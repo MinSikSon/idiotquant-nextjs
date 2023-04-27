@@ -1,13 +1,11 @@
 import React from "react";
-import Table from "../components/Table.js"
-import Calculator from "../components/Calculator.js"
-import Search from "../components/Search.js"
-import Card from "../components/Card.js"
-import { strategyNCAV } from "../components/Strategy.js";
+import Table from "../../components/Table.js"
+import Calculator from "../../components/Calculator.js"
+import Search from "../../components/Search.js"
+import Card from "../../components/Card.js"
+import { strategyNCAV } from "../../components/Strategy.js";
 import Link from "next/link.js";
-import Head from "next/head.js";
-import Script from "next/script.js";
-import { Util } from "../components/Util.js";
+import { Util } from "../../components/Util.js";
 
 export default function QuantPost() {
     // state
@@ -294,8 +292,8 @@ export default function QuantPost() {
     }
     const Title = () => {
         return (
-            <Link href="./posts/terms">
-                <div className="font-serif text-2xl text-white header-contents text-center">
+            <Link href="./terms">
+                <div className="font-serif text-2xl text-white bg-black header-contents text-center">
                     IDIOT<span className='text-yellow-300'>.</span>QUANT
                 </div>
             </Link>
@@ -303,25 +301,13 @@ export default function QuantPost() {
     };
     const Information = (props) => {
         return (
-            <div className='pt-5' onClick={() => props.strategyExample()}>
+            <div className='pt-5 bg-black' onClick={() => props.strategyExample()}>
                 <Card title={props.informationTitle} description={props.informationDescription} />
             </div>
         );
     };
     return (
-        <div className="bg-black">
-            <Head>
-                <title>퀀트 종목 추천</title>
-                <link rel="icon" href="/images/profile.jpeg" />
-            </Head>
-            <Script
-                src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-6995198721227228"
-                crossorigin="anonymous"
-                strategy="lazyOnload"
-                onLoad={() =>
-                    console.log(`script loaded correctly, window.FB has been populated`)
-                }
-            />
+        <div>
             <Title />
             <Information
                 informationTitle={informationTitle}
