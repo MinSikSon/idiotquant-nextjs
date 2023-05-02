@@ -9,21 +9,52 @@ import Head from "next/head.js";
 import Script from "next/script.js";
 import { Util } from "../components/Util.js";
 
-export default function QuantPost() {
+export async function getServerSideProps() {
+    async function fetchAndSet(subUrl) {
+        const url = `https://idiotquant-backend.tofu89223.workers.dev`;
+        const port = `443`;
+        const res = await fetch(`${url}:${port}/${subUrl}`);
+        const json = await res.json();
+        return json;
+    }
+
+    const marketInfo20181214 = await fetchAndSet('stock/market-info?date=20181214');
+    const marketInfo20191213 = await fetchAndSet('stock/market-info?date=20191213');
+    const marketInfo20201214 = await fetchAndSet('stock/market-info?date=20201214');
+    const marketInfo20211214 = await fetchAndSet('stock/market-info?date=20211214');
+    const marketInfo20221214 = await fetchAndSet('stock/market-info?date=20221214');
+    const marketInfo20230111 = await fetchAndSet('stock/market-info?date=20230111');
+    const marketInfoLatest = await fetchAndSet('stock/market-info?date=20230426');
+    const financialInfoAll = await fetchAndSet('stock/financial-info');
+    return {
+        props: {
+            // props for your component
+            marketInfo20181214,
+            marketInfo20191213,
+            marketInfo20201214,
+            marketInfo20211214,
+            marketInfo20221214,
+            marketInfo20230111,
+            marketInfoLatest,
+            financialInfoAll,
+        },
+    };
+}
+
+export default function QuantPost({
+    marketInfo20181214,
+    marketInfo20191213,
+    marketInfo20201214,
+    marketInfo20211214,
+    marketInfo20221214,
+    marketInfo20230111,
+    marketInfoLatest,
+    financialInfoAll,
+}) {
     // state
     const [inputValue, setInputValue] = React.useState('');
     const [inputPlaceholder, setInputPlaceholder] = React.useState('');
     const [searchResult, setSearchResult] = React.useState('');
-
-    const [marketInfo20181214, setMarketInfo20181214] = React.useState('');
-    const [marketInfo20191213, setMarketInfo20191213] = React.useState('');
-    const [marketInfo20201214, setMarketInfo20201214] = React.useState('');
-    const [marketInfo20211214, setMarketInfo20211214] = React.useState('');
-    const [marketInfo20221214, setMarketInfo20221214] = React.useState('');
-    const [marketInfo20230111, setMarketInfo20230111] = React.useState('');
-    const [marketInfoLatest, setMarketInfoLatest] = React.useState('');
-
-    const [financialInfoAll, setFinancialInfoAll] = React.useState('');
 
     const [latestStockCompanyInfo, setLatestStockCompanyInfo] = React.useState('');
 
@@ -41,51 +72,6 @@ export default function QuantPost() {
     const [prevInfo, setPrevInfo] = React.useState('');
 
     const [searchingList, setSearchingList] = React.useState('');
-
-    React.useEffect(() => {
-        // fetch
-        function fetchAndSet(subUrl, state, setter, useSessionStorage = false) {
-            let needUpdateState = true;
-            // if (true === useSessionStorage) {
-            //     let item = window.sessionStorage.getItem(state);
-
-            //     needUpdateState = !JSON.parse(item);
-            // }
-
-            if (false === needUpdateState) {
-                return;
-            }
-
-            const url = `https://idiotquant-backend.tofu89223.workers.dev`;
-            const port = `443`;
-            fetch(`${url}:${port}/${subUrl}`)
-                .then(function (response) {
-                    return response.json();
-                })
-                .then(function (json) {
-                    setter(json);
-                });
-        }
-
-        let useSessionStorage = false;
-
-        fetchAndSet('stock/market-info?date=20181214', 'marketInfo20181214', setMarketInfo20181214, useSessionStorage);
-        fetchAndSet('stock/market-info?date=20191213', 'marketInfo20191213', setMarketInfo20191213, useSessionStorage);
-        fetchAndSet('stock/market-info?date=20201214', 'marketInfo20201214', setMarketInfo20201214, useSessionStorage);
-        fetchAndSet('stock/market-info?date=20211214', 'marketInfo20211214', setMarketInfo20211214, useSessionStorage);
-        fetchAndSet('stock/market-info?date=20221214', 'marketInfo20221214', setMarketInfo20221214, useSessionStorage);
-        fetchAndSet('stock/market-info?date=20230111', 'marketInfo20230111', setMarketInfo20230111, useSessionStorage);
-        fetchAndSet('stock/market-info?date=20230426', 'marketInfoLatest', setMarketInfoLatest, useSessionStorage);
-        fetchAndSet('stock/financial-info', 'financialInfoAll', setFinancialInfoAll, useSessionStorage);
-
-        // setTimeout(() => window.scrollTo(0, 0), 1000);
-
-        // window.addEventListener("scroll", () => setScrollEffect(false === scrollEffect && window.scrollY >= 80));
-
-        // return () => {
-        //     window.removeEventListener("scroll", onScroll);
-        // };
-    }, []);
 
     function changeStockCompanyName(dictOrigin, srcName, dstName) {
         const { [srcName]: srcCompanyInfo, ...rest } = dictOrigin;
