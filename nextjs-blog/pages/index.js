@@ -298,7 +298,7 @@ export default function QuantPost({
         );
     };
     return (
-        <div className="bg-black">
+        <div className="w-fit bg-black">
             <Head>
                 <title>퀀트 종목 추천</title>
                 <link rel="icon" href="/images/profile.jpeg" />
