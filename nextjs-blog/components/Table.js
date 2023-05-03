@@ -1,4 +1,5 @@
 
+// import CustomChart from "./CustomChart";
 import CustomChart from "./CustomChart";
 import Loading from "./Loading";
 import { Util } from "./Util";
@@ -78,6 +79,26 @@ const ListNode = (props) => {
                             width={'90'}
                             display={false}
                         /> */}
+                        <CustomChart
+                            tickerName={props.tickerName}
+                            bsnsFullDate={props.bsnsFullDate}
+                            fairPrice={props.fairPrice}
+
+                            marketInfo20181214={props.marketInfo20181214}
+                            marketInfo20191213={props.marketInfo20191213}
+                            marketInfo20201214={props.marketInfo20201214}
+                            marketInfo20211214={props.marketInfo20211214}
+                            marketInfo20221214={props.marketInfo20221214}
+                            marketInfo20230111={props.marketInfo20230111}
+                            marketInfoLatest={props.marketInfoLatest}
+
+                            responsive={false}
+                            height={60}
+                            width={90}
+                            display={false}
+                        >
+
+                        </CustomChart>
                     </div>
                 </div>
             </div>
@@ -99,6 +120,8 @@ export default function Table(props) {
         !!props.marketInfo20230111,
         !!props.marketInfoLatest,
     ].forEach((item) => needLoading &&= item);
+
+    // console.log(`Table needLoading`, needLoading);
 
     let cumulativeRatio = 0;
 

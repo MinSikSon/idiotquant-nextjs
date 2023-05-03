@@ -1,6 +1,7 @@
 import React from "react";
 import SearchingListItem from "./SearchingListItem";
 import { Util } from "./Util";
+import CustomChart from "./CustomChart";
 
 const Input = (props) => {
     const MagnifyingGlassIcon = (props) => {
@@ -151,9 +152,7 @@ export default function Search(props) {
                     :
                     (!!props.searchResult && Object.keys(props.searchResult).length > 0) ?
                         <>
-                            {/* <CustomChart
-                                corpCode={'cc2' + props.corpCode}
-
+                            <CustomChart
                                 fairPrice={fairPrice}
                                 tickerName={jsonSearchResult['종목명']}
                                 bsnsFullDate={(Object.keys(props.dictFilteredStockCompanyInfo).length > 0) ? props.dictFilteredStockCompanyInfo[Object.keys(props.dictFilteredStockCompanyInfo)[0]].bsnsDate : '-'}
@@ -168,13 +167,9 @@ export default function Search(props) {
                                 marketInfo20230111={props.marketInfo20230111}
                                 marketInfoLatest={props.marketInfoLatest}
 
-                                inputAveragePrice={props.inputAveragePrice}
-
                                 responsive={true}
                                 display={true}
-
-                                dictFilteredStockCompanyInfo={props.dictFilteredStockCompanyInfo}
-                            /> */}
+                            />
                             <div className={`grid grid-cols-3`}>
                                 {Object.keys(selectedSearchResult).map((key, index) => <CustomDiv key={index} title={key} item={jsonSearchResult[key]} />)}
                             </div>
