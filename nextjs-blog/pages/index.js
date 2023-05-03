@@ -9,7 +9,8 @@ import Head from "next/head.js";
 import Script from "next/script.js";
 import { Util } from "../components/Util.js";
 
-export async function getServerSideProps() {
+// export async function getServerSideProps(context) {
+export async function getStaticProps() {
     async function fetchAndSet(subUrl) {
         const url = `https://idiotquant-backend.tofu89223.workers.dev`;
         const port = `443`;
@@ -26,6 +27,8 @@ export async function getServerSideProps() {
     const marketInfo20230111 = await fetchAndSet('stock/market-info?date=20230111');
     const marketInfoLatest = await fetchAndSet('stock/market-info?date=20230426');
     const financialInfoAll = await fetchAndSet('stock/financial-info');
+
+    // const serverData = await getServerData();
     return {
         props: {
             // props for your component
