@@ -340,14 +340,16 @@ export default function QuantPost({
                     />
 
                 </div>
-                <Calculator
-                    scrollEffect={scrollEffect}
+                <Link href="./posts/calculator">
+                    <Calculator
+                        scrollEffect={scrollEffect}
 
-                    openCalculator={openCalculator}
-                    setOpenCalculator={setOpenCalculator}
+                        openCalculator={openCalculator}
+                        setOpenCalculator={setOpenCalculator}
 
-                    openSearchResult={openSearchResult}
-                />
+                        openSearchResult={openSearchResult}
+                    />
+                </Link>
                 <Search
                     setOpenSearchResult={setOpenSearchResult}
                     searchStockCompanyInfo={searchStockCompanyInfo}

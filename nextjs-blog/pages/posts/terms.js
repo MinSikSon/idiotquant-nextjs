@@ -159,7 +159,7 @@ const Warren = (props) => {
 export default function TermsPost() {
     const Title = () => {
         return (
-            <Link href="../">
+            <Link href="/">
                 <div className="font-serif text-2xl text-black bg-white header-contents text-center">
                     IDIOT<span className='text-yellow-300'>.</span>QUANT
                 </div>
