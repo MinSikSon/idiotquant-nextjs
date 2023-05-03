@@ -298,12 +298,13 @@ export default function QuantPost({
         );
     };
     return (
-        <div className="w-fit bg-black">
+        <div className="bg-black">
             <Head>
                 <title>퀀트 종목 추천</title>
                 <link rel="icon" href="/images/profile.jpeg" />
             </Head>
             <Script
+                async
                 src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-6995198721227228"
                 crossorigin="anonymous"
                 strategy="lazyOnload"
