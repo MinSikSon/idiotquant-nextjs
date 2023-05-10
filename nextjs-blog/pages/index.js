@@ -340,7 +340,7 @@ export default function QuantPost({
                     />
 
                 </div>
-                <Link href="./posts/calculator">
+                <Link href="./calculator">
                     <Calculator
                         scrollEffect={scrollEffect}
 

@@ -1,4 +1,4 @@
-@tailwind base;
+/* @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
@@ -18,4 +18,4 @@
   .btn-grey-jumbo {
     @apply bg-gray-200 shadow-md rounded-2xl w-full h-12 text-black font-medium flex justify-center items-center;
   }
-}
+} */
