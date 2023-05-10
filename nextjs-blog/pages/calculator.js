@@ -4,6 +4,7 @@ import Link from "next/link";
 import React from "react";
 
 import { Input, Select, Option, Button } from "@material-tailwind/react";
+import { Util } from "../components/Util";
 
 export default function Calculator() {
     const [date, setDate] = React.useState(new Date());
@@ -67,14 +68,21 @@ export default function Calculator() {
         console.log(`투자 시작 금액: (원) investmentAmount`, investmentAmount);
         console.log(`투자 기간: (년) numberOfYears`, numberOfYears);
         console.log(`연간 이자율 interestRate`, interestRate);
-        console.log(`복리 compunding`, compunding);
+        console.log(`(select) 복리 compunding`, compunding);
         console.log(`추가 납입금 contributions`, contributions);
-        console.log(`추가 납입금 납입 빈도 frequency`, frequency);
+        console.log(`(select) 추가 납입금 납입 빈도 frequency`, frequency);
         console.log(`물가상승률 (%) annualInflationRate`, annualInflationRate);
 
+        let value = investmentAmount;
+        for (let year = 0; year < numberOfYears; year++) {
+            value = value * (1 + interestRate / 100);
+        }
         console.log(`result`, result);
 
-        const totalValue = investmentAmount * numberOfYears * (1 + interestRate / 100) + compunding;
+        const option = {
+            maximumFractionDigits: 0
+        };
+        const totalValue = Number(value).toLocaleString('ko-KR', option);
         setResult(`최종 수익금: ` + totalValue + ` 원`);
     }
 
