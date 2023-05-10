@@ -64,8 +64,18 @@ export default function Calculator() {
     const [result, setResult] = React.useState('');
 
     function handleCalculate() {
+        console.log(`투자 시작 금액: (원) investmentAmount`, investmentAmount);
+        console.log(`투자 기간: (년) numberOfYears`, numberOfYears);
+        console.log(`연간 이자율 interestRate`, interestRate);
+        console.log(`복리 compunding`, compunding);
+        console.log(`추가 납입금 contributions`, contributions);
+        console.log(`추가 납입금 납입 빈도 frequency`, frequency);
+        console.log(`물가상승률 (%) annualInflationRate`, annualInflationRate);
+
+        console.log(`result`, result);
+
         const totalValue = investmentAmount * numberOfYears * (1 + interestRate / 100) + compunding;
-        setResult(`최종 수익금:` + totalValue);
+        setResult(`최종 수익금: ` + totalValue + ` 원`);
     }
 
     function handleClear() {
@@ -109,7 +119,7 @@ export default function Calculator() {
                             <Input color="teal" label="투자 기간: (년)" type='number' onChange={(e) => { setNumberOfYears(e.target.value) }} value={numberOfYears} />
 
                             <Input color="teal" label="연간 이자율" type='number' onChange={(e) => { setInterestRate(e.target.value) }} value={interestRate} />
-                            <Select color="teal" label="복리" onChange={(e) => { setCompunding(e.target.value) }}>
+                            <Select color="teal" label="복리" onChange={(value) => { setCompunding(value) }}>
                                 <Option value='1'>Daily (360/Yr)</Option>
                                 <Option value='2'>Daily (365/Yr)</Option>
                                 <Option value='3'>Monthly (12/Yr)</Option>
@@ -117,7 +127,7 @@ export default function Calculator() {
                                 <Option value='5'>Annually (1/Yr)</Option>
                             </Select>
                             <Input color="teal" label="추가 납입금" type='number' onChange={(e) => { setContributions(e.target.value) }} value={contributions} />
-                            <Select color="teal" label="추가 납입금 납입 빈도" onChange={(e) => { setFrequency(e.target.value) }} >
+                            <Select color="teal" label="추가 납입금 납입 빈도" onChange={(value) => { setFrequency(value) }} >
                                 <Option value='1'>Weekly</Option>
                                 <Option value='2'>Bi-Weekly</Option>
                                 <Option value='3'>Semi-Monthly</Option>
