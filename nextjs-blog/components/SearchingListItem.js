@@ -3,7 +3,7 @@ export default function SearchingListItem(props) {
     // console.log(`SearchingListItem`, props);
     return (
         // <article className="flex items-start space-x-6 p-6 bg-black text-white">
-        <article className="flex items-start space-x-6 px-6 text-white hover:bg-gray-300 rounded-lg" onClick={(e) => {
+        <article className="flex items-start space-x-6 px-6 text-black hover:bg-gray-300 rounded-lg" onClick={(e) => {
             e.preventDefault();
             // console.log(e.target.innerText);
             props.searchStockCompanyInfo(e.target.innerText);
@@ -13,7 +13,7 @@ export default function SearchingListItem(props) {
             <div className="min-w-0 relative flex-auto">
                 {/* <h2 className="font-semibold text-slate-900 truncate pr-20">{movie.title}</h2> */}
                 {/* <h2 className="font-semibold text-slate-900 truncate pr-20">{movie.종목명}</h2> */}
-                <h2 className="font-semibold text-white truncate pr-20 my-1">{movie.종목명}</h2>
+                <h2 className="font-semibold text-black truncate pr-20 my-1">{movie.종목명}</h2>
                 {/* <dl className="mt-2 flex flex-wrap text-sm leading-6 font-medium">
                     <div className="absolute top-0 right-0 flex items-center space-x-1">
                         <dt className="text-sky-500">

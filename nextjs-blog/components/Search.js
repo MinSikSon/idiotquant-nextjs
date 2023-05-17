@@ -14,7 +14,7 @@ const Input = (props) => {
 
     const Left = (props) => {
         return (
-            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth="1.5" stroke="currentColor" className="w-7 h-7 text-white">
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth="1.5" stroke="currentColor" className="w-7 h-7 text-black">
                 <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 19.5L8.25 12l7.5-7.5" />
             </svg>
         );
@@ -37,7 +37,7 @@ const Input = (props) => {
                     e.target[0].value = ''
                     props.setOpenSearchResult(true);
                 }}
-                className={`p-1 flex items-center ${props.openSearchResult ? 'border-b border-slate-500 mb-3 pb-3' : 'p-0.5 sm:border-2 sm:border-white sm:rounded-xl md:border-2 md:border-white md:rounded-xl'}`}
+                className={`p-1 flex items-center ${props.openSearchResult ? 'border-b border-slate-500 mb-3 pb-3' : 'p-0.5 sm:border-2 sm:border-black sm:rounded-xl md:border-2 md:border-black md:rounded-xl'}`}
             >
                 <div className="rounded-md w-full flex">
                     {/* <MagnifyingGlassIcon /> */}
@@ -53,7 +53,7 @@ const Input = (props) => {
                             <input
                                 ref={refFocus}
                                 name="searchValue"
-                                className="bg-gray-700 appearance-none border-none w-full text-yellow-500 p-2 rounded-lg text-base focus:outline-none"
+                                className="bg-gray-300 appearance-none border-none w-full text-black p-2 rounded-lg text-base focus:outline-none"
                                 type="text"
                                 placeholder={props.inputPlaceholder}
                                 value={props.inputValue}
@@ -68,7 +68,7 @@ const Input = (props) => {
                         <></>
                     }
                 </div>
-                <button className='rounded-3xl p-2 pr-3 inline-flex items-center justify-center text-white focus:outline-none'>
+                <button className='rounded-3xl p-2 pr-3 inline-flex items-center justify-center text-black focus:outline-none'>
                     <MagnifyingGlassIcon />
                 </button>
             </form>
@@ -117,8 +117,8 @@ export default function Search(props) {
     const CustomDiv = (props) => {
         return (
             <div className='mx-1 my-1 grid grid-cols-3 grid-rows-2 border-b border-gray-400'>
-                <div className={`col-span-3 row-span-1 text-xs ${!!props.textColor ? props.textColor : `text-white`}`}>{props.title} {!!props.ratio ? props.ratio : ''}</div>
-                <div className='col-span-3 row-span-1 text-right text-xs text-white'>{props.item}</div>
+                <div className={`col-span-3 row-span-1 text-xs ${!!props.textColor ? props.textColor : `text-black`}`}>{props.title} {!!props.ratio ? props.ratio : ''}</div>
+                <div className='col-span-3 row-span-1 text-right text-xs text-black'>{props.item}</div>
             </div>
         );
     }
@@ -132,7 +132,7 @@ export default function Search(props) {
     }
 
     return (
-        <div className={`${props.scrollEffect && !props.openSearchResult ? 'translate translate-y-10' : ''} z-10 fixed w-fit sm:relative sm:w-80 md:relative md:w-80 top-0 rounded-xl ${(true === props.openSearchResult || true === !!props.searchingList) ? `bg-black duration-300 w-screen h-screen` : `right-0 border-none duration-300`}`}>
+        <div className={`${props.scrollEffect && !props.openSearchResult ? 'translate translate-y-10' : ''} z-10 fixed w-fit sm:relative sm:w-80 md:relative md:w-80 top-0 rounded-xl ${(true === props.openSearchResult || true === !!props.searchingList) ? `bg-white duration-300 w-screen h-screen` : `right-0 border-none duration-300`}`}>
             <Input {...props} />
 
             {(true === !!props.openSearchResult) ?

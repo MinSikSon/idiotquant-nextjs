@@ -1,108 +1,82 @@
 
 // import CustomChart from "./CustomChart";
+import { Avatar, Card, IconButton, List, ListItem, ListItemPrefix, ListItemSuffix, Typography } from "@material-tailwind/react";
+import CustomCard from "./CustomCard";
 import CustomChart from "./CustomChart";
 import Loading from "./Loading";
 import { Util } from "./Util";
+import { TrashIcon } from "@heroicons/react/24/outline";
 
 const MarQueue = (props) => {
     const CardList = () => {
         return (
             <>
-                {props.contents.map((content, index) => <Card key={index} title={content.title} description={content.description} textColor={content.textColor} backGround={content.backGround} />)}
+                {props.contents.map((content, index) => <CustomCard key={index} title={content.title} description={content.description} textColor={content.textColor} backGround={content.backGround} />)}
             </>
         );
     };
 
     return (
         <div className='relative flex overflow-x-hidden'>
-            {/* <div className='flex animate-marquee whitespace-nowrap'>
+            <div className='flex animate-marquee whitespace-nowrap'>
                 <CardList />
             </div>
             <div className='flex absolute animate-marquee2 whitespace-nowrap'>
                 <CardList />
-            </div> */}
+            </div>
         </div>
     );
 }
 
 const ListNode = (props) => {
-    const CloseIcon = () => {
-        return (
-            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" className="stroke-2">
-                <path strokeLinecap="round" strokeLinejoin="round" d="M14.74 9l-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 01-2.244 2.077H8.084a2.25 2.25 0 01-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 00-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 013.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 00-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 00-7.5 0" />
-            </svg>
-        );
-    };
-
     return (
-        <li className={`snap-center ${(true === props.active) ? `border border-red-500 rounded-l-2xl rounded-r-lg` : `border border-black`} text-gray-400 hover:border-red-500 cursor-pointer`}>
-            <div className={`grid grid-cols-12 text-xs font-medium text-white font-mono`}>
-                {(true === props.active) ?
-                    <button className={`col-span-1 row-span-2 text-center text-lg font-mono bg-red-500 rounded-l-2xl`} onClick={() => props.deleteStockCompanyInList(props.tickerName)}>
-                        <CloseIcon />
-                    </button>
-                    :
-                    <div className={`col-span-1 row-span-2 text-center text-lg font-mono`}>
-                        {props.index + 1}
+        <ListItem>
+            <ListItemPrefix>
+                <IconButton variant="text" color="blue-gray" onClick={() => props.deleteStockCompanyInList(props.tickerName)}>
+                    <div className='flex'>
+                        <TrashIcon className="h-5 w-5" /> {props.index + 1}
                     </div>
-                }
+                </IconButton>
 
-                <div className='col-span-11 grid grid-cols-11' onClick={() => { props.searchStockCompanyInfo(props.tickerName); props.setOpenSearchResult(false); }} >
-                    <div className='self-center ml-1 col-span-5 text-lg grid grid-rows-2'>
-                        <div className="row-span-1 text-white text-lg">{props.tickerName}</div>
-                        <div className="row-span-1 text-gray-400 text-sm">기대수익률 {props.ratio - 100}%</div>
+            </ListItemPrefix>
+            <div>
+                <Typography variant="h6" color="blue-gray">
+                    ({props.ratio - 100} %) {props.tickerName}
+                </Typography>
+                <Typography variant="small" color="gray" className="font-normal">
+                    <div className='flex gap-5'>
+                        <Typography variant="small" color="blue" className="font-normal">
+                            {props.close} 원
+                        </Typography>
+                        <Typography variant="small" color="red" className="font-normal">
+                            {props.fairPrice} 원
+                        </Typography>
+
                     </div>
-                    <div className="self-center col-span-3 grid text-base text-center">
-                        <div className="row-span-1 rounded-t-sm bg-blue-500 text-white text-sm text-right pr-1">{props.close} 원</div>
-                        <div className="row-span-1 rounded-b-sm bg-red-500 text-white text-sm text-right pr-1">{props.fairPrice} 원</div>
-                    </div>
-                    <div className="self-center col-span-3 grid justify-center">
-                        {/* <CustomChart
-                            corpCode={'cc1' + props.corpCode}
-
-                            fairPrice={props.fairPrice}
-                            tickerName={props.tickerName}
-                            bsnsFullDate={props.bsnsFullDate}
-                            marketCapitalization={props.marketCapitalization}
-                            listedStocks={props.listedStocks}
-
-                            marketInfo20181214={props.marketInfo20181214}
-                            marketInfo20191213={props.marketInfo20191213}
-                            marketInfo20201214={props.marketInfo20201214}
-                            marketInfo20211214={props.marketInfo20211214}
-                            marketInfo20221214={props.marketInfo20221214}
-                            marketInfo20230111={props.marketInfo20230111}
-                            marketInfoLatest={props.marketInfoLatest}
-
-                            responsive={false}
-                            height={'60'}
-                            width={'90'}
-                            display={false}
-                        /> */}
-                        <CustomChart
-                            tickerName={props.tickerName}
-                            bsnsFullDate={props.bsnsFullDate}
-                            fairPrice={props.fairPrice}
-
-                            marketInfo20181214={props.marketInfo20181214}
-                            marketInfo20191213={props.marketInfo20191213}
-                            marketInfo20201214={props.marketInfo20201214}
-                            marketInfo20211214={props.marketInfo20211214}
-                            marketInfo20221214={props.marketInfo20221214}
-                            marketInfo20230111={props.marketInfo20230111}
-                            marketInfoLatest={props.marketInfoLatest}
-
-                            responsive={false}
-                            height={60}
-                            width={90}
-                            display={false}
-                        >
-
-                        </CustomChart>
-                    </div>
-                </div>
+                </Typography>
             </div>
-        </li>
+            <ListItemSuffix>
+                <CustomChart
+                    tickerName={props.tickerName}
+                    bsnsFullDate={props.bsnsFullDate}
+                    fairPrice={props.fairPrice}
+
+                    marketInfo20181214={props.marketInfo20181214}
+                    marketInfo20191213={props.marketInfo20191213}
+                    marketInfo20201214={props.marketInfo20201214}
+                    marketInfo20211214={props.marketInfo20211214}
+                    marketInfo20221214={props.marketInfo20221214}
+                    marketInfo20230111={props.marketInfo20230111}
+                    marketInfoLatest={props.marketInfoLatest}
+
+                    responsive={false}
+                    height={60}
+                    width={90}
+                    display={false}
+                />
+            </ListItemSuffix>
+
+        </ListItem >
     );
 };
 
@@ -174,11 +148,11 @@ export default function Table(props) {
 
     const contents = [
         { title: `종목수`, description: numOfStockItems },
-        { title: `기대수익률`, description: 기대수익, textColor: `text-white`, backGround: `bg-yellow-600` },
+        { title: `기대수익률`, description: 기대수익, textColor: `text-black`, backGround: `bg-yellow-600` },
         { title: `주가 기준일자`, description: `${bsnsDate}` },
         { title: `재무정보 기준일자`, description: `${thstrm_dt}` },
-        { title: `현재가`, description: `x,xxx 원`, textColor: `text-white`, backGround: `bg-blue-500` },
-        { title: `목표가`, description: `xx,xxx 원`, textColor: `text-white`, backGround: `bg-red-500` },
+        { title: `현재가`, description: `x,xxx 원`, textColor: `text-black`, backGround: `bg-blue-500` },
+        { title: `목표가`, description: `xx,xxx 원`, textColor: `text-black`, backGround: `bg-red-500` },
     ];
 
     return (
@@ -189,14 +163,17 @@ export default function Table(props) {
             <div className={`z-10 fixed top-0 w-full ${(true === props.scrollEffect) ? 'transition translate-y-2 visible' : 'invisible'}`}>
                 <MarQueue contents={contents} />
             </div>
-            {(false == needLoading) ?
-                <Loading />
-                :
-                <ul className="snap-y">
-                    {(tbody.length > 0) ? tbody.map((item) => <ListNode key={item.key} {...item} deleteStockCompanyInList={props.deleteStockCompanyInList} />) : <></>}
-                </ul>
-            }
-
+            <Card className="w-full">
+                <List>
+                    {(false == needLoading) ?
+                        <Loading />
+                        :
+                        <ul className="snap-y">
+                            {(tbody.length > 0) ? tbody.map((item) => <ListNode key={item.key} {...item} deleteStockCompanyInList={props.deleteStockCompanyInList} />) : <></>}
+                        </ul>
+                    }
+                </List>
+            </Card>
         </>
     );
 };

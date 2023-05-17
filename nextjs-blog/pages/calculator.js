@@ -74,7 +74,8 @@ export default function Calculator() {
         console.log(`물가상승률 (%) annualInflationRate`, annualInflationRate);
 
         let value = investmentAmount;
-        for (let year = 0; year < numberOfYears; year++) {
+        const loop = (numberOfYears < 0) ? 0 : numberOfYears;
+        for (let year = 0; year <= loop; year++) {
             value = value * (1 + interestRate / 100);
         }
         console.log(`result`, result);

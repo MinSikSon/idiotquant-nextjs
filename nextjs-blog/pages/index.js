@@ -2,7 +2,7 @@ import React from "react";
 import Table from "../components/Table.js"
 import Calculator from "../components/Calculator.js"
 import Search from "../components/Search.js"
-import Card from "../components/Card.js"
+import CustomCard from "../components/CustomCard.js"
 import { strategyNCAV } from "../components/Strategy.js";
 import Link from "next/link.js";
 import Head from "next/head.js";
@@ -284,7 +284,7 @@ export default function QuantPost({
     const Title = () => {
         return (
             <Link href="./posts/terms">
-                <div className="font-serif text-2xl text-white header-contents text-center">
+                <div className="font-serif text-2xl text-black header-contents text-center">
                     IDIOT<span className='text-yellow-300'>.</span>QUANT
                 </div>
             </Link>
@@ -293,12 +293,12 @@ export default function QuantPost({
     const Information = (props) => {
         return (
             <div className='pt-5' onClick={() => props.strategyExample()}>
-                <Card title={props.informationTitle} description={props.informationDescription} />
+                <CustomCard title={props.informationTitle} description={props.informationDescription} />
             </div>
         );
     };
     return (
-        <div className="bg-black">
+        <div className="bg-white">
             <Head>
                 <title>퀀트 종목 추천</title>
                 <link rel="icon" href="/images/profile.jpeg" />
@@ -317,7 +317,7 @@ export default function QuantPost({
                 informationTitle={informationTitle}
                 informationDescription={informationDescription}
                 strategyExample={strategyExample} />
-            <div className="bg-black relative sm:grid sm:grid-cols-2 sm:gap-4 sm:place-items-center md:grid md:grid-cols-2 md:gap-4 md:place-items-center md:px-10">
+            <div className="bg-white relative sm:grid sm:grid-cols-2 sm:gap-4 sm:place-items-center md:grid md:grid-cols-2 md:gap-4 md:place-items-center md:px-10">
                 <div className="pb-80 sm:overflow-y-auto sm:h-screen md:overflow-y-auto md:h-screen w-full">
                     <Table
                         searchStockCompanyInfo={searchStockCompanyInfo}
