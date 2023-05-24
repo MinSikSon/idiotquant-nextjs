@@ -105,6 +105,15 @@ export default function Calculator() {
                 <title>투자 계산기</title>
                 <link rel="icon" href="/images/profile.jpeg" />
             </Head>
+            <Script
+                async
+                src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-6995198721227228"
+                crossorigin="anonymous"
+                strategy="lazyOnload"
+                onLoad={() =>
+                    console.log(`script loaded correctly, window.FB has been populated`)
+                }
+            />
             <div className='grid grid-cols-8 py-2'>
                 <div className='col-span-1'>
                     <Left />
