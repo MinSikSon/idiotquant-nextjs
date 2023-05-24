@@ -25,7 +25,8 @@ export async function getStaticProps() {
     const marketInfo20211214 = await fetchAndSet('stock/market-info?date=20211214');
     const marketInfo20221214 = await fetchAndSet('stock/market-info?date=20221214');
     const marketInfo20230111 = await fetchAndSet('stock/market-info?date=20230111');
-    const marketInfoLatest = await fetchAndSet('stock/market-info?date=20230426');
+    // const marketInfoLatest = await fetchAndSet('stock/market-info?date=20230426');
+    const marketInfoLatest = await fetchAndSet('stock/market-info?date=20230524');
     const financialInfoAll = await fetchAndSet('stock/financial-info');
 
     // const serverData = await getServerData();
