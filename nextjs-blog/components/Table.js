@@ -30,7 +30,7 @@ const MarQueue = (props) => {
 
 const ListNode = (props) => {
     return (
-        <ListItem className="p-1">
+        <ListItem className="p-1 pb-2">
             <ListItemPrefix>
                 <IconButton variant="text" color="blue-gray" onClick={() => props.deleteStockCompanyInList(props.tickerName)}>
                     <div className='flex'>
