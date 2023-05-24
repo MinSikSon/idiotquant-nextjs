@@ -160,7 +160,7 @@ export default function TermsPost() {
     const Title = () => {
         return (
             <Link href="/">
-                <div className="font-serif text-2xl text-black bg-white header-contents text-center">
+                <div className="font-serif text-xl text-black bg-white header-contents text-center py-3">
                     IDIOT<span className='text-yellow-300'>.</span>QUANT
                 </div>
             </Link>

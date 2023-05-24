@@ -285,7 +285,7 @@ export default function QuantPost({
     const Title = () => {
         return (
             <Link href="./posts/terms">
-                <div className="font-serif text-2xl text-black header-contents text-center">
+                <div className="font-serif text-xl text-black header-contents text-center py-3">
                     IDIOT<span className='text-yellow-300'>.</span>QUANT
                 </div>
             </Link>
@@ -293,7 +293,7 @@ export default function QuantPost({
     };
     const Information = (props) => {
         return (
-            <div className='pt-5' onClick={() => props.strategyExample()}>
+            <div onClick={() => props.strategyExample()}>
                 <CustomCard title={props.informationTitle} description={props.informationDescription} />
             </div>
         );
