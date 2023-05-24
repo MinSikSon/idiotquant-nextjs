@@ -1,6 +1,7 @@
 // code 출처 : https://reactjsexample.com/a-simple-calculator-app-built-using-tailwind-css-and-react-js/
 import Head from "next/head";
 import Link from "next/link";
+import Script from "next/script.js";
 import React from "react";
 
 import { Input, Select, Option, Button } from "@material-tailwind/react";
