@@ -88,7 +88,7 @@ export default function Calculator() {
         <div>
             <Head>
                 <title>Investment Inflation Calculator</title>
-                <link rel="icon" href="/images/profile.jpeg" />
+                <link rel="icon" href="/images/icons8-calculator.gif" />
                 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=0" />
             </Head>
             <Script
