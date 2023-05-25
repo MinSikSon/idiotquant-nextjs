@@ -11,9 +11,11 @@ export default function Calculator() {
 
     React.useEffect(() => {
         setInterval(() => { setDate(new Date()); }, 1000);
-
-        handleCalculate();
     }, []);
+
+    React.useEffect(() => {
+        handleCalculate();
+    });
 
     const Left = (props) => {
         return (
@@ -46,16 +48,24 @@ export default function Calculator() {
     const [annualInflationRate, setAnnualInflationRate] = React.useState(3);
     const [result, setResult] = React.useState('');
 
+    function handleCalculateSampleData() {
+        setInvestmentAmount(50000000);
+        setNumberOfYears(12);
+        setInterestRate(25);
+        // setCompunding('');
+        setContributions(2000000);
+        // setFrequency('');
+        setAnnualInflationRate(1);
+    }
+
     function handleCalculate() {
         let value = Number(investmentAmount);
         const loop = (numberOfYears < 0) ? 0 : numberOfYears * 12;
         const monthlyInterestRate = interestRate / 12;
         const monthlyInflationRate = annualInflationRate / 12;
         for (let month = 0; month < loop; month++) {
-            let before = value;
             value = value * (1 + (monthlyInterestRate - monthlyInflationRate) / 100);
             value += (Number(contributions));
-            console.log(month + ', ' + before + '->' + value + ', 시작금액:' + investmentAmount);
         }
 
         const totalValue = Number(value).toLocaleString('ko-KR', { maximumFractionDigits: 0 });
@@ -104,7 +114,7 @@ export default function Calculator() {
 
                 <div className="w-full h-full bg-gray-50 rounded-2xl shadow-xl border-4 border-gray-100">
                     <div className="w-auto m-1 h-auto mb-2">
-                        <form className="flex flex-col gap-4 m-8">
+                        <form className="flex flex-col gap-2 m-8">
                             <div className='flex'>
                                 <Input color="black" label="투자 시작 금액: (원)" type='number' onChange={(e) => { setInvestmentAmount(e.target.value) }} value={investmentAmount} />
                                 {investmentAmount && <ClearButton handleClick={() => setInvestmentAmount('')} />}
@@ -153,6 +163,11 @@ export default function Calculator() {
                                 <Button color="gray" onClick={handleClear}>Clear</Button>
                                 <Button color="yellow" onClick={handleCalculate}>Calculate</Button>
                             </div>
+                            <Button color="green" variant="outlined" onClick={handleCalculateSampleData}>
+                                <div>(예시) 시작금액: 5000 만원, 투자기간: 12년</div>
+                                <div>이자율: 25%, 추납금: 200 만원, 물가 상승률: 1% </div>
+                            </Button>
+
                             <div className='grid grid-rows-8'>
                                 <div className='rows-span-1 text-2xl underline decoration-4 decoration-yellow-500'>{'최종 수입금: ' + result + ' 원'}</div>
                                 <div className='rows-span-1'>{'투자 시작 금액: ' + Number(investmentAmount).toLocaleString('ko-KR', { maximumFractionDigits: 0 }) + ' 원'}</div>
