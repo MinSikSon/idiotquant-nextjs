@@ -8,22 +8,12 @@ import { Input, Select, Option, Button } from "@material-tailwind/react";
 
 export default function Calculator() {
     const [date, setDate] = React.useState(new Date());
-    // const [number, setNumber] = React.useState('45 + (1250 x 100) / 100');
-    const [number, setNumber] = React.useState('45 + (1250 x 100) / 100');
-    const [sum, setSum] = React.useState('12,545');
 
     React.useEffect(() => {
         setInterval(() => { setDate(new Date()); }, 1000);
+
+        handleCalculate();
     }, []);
-
-    // React.useEffect(() => {
-    //     console.log(`investmentAmount`, investmentAmount);
-    // });
-
-    function handleOnClick(e) {
-        console.log(`handleOnClick`, e);
-        // console.log(`e.target.innerHTML`, e.target.innerHTML);
-    }
 
     const Left = (props) => {
         return (
@@ -43,48 +33,33 @@ export default function Calculator() {
         );
     };
 
-    function addZeroPad(time) {
-        return String(time).padStart(2, '0');
+    const ClearButton = (props) => {
+        return <Button className='rounded-lg text-black bg-yellow-100' color="yellow" onClick={props.handleClick}>CLEAR</Button>
     }
 
-    const Timer = (props) => {
-        return (
-            <div className="text-sm">
-                {addZeroPad(date.getHours()) + ":" + addZeroPad(date.getMinutes()) + ":" + addZeroPad(date.getSeconds())}
-            </div>
-        )
-    }
-
-    const [investmentAmount, setInvestmentAmount] = React.useState('');
-    const [numberOfYears, setNumberOfYears] = React.useState('');
-    const [interestRate, setInterestRate] = React.useState('');
+    const [investmentAmount, setInvestmentAmount] = React.useState(500000);
+    const [numberOfYears, setNumberOfYears] = React.useState(3);
+    const [interestRate, setInterestRate] = React.useState(27);
     const [compunding, setCompunding] = React.useState('');
-    const [contributions, setContributions] = React.useState('');
+    const [contributions, setContributions] = React.useState(50000);
     const [frequency, setFrequency] = React.useState('');
-    const [annualInflationRate, setAnnualInflationRate] = React.useState('');
+    const [annualInflationRate, setAnnualInflationRate] = React.useState(3);
     const [result, setResult] = React.useState('');
 
     function handleCalculate() {
-        console.log(`투자 시작 금액: (원) investmentAmount`, investmentAmount);
-        console.log(`투자 기간: (년) numberOfYears`, numberOfYears);
-        console.log(`연간 이자율 interestRate`, interestRate);
-        console.log(`(select) 복리 compunding`, compunding);
-        console.log(`추가 납입금 contributions`, contributions);
-        console.log(`(select) 추가 납입금 납입 빈도 frequency`, frequency);
-        console.log(`물가상승률 (%) annualInflationRate`, annualInflationRate);
-
-        let value = investmentAmount;
-        const loop = (numberOfYears < 0) ? 0 : numberOfYears;
-        for (let year = 0; year <= loop; year++) {
-            value = value * (1 + interestRate / 100);
+        let value = Number(investmentAmount);
+        const loop = (numberOfYears < 0) ? 0 : numberOfYears * 12;
+        const monthlyInterestRate = interestRate / 12;
+        const monthlyInflationRate = annualInflationRate / 12;
+        for (let month = 0; month < loop; month++) {
+            let before = value;
+            value = value * (1 + (monthlyInterestRate - monthlyInflationRate) / 100);
+            value += (Number(contributions));
+            console.log(month + ', ' + before + '->' + value + ', 시작금액:' + investmentAmount);
         }
-        console.log(`result`, result);
 
-        const option = {
-            maximumFractionDigits: 0
-        };
-        const totalValue = Number(value).toLocaleString('ko-KR', option);
-        setResult(`최종 수익금: ` + totalValue + ` 원`);
+        const totalValue = Number(value).toLocaleString('ko-KR', { maximumFractionDigits: 0 });
+        setResult(totalValue);
     }
 
     function handleClear() {
@@ -100,7 +75,6 @@ export default function Calculator() {
     }
 
     return (
-        // <div onClick={handleOnClick}>
         <div>
             <Head>
                 <title>투자 계산기</title>
@@ -116,14 +90,13 @@ export default function Calculator() {
                 }
             />
             <div className='grid grid-cols-8 py-2'>
-                <div className='col-span-1'>
+                <div className='col-span-1 pl-2'>
                     <Left />
                 </div>
                 <div className='col-span-6 self-center text-center'>
                     <Title />
                 </div>
                 <div className='col-span-1 self-center text-right pr-2'>
-                    {/* <Timer /> */}
                 </div>
             </div>
 
@@ -131,26 +104,35 @@ export default function Calculator() {
 
                 <div className="w-full h-full bg-gray-50 rounded-2xl shadow-xl border-4 border-gray-100">
                     <div className="w-auto m-1 h-auto mb-2">
-                        <form className="flex flex-col gap-4 m-10">
-                            <div className='col-span-4 self-center'>
-                                {/* <Title /> */}
+                        <form className="flex flex-col gap-4 m-8">
+                            <div className='flex'>
+                                <Input color="black" label="투자 시작 금액: (원)" type='number' onChange={(e) => { setInvestmentAmount(e.target.value) }} value={investmentAmount} />
+                                {investmentAmount && <ClearButton handleClick={() => setInvestmentAmount('')} />}
                             </div>
-                            <Input color="black" label="투자 시작 금액: (원)" type='number' onChange={(e) => { setInvestmentAmount(e.target.value) }} value={investmentAmount} icon={<i className="fas fa-heart" />} />
-                            <Input color="black" label="투자 기간: (년)" type='number' onChange={(e) => { setNumberOfYears(e.target.value) }} value={numberOfYears} />
-                            <Input color="black" label="연간 이자율" type='number' onChange={(e) => { setInterestRate(e.target.value) }} value={interestRate} />
-                            <Select color="black" label="복리" onChange={(value) => { setCompunding(value) }}
+                            <div className='flex'>
+                                <Input color="black" label="투자 기간: (년)" type='number' onChange={(e) => { setNumberOfYears(e.target.value) }} value={numberOfYears} />
+                                {numberOfYears && <ClearButton handleClick={() => setNumberOfYears('')} />}
+                            </div>
+                            <div className='flex'>
+                                <Input color="black" label="연간 이자율 (%)" type='number' onChange={(e) => { setInterestRate(e.target.value) }} value={interestRate} />
+                                {interestRate && <ClearButton handleClick={() => setInterestRate('')} />}
+                            </div>
+                            <Select disabled color="blue" label="복리" value='3' onChange={(value) => { setCompunding(value) }}
                                 animate={{
                                     mount: { y: 0 },
                                     unmount: { y: 25 },
                                 }}>
                                 <Option value='1'>Daily (360/Yr)</Option>
                                 <Option value='2'>Daily (365/Yr)</Option>
-                                <Option value='3'>Monthly (12/Yr)</Option>
+                                <Option value='3'>복리: Monthly (12/Yr)</Option>
                                 <Option value='4'>Quarterly (4/Yr)</Option>
                                 <Option value='5'>Annually (1/Yr)</Option>
                             </Select>
-                            <Input color="black" label="추가 납입금" type='number' onChange={(e) => { setContributions(e.target.value) }} value={contributions} />
-                            <Select color="black" label="추가 납입금 납입 빈도" onChange={(value) => { setFrequency(value) }}
+                            <div className='flex'>
+                                <Input color="black" label="추가 납입금" type='number' onChange={(e) => { setContributions(e.target.value) }} value={contributions} />
+                                {contributions && <ClearButton handleClick={() => setContributions('')} />}
+                            </div>
+                            <Select disabled color="blue" label="추가 납입금 납입 빈도" value='4' onChange={(value) => { setFrequency(value) }}
                                 animate={{
                                     mount: { y: 0 },
                                     unmount: { y: 25 },
@@ -158,18 +140,27 @@ export default function Calculator() {
                                 <Option value='1'>Weekly</Option>
                                 <Option value='2'>Bi-Weekly</Option>
                                 <Option value='3'>Semi-Monthly</Option>
-                                <Option value='4'>Monthly</Option>
+                                <Option value='4'>추가 납입금 납입 빈도: Monthly</Option>
                                 <Option value='5'>Quarterly</Option>
                                 <Option value='6'>Semi-Annually</Option>
                                 <Option value='7'>Annually</Option>
                             </Select>
-                            <Input color="black" label="물가상승률 (%)" type='number' onChange={(e) => { setAnnualInflationRate(e.target.value) }} value={annualInflationRate} />
+                            <div className='flex'>
+                                <Input color="black" label="물가상승률 (%)" type='number' onChange={(e) => { setAnnualInflationRate(e.target.value) }} value={annualInflationRate} />
+                                {annualInflationRate && <ClearButton handleClick={() => setAnnualInflationRate('')} />}
+                            </div>
                             <div className="grid grid-cols-2 gap-4">
                                 <Button color="gray" onClick={handleClear}>Clear</Button>
                                 <Button color="yellow" onClick={handleCalculate}>Calculate</Button>
                             </div>
-                            <div>
-                                {result}
+                            <div className='grid grid-rows-8'>
+                                <div className='rows-span-1 text-2xl underline decoration-4 decoration-yellow-500'>{'최종 수입금: ' + result + ' 원'}</div>
+                                <div className='rows-span-1'>{'투자 시작 금액: ' + Number(investmentAmount).toLocaleString('ko-KR', { maximumFractionDigits: 0 }) + ' 원'}</div>
+                                <div className='rows-span-1'>{'투자 기간: ' + numberOfYears + ' 년'}</div>
+                                <div className='rows-span-1'>{'연간 이자율: ' + interestRate + ' %'}</div>
+                                <div className='rows-span-1'>{'복리: ' + compunding + ' '}</div>
+                                <div className='rows-span-1'>{'추가 납입금: ' + Number(contributions).toLocaleString('ko-KR', { maximumFractionDigits: 0 }) + ' 원'}</div>
+                                <div className='rows-span-1'>{'물가 상승률: ' + annualInflationRate + ' %'}</div>
                             </div>
                         </form>
                     </div>
