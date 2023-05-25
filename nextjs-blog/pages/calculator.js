@@ -76,7 +76,7 @@ export default function Calculator() {
         setInvestmentAmount('');
         setNumberOfYears('');
         setInterestRate('');
-        setCompunding('');
+        // setCompunding('');
         setContributions('');
         setFrequency('');
         setAnnualInflationRate('');
@@ -173,7 +173,8 @@ export default function Calculator() {
                                 <div className='rows-span-1'>{'투자 시작 금액: ' + Number(investmentAmount).toLocaleString('ko-KR', { maximumFractionDigits: 0 }) + ' 원'}</div>
                                 <div className='rows-span-1'>{'투자 기간: ' + numberOfYears + ' 년'}</div>
                                 <div className='rows-span-1'>{'연간 이자율: ' + interestRate + ' %'}</div>
-                                <div className='rows-span-1'>{'복리: ' + compunding + ' '}</div>
+                                {/* <div className='rows-span-1'>{'복리: ' + compunding + ' '}</div> */}
+                                <div className='rows-span-1'>{'복리: Monthly (12/Yr)'}</div>
                                 <div className='rows-span-1'>{'추가 납입금: ' + Number(contributions).toLocaleString('ko-KR', { maximumFractionDigits: 0 }) + ' 원'}</div>
                                 <div className='rows-span-1'>{'물가 상승률: ' + annualInflationRate + ' %'}</div>
                             </div>
