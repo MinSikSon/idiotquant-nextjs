@@ -33,31 +33,20 @@ const ListNode = (props) => {
         <ListItem className="p-1 pb-2">
             <ListItemPrefix>
                 <IconButton variant="text" color="blue-gray" onClick={() => props.deleteStockCompanyInList(props.tickerName)}>
-                    <div className='flex'>
-                        <TrashIcon className="h-5 w-5" /> {props.index + 1}
-                    </div>
+                    <div>{props.index + 1}</div>
+                    <TrashIcon className="h-5 w-5" />
                 </IconButton>
             </ListItemPrefix>
             <div>
-                <Typography className='flex'>
-                    <ListItemPrefix >
-                        <Typography variant="h5">
-                            {props.tickerName}
-                        </Typography>
-                    </ListItemPrefix>
-                    <ListItemSuffix>
-                        <Chip value={props.ratio - 100 + "%"} color={(props.ratio - 100) >= 0 ? 'blue' : 'red'} variant={(props.ratio - 100) >= 0 ? 'outlined' : 'gradient'} className="rounded-full" />
-                    </ListItemSuffix>
-
-                </Typography>
-                <Typography className='flex'>
-                    <ListItemPrefix >
-                        <Chip value={"현재가:" + props.close + " 원"} variant="ghost" size="sm" color="blue" className="rounded-full" />
-                    </ListItemPrefix>
-                    <ListItemSuffix>
-                        <Chip value={"목표가:" + props.fairPrice + " 원"} variant="ghost" size="sm" color="red" className="rounded-full" />
-                    </ListItemSuffix>
-                </Typography>
+                <div className='flex'>
+                    <Typography variant="h5">{props.tickerName}</Typography>
+                    <div className='m-1'></div>
+                    <Chip value={props.ratio - 100 + "%"} color={(props.ratio - 100) >= 0 ? 'red' : 'blue'} variant={(props.ratio - 100) >= 0 ? 'outlined' : 'gradient'} className="rounded-full" />
+                </div>
+                <div className='flex'>
+                    <Chip value={"현재가:" + props.close + " 원"} variant="ghost" size="sm" color="blue" className="rounded-full" />
+                    <Chip value={"목표가:" + props.fairPrice + " 원"} variant="ghost" size="sm" color="red" className="rounded-full" />
+                </div>
             </div>
             <ListItemSuffix>
                 <CustomChart
