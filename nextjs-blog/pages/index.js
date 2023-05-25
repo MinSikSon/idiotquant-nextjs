@@ -303,6 +303,7 @@ export default function QuantPost({
             <Head>
                 <title>퀀트 종목 추천</title>
                 <link rel="icon" href="/images/profile.jpeg" />
+                <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0,user-scalable=0" />
             </Head>
             <Script
                 async
