@@ -114,7 +114,11 @@ export default function Calculator() {
 
                 <div className="w-full h-full bg-gray-50 rounded-2xl shadow-xl border-4 border-gray-100">
                     <div className="w-auto m-1 h-auto mb-2">
-                        <form className="flex flex-col gap-2 m-8">
+                        <form className="flex flex-col gap-2 m-8 mt-1">
+                            <div className='flex flex-col mb-4 '>
+                                <div className='text-xl underline decoration-4 decoration-yellow-500'>{'최종 수입금:'}</div>
+                                <div className='text-3xl text-right underline decoration-4 decoration-yellow-500'>{' ' + result + ' 원'}</div>
+                            </div>
                             <div className='flex'>
                                 <Input color="black" label="투자 시작 금액: (원)" type='number' onChange={(e) => { setInvestmentAmount(e.target.value) }} value={investmentAmount} />
                                 {investmentAmount && <ClearButton handleClick={() => setInvestmentAmount('')} />}
@@ -169,7 +173,6 @@ export default function Calculator() {
                             </Button>
 
                             <div className='grid grid-rows-8'>
-                                <div className='rows-span-1 text-2xl underline decoration-4 decoration-yellow-500'>{'최종 수입금: ' + result + ' 원'}</div>
                                 <div className='rows-span-1'>{'투자 시작 금액: ' + Number(investmentAmount).toLocaleString('ko-KR', { maximumFractionDigits: 0 }) + ' 원'}</div>
                                 <div className='rows-span-1'>{'투자 기간: ' + numberOfYears + ' 년'}</div>
                                 <div className='rows-span-1'>{'연간 이자율: ' + interestRate + ' %'}</div>
