@@ -41,7 +41,7 @@ const ListNode = (props) => {
                 <div className='flex'>
                     <Typography variant="h5">{props.tickerName}</Typography>
                     <div className='m-1'></div>
-                    <Chip value={props.ratio - 100 + "%"} color={(props.ratio - 100) >= 0 ? 'red' : 'blue'} variant={(props.ratio - 100) >= 0 ? 'outlined' : 'gradient'} className="rounded-full" />
+                    <Chip className="rounded-full p-1" value={props.ratio - 100 + "%"} color={(props.ratio - 100) >= 0 ? 'red' : 'blue'} variant={(props.ratio - 100) >= 0 ? 'outlined' : 'gradient'} />
                 </div>
                 <div className='flex'>
                     <Chip value={"현재가:" + props.close + " 원"} variant="ghost" size="sm" color="blue" className="rounded-full" />
