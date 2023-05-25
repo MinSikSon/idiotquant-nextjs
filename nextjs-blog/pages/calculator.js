@@ -87,7 +87,7 @@ export default function Calculator() {
     return (
         <div>
             <Head>
-                <title>투자 계산기</title>
+                <title>Investment Inflation Calculator</title>
                 <link rel="icon" href="/images/profile.jpeg" />
                 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=0" />
             </Head>
