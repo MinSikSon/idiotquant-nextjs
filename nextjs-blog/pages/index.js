@@ -302,7 +302,7 @@ export default function QuantPost({
         <div className="bg-white">
             <Head>
                 <title>퀀트 종목 추천</title>
-                <link rel="icon" href="/images/profile.jpeg" />
+                <link rel="icon" href="/images/icons8-algorithm-flatart-icons-lineal-color-32.png" />
                 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0,user-scalable=0" />
             </Head>
             <Script

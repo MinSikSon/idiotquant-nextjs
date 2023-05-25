@@ -29,7 +29,7 @@ export default function Calculator() {
 
     const Title = () => {
         return (
-            <div className="font-serif text-xl header-contents text-center">
+            <div className="font-serif text-lg header-contents text-center">
                 Investment<span className='bg-yellow-500'> Inflation </span>Calculator
             </div>
         );
@@ -88,7 +88,7 @@ export default function Calculator() {
         <div>
             <Head>
                 <title>Investment Inflation Calculator</title>
-                <link rel="icon" href="/images/icons8-calculator.gif" />
+                <link rel="icon" href="/images/icons8-calculator-color-32.png" />
                 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=0" />
             </Head>
             <Script
@@ -107,8 +107,7 @@ export default function Calculator() {
                 <div className='col-span-6 self-center text-center'>
                     <Title />
                 </div>
-                <div className='col-span-1 self-center text-right pr-2'>
-                </div>
+                <img className='h-7 col-span-1 object-fill' src='/images/icons8-calculator.gif' />
             </div>
 
             <div className="bg-gray-200 w-screen h-screen flex justify-center items-center">
