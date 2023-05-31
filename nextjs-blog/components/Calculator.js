@@ -8,7 +8,6 @@ export default function Calculator(props) {
         <>
             <div className={`
             ${props.scrollEffect && !props.openSearchResult ? 'translate translate-y-10' : ''}
-            bg-red-500
             z-20 fixed w-fit rounded-xl
             top-2
             ${(true === props.openSearchResult) ?
