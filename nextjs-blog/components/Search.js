@@ -132,7 +132,10 @@ export default function Search(props) {
             ${props.scrollEffect && !props.openSearchResult ? 'translate translate-y-10' : ''}
             z-10 fixed w-fit top-0 rounded-xl
             md:px-20 lg:px-40 xl:px-64 2xl:px-80
-            ${(true === props.openSearchResult || true === !!props.searchingList) ? `bg-gray-50 duration-300 w-screen h-screen` : `right-0 border-none duration-300`}
+            ${(true === props.openSearchResult || true === !!props.searchingList) ?
+                `bg-gray-50 duration-300 w-screen h-screen`
+                :
+                `right-0 border-none duration-300`}
         `}>
             <div className={`${(true === props.openSearchResult || true === !!props.searchingList) ? 'bg-white rounded-md drop-shadow-md' : ''}`}>
                 <Input {...props} />

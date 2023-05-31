@@ -307,7 +307,7 @@ export default function QuantPost({
         );
     };
     return (
-        <div className="bg-white sm:bg-gray-50">
+        <div className='bg-white sm:bg-gray-50'>
             <Head>
                 <title>퀀트 종목 추천</title>
                 <link rel="icon" href="/images/icons8-algorithm-flatart-icons-lineal-color-32.png" />
@@ -363,7 +363,7 @@ export default function QuantPost({
                     searchingList={searchingList}
                     scrollEffect={scrollEffect}
                 />
-                <div className="pb-80 w-full">
+                <div className={`pb-80 w-full`}>
                     <Table
                         searchStockCompanyInfo={searchStockCompanyInfo}
                         setOpenSearchResult={setOpenSearchResult}

@@ -17,6 +17,22 @@ const MarQueue = (props) => {
     };
 
     return (
+        <div className='relative flex overflow-x-scroll'>
+            <CardList />
+        </div>
+    );
+}
+
+const MarQueue2 = (props) => {
+    const CardList = () => {
+        return (
+            <>
+                {props.contents.map((content, index) => <CustomCard key={index} title={content.title} description={content.description} textColor={content.textColor} backGround={content.backGround} />)}
+            </>
+        );
+    };
+
+    return (
         <div className='relative flex overflow-x-hidden'>
             <div className='flex animate-marquee whitespace-nowrap'>
                 <CardList />
@@ -27,7 +43,6 @@ const MarQueue = (props) => {
         </div>
     );
 }
-
 const ListNode = (props) => {
     return (
         <ListItem className="p-1 pb-2">
