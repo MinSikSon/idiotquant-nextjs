@@ -8,6 +8,7 @@ import Link from "next/link.js";
 import Head from "next/head.js";
 import Script from "next/script.js";
 import { Util } from "../components/Util.js";
+import { Select, Option } from "@material-tailwind/react";
 
 // export async function getServerSideProps(context) {
 export async function getStaticProps() {
@@ -71,11 +72,13 @@ export default function QuantPost({
 
     const [scrollEffect, setScrollEffect] = React.useState(false);
 
-    const [informationTitle, setInformationTitle] = React.useState(`퀀트 종목 추천`);
-    const [informationDescription, setInformationDescription] = React.useState(`"순유동자산 > 시가총액" 인 종목 추천합니다.`);
+    const [strategyTitle, setStrategyTitle] = React.useState(`퀀트 종목 추천`);
+    const [strategyDescription, setStrategyDescription] = React.useState(`"순유동자산 > 시가총액" 인 종목 추천합니다.`);
     const [prevInfo, setPrevInfo] = React.useState('');
 
     const [searchingList, setSearchingList] = React.useState('');
+
+    const [selectedStrategy, setSelectedStrategy] = React.useState('ncav');
 
     function changeStockCompanyName(dictOrigin, srcName, dstName) {
         const { [srcName]: srcCompanyInfo, ...rest } = dictOrigin;
@@ -89,8 +92,8 @@ export default function QuantPost({
             setDictFilteredStockCompanyInfo(prevInfo);
             setPrevInfo('');
 
-            setInformationTitle(`퀀트 종목 추천`);
-            setInformationDescription(`"순유동자산 > 시가총액" 인 종목 추천합니다.`);
+            setStrategyTitle(`퀀트 종목 추천`);
+            setStrategyDescription(`"순유동자산 > 시가총액" 인 종목 추천합니다.`);
 
             return;
         }
@@ -152,8 +155,8 @@ export default function QuantPost({
         setPrevInfo(dictFilteredStockCompanyInfo);
         setDictFilteredStockCompanyInfo(dictFinancialMarketInfo);
 
-        setInformationTitle('HIDDEN');
-        setInformationDescription('새로운 종목을 뽑습니다. 아직 TEST 중입니다');
+        setStrategyTitle('소형주 + 저 PBR + 저 PER');
+        setStrategyDescription('아직 TEST 중입니다');
     }
 
     React.useEffect(() => {
@@ -296,13 +299,36 @@ export default function QuantPost({
             </Link>
         );
     };
-    const SubTitle = (props) => {
+
+    const SubTitle = () => {
+        function handleChange(selected) {
+            console.log(`handleChange`, selected);
+            switch (selected) {
+                case 'ncav':
+                    strategyExample();
+                    break;
+                case '2':
+                    strategyExample();
+                    break;
+            }
+
+            setSelectedStrategy(selected);
+        }
+
         return (
-            <div
-                className='sm:px-20 md:px-40 lg:px-64 xl:px-80 2xl:px-96'
-                onClick={() => props.strategyExample()}
-            >
-                <CustomCard onClick={() => props.strategyExample()} title={props.informationTitle} description={props.informationDescription} />
+            <div className='sm:px-20 md:px-40 lg:px-64 xl:px-80 2xl:px-96'>
+                <div className="w-full p-1">
+                    <Select color='green' label="종목 선택 방법" onChange={(selected) => handleChange(selected)} value={selectedStrategy}>
+                        <Option value='ncav'>NCAV</Option>
+                        <Option value='2'>소형주 + 저 PBR + 저 PER</Option>
+                    </Select>
+                </div>
+                <div>
+                    <CustomCard
+                        title={strategyTitle}
+                        description={strategyDescription}
+                    />
+                </div>
             </div>
         );
     };
@@ -323,11 +349,7 @@ export default function QuantPost({
                 }
             />
             <Title />
-            <SubTitle
-                informationTitle={informationTitle}
-                informationDescription={informationDescription}
-                strategyExample={strategyExample}
-            />
+            <SubTitle />
             <div className="relative">
                 <Link href="./calculator">
                     <Calculator
