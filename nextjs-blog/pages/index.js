@@ -285,21 +285,29 @@ export default function QuantPost({
     const Title = () => {
         return (
             <Link href="./posts/terms">
-                <div className="font-serif text-xl text-black header-contents text-center py-3">
-                    IDIOT<span className='text-yellow-300'>.</span>QUANT
+                <div
+                    className='font-serif 
+                    text-xl sm:text-xl md:text-2xl lg:text-3xl
+                    text-black header-contents text-center py-3
+                    sm:underline sm:decoration-2 md:decoration-4 sm:decoration-green-400'
+                >
+                    IDIOT<span className='text-green-400'>.</span>QUANT
                 </div>
             </Link>
         );
     };
-    const Information = (props) => {
+    const SubTitle = (props) => {
         return (
-            <div onClick={() => props.strategyExample()}>
-                <CustomCard title={props.informationTitle} description={props.informationDescription} />
+            <div
+                className='sm:px-20 md:px-40 lg:px-64 xl:px-80 2xl:px-96'
+                onClick={() => props.strategyExample()}
+            >
+                <CustomCard onClick={() => props.strategyExample()} title={props.informationTitle} description={props.informationDescription} />
             </div>
         );
     };
     return (
-        <div className="bg-white">
+        <div className="bg-white sm:bg-gray-50">
             <Head>
                 <title>퀀트 종목 추천</title>
                 <link rel="icon" href="/images/icons8-algorithm-flatart-icons-lineal-color-32.png" />
@@ -315,33 +323,12 @@ export default function QuantPost({
                 }
             />
             <Title />
-            <Information
+            <SubTitle
                 informationTitle={informationTitle}
                 informationDescription={informationDescription}
-                strategyExample={strategyExample} />
-            <div className="bg-white relative sm:grid sm:grid-cols-2 sm:gap-4 sm:place-items-center md:grid md:grid-cols-2 md:gap-4 md:place-items-center md:px-10">
-                <div className="pb-80 sm:overflow-y-auto sm:h-screen md:overflow-y-auto md:h-screen w-full">
-                    <Table
-                        searchStockCompanyInfo={searchStockCompanyInfo}
-                        setOpenSearchResult={setOpenSearchResult}
-
-                        dictFilteredStockCompanyInfo={dictFilteredStockCompanyInfo}
-                        searchResult={searchResult}
-
-                        marketInfo20181214={marketInfo20181214}
-                        marketInfo20191213={marketInfo20191213}
-                        marketInfo20201214={marketInfo20201214}
-                        marketInfo20211214={marketInfo20211214}
-                        marketInfo20221214={marketInfo20221214}
-                        marketInfo20230111={marketInfo20230111}
-                        marketInfoLatest={marketInfoLatest}
-
-                        deleteStockCompanyInList={deleteStockCompanyInList}
-
-                        scrollEffect={scrollEffect}
-                    />
-
-                </div>
+                strategyExample={strategyExample}
+            />
+            <div className="relative">
                 <Link href="./calculator">
                     <Calculator
                         scrollEffect={scrollEffect}
@@ -376,6 +363,27 @@ export default function QuantPost({
                     searchingList={searchingList}
                     scrollEffect={scrollEffect}
                 />
+                <div className="pb-80 w-full">
+                    <Table
+                        searchStockCompanyInfo={searchStockCompanyInfo}
+                        setOpenSearchResult={setOpenSearchResult}
+
+                        dictFilteredStockCompanyInfo={dictFilteredStockCompanyInfo}
+                        searchResult={searchResult}
+
+                        marketInfo20181214={marketInfo20181214}
+                        marketInfo20191213={marketInfo20191213}
+                        marketInfo20201214={marketInfo20201214}
+                        marketInfo20211214={marketInfo20211214}
+                        marketInfo20221214={marketInfo20221214}
+                        marketInfo20230111={marketInfo20230111}
+                        marketInfoLatest={marketInfoLatest}
+
+                        deleteStockCompanyInList={deleteStockCompanyInList}
+
+                        scrollEffect={scrollEffect}
+                    />
+                </div>
             </div>
         </div>
     );

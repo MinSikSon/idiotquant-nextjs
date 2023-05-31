@@ -30,6 +30,7 @@ export default ({
 
     height,
     width,
+    className,
 }) => {
 
     const close20181214 = GetCloseAfterValidCheck(marketInfo20181214['data'][tickerName]);

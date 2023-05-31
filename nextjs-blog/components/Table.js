@@ -149,8 +149,8 @@ export default function Table(props) {
     ];
 
     return (
-        <>
-            <div className='visible sm:invisible md:invisible'>
+        <div className='sm:px-20 md:px-40 lg:px-64 xl:px-80 2xl:px-96'>
+            <div className='visible'>
                 <MarQueue contents={contents} />
             </div>
             <div className={`z-10 fixed top-0 w-full ${(true === props.scrollEffect) ? 'transition translate-y-2 visible' : 'invisible'}`}>
@@ -167,6 +167,6 @@ export default function Table(props) {
                     }
                 </List>
             </Card>
-        </>
+        </div>
     );
 };

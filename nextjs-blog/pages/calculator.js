@@ -110,8 +110,7 @@ export default function Calculator() {
                 <img className='h-7 col-span-1 object-fill' src='/images/icons8-calculator.gif' />
             </div>
 
-            <div className="bg-gray-200 w-screen h-screen flex justify-center items-center">
-
+            <div className='bg-gray-200 w-screen h-screen flex justify-center items-center sm:px-20 md:px-40 lg:px-64 xl:px-80 2xl:px-96'>
                 <div className="w-full h-full bg-gray-50 rounded-2xl shadow-xl border-4 border-gray-100">
                     <div className="w-auto m-1 h-auto mb-2">
                         <form className="flex flex-col gap-2 m-8 mt-1">
