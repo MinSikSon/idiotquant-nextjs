@@ -9,6 +9,7 @@ import Head from "next/head.js";
 import Script from "next/script.js";
 import { Util } from "../components/Util.js";
 import { Select, Option } from "@material-tailwind/react";
+import Login from "../components/Login.js";
 
 // export async function getServerSideProps(context) {
 export async function getStaticProps() {
@@ -351,6 +352,9 @@ export default function QuantPost({
             <Title />
             <SubTitle />
             <div className="relative">
+                <Link href='./oauth'>
+                    <Login />
+                </Link>
                 <Link href="./calculator">
                     <Calculator
                         scrollEffect={scrollEffect}
