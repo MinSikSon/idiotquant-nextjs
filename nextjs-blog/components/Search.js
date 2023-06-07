@@ -2,24 +2,12 @@ import React from "react";
 import SearchingListItem from "./SearchingListItem";
 import { Util } from "./Util";
 import CustomChart from "./CustomChart";
+import {
+    MagnifyingGlassIcon,
+    ArrowUturnLeftIcon
+} from "@heroicons/react/24/outline";
 
 const Input = (props) => {
-    const MagnifyingGlassIcon = (props) => {
-        return (
-            <svg className='text-slate-400 h-7 w-7' viewBox="0 0 20 20" fill="currentColor">
-                <path fillRule="evenodd" d="M8 4a4 4 0 100 8 4 4 0 000-8zM2 8a6 6 0 1110.89 3.476l4.817 4.817a1 1 0 01-1.414 1.414l-4.816-4.816A6 6 0 012 8z" clipRule="evenodd" />
-            </svg>
-        );
-    }
-
-    const Left = (props) => {
-        return (
-            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth="1.5" stroke="currentColor" className="w-7 h-7 text-black">
-                <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 19.5L8.25 12l7.5-7.5" />
-            </svg>
-        );
-    }
-
     const refFocus = React.useRef();
 
     React.useEffect(() => {
@@ -46,7 +34,7 @@ const Input = (props) => {
                                 className="py-2 pr-1"
                                 onClick={(e) => { e.preventDefault(); props.setOpenSearchResult(false); }}
                             >
-                                <Left />
+                                <ArrowUturnLeftIcon strokeWidth={2} className="h-7 w-7" />
                             </div>
 
                             <input
@@ -68,7 +56,7 @@ const Input = (props) => {
                     }
                 </div>
                 <button className='rounded-3xl p-2 pr-3 inline-flex items-center justify-center text-black focus:outline-none'>
-                    <MagnifyingGlassIcon />
+                    <MagnifyingGlassIcon strokeWidth={2} className="h-7 w-7" />
                 </button>
             </form>
         </>

@@ -1,14 +1,9 @@
-import { Input, Select, Option, Button } from "@material-tailwind/react";
-import Head from "next/head";
-import Link from "next/link";
+import { Button } from "@material-tailwind/react";
+import {
+    ArrowRightOnRectangleIcon
+} from "@heroicons/react/24/outline";
 
-// https://kauth.kakao.com/oauth/authorize?response_type=code&client_id=25079c20b5c42c7b91a72308ef5c4ad5&redirect_uri=https://idiotquant.com/oauth
 export default function Oauth(props) {
-    const LoginIcon = (props) => {
-        return (
-            <img className='h-7' src='/images/icons8-login-60.png'></img>
-        );
-    }
     const rest_api_key = '25079c20b5c42c7b91a72308ef5c4ad5';
     const redirect_uri = 'https://idiotquant.com/';
     const kakaoUrl = `https://kauth.kakao.com/oauth/authorize?response_type=code&client_id=${rest_api_key}&redirect_uri=${redirect_uri}`;
@@ -19,15 +14,21 @@ export default function Oauth(props) {
 
     return (
         <>
-            <div className='z-20 fixed w-fit rounded-xl top-2'>
+            <div className={`z-20 fixed w-fit rounded-xl top-2
+            ${(true === props.openSearchResult) ? `z-0` : `left-0 border-none duration-300`}
+            `}>
                 <form onSubmit={(e) => { e.preventDefault(); }}>
-                    <Button className='flex items-center bg-yellow-400 h-7 p-3 m-0 mt-1' color='yellow' onClick={handleLogin}>
-                        <LoginIcon />
-                        <div className="pt-1">KAKAO</div>
-                    </Button>
+                    {props.openSearchResult ?
+                        <>
+                        </>
+                        :
+                        <button className='flex items-center h-7 py-3 px-1 m-0 ml-1 mt-1' onClick={handleLogin}>
+                            <ArrowRightOnRectangleIcon strokeWidth={2} className="h-5 w-5" />
+                            <div className="pt-1">kakao login</div>
+                        </button>
+                    }
                 </form>
             </div>
         </>
-
     );
 }

@@ -361,7 +361,10 @@ export default function QuantPost({
             <Title />
             <SubTitle />
             <div className="relative">
-                <Oauth />
+                <Oauth
+                    scrollEffect={scrollEffect}
+                    openSearchResult={openSearchResult}
+                />
                 <Link href="./calculator">
                     <Calculator
                         scrollEffect={scrollEffect}
