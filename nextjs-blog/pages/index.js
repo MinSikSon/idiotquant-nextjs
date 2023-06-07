@@ -212,7 +212,7 @@ export default function QuantPost({
             return Math.floor(Math.random() * (max - min + 1)) + min;
         }
 
-        if (stockCompanyChangeCount > getRandomInt(3, 5)) {
+        if ((!!!code) && (stockCompanyChangeCount > getRandomInt(3, 5))) {
             alert('종목관리를 하려면 로그인 하세요.');
             setStockCompanyChangeCount(0);
 
@@ -222,9 +222,9 @@ export default function QuantPost({
 
     React.useEffect(() => {
         const _code = new URL(window.location.href).searchParams.get('code');
-        console.log('code:', _code);
-
-        setCode(_code);
+        if (!!_code) {
+            setCode(_code);
+        }
     }, []);
 
     function searchStockCompanyInfo(stockCompanyName) {
