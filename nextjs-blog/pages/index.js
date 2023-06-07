@@ -9,7 +9,7 @@ import Head from "next/head.js";
 import Script from "next/script.js";
 import { Util } from "../components/Util.js";
 import { Select, Option } from "@material-tailwind/react";
-import Login from "../components/Login.js";
+import Oauth from "../components/Oauth.js";
 
 // export async function getServerSideProps(context) {
 export async function getStaticProps() {
@@ -80,6 +80,8 @@ export default function QuantPost({
     const [searchingList, setSearchingList] = React.useState('');
 
     const [selectedStrategy, setSelectedStrategy] = React.useState('ncav');
+
+    const [code, setCode] = React.useState('');
 
     function changeStockCompanyName(dictOrigin, srcName, dstName) {
         const { [srcName]: srcCompanyInfo, ...rest } = dictOrigin;
@@ -218,6 +220,13 @@ export default function QuantPost({
         }
     }, [stockCompanyChangeCount]);
 
+    React.useEffect(() => {
+        const _code = new URL(window.location.href).searchParams.get('code');
+        console.log('code:', _code);
+
+        setCode(_code);
+    }, []);
+
     function searchStockCompanyInfo(stockCompanyName) {
         setSearchingList('');
 
@@ -352,9 +361,7 @@ export default function QuantPost({
             <Title />
             <SubTitle />
             <div className="relative">
-                <Link href='./oauth'>
-                    <Login />
-                </Link>
+                <Oauth />
                 <Link href="./calculator">
                     <Calculator
                         scrollEffect={scrollEffect}
