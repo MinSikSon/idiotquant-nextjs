@@ -21,7 +21,7 @@ export default function Oauth(props) {
         <>
             <div className='z-20 fixed w-fit rounded-xl top-2'>
                 <form onSubmit={(e) => { e.preventDefault(); }}>
-                    <Button className='flex items-center bg-yellow-400 h-7 p-1 m-0' color='yellow' onClick={handleLogin}>
+                    <Button className='flex items-center bg-yellow-400 h-7 p-3 m-0 mt-1' color='yellow' onClick={handleLogin}>
                         <LoginIcon />
                         <div className="pt-1">KAKAO</div>
                     </Button>
