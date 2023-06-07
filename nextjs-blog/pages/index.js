@@ -72,7 +72,7 @@ export default function QuantPost({
 
     const [scrollEffect, setScrollEffect] = React.useState(false);
 
-    const [strategyTitle, setStrategyTitle] = React.useState(`퀀트 종목 추천`);
+    const [strategyTitle, setStrategyTitle] = React.useState(`NCAV 전략`);
     const [strategyDescription, setStrategyDescription] = React.useState(`"순유동자산 > 시가총액" 인 종목 추천합니다.`);
     const [prevInfo, setPrevInfo] = React.useState('');
 
@@ -92,7 +92,7 @@ export default function QuantPost({
             setDictFilteredStockCompanyInfo(prevInfo);
             setPrevInfo('');
 
-            setStrategyTitle(`퀀트 종목 추천`);
+            setStrategyTitle(`NCAV 전략`);
             setStrategyDescription(`"순유동자산 > 시가총액" 인 종목 추천합니다.`);
 
             return;
@@ -302,7 +302,7 @@ export default function QuantPost({
 
     const SubTitle = () => {
         function handleChange(selected) {
-            console.log(`handleChange`, selected);
+            // console.log(`handleChange`, selected);
             switch (selected) {
                 case 'ncav':
                     strategyExample();
