@@ -84,6 +84,7 @@ export default function QuantPost({
 
     const [ip, setIp] = React.useState('');
     const [code, setCode] = React.useState('');
+    const [accessToken, setAccessToken] = React.useState('');
 
     function changeStockCompanyName(dictOrigin, srcName, dstName) {
         const { [srcName]: srcCompanyInfo, ...rest } = dictOrigin;
@@ -232,35 +233,48 @@ export default function QuantPost({
             const requestOptions = {
                 method: 'POST',
                 headers: {
-                    'Content-Type': 'application/x-www-form-urlencoded',
+                    'Content-Type': 'application/x-www-form-urlencoded;charset=utf-8',
                 },
-                body: `grant_type=authorization_code&client_id=${rest_api_key}&redirect_uri=${encodeURIComponent(redirect_uri)}&code=${authorizeCode}&scope=profile_nickname`,
+                body: `grant_type=authorization_code&client_id=${rest_api_key}&redirect_uri=${encodeURIComponent(redirect_uri)}&code=${authorizeCode}&scope=openid,profile_nickname`,
             };
 
-            fetch("https://kauth.kakao.com/oauth/token", requestOptions).then((res) => {
-                console.log('get res:', res);
-            }).then(() => {
-                axios.get('https://geolocation-db.com/json/')
-                    .then((res) => {
-                        console.log('res:', res);
-                        console.log('res.data.IPv4', res.data.IPv4);
+            fetch("https://kauth.kakao.com/oauth/token", requestOptions)
+                .then(res => {
+                    console.log('post res:', res);
+                    if (res.ok) {
+                        return res.text();
+                    } else {
+                        throw new Error('Request failed');
+                    }
+                })
+                .then(body => {
+                    console.log('post body:', body);
+                    console.log(`body.access_token`, body.access_token);
+                    console.log(`JSON.parse(body).access_token`, JSON.parse(body).access_token);
+                    setAccessToken(JSON.parse(body).access_token);
+                })
+                .then(() => {
+                    axios.get('https://geolocation-db.com/json/')
+                        .then((res) => {
+                            console.log('res:', res);
+                            console.log('res.data.IPv4', res.data.IPv4);
 
-                        setIp(res.data.IPv4);
-                        setCode(authorizeCode);
+                            setIp(res.data.IPv4);
+                            setCode(authorizeCode);
 
-                        const url = `https://idiotquant-backend.tofu89223.workers.dev`;
-                        const port = `443`;
-                        // const res = fetch(`${url}:${port}/${subUrl}`, {
-                        //     method: 'POST',
-                        //     headers: {
-                        //         'Content-Type': 'application/json',
-                        //     },
-                        //     body: JSON.stringify(data),
-                        // });
-                        // const json = await res.json();
-                        // return json;
-                    });
-            })
+                            const url = `https://idiotquant-backend.tofu89223.workers.dev`;
+                            const port = `443`;
+                            // const res = fetch(`${url}:${port}/${subUrl}`, {
+                            //     method: 'POST',
+                            //     headers: {
+                            //         'Content-Type': 'application/json',
+                            //     },
+                            //     body: JSON.stringify(data),
+                            // });
+                            // const json = await res.json();
+                            // return json;
+                        });
+                })
         }
     }, []);
 
@@ -399,6 +413,8 @@ export default function QuantPost({
             <SubTitle />
             <div className="relative">
                 <Oauth
+                    authorizeCode={code}
+                    accessToken={accessToken}
                     scrollEffect={scrollEffect}
                     openSearchResult={openSearchResult}
                 />
