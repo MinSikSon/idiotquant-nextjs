@@ -8,6 +8,7 @@
   "dependencies": {
     "@heroicons/react": "^2.0.18",
     "@material-tailwind/react": "^2.0.0",
+    "axios": "^1.4.0",
     "chart.js": "^4.3.0",
     "gray-matter": "^4.0.3",
     "material-ripple-effects": "^2.0.1",

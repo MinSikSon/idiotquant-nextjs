@@ -10,6 +10,7 @@ import Script from "next/script.js";
 import { Util } from "../components/Util.js";
 import { Select, Option } from "@material-tailwind/react";
 import Oauth from "../components/Oauth.js";
+import axios from 'axios';
 
 // export async function getServerSideProps(context) {
 export async function getStaticProps() {
@@ -81,6 +82,7 @@ export default function QuantPost({
 
     const [selectedStrategy, setSelectedStrategy] = React.useState('ncav');
 
+    const [ip, setIp] = React.useState('');
     const [code, setCode] = React.useState('');
 
     function changeStockCompanyName(dictOrigin, srcName, dstName) {
@@ -221,9 +223,48 @@ export default function QuantPost({
     }, [stockCompanyChangeCount]);
 
     React.useEffect(() => {
+        console.log(`window.location.href`, window.location.href);
         const _code = new URL(window.location.href).searchParams.get('code');
         if (!!_code) {
-            setCode(_code);
+            const rest_api_key = '25079c20b5c42c7b91a72308ef5c4ad5';
+            const redirect_uri = 'https://idiotquant.com/';
+            const data = {
+                "grant_type": "authorization_code",
+                "client_id": rest_api_key,
+                "redirect_uri": encodeURIComponent(redirect_uri),
+                "code": _code,
+                "scope": "profile_nickname"
+            };
+            fetch("https://kauth.kakao.com/oauth/token", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/x-www-form-urlencoded"
+                },
+                body: JSON.stringify(data),
+            }).then((res) => {
+                console.log('post res:', res);
+            }).then(() => {
+                axios.get('https://geolocation-db.com/json/')
+                    .then((res) => {
+                        console.log('res:', res);
+                        console.log('res.IPv4', res.IPv4);
+
+                        setIp(res.IPv4);
+                        setCode(_code);
+
+                        const url = `https://idiotquant-backend.tofu89223.workers.dev`;
+                        const port = `443`;
+                        // const res = fetch(`${url}:${port}/${subUrl}`, {
+                        //     method: 'POST',
+                        //     headers: {
+                        //         'Content-Type': 'application/json',
+                        //     },
+                        //     body: JSON.stringify(data),
+                        // });
+                        // const json = await res.json();
+                        // return json;
+                    });
+            })
         }
     }, []);
 

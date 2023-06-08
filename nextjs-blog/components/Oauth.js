@@ -1,4 +1,3 @@
-import { Button } from "@material-tailwind/react";
 import {
     ArrowRightOnRectangleIcon
 } from "@heroicons/react/24/outline";
