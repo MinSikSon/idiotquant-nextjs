@@ -224,33 +224,29 @@ export default function QuantPost({
 
     React.useEffect(() => {
         console.log(`window.location.href`, window.location.href);
-        const _code = new URL(window.location.href).searchParams.get('code');
-        if (!!_code) {
+        const authorizeCode = new URL(window.location.href).searchParams.get('code');
+        if (!!authorizeCode) {
             const rest_api_key = '25079c20b5c42c7b91a72308ef5c4ad5';
             const redirect_uri = 'https://idiotquant.com/';
-            const data = {
-                "grant_type": "authorization_code",
-                "client_id": rest_api_key,
-                "redirect_uri": encodeURIComponent(redirect_uri),
-                "code": _code,
-                "scope": "profile_nickname"
-            };
-            fetch("https://kauth.kakao.com/oauth/token", {
-                method: "POST",
+
+            const requestOptions = {
+                method: 'POST',
                 headers: {
-                    "Content-Type": "application/x-www-form-urlencoded"
+                    'Content-Type': 'application/x-www-form-urlencoded',
                 },
-                body: JSON.stringify(data),
-            }).then((res) => {
-                console.log('post res:', res);
+                body: `grant_type=authorization_code&client_id=${rest_api_key}&redirect_uri=${encodeURIComponent(redirect_uri)}&code=${authorizeCode}&scope=profile_nickname`,
+            };
+
+            fetch("https://kauth.kakao.com/oauth/token", requestOptions).then((res) => {
+                console.log('get res:', res);
             }).then(() => {
                 axios.get('https://geolocation-db.com/json/')
                     .then((res) => {
                         console.log('res:', res);
-                        console.log('res.IPv4', res.IPv4);
+                        console.log('res.data.IPv4', res.data.IPv4);
 
-                        setIp(res.IPv4);
-                        setCode(_code);
+                        setIp(res.data.IPv4);
+                        setCode(authorizeCode);
 
                         const url = `https://idiotquant-backend.tofu89223.workers.dev`;
                         const port = `443`;
