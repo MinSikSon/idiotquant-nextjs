@@ -9,8 +9,9 @@ import Head from "next/head.js";
 import Script from "next/script.js";
 import { Util } from "../components/Util.js";
 import { Select, Option } from "@material-tailwind/react";
-import Oauth from "../components/Oauth.js";
 import axios from 'axios';
+import Login from "./login.js";
+import Oauth from "../components/Oauth.js";
 
 // export async function getServerSideProps(context) {
 export async function getStaticProps() {
@@ -83,7 +84,7 @@ export default function QuantPost({
     const [selectedStrategy, setSelectedStrategy] = React.useState('ncav');
 
     const [ip, setIp] = React.useState('');
-    const [code, setCode] = React.useState('');
+    const [authorizeCode, setAuthorizeCode] = React.useState('');
     const [accessToken, setAccessToken] = React.useState('');
 
     function changeStockCompanyName(dictOrigin, srcName, dstName) {
@@ -215,7 +216,7 @@ export default function QuantPost({
             return Math.floor(Math.random() * (max - min + 1)) + min;
         }
 
-        if ((!!!code) && (stockCompanyChangeCount > getRandomInt(3, 5))) {
+        if ((!!!authorizeCode) && (stockCompanyChangeCount > getRandomInt(3, 5))) {
             alert('종목관리를 하려면 로그인 하세요.');
             setStockCompanyChangeCount(0);
 
@@ -225,8 +226,8 @@ export default function QuantPost({
 
     React.useEffect(() => {
         console.log(`window.location.href`, window.location.href);
-        const authorizeCode = new URL(window.location.href).searchParams.get('code');
-        if (!!authorizeCode) {
+        const _authorizeCode = new URL(window.location.href).searchParams.get('code');
+        if (!!_authorizeCode) {
             const rest_api_key = '25079c20b5c42c7b91a72308ef5c4ad5';
             const redirect_uri = 'https://idiotquant.com/';
 
@@ -235,7 +236,7 @@ export default function QuantPost({
                 headers: {
                     'Content-Type': 'application/x-www-form-urlencoded;charset=utf-8',
                 },
-                body: `grant_type=authorization_code&client_id=${rest_api_key}&redirect_uri=${encodeURIComponent(redirect_uri)}&code=${authorizeCode}&scope=openid,profile_nickname`,
+                body: `grant_type=authorization_code&client_id=${rest_api_key}&redirect_uri=${encodeURIComponent(redirect_uri)}&code=${_authorizeCode}&scope=openid,profile_nickname`,
             };
 
             fetch("https://kauth.kakao.com/oauth/token", requestOptions)
@@ -260,7 +261,7 @@ export default function QuantPost({
                             console.log('res.data.IPv4', res.data.IPv4);
 
                             setIp(res.data.IPv4);
-                            setCode(authorizeCode);
+                            setAuthorizeCode(_authorizeCode);
 
                             const url = `https://idiotquant-backend.tofu89223.workers.dev`;
                             const port = `443`;
@@ -413,7 +414,7 @@ export default function QuantPost({
             <SubTitle />
             <div className="relative">
                 <Oauth
-                    authorizeCode={code}
+                    authorizeCode={authorizeCode}
                     accessToken={accessToken}
                     scrollEffect={scrollEffect}
                     openSearchResult={openSearchResult}
