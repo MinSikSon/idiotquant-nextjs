@@ -12,6 +12,7 @@ import { Select, Option } from "@material-tailwind/react";
 import axios from 'axios';
 import Login from "./login.js";
 import Oauth from "../components/Oauth.js";
+import { useRouter } from 'next/router';
 
 // export async function getServerSideProps(context) {
 export async function getStaticProps() {
@@ -30,7 +31,8 @@ export async function getStaticProps() {
     const marketInfo20221214 = await fetchAndSet('stock/market-info?date=20221214');
     const marketInfo20230111 = await fetchAndSet('stock/market-info?date=20230111');
     // const marketInfoLatest = await fetchAndSet('stock/market-info?date=20230426');
-    const marketInfoLatest = await fetchAndSet('stock/market-info?date=20230524');
+    // const marketInfoLatest = await fetchAndSet('stock/market-info?date=20230524');
+    const marketInfoLatest = await fetchAndSet('stock/market-info?date=20230622');
     const financialInfoAll = await fetchAndSet('stock/financial-info');
 
     // const serverData = await getServerData();
@@ -86,6 +88,7 @@ export default function QuantPost({
     const [ip, setIp] = React.useState('');
     const [authorizeCode, setAuthorizeCode] = React.useState('');
     const [accessToken, setAccessToken] = React.useState('');
+    const [loginStatus, setLoginStatus] = React.useState(false);
 
     function changeStockCompanyName(dictOrigin, srcName, dstName) {
         const { [srcName]: srcCompanyInfo, ...rest } = dictOrigin;
@@ -223,10 +226,16 @@ export default function QuantPost({
             // TODO: 로그인 화면 이동.
         }
     }, [stockCompanyChangeCount]);
+    const router = useRouter();
 
     React.useEffect(() => {
         console.log(`window.location.href`, window.location.href);
         const _authorizeCode = new URL(window.location.href).searchParams.get('code');
+        console.log('_authorizeCode', _authorizeCode);
+        console.log('router.query', router.query);
+        const { authorizeCode } = router.query;
+        console.log(`authorizeCode`, authorizeCode);
+
         if (!!_authorizeCode) {
             const rest_api_key = '25079c20b5c42c7b91a72308ef5c4ad5';
             const redirect_uri = 'https://idiotquant.com/';
@@ -276,6 +285,9 @@ export default function QuantPost({
                             // return json;
                         });
                 })
+        }
+        else {
+            setAuthorizeCode(_authorizeCode);
         }
     }, []);
 
