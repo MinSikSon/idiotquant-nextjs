@@ -10,9 +10,9 @@ import Script from "next/script.js";
 import { Util } from "../components/Util.js";
 import { Select, Option } from "@material-tailwind/react";
 import axios from 'axios';
-import Login from "./login.js";
 import Oauth from "../components/Oauth.js";
 import { useRouter } from 'next/router';
+import Title from "../components/Title.js";
 
 // export async function getServerSideProps(context) {
 export async function getStaticProps() {
@@ -359,20 +359,6 @@ export default function QuantPost({
         setInputValue(inputValue);
         setSearchingList(slicedArray);
     }
-    const Title = () => {
-        return (
-            <Link href="./posts/terms">
-                <div
-                    className='font-serif 
-                    text-xl sm:text-xl md:text-2xl lg:text-3xl
-                    text-black header-contents text-center py-3
-                    sm:underline sm:decoration-2 md:decoration-4 sm:decoration-green-400'
-                >
-                    IDIOT<span className='text-green-400'>.</span>QUANT
-                </div>
-            </Link>
-        );
-    };
 
     const SubTitle = () => {
         function handleChange(selected) {
@@ -406,6 +392,7 @@ export default function QuantPost({
             </div>
         );
     };
+
     return (
         <div className='bg-white sm:bg-gray-50'>
             <Head>
@@ -465,7 +452,7 @@ export default function QuantPost({
                     searchingList={searchingList}
                     scrollEffect={scrollEffect}
                 />
-                <div className={`pb-80 w-full`}>
+                <div className='pb-80 w-full'>
                     <Table
                         searchStockCompanyInfo={searchStockCompanyInfo}
                         setOpenSearchResult={setOpenSearchResult}
