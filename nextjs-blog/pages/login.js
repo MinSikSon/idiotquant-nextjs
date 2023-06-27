@@ -2,7 +2,6 @@ import Link from 'next/link';
 import { useRouter } from 'next/router';
 import { useEffect } from 'react';
 import Title from '../components/Title';
-import { Button } from '@material-tailwind/react';
 
 export default function Login(props) {
     const router = useRouter();
@@ -51,21 +50,24 @@ export default function Login(props) {
     console.log(`router.query`, router.query);
     console.log(`props.authorizeCode`, props.authorizeCode);
 
+    const KakaoIcon = () => {
+        return (
+            <img className='w-fit' src='/images/kakao_login_medium_narrow.png'></img>
+        );
+    }
+
     return (
         <>
             <Title />
-            <div className='grid grid-cols-3 place-content-center h-32'>
-                <div></div>
-                <div></div>
-                <div></div>
-                <div></div>
-                <Button color='amber'>
-                    <Link href={!!props.authorizeCode ? getLogoutUrl() : getLoginUrl()}>
-                        {/* <ArrowRightOnRectangleIcon strokeWidth={2} className="h-5 w-5" /> */}
-                        <div className="pt-1">{loginStatus}</div>
+            <div className='grid grid-cols-5 grid-rows-2 place-content-center h-32'>
+                <div className='col-span-5' />
+                <div />
+                <div className='col-span-3 grid place-items-center'>
+                    <Link className='' href={!!props.authorizeCode ? getLogoutUrl() : getLoginUrl()}>
+                        <KakaoIcon />
                     </Link>
-                </Button>
-                <div></div>
+                </div>
+                <div />
             </div>
         </>
     );

@@ -4,7 +4,7 @@ import {
 import Link from "next/link";
 
 export default function Oauth(props) {
-    const loginStatus = (!!props.authorizeCode) ? 'kakao logout' : 'kakao login';
+    const loginStatus = (!!props.authorizeCode) ? 'Logout' : 'Login';
 
     const url = {
         pathname: '/login',

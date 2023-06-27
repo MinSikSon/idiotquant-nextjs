@@ -83,7 +83,6 @@ const ListNode = (props) => {
                     display={false}
                 />
             </ListItemSuffix>
-
         </ListItem >
     );
 };
