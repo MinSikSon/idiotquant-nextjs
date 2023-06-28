@@ -14,12 +14,20 @@ function RequestToken(_authorizeCode) {
     const rest_api_key = '25079c20b5c42c7b91a72308ef5c4ad5';
     const redirect_uri = 'https://idiotquant.com/';
 
+    const postData = {
+        grant_type: 'authorization_code',
+        client_id: rest_api_key,
+        redirect_uri: redirect_uri,
+        code: _authorizeCode,
+    };
+
     const requestOptions = {
         method: 'POST',
         headers: {
             'Content-Type': 'application/x-www-form-urlencoded;charset=utf-8',
         },
-        body: `grant_type=authorization_code&client_id=${rest_api_key}&redirect_uri=${encodeURIComponent(redirect_uri)}&code=${_authorizeCode}&scope=openid,profile_nickname`,
+        // body: `grant_type=authorization_code&client_id=${rest_api_key}&redirect_uri=${encodeURIComponent(redirect_uri)}&code=${_authorizeCode}`,
+        body: new URLSearchParams(postData).toString(),
     };
 
     fetch("https://kauth.kakao.com/oauth/token", requestOptions)
