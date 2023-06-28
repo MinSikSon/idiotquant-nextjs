@@ -18,41 +18,32 @@ export default function Login(props) {
     console.log(`2 authorizeCode`, authorizeCode);
     console.log(`2 loginStatus`, loginStatus);
 
-    const getLoginUrl = () => {
+    const Login = () => {
+        console.log(`Login`);
         const rest_api_key = '25079c20b5c42c7b91a72308ef5c4ad5';
         const redirect_uri = 'https://idiotquant.com/user/login';
-        const kakaoUrl = `https://kauth.kakao.com/oauth/authorize?response_type=code&client_id=${rest_api_key}&redirect_uri=${encodeURIComponent(redirect_uri)}`;
+        const authorizeEndpoint = `https://kauth.kakao.com/oauth/authorize?response_type=code&client_id=${rest_api_key}&redirect_uri=${encodeURIComponent(redirect_uri)}`;
 
-        // const kakaoUrl = {
-        //     pathname: `https://kauth.kakao.com/oauth/authorize?response_type=code&client_id=${rest_api_key}&redirect_uri=${encodeURIComponent(redirect_uri)}`,
-        //     // query: {
-        //     //     authorizeCode: true,
-        //     // },
-        // }
-        return kakaoUrl;
+        router.push(authorizeEndpoint);
     }
 
-    const getLogoutUrl = () => {
+    const Logout = () => {
+        console.log(`Logout`);
         const rest_api_key = '25079c20b5c42c7b91a72308ef5c4ad5';
         const redirect_uri = 'https://idiotquant.com/user/logout';
-
-        const kakaoUrl = `https://kauth.kakao.com/oauth/logout?client_id=${rest_api_key}&logout_redirect_uri=${encodeURIComponent(redirect_uri)}`;
-        // const kakaoUrl = {
-        //     pathname: `https://kauth.kakao.com/oauth/logout?client_id=${rest_api_key}&logout_redirect_uri=${encodeURIComponent(redirect_uri)}`,
-        //     // query: {
-        //     //     authorizeCode: false,
-        //     // },
-        // }
-        return kakaoUrl;
+        const authorizeEndpoint = `https://kauth.kakao.com/oauth/authorize?client_id=${rest_api_key}&logout_redirect_uri=${encodeURIComponent(redirect_uri)}`;
+        router.push(authorizeEndpoint);
     }
 
     console.log(`router`, router);
     console.log(`router.query`, router.query);
-    console.log(`props.authorizeCode`, props.authorizeCode);
 
     const KakaoIcon = () => {
+        console.log(`!!authorizeCode`, !!authorizeCode);
         return (
-            <img className='w-fit' src='/images/kakao_login_medium_narrow.png'></img>
+            <button onClick={!!authorizeCode ? Logout : Login}>
+                <img className='w-fit' src='/images/kakao_login_medium_narrow.png'></img>
+            </button>
         );
     }
 
@@ -63,9 +54,7 @@ export default function Login(props) {
                 <div className='col-span-5' />
                 <div />
                 <div className='col-span-3 grid place-items-center'>
-                    <Link className='' href={!!props.authorizeCode ? getLogoutUrl() : getLoginUrl()}>
-                        <KakaoIcon />
-                    </Link>
+                    <KakaoIcon />
                 </div>
                 <div />
             </div>
