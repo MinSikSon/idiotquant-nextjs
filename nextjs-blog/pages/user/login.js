@@ -18,8 +18,8 @@ async function RequestToken(_authorizeCode) {
         headers: {
             'Content-Type': 'application/x-www-form-urlencoded;charset=utf-8',
         },
-        // body: `grant_type=authorization_code&client_id=${rest_api_key}&redirect_uri=${encodeURIComponent(redirect_uri)}&code=${_authorizeCode}`,
-        body: new URLSearchParams(postData).toString(),
+        body: `grant_type=authorization_code&client_id=${rest_api_key}&redirect_uri=${encodeURIComponent(redirect_uri)}&code=${_authorizeCode}`,
+        // body: new URLSearchParams(postData).toString(),
     };
 
     console.log(`requestOptions`, requestOptions);

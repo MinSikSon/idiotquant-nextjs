@@ -24,6 +24,7 @@ export default function Login(props) {
         const redirect_uri = 'https://idiotquant.com/user/login';
         const authorizeEndpoint = `https://kauth.kakao.com/oauth/authorize?response_type=code&client_id=${rest_api_key}&redirect_uri=${encodeURIComponent(redirect_uri)}`;
 
+        console.log(`authorizeEndpoint`, authorizeEndpoint);
         router.push(authorizeEndpoint);
     }
 
@@ -42,7 +43,7 @@ export default function Login(props) {
         console.log(`!!authorizeCode`, !!authorizeCode);
         return (
             <button onClick={!!authorizeCode ? Logout : Login}>
-                <img className='w-fit' src='/images/kakao_login_medium_narrow.png'></img>
+                <img className='w-fit' src='/images/kakao_login_large.png'></img>
             </button>
         );
     }
@@ -50,13 +51,14 @@ export default function Login(props) {
     return (
         <>
             <Title />
-            <div className='grid grid-cols-5 grid-rows-2 place-content-center h-32'>
-                <div className='col-span-5' />
-                <div />
-                <div className='col-span-3 grid place-items-center'>
+            <div className='grid grid-cols-8 grid-rows-3 place-content-center h-32'>
+                <div className='col-span-8' />
+                <div className='col-span-8' />
+                <div className='col-span-3' />
+                <div className='col-span-2 flex justify-center items-center'>
                     <KakaoIcon />
                 </div>
-                <div />
+                <div className='col-span-3' />
             </div>
         </>
     );
