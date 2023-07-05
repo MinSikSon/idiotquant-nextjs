@@ -21,7 +21,8 @@ export default function Login(props) {
     const Login = () => {
         console.log(`Login`);
         const rest_api_key = '25079c20b5c42c7b91a72308ef5c4ad5';
-        const redirect_uri = 'https://idiotquant.com/user/login';
+        // const redirect_uri = 'https://idiotquant.com/user/login';
+        const redirect_uri = 'https://idiotquant.com';
         const authorizeEndpoint = `https://kauth.kakao.com/oauth/authorize?response_type=code&client_id=${rest_api_key}&redirect_uri=${encodeURIComponent(redirect_uri)}`;
 
         console.log(`authorizeEndpoint`, authorizeEndpoint);
