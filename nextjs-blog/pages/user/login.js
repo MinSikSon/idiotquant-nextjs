@@ -12,13 +12,15 @@ async function RequestToken(_authorizeCode) {
     };
 
     console.log(`postData`, postData);
+    console.log(`new URLSearchParams(postData)`, new URLSearchParams(postData));
+    console.log(`new URLSearchParams(postData).toString()`, new URLSearchParams(postData).toString());
     const requestOptions = {
         method: 'POST',
         headers: {
             'Content-Type': 'application/x-www-form-urlencoded;charset=utf-8',
         },
         // body: `grant_type=authorization_code&client_id=${rest_api_key}&redirect_uri=${redirect_uri}&code=${_authorizeCode}`,
-        body: new URLSearchParams(postData).toString(),
+        body: new URLSearchParams(postData),
     };
 
     console.log(`requestOptions`, requestOptions);
