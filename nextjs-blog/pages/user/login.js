@@ -7,12 +7,13 @@ async function RequestToken(_authorizeCode) {
     const postData = {
         grant_type: 'authorization_code',
         client_id: rest_api_key,
-        redirect_uri: encodeURIComponent(redirect_uri),
+        // redirect_uri: encodeURIComponent(redirect_uri),
+        redirect_uri: redirect_uri,
         code: _authorizeCode,
     };
 
     console.log(`postData`, postData);
-    console.log(`new URLSearchParams(postData)`, new URLSearchParams(postData));
+    // console.log(`new URLSearchParams(postData)`, new URLSearchParams(postData));
     console.log(`new URLSearchParams(postData).toString()`, new URLSearchParams(postData).toString());
     const requestOptions = {
         method: 'POST',
@@ -20,7 +21,7 @@ async function RequestToken(_authorizeCode) {
             'Content-Type': 'application/x-www-form-urlencoded;charset=utf-8',
         },
         // body: `grant_type=authorization_code&client_id=${rest_api_key}&redirect_uri=${redirect_uri}&code=${_authorizeCode}`,
-        body: new URLSearchParams(postData),
+        body: new URLSearchParams(postData).toString(),
     };
 
     console.log(`requestOptions`, requestOptions);
@@ -55,7 +56,7 @@ export default function Login(props) {
 
     return (
         <>
-            hihi
+            waiting...
         </>
     )
 }
