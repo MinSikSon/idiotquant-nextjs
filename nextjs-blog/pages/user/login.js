@@ -1,4 +1,3 @@
-import { useRouter } from "next/router";
 import { useEffect } from "react"
 
 async function RequestToken(_authorizeCode) {
@@ -18,8 +17,8 @@ async function RequestToken(_authorizeCode) {
         headers: {
             'Content-Type': 'application/x-www-form-urlencoded;charset=utf-8',
         },
-        body: `grant_type=authorization_code&client_id=${rest_api_key}&redirect_uri=${encodeURIComponent(redirect_uri)}&code=${_authorizeCode}`,
-        // body: new URLSearchParams(postData).toString(),
+        // body: `grant_type=authorization_code&client_id=${rest_api_key}&redirect_uri=${redirect_uri}&code=${_authorizeCode}`,
+        body: new URLSearchParams(postData).toString(),
     };
 
     console.log(`requestOptions`, requestOptions);
@@ -42,10 +41,7 @@ async function RequestToken(_authorizeCode) {
 }
 
 export default function Login(props) {
-    const router = useRouter();
-    const { authorizeCode } = router.query;
     useEffect(() => {
-        console.log(`authorizeCode`, authorizeCode);
         const _authorizeCode = new URL(window.location.href).searchParams.get('code');
 
         console.log(`[Login] _authorizeCode:`, _authorizeCode);
@@ -57,6 +53,7 @@ export default function Login(props) {
 
     return (
         <>
+            hihi
         </>
     )
 }
