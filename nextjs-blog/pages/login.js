@@ -11,7 +11,7 @@ async function RequestToken(_authorizeCode) {
     const postData = {
         'grant_type': 'authorization_code',
         'client_id': rest_api_key,
-        'redirect_uri': encodeURIComponent(redirect_uri),
+        'redirect_uri': redirect_uri,
         'code': _authorizeCode,
     };
 
@@ -23,7 +23,7 @@ async function RequestToken(_authorizeCode) {
         headers: {
             'Content-Type': 'application/x-www-form-urlencoded',
         },
-        body: new URLSearchParams(postData).toString(),
+        body: encodeURIComponent(new URLSearchParams(postData).toString()),
     };
 
     console.log(`requestOptions`, requestOptions);
