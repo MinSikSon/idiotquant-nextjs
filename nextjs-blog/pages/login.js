@@ -70,7 +70,7 @@ export default function Login(props) {
     const Login = () => {
         console.log(`Login`);
         const rest_api_key = '25079c20b5c42c7b91a72308ef5c4ad5';
-        const redirect_uri = 'https://idiotquant.com/login';
+        const redirect_uri = 'https://idiotquant.com/login'; // NOTE: [KAKAO] 인가코드 redirect uri 와 액세스 토큰 redirect uri 가 같아야 합니다.
         // const redirect_uri = 'https://idiotquant.com';
         const authorizeEndpoint = `https://kauth.kakao.com/oauth/authorize?response_type=code&client_id=${rest_api_key}&redirect_uri=${encodeURIComponent(redirect_uri)}`;
 
