@@ -17,7 +17,7 @@ async function RequestToken(_authorizeCode) {
     const requestOptions = {
         method: 'POST',
         headers: {
-            'Content-Type': 'application/x-www-form-urlencoded;charset=utf-8',
+            'Content-Type': 'application/x-www-form-urlencoded',
         },
         body: new URLSearchParams(postData),
     };
