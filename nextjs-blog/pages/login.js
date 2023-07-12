@@ -6,7 +6,7 @@ import Title from '../components/Title';
 
 async function RequestToken(_authorizeCode) {
     const rest_api_key = '25079c20b5c42c7b91a72308ef5c4ad5';
-    const redirect_uri = 'https://idiotquant.com';
+    const redirect_uri = 'https://idiotquant.com/login'; // NOTE: [KAKAO] 인가코드 redirect uri 와 액세스 토큰 redirect uri 가 같아야 합니다.
 
     const postData = {
         'grant_type': 'authorization_code',
