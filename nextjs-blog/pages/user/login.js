@@ -19,7 +19,7 @@ async function RequestToken(_authorizeCode) {
         headers: {
             'Content-Type': 'application/x-www-form-urlencoded',
         },
-        body: new URLSearchParams(postData),
+        body: new URLSearchParams(postData).toString(),
     };
 
     console.log(`requestOptions`, requestOptions);
