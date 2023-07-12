@@ -24,21 +24,21 @@ async function RequestToken(_authorizeCode) {
 
     console.log(`requestOptions`, requestOptions);
 
-    await fetch("https://kauth.kakao.com/oauth/token", requestOptions)
-        .then(res => {
-            console.log('post res:', res);
-            if (res.ok) {
-                return res.text();
-            } else {
-                throw new Error('Request failed');
-            }
-        })
-        .then(body => {
-            console.log('post body:', body);
-            console.log(`body.access_token`, body.access_token);
-            console.log(`JSON.parse(body).access_token`, JSON.parse(body).access_token);
-            // setAccessToken(JSON.parse(body).access_token);
-        })
+    // await fetch("https://kauth.kakao.com/oauth/token", requestOptions)
+    //     .then(res => {
+    //         console.log('post res:', res);
+    //         if (res.ok) {
+    //             return res.text();
+    //         } else {
+    //             throw new Error('Request failed');
+    //         }
+    //     })
+    //     .then(body => {
+    //         console.log('post body:', body);
+    //         console.log(`body.access_token`, body.access_token);
+    //         console.log(`JSON.parse(body).access_token`, JSON.parse(body).access_token);
+    //         // setAccessToken(JSON.parse(body).access_token);
+    //     })
 }
 
 export default function Login(props) {
