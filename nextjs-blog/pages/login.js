@@ -51,18 +51,14 @@ export default function Login(props) {
         if (!router.isReady) return;
         console.log(`1 router.isReady`, router.isReady);
         console.log(`1 router`, router);
-    }, [router.isReady]);
 
-    useEffect(() => {
         const _authorizeCode = new URL(window.location.href).searchParams.get('code');
-
         console.log(`[Login] _authorizeCode:`, _authorizeCode);
 
         if (!!_authorizeCode) {
             RequestToken(_authorizeCode);
         }
-        // router.push('/');
-    }, []);
+    }, [router.isReady]);
 
     const { authorizeCode } = router.query;
 
