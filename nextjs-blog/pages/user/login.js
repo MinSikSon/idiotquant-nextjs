@@ -14,20 +14,27 @@ async function RequestToken(_authorizeCode) {
     console.log(`postData`, postData);
     // console.log(`new URLSearchParams(postData)`, new URLSearchParams(postData));
     console.log(`new URLSearchParams(postData).toString()`, new URLSearchParams(postData).toString());
+    // const requestOptions = {
+    //     method: 'POST',
+    //     headers: {
+    //         'Content-Type': 'application/x-www-form-urlencoded',
+    //     },
+    //     // body: `grant_type=authorization_code&client_id=${rest_api_key}&redirect_uri=${redirect_uri}&code=${_authorizeCode}`,
+    //     body: new URLSearchParams(postData).toString(),
+    // };
     const requestOptions = {
-        method: 'POST',
+        method: 'GET',
         headers: {
-            'Content-Type': 'application/x-www-form-urlencoded',
+            'Authorization': `Bearer ${_authorizeCode}`
         },
-        // body: `grant_type=authorization_code&client_id=${rest_api_key}&redirect_uri=${redirect_uri}&code=${_authorizeCode}`,
-        body: new URLSearchParams(postData).toString(),
     };
 
     console.log(`requestOptions`, requestOptions);
 
-    await fetch("https://kauth.kakao.com/oauth/token", requestOptions)
+    // await fetch("https://kauth.kakao.com/oauth/token", requestOptions)
+    await fetch("https://kapi.kakao.com/v1/user/access_token_info", requestOptions)
         .then(res => {
-            console.log('post res:', res);
+            console.log('get res:', res);
             if (res.ok) {
                 return res.text();
             } else {
@@ -35,7 +42,7 @@ async function RequestToken(_authorizeCode) {
             }
         })
         .then(body => {
-            console.log('post body:', body);
+            console.log('get body:', body);
             console.log(`body.access_token`, body.access_token);
             console.log(`JSON.parse(body).access_token`, JSON.parse(body).access_token);
             // setAccessToken(JSON.parse(body).access_token);
