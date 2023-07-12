@@ -5,22 +5,21 @@ async function RequestToken(_authorizeCode) {
     const redirect_uri = 'https://idiotquant.com';
 
     const postData = {
-        grant_type: 'authorization_code',
-        client_id: rest_api_key,
-        redirect_uri: encodeURIComponent(redirect_uri),
-        code: _authorizeCode,
+        'grant_type': 'authorization_code',
+        'client_id': rest_api_key,
+        'redirect_uri': encodeURIComponent(redirect_uri),
+        'code': _authorizeCode,
     };
 
     console.log(`postData`, postData);
-    // console.log(`new URLSearchParams(postData)`, new URLSearchParams(postData));
+    console.log(`new URLSearchParams(postData)`, new URLSearchParams(postData));
     console.log(`new URLSearchParams(postData).toString()`, new URLSearchParams(postData).toString());
     const requestOptions = {
         method: 'POST',
         headers: {
-            'Content-type': 'application/x-www-form-urlencoded;charset=utf-8',
+            'Content-Type': 'application/x-www-form-urlencoded;charset=utf-8',
         },
-        body: `grant_type=authorization_code&client_id=${rest_api_key}&redirect_uri=${redirect_uri}&code=${_authorizeCode}`,
-        // body: JSON.toString(postData),
+        body: new URLSearchParams(postData),
     };
 
     console.log(`requestOptions`, requestOptions);
