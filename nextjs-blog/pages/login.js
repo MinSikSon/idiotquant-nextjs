@@ -9,10 +9,10 @@ async function RequestToken(_authorizeCode) {
     const redirect_uri = 'https://idiotquant.com/login'; // NOTE: [KAKAO] 인가코드 redirect uri 와 액세스 토큰 redirect uri 가 같아야 합니다.
 
     const postData = {
-        'grant_type': 'authorization_code',
-        'client_id': rest_api_key,
-        'redirect_uri': redirect_uri,
-        'code': _authorizeCode,
+        'grant_type': encodeURIComponent('authorization_code'),
+        'client_id': encodeURIComponent(rest_api_key),
+        'redirect_uri': encodeURIComponent(redirect_uri),
+        'code': encodeURIComponent(_authorizeCode),
     };
 
     console.log(`postData`, postData);
@@ -23,7 +23,7 @@ async function RequestToken(_authorizeCode) {
         headers: {
             'Content-Type': 'application/x-www-form-urlencoded',
         },
-        body: encodeURIComponent(new URLSearchParams(postData).toString()),
+        body: new URLSearchParams(postData).toString(),
     };
 
     console.log(`requestOptions`, requestOptions);
