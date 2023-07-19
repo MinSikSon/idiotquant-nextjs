@@ -13,12 +13,7 @@ async function RequestToken(_authorizeCode) {
     const response = await fetch(tokenUrl, {
         method: 'POST',
         headers: { 'Content-Type': 'application/x-www-form-urlencoded;charset=utf-8' },
-    })
-        // .then(res => {
-        //     console.log(`res`, res);
-        //     return res;
-        // })
-        .then((res) => res.json());
+    }).then((res) => res.json());
 
     return response;
 }
@@ -59,11 +54,23 @@ export default function Login(props) {
         router.push(authorizeEndpoint);
     }
 
+    function RequestLogout() {
+        const authorizeEndpoint = `https://kauth.kakao.com/oauth/logout?client_id=${env.KAKAO_REST_API_KEY}&logout_redirect_uri=${env.KAKAO_REDIRECT_URI}`;
+
+        fetch(authorizeEndpoint, {
+            method: 'GET',
+        }).then((res) => {
+            console.log(`RequestLogout`, res);
+            return res;
+        }).then((res) => res.json());
+
+    }
     const Logout = () => {
         console.log(`Logout`);
-        const authorizeEndpoint = `https://kauth.kakao.com/oauth/authorize?client_id=${env.KAKAO_REST_API_KEY}&logout_redirect_uri=${env.KAKAO_REDIRECT_URI}`;
+        const authorizeEndpoint = `https://kauth.kakao.com/oauth/logout?client_id=${env.KAKAO_REST_API_KEY}&logout_redirect_uri=${env.KAKAO_REDIRECT_URI}`;
 
-        router.push(authorizeEndpoint);
+        RequestLogout();
+        // router.push(authorizeEndpoint);
     }
 
     console.log(`router`, router);
