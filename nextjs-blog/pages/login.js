@@ -7,7 +7,7 @@ const KAKAO_REDIRECT_URI = 'https://idiotquant.com/login'; // NOTE: [KAKAO] Ïù∏Í
 async function RequestToken(_authorizeCode) {
     const KAKAO_REST_API_KEY = '25079c20b5c42c7b91a72308ef5c4ad5';
 
-    const tokenUrl = `https:://kauth.kakao.com/oauth/token?grant_type=authorization_code&client_id=${KAKAO_REST_API_KEY}&redirect_uri=${encodeURIComponent(KAKAO_REDIRECT_URI)}&code=${_authorizeCode}`;
+    const tokenUrl = `https://kauth.kakao.com/oauth/token?grant_type=authorization_code&client_id=${KAKAO_REST_API_KEY}&redirect_uri=${encodeURIComponent(KAKAO_REDIRECT_URI)}&code=${_authorizeCode}`;
     console.log(`tokenUrl`, tokenUrl);
 
     const response = await fetch(tokenUrl, {
