@@ -1,4 +1,3 @@
-import Link from 'next/link';
 import { useRouter } from 'next/router';
 import React from "react";
 import Title from '../components/Title';
@@ -24,8 +23,6 @@ export default function Login(props) {
     React.useEffect(() => {
         async function callback() {
             if (!router.isReady) return;
-            console.log(`1 router.isReady`, router.isReady);
-            console.log(`1 router`, router);
 
             const _authorizeCode = new URL(window.location.href).searchParams.get('code');
 
@@ -41,43 +38,30 @@ export default function Login(props) {
     }, [router.isReady]);
 
 
-    const loginStatus = (!!authorizeCode) ? 'kakao logout' : 'kakao login';
-
-    console.log(`2 authorizeCode`, authorizeCode);
-    console.log(`2 loginStatus`, loginStatus);
-
     function Login() {
         console.log(`Login`);
         const authorizeEndpoint = `https://kauth.kakao.com/oauth/authorize?response_type=code&client_id=${env.KAKAO_REST_API_KEY}&redirect_uri=${env.KAKAO_REDIRECT_URI}`;
 
-        console.log(`authorizeEndpoint`, authorizeEndpoint);
         router.push(authorizeEndpoint);
     }
 
-    function RequestLogout() {
+
+    const Logout = () => {
+        console.log(`Logout`);
         const authorizeEndpoint = `https://kauth.kakao.com/oauth/logout?client_id=${env.KAKAO_REST_API_KEY}&logout_redirect_uri=${env.KAKAO_REDIRECT_URI}`;
 
         fetch(authorizeEndpoint, {
             method: 'GET',
         }).then((res) => {
             console.log(`RequestLogout`, res);
+            if (true === res.ok) {
+                router.push('/');
+            }
             return res;
-        }).then((res) => res.json());
-
+        })
     }
-    const Logout = () => {
-        console.log(`Logout`);
-        const authorizeEndpoint = `https://kauth.kakao.com/oauth/logout?client_id=${env.KAKAO_REST_API_KEY}&logout_redirect_uri=${env.KAKAO_REDIRECT_URI}`;
-
-        RequestLogout();
-        // router.push(authorizeEndpoint);
-    }
-
-    console.log(`router`, router);
-    console.log(`router.query`, router.query);
 
     const KakaoIcon = () => {
-        console.log(`!!authorizeCode`, !!authorizeCode);
         return (
             <>
                 {
@@ -95,8 +79,8 @@ export default function Login(props) {
                         :
                         <Button
                             size="lg"
-                            // variant="outlined"
-                            color="yellow"
+                            variant="outlined"
+                            color="blue-gray"
                             className="flex items-center gap-3"
                             onClick={Logout}
                         >
