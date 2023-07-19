@@ -30,23 +30,28 @@ export async function getStaticProps() {
     const marketInfo20211214 = await fetchAndSet('stock/market-info?date=20211214');
     const marketInfo20221214 = await fetchAndSet('stock/market-info?date=20221214');
     const marketInfo20230111 = await fetchAndSet('stock/market-info?date=20230111');
-    // const marketInfoLatest = await fetchAndSet('stock/market-info?date=20230426');
-    // const marketInfoLatest = await fetchAndSet('stock/market-info?date=20230524');
-    // const marketInfoLatest = await fetchAndSet('stock/market-info?date=20230622');
+    const marketInfo20230426 = await fetchAndSet('stock/market-info?date=20230426');
+    const marketInfo20230524 = await fetchAndSet('stock/market-info?date=20230524');
+    const marketInfo20230622 = await fetchAndSet('stock/market-info?date=20230622');
     const marketInfoLatest = await fetchAndSet('stock/market-info?date=20230719');
     const financialInfoAll = await fetchAndSet('stock/financial-info');
 
-    // const serverData = await getServerData();
+    let marketInfoList = []
+    marketInfoList.push(marketInfo20181214);
+    marketInfoList.push(marketInfo20191213);
+    marketInfoList.push(marketInfo20201214);
+    marketInfoList.push(marketInfo20211214);
+    marketInfoList.push(marketInfo20221214);
+    marketInfoList.push(marketInfo20230111);
+    marketInfoList.push(marketInfo20230426);
+    marketInfoList.push(marketInfo20230524);
+    marketInfoList.push(marketInfo20230622);
+    marketInfoList.push(marketInfoLatest);
+
     return {
         props: {
             // props for your component
-            marketInfo20181214,
-            marketInfo20191213,
-            marketInfo20201214,
-            marketInfo20211214,
-            marketInfo20221214,
-            marketInfo20230111,
-            marketInfoLatest,
+            marketInfoList,
             financialInfoAll,
         },
     };
@@ -95,13 +100,7 @@ async function RequestToken(_authorizeCode) {
 }
 
 export default function QuantPost({
-    marketInfo20181214,
-    marketInfo20191213,
-    marketInfo20201214,
-    marketInfo20211214,
-    marketInfo20221214,
-    marketInfo20230111,
-    marketInfoLatest,
+    marketInfoList,
     financialInfoAll,
 }) {
     // state
@@ -213,6 +212,9 @@ export default function QuantPost({
     }
 
     React.useEffect(() => {
+        const matkerInfoLatestIndex = marketInfoList.length - 1;
+        const marketInfoLatest = marketInfoList[matkerInfoLatestIndex];
+
         if (!!financialInfoAll && !!marketInfoLatest) {
             function addEasterEgg(dictOrigin) {
                 let easterEgg = {
@@ -247,7 +249,7 @@ export default function QuantPost({
 
             setLatestStockCompanyInfo(dictFinancialMarketInfo);
         }
-    }, [financialInfoAll, marketInfoLatest]);
+    }, [financialInfoAll, marketInfoList.marketInfoLatest]);
 
     React.useEffect(() => {
         if (!!latestStockCompanyInfo) {
@@ -271,6 +273,9 @@ export default function QuantPost({
     }, [stockCompanyChangeCount]);
 
     function searchStockCompanyInfo(stockCompanyName) {
+        const matkerInfoLatestIndex = marketInfoList.length - 1;
+        const marketInfoLatest = marketInfoList[matkerInfoLatestIndex];
+
         setSearchingList('');
 
         const stockCompanyInfo = dictFilteredStockCompanyInfo[stockCompanyName] || latestStockCompanyInfo[stockCompanyName];
@@ -425,13 +430,7 @@ export default function QuantPost({
                     inputPlaceholder={inputPlaceholder}
 
                     // new state
-                    marketInfo20181214={marketInfo20181214}
-                    marketInfo20191213={marketInfo20191213}
-                    marketInfo20201214={marketInfo20201214}
-                    marketInfo20211214={marketInfo20211214}
-                    marketInfo20221214={marketInfo20221214}
-                    marketInfo20230111={marketInfo20230111}
-                    marketInfoLatest={marketInfoLatest}
+                    marketInfoList={marketInfoList}
 
                     dictFilteredStockCompanyInfo={dictFilteredStockCompanyInfo}
 
@@ -449,13 +448,7 @@ export default function QuantPost({
                         dictFilteredStockCompanyInfo={dictFilteredStockCompanyInfo}
                         searchResult={searchResult}
 
-                        marketInfo20181214={marketInfo20181214}
-                        marketInfo20191213={marketInfo20191213}
-                        marketInfo20201214={marketInfo20201214}
-                        marketInfo20211214={marketInfo20211214}
-                        marketInfo20221214={marketInfo20221214}
-                        marketInfo20230111={marketInfo20230111}
-                        marketInfoLatest={marketInfoLatest}
+                        marketInfoList={marketInfoList}
 
                         deleteStockCompanyInList={deleteStockCompanyInList}
 

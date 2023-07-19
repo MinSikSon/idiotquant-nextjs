@@ -69,13 +69,14 @@ const ListNode = (props) => {
                     bsnsFullDate={props.bsnsFullDate}
                     fairPrice={props.fairPrice}
 
-                    marketInfo20181214={props.marketInfo20181214}
-                    marketInfo20191213={props.marketInfo20191213}
-                    marketInfo20201214={props.marketInfo20201214}
-                    marketInfo20211214={props.marketInfo20211214}
-                    marketInfo20221214={props.marketInfo20221214}
-                    marketInfo20230111={props.marketInfo20230111}
-                    marketInfoLatest={props.marketInfoLatest}
+                    marketInfoList={props.marketInfoList}
+                    // marketInfo20181214={props.marketInfo20181214}
+                    // marketInfo20191213={props.marketInfo20191213}
+                    // marketInfo20201214={props.marketInfo20201214}
+                    // marketInfo20211214={props.marketInfo20211214}
+                    // marketInfo20221214={props.marketInfo20221214}
+                    // marketInfo20230111={props.marketInfo20230111}
+                    // marketInfoLatest={props.marketInfoLatest}
 
                     responsive={false}
                     height={60}
@@ -90,19 +91,8 @@ const ListNode = (props) => {
 //////////////////////////////////////////////////////////////////////////////
 // Table
 export default function Table(props) {
-    let needLoading = true;
-    [
-        !!props.dictFilteredStockCompanyInfo,
-        !!props.marketInfo20181214,
-        !!props.marketInfo20191213,
-        !!props.marketInfo20201214,
-        !!props.marketInfo20211214,
-        !!props.marketInfo20221214,
-        !!props.marketInfo20230111,
-        !!props.marketInfoLatest,
-    ].forEach((item) => needLoading &&= item);
-
-    // console.log(`Table needLoading`, needLoading);
+    let loadingDone = !!props.dictFilteredStockCompanyInfo;
+    props.marketInfoList.forEach((obj) => loadingDone &&= !!obj);
 
     let cumulativeRatio = 0;
 
@@ -136,13 +126,7 @@ export default function Table(props) {
             bsnsFullDate: bsnsDate,
 
             listedStocks: 상장주식수,
-            marketInfo20181214: props.marketInfo20181214,
-            marketInfo20191213: props.marketInfo20191213,
-            marketInfo20201214: props.marketInfo20201214,
-            marketInfo20211214: props.marketInfo20211214,
-            marketInfo20221214: props.marketInfo20221214,
-            marketInfo20230111: props.marketInfo20230111,
-            marketInfoLatest: props.marketInfoLatest,
+            marketInfoList: props.marketInfoList,
         });
 
         ++index;
@@ -172,7 +156,7 @@ export default function Table(props) {
             </div>
             <Card className="w-full">
                 <List>
-                    {(false == needLoading) ?
+                    {(false == loadingDone) ?
                         <Loading />
                         :
                         <ul className="snap-y">
