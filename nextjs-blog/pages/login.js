@@ -1,31 +1,29 @@
 import Link from 'next/link';
 import { useRouter } from 'next/router';
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import Title from '../components/Title';
-const KAKAO_REDIRECT_URI = 'https://idiotquant.com/login'; // NOTE: [KAKAO] 인가코드 redirect uri 와 액세스 토큰 redirect uri 가 같아야 합니다.
-
+const env = {
+    KAKAO_REST_API_KEY: '25079c20b5c42c7b91a72308ef5c4ad5',
+    KAKAO_REDIRECT_URI: 'https://idiotquant.com/login'
+}
 async function RequestToken(_authorizeCode) {
-    const KAKAO_REST_API_KEY = '25079c20b5c42c7b91a72308ef5c4ad5';
-
-    const tokenUrl = `https://kauth.kakao.com/oauth/token?grant_type=authorization_code&client_id=${KAKAO_REST_API_KEY}&redirect_uri=${encodeURIComponent(KAKAO_REDIRECT_URI)}&code=${_authorizeCode}`;
-    console.log(`tokenUrl`, tokenUrl);
+    const tokenUrl = `https://kauth.kakao.com/oauth/token?grant_type=authorization_code&client_id=${env.KAKAO_REST_API_KEY}&redirect_uri=${encodeURIComponent(env.KAKAO_REDIRECT_URI)}&code=${_authorizeCode}`;
 
     const response = await fetch(tokenUrl, {
         method: 'POST',
-        // headers: { 'Content-Type': 'application/json' },
         headers: { 'Content-Type': 'application/x-www-form-urlencoded;charset=utf-8' },
-    }).then(res => {
-        console.log(`res`, res);
-
-        return res;
-    }).then((res) => res.json());
-
-    console.log('response', response);
+    })
+        // .then(res => {
+        //     console.log(`res`, res);
+        //     return res;
+        // })
+        .then((res) => res.json());
 
     return response;
 }
 
 export default function Login(props) {
+    const { authorizeCode, setAuthorizeCode } = useState('');
     const router = useRouter();
     useEffect(() => {
         async function callback() {
@@ -34,17 +32,18 @@ export default function Login(props) {
             console.log(`1 router`, router);
 
             const _authorizeCode = new URL(window.location.href).searchParams.get('code');
-            console.log(`[Login] _authorizeCode:`, _authorizeCode);
 
-            if (!!_authorizeCode) {
-                const responseToken = await RequestToken(_authorizeCode);
-                console.log('responseToken', responseToken);
+            if (!!!_authorizeCode) return;
+            const responseToken = await RequestToken(_authorizeCode);
+            console.log('responseToken', responseToken);
+
+            if ('' == authorizeCode) {
+                setAuthorizeCode(_authorizeCode);
             }
         }
         callback();
     }, [router.isReady]);
 
-    const { authorizeCode } = router.query;
 
     const loginStatus = (!!authorizeCode) ? 'kakao logout' : 'kakao login';
 
@@ -53,8 +52,7 @@ export default function Login(props) {
 
     function Login() {
         console.log(`Login`);
-        const KAKAO_REST_API_KEY = '25079c20b5c42c7b91a72308ef5c4ad5';
-        const authorizeEndpoint = `https://kauth.kakao.com/oauth/authorize?response_type=code&client_id=${KAKAO_REST_API_KEY}&redirect_uri=${KAKAO_REDIRECT_URI}`;
+        const authorizeEndpoint = `https://kauth.kakao.com/oauth/authorize?response_type=code&client_id=${env.KAKAO_REST_API_KEY}&redirect_uri=${env.KAKAO_REDIRECT_URI}`;
 
         console.log(`authorizeEndpoint`, authorizeEndpoint);
         router.push(authorizeEndpoint);
@@ -62,9 +60,8 @@ export default function Login(props) {
 
     const Logout = () => {
         console.log(`Logout`);
-        const KAKAO_REST_API_KEY = '25079c20b5c42c7b91a72308ef5c4ad5';
         const redirect_uri = 'https://idiotquant.com/user/logout';
-        const authorizeEndpoint = `https://kauth.kakao.com/oauth/authorize?client_id=${KAKAO_REST_API_KEY}&logout_redirect_uri=${encodeURIComponent(redirect_uri)}`;
+        const authorizeEndpoint = `https://kauth.kakao.com/oauth/authorize?client_id=${env.KAKAO_REST_API_KEY}&logout_redirect_uri=${encodeURIComponent(redirect_uri)}`;
         router.push(authorizeEndpoint);
     }
 
