@@ -4,7 +4,7 @@ import { useEffect } from 'react';
 import Title from '../components/Title';
 
 
-async function RequestToken(_authorizeCode) {
+function RequestToken(_authorizeCode) {
     const rest_api_key = '25079c20b5c42c7b91a72308ef5c4ad5';
     const redirect_uri = 'https://idiotquant.com/login'; // NOTE: [KAKAO] 인가코드 redirect uri 와 액세스 토큰 redirect uri 가 같아야 합니다.
 
@@ -21,14 +21,14 @@ async function RequestToken(_authorizeCode) {
     const requestOptions = {
         method: 'POST',
         headers: {
-            'Content-Type': 'application/x-www-form-urlencoded',
+            'Content-Type': 'application/json',
         },
         body: new URLSearchParams(postData).toString(),
     };
 
     console.log(`requestOptions`, requestOptions);
 
-    await fetch("https://kauth.kakao.com/oauth/token", requestOptions)
+    fetch("https://kauth.kakao.com/oauth/token", requestOptions)
         .then(res => {
             console.log('post res:', res);
             if (res.ok) {
@@ -67,15 +67,19 @@ export default function Login(props) {
     console.log(`2 authorizeCode`, authorizeCode);
     console.log(`2 loginStatus`, loginStatus);
 
-    const Login = () => {
+    async function Login() {
         console.log(`Login`);
         const rest_api_key = '25079c20b5c42c7b91a72308ef5c4ad5';
         const redirect_uri = 'https://idiotquant.com/login'; // NOTE: [KAKAO] 인가코드 redirect uri 와 액세스 토큰 redirect uri 가 같아야 합니다.
         // const redirect_uri = 'https://idiotquant.com';
-        const authorizeEndpoint = `https://kauth.kakao.com/oauth/authorize?response_type=code&client_id=${rest_api_key}&redirect_uri=${encodeURIComponent(redirect_uri)}`;
+        const authorizeEndpoint = encodeURIComponent(`https://kauth.kakao.com/oauth/authorize?response_type=code&client_id=${rest_api_key}&redirect_uri=${redirect_uri}`);
 
         console.log(`authorizeEndpoint`, authorizeEndpoint);
-        router.push(authorizeEndpoint);
+        // router.push(authorizeEndpoint);
+
+        await fetch(authorizeEndpoint).then(res => {
+            console.log('fetch get', res);
+        });
     }
 
     const Logout = () => {
