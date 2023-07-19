@@ -32,7 +32,8 @@ export async function getStaticProps() {
     const marketInfo20230111 = await fetchAndSet('stock/market-info?date=20230111');
     // const marketInfoLatest = await fetchAndSet('stock/market-info?date=20230426');
     // const marketInfoLatest = await fetchAndSet('stock/market-info?date=20230524');
-    const marketInfoLatest = await fetchAndSet('stock/market-info?date=20230622');
+    // const marketInfoLatest = await fetchAndSet('stock/market-info?date=20230622');
+    const marketInfoLatest = await fetchAndSet('stock/market-info?date=20230719');
     const financialInfoAll = await fetchAndSet('stock/financial-info');
 
     // const serverData = await getServerData();
