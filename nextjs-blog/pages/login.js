@@ -94,7 +94,7 @@ export default function Login(props) {
                             onClick={Logout}
                         >
                             <img src="/images/kakaotalk_sharing_btn_small.png" alt="metamask" className="h-6 w-6" />
-                            Continue with Kakao
+                            Logout
                         </Button>
                 }
             </>
