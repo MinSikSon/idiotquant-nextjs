@@ -5,32 +5,19 @@ import Title from '../components/Title';
 
 
 function RequestToken(_authorizeCode) {
-    const rest_api_key = '25079c20b5c42c7b91a72308ef5c4ad5';
-    const redirect_uri = 'https://idiotquant.com/login'; // NOTE: [KAKAO] 인가코드 redirect uri 와 액세스 토큰 redirect uri 가 같아야 합니다.
+    const KAKAO_REST_API_KEY = '25079c20b5c42c7b91a72308ef5c4ad5';
+    const KAKAO_REDIRECT_URI = 'https://idiotquant.com/login'; // NOTE: [KAKAO] 인가코드 redirect uri 와 액세스 토큰 redirect uri 가 같아야 합니다.
 
-    const postData = {
-        'grant_type': encodeURIComponent('authorization_code'),
-        'client_id': encodeURIComponent(rest_api_key),
-        'redirect_uri': encodeURIComponent(redirect_uri),
-        'code': encodeURIComponent(_authorizeCode),
-    };
+    const tokenUrl = `https:://kauth.kakao.com/oauth/token?grant_type=authorization_code&client_id=${KAKAO_REST_API_KEY}&redirect_uri=${KAKAO_REDIRECT_URI}&code=${_authorizeCode}`;
+    console.log(`tokenUrl`, tokenUrl);
 
-    console.log(`postData`, postData);
-    console.log(`new URLSearchParams(postData)`, new URLSearchParams(postData));
-    console.log(`new URLSearchParams(postData).toString()`, new URLSearchParams(postData).toString());
-    const requestOptions = {
+    fetch(tokenUrl, {
         method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-        },
-        body: new URLSearchParams(postData).toString(),
-    };
-
-    console.log(`requestOptions`, requestOptions);
-
-    fetch("https://kauth.kakao.com/oauth/token", requestOptions)
+        headers: { 'Content-Type': 'application/json' }
+    })
         .then(res => {
             console.log('post res:', res);
+            console.log('post res:', res.json())
             if (res.ok) {
                 return res.text();
             } else {
@@ -67,26 +54,21 @@ export default function Login(props) {
     console.log(`2 authorizeCode`, authorizeCode);
     console.log(`2 loginStatus`, loginStatus);
 
-    async function Login() {
+    function Login() {
         console.log(`Login`);
-        const rest_api_key = '25079c20b5c42c7b91a72308ef5c4ad5';
+        const KAKAO_REST_API_KEY = '25079c20b5c42c7b91a72308ef5c4ad5';
         const redirect_uri = 'https://idiotquant.com/login'; // NOTE: [KAKAO] 인가코드 redirect uri 와 액세스 토큰 redirect uri 가 같아야 합니다.
-        // const redirect_uri = 'https://idiotquant.com';
-        const authorizeEndpoint = encodeURIComponent(`https://kauth.kakao.com/oauth/authorize?response_type=code&client_id=${rest_api_key}&redirect_uri=${redirect_uri}`);
+        const authorizeEndpoint = `https://kauth.kakao.com/oauth/authorize?response_type=code&client_id=${KAKAO_REST_API_KEY}&redirect_uri=${redirect_uri}`;
 
         console.log(`authorizeEndpoint`, authorizeEndpoint);
-        // router.push(authorizeEndpoint);
-
-        await fetch(authorizeEndpoint).then(res => {
-            console.log('fetch get', res);
-        });
+        router.push(authorizeEndpoint);
     }
 
     const Logout = () => {
         console.log(`Logout`);
-        const rest_api_key = '25079c20b5c42c7b91a72308ef5c4ad5';
+        const KAKAO_REST_API_KEY = '25079c20b5c42c7b91a72308ef5c4ad5';
         const redirect_uri = 'https://idiotquant.com/user/logout';
-        const authorizeEndpoint = `https://kauth.kakao.com/oauth/authorize?client_id=${rest_api_key}&logout_redirect_uri=${encodeURIComponent(redirect_uri)}`;
+        const authorizeEndpoint = `https://kauth.kakao.com/oauth/authorize?client_id=${KAKAO_REST_API_KEY}&logout_redirect_uri=${encodeURIComponent(redirect_uri)}`;
         router.push(authorizeEndpoint);
     }
 
