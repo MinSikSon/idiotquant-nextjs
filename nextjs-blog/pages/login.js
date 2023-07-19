@@ -1,7 +1,8 @@
 import Link from 'next/link';
 import { useRouter } from 'next/router';
-import { useEffect, useState } from 'react';
+import React from "react";
 import Title from '../components/Title';
+import { Button } from '@material-tailwind/react';
 const env = {
     KAKAO_REST_API_KEY: '25079c20b5c42c7b91a72308ef5c4ad5',
     KAKAO_REDIRECT_URI: 'https://idiotquant.com/login'
@@ -23,9 +24,9 @@ async function RequestToken(_authorizeCode) {
 }
 
 export default function Login(props) {
-    const { authorizeCode, setAuthorizeCode } = useState('');
     const router = useRouter();
-    useEffect(() => {
+    const [authorizeCode, setAuthorizeCode] = React.useState('');
+    React.useEffect(() => {
         async function callback() {
             if (!router.isReady) return;
             console.log(`1 router.isReady`, router.isReady);
@@ -60,8 +61,8 @@ export default function Login(props) {
 
     const Logout = () => {
         console.log(`Logout`);
-        const redirect_uri = 'https://idiotquant.com/user/logout';
-        const authorizeEndpoint = `https://kauth.kakao.com/oauth/authorize?client_id=${env.KAKAO_REST_API_KEY}&logout_redirect_uri=${encodeURIComponent(redirect_uri)}`;
+        const authorizeEndpoint = `https://kauth.kakao.com/oauth/authorize?client_id=${env.KAKAO_REST_API_KEY}&logout_redirect_uri=${env.KAKAO_REDIRECT_URI}`;
+
         router.push(authorizeEndpoint);
     }
 
@@ -71,9 +72,32 @@ export default function Login(props) {
     const KakaoIcon = () => {
         console.log(`!!authorizeCode`, !!authorizeCode);
         return (
-            <button onClick={!!authorizeCode ? Logout : Login}>
-                <img className='w-fit' src='/images/kakao_login_large.png'></img>
-            </button>
+            <>
+                {
+                    (!!!authorizeCode) ?
+                        <Button
+                            size="lg"
+                            // variant="outlined"
+                            color="yellow"
+                            className="flex items-center gap-3"
+                            onClick={Login}
+                        >
+                            <img src="/images/kakaotalk_sharing_btn_small.png" alt="metamask" className="h-6 w-6" />
+                            Continue with Kakao
+                        </Button>
+                        :
+                        <Button
+                            size="lg"
+                            // variant="outlined"
+                            color="yellow"
+                            className="flex items-center gap-3"
+                            onClick={Logout}
+                        >
+                            <img src="/images/kakaotalk_sharing_btn_small.png" alt="metamask" className="h-6 w-6" />
+                            Continue with Kakao
+                        </Button>
+                }
+            </>
         );
     }
 
@@ -83,11 +107,9 @@ export default function Login(props) {
             <div className='grid grid-cols-8 grid-rows-3 place-content-center h-32'>
                 <div className='col-span-8' />
                 <div className='col-span-8' />
-                <div className='col-span-3' />
-                <div className='col-span-2 flex justify-center items-center'>
+                <div className='col-span-8 flex justify-center items-center'>
                     <KakaoIcon />
                 </div>
-                <div className='col-span-3' />
             </div>
         </>
     );
