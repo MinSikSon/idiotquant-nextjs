@@ -4,37 +4,26 @@ import { useEffect } from 'react';
 import Title from '../components/Title';
 
 
-function RequestToken(_authorizeCode) {
+async function RequestToken(_authorizeCode) {
     const KAKAO_REST_API_KEY = '25079c20b5c42c7b91a72308ef5c4ad5';
     const KAKAO_REDIRECT_URI = 'https://idiotquant.com/login'; // NOTE: [KAKAO] 인가코드 redirect uri 와 액세스 토큰 redirect uri 가 같아야 합니다.
 
     const tokenUrl = `https:://kauth.kakao.com/oauth/token?grant_type=authorization_code&client_id=${KAKAO_REST_API_KEY}&redirect_uri=${KAKAO_REDIRECT_URI}&code=${_authorizeCode}`;
     console.log(`tokenUrl`, tokenUrl);
 
-    fetch(tokenUrl, {
+    const response = await fetch(tokenUrl, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' }
-    })
-        .then(res => {
-            console.log('post res:', res);
-            console.log('post res:', res.json())
-            if (res.ok) {
-                return res.text();
-            } else {
-                throw new Error('Request failed');
-            }
-        })
-        .then(body => {
-            console.log('post body:', body);
-            console.log(`body.access_token`, body.access_token);
-            console.log(`JSON.parse(body).access_token`, JSON.parse(body).access_token);
-            // setAccessToken(JSON.parse(body).access_token);
-        })
+    }).then(res => res.json());
+
+    console.log('response', response);
+
+    return response;
 }
 
 export default function Login(props) {
     const router = useRouter();
-    useEffect(() => {
+    useEffect(async () => {
         if (!router.isReady) return;
         console.log(`1 router.isReady`, router.isReady);
         console.log(`1 router`, router);
@@ -43,7 +32,8 @@ export default function Login(props) {
         console.log(`[Login] _authorizeCode:`, _authorizeCode);
 
         if (!!_authorizeCode) {
-            RequestToken(_authorizeCode);
+            const responseToken = await RequestToken(_authorizeCode);
+            console.log('responseToken', responseToken);
         }
     }, [router.isReady]);
 
