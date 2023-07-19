@@ -14,7 +14,11 @@ async function RequestToken(_authorizeCode) {
     const response = await fetch(tokenUrl, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' }
-    }).then(res => res.json());
+    }).then(res => {
+        console.log(`res`, res);
+
+        return res;
+    }).then((res) => res.json());
 
     console.log('response', response);
 
@@ -47,8 +51,8 @@ export default function Login(props) {
     function Login() {
         console.log(`Login`);
         const KAKAO_REST_API_KEY = '25079c20b5c42c7b91a72308ef5c4ad5';
-        const redirect_uri = 'https://idiotquant.com/login'; // NOTE: [KAKAO] 인가코드 redirect uri 와 액세스 토큰 redirect uri 가 같아야 합니다.
-        const authorizeEndpoint = `https://kauth.kakao.com/oauth/authorize?response_type=code&client_id=${KAKAO_REST_API_KEY}&redirect_uri=${redirect_uri}`;
+        const KAKAO_REDIRECT_URI = 'https://idiotquant.com/login'; // NOTE: [KAKAO] 인가코드 redirect uri 와 액세스 토큰 redirect uri 가 같아야 합니다.
+        const authorizeEndpoint = `https://kauth.kakao.com/oauth/authorize?response_type=code&client_id=${KAKAO_REST_API_KEY}&redirect_uri=${KAKAO_REDIRECT_URI}`;
 
         console.log(`authorizeEndpoint`, authorizeEndpoint);
         router.push(authorizeEndpoint);
