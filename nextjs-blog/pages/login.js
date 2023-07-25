@@ -134,7 +134,7 @@ export default function Login(props) {
                                         {nickname} 님 반갑습니다.
                                     </Typography>
                                     <Typography>
-                                        login 하려면 아래 버튼을 눌려주세요.
+                                        logout 하려면 아래 버튼을 눌려주세요.
                                     </Typography>
                                 </CardBody>
                                 <Button
