@@ -37,6 +37,24 @@ export default function Login(props) {
         callback();
     }, [router.isReady]);
 
+    React.useEffect(() => {
+        async function RequestNickname(_token) {
+            if (!!!_token) return;
+
+            const requestUrl = `https://kapi.kakao.com/v2/user/me`;
+
+            const response = await fetch(requestUrl, {
+                method: 'GET',
+                headers: { 'Authorization': `Bearer ${_token}` },
+            }).then((res) => res.json());
+            console.log('RequestNickname', response);
+
+            return response;
+        }
+
+        RequestNickname(authorizeCode);
+    }, [authorizeCode]);
+
 
     function Login() {
         console.log(`Login`);
