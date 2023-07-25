@@ -6,16 +6,39 @@ const env = {
     KAKAO_REST_API_KEY: '25079c20b5c42c7b91a72308ef5c4ad5',
     KAKAO_REDIRECT_URI: 'https://idiotquant.com/login'
 }
+
+async function RequestNickname(_token) {
+    if (!!!_token) return;
+
+    const requestUrl = `https://kapi.kakao.com/v2/user/me`;
+
+    const response = await fetch(requestUrl, {
+        method: 'GET',
+        headers: { 'Authorization': `Bearer ${_token}` },
+    }).then((res) => res.json());
+
+    console.log('_token', _token);
+    console.log('RequestNickname', response);
+
+    return response;
+}
+
 async function RequestToken(_authorizeCode) {
     const tokenUrl = `https://kauth.kakao.com/oauth/token?grant_type=authorization_code&client_id=${env.KAKAO_REST_API_KEY}&redirect_uri=${encodeURIComponent(env.KAKAO_REDIRECT_URI)}&code=${_authorizeCode}`;
 
-    const response = await fetch(tokenUrl, {
+    const responseToken = await fetch(tokenUrl, {
         method: 'POST',
         headers: { 'Content-Type': 'application/x-www-form-urlencoded;charset=utf-8' },
     }).then((res) => res.json());
 
-    return response;
+    console.log('responseToken', responseToken);
+
+    const responseNickname = await RequestNickname(responseToken.access_token);
+    console.log(`responseNickname`, responseNickname);
+
+    return responseToken;
 }
+
 
 export default function Login(props) {
     const router = useRouter();
@@ -25,10 +48,9 @@ export default function Login(props) {
             if (!router.isReady) return;
 
             const _authorizeCode = new URL(window.location.href).searchParams.get('code');
-
             if (!!!_authorizeCode) return;
+
             const responseToken = await RequestToken(_authorizeCode);
-            console.log('responseToken', responseToken);
 
             if ('' == authorizeCode) {
                 setAuthorizeCode(_authorizeCode);
@@ -36,27 +58,6 @@ export default function Login(props) {
         }
         callback();
     }, [router.isReady]);
-
-    React.useEffect(() => {
-        async function RequestNickname(_token) {
-            if (!!!_token) return;
-
-            const requestUrl = `https://kapi.kakao.com/v2/user/me`;
-
-            const response = await fetch(requestUrl, {
-                method: 'GET',
-                headers: { 'Authorization': `Bearer ${_token}` },
-            }).then((res) => res.json());
-            console.log('authorizeCode', authorizeCode);
-            console.log('_token', _token);
-            console.log('RequestNickname', response);
-
-            return response;
-        }
-
-        RequestNickname(authorizeCode);
-    }, [authorizeCode]);
-
 
     function Login() {
         console.log(`Login`);
