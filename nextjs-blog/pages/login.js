@@ -1,7 +1,7 @@
 import { useRouter } from 'next/router';
 import React from "react";
 import Title from '../components/Title';
-import { Button } from '@material-tailwind/react';
+import { Button, Card, CardBody, Typography } from '@material-tailwind/react';
 const env = {
     KAKAO_REST_API_KEY: '25079c20b5c42c7b91a72308ef5c4ad5',
     KAKAO_REDIRECT_URI: 'https://idiotquant.com/login'
@@ -33,15 +33,13 @@ async function RequestToken(_authorizeCode) {
 
     console.log('responseToken', responseToken);
 
-    const responseNickname = await RequestNickname(responseToken.access_token);
-    console.log(`responseNickname`, responseNickname);
-
     return responseToken;
 }
 
 
 export default function Login(props) {
     const router = useRouter();
+    const [nickname, setNickname] = React.useState('');
     const [authorizeCode, setAuthorizeCode] = React.useState('');
     React.useEffect(() => {
         async function callback() {
@@ -51,6 +49,13 @@ export default function Login(props) {
             if (!!!_authorizeCode) return;
 
             const responseToken = await RequestToken(_authorizeCode);
+
+            const responseNickname = await RequestNickname(responseToken.access_token);
+            console.log(`responseNickname`, responseNickname);
+
+            if ('' == nickname) {
+                setNickname(responseNickname.properties.nickname);
+            }
 
             if ('' == authorizeCode) {
                 setAuthorizeCode(_authorizeCode);
@@ -87,27 +92,64 @@ export default function Login(props) {
             <>
                 {
                     (!!!authorizeCode) ?
-                        <Button
-                            size="lg"
-                            // variant="outlined"
-                            color="yellow"
-                            className="flex items-center gap-3"
-                            onClick={Login}
-                        >
-                            <img src="/images/kakaotalk_sharing_btn_small.png" alt="metamask" className="h-6 w-6" />
-                            Continue with Kakao
-                        </Button>
+                        <>
+                            <Card className="mt-6 w-96">
+                                {/* <CardHeader color="blue-gray" className="relative h-20">
+                                    <img
+                                        src="https://images.unsplash.com/photo-1540553016722-983e48a2cd10?ixlib=rb-1.2.1&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=800&q=80"
+                                        alt="card-image"
+                                    />
+                                </CardHeader> */}
+                                <CardBody>
+                                    <Typography variant="h5" color="blue-gray" className="mb-2">
+                                        반갑습니다.
+                                    </Typography>
+                                    <Typography>
+                                        login 하려면 아래 버튼을 눌려주세요.
+                                    </Typography>
+                                </CardBody>
+                                <Button
+                                    size="lg"
+                                    // variant="outlined"
+                                    color="yellow"
+                                    className="flex items-center gap-3"
+                                    onClick={Login}
+                                >
+                                    <img src="/images/kakaotalk_sharing_btn_small.png" alt="metamask" className="h-6 w-6" />
+                                    Continue with Kakao
+                                </Button>
+                            </Card>
+                        </>
                         :
-                        <Button
-                            size="lg"
-                            variant="outlined"
-                            color="blue-gray"
-                            className="flex items-center gap-3"
-                            onClick={Logout}
-                        >
-                            <img src="/images/kakaotalk_sharing_btn_small.png" alt="metamask" className="h-6 w-6" />
-                            Logout
-                        </Button>
+                        <>
+                            <Card className="mt-6 w-96">
+                                {/* <CardHeader color="blue-gray" className="relative h-20">
+                                    <img
+                                        src="https://images.unsplash.com/photo-1540553016722-983e48a2cd10?ixlib=rb-1.2.1&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=800&q=80"
+                                        alt="card-image"
+                                    />
+                                </CardHeader> */}
+                                <CardBody>
+                                    <Typography variant="h5" color="blue-gray" className="mb-2">
+                                        {nickname} 님 반갑습니다.
+                                    </Typography>
+                                    <Typography>
+                                        login 하려면 아래 버튼을 눌려주세요.
+                                    </Typography>
+                                </CardBody>
+                                <Button
+                                    size="lg"
+                                    variant="outlined"
+                                    color="blue-gray"
+                                    className="flex items-center gap-3"
+                                    onClick={Logout}
+                                >
+                                    <img src="/images/kakaotalk_sharing_btn_small.png" alt="metamask" className="h-6 w-6" />
+                                    Logout
+                                </Button>
+                            </Card>
+                        </>
+
                 }
             </>
         );
