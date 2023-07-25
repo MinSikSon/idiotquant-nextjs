@@ -47,6 +47,8 @@ export default function Login(props) {
                 method: 'GET',
                 headers: { 'Authorization': `Bearer ${_token}` },
             }).then((res) => res.json());
+            console.log('authorizeCode', authorizeCode);
+            console.log('_token', _token);
             console.log('RequestNickname', response);
 
             return response;
