@@ -1,5 +1,4 @@
 
-// import CustomChart from "./CustomChart";
 import { Avatar, Card, Chip, IconButton, List, ListItem, ListItemPrefix, ListItemSuffix, Typography } from "@material-tailwind/react";
 import CustomCard from "./CustomCard";
 import CustomChart from "./CustomChart";

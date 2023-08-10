@@ -9,9 +9,8 @@ import Head from "next/head.js";
 import Script from "next/script.js";
 import { Util } from "../components/Util.js";
 import { Select, Option } from "@material-tailwind/react";
-import axios from 'axios';
+
 import Oauth from "../components/Oauth.js";
-import { useRouter } from 'next/router';
 import Title from "../components/Title.js";
 
 // export async function getServerSideProps(context) {
@@ -36,7 +35,8 @@ export async function getStaticProps() {
     const marketInfo20230426 = await fetchAndSet('stock/market-info?date=20230426');
     const marketInfo20230524 = await fetchAndSet('stock/market-info?date=20230524');
     const marketInfo20230622 = await fetchAndSet('stock/market-info?date=20230622');
-    const marketInfoLatest = await fetchAndSet('stock/market-info?date=20230719');
+    const marketInfo20230719 = await fetchAndSet('stock/market-info?date=20230719');
+    const marketInfoLatest = await fetchAndSet('stock/market-info?date=20230810');
     const financialInfoAll = await fetchAndSet('stock/financial-info');
 
     let marketInfoList = []
@@ -52,6 +52,7 @@ export async function getStaticProps() {
     marketInfoList.push(marketInfo20230426);
     marketInfoList.push(marketInfo20230524);
     marketInfoList.push(marketInfo20230622);
+    marketInfoList.push(marketInfo20230719);
     marketInfoList.push(marketInfoLatest);
 
     return {
