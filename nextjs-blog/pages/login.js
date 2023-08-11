@@ -160,11 +160,11 @@ export default function Login(props) {
             const url = `https://idiotquant-backend.tofu89223.workers.dev`;
             const port = `443`;
             fetch(`${url}:${port}/${subUrl}`, {
-                method: 'POST',
-                // headers: { 'Content-Type': 'application/x-www-form-urlencoded;charset=utf-8' },
+                method: "POST",
                 headers: {
-                    "Content-Type": "application/json",
+                    'Content-Type': 'application/x-www-form-urlencoded;charset=utf-8',
                     "Access-Control-Allow-Origin": "*",
+
                 },
                 body: JSON.stringify({ token: 'test' }),
             }).then(res => {
