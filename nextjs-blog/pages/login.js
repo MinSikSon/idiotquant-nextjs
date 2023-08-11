@@ -164,6 +164,7 @@ export default function Login(props) {
                 // headers: { 'Content-Type': 'application/x-www-form-urlencoded;charset=utf-8' },
                 headers: {
                     "Content-Type": "application/json",
+                    "Access-Control-Allow-Origin": "*",
                 },
                 body: JSON.stringify({ token: 'test' }),
             }).then(res => {
