@@ -161,12 +161,7 @@ export default function Login(props) {
             const port = `443`;
             fetch(`${url}:${port}/${subUrl}`, {
                 method: "POST",
-                headers: {
-                    // 'Content-Type': 'application/x-www-form-urlencoded;charset=utf-8',
-                    'Content-Type': 'text/plain',
-                    "Access-Control-Allow-Origin": "*",
-
-                },
+                ContentType: 'text/plain',
                 body: JSON.stringify({ token: 'test' }),
             }).then(res => {
                 console.log(`res`, res);
