@@ -155,7 +155,7 @@ export default function Login(props) {
         );
     }
 
-    async function Test() {
+    function Test() {
         async function fetchAndSet(subUrl) {
             const data = { token: 'test' };
 
@@ -180,10 +180,9 @@ export default function Login(props) {
 
         console.log('Test');
 
-        const res = await fetchAndSet('login');
-        console.log(`res`, res);
-
-        return res;
+        fetchAndSet('login').then(res => {
+            console.log(`res`, res);
+        })
     }
 
     return (
