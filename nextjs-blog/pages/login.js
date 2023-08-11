@@ -155,10 +155,39 @@ export default function Login(props) {
         );
     }
 
+    function Test() {
+        function fetchAndSet(subUrl) {
+            const url = `https://idiotquant-backend.tofu89223.workers.dev`;
+            const port = `443`;
+            fetch(`${url}:${port}/${subUrl}`, {
+                method: 'POST',
+                // headers: { 'Content-Type': 'application/x-www-form-urlencoded;charset=utf-8' },
+                headers: {
+                    "Content-Type": "application/json",
+                },
+                body: JSON.stringify({ token: 'test' }),
+            }).then(res => {
+                console.log(`res`, res);
+            })
+        }
+
+        console.log('Test');
+
+        fetchAndSet('login');
+
+        // fetch(tokenUrl, {
+        //     method: 'POST',
+        //     headers: { 'Content-Type': 'application/x-www-form-urlencoded;charset=utf-8' },
+        // }).then((res) => res.json());
+    }
+
     return (
         <>
             <Title />
-            <div className='grid grid-cols-8 grid-rows-3 place-content-center h-32'>
+            <div className='grid grid-cols-8 grid-rows-4 place-content-center h-32'>
+                <div className='col-span-8'>
+                    <Button onClick={Test}>test</Button>
+                </div>
                 <div className='col-span-8' />
                 <div className='col-span-8' />
                 <div className='col-span-8 flex justify-center items-center'>
