@@ -37,6 +37,52 @@ async function RequestToken(_authorizeCode) {
     return responseToken;
 }
 
+function registerUser(id, token, nickname) {
+    function fetchAndSet(subUrl) {
+        console.log(`fetchAndSet`);
+
+        const data = {
+            'id': id,
+            'nickname': nickname,
+        };
+        // const options = {
+        //     method: "POST", // *GET, POST, PUT, DELETE 등
+        //     // mode: "cors", // no-cors, *cors, same-origin
+        //     // cache: "no-cache", // *default, no-cache, reload, force-cache, only-if-cached
+        //     // credentials: "omit", // include, *same-origin, omit
+        //     headers: {
+        //         "content-type": "application/json",
+        //         // "Access-Control-Allow-Origin": "*",
+        //     },
+        //     // redirect: "follow", // manual, *follow, error
+        //     // referrerPolicy: "no-referrer", // no-referrer, *no-referrer-when-downgrade, origin, origin-when-cross-origin, same-origin, strict-origin, strict-origin-when-cross-origin, unsafe-url
+        //     body: JSON.stringify(data), // body의 데이터 유형은 반드시 "Content-Type" 헤더와 일치해야 함
+        // };
+        const options = { method: "POST", body: JSON.stringify(data) };
+        const url = `https://idiotquant-backend.tofu89223.workers.dev`;
+        // const port = `443`;
+        const port = `443`;
+        fetch(`${url}:${port}/${subUrl}`, options)
+            .then(res => {
+                console.log(`res`, res);
+
+                if (res.ok) {
+                    return res.json();
+                }
+            })
+            .catch(error => {
+                console.log(`error`, error);
+            })
+        // .then(data => {
+        //     console.log(`data`, data);
+        // })
+        // .catch(error => {
+        //     console.log(`error`, error);
+        // })
+    };
+
+    fetchAndSet('login');
+}
 
 export default function Login(props) {
     const router = useRouter();
@@ -156,48 +202,10 @@ export default function Login(props) {
         );
     }
 
-    async function Test() {
-        async function fetchAndSet(subUrl) {
-            const data = { token: 'test' };
-            const options = {
-                method: "POST", // *GET, POST, PUT, DELETE 등
-                mode: "cors", // no-cors, *cors, same-origin
-                // cache: "no-cache", // *default, no-cache, reload, force-cache, only-if-cached
-                // credentials: "include", // include, *same-origin, omit
-                headers: {
-                    "Content-Type": "application/json",
-                    // 'Content-Type': 'application/x-www-form-urlencoded',
-                },
-                // redirect: "follow", // manual, *follow, error
-                // referrerPolicy: "origin-when-cross-origin", // no-referrer, *no-referrer-when-downgrade, origin, origin-when-cross-origin, same-origin, strict-origin, strict-origin-when-cross-origin, unsafe-url
-                // body: JSON.stringify(data), // body의 데이터 유형은 반드시 "Content-Type" 헤더와 일치해야 함
-            };
-            const url = `https://idiotquant-backend.tofu89223.workers.dev`;
-            const port = `443`;
-            const res = await fetch(`${url}:${port}/${subUrl}`, options);
-
-            if (res.ok) {
-                const json = await res.json();
-                console.log(`res json`, json);
-
-                return json;
-            }
-            else {
-                console.log(`!res.ok`, res);
-            }
-
-        };
-
-        fetchAndSet('login');
-    }
-
     return (
         <>
             <Title />
             <div className='grid grid-cols-8 grid-rows-4 place-content-center h-32'>
-                <div className='col-span-8'>
-                    <Button onClick={Test}>test</Button>
-                </div>
                 <div className='col-span-8' />
                 <div className='col-span-8' />
                 <div className='col-span-8 flex justify-center items-center'>
