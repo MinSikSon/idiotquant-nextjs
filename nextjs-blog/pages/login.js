@@ -2,6 +2,7 @@ import { useRouter } from 'next/router';
 import React from "react";
 import Title from '../components/Title';
 import { Button, Card, CardBody, Typography } from '@material-tailwind/react';
+
 const env = {
     KAKAO_REST_API_KEY: '25079c20b5c42c7b91a72308ef5c4ad5',
     KAKAO_REDIRECT_URI: 'https://idiotquant.com/login'
@@ -155,34 +156,39 @@ export default function Login(props) {
         );
     }
 
-    function Test() {
+    async function Test() {
         async function fetchAndSet(subUrl) {
             const data = { token: 'test' };
-
-            const url = `https://idiotquant-backend.tofu89223.workers.dev`;
-            const port = `443`;
-            const response = await fetch(`${url}:${port}/${subUrl}`, {
+            const options = {
                 method: "POST", // *GET, POST, PUT, DELETE 등
                 mode: "cors", // no-cors, *cors, same-origin
-                cache: "no-cache", // *default, no-cache, reload, force-cache, only-if-cached
-                credentials: "same-origin", // include, *same-origin, omit
+                // cache: "no-cache", // *default, no-cache, reload, force-cache, only-if-cached
+                // credentials: "include", // include, *same-origin, omit
                 headers: {
                     "Content-Type": "application/json",
                     // 'Content-Type': 'application/x-www-form-urlencoded',
                 },
-                redirect: "follow", // manual, *follow, error
-                referrerPolicy: "origin-when-cross-origin", // no-referrer, *no-referrer-when-downgrade, origin, origin-when-cross-origin, same-origin, strict-origin, strict-origin-when-cross-origin, unsafe-url
-                body: JSON.stringify(data), // body의 데이터 유형은 반드시 "Content-Type" 헤더와 일치해야 함
-            });
+                // redirect: "follow", // manual, *follow, error
+                // referrerPolicy: "origin-when-cross-origin", // no-referrer, *no-referrer-when-downgrade, origin, origin-when-cross-origin, same-origin, strict-origin, strict-origin-when-cross-origin, unsafe-url
+                // body: JSON.stringify(data), // body의 데이터 유형은 반드시 "Content-Type" 헤더와 일치해야 함
+            };
+            const url = `https://idiotquant-backend.tofu89223.workers.dev`;
+            const port = `443`;
+            const res = await fetch(`${url}:${port}/${subUrl}`, options);
 
-            return response.json(); // JSON 응답을 네이티브 JavaScript 객체로 파싱
+            if (res.ok) {
+                const json = await res.json();
+                console.log(`res json`, json);
+
+                return json;
+            }
+            else {
+                console.log(`!res.ok`, res);
+            }
+
         };
 
-        console.log('Test');
-
-        fetchAndSet('login').then(res => {
-            console.log(`res`, res);
-        })
+        fetchAndSet('login');
     }
 
     return (
