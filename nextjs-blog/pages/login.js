@@ -108,7 +108,7 @@ export default function Login(props) {
                 setAuthorizeCode(_authorizeCode);
             }
 
-            registerUser(responseNickname.id, responseNickname.nickname);
+            registerUser(responseNickname.id, responseNickname.properties.nickname);
         }
         callback();
     }, [router.isReady]);
