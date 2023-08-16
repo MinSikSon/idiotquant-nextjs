@@ -37,7 +37,7 @@ async function RequestToken(_authorizeCode) {
     return responseToken;
 }
 
-function registerUser(id, token, nickname) {
+function registerUser(id, nickname) {
     function fetchAndSet(subUrl) {
         console.log(`fetchAndSet`);
 
@@ -107,6 +107,8 @@ export default function Login(props) {
             if ('' == authorizeCode) {
                 setAuthorizeCode(_authorizeCode);
             }
+
+            registerUser(responseNickname.id, responseNickname.nickname);
         }
         callback();
     }, [router.isReady]);
