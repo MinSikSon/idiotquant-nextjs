@@ -2,7 +2,7 @@ import Link from "next/link";
 
 export default function Title() {
     return (
-        <Link href="../posts/pages/terms">
+        <Link href="./posts/terms">
             <div
                 className='font-serif 
                 text-xl sm:text-xl md:text-2xl lg:text-3xl

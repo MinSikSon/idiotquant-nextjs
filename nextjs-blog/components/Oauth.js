@@ -2,15 +2,9 @@ import {
     ArrowRightOnRectangleIcon
 } from "@heroicons/react/24/outline";
 import Link from "next/link";
-import React from "react";
 
 export default function Oauth(props) {
     const loginStatus = (!!props.authorizeCode) ? 'Logout' : 'Login';
-
-    React.useEffect(() => {
-        console.log(`Oauth`);
-
-    }, []);
 
     const url = {
         pathname: '/login',
