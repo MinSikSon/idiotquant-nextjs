@@ -12,6 +12,7 @@ import { Select, Option } from "@material-tailwind/react";
 
 import Oauth from "../components/Oauth.js";
 import Title from "../components/Title.js";
+import { useRouter } from "next/router.js";
 
 // export async function getServerSideProps(context) {
 export async function getStaticProps() {
@@ -110,6 +111,8 @@ export default function QuantPost({
     marketInfoList,
     financialInfoAll,
 }) {
+    const router = useRouter();
+
     // state
     const [inputValue, setInputValue] = React.useState('');
     const [inputPlaceholder, setInputPlaceholder] = React.useState('');
@@ -338,6 +341,11 @@ export default function QuantPost({
 
         if (!!_authorizeCode) {
             RequestToken(_authorizeCode);
+        }
+
+        console.log(`router.query`, router.query);
+        if (!!router.query) {
+            console.log(`test`);
         }
     }, []);
 
