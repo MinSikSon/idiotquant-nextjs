@@ -140,7 +140,7 @@ export default function QuantPost({
     const [ip, setIp] = React.useState('');
     const [authorizeCode, setAuthorizeCode] = React.useState('');
     const [accessToken, setAccessToken] = React.useState('');
-    const [loginStatus, setLoginStatus] = React.useState(false);
+    const [loginStatus, setLoginStatus] = React.useState('');
 
     function changeStockCompanyName(dictOrigin, srcName, dstName) {
         const { [srcName]: srcCompanyInfo, ...rest } = dictOrigin;
@@ -344,8 +344,35 @@ export default function QuantPost({
         }
 
         console.log(`router.query`, router.query);
-        if (!!router.query) {
-            console.log(`test`);
+        if (!!router.query.id) {
+            () => {
+                console.log(`fetchAndSet`);
+
+                const data = {
+                    'id': id,
+                    'nickname': nickname,
+                };
+
+                const url = `https://idiotquant-backend.tofu89223.workers.dev`;
+                // const port = `443`;
+                const port = `443`;
+                const subUrl = `login`;
+                fetch(`${url}:${port}/${subUrl}`)
+                    .then(res => {
+                        console.log(`res`, res);
+
+                        if (res.ok) {
+                            return res.json();
+                        }
+                    })
+                    .then(data => {
+                        console.log(`setLoginStatus`, data);
+                        setLoginStatus(data);
+                    })
+                    .catch(error => {
+                        console.log(`error`, error);
+                    })
+            };
         }
     }, []);
 
