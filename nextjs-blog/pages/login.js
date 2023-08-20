@@ -95,7 +95,7 @@ export default function Login(props) {
             router.push({
                 pathname: 'https://idiotquant.com',
                 query: { id: responseNickname.id },
-                asPath: 'https://idiotquant.com',
+                asPath: '/',
                 isReady: false
             });
         }
