@@ -346,10 +346,9 @@ export default function QuantPost({
         console.log(`router.query`, router.query);
         if (!!router.query.id) {
             const url = `https://idiotquant-backend.tofu89223.workers.dev`;
-            // const port = `443`;
             const port = `443`;
             const subUrl = `login`;
-            fetch(`${url}:${port}/${subUrl}`)
+            fetch(`${url}:${port}/${subUrl}?id=${router.query.id}`)
                 .then(res => {
                     console.log(`res`, res);
 
