@@ -2,6 +2,8 @@ import React from "react";
 import Table from "../components/Table.js"
 import Calculator from "../components/Calculator.js"
 import Search from "../components/Search.js"
+import { useRouter } from 'next/router';
+
 import CustomCard from "../components/CustomCard.js"
 import { strategyNCAV } from "../components/Strategy.js";
 import Link from "next/link.js";
@@ -12,6 +14,7 @@ import { Select, Option } from "@material-tailwind/react";
 
 import Oauth from "../components/Oauth.js";
 import Title from "../components/Title.js";
+
 
 // export async function getServerSideProps(context) {
 export async function getStaticProps() {
@@ -110,6 +113,8 @@ export default function QuantPost({
     marketInfoList,
     financialInfoAll,
 }) {
+    const router = useRouter();
+
     // state
     const [inputValue, setInputValue] = React.useState('');
     const [inputPlaceholder, setInputPlaceholder] = React.useState('');
@@ -338,6 +343,12 @@ export default function QuantPost({
 
         if (!!_authorizeCode) {
             RequestToken(_authorizeCode);
+        }
+
+
+        console.log(`router.query.id:`, router.query.id);
+        if (!!router.query.id) {
+
         }
     }, []);
 

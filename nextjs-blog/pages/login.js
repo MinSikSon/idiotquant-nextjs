@@ -3,11 +3,6 @@ import React from "react";
 import Title from '../components/Title';
 import { Button, Card, CardBody, Typography } from '@material-tailwind/react';
 
-const env = {
-    KAKAO_REST_API_KEY: '25079c20b5c42c7b91a72308ef5c4ad5',
-    KAKAO_REDIRECT_URI: 'https://idiotquant.com/login'
-}
-
 async function RequestNickname(_token) {
     if (!!!_token) return;
 
@@ -25,7 +20,12 @@ async function RequestNickname(_token) {
 }
 
 async function RequestToken(_authorizeCode) {
-    const tokenUrl = `https://kauth.kakao.com/oauth/token?grant_type=authorization_code&client_id=${env.KAKAO_REST_API_KEY}&redirect_uri=${encodeURIComponent(env.KAKAO_REDIRECT_URI)}&code=${_authorizeCode}`;
+    const env = {
+        KAKAO_REST_API_KEY: '25079c20b5c42c7b91a72308ef5c4ad5',
+        REDIRECT_URI: 'https://idiotquant.com/login'
+    }
+
+    const tokenUrl = `https://kauth.kakao.com/oauth/token?grant_type=authorization_code&client_id=${env.KAKAO_REST_API_KEY}&redirect_uri=${encodeURIComponent(env.REDIRECT_URI)}&code=${_authorizeCode}`;
 
     const responseToken = await fetch(tokenUrl, {
         method: 'POST',
@@ -45,19 +45,7 @@ function registerUser(id, nickname) {
             'id': id,
             'nickname': nickname,
         };
-        // const options = {
-        //     method: "POST", // *GET, POST, PUT, DELETE 등
-        //     // mode: "cors", // no-cors, *cors, same-origin
-        //     // cache: "no-cache", // *default, no-cache, reload, force-cache, only-if-cached
-        //     // credentials: "omit", // include, *same-origin, omit
-        //     headers: {
-        //         "content-type": "application/json",
-        //         // "Access-Control-Allow-Origin": "*",
-        //     },
-        //     // redirect: "follow", // manual, *follow, error
-        //     // referrerPolicy: "no-referrer", // no-referrer, *no-referrer-when-downgrade, origin, origin-when-cross-origin, same-origin, strict-origin, strict-origin-when-cross-origin, unsafe-url
-        //     body: JSON.stringify(data), // body의 데이터 유형은 반드시 "Content-Type" 헤더와 일치해야 함
-        // };
+
         const options = { method: "POST", body: JSON.stringify(data) };
         const url = `https://idiotquant-backend.tofu89223.workers.dev`;
         // const port = `443`;
@@ -109,21 +97,22 @@ export default function Login(props) {
             }
 
             registerUser(responseNickname.id, responseNickname.properties.nickname);
+
+            router.push({ pathname: `https://idiotquant.com`, query: { id: responseNickname.id } });
         }
         callback();
     }, [router.isReady]);
 
-    function Login() {
-        console.log(`Login`);
-        const authorizeEndpoint = `https://kauth.kakao.com/oauth/authorize?response_type=code&client_id=${env.KAKAO_REST_API_KEY}&redirect_uri=${env.KAKAO_REDIRECT_URI}`;
+    function doLogin() {
+        console.log(`doLogin`);
+        const authorizeEndpoint = `https://kauth.kakao.com/oauth/authorize?response_type=code&client_id=${env.KAKAO_REST_API_KEY}&redirect_uri=${env.REDIRECT_URI}`;
 
         router.push(authorizeEndpoint);
     }
 
-
-    const Logout = () => {
-        console.log(`Logout`);
-        const authorizeEndpoint = `https://kauth.kakao.com/oauth/logout?client_id=${env.KAKAO_REST_API_KEY}&logout_redirect_uri=${env.KAKAO_REDIRECT_URI}`;
+    const doLogout = () => {
+        console.log(`doLogout`);
+        const authorizeEndpoint = `https://kauth.kakao.com/oauth/logout?client_id=${env.KAKAO_REST_API_KEY}&logout_redirect_uri=${env.REDIRECT_URI}`;
 
         fetch(authorizeEndpoint, {
             method: 'GET',
@@ -162,7 +151,7 @@ export default function Login(props) {
                                     // variant="outlined"
                                     color="yellow"
                                     className="flex items-center gap-3"
-                                    onClick={Login}
+                                    onClick={doLogin}
                                 >
                                     <img src="/images/kakaotalk_sharing_btn_small.png" alt="metamask" className="h-6 w-6" />
                                     Continue with Kakao
@@ -191,7 +180,7 @@ export default function Login(props) {
                                     variant="outlined"
                                     color="blue-gray"
                                     className="flex items-center gap-3"
-                                    onClick={Logout}
+                                    onClick={doLogout}
                                 >
                                     <img src="/images/kakaotalk_sharing_btn_small.png" alt="metamask" className="h-6 w-6" />
                                     Logout
