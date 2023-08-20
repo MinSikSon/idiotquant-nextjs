@@ -335,14 +335,6 @@ export default function QuantPost({
     }
 
     React.useEffect(() => {
-        // const _authorizeCode = new URL(window.location.href).searchParams.get('code');
-
-        // console.log(`[Login] _authorizeCode:`, _authorizeCode);
-
-        // if (!!_authorizeCode) {
-        //     RequestToken(_authorizeCode);
-        // }
-
         console.log(`router.query`, router.query);
         if (!!router.query.id) {
             const url = `https://idiotquant-backend.tofu89223.workers.dev`;
@@ -350,14 +342,11 @@ export default function QuantPost({
             const subUrl = `login`;
             fetch(`${url}:${port}/${subUrl}?id=${router.query.id}`)
                 .then(res => {
-                    console.log(`res`, res);
-
                     if (res.ok) {
                         return res.json();
                     }
                 })
                 .then(data => {
-                    console.log(`setLoginStatus`, data);
                     setLoginStatus(data);
                 })
                 .catch(error => {
