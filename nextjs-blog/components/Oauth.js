@@ -5,7 +5,7 @@ import Link from "next/link";
 
 export default function Oauth(props) {
     // const loginStatus = (!!props.authorizeCode) ? 'Logout' : 'Login';
-    const loginStatus = (!!props.loginStatus) ? 'Logout' : 'Login';
+    const loginStatus = (!!props.loginStatus) ? `Logout ${props.loginStatus}` : 'Login';
 
     const url = {
         pathname: '/login',
