@@ -65,47 +65,47 @@ export async function getStaticProps() {
     };
 }
 
-async function RequestToken(_authorizeCode) {
-    const rest_api_key = '25079c20b5c42c7b91a72308ef5c4ad5';
-    const redirect_uri = 'https://idiotquant.com';
+// async function RequestToken(_authorizeCode) {
+//     const rest_api_key = '25079c20b5c42c7b91a72308ef5c4ad5';
+//     const redirect_uri = 'https://idiotquant.com';
 
-    const postData = {
-        grant_type: 'authorization_code',
-        client_id: rest_api_key,
-        redirect_uri: encodeURIComponent(redirect_uri),
-        code: _authorizeCode,
-    };
+//     const postData = {
+//         grant_type: 'authorization_code',
+//         client_id: rest_api_key,
+//         redirect_uri: encodeURIComponent(redirect_uri),
+//         code: _authorizeCode,
+//     };
 
-    console.log(`postData`, postData);
-    // console.log(`new URLSearchParams(postData)`, new URLSearchParams(postData));
-    console.log(`new URLSearchParams(postData).toString()`, new URLSearchParams(postData).toString());
-    const requestOptions = {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/x-www-form-urlencoded',
-        },
-        // body: `grant_type=authorization_code&client_id=${rest_api_key}&redirect_uri=${redirect_uri}&code=${_authorizeCode}`,
-        body: new URLSearchParams(postData).toString(),
-    };
+//     console.log(`postData`, postData);
+//     // console.log(`new URLSearchParams(postData)`, new URLSearchParams(postData));
+//     console.log(`new URLSearchParams(postData).toString()`, new URLSearchParams(postData).toString());
+//     const requestOptions = {
+//         method: 'POST',
+//         headers: {
+//             'Content-Type': 'application/x-www-form-urlencoded',
+//         },
+//         // body: `grant_type=authorization_code&client_id=${rest_api_key}&redirect_uri=${redirect_uri}&code=${_authorizeCode}`,
+//         body: new URLSearchParams(postData).toString(),
+//     };
 
-    console.log(`requestOptions`, requestOptions);
+//     console.log(`requestOptions`, requestOptions);
 
-    await fetch("https://kauth.kakao.com/oauth/token", requestOptions)
-        .then(res => {
-            console.log('post res:', res);
-            if (res.ok) {
-                return res.text();
-            } else {
-                throw new Error('Request failed');
-            }
-        })
-        .then(body => {
-            console.log('post body:', body);
-            console.log(`body.access_token`, body.access_token);
-            console.log(`JSON.parse(body).access_token`, JSON.parse(body).access_token);
-            // setAccessToken(JSON.parse(body).access_token);
-        })
-}
+//     await fetch("https://kauth.kakao.com/oauth/token", requestOptions)
+//         .then(res => {
+//             console.log('post res:', res);
+//             if (res.ok) {
+//                 return res.text();
+//             } else {
+//                 throw new Error('Request failed');
+//             }
+//         })
+//         .then(body => {
+//             console.log('post body:', body);
+//             console.log(`body.access_token`, body.access_token);
+//             console.log(`JSON.parse(body).access_token`, JSON.parse(body).access_token);
+//             // setAccessToken(JSON.parse(body).access_token);
+//         })
+// }
 
 export default function QuantPost({
     marketInfoList,
@@ -335,44 +335,35 @@ export default function QuantPost({
     }
 
     React.useEffect(() => {
-        const _authorizeCode = new URL(window.location.href).searchParams.get('code');
+        // const _authorizeCode = new URL(window.location.href).searchParams.get('code');
 
-        console.log(`[Login] _authorizeCode:`, _authorizeCode);
+        // console.log(`[Login] _authorizeCode:`, _authorizeCode);
 
-        if (!!_authorizeCode) {
-            RequestToken(_authorizeCode);
-        }
+        // if (!!_authorizeCode) {
+        //     RequestToken(_authorizeCode);
+        // }
 
         console.log(`router.query`, router.query);
         if (!!router.query.id) {
-            () => {
-                console.log(`fetchAndSet`);
+            const url = `https://idiotquant-backend.tofu89223.workers.dev`;
+            // const port = `443`;
+            const port = `443`;
+            const subUrl = `login`;
+            fetch(`${url}:${port}/${subUrl}`)
+                .then(res => {
+                    console.log(`res`, res);
 
-                const data = {
-                    'id': id,
-                    'nickname': nickname,
-                };
-
-                const url = `https://idiotquant-backend.tofu89223.workers.dev`;
-                // const port = `443`;
-                const port = `443`;
-                const subUrl = `login`;
-                fetch(`${url}:${port}/${subUrl}`)
-                    .then(res => {
-                        console.log(`res`, res);
-
-                        if (res.ok) {
-                            return res.json();
-                        }
-                    })
-                    .then(data => {
-                        console.log(`setLoginStatus`, data);
-                        setLoginStatus(data);
-                    })
-                    .catch(error => {
-                        console.log(`error`, error);
-                    })
-            };
+                    if (res.ok) {
+                        return res.json();
+                    }
+                })
+                .then(data => {
+                    console.log(`setLoginStatus`, data);
+                    setLoginStatus(data);
+                })
+                .catch(error => {
+                    console.log(`error`, error);
+                });
         }
     }, []);
 
@@ -453,6 +444,7 @@ export default function QuantPost({
                     accessToken={accessToken}
                     scrollEffect={scrollEffect}
                     openSearchResult={openSearchResult}
+                    loginStatus={loginStatus}
                 />
                 <Link href="./calculator">
                     <Calculator

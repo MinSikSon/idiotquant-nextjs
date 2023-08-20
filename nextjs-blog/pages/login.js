@@ -92,7 +92,12 @@ export default function Login(props) {
 
             registerUser(responseNickname.id, responseNickname.properties.nickname);
 
-            router.push({ pathname: 'https://idiotquant.com', query: { id: responseNickname.id } });
+            router.push({
+                pathname: 'https://idiotquant.com',
+                query: { id: responseNickname.id },
+                asPath: 'https://idiotquant.com',
+                isReady: false
+            });
         }
         callback();
     }, [router.isReady]);
