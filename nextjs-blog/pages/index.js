@@ -276,7 +276,7 @@ export default function QuantPost({
             return Math.floor(Math.random() * (max - min + 1)) + min;
         }
 
-        if ((!!!authorizeCode) && (stockCompanyChangeCount > getRandomInt(3, 5))) {
+        if ((!!!loginStatus) && (stockCompanyChangeCount > getRandomInt(3, 5))) {
             alert('종목관리를 하려면 로그인 하세요.');
             setStockCompanyChangeCount(0);
 
