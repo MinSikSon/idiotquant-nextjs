@@ -79,6 +79,9 @@ export default function Login(props) {
 
             const responseToken = await RequestToken(_authorizeCode);
 
+            localStorage.setItem('token', responseToken);
+            console.log(`localStorage.getItem('token')`, localStorage.getItem('token'));
+
             const responseNickname = await RequestNickname(responseToken.access_token);
             console.log(`responseNickname`, responseNickname);
 
@@ -102,14 +105,15 @@ export default function Login(props) {
 
     function Login() {
         console.log(`Login`);
+
         const authorizeEndpoint = `https://kauth.kakao.com/oauth/authorize?response_type=code&client_id=${env.KAKAO_REST_API_KEY}&redirect_uri=${env.KAKAO_REDIRECT_URI}`;
 
         router.push(authorizeEndpoint);
     }
 
-
     const Logout = () => {
         console.log(`Logout`);
+
         const authorizeEndpoint = `https://kauth.kakao.com/oauth/logout?client_id=${env.KAKAO_REST_API_KEY}&logout_redirect_uri=${env.KAKAO_REDIRECT_URI}`;
 
         fetch(authorizeEndpoint, {

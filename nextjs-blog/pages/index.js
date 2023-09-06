@@ -295,13 +295,11 @@ export default function QuantPost({
     }
 
     React.useEffect(() => {
-        console.log(`router`, router);
-        console.log(`router.query`, router.query);
-        if (!!router.query.id) {
+        function RequestLogin(id) {
             const url = `https://idiotquant-backend.tofu89223.workers.dev`;
             const port = `443`;
             const subUrl = `login`;
-            fetch(`${url}:${port}/${subUrl}?id=${router.query.id}`)
+            fetch(`${url}:${port}/${subUrl}?id=${id}`)
                 .then(res => {
                     if (res.ok) {
                         return res.json();
@@ -317,6 +315,25 @@ export default function QuantPost({
                 .catch(error => {
                     console.log(`error`, error);
                 });
+        }
+
+        console.log(`router`, router);
+        console.log(`router.query`, router.query);
+
+        const kakaoId = localStorage.getItem('kakaoId');
+        if (!!router.query.id) {
+            RequestLogin(router.query.id);
+        }
+        else if (!!kakaoId) {
+            // token 확인
+            const token = localStorage.getItem('token');
+
+            console.log(`token`, token);
+
+            // kakao server 에 token 유효한지 확인?
+            if (true) {
+                RequestLogin(kakaoId);
+            }
         }
     }, []);
 
