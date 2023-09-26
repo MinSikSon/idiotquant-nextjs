@@ -1,3 +1,6 @@
+# 서비스 확인
+- https://idiotquant.com
+
 # NEXT.JS
 
 - https://nextjs.org/learn/foundations/about-nextjs/what-is-nextjs
