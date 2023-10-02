@@ -170,6 +170,8 @@ export default function TermsPost() {
         <div>
             <Head>
                 <title>주식 용어 소개와 좋은 글 모음</title>
+                <link rel="icon" href="/images/icons8-algorithm-flatart-icons-lineal-color-32.png" />
+                <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=0" />
                 <meta name="description" content="주식 시장에서 자주 사용되는 용어를 소개하고, 투자에 도움이 되는 좋은 글들을 모아놓은 웹 페이지입니다. 주식 시장에 대한 이해를 높이고, 투자에 필요한 정보를 제공합니다." />
             </Head>
             <Title />
