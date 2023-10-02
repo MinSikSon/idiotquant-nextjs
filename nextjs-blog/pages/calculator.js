@@ -90,6 +90,7 @@ export default function Calculator() {
                 <title>Investment Inflation Calculator</title>
                 <link rel="icon" href="/images/icons8-calculator-color-32.png" />
                 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=0" />
+                <meta name="description" content="인플레이션을 고려하여 미래 수익을 계산하는 계산기를 제공하는 웹 페이지입니다. 현재 가치를 기반으로 인플레이션률을 적용하여 미래의 금융적 상황을 예측하고 투자 결정에 도움을 드립니다." />
             </Head>
             <Script
                 async
