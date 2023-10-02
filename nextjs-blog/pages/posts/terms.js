@@ -168,6 +168,10 @@ export default function TermsPost() {
     };
     return (
         <div>
+            <Head>
+                <title>주식 용어 소개와 좋은 글 모음</title>
+                <meta name="description" content="주식 시장에서 자주 사용되는 용어를 소개하고, 투자에 도움이 되는 좋은 글들을 모아놓은 웹 페이지입니다. 주식 시장에 대한 이해를 높이고, 투자에 필요한 정보를 제공합니다." />
+            </Head>
             <Title />
             <Article title={`원칙 Principles`} subTitle={`🌵`} detail={<RayDalio />} img1={"https://image.yes24.com/goods/115381618/XL"} img2={"https://image.yes24.com/goods/61186169/XL"} img3={"https://image.aladin.co.kr/product/30493/69/letslook/K122830485_t2.jpg"} />
             <Article title={`퀀트 용어`} subTitle={`🌵`} detail={<Quant />} img1={`https://www.syesd.co.kr/homepage/syStoryImageFolder/1614817264026_fb8ff05cd5914f31981ff8aab95f8219_01.png`} img2={`https://i.ytimg.com/vi/7S5ZdmnXQyU/maxresdefault.jpg`} img3={"https://i.pinimg.com/736x/19/1a/ba/191aba7a077145d3a3bb6c5455c914af.jpg"} />
