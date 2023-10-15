@@ -53,13 +53,14 @@ const ListNode = (props) => {
             </ListItemPrefix>
             <div>
                 <div className='flex'>
-                    <Typography variant="h5">{props.tickerName}</Typography>
+                    <Typography variant={`${props.tickerName.length <= 5 ? 'h5' : 'h6'}`}>{props.tickerName}</Typography>
                     <div className='m-1'></div>
                     <Chip className="rounded-full p-1" value={props.ratio - 100 + "%"} color={(props.ratio - 100) >= 0 ? 'red' : 'blue'} variant={(props.ratio - 100) >= 0 ? 'outlined' : 'gradient'} />
+                    <Chip value={"목표가:" + props.fairPrice + " 원"} variant="ghost" size="sm" color="red" className="rounded-full" />
                 </div>
                 <div className='flex'>
+                    <Chip value={"이전가:" + props.prevClose + " 원"} variant="ghost" size="sm" color="orange" className="rounded-full" />
                     <Chip value={"현재가:" + props.close + " 원"} variant="ghost" size="sm" color="blue" className="rounded-full" />
-                    <Chip value={"목표가:" + props.fairPrice + " 원"} variant="ghost" size="sm" color="red" className="rounded-full" />
                 </div>
             </div>
             <ListItemSuffix>
@@ -92,7 +93,7 @@ export default function Table(props) {
     let index = 0;
 
     for (let key in props.dictFilteredStockCompanyInfo) {
-        const { corp_code, active, 종목명, 유동자산, 부채총계, 상장주식수, 종가, 당기순이익, PER, bsnsDate } = props.dictFilteredStockCompanyInfo[key];
+        const { corp_code, active, 종목명, 유동자산, 부채총계, 상장주식수, 종가, 당기순이익, PER, bsnsDate, prevMarketInfo } = props.dictFilteredStockCompanyInfo[key];
 
         const fairPrice/*적정가*/ = Number((Number(유동자산) - Number(부채총계)) / Number(상장주식수)).toFixed(0);
         const ratio = Number(fairPrice / Number(종가));
@@ -115,24 +116,37 @@ export default function Table(props) {
             liabilities: Util.UnitConversion(부채총계),
             netIncome: Util.UnitConversion(당기순이익),
             PER: Number(PER),
+            close: Number(종가).toLocaleString(),
             bsnsFullDate: bsnsDate,
 
             listedStocks: 상장주식수,
             marketInfoList: props.marketInfoList,
+
+            // prev
+            prevBsnsFullDate: prevMarketInfo.bsnsDate,
+            prevClose: Number(prevMarketInfo.종가).toLocaleString()
+
         });
 
         ++index;
     }
 
+    // console.log(`props.dictFilteredStockCompanyInfo`, props.dictFilteredStockCompanyInfo);
+    // console.log(`Object.keys(props.dictFilteredStockCompanyInfo)`, Object.keys(props.dictFilteredStockCompanyInfo));
+    // console.log(`Object.keys(props.dictFilteredStockCompanyInfo)[0]`, Object.keys(props.dictFilteredStockCompanyInfo)[0]);
+    // console.log(`props.dictFilteredStockCompanyInfo[Object.keys(props.dictFilteredStockCompanyInfo)[0]]`, props.dictFilteredStockCompanyInfo[Object.keys(props.dictFilteredStockCompanyInfo)[0]]);
+
     const numOfStockItems = Object.keys(props.dictFilteredStockCompanyInfo).length;
     const 기대수익 = (numOfStockItems == 0) ? '0%' : `${Number((cumulativeRatio / numOfStockItems - 1) * 100).toFixed(1)}%`;
+    const prevBsnsDate = (numOfStockItems == 0) ? '-' : props.dictFilteredStockCompanyInfo[Object.keys(props.dictFilteredStockCompanyInfo)[0]].prevMarketInfo.bsnsDate;
     const bsnsDate = (numOfStockItems == 0) ? '-' : props.dictFilteredStockCompanyInfo[Object.keys(props.dictFilteredStockCompanyInfo)[0]].bsnsDate;
     const thstrm_dt = (numOfStockItems == 0) ? '-' : props.dictFilteredStockCompanyInfo[Object.keys(props.dictFilteredStockCompanyInfo)[0]].thstrm_dt;
 
     const contents = [
         { title: `종목수`, description: `${numOfStockItems} 개` },
-        { title: `기대수익률`, description: 기대수익, textColor: `text-black`, backGround: `bg-yellow-600` },
-        { title: `주가 기준일자`, description: `${bsnsDate}` },
+        { title: `기대수익률`, description: 기대수익, textColor: `text-black`, backGround: `bg-red-200` },
+        { title: `이전 기준일자`, description: `${prevBsnsDate}`, textColor: `text-black`, backGround: `bg-amber-200` },
+        { title: `주가 기준일자`, description: `${bsnsDate}`, textColor: `text-black`, backGround: `bg-blue-200` },
         { title: `재무정보 기준일자`, description: `${thstrm_dt}` },
         // { title: `현재가`, description: `x,xxx 원`, textColor: `text-black`, backGround: `bg-blue-500` },
         // { title: `목표가`, description: `xx,xxx 원`, textColor: `text-black`, backGround: `bg-red-500` },

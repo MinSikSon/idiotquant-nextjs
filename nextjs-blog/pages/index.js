@@ -40,6 +40,7 @@ export async function getStaticProps() {
     const marketInfo20230810 = await fetchAndSet('stock/market-info?date=20230810');
     const marketInfo20230825 = await fetchAndSet('stock/market-info?date=20230825');
     const marketInfo20230922 = await fetchAndSet('stock/market-info?date=20230922');
+    const marketInfoPrev = await fetchAndSet('stock/market-info?date=20230922');
     const marketInfoLatest = await fetchAndSet('stock/market-info?date=20231013');
 
     const financialInfoAll = await fetchAndSet('stock/financial-info');
@@ -61,6 +62,7 @@ export async function getStaticProps() {
     marketInfoList.push(marketInfo20230810);
     marketInfoList.push(marketInfo20230825);
     marketInfoList.push(marketInfo20230922);
+    marketInfoList.push(marketInfoPrev);
     marketInfoList.push(marketInfoLatest);
 
     return {
@@ -187,8 +189,10 @@ export default function QuantPost({
     }
 
     React.useEffect(() => {
-        const matkerInfoLatestIndex = marketInfoList.length - 1;
-        const marketInfoLatest = marketInfoList[matkerInfoLatestIndex];
+        const marketInfoPrevIndex = marketInfoList.length - 2;
+        const marketInfoLatestIndex = marketInfoList.length - 1;
+        const marketInfoPrev = marketInfoList[marketInfoPrevIndex];
+        const marketInfoLatest = marketInfoList[marketInfoLatestIndex];
 
         if (!!financialInfoAll && !!marketInfoLatest) {
             function addEasterEgg(dictOrigin) {
@@ -215,6 +219,10 @@ export default function QuantPost({
                 (stockCompany) => {
                     dictFinancialMarketInfo[stockCompany['종목명']] = {
                         active: false,
+                        prevMarketInfo: {
+                            bsnsDate: marketInfoPrev['date'],
+                            ...marketInfoPrev['data'][stockCompany['종목명']]
+                        },
                         bsnsDate: marketInfoLatest['date'],
                         ...financialInfoAll[stockCompany['종목명']],
                         ...marketInfoLatest['data'][stockCompany['종목명']]
@@ -248,8 +256,8 @@ export default function QuantPost({
     }, [stockCompanyChangeCount]);
 
     function searchStockCompanyInfo(stockCompanyName) {
-        const matkerInfoLatestIndex = marketInfoList.length - 1;
-        const marketInfoLatest = marketInfoList[matkerInfoLatestIndex];
+        const marketInfoLatestIndex = marketInfoList.length - 1;
+        const marketInfoLatest = marketInfoList[marketInfoLatestIndex];
 
         setSearchingList('');
 
