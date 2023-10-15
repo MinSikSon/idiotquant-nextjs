@@ -1,5 +1,5 @@
 
-import { Avatar, Card, Chip, IconButton, List, ListItem, ListItemPrefix, ListItemSuffix, Typography } from "@material-tailwind/react";
+import { Card, Chip, IconButton, List, ListItem, ListItemPrefix, ListItemSuffix, Typography } from "@material-tailwind/react";
 import CustomCard from "./CustomCard";
 import CustomChart from "./CustomChart";
 import Loading from "./Loading";
@@ -69,13 +69,6 @@ const ListNode = (props) => {
                     fairPrice={props.fairPrice}
 
                     marketInfoList={props.marketInfoList}
-                    // marketInfo20181214={props.marketInfo20181214}
-                    // marketInfo20191213={props.marketInfo20191213}
-                    // marketInfo20201214={props.marketInfo20201214}
-                    // marketInfo20211214={props.marketInfo20211214}
-                    // marketInfo20221214={props.marketInfo20221214}
-                    // marketInfo20230111={props.marketInfo20230111}
-                    // marketInfoLatest={props.marketInfoLatest}
 
                     responsive={false}
                     height={60}
