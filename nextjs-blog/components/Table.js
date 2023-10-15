@@ -137,12 +137,12 @@ export default function Table(props) {
     const thstrm_dt = (numOfStockItems == 0) ? '-' : props.dictFilteredStockCompanyInfo[Object.keys(props.dictFilteredStockCompanyInfo)[0]].thstrm_dt;
 
     const contents = [
-        { title: `종목수`, description: numOfStockItems },
+        { title: `종목수`, description: `${numOfStockItems} 개` },
         { title: `기대수익률`, description: 기대수익, textColor: `text-black`, backGround: `bg-yellow-600` },
         { title: `주가 기준일자`, description: `${bsnsDate}` },
         { title: `재무정보 기준일자`, description: `${thstrm_dt}` },
-        { title: `현재가`, description: `x,xxx 원`, textColor: `text-black`, backGround: `bg-blue-500` },
-        { title: `목표가`, description: `xx,xxx 원`, textColor: `text-black`, backGround: `bg-red-500` },
+        // { title: `현재가`, description: `x,xxx 원`, textColor: `text-black`, backGround: `bg-blue-500` },
+        // { title: `목표가`, description: `xx,xxx 원`, textColor: `text-black`, backGround: `bg-red-500` },
     ];
 
     return (
@@ -150,9 +150,9 @@ export default function Table(props) {
             <div className='visible'>
                 <MarQueue contents={contents} />
             </div>
-            <div className={`z-10 fixed top-0 w-full ${(true === props.scrollEffect) ? 'transition translate-y-2 visible' : 'invisible'}`}>
+            {/* <div className={`z-10 fixed top-0 w-full ${(true === props.scrollEffect) ? 'transition translate-y-2 visible' : 'invisible'}`}>
                 <MarQueue contents={contents} />
-            </div>
+            </div> */}
             <Card className="w-full">
                 <List>
                     {(false == loadingDone) ?
