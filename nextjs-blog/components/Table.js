@@ -42,40 +42,45 @@ const MarQueue2 = (props) => {
         </div>
     );
 }
+
+
 const ListNode = (props) => {
+    const diffRatio = ((1 - (Number((props.close).replace(/,/g, '')) / Number((props.prevClose).replace(/,/g, '')))) * 100).toFixed(1);
     return (
-        <ListItem className="p-1 pb-2">
-            <ListItemPrefix>
-                <IconButton variant="text" color="blue-gray" onClick={() => props.deleteStockCompanyInList(props.tickerName)}>
-                    <div>{props.index + 1}</div>
-                    <TrashIcon className="h-5 w-5" />
-                </IconButton>
+        <ListItem className="p-1 border-b-2">
+            <ListItemPrefix className="mr-2">
+                <Chip className="border-none" size="sm" variant="outlined" value={"목표가"} />
+                <Chip className="border-none" size="sm" variant="outlined" value={props.fairPrice + "원 (" + (props.ratio - 100) + "%)"}
+                    color={(props.ratio - 100) >= 100 ? 'red' : ((props.ratio - 100) >= 50 ? 'yellow' : 'blue')} />
+                {/* <IconButton className="w-3" variant="text" color="blue-gray" onClick={() => props.deleteStockCompanyInList(props.tickerName)}>
+                            <div>{props.index + 1}</div>
+                            <TrashIcon className="h-4 w-4" />
+                        </IconButton> */}
+
+                {/* <CustomChart
+                            tickerName={props.tickerName}
+                            bsnsFullDate={props.bsnsFullDate}
+                            fairPrice={props.fairPrice}
+
+                            marketInfoList={props.marketInfoList}
+
+                            responsive={false}
+                            height={40}
+                            width={90}
+                            display={false}
+                        /> */}
+                {/* <Chip value={"이전:" + props.prevClose + "원"} variant="ghost" size="sm" /> */}
+
+                {/* <Chip className="rounded-full p-1" size="sm" value={props.ratio - 100 + "%"} color={(props.ratio - 100) >= 0 ? 'red' : 'blue'} variant={(props.ratio - 100) >= 0 ? 'outlined' : 'gradient'} /> */}
             </ListItemPrefix>
             <div>
-                <div className='flex'>
-                    <Typography variant={`${props.tickerName.length <= 5 ? 'h5' : 'h6'}`}>{props.tickerName}</Typography>
-                    <div className='m-1'></div>
-                    <Chip className="rounded-full p-1" value={props.ratio - 100 + "%"} color={(props.ratio - 100) >= 0 ? 'red' : 'blue'} variant={(props.ratio - 100) >= 0 ? 'outlined' : 'gradient'} />
-                    <Chip value={"목표가:" + props.fairPrice + " 원"} variant="ghost" size="sm" color="red" className="rounded-full" />
-                </div>
-                <div className='flex'>
-                    <Chip value={"이전가:" + props.prevClose + " 원"} variant="ghost" size="sm" color="orange" className="rounded-full" />
-                    <Chip value={"현재가:" + props.close + " 원"} variant="ghost" size="sm" color="blue" className="rounded-full" />
-                </div>
+                {/* <Typography className="ml-3" variant={`${props.tickerName.length <= 5 ? 'h5' : 'h6'}`}>{props.tickerName}</Typography> */}
+                <Typography className="ml-3" variant="h5">{props.tickerName}</Typography>
+
             </div>
             <ListItemSuffix>
-                <CustomChart
-                    tickerName={props.tickerName}
-                    bsnsFullDate={props.bsnsFullDate}
-                    fairPrice={props.fairPrice}
-
-                    marketInfoList={props.marketInfoList}
-
-                    responsive={false}
-                    height={60}
-                    width={90}
-                    display={false}
-                />
+                <Chip className="border-none text-lg p-0 text-right" variant="outlined" size="lg" value={diffRatio + "%"} color={diffRatio > 0 ? 'red' : 'blue'} />
+                <Chip className="border-none" variant="outlined" size="sm" value={props.close + "원"} />
             </ListItemSuffix>
         </ListItem >
     );
@@ -144,10 +149,10 @@ export default function Table(props) {
 
     const contents = [
         { title: `종목수`, description: `${numOfStockItems} 개` },
-        { title: `기대수익률`, description: 기대수익, textColor: `text-black`, backGround: `bg-red-200` },
-        { title: `이전 기준일자`, description: `${prevBsnsDate}`, textColor: `text-black`, backGround: `bg-amber-200` },
-        { title: `주가 기준일자`, description: `${bsnsDate}`, textColor: `text-black`, backGround: `bg-blue-200` },
-        { title: `재무정보 기준일자`, description: `${thstrm_dt}` },
+        { title: `목표수익률`, description: 기대수익, textColor: `text-black`, backGround: `` },
+        { title: `이전 주가`, description: `${prevBsnsDate}`, textColor: `text-black`, backGround: `bg-amber-200` },
+        { title: `주가`, description: `${bsnsDate}`, textColor: `text-black`, backGround: `bg-blue-200` },
+        { title: `재무정보`, description: `${thstrm_dt}` },
         // { title: `현재가`, description: `x,xxx 원`, textColor: `text-black`, backGround: `bg-blue-500` },
         // { title: `목표가`, description: `xx,xxx 원`, textColor: `text-black`, backGround: `bg-red-500` },
     ];
