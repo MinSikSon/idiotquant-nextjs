@@ -15,13 +15,6 @@ function GetCloseAfterValidCheck(marketInfo) {
 export default ({
     tickerName,
     marketInfoList,
-    // marketInfo20181214,
-    // marketInfo20191213,
-    // marketInfo20201214,
-    // marketInfo20211214,
-    // marketInfo20221214,
-    // marketInfo20230111,
-    // marketInfoLatest,
 
     bsnsFullDate,
     fairPrice,
@@ -36,38 +29,22 @@ export default ({
 
     const closeList = [];
     const dateList = [];
+    const fairPriceList = [];
+
+    const fairPrice_ = parseInt(fairPrice.replace(/,/g, ''));
 
     marketInfoList.forEach((obj) => {
         closeList.push(GetCloseAfterValidCheck(obj['data'][tickerName]));
         dateList.push(obj['date']);
+        fairPriceList.push(fairPrice_);
     });
 
-    // const close20181214 = GetCloseAfterValidCheck(marketInfo20181214['data'][tickerName]);
-    // const close20191213 = GetCloseAfterValidCheck(marketInfo20191213['data'][tickerName]);
-    // const close20201214 = GetCloseAfterValidCheck(marketInfo20201214['data'][tickerName]);
-    // const close20211214 = GetCloseAfterValidCheck(marketInfo20211214['data'][tickerName]);
-    // const close20221214 = GetCloseAfterValidCheck(marketInfo20221214['data'][tickerName]);
-    // const close20230111 = GetCloseAfterValidCheck(marketInfo20230111['data'][tickerName]);
-    // const latest = GetCloseAfterValidCheck(marketInfoLatest['data'][tickerName]);
-
-    const fairPrice_ = parseInt(fairPrice.replace(/,/g, ''));
-
     const data = {
-        // labels: ['20181214', '20191213', '20201214', '20211214', '20221214', '20230111', bsnsFullDate],
         labels: dateList,
         datasets:
             [
                 {
                     label: `주식가격`,
-                    // data: [
-                    //     close20181214,
-                    //     close20191213,
-                    //     close20201214,
-                    //     close20211214,
-                    //     close20221214,
-                    //     close20230111,
-                    //     latest
-                    // ],
                     data: closeList,
                     borderWidth: 3,
                     borderColor: 'rgba(9,125,243,1)', // blue
@@ -83,15 +60,7 @@ export default ({
                 },
                 {
                     label: `적정가격`,
-                    data: [
-                        fairPrice_,
-                        fairPrice_,
-                        fairPrice_,
-                        fairPrice_,
-                        fairPrice_,
-                        fairPrice_,
-                        fairPrice_,
-                    ],
+                    data: fairPriceList,
                     borderWidth: 4,
                     borderColor: 'rgba(239,68,68,1)', // red
                     // backgroundColor: 'rgba(239,68,68,0.3)', // red
