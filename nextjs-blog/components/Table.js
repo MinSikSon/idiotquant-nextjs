@@ -46,12 +46,15 @@ const MarQueue2 = (props) => {
 
 const ListNode = (props) => {
     const diffRatio = ((1 - (Number((props.close).replace(/,/g, '')) / Number((props.prevClose).replace(/,/g, '')))) * 100).toFixed(1);
+    const percentCompareFirst = (props.ratio - 100) >= 100 ? true : false;
+    const percentCompareSecond = (props.ratio - 100) >= 50 ? true : false;
+    const selectedColorByRatio = percentCompareFirst ? 'red' : (percentCompareSecond ? 'yellow' : 'blue');
     return (
-        <ListItem className="p-1 border-b-2">
-            <ListItemPrefix className="mr-2">
+        <ListItem className="p-0.5 border-b-2">
+            <ListItemPrefix className="mr-2 w-24">
                 <Chip className="border-none" size="sm" variant="outlined" value={"목표가"} />
-                <Chip className="border-none" size="sm" variant="outlined" value={props.fairPrice + "원 (" + (props.ratio - 100) + "%)"}
-                    color={(props.ratio - 100) >= 100 ? 'red' : ((props.ratio - 100) >= 50 ? 'yellow' : 'blue')} />
+                <Chip className="border-none" size="sm" variant="outlined" color={selectedColorByRatio} value={props.fairPrice + "원 (" + (props.ratio - 100) + "%)"} />
+
                 {/* <IconButton className="w-3" variant="text" color="blue-gray" onClick={() => props.deleteStockCompanyInList(props.tickerName)}>
                             <div>{props.index + 1}</div>
                             <TrashIcon className="h-4 w-4" />
