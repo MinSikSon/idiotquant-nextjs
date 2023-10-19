@@ -256,12 +256,17 @@ export default function QuantPost({
     }, [stockCompanyChangeCount]);
 
     function searchStockCompanyInfo(stockCompanyName) {
+        console.warn(`[call] searchStockCompanyInfo`);
+
+        const marketInfoPrevIndex = marketInfoList.length - 2;
+        const marketInfoPrev = marketInfoList[marketInfoPrevIndex];
         const marketInfoLatestIndex = marketInfoList.length - 1;
         const marketInfoLatest = marketInfoList[marketInfoLatestIndex];
 
         setSearchingList('');
 
         const stockCompanyInfo = dictFilteredStockCompanyInfo[stockCompanyName] || latestStockCompanyInfo[stockCompanyName];
+        console.warn(`stockCompanyInfo`, stockCompanyInfo);
         if (!stockCompanyInfo || Object.keys(stockCompanyInfo).length == 0) {
             setInputPlaceholder(`검색 결과가 없습니다.`);
             setSearchResult({});
@@ -297,13 +302,20 @@ export default function QuantPost({
             const curStockCompanyName = stockCompany['종목명'];
 
             newFilteredStockCompanyList.push(curStockCompanyName);
-            dictFinancialMarketInfo[curStockCompanyName] = { active: curStockCompanyName == stockCompanyName, bsnsDate: marketInfoLatest['date'], ...financialInfoAll[curStockCompanyName], ...marketInfoLatest['data'][curStockCompanyName] }
+            dictFinancialMarketInfo[curStockCompanyName] = {
+                active: curStockCompanyName == stockCompanyName,
+                bsnsDate: marketInfoLatest['date'],
+                ...financialInfoAll[curStockCompanyName],
+                ...marketInfoLatest['data'][curStockCompanyName],
+                prevMarketInfo: marketInfoPrev['data'][curStockCompanyName]
+            }
         });
 
         if (newFilteredStockCompanyList.length != Object.keys(dictFilteredStockCompanyInfo).length) {
             setStockCompanyChangeCount((prev) => (prev + 1));
         }
 
+        // console.log(`dictFinancialMarketInfo`, dictFinancialMarketInfo);
         setDictFilteredStockCompanyInfo(dictFinancialMarketInfo);
     }
 
@@ -462,6 +474,7 @@ export default function QuantPost({
                     <Table
                         searchStockCompanyInfo={searchStockCompanyInfo}
                         setOpenSearchResult={setOpenSearchResult}
+                        openSearchResult={openSearchResult}
 
                         dictFilteredStockCompanyInfo={dictFilteredStockCompanyInfo}
                         searchResult={searchResult}

@@ -4,7 +4,6 @@ import {
 import Link from "next/link";
 
 export default function Oauth(props) {
-    // const loginStatus = (!!props.loginStatus) ? `Logout ${props.loginStatus}` : 'Login';
     const loginStatus = (!!props.loginStatus) ? `${props.loginStatus} 🖐` : 'Login';
 
     const url = {
@@ -15,8 +14,8 @@ export default function Oauth(props) {
     }
     return (
         <>
-            <div className={`z-20 fixed w-32 h-8 rounded-xl top-2
-            ${(true === props.openSearchResult) ? `z-0` : `left-0 border-none duration-300`}
+            <div className={`z-20 fixed w-8 h-8 rounded-xl top-2
+            ${(true === props.openSearchResult) ? `z-20` : `left-0 border-none duration-300 z-0`}
             `}>
                 <form onSubmit={(e) => { e.preventDefault(); }}>
                     {props.openSearchResult ?
