@@ -8,8 +8,8 @@ import {
 } from "@heroicons/react/24/outline";
 
 const Input = (props) => {
-    console.log(`%c[call] Input`, `color : white; background : blue`);
-    console.log(`props.openSearchResult`, props.openSearchResult);
+    // console.log(`%c[call] Input`, `color : white; background : blue`);
+    // console.log(`props.openSearchResult`, props.openSearchResult);
 
     const refFocus = React.useRef();
 
@@ -19,7 +19,7 @@ const Input = (props) => {
         }
     });
 
-    console.log(`props.openSearchResult`, props.openSearchResult);
+    // console.log(`props.openSearchResult`, props.openSearchResult);
     return (
         <>
             <form

@@ -256,8 +256,6 @@ export default function QuantPost({
     }, [stockCompanyChangeCount]);
 
     function searchStockCompanyInfo(stockCompanyName) {
-        console.warn(`[call] searchStockCompanyInfo`);
-
         const marketInfoPrevIndex = marketInfoList.length - 2;
         const marketInfoPrev = marketInfoList[marketInfoPrevIndex];
         const marketInfoLatestIndex = marketInfoList.length - 1;
@@ -266,7 +264,6 @@ export default function QuantPost({
         setSearchingList('');
 
         const stockCompanyInfo = dictFilteredStockCompanyInfo[stockCompanyName] || latestStockCompanyInfo[stockCompanyName];
-        console.warn(`stockCompanyInfo`, stockCompanyInfo);
         if (!stockCompanyInfo || Object.keys(stockCompanyInfo).length == 0) {
             setInputPlaceholder(`검색 결과가 없습니다.`);
             setSearchResult({});
@@ -342,8 +339,8 @@ export default function QuantPost({
                 });
         }
 
-        console.log(`router`, router);
-        console.log(`router.query`, router.query);
+        // console.log(`router`, router);
+        // console.log(`router.query`, router.query);
 
         const kakaoId = localStorage.getItem('kakaoId');
         if (!!router.query.id) {
