@@ -6,10 +6,11 @@ import {
     MagnifyingGlassIcon,
     ArrowUturnLeftIcon
 } from "@heroicons/react/24/outline";
+import { ListItem, ListItemPrefix, ListItemSuffix } from "@material-tailwind/react";
+
 
 const Input = (props) => {
-    // console.log(`%c[call] Input`, `color : white; background : blue`);
-    // console.log(`props.openSearchResult`, props.openSearchResult);
+    console.log(`%c[call] Input`, `color : white; background : blue`);
 
     const refFocus = React.useRef();
 
@@ -19,21 +20,20 @@ const Input = (props) => {
         }
     });
 
-    // console.log(`props.openSearchResult`, props.openSearchResult);
     return (
-        <>
-            <form
-                onSubmit={(e) => {
-                    e.preventDefault();
-                    props.searchStockCompanyInfo(props.searchingList[0]?.['종목명'] || '');
-                    e.target[0].value = ''
-                    props.setOpenSearchResult(true);
-                }}
-                className={`p-1 flex items-center ${props.openSearchResult ? 'border-b border-slate-500 mb-3 pb-3' : 'p-0.5 '}`}
-            >
-                <div className="rounded-md w-full flex">
+        <form
+            onSubmit={(e) => {
+                e.preventDefault();
+                props.searchStockCompanyInfo(props.searchingList[0]?.['종목명'] || '');
+                e.target[0].value = ''
+                props.setOpenSearchResult(true);
+            }}
+            className={`p-1 flex items-center ${props.openSearchResult ? 'border-b border-slate-500 mb-3 pb-3' : 'p-0.5 '}`}
+        >
+            <ListItem className="p-0">
+                <ListItemPrefix>
                     {props.openSearchResult ?
-                        <>
+                        <div className='flex'>
                             <div
                                 className="py-2 pr-1"
                                 onClick={(e) => { e.preventDefault(); props.setOpenSearchResult(false); }}
@@ -54,26 +54,26 @@ const Input = (props) => {
                                     props.getSearchingList(e.target.value);
                                 }}
                             />
-                        </>
+                        </div>
                         :
                         <></>
                     }
-                </div>
-                <button className='rounded-3xl p-2 pr-3 inline-flex items-center justify-center text-black focus:outline-none'>
-                    <MagnifyingGlassIcon strokeWidth={2} className="h-7 w-7" />
-                </button>
-            </form>
-        </>
+                </ListItemPrefix>
+                <ListItemSuffix className=''>
+                    <button className='rounded-3xl pr-3 inline-flex items-center justify-center text-black focus:outline-none'>
+                        <MagnifyingGlassIcon strokeWidth={2} className="h-7 w-7" />
+                    </button>
+                </ListItemSuffix>
+            </ListItem>
+        </form>
     );
 }
 
 
 //////////////////////////////////////////////////////////////////////////////
 // Search
-export default function Search(props) {
-    let jsonSearchResult = { '종목명': '-', 'stock_code': '-', '종가': 0, '유동자산': 0, '부채총계': 0, '당기순이익': 0, '거래량': 0, '시가총액': 1, '상장주식수': 1/*divide by zero 방지용*/, ...props.searchResult };
-    let fairPrice/*적정가*/ = Number((Number(jsonSearchResult['유동자산']) - Number(jsonSearchResult['부채총계'])) / Number(jsonSearchResult['상장주식수'])).toFixed(0);
-    let ratio = Number(fairPrice / Number(jsonSearchResult['종가']));
+function _getSelectedSearchResult(searchResult) {
+    let jsonSearchResult = { '종목명': '-', 'stock_code': '-', '종가': 0, '유동자산': 0, '부채총계': 0, '당기순이익': 0, '거래량': 0, '시가총액': 1, '상장주식수': 1/*divide by zero 방지용*/, ...searchResult };
 
     let selectedSearchResult = {};
     selectedSearchResult['BPS'] = jsonSearchResult['BPS'];
@@ -83,24 +83,35 @@ export default function Search(props) {
     selectedSearchResult['PBR'] = jsonSearchResult['PBR'];
     selectedSearchResult['PER'] = jsonSearchResult['PER'];
 
-    jsonSearchResult['종가'] = selectedSearchResult['종가'] = Util.UnitConversion(jsonSearchResult['종가'], true);
-    jsonSearchResult['유동자산'] = selectedSearchResult['유동자산'] = Util.UnitConversion(jsonSearchResult['유동자산'], true);
-    jsonSearchResult['비유동자산'] = selectedSearchResult['비유동자산'] = Util.UnitConversion(jsonSearchResult['비유동자산'], true);
-    jsonSearchResult['유동부채'] = selectedSearchResult['유동부채'] = Util.UnitConversion(jsonSearchResult['유동부채'], true);
-    jsonSearchResult['비유동부채'] = selectedSearchResult['비유동부채'] = Util.UnitConversion(jsonSearchResult['비유동부채'], true);
-    jsonSearchResult['부채총계'] = selectedSearchResult['부채총계'] = Util.UnitConversion(jsonSearchResult['부채총계'], true);
-    jsonSearchResult['자본총계'] = selectedSearchResult['자본총계'] = Util.UnitConversion(jsonSearchResult['자본총계'], true);
-    jsonSearchResult['자산총계'] = selectedSearchResult['자산총계'] = Util.UnitConversion(jsonSearchResult['자산총계'], true);
-    jsonSearchResult['당기순이익'] = selectedSearchResult['당기순이익'] = Util.UnitConversion(jsonSearchResult['당기순이익'], true);
-    jsonSearchResult['시가총액'] = selectedSearchResult['시가총액'] = Util.UnitConversion(jsonSearchResult['시가총액'], true);
-    jsonSearchResult['매출액'] = selectedSearchResult['매출액'] = Util.UnitConversion(jsonSearchResult['매출액'], true);
-    jsonSearchResult['영업이익'] = selectedSearchResult['영업이익'] = Util.UnitConversion(jsonSearchResult['영업이익'], true);
-    jsonSearchResult['이익잉여금'] = selectedSearchResult['이익잉여금'] = Util.UnitConversion(jsonSearchResult['이익잉여금'], true);
-    jsonSearchResult['거래대금'] = selectedSearchResult['거래대금'] = Util.UnitConversion(jsonSearchResult['거래대금'], true);
-    jsonSearchResult['자본금'] = selectedSearchResult['자본금'] = Util.UnitConversion(jsonSearchResult['자본금'], true);
+    selectedSearchResult['종가'] = jsonSearchResult['종가'] = Util.UnitConversion(jsonSearchResult['종가'], true);
+    selectedSearchResult['유동자산'] = jsonSearchResult['유동자산'] = Util.UnitConversion(jsonSearchResult['유동자산'], true);
+    selectedSearchResult['비유동자산'] = jsonSearchResult['비유동자산'] = Util.UnitConversion(jsonSearchResult['비유동자산'], true);
+    selectedSearchResult['유동부채'] = jsonSearchResult['유동부채'] = Util.UnitConversion(jsonSearchResult['유동부채'], true);
+    selectedSearchResult['비유동부채'] = jsonSearchResult['비유동부채'] = Util.UnitConversion(jsonSearchResult['비유동부채'], true);
+    selectedSearchResult['부채총계'] = jsonSearchResult['부채총계'] = Util.UnitConversion(jsonSearchResult['부채총계'], true);
+    selectedSearchResult['자본총계'] = jsonSearchResult['자본총계'] = Util.UnitConversion(jsonSearchResult['자본총계'], true);
+    selectedSearchResult['자산총계'] = jsonSearchResult['자산총계'] = Util.UnitConversion(jsonSearchResult['자산총계'], true);
+    selectedSearchResult['당기순이익'] = jsonSearchResult['당기순이익'] = Util.UnitConversion(jsonSearchResult['당기순이익'], true);
+    selectedSearchResult['시가총액'] = jsonSearchResult['시가총액'] = Util.UnitConversion(jsonSearchResult['시가총액'], true);
+    selectedSearchResult['매출액'] = jsonSearchResult['매출액'] = Util.UnitConversion(jsonSearchResult['매출액'], true);
+    selectedSearchResult['영업이익'] = jsonSearchResult['영업이익'] = Util.UnitConversion(jsonSearchResult['영업이익'], true);
+    selectedSearchResult['이익잉여금'] = jsonSearchResult['이익잉여금'] = Util.UnitConversion(jsonSearchResult['이익잉여금'], true);
+    selectedSearchResult['거래대금'] = jsonSearchResult['거래대금'] = Util.UnitConversion(jsonSearchResult['거래대금'], true);
+    selectedSearchResult['자본금'] = jsonSearchResult['자본금'] = Util.UnitConversion(jsonSearchResult['자본금'], true);
+
+    return selectedSearchResult;
+}
+export default function Search(props) {
+    console.log(`%c[call] Search`, `color : white; background : blue`);
+
+    let jsonSearchResult = { '종목명': '-', 'stock_code': '-', '종가': 0, '유동자산': 0, '부채총계': 0, '당기순이익': 0, '거래량': 0, '시가총액': 1, '상장주식수': 1/*divide by zero 방지용*/, ...props.searchResult };
+    let fairPrice/*적정가*/ = Number((Number(jsonSearchResult['유동자산']) - Number(jsonSearchResult['부채총계'])) / Number(jsonSearchResult['상장주식수'])).toFixed(0);
+    let ratio = Number(fairPrice / Number(jsonSearchResult['종가']));
     if (isNaN(ratio)) {
         ratio = 0;
     }
+
+    let selectedSearchResult = _getSelectedSearchResult(jsonSearchResult);
 
     const CustomDiv = (props) => {
         return (
@@ -119,15 +130,15 @@ export default function Search(props) {
         );
     }
 
+    console.error(`props.openSearchResult`, props.openSearchResult);
     return (
         <div className={`
             ${props.scrollEffect && !props.openSearchResult ? 'translate translate-y-10' : ''}
-            z-10 fixed w-fit top-0 rounded-xl
-            md:px-20 lg:px-40 xl:px-64 2xl:px-80
+            z-10 rounded-xl
             ${(true === props.openSearchResult || true === !!props.searchingList) ?
                 `bg-gray-50 duration-300 w-screen h-screen`
                 :
-                `right-0 border-none duration-300`}
+                `border-none duration-300`}
         `}>
             <div className={`${(true === props.openSearchResult || true === !!props.searchingList) ? 'bg-white rounded-md drop-shadow-md' : ''}`}>
                 <Input {...props} />
@@ -157,13 +168,6 @@ export default function Search(props) {
                                     marketCapitalization={jsonSearchResult['시가총액']}
                                     listedStocks={jsonSearchResult['상장주식수']}
                                     marketInfoList={props.marketInfoList}
-                                    // marketInfo20181214={props.marketInfo20181214}
-                                    // marketInfo20191213={props.marketInfo20191213}
-                                    // marketInfo20201214={props.marketInfo20201214}
-                                    // marketInfo20211214={props.marketInfo20211214}
-                                    // marketInfo20221214={props.marketInfo20221214}
-                                    // marketInfo20230111={props.marketInfo20230111}
-                                    // marketInfoLatest={props.marketInfoLatest}
 
                                     responsive={true}
                                     display={true}

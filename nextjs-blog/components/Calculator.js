@@ -8,8 +8,7 @@ export default function Calculator(props) {
         <>
             <div className={`
             ${props.scrollEffect && !props.openSearchResult ? 'translate translate-y-10' : ''}
-            z-20 fixed w-fit rounded-xl
-            top-2
+            z-20 w-fit rounded-xl
             ${(true === props.openSearchResult) ?
                     `z-0`
                     :
@@ -20,13 +19,14 @@ export default function Calculator(props) {
                     className={`
                     p-1 flex items-center ${props.openSearchResult ? 'border-b border-slate-500 mb-3 pb-3' : 'p-0.5'}
                     `}>
-                    <button className='rounded-3xl inline-flex items-center justify-center text-white focus:outline-none'>
+                    <button className='rounded-3xl inline-flex items-center justify-center text-black text-xs focus:outline-none'>
                         {props.openSearchResult ?
                             <>
                             </>
                             :
                             <>
-                                <CalculatorIcon />
+                                <CalculatorIcon></CalculatorIcon>
+                                인플레이션<br />계산기
                             </>
                         }
                     </button>

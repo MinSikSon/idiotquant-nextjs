@@ -50,7 +50,7 @@ const ListNode = (props) => {
     const percentCompareSecond = (props.ratio - 100) >= 50 ? true : false;
     const selectedColorByRatio = percentCompareFirst ? 'red' : (percentCompareSecond ? 'yellow' : 'blue');
     return (
-        <ListItem className="p-0.5 border-b-2">
+        <ListItem className="p-0 border-b-2">
             <ListItemPrefix className="mr-2 w-24">
                 <Chip className="border-none" size="sm" variant="outlined" value={"목표가"} />
                 <Chip className="border-none" size="sm" variant="outlined" color={selectedColorByRatio} value={props.fairPrice + "원 (" + (props.ratio - 100) + "%)"} />
