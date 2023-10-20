@@ -9,10 +9,12 @@ import Head from "next/head.js";
 import Script from "next/script.js";
 import { Util } from "../components/Util.js";
 import { Select, Option } from "@material-tailwind/react";
+import { ListItem, ListItemPrefix, ListItemSuffix } from "@material-tailwind/react";
 
 import Oauth from "../components/Oauth.js";
 import Title from "../components/Title.js";
 import { useRouter } from "next/router.js";
+import NavbarDefault from "../components/Navigation.js";
 
 // export async function getServerSideProps(context) {
 export async function getStaticProps() {
@@ -78,6 +80,8 @@ export default function QuantPost({
     marketInfoList,
     financialInfoAll,
 }) {
+    console.log(`%c[call] QuantPost`, `color : white; background : blue`);
+
     const router = useRouter();
 
     // state
@@ -108,6 +112,9 @@ export default function QuantPost({
     const [authorizeCode, setAuthorizeCode] = React.useState('');
     const [accessToken, setAccessToken] = React.useState('');
     const [loginStatus, setLoginStatus] = React.useState('');
+
+    // const [openNav, setOpenNav] = React.useState(false);
+    const [openNav, setOpenNav] = React.useState(true);
 
     function changeStockCompanyName(dictOrigin, srcName, dstName) {
         const { [srcName]: srcCompanyInfo, ...rest } = dictOrigin;
@@ -412,6 +419,7 @@ export default function QuantPost({
         );
     };
 
+
     return (
         <div className='bg-white sm:bg-gray-50'>
             <Head>
@@ -429,8 +437,28 @@ export default function QuantPost({
                     console.log(`script loaded correctly, window.FB has been populated`)
                 }
             />
-            <Title />
-            <SubTitle />
+            {/* <Title /> */}
+            <NavbarDefault openNav={openNav} setOpenNav={setOpenNav}
+                scrollEffect={scrollEffect}
+
+                openCalculator={openCalculator}
+                setOpenCalculator={setOpenCalculator}
+
+                setOpenSearchResult={setOpenSearchResult}
+                openSearchResult={openSearchResult}
+                searchStockCompanyInfo={searchStockCompanyInfo}
+                searchResult={searchResult}
+                inputValue={inputValue}
+                inputPlaceholder={inputPlaceholder}
+
+                // new state
+                marketInfoList={marketInfoList}
+
+                dictFilteredStockCompanyInfo={dictFilteredStockCompanyInfo}
+
+                getSearchingList={getSearchingList}
+                searchingList={searchingList}
+            />
             <div className="relative">
                 <Oauth
                     authorizeCode={authorizeCode}
@@ -439,34 +467,8 @@ export default function QuantPost({
                     openSearchResult={openSearchResult}
                     loginStatus={loginStatus}
                 />
-                <Link href="./calculator">
-                    <Calculator
-                        scrollEffect={scrollEffect}
+                {openSearchResult ? <></> : <SubTitle />}
 
-                        openCalculator={openCalculator}
-                        setOpenCalculator={setOpenCalculator}
-
-                        openSearchResult={openSearchResult}
-                    />
-                </Link>
-                <Search
-                    setOpenSearchResult={setOpenSearchResult}
-                    searchStockCompanyInfo={searchStockCompanyInfo}
-                    searchResult={searchResult}
-                    inputValue={inputValue}
-                    inputPlaceholder={inputPlaceholder}
-
-                    // new state
-                    marketInfoList={marketInfoList}
-
-                    dictFilteredStockCompanyInfo={dictFilteredStockCompanyInfo}
-
-                    openSearchResult={openSearchResult}
-
-                    getSearchingList={getSearchingList}
-                    searchingList={searchingList}
-                    scrollEffect={scrollEffect}
-                />
                 <div className='pb-80 w-full'>
                     <Table
                         searchStockCompanyInfo={searchStockCompanyInfo}
