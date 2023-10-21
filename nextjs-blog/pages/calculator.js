@@ -7,7 +7,7 @@ import React from "react";
 import { Input, Select, Option, Button, ListItem, ListItemPrefix, ListItemSuffix } from "@material-tailwind/react";
 
 import {
-    ArrowUturnLeftIcon
+    ArrowUturnLeftIcon, HomeIcon
 } from "@heroicons/react/24/outline";
 
 export default function Calculator() {
@@ -91,7 +91,7 @@ export default function Calculator() {
             <ListItem className='text-black'>
                 <ListItemPrefix>
                     <Link href="/">
-                        <ArrowUturnLeftIcon strokeWidth={2} className="h-6 w-6" />
+                        <HomeIcon strokeWidth={2} className="h-6 w-6" />
                     </Link>
                 </ListItemPrefix>
                 <div className="w-full font-mono text-xl header-contents text-center">

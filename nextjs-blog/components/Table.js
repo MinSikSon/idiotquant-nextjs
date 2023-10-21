@@ -4,7 +4,6 @@ import CustomCard from "./CustomCard";
 import CustomChart from "./CustomChart";
 import Loading from "./Loading";
 import { Util } from "./Util";
-import { TrashIcon } from "@heroicons/react/24/outline";
 
 const MarQueue = (props) => {
     const CardList = () => {

@@ -29,16 +29,13 @@ const Input = (props) => {
                 e.target[0].value = ''
                 props.setOpenSearchResult(true);
             }}
-            className={`flex items-center ${props.openSearchResult ? 'border-b border-slate-500 mb-3 pb-2' : 'p-0.5 '}`}
+            className={`flex items-center ${props.openSearchResult ? 'border-b border-slate-500' : ''}`}
         >
-            <ListItem className="p-0 pt-2 px-1 text-black">
+            <ListItem className={`p-0 px-1 text-black ${props.openSearchResult ? 'pt-2 pb-2' : ''}`}>
                 {props.openSearchResult ?
                     <>
                         <ListItemPrefix>
-                            <div
-                                className=""
-                                onClick={(e) => { e.preventDefault(); props.setOpenSearchResult(false); }}
-                            >
+                            <div onClick={(e) => { e.preventDefault(); props.setOpenSearchResult(false); }}>
                                 <ArrowUturnLeftIcon strokeWidth={2} className="h-6 w-6" />
                             </div>
                         </ListItemPrefix>
@@ -60,7 +57,7 @@ const Input = (props) => {
                     <></>
                 }
                 <ListItemSuffix className=''>
-                    <button className='rounded-3xl pr-4 inline-flex items-center justify-center text-black focus:outline-none'>
+                    <button className={`rounded-3xl ${props.openSearchResult ? 'pr-4' : ''} inline-flex items-center justify-center text-black focus:outline-none`}>
                         <MagnifyingGlassIcon strokeWidth={2} className="h-6 w-6" />
                     </button>
                 </ListItemSuffix>
@@ -133,11 +130,8 @@ export default function Search(props) {
     // console.warn(`props.openSearchResult`, props.openSearchResult);
     return (
         <div className={`z-10 rounded-xl
-            ${props.scrollEffect && !props.openSearchResult ? 'translate translate-y-10' : ''}
-            ${(true === props.openSearchResult || true === !!props.searchingList) ?
-                `bg-gray-50 duration-300 w-screen h-screen`
-                :
-                `border-none duration-300`}
+            ${props.scrollEffect && !props.openSearchResult ? '' : ''}
+            ${(true === props.openSearchResult || true === !!props.searchingList) ? `bg-gray-50 w-screen h-screen` : `border-none`}
         `}>
             <div className={`${(true === props.openSearchResult || true === !!props.searchingList) ? 'bg-white rounded-md drop-shadow-md' : ''}`}>
                 <Input {...props} />
