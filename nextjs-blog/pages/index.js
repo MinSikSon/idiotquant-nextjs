@@ -80,7 +80,7 @@ export default function QuantPost({
     marketInfoList,
     financialInfoAll,
 }) {
-    console.log(`%c[call] QuantPost`, `color : white; background : blue`);
+    // console.log(`%c[call] QuantPost`, `color : white; background : blue`);
 
     const router = useRouter();
 
@@ -268,6 +268,9 @@ export default function QuantPost({
         const marketInfoLatestIndex = marketInfoList.length - 1;
         const marketInfoLatest = marketInfoList[marketInfoLatestIndex];
 
+        // console.log(`marketInfoPrev`, marketInfoPrev);
+        // console.log(`marketInfoLatest`, marketInfoLatest);
+
         setSearchingList('');
 
         const stockCompanyInfo = dictFilteredStockCompanyInfo[stockCompanyName] || latestStockCompanyInfo[stockCompanyName];
@@ -277,7 +280,6 @@ export default function QuantPost({
             return;
         }
 
-        setSearchResult(stockCompanyInfo);
 
         let newInputPlaceholder = `'${stockCompanyName}' 의 시총: ${Util.UnitConversion(stockCompanyInfo['시가총액'], true)}`;
 
@@ -311,13 +313,19 @@ export default function QuantPost({
                 bsnsDate: marketInfoLatest['date'],
                 ...financialInfoAll[curStockCompanyName],
                 ...marketInfoLatest['data'][curStockCompanyName],
-                prevMarketInfo: marketInfoPrev['data'][curStockCompanyName]
+                prevMarketInfo:
+                {
+                    ...marketInfoPrev['data'][curStockCompanyName],
+                    bsnsDate: marketInfoPrev['date']
+                }
             }
         });
 
         if (newFilteredStockCompanyList.length != Object.keys(dictFilteredStockCompanyInfo).length) {
             setStockCompanyChangeCount((prev) => (prev + 1));
         }
+
+        setSearchResult(stockCompanyInfo);
 
         // console.log(`dictFinancialMarketInfo`, dictFinancialMarketInfo);
         setDictFilteredStockCompanyInfo(dictFinancialMarketInfo);
@@ -403,7 +411,7 @@ export default function QuantPost({
 
         return (
             <div className='sm:px-20 md:px-40 lg:px-64 xl:px-80 2xl:px-96'>
-                <div className="w-full p-1">
+                <div className="w-full p-1 pt-4">
                     <Select color='green' label="종목 선택 방법" onChange={(selected) => handleChange(selected)} value={selectedStrategy}>
                         <Option value='ncav'>NCAV</Option>
                         <Option value='2'>소형주 + 저 PBR + 저 PER</Option>
@@ -458,15 +466,19 @@ export default function QuantPost({
 
                 getSearchingList={getSearchingList}
                 searchingList={searchingList}
+
+                authorizeCode={authorizeCode}
+                accessToken={accessToken}
+                loginStatus={loginStatus}
             />
             <div className="relative">
-                <Oauth
+                {/* <Oauth
                     authorizeCode={authorizeCode}
                     accessToken={accessToken}
                     scrollEffect={scrollEffect}
                     openSearchResult={openSearchResult}
                     loginStatus={loginStatus}
-                />
+                /> */}
                 {openSearchResult ? <></> : <SubTitle />}
 
                 <div className='pb-80 w-full'>

@@ -150,6 +150,9 @@ export default function Table(props) {
     const numOfStockItems = Object.keys(props.dictFilteredStockCompanyInfo).length;
     const 기대수익 = (numOfStockItems == 0) ? '0%' : `${Number((cumulativeRatio / numOfStockItems - 1) * 100).toFixed(1)}%`;
     const prevBsnsDate = (numOfStockItems == 0) ? '-' : props.dictFilteredStockCompanyInfo[Object.keys(props.dictFilteredStockCompanyInfo)[0]].prevMarketInfo.bsnsDate;
+    // console.log(`props.dictFilteredStockCompanyInfo`, props.dictFilteredStockCompanyInfo);
+    // console.log(`Object.keys(props.dictFilteredStockCompanyInfo)[0]`, Object.keys(props.dictFilteredStockCompanyInfo)[0]);
+    // console.log(`prevBsnsDate`, prevBsnsDate, `, numOfStockItems`, numOfStockItems);
     const bsnsDate = (numOfStockItems == 0) ? '-' : props.dictFilteredStockCompanyInfo[Object.keys(props.dictFilteredStockCompanyInfo)[0]].bsnsDate;
     const thstrm_dt = (numOfStockItems == 0) ? '-' : props.dictFilteredStockCompanyInfo[Object.keys(props.dictFilteredStockCompanyInfo)[0]].thstrm_dt;
 

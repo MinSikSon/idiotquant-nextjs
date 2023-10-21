@@ -12,6 +12,7 @@ import {
 import Link from "next/link";
 import Calculator from "./Calculator";
 import Search from "./Search";
+import Oauth from "./Oauth";
 
 export default function NavbarDefault(props) {
 
@@ -24,23 +25,28 @@ export default function NavbarDefault(props) {
 
     const NavList = (props) => {
         return (
-            <ul className="mt-2 mb-4 flex gap-2 lg:mb-0 lg:mt-0 lg:flex-row lg:items-center lg:gap-6">
-                <Link href="./calculator">
-                    <Calculator
-                        scrollEffect={props.scrollEffect}
+            <ul className="flex items-center gap-3 mb-0 mt-0 lg:flex-row lg:gap-6">
+                <Calculator
+                    scrollEffect={props.scrollEffect}
 
-                        openCalculator={props.openCalculator}
-                        setOpenCalculator={props.setOpenCalculator}
+                    openCalculator={props.openCalculator}
+                    setOpenCalculator={props.setOpenCalculator}
 
-                        openSearchResult={props.openSearchResult}
-                    />
-                </Link>
+                    openSearchResult={props.openSearchResult}
+                />
+                <Oauth
+                    authorizeCode={props.authorizeCode}
+                    accessToken={props.accessToken}
+                    scrollEffect={props.scrollEffect}
+                    openSearchResult={props.openSearchResult}
+                    loginStatus={props.loginStatus}
+                />
             </ul>
         )
     };
 
     return (
-        <Navbar className="mx-auto max-w-screen-xl p-0 pt-6">
+        <Navbar className="mx-auto max-w-screen-xl p-0">
             <ListItem className='p-0'>
                 {/* <div className="container mx-auto flex items-center justify-between text-blue-gray-900"> */}
                 {/* <Typography
@@ -51,47 +57,24 @@ export default function NavbarDefault(props) {
                     IDIOT QUANT
                 </Typography> */}
                 {props.openSearchResult ? <></> : <ListItemPrefix>
-                    <div className='font-serif 
-                text-xl sm:text-xl md:text-2xl lg:text-3xl
-                text-black header-contents text-center py-3
-                sm:underline sm:decoration-2 md:decoration-4 sm:decoration-green-400'
-                    >
+                    <div className='pl-1 pt-1 font-serif text-base sm:text-xl md:text-2xl lg:text-3xl text-black header-contents text-center sm:underline sm:decoration-2 md:decoration-4 sm:decoration-green-400'>
                         {/* IDIOT<span className='text-green-400'>.</span>QUANT */}
                         IDIOT<br />QUANT
                     </div>
                 </ListItemPrefix>}
 
-                {/* <NavList
+                <NavList
                     scrollEffect={props.scrollEffect}
 
                     openCalculator={props.openCalculator}
                     setOpenCalculator={props.setOpenCalculator}
 
-                    setOpenSearchResult={props.setOpenSearchResult}
                     openSearchResult={props.openSearchResult}
-                    searchStockCompanyInfo={props.searchStockCompanyInfo}
-                    searchResult={props.searchResult}
-                    inputValue={props.inputValue}
-                    inputPlaceholder={props.inputPlaceholder}
+                    authorizeCode={props.authorizeCode}
+                    accessToken={props.accessToken}
+                    loginStatus={props.loginStatus}
+                ></NavList>
 
-                    // new state
-                    marketInfoList={props.marketInfoList}
-
-                    dictFilteredStockCompanyInfo={props.dictFilteredStockCompanyInfo}
-
-                    getSearchingList={props.getSearchingList}
-                    searchingList={props.searchingList}
-                ></NavList> */}
-                <Link href="./calculator">
-                    <Calculator
-                        scrollEffect={props.scrollEffect}
-
-                        openCalculator={props.openCalculator}
-                        setOpenCalculator={props.setOpenCalculator}
-
-                        openSearchResult={props.openSearchResult}
-                    />
-                </Link>
                 <ListItemSuffix>
                     <Search
                         setOpenSearchResult={props.setOpenSearchResult}
