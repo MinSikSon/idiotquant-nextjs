@@ -10,7 +10,7 @@ import { ListItem, ListItemPrefix, ListItemSuffix } from "@material-tailwind/rea
 
 
 const Input = (props) => {
-    console.log(`%c[call] Input`, `color : white; background : blue`);
+    // console.log(`%c[call] Input`, `color : white; background : blue`);
 
     const refFocus = React.useRef();
 
@@ -20,6 +20,7 @@ const Input = (props) => {
         }
     });
 
+    // console.log(`props.openSearchResult`, props.openSearchResult);
     return (
         <form
             onSubmit={(e) => {
@@ -28,39 +29,38 @@ const Input = (props) => {
                 e.target[0].value = ''
                 props.setOpenSearchResult(true);
             }}
-            className={`p-1 flex items-center ${props.openSearchResult ? 'border-b border-slate-500 mb-3 pb-3' : 'p-0.5 '}`}
+            className={`flex items-center ${props.openSearchResult ? 'border-b border-slate-500 mb-3 pb-2' : 'p-0.5 '}`}
         >
-            <ListItem className="p-0">
-                <ListItemPrefix>
-                    {props.openSearchResult ?
-                        <div className='flex'>
+            <ListItem className="p-0 pt-2 px-1 ">
+                {props.openSearchResult ?
+                    <>
+                        <ListItemPrefix>
                             <div
-                                className="py-2 pr-1"
+                                className=""
                                 onClick={(e) => { e.preventDefault(); props.setOpenSearchResult(false); }}
                             >
                                 <ArrowUturnLeftIcon strokeWidth={2} className="h-7 w-7" />
                             </div>
-
-                            <input
-                                ref={refFocus}
-                                name="searchValue"
-                                className="bg-gray-200 appearance-none border-none w-full text-black p-2 rounded-lg text-base focus:outline-none"
-                                type="text"
-                                placeholder={props.inputPlaceholder}
-                                value={props.inputValue}
-                                aria-label="Full name"
-                                onChange={(e) => {
-                                    e.preventDefault();
-                                    props.getSearchingList(e.target.value);
-                                }}
-                            />
-                        </div>
-                        :
-                        <></>
-                    }
-                </ListItemPrefix>
+                        </ListItemPrefix>
+                        <input
+                            ref={refFocus}
+                            name="searchValue"
+                            className="bg-gray-100 appearance-none border-none w-full text-black p-2 rounded-lg text-sm focus:outline-none"
+                            type="text"
+                            placeholder={props.inputPlaceholder}
+                            value={props.inputValue}
+                            aria-label="Full name"
+                            onChange={(e) => {
+                                e.preventDefault();
+                                props.getSearchingList(e.target.value);
+                            }}
+                        />
+                    </>
+                    :
+                    <></>
+                }
                 <ListItemSuffix className=''>
-                    <button className='rounded-3xl pr-3 inline-flex items-center justify-center text-black focus:outline-none'>
+                    <button className='rounded-3xl pr-4 inline-flex items-center justify-center text-black focus:outline-none'>
                         <MagnifyingGlassIcon strokeWidth={2} className="h-7 w-7" />
                     </button>
                 </ListItemSuffix>
@@ -102,7 +102,7 @@ function _getSelectedSearchResult(searchResult) {
     return selectedSearchResult;
 }
 export default function Search(props) {
-    console.log(`%c[call] Search`, `color : white; background : blue`);
+    // console.log(`%c[call] Search`, `color : white; background : blue`);
 
     let jsonSearchResult = { '종목명': '-', 'stock_code': '-', '종가': 0, '유동자산': 0, '부채총계': 0, '당기순이익': 0, '거래량': 0, '시가총액': 1, '상장주식수': 1/*divide by zero 방지용*/, ...props.searchResult };
     let fairPrice/*적정가*/ = Number((Number(jsonSearchResult['유동자산']) - Number(jsonSearchResult['부채총계'])) / Number(jsonSearchResult['상장주식수'])).toFixed(0);
@@ -130,11 +130,10 @@ export default function Search(props) {
         );
     }
 
-    console.error(`props.openSearchResult`, props.openSearchResult);
+    // console.warn(`props.openSearchResult`, props.openSearchResult);
     return (
-        <div className={`
+        <div className={`z-10 rounded-xl
             ${props.scrollEffect && !props.openSearchResult ? 'translate translate-y-10' : ''}
-            z-10 rounded-xl
             ${(true === props.openSearchResult || true === !!props.searchingList) ?
                 `bg-gray-50 duration-300 w-screen h-screen`
                 :
