@@ -4,7 +4,11 @@ import Link from "next/link";
 import Script from "next/script.js";
 import React from "react";
 
-import { Input, Select, Option, Button } from "@material-tailwind/react";
+import { Input, Select, Option, Button, ListItem, ListItemPrefix, ListItemSuffix } from "@material-tailwind/react";
+
+import {
+    ArrowUturnLeftIcon
+} from "@heroicons/react/24/outline";
 
 export default function Calculator() {
     const [date, setDate] = React.useState(new Date());
@@ -16,24 +20,6 @@ export default function Calculator() {
     React.useEffect(() => {
         handleCalculate();
     });
-
-    const Left = (props) => {
-        return (
-            <Link href="/">
-                <svg className="w-7 h-7 text-black" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth="1.5" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 19.5L8.25 12l7.5-7.5" />
-                </svg>
-            </Link>
-        );
-    }
-
-    const Title = () => {
-        return (
-            <div className="font-serif text-lg header-contents text-center">
-                Investment<span className='bg-yellow-500'> Inflation </span>Calculator
-            </div>
-        );
-    };
 
     const ClearButton = (props) => {
         return <Button className='rounded-lg text-black bg-yellow-100' color="yellow" onClick={props.handleClick}>CLEAR</Button>
@@ -87,7 +73,7 @@ export default function Calculator() {
     return (
         <div>
             <Head>
-                <title>Investment Inflation Calculator | 인플레이션 및 수익 계산기 | 미래 수익 예측</title>
+                <title>인플레이션 및 수익 계산기 | 미래 수익 예측</title>
                 <link rel="icon" href="/images/icons8-calculator-color-32.png" />
                 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=0" />
                 <meta name="description" content="인플레이션을 고려하여 미래 수익을 계산하는 계산기를 제공하는 웹 페이지입니다. 현재 가치를 기반으로 인플레이션률을 적용하여 미래의 금융적 상황을 예측하고 투자 결정에 도움을 드립니다." />
@@ -101,15 +87,20 @@ export default function Calculator() {
                     console.log(`script loaded correctly, window.FB has been populated`)
                 }
             />
-            <div className='grid grid-cols-8 py-2'>
-                <div className='col-span-1 pl-2'>
-                    <Left />
+
+            <ListItem className='text-black'>
+                <ListItemPrefix>
+                    <Link href="/">
+                        <ArrowUturnLeftIcon strokeWidth={2} className="h-6 w-6" />
+                    </Link>
+                </ListItemPrefix>
+                <div className="w-full font-mono text-xl header-contents text-center">
+                    <span className='bg-yellow-500'> 인플레이션 </span> 계산기
                 </div>
-                <div className='col-span-6 self-center text-center'>
-                    <Title />
-                </div>
-                <img className='h-7 col-span-1 object-fill' src='/images/icons8-calculator.gif' />
-            </div>
+                <ListItemSuffix>
+                    <img className='h-7 col-span-1 object-fill' src='/images/icons8-calculator.gif' />
+                </ListItemSuffix>
+            </ListItem>
 
             <div className='bg-gray-200 w-screen h-screen flex justify-center items-center sm:px-20 md:px-40 lg:px-64 xl:px-80 2xl:px-96'>
                 <div className="w-full h-full bg-gray-50 rounded-2xl shadow-xl border-4 border-gray-100">
@@ -163,9 +154,9 @@ export default function Calculator() {
                                 <Input color="black" label="물가상승률 (%)" type='number' onChange={(e) => { setAnnualInflationRate(e.target.value) }} value={annualInflationRate} />
                                 {annualInflationRate && <ClearButton handleClick={() => setAnnualInflationRate('')} />}
                             </div>
-                            <div className="grid grid-cols-2 gap-4">
-                                <Button color="gray" onClick={handleClear}>Clear</Button>
-                                <Button color="yellow" onClick={handleCalculate}>Calculate</Button>
+                            <div className="grid grid-cols-1">
+                                <Button color="gray" onClick={handleClear}>Clear All</Button>
+                                {/* <Button color="yellow" onClick={handleCalculate}>Calculate</Button> */}
                             </div>
                             <Button color="green" variant="outlined" onClick={handleCalculateSampleData}>
                                 <div>(예시) 시작금액: 5000 만원, 투자기간: 12년</div>

@@ -39,7 +39,7 @@ const Input = (props) => {
                                 className=""
                                 onClick={(e) => { e.preventDefault(); props.setOpenSearchResult(false); }}
                             >
-                                <ArrowUturnLeftIcon strokeWidth={2} className="h-7 w-7" />
+                                <ArrowUturnLeftIcon strokeWidth={2} className="h-6 w-6" />
                             </div>
                         </ListItemPrefix>
                         <input
@@ -61,7 +61,7 @@ const Input = (props) => {
                 }
                 <ListItemSuffix className=''>
                     <button className='rounded-3xl pr-4 inline-flex items-center justify-center text-black focus:outline-none'>
-                        <MagnifyingGlassIcon strokeWidth={2} className="h-7 w-7" />
+                        <MagnifyingGlassIcon strokeWidth={2} className="h-6 w-6" />
                     </button>
                 </ListItemSuffix>
             </ListItem>
