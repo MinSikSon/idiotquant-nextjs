@@ -7,7 +7,7 @@ export default function Calculator(props) {
         );
     }
 
-    console.log(`props.openSearchResult`, props.openSearchResult);
+    // console.log(`props.openSearchResult`, props.openSearchResult);
     if (props.openSearchResult) return <></>;
     return (
         <Link href="./calculator">

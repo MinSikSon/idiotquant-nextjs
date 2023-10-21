@@ -31,7 +31,7 @@ const Input = (props) => {
             }}
             className={`flex items-center ${props.openSearchResult ? 'border-b border-slate-500 mb-3 pb-2' : 'p-0.5 '}`}
         >
-            <ListItem className="p-0 pt-2 px-1 ">
+            <ListItem className="p-0 pt-2 px-1 text-black">
                 {props.openSearchResult ?
                     <>
                         <ListItemPrefix>

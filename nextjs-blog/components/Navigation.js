@@ -46,7 +46,7 @@ export default function NavbarDefault(props) {
     };
 
     return (
-        <Navbar className="mx-auto max-w-screen-xl p-0">
+        <Navbar className="mx-auto max-w-screen-xl p-0 text-black">
             <ListItem className='p-0'>
                 {/* <div className="container mx-auto flex items-center justify-between text-blue-gray-900"> */}
                 {/* <Typography
