@@ -16,14 +16,18 @@ export default function Oauth(props) {
 
     return (
         <div className='text-black'>
-            <form onSubmit={(e) => { e.preventDefault(); }}>
-                <Link href={url} passHref as='/login'>
-                    <button className='flex'>
-                        <ArrowRightOnRectangleIcon strokeWidth={2} className="h-5 w-5" />
-                        <div className="pt-1 text-xs">{loginStatus}</div>
-                    </button>
+            {!!props.loginStatus ?
+                <div className='flex'>
+                    <ArrowRightOnRectangleIcon strokeWidth={2} className="h-5 w-5" />
+                    <div className="pt-1 text-xs">{loginStatus}</div>
+                </div>
+                :
+                <Link className='flex' href={url} passHref as='/login'>
+                    <ArrowRightOnRectangleIcon strokeWidth={2} className="h-5 w-5" />
+                    <div className="pt-1 text-xs">{loginStatus}</div>
                 </Link>
-            </form>
+            }
+
         </div>
     );
 }

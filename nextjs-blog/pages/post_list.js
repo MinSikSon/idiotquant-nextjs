@@ -20,39 +20,38 @@ export default function PostList(props) {
             </ListItem>
 
             <List>
-                <ListItem className='border-b-2'>
-                    <ListItemPrefix>
-                        <BookOpenIcon strokeWidth={2} className="h-6 w-6" />
-                    </ListItemPrefix>
-                    <Link href='./posts/famous_saying'>
+                <Link href='./posts/famous_saying'>
+                    <ListItem className='border-b-2'>
+                        <ListItemPrefix>
+                            <BookOpenIcon strokeWidth={2} className="h-6 w-6" />
+                        </ListItemPrefix>
                         <div className='pt-1'>투자 격언</div>
-                    </Link>
-                </ListItem>
-                <ListItem className='border-b-2'>
-                    <ListItemPrefix>
-                        <CurrencyDollarIcon strokeWidth={2} className="h-6 w-6" />
-                    </ListItemPrefix>
-                    <Link href='./posts/quant'>
+                    </ListItem>
+                </Link>
+                <Link href='./posts/quant'>
+                    <ListItem className='border-b-2'>
+                        <ListItemPrefix>
+                            <CurrencyDollarIcon strokeWidth={2} className="h-6 w-6" />
+                        </ListItemPrefix>
                         <div className='pt-1'>퀀트 용어</div>
-                    </Link>
-                </ListItem>
-                <ListItem className='border-b-2'>
-                    <ListItemPrefix>
-                        <ChatBubbleOvalLeftEllipsisIcon strokeWidth={2} className="h-6 w-6" />
-                    </ListItemPrefix>
-                    <Link href='./posts/etc'>
+                    </ListItem>
+                </Link>
+                <Link href='./posts/etc'>
+                    <ListItem className='border-b-2'>
+                        <ListItemPrefix>
+                            <ChatBubbleOvalLeftEllipsisIcon strokeWidth={2} className="h-6 w-6" />
+                        </ListItemPrefix>
                         <div className='pt-1'>기타 등등 글</div>
-                    </Link>
-                </ListItem>
-
-                <ListItem className='border-b-2'>
-                    <ListItemPrefix>
-                        <HeartIcon strokeWidth={2} className="h-6 w-6" />
-                    </ListItemPrefix>
-                    <Link href='./posts/terms'>
+                    </ListItem>
+                </Link>
+                <Link href='./posts/terms'>
+                    <ListItem className='border-b-2'>
+                        <ListItemPrefix>
+                            <HeartIcon strokeWidth={2} className="h-6 w-6" />
+                        </ListItemPrefix>
                         <div className='pt-1'>한 번에 보기</div>
-                    </Link>
-                </ListItem>
+                    </ListItem>
+                </Link>
             </List>
 
         </>
