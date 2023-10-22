@@ -20,7 +20,6 @@ const Input = (props) => {
         }
     });
 
-    // console.log(`props.openSearchResult`, props.openSearchResult);
     return (
         <form
             onSubmit={(e) => {
@@ -29,9 +28,9 @@ const Input = (props) => {
                 e.target[0].value = ''
                 props.setOpenSearchResult(true);
             }}
-            className={`flex items-center ${props.openSearchResult ? 'border-b border-slate-500' : ''}`}
+            className={`flex items-center`}
         >
-            <ListItem className={`p-0 px-1 text-black ${props.openSearchResult ? 'pt-2 pb-2' : ''}`}>
+            <ListItem className={`p-0 px-1 text-black `}>
                 {props.openSearchResult ?
                     <>
                         <ListItemPrefix>
@@ -47,17 +46,14 @@ const Input = (props) => {
                             placeholder={props.inputPlaceholder}
                             value={props.inputValue}
                             aria-label="Full name"
-                            onChange={(e) => {
-                                e.preventDefault();
-                                props.getSearchingList(e.target.value);
-                            }}
+                            onChange={(e) => { e.preventDefault(); props.getSearchingList(e.target.value); }}
                         />
                     </>
                     :
                     <></>
                 }
-                <ListItemSuffix className=''>
-                    <button className={`rounded-3xl ${props.openSearchResult ? 'pr-4' : ''} inline-flex items-center justify-center text-black focus:outline-none`}>
+                <ListItemSuffix>
+                    <button className={`rounded-3xl pr-4 inline-flex items-center justify-center text-black focus:outline-none`}>
                         <MagnifyingGlassIcon strokeWidth={2} className="h-6 w-6" />
                     </button>
                 </ListItemSuffix>
@@ -119,20 +115,8 @@ export default function Search(props) {
         );
     }
 
-    const CloseIcon = () => {
-        return (
-            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth="1.5" className="w-6 h-6 stroke-white fill-black">
-                <path strokeLinecap="round" strokeLinejoin="round" d="M9.75 9.75l4.5 4.5m0-4.5l-4.5 4.5M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-            </svg>
-        );
-    }
-
-    // console.warn(`props.openSearchResult`, props.openSearchResult);
     return (
-        <div className={`z-10 rounded-xl
-            ${props.scrollEffect && !props.openSearchResult ? '' : ''}
-            ${(true === props.openSearchResult || true === !!props.searchingList) ? `bg-gray-50 w-screen h-screen` : `border-none`}
-        `}>
+        <div className={`z-10 rounded-xl ${(true === props.openSearchResult || true === !!props.searchingList) ? `bg-gray-50 w-screen h-screen` : `border-none`}`}>
             <div className={`${(true === props.openSearchResult || true === !!props.searchingList) ? 'bg-white rounded-md drop-shadow-md' : ''}`}>
                 <Input {...props} />
 

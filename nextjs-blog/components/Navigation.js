@@ -35,15 +35,14 @@ export default function NavbarDefault(props) {
     };
 
     return (
-        <Navbar className="mx-auto max-w-screen-xl p-0 text-black">
+        <Navbar className="mx-auto max-w-screen-xl p-0 text-black pt-2">
             <ListItem className='p-0'>
                 {props.openSearchResult ?
                     <></>
                     :
                     <ListItemPrefix>
-                        <div className='pl-1 pt-1 font-serif text-base sm:text-xl md:text-2xl lg:text-3xl text-black header-contents text-center sm:underline sm:decoration-2 md:decoration-4 sm:decoration-green-400'>
-                            {/* IDIOT<span className='text-green-400'>.</span>QUANT */}
-                            IDIOT<br />QUANT
+                        <div className='pl-1 pt-1 font-serif text-sm sm:text-xl md:text-2xl lg:text-3xl text-black header-contents text-center sm:underline sm:decoration-2 md:decoration-4 sm:decoration-green-400'>
+                            <div>idiot<span className='text-green-400'>.</span>quant</div>
                         </div>
                     </ListItemPrefix>}
 
@@ -70,7 +69,6 @@ export default function NavbarDefault(props) {
                         inputValue={props.inputValue}
                         inputPlaceholder={props.inputPlaceholder}
 
-                        // new state
                         marketInfoList={props.marketInfoList}
 
                         dictFilteredStockCompanyInfo={props.dictFilteredStockCompanyInfo}
