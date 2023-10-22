@@ -12,7 +12,6 @@ export default function Oauth(props) {
             authorizeCode: props.authorizeCode,
         },
     }
-    if (props.openSearchResult) return (<></>);
 
     return (
         <div className='text-black'>

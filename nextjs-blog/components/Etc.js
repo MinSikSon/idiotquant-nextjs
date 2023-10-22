@@ -2,9 +2,6 @@ import { BookOpenIcon, EllipsisHorizontalCircleIcon } from "@heroicons/react/24/
 import Link from "next/link";
 
 export default function Etc(props) {
-
-    if (props.openSearchResult) return <></>;
-
     return (
         <div className='pl-2'>
             <Link href='./post_list'>
