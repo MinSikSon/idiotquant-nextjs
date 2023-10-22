@@ -92,7 +92,6 @@ const ListNode = (props) => {
 // Table
 export default function Table(props) {
     // console.log(`%c[call] Table()`, `color : white; background : blue;`);
-    // console.log(`props.openSearchResult`, props.openSearchResult);
 
     let loadingDone = !!props.dictFilteredStockCompanyInfo;
     props.marketInfoList.forEach((obj) => loadingDone &&= !!obj);
@@ -105,7 +104,6 @@ export default function Table(props) {
     if (false == props.openSearchResult) {
         for (let key in props.dictFilteredStockCompanyInfo) {
             const { corp_code, active, 종목명, 유동자산, 부채총계, 상장주식수, 종가, 당기순이익, PER, bsnsDate, prevMarketInfo } = props.dictFilteredStockCompanyInfo[key];
-            // console.log(`prevMarketInfo`, prevMarketInfo);
             const fairPrice/*적정가*/ = Number((Number(유동자산) - Number(부채총계)) / Number(상장주식수)).toFixed(0);
             const ratio = Number(fairPrice / Number(종가));
 
@@ -143,15 +141,9 @@ export default function Table(props) {
         }
     }
 
-    // console.warn(`Object.keys(props.dictFilteredStockCompanyInfo)[0]`, Object.keys(props.dictFilteredStockCompanyInfo)[0]);
-    // console.warn(`props.dictFilteredStockCompanyInfo`, props.dictFilteredStockCompanyInfo);
-
     const numOfStockItems = Object.keys(props.dictFilteredStockCompanyInfo).length;
     const 기대수익 = (numOfStockItems == 0) ? '0%' : `${Number((cumulativeRatio / numOfStockItems - 1) * 100).toFixed(1)}%`;
     const prevBsnsDate = (numOfStockItems == 0) ? '-' : props.dictFilteredStockCompanyInfo[Object.keys(props.dictFilteredStockCompanyInfo)[0]].prevMarketInfo.bsnsDate;
-    // console.log(`props.dictFilteredStockCompanyInfo`, props.dictFilteredStockCompanyInfo);
-    // console.log(`Object.keys(props.dictFilteredStockCompanyInfo)[0]`, Object.keys(props.dictFilteredStockCompanyInfo)[0]);
-    // console.log(`prevBsnsDate`, prevBsnsDate, `, numOfStockItems`, numOfStockItems);
     const bsnsDate = (numOfStockItems == 0) ? '-' : props.dictFilteredStockCompanyInfo[Object.keys(props.dictFilteredStockCompanyInfo)[0]].bsnsDate;
     const thstrm_dt = (numOfStockItems == 0) ? '-' : props.dictFilteredStockCompanyInfo[Object.keys(props.dictFilteredStockCompanyInfo)[0]].thstrm_dt;
 
