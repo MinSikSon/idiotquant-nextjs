@@ -1,9 +1,10 @@
 
-import { Card, Chip, IconButton, List, ListItem, ListItemPrefix, ListItemSuffix, Typography } from "@material-tailwind/react";
+import { Card, Chip, IconButton, List, ListItem, ListItemPrefix, ListItemSuffix, Popover, PopoverContent, PopoverHandler, Typography } from "@material-tailwind/react";
 import CustomCard from "./CustomCard";
 import CustomChart from "./CustomChart";
 import Loading from "./Loading";
 import { Util } from "./Util";
+import { TrashIcon } from "@heroicons/react/24/outline";
 
 const MarQueue = (props) => {
     const CardList = () => {
@@ -48,43 +49,65 @@ const ListNode = (props) => {
     const percentCompareFirst = (props.ratio - 100) >= 100 ? true : false;
     const percentCompareSecond = (props.ratio - 100) >= 50 ? true : false;
     const selectedColorByRatio = percentCompareFirst ? 'red' : (percentCompareSecond ? 'yellow' : 'blue');
+
     return (
-        <ListItem className="p-0 border-b-2">
-            <ListItemPrefix className="mr-2 w-24">
-                <Chip className="border-none" size="sm" variant="outlined" value={"목표가"} />
-                <Chip className="border-none" size="sm" variant="outlined" color={selectedColorByRatio} value={props.fairPrice + "원 (" + (props.ratio - 100) + "%)"} />
+        <Popover animate={{
+            mount: { scale: 1, y: 0 },
+            unmount: { scale: 0, y: 25 },
+        }}>
+            <PopoverHandler>
+                <ListItem className="p-0 border-b-2">
+                    <ListItemPrefix className="mr-2 w-24">
+                        <Chip className="border-none" size="sm" variant="outlined" value={"목표가"} />
+                        <Chip className="border-none" size="sm" variant="outlined" color={selectedColorByRatio} value={props.fairPrice + "원 (" + (props.ratio - 100) + "%)"} />
 
-                {/* <IconButton className="w-3" variant="text" color="blue-gray" onClick={() => props.deleteStockCompanyInList(props.tickerName)}>
-                            <div>{props.index + 1}</div>
-                            <TrashIcon className="h-4 w-4" />
-                        </IconButton> */}
+                    </ListItemPrefix>
+                    <div>
+                        {/* <Typography className="ml-3" variant={`${props.tickerName.length <= 5 ? 'h5' : 'h6'}`}>{props.tickerName}</Typography> */}
+                        <Typography className="ml-3" variant="h5">{props.tickerName}</Typography>
 
+                    </div>
+                    <ListItemSuffix>
+                        <Chip className="border-none text-lg p-0 text-right" variant="outlined" size="lg" value={diffRatio + "%"} color={diffRatio > 0 ? 'red' : 'blue'} />
+                        <Chip className="border-none" variant="outlined" size="sm" value={props.close + "원"} />
+                    </ListItemSuffix>
+                </ListItem >
+            </PopoverHandler>
+            <PopoverContent className='flex items-center p-0'>
+                <IconButton className='rounded-full' color="red" onClick={() => props.deleteStockCompanyInList(props.tickerName)}>
+                    <TrashIcon className="h-6 w-6" />
+                </IconButton>
+                <div>
+                    <div className='flex'>
+                        <Chip size='sm' color='blue' value={"현재 주가:" + props.close + "원"} />
+                        <Chip size='sm' color='blue' value={"이전 주가:" + props.prevClose + "원"} />
+                        <Chip size='sm' color='pink' value={"목표 주가:" + props.fairPrice + "원"} />
+                    </div>
+                    <div className='flex'>
+                        <Chip size='sm' color='indigo' value={"유동자산:" + props.currentAssets + "원"} />
+                        <Chip size='sm' color='amber' value={"부채총계:" + props.liabilities + "원"} />
+                        <Chip size='sm' color='cyan' value={"당기순이익:" + props.netIncome + "원"} />
+                    </div>
+                    <div className='flex'>
+                        <Chip size='sm' color='purple' value={"PER:" + props.PER} />
+                        <Chip size='sm' color='purple' value={"PBR:" + props.PBR} />
+                        <Chip size='sm' color='teal' value={"상장주식수:" + props.listedStocks + "개"} />
+                    </div>
+                </div>
                 {/* <CustomChart
-                            tickerName={props.tickerName}
-                            bsnsFullDate={props.bsnsFullDate}
-                            fairPrice={props.fairPrice}
+                    tickerName={props.tickerName}
+                    bsnsFullDate={props.bsnsFullDate}
+                    fairPrice={props.fairPrice}
 
-                            marketInfoList={props.marketInfoList}
+                    marketInfoList={props.marketInfoList}
 
-                            responsive={false}
-                            height={40}
-                            width={90}
-                            display={false}
-                        /> */}
-                {/* <Chip value={"이전:" + props.prevClose + "원"} variant="ghost" size="sm" /> */}
-
-                {/* <Chip className="rounded-full p-1" size="sm" value={props.ratio - 100 + "%"} color={(props.ratio - 100) >= 0 ? 'red' : 'blue'} variant={(props.ratio - 100) >= 0 ? 'outlined' : 'gradient'} /> */}
-            </ListItemPrefix>
-            <div>
-                {/* <Typography className="ml-3" variant={`${props.tickerName.length <= 5 ? 'h5' : 'h6'}`}>{props.tickerName}</Typography> */}
-                <Typography className="ml-3" variant="h5">{props.tickerName}</Typography>
-
-            </div>
-            <ListItemSuffix>
-                <Chip className="border-none text-lg p-0 text-right" variant="outlined" size="lg" value={diffRatio + "%"} color={diffRatio > 0 ? 'red' : 'blue'} />
-                <Chip className="border-none" variant="outlined" size="sm" value={props.close + "원"} />
-            </ListItemSuffix>
-        </ListItem >
+                    responsive={false}
+                    height={60}
+                    width={90}
+                    display={false}
+                /> */}
+            </PopoverContent>
+        </Popover>
     );
 };
 
@@ -101,9 +124,10 @@ export default function Table(props) {
     let tbody = [];
     let index = 0;
 
+    // console.log(`props.dictFilteredStockCompanyInfo`, props.dictFilteredStockCompanyInfo);
     if (false == props.openSearchResult) {
         for (let key in props.dictFilteredStockCompanyInfo) {
-            const { corp_code, active, 종목명, 유동자산, 부채총계, 상장주식수, 종가, 당기순이익, PER, bsnsDate, prevMarketInfo } = props.dictFilteredStockCompanyInfo[key];
+            const { corp_code, active, 종목명, 유동자산, 부채총계, 상장주식수, 종가, 당기순이익, PER, PBR, bsnsDate, prevMarketInfo } = props.dictFilteredStockCompanyInfo[key];
             const fairPrice/*적정가*/ = Number((Number(유동자산) - Number(부채총계)) / Number(상장주식수)).toFixed(0);
             const ratio = Number(fairPrice / Number(종가));
 
@@ -125,6 +149,7 @@ export default function Table(props) {
                 liabilities: Util.UnitConversion(부채총계),
                 netIncome: Util.UnitConversion(당기순이익),
                 PER: Number(PER),
+                PBR: Number(PBR),
                 close: Number(종가).toLocaleString(),
                 bsnsFullDate: bsnsDate,
 
