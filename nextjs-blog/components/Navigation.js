@@ -35,50 +35,52 @@ export default function NavbarDefault(props) {
     };
 
     return (
-        <Navbar className="mx-auto max-w-screen-xl p-0 text-black pt-2">
-            <ListItem className='p-0'>
-                {props.openSearchResult ?
-                    <></>
-                    :
-                    <ListItemPrefix>
-                        <div className='pl-1 pt-1 font-serif text-sm sm:text-xl md:text-2xl lg:text-3xl text-black header-contents text-center sm:underline sm:decoration-2 md:decoration-4 sm:decoration-green-400'>
-                            <div>idiot<span className='text-green-400'>.</span>quant</div>
-                        </div>
-                    </ListItemPrefix>}
+        <>
+            <Navbar className="mx-auto max-w-screen-xl p-0 text-black pt-2">
+                <ListItem className='p-0'>
+                    {props.openSearchResult ?
+                        <></>
+                        :
+                        <ListItemPrefix>
+                            <div className='pl-1 pt-1 font-serif text-sm sm:text-xl md:text-2xl lg:text-3xl text-black header-contents text-center sm:underline sm:decoration-2 md:decoration-4 sm:decoration-green-400'>
+                                <div>idiot<span className='text-green-400'>.</span>quant</div>
+                            </div>
+                        </ListItemPrefix>}
 
-                <NavList
-                    openSearchResult={props.openSearchResult}
-
-                    scrollEffect={props.scrollEffect}
-
-                    openCalculator={props.openCalculator}
-                    setOpenCalculator={props.setOpenCalculator}
-
-                    authorizeCode={props.authorizeCode}
-                    accessToken={props.accessToken}
-                    loginStatus={props.loginStatus}
-                ></NavList>
-
-                <ListItemSuffix>
-                    <Search
+                    <NavList
                         openSearchResult={props.openSearchResult}
 
-                        setOpenSearchResult={props.setOpenSearchResult}
-                        searchStockCompanyInfo={props.searchStockCompanyInfo}
-                        searchResult={props.searchResult}
-                        inputValue={props.inputValue}
-                        inputPlaceholder={props.inputPlaceholder}
-
-                        marketInfoList={props.marketInfoList}
-
-                        dictFilteredStockCompanyInfo={props.dictFilteredStockCompanyInfo}
-
-                        getSearchingList={props.getSearchingList}
-                        searchingList={props.searchingList}
                         scrollEffect={props.scrollEffect}
-                    />
-                </ListItemSuffix>
-            </ListItem>
-        </Navbar>
+
+                        openCalculator={props.openCalculator}
+                        setOpenCalculator={props.setOpenCalculator}
+
+                        authorizeCode={props.authorizeCode}
+                        accessToken={props.accessToken}
+                        loginStatus={props.loginStatus}
+                    ></NavList>
+
+                    <ListItemSuffix>
+                        <Search
+                            openSearchResult={props.openSearchResult}
+
+                            setOpenSearchResult={props.setOpenSearchResult}
+                            searchStockCompanyInfo={props.searchStockCompanyInfo}
+                            searchResult={props.searchResult}
+                            inputValue={props.inputValue}
+                            inputPlaceholder={props.inputPlaceholder}
+
+                            marketInfoList={props.marketInfoList}
+
+                            dictFilteredStockCompanyInfo={props.dictFilteredStockCompanyInfo}
+
+                            getSearchingList={props.getSearchingList}
+                            searchingList={props.searchingList}
+                            scrollEffect={props.scrollEffect}
+                        />
+                    </ListItemSuffix>
+                </ListItem>
+            </Navbar>
+        </>
     );
 }
