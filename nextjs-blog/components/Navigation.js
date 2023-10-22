@@ -12,13 +12,15 @@ import Etc from "./Etc";
 
 export default function NavbarDefault(props) {
     const NavList = (props) => {
+
+        if (props.openSearchResult) return <></>;
+
         return (
             <ul className="flex items-center gap-3 mb-0 mt-0 lg:flex-row lg:gap-6">
                 <Oauth
                     authorizeCode={props.authorizeCode}
                     accessToken={props.accessToken}
                     scrollEffect={props.scrollEffect}
-                    openSearchResult={props.openSearchResult}
                     loginStatus={props.loginStatus}
                 />
                 <Calculator
@@ -26,12 +28,8 @@ export default function NavbarDefault(props) {
 
                     openCalculator={props.openCalculator}
                     setOpenCalculator={props.setOpenCalculator}
-
-                    openSearchResult={props.openSearchResult}
                 />
-                <Etc
-                    openSearchResult={props.openSearchResult}
-                />
+                <Etc />
             </ul>
         )
     };
@@ -39,20 +37,24 @@ export default function NavbarDefault(props) {
     return (
         <Navbar className="mx-auto max-w-screen-xl p-0 text-black">
             <ListItem className='p-0'>
-                {props.openSearchResult ? <></> : <ListItemPrefix>
-                    <div className='pl-1 pt-1 font-serif text-base sm:text-xl md:text-2xl lg:text-3xl text-black header-contents text-center sm:underline sm:decoration-2 md:decoration-4 sm:decoration-green-400'>
-                        {/* IDIOT<span className='text-green-400'>.</span>QUANT */}
-                        IDIOT<br />QUANT
-                    </div>
-                </ListItemPrefix>}
+                {props.openSearchResult ?
+                    <></>
+                    :
+                    <ListItemPrefix>
+                        <div className='pl-1 pt-1 font-serif text-base sm:text-xl md:text-2xl lg:text-3xl text-black header-contents text-center sm:underline sm:decoration-2 md:decoration-4 sm:decoration-green-400'>
+                            {/* IDIOT<span className='text-green-400'>.</span>QUANT */}
+                            IDIOT<br />QUANT
+                        </div>
+                    </ListItemPrefix>}
 
                 <NavList
+                    openSearchResult={props.openSearchResult}
+
                     scrollEffect={props.scrollEffect}
 
                     openCalculator={props.openCalculator}
                     setOpenCalculator={props.setOpenCalculator}
 
-                    openSearchResult={props.openSearchResult}
                     authorizeCode={props.authorizeCode}
                     accessToken={props.accessToken}
                     loginStatus={props.loginStatus}
@@ -60,6 +62,8 @@ export default function NavbarDefault(props) {
 
                 <ListItemSuffix>
                     <Search
+                        openSearchResult={props.openSearchResult}
+
                         setOpenSearchResult={props.setOpenSearchResult}
                         searchStockCompanyInfo={props.searchStockCompanyInfo}
                         searchResult={props.searchResult}
@@ -70,8 +74,6 @@ export default function NavbarDefault(props) {
                         marketInfoList={props.marketInfoList}
 
                         dictFilteredStockCompanyInfo={props.dictFilteredStockCompanyInfo}
-
-                        openSearchResult={props.openSearchResult}
 
                         getSearchingList={props.getSearchingList}
                         searchingList={props.searchingList}
