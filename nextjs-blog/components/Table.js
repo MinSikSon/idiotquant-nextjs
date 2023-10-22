@@ -84,6 +84,10 @@ const ListNode = (props) => {
                         <Chip size='sm' color='pink' value={"목표 주가:" + props.fairPrice + "원"} />
                     </div>
                     <div className='flex'>
+                        <Chip size='sm' color='green' value={"시가총액:" + props.marketCapitalization + "원"} />
+                        <Chip size='sm' color='green' value={"상장주식수:" + Number(props.listedStocks).toLocaleString() + "개"} />
+                    </div>
+                    <div className='flex'>
                         <Chip size='sm' color='indigo' value={"유동자산:" + props.currentAssets + "원"} />
                         <Chip size='sm' color='amber' value={"부채총계:" + props.liabilities + "원"} />
                         <Chip size='sm' color='cyan' value={"당기순이익:" + props.netIncome + "원"} />
@@ -91,7 +95,6 @@ const ListNode = (props) => {
                     <div className='flex'>
                         <Chip size='sm' color='purple' value={"PER:" + props.PER} />
                         <Chip size='sm' color='purple' value={"PBR:" + props.PBR} />
-                        <Chip size='sm' color='teal' value={"상장주식수:" + props.listedStocks + "개"} />
                     </div>
                 </div>
                 {/* <CustomChart
@@ -124,10 +127,10 @@ export default function Table(props) {
     let tbody = [];
     let index = 0;
 
-    // console.log(`props.dictFilteredStockCompanyInfo`, props.dictFilteredStockCompanyInfo);
+    // (`props.dictFilteredStockCompanyInfo`, props.dictFilteredStockCompanyInfo);
     if (false == props.openSearchResult) {
         for (let key in props.dictFilteredStockCompanyInfo) {
-            const { corp_code, active, 종목명, 유동자산, 부채총계, 상장주식수, 종가, 당기순이익, PER, PBR, bsnsDate, prevMarketInfo } = props.dictFilteredStockCompanyInfo[key];
+            const { corp_code, active, 종목명, 유동자산, 부채총계, 상장주식수, 종가, 당기순이익, 시가총액, PER, PBR, bsnsDate, prevMarketInfo } = props.dictFilteredStockCompanyInfo[key];
             const fairPrice/*적정가*/ = Number((Number(유동자산) - Number(부채총계)) / Number(상장주식수)).toFixed(0);
             const ratio = Number(fairPrice / Number(종가));
 
@@ -148,6 +151,8 @@ export default function Table(props) {
                 currentAssets: Util.UnitConversion(유동자산),
                 liabilities: Util.UnitConversion(부채총계),
                 netIncome: Util.UnitConversion(당기순이익),
+                marketCapitalization: Util.UnitConversion(시가총액),
+
                 PER: Number(PER),
                 PBR: Number(PBR),
                 close: Number(종가).toLocaleString(),
