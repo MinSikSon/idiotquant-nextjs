@@ -14,6 +14,13 @@ export default function NavbarDefault(props) {
     const NavList = (props) => {
         return (
             <ul className="flex items-center gap-3 mb-0 mt-0 lg:flex-row lg:gap-6">
+                <Oauth
+                    authorizeCode={props.authorizeCode}
+                    accessToken={props.accessToken}
+                    scrollEffect={props.scrollEffect}
+                    openSearchResult={props.openSearchResult}
+                    loginStatus={props.loginStatus}
+                />
                 <Calculator
                     scrollEffect={props.scrollEffect}
 
@@ -21,13 +28,6 @@ export default function NavbarDefault(props) {
                     setOpenCalculator={props.setOpenCalculator}
 
                     openSearchResult={props.openSearchResult}
-                />
-                <Oauth
-                    authorizeCode={props.authorizeCode}
-                    accessToken={props.accessToken}
-                    scrollEffect={props.scrollEffect}
-                    openSearchResult={props.openSearchResult}
-                    loginStatus={props.loginStatus}
                 />
                 <Etc
                     openSearchResult={props.openSearchResult}
