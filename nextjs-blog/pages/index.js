@@ -413,7 +413,7 @@ export default function QuantPost({
             setSelectedStrategy(selected);
         }
 
-        if (!loginStatus) return (
+        if (!!!props.loginStatus) return (
             <div className='sm:px-20 md:px-40 lg:px-64 xl:px-80 2xl:px-96'>
                 <div className="w-full p-1 pt-4">
                     <Select color='green' label="종목 선택 방법" onChange={(selected) => handleChange(selected)} value={selectedStrategy}>
@@ -494,7 +494,10 @@ export default function QuantPost({
                 loginStatus={loginStatus}
             />
 
-            <SubTitle openSearchResult={openSearchResult} />
+            <SubTitle
+                loginStatus={loginStatus}
+                openSearchResult={openSearchResult}
+            />
 
             <div className='pb-80 w-full'>
                 <Table
