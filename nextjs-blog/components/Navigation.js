@@ -22,6 +22,9 @@ export default function NavbarDefault(props) {
                     accessToken={props.accessToken}
                     scrollEffect={props.scrollEffect}
                     loginStatus={props.loginStatus}
+
+                    openMenu={props.openMenu}
+                    setOpenMenu={props.setOpenMenu}
                 />
                 <Calculator
                     scrollEffect={props.scrollEffect}
@@ -58,6 +61,9 @@ export default function NavbarDefault(props) {
                         authorizeCode={props.authorizeCode}
                         accessToken={props.accessToken}
                         loginStatus={props.loginStatus}
+
+                        openMenu={props.openMenu}
+                        setOpenMenu={props.setOpenMenu}
                     ></NavList>
 
                     <ListItemSuffix>

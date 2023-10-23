@@ -109,6 +109,8 @@ export default function QuantPost({
     // const [openNav, setOpenNav] = React.useState(false);
     const [openNav, setOpenNav] = React.useState(true);
 
+    const [openMenu, setOpenMenu] = React.useState(false);
+
     function changeStockCompanyName(dictOrigin, srcName, dstName) {
         const { [srcName]: srcCompanyInfo, ...rest } = dictOrigin;
         rest[dstName] = { ...srcCompanyInfo, '종목명': dstName };
@@ -468,7 +470,8 @@ export default function QuantPost({
                 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0,user-scalable=0" />
                 <meta name="description" content="한국주식에 대한 퀀트적인 분석과 필터링을 통해 적합한 종목을 추천하는 웹 페이지입니다. 효율적인 퀀트 투자 전략을 기반으로 한국 주식 시장에서 가치 있는 투자 대상을 찾아드립니다." />
             </Head>
-            <NavbarDefault openNav={openNav} setOpenNav={setOpenNav}
+            <NavbarDefault
+                openNav={openNav} setOpenNav={setOpenNav}
                 scrollEffect={scrollEffect}
 
                 openCalculator={openCalculator}
@@ -492,6 +495,9 @@ export default function QuantPost({
                 authorizeCode={authorizeCode}
                 accessToken={accessToken}
                 loginStatus={loginStatus}
+
+                openMenu={openMenu}
+                setOpenMenu={setOpenMenu}
             />
 
             <SubTitle
