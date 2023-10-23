@@ -4,7 +4,7 @@ import CustomCard from "../components/CustomCard.js"
 import { strategyNCAV } from "../components/Strategy.js";
 import Head from "next/head.js";
 import { Util } from "../components/Util.js";
-import { Select, Option } from "@material-tailwind/react";
+import { Select, Option, Stepper, Step, Button, Chip, List, ListItem, ListItemPrefix, Typography, Checkbox } from "@material-tailwind/react";
 
 import { useRouter } from "next/router.js";
 import NavbarDefault from "../components/Navigation.js";
@@ -387,7 +387,18 @@ export default function QuantPost({
         setSearchingList(slicedArray);
     }
 
-    const SubTitle = () => {
+
+    // Stepper
+    const [activeStep, setActiveStep] = React.useState(0);
+    const [isLastStep, setIsLastStep] = React.useState(false);
+    const [isFirstStep, setIsFirstStep] = React.useState(false);
+
+    const handleNext = () => !isLastStep && setActiveStep((cur) => cur + 1);
+    const handlePrev = () => !isFirstStep && setActiveStep((cur) => cur - 1);
+
+    const SubTitle = (props) => {
+        if (props.openSearchResult) return <></>;
+
         function handleChange(selected) {
             // console.log(`handleChange`, selected);
             switch (selected) {
@@ -402,7 +413,7 @@ export default function QuantPost({
             setSelectedStrategy(selected);
         }
 
-        return (
+        if (!loginStatus) return (
             <div className='sm:px-20 md:px-40 lg:px-64 xl:px-80 2xl:px-96'>
                 <div className="w-full p-1 pt-4">
                     <Select color='green' label="종목 선택 방법" onChange={(selected) => handleChange(selected)} value={selectedStrategy}>
@@ -418,8 +429,36 @@ export default function QuantPost({
                 </div>
             </div>
         );
-    };
 
+        const CustomListItem = (props) => {
+            return (
+                <ListItem className="p-0">
+                    <label htmlFor={`${props.id}`} className="flex w-full cursor-pointer items-center px-3 py-0">
+                        <ListItemPrefix className="mr-3">
+                            <Checkbox
+                                id={`${props.id}`}
+                                ripple={false}
+                                className="hover:before:opacity-0"
+                                containerProps={{
+                                    className: "p-0",
+                                }}
+                            />
+                        </ListItemPrefix>
+                        <div className='text-xs'>
+                            {props.content}
+                        </div>
+                    </label>
+                </ListItem>
+            )
+        }
+        return (
+            <List className="flex-row">
+                <CustomListItem id='per' content='저 PER' />
+                <CustomListItem id='pbr' content='저 PBR' />
+                <CustomListItem id='netIncome' content='당기순이익' />
+            </List >
+        );
+    };
 
     return (
         <div className='bg-white sm:bg-gray-50'>
@@ -454,32 +493,24 @@ export default function QuantPost({
                 accessToken={accessToken}
                 loginStatus={loginStatus}
             />
-            <div className="relative">
-                {/* <Oauth
-                    authorizeCode={authorizeCode}
-                    accessToken={accessToken}
-                    scrollEffect={scrollEffect}
+
+            <SubTitle openSearchResult={openSearchResult} />
+
+            <div className='pb-80 w-full'>
+                <Table
+                    searchStockCompanyInfo={searchStockCompanyInfo}
+                    setOpenSearchResult={setOpenSearchResult}
                     openSearchResult={openSearchResult}
-                    loginStatus={loginStatus}
-                /> */}
-                {openSearchResult ? <></> : <SubTitle />}
 
-                <div className='pb-80 w-full'>
-                    <Table
-                        searchStockCompanyInfo={searchStockCompanyInfo}
-                        setOpenSearchResult={setOpenSearchResult}
-                        openSearchResult={openSearchResult}
+                    dictFilteredStockCompanyInfo={dictFilteredStockCompanyInfo}
+                    searchResult={searchResult}
 
-                        dictFilteredStockCompanyInfo={dictFilteredStockCompanyInfo}
-                        searchResult={searchResult}
+                    marketInfoList={marketInfoList}
 
-                        marketInfoList={marketInfoList}
+                    deleteStockCompanyInList={deleteStockCompanyInList}
 
-                        deleteStockCompanyInList={deleteStockCompanyInList}
-
-                        scrollEffect={scrollEffect}
-                    />
-                </div>
+                    scrollEffect={scrollEffect}
+                />
             </div>
         </div>
     );
