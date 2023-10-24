@@ -1,15 +1,14 @@
 import React from "react";
 import Table from "../components/Table.js"
-import CustomCard from "../components/CustomCard.js"
-import { strategyNCAV } from "../components/Strategy.js";
 import Head from "next/head.js";
 import { Util } from "../components/Util.js";
-import { Select, Option, Stepper, Step, Button, Chip, List, ListItem, ListItemPrefix, Typography, Checkbox } from "@material-tailwind/react";
 
 import { useRouter } from "next/router.js";
 import NavbarDefault from "../components/Navigation.js";
+import DescriptionPanel from "../components/DescriptionPanel.js";
 
-// export async function getServerSideProps(context) {
+import { strategyNCAV } from "../components/Strategy.js";
+
 export async function getStaticProps() {
     async function fetchAndSet(subUrl) {
         const url = `https://idiotquant-backend.tofu89223.workers.dev`;
@@ -93,11 +92,9 @@ export default function QuantPost({
 
     const [scrollEffect, setScrollEffect] = React.useState(false);
 
-    const [strategyTitle, setStrategyTitle] = React.useState(`NCAV 전략`);
-    const [strategyDescription, setStrategyDescription] = React.useState(`"순유동자산 > 시가총액" 인 종목 추천합니다.`);
-    const [prevInfo, setPrevInfo] = React.useState('');
+    const [strategyInfo, setStrategyInfo] = React.useState({ title: 'NCAV 전략', description: '"순유동자산 > 시가총액" 인 종목 추천합니다.' });
 
-    const [searchingList, setSearchingList] = React.useState('');
+    const [searchingList, setSearchingList] = React.useState(''); // 검색 도중 종목명 출력
 
     const [selectedStrategy, setSelectedStrategy] = React.useState('ncav');
 
@@ -106,7 +103,6 @@ export default function QuantPost({
     const [accessToken, setAccessToken] = React.useState('');
     const [loginStatus, setLoginStatus] = React.useState('');
 
-    // const [openNav, setOpenNav] = React.useState(false);
     const [openNav, setOpenNav] = React.useState(true);
 
     const [openMenu, setOpenMenu] = React.useState(false);
@@ -116,78 +112,6 @@ export default function QuantPost({
         rest[dstName] = { ...srcCompanyInfo, '종목명': dstName };
 
         return rest;
-    }
-
-    function strategyExample() {
-        if (!!prevInfo) {
-            setDictFilteredStockCompanyInfo(prevInfo);
-            setPrevInfo('');
-
-            setStrategyTitle(`NCAV 전략`);
-            setStrategyDescription(`"순유동자산 > 시가총액" 인 종목 추천합니다.`);
-
-            return;
-        }
-
-        let arrFinancialMarketInfo = Array.from(Object.values(latestStockCompanyInfo));
-
-        function filtering(array, key) {
-            return array.filter(item => !!item[key] && 0 < Number(item[key]));
-        }
-        arrFinancialMarketInfo = filtering(arrFinancialMarketInfo, 'PBR');
-        arrFinancialMarketInfo = filtering(arrFinancialMarketInfo, '거래량');
-        arrFinancialMarketInfo = filtering(arrFinancialMarketInfo, 'EPS');
-
-        // 항목 추가
-        arrFinancialMarketInfo.forEach(item => item['score'] = 0);
-        function setScore(array) {
-            let score = 0;
-
-            array.forEach(item => item['score'] += (++score));
-
-            return array;
-        }
-
-        // sort(PBR)
-        let arraySorted1 = new Array(...arrFinancialMarketInfo);
-        arraySorted1.sort(function (a, b) {
-            return Number(a['PBR']) - Number(b['PBR']);
-        });
-        setScore(arraySorted1);
-
-        // sort(capital)
-        let arraySorted2 = new Array(...arraySorted1);
-        arraySorted2.sort(function (a, b) {
-            return Number(a['시가총액']) - Number(b['시가총액']);
-        });
-        setScore(arraySorted2);
-        // 시가총액 하위 20% cut-line
-        const cutLine = Number(arraySorted2.length * 0.2).toFixed(0);
-        // console.log(`cut-line(${cutLine}) 시가총액: ${Util.UnitConversion(arraySorted2[cutLine]['시가총액'], true)}, `, arraySorted2[cutLine]);
-
-        // sort(PER)
-        let arraySorted3 = new Array(...arraySorted2);
-        arraySorted3.sort(function (a, b) {
-            return Number(a['PER']) - Number(b['PER']);
-        });
-        setScore(arraySorted3);
-
-        // sort(score)
-        let arraySorted4 = new Array(...arraySorted3);
-        arraySorted4.sort(function (a, b) {
-            return Number(a['score']) - Number(b['score']);
-        });
-
-        const arrSelectedStockCompany = arraySorted4.slice(0, 40);
-
-        const dictFinancialMarketInfo = {};
-        arrSelectedStockCompany.forEach((stockCompany) => dictFinancialMarketInfo[stockCompany['종목명']] = stockCompany);
-
-        setPrevInfo(dictFilteredStockCompanyInfo);
-        setDictFilteredStockCompanyInfo(dictFinancialMarketInfo);
-
-        setStrategyTitle('소형주 + 저 PBR + 저 PER');
-        setStrategyDescription('아직 TEST 중입니다');
     }
 
     React.useEffect(() => {
@@ -263,9 +187,6 @@ export default function QuantPost({
         const marketInfoLatestIndex = marketInfoList.length - 1;
         const marketInfoLatest = marketInfoList[marketInfoLatestIndex];
 
-        // console.log(`marketInfoPrev`, marketInfoPrev);
-        // console.log(`marketInfoLatest`, marketInfoLatest);
-
         setSearchingList('');
 
         const stockCompanyInfo = dictFilteredStockCompanyInfo[stockCompanyName] || latestStockCompanyInfo[stockCompanyName];
@@ -322,7 +243,6 @@ export default function QuantPost({
 
         setSearchResult(stockCompanyInfo);
 
-        // console.log(`dictFinancialMarketInfo`, dictFinancialMarketInfo);
         setDictFilteredStockCompanyInfo(dictFinancialMarketInfo);
     }
 
@@ -348,9 +268,6 @@ export default function QuantPost({
                     console.log(`error`, error);
                 });
         }
-
-        // console.log(`router`, router);
-        // console.log(`router.query`, router.query);
 
         const kakaoId = localStorage.getItem('kakaoId');
         if (!!router.query.id) {
@@ -389,79 +306,6 @@ export default function QuantPost({
         setSearchingList(slicedArray);
     }
 
-
-    // Stepper
-    const [activeStep, setActiveStep] = React.useState(0);
-    const [isLastStep, setIsLastStep] = React.useState(false);
-    const [isFirstStep, setIsFirstStep] = React.useState(false);
-
-    const handleNext = () => !isLastStep && setActiveStep((cur) => cur + 1);
-    const handlePrev = () => !isFirstStep && setActiveStep((cur) => cur - 1);
-
-    const SubTitle = (props) => {
-        if (props.openSearchResult) return <></>;
-
-        function handleChange(selected) {
-            // console.log(`handleChange`, selected);
-            switch (selected) {
-                case 'ncav':
-                    strategyExample();
-                    break;
-                case '2':
-                    strategyExample();
-                    break;
-            }
-
-            setSelectedStrategy(selected);
-        }
-
-        if (!!!props.loginStatus) return (
-            <div className='sm:px-20 md:px-40 lg:px-64 xl:px-80 2xl:px-96'>
-                <div className="w-full p-1 pt-4">
-                    <Select color='green' label="종목 선택 방법" onChange={(selected) => handleChange(selected)} value={selectedStrategy}>
-                        <Option value='ncav'>NCAV</Option>
-                        <Option value='2'>소형주 + 저 PBR + 저 PER</Option>
-                    </Select>
-                </div>
-                <div>
-                    <CustomCard
-                        title={strategyTitle}
-                        description={strategyDescription}
-                    />
-                </div>
-            </div>
-        );
-
-        const CustomListItem = (props) => {
-            return (
-                <ListItem className="p-0">
-                    <label htmlFor={`${props.id}`} className="flex w-full cursor-pointer items-center px-3 py-0">
-                        <ListItemPrefix className="mr-3">
-                            <Checkbox
-                                id={`${props.id}`}
-                                ripple={false}
-                                className="hover:before:opacity-0"
-                                containerProps={{
-                                    className: "p-0",
-                                }}
-                            />
-                        </ListItemPrefix>
-                        <div className='text-xs'>
-                            {props.content}
-                        </div>
-                    </label>
-                </ListItem>
-            )
-        }
-        return (
-            <List className="flex-row">
-                <CustomListItem id='per' content='저 PER' />
-                <CustomListItem id='pbr' content='저 PBR' />
-                <CustomListItem id='netIncome' content='당기순이익' />
-            </List >
-        );
-    };
-
     return (
         <div className='bg-white sm:bg-gray-50'>
             <Head>
@@ -471,7 +315,9 @@ export default function QuantPost({
                 <meta name="description" content="한국주식에 대한 퀀트적인 분석과 필터링을 통해 적합한 종목을 추천하는 웹 페이지입니다. 효율적인 퀀트 투자 전략을 기반으로 한국 주식 시장에서 가치 있는 투자 대상을 찾아드립니다." />
             </Head>
             <NavbarDefault
-                openNav={openNav} setOpenNav={setOpenNav}
+                openNav={openNav}
+                setOpenNav={setOpenNav}
+
                 scrollEffect={scrollEffect}
 
                 openCalculator={openCalculator}
@@ -500,27 +346,34 @@ export default function QuantPost({
                 setOpenMenu={setOpenMenu}
             />
 
-            <SubTitle
+            <DescriptionPanel
                 loginStatus={loginStatus}
                 openSearchResult={openSearchResult}
+                strategyInfo={strategyInfo}
+
+                latestStockCompanyInfo={latestStockCompanyInfo}
+                setDictFilteredStockCompanyInfo={setDictFilteredStockCompanyInfo}
+
+                selectedStrategy={selectedStrategy}
+                setSelectedStrategy={setSelectedStrategy}
+
+                setStrategyInfo={setStrategyInfo}
             />
 
-            <div className='pb-80 w-full'>
-                <Table
-                    searchStockCompanyInfo={searchStockCompanyInfo}
-                    setOpenSearchResult={setOpenSearchResult}
-                    openSearchResult={openSearchResult}
+            <Table
+                searchStockCompanyInfo={searchStockCompanyInfo}
+                setOpenSearchResult={setOpenSearchResult}
+                openSearchResult={openSearchResult}
 
-                    dictFilteredStockCompanyInfo={dictFilteredStockCompanyInfo}
-                    searchResult={searchResult}
+                dictFilteredStockCompanyInfo={dictFilteredStockCompanyInfo}
+                searchResult={searchResult}
 
-                    marketInfoList={marketInfoList}
+                marketInfoList={marketInfoList}
 
-                    deleteStockCompanyInList={deleteStockCompanyInList}
+                deleteStockCompanyInList={deleteStockCompanyInList}
 
-                    scrollEffect={scrollEffect}
-                />
-            </div>
+                scrollEffect={scrollEffect}
+            />
         </div>
     );
 }

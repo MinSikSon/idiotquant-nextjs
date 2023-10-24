@@ -2,10 +2,7 @@ import React from "react";
 import SearchingListItem from "./SearchingListItem";
 import { Util } from "./Util";
 import CustomChart from "./CustomChart";
-import {
-    MagnifyingGlassIcon,
-    ArrowUturnLeftIcon
-} from "@heroicons/react/24/outline";
+import { MagnifyingGlassIcon, ArrowUturnLeftIcon } from "@heroicons/react/24/outline";
 import { ListItem, ListItemPrefix, ListItemSuffix } from "@material-tailwind/react";
 
 
