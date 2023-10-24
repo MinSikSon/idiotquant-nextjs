@@ -6,17 +6,9 @@ import React from "react";
 
 import { Input, Select, Option, Button, ListItem, ListItemPrefix, ListItemSuffix } from "@material-tailwind/react";
 
-import {
-    ArrowUturnLeftIcon, HomeIcon
-} from "@heroicons/react/24/outline";
+import { HomeIcon } from "@heroicons/react/24/outline";
 
 export default function Calculator() {
-    const [date, setDate] = React.useState(new Date());
-
-    React.useEffect(() => {
-        setInterval(() => { setDate(new Date()); }, 1000);
-    }, []);
-
     React.useEffect(() => {
         handleCalculate();
     });

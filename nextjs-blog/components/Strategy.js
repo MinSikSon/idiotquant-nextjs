@@ -1,4 +1,3 @@
-
 function cleansing(dictOrigin) {
     function filtering(array, key) {
         return array.filter(item => !!item[key] && 0 < Number(item[key]));
@@ -19,6 +18,7 @@ function cleansing(dictOrigin) {
 }
 
 export function strategyNCAV(dictLatestStockCompanyInfo) {
+
     const dictCleansing = cleansing(dictLatestStockCompanyInfo);
     const arrFinancialMarketInfo = Array.from(Object.values(dictCleansing));
 
@@ -53,4 +53,64 @@ export function strategyNCAV(dictLatestStockCompanyInfo) {
     arrSorted1.forEach((stockCompany) => { dictNewFinancialMarketInfo[stockCompany['종목명']] = { active: false, bsnsDate: stockCompany['bsnsDate'], ...stockCompany } });
 
     return dictNewFinancialMarketInfo;
+}
+
+// filter 선택에 따라서, on/off 되게만 해도 좋을듯?
+export function strategyExample(latestStockCompanyInfo) {
+
+    let arrFinancialMarketInfo = Array.from(Object.values(latestStockCompanyInfo));
+
+    function filtering(array, key) {
+        return array.filter(item => !!item[key] && 0 < Number(item[key]));
+    }
+    arrFinancialMarketInfo = filtering(arrFinancialMarketInfo, 'PBR');
+    arrFinancialMarketInfo = filtering(arrFinancialMarketInfo, '거래량');
+    arrFinancialMarketInfo = filtering(arrFinancialMarketInfo, 'EPS');
+
+    // 항목 추가
+    arrFinancialMarketInfo.forEach(item => item['score'] = 0);
+    function setScore(array) {
+        let score = 0;
+
+        array.forEach(item => item['score'] += (++score));
+
+        return array;
+    }
+
+    // sort(PBR)
+    let arraySorted1 = new Array(...arrFinancialMarketInfo);
+    arraySorted1.sort(function (a, b) {
+        return Number(a['PBR']) - Number(b['PBR']);
+    });
+    setScore(arraySorted1);
+
+    // sort(capital)
+    let arraySorted2 = new Array(...arraySorted1);
+    arraySorted2.sort(function (a, b) {
+        return Number(a['시가총액']) - Number(b['시가총액']);
+    });
+    setScore(arraySorted2);
+    // 시가총액 하위 20% cut-line
+    const cutLine = Number(arraySorted2.length * 0.2).toFixed(0);
+    // console.log(`cut-line(${cutLine}) 시가총액: ${Util.UnitConversion(arraySorted2[cutLine]['시가총액'], true)}, `, arraySorted2[cutLine]);
+
+    // sort(PER)
+    let arraySorted3 = new Array(...arraySorted2);
+    arraySorted3.sort(function (a, b) {
+        return Number(a['PER']) - Number(b['PER']);
+    });
+    setScore(arraySorted3);
+
+    // sort(score)
+    let arraySorted4 = new Array(...arraySorted3);
+    arraySorted4.sort(function (a, b) {
+        return Number(a['score']) - Number(b['score']);
+    });
+
+    const arrSelectedStockCompany = arraySorted4.slice(0, 40);
+
+    const dictFinancialMarketInfo = {};
+    arrSelectedStockCompany.forEach((stockCompany) => dictFinancialMarketInfo[stockCompany['종목명']] = stockCompany);
+
+    return dictFinancialMarketInfo;
 }

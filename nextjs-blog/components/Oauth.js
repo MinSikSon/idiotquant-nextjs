@@ -17,7 +17,6 @@ export default function Oauth(props) {
         },
     }
 
-    console.log(`props.loginStatus`, props.loginStatus);
     if (!!props.loginStatus) return (
         <div className='text-black'>
             <Menu open={props.openMenu} handler={props.setOpenMenu}>
