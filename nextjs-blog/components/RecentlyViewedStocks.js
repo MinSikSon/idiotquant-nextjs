@@ -23,6 +23,7 @@ export default function RecentlyViewedStocks(props) {
                 <Item stockName="삼양통상" percentage="-3" />
                 <Item stockName="삼정펄프" percentage="2.4" />
                 <Item stockName="카카오" percentage="-0.5" />
+                <Item stockName="HDC현대산업개발" percentage="3.5" />
             </div>
         </div>
     );
