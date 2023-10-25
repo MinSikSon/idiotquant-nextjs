@@ -20,9 +20,11 @@ export default function DescriptionPanel(props) {
         props.setSelectedStrategy(selected);
     }
 
+    // TODO: 전략 현재는 2개, list 로 변경하고 추가/제거 할 수 있도록 변경 필요
+    // list 유지되게 할 필요
     const { title, description } = props.strategyInfo;
     if (!!!props.loginStatus) return (
-        <div className='sm:px-20 md:px-40 lg:px-64 xl:px-80 2xl:px-96'>
+        <div className='bg-white sm:px-20 md:px-40 lg:px-64 xl:px-80 2xl:px-96'>
             <div className="w-full p-1 pt-4">
                 <Select color='green' label="종목 선택 방법" onChange={(selected) => handleChange(selected)} value={props.selectedStrategy}>
                     <Option value='ncav'>NCAV</Option>
@@ -56,7 +58,7 @@ export default function DescriptionPanel(props) {
     }
 
     return (
-        <List className="flex-row">
+        <List className="bg-white flex-row">
             <CustomListItem id='per' content='저 PER' />
             <CustomListItem id='pbr' content='저 PBR' />
             <CustomListItem id='netIncome' content='당기순이익' />
