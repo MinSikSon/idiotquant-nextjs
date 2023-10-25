@@ -8,6 +8,8 @@ import NavbarDefault from "../components/Navigation.js";
 import DescriptionPanel from "../components/DescriptionPanel.js";
 
 import { strategyNCAV } from "../components/Strategy.js";
+import RecentlyViewedStocks from "../components/RecentlyViewedStocks.js";
+import TitlePanel from "../components/TitlePanel.js";
 
 export async function getStaticProps() {
     async function fetchAndSet(subUrl) {
@@ -307,7 +309,7 @@ export default function QuantPost({
     }
 
     return (
-        <div className='bg-white sm:bg-gray-50'>
+        <div className='bg-gray-200'>
             <Head>
                 <title>한국주식 퀀트 필터링 종목추천 | 투자 전략</title>
                 <link rel="icon" href="/images/icons8-algorithm-flatart-icons-lineal-color-32.png" />
@@ -346,6 +348,8 @@ export default function QuantPost({
                 setOpenMenu={setOpenMenu}
             />
 
+            <TitlePanel openSearchResult={openSearchResult} />
+            <RecentlyViewedStocks openSearchResult={openSearchResult} />
             <DescriptionPanel
                 loginStatus={loginStatus}
                 openSearchResult={openSearchResult}
