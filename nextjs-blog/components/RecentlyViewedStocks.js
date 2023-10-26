@@ -15,16 +15,18 @@ export default function RecentlyViewedStocks(props) {
     }
 
     return (
-        <div className='py-3 my-2 bg-white'>
+        <div className='py-3 my-2 bg-white sm:px-20 md:px-40 lg:px-64 xl:px-80 2xl:px-96'>
             <Typography className="pl-5 pb-2" variant='h6'>최근 본 주식</Typography>
-            <div className="pl-5 flex gap-1 overflow-auto snap-x">
+            {/* <div className="pl-5 flex gap-1 overflow-auto snap-x"> */}
+            <Button disabled variant="text" className="pl-5 flex gap-1 overflow-auto snap-x">
                 <Item stockName="실험실" percentage="100" />
                 <Item stockName="삼성전자" percentage="3" />
                 <Item stockName="삼양통상" percentage="-3" />
                 <Item stockName="삼정펄프" percentage="2.4" />
                 <Item stockName="카카오" percentage="-0.5" />
                 <Item stockName="HDC현대산업개발" percentage="3.5" />
-            </div>
+            </Button>
+            {/* </div> */}
         </div>
     );
 }

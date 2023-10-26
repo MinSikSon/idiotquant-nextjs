@@ -116,8 +116,10 @@ const ListNode = (props) => {
 
 //////////////////////////////////////////////////////////////////////////////
 // Table
-export default function Table(props) {
-    // console.log(`%c[call] Table()`, `color : white; background : blue;`);
+export default function TablePanel(props) {
+    console.log(`%c TablePanel`, `color:blue; background:white`);
+
+    if (props.openSearchResult) <></>;
 
     let loadingDone = !!props.dictFilteredStockCompanyInfo;
     props.marketInfoList.forEach((obj) => loadingDone &&= !!obj);
@@ -128,47 +130,45 @@ export default function Table(props) {
     let index = 0;
 
     // (`props.dictFilteredStockCompanyInfo`, props.dictFilteredStockCompanyInfo);
-    if (false == props.openSearchResult) {
-        for (let key in props.dictFilteredStockCompanyInfo) {
-            const { corp_code, active, 종목명, 유동자산, 부채총계, 상장주식수, 종가, 당기순이익, 시가총액, PER, PBR, bsnsDate, prevMarketInfo } = props.dictFilteredStockCompanyInfo[key];
-            const fairPrice/*적정가*/ = Number((Number(유동자산) - Number(부채총계)) / Number(상장주식수)).toFixed(0);
-            const ratio = Number(fairPrice / Number(종가));
+    for (let key in props.dictFilteredStockCompanyInfo) {
+        const { corp_code, active, 종목명, 유동자산, 부채총계, 상장주식수, 종가, 당기순이익, 시가총액, PER, PBR, bsnsDate, prevMarketInfo } = props.dictFilteredStockCompanyInfo[key];
+        const fairPrice/*적정가*/ = Number((Number(유동자산) - Number(부채총계)) / Number(상장주식수)).toFixed(0);
+        const ratio = Number(fairPrice / Number(종가));
 
-            cumulativeRatio += ratio;
+        cumulativeRatio += ratio;
 
-            tbody.push({
-                key: parseInt(corp_code).toString(),
-                corpCode: parseInt(corp_code),
-                searchStockCompanyInfo: props.searchStockCompanyInfo,
-                setOpenSearchResult: props.setOpenSearchResult,
+        tbody.push({
+            key: parseInt(corp_code).toString(),
+            corpCode: parseInt(corp_code),
+            searchStockCompanyInfo: props.searchStockCompanyInfo,
+            setOpenSearchResult: props.setOpenSearchResult,
 
-                active: active,
-                tickerName: 종목명,
-                index: index,
-                ratio: Number(ratio * 100).toFixed(0),
-                close: Number(종가).toLocaleString(),
-                fairPrice: Number(fairPrice).toLocaleString(),
-                currentAssets: Util.UnitConversion(유동자산),
-                liabilities: Util.UnitConversion(부채총계),
-                netIncome: Util.UnitConversion(당기순이익),
-                marketCapitalization: Util.UnitConversion(시가총액),
+            active: active,
+            tickerName: 종목명,
+            index: index,
+            ratio: Number(ratio * 100).toFixed(0),
+            close: Number(종가).toLocaleString(),
+            fairPrice: Number(fairPrice).toLocaleString(),
+            currentAssets: Util.UnitConversion(유동자산),
+            liabilities: Util.UnitConversion(부채총계),
+            netIncome: Util.UnitConversion(당기순이익),
+            marketCapitalization: Util.UnitConversion(시가총액),
 
-                PER: Number(PER),
-                PBR: Number(PBR),
-                close: Number(종가).toLocaleString(),
-                bsnsFullDate: bsnsDate,
+            PER: Number(PER),
+            PBR: Number(PBR),
+            close: Number(종가).toLocaleString(),
+            bsnsFullDate: bsnsDate,
 
-                listedStocks: 상장주식수,
-                marketInfoList: props.marketInfoList,
+            listedStocks: 상장주식수,
+            marketInfoList: props.marketInfoList,
 
-                // prev
-                prevBsnsFullDate: prevMarketInfo.bsnsDate,
-                prevClose: Number(prevMarketInfo.종가).toLocaleString()
+            // prev
+            prevBsnsFullDate: prevMarketInfo.bsnsDate,
+            prevClose: Number(prevMarketInfo.종가).toLocaleString()
 
-            });
+        });
 
-            ++index;
-        }
+        ++index;
     }
 
     const numOfStockItems = Object.keys(props.dictFilteredStockCompanyInfo).length;
@@ -189,28 +189,20 @@ export default function Table(props) {
 
     return (
         <>
-            {
-                (props.openSearchResult == true) ? <></> :
-                    <div className='sm:px-20 md:px-40 lg:px-64 xl:px-80 2xl:px-96'>
-                        <div className='visible'>
-                            <MarQueue contents={contents} />
-                        </div>
-                        {/* <div className={`z-10 fixed top-0 w-full ${(true === props.scrollEffect) ? 'transition translate-y-2 visible' : 'invisible'}`}>
+            <div className='visible'>
                 <MarQueue contents={contents} />
-            </div> */}
-                        <Card className="w-full">
-                            <List>
-                                {(false == loadingDone) ?
-                                    <Loading />
-                                    :
-                                    <ul className="snap-y">
-                                        {(tbody.length > 0) ? tbody.map((item) => <ListNode key={item.key} {...item} deleteStockCompanyInList={props.deleteStockCompanyInList} />) : <></>}
-                                    </ul>
-                                }
-                            </List>
-                        </Card>
-                    </div>
-            }
+            </div>
+            <Card className="w-full">
+                <List>
+                    {(false == loadingDone) ?
+                        <Loading />
+                        :
+                        <ul className="snap-y">
+                            {(tbody.length > 0) ? tbody.map((item) => <ListNode key={item.key} {...item} deleteStockCompanyInList={props.deleteStockCompanyInList} />) : <></>}
+                        </ul>
+                    }
+                </List>
+            </Card>
         </>
     );
 };

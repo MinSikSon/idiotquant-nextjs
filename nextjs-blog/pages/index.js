@@ -1,5 +1,5 @@
 import React from "react";
-import Table from "../components/Table.js"
+import TablePanel from "../components/TablePanel.js"
 import Head from "next/head.js";
 import { Util } from "../components/Util.js";
 
@@ -91,8 +91,6 @@ export default function QuantPost({
     const [dictFilteredStockCompanyInfo, setDictFilteredStockCompanyInfo] = React.useState('');
 
     const [stockCompanyChangeCount, setStockCompanyChangeCount] = React.useState(0);
-
-    const [scrollEffect, setScrollEffect] = React.useState(false);
 
     const [strategyInfo, setStrategyInfo] = React.useState({ title: 'NCAV 전략', description: '"순유동자산 > 시가총액" 인 종목 추천합니다.' });
 
@@ -197,7 +195,6 @@ export default function QuantPost({
             setSearchResult({});
             return;
         }
-
 
         let newInputPlaceholder = `'${stockCompanyName}' 의 시총: ${Util.UnitConversion(stockCompanyInfo['시가총액'], true)}`;
 
@@ -320,8 +317,6 @@ export default function QuantPost({
                 openNav={openNav}
                 setOpenNav={setOpenNav}
 
-                scrollEffect={scrollEffect}
-
                 openCalculator={openCalculator}
                 setOpenCalculator={setOpenCalculator}
 
@@ -362,12 +357,9 @@ export default function QuantPost({
                 setSelectedStrategy={setSelectedStrategy}
 
                 setStrategyInfo={setStrategyInfo}
-            />
 
-            <Table
                 searchStockCompanyInfo={searchStockCompanyInfo}
                 setOpenSearchResult={setOpenSearchResult}
-                openSearchResult={openSearchResult}
 
                 dictFilteredStockCompanyInfo={dictFilteredStockCompanyInfo}
                 searchResult={searchResult}
@@ -375,9 +367,8 @@ export default function QuantPost({
                 marketInfoList={marketInfoList}
 
                 deleteStockCompanyInList={deleteStockCompanyInList}
-
-                scrollEffect={scrollEffect}
             />
+
         </div>
     );
 }
