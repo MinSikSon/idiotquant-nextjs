@@ -11,6 +11,7 @@ import Oauth from "./Oauth";
 import Etc from "./Etc";
 
 export default function NavbarDefault(props) {
+    console.log(`%c NavbarDefault`, `color:blue; background:white`);
     const NavList = (props) => {
 
         if (props.openSearchResult) return <></>;
@@ -20,15 +21,12 @@ export default function NavbarDefault(props) {
                 <Oauth
                     authorizeCode={props.authorizeCode}
                     accessToken={props.accessToken}
-                    scrollEffect={props.scrollEffect}
                     loginStatus={props.loginStatus}
 
                     openMenu={props.openMenu}
                     setOpenMenu={props.setOpenMenu}
                 />
                 <Calculator
-                    scrollEffect={props.scrollEffect}
-
                     openCalculator={props.openCalculator}
                     setOpenCalculator={props.setOpenCalculator}
                 />
