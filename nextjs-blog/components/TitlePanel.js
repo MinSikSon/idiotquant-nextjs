@@ -1,7 +1,7 @@
 import { Typography } from "@material-tailwind/react";
 
 export default function TitlePanel(props) {
-    console.log(`%c TitlePanel`, `color:blue; background:white`);
+    // console.log(`%c TitlePanel`, `color:blue; background:white`);
 
     if (props.openSearchResult) return <></>
 

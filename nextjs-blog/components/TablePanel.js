@@ -117,7 +117,7 @@ const ListNode = (props) => {
 //////////////////////////////////////////////////////////////////////////////
 // Table
 export default function TablePanel(props) {
-    console.log(`%c TablePanel`, `color:blue; background:white`);
+    // console.log(`%c TablePanel`, `color:blue; background:white`);
 
     if (props.openSearchResult) <></>;
 

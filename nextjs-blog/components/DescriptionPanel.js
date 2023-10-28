@@ -4,12 +4,11 @@ import { strategyNCAV, strategyExample } from "../components/Strategy.js";
 import TablePanel from "./TablePanel";
 
 export default function DescriptionPanel(props) {
-    console.log(`%c DescriptionPanel`, `color:blue; background:white`);
+    // console.log(`%c DescriptionPanel`, `color:blue; background:white`);
 
     if (props.openSearchResult) return <></>;
 
     function handleChange(selected) {
-        console.log(`handleChange`, selected);
         switch (selected) {
             case 'ncav':
                 props.setDictFilteredStockCompanyInfo(strategyNCAV(props.latestStockCompanyInfo));
@@ -83,19 +82,6 @@ export default function DescriptionPanel(props) {
                         </TabsBody>
                     </Tabs>
                     {/* <CustomCard title={title} description={description} /> */}
-
-                    {/* <TablePanel
-                        searchStockCompanyInfo={props.searchStockCompanyInfo}
-                        setOpenSearchResult={props.setOpenSearchResult}
-                        openSearchResult={props.openSearchResult}
-
-                        dictFilteredStockCompanyInfo={props.dictFilteredStockCompanyInfo}
-                        searchResult={props.searchResult}
-
-                        marketInfoList={props.marketInfoList}
-
-                        deleteStockCompanyInList={props.deleteStockCompanyInList}
-                    /> */}
                 </div>
             </div>
         </>
