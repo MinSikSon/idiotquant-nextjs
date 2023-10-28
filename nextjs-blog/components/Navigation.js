@@ -11,7 +11,7 @@ import Oauth from "./Oauth";
 import Etc from "./Etc";
 
 export default function NavbarDefault(props) {
-    console.log(`%c NavbarDefault`, `color:blue; background:white`);
+    // console.log(`%c NavbarDefault`, `color:blue; background:white`);
     const NavList = (props) => {
 
         if (props.openSearchResult) return <></>;

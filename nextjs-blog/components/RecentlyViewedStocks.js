@@ -1,32 +1,46 @@
 import { XMarkIcon } from "@heroicons/react/24/outline";
 import { Button, Checkbox, Chip, ListItem, ListItemPrefix, ListItemSuffix, Typography } from "@material-tailwind/react";
+import { Util } from "./Util";
 
 export default function RecentlyViewedStocks(props) {
     if (props.openSearchResult) return <></>;
 
     const Item = (props) => {
         return (
-            <div className='snap-center flex flex-row bg-gray-200 rounded-lg items-center px-1'>
-                <Chip className="border-none pr-1" value={`${props.stockName}`} variant="outlined" size="lg" onClick={() => { console.log(`clicked Chip`) }} />
-                <div className={`text-sm ${props.percentage > 0 ? 'text-red-600' : 'text-blue-600'}`}>{props.percentage}%</div>
-                <XMarkIcon strokeWidth={2} className="h-5 w-5" onClick={() => { console.log(`clicked XMarkIcon`) }} />
+            <div className='shrink-0 snap-center flex flex-row bg-gray-200 rounded-lg items-center px-1'>
+                <Chip
+                    className="border-none pr-1 text-xs text-black"
+                    value={`${props.stockName}`}
+                    variant="outlined"
+                    onClick={() => { props.clickedRecentlyViewedStock(props.stockName) }}
+                />
+                <div className={`text-xs shrink-0`}>{Util.UnitConversion(props.description, true)}</div>
+                {/* <div className={`text-sm ${props.percentage > 0 ? 'text-red-600' : 'text-blue-600'}`}>{props.percentage}%</div> */}
+                <XMarkIcon className="h-5 w-5 shrink-0" strokeWidth={2} onClick={() => (props.spliceRecentlyViewedStocksList(props.stockName))} />
             </div>
         );
     }
 
+    function getRandomInt(min, max) {
+        min = Math.ceil(min);
+        max = Math.floor(max);
+        return Math.floor(Math.random() * (max - min + 1)) + min;
+    }
+
+    // props.recentlyViewedStocksList.map(({ stockName }) => { console.log(props.latestStockCompanyInfo[stockName]); });
+
     return (
         <div className='py-3 my-2 bg-white sm:px-20 md:px-40 lg:px-64 xl:px-80 2xl:px-96'>
             <Typography className="pl-5 pb-2" variant='h6'>최근 본 주식</Typography>
-            {/* <div className="pl-5 flex gap-1 overflow-auto snap-x"> */}
-            <Button disabled variant="text" className="pl-5 flex gap-1 overflow-auto snap-x">
-                <Item stockName="실험실" percentage="100" />
-                <Item stockName="삼성전자" percentage="3" />
-                <Item stockName="삼양통상" percentage="-3" />
-                <Item stockName="삼정펄프" percentage="2.4" />
-                <Item stockName="카카오" percentage="-0.5" />
-                <Item stockName="HDC현대산업개발" percentage="3.5" />
-            </Button>
-            {/* </div> */}
+            <div className="pl-5 flex gap-1 overflow-auto snap-x">
+                {props.recentlyViewedStocksList.map(({ stockName }) => (<Item
+                    stockName={stockName}
+                    description={props.latestStockCompanyInfo[stockName]['종가']}
+                    clickedRecentlyViewedStock={props.clickedRecentlyViewedStock}
+
+                    spliceRecentlyViewedStocksList={props.spliceRecentlyViewedStocksList}
+                />))}
+            </div>
         </div>
     );
 }

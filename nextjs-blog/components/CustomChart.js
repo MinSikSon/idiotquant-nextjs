@@ -86,15 +86,15 @@ export default ({
                         },
                     },
                     animations: false,
-                    animations: {
-                        tension: {
-                            duration: 5000,
-                            easing: 'linear',
-                            from: 0.5,
-                            to: 0,
-                            loop: true
-                        },
-                    },
+                    // animations: {
+                    //     tension: {
+                    //         duration: 5000,
+                    //         easing: 'linear',
+                    //         from: 0.5,
+                    //         to: 0,
+                    //         loop: true
+                    //     },
+                    // },
                     scales: {
                         y: {
                             // beginAtZero: true,

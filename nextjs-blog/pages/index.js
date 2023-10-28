@@ -107,6 +107,9 @@ export default function QuantPost({
 
     const [openMenu, setOpenMenu] = React.useState(false);
 
+    // RecentlyViewedStocks.js
+    const [recentlyViewedStocksList, setRecentlyViewedStocksList] = React.useState([]);
+
     function changeStockCompanyName(dictOrigin, srcName, dstName) {
         const { [srcName]: srcCompanyInfo, ...rest } = dictOrigin;
         rest[dstName] = { ...srcCompanyInfo, '종목명': dstName };
@@ -181,7 +184,15 @@ export default function QuantPost({
         }
     }, [stockCompanyChangeCount]);
 
+    function clickedRecentlyViewedStock(stockCompanyName) {
+        // console.log(`%c clickedRecentlyViewedStock ${stockCompanyName}`, `color : blue; background : white`)
+
+        searchStockCompanyInfo(stockCompanyName);
+        setOpenSearchResult(true);
+    }
+
     function searchStockCompanyInfo(stockCompanyName) {
+        // console.log(`%c searchStockCompanyinfo 1 ${stockCompanyName}`, `color : blue; background : white`)
         const marketInfoPrevIndex = marketInfoList.length - 2;
         const marketInfoPrev = marketInfoList[marketInfoPrevIndex];
         const marketInfoLatestIndex = marketInfoList.length - 1;
@@ -243,6 +254,23 @@ export default function QuantPost({
         setSearchResult(stockCompanyInfo);
 
         setDictFilteredStockCompanyInfo(dictFinancialMarketInfo);
+
+        // update recentlyViewedStocksList
+        let newRecentlyViewedStocksList = [...recentlyViewedStocksList];
+        for (let i = 0; i < newRecentlyViewedStocksList.length; ++i) {
+            if (stockCompanyName != newRecentlyViewedStocksList[i].stockName) {
+                continue;
+            }
+
+            newRecentlyViewedStocksList.splice(i, 1);
+            break;
+        }
+        if (newRecentlyViewedStocksList.length >= 10) {
+            newRecentlyViewedStocksList.pop();
+        }
+
+        newRecentlyViewedStocksList = [{ stockName: stockCompanyName }, ...newRecentlyViewedStocksList];
+        setRecentlyViewedStocksList(newRecentlyViewedStocksList);
     }
 
     React.useEffect(() => {
@@ -305,6 +333,20 @@ export default function QuantPost({
         setSearchingList(slicedArray);
     }
 
+    function spliceRecentlyViewedStocksList(stockName) {
+        let newRecentlyViewedStocksList = [...recentlyViewedStocksList];
+        for (let i = 0; i < newRecentlyViewedStocksList.length; ++i) {
+            if (stockName != newRecentlyViewedStocksList[i].stockName) {
+                continue;
+            }
+
+            newRecentlyViewedStocksList.splice(i, 1);
+            break;
+        }
+
+        setRecentlyViewedStocksList(newRecentlyViewedStocksList);
+    }
+
     return (
         <div className='bg-gray-200'>
             <Head>
@@ -341,10 +383,21 @@ export default function QuantPost({
 
                 openMenu={openMenu}
                 setOpenMenu={setOpenMenu}
+
+
+                recentlyViewedStocksList={recentlyViewedStocksList}
+                setRecentlyViewedStocksList={setRecentlyViewedStocksList}
             />
 
             <TitlePanel openSearchResult={openSearchResult} />
-            <RecentlyViewedStocks openSearchResult={openSearchResult} />
+            <RecentlyViewedStocks
+                openSearchResult={openSearchResult}
+                recentlyViewedStocksList={recentlyViewedStocksList}
+                latestStockCompanyInfo={latestStockCompanyInfo}
+                spliceRecentlyViewedStocksList={spliceRecentlyViewedStocksList}
+
+                clickedRecentlyViewedStock={clickedRecentlyViewedStock}
+            />
             <DescriptionPanel
                 loginStatus={loginStatus}
                 openSearchResult={openSearchResult}
