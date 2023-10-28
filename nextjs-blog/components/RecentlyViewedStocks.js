@@ -33,13 +33,17 @@ export default function RecentlyViewedStocks(props) {
         <div className='py-3 my-2 bg-white sm:px-20 md:px-40 lg:px-64 xl:px-80 2xl:px-96'>
             <Typography className="pl-5 pb-2" variant='h6'>최근 본 주식</Typography>
             <div className="pl-5 flex gap-1 overflow-auto snap-x">
-                {props.recentlyViewedStocksList.map(({ stockName }) => (<Item
-                    stockName={stockName}
-                    description={props.latestStockCompanyInfo[stockName]['종가']}
-                    clickedRecentlyViewedStock={props.clickedRecentlyViewedStock}
+                {props.recentlyViewedStocksList.length > 0 ?
+                    props.recentlyViewedStocksList.map(({ stockName }) => (<Item
+                        stockName={stockName}
+                        description={props.latestStockCompanyInfo[stockName]['종가']}
+                        clickedRecentlyViewedStock={props.clickedRecentlyViewedStock}
 
-                    spliceRecentlyViewedStocksList={props.spliceRecentlyViewedStocksList}
-                />))}
+                        spliceRecentlyViewedStocksList={props.spliceRecentlyViewedStocksList}
+                    />))
+                    :
+                    <Typography variant="small">최근에 본 주식이 없어요</Typography>
+                }
             </div>
         </div>
     );

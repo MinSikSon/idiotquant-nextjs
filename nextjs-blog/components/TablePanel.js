@@ -1,23 +1,17 @@
 
-import { Card, Chip, IconButton, List, ListItem, ListItemPrefix, ListItemSuffix, Popover, PopoverContent, PopoverHandler, Typography } from "@material-tailwind/react";
+import { Card, CardBody, CardHeader, Chip, IconButton, List, ListItem, ListItemPrefix, ListItemSuffix, Popover, PopoverContent, PopoverHandler, Typography } from "@material-tailwind/react";
 import CustomCard from "./CustomCard";
 import CustomChart from "./CustomChart";
 import Loading from "./Loading";
 import { Util } from "./Util";
-import { TrashIcon } from "@heroicons/react/24/outline";
+import { CurrencyDollarIcon, TrashIcon } from "@heroicons/react/24/outline";
 
 const MarQueue = (props) => {
-    const CardList = () => {
-        return (
+    return (
+        <div className='relative flex overflow-x-scroll'>
             <>
                 {props.contents.map((content, index) => <CustomCard key={index} title={content.title} description={content.description} textColor={content.textColor} backGround={content.backGround} />)}
             </>
-        );
-    };
-
-    return (
-        <div className='relative flex overflow-x-scroll'>
-            <CardList />
         </div>
     );
 }
@@ -187,19 +181,77 @@ export default function TablePanel(props) {
         // { title: `목표가`, description: `xx,xxx 원`, textColor: `text-black`, backGround: `bg-red-500` },
     ];
 
+    const CardList = (props) => {
+        function extractVideoID(url) {
+            var regExp =
+                /^.*((youtu.be\/)|(v\/)|(\/u\/\w\/)|(embed\/)|(watch\?))\??v?=?([^#\&\?]*).*/;
+            var match = url.match(regExp);
+            if (match && match[7].length == 11) {
+                return match[7];
+            } else {
+                alert("Could not extract video ID.");
+            }
+        }
+        const videoId = extractVideoID(`https://www.youtube.com/watch?v=xguam0TKMw8`);
+
+        return (
+            <Card className="px-0">
+                <CardHeader shadow={false} floated={false} color={props.color} className="mb-2 grid place-items-center rounded-none" >
+                    {/* <img
+                    src="https://img.freepik.com/free-photo/happy-face-asian-business-man-holding-money-us-dollar-bills-on-business-district-urban_1150-34754.jpg?w=996&t=st=1698503020~exp=1698503620~hmac=544881a393fa191b91a2c06cb1f1d55ac5a34604726b616e0d2fe592119cc01f"
+                    alt="card-image"
+                    className="h-full w-full object-cover"
+                /> */}
+                    {/* <video className="h-full w-full rounded-lg" controls autoPlay muted>
+                    <source src="https://www.youtube.com/watch?v=xguam0TKMw8" type="video/mp4" />
+                    Your browser does not support the video tag.
+                </video> */}
+                    {/* <iframe
+                        src={`https://www.youtube.com/embed/${videoId}`}
+                        allowFullScreen
+                    /> */}
+                    <Typography variant="h3" color='white'>{props.ratio}</Typography>
+                </CardHeader>
+                <CardBody className="m-0 p-0">
+                    <Typography className="pl-2" variant="h5" color={`${props.color}`}>시가총액 대비 순유동자산이 {props.ratio} 인 종목입니다.</Typography>
+                    {(props.tbody.length > 0) ? props.tbody.map((item) => <ListNode key={item.key} {...item} deleteStockCompanyInList={props.deleteStockCompanyInList} />) : <></>}
+                </CardBody>
+            </Card>
+        );
+    }
+
+    let over100 = [];
+    let over50 = [];
+    let under50 = [];
+
+    console.log(`tbody`, tbody);
+    for (let i = 0; i < tbody.length; ++i) {
+        if (tbody[i].ratio >= 200) {
+            over100.push(tbody[i]);
+        }
+        else if (tbody[i].ratio >= 150) {
+            over50.push(tbody[i]);
+        }
+        else {
+            under50.push(tbody[i]);
+        }
+    }
+
     return (
         <>
             <div className='visible'>
                 <MarQueue contents={contents} />
             </div>
             <Card className="w-full">
-                <List>
+                <List className="px-0">
                     {(false == loadingDone) ?
                         <Loading />
                         :
-                        <ul className="snap-y">
-                            {(tbody.length > 0) ? tbody.map((item) => <ListNode key={item.key} {...item} deleteStockCompanyInList={props.deleteStockCompanyInList} />) : <></>}
-                        </ul>
+                        <>
+                            <CardList tbody={over100} loop={5} ratio={'100% 이상'} color={'red'} deleteStockCompanyInList={props.deleteStockCompanyInList} />
+                            <CardList tbody={over50} loop={2} ratio={'50% 이상'} color={'orange'} deleteStockCompanyInList={props.deleteStockCompanyInList} />
+                            <CardList tbody={under50} loop={5} ratio={'50% 이하'} color={'blue'} deleteStockCompanyInList={props.deleteStockCompanyInList} />
+                        </>
                     }
                 </List>
             </Card>

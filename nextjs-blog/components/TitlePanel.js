@@ -3,7 +3,7 @@ import { Typography } from "@material-tailwind/react";
 export default function TitlePanel(props) {
     // console.log(`%c TitlePanel`, `color:blue; background:white`);
 
-    if (props.openSearchResult) return <></>
+    if (props.openSearchResult) return <></>;
 
     return (
         <div className='py-3 my-2 bg-white'>
