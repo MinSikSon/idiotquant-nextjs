@@ -25,9 +25,9 @@ const Input = (props) => {
                 e.target[0].value = ''
                 props.setOpenSearchResult(true);
             }}
-            className={`flex items-center`}
+            className={`flex items-center p-0`}
         >
-            <ListItem className={`p-0 px-1 text-black `}>
+            <ListItem className={`p-0 px-1 text-black`}>
                 {props.openSearchResult ?
                     <>
                         <ListItemPrefix>
@@ -38,7 +38,7 @@ const Input = (props) => {
                         <input
                             ref={refFocus}
                             name="searchValue"
-                            className="bg-gray-100 appearance-none border-none w-full text-black p-2 rounded-lg text-sm focus:outline-none"
+                            className="appearance-none border-none w-full text-black p-2 rounded-lg text-sm focus:outline-none"
                             type="text"
                             placeholder={props.inputPlaceholder}
                             value={props.inputValue}
@@ -112,49 +112,49 @@ export default function Search(props) {
         );
     }
 
+    // console.log(`props.openSearchResult`, props.openSearchResult);
+    // console.log(`props.searchingList`, props.searchingList);
+    // console.log(`props.searchResult`, props.searchResult);
+    if (true === !!!props.openSearchResult) return <Input {...props} />;
+
     return (
-        <div className={`z-10 rounded-xl ${(true === props.openSearchResult || true === !!props.searchingList) ? `bg-gray-50 w-screen h-screen` : `border-none`}`}>
-            <div className={`${(true === props.openSearchResult || true === !!props.searchingList) ? 'bg-white rounded-md drop-shadow-md' : ''}`}>
-                <Input {...props} />
-
-                {(true === !!props.openSearchResult) ?
-                    (true === !!props.searchingList) ?
+        <div className={`z-10 w-full`}>
+            <Input {...props} />
+            {
+                (true === !!props.searchingList) ?
+                    <>
+                        {props.searchingList.map((item, index) =>
+                            <SearchingListItem
+                                key={index}
+                                movie={item}
+                                searchStockCompanyInfo={(stockCompany) => {
+                                    props.setOpenSearchResult(true)
+                                    props.searchStockCompanyInfo(stockCompany);
+                                }}
+                            />)}
+                    </>
+                    :
+                    (!!props.searchResult && Object.keys(props.searchResult).length > 0) ?
                         <>
-                            {props.searchingList.map((item, index) =>
-                                <SearchingListItem
-                                    key={index}
-                                    movie={item}
-                                    searchStockCompanyInfo={(stockCompany) => {
-                                        props.setOpenSearchResult(true)
-                                        props.searchStockCompanyInfo(stockCompany);
-                                    }}
-                                />)}
+                            <CustomChart
+                                fairPrice={fairPrice}
+                                tickerName={jsonSearchResult['종목명']}
+                                bsnsFullDate={(Object.keys(props.dictFilteredStockCompanyInfo).length > 0) ? props.dictFilteredStockCompanyInfo[Object.keys(props.dictFilteredStockCompanyInfo)[0]].bsnsDate : '-'}
 
+                                marketCapitalization={jsonSearchResult['시가총액']}
+                                listedStocks={jsonSearchResult['상장주식수']}
+                                marketInfoList={props.marketInfoList}
+
+                                responsive={true}
+                                display={true}
+                            />
+                            <div className={`grid grid-cols-3`}>
+                                {Object.keys(selectedSearchResult).map((key, index) => <CustomDiv key={index} title={key} item={jsonSearchResult[key]} />)}
+                            </div>
                         </>
                         :
-                        (!!props.searchResult && Object.keys(props.searchResult).length > 0) ?
-                            <>
-                                <CustomChart
-                                    fairPrice={fairPrice}
-                                    tickerName={jsonSearchResult['종목명']}
-                                    bsnsFullDate={(Object.keys(props.dictFilteredStockCompanyInfo).length > 0) ? props.dictFilteredStockCompanyInfo[Object.keys(props.dictFilteredStockCompanyInfo)[0]].bsnsDate : '-'}
-
-                                    marketCapitalization={jsonSearchResult['시가총액']}
-                                    listedStocks={jsonSearchResult['상장주식수']}
-                                    marketInfoList={props.marketInfoList}
-
-                                    responsive={true}
-                                    display={true}
-                                />
-                                <div className={`grid grid-cols-3`}>
-                                    {Object.keys(selectedSearchResult).map((key, index) => <CustomDiv key={index} title={key} item={jsonSearchResult[key]} />)}
-                                </div>
-                            </>
-                            :
-                            <></>
-                    : <></>
-                }
-            </div>
+                        <></>
+            }
         </div>
     );
 }

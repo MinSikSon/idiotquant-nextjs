@@ -113,7 +113,9 @@ const ListNode = (props) => {
 export default function TablePanel(props) {
     // console.log(`%c TablePanel`, `color:blue; background:white`);
 
-    if (props.openSearchResult) <></>;
+    // console.log(`TablePanel 1`, props.openSearchResult);
+    // console.log(`TablePanel 2`, props.searchingList);
+    if (!props.openSearchResult) <>hihi</>;
 
     let loadingDone = !!props.dictFilteredStockCompanyInfo;
     props.marketInfoList.forEach((obj) => loadingDone &&= !!obj);
@@ -224,7 +226,7 @@ export default function TablePanel(props) {
     let over50 = [];
     let under50 = [];
 
-    console.log(`tbody`, tbody);
+    // console.log(`tbody`, tbody);
     for (let i = 0; i < tbody.length; ++i) {
         if (tbody[i].ratio >= 200) {
             over100.push(tbody[i]);

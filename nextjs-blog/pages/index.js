@@ -1,5 +1,4 @@
 import React from "react";
-import TablePanel from "../components/TablePanel.js"
 import Head from "next/head.js";
 import { Util } from "../components/Util.js";
 
@@ -347,81 +346,114 @@ export default function QuantPost({
         setRecentlyViewedStocksList(newRecentlyViewedStocksList);
     }
 
+    // sm	640px	@media (min-width: 640px) { ... }
+    // md	768px	@media (min-width: 768px) { ... }
+    // lg	1024px	@media (min-width: 1024px) { ... }
+    // xl	1280px	@media (min-width: 1280px) { ... }
+    // 2xl	1536px	@media (min-width: 1536px) { ... }
     return (
-        <div className='bg-gray-200'>
-            <Head>
-                <title>한국주식 퀀트 필터링 종목추천 | 투자 전략</title>
-                <link rel="icon" href="/images/icons8-algorithm-flatart-icons-lineal-color-32.png" />
-                <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0,user-scalable=0" />
-                <meta name="description" content="한국주식에 대한 퀀트적인 분석과 필터링을 통해 적합한 종목을 추천하는 웹 페이지입니다. 효율적인 퀀트 투자 전략을 기반으로 한국 주식 시장에서 가치 있는 투자 대상을 찾아드립니다." />
-            </Head>
-            <NavbarDefault
-                openNav={openNav}
-                setOpenNav={setOpenNav}
+        <div className="flex">
+            <div className='bg-gray-200 w-full sm:w-1/2 md:w-1/2 lg:w-1/2 xl:w-1/2 2xl:w-1/2'>
+                <Head>
+                    <title>한국주식 퀀트 필터링 종목추천 | 투자 전략</title>
+                    <link rel="icon" href="/images/icons8-algorithm-flatart-icons-lineal-color-32.png" />
+                    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0,user-scalable=0" />
+                    <meta name="description" content="한국주식에 대한 퀀트적인 분석과 필터링을 통해 적합한 종목을 추천하는 웹 페이지입니다. 효율적인 퀀트 투자 전략을 기반으로 한국 주식 시장에서 가치 있는 투자 대상을 찾아드립니다." />
+                </Head>
+                <NavbarDefault
+                    openNav={openNav}
+                    setOpenNav={setOpenNav}
 
-                openCalculator={openCalculator}
-                setOpenCalculator={setOpenCalculator}
+                    openCalculator={openCalculator}
+                    setOpenCalculator={setOpenCalculator}
 
-                setOpenSearchResult={setOpenSearchResult}
-                openSearchResult={openSearchResult}
-                searchStockCompanyInfo={searchStockCompanyInfo}
-                searchResult={searchResult}
-                inputValue={inputValue}
-                inputPlaceholder={inputPlaceholder}
+                    setOpenSearchResult={setOpenSearchResult}
+                    openSearchResult={openSearchResult}
+                    searchStockCompanyInfo={searchStockCompanyInfo}
+                    searchResult={searchResult}
+                    inputValue={inputValue}
+                    inputPlaceholder={inputPlaceholder}
 
-                // new state
-                marketInfoList={marketInfoList}
+                    // new state
+                    marketInfoList={marketInfoList}
 
-                dictFilteredStockCompanyInfo={dictFilteredStockCompanyInfo}
+                    dictFilteredStockCompanyInfo={dictFilteredStockCompanyInfo}
 
-                getSearchingList={getSearchingList}
-                searchingList={searchingList}
+                    getSearchingList={getSearchingList}
+                    searchingList={searchingList}
 
-                authorizeCode={authorizeCode}
-                accessToken={accessToken}
-                loginStatus={loginStatus}
+                    authorizeCode={authorizeCode}
+                    accessToken={accessToken}
+                    loginStatus={loginStatus}
 
-                openMenu={openMenu}
-                setOpenMenu={setOpenMenu}
+                    openMenu={openMenu}
+                    setOpenMenu={setOpenMenu}
 
 
-                recentlyViewedStocksList={recentlyViewedStocksList}
-                setRecentlyViewedStocksList={setRecentlyViewedStocksList}
-            />
+                    recentlyViewedStocksList={recentlyViewedStocksList}
+                    setRecentlyViewedStocksList={setRecentlyViewedStocksList}
+                />
 
-            <TitlePanel openSearchResult={openSearchResult} />
-            <RecentlyViewedStocks
-                openSearchResult={openSearchResult}
-                recentlyViewedStocksList={recentlyViewedStocksList}
-                latestStockCompanyInfo={latestStockCompanyInfo}
-                spliceRecentlyViewedStocksList={spliceRecentlyViewedStocksList}
+                <TitlePanel openSearchResult={openSearchResult} />
+                <RecentlyViewedStocks
+                    openSearchResult={openSearchResult}
+                    recentlyViewedStocksList={recentlyViewedStocksList}
+                    latestStockCompanyInfo={latestStockCompanyInfo}
+                    spliceRecentlyViewedStocksList={spliceRecentlyViewedStocksList}
 
-                clickedRecentlyViewedStock={clickedRecentlyViewedStock}
-            />
-            <DescriptionPanel
-                loginStatus={loginStatus}
-                openSearchResult={openSearchResult}
-                strategyInfo={strategyInfo}
+                    clickedRecentlyViewedStock={clickedRecentlyViewedStock}
+                />
+                <div className='sm:hidden md:hidden lg:hidden xl:hidden 2xl:hidden'>
+                    <DescriptionPanel
+                        loginStatus={loginStatus}
+                        openSearchResult={openSearchResult}
+                        strategyInfo={strategyInfo}
 
-                latestStockCompanyInfo={latestStockCompanyInfo}
-                setDictFilteredStockCompanyInfo={setDictFilteredStockCompanyInfo}
+                        latestStockCompanyInfo={latestStockCompanyInfo}
+                        setDictFilteredStockCompanyInfo={setDictFilteredStockCompanyInfo}
 
-                selectedStrategy={selectedStrategy}
-                setSelectedStrategy={setSelectedStrategy}
+                        selectedStrategy={selectedStrategy}
+                        setSelectedStrategy={setSelectedStrategy}
 
-                setStrategyInfo={setStrategyInfo}
+                        setStrategyInfo={setStrategyInfo}
 
-                searchStockCompanyInfo={searchStockCompanyInfo}
-                setOpenSearchResult={setOpenSearchResult}
+                        searchStockCompanyInfo={searchStockCompanyInfo}
+                        setOpenSearchResult={setOpenSearchResult}
 
-                dictFilteredStockCompanyInfo={dictFilteredStockCompanyInfo}
-                searchResult={searchResult}
+                        dictFilteredStockCompanyInfo={dictFilteredStockCompanyInfo}
+                        searchResult={searchResult}
+                        searchingList={searchingList}
 
-                marketInfoList={marketInfoList}
+                        marketInfoList={marketInfoList}
 
-                deleteStockCompanyInList={deleteStockCompanyInList}
-            />
+                        deleteStockCompanyInList={deleteStockCompanyInList}
+                    />
+                </div>
+            </div>
+            <div className='w-0 sm:w-1/2 md:w-1/2 lg:w-1/2 xl:w-1/2 2xl:w-1/2'>
+                <DescriptionPanel
+                    loginStatus={loginStatus}
+                    openSearchResult={false}
+                    strategyInfo={strategyInfo}
 
+                    latestStockCompanyInfo={latestStockCompanyInfo}
+                    setDictFilteredStockCompanyInfo={setDictFilteredStockCompanyInfo}
+
+                    selectedStrategy={selectedStrategy}
+                    setSelectedStrategy={setSelectedStrategy}
+
+                    setStrategyInfo={setStrategyInfo}
+
+                    searchStockCompanyInfo={searchStockCompanyInfo}
+                    setOpenSearchResult={setOpenSearchResult}
+
+                    dictFilteredStockCompanyInfo={dictFilteredStockCompanyInfo}
+                    searchResult={searchResult}
+
+                    marketInfoList={marketInfoList}
+
+                    deleteStockCompanyInList={deleteStockCompanyInList}
+                /></div>
         </div>
     );
 }
