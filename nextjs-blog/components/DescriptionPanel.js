@@ -6,6 +6,7 @@ import TablePanel from "./TablePanel";
 export default function DescriptionPanel(props) {
     // console.log(`%c DescriptionPanel`, `color:blue; background:white`);
 
+    // console.log(`DescriptionPanel`, props.searchingList);
     if (props.openSearchResult) return <></>;
 
     function handleChange(selected) {
@@ -23,10 +24,6 @@ export default function DescriptionPanel(props) {
         props.setSelectedStrategy(selected);
     }
 
-    // TODO: 전략 현재는 2개, list 로 변경하고 추가/제거 할 수 있도록 변경 필요
-    // list 유지되게 할 필요
-    const { title, description } = props.strategyInfo;
-
     const data = [
         {
             label: 'NCAV',
@@ -40,50 +37,50 @@ export default function DescriptionPanel(props) {
         }
     ]
     return (
-        <>
-            <div className='py-3 my-2 bg-white sm:px-20 md:px-40 lg:px-64 xl:px-80 2xl:px-96'>
-                <Typography className="pl-5 pb-2" variant='h6'>관심 주식</Typography>
-                <div className='bg-white'>
-                    <Tabs value="ncav">
-                        <ListItem className="p-0 pl-5">
-                            <TabsHeader
-                                className="overflow-x-scroll rounded-none border-b border-blue-gray-100 bg-transparent p-0"
-                                indicatorProps={{ className: "bg-transparent border-b-2 border-gray-900 shadow-none rounded-none", }}
-                            >
-                                {data.map(({ label, value }) => (
-                                    <Tab className="shrink-0 w-fit text-sm" onClick={() => handleChange(value)} key={value} value={value}>
-                                        {label}
-                                    </Tab>
-                                ))}
-                            </TabsHeader>
-
-                            <ListItemSuffix className="shrink-0 w-fit">
-                                <Button disabled className="border-l-2 p-0 px-1 mx-1 rounded-none text-sm" variant="text">편집</Button>
-                            </ListItemSuffix>
-                        </ListItem>
-                        <TabsBody>
-                            {data.map(({ value, desc }) => (
-                                <TabPanel key={value} value={value} className="text-sm text-black">
-                                    {desc}
-                                </TabPanel>
+        <div className='py-3 my-2 bg-white'>
+            <Typography className="pl-5 pb-2" variant='h6'>관심 주식</Typography>
+            <div className='bg-white'>
+                <Tabs value="ncav">
+                    <ListItem className="p-0 pl-5">
+                        <TabsHeader
+                            className="overflow-x-scroll rounded-none border-b border-blue-gray-100 bg-transparent p-0"
+                            indicatorProps={{ className: "bg-transparent border-b-2 border-gray-900 shadow-none rounded-none", }}
+                        >
+                            {data.map(({ label, value }) => (
+                                <Tab className="shrink-0 w-fit text-sm" onClick={() => handleChange(value)} key={value} value={value}>
+                                    {label}
+                                </Tab>
                             ))}
-                            <TablePanel
-                                searchStockCompanyInfo={props.searchStockCompanyInfo}
-                                setOpenSearchResult={props.setOpenSearchResult}
-                                openSearchResult={props.openSearchResult}
+                        </TabsHeader>
 
-                                dictFilteredStockCompanyInfo={props.dictFilteredStockCompanyInfo}
-                                searchResult={props.searchResult}
+                        <ListItemSuffix className="shrink-0 w-fit">
+                            <Button disabled className="border-l-2 p-0 px-1 mx-1 rounded-none text-sm" variant="text">편집</Button>
+                        </ListItemSuffix>
+                    </ListItem>
+                    <TabsBody>
+                        {data.map(({ value, desc }) => (
+                            <TabPanel key={value} value={value} className="text-sm text-black">
+                                {desc}
+                            </TabPanel>
+                        ))}
+                        <TablePanel
+                            searchStockCompanyInfo={props.searchStockCompanyInfo}
+                            setOpenSearchResult={props.setOpenSearchResult}
+                            openSearchResult={props.openSearchResult}
 
-                                marketInfoList={props.marketInfoList}
+                            dictFilteredStockCompanyInfo={props.dictFilteredStockCompanyInfo}
+                            searchResult={props.searchResult}
 
-                                deleteStockCompanyInList={props.deleteStockCompanyInList}
-                            />
-                        </TabsBody>
-                    </Tabs>
-                    {/* <CustomCard title={title} description={description} /> */}
-                </div>
+                            marketInfoList={props.marketInfoList}
+
+                            deleteStockCompanyInList={props.deleteStockCompanyInList}
+
+                            searchingList={props.searchingList}
+                        />
+                    </TabsBody>
+                </Tabs>
+                {/* <CustomCard title={title} description={description} /> */}
             </div>
-        </>
+        </div>
     );
 };
