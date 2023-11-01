@@ -430,7 +430,7 @@ export default function QuantPost({
                     />
                 </div>
             </div>
-            <div className='w-0 sm:w-1/2 md:w-1/2 lg:w-1/2 xl:w-1/2 2xl:w-1/2'>
+            <div className='hidden sm:block sm:w-1/2 md:w-1/2 lg:w-1/2 xl:w-1/2 2xl:w-1/2'>
                 <DescriptionPanel
                     loginStatus={loginStatus}
                     openSearchResult={false}
