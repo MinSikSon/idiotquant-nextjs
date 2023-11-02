@@ -7,7 +7,7 @@ export default function DescriptionPanel(props) {
     // console.log(`%c DescriptionPanel`, `color:blue; background:white`);
 
     // console.log(`DescriptionPanel`, props.searchingList);
-    if (props.openSearchResult) return <></>;
+    if (props.searchPanelIsOpened) return <></>;
 
     function handleChange(selected) {
         switch (selected) {
@@ -65,9 +65,9 @@ export default function DescriptionPanel(props) {
                         ))}
                         <TablePanel
                             // func
-                            setOpenSearchResult={props.setOpenSearchResult}
+                            setSearchPanelIsOpened={props.setSearchPanelIsOpened}
 
-                            openSearchResult={props.openSearchResult}
+                            searchPanelIsOpened={props.searchPanelIsOpened}
 
                             dictFilteredStockCompanyInfo={props.dictFilteredStockCompanyInfo}
                             marketInfoList={props.marketInfoList}

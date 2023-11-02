@@ -3,7 +3,7 @@ import { Button, Checkbox, Chip, ListItem, ListItemPrefix, ListItemSuffix, Typog
 import { Util } from "./Util";
 
 export default function RecentlyViewedStocks(props) {
-    if (props.openSearchResult) return <></>;
+    if (props.searchPanelIsOpened) return <></>;
 
     const Item = (props) => {
         return (

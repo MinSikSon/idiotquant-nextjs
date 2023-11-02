@@ -12,7 +12,7 @@ const Input = (props) => {
     const refFocus = React.useRef();
 
     React.useEffect(() => {
-        if (!!props.openSearchResult) {
+        if (!!props.searchPanelIsOpened) {
             refFocus.current.focus();
         }
     });
@@ -23,15 +23,15 @@ const Input = (props) => {
                 e.preventDefault();
                 props.handleSearchStockCompanyInfo(props.searchingList[0]?.['종목명'] || '');
                 e.target[0].value = ''
-                props.setOpenSearchResult(true);
+                props.setSearchPanelIsOpened(true);
             }}
             className={`flex items-center p-0`}
         >
             <ListItem className={`p-0 px-1 text-black`}>
-                {props.openSearchResult ?
+                {props.searchPanelIsOpened ?
                     <>
                         <ListItemPrefix>
-                            <div onClick={(e) => { e.preventDefault(); props.setOpenSearchResult(false); }}>
+                            <div onClick={(e) => { e.preventDefault(); props.setSearchPanelIsOpened(false); }}>
                                 <ArrowUturnLeftIcon strokeWidth={2} className="h-6 w-6" />
                             </div>
                         </ListItemPrefix>
@@ -92,8 +92,8 @@ function _getSelectedSearchResult(searchResult) {
     return selectedSearchResult;
 }
 export default function SearchPanel(props) {
-    console.log(`%c[call] Search`, `color : white; background : blue`);
-    console.log(`props.openSearchResult`, props.openSearchResult);
+    // console.log(`%c[call] Search`, `color : white; background : blue`);
+    // console.log(`props.searchPanelIsOpened`, props.searchPanelIsOpened);
 
     let jsonSearchResult = { '종목명': '-', 'stock_code': '-', '종가': 0, '유동자산': 0, '부채총계': 0, '당기순이익': 0, '거래량': 0, '시가총액': 1, '상장주식수': 1/*divide by zero 방지용*/, ...props.searchResult };
     let fairPrice/*적정가*/ = Number((Number(jsonSearchResult['유동자산']) - Number(jsonSearchResult['부채총계'])) / Number(jsonSearchResult['상장주식수'])).toFixed(0);
@@ -113,10 +113,10 @@ export default function SearchPanel(props) {
         );
     }
 
-    // console.log(`props.openSearchResult`, props.openSearchResult);
+    // console.log(`props.searchPanelIsOpened`, props.searchPanelIsOpened);
     // console.log(`props.searchingList`, props.searchingList);
     // console.log(`props.searchResult`, props.searchResult);
-    if (true === !!!props.openSearchResult) return <Input {...props} />;
+    if (true === !!!props.searchPanelIsOpened) return <Input {...props} />;
 
     return (
         <div className={`z-10 w-full`}>
@@ -129,7 +129,7 @@ export default function SearchPanel(props) {
                                 key={index}
                                 movie={item}
                                 handleSearchStockCompanyInfo={(stockCompany) => {
-                                    props.setOpenSearchResult(true)
+                                    props.setSearchPanelIsOpened(true)
                                     props.handleSearchStockCompanyInfo(stockCompany);
                                 }}
                             />)}
