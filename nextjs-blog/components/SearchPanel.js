@@ -91,8 +91,9 @@ function _getSelectedSearchResult(searchResult) {
 
     return selectedSearchResult;
 }
-export default function Search(props) {
-    // console.log(`%c[call] Search`, `color : white; background : blue`);
+export default function SearchPanel(props) {
+    console.log(`%c[call] Search`, `color : white; background : blue`);
+    console.log(`props.openSearchResult`, props.openSearchResult);
 
     let jsonSearchResult = { '종목명': '-', 'stock_code': '-', '종가': 0, '유동자산': 0, '부채총계': 0, '당기순이익': 0, '거래량': 0, '시가총액': 1, '상장주식수': 1/*divide by zero 방지용*/, ...props.searchResult };
     let fairPrice/*적정가*/ = Number((Number(jsonSearchResult['유동자산']) - Number(jsonSearchResult['부채총계'])) / Number(jsonSearchResult['상장주식수'])).toFixed(0);

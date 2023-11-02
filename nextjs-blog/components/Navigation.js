@@ -6,7 +6,7 @@ import {
     ListItemSuffix,
 } from "@material-tailwind/react";
 import Calculator from "./Calculator";
-import Search from "./Search";
+import SearchPanel from "./SearchPanel";
 import Oauth from "./Oauth";
 import Etc from "./Etc";
 
@@ -54,7 +54,7 @@ export default function NavbarDefault(props) {
                 />
 
                 <ListItemSuffix className={`${props.openSearchResult ? 'm-0 w-full' : ''}`}>
-                    <Search
+                    <SearchPanel
                         openSearchResult={props.openSearchResult}
 
                         setOpenSearchResult={props.setOpenSearchResult}
