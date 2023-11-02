@@ -53,17 +53,15 @@ const ListNode = (props) => {
                 <ListItem className="p-0 border-b-2">
                     <ListItemPrefix className="mr-2 w-24">
                         <Chip className="border-none" size="sm" variant="outlined" value={"목표가"} />
-                        <Chip className="border-none" size="sm" variant="outlined" color={selectedColorByRatio} value={props.fairPrice + "원 (" + (props.ratio - 100) + "%)"} />
-
+                        <Chip className="border-none py-0" size="sm" variant="outlined" color={selectedColorByRatio} value={props.fairPrice + "원 (" + (props.ratio - 100) + "%)"} />
                     </ListItemPrefix>
                     <div>
                         {/* <Typography className="ml-3" variant={`${props.tickerName.length <= 5 ? 'h5' : 'h6'}`}>{props.tickerName}</Typography> */}
                         <Typography className="ml-3" variant="h5">{props.tickerName}</Typography>
-
                     </div>
                     <ListItemSuffix>
                         <Chip className="border-none text-lg p-0 text-right" variant="outlined" size="lg" value={diffRatio + "%"} color={diffRatio > 0 ? 'red' : 'blue'} />
-                        <Chip className="border-none" variant="outlined" size="sm" value={props.close + "원"} />
+                        <Chip className="border-none py-0" variant="outlined" size="sm" value={props.close + "원"} />
                     </ListItemSuffix>
                 </ListItem >
             </PopoverHandler>
@@ -113,12 +111,10 @@ const ListNode = (props) => {
 export default function TablePanel(props) {
     // console.log(`%c TablePanel`, `color:blue; background:white`);
 
-    // console.log(`TablePanel 1`, props.openSearchResult);
-    // console.log(`TablePanel 2`, props.searchingList);
-    if (!props.openSearchResult) <>hihi</>;
-
     let loadingDone = !!props.dictFilteredStockCompanyInfo;
     props.marketInfoList.forEach((obj) => loadingDone &&= !!obj);
+
+    if (false === loadingDone) return <Loading />;
 
     let cumulativeRatio = 0;
 
@@ -179,8 +175,6 @@ export default function TablePanel(props) {
         { title: `이전 주가`, description: `${prevBsnsDate}`, textColor: `text-black`, backGround: `bg-amber-200` },
         { title: `주가`, description: `${bsnsDate}`, textColor: `text-black`, backGround: `bg-blue-200` },
         { title: `재무정보`, description: `${thstrm_dt}` },
-        // { title: `현재가`, description: `x,xxx 원`, textColor: `text-black`, backGround: `bg-blue-500` },
-        // { title: `목표가`, description: `xx,xxx 원`, textColor: `text-black`, backGround: `bg-red-500` },
     ];
 
     const CardList = (props) => {
@@ -198,7 +192,7 @@ export default function TablePanel(props) {
 
         return (
             <Card className="px-0">
-                <CardHeader shadow={false} floated={false} color={props.color} className="mb-2 grid place-items-center rounded-none" >
+                <CardHeader shadow={false} floated={false} color={props.color} className="mb-2 grid place-items-center" >
                     {/* <img
                     src="https://img.freepik.com/free-photo/happy-face-asian-business-man-holding-money-us-dollar-bills-on-business-district-urban_1150-34754.jpg?w=996&t=st=1698503020~exp=1698503620~hmac=544881a393fa191b91a2c06cb1f1d55ac5a34604726b616e0d2fe592119cc01f"
                     alt="card-image"
@@ -215,7 +209,7 @@ export default function TablePanel(props) {
                     <Typography variant="h3" color='white'>{props.ratio}</Typography>
                 </CardHeader>
                 <CardBody className="m-0 p-0">
-                    <Typography className="pl-2" variant="h5" color={`${props.color}`}>시가총액 대비 순유동자산이 {props.ratio} 인 종목입니다.</Typography>
+                    <Typography className="px-5" variant="h6" color={`${props.color}`}>시가총액 대비 순유동자산이 {props.ratio}인 종목</Typography>
                     {(props.tbody.length > 0) ? props.tbody.map((item) => <ListNode key={item.key} {...item} deleteStockCompanyInList={props.deleteStockCompanyInList} />) : <></>}
                 </CardBody>
             </Card>
@@ -226,7 +220,6 @@ export default function TablePanel(props) {
     let over50 = [];
     let under50 = [];
 
-    // console.log(`tbody`, tbody);
     for (let i = 0; i < tbody.length; ++i) {
         if (tbody[i].ratio >= 200) {
             over100.push(tbody[i]);
@@ -241,20 +234,12 @@ export default function TablePanel(props) {
 
     return (
         <>
-            <div className='visible'>
-                <MarQueue contents={contents} />
-            </div>
+            <MarQueue2 contents={contents} />
             <Card className="w-full">
                 <List className="px-0">
-                    {(false == loadingDone) ?
-                        <Loading />
-                        :
-                        <>
-                            <CardList tbody={over100} loop={5} ratio={'100% 이상'} color={'red'} deleteStockCompanyInList={props.deleteStockCompanyInList} />
-                            <CardList tbody={over50} loop={2} ratio={'50% 이상'} color={'orange'} deleteStockCompanyInList={props.deleteStockCompanyInList} />
-                            <CardList tbody={under50} loop={5} ratio={'50% 이하'} color={'blue'} deleteStockCompanyInList={props.deleteStockCompanyInList} />
-                        </>
-                    }
+                    <CardList tbody={over100} loop={5} ratio={'100% 이상'} color={'red'} deleteStockCompanyInList={props.deleteStockCompanyInList} />
+                    <CardList tbody={over50} loop={2} ratio={'50% 이상'} color={'orange'} deleteStockCompanyInList={props.deleteStockCompanyInList} />
+                    <CardList tbody={under50} loop={5} ratio={'50% 이하'} color={'blue'} deleteStockCompanyInList={props.deleteStockCompanyInList} />
                 </List>
             </Card>
         </>
