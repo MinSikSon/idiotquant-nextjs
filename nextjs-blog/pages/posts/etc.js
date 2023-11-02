@@ -5,7 +5,7 @@ import ArticleTemplate from "./template";
 const Etc = () => {
     return (
         <>
-            <ul className='list-disc list-outside pb-4'>
+            <ul className='list-disc list-inside pb-4 text-xs'>
                 <li>CAGR: Compound Annual Growth Rate (연평균성장률)</li>
                 <li>NCAV: Net Current Asset Value (순유동자산)</li>
                 <li>MDD: Maximum Draw Down</li>
@@ -17,11 +17,9 @@ const Etc = () => {
                 <li>PER * EPS = 1 주 가격</li>
                 <li>EPS: Earning Per Share. 1 주 당 수익금</li>
                 <li>PBR: Price Book Ratio. 장부가 대비 1주 가격을 비율로 나타냄</li>
-                <li>EV/EBIT: 몇 년 만에 내가 투자한 비용을 회수할 수 있는지를 알려주는 지표.</li>
+                <li>EV/EBIT: 몇 년 만에 투자 비용 회수할 수 있는지 알려주는 지표.</li>
                 <li>EV: Enterprise Value. 기업가치. 실제 얼마를 투입하면 기업을 완전히 지배할 수 있는지 보여주는 지표.</li>
-                <ul className='list-disc list-inside'>
-                    <li>EV = 시가총액 + 부채 - 현금 - 비영업자산</li>
-                </ul>
+                <li className="pl-4">EV = 시가총액 + 부채 - 현금 - 비영업자산</li>
 
                 <li>EBIT: Earning Before Interest and Taxes. 영업이익. 이자비용과 법인세 차감 전 이익.</li>
                 <li>ROC: Return On Capital. ROC = EBIT(영업이익)/투자자본</li>
@@ -29,13 +27,11 @@ const Etc = () => {
                 <li>고정자산 == 비유동자산</li>
 
                 <li>GP/A = 매출총이익/총자산 = (매출액 - 매출원가) / (자기자본 + 대출(부채))</li>
-                <ul className='list-disc list-inside'>
-                    <li>GP/A: GP: Gross Prifit. 매출 총 이익. A: Assets. 총 자산.</li>
-                </ul>
+                <li className='pl-4'>GP/A: GP: Gross Prifit. 매출 총 이익. A: Assets. 총 자산.</li>
 
                 <li>BS: Balance Sheet. 재무 상태표(대차 대조표)</li>
             </ul >
-            <ul className='list-disc list-outside bg-gray-200 pb-4'>
+            <ul className='list-disc list-inside bg-gray-200 pb-4 text-xs'>
                 <li>매출 총액 - 매출 원가 = 매출 이익</li>
                 <li>매출 이익 - 판매 관리비 = 영업 이익</li>
                 <li>영업 이익 - 영업 이외의 활동으로 인한 손익 = 순이익</li>
@@ -44,22 +40,20 @@ const Etc = () => {
                 <li>참고: IFRS 에서는 영업 이익에 1회성 처분 비용 포함 시키기도 함.</li>
             </ul>
 
-            <ul className='list-disc list-outside bg-gray-300 pb-4'>
+            <ul className='list-disc list-inside bg-gray-300 pb-4 text-xs'>
                 <li>제159조(사업보고서 등의 제출)</li>
-                <ul className='list-disc list-inside'>
-                    <li>① 주권상장법인, 그 밖에 대통령령으로 정하는 법인(이하 “사업보고서 제출대상법인”이라 한다)은 그 사업보고서를 각 사업연도 경과 후 90일 이내에 금융위원회와 거래소에 제출하여야 한다.</li>
-                    <li><a href='https://www.law.go.kr/법령/자본시장과%20금융투자업에%20관한%20법률/제159조'>자본시장과 금융투자업에 관한 법률</a></li>
-                </ul>
+                <li className="pl-4">① 주권상장법인, 그 밖에 대통령령으로 정하는 법인(이하 “사업보고서 제출대상법인”이라 한다)은 그 사업보고서를 각 사업연도 경과 후 90일 이내에 금융위원회와 거래소에 제출하여야 한다.</li>
+                <li className="pl-4"><a href='https://www.law.go.kr/법령/자본시장과%20금융투자업에%20관한%20법률/제159조'>자본시장과 금융투자업에 관한 법률</a></li>
             </ul>
 
-            <ul className='list-disc list-outside bg-gray-300 pb-4'>
+            <ul className='list-disc list-inside bg-gray-300 pb-4 text-xs'>
                 <li>제159조(사업보고서 등의 제출)</li>
             </ul>
         </>
     );
 }
 
-export default function TermsPost() {
+export default function EtcPost() {
     const Title = () => {
         return (
             <Link href="/post_list">
