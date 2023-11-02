@@ -13,7 +13,7 @@ import Etc from "./Etc";
 export default function NavbarDefault(props) {
     // console.log(`%c NavbarDefault`, `color:blue; background:white`);
     const NavList = (props) => {
-        if (props.openSearchResult) return <></>;
+        if (props.searchPanelIsOpened) return <></>;
 
         return (
             <ul className="flex items-center gap-3 mb-0 mt-0 lg:flex-row lg:gap-6">
@@ -38,7 +38,7 @@ export default function NavbarDefault(props) {
         <Navbar className="p-0 text-black">
             <ListItem>
                 <NavList
-                    openSearchResult={props.openSearchResult}
+                    searchPanelIsOpened={props.searchPanelIsOpened}
 
                     scrollEffect={props.scrollEffect}
 
@@ -53,11 +53,11 @@ export default function NavbarDefault(props) {
                     setOpenMenu={props.setOpenMenu}
                 />
 
-                <ListItemSuffix className={`${props.openSearchResult ? 'm-0 w-full' : ''}`}>
+                <ListItemSuffix className={`${props.searchPanelIsOpened ? 'm-0 w-full' : ''}`}>
                     <SearchPanel
-                        openSearchResult={props.openSearchResult}
+                        searchPanelIsOpened={props.searchPanelIsOpened}
+                        setSearchPanelIsOpened={props.setSearchPanelIsOpened}
 
-                        setOpenSearchResult={props.setOpenSearchResult}
                         handleSearchStockCompanyInfo={props.handleSearchStockCompanyInfo}
                         searchResult={props.searchResult}
                         inputValue={props.inputValue}

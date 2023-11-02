@@ -84,7 +84,7 @@ export default function QuantPost({
 
     const [latestStockCompanyInfo, setLatestStockCompanyInfo] = React.useState('');
 
-    const [openSearchResult, setOpenSearchResult] = React.useState(false);
+    const [searchPanelIsOpened, setSearchPanelIsOpened] = React.useState(false);
     const [openCalculator, setOpenCalculator] = React.useState(false);
 
     const [dictFilteredStockCompanyInfo, setDictFilteredStockCompanyInfo] = React.useState('');
@@ -187,7 +187,7 @@ export default function QuantPost({
         // console.log(`%c clickedRecentlyViewedStock ${stockCompanyName}`, `color : blue; background : white`)
 
         handleSearchStockCompanyInfo(stockCompanyName);
-        setOpenSearchResult(true);
+        setSearchPanelIsOpened(true);
     }
 
     function handleSearchStockCompanyInfo(stockCompanyName) {
@@ -367,8 +367,8 @@ export default function QuantPost({
                     openCalculator={openCalculator}
                     setOpenCalculator={setOpenCalculator}
 
-                    setOpenSearchResult={setOpenSearchResult}
-                    openSearchResult={openSearchResult}
+                    setSearchPanelIsOpened={setSearchPanelIsOpened}
+                    searchPanelIsOpened={searchPanelIsOpened}
                     handleSearchStockCompanyInfo={handleSearchStockCompanyInfo}
                     searchResult={searchResult}
                     inputValue={inputValue}
@@ -394,9 +394,10 @@ export default function QuantPost({
                     setRecentlyViewedStocksList={setRecentlyViewedStocksList}
                 />
 
-                <TitlePanel openSearchResult={openSearchResult} />
+                <TitlePanel searchPanelIsOpened={searchPanelIsOpened} />
                 <RecentlyViewedStocks
-                    openSearchResult={openSearchResult}
+                    searchPanelIsOpened={searchPanelIsOpened}
+
                     recentlyViewedStocksList={recentlyViewedStocksList}
                     latestStockCompanyInfo={latestStockCompanyInfo}
                     spliceRecentlyViewedStocksList={spliceRecentlyViewedStocksList}
@@ -406,7 +407,9 @@ export default function QuantPost({
                 <div className='sm:hidden md:hidden lg:hidden xl:hidden 2xl:hidden'>
                     <DescriptionPanel
                         loginStatus={loginStatus}
-                        openSearchResult={openSearchResult}
+                        searchPanelIsOpened={searchPanelIsOpened}
+                        setSearchPanelIsOpened={setSearchPanelIsOpened}
+
                         strategyInfo={strategyInfo}
 
                         latestStockCompanyInfo={latestStockCompanyInfo}
@@ -418,7 +421,6 @@ export default function QuantPost({
                         setStrategyInfo={setStrategyInfo}
 
                         handleSearchStockCompanyInfo={handleSearchStockCompanyInfo}
-                        setOpenSearchResult={setOpenSearchResult}
 
                         dictFilteredStockCompanyInfo={dictFilteredStockCompanyInfo}
                         searchResult={searchResult}
@@ -433,7 +435,10 @@ export default function QuantPost({
             <div className='hidden sm:block sm:w-1/2 md:w-1/2 lg:w-1/2 xl:w-1/2 2xl:w-1/2'>
                 <DescriptionPanel
                     loginStatus={loginStatus}
-                    openSearchResult={false}
+
+                    searchPanelIsOpened={false}
+                    setSearchPanelIsOpened={setSearchPanelIsOpened}
+
                     strategyInfo={strategyInfo}
 
                     latestStockCompanyInfo={latestStockCompanyInfo}
@@ -445,7 +450,6 @@ export default function QuantPost({
                     setStrategyInfo={setStrategyInfo}
 
                     searchStockCompanyInfo={handleSearchStockCompanyInfo}
-                    setOpenSearchResult={setOpenSearchResult}
 
                     dictFilteredStockCompanyInfo={dictFilteredStockCompanyInfo}
                     searchResult={searchResult}
