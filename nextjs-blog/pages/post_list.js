@@ -6,14 +6,12 @@ export default function PostList(props) {
     return (
         <>
             <ListItem className='text-black'>
-                <ListItemPrefix>
+                <ListItemPrefix className="hover:bg-red-100">
                     <Link href="/">
                         <HomeIcon strokeWidth={2} className="h-6 w-6" />
                     </Link>
                 </ListItemPrefix>
-                <div className="w-full font-mono text-xl header-contents text-center">
-                    살펴 볼만한 어떤 <span className='bg-yellow-500'> 것</span>들
-                </div>
+
                 <ListItemSuffix>
                     <ArrowTrendingUpIcon strokeWidth={2} className="h-6 w-6" />
                 </ListItemSuffix>

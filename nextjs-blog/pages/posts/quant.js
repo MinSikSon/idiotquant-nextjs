@@ -5,10 +5,10 @@ import ArticleTemplate from "./template";
 const Quant = () => {
     return (
         <div>
-            <ul className='list-disc list-outside pb-4'>
+            <ul className='list-disc list-inside pb-4'>
                 <li>계량투자 (퀀트투자): 수치만 보고 투자하는 방식</li>
                 <li>투자스타일</li>
-                <ul className='list-disc list-inside'>
+                <ul className='list-disc list-inside pl-4'>
                     <li>밸류 전략: 가치투자</li>
                     <li>퀄리티 전략: 우량주투자</li>
                     <li>모멘텀 전략: 추세투자</li>
@@ -16,7 +16,7 @@ const Quant = () => {
                     <li>콤보 전략: 위 4개 전략 조합</li>
                 </ul>
             </ul >
-            <ul className='list-disc list-outside bg-gray-200 pb-4'>
+            <ul className='list-disc list-inside bg-gray-200 pb-4'>
                 <li>매출 총액 - 매출 원가 = 매출 이익</li>
                 <li>매출 이익 - 판매 관리비 = 영업 이익</li>
             </ul>
@@ -26,7 +26,7 @@ const Quant = () => {
 }
 
 
-export default function TermsPost() {
+export default function QuantPost() {
     const Title = () => {
         return (
             <Link href="/post_list">
