@@ -121,7 +121,7 @@ export default function TablePanel(props) {
     let tbody = [];
     let index = 0;
 
-    // (`props.dictFilteredStockCompanyInfo`, props.dictFilteredStockCompanyInfo);
+    console.log(`props.dictFilteredStockCompanyInfo`, props.dictFilteredStockCompanyInfo);
     for (let key in props.dictFilteredStockCompanyInfo) {
         const { corp_code, active, 종목명, 유동자산, 부채총계, 상장주식수, 종가, 당기순이익, 시가총액, PER, PBR, bsnsDate, prevMarketInfo } = props.dictFilteredStockCompanyInfo[key];
         const fairPrice/*적정가*/ = Number((Number(유동자산) - Number(부채총계)) / Number(상장주식수)).toFixed(0);
@@ -132,8 +132,8 @@ export default function TablePanel(props) {
         tbody.push({
             key: parseInt(corp_code).toString(),
             corpCode: parseInt(corp_code),
-            searchStockCompanyInfo: props.searchStockCompanyInfo,
             setOpenSearchResult: props.setOpenSearchResult,
+            deleteStockCompanyInList: props.deleteStockCompanyInList,
 
             active: active,
             tickerName: 종목명,
@@ -210,7 +210,7 @@ export default function TablePanel(props) {
                 </CardHeader>
                 <CardBody className="m-0 p-0">
                     <Typography className="px-5" variant="h6" color={`${props.color}`}>시가총액 대비 순유동자산이 {props.ratio}인 종목</Typography>
-                    {(props.tbody.length > 0) ? props.tbody.map((item) => <ListNode key={item.key} {...item} deleteStockCompanyInList={props.deleteStockCompanyInList} />) : <></>}
+                    {(props.tbody.length > 0) ? props.tbody.map((item) => <ListNode key={item.key} {...item} />) : <></>}
                 </CardBody>
             </Card>
         );

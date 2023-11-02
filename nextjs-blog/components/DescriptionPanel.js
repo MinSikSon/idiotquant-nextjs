@@ -64,18 +64,15 @@ export default function DescriptionPanel(props) {
                             </TabPanel>
                         ))}
                         <TablePanel
-                            searchStockCompanyInfo={props.searchStockCompanyInfo}
+                            // func
                             setOpenSearchResult={props.setOpenSearchResult}
+
                             openSearchResult={props.openSearchResult}
 
                             dictFilteredStockCompanyInfo={props.dictFilteredStockCompanyInfo}
-                            searchResult={props.searchResult}
-
                             marketInfoList={props.marketInfoList}
 
                             deleteStockCompanyInList={props.deleteStockCompanyInList}
-
-                            searchingList={props.searchingList}
                         />
                     </TabsBody>
                 </Tabs>

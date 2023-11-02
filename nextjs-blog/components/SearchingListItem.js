@@ -6,7 +6,7 @@ export default function SearchingListItem(props) {
         <article className="flex items-start space-x-6 px-6 text-black hover:bg-gray-300 rounded-lg" onClick={(e) => {
             e.preventDefault();
             // console.log(e.target.innerText);
-            props.searchStockCompanyInfo(e.target.innerText);
+            props.handleSearchStockCompanyInfo(e.target.innerText);
             // e.target.innerText = '';
         }}>
             {/* <img src={movie.image} alt="" width="60" height="88" className="flex-none rounded-md bg-slate-100" /> */}
