@@ -58,7 +58,7 @@ export default function NavbarDefault(props) {
                         openSearchResult={props.openSearchResult}
 
                         setOpenSearchResult={props.setOpenSearchResult}
-                        searchStockCompanyInfo={props.searchStockCompanyInfo}
+                        handleSearchStockCompanyInfo={props.handleSearchStockCompanyInfo}
                         searchResult={props.searchResult}
                         inputValue={props.inputValue}
                         inputPlaceholder={props.inputPlaceholder}

@@ -186,12 +186,12 @@ export default function QuantPost({
     function clickedRecentlyViewedStock(stockCompanyName) {
         // console.log(`%c clickedRecentlyViewedStock ${stockCompanyName}`, `color : blue; background : white`)
 
-        searchStockCompanyInfo(stockCompanyName);
+        handleSearchStockCompanyInfo(stockCompanyName);
         setOpenSearchResult(true);
     }
 
-    function searchStockCompanyInfo(stockCompanyName) {
-        // console.log(`%c searchStockCompanyinfo 1 ${stockCompanyName}`, `color : blue; background : white`)
+    function handleSearchStockCompanyInfo(stockCompanyName) {
+        // console.log(`%c handleSearchStockCompanyInfo 1 ${stockCompanyName}`, `color : blue; background : white`)
         const marketInfoPrevIndex = marketInfoList.length - 2;
         const marketInfoPrev = marketInfoList[marketInfoPrevIndex];
         const marketInfoLatestIndex = marketInfoList.length - 1;
@@ -369,7 +369,7 @@ export default function QuantPost({
 
                     setOpenSearchResult={setOpenSearchResult}
                     openSearchResult={openSearchResult}
-                    searchStockCompanyInfo={searchStockCompanyInfo}
+                    handleSearchStockCompanyInfo={handleSearchStockCompanyInfo}
                     searchResult={searchResult}
                     inputValue={inputValue}
                     inputPlaceholder={inputPlaceholder}
@@ -417,7 +417,7 @@ export default function QuantPost({
 
                         setStrategyInfo={setStrategyInfo}
 
-                        searchStockCompanyInfo={searchStockCompanyInfo}
+                        handleSearchStockCompanyInfo={handleSearchStockCompanyInfo}
                         setOpenSearchResult={setOpenSearchResult}
 
                         dictFilteredStockCompanyInfo={dictFilteredStockCompanyInfo}
@@ -444,7 +444,7 @@ export default function QuantPost({
 
                     setStrategyInfo={setStrategyInfo}
 
-                    searchStockCompanyInfo={searchStockCompanyInfo}
+                    searchStockCompanyInfo={handleSearchStockCompanyInfo}
                     setOpenSearchResult={setOpenSearchResult}
 
                     dictFilteredStockCompanyInfo={dictFilteredStockCompanyInfo}

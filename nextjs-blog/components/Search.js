@@ -21,7 +21,7 @@ const Input = (props) => {
         <form
             onSubmit={(e) => {
                 e.preventDefault();
-                props.searchStockCompanyInfo(props.searchingList[0]?.['종목명'] || '');
+                props.handleSearchStockCompanyInfo(props.searchingList[0]?.['종목명'] || '');
                 e.target[0].value = ''
                 props.setOpenSearchResult(true);
             }}
@@ -127,9 +127,9 @@ export default function Search(props) {
                             <SearchingListItem
                                 key={index}
                                 movie={item}
-                                searchStockCompanyInfo={(stockCompany) => {
+                                handleSearchStockCompanyInfo={(stockCompany) => {
                                     props.setOpenSearchResult(true)
-                                    props.searchStockCompanyInfo(stockCompany);
+                                    props.handleSearchStockCompanyInfo(stockCompany);
                                 }}
                             />)}
                     </>
