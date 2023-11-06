@@ -39,7 +39,7 @@ const MarQueue2 = (props) => {
 
 
 const ListNode = (props) => {
-    const diffRatio = ((1 - (Number((props.close).replace(/,/g, '')) / Number((props.prevClose).replace(/,/g, '')))) * 100).toFixed(1);
+    const diffRatio = (((Number((props.close).replace(/,/g, '')) / Number((props.prevClose).replace(/,/g, ''))) - 1) * 100).toFixed(1);
     const percentCompareFirst = (props.ratio - 100) >= 100 ? true : false;
     const percentCompareSecond = (props.ratio - 100) >= 50 ? true : false;
     const selectedColorByRatio = percentCompareFirst ? 'red' : (percentCompareSecond ? 'yellow' : 'blue');
@@ -71,8 +71,8 @@ const ListNode = (props) => {
                 </IconButton>
                 <div>
                     <div className='flex'>
-                        <Chip size='sm' color='blue' value={"현재 주가:" + props.close + "원"} />
                         <Chip size='sm' color='blue' value={"이전 주가:" + props.prevClose + "원"} />
+                        <Chip size='sm' color='blue' value={"현재 주가:" + props.close + "원"} />
                         <Chip size='sm' color='pink' value={"목표 주가:" + props.fairPrice + "원"} />
                     </div>
                     <div className='flex'>
@@ -87,6 +87,7 @@ const ListNode = (props) => {
                     <div className='flex'>
                         <Chip size='sm' color='purple' value={"PER:" + props.PER} />
                         <Chip size='sm' color='purple' value={"PBR:" + props.PBR} />
+                        <Chip size='sm' color='purple' value={"EPS:" + props.EPS} />
                     </div>
                 </div>
                 {/* <CustomChart
@@ -123,7 +124,8 @@ export default function TablePanel(props) {
 
     // console.log(`props.dictFilteredStockCompanyInfo`, props.dictFilteredStockCompanyInfo);
     for (let key in props.dictFilteredStockCompanyInfo) {
-        const { corp_code, active, 종목명, 유동자산, 부채총계, 상장주식수, 종가, 당기순이익, 시가총액, PER, PBR, bsnsDate, prevMarketInfo } = props.dictFilteredStockCompanyInfo[key];
+        const { corp_code, active, 종목명, 유동자산, 부채총계, 상장주식수, 종가, 당기순이익, 시가총액, PER, PBR, EPS, bsnsDate, prevMarketInfo } = props.dictFilteredStockCompanyInfo[key];
+        console.log(props.dictFilteredStockCompanyInfo[key]);
         const fairPrice/*적정가*/ = Number((Number(유동자산) - Number(부채총계)) / Number(상장주식수)).toFixed(0);
         const ratio = Number(fairPrice / Number(종가));
 
@@ -148,6 +150,7 @@ export default function TablePanel(props) {
 
             PER: Number(PER),
             PBR: Number(PBR),
+            EPS: Number(EPS),
             close: Number(종가).toLocaleString(),
             bsnsFullDate: bsnsDate,
 
@@ -206,10 +209,10 @@ export default function TablePanel(props) {
                         src={`https://www.youtube.com/embed/${videoId}`}
                         allowFullScreen
                     /> */}
-                    <Typography variant="h3" color='white'>{props.ratio}</Typography>
+                    {/* <Typography variant="h3" color='white'>{props.ratio}</Typography> */}
                 </CardHeader>
                 <CardBody className="m-0 p-0">
-                    <Typography className="px-5" variant="h6" color={`${props.color}`}>시가총액 대비 순유동자산이 {props.ratio}인 종목</Typography>
+                    {/* <Typography className="px-5" variant="h6" color={`${props.color}`}>시가총액 대비 순유동자산이 {props.ratio}인 종목</Typography> */}
                     {(props.tbody.length > 0) ? props.tbody.map((item) => <ListNode key={item.key} {...item} />) : <></>}
                 </CardBody>
             </Card>

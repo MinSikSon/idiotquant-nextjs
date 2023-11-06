@@ -10,17 +10,22 @@ export default function DescriptionPanel(props) {
     if (props.searchPanelIsOpened) return <></>;
 
     function handleChange(selected) {
+        let strategy = '';
+        let strategyInfo = ''
+
         switch (selected) {
             case 'ncav':
-                props.setDictFilteredStockCompanyInfo(strategyNCAV(props.latestStockCompanyInfo));
-                props.setStrategyInfo({ title: 'NCAV 전략', description: '"순유동자산 > 시가총액" 인 종목 추천합니다.' });
+                strategy = strategyNCAV(props.latestStockCompanyInfo);
+                strategyInfo = { title: 'NCAV 전략', description: '"순유동자산 > 시가총액" 인 종목 추천합니다.' };
                 break;
             case '저평가소형주':
-                props.setDictFilteredStockCompanyInfo(strategyExample(props.latestStockCompanyInfo));
-                props.setStrategyInfo({ title: '소형주 + 저PER + 저PBR', description: '저평가소형주' });
+                strategy = strategyExample(props.latestStockCompanyInfo);
+                strategyInfo = { title: '소형주 + 저PER + 저PBR', description: '저평가소형주' }
                 break;
         }
 
+        props.setDictFilteredStockCompanyInfo(strategy);
+        props.setStrategyInfo(strategyInfo);
         props.setSelectedStrategy(selected);
     }
 
