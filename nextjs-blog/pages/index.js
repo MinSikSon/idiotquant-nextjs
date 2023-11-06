@@ -35,8 +35,9 @@ export async function getStaticProps() {
     const marketInfo20230810 = await fetchAndSet('stock/market-info?date=20230810');
     const marketInfo20230825 = await fetchAndSet('stock/market-info?date=20230825');
     const marketInfo20230922 = await fetchAndSet('stock/market-info?date=20230922');
-    const marketInfoPrev = await fetchAndSet('stock/market-info?date=20230922');
-    const marketInfoLatest = await fetchAndSet('stock/market-info?date=20231013');
+    const marketInfo20231013 = await fetchAndSet('stock/market-info?date=20231013');
+    const marketInfoPrev = await fetchAndSet('stock/market-info?date=20231013');
+    const marketInfoLatest = await fetchAndSet('stock/market-info?date=20231106');
 
     const financialInfoAll = await fetchAndSet('stock/financial-info');
 
@@ -57,6 +58,7 @@ export async function getStaticProps() {
     marketInfoList.push(marketInfo20230810);
     marketInfoList.push(marketInfo20230825);
     marketInfoList.push(marketInfo20230922);
+    marketInfoList.push(marketInfo20231013);
     marketInfoList.push(marketInfoPrev);
     marketInfoList.push(marketInfoLatest);
 
