@@ -142,7 +142,7 @@ export default function SearchPanel(props) {
                     (!!props.searchResult && Object.keys(props.searchResult).length > 0) ?
                         <>
                             <Chip className="w-fit" value={jsonSearchResult['종목명']} />
-                            <Chip className="border-none text-xl text-black b-0 m-0" variant="outlined" value={Util.UnitConversion(jsonSearchResult['종가'], true)} />
+                            <Chip className="border-none text-xl text-black b-0 m-0" variant="outlined" value={`${Number(jsonSearchResult['종가']).toLocaleString('ko-KR', { maximumFractionDigits: 0 })}원`} />
                             <CustomChart
                                 fairPrice={fairPrice}
                                 tickerName={jsonSearchResult['종목명']}
