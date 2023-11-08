@@ -21,7 +21,7 @@ function filteredByNcavStrategy(arrFinancialMarketInfo) {
 
 export function strategyNCAV(stockCompanyInfo) {
 
-    const arrFinancialMarketInfo = Array.from(Object.values(cleansing(stockCompanyInfo)));
+    const arrFinancialMarketInfo = Array.from(Object.values(cleansing(stockCompanyInfo, ['거래량'])));
 
     const arrFilteredByNCAV = filteredByNcavStrategy(arrFinancialMarketInfo);
 

@@ -78,6 +78,8 @@ export default function DescriptionPanel(props) {
                             marketInfoList={props.marketInfoList}
 
                             deleteStockCompanyInList={props.deleteStockCompanyInList}
+
+                            clickedRecentlyViewedStock={props.clickedRecentlyViewedStock}
                         />
                     </TabsBody>
                 </Tabs>
