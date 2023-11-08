@@ -39,10 +39,27 @@ const MarQueue2 = (props) => {
 
 
 const ListNode = (props) => {
-    const diffRatio = ((1 - (Number((props.close).replace(/,/g, '')) / Number((props.prevClose).replace(/,/g, '')))) * 100).toFixed(1);
+    const diffRatio = (((Number((props.close).replace(/,/g, '')) / Number((props.prevClose).replace(/,/g, ''))) - 1) * 100).toFixed(1);
     const percentCompareFirst = (props.ratio - 100) >= 100 ? true : false;
     const percentCompareSecond = (props.ratio - 100) >= 50 ? true : false;
     const selectedColorByRatio = percentCompareFirst ? 'red' : (percentCompareSecond ? 'yellow' : 'blue');
+
+    return (
+        <ListItem className="p-0 border-b-2" onClick={() => { props.clickedRecentlyViewedStock(props.tickerName) }}>
+            <ListItemPrefix className="mr-2 w-24">
+                <Chip className="border-none" size="sm" variant="outlined" value={"목표가"} />
+                <Chip className="border-none py-0" size="sm" variant="outlined" color={selectedColorByRatio} value={props.fairPrice + "원 (" + (props.ratio - 100) + "%)"} />
+            </ListItemPrefix>
+            <div>
+                {/* <Typography className="ml-3" variant={`${props.tickerName.length <= 5 ? 'h5' : 'h6'}`}>{props.tickerName}</Typography> */}
+                <Typography className="ml-3" variant="h6">{props.tickerName}</Typography>
+            </div>
+            <ListItemSuffix>
+                <Chip className="border-none text-lg p-0 text-right" variant="outlined" size="lg" value={diffRatio + "%"} color={diffRatio > 0 ? 'red' : 'blue'} />
+                <Chip className="border-none py-0" variant="outlined" size="sm" value={props.close + "원"} />
+            </ListItemSuffix>
+        </ListItem >
+    );
 
     return (
         <Popover animate={{
@@ -50,7 +67,7 @@ const ListNode = (props) => {
             unmount: { scale: 0, y: 25 },
         }}>
             <PopoverHandler>
-                <ListItem className="p-0 border-b-2">
+                <ListItem className="p-0 border-b-2" onClick={() => { props.clickedRecentlyViewedStock(props.tickerName) }}>
                     <ListItemPrefix className="mr-2 w-24">
                         <Chip className="border-none" size="sm" variant="outlined" value={"목표가"} />
                         <Chip className="border-none py-0" size="sm" variant="outlined" color={selectedColorByRatio} value={props.fairPrice + "원 (" + (props.ratio - 100) + "%)"} />
@@ -71,8 +88,8 @@ const ListNode = (props) => {
                 </IconButton>
                 <div>
                     <div className='flex'>
-                        <Chip size='sm' color='blue' value={"현재 주가:" + props.close + "원"} />
                         <Chip size='sm' color='blue' value={"이전 주가:" + props.prevClose + "원"} />
+                        <Chip size='sm' color='blue' value={"현재 주가:" + props.close + "원"} />
                         <Chip size='sm' color='pink' value={"목표 주가:" + props.fairPrice + "원"} />
                     </div>
                     <div className='flex'>
@@ -87,6 +104,7 @@ const ListNode = (props) => {
                     <div className='flex'>
                         <Chip size='sm' color='purple' value={"PER:" + props.PER} />
                         <Chip size='sm' color='purple' value={"PBR:" + props.PBR} />
+                        <Chip size='sm' color='purple' value={"EPS:" + props.EPS} />
                     </div>
                 </div>
                 {/* <CustomChart
@@ -121,9 +139,10 @@ export default function TablePanel(props) {
     let tbody = [];
     let index = 0;
 
-    // console.log(`props.dictFilteredStockCompanyInfo`, props.dictFilteredStockCompanyInfo);
+    console.log(`props.dictFilteredStockCompanyInfo`, props.dictFilteredStockCompanyInfo);
     for (let key in props.dictFilteredStockCompanyInfo) {
-        const { corp_code, active, 종목명, 유동자산, 부채총계, 상장주식수, 종가, 당기순이익, 시가총액, PER, PBR, bsnsDate, prevMarketInfo } = props.dictFilteredStockCompanyInfo[key];
+        const { corp_code, active, 종목명, 유동자산, 부채총계, 상장주식수, 종가, 당기순이익, 시가총액, PER, PBR, EPS, bsnsDate, prevMarketInfo } = props.dictFilteredStockCompanyInfo[key];
+        console.log(props.dictFilteredStockCompanyInfo[key]);
         const fairPrice/*적정가*/ = Number((Number(유동자산) - Number(부채총계)) / Number(상장주식수)).toFixed(0);
         const ratio = Number(fairPrice / Number(종가));
 
@@ -134,6 +153,7 @@ export default function TablePanel(props) {
             corpCode: parseInt(corp_code),
             setSearchPanelIsOpened: props.setSearchPanelIsOpened,
             deleteStockCompanyInList: props.deleteStockCompanyInList,
+            clickedRecentlyViewedStock: props.clickedRecentlyViewedStock,
 
             active: active,
             tickerName: 종목명,
@@ -148,6 +168,7 @@ export default function TablePanel(props) {
 
             PER: Number(PER),
             PBR: Number(PBR),
+            EPS: Number(EPS),
             close: Number(종가).toLocaleString(),
             bsnsFullDate: bsnsDate,
 
@@ -206,10 +227,10 @@ export default function TablePanel(props) {
                         src={`https://www.youtube.com/embed/${videoId}`}
                         allowFullScreen
                     /> */}
-                    <Typography variant="h3" color='white'>{props.ratio}</Typography>
+                    <Typography variant="h5" color='white'>{props.ratio}</Typography>
                 </CardHeader>
                 <CardBody className="m-0 p-0">
-                    <Typography className="px-5" variant="h6" color={`${props.color}`}>시가총액 대비 순유동자산이 {props.ratio}인 종목</Typography>
+                    {/* <Typography className="px-5" variant="h6" color={`${props.color}`}>시가총액 대비 순유동자산이 {props.ratio}인 종목</Typography> */}
                     {(props.tbody.length > 0) ? props.tbody.map((item) => <ListNode key={item.key} {...item} />) : <></>}
                 </CardBody>
             </Card>
@@ -232,14 +253,18 @@ export default function TablePanel(props) {
         }
     }
 
+    // tbody.sort((a, b) => { return b.ratio - a.ratio; });
+    tbody.sort((a, b) => { return b.weight - a.weight; });
+
     return (
         <>
             <MarQueue2 contents={contents} />
             <Card className="w-full">
                 <List className="px-0">
-                    <CardList tbody={over100} loop={5} ratio={'100% 이상'} color={'red'} deleteStockCompanyInList={props.deleteStockCompanyInList} />
-                    <CardList tbody={over50} loop={2} ratio={'50% 이상'} color={'orange'} deleteStockCompanyInList={props.deleteStockCompanyInList} />
-                    <CardList tbody={under50} loop={5} ratio={'50% 이하'} color={'blue'} deleteStockCompanyInList={props.deleteStockCompanyInList} />
+                    {/* <CardList tbody={over100} loop={5} ratio={'100% 이상'} color={'red'} deleteStockCompanyInList={props.deleteStockCompanyInList} /> */}
+                    {/* <CardList tbody={over50} loop={2} ratio={'50% 이상'} color={'orange'} deleteStockCompanyInList={props.deleteStockCompanyInList} /> */}
+                    {/* <CardList tbody={under50} loop={5} ratio={'50% 이하'} color={'blue'} deleteStockCompanyInList={props.deleteStockCompanyInList} /> */}
+                    <CardList tbody={tbody} loop={5} ratio={''} color={'blue'} deleteStockCompanyInList={props.deleteStockCompanyInList} />
                 </List>
             </Card>
         </>

@@ -2,6 +2,8 @@
 // Util
 export class Util {
     static UnitConversion(num, addWon) {
+        if (num <= 10000 && num >= 0) return num; // 소수점 단위 일반 출력
+
         if (isNaN(num)) {
             return '0원';
         }

@@ -431,6 +431,8 @@ export default function QuantPost({
                         marketInfoList={marketInfoList}
 
                         deleteStockCompanyInList={deleteStockCompanyInList}
+
+                        clickedRecentlyViewedStock={clickedRecentlyViewedStock}
                     />
                 </div>
             </div>
@@ -459,6 +461,8 @@ export default function QuantPost({
                     marketInfoList={marketInfoList}
 
                     deleteStockCompanyInList={deleteStockCompanyInList}
+
+                    clickedRecentlyViewedStock={clickedRecentlyViewedStock}
                 /></div>
         </div>
     );

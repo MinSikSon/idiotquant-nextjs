@@ -27,8 +27,6 @@ export default function RecentlyViewedStocks(props) {
         return Math.floor(Math.random() * (max - min + 1)) + min;
     }
 
-    // props.recentlyViewedStocksList.map(({ stockName }) => { console.log(props.latestStockCompanyInfo[stockName]); });
-
     return (
         <div className='py-3 my-2 bg-white'>
             <Typography className="pl-5 pb-2" variant='h6'>최근 본 주식</Typography>

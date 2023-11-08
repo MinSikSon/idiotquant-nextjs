@@ -1,40 +1,29 @@
-function cleansing(dictOrigin) {
-    function filtering(array, key) {
-        return array.filter(item => !!item[key] && 0 < Number(item[key]));
-    }
+import { cleansing, isAllValid } from "../lib/DataCleansing";
 
-    const array = Array.from(Object.values(dictOrigin));
-    const filteredArray1 = filtering(array, '거래량');
-    const filteredArray2 = filtering(filteredArray1, '영업이익');
-    const filteredArray3 = filtering(filteredArray2, '당기순이익');
 
-    let dict = {};
-
-    filteredArray3.forEach((element) => {
-        dict[element['종목명']] = element;
-    });
-
-    return dict;
-}
-
-export function strategyNCAV(dictLatestStockCompanyInfo) {
-
-    const dictCleansing = cleansing(dictLatestStockCompanyInfo);
-    const arrFinancialMarketInfo = Array.from(Object.values(dictCleansing));
-
+function filteredByNcavStrategy(arrFinancialMarketInfo) {
     function compareTwo(array, key1, key2) {
-        return array.filter(item => !!item[key1] && !!item[key2] && Number(item[key1]) >= Number(item[key2]));
+        return array.filter(item => isAllValid(item[key1], item[key2], true) && Number(item[key1]) >= Number(item[key2]));
     }
 
     function compareThree(array, key1, key2, key3) {
-        return array.filter(item => !!item[key1] && !!item[key2] && !!item[key3] && (Number(item[key1]) + Number(item[key2])) >= Number(item[key3]));
+        return array.filter(item => isAllValid(item[key1], item[key2], item[key3]) && (Number(item[key1]) + Number(item[key2])) >= Number(item[key3]));
     }
 
-    function compareThree2(array, key1, key2, key3) {
-        return array.filter(item => !!item[key1] && !!item[key2] && !!item[key3] && (Number(item[key1]) + Number(item[key2])) <= Number(item[key3]));
+    function filteredByCompare(array, keyA, keyB, keyC) {
+        return array.filter(item => (isAllValid(item[keyA], item[keyB], item[keyC]) && (Number(item[keyA]) + Number(item[keyB])) <= Number(item[keyC])));
     }
 
-    const arrFilteredByNCAV = compareThree2(arrFinancialMarketInfo, '시가총액', '부채총계', '유동자산');
+    const arrFilteredByNCAV = filteredByCompare(arrFinancialMarketInfo, '시가총액', '부채총계', '유동자산');
+
+    return arrFilteredByNCAV;
+}
+
+export function strategyNCAV(stockCompanyInfo) {
+
+    const arrFinancialMarketInfo = Array.from(Object.values(cleansing(stockCompanyInfo, ['거래량'])));
+
+    const arrFilteredByNCAV = filteredByNcavStrategy(arrFinancialMarketInfo);
 
     let arrSorted1 = new Array(...arrFilteredByNCAV);
     arrSorted1.sort(function (a, b) {
@@ -56,23 +45,15 @@ export function strategyNCAV(dictLatestStockCompanyInfo) {
 }
 
 // filter 선택에 따라서, on/off 되게만 해도 좋을듯?
-export function strategyExample(latestStockCompanyInfo) {
-
-    let arrFinancialMarketInfo = Array.from(Object.values(latestStockCompanyInfo));
-
-    function filtering(array, key) {
-        return array.filter(item => !!item[key] && 0 < Number(item[key]));
-    }
-    arrFinancialMarketInfo = filtering(arrFinancialMarketInfo, 'PBR');
-    arrFinancialMarketInfo = filtering(arrFinancialMarketInfo, '거래량');
-    arrFinancialMarketInfo = filtering(arrFinancialMarketInfo, 'EPS');
+export function strategyExample(stockCompanyInfo) {
+    let arrFinancialMarketInfo = Array.from(Object.values(cleansing(stockCompanyInfo, ['PBR', '거래량', 'EPS'])));
 
     // 항목 추가
-    arrFinancialMarketInfo.forEach(item => item['score'] = 0);
-    function setScore(array) {
-        let score = 0;
+    arrFinancialMarketInfo.forEach(item => item['weight'] = 0);
+    function addWeight(array) {
+        let weight = 0;
 
-        array.forEach(item => item['score'] += (++score));
+        array.forEach(item => item['weight'] += (++weight));
 
         return array;
     }
@@ -82,14 +63,14 @@ export function strategyExample(latestStockCompanyInfo) {
     arraySorted1.sort(function (a, b) {
         return Number(a['PBR']) - Number(b['PBR']);
     });
-    setScore(arraySorted1);
+    addWeight(arraySorted1);
 
     // sort(capital)
     let arraySorted2 = new Array(...arraySorted1);
     arraySorted2.sort(function (a, b) {
         return Number(a['시가총액']) - Number(b['시가총액']);
     });
-    setScore(arraySorted2);
+    addWeight(arraySorted2);
     // 시가총액 하위 20% cut-line
     const cutLine = Number(arraySorted2.length * 0.2).toFixed(0);
     // console.log(`cut-line(${cutLine}) 시가총액: ${Util.UnitConversion(arraySorted2[cutLine]['시가총액'], true)}, `, arraySorted2[cutLine]);
@@ -99,14 +80,15 @@ export function strategyExample(latestStockCompanyInfo) {
     arraySorted3.sort(function (a, b) {
         return Number(a['PER']) - Number(b['PER']);
     });
-    setScore(arraySorted3);
+    addWeight(arraySorted3);
 
-    // sort(score)
+    // sort(weight)
     let arraySorted4 = new Array(...arraySorted3);
     arraySorted4.sort(function (a, b) {
-        return Number(a['score']) - Number(b['score']);
+        return Number(a['weight']) - Number(b['weight']);
     });
 
+    console.log(`arraySorted4`, arraySorted4);
     const arrSelectedStockCompany = arraySorted4.slice(0, 40);
 
     const dictFinancialMarketInfo = {};

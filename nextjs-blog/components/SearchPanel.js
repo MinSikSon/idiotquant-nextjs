@@ -3,7 +3,7 @@ import SearchingListItem from "./SearchingListItem";
 import { Util } from "./Util";
 import CustomChart from "./CustomChart";
 import { MagnifyingGlassIcon, ArrowUturnLeftIcon } from "@heroicons/react/24/outline";
-import { ListItem, ListItemPrefix, ListItemSuffix } from "@material-tailwind/react";
+import { Chip, ListItem, ListItemPrefix, ListItemSuffix } from "@material-tailwind/react";
 
 
 const Input = (props) => {
@@ -106,10 +106,14 @@ export default function SearchPanel(props) {
 
     const CustomDiv = (props) => {
         return (
-            <div className='mx-1 my-1 grid grid-cols-3 grid-rows-2 border-b border-gray-400'>
-                <div className={`col-span-3 row-span-1 text-xs ${!!props.textColor ? props.textColor : `text-black`}`}>{props.title} {!!props.ratio ? props.ratio : ''}</div>
-                <div className='col-span-3 row-span-1 text-right text-xs text-black'>{props.item}</div>
-            </div>
+            <ListItem className={`p-0 pt-1 m-0 rounded-none ${props.item > 0 ? '' : 'bg-blue-700'}`}>
+                <ListItemPrefix className="p-0 m-0">
+                    < Chip className={`m-0 border-none ${props.item > 0 ? 'text-gray-700' : 'text-white'}`} variant="outlined" value={props.title} />
+                </ListItemPrefix>
+                <ListItemSuffix className="p-0">
+                    < Chip className={`m-0 border-none ${props.item > 0 ? 'text-black' : 'text-white'}`} variant="outlined" value={Util.UnitConversion(props.item, true)} />
+                </ListItemSuffix>
+            </ListItem>
         );
     }
 
@@ -137,6 +141,8 @@ export default function SearchPanel(props) {
                     :
                     (!!props.searchResult && Object.keys(props.searchResult).length > 0) ?
                         <>
+                            <Chip className="w-fit" value={jsonSearchResult['종목명']} />
+                            <Chip className="border-none text-xl text-black b-0 m-0" variant="outlined" value={Util.UnitConversion(jsonSearchResult['종가'], true)} />
                             <CustomChart
                                 fairPrice={fairPrice}
                                 tickerName={jsonSearchResult['종목명']}
@@ -148,8 +154,10 @@ export default function SearchPanel(props) {
 
                                 responsive={true}
                                 display={true}
+                                height={'60px'}
+                                width={'90px'}
                             />
-                            <div className={`grid grid-cols-3`}>
+                            <div className={`grid grid-cols-2`}>
                                 {Object.keys(selectedSearchResult).map((key, index) => <CustomDiv key={index} title={key} item={jsonSearchResult[key]} />)}
                             </div>
                         </>
