@@ -13,7 +13,11 @@ const Input = (props) => {
 
     React.useEffect(() => {
         if (!!props.searchPanelIsOpened) {
-            refFocus.current.focus();
+            if (!!props.searchResult) {
+                if (Object.keys(props.searchResult).length == 0) {
+                    refFocus.current.focus();
+                }
+            }
         }
     });
 

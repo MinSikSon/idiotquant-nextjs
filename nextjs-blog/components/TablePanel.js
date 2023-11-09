@@ -139,10 +139,10 @@ export default function TablePanel(props) {
     let tbody = [];
     let index = 0;
 
-    console.log(`props.dictFilteredStockCompanyInfo`, props.dictFilteredStockCompanyInfo);
+    // console.log(`props.dictFilteredStockCompanyInfo`, props.dictFilteredStockCompanyInfo);
     for (let key in props.dictFilteredStockCompanyInfo) {
         const { corp_code, active, 종목명, 유동자산, 부채총계, 상장주식수, 종가, 당기순이익, 시가총액, PER, PBR, EPS, bsnsDate, prevMarketInfo } = props.dictFilteredStockCompanyInfo[key];
-        console.log(props.dictFilteredStockCompanyInfo[key]);
+        // console.log(props.dictFilteredStockCompanyInfo[key]);
         const fairPrice/*적정가*/ = Number((Number(유동자산) - Number(부채총계)) / Number(상장주식수)).toFixed(0);
         const ratio = Number(fairPrice / Number(종가));
 
