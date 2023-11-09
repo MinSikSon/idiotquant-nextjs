@@ -31,7 +31,7 @@ const Input = (props) => {
             }}
             className={`flex items-center p-0`}
         >
-            <ListItem className={`p-0 px-1 text-black`}>
+            <ListItem className={`p-0 text-black`}>
                 {props.searchPanelIsOpened ?
                     <>
                         <ListItemPrefix>
@@ -54,7 +54,7 @@ const Input = (props) => {
                     <></>
                 }
                 <ListItemSuffix>
-                    <button className={`rounded-3xl pr-4 inline-flex items-center justify-center text-black focus:outline-none`}>
+                    <button className={`rounded-3xl ${props.searchPanelIsOpened ? 'pr-7' : 'pr-3'} inline-flex items-center justify-center text-black focus:outline-none`}>
                         <MagnifyingGlassIcon strokeWidth={2} className="h-6 w-6" />
                     </button>
                 </ListItemSuffix>

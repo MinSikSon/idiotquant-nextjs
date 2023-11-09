@@ -16,7 +16,7 @@ export default function NavbarDefault(props) {
         if (props.searchPanelIsOpened) return <></>;
 
         return (
-            <ul className="flex items-center gap-3 mb-0 mt-0 lg:flex-row lg:gap-6">
+            <ul className="flex items-center gap-3 mb-0 mt-0 pr-2 lg:flex-row lg:gap-6">
                 <Oauth
                     authorizeCode={props.authorizeCode}
                     accessToken={props.accessToken}
@@ -52,7 +52,6 @@ export default function NavbarDefault(props) {
                     openMenu={props.openMenu}
                     setOpenMenu={props.setOpenMenu}
                 />
-
                 <ListItemSuffix className={`${props.searchPanelIsOpened ? 'm-0 w-full' : ''}`}>
                     <SearchPanel
                         searchPanelIsOpened={props.searchPanelIsOpened}
