@@ -46,14 +46,15 @@ export default ({
                 {
                     label: `주식가격`,
                     data: closeList,
-                    borderWidth: 3,
+                    borderWidth: 1,
                     borderColor: 'rgba(9,125,243,1)', // blue
                     // borderColor: 'rgba(255,255,255,1)', // white
                     backgroundColor: 'rgba(9,125,243,0.5)', // blue
                     // pointStyle: 'cross',
                     // pointStyle: 'line',
                     // pointStyle: 'crossRot',
-                    pointStyle: 'circle',
+                    // pointStyle: 'circle',
+                    pointStyle: false,
                     pointRadius: 1,
                     pointHoverRadius: 1,
                     fill: true,
@@ -61,30 +62,38 @@ export default ({
                 {
                     label: `적정가격`,
                     data: fairPriceList,
-                    borderWidth: 4,
+                    borderWidth: 1,
                     borderColor: 'rgba(239,68,68,1)', // red
-                    // backgroundColor: 'rgba(239,68,68,0.3)', // red
+                    backgroundColor: 'rgba(239,68,68,0.1)', // red
                     pointStyle: false,
                     fill: true,
                 }
             ]
     };
 
+    const arbitraryLine = {
+        id: 'arbitraryLine',
+        afterDatasetsDraw(chart, args, pluginOptions) {
+            const { ctx, chartArea: { top, bottom, left, right, width, height }, scales: { x, y } } = chart;
+            ctx.save();
+
+            ctx.beginPath();
+            ctx.lineWidth = 0.7;
+            ctx.strokeStyle = 'gray';
+            ctx.moveTo(chart.tooltip.caretX, top);
+            ctx.lineTo(chart.tooltip.caretX, bottom);
+            ctx.stroke();
+            ctx.restore();
+        }
+    }
     return (
         <div>
             <Line
                 data={data}
                 height={height}
                 width={width}
+                plugins={[arbitraryLine]}
                 options={{
-                    plugins: {
-                        legend: {
-                            display: display
-                        },
-                        tooltip: {
-                            enabled: display
-                        },
-                    },
                     animations: false,
                     // animations: {
                     //     tension: {
@@ -104,7 +113,7 @@ export default ({
                             display: display,
                             beginAtZero: true,
                             title: {
-                                display: true,
+                                display: display,
                                 text: 'PRICE(₩)',
                             },
                         },
