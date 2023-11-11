@@ -157,7 +157,7 @@ export default function SearchPanel(props) {
                                 marketInfoList={props.marketInfoList}
 
                                 responsive={true}
-                                display={true}
+                                display={false}
                                 height={'60px'}
                                 width={'90px'}
                             />
