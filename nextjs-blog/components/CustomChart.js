@@ -46,10 +46,12 @@ export default ({
                 {
                     label: `주식가격`,
                     data: closeList,
-                    borderWidth: 1,
-                    borderColor: 'rgba(9,125,243,1)', // blue
+                    borderWidth: 2,
+                    // borderColor: 'rgba(9,125,243,1)', // blue
+                    borderColor: 'rgba(0,0,0,1)',
                     // borderColor: 'rgba(255,255,255,1)', // white
-                    backgroundColor: 'rgba(9,125,243,0.5)', // blue
+                    // backgroundColor: 'rgba(9,125,243,0.5)', // blue
+                    backgroundColor: 'rgba(0,0,0,0)',
                     // pointStyle: 'cross',
                     // pointStyle: 'line',
                     // pointStyle: 'crossRot',
@@ -62,9 +64,10 @@ export default ({
                 {
                     label: `적정가격`,
                     data: fairPriceList,
-                    borderWidth: 1,
-                    borderColor: 'rgba(239,68,68,1)', // red
-                    backgroundColor: 'rgba(239,68,68,0.1)', // red
+                    borderWidth: 2,
+                    borderColor: `${fairPriceList[fairPriceList.length - 1] >= closeList[closeList.length - 1] ? 'rgba(239, 68, 68, 1)' : 'rgba(9,125,243,1)'}`, // blue : red
+                    // backgroundColor: 'rgba(239,68,68,0.1)', // red
+                    backgroundColor: 'rgba(0,0,0,0)', // red
                     pointStyle: false,
                     fill: true,
                 }
