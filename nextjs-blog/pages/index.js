@@ -3,7 +3,7 @@ import Head from "next/head.js";
 import { Util } from "../components/Util.js";
 
 import { useRouter } from "next/router.js";
-import NavbarDefault from "../components/Navigation.js";
+import NavbarDefault from "../components/NavigationPanel.js";
 import DescriptionPanel from "../components/DescriptionPanel.js";
 
 import { strategyNCAV } from "../components/Strategy.js";
