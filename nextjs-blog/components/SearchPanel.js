@@ -145,8 +145,8 @@ export default function SearchPanel(props) {
                     :
                     (!!props.searchResult && Object.keys(props.searchResult).length > 0) ?
                         <>
-                            <Chip className="w-fit border-none text-black text-sm py-0 my-0" variant="outlined" value={jsonSearchResult['종목명']} />
-                            <Chip className="border-none text-black text-xl b-0 py-0 m-0" variant="outlined" value={`${Number(jsonSearchResult['종가']).toLocaleString('ko-KR', { maximumFractionDigits: 0 })}원`} />
+                            <Chip className="w-fit border-none text-black text-md pb-0 my-0" variant="outlined" value={jsonSearchResult['종목명']} />
+                            <Chip className="border-none text-black text-2xl b-0 py-0 m-0" variant="outlined" value={`${Number(jsonSearchResult['종가']).toLocaleString('ko-KR', { maximumFractionDigits: 0 })}원`} />
                             <CustomChart
                                 fairPrice={fairPrice}
                                 tickerName={jsonSearchResult['종목명']}
