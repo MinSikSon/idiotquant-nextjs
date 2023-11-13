@@ -39,6 +39,7 @@ const Input = (props) => {
                             <div onClick={(e) => {
                                 e.preventDefault();
                                 props.setSearchPanelIsOpened(false);
+                                props.setSearchResult({});
                             }}>
                                 <ArrowUturnLeftIcon strokeWidth={2} className="h-6 w-6" />
                             </div>
