@@ -131,11 +131,11 @@ export default function TablePanel(props) {
     return (
         <>
             <MarQueue2 contents={[
-                { title: `종목수`, description: `${numOfStockItems} 개` },
+                { title: `추천 종목수`, description: `${numOfStockItems} 개` },
                 { title: `목표수익률`, description: 기대수익, textColor: `text-black`, backGround: `` },
-                { title: `이전 주가`, description: `${prevBsnsDate}`, textColor: `text-black`, backGround: `bg-amber-200` },
-                { title: `주가`, description: `${bsnsDate}`, textColor: `text-black`, backGround: `bg-blue-200` },
-                { title: `재무정보`, description: `${thstrm_dt}` },
+                { title: `이전 주가 일자`, description: `${prevBsnsDate}`, textColor: `text-black`, backGround: `bg-amber-200` },
+                { title: `최근 주가 일자`, description: `${bsnsDate}`, textColor: `text-black`, backGround: `bg-blue-200` },
+                { title: `재무정보 일자`, description: `${thstrm_dt}` },
             ]} />
             <Card className="w-full">
                 <List className="px-0">

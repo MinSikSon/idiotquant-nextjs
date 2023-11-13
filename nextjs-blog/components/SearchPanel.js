@@ -16,10 +16,11 @@ const Input = (props) => {
             if (!!props.searchResult) {
                 if (Object.keys(props.searchResult).length == 0) {
                     refFocus.current.focus();
+                    props.setSearchResult({});
                 }
             }
         }
-    });
+    }, []);
 
     return (
         <form
@@ -35,7 +36,10 @@ const Input = (props) => {
                 {props.searchPanelIsOpened ?
                     <>
                         <ListItemPrefix>
-                            <div onClick={(e) => { e.preventDefault(); props.setSearchPanelIsOpened(false); }}>
+                            <div onClick={(e) => {
+                                e.preventDefault();
+                                props.setSearchPanelIsOpened(false);
+                            }}>
                                 <ArrowUturnLeftIcon strokeWidth={2} className="h-6 w-6" />
                             </div>
                         </ListItemPrefix>
@@ -47,7 +51,14 @@ const Input = (props) => {
                             placeholder={props.inputPlaceholder}
                             value={props.inputValue}
                             aria-label="Full name"
-                            onChange={(e) => { e.preventDefault(); props.getSearchingList(e.target.value); }}
+                            onChange={(e) => {
+                                e.preventDefault();
+                                props.getSearchingList(e.target.value);
+                            }}
+                            onClick={(e) => {
+                                e.preventDefault();
+                                props.setSearchResult({});
+                            }}
                         />
                     </>
                     :
