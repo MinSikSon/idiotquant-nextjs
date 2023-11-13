@@ -10,7 +10,7 @@ import SearchPanel from "./SearchPanel";
 import Oauth from "./Oauth";
 import Etc from "./Etc";
 
-export default function NavbarDefault(props) {
+export default function NavigationPanel(props) {
     // console.log(`%c NavbarDefault`, `color:blue; background:white`);
     const NavList = (props) => {
         if (props.searchPanelIsOpened) return <></>;
@@ -69,6 +69,8 @@ export default function NavbarDefault(props) {
                         getSearchingList={props.getSearchingList}
                         searchingList={props.searchingList}
                         scrollEffect={props.scrollEffect}
+
+                        setSearchResult={props.setSearchResult}
                     />
                 </ListItemSuffix>
             </ListItem>

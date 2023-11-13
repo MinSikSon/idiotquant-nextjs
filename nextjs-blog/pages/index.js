@@ -3,12 +3,12 @@ import Head from "next/head.js";
 import { Util } from "../components/Util.js";
 
 import { useRouter } from "next/router.js";
-import NavbarDefault from "../components/NavigationPanel.js";
 import DescriptionPanel from "../components/DescriptionPanel.js";
 
 import { strategyNCAV } from "../components/Strategy.js";
 import RecentlyViewedStocks from "../components/RecentlyViewedStocks.js";
 import TitlePanel from "../components/TitlePanel.js";
+import NavigationPanel from "../components/NavigationPanel.js";
 
 export async function getStaticProps() {
     async function fetchAndSet(subUrl) {
@@ -111,6 +111,21 @@ export default function QuantPost({
     // RecentlyViewedStocks.js
     const [recentlyViewedStocksList, setRecentlyViewedStocksList] = React.useState([]);
 
+    const [stocksOfInterest, setStocksOfInterest] = React.useState([
+        {
+            label: 'NCAV',
+            value: 'ncav',
+            desc: `"순유동자산(= 유동자산 - 부채총계)"이 "시가총액"을 넘어선 기업을 선정합니다. 이러한 기업은 안정성과 재무 건전성 면에서 우수하며, 투자자들에게 안전하고 안정적인 투자 기회를 제공할 수 있습니다. 그러나 투자는 항상 리스크를 동반하므로 신중한 분석이 필요하며 전문가의 조언을 검토하는 것을 권장합니다.`
+        },
+        {
+            label: '소형주+저PBR+저PER',
+            value: '저평가소형주',
+            desc: "저평가된 소형주 투자를 고려하는 퀀트 전략 중 하나로, 낮은 PBR (주가순자산가치비율)와 낮은 PER (주가이익비율)을 가진 종목을 탐색합니다. 이러한 종목은 현재 시장가치 대비 자산 및 수익이 낮게 평가되어 있을 가능성이 높아, 잠재적으로 미래 성장과 가치 상승의 기회를 제공할 수 있습니다. 하지만, 투자는 항상 리스크를 동반하므로 신중한 연구와 다양한 요인을 고려하는 것이 중요합니다."
+        }
+    ])
+
+    const [localInfo, setLocalInfo] = React.useState({ testCnt: 1, isPanelOpened: searchPanelIsOpened, log: 'hihi' });
+
     function changeStockCompanyName(dictOrigin, srcName, dstName) {
         const { [srcName]: srcCompanyInfo, ...rest } = dictOrigin;
         rest[dstName] = { ...srcCompanyInfo, '종목명': dstName };
@@ -190,6 +205,8 @@ export default function QuantPost({
 
         handleSearchStockCompanyInfo(stockCompanyName);
         setSearchPanelIsOpened(true);
+
+        setLocalInfo({ testCnt: localInfo.testCnt + 1, log: 'clickedRecentlyViewedStock' });
     }
 
     function handleSearchStockCompanyInfo(stockCompanyName) {
@@ -255,8 +272,12 @@ export default function QuantPost({
         setSearchResult(stockCompanyInfo);
 
         setDictFilteredStockCompanyInfo(dictFinancialMarketInfo);
+        setLocalInfo({ testCnt: localInfo.testCnt + 1, log: 'setDictFilteredStockCompanyInfo' });
 
-        // update recentlyViewedStocksList
+        updateRecentlyViewdStocksList(stockCompanyName);
+    }
+
+    function updateRecentlyViewdStocksList(stockCompanyName) {
         let newRecentlyViewedStocksList = [...recentlyViewedStocksList];
         for (let i = 0; i < newRecentlyViewedStocksList.length; ++i) {
             if (stockCompanyName != newRecentlyViewedStocksList[i].stockName) {
@@ -274,7 +295,29 @@ export default function QuantPost({
         setRecentlyViewedStocksList(newRecentlyViewedStocksList);
     }
 
+    function handleClickStocksOfInterestButton() {
+
+        setSearchPanelIsOpened(true);
+        setLocalInfo({ testCnt: localInfo.testCnt + 1, isPanelOpened: true, log: 'handleClickStocksOfInterestButton' });
+    }
+
     React.useEffect(() => {
+        localStorage.setItem('localInfo', JSON.stringify(localInfo));
+    }, [localInfo]);
+
+    React.useEffect(() => {
+        const oldLocalInfo = localStorage.getItem('localInfo');
+        if (null == oldLocalInfo) {
+            const newLocalInfo = localStorage.setItem('localInfo', JSON.stringify(localInfo));
+            setLocalInfo(newLocalInfo);
+        }
+        else {
+            const objLocalInfo = JSON.parse(oldLocalInfo);
+            setLocalInfo(objLocalInfo);
+            console.log(`oldLocalInfo`, oldLocalInfo);
+            console.log(`objLocalInfo`, objLocalInfo);
+        }
+
         function RequestLogin(id) {
             const url = `https://idiotquant-backend.tofu89223.workers.dev`;
             const port = `443`;
@@ -323,6 +366,8 @@ export default function QuantPost({
         let newDict = {}
         newFilteredStockCompanyList.forEach(item => { newDict[item['종목명']] = item });
         setDictFilteredStockCompanyInfo(newDict);
+
+        setLocalInfo({ testCnt: localInfo.testCnt + 1, log: 'deleteStockCompanyInList' });
     }
 
     function getSearchingList(inputValue) {
@@ -362,7 +407,7 @@ export default function QuantPost({
                     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0,user-scalable=0" />
                     <meta name="description" content="한국주식에 대한 퀀트적인 분석과 필터링을 통해 적합한 종목을 추천하는 웹 페이지입니다. 효율적인 퀀트 투자 전략을 기반으로 한국 주식 시장에서 가치 있는 투자 대상을 찾아드립니다." />
                 </Head>
-                <NavbarDefault
+                <NavigationPanel
                     openNav={openNav}
                     setOpenNav={setOpenNav}
 
@@ -391,12 +436,16 @@ export default function QuantPost({
                     openMenu={openMenu}
                     setOpenMenu={setOpenMenu}
 
-
                     recentlyViewedStocksList={recentlyViewedStocksList}
                     setRecentlyViewedStocksList={setRecentlyViewedStocksList}
+
+                    setSearchResult={setSearchResult}
                 />
 
-                <TitlePanel searchPanelIsOpened={searchPanelIsOpened} />
+                <TitlePanel
+                    searchPanelIsOpened={searchPanelIsOpened}
+                    setSearchResult={setSearchResult}
+                />
                 <RecentlyViewedStocks
                     searchPanelIsOpened={searchPanelIsOpened}
 
@@ -405,6 +454,8 @@ export default function QuantPost({
                     spliceRecentlyViewedStocksList={spliceRecentlyViewedStocksList}
 
                     clickedRecentlyViewedStock={clickedRecentlyViewedStock}
+
+                    searchResult={searchResult}
                 />
                 <div className='sm:hidden md:hidden lg:hidden xl:hidden 2xl:hidden'>
                     <DescriptionPanel
@@ -433,6 +484,13 @@ export default function QuantPost({
                         deleteStockCompanyInList={deleteStockCompanyInList}
 
                         clickedRecentlyViewedStock={clickedRecentlyViewedStock}
+
+                        stocksOfInterest={stocksOfInterest}
+                        setStocksOfInterest={setStocksOfInterest}
+                        localInfo={localInfo}
+                        setLocalInfo={setLocalInfo}
+
+                        handleClickStocksOfInterestButton={handleClickStocksOfInterestButton}
                     />
                 </div>
             </div>
@@ -463,6 +521,14 @@ export default function QuantPost({
                     deleteStockCompanyInList={deleteStockCompanyInList}
 
                     clickedRecentlyViewedStock={clickedRecentlyViewedStock}
+
+                    stocksOfInterest={stocksOfInterest}
+                    setStocksOfInterest={setStocksOfInterest}
+
+                    localInfo={localInfo}
+                    setLocalInfo={setLocalInfo}
+
+                    handleClickStocksOfInterestButton={handleClickStocksOfInterestButton}
                 /></div>
         </div>
     );
