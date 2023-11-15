@@ -55,7 +55,6 @@ export default function NavigationPanel(props) {
                 <ListItemSuffix className={`${props.searchPanelIsOpened ? 'm-0 w-full' : ''}`}>
                     <SearchPanel
                         searchPanelIsOpened={props.searchPanelIsOpened}
-                        setSearchPanelIsOpened={props.setSearchPanelIsOpened}
 
                         handleSearchStockCompanyInfo={props.handleSearchStockCompanyInfo}
                         searchResult={props.searchResult}
@@ -71,6 +70,8 @@ export default function NavigationPanel(props) {
                         scrollEffect={props.scrollEffect}
 
                         setSearchResult={props.setSearchResult}
+
+                        handleArrowUturnLeftIcon={props.handleArrowUturnLeftIcon}
                     />
                 </ListItemSuffix>
             </ListItem>

@@ -5,10 +5,11 @@ import { Util } from "../components/Util.js";
 import { useRouter } from "next/router.js";
 import DescriptionPanel from "../components/DescriptionPanel.js";
 
-import { strategyNCAV } from "../components/Strategy.js";
+import { GetArrayFilteredByStrategyExample, GetArrayFilteredByStrategyNCAV, strategyExample, strategyNCAV } from "../components/Strategy.js";
 import RecentlyViewedStocks from "../components/RecentlyViewedStocks.js";
 import TitlePanel from "../components/TitlePanel.js";
 import NavigationPanel from "../components/NavigationPanel.js";
+import StocksOfInterestPanel from "../components/StocksOfInterestPanel.js";
 
 export async function getStaticProps() {
     async function fetchAndSet(subUrl) {
@@ -90,6 +91,7 @@ export default function QuantPost({
     const [openCalculator, setOpenCalculator] = React.useState(false);
 
     const [dictFilteredStockCompanyInfo, setDictFilteredStockCompanyInfo] = React.useState('');
+    const [arrayFilteredStocksList, setArrayFilteredStocksList] = React.useState([]);
 
     const [stockCompanyChangeCount, setStockCompanyChangeCount] = React.useState(0);
 
@@ -99,7 +101,6 @@ export default function QuantPost({
 
     const [selectedStrategy, setSelectedStrategy] = React.useState('ncav');
 
-    const [ip, setIp] = React.useState('');
     const [authorizeCode, setAuthorizeCode] = React.useState('');
     const [accessToken, setAccessToken] = React.useState('');
     const [loginStatus, setLoginStatus] = React.useState('');
@@ -115,14 +116,17 @@ export default function QuantPost({
         {
             label: 'NCAV',
             value: 'ncav',
+            stocks: '',
             desc: `"순유동자산(= 유동자산 - 부채총계)"이 "시가총액"을 넘어선 기업을 선정합니다. 이러한 기업은 안정성과 재무 건전성 면에서 우수하며, 투자자들에게 안전하고 안정적인 투자 기회를 제공할 수 있습니다. 그러나 투자는 항상 리스크를 동반하므로 신중한 분석이 필요하며 전문가의 조언을 검토하는 것을 권장합니다.`
         },
         {
             label: '소형주+저PBR+저PER',
             value: '저평가소형주',
+            stocks: '',
             desc: "저평가된 소형주 투자를 고려하는 퀀트 전략 중 하나로, 낮은 PBR (주가순자산가치비율)와 낮은 PER (주가이익비율)을 가진 종목을 탐색합니다. 이러한 종목은 현재 시장가치 대비 자산 및 수익이 낮게 평가되어 있을 가능성이 높아, 잠재적으로 미래 성장과 가치 상승의 기회를 제공할 수 있습니다. 하지만, 투자는 항상 리스크를 동반하므로 신중한 연구와 다양한 요인을 고려하는 것이 중요합니다."
         }
-    ])
+    ]);
+    const [stocksOfInterestPanelOpened, setStocksOfInterestPanelOpened] = React.useState(false);
 
     const [localInfo, setLocalInfo] = React.useState({ testCnt: 1, isPanelOpened: searchPanelIsOpened, log: 'hihi' });
 
@@ -182,6 +186,18 @@ export default function QuantPost({
     React.useEffect(() => {
         if (!!latestStockCompanyInfo) {
             setDictFilteredStockCompanyInfo(strategyNCAV(latestStockCompanyInfo));
+
+            const arrInitStocksList = GetArrayFilteredByStrategyNCAV(latestStockCompanyInfo);
+            setArrayFilteredStocksList(arrInitStocksList);
+
+            // TODO: strategyNCAV 결과로 그냥 종목명만 뽑아도 될거 같긴 한데? 정보를 너무 많이 담고 있음.
+            stocksOfInterest[0].stocks = arrInitStocksList;
+
+            const arrStrategyExample = GetArrayFilteredByStrategyExample(latestStockCompanyInfo);
+            console.log(`arrStrategyExample`, arrStrategyExample);
+            stocksOfInterest[1].stocks = arrStrategyExample;
+
+            console.log(`stocksOfInterest`, stocksOfInterest);
         }
     }, [latestStockCompanyInfo]);
 
@@ -201,16 +217,14 @@ export default function QuantPost({
     }, [stockCompanyChangeCount]);
 
     function clickedRecentlyViewedStock(stockCompanyName) {
-        // console.log(`%c clickedRecentlyViewedStock ${stockCompanyName}`, `color : blue; background : white`)
-
         handleSearchStockCompanyInfo(stockCompanyName);
-        setSearchPanelIsOpened(true);
 
         setLocalInfo({ testCnt: localInfo.testCnt + 1, log: 'clickedRecentlyViewedStock' });
     }
 
     function handleSearchStockCompanyInfo(stockCompanyName) {
-        // console.log(`%c handleSearchStockCompanyInfo 1 ${stockCompanyName}`, `color : blue; background : white`)
+        setSearchPanelIsOpened(true)
+
         const marketInfoPrevIndex = marketInfoList.length - 2;
         const marketInfoPrev = marketInfoList[marketInfoPrevIndex];
         const marketInfoLatestIndex = marketInfoList.length - 1;
@@ -272,6 +286,8 @@ export default function QuantPost({
         setSearchResult(stockCompanyInfo);
 
         setDictFilteredStockCompanyInfo(dictFinancialMarketInfo);
+        setArrayFilteredStocksList(newFilteredStockCompanyList);
+
         setLocalInfo({ testCnt: localInfo.testCnt + 1, log: 'setDictFilteredStockCompanyInfo' });
 
         updateRecentlyViewdStocksList(stockCompanyName);
@@ -296,8 +312,9 @@ export default function QuantPost({
     }
 
     function handleClickStocksOfInterestButton() {
-
         setSearchPanelIsOpened(true);
+        setStocksOfInterestPanelOpened(true);
+
         setLocalInfo({ testCnt: localInfo.testCnt + 1, isPanelOpened: true, log: 'handleClickStocksOfInterestButton' });
     }
 
@@ -314,8 +331,8 @@ export default function QuantPost({
         else {
             const objLocalInfo = JSON.parse(oldLocalInfo);
             setLocalInfo(objLocalInfo);
-            console.log(`oldLocalInfo`, oldLocalInfo);
-            console.log(`objLocalInfo`, objLocalInfo);
+            // console.log(`oldLocalInfo`, oldLocalInfo);
+            // console.log(`objLocalInfo`, objLocalInfo);
         }
 
         function RequestLogin(id) {
@@ -366,6 +383,7 @@ export default function QuantPost({
         let newDict = {}
         newFilteredStockCompanyList.forEach(item => { newDict[item['종목명']] = item });
         setDictFilteredStockCompanyInfo(newDict);
+        setArrayFilteredStocksList(newFilteredStockCompanyList);
 
         setLocalInfo({ testCnt: localInfo.testCnt + 1, log: 'deleteStockCompanyInList' });
     }
@@ -393,6 +411,32 @@ export default function QuantPost({
         setRecentlyViewedStocksList(newRecentlyViewedStocksList);
     }
 
+    function handleArrowUturnLeftIcon(e) {
+        e.preventDefault();
+
+        setSearchPanelIsOpened(false);
+        setStocksOfInterestPanelOpened(false);
+
+        setSearchResult({})
+    }
+
+
+    function handleStocksOfInterestChange(selected) {
+        for (let i = 0; i < stocksOfInterest.length; ++i) {
+            if (selected != stocksOfInterest[i].value) continue;
+
+            const filteredStocksByStrategy = stocksOfInterest[i].stocks;
+            const strategyInfo = { title: stocksOfInterest[i].label, description: stocksOfInterest[i].desc };
+            setArrayFilteredStocksList(filteredStocksByStrategy);
+            setStrategyInfo(strategyInfo);
+            setSelectedStrategy(selected);
+        }
+    }
+
+    function addNewStocksOfInterest() {
+
+    }
+
     // sm	640px	@media (min-width: 640px) { ... }
     // md	768px	@media (min-width: 768px) { ... }
     // lg	1024px	@media (min-width: 1024px) { ... }
@@ -414,7 +458,6 @@ export default function QuantPost({
                     openCalculator={openCalculator}
                     setOpenCalculator={setOpenCalculator}
 
-                    setSearchPanelIsOpened={setSearchPanelIsOpened}
                     searchPanelIsOpened={searchPanelIsOpened}
                     handleSearchStockCompanyInfo={handleSearchStockCompanyInfo}
                     searchResult={searchResult}
@@ -422,9 +465,10 @@ export default function QuantPost({
                     inputPlaceholder={inputPlaceholder}
 
                     // new state
-                    marketInfoList={marketInfoList}
-
                     dictFilteredStockCompanyInfo={dictFilteredStockCompanyInfo}
+                    arrayFilteredStocksList={arrayFilteredStocksList}
+                    latestStockCompanyInfo={latestStockCompanyInfo}
+                    marketInfoList={marketInfoList}
 
                     getSearchingList={getSearchingList}
                     searchingList={searchingList}
@@ -440,6 +484,8 @@ export default function QuantPost({
                     setRecentlyViewedStocksList={setRecentlyViewedStocksList}
 
                     setSearchResult={setSearchResult}
+
+                    handleArrowUturnLeftIcon={handleArrowUturnLeftIcon}
                 />
 
                 <TitlePanel
@@ -457,11 +503,16 @@ export default function QuantPost({
 
                     searchResult={searchResult}
                 />
+                <StocksOfInterestPanel
+                    stocksOfInterestPanelOpened={stocksOfInterestPanelOpened}
+                    stocksOfInterest={stocksOfInterest}
+
+                    handleStocksOfInterestChange={handleStocksOfInterestChange}
+                />
                 <div className='sm:hidden md:hidden lg:hidden xl:hidden 2xl:hidden'>
                     <DescriptionPanel
                         loginStatus={loginStatus}
                         searchPanelIsOpened={searchPanelIsOpened}
-                        setSearchPanelIsOpened={setSearchPanelIsOpened}
 
                         strategyInfo={strategyInfo}
 
@@ -476,10 +527,11 @@ export default function QuantPost({
                         handleSearchStockCompanyInfo={handleSearchStockCompanyInfo}
 
                         dictFilteredStockCompanyInfo={dictFilteredStockCompanyInfo}
+                        arrayFilteredStocksList={arrayFilteredStocksList}
+                        marketInfoList={marketInfoList}
+
                         searchResult={searchResult}
                         searchingList={searchingList}
-
-                        marketInfoList={marketInfoList}
 
                         deleteStockCompanyInList={deleteStockCompanyInList}
 
@@ -491,6 +543,9 @@ export default function QuantPost({
                         setLocalInfo={setLocalInfo}
 
                         handleClickStocksOfInterestButton={handleClickStocksOfInterestButton}
+                        stocksOfInterestPanelOpened={stocksOfInterestPanelOpened}
+
+                        handleStocksOfInterestChange={handleStocksOfInterestChange}
                     />
                 </div>
             </div>
@@ -503,7 +558,6 @@ export default function QuantPost({
 
                     strategyInfo={strategyInfo}
 
-                    latestStockCompanyInfo={latestStockCompanyInfo}
                     setDictFilteredStockCompanyInfo={setDictFilteredStockCompanyInfo}
 
                     selectedStrategy={selectedStrategy}
@@ -514,9 +568,11 @@ export default function QuantPost({
                     searchStockCompanyInfo={handleSearchStockCompanyInfo}
 
                     dictFilteredStockCompanyInfo={dictFilteredStockCompanyInfo}
-                    searchResult={searchResult}
-
+                    arrayFilteredStocksList={arrayFilteredStocksList}
+                    latestStockCompanyInfo={latestStockCompanyInfo}
                     marketInfoList={marketInfoList}
+
+                    searchResult={searchResult}
 
                     deleteStockCompanyInList={deleteStockCompanyInList}
 
@@ -529,7 +585,10 @@ export default function QuantPost({
                     setLocalInfo={setLocalInfo}
 
                     handleClickStocksOfInterestButton={handleClickStocksOfInterestButton}
-                /></div>
+
+                    handleStocksOfInterestChange={handleStocksOfInterestChange}
+                />
+            </div>
         </div>
     );
 }

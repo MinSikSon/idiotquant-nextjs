@@ -3,12 +3,11 @@ export default function SearchingListItem(props) {
     // console.log(`SearchingListItem`, props);
     return (
         // <article className="flex items-start space-x-6 p-6 bg-black text-white">
-        <article className="flex items-start space-x-6 px-6 text-black hover:bg-gray-300 rounded-lg" onClick={(e) => {
-            e.preventDefault();
-            // console.log(e.target.innerText);
-            props.handleSearchStockCompanyInfo(e.target.innerText);
-            // e.target.innerText = '';
-        }}>
+        <article className="flex items-start space-x-6 px-6 text-black hover:bg-gray-300 rounded-lg"
+            onClick={(e) => {
+                e.preventDefault();
+                props.handleSearchStockCompanyInfo(e.target.innerText);
+            }}>
             {/* <img src={movie.image} alt="" width="60" height="88" className="flex-none rounded-md bg-slate-100" /> */}
             <div className="min-w-0 relative flex-auto">
                 {/* <h2 className="font-semibold text-slate-900 truncate pr-20">{movie.title}</h2> */}

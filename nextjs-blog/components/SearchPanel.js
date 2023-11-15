@@ -28,7 +28,6 @@ const Input = (props) => {
                 e.preventDefault();
                 props.handleSearchStockCompanyInfo(props.searchingList[0]?.['종목명'] || '');
                 e.target[0].value = ''
-                props.setSearchPanelIsOpened(true);
             }}
             className={`flex items-center p-0`}
         >
@@ -37,9 +36,7 @@ const Input = (props) => {
                     <>
                         <ListItemPrefix>
                             <div onClick={(e) => {
-                                e.preventDefault();
-                                props.setSearchPanelIsOpened(false);
-                                props.setSearchResult({});
+                                props.handleArrowUturnLeftIcon(e);
                             }}>
                                 <ArrowUturnLeftIcon strokeWidth={2} className="h-6 w-6" />
                             </div>
@@ -148,10 +145,7 @@ export default function SearchPanel(props) {
                             <SearchingListItem
                                 key={index}
                                 movie={item}
-                                handleSearchStockCompanyInfo={(stockCompany) => {
-                                    props.setSearchPanelIsOpened(true)
-                                    props.handleSearchStockCompanyInfo(stockCompany);
-                                }}
+                                handleSearchStockCompanyInfo={props.handleSearchStockCompanyInfo}
                             />)}
                     </>
                     :

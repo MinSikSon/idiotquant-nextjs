@@ -58,14 +58,24 @@ export default function TablePanel(props) {
 
     if (false === loadingDone) return <Loading />;
 
+    const NUM_OF_STOCK_ITEMS = props.arrayFilteredStocksList.length;
+    if (0 == NUM_OF_STOCK_ITEMS) return <Loading />;
+
     let cumulativeRatio = 0;
 
     let tbody = [];
     let index = 0;
 
-    // console.log(`props.dictFilteredStockCompanyInfo`, props.dictFilteredStockCompanyInfo);
-    for (let key in props.dictFilteredStockCompanyInfo) {
-        const { corp_code, active, 종목명, 유동자산, 부채총계, 상장주식수, 종가, 당기순이익, 시가총액, PER, PBR, EPS, bsnsDate, prevMarketInfo } = props.dictFilteredStockCompanyInfo[key];
+    // console.log(`1-1) props.arrayFilteredStocksList`, props.arrayFilteredStocksList);
+    // console.log(`1-2) props.arrayFilteredStocksList.length`, props.arrayFilteredStocksList.length);
+    // console.log(`2-1) props.latestStockCompanyInfo`, props.latestStockCompanyInfo);
+    // console.log(`2-2) Object.keys(props.latestStockCompanyInfo).length`, Object.keys(props.latestStockCompanyInfo).length);
+    // console.log(`3-1) props.marketInfoList`, props.marketInfoList);
+    // console.log(`3-2) Object.keys(props.marketInfoList).length`, Object.keys(props.marketInfoList).length);
+    // console.log(`4-1) props.dictFilteredStockCompanyInfo`, props.dictFilteredStockCompanyInfo);
+
+    for (let stockName of props.arrayFilteredStocksList) {
+        const { corp_code, active, 종목명, 유동자산, 부채총계, 상장주식수, 종가, 당기순이익, 시가총액, PER, PBR, EPS, bsnsDate, prevMarketInfo } = props.latestStockCompanyInfo[stockName];
         const fairPrice/*적정가*/ = Number((Number(유동자산) - Number(부채총계)) / Number(상장주식수)).toFixed(0);
         const ratio = Number(fairPrice / Number(종가));
 
@@ -74,7 +84,6 @@ export default function TablePanel(props) {
         tbody.push({
             key: parseInt(corp_code).toString(),
             corpCode: parseInt(corp_code),
-            setSearchPanelIsOpened: props.setSearchPanelIsOpened,
             deleteStockCompanyInList: props.deleteStockCompanyInList,
             clickedRecentlyViewedStock: props.clickedRecentlyViewedStock,
 
@@ -107,11 +116,14 @@ export default function TablePanel(props) {
         ++index;
     }
 
-    const numOfStockItems = Object.keys(props.dictFilteredStockCompanyInfo).length;
-    const 기대수익 = (numOfStockItems == 0) ? '0%' : `${Number((cumulativeRatio / numOfStockItems - 1) * 100).toFixed(1)}%`;
-    const prevBsnsDate = (numOfStockItems == 0) ? '-' : props.dictFilteredStockCompanyInfo[Object.keys(props.dictFilteredStockCompanyInfo)[0]].prevMarketInfo.bsnsDate;
-    const bsnsDate = (numOfStockItems == 0) ? '-' : props.dictFilteredStockCompanyInfo[Object.keys(props.dictFilteredStockCompanyInfo)[0]].bsnsDate;
-    const thstrm_dt = (numOfStockItems == 0) ? '-' : props.dictFilteredStockCompanyInfo[Object.keys(props.dictFilteredStockCompanyInfo)[0]].thstrm_dt;
+
+    const LATEST_MARKET_INFO_INDEX = props.marketInfoList.length - 1;
+
+    const 기대수익 = `${Number((cumulativeRatio / NUM_OF_STOCK_ITEMS - 1) * 100).toFixed(1)}%`;
+    const prevBsnsDate = props.marketInfoList[LATEST_MARKET_INFO_INDEX - 1].date;
+    const bsnsDate = props.marketInfoList[LATEST_MARKET_INFO_INDEX].date;
+
+    const thstrm_dt = props.latestStockCompanyInfo[Object.keys(props.latestStockCompanyInfo)[0]].thstrm_dt;
 
     const CardList = (props) => {
         return (
@@ -131,7 +143,7 @@ export default function TablePanel(props) {
     return (
         <>
             <MarQueue2 contents={[
-                { title: `추천 종목수`, description: `${numOfStockItems} 개` },
+                { title: `추천 종목수`, description: `${NUM_OF_STOCK_ITEMS} 개` },
                 { title: `목표수익률`, description: 기대수익, textColor: `text-black`, backGround: `` },
                 { title: `이전 주가 일자`, description: `${prevBsnsDate}`, textColor: `text-black`, backGround: `bg-amber-200` },
                 { title: `최근 주가 일자`, description: `${bsnsDate}`, textColor: `text-black`, backGround: `bg-blue-200` },
