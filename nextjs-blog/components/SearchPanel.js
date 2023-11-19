@@ -12,11 +12,13 @@ const Input = (props) => {
     const refFocus = React.useRef();
 
     React.useEffect(() => {
-        if (!!props.searchPanelIsOpened) {
-            if (!!props.searchResult) {
-                if (Object.keys(props.searchResult).length == 0) {
-                    refFocus.current.focus();
-                    props.setSearchResult({});
+        if (props.stocksOfInterestPanelOpened == false) {
+            if (!!props.searchPanelIsOpened) {
+                if (!!props.searchResult) {
+                    if (Object.keys(props.searchResult).length == 0) {
+                        refFocus.current.focus();
+                        props.setSearchResult({});
+                    }
                 }
             }
         }
@@ -32,7 +34,7 @@ const Input = (props) => {
             className={`flex items-center p-0`}
         >
             <ListItem className={`p-0 text-black`}>
-                {props.searchPanelIsOpened ?
+                {props.searchPanelIsOpened == true ?
                     <>
                         <ListItemPrefix>
                             <div onClick={(e) => {
@@ -41,32 +43,38 @@ const Input = (props) => {
                                 <ArrowUturnLeftIcon strokeWidth={2} className="h-6 w-6" />
                             </div>
                         </ListItemPrefix>
-                        <input
-                            ref={refFocus}
-                            name="searchValue"
-                            className="appearance-none border-none w-full text-black p-2 rounded-lg text-sm focus:outline-none"
-                            type="text"
-                            placeholder={props.inputPlaceholder}
-                            value={props.inputValue}
-                            aria-label="Full name"
-                            onChange={(e) => {
-                                e.preventDefault();
-                                props.getSearchingList(e.target.value);
-                            }}
-                            onClick={(e) => {
-                                e.preventDefault();
-                                props.setSearchResult({});
-                            }}
-                        />
+                        {(props.stocksOfInterestPanelOpened == true) ?
+                            <></> :
+                            <input
+                                ref={refFocus}
+                                name="searchValue"
+                                className="appearance-none border-none w-full text-black p-2 rounded-lg text-sm focus:outline-none"
+                                type="text"
+                                placeholder={props.inputPlaceholder}
+                                value={props.inputValue}
+                                aria-label="Full name"
+                                onChange={(e) => {
+                                    e.preventDefault();
+                                    props.getSearchingList(e.target.value);
+                                }}
+                                onClick={(e) => {
+                                    e.preventDefault();
+                                    props.setSearchResult({});
+                                }}
+                            />
+                        }
                     </>
                     :
                     <></>
                 }
-                <ListItemSuffix>
-                    <button className={`rounded-3xl ${props.searchPanelIsOpened ? 'pr-7' : 'pr-3'} inline-flex items-center justify-center text-black focus:outline-none`}>
-                        <MagnifyingGlassIcon strokeWidth={2} className="h-6 w-6" />
-                    </button>
-                </ListItemSuffix>
+                {(props.stocksOfInterestPanelOpened == true) ?
+                    <></> :
+                    <ListItemSuffix>
+                        <button className={`rounded-3xl ${props.searchPanelIsOpened ? 'pr-7' : 'pr-3'} inline-flex items-center justify-center text-black focus:outline-none`}>
+                            <MagnifyingGlassIcon strokeWidth={2} className="h-6 w-6" />
+                        </button>
+                    </ListItemSuffix>
+                }
             </ListItem>
         </form>
     );
@@ -135,10 +143,12 @@ export default function SearchPanel(props) {
     // console.log(`props.searchResult`, props.searchResult);
     if (true === !!!props.searchPanelIsOpened) return <Input {...props} />;
 
+    // console.log(`props.stocksOfInterestPanelOpened`, props.stocksOfInterestPanelOpened);
     return (
         <div className={`z-10 w-full`}>
             <Input {...props} />
             {
+
                 (true === !!props.searchingList) ?
                     <>
                         {props.searchingList.map((item, index) =>
@@ -149,30 +159,34 @@ export default function SearchPanel(props) {
                             />)}
                     </>
                     :
-                    (!!props.searchResult && Object.keys(props.searchResult).length > 0) ?
-                        <>
-                            <Chip className="w-fit border-none text-black text-md pb-0 my-0" variant="outlined" value={jsonSearchResult['종목명']} />
-                            <Chip className="border-none text-black text-2xl b-0 py-0 m-0" variant="outlined" value={`${Number(jsonSearchResult['종가']).toLocaleString('ko-KR', { maximumFractionDigits: 0 })}원`} />
-                            <CustomChart
-                                fairPrice={fairPrice}
-                                tickerName={jsonSearchResult['종목명']}
-                                bsnsFullDate={(Object.keys(props.dictFilteredStockCompanyInfo).length > 0) ? props.dictFilteredStockCompanyInfo[Object.keys(props.dictFilteredStockCompanyInfo)[0]].bsnsDate : '-'}
+                    (false === props.stocksOfInterestPanelOpened ?
+                        (!!props.searchResult && Object.keys(props.searchResult).length > 0 ?
+                            <>
+                                <Chip className="w-fit border-none text-black text-md pb-0 my-0" variant="outlined" value={jsonSearchResult['종목명']} />
+                                <Chip className="border-none text-black text-2xl b-0 py-0 m-0" variant="outlined" value={`${Number(jsonSearchResult['종가']).toLocaleString('ko-KR', { maximumFractionDigits: 0 })}원`} />
+                                <CustomChart
+                                    fairPrice={fairPrice}
+                                    tickerName={jsonSearchResult['종목명']}
+                                    bsnsFullDate={(Object.keys(props.dictFilteredStockCompanyInfo).length > 0) ? props.dictFilteredStockCompanyInfo[Object.keys(props.dictFilteredStockCompanyInfo)[0]].bsnsDate : '-'}
 
-                                marketCapitalization={jsonSearchResult['시가총액']}
-                                listedStocks={jsonSearchResult['상장주식수']}
-                                marketInfoList={props.marketInfoList}
+                                    marketCapitalization={jsonSearchResult['시가총액']}
+                                    listedStocks={jsonSearchResult['상장주식수']}
+                                    marketInfoList={props.marketInfoList}
 
-                                responsive={true}
-                                display={false}
-                                height={'60px'}
-                                width={'90px'}
-                            />
-                            <div className={`grid grid-cols-2`}>
-                                {Object.keys(selectedSearchResult).map((key, index) => <CustomDiv key={index} title={key} item={jsonSearchResult[key]} />)}
-                            </div>
-                        </>
-                        :
-                        <></>
+                                    responsive={true}
+                                    display={false}
+                                    height={'60px'}
+                                    width={'90px'}
+                                />
+                                <div className={`grid grid-cols-2`}>
+                                    {Object.keys(selectedSearchResult).map((key, index) => <CustomDiv key={index} title={key} item={jsonSearchResult[key]} />)}
+                                </div>
+                            </>
+                            : <></>
+                        )
+                        : <></>
+                    )
+
             }
         </div>
     );
