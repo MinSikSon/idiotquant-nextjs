@@ -103,7 +103,7 @@ export function GetArrayFilteredByStrategyExample(stockCompanyInfo) {
         return Number(a['weight']) - Number(b['weight']);
     });
 
-    console.log(`arraySorted4`, arraySorted4);
+    // console.log(`arraySorted4`, arraySorted4);
     const arrSelectedStockCompany = arraySorted4.slice(0, 40);
 
     const companyList = new Array();

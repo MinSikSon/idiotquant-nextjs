@@ -58,8 +58,12 @@ export default function TablePanel(props) {
 
     if (false === loadingDone) return <Loading />;
 
+    // console.log(`%c TablePanel 2`, `color:blue; background:white`);
+
     const NUM_OF_STOCK_ITEMS = props.arrayFilteredStocksList.length;
     if (0 == NUM_OF_STOCK_ITEMS) return <Loading />;
+
+    // console.log(`%c TablePanel 3`, `color:blue; background:white`);
 
     let cumulativeRatio = 0;
 
@@ -84,7 +88,6 @@ export default function TablePanel(props) {
         tbody.push({
             key: parseInt(corp_code).toString(),
             corpCode: parseInt(corp_code),
-            deleteStockCompanyInList: props.deleteStockCompanyInList,
             clickedRecentlyViewedStock: props.clickedRecentlyViewedStock,
 
             active: active,
@@ -116,7 +119,6 @@ export default function TablePanel(props) {
         ++index;
     }
 
-
     const LATEST_MARKET_INFO_INDEX = props.marketInfoList.length - 1;
 
     const 기대수익 = `${Number((cumulativeRatio / NUM_OF_STOCK_ITEMS - 1) * 100).toFixed(1)}%`;
@@ -142,16 +144,19 @@ export default function TablePanel(props) {
 
     return (
         <>
-            <MarQueue2 contents={[
-                { title: `추천 종목수`, description: `${NUM_OF_STOCK_ITEMS} 개` },
-                { title: `목표수익률`, description: 기대수익, textColor: `text-black`, backGround: `` },
-                { title: `이전 주가 일자`, description: `${prevBsnsDate}`, textColor: `text-black`, backGround: `bg-amber-200` },
-                { title: `최근 주가 일자`, description: `${bsnsDate}`, textColor: `text-black`, backGround: `bg-blue-200` },
-                { title: `재무정보 일자`, description: `${thstrm_dt}` },
-            ]} />
-            <Card className="w-full">
-                <List className="px-0">
-                    <CardList tbody={tbody} loop={5} ratio={''} color={'blue'} deleteStockCompanyInList={props.deleteStockCompanyInList} />
+            {props.marqueueDisplay === true ?
+                <MarQueue2 contents={[
+                    { title: `추천 종목수`, description: `${NUM_OF_STOCK_ITEMS} 개` },
+                    { title: `목표수익률`, description: 기대수익, textColor: `text-black`, backGround: `` },
+                    { title: `이전 주가 일자`, description: `${prevBsnsDate}`, textColor: `text-black`, backGround: `bg-amber-200` },
+                    { title: `최근 주가 일자`, description: `${bsnsDate}`, textColor: `text-black`, backGround: `bg-blue-200` },
+                    { title: `재무정보 일자`, description: `${thstrm_dt}` },
+                ]} />
+                : <></>
+            }
+            <Card className="w-full z-10">
+                <List className="px-0 mt-0">
+                    <CardList tbody={tbody} loop={5} ratio={''} color={'blue'} />
                 </List>
             </Card>
         </>

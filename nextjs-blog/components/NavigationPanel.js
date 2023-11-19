@@ -72,6 +72,8 @@ export default function NavigationPanel(props) {
                         setSearchResult={props.setSearchResult}
 
                         handleArrowUturnLeftIcon={props.handleArrowUturnLeftIcon}
+
+                        stocksOfInterestPanelOpened={props.stocksOfInterestPanelOpened}
                     />
                 </ListItemSuffix>
             </ListItem>
