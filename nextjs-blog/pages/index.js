@@ -11,6 +11,8 @@ import TitlePanel from "../components/TitlePanel.js";
 import NavigationPanel from "../components/NavigationPanel.js";
 import StocksOfInterestPanel from "../components/StocksOfInterestPanel.js";
 import NewGroupPanel from "../components/NewGroupPanel.js";
+import AddStockInGroupPanel from "../components/AddStockInGroupPanel.js";
+import DeleteGroupPanel from "../components/DeleteGroupPanel.js";
 
 export async function getStaticProps() {
     async function fetchAndSet(subUrl) {
@@ -88,7 +90,6 @@ export default function QuantPost({
 
     const [latestStockCompanyInfo, setLatestStockCompanyInfo] = React.useState('');
 
-    const [searchPanelIsOpened, setSearchPanelIsOpened] = React.useState(false);
     const [openCalculator, setOpenCalculator] = React.useState(false);
 
     const [dictFilteredStockCompanyInfo, setDictFilteredStockCompanyInfo] = React.useState('');
@@ -130,11 +131,10 @@ export default function QuantPost({
             }
         ]
     });
-    const [stocksOfInterestPanelOpened, setStocksOfInterestPanelOpened] = React.useState(false);
 
-    const [localInfo, setLocalInfo] = React.useState({ testCnt: 1, isPanelOpened: searchPanelIsOpened, log: 'hihi' });
+    const [openedPanel, setOpenedPanel] = React.useState('');
 
-    const [editGroupOpened, setEditGroupOpend] = React.useState(false);
+    const [localInfo, setLocalInfo] = React.useState({ testCnt: 1, openedPanel: openedPanel, log: 'hihi' });
 
     function changeStockCompanyName(dictOrigin, srcName, dstName) {
         const { [srcName]: srcCompanyInfo, ...rest } = dictOrigin;
@@ -223,10 +223,12 @@ export default function QuantPost({
     }, [stockCompanyChangeCount]);
 
     function clickedRecentlyViewedStock(clickedStockCompanyName) {
-        // console.log(`clickedRecentlyViewedStock`, stockCompanyName);
-        // console.log(`arrayFilteredStocksList`, arrayFilteredStocksList);
-        // console.log(`stocksOfInterestPanelOpened`, stocksOfInterestPanelOpened);
-        if (stocksOfInterestPanelOpened == false) {
+        // console.log(`clickedRecentlyViewedStock`, openedPanel);
+        if ('' === openedPanel
+            || 'SearchPanel' === openedPanel
+            || 'StocksOfInterestPanel' === openedPanel
+            || 'AddStockInGroupPanel' === openedPanel
+        ) {
             handleSearchStockCompanyInfo(clickedStockCompanyName);
 
             setLocalInfo({ testCnt: localInfo.testCnt + 1, log: 'clickedRecentlyViewedStock' });
@@ -234,7 +236,9 @@ export default function QuantPost({
     }
 
     function handleSearchStockCompanyInfo(clickedStockCompanyName) {
-        setSearchPanelIsOpened(true)
+        if (openedPanel !== 'AddStockInGroupPanel') {
+            setOpenedPanel('SearchPanel');
+        }
 
         const marketInfoPrevIndex = marketInfoList.length - 2;
         const marketInfoPrev = marketInfoList[marketInfoPrevIndex];
@@ -332,8 +336,7 @@ export default function QuantPost({
     }
 
     function handleClickStocksOfInterestButton() {
-        setSearchPanelIsOpened(true);
-        setStocksOfInterestPanelOpened(true);
+        setOpenedPanel('StocksOfInterestPanel');
 
         setLocalInfo({ testCnt: localInfo.testCnt + 1, isPanelOpened: true, log: 'handleClickStocksOfInterestButton' });
     }
@@ -428,17 +431,22 @@ export default function QuantPost({
             break;
         }
 
-        setRecentlyViewedStocksList(newRecentlyViewedStocksList);
+        setRecentlyViewedStocksList({ ...newRecentlyViewedStocksList });
     }
 
     function handleArrowUturnLeftIcon(e) {
-        // console.log(`handleArrowUturnLeftIcon`, handleArrowUturnLeftIcon);
+        // console.log(`handleArrowUturnLeftIcon`, openedPanel);
         e.preventDefault();
 
-        setSearchPanelIsOpened(false);
-        setStocksOfInterestPanelOpened(false);
+        if ('AddStockInGroupPanel' === openedPanel) {
+            setOpenedPanel('StocksOfInterestPanel');
+            return;
+        }
 
-        setSearchResult({})
+        setOpenedPanel('');
+
+        setSearchResult({});
+        setSearchingList({});
     }
 
     function handleStocksOfInterestChange(selected) {
@@ -463,10 +471,6 @@ export default function QuantPost({
         }
     }
 
-    function editGroup() {
-        setEditGroupOpend(true);
-    }
-
     function addNewStockGroup(groupName) {
         const newStocksOfInterest = stocksOfInterest;
 
@@ -474,7 +478,7 @@ export default function QuantPost({
         newStocksOfInterest.tabs.push(
             {
                 label: groupName,
-                value: groupName,
+                value: groupName + newStocksOfInterest.tabs.length,
                 stocks: [],
                 desc: groupName,
                 test: 'hihihi'
@@ -490,7 +494,7 @@ export default function QuantPost({
 
         let duplicated = false;
         for (let i = 0; i < newStocksOfInterest.tabs[stocksOfInterest.selectedTab].stocks.length; ++i) {
-            if ('삼성전자' == newStocksOfInterest.tabs[stocksOfInterest.selectedTab].stocks[i]) {
+            if (stockName == newStocksOfInterest.tabs[stocksOfInterest.selectedTab].stocks[i]) {
                 duplicated = true;
                 break;
             }
@@ -502,13 +506,16 @@ export default function QuantPost({
 
         newStocksOfInterest.tabs[stocksOfInterest.selectedTab].stocks.push('삼성전자');
 
-        setStocksOfInterest(newStocksOfInterest);
+        setStocksOfInterest({ ...newStocksOfInterest });
         updateRecentlyViewdStocksList(stockName);
     }
 
-    function editGroupDone() {
-        // console.log(`editGroupDone`);
-        setEditGroupOpend(false);
+    function handleDeleteStockGroup(idx) {
+        const newStocksOfInterest = stocksOfInterest;
+        newStocksOfInterest.tabs.splice(idx, 1);
+        newStocksOfInterest.selectedTab = 0;
+
+        setStocksOfInterest({ ...newStocksOfInterest });
     }
 
     // sm	640px	@media (min-width: 640px) { ... }
@@ -516,6 +523,56 @@ export default function QuantPost({
     // lg	1024px	@media (min-width: 1024px) { ... }
     // xl	1280px	@media (min-width: 1280px) { ... }
     // 2xl	1536px	@media (min-width: 1536px) { ... }
+
+    if ('DeleteGroupPanel' === openedPanel) {
+        return <DeleteGroupPanel
+            openedPanel={openedPanel}
+            setOpenedPanel={setOpenedPanel}
+
+            stocksOfInterest={stocksOfInterest}
+
+            handleDeleteStockGroup={handleDeleteStockGroup}
+        />
+    }
+
+    if ('AddStockInGroupPanel' === openedPanel) {
+        return (
+            <>
+                <AddStockInGroupPanel
+                    openedPanel={openedPanel}
+                    setOpenedPanel={setOpenedPanel}
+
+                    handleSearchStockCompanyInfo={handleSearchStockCompanyInfo}
+                    searchResult={searchResult}
+                    inputValue={inputValue}
+                    inputPlaceholder={inputPlaceholder}
+
+                    marketInfoList={marketInfoList}
+
+                    dictFilteredStockCompanyInfo={dictFilteredStockCompanyInfo}
+
+                    getSearchingList={getSearchingList}
+                    searchingList={searchingList}
+
+                    setSearchResult={setSearchResult}
+
+                    handleArrowUturnLeftIcon={handleArrowUturnLeftIcon}
+                />
+                <RecentlyViewedStocks
+                    openedPanel={openedPanel}
+
+                    recentlyViewedStocksList={recentlyViewedStocksList}
+                    latestStockCompanyInfo={latestStockCompanyInfo}
+                    spliceRecentlyViewedStocksList={spliceRecentlyViewedStocksList}
+
+                    clickedRecentlyViewedStock={clickedRecentlyViewedStock}
+
+                    searchResult={searchResult}
+                />
+            </>
+        );
+    }
+
     return (
         <div className="flex">
             <div className='w-full sm:w-1/2 md:w-1/2 lg:w-1/2 xl:w-1/2 2xl:w-1/2'>
@@ -525,23 +582,25 @@ export default function QuantPost({
                     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0,user-scalable=0" />
                     <meta name="description" content="한국주식에 대한 퀀트적인 분석과 필터링을 통해 적합한 종목을 추천하는 웹 페이지입니다. 효율적인 퀀트 투자 전략을 기반으로 한국 주식 시장에서 가치 있는 투자 대상을 찾아드립니다." />
                 </Head>
-                {true === editGroupOpened ?
+                {'NewGroupPanel' === openedPanel ?
                     <>
                         <NewGroupPanel
+                            setOpenedPanel={setOpenedPanel}
                             addNewStockGroup={addNewStockGroup}
-                            editGroupDone={editGroupDone}
                         />
                     </>
                     :
                     <>
                         <NavigationPanel
+                            openedPanel={openedPanel}
+                            setOpenedPanel={setOpenedPanel}
+
                             openNav={openNav}
                             setOpenNav={setOpenNav}
 
                             openCalculator={openCalculator}
                             setOpenCalculator={setOpenCalculator}
 
-                            searchPanelIsOpened={searchPanelIsOpened}
                             handleSearchStockCompanyInfo={handleSearchStockCompanyInfo}
                             searchResult={searchResult}
                             inputValue={inputValue}
@@ -569,18 +628,16 @@ export default function QuantPost({
                             setSearchResult={setSearchResult}
 
                             handleArrowUturnLeftIcon={handleArrowUturnLeftIcon}
-
-                            stocksOfInterestPanelOpened={stocksOfInterestPanelOpened}
                         />
-                        <TitlePanel
-                            searchPanelIsOpened={searchPanelIsOpened}
-                            setSearchResult={setSearchResult}
-                        />
-
-                        {stocksOfInterestPanelOpened == true ?
-                            <></> :
+                        {'' === openedPanel ?
+                            <TitlePanel
+                                setSearchResult={setSearchResult}
+                            />
+                            : <></>
+                        }
+                        {'' === openedPanel || 'SearchPanel' === openedPanel ?
                             <RecentlyViewedStocks
-                                searchPanelIsOpened={searchPanelIsOpened}
+                                openedPanel={openedPanel}
 
                                 recentlyViewedStocksList={recentlyViewedStocksList}
                                 latestStockCompanyInfo={latestStockCompanyInfo}
@@ -590,109 +647,118 @@ export default function QuantPost({
 
                                 searchResult={searchResult}
                             />
+                            : <></>
                         }
-                        <StocksOfInterestPanel
-                            stocksOfInterestPanelOpened={stocksOfInterestPanelOpened}
-                            stocksOfInterest={stocksOfInterest}
+                        {('StocksOfInterestPanel' === openedPanel) ?
+                            <StocksOfInterestPanel
+                                openedPanel={openedPanel}
+                                setOpenedPanel={setOpenedPanel}
 
-                            handleStocksOfInterestChange={handleStocksOfInterestChange}
+                                stocksOfInterest={stocksOfInterest}
 
-                            searchPanelIsOpened={searchPanelIsOpened}
-                            dictFilteredStockCompanyInfo={dictFilteredStockCompanyInfo}
-
-                            arrayFilteredStocksList={arrayFilteredStocksList}
-
-                            latestStockCompanyInfo={latestStockCompanyInfo}
-                            marketInfoList={marketInfoList}
-
-                            deleteStockCompanyInList={deleteStockCompanyInList}
-
-                            clickedRecentlyViewedStock={clickedRecentlyViewedStock}
-
-                            editGroup={editGroup}
-
-                            addNewStocksOfInterest={addNewStocksOfInterest}
-                        />
-
-                        <div className='sm:hidden md:hidden lg:hidden xl:hidden 2xl:hidden'>
-                            <DescriptionPanel
-                                loginStatus={loginStatus}
-                                searchPanelIsOpened={searchPanelIsOpened}
-
-                                strategyInfo={strategyInfo}
-
-                                latestStockCompanyInfo={latestStockCompanyInfo}
-                                setDictFilteredStockCompanyInfo={setDictFilteredStockCompanyInfo}
-
-                                selectedStrategy={selectedStrategy}
-                                setSelectedStrategy={setSelectedStrategy}
-
-                                setStrategyInfo={setStrategyInfo}
-
-                                handleSearchStockCompanyInfo={handleSearchStockCompanyInfo}
+                                handleStocksOfInterestChange={handleStocksOfInterestChange}
 
                                 dictFilteredStockCompanyInfo={dictFilteredStockCompanyInfo}
+
                                 arrayFilteredStocksList={arrayFilteredStocksList}
+
+                                latestStockCompanyInfo={latestStockCompanyInfo}
                                 marketInfoList={marketInfoList}
 
-                                searchResult={searchResult}
-                                searchingList={searchingList}
+                                deleteStockCompanyInList={deleteStockCompanyInList}
 
                                 clickedRecentlyViewedStock={clickedRecentlyViewedStock}
 
-                                stocksOfInterest={stocksOfInterest}
-                                setStocksOfInterest={setStocksOfInterest}
-                                localInfo={localInfo}
-                                setLocalInfo={setLocalInfo}
-
-                                handleClickStocksOfInterestButton={handleClickStocksOfInterestButton}
-                                stocksOfInterestPanelOpened={stocksOfInterestPanelOpened}
-
-                                handleStocksOfInterestChange={handleStocksOfInterestChange}
+                                addNewStocksOfInterest={addNewStocksOfInterest}
                             />
-                        </div>
+                            : <></>
+                        }
+
+                        {'' === openedPanel ?
+                            <div className='sm:hidden md:hidden lg:hidden xl:hidden 2xl:hidden'>
+                                <DescriptionPanel
+                                    openedPanel={openedPanel}
+                                    setOpenedPanel={setOpenedPanel}
+
+                                    loginStatus={loginStatus}
+
+                                    strategyInfo={strategyInfo}
+
+                                    latestStockCompanyInfo={latestStockCompanyInfo}
+                                    setDictFilteredStockCompanyInfo={setDictFilteredStockCompanyInfo}
+
+                                    selectedStrategy={selectedStrategy}
+                                    setSelectedStrategy={setSelectedStrategy}
+
+                                    setStrategyInfo={setStrategyInfo}
+
+                                    handleSearchStockCompanyInfo={handleSearchStockCompanyInfo}
+
+                                    dictFilteredStockCompanyInfo={dictFilteredStockCompanyInfo}
+                                    arrayFilteredStocksList={arrayFilteredStocksList}
+                                    marketInfoList={marketInfoList}
+
+                                    searchResult={searchResult}
+                                    searchingList={searchingList}
+
+                                    clickedRecentlyViewedStock={clickedRecentlyViewedStock}
+
+                                    stocksOfInterest={stocksOfInterest}
+                                    setStocksOfInterest={setStocksOfInterest}
+                                    localInfo={localInfo}
+                                    setLocalInfo={setLocalInfo}
+
+                                    handleClickStocksOfInterestButton={handleClickStocksOfInterestButton}
+
+                                    handleStocksOfInterestChange={handleStocksOfInterestChange}
+                                />
+                            </div>
+                            : <></>
+                        }
                     </>
                 }
             </div>
-            <div className='hidden sm:block sm:w-1/2 md:w-1/2 lg:w-1/2 xl:w-1/2 2xl:w-1/2'>
-                <DescriptionPanel
-                    loginStatus={loginStatus}
+            {'' === openedPanel ?
+                <div className='hidden sm:block sm:w-1/2 md:w-1/2 lg:w-1/2 xl:w-1/2 2xl:w-1/2'>
+                    <DescriptionPanel
+                        openedPanel={openedPanel}
+                        setOpenedPanel={setOpenedPanel}
 
-                    searchPanelIsOpened={false}
-                    setSearchPanelIsOpened={setSearchPanelIsOpened}
+                        loginStatus={loginStatus}
 
-                    strategyInfo={strategyInfo}
+                        strategyInfo={strategyInfo}
 
-                    setDictFilteredStockCompanyInfo={setDictFilteredStockCompanyInfo}
+                        setDictFilteredStockCompanyInfo={setDictFilteredStockCompanyInfo}
 
-                    selectedStrategy={selectedStrategy}
-                    setSelectedStrategy={setSelectedStrategy}
+                        selectedStrategy={selectedStrategy}
+                        setSelectedStrategy={setSelectedStrategy}
 
-                    setStrategyInfo={setStrategyInfo}
+                        setStrategyInfo={setStrategyInfo}
 
-                    searchStockCompanyInfo={handleSearchStockCompanyInfo}
+                        searchStockCompanyInfo={handleSearchStockCompanyInfo}
 
-                    dictFilteredStockCompanyInfo={dictFilteredStockCompanyInfo}
-                    arrayFilteredStocksList={arrayFilteredStocksList}
-                    latestStockCompanyInfo={latestStockCompanyInfo}
-                    marketInfoList={marketInfoList}
+                        dictFilteredStockCompanyInfo={dictFilteredStockCompanyInfo}
+                        arrayFilteredStocksList={arrayFilteredStocksList}
+                        latestStockCompanyInfo={latestStockCompanyInfo}
+                        marketInfoList={marketInfoList}
 
-                    searchResult={searchResult}
+                        searchResult={searchResult}
 
-                    clickedRecentlyViewedStock={clickedRecentlyViewedStock}
+                        clickedRecentlyViewedStock={clickedRecentlyViewedStock}
 
-                    stocksOfInterest={stocksOfInterest}
-                    setStocksOfInterest={setStocksOfInterest}
+                        stocksOfInterest={stocksOfInterest}
+                        setStocksOfInterest={setStocksOfInterest}
 
-                    localInfo={localInfo}
-                    setLocalInfo={setLocalInfo}
+                        localInfo={localInfo}
+                        setLocalInfo={setLocalInfo}
 
-                    handleClickStocksOfInterestButton={handleClickStocksOfInterestButton}
-                    stocksOfInterestPanelOpened={stocksOfInterestPanelOpened}
+                        handleClickStocksOfInterestButton={handleClickStocksOfInterestButton}
 
-                    handleStocksOfInterestChange={handleStocksOfInterestChange}
-                />
-            </div>
+                        handleStocksOfInterestChange={handleStocksOfInterestChange}
+                    />
+                </div>
+                : <></>
+            }
         </div>
     );
 }

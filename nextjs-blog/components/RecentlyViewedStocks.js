@@ -1,8 +1,10 @@
 import { XMarkIcon } from "@heroicons/react/24/outline";
-import { Button, Checkbox, Chip, ListItem, ListItemPrefix, ListItemSuffix, Typography } from "@material-tailwind/react";
+import { Chip, Typography } from "@material-tailwind/react";
 import { Util } from "./Util";
 
 export default function RecentlyViewedStocks(props) {
+    // console.log(`%c RecentlyViewedStocks`, `color:blue; background:white`);
+
     if (!!props.searchResult && Object.keys(props.searchResult).length > 0) return <></>;
 
     const Item = (props) => {
@@ -15,7 +17,6 @@ export default function RecentlyViewedStocks(props) {
                     onClick={() => { props.clickedRecentlyViewedStock(props.stockName) }}
                 />
                 <div className={`text-xs shrink-0`}>{Util.UnitConversion(props.description, true)}</div>
-                {/* <div className={`text-sm ${props.percentage > 0 ? 'text-red-600' : 'text-blue-600'}`}>{props.percentage}%</div> */}
                 <XMarkIcon className="h-5 w-5 shrink-0" strokeWidth={2} onClick={() => (props.spliceRecentlyViewedStocksList(props.stockName))} />
             </div>
         );

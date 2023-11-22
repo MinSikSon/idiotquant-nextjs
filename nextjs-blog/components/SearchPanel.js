@@ -12,13 +12,11 @@ const Input = (props) => {
     const refFocus = React.useRef();
 
     React.useEffect(() => {
-        if (props.stocksOfInterestPanelOpened == false) {
-            if (!!props.searchPanelIsOpened) {
-                if (!!props.searchResult) {
-                    if (Object.keys(props.searchResult).length == 0) {
-                        refFocus.current.focus();
-                        props.setSearchResult({});
-                    }
+        if (('SearchPanel' === props.openedPanel) || ('AddStockInGroupPanel' === props.openedPanel)) {
+            if (!!props.searchResult) {
+                if (Object.keys(props.searchResult).length == 0) {
+                    refFocus.current.focus();
+                    props.setSearchResult({});
                 }
             }
         }
@@ -34,7 +32,7 @@ const Input = (props) => {
             className={`flex items-center p-0`}
         >
             <ListItem className={`p-0 text-black`}>
-                {props.searchPanelIsOpened == true ?
+                {(('SearchPanel' === props.openedPanel) || ('AddStockInGroupPanel' === props.openedPanel)) ?
                     <>
                         <ListItemPrefix>
                             <div onClick={(e) => {
@@ -43,37 +41,33 @@ const Input = (props) => {
                                 <ArrowUturnLeftIcon strokeWidth={2} className="h-6 w-6" />
                             </div>
                         </ListItemPrefix>
-                        {(props.stocksOfInterestPanelOpened == true) ?
-                            <></> :
-                            <input
-                                ref={refFocus}
-                                name="searchValue"
-                                className="appearance-none border-none w-full text-black p-2 rounded-lg text-sm focus:outline-none"
-                                type="text"
-                                placeholder={props.inputPlaceholder}
-                                value={props.inputValue}
-                                aria-label="Full name"
-                                onChange={(e) => {
-                                    e.preventDefault();
-                                    props.getSearchingList(e.target.value);
-                                }}
-                                onClick={(e) => {
-                                    e.preventDefault();
-                                    props.setSearchResult({});
-                                }}
-                            />
-                        }
+                        <input
+                            ref={refFocus}
+                            name="searchValue"
+                            className="appearance-none border-none w-full text-black rounded-lg text-sm focus:outline-none"
+                            type="text"
+                            placeholder={props.inputPlaceholder}
+                            value={props.inputValue}
+                            aria-label="Full name"
+                            onChange={(e) => {
+                                e.preventDefault();
+                                props.getSearchingList(e.target.value);
+                            }}
+                            onClick={(e) => {
+                                e.preventDefault();
+                                props.setSearchResult({});
+                            }}
+                        />
                     </>
-                    :
-                    <></>
+                    : <></>
                 }
-                {(props.stocksOfInterestPanelOpened == true) ?
-                    <></> :
+                {(('' === props.openedPanel) || ('SearchPanel' === props.openedPanel) || ('AddStockInGroupPanel' === props.openedPanel)) ?
                     <ListItemSuffix>
                         <button className={`rounded-3xl ${props.searchPanelIsOpened ? 'pr-7' : 'pr-3'} inline-flex items-center justify-center text-black focus:outline-none`}>
                             <MagnifyingGlassIcon strokeWidth={2} className="h-6 w-6" />
                         </button>
                     </ListItemSuffix>
+                    : <></>
                 }
             </ListItem>
         </form>
@@ -114,7 +108,7 @@ function _getSelectedSearchResult(searchResult) {
 }
 export default function SearchPanel(props) {
     // console.log(`%c[call] Search`, `color : white; background : blue`);
-    // console.log(`props.searchPanelIsOpened`, props.searchPanelIsOpened);
+    // console.log(`props.openedPanel`, props.openedPanel);
 
     let jsonSearchResult = { '종목명': '-', 'stock_code': '-', '종가': 0, '유동자산': 0, '부채총계': 0, '당기순이익': 0, '거래량': 0, '시가총액': 1, '상장주식수': 1/*divide by zero 방지용*/, ...props.searchResult };
     let fairPrice/*적정가*/ = Number((Number(jsonSearchResult['유동자산']) - Number(jsonSearchResult['부채총계'])) / Number(jsonSearchResult['상장주식수'])).toFixed(0);
@@ -141,15 +135,14 @@ export default function SearchPanel(props) {
     // console.log(`props.searchPanelIsOpened`, props.searchPanelIsOpened);
     // console.log(`props.searchingList`, props.searchingList);
     // console.log(`props.searchResult`, props.searchResult);
-    if (true === !!!props.searchPanelIsOpened) return <Input {...props} />;
+    // if ('SearchPanel' === props.openedPanel) return <Input {...props} />;
 
     // console.log(`props.stocksOfInterestPanelOpened`, props.stocksOfInterestPanelOpened);
     return (
         <div className={`z-10 w-full`}>
             <Input {...props} />
             {
-
-                (true === !!props.searchingList) ?
+                (true === !!props.searchingList && Object.keys(props.searchingList).length > 0) ?
                     <>
                         {props.searchingList.map((item, index) =>
                             <SearchingListItem
@@ -159,8 +152,9 @@ export default function SearchPanel(props) {
                             />)}
                     </>
                     :
-                    (false === props.stocksOfInterestPanelOpened ?
-                        (!!props.searchResult && Object.keys(props.searchResult).length > 0 ?
+                    ('StocksOfInterestPanel' === props.openedPanel ?
+                        <></> :
+                        (true === !!props.searchResult && Object.keys(props.searchResult).length > 0 ?
                             <>
                                 <Chip className="w-fit border-none text-black text-md pb-0 my-0" variant="outlined" value={jsonSearchResult['종목명']} />
                                 <Chip className="border-none text-black text-2xl b-0 py-0 m-0" variant="outlined" value={`${Number(jsonSearchResult['종가']).toLocaleString('ko-KR', { maximumFractionDigits: 0 })}원`} />
@@ -184,7 +178,6 @@ export default function SearchPanel(props) {
                             </>
                             : <></>
                         )
-                        : <></>
                     )
 
             }
