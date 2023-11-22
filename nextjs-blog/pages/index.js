@@ -468,7 +468,6 @@ export default function QuantPost({
     }
 
     function addNewStockGroup(groupName) {
-        // console.log(`addNewStockGroup`, groupName);
         const newStocksOfInterest = stocksOfInterest;
 
         newStocksOfInterest.selectedTab = newStocksOfInterest.tabs.length;
@@ -481,14 +480,12 @@ export default function QuantPost({
                 test: 'hihihi'
             }
         )
-        // console.log(`newStocksOfInterest`, newStocksOfInterest);
 
-        setStocksOfInterest(newStocksOfInterest);
+        setStocksOfInterest({ ...newStocksOfInterest });
+        handleStocksOfInterestChange(groupName);
     }
 
     function addNewStocksOfInterest(stockName) {
-        // console.log(`addNewStocksOfInterest`);
-        // console.log(`arrayFilteredStocksList`, arrayFilteredStocksList);
         const newStocksOfInterest = stocksOfInterest;
 
         let duplicated = false;
@@ -499,17 +496,18 @@ export default function QuantPost({
             }
         }
 
-        if (false == duplicated) {
-            newStocksOfInterest.tabs[stocksOfInterest.selectedTab].stocks.push('삼성전자');
-
-            console.log(`newStocksOfInterest`, newStocksOfInterest);
-            setStocksOfInterest({ ...newStocksOfInterest });
+        if (true == duplicated) {
+            return;
         }
 
+        newStocksOfInterest.tabs[stocksOfInterest.selectedTab].stocks.push('삼성전자');
+
+        setStocksOfInterest(newStocksOfInterest);
+        updateRecentlyViewdStocksList(stockName);
     }
 
     function editGroupDone() {
-        console.log(`editGroupDone`);
+        // console.log(`editGroupDone`);
         setEditGroupOpend(false);
     }
 

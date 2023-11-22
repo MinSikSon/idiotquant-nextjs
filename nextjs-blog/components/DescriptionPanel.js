@@ -9,31 +9,30 @@ export default function DescriptionPanel(props) {
 
     // console.log(`props.stocksOfInterest`, props.stocksOfInterest);
     return (
-        <div className='py-3 my-2 bg-white'>
+        <div className='py-3 my-2'>
             <Typography className="pl-5 pb-2" variant='h6'>관심 주식</Typography>
-            <div className='bg-white'>
+            <div>
                 <Tabs value={props.stocksOfInterest.tabs[props.stocksOfInterest.selectedTab].value}>
                     <TabsHeader
-                        className="overflow-x-scroll rounded-none border-b border-blue-gray-100 bg-transparent p-0"
+                        className="flex rounded-none border-b border-blue-gray-100 bg-transparent p-0"
                         indicatorProps={{ className: "bg-transparent border-b-2 border-gray-900 shadow-none rounded-none", }}
                     >
-                        <ListItem className="p-0 pl-5">
+                        <div className="overflow-x-scroll w-10/12 flex">
                             {props.stocksOfInterest.tabs.map(({ label, value }, idx) => (
                                 <Tab className="shrink-0 w-fit text-sm"
                                     onClick={() => props.handleStocksOfInterestChange(value)} key={idx} value={value}>
                                     {label}
                                 </Tab>
                             ))}
-                            <ListItemSuffix className="shrink-0 w-fit">
-                                <Button
-                                    className="border-l-2 p-0 px-1 mx-1 rounded-none text-sm"
-                                    variant="text"
-                                    onClick={(e) => {
-                                        e.preventDefault();
-                                        props.handleClickStocksOfInterestButton()
-                                    }}>편집</Button>
-                            </ListItemSuffix>
-                        </ListItem>
+                        </div>
+                        <Button
+                            className="w-2/12 text-sm shrink-0 p-2 mr-1"
+                            // variant="text"
+                            color="blue"
+                            onClick={(e) => {
+                                e.preventDefault();
+                                props.handleClickStocksOfInterestButton()
+                            }}>편집</Button>
                     </TabsHeader>
                     <TabsBody>
                         {props.stocksOfInterest.tabs.map(({ value, desc }, idx) => (
