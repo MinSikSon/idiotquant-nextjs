@@ -127,19 +127,6 @@ export default function TablePanel(props) {
 
     const thstrm_dt = props.latestStockCompanyInfo[Object.keys(props.latestStockCompanyInfo)[0]].thstrm_dt;
 
-    const CardList = (props) => {
-        return (
-            <Card className="px-0">
-                <CardHeader shadow={false} floated={false} color={props.color} className="mb-2 grid place-items-center" >
-                    <Typography variant="h5" color='white'>{props.ratio}</Typography>
-                </CardHeader>
-                <CardBody className="m-0 p-0">
-                    {(props.tbody.length > 0) ? props.tbody.map((item) => <ListNode key={item.key} {...item} />) : <></>}
-                </CardBody>
-            </Card>
-        );
-    }
-
     tbody.sort((a, b) => { return b.weight - a.weight; });
 
     return (
@@ -156,7 +143,7 @@ export default function TablePanel(props) {
             }
             <Card className="w-full z-10">
                 <List className="px-0 mt-0">
-                    <CardList tbody={tbody} loop={5} ratio={''} color={'blue'} />
+                    {(tbody.length > 0) ? tbody.map((item) => <ListNode key={item.key} {...item} />) : <></>}
                 </List>
             </Card>
         </>
