@@ -26,16 +26,16 @@ export default function StocksOfInterestPanel(props) {
 
     return (
         <div>
-            <Tabs value={props.stocksOfInterest.tabs[props.stocksOfInterest.selectedTab].value}>
+            <Tabs value={props.stocksOfInterest.tabs[props.selectedStocksOfInterestTab].value}>
                 <TabsHeader
                     className="flex rounded-none border-b border-blue-gray-100 bg-transparent p-0"
                     indicatorProps={{ className: "bg-transparent border-b-2 border-gray-900 shadow-none rounded-none", }}>
                     <div className="overflow-x-scroll flex w-10/12">
                         {props.stocksOfInterest.tabs.map(({ label, value }, idx) => (
                             <Tab
-                                className={`shrink-0 w-fit text-sm rounded-t ${idx < 2 ? 'bg-blue-500 text-white' : ''}`}
+                                className={`shrink-0 w-fit text-sm rounded-t ${idx < 2 ? 'line-through' : ''}`}
                                 onClick={() => props.handleStocksOfInterestChange(value)}
-                                key={idx}
+                                key={value}
                                 value={value}>
                                 {label}
                             </Tab>
@@ -43,7 +43,6 @@ export default function StocksOfInterestPanel(props) {
                     </div>
                     <Button
                         className="p-2 mr-1 text-sm flex shrink-0 w-2/12"
-                        // variant="text"
                         color="blue"
                         onClick={(e) => {
                             e.preventDefault();
@@ -51,7 +50,7 @@ export default function StocksOfInterestPanel(props) {
                         }}><PlusIcon strokeWidth={2} className="h-5 w-5" />추가</Button>
                 </TabsHeader>
                 <TabsBody>
-                    {props.stocksOfInterest.selectedTab < 2 ?
+                    {props.selectedStocksOfInterestTab < 2 ?
                         <></>
                         :
                         <ListNode setOpenedPanel={props.setOpenedPanel} />
@@ -60,7 +59,6 @@ export default function StocksOfInterestPanel(props) {
                         marqueueDisplay={false}
                         searchPanelIsOpened={props.searchPanelIsOpened}
 
-                        dictFilteredStockCompanyInfo={props.dictFilteredStockCompanyInfo}
                         arrayFilteredStocksList={props.arrayFilteredStocksList}
                         latestStockCompanyInfo={props.latestStockCompanyInfo}
                         marketInfoList={props.marketInfoList}

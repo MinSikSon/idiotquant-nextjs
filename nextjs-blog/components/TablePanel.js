@@ -53,7 +53,7 @@ const ListNode = (props) => {
 export default function TablePanel(props) {
     // console.log(`%c TablePanel`, `color:blue; background:white`);
 
-    let loadingDone = !!props.dictFilteredStockCompanyInfo;
+    let loadingDone = true;
     props.marketInfoList.forEach((obj) => loadingDone &&= !!obj);
 
     if (false === loadingDone) return <Loading />;
@@ -76,7 +76,6 @@ export default function TablePanel(props) {
     // console.log(`2-2) Object.keys(props.latestStockCompanyInfo).length`, Object.keys(props.latestStockCompanyInfo).length);
     // console.log(`3-1) props.marketInfoList`, props.marketInfoList);
     // console.log(`3-2) Object.keys(props.marketInfoList).length`, Object.keys(props.marketInfoList).length);
-    // console.log(`4-1) props.dictFilteredStockCompanyInfo`, props.dictFilteredStockCompanyInfo);
 
     for (let stockName of props.arrayFilteredStocksList) {
         const { corp_code, active, 종목명, 유동자산, 부채총계, 상장주식수, 종가, 당기순이익, 시가총액, PER, PBR, EPS, bsnsDate, prevMarketInfo } = props.latestStockCompanyInfo[stockName];

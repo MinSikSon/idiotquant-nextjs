@@ -12,15 +12,16 @@ const Input = (props) => {
     const refFocus = React.useRef();
 
     React.useEffect(() => {
-        if (('SearchPanel' === props.openedPanel) || ('AddStockInGroupPanel' === props.openedPanel)) {
-            if (!!props.searchResult) {
+        // console.log(`props.searchResult`, props.searchResult);
+        if ('' !== props.openedPanel) {
+            if (!!!props.searchResult) {
                 if (Object.keys(props.searchResult).length == 0) {
                     refFocus.current.focus();
-                    props.setSearchResult({});
+                    props.setSearchResult('');
                 }
             }
         }
-    }, []);
+    }, [props.openedPanel]);
 
     return (
         <form
@@ -44,7 +45,7 @@ const Input = (props) => {
                         <input
                             ref={refFocus}
                             name="searchValue"
-                            className="appearance-none border-none w-full text-black rounded-lg text-sm focus:outline-none"
+                            className="appearance-none border-none w-full text-black text-sm focus:outline-none"
                             type="text"
                             placeholder={props.inputPlaceholder}
                             value={props.inputValue}
@@ -55,7 +56,7 @@ const Input = (props) => {
                             }}
                             onClick={(e) => {
                                 e.preventDefault();
-                                props.setSearchResult({});
+                                props.setSearchResult('');
                             }}
                         />
                     </>
@@ -63,7 +64,13 @@ const Input = (props) => {
                 }
                 {(('' === props.openedPanel) || ('SearchPanel' === props.openedPanel) || ('AddStockInGroupPanel' === props.openedPanel)) ?
                     <ListItemSuffix>
-                        <button className={`rounded-3xl ${props.searchPanelIsOpened ? 'pr-7' : 'pr-3'} inline-flex items-center justify-center text-black focus:outline-none`}>
+                        <button
+                            className={`rounded-3xl ${props.searchPanelIsOpened ? 'pr-7' : 'pr-3'} inline-flex items-center justify-center text-black focus:outline-none`}
+                            onClick={(e) => {
+                                e.preventDefault();
+                                props.handleSearchStockCompanyInfo(props.searchingList[0]?.['종목명'] || '');
+                            }}
+                        >
                             <MagnifyingGlassIcon strokeWidth={2} className="h-6 w-6" />
                         </button>
                     </ListItemSuffix>
@@ -138,6 +145,7 @@ export default function SearchPanel(props) {
     // if ('SearchPanel' === props.openedPanel) return <Input {...props} />;
 
     // console.log(`props.stocksOfInterestPanelOpened`, props.stocksOfInterestPanelOpened);
+    // console.log(`jsonSearchResult`, jsonSearchResult);
     return (
         <div className={`z-10 w-full`}>
             <Input {...props} />
@@ -161,7 +169,7 @@ export default function SearchPanel(props) {
                                 <CustomChart
                                     fairPrice={fairPrice}
                                     tickerName={jsonSearchResult['종목명']}
-                                    bsnsFullDate={(Object.keys(props.dictFilteredStockCompanyInfo).length > 0) ? props.dictFilteredStockCompanyInfo[Object.keys(props.dictFilteredStockCompanyInfo)[0]].bsnsDate : '-'}
+                                    bsnsFullDate={(Object.keys(jsonSearchResult).length > 0) ? jsonSearchResult.bsnsDate : '-'}
 
                                     marketCapitalization={jsonSearchResult['시가총액']}
                                     listedStocks={jsonSearchResult['상장주식수']}

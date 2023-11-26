@@ -11,13 +11,13 @@ export default function DeleteGroupPanel(props) {
                         <ArrowUturnLeftIcon className="h-6 w-6" />
                     </div>
                 </ListItemPrefix>
-                <div className="w-full text-center pr-10 text-lg">그룹 제거</div>
+                <div className="w-full text-center pr-10 text-lg">그룹 삭제</div>
             </ListItem>
         </Navbar>
         <List className="bg-gray-100">
             {props.stocksOfInterest.tabs.map((item, idx) => {
                 // console.log(`idx:`, idx, `, item`, item);
-                return <ListItem key={idx}>
+                return <ListItem key={item.value}>
                     <ListItemPrefix>
                         {item.label} ({item.stocks.length})
                     </ListItemPrefix>

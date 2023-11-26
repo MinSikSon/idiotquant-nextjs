@@ -32,8 +32,8 @@ export default function NavigationPanel(props) {
     }
 
     return (
-        <Navbar className="p-0 text-black">
-            <ListItem>
+        <Navbar className="">
+            <ListItem className="p-0 m-0">
                 {'SearchPanel' === props.openedPanel ?
                     <></> :
                     <ul className="flex items-center gap-2 mb-0 mt-0 pr-2 lg:flex-row lg:gap-6">
@@ -63,8 +63,6 @@ export default function NavigationPanel(props) {
                         inputPlaceholder={props.inputPlaceholder}
 
                         marketInfoList={props.marketInfoList}
-
-                        dictFilteredStockCompanyInfo={props.dictFilteredStockCompanyInfo}
 
                         getSearchingList={props.getSearchingList}
                         searchingList={props.searchingList}

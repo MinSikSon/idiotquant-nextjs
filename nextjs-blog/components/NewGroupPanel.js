@@ -22,10 +22,8 @@ export default function NewGroupPanel(props) {
             <form
                 onSubmit={(e) => {
                     e.preventDefault();
-                    // console.log(e.target[0].value);
                     props.addNewStockGroup(e.target[0].value);
                     e.target[0].value = ''
-                    props.setOpenedPanel('StocksOfInterestPanel');
                 }}
                 className={`gap-5`}
             >

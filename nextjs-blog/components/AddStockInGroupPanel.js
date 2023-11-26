@@ -15,8 +15,6 @@ export default function AddStockInGroupPanel(props) {
 
                 marketInfoList={props.marketInfoList}
 
-                dictFilteredStockCompanyInfo={props.dictFilteredStockCompanyInfo}
-
                 getSearchingList={props.getSearchingList}
                 searchingList={props.searchingList}
 
