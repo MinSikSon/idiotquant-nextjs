@@ -9,7 +9,7 @@ export default function RecentlyViewedStocks(props) {
 
     const Item = (props) => {
         return (
-            <div className='shrink-0 snap-center flex flex-row bg-gray-200 rounded-lg items-center px-1'>
+            <div className='shrink-0 snap-center flex flex-row bg-gray-200 rounded-lg items-center p-1'>
                 <Chip
                     className="border-none pr-1 text-xs text-black"
                     value={`${props.stockName}`}
@@ -17,7 +17,11 @@ export default function RecentlyViewedStocks(props) {
                     onClick={() => { props.clickedRecentlyViewedStock(props.stockName) }}
                 />
                 <div className={`text-xs shrink-0`}>{Util.UnitConversion(props.description, true)}</div>
-                <XMarkIcon className="h-5 w-5 shrink-0" strokeWidth={2} onClick={() => (props.spliceRecentlyViewedStocksList(props.stockName))} />
+                <XMarkIcon
+                    className="h-5 w-5 shrink-0"
+                    strokeWidth={2}
+                    onClick={() => (props.spliceRecentlyViewedStocksList(props.stockName))}
+                />
             </div>
         );
     }
@@ -33,7 +37,8 @@ export default function RecentlyViewedStocks(props) {
             <Typography className="pl-5 pb-2" variant='h6'>최근 본 주식</Typography>
             <div className="pl-5 flex gap-1 overflow-auto snap-x">
                 {props.recentlyViewedStocksList.length > 0 ?
-                    props.recentlyViewedStocksList.map(({ stockName }) => (<Item
+                    props.recentlyViewedStocksList.map((stockName, idx) => (<Item
+                        key={stockName}
                         stockName={stockName}
                         description={props.latestStockCompanyInfo[stockName]['종가']}
                         clickedRecentlyViewedStock={props.clickedRecentlyViewedStock}

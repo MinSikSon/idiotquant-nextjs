@@ -4,7 +4,7 @@ export default function TitlePanel(props) {
     // console.log(`%c TitlePanel`, `color:blue; background:white`);
 
     return (
-        <div className='py-3 my-2 bg-white'>
+        <div className='my-2 bg-white'>
             <Typography className="pl-5 pb-1" variant='h4'>
                 <div>idiot<span className='text-green-400'>.</span>quant</div>
             </Typography>
