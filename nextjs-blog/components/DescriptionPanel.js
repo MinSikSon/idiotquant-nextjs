@@ -3,9 +3,9 @@ import TablePanel from "./TablePanel";
 
 export default function DescriptionPanel(props) {
     // console.log(`%c DescriptionPanel`, `color:blue; background:white`);
-    // console.log(`DescriptionPanel`, props.searchingList);
+    // console.log(`props.openedPanel`, props.openedPanel);
 
-    if (props.searchPanelIsOpened) return <></>;
+    if ('SearchPanel' === props.openedPanel) return <></>;
 
     // console.log(`props.stocksOfInterest`, props.stocksOfInterest);
     return (
@@ -19,15 +19,16 @@ export default function DescriptionPanel(props) {
                     >
                         <div className="overflow-x-scroll w-10/12 flex">
                             {props.stocksOfInterest.tabs.map(({ label, value }, idx) => (
-                                <Tab className="shrink-0 w-fit text-sm"
-                                    onClick={() => props.handleStocksOfInterestChange(value)} key={idx} value={value}>
+                                <Tab className={`shrink-0 w-fit rounded-t text-sm ${idx < 2 ? 'bg-blue-400 text-white' : ''}`}
+                                    onClick={() => props.handleStocksOfInterestChange(value)}
+                                    key={idx}
+                                    value={value}>
                                     {label}
                                 </Tab>
                             ))}
                         </div>
                         <Button
                             className="w-2/12 text-sm shrink-0 p-2 mr-1"
-                            // variant="text"
                             color="blue"
                             onClick={(e) => {
                                 e.preventDefault();

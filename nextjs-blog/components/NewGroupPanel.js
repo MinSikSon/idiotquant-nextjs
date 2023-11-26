@@ -1,5 +1,5 @@
 import { ArrowLeftIcon, ArrowUturnLeftIcon, BackwardIcon, MagnifyingGlassIcon } from "@heroicons/react/24/outline";
-import { Button, ListItem, ListItemPrefix, ListItemSuffix } from "@material-tailwind/react";
+import { Button, ListItem, ListItemPrefix, ListItemSuffix, Navbar } from "@material-tailwind/react";
 import React from "react";
 
 export default function NewGroupPanel(props) {
@@ -10,13 +10,14 @@ export default function NewGroupPanel(props) {
     }, []);
 
     return <>
-        <ListItem className={`flex items-center w-full`}>
-            <ListItemPrefix>
-                <div onClick={() => props.editGroupDone()}><ArrowUturnLeftIcon className="h-6 w-6" /></div>
-            </ListItemPrefix>
-            <div className="w-full text-center pr-10 text-lg">새 그룹</div>
-        </ListItem>
-
+        <Navbar>
+            <ListItem className={`flex items-center w-full text-black p-0 m-0`}>
+                <ListItemPrefix>
+                    <div onClick={() => props.setOpenedPanel('StocksOfInterestPanel')}><ArrowUturnLeftIcon className="h-6 w-6" /></div>
+                </ListItemPrefix>
+                <div className="w-full text-center pr-10 text-lg">새 그룹</div>
+            </ListItem>
+        </Navbar>
         <div>
             <form
                 onSubmit={(e) => {
@@ -24,14 +25,14 @@ export default function NewGroupPanel(props) {
                     // console.log(e.target[0].value);
                     props.addNewStockGroup(e.target[0].value);
                     e.target[0].value = ''
-                    props.editGroupDone();
+                    props.setOpenedPanel('StocksOfInterestPanel');
                 }}
                 className={`gap-5`}
             >
                 <input
                     ref={refFocus}
                     name="searchValue"
-                    className="appearance-none border-b border-b-2 border-blue-500 w-full text-black p-2 my-5 text-lg focus:outline-none"
+                    className="appearance-none border-b-2 border-blue-500 w-full text-black p-2 my-5 text-lg focus:outline-none"
                     type="text"
                     placeholder={`추가할 그룹명 입력`}
                     aria-label="Full name"
