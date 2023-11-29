@@ -12,6 +12,9 @@ import Etc from "./Etc";
 import { ArrowUturnLeftIcon } from "@heroicons/react/24/outline";
 
 export default function NavigationPanel(props) {
+    if ('NewGroupPanel' === props.openedPanel) return <></>;
+    if ('AddStockInGroupPanel' === props.openedPanel) return <></>;
+
     // console.log(`%c NavigationPanel`, `color:blue; background:white`);
     // console.log(`props.openedPanel`, props.openedPanel);
 

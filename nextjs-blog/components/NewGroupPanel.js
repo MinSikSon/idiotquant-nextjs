@@ -3,6 +3,8 @@ import { Button, ListItem, ListItemPrefix, ListItemSuffix, Navbar } from "@mater
 import React from "react";
 
 export default function NewGroupPanel(props) {
+    if ('NewGroupPanel' !== props.openedPanel) return <></>;
+
     const refFocus = React.useRef();
 
     React.useEffect(() => {
