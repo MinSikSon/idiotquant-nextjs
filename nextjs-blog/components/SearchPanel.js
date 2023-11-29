@@ -128,7 +128,7 @@ export default function SearchPanel(props) {
 
     const CustomDiv = (props) => {
         return (
-            <ListItem className={`p-0 pt-1 px-2 m-0 rounded-none border-b-2 border-gray-200 ${props.item > 0 ? '' : 'bg-blue-700'}`}>
+            <ListItem className={`p-0 px-2 m-0 rounded-none border-b-2 border-gray-200 ${props.item > 0 ? '' : 'bg-blue-700'}`}>
                 <ListItemPrefix className="p-0 m-0">
                     <Chip className={`m-0 px-0 border-none ${props.item > 0 ? 'text-gray-700' : 'text-white'}`} variant="outlined" value={props.title} />
                 </ListItemPrefix>
