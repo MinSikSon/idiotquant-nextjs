@@ -478,7 +478,7 @@ export default function QuantPost({
 
         setSelectedStocksOfInterestTab(0);
         setStocksOfInterest({ ...newStocksOfInterest });
-        console.log(`newStocksOfInterest`, newStocksOfInterest);
+        // console.log(`newStocksOfInterest`, newStocksOfInterest);
     }
 
     // sm	640px	@media (min-width: 640px) { ... }

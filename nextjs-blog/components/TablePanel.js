@@ -140,7 +140,7 @@ export default function TablePanel(props) {
                 ]} />
                 : <></>
             }
-            <Card className="w-full z-10">
+            <Card className="w-full z-10 overflow-y-auto h-screen">
                 <List className="px-0 mt-0">
                     {(tbody.length > 0) ? tbody.map((item) => <ListNode key={item.key} {...item} />) : <></>}
                 </List>
