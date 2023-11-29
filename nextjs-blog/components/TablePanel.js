@@ -51,7 +51,7 @@ const ListNode = (props) => {
 //////////////////////////////////////////////////////////////////////////////
 // Table
 export default function TablePanel(props) {
-    console.log(`%c TablePanel`, `color:blue; background:white`);
+    // console.log(`%c TablePanel`, `color:blue; background:white`);
 
     let loadingDone = true;
     props.marketInfoList.forEach((obj) => loadingDone &&= !!obj);
