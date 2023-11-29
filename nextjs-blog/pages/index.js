@@ -311,6 +311,9 @@ export default function QuantPost({
     React.useEffect(() => {
         localStorage.setItem('localInfo', JSON.stringify(localInfo));
     }, [localInfo]);
+    React.useEffect(() => {
+        localStorage.setItem('stocksOfInterest', JSON.stringify(stocksOfInterest));
+    }, [stocksOfInterest])
 
     React.useEffect(() => {
         const oldLocalInfo = localStorage.getItem('localInfo');
@@ -323,6 +326,16 @@ export default function QuantPost({
             setLocalInfo(objLocalInfo);
             // console.log(`oldLocalInfo`, oldLocalInfo);
             // console.log(`objLocalInfo`, objLocalInfo);
+        }
+
+        const oldStocksOfInterest = localStorage.getItem('stocksOfInterest');
+        if (null == oldStocksOfInterest) {
+            const newStocksOfInterest = localStorage.setItem('stocksOfInterest', JSON.stocksOfInterest(stocksOfInterest));
+            setStocksOfInterest(newStocksOfInterest);
+        }
+        else {
+            const objStocksOfInterest = JSON.parse(oldStocksOfInterest);
+            setStocksOfInterest(objStocksOfInterest);
         }
 
         function RequestLogin(id) {
@@ -461,8 +474,11 @@ export default function QuantPost({
         const newStocksOfInterest = stocksOfInterest;
         newStocksOfInterest.tabs.splice(idx, 1);
 
-        setStocksOfInterest({ ...newStocksOfInterest });
+        setArrayFilteredStocksList([...newStocksOfInterest.tabs[0].stocks]);
+
         setSelectedStocksOfInterestTab(0);
+        setStocksOfInterest({ ...newStocksOfInterest });
+        console.log(`newStocksOfInterest`, newStocksOfInterest);
     }
 
     // sm	640px	@media (min-width: 640px) { ... }
