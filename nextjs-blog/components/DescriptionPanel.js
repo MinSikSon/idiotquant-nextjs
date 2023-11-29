@@ -5,7 +5,7 @@ export default function DescriptionPanel(props) {
     // console.log(`%c DescriptionPanel`, `color:blue; background:white`);
     // console.log(`props.openedPanel`, props.openedPanel);
 
-    if ('SearchPanel' === props.openedPanel) return <></>;
+    if ('' !== props.openedPanel) return <></>;
 
     return (
         <div className='py-3 my-2'>
@@ -14,11 +14,10 @@ export default function DescriptionPanel(props) {
                 <Tabs value={props.stocksOfInterest.tabs[props.selectedStocksOfInterestTab].value}>
                     <TabsHeader
                         className="flex rounded-none border-b border-blue-gray-100 bg-transparent p-0"
-                        indicatorProps={{ className: "bg-transparent border-b-2 border-gray-900 shadow-none rounded-none", }}
-                    >
+                        indicatorProps={{ className: "bg-transparent border-b-2 border-gray-900 shadow-none rounded-none", }}>
                         <div className="overflow-x-scroll w-10/12 flex">
                             {props.stocksOfInterest.tabs.map(({ label, value }, idx) => (
-                                <Tab className={`shrink-0 w-fit rounded-t text-sm`}
+                                <Tab className={`shrink-0 w-fit text-sm rounded-t`}
                                     onClick={() => props.handleStocksOfInterestChange(value)}
                                     key={value}
                                     value={value}>
@@ -27,7 +26,7 @@ export default function DescriptionPanel(props) {
                             ))}
                         </div>
                         <Button
-                            className="w-2/12 text-sm shrink-0 p-2 mr-1"
+                            className="w-2/12 text-sm shrink-0 p-2 mr-1 self-center"
                             color="blue"
                             onClick={(e) => {
                                 e.preventDefault();

@@ -30,9 +30,9 @@ const Input = (props) => {
                 props.handleSearchStockCompanyInfo(props.searchingList[0]?.['종목명'] || '');
                 e.target[0].value = ''
             }}
-            className={`flex items-center p-0`}
+            className={`flex items-center p-0 m-0 bg-none`}
         >
-            <ListItem className={`p-0 text-black`}>
+            <ListItem className={`p-0 text-black bg-none`}>
                 {(('SearchPanel' === props.openedPanel) || ('AddStockInGroupPanel' === props.openedPanel)) ?
                     <>
                         <ListItemPrefix>
@@ -45,7 +45,7 @@ const Input = (props) => {
                         <input
                             ref={refFocus}
                             name="searchValue"
-                            className="appearance-none border-none w-full text-black text-sm focus:outline-none"
+                            className="appearance-none w-full text-black text-sm rounded-2xl p-4 h-6 border-2 hover:border-gray-400 hover:outline-none"
                             type="text"
                             placeholder={props.inputPlaceholder}
                             value={props.inputValue}

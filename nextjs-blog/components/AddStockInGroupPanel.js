@@ -2,6 +2,7 @@ import { Navbar } from "@material-tailwind/react";
 import SearchPanel from "./SearchPanel";
 
 export default function AddStockInGroupPanel(props) {
+    if ('AddStockInGroupPanel' !== props.openedPanel) return <></>;
     return (
         <Navbar>
             <SearchPanel

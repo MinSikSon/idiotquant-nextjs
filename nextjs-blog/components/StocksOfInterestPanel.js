@@ -3,6 +3,8 @@ import TablePanel from "./TablePanel";
 import { PlusIcon } from "@heroicons/react/24/outline";
 
 export default function StocksOfInterestPanel(props) {
+    if ('StocksOfInterestPanel' !== props.openedPanel) return <></>;
+
     // console.log(`%c StocksOfInterestPanel`, `color:blue; background:white`);
 
     const ListNode = (props) => {
@@ -30,7 +32,7 @@ export default function StocksOfInterestPanel(props) {
                 <TabsHeader
                     className="flex rounded-none border-b border-blue-gray-100 bg-transparent p-0"
                     indicatorProps={{ className: "bg-transparent border-b-2 border-gray-900 shadow-none rounded-none", }}>
-                    <div className="overflow-x-scroll flex w-10/12">
+                    <div className="overflow-x-scroll flex w-4/5">
                         {props.stocksOfInterest.tabs.map(({ label, value }, idx) => (
                             <Tab
                                 className={`shrink-0 w-fit text-sm rounded-t ${idx < 2 ? 'line-through' : ''}`}
@@ -42,12 +44,12 @@ export default function StocksOfInterestPanel(props) {
                         ))}
                     </div>
                     <Button
-                        className="p-2 mr-1 text-sm flex shrink-0 w-2/12"
+                        className="flex p-2 mr-1 text-sm shrink-0 w-1/5 self-center"
                         color="blue"
                         onClick={(e) => {
                             e.preventDefault();
                             props.setOpenedPanel('NewGroupPanel')
-                        }}><PlusIcon strokeWidth={2} className="h-5 w-5" />추가</Button>
+                        }}><PlusIcon strokeWidth={3} className="h-4 w-4" /><div>추가</div></Button>
                 </TabsHeader>
                 <TabsBody>
                     {props.selectedStocksOfInterestTab < 2 ?
