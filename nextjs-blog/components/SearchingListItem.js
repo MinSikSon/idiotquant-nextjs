@@ -1,6 +1,6 @@
 export default function SearchingListItem(props) {
     const { movie } = props;
-    // console.log(`SearchingListItem`, props);
+    // console.log(`%cSearchingListItem`, `color:blue; background:white;`, props);
     return (
         // <article className="flex items-start space-x-6 p-6 bg-black text-white">
         <article className="flex items-start space-x-6 px-6 text-black hover:bg-gray-300 rounded-lg"

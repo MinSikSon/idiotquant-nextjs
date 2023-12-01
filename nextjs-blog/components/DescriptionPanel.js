@@ -6,6 +6,7 @@ export default function DescriptionPanel(props) {
     // console.log(`props.openedPanel`, props.openedPanel);
 
     if ('' !== props.openedPanel) return <></>;
+    if (!!!props.stocksOfInterest.tabs) return <></>;
 
     return (
         <div className='py-3 my-2'>
