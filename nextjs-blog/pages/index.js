@@ -111,22 +111,7 @@ export default function QuantPost({
     const [recentlyViewedStocksList, setRecentlyViewedStocksList] = React.useState([]);
 
     const [selectedStocksOfInterestTab, setSelectedStocksOfInterestTab] = React.useState(0);
-    const [stocksOfInterest, setStocksOfInterest] = React.useState({
-        tabs: [
-            {
-                label: 'NCAV',
-                value: 'ncav',
-                stocks: [],
-                desc: `"순유동자산(= 유동자산 - 부채총계)"이 "시가총액"을 넘어선 기업을 선정합니다. 이러한 기업은 안정성과 재무 건전성 면에서 우수하며, 투자자들에게 안전하고 안정적인 투자 기회를 제공할 수 있습니다. 그러나 투자는 항상 리스크를 동반하므로 신중한 분석이 필요하며 전문가의 조언을 검토하는 것을 권장합니다.`
-            },
-            {
-                label: '소형주+저PBR+저PER',
-                value: '저평가소형주',
-                stocks: [],
-                desc: "저평가된 소형주 투자를 고려하는 퀀트 전략 중 하나로, 낮은 PBR (주가순자산가치비율)와 낮은 PER (주가이익비율)을 가진 종목을 탐색합니다. 이러한 종목은 현재 시장가치 대비 자산 및 수익이 낮게 평가되어 있을 가능성이 높아, 잠재적으로 미래 성장과 가치 상승의 기회를 제공할 수 있습니다. 하지만, 투자는 항상 리스크를 동반하므로 신중한 연구와 다양한 요인을 고려하는 것이 중요합니다."
-            }
-        ]
-    });
+    const [stocksOfInterest, setStocksOfInterest] = React.useState({});
 
     const [openedPanel, setOpenedPanel] = React.useState('');
 
@@ -151,49 +136,77 @@ export default function QuantPost({
             const dictFinancialMarketInfo = {};
             Object.values(dictNewFinancialInfoAll).forEach(
                 (stockCompany) => {
-                    dictFinancialMarketInfo[stockCompany['종목명']] = {
-                        active: false,
-                        prevMarketInfo: {
-                            bsnsDate: marketInfoPrev['date'],
-                            ...marketInfoPrev['data'][stockCompany['종목명']]
-                        },
-                        bsnsDate: marketInfoLatest['date'],
-                        ...dictNewFinancialInfoAll[stockCompany['종목명']],
-                        ...marketInfoLatest['data'][stockCompany['종목명']]
+                    const isDefined = !!stockCompany['종목명'];
+                    if (isDefined) {
+                        dictFinancialMarketInfo[stockCompany['종목명']] = {
+                            active: false,
+                            prevMarketInfo: {
+                                bsnsDate: marketInfoPrev['date'],
+                                ...marketInfoPrev['data'][stockCompany['종목명']]
+                            },
+                            bsnsDate: marketInfoLatest['date'],
+                            ...dictNewFinancialInfoAll[stockCompany['종목명']],
+                            ...marketInfoLatest['data'][stockCompany['종목명']]
+                        }
                     }
                 }
             );
+
             setLatestStockCompanyInfo(dictFinancialMarketInfo);
         }
     }, [financialInfoAll, marketInfoList.marketInfoLatest]);
 
     React.useEffect(() => {
         if (!!latestStockCompanyInfo) {
+            let needInit = false;
 
-            const arrInitStocksList = GetArrayFilteredByStrategyNCAV(latestStockCompanyInfo);
-            setArrayFilteredStocksList([...arrInitStocksList]);
+            const oldStocksOfInterest = localStorage.getItem('stocksOfInterest');
+            // console.log(`oldStocksOfInterest`, oldStocksOfInterest);
+            if (!!oldStocksOfInterest) {
+                const objStocksOfInterest = JSON.parse(oldStocksOfInterest);
+                // console.log(`objStocksOfInterest`, objStocksOfInterest);
+                if (!!!objStocksOfInterest.init) {
+                    // console.log(`case 1`);
+                    needInit = true;
+                }
+            }
+            else {
+                // console.log(`case 2`);
+                needInit = true;
+            }
 
-            stocksOfInterest.tabs[0].stocks = arrInitStocksList;
+            if (true === needInit) {
+                // console.log(`needInit`);
+                const arrInitStocksList = GetArrayFilteredByStrategyNCAV(latestStockCompanyInfo);
 
-            const arrStrategyExample = GetArrayFilteredByStrategyExample(latestStockCompanyInfo);
-            stocksOfInterest.tabs[1].stocks = arrStrategyExample;
+                const arrStrategyExample = GetArrayFilteredByStrategyExample(latestStockCompanyInfo);
+
+                let newStocksOfInterest = {
+                    init: true,
+                    tabs: [
+                        {
+                            label: 'NCAV',
+                            value: 'ncav',
+                            stocks: arrInitStocksList,
+                            desc: `"순유동자산(= 유동자산 - 부채총계)"이 "시가총액"을 넘어선 기업을 선정합니다. 이러한 기업은 안정성과 재무 건전성 면에서 우수하며, 투자자들에게 안전하고 안정적인 투자 기회를 제공할 수 있습니다. 그러나 투자는 항상 리스크를 동반하므로 신중한 분석이 필요하며 전문가의 조언을 검토하는 것을 권장합니다.`
+                        },
+                        {
+                            label: '소형주+저PBR+저PER',
+                            value: '저평가소형주',
+                            stocks: arrStrategyExample,
+                            desc: "저평가된 소형주 투자를 고려하는 퀀트 전략 중 하나로, 낮은 PBR (주가순자산가치비율)와 낮은 PER (주가이익비율)을 가진 종목을 탐색합니다. 이러한 종목은 현재 시장가치 대비 자산 및 수익이 낮게 평가되어 있을 가능성이 높아, 잠재적으로 미래 성장과 가치 상승의 기회를 제공할 수 있습니다. 하지만, 투자는 항상 리스크를 동반하므로 신중한 연구와 다양한 요인을 고려하는 것이 중요합니다."
+                        }
+                    ],
+                };
+
+                setArrayFilteredStocksList([...arrInitStocksList]);
+                setStocksOfInterest({ ...newStocksOfInterest });
+            }
+            else {
+                setArrayFilteredStocksList([...(stocksOfInterest.tabs[0].stocks)]);
+            }
         }
     }, [latestStockCompanyInfo]);
-
-    // React.useEffect(() => {
-    //     function getRandomInt(min, max) {
-    //         min = Math.ceil(min);
-    //         max = Math.floor(max);
-    //         return Math.floor(Math.random() * (max - min + 1)) + min;
-    //     }
-
-    //     if (!!!loginStatus) {
-    //         alert('종목관리를 하려면 로그인 하세요.');
-    //         setStockCompanyChangeCount(0);
-
-    //         // TODO: 로그인 화면 이동.
-    //     }
-    // }, [stockCompanyChangeCount]);
 
     function clickedRecentlyViewedStock(clickedStockCompanyName) {
         // console.log(`clickedRecentlyViewedStock`, openedPanel);
@@ -223,6 +236,13 @@ export default function QuantPost({
         const stockCompanyInfo = latestStockCompanyInfo[clickedStockCompanyName];
         if (!stockCompanyInfo || Object.keys(stockCompanyInfo).length == 0) {
             setInputPlaceholder(`검색 결과가 없습니다.`);
+            setSearchResult('');
+            return;
+        }
+
+        if (!!!stockCompanyInfo['시가총액']) {
+            // console.log(`코넥스 상장 종목일 수 있음`);
+            setInputPlaceholder(`코넥스 상장 종목일 수 있습니다.`);
             setSearchResult('');
             return;
         }
@@ -272,12 +292,15 @@ export default function QuantPost({
         });
 
         setSearchResult(stockCompanyInfo);
+        // console.log(`stockCompanyInfo`, stockCompanyInfo);
+
+        // console.log(`newFilteredStockCompanyList`, newFilteredStockCompanyList);
 
         setArrayFilteredStocksList([...newFilteredStockCompanyList]);
 
         const newStrategy = stocksOfInterest;
         newStrategy.tabs[selectedStocksOfInterestTab].stocks = newFilteredStockCompanyList;
-        setStocksOfInterest(newStrategy);
+        setStocksOfInterest({ ...newStrategy });
 
         setLocalInfo({ testCnt: localInfo.testCnt + 1, log: 'handleSearchStockCompanyInfo' });
 
@@ -314,30 +337,30 @@ export default function QuantPost({
         localStorage.setItem('localInfo', JSON.stringify(localInfo));
     }, [localInfo]);
     React.useEffect(() => {
-        localStorage.setItem('stocksOfInterest', JSON.stringify(stocksOfInterest));
+        if (!!stocksOfInterest && !!(stocksOfInterest.init)) {
+            localStorage.setItem('stocksOfInterest', JSON.stringify(stocksOfInterest));
+        }
     }, [stocksOfInterest])
 
     React.useEffect(() => {
         const oldLocalInfo = localStorage.getItem('localInfo');
         if (null == oldLocalInfo) {
-            const newLocalInfo = localStorage.setItem('localInfo', JSON.stringify(localInfo));
-            setLocalInfo(newLocalInfo);
+            localStorage.setItem('localInfo', JSON.stringify(localInfo));
         }
         else {
             const objLocalInfo = JSON.parse(oldLocalInfo);
             setLocalInfo(objLocalInfo);
-            // console.log(`oldLocalInfo`, oldLocalInfo);
-            // console.log(`objLocalInfo`, objLocalInfo);
         }
 
         const oldStocksOfInterest = localStorage.getItem('stocksOfInterest');
         if (null == oldStocksOfInterest) {
-            const newStocksOfInterest = localStorage.setItem('stocksOfInterest', JSON.stocksOfInterest(stocksOfInterest));
-            setStocksOfInterest(newStocksOfInterest);
+            // console.log(`save stocksOfInterest`);
+            localStorage.setItem('stocksOfInterest', JSON.stringify(stocksOfInterest));
         }
         else {
             const objStocksOfInterest = JSON.parse(oldStocksOfInterest);
-            setStocksOfInterest(objStocksOfInterest);
+            // console.log(`load stocksOfInterest`, objStocksOfInterest);
+            setStocksOfInterest({ ...objStocksOfInterest });
         }
 
         function RequestLogin(id) {
@@ -380,8 +403,9 @@ export default function QuantPost({
     }, []);
 
     function getSearchingList(inputValue) {
-        let array = Object.values(financialInfoAll);
-        let filteredArray = array.filter(item => !!inputValue && String(item['종목명']).toUpperCase()?.includes(String(inputValue).toUpperCase()));
+        // console.log(`[getSearchingList]`, latestStockCompanyInfo);
+        let array = Object.values(latestStockCompanyInfo);
+        let filteredArray = array.filter(item => !!inputValue && !!item['시가총액'] && String(item['종목명']).toUpperCase()?.includes(String(inputValue).toUpperCase()));
         let slicedArray = filteredArray.slice(0, 10);
 
         setInputValue(inputValue);
