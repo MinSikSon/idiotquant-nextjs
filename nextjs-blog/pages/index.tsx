@@ -207,7 +207,7 @@ export default function QuantPost({ marketInfoList, financialInfoAll }) {
 
   React.useEffect(() => {
     if (!!latestStockCompanyInfo) {
-      let needInit = false;
+      let needInit: boolean = false;
 
       const oldStocksOfInterest = localStorage.getItem("stocksOfInterest");
       if (!!oldStocksOfInterest) {
@@ -251,12 +251,16 @@ export default function QuantPost({ marketInfoList, financialInfoAll }) {
         setArrayFilteredStocksList([...arrInitStocksList]);
         setStocksOfInterest({ ...newStocksOfInterest });
       } else {
-        console.log(`stocksOfInterest`, stocksOfInterest);
-        console.log(
-          `stocksOfInterest.tabs[0].stocks`,
-          stocksOfInterest.tabs[0].stocks
-        );
-        setArrayFilteredStocksList([...stocksOfInterest.tabs[0].stocks]);
+        // console.log(`stocksOfInterest`, stocksOfInterest);
+        if (Object.keys(stocksOfInterest).length > 0) {
+          if (!!stocksOfInterest.tabs) {
+            // console.log(
+            //   `stocksOfInterest.tabs[0].stocks`,
+            //   stocksOfInterest.tabs[0].stocks
+            // );
+            setArrayFilteredStocksList([...stocksOfInterest.tabs[0].stocks]);
+          }
+        }
       }
     }
   }, [latestStockCompanyInfo]);
