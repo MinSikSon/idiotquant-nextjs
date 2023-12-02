@@ -94,11 +94,14 @@ function _getSelectedSearchResult(searchResult) {
     if (0 == Number(jsonSearchResult['자본금'])) {
         selectedSearchResult['ROE'] = "자본금 누락";
     }
+    if (0 == Number(jsonSearchResult['이익잉여금'])) {
+        selectedSearchResult['ROE'] = "이익잉여금 누락";
+    }
     else {
         const 자기자본 = (Number(jsonSearchResult['자본금']) + Number(jsonSearchResult['이익잉여금']));
         // console.log(`자기자본`, 자기자본);
         if (0 >= 자기자본) {
-            selectedSearchResult['ROE'] = "이익잉여금 누락";
+            selectedSearchResult['ROE'] = "자본 줄어드는 중";
         }
         else {
             selectedSearchResult['ROE'] = Number(100 * Number(jsonSearchResult['당기순이익']) / 자기자본).toFixed(1);
@@ -168,6 +171,9 @@ export default function SearchPanel(props) {
                 index = 0;
             }
             else if ("이익잉여금 누락" == props.item) {
+                index = 0;
+            }
+            else if ("자본 줄어드는 중" == props.item) {
                 index = 0;
             }
         }

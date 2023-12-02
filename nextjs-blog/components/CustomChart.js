@@ -62,7 +62,7 @@ export default ({
                     fill: true,
                 },
                 {
-                    label: `적정가격 = (유동자산 - 유동부채) / 상장주식수`,
+                    label: `적정가격 = (유동자산 - 부채총계) / 상장주식수`,
                     data: fairPriceList,
                     borderWidth: 2,
                     borderColor: `${fairPriceList[fairPriceList.length - 1] >= closeList[closeList.length - 1] ? 'rgba(239, 68, 68, 1)' : 'rgba(9,125,243,1)'}`, // blue : red
