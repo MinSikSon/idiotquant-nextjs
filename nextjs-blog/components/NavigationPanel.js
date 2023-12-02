@@ -35,7 +35,7 @@ export default function NavigationPanel(props) {
     }
 
     return (
-        <Navbar className="px-2">
+        <Navbar className="px-2 sm:fixed sm:w-1/2 md:w-1/2 lg:w-1/2 xl:w-1/2 2xl:w-1/2">
             <ListItem className="p-0 m-0">
                 {'SearchPanel' === props.openedPanel ?
                     <></> :

@@ -680,24 +680,26 @@ export default function QuantPost({ marketInfoList, financialInfoAll }) {
             accessToken={accessToken}
             loginStatus={loginStatus}
           />
-          <TitlePanel
-            openedPanel={openedPanel}
-            setSearchResult={setSearchResult}
-          />
-          {"" === openedPanel ||
-          "SearchPanel" === openedPanel ||
-          "AddStockInGroupPanel" === openedPanel ? (
-            <RecentlyViewedStocks
+          <div className="sm:fixed sm:top-20 sm:w-1/2 md:w-1/2 lg:w-1/2 xl:w-1/2 2xl:w-1/2">
+            <TitlePanel
               openedPanel={openedPanel}
-              recentlyViewedStocksList={recentlyViewedStocksList}
-              latestStockCompanyInfo={latestStockCompanyInfo}
-              spliceRecentlyViewedStocksList={spliceRecentlyViewedStocksList}
-              clickedRecentlyViewedStock={clickedRecentlyViewedStock}
-              searchResult={searchResult}
+              setSearchResult={setSearchResult}
             />
-          ) : (
-            <></>
-          )}
+            {"" === openedPanel ||
+            "SearchPanel" === openedPanel ||
+            "AddStockInGroupPanel" === openedPanel ? (
+              <RecentlyViewedStocks
+                openedPanel={openedPanel}
+                recentlyViewedStocksList={recentlyViewedStocksList}
+                latestStockCompanyInfo={latestStockCompanyInfo}
+                spliceRecentlyViewedStocksList={spliceRecentlyViewedStocksList}
+                clickedRecentlyViewedStock={clickedRecentlyViewedStock}
+                searchResult={searchResult}
+              />
+            ) : (
+              <></>
+            )}
+          </div>
           <StocksOfInterestPanel
             openedPanel={openedPanel}
             setOpenedPanel={setOpenedPanel}
