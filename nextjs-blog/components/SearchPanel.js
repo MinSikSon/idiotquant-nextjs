@@ -85,15 +85,27 @@ const Input = (props) => {
 //////////////////////////////////////////////////////////////////////////////
 // Search
 function _getSelectedSearchResult(searchResult) {
-    let jsonSearchResult = { '종목명': '-', 'stock_code': '-', '종가': 0, '유동자산': 0, '부채총계': 0, '당기순이익': 0, '거래량': 0, '시가총액': 1, '상장주식수': 1/*divide by zero 방지용*/, ...searchResult };
+    let jsonSearchResult = { '종목명': '-', 'stock_code': '-', '종가': 0, '유동자산': 0, '부채총계': 0, '당기순이익': 0, '거래량': 0, '시가총액': 1, '상장주식수': 1/*divide by zero 방지용*/, '자본금': 0, ...searchResult };
 
     let selectedSearchResult = {};
     selectedSearchResult['종가'] = jsonSearchResult['종가'] = Util.UnitConversion(jsonSearchResult['종가'], true);
 
-    const 자기자본 = (Number(jsonSearchResult['자본금']) + Number(jsonSearchResult['이익잉여금']));
-    selectedSearchResult['ROE'] = Number(100 * Number(jsonSearchResult['당기순이익']) / 자기자본).toFixed(1);
-    console.log(`selectedSearchResult['ROE']`, jsonSearchResult['ROE']);
-    selectedSearchResult['ROE'] += "%";
+    // console.log(`searchResult`, searchResult);
+    if (0 == Number(jsonSearchResult['자본금'])) {
+        selectedSearchResult['ROE'] = "자본금 누락";
+    }
+    else {
+        const 자기자본 = (Number(jsonSearchResult['자본금']) + Number(jsonSearchResult['이익잉여금']));
+        // console.log(`자기자본`, 자기자본);
+        if (0 >= 자기자본) {
+            selectedSearchResult['ROE'] = "이익잉여금 누락";
+        }
+        else {
+            selectedSearchResult['ROE'] = Number(100 * Number(jsonSearchResult['당기순이익']) / 자기자본).toFixed(1);
+            // console.log(`selectedSearchResult['ROE']`, selectedSearchResult['ROE']);
+            selectedSearchResult['ROE'] += "%";
+        }
+    }
 
     if (0 == jsonSearchResult['PER']) {
         selectedSearchResult['PER'] = "전 분기 적자";
@@ -153,7 +165,7 @@ export default function SearchPanel(props) {
                 index = 0;
             }
         }
-        console.log(`index`, index);
+        // console.log(`index`, index);
         const bgColor = (-1 === index) ? '' : 'bg-blue-700';
         const titleTextColor = (-1 === index) ? 'text-gray-700' : 'text-white';
         const itemTextColor = (-1 === index) ? 'text-black' : 'text-white';
