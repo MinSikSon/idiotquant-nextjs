@@ -4,7 +4,7 @@ import SearchPanel from "./SearchPanel";
 export default function AddStockInGroupPanel(props) {
     if ('AddStockInGroupPanel' !== props.openedPanel) return <></>;
     return (
-        <Navbar>
+        <Navbar className="px-2">
             <SearchPanel
                 openedPanel={props.openedPanel}
                 setOpenedPanel={props.setOpenedPanel}
