@@ -164,6 +164,12 @@ export default function SearchPanel(props) {
             if ("전 분기 적자" === props.item) {
                 index = 0;
             }
+            else if ("자본금 누락" == props.item) {
+                index = 0;
+            }
+            else if ("이익잉여금 누락" == props.item) {
+                index = 0;
+            }
         }
         // console.log(`index`, index);
         const bgColor = (-1 === index) ? '' : 'bg-blue-700';
