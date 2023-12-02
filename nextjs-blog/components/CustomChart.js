@@ -62,7 +62,7 @@ export default ({
                     fill: true,
                 },
                 {
-                    label: `적정가격`,
+                    label: `적정가격 = (유동자산 - 유동부채) / 상장주식수`,
                     data: fairPriceList,
                     borderWidth: 2,
                     borderColor: `${fairPriceList[fairPriceList.length - 1] >= closeList[closeList.length - 1] ? 'rgba(239, 68, 68, 1)' : 'rgba(9,125,243,1)'}`, // blue : red
@@ -77,14 +77,18 @@ export default ({
     const arbitraryLine = {
         id: 'arbitraryLine',
         afterDatasetsDraw(chart, args, pluginOptions) {
+            // console.log(`chart`, chart);
+            // console.log(`chart.tooltip`, chart.tooltip);
             const { ctx, chartArea: { top, bottom, left, right, width, height }, scales: { x, y } } = chart;
             ctx.save();
 
             ctx.beginPath();
             ctx.lineWidth = 0.7;
             ctx.strokeStyle = 'gray';
-            ctx.moveTo(chart.tooltip.caretX, top);
-            ctx.lineTo(chart.tooltip.caretX, bottom);
+            if (!!chart.tooltip) {
+                ctx.moveTo(chart.tooltip.caretX, top);
+                ctx.lineTo(chart.tooltip.caretX, bottom);
+            }
             ctx.stroke();
             ctx.restore();
         }

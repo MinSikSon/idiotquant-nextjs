@@ -88,14 +88,36 @@ function _getSelectedSearchResult(searchResult) {
     let jsonSearchResult = { '종목명': '-', 'stock_code': '-', '종가': 0, '유동자산': 0, '부채총계': 0, '당기순이익': 0, '거래량': 0, '시가총액': 1, '상장주식수': 1/*divide by zero 방지용*/, ...searchResult };
 
     let selectedSearchResult = {};
+    selectedSearchResult['종가'] = jsonSearchResult['종가'] = Util.UnitConversion(jsonSearchResult['종가'], true);
+
+    const 자기자본 = (Number(jsonSearchResult['자본금']) + Number(jsonSearchResult['이익잉여금']));
+    selectedSearchResult['ROE'] = Number(100 * Number(jsonSearchResult['당기순이익']) / 자기자본).toFixed(1);
+    console.log(`selectedSearchResult['ROE']`, jsonSearchResult['ROE']);
+    selectedSearchResult['ROE'] += "%";
+
+    if (0 == jsonSearchResult['PER']) {
+        selectedSearchResult['PER'] = "전 분기 적자";
+    }
+    else {
+        selectedSearchResult['PER'] = jsonSearchResult['PER'];
+    }
+    if (0 == jsonSearchResult['EPS']) {
+        selectedSearchResult['EPS'] = "전 분기 적자";
+    }
+    else {
+        selectedSearchResult['EPS'] = jsonSearchResult['EPS'];
+    }
+    selectedSearchResult['PBR'] = jsonSearchResult['PBR'];
     selectedSearchResult['BPS'] = jsonSearchResult['BPS'];
     selectedSearchResult['DIV'] = jsonSearchResult['DIV'];
     selectedSearchResult['DPS'] = jsonSearchResult['DPS'];
-    selectedSearchResult['EPS'] = jsonSearchResult['EPS'];
-    selectedSearchResult['PBR'] = jsonSearchResult['PBR'];
-    selectedSearchResult['PER'] = jsonSearchResult['PER'];
 
-    selectedSearchResult['종가'] = jsonSearchResult['종가'] = Util.UnitConversion(jsonSearchResult['종가'], true);
+    selectedSearchResult['시가총액'] = jsonSearchResult['시가총액'] = Util.UnitConversion(jsonSearchResult['시가총액'], true);
+    selectedSearchResult['당기순이익'] = jsonSearchResult['당기순이익'] = Util.UnitConversion(jsonSearchResult['당기순이익'], true);
+    selectedSearchResult['매출액'] = jsonSearchResult['매출액'] = Util.UnitConversion(jsonSearchResult['매출액'], true);
+    selectedSearchResult['영업이익'] = jsonSearchResult['영업이익'] = Util.UnitConversion(jsonSearchResult['영업이익'], true);
+    selectedSearchResult['거래대금'] = jsonSearchResult['거래대금'] = Util.UnitConversion(jsonSearchResult['거래대금'], true);
+    selectedSearchResult['이익잉여금'] = jsonSearchResult['이익잉여금'] = Util.UnitConversion(jsonSearchResult['이익잉여금'], true);
     selectedSearchResult['유동자산'] = jsonSearchResult['유동자산'] = Util.UnitConversion(jsonSearchResult['유동자산'], true);
     selectedSearchResult['비유동자산'] = jsonSearchResult['비유동자산'] = Util.UnitConversion(jsonSearchResult['비유동자산'], true);
     selectedSearchResult['유동부채'] = jsonSearchResult['유동부채'] = Util.UnitConversion(jsonSearchResult['유동부채'], true);
@@ -103,13 +125,11 @@ function _getSelectedSearchResult(searchResult) {
     selectedSearchResult['부채총계'] = jsonSearchResult['부채총계'] = Util.UnitConversion(jsonSearchResult['부채총계'], true);
     selectedSearchResult['자본총계'] = jsonSearchResult['자본총계'] = Util.UnitConversion(jsonSearchResult['자본총계'], true);
     selectedSearchResult['자산총계'] = jsonSearchResult['자산총계'] = Util.UnitConversion(jsonSearchResult['자산총계'], true);
-    selectedSearchResult['당기순이익'] = jsonSearchResult['당기순이익'] = Util.UnitConversion(jsonSearchResult['당기순이익'], true);
-    selectedSearchResult['시가총액'] = jsonSearchResult['시가총액'] = Util.UnitConversion(jsonSearchResult['시가총액'], true);
-    selectedSearchResult['매출액'] = jsonSearchResult['매출액'] = Util.UnitConversion(jsonSearchResult['매출액'], true);
-    selectedSearchResult['영업이익'] = jsonSearchResult['영업이익'] = Util.UnitConversion(jsonSearchResult['영업이익'], true);
-    selectedSearchResult['이익잉여금'] = jsonSearchResult['이익잉여금'] = Util.UnitConversion(jsonSearchResult['이익잉여금'], true);
-    selectedSearchResult['거래대금'] = jsonSearchResult['거래대금'] = Util.UnitConversion(jsonSearchResult['거래대금'], true);
     selectedSearchResult['자본금'] = jsonSearchResult['자본금'] = Util.UnitConversion(jsonSearchResult['자본금'], true);
+    selectedSearchResult['상장주식수'] = jsonSearchResult['상장주식수'] + "개";
+    selectedSearchResult[' '] = ' ';
+    selectedSearchResult['ROE='] = "100 * 당기순이익 / (자본금 + 이익잉여금)";
+    selectedSearchResult['  '] = ' ';
 
     return selectedSearchResult;
 }
@@ -127,13 +147,23 @@ export default function SearchPanel(props) {
     let selectedSearchResult = _getSelectedSearchResult(jsonSearchResult);
 
     const CustomDiv = (props) => {
+        let index = String(props.item).indexOf('-');
+        if (-1 === index) {
+            if ("전 분기 적자" === props.item) {
+                index = 0;
+            }
+        }
+        console.log(`index`, index);
+        const bgColor = (-1 === index) ? '' : 'bg-blue-700';
+        const titleTextColor = (-1 === index) ? 'text-gray-700' : 'text-white';
+        const itemTextColor = (-1 === index) ? 'text-black' : 'text-white';
         return (
-            <ListItem className={`p-0 px-2 m-0 rounded-none border-b-2 border-gray-200 ${props.item > 0 ? '' : 'bg-blue-700'}`}>
-                <ListItemPrefix className="p-0 m-0">
-                    <Chip className={`m-0 px-0 border-none ${props.item > 0 ? 'text-gray-700' : 'text-white'}`} variant="outlined" value={props.title} />
+            <ListItem className={`p-0 px-1 m-0 mx-1 w-11/12 rounded-full border-b-2 border-gray-200 ${bgColor}`}>
+                <ListItemPrefix className="p-0 pl-1 m-0">
+                    <Chip className={`text-xs m-0 p-0 border-none ${titleTextColor}`} variant="outlined" value={props.title} />
                 </ListItemPrefix>
-                <ListItemSuffix>
-                    <Chip className={`m-0 px-0 border-none ${props.item > 0 ? 'text-black' : 'text-white'}`} variant="outlined" value={Util.UnitConversion(props.item, true)} />
+                <ListItemSuffix className="p-0 pr-1 my-0">
+                    <Chip className={`text-sm m-0 p-0 border-none ${itemTextColor}`} variant="outlined" value={props.item} />
                 </ListItemSuffix>
             </ListItem>
         );
@@ -180,8 +210,8 @@ export default function SearchPanel(props) {
                                     height={'60px'}
                                     width={'90px'}
                                 />
-                                <div className={`grid grid-cols-2`}>
-                                    {Object.keys(selectedSearchResult).map((key, index) => <CustomDiv key={index} title={key} item={jsonSearchResult[key]} />)}
+                                <div className={`grid grid-cols-2 pr-1`}>
+                                    {Object.keys(selectedSearchResult).map((key, index) => <CustomDiv key={index} title={key} item={selectedSearchResult[key]} />)}
                                 </div>
                             </>
                             : <></>

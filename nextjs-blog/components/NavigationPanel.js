@@ -20,7 +20,7 @@ export default function NavigationPanel(props) {
 
     if ('StocksOfInterestPanel' === props.openedPanel) {
         return (
-            <Navbar >
+            <Navbar className="px-2">
                 <ListItem className={`p-0 m-0 text-black`}>
                     <ListItemPrefix>
                         <div onClick={(e) => {
@@ -35,7 +35,7 @@ export default function NavigationPanel(props) {
     }
 
     return (
-        <Navbar className="">
+        <Navbar className="px-2">
             <ListItem className="p-0 m-0">
                 {'SearchPanel' === props.openedPanel ?
                     <></> :
