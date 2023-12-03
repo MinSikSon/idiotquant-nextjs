@@ -434,26 +434,47 @@ export default function QuantPost({ marketInfoList, financialInfoAll }) {
   }, [stocksOfInterest]);
 
   React.useEffect(() => {
-    const oldLocalInfo = localStorage.getItem("localInfo");
-    if (null == oldLocalInfo) {
-      localStorage.setItem("localInfo", JSON.stringify(localInfo));
-    } else {
-      const objLocalInfo = JSON.parse(oldLocalInfo);
-      setLocalInfo(objLocalInfo);
-    }
-
-    const oldStocksOfInterest = localStorage.getItem("stocksOfInterest");
-    if (null == oldStocksOfInterest) {
-      // console.log(`save stocksOfInterest`);
+    if (!!recentlyViewedStocksList && recentlyViewedStocksList.length > 0) {
+      // const oldRecentlyViewedStocksList = localStorage.getItem('recentlyViewedStocksList');
+      // const arrOldRecentlyViewedStocksList = JSON.parse(oldRecentlyViewedStocksList);
+      // setRecentlyViewedStocksList([...arrOldRecentlyViewedStocksList]);
       localStorage.setItem(
-        "stocksOfInterest",
-        JSON.stringify(stocksOfInterest)
+        "recentlyViewedStocksList",
+        JSON.stringify(recentlyViewedStocksList)
       );
-    } else {
-      const objStocksOfInterest = JSON.parse(oldStocksOfInterest);
-      // console.log(`load stocksOfInterest`, objStocksOfInterest);
-      setStocksOfInterest({ ...objStocksOfInterest });
     }
+  }, [recentlyViewedStocksList]);
+
+  function updateLocalStorageItem(
+    itemName: string,
+    [state, setState],
+    isArray: boolean
+  ) {
+    const oldItem = localStorage.getItem(itemName);
+    if (null == oldItem) {
+      localStorage.setItem(itemName, JSON.stringify(state));
+    } else {
+      const oldState = JSON.parse(oldItem);
+      if (true === isArray) {
+        setState([...oldState]);
+      } else {
+        setState({ ...oldState });
+      }
+    }
+  }
+
+  React.useEffect(() => {
+    updateLocalStorageItem("localInfo", [localInfo, setLocalInfo], false);
+    updateLocalStorageItem(
+      "stocksOfInterest",
+      [stocksOfInterest, setStocksOfInterest],
+      false
+    );
+    updateLocalStorageItem(
+      "recentlyViewedStocksList",
+      [recentlyViewedStocksList, setRecentlyViewedStocksList],
+      true
+    );
 
     function RequestLogin(id) {
       const url = `https://idiotquant-backend.tofu89223.workers.dev`;
