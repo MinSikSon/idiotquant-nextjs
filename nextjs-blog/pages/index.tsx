@@ -4,10 +4,7 @@ import { Util } from "../components/Util.js";
 import { useRouter } from "next/router.js";
 import DescriptionPanel from "../components/DescriptionPanel.js";
 
-import {
-  GetArrayFilteredByStrategyExample,
-  GetArrayFilteredByStrategyNCAV,
-} from "../components/Strategy.js";
+import { GetArrayFilteredByStrategyExample, GetArrayFilteredByStrategyNCAV, } from "../components/Strategy.js";
 import RecentlyViewedStocks from "../components/RecentlyViewedStocks.js";
 import TitlePanel from "../components/TitlePanel.js";
 import NavigationPanel from "../components/NavigationPanel.js";
@@ -15,6 +12,7 @@ import StocksOfInterestPanel from "../components/StocksOfInterestPanel.js";
 import NewGroupPanel from "../components/NewGroupPanel.js";
 import AddStockInGroupPanel from "../components/AddStockInGroupPanel.js";
 import DeleteGroupPanel from "../components/DeleteGroupPanel.js";
+import BackTestingPanel from "../components/BackTestingPanel";
 
 export async function getStaticProps() {
   async function fetchAndSet(subUrl) {
@@ -25,62 +23,35 @@ export async function getStaticProps() {
     return json;
   }
 
-  const marketInfo20181214 = await fetchAndSet(
-    "stock/market-info?date=20181214"
-  );
-  const marketInfo20191213 = await fetchAndSet(
-    "stock/market-info?date=20191213"
-  );
-  const marketInfo20201214 = await fetchAndSet(
-    "stock/market-info?date=20201214"
-  );
-  const marketInfo20211214 = await fetchAndSet(
-    "stock/market-info?date=20211214"
-  );
-  const marketInfo20221214 = await fetchAndSet(
-    "stock/market-info?date=20221214"
-  );
-  const marketInfo20230111 = await fetchAndSet(
-    "stock/market-info?date=20230111"
-  );
-  const marketInfo20230302 = await fetchAndSet(
-    "stock/market-info?date=20230302"
-  );
-  const marketInfo20230324 = await fetchAndSet(
-    "stock/market-info?date=20230324"
-  );
-  const marketInfo20230417 = await fetchAndSet(
-    "stock/market-info?date=20230417"
-  );
-  const marketInfo20230426 = await fetchAndSet(
-    "stock/market-info?date=20230426"
-  );
-  const marketInfo20230524 = await fetchAndSet(
-    "stock/market-info?date=20230524"
-  );
-  const marketInfo20230622 = await fetchAndSet(
-    "stock/market-info?date=20230622"
-  );
-  const marketInfo20230719 = await fetchAndSet(
-    "stock/market-info?date=20230719"
-  );
-  const marketInfo20230810 = await fetchAndSet(
-    "stock/market-info?date=20230810"
-  );
-  const marketInfo20230825 = await fetchAndSet(
-    "stock/market-info?date=20230825"
-  );
-  const marketInfo20230922 = await fetchAndSet(
-    "stock/market-info?date=20230922"
-  );
-  const marketInfo20231013 = await fetchAndSet(
-    "stock/market-info?date=20231013"
-  );
-  const marketInfo20231106 = await fetchAndSet(
-    "stock/market-info?date=20231106"
-  );
+  const marketInfo20181214 = await fetchAndSet("stock/market-info?date=20181214");
+  const marketInfo20191213 = await fetchAndSet("stock/market-info?date=20191213");
+  const marketInfo20201214 = await fetchAndSet("stock/market-info?date=20201214");
+  const marketInfo20211214 = await fetchAndSet("stock/market-info?date=20211214");
+  const marketInfo20221214 = await fetchAndSet("stock/market-info?date=20221214");
+  const marketInfo20230111 = await fetchAndSet("stock/market-info?date=20230111");
+  const marketInfo20230302 = await fetchAndSet("stock/market-info?date=20230302");
+  const marketInfo20230324 = await fetchAndSet("stock/market-info?date=20230324");
+  const marketInfo20230417 = await fetchAndSet("stock/market-info?date=20230417");
+  const marketInfo20230426 = await fetchAndSet("stock/market-info?date=20230426");
+  const marketInfo20230524 = await fetchAndSet("stock/market-info?date=20230524");
+  const marketInfo20230622 = await fetchAndSet("stock/market-info?date=20230622");
+  const marketInfo20230719 = await fetchAndSet("stock/market-info?date=20230719");
+  const marketInfo20230810 = await fetchAndSet("stock/market-info?date=20230810");
+  const marketInfo20230825 = await fetchAndSet("stock/market-info?date=20230825");
+  const marketInfo20230922 = await fetchAndSet("stock/market-info?date=20230922");
+  const marketInfo20231013 = await fetchAndSet("stock/market-info?date=20231013");
   const marketInfoPrev = await fetchAndSet("stock/market-info?date=20231106");
   const marketInfoLatest = await fetchAndSet("stock/market-info?date=20231124");
+
+  let financialInfoList = {};
+  for (let year = 2017; year <= 2022; ++year) {
+    for (let quarter = 4; quarter <= 4; ++quarter) {
+      const reqFinancialInfo = await fetchAndSet(
+        `stock/financial-info?year=${year}&quarter=${quarter}`
+      );
+      financialInfoList[`financialInfo_${year}_${quarter}`] = reqFinancialInfo;
+    }
+  }
 
   const financialInfoAll = await fetchAndSet(
     "stock/financial-info?year=2023&quarter=3"
@@ -104,7 +75,6 @@ export async function getStaticProps() {
   marketInfoList.push(marketInfo20230825);
   marketInfoList.push(marketInfo20230922);
   marketInfoList.push(marketInfo20231013);
-  marketInfoList.push(marketInfo20231106);
   marketInfoList.push(marketInfoPrev);
   marketInfoList.push(marketInfoLatest);
 
@@ -112,12 +82,17 @@ export async function getStaticProps() {
     props: {
       // props for your component
       marketInfoList,
+      financialInfoList,
       financialInfoAll,
     },
   };
 }
 
-export default function QuantPost({ marketInfoList, financialInfoAll }) {
+export default function QuantPost({
+  marketInfoList,
+  financialInfoList,
+  financialInfoAll,
+}) {
   // console.log(`%c[call] QuantPost`, `color : white; background : blue`);
 
   const router: any = useRouter();
@@ -127,13 +102,11 @@ export default function QuantPost({ marketInfoList, financialInfoAll }) {
   const [inputPlaceholder, setInputPlaceholder] = React.useState("");
   const [searchResult, setSearchResult] = React.useState("");
 
-  const [latestStockCompanyInfo, setLatestStockCompanyInfo] =
-    React.useState<any>({});
+  const [latestStockCompanyInfo, setLatestStockCompanyInfo] = React.useState<any>({});
 
   const [openCalculator, setOpenCalculator] = React.useState(false);
 
-  const [arrayFilteredStocksList, setArrayFilteredStocksList] =
-    React.useState<any>([]);
+  const [arrayFilteredStocksList, setArrayFilteredStocksList] = React.useState<any>([]);
 
   const [searchingList, setSearchingList] = React.useState([]); // 검색 도중 종목명 출력
 
@@ -148,11 +121,9 @@ export default function QuantPost({ marketInfoList, financialInfoAll }) {
   const [openMenu, setOpenMenu] = React.useState(false);
 
   // RecentlyViewedStocks.js
-  const [recentlyViewedStocksList, setRecentlyViewedStocksList] =
-    React.useState([]);
+  const [recentlyViewedStocksList, setRecentlyViewedStocksList] = React.useState([]);
 
-  const [selectedStocksOfInterestTab, setSelectedStocksOfInterestTab] =
-    React.useState(0);
+  const [selectedStocksOfInterestTab, setSelectedStocksOfInterestTab] = React.useState(0);
 
   //   type TabInfo = { label: string; value: string; stocks: []; desc: string };
   //   type StocksOfInterest = { init: boolean; tabs: { TabInfo }[] };
@@ -160,11 +131,9 @@ export default function QuantPost({ marketInfoList, financialInfoAll }) {
 
   const [openedPanel, setOpenedPanel] = React.useState("");
 
-  const [localInfo, setLocalInfo] = React.useState<any>({
-    testCnt: 1,
-    openedPanel: openedPanel,
-    log: "hihi",
-  });
+  const [localInfo, setLocalInfo] = React.useState<any>({ testCnt: 1, openedPanel: openedPanel, log: "hihi", });
+
+  const [backTestResultLog, setBackTestResultLog] = React.useState([]);
 
   function changeStockCompanyName(dictOrigin, srcName, dstName) {
     const { [srcName]: srcCompanyInfo, ...rest } = dictOrigin;
@@ -180,11 +149,7 @@ export default function QuantPost({ marketInfoList, financialInfoAll }) {
     const marketInfoLatest = marketInfoList[marketInfoLatestIndex];
 
     if (!!financialInfoAll && !!marketInfoLatest) {
-      let dictNewFinancialInfoAll = changeStockCompanyName(
-        financialInfoAll,
-        "현대자동차",
-        "현대차"
-      );
+      let dictNewFinancialInfoAll = changeStockCompanyName(financialInfoAll, "현대자동차", "현대차");
 
       const dictFinancialMarketInfo = {};
       Object.values(dictNewFinancialInfoAll).forEach((stockCompany) => {
@@ -224,13 +189,8 @@ export default function QuantPost({ marketInfoList, financialInfoAll }) {
 
       if (true === needInit) {
         // console.log(`needInit`);
-        const arrInitStocksList = GetArrayFilteredByStrategyNCAV(
-          latestStockCompanyInfo
-        );
-
-        const arrStrategyExample = GetArrayFilteredByStrategyExample(
-          latestStockCompanyInfo
-        );
+        const arrInitStocksList = GetArrayFilteredByStrategyNCAV(latestStockCompanyInfo);
+        const arrStrategyExample = GetArrayFilteredByStrategyExample(latestStockCompanyInfo);
 
         let newStocksOfInterest = {
           init: true,
@@ -277,10 +237,7 @@ export default function QuantPost({ marketInfoList, financialInfoAll }) {
     ) {
       handleSearchStockCompanyInfo(clickedStockCompanyName);
 
-      setLocalInfo({
-        testCnt: localInfo.testCnt + 1,
-        log: "clickedRecentlyViewedStock",
-      });
+      setLocalInfo({ testCnt: localInfo.testCnt + 1, log: "clickedRecentlyViewedStock", });
     }
   }
 
@@ -334,7 +291,7 @@ export default function QuantPost({ marketInfoList, financialInfoAll }) {
       let fairPriceA: any = Number(
         (Number(latestStockCompanyInfo[a]["유동자산"]) -
           Number(latestStockCompanyInfo[a]["부채총계"])) /
-          Number(latestStockCompanyInfo[a]["상장주식수"])
+        Number(latestStockCompanyInfo[a]["상장주식수"])
       ).toFixed(0);
       let ratioA: any = Number(
         fairPriceA / Number(latestStockCompanyInfo[a]["종가"])
@@ -343,11 +300,9 @@ export default function QuantPost({ marketInfoList, financialInfoAll }) {
       let fairPriceB: any = Number(
         (Number(latestStockCompanyInfo[b]["유동자산"]) -
           Number(latestStockCompanyInfo[b]["부채총계"])) /
-          Number(latestStockCompanyInfo[b]["상장주식수"])
+        Number(latestStockCompanyInfo[b]["상장주식수"])
       ).toFixed(0);
-      let ratioB: any = Number(
-        fairPriceB / Number(latestStockCompanyInfo[b]["종가"])
-      );
+      let ratioB: any = Number(fairPriceB / Number(latestStockCompanyInfo[b]["종가"]));
 
       return ratioB.toFixed(3) - ratioA.toFixed(3);
     });
@@ -445,11 +400,7 @@ export default function QuantPost({ marketInfoList, financialInfoAll }) {
     }
   }, [recentlyViewedStocksList]);
 
-  function updateLocalStorageItem(
-    itemName: string,
-    [state, setState],
-    isArray: boolean
-  ) {
+  function updateLocalStorageItem(itemName: string, [state, setState], isArray: boolean) {
     const oldItem = localStorage.getItem(itemName);
     if (null == oldItem) {
       localStorage.setItem(itemName, JSON.stringify(state));
@@ -465,16 +416,8 @@ export default function QuantPost({ marketInfoList, financialInfoAll }) {
 
   React.useEffect(() => {
     updateLocalStorageItem("localInfo", [localInfo, setLocalInfo], false);
-    updateLocalStorageItem(
-      "stocksOfInterest",
-      [stocksOfInterest, setStocksOfInterest],
-      false
-    );
-    updateLocalStorageItem(
-      "recentlyViewedStocksList",
-      [recentlyViewedStocksList, setRecentlyViewedStocksList],
-      true
-    );
+    updateLocalStorageItem("stocksOfInterest", [stocksOfInterest, setStocksOfInterest], false);
+    updateLocalStorageItem("recentlyViewedStocksList", [recentlyViewedStocksList, setRecentlyViewedStocksList], true);
 
     function RequestLogin(id) {
       const url = `https://idiotquant-backend.tofu89223.workers.dev`;
@@ -517,14 +460,7 @@ export default function QuantPost({ marketInfoList, financialInfoAll }) {
   function getSearchingList(inputValue) {
     // console.log(`[getSearchingList]`, latestStockCompanyInfo);
     let array = Object.values(latestStockCompanyInfo);
-    let filteredArray = array.filter(
-      (item) =>
-        !!inputValue &&
-        !!item["시가총액"] &&
-        String(item["종목명"])
-          .toUpperCase()
-          ?.includes(String(inputValue).toUpperCase())
-    );
+    let filteredArray = array.filter((item) => !!inputValue && !!item["시가총액"] && String(item["종목명"]).toUpperCase()?.includes(String(inputValue).toUpperCase()));
     let slicedArray = filteredArray.slice(0, 10);
 
     setInputValue(inputValue);
@@ -598,15 +534,8 @@ export default function QuantPost({ marketInfoList, financialInfoAll }) {
     const newStocksOfInterest = stocksOfInterest;
 
     let duplicated = false;
-    for (
-      let i = 0;
-      i < newStocksOfInterest.tabs[selectedStocksOfInterestTab].stocks.length;
-      ++i
-    ) {
-      if (
-        stockName ==
-        newStocksOfInterest.tabs[selectedStocksOfInterestTab].stocks[i]
-      ) {
+    for (let i = 0; i < newStocksOfInterest.tabs[selectedStocksOfInterestTab].stocks.length; ++i) {
+      if (stockName == newStocksOfInterest.tabs[selectedStocksOfInterestTab].stocks[i]) {
         duplicated = true;
         break;
       }
@@ -640,6 +569,23 @@ export default function QuantPost({ marketInfoList, financialInfoAll }) {
   // lg	1024px	@media (min-width: 1024px) { ... }
   // xl	1280px	@media (min-width: 1280px) { ... }
   // 2xl	1536px	@media (min-width: 1536px) { ... }
+
+  //   console.log(`financialInfoList`, financialInfoList);
+
+  console.log(`openedPanel`, openedPanel);
+  if ("BackTestingPanel" === openedPanel) {
+    return (
+      <BackTestingPanel
+        openedPanel={openedPanel}
+        setOpenedPanel={setOpenedPanel}
+        financialInfoList={financialInfoList}
+        marketInfoList={marketInfoList}
+
+        backTestResultLog={backTestResultLog}
+        setBackTestResultLog={setBackTestResultLog}
+      />
+    );
+  }
 
   if ("DeleteGroupPanel" === openedPanel) {
     return (
@@ -707,8 +653,8 @@ export default function QuantPost({ marketInfoList, financialInfoAll }) {
               setSearchResult={setSearchResult}
             />
             {"" === openedPanel ||
-            "SearchPanel" === openedPanel ||
-            "AddStockInGroupPanel" === openedPanel ? (
+              "SearchPanel" === openedPanel ||
+              "AddStockInGroupPanel" === openedPanel ? (
               <RecentlyViewedStocks
                 openedPanel={openedPanel}
                 recentlyViewedStocksList={recentlyViewedStocksList}
