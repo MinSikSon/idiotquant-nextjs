@@ -16,7 +16,9 @@ const Input = (props) => {
         if ('' !== props.openedPanel) {
             if (!!!props.searchResult) {
                 if (Object.keys(props.searchResult).length == 0) {
-                    refFocus.current.focus();
+                    if (!!refFocus.current) {
+                        refFocus.current.focus();
+                    }
                     props.setSearchResult('');
                 }
             }
@@ -149,7 +151,7 @@ function _getSelectedSearchResult(searchResult) {
     return selectedSearchResult;
 }
 export default function SearchPanel(props) {
-    // console.log(`%c[call] Search`, `color : white; background : blue`);
+    console.log(`%cSearchPanel`, `color : white; background : blue`);
     // console.log(`props.openedPanel`, props.openedPanel);
 
     let jsonSearchResult = { '종목명': '-', 'stock_code': '-', '종가': 0, '유동자산': 0, '부채총계': 0, '당기순이익': 0, '거래량': 0, '시가총액': 1, '상장주식수': 1/*divide by zero 방지용*/, ...props.searchResult };

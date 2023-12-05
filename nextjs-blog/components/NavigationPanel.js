@@ -10,6 +10,7 @@ import SearchPanel from "./SearchPanel";
 import Oauth from "./Oauth";
 import Etc from "./Etc";
 import { ArrowUturnLeftIcon } from "@heroicons/react/24/outline";
+import BackTesting from "./BackTesting";
 
 export default function NavigationPanel(props) {
     if ('NewGroupPanel' === props.openedPanel) return <></>;
@@ -53,6 +54,8 @@ export default function NavigationPanel(props) {
                             setOpenCalculator={props.setOpenCalculator}
                         />
                         <Etc />
+                        <BackTesting setOpenedPanel={props.setOpenedPanel} />
+
                     </ul>
                 }
                 <ListItemSuffix className={`${'SearchPanel' === props.openedPanel ? 'm-0 w-full' : ''}`}>
