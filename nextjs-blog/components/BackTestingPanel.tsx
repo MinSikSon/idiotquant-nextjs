@@ -3,7 +3,10 @@ import { Button, Card, CardBody, CardHeader, List, ListItem, ListItemPrefix, Nav
 import React from "react";
 
 export default function BackTestingPanel(props) {
+  const [principal, setPrincipal] = React.useState(100000000);
   const [backTestResult, setBackTestResult] = React.useState({});
+  const [stocks, setStocks] = React.useState([]);
+  const [showStocks, setShowStocks] = React.useState(false);
 
   const getNCAV = () => {
     console.log(`props.financialInfoList`, props.financialInfoList);
@@ -89,8 +92,8 @@ export default function BackTestingPanel(props) {
     console.log(`mergedSelectedStockInfoList`, mergedSelectedStockInfoList);
 
     let logList = [];
-    const 원금: number = 100000000;
-    logList.push([`(시작) 원금: ${원금}`]);
+    const 원금: number = principal;
+    // logList.push([`(시작) 원금: ${원금}`]);
     let 최종_수익금: number = 원금;
     // 수익률 계산
     for (let i = 0; i < mergedSelectedStockNameList.length - 1; ++i) {
@@ -139,56 +142,84 @@ export default function BackTestingPanel(props) {
       const 최종_수익률: number = 누적_수익률 / 종목수;
       최종_수익금 = 최종_수익금 * (1 + 최종_수익률);
       let newLog = [];
-      newLog.push(`${curDate}->${nextDate}`);
-      newLog.push(`최종_수익금: ${최종_수익금.toFixed(0)}`);
-      newLog.push(`최종_수익률: ${최종_수익률.toFixed(5)}`);
-      newLog.push(`종목수: ${종목수}`);
-      newLog.push(`누적_수익률: ${누적_수익률.toFixed(2)}`);
+      newLog.push(`buy:${curDate} sell:${nextDate}`);
+      newLog.push(`${최종_수익금.toFixed(0)}`);
+      newLog.push(`${최종_수익률.toFixed(4)}`);
+      newLog.push(`${종목수}`);
+      newLog.push(`${누적_수익률.toFixed(2)}`);
       // console.log(newLog);
       logList.push(newLog);
     }
     props.setBackTestResultLog([...logList]);
+
+    setStocks([...mergedSelectedStockNameList]);
   };
   return (
     <>
       <Navbar>
         <ListItem className={`flex items-center w-full text-black p-0 m-0`}>
           <ListItemPrefix>
-            <div onClick={() => props.setOpenedPanel("")}>
+            <div onClick={() => {
+              props.setOpenedPanel("");
+              props.setBackTestResultLog([]);
+            }}>
               <ArrowUturnLeftIcon className="h-6 w-6" />
             </div>
           </ListItemPrefix>
           <div className="w-full text-center pr-10 text-lg">백테스트</div>
         </ListItem>
       </Navbar>
-      <Button onClick={getNCAV}>TEST 중입니다.</Button>
-      <List>
-        {props.backTestResultLog.map((item, idx) => <>
-          <ListItem className="text-xs" key={idx}>
-            <Card className="mt-6 w-full">
-              {/* <CardHeader className="h-4"> */}
-              {/* </CardHeader> */}
-              <CardBody className="m-0 p-0">
-                <Typography variant="h4">
-                  {item[0]}
-                </Typography>
-                <Typography variant="h5">
-                  {item[1]}
-                </Typography>
-                <Typography variant="h6">
-                  {item[2]}
-                </Typography>
-                <Typography variant="h6">
-                  {item[3]}
-                </Typography>
-                <Typography variant="h6">
-                  {item[4]}
-                </Typography>
-              </CardBody>
-            </Card>
-          </ListItem>
-        </>)}
-      </List>
+      <Button onClick={() => getNCAV()}>백테스트. 원금: {principal}원</Button>
+      <Button onClick={() => setShowStocks(!showStocks)}>{showStocks ? "종목 숨기기" : "종목 표시"}</Button>
+
+      <Card className="mt-6 w-full">
+        <table className="table-fixed w-full">
+          <thead>
+            <tr className="text-xs">
+              <th>기간</th>
+              <th>최종<br />수익금</th>
+              <th>수익률</th>
+              <th>종목수</th>
+              <th>누적<br />수익률</th>
+            </tr>
+          </thead>
+          <tbody>
+            {props.backTestResultLog.map((item, idx) => {
+              const isLast = idx == props.backTestResultLog.length - 1;
+              const classes = isLast ? "p-2 bg-green-200" : "p-0 bg-green-100 border-b border-blue-gray-50"
+              return (<>
+                <tr key={idx} className="text-xs">
+                  <td className={classes}>
+                    {item[0]}
+                  </td>
+                  <td className={classes}>
+                    {item[1]}
+                  </td>
+                  <td className={classes}>
+                    {item[2]}
+                  </td>
+                  <td className={classes}>
+                    {item[3]}
+                  </td>
+                  <td className={classes}>
+                    {item[4]}
+                  </td>
+                </tr>
+                {showStocks ?
+                  <tr >
+                    <td colSpan={5} className="text-xs">
+                      {stocks[idx].map((item) => { return item + '|' })}
+                    </td>
+                  </tr>
+                  :
+                  <></>
+                }
+              </>);
+            })}
+          </tbody>
+        </table>
+      </Card>
+
     </>
   );
 }
