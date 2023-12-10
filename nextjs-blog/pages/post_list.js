@@ -2,8 +2,7 @@ import React from "react";
 import { ArrowTrendingUpIcon, ChatBubbleOvalLeftEllipsisIcon, HomeIcon } from "@heroicons/react/24/outline";
 import { List, ListItem, ListItemPrefix, ListItemSuffix } from "@material-tailwind/react";
 import Link from "next/link";
-import ArticleTemplate from "./posts/template";
-import { ArticleTemplateSimple } from "./posts/template";
+import { ArticleTemplate, ArticleTemplateSimple } from "./posts/template";
 
 export default function PostList(props) {
     const [contents, setContents] = React.useState([

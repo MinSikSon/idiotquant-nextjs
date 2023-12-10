@@ -1,5 +1,5 @@
 
-export default function ArticleTemplate(props) {
+export function ArticleTemplate(props) {
     const title = props.title;
     const subTitle = props.subTitle;
     const detail = props.detail;
