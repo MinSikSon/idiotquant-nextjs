@@ -2,16 +2,6 @@ import Link from "next/link";
 import Head from "next/head";
 import ArticleTemplate from "./template";
 
-const RayDalio = () => {
-    return (
-        <ul className='list-disc list-inside'>
-            <li>역사는 반복된다</li>
-            <li>1980년 3월, 은 가격 폭락. 시기가 중요하다.</li>
-            <li>브리지워터</li>
-        </ul>
-    );
-}
-
 const Graham = (props) => {
     return (
         <ul className='list-disc list-inside'>
