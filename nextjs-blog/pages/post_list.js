@@ -1,5 +1,5 @@
 import React from "react";
-import { ArrowTrendingUpIcon, ArrowUturnLeftIcon, BookOpenIcon, BuildingLibraryIcon, BuildingOffice2Icon, BuildingOfficeIcon, ChatBubbleOvalLeftEllipsisIcon, CurrencyDollarIcon, HeartIcon, HomeIcon } from "@heroicons/react/24/outline";
+import { ArrowTrendingUpIcon, ChatBubbleOvalLeftEllipsisIcon, HomeIcon } from "@heroicons/react/24/outline";
 import { List, ListItem, ListItemPrefix, ListItemSuffix } from "@material-tailwind/react";
 import Link from "next/link";
 import ArticleTemplate from "./posts/template";
@@ -165,14 +165,6 @@ export default function PostList(props) {
                         <div className='pt-1'>기타 등등 글</div>
                     </ListItem>
                 </Link>
-                {/* <Link href='./posts/terms'>
-                    <ListItem className='border-b-2'>
-                        <ListItemPrefix>
-                            <HeartIcon strokeWidth={2} className="h-6 w-6" />
-                        </ListItemPrefix>
-                        <div className='pt-1'>한 번에 보기</div>
-                    </ListItem>
-                </Link> */}
             </List>
 
         </>
