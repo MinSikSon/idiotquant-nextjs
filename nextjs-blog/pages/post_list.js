@@ -2,7 +2,8 @@ import React from "react";
 import { ArrowTrendingUpIcon, ChatBubbleOvalLeftEllipsisIcon, HomeIcon } from "@heroicons/react/24/outline";
 import { List, ListItem, ListItemPrefix, ListItemSuffix } from "@material-tailwind/react";
 import Link from "next/link";
-import { ArticleTemplate, ArticleTemplateSimple } from "./posts/template";
+import TemplateArticle from "../components/TemplateArticle";
+import TemplateArticleSimple from "../components/TemplateArticleSimple";
 
 export default function PostList(props) {
     const [contents, setContents] = React.useState([
@@ -129,7 +130,7 @@ export default function PostList(props) {
                     return (
                         <div onClick={() => setSelectedContentIndex(index == selectedContentIndex ? -1 : index)}>
                             {(selectedContentIndex == index) ?
-                                <ArticleTemplate
+                                <TemplateArticle
                                     key={index}
                                     title={item.title}
                                     subTitle={item.subTitle}
@@ -137,7 +138,7 @@ export default function PostList(props) {
                                     detail={item.detail}
                                     img1={item.img}
                                 />
-                                : <ArticleTemplateSimple
+                                : <TemplateArticleSimple
                                     key={`${index}_Simple`}
                                     title={item.title}
                                     subTitle={item.subTitle}
