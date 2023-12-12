@@ -26,13 +26,12 @@ const Input = (props) => {
     }, [props.openedPanel]);
 
     return (
-        <form
+        <form className={`flex items-center p-0 m-0 bg-none`}
             onSubmit={(e) => {
                 e.preventDefault();
                 props.handleSearchStockCompanyInfo(props.searchingList[0]?.['종목명'] || '');
                 e.target[0].value = ''
             }}
-            className={`flex items-center p-0 m-0 bg-none`}
         >
             <ListItem className={`p-0 text-black bg-none`}>
                 {(('SearchPanel' === props.openedPanel) || ('AddStockInGroupPanel' === props.openedPanel)) ?
@@ -86,7 +85,8 @@ const Input = (props) => {
 
 //////////////////////////////////////////////////////////////////////////////
 // Search
-function _getSelectedSearchResult(searchResult) {
+function _getSelectedSearchResult(searchResult, financialInfoList) {
+    console.log(`financialInfoList`, financialInfoList);
     let jsonSearchResult = { '종목명': '-', 'stock_code': '-', '종가': 0, '유동자산': 0, '부채총계': 0, '당기순이익': 0, '거래량': 0, '시가총액': 1, '상장주식수': 1/*divide by zero 방지용*/, '자본금': 0, ...searchResult };
 
     let selectedSearchResult = {};
@@ -96,6 +96,9 @@ function _getSelectedSearchResult(searchResult) {
     if (0 == Number(jsonSearchResult['자본금'])) {
         selectedSearchResult['ROE'] = "자본금 누락";
     }
+
+    let 당기순이익_합산 = 0;
+    let 자본금_합산 = 0;
     if (0 == Number(jsonSearchResult['이익잉여금'])) {
         selectedSearchResult['ROE'] = "이익잉여금 누락";
     }
@@ -106,9 +109,36 @@ function _getSelectedSearchResult(searchResult) {
             selectedSearchResult['ROE'] = "자본 줄어드는 중";
         }
         else {
-            selectedSearchResult['ROE'] = Number(100 * Number(jsonSearchResult['당기순이익']) / 자기자본).toFixed(1);
+            // selectedSearchResult['ROE'] = Number(100 * Number(jsonSearchResult['당기순이익']) / 자기자본).toFixed(1);
             // console.log(`selectedSearchResult['ROE']`, selectedSearchResult['ROE']);
-            selectedSearchResult['ROE'] += "%";
+            // console.log(`financialInfoList`, financialInfoList);
+            const start = Object.keys(financialInfoList).length - 1;
+            const end = Object.keys(financialInfoList).length - 4;
+            let 당기순이익_누락 = false;
+            for (let i = start; i >= end; --i) {
+                // const key = Object.keys(financialInfoList)[i];
+                const financialInfo = Object.values(financialInfoList)[i];
+                if (undefined == financialInfo[jsonSearchResult['종목명']]) {
+                    selectedSearchResult['ROE'] = "당기순이익 누락";
+                    당기순이익_누락 = true;
+                    break;
+                }
+                if (!!financialInfo[jsonSearchResult['종목명']]['당기순이익(손실)']) {
+                    당기순이익_합산 -= Number(financialInfo[jsonSearchResult['종목명']]['당기순이익']);
+                }
+                else {
+                    당기순이익_합산 += Number(financialInfo[jsonSearchResult['종목명']]['당기순이익']);
+                }
+                자본금_합산 += (Number(financialInfo[jsonSearchResult['종목명']]['자본금']) + Number(financialInfo[jsonSearchResult['종목명']]['이익잉여금']));
+                console.log(i, `1 financialInfo[jsonSearchResult['종목명']]`, financialInfo[jsonSearchResult['종목명']]);
+                console.log(i, `2 당기순이익_합산`, 당기순이익_합산);
+            }
+            const 자본금_평균 = 자본금_합산 / 4;
+            // console.log(`당기순이익_합산 / 자기자본`, 100 * 당기순이익_합산 / 자기자본);
+            if (당기순이익_누락 == false) {
+                selectedSearchResult['ROE'] = Number(100 * 당기순이익_합산 / 자본금_평균).toFixed(1);
+                selectedSearchResult['ROE'] += "%";
+            }
         }
     }
 
@@ -130,8 +160,9 @@ function _getSelectedSearchResult(searchResult) {
     selectedSearchResult['DPS'] = jsonSearchResult['DPS'];
 
     selectedSearchResult['시가총액'] = jsonSearchResult['시가총액'] = Util.UnitConversion(jsonSearchResult['시가총액'], true);
-    selectedSearchResult['당기순이익'] = jsonSearchResult['당기순이익'] = Util.UnitConversion(jsonSearchResult['당기순이익'], true);
     selectedSearchResult['매출액'] = jsonSearchResult['매출액'] = Util.UnitConversion(jsonSearchResult['매출액'], true);
+    selectedSearchResult['당기순이익'] = jsonSearchResult['당기순이익'] = Util.UnitConversion(jsonSearchResult['당기순이익'], true);
+    selectedSearchResult['연간순이익'] = Util.UnitConversion(당기순이익_합산, true);
     selectedSearchResult['영업이익'] = jsonSearchResult['영업이익'] = Util.UnitConversion(jsonSearchResult['영업이익'], true);
     selectedSearchResult['거래대금'] = jsonSearchResult['거래대금'] = Util.UnitConversion(jsonSearchResult['거래대금'], true);
     selectedSearchResult['이익잉여금'] = jsonSearchResult['이익잉여금'] = Util.UnitConversion(jsonSearchResult['이익잉여금'], true);
@@ -144,8 +175,8 @@ function _getSelectedSearchResult(searchResult) {
     selectedSearchResult['자산총계'] = jsonSearchResult['자산총계'] = Util.UnitConversion(jsonSearchResult['자산총계'], true);
     selectedSearchResult['자본금'] = jsonSearchResult['자본금'] = Util.UnitConversion(jsonSearchResult['자본금'], true);
     selectedSearchResult['상장주식수'] = jsonSearchResult['상장주식수'] + "개";
-    selectedSearchResult[' '] = ' ';
-    selectedSearchResult['ROE='] = "100 * 당기순이익 / (자본금 + 이익잉여금)";
+    // selectedSearchResult[' '] = ' ';
+    selectedSearchResult['ROE='] = "100 * 연간순이익 / (자본금 + 이익잉여금)";
     selectedSearchResult['  '] = ' ';
 
     return selectedSearchResult;
@@ -155,13 +186,14 @@ export default function SearchPanel(props) {
     // console.log(`props.openedPanel`, props.openedPanel);
 
     let jsonSearchResult = { '종목명': '-', 'stock_code': '-', '종가': 0, '유동자산': 0, '부채총계': 0, '당기순이익': 0, '거래량': 0, '시가총액': 1, '상장주식수': 1/*divide by zero 방지용*/, ...props.searchResult };
+    console.log(`jsonSearchResult['종목명']`, jsonSearchResult['종목명']);
     let fairPrice/*적정가*/ = Number((Number(jsonSearchResult['유동자산']) - Number(jsonSearchResult['부채총계'])) / Number(jsonSearchResult['상장주식수'])).toFixed(0);
     let ratio = Number(fairPrice / Number(jsonSearchResult['종가']));
     if (isNaN(ratio)) {
         ratio = 0;
     }
 
-    let selectedSearchResult = _getSelectedSearchResult(jsonSearchResult);
+    let selectedSearchResult = _getSelectedSearchResult(jsonSearchResult, props.financialInfoList);
 
     const CustomDiv = (props) => {
         let index = String(props.item).indexOf('-');

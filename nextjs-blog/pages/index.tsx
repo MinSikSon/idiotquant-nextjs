@@ -44,18 +44,15 @@ export async function getStaticProps() {
   const marketInfoLatest = await fetchAndSet("stock/market-info?date=20231124");
 
   let financialInfoList = {};
-  for (let year = 2017; year <= 2022; ++year) {
-    for (let quarter = 4; quarter <= 4; ++quarter) {
-      const reqFinancialInfo = await fetchAndSet(
-        `stock/financial-info?year=${year}&quarter=${quarter}`
-      );
+  for (let year = 2017; year <= 2023; ++year) {
+    for (let quarter = 0; quarter <= 4; ++quarter) {
+      const reqFinancialInfo = await fetchAndSet(`stock/financial-info?year=${year}&quarter=${quarter}`);
+      if (null == reqFinancialInfo) continue;
       financialInfoList[`financialInfo_${year}_${quarter}`] = reqFinancialInfo;
     }
   }
 
-  const financialInfoAll = await fetchAndSet(
-    "stock/financial-info?year=2023&quarter=3"
-  );
+  const financialInfoAll = await fetchAndSet("stock/financial-info?year=2023&quarter=3");
 
   let marketInfoList = [];
   marketInfoList.push(marketInfo20181214);
@@ -614,6 +611,8 @@ export default function QuantPost({
             searchingList={searchingList}
             setSearchResult={setSearchResult}
             handleArrowUturnLeftIcon={handleArrowUturnLeftIcon}
+
+            financialInfoList={financialInfoList}
           />
           <NewGroupPanel
             openedPanel={openedPanel}
@@ -646,6 +645,8 @@ export default function QuantPost({
             authorizeCode={authorizeCode}
             accessToken={accessToken}
             loginStatus={loginStatus}
+
+            financialInfoList={financialInfoList}
           />
           <div className="sm:fixed sm:top-20 sm:w-1/2 md:w-1/2 lg:w-1/2 xl:w-1/2 2xl:w-1/2">
             <TitlePanel
