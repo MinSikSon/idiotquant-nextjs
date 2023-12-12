@@ -4,7 +4,6 @@ export default function TemplateArticleSimple(props) {
     const title = props.title;
     const subTitle = props.subTitle;
     const link = props.link;
-    console.log(!!link, `link`, link);
 
     return (
         <div className="px-4 sm:p-6 md:py-10 md:px-8">
@@ -14,7 +13,7 @@ export default function TemplateArticleSimple(props) {
                         {title}
                     </h1>
                     <div className="text-sm leading-4 font-medium text-white bg-black w-fit sm:text-slate-500 dark:sm:text-slate-400">
-                        {!!link ? <a href={link}>{subTitle}</a> : { subTitle }}
+                        {!!link ? <a href={link}>{subTitle}</a> : <div>{subTitle}</div>}
                     </div>
                 </div>
                 <div className="grid gap-4 col-start-1 col-end-3 row-start-1 sm:mb-6 sm:grid-cols-4 lg:gap-6 lg:col-start-2 lg:row-end-6 lg:row-span-6 lg:mb-0">
