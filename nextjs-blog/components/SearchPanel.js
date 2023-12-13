@@ -86,7 +86,7 @@ const Input = (props) => {
 //////////////////////////////////////////////////////////////////////////////
 // Search
 function _getSelectedSearchResult(searchResult, financialInfoList) {
-    console.log(`financialInfoList`, financialInfoList);
+    // console.log(`financialInfoList`, financialInfoList);
     let jsonSearchResult = { '종목명': '-', 'stock_code': '-', '종가': 0, '유동자산': 0, '부채총계': 0, '당기순이익': 0, '거래량': 0, '시가총액': 1, '상장주식수': 1/*divide by zero 방지용*/, '자본금': 0, ...searchResult };
 
     let selectedSearchResult = {};
@@ -130,8 +130,8 @@ function _getSelectedSearchResult(searchResult, financialInfoList) {
                     당기순이익_합산 += Number(financialInfo[jsonSearchResult['종목명']]['당기순이익']);
                 }
                 자본금_합산 += (Number(financialInfo[jsonSearchResult['종목명']]['자본금']) + Number(financialInfo[jsonSearchResult['종목명']]['이익잉여금']));
-                console.log(i, `1 financialInfo[jsonSearchResult['종목명']]`, financialInfo[jsonSearchResult['종목명']]);
-                console.log(i, `2 당기순이익_합산`, 당기순이익_합산);
+                // console.log(i, `1 financialInfo[jsonSearchResult['종목명']]`, financialInfo[jsonSearchResult['종목명']]);
+                // console.log(i, `2 당기순이익_합산`, 당기순이익_합산);
             }
             const 자본금_평균 = 자본금_합산 / 4;
             // console.log(`당기순이익_합산 / 자기자본`, 100 * 당기순이익_합산 / 자기자본);
@@ -182,11 +182,11 @@ function _getSelectedSearchResult(searchResult, financialInfoList) {
     return selectedSearchResult;
 }
 export default function SearchPanel(props) {
-    console.log(`%cSearchPanel`, `color : white; background : blue`);
+    // console.log(`%cSearchPanel`, `color : white; background : blue`);
     // console.log(`props.openedPanel`, props.openedPanel);
 
     let jsonSearchResult = { '종목명': '-', 'stock_code': '-', '종가': 0, '유동자산': 0, '부채총계': 0, '당기순이익': 0, '거래량': 0, '시가총액': 1, '상장주식수': 1/*divide by zero 방지용*/, ...props.searchResult };
-    console.log(`jsonSearchResult['종목명']`, jsonSearchResult['종목명']);
+    // console.log(`jsonSearchResult['종목명']`, jsonSearchResult['종목명']);
     let fairPrice/*적정가*/ = Number((Number(jsonSearchResult['유동자산']) - Number(jsonSearchResult['부채총계'])) / Number(jsonSearchResult['상장주식수'])).toFixed(0);
     let ratio = Number(fairPrice / Number(jsonSearchResult['종가']));
     if (isNaN(ratio)) {

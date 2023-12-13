@@ -569,7 +569,7 @@ export default function QuantPost({
 
   //   console.log(`financialInfoList`, financialInfoList);
 
-  console.log(`openedPanel`, openedPanel);
+  // console.log(`openedPanel`, openedPanel);
   if ("BackTestingPanel" === openedPanel) {
     return (
       <BackTestingPanel
