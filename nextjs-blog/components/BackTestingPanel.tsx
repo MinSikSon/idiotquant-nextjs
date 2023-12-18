@@ -9,8 +9,8 @@ export default function BackTestingPanel(props) {
   const [showStocks, setShowStocks] = React.useState(false);
 
   const getNCAV = () => {
-    console.log(`props.financialInfoList`, props.financialInfoList);
-    console.log(`props.marketInfoList`, props.marketInfoList);
+    // console.log(`props.financialInfoList`, props.financialInfoList);
+    // console.log(`props.marketInfoList`, props.marketInfoList);
     let selectedFinancialInfoList = [];
 
     for (let i = 0; i < props.marketInfoList.length; ++i) {
@@ -35,7 +35,7 @@ export default function BackTestingPanel(props) {
       }
     }
 
-    console.log(`selectedFinancialInfoList`, selectedFinancialInfoList);
+    // console.log(`selectedFinancialInfoList`, selectedFinancialInfoList);
 
     let mergedSelectedStockNameList = [];
     let mergedSelectedStockInfoList = [];
@@ -88,8 +88,8 @@ export default function BackTestingPanel(props) {
       mergedSelectedStockInfoList.push(selectedStockInfoList);
     }
 
-    console.log(`mergedSelectedStockNameList`, mergedSelectedStockNameList);
-    console.log(`mergedSelectedStockInfoList`, mergedSelectedStockInfoList);
+    // console.log(`mergedSelectedStockNameList`, mergedSelectedStockNameList);
+    // console.log(`mergedSelectedStockInfoList`, mergedSelectedStockInfoList);
 
     let logList = [];
     const 원금: number = principal;
@@ -111,13 +111,13 @@ export default function BackTestingPanel(props) {
 
         let 수익률: number = 0;
         if (!!!curMarketInfo["상장주식수"]) {
-          console.log(`curMarketInfo`, curMarketInfo);
+          // console.log(`curMarketInfo`, curMarketInfo);
           return;
         }
         if (!!!nextMarketInfo) {
           // 상장 폐지 예상
-          console.log(`stockName`, stockName); // 엔케이물산
-          console.log(`nextMarketInfo`, nextMarketInfo);
+          // console.log(`stockName`, stockName); // 엔케이물산
+          // console.log(`nextMarketInfo`, nextMarketInfo);
           수익률 = -1;
         }
         else {
