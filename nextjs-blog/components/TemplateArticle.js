@@ -39,7 +39,7 @@ export default function TemplateArticle(props) {
 
                 <div
                     onMouseMove={(e) => {
-                        console.log(`e`, e);
+                        // console.log(`onMouseMove e`, e);
                         const x = e.pageX - e.target.x;
                         const y = e.pageY - e.target.y;
 
@@ -53,9 +53,9 @@ export default function TemplateArticle(props) {
                         e.target.style.transform = `perspective(350px) rotateX(0deg) rotateY(0deg)`;
                     }}
                     onTouchMove={(e) => {
-                        console.log(`e`, e);
-                        const x = e.pageX - e.target.x;
-                        const y = e.pageY - e.target.y;
+                        // console.log(`onTouchMove e`, e);
+                        const x = e.targetTouches[0].pageX - e.target.x;
+                        const y = e.targetTouches[0].pageY - e.target.y;
 
                         // const rotateY = -1 / 5 * x + 20;
                         const rotateY = -1 / 10 * x + 20;
