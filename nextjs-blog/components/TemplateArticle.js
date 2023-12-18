@@ -71,7 +71,7 @@ export default function TemplateArticle(props) {
                         <img
                             src={props.img}
                             alt=""
-                            className="h-fit object-cover rounded-md sm:w-fit sm:col-span-2 lg:col-span-full border-8 border-s-gray-500 hover:border-s-red-50 border-e-gray-400 hover:border-e-orange-100 border-t-gray-300 hover:border-t-yellow-100 border-b-gray-200 hover:border-b-green-100"
+                            className="w-full h-fit object-cover rounded-md sm:w-fit sm:col-span-2 lg:col-span-full border-8 border-s-gray-500 hover:border-s-red-50 border-e-gray-400 hover:border-e-orange-100 border-t-gray-300 hover:border-t-yellow-100 border-b-gray-200 hover:border-b-green-100"
                             loading="lazy"
                         />
                     </div>
