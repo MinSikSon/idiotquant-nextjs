@@ -23,7 +23,7 @@ export default function PostList(props) {
             subTitle: '워렌 버핏',
             link: 'https://namu.wiki/w/워렌%20버핏',
             detail: ['좋은 기업을 좋은 가격에 사라'],
-            img: 'https://upload.wikimedia.org/wikipedia/commons/thumb/5/51/Warren_Buffett_KU_Visit.jpg/400px-Warren_Buffett_KU_Visit.jpg'
+            img: 'https://i.namu.wiki/i/6K83TnQIBh1fathUj1VYM0TwY6_dzNrjseRsT0EzB4CLvbnJ2NsEa-6cKE05HodxBPUZ2lGYyJV9kBOjulnUktz7q75TkGeKlhxUuZpgzBuodWhzHWhxkgyAzsW47bTFIUZ7py9V693NeqGWqPQO8Q.webp'
         },
         {
             title: '퀀트 용어',
