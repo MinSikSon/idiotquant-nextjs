@@ -1,5 +1,5 @@
-import { ArrowLeftIcon, ArrowUturnLeftIcon, BackwardIcon, MagnifyingGlassIcon } from "@heroicons/react/24/outline";
-import { Button, ListItem, ListItemPrefix, ListItemSuffix, Navbar } from "@material-tailwind/react";
+import { ArrowUturnLeftIcon, } from "@heroicons/react/24/outline";
+import { ListItem, ListItemPrefix, Navbar } from "@material-tailwind/react";
 import React from "react";
 
 export default function NewGroupPanel(props) {

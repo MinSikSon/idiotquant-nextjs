@@ -1,5 +1,5 @@
 import { ArrowUturnLeftIcon } from "@heroicons/react/24/outline";
-import { Button, Card, CardBody, CardHeader, List, ListItem, ListItemPrefix, Navbar, Typography, } from "@material-tailwind/react";
+import { Button, Card, ListItem, ListItemPrefix, Navbar, } from "@material-tailwind/react";
 import React from "react";
 
 export default function BackTestingPanel(props) {
@@ -16,7 +16,7 @@ export default function BackTestingPanel(props) {
     for (let i = 0; i < props.marketInfoList.length; ++i) {
       const date = props.marketInfoList[i].date;
       const data = props.marketInfoList[i].data;
-      const yearInDate = date.slice(0, 4);
+      const yearInDate: number = date.slice(0, 4);
       const monthInDate = date.slice(4, 6);
       const dayInDate = date.slice(6, 8);
 
@@ -39,7 +39,9 @@ export default function BackTestingPanel(props) {
 
     let mergedSelectedStockNameList = [];
     let mergedSelectedStockInfoList = [];
-    for (let i = 0; i < props.marketInfoList.length; ++i) {
+    // console.log(`selectedFinancialInfoList`, selectedFinancialInfoList);
+    // console.log(`props.marketInfoList.length`, props.marketInfoList.length);
+    for (let i = 0; i < Object.keys(selectedFinancialInfoList).length; ++i) {
       let selectedStockNameList = [];
       let selectedStockInfoList = [];
       let selectedFinancialInfo = selectedFinancialInfoList[i];

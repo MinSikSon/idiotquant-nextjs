@@ -1,6 +1,6 @@
 import React from "react";
-import { ArrowTrendingUpIcon, ChatBubbleOvalLeftEllipsisIcon, HomeIcon } from "@heroicons/react/24/outline";
-import { List, ListItem, ListItemPrefix, ListItemSuffix } from "@material-tailwind/react";
+import { ArrowTrendingUpIcon, HomeIcon } from "@heroicons/react/24/outline";
+import { ListItem, ListItemPrefix, ListItemSuffix } from "@material-tailwind/react";
 import Link from "next/link";
 import TemplateArticle from "../components/TemplateArticle";
 import TemplateArticleSimple from "../components/TemplateArticleSimple";
@@ -23,7 +23,7 @@ export default function PostList(props) {
             subTitle: '워렌 버핏',
             link: 'https://namu.wiki/w/워렌%20버핏',
             detail: ['좋은 기업을 좋은 가격에 사라'],
-            img: 'https://i.namu.wiki/i/6K83TnQIBh1fathUj1VYM0TwY6_dzNrjseRsT0EzB4CLvbnJ2NsEa-6cKE05HodxBPUZ2lGYyJV9kBOjulnUktz7q75TkGeKlhxUuZpgzBuodWhzHWhxkgyAzsW47bTFIUZ7py9V693NeqGWqPQO8Q.webp'
+            img: 'https://i.namu.wiki/i/EI473RiPs9v96FCATiMS54iX2Ou_Ygwu514ozAGL-_g1PIY6hA3Kk-P9GNtNIEX6spNLSbK_a3Eoy99JXvDjxeQBtMHJTl_EpF3k0lAfSaxjgCQA1QM0pMLGC42ZnYoFFOjMvIkqVtD3Mt1qGGCeMQ.webp'
         },
         {
             title: '퀀트 용어',
