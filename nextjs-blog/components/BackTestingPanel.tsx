@@ -144,7 +144,7 @@ export default function BackTestingPanel(props) {
       const 평균_수익률: number = 누적_수익률 / 종목수;
       최종_수익금 = 최종_수익금 * (1 + 평균_수익률);
       let newLog = [];
-      newLog.push(`매수:${curDate}~매도:${nextDate}`);
+      newLog.push(`매수${curDate}~매도${nextDate}`);
       newLog.push(`${최종_수익금.toFixed(0)}`);
       newLog.push(`${평균_수익률.toFixed(4)}`);
       newLog.push(`${종목수}`);
@@ -178,54 +178,7 @@ export default function BackTestingPanel(props) {
 
           setShowStocks(target.checked);
         }} />
-
       </div>
-
-
-      {/* <Card className="mt-6 w-full">
-        <table className="table-fixed w-full">
-          <thead>
-            <tr className="text-xs">
-              <th>기간</th>
-              <th>최종 수익금</th>
-              <th>평균 수익률</th>
-              <th>종목수</th>
-            </tr>
-          </thead>
-          <tbody>
-            {props.backTestResultLog.map((item, idx) => {
-              const isLast = idx == props.backTestResultLog.length - 1;
-              const classCommon = "text-center p-1";
-              const classes = classCommon + (isLast ? " bg-green-500 text-white" : " bg-green-100 border-b border-blue-gray-50");
-              return (<>
-                <tr key={idx} className="text-xs">
-                  <td className={classes}>
-                    {item[0]}
-                  </td>
-                  <td className={classes}>
-                    {item[1]} 원
-                  </td>
-                  <td className={classes}>
-                    {Number(item[2]) * 100} %
-                  </td>
-                  <td className={classes}>
-                    {item[3]} 개
-                  </td>
-                </tr>
-                {showStocks ?
-                  <tr >
-                    <td colSpan={4} className="text-xs">
-                      {stocks[idx].map((item) => { return item + '|' })}
-                    </td>
-                  </tr>
-                  :
-                  <></>
-                }
-              </>);
-            })}
-          </tbody>
-        </table>
-      </Card> */}
 
       <Timeline>
         {
@@ -238,7 +191,7 @@ export default function BackTestingPanel(props) {
                 <TimelineItem className={`${showStocks ? "h-52" : "h-32"}`}>
                   {isLastItem ? <></> : <TimelineConnector className="!w-[78px]" />
                   }
-                  <TimelineHeader className={`relative rounded-xl border border-blue-gray-50 ${isLastItem ? "bg-red-50" : "bg-white"}  ${item[2] < 0 ? "" : "border-red-200 border-2"} py-3 pl-4 pr-8 shadow-lg shadow-blue-gray-900/5`}>
+                  <TimelineHeader className={`relative rounded-xl border border-blue-gray-50 ${isLastItem ? "bg-red-50" : "bg-white"}  ${item[2] < 0 ? "" : "border-red-200 border-2"} py-3 pl-4 pr-6 shadow-lg shadow-blue-gray-900/5`}>
                     <TimelineIcon className="p-3" variant="ghost" color="green">
                       <CurrencyDollarIcon className="h-5 w-5" />
                     </TimelineIcon>
