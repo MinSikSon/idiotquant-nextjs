@@ -174,10 +174,9 @@ export default function BackTestingPanel(props) {
         <Chip className="bg-white border-none text-black" value={`원금: ${principal} 원`} />
         <Button className="p-0 px-2" onClick={() => getNCAV()}>run backtest </Button>
         <Switch color="green" label="종목 표시" onClick={(e) => {
-          console.log(e);
-          console.log(e.target.checked);
+          const target: any = e.target;
 
-          setShowStocks(e.target.checked);
+          setShowStocks(target.checked);
         }} />
 
       </div>
