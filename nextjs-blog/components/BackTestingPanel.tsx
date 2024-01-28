@@ -1,5 +1,5 @@
-import { ArrowUturnLeftIcon } from "@heroicons/react/24/outline";
-import { Button, Card, ListItem, ListItemPrefix, Navbar, } from "@material-tailwind/react";
+import { ArchiveBoxIcon, ArrowUturnLeftIcon, BellIcon, CurrencyDollarIcon } from "@heroicons/react/24/outline";
+import { Button, Card, Chip, ListItem, ListItemPrefix, Navbar, Switch, Timeline, TimelineConnector, TimelineHeader, TimelineIcon, TimelineItem, Typography, } from "@material-tailwind/react";
 import React from "react";
 
 export default function BackTestingPanel(props) {
@@ -141,14 +141,13 @@ export default function BackTestingPanel(props) {
         // console.log(`수익률`, 수익률);
         누적_수익률 += 수익률;
       }
-      const 최종_수익률: number = 누적_수익률 / 종목수;
-      최종_수익금 = 최종_수익금 * (1 + 최종_수익률);
+      const 평균_수익률: number = 누적_수익률 / 종목수;
+      최종_수익금 = 최종_수익금 * (1 + 평균_수익률);
       let newLog = [];
-      newLog.push(`buy:${curDate} sell:${nextDate}`);
+      newLog.push(`매수:${curDate}~매도:${nextDate}`);
       newLog.push(`${최종_수익금.toFixed(0)}`);
-      newLog.push(`${최종_수익률.toFixed(4)}`);
+      newLog.push(`${평균_수익률.toFixed(4)}`);
       newLog.push(`${종목수}`);
-      newLog.push(`${누적_수익률.toFixed(2)}`);
       // console.log(newLog);
       logList.push(newLog);
     }
@@ -171,45 +170,52 @@ export default function BackTestingPanel(props) {
           <div className="w-full text-center pr-10 text-lg">백테스트</div>
         </ListItem>
       </Navbar>
-      <Button onClick={() => getNCAV()}>백테스트. 원금: {principal}원</Button>
-      <Button onClick={() => setShowStocks(!showStocks)}>{showStocks ? "종목 숨기기" : "종목 표시"}</Button>
+      <div className="flex py-1 gap-3">
+        <Chip className="bg-white border-none text-black" value={`원금: ${principal} 원`} />
+        <Button className="p-0 px-2" onClick={() => getNCAV()}>run backtest </Button>
+        <Switch color="green" label="종목 표시" onClick={(e) => {
+          console.log(e);
+          console.log(e.target.checked);
 
-      <Card className="mt-6 w-full">
+          setShowStocks(e.target.checked);
+        }} />
+
+      </div>
+
+
+      {/* <Card className="mt-6 w-full">
         <table className="table-fixed w-full">
           <thead>
             <tr className="text-xs">
               <th>기간</th>
-              <th>최종<br />수익금</th>
-              <th>수익률</th>
+              <th>최종 수익금</th>
+              <th>평균 수익률</th>
               <th>종목수</th>
-              <th>누적<br />수익률</th>
             </tr>
           </thead>
           <tbody>
             {props.backTestResultLog.map((item, idx) => {
               const isLast = idx == props.backTestResultLog.length - 1;
-              const classes = isLast ? "p-2 bg-green-200" : "p-0 bg-green-100 border-b border-blue-gray-50"
+              const classCommon = "text-center p-1";
+              const classes = classCommon + (isLast ? " bg-green-500 text-white" : " bg-green-100 border-b border-blue-gray-50");
               return (<>
                 <tr key={idx} className="text-xs">
                   <td className={classes}>
                     {item[0]}
                   </td>
                   <td className={classes}>
-                    {item[1]}
+                    {item[1]} 원
                   </td>
                   <td className={classes}>
-                    {item[2]}
+                    {Number(item[2]) * 100} %
                   </td>
                   <td className={classes}>
-                    {item[3]}
-                  </td>
-                  <td className={classes}>
-                    {item[4]}
+                    {item[3]} 개
                   </td>
                 </tr>
                 {showStocks ?
                   <tr >
-                    <td colSpan={5} className="text-xs">
+                    <td colSpan={4} className="text-xs">
                       {stocks[idx].map((item) => { return item + '|' })}
                     </td>
                   </tr>
@@ -220,8 +226,47 @@ export default function BackTestingPanel(props) {
             })}
           </tbody>
         </table>
-      </Card>
+      </Card> */}
 
+      <Timeline>
+        {
+          props.backTestResultLog.map((item, idx) => {
+            const isLastItem = Object.keys(props.backTestResultLog).length - 1 == idx;
+            // const isLastItem = false;
+            console.log(`isLastItem`, isLastItem);
+            return (
+              <>
+                <TimelineItem className={`${showStocks ? "h-52" : "h-32"}`}>
+                  {isLastItem ? <></> : <TimelineConnector className="!w-[78px]" />
+                  }
+                  <TimelineHeader className={`relative rounded-xl border border-blue-gray-50 ${isLastItem ? "bg-red-50" : "bg-white"}  ${item[2] < 0 ? "" : "border-red-200 border-2"} py-3 pl-4 pr-8 shadow-lg shadow-blue-gray-900/5`}>
+                    <TimelineIcon className="p-3" variant="ghost" color="green">
+                      <CurrencyDollarIcon className="h-5 w-5" />
+                    </TimelineIcon>
+                    <div className="flex flex-col gap-1 w-full">
+                      <Typography variant="h5" color="blue-gray">
+                        {item[0]}
+                      </Typography>
+                      <Typography variant="h6" color="gray" className="font-normal">
+                        {item[1]} 원 | {item[2] * 100} % | {item[3]}개 종목
+                        {
+                          showStocks ?
+                            <div className="text-xs font-normal overflow-y-auto h-20">
+                              {stocks[idx].map((item) => { return item + '|' })}
+                            </div>
+                            :
+                            <></>
+                        }
+                      </Typography>
+
+                    </div>
+                  </TimelineHeader>
+                </TimelineItem >
+              </>
+            )
+          })
+        }
+      </Timeline >
     </>
   );
 }
