@@ -22,6 +22,8 @@ export default function AddStockInGroupPanel(props) {
                 setSearchResult={props.setSearchResult}
 
                 handleArrowUturnLeftIcon={props.handleArrowUturnLeftIcon}
+
+                financialInfoList={props.financialInfoList}
             />
         </Navbar>
     );
