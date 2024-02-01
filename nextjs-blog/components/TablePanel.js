@@ -58,28 +58,23 @@ export default function TablePanel(props) {
 
     if (false === loadingDone) return <Loading />;
 
-    // console.log(`%c TablePanel 2`, `color:blue; background:white`);
-
     const NUM_OF_STOCK_ITEMS = props.arrayFilteredStocksList.length;
     if (0 == NUM_OF_STOCK_ITEMS) return <Loading />;
-
-    // console.log(`%c TablePanel 3`, `color:blue; background:white`);
 
     let cumulativeRatio = 0;
 
     let tbody = [];
     let index = 0;
 
-    // console.log(`1-1) props.arrayFilteredStocksList`, props.arrayFilteredStocksList);
-    // console.log(`1-2) props.arrayFilteredStocksList.length`, props.arrayFilteredStocksList.length);
-    // console.log(`2-1) props.latestStockCompanyInfo`, props.latestStockCompanyInfo);
-    // console.log(`2-2) Object.keys(props.latestStockCompanyInfo).length`, Object.keys(props.latestStockCompanyInfo).length);
-    // console.log(`3-1) props.marketInfoList`, props.marketInfoList);
-    // console.log(`3-2) Object.keys(props.marketInfoList).length`, Object.keys(props.marketInfoList).length);
-
     for (let stockName of props.arrayFilteredStocksList) {
         const { corp_code, active, 종목명, 유동자산, 부채총계, 상장주식수, 종가, 당기순이익, 시가총액, PER, PBR, EPS, bsnsDate, prevMarketInfo } = props.latestStockCompanyInfo[stockName];
         const fairPrice/*적정가*/ = Number((Number(유동자산) - Number(부채총계)) / Number(상장주식수)).toFixed(0);
+
+        const 상장폐지 = (!!!상장주식수); // undefined
+        if (true === 상장폐지) {
+            continue;
+        }
+
         const ratio = Number(fairPrice / Number(종가));
 
         cumulativeRatio += ratio;
