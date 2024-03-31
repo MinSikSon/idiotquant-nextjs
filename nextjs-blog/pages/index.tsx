@@ -48,7 +48,7 @@ export async function getStaticProps() {
 
   let financialInfoList = {};
   // for (let year = 2017; year <= 2023; ++year) {
-  for (let year = 2018; year <= 2023; ++year) {
+  for (let year = 2018; year <= 2022; ++year) {
     for (let quarter = 4; quarter <= 4; ++quarter) {
       const reqFinancialInfo = await fetchAndSet(`stock/financial-info?year=${year}&quarter=${quarter}`);
       if (null == reqFinancialInfo) continue;
@@ -56,7 +56,7 @@ export async function getStaticProps() {
     }
   }
 
-  const financialInfoAll = await fetchAndSet("stock/financial-info?year=2023&quarter=3");
+  const financialInfoAll = await fetchAndSet("stock/financial-info?year=2023&quarter=4");
 
   let marketInfoList = [];
   // marketInfoList.push(marketInfo20181214);
