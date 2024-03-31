@@ -67,6 +67,12 @@ export default function TablePanel(props) {
     let index = 0;
 
     for (let stockName of props.arrayFilteredStocksList) {
+        // console.log(`stockName`, stockName);
+        // console.log(props.latestStockCompanyInfo[stockName]);
+        if (undefined == props.latestStockCompanyInfo[stockName]) {
+            continue; // TODO : 임시 code. undefined 인 이유 확인하고 다시 code 수정 필요.
+        }
+
         const { corp_code, active, 종목명, 유동자산, 부채총계, 상장주식수, 종가, 당기순이익, 시가총액, PER, PBR, EPS, bsnsDate, prevMarketInfo } = props.latestStockCompanyInfo[stockName];
         const fairPrice/*적정가*/ = Number((Number(유동자산) - Number(부채총계)) / Number(상장주식수)).toFixed(0);
 
