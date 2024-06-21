@@ -3,7 +3,7 @@
 import React from "react";
 import TitlePanel from "../../components/TitlePanel";
 
-export default async function QuantMain() {
+export default function QuantMain() {
   // const [openedPanel, setOpenedPanel] = React.useState<any>("");
   // const [financialInfoList, setFinancialInfoList] = React.useState<any>("");
   // const [marketInfoList, setMarketInfoList] = React.useState<any>("");
