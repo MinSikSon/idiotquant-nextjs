@@ -1,9 +1,11 @@
+"use client"
+
 import React from "react";
 import { ArrowTrendingUpIcon, HomeIcon } from "@heroicons/react/24/outline";
 import { ListItem, ListItemPrefix, ListItemSuffix } from "@material-tailwind/react";
 import Link from "next/link";
-import TemplateArticle from "../components/TemplateArticle";
-import TemplateArticleSimple from "../components/TemplateArticleSimple";
+import TemplateArticle from "../../components/TemplateArticle";
+import TemplateArticleSimple from "../../components/TemplateArticleSimple";
 
 export default function PostList(props) {
     const [contents, setContents] = React.useState([
@@ -23,7 +25,7 @@ export default function PostList(props) {
             subTitle: '워렌 버핏',
             link: 'https://namu.wiki/w/워렌%20버핏',
             detail: ['좋은 기업을 좋은 가격에 사라'],
-            img: 'https://i.namu.wiki/i/EI473RiPs9v96FCATiMS54iX2Ou_Ygwu514ozAGL-_g1PIY6hA3Kk-P9GNtNIEX6spNLSbK_a3Eoy99JXvDjxeQBtMHJTl_EpF3k0lAfSaxjgCQA1QM0pMLGC42ZnYoFFOjMvIkqVtD3Mt1qGGCeMQ.webp'
+            img: 'https://i.namu.wiki/i/8yRtr2VZPwEVHkgocxnABZ7eXJc1WAVdAYSchp-nn1DhKeDov15G08Jt3DOG9ahgrpo3ajQmvoxnO4YWJAKaAKXiBltQq5vYNw1swNaE50IwtTVIRwNWvi-ybu9quZ-tNW6hn0jG9-EOQ6ywcs64Aw.webp'
         },
         {
             title: '퀀트 용어',
@@ -97,20 +99,6 @@ export default function PostList(props) {
 
     const [selectedContentIndex, setSelectedContentIndex] = React.useState(-1);
 
-    function TitlePanel(props) {
-        return (<ListItem className='text-black'>
-            <ListItemPrefix className="hover:bg-red-100">
-                <Link href="/">
-                    <HomeIcon strokeWidth={2} className="h-6 w-6" />
-                </Link>
-            </ListItemPrefix>
-
-            <ListItemSuffix>
-                <ArrowTrendingUpIcon strokeWidth={2} className="h-6 w-6" />
-            </ListItemSuffix>
-        </ListItem>);
-    }
-
     const Article = (props) => {
         const item = props.item;
         const index = props.index;
@@ -141,7 +129,6 @@ export default function PostList(props) {
 
     return (
         <>
-            <TitlePanel />
             {contents.map((item, index) =>
                 <Article
                     key={index.toString()}

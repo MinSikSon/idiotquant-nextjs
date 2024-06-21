@@ -193,7 +193,7 @@ export default function SearchPanel(props) {
         ratio = 0;
     }
 
-    let selectedSearchResult = _getSelectedSearchResult(jsonSearchResult, props.financialInfoList);
+    // let selectedSearchResult = _getSelectedSearchResult(jsonSearchResult, props.financialInfoList);
 
     const CustomDiv = (props) => {
         let index = String(props.item).indexOf('-');
@@ -236,7 +236,7 @@ export default function SearchPanel(props) {
     // console.log(`jsonSearchResult`, jsonSearchResult);
     return (
         <div className={`z-10 w-full`}>
-            <Input {...props} />
+            {/* <Input {...props} /> */}
             {
                 (true === !!props.searchingList && Object.keys(props.searchingList).length > 0) ?
                     <>
@@ -269,7 +269,7 @@ export default function SearchPanel(props) {
                                     width={'90px'}
                                 />
                                 <div className={`grid grid-cols-2 pr-1`}>
-                                    {Object.keys(selectedSearchResult).map((key, index) => <CustomDiv key={index} title={key} item={selectedSearchResult[key]} />)}
+                                    {/* {Object.keys(selectedSearchResult).map((key, index) => <CustomDiv key={index} title={key} item={selectedSearchResult[key]} />)} */}
                                 </div>
                             </>
                             : <></>

@@ -1,3 +1,5 @@
+"use client"
+
 import { Button, Tab, Tabs, TabsHeader, TabsBody, TabPanel, ListItem, ListItemSuffix, ListItemPrefix, Typography } from "@material-tailwind/react";
 import TablePanel from "./TablePanel";
 

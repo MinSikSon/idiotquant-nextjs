@@ -6,7 +6,7 @@ export default function BackTesting(props) {
       className={`flex p-0.5`}
       onSubmit={(e) => {
         e.preventDefault();
-        props.setOpenedPanel("BackTestingPanel");
+        // props.setOpenedPanel("BackTestingPanel");
       }}
     >
       <button className="rounded-3xl inline-flex items-center justify-center text-black text-xs focus:outline-none">

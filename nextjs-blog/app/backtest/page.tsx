@@ -1,3 +1,5 @@
+"use client"
+
 import { ArchiveBoxIcon, ArrowUturnLeftIcon, BellIcon, CurrencyDollarIcon } from "@heroicons/react/24/outline";
 import { Button, Card, Chip, ListItem, ListItemPrefix, Navbar, Switch, Timeline, TimelineConnector, TimelineHeader, TimelineIcon, TimelineItem, Typography, } from "@material-tailwind/react";
 import React from "react";
@@ -5,13 +7,13 @@ import React from "react";
 export default function BackTestingPanel(props) {
   const [principal, setPrincipal] = React.useState(100000000);
   const [backTestResult, setBackTestResult] = React.useState({});
-  const [stocks, setStocks] = React.useState([]);
+  const [stocks, setStocks] = React.useState<any>([]);
   const [showStocks, setShowStocks] = React.useState(false);
 
   const getNCAV = () => {
     // console.log(`props.financialInfoList`, props.financialInfoList);
     // console.log(`props.marketInfoList`, props.marketInfoList);
-    let selectedFinancialInfoList = [];
+    let selectedFinancialInfoList: any = [];
 
     for (let i = 0; i < props.marketInfoList.length; ++i) {
       const date = props.marketInfoList[i].date;
@@ -21,7 +23,7 @@ export default function BackTestingPanel(props) {
       const dayInDate = date.slice(6, 8);
 
       // 재무제표 선택
-      let selectedFinancialInfo = {};
+      let selectedFinancialInfo: any = {};
       for (let j = 0; j < Object.keys(props.financialInfoList).length; ++j) {
         const key: string = Object.keys(props.financialInfoList)[j];
         const subKey: string[] = key.split("_");
@@ -37,13 +39,13 @@ export default function BackTestingPanel(props) {
 
     // console.log(`selectedFinancialInfoList`, selectedFinancialInfoList);
 
-    let mergedSelectedStockNameList = [];
-    let mergedSelectedStockInfoList = [];
+    let mergedSelectedStockNameList: any = [];
+    let mergedSelectedStockInfoList: any = [];
     // console.log(`selectedFinancialInfoList`, selectedFinancialInfoList);
     // console.log(`props.marketInfoList.length`, props.marketInfoList.length);
     for (let i = 0; i < Object.keys(selectedFinancialInfoList).length; ++i) {
-      let selectedStockNameList = [];
-      let selectedStockInfoList = [];
+      let selectedStockNameList: any = [];
+      let selectedStockInfoList: any = [];
       let selectedFinancialInfo = selectedFinancialInfoList[i];
       // console.log(`Object.keys(props.marketInfoList[i].data).length`, Object.keys(props.marketInfoList[i].data).length);
       // console.log(`Object.keys(props.marketInfoList[i].data)`, Object.keys(props.marketInfoList[i].data));
@@ -51,8 +53,8 @@ export default function BackTestingPanel(props) {
       const keyOfMarketInfoList = Object.keys(props.marketInfoList[i].data);
       const valueOfMarketInfoList = Object.values(props.marketInfoList[i].data);
       for (let j = 0; j < keyOfMarketInfoList.length; ++j) {
-        const keyOfMarketInfo = keyOfMarketInfoList[j];
-        let valueOfMarketInfo = {};
+        const keyOfMarketInfo: any = keyOfMarketInfoList[j];
+        let valueOfMarketInfo: any = {};
         valueOfMarketInfo = valueOfMarketInfoList[j];
         // console.log(`valueOfMarketInfo`, valueOfMarketInfo);
         const 시가총액 = valueOfMarketInfo["시가총액"];
@@ -93,7 +95,7 @@ export default function BackTestingPanel(props) {
     // console.log(`mergedSelectedStockNameList`, mergedSelectedStockNameList);
     // console.log(`mergedSelectedStockInfoList`, mergedSelectedStockInfoList);
 
-    let logList = [];
+    let logList: any = [];
     const 원금: number = principal;
     // logList.push([`(시작) 원금: ${원금}`]);
     let 최종_수익금: number = 원금;
@@ -143,7 +145,7 @@ export default function BackTestingPanel(props) {
       }
       const 평균_수익률: number = 누적_수익률 / 종목수;
       최종_수익금 = 최종_수익금 * (1 + 평균_수익률);
-      let newLog = [];
+      let newLog: any = [];
       newLog.push(`매수${curDate}~매도${nextDate}`);
       newLog.push(`${최종_수익금.toFixed(0)}`);
       newLog.push(`${평균_수익률.toFixed(4)}`);
@@ -159,14 +161,6 @@ export default function BackTestingPanel(props) {
     <>
       <Navbar>
         <ListItem className={`flex items-center w-full text-black p-0 m-0`}>
-          <ListItemPrefix>
-            <div onClick={() => {
-              props.setOpenedPanel("");
-              props.setBackTestResultLog([]);
-            }}>
-              <ArrowUturnLeftIcon className="h-6 w-6" />
-            </div>
-          </ListItemPrefix>
           <div className="w-full text-center pr-10 text-lg">백테스트</div>
         </ListItem>
       </Navbar>
@@ -181,7 +175,7 @@ export default function BackTestingPanel(props) {
       </div>
 
       <Timeline>
-        {
+        {/* {
           props.backTestResultLog.map((item, idx) => {
             const isLastItem = Object.keys(props.backTestResultLog).length - 1 == idx;
             // const isLastItem = false;
@@ -217,7 +211,7 @@ export default function BackTestingPanel(props) {
               </>
             )
           })
-        }
+        } */}
       </Timeline >
     </>
   );
