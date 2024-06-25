@@ -1,5 +1,6 @@
 import "../styles/global.css"
-import { StickyNavbar } from "../components/navigation"
+import { Nav } from "../components/navigation"
+import StoreProvider from "./StoreProvider"
 
 export const metadata = {
   title: 'Next.js',
@@ -12,13 +13,15 @@ export default function RootLayout({
   children: React.ReactNode
 }) {
   return (
-    <html lang="en">
-      <body className="bg-blue-gray-50">
-        <StickyNavbar />
-        <div className="pt-1">
-          {children}
-        </div>
-      </body>
-    </html>
+    <StoreProvider>
+      <html lang="en">
+        <body className="bg-blue-gray-50">
+          <Nav />
+          <div className="pt-1">
+            {children}
+          </div>
+        </body>
+      </html>
+    </StoreProvider>
   )
 }
