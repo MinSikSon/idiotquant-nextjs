@@ -1,6 +1,6 @@
 import "../styles/global.css"
 import { Nav } from "../components/navigation"
-import StoreProvider from "./StoreProvider"
+import { StoreProvider } from "./StoreProvider"
 
 export const metadata = {
   title: 'Next.js',

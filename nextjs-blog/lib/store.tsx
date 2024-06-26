@@ -1,7 +1,8 @@
 import { Action, combineSlices, configureStore, ThunkAction } from "@reduxjs/toolkit"
-import { counterSlice } from "@/lib/features/counter/counterSlice";
+import { counterSlice } from "./features/counter/counterSlice";
+import { financialInfoSlice } from "./features/stock/financialInfoSlice";
 
-const rootReducer = combineSlices(counterSlice);
+const rootReducer: any = combineSlices(counterSlice, financialInfoSlice);
 export type RootState = ReturnType<typeof rootReducer>;
 
 export const makeStore = () => {
@@ -20,3 +21,5 @@ export type AppThunk<ThunkReturnType = void> = ThunkAction<
     unknown,
     Action
 >;
+
+export const API_URL = "https://idiotquant-backend.tofu89223.workers.dev";
