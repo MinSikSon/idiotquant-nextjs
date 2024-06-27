@@ -1,5 +1,5 @@
 import { createAppSlice } from "@/lib/createAppSlice";
-import { getFinancialInfo } from "./stockAPI";
+import { getFinancialInfo } from "./financialInfoAPI";
 
 interface FinancialInfo {
     state: "loading" | "loaded" | "failed";
@@ -17,8 +17,9 @@ export const financialInfoSlice = createAppSlice({
     initialState,
     reducers: (create) => ({
         initFinancialInfo: create.asyncThunk(
-            async () => {
-                const res = await getFinancialInfo("2023", "4");
+            async ({ year, quarter }: { year: string, quarter: string }) => {
+                const res: any = await getFinancialInfo(year, quarter);
+                // const res = "empty";
                 return res;
             },
             {
