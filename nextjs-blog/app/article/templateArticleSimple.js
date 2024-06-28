@@ -1,6 +1,6 @@
 
 
-export default function TemplateArticleSimple(props) {
+export function TemplateArticleSimple(props) {
     const title = props.title;
     const subTitle = props.subTitle;
     const link = props.link;
@@ -13,11 +13,11 @@ export default function TemplateArticleSimple(props) {
                         {title}
                     </h1>
                     <div className="text-sm leading-4 font-medium text-white bg-black w-fit sm:text-slate-500 dark:sm:text-slate-400">
-                        {!!link ? <a href={link}>{subTitle}</a> : <div>{subTitle}</div>}
+                        <div>{subTitle}</div>
                     </div>
                 </div>
                 <div className="grid gap-4 col-start-1 col-end-3 row-start-1 sm:mb-6 sm:grid-cols-4 lg:gap-6 lg:col-start-2 lg:row-end-6 lg:row-span-6 lg:mb-0">
-                    <img src={props.img1} alt="" className="w-full h-32 object-cover rounded-lg sm:h-52 sm:col-span-2 lg:col-span-full" loading="lazy" />
+                    <img src={props.img} alt="" className="w-full h-32 object-cover rounded-lg sm:h-52 sm:col-span-2 lg:col-span-full" loading="lazy" />
                 </div>
                 <div className="mt-4 col-start-1 row-start-3 self-center sm:mt-0 sm:col-start-2 sm:row-start-2 sm:row-span-2 lg:mt-6 lg:col-start-1 lg:row-start-3 lg:row-end-4">
                 </div>

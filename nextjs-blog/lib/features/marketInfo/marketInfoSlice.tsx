@@ -1,25 +1,24 @@
 import { createAppSlice } from "@/lib/createAppSlice";
-import { getFinancialInfo } from "./financialInfoAPI";
+import { getMarketInfo } from "./marketInfoAPI";
 
-interface FinancialInfo {
+interface MarketInfo {
     state: "loading" | "loaded" | "failed";
     loaded: boolean;
     value: any;
 }
-const initialState: FinancialInfo = {
+const initialState: MarketInfo = {
     state: "loading",
     loaded: false,
     value: {}
 }
 
-export const financialInfoSlice = createAppSlice({
-    name: "financial",
+export const marketInfoSlice = createAppSlice({
+    name: "market",
     initialState,
     reducers: (create) => ({
-        initFinancialInfo: create.asyncThunk(
-            async ({ year, quarter }: { year: string, quarter: string }) => {
-                const res: any = await getFinancialInfo(year, quarter);
-                // const res = "empty";
+        initMarketInfo: create.asyncThunk(
+            async ({ date }: { date: string }) => {
+                const res: any = await getMarketInfo(date); // 20230426
                 return res;
             },
             {
@@ -39,10 +38,10 @@ export const financialInfoSlice = createAppSlice({
         )
     }),
     selectors: {
-        selectLoaded: (state) => state.loaded,
-        selectFinancialInfo: (state) => state.value,
+        selectMarketInfoLoaded: (state) => state.loaded,
+        selectMarketInfo: (state) => state.value,
     }
 });
 
-export const { initFinancialInfo } = financialInfoSlice.actions;
-export const { selectFinancialInfo, selectLoaded } = financialInfoSlice.selectors;
+export const { initMarketInfo } = marketInfoSlice.actions;
+export const { selectMarketInfoLoaded, selectMarketInfo } = marketInfoSlice.selectors;

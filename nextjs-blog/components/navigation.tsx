@@ -15,7 +15,7 @@ export const Nav = () => {
             <div className='flex'>
                 <Link className={`flex-auto ${defaultDeco} ${hoverDecorations} ${pathname === "/" ? decorations : ""}`} href="/">Home</Link>
                 <Link className={`flex-auto ${defaultDeco} ${hoverDecorations} ${pathname === "/calculator" ? decorations : ""}`} href="/calculator">Calculator</Link>
-                {/* <Link className={`flex-auto ${defaultDeco} ${hoverDecorations}  ${pathname === "/quotes" ? decorations : ""}`} href="/quotes">Quotes</Link> */}
+                <Link className={`flex-auto ${defaultDeco} ${hoverDecorations}  ${pathname === "/article" ? decorations : ""}`} href="/article">article</Link>
             </div>
         </nav>
     );

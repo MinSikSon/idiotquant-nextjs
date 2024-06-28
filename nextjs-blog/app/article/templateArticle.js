@@ -1,8 +1,8 @@
 
 import React from 'react';
 
-export default function TemplateArticle(props) {
-    console.log(`%cTemplateArticle`, 'color:blue;background:white;');
+export function TemplateArticle(props) {
+    // console.log(`%cTemplateArticle`, 'color:blue;background:white;');
     const title = props.title;
     const subTitle = props.subTitle;
     const detail = props.detail;
@@ -10,7 +10,6 @@ export default function TemplateArticle(props) {
 
     const SubList = (props) => {
         const item = props.item;
-        // console.log(typeof item, `item`, item);
         if ('object' == typeof item) {
             return (
                 <ul className='list-disc list-inside pl-4'>
@@ -33,7 +32,10 @@ export default function TemplateArticle(props) {
                 <div className="relative col-start-1 row-start-1 flex flex-col-reverse rounded-lg sm:bg-none sm:row-start-2 sm:p-0 lg:row-start-1">
                     <h1 className="mt-1 text-lg font-semibold text-white bg-black w-fit sm:text-slate-900 md:text-2xl dark:sm:text-white">{title}</h1>
                     <div className="text-sm leading-4 font-medium text-white bg-black w-fit sm:text-slate-500 dark:sm:text-slate-400">
-                        {!!link ? <a href={link}>{subTitle}</a> : <div> {subTitle}</div>}
+                        {!!link ?
+                            <a href={link}>{subTitle}</a> :
+                            <div> {subTitle}</div>
+                        }
                     </div>
                 </div>
 
@@ -79,9 +81,10 @@ export default function TemplateArticle(props) {
             </>
         );
     }
+
     return (
         <div className="py-6 px-4 sm:p-6 md:py-10 md:px-8">
-            <CustomImage img={props.img1} />
+            <CustomImage img={props.img} />
             <div className="mt-4 text-sm leading-6 col-start-1 sm:col-span-2 lg:mt-6 lg:row-start-4 lg:col-span-1 bg-gray-100 rounded-lg">
                 <ul className='list-disc list-inside'>
                     {detail.map((item, index) => <SubList key={index.toString()} item={item} />)}

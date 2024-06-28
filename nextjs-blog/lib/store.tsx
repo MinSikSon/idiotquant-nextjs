@@ -1,8 +1,9 @@
-import { counterSlice } from "@/lib/features/counter/counterSlice";
 import { Action, combineSlices, configureStore, ThunkAction } from "@reduxjs/toolkit"
 import { financialInfoSlice } from "./features/financialInfo/financialInfoSlice";
+import { marketInfoSlice } from "./features/marketInfo/marketInfoSlice";
+import { articleSlice } from "./features/article/articleSlice";
 
-const rootReducer: any = combineSlices(counterSlice, financialInfoSlice);
+const rootReducer: any = combineSlices(financialInfoSlice, marketInfoSlice, articleSlice);
 export type RootState = ReturnType<typeof rootReducer>;
 
 export const makeStore = () => {
