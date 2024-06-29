@@ -16,17 +16,18 @@ export default function Calculator() {
     });
 
     const ClearButton = (props) => {
-        return <Button className='rounded-lg text-black bg-yellow-100' color="yellow" onClick={props.handleClick}>CLEAR</Button>
+        // return <Button className='rounded-lg text-black bg-yellow-100' color="yellow" onClick={props.handleClick}>CLEAR</Button>
+        return <Button>CLEAR</Button>
     }
 
-    const [investmentAmount, setInvestmentAmount] = React.useState<any>(500000);
-    const [numberOfYears, setNumberOfYears] = React.useState<any>(3);
-    const [interestRate, setInterestRate] = React.useState<any>(27);
-    const [compunding, setCompunding] = React.useState<any>('');
-    const [contributions, setContributions] = React.useState<any>(50000);
-    const [frequency, setFrequency] = React.useState<any>('');
-    const [annualInflationRate, setAnnualInflationRate] = React.useState<any>(3);
-    const [result, setResult] = React.useState<any>('');
+    const [investmentAmount, setInvestmentAmount] = React.useState(500000);
+    const [numberOfYears, setNumberOfYears] = React.useState(3);
+    const [interestRate, setInterestRate] = React.useState(27);
+    const [compunding, setCompunding] = React.useState('');
+    const [contributions, setContributions] = React.useState(50000);
+    const [frequency, setFrequency] = React.useState('');
+    const [annualInflationRate, setAnnualInflationRate] = React.useState(3);
+    const [result, setResult] = React.useState('');
 
     function handleCalculateSampleData() {
         setInvestmentAmount(50000000);
