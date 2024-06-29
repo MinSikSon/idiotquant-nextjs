@@ -2,7 +2,7 @@ import { createAppSlice } from "@/lib/createAppSlice";
 import { getFinancialInfo } from "./financialInfoAPI";
 
 interface FinancialInfo {
-    state: "loading" | "loaded" | "failed";
+    state: "loading" | "loaded" | "rejected";
     loaded: boolean;
     value: any;
 }
@@ -25,15 +25,17 @@ export const financialInfoSlice = createAppSlice({
             {
                 pending: (state) => {
                     state.state = "loading";
+                    state.loaded = true;
                 },
                 fulfilled: (state, action) => {
                     console.log(`fulfilled`);
-                    state.state = "loaded";
-                    state.loaded = true;
                     state.value = action.payload;
+                    state.loaded = true;
+                    // state.state = "loaded";
                 },
                 rejected: (state) => {
-                    state.state = "failed";
+                    console.log(`rejected`);
+                    state.state = "rejected";
                 }
             }
         )

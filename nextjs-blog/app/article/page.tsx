@@ -3,7 +3,6 @@
 import React from "react";
 import Link from "next/link";
 
-import { TemplateArticle } from "./templateArticle";
 import { TemplateArticleSimple } from "./templateArticleSimple";
 import { useAppSelector } from "@/lib/hooks";
 import { selectArticleIndex, selectArticleList, } from "@/lib/features/article/articleSlice";

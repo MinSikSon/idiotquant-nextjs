@@ -1,6 +1,7 @@
 import "../styles/global.css"
 import { Nav } from "../components/navigation"
 import { StoreProvider } from "./StoreProvider"
+import { TitlePanel } from "@/components/panel/title"
 
 export const metadata = {
   title: 'Next.js',
@@ -17,6 +18,8 @@ export default function RootLayout({
       <html lang="en">
         <body className="bg-blue-gray-50">
           <Nav />
+          <TitlePanel />
+
           <div className="pt-1">
             {children}
           </div>

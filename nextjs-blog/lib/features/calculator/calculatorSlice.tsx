@@ -1,5 +1,5 @@
 import { createAppSlice } from "@/lib/createAppSlice";
-import { getMarketInfo } from "./marketInfoAPI";
+import { getMarketInfo } from "./calculatorAPI";
 
 interface MarketInfo {
     state: "loading" | "loaded" | "rejected";
@@ -12,8 +12,8 @@ const initialState: MarketInfo = {
     value: {}
 }
 
-export const marketInfoSlice = createAppSlice({
-    name: "market",
+export const calculatorSlice = createAppSlice({
+    name: "calculator",
     initialState,
     reducers: (create) => ({
         initMarketInfo: create.asyncThunk(
@@ -46,5 +46,5 @@ export const marketInfoSlice = createAppSlice({
     }
 });
 
-export const { initMarketInfo } = marketInfoSlice.actions;
-export const { selectMarketInfoLoaded, selectMarketInfo } = marketInfoSlice.selectors;
+export const { initMarketInfo } = calculatorSlice.actions;
+export const { selectMarketInfoLoaded, selectMarketInfo } = calculatorSlice.selectors;
