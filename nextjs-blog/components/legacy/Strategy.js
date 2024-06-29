@@ -1,4 +1,4 @@
-import { cleansing, isAllValid } from "../lib/DataCleansing";
+import { cleansing, isAllValid } from "@/lib/DataCleansing";
 
 
 function filteredByNcavStrategy(arrFinancialMarketInfo) {

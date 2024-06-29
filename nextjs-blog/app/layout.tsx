@@ -1,4 +1,4 @@
-import "../styles/global.css"
+import "@/app/global.css"
 import { Nav } from "../components/navigation"
 import { StoreProvider } from "./StoreProvider"
 import { TitlePanel } from "@/components/panel/title"
