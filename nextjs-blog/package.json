@@ -7,9 +7,9 @@
     "start": "next start"
   },
   "dependencies": {
-    "@heroicons/react": "^2.0.18",
+    "@heroicons/react": "^2.1.4",
     "@material-tailwind/react": "^2.1.9",
-    "@reduxjs/toolkit": "^2.2.5",
+    "@reduxjs/toolkit": "^2.2.6",
     "axios": "^1.4.0",
     "chart.js": "^4.3.0",
     "gray-matter": "^4.0.3",
@@ -26,10 +26,10 @@
   },
   "devDependencies": {
     "@types/node": "20.12.12",
-    "@types/react": "18.3.2",
-    "autoprefixer": "^10.4.14",
-    "postcss": "^8.4.23",
-    "tailwindcss": "^3.3.1",
-    "typescript": "5.4.5"
+    "@types/react": "18.2.19",
+    "autoprefixer": "^10.4.19",
+    "postcss": "^8.4.38",
+    "tailwindcss": "^3.4.4",
+    "typescript": "5.5.2"
   }
 }
