@@ -38,7 +38,7 @@ export const Nav = () => {
     const decorations = 'underline decoration-green-400';
     const hoverDecorations = 'hover:underline hover:decoration-green-400';
     return (
-        <nav className='bg-white flex justify-center text-xl lx:text-2xl 2xl:text-2xl'>
+        <nav className='bg-white flex justify-center text-2xl'>
             <div className='flex'>
                 <Link className={`flex-auto ${defaultDeco} ${hoverDecorations} ${pathname === "/" ? decorations : ""}`} href="/">Home</Link>
                 <Link className={`flex-auto ${defaultDeco} ${hoverDecorations} ${pathname === "/calculator" ? decorations : ""}`} href="/calculator">Calculator</Link>

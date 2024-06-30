@@ -1,10 +1,12 @@
 /** @type {import('tailwindcss').Config} */
 
+import type { Config } from 'tailwindcss';
 const withMT = require("@material-tailwind/react/utils/withMT");
 
-module.exports = withMT({
+const config: Config = withMT({
     content: [
         "./app/**/*.{js,ts,jsx,tsx,mdx}",
+        "./app/legacy/**/*.{js,ts,jsx,tsx,mdx}",
         "./pages/**/*.{js,ts,jsx,tsx,mdx}",
         "./components/**/*.{js,ts,jsx,tsx,mdx}",
 
@@ -35,3 +37,9 @@ module.exports = withMT({
     },
     plugins: [],
 });
+
+export default config;
+
+
+// NOTE (material-tailwind 와 typescript 호환성 문제) : https://github.com/creativetimofficial/material-tailwind/issues/528
+// - package.json 에서 "@types/react": "18.2.19", 로 변경

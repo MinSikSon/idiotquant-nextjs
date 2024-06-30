@@ -14,7 +14,7 @@ import RecentlyViewedStocks from "@/components/legacy/RecentlyViewedStocks";
 import StocksOfInterestPanel from "@/components/legacy/StocksOfInterestPanel";
 import DescriptionPanel from "@/components/legacy/DescriptionPanel";
 
-export async function getData() {
+async function getData() {
   async function fetchAndSet(subUrl) {
     const url = `https://idiotquant-backend.tofu89223.workers.dev`;
     const port = `443`;
@@ -88,7 +88,6 @@ export async function getData() {
   };
 }
 
-
 export default async function QuantPost() {
   console.log(`%c[call] QuantPost`, `color : white; background : blue`);
   const investValues = await getData();
@@ -100,19 +99,19 @@ export default async function QuantPost() {
   // const [financialInfoAll, setFinancialInfoAll] = React.useState([])
 
   // state
-  const [inputValue, setInputValue] = React.useState("");
-  const [inputPlaceholder, setInputPlaceholder] = React.useState("");
-  const [searchResult, setSearchResult] = React.useState("");
+  const [inputValue, setInputValue] = React.useState<any>("");
+  const [inputPlaceholder, setInputPlaceholder] = React.useState<any>("");
+  const [searchResult, setSearchResult] = React.useState<any>("");
 
-  const [latestStockCompanyInfo, setLatestStockCompanyInfo] = React.useState<any>({});
+  const [latestStockCompanyInfo, setLatestStockCompanyInfo] = React.useState({});
 
-  const [openCalculator, setOpenCalculator] = React.useState(false);
+  const [openCalculator, setOpenCalculator] = React.useState<any>(false);
 
   const [arrayFilteredStocksList, setArrayFilteredStocksList] = React.useState<any>([]);
 
   const [searchingList, setSearchingList] = React.useState<any>([]); // 검색 도중 종목명 출력
 
-  const [selectedStrategy, setSelectedStrategy] = React.useState("ncav");
+  const [selectedStrategy, setSelectedStrategy] = React.useState<any>("ncav");
 
   const [authorizeCode, setAuthorizeCode] = React.useState("");
   const [accessToken, setAccessToken] = React.useState("");
@@ -125,17 +124,17 @@ export default async function QuantPost() {
   // RecentlyViewedStocks.js
   const [recentlyViewedStocksList, setRecentlyViewedStocksList] = React.useState<any>([]);
 
-  const [selectedStocksOfInterestTab, setSelectedStocksOfInterestTab] = React.useState(0);
+  const [selectedStocksOfInterestTab, setSelectedStocksOfInterestTab] = React.useState<any>(0);
 
   //   type TabInfo = { label: string; value: string; stocks: []; desc: string };
   //   type StocksOfInterest = { init: boolean; tabs: { TabInfo }[] };
   const [stocksOfInterest, setStocksOfInterest] = React.useState<any>({});
 
-  const [openedPanel, setOpenedPanel] = React.useState("");
+  const [openedPanel, setOpenedPanel] = React.useState<any>("");
 
   const [localInfo, setLocalInfo] = React.useState<any>({ testCnt: 1, openedPanel: openedPanel, log: "hihi", });
 
-  const [backTestResultLog, setBackTestResultLog] = React.useState([]);
+  const [backTestResultLog, setBackTestResultLog] = React.useState<any>([]);
 
   function changeStockCompanyName(dictOrigin, srcName, dstName) {
     const { [srcName]: srcCompanyInfo, ...rest } = dictOrigin;
@@ -176,7 +175,7 @@ export default async function QuantPost() {
 
   React.useEffect(() => {
     if (!!latestStockCompanyInfo) {
-      let needInit: boolean = false;
+      let needInit = false;
 
       const oldStocksOfInterest = localStorage.getItem("stocksOfInterest");
       if (!!oldStocksOfInterest) {
@@ -191,8 +190,8 @@ export default async function QuantPost() {
 
       if (true === needInit) {
         // console.log(`needInit`);
-        const arrInitStocksList = GetArrayFilteredByStrategyNCAV(latestStockCompanyInfo);
-        const arrStrategyExample = GetArrayFilteredByStrategyExample(latestStockCompanyInfo);
+        const arrInitStocksList: any = GetArrayFilteredByStrategyNCAV(latestStockCompanyInfo);
+        const arrStrategyExample: any = GetArrayFilteredByStrategyExample(latestStockCompanyInfo);
 
         let newStocksOfInterest = {
           init: true,
@@ -311,7 +310,7 @@ export default async function QuantPost() {
 
     const newFilteredStockCompanyList: any = [];
     const dictFinancialMarketInfo: any = {};
-    sortedArray.forEach((stockCompanyName) => {
+    sortedArray.forEach((stockCompanyName: any) => {
       newFilteredStockCompanyList.push(stockCompanyName);
       dictFinancialMarketInfo[stockCompanyName] = {
         active: stockCompanyName == clickedStockCompanyName,
@@ -332,7 +331,7 @@ export default async function QuantPost() {
 
     setArrayFilteredStocksList([...newFilteredStockCompanyList]);
 
-    const newStrategy = stocksOfInterest;
+    const newStrategy: any = stocksOfInterest;
     newStrategy.tabs[selectedStocksOfInterestTab].stocks =
       newFilteredStockCompanyList;
     setStocksOfInterest({ ...newStrategy });
@@ -345,9 +344,9 @@ export default async function QuantPost() {
     updateRecentlyViewdStocksList(clickedStockCompanyName);
   }
 
-  function updateRecentlyViewdStocksList(stockCompanyName: any) {
+  function updateRecentlyViewdStocksList(stockCompanyName) {
     // console.log(`updateRecentlyViewdStocksList`, recentlyViewedStocksList);
-    let newRecentlyViewedStocksList: any = [...recentlyViewedStocksList];
+    let newRecentlyViewedStocksList = [...recentlyViewedStocksList];
     for (let i = 0; i < newRecentlyViewedStocksList.length; ++i) {
       if (stockCompanyName != newRecentlyViewedStocksList[i]) {
         continue;
@@ -402,7 +401,7 @@ export default async function QuantPost() {
     }
   }, [recentlyViewedStocksList]);
 
-  function updateLocalStorageItem(itemName: string, [state, setState], isArray: boolean) {
+  function updateLocalStorageItem(itemName, [state, setState], isArray) {
     const oldItem = localStorage.getItem(itemName);
     if (null == oldItem) {
       localStorage.setItem(itemName, JSON.stringify(state));
@@ -589,7 +588,7 @@ export default async function QuantPost() {
 
   return (
     <>
-      <div className="flex">
+      {/* <div className="flex">
         <div className="w-full sm:w-1/2 md:w-1/2 lg:w-1/2 xl:w-1/2 2xl:w-1/2">
           <AddStockInGroupPanel
             openedPanel={openedPanel}
@@ -720,7 +719,7 @@ export default async function QuantPost() {
             handleStocksOfInterestChange={handleStocksOfInterestChange}
           />
         </div>
-      </div>
+      </div> */}
     </>
   );
 }
