@@ -2,8 +2,9 @@ import { Action, combineSlices, configureStore, ThunkAction } from "@reduxjs/too
 import { financialInfoSlice } from "./features/financialInfo/financialInfoSlice";
 import { marketInfoSlice } from "./features/marketInfo/marketInfoSlice";
 import { articleSlice } from "./features/article/articleSlice";
+import { strategySlice } from "./features/strategy/strategySlice";
 
-const rootReducer: any = combineSlices(financialInfoSlice, marketInfoSlice, articleSlice);
+const rootReducer: any = combineSlices(financialInfoSlice, marketInfoSlice, articleSlice, strategySlice);
 export type RootState = ReturnType<typeof rootReducer>;
 
 export const makeStore = () => {
