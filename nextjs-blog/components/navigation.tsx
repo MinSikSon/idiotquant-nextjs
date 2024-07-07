@@ -28,9 +28,14 @@ export const Nav = () => {
     const quarter: string = "1";
     const marketInfoDate: string = "20230426";
 
-    // TODO
-    // - ncavList 존재 o -> getNcavList
-    // - ncavList 존재 x -> financialInfo + marketInfo -> ncavList 구성 -> setNcavList
+    // TODO 1
+    // - getFinancialInfo date list -> get latest financialInfo date
+    // - getMarketInfo date list -> get latest marketInfo date
+
+
+    // TODO 2
+    // - ncavList 존재 o -> getNcavList(latestFinancialInfoDate, latestMarketInfoDate)
+    // - ncavList 존재 x -> getFinancialInfo + getMarketInfo -> ncavList 구성 -> setNcavList
 
     useEffect(() => {
         if (false == financialInfoLoaded) {
