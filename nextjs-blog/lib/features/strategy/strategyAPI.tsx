@@ -1,3 +1,4 @@
+
 export const getNcavList: any = async (financialInfoDate: string, marketInfoDate: string) => {
     const url = `/stock/ncav-list?financialInfoDate=${financialInfoDate}&marketInfoDate=${marketInfoDate}`
     console.log(`[getNcavList] financialInfoDate:`, financialInfoDate, `, marketInfoDate:`, marketInfoDate, `, url:`, url);
@@ -8,19 +9,23 @@ export const getNcavList: any = async (financialInfoDate: string, marketInfoDate
 }
 
 export const setNcavList: any = async (financialInfoDate: string, marketInfoDate: string, ncavList: string[]) => {
-    const port = `443`;
-    const url = `/api/stock/register-ncav-list`
+    const url = `/stock/register-ncav-list`
     const data = {
         financialInfoDate: financialInfoDate,
         marketInfoDate: marketInfoDate,
-        ncavList: ncavList
+        // ncavList: ncavList.toString()
+        ncavList: JSON.stringify(ncavList)
     };
-    console.log(`[setNcavList] data:`, data);
+    console.log(`JSON.stringify(data)`, JSON.stringify(data));
     const options = {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json', },
+        headers: {
+            'Content-Type': 'test/plain;charset=UTF-8',
+            // 'Content-Type': 'application/json',
+        },
         body: JSON.stringify(data),
     };
+    console.log(`[setNcavList] data:`, data);
     const res = await fetch(url, options);
 
     console.log(`[setNcavList]`, res);

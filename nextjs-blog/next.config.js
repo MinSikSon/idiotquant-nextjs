@@ -21,5 +21,27 @@ const nextConfig = {
     //         }
     //     ]
     // }
+    async headers() {
+        return [
+            {
+                source: "/(.*)",
+                headers: [
+                    {
+                        key: "Access-Control-Allow-Origin",
+                        value: process.env.NEXT_PUBLIC_API_URL,
+                    },
+                    {
+                        key: "Access-Control-Allow-Headers",
+                        value:
+                            "Origin, X-Requested-With, Content-Type, Accept, Authorization",
+                    },
+                    {
+                        key: "Access-Control-Allow-Methods",
+                        value: "GET, POST, PATCH, DELETE, OPTIONS",
+                    },
+                ],
+            },
+        ];
+    },
 }
 module.exports = nextConfig;

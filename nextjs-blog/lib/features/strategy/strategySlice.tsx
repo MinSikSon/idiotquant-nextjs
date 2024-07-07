@@ -2,7 +2,7 @@ import { createAppSlice } from "@/lib/createAppSlice";
 import { setNcavList, getNcavList } from "./strategyAPI";
 
 interface StrategyInfo {
-    state: "ready" | "loading" | "loaded" | "rejected" | "retry";
+    state: "ready" | "loading" | "loaded" | "get-rejected" | "set-rejected" | "retry";
     value: any;
 }
 const initialState: StrategyInfo = {
@@ -24,8 +24,8 @@ export const strategySlice = createAppSlice({
         }),
         getStrategyList: create.asyncThunk(
             async ({ financialInfoDate, marketInfoDate }: { financialInfoDate: string, marketInfoDate: string }) => {
-                console.log(`[getStrategyList]`);
-                const res: any = await getNcavList(`${financialInfoDate}.`, marketInfoDate);
+                console.log(`[getStrategyList]`, financialInfoDate, marketInfoDate);
+                const res: any = await getNcavList(financialInfoDate, marketInfoDate);
                 return res;
             },
             {
@@ -40,13 +40,13 @@ export const strategySlice = createAppSlice({
                 },
                 rejected: (state) => {
                     console.log(`[getStrategyList] rejected`);
-                    state.state = "rejected";
+                    state.state = "get-rejected";
                 }
             },
         ),
         setStrategyList: create.asyncThunk(
             async ({ financialInfoDate, marketInfoDate, ncavList }: { financialInfoDate: string, marketInfoDate: string, ncavList: string[] }) => {
-                console.log(`[setStrategyList]`);
+                console.log(`[setStrategyList]`, financialInfoDate, marketInfoDate, ncavList);
                 const res: any = await setNcavList(financialInfoDate, marketInfoDate, ncavList);
                 return res;
             },
@@ -62,7 +62,7 @@ export const strategySlice = createAppSlice({
                 },
                 rejected: (state) => {
                     console.log(`[setStrategyList] rejected`);
-                    state.state = "rejected";
+                    state.state = "set-rejected";
                 }
             },
         )

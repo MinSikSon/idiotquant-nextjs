@@ -6,7 +6,7 @@ import { usePathname } from "next/navigation";
 import { useAppDispatch, useAppSelector } from "@/lib/hooks";
 import { initFinancialInfo, selectFinancialInfo, selectLoaded } from "@/lib/features/financialInfo/financialInfoSlice";
 import { initMarketInfo, selectMarketInfo, selectMarketInfoLoaded } from "@/lib/features/marketInfo/marketInfoSlice";
-import { getStrategyList, setStrategyList, selectNcavListState, setRetry, setLoading } from "@/lib/features/strategy/strategySlice";
+import { getStrategyList, setStrategyList, selectNcavListState, setRetry, setLoading, selectNcavList } from "@/lib/features/strategy/strategySlice";
 
 export const Nav = () => {
     const pathname = usePathname();
@@ -17,6 +17,7 @@ export const Nav = () => {
 
     const marketInfoLoaded = useAppSelector(selectMarketInfoLoaded);
     const marketInfo: object = useAppSelector(selectMarketInfo);
+    const ncavList: object = useAppSelector(selectNcavList);
 
     const ncavListState = useAppSelector(selectNcavListState);
 
@@ -27,6 +28,10 @@ export const Nav = () => {
     const quarter: string = "1";
     const marketInfoDate: string = "20230426";
 
+    // TODO
+    // - ncavList 존재 o -> getNcavList
+    // - ncavList 존재 x -> financialInfo + marketInfo -> ncavList 구성 -> setNcavList
+
     useEffect(() => {
         if (false == financialInfoLoaded) {
             console.log(`financialInfoLoaded:`, financialInfoLoaded);
@@ -36,6 +41,7 @@ export const Nav = () => {
             console.log(`marketInfoLoaded:`, marketInfoLoaded);
             dispatch(initMarketInfo({ date: marketInfoDate }));
         }
+
         if ("ready" == ncavListState) {
             dispatch(setLoading());
             const financialInfoDate = `${year}${quarter}Q`;
@@ -46,8 +52,9 @@ export const Nav = () => {
 
     useEffect(() => {
         console.log(`[ncavListState 2]`, ncavListState);
-        const ncavList = ["손민식", "김수빈"];
-        if ("loading" == ncavListState) {
+
+        if ("get-rejected" == ncavListState) {
+            const ncavList = ["손민식", "김수빈", "테슷흐"];
             dispatch(setRetry());
             console.log(`rejected!!!!!!!!!!`);
             const dummy = {
@@ -57,13 +64,15 @@ export const Nav = () => {
             }
             dispatch(setStrategyList(dummy));
         }
-        if ("retry" == ncavListState) {
+        else if ("retry" == ncavListState) {
             console.log(`end!!!!!!!!!!!!!!`);
         }
     }, [ncavListState]);
 
     console.log(`financialInfo`, financialInfo);
     console.log(`marketInfo`, marketInfo);
+    console.log(`ncavListState`, ncavListState);
+    console.log(`ncavList`, ncavList);
 
     const defaultDeco = 'pr-1';
     const decorations = 'underline decoration-green-400';
