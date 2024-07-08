@@ -1,83 +1,11 @@
 "use client"
 
-import React, { useEffect } from "react";
+import React from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useAppDispatch, useAppSelector } from "@/lib/hooks";
-import { initFinancialInfo, selectFinancialInfo, selectLoaded } from "@/lib/features/financialInfo/financialInfoSlice";
-import { initMarketInfo, selectMarketInfo, selectMarketInfoLoaded } from "@/lib/features/marketInfo/marketInfoSlice";
-import { getStrategyList, setStrategyList, selectNcavListState, setRetry, setLoading, selectNcavList } from "@/lib/features/strategy/strategySlice";
 
 export const Nav = () => {
     const pathname = usePathname();
-
-    const dispatch = useAppDispatch();
-    const financialInfoLoaded = useAppSelector(selectLoaded);
-    const financialInfo: object = useAppSelector(selectFinancialInfo);
-
-    const marketInfoLoaded = useAppSelector(selectMarketInfoLoaded);
-    const marketInfo: object = useAppSelector(selectMarketInfo);
-    const ncavList: object = useAppSelector(selectNcavList);
-
-    const ncavListState = useAppSelector(selectNcavListState);
-
-    // test data
-    // const year: string = "2023";
-    // const quarter: string = "4";
-    const year: string = "2024";
-    const quarter: string = "1";
-    const marketInfoDate: string = "20230426";
-
-    // TODO 1
-    // - getFinancialInfo date list -> get latest financialInfo date
-    // - getMarketInfo date list -> get latest marketInfo date
-
-
-    // TODO 2
-    // - ncavList 존재 o -> getNcavList(latestFinancialInfoDate, latestMarketInfoDate)
-    // - ncavList 존재 x -> getFinancialInfo + getMarketInfo -> ncavList 구성 -> setNcavList
-
-    useEffect(() => {
-        if (false == financialInfoLoaded) {
-            console.log(`financialInfoLoaded:`, financialInfoLoaded);
-            dispatch(initFinancialInfo({ year, quarter }));
-        }
-        if (false == marketInfoLoaded) {
-            console.log(`marketInfoLoaded:`, marketInfoLoaded);
-            dispatch(initMarketInfo({ date: marketInfoDate }));
-        }
-
-        if ("ready" == ncavListState) {
-            dispatch(setLoading());
-            const financialInfoDate = `${year}${quarter}Q`;
-            console.log(`[ncavListState 1]`, ncavListState);
-            dispatch(getStrategyList({ financialInfoDate, marketInfoDate }));
-        }
-    }, [])
-
-    useEffect(() => {
-        console.log(`[ncavListState 2]`, ncavListState);
-
-        if ("get-rejected" == ncavListState) {
-            const ncavList = ["손민식", "김수빈", "테슷흐"];
-            dispatch(setRetry());
-            console.log(`rejected!!!!!!!!!!`);
-            const dummy = {
-                financialInfoDate: `${year}${quarter}Q`,
-                marketInfoDate: marketInfoDate,
-                ncavList: ncavList
-            }
-            dispatch(setStrategyList(dummy));
-        }
-        else if ("retry" == ncavListState) {
-            console.log(`end!!!!!!!!!!!!!!`);
-        }
-    }, [ncavListState]);
-
-    console.log(`financialInfo`, financialInfo);
-    console.log(`marketInfo`, marketInfo);
-    console.log(`ncavListState`, ncavListState);
-    console.log(`ncavList`, ncavList);
 
     const defaultDeco = 'pr-1';
     const decorations = 'underline decoration-green-400';

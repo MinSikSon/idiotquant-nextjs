@@ -34,9 +34,9 @@ export const strategySlice = createAppSlice({
                     state.state = "loading";
                 },
                 fulfilled: (state, action) => {
+                    console.log(`[getStrategyList] fulfilled - action.payload:`, action.payload);
                     state.state = "loaded";
                     state.value = action.payload;
-                    console.log(`[getStrategyList] fulfilled - action.payload:`, action.payload);
                 },
                 rejected: (state) => {
                     console.log(`[getStrategyList] rejected`);
