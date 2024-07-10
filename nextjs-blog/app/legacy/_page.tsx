@@ -2,7 +2,7 @@ import React from "react";
 
 import { useRouter } from "next/router.js";
 
-import { GetArrayFilteredByStrategyExample, GetArrayFilteredByStrategyNCAV } from "@/components/legacy/Strategy";
+import { GetArrayFilteredByStrategyExample, GetStockNameArrayFilteredByStrategyNCAV } from "@/components/legacy/Strategy";
 import { Util } from "@/components/legacy/Util";
 import DeleteGroupPanel from "@/components/legacy/DeleteGroupPanel";
 import AddStockInGroupPanel from "@/components/legacy/AddStockInGroupPanel";
@@ -190,7 +190,7 @@ export default async function QuantPost() {
 
       if (true === needInit) {
         // console.log(`needInit`);
-        const arrInitStocksList: any = GetArrayFilteredByStrategyNCAV(latestStockCompanyInfo);
+        const arrInitStocksList: any = GetStockNameArrayFilteredByStrategyNCAV(latestStockCompanyInfo);
         const arrStrategyExample: any = GetArrayFilteredByStrategyExample(latestStockCompanyInfo);
 
         let newStocksOfInterest = {

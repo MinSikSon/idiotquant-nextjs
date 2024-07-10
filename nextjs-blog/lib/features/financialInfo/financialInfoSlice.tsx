@@ -1,26 +1,38 @@
 import { createAppSlice } from "@/lib/createAppSlice";
 import { getFinancialInfo, getFinancialInfoList, setFinancialInfoList } from "./financialInfoAPI";
 
+
+
+interface LatestFinancialDate {
+    year: string;
+    quarter: string;
+}
 interface FinancialInfo {
     state: "init"
     | "get-rejected"
     | "ready-financialInfoList"
+    | "ready-financialInfo"
     | "loading" | "loaded" | "rejected";
     loaded: boolean;
     financialInfoList: string[];
+    latestDate: LatestFinancialDate;
     value: any;
 }
 const initialState: FinancialInfo = {
     state: "init",
     loaded: false,
     financialInfoList: [],
-    value: {}
+    latestDate: { year: "9999", quarter: "0" },
+    value: {},
 }
 
 export const financialInfoSlice = createAppSlice({
     name: "financial",
     initialState,
     reducers: (create) => ({
+        setStateLoading: create.reducer((state) => {
+            state.state = "loading";
+        }),
         getList: create.asyncThunk(
             async () => { return await getFinancialInfoList(); },
             {
@@ -32,6 +44,13 @@ export const financialInfoSlice = createAppSlice({
                     // console.log(`[getList] fulfilled`, action.payload, !!action.payload);
                     if (!!action.payload) {
                         state.financialInfoList = action.payload;
+
+                        const afinancialInfoList = String(action.payload).split(",");
+                        const latestFinancialInfoList = afinancialInfoList[afinancialInfoList.length - 1];
+                        const splitLatestFinancialInfoList = latestFinancialInfoList.replaceAll("\"", "").replaceAll("[", "").replaceAll("]", "").split("_");
+                        const year = splitLatestFinancialInfoList[1];
+                        const quarter = splitLatestFinancialInfoList[2].replace("Q", "");
+                        state.latestDate = { year, quarter };
                         state.state = "ready-financialInfoList";
                     }
                     else {
@@ -70,7 +89,7 @@ export const financialInfoSlice = createAppSlice({
                     // console.log(`fulfilled`);
                     state.value = action.payload;
                     state.loaded = true;
-                    // state.state = "loaded";
+                    state.state = "ready-financialInfo";
                 },
                 rejected: (state) => {
                     // console.log(`rejected`);
@@ -84,9 +103,12 @@ export const financialInfoSlice = createAppSlice({
         selectFinancialInfoState: (state) => state.state,
         selectFinancialInfoList: (state) => state.financialInfoList,
         selectFinancialInfo: (state) => state.value,
+        selectLatestDate: (state) => state.latestDate,
     }
 });
 
+export const { setStateLoading } = financialInfoSlice.actions;
 export const { initFinancialInfo } = financialInfoSlice.actions;
 export const { getList, setList } = financialInfoSlice.actions;
 export const { selectFinancialInfo, selectFinancialInfoList, selectLoaded, selectFinancialInfoState } = financialInfoSlice.selectors;
+export const { selectLatestDate } = financialInfoSlice.selectors;

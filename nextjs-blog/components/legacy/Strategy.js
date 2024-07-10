@@ -19,7 +19,7 @@ function filteredByNcavStrategy(arrFinancialMarketInfo) {
     return arrFilteredByNCAV;
 }
 
-export function GetArrayFilteredByStrategyNCAV(stockCompanyInfo) {
+export function GetStockNameArrayFilteredByStrategyNCAV(stockCompanyInfo) {
     const arrObjFinancialMarketInfo = Array.from(Object.values(cleansing(stockCompanyInfo, ['거래량'])));
     const arrObjFilteredByNCAV = filteredByNcavStrategy(arrObjFinancialMarketInfo);
 
@@ -37,6 +37,28 @@ export function GetArrayFilteredByStrategyNCAV(stockCompanyInfo) {
     arrSorted1.forEach(item => companyList.push(item['종목명']));
 
     return companyList;
+}
+
+export function GetStocksFilteredByStrategyNCAV(stockCompanyInfo) {
+    const filteredStockNameList = GetStockNameArrayFilteredByStrategyNCAV(stockCompanyInfo);
+
+    let filteredStocks = {};
+    for (const i in filteredStockNameList) {
+        const stockName = filteredStockNameList[i];
+        filteredStocks[stockName] = stockCompanyInfo[stockName];
+    }
+
+    return filteredStocks;
+}
+
+export function GetMeredStocksList(financialInfo, marketInfo) {
+    let mergedStockInfo = {};
+    for (const [key, value] of Object.entries(financialInfo)) {
+        if (true == !!!marketInfo[`data`][key]) continue;
+        mergedStockInfo[key] = { ...value, ...marketInfo[`data`][key] };
+    }
+
+    return mergedStockInfo;
 }
 
 // filter 선택에 따라서, on/off 되게만 해도 좋을듯?

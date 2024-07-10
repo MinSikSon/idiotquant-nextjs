@@ -5,15 +5,18 @@ interface MarketInfo {
     state: "init"
     | "get-rejected"
     | "ready-marketInfoList"
+    | "ready-marketInfo"
     | "loading" | "loaded" | "rejected";
     loaded: boolean;
     marketInfoList: string[];
+    latestDate: string;
     value: any;
 }
 const initialState: MarketInfo = {
     state: "init",
     loaded: false,
     marketInfoList: [],
+    latestDate: "99999999",
     value: {}
 }
 
@@ -21,8 +24,13 @@ export const marketInfoSlice = createAppSlice({
     name: "market",
     initialState,
     reducers: (create) => ({
+        setMarketInfoStateLoading: create.reducer((state) => {
+            state.state = "loading";
+        }),
         getMarketList: create.asyncThunk(
-            async () => { return await getMarketInfoList(); },
+            async () => {
+                return await getMarketInfoList();
+            },
             {
                 pending: (state) => {
                     // console.log(`[getMarketList] pending`);
@@ -33,6 +41,13 @@ export const marketInfoSlice = createAppSlice({
                     if (!!action.payload) {
                         state.marketInfoList = action.payload;
                         state.state = "ready-marketInfoList";
+
+                        const aMarketInfoList = String(action.payload).split(",");
+                        const latestMarketInfoList = aMarketInfoList[aMarketInfoList.length - 1];
+                        const splitLatestMarketInfoList = latestMarketInfoList.replaceAll("\"", "").replaceAll("[", "").replaceAll("]", "").split("_");
+                        const date = splitLatestMarketInfoList[1];
+
+                        state.latestDate = date;
                     }
                     else {
                         state.state = "get-rejected";
@@ -64,11 +79,10 @@ export const marketInfoSlice = createAppSlice({
                 pending: (state) => {
                     // console.log(`pending`);
                     state.state = "loading";
-                    state.loaded = true;
                 },
                 fulfilled: (state, action) => {
                     // console.log(`fulfilled`);
-                    state.state = "loaded";
+                    state.state = "ready-marketInfo";
                     state.loaded = true;
                     state.value = action.payload;
                 },
@@ -83,10 +97,14 @@ export const marketInfoSlice = createAppSlice({
         selectMarketInfoLoaded: (state) => state.loaded,
         selectMarketInfoState: (state) => state.state,
         selectMarketInfoList: (state) => state.marketInfoList,
+        selectMarketInfoLatestDate: (state) => state.latestDate,
         selectMarketInfo: (state) => state.value,
     }
 });
 
+
+export const { setMarketInfoStateLoading } = marketInfoSlice.actions;
 export const { initMarketInfo } = marketInfoSlice.actions;
 export const { getMarketList, setMarketList } = marketInfoSlice.actions;
 export const { selectMarketInfo, selectMarketInfoList, selectMarketInfoLoaded, selectMarketInfoState } = marketInfoSlice.selectors;
+export const { selectMarketInfoLatestDate } = marketInfoSlice.selectors;

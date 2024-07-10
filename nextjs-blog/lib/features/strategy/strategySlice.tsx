@@ -3,7 +3,7 @@ import { setNcavList, getNcavList } from "./strategyAPI";
 
 interface StrategyInfo {
     state: "ready" | "loading" | "loaded" | "get-rejected" | "set-rejected" | "retry";
-    value: any;
+    value: object;
 }
 const initialState: StrategyInfo = {
     state: "ready",
@@ -15,50 +15,52 @@ export const strategySlice = createAppSlice({
     initialState,
     reducers: (create) => ({
         setLoading: create.reducer((state) => {
-            console.log(`[setRetry]`)
+            // console.log(`[setLoading]`)
             state.state = "loading";
         }),
         setRetry: create.reducer((state) => {
-            console.log(`[setRetry]`)
+            // console.log(`[setRetry]`)
             state.state = "retry";
         }),
         getStrategyList: create.asyncThunk(
             async ({ financialInfoDate, marketInfoDate }: { financialInfoDate: string, marketInfoDate: string }) => {
-                console.log(`[getStrategyList]`, financialInfoDate, marketInfoDate);
+                // console.log(`[getStrategyList]`, financialInfoDate, marketInfoDate);
                 const res: any = await getNcavList(financialInfoDate, marketInfoDate);
                 return res;
             },
             {
                 pending: (state) => {
-                    console.log(`[getStrategyList] pending`);
+                    // console.log(`[getStrategyList] pending`);
                     state.state = "loading";
                 },
                 fulfilled: (state, action) => {
-                    console.log(`[getStrategyList] fulfilled - action.payload:`, action.payload);
                     state.state = "loaded";
-                    state.value = action.payload;
+                    const json = JSON.parse(action.payload)
+                    // console.log(`[getStrategyList] fulfilled - action.payload:`, json);
+                    state.value = json;
                 },
                 rejected: (state) => {
-                    console.log(`[getStrategyList] rejected`);
+                    // console.log(`[getStrategyList] rejected`);
                     state.state = "get-rejected";
                 }
             },
         ),
         setStrategyList: create.asyncThunk(
-            async ({ financialInfoDate, marketInfoDate, ncavList }: { financialInfoDate: string, marketInfoDate: string, ncavList: string[] }) => {
-                console.log(`[setStrategyList]`, financialInfoDate, marketInfoDate, ncavList);
+            async ({ financialInfoDate, marketInfoDate, ncavList }: { financialInfoDate: string, marketInfoDate: string, ncavList: string }) => {
+                // console.log(`[setStrategyList]`, financialInfoDate, marketInfoDate, ncavList);
                 const res: any = await setNcavList(financialInfoDate, marketInfoDate, ncavList);
                 return res;
             },
             {
                 pending: (state) => {
-                    console.log(`[setStrategyList] pending`);
+                    // console.log(`[setStrategyList] pending`);
                     state.state = "loading";
                 },
                 fulfilled: (state, action) => {
                     state.state = "loaded";
-                    state.value = action.payload;
-                    console.log(`[setStrategyList] fulfilled - action.payload:`, action.payload);
+                    const json = JSON.parse(action.payload);
+                    // console.log(`[setStrategyList] fulfilled - action.payload:`, json);
+                    state.value = json;
                 },
                 rejected: (state) => {
                     console.log(`[setStrategyList] rejected`);
