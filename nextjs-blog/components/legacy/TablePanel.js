@@ -88,7 +88,7 @@ export default function TablePanel(props) {
         tbody.push({
             key: parseInt(corp_code).toString(),
             corpCode: parseInt(corp_code),
-            clickedRecentlyViewedStock: props.clickedRecentlyViewedStock,
+            // clickedRecentlyViewedStock: props.clickedRecentlyViewedStock,
 
             active: active,
             tickerName: 종목명,

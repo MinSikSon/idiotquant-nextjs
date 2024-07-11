@@ -1,13 +1,13 @@
 
 export const getFinancialInfo: any = async (year: string, quarter: string) => {
-    const url = `stock/financial-info?year=${year}&quarter=${quarter}`
+    const url = `${process.env.NEXT_PUBLIC_API_URL}/stock/financial-info?year=${year}&quarter=${quarter}`
     const res = await fetch(url);
 
     return res.json();
 }
 
 export const setFinancialInfoList: any = async (dateList: string[]) => {
-    const url = `stock/financial-info-list`;
+    const url = `${process.env.NEXT_PUBLIC_API_URL}/stock/financial-info-list`;
     const options = {
         method: 'POST',
         headers: {
@@ -21,7 +21,7 @@ export const setFinancialInfoList: any = async (dateList: string[]) => {
 }
 
 export const getFinancialInfoList: any = async () => {
-    const url = `stock/financial-info-list`
+    const url = `${process.env.NEXT_PUBLIC_API_URL}/stock/financial-info-list`
     const res = await fetch(url);
 
     return res.json();

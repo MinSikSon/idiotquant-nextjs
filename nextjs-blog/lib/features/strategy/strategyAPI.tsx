@@ -8,7 +8,7 @@ export const getNcavList: any = async (financialInfoDate: string, marketInfoDate
 }
 
 export const setNcavList: any = async (financialInfoDate: string, marketInfoDate: string, ncavList: string) => {
-    const url = `/stock/strategy/ncav`
+    const url = `${process.env.NEXT_PUBLIC_API_URL}/stock/strategy/ncav`
     const data = {
         financialInfoDate: financialInfoDate,
         marketInfoDate: marketInfoDate,

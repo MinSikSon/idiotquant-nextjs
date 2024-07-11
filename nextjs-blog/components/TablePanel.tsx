@@ -3,6 +3,7 @@ import { Card, Chip, List, ListItem, ListItemPrefix, ListItemSuffix, Typography 
 import { Util } from "./Util";
 import CustomCard from "@/components/CustomCard";
 import Loading from "@/components/Loading";
+import Link from "next/link";
 
 const MarQueue2 = (props) => {
     const CardList = () => {
@@ -33,19 +34,22 @@ const ListNode = (props) => {
     const selectedColorByRatio = percentCompareFirst ? 'red' : (percentCompareSecond ? 'yellow' : 'blue');
 
     return (
-        <ListItem className="p-0 border-b-2" onClick={() => { props.clickedRecentlyViewedStock(props.tickerName) }}>
-            <ListItemPrefix className="mr-2 w-24">
-                <Chip className="border-none" size="sm" variant="outlined" value={"목표가"} />
-                <Chip className="border-none py-0" size="sm" variant="outlined" color={selectedColorByRatio} value={props.fairPrice + "원 (" + (props.ratio - 100) + "%)"} />
-            </ListItemPrefix>
-            <div>
-                <Typography className="ml-3" variant="h6">{props.tickerName}</Typography>
-            </div>
-            <ListItemSuffix>
-                <Chip className="border-none text-lg p-0 text-right" variant="outlined" size="lg" value={diffRatio + "%"} color={diffRatio > 0 ? 'red' : 'blue'} />
-                <Chip className="border-none py-0" variant="outlined" size="sm" value={props.close + "원"} />
-            </ListItemSuffix>
-        </ListItem >
+        <Link href={`/ticker/${props.tickerName}`}>
+            {/* <ListItem className="p-0 border-b-2" onClick={() => { props.clickedRecentlyViewedStock(props.tickerName) }}> */}
+            <ListItem className="p-0 border-b-2">
+                <ListItemPrefix className="mr-2 w-24">
+                    <Chip className="border-none" size="sm" variant="outlined" value={"목표가"} />
+                    <Chip className="border-none py-0" size="sm" variant="outlined" color={selectedColorByRatio} value={props.fairPrice + "원 (" + (props.ratio - 100) + "%)"} />
+                </ListItemPrefix>
+                <div>
+                    <Typography className="ml-3" variant="h6">{props.tickerName}</Typography>
+                </div>
+                <ListItemSuffix>
+                    <Chip className="border-none text-lg p-0 text-right" variant="outlined" size="lg" value={diffRatio + "%"} color={diffRatio > 0 ? 'red' : 'blue'} />
+                    <Chip className="border-none py-0" variant="outlined" size="sm" value={props.close + "원"} />
+                </ListItemSuffix>
+            </ListItem >
+        </Link>
     );
 };
 

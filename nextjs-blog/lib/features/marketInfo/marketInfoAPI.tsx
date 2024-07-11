@@ -1,13 +1,13 @@
 
 export const getMarketInfo: any = async (date: string) => {
-    const url = `stock/market-info?date=${date}`
+    const url = `${process.env.NEXT_PUBLIC_API_URL}/stock/market-info?date=${date}`
     const res = await fetch(url);
 
     return res.json();
 }
 
 export const setMarketInfoList: any = async (dateList: string[]) => {
-    const url = `stock/market-info-list`;
+    const url = `${process.env.NEXT_PUBLIC_API_URL}/stock/market-info-list`;
     const options = {
         method: 'POST',
         headers: {
@@ -22,7 +22,7 @@ export const setMarketInfoList: any = async (dateList: string[]) => {
 }
 
 export const getMarketInfoList: any = async () => {
-    const url = `stock/market-info-list`
+    const url = `${process.env.NEXT_PUBLIC_API_URL}/stock/market-info-list`
     const res = await fetch(url);
 
     return res.json();
