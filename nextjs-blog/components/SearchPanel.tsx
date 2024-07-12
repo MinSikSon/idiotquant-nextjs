@@ -4,11 +4,12 @@ import { Chip, ListItem, ListItemPrefix, ListItemSuffix } from "@material-tailwi
 import { useAppSelector } from "@/lib/hooks";
 
 import { selectNcavList } from "@/lib/features/strategy/strategySlice";
+import { Util } from "@/components/Util";
 
 export default function SearchPanel(props) {
-    console.log(`[SearchPanel] props`, props);
+    // console.log(`[SearchPanel] props`, props);
     const ncavList: object = useAppSelector(selectNcavList);
-    console.log(`[SearchPanel] ncavList`, ncavList);
+    // console.log(`[SearchPanel] ncavList`, ncavList);
     // console.log(`%cSearchPanel`, `color : white; background : blue`);
 
     let jsonSearchResult = { '종목명': '-', 'stock_code': '-', '종가': 0, '유동자산': 0, '부채총계': 0, '당기순이익': 0, '거래량': 0, '시가총액': 1, '상장주식수': 1/*divide by zero 방지용*/, ...ncavList[props.ticker] };
@@ -39,13 +40,19 @@ export default function SearchPanel(props) {
         const bgColor = (-1 === index) ? '' : 'bg-blue-700';
         const titleTextColor = (-1 === index) ? 'text-gray-700' : 'text-white';
         const itemTextColor = (-1 === index) ? 'text-black' : 'text-white';
+        let item = props.item;
+        // console.log(`props.item isNaN(props.item)`, props.item, isNaN(props.item));
+        if (false == isNaN(props.item)) {
+            item = Number(item).toFixed(3);
+            item = Util.UnitConversion(item, true);
+        }
         return (
             <ListItem className={`p-0 px-1 m-0 mx-1 w-11/12 rounded-full border-b-2 border-gray-200 ${bgColor}`}>
                 <ListItemPrefix className="p-0 pl-1 m-0">
                     <Chip className={`text-xs m-0 p-0 border-none ${titleTextColor}`} variant="outlined" value={props.title} />
                 </ListItemPrefix>
                 <ListItemSuffix className="p-0 pr-1 my-0">
-                    <Chip className={`text-sm m-0 p-0 border-none ${itemTextColor}`} variant="outlined" value={props.item} />
+                    <Chip className={`text-xs m-0 p-0 border-none ${itemTextColor}`} variant="outlined" value={item} />
                 </ListItemSuffix>
             </ListItem>
         );
@@ -74,7 +81,7 @@ export default function SearchPanel(props) {
                 width={'90px'}
             /> */}
             <div className={`grid grid-cols-2 pr-1`}>
-                {/* {Object.keys(selectedSearchResult).map((key, index) => <CustomDiv key={index} title={key} item={selectedSearchResult[key]} />)} */}
+                {Object.keys(jsonSearchResult).map((key, index) => <CustomDiv key={index} title={key} item={jsonSearchResult[key]} />)}
             </div>
         </div>
     );

@@ -56,7 +56,7 @@ const ListNode = (props) => {
             link={`/ticker/${props.tickerName}`}
             item1={props.tickerName}
             item2={props.close + "원"}
-            item3={"->"}
+            item3={"➡️"}
             item4={props.fairPrice + "원 (" + (props.ratio - 100) + "%)"}
             color={selectedColorByRatio}
         />
@@ -163,7 +163,7 @@ export default function TablePanel(props) {
                         link={`/`}
                         item1={"종목명"}
                         item2={"현재가"}
-                        item3={"->"}
+                        item3={"➡️"}
                         item4={"목표가"}
                         color={"blue"}
                         bgColor={"bg-gray-200"}

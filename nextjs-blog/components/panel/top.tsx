@@ -24,8 +24,8 @@ export const TopPanel = () => {
     const pathname = usePathname();
     const splitedPathname = pathname?.split("/");
 
-    console.log(`pathname`, pathname);
-    console.log(`splitedPathname`, splitedPathname);
+    // console.log(`pathname`, pathname);
+    // console.log(`splitedPathname`, splitedPathname);
 
     return <>
         <div className="fixed top-0 z-40 w-full">
