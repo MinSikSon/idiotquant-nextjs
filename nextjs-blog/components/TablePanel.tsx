@@ -15,7 +15,7 @@ const MarQueue2 = (props) => {
     };
 
     return (
-        <div className='relative flex overflow-x-hidden'>
+        <div className='relative z-10 top-0 flex overflow-x-hidden'>
             <div className='flex animate-marquee whitespace-nowrap'>
                 <CardList />
             </div>
@@ -26,30 +26,40 @@ const MarQueue2 = (props) => {
     );
 }
 
+const ListNodeTemplate = (props) => {
+    return (
+        <Link href={props.link}>
+            <ListItem className={`p-0 border-b-2 ${props.bgColor}`}>
+                <ListItemPrefix>
+                    <Typography className="ml-3 pl-4" variant="h6">{props.item1}</Typography>
+                </ListItemPrefix>
+                <ListItemSuffix>
+                    <Chip className="border-none py-0 pr-2" size="sm" variant="outlined" value={props.item2} />
+                </ListItemSuffix>
+                <div className="mr-2 w-3">
+                    <Chip className="border-none py-0" size="sm" variant="outlined" value={props.item3} />
+                </div>
+                <div className="mr-2 w-28">
+                    <Chip className="border-none py-0" size="sm" variant="outlined" color={props.color} value={props.item4} />
+                </div>
+            </ListItem >
+        </Link>
+    );
+}
 const ListNode = (props) => {
-    // const diffRatio: number = Number((((Number((props.close).replace(/,/g, '')) / Number((props.prevClose).replace(/,/g, ''))) - 1) * 100).toFixed(1));
-    const diffRatio: number = 0;
     const percentCompareFirst = (props.ratio - 100) >= 100 ? true : false;
     const percentCompareSecond = (props.ratio - 100) >= 50 ? true : false;
     const selectedColorByRatio = percentCompareFirst ? 'red' : (percentCompareSecond ? 'yellow' : 'blue');
 
     return (
-        <Link href={`/ticker/${props.tickerName}`}>
-            {/* <ListItem className="p-0 border-b-2" onClick={() => { props.clickedRecentlyViewedStock(props.tickerName) }}> */}
-            <ListItem className="p-0 border-b-2">
-                <ListItemPrefix className="mr-2 w-24">
-                    <Chip className="border-none" size="sm" variant="outlined" value={"목표가"} />
-                    <Chip className="border-none py-0" size="sm" variant="outlined" color={selectedColorByRatio} value={props.fairPrice + "원 (" + (props.ratio - 100) + "%)"} />
-                </ListItemPrefix>
-                <div>
-                    <Typography className="ml-3" variant="h6">{props.tickerName}</Typography>
-                </div>
-                <ListItemSuffix>
-                    <Chip className="border-none text-lg p-0 text-right" variant="outlined" size="lg" value={diffRatio + "%"} color={diffRatio > 0 ? 'red' : 'blue'} />
-                    <Chip className="border-none py-0" variant="outlined" size="sm" value={props.close + "원"} />
-                </ListItemSuffix>
-            </ListItem >
-        </Link>
+        <ListNodeTemplate
+            link={`/ticker/${props.tickerName}`}
+            item1={props.tickerName}
+            item2={props.close + "원"}
+            item3={"->"}
+            item4={props.fairPrice + "원 (" + (props.ratio - 100) + "%)"}
+            color={selectedColorByRatio}
+        />
     );
 };
 
@@ -127,7 +137,7 @@ export default function TablePanel(props) {
 
     const 기대수익 = `${Number((cumulativeRatio / NUM_OF_STOCK_ITEMS - 1) * 100).toFixed(1)}%`;
     // const prevBsnsDate = props.marketInfoList[LATEST_MARKET_INFO_INDEX - 1].date;
-    const prevBsnsDate = "99999999";
+    // const prevBsnsDate = "99999999";
     // const bsnsDate = props.marketInfoList[LATEST_MARKET_INFO_INDEX].date;
     const bsnsDate = props.bsnsDate;
 
@@ -141,16 +151,26 @@ export default function TablePanel(props) {
                 <MarQueue2 contents={[
                     { title: `추천 종목수`, description: `${NUM_OF_STOCK_ITEMS} 개` },
                     { title: `목표수익률`, description: 기대수익, textColor: `text-black`, backGround: `` },
-                    { title: `이전 주가 일자`, description: `${prevBsnsDate}`, textColor: `text-black`, backGround: `bg-amber-200` },
+                    // { title: `이전 주가 일자`, description: `${prevBsnsDate}`, textColor: `text-black`, backGround: `bg-amber-200` },
                     { title: `최근 주가 일자`, description: `${bsnsDate}`, textColor: `text-black`, backGround: `bg-blue-200` },
                     { title: `재무정보 일자`, description: `${thstrm_dt}` },
                 ]} />
                 : <></>
             }
-            <Card className="w-full z-10 overflow-y-auto h-screen">
-                <List className="px-0 mt-0">
+            <Card className="w-full z-0 overflow-y-auto h-screen">
+                <List className="px-0">
+                    <ListNodeTemplate
+                        link={`/`}
+                        item1={"종목명"}
+                        item2={"현재가"}
+                        item3={"->"}
+                        item4={"목표가"}
+                        color={"blue"}
+                        bgColor={"bg-gray-200"}
+                    />
                     {(tbody.length > 0) ? tbody.map((item: any, index: any) => <ListNode key={index} {...item} />) : <></>}
                 </List>
+                <div className="pb-32" />
             </Card>
         </>
     );
