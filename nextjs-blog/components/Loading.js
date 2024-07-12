@@ -3,7 +3,7 @@
 export default function Loading() {
     const SimpleLoadingImage = () => {
         return (<>
-            <div className="border border-blue-100 shadow rounded-lg px-4 py-0.5 w-full mx-auto">
+            <div className="border border-gray-100 shadow rounded-lg px-4 py-0.5 w-full mx-auto">
                 <div className="animate-pulse flex space-x-4">
                     <div className="flex-1 space-y-6 py-3">
                         <div className="grid grid-cols-3 gap-4">
@@ -42,20 +42,28 @@ export default function Loading() {
 
     return (<>
         <SimpleLoadingImage />
-        <LoadingImage />
-        <LoadingImage />
-        <LoadingImage />
-        <LoadingImage />
-        <LoadingImage />
-        <LoadingImage />
-        <LoadingImage />
-        <LoadingImage />
-        <LoadingImage />
-        <LoadingImage />
-        <LoadingImage />
-        <LoadingImage />
-        <LoadingImage />
-        <LoadingImage />
-        <LoadingImage />
+        <SimpleLoadingImage />
+        <SimpleLoadingImage />
+        <SimpleLoadingImage />
+        <SimpleLoadingImage />
+        <SimpleLoadingImage />
+        <SimpleLoadingImage />
+        <SimpleLoadingImage />
+        <SimpleLoadingImage />
+        <SimpleLoadingImage />
+        <SimpleLoadingImage />
+        <SimpleLoadingImage />
+        <SimpleLoadingImage />
+        <SimpleLoadingImage />
+        <SimpleLoadingImage />
+        <SimpleLoadingImage />
+        <SimpleLoadingImage />
+        <SimpleLoadingImage />
+        <SimpleLoadingImage />
+        <SimpleLoadingImage />
+        <SimpleLoadingImage />
+        <SimpleLoadingImage />
+        <SimpleLoadingImage />
+        <SimpleLoadingImage />
     </>);
 }
