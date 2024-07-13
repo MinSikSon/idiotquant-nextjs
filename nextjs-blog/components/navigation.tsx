@@ -12,8 +12,9 @@ const DefaultNav = (props) => {
     return (
         <nav className='bg-white flex justify-center text-xl'>
             <div className='flex'>
-                <Link className={`flex-auto ${defaultDeco} ${hoverDecorations} ${props.pathname === "/" ? decorations : ""}`} href="/">Home</Link>
-                <Link className={`flex-auto ${defaultDeco} ${hoverDecorations} ${props.pathname === "/calculator" ? decorations : ""}`} href="/calculator">Calculator</Link>
+                <Link className={`flex-auto ${defaultDeco} ${hoverDecorations} ${props.pathname === "/" ? decorations : ""}`} href="/">home</Link>
+                <Link className={`flex-auto ${defaultDeco} ${hoverDecorations} ${props.pathname === "/backtest" ? decorations : ""}`} href="/backtest">backtest</Link>
+                <Link className={`flex-auto ${defaultDeco} ${hoverDecorations} ${props.pathname === "/calculator" ? decorations : ""}`} href="/calculator">calculator</Link>
                 <Link className={`flex-auto ${defaultDeco} ${hoverDecorations}  ${props.pathname === "/article" ? decorations : ""}`} href="/article">article</Link>
             </div>
         </nav>

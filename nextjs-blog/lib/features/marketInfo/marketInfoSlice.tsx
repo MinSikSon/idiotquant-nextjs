@@ -8,14 +8,14 @@ interface MarketInfo {
     | "ready-marketInfo"
     | "loading" | "loaded" | "rejected";
     loaded: boolean;
-    marketInfoList: string[];
+    marketInfoList: string;
     latestDate: string;
     value: any;
 }
 const initialState: MarketInfo = {
     state: "init",
     loaded: false,
-    marketInfoList: [],
+    marketInfoList: "",
     latestDate: "99999999",
     value: {}
 }

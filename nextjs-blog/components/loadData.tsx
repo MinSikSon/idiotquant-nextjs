@@ -74,6 +74,7 @@ export const LoadData = () => {
                 "financialInfo_2023_2Q",
                 "financialInfo_2023_3Q",
                 "financialInfo_2023_4Q",
+                "financialInfo_2024_1Q",
             ];
             dispatch(setList(financialInfoList));
         }
@@ -109,6 +110,7 @@ export const LoadData = () => {
                 "marketInfo_20231124",
                 "marketInfo_20240201",
                 "marketInfo_20240327",
+                "marketInfo_20240712",
             ];
             dispatch(setMarketList(marketInfoList));
         }
