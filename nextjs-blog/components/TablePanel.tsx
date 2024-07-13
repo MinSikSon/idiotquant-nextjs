@@ -145,6 +145,7 @@ export default function TablePanel(props) {
 
     tbody.sort((a, b) => { return b.weight - a.weight; });
 
+    console.log(`TODO: 필터기능 추가`);
     return (
         <>
             {props.marqueueDisplay === true ?
