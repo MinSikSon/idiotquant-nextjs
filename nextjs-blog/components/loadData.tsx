@@ -16,7 +16,7 @@ export const LoadData = () => {
 
     const marketInfoState = useAppSelector(selectMarketInfoState);
     const marketInfo: object = useAppSelector(selectMarketInfo);
-    const marketInfoList: string[] = useAppSelector(selectMarketInfoList);
+    const marketInfoList = useAppSelector(selectMarketInfoList);
     const marketLatestDate: any = useAppSelector(selectMarketInfoLatestDate);
 
     const ncavList: object = useAppSelector(selectNcavList);

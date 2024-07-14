@@ -2,17 +2,14 @@
 
 import { getPrevYearAndQuarter, getYearAndQuarterByDate } from "@/components/yearQuarterMatcher";
 import { selectMarketInfoList } from "@/lib/features/marketInfo/marketInfoSlice";
-import { useAppSelector } from "@/lib/hooks";
+import { useAppDispatch, useAppSelector } from "@/lib/hooks";
 import { Button, Card, CardBody, CardFooter, CardHeader, Slider, Typography } from "@material-tailwind/react";
 import { useState, useEffect } from "react";
-
-// import { ArchiveBoxIcon, ArrowUturnLeftIcon, BellIcon, CurrencyDollarIcon } from "@heroicons/react/24/outline";
-// import { Button, Card, Chip, ListItem, ListItemPrefix, Navbar, Switch, Timeline, TimelineConnector, TimelineHeader, TimelineIcon, TimelineItem, Typography, } from "@material-tailwind/react";
-// import React from "react";
+import { useDispatch } from "react-redux";
 
 const SimpleCard = (props) => {
     return (
-        <Card className="mt-6 w-96">
+        <Card className="my-0 w-96">
             <CardHeader
                 floated={false}
                 shadow={false}
@@ -33,70 +30,64 @@ const SimpleCard = (props) => {
                     {props.description2}
                 </Typography>
             </CardBody>
-            <CardFooter className="pt-0">
-                <Button>{props.buttonDesc}</Button>
+            <CardFooter className="py-0">
+                <Button onClick={props.buttonClieckEvent}>{props.buttonDesc}</Button>
             </CardFooter>
         </Card>
     );
 }
 
 export default function BackTesting(props) {
+    const dispatch = useAppDispatch();
 
     console.log(`Step1. 선택할 수 있는 marketInfo date 출력`);
     const marketInfoDateList = useAppSelector(selectMarketInfoList).replaceAll("[", "").replaceAll("]", "").split(",").map(data => data.replaceAll("\"", ""));
-    // console.log(`marketInfoDateList`, marketInfoDateList);
-    // console.log(`marketInfoDateList.length`, marketInfoDateList.length);
 
-    console.log(`Step2-1. 해당 marketInfo date 선택하면, financialInfo 와 조합하여 종목 추출 (일단은 전략은 NCAV 로 통일)`);
-    console.log(`Step2-2. run backtesting 버튼 누르면 실행`);
-    console.log(`Step3. 현재 주가와 비교`);
+    console.log(`Step2. 해당 marketInfo date 선택하면, financialInfo 와 조합하여 종목 추출 (일단은 전략은 NCAV 로 통일)`);
+    console.log(`Step3. run backtesting 버튼 누르면 실행 (현재 주가와 비교)`);
 
     const [startIndex, setStartIndex] = useState(0);
     const [endIndex, setEndIndex] = useState(0);
-    useEffect(() => {
-        if (0 == startIndex) {
-            setStartIndex(0);
-        }
-        if (0 == endIndex) {
-            setEndIndex(marketInfoDateList.length - 1);
-        }
-    }, [marketInfoDateList]);
+
+    // useEffect(() => {
+    //     if (0 == startIndex) {
+    //         setStartIndex(0);
+    //     }
+    //     if (0 == endIndex) {
+    //         setEndIndex(marketInfoDateList.length - 1);
+    //     }
+    // }, [marketInfoDateList]);
 
     function handleChange(e) {
         const offset = Number((100 / marketInfoDateList.length).toFixed(0));
-        console.log(`offset`, offset);
-        console.log(`handleChange`, e);
-        console.log(`handleChange`, e.target.value);
+        console.log(`handleChange`, e, `, e.target.value:`, e.target.value);
         const index = e.target.value / offset;
-        console.log(`index`, index);
         // console.log(`marketInfoDateList`, marketInfoDateList);
-        console.log(`marketInfoDateList[index]`, marketInfoDateList[index]);
-        if (endIndex > index) {
-            setStartIndex(index);
-        }
+        console.log(`marketInfoDateList[index: ${index}]`, marketInfoDateList[index]);
+        setStartIndex(index);
         // offset 에 따라 화면에 값 출력
     }
 
     function handleChange2(e) {
-        console.log(`e`, e);
         const offset = Number((100 / marketInfoDateList.length).toFixed(0));
-        console.log(`offset`, offset);
-        console.log(`handleChange`, e);
-        console.log(`handleChange`, e.target.value);
+        console.log(`handleChange`, e, `, e.target.value:`, e.target.value);
         const index = e.target.value / offset;
-        console.log(`index`, index);
         // console.log(`marketInfoDateList`, marketInfoDateList);
-        console.log(`marketInfoDateList[index]`, marketInfoDateList[index]);
-        if (startIndex < index) {
-            setEndIndex(index);
-        }
+        console.log(`marketInfoDateList[index: ${index}]`, marketInfoDateList[index]);
+        setEndIndex(index);
         // offset 에 따라 화면에 값 출력
+    }
+
+    function runBacktest() {
+        console.log(`[runBacktest]`, startIndex, endIndex);
+
+        // dispatch
     }
 
     let prevStartYearAndQuarter = { year: 9999, quarter: 1 };
     let prevEndYearAndQuarter = { year: 9999, quarter: 1 };
-    console.log(`marketInfoDateList `, marketInfoDateList);
-    console.log(`marketInfoDateList.length `, marketInfoDateList.length);
+    // console.log(`marketInfoDateList `, marketInfoDateList);
+    // console.log(`marketInfoDateList.length `, marketInfoDateList.length);
     if ('' != marketInfoDateList[0]) {
         let startYearAndQuarter = getYearAndQuarterByDate(marketInfoDateList[startIndex].split("_")[1]);
         prevStartYearAndQuarter = getPrevYearAndQuarter(startYearAndQuarter.year, startYearAndQuarter.quarter);
@@ -152,6 +143,7 @@ export default function BackTesting(props) {
                 </div>
             }
             buttonDesc={"run backtesting"}
+            buttonClieckEvent={runBacktest}
         />
     </>;
 }
