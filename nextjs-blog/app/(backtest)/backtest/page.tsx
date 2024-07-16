@@ -17,8 +17,7 @@ const SimpleCard = (props) => {
                 floated={false}
                 shadow={false}
                 color="transparent"
-                className="m-0 rounded-none"
-            >
+                className="m-0 rounded-none">
                 <img
                     src="https://images.unsplash.com/photo-1522202176988-66273c2fd55f?ixlib=rb-4.0.3&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=1471&q=80"
                     alt="ui/ux review check"
@@ -33,8 +32,8 @@ const SimpleCard = (props) => {
                     {props.description2}
                 </Typography>
             </CardBody>
-            <CardFooter className="py-0">
-                <Button onClick={props.buttonClieckEvent}>{props.buttonDesc}</Button>
+            <CardFooter className="flex pt-0">
+                <Button className="grow" onClick={props.buttonClieckEvent}>{props.buttonDesc}</Button>
             </CardFooter>
         </Card>
     );
@@ -74,7 +73,10 @@ export default function BackTesting(props) {
         const index = e.target.value / offset;
         // console.log(`marketInfoDateList`, marketInfoDateList);
         console.log(`marketInfoDateList[index: ${index}]`, marketInfoDateList[index]);
-        setStartIndex(index);
+        console.log(`startIndex`, startIndex, `, endIndex`, endIndex);
+        if (index < endIndex) {
+            setStartIndex(index);
+        }
         // offset 에 따라 화면에 값 출력
     }
 
@@ -84,7 +86,10 @@ export default function BackTesting(props) {
         const index = e.target.value / offset;
         // console.log(`marketInfoDateList`, marketInfoDateList);
         console.log(`marketInfoDateList[index: ${index}]`, marketInfoDateList[index]);
-        setEndIndex(index);
+        console.log(`startIndex`, startIndex, `, endIndex`, endIndex);
+        if (startIndex < index) {
+            setEndIndex(index);
+        }
         // offset 에 따라 화면에 값 출력
     }
 
@@ -198,11 +203,13 @@ export default function BackTesting(props) {
             loadingMsg={`waiting`}
 
             pathname={`backtest`}
-            marqueueDisplay={true}
+            marqueueDisplay={false}
 
             filteredStocks={filteredStocks}
             bsnsDate={!!startMarketInfo["date"] ? startMarketInfo["date"] : "999999"}
             endMarketInfo={endMarketInfo}
+
+            endDate={marketInfoDateList[endIndex]}
         />
     </>;
 }

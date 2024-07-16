@@ -57,16 +57,28 @@ const ListNode = (props) => {
     const percentCompareSecond = (props.ratio - 100) >= 50 ? true : false;
     const selectedColorByRatio = percentCompareFirst ? 'red' : (percentCompareSecond ? 'yellow' : 'blue');
 
+    let close = props.close;
     // console.log(`[ListNode] props.endMarketInfo`, props.endMarketInfo);
-    let endClosePrice = null;
+    let endClosePrice: any = null;
     if (!!props.endMarketInfo) {
-        endClosePrice = !!props.endMarketInfo[`종가`] ? props.endMarketInfo[`종가`] : "없음";
+        endClosePrice = !!props.endMarketInfo[`종가`] ? `${props.endMarketInfo[`종가`]} 원` : `-`;
+
+        console.log(`props.endMarketInfo`, props.endMarketInfo);
+        console.log(`props.marketCapitalization`, props.marketCapitalization);
+
+
+        // NOTE: endMarketInfo 시점에 종가 맞춤 (액면분할 했을 수 있기 때문)
+        close = Number(props.marketCapitalization / props.endMarketInfo[`상장주식수`]).toFixed(0);
     }
+    else {
+        endClosePrice = `-`;
+    }
+
     return (
         <ListNodeTemplate
             link={`/${props.pathname}/${props.tickerName}`}
             item1={props.tickerName}
-            item2={props.close + "원"}
+            item2={close + "원"}
             item3={"➡️"}
             item4={props.fairPrice + "원 (" + (props.ratio - 100) + "%)"}
             color={selectedColorByRatio}
@@ -88,6 +100,9 @@ export default function TablePanel(props) {
     if (0 == NUM_OF_STOCK_ITEMS) return <Loading loadingMsg={props.loadingMsg} />;
 
     let cumulativeRatio = 0;
+
+    let realStockCount = 0;
+    let cumulativeRealRatio = 0;
 
     let tbody: any = [];
     let index = 0;
@@ -117,9 +132,19 @@ export default function TablePanel(props) {
                 endMarketInfo = props.endMarketInfo[`data`][getChangedTicker(종목명)];
             }
 
-            endMarketInfo = !!endMarketInfo ? endMarketInfo : "없음";
-        }
+            endMarketInfo = !!endMarketInfo ? endMarketInfo : undefined;
 
+            if (undefined == endMarketInfo) {
+
+            }
+            else {
+                let closeBasedEndMarketInfo = 시가총액 / endMarketInfo[`상장주식수`];
+                endMarketInfo[`상장주식수`];
+                // endMarketInfo[`시가총액`];
+                cumulativeRealRatio += (((endMarketInfo[`종가`] / closeBasedEndMarketInfo) - 1));
+                realStockCount++;
+            }
+        }
 
         tbody.push({
             // key: parseInt(corp_code).toString(),
@@ -135,7 +160,8 @@ export default function TablePanel(props) {
             currentAssets: Util.UnitConversion(유동자산),
             liabilities: Util.UnitConversion(부채총계),
             netIncome: Util.UnitConversion(당기순이익),
-            marketCapitalization: Util.UnitConversion(시가총액),
+            // marketCapitalization: Util.UnitConversion(시가총액),
+            marketCapitalization: 시가총액,
 
             PER: Number(PER),
             PBR: Number(PBR),
@@ -156,6 +182,7 @@ export default function TablePanel(props) {
     }
 
     const 기대수익 = `${Number((cumulativeRatio / NUM_OF_STOCK_ITEMS - 1) * 100).toFixed(1)}%`;
+    const 실수익 = ((cumulativeRealRatio / realStockCount) * 100).toFixed(1) + '%';
     const bsnsDate = props.bsnsDate;
     const thstrm_dt = props.filteredStocks[Object.keys(props.filteredStocks)[0]].thstrm_dt;
 
@@ -172,7 +199,22 @@ export default function TablePanel(props) {
                     { title: `최근 주가 일자`, description: `${bsnsDate}`, textColor: `text-black`, backGround: `bg-blue-200` },
                     { title: `재무정보 일자`, description: `${thstrm_dt}` },
                 ]} />
-                : <></>
+                : <>
+                    <div className="flex w-full">
+                        <Chip className="w-1/2" variant="outlined" size="sm" value={`재무정보 일자: ${thstrm_dt}`} />
+                    </div>
+                    <div className="flex w-full">
+                        <Chip className="w-1/2" variant="outlined" size="sm" value={`최근 주가 일자: ${bsnsDate}`} />
+                        <Chip className="w-1/2" variant="outlined" size="sm" value={`최근 주가 일자: ${(props.endDate).split(`_`)[1]}`} />
+                    </div>
+                    <div className="flex w-full">
+                        <Chip className="w-1/2" variant="outlined" size="sm" value={`추천 종목수: ${NUM_OF_STOCK_ITEMS} 개`} />
+                    </div>
+                    <div className="flex w-full">
+                        <Chip className="w-1/2" variant="outlined" size="sm" value={`목표수익률: ${기대수익}`} />
+                        <Chip className="w-1/2" variant="outlined" size="sm" value={`실수익률: ${실수익}`} />
+                    </div>
+                </>
             }
             <Card className="w-full z-0 overflow-y-auto h-screen">
                 <List className="px-0">

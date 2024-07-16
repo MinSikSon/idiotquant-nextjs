@@ -40,8 +40,8 @@ export default function SearchPanel(props) {
         const itemTextColor = (-1 === index) ? 'text-black' : 'text-white';
         let item = props.item;
         if (false == isNaN(props.item)) {
-            item = Number(item).toFixed(3);
-            item = Util.UnitConversion(item, true);
+            // item = Number(item).toFixed(3);
+            // item = Util.UnitConversion(item, true);
         }
         return (
             <ListItem className={`p-0 px-1 m-0 mx-1 w-11/12 rounded-full border-b-2 border-gray-200 ${bgColor}`}>
