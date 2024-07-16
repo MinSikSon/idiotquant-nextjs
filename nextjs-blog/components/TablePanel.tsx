@@ -59,19 +59,15 @@ const ListNode = (props) => {
 
     let close = props.close;
     // console.log(`[ListNode] props.endMarketInfo`, props.endMarketInfo);
-    let endClosePrice: any = null;
+    let endClosePrice: any = undefined;
     if (!!props.endMarketInfo) {
         endClosePrice = !!props.endMarketInfo[`종가`] ? `${props.endMarketInfo[`종가`]} 원` : `-`;
 
         console.log(`props.endMarketInfo`, props.endMarketInfo);
         console.log(`props.marketCapitalization`, props.marketCapitalization);
 
-
         // NOTE: endMarketInfo 시점에 종가 맞춤 (액면분할 했을 수 있기 때문)
         close = Number(props.marketCapitalization / props.endMarketInfo[`상장주식수`]).toFixed(0);
-    }
-    else {
-        endClosePrice = `-`;
     }
 
     return (
@@ -132,12 +128,9 @@ export default function TablePanel(props) {
                 endMarketInfo = props.endMarketInfo[`data`][getChangedTicker(종목명)];
             }
 
-            endMarketInfo = !!endMarketInfo ? endMarketInfo : undefined;
+            endMarketInfo = !!endMarketInfo ? endMarketInfo : `-`;
 
-            if (undefined == endMarketInfo) {
-
-            }
-            else {
+            if (`-` != endMarketInfo) {
                 let closeBasedEndMarketInfo = 시가총액 / endMarketInfo[`상장주식수`];
                 endMarketInfo[`상장주식수`];
                 // endMarketInfo[`시가총액`];
