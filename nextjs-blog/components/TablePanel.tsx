@@ -63,8 +63,8 @@ const ListNode = (props) => {
     if (!!props.endMarketInfo) {
         endClosePrice = !!props.endMarketInfo[`종가`] ? `${props.endMarketInfo[`종가`]} 원` : `-`;
 
-        console.log(`props.endMarketInfo`, props.endMarketInfo);
-        console.log(`props.marketCapitalization`, props.marketCapitalization);
+        // console.log(`props.endMarketInfo`, props.endMarketInfo);
+        // console.log(`props.marketCapitalization`, props.marketCapitalization);
 
         // NOTE: endMarketInfo 시점에 종가 맞춤 (액면분할 했을 수 있기 때문)
         close = Number(props.marketCapitalization / props.endMarketInfo[`상장주식수`]).toFixed(0);
