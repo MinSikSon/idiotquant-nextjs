@@ -3,12 +3,16 @@
 import { ArrowUturnLeftIcon } from "@heroicons/react/24/outline";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { SearchPanel } from "@/components/panel/search";
 
-const DefaultTopPanel = () => {
+const DefaultTopPanel = (props) => {
     return (
-        <Link href="/">
-            <div>idiot<span className='text-green-400'>.</span>quant</div>
-        </Link>
+        <div className="flex justify-between">
+            <Link className="" href="/">
+                <div>idiot<span className='text-green-400'>.</span>quant</div>
+            </Link>
+            {props.search ? <SearchPanel /> : <></>}
+        </div>
     );
 }
 
@@ -37,11 +41,17 @@ const TopPanelSelector = (props) => {
         return <TickerTopPanel />;
     }
     if (`backtest` == props.splitedPathname[1] && 3 == props.splitedPathname.length) {
-        return <BackTestTopPanel />
+        return <BackTestTopPanel />;
+    }
+    if (`backtest` == props.splitedPathname[1]) {
+        return <DefaultTopPanel search={false} />;
+    }
+    if (`search` == props.splitedPathname[1]) {
+        return <DefaultTopPanel search={false} />;
     }
     return (<>
-        <DefaultTopPanel />
-    </>)
+        <DefaultTopPanel search={true} />
+    </>);
 }
 
 export const TopPanel = () => {
