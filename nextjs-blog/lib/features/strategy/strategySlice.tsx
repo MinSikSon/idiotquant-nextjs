@@ -3,7 +3,7 @@ import { setNcavList, getNcavList } from "./strategyAPI";
 
 interface StrategyInfo {
     state: "ready" | "loading" | "loaded" | "get-rejected" | "set-rejected" | "retry";
-    value: object;
+    value: any;
 }
 const initialState: StrategyInfo = {
     state: "ready",
@@ -24,7 +24,7 @@ export const strategySlice = createAppSlice({
         }),
         getStrategyList: create.asyncThunk(
             async ({ financialInfoDate, marketInfoDate }: { financialInfoDate: string, marketInfoDate: string }) => {
-                // console.log(`[getStrategyList]`, financialInfoDate, marketInfoDate);
+                console.log(`[getStrategyList]`, financialInfoDate, marketInfoDate);
                 const res: any = await getNcavList(financialInfoDate, marketInfoDate);
                 return res;
             },

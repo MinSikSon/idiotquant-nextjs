@@ -1,6 +1,9 @@
 //////////////////////////////////////////////////////////////////////////////
+
+import { Button } from "@material-tailwind/react";
+
 // Loading
-export default function Loading() {
+export default function Loading(props) {
     const SimpleLoadingImage = () => {
         return (<>
             <div className="border border-gray-100 shadow rounded-lg px-4 py-0.5 w-full mx-auto">
@@ -41,6 +44,9 @@ export default function Loading() {
     }
 
     return (<>
+        <Button variant="text" loading={true}>
+            {props.loadingMsg}
+        </Button>
         <SimpleLoadingImage />
         <SimpleLoadingImage />
         <SimpleLoadingImage />

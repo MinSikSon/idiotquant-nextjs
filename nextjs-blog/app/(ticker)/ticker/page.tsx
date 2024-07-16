@@ -1,22 +1,31 @@
-// "use client"
+import TablePanel, { ListNodeTemplate } from "@/components/TablePanel";
+import { selectMarketInfoLatestDate } from "@/lib/features/marketInfo/marketInfoSlice";
+import { selectNcavList } from "@/lib/features/strategy/strategySlice";
+import { useAppSelector } from "@/lib/hooks";
 
-// import TablePanel from "@/components/TablePanel";
-// import { selectMarketInfoLatestDate } from "@/lib/features/marketInfo/marketInfoSlice";
-// import { selectNcavList } from "@/lib/features/strategy/strategySlice";
-// import { useAppSelector } from "@/lib/hooks";
-// import React from "react";
+export const Ticker = () => {
+    const bsnsDate = useAppSelector(selectMarketInfoLatestDate);
+    const filteredStocks = useAppSelector(selectNcavList);
+    // console.log(`[Home] filteredStocks`, filteredStocks,`, bsnsDate`, bsnsDate);
 
-// export default function Stock() {
-//     const bsnsDate = useAppSelector(selectMarketInfoLatestDate);
-//     const filteredStocksList = useAppSelector(selectNcavList);
-//     return <>
-//         <TablePanel
-//             marqueueDisplay={true}
+    return <>
+        <TablePanel
+            listHeader={<ListNodeTemplate
+                link={`/`}
+                item1={"종목명"}
+                item2={"현재가"}
+                item3={"➡️"}
+                item4={"목표가"}
+                color={"blue"}
+                bgColor={"bg-gray-200"}
+            />}
+            loadingMsg={"loading"}
 
-//             arrayFilteredStocksList={Object.keys(filteredStocksList)}
-//             latestStockCompanyInfo={filteredStocksList}
-//             marketInfoList={filteredStocksList}
-//             bsnsDate={bsnsDate}
-//         />
-//     </>;
-// }
+            pathname={`ticker`}
+            marqueueDisplay={true}
+
+            filteredStocks={filteredStocks}
+            bsnsDate={bsnsDate}
+        />
+    </>;
+}

@@ -1,7 +1,10 @@
 
 export const getFinancialInfo: any = async (year: string, quarter: string) => {
+    // console.log(`[getFinancialInfo]`, year, quarter);
     const url = `${process.env.NEXT_PUBLIC_API_URL}/stock/financial-info?year=${year}&quarter=${quarter}`
     const res = await fetch(url);
+
+    // console.log(`[getFinancialInfo] res`, res);
 
     return res.json();
 }

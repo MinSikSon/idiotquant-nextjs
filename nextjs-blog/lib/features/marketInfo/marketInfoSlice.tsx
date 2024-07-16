@@ -72,22 +72,23 @@ export const marketInfoSlice = createAppSlice({
         ),
         initMarketInfo: create.asyncThunk(
             async ({ date }: { date: string }) => {
+                console.log(`[initMarketInfo]`, date);
                 const res: any = await getMarketInfo(date); // 20230426
                 return res;
             },
             {
                 pending: (state) => {
-                    // console.log(`pending`);
+                    console.log(`[initMarketInfo] pending`);
                     state.state = "loading";
                 },
                 fulfilled: (state, action) => {
-                    // console.log(`fulfilled`);
+                    console.log(`[initMarketInfo] fulfilled`, action.payload);
                     state.state = "ready-marketInfo";
                     state.loaded = true;
                     state.value = action.payload;
                 },
                 rejected: (state) => {
-                    console.log(`rejected`);
+                    console.log(`[initMarketInfo] rejected`);
                     state.state = "rejected";
                 }
             }

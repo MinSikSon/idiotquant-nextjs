@@ -7,10 +7,9 @@ import { selectNcavList } from "@/lib/features/strategy/strategySlice";
 import { Util } from "@/components/Util";
 
 export default function SearchPanel(props) {
-    // console.log(`[SearchPanel] props`, props);
-    const ncavList: object = useAppSelector(selectNcavList);
-    // console.log(`[SearchPanel] ncavList`, ncavList);
     // console.log(`%cSearchPanel`, `color : white; background : blue`);
+    console.log(`[SearchPanel] props`, props);
+    const ncavList: object = props.ncavList;
 
     let jsonSearchResult = { '종목명': '-', 'stock_code': '-', '종가': 0, '유동자산': 0, '부채총계': 0, '당기순이익': 0, '거래량': 0, '시가총액': 1, '상장주식수': 1/*divide by zero 방지용*/, ...ncavList[props.ticker] };
     // console.log(`jsonSearchResult['종목명']`, jsonSearchResult['종목명']);
@@ -36,12 +35,10 @@ export default function SearchPanel(props) {
                 index = 0;
             }
         }
-        // console.log(`index`, index);
         const bgColor = (-1 === index) ? '' : 'bg-blue-700';
         const titleTextColor = (-1 === index) ? 'text-gray-700' : 'text-white';
         const itemTextColor = (-1 === index) ? 'text-black' : 'text-white';
         let item = props.item;
-        // console.log(`props.item isNaN(props.item)`, props.item, isNaN(props.item));
         if (false == isNaN(props.item)) {
             item = Number(item).toFixed(3);
             item = Util.UnitConversion(item, true);
@@ -58,10 +55,6 @@ export default function SearchPanel(props) {
         );
     }
 
-    // console.log(`props.searchPanelIsOpened`, props.searchPanelIsOpened);
-
-    // console.log(`props.stocksOfInterestPanelOpened`, props.stocksOfInterestPanelOpened);
-    // console.log(`jsonSearchResult`, jsonSearchResult);
     return (
         <div className={`z-10 w-full`}>
             <Chip className="w-fit border-none text-black text-md pb-0 my-0" variant="outlined" value={jsonSearchResult['종목명']} />
