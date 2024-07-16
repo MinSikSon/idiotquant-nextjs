@@ -1,18 +1,13 @@
 
 import React from "react";
 import { Chip, ListItem, ListItemPrefix, ListItemSuffix } from "@material-tailwind/react";
-import { useAppSelector } from "@/lib/hooks";
 
-import { selectNcavList } from "@/lib/features/strategy/strategySlice";
-import { Util } from "@/components/Util";
-
-export default function SearchPanel(props) {
-    // console.log(`%cSearchPanel`, `color : white; background : blue`);
-    console.log(`[SearchPanel] props`, props);
+export default function ItemPanel(props) {
+    // console.log(`%ItemPanel`, `color : white; background : blue`);
+    console.log(`[ItemPanel] props`, props);
     const ncavList: object = props.ncavList;
 
     let jsonSearchResult = { '종목명': '-', 'stock_code': '-', '종가': 0, '유동자산': 0, '부채총계': 0, '당기순이익': 0, '거래량': 0, '시가총액': 1, '상장주식수': 1/*divide by zero 방지용*/, ...ncavList[props.ticker] };
-    // console.log(`jsonSearchResult['종목명']`, jsonSearchResult['종목명']);
     let fairPrice/*적정가*/: number = Number(Number((Number(jsonSearchResult['유동자산']) - Number(jsonSearchResult['부채총계'])) / Number(jsonSearchResult['상장주식수'])).toFixed(0));
     let ratio = Number(fairPrice / Number(jsonSearchResult['종가']));
     if (isNaN(ratio)) {
@@ -43,6 +38,7 @@ export default function SearchPanel(props) {
             // item = Number(item).toFixed(3);
             // item = Util.UnitConversion(item, true);
         }
+
         return (
             <ListItem className={`p-0 px-1 m-0 mx-1 w-11/12 rounded-full border-b-2 border-gray-200 ${bgColor}`}>
                 <ListItemPrefix className="p-0 pl-1 m-0">
@@ -59,20 +55,6 @@ export default function SearchPanel(props) {
         <div className={`z-10 w-full`}>
             <Chip className="w-fit border-none text-black text-md pb-0 my-0" variant="outlined" value={jsonSearchResult['종목명']} />
             <Chip className="border-none text-black text-2xl b-0 py-0 m-0" variant="outlined" value={`${Number(jsonSearchResult['종가']).toLocaleString('ko-KR', { maximumFractionDigits: 0 })}원`} />
-            {/* <CustomChart
-                fairPrice={fairPrice}
-                tickerName={jsonSearchResult['종목명']}
-                bsnsFullDate={(Object.keys(jsonSearchResult).length > 0) ? jsonSearchResult.bsnsDate : '-'}
-
-                marketCapitalization={jsonSearchResult['시가총액']}
-                listedStocks={jsonSearchResult['상장주식수']}
-                marketInfoList={props.marketInfoList}
-
-                responsive={true}
-                display={false}
-                height={'60px'}
-                width={'90px'}
-            /> */}
             <div className={`grid grid-cols-2 pr-1`}>
                 {Object.keys(jsonSearchResult).map((key, index) => <CustomDiv key={index} title={key} item={jsonSearchResult[key]} />)}
             </div>
