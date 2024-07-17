@@ -5,14 +5,13 @@ import Link from "next/link";
 
 import { TemplateArticleSimple } from "./templateArticleSimple";
 import { useAppSelector } from "@/lib/hooks";
-import { selectArticleIndex, selectArticleList, } from "@/lib/features/article/articleSlice";
+import { selectArticleList, } from "@/lib/features/article/articleSlice";
 
 export default function ArticlePage() {
-    const articleIndex = useAppSelector(selectArticleIndex);
     const articleList = useAppSelector(selectArticleList);
 
-    const Article = (props) => {
-        const { index, item, articleIndex } = props;
+    const Article = (props: any) => {
+        const { index, item } = props;
 
         return <div>
             <Link href={`/article/${index}`}>
@@ -34,7 +33,6 @@ export default function ArticlePage() {
                     key={index.toString()}
                     index={index}
                     item={item}
-                    articleIndex={articleIndex}
                 />
             )}
         </div>

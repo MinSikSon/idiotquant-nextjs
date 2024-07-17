@@ -1,16 +1,15 @@
 "use client"
 
-import { GetMeredStocksList, GetStocksFilteredByStrategyNCAV } from "@/components/legacy/Strategy";
+import { GetMeredStocksList, GetStocksFilteredByStrategyNCAV } from "@/components/Strategy";
 import TablePanel, { ListNodeTemplate } from "@/components/TablePanel";
 import { getPrevYearAndQuarter, getYearAndQuarterByDate } from "@/components/yearQuarterMatcher";
 import { getEndMarketInfo, getStartFinancialInfo, getStartMarketInfo, selectEndMarketInfo, selectStartFinancialInfo, selectStartMarketInfo, setBackTestStrategyList } from "@/lib/features/backtest/backtestSlice";
 import { selectMarketInfoList } from "@/lib/features/marketInfo/marketInfoSlice";
-import { setStrategyList } from "@/lib/features/strategy/strategySlice";
 import { useAppDispatch, useAppSelector } from "@/lib/hooks";
 import { Button, Card, CardBody, CardFooter, CardHeader, Slider, Typography } from "@material-tailwind/react";
 import { useState, useEffect } from "react";
 
-const SimpleCard = (props) => {
+const SimpleCard = (props: any) => {
     return (
         <Card className="my-0 w-96">
             {/* <CardHeader
@@ -39,7 +38,7 @@ const SimpleCard = (props) => {
     );
 }
 
-export default function BackTesting(props) {
+export default function BackTesting(props: any) {
     const dispatch = useAppDispatch();
     const startFinancialInfo = useAppSelector(selectStartFinancialInfo);
     const startMarketInfo = useAppSelector(selectStartMarketInfo);
@@ -67,7 +66,7 @@ export default function BackTesting(props) {
         }
     }, [marketInfoDateList]);
 
-    function handleChange(e) {
+    function handleChange(e: any) {
         const offset = Number((100 / marketInfoDateList.length).toFixed(0));
         console.log(`handleChange`, e, `, e.target.value:`, e.target.value);
         const index = e.target.value / offset;
@@ -80,7 +79,7 @@ export default function BackTesting(props) {
         // offset 에 따라 화면에 값 출력
     }
 
-    function handleChange2(e) {
+    function handleChange2(e: any) {
         const offset = Number((100 / marketInfoDateList.length).toFixed(0));
         console.log(`handleChange`, e, `, e.target.value:`, e.target.value);
         const index = e.target.value / offset;

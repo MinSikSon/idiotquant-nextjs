@@ -2,19 +2,19 @@
 import React from "react";
 import { Chip, ListItem, ListItemPrefix, ListItemSuffix } from "@material-tailwind/react";
 
-export default function ItemPanel(props) {
+export default function ItemPanel(props: any) {
     // console.log(`%ItemPanel`, `color : white; background : blue`);
     console.log(`[ItemPanel] props`, props);
-    const ncavList: object = props.ncavList;
+    const ncavList: any = props.ncavList;
 
-    let jsonSearchResult = { '종목명': '-', 'stock_code': '-', '종가': 0, '유동자산': 0, '부채총계': 0, '당기순이익': 0, '거래량': 0, '시가총액': 1, '상장주식수': 1/*divide by zero 방지용*/, ...ncavList[props.ticker] };
+    let jsonSearchResult: any = { '종목명': '-', 'stock_code': '-', '종가': 0, '유동자산': 0, '부채총계': 0, '당기순이익': 0, '거래량': 0, '시가총액': 1, '상장주식수': 1/*divide by zero 방지용*/, ...ncavList[props.ticker] };
     let fairPrice/*적정가*/: number = Number(Number((Number(jsonSearchResult['유동자산']) - Number(jsonSearchResult['부채총계'])) / Number(jsonSearchResult['상장주식수'])).toFixed(0));
     let ratio = Number(fairPrice / Number(jsonSearchResult['종가']));
     if (isNaN(ratio)) {
         ratio = 0;
     }
 
-    const CustomDiv = (props) => {
+    const CustomDiv = (props: any) => {
         let index = String(props.item).indexOf('-');
         if (-1 === index) {
             if ("전 분기 적자" === props.item) {

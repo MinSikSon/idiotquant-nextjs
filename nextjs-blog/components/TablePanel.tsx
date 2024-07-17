@@ -7,11 +7,11 @@ import Link from "next/link";
 import { getChangedTicker } from "./tickerMapper";
 import { usePathname } from "next/navigation";
 
-const MarQueue2 = (props) => {
+const MarQueue2 = (props: any) => {
     const CardList = () => {
         return (
             <>
-                {props.contents.map((content, index) => <CustomCard key={index} title={content.title} description={content.description} textColor={content.textColor} backGround={content.backGround} />)}
+                {props.contents.map((content: any, index: any) => <CustomCard key={index} title={content.title} description={content.description} textColor={content.textColor} backGround={content.backGround} />)}
             </>
         );
     };
@@ -28,7 +28,7 @@ const MarQueue2 = (props) => {
     );
 }
 
-export const ListNodeTemplate = (props) => {
+export const ListNodeTemplate = (props: any) => {
     return (
         <Link href={props.link}>
             <ListItem className={`p-0 border-b-2 ${props.bgColor}`}>
@@ -52,7 +52,7 @@ export const ListNodeTemplate = (props) => {
         </Link>
     );
 }
-const ListNode = (props) => {
+const ListNode = (props: any) => {
     const percentCompareFirst = (props.ratio - 100) >= 100 ? true : false;
     const percentCompareSecond = (props.ratio - 100) >= 50 ? true : false;
     const selectedColorByRatio = percentCompareFirst ? 'red' : (percentCompareSecond ? 'yellow' : 'blue');
@@ -85,7 +85,7 @@ const ListNode = (props) => {
 
 //////////////////////////////////////////////////////////////////////////////
 // Table
-export default function TablePanel(props) {
+export default function TablePanel(props: any) {
     // console.log(`%c TablePanel`, `color:blue; background:white`);
 
     const stockNameList = Object.keys(props.filteredStocks);
@@ -179,7 +179,7 @@ export default function TablePanel(props) {
     const bsnsDate = props.bsnsDate;
     const thstrm_dt = props.filteredStocks[Object.keys(props.filteredStocks)[0]].thstrm_dt;
 
-    tbody.sort((a, b) => { return b.weight - a.weight; });
+    tbody.sort((a: any, b: any) => { return b.weight - a.weight; });
 
     console.log(`TODO: 필터기능 추가`);
     return (

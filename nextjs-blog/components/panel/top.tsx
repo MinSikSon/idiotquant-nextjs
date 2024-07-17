@@ -5,7 +5,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { SearchPanel } from "@/components/panel/search";
 
-const DefaultTopPanel = (props) => {
+const DefaultTopPanel = (props: any) => {
     return (
         <div className="flex justify-between">
             <Link className="" href="/">
@@ -32,7 +32,7 @@ const BackTestTopPanel = () => {
     );
 }
 
-const TopPanelSelector = (props) => {
+const TopPanelSelector = (props: any) => {
     // console.log(`[TopPanelSelector] props.splitedPathname`, props.splitedPathname, props.splitedPathname.length);
     if (!!!props.splitedPathname) {
         return <DefaultTopPanel />;

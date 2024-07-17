@@ -4,8 +4,8 @@ import React, { useEffect } from "react";
 import { useAppDispatch, useAppSelector } from "@/lib/hooks";
 import { getList, initFinancialInfo, selectFinancialInfo, selectFinancialInfoList, selectFinancialInfoState, selectLatestDate, selectLoaded, setList, setStateLoading } from "@/lib/features/financialInfo/financialInfoSlice";
 import { getMarketList, initMarketInfo, selectMarketInfo, selectMarketInfoLatestDate, selectMarketInfoList, selectMarketInfoLoaded, selectMarketInfoState, setMarketInfoStateLoading, setMarketList } from "@/lib/features/marketInfo/marketInfoSlice";
-import { getStrategyList, setStrategyList, selectNcavListState, setRetry, setLoading, selectNcavList } from "@/lib/features/strategy/strategySlice";
-import { GetMeredStocksList, GetStockNameArrayFilteredByStrategyNCAV, GetStocksFilteredByStrategyNCAV } from "./legacy/Strategy";
+import { getStrategyList, setStrategyList, selectNcavListState, setLoading, selectNcavList } from "@/lib/features/strategy/strategySlice";
+import { GetMeredStocksList, GetStocksFilteredByStrategyNCAV } from "@/components/Strategy";
 
 export const LoadData = () => {
     const dispatch = useAppDispatch();
@@ -15,7 +15,7 @@ export const LoadData = () => {
     const financialLatestDate: any = useAppSelector(selectLatestDate);
 
     const marketInfoState = useAppSelector(selectMarketInfoState);
-    const marketInfo: object = useAppSelector(selectMarketInfo);
+    const marketInfo: any = useAppSelector(selectMarketInfo);
     const marketInfoList = useAppSelector(selectMarketInfoList);
     const marketLatestDate: any = useAppSelector(selectMarketInfoLatestDate);
 
@@ -127,7 +127,7 @@ export const LoadData = () => {
                 const { year, quarter } = financialLatestDate;
                 // console.log(`financialLatestDate`, financialLatestDate);
 
-                const ncavStrategyList = {
+                const ncavStrategyList: any = {
                     financialInfoDate: `${year}${quarter}Q`,
                     marketInfoDate: marketInfo[`date`],
                     ncavList: JSON.stringify(filteredStocks)

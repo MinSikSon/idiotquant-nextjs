@@ -4,7 +4,7 @@ import React from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 
-const DefaultNav = (props) => {
+const DefaultNav = (props: any) => {
 
     const defaultDeco = 'pr-1';
     const decorations = 'underline decoration-green-400';

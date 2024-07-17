@@ -3,11 +3,11 @@
   "description": "nextjs 14",
   "scripts": {
     "dev": "next dev",
-    "build": "next build && next export",
+    "build": "next build",
     "start": "next start"
   },
   "dependencies": {
-    "@heroicons/react": "^2.1.4",
+    "@heroicons/react": "^2.1.5",
     "@material-tailwind/react": "^2.1.9",
     "@reduxjs/toolkit": "^2.2.6",
     "axios": "^1.4.0",
@@ -18,8 +18,8 @@
     "next-redux-wrapper": "^8.1.0",
     "node": "^20.15.0",
     "react": "^18.2.25",
+    "react-dom": "^18.2.25",
     "react-chartjs-2": "^5.2.0",
-    "react-dom": "^18.3.1",
     "react-redux": "^9.1.2",
     "redux-thunk": "^3.1.0",
     "typescript": "5.4.5"

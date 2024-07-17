@@ -1,17 +1,17 @@
-"use client"
+export async function generateStaticParams() {
+    const posts = await fetch('https://.../article').then((res) => res.json())
 
-import { selectArticleList, setArticleIndex } from "@/lib/features/article/articleSlice"
-import { useAppDispatch, useAppSelector } from "@/lib/hooks"
-import { useEffect } from "react";
+    return posts.map((post: any) => ({
+        id: post.id,
+    }))
+}
+
+import { selectArticleList } from "@/lib/features/article/articleSlice"
+import { useAppSelector } from "@/lib/hooks"
 import { TemplateArticle } from "../templateArticle";
 
 export default function Item({ params: { id } }: { params: { id: number } }) {
-    const dispatch = useAppDispatch();
     const articleList = useAppSelector(selectArticleList);
-
-    useEffect(() => {
-        dispatch(setArticleIndex(id));
-    }, []);
 
     return <TemplateArticle
         title={articleList[id].title}

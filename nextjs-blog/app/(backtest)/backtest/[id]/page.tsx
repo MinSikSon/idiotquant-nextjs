@@ -1,4 +1,10 @@
-"use client"
+export async function generateStaticParams() {
+    const posts = await fetch('https://.../backtest').then((res) => res.json())
+
+    return posts.map((post: any) => ({
+        id: post.id,
+    }))
+}
 
 import ItemPanel from "@/components/itemPanel";
 import { selectBackTestNcavList } from "@/lib/features/backtest/backtestSlice";
