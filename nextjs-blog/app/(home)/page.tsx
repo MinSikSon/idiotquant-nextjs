@@ -1,7 +1,7 @@
 "use client"
 
+import { Ticker } from "@/components/main";
 import React from "react";
-import { Ticker } from "../(ticker)/ticker/page";
 
 export default function Home() {
   return <Ticker />;
