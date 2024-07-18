@@ -1,5 +1,5 @@
 const nextConfig = {
-    output: 'export',
+    // output: 'export',
     distDir: 'out',
     webpack: (config) => {
         // Webpack 캐시를 비우고 새로운 캐시를 설정
@@ -16,9 +16,9 @@ const nextConfig = {
 
         return config;
     },
-    experimental: {
-        // runtime: 'experimental-edge',
-    },
+    // experimental: {
+    // runtime: 'experimental-edge',
+    // },
     // reactStrictMode: true,
     // swcMinify: true,
     // images: {
