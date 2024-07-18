@@ -1,12 +1,3 @@
-// export async function generateStaticParams() {
-//     const posts = await fetch('https://.../article').then((res) => res.json())
-
-//     return posts.map((post: any) => ({
-//         id: post.id,
-//     }))
-// }
-
-"use client"
 
 import { selectArticleList } from "@/lib/features/article/articleSlice"
 import { useAppSelector } from "@/lib/hooks"
