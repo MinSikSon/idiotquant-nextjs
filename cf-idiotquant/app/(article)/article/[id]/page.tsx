@@ -1,3 +1,4 @@
+"use client"
 
 import { selectArticleList } from "@/lib/features/article/articleSlice"
 import { useAppSelector } from "@/lib/hooks"

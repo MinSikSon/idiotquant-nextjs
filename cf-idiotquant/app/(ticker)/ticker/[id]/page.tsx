@@ -1,3 +1,4 @@
+"use client"
 
 import ItemPanel from "@/components/itemPanel";
 import { selectNcavList } from "@/lib/features/strategy/strategySlice";

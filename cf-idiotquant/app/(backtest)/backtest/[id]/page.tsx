@@ -1,3 +1,4 @@
+"use client"
 
 import ItemPanel from "@/components/itemPanel";
 import { selectBackTestNcavList } from "@/lib/features/backtest/backtestSlice";
