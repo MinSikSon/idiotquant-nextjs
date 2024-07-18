@@ -19,3 +19,5 @@ export default function Item({ params: { id } }: { params: { id: string } }) {
         ncavList={ncavList}
     />
 }
+
+export const runtime = 'edge'

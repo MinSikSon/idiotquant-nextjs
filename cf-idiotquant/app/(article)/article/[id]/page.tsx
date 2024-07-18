@@ -23,3 +23,5 @@ export default function Item({ params: { id } }: { params: { id: number } }) {
         img={articleList[id].img}
     />
 }
+
+export const runtime = 'edge'
