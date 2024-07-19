@@ -43,15 +43,15 @@ export default function BackTesting(props: any) {
     const startFinancialInfo = useAppSelector(selectStartFinancialInfo);
     const startMarketInfo = useAppSelector(selectStartMarketInfo);
     const endMarketInfo = useAppSelector(selectEndMarketInfo);
-    console.log(`[BackTesting] startFinancialInfo`, startFinancialInfo);
-    console.log(`[BackTesting] startMarketInfo`, startMarketInfo);
-    console.log(`[BackTesting] endMarketInfo`, endMarketInfo);
+    // console.log(`[BackTesting] startFinancialInfo`, startFinancialInfo);
+    // console.log(`[BackTesting] startMarketInfo`, startMarketInfo);
+    // console.log(`[BackTesting] endMarketInfo`, endMarketInfo);
 
-    console.log(`Step1. 선택할 수 있는 marketInfo date 출력`);
+    // console.log(`Step1. 선택할 수 있는 marketInfo date 출력`);
     const marketInfoDateList = useAppSelector(selectMarketInfoList).replaceAll("[", "").replaceAll("]", "").split(",").map(data => data.replaceAll("\"", ""));
 
-    console.log(`Step2. 해당 marketInfo date 선택하면, financialInfo 와 조합하여 종목 추출 (일단은 전략은 NCAV 로 통일)`);
-    console.log(`Step3. run backtesting 버튼 누르면 실행 (현재 주가와 비교)`);
+    // console.log(`Step2. 해당 marketInfo date 선택하면, financialInfo 와 조합하여 종목 추출 (일단은 전략은 NCAV 로 통일)`);
+    // console.log(`Step3. run backtesting 버튼 누르면 실행 (현재 주가와 비교)`);
 
     const [startIndex, setStartIndex] = useState(0);
     const [endIndex, setEndIndex] = useState(0);
@@ -68,11 +68,11 @@ export default function BackTesting(props: any) {
 
     function handleChange(e: any) {
         const offset = Number((100 / marketInfoDateList.length).toFixed(0));
-        console.log(`handleChange`, e, `, e.target.value:`, e.target.value);
+        // console.log(`handleChange`, e, `, e.target.value:`, e.target.value);
         const index = e.target.value / offset;
         // console.log(`marketInfoDateList`, marketInfoDateList);
-        console.log(`marketInfoDateList[index: ${index}]`, marketInfoDateList[index]);
-        console.log(`startIndex`, startIndex, `, endIndex`, endIndex);
+        // console.log(`marketInfoDateList[index: ${index}]`, marketInfoDateList[index]);
+        // console.log(`startIndex`, startIndex, `, endIndex`, endIndex);
         if (index < endIndex) {
             setStartIndex(index);
         }
@@ -81,11 +81,11 @@ export default function BackTesting(props: any) {
 
     function handleChange2(e: any) {
         const offset = Number((100 / marketInfoDateList.length).toFixed(0));
-        console.log(`handleChange`, e, `, e.target.value:`, e.target.value);
+        // console.log(`handleChange`, e, `, e.target.value:`, e.target.value);
         const index = e.target.value / offset;
         // console.log(`marketInfoDateList`, marketInfoDateList);
-        console.log(`marketInfoDateList[index: ${index}]`, marketInfoDateList[index]);
-        console.log(`startIndex`, startIndex, `, endIndex`, endIndex);
+        // console.log(`marketInfoDateList[index: ${index}]`, marketInfoDateList[index]);
+        // console.log(`startIndex`, startIndex, `, endIndex`, endIndex);
         if (startIndex < index) {
             setEndIndex(index);
         }
@@ -97,7 +97,7 @@ export default function BackTesting(props: any) {
     let prevEndYearAndQuarter = { year: 9999, quarter: 1 };
 
     function runBacktest() {
-        console.log(`[runBacktest]`, startIndex, endIndex, prevStartYearAndQuarter);
+        // console.log(`[runBacktest]`, startIndex, endIndex, prevStartYearAndQuarter);
 
         const startMarketInfoDate: string = marketInfoDateList[startIndex].split("_")[1];
         const endMarketInfoDate: string = marketInfoDateList[endIndex].split("_")[1];
@@ -142,7 +142,7 @@ export default function BackTesting(props: any) {
         endValue = endValue > 100 ? 100 : endValue;
     }
 
-    console.log(`[BackTesting] filteredStocksList`, filteredStocks);
+    // console.log(`[BackTesting] filteredStocksList`, filteredStocks);
     // console.log(`[BackTesting] bsnsDate`, startMarketInfo[`date`]);
 
     return <>

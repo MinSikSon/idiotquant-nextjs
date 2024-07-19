@@ -4,7 +4,7 @@ import { Chip, ListItem, ListItemPrefix, ListItemSuffix } from "@material-tailwi
 
 export default function ItemPanel(props: any) {
     // console.log(`%ItemPanel`, `color : white; background : blue`);
-    console.log(`[ItemPanel] props`, props);
+    // console.log(`[ItemPanel] props`, props);
     const ncavList: any = props.ncavList;
 
     let jsonSearchResult: any = { '종목명': '-', 'stock_code': '-', '종가': 0, '유동자산': 0, '부채총계': 0, '당기순이익': 0, '거래량': 0, '시가총액': 1, '상장주식수': 1/*divide by zero 방지용*/, ...ncavList[props.ticker] };

@@ -38,7 +38,7 @@ export const LoadData = () => {
     }, [])
 
     function checkInCommon() {
-        console.log(`checkInCommon`);
+        // console.log(`checkInCommon`);
         if ("ready-financialInfoList" == financialInfoState)
             if ("ready-marketInfoList" == marketInfoState) {
                 const { year, quarter } = financialLatestDate;
@@ -54,7 +54,7 @@ export const LoadData = () => {
 
         if ("ready-financialInfo" == financialInfoState)
             if ("ready-marketInfo" == marketInfoState) {
-                console.log(`ready financialInfo & marketInfo`);
+                // console.log(`ready financialInfo & marketInfo`);
             }
     }
 
@@ -83,7 +83,7 @@ export const LoadData = () => {
     }, [financialInfoState])
 
     useEffect(() => {
-        console.log(`useEffect3 [LoadData] marketInfoState`, marketInfoState);
+        // console.log(`useEffect3 [LoadData] marketInfoState`, marketInfoState);
         if ("ready-marketInfoList" == marketInfoState) {
             // console.log(`[LoadData] [ready-marketInfoList]`, marketLatestDate);
         }
@@ -119,7 +119,7 @@ export const LoadData = () => {
     }, [marketInfoState])
 
     useEffect(() => {
-        console.log(`useEffect4 [LoadData] financialInfo, marketInfo`, financialInfo, !!financialInfo, marketInfo, !!marketInfo);
+        // console.log(`useEffect4 [LoadData] financialInfo, marketInfo`, financialInfo, !!financialInfo, marketInfo, !!marketInfo);
         if (true == !!financialInfo && Object.keys(financialInfo).length > 0)
             if (true == !!marketInfo && Object.keys(marketInfo).length > 0) {
                 const mergedStockInfo = GetMeredStocksList(financialInfo, marketInfo);
@@ -138,7 +138,7 @@ export const LoadData = () => {
 
 
     useEffect(() => {
-        console.log(`useEffect5 [LoadData] ncavListState`, ncavListState);
+        // console.log(`useEffect5 [LoadData] ncavListState`, ncavListState);
         if ("get-rejected" == ncavListState) {
             const afinancialInfoList = String(financialInfoList).split(",");
             const latestFinancialInfoList = afinancialInfoList[afinancialInfoList.length - 1];
@@ -156,7 +156,7 @@ export const LoadData = () => {
         }
     }, [ncavListState]);
 
-    console.log(`ncavList`, ncavList);
+    // console.log(`ncavList`, ncavList);
 
     return (
         <></>
