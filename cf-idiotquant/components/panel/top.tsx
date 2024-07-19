@@ -62,7 +62,7 @@ export const TopPanel = () => {
     // console.log(`splitedPathname`, splitedPathname);
 
     return <>
-        <div className="fixed top-0 z-40 w-full">
+        <div className="fixed top-0 z-40 w-full h-10">
             <div className='w-full bg-white text-xl pl-2 drop-shadow-md'>
                 <TopPanelSelector splitedPathname={splitedPathname} />
             </div>

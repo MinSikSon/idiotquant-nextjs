@@ -19,11 +19,15 @@ export default function RootLayout({
       <html lang="en">
         <body>
           <LoadData />
-          <TopPanel />
-          <div className="fixed top-8 w-full">
-            {children}
+          <div>
+            <TopPanel />
+            <div className="h-10"></div>
+            <div className="w-full y-full scroll-auto">
+              {children}
+            </div>
+            <div className="h-10"></div>
+            <Nav />
           </div>
-          <Nav />
         </body>
       </html>
     </StoreProvider>
