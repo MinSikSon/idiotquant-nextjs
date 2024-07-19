@@ -1,0 +1,7 @@
+name = "cf-idiotquant"
+
+compatibility_flags = ["nodejs_compat"]
+
+[[kv_namespaces]]
+binding = "MY_KV"
+id = "cac86facadfa4732b69a785756f540e2"
