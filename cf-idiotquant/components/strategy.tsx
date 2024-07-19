@@ -1,17 +1,17 @@
 import { cleansing, isAllValid } from "@/lib/DataCleansing";
 
 
-function filteredByNcavStrategy(arrFinancialMarketInfo) {
-    function compareTwo(array, key1, key2) {
-        return array.filter(item => isAllValid(item[key1], item[key2], true) && Number(item[key1]) >= Number(item[key2]));
+function filteredByNcavStrategy(arrFinancialMarketInfo: any) {
+    function compareTwo(array: any, key1: any, key2: any) {
+        return array.filter((item: any) => isAllValid(item[key1], item[key2], true) && Number(item[key1]) >= Number(item[key2]));
     }
 
-    function compareThree(array, key1, key2, key3) {
-        return array.filter(item => isAllValid(item[key1], item[key2], item[key3]) && (Number(item[key1]) + Number(item[key2])) >= Number(item[key3]));
+    function compareThree(array: any, key1: any, key2: any, key3: any) {
+        return array.filter((item: any) => isAllValid(item[key1], item[key2], item[key3]) && (Number(item[key1]) + Number(item[key2])) >= Number(item[key3]));
     }
 
-    function filteredByCompare(array, keyA, keyB, keyC) {
-        return array.filter(item => (isAllValid(item[keyA], item[keyB], item[keyC]) && (Number(item[keyA]) + Number(item[keyB])) <= Number(item[keyC])));
+    function filteredByCompare(array: any, keyA: any, keyB: any, keyC: any) {
+        return array.filter((item: any) => (isAllValid(item[keyA], item[keyB], item[keyC]) && (Number(item[keyA]) + Number(item[keyB])) <= Number(item[keyC])));
     }
 
     const arrFilteredByNCAV = filteredByCompare(arrFinancialMarketInfo, '시가총액', '부채총계', '유동자산');
@@ -19,7 +19,7 @@ function filteredByNcavStrategy(arrFinancialMarketInfo) {
     return arrFilteredByNCAV;
 }
 
-export function GetStockNameArrayFilteredByStrategyNCAV(stockCompanyInfo) {
+export function GetStockNameArrayFilteredByStrategyNCAV(stockCompanyInfo: any) {
     const arrObjFinancialMarketInfo = Array.from(Object.values(cleansing(stockCompanyInfo, ['거래량'])));
     const arrObjFilteredByNCAV = filteredByNcavStrategy(arrObjFinancialMarketInfo);
 
@@ -39,10 +39,10 @@ export function GetStockNameArrayFilteredByStrategyNCAV(stockCompanyInfo) {
     return companyList;
 }
 
-export function GetStocksFilteredByStrategyNCAV(stockCompanyInfo) {
+export function GetStocksFilteredByStrategyNCAV(stockCompanyInfo: any) {
     const filteredStockNameList = GetStockNameArrayFilteredByStrategyNCAV(stockCompanyInfo);
 
-    let filteredStocks = {};
+    let filteredStocks: any = {};
     for (const i in filteredStockNameList) {
         const stockName = filteredStockNameList[i];
         filteredStocks[stockName] = stockCompanyInfo[stockName];
@@ -51,9 +51,9 @@ export function GetStocksFilteredByStrategyNCAV(stockCompanyInfo) {
     return filteredStocks;
 }
 
-export function GetMeredStocksList(financialInfo, marketInfo) {
-    let mergedStockInfo = {};
-    for (const [key, value] of Object.entries(financialInfo)) {
+export function GetMeredStocksList(financialInfo: any, marketInfo: any) {
+    let mergedStockInfo: any = {};
+    for (const [key, value] of Object.entries<any>(financialInfo)) {
         if (true == !!!marketInfo[`data`][key]) continue;
         mergedStockInfo[key] = { ...value, ...marketInfo[`data`][key] };
     }
@@ -62,15 +62,15 @@ export function GetMeredStocksList(financialInfo, marketInfo) {
 }
 
 // filter 선택에 따라서, on/off 되게만 해도 좋을듯?
-export function GetArrayFilteredByStrategyExample(stockCompanyInfo) {
+export function GetArrayFilteredByStrategyExample(stockCompanyInfo: any) {
     let arrFinancialMarketInfo = Array.from(Object.values(cleansing(stockCompanyInfo, ['PBR', '거래량', 'EPS'])));
 
     // 항목 추가
     arrFinancialMarketInfo.forEach(item => item['weight'] = 0);
-    function addWeight(array) {
+    function addWeight(array: any) {
         let weight = 0;
 
-        array.forEach(item => item['weight'] += (++weight));
+        array.forEach((item: any) => item['weight'] += (++weight));
 
         return array;
     }

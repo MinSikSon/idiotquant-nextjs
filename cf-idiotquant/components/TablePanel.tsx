@@ -1,6 +1,6 @@
 
 import { Card, Chip, List, ListItem, ListItemPrefix, ListItemSuffix, Typography } from "@material-tailwind/react";
-import { Util } from "./Util";
+import { Util } from "./util";
 import CustomCard from "@/components/CustomCard";
 import Loading from "@/components/Loading";
 import Link from "next/link";
@@ -150,9 +150,9 @@ export default function TablePanel(props: any) {
             ratio: Number(ratio * 100).toFixed(0),
             close: Number(종가).toLocaleString(),
             fairPrice: Number(fairPrice).toLocaleString(),
-            currentAssets: Util.UnitConversion(유동자산),
-            liabilities: Util.UnitConversion(부채총계),
-            netIncome: Util.UnitConversion(당기순이익),
+            currentAssets: Util.UnitConversion(유동자산, false),
+            liabilities: Util.UnitConversion(부채총계, false),
+            netIncome: Util.UnitConversion(당기순이익, false),
             // marketCapitalization: Util.UnitConversion(시가총액),
             marketCapitalization: 시가총액,
 
@@ -214,7 +214,6 @@ export default function TablePanel(props: any) {
                     {props.listHeader}
                     {(tbody.length > 0) ? tbody.map((item: any, index: any) => <ListNode key={index} {...item} pathname={props.pathname} />) : <></>}
                 </List>
-                <div className="pb-32" />
             </Card>
         </>
     );

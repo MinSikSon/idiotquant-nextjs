@@ -1,6 +1,6 @@
 "use client"
 
-import { GetMeredStocksList, GetStocksFilteredByStrategyNCAV } from "@/components/Strategy";
+import { GetMeredStocksList, GetStocksFilteredByStrategyNCAV } from "@/components/strategy";
 import TablePanel, { ListNodeTemplate } from "@/components/TablePanel";
 import { getPrevYearAndQuarter, getYearAndQuarterByDate } from "@/components/yearQuarterMatcher";
 import { getEndMarketInfo, getStartFinancialInfo, getStartMarketInfo, selectEndMarketInfo, selectStartFinancialInfo, selectStartMarketInfo, setBackTestStrategyList } from "@/lib/features/backtest/backtestSlice";
@@ -64,7 +64,7 @@ export default function BackTesting(props: any) {
         if (0 == endIndex) {
             setEndIndex(marketInfoDateList.length - 1);
         }
-    }, [marketInfoDateList]);
+    }, [startIndex, endIndex, marketInfoDateList]);
 
     function handleChange(e: any) {
         const offset = Number((100 / marketInfoDateList.length).toFixed(0));

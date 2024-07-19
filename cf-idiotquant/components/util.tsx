@@ -1,7 +1,7 @@
 //////////////////////////////////////////////////////////////////////////////
 // Util
 export class Util {
-    static UnitConversion(num, addWon) {
+    static UnitConversion(num: number, addWon: boolean) {
         if (isNaN(num)) {
             return '0원';
         }
@@ -10,13 +10,13 @@ export class Util {
 
         let conversionCount = 0;
 
-        let n = Number(num);
+        let n: number = Number(num);
         if (n > 0) {
             for (let i = 0; i < 10; i++) {
                 if (n < 10000) {
                     break;
                 }
-                n = (n / 10000).toFixed(1);
+                n = Number((n / 10000).toFixed(1));
                 conversionCount++;
             }
         }
@@ -25,7 +25,7 @@ export class Util {
                 if (n > -10000) {
                     break;
                 }
-                n = (n / 10000).toFixed(1);
+                n = Number((n / 10000).toFixed(1));
                 conversionCount++;
             }
         }
@@ -49,10 +49,10 @@ export class Util {
 };
 
 
-export function escapeSpecialCharacters(url) {
+export function escapeSpecialCharacters(url: any) {
     // 특수 문자를 정의합니다.
     const specialCharacters = /[!#$%&'()*+,/:;=?@[\]<>\\^`{|}~.]/g;
 
     // 특수 문자 앞에 백슬래시를 추가합니다.
-    return url.replace(specialCharacters, match => '\\' + match);
+    return url.replace(specialCharacters, (match: any) => '\\' + match);
 }

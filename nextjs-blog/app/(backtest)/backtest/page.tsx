@@ -48,7 +48,7 @@ export default function BackTesting(props: any) {
     console.log(`[BackTesting] endMarketInfo`, endMarketInfo);
 
     console.log(`Step1. 선택할 수 있는 marketInfo date 출력`);
-    const marketInfoDateList = useAppSelector(selectMarketInfoList).replaceAll("[", "").replaceAll("]", "").split(",").map(data => data.replaceAll("\"", ""));
+    const marketInfoDateList = useAppSelector(selectMarketInfoList).replaceAll("[", "").replaceAll("]", "").split(",").map((data: any) => data.replaceAll("\"", ""));
 
     console.log(`Step2. 해당 marketInfo date 선택하면, financialInfo 와 조합하여 종목 추출 (일단은 전략은 NCAV 로 통일)`);
     console.log(`Step3. run backtesting 버튼 누르면 실행 (현재 주가와 비교)`);

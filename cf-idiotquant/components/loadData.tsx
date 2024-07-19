@@ -5,7 +5,7 @@ import { useAppDispatch, useAppSelector } from "@/lib/hooks";
 import { getList, initFinancialInfo, selectFinancialInfo, selectFinancialInfoList, selectFinancialInfoState, selectLatestDate, selectLoaded, setList, setStateLoading } from "@/lib/features/financialInfo/financialInfoSlice";
 import { getMarketList, initMarketInfo, selectMarketInfo, selectMarketInfoLatestDate, selectMarketInfoList, selectMarketInfoLoaded, selectMarketInfoState, setMarketInfoStateLoading, setMarketList } from "@/lib/features/marketInfo/marketInfoSlice";
 import { getStrategyList, setStrategyList, selectNcavListState, setLoading, selectNcavList } from "@/lib/features/strategy/strategySlice";
-import { GetMeredStocksList, GetStocksFilteredByStrategyNCAV } from "@/components/Strategy";
+import { GetMeredStocksList, GetStocksFilteredByStrategyNCAV } from "@/components/strategy";
 
 export const LoadData = () => {
     const dispatch = useAppDispatch();
