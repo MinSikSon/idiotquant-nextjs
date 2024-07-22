@@ -1,44 +1,49 @@
 import { PayloadAction } from "@reduxjs/toolkit";
 import { createAppSlice } from "@/lib/createAppSlice";
-
-export interface Article {
-    title: string;
-    subTitle: string;
-    link: string;
-    detail: string[];
-    img: string;
-}
+import { escapeSpecialCharacters } from "@/components/util";
+import { Web3CardPropsType } from "@/components/topCreators2";
 
 interface ArticleList {
     index: number;
-    article: Article[];
+    article: Web3CardPropsType[];
 }
 
 const initialState: ArticleList = {
     index: 0,
     article: [
         {
-            title: '투자 격언',
-            subTitle: '벤저민 그레이엄',
-            link: 'https://namu.wiki/w/벤저민%20그레이엄',
+            cardNum: "0",
+            profileImg: 'https://upload.wikimedia.org/wikipedia/commons/2/2a/Benjamin_Graham_%281894-1976%29_portrait_on_23_March_1950.jpg',
+            name: '벤저민 그레이엄',
+            desc: '투자 격언',
+            summary: '청산가치가 시가총액보다 크면서 흑자인 기업에 투자하는 전략',
+            imgs: `https://contents.kyobobook.co.kr/sih/fit-in/458x0/pdt/9780060555665.jpg`,
             detail: [
                 '청산가치가 시가총액보다 크면서 흑자인 기업에 투자하는 전략',
                 '조건에 부합하는 종목 20~30 개 정도를 매수 하는 전략',
                 '그러나 종목이 몇 개 없다면, 1개 기업에 내 자산의 최대 10% 만 투자하도록'
             ],
-            img: 'https://upload.wikimedia.org/wikipedia/commons/2/2a/Benjamin_Graham_%281894-1976%29_portrait_on_23_March_1950.jpg'
         },
         {
-            title: '투자 격언',
-            subTitle: '워렌 버핏',
-            link: 'https://namu.wiki/w/워렌%20버핏',
+            cardNum: "1",
+            profileImg: 'https://upload.wikimedia.org/wikipedia/commons/5/51/Warren_Buffett_KU_Visit.jpg',
+            name: '워렌 버핏',
+            desc: '투자 격언',
+            summary: '좋은 기업을 좋은 가격에 사라',
+            imgs: "https://d28hgpri8am2if.cloudfront.net/book_images/cvr9780857208439_9780857208439_hr.jpg",
             detail: ['좋은 기업을 좋은 가격에 사라'],
-            img: 'https://upload.wikimedia.org/wikipedia/commons/5/51/Warren_Buffett_KU_Visit.jpg'
         },
         {
-            title: '퀀트 용어',
-            subTitle: '🌵',
-            link: '',
+            cardNum: "2",
+            profileImg: 'https://www.syesd.co.kr/homepage/syStoryImageFolder/1614817264026_fb8ff05cd5914f31981ff8aab95f8219_01.png',
+            name: '🌵',
+            desc: '퀀트 용어',
+            summary: '계량투자 (퀀트투자): 수치만 보고 투자하는 방식',
+            imgs: "https://www.funds-europe.com/wp-content/uploads/sites/4/2020/04/Quant_investing.jpg",
+
+            // title: '퀀트 용어',
+            // subTitle: '🌵',
+            // link: '',
             detail: [
                 '계량투자 (퀀트투자): 수치만 보고 투자하는 방식',
                 '투자스타일1 밸류 전략: 가치투자',
@@ -49,12 +54,19 @@ const initialState: ArticleList = {
                 '매출 총액 - 매출 원가 = 매출 이익',
                 '매출 이익 - 판매 관리비 = 영업 이익',
             ],
-            img: 'https://www.syesd.co.kr/homepage/syStoryImageFolder/1614817264026_fb8ff05cd5914f31981ff8aab95f8219_01.png'
+            // img: 'https://www.syesd.co.kr/homepage/syStoryImageFolder/1614817264026_fb8ff05cd5914f31981ff8aab95f8219_01.png'
         },
         {
-            title: '기본 용어',
-            subTitle: '🌵🌵',
-            link: '',
+            cardNum: "3",
+            profileImg: 'https://www.syesd.co.kr/homepage/syStoryImageFolder/1614817264026_fb8ff05cd5914f31981ff8aab95f8219_01.png',
+            name: '🌵🌵',
+            desc: '기본 용어',
+            summary: 'CAGR: Compound Annual Growth Rate (연평균성장률)',
+            imgs: "https://www.syesd.co.kr/homepage/syStoryImageFolder/1614817264026_fb8ff05cd5914f31981ff8aab95f8219_01.png",
+
+            // title: '기본 용어',
+            // subTitle: '🌵🌵',
+            // link: '',
             detail: [
                 'CAGR: Compound Annual Growth Rate (연평균성장률)',
                 'NCAV: Net Current Asset Value (순유동자산)',
@@ -78,12 +90,19 @@ const initialState: ArticleList = {
                 'GP/A: GP: Gross Prifit. 매출 총 이익. A: Assets. 총 자산.',
                 'BS: Balance Sheet. 재무 상태표(대차 대조표)',
             ],
-            img: 'https://www.syesd.co.kr/homepage/syStoryImageFolder/1614817264026_fb8ff05cd5914f31981ff8aab95f8219_01.png'
+            // img: 'https://www.syesd.co.kr/homepage/syStoryImageFolder/1614817264026_fb8ff05cd5914f31981ff8aab95f8219_01.png'
         },
         {
-            title: '기타 용어',
-            subTitle: '🌵🌵🌵',
-            link: '',
+            cardNum: "4",
+            profileImg: 'https://www.syesd.co.kr/homepage/syStoryImageFolder/1614817264026_fb8ff05cd5914f31981ff8aab95f8219_01.png',
+            name: '🌵🌵🌵',
+            desc: '기타 용어',
+            summary: '매출 총액 - 매출 원가 = 매출 이익',
+            imgs: "https://www.syesd.co.kr/homepage/syStoryImageFolder/1614817264026_fb8ff05cd5914f31981ff8aab95f8219_01.png",
+
+            // title: '기타 용어',
+            // subTitle: '🌵🌵🌵',
+            // link: '',
             detail: [
                 '매출 총액 - 매출 원가 = 매출 이익',
                 '매출 이익 - 판매 관리비 = 영업 이익',
@@ -95,7 +114,7 @@ const initialState: ArticleList = {
                 '① 주권상장법인, 그 밖에 대통령령으로 정하는 법인(이하 “사업보고서 제출대상법인”이라 한다)은 그 사업보고서를 각 사업연도 경과 후 90일 이내에 금융위원회와 거래소에 제출하여야 한다.',
                 '자본시장과 금융투자업에 관한 법률',
             ],
-            img: 'https://www.syesd.co.kr/homepage/syStoryImageFolder/1614817264026_fb8ff05cd5914f31981ff8aab95f8219_01.png'
+            // img: 'https://www.syesd.co.kr/homepage/syStoryImageFolder/1614817264026_fb8ff05cd5914f31981ff8aab95f8219_01.png'
         },
     ]
 };

@@ -8,11 +8,11 @@ export default function Item({ params: { id } }: { params: { id: number } }) {
     const articleList = useAppSelector(selectArticleList);
 
     return <TemplateArticle
-        title={articleList[id].title}
-        subTitle={articleList[id].subTitle}
-        link={articleList[id].link}
+        title={articleList[id].name}
+        subTitle={articleList[id].desc}
+        // link={articleList[id].link}
         detail={articleList[id].detail}
-        img={articleList[id].img}
+        img={articleList[id].imgs}
     />
 }
 
