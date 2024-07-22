@@ -32,11 +32,11 @@ function Web3Card({
     profileImg,
     summary,
 }: Web3CardPropsType) {
-    console.log(`[Web3Card] imgs`, imgs);
+    // console.log(`[Web3Card] imgs`, imgs);
     const url: string = imgs;
-    console.log(`url`, url);
+    // console.log(`url`, url);
 
-    console.log(`cardNum`, cardNum);
+    // console.log(`cardNum`, cardNum);
     return (
         <Link href={`/article/${Number(cardNum)}`}>
             <Card className="border border-gray-300 overflow-hidden shadow-sm">
