@@ -105,6 +105,6 @@ export default function Home() {
 
   return <>
     <Ticker />
-    <TablesExample8 {...props} />
+    {/* <TablesExample8 {...props} /> */}
   </>
 }
