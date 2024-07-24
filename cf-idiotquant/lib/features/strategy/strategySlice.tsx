@@ -1,13 +1,71 @@
 import { createAppSlice } from "@/lib/createAppSlice";
 import { setNcavList, getNcavList } from "./strategyAPI";
+import { Example8TableHeadType, Example8TableRowType } from "@/components/tableExample8";
+
+
+export const STRATEGY_TABLE_HEAD: Example8TableHeadType[] = [
+    {
+        // head: "Digital Asset",
+        head: "종목명",
+        customeStyle: "!text-left",
+    },
+    {
+        // head: "Price",
+        head: "주가",
+        customeStyle: "text-right",
+    },
+    {
+        // head: "Change",
+        head: "기대수익율",
+        customeStyle: "text-right",
+    },
+    {
+        // head: "Volume",
+        head: "목표가",
+        customeStyle: "text-right",
+    },
+    {
+        // head: "Market Cap",
+        head: "시가 총액",
+        customeStyle: "text-right",
+    },
+    {
+        head: "BPS",
+        customeStyle: "text-right",
+    },
+    {
+        head: "EPS",
+        customeStyle: "text-right",
+    },
+    {
+        head: "PBR",
+        customeStyle: "text-right",
+    },
+    {
+        head: "PER",
+        customeStyle: "text-right",
+    },
+    // {
+    //     head: "Trend",
+    //     customeStyle: "text-right",
+    // },
+    // {
+    //     head: "Actions",
+    //     customeStyle: "text-right",
+    // },
+];
+
 
 interface StrategyInfo {
     state: "ready" | "loading" | "loaded" | "get-rejected" | "set-rejected" | "retry";
     value: any;
+    STRATEGY_TABLE_ROW: Example8TableRowType[];
+
 }
 const initialState: StrategyInfo = {
     state: "ready",
-    value: {}
+    value: {},
+    STRATEGY_TABLE_ROW: [],
 }
 
 export const strategySlice = createAppSlice({
@@ -36,7 +94,7 @@ export const strategySlice = createAppSlice({
                 fulfilled: (state, action) => {
                     state.state = "loaded";
                     const json = JSON.parse(action.payload)
-                    // console.log(`[getStrategyList] fulfilled - action.payload:`, json);
+                    console.log(`[getStrategyList] fulfilled - action.payload:`, json);
                     state.value = json;
                 },
                 rejected: (state) => {
@@ -59,8 +117,46 @@ export const strategySlice = createAppSlice({
                 fulfilled: (state, action) => {
                     state.state = "loaded";
                     const json = JSON.parse(action.payload);
-                    // console.log(`[setStrategyList] fulfilled - action.payload:`, json);
+                    console.log(`[setStrategyList] fulfilled - action.payload:`, json);
+                    const keys = Object.keys(json);
+                    console.log(`Object.keys(json)`, keys);
+                    const numList = Object.keys(json).length;
+                    const tableRows: Example8TableRowType[] = [];
+                    for (let i = 0; i < numList; i++) {
+                        const name = keys[i];
+                        const obj = json[name];
+                        const stockCode = obj[`stock_code`];
+                        const close = obj[`종가`];
+                        const targetPrice = (Number(obj[`유동자산`]) - Number(obj[`부채총계`])) / Number(obj[`상장주식수`]);
+                        console.log(`targetPrice`, targetPrice);
+                        const change = (((targetPrice / Number(close)) - 1) * 100)
+                        const color = (change > 100) ? `green` : (change > 50) ? `` : `red`;
+                        const marketCap = obj[`시가총액`];
+                        const bps = obj[`BPS`];
+                        const eps = obj[`EPS`];
+                        const pbr = obj[`PBR`];
+                        const per = obj[`PER`];
+                        const tableRow: Example8TableRowType = {
+                            digitalAsset: stockCode,
+                            detail: name,
+                            price: "₩" + close,
+                            change: change.toFixed(2).toString() + "%",
+                            volume: "₩" + targetPrice.toFixed(0).toString(),
+                            market: "₩" + marketCap,
+                            color: color,
+                            // trend?: number; // optional
+                            // chartName?: string;
+                            // chartData?: number[];
+                            bps: bps,
+                            eps: eps,
+                            pbr: pbr,
+                            per: per,
+                        };
+                        tableRows.push(tableRow);
+                    }
+
                     state.value = json;
+                    state.STRATEGY_TABLE_ROW = tableRows;
                 },
                 rejected: (state) => {
                     console.log(`[setStrategyList] rejected`);
@@ -72,8 +168,9 @@ export const strategySlice = createAppSlice({
     selectors: {
         selectNcavList: (state) => state.value,
         selectNcavListState: (state) => state.state,
+        selectStrategyTableRow: (state) => state.STRATEGY_TABLE_ROW,
     }
 });
 
 export const { getStrategyList, setStrategyList, setLoading, setRetry } = strategySlice.actions;
-export const { selectNcavList, selectNcavListState, } = strategySlice.selectors;
+export const { selectNcavList, selectNcavListState, selectStrategyTableRow } = strategySlice.selectors;

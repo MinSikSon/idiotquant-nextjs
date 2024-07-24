@@ -47,6 +47,7 @@ export default function Loading(props) {
         <Button variant="text" loading={true}>
             {props.loadingMsg}
         </Button>
+        {/* <SimpleLoadingImage />
         <SimpleLoadingImage />
         <SimpleLoadingImage />
         <SimpleLoadingImage />
@@ -69,7 +70,6 @@ export default function Loading(props) {
         <SimpleLoadingImage />
         <SimpleLoadingImage />
         <SimpleLoadingImage />
-        <SimpleLoadingImage />
-        <SimpleLoadingImage />
+        <SimpleLoadingImage /> */}
     </>);
 }

@@ -27,6 +27,7 @@ import {
 
 // deepmerge
 import merge from "deepmerge";
+import Loading from "./Loading";
 
 // area chart
 interface ChartsPropsType {
@@ -137,7 +138,7 @@ function AreaChart({
 
 
 export interface Example8TableRowType {
-    img: string;
+    img?: string;
     digitalAsset: string;
     detail: string;
     price: string;
@@ -148,6 +149,10 @@ export interface Example8TableRowType {
     trend?: number; // optional
     chartName?: string;
     chartData?: number[];
+    bps?: string;
+    eps?: string;
+    pbr?: string;
+    per?: string;
 }
 
 export interface Example8TableHeadType {
@@ -206,108 +211,151 @@ function TablesExample8({
                         </Button>
                     </div> */}
                 </CardHeader>
-                <CardBody className="overflow-scroll !px-0 py-2">
-                    <table className="w-full min-w-max table-auto">
-                        <thead>
-                            <tr>
-                                {tableHead.map(({ head, customeStyle }) => (
-                                    <th
-                                        key={head}
-                                        className={`border-b border-gray-300 !p-4 pb-8 ${customeStyle}`}
-                                    >
-                                        <Typography
-                                            color="blue-gray"
-                                            variant="small"
-                                            className="!font-bold"
+
+                {tableRow.length == 0 ?
+                    <Loading loadingMsg={`loading`} />
+                    :
+                    <CardBody className="overflow-scroll !px-0 py-2">
+                        <table className="w-full min-w-max table-auto">
+                            <thead>
+                                <tr>
+                                    {tableHead.map(({ head, customeStyle }) => (
+                                        <th
+                                            key={head}
+                                            className={`border-b border-gray-300 !p-4 pb-8 ${customeStyle}`}
                                         >
-                                            {head}
-                                        </Typography>
-                                    </th>
-                                ))}
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {tableRow.map(
-                                (
-                                    {
-                                        img,
-                                        digitalAsset,
-                                        detail,
-                                        price,
-                                        change,
-                                        volume,
-                                        market,
-                                        color,
-                                        chartName = "2023 Sales",
-                                        // chartData = [30, 40, 500, 420, 700, 350, 500, 330, 900,],
-                                        chartData = [0, 0, 0, 0, 0, 0, 0, 0, 0,],
-                                    },
-                                    index
-                                ) => {
-                                    const isLast = index === tableRow.length - 1;
-                                    const classes = isLast
-                                        ? "!px-4"
-                                        : "!px-4 border-b border-gray-300";
-                                    return (
-                                        <tr key={digitalAsset}>
-                                            <td className={classes}>
-                                                <div className="flex items-center gap-4 text-left">
-                                                    {/* <img
+                                            <Typography
+                                                color="blue-gray"
+                                                variant="small"
+                                                className="!font-bold"
+                                            >
+                                                {head}
+                                            </Typography>
+                                        </th>
+                                    ))}
+                                </tr>
+                            </thead>
+                            <tbody>
+
+                                {tableRow.map(
+                                    (
+                                        {
+                                            img,
+                                            digitalAsset,
+                                            detail,
+                                            price,
+                                            change,
+                                            volume,
+                                            market,
+                                            color,
+                                            chartName = "2023 Sales",
+                                            // chartData = [30, 40, 500, 420, 700, 350, 500, 330, 900,],
+                                            chartData = [0, 0, 0, 0, 0, 0, 0, 0, 0,],
+                                            bps,
+                                            eps,
+                                            pbr,
+                                            per,
+                                        },
+                                        index
+                                    ) => {
+                                        const isLast = index === tableRow.length - 1;
+                                        const bgColor = index % 2 ? 'bg-gray-100' : ''
+                                        const classes = isLast
+                                            ? "!px-4"
+                                            : `!px-4 border-b border-gray-300 ${bgColor}`;
+                                        return (
+                                            <tr key={digitalAsset}>
+                                                <td className={classes}>
+                                                    <div className="flex items-center gap-4 text-left">
+                                                        {/* <img
                                                         src={img}
                                                         alt={digitalAsset}
                                                         className="border rounded-md p-1 h-10 w-10"
                                                     /> */}
-                                                    <div>
-                                                        <Typography
+                                                        <div>
+                                                            {/* <Typography
                                                             variant="small"
                                                             color="blue-gray"
                                                             className="!font-semibold"
                                                         >
                                                             {digitalAsset}
-                                                        </Typography>
-                                                        <Typography
-                                                            variant="small"
-                                                            className="!font-normal text-gray-600"
-                                                        >
-                                                            {detail}
-                                                        </Typography>
+                                                        </Typography> */}
+                                                            <Typography
+                                                                // variant="small"
+                                                                variant="h6"
+                                                                className="!font-normal text-gray-600"
+                                                            >
+                                                                {detail}
+                                                            </Typography>
+                                                        </div>
                                                     </div>
-                                                </div>
-                                            </td>
-                                            <td className={classes}>
-                                                <Typography
-                                                    variant="small"
-                                                    className="!font-normal text-gray-600 text-right"
-                                                >
-                                                    {price}
-                                                </Typography>
-                                            </td>
-                                            <td className={classes}>
-                                                <Typography
-                                                    variant="small"
-                                                    color={color as TypographyProps["color"]}
-                                                    className="!font-bold text-right"
-                                                >
-                                                    {change}
-                                                </Typography>
-                                            </td>
-                                            {/* <td className={classes}>
-                                                <Typography
-                                                    variant="small"
-                                                    className="!font-normal text-gray-600 text-right"
-                                                >
-                                                    {volume}
-                                                </Typography>
-                                            </td> */}
-                                            <td className={classes}>
-                                                <Typography
-                                                    variant="small"
-                                                    className="!font-normal text-gray-600 text-right"
-                                                >
-                                                    {market}
-                                                </Typography>
-                                            </td>
-                                            <td className={classes}>
+                                                </td>
+                                                <td className={classes}>
+                                                    <Typography
+                                                        variant="small"
+                                                        className="!font-normal text-gray-600 text-right"
+                                                    >
+                                                        {price}
+                                                    </Typography>
+                                                </td>
+                                                <td className={classes}>
+                                                    <Typography
+                                                        variant="small"
+                                                        color={color as TypographyProps["color"]}
+                                                        className="!font-bold text-right"
+                                                    >
+                                                        {change}
+                                                    </Typography>
+                                                </td>
+                                                <td className={classes}>
+                                                    <Typography
+                                                        variant="small"
+                                                        className="!font-normal text-gray-600 text-right"
+                                                    >
+                                                        {volume}
+                                                    </Typography>
+                                                </td>
+                                                <td className={classes}>
+                                                    <Typography
+                                                        variant="small"
+                                                        className="!font-normal text-gray-600 text-right"
+                                                    >
+                                                        {market}
+                                                    </Typography>
+                                                </td>
+                                                <td className={classes}>
+                                                    <Typography
+                                                        variant="small"
+                                                        className="!font-normal text-gray-600 text-right"
+                                                    >
+                                                        {bps}
+                                                    </Typography>
+                                                </td>
+                                                <td className={classes}>
+                                                    <Typography
+                                                        variant="small"
+                                                        className="!font-normal text-gray-600 text-right"
+                                                    >
+                                                        {eps}
+                                                    </Typography>
+                                                </td>
+                                                <td className={classes}>
+                                                    <Typography
+                                                        variant="small"
+                                                        className="!font-normal text-gray-600 text-right"
+                                                    >
+                                                        {pbr}
+                                                    </Typography>
+                                                </td>
+                                                <td className={classes}>
+                                                    <Typography
+                                                        variant="small"
+                                                        className="!font-normal text-gray-600 text-right"
+                                                    >
+                                                        {per}
+                                                    </Typography>
+                                                </td>
+                                                {/* <td className={classes}>
                                                 <div className="max-w-[12rem] ml-auto h-12 -translate-y-6">
                                                     <AreaChart
                                                         colors={["#2196F373"]}
@@ -320,8 +368,8 @@ function TablesExample8({
                                                         ]}
                                                     />
                                                 </div>
-                                            </td>
-                                            {/* <td className={classes}>
+                                            </td> */}
+                                                {/* <td className={classes}>
                                                 <div className="flex justify-end gap-4">
                                                     <IconButton variant="text" size="sm">
                                                         <DocumentMagnifyingGlassIcon className="h-5 w-5 text-gray-900" />
@@ -331,13 +379,14 @@ function TablesExample8({
                                                     </IconButton>
                                                 </div>
                                             </td> */}
-                                        </tr>
-                                    );
-                                }
-                            )}
-                        </tbody>
-                    </table>
-                </CardBody>
+                                            </tr>
+                                        );
+                                    }
+                                )}
+                            </tbody>
+                        </table>
+                    </CardBody>
+                }
             </Card>
         </section>
     );
