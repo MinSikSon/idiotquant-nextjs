@@ -30,7 +30,7 @@ const initialState: ArticleList = {
             name: '워렌 버핏',
             desc: '투자 격언',
             summary: '좋은 기업을 좋은 가격에 사라',
-            imgs: "https://d28hgpri8am2if.cloudfront.net/book_images/cvr9780857208439_9780857208439_hr.jpg",
+            imgs: "https://m.media-amazon.com/images/I/71MDz2FR1dL._SL1500_.jpg",
             detail: ['좋은 기업을 좋은 가격에 사라'],
         },
         {
