@@ -1,11 +1,11 @@
 
 export const getMarketInfo: any = async (date: string) => {
-    console.log(`[getMarketInfo] date`, date);
+    // console.log(`[getMarketInfo] date`, date);
     const url = `${process.env.NEXT_PUBLIC_API_URL}/stock/market-info?date=${date}`
-    console.log(`[getMarketInfo] url`, url);
+    // console.log(`[getMarketInfo] url`, url);
     const res = await fetch(url);
 
-    console.log(`[getMarketInfo] res`, res);
+    // console.log(`[getMarketInfo] res`, res);
 
     return res.json();
 }

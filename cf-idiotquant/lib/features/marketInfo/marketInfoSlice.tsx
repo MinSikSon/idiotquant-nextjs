@@ -78,7 +78,7 @@ export const marketInfoSlice = createAppSlice({
             },
             {
                 pending: (state) => {
-                    console.log(`[initMarketInfo] pending`);
+                    // console.log(`[initMarketInfo] pending`);
                     state.state = "loading";
                 },
                 fulfilled: (state, action) => {

@@ -82,7 +82,7 @@ export const strategySlice = createAppSlice({
         }),
         getStrategyList: create.asyncThunk(
             async ({ financialInfoDate, marketInfoDate }: { financialInfoDate: string, marketInfoDate: string }) => {
-                console.log(`[getStrategyList]`, financialInfoDate, marketInfoDate);
+                // console.log(`[getStrategyList]`, financialInfoDate, marketInfoDate);
                 const res: any = await getNcavList(financialInfoDate, marketInfoDate);
                 return res;
             },
@@ -94,7 +94,7 @@ export const strategySlice = createAppSlice({
                 fulfilled: (state, action) => {
                     state.state = "loaded";
                     const json = JSON.parse(action.payload)
-                    console.log(`[getStrategyList] fulfilled - action.payload:`, json);
+                    // console.log(`[getStrategyList] fulfilled - action.payload:`, json);
                     state.value = json;
                 },
                 rejected: (state) => {
@@ -117,9 +117,8 @@ export const strategySlice = createAppSlice({
                 fulfilled: (state, action) => {
                     state.state = "loaded";
                     const json = JSON.parse(action.payload);
-                    console.log(`[setStrategyList] fulfilled - action.payload:`, json);
+                    // console.log(`[setStrategyList] fulfilled - action.payload:`, json);
                     const keys = Object.keys(json);
-                    console.log(`Object.keys(json)`, keys);
                     const numList = Object.keys(json).length;
                     const tableRows: Example8TableRowType[] = [];
                     for (let i = 0; i < numList; i++) {
@@ -128,7 +127,6 @@ export const strategySlice = createAppSlice({
                         const stockCode = obj[`stock_code`];
                         const close = obj[`종가`];
                         const targetPrice = (Number(obj[`유동자산`]) - Number(obj[`부채총계`])) / Number(obj[`상장주식수`]);
-                        console.log(`targetPrice`, targetPrice);
                         const change = (((targetPrice / Number(close)) - 1) * 100)
                         const color = (change > 100) ? `green` : (change > 50) ? `` : `red`;
                         const marketCap = obj[`시가총액`];
