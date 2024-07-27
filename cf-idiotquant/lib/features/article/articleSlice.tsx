@@ -58,11 +58,14 @@ const initialState: ArticleList = {
         },
         {
             cardNum: "3",
-            profileImg: 'https://www.syesd.co.kr/homepage/syStoryImageFolder/1614817264026_fb8ff05cd5914f31981ff8aab95f8219_01.png',
+            // profileImg: 'https://www.syesd.co.kr/homepage/syStoryImageFolder/1614817264026_fb8ff05cd5914f31981ff8aab95f8219_01.png',
+            profileImg: 'https://upload.wikimedia.org/wikipedia/en/0/02/Homer_Simpson_2006.png',
             name: '🌵🌵',
             desc: '기본 용어',
             summary: 'CAGR: Compound Annual Growth Rate (연평균성장률)',
-            imgs: "https://www.syesd.co.kr/homepage/syStoryImageFolder/1614817264026_fb8ff05cd5914f31981ff8aab95f8219_01.png",
+            // imgs: "https://www.syesd.co.kr/homepage/syStoryImageFolder/1614817264026_fb8ff05cd5914f31981ff8aab95f8219_01.png",
+            imgs: "https://images.saymedia-content.com/.image/c_limit%2Ccs_srgb%2Cq_auto:eco%2Cw_700/MjAzMTI2MTMyMjk0NTU5Mjk5/simpsons-predictions-for-is-insane.webp",
+
 
             // title: '기본 용어',
             // subTitle: '🌵🌵',
@@ -94,11 +97,13 @@ const initialState: ArticleList = {
         },
         {
             cardNum: "4",
-            profileImg: 'https://www.syesd.co.kr/homepage/syStoryImageFolder/1614817264026_fb8ff05cd5914f31981ff8aab95f8219_01.png',
+            // profileImg: 'https://www.syesd.co.kr/homepage/syStoryImageFolder/1614817264026_fb8ff05cd5914f31981ff8aab95f8219_01.png',
+            profileImg: 'https://upload.wikimedia.org/wikipedia/en/0/02/Homer_Simpson_2006.png',
             name: '🌵🌵🌵',
             desc: '기타 용어',
             summary: '매출 총액 - 매출 원가 = 매출 이익',
-            imgs: "https://www.syesd.co.kr/homepage/syStoryImageFolder/1614817264026_fb8ff05cd5914f31981ff8aab95f8219_01.png",
+            // imgs: "https://www.syesd.co.kr/homepage/syStoryImageFolder/1614817264026_fb8ff05cd5914f31981ff8aab95f8219_01.png",
+            imgs: "https://images.saymedia-content.com/.image/c_limit%2Ccs_srgb%2Cq_auto:eco%2Cw_700/MjAzMTI2MTMyMjk0NTU5Mjk5/simpsons-predictions-for-is-insane.webp",
 
             // title: '기타 용어',
             // subTitle: '🌵🌵🌵',
