@@ -15,11 +15,6 @@ export default function Calculator() {
         handleCalculate();
     });
 
-    const ClearButton = (props) => {
-        // return <Button className='rounded-lg text-black bg-yellow-100' color="yellow" onClick={props.handleClick}>CLEAR</Button>
-        return <Button>CLEAR</Button>
-    }
-
     const [investmentAmount, setInvestmentAmount] = React.useState(500000);
     const [numberOfYears, setNumberOfYears] = React.useState(3);
     const [interestRate, setInterestRate] = React.useState(27);
@@ -107,15 +102,15 @@ export default function Calculator() {
                             </div>
                             <div className='flex'>
                                 <Input color="black" label="투자 시작 금액: (원)" type='number' onChange={(e) => { setInvestmentAmount(e.target.value) }} value={investmentAmount} />
-                                {investmentAmount && <ClearButton handleClick={() => setInvestmentAmount('')} />}
+                                {investmentAmount && <Button onClick={() => setInvestmentAmount('')} >CLEAR</Button>}
                             </div>
                             <div className='flex'>
                                 <Input color="black" label="투자 기간: (년)" type='number' onChange={(e) => { setNumberOfYears(e.target.value) }} value={numberOfYears} />
-                                {numberOfYears && <ClearButton handleClick={() => setNumberOfYears('')} />}
+                                {numberOfYears && <Button onClick={() => setNumberOfYears('')}>CLEAR</Button>}
                             </div>
                             <div className='flex'>
                                 <Input color="black" label="연간 이자율 (%)" type='number' onChange={(e) => { setInterestRate(e.target.value) }} value={interestRate} />
-                                {interestRate && <ClearButton handleClick={() => setInterestRate('')} />}
+                                {interestRate && <Button onClick={() => setInterestRate('')}>CLEAR</Button>}
                             </div>
                             <Select disabled color="blue" label="복리" value='3' onChange={(value) => { setCompunding(value) }}
                                 animate={{
@@ -130,7 +125,7 @@ export default function Calculator() {
                             </Select>
                             <div className='flex'>
                                 <Input color="black" label="추가 납입금" type='number' onChange={(e) => { setContributions(e.target.value) }} value={contributions} />
-                                {contributions && <ClearButton handleClick={() => setContributions('')} />}
+                                {contributions && <Button onClick={() => setContributions('')}>CLEAR</Button>}
                             </div>
                             <Select disabled color="blue" label="추가 납입금 납입 빈도" value='4' onChange={(value) => { setFrequency(value) }}
                                 animate={{
@@ -147,7 +142,7 @@ export default function Calculator() {
                             </Select>
                             <div className='flex'>
                                 <Input color="black" label="물가상승률 (%)" type='number' onChange={(e) => { setAnnualInflationRate(e.target.value) }} value={annualInflationRate} />
-                                {annualInflationRate && <ClearButton handleClick={() => setAnnualInflationRate('')} />}
+                                {annualInflationRate && <Button onClick={() => setAnnualInflationRate('')}>CLEAR</Button>}
                             </div>
                             <div className="grid grid-cols-1">
                                 <Button color="gray" onClick={handleClear}>Clear All</Button>
