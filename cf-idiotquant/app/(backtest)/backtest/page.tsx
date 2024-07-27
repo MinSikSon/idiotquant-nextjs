@@ -11,7 +11,7 @@ import { useState, useEffect } from "react";
 
 const SimpleCard = (props: any) => {
     return (
-        <Card className="my-0 w-96">
+        <Card className="my-0 w-full sm:px-28 lg:px-48 xl:px-64">
             {/* <CardHeader
                 floated={false}
                 shadow={false}
