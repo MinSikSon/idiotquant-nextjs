@@ -196,7 +196,7 @@ export function Web3Card2({
                         </Button>
                     </div> */}
                 </CardHeader>
-                <CardBody className="grid xl:grid-cols-3 grid-cols-1 gap-4 px-4">
+                <CardBody className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 px-4">
                     {data.map((props, key) => (
                         <Web3Card key={key} {...props} />
                     ))}
