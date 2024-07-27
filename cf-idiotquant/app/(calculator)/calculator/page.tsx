@@ -102,15 +102,15 @@ export default function Calculator() {
                                 <div className='text-2xl text-right underline decoration-4 decoration-yellow-500'>{' ' + result.toLocaleString('ko-KR', { maximumFractionDigits: 0 }) + ' 원'}</div>
                             </div>
                             <div className='flex'>
-                                <Input color="black" label="투자 시작 금액: (원)" type='number' onChange={(e) => { setInvestmentAmount(Number(e.target.value)) }} value={Number(investmentAmount)} />
+                                <Input color="black" label="투자 시작 금액: (원)" type='number' onChange={(e) => { setInvestmentAmount(Number(e.target.value)); }} value={Number(investmentAmount)} crossOrigin={undefined} />
                                 {!!investmentAmount ? <Button variant="outlined" onClick={() => setInvestmentAmount(0)} >CLEAR</Button> : <></>}
                             </div>
                             <div className='flex'>
-                                <Input color="black" label="투자 기간: (년)" type='number' onChange={(e) => { setNumberOfYears(Number(e.target.value)) }} value={numberOfYears} />
+                                <Input color="black" label="투자 기간: (년)" type='number' onChange={(e) => { setNumberOfYears(Number(e.target.value)); }} value={numberOfYears} crossOrigin={undefined} />
                                 {!!numberOfYears ? <Button variant="outlined" onClick={() => setNumberOfYears(0)}>CLEAR</Button> : <></>}
                             </div>
                             <div className='flex'>
-                                <Input color="black" label="연간 이자율 (%)" type='number' onChange={(e) => { setInterestRate(Number(e.target.value)) }} value={interestRate} />
+                                <Input color="black" label="연간 이자율 (%)" type='number' onChange={(e) => { setInterestRate(Number(e.target.value)); }} value={interestRate} crossOrigin={undefined} />
                                 {!!interestRate ? <Button variant="outlined" onClick={() => setInterestRate(0)}>CLEAR</Button> : <></>}
                             </div>
                             <Select disabled color="blue" label="복리" value='3' onChange={(value) => { setCompunding(Number(value)) }}
@@ -125,7 +125,7 @@ export default function Calculator() {
                                 <Option value='5'>Annually (1/Yr)</Option>
                             </Select>
                             <div className='flex'>
-                                <Input color="black" label="추가 납입금" type='number' onChange={(e) => { setContributions(Number(e.target.value)) }} value={contributions} />
+                                <Input color="black" label="추가 납입금" type='number' onChange={(e) => { setContributions(Number(e.target.value)); }} value={contributions} crossOrigin={undefined} />
                                 {!!contributions ? <Button variant="outlined" onClick={() => setContributions(0)}>CLEAR</Button> : <></>}
                             </div>
                             <Select disabled color="blue" label="추가 납입금 납입 빈도" value='4' onChange={(value) => { setFrequency(Number(value)) }}
@@ -142,7 +142,7 @@ export default function Calculator() {
                                 <Option value='7'>Annually</Option>
                             </Select>
                             <div className='flex'>
-                                <Input color="black" label="물가상승률 (%)" type='number' onChange={(e) => { setAnnualInflationRate(Number(e.target.value)) }} value={annualInflationRate} />
+                                <Input color="black" label="물가상승률 (%)" type='number' onChange={(e) => { setAnnualInflationRate(Number(e.target.value)); }} value={annualInflationRate} crossOrigin={undefined} />
                                 {!!annualInflationRate ? <Button variant="outlined" onClick={() => setAnnualInflationRate(0)}>CLEAR</Button> : <></>}
                             </div>
                             <div className="grid grid-cols-1">
