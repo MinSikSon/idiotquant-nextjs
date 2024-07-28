@@ -98,12 +98,14 @@ interface StrategyInfo {
     state: "ready" | "loading" | "loaded" | "get-rejected" | "set-rejected" | "retry";
     value: any;
     STRATEGY_TABLE_ROW: Example8TableRowType[];
+    strategyList: any;
 
 }
 const initialState: StrategyInfo = {
     state: "ready",
     value: {},
     STRATEGY_TABLE_ROW: [],
+    strategyList: [],
 }
 
 export const strategySlice = createAppSlice({
@@ -135,8 +137,10 @@ export const strategySlice = createAppSlice({
                     state.state = nextState;
                     const json = action.payload;
 
-                    state.STRATEGY_TABLE_ROW = translateJsonToTableRow(json);
                     state.value = json;
+                    const tableRow = translateJsonToTableRow(json);
+                    state.STRATEGY_TABLE_ROW = tableRow
+                    state.strategyList.push(tableRow);
                 },
                 rejected: (state) => {
                     const nextState = "get-rejected";
@@ -163,9 +167,10 @@ export const strategySlice = createAppSlice({
                     state.state = nextState;
 
                     const json = JSON.parse(action.payload);
-                    state.STRATEGY_TABLE_ROW = translateJsonToTableRow(json);
-
+                    const tableRow = translateJsonToTableRow(json);
+                    state.STRATEGY_TABLE_ROW = tableRow
                     state.value = json;
+                    state.strategyList.push(tableRow);
                 },
                 rejected: (state) => {
                     const nextState = "set-rejected";
@@ -179,8 +184,10 @@ export const strategySlice = createAppSlice({
         selectNcavList: (state) => state.value,
         selectStrategyState: (state) => state.state,
         selectStrategyTableRow: (state) => state.STRATEGY_TABLE_ROW,
+
+        selectStrategyList: (state) => state.strategyList,
     }
 });
 
 export const { getStrategyList, setStrategyList, setLoading, setRetry } = strategySlice.actions;
-export const { selectNcavList, selectStrategyState, selectStrategyTableRow } = strategySlice.selectors;
+export const { selectNcavList, selectStrategyState, selectStrategyTableRow, selectStrategyList } = strategySlice.selectors;

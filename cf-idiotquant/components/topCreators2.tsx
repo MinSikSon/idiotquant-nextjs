@@ -21,24 +21,25 @@ export interface Web3CardPropsType {
     profileImg: string;
     summary: string;
 
-    detail?: string[];
+    detail?: any[];
 }
 
 function Web3Card({
+    parentRouter,
     name,
     desc,
     imgs,
     cardNum,
     profileImg,
     summary,
-}: Web3CardPropsType) {
+}: Web3CardPropsType & { parentRouter: string }) {
     // console.log(`[Web3Card] imgs`, imgs);
     const url: string = imgs;
     // console.log(`url`, url);
 
     // console.log(`cardNum`, cardNum);
     return (
-        <Link href={`/article/${Number(cardNum)}`}>
+        <Link href={`/${parentRouter}/${Number(cardNum)}`}>
             <Card className="border border-gray-300 overflow-hidden shadow-sm">
                 <CardBody className={`px-4 pt-4 pb-32 xl:pt-8 xl:pb-64 bg-cover bg-center`}>
                     <div className="absolute top-0 left-0 h-48 xl:h-80 w-full bg-cover bg-center rounded-xl" style={{ backgroundImage: `url('${url}')` }}></div>
@@ -157,8 +158,10 @@ function Web3Card({
 // ];
 
 export function Web3Card2({
+    title,
+    parentRouter,
     data
-}: { data: Web3CardPropsType[] }) {
+}: { title: string, parentRouter: string, data: Web3CardPropsType[] }) {
     console.log(`[Web3Card2] data`, data);
 
     return (
@@ -175,7 +178,7 @@ export function Web3Card2({
                             variant="h1"
                             className="!text-2xl mb-1"
                         >
-                            Article
+                            {title}
                         </Typography>
                         {/* <Typography
                             color="blue-gray"
@@ -198,7 +201,7 @@ export function Web3Card2({
                 </CardHeader>
                 <CardBody className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 px-4">
                     {data.map((props, key) => (
-                        <Web3Card key={key} {...props} />
+                        <Web3Card key={key} parentRouter={parentRouter} {...props} />
                     ))}
                 </CardBody>
             </Card>

@@ -11,6 +11,6 @@ export default function ArticlePage() {
     console.log(`[ArticlePage] articleList`, articleList);
 
     return <>
-        {!!articleList ? <Web3Card2 data={articleList} /> : <></>}
+        {!!articleList ? <Web3Card2 title={'Article'} parentRouter={'article'} data={articleList} /> : <></>}
     </>
 }
