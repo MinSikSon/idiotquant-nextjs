@@ -2,7 +2,7 @@
 
 import { selectArticleList } from "@/lib/features/article/articleSlice"
 import { useAppSelector } from "@/lib/hooks"
-import { TemplateArticle } from "../templateArticle";
+import { TemplateArticle } from "@/components/templateArticle";
 
 export default function Item({ params: { id } }: { params: { id: number } }) {
     const articleList = useAppSelector(selectArticleList);
