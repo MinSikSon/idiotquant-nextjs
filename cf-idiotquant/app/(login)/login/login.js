@@ -6,7 +6,10 @@ import { useRouter } from "next/navigation";
 
 const env = {
     KAKAO_REST_API_KEY: '25079c20b5c42c7b91a72308ef5c4ad5',
-    KAKAO_REDIRECT_URI: 'https://idiotquant.com/login'
+    // KAKAO_REDIRECT_URI: 'https://idiotquant.com/login'
+    // KAKAO_REDIRECT_URI: 'https://idiotquant.com/'
+    // KAKAO_REDIRECT_URI: 'http://localhost:3000' // TODO: for test
+    KAKAO_REDIRECT_URI: 'http://localhost:3000/login' // TODO: for test
 }
 
 async function RequestNickname(_token) {
@@ -73,11 +76,15 @@ export default function Login(props) {
     const [authorizeCode, setAuthorizeCode] = React.useState('');
     React.useEffect(() => {
         async function callback() {
-
             const _authorizeCode = new URL(window.location.href).searchParams.get('code');
+            console.log(`_authorizeCode`, _authorizeCode);
             if (!!!_authorizeCode) return;
 
             const responseToken = await RequestToken(_authorizeCode);
+            if (!!responseToken.error_code && "KOE320" == responseToken.error_code) {
+                console.log(`!!!!! responseToken`, responseToken);
+                return;
+            }
 
             localStorage.setItem('token', responseToken);
             console.log(`localStorage.getItem('token')`, localStorage.getItem('token'));
@@ -96,9 +103,9 @@ export default function Login(props) {
             registerUser(responseNickname.id, responseNickname.properties.nickname);
 
             router.push({
-                pathname: 'https://idiotquant.com',
+                pathname: env.KAKAO_REDIRECT_URI,
                 query: { id: responseNickname.id },
-            }, 'https://idiotquant.com');
+            }, env.KAKAO_REDIRECT_URI);
         }
         callback();
     }, []);
