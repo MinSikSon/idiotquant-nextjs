@@ -2,6 +2,7 @@
 
 import React from "react";
 import { Button, Card, CardBody, Typography } from '@material-tailwind/react';
+import { useRouter } from "next/navigation";
 
 const env = {
     KAKAO_REST_API_KEY: '25079c20b5c42c7b91a72308ef5c4ad5',
@@ -67,6 +68,7 @@ function registerUser(id, nickname) {
 }
 
 export default function Login(props) {
+    const router = useRouter();
     const [nickname, setNickname] = React.useState('');
     const [authorizeCode, setAuthorizeCode] = React.useState('');
     React.useEffect(() => {
@@ -93,10 +95,10 @@ export default function Login(props) {
 
             registerUser(responseNickname.id, responseNickname.properties.nickname);
 
-            // router.push({
-            //     pathname: 'https://idiotquant.com',
-            //     query: { id: responseNickname.id },
-            // }, 'https://idiotquant.com');
+            router.push({
+                pathname: 'https://idiotquant.com',
+                query: { id: responseNickname.id },
+            }, 'https://idiotquant.com');
         }
         callback();
     }, []);
@@ -106,7 +108,7 @@ export default function Login(props) {
 
         const authorizeEndpoint = `https://kauth.kakao.com/oauth/authorize?response_type=code&client_id=${env.KAKAO_REST_API_KEY}&redirect_uri=${env.KAKAO_REDIRECT_URI}`;
 
-        // router.push(authorizeEndpoint);
+        router.push(authorizeEndpoint);
     }
 
     const Logout = () => {
@@ -119,7 +121,7 @@ export default function Login(props) {
         }).then((res) => {
             console.log(`RequestLogout`, res);
             if (true === res.ok) {
-                // router.push('/');
+                router.push('/');
             }
             return res;
         })

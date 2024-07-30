@@ -162,7 +162,7 @@ export function Web3Card2({
     parentRouter,
     data
 }: { title: string, parentRouter: string, data: Web3CardPropsType[] }) {
-    console.log(`[Web3Card2] data`, data);
+    // console.log(`[Web3Card2] data`, data);
 
     return (
         <section className="px-4 py-4">

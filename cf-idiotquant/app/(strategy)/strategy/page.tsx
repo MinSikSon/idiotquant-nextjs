@@ -42,7 +42,7 @@ export default function Strategy() {
     }
 
     const strategyList = useAppSelector(selectStrategyList);
-    console.log(`[Home] strategyList`, strategyList, strategyList.length);
+    // console.log(`[Home] strategyList`, strategyList, strategyList.length);
 
     let propsList: Web3CardPropsType[] = [
         {
