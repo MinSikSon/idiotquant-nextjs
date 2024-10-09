@@ -77,7 +77,6 @@ export default function Login(props) {
     React.useEffect(() => {
         async function callback() {
             const _authorizeCode = new URL(window.location.href).searchParams.get('code');
-            // console.log(`_authorizeCode`, _authorizeCode);
             if (!!!_authorizeCode) return;
 
             const responseToken = await RequestToken(_authorizeCode);
@@ -86,8 +85,8 @@ export default function Login(props) {
                 return;
             }
 
-            localStorage.setItem('token', responseToken);
-            console.log(`localStorage.getItem('token')`, localStorage.getItem('token'));
+            // localStorage.setItem('token', responseToken); // accessToken을 local 에 저장하면 안됨
+            // console.log(`localStorage.getItem('token')`, localStorage.getItem('token'));
 
             const responseNickname = await RequestNickname(responseToken.access_token);
             console.log(`responseNickname`, responseNickname);
@@ -102,7 +101,7 @@ export default function Login(props) {
 
             localStorage.setItem('kakaoId', responseNickname.id);
             localStorage.setItem('kakaoNickName', responseNickname.properties.nickname);
-            localStorage.setItem('kakaoAuthorizeCode', _authorizeCode);
+            // localStorage.setItem('kakaoAuthorizeCode', _authorizeCode);
 
             registerUser(responseNickname.id, responseNickname.properties.nickname);
 
@@ -126,18 +125,11 @@ export default function Login(props) {
 
     const Logout = () => {
         console.log(`Logout`);
+        localStorage.removeItem('kakaoId');
+        localStorage.removeItem('kakaoNickName');
 
         const authorizeEndpoint = `https://kauth.kakao.com/oauth/logout?client_id=${process.env.NEXT_PUBLIC_KAKAO_REST_API_KEY}&logout_redirect_uri=${env.KAKAO_REDIRECT_URI}`;
-
-        fetch(authorizeEndpoint, {
-            method: 'GET',
-        }).then((res) => {
-            console.log(`RequestLogout`, res);
-            if (true === res.ok) {
-                router.push('/');
-            }
-            return res;
-        })
+        router.push(authorizeEndpoint);
     }
 
     const KakaoIcon = () => {
