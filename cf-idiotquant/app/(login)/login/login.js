@@ -5,8 +5,6 @@ import { Button, Card, CardBody, Typography } from '@material-tailwind/react';
 import { useRouter } from "next/navigation";
 
 const env = {
-    KAKAO_REST_API_KEY: '25079c20b5c42c7b91a72308ef5c4ad5',
-    KAKAO_REDIRECT_URI: 'https://idiotquant.com/login'
     // KAKAO_REDIRECT_URI: 'https://idiotquant.com/'
     // KAKAO_REDIRECT_URI: 'http://localhost:3000' // TODO: for test
     // KAKAO_REDIRECT_URI: 'http://localhost:3000/login' // TODO: for test
@@ -29,7 +27,7 @@ async function RequestNickname(_token) {
 }
 
 async function RequestToken(_authorizeCode) {
-    const tokenUrl = `https://kauth.kakao.com/oauth/token?grant_type=authorization_code&client_id=${env.KAKAO_REST_API_KEY}&redirect_uri=${encodeURIComponent(env.KAKAO_REDIRECT_URI)}&code=${_authorizeCode}`;
+    const tokenUrl = `https://kauth.kakao.com/oauth/token?grant_type=authorization_code&client_id=${process.env.NEXT_PUBLIC_KAKAO_REST_API_KEY}&redirect_uri=${encodeURIComponent(env.KAKAO_REDIRECT_URI)}&code=${_authorizeCode}`;
 
     const responseToken = await fetch(tokenUrl, {
         method: 'POST',
@@ -43,7 +41,7 @@ async function RequestToken(_authorizeCode) {
 
 function registerUser(id, nickname) {
     function fetchAndSet(subUrl) {
-        console.log(`fetchAndSet`);
+        console.log(`[fetchAndSet]`, `subUrl:`, subUrl);
 
         const data = {
             'id': id,
@@ -54,7 +52,9 @@ function registerUser(id, nickname) {
         const url = `https://idiotquant-backend.tofu89223.workers.dev`;
         // const port = `443`;
         const port = `443`;
-        fetch(`${url}:${port}/${subUrl}`, options)
+        const fetchUrl = `${url}:${port}/${subUrl}`;
+
+        fetch(fetchUrl, options)
             .then(res => {
                 console.log(`res`, res);
 
@@ -100,12 +100,18 @@ export default function Login(props) {
                 setAuthorizeCode(_authorizeCode);
             }
 
+            localStorage.setItem('kakaoId', responseNickname.id);
+            localStorage.setItem('kakaoNickName', responseNickname.properties.nickname);
+            localStorage.setItem('kakaoAuthorizeCode', _authorizeCode);
+
             registerUser(responseNickname.id, responseNickname.properties.nickname);
 
-            router.push({
+            const url = {
                 pathname: env.KAKAO_REDIRECT_URI,
                 query: { id: responseNickname.id },
-            }, env.KAKAO_REDIRECT_URI);
+            };
+            const queryString = new URLSearchParams(url.query).toString();
+            router.push(`${url.pathname}?${queryString}`);
         }
         callback();
     }, []);
@@ -113,7 +119,7 @@ export default function Login(props) {
     function Login() {
         console.log(`Login`);
 
-        const authorizeEndpoint = `https://kauth.kakao.com/oauth/authorize?response_type=code&client_id=${env.KAKAO_REST_API_KEY}&redirect_uri=${env.KAKAO_REDIRECT_URI}`;
+        const authorizeEndpoint = `https://kauth.kakao.com/oauth/authorize?response_type=code&client_id=${process.env.NEXT_PUBLIC_KAKAO_REST_API_KEY}&redirect_uri=${env.KAKAO_REDIRECT_URI}`;
 
         router.push(authorizeEndpoint);
     }
@@ -121,7 +127,7 @@ export default function Login(props) {
     const Logout = () => {
         console.log(`Logout`);
 
-        const authorizeEndpoint = `https://kauth.kakao.com/oauth/logout?client_id=${env.KAKAO_REST_API_KEY}&logout_redirect_uri=${env.KAKAO_REDIRECT_URI}`;
+        const authorizeEndpoint = `https://kauth.kakao.com/oauth/logout?client_id=${process.env.NEXT_PUBLIC_KAKAO_REST_API_KEY}&logout_redirect_uri=${env.KAKAO_REDIRECT_URI}`;
 
         fetch(authorizeEndpoint, {
             method: 'GET',

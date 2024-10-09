@@ -29,6 +29,7 @@ function NavList() {
     return (
         <ul className="mb-4 mt-2 flex flex-col gap-3 lg:mb-0 lg:mt-0 lg:flex-row lg:items-center lg:gap-8">
             <NavItem url="/login" label="Login" />
+            <NavItem url="/logout" label="Logout" />
             <NavItem url="/backtest" label="Backtest" />
             <NavItem url="/calculator" label="Calculator" />
             <NavItem url="/article" label="Article" />
