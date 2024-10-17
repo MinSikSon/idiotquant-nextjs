@@ -5,9 +5,10 @@ import { Button, Card, CardBody, Typography } from '@material-tailwind/react';
 import { useRouter } from "next/navigation";
 
 const env = {
+    // KAKAO_REDIRECT_URI: 'https://idiotquant.com/login'
     // KAKAO_REDIRECT_URI: 'https://idiotquant.com/'
     // KAKAO_REDIRECT_URI: 'http://localhost:3000' // TODO: for test
-    // KAKAO_REDIRECT_URI: 'http://localhost:3000/login' // TODO: for test
+    KAKAO_REDIRECT_URI: 'http://localhost:3000/login' // TODO: for test
 }
 
 async function RequestNickname(_token) {
@@ -17,10 +18,13 @@ async function RequestNickname(_token) {
 
     const response = await fetch(requestUrl, {
         method: 'GET',
-        headers: { 'Authorization': `Bearer ${_token}` },
+        // credentials: 'include',  // include credentials (like cookies) in the request
+        headers: {
+            'Authorization': `Bearer ${_token}`
+        },
     }).then((res) => res.json());
 
-    console.log('_token', _token);
+    // console.log('_token', _token);
     console.log('RequestNickname', response);
 
     return response;
@@ -34,13 +38,13 @@ async function RequestToken(_authorizeCode) {
         headers: { 'Content-Type': 'application/x-www-form-urlencoded;charset=utf-8' },
     }).then((res) => res.json());
 
-    console.log('responseToken', responseToken);
+    // console.log('responseToken', responseToken);
 
     return responseToken;
 }
 
-function registerUser(id, nickname) {
-    function fetchAndSet(subUrl) {
+async function registerUser(id, nickname) {
+    async function fetchAndSet(subUrl) {
         console.log(`[fetchAndSet]`, `subUrl:`, subUrl);
 
         const data = {
@@ -48,19 +52,27 @@ function registerUser(id, nickname) {
             'nickname': nickname,
         };
 
-        const options = { method: "POST", body: JSON.stringify(data) };
-        const url = `https://idiotquant-backend.tofu89223.workers.dev`;
-        // const port = `443`;
-        const port = `443`;
+        const options = {
+            method: 'POST',
+            credentials: 'include',  // include credentials (like cookies) in the request
+            headers: {
+                'Content-Type': 'application/json', // 요청 본문이 JSON 형식임을 명시
+            },
+            body: JSON.stringify(data)
+        };
+        const url = 'https://idiotquant-backend.tofu89223.workers.dev';
+        const port = '443';
         const fetchUrl = `${url}:${port}/${subUrl}`;
 
         fetch(fetchUrl, options)
             .then(res => {
                 console.log(`res`, res);
-
                 if (res.ok) {
                     return res.json();
                 }
+            })
+            .then(res => {
+                console.log(`res2`, res);
             })
             .catch(error => {
                 console.log(`error`, error);
@@ -77,6 +89,7 @@ export default function Login(props) {
     React.useEffect(() => {
         async function callback() {
             const _authorizeCode = new URL(window.location.href).searchParams.get('code');
+            // console.log(`_authorizeCode`, _authorizeCode);
             if (!!!_authorizeCode) return;
 
             const responseToken = await RequestToken(_authorizeCode);

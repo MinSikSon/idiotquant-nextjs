@@ -1,6 +1,9 @@
 # 서비스 확인
 - https://idiotquant.com
 
+# cloudflare worker log 확인
+- $ wrangler tail
+
 # NEXT.JS
 
 - https://nextjs.org/learn/foundations/about-nextjs/what-is-nextjs
