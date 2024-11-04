@@ -9,6 +9,7 @@ import { GetMeredStocksList, GetStocksFilteredByStrategyNCAV } from "@/component
 import { setBackTestStrategyList } from "@/lib/features/backtest/backtestSlice";
 
 export const LoadData = () => {
+
     const dispatch = useAppDispatch();
     const financialInfoState = useAppSelector(selectFinancialInfoState);
     const financialInfo: object = useAppSelector(selectFinancialInfo);
@@ -21,6 +22,8 @@ export const LoadData = () => {
     const marketLatestDate: any = useAppSelector(selectMarketInfoLatestDate);
 
     const strategyState = useAppSelector(selectStrategyState);
+
+    console.log(`[LoadData] financialInfoState:`, financialInfoState, `, marketInfoState:`, marketInfoState, `, strategyState:`, strategyState);
 
     // TODO 1
     // -  date list -> get latest financialInfo date
@@ -58,6 +61,7 @@ export const LoadData = () => {
     }
 
     useEffect(() => {
+        console.log(`[loadData] financialInfoState`, financialInfoState);
         if ("ready-financialInfoList" == financialInfoState) {
         }
         else if ("get-rejected" == financialInfoState) {

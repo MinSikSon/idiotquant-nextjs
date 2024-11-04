@@ -37,12 +37,13 @@ export const financialInfoSlice = createAppSlice({
             async () => { return await getFinancialInfoList(); },
             {
                 pending: (state) => {
-                    // console.log(`[getList] pending`);
+                    console.log(`loading`);
                     state.state = "loading";
                 },
                 fulfilled: (state, action) => {
                     // console.log(`[getList] fulfilled`, action.payload, !!action.payload);
                     if (!!action.payload) {
+                        console.log(`ready-financialInfoList`);
                         state.financialInfoList = action.payload;
 
                         const afinancialInfoList = String(action.payload).split(",");
@@ -54,11 +55,12 @@ export const financialInfoSlice = createAppSlice({
                         state.state = "ready-financialInfoList";
                     }
                     else {
+                        console.log(`get-rejected 1`);
                         state.state = "get-rejected";
                     }
                 },
                 rejected: (state) => {
-                    // console.log(`[getList] rejected`);
+                    console.log(`get-rejected 2`);
                     state.state = "get-rejected";
                 }
             }
@@ -82,17 +84,18 @@ export const financialInfoSlice = createAppSlice({
             },
             {
                 pending: (state) => {
+                    console.log(`loading`);
                     state.state = "loading";
                     state.loaded = true;
                 },
                 fulfilled: (state, action) => {
-                    // console.log(`fulfilled`);
+                    console.log(`ready-financialInfo`);
                     state.value = action.payload;
                     state.loaded = true;
                     state.state = "ready-financialInfo";
                 },
                 rejected: (state) => {
-                    // console.log(`rejected`);
+                    console.log(`rejected`);
                     state.state = "rejected";
                 }
             }

@@ -12,12 +12,13 @@ export const getFinancialInfo: any = async (year: string, quarter: string) => {
 }
 
 export const setFinancialInfoList: any = async (dateList: string[]) => {
+    console.log(`[setFinancialInfoList] dateList`, dateList);
     const url = `${process.env.NEXT_PUBLIC_API_URL}/stock/financial-info-list`;
-    const options = {
+    const options: RequestInit = {
         method: 'POST',
-        // credentials: 'include',  // include credentials (like cookies) in the request
+        credentials: 'include',  // include credentials (like cookies) in the request
         headers: {
-            'Content-Type': 'test/plain;charset=UTF-8',
+            'Content-Type': 'charset=UTF-8',
         },
         body: JSON.stringify(dateList),
     };
@@ -28,9 +29,14 @@ export const setFinancialInfoList: any = async (dateList: string[]) => {
 
 export const getFinancialInfoList: any = async () => {
     const url = `${process.env.NEXT_PUBLIC_API_URL}/stock/financial-info-list`
-    const res = await fetch(url, {
+    const options: RequestInit = {
+        method: 'GET',
         credentials: 'include',  // include credentials (like cookies) in the request
-    });
+    };
+    // const res = await fetch(url, options);
+    const res = await fetch(url, options);
+
+    console.log(`[getFinancialInfoList] res`, res);
 
     return res.json();
 }

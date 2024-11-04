@@ -35,17 +35,19 @@ async function RequestToken(_authorizeCode) {
 
     const responseToken = await fetch(tokenUrl, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/x-www-form-urlencoded;charset=utf-8' },
+        headers: {
+            'Content-Type': 'application/x-www-form-urlencoded;charset=utf-8'
+        },
     }).then((res) => res.json());
 
-    // console.log('responseToken', responseToken);
+    console.log('[RequestToken] response:', responseToken);
 
     return responseToken;
 }
 
 async function registerUser(id, nickname) {
     async function fetchAndSet(subUrl) {
-        console.log(`[fetchAndSet]`, `subUrl:`, subUrl);
+        console.log(`[registerUser]`, `subUrl:`, subUrl);
 
         const data = {
             'id': id,
@@ -57,6 +59,7 @@ async function registerUser(id, nickname) {
             credentials: 'include',  // include credentials (like cookies) in the request
             headers: {
                 'Content-Type': 'application/json', // 요청 본문이 JSON 형식임을 명시
+                // 'Content-Type': 'text/html', // 요청 본문이 JSON 형식임을 명시
             },
             body: JSON.stringify(data)
         };
@@ -88,14 +91,26 @@ export default function Login(props) {
     const [authorizeCode, setAuthorizeCode] = React.useState('');
     React.useEffect(() => {
         async function callback() {
+            // TODO(minsik.son) : 지금.. 뭔가 bug 인해서 Request 2번 날리고 있음.
+            if (1 == localStorage.getItem('login')) // NOTE: 임시코드
+            {
+                return;
+            }
+
             const _authorizeCode = new URL(window.location.href).searchParams.get('code');
-            // console.log(`_authorizeCode`, _authorizeCode);
+            console.log(`_authorizeCode`, _authorizeCode);
             if (!!!_authorizeCode) return;
 
+            localStorage.setItem('login', 1);
+
             const responseToken = await RequestToken(_authorizeCode);
-            if (!!responseToken.error_code && "KOE320" == responseToken.error_code) {
+            if (!!responseToken.error_code) {
                 console.log(`!!!!! responseToken`, responseToken);
                 return;
+            }
+
+            if ("KOE320" == responseToken.error_code) {
+                console.log(`responseToken.error_code`, responseToken.error_code);
             }
 
             // localStorage.setItem('token', responseToken); // accessToken을 local 에 저장하면 안됨
@@ -140,6 +155,7 @@ export default function Login(props) {
         console.log(`Logout`);
         localStorage.removeItem('kakaoId');
         localStorage.removeItem('kakaoNickName');
+        localStorage.removeItem('login');
 
         const authorizeEndpoint = `https://kauth.kakao.com/oauth/logout?client_id=${process.env.NEXT_PUBLIC_KAKAO_REST_API_KEY}&logout_redirect_uri=${env.KAKAO_REDIRECT_URI}`;
         router.push(authorizeEndpoint);
@@ -149,7 +165,7 @@ export default function Login(props) {
         return (
             <>
                 {
-                    (!!!authorizeCode) ?
+                    (!!!localStorage.getItem('login')) ?
                         <>
                             <Card className="mt-6 w-96">
                                 {/* <CardHeader color="blue-gray" className="relative h-20">
@@ -189,7 +205,7 @@ export default function Login(props) {
                                 </CardHeader> */}
                                 <CardBody>
                                     <Typography variant="h5" color="blue-gray" className="mb-2">
-                                        {nickname} 님 반갑습니다.
+                                        {localStorage.getItem('kakaoNickName')} 님 반갑습니다.
                                     </Typography>
                                     <Typography>
                                         logout 하려면 아래 버튼을 눌려주세요.
