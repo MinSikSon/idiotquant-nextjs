@@ -104,13 +104,9 @@ export default function Login(props) {
             localStorage.setItem('login', 1);
 
             const responseToken = await RequestToken(_authorizeCode);
-            if (!!responseToken.error_code) {
+            if (!!responseToken.error_code && "KOE320" == responseToken.error_code) {
                 console.log(`!!!!! responseToken`, responseToken);
                 return;
-            }
-
-            if ("KOE320" == responseToken.error_code) {
-                console.log(`responseToken.error_code`, responseToken.error_code);
             }
 
             // localStorage.setItem('token', responseToken); // accessToken을 local 에 저장하면 안됨

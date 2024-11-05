@@ -12,7 +12,7 @@ interface FinancialInfo {
     | "get-rejected"
     | "ready-financialInfoList"
     | "ready-financialInfo"
-    | "loading" | "loaded" | "rejected";
+    | "pending" | "loaded" | "rejected";
     loaded: boolean;
     financialInfoList: string[];
     latestDate: LatestFinancialDate;
@@ -30,15 +30,12 @@ export const financialInfoSlice = createAppSlice({
     name: "financial",
     initialState,
     reducers: (create) => ({
-        setStateLoading: create.reducer((state) => {
-            state.state = "loading";
-        }),
         getList: create.asyncThunk(
             async () => { return await getFinancialInfoList(); },
             {
                 pending: (state) => {
-                    console.log(`loading`);
-                    state.state = "loading";
+                    console.log(`pending`);
+                    state.state = "pending";
                 },
                 fulfilled: (state, action) => {
                     // console.log(`[getList] fulfilled`, action.payload, !!action.payload);
@@ -110,7 +107,6 @@ export const financialInfoSlice = createAppSlice({
     }
 });
 
-export const { setStateLoading } = financialInfoSlice.actions;
 export const { initFinancialInfo } = financialInfoSlice.actions;
 export const { getList, setList } = financialInfoSlice.actions;
 export const { selectFinancialInfo, selectFinancialInfoList, selectLoaded, selectFinancialInfoState } = financialInfoSlice.selectors;

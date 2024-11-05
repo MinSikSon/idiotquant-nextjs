@@ -95,14 +95,14 @@ function translateJsonToTableRow(json: any) {
 }
 
 interface StrategyInfo {
-    state: "ready" | "loading" | "loaded" | "get-rejected" | "set-rejected" | "retry";
+    state: "init" | "loading" | "loaded" | "get-rejected" | "set-rejected" | "retry";
     value: any;
     STRATEGY_TABLE_ROW: Example8TableRowType[];
     strategyList: any;
 
 }
 const initialState: StrategyInfo = {
-    state: "ready",
+    state: "init",
     value: {},
     STRATEGY_TABLE_ROW: [],
     strategyList: [],
