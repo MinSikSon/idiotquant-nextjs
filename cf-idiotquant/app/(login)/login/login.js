@@ -89,6 +89,8 @@ export default function Login(props) {
     const router = useRouter();
     const [nickname, setNickname] = React.useState('');
     const [authorizeCode, setAuthorizeCode] = React.useState('');
+    const [storedValue, setStoredValue] = React.useState(null);
+
     React.useEffect(() => {
         async function callback() {
             // TODO(minsik.son) : 지금.. 뭔가 bug 인해서 Request 2번 날리고 있음.
@@ -102,6 +104,8 @@ export default function Login(props) {
             if (!!!_authorizeCode) return;
 
             localStorage.setItem('login', 1);
+
+            setStoredValue(localStorage.getItem('login'));
 
             const responseToken = await RequestToken(_authorizeCode);
             if (!!responseToken.error_code && "KOE320" == responseToken.error_code) {
@@ -141,7 +145,6 @@ export default function Login(props) {
 
     function Login() {
         console.log(`Login`);
-
         const authorizeEndpoint = `https://kauth.kakao.com/oauth/authorize?response_type=code&client_id=${process.env.NEXT_PUBLIC_KAKAO_REST_API_KEY}&redirect_uri=${env.KAKAO_REDIRECT_URI}`;
 
         router.push(authorizeEndpoint);
@@ -161,7 +164,7 @@ export default function Login(props) {
         return (
             <>
                 {
-                    (!!!localStorage.getItem('login')) ?
+                    (!!!storedValue) ?
                         <>
                             <Card className="mt-6 w-96">
                                 {/* <CardHeader color="blue-gray" className="relative h-20">
