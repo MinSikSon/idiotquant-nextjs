@@ -34,7 +34,7 @@ function Web3Card({
     summary,
 }: Web3CardPropsType & { parentRouter: string }) {
     // console.log(`[Web3Card] imgs`, imgs);
-    const url: string = imgs;
+    // const url: string = imgs;
     // console.log(`url`, url);
 
     // console.log(`cardNum`, cardNum);
@@ -42,7 +42,8 @@ function Web3Card({
         <Link href={`/${parentRouter}/${Number(cardNum)}`}>
             <Card className="border border-gray-300 overflow-hidden shadow-sm">
                 <CardBody className={`px-4 pt-4 pb-32 xl:pt-8 xl:pb-64 bg-cover bg-center`}>
-                    <div className="absolute top-0 left-0 h-48 xl:h-80 w-full bg-cover bg-center rounded-xl" style={{ backgroundImage: `url('${url}')` }}></div>
+                    {/* <div className="absolute top-0 left-0 h-48 xl:h-80 w-full bg-cover bg-center rounded-xl" style={{ backgroundImage: `url('${url}')` }}></div> */}
+                    <div className="absolute top-0 left-0 h-48 xl:h-80 w-full bg-cover bg-center rounded-xl bg-gray-500"></div>
                     <div className={`flex items-start justify-between`}>
                         <Typography color="white"
                             className="!text-base !font-semibold mb-1"
@@ -55,8 +56,9 @@ function Web3Card({
                     </div>
                     <div className="my-4 flex items-start justify-between">
                         <div className="absolute top-40 xl:top-72 flex items-center gap-2 bg-white/70 p-1 rounded-full border border-gray-200 ">
-                            <Avatar size="sm" src={profileImg} alt={name} />
-                            <div className="pr-4">
+                            <Avatar size="sm" src="/images/icons8-algorithm-flatart-icons-lineal-color-96.png" alt={name} />
+                            {/* <Avatar size="sm" className="bg-red-100" alt={name} /> */}
+                            <div className="pl-4 pr-4">
                                 <Typography color="black" variant="h6">
                                     {name}
                                 </Typography>
