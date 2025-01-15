@@ -37,6 +37,8 @@ function NavList() {
 }
 
 export function NavbarWithSimpleLinks() {
+    console.log(`[NavbarWithSimpleLinks]`);
+
     const [open, setOpen] = React.useState(false);
     const handleOpen = () => setOpen((cur) => !cur);
 

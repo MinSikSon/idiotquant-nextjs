@@ -6,7 +6,7 @@ interface MarketInfo {
     | "get-rejected"
     | "ready-marketInfoList"
     | "ready-marketInfo"
-    | "loading" | "loaded" | "rejected";
+    | "pending" | "loaded" | "rejected";
     loaded: boolean;
     marketInfoList: string;
     latestDate: string;
@@ -25,7 +25,7 @@ export const marketInfoSlice = createAppSlice({
     initialState,
     reducers: (create) => ({
         setMarketInfoStateLoading: create.reducer((state) => {
-            state.state = "loading";
+            state.state = "pending";
         }),
         getMarketList: create.asyncThunk(
             async () => {
@@ -34,7 +34,7 @@ export const marketInfoSlice = createAppSlice({
             {
                 pending: (state) => {
                     // console.log(`[getMarketList] pending`);
-                    state.state = "loading";
+                    state.state = "pending";
                 },
                 fulfilled: (state, action) => {
                     // console.log(`[getMarketList] fulfilled`, action.payload, !!action.payload);
@@ -54,7 +54,7 @@ export const marketInfoSlice = createAppSlice({
                     }
                 },
                 rejected: (state) => {
-                    // console.log(`[getMarketList] rejected`);
+                    // console.log(`[getMarketList] get-rejected`);
                     state.state = "get-rejected";
                 }
             }
@@ -62,7 +62,7 @@ export const marketInfoSlice = createAppSlice({
         setMarketList: create.asyncThunk(
             async (dateList: string[]) => { return await setMarketInfoList(dateList); },
             {
-                pending: (state) => { state.state = "loading"; },
+                pending: (state) => { state.state = "pending"; },
                 fulfilled: (state, action) => {
                     state.marketInfoList = action.payload;
                     state.state = "ready-marketInfoList";
@@ -79,7 +79,7 @@ export const marketInfoSlice = createAppSlice({
             {
                 pending: (state) => {
                     // console.log(`[initMarketInfo] pending`);
-                    state.state = "loading";
+                    state.state = "pending";
                 },
                 fulfilled: (state, action) => {
                     // console.log(`[initMarketInfo] fulfilled`, action.payload);
@@ -88,7 +88,7 @@ export const marketInfoSlice = createAppSlice({
                     state.value = action.payload;
                 },
                 rejected: (state) => {
-                    console.log(`[initMarketInfo] rejected`);
+                    // console.log(`[initMarketInfo] rejected`);
                     state.state = "rejected";
                 }
             }

@@ -3,6 +3,8 @@
 import React from "react";
 import { Button, Card, CardBody, Typography } from '@material-tailwind/react';
 import { useRouter } from "next/navigation";
+import { selectKakaoAuthCode, selectKakaoId, selectKakaoNickName, setKakaoAuthCode, setKakaoId, setKakaoNickName } from "@/lib/features/login/loginSlice";
+import { useAppDispatch, useAppSelector } from "@/lib/hooks";
 
 const env = {
     KAKAO_REDIRECT_URI: 'https://idiotquant.com/login'
@@ -35,17 +37,19 @@ async function RequestToken(_authorizeCode) {
 
     const responseToken = await fetch(tokenUrl, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/x-www-form-urlencoded;charset=utf-8' },
+        headers: {
+            'Content-Type': 'application/x-www-form-urlencoded;charset=utf-8'
+        },
     }).then((res) => res.json());
 
-    // console.log('responseToken', responseToken);
+    console.log('[RequestToken] response:', responseToken);
 
     return responseToken;
 }
 
 async function registerUser(id, nickname) {
     async function fetchAndSet(subUrl) {
-        console.log(`[fetchAndSet]`, `subUrl:`, subUrl);
+        console.log(`[registerUser]`, `subUrl:`, subUrl);
 
         const data = {
             'id': id,
@@ -57,6 +61,7 @@ async function registerUser(id, nickname) {
             credentials: 'include',  // include credentials (like cookies) in the request
             headers: {
                 'Content-Type': 'application/json', // 요청 본문이 JSON 형식임을 명시
+                // 'Content-Type': 'text/html', // 요청 본문이 JSON 형식임을 명시
             },
             body: JSON.stringify(data)
         };
@@ -86,11 +91,27 @@ export default function Login(props) {
     const router = useRouter();
     const [nickname, setNickname] = React.useState('');
     const [authorizeCode, setAuthorizeCode] = React.useState('');
+
+    const dispatch = useAppDispatch();
+    const kakaoAuthCode = useAppSelector(selectKakaoAuthCode);
+    const kakaoNickName = useAppSelector(selectKakaoNickName);
+    const kakaoId = useAppSelector(selectKakaoId);
+
     React.useEffect(() => {
         async function callback() {
-            const _authorizeCode = new URL(window.location.href).searchParams.get('code');
-            // console.log(`_authorizeCode`, _authorizeCode);
-            if (!!!_authorizeCode) return;
+            // TODO(minsik.son) : 지금.. 뭔가 bug 인해서 Request 2번 날리고 있음.
+
+            console.log(`kakaoAuthCode:`, kakaoAuthCode);
+            let _authorizeCode = ""
+            if ("" == kakaoAuthCode) {
+                _authorizeCode = new URL(window.location.href).searchParams.get('code');
+                console.log(`_authorizeCode`, _authorizeCode);
+                if (!!!_authorizeCode) return;
+                dispatch(setKakaoAuthCode(_authorizeCode));
+            }
+            else {
+                _authorizeCode = selectKakaoAuthCode;
+            }
 
             const responseToken = await RequestToken(_authorizeCode);
             if (!!responseToken.error_code && "KOE320" == responseToken.error_code) {
@@ -117,6 +138,8 @@ export default function Login(props) {
             // localStorage.setItem('kakaoAuthorizeCode', _authorizeCode);
 
             registerUser(responseNickname.id, responseNickname.properties.nickname);
+            dispatch(setKakaoNickName(responseNickname.properties.nickname))
+            dispatch(setKakaoId(responseNickname.id))
 
             const url = {
                 pathname: env.KAKAO_REDIRECT_URI,
@@ -130,7 +153,6 @@ export default function Login(props) {
 
     function Login() {
         console.log(`Login`);
-
         const authorizeEndpoint = `https://kauth.kakao.com/oauth/authorize?response_type=code&client_id=${process.env.NEXT_PUBLIC_KAKAO_REST_API_KEY}&redirect_uri=${env.KAKAO_REDIRECT_URI}`;
 
         router.push(authorizeEndpoint);
@@ -140,6 +162,11 @@ export default function Login(props) {
         console.log(`Logout`);
         localStorage.removeItem('kakaoId');
         localStorage.removeItem('kakaoNickName');
+        localStorage.removeItem('login');
+
+        dispatch(setKakaoAuthCode(""));
+        dispatch(setKakaoNickName(""));
+        dispatch(setKakaoId(""));
 
         const authorizeEndpoint = `https://kauth.kakao.com/oauth/logout?client_id=${process.env.NEXT_PUBLIC_KAKAO_REST_API_KEY}&logout_redirect_uri=${env.KAKAO_REDIRECT_URI}`;
         router.push(authorizeEndpoint);
@@ -149,7 +176,7 @@ export default function Login(props) {
         return (
             <>
                 {
-                    (!!!authorizeCode) ?
+                    (!!!kakaoNickName) ?
                         <>
                             <Card className="mt-6 w-96">
                                 {/* <CardHeader color="blue-gray" className="relative h-20">
@@ -189,7 +216,7 @@ export default function Login(props) {
                                 </CardHeader> */}
                                 <CardBody>
                                     <Typography variant="h5" color="blue-gray" className="mb-2">
-                                        {nickname} 님 반갑습니다.
+                                        {kakaoNickName} 님 반갑습니다.
                                     </Typography>
                                     <Typography>
                                         logout 하려면 아래 버튼을 눌려주세요.

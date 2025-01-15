@@ -2,7 +2,8 @@
 
 import React, { useEffect } from "react";
 import { useAppDispatch, useAppSelector } from "@/lib/hooks";
-import { getList, initFinancialInfo, selectFinancialInfo, selectFinancialInfoList, selectFinancialInfoState, selectLatestDate, selectLoaded, setList, setStateLoading } from "@/lib/features/financialInfo/financialInfoSlice";
+import { getList, initFinancialInfo, selectFinancialInfo, selectFinancialInfoList, selectFinancialInfoState, selectLatestDate, selectLoaded, setList } from "@/lib/features/financialInfo/financialInfoSlice";
+
 import { getMarketList, initMarketInfo, selectMarketInfo, selectMarketInfoLatestDate, selectMarketInfoList, selectMarketInfoLoaded, selectMarketInfoState, setMarketInfoStateLoading, setMarketList } from "@/lib/features/marketInfo/marketInfoSlice";
 import { getStrategyList, setStrategyList, selectStrategyState, setLoading, selectNcavList } from "@/lib/features/strategy/strategySlice";
 import { GetMeredStocksList, GetStocksFilteredByStrategyNCAV } from "@/components/strategy";
@@ -11,6 +12,7 @@ import { setBackTestStrategyList } from "@/lib/features/backtest/backtestSlice";
 export const LoadData = () => {
     const dispatch = useAppDispatch();
     const financialInfoState = useAppSelector(selectFinancialInfoState);
+
     const financialInfo: object = useAppSelector(selectFinancialInfo);
     const financialInfoList: string[] = useAppSelector(selectFinancialInfoList);
     const financialLatestDate: any = useAppSelector(selectLatestDate);
@@ -22,19 +24,17 @@ export const LoadData = () => {
 
     const strategyState = useAppSelector(selectStrategyState);
 
+    // console.log(`[LoadData 1]`, new Date(), `financialInfoState:`, financialInfoState, `, financialInfo:`, financialInfo, `, financialInfoList:`, financialInfoList);
+    // console.log(`[LoadData 2]`, new Date(), `financialLatestDate:`, financialLatestDate, `, marketInfoState:`, marketInfoState, `, marketInfo:`, marketInfo);
+    // console.log(`[LoadData 3]`, new Date(), `marketInfoList:`, marketInfoList, `, marketLatestDate:`, marketLatestDate, `, strategyState:`, strategyState);
+
     // TODO 1
     // -  date list -> get latest financialInfo date
     // - getMarketInfo date list -> get latest marketInfo date
 
-
     // TODO 2
     // - ncavList 존재 o -> getNcavList(latestFinancialInfoDate, latestMarketInfoDate)
     // - ncavList 존재 x ->  + getMarketInfo -> ncavList 구성 -> setNcavList
-
-    useEffect(() => {
-        dispatch(getList());
-        dispatch(getMarketList());
-    }, [])
 
     function checkInCommon() {
         // console.log(`checkInCommon`);
@@ -44,7 +44,7 @@ export const LoadData = () => {
                 const date = marketLatestDate;
 
                 // console.log(`year:`, year, `, quarter:`, quarter, `, date:`, date, `, ncavListState:`, ncavListState);
-                if ("ready" == strategyState) {
+                if ("init" == strategyState) {
                     dispatch(setLoading());
                     const financialInfoDate = `${year}${quarter}Q`;
                     dispatch(getStrategyList({ financialInfoDate, marketInfoDate: date }));
@@ -58,6 +58,15 @@ export const LoadData = () => {
     }
 
     useEffect(() => {
+        if (financialInfoState == "init") {
+            // console.log(`111 []`, new Date(), `financialInfoState:`, financialInfoState, `, marketInfoState:`, marketInfoState);
+            dispatch(getList());
+            dispatch(getMarketList());
+        }
+    }, [financialInfoState, marketInfoState])
+
+    useEffect(() => {
+        // console.log(`222 [loadData] financialInfoState`, financialInfoState);
         if ("ready-financialInfoList" == financialInfoState) {
         }
         else if ("get-rejected" == financialInfoState) {
@@ -74,15 +83,16 @@ export const LoadData = () => {
                 "financialInfo_2023_3Q",
                 "financialInfo_2023_4Q",
                 "financialInfo_2024_1Q",
+                "financialInfo_2024_3Q",
             ];
             dispatch(setList(financialInfoList));
         }
 
         checkInCommon();
-    }, [financialInfoState])
+    }, [financialInfoState, dispatch])
 
     useEffect(() => {
-        // console.log(`useEffect3 [LoadData] marketInfoState`, marketInfoState);
+        // console.log(`333 [LoadData] marketInfoState`, marketInfoState);
         if ("ready-marketInfoList" == marketInfoState) {
             // console.log(`[LoadData] [ready-marketInfoList]`, marketLatestDate);
         }
@@ -110,15 +120,17 @@ export const LoadData = () => {
                 "marketInfo_20240201",
                 "marketInfo_20240327",
                 "marketInfo_20240712",
+                "marketInfo_20241202",
+                "marketInfo_20250115",
             ];
             dispatch(setMarketList(marketInfoList));
         }
 
         checkInCommon();
-    }, [marketInfoState])
+    }, [marketInfoState, dispatch, marketLatestDate])
 
     useEffect(() => {
-        // console.log(`useEffect4 [LoadData] financialInfo, marketInfo`, financialInfo, !!financialInfo, marketInfo, !!marketInfo);
+        // console.log(`444 [LoadData] financialInfo, marketInfo`, financialInfo, !!financialInfo, marketInfo, !!marketInfo);
         if (true == !!financialInfo && Object.keys(financialInfo).length > 0)
             if (true == !!marketInfo && Object.keys(marketInfo).length > 0) {
                 const mergedStockInfo = GetMeredStocksList(financialInfo, marketInfo);
@@ -134,19 +146,19 @@ export const LoadData = () => {
                 // console.log(`ncavStrategyList`, ncavStrategyList);
                 dispatch(setStrategyList(ncavStrategyList));
             }
-    }, [financialInfo, marketInfo]);
+    }, [financialInfo, marketInfo, dispatch, financialLatestDate]);
 
     useEffect(() => {
-        // console.log(`useEffect5 [LoadData] strategyState`, strategyState);
+        // console.log(`555 [LoadData] strategyState`, strategyState);
         switch (strategyState) {
             case "get-rejected":
                 {
+                    // console.log(`[LoadData] get-rejected`);
                     const afinancialInfoList = String(financialInfoList).split(",");
                     const latestFinancialInfoList = afinancialInfoList[afinancialInfoList.length - 1];
                     const splitLatestFinancialInfoList = latestFinancialInfoList.replaceAll("\"", "").replaceAll("[", "").replaceAll("]", "").split("_");
                     const year = splitLatestFinancialInfoList[1];
                     const quarter = splitLatestFinancialInfoList[2].replace("Q", "");
-                    // console.log(`[LoadData] year, quarter`, year, quarter);
                     dispatch(initFinancialInfo({ year, quarter }));
 
                     const aMarketInfoList = String(marketInfoList).split(",");
@@ -158,14 +170,16 @@ export const LoadData = () => {
                 }
             case "loaded":
                 {
+                    // console.log(`[LoadData] loaded`);
                     break;
                 }
             default:
                 {
+                    // console.log(`[LoadData] default strategyState:`, strategyState);
                     break;
                 }
         }
-    }, [strategyState]);
+    }, [strategyState, dispatch, financialInfoList, marketInfoList]);
 
     return (
         <></>
