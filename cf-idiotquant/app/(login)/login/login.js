@@ -7,10 +7,10 @@ import { selectKakaoAuthCode, selectKakaoId, selectKakaoNickName, setKakaoAuthCo
 import { useAppDispatch, useAppSelector } from "@/lib/hooks";
 
 const env = {
-    // KAKAO_REDIRECT_URI: 'https://idiotquant.com/login'
+    KAKAO_REDIRECT_URI: 'https://idiotquant.com/login'
     // KAKAO_REDIRECT_URI: 'https://idiotquant.com/'
     // KAKAO_REDIRECT_URI: 'http://localhost:3000' // TODO: for test
-    KAKAO_REDIRECT_URI: 'http://localhost:3000/login' // TODO: for test
+    // KAKAO_REDIRECT_URI: 'http://localhost:3000/login' // TODO: for test
 }
 
 async function RequestNickname(_token) {
