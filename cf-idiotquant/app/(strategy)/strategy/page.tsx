@@ -49,9 +49,11 @@ export default function Strategy() {
         {
             name: 'NCAV',
             desc: 'Net-Current Asset Value',
-            imgs: getRandomMainImage(0),
+            // imgs: getRandomMainImage(0),
+            imgs: "",
             cardNum: '0',
-            profileImg: getRandomUserImage(0),
+            // profileImg: getRandomUserImage(0),
+            profileImg: "",
             summary: '저평가 주식을 추천합니다. 순유동자산 대비 시가총액이 얼마나 높은 지를 기준으로 합니다.',
         },
         // {
