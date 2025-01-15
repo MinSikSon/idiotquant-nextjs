@@ -3,12 +3,7 @@ export const getMarketInfo: any = async (date: string) => {
     // console.log(`[getMarketInfo] date`, date);
     const url = `${process.env.NEXT_PUBLIC_API_URL}/stock/market-info?date=${date}`
     // console.log(`[getMarketInfo] url`, url);
-    const options = {
-        headers: {
-            // credentials: 'include',  // include credentials (like cookies) in the request
-        }
-    }
-    const res = await fetch(url, options);
+    const res = await fetch(url);
 
     // console.log(`[getMarketInfo] res`, res);
 

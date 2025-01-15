@@ -163,8 +163,6 @@ export interface Example8TableHeadType {
 export interface TablesExample8PropsType {
     title: string;
     subTitle: string;
-    financial_date: string;
-    market_date: string;
     tableHead: Example8TableHeadType[];
     tableRow: Example8TableRowType[];
 }
@@ -172,8 +170,6 @@ export interface TablesExample8PropsType {
 function TablesExample8({
     title,
     subTitle,
-    financial_date,
-    market_date,
     tableHead,
     tableRow
 }: TablesExample8PropsType) {
@@ -196,18 +192,6 @@ function TablesExample8({
                         >
                             {/* Compare different cryptocurrencies, and make informed investment. */}
                             {subTitle}
-                        </Typography>
-                        <Typography
-                            variant="small"
-                            className="text-gray-600 font-normal mt-1"
-                        >
-                            - financial date: {financial_date}
-                        </Typography>
-                        <Typography
-                            variant="small"
-                            className="text-gray-600 font-normal mt-1"
-                        >
-                            - market date: {market_date}
                         </Typography>
                     </div>
                     {/* <div className="flex items-center w-full shrink-0 gap-4 md:w-max">
