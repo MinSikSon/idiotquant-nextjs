@@ -1,9 +1,10 @@
 import "@/app/global.css"
 import { Nav } from "@/components/navigation"
 import { StoreProvider } from "./StoreProvider"
-import { LoadData } from "@/components/loadData"
 import { TopPanel } from "@/components/panel/top"
 import NavbarWithSimpleLinks from "@/components/navigation2"
+import { LoadData } from "@/components/loadData"
+import { LoginCheck } from "@/components/loginCheck"
 
 export const metadata = {
   title: 'idiot.quant',
@@ -17,9 +18,10 @@ export default function RootLayout({
 }) {
   return (
     <StoreProvider>
+      <LoadData />
+      <LoginCheck />
       <html lang="en">
         <body>
-          <LoadData />
           <div>
             <NavbarWithSimpleLinks />
             {/* <TopPanel /> */}
