@@ -4,8 +4,17 @@ import { marketInfoSlice } from "./features/marketInfo/marketInfoSlice";
 import { articleSlice } from "./features/article/articleSlice";
 import { strategySlice } from "./features/strategy/strategySlice";
 import { backtestSlice } from "./features/backtest/backtestSlice";
+import { loginSlice } from "./features/login/loginSlice";
 
-const rootReducer: any = combineSlices(financialInfoSlice, marketInfoSlice, articleSlice, strategySlice, backtestSlice);
+const rootReducer: any = combineSlices(
+    financialInfoSlice,
+    marketInfoSlice,
+    articleSlice,
+    strategySlice,
+    backtestSlice,
+    loginSlice
+);
+
 export type RootState = ReturnType<typeof rootReducer>;
 
 export const makeStore = () => {

@@ -3,12 +3,14 @@
 import React from "react";
 import { Button, Card, CardBody, Typography } from '@material-tailwind/react';
 import { useRouter } from "next/navigation";
+import { selectKakaoAuthCode, selectKakaoId, selectKakaoNickName, setKakaoAuthCode, setKakaoId, setKakaoNickName } from "@/lib/features/login/loginSlice";
+import { useAppDispatch, useAppSelector } from "@/lib/hooks";
 
 const env = {
-    KAKAO_REDIRECT_URI: 'https://idiotquant.com/login'
+    // KAKAO_REDIRECT_URI: 'https://idiotquant.com/login'
     // KAKAO_REDIRECT_URI: 'https://idiotquant.com/'
     // KAKAO_REDIRECT_URI: 'http://localhost:3000' // TODO: for test
-    // KAKAO_REDIRECT_URI: 'http://localhost:3000/login' // TODO: for test
+    KAKAO_REDIRECT_URI: 'http://localhost:3000/login' // TODO: for test
 }
 
 async function RequestNickname(_token) {
@@ -89,23 +91,27 @@ export default function Login(props) {
     const router = useRouter();
     const [nickname, setNickname] = React.useState('');
     const [authorizeCode, setAuthorizeCode] = React.useState('');
-    const [storedValue, setStoredValue] = React.useState(null);
+
+    const dispatch = useAppDispatch();
+    const kakaoAuthCode = useAppSelector(selectKakaoAuthCode);
+    const kakaoNickName = useAppSelector(selectKakaoNickName);
+    const kakaoId = useAppSelector(selectKakaoId);
 
     React.useEffect(() => {
         async function callback() {
             // TODO(minsik.son) : 지금.. 뭔가 bug 인해서 Request 2번 날리고 있음.
-            if (1 == localStorage.getItem('login')) // NOTE: 임시코드
-            {
-                return;
+
+            console.log(`kakaoAuthCode:`, kakaoAuthCode);
+            let _authorizeCode = ""
+            if ("" == kakaoAuthCode) {
+                _authorizeCode = new URL(window.location.href).searchParams.get('code');
+                console.log(`_authorizeCode`, _authorizeCode);
+                if (!!!_authorizeCode) return;
+                dispatch(setKakaoAuthCode(_authorizeCode));
             }
-
-            const _authorizeCode = new URL(window.location.href).searchParams.get('code');
-            console.log(`_authorizeCode`, _authorizeCode);
-            if (!!!_authorizeCode) return;
-
-            localStorage.setItem('login', 1);
-
-            setStoredValue(localStorage.getItem('login'));
+            else {
+                _authorizeCode = selectKakaoAuthCode;
+            }
 
             const responseToken = await RequestToken(_authorizeCode);
             if (!!responseToken.error_code && "KOE320" == responseToken.error_code) {
@@ -132,6 +138,8 @@ export default function Login(props) {
             // localStorage.setItem('kakaoAuthorizeCode', _authorizeCode);
 
             registerUser(responseNickname.id, responseNickname.properties.nickname);
+            dispatch(setKakaoNickName(responseNickname.properties.nickname))
+            dispatch(setKakaoId(responseNickname.id))
 
             const url = {
                 pathname: env.KAKAO_REDIRECT_URI,
@@ -156,6 +164,10 @@ export default function Login(props) {
         localStorage.removeItem('kakaoNickName');
         localStorage.removeItem('login');
 
+        dispatch(setKakaoAuthCode(""));
+        dispatch(setKakaoNickName(""));
+        dispatch(setKakaoId(""));
+
         const authorizeEndpoint = `https://kauth.kakao.com/oauth/logout?client_id=${process.env.NEXT_PUBLIC_KAKAO_REST_API_KEY}&logout_redirect_uri=${env.KAKAO_REDIRECT_URI}`;
         router.push(authorizeEndpoint);
     }
@@ -164,7 +176,7 @@ export default function Login(props) {
         return (
             <>
                 {
-                    (!!!storedValue) ?
+                    (!!!kakaoNickName) ?
                         <>
                             <Card className="mt-6 w-96">
                                 {/* <CardHeader color="blue-gray" className="relative h-20">
@@ -204,7 +216,7 @@ export default function Login(props) {
                                 </CardHeader> */}
                                 <CardBody>
                                     <Typography variant="h5" color="blue-gray" className="mb-2">
-                                        {localStorage.getItem('kakaoNickName')} 님 반갑습니다.
+                                        {kakaoNickName} 님 반갑습니다.
                                     </Typography>
                                     <Typography>
                                         logout 하려면 아래 버튼을 눌려주세요.

@@ -97,6 +97,8 @@ function translateJsonToTableRow(json: any) {
 interface StrategyInfo {
     state: "init" | "loading" | "loaded" | "get-rejected" | "set-rejected" | "retry";
     value: any;
+    financial_date: string;
+    market_date: string;
     STRATEGY_TABLE_ROW: Example8TableRowType[];
     strategyList: any;
 
@@ -104,6 +106,8 @@ interface StrategyInfo {
 const initialState: StrategyInfo = {
     state: "init",
     value: {},
+    financial_date: "",
+    market_date: "",
     STRATEGY_TABLE_ROW: [],
     strategyList: [],
 }
@@ -124,6 +128,7 @@ export const strategySlice = createAppSlice({
             async ({ financialInfoDate, marketInfoDate }: { financialInfoDate: string, marketInfoDate: string }) => {
                 // console.log(`[getStrategyList]`, financialInfoDate, marketInfoDate);
                 const res: any = await getNcavList(financialInfoDate, marketInfoDate);
+                // console.log(`[getStrategyList] res`, res);
                 return res;
             },
             {
@@ -138,6 +143,9 @@ export const strategySlice = createAppSlice({
                     const json = action.payload;
 
                     state.value = json;
+                    // console.log(`[getStrategyList] json`, json);
+
+                    // state.date = marketInfoDate;
                     const tableRow = translateJsonToTableRow(json);
                     state.STRATEGY_TABLE_ROW = tableRow
                     state.strategyList.push(tableRow);
@@ -153,7 +161,8 @@ export const strategySlice = createAppSlice({
             async ({ financialInfoDate, marketInfoDate, ncavList }: { financialInfoDate: string, marketInfoDate: string, ncavList: string }) => {
                 // console.log(`[setStrategyList]`, financialInfoDate, marketInfoDate, ncavList);
                 const res: any = await setNcavList(financialInfoDate, marketInfoDate, ncavList);
-                return res;
+                // console.log(`[setStrategyList] res`, res);
+                return { 'res': res, 'financial_date': financialInfoDate, 'market_date': marketInfoDate };
             },
             {
                 pending: (state) => {
@@ -166,7 +175,16 @@ export const strategySlice = createAppSlice({
                     // console.log(`[setStrategyList]`, nextState);
                     state.state = nextState;
 
-                    const json = JSON.parse(action.payload);
+                    const json = JSON.parse(action.payload['res']);
+                    // console.log(`[setStrategyList] res`, json);
+
+                    const financial_date = action.payload['financial_date'];
+                    state.financial_date = financial_date;
+                    // console.log(`[setStrategyList] market_date`, financial_date);
+                    const market_date = action.payload['market_date'];
+                    state.market_date = market_date;
+                    // console.log(`[setStrategyList] market_date`, market_date);
+
                     const tableRow = translateJsonToTableRow(json);
                     state.STRATEGY_TABLE_ROW = tableRow
                     state.value = json;
@@ -184,10 +202,12 @@ export const strategySlice = createAppSlice({
         selectNcavList: (state) => state.value,
         selectStrategyState: (state) => state.state,
         selectStrategyTableRow: (state) => state.STRATEGY_TABLE_ROW,
+        selectStrategyFinancialDate: (state) => state.financial_date,
+        selectStrategyMarketDate: (state) => state.market_date,
 
         selectStrategyList: (state) => state.strategyList,
     }
 });
 
 export const { getStrategyList, setStrategyList, setLoading, setRetry } = strategySlice.actions;
-export const { selectNcavList, selectStrategyState, selectStrategyTableRow, selectStrategyList } = strategySlice.selectors;
+export const { selectNcavList, selectStrategyState, selectStrategyTableRow, selectStrategyFinancialDate, selectStrategyMarketDate, selectStrategyList } = strategySlice.selectors;

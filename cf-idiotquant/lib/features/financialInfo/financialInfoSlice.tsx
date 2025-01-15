@@ -1,12 +1,11 @@
 import { createAppSlice } from "@/lib/createAppSlice";
 import { getFinancialInfo, getFinancialInfoList, setFinancialInfoList } from "./financialInfoAPI";
 
-
-
 interface LatestFinancialDate {
     year: string;
     quarter: string;
 }
+
 interface FinancialInfo {
     state: "init"
     | "get-rejected"
@@ -18,6 +17,7 @@ interface FinancialInfo {
     latestDate: LatestFinancialDate;
     value: any;
 }
+
 const initialState: FinancialInfo = {
     state: "init",
     loaded: false,
@@ -31,7 +31,9 @@ export const financialInfoSlice = createAppSlice({
     initialState,
     reducers: (create) => ({
         getList: create.asyncThunk(
-            async () => { return await getFinancialInfoList(); },
+            async () => {
+                return await getFinancialInfoList();
+            },
             {
                 pending: (state) => {
                     console.log(`pending`);
@@ -40,7 +42,7 @@ export const financialInfoSlice = createAppSlice({
                 fulfilled: (state, action) => {
                     // console.log(`[getList] fulfilled`, action.payload, !!action.payload);
                     if (!!action.payload) {
-                        console.log(`ready-financialInfoList`);
+                        // console.log(`ready-financialInfoList`);
                         state.financialInfoList = action.payload;
 
                         const afinancialInfoList = String(action.payload).split(",");
@@ -63,9 +65,11 @@ export const financialInfoSlice = createAppSlice({
             }
         ),
         setList: create.asyncThunk(
-            async (dateList: string[]) => { return await setFinancialInfoList(dateList); },
+            async (dateList: string[]) => {
+                return await setFinancialInfoList(dateList);
+            },
             {
-                pending: (state) => { state.state = "loading"; },
+                pending: (state) => { state.state = "pending"; },
                 fulfilled: (state, action) => {
                     state.financialInfoList = action.payload;
                     state.state = "ready-financialInfoList";
@@ -81,12 +85,12 @@ export const financialInfoSlice = createAppSlice({
             },
             {
                 pending: (state) => {
-                    console.log(`loading`);
-                    state.state = "loading";
+                    console.log(`pending`);
+                    state.state = "pending";
                     state.loaded = true;
                 },
                 fulfilled: (state, action) => {
-                    console.log(`ready-financialInfo`);
+                    // console.log(`ready-financialInfo`);
                     state.value = action.payload;
                     state.loaded = true;
                     state.state = "ready-financialInfo";
@@ -107,7 +111,5 @@ export const financialInfoSlice = createAppSlice({
     }
 });
 
-export const { initFinancialInfo } = financialInfoSlice.actions;
-export const { getList, setList } = financialInfoSlice.actions;
-export const { selectFinancialInfo, selectFinancialInfoList, selectLoaded, selectFinancialInfoState } = financialInfoSlice.selectors;
-export const { selectLatestDate } = financialInfoSlice.selectors;
+export const { initFinancialInfo, getList, setList } = financialInfoSlice.actions;
+export const { selectFinancialInfo, selectFinancialInfoList, selectLoaded, selectFinancialInfoState, selectLatestDate } = financialInfoSlice.selectors;
