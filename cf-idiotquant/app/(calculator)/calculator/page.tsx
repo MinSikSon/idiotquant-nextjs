@@ -2,13 +2,10 @@
 
 // code 출처 : https://reactjsexample.com/a-simple-calculator-app-built-using-tailwind-css-and-react-js/
 import Head from "next/head";
-import Link from "next/link";
 import Script from "next/script.js";
 import React from "react";
 
-import { Input, Select, Option, Button, ListItem, ListItemPrefix, ListItemSuffix } from "@material-tailwind/react";
-
-import { HomeIcon } from "@heroicons/react/24/outline";
+import { Input, Select, Option, Button, ListItem, ListItemSuffix } from "@material-tailwind/react";
 
 export default function Calculator() {
     React.useEffect(() => {
@@ -25,7 +22,7 @@ export default function Calculator() {
     const [result, setResult] = React.useState<number>(0);
 
     function handleCalculateSampleData() {
-        setInvestmentAmount(50000000);
+        setInvestmentAmount(Number(50000000) * 1);
         setNumberOfYears(12);
         setInterestRate(25);
         // setCompunding('');
@@ -49,7 +46,7 @@ export default function Calculator() {
     }
 
     function handleClear() {
-        setInvestmentAmount(0);
+        setInvestmentAmount(Number(0) * 1);
         setNumberOfYears(0);
         setInterestRate(0);
         // setCompunding(0);
@@ -58,6 +55,10 @@ export default function Calculator() {
         setAnnualInflationRate(0);
 
         setResult(0);
+    }
+
+    function removeLeftZero(e: any) {
+        e.target.value = (Number(e.target.value) * 1).toString();
     }
 
     return (
@@ -77,8 +78,6 @@ export default function Calculator() {
                     console.log(`script loaded correctly, window.FB has been populated`)
                 }
             />
-
-
 
             <div className='w-screen flex justify-between items-center p-4 sm:px-20 md:px-40 lg:px-64 xl:px-80 2xl:px-96'>
                 <div className="w-full h-full rounded-xl bg-white text-gray-700 border border-gray-300 shadow-md">
@@ -102,15 +101,15 @@ export default function Calculator() {
                                 <div className='text-2xl text-right underline decoration-4 decoration-yellow-500'>{' ' + result.toLocaleString('ko-KR', { maximumFractionDigits: 0 }) + ' 원'}</div>
                             </div>
                             <div className='flex'>
-                                <Input color="black" label="투자 시작 금액: (원)" type='number' onChange={(e) => { setInvestmentAmount(Number(e.target.value)); }} value={Number(investmentAmount)} crossOrigin={undefined} />
-                                {!!investmentAmount ? <Button variant="outlined" onClick={() => setInvestmentAmount(0)} >CLEAR</Button> : <></>}
+                                <Input color="black" label="투자 시작 금액: (원)" type='number' onChange={(e) => { removeLeftZero(e); setInvestmentAmount(Number(e.target.value)); }} value={Number(investmentAmount) * 1} crossOrigin={undefined} />
+                                {!!investmentAmount ? <Button variant="outlined" onClick={() => setInvestmentAmount(Number(0) * 1)} >CLEAR</Button> : <></>}
                             </div>
                             <div className='flex'>
-                                <Input color="black" label="투자 기간: (년)" type='number' onChange={(e) => { setNumberOfYears(Number(e.target.value)); }} value={numberOfYears} crossOrigin={undefined} />
+                                <Input color="black" label="투자 기간: (년)" type='number' onChange={(e) => { removeLeftZero(e); setNumberOfYears(Number(e.target.value)); }} value={numberOfYears} crossOrigin={undefined} />
                                 {!!numberOfYears ? <Button variant="outlined" onClick={() => setNumberOfYears(0)}>CLEAR</Button> : <></>}
                             </div>
                             <div className='flex'>
-                                <Input color="black" label="연간 이자율 (%)" type='number' onChange={(e) => { setInterestRate(Number(e.target.value)); }} value={interestRate} crossOrigin={undefined} />
+                                <Input color="black" label="연간 이자율 (%)" type='number' onChange={(e) => { removeLeftZero(e); setInterestRate(Number(e.target.value)); }} value={interestRate} crossOrigin={undefined} />
                                 {!!interestRate ? <Button variant="outlined" onClick={() => setInterestRate(0)}>CLEAR</Button> : <></>}
                             </div>
                             <Select disabled color="blue" label="복리" value='3' onChange={(value) => { setCompunding(Number(value)) }}
@@ -125,7 +124,7 @@ export default function Calculator() {
                                 <Option value='5'>Annually (1/Yr)</Option>
                             </Select>
                             <div className='flex'>
-                                <Input color="black" label="추가 납입금" type='number' onChange={(e) => { setContributions(Number(e.target.value)); }} value={contributions} crossOrigin={undefined} />
+                                <Input color="black" label="추가 납입금" type='number' onChange={(e) => { removeLeftZero(e); setContributions(Number(e.target.value)); }} value={contributions} crossOrigin={undefined} />
                                 {!!contributions ? <Button variant="outlined" onClick={() => setContributions(0)}>CLEAR</Button> : <></>}
                             </div>
                             <Select disabled color="blue" label="추가 납입금 납입 빈도" value='4' onChange={(value) => { setFrequency(Number(value)) }}
@@ -142,7 +141,7 @@ export default function Calculator() {
                                 <Option value='7'>Annually</Option>
                             </Select>
                             <div className='flex'>
-                                <Input color="black" label="물가상승률 (%)" type='number' onChange={(e) => { setAnnualInflationRate(Number(e.target.value)); }} value={annualInflationRate} crossOrigin={undefined} />
+                                <Input color="black" label="물가상승률 (%)" type='number' onChange={(e) => { removeLeftZero(e); setAnnualInflationRate(Number(e.target.value)); }} value={annualInflationRate} crossOrigin={undefined} />
                                 {!!annualInflationRate ? <Button variant="outlined" onClick={() => setAnnualInflationRate(0)}>CLEAR</Button> : <></>}
                             </div>
                             <div className="grid grid-cols-1">
