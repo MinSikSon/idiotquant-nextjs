@@ -97,25 +97,6 @@ export default function Calculator() {
         }
     }
 
-
-    function getInterestRateBenchmark(interestRateBenchmark: number) {
-        console.log(`interestRateBenchmark`, interestRateBenchmark);
-        switch (interestRateBenchmark) {
-            case InterestRateBenchmark.eDAILY360:
-                return "Daily (360/Yr)";
-            case InterestRateBenchmark.eDAILY365:
-                return "Daily (365/Yr)";
-            case InterestRateBenchmark.eMONTHLY:
-                return "Monthly (12/Yr)";
-            case InterestRateBenchmark.eQUARTERLY:
-                return "Quarterly (4/Yr)";
-            case InterestRateBenchmark.eANNUALLY:
-                return "Annually (1/Yr)";
-            default:
-                return "Unknown";
-        }
-    }
-
     function handleCalculate() {
         const numberOfDay = numberOfYears * 365;
         const numberOfHour = numberOfDay * 24;
