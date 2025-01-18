@@ -12,22 +12,35 @@ export default function Calculator() {
         handleCalculate();
     });
 
-    const InterestRateBenchmark =
+    const InterestRateBenchmarkTermPerHour =
     {
-        eDAILY360: 1, //"(Daily 360/Yr)"
-        eDAILY365: 2, //"(Daily 365/Yr)"
-        eMONTHLY: 3, //"(Monthly 12/Yr)"
-        eQUARTERLY: 4, //"(Quarterly 4/Yr)"
-        eANNUALLY: 5, //"(Annually 1/Yr)"
+        // eDAILY360: 1, //"(Daily 360/Yr)"
+        eDAILY365: 24,    // 365 day * 24 hour / 365 day = 24 hour
+        eMONTHLY: 730,    // 365 day * 24 hour / 12 month = 730 hour
+        eQUARTERLY: 2190, // 365 day * 24 hour / 4 quarter = 2190 hour
+        eANNUALLY: 8760,  // 365 day * 24 hour / 1 year = 8760 hour
     }
 
-    const [investmentAmount, setInvestmentAmount] = React.useState<number>(500000);
-    const [numberOfYears, setNumberOfYears] = React.useState<number>(3);
-    const [interestRate, setInterestRate] = React.useState<number>(27);
-    const [compunding, setCompunding] = React.useState<number>(InterestRateBenchmark.eANNUALLY);
-    const [contributions, setContributions] = React.useState<number>(50000);
-    const [frequency, setFrequency] = React.useState<number>(0);
-    const [annualInflationRate, setAnnualInflationRate] = React.useState<number>(3);
+    const ContributionRateBenchmarkTermPerHour = {
+        eWEEKLY: 168,         // 7 day * 24 hour = 168 hour
+        eBIWEEKLY: 336,       // 14 day * 24 hour = 336 hour
+        eSEMIMONTHLY: 1460,   // 365 day * 24 hour / 6 month = 1460 hour
+        eMONTHLY: 730,        // 365 day * 24 hour / 12 month = 730 hour
+        eQUARTERLY: 2190,     // 365 day * 24 hour / 4 quarter = 2190 hour
+        eSEMIANNUALLY: 17520, // 365 day * 24 hour / 2 year = 17520 hour
+        eANNUALLY: 8760,      // 365 day * 24 hour / 1 year = 8760 hour
+    }
+
+    const DEFAULT_INTEREST_RATE_BENCHMARK = InterestRateBenchmarkTermPerHour.eANNUALLY;
+    const DEFAULT_CONTRIBUTION_RATE_BENCHMARK = ContributionRateBenchmarkTermPerHour.eMONTHLY;
+
+    const [investmentAmount, setInvestmentAmount] = React.useState<number>(50000000);
+    const [numberOfYears, setNumberOfYears] = React.useState<number>(12);
+    const [interestRate, setInterestRate] = React.useState<number>(24);
+    const [compunding, setCompunding] = React.useState<number>(DEFAULT_INTEREST_RATE_BENCHMARK);
+    const [contributions, setContributions] = React.useState<number>(3000000);
+    const [frequency, setFrequency] = React.useState<number>(DEFAULT_CONTRIBUTION_RATE_BENCHMARK);
+    const [inflationRate, setInflationRate] = React.useState<number>(3);
     const [result, setResult] = React.useState<number>(0);
 
 
@@ -35,10 +48,53 @@ export default function Calculator() {
         setInvestmentAmount(Number(50000000) * 1);
         setNumberOfYears(12);
         setInterestRate(24);
-        setCompunding(InterestRateBenchmark.eANNUALLY);
-        setContributions(2000000);
-        // setFrequency('');
-        setAnnualInflationRate(1);
+        setCompunding(DEFAULT_INTEREST_RATE_BENCHMARK);
+        setContributions(3000000);
+        setFrequency(DEFAULT_CONTRIBUTION_RATE_BENCHMARK);
+        setInflationRate(3);
+    }
+
+
+    function getInterestRateBenchmark(interestRateBenchmark: number) {
+        // console.log(`interestRateBenchmark`, interestRateBenchmark);
+        switch (interestRateBenchmark) {
+            // case InterestRateBenchmark.eDAILY360:
+            //     return "Daily (360/Yr)";
+            case InterestRateBenchmarkTermPerHour.eDAILY365:
+                return "Daily (365/Yr)";
+            case InterestRateBenchmarkTermPerHour.eMONTHLY:
+                return "Monthly (12/Yr)";
+            case InterestRateBenchmarkTermPerHour.eQUARTERLY:
+                return "Quarterly (4/Yr)";
+            case InterestRateBenchmarkTermPerHour.eANNUALLY:
+                return "Annually (1/Yr)";
+            default:
+                return "Unknown";
+        }
+    }
+
+    function getContributeRateBenchmark(contributeRateBenchmark: number) {
+        // console.log(`interestRateBenchmark`, interestRateBenchmark);
+        switch (contributeRateBenchmark) {
+            // case InterestRateBenchmark.eDAILY360:
+            //     return "Daily (360/Yr)";
+            case ContributionRateBenchmarkTermPerHour.eWEEKLY:
+                return "WEEKLY";
+            case ContributionRateBenchmarkTermPerHour.eBIWEEKLY:
+                return "BI-WEEKLY";
+            case ContributionRateBenchmarkTermPerHour.eSEMIMONTHLY:
+                return "SEMI-MONTHLY";
+            case ContributionRateBenchmarkTermPerHour.eMONTHLY:
+                return "MONTHLY";
+            case ContributionRateBenchmarkTermPerHour.eQUARTERLY:
+                return "QUARTERLY";
+            case ContributionRateBenchmarkTermPerHour.eSEMIANNUALLY:
+                return "SEMI-ANNUALLY";
+            case ContributionRateBenchmarkTermPerHour.eANNUALLY:
+                return "ANNUALLY";
+            default:
+                return "Unknown";
+        }
     }
 
 
@@ -61,59 +117,27 @@ export default function Calculator() {
     }
 
     function handleCalculate() {
-        const QUARTER_COUNT = 4;
-        const MONTH_COUNT = 12;
-
-        const numberOfDay360 = numberOfYears * 360;
-        const numberOfDay365 = numberOfYears * 365;
-        const numberOfMonth = numberOfYears * MONTH_COUNT;
-        const numberOfQuarter = numberOfYears * QUARTER_COUNT;
-        let modInterestRate = 0;
-        let modInflationRate = 0;
-
-        // 복리 기준(일/월/분기/연) 설정
-        let loop = 0;
-        switch (compunding) {
-            case InterestRateBenchmark.eDAILY360:
-                loop = numberOfDay360;
-                modInterestRate = interestRate / 360;
-                modInflationRate = annualInflationRate / 360;
-                break;
-            case InterestRateBenchmark.eDAILY365:
-                loop = numberOfDay365;
-                modInterestRate = interestRate / 365;
-                modInflationRate = annualInflationRate / 365;
-                break;
-            case InterestRateBenchmark.eMONTHLY:
-                loop = numberOfMonth;
-                modInterestRate = interestRate / MONTH_COUNT;
-                modInflationRate = annualInflationRate / MONTH_COUNT;
-                break;
-            case InterestRateBenchmark.eQUARTERLY:
-                loop = numberOfQuarter;
-                modInterestRate = interestRate / QUARTER_COUNT;
-                modInflationRate = annualInflationRate / QUARTER_COUNT;
-                break;
-            case InterestRateBenchmark.eANNUALLY:
-                loop = numberOfYears;
-                modInterestRate = interestRate;
-                modInflationRate = annualInflationRate;
-                break;
-            default:
-                break;
-        }
+        const numberOfDay = numberOfYears * 365;
+        const numberOfHour = numberOfDay * 24;
 
         // 원금 수익 계산
         let principalReturn = Number(investmentAmount);
-        for (let i = 0; i < loop; i++) {
-            principalReturn = principalReturn * (1 + (modInterestRate - modInflationRate) / 100);
+        for (let i = 0; i <= numberOfHour; ++i) {
+            if (i > 0 && (0 == (i % compunding))) {
+                principalReturn = principalReturn * (1 + ((interestRate - inflationRate) / 100));
+            }
         }
 
         // 추가납입금 수익 계산
         let additionalPaymentReturn = 0;
-        for (let i = 0; i < loop; i++) {
-            additionalPaymentReturn += Number(contributions);
-            additionalPaymentReturn = additionalPaymentReturn * (1 + (modInterestRate - modInflationRate) / 100);
+        for (let i = 0; i <= numberOfHour; ++i) {
+            if (i > 0 && (0 == (i % compunding))) {
+                additionalPaymentReturn = additionalPaymentReturn * (1 + ((interestRate - inflationRate) / 100));
+            }
+
+            if (i > 0 && (0 == (i % frequency))) {
+                additionalPaymentReturn += Number(contributions);
+            }
         }
 
         const totalValue: number = Number(principalReturn.toFixed(0)) + Number(additionalPaymentReturn.toFixed(0));
@@ -124,10 +148,10 @@ export default function Calculator() {
         setInvestmentAmount(Number(0) * 1);
         setNumberOfYears(0);
         setInterestRate(0);
-        setCompunding(InterestRateBenchmark.eANNUALLY);
+        setCompunding(DEFAULT_INTEREST_RATE_BENCHMARK);
         setContributions(0);
-        setFrequency(0);
-        setAnnualInflationRate(0);
+        setFrequency(DEFAULT_CONTRIBUTION_RATE_BENCHMARK);
+        setInflationRate(0);
 
         setResult(0);
     }
@@ -140,7 +164,7 @@ export default function Calculator() {
             'compunding': compunding,
             'contributions': contributions,
             'frequency': frequency,
-            'annualInflationRate': annualInflationRate,
+            'inflationRate': inflationRate,
             'totalValue': result
         }
 
@@ -180,7 +204,7 @@ export default function Calculator() {
                         </ListItemSuffix>
                     </ListItem>
                     <div className="w-auto m-1 h-auto mb-1">
-                        <form className="flex flex-col gap-2 m-4">
+                        <form className="flex flex-col gap-1.5 m-4">
                             <div className='flex justify-between mb-1'>
                                 <div className='text-lg underline decoration-4 decoration-yellow-500'>{'최종 수입금:'}</div>
                                 <div className='text-2xl text-right underline decoration-4 decoration-yellow-500'>{' ' + result.toLocaleString('ko-KR', { maximumFractionDigits: 0 }) + ' 원'}</div>
@@ -193,41 +217,44 @@ export default function Calculator() {
                                 <Input color="red" label="투자 기간: (년)" type='number' onChange={(e) => { removeLeftZero(e); setNumberOfYears(Number(e.target.value)); }} value={numberOfYears} crossOrigin={undefined} />
                                 {!!numberOfYears ? <Button className="ml-1 py-0" variant="outlined" onClick={() => setNumberOfYears(0)}>CLEAR</Button> : <></>}
                             </div>
-                            <div className='flex'>
-                                <Input color="red" label={`${getInterestRateBenchmark(compunding)} 이자율 (%)`} type='number' onChange={(e) => { removeLeftZero(e); setInterestRate(Number(e.target.value)); }} value={interestRate} crossOrigin={undefined} />
-                                {!!interestRate ? <Button className="ml-1 py-0" variant="outlined" onClick={() => setInterestRate(0)}>CLEAR</Button> : <></>}
+                            <div className='flex-row border-4  border-red-100 pt-1'>
+                                <Select color="red" label="복리" value={String(compunding)} onChange={(value) => { setCompunding(Number(value)) }}
+                                    animate={{
+                                        mount: { y: 0 },
+                                        unmount: { y: 25 },
+                                    }}>
+                                    <Option value={String(InterestRateBenchmarkTermPerHour.eDAILY365)}>Daily (365/Yr)</Option>
+                                    <Option value={String(InterestRateBenchmarkTermPerHour.eMONTHLY)}>Monthly (12/Yr)</Option>
+                                    <Option value={String(InterestRateBenchmarkTermPerHour.eQUARTERLY)}>Quarterly (4/Yr)</Option>
+                                    <Option value={String(InterestRateBenchmarkTermPerHour.eANNUALLY)}>Annually (1/Yr)</Option>
+                                </Select>
+                                <div className='pt-2 flex'>
+                                    <Input color="red" label={`${getInterestRateBenchmark(compunding)} 이자율 (%)`} type='number' onChange={(e) => { removeLeftZero(e); setInterestRate(Number(e.target.value)); }} value={interestRate} crossOrigin={undefined} />
+                                    {!!interestRate ? <Button className="ml-1 py-0" variant="outlined" onClick={() => setInterestRate(0)}>CLEAR</Button> : <></>}
+                                </div>
                             </div>
-                            <Select color="red" label="복리" value={String(InterestRateBenchmark.eANNUALLY)} onChange={(value) => { setCompunding(Number(value)) }}
-                                animate={{
-                                    mount: { y: 0 },
-                                    unmount: { y: 25 },
-                                }}>
-                                <Option value={String(InterestRateBenchmark.eDAILY360)}>Daily (360/Yr)</Option>
-                                <Option value={String(InterestRateBenchmark.eDAILY365)}>Daily (365/Yr)</Option>
-                                <Option value={String(InterestRateBenchmark.eMONTHLY)}>Monthly (12/Yr)</Option>
-                                <Option value={String(InterestRateBenchmark.eQUARTERLY)}>Quarterly (4/Yr)</Option>
-                                <Option value={String(InterestRateBenchmark.eANNUALLY)}>Annually (1/Yr)</Option>
-                            </Select>
-                            <div className='flex'>
-                                <Input color="red" label="추가 납입금" type='number' onChange={(e) => { removeLeftZero(e); setContributions(Number(e.target.value)); }} value={contributions} crossOrigin={undefined} />
-                                {!!contributions ? <Button className="ml-1 py-0" variant="outlined" onClick={() => setContributions(0)}>CLEAR</Button> : <></>}
+                            <div className='flex-row border-4  border-blue-100 pt-1'>
+                                <Select className="bg-white" color="blue" label="추가 납입금 납입 빈도" value={String(frequency)} onChange={(value) => { setFrequency(Number(value)) }}
+                                    animate={{
+                                        mount: { y: 0 },
+                                        unmount: { y: 25 },
+                                    }} >
+                                    <Option value={String(ContributionRateBenchmarkTermPerHour.eWEEKLY)}>Weekly</Option>
+                                    <Option value={String(ContributionRateBenchmarkTermPerHour.eBIWEEKLY)}>Bi-Weekly</Option>
+                                    <Option value={String(ContributionRateBenchmarkTermPerHour.eSEMIMONTHLY)}>Semi-Monthly</Option>
+                                    <Option value={String(ContributionRateBenchmarkTermPerHour.eMONTHLY)}>Monthly</Option>
+                                    <Option value={String(ContributionRateBenchmarkTermPerHour.eQUARTERLY)}>Quarterly</Option>
+                                    <Option value={String(ContributionRateBenchmarkTermPerHour.eSEMIANNUALLY)}>Semi-Annually</Option>
+                                    <Option value={String(ContributionRateBenchmarkTermPerHour.eANNUALLY)}>Annually</Option>
+                                </Select>
+                                <div className='pt-2 flex bg-white'>
+                                    <Input color="blue" label={`${getContributeRateBenchmark(frequency)} 추가 납입금`} type='number' onChange={(e) => { removeLeftZero(e); setContributions(Number(e.target.value)); }} value={contributions} crossOrigin={undefined} />
+                                    {!!contributions ? <Button className="ml-1 py-0" variant="outlined" onClick={() => setContributions(0)}>CLEAR</Button> : <></>}
+                                </div>
                             </div>
-                            {/* <Select disabled color="blue" label="추가 납입금 납입 빈도" value='4' onChange={(value) => { setFrequency(Number(value)) }}
-                                animate={{
-                                    mount: { y: 0 },
-                                    unmount: { y: 25 },
-                                }} >
-                                <Option value='1'>Weekly</Option>
-                                <Option value='2'>Bi-Weekly</Option>
-                                <Option value='3'>Semi-Monthly</Option>
-                                <Option value='4'>추가 납입금 납입 빈도: Monthly</Option>
-                                <Option value='5'>Quarterly</Option>
-                                <Option value='6'>Semi-Annually</Option>
-                                <Option value='7'>Annually</Option>
-                            </Select> */}
                             <div className='flex'>
-                                <Input color="red" label="물가상승률 (%)" type='number' onChange={(e) => { removeLeftZero(e); setAnnualInflationRate(Number(e.target.value)); }} value={annualInflationRate} crossOrigin={undefined} />
-                                {!!annualInflationRate ? <Button className="ml-1 py-0" variant="outlined" onClick={() => setAnnualInflationRate(0)}>CLEAR</Button> : <></>}
+                                <Input color="red" label="물가상승률 (%)" type='number' onChange={(e) => { removeLeftZero(e); setInflationRate(Number(e.target.value)); }} value={inflationRate} crossOrigin={undefined} />
+                                {!!inflationRate ? <Button className="ml-1 py-0" variant="outlined" onClick={() => setInflationRate(0)}>CLEAR</Button> : <></>}
                             </div>
                             <div className="flex">
                                 <Button className="w-36 mr-1" color="green" variant="outlined" onClick={handleCalculateSampleData}>

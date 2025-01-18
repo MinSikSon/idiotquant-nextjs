@@ -12,7 +12,7 @@ export const getFinancialInfo: any = async (year: string, quarter: string) => {
 }
 
 export const setFinancialInfoList: any = async (dateList: string[]) => {
-    console.log(`[setFinancialInfoList] dateList`, dateList);
+    // console.log(`[setFinancialInfoList] dateList`, dateList);
     const url = `${process.env.NEXT_PUBLIC_API_URL}/stock/financial-info-list`;
     const options: RequestInit = {
         method: 'POST',
