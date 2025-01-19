@@ -321,7 +321,9 @@ export default function Calculator() {
                             :
                             <ListItem>
                                 <div>
-                                    test
+                                    <Typography variant="h6" color="blue-gray">
+                                        <span className='border border-1 border-black rounded p-1'>계산 결과 등록</span> 버튼을 눌려주세요.
+                                    </Typography>
                                 </div>
                             </ListItem>}
                     </List>
