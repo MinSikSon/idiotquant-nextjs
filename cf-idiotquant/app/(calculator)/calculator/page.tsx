@@ -5,7 +5,7 @@ import Head from "next/head";
 import Script from "next/script.js";
 import React from "react";
 
-import { Input, Select, Option, Button, ListItem, ListItemSuffix, List } from "@material-tailwind/react";
+import { Input, Select, Option, Button, ListItem, ListItemSuffix, List, Typography } from "@material-tailwind/react";
 
 export default function Calculator() {
     React.useEffect(() => {
@@ -31,29 +31,41 @@ export default function Calculator() {
         eANNUALLY: 8760,      // 365 day * 24 hour / 1 year = 8760 hour
     }
 
+    interface Result {
+        index: number,
+        investmentAmount: number,
+        numberOfYears: number,
+        interestRate: number,
+        compounding: number,
+        contributions: number,
+        frequency: number,
+        inflationRate: number,
+        totalValue: number
+    }
+
     const DEFAULT_INTEREST_RATE_BENCHMARK = InterestRateBenchmarkTermPerHour.eANNUALLY;
     const DEFAULT_CONTRIBUTION_RATE_BENCHMARK = ContributionRateBenchmarkTermPerHour.eMONTHLY;
 
     const [investmentAmount, setInvestmentAmount] = React.useState<number>(50000000);
     const [numberOfYears, setNumberOfYears] = React.useState<number>(12);
     const [interestRate, setInterestRate] = React.useState<number>(24);
-    const [compunding, setCompunding] = React.useState<number>(DEFAULT_INTEREST_RATE_BENCHMARK);
+    const [compounding, setCompounding] = React.useState<number>(DEFAULT_INTEREST_RATE_BENCHMARK);
     const [contributions, setContributions] = React.useState<number>(3000000);
     const [frequency, setFrequency] = React.useState<number>(DEFAULT_CONTRIBUTION_RATE_BENCHMARK);
     const [inflationRate, setInflationRate] = React.useState<number>(3);
     const [result, setResult] = React.useState<number>(0);
+    const [resultList, setResultList] = React.useState<Result[]>([]);
 
 
     function handleCalculateSampleData() {
         setInvestmentAmount(Number(50000000) * 1);
         setNumberOfYears(12);
         setInterestRate(24);
-        setCompunding(DEFAULT_INTEREST_RATE_BENCHMARK);
+        setCompounding(DEFAULT_INTEREST_RATE_BENCHMARK);
         setContributions(3000000);
         setFrequency(DEFAULT_CONTRIBUTION_RATE_BENCHMARK);
         setInflationRate(3);
     }
-
 
     function getInterestRateBenchmark(interestRateBenchmark: number) {
         // console.log(`interestRateBenchmark`, interestRateBenchmark);
@@ -104,7 +116,7 @@ export default function Calculator() {
         // 원금 수익 계산
         let principalReturn = Number(investmentAmount);
         for (let i = 0; i <= numberOfHour; ++i) {
-            if (i > 0 && (0 == (i % compunding))) {
+            if (i > 0 && (0 == (i % compounding))) {
                 principalReturn = principalReturn * (1 + ((interestRate - inflationRate) / 100));
             }
         }
@@ -112,7 +124,7 @@ export default function Calculator() {
         // 추가납입금 수익 계산
         let additionalPaymentReturn = 0;
         for (let i = 0; i <= numberOfHour; ++i) {
-            if (i > 0 && (0 == (i % compunding))) {
+            if (i > 0 && (0 == (i % compounding))) {
                 additionalPaymentReturn = additionalPaymentReturn * (1 + ((interestRate - inflationRate) / 100));
             }
 
@@ -129,7 +141,7 @@ export default function Calculator() {
         setInvestmentAmount(Number(0) * 1);
         setNumberOfYears(0);
         setInterestRate(0);
-        setCompunding(DEFAULT_INTEREST_RATE_BENCHMARK);
+        setCompounding(DEFAULT_INTEREST_RATE_BENCHMARK);
         setContributions(0);
         setFrequency(DEFAULT_CONTRIBUTION_RATE_BENCHMARK);
         setInflationRate(0);
@@ -138,18 +150,38 @@ export default function Calculator() {
     }
 
     function handleRegister() {
-        let registerValue = {
+        console.log(`resultList`, resultList);
+        const index = resultList.length;
+        let registerValue: Result = {
+            'index': index,
             'investmentAmount': investmentAmount,
             'numberOfYears': numberOfYears,
             'interestRate': interestRate,
-            'compunding': compunding,
+            'compounding': compounding,
             'contributions': contributions,
             'frequency': frequency,
             'inflationRate': inflationRate,
             'totalValue': result
         }
-
         console.log(`계산 결과 등록`, registerValue);
+
+        const NewResultList = [registerValue, ...resultList];
+        console.log(`NewResultList`, NewResultList);
+        setResultList(NewResultList);
+    }
+
+    function handleOnClickResultList(e: any, key: any) {
+        console.log(`[handleOnClickResultList]`, `e:`, e, `, key:`, key);
+
+        setInvestmentAmount(resultList[key].investmentAmount);
+        setNumberOfYears(resultList[key].numberOfYears);
+        setInterestRate(resultList[key].interestRate);
+        setCompounding(resultList[key].compounding);
+        setContributions(resultList[key].contributions);
+        setFrequency(resultList[key].frequency);
+        setInflationRate(resultList[key].inflationRate);
+
+        setResult(resultList[key].totalValue);
     }
 
     function removeLeftZero(e: any) {
@@ -174,7 +206,7 @@ export default function Calculator() {
                 }
             />
 
-            <div className='w-screen flex justify-between items-center p-4 sm:px-20 md:px-40 lg:px-64 xl:px-80 2xl:px-96'>
+            <div className='w-screen flex justify-between items-center px-4 py-0 sm:px-20 md:px-40 lg:px-64 xl:px-80 2xl:px-96'>
                 <div className="w-full h-full rounded-xl bg-white text-gray-700 border border-gray-300 shadow-md">
                     <ListItem className='text-black pb-0 mb-1'>
                         <div className="w-full font-mono text-md header-contents text-center">
@@ -199,7 +231,7 @@ export default function Calculator() {
                                 {!!numberOfYears ? <Button className="ml-1 py-0" variant="outlined" onClick={() => setNumberOfYears(0)}>CLEAR</Button> : <></>}
                             </div>
                             <div className='flex-row border-4  border-red-100 pt-1'>
-                                <Select color="red" label="복리" value={String(compunding)} onChange={(value) => { setCompunding(Number(value)) }}
+                                <Select color="red" label="복리" value={String(compounding)} onChange={(value) => { setCompounding(Number(value)) }}
                                     animate={{
                                         mount: { y: 0 },
                                         unmount: { y: 25 },
@@ -210,7 +242,7 @@ export default function Calculator() {
                                     <Option value={String(InterestRateBenchmarkTermPerHour.eANNUALLY)}>Annually (1/Yr)</Option>
                                 </Select>
                                 <div className='pt-2 flex'>
-                                    <Input color="red" label={`${getInterestRateBenchmark(compunding)} 이자율 (%)`} type='number' onChange={(e) => { removeLeftZero(e); setInterestRate(Number(e.target.value)); }} value={interestRate} crossOrigin={undefined} />
+                                    <Input color="red" label={`${getInterestRateBenchmark(compounding)} 이자율 (%)`} type='number' onChange={(e) => { removeLeftZero(e); setInterestRate(Number(e.target.value)); }} value={interestRate} crossOrigin={undefined} />
                                     {!!interestRate ? <Button className="ml-1 py-0" variant="outlined" onClick={() => setInterestRate(0)}>CLEAR</Button> : <></>}
                                 </div>
                             </div>
@@ -249,7 +281,7 @@ export default function Calculator() {
                             </div>
                             <div className="flex">
                                 <div className="w-full grid grid-cols-1">
-                                    <Button disabled variant="outlined" onClick={handleRegister}>계산 결과 등록 🦄</Button>
+                                    <Button variant="outlined" onClick={handleRegister}>계산 결과 등록 🦄</Button>
                                 </div>
                             </div>
                         </form>
@@ -267,11 +299,31 @@ export default function Calculator() {
                         </ListItemSuffix>
                     </ListItem>
                     <List>
-                        <ListItem>
-                            <div>
-                                {/* test */}
-                            </div>
-                        </ListItem>
+                        {resultList.length > 0 ?
+                            resultList.map((element: Result, key: any) => {
+                                return <ListItem key={key} onClick={(e) => handleOnClickResultList(e, key)}>
+                                    <div className='flex-col'>
+                                        <Typography variant="h6" color="blue-gray">
+                                            최종수입금: {element['totalValue']}원, 투자기간: {element['numberOfYears']}년
+                                        </Typography>
+                                        <Typography variant="small" color="gray" className="font-normal">
+                                            초기투자금:{element['investmentAmount']}원 ({getInterestRateBenchmark(element['compounding'])})
+                                        </Typography>
+                                        <Typography variant="small" color="gray" className="font-normal">
+                                            추가납입금:{element['contributions']}원 ({getContributeRateBenchmark(element['frequency'])})
+                                        </Typography>
+                                        <Typography variant="small" color="gray" className="font-normal">
+                                            이자율: {element['interestRate']}%, 물가상승률: {element['inflationRate']}%
+                                        </Typography>
+                                    </div>
+                                </ListItem>
+                            })
+                            :
+                            <ListItem>
+                                <div>
+                                    test
+                                </div>
+                            </ListItem>}
                     </List>
                 </div>
             </div>
