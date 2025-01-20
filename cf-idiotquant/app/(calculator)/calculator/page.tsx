@@ -5,7 +5,7 @@ import Head from "next/head";
 import Script from "next/script.js";
 import React from "react";
 
-import { Input, Select, Option, Button, ListItem, ListItemSuffix, List, Typography } from "@material-tailwind/react";
+import { Input, Select, Option, Button, ListItem, ListItemSuffix, List, Typography, Chip } from "@material-tailwind/react";
 
 export default function Calculator() {
     React.useEffect(() => {
@@ -40,13 +40,18 @@ export default function Calculator() {
         contributions: number,
         frequency: number,
         inflationRate: number,
-        totalValue: number
+        totalInvestment: number,
+        totalValue: number,
+        finalRateOfReturn: number,
     }
 
     const DEFAULT_INTEREST_RATE_BENCHMARK = InterestRateBenchmarkTermPerHour.eANNUALLY;
     const DEFAULT_CONTRIBUTION_RATE_BENCHMARK = ContributionRateBenchmarkTermPerHour.eMONTHLY;
 
     const [investmentAmount, setInvestmentAmount] = React.useState<number>(50000000);
+    const [totalInvestment, setTotalInvestment] = React.useState<number>(0);
+    const [finalRateOfReturn, setFinalRateOfReturn] = React.useState<number>(0);
+
     const [numberOfYears, setNumberOfYears] = React.useState<number>(12);
     const [interestRate, setInterestRate] = React.useState<number>(24);
     const [compounding, setCompounding] = React.useState<number>(DEFAULT_INTEREST_RATE_BENCHMARK);
@@ -115,6 +120,7 @@ export default function Calculator() {
 
         // 원금 수익 계산
         let principalReturn = Number(investmentAmount);
+        let totalInvestmentReturn = principalReturn;
         for (let i = 0; i <= numberOfHour; ++i) {
             if (i > 0 && (0 == (i % compounding))) {
                 principalReturn = principalReturn * (1 + ((interestRate - inflationRate) / 100));
@@ -129,12 +135,15 @@ export default function Calculator() {
             }
 
             if (i > 0 && (0 == (i % frequency))) {
+                totalInvestmentReturn += Number(contributions);
                 additionalPaymentReturn += Number(contributions);
             }
         }
 
         const totalValue: number = Number(principalReturn.toFixed(0)) + Number(additionalPaymentReturn.toFixed(0));
         setResult(totalValue);
+        setTotalInvestment(totalInvestmentReturn);
+        setFinalRateOfReturn(0 == totalInvestmentReturn ? 0 : ((totalValue / totalInvestmentReturn) * 100 - 100));
     }
 
     function handleClear() {
@@ -145,8 +154,9 @@ export default function Calculator() {
         setContributions(0);
         setFrequency(DEFAULT_CONTRIBUTION_RATE_BENCHMARK);
         setInflationRate(0);
-
+        setTotalInvestment(0);
         setResult(0);
+        setFinalRateOfReturn(0);
     }
 
     function handleRegister() {
@@ -161,7 +171,9 @@ export default function Calculator() {
             'contributions': contributions,
             'frequency': frequency,
             'inflationRate': inflationRate,
-            'totalValue': result
+            'totalInvestment': totalInvestment,
+            'totalValue': result,
+            'finalRateOfReturn': finalRateOfReturn,
         }
         console.log(`계산 결과 등록`, registerValue);
 
@@ -218,20 +230,30 @@ export default function Calculator() {
                     </ListItem>
                     <div className="w-auto m-1 h-auto mb-1">
                         <form className="flex flex-col gap-1.5 m-4">
-                            <div className='flex justify-between mb-1'>
-                                <div className='text-lg underline decoration-4 decoration-yellow-500'>{'최종 수입금:'}</div>
-                                <div className='text-2xl text-right underline decoration-4 decoration-yellow-500'>{' ' + result.toLocaleString('ko-KR', { maximumFractionDigits: 0 }) + ' 원'}</div>
+                            <div className="gap-0">
+                                <div className='flex justify-between my-0'>
+                                    <div className='text-lg underline decoration-4 decoration-yellow-500'>{'최종 수입금:'}</div>
+                                    <div className='text-2xl text-right underline decoration-4 decoration-yellow-500'>{' ' + result.toLocaleString('ko-KR', { maximumFractionDigits: 0 }) + ' 원'}</div>
+                                </div>
+                                <div className='flex justify-between my-0 py-0'>
+                                    <div className='text-md'>{'(최종 수익률:'}</div>
+                                    <div className='text-xl text-right'>{' ' + Number(finalRateOfReturn).toFixed(2) + ' %)'}</div>
+                                </div>
+                                <div className='flex justify-between my-0 py-0'>
+                                    <div className='text-lg'>{'누적 투자금:'}</div>
+                                    <div className='text-2xl text-right'>{' ' + totalInvestment.toLocaleString('ko-KR', { maximumFractionDigits: 0 }) + ' 원'}</div>
+                                </div>
                             </div>
                             <div className='flex'>
-                                <Input color="red" label="투자 시작 금액: (원)" type='number' onChange={(e) => { removeLeftZero(e); setInvestmentAmount(Number(e.target.value)); }} value={Number(investmentAmount) * 1} crossOrigin={undefined} />
+                                <Input color="black" label="투자 시작 금액: (원)" type='number' onChange={(e) => { removeLeftZero(e); setInvestmentAmount(Number(e.target.value)); }} value={Number(investmentAmount) * 1} crossOrigin={undefined} />
                                 {!!investmentAmount ? <Button className="ml-1 py-0" variant="outlined" onClick={() => setInvestmentAmount(Number(0) * 1)} >CLEAR</Button> : <></>}
                             </div>
                             <div className='flex'>
-                                <Input color="red" label="투자 기간: (년)" type='number' onChange={(e) => { removeLeftZero(e); setNumberOfYears(Number(e.target.value)); }} value={numberOfYears} crossOrigin={undefined} />
+                                <Input color="black" label="투자 기간: (년)" type='number' onChange={(e) => { removeLeftZero(e); setNumberOfYears(Number(e.target.value)); }} value={numberOfYears} crossOrigin={undefined} />
                                 {!!numberOfYears ? <Button className="ml-1 py-0" variant="outlined" onClick={() => setNumberOfYears(0)}>CLEAR</Button> : <></>}
                             </div>
                             <div className='flex-row border-4  border-red-100 pt-1'>
-                                <Select color="red" label="복리" value={String(compounding)} onChange={(value) => { setCompounding(Number(value)) }}
+                                <Select label="복리" value={String(compounding)} onChange={(value) => { setCompounding(Number(value)) }}
                                     animate={{
                                         mount: { y: 0 },
                                         unmount: { y: 25 },
@@ -242,12 +264,12 @@ export default function Calculator() {
                                     <Option value={String(InterestRateBenchmarkTermPerHour.eANNUALLY)}>Annually (1/Yr)</Option>
                                 </Select>
                                 <div className='pt-2 flex'>
-                                    <Input color="red" label={`${getInterestRateBenchmark(compounding)} 이자율 (%)`} type='number' onChange={(e) => { removeLeftZero(e); setInterestRate(Number(e.target.value)); }} value={interestRate} crossOrigin={undefined} />
+                                    <Input color="black" label={`${getInterestRateBenchmark(compounding)} 이자율 (%)`} type='number' onChange={(e) => { removeLeftZero(e); setInterestRate(Number(e.target.value)); }} value={interestRate} crossOrigin={undefined} />
                                     {!!interestRate ? <Button className="ml-1 py-0" variant="outlined" onClick={() => setInterestRate(0)}>CLEAR</Button> : <></>}
                                 </div>
                             </div>
                             <div className='flex-row border-4  border-blue-100 pt-1'>
-                                <Select className="bg-white" color="blue" label="추가 납입금 납입 빈도" value={String(frequency)} onChange={(value) => { setFrequency(Number(value)) }}
+                                <Select className="bg-white" label="추가 납입금 납입 빈도" value={String(frequency)} onChange={(value) => { setFrequency(Number(value)) }}
                                     animate={{
                                         mount: { y: 0 },
                                         unmount: { y: 25 },
@@ -261,22 +283,22 @@ export default function Calculator() {
                                     <Option value={String(ContributionRateBenchmarkTermPerHour.eANNUALLY)}>Annually</Option>
                                 </Select>
                                 <div className='pt-2 flex bg-white'>
-                                    <Input color="blue" label={`${getContributeRateBenchmark(frequency)} 추가 납입금`} type='number' onChange={(e) => { removeLeftZero(e); setContributions(Number(e.target.value)); }} value={contributions} crossOrigin={undefined} />
+                                    <Input color="black" label={`${getContributeRateBenchmark(frequency)} 추가 납입금`} type='number' onChange={(e) => { removeLeftZero(e); setContributions(Number(e.target.value)); }} value={contributions} crossOrigin={undefined} />
                                     {!!contributions ? <Button className="ml-1 py-0" variant="outlined" onClick={() => setContributions(0)}>CLEAR</Button> : <></>}
                                 </div>
                             </div>
                             <div className='flex'>
-                                <Input color="red" label="물가상승률 (%)" type='number' onChange={(e) => { removeLeftZero(e); setInflationRate(Number(e.target.value)); }} value={inflationRate} crossOrigin={undefined} />
+                                <Input color="black" label="물가상승률 (%)" type='number' onChange={(e) => { removeLeftZero(e); setInflationRate(Number(e.target.value)); }} value={inflationRate} crossOrigin={undefined} />
                                 {!!inflationRate ? <Button className="ml-1 py-0" variant="outlined" onClick={() => setInflationRate(0)}>CLEAR</Button> : <></>}
                             </div>
                             <div className="flex">
                                 <Button className="w-36 mr-1" color="green" variant="outlined" onClick={handleCalculateSampleData}>
-                                    <div>(계산 예)</div>
+                                    <div>(계산 예시)</div>
                                     {/* <div>(예시) 시작 금액: {investmentAmount}원, 투자 기간: {numberOfYears}년</div> */}
                                     {/* <div>이자율: {interestRate}%, 추납금: {contributions}원, 물가 상승률: {annualInflationRate}% </div> */}
                                 </Button>
                                 <div className="w-full grid grid-cols-1">
-                                    <Button className="ml-1 rounded-full" variant="outlined" color="red" onClick={handleClear}>Clear All</Button>
+                                    <Button className="ml-1 rounded-full" variant="outlined" color="red" onClick={handleClear}>ALL CLEAR</Button>
                                 </div>
                             </div>
                             <div className="flex">
@@ -301,20 +323,28 @@ export default function Calculator() {
                     <List>
                         {resultList.length > 0 ?
                             resultList.map((element: Result, key: any) => {
-                                return <ListItem key={key} onClick={(e) => handleOnClickResultList(e, key)}>
+                                return <ListItem className='p-1 border-2 border-gray-300 mb-1' key={key} onClick={(e) => handleOnClickResultList(e, key)}>
                                     <div className='flex-col'>
-                                        <Typography variant="h6" color="blue-gray">
-                                            최종수입금: {element['totalValue']}원, 투자기간: {element['numberOfYears']}년
-                                        </Typography>
-                                        <Typography variant="small" color="gray" className="font-normal">
-                                            초기투자금:{element['investmentAmount']}원 ({getInterestRateBenchmark(element['compounding'])})
-                                        </Typography>
-                                        <Typography variant="small" color="gray" className="font-normal">
-                                            추가납입금:{element['contributions']}원 ({getContributeRateBenchmark(element['frequency'])})
-                                        </Typography>
-                                        <Typography variant="small" color="gray" className="font-normal">
-                                            이자율: {element['interestRate']}%, 물가상승률: {element['inflationRate']}%
-                                        </Typography>
+                                        <div className="flex gap-1 pb-1">
+                                            <Chip size='lg' color="amber" className="text-md" value={`최종수입금: ${element['totalValue'].toLocaleString('ko-KR', { maximumFractionDigits: 0 })}원`} />
+                                        </div>
+                                        <div className="flex gap-1 pb-1">
+                                            <Chip color="amber" className="text-md" value={`투자기간: ${element['numberOfYears']}년`} />
+                                            <Chip color="amber" className="text-md" value={`최종수익률: ${Number(element['finalRateOfReturn']).toFixed(2)}%`} />
+                                        </div>
+                                        <div className="flex gap-1 pb-1">
+                                            <Chip className="text-md" variant="outlined" value={`누적투자금: ${element['totalInvestment'].toLocaleString('ko-KR', { maximumFractionDigits: 0 })}원`} />
+                                        </div>
+                                        <div className="flex gap-1 pb-1">
+                                            <Chip variant="outlined" color="red" value={`이자율: ${element['interestRate']}%`} />
+                                            <Chip variant="outlined" color="blue" value={`물가상승률: ${element['inflationRate']}%`} />
+                                        </div>
+                                        <div className="flex gap-1 pb-1">
+                                            <Chip variant="outlined" value={`초기투자금: ${element['investmentAmount'].toLocaleString('ko-KR', { maximumFractionDigits: 0 })}원 (${getInterestRateBenchmark(element['compounding'])})`} />
+                                        </div>
+                                        <div className="flex gap-1 pb-1">
+                                            <Chip variant="outlined" value={`추가납입금: ${element['contributions'].toLocaleString('ko-KR', { maximumFractionDigits: 0 })}원 (${getContributeRateBenchmark(element['frequency'])})`} />
+                                        </div>
                                     </div>
                                 </ListItem>
                             })
@@ -322,7 +352,7 @@ export default function Calculator() {
                             <ListItem>
                                 <div>
                                     <Typography variant="h6" color="blue-gray">
-                                        <span className='border border-1 border-black rounded p-1'>계산 결과 등록</span> 버튼을 눌려주세요.
+                                        <span className='border border-1 border-black rounded p-1'>계산 결과 등록 🦄</span> 버튼을 눌려주세요.
                                     </Typography>
                                 </div>
                             </ListItem>}
