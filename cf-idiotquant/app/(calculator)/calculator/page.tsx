@@ -7,6 +7,22 @@ import React from "react";
 
 import { Input, Select, Option, Button, ListItem, ListItemSuffix, List, Typography, Chip } from "@material-tailwind/react";
 
+import { CalculationList } from "@/app/(calculator)/calculator/CalculationList"
+
+export interface CalculationResult {
+    index: number,
+    investmentAmount: number,
+    numberOfYears: number,
+    interestRate: number,
+    compounding: number,
+    contributions: number,
+    frequency: number,
+    inflationRate: number,
+    totalInvestment: number,
+    totalValue: number,
+    finalRateOfReturn: number,
+}
+
 export default function Calculator() {
     React.useEffect(() => {
         handleCalculate();
@@ -31,19 +47,6 @@ export default function Calculator() {
         eANNUALLY: 8760,      // 365 day * 24 hour / 1 year = 8760 hour
     }
 
-    interface Result {
-        index: number,
-        investmentAmount: number,
-        numberOfYears: number,
-        interestRate: number,
-        compounding: number,
-        contributions: number,
-        frequency: number,
-        inflationRate: number,
-        totalInvestment: number,
-        totalValue: number,
-        finalRateOfReturn: number,
-    }
 
     const DEFAULT_INTEREST_RATE_BENCHMARK = InterestRateBenchmarkTermPerHour.eANNUALLY;
     const DEFAULT_CONTRIBUTION_RATE_BENCHMARK = ContributionRateBenchmarkTermPerHour.eMONTHLY;
@@ -59,7 +62,7 @@ export default function Calculator() {
     const [frequency, setFrequency] = React.useState<number>(DEFAULT_CONTRIBUTION_RATE_BENCHMARK);
     const [inflationRate, setInflationRate] = React.useState<number>(3);
     const [result, setResult] = React.useState<number>(0);
-    const [resultList, setResultList] = React.useState<Result[]>([]);
+    const [resultList, setResultList] = React.useState<CalculationResult[]>([]);
 
 
     function handleCalculateSampleData() {
@@ -162,7 +165,7 @@ export default function Calculator() {
     function handleRegister() {
         console.log(`resultList`, resultList);
         const index = resultList.length;
-        let registerValue: Result = {
+        let registerValue: CalculationResult = {
             'index': index,
             'investmentAmount': investmentAmount,
             'numberOfYears': numberOfYears,
@@ -310,55 +313,13 @@ export default function Calculator() {
                     </div>
                 </div>
             </div>
-            <div className='w-screen flex justify-between items-center p-4 sm:px-20 md:px-40 lg:px-64 xl:px-80 2xl:px-96'>
-                <div className="w-full h-full rounded-xl bg-white text-gray-700 border border-gray-300 shadow-md">
-                    <ListItem className='text-black pb-0 mb-1'>
-                        <div className="w-full font-mono text-md header-contents text-center">
-                            인플레이션 계산 <span className='bg-yellow-500'> 결과 </span>
-                        </div>
-                        <ListItemSuffix>
-                            <img className='h-4 col-span-1 object-fill' src='/images/icons8-calculator.gif' />
-                        </ListItemSuffix>
-                    </ListItem>
-                    <List>
-                        {resultList.length > 0 ?
-                            resultList.map((element: Result, key: any) => {
-                                return <ListItem className='p-1 border-2 border-gray-300 mb-1' key={key} onClick={(e) => handleOnClickResultList(e, key)}>
-                                    <div className='flex-col'>
-                                        <div className="flex gap-1 pb-1">
-                                            <Chip size='lg' color="amber" className="text-md" value={`최종수입금: ${element['totalValue'].toLocaleString('ko-KR', { maximumFractionDigits: 0 })}원`} />
-                                        </div>
-                                        <div className="flex gap-1 pb-1">
-                                            <Chip color="amber" className="text-md" value={`투자기간: ${element['numberOfYears']}년`} />
-                                            <Chip color="amber" className="text-md" value={`최종수익률: ${Number(element['finalRateOfReturn']).toFixed(2)}%`} />
-                                        </div>
-                                        <div className="flex gap-1 pb-1">
-                                            <Chip className="text-md" variant="outlined" value={`누적투자금: ${element['totalInvestment'].toLocaleString('ko-KR', { maximumFractionDigits: 0 })}원`} />
-                                        </div>
-                                        <div className="flex gap-1 pb-1">
-                                            <Chip variant="outlined" color="red" value={`이자율: ${element['interestRate']}%`} />
-                                            <Chip variant="outlined" color="blue" value={`물가상승률: ${element['inflationRate']}%`} />
-                                        </div>
-                                        <div className="flex gap-1 pb-1">
-                                            <Chip variant="outlined" value={`초기투자금: ${element['investmentAmount'].toLocaleString('ko-KR', { maximumFractionDigits: 0 })}원 (${getInterestRateBenchmark(element['compounding'])})`} />
-                                        </div>
-                                        <div className="flex gap-1 pb-1">
-                                            <Chip variant="outlined" value={`추가납입금: ${element['contributions'].toLocaleString('ko-KR', { maximumFractionDigits: 0 })}원 (${getContributeRateBenchmark(element['frequency'])})`} />
-                                        </div>
-                                    </div>
-                                </ListItem>
-                            })
-                            :
-                            <ListItem>
-                                <div>
-                                    <Typography variant="h6" color="blue-gray">
-                                        <span className='border border-1 border-black rounded p-1'>계산 결과 등록 🦄</span> 버튼을 눌려주세요.
-                                    </Typography>
-                                </div>
-                            </ListItem>}
-                    </List>
-                </div>
-            </div>
+            <CalculationList
+                resultList={resultList}
+                handleOnClickResultList={handleOnClickResultList}
+                getInterestRateBenchmark={getInterestRateBenchmark}
+                getContributeRateBenchmark={getContributeRateBenchmark}
+            />
+
         </div>
     );
 }
