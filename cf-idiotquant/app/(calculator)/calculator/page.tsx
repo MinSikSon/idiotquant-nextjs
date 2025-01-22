@@ -5,9 +5,8 @@ import Head from "next/head";
 import Script from "next/script.js";
 import React from "react";
 
-import { Input, Select, Option, Button, ListItem, ListItemSuffix, List, Typography, Chip } from "@material-tailwind/react";
-
-import { CalculationList } from "@/app/(calculator)/calculator/CalculationList"
+import { Input, Select, Option, Button, ListItem, ListItemSuffix } from "@material-tailwind/react";
+import { CalculationList } from "@/app/(calculator)/calculator/calculationList"
 
 export interface CalculationResult {
     index: number,
@@ -78,8 +77,6 @@ export default function Calculator() {
     function getInterestRateBenchmark(interestRateBenchmark: number) {
         // console.log(`interestRateBenchmark`, interestRateBenchmark);
         switch (interestRateBenchmark) {
-            // case InterestRateBenchmark.eDAILY360:
-            //     return "Daily (360/Yr)";
             case InterestRateBenchmarkTermPerHour.eDAILY365:
                 return "Daily (365/Yr)";
             case InterestRateBenchmarkTermPerHour.eMONTHLY:
@@ -96,8 +93,6 @@ export default function Calculator() {
     function getContributeRateBenchmark(contributeRateBenchmark: number) {
         // console.log(`interestRateBenchmark`, interestRateBenchmark);
         switch (contributeRateBenchmark) {
-            // case InterestRateBenchmark.eDAILY360:
-            //     return "Daily (360/Yr)";
             case ContributionRateBenchmarkTermPerHour.eWEEKLY:
                 return "WEEKLY";
             case ContributionRateBenchmarkTermPerHour.eBIWEEKLY:
