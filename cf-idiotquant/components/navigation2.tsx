@@ -18,11 +18,11 @@ interface NavItemPropsType {
 
 function NavItem({ url, label }: NavItemPropsType) {
     return (
-        <a href={url}>
+        <Link href={url}>
             <Typography as="li" color="blue-gray" className="p-1 font-medium">
                 {label}
             </Typography>
-        </a>
+        </Link>
     );
 }
 
