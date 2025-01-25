@@ -1,4 +1,5 @@
 
+import Link from 'next/link';
 import React from 'react';
 
 export function TemplateArticle(props) {
@@ -33,7 +34,7 @@ export function TemplateArticle(props) {
                     <h1 className="mt-1 text-lg font-semibold text-white bg-black w-fit sm:text-slate-900 md:text-2xl dark:sm:text-white">{title}</h1>
                     <div className="text-sm leading-4 font-medium text-white bg-black w-fit sm:text-slate-500 dark:sm:text-slate-400">
                         {!!link ?
-                            <a href={link}>{subTitle}</a> :
+                            <Link href={link}>{subTitle}</Link> :
                             <div> {subTitle}</div>
                         }
                     </div>
