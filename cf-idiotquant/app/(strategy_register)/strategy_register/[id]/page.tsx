@@ -102,25 +102,60 @@ export default function Item({ params: { id } }: { params: { id: string } }) {
             return <div>Invalid id</div>;
         }
     }
+    const handleOnClick = (isLastStep: boolean) => {
+        if (true == isLastStep) {
+            console.log(`handleOnClick`);
+        }
+    }
+
     const isLastStep = (Number(id) + 1) == totalStepCount;
+    const allSelected = 0 != per && 0 != pbr && 0 != capitalization;
+
     // console.log(`isLastStep`, isLastStep);
-    return <RegisterTemplate
-        id={decodeURI(id)}
-        totalStepCount={totalStepCount}
-        title={getTitle(Number(id))}
-        subTitle={getSubTitle(Number(id))}
-        content={getContents(Number(id))}
-        footer={<>
-            <Link href={0 == Number(id) ? `/` : `/strategy_register/${Number(id) - 1}`}>
-                <Button size="sm" variant="outlined">
-                    prev
-                </Button>
-            </Link>
-            <Link href={(true == isLastStep) ? `/strategy_register` : `/strategy_register/${Number(id) + 1}`}>
-                <Button color={(true == isLastStep) ? `blue` : `gray`} size="sm" variant="outlined">
-                    {(true == isLastStep) ? `complete` : `next`}
-                </Button>
-            </Link>
-        </>}
-    />
+    return <>
+        <RegisterTemplate
+            id={decodeURI(id)}
+            totalStepCount={totalStepCount}
+            title={getTitle(Number(id))}
+            subTitle={getSubTitle(Number(id))}
+            content={getContents(Number(id))}
+            footer={
+                <div className="flex flex-col gap-2">
+                    <div className="flex justify-between items-center">
+                        <div className="flex flex-col">
+                            <div>
+                                PER: {per} 이하
+                            </div>
+                            <div>
+                                PBR: {pbr} 이하
+                            </div>
+                            <div>
+                                시가총액: {Util.UnitConversion(capitalization, true)} 이하
+                            </div>
+                        </div>
+                    </div>
+                    <div className="flex justify-between items-center">
+                        <Link href={0 == Number(id) ? `/` : `/strategy_register/${Number(id) - 1}`}>
+                            <Button size="sm" variant="outlined">
+                                prev
+                            </Button>
+                        </Link>
+
+                        {false == isLastStep || allSelected ?
+                            <Link href={(true == isLastStep) ? `/` : `/strategy_register/${Number(id) + 1}`}>
+                                <Button disabled={(true == allSelected) ? false : true} color={(true == isLastStep) ? `blue` : `gray`} onClick={() => handleOnClick(isLastStep)} size="sm" variant="outlined">
+                                    {(true == isLastStep) ? `complete` : `next`}
+                                </Button>
+                            </Link>
+                            :
+                            <Button disabled color={(true == isLastStep) ? `blue` : `gray`} onClick={() => handleOnClick(isLastStep)} size="sm" variant="outlined">
+                                {(true == isLastStep) ? `complete` : `next`}
+                            </Button>
+                        }
+
+                    </div>
+                </div>
+            }
+        />
+    </>
 }

@@ -60,9 +60,7 @@ export default function RegisterTemplate(props: RegisterTemplateProps) {
                 </CardBody>
                 {!!props.footer ?
                     <CardFooter className="py-2">
-                        <div className="flex justify-between items-center">
-                            {props.footer}
-                        </div>
+                        {props.footer}
                     </CardFooter>
                     :
                     <></>
