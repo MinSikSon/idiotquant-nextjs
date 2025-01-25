@@ -63,13 +63,13 @@ export default function Item({ params: { id } }: { params: { id: string } }) {
                 <div className="flex justify-between items-center">
                     <div>PER</div>
                     <ButtonGroup variant="outlined" size="sm">
-                        {perList.map((item) => <Button className={per == item ? selectedButtonColor : ``} onClick={() => handleOnclickPer(item)}>{`< ${item}`}</Button>)}
+                        {perList.map((item, key) => <Button key={key} className={per == item ? selectedButtonColor : ``} onClick={() => handleOnclickPer(item)}>{`< ${item}`}</Button>)}
                     </ButtonGroup>
                 </div>
                 <div className="flex justify-between items-center">
                     <div>PBR</div>
                     <ButtonGroup variant="outlined" size="sm">
-                        {pbrList.map((item) => <Button className={pbr == item ? selectedButtonColor : ``} onClick={() => handleOnclickPbr(item)}>{`< ${item}`}</Button>)}
+                        {pbrList.map((item, key) => <Button key={key} className={pbr == item ? selectedButtonColor : ``} onClick={() => handleOnclickPbr(item)}>{`< ${item}`}</Button>)}
                     </ButtonGroup>
                 </div>
             </div>
@@ -86,7 +86,7 @@ export default function Item({ params: { id } }: { params: { id: string } }) {
                 <div className="flex justify-between items-center">
                     <div>{step1Title}</div>
                     <ButtonGroup variant="outlined" size="sm">
-                        {capitalizationList.map((item) => <Button className={capitalization == item ? selectedButtonColor : ``} onClick={() => handleOnclickCapitalization(item)}>{`< ${Util.UnitConversion(item, true)}`}</Button>)}
+                        {capitalizationList.map((item, key) => <Button key={key} className={capitalization == item ? selectedButtonColor : ``} onClick={() => handleOnclickCapitalization(item)}>{`< ${Util.UnitConversion(item, true)}`}</Button>)}
                     </ButtonGroup>
                 </div>
             </div>
@@ -102,6 +102,8 @@ export default function Item({ params: { id } }: { params: { id: string } }) {
             return <div>Invalid id</div>;
         }
     }
+    const isLastStep = (Number(id) + 1) == totalStepCount;
+    // console.log(`isLastStep`, isLastStep);
     return <RegisterTemplate
         id={decodeURI(id)}
         totalStepCount={totalStepCount}
@@ -114,9 +116,9 @@ export default function Item({ params: { id } }: { params: { id: string } }) {
                     prev
                 </Button>
             </Link>
-            <Link href={(Number(id) + 1) == totalStepCount ? `/strategy_register` : `/strategy_register/${Number(id) + 1}`}>
-                <Button size="sm" variant="outlined">
-                    {(Number(id) + 1) == totalStepCount ? `complete` : `next`}
+            <Link href={(true == isLastStep) ? `/strategy_register` : `/strategy_register/${Number(id) + 1}`}>
+                <Button color={(true == isLastStep) ? `blue` : `gray`} size="sm" variant="outlined">
+                    {(true == isLastStep) ? `complete` : `next`}
                 </Button>
             </Link>
         </>}
