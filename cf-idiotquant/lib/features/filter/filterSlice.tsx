@@ -48,15 +48,15 @@ export const filterSlice = createAppSlice({
     initialState,
     reducers: (create) => ({
         setPer: create.reducer((state, action: PayloadAction<number>) => {
-            console.log(`[setPer]`)
+            // console.log(`[setPer]`)
             state.step0.per = action.payload;
         }),
         setPbr: create.reducer((state, action: PayloadAction<number>) => {
-            console.log(`[setPbr]`)
+            // console.log(`[setPbr]`)
             state.step0.pbr = action.payload;
         }),
         setCapitalization: create.reducer((state, action: PayloadAction<number>) => {
-            console.log(`[setCapitalization]`)
+            // console.log(`[setCapitalization]`)
             state.step1.capitalization = action.payload;
         }),
         // getStrategyList: create.asyncThunk(

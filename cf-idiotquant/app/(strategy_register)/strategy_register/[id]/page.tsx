@@ -104,7 +104,8 @@ export default function Item({ params: { id } }: { params: { id: string } }) {
     }
     const handleOnClick = (isLastStep: boolean) => {
         if (true == isLastStep) {
-            console.log(`handleOnClick`);
+            // console.log(`handleOnClick`);
+            alert(`기능 추가 예정입니다..!`);
         }
     }
 
