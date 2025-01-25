@@ -9,6 +9,7 @@ import {
     IconButton,
 } from "@material-tailwind/react";
 import { Bars3Icon, XMarkIcon } from "@heroicons/react/24/outline";
+import Link from "next/link";
 
 interface NavItemPropsType {
     url: string;
@@ -52,14 +53,14 @@ export function NavbarWithSimpleLinks() {
     return (
         <Navbar color="transparent" fullWidth>
             <div className="container mx-auto flex items-center justify-between text-blue-gray-900">
-                <Typography
-                    as="a"
-                    href="/"
-                    color="blue-gray"
-                    className="mr-4 cursor-pointer text-lg font-bold"
-                >
-                    Idiot Quant
-                </Typography>
+                <Link href="/">
+                    <Typography
+                        color="blue-gray"
+                        className="mr-4 cursor-pointer text-lg font-bold"
+                    >
+                        Idiot Quant
+                    </Typography>
+                </Link>
                 <div className="hidden lg:block">
                     <NavList />
                 </div>
