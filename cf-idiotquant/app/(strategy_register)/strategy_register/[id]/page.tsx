@@ -144,7 +144,7 @@ export default function Item({ params: { id } }: { params: { id: string } }) {
 
                         {false == isLastStep || allSelected ?
                             <Link href={(true == isLastStep) ? `/` : `/strategy_register/${Number(id) + 1}`}>
-                                <Button disabled={(true == allSelected) ? false : true} color={(true == isLastStep) ? `blue` : `gray`} onClick={() => handleOnClick(isLastStep)} size="sm" variant="outlined">
+                                <Button color={(true == isLastStep) ? `blue` : `gray`} onClick={() => handleOnClick(isLastStep)} size="sm" variant="outlined">
                                     {(true == isLastStep) ? `complete` : `next`}
                                 </Button>
                             </Link>
