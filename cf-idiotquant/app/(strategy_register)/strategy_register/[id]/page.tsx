@@ -159,3 +159,5 @@ export default function Item({ params: { id } }: { params: { id: string } }) {
         />
     </>
 }
+
+export const runtime = 'edge'
