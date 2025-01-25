@@ -1,7 +1,5 @@
 import "@/app/global.css"
-import { Nav } from "@/components/navigation"
 import { StoreProvider } from "./StoreProvider"
-import { TopPanel } from "@/components/panel/top"
 import NavbarWithSimpleLinks from "@/components/navigation2"
 import { LoadData } from "@/components/loadData"
 
