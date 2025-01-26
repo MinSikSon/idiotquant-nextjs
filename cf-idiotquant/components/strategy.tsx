@@ -51,7 +51,7 @@ export function GetStocksFilteredByStrategyNCAV(stockCompanyInfo: any) {
     return filteredStocks;
 }
 
-export function GetMeredStocksList(financialInfo: any, marketInfo: any) {
+export function GetMergedStocksList(financialInfo: any, marketInfo: any) {
     let mergedStockInfo: any = {};
     for (const [key, value] of Object.entries<any>(financialInfo)) {
         if (true == !!!marketInfo[`data`][key]) continue;

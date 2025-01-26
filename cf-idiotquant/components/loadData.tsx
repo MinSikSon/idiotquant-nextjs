@@ -6,7 +6,7 @@ import { getList, initFinancialInfo, selectFinancialInfo, selectFinancialInfoLis
 
 import { getMarketList, initMarketInfo, selectMarketInfo, selectMarketInfoLatestDate, selectMarketInfoList, selectMarketInfoLoaded, selectMarketInfoState, setMarketInfoStateLoading, setMarketList } from "@/lib/features/marketInfo/marketInfoSlice";
 import { getStrategyList, setStrategyList, selectStrategyState, setLoading, selectNcavList } from "@/lib/features/strategy/strategySlice";
-import { GetMeredStocksList, GetStocksFilteredByStrategyNCAV } from "@/components/strategy";
+import { GetMergedStocksList, GetStocksFilteredByStrategyNCAV } from "@/components/strategy";
 import { setBackTestStrategyList } from "@/lib/features/backtest/backtestSlice";
 
 export const LoadData = () => {
@@ -133,7 +133,7 @@ export const LoadData = () => {
         // console.log(`444 [LoadData] financialInfo, marketInfo`, financialInfo, !!financialInfo, marketInfo, !!marketInfo);
         if (true == !!financialInfo && Object.keys(financialInfo).length > 0)
             if (true == !!marketInfo && Object.keys(marketInfo).length > 0) {
-                const mergedStockInfo = GetMeredStocksList(financialInfo, marketInfo);
+                const mergedStockInfo = GetMergedStocksList(financialInfo, marketInfo);
                 const filteredStocks = GetStocksFilteredByStrategyNCAV(mergedStockInfo);
                 const { year, quarter } = financialLatestDate;
                 // console.log(`financialLatestDate`, financialLatestDate);
