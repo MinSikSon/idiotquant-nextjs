@@ -7,23 +7,23 @@ import { getRandomMainImage, getRandomUserImage } from "@/app/(strategy)/strateg
 
 export default function Strategy() {
     const strategyList = useAppSelector(selectStrategyList);
-    // console.log(`[Home] strategyList`, strategyList, strategyList.length);
+    console.log(`[Home] strategyList`, strategyList, strategyList.length);
 
     let propsList: Web3CardPropsType[] = [
         {
             name: 'NCAV',
             desc: 'Net-Current Asset Value',
-            imgs: getRandomMainImage(0),
+            imgs: getRandomMainImage(),
             cardNum: '0',
-            profileImg: getRandomUserImage(0),
-            summary: '저평가 주식을 추천합니다. 순유동자산 대비 시가총액이 얼마나 높은 지를 기준으로 합니다.',
+            profileImg: getRandomUserImage(),
+            summary: `저평가 주식 ${strategyList.length > 0 ? strategyList[0].length : `0`} 개를 추천합니다. 순유동자산 대비 시가총액이 얼마나 높은 지를 기준으로 합니다.`,
         },
         // {
         //     name: 'NCAV',
         //     desc: 'Net-Current Asset Value',
-        //     imgs: getRandomMainImage(1),
+        //     imgs: getRandomMainImage(),
         //     cardNum: '1',
-        //     profileImg: getRandomUserImage(1),
+        //     profileImg: getRandomUserImage(),
         //     summary: '저평가 주식을 추천합니다. 순유동자산 대비 시가총액이 얼마나 높은 지를 기준으로 합니다.',
         // },
         // {
@@ -48,6 +48,22 @@ export default function Strategy() {
         //     imgs: getRandomMainImage(4),
         //     cardNum: '4',
         //     profileImg: getRandomUserImage(4),
+        //     summary: '저평가 주식을 추천합니다. 순유동자산 대비 시가총액이 얼마나 높은 지를 기준으로 합니다.',
+        // },
+        // {
+        //     name: 'NCAV',
+        //     desc: 'Net-Current Asset Value',
+        //     imgs: getRandomMainImage(5),
+        //     cardNum: '4',
+        //     profileImg: getRandomUserImage(5),
+        //     summary: '저평가 주식을 추천합니다. 순유동자산 대비 시가총액이 얼마나 높은 지를 기준으로 합니다.',
+        // },
+        // {
+        //     name: 'NCAV',
+        //     desc: 'Net-Current Asset Value',
+        //     imgs: getRandomMainImage(6),
+        //     cardNum: '4',
+        //     profileImg: getRandomUserImage(6),
         //     summary: '저평가 주식을 추천합니다. 순유동자산 대비 시가총액이 얼마나 높은 지를 기준으로 합니다.',
         // }
     ];

@@ -42,7 +42,7 @@ function Web3Card({
         <Link href={`/${parentRouter}/${Number(cardNum)}`}>
             <Card className="border border-gray-300 overflow-hidden shadow-sm">
                 <CardBody className={`px-4 pt-4 pb-32 xl:pt-8 xl:pb-64 bg-cover bg-center`}>
-                    <div className="absolute top-0 left-0 h-48 xl:h-80 w-full bg-cover bg-center rounded-xl" style={{ backgroundImage: `url('${url}')` }}></div>
+                    <div className="absolute top-0 left-0 h-48 xl:h-80 w-full bg-cover bg-center" style={{ backgroundImage: `url('${url}')` }}></div>
                     <div className={`flex items-start justify-between`}>
                         <Typography color="white"
                             className="!text-base !font-semibold mb-1"
