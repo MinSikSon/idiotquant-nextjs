@@ -1,6 +1,7 @@
 import { createAppSlice } from "@/lib/createAppSlice";
 import { setNcavList, getNcavList } from "./strategyAPI";
 import { Example8TableHeadType, Example8TableRowType } from "@/components/tableExample8";
+import { PayloadAction } from "@reduxjs/toolkit";
 
 
 export const STRATEGY_TABLE_HEAD: Example8TableHeadType[] = [
@@ -124,6 +125,11 @@ export const strategySlice = createAppSlice({
             // console.log(`[setRetry]`)
             state.state = "retry";
         }),
+        addStrategyList: create.reducer((state, action: PayloadAction<any>) => {
+            const json = JSON.parse(action.payload);
+            console.log(`[addStrategyList]`, json);
+            state.strategyList.push(json);
+        }),
         getStrategyList: create.asyncThunk(
             async ({ financialInfoDate, marketInfoDate }: { financialInfoDate: string, marketInfoDate: string }) => {
                 // console.log(`[getStrategyList]`, financialInfoDate, marketInfoDate);
@@ -210,4 +216,6 @@ export const strategySlice = createAppSlice({
 });
 
 export const { getStrategyList, setStrategyList, setLoading, setRetry } = strategySlice.actions;
+export const { addStrategyList } = strategySlice.actions;
+
 export const { selectNcavList, selectStrategyState, selectStrategyTableRow, selectStrategyFinancialDate, selectStrategyMarketDate, selectStrategyList } = strategySlice.selectors;

@@ -134,6 +134,7 @@ export const LoadData = () => {
         if (true == !!financialInfo && Object.keys(financialInfo).length > 0)
             if (true == !!marketInfo && Object.keys(marketInfo).length > 0) {
                 const mergedStockInfo = GetMergedStocksList(financialInfo, marketInfo);
+                // console.log(`GetStocksFilteredByStrategyNCAV`, mergedStockInfo);
                 const filteredStocks = GetStocksFilteredByStrategyNCAV(mergedStockInfo);
                 const { year, quarter } = financialLatestDate;
                 // console.log(`financialLatestDate`, financialLatestDate);

@@ -1,12 +1,16 @@
 "use client"
 
 import RegisterTemplate from "@/app/(strategy_register)/strategy_register/register_template";
+import { GetMergedStocksList } from "@/components/strategy";
+import { GetStocksFilteredByCustom } from "@/components/strategyCustom";
 import { Util } from "@/components/util";
 import { getCapitalization, getPbr, getPer, getTotalStepCount } from "@/lib/features/filter/filterSlice";
 import { setCapitalization, setPer, setPbr } from "@/lib/features/filter/filterSlice";
 import { getPerList, getPbrList, getCapitalizationList } from "@/lib/features/filter/filterSlice";
 import { getStep0Title, getStep1Title } from "@/lib/features/filter/filterSlice";
 import { getStep0SubTitle, getStep1SubTitle } from "@/lib/features/filter/filterSlice";
+import { selectFinancialInfo, selectFinancialInfoList } from "@/lib/features/financialInfo/financialInfoSlice";
+import { selectMarketInfo } from "@/lib/features/marketInfo/marketInfoSlice";
 import { useAppDispatch, useAppSelector } from "@/lib/hooks";
 import { Button, ButtonGroup } from "@material-tailwind/react";
 import Link from "next/link";
@@ -24,6 +28,10 @@ export default function Item({ params: { id } }: { params: { id: string } }) {
     const pbrList: number[] = useAppSelector(getPbrList);
     const capitalization = useAppSelector(getCapitalization);
     const capitalizationList: number[] = useAppSelector(getCapitalizationList);
+
+    const financialInfo: object = useAppSelector(selectFinancialInfo);
+    // const financialInfoList: string[] = useAppSelector(selectFinancialInfoList);
+    const marketInfo: any = useAppSelector(selectMarketInfo);
 
     const getTitle = (id: number) => {
         if (id === 0) {
@@ -106,6 +114,12 @@ export default function Item({ params: { id } }: { params: { id: string } }) {
         if (true == isLastStep) {
             // console.log(`handleOnClick`);
             alert(`기능 추가 예정입니다..!`);
+
+            // return;
+            const mergedStockInfo = GetMergedStocksList(financialInfo, marketInfo);
+            // console.log(`mergedStockInfo`, mergedStockInfo);
+            const filteredStocks = GetStocksFilteredByCustom(mergedStockInfo, ["PER", "PBR", "시가총액"], [per, pbr, capitalization]);
+            console.log(`filteredStocks`, filteredStocks);
         }
     }
 
