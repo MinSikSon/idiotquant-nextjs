@@ -1,7 +1,5 @@
 import { PayloadAction } from "@reduxjs/toolkit";
 import { createAppSlice } from "@/lib/createAppSlice";
-// import { setNcavList, getNcavList } from "./filterAPI";
-import { Example8TableHeadType, Example8TableRowType } from "@/components/tableExample8";
 
 interface StrategyStep1FilterInterface {
     title: string;
@@ -59,79 +57,6 @@ export const filterSlice = createAppSlice({
             // console.log(`[setCapitalization]`)
             state.step1.capitalization = action.payload;
         }),
-        // getStrategyList: create.asyncThunk(
-        //     async ({ financialInfoDate, marketInfoDate }: { financialInfoDate: string, marketInfoDate: string }) => {
-        //         // console.log(`[getStrategyList]`, financialInfoDate, marketInfoDate);
-        //         const res: any = await getNcavList(financialInfoDate, marketInfoDate);
-        //         // console.log(`[getStrategyList] res`, res);
-        //         return res;
-        //     },
-        //     {
-        //         pending: (state) => {
-        //             // console.log(`[getStrategyList] pending`);
-        //             state.state = "loading";
-        //         },
-        //         fulfilled: (state, action) => {
-        //             const nextState = "loaded";
-        //             // console.log(`[getStrategyList]`, nextState, action.payload);
-        //             state.state = nextState;
-        //             const json = action.payload;
-
-        //             state.value = json;
-        //             // console.log(`[getStrategyList] json`, json);
-
-        //             // state.date = marketInfoDate;
-        //             const tableRow = translateJsonToTableRow(json);
-        //             state.STRATEGY_TABLE_ROW = tableRow
-        //             state.strategyList.push(tableRow);
-        //         },
-        //         rejected: (state) => {
-        //             const nextState = "get-rejected";
-        //             // console.log(`[getStrategyList]`, nextState);
-        //             state.state = nextState;
-        //         }
-        //     },
-        // ),
-        // setStrategyList: create.asyncThunk(
-        //     async ({ financialInfoDate, marketInfoDate, ncavList }: { financialInfoDate: string, marketInfoDate: string, ncavList: string }) => {
-        //         // console.log(`[setStrategyList]`, financialInfoDate, marketInfoDate, ncavList);
-        //         const res: any = await setNcavList(financialInfoDate, marketInfoDate, ncavList);
-        //         // console.log(`[setStrategyList] res`, res);
-        //         return { 'res': res, 'financial_date': financialInfoDate, 'market_date': marketInfoDate };
-        //     },
-        //     {
-        //         pending: (state) => {
-        //             const nextState = "loading";
-        //             // console.log(`[setStrategyList]`, nextState);
-        //             state.state = "loading";
-        //         },
-        //         fulfilled: (state, action) => {
-        //             const nextState = "loaded";
-        //             // console.log(`[setStrategyList]`, nextState);
-        //             state.state = nextState;
-
-        //             const json = JSON.parse(action.payload['res']);
-        //             // console.log(`[setStrategyList] res`, json);
-
-        //             const financial_date = action.payload['financial_date'];
-        //             state.financial_date = financial_date;
-        //             // console.log(`[setStrategyList] market_date`, financial_date);
-        //             const market_date = action.payload['market_date'];
-        //             state.market_date = market_date;
-        //             // console.log(`[setStrategyList] market_date`, market_date);
-
-        //             const tableRow = translateJsonToTableRow(json);
-        //             state.STRATEGY_TABLE_ROW = tableRow
-        //             state.value = json;
-        //             state.strategyList.push(tableRow);
-        //         },
-        //         rejected: (state) => {
-        //             const nextState = "set-rejected";
-        //             // console.log(`[setStrategyList]`, nextState);
-        //             state.state = nextState;
-        //         }
-        //     },
-        // )
     }),
     selectors: {
         getTotalStepCount: (state) => state.totalStepCount,
@@ -145,13 +70,6 @@ export const filterSlice = createAppSlice({
         getPbrList: (state) => state.step0.pbrList,
         getCapitalization: (state) => state.step1.capitalization,
         getCapitalizationList: (state) => state.step1.capitalizationList,
-        // selectNcavList: (state) => state.value,
-        // selectStrategyState: (state) => state.state,
-        // selectStrategyTableRow: (state) => state.STRATEGY_TABLE_ROW,
-        // selectStrategyFinancialDate: (state) => state.financial_date,
-        // selectStrategyMarketDate: (state) => state.market_date,
-
-        // selectStrategyList: (state) => state.strategyList,
     }
 });
 
@@ -161,5 +79,3 @@ export const { getStep0SubTitle, getStep1SubTitle } = filterSlice.selectors;
 export const { getPer, getPbr, getCapitalization } = filterSlice.selectors;
 export const { getPerList, getPbrList, getCapitalizationList } = filterSlice.selectors;
 export const { setPer, setPbr, setCapitalization } = filterSlice.actions;
-// export const { getStrategyList, setStrategyList, setLoading, setRetry } = strategySlice.actions;
-// export const { selectNcavList, selectStrategyState, selectStrategyTableRow, selectStrategyFinancialDate, selectStrategyMarketDate, selectStrategyList } = strategySlice.selectors;
