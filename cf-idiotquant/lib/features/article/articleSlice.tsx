@@ -1,6 +1,5 @@
 import { PayloadAction } from "@reduxjs/toolkit";
 import { createAppSlice } from "@/lib/createAppSlice";
-import { escapeSpecialCharacters } from "@/components/util";
 import { Web3CardPropsType } from "@/components/topCreators2";
 
 interface ArticleList {
@@ -14,8 +13,8 @@ const initialState: ArticleList = {
         {
             cardNum: "0",
             profileImg: 'https://upload.wikimedia.org/wikipedia/commons/2/2a/Benjamin_Graham_%281894-1976%29_portrait_on_23_March_1950.jpg',
-            name: '벤저민 그레이엄',
-            desc: '투자 격언',
+            title: '벤저민 그레이엄',
+            subTitle: '투자 격언',
             summary: '청산가치가 시가총액보다 크면서 흑자인 기업에 투자하는 전략',
             imgs: `https://contents.kyobobook.co.kr/sih/fit-in/458x0/pdt/9780060555665.jpg`,
             detail: [
@@ -27,8 +26,8 @@ const initialState: ArticleList = {
         {
             cardNum: "1",
             profileImg: 'https://upload.wikimedia.org/wikipedia/commons/5/51/Warren_Buffett_KU_Visit.jpg',
-            name: '워렌 버핏',
-            desc: '투자 격언',
+            title: '워렌 버핏',
+            subTitle: '투자 격언',
             summary: '좋은 기업을 좋은 가격에 사라',
             imgs: "https://m.media-amazon.com/images/I/71MDz2FR1dL._SL1500_.jpg",
             detail: ['좋은 기업을 좋은 가격에 사라'],
@@ -36,8 +35,8 @@ const initialState: ArticleList = {
         {
             cardNum: "2",
             profileImg: 'https://www.syesd.co.kr/homepage/syStoryImageFolder/1614817264026_fb8ff05cd5914f31981ff8aab95f8219_01.png',
-            name: '🌵',
-            desc: '퀀트 용어',
+            title: '🌵',
+            subTitle: '퀀트 용어',
             summary: '계량투자 (퀀트투자): 수치만 보고 투자하는 방식',
             imgs: "https://www.funds-europe.com/wp-content/uploads/sites/4/2020/04/Quant_investing.jpg",
 
@@ -60,8 +59,8 @@ const initialState: ArticleList = {
             cardNum: "3",
             // profileImg: 'https://www.syesd.co.kr/homepage/syStoryImageFolder/1614817264026_fb8ff05cd5914f31981ff8aab95f8219_01.png',
             profileImg: 'https://upload.wikimedia.org/wikipedia/en/0/02/Homer_Simpson_2006.png',
-            name: '🌵🌵',
-            desc: '기본 용어',
+            title: '🌵🌵',
+            subTitle: '기본 용어',
             summary: 'CAGR: Compound Annual Growth Rate (연평균성장률)',
             // imgs: "https://www.syesd.co.kr/homepage/syStoryImageFolder/1614817264026_fb8ff05cd5914f31981ff8aab95f8219_01.png",
             imgs: "https://images.saymedia-content.com/.image/c_limit%2Ccs_srgb%2Cq_auto:eco%2Cw_700/MjAzMTI2MTMyMjk0NTU5Mjk5/simpsons-predictions-for-is-insane.webp",
@@ -99,8 +98,8 @@ const initialState: ArticleList = {
             cardNum: "4",
             // profileImg: 'https://www.syesd.co.kr/homepage/syStoryImageFolder/1614817264026_fb8ff05cd5914f31981ff8aab95f8219_01.png',
             profileImg: 'https://upload.wikimedia.org/wikipedia/en/0/02/Homer_Simpson_2006.png',
-            name: '🌵🌵🌵',
-            desc: '기타 용어',
+            title: '🌵🌵🌵',
+            subTitle: '기타 용어',
             summary: '매출 총액 - 매출 원가 = 매출 이익',
             // imgs: "https://www.syesd.co.kr/homepage/syStoryImageFolder/1614817264026_fb8ff05cd5914f31981ff8aab95f8219_01.png",
             imgs: "https://images.saymedia-content.com/.image/c_limit%2Ccs_srgb%2Cq_auto:eco%2Cw_700/MjAzMTI2MTMyMjk0NTU5Mjk5/simpsons-predictions-for-is-insane.webp",
