@@ -9,14 +9,18 @@ import { setDefaultStrategy, setCapitalization, setPer, setPbr } from "@/lib/fea
 import { getDefaultStrategyList, getPerList, getPbrList, getCapitalizationList } from "@/lib/features/filter/filterSlice";
 import { getStep0Title, getStep1Title, getStep2Title } from "@/lib/features/filter/filterSlice";
 import { getStep0SubTitle, getStep1SubTitle, getStep2SubTitle } from "@/lib/features/filter/filterSlice";
-import { selectFinancialInfo, selectFinancialInfoList } from "@/lib/features/financialInfo/financialInfoSlice";
+import { selectFinancialInfo, selectLatestDate } from "@/lib/features/financialInfo/financialInfoSlice";
 import { selectMarketInfo } from "@/lib/features/marketInfo/marketInfoSlice";
+import { addStrategyList } from "@/lib/features/strategy/strategySlice";
 import { useAppDispatch, useAppSelector } from "@/lib/hooks";
 import { Button, ButtonGroup } from "@material-tailwind/react";
 import Link from "next/link";
 
 export default function Item({ params: { id } }: { params: { id: string } }) {
     const dispatch = useAppDispatch();
+
+    const financialLatestDate: any = useAppSelector(selectLatestDate);
+
     const totalStepCount = useAppSelector(getTotalStepCount);
 
     const step0Title = useAppSelector(getStep0Title);
@@ -152,8 +156,10 @@ export default function Item({ params: { id } }: { params: { id: string } }) {
         alert(`기능 추가 예정입니다..!`);
 
         // return;
+        // console.log(`financialInfo`, financialInfo);
+        // console.log(`marketInfo`, marketInfo);
         const mergedStockInfo = GetMergedStocksList(financialInfo, marketInfo);
-        console.log(`mergedStockInfo`, mergedStockInfo, Object.keys(mergedStockInfo).length);
+        // console.log(`mergedStockInfo`, mergedStockInfo, Object.keys(mergedStockInfo).length);
         // filter: strategy
         let filteredByStrategyStocks: any = {};
         if (defaultStrategy == `ncav`) {
@@ -162,11 +168,23 @@ export default function Item({ params: { id } }: { params: { id: string } }) {
         else {
             filteredByStrategyStocks = mergedStockInfo;
         }
-        console.log(`defaultStrategy`, defaultStrategy, filteredByStrategyStocks, Object.keys(filteredByStrategyStocks).length);
+        // console.log(`defaultStrategy`, defaultStrategy, filteredByStrategyStocks, Object.keys(filteredByStrategyStocks).length);
 
         // filter: stock information
         const filteredStocks = GetStocksFilteredByCustom(filteredByStrategyStocks, ["PER", "PBR", "시가총액"], [per, pbr, capitalization]);
-        console.log(`filteredStocks`, filteredStocks, Object.keys(filteredStocks).length);
+        // console.log(`filteredStocks`, filteredStocks, Object.keys(filteredStocks).length);
+
+        const { year, quarter } = financialLatestDate;
+        const newStrategyList: any = {
+            title: `(custom) base: ${defaultStrategy}`,
+            subTitle: `PER:${per}, PBR:${pbr}, 시가총액:${isNaN(capitalization) ? capitalization : Util.UnitConversion(capitalization, true)}`,
+            desc: `custom filter`,
+            financialInfoDate: `${year}${quarter}Q`,
+            marketInfoDate: marketInfo[`date`],
+            ncavList: JSON.stringify(filteredStocks)
+        }
+        // console.log(`newStrategyList`, newStrategyList);
+        dispatch(addStrategyList(newStrategyList));
     }
 
     const isLastStep = (Number(id) + 1) == totalStepCount;

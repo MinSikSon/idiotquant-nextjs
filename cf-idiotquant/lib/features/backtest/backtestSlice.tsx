@@ -91,23 +91,19 @@ export const backtestSlice = createAppSlice({
         ),
         setBackTestStrategyList: create.asyncThunk(
             async ({ financialInfoDate, marketInfoDate, ncavList }: { financialInfoDate: string, marketInfoDate: string, ncavList: string }) => {
-                // console.log(`[setStrategyList]`, financialInfoDate, marketInfoDate, ncavList);
                 const res: any = await setNcavList(financialInfoDate, marketInfoDate, ncavList);
                 return res;
             },
             {
                 pending: (state) => {
-                    // console.log(`[setStrategyList] pending`);
                     state.state = "loading";
                 },
                 fulfilled: (state, action) => {
                     state.state = "loaded";
                     const json = JSON.parse(action.payload);
-                    // console.log(`[setStrategyList] fulfilled - action.payload:`, json);
                     state.value = json;
                 },
                 rejected: (state) => {
-                    console.log(`[setStrategyList] rejected`);
                     state.state = "set-rejected";
                 }
             },

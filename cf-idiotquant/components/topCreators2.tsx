@@ -10,12 +10,11 @@ import {
     Typography,
     CardFooter,
 } from "@material-tailwind/react";
-import { escapeSpecialCharacters } from "./util";
 import Link from "next/link";
 
 export interface Web3CardPropsType {
-    name: string;
-    desc: string;
+    title: string;
+    subTitle: string;
     imgs: string;
     cardNum: string;
     profileImg: string;
@@ -26,8 +25,8 @@ export interface Web3CardPropsType {
 
 function Web3Card({
     parentRouter,
-    name,
-    desc,
+    title,
+    subTitle,
     imgs,
     cardNum,
     profileImg,
@@ -55,17 +54,17 @@ function Web3Card({
                     </div>
                     <div className="my-4 flex items-start justify-between">
                         <div className="absolute top-40 xl:top-72 flex items-center gap-2 bg-white/70 p-1 rounded-full border border-gray-200 ">
-                            <Avatar size="sm" src={profileImg} alt={name} />
+                            <Avatar size="sm" src={profileImg} alt={title} />
                             <div className="pr-4">
                                 <Typography color="black" variant="h6">
-                                    {name}
+                                    {title}
                                 </Typography>
                                 <Typography
                                     color="gray"
                                     variant="small"
                                     className="font-medium"
                                 >
-                                    {desc}
+                                    {subTitle}
                                 </Typography>
                             </div>
                         </div>

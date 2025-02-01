@@ -5,7 +5,7 @@ import { useAppDispatch, useAppSelector } from "@/lib/hooks";
 import { getList, initFinancialInfo, selectFinancialInfo, selectFinancialInfoList, selectFinancialInfoState, selectLatestDate, selectLoaded, setList } from "@/lib/features/financialInfo/financialInfoSlice";
 
 import { getMarketList, initMarketInfo, selectMarketInfo, selectMarketInfoLatestDate, selectMarketInfoList, selectMarketInfoLoaded, selectMarketInfoState, setMarketInfoStateLoading, setMarketList } from "@/lib/features/marketInfo/marketInfoSlice";
-import { getStrategyList, setStrategyList, selectStrategyState, setLoading, selectNcavList } from "@/lib/features/strategy/strategySlice";
+import { getStrategyList, addStrategyList, selectStrategyState, setLoading, selectNcavList } from "@/lib/features/strategy/strategySlice";
 import { GetMergedStocksList, GetStocksFilteredByStrategyNCAV } from "@/components/strategy";
 import { setBackTestStrategyList } from "@/lib/features/backtest/backtestSlice";
 
@@ -141,13 +141,14 @@ export const LoadData = () => {
 
                 const ncavStrategyList: any = {
                     title: "퀀트 종목 추천 전략 : NCAV",
-                    subTitle: "저평가 주식을 추천합니다. 순유동자산 대비 시가총액이 얼마나 높은 지를 기준으로 합니다.",
+                    subTitle: "Net-Current Asset Value",
+                    desc: "저평가 주식을 추천합니다. 순유동자산 대비 시가총액이 얼마나 높은 지를 기준으로 합니다.",
                     financialInfoDate: `${year}${quarter}Q`,
                     marketInfoDate: marketInfo[`date`],
                     ncavList: JSON.stringify(filteredStocks)
                 }
                 // console.log(`ncavStrategyList`, ncavStrategyList);
-                dispatch(setStrategyList(ncavStrategyList));
+                dispatch(addStrategyList(ncavStrategyList));
             }
     }, [financialInfo, marketInfo, dispatch, financialLatestDate]);
 

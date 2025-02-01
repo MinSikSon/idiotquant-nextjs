@@ -2,6 +2,7 @@ import { createAppSlice } from "@/lib/createAppSlice";
 import { setNcavList, getNcavList } from "./strategyAPI";
 import { Example8TableHeadType, Example8TableRowType } from "@/components/tableExample8";
 import { PayloadAction } from "@reduxjs/toolkit";
+import { getRandomMainImage, getRandomUserImage } from "@/app/(strategy)/strategy/image";
 
 
 export const STRATEGY_TABLE_HEAD: Example8TableHeadType[] = [
@@ -95,9 +96,12 @@ function translateJsonToTableRow(json: any) {
     return tableRows;
 }
 
-interface StrategyInfo {
+export interface StrategyInfo {
     title: string;
     subTitle: string;
+    desc: string;
+    img: string;
+    profileImg: string;
     value: any;
     financial_date: string;
     market_date: string;
@@ -113,15 +117,7 @@ interface StrategyInfoList {
 const initialState: StrategyInfoList = {
     state: "init",
     strategyCount: 0,
-    strategyInfoList: [{
-        title: "",
-        subTitle: "",
-        value: {},
-        financial_date: "",
-        market_date: "",
-        STRATEGY_TABLE_ROW: [],
-        stockList: [],
-    },]
+    strategyInfoList: []
 }
 
 export const strategySlice = createAppSlice({
@@ -133,11 +129,6 @@ export const strategySlice = createAppSlice({
         }),
         setRetry: create.reducer((state) => {
             state.state = "retry";
-        }),
-        addStrategyList: create.reducer((state, action: PayloadAction<any>) => {
-            const json = JSON.parse(action.payload);
-            const infoIndex = state.strategyCount;
-            state.strategyInfoList[infoIndex].stockList = json;
         }),
         getStrategyList: create.asyncThunk(
             async ({ financialInfoDate, marketInfoDate }: { financialInfoDate: string, marketInfoDate: string }) => {
@@ -168,10 +159,10 @@ export const strategySlice = createAppSlice({
                 }
             },
         ),
-        setStrategyList: create.asyncThunk(
-            async ({ title, subTitle, financialInfoDate, marketInfoDate, ncavList }: { title: string, subTitle: string, financialInfoDate: string, marketInfoDate: string, ncavList: string }) => {
+        addStrategyList: create.asyncThunk(
+            async ({ title, subTitle, desc, financialInfoDate, marketInfoDate, ncavList }: { title: string, subTitle: string, desc: string, financialInfoDate: string, marketInfoDate: string, ncavList: string }) => {
                 const res: any = await setNcavList(financialInfoDate, marketInfoDate, ncavList);
-                return { 'title': title, 'subTitle': subTitle, 'res': res, 'financial_date': financialInfoDate, 'market_date': marketInfoDate };
+                return { 'title': title, 'subTitle': subTitle, 'desc': desc, 'res': res, 'financial_date': financialInfoDate, 'market_date': marketInfoDate };
             },
             {
                 pending: (state) => {
@@ -186,19 +177,24 @@ export const strategySlice = createAppSlice({
 
                     const title = action.payload['title'];
                     const subTitle = action.payload['subTitle'];
-                    const infoIndex = state.strategyCount;
+                    const desc = action.payload['desc'];
                     const financial_date = action.payload['financial_date'];
-                    state.strategyInfoList[infoIndex].financial_date = financial_date;
                     const market_date = action.payload['market_date'];
-                    state.strategyInfoList[infoIndex].market_date = market_date;
 
-                    const tableRow = translateJsonToTableRow(json);
-                    state.strategyInfoList[infoIndex].title = title;
-                    state.strategyInfoList[infoIndex].subTitle = subTitle;
-                    state.strategyInfoList[infoIndex].STRATEGY_TABLE_ROW = tableRow
-                    state.strategyInfoList[infoIndex].value = json;
-                    state.strategyInfoList[infoIndex].stockList = tableRow;
-
+                    const newStrategyInfo: StrategyInfo = {
+                        title: title,
+                        subTitle: subTitle,
+                        desc: desc,
+                        img: getRandomMainImage(),
+                        profileImg: getRandomUserImage(),
+                        value: json,
+                        financial_date: financial_date,
+                        market_date: market_date,
+                        STRATEGY_TABLE_ROW: translateJsonToTableRow(json),
+                        stockList: translateJsonToTableRow(json)
+                    };
+                    console.log(`newStrategyInfo`, newStrategyInfo);
+                    state.strategyInfoList.push(newStrategyInfo);
                     state.strategyCount = state.strategyCount + 1;
                 },
                 rejected: (state) => {
@@ -213,15 +209,12 @@ export const strategySlice = createAppSlice({
         selectNcavList: (state) => state.strategyInfoList[0].value,
         selectStrategyState: (state) => state.state,
         selectStrategyTableRow: (state) => state.strategyInfoList[0].STRATEGY_TABLE_ROW,
-        selectStrategyFinancialDate: (state) => state.strategyInfoList[0].financial_date,
-        selectStrategyMarketDate: (state) => state.strategyInfoList[0].market_date,
 
         selectStockList: (state) => state.strategyInfoList[0].stockList,
     }
 });
 
-export const { getStrategyList, setStrategyList, setLoading, setRetry } = strategySlice.actions;
-export const { addStrategyList } = strategySlice.actions;
+export const { getStrategyList, addStrategyList, setLoading, setRetry } = strategySlice.actions;
 
-export const { selectNcavList, selectStrategyState, selectStrategyTableRow, selectStrategyFinancialDate, selectStrategyMarketDate, selectStockList } = strategySlice.selectors;
+export const { selectNcavList, selectStrategyState, selectStrategyTableRow, selectStockList } = strategySlice.selectors;
 export const { getStrategyInfoList } = strategySlice.selectors;
