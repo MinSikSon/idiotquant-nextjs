@@ -4,11 +4,11 @@ import RegisterTemplate from "@/app/(strategy_register)/strategy_register/regist
 import { GetMergedStocksList } from "@/components/strategy";
 import { GetStocksFilteredByCustom } from "@/components/strategyCustom";
 import { Util } from "@/components/util";
-import { getCapitalization, getPbr, getPer, getTotalStepCount } from "@/lib/features/filter/filterSlice";
-import { setCapitalization, setPer, setPbr } from "@/lib/features/filter/filterSlice";
-import { getPerList, getPbrList, getCapitalizationList } from "@/lib/features/filter/filterSlice";
-import { getStep0Title, getStep1Title } from "@/lib/features/filter/filterSlice";
-import { getStep0SubTitle, getStep1SubTitle } from "@/lib/features/filter/filterSlice";
+import { getDefaultStrategy, getCapitalization, getPbr, getPer, getTotalStepCount } from "@/lib/features/filter/filterSlice";
+import { setDefaultStrategy, setCapitalization, setPer, setPbr } from "@/lib/features/filter/filterSlice";
+import { getDefaultStrategyList, getPerList, getPbrList, getCapitalizationList } from "@/lib/features/filter/filterSlice";
+import { getStep0Title, getStep1Title, getStep2Title } from "@/lib/features/filter/filterSlice";
+import { getStep0SubTitle, getStep1SubTitle, getStep2SubTitle } from "@/lib/features/filter/filterSlice";
 import { selectFinancialInfo, selectFinancialInfoList } from "@/lib/features/financialInfo/financialInfoSlice";
 import { selectMarketInfo } from "@/lib/features/marketInfo/marketInfoSlice";
 import { useAppDispatch, useAppSelector } from "@/lib/hooks";
@@ -18,10 +18,16 @@ import Link from "next/link";
 export default function Item({ params: { id } }: { params: { id: string } }) {
     const dispatch = useAppDispatch();
     const totalStepCount = useAppSelector(getTotalStepCount);
+
     const step0Title = useAppSelector(getStep0Title);
     const step0SubTitle = useAppSelector(getStep0SubTitle);
     const step1Title = useAppSelector(getStep1Title);
     const step1SubTitle = useAppSelector(getStep1SubTitle);
+    const step2Title = useAppSelector(getStep2Title);
+    const step2SubTitle = useAppSelector(getStep2SubTitle);
+
+    const defaultStrategy = useAppSelector(getDefaultStrategy);
+    const defaultStrategyList: string[] = useAppSelector(getDefaultStrategyList);
     const per = useAppSelector(getPer);
     const perList: number[] = useAppSelector(getPerList);
     const pbr = useAppSelector(getPbr);
@@ -38,6 +44,8 @@ export default function Item({ params: { id } }: { params: { id: string } }) {
             return step0Title;
         } else if (id === 1) {
             return step1Title;
+        } else if (id === 2) {
+            return step2Title;
         } else {
             return "Invalid id";
         }
@@ -48,14 +56,35 @@ export default function Item({ params: { id } }: { params: { id: string } }) {
             return step0SubTitle;
         } else if (id === 1) {
             return step1SubTitle;
+        } else if (id === 2) {
+            return step2SubTitle;
         } else {
             return "Invalid id";
         }
     }
 
+    const classNameButtonGroup = `flex justify-between items-center h-10`
     const selectedButtonColor = `bg-black text-white`;
-
     const getStep0Contents = () => {
+        function handleOnclickDefaultStrategy(item: any) {
+            dispatch(setDefaultStrategy(item));
+        }
+
+        return <>
+            <div className="flex flex-col gap-2">
+                <div className={classNameButtonGroup}>
+                    <div>전략</div>
+                    <ButtonGroup variant="outlined" size="sm">
+                        {defaultStrategyList.map((item, key) => <Button key={key} className={defaultStrategy == item ? selectedButtonColor : ``} onClick={() => handleOnclickDefaultStrategy(item)}>{`${item}`}</Button>)}
+                    </ButtonGroup>
+                </div>
+                <div className={classNameButtonGroup}>
+                </div>
+            </div>
+        </>
+    }
+
+    const getStep1Contents = () => {
         function handleOnclickPer(item: any) {
             // console.log(`setPer`, item);
             dispatch(setPer(item));
@@ -68,13 +97,13 @@ export default function Item({ params: { id } }: { params: { id: string } }) {
 
         return <>
             <div className="flex flex-col gap-2">
-                <div className="flex justify-between items-center">
+                <div className={classNameButtonGroup}>
                     <div>PER</div>
                     <ButtonGroup variant="outlined" size="sm">
                         {perList.map((item, key) => <Button key={key} className={per == item ? selectedButtonColor : ``} onClick={() => handleOnclickPer(item)}>{`< ${item}`}</Button>)}
                     </ButtonGroup>
                 </div>
-                <div className="flex justify-between items-center">
+                <div className={classNameButtonGroup}>
                     <div>PBR</div>
                     <ButtonGroup variant="outlined" size="sm">
                         {pbrList.map((item, key) => <Button key={key} className={pbr == item ? selectedButtonColor : ``} onClick={() => handleOnclickPbr(item)}>{`< ${item}`}</Button>)}
@@ -83,7 +112,8 @@ export default function Item({ params: { id } }: { params: { id: string } }) {
             </div>
         </>
     }
-    const getStep1Contents = () => {
+
+    const getStep2Contents = () => {
         function handleOnclickCapitalization(item: any) {
             // console.log(`setCapitalization`, item);
             dispatch(setCapitalization(item));
@@ -91,11 +121,13 @@ export default function Item({ params: { id } }: { params: { id: string } }) {
 
         return <>
             <div className="flex flex-col gap-2">
-                <div className="flex justify-between items-center">
-                    <div>{step1Title}</div>
+                <div className={classNameButtonGroup}>
+                    <div>{step2Title}</div>
                     <ButtonGroup variant="outlined" size="sm">
                         {capitalizationList.map((item, key) => <Button key={key} className={capitalization == item ? selectedButtonColor : ``} onClick={() => handleOnclickCapitalization(item)}>{`< ${Util.UnitConversion(item, true)}`}</Button>)}
                     </ButtonGroup>
+                </div>
+                <div className={classNameButtonGroup}>
                 </div>
             </div>
         </>
@@ -106,6 +138,8 @@ export default function Item({ params: { id } }: { params: { id: string } }) {
             return getStep0Contents();
         } else if (id === 1) {
             return getStep1Contents();
+        } else if (id === 2) {
+            return getStep2Contents();
         } else {
             return <div>Invalid id</div>;
         }
@@ -117,9 +151,12 @@ export default function Item({ params: { id } }: { params: { id: string } }) {
 
             // return;
             const mergedStockInfo = GetMergedStocksList(financialInfo, marketInfo);
-            // console.log(`mergedStockInfo`, mergedStockInfo);
+            console.log(`mergedStockInfo`, mergedStockInfo, Object.keys(mergedStockInfo).length);
+            // filter: strategy
+
+            // filter: stock information
             const filteredStocks = GetStocksFilteredByCustom(mergedStockInfo, ["PER", "PBR", "시가총액"], [per, pbr, capitalization]);
-            console.log(`filteredStocks`, filteredStocks);
+            console.log(`filteredStocks`, filteredStocks, Object.keys(filteredStocks).length);
         }
     }
 
@@ -129,6 +166,7 @@ export default function Item({ params: { id } }: { params: { id: string } }) {
     // console.log(`isLastStep`, isLastStep);
     return <>
         <RegisterTemplate
+            cardBodyFix={true}
             id={decodeURI(id)}
             totalStepCount={totalStepCount}
             title={getTitle(Number(id))}
@@ -138,6 +176,9 @@ export default function Item({ params: { id } }: { params: { id: string } }) {
                 <div className="flex flex-col gap-2">
                     <div className="flex justify-between items-center">
                         <div className="flex flex-col">
+                            <div>
+                                기본 전략: {defaultStrategy}
+                            </div>
                             <div>
                                 PER: {per} 이하
                             </div>

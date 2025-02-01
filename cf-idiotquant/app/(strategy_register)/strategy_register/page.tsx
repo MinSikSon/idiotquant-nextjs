@@ -18,6 +18,7 @@ export default function RegisterStrategy() {
     const resultRegistable = 0 != per && 0 != pbr && 0 != capitalization;
     return <>
         <RegisterTemplate
+            cardBodyFix={false}
             id={`1`}
             totalStepCount={2}
             title={`선택 결과`}

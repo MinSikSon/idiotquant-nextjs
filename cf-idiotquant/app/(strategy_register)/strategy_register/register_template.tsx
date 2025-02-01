@@ -1,6 +1,7 @@
 import { Card, CardBody, CardFooter, CardHeader, Typography } from "@material-tailwind/react";
 
 interface RegisterTemplateProps {
+    cardBodyFix: boolean;
     id: string;
     totalStepCount: number;
     title: string;
@@ -50,7 +51,7 @@ export default function RegisterTemplate(props: RegisterTemplateProps) {
                         </Button>
                     </div> */}
                 </CardHeader>
-                <CardBody className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 px-4">
+                <CardBody className={`grid grid-cols-1 ${props.cardBodyFix ? '' : 'sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4'} gap-4 px-4`}>
                     {/* {data.map((props, key) => (
                         <Web3Card key={key} parentRouter={parentRouter} {...props} />
                     ))} */}
