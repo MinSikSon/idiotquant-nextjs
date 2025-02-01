@@ -169,9 +169,9 @@ export const strategySlice = createAppSlice({
             },
         ),
         setStrategyList: create.asyncThunk(
-            async ({ financialInfoDate, marketInfoDate, ncavList }: { financialInfoDate: string, marketInfoDate: string, ncavList: string }) => {
+            async ({ title, subTitle, financialInfoDate, marketInfoDate, ncavList }: { title: string, subTitle: string, financialInfoDate: string, marketInfoDate: string, ncavList: string }) => {
                 const res: any = await setNcavList(financialInfoDate, marketInfoDate, ncavList);
-                return { 'res': res, 'financial_date': financialInfoDate, 'market_date': marketInfoDate };
+                return { 'title': title, 'subTitle': subTitle, 'res': res, 'financial_date': financialInfoDate, 'market_date': marketInfoDate };
             },
             {
                 pending: (state) => {
@@ -184,6 +184,8 @@ export const strategySlice = createAppSlice({
 
                     const json = JSON.parse(action.payload['res']);
 
+                    const title = action.payload['title'];
+                    const subTitle = action.payload['subTitle'];
                     const infoIndex = state.strategyCount;
                     const financial_date = action.payload['financial_date'];
                     state.strategyInfoList[infoIndex].financial_date = financial_date;
@@ -191,8 +193,8 @@ export const strategySlice = createAppSlice({
                     state.strategyInfoList[infoIndex].market_date = market_date;
 
                     const tableRow = translateJsonToTableRow(json);
-                    state.strategyInfoList[infoIndex].title = "퀀트 종목 추천";
-                    state.strategyInfoList[infoIndex].subTitle = "저평가 주식을 추천합니다. 순유동자산 대비 시가총액이 얼마나 높은 지를 기준으로 합니다.";
+                    state.strategyInfoList[infoIndex].title = title;
+                    state.strategyInfoList[infoIndex].subTitle = subTitle;
                     state.strategyInfoList[infoIndex].STRATEGY_TABLE_ROW = tableRow
                     state.strategyInfoList[infoIndex].value = json;
                     state.strategyInfoList[infoIndex].stockList = tableRow;

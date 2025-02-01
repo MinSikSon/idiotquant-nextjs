@@ -140,6 +140,8 @@ export const LoadData = () => {
                 // console.log(`financialLatestDate`, financialLatestDate);
 
                 const ncavStrategyList: any = {
+                    title: "퀀트 종목 추천 전략 : NCAV",
+                    subTitle: "저평가 주식을 추천합니다. 순유동자산 대비 시가총액이 얼마나 높은 지를 기준으로 합니다.",
                     financialInfoDate: `${year}${quarter}Q`,
                     marketInfoDate: marketInfo[`date`],
                     ncavList: JSON.stringify(filteredStocks)
