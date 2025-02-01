@@ -3,7 +3,7 @@ import { cleansing } from "@/lib/DataCleansing";
 function filteredByEachCompare(array: any, keys: any[], conditions: any[]) {
     return array.filter((item: any) => {
         for (let i = 0; i < keys.length; i++) {
-            if ('all' == conditions[i]) {
+            if ('ALL' == conditions[i]) {
                 return true;
             }
 

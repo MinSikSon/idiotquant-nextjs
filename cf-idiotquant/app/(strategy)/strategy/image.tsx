@@ -25,12 +25,13 @@ export function getRandomMainImage(idx: any = undefined) {
 }
 
 export function getRandomUserImage(idx: any = undefined) {
+    console.log(`getRandomUserImage`, idx);
     const imageList: string[] = [
         'https://www.artic.edu/iiif/2/47c5bcb8-62ef-e5d7-55e7-f5121f409a30/full/400,/0/default.jpg',
         'https://www.artic.edu/iiif/2/3a608f55-d76e-fa96-d0b1-0789fbc48f1e/full/400,/0/default.jpg',
         'https://www.artic.edu/iiif/2/78c80988-6524-cec7-c661-a4c0a706d06f/full/400,/0/default.jpg',
         'https://www.artic.edu/iiif/2/3f9aa9db-61e1-7060-fdb0-bfd7e41ddd08/full/400,/0/default.jpg',
-        'https://www.artic.edu/iiif/2/5c3cbb0f-03e6-7d46-60b6-f612ed71b5d3/full/400,/0/default.jpg',
+        'https://www.artic.edu/iiif/2/0675f9a9-1a7b-c90a-3bb6-7f7be2afb678/full/1686,/0/default.jpg',
         'https://www.artic.edu/iiif/2/d19683c2-2ef4-e586-7add-c1008b6a8fb2/full/400,/0/default.jpg',
         // 'https://cdn.pixabay.com/photo/2021/11/12/03/04/woman-6787784_1280.png',
         // 'https://cdn.pixabay.com/photo/2022/02/04/03/06/woman-6991826_1280.png',

@@ -82,6 +82,7 @@ export default function Item({ params: { id } }: { params: { id: string } }) {
                     </ButtonGroup>
                 </div>
                 <div className={classNameButtonGroup}>
+                    전략 추가 예정
                 </div>
             </div>
         </>
@@ -153,7 +154,7 @@ export default function Item({ params: { id } }: { params: { id: string } }) {
         }
 
         // console.log(`handleOnClick`);
-        alert(`기능 추가 예정입니다..!`);
+        // alert(`기능 추가 예정입니다..!`);
 
         // return;
         // console.log(`financialInfo`, financialInfo);
@@ -162,7 +163,7 @@ export default function Item({ params: { id } }: { params: { id: string } }) {
         // console.log(`mergedStockInfo`, mergedStockInfo, Object.keys(mergedStockInfo).length);
         // filter: strategy
         let filteredByStrategyStocks: any = {};
-        if (defaultStrategy == `ncav`) {
+        if (defaultStrategy == `NCAV`) {
             filteredByStrategyStocks = GetStocksFilteredByStrategyNCAV(mergedStockInfo)
         }
         else {

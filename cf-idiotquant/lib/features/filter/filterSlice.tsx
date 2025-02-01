@@ -35,23 +35,23 @@ const initialState: StrategyFilterInterface = {
         title: "전략 선택",
         subTitle: "-",
         defaultStrategy: '-',
-        defaultStrategyList: ['-', 'ncav'],
+        defaultStrategyList: ['-', 'NCAV'],
 
     },
     step1: {
         title: "PER, PBR",
         subTitle: "price earning ratio, price book value ratio",
-        per: 'all',
-        perList: ['all', 5, 10, 15],
-        pbr: 'all',
-        pbrList: ['all', 0.3, 0.6, 1.0],
+        per: 'ALL',
+        perList: ['ALL', 5, 10, 15],
+        pbr: 'ALL',
+        pbrList: ['ALL', 0.3, 0.6, 1.0],
 
     },
     step2: {
         title: "시가총액 최대",
         subTitle: "주식 수 * 주가",
-        capitalization: 'all',
-        capitalizationList: ['all', 100000000000, 1000000000000]
+        capitalization: 'ALL',
+        capitalizationList: ['ALL', 100000000000, 1000000000000]
     },
 }
 
