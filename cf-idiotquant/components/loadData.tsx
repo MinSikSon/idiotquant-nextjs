@@ -5,8 +5,8 @@ import { useAppDispatch, useAppSelector } from "@/lib/hooks";
 import { getList, initFinancialInfo, selectFinancialInfo, selectFinancialInfoList, selectFinancialInfoState, selectLatestDate, selectLoaded, setList } from "@/lib/features/financialInfo/financialInfoSlice";
 
 import { getMarketList, initMarketInfo, selectMarketInfo, selectMarketInfoLatestDate, selectMarketInfoList, selectMarketInfoLoaded, selectMarketInfoState, setMarketInfoStateLoading, setMarketList } from "@/lib/features/marketInfo/marketInfoSlice";
-import { getStrategyList, setStrategyList, selectStrategyState, setLoading, selectNcavList } from "@/lib/features/strategy/strategySlice";
-import { GetMeredStocksList, GetStocksFilteredByStrategyNCAV } from "@/components/strategy";
+import { getStrategyList, addStrategyList, selectStrategyState, setLoading, selectNcavList } from "@/lib/features/strategy/strategySlice";
+import { GetMergedStocksList, GetStocksFilteredByStrategyNCAV } from "@/components/strategy";
 import { setBackTestStrategyList } from "@/lib/features/backtest/backtestSlice";
 
 export const LoadData = () => {
@@ -133,18 +133,22 @@ export const LoadData = () => {
         // console.log(`444 [LoadData] financialInfo, marketInfo`, financialInfo, !!financialInfo, marketInfo, !!marketInfo);
         if (true == !!financialInfo && Object.keys(financialInfo).length > 0)
             if (true == !!marketInfo && Object.keys(marketInfo).length > 0) {
-                const mergedStockInfo = GetMeredStocksList(financialInfo, marketInfo);
+                const mergedStockInfo = GetMergedStocksList(financialInfo, marketInfo);
+                // console.log(`GetStocksFilteredByStrategyNCAV`, mergedStockInfo);
                 const filteredStocks = GetStocksFilteredByStrategyNCAV(mergedStockInfo);
                 const { year, quarter } = financialLatestDate;
                 // console.log(`financialLatestDate`, financialLatestDate);
 
                 const ncavStrategyList: any = {
+                    title: "퀀트 종목 추천 전략 : NCAV",
+                    subTitle: "Net-Current Asset Value",
+                    desc: "저평가 주식을 추천합니다. 순유동자산 대비 시가총액이 얼마나 높은 지를 기준으로 합니다.",
                     financialInfoDate: `${year}${quarter}Q`,
                     marketInfoDate: marketInfo[`date`],
                     ncavList: JSON.stringify(filteredStocks)
                 }
                 // console.log(`ncavStrategyList`, ncavStrategyList);
-                dispatch(setStrategyList(ncavStrategyList));
+                dispatch(addStrategyList(ncavStrategyList));
             }
     }, [financialInfo, marketInfo, dispatch, financialLatestDate]);
 

@@ -1,6 +1,8 @@
 import { createAppSlice } from "@/lib/createAppSlice";
 import { setNcavList, getNcavList } from "./strategyAPI";
 import { Example8TableHeadType, Example8TableRowType } from "@/components/tableExample8";
+import { PayloadAction } from "@reduxjs/toolkit";
+import { getRandomMainImage, getRandomUserImage } from "@/app/(strategy)/strategy/image";
 
 
 export const STRATEGY_TABLE_HEAD: Example8TableHeadType[] = [
@@ -57,7 +59,7 @@ export const STRATEGY_TABLE_HEAD: Example8TableHeadType[] = [
 
 function translateJsonToTableRow(json: any) {
     const keys = Object.keys(json);
-    const numList = Object.keys(json).length;
+    const numList = keys.length;
     const tableRows: Example8TableRowType[] = [];
     for (let i = 0; i < numList; i++) {
         const name = keys[i];
@@ -94,22 +96,28 @@ function translateJsonToTableRow(json: any) {
     return tableRows;
 }
 
-interface StrategyInfo {
-    state: "init" | "loading" | "loaded" | "get-rejected" | "set-rejected" | "retry";
+export interface StrategyInfo {
+    title: string;
+    subTitle: string;
+    desc: string;
+    img: string;
+    profileImg: string;
     value: any;
     financial_date: string;
     market_date: string;
     STRATEGY_TABLE_ROW: Example8TableRowType[];
-    strategyList: any;
+    stockList: any;
+}
+interface StrategyInfoList {
+    state: "init" | "loading" | "loaded" | "get-rejected" | "set-rejected" | "retry";
+    strategyCount: number;
+    strategyInfoList: StrategyInfo[];
 
 }
-const initialState: StrategyInfo = {
+const initialState: StrategyInfoList = {
     state: "init",
-    value: {},
-    financial_date: "",
-    market_date: "",
-    STRATEGY_TABLE_ROW: [],
-    strategyList: [],
+    strategyCount: 0,
+    strategyInfoList: []
 }
 
 export const strategySlice = createAppSlice({
@@ -117,97 +125,96 @@ export const strategySlice = createAppSlice({
     initialState,
     reducers: (create) => ({
         setLoading: create.reducer((state) => {
-            // console.log(`[setLoading]`)
             state.state = "loading";
         }),
         setRetry: create.reducer((state) => {
-            // console.log(`[setRetry]`)
             state.state = "retry";
         }),
         getStrategyList: create.asyncThunk(
             async ({ financialInfoDate, marketInfoDate }: { financialInfoDate: string, marketInfoDate: string }) => {
-                // console.log(`[getStrategyList]`, financialInfoDate, marketInfoDate);
                 const res: any = await getNcavList(financialInfoDate, marketInfoDate);
-                // console.log(`[getStrategyList] res`, res);
                 return res;
             },
             {
                 pending: (state) => {
-                    // console.log(`[getStrategyList] pending`);
                     state.state = "loading";
                 },
                 fulfilled: (state, action) => {
                     const nextState = "loaded";
-                    // console.log(`[getStrategyList]`, nextState, action.payload);
                     state.state = nextState;
                     const json = action.payload;
 
-                    state.value = json;
-                    // console.log(`[getStrategyList] json`, json);
+                    const infoIndex = state.strategyCount;
+                    state.strategyInfoList[infoIndex].value = json;
 
-                    // state.date = marketInfoDate;
                     const tableRow = translateJsonToTableRow(json);
-                    state.STRATEGY_TABLE_ROW = tableRow
-                    state.strategyList.push(tableRow);
+                    state.strategyInfoList[infoIndex].STRATEGY_TABLE_ROW = tableRow
+                    state.strategyInfoList[infoIndex].stockList = tableRow;
+
+                    state.strategyCount = state.strategyCount + 1;
                 },
                 rejected: (state) => {
                     const nextState = "get-rejected";
-                    // console.log(`[getStrategyList]`, nextState);
                     state.state = nextState;
                 }
             },
         ),
-        setStrategyList: create.asyncThunk(
-            async ({ financialInfoDate, marketInfoDate, ncavList }: { financialInfoDate: string, marketInfoDate: string, ncavList: string }) => {
-                // console.log(`[setStrategyList]`, financialInfoDate, marketInfoDate, ncavList);
+        addStrategyList: create.asyncThunk(
+            async ({ title, subTitle, desc, financialInfoDate, marketInfoDate, ncavList }: { title: string, subTitle: string, desc: string, financialInfoDate: string, marketInfoDate: string, ncavList: string }) => {
                 const res: any = await setNcavList(financialInfoDate, marketInfoDate, ncavList);
-                // console.log(`[setStrategyList] res`, res);
-                return { 'res': res, 'financial_date': financialInfoDate, 'market_date': marketInfoDate };
+                return { 'title': title, 'subTitle': subTitle, 'desc': desc, 'res': res, 'financial_date': financialInfoDate, 'market_date': marketInfoDate };
             },
             {
                 pending: (state) => {
                     const nextState = "loading";
-                    // console.log(`[setStrategyList]`, nextState);
                     state.state = "loading";
                 },
                 fulfilled: (state, action) => {
                     const nextState = "loaded";
-                    // console.log(`[setStrategyList]`, nextState);
                     state.state = nextState;
 
                     const json = JSON.parse(action.payload['res']);
-                    // console.log(`[setStrategyList] res`, json);
 
+                    const title = action.payload['title'];
+                    const subTitle = action.payload['subTitle'];
+                    const desc = action.payload['desc'];
                     const financial_date = action.payload['financial_date'];
-                    state.financial_date = financial_date;
-                    // console.log(`[setStrategyList] market_date`, financial_date);
                     const market_date = action.payload['market_date'];
-                    state.market_date = market_date;
-                    // console.log(`[setStrategyList] market_date`, market_date);
 
-                    const tableRow = translateJsonToTableRow(json);
-                    state.STRATEGY_TABLE_ROW = tableRow
-                    state.value = json;
-                    state.strategyList.push(tableRow);
+                    const newStrategyInfo: StrategyInfo = {
+                        title: title,
+                        subTitle: subTitle,
+                        desc: desc,
+                        img: getRandomMainImage(),
+                        profileImg: getRandomUserImage(),
+                        value: json,
+                        financial_date: financial_date,
+                        market_date: market_date,
+                        STRATEGY_TABLE_ROW: translateJsonToTableRow(json),
+                        stockList: translateJsonToTableRow(json)
+                    };
+                    console.log(`newStrategyInfo`, newStrategyInfo);
+                    state.strategyInfoList.push(newStrategyInfo);
+                    state.strategyCount = state.strategyCount + 1;
                 },
                 rejected: (state) => {
                     const nextState = "set-rejected";
-                    // console.log(`[setStrategyList]`, nextState);
                     state.state = nextState;
                 }
             },
         )
     }),
     selectors: {
-        selectNcavList: (state) => state.value,
+        getStrategyInfoList: (state) => state.strategyInfoList,
+        selectNcavList: (state) => state.strategyInfoList[0].value,
         selectStrategyState: (state) => state.state,
-        selectStrategyTableRow: (state) => state.STRATEGY_TABLE_ROW,
-        selectStrategyFinancialDate: (state) => state.financial_date,
-        selectStrategyMarketDate: (state) => state.market_date,
+        selectStrategyTableRow: (state) => state.strategyInfoList[0].STRATEGY_TABLE_ROW,
 
-        selectStrategyList: (state) => state.strategyList,
+        selectStockList: (state) => state.strategyInfoList[0].stockList,
     }
 });
 
-export const { getStrategyList, setStrategyList, setLoading, setRetry } = strategySlice.actions;
-export const { selectNcavList, selectStrategyState, selectStrategyTableRow, selectStrategyFinancialDate, selectStrategyMarketDate, selectStrategyList } = strategySlice.selectors;
+export const { getStrategyList, addStrategyList, setLoading, setRetry } = strategySlice.actions;
+
+export const { selectNcavList, selectStrategyState, selectStrategyTableRow, selectStockList } = strategySlice.selectors;
+export const { getStrategyInfoList } = strategySlice.selectors;

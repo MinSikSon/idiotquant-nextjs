@@ -1,6 +1,6 @@
 "use client"
 
-import { GetMeredStocksList, GetStocksFilteredByStrategyNCAV } from "@/components/strategy";
+import { GetMergedStocksList, GetStocksFilteredByStrategyNCAV } from "@/components/strategy";
 import TablePanel, { ListNodeTemplate } from "@/components/TablePanel";
 import { getPrevYearAndQuarter, getYearAndQuarterByDate } from "@/components/yearQuarterMatcher";
 import { getEndMarketInfo, getStartFinancialInfo, getStartMarketInfo, selectEndMarketInfo, selectStartFinancialInfo, selectStartMarketInfo, setBackTestStrategyList } from "@/lib/features/backtest/backtestSlice";
@@ -110,7 +110,7 @@ export default function BackTesting(props: any) {
         if (true == !!startFinancialInfo && Object.keys(startFinancialInfo).length > 0)
             if (true == !!startMarketInfo && Object.keys(startMarketInfo).length > 0)
                 if (true == !!endMarketInfo && Object.keys(endMarketInfo).length > 0) {
-                    const mergedStockInfo = GetMeredStocksList(startFinancialInfo, startMarketInfo);
+                    const mergedStockInfo = GetMergedStocksList(startFinancialInfo, startMarketInfo);
                     const dicFilteredStocks = GetStocksFilteredByStrategyNCAV(mergedStockInfo);
                     setFilteredStocks(dicFilteredStocks);
 
