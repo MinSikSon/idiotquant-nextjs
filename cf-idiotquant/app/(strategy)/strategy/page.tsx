@@ -1,13 +1,13 @@
 "use client"
 
 import { Web3Card2, Web3CardPropsType } from "@/components/topCreators2";
-import { selectStrategyList } from "@/lib/features/strategy/strategySlice";
+import { selectStockList } from "@/lib/features/strategy/strategySlice";
 import { useAppSelector } from "@/lib/hooks";
 import { getRandomMainImage, getRandomUserImage } from "@/app/(strategy)/strategy/image";
 
 export default function Strategy() {
-    const strategyList = useAppSelector(selectStrategyList);
-    console.log(`[Home] strategyList`, strategyList, strategyList.length);
+    const stockList = useAppSelector(selectStockList);
+    console.log(`[Home] strategyList`, stockList, stockList.length);
 
     let propsList: Web3CardPropsType[] = [
         {
@@ -16,7 +16,7 @@ export default function Strategy() {
             imgs: getRandomMainImage(),
             cardNum: '0',
             profileImg: getRandomUserImage(),
-            summary: `저평가 주식 ${strategyList.length > 0 ? strategyList[0].length : `0`} 개를 추천합니다. 순유동자산 대비 시가총액이 얼마나 높은 지를 기준으로 합니다.`,
+            summary: `저평가 주식 ${stockList.length > 0 ? stockList.length : `0`} 개를 추천합니다. 순유동자산 대비 시가총액이 얼마나 높은 지를 기준으로 합니다.`,
         },
         // {
         //     name: 'NCAV',
@@ -69,7 +69,7 @@ export default function Strategy() {
     ];
 
     return <>
-        {!!strategyList ? <Web3Card2 title={'Strategy'} parentRouter={'strategy'} data={propsList} /> : <></>}
+        {!!stockList ? <Web3Card2 title={'Strategy'} parentRouter={'strategy'} data={propsList} /> : <></>}
     </>
 }
 

@@ -1,7 +1,7 @@
 "use client"
 
 import RegisterTemplate from "@/app/(strategy_register)/strategy_register/register_template";
-import { GetMergedStocksList } from "@/components/strategy";
+import { GetMergedStocksList, GetStocksFilteredByStrategyNCAV } from "@/components/strategy";
 import { GetStocksFilteredByCustom } from "@/components/strategyCustom";
 import { Util } from "@/components/util";
 import { getDefaultStrategy, getCapitalization, getPbr, getPer, getTotalStepCount } from "@/lib/features/filter/filterSlice";
@@ -29,14 +29,13 @@ export default function Item({ params: { id } }: { params: { id: string } }) {
     const defaultStrategy = useAppSelector(getDefaultStrategy);
     const defaultStrategyList: string[] = useAppSelector(getDefaultStrategyList);
     const per = useAppSelector(getPer);
-    const perList: number[] = useAppSelector(getPerList);
+    const perList: any[] = useAppSelector(getPerList);
     const pbr = useAppSelector(getPbr);
-    const pbrList: number[] = useAppSelector(getPbrList);
+    const pbrList: any[] = useAppSelector(getPbrList);
     const capitalization = useAppSelector(getCapitalization);
-    const capitalizationList: number[] = useAppSelector(getCapitalizationList);
+    const capitalizationList: any[] = useAppSelector(getCapitalizationList);
 
     const financialInfo: object = useAppSelector(selectFinancialInfo);
-    // const financialInfoList: string[] = useAppSelector(selectFinancialInfoList);
     const marketInfo: any = useAppSelector(selectMarketInfo);
 
     const getTitle = (id: number) => {
@@ -98,15 +97,15 @@ export default function Item({ params: { id } }: { params: { id: string } }) {
         return <>
             <div className="flex flex-col gap-2">
                 <div className={classNameButtonGroup}>
-                    <div>PER</div>
+                    <div>PER 최대</div>
                     <ButtonGroup variant="outlined" size="sm">
-                        {perList.map((item, key) => <Button key={key} className={per == item ? selectedButtonColor : ``} onClick={() => handleOnclickPer(item)}>{`< ${item}`}</Button>)}
+                        {perList.map((item, key) => <Button key={key} className={per == item ? selectedButtonColor : ``} onClick={() => handleOnclickPer(item)}>{`${item}`}</Button>)}
                     </ButtonGroup>
                 </div>
                 <div className={classNameButtonGroup}>
-                    <div>PBR</div>
+                    <div>PBR 최대</div>
                     <ButtonGroup variant="outlined" size="sm">
-                        {pbrList.map((item, key) => <Button key={key} className={pbr == item ? selectedButtonColor : ``} onClick={() => handleOnclickPbr(item)}>{`< ${item}`}</Button>)}
+                        {pbrList.map((item, key) => <Button key={key} className={pbr == item ? selectedButtonColor : ``} onClick={() => handleOnclickPbr(item)}>{`${item}`}</Button>)}
                     </ButtonGroup>
                 </div>
             </div>
@@ -124,7 +123,7 @@ export default function Item({ params: { id } }: { params: { id: string } }) {
                 <div className={classNameButtonGroup}>
                     <div>{step2Title}</div>
                     <ButtonGroup variant="outlined" size="sm">
-                        {capitalizationList.map((item, key) => <Button key={key} className={capitalization == item ? selectedButtonColor : ``} onClick={() => handleOnclickCapitalization(item)}>{`< ${Util.UnitConversion(item, true)}`}</Button>)}
+                        {capitalizationList.map((item, key) => <Button key={key} className={capitalization == item ? selectedButtonColor : ``} onClick={() => handleOnclickCapitalization(item)}>{`${isNaN(item) ? item : Util.UnitConversion(item, true)}`}</Button>)}
                     </ButtonGroup>
                 </div>
                 <div className={classNameButtonGroup}>
@@ -145,19 +144,29 @@ export default function Item({ params: { id } }: { params: { id: string } }) {
         }
     }
     const handleOnClick = (isLastStep: boolean) => {
-        if (true == isLastStep) {
-            // console.log(`handleOnClick`);
-            alert(`기능 추가 예정입니다..!`);
-
-            // return;
-            const mergedStockInfo = GetMergedStocksList(financialInfo, marketInfo);
-            console.log(`mergedStockInfo`, mergedStockInfo, Object.keys(mergedStockInfo).length);
-            // filter: strategy
-
-            // filter: stock information
-            const filteredStocks = GetStocksFilteredByCustom(mergedStockInfo, ["PER", "PBR", "시가총액"], [per, pbr, capitalization]);
-            console.log(`filteredStocks`, filteredStocks, Object.keys(filteredStocks).length);
+        if (false == isLastStep) {
+            return;
         }
+
+        // console.log(`handleOnClick`);
+        alert(`기능 추가 예정입니다..!`);
+
+        // return;
+        const mergedStockInfo = GetMergedStocksList(financialInfo, marketInfo);
+        console.log(`mergedStockInfo`, mergedStockInfo, Object.keys(mergedStockInfo).length);
+        // filter: strategy
+        let filteredByStrategyStocks: any = {};
+        if (defaultStrategy == `ncav`) {
+            filteredByStrategyStocks = GetStocksFilteredByStrategyNCAV(mergedStockInfo)
+        }
+        else {
+            filteredByStrategyStocks = mergedStockInfo;
+        }
+        console.log(`defaultStrategy`, defaultStrategy, filteredByStrategyStocks, Object.keys(filteredByStrategyStocks).length);
+
+        // filter: stock information
+        const filteredStocks = GetStocksFilteredByCustom(filteredByStrategyStocks, ["PER", "PBR", "시가총액"], [per, pbr, capitalization]);
+        console.log(`filteredStocks`, filteredStocks, Object.keys(filteredStocks).length);
     }
 
     const isLastStep = (Number(id) + 1) == totalStepCount;
@@ -180,13 +189,13 @@ export default function Item({ params: { id } }: { params: { id: string } }) {
                                 기본 전략: {defaultStrategy}
                             </div>
                             <div>
-                                PER: {per} 이하
+                                PER: {per}
                             </div>
                             <div>
-                                PBR: {pbr} 이하
+                                PBR: {pbr}
                             </div>
                             <div>
-                                시가총액: {Util.UnitConversion(capitalization, true)} 이하
+                                시가총액: {isNaN(capitalization) ? capitalization : Util.UnitConversion(capitalization, true)}
                             </div>
                         </div>
                     </div>

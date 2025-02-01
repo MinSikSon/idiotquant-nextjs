@@ -3,6 +3,10 @@ import { cleansing } from "@/lib/DataCleansing";
 function filteredByEachCompare(array: any, keys: any[], conditions: any[]) {
     return array.filter((item: any) => {
         for (let i = 0; i < keys.length; i++) {
+            if ('all' == conditions[i]) {
+                return true;
+            }
+
             // 값 없는 경우 제외
             if ("PER" == keys[i] && 0 == Number(item[keys[i]])) {
                 return false;

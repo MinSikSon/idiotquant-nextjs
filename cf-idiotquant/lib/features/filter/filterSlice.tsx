@@ -10,16 +10,16 @@ interface StrategyStep0FilterInterface {
 interface StrategyStep1FilterInterface {
     title: string;
     subTitle: string;
-    per: number;
-    perList: number[];
-    pbr: number;
-    pbrList: number[];
+    per: any;
+    perList: any[];
+    pbr: any;
+    pbrList: any[];
 }
 interface StrategyStep2FilterInterface {
     title: string;
     subTitle: string;
-    capitalization: number;
-    capitalizationList: number[];
+    capitalization: any;
+    capitalizationList: any[];
 }
 
 interface StrategyFilterInterface {
@@ -41,17 +41,17 @@ const initialState: StrategyFilterInterface = {
     step1: {
         title: "PER, PBR",
         subTitle: "price earning ratio, price book value ratio",
-        per: 5,
-        perList: [5, 10, 15],
-        pbr: 0.2,
-        pbrList: [0.2, 0.4, 0.6, 0.8, 1.0],
+        per: 'all',
+        perList: ['all', 5, 10, 15],
+        pbr: 'all',
+        pbrList: ['all', 0.3, 0.6, 1.0],
 
     },
     step2: {
-        title: "시가총액",
-        subTitle: "주식수 * 주가",
-        capitalization: 100000000000,
-        capitalizationList: [100000000000, 1000000000000, 10000000000000]
+        title: "시가총액 최대",
+        subTitle: "주식 수 * 주가",
+        capitalization: 'all',
+        capitalizationList: ['all', 100000000000, 1000000000000]
     },
 }
 
@@ -63,15 +63,15 @@ export const filterSlice = createAppSlice({
             // console.log(`[setDefaultStrategy]`)
             state.step0.defaultStrategy = action.payload;
         }),
-        setPer: create.reducer((state, action: PayloadAction<number>) => {
+        setPer: create.reducer((state, action: PayloadAction<any>) => {
             // console.log(`[setPer]`)
             state.step1.per = action.payload;
         }),
-        setPbr: create.reducer((state, action: PayloadAction<number>) => {
+        setPbr: create.reducer((state, action: PayloadAction<any>) => {
             // console.log(`[setPbr]`)
             state.step1.pbr = action.payload;
         }),
-        setCapitalization: create.reducer((state, action: PayloadAction<number>) => {
+        setCapitalization: create.reducer((state, action: PayloadAction<any>) => {
             // console.log(`[setCapitalization]`)
             state.step2.capitalization = action.payload;
         }),
