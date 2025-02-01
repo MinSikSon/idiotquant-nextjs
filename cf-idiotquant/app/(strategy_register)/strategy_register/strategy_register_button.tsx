@@ -6,6 +6,7 @@ export default function StrategyRegisterButton() {
     return <>
         <Link href={`/strategy_register/0`}>
             <RegisterTemplate
+                cardBodyFix={false}
                 id={`-`}
                 totalStepCount={1}
                 title={`신규 투자 전략 등록`}
