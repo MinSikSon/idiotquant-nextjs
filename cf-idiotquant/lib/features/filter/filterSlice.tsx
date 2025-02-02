@@ -21,7 +21,6 @@ interface StrategyStep2FilterInterface {
     capitalization: any;
     capitalizationList: any[];
 }
-
 interface StrategyStep3FilterInterface {
     title: string;
     subTitle: string;
