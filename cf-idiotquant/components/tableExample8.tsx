@@ -27,7 +27,8 @@ import {
 
 // deepmerge
 import merge from "deepmerge";
-import Loading from "./Loading";
+import Loading from "@/components/Loading";
+import { Util } from "@/components/util";
 
 // area chart
 interface ChartsPropsType {
@@ -141,11 +142,12 @@ export interface Example8TableRowType {
     img?: string;
     digitalAsset: string;
     detail: string;
-    price: string;
-    change: string;
-    volume?: string;
+    closePrice: string;
+    expectedRateOfReturn: string;
+    expectedRateOfReturnColor: string;
+    targetPrice?: string;
     market: string;
-    color: string;
+    netCurrentAssert?: string;
     trend?: number; // optional
     chartName?: string;
     chartData?: number[];
@@ -153,6 +155,7 @@ export interface Example8TableRowType {
     eps?: string;
     pbr?: string;
     per?: string;
+    netIncome?: string;
 }
 
 export interface Example8TableHeadType {
@@ -241,7 +244,7 @@ function TablesExample8({
                                     {tableHead.map(({ head, customeStyle }) => (
                                         <th
                                             key={head}
-                                            className={`border-b border-gray-300 !p-4 pb-8 ${customeStyle}`}
+                                            className={`border-b border-gray-300 pl-3 pb-2 ${customeStyle}`}
                                         >
                                             <Typography
                                                 color="blue-gray"
@@ -262,11 +265,12 @@ function TablesExample8({
                                             img,
                                             digitalAsset,
                                             detail,
-                                            price,
-                                            change,
-                                            volume,
+                                            closePrice,
+                                            expectedRateOfReturn,
+                                            expectedRateOfReturnColor,
+                                            targetPrice,
                                             market,
-                                            color,
+                                            netCurrentAssert,
                                             chartName = "2023 Sales",
                                             // chartData = [30, 40, 500, 420, 700, 350, 500, 330, 900,],
                                             chartData = [0, 0, 0, 0, 0, 0, 0, 0, 0,],
@@ -274,14 +278,15 @@ function TablesExample8({
                                             eps,
                                             pbr,
                                             per,
+                                            netIncome,
                                         },
                                         index
                                     ) => {
                                         const isLast = index === tableRow.length - 1;
-                                        const bgColor = index % 2 ? 'bg-gray-100' : ''
+                                        const bgColor = index % 2 ? 'bg-blue-gray-50' : ''
                                         const classes = isLast
-                                            ? "!px-4"
-                                            : `!px-4 border-b border-gray-300 ${bgColor}`;
+                                            ? "!pl-2"
+                                            : `!pl-2 border-b border-gray-100 ${bgColor}`;
                                         return (
                                             <tr key={digitalAsset}>
                                                 <td className={classes}>
@@ -314,16 +319,16 @@ function TablesExample8({
                                                         variant="small"
                                                         className="!font-normal text-gray-600 text-right"
                                                     >
-                                                        {price}
+                                                        {Util.UnitConversion(Number(closePrice), true)}
                                                     </Typography>
                                                 </td>
                                                 <td className={classes}>
                                                     <Typography
                                                         variant="small"
-                                                        color={color as TypographyProps["color"]}
+                                                        color={expectedRateOfReturnColor as TypographyProps["color"]}
                                                         className="!font-bold text-right"
                                                     >
-                                                        {change}
+                                                        {expectedRateOfReturn}
                                                     </Typography>
                                                 </td>
                                                 <td className={classes}>
@@ -331,7 +336,7 @@ function TablesExample8({
                                                         variant="small"
                                                         className="!font-normal text-gray-600 text-right"
                                                     >
-                                                        {volume}
+                                                        {Util.UnitConversion(Number(targetPrice), true)}
                                                     </Typography>
                                                 </td>
                                                 <td className={classes}>
@@ -339,7 +344,15 @@ function TablesExample8({
                                                         variant="small"
                                                         className="!font-normal text-gray-600 text-right"
                                                     >
-                                                        {market}
+                                                        {Util.UnitConversion(Number(market), true)}
+                                                    </Typography>
+                                                </td>
+                                                <td className={classes}>
+                                                    <Typography
+                                                        variant="small"
+                                                        className="!font-normal text-gray-600 text-right"
+                                                    >
+                                                        {Util.UnitConversion(Number(netCurrentAssert), true)}
                                                     </Typography>
                                                 </td>
                                                 <td className={classes}>
@@ -372,6 +385,14 @@ function TablesExample8({
                                                         className="!font-normal text-gray-600 text-right"
                                                     >
                                                         {per}
+                                                    </Typography>
+                                                </td>
+                                                <td className={classes}>
+                                                    <Typography
+                                                        variant="small"
+                                                        className="!font-normal text-gray-600 text-right"
+                                                    >
+                                                        {isNaN(Number(netIncome)) ? '-' : Util.UnitConversion(Number(netIncome), true)}
                                                     </Typography>
                                                 </td>
                                                 {/* <td className={classes}>

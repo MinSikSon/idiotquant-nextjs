@@ -4,7 +4,7 @@ import RegisterTemplate from "@/app/(strategy_register)/strategy_register/regist
 import { GetMergedStocksList, GetStocksFilteredByStrategyNCAV } from "@/components/strategy";
 import { GetStocksFilteredByCustom } from "@/components/strategyCustom";
 import { Util } from "@/components/util";
-import { getDefaultStrategy, getCapitalization, getPbr, getPer, getTotalStepCount } from "@/lib/features/filter/filterSlice";
+import { getDefaultStrategy, getCapitalization, getPbr, getPer, getTotalStepCount, getNetIncome, getNetIncomeList, getStep3Title, getStep3SubTitle, setNetIncome } from "@/lib/features/filter/filterSlice";
 import { setDefaultStrategy, setCapitalization, setPer, setPbr } from "@/lib/features/filter/filterSlice";
 import { getDefaultStrategyList, getPerList, getPbrList, getCapitalizationList } from "@/lib/features/filter/filterSlice";
 import { getStep0Title, getStep1Title, getStep2Title } from "@/lib/features/filter/filterSlice";
@@ -29,6 +29,8 @@ export default function Item({ params: { id } }: { params: { id: string } }) {
     const step1SubTitle = useAppSelector(getStep1SubTitle);
     const step2Title = useAppSelector(getStep2Title);
     const step2SubTitle = useAppSelector(getStep2SubTitle);
+    const step3Title = useAppSelector(getStep3Title);
+    const step3SubTitle = useAppSelector(getStep3SubTitle);
 
     const defaultStrategy = useAppSelector(getDefaultStrategy);
     const defaultStrategyList: string[] = useAppSelector(getDefaultStrategyList);
@@ -38,6 +40,8 @@ export default function Item({ params: { id } }: { params: { id: string } }) {
     const pbrList: any[] = useAppSelector(getPbrList);
     const capitalization = useAppSelector(getCapitalization);
     const capitalizationList: any[] = useAppSelector(getCapitalizationList);
+    const netIncome = useAppSelector(getNetIncome);
+    const netIncomeList: boolean[] = useAppSelector(getNetIncomeList);
 
     const financialInfo: object = useAppSelector(selectFinancialInfo);
     const marketInfo: any = useAppSelector(selectMarketInfo);
@@ -73,19 +77,17 @@ export default function Item({ params: { id } }: { params: { id: string } }) {
             dispatch(setDefaultStrategy(item));
         }
 
-        return <>
-            <div className="flex flex-col gap-2">
-                <div className={classNameButtonGroup}>
-                    <div>전략</div>
-                    <ButtonGroup variant="outlined" size="sm">
-                        {defaultStrategyList.map((item, key) => <Button key={key} className={defaultStrategy == item ? selectedButtonColor : ``} onClick={() => handleOnclickDefaultStrategy(item)}>{`${item}`}</Button>)}
-                    </ButtonGroup>
-                </div>
-                <div className={classNameButtonGroup}>
-                    전략 추가 예정
-                </div>
+        return <div className="flex flex-col">
+            <div className={classNameButtonGroup}>
+                <div>전략</div>
+                <ButtonGroup variant="outlined" size="sm">
+                    {defaultStrategyList.map((item, key) => <Button key={key} className={defaultStrategy == item ? selectedButtonColor : ``} onClick={() => handleOnclickDefaultStrategy(item)}>{`${item}`}</Button>)}
+                </ButtonGroup>
             </div>
-        </>
+            {/* <div className={classNameButtonGroup}>
+                    전략 추가 예정
+                </div> */}
+        </div>
     }
 
     const getStep1Contents = () => {
@@ -99,22 +101,20 @@ export default function Item({ params: { id } }: { params: { id: string } }) {
             dispatch(setPbr(item));
         }
 
-        return <>
-            <div className="flex flex-col gap-2">
-                <div className={classNameButtonGroup}>
-                    <div>PER 최대</div>
-                    <ButtonGroup variant="outlined" size="sm">
-                        {perList.map((item, key) => <Button key={key} className={per == item ? selectedButtonColor : ``} onClick={() => handleOnclickPer(item)}>{`${item}`}</Button>)}
-                    </ButtonGroup>
-                </div>
-                <div className={classNameButtonGroup}>
-                    <div>PBR 최대</div>
-                    <ButtonGroup variant="outlined" size="sm">
-                        {pbrList.map((item, key) => <Button key={key} className={pbr == item ? selectedButtonColor : ``} onClick={() => handleOnclickPbr(item)}>{`${item}`}</Button>)}
-                    </ButtonGroup>
-                </div>
+        return <div className="flex flex-col">
+            <div className={classNameButtonGroup}>
+                <div>PER 최대</div>
+                <ButtonGroup variant="outlined" size="sm">
+                    {perList.map((item, key) => <Button key={key} className={per == item ? selectedButtonColor : ``} onClick={() => handleOnclickPer(item)}>{`${item}`}</Button>)}
+                </ButtonGroup>
             </div>
-        </>
+            <div className={classNameButtonGroup}>
+                <div>PBR 최대</div>
+                <ButtonGroup variant="outlined" size="sm">
+                    {pbrList.map((item, key) => <Button key={key} className={pbr == item ? selectedButtonColor : ``} onClick={() => handleOnclickPbr(item)}>{`${item}`}</Button>)}
+                </ButtonGroup>
+            </div>
+        </div>
     }
 
     const getStep2Contents = () => {
@@ -123,35 +123,54 @@ export default function Item({ params: { id } }: { params: { id: string } }) {
             dispatch(setCapitalization(item));
         }
 
-        return <>
-            <div className="flex flex-col gap-2">
-                <div className={classNameButtonGroup}>
-                    <div>{step2Title}</div>
-                    <ButtonGroup variant="outlined" size="sm">
-                        {capitalizationList.map((item, key) => <Button key={key} className={capitalization == item ? selectedButtonColor : ``} onClick={() => handleOnclickCapitalization(item)}>{`${isNaN(item) ? item : Util.UnitConversion(item, true)}`}</Button>)}
-                    </ButtonGroup>
-                </div>
-                <div className={classNameButtonGroup}>
-                </div>
+        return <div className="flex flex-col">
+            <div className={classNameButtonGroup}>
+                <div>{step2Title}</div>
+                <ButtonGroup variant="outlined" size="sm">
+                    {capitalizationList.map((item, key) => <Button key={key} className={capitalization == item ? selectedButtonColor : ``} onClick={() => handleOnclickCapitalization(item)}>{`${isNaN(item) ? item : Util.UnitConversion(item, true)}`}</Button>)}
+                </ButtonGroup>
             </div>
-        </>
+        </div>
+    }
+
+    const getStep3Contents = () => {
+        function handleOnclickNetIncome(item: any) {
+            // console.log(`setCapitalization`, item);
+            dispatch(setNetIncome(item));
+        }
+
+        return <div className="flex flex-col">
+            <div className={classNameButtonGroup}>
+                <div>{step3Title}</div>
+                <ButtonGroup variant="outlined" size="sm">
+                    {netIncomeList.map((item, key) => <Button key={key} className={netIncome == item ? selectedButtonColor : ``} onClick={() => handleOnclickNetIncome(item)}>{String(item)}</Button>)}
+                </ButtonGroup>
+            </div>
+        </div>
     }
 
     const getContents = (id: number) => {
-        if (id === 0) {
-            return getStep0Contents();
-        } else if (id === 1) {
-            return getStep1Contents();
-        } else if (id === 2) {
-            return getStep2Contents();
-        } else {
-            return <div>Invalid id</div>;
-        }
+        // if (id === 0) {
+        //     return getStep0Contents();
+        // } else if (id === 1) {
+        //     return getStep1Contents();
+        // } else if (id === 2) {
+        //     return getStep2Contents();
+        // } else {
+        //     return <div>Invalid id</div>;
+        // }
+
+        return <>
+            {getStep0Contents()}
+            {getStep1Contents()}
+            {getStep2Contents()}
+            {getStep3Contents()}
+        </>
     }
     const handleOnClick = (isLastStep: boolean) => {
-        if (false == isLastStep) {
-            return;
-        }
+        // if (false == isLastStep) {
+        //     return;
+        // }
 
         // console.log(`handleOnClick`);
         // alert(`기능 추가 예정입니다..!`);
@@ -171,8 +190,9 @@ export default function Item({ params: { id } }: { params: { id: string } }) {
         }
         // console.log(`defaultStrategy`, defaultStrategy, filteredByStrategyStocks, Object.keys(filteredByStrategyStocks).length);
 
+        console.log(`netIncome`, netIncome);
         // filter: stock information
-        const filteredStocks = GetStocksFilteredByCustom(filteredByStrategyStocks, ["PER", "PBR", "시가총액"], [per, pbr, capitalization]);
+        const filteredStocks = GetStocksFilteredByCustom(filteredByStrategyStocks, ["PER", "PBR", "시가총액", "당기순이익"], [per, pbr, capitalization, netIncome]);
         // console.log(`filteredStocks`, filteredStocks, Object.keys(filteredStocks).length);
 
         const { year, quarter } = financialLatestDate;
@@ -202,7 +222,7 @@ export default function Item({ params: { id } }: { params: { id: string } }) {
             content={getContents(Number(id))}
             footer={
                 <div className="flex flex-col gap-2">
-                    <div className="flex justify-between items-center">
+                    {/* <div className="flex justify-between items-center">
                         <div className="flex flex-col">
                             <div>
                                 기본 전략: {defaultStrategy}
@@ -217,15 +237,16 @@ export default function Item({ params: { id } }: { params: { id: string } }) {
                                 시가총액: {isNaN(capitalization) ? capitalization : Util.UnitConversion(capitalization, true)}
                             </div>
                         </div>
-                    </div>
+                    </div> */}
                     <div className="flex justify-between items-center">
                         <Link href={0 == Number(id) ? `/` : `/strategy_register/${Number(id) - 1}`}>
                             <Button size="sm" variant="outlined">
-                                prev
+                                {/* prev */}
+                                취소
                             </Button>
                         </Link>
 
-                        {false == isLastStep || allSelected ?
+                        {/* {false == isLastStep || allSelected ?
                             <Link href={(true == isLastStep) ? `/` : `/strategy_register/${Number(id) + 1}`}>
                                 <Button color={(true == isLastStep) ? `blue` : `gray`} onClick={() => handleOnClick(isLastStep)} size="sm" variant="outlined">
                                     {(true == isLastStep) ? `complete` : `next`}
@@ -235,8 +256,12 @@ export default function Item({ params: { id } }: { params: { id: string } }) {
                             <Button disabled color={(true == isLastStep) ? `blue` : `gray`} onClick={() => handleOnClick(isLastStep)} size="sm" variant="outlined">
                                 {(true == isLastStep) ? `complete` : `next`}
                             </Button>
-                        }
-
+                        } */}
+                        <Link href={`/`}>
+                            <Button color={`blue`} onClick={() => handleOnClick(isLastStep)} size="sm" variant="outlined">
+                                등록
+                            </Button>
+                        </Link>
                     </div>
                 </div>
             }
