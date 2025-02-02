@@ -21,12 +21,19 @@ interface StrategyStep2FilterInterface {
     capitalization: any;
     capitalizationList: any[];
 }
+interface StrategyStep3FilterInterface {
+    title: string;
+    subTitle: string;
+    netIncome: boolean;
+    netIncomeList: boolean[];
+}
 
 interface StrategyFilterInterface {
     totalStepCount: number;
     step0: StrategyStep0FilterInterface;
     step1: StrategyStep1FilterInterface;
     step2: StrategyStep2FilterInterface;
+    step3: StrategyStep3FilterInterface;
 }
 
 const initialState: StrategyFilterInterface = {
@@ -53,6 +60,12 @@ const initialState: StrategyFilterInterface = {
         capitalization: 'ALL',
         capitalizationList: ['ALL', 100000000000, 1000000000000]
     },
+    step3: {
+        title: "당기순이익 고려",
+        subTitle: "당기순이익 = 총수익 - 총비용 - 세금",
+        netIncome: false,
+        netIncomeList: [false, true]
+    },
 }
 
 export const filterSlice = createAppSlice({
@@ -75,6 +88,10 @@ export const filterSlice = createAppSlice({
             // console.log(`[setCapitalization]`)
             state.step2.capitalization = action.payload;
         }),
+        setNetIncome: create.reducer((state, action: PayloadAction<boolean>) => {
+            // console.log(`[setCapitalization]`)
+            state.step3.netIncome = action.payload;
+        }),
     }),
     selectors: {
         getTotalStepCount: (state) => state.totalStepCount,
@@ -84,6 +101,8 @@ export const filterSlice = createAppSlice({
         getStep1SubTitle: (state) => state.step1.subTitle,
         getStep2Title: (state) => state.step2.title,
         getStep2SubTitle: (state) => state.step2.subTitle,
+        getStep3Title: (state) => state.step3.title,
+        getStep3SubTitle: (state) => state.step3.subTitle,
         getDefaultStrategy: (state) => state.step0.defaultStrategy,
         getDefaultStrategyList: (state) => state.step0.defaultStrategyList,
         getPer: (state) => state.step1.per,
@@ -92,12 +111,14 @@ export const filterSlice = createAppSlice({
         getPbrList: (state) => state.step1.pbrList,
         getCapitalization: (state) => state.step2.capitalization,
         getCapitalizationList: (state) => state.step2.capitalizationList,
+        getNetIncome: (state) => state.step3.netIncome,
+        getNetIncomeList: (state) => state.step3.netIncomeList,
     }
 });
 
 export const { getTotalStepCount } = filterSlice.selectors;
-export const { getStep0Title, getStep1Title, getStep2Title } = filterSlice.selectors;
-export const { getStep0SubTitle, getStep1SubTitle, getStep2SubTitle } = filterSlice.selectors;
-export const { getDefaultStrategy, getPer, getPbr, getCapitalization } = filterSlice.selectors;
-export const { getDefaultStrategyList, getPerList, getPbrList, getCapitalizationList } = filterSlice.selectors;
-export const { setDefaultStrategy, setPer, setPbr, setCapitalization } = filterSlice.actions;
+export const { getStep0Title, getStep1Title, getStep2Title, getStep3Title } = filterSlice.selectors;
+export const { getStep0SubTitle, getStep1SubTitle, getStep2SubTitle, getStep3SubTitle } = filterSlice.selectors;
+export const { getDefaultStrategy, getPer, getPbr, getCapitalization, getNetIncome } = filterSlice.selectors;
+export const { getDefaultStrategyList, getPerList, getPbrList, getCapitalizationList, getNetIncomeList } = filterSlice.selectors;
+export const { setDefaultStrategy, setPer, setPbr, setCapitalization, setNetIncome } = filterSlice.actions;

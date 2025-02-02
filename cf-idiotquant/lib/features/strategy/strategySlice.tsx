@@ -9,7 +9,7 @@ export const STRATEGY_TABLE_HEAD: Example8TableHeadType[] = [
     {
         // head: "Digital Asset",
         head: "종목명",
-        customeStyle: "!text-left",
+        customeStyle: "text-left",
     },
     {
         // head: "Price",
@@ -17,18 +17,22 @@ export const STRATEGY_TABLE_HEAD: Example8TableHeadType[] = [
         customeStyle: "text-right",
     },
     {
-        // head: "Change",
+        // head: "expectedRateOfReturn",
         head: "기대수익율",
         customeStyle: "text-right",
     },
     {
-        // head: "Volume",
+        // head: "targetPrice",
         head: "목표가",
         customeStyle: "text-right",
     },
     {
         // head: "Market Cap",
         head: "시가 총액",
+        customeStyle: "text-right",
+    },
+    {
+        head: "순유동자산",
         customeStyle: "text-right",
     },
     {
@@ -45,6 +49,10 @@ export const STRATEGY_TABLE_HEAD: Example8TableHeadType[] = [
     },
     {
         head: "PER",
+        customeStyle: "text-right",
+    },
+    {
+        head: "당기순이익",
         customeStyle: "text-right",
     },
     // {
@@ -66,22 +74,31 @@ function translateJsonToTableRow(json: any) {
         const obj = json[name];
         const stockCode = obj[`stock_code`];
         const close = obj[`종가`];
-        const targetPrice = (Number(obj[`유동자산`]) - Number(obj[`부채총계`])) / Number(obj[`상장주식수`]);
-        const change = (((targetPrice / Number(close)) - 1) * 100)
-        const color = (change > 100) ? `green` : (change > 50) ? `` : `red`;
+        const netCurrentAssert = (Number(obj[`유동자산`]) - Number(obj[`부채총계`]));
+        const targetPrice = netCurrentAssert / Number(obj[`상장주식수`]);
+        const expectedRateOfReturn = (((targetPrice / Number(close)) - 1) * 100)
+        let expectedRateOfReturnColor = ``;
+        if (expectedRateOfReturn >= 50) {
+            expectedRateOfReturnColor = `green`;
+        }
+        else if (expectedRateOfReturn < 0) {
+            expectedRateOfReturnColor = `red`;
+        }
         const marketCap = obj[`시가총액`];
         const bps = obj[`BPS`];
         const eps = obj[`EPS`];
         const pbr = obj[`PBR`];
         const per = obj[`PER`];
+        const netIncome = obj[`당기순이익`];
         const tableRow: Example8TableRowType = {
             digitalAsset: stockCode,
             detail: name,
-            price: "₩" + close,
-            change: change.toFixed(2).toString() + "%",
-            volume: "₩" + targetPrice.toFixed(0).toString(),
-            market: "₩" + marketCap,
-            color: color,
+            closePrice: close,
+            expectedRateOfReturn: expectedRateOfReturn.toFixed(1).toString() + "%",
+            expectedRateOfReturnColor: expectedRateOfReturnColor,
+            targetPrice: targetPrice.toFixed(0).toString(),
+            market: marketCap,
+            netCurrentAssert: String(netCurrentAssert),
             // trend?: number; // optional
             // chartName?: string;
             // chartData?: number[];
@@ -89,6 +106,7 @@ function translateJsonToTableRow(json: any) {
             eps: eps,
             pbr: pbr,
             per: per,
+            netIncome: netIncome,
         };
         tableRows.push(tableRow);
     }

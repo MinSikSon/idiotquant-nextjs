@@ -6,7 +6,7 @@ export class Util {
             return '0원';
         }
 
-        if (num <= 1000 && num >= 0) return num; // 소수점 단위 일반 출력
+        // if (num <= 1000 && num >= 0) return num; // 소수점 단위 일반 출력
 
         let conversionCount = 0;
 

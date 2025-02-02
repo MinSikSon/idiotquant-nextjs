@@ -4,8 +4,10 @@ function filteredByEachCompare(array: any, keys: any[], conditions: any[]) {
     return array.filter((item: any) => {
         for (let i = 0; i < keys.length; i++) {
             if ('ALL' == conditions[i]) {
-                return true;
+                continue;
             }
+
+            // console.log(`keys`)
 
             // 값 없는 경우 제외
             if ("PER" == keys[i] && 0 == Number(item[keys[i]])) {
@@ -17,9 +19,27 @@ function filteredByEachCompare(array: any, keys: any[], conditions: any[]) {
             if ("시가총액" == keys[i] && 0 == Number(item[keys[i]])) {
                 return false;
             }
+            if ("당기순이익" == keys[i]) {
+                if (0 == Number(item[keys[i]])) {
+                    return false;
+                }
+                if (false == conditions[i]) {
+                    continue;
+                }
+            }
 
             if (!!!item[keys[i]])
                 return false;
+            if ("당기순이익" == keys[i]) {
+                if (true == conditions[i]) {
+                    if (Number(item[keys[i]]) >= 0) {
+                        continue;
+                    }
+                    else {
+                        return false;
+                    }
+                }
+            }
             if (item[keys[i]] > conditions[i])
                 return false;
         }
