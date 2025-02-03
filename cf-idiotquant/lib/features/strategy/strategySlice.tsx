@@ -211,7 +211,7 @@ export const strategySlice = createAppSlice({
                         STRATEGY_TABLE_ROW: translateJsonToTableRow(json),
                         stockList: translateJsonToTableRow(json)
                     };
-                    console.log(`newStrategyInfo`, newStrategyInfo);
+                    // console.log(`newStrategyInfo`, newStrategyInfo);
                     state.strategyInfoList.push(newStrategyInfo);
                     state.strategyCount = state.strategyCount + 1;
                 },

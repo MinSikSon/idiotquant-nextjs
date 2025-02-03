@@ -201,7 +201,7 @@ export default function Calculator() {
     return (
         <div>
             <Head>
-                <title>인플레이션 및 수익 계산기 | 미래 수익 예측</title>
+                <title>기대 수익 계산기 | 미래 수익 예측</title>
                 <link rel="icon" href="/images/icons8-calculator-color-32.png" />
                 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=0" />
                 <meta name="description" content="인플레이션을 고려하여 미래 수익을 계산하는 계산기를 제공하는 웹 페이지입니다. 현재 가치를 기반으로 인플레이션률을 적용하여 미래의 금융적 상황을 예측하고 투자 결정에 도움을 드립니다." />
@@ -220,7 +220,7 @@ export default function Calculator() {
                 <div className="w-full h-full rounded-xl bg-white text-gray-700 border border-gray-300 shadow-md">
                     <ListItem className='text-black pb-0 mb-1'>
                         <div className="w-full font-mono text-md header-contents text-center">
-                            <span className='bg-yellow-500'> 인플레이션 </span> 계산기
+                            <span className='bg-yellow-500'> 기대 수익 </span> 계산기
                         </div>
                         <ListItemSuffix>
                             <img className='h-4 col-span-1 object-fill' src='/images/icons8-calculator.gif' />

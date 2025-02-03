@@ -13,7 +13,7 @@ export default function RegisterTemplate(props: RegisterTemplateProps) {
     // console.log(`props.id`, props.id);
     return <>
         <section className={`px-4`}>
-            <Card shadow={false} className={`border ${props.id == `-` ? `border-red-300` : `border-gray-300`}`}>
+            <Card shadow={false} className={`border-2 border-gray-100}`}>
                 <CardHeader
                     shadow={false}
                     floated={false}
