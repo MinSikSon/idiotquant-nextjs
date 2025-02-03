@@ -48,12 +48,12 @@ function Web3Card({
                         >
                             {cardNum}
                         </Typography>
-                        <Button color="black" size="sm" variant="outlined" className="border-gray-300 bg-white/70 p-1">
-                            see collection
+                        <Button className="z-10 border-gray-300 bg-white/70 p-1" color="black" size="sm" variant="outlined">
+                            click to view
                         </Button>
                     </div>
                     <div className="my-4 flex items-start justify-between">
-                        <div className="absolute top-40 xl:top-72 flex items-center gap-2 bg-white/70 p-1 rounded-full border-2 border-gray-200 ">
+                        <div className="absolute top-40 left-2 xl:top-72 flex items-center gap-2 bg-white/70 p-1 rounded-xl border-2 border-gray-200 ">
                             <Avatar size="sm" src={profileImg} alt={title} />
                             <div className="pr-4">
                                 <Typography color="black" variant="h6">
