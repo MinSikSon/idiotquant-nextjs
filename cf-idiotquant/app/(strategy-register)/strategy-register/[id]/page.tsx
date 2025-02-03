@@ -1,14 +1,14 @@
 "use client"
 
-import RegisterTemplate from "@/app/(strategy_register)/strategy_register/register_template";
+import RegisterTemplate from "@/app/(strategy-register)/strategy-register/register_template";
 import { GetMergedStocksList, GetStocksFilteredByStrategyNCAV } from "@/components/strategy";
 import { GetStocksFilteredByCustom } from "@/components/strategyCustom";
 import { Util } from "@/components/util";
-import { getDefaultStrategy, getCapitalization, getPbr, getPer, getTotalStepCount, getNetIncome, getNetIncomeList, getStep3Title, getStep3SubTitle, setNetIncome } from "@/lib/features/filter/filterSlice";
+import { getDefaultStrategy, getCapitalization, getPbr, getPer, getTotalStepCount, getNetIncome, getNetIncomeList, getStep3Title, getStep3SubTitle, setNetIncome, getCapitalizationMin, getCapitalizationMinList } from "@/lib/features/filter/filterSlice";
 import { setDefaultStrategy, setCapitalization, setPer, setPbr } from "@/lib/features/filter/filterSlice";
 import { getDefaultStrategyList, getPerList, getPbrList, getCapitalizationList } from "@/lib/features/filter/filterSlice";
 import { getStep0Title, getStep1Title, getStep2Title } from "@/lib/features/filter/filterSlice";
-import { getStep0SubTitle, getStep1SubTitle, getStep2SubTitle } from "@/lib/features/filter/filterSlice";
+import { getStep0SubTitle, getStep1SubTitle, getStep2SubTitle1, getStep2SubTitle2 } from "@/lib/features/filter/filterSlice";
 import { selectFinancialInfo, selectLatestDate } from "@/lib/features/financialInfo/financialInfoSlice";
 import { selectMarketInfo } from "@/lib/features/marketInfo/marketInfoSlice";
 import { addStrategyList } from "@/lib/features/strategy/strategySlice";
@@ -28,7 +28,8 @@ export default function Item({ params: { id } }: { params: { id: string } }) {
     const step1Title = useAppSelector(getStep1Title);
     const step1SubTitle = useAppSelector(getStep1SubTitle);
     const step2Title = useAppSelector(getStep2Title);
-    const step2SubTitle = useAppSelector(getStep2SubTitle);
+    const step2SubTitle1 = useAppSelector(getStep2SubTitle1);
+    const step2SubTitle2 = useAppSelector(getStep2SubTitle2);
     const step3Title = useAppSelector(getStep3Title);
     const step3SubTitle = useAppSelector(getStep3SubTitle);
 
@@ -38,6 +39,8 @@ export default function Item({ params: { id } }: { params: { id: string } }) {
     const perList: any[] = useAppSelector(getPerList);
     const pbr = useAppSelector(getPbr);
     const pbrList: any[] = useAppSelector(getPbrList);
+    const capitalizationMin = useAppSelector(getCapitalizationMin);
+    const capitalizationMinList: any[] = useAppSelector(getCapitalizationMinList);
     const capitalization = useAppSelector(getCapitalization);
     const capitalizationList: any[] = useAppSelector(getCapitalizationList);
     const netIncome = useAppSelector(getNetIncome);
@@ -47,31 +50,35 @@ export default function Item({ params: { id } }: { params: { id: string } }) {
     const marketInfo: any = useAppSelector(selectMarketInfo);
 
     const getTitle = (id: number) => {
-        if (id === 0) {
-            return step0Title;
-        } else if (id === 1) {
-            return step1Title;
-        } else if (id === 2) {
-            return step2Title;
-        } else {
-            return "Invalid id";
-        }
+        // if (id === 0) {
+        //     return step0Title;
+        // } else if (id === 1) {
+        //     return step1Title;
+        // } else if (id === 2) {
+        //     return step2Title;
+        // } else {
+        //     return "Invalid id";
+        // }
+
+        return "나만의 투자 전략 만들기";
     }
 
     const getSubTitle = (id: number) => {
-        if (id === 0) {
-            return step0SubTitle;
-        } else if (id === 1) {
-            return step1SubTitle;
-        } else if (id === 2) {
-            return step2SubTitle;
-        } else {
-            return "Invalid id";
-        }
+        // if (id === 0) {
+        //     return step0SubTitle;
+        // } else if (id === 1) {
+        //     return step1SubTitle;
+        // } else if (id === 2) {
+        //     return step2SubTitle;
+        // } else {
+        //     return "Invalid id";
+        // }
+
+        return "";
     }
 
-    const classNameButtonGroup = `flex justify-between items-center h-10`
-    const selectedButtonColor = `bg-black text-white`;
+    const classNameButtonGroup = `flex flex-col justify-between items-left mt-2 text-black hover:text-blue-500`
+    const selectedButtonColor = `bg-blue-500 text-white`;
     const getStep0Contents = () => {
         function handleOnclickDefaultStrategy(item: any) {
             dispatch(setDefaultStrategy(item));
@@ -80,7 +87,7 @@ export default function Item({ params: { id } }: { params: { id: string } }) {
         return <div className="flex flex-col">
             <div className={classNameButtonGroup}>
                 <div>전략</div>
-                <ButtonGroup variant="outlined" size="sm">
+                <ButtonGroup color="blue" variant="outlined" size="sm" fullWidth>
                     {defaultStrategyList.map((item, key) => <Button key={key} className={defaultStrategy == item ? selectedButtonColor : ``} onClick={() => handleOnclickDefaultStrategy(item)}>{`${item}`}</Button>)}
                 </ButtonGroup>
             </div>
@@ -104,13 +111,13 @@ export default function Item({ params: { id } }: { params: { id: string } }) {
         return <div className="flex flex-col">
             <div className={classNameButtonGroup}>
                 <div>PER 최대</div>
-                <ButtonGroup variant="outlined" size="sm">
+                <ButtonGroup color="blue" variant="outlined" size="sm" fullWidth>
                     {perList.map((item, key) => <Button key={key} className={per == item ? selectedButtonColor : ``} onClick={() => handleOnclickPer(item)}>{`${item}`}</Button>)}
                 </ButtonGroup>
             </div>
             <div className={classNameButtonGroup}>
                 <div>PBR 최대</div>
-                <ButtonGroup variant="outlined" size="sm">
+                <ButtonGroup color="blue" variant="outlined" size="sm" fullWidth>
                     {pbrList.map((item, key) => <Button key={key} className={pbr == item ? selectedButtonColor : ``} onClick={() => handleOnclickPbr(item)}>{`${item}`}</Button>)}
                 </ButtonGroup>
             </div>
@@ -125,9 +132,15 @@ export default function Item({ params: { id } }: { params: { id: string } }) {
 
         return <div className="flex flex-col">
             <div className={classNameButtonGroup}>
-                <div>{step2Title}</div>
-                <ButtonGroup variant="outlined" size="sm">
-                    {capitalizationList.map((item, key) => <Button key={key} className={capitalization == item ? selectedButtonColor : ``} onClick={() => handleOnclickCapitalization(item)}>{`${isNaN(item) ? item : Util.UnitConversion(item, true)}`}</Button>)}
+                <div>{step2SubTitle1}</div>
+                <ButtonGroup color="blue" variant="outlined" size="sm" fullWidth>
+                    {capitalizationMinList.map((item, key) => <Button key={key} className={`px-0 ${capitalizationMin == item ? selectedButtonColor : ``}`} onClick={() => handleOnclickCapitalization(item)}>{`${isNaN(item) ? item : Util.UnitConversion(item, true)}`}</Button>)}
+                </ButtonGroup>
+            </div>
+            <div className={classNameButtonGroup}>
+                <div>{step2SubTitle2}</div>
+                <ButtonGroup color="blue" variant="outlined" size="sm" fullWidth>
+                    {capitalizationList.map((item, key) => <Button key={key} className={`px-0 ${capitalization == item ? selectedButtonColor : ``}`} onClick={() => handleOnclickCapitalization(item)}>{`${isNaN(item) ? item : Util.UnitConversion(item, true)}`}</Button>)}
                 </ButtonGroup>
             </div>
         </div>
@@ -142,7 +155,7 @@ export default function Item({ params: { id } }: { params: { id: string } }) {
         return <div className="flex flex-col">
             <div className={classNameButtonGroup}>
                 <div>{step3Title}</div>
-                <ButtonGroup variant="outlined" size="sm">
+                <ButtonGroup color="blue" variant="outlined" size="sm" fullWidth>
                     {netIncomeList.map((item, key) => <Button key={key} className={netIncome == item ? selectedButtonColor : ``} onClick={() => handleOnclickNetIncome(item)}>{String(item)}</Button>)}
                 </ButtonGroup>
             </div>
@@ -239,15 +252,15 @@ export default function Item({ params: { id } }: { params: { id: string } }) {
                         </div>
                     </div> */}
                     <div className="flex justify-between items-center">
-                        <Link href={0 == Number(id) ? `/` : `/strategy_register/${Number(id) - 1}`}>
-                            <Button size="sm" variant="outlined">
+                        <Link href={0 == Number(id) ? `/` : `/strategy-register/${Number(id) - 1}`}>
+                            <Button color="red" size="sm" variant="outlined">
                                 {/* prev */}
                                 취소
                             </Button>
                         </Link>
 
                         {/* {false == isLastStep || allSelected ?
-                            <Link href={(true == isLastStep) ? `/` : `/strategy_register/${Number(id) + 1}`}>
+                            <Link href={(true == isLastStep) ? `/` : `/strategy-register/${Number(id) + 1}`}>
                                 <Button color={(true == isLastStep) ? `blue` : `gray`} onClick={() => handleOnClick(isLastStep)} size="sm" variant="outlined">
                                     {(true == isLastStep) ? `complete` : `next`}
                                 </Button>
@@ -258,7 +271,7 @@ export default function Item({ params: { id } }: { params: { id: string } }) {
                             </Button>
                         } */}
                         <Link href={`/`}>
-                            <Button color={`blue`} onClick={() => handleOnClick(isLastStep)} size="sm" variant="outlined">
+                            <Button className="hover:text-blue-500 hover:border-blue-500" color={`black`} onClick={() => handleOnClick(isLastStep)} size="sm" variant="outlined">
                                 등록
                             </Button>
                         </Link>

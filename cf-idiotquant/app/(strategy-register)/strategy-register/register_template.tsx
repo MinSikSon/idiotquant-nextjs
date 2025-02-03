@@ -25,7 +25,8 @@ export default function RegisterTemplate(props: RegisterTemplateProps) {
                             variant="h1"
                             className="!text-2xl"
                         >
-                            {props.title} {`-` == props.id ? `` : `(${Number(props.id) + 1} / ${props.totalStepCount})`}
+                            {/* {props.title} {`-` == props.id ? `` : `(${Number(props.id) + 1} / ${props.totalStepCount})`} */}
+                            {props.title}
                         </Typography>
                         {/* <Typography
                             color="blue-gray"
