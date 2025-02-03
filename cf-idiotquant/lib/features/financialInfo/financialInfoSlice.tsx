@@ -36,7 +36,7 @@ export const financialInfoSlice = createAppSlice({
             },
             {
                 pending: (state) => {
-                    console.log(`pending`);
+                    // console.log(`pending`);
                     state.state = "pending";
                 },
                 fulfilled: (state, action) => {
@@ -85,7 +85,7 @@ export const financialInfoSlice = createAppSlice({
             },
             {
                 pending: (state) => {
-                    console.log(`pending`);
+                    // console.log(`pending`);
                     state.state = "pending";
                     state.loaded = true;
                 },

@@ -8,7 +8,7 @@ export const getNcavList: any = async (financialInfoDate: string, marketInfoDate
     }
     let res = await fetch(url, options);
     // console.log(`[getNcavList] financialInfoDate:`, financialInfoDate, `, marketInfoDate:`, marketInfoDate, `, url:`, url);
-    console.log(`[getNcavList]`, res);
+    // console.log(`[getNcavList]`, res);
 
     return res.json();
 }

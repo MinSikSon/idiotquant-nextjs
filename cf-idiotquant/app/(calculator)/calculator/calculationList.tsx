@@ -7,7 +7,7 @@ export const CalculationList = (props: any) => {
             <div className="w-full h-full rounded-xl bg-white text-gray-700 border border-gray-300 shadow-md">
                 <ListItem className='text-black pb-0 mb-1'>
                     <div className="w-full font-mono text-md header-contents text-center">
-                        인플레이션 계산 <span className='bg-yellow-500'> 결과 </span>
+                        기대 수익 계산 <span className='bg-yellow-500'> 결과 </span>
                     </div>
                     <ListItemSuffix>
                         <img className='h-4 col-span-1 object-fill' src='/images/icons8-calculator.gif' />

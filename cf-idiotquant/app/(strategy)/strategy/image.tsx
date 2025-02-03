@@ -25,7 +25,7 @@ export function getRandomMainImage(idx: any = undefined) {
 }
 
 export function getRandomUserImage(idx: any = undefined) {
-    console.log(`getRandomUserImage`, idx);
+    // console.log(`getRandomUserImage`, idx);
     const imageList: string[] = [
         'https://www.artic.edu/iiif/2/47c5bcb8-62ef-e5d7-55e7-f5121f409a30/full/400,/0/default.jpg',
         'https://www.artic.edu/iiif/2/3a608f55-d76e-fa96-d0b1-0789fbc48f1e/full/400,/0/default.jpg',

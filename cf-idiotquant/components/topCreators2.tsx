@@ -53,7 +53,7 @@ function Web3Card({
                         </Button>
                     </div>
                     <div className="my-4 flex items-start justify-between">
-                        <div className="absolute top-40 xl:top-72 flex items-center gap-2 bg-white/70 p-1 rounded-full border border-gray-200 ">
+                        <div className="absolute top-40 xl:top-72 flex items-center gap-2 bg-white/70 p-1 rounded-full border-2 border-gray-200 ">
                             <Avatar size="sm" src={profileImg} alt={title} />
                             <div className="pr-4">
                                 <Typography color="black" variant="h6">
