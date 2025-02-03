@@ -336,7 +336,7 @@ function TablesExample8({
                                                         variant="small"
                                                         className="!font-normal text-gray-600 text-right"
                                                     >
-                                                        {Util.UnitConversion(Number(targetPrice), true)}
+                                                        {isNaN(Number(targetPrice)) ? `-` : Util.UnitConversion(Number(targetPrice), true)}
                                                     </Typography>
                                                 </td>
                                                 <td className={classes}>

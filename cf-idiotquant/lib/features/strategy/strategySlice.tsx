@@ -76,14 +76,23 @@ function translateJsonToTableRow(json: any) {
         const close = obj[`종가`];
         const netCurrentAssert = (Number(obj[`유동자산`]) - Number(obj[`부채총계`]));
         const targetPrice = netCurrentAssert / Number(obj[`상장주식수`]);
-        const expectedRateOfReturn = (((targetPrice / Number(close)) - 1) * 100)
+        let expectedRateOfReturn = `유동자산 x`;
         let expectedRateOfReturnColor = ``;
-        if (expectedRateOfReturn >= 50) {
-            expectedRateOfReturnColor = `green`;
-        }
-        else if (expectedRateOfReturn < 0) {
+        if (true == isNaN(targetPrice)) {
             expectedRateOfReturnColor = `red`;
         }
+        else {
+            let expectedRateOfReturnNumber = (((targetPrice / Number(close)) - 1) * 100);
+            if (expectedRateOfReturnNumber >= 50) {
+                expectedRateOfReturnColor = `green`;
+            }
+            else if (expectedRateOfReturnNumber < 0) {
+                expectedRateOfReturnColor = `red`;
+            }
+
+            expectedRateOfReturn = expectedRateOfReturnNumber.toFixed(1).toString() + `%`;
+        }
+
         const marketCap = obj[`시가총액`];
         const bps = obj[`BPS`];
         const eps = obj[`EPS`];
@@ -94,7 +103,7 @@ function translateJsonToTableRow(json: any) {
             digitalAsset: stockCode,
             detail: name,
             closePrice: close,
-            expectedRateOfReturn: expectedRateOfReturn.toFixed(1).toString() + "%",
+            expectedRateOfReturn: expectedRateOfReturn,
             expectedRateOfReturnColor: expectedRateOfReturnColor,
             targetPrice: targetPrice.toFixed(0).toString(),
             market: marketCap,
