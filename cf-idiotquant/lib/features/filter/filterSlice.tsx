@@ -32,7 +32,6 @@ interface StrategyStep3FilterInterface {
 }
 
 interface StrategyFilterInterface {
-    totalStepCount: number;
     step0: StrategyStep0FilterInterface;
     step1: StrategyStep1FilterInterface;
     step2: StrategyStep2FilterInterface;
@@ -40,7 +39,6 @@ interface StrategyFilterInterface {
 }
 
 const initialState: StrategyFilterInterface = {
-    totalStepCount: 3,
     step0: {
         title: "전략 선택",
         subTitle: "-",
@@ -60,7 +58,7 @@ const initialState: StrategyFilterInterface = {
     step2: {
         title: "시가총액 최대",
         subTitle1: "시가총액 최소값",
-        subTitle2: "주식 수 * 주가",
+        subTitle2: "시가총액 최대값",
         capitalizationMin: 'ALL',
         capitalizationMinList: ['ALL', 10000000000, 50000000000, 100000000000, 500000000000],
         capitalization: 'ALL',
@@ -104,7 +102,6 @@ export const filterSlice = createAppSlice({
         }),
     }),
     selectors: {
-        getTotalStepCount: (state) => state.totalStepCount,
         getStep0Title: (state) => state.step0.title,
         getStep0SubTitle: (state) => state.step0.subTitle,
         getStep1Title: (state) => state.step1.title,
@@ -129,7 +126,6 @@ export const filterSlice = createAppSlice({
     }
 });
 
-export const { getTotalStepCount } = filterSlice.selectors;
 export const { getStep0Title, getStep1Title, getStep2Title, getStep3Title } = filterSlice.selectors;
 export const { getStep0SubTitle, getStep1SubTitle, getStep2SubTitle1, getStep2SubTitle2, getStep3SubTitle } = filterSlice.selectors;
 export const { getDefaultStrategy, getPer, getPbr, getCapitalizationMin, getCapitalization, getNetIncome } = filterSlice.selectors;

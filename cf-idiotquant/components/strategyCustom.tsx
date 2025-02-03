@@ -19,6 +19,9 @@ function filteredByEachCompare(array: any, keys: any[], conditions: any[]) {
             if ("시가총액" == keys[i] && 0 == Number(item[keys[i]])) {
                 return false;
             }
+            if ("시가총액최소값" == keys[i] && 0 == Number(item["시가총액"])) {
+                return false;
+            }
             if ("당기순이익" == keys[i]) {
                 if (0 == Number(item[keys[i]])) {
                     return false;
@@ -28,7 +31,8 @@ function filteredByEachCompare(array: any, keys: any[], conditions: any[]) {
                 }
             }
 
-            if (!!!item[keys[i]])
+            const validCheckSkipItem = ("시가총액최소값" == keys[i]); // [NOTE] item 에 "시가총액최소값" 는 없음.
+            if (false == validCheckSkipItem && !!!item[keys[i]])
                 return false;
             if ("당기순이익" == keys[i]) {
                 if (true == conditions[i]) {
@@ -40,6 +44,15 @@ function filteredByEachCompare(array: any, keys: any[], conditions: any[]) {
                     }
                 }
             }
+            if ("시가총액최소값" == keys[i]) {
+                if (item["시가총액"] >= conditions[i]) {
+                    continue; // pass
+                }
+                else {
+                    return false;
+                }
+            }
+
             if (item[keys[i]] > conditions[i])
                 return false;
         }

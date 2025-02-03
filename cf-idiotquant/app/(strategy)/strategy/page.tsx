@@ -18,7 +18,7 @@ export default function Strategy() {
             imgs: item.img,
             cardNum: String(key),
             profileImg: item.profileImg,
-            summary: `(추천 종목 수: ${item.stockList.length}) ${item.desc}`,
+            summary: item.desc,
             // detail: item.detail,
         };
     });
