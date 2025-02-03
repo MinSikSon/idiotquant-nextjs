@@ -80,12 +80,21 @@ export default function BackTesting(props: any) {
     }
 
     function handleChange2(e: any) {
-        const offset = Number((100 / marketInfoDateList.length).toFixed(0));
+        const arraySize: number = marketInfoDateList.length;
+        // console.log(`marketInfoDateList.length`, arraySize);
+        const offset: number = Number((100 / arraySize).toFixed(0));
         // console.log(`handleChange`, e, `, e.target.value:`, e.target.value);
-        const index = e.target.value / offset;
+        const index: number = e.target.value / offset;
+        // console.log(`offset`, offset);
+        // console.log(`index`, index);
         // console.log(`marketInfoDateList`, marketInfoDateList);
         // console.log(`marketInfoDateList[index: ${index}]`, marketInfoDateList[index]);
         // console.log(`startIndex`, startIndex, `, endIndex`, endIndex);
+
+        if (arraySize <= index) {
+            return;
+        }
+
         if (startIndex < index) {
             setEndIndex(index);
         }
@@ -127,6 +136,10 @@ export default function BackTesting(props: any) {
 
     // console.log(`marketInfoDateList `, marketInfoDateList);
     // console.log(`marketInfoDateList.length `, marketInfoDateList.length);
+    // console.log(`startIndex`, startIndex)
+    // console.log(`marketInfoDateList[startIndex]`, marketInfoDateList[startIndex])
+    // console.log(`endIndex`, endIndex)
+    // console.log(`marketInfoDateList[endIndex]`, marketInfoDateList[endIndex])
     if ('' != marketInfoDateList[0]) {
         let startYearAndQuarter = getYearAndQuarterByDate(marketInfoDateList[startIndex].split("_")[1]);
         prevStartYearAndQuarter = getPrevYearAndQuarter(startYearAndQuarter.year, startYearAndQuarter.quarter);

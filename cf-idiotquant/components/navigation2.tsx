@@ -16,26 +16,6 @@ interface NavItemPropsType {
     label: string;
 }
 
-function NavItem({ url, label }: NavItemPropsType) {
-    return (
-        <Link href={url}>
-            <Typography as="li" color="blue-gray" className="p-1 font-medium">
-                {label}
-            </Typography>
-        </Link>
-    );
-}
-
-function NavList() {
-    return (
-        <ul className="mb-4 mt-2 flex flex-col gap-3 lg:mb-0 lg:mt-0 lg:flex-row lg:items-center lg:gap-8">
-            <NavItem url="/login" label="Login" />
-            <NavItem url="/backtest" label="Backtest" />
-            <NavItem url="/calculator" label="Calculator" />
-            <NavItem url="/article" label="Article" />
-        </ul>
-    );
-}
 
 export function NavbarWithSimpleLinks() {
     console.log(`[NavbarWithSimpleLinks]`);
@@ -49,6 +29,27 @@ export function NavbarWithSimpleLinks() {
             () => window.innerWidth >= 960 && setOpen(false)
         );
     }, []);
+
+    function NavItem({ url, label }: NavItemPropsType) {
+        return (
+            <Link href={url} onClick={() => setOpen(false)}>
+                <Typography as="li" color="blue-gray" className="p-1 font-medium">
+                    {label}
+                </Typography>
+            </Link>
+        );
+    }
+
+    function NavList() {
+        return (
+            <ul className="mb-4 mt-2 flex flex-col gap-3 lg:mb-0 lg:mt-0 lg:flex-row lg:items-center lg:gap-8">
+                <NavItem url="/login" label="Login" />
+                <NavItem url="/backtest" label="Backtest" />
+                <NavItem url="/calculator" label="Calculator" />
+                <NavItem url="/article" label="Article" />
+            </ul>
+        );
+    }
 
     return (
         <Navbar color="transparent" fullWidth>
