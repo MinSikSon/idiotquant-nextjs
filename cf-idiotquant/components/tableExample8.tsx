@@ -148,6 +148,7 @@ export interface Example8TableRowType {
     targetPrice?: string;
     market: string;
     netCurrentAssert?: string;
+    netIncome?: string;
     trend?: number; // optional
     chartName?: string;
     chartData?: number[];
@@ -155,7 +156,6 @@ export interface Example8TableRowType {
     eps?: string;
     pbr?: string;
     per?: string;
-    netIncome?: string;
 }
 
 export interface Example8TableHeadType {
@@ -271,6 +271,7 @@ function TablesExample8({
                                             targetPrice,
                                             market,
                                             netCurrentAssert,
+                                            netIncome,
                                             chartName = "2023 Sales",
                                             // chartData = [30, 40, 500, 420, 700, 350, 500, 330, 900,],
                                             chartData = [0, 0, 0, 0, 0, 0, 0, 0, 0,],
@@ -278,7 +279,6 @@ function TablesExample8({
                                             eps,
                                             pbr,
                                             per,
-                                            netIncome,
                                         },
                                         index
                                     ) => {
@@ -360,6 +360,14 @@ function TablesExample8({
                                                         variant="small"
                                                         className="!font-normal text-gray-600 text-right"
                                                     >
+                                                        {isNaN(Number(netIncome)) ? '-' : Util.UnitConversion(Number(netIncome), true)}
+                                                    </Typography>
+                                                </td>
+                                                <td className={classes}>
+                                                    <Typography
+                                                        variant="small"
+                                                        className="!font-normal text-gray-600 text-right"
+                                                    >
                                                         {bps}
                                                     </Typography>
                                                 </td>
@@ -385,14 +393,6 @@ function TablesExample8({
                                                         className="!font-normal text-gray-600 text-right"
                                                     >
                                                         {per}
-                                                    </Typography>
-                                                </td>
-                                                <td className={classes}>
-                                                    <Typography
-                                                        variant="small"
-                                                        className="!font-normal text-gray-600 text-right"
-                                                    >
-                                                        {isNaN(Number(netIncome)) ? '-' : Util.UnitConversion(Number(netIncome), true)}
                                                     </Typography>
                                                 </td>
                                                 {/* <td className={classes}>
