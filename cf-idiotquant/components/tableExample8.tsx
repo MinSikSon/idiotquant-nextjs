@@ -16,6 +16,9 @@ import {
     IconButton,
     Input,
     TypographyProps,
+    Popover,
+    PopoverHandler,
+    PopoverContent,
 } from "@material-tailwind/react";
 
 import { ChevronDownIcon } from "@heroicons/react/24/outline";
@@ -160,6 +163,7 @@ export interface Example8TableRowType {
 
 export interface Example8TableHeadType {
     head: string;
+    desc?: string;
     customeStyle?: string;
 }
 
@@ -241,18 +245,26 @@ function TablesExample8({
                         <table className="w-full min-w-max table-auto">
                             <thead>
                                 <tr>
-                                    {tableHead.map(({ head, customeStyle }) => (
+                                    {tableHead.map(({ head, desc, customeStyle }) => (
                                         <th
                                             key={head}
                                             className={`border-b border-gray-300 pl-3 pb-2 ${customeStyle}`}
                                         >
-                                            <Typography
-                                                color="blue-gray"
-                                                variant="small"
-                                                className="!font-bold"
-                                            >
-                                                {head}
-                                            </Typography>
+                                            <Popover>
+                                                <PopoverHandler>
+                                                    <Typography
+                                                        color="blue-gray"
+                                                        variant="small"
+                                                        className="!font-bold cursor-pointer"
+                                                    >
+                                                        {head}
+                                                    </Typography>
+                                                </PopoverHandler>
+                                                <PopoverContent>
+                                                    {desc}
+                                                </PopoverContent>
+                                            </Popover>
+
                                         </th>
                                     ))}
                                 </tr>
@@ -336,7 +348,7 @@ function TablesExample8({
                                                         variant="small"
                                                         className="!font-normal text-gray-600 text-right"
                                                     >
-                                                        {Util.UnitConversion(Number(targetPrice), true)}
+                                                        {isNaN(Number(targetPrice)) ? `-` : Util.UnitConversion(Number(targetPrice), true)}
                                                     </Typography>
                                                 </td>
                                                 <td className={classes}>

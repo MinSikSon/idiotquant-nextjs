@@ -7,62 +7,60 @@ import { getRandomMainImage, getRandomUserImage } from "@/app/(strategy)/strateg
 
 export const STRATEGY_TABLE_HEAD: Example8TableHeadType[] = [
     {
-        // head: "Digital Asset",
         head: "종목명",
+        desc: "망고체리",
         customeStyle: "text-left",
     },
     {
-        // head: "Price",
         head: "주가",
+        desc: "market date 일자의 종가입니다.",
         customeStyle: "text-right",
     },
     {
-        // head: "expectedRateOfReturn",
         head: "기대수익율",
+        desc: "기대수익율 = (유동자산 - 부채총계) / 시가총액",
         customeStyle: "text-right",
     },
     {
-        // head: "targetPrice",
         head: "목표가",
+        desc: "시가총액 대비 순유동자산 비율로 계산됩니다.",
         customeStyle: "text-right",
     },
     {
-        // head: "Market Cap",
         head: "시가 총액",
+        desc: "시가총액(Market Capitalization)은 주식시장에서 거래되는 기업의 전체 가치를 나타내는 지표로, 해당 기업의 주식 가격과 발행 주식 수를 곱한 값입니다. 이는 주식 시장에서 기업의 상대적인 크기나 가치를 평가하는 데 사용됩니다.",
         customeStyle: "text-right",
     },
     {
         head: "순유동자산",
+        desc: "순유동자산(Net Working Capital, NWC)은 기업의 유동자산에서 유동부채를 차감한 값으로, 기업의 단기적인 재무건전성을 나타내는 지표입니다. 이 값이 클수록 기업은 단기적인 채무를 갚을 수 있는 능력이 높다는 의미입니다.",
         customeStyle: "text-right",
     },
     {
         head: "당기순이익",
+        desc: "당기순이익(Net Income)은 기업이 일정 기간 동안 벌어들인 최종적인 이익을 의미합니다. 즉, 매출에서 모든 비용(원가, 운영비, 이자, 세금 등)을 차감한 후 실제 남는 돈입니다.",
         customeStyle: "text-right",
     },
     {
         head: "BPS",
+        desc: "BPS는 기업의 주당 순자산 가치(Book Value Per Share) 를 의미하며, 주식 한 주당 순자산(자본)이 얼마나 되는지를 나타내는 지표입니다.",
         customeStyle: "text-right",
     },
     {
         head: "EPS",
+        desc: "EPS는 주당순이익(Earnings Per Share,)을 의미하며, 기업이 한 해 동안 벌어들인 순이익을 주식 한 주당 얼마씩 배분할 수 있는지를 나타내는 지표입니다.",
         customeStyle: "text-right",
     },
     {
         head: "PBR",
+        desc: "PBR(Price to Book Ratio, 주가순자산비율)는 기업의 주가를 주당순자산(BPS) 으로 나눈 비율로, 주식 시장에서 그 기업의 순자산 대비 주식이 얼마나 고평가되었는지 또는 저평가되었는지를 나타내는 지표입니다.",
         customeStyle: "text-right",
     },
     {
         head: "PER",
+        desc: "PER(Price to Earnings Ratio, 주가수익비율)는 주가를 주당순이익(EPS) 으로 나눈 비율로, 기업의 주가가 그 기업의 이익에 비해 얼마나 고평가되거나 저평가되었는지를 나타내는 지표입니다. 이는 주식이 상대적으로 비싸거나 싼지를 평가하는 데 사용됩니다.",
         customeStyle: "text-right",
     },
-    // {
-    //     head: "Trend",
-    //     customeStyle: "text-right",
-    // },
-    // {
-    //     head: "Actions",
-    //     customeStyle: "text-right",
-    // },
 ];
 
 function translateJsonToTableRow(json: any) {
@@ -76,14 +74,23 @@ function translateJsonToTableRow(json: any) {
         const close = obj[`종가`];
         const netCurrentAssert = (Number(obj[`유동자산`]) - Number(obj[`부채총계`]));
         const targetPrice = netCurrentAssert / Number(obj[`상장주식수`]);
-        const expectedRateOfReturn = (((targetPrice / Number(close)) - 1) * 100)
+        let expectedRateOfReturn = `유동자산 x`;
         let expectedRateOfReturnColor = ``;
-        if (expectedRateOfReturn >= 50) {
-            expectedRateOfReturnColor = `green`;
-        }
-        else if (expectedRateOfReturn < 0) {
+        if (true == isNaN(targetPrice)) {
             expectedRateOfReturnColor = `red`;
         }
+        else {
+            let expectedRateOfReturnNumber = (((targetPrice / Number(close)) - 1) * 100);
+            if (expectedRateOfReturnNumber >= 50) {
+                expectedRateOfReturnColor = `green`;
+            }
+            else if (expectedRateOfReturnNumber < 0) {
+                expectedRateOfReturnColor = `red`;
+            }
+
+            expectedRateOfReturn = expectedRateOfReturnNumber.toFixed(1).toString() + `%`;
+        }
+
         const marketCap = obj[`시가총액`];
         const bps = obj[`BPS`];
         const eps = obj[`EPS`];
@@ -94,7 +101,7 @@ function translateJsonToTableRow(json: any) {
             digitalAsset: stockCode,
             detail: name,
             closePrice: close,
-            expectedRateOfReturn: expectedRateOfReturn.toFixed(1).toString() + "%",
+            expectedRateOfReturn: expectedRateOfReturn,
             expectedRateOfReturnColor: expectedRateOfReturnColor,
             targetPrice: targetPrice.toFixed(0).toString(),
             market: marketCap,

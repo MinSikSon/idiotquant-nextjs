@@ -33,7 +33,7 @@ export function NavbarWithSimpleLinks() {
     function NavItem({ url, label }: NavItemPropsType) {
         return (
             <Link href={url} onClick={() => setOpen(false)}>
-                <Typography as="li" color="blue-gray" className="font-medium">
+                <Typography className="font-medium hover:text-blue-500" as="li" color="blue-gray">
                     {label}
                 </Typography>
             </Link>
