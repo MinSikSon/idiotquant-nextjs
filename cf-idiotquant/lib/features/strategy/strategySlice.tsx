@@ -36,6 +36,10 @@ export const STRATEGY_TABLE_HEAD: Example8TableHeadType[] = [
         customeStyle: "text-right",
     },
     {
+        head: "당기순이익",
+        customeStyle: "text-right",
+    },
+    {
         head: "BPS",
         customeStyle: "text-right",
     },
@@ -49,10 +53,6 @@ export const STRATEGY_TABLE_HEAD: Example8TableHeadType[] = [
     },
     {
         head: "PER",
-        customeStyle: "text-right",
-    },
-    {
-        head: "당기순이익",
         customeStyle: "text-right",
     },
     // {
@@ -99,6 +99,7 @@ function translateJsonToTableRow(json: any) {
             targetPrice: targetPrice.toFixed(0).toString(),
             market: marketCap,
             netCurrentAssert: String(netCurrentAssert),
+            netIncome: netIncome,
             // trend?: number; // optional
             // chartName?: string;
             // chartData?: number[];
@@ -106,7 +107,6 @@ function translateJsonToTableRow(json: any) {
             eps: eps,
             pbr: pbr,
             per: per,
-            netIncome: netIncome,
         };
         tableRows.push(tableRow);
     }
