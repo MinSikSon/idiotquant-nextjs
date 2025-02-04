@@ -33,11 +33,9 @@ export const marketInfoSlice = createAppSlice({
             },
             {
                 pending: (state) => {
-                    // console.log(`[getMarketList] pending`);
                     state.state = "pending";
                 },
                 fulfilled: (state, action) => {
-                    // console.log(`[getMarketList] fulfilled`, action.payload, !!action.payload);
                     if (!!action.payload) {
                         state.marketInfoList = action.payload;
                         state.state = "ready-marketInfoList";
@@ -54,7 +52,6 @@ export const marketInfoSlice = createAppSlice({
                     }
                 },
                 rejected: (state) => {
-                    // console.log(`[getMarketList] get-rejected`);
                     state.state = "get-rejected";
                 }
             }

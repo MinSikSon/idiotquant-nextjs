@@ -6,8 +6,10 @@ import { getList, initFinancialInfo, selectFinancialInfo, selectFinancialInfoLis
 
 import { getMarketList, initMarketInfo, selectMarketInfo, selectMarketInfoLatestDate, selectMarketInfoList, selectMarketInfoLoaded, selectMarketInfoState, setMarketInfoStateLoading, setMarketList } from "@/lib/features/marketInfo/marketInfoSlice";
 import { getStrategyList, addStrategyList, selectStrategyState, setLoading, selectNcavList } from "@/lib/features/strategy/strategySlice";
+import { getCloudFlareLoginStatus } from "@/lib/features/login/loginSlice";
 import { GetMergedStocksList, GetStocksFilteredByStrategyNCAV } from "@/components/strategy";
-import { setBackTestStrategyList } from "@/lib/features/backtest/backtestSlice";
+// import { setBackTestStrategyList } from "@/lib/features/backtest/backtestSlice";
+import { selectKakaoId } from "@/lib/features/login/loginSlice";
 
 export const LoadData = () => {
     const dispatch = useAppDispatch();
@@ -23,6 +25,8 @@ export const LoadData = () => {
     const marketLatestDate: any = useAppSelector(selectMarketInfoLatestDate);
 
     const strategyState = useAppSelector(selectStrategyState);
+
+    const kakaoId = useAppSelector(selectKakaoId);
 
     // console.log(`[LoadData 1]`, new Date(), `financialInfoState:`, financialInfoState, `, financialInfo:`, financialInfo, `, financialInfoList:`, financialInfoList);
     // console.log(`[LoadData 2]`, new Date(), `financialLatestDate:`, financialLatestDate, `, marketInfoState:`, marketInfoState, `, marketInfo:`, marketInfo);
@@ -60,6 +64,13 @@ export const LoadData = () => {
     useEffect(() => {
         if (financialInfoState == "init") {
             // console.log(`111 []`, new Date(), `financialInfoState:`, financialInfoState, `, marketInfoState:`, marketInfoState);
+
+            console.log(`kakaoId`, kakaoId, !!kakaoId);
+            const localStorageKakaoId = localStorage.getItem('kakaoId');
+            console.log(`localStorageKakaoId`, localStorageKakaoId, !!localStorageKakaoId);
+            if (false == !!kakaoId && true == !!localStorageKakaoId) {
+                dispatch(getCloudFlareLoginStatus());
+            }
             dispatch(getList());
             dispatch(getMarketList());
         }
