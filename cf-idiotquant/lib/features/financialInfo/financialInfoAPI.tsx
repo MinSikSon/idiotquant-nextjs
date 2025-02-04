@@ -35,7 +35,6 @@ export const getFinancialInfoList: any = async () => {
     };
     // const res = await fetch(url, options);
     const res = await fetch(url, options);
-
     // console.log(`[getFinancialInfoList] res`, res);
 
     return res.json();

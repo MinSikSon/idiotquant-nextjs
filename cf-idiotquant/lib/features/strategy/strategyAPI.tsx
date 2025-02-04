@@ -1,14 +1,14 @@
 
 export const getNcavList: any = async (financialInfoDate: string, marketInfoDate: string) => {
     const url = `${process.env.NEXT_PUBLIC_API_URL}/stock/strategy/ncav?financialInfoDate=${financialInfoDate}&marketInfoDate=${marketInfoDate}`
-    const options = {
+    const options: RequestInit = {
+        credentials: 'include',  // include credentials (like cookies) in the request
         headers: {
-            // credentials: 'include',  // include credentials (like cookies) in the request
         }
     }
     let res = await fetch(url, options);
     // console.log(`[getNcavList] financialInfoDate:`, financialInfoDate, `, marketInfoDate:`, marketInfoDate, `, url:`, url);
-    // console.log(`[getNcavList]`, res);
+    // console.log(`[getNcavList] res`, res);
 
     return res.json();
 }
@@ -22,8 +22,9 @@ export const setNcavList: any = async (financialInfoDate: string, marketInfoDate
     };
 
     // console.log(`[setNcavList]`, data);
-    const options = {
+    const options: RequestInit = {
         method: 'POST',
+        credentials: 'include',  // include credentials (like cookies) in the request
         headers: {
             'Content-Type': 'test/plain;charset=UTF-8',
         },
