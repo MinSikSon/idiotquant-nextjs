@@ -8,7 +8,7 @@ import { getRandomMainImage, getRandomUserImage } from "@/app/(strategy)/strateg
 export const STRATEGY_TABLE_HEAD: Example8TableHeadType[] = [
     {
         head: "종목명",
-        desc: "망고체리",
+        desc: "🥭🍒",
         customeStyle: "text-left",
     },
     {
