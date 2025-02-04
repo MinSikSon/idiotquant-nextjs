@@ -43,9 +43,10 @@ export const loginSlice = createAppSlice({
             },
             {
                 pending: (state) => {
-                    console.log(`pending`);
+                    // console.log(`[getCloudFlareLoginStatus] pending`);
                 },
                 fulfilled: (state, action) => {
+                    // console.log(`[getCloudFlareLoginStatus] fulfilled`);
                     // console.log(`action.payload`, action.payload);
                     const id = action.payload['id'];
                     const name = action.payload['name'];
@@ -55,7 +56,7 @@ export const loginSlice = createAppSlice({
                     state.nickName = name;
                 },
                 rejected: (state) => {
-                    console.log(`get-rejected 2`);
+                    console.log(`[getCloudFlareLoginStatus] get-rejected 2`);
                 }
             }
         ),
