@@ -44,7 +44,8 @@ export function NavbarWithSimpleLinks() {
         return (
             <ul className="pl-2 pt-2 mb-4 mt-2 flex flex-col gap-2 lg:mb-0 lg:mt-0 lg:flex-row lg:items-center lg:gap-8">
                 <NavItem url="/" label="idiot.quant 🚀" />
-                <NavItem url="/login" label={`login ${!!localStorage.getItem('kakaoId') ? '🔓' : '🔒'}`} />
+                {/* <NavItem url="/login" label={`login ${!!localStorage.getItem('kakaoId') ? '🔓' : '🔒'}`} /> */}
+                <NavItem url="/login" label={`login 🔒`} />
                 {/* <NavItem url="/backtest" label="Backtest" /> */}
                 <NavItem url="/calculator" label="기대 수익 계산기 🎲" />
                 {/* <NavItem url="/article" label="Article" /> */}
