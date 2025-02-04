@@ -264,7 +264,6 @@ function TablesExample8({
                                                     {desc}
                                                 </PopoverContent>
                                             </Popover>
-
                                         </th>
                                     ))}
                                 </tr>

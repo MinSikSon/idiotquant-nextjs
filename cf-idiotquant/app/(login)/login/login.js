@@ -151,7 +151,7 @@ export default function Login(props) {
         callback();
     }, []);
 
-    function Login() {
+    function onClickLogin() {
         console.log(`Login`);
         const authorizeEndpoint = `https://kauth.kakao.com/oauth/authorize?response_type=code&client_id=${process.env.NEXT_PUBLIC_KAKAO_REST_API_KEY}&redirect_uri=${env.KAKAO_REDIRECT_URI}`;
 
@@ -198,7 +198,7 @@ export default function Login(props) {
                                     // variant="outlined"
                                     color="yellow"
                                     className="flex items-center gap-3"
-                                    onClick={Login}
+                                    onClick={onClickLogin}
                                 >
                                     <img src="/images/kakaotalk_sharing_btn_small.png" alt="metamask" className="h-6 w-6" />
                                     Continue with Kakao

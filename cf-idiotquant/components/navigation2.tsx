@@ -11,6 +11,9 @@ import {
 import { Bars3Icon, XMarkIcon } from "@heroicons/react/24/outline";
 import Link from "next/link";
 
+import { selectKakaoId } from "@/lib/features/login/loginSlice";
+import { useAppSelector } from "@/lib/hooks";
+
 interface NavItemPropsType {
     url: string;
     label: string;
@@ -22,6 +25,8 @@ export function NavbarWithSimpleLinks() {
 
     const [open, setOpen] = React.useState(false);
     const handleOpen = () => setOpen((cur) => !cur);
+
+    const kakaoId = useAppSelector(selectKakaoId);
 
     React.useEffect(() => {
         window.addEventListener(
@@ -43,10 +48,10 @@ export function NavbarWithSimpleLinks() {
     function NavList() {
         return (
             <ul className="pl-2 pt-2 mb-4 mt-2 flex flex-col gap-2 lg:mb-0 lg:mt-0 lg:flex-row lg:items-center lg:gap-8">
-                <NavItem url="/" label="idiot.quant" />
-                {/* <NavItem url="/login" label="Login" /> */}
+                <NavItem url="/" label="idiot.quant 🚀" />
+                <NavItem url="/login" label={`login ${!!!kakaoId ? '🔓' : '🔒'}`} />
                 {/* <NavItem url="/backtest" label="Backtest" /> */}
-                <NavItem url="/calculator" label="기대 수익 계산기" />
+                <NavItem url="/calculator" label="기대 수익 계산기 🎲" />
                 {/* <NavItem url="/article" label="Article" /> */}
             </ul>
         );
