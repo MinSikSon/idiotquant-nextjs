@@ -6,6 +6,7 @@ import { strategySlice } from "./features/strategy/strategySlice";
 import { backtestSlice } from "./features/backtest/backtestSlice";
 import { loginSlice } from "./features/login/loginSlice";
 import { filterSlice } from "./features/filter/filterSlice";
+import { koreaInvestmentSlice } from "./features/koreaInvestment/koreaInvestmentSlice";
 
 const rootReducer: any = combineSlices(
     financialInfoSlice,
@@ -14,7 +15,8 @@ const rootReducer: any = combineSlices(
     strategySlice,
     backtestSlice,
     loginSlice,
-    filterSlice
+    filterSlice,
+    koreaInvestmentSlice,
 );
 
 export type RootState = ReturnType<typeof rootReducer>;

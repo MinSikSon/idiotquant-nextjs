@@ -53,6 +53,7 @@ export function NavbarWithSimpleLinks() {
                 {/* <NavItem url="/backtest" label="Backtest" /> */}
                 <NavItem url="/calculator" label="기대 수익 계산기 🎲" />
                 {/* <NavItem url="/article" label="Article" /> */}
+                <NavItem url="/open-api" label="open api" />
             </ul>
         );
     }
