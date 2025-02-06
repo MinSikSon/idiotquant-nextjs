@@ -1,18 +1,54 @@
+import { KoreaInvestmentToken } from "./koreaInvestmentSlice";
 
 export const postWebSocketApi: any = async () => {
-    const url = `${process.env.NEXT_PUBLIC_API_URL}/oauth/approval`;
+    const subUrl = `/oauth2/Approval`;
+    return postKoreaInvestmentRequest(subUrl);
+}
+
+export const postTokenApi: any = async () => {
+    const subUrl = `/oauth2/tokenP`;
+    return postKoreaInvestmentRequest(subUrl);
+}
+
+export const getInquireBalanceApi: any = async (koreaInvestmentToken: KoreaInvestmentToken) => {
+    // const subUrl = `/uapi/domestic-stock/v1/trading/inquire-balance`;
+    const subUrl = `/uapi/domestic-stock/trading/inquire-balance`;
+    const additionalHeaders: AdditionalHeaders = {
+        "authorization": koreaInvestmentToken["access_token"]
+    }
+    return getKoreaInvestmentRequest(subUrl, additionalHeaders);
+}
+
+interface AdditionalHeaders {
+    "authorization"?: string;
+}
+
+async function postKoreaInvestmentRequest(subUrl: string, additionalHeaders?: AdditionalHeaders) {
+    const url = `${process.env.NEXT_PUBLIC_API_URL}${subUrl}`;
     const options: RequestInit = {
         method: "POST",
         credentials: "include",  // include credentials (like cookies) in the request
         headers: {
             "content-type": "application/json; utf-8",
+            ...additionalHeaders
         },
     };
     const res = await fetch(url, options);
-    console.log(`[postWebSocketApi] res`, res, typeof res);
-    // const json = res.json();
-    // console.log(`[postWebSocketApi] json`, json, typeof json);
 
-    // return textPromise1;
+    return res.json();
+}
+
+async function getKoreaInvestmentRequest(subUrl: string, additionalHeaders?: AdditionalHeaders) {
+    const url = `${process.env.NEXT_PUBLIC_API_URL}${subUrl}`;
+    const options: RequestInit = {
+        method: "GET",
+        credentials: "include",  // include credentials (like cookies) in the request
+        headers: {
+            "content-type": "application/json; utf-8",
+            ...additionalHeaders,
+        },
+    };
+    const res = await fetch(url, options);
+
     return res.json();
 }
