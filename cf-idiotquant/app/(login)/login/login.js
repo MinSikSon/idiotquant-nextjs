@@ -27,7 +27,7 @@ async function RequestNickname(_token) {
     }).then((res) => res.json());
 
     // console.log('_token', _token);
-    console.log('RequestNickname', response);
+    // console.log('RequestNickname', response);
 
     return response;
 }
@@ -42,14 +42,14 @@ async function RequestToken(_authorizeCode) {
         },
     }).then((res) => res.json());
 
-    console.log('[RequestToken] response:', responseToken);
+    // console.log('[RequestToken] response:', responseToken);
 
     return responseToken;
 }
 
 async function registerUser(id, nickname) {
     async function fetchAndSet(subUrl) {
-        console.log(`[registerUser]`, `subUrl:`, subUrl);
+        // console.log(`[registerUser]`, `subUrl:`, subUrl);
 
         const data = {
             'id': id,
@@ -71,13 +71,13 @@ async function registerUser(id, nickname) {
 
         fetch(fetchUrl, options)
             .then(res => {
-                console.log(`res`, res);
+                // console.log(`res`, res);
                 if (res.ok) {
                     return res.json();
                 }
             })
             .then(res => {
-                console.log(`res2`, res);
+                // console.log(`res2`, res);
             })
             .catch(error => {
                 console.log(`error`, error);
@@ -87,7 +87,7 @@ async function registerUser(id, nickname) {
     fetchAndSet('login');
 }
 
-export default function Login(props) {
+export default function Login() {
     const router = useRouter();
     const [nickname, setNickname] = React.useState('');
     const [authorizeCode, setAuthorizeCode] = React.useState('');
@@ -99,13 +99,11 @@ export default function Login(props) {
 
     React.useEffect(() => {
         async function callback() {
-            // TODO(minsik.son) : 지금.. 뭔가 bug 인해서 Request 2번 날리고 있음.
-
-            console.log(`kakaoAuthCode:`, kakaoAuthCode);
+            // console.log(`kakaoAuthCode:`, kakaoAuthCode);
             let _authorizeCode = ""
             if ("" == kakaoAuthCode) {
                 _authorizeCode = new URL(window.location.href).searchParams.get('code');
-                console.log(`_authorizeCode`, _authorizeCode);
+                // console.log(`_authorizeCode`, _authorizeCode);
                 if (!!!_authorizeCode) return;
                 dispatch(setKakaoAuthCode(_authorizeCode));
             }
@@ -123,7 +121,7 @@ export default function Login(props) {
             // console.log(`localStorage.getItem('token')`, localStorage.getItem('token'));
 
             const responseNickname = await RequestNickname(responseToken.access_token);
-            console.log(`responseNickname`, responseNickname);
+            // console.log(`responseNickname`, responseNickname);
 
             if ('' == nickname) {
                 setNickname(responseNickname.properties.nickname);

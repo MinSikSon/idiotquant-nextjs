@@ -38,14 +38,15 @@ export const loginSlice = createAppSlice({
         getCloudFlareLoginStatus: create.asyncThunk(
             async () => {
                 const res = await getLoginStatus();
-                console.log(`res`, res);
+                console.log(`[getCloudFlareLoginStatus] res`, res);
                 return res;
             },
             {
                 pending: (state) => {
-                    console.log(`pending`);
+                    // console.log(`[getCloudFlareLoginStatus] pending`);
                 },
                 fulfilled: (state, action) => {
+                    console.log(`[getCloudFlareLoginStatus] fulfilled`);
                     // console.log(`action.payload`, action.payload);
                     const id = action.payload['id'];
                     const name = action.payload['name'];
@@ -55,7 +56,7 @@ export const loginSlice = createAppSlice({
                     state.nickName = name;
                 },
                 rejected: (state) => {
-                    console.log(`get-rejected 2`);
+                    console.log(`[getCloudFlareLoginStatus] get-rejected 2`);
                 }
             }
         ),
@@ -64,8 +65,9 @@ export const loginSlice = createAppSlice({
         selectKakaoAuthCode: (state) => state.kakaoAuthCode,
         selectKakaoNickName: (state) => state.nickName,
         selectKakaoId: (state) => state.id,
+        selectState: (state) => state.state,
     }
 });
 
 export const { setKakaoAuthCode, setKakaoNickName, setKakaoId, getCloudFlareLoginStatus } = loginSlice.actions;
-export const { selectKakaoAuthCode, selectKakaoNickName, selectKakaoId } = loginSlice.selectors;
+export const { selectKakaoAuthCode, selectKakaoNickName, selectKakaoId, selectState } = loginSlice.selectors;

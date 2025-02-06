@@ -65,9 +65,9 @@ export const LoadData = () => {
         if (financialInfoState == "init") {
             // console.log(`111 []`, new Date(), `financialInfoState:`, financialInfoState, `, marketInfoState:`, marketInfoState);
 
-            console.log(`kakaoId`, kakaoId, !!kakaoId);
+            // console.log(`kakaoId`, kakaoId, !!kakaoId);
             const localStorageKakaoId = localStorage.getItem('kakaoId');
-            console.log(`localStorageKakaoId`, localStorageKakaoId, !!localStorageKakaoId);
+            // console.log(`localStorageKakaoId`, localStorageKakaoId, !!localStorageKakaoId);
             if (false == !!kakaoId && true == !!localStorageKakaoId) {
                 dispatch(getCloudFlareLoginStatus());
             }

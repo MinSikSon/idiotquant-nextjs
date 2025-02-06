@@ -152,9 +152,7 @@ export interface Example8TableRowType {
     market: string;
     netCurrentAssert?: string;
     netIncome?: string;
-    trend?: number; // optional
     chartName?: string;
-    chartData?: number[];
     bps?: string;
     eps?: string;
     pbr?: string;
@@ -283,9 +281,6 @@ function TablesExample8({
                                             market,
                                             netCurrentAssert,
                                             netIncome,
-                                            chartName = "2023 Sales",
-                                            // chartData = [30, 40, 500, 420, 700, 350, 500, 330, 900,],
-                                            chartData = [0, 0, 0, 0, 0, 0, 0, 0, 0,],
                                             bps,
                                             eps,
                                             pbr,
@@ -330,7 +325,7 @@ function TablesExample8({
                                                         variant="small"
                                                         className="!font-normal text-gray-600 text-right"
                                                     >
-                                                        {Util.UnitConversion(Number(closePrice), true)}
+                                                        {isNaN(Number(closePrice)) ? closePrice : Util.UnitConversion(Number(closePrice), true)}
                                                     </Typography>
                                                 </td>
                                                 <td className={classes}>
@@ -347,7 +342,7 @@ function TablesExample8({
                                                         variant="small"
                                                         className="!font-normal text-gray-600 text-right"
                                                     >
-                                                        {isNaN(Number(targetPrice)) ? `-` : Util.UnitConversion(Number(targetPrice), true)}
+                                                        {isNaN(Number(targetPrice)) ? targetPrice : Util.UnitConversion(Number(targetPrice), true)}
                                                     </Typography>
                                                 </td>
                                                 <td className={classes}>
@@ -355,7 +350,7 @@ function TablesExample8({
                                                         variant="small"
                                                         className="!font-normal text-gray-600 text-right"
                                                     >
-                                                        {Util.UnitConversion(Number(market), true)}
+                                                        {isNaN(Number(market)) ? market : Util.UnitConversion(Number(market), true)}
                                                     </Typography>
                                                 </td>
                                                 <td className={classes}>
@@ -363,7 +358,7 @@ function TablesExample8({
                                                         variant="small"
                                                         className="!font-normal text-gray-600 text-right"
                                                     >
-                                                        {Util.UnitConversion(Number(netCurrentAssert), true)}
+                                                        {isNaN(Number(netCurrentAssert)) ? netCurrentAssert : Util.UnitConversion(Number(netCurrentAssert), true)}
                                                     </Typography>
                                                 </td>
                                                 <td className={classes}>
@@ -371,7 +366,7 @@ function TablesExample8({
                                                         variant="small"
                                                         className="!font-normal text-gray-600 text-right"
                                                     >
-                                                        {isNaN(Number(netIncome)) ? '-' : Util.UnitConversion(Number(netIncome), true)}
+                                                        {isNaN(Number(netIncome)) ? netIncome : Util.UnitConversion(Number(netIncome), true)}
                                                     </Typography>
                                                 </td>
                                                 <td className={classes}>
