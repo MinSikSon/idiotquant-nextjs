@@ -87,7 +87,7 @@ async function registerUser(id, nickname) {
     fetchAndSet('login');
 }
 
-export default function Login(props) {
+export default function Login() {
     const router = useRouter();
     const [nickname, setNickname] = React.useState('');
     const [authorizeCode, setAuthorizeCode] = React.useState('');

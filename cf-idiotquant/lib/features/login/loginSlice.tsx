@@ -65,8 +65,9 @@ export const loginSlice = createAppSlice({
         selectKakaoAuthCode: (state) => state.kakaoAuthCode,
         selectKakaoNickName: (state) => state.nickName,
         selectKakaoId: (state) => state.id,
+        selectState: (state) => state.state,
     }
 });
 
 export const { setKakaoAuthCode, setKakaoNickName, setKakaoId, getCloudFlareLoginStatus } = loginSlice.actions;
-export const { selectKakaoAuthCode, selectKakaoNickName, selectKakaoId } = loginSlice.selectors;
+export const { selectKakaoAuthCode, selectKakaoNickName, selectKakaoId, selectState } = loginSlice.selectors;
