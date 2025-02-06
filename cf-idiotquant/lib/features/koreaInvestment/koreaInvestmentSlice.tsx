@@ -63,8 +63,8 @@ export const koreaInvestmentSlice = createAppSlice({
                 },
                 fulfilled: (state, action) => {
                     // console.log(`[postWebSocket] action.payload`, action.payload);
-                    const json = JSON.parse(action.payload);
-                    console.log(`json["approval_key"]`, json["approval_key"]);
+                    const json = action.payload;
+                    // console.log(`json["approval_key"]`, json["approval_key"]);
                     state.koreaInvestmentApproval.approval_key = json["approval_key"];
                     state.state = "approval";
                 },
@@ -91,7 +91,7 @@ export const koreaInvestmentSlice = createAppSlice({
                 },
                 fulfilled: (state, action) => {
                     console.log(`[postToken] action.payload`, action.payload);
-                    const json = JSON.parse(action.payload);
+                    const json = action.payload;
                     state.koreaInvestmentToken.access_token = json["access_token"];
                     state.koreaInvestmentToken.access_token_token_expired = json["access_token_token_expired"];
                     state.koreaInvestmentToken.token_type = json["token_type"];
@@ -115,8 +115,8 @@ export const koreaInvestmentSlice = createAppSlice({
                     // console.log(`[postWebSocket] pending`);
                 },
                 fulfilled: (state, action) => {
-                    console.log(`[getInquireBalance] action.payload`, action.payload, typeof action.payload);
-                    const json = JSON.parse(action.payload);
+                    console.log(`[getInquireBalance] action.payload`, action.payload.length, action.payload, typeof action.payload);
+                    // const json = JSON.parse(action.payload);
                     // state.koreaInvestmentToken.access_token = json["access_token"];
                     // state.koreaInvestmentToken.access_token_token_expired = json["access_token_token_expired"];
                     // state.koreaInvestmentToken.token_type = json["token_type"];
