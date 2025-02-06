@@ -27,20 +27,22 @@ export default function OpenApi() {
         dispatch(reqPostWebSocket());
 
         const koreaInvestmentToken = localStorage.getItem('koreaInvestmentToken');
-        // console.log(`koreaInvestmentToken`, koreaInvestmentToken, typeof koreaInvestmentToken, !!koreaInvestmentToken);
+        console.log(`koreaInvestmentToken`, koreaInvestmentToken, typeof koreaInvestmentToken, !!koreaInvestmentToken);
         if (false == !!koreaInvestmentToken) {
             dispatch(reqPostToken()); // NOTE: 1분에 한 번씩만 token 발급 가능
         }
         else {
             const json = JSON.parse(koreaInvestmentToken);
+            console.log(`json`, json);
             const currentDate = time;
             const expiredDate = new Date(json["access_token_token_expired"]);
             const skipPostToken = (expiredDate > currentDate);
-            // console.log(`skipPostToken`, skipPostToken, `currentDate:`, currentDate, `, expiredDate:`, expiredDate);
-            if (false == skipPostToken) {
-                dispatch(reqPostToken()); // NOTE: 1분에 한 번씩만 token 발급 가능
-            }
-            else {
+            console.log(`skipPostToken`, skipPostToken, `currentDate:`, currentDate, `, expiredDate:`, expiredDate);
+            // if (false == skipPostToken) {
+            //     dispatch(reqPostToken()); // NOTE: 1분에 한 번씩만 token 발급 가능
+            // }
+            // else
+            {
                 if (false == !!kiToken["access_token"]) {
                     dispatch(setKoreaInvestmentToken(json));
                 }
@@ -85,7 +87,7 @@ export default function OpenApi() {
         },
     ];
 
-    // console.log(`kiBalance["output1"]`, kiBalance["output1"]);
+    console.log(`kiBalance["output1"]`, kiBalance["output1"]);
     let example8TableRowType: Example8TableRowType[] = [];
     if (!!kiBalance["output1"] && kiBalance["output1"].length > 0) {
         example8TableRowType = (kiBalance["output1"].map((item, index) => {

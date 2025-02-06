@@ -150,12 +150,14 @@ export const koreaInvestmentSlice = createAppSlice({
             }
         ),
         setKoreaInvestmentToken: create.reducer((state, action: PayloadAction<KoreaInvestmentToken>) => {
-            // console.log(`[postToken] action.payload`, action.payload);
+            console.log(`[setKoreaInvestmentToken] action.payload`, action.payload);
             const json = action.payload;
             state.koreaInvestmentToken.access_token = json["access_token"];
             state.koreaInvestmentToken.access_token_token_expired = json["access_token_token_expired"];
             state.koreaInvestmentToken.token_type = json["token_type"];
             state.koreaInvestmentToken.expires_in = json["expires_in"];
+
+            localStorage.setItem('koreaInvestmentToken', JSON.stringify(json));
         }),
         reqPostToken: create.asyncThunk(
             async () => {
@@ -168,14 +170,17 @@ export const koreaInvestmentSlice = createAppSlice({
                 fulfilled: (state, action) => {
                     // console.log(`[postToken] action.payload`, action.payload);
                     const json = action.payload;
-                    state.koreaInvestmentToken.access_token = json["access_token"];
-                    state.koreaInvestmentToken.access_token_token_expired = json["access_token_token_expired"];
-                    state.koreaInvestmentToken.token_type = json["token_type"];
-                    state.koreaInvestmentToken.expires_in = json["expires_in"];
+                    console.log(`json["error_description"]`, !!!json["error_description"], json["error_description"]);
+                    if (!!!json["error_description"]) {
+                        state.koreaInvestmentToken.access_token = json["access_token"];
+                        state.koreaInvestmentToken.access_token_token_expired = json["access_token_token_expired"];
+                        state.koreaInvestmentToken.token_type = json["token_type"];
+                        state.koreaInvestmentToken.expires_in = json["expires_in"];
 
-                    localStorage.setItem('koreaInvestmentToken', JSON.stringify(json));
+                        localStorage.setItem('koreaInvestmentToken', JSON.stringify(json));
 
-                    state.state = "token";
+                        state.state = "token";
+                    }
                 },
                 rejected: (state) => {
                     console.log(`[postWebSocket] get-rejected 2`);
@@ -188,10 +193,10 @@ export const koreaInvestmentSlice = createAppSlice({
             },
             {
                 pending: (state) => {
-                    // console.log(`[postWebSocket] pending`);
+                    console.log(`[postWebSocket] pending`);
                 },
                 fulfilled: (state, action) => {
-                    // console.log(`[getInquireBalance] action.payload`, typeof action.payload, action.payload);
+                    console.log(`[getInquireBalance] action.payload`, typeof action.payload, action.payload);
                     const newKoreaInvestBalance: KoreaInvestmentBalance = action.payload;
                     // console.log(`[getInquireBalance] newKoreaInvestBalance`, typeof newKoreaInvestBalance, newKoreaInvestBalance);
                     state.koreaInvestmentBalance = newKoreaInvestBalance;
