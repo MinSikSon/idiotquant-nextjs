@@ -1,3 +1,4 @@
+import { getCookie } from "@/components/util";
 import { KoreaInvestmentToken } from "./koreaInvestmentSlice";
 
 export const postApprovalKeyApi: any = async () => {
@@ -14,13 +15,15 @@ export const getInquireBalanceApi: any = async (koreaInvestmentToken: KoreaInves
     // console.log(`[getInquireBalanceApi] koreaInvestmentToken`, koreaInvestmentToken);
     const subUrl = `/uapi/domestic-stock/trading/inquire-balance`;
     const additionalHeaders: AdditionalHeaders = {
-        "authorization": koreaInvestmentToken["access_token"]
+        "authorization": koreaInvestmentToken["access_token"],
+        "kakaoId": getCookie("kakaoId"),
     }
     return getKoreaInvestmentRequest(subUrl, additionalHeaders);
 }
 
 interface AdditionalHeaders {
     "authorization"?: string;
+    "kakaoId"?: string;
 }
 
 async function postKoreaInvestmentRequest(subUrl: string, additionalHeaders?: AdditionalHeaders) {
