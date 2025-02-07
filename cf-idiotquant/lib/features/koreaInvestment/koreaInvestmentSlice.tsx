@@ -1,6 +1,6 @@
 import { PayloadAction } from "@reduxjs/toolkit";
 import { createAppSlice } from "@/lib/createAppSlice";
-import { getInquireBalanceApi, postTokenApi, postApprovalKeyApi } from "./koreaInvestmentAPI";
+import { getInquireBalanceApi, postTokenApi, postApprovalKeyApi, postOrderCash } from "./koreaInvestmentAPI";
 import { registerCookie } from "@/components/util";
 
 export interface KoreaInvestmentApproval {
@@ -86,6 +86,20 @@ export interface KoreaInvestmentBalance {
     output2: KoreaInvestmentBalanceOutput2[];
     rt_cd: string;
 }
+
+interface KoreaInvestmentOrderCashOutput {
+    KRX_FWDG_ORD_ORGNO: string;
+    ODNO: string;
+    ORD_TMD: string;
+}
+interface KoreaInvestmentOrderCash {
+    state: "init" | "req" | "pending" | "fulfilled";
+    rt_cd: string;
+    msg_cd: string;
+    msg1: string;
+    output: KoreaInvestmentOrderCashOutput;
+}
+
 interface KoreaInvestmentInfo {
     state: "init"
     | "get-rejected"
@@ -93,12 +107,14 @@ interface KoreaInvestmentInfo {
     | "approval"
     | "token"
     | "inquire-balance"
+    | "order-cash"
     ;
     id: string;
     nickName: string;
     koreaInvestmentApproval: KoreaInvestmentApproval;
     koreaInvestmentToken: KoreaInvestmentToken;
     koreaInvestmentBalance: KoreaInvestmentBalance;
+    koreaInvestmentOrderCash: KoreaInvestmentOrderCash;
 }
 const initialState: KoreaInvestmentInfo = {
     state: "init",
@@ -124,6 +140,17 @@ const initialState: KoreaInvestmentInfo = {
         output1: [],
         output2: [],
         rt_cd: ""
+    },
+    koreaInvestmentOrderCash: {
+        state: "init",
+        rt_cd: "",
+        msg_cd: "",
+        msg1: "",
+        output: {
+            KRX_FWDG_ORD_ORGNO: "",
+            ODNO: "",
+            ORD_TMD: ""
+        }
     }
 }
 export const koreaInvestmentSlice = createAppSlice({
@@ -226,6 +253,32 @@ export const koreaInvestmentSlice = createAppSlice({
                 },
             }
         ),
+        reqPostOrderCash: create.asyncThunk(
+            async ({ koreaInvestmentToken, PDNO, buyOrSell }: { koreaInvestmentToken: KoreaInvestmentToken, PDNO: string, buyOrSell: string }) => {
+                return await postOrderCash(koreaInvestmentToken, PDNO, buyOrSell);
+            },
+            {
+                pending: (state) => {
+                    console.log(`[postOrderCash] pending`);
+                    state.koreaInvestmentOrderCash.state = "pending";
+                },
+                fulfilled: (state, action) => {
+                    console.log(`[reqPostOrderCash] fulfilled`);
+                    console.log(`[reqPostOrderCash] action.payload`, typeof action.payload, action.payload);
+                    console.log(`[reqPostOrderCash] action.payload["output1"]`, action.payload["output1"]);
+                    if (undefined != action.payload["output1"]) {
+                        const newKoreaInvestmentOrderCash: KoreaInvestmentOrderCash = action.payload;
+                        // console.log(`[getInquireBalance] newKoreaInvestBalance`, typeof newKoreaInvestBalance, newKoreaInvestBalance);
+                        state.koreaInvestmentOrderCash.state = "fulfilled";
+                        state.koreaInvestmentOrderCash = newKoreaInvestmentOrderCash;
+                        state.state = "order-cash";
+                    }
+                },
+                rejected: (state) => {
+                    console.log(`[reqPostOrderCash] get-rejected 2`);
+                },
+            }
+        ),
     }),
     selectors: {
         getKoreaInvestmentApproval: (state) => state.koreaInvestmentApproval,
@@ -234,6 +287,6 @@ export const koreaInvestmentSlice = createAppSlice({
     }
 });
 
-export const { reqPostApprovalKey, reqPostToken, reqGetInquireBalance } = koreaInvestmentSlice.actions;
+export const { reqPostApprovalKey, reqPostToken, reqGetInquireBalance, reqPostOrderCash } = koreaInvestmentSlice.actions;
 export const { setKoreaInvestmentToken } = koreaInvestmentSlice.actions;
 export const { getKoreaInvestmentApproval, getKoreaInvestmentToken, getKoreaInvestmentBalance } = koreaInvestmentSlice.selectors;

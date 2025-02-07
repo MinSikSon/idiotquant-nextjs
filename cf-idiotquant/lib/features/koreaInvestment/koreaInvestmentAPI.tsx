@@ -1,6 +1,30 @@
 import { getCookie } from "@/components/util";
 import { KoreaInvestmentToken } from "./koreaInvestmentSlice";
 
+// 주문
+export const postOrderCash: any = async (koreaInvestmentToken: KoreaInvestmentToken, PDNO: string, buyOrSell: string) => {
+    const subUrl = `/uapi/domestic-stock/v1/trading/order-cash`;
+    const additionalHeaders: AdditionalHeaders = {
+        "authorization": koreaInvestmentToken["access_token"],
+        "kakaoId": getCookie("kakaoId"),
+        "PDNO": PDNO,
+        "buyOrSell": buyOrSell,
+    }
+    return getKoreaInvestmentRequest(subUrl, additionalHeaders);
+}
+
+// 계좌 조회
+export const getInquireBalanceApi: any = async (koreaInvestmentToken: KoreaInvestmentToken) => {
+    // console.log(`[getInquireBalanceApi] koreaInvestmentToken`, koreaInvestmentToken);
+    const subUrl = `/uapi/domestic-stock/v1/trading/inquire-balance`;
+    const additionalHeaders: AdditionalHeaders = {
+        "authorization": koreaInvestmentToken["access_token"],
+        "kakaoId": getCookie("kakaoId"),
+    }
+    return getKoreaInvestmentRequest(subUrl, additionalHeaders);
+}
+
+// 인증 및 토큰 요청
 export const postApprovalKeyApi: any = async () => {
     const subUrl = `/oauth2/Approval`;
     return postKoreaInvestmentRequest(subUrl);
@@ -11,19 +35,11 @@ export const postTokenApi: any = async () => {
     return postKoreaInvestmentRequest(subUrl);
 }
 
-export const getInquireBalanceApi: any = async (koreaInvestmentToken: KoreaInvestmentToken) => {
-    // console.log(`[getInquireBalanceApi] koreaInvestmentToken`, koreaInvestmentToken);
-    const subUrl = `/uapi/domestic-stock/trading/inquire-balance`;
-    const additionalHeaders: AdditionalHeaders = {
-        "authorization": koreaInvestmentToken["access_token"],
-        "kakaoId": getCookie("kakaoId"),
-    }
-    return getKoreaInvestmentRequest(subUrl, additionalHeaders);
-}
-
 interface AdditionalHeaders {
-    "authorization"?: string;
-    "kakaoId"?: string;
+    authorization?: string;
+    kakaoId?: string;
+    PDNO?: string; // 종목 번호
+    buyOrSell?: string;
 }
 
 async function postKoreaInvestmentRequest(subUrl: string, additionalHeaders?: AdditionalHeaders) {
