@@ -32,14 +32,14 @@ export default function OpenApi() {
 
         console.log(`[OpenApi] ${seq}-1 kiToken`, kiToken);
         console.log(`[OpenApi] ${seq}-1 loginState`, loginState);
-        const koreaInvestmentToken = localStorage.getItem('koreaInvestmentToken');
+        const koreaInvestmentToken = sessionStorage.getItem('koreaInvestmentToken');
         // console.log(`koreaInvestmentToken`, koreaInvestmentToken, typeof koreaInvestmentToken, !!koreaInvestmentToken);
         if (false == !!koreaInvestmentToken) {
             if ("init" == kiBalance.state && "" == kiToken["access_token"]) {
                 dispatch(reqPostToken()); // NOTE: 1분에 한 번씩만 token 발급 가능
             }
             else {
-                localStorage.setItem('koreaInvestmentToken', JSON.stringify(kiToken));
+                sessionStorage.setItem('koreaInvestmentToken', JSON.stringify(kiToken));
             }
         }
         else {

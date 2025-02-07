@@ -57,11 +57,12 @@ async function registerUser(id, nickname) {
         };
 
         const options = {
-            method: 'POST',
-            credentials: 'include',  // include credentials (like cookies) in the request
+            method: "POST",
+            credentials: "include",  // include credentials (like cookies) in the request
             headers: {
-                'Content-Type': 'application/json', // 요청 본문이 JSON 형식임을 명시
+                "Content-Type": "application/json", // 요청 본문이 JSON 형식임을 명시
                 // 'Content-Type': 'text/html', // 요청 본문이 JSON 형식임을 명시
+
             },
             body: JSON.stringify(data)
         };
@@ -131,8 +132,8 @@ export default function Login() {
                 setAuthorizeCode(_authorizeCode);
             }
 
-            localStorage.setItem('kakaoId', responseNickname.id);
-            localStorage.setItem('kakaoNickName', responseNickname.properties.nickname);
+            sessionStorage.setItem('kakaoId', responseNickname.id);
+            sessionStorage.setItem('kakaoNickName', responseNickname.properties.nickname);
             // localStorage.setItem('kakaoAuthorizeCode', _authorizeCode);
 
             registerUser(responseNickname.id, responseNickname.properties.nickname);
@@ -158,9 +159,9 @@ export default function Login() {
 
     const Logout = () => {
         console.log(`Logout`);
-        localStorage.removeItem('kakaoId');
-        localStorage.removeItem('kakaoNickName');
-        localStorage.removeItem('login');
+        sessionStorage.removeItem('kakaoId');
+        sessionStorage.removeItem('kakaoNickName');
+        sessionStorage.removeItem('login');
 
         dispatch(setKakaoAuthCode(""));
         dispatch(setKakaoNickName(""));

@@ -165,7 +165,7 @@ export const koreaInvestmentSlice = createAppSlice({
             state.koreaInvestmentToken.token_type = json["token_type"];
             state.koreaInvestmentToken.expires_in = json["expires_in"];
 
-            localStorage.setItem('koreaInvestmentToken', JSON.stringify(json));
+            sessionStorage.setItem('koreaInvestmentToken', JSON.stringify(json));
         }),
         reqPostToken: create.asyncThunk(
             async () => {
@@ -187,7 +187,7 @@ export const koreaInvestmentSlice = createAppSlice({
                         state.koreaInvestmentToken.token_type = json["token_type"];
                         state.koreaInvestmentToken.expires_in = json["expires_in"];
 
-                        localStorage.setItem('koreaInvestmentToken', JSON.stringify(json));
+                        sessionStorage.setItem('koreaInvestmentToken', JSON.stringify(json));
 
                         state.state = "token";
                     }

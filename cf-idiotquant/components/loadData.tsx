@@ -66,7 +66,7 @@ export const LoadData = () => {
             // console.log(`111 []`, new Date(), `financialInfoState:`, financialInfoState, `, marketInfoState:`, marketInfoState);
 
             // console.log(`kakaoId`, kakaoId, !!kakaoId);
-            const localStorageKakaoId = localStorage.getItem('kakaoId');
+            const localStorageKakaoId = sessionStorage.getItem('kakaoId');
             // console.log(`localStorageKakaoId`, localStorageKakaoId, !!localStorageKakaoId);
             if (false == !!kakaoId && true == !!localStorageKakaoId) {
                 dispatch(getCloudFlareLoginStatus());
