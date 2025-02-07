@@ -3,21 +3,25 @@
 import Login from "@/app/(login)/login/login";
 import TablesExample8, { Example8TableHeadType, Example8TableRowType, TablesExample8PropsType } from "@/components/tableExample8";
 import { getCookie, registerCookie, Util } from "@/components/util";
-import { reqPostApprovalKey, reqPostToken, reqGetInquireBalance, reqPostOrderCash } from "@/lib/features/koreaInvestment/koreaInvestmentSlice";
+import { reqPostApprovalKey, reqPostToken, reqGetInquireBalance, reqPostOrderCash, reqGetInquirePrice, KoreaInvestmentInqurePrice, getKoreaInvestmentInqurePrice } from "@/lib/features/koreaInvestment/koreaInvestmentSlice";
 import { KoreaInvestmentApproval, KoreaInvestmentToken, KoreaInvestmentBalance } from "@/lib/features/koreaInvestment/koreaInvestmentSlice";
 import { setKoreaInvestmentToken } from "@/lib/features/koreaInvestment/koreaInvestmentSlice";
 import { getKoreaInvestmentApproval, getKoreaInvestmentToken, getKoreaInvestmentBalance } from "@/lib/features/koreaInvestment/koreaInvestmentSlice";
 import { selectState } from "@/lib/features/login/loginSlice";
 
 import { useAppDispatch, useAppSelector } from "@/lib/hooks";
-import { Button } from "@material-tailwind/react";
+import { Button, Input } from "@material-tailwind/react";
 import React from "react";
+
+import { corpCode } from "@/components/corpCode.js"
+
 
 export default function OpenApi() {
     const dispatch = useAppDispatch();
     const kiApproval: KoreaInvestmentApproval = useAppSelector(getKoreaInvestmentApproval);
     const kiToken: KoreaInvestmentToken = useAppSelector(getKoreaInvestmentToken);
     const kiBalance: KoreaInvestmentBalance = useAppSelector(getKoreaInvestmentBalance);
+    const kiInquirePrice: KoreaInvestmentInqurePrice = useAppSelector(getKoreaInvestmentInqurePrice);
 
     const [time, setTime] = React.useState<any>('');
     const loginState = useAppSelector(selectState);
@@ -158,11 +162,51 @@ export default function OpenApi() {
         tableRow: example8TableRowType,
     }
 
+    const [stockName, setStockName] = React.useState<string>("");
+    function onSearchButton(stockName: string) {
+        const jsonStock: any = corpCode()[stockName];
+        console.log(`stockName`, stockName, `jsonStock`, jsonStock);
+        if (!!jsonStock) {
+            const stockCode = jsonStock.stock_code;
+            console.log(`stockCode`, stockCode);
+            dispatch(reqGetInquirePrice({ koreaInvestmentToken: kiToken, PDNO: stockCode }));
+        }
+
+        setStockName("");
+    }
+
+    console.log(`[OpenApi] kiInquirePrice`, kiInquirePrice);
     return <>
         {"init" == loginState ?
             <Login />
             :
-            <TablesExample8 {...props} />
+            <>
+                <TablesExample8 {...props} />
+                <div className="flex justify-between border p-2 m-2">
+                    <div className="flex-auto p-2">
+                        <Input className="" color="black" label="주식 검색" type='string'
+                            value={stockName} crossOrigin={undefined}
+                            onChange={(e) => setStockName(String(e.target.value))}
+                            onKeyUp={(e) => {
+                                if ("" === e.target.value) {
+                                    return;
+                                }
+                                if ("Enter" === e.key) {
+                                    // console.log(e);
+                                    onSearchButton(String(e.target.value));  // 엔터를 눌렀을 때 버튼 클릭
+                                }
+                            }}
+                        />
+                    </div>
+                    <div className="flex-auto p-2">
+                        <Button className="" variant="outlined" onClick={() => {
+                            // console.log(`stockName`, stockName);
+                            onSearchButton(stockName);
+                        }}>검색</Button>
+                    </div>
+
+                </div>
+            </>
         }
     </>
 }

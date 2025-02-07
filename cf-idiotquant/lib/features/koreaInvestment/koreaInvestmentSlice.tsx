@@ -1,6 +1,6 @@
 import { PayloadAction } from "@reduxjs/toolkit";
 import { createAppSlice } from "@/lib/createAppSlice";
-import { getInquireBalanceApi, postTokenApi, postApprovalKeyApi, postOrderCash } from "./koreaInvestmentAPI";
+import { getInquireBalanceApi, postTokenApi, postApprovalKeyApi, postOrderCash, getInquirePrice } from "./koreaInvestmentAPI";
 import { registerCookie } from "@/components/util";
 
 export interface KoreaInvestmentApproval {
@@ -100,6 +100,95 @@ interface KoreaInvestmentOrderCash {
     output: KoreaInvestmentOrderCashOutput;
 }
 
+interface KoreaInvestmentInqurePriceOutput {
+    iscd_stat_cls_code: string;
+    marg_rate: string;
+    rprs_mrkt_kor_name: string;
+    bstp_kor_isnm: string;
+    temp_stop_yn: string;
+    oprc_rang_cont_yn: string;
+    clpr_rang_cont_yn: string;
+    crdt_able_yn: string;
+    grmn_rate_cls_code: string;
+    elw_pblc_yn: string;
+    stck_prpr: string;
+    prdy_vrss: string;
+    prdy_vrss_sign: string;
+    prdy_ctrt: string;
+    acml_tr_pbmn: string;
+    acml_vol: string;
+    prdy_vrss_vol_rate: string;
+    stck_oprc: string;
+    stck_hgpr: string;
+    stck_lwpr: string;
+    stck_mxpr: string;
+    stck_llam: string;
+    stck_sdpr: string;
+    wghn_avrg_stck_prc: string;
+    hts_frgn_ehrt: string;
+    frgn_ntby_qty: string;
+    pgtr_ntby_qty: string;
+    pvt_scnd_dmrs_prc: string;
+    pvt_frst_dmrs_prc: string;
+    pvt_pont_val: string;
+    pvt_frst_dmsp_prc: string;
+    pvt_scnd_dmsp_prc: string;
+    dmrs_val: string;
+    dmsp_val: string;
+    cpfn: string;
+    rstc_wdth_prc: string;
+    stck_fcam: string;
+    stck_sspr: string;
+    aspr_unit: string;
+    hts_deal_qty_unit_val: string;
+    lstn_stcn: string;
+    hts_avls: string;
+    per: string;
+    pbr: string;
+    stac_month: string;
+    vol_tnrt: string;
+    eps: string;
+    bps: string;
+    d250_hgpr: string;
+    d250_hgpr_date: string;
+    d250_hgpr_vrss_prpr_rate: string;
+    d250_lwpr: string;
+    d250_lwpr_date: string;
+    d250_lwpr_vrss_prpr_rate: string;
+    stck_dryy_hgpr: string;
+    dryy_hgpr_vrss_prpr_rate: string;
+    dryy_hgpr_date: string;
+    stck_dryy_lwpr: string;
+    dryy_lwpr_vrss_prpr_rate: string;
+    dryy_lwpr_date: string;
+    w52_hgpr: string;
+    w52_hgpr_vrss_prpr_ctrt: string;
+    w52_hgpr_date: string;
+    w52_lwpr: string;
+    w52_lwpr_vrss_prpr_ctrt: string;
+    w52_lwpr_date: string;
+    whol_loan_rmnd_rate: string;
+    ssts_yn: string;
+    stck_shrn_iscd: string;
+    fcam_cnnm: string;
+    cpfn_cnnm: string;
+    frgn_hldn_qty: string;
+    vi_cls_code: string;
+    ovtm_vi_cls_code: string;
+    last_ssts_cntg_qty: string;
+    invt_caful_yn: string;
+    mrkt_warn_cls_code: string;
+    short_over_yn: string;
+    sltr_yn: string;
+}
+export interface KoreaInvestmentInqurePrice {
+    state: "init" | "req" | "pending" | "fulfilled";
+    rt_cd: string;
+    msg_cd: string;
+    msg1: string;
+    output: KoreaInvestmentInqurePriceOutput;
+}
+
 interface KoreaInvestmentInfo {
     state: "init"
     | "get-rejected"
@@ -108,6 +197,7 @@ interface KoreaInvestmentInfo {
     | "token"
     | "inquire-balance"
     | "order-cash"
+    | "inquire-price"
     ;
     id: string;
     nickName: string;
@@ -115,6 +205,7 @@ interface KoreaInvestmentInfo {
     koreaInvestmentToken: KoreaInvestmentToken;
     koreaInvestmentBalance: KoreaInvestmentBalance;
     koreaInvestmentOrderCash: KoreaInvestmentOrderCash;
+    koreaInvestmentInqurePrice: KoreaInvestmentInqurePrice;
 }
 const initialState: KoreaInvestmentInfo = {
     state: "init",
@@ -150,6 +241,94 @@ const initialState: KoreaInvestmentInfo = {
             KRX_FWDG_ORD_ORGNO: "",
             ODNO: "",
             ORD_TMD: ""
+        }
+    },
+    koreaInvestmentInqurePrice: {
+        state: "init",
+        rt_cd: "",
+        msg_cd: "",
+        msg1: "",
+        output:
+        {
+            iscd_stat_cls_code: "",
+            marg_rate: "",
+            rprs_mrkt_kor_name: "",
+            bstp_kor_isnm: "",
+            temp_stop_yn: "",
+            oprc_rang_cont_yn: "",
+            clpr_rang_cont_yn: "",
+            crdt_able_yn: "",
+            grmn_rate_cls_code: "",
+            elw_pblc_yn: "",
+            stck_prpr: "",
+            prdy_vrss: "",
+            prdy_vrss_sign: "",
+            prdy_ctrt: "",
+            acml_tr_pbmn: "",
+            acml_vol: "",
+            prdy_vrss_vol_rate: "",
+            stck_oprc: "",
+            stck_hgpr: "",
+            stck_lwpr: "",
+            stck_mxpr: "",
+            stck_llam: "",
+            stck_sdpr: "",
+            wghn_avrg_stck_prc: "",
+            hts_frgn_ehrt: "",
+            frgn_ntby_qty: "",
+            pgtr_ntby_qty: "",
+            pvt_scnd_dmrs_prc: "",
+            pvt_frst_dmrs_prc: "",
+            pvt_pont_val: "",
+            pvt_frst_dmsp_prc: "",
+            pvt_scnd_dmsp_prc: "",
+            dmrs_val: "",
+            dmsp_val: "",
+            cpfn: "",
+            rstc_wdth_prc: "",
+            stck_fcam: "",
+            stck_sspr: "",
+            aspr_unit: "",
+            hts_deal_qty_unit_val: "",
+            lstn_stcn: "",
+            hts_avls: "",
+            per: "",
+            pbr: "",
+            stac_month: "",
+            vol_tnrt: "",
+            eps: "",
+            bps: "",
+            d250_hgpr: "",
+            d250_hgpr_date: "",
+            d250_hgpr_vrss_prpr_rate: "",
+            d250_lwpr: "",
+            d250_lwpr_date: "",
+            d250_lwpr_vrss_prpr_rate: "",
+            stck_dryy_hgpr: "",
+            dryy_hgpr_vrss_prpr_rate: "",
+            dryy_hgpr_date: "",
+            stck_dryy_lwpr: "",
+            dryy_lwpr_vrss_prpr_rate: "",
+            dryy_lwpr_date: "",
+            w52_hgpr: "",
+            w52_hgpr_vrss_prpr_ctrt: "",
+            w52_hgpr_date: "",
+            w52_lwpr: "",
+            w52_lwpr_vrss_prpr_ctrt: "",
+            w52_lwpr_date: "",
+            whol_loan_rmnd_rate: "",
+            ssts_yn: "",
+            stck_shrn_iscd: "",
+            fcam_cnnm: "",
+            cpfn_cnnm: "",
+            frgn_hldn_qty: "",
+            vi_cls_code: "",
+            ovtm_vi_cls_code: "",
+            last_ssts_cntg_qty: "",
+            invt_caful_yn: "",
+            mrkt_warn_cls_code: "",
+            short_over_yn: "",
+            sltr_yn: "",
         }
     }
 }
@@ -259,7 +438,7 @@ export const koreaInvestmentSlice = createAppSlice({
             },
             {
                 pending: (state) => {
-                    console.log(`[postOrderCash] pending`);
+                    console.log(`[reqPostOrderCash] pending`);
                     state.koreaInvestmentOrderCash.state = "pending";
                 },
                 fulfilled: (state, action) => {
@@ -279,14 +458,44 @@ export const koreaInvestmentSlice = createAppSlice({
                 },
             }
         ),
+        reqGetInquirePrice: create.asyncThunk(
+            async ({ koreaInvestmentToken, PDNO }: { koreaInvestmentToken: KoreaInvestmentToken, PDNO: string }) => {
+                return await getInquirePrice(koreaInvestmentToken, PDNO);
+            },
+            {
+                pending: (state) => {
+                    console.log(`[reqGetInquirePrice] pending`);
+                    state.koreaInvestmentOrderCash.state = "pending";
+                },
+                fulfilled: (state, action) => {
+                    console.log(`[reqGetInquirePrice] fulfilled`);
+                    console.log(`[reqGetInquirePrice] action.payload`, typeof action.payload, action.payload);
+                    console.log(`[reqGetInquirePrice] action.payload["output1"]`, action.payload["output1"]);
+                    if (undefined != action.payload["output1"]) {
+                        const newKoreaInvestmentInqurePrice: KoreaInvestmentInqurePrice = action.payload;
+                        // console.log(`[getInquireBalance] newKoreaInvestBalance`, typeof newKoreaInvestBalance, newKoreaInvestBalance);
+                        state.koreaInvestmentInqurePrice.state = "fulfilled";
+                        state.koreaInvestmentInqurePrice.rt_cd = newKoreaInvestmentInqurePrice.rt_cd;
+                        state.koreaInvestmentInqurePrice.msg_cd = newKoreaInvestmentInqurePrice.msg_cd;
+                        state.koreaInvestmentInqurePrice.msg1 = newKoreaInvestmentInqurePrice.msg1;
+                        state.koreaInvestmentInqurePrice.output = newKoreaInvestmentInqurePrice.output;
+                        state.state = "inquire-price";
+                    }
+                },
+                rejected: (state) => {
+                    console.log(`[reqPostOrderCash] get-rejected 2`);
+                },
+            }
+        ),
     }),
     selectors: {
         getKoreaInvestmentApproval: (state) => state.koreaInvestmentApproval,
         getKoreaInvestmentToken: (state) => state.koreaInvestmentToken,
         getKoreaInvestmentBalance: (state) => state.koreaInvestmentBalance,
+        getKoreaInvestmentInqurePrice: (state) => state.koreaInvestmentInqurePrice,
     }
 });
 
-export const { reqPostApprovalKey, reqPostToken, reqGetInquireBalance, reqPostOrderCash } = koreaInvestmentSlice.actions;
+export const { reqPostApprovalKey, reqPostToken, reqGetInquireBalance, reqPostOrderCash, reqGetInquirePrice } = koreaInvestmentSlice.actions;
 export const { setKoreaInvestmentToken } = koreaInvestmentSlice.actions;
-export const { getKoreaInvestmentApproval, getKoreaInvestmentToken, getKoreaInvestmentBalance } = koreaInvestmentSlice.selectors;
+export const { getKoreaInvestmentApproval, getKoreaInvestmentToken, getKoreaInvestmentBalance, getKoreaInvestmentInqurePrice } = koreaInvestmentSlice.selectors;

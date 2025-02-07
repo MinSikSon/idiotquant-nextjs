@@ -1,6 +1,18 @@
 import { getCookie } from "@/components/util";
 import { KoreaInvestmentToken } from "./koreaInvestmentSlice";
 
+// 시세 조회
+export const getInquirePrice: any = async (koreaInvestmentToken: KoreaInvestmentToken, PDNO: string) => {
+    const subUrl = `/uapi/domestic-stock/v1/quotations/inquire-price`;
+    const additionalHeaders: AdditionalHeaders = {
+        "authorization": koreaInvestmentToken["access_token"],
+        "kakaoId": getCookie("kakaoId"),
+        "PDNO": PDNO,
+        // "buyOrSell": buyOrSell,
+    }
+    return getKoreaInvestmentRequest(subUrl, additionalHeaders);
+}
+
 // 주문
 export const postOrderCash: any = async (koreaInvestmentToken: KoreaInvestmentToken, PDNO: string, buyOrSell: string) => {
     const subUrl = `/uapi/domestic-stock/v1/trading/order-cash`;
@@ -10,7 +22,7 @@ export const postOrderCash: any = async (koreaInvestmentToken: KoreaInvestmentTo
         "PDNO": PDNO,
         "buyOrSell": buyOrSell,
     }
-    return getKoreaInvestmentRequest(subUrl, additionalHeaders);
+    return postKoreaInvestmentRequest(subUrl, additionalHeaders);
 }
 
 // 계좌 조회

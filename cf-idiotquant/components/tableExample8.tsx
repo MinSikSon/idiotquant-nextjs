@@ -186,7 +186,7 @@ function TablesExample8({
     tableRow
 }: TablesExample8PropsType) {
     return (
-        <section className="m-4">
+        <section className="m-2">
             <Card className="h-full w-full">
                 <CardHeader
                     floated={false}
