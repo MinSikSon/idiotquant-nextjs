@@ -1,6 +1,6 @@
 export function cleansing(dictOrigin, condition = ['거래량', '영업이익', '당기순이익']) {
     function filtering(array, key) {
-        return array.filter(item => !!item[key] && 0 < Number(item[key]));
+        return array.filter(item => undefined != item && !!item[key] && 0 < Number(item[key]));
     }
 
     const originArray = Array.from(Object.values(dictOrigin));
