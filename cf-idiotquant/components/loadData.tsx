@@ -10,6 +10,7 @@ import { getCloudFlareLoginStatus } from "@/lib/features/login/loginSlice";
 import { GetMergedStocksList, GetStocksFilteredByStrategyNCAV } from "@/components/strategy";
 // import { setBackTestStrategyList } from "@/lib/features/backtest/backtestSlice";
 import { selectKakaoId } from "@/lib/features/login/loginSlice";
+import { getCookie } from "./util";
 
 export const LoadData = () => {
     const dispatch = useAppDispatch();
@@ -66,9 +67,13 @@ export const LoadData = () => {
             // console.log(`111 []`, new Date(), `financialInfoState:`, financialInfoState, `, marketInfoState:`, marketInfoState);
 
             // console.log(`kakaoId`, kakaoId, !!kakaoId);
-            const localStorageKakaoId = sessionStorage.getItem('kakaoId');
+
+            // const localStorageKakaoId = sessionStorage.getItem('kakaoId');
             // console.log(`localStorageKakaoId`, localStorageKakaoId, !!localStorageKakaoId);
-            if (false == !!kakaoId && true == !!localStorageKakaoId) {
+            const cookieKakaoId = getCookie("kakaoId");
+            console.log(`[cookie] coockieKakaoId`, !!cookieKakaoId, cookieKakaoId);
+            // if (false == !!kakaoId && true == !!localStorageKakaoId) {
+            if (false == !!kakaoId && true == !!cookieKakaoId) {
                 dispatch(getCloudFlareLoginStatus());
             }
             dispatch(getList());

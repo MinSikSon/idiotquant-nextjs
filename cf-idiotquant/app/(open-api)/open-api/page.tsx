@@ -2,7 +2,7 @@
 
 import Login from "@/app/(login)/login/login";
 import TablesExample8, { Example8TableHeadType, Example8TableRowType, TablesExample8PropsType } from "@/components/tableExample8";
-import { Util } from "@/components/util";
+import { getCookie, registerCookie, Util } from "@/components/util";
 import { reqPostApprovalKey, reqPostToken, reqGetInquireBalance } from "@/lib/features/koreaInvestment/koreaInvestmentSlice";
 import { KoreaInvestmentApproval, KoreaInvestmentToken, KoreaInvestmentBalance } from "@/lib/features/koreaInvestment/koreaInvestmentSlice";
 import { setKoreaInvestmentToken } from "@/lib/features/koreaInvestment/koreaInvestmentSlice";
@@ -32,18 +32,29 @@ export default function OpenApi() {
 
         console.log(`[OpenApi] ${seq}-1 kiToken`, kiToken);
         console.log(`[OpenApi] ${seq}-1 loginState`, loginState);
-        const koreaInvestmentToken = sessionStorage.getItem('koreaInvestmentToken');
+
+        const cookieKoreaInvestmentToken = getCookie("koreaInvestmentToken");
+        console.log(`cookieKoreaInvestmentToken`, typeof cookieKoreaInvestmentToken, cookieKoreaInvestmentToken);
+        if (undefined != cookieKoreaInvestmentToken) {
+            const jsonCookieKoreaInvestmentToken = JSON.parse(cookieKoreaInvestmentToken);
+            console.log(`jsonCookieKoreaInvestmentToken`, typeof jsonCookieKoreaInvestmentToken, jsonCookieKoreaInvestmentToken);
+        }
+
+        // const koreaInvestmentToken = sessionStorage.getItem('koreaInvestmentToken');
         // console.log(`koreaInvestmentToken`, koreaInvestmentToken, typeof koreaInvestmentToken, !!koreaInvestmentToken);
-        if (false == !!koreaInvestmentToken) {
+        if (false == !!cookieKoreaInvestmentToken) {
             if ("init" == kiBalance.state && "" == kiToken["access_token"]) {
                 dispatch(reqPostToken()); // NOTE: 1분에 한 번씩만 token 발급 가능
             }
             else {
-                sessionStorage.setItem('koreaInvestmentToken', JSON.stringify(kiToken));
+                // sessionStorage.setItem('koreaInvestmentToken', JSON.stringify(kiToken));
+                registerCookie("koreaInvestmentToken", JSON.stringify(kiToken));
             }
         }
         else {
-            const json = JSON.parse(koreaInvestmentToken);
+            const jsonCookieKoreaInvestmentToken = JSON.parse(cookieKoreaInvestmentToken);
+            // const json = JSON.parse(koreaInvestmentToken);
+            const json = jsonCookieKoreaInvestmentToken;
             // console.log(`json`, json);
             const currentDate = time;
             const expiredDate = new Date(json["access_token_token_expired"]);
@@ -69,7 +80,7 @@ export default function OpenApi() {
     }
     React.useEffect(() => {
         reload('1');
-    }, [kiToken.state]);
+    }, [kiToken]);
     // React.useEffect(() => {
     //     reload('2');
     // }, [kiToken, loginState]);

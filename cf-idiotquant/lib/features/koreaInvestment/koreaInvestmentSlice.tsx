@@ -1,6 +1,7 @@
 import { PayloadAction } from "@reduxjs/toolkit";
 import { createAppSlice } from "@/lib/createAppSlice";
 import { getInquireBalanceApi, postTokenApi, postApprovalKeyApi } from "./koreaInvestmentAPI";
+import { registerCookie } from "@/components/util";
 
 export interface KoreaInvestmentApproval {
     state: "init" | "req" | "pending" | "fulfilled";
@@ -165,7 +166,8 @@ export const koreaInvestmentSlice = createAppSlice({
             state.koreaInvestmentToken.token_type = json["token_type"];
             state.koreaInvestmentToken.expires_in = json["expires_in"];
 
-            sessionStorage.setItem('koreaInvestmentToken', JSON.stringify(json));
+            // sessionStorage.setItem('koreaInvestmentToken', JSON.stringify(json));
+            registerCookie("koreaInvestmentToken", JSON.stringify(json));
         }),
         reqPostToken: create.asyncThunk(
             async () => {
@@ -187,7 +189,8 @@ export const koreaInvestmentSlice = createAppSlice({
                         state.koreaInvestmentToken.token_type = json["token_type"];
                         state.koreaInvestmentToken.expires_in = json["expires_in"];
 
-                        sessionStorage.setItem('koreaInvestmentToken', JSON.stringify(json));
+                        // sessionStorage.setItem('koreaInvestmentToken', JSON.stringify(json));
+                        registerCookie("koreaInvestmentToken", JSON.stringify(json));
 
                         state.state = "token";
                     }
