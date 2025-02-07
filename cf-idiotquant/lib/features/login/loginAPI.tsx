@@ -4,6 +4,10 @@ export const getLoginStatus: any = async () => {
     const options: RequestInit = {
         method: 'GET',
         credentials: 'include',  // include credentials (like cookies) in the request
+        headers: {
+            "content-type": "application/json; utf-8",
+            // ...additionalHeaders,
+        },
     };
     // const res = await fetch(url, options);
     const res = await fetch(url, options);

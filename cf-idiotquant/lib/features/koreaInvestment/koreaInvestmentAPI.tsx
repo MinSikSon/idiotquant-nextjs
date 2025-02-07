@@ -1,6 +1,6 @@
 import { KoreaInvestmentToken } from "./koreaInvestmentSlice";
 
-export const postWebSocketApi: any = async () => {
+export const postApprovalKeyApi: any = async () => {
     const subUrl = `/oauth2/Approval`;
     return postKoreaInvestmentRequest(subUrl);
 }
@@ -11,7 +11,7 @@ export const postTokenApi: any = async () => {
 }
 
 export const getInquireBalanceApi: any = async (koreaInvestmentToken: KoreaInvestmentToken) => {
-    // const subUrl = `/uapi/domestic-stock/v1/trading/inquire-balance`;
+    // console.log(`[getInquireBalanceApi] koreaInvestmentToken`, koreaInvestmentToken);
     const subUrl = `/uapi/domestic-stock/trading/inquire-balance`;
     const additionalHeaders: AdditionalHeaders = {
         "authorization": koreaInvestmentToken["access_token"]

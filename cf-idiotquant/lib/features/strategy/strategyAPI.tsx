@@ -23,10 +23,10 @@ export const setNcavList: any = async (financialInfoDate: string, marketInfoDate
 
     // console.log(`[setNcavList]`, data);
     const options: RequestInit = {
-        method: 'POST',
-        credentials: 'include',  // include credentials (like cookies) in the request
+        method: "POST",
+        credentials: "include",  // include credentials (like cookies) in the request
         headers: {
-            'Content-Type': 'test/plain;charset=UTF-8',
+            "Content-Type": "test/plain;charset=UTF-8",
         },
         body: JSON.stringify(data),
     };
