@@ -30,8 +30,8 @@ export const setFinancialInfoList: any = async (dateList: string[]) => {
 export const getFinancialInfoList: any = async () => {
     const url = `${process.env.NEXT_PUBLIC_API_URL}/stock/financial-info-list`
     const options: RequestInit = {
-        method: 'GET',
-        credentials: 'include',  // include credentials (like cookies) in the request
+        method: "GET",
+        credentials: "include",  // include credentials (like cookies) in the request
     };
     // const res = await fetch(url, options);
     const res = await fetch(url, options);

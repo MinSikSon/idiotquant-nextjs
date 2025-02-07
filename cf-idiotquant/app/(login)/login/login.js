@@ -5,6 +5,7 @@ import { Button, Card, CardBody, Typography } from '@material-tailwind/react';
 import { useRouter } from "next/navigation";
 import { selectKakaoAuthCode, selectKakaoId, selectKakaoNickName, setKakaoAuthCode, setKakaoId, setKakaoNickName } from "@/lib/features/login/loginSlice";
 import { useAppDispatch, useAppSelector } from "@/lib/hooks";
+import { getCookie, registerCookie } from "@/components/util";
 
 const env = {
     KAKAO_REDIRECT_URI: 'https://idiotquant.com/login'
@@ -100,6 +101,10 @@ export default function Login() {
 
     React.useEffect(() => {
         async function callback() {
+            console.log(`[Login] document.cookie`, document.cookie);
+            // console.log(`[Login] getCookie(document.cookie)`, getCookie("username"));
+            console.log(`[cookie] getCookie("kakaoId")`, getCookie("kakaoId"));
+            console.log(`[cookie] getCookie("kakaoNickName")`, getCookie("kakaoNickName"));
             // console.log(`kakaoAuthCode:`, kakaoAuthCode);
             let _authorizeCode = ""
             if ("" == kakaoAuthCode) {
@@ -132,8 +137,11 @@ export default function Login() {
                 setAuthorizeCode(_authorizeCode);
             }
 
-            sessionStorage.setItem('kakaoId', responseNickname.id);
-            sessionStorage.setItem('kakaoNickName', responseNickname.properties.nickname);
+            // sessionStorage.setItem('kakaoId', responseNickname.id);
+            registerCookie("kakaoId", responseNickname.id);
+            // sessionStorage.setItem('kakaoNickName', responseNickname.properties.nickname);
+            registerCookie("kakaoNickName", responseNickname.properties.nickname);
+
             // localStorage.setItem('kakaoAuthorizeCode', _authorizeCode);
 
             registerUser(responseNickname.id, responseNickname.properties.nickname);
@@ -159,9 +167,12 @@ export default function Login() {
 
     const Logout = () => {
         console.log(`Logout`);
-        sessionStorage.removeItem('kakaoId');
-        sessionStorage.removeItem('kakaoNickName');
-        sessionStorage.removeItem('login');
+        // sessionStorage.removeItem('kakaoId');
+        registerCookie("kakaoId", "");
+        // sessionStorage.removeItem('kakaoNickName');
+        registerCookie("kakaoNickName", "");
+        // sessionStorage.removeItem('login');
+        registerCookie("login", "");
 
         dispatch(setKakaoAuthCode(""));
         dispatch(setKakaoNickName(""));

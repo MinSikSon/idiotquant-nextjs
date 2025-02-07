@@ -56,3 +56,14 @@ export function escapeSpecialCharacters(url: any) {
     // 특수 문자 앞에 백슬래시를 추가합니다.
     return url.replace(specialCharacters, (match: any) => '\\' + match);
 }
+
+export const registerCookie = (key: string, value: string) => {
+    document.cookie = `${key}=${value}; path=/; expires=Fri, 31 Dec 2025 23:59:59 GMT`; // [NOTE] 만료일 임시 설정
+}
+
+export const getCookie = (name: string) => {
+    return document.cookie
+        .split("; ")
+        .find((row) => row.startsWith(name + "="))
+        ?.split("=")[1];
+};
