@@ -1,11 +1,13 @@
 import { PayloadAction } from "@reduxjs/toolkit";
 import { createAppSlice } from "@/lib/createAppSlice";
-import { getInquireBalanceApi, postTokenApi, postWebSocketApi } from "./koreaInvestmentAPI";
+import { getInquireBalanceApi, postTokenApi, postApprovalKeyApi } from "./koreaInvestmentAPI";
 
-interface KoreaInvestmentApproval {
+export interface KoreaInvestmentApproval {
+    state: "init" | "req" | "pending" | "fulfilled";
     approval_key: string;
 }
 export interface KoreaInvestmentToken {
+    state: "init" | "req" | "pending" | "fulfilled";
     // NOTE: 분당 1회 발급 가능
     access_token: string;
     access_token_token_expired: string;
@@ -74,7 +76,7 @@ interface KoreaInvestmentBalanceOutput2 {
     tot_stln_slng_chgs: string;
 }
 export interface KoreaInvestmentBalance {
-    state: "init" | "logout" | "login";
+    state: "init" | "req" | "pending" | "fulfilled";
     ctx_area_fk100: string;
     ctx_area_nk100: string;
     msg1: string;
@@ -102,9 +104,11 @@ const initialState: KoreaInvestmentInfo = {
     id: "",
     nickName: "",
     koreaInvestmentApproval: {
+        state: "init",
         approval_key: ""
     },
     koreaInvestmentToken: {
+        state: "init",
         access_token: "",
         access_token_token_expired: "",
         token_type: "",
@@ -125,9 +129,9 @@ export const koreaInvestmentSlice = createAppSlice({
     name: "koreaInvestment",
     initialState,
     reducers: (create) => ({
-        reqPostWebSocket: create.asyncThunk(
+        reqPostApprovalKey: create.asyncThunk(
             async () => {
-                const res = await postWebSocketApi();
+                const res = await postApprovalKeyApi();
                 if (null == res) {
                     return;
                 }
@@ -135,23 +139,27 @@ export const koreaInvestmentSlice = createAppSlice({
             },
             {
                 pending: (state) => {
-                    console.log(`[postWebSocket] pending`);
+                    console.log(`[reqPostApprovalKey] pending`);
+                    state.koreaInvestmentApproval.state = "pending";
                 },
                 fulfilled: (state, action) => {
-                    console.log(`[postWebSocket] fulfilled action.payload`, action.payload);
+                    console.log(`[reqPostApprovalKey] fulfilled`);
+                    // console.log(`[reqPostApprovalKey] action.payload`, action.payload);
                     const json = action.payload;
                     // console.log(`json["approval_key"]`, json["approval_key"]);
                     state.koreaInvestmentApproval.approval_key = json["approval_key"];
+                    state.koreaInvestmentApproval.state = "fulfilled";
                     state.state = "approval";
                 },
                 rejected: (state) => {
-                    console.log(`[postWebSocket] get-rejected 2`);
+                    console.log(`[reqPostApprovalKey] get-rejected 2`);
                 },
             }
         ),
         setKoreaInvestmentToken: create.reducer((state, action: PayloadAction<KoreaInvestmentToken>) => {
-            console.log(`[setKoreaInvestmentToken] action.payload`, action.payload);
+            // console.log(`[setKoreaInvestmentToken] action.payload`, action.payload);
             const json = action.payload;
+            state.koreaInvestmentToken.state = "fulfilled";
             state.koreaInvestmentToken.access_token = json["access_token"];
             state.koreaInvestmentToken.access_token_token_expired = json["access_token_token_expired"];
             state.koreaInvestmentToken.token_type = json["token_type"];
@@ -165,13 +173,15 @@ export const koreaInvestmentSlice = createAppSlice({
             },
             {
                 pending: (state) => {
-                    // console.log(`[postWebSocket] pending`);
+                    console.log(`[reqPostToken] pending`);
+                    state.koreaInvestmentToken.state = "pending";
                 },
                 fulfilled: (state, action) => {
-                    // console.log(`[postToken] action.payload`, action.payload);
+                    console.log(`[reqPostToken] action.payload`, action.payload);
                     const json = action.payload;
                     console.log(`json["error_description"]`, !!!json["error_description"], json["error_description"]);
                     if (!!!json["error_description"]) {
+                        state.koreaInvestmentToken.state = "fulfilled";
                         state.koreaInvestmentToken.access_token = json["access_token"];
                         state.koreaInvestmentToken.access_token_token_expired = json["access_token_token_expired"];
                         state.koreaInvestmentToken.token_type = json["token_type"];
@@ -183,7 +193,7 @@ export const koreaInvestmentSlice = createAppSlice({
                     }
                 },
                 rejected: (state) => {
-                    console.log(`[postWebSocket] get-rejected 2`);
+                    console.log(`[reqPostToken] get-rejected 2`);
                 },
             }
         ),
@@ -193,17 +203,23 @@ export const koreaInvestmentSlice = createAppSlice({
             },
             {
                 pending: (state) => {
-                    console.log(`[postWebSocket] pending`);
+                    console.log(`[getInquireBalance] pending`);
+                    state.koreaInvestmentBalance.state = "pending";
                 },
                 fulfilled: (state, action) => {
+                    console.log(`[getInquireBalance] fulfilled`);
                     console.log(`[getInquireBalance] action.payload`, typeof action.payload, action.payload);
-                    const newKoreaInvestBalance: KoreaInvestmentBalance = action.payload;
-                    // console.log(`[getInquireBalance] newKoreaInvestBalance`, typeof newKoreaInvestBalance, newKoreaInvestBalance);
-                    state.koreaInvestmentBalance = newKoreaInvestBalance;
-                    state.state = "inquire-balance";
+                    console.log(`[getInquireBalance] action.payload["output1"]`, action.payload["output1"]);
+                    if (undefined != action.payload["output1"]) {
+                        const newKoreaInvestBalance: KoreaInvestmentBalance = action.payload;
+                        // console.log(`[getInquireBalance] newKoreaInvestBalance`, typeof newKoreaInvestBalance, newKoreaInvestBalance);
+                        state.koreaInvestmentBalance.state = "fulfilled";
+                        state.koreaInvestmentBalance = newKoreaInvestBalance;
+                        state.state = "inquire-balance";
+                    }
                 },
                 rejected: (state) => {
-                    console.log(`[postWebSocket] get-rejected 2`);
+                    console.log(`[getInquireBalance] get-rejected 2`);
                 },
             }
         ),
@@ -215,6 +231,6 @@ export const koreaInvestmentSlice = createAppSlice({
     }
 });
 
-export const { reqPostWebSocket, reqPostToken, reqGetInquireBalance } = koreaInvestmentSlice.actions;
+export const { reqPostApprovalKey, reqPostToken, reqGetInquireBalance } = koreaInvestmentSlice.actions;
 export const { setKoreaInvestmentToken } = koreaInvestmentSlice.actions;
 export const { getKoreaInvestmentApproval, getKoreaInvestmentToken, getKoreaInvestmentBalance } = koreaInvestmentSlice.selectors;
