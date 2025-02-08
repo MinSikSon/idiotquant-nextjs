@@ -26,6 +26,9 @@ export default function OpenApi() {
     const [time, setTime] = React.useState<any>('');
     const loginState = useAppSelector(selectState);
 
+    const [startDate, setStartDate] = React.useState<any>("2025-02-03");
+    const [endDate, setEndDate] = React.useState<any>("2025-02-07");
+
     function reload(seq: any) {
         setTime(new Date());
 
@@ -138,10 +141,10 @@ export default function OpenApi() {
                 netIncome: `${(Number(item["pchs_amt"]) / Number(kiBalance.output2[0]["pchs_amt_smtl_amt"]) * 100).toFixed(2)} %`,
                 chartName: '',
                 tag: <div className="mr-2 gap-1">
-                    <Button className="p-0 m-0" variant="outlined" size="sm" onClick={() => handleOnClick(item["prdt_name"], item["pdno"], "buy")}>
+                    <Button className="p-0 py-1 m-0 mr-1" variant="outlined" size="sm" onClick={() => handleOnClick(item["prdt_name"], item["pdno"], "buy")}>
                         매수
                     </Button>
-                    <Button className="p-0 m-0" variant="outlined" size="sm" onClick={() => handleOnClick(item["prdt_name"], item["pdno"], "sell")}>
+                    <Button className="p-0 py-1 m-0" variant="outlined" size="sm" onClick={() => handleOnClick(item["prdt_name"], item["pdno"], "sell")}>
                         매도
                     </Button>
                 </div>,
@@ -181,10 +184,50 @@ export default function OpenApi() {
             const stockCode = jsonStock.stock_code;
             console.log(`stockCode`, stockCode);
             dispatch(reqGetInquirePrice({ koreaInvestmentToken: kiToken, PDNO: stockCode }));
-            dispatch(reqGetInquireDailyItemChartPrice({ koreaInvestmentToken: kiToken, PDNO: stockCode, FID_INPUT_DATE_1: "20230102", FID_INPUT_DATE_2: "20230105" }))
+            dispatch(reqGetInquireDailyItemChartPrice({ koreaInvestmentToken: kiToken, PDNO: stockCode, FID_INPUT_DATE_1: formatDate(startDate), FID_INPUT_DATE_2: formatDate(endDate) }))
         }
 
         setStockName("");
+    }
+
+    const handleInputStockName = (e: React.ChangeEvent<HTMLInputElement>) => {
+        setStockName(e.target.value);
+    };
+    const handleInputStockNameOnKeyUp = (e: React.KeyboardEvent<HTMLInputElement>) => {
+        if ("" === e.currentTarget.value) {
+            return;
+        }
+        if ("Enter" === e.key) {
+            // console.log(e);
+            onSearchButton(String(e.currentTarget.value));  // 엔터를 눌렀을 때 버튼 클릭
+        }
+    };
+
+    const handleInputStartDate = (e: React.ChangeEvent<HTMLInputElement>) => {
+        setStartDate(e.target.value);
+    };
+    const handleInputEndDate = (e: React.ChangeEvent<HTMLInputElement>) => {
+        setEndDate(e.target.value);
+    };
+
+    // const formatDate = (inputDate: string) => {
+    //     console.log(`inputDate`, inputDate);
+    //     if (!inputDate) return "날짜를 입력하세요.";
+    //     const dateObj = new Date(inputDate);
+    //     return dateObj.toLocaleDateString("ko-KR", {
+    //         year: "numeric",
+    //         month: "long",
+    //         day: "numeric",
+    //         weekday: "long",
+    //     });
+    // };
+
+    const formatDate = (date: string) => {
+        // const arrDate = date.split("-");
+        const YYYYMMDD = date.replaceAll("-", ""); // YYYYMMDD
+        // console.log("YYYYMMDD", YYYYMMDD);
+
+        return YYYYMMDD;
     }
 
     return <>
@@ -193,29 +236,52 @@ export default function OpenApi() {
             :
             <>
                 <TablesExample8 {...props} />
-                <div className="flex justify-between border p-2 m-2">
+                <div className="flex justify-between border m-2">
                     <div className="flex-auto p-2">
-                        <Input className="" color="black" label="주식 검색" type='string'
-                            value={stockName} crossOrigin={undefined}
-                            onChange={(e) => setStockName(String(e.target.value))}
-                            onKeyUp={(e) => {
-                                if ("" === e.target.value) {
-                                    return;
-                                }
-                                if ("Enter" === e.key) {
-                                    // console.log(e);
-                                    onSearchButton(String(e.target.value));  // 엔터를 눌렀을 때 버튼 클릭
-                                }
-                            }}
+                        <Input
+                            className=""
+                            color="black"
+                            label="주식 검색"
+                            type='string'
+                            value={stockName}
+                            crossOrigin={undefined}
+                            onChange={handleInputStockName}
+                            onKeyUp={handleInputStockNameOnKeyUp}
                         />
                     </div>
                     <div className="flex-auto p-2">
-                        <Button className="" variant="outlined" onClick={() => {
+                        <Button className="" variant="outlined" value={stockName} onClick={() => {
                             // console.log(`stockName`, stockName);
                             onSearchButton(stockName);
                         }}>검색</Button>
                     </div>
-
+                </div>
+                <div className="flex flex-col justify-between border m-2">
+                    <div className="flex-auto p-2">
+                        <Input
+                            className=""
+                            color="black"
+                            label="시작날짜"
+                            type='date'
+                            value={startDate} crossOrigin={undefined}
+                            onChange={handleInputStartDate}
+                        />
+                    </div>
+                    <div className="flex-auto p-2">
+                        <Input
+                            className=""
+                            color="black"
+                            label="종료날짜"
+                            type='date'
+                            value={endDate} crossOrigin={undefined}
+                            onChange={handleInputEndDate}
+                        />
+                    </div>
+                </div>
+                <div className="flex flex-col justify-between border m-2">
+                    <div className="flex-auto p-2">
+                        {formatDate(startDate)}~{formatDate(endDate)}
+                    </div>
                 </div>
             </>
         }
