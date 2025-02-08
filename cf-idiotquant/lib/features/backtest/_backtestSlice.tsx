@@ -23,24 +23,24 @@ export const backtestSlice = createAppSlice({
     name: "backtest",
     initialState,
     reducers: (create) => ({
-        getStartFinancialInfo: create.asyncThunk(
+        reqGetStartFinancialInfo: create.asyncThunk(
             async ({ year, quarter }: { year: string, quarter: string }) => {
-                // console.log(`[getStartFinancialInfo]`, year, quarter);
+                // console.log(`[reqGetStartFinancialInfo]`, year, quarter);
                 const res: any = await getFinancialInfo(year, quarter);
                 return res;
             },
             {
                 pending: (state) => {
-                    // console.log(`[getStartFinancialInfo] pending`);
+                    // console.log(`[reqGetStartFinancialInfo] pending`);
                     state.state = "loading";
                 },
                 fulfilled: (state, action) => {
-                    // console.log(`[getStartFinancialInfo] fulfilled - action.payload:`, action.payload);
+                    // console.log(`[reqGetStartFinancialInfo] fulfilled - action.payload:`, action.payload);
                     state.state = "loaded";
                     state.startFinancialInfo = action.payload;
                 },
                 rejected: (state) => {
-                    // console.log(`[getStartFinancialInfo] rejected`);
+                    // console.log(`[reqGetStartFinancialInfo] rejected`);
                     state.state = "get-rejected";
                 }
             },
@@ -118,7 +118,7 @@ export const backtestSlice = createAppSlice({
     }
 });
 
-export const { getStartFinancialInfo, getStartMarketInfo, getEndMarketInfo } = backtestSlice.actions;
+export const { reqGetStartFinancialInfo, getStartMarketInfo, getEndMarketInfo } = backtestSlice.actions;
 export const { selectStartFinancialInfo, selectStartMarketInfo, selectEndMarketInfo } = backtestSlice.selectors;
 
 export const { setBackTestStrategyList } = backtestSlice.actions;

@@ -141,7 +141,7 @@ export const backtestSlice = createAppSlice({
         ),
         reqGetFinancialInfo: create.asyncThunk(
             async ({ year, quarter }: { year: string, quarter: string }) => {
-                // console.log(`[getStartFinancialInfo]`, year, quarter);
+                // console.log(`[reqGetStartFinancialInfo]`, year, quarter);
                 const res: any = await getFinancialInfo(year, quarter);
                 return res;
             },

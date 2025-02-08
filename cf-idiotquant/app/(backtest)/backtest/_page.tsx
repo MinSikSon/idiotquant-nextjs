@@ -3,7 +3,7 @@
 // import { GetMergedStocksList, GetStocksFilteredByStrategyNCAV } from "@/components/strategy";
 // import TablePanel, { ListNodeTemplate } from "@/components/TablePanel";
 // import { getPrevYearAndQuarter, getYearAndQuarterByDate } from "@/components/yearQuarterMatcher";
-// import { getEndMarketInfo, getStartFinancialInfo, getStartMarketInfo, selectEndMarketInfo, selectStartFinancialInfo, selectStartMarketInfo, setBackTestStrategyList } from "@/lib/features/backtest/backtestSlice";
+// import { getEndMarketInfo, reqGetStartFinancialInfo, getStartMarketInfo, selectEndMarketInfo, selectStartFinancialInfo, selectStartMarketInfo, setBackTestStrategyList } from "@/lib/features/backtest/backtestSlice";
 // import { selectMarketInfoList } from "@/lib/features/marketInfo/marketInfoSlice";
 // import { useAppDispatch, useAppSelector } from "@/lib/hooks";
 // import { Button, Card, CardBody, CardFooter, CardHeader, Slider, Typography } from "@material-tailwind/react";
@@ -110,7 +110,7 @@
 
 //         const startMarketInfoDate: string = marketInfoDateList[startIndex].split("_")[1];
 //         const endMarketInfoDate: string = marketInfoDateList[endIndex].split("_")[1];
-//         dispatch(getStartFinancialInfo({ year: (prevStartYearAndQuarter.year).toString(), quarter: (prevStartYearAndQuarter.quarter).toString() }));
+//         dispatch(reqGetStartFinancialInfo({ year: (prevStartYearAndQuarter.year).toString(), quarter: (prevStartYearAndQuarter.quarter).toString() }));
 //         dispatch(getStartMarketInfo({ date: startMarketInfoDate }));
 //         dispatch(getEndMarketInfo({ date: endMarketInfoDate }));
 //     }
