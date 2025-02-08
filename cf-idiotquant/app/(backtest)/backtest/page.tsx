@@ -17,6 +17,8 @@ import {
 import { setBackTestConditionType1, getBackTestConditionType1 } from "@/lib/features/backtest/backtestSlice";
 import { setBackTestConditionType2, getBackTestConditionType2 } from "@/lib/features/backtest/backtestSlice";
 import { setBackTestConditionType3, getBackTestConditionType3 } from "@/lib/features/backtest/backtestSlice";
+import { reqGetFinancialInfoList, getBackTestConditionFinancialInfoList } from "@/lib/features/backtest/backtestSlice";
+
 import React from "react";
 
 export default function BackTest() {
@@ -25,6 +27,7 @@ export default function BackTest() {
     const backTestConditionType1 = useAppSelector(getBackTestConditionType1);
     const backTestConditionType2 = useAppSelector(getBackTestConditionType2);
     const backTestConditionType3 = useAppSelector(getBackTestConditionType3);
+    const backTestConditionFinancialInfoList = useAppSelector(getBackTestConditionFinancialInfoList);
 
     const getTitle = () => {
         return "back test"
@@ -71,6 +74,14 @@ export default function BackTest() {
     React.useEffect(() => {
         console.log(`backTestConditionType3`, backTestConditionType3);
     }, [backTestConditionType3]);
+    React.useEffect(() => {
+        console.log(`backTestConditionFinancialInfoList`, backTestConditionFinancialInfoList);
+
+        const output2 = backTestConditionFinancialInfoList.output2;
+        const transformedData = output2.filter(item => item.endsWith("12"));
+        console.log(`transformedData`, transformedData);
+
+    }, [backTestConditionFinancialInfoList]);
 
     const getContents = () => {
         return <>
@@ -81,9 +92,9 @@ export default function BackTest() {
     };
 
     const getFooter = () => {
-
         const handleOnClick = () => {
-            console.log(`[handleOnClick] do nothing`);
+            console.log(`[handleOnClick] dispatch(reqGetFinancialInfoList())`);
+            dispatch(reqGetFinancialInfoList());
         }
 
         return <>

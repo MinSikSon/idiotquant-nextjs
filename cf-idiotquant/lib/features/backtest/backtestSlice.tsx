@@ -1,5 +1,6 @@
 import { createAppSlice } from "@/lib/createAppSlice";
 import { PayloadAction } from "@reduxjs/toolkit";
+import { getFinancialInfo, getFinancialInfoList } from "../financialInfo/financialInfoAPI";
 
 export interface BackTestConditionType1 {
     state: string;
@@ -18,15 +19,41 @@ export interface BackTestConditionType3 {
     endDate: string;
 }
 
+interface BackTestConditionFilterResultTypeOutput {
+    date: string;
+    value: string;
+}
+export interface BackTestConditionFilterResultType {
+    state: string;
+    title: string;
+
+    output: BackTestConditionFilterResultTypeOutput[];
+}
+
+export interface BackTestConditionFinancialInfoList {
+    state: string;
+    title: string;
+
+    output1: any[];
+    output2: any[];
+}
+
 interface BackTestInfo {
     state: "init"
+    | "pending"
+    | "fulfilled"
+    | "rejected"
     | "type1"
     | "type2"
     | "type3"
+    | "filter-result"
     ;
     backTestConditionType1: BackTestConditionType1;
     backTestConditionType2: BackTestConditionType2;
     backTestConditionType3: BackTestConditionType3;
+
+    backTestConditionFilterResultType: BackTestConditionFilterResultType;
+    backTestConditionFinancialInfoList: BackTestConditionFinancialInfoList;
 }
 
 const initialState: BackTestInfo = {
@@ -46,6 +73,17 @@ const initialState: BackTestInfo = {
         state: "init",
         title: "종료날짜",
         endDate: "2024-04-01",
+    },
+    backTestConditionFilterResultType: {
+        state: "init",
+        title: "필터결과",
+        output: [],
+    },
+    backTestConditionFinancialInfoList: {
+        state: "init",
+        title: "재무정보 리스트",
+        output1: [],
+        output2: [],
     }
 }
 export const backtestSlice = createAppSlice({
@@ -63,7 +101,43 @@ export const backtestSlice = createAppSlice({
         setBackTestConditionType3: create.reducer((state, action: PayloadAction<BackTestConditionType3>) => {
             state.backTestConditionType3 = action.payload;
             state.state = "type3";
-        })
+        }),
+        setBackTestConditionFilterResultType: create.reducer((state, action: PayloadAction<BackTestConditionFilterResultType>) => {
+            state.backTestConditionFilterResultType = action.payload;
+            state.state = "filter-result";
+        }),
+        reqGetFinancialInfoList: create.asyncThunk(
+            // async ({ year, quarter }: { year: string, quarter: string }) => {
+            async () => {
+                // console.log(`[reqGetFinancialInfoList]`, year, quarter);
+                const res: any = await getFinancialInfoList();
+                // const res: any = await getFinancialInfo(year, quarter);
+                return res;
+            },
+            {
+                pending: (state) => {
+                    console.log(`[reqGetFinancialInfoList] pending`);
+                    state.state = "pending";
+                },
+                fulfilled: (state, action) => {
+                    console.log(`[reqGetFinancialInfoList] fulfilled action.payload:`, typeof action.payload, action.payload);
+                    state.backTestConditionFinancialInfoList.output1 = JSON.parse(action.payload);
+                    const quarterMap: any = { "1Q": "03", "2Q": "06", "3Q": "09", "4Q": "12" };
+
+                    const transformedData = JSON.parse(action.payload).map((item: any) => {
+                        const match = item.match(/financialInfo_(\d+)_(\dQ)/); // "YYYY_XQ" 패턴 찾기
+                        return match ? `${match[1]}${quarterMap[match[2]]}` : item; // "YYYYMM"으로 변환
+                    });
+
+                    state.backTestConditionFinancialInfoList.output2 = transformedData;
+                    state.state = "fulfilled";
+                },
+                rejected: (state) => {
+                    console.log(`[reqGetFinancialInfoList] rejected`);
+                    state.state = "rejected";
+                }
+            },
+        ),
         // getStartFinancialInfo: create.asyncThunk(
         //     async ({ year, quarter }: { year: string, quarter: string }) => {
         //         // console.log(`[getStartFinancialInfo]`, year, quarter);
@@ -86,79 +160,13 @@ export const backtestSlice = createAppSlice({
         //         }
         //     },
         // ),
-        //     getStartMarketInfo: create.asyncThunk(
-        //         async ({ date }: { date: string }) => {
-        //             console.log(`[getStartMarketInfo]`, date);
-        //             const res: any = await getMarketInfo(date);
-        //             return res;
-        //         },
-        //         {
-        //             pending: (state) => {
-        //                 // console.log(`[getStartMarketInfo] pending`);
-        //                 state.state = "loading";
-        //             },
-        //             fulfilled: (state, action) => {
-        //                 // console.log(`[getStartMarketInfo] fulfilled - action.payload:`, action.payload);
-        //                 state.state = "loaded";
-        //                 state.startMarketInfo = action.payload;
-        //             },
-        //             rejected: (state) => {
-        //                 // console.log(`[getStartMarketInfo] rejected`);
-        //                 state.state = "get-rejected";
-        //             }
-        //         },
-        //     ),
-        //     getEndMarketInfo: create.asyncThunk(
-        //         async ({ date }: { date: string }) => {
-        //             // console.log(`[getEndMarketInfo]`, date);
-        //             const res: any = await getMarketInfo(date);
-        //             return res;
-        //         },
-        //         {
-        //             pending: (state) => {
-        //                 // console.log(`[getEndMarketInfo] pending`);
-        //                 state.state = "loading";
-        //             },
-        //             fulfilled: (state, action) => {
-        //                 // console.log(`[getEndMarketInfo] fulfilled - action.payload:`, action.payload);
-        //                 state.state = "loaded";
-        //                 state.endMarketInfo = action.payload;
-        //             },
-        //             rejected: (state) => {
-        //                 // console.log(`[getEndMarketInfo] rejected`);
-        //                 state.state = "get-rejected";
-        //             }
-        //         },
-        //     ),
-        //     setBackTestStrategyList: create.asyncThunk(
-        //         async ({ financialInfoDate, marketInfoDate, ncavList }: { financialInfoDate: string, marketInfoDate: string, ncavList: string }) => {
-        //             const res: any = await setNcavList(financialInfoDate, marketInfoDate, ncavList);
-        //             return res;
-        //         },
-        //         {
-        //             pending: (state) => {
-        //                 state.state = "loading";
-        //             },
-        //             fulfilled: (state, action) => {
-        //                 state.state = "loaded";
-        //                 const json = JSON.parse(action.payload);
-        //                 state.value = json;
-        //             },
-        //             rejected: (state) => {
-        //                 state.state = "set-rejected";
-        //             }
-        //         },
-        //     )
     }),
     selectors: {
-        // selectStartFinancialInfo: (state) => state.startFinancialInfo,
-        // selectStartMarketInfo: (state) => state.startMarketInfo,
-        // selectEndMarketInfo: (state) => state.endMarketInfo,
-        // selectBackTestState: (state) => state.state,
-        // selectBackTestNcavList: (state) => state.value,
         getBackTestConditionType1: (state) => state.backTestConditionType1,
         getBackTestConditionType2: (state) => state.backTestConditionType2,
         getBackTestConditionType3: (state) => state.backTestConditionType3,
+        getBackTestConditionFilterResultType: (state) => state.backTestConditionFilterResultType,
+        getBackTestConditionFinancialInfoList: (state) => state.backTestConditionFinancialInfoList,
     }
 });
 export const { setBackTestConditionType1 } = backtestSlice.actions;
@@ -167,3 +175,10 @@ export const { setBackTestConditionType2 } = backtestSlice.actions;
 export const { getBackTestConditionType2 } = backtestSlice.selectors;
 export const { setBackTestConditionType3 } = backtestSlice.actions;
 export const { getBackTestConditionType3 } = backtestSlice.selectors;
+export const { setBackTestConditionFilterResultType } = backtestSlice.actions;
+export const { getBackTestConditionFilterResultType } = backtestSlice.selectors;
+
+// request
+export const { reqGetFinancialInfoList } = backtestSlice.actions;
+export const { getBackTestConditionFinancialInfoList } = backtestSlice.selectors;
+
