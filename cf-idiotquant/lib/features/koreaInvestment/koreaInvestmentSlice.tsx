@@ -1,6 +1,6 @@
 import { PayloadAction } from "@reduxjs/toolkit";
 import { createAppSlice } from "@/lib/createAppSlice";
-import { getInquireBalanceApi, postTokenApi, postApprovalKeyApi, postOrderCash, getInquirePrice } from "./koreaInvestmentAPI";
+import { getInquireBalanceApi, postTokenApi, postApprovalKeyApi, postOrderCash, getInquirePrice, getInquireDailyItemChartPrice } from "./koreaInvestmentAPI";
 import { registerCookie } from "@/components/util";
 
 export interface KoreaInvestmentApproval {
@@ -189,6 +189,64 @@ export interface KoreaInvestmentInqurePrice {
     output: KoreaInvestmentInqurePriceOutput;
 }
 
+interface KoreaInvestmentInqureDailyItemChartPriceOutput1 {
+    acml_tr_pbmn: string;
+    acml_vol: string;
+    askp: string;
+    bidp: string;
+    cpfn: string;
+    eps: string;
+    hts_avls: string;
+    hts_kor_isnm: string;
+    itewhol_loan_rmnd_ratem_name: string;
+    lstn_stcn: string;
+    pbr: string;
+    per: string;
+    prdy_ctrt: string;
+    prdy_vol: string;
+    prdy_vrss: string;
+    prdy_vrss_sign: string;
+    prdy_vrss_vol: string;
+    stck_fcam: string;
+    stck_hgpr: string;
+    stck_llam: string;
+    stck_lwpr: string;
+    stck_mxpr: string;
+    stck_oprc: string;
+    stck_prdy_clpr: string;
+    stck_prdy_hgpr: string;
+    stck_prdy_lwpr: string;
+    stck_prdy_oprc: string;
+    stck_prpr: string;
+    stck_shrn_iscd: string;
+    vol_tnrt: string;
+}
+
+interface KoreaInvestmentInqureDailyItemChartPriceOutput2 {
+    acml_tr_pbmn: string;
+    acml_vol: string;
+    flng_cls_code: string;
+    mod_yn: string;
+    prdy_vrss: string;
+    prdy_vrss_sign: string;
+    prtt_rate: string;
+    revl_issu_reas: string;
+    stck_bsop_date: string;
+    stck_clpr: string;
+    stck_hgpr: string;
+    stck_lwpr: string;
+    stck_oprc: string;
+}
+
+export interface KoreaInvestmentInqureDailyItemChartPrice {
+    state: "init" | "req" | "pending" | "fulfilled";
+    rt_cd: string;
+    msg_cd: string;
+    msg1: string;
+    output1: KoreaInvestmentInqureDailyItemChartPriceOutput1;
+    output2: KoreaInvestmentInqureDailyItemChartPriceOutput2[];
+}
+
 interface KoreaInvestmentInfo {
     state: "init"
     | "get-rejected"
@@ -198,6 +256,7 @@ interface KoreaInvestmentInfo {
     | "inquire-balance"
     | "order-cash"
     | "inquire-price"
+    | "inquire-daily-itemchartprice"
     ;
     id: string;
     nickName: string;
@@ -206,6 +265,7 @@ interface KoreaInvestmentInfo {
     koreaInvestmentBalance: KoreaInvestmentBalance;
     koreaInvestmentOrderCash: KoreaInvestmentOrderCash;
     koreaInvestmentInqurePrice: KoreaInvestmentInqurePrice;
+    koreaInvestmentInqureDailyItemChartPrice: KoreaInvestmentInqureDailyItemChartPrice;
 }
 const initialState: KoreaInvestmentInfo = {
     state: "init",
@@ -330,6 +390,45 @@ const initialState: KoreaInvestmentInfo = {
             short_over_yn: "",
             sltr_yn: "",
         }
+    },
+    koreaInvestmentInqureDailyItemChartPrice: {
+        state: "init",
+        rt_cd: "",
+        msg_cd: "",
+        msg1: "",
+        output1: {
+            acml_tr_pbmn: "",
+            acml_vol: "",
+            askp: "",
+            bidp: "",
+            cpfn: "",
+            eps: "",
+            hts_avls: "",
+            hts_kor_isnm: "",
+            itewhol_loan_rmnd_ratem_name: "",
+            lstn_stcn: "",
+            pbr: "",
+            per: "",
+            prdy_ctrt: "",
+            prdy_vol: "",
+            prdy_vrss: "",
+            prdy_vrss_sign: "",
+            prdy_vrss_vol: "",
+            stck_fcam: "",
+            stck_hgpr: "",
+            stck_llam: "",
+            stck_lwpr: "",
+            stck_mxpr: "",
+            stck_oprc: "",
+            stck_prdy_clpr: "",
+            stck_prdy_hgpr: "",
+            stck_prdy_lwpr: "",
+            stck_prdy_oprc: "",
+            stck_prpr: "",
+            stck_shrn_iscd: "",
+            vol_tnrt: "",
+        },
+        output2: []
     }
 }
 export const koreaInvestmentSlice = createAppSlice({
@@ -422,8 +521,8 @@ export const koreaInvestmentSlice = createAppSlice({
                     if (undefined != action.payload["output1"]) {
                         const newKoreaInvestBalance: KoreaInvestmentBalance = action.payload;
                         // console.log(`[getInquireBalance] newKoreaInvestBalance`, typeof newKoreaInvestBalance, newKoreaInvestBalance);
-                        state.koreaInvestmentBalance.state = "fulfilled";
                         state.koreaInvestmentBalance = newKoreaInvestBalance;
+                        state.koreaInvestmentBalance.state = "fulfilled";
                         state.state = "inquire-balance";
                     }
                 },
@@ -448,8 +547,8 @@ export const koreaInvestmentSlice = createAppSlice({
                     if (undefined != action.payload["output1"]) {
                         const newKoreaInvestmentOrderCash: KoreaInvestmentOrderCash = action.payload;
                         // console.log(`[getInquireBalance] newKoreaInvestBalance`, typeof newKoreaInvestBalance, newKoreaInvestBalance);
-                        state.koreaInvestmentOrderCash.state = "fulfilled";
                         state.koreaInvestmentOrderCash = newKoreaInvestmentOrderCash;
+                        state.koreaInvestmentOrderCash.state = "fulfilled";
                         state.state = "order-cash";
                     }
                 },
@@ -470,20 +569,53 @@ export const koreaInvestmentSlice = createAppSlice({
                 fulfilled: (state, action) => {
                     console.log(`[reqGetInquirePrice] fulfilled`);
                     console.log(`[reqGetInquirePrice] action.payload`, typeof action.payload, action.payload);
-                    console.log(`[reqGetInquirePrice] action.payload["output1"]`, action.payload["output1"]);
-                    if (undefined != action.payload["output1"]) {
+                    console.log(`[reqGetInquirePrice] action.payload["output"]`, action.payload["output"]);
+                    if (undefined != action.payload["output"]) {
                         const newKoreaInvestmentInqurePrice: KoreaInvestmentInqurePrice = action.payload;
                         // console.log(`[getInquireBalance] newKoreaInvestBalance`, typeof newKoreaInvestBalance, newKoreaInvestBalance);
+                        // state.koreaInvestmentInqurePrice.rt_cd = newKoreaInvestmentInqurePrice.rt_cd;
+                        // state.koreaInvestmentInqurePrice.msg_cd = newKoreaInvestmentInqurePrice.msg_cd;
+                        // state.koreaInvestmentInqurePrice.msg1 = newKoreaInvestmentInqurePrice.msg1;
+                        // state.koreaInvestmentInqurePrice.output = newKoreaInvestmentInqurePrice.output;
+                        state.koreaInvestmentInqurePrice = newKoreaInvestmentInqurePrice;
                         state.koreaInvestmentInqurePrice.state = "fulfilled";
-                        state.koreaInvestmentInqurePrice.rt_cd = newKoreaInvestmentInqurePrice.rt_cd;
-                        state.koreaInvestmentInqurePrice.msg_cd = newKoreaInvestmentInqurePrice.msg_cd;
-                        state.koreaInvestmentInqurePrice.msg1 = newKoreaInvestmentInqurePrice.msg1;
-                        state.koreaInvestmentInqurePrice.output = newKoreaInvestmentInqurePrice.output;
                         state.state = "inquire-price";
                     }
                 },
                 rejected: (state) => {
                     console.log(`[reqPostOrderCash] get-rejected 2`);
+                },
+            }
+        ),
+        reqGetInquireDailyItemChartPrice: create.asyncThunk(
+            async ({ koreaInvestmentToken, PDNO, FID_INPUT_DATE_1, FID_INPUT_DATE_2 }: { koreaInvestmentToken: KoreaInvestmentToken, PDNO: string, FID_INPUT_DATE_1: string, FID_INPUT_DATE_2: string }) => {
+                return await getInquireDailyItemChartPrice(koreaInvestmentToken, PDNO, FID_INPUT_DATE_1, FID_INPUT_DATE_2);
+            },
+            {
+                pending: (state) => {
+                    console.log(`[reqGetInquireDailyItemChartPrice] pending`);
+                    state.koreaInvestmentOrderCash.state = "pending";
+                },
+                fulfilled: (state, action) => {
+                    console.log(`[reqGetInquireDailyItemChartPrice] fulfilled`);
+                    console.log(`[reqGetInquireDailyItemChartPrice] action.payload`, typeof action.payload, action.payload);
+                    console.log(`[reqGetInquireDailyItemChartPrice] action.payload["output1"]`, action.payload["output1"]);
+                    console.log(`[reqGetInquireDailyItemChartPrice] action.payload["output2"]`, action.payload["output2"]);
+                    if (undefined != action.payload["output1"]) {
+                        const newKoreaInvestmentInqureDailyItemChartPrice: KoreaInvestmentInqureDailyItemChartPrice = action.payload;
+                        // console.log(`[getInquireBalance] newKoreaInvestBalance`, typeof newKoreaInvestBalance, newKoreaInvestBalance);
+                        // state.koreaInvestmentInqureDailyItemChartPrice.rt_cd = newKoreaInvestmentInqureDailyItemChartPrice.rt_cd;
+                        // state.koreaInvestmentInqureDailyItemChartPrice.msg_cd = newKoreaInvestmentInqureDailyItemChartPrice.msg_cd;
+                        // state.koreaInvestmentInqureDailyItemChartPrice.msg1 = newKoreaInvestmentInqureDailyItemChartPrice.msg1;
+                        // state.koreaInvestmentInqureDailyItemChartPrice.output1 = newKoreaInvestmentInqureDailyItemChartPrice.output1;
+                        // state.koreaInvestmentInqureDailyItemChartPrice.output2 = newKoreaInvestmentInqureDailyItemChartPrice.output2;
+                        state.koreaInvestmentInqureDailyItemChartPrice = newKoreaInvestmentInqureDailyItemChartPrice;
+                        state.koreaInvestmentInqureDailyItemChartPrice.state = "fulfilled";
+                        state.state = "inquire-daily-itemchartprice";
+                    }
+                },
+                rejected: (state) => {
+                    console.log(`[reqGetInquireDailyItemChartPrice] get-rejected 2`);
                 },
             }
         ),
@@ -493,9 +625,10 @@ export const koreaInvestmentSlice = createAppSlice({
         getKoreaInvestmentToken: (state) => state.koreaInvestmentToken,
         getKoreaInvestmentBalance: (state) => state.koreaInvestmentBalance,
         getKoreaInvestmentInqurePrice: (state) => state.koreaInvestmentInqurePrice,
+        getKoreaInvestmentInqureDailyItemChartPrice: (state) => state.koreaInvestmentInqureDailyItemChartPrice,
     }
 });
 
-export const { reqPostApprovalKey, reqPostToken, reqGetInquireBalance, reqPostOrderCash, reqGetInquirePrice } = koreaInvestmentSlice.actions;
+export const { reqPostApprovalKey, reqPostToken, reqGetInquireBalance, reqPostOrderCash, reqGetInquirePrice, reqGetInquireDailyItemChartPrice } = koreaInvestmentSlice.actions;
 export const { setKoreaInvestmentToken } = koreaInvestmentSlice.actions;
-export const { getKoreaInvestmentApproval, getKoreaInvestmentToken, getKoreaInvestmentBalance, getKoreaInvestmentInqurePrice } = koreaInvestmentSlice.selectors;
+export const { getKoreaInvestmentApproval, getKoreaInvestmentToken, getKoreaInvestmentBalance, getKoreaInvestmentInqurePrice, getKoreaInvestmentInqureDailyItemChartPrice } = koreaInvestmentSlice.selectors;

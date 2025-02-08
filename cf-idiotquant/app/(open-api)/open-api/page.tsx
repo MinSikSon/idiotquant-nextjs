@@ -3,7 +3,7 @@
 import Login from "@/app/(login)/login/login";
 import TablesExample8, { Example8TableHeadType, Example8TableRowType, TablesExample8PropsType } from "@/components/tableExample8";
 import { getCookie, registerCookie, Util } from "@/components/util";
-import { reqPostApprovalKey, reqPostToken, reqGetInquireBalance, reqPostOrderCash, reqGetInquirePrice, KoreaInvestmentInqurePrice, getKoreaInvestmentInqurePrice } from "@/lib/features/koreaInvestment/koreaInvestmentSlice";
+import { reqPostApprovalKey, reqPostToken, reqGetInquireBalance, reqPostOrderCash, reqGetInquirePrice, KoreaInvestmentInqurePrice, getKoreaInvestmentInqurePrice, reqGetInquireDailyItemChartPrice, getKoreaInvestmentInqureDailyItemChartPrice, KoreaInvestmentInqureDailyItemChartPrice } from "@/lib/features/koreaInvestment/koreaInvestmentSlice";
 import { KoreaInvestmentApproval, KoreaInvestmentToken, KoreaInvestmentBalance } from "@/lib/features/koreaInvestment/koreaInvestmentSlice";
 import { setKoreaInvestmentToken } from "@/lib/features/koreaInvestment/koreaInvestmentSlice";
 import { getKoreaInvestmentApproval, getKoreaInvestmentToken, getKoreaInvestmentBalance } from "@/lib/features/koreaInvestment/koreaInvestmentSlice";
@@ -22,6 +22,7 @@ export default function OpenApi() {
     const kiToken: KoreaInvestmentToken = useAppSelector(getKoreaInvestmentToken);
     const kiBalance: KoreaInvestmentBalance = useAppSelector(getKoreaInvestmentBalance);
     const kiInquirePrice: KoreaInvestmentInqurePrice = useAppSelector(getKoreaInvestmentInqurePrice);
+    const kiInqureDailyItemChartPrice: KoreaInvestmentInqureDailyItemChartPrice = useAppSelector(getKoreaInvestmentInqureDailyItemChartPrice);
 
     const [time, setTime] = React.useState<any>('');
     const loginState = useAppSelector(selectState);
@@ -30,12 +31,13 @@ export default function OpenApi() {
         setTime(new Date());
 
         // login check ?
-        if ("init" == kiApproval.state) {
+        // if ("init" == kiApproval.state) 
+        {
             dispatch(reqPostApprovalKey());
         }
 
-        console.log(`[OpenApi] ${seq}-1 kiToken`, kiToken);
-        console.log(`[OpenApi] ${seq}-1 loginState`, loginState);
+        // console.log(`[OpenApi] ${seq}-1 kiToken`, kiToken);
+        // console.log(`[OpenApi] ${seq}-1 loginState`, loginState);
 
         const cookieKoreaInvestmentToken = getCookie("koreaInvestmentToken");
         console.log(`cookieKoreaInvestmentToken`, typeof cookieKoreaInvestmentToken, cookieKoreaInvestmentToken);
@@ -63,8 +65,15 @@ export default function OpenApi() {
             const currentDate = time;
             const expiredDate = new Date(json["access_token_token_expired"]);
             const skipPostToken = (expiredDate > currentDate);
-            if (false == !!kiToken["access_token"]) {
-                dispatch(setKoreaInvestmentToken(json));
+            console.log(`skipPostToken`, skipPostToken);
+            if (false == skipPostToken) {
+                console.log(`expiredDate`, expiredDate, `currentDate`, currentDate);
+                dispatch(reqPostToken());
+            }
+            else {
+                if (false == !!kiToken["access_token"]) {
+                    dispatch(setKoreaInvestmentToken(json));
+                }
             }
         }
 
@@ -74,6 +83,9 @@ export default function OpenApi() {
         if ("" != kiToken["access_token"] && "init" != loginState) {
             dispatch(reqGetInquireBalance(kiToken));
         }
+
+        console.log(`[OpenApi] kiInquirePrice`, kiInquirePrice);
+        console.log(`[OpenApi] kiInqureDailyItemChartPrice`, kiInqureDailyItemChartPrice);
     }
     React.useEffect(() => {
         reload('1');
@@ -118,7 +130,7 @@ export default function OpenApi() {
             return {
                 digitalAsset: item["prdt_name"], // key
                 detail: item["prdt_name"],
-                closePrice: Util.UnitConversion(Number(item["prpr"]), true),
+                closePrice: Number(item["prpr"]).toLocaleString() + " 원",
                 expectedRateOfReturn: `${item['hldg_qty']}/${item['ord_psbl_qty']}`,
                 expectedRateOfReturnColor: '', // x
                 targetPrice: Util.UnitConversion(Number(item["evlu_pfls_amt"]), true),
@@ -170,12 +182,12 @@ export default function OpenApi() {
             const stockCode = jsonStock.stock_code;
             console.log(`stockCode`, stockCode);
             dispatch(reqGetInquirePrice({ koreaInvestmentToken: kiToken, PDNO: stockCode }));
+            dispatch(reqGetInquireDailyItemChartPrice({ koreaInvestmentToken: kiToken, PDNO: stockCode, FID_INPUT_DATE_1: "20230102", FID_INPUT_DATE_2: "20230105" }))
         }
 
         setStockName("");
     }
 
-    console.log(`[OpenApi] kiInquirePrice`, kiInquirePrice);
     return <>
         {"init" == loginState ?
             <Login />
