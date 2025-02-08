@@ -3,7 +3,7 @@
 import Login from "@/app/(login)/login/login";
 import TablesExample8, { Example8TableHeadType, Example8TableRowType, TablesExample8PropsType } from "@/components/tableExample8";
 import { getCookie, registerCookie, Util } from "@/components/util";
-import { reqPostApprovalKey, reqPostToken, reqGetInquireBalance, reqPostOrderCash, reqGetInquirePrice, KoreaInvestmentInqurePrice, getKoreaInvestmentInqurePrice, reqGetInquireDailyItemChartPrice, getKoreaInvestmentInqureDailyItemChartPrice, KoreaInvestmentInqureDailyItemChartPrice } from "@/lib/features/koreaInvestment/koreaInvestmentSlice";
+import { reqPostApprovalKey, reqPostToken, reqGetInquireBalance, reqPostOrderCash, reqGetInquirePrice, KoreaInvestmentInquirePrice, getKoreaInvestmentInquirePrice, reqGetInquireDailyItemChartPrice, getKoreaInvestmentInquireDailyItemChartPrice, KoreaInvestmentInquireDailyItemChartPrice, reqGetBalanceSheet, getKoreaInvestmentBalanceSheet, KoreaInvestmentBalanceSheet } from "@/lib/features/koreaInvestment/koreaInvestmentSlice";
 import { KoreaInvestmentApproval, KoreaInvestmentToken, KoreaInvestmentBalance } from "@/lib/features/koreaInvestment/koreaInvestmentSlice";
 import { setKoreaInvestmentToken } from "@/lib/features/koreaInvestment/koreaInvestmentSlice";
 import { getKoreaInvestmentApproval, getKoreaInvestmentToken, getKoreaInvestmentBalance } from "@/lib/features/koreaInvestment/koreaInvestmentSlice";
@@ -15,13 +15,19 @@ import React from "react";
 
 import corpCode from "@/components/corpCode"
 
+import { usePathname } from "next/navigation";
+
 export default function OpenApi() {
+    const pathname = usePathname();
+    console.log(`pathname`, pathname);
+
     const dispatch = useAppDispatch();
     const kiApproval: KoreaInvestmentApproval = useAppSelector(getKoreaInvestmentApproval);
     const kiToken: KoreaInvestmentToken = useAppSelector(getKoreaInvestmentToken);
     const kiBalance: KoreaInvestmentBalance = useAppSelector(getKoreaInvestmentBalance);
-    const kiInquirePrice: KoreaInvestmentInqurePrice = useAppSelector(getKoreaInvestmentInqurePrice);
-    const kiInqureDailyItemChartPrice: KoreaInvestmentInqureDailyItemChartPrice = useAppSelector(getKoreaInvestmentInqureDailyItemChartPrice);
+    const kiInquirePrice: KoreaInvestmentInquirePrice = useAppSelector(getKoreaInvestmentInquirePrice);
+    const kiInquireDailyItemChartPrice: KoreaInvestmentInquireDailyItemChartPrice = useAppSelector(getKoreaInvestmentInquireDailyItemChartPrice);
+    const kiBalanceSheet: KoreaInvestmentBalanceSheet = useAppSelector(getKoreaInvestmentBalanceSheet);
 
     const [time, setTime] = React.useState<any>('');
     const loginState = useAppSelector(selectState);
@@ -87,7 +93,8 @@ export default function OpenApi() {
         }
 
         console.log(`[OpenApi] kiInquirePrice`, kiInquirePrice);
-        console.log(`[OpenApi] kiInqureDailyItemChartPrice`, kiInqureDailyItemChartPrice);
+        console.log(`[OpenApi] kiInquireDailyItemChartPrice`, kiInquireDailyItemChartPrice);
+        console.log(`[OpenApi] kiBalanceSheet`, kiBalanceSheet);
     }
     React.useEffect(() => {
         reload('1');
@@ -185,6 +192,7 @@ export default function OpenApi() {
             console.log(`stockCode`, stockCode);
             dispatch(reqGetInquirePrice({ koreaInvestmentToken: kiToken, PDNO: stockCode }));
             dispatch(reqGetInquireDailyItemChartPrice({ koreaInvestmentToken: kiToken, PDNO: stockCode, FID_INPUT_DATE_1: formatDate(startDate), FID_INPUT_DATE_2: formatDate(endDate) }))
+            dispatch(reqGetBalanceSheet({ koreaInvestmentToken: kiToken, PDNO: stockCode }));
         }
 
         setStockName("");
@@ -232,7 +240,7 @@ export default function OpenApi() {
 
     return <>
         {"init" == loginState ?
-            <Login />
+            <Login parentUrl={pathname} />
             :
             <>
                 <TablesExample8 {...props} />
