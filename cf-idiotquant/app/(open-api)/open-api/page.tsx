@@ -13,7 +13,7 @@ import { useAppDispatch, useAppSelector } from "@/lib/hooks";
 import { Button, Input } from "@material-tailwind/react";
 import React from "react";
 
-import corpCode from "@/public/data/corpCode.json"
+import corpCodeJson from "@/public/data/corpCode.json"
 
 import { usePathname } from "next/navigation";
 
@@ -184,15 +184,24 @@ export default function OpenApi() {
     }
 
     const [stockName, setStockName] = React.useState<string>("");
-    function onSearchButton(stockName: string) {
-        const jsonStock: any = corpCode[stockName];
-        console.log(`stockName`, stockName, `jsonStock`, jsonStock);
+
+    function onSearchButton(stockName: any) {
+        type CorpCodeType = {
+            corp_code: string;
+            stock_code: string;
+            modify_date: string;
+        };
+
+        const corpCode: any = corpCodeJson;
+        const jsonStock: CorpCodeType = corpCode[stockName];
+        // console.log(`jsonStock`, jsonStock);
+        // console.log(`stockName`, stockName, `jsonStock`, jsonStock);
         if (!!jsonStock) {
-            const stockCode = jsonStock.stock_code;
-            console.log(`stockCode`, stockCode);
-            dispatch(reqGetInquirePrice({ koreaInvestmentToken: kiToken, PDNO: stockCode }));
-            dispatch(reqGetInquireDailyItemChartPrice({ koreaInvestmentToken: kiToken, PDNO: stockCode, FID_INPUT_DATE_1: formatDate(startDate), FID_INPUT_DATE_2: formatDate(endDate) }))
-            dispatch(reqGetBalanceSheet({ koreaInvestmentToken: kiToken, PDNO: stockCode }));
+            const { stock_code } = jsonStock;
+            // console.log(`stockCode`, stock_code);
+            dispatch(reqGetInquirePrice({ koreaInvestmentToken: kiToken, PDNO: stock_code }));
+            dispatch(reqGetInquireDailyItemChartPrice({ koreaInvestmentToken: kiToken, PDNO: stock_code, FID_INPUT_DATE_1: formatDate(startDate), FID_INPUT_DATE_2: formatDate(endDate) }))
+            dispatch(reqGetBalanceSheet({ koreaInvestmentToken: kiToken, PDNO: stock_code }));
         }
 
         setStockName("");
