@@ -9,12 +9,12 @@ interface RegisterTemplateProps {
 }
 export default function RegisterTemplate(props: RegisterTemplateProps) {
     return <>
-        <section className={`px-4`}>
-            <Card shadow={false} className={`border-2 border-gray-100}`}>
+        <section className={`px-2`}>
+            <Card shadow={false} className={`border rounded border-gray-100}`}>
                 <CardHeader
                     shadow={false}
                     floated={false}
-                    className="flex overflow-visible gap-y-4 flex-wrap items-start justify-between rounded-none"
+                    className="flex overflow-visible gap-y-4 flex-wrap items-start justify-between rounded"
                 >
                     <div>
                         <Typography

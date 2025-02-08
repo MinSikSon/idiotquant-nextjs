@@ -1,6 +1,6 @@
 "use client"
 
-import RegisterTemplate from "@/app/(strategy-register)/strategy-register/register_template";
+import RegisterTemplate from "@/components/register_template";
 import { GetMergedStocksList, GetStocksFilteredByStrategyNCAV } from "@/components/strategy";
 import { GetStocksFilteredByCustom } from "@/components/strategyCustom";
 import { Util } from "@/components/util";
