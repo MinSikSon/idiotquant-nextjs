@@ -7,13 +7,6 @@ import { selectKakaoAuthCode, selectKakaoId, selectKakaoNickName, setKakaoAuthCo
 import { useAppDispatch, useAppSelector } from "@/lib/hooks";
 import { getCookie, registerCookie } from "@/components/util";
 
-const env = {
-    KAKAO_REDIRECT_URI: 'https://idiotquant.com/login'
-    // KAKAO_REDIRECT_URI: 'https://idiotquant.com/'
-    // KAKAO_REDIRECT_URI: 'http://localhost:3000' // TODO: for test
-    // KAKAO_REDIRECT_URI: 'http://localhost:3000/login' // TODO: for test
-}
-
 async function RequestNickname(_token) {
     if (!!!_token) return;
 
@@ -33,8 +26,8 @@ async function RequestNickname(_token) {
     return response;
 }
 
-async function RequestToken(_authorizeCode) {
-    const tokenUrl = `https://kauth.kakao.com/oauth/token?grant_type=authorization_code&client_id=${process.env.NEXT_PUBLIC_KAKAO_REST_API_KEY}&redirect_uri=${encodeURIComponent(env.KAKAO_REDIRECT_URI)}&code=${_authorizeCode}`;
+async function RequestToken(_authorizeCode, redirectUrl) {
+    const tokenUrl = `https://kauth.kakao.com/oauth/token?grant_type=authorization_code&client_id=${process.env.NEXT_PUBLIC_KAKAO_REST_API_KEY}&redirect_uri=${encodeURIComponent(redirectUrl)}&code=${_authorizeCode}`;
 
     const responseToken = await fetch(tokenUrl, {
         method: 'POST',
@@ -89,8 +82,9 @@ async function registerUser(id, nickname) {
     fetchAndSet('login');
 }
 
-export default function Login() {
+export default function Login(props) {
     const router = useRouter();
+
     const [nickname, setNickname] = React.useState('');
     const [authorizeCode, setAuthorizeCode] = React.useState('');
 
@@ -117,7 +111,7 @@ export default function Login() {
                 _authorizeCode = selectKakaoAuthCode;
             }
 
-            const responseToken = await RequestToken(_authorizeCode);
+            const responseToken = await RequestToken(_authorizeCode, `${window.location.origin}${props.parentUrl}`);
             if (!!responseToken.error_code && "KOE320" == responseToken.error_code) {
                 console.log(`!!!!! responseToken`, responseToken);
                 return;
@@ -149,7 +143,7 @@ export default function Login() {
             dispatch(setKakaoId(responseNickname.id))
 
             const url = {
-                pathname: env.KAKAO_REDIRECT_URI,
+                pathname: `${window.location.origin}${props.parentUrl}`,
                 query: { id: responseNickname.id },
             };
             const queryString = new URLSearchParams(url.query).toString();
@@ -158,14 +152,14 @@ export default function Login() {
         callback();
     }, []);
 
-    function onClickLogin() {
+    function onClickLogin(redirectUrl) {
         console.log(`Login`);
-        const authorizeEndpoint = `https://kauth.kakao.com/oauth/authorize?response_type=code&client_id=${process.env.NEXT_PUBLIC_KAKAO_REST_API_KEY}&redirect_uri=${env.KAKAO_REDIRECT_URI}`;
+        const authorizeEndpoint = `https://kauth.kakao.com/oauth/authorize?response_type=code&client_id=${process.env.NEXT_PUBLIC_KAKAO_REST_API_KEY}&redirect_uri=${redirectUrl}`;
 
         router.push(authorizeEndpoint);
     }
 
-    const Logout = () => {
+    const Logout = (redirectUrl) => {
         console.log(`Logout`);
         // sessionStorage.removeItem('kakaoId');
         registerCookie("kakaoId", "");
@@ -178,7 +172,7 @@ export default function Login() {
         dispatch(setKakaoNickName(""));
         dispatch(setKakaoId(""));
 
-        const authorizeEndpoint = `https://kauth.kakao.com/oauth/logout?client_id=${process.env.NEXT_PUBLIC_KAKAO_REST_API_KEY}&logout_redirect_uri=${env.KAKAO_REDIRECT_URI}`;
+        const authorizeEndpoint = `https://kauth.kakao.com/oauth/logout?client_id=${process.env.NEXT_PUBLIC_KAKAO_REST_API_KEY}&logout_redirect_uri=${redirectUrl}`;
         router.push(authorizeEndpoint);
     }
 
@@ -208,7 +202,7 @@ export default function Login() {
                                     // variant="outlined"
                                     color="yellow"
                                     className="flex items-center gap-3"
-                                    onClick={onClickLogin}
+                                    onClick={() => onClickLogin(`${window.location.origin}${props.parentUrl}`)}
                                 >
                                     <img src="/images/kakaotalk_sharing_btn_small.png" alt="metamask" className="h-6 w-6" />
                                     Continue with Kakao
@@ -237,7 +231,7 @@ export default function Login() {
                                     variant="outlined"
                                     color="blue-gray"
                                     className="flex items-center gap-3"
-                                    onClick={Logout}
+                                    onClick={() => Logout(`${window.location.origin}${props.parentUrl}`)}
                                 >
                                     <img src="/images/kakaotalk_sharing_btn_small.png" alt="metamask" className="h-6 w-6" />
                                     Logout

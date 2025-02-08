@@ -57,88 +57,23 @@ export default function StrategyRegister() {
 
     const classNameButtonGroup = `flex flex-col justify-between items-left mt-2 text-black hover:text-blue-500`
     const selectedButtonColor = `bg-blue-500 text-white`;
-    const getStep0Contents = () => {
-        function handleOnclickDefaultStrategy(item: any) {
-            dispatch(setDefaultStrategy(item));
-        }
-
+    const getStepContents = (title: string, list: any[], selectValue: any, handleOnClick: any) => {
         return <div className="flex flex-col">
-            <div className={classNameButtonGroup}>
-                <div>전략</div>
+            <div className="flex flex-col justify-between items-left mt-2 text-black hover:text-blue-500">
+                <div>{title}</div>
                 <ButtonGroup color="blue" variant="outlined" size="sm" fullWidth>
-                    {defaultStrategyList.map((item, key) => <Button key={key} className={defaultStrategy == item ? selectedButtonColor : ``} onClick={() => handleOnclickDefaultStrategy(item)}>{`${item}`}</Button>)}
-                </ButtonGroup>
-            </div>
-            {/* <div className={classNameButtonGroup}>
-                    전략 추가 예정
-                </div> */}
-        </div>
-    }
-
-    const getStep1Contents = () => {
-        function handleOnclickPer(item: any) {
-            // console.log(`setPer`, item);
-            dispatch(setPer(item));
-        }
-
-        function handleOnclickPbr(item: any) {
-            // console.log(`setPbr`, item);
-            dispatch(setPbr(item));
-        }
-
-        return <div className="flex flex-col">
-            <div className={classNameButtonGroup}>
-                <div>PER 최대</div>
-                <ButtonGroup color="blue" variant="outlined" size="sm" fullWidth>
-                    {perList.map((item, key) => <Button key={key} className={per == item ? selectedButtonColor : ``} onClick={() => handleOnclickPer(item)}>{`${item}`}</Button>)}
-                </ButtonGroup>
-            </div>
-            <div className={classNameButtonGroup}>
-                <div>PBR 최대</div>
-                <ButtonGroup color="blue" variant="outlined" size="sm" fullWidth>
-                    {pbrList.map((item, key) => <Button key={key} className={pbr == item ? selectedButtonColor : ``} onClick={() => handleOnclickPbr(item)}>{`${item}`}</Button>)}
+                    {list.map((item, key) => <Button key={key} className={selectValue == item ? `bg-blue-500 text-white` : ``} onClick={() => handleOnClick(item)}>{`${item}`}</Button>)}
                 </ButtonGroup>
             </div>
         </div>
     }
 
-    const getStep2Contents = () => {
-        function handleOnclickCapitalizationMin(item: any) {
-            // console.log(`setCapitalization`, item);
-            dispatch(setCapitalizationMin(item));
-        }
-        function handleOnclickCapitalization(item: any) {
-            // console.log(`setCapitalization`, item);
-            dispatch(setCapitalization(item));
-        }
-
+    const getStepContentsType2 = (title: string, list: any[], selectValue: any, handleOnClick: any) => {
         return <div className="flex flex-col">
-            <div className={classNameButtonGroup}>
-                <div>{step2SubTitle1}</div>
+            <div className="flex flex-col justify-between items-left mt-2 text-black hover:text-blue-500">
+                <div>{title}</div>
                 <ButtonGroup color="blue" variant="outlined" size="sm" fullWidth>
-                    {capitalizationMinList.map((item, key) => <Button key={key} className={`px-0 ${capitalizationMin == item ? selectedButtonColor : ``}`} onClick={() => handleOnclickCapitalizationMin(item)}>{`${isNaN(item) ? item : Util.UnitConversion(item, true)}`}</Button>)}
-                </ButtonGroup>
-            </div>
-            <div className={classNameButtonGroup}>
-                <div>{step2SubTitle2}</div>
-                <ButtonGroup color="blue" variant="outlined" size="sm" fullWidth>
-                    {capitalizationList.map((item, key) => <Button key={key} className={`px-0 ${capitalization == item ? selectedButtonColor : ``}`} onClick={() => handleOnclickCapitalization(item)}>{`${isNaN(item) ? item : Util.UnitConversion(item, true)}`}</Button>)}
-                </ButtonGroup>
-            </div>
-        </div>
-    }
-
-    const getStep3Contents = () => {
-        function handleOnclickNetIncome(item: any) {
-            // console.log(`setCapitalization`, item);
-            dispatch(setNetIncome(item));
-        }
-
-        return <div className="flex flex-col">
-            <div className={classNameButtonGroup}>
-                <div>{step3Title}</div>
-                <ButtonGroup color="blue" variant="outlined" size="sm" fullWidth>
-                    {netIncomeList.map((item, key) => <Button key={key} className={netIncome == item ? selectedButtonColor : ``} onClick={() => handleOnclickNetIncome(item)}>{String(item)}</Button>)}
+                    {list.map((item, key) => <Button key={key} className={`px-0 ${selectValue == item ? `bg-blue-500 text-white` : ``}`} onClick={() => handleOnClick(item)}>{`${Util.UnitConversion(Number(item), true)}`}</Button>)}
                 </ButtonGroup>
             </div>
         </div>
@@ -146,10 +81,12 @@ export default function StrategyRegister() {
 
     const getContents = () => {
         return <>
-            {getStep0Contents()}
-            {getStep1Contents()}
-            {getStep2Contents()}
-            {getStep3Contents()}
+            {getStepContents("전략", defaultStrategyList, defaultStrategy, (item: any) => { dispatch(setDefaultStrategy(item)); })}
+            {getStepContents("PER 최대", perList, per, (item: any) => { dispatch(setPer(item)); })}
+            {getStepContents("PBR 최대", pbrList, pbr, (item: any) => { dispatch(setPbr(item)); })}
+            {getStepContentsType2(step2SubTitle1, capitalizationMinList, capitalizationMin, (item: any) => { dispatch(setCapitalizationMin(item)); })}
+            {getStepContentsType2(step2SubTitle2, capitalizationList, capitalization, (item: any) => { dispatch(setCapitalization(item)); })}
+            {getStepContents(step3Title, netIncomeList, netIncome, (item: any) => { dispatch(setNetIncome(item)); })}
         </>
     }
 

@@ -157,6 +157,7 @@ export interface Example8TableRowType {
     eps?: string;
     pbr?: string;
     per?: string;
+    tag?: any;
 }
 
 export interface Example8TableHeadType {
@@ -166,7 +167,7 @@ export interface Example8TableHeadType {
 }
 
 export interface TablesExample8PropsType {
-    title: string;
+    title: any;
     subTitle: string;
     desc: string;
     financial_date: string;
@@ -185,7 +186,7 @@ function TablesExample8({
     tableRow
 }: TablesExample8PropsType) {
     return (
-        <section className="m-4">
+        <section className="m-2">
             <Card className="h-full w-full">
                 <CardHeader
                     floated={false}
@@ -274,6 +275,7 @@ function TablesExample8({
                                             img,
                                             digitalAsset,
                                             detail,
+                                            tag,
                                             closePrice,
                                             expectedRateOfReturn,
                                             expectedRateOfReturnColor,
@@ -315,7 +317,10 @@ function TablesExample8({
                                                                 variant="h6"
                                                                 className="!font-normal text-gray-600"
                                                             >
-                                                                {detail}
+                                                                <div className="flex">
+                                                                    {tag}
+                                                                    {detail}
+                                                                </div>
                                                             </Typography>
                                                         </div>
                                                     </div>
