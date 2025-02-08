@@ -18,6 +18,9 @@ import { setBackTestConditionType1, getBackTestConditionType1 } from "@/lib/feat
 import { setBackTestConditionType2, getBackTestConditionType2 } from "@/lib/features/backtest/backtestSlice";
 import { setBackTestConditionType3, getBackTestConditionType3 } from "@/lib/features/backtest/backtestSlice";
 import { reqGetFinancialInfoList, getBackTestConditionFinancialInfoList } from "@/lib/features/backtest/backtestSlice";
+import { getBackTestConditionFilterResultType } from "@/lib/features/backtest/backtestSlice";
+
+import { reqGetFinancialInfo } from "@/lib/features/backtest/backtestSlice";
 
 import React from "react";
 
@@ -28,6 +31,7 @@ export default function BackTest() {
     const backTestConditionType2 = useAppSelector(getBackTestConditionType2);
     const backTestConditionType3 = useAppSelector(getBackTestConditionType3);
     const backTestConditionFinancialInfoList = useAppSelector(getBackTestConditionFinancialInfoList);
+    const backTestConditionFilterResultType = useAppSelector(getBackTestConditionFilterResultType);
 
     const getTitle = () => {
         return "back test"
@@ -81,7 +85,15 @@ export default function BackTest() {
         const transformedData = output2.filter(item => item.endsWith("12"));
         console.log(`transformedData`, transformedData);
 
+        const output1 = backTestConditionFinancialInfoList.output1;
+
+        if (output2.length > 0) {
+            dispatch(reqGetFinancialInfo({ year: "2017", quarter: "4" }));
+        }
     }, [backTestConditionFinancialInfoList]);
+    React.useEffect(() => {
+        console.log(`backTestConditionFilterResultType`, backTestConditionFilterResultType);
+    }, [backTestConditionFilterResultType]);
 
     const getContents = () => {
         return <>

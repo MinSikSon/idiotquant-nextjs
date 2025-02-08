@@ -20,8 +20,9 @@ export interface BackTestConditionType3 {
 }
 
 interface BackTestConditionFilterResultTypeOutput {
-    date: string;
-    value: string;
+    [date: string]: {
+        value: string;
+    }
 }
 export interface BackTestConditionFilterResultType {
     state: string;
@@ -138,28 +139,29 @@ export const backtestSlice = createAppSlice({
                 }
             },
         ),
-        // getStartFinancialInfo: create.asyncThunk(
-        //     async ({ year, quarter }: { year: string, quarter: string }) => {
-        //         // console.log(`[getStartFinancialInfo]`, year, quarter);
-        //         const res: any = await getFinancialInfo(year, quarter);
-        //         return res;
-        //     },
-        //     {
-        //         pending: (state) => {
-        //             // console.log(`[getStartFinancialInfo] pending`);
-        //             state.state = "loading";
-        //         },
-        //         fulfilled: (state, action) => {
-        //             // console.log(`[getStartFinancialInfo] fulfilled - action.payload:`, action.payload);
-        //             state.state = "loaded";
-        //             state.startFinancialInfo = action.payload;
-        //         },
-        //         rejected: (state) => {
-        //             // console.log(`[getStartFinancialInfo] rejected`);
-        //             state.state = "get-rejected";
-        //         }
-        //     },
-        // ),
+        reqGetFinancialInfo: create.asyncThunk(
+            async ({ year, quarter }: { year: string, quarter: string }) => {
+                // console.log(`[getStartFinancialInfo]`, year, quarter);
+                const res: any = await getFinancialInfo(year, quarter);
+                return res;
+            },
+            {
+                pending: (state) => {
+                    console.log(`[reqGetFinancialInfo] pending`);
+                    state.state = "pending";
+                },
+                fulfilled: (state, action) => {
+                    console.log(`[reqGetFinancialInfo] fulfilled action.payload:`, typeof action.payload, action.payload);
+                    state.state = "fulfilled";
+                    state.backTestConditionFilterResultType.output = [...state.backTestConditionFilterResultType.output, { "test": action.payload }];
+                    // state.backTestConditionFilterResultType.state = "get-financial-info";
+                },
+                rejected: (state) => {
+                    console.log(`[reqGetFinancialInfo] rejected`);
+                    state.state = "rejected";
+                }
+            },
+        ),
     }),
     selectors: {
         getBackTestConditionType1: (state) => state.backTestConditionType1,
@@ -181,4 +183,7 @@ export const { getBackTestConditionFilterResultType } = backtestSlice.selectors;
 // request
 export const { reqGetFinancialInfoList } = backtestSlice.actions;
 export const { getBackTestConditionFinancialInfoList } = backtestSlice.selectors;
+export const { reqGetFinancialInfo } = backtestSlice.actions;
+
+
 
