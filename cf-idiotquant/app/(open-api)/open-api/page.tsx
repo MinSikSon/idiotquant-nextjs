@@ -13,7 +13,7 @@ import { useAppDispatch, useAppSelector } from "@/lib/hooks";
 import { Button, Input } from "@material-tailwind/react";
 import React from "react";
 
-import corpCode from "@/components/corpCode"
+import corpCode from "@/public/data/corpCode.json"
 
 import { usePathname } from "next/navigation";
 
