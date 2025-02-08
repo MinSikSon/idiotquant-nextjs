@@ -13,8 +13,7 @@ import { useAppDispatch, useAppSelector } from "@/lib/hooks";
 import { Button, Input } from "@material-tailwind/react";
 import React from "react";
 
-import { corpCode } from "@/components/corpCode.js"
-
+import corpCode from "@/components/corpCode"
 
 export default function OpenApi() {
     const dispatch = useAppDispatch();
@@ -176,7 +175,7 @@ export default function OpenApi() {
 
     const [stockName, setStockName] = React.useState<string>("");
     function onSearchButton(stockName: string) {
-        const jsonStock: any = corpCode()[stockName];
+        const jsonStock: any = corpCode[stockName];
         console.log(`stockName`, stockName, `jsonStock`, jsonStock);
         if (!!jsonStock) {
             const stockCode = jsonStock.stock_code;
