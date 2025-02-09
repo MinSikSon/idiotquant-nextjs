@@ -279,7 +279,7 @@ export default function OpenApi() {
                             className=""
                             color="black"
                             label="시작날짜"
-                            type='date'
+                            type="date"
                             value={startDate} crossOrigin={undefined}
                             onChange={handleInputStartDate}
                         />
@@ -289,7 +289,7 @@ export default function OpenApi() {
                             className=""
                             color="black"
                             label="종료날짜"
-                            type='date'
+                            type="date"
                             value={endDate} crossOrigin={undefined}
                             onChange={handleInputEndDate}
                         />
