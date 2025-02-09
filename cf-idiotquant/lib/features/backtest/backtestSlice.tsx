@@ -181,7 +181,7 @@ export const backtestSlice = createAppSlice({
                     state.state = "pending";
                 },
                 fulfilled: (state, action) => {
-                    // console.log(`[reqGetFinancialInfo] fulfilled action.payload:`, typeof action.payload, action.payload);
+                    console.log(`[reqGetFinancialInfo] fulfilled action.payload:`, typeof action.payload, action.payload);
                     state.state = "fulfilled";
                     const key: string = action.payload["yearQuarter"];
                     const output: any = action.payload["output"];

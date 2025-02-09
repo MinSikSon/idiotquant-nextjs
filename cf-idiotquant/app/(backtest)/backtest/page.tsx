@@ -248,7 +248,7 @@ export default function BackTest() {
                                                 // console.log(`currentFilteredStockInfo`, currentFilteredStockInfo);
                                                 return <>
                                                     <Typography key={index} color="gray" className="font-normal text-xs text-gray-600">
-                                                        [{stockName}] 수익:{!!currentFilteredStockInfo ? (Number(currentFilteredStockInfo["시가"]) - Number(filteredStockInfo["시가"])) : "없음"} 시가:{Number(filteredStockInfo["시가"]).toFixed(0)} 원, 유동자산:{Util.UnitConversion(filteredStockInfo["유동자산"], true)}, 부채총계:{Util.UnitConversion(filteredStockInfo["부채총계"], true)}
+                                                        [{stockName}] 수익:{profit} 시가:{Number(filteredStockInfo["시가"]).toFixed(0)} 원, 유동자산:{Util.UnitConversion(filteredStockInfo["유동자산"], true)}, 부채총계:{Util.UnitConversion(filteredStockInfo["부채총계"], true)}
                                                     </Typography>
                                                 </>
                                             }) : <>
