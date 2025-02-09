@@ -1,227 +1,282 @@
 "use client"
 
-import { GetMergedStocksList, GetStocksFilteredByStrategyNCAV } from "@/components/strategy";
-import TablePanel, { ListNodeTemplate } from "@/components/TablePanel";
-import { getPrevYearAndQuarter, getYearAndQuarterByDate } from "@/components/yearQuarterMatcher";
-import { getEndMarketInfo, getStartFinancialInfo, getStartMarketInfo, selectEndMarketInfo, selectStartFinancialInfo, selectStartMarketInfo, setBackTestStrategyList } from "@/lib/features/backtest/backtestSlice";
-import { selectMarketInfoList } from "@/lib/features/marketInfo/marketInfoSlice";
 import { useAppDispatch, useAppSelector } from "@/lib/hooks";
-import { Button, Card, CardBody, CardFooter, CardHeader, Slider, Typography } from "@material-tailwind/react";
-import { useState, useEffect } from "react";
+import { Button, ButtonGroup, Input } from "@material-tailwind/react";
+import RegisterTemplate from "@/components/register_template";
+import Link from "next/link";
 
-const SimpleCard = (props: any) => {
-    return (
-        <Card className="my-0 w-full sm:px-28 lg:px-48 xl:px-64">
-            {/* <CardHeader
-                floated={false}
-                shadow={false}
-                color="transparent"
-                className="m-0 rounded-none">
-                <img
-                    src="https://images.unsplash.com/photo-1522202176988-66273c2fd55f?ixlib=rb-4.0.3&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=1471&q=80"
-                    alt="ui/ux review check"
-                />
-            </CardHeader> */}
-            <CardBody>
-                <Typography variant="h5" color="blue-gray" className="mb-2">
-                    {props.title}
-                </Typography>
-                <Typography variant="h6">
-                    {props.description1}
-                    {props.description2}
-                </Typography>
-            </CardBody>
-            <CardFooter className="flex pt-0">
-                <Button className="grow" onClick={props.buttonClieckEvent}>{props.buttonDesc}</Button>
-            </CardFooter>
-        </Card>
-    );
-}
+import {
+    Timeline,
+    TimelineItem,
+    TimelineConnector,
+    TimelineHeader,
+    TimelineIcon,
+    TimelineBody,
+    Typography,
+} from "@material-tailwind/react";
+import { setBackTestConditionType1, getBackTestConditionType1, setBackTestConditionFilterResultType, BackTestConditionFilterResultType } from "@/lib/features/backtest/backtestSlice";
+import { setBackTestConditionType2, getBackTestConditionType2 } from "@/lib/features/backtest/backtestSlice";
+import { setBackTestConditionType3, getBackTestConditionType3 } from "@/lib/features/backtest/backtestSlice";
+import { reqGetFinancialInfoList, getBackTestConditionFinancialInfoList } from "@/lib/features/backtest/backtestSlice";
+import { getBackTestConditionFilterResultType } from "@/lib/features/backtest/backtestSlice";
 
-export default function BackTesting(props: any) {
+import { reqGetFinancialInfoWithMarketInfo } from "@/lib/features/backtest/backtestSlice";
+
+import React from "react";
+import { CurrencyDollarIcon } from "@heroicons/react/24/outline";
+import { Util } from "@/components/util";
+
+export default function BackTest() {
     const dispatch = useAppDispatch();
-    const startFinancialInfo = useAppSelector(selectStartFinancialInfo);
-    const startMarketInfo = useAppSelector(selectStartMarketInfo);
-    const endMarketInfo = useAppSelector(selectEndMarketInfo);
-    // console.log(`[BackTesting] startFinancialInfo`, startFinancialInfo);
-    // console.log(`[BackTesting] startMarketInfo`, startMarketInfo);
-    // console.log(`[BackTesting] endMarketInfo`, endMarketInfo);
 
-    // console.log(`Step1. 선택할 수 있는 marketInfo date 출력`);
-    const marketInfoDateList = useAppSelector(selectMarketInfoList).replaceAll("[", "").replaceAll("]", "").split(",").map(data => data.replaceAll("\"", ""));
+    const backTestConditionType1 = useAppSelector(getBackTestConditionType1);
+    const backTestConditionType2 = useAppSelector(getBackTestConditionType2);
+    const backTestConditionType3 = useAppSelector(getBackTestConditionType3);
+    const backTestConditionFinancialInfoList = useAppSelector(getBackTestConditionFinancialInfoList);
+    const backTestConditionFilterResultType: BackTestConditionFilterResultType = useAppSelector(getBackTestConditionFilterResultType);
 
-    // console.log(`Step2. 해당 marketInfo date 선택하면, financialInfo 와 조합하여 종목 추출 (일단은 전략은 NCAV 로 통일)`);
-    // console.log(`Step3. run backtesting 버튼 누르면 실행 (현재 주가와 비교)`);
+    const totalProfit = React.useRef(0);
+    const [totalProfitState, setTotalProfitState] = React.useState(0);
 
-    const [startIndex, setStartIndex] = useState(0);
-    const [endIndex, setEndIndex] = useState(0);
-    const [filteredStocks, setFilteredStocks] = useState({});
+    const getTitle = () => {
+        return "back-test"
+    };
 
-    useEffect(() => {
-        if (0 == startIndex) {
-            setStartIndex(0);
+    const getSubTitle = () => {
+        return "전략에 따른 수익을 확인해보세요."
+    };
+
+    const getStepContents = (title: string, list: any[], selectValue: any, handleOnClick: any) => {
+        return <div className="flex flex-col">
+            <div className="flex flex-col justify-between items-left mt-2 text-black hover:text-blue-500">
+                <div>{title}</div>
+                <ButtonGroup color="blue" variant="outlined" size="sm" fullWidth>
+                    {list.map((item, key) => <Button key={key} className={selectValue == item ? `bg-blue-500 text-white` : ``} onClick={() => handleOnClick(item)}>{`${item}`}</Button>)}
+                </ButtonGroup>
+            </div>
+        </div>
+    };
+
+    const getDateContents = (title: string, selectValue: any, min: any, max: any, handleOnChange: any) => {
+        return <div className="flex flex-col">
+            <div className="flex flex-col justify-between items-left mt-2 text-black hover:text-blue-500">
+                <Input
+                    className=""
+                    color="black"
+                    label={title}
+                    type="date"
+                    value={selectValue} crossOrigin={undefined}
+                    onChange={(e) => handleOnChange(e.currentTarget.value)}
+                    min={min}
+                    max={max}
+                />
+            </div>
+        </div>
+    };
+
+    React.useEffect(() => {
+        // console.log(`backTestConditionType1`, backTestConditionType1);
+    }, [backTestConditionType1]);
+    React.useEffect(() => {
+        // console.log(`backTestConditionType2`, backTestConditionType2);
+    }, [backTestConditionType2]);
+    React.useEffect(() => {
+        // console.log(`backTestConditionType3`, backTestConditionType3);
+    }, [backTestConditionType3]);
+    React.useEffect(() => {
+        // console.log(`backTestConditionFinancialInfoList`, backTestConditionFinancialInfoList);
+        const output2 = backTestConditionFinancialInfoList.output2;
+        const transformedData = output2.filter(item => item.endsWith("12"));
+        // console.log(`transformedData`, transformedData);
+
+        const output1 = backTestConditionFinancialInfoList.output1;
+
+        if ("init" == backTestConditionFinancialInfoList.state && output1.length > 0) {
+            // const match = output1[0].match(/_(\d{4})_(\d)Q/); // 처음 값만 사용해서 요청
+            // console.log(`match`, match);
+            // dispatch(reqGetFinancialInfo({ year: match[1], quarter: match[2] })); // 요청 결과는 backTestConditionFilterResultType 에 갱신 됨.
+            dispatch(setBackTestConditionFilterResultType({ ...backTestConditionFilterResultType, startDate: backTestConditionType2.startDate, endDate: backTestConditionType3.endDate, state: "loading" }));
         }
-        if (0 == endIndex) {
-            setEndIndex(marketInfoDateList.length - 1);
-        }
-    }, [startIndex, endIndex, marketInfoDateList]);
+    }, [backTestConditionFinancialInfoList]);
+    React.useEffect(() => {
+        console.log(`backTestConditionFilterResultType`, backTestConditionFilterResultType);
 
-    function handleChange(e: any) {
-        const offset = Number((100 / marketInfoDateList.length).toFixed(0));
-        // console.log(`handleChange`, e, `, e.target.value:`, e.target.value);
-        const index = e.target.value / offset;
-        // console.log(`marketInfoDateList`, marketInfoDateList);
-        // console.log(`marketInfoDateList[index: ${index}]`, marketInfoDateList[index]);
-        // console.log(`startIndex`, startIndex, `, endIndex`, endIndex);
-        if (index < endIndex) {
-            setStartIndex(index);
-        }
-        // offset 에 따라 화면에 값 출력
-    }
-
-    function handleChange2(e: any) {
-        const arraySize: number = marketInfoDateList.length;
-        // console.log(`marketInfoDateList.length`, arraySize);
-        const offset: number = Number((100 / arraySize).toFixed(0));
-        // console.log(`handleChange`, e, `, e.target.value:`, e.target.value);
-        const index: number = e.target.value / offset;
-        // console.log(`offset`, offset);
-        // console.log(`index`, index);
-        // console.log(`marketInfoDateList`, marketInfoDateList);
-        // console.log(`marketInfoDateList[index: ${index}]`, marketInfoDateList[index]);
-        // console.log(`startIndex`, startIndex, `, endIndex`, endIndex);
-
-        if (arraySize <= index) {
-            return;
-        }
-
-        if (startIndex < index) {
-            setEndIndex(index);
-        }
-        // offset 에 따라 화면에 값 출력
-    }
-
-
-    let prevStartYearAndQuarter = { year: 9999, quarter: 1 };
-    let prevEndYearAndQuarter = { year: 9999, quarter: 1 };
-
-    function runBacktest() {
-        // console.log(`[runBacktest]`, startIndex, endIndex, prevStartYearAndQuarter);
-
-        const startMarketInfoDate: string = marketInfoDateList[startIndex].split("_")[1];
-        const endMarketInfoDate: string = marketInfoDateList[endIndex].split("_")[1];
-        dispatch(getStartFinancialInfo({ year: (prevStartYearAndQuarter.year).toString(), quarter: (prevStartYearAndQuarter.quarter).toString() }));
-        dispatch(getStartMarketInfo({ date: startMarketInfoDate }));
-        dispatch(getEndMarketInfo({ date: endMarketInfoDate }));
-    }
-
-    useEffect(() => {
-        if (true == !!startFinancialInfo && Object.keys(startFinancialInfo).length > 0)
-            if (true == !!startMarketInfo && Object.keys(startMarketInfo).length > 0)
-                if (true == !!endMarketInfo && Object.keys(endMarketInfo).length > 0) {
-                    const mergedStockInfo = GetMergedStocksList(startFinancialInfo, startMarketInfo);
-                    const dicFilteredStocks = GetStocksFilteredByStrategyNCAV(mergedStockInfo);
-                    setFilteredStocks(dicFilteredStocks);
-
-                    const ncavStrategyList = {
-                        financialInfoDate: `${prevStartYearAndQuarter.year}${prevStartYearAndQuarter.quarter}Q`,
-                        marketInfoDate: startMarketInfo[`date`],
-                        ncavList: JSON.stringify(filteredStocks)
-                    }
-
-                    dispatch(setBackTestStrategyList(ncavStrategyList));
+        const output2 = backTestConditionFinancialInfoList.output2;
+        // console.log(`output2`, output2);
+        if ("loading" == backTestConditionFilterResultType.state && output2.length > 0) {
+            const formatDate = (dateStr: string): string => {
+                if (dateStr.length !== 6) {
+                    throw new Error("Invalid date format");
                 }
 
-    }, [startFinancialInfo, startMarketInfo, endMarketInfo])
+                const year = dateStr.slice(0, 4);  // "2017"
+                const month = dateStr.slice(4, 6); // "12"
 
-    // console.log(`marketInfoDateList `, marketInfoDateList);
-    // console.log(`marketInfoDateList.length `, marketInfoDateList.length);
-    // console.log(`startIndex`, startIndex)
-    // console.log(`marketInfoDateList[startIndex]`, marketInfoDateList[startIndex])
-    // console.log(`endIndex`, endIndex)
-    // console.log(`marketInfoDateList[endIndex]`, marketInfoDateList[endIndex])
-    if ('' != marketInfoDateList[0]) {
-        let startYearAndQuarter = getYearAndQuarterByDate(marketInfoDateList[startIndex].split("_")[1]);
-        prevStartYearAndQuarter = getPrevYearAndQuarter(startYearAndQuarter.year, startYearAndQuarter.quarter);
+                return `${year}-${month}-01`; // "2017-12-01"
+            };
 
-        let endYearAndQuarter = getYearAndQuarterByDate(marketInfoDateList[endIndex].split("_")[1]);
-        prevEndYearAndQuarter = getPrevYearAndQuarter(endYearAndQuarter.year, endYearAndQuarter.quarter);
+            const yearQuarterList = backTestConditionFilterResultType.output;
+            // console.log(`yearQuarterList`, yearQuarterList);
 
-    }
+            const startDate = backTestConditionFilterResultType.startDate;
+            const endDate = backTestConditionFilterResultType.endDate;
+            let isDone = true;
+            for (let i = 0; i < output2.length; ++i) {
+                const YYYYMMDD = formatDate(output2[i]); // YYYY-MM-DD
+                // console.log(new Date(startDate), new Date(endDate), new Date(YYYYMMDD));
+                // console.log(new Date(startDate) <= new Date(YYYYMMDD), new Date(endDate) >= new Date(YYYYMMDD));
+                if (false == (new Date(startDate) <= new Date(YYYYMMDD))) {
+                    continue;
+                }
+                if (false == (new Date(endDate) >= new Date(YYYYMMDD))) {
+                    continue;
+                }
 
-    let endValue = 100;
-    if (marketInfoDateList.length > 0) {
-        endValue = (Number((100 / marketInfoDateList.length).toFixed(0)) * endIndex);
-        endValue = endValue > 100 ? 100 : endValue;
-    }
+                // console.log(`yearQuarterList[output2[${i}]]`, yearQuarterList[output2[i]], `output2[${i}]`, output2[i]);
+                if (undefined == yearQuarterList[output2[i]]) {
+                    const output1 = backTestConditionFinancialInfoList.output1;
+                    // console.log(`output1`, output1);
+                    const match = output1[i].match(/_(\d{4})_(\d)Q/); // 처음 값만 사용해서 요청
+                    // console.log(`match`, match);
+                    dispatch(reqGetFinancialInfoWithMarketInfo({ year: match[1], quarter: match[2] })); // 요청 결과는 backTestConditionFilterResultType 에 갱신 됨.
 
-    // console.log(`[BackTesting] filteredStocksList`, filteredStocks);
-    // console.log(`[BackTesting] bsnsDate`, startMarketInfo[`date`]);
+                    isDone = false;
+                    break;
+                }
+            }
 
-    return <>
-        <SimpleCard
-            title={`back test (strategy : NCAV only)`}
-            description1={<div className="w-full">
-                <div>
-                    start date : {marketInfoDateList[startIndex]}
-                </div>
-                <div className="px-3">
-                    <Slider
-                        size={"lg"}
-                        defaultValue={0}
-                        value={marketInfoDateList.length > 0 ? Number((100 / marketInfoDateList.length).toFixed(0)) * startIndex : 0}
-                        step={marketInfoDateList.length > 0 ? (100 / marketInfoDateList.length).toFixed(0) : 1}
-                        onChange={handleChange}
-                    />
-                </div>
-                <div className="pl-6">
-                    year:{prevStartYearAndQuarter.year}, quarter:{prevStartYearAndQuarter.quarter}
-                </div>
-            </div>}
-            description2={
-                <div className="w-full">
-                    <div>
-                        end date : {marketInfoDateList[endIndex]}
-                    </div>
-                    <div className="px-3">
-                        <Slider
-                            size={"lg"}
-                            defaultValue={100}
-                            value={endValue}
-                            step={marketInfoDateList.length > 0 ? (100 / marketInfoDateList.length).toFixed(0) : 1}
-                            onChangeCapture={handleChange2}
-                        />
-                    </div>
-                    <div className="pl-6">
-                        year:{prevEndYearAndQuarter.year}, quarter:{prevEndYearAndQuarter.quarter}
+            if (true == isDone) {
+                // console.log(`output1.length`, output1.length, `isDone`, isDone);
+                dispatch(setBackTestConditionFilterResultType({ ...backTestConditionFilterResultType, state: "done" }));
+            }
+        }
+    }, [backTestConditionFilterResultType]);
+
+    const getContents = () => {
+        return <>
+            {getStepContents(backTestConditionType1.title, backTestConditionType1.strategyList, backTestConditionType1.strategy, (item: string) => { dispatch(setBackTestConditionType1({ ...backTestConditionType1, strategy: item })); })}
+            {getDateContents(backTestConditionType2.title, backTestConditionType2.startDate, backTestConditionType2.min, backTestConditionType2.max, (item: any) => { dispatch(setBackTestConditionType2({ ...backTestConditionType2, startDate: item })); })}
+            {getDateContents(backTestConditionType3.title, backTestConditionType3.endDate, backTestConditionType3.min, backTestConditionType3.max, (item: any) => { dispatch(setBackTestConditionType3({ ...backTestConditionType3, endDate: item })); })}
+        </>
+    };
+
+    const getFooter = () => {
+        const handleOnClick = () => {
+            // console.log(`[handleOnClick] dispatch(reqGetFinancialInfoList())`);
+            totalProfit.current = 0;
+            dispatch(setBackTestConditionFilterResultType({ ...backTestConditionFilterResultType, state: "init", output: {} }));
+            dispatch(reqGetFinancialInfoList());
+        }
+
+        return <>
+            {
+                <div className="flex flex-col gap-2">
+                    <div className="flex justify-between items-center">
+                        <Link href={`/`}>
+                            <Button color="red" size="sm" variant="outlined">
+                                취소
+                            </Button>
+                        </Link>
+                        <Button className="hover:text-blue-500 hover:border-blue-500" disabled={"loading" == backTestConditionFilterResultType.state ? true : false} loading={"loading" == backTestConditionFilterResultType.state ? true : false} color={`black`} onClick={() => handleOnClick()} size="sm" variant="outlined">
+                            {"loading" == backTestConditionFilterResultType.state ? "등록 중" : "등록"}
+                        </Button>
                     </div>
                 </div>
             }
-            buttonDesc={"run backtesting"}
-            buttonClieckEvent={runBacktest}
+        </>
+    };
+
+    const formatDate = (dateStr: string): string => {
+        if (dateStr.length !== 6) {
+            throw new Error("Invalid date format");
+        }
+
+        const year = dateStr.slice(0, 4);  // "2017"
+        const month = dateStr.slice(4, 6); // "12"
+
+        const quarterMap: any = { "03": "1", "06": "2", "09": "3", "12": "4" };
+
+        return `${year}년 ${quarterMap[month]}분기`;
+    };
+
+    // 1. 특정 날짜 기준으로 종목 뽑기
+    // - strategy-register 참고
+    // 2. 해당 종목을 팔기
+    // - 현재 가격으로 비교
+    // { getStepContents("전략", ["test"], "test", (item: any) => { dispatch(setDefaultStrategy(item)); }) }
+    return <>
+        <RegisterTemplate
+            cardBodyFix={true}
+            title={getTitle()}
+            subTitle={getSubTitle()}
+            content={getContents()}
+            footer={getFooter()}
         />
+        <div className="p-2 m-2 border rounded">
+            <div className="w-full">
+                <Timeline>
+                    <>
+                        <div>최종수익:{totalProfit.current}원</div>
+                        {Object.keys(backTestConditionFilterResultType.output).map((date: any, index: any) => {
+                            console.log(`index`, index);
+                            console.log(`date`, date);
+                            let prevDate = ""
+                            if (index >= 1) {
+                                prevDate = Object.keys(backTestConditionFilterResultType.output)[index - 1];
+                                console.log(`prevDate`, prevDate);
+                            }
 
-        <TablePanel
-            listHeader={<ListNodeTemplate
-                link={`/backtest`}
-                item1={"종목명"}
-                item2={"start"}
-                item3={"➡️"}
-                item4={"목표가"}
-                color={"blue"}
-                bgColor={"bg-gray-200"}
-                item5={"end"}
-            />}
-            loadingMsg={`waiting`}
-
-            pathname={`backtest`}
-            marqueueDisplay={false}
-
-            filteredStocks={filteredStocks}
-            bsnsDate={!!startMarketInfo["date"] ? startMarketInfo["date"] : "999999"}
-            endMarketInfo={endMarketInfo}
-
-            endDate={marketInfoDateList[endIndex]}
-        />
-    </>;
+                            return <TimelineItem key={index}>
+                                <TimelineConnector />
+                                <TimelineHeader className="h-3">
+                                    <TimelineIcon className="p-0" variant="ghost" color="green" >
+                                        <CurrencyDollarIcon className="h-4 w-4" />
+                                    </TimelineIcon>
+                                    <Typography color="blue-gray" className="text-base font-bold leading-none">
+                                        {formatDate(date)}
+                                    </Typography>
+                                </TimelineHeader>
+                                <TimelineBody className="pb-8">
+                                    <Typography color="blue-gray" className="text-base font-bold leading-none">
+                                        전년도 매수 종목 매도
+                                        <>
+                                            {index >= 1 ? Object.keys(backTestConditionFilterResultType.output3[prevDate]).map((stockName: any, index: any) => {
+                                                const filteredStockInfo = backTestConditionFilterResultType.output3[prevDate][stockName];
+                                                const currentFilteredStockInfo = backTestConditionFilterResultType.output2[date]["data"][stockName];
+                                                const profit = !!currentFilteredStockInfo ? (Number(currentFilteredStockInfo["시가"]) - Number(filteredStockInfo["시가"])) : 0;
+                                                totalProfit.current += profit;
+                                                // console.log(`currentFilteredStockInfo`, currentFilteredStockInfo);
+                                                return <>
+                                                    <Typography key={index} color="gray" className="font-normal text-xs text-gray-600">
+                                                        [{stockName}] 수익:{!!currentFilteredStockInfo ? (Number(currentFilteredStockInfo["시가"]) - Number(filteredStockInfo["시가"])) : "없음"} 시가:{Number(filteredStockInfo["시가"]).toFixed(0)} 원, 유동자산:{Util.UnitConversion(filteredStockInfo["유동자산"], true)}, 부채총계:{Util.UnitConversion(filteredStockInfo["부채총계"], true)}
+                                                    </Typography>
+                                                </>
+                                            }) : <>
+                                                <Typography key={index} color="gray" className="font-normal text-xs text-gray-600">
+                                                    없음
+                                                </Typography>
+                                            </>}
+                                        </>
+                                    </Typography>
+                                    <Typography color="blue-gray" className="text-base font-bold leading-none">
+                                        매수 종목
+                                    </Typography>
+                                    <>
+                                        {Object.keys(backTestConditionFilterResultType.output3[date]).map((stockName: any, index: any) => {
+                                            const filteredStockInfo = backTestConditionFilterResultType.output3[date][stockName];
+                                            return <>
+                                                <Typography key={index} color="gray" className="font-normal text-xs text-gray-600">
+                                                    [{stockName}] 시가:{Number(filteredStockInfo["시가"]).toFixed(0)} 원, 유동자산:{Util.UnitConversion(filteredStockInfo["유동자산"], true)}, 부채총계:{Util.UnitConversion(filteredStockInfo["부채총계"], true)}
+                                                </Typography>
+                                            </>
+                                        })}
+                                    </>
+                                </TimelineBody>
+                            </TimelineItem>
+                        })}
+                    </>
+                </Timeline>
+            </div>
+        </div>
+    </>
 }

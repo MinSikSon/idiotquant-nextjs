@@ -1,125 +1,250 @@
 import { createAppSlice } from "@/lib/createAppSlice";
-import { getMarketInfo } from "../marketInfo/marketInfoAPI";
-import { getFinancialInfo } from "../financialInfo/financialInfoAPI";
-import { setNcavList } from "../strategy/strategyAPI";
+import { PayloadAction } from "@reduxjs/toolkit";
+import { getFinancialInfoList } from "../financialInfo/financialInfoAPI";
+import { getFinancialInfoWithMarketInfo } from "./backtestAPI";
+import { GetMergedStocksList, GetStocksFilteredByStrategyNCAV } from "@/components/strategy";
+
+export interface BackTestConditionType1 {
+    state: string;
+    title: string;
+    strategyList: string[];
+    strategy: string;
+}
+export interface BackTestConditionType2 {
+    state: string;
+    title: string;
+    startDate: string;
+    min: string;
+    max: string;
+}
+export interface BackTestConditionType3 {
+    state: string;
+    title: string;
+    endDate: string;
+    min: string;
+    max: string;
+}
+
+export interface BackTestConditionFilterResultType {
+    state: "init"
+    | "loading"
+    | "done"
+    ;
+    title: string;
+
+    startDate: string;
+    endDate: string;
+    output: any;
+    output2: any;
+    output3: any;
+}
+
+export interface BackTestConditionFinancialInfoList {
+    state: "init"
+    | "loading"
+    | "done"
+    ;
+    title: string;
+
+    output1: any[];
+    output2: string[];
+}
 
 interface BackTestInfo {
-    state: "ready" | "loading" | "loaded" | "get-rejected" | "set-rejected" | "retry";
-    startFinancialInfo: any;
-    startMarketInfo: any;
-    endMarketInfo: any;
-    value: any;
+    state: "init"
+    | "pending"
+    | "fulfilled"
+    | "rejected"
+    | "type1"
+    | "type2"
+    | "type3"
+    | "filter-result"
+    ;
+    backTestConditionType1: BackTestConditionType1;
+    backTestConditionType2: BackTestConditionType2;
+    backTestConditionType3: BackTestConditionType3;
+
+    backTestConditionFilterResultType: BackTestConditionFilterResultType;
+    backTestConditionFinancialInfoList: BackTestConditionFinancialInfoList;
 }
 
 const initialState: BackTestInfo = {
-    state: "ready",
-    startFinancialInfo: {},
-    startMarketInfo: {},
-    endMarketInfo: {},
-    value: {},
+    state: "init",
+    backTestConditionType1: {
+        state: "init",
+        title: "전략",
+        // strategyList: ["none", "NCAV"],
+        strategyList: ["NCAV"],
+        strategy: "NCAV",
+    },
+    backTestConditionType2: {
+        state: "init",
+        title: "시작날짜",
+        startDate: "2018-12-01",
+        min: "2018-12-01",
+        max: "2024-11-30",
+    },
+    backTestConditionType3: {
+        state: "init",
+        title: "종료날짜",
+        endDate: "2024-11-30",
+        min: "2018-12-01",
+        max: "2024-11-30",
+    },
+    backTestConditionFilterResultType: {
+        state: "init",
+        title: "필터결과",
+        startDate: "",
+        endDate: "",
+        output: {},
+        output2: {},
+        output3: {},
+    },
+    backTestConditionFinancialInfoList: {
+        state: "init",
+        title: "재무정보 리스트",
+        output1: [],
+        output2: [],
+    }
 }
-
 export const backtestSlice = createAppSlice({
     name: "backtest",
     initialState,
     reducers: (create) => ({
-        getStartFinancialInfo: create.asyncThunk(
+        setBackTestConditionType1: create.reducer((state, action: PayloadAction<BackTestConditionType1>) => {
+            state.backTestConditionType1 = action.payload;
+            state.state = "type1";
+        }),
+        setBackTestConditionType2: create.reducer((state, action: PayloadAction<BackTestConditionType2>) => {
+            state.backTestConditionType2 = action.payload;
+            state.state = "type2";
+        }),
+        setBackTestConditionType3: create.reducer((state, action: PayloadAction<BackTestConditionType3>) => {
+            state.backTestConditionType3 = action.payload;
+            state.state = "type3";
+        }),
+        setBackTestConditionFilterResultType: create.reducer((state, action: PayloadAction<BackTestConditionFilterResultType>) => {
+            console.log(`[setBackTestConditionFilterResultType] action.payload`, action.payload);
+            state.backTestConditionFilterResultType = action.payload;
+            state.state = "filter-result";
+        }),
+        reqGetFinancialInfoList: create.asyncThunk(
+            // async ({ year, quarter }: { year: string, quarter: string }) => {
+            async () => {
+                // console.log(`[reqGetFinancialInfoList]`, year, quarter);
+                const res: any = await getFinancialInfoList();
+                // const res: any = await getFinancialInfo(year, quarter);
+                return res;
+            },
+            {
+                pending: (state) => {
+                    console.log(`[reqGetFinancialInfoList] pending`);
+                    state.state = "pending";
+                },
+                fulfilled: (state, action) => {
+                    console.log(`[reqGetFinancialInfoList] fulfilled action.payload:`, typeof action.payload, action.payload);
+                    const quarterMap: any = { "1Q": "03", "2Q": "06", "3Q": "09", "4Q": "12" };
+                    const transformedData = JSON.parse(action.payload).map((item: any) => {
+                        const match = item.match(/financialInfo_(\d+)_(\dQ)/); // "YYYY_XQ" 패턴 찾기
+                        return match ? `${match[1]}${quarterMap[match[2]]}` : item; // "YYYYMM"으로 변환
+                    });
+
+                    const output2 = [...state.backTestConditionFinancialInfoList.output2];
+                    const condition = (JSON.stringify(output2) != JSON.stringify(transformedData)); // list 중복 갱신 방지
+                    // if (condition)
+                    {
+                        // console.log(`[reqGetFinancialInfoList] state.backTestConditionFinancialInfoList`, state.backTestConditionFinancialInfoList);
+                        // console.log(`[reqGetFinancialInfoList] output2`, typeof output2, output2);
+                        // console.log(`[reqGetFinancialInfoList] transformedData`, typeof transformedData, transformedData);
+                        state.backTestConditionFinancialInfoList.output1 = JSON.parse(action.payload);
+                        state.backTestConditionFinancialInfoList.output2 = transformedData;
+                        // state.backTestConditionFinancialInfoList.state = "loading";
+
+                        state.state = "fulfilled";
+                    }
+                },
+                rejected: (state) => {
+                    console.log(`[reqGetFinancialInfoList] rejected`);
+                    state.state = "rejected";
+                }
+            },
+        ),
+        reqGetFinancialInfoWithMarketInfo: create.asyncThunk(
             async ({ year, quarter }: { year: string, quarter: string }) => {
-                // console.log(`[getStartFinancialInfo]`, year, quarter);
-                const res: any = await getFinancialInfo(year, quarter);
+                // console.log(`[reqGetStartFinancialInfo]`, year, quarter);
+                const res: any = await getFinancialInfoWithMarketInfo(year, quarter);
                 return res;
             },
             {
                 pending: (state) => {
-                    // console.log(`[getStartFinancialInfo] pending`);
-                    state.state = "loading";
+                    // console.log(`[reqGetFinancialInfo] pending`);
+                    state.state = "pending";
                 },
                 fulfilled: (state, action) => {
-                    // console.log(`[getStartFinancialInfo] fulfilled - action.payload:`, action.payload);
-                    state.state = "loaded";
-                    state.startFinancialInfo = action.payload;
+                    // console.log(`[reqGetFinancialInfo] fulfilled action.payload:`, typeof action.payload, action.payload);
+                    state.state = "fulfilled";
+                    const key: string = action.payload["yearQuarter"];
+                    const output: any = action.payload["output"];
+                    const output2: any = action.payload["output2"];
+                    type OutputType = {
+                        [key: string]: any;
+                    }
+                    let newDictionary: OutputType = { ...state.backTestConditionFilterResultType.output };
+                    newDictionary[key] = output;
+                    state.backTestConditionFilterResultType.output = newDictionary;
+                    let newDictionary2: OutputType = { ...state.backTestConditionFilterResultType.output2 };
+                    newDictionary2[key] = output2;
+                    state.backTestConditionFilterResultType.output2 = newDictionary2;
+
+                    // filter list
+                    if ("NCAV" == state.backTestConditionType1.strategy) {
+                        let newDictionary3: OutputType = { ...state.backTestConditionFilterResultType.output3 };
+
+                        const mergedStockInfo = GetMergedStocksList(output, output2);
+                        // console.log(`mergedStockInfo`, mergedStockInfo, Object.keys(mergedStockInfo).length);
+                        // filter: strategy
+                        let filteredByStrategyStocks: any = GetStocksFilteredByStrategyNCAV(mergedStockInfo);
+                        // console.log(`defaultStrategy`, defaultStrategy, filteredByStrategyStocks, Object.keys(filteredByStrategyStocks).length);
+
+                        // filter: stock information
+                        const filteredStocks = filteredByStrategyStocks;
+                        // const filteredStocks = GetStocksFilteredByCustom(filteredByStrategyStocks, ["PER", "PBR", "시가총액최소값", "시가총액", "당기순이익"], [per, pbr, capitalizationMin, capitalization, netIncome]);
+                        console.log(`filteredStocks`, filteredStocks, Object.keys(filteredStocks).length);
+
+                        newDictionary3[key] = filteredStocks;
+                        state.backTestConditionFilterResultType.output3 = newDictionary3;
+                    }
+
                 },
                 rejected: (state) => {
-                    // console.log(`[getStartFinancialInfo] rejected`);
-                    state.state = "get-rejected";
+                    console.log(`[reqGetFinancialInfo] rejected`);
+                    state.state = "rejected";
                 }
             },
         ),
-        getStartMarketInfo: create.asyncThunk(
-            async ({ date }: { date: string }) => {
-                console.log(`[getStartMarketInfo]`, date);
-                const res: any = await getMarketInfo(date);
-                return res;
-            },
-            {
-                pending: (state) => {
-                    // console.log(`[getStartMarketInfo] pending`);
-                    state.state = "loading";
-                },
-                fulfilled: (state, action) => {
-                    // console.log(`[getStartMarketInfo] fulfilled - action.payload:`, action.payload);
-                    state.state = "loaded";
-                    state.startMarketInfo = action.payload;
-                },
-                rejected: (state) => {
-                    // console.log(`[getStartMarketInfo] rejected`);
-                    state.state = "get-rejected";
-                }
-            },
-        ),
-        getEndMarketInfo: create.asyncThunk(
-            async ({ date }: { date: string }) => {
-                // console.log(`[getEndMarketInfo]`, date);
-                const res: any = await getMarketInfo(date);
-                return res;
-            },
-            {
-                pending: (state) => {
-                    // console.log(`[getEndMarketInfo] pending`);
-                    state.state = "loading";
-                },
-                fulfilled: (state, action) => {
-                    // console.log(`[getEndMarketInfo] fulfilled - action.payload:`, action.payload);
-                    state.state = "loaded";
-                    state.endMarketInfo = action.payload;
-                },
-                rejected: (state) => {
-                    // console.log(`[getEndMarketInfo] rejected`);
-                    state.state = "get-rejected";
-                }
-            },
-        ),
-        setBackTestStrategyList: create.asyncThunk(
-            async ({ financialInfoDate, marketInfoDate, ncavList }: { financialInfoDate: string, marketInfoDate: string, ncavList: string }) => {
-                const res: any = await setNcavList(financialInfoDate, marketInfoDate, ncavList);
-                return res;
-            },
-            {
-                pending: (state) => {
-                    state.state = "loading";
-                },
-                fulfilled: (state, action) => {
-                    state.state = "loaded";
-                    const json = JSON.parse(action.payload);
-                    state.value = json;
-                },
-                rejected: (state) => {
-                    state.state = "set-rejected";
-                }
-            },
-        )
     }),
     selectors: {
-        selectStartFinancialInfo: (state) => state.startFinancialInfo,
-        selectStartMarketInfo: (state) => state.startMarketInfo,
-        selectEndMarketInfo: (state) => state.endMarketInfo,
-        selectBackTestState: (state) => state.state,
-        selectBackTestNcavList: (state) => state.value,
+        getBackTestConditionType1: (state) => state.backTestConditionType1,
+        getBackTestConditionType2: (state) => state.backTestConditionType2,
+        getBackTestConditionType3: (state) => state.backTestConditionType3,
+        getBackTestConditionFilterResultType: (state) => state.backTestConditionFilterResultType,
+
+        getBackTestConditionFinancialInfoList: (state) => state.backTestConditionFinancialInfoList,
     }
 });
+export const { setBackTestConditionType1 } = backtestSlice.actions;
+export const { getBackTestConditionType1 } = backtestSlice.selectors;
+export const { setBackTestConditionType2 } = backtestSlice.actions;
+export const { getBackTestConditionType2 } = backtestSlice.selectors;
+export const { setBackTestConditionType3 } = backtestSlice.actions;
+export const { getBackTestConditionType3 } = backtestSlice.selectors;
+export const { setBackTestConditionFilterResultType } = backtestSlice.actions;
+export const { getBackTestConditionFilterResultType } = backtestSlice.selectors;
 
-export const { getStartFinancialInfo, getStartMarketInfo, getEndMarketInfo } = backtestSlice.actions;
-export const { selectStartFinancialInfo, selectStartMarketInfo, selectEndMarketInfo } = backtestSlice.selectors;
+// request
+export const { reqGetFinancialInfoList } = backtestSlice.actions;
+export const { getBackTestConditionFinancialInfoList } = backtestSlice.selectors;
+export const { reqGetFinancialInfoWithMarketInfo } = backtestSlice.actions;
 
-export const { setBackTestStrategyList } = backtestSlice.actions;
-export const { selectBackTestNcavList } = backtestSlice.selectors;
+
+

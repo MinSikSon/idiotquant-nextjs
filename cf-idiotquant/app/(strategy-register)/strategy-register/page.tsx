@@ -1,6 +1,6 @@
 "use client"
 
-import RegisterTemplate from "@/app/(strategy-register)/strategy-register/register_template";
+import RegisterTemplate from "@/components/register_template";
 import { GetMergedStocksList, GetStocksFilteredByStrategyNCAV } from "@/components/strategy";
 import { GetStocksFilteredByCustom } from "@/components/strategyCustom";
 import { Util } from "@/components/util";
@@ -55,8 +55,6 @@ export default function StrategyRegister() {
         return "";
     }
 
-    const classNameButtonGroup = `flex flex-col justify-between items-left mt-2 text-black hover:text-blue-500`
-    const selectedButtonColor = `bg-blue-500 text-white`;
     const getStepContents = (title: string, list: any[], selectValue: any, handleOnClick: any) => {
         return <div className="flex flex-col">
             <div className="flex flex-col justify-between items-left mt-2 text-black hover:text-blue-500">

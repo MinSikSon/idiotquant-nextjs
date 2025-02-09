@@ -1,5 +1,5 @@
 import Link from "next/link";
-import RegisterTemplate from "./register_template";
+import RegisterTemplate from "../../../components/register_template";
 
 export default function StrategyRegisterButton() {
     return <>
