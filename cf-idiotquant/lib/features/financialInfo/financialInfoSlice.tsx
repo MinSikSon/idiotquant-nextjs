@@ -90,7 +90,7 @@ export const financialInfoSlice = createAppSlice({
                     state.loaded = true;
                 },
                 fulfilled: (state, action) => {
-                    // console.log(`ready-financialInfo`);
+                    console.log(`ready-financialInfo`, action.payload);
                     state.value = action.payload;
                     state.loaded = true;
                     state.state = "ready-financialInfo";

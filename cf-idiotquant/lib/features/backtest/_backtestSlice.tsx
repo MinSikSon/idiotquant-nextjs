@@ -37,7 +37,7 @@ export const backtestSlice = createAppSlice({
                 fulfilled: (state, action) => {
                     // console.log(`[reqGetStartFinancialInfo] fulfilled - action.payload:`, action.payload);
                     state.state = "loaded";
-                    state.startFinancialInfo = action.payload;
+                    state.startFinancialInfo = action.payload["output"];
                 },
                 rejected: (state) => {
                     // console.log(`[reqGetStartFinancialInfo] rejected`);

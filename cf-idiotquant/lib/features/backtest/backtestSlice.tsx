@@ -12,31 +12,38 @@ export interface BackTestConditionType2 {
     state: string;
     title: string;
     startDate: string;
+    min: string;
+    max: string;
 }
 export interface BackTestConditionType3 {
     state: string;
     title: string;
     endDate: string;
+    min: string;
+    max: string;
 }
 
-interface BackTestConditionFilterResultTypeOutput {
-    [date: string]: {
-        value: string;
-    }
-}
 export interface BackTestConditionFilterResultType {
-    state: string;
+    state: "init"
+    | "loading"
+    | "done"
+    ;
     title: string;
 
-    output: BackTestConditionFilterResultTypeOutput[];
+    startDate: string;
+    endDate: string;
+    output: any;
 }
 
 export interface BackTestConditionFinancialInfoList {
-    state: string;
+    state: "init"
+    | "loading"
+    | "done"
+    ;
     title: string;
 
     output1: any[];
-    output2: any[];
+    output2: string[];
 }
 
 interface BackTestInfo {
@@ -62,23 +69,30 @@ const initialState: BackTestInfo = {
     backTestConditionType1: {
         state: "init",
         title: "전략",
-        strategyList: ["none", "NCAV"],
-        strategy: "none",
+        // strategyList: ["none", "NCAV"],
+        strategyList: ["NCAV"],
+        strategy: "NCAV",
     },
     backTestConditionType2: {
         state: "init",
         title: "시작날짜",
-        startDate: "2004-04-01",
+        startDate: "2017-12-01",
+        min: "2017-12-01",
+        max: "2024-11-30",
     },
     backTestConditionType3: {
         state: "init",
         title: "종료날짜",
-        endDate: "2024-04-01",
+        endDate: "2024-11-30",
+        min: "2017-12-01",
+        max: "2024-11-30",
     },
     backTestConditionFilterResultType: {
         state: "init",
         title: "필터결과",
-        output: [],
+        startDate: "",
+        endDate: "",
+        output: {},
     },
     backTestConditionFinancialInfoList: {
         state: "init",
@@ -104,6 +118,7 @@ export const backtestSlice = createAppSlice({
             state.state = "type3";
         }),
         setBackTestConditionFilterResultType: create.reducer((state, action: PayloadAction<BackTestConditionFilterResultType>) => {
+            console.log(`[setBackTestConditionFilterResultType] action.payload`, action.payload);
             state.backTestConditionFilterResultType = action.payload;
             state.state = "filter-result";
         }),
@@ -122,16 +137,25 @@ export const backtestSlice = createAppSlice({
                 },
                 fulfilled: (state, action) => {
                     console.log(`[reqGetFinancialInfoList] fulfilled action.payload:`, typeof action.payload, action.payload);
-                    state.backTestConditionFinancialInfoList.output1 = JSON.parse(action.payload);
                     const quarterMap: any = { "1Q": "03", "2Q": "06", "3Q": "09", "4Q": "12" };
-
                     const transformedData = JSON.parse(action.payload).map((item: any) => {
                         const match = item.match(/financialInfo_(\d+)_(\dQ)/); // "YYYY_XQ" 패턴 찾기
                         return match ? `${match[1]}${quarterMap[match[2]]}` : item; // "YYYYMM"으로 변환
                     });
 
-                    state.backTestConditionFinancialInfoList.output2 = transformedData;
-                    state.state = "fulfilled";
+                    const output2 = [...state.backTestConditionFinancialInfoList.output2];
+                    const condition = (JSON.stringify(output2) != JSON.stringify(transformedData)); // list 중복 갱신 방지
+                    // if (condition)
+                    {
+                        // console.log(`[reqGetFinancialInfoList] state.backTestConditionFinancialInfoList`, state.backTestConditionFinancialInfoList);
+                        // console.log(`[reqGetFinancialInfoList] output2`, typeof output2, output2);
+                        // console.log(`[reqGetFinancialInfoList] transformedData`, typeof transformedData, transformedData);
+                        state.backTestConditionFinancialInfoList.output1 = JSON.parse(action.payload);
+                        state.backTestConditionFinancialInfoList.output2 = transformedData;
+                        // state.backTestConditionFinancialInfoList.state = "loading";
+
+                        state.state = "fulfilled";
+                    }
                 },
                 rejected: (state) => {
                     console.log(`[reqGetFinancialInfoList] rejected`);
@@ -153,8 +177,14 @@ export const backtestSlice = createAppSlice({
                 fulfilled: (state, action) => {
                     console.log(`[reqGetFinancialInfo] fulfilled action.payload:`, typeof action.payload, action.payload);
                     state.state = "fulfilled";
-                    state.backTestConditionFilterResultType.output = [...state.backTestConditionFilterResultType.output, { "test": action.payload }];
-                    // state.backTestConditionFilterResultType.state = "get-financial-info";
+                    const key: string = action.payload["yearQuarter"];
+                    const output: any = action.payload["output"];
+                    type OutputType = {
+                        [key: string]: any;
+                    }
+                    let newDictionary: OutputType = { ...state.backTestConditionFilterResultType.output };
+                    newDictionary[key] = output;
+                    state.backTestConditionFilterResultType.output = newDictionary;
                 },
                 rejected: (state) => {
                     console.log(`[reqGetFinancialInfo] rejected`);
