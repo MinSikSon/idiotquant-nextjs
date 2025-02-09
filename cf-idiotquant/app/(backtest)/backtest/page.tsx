@@ -20,9 +20,11 @@ import { setBackTestConditionType3, getBackTestConditionType3 } from "@/lib/feat
 import { reqGetFinancialInfoList, getBackTestConditionFinancialInfoList } from "@/lib/features/backtest/backtestSlice";
 import { getBackTestConditionFilterResultType } from "@/lib/features/backtest/backtestSlice";
 
-import { reqGetFinancialInfo } from "@/lib/features/backtest/backtestSlice";
+import { reqGetFinancialInfoWithMarketInfo } from "@/lib/features/backtest/backtestSlice";
 
 import React from "react";
+import { CurrencyDollarIcon } from "@heroicons/react/24/outline";
+import { Util } from "@/components/util";
 
 export default function BackTest() {
     const dispatch = useAppDispatch();
@@ -33,12 +35,15 @@ export default function BackTest() {
     const backTestConditionFinancialInfoList = useAppSelector(getBackTestConditionFinancialInfoList);
     const backTestConditionFilterResultType: BackTestConditionFilterResultType = useAppSelector(getBackTestConditionFilterResultType);
 
+    const totalProfit = React.useRef(0);
+    const [totalProfitState, setTotalProfitState] = React.useState(0);
+
     const getTitle = () => {
-        return "back test"
+        return "back-test"
     };
 
     const getSubTitle = () => {
-        return "back test gogo"
+        return "전략에 따른 수익을 확인해보세요."
     };
 
     const getStepContents = (title: string, list: any[], selectValue: any, handleOnClick: any) => {
@@ -70,19 +75,19 @@ export default function BackTest() {
     };
 
     React.useEffect(() => {
-        console.log(`backTestConditionType1`, backTestConditionType1);
+        // console.log(`backTestConditionType1`, backTestConditionType1);
     }, [backTestConditionType1]);
     React.useEffect(() => {
-        console.log(`backTestConditionType2`, backTestConditionType2);
+        // console.log(`backTestConditionType2`, backTestConditionType2);
     }, [backTestConditionType2]);
     React.useEffect(() => {
-        console.log(`backTestConditionType3`, backTestConditionType3);
+        // console.log(`backTestConditionType3`, backTestConditionType3);
     }, [backTestConditionType3]);
     React.useEffect(() => {
-        console.log(`backTestConditionFinancialInfoList`, backTestConditionFinancialInfoList);
+        // console.log(`backTestConditionFinancialInfoList`, backTestConditionFinancialInfoList);
         const output2 = backTestConditionFinancialInfoList.output2;
         const transformedData = output2.filter(item => item.endsWith("12"));
-        console.log(`transformedData`, transformedData);
+        // console.log(`transformedData`, transformedData);
 
         const output1 = backTestConditionFinancialInfoList.output1;
 
@@ -96,18 +101,9 @@ export default function BackTest() {
     React.useEffect(() => {
         console.log(`backTestConditionFilterResultType`, backTestConditionFilterResultType);
 
-        const output1 = backTestConditionFinancialInfoList.output1;
-        console.log(`output1`, output1);
         const output2 = backTestConditionFinancialInfoList.output2;
-        console.log(`output2`, output2);
-        const yearQuarterList = backTestConditionFilterResultType.output;
-        console.log(`yearQuarterList`, yearQuarterList);
-
-        const startDate = backTestConditionFilterResultType.startDate;
-        const endDate = backTestConditionFilterResultType.endDate;
-
-        if (output1.length > 0) {
-            console.log(`output1.length`, output1.length);
+        // console.log(`output2`, output2);
+        if ("loading" == backTestConditionFilterResultType.state && output2.length > 0) {
             const formatDate = (dateStr: string): string => {
                 if (dateStr.length !== 6) {
                     throw new Error("Invalid date format");
@@ -119,11 +115,16 @@ export default function BackTest() {
                 return `${year}-${month}-01`; // "2017-12-01"
             };
 
+            const yearQuarterList = backTestConditionFilterResultType.output;
+            // console.log(`yearQuarterList`, yearQuarterList);
+
+            const startDate = backTestConditionFilterResultType.startDate;
+            const endDate = backTestConditionFilterResultType.endDate;
             let isDone = true;
-            for (let i = 0; i < output1.length; ++i) {
+            for (let i = 0; i < output2.length; ++i) {
                 const YYYYMMDD = formatDate(output2[i]); // YYYY-MM-DD
-                console.log(new Date(startDate), new Date(endDate), new Date(YYYYMMDD));
-                console.log(new Date(startDate) <= new Date(YYYYMMDD), new Date(endDate) >= new Date(YYYYMMDD));
+                // console.log(new Date(startDate), new Date(endDate), new Date(YYYYMMDD));
+                // console.log(new Date(startDate) <= new Date(YYYYMMDD), new Date(endDate) >= new Date(YYYYMMDD));
                 if (false == (new Date(startDate) <= new Date(YYYYMMDD))) {
                     continue;
                 }
@@ -131,19 +132,21 @@ export default function BackTest() {
                     continue;
                 }
 
-                console.log(`yearQuarterList[output2[${i}]]`, yearQuarterList[output2[i]], `output2[${i}]`, output2[i]);
+                // console.log(`yearQuarterList[output2[${i}]]`, yearQuarterList[output2[i]], `output2[${i}]`, output2[i]);
                 if (undefined == yearQuarterList[output2[i]]) {
+                    const output1 = backTestConditionFinancialInfoList.output1;
+                    // console.log(`output1`, output1);
                     const match = output1[i].match(/_(\d{4})_(\d)Q/); // 처음 값만 사용해서 요청
-                    console.log(`match`, match);
-                    dispatch(reqGetFinancialInfo({ year: match[1], quarter: match[2] })); // 요청 결과는 backTestConditionFilterResultType 에 갱신 됨.
+                    // console.log(`match`, match);
+                    dispatch(reqGetFinancialInfoWithMarketInfo({ year: match[1], quarter: match[2] })); // 요청 결과는 backTestConditionFilterResultType 에 갱신 됨.
 
                     isDone = false;
                     break;
                 }
             }
 
-            if ("loading" == backTestConditionFilterResultType.state && true == isDone) {
-                console.log(`output1.length`, output1.length, `isDone`, isDone);
+            if (true == isDone) {
+                // console.log(`output1.length`, output1.length, `isDone`, isDone);
                 dispatch(setBackTestConditionFilterResultType({ ...backTestConditionFilterResultType, state: "done" }));
             }
         }
@@ -159,7 +162,8 @@ export default function BackTest() {
 
     const getFooter = () => {
         const handleOnClick = () => {
-            console.log(`[handleOnClick] dispatch(reqGetFinancialInfoList())`);
+            // console.log(`[handleOnClick] dispatch(reqGetFinancialInfoList())`);
+            totalProfit.current = 0;
             dispatch(setBackTestConditionFilterResultType({ ...backTestConditionFilterResultType, state: "init", output: {} }));
             dispatch(reqGetFinancialInfoList());
         }
@@ -170,19 +174,29 @@ export default function BackTest() {
                     <div className="flex justify-between items-center">
                         <Link href={`/`}>
                             <Button color="red" size="sm" variant="outlined">
-                                {/* prev */}
                                 취소
                             </Button>
                         </Link>
-                        {/* <Link href={`/`}> */}
-                        <Button className="hover:text-blue-500 hover:border-blue-500" disabled={"loading" == backTestConditionFilterResultType.state ? true : false} color={`black`} onClick={() => handleOnClick()} size="sm" variant="outlined">
-                            등록
+                        <Button className="hover:text-blue-500 hover:border-blue-500" disabled={"loading" == backTestConditionFilterResultType.state ? true : false} loading={"loading" == backTestConditionFilterResultType.state ? true : false} color={`black`} onClick={() => handleOnClick()} size="sm" variant="outlined">
+                            {"loading" == backTestConditionFilterResultType.state ? "등록 중" : "등록"}
                         </Button>
-                        {/* </Link> */}
                     </div>
                 </div>
             }
         </>
+    };
+
+    const formatDate = (dateStr: string): string => {
+        if (dateStr.length !== 6) {
+            throw new Error("Invalid date format");
+        }
+
+        const year = dateStr.slice(0, 4);  // "2017"
+        const month = dateStr.slice(4, 6); // "12"
+
+        const quarterMap: any = { "03": "1", "06": "2", "09": "3", "12": "4" };
+
+        return `${year}년 ${quarterMap[month]}분기`;
     };
 
     // 1. 특정 날짜 기준으로 종목 뽑기
@@ -199,97 +213,70 @@ export default function BackTest() {
             footer={getFooter()}
         />
         <div className="p-2 m-2 border rounded">
-            <DefaultTimeline2 backTestConditionFilterResultType={backTestConditionFilterResultType} />
+            <div className="w-full">
+                <Timeline>
+                    <>
+                        <div>최종수익:{totalProfit.current}원</div>
+                        {Object.keys(backTestConditionFilterResultType.output).map((date: any, index: any) => {
+                            console.log(`index`, index);
+                            console.log(`date`, date);
+                            let prevDate = ""
+                            if (index >= 1) {
+                                prevDate = Object.keys(backTestConditionFilterResultType.output)[index - 1];
+                                console.log(`prevDate`, prevDate);
+                            }
+
+                            return <TimelineItem key={index}>
+                                <TimelineConnector />
+                                <TimelineHeader className="h-3">
+                                    <TimelineIcon className="p-0" variant="ghost" color="green" >
+                                        <CurrencyDollarIcon className="h-4 w-4" />
+                                    </TimelineIcon>
+                                    <Typography color="blue-gray" className="text-base font-bold leading-none">
+                                        {formatDate(date)}
+                                    </Typography>
+                                </TimelineHeader>
+                                <TimelineBody className="pb-8">
+                                    <Typography color="blue-gray" className="text-base font-bold leading-none">
+                                        전년도 매수 종목 매도
+                                        <>
+                                            {index >= 1 ? Object.keys(backTestConditionFilterResultType.output3[prevDate]).map((stockName: any, index: any) => {
+                                                const filteredStockInfo = backTestConditionFilterResultType.output3[prevDate][stockName];
+                                                const currentFilteredStockInfo = backTestConditionFilterResultType.output2[date]["data"][stockName];
+                                                const profit = !!currentFilteredStockInfo ? (Number(currentFilteredStockInfo["시가"]) - Number(filteredStockInfo["시가"])) : 0;
+                                                totalProfit.current += profit;
+                                                // console.log(`currentFilteredStockInfo`, currentFilteredStockInfo);
+                                                return <>
+                                                    <Typography key={index} color="gray" className="font-normal text-xs text-gray-600">
+                                                        [{stockName}] 수익:{!!currentFilteredStockInfo ? (Number(currentFilteredStockInfo["시가"]) - Number(filteredStockInfo["시가"])) : "없음"} 시가:{Number(filteredStockInfo["시가"]).toFixed(0)} 원, 유동자산:{Util.UnitConversion(filteredStockInfo["유동자산"], true)}, 부채총계:{Util.UnitConversion(filteredStockInfo["부채총계"], true)}
+                                                    </Typography>
+                                                </>
+                                            }) : <>
+                                                <Typography key={index} color="gray" className="font-normal text-xs text-gray-600">
+                                                    없음
+                                                </Typography>
+                                            </>}
+                                        </>
+                                    </Typography>
+                                    <Typography color="blue-gray" className="text-base font-bold leading-none">
+                                        매수 종목
+                                    </Typography>
+                                    <>
+                                        {Object.keys(backTestConditionFilterResultType.output3[date]).map((stockName: any, index: any) => {
+                                            const filteredStockInfo = backTestConditionFilterResultType.output3[date][stockName];
+                                            return <>
+                                                <Typography key={index} color="gray" className="font-normal text-xs text-gray-600">
+                                                    [{stockName}] 시가:{Number(filteredStockInfo["시가"]).toFixed(0)} 원, 유동자산:{Util.UnitConversion(filteredStockInfo["유동자산"], true)}, 부채총계:{Util.UnitConversion(filteredStockInfo["부채총계"], true)}
+                                                </Typography>
+                                            </>
+                                        })}
+                                    </>
+                                </TimelineBody>
+                            </TimelineItem>
+                        })}
+                    </>
+                </Timeline>
+            </div>
         </div>
     </>
-}
-const DefaultTimeline2 = (props: any) => {
-    return (
-        // <div className="w-[32rem]">
-        <div className="w-full">
-            <Timeline>
-                {Object.keys(props.backTestConditionFilterResultType.output).map((key: any, index: any) => {
-                    console.log(`key`, key);
-                    // console.log(props.backTestConditionFilterResultType.output[key]);
-                    // console.log(props.backTestConditionFilterResultType.output[key]["삼성전자"]);
-                    const firstValue = props.backTestConditionFilterResultType.output[key]["삼성전자"];
-                    return <TimelineItem key={index}>
-                        <TimelineConnector />
-                        <TimelineHeader className="h-3">
-                            <TimelineIcon />
-                            <Typography variant="h6" color="blue-gray" className="leading-none">
-                                {key}
-                            </Typography>
-                        </TimelineHeader>
-                        <TimelineBody className="pb-6">
-                            <Typography color="gray" className="font-normal text-xs text-gray-600">
-                                유동자산: {firstValue["유동자산"]}, 부채총계: {firstValue["부채총계"]}
-                            </Typography>
-                        </TimelineBody>
-                    </TimelineItem>
-                })}
-            </Timeline>
-        </div>
-    );
-}
-
-const DefaultTimeline = () => {
-    return (
-        // <div className="w-[32rem]">
-        <div className="w-full">
-            <Timeline>
-                <TimelineItem>
-                    <TimelineConnector />
-                    <TimelineHeader className="h-3">
-                        <TimelineIcon />
-                        <Typography variant="h6" color="blue-gray" className="leading-none">
-                            Timeline Title Here.
-                        </Typography>
-                    </TimelineHeader>
-                    {/* <TimelineBody className="w-8/12 sm:w-9/12 lg:w-11/12 xl:w-full pb-8"> */}
-                    <TimelineBody className="pb-8">
-                        <Typography variant="small" color="gray" className="font-normal text-gray-600">
-                            The key to more success is to have a lot of pillows. Put it this way, it took me
-                            twenty five years to get these plants, twenty five years of blood sweat and tears, and
-                            I&apos;m never giving up, I&apos;m just getting started. I&apos;m up to something. Fan
-                            luv.
-                        </Typography>
-                    </TimelineBody>
-                </TimelineItem>
-                <TimelineItem>
-                    <TimelineConnector />
-                    <TimelineHeader className="h-3">
-                        <TimelineIcon />
-                        <Typography variant="h6" color="blue-gray" className="leading-none">
-                            Timeline Title Here.
-                        </Typography>
-                    </TimelineHeader>
-                    <TimelineBody className="pb-8">
-                        <Typography variant="small" color="gray" className="font-normal text-gray-600">
-                            The key to more success is to have a lot of pillows. Put it this way, it took me
-                            twenty five years to get these plants, twenty five years of blood sweat and tears, and
-                            I&apos;m never giving up, I&apos;m just getting started. I&apos;m up to something. Fan
-                            luv.
-                        </Typography>
-                    </TimelineBody>
-                </TimelineItem>
-                <TimelineItem>
-                    <TimelineHeader className="h-3">
-                        <TimelineIcon />
-                        <Typography variant="h6" color="blue-gray" className="leading-none">
-                            Timeline Title Here.
-                        </Typography>
-                    </TimelineHeader>
-                    <TimelineBody>
-                        <Typography variant="small" color="gray" className="font-normal text-gray-600">
-                            The key to more success is to have a lot of pillows. Put it this way, it took me
-                            twenty five years to get these plants, twenty five years of blood sweat and tears, and
-                            I&apos;m never giving up, I&apos;m just getting started. I&apos;m up to something. Fan
-                            luv.
-                        </Typography>
-                    </TimelineBody>
-                </TimelineItem>
-            </Timeline>
-        </div>
-    );
 }

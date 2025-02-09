@@ -1,6 +1,8 @@
 import { createAppSlice } from "@/lib/createAppSlice";
 import { PayloadAction } from "@reduxjs/toolkit";
-import { getFinancialInfo, getFinancialInfoList } from "../financialInfo/financialInfoAPI";
+import { getFinancialInfoList } from "../financialInfo/financialInfoAPI";
+import { getFinancialInfoWithMarketInfo } from "./backtestAPI";
+import { GetMergedStocksList, GetStocksFilteredByStrategyNCAV } from "@/components/strategy";
 
 export interface BackTestConditionType1 {
     state: string;
@@ -33,6 +35,8 @@ export interface BackTestConditionFilterResultType {
     startDate: string;
     endDate: string;
     output: any;
+    output2: any;
+    output3: any;
 }
 
 export interface BackTestConditionFinancialInfoList {
@@ -76,15 +80,15 @@ const initialState: BackTestInfo = {
     backTestConditionType2: {
         state: "init",
         title: "시작날짜",
-        startDate: "2017-12-01",
-        min: "2017-12-01",
+        startDate: "2018-12-01",
+        min: "2018-12-01",
         max: "2024-11-30",
     },
     backTestConditionType3: {
         state: "init",
         title: "종료날짜",
         endDate: "2024-11-30",
-        min: "2017-12-01",
+        min: "2018-12-01",
         max: "2024-11-30",
     },
     backTestConditionFilterResultType: {
@@ -93,6 +97,8 @@ const initialState: BackTestInfo = {
         startDate: "",
         endDate: "",
         output: {},
+        output2: {},
+        output3: {},
     },
     backTestConditionFinancialInfoList: {
         state: "init",
@@ -163,28 +169,52 @@ export const backtestSlice = createAppSlice({
                 }
             },
         ),
-        reqGetFinancialInfo: create.asyncThunk(
+        reqGetFinancialInfoWithMarketInfo: create.asyncThunk(
             async ({ year, quarter }: { year: string, quarter: string }) => {
                 // console.log(`[reqGetStartFinancialInfo]`, year, quarter);
-                const res: any = await getFinancialInfo(year, quarter);
+                const res: any = await getFinancialInfoWithMarketInfo(year, quarter);
                 return res;
             },
             {
                 pending: (state) => {
-                    console.log(`[reqGetFinancialInfo] pending`);
+                    // console.log(`[reqGetFinancialInfo] pending`);
                     state.state = "pending";
                 },
                 fulfilled: (state, action) => {
-                    console.log(`[reqGetFinancialInfo] fulfilled action.payload:`, typeof action.payload, action.payload);
+                    // console.log(`[reqGetFinancialInfo] fulfilled action.payload:`, typeof action.payload, action.payload);
                     state.state = "fulfilled";
                     const key: string = action.payload["yearQuarter"];
                     const output: any = action.payload["output"];
+                    const output2: any = action.payload["output2"];
                     type OutputType = {
                         [key: string]: any;
                     }
                     let newDictionary: OutputType = { ...state.backTestConditionFilterResultType.output };
                     newDictionary[key] = output;
                     state.backTestConditionFilterResultType.output = newDictionary;
+                    let newDictionary2: OutputType = { ...state.backTestConditionFilterResultType.output2 };
+                    newDictionary2[key] = output2;
+                    state.backTestConditionFilterResultType.output2 = newDictionary2;
+
+                    // filter list
+                    if ("NCAV" == state.backTestConditionType1.strategy) {
+                        let newDictionary3: OutputType = { ...state.backTestConditionFilterResultType.output3 };
+
+                        const mergedStockInfo = GetMergedStocksList(output, output2);
+                        // console.log(`mergedStockInfo`, mergedStockInfo, Object.keys(mergedStockInfo).length);
+                        // filter: strategy
+                        let filteredByStrategyStocks: any = GetStocksFilteredByStrategyNCAV(mergedStockInfo);
+                        // console.log(`defaultStrategy`, defaultStrategy, filteredByStrategyStocks, Object.keys(filteredByStrategyStocks).length);
+
+                        // filter: stock information
+                        const filteredStocks = filteredByStrategyStocks;
+                        // const filteredStocks = GetStocksFilteredByCustom(filteredByStrategyStocks, ["PER", "PBR", "시가총액최소값", "시가총액", "당기순이익"], [per, pbr, capitalizationMin, capitalization, netIncome]);
+                        console.log(`filteredStocks`, filteredStocks, Object.keys(filteredStocks).length);
+
+                        newDictionary3[key] = filteredStocks;
+                        state.backTestConditionFilterResultType.output3 = newDictionary3;
+                    }
+
                 },
                 rejected: (state) => {
                     console.log(`[reqGetFinancialInfo] rejected`);
@@ -198,6 +228,7 @@ export const backtestSlice = createAppSlice({
         getBackTestConditionType2: (state) => state.backTestConditionType2,
         getBackTestConditionType3: (state) => state.backTestConditionType3,
         getBackTestConditionFilterResultType: (state) => state.backTestConditionFilterResultType,
+
         getBackTestConditionFinancialInfoList: (state) => state.backTestConditionFinancialInfoList,
     }
 });
@@ -213,7 +244,7 @@ export const { getBackTestConditionFilterResultType } = backtestSlice.selectors;
 // request
 export const { reqGetFinancialInfoList } = backtestSlice.actions;
 export const { getBackTestConditionFinancialInfoList } = backtestSlice.selectors;
-export const { reqGetFinancialInfo } = backtestSlice.actions;
+export const { reqGetFinancialInfoWithMarketInfo } = backtestSlice.actions;
 
 
 
