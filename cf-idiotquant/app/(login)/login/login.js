@@ -95,10 +95,7 @@ export default function Login(props) {
 
     React.useEffect(() => {
         async function callback() {
-            console.log(`[Login] document.cookie`, document.cookie);
-            // console.log(`[Login] getCookie(document.cookie)`, getCookie("username"));
-            console.log(`[cookie] getCookie("kakaoId")`, getCookie("kakaoId"));
-            console.log(`[cookie] getCookie("kakaoNickName")`, getCookie("kakaoNickName"));
+            console.log(`[cookie] getCookie("kakaoId")`, getCookie("kakaoId"), `getCookie("kakaoNickName")`, getCookie("kakaoNickName"));
             // console.log(`kakaoAuthCode:`, kakaoAuthCode);
             let _authorizeCode = ""
             if ("" == kakaoAuthCode) {
