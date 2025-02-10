@@ -70,7 +70,7 @@ export function NavbarWithSimpleLinks() {
                         idiot<span className="text-blue-500">.</span>quant
                     </Typography>
                 </Link>
-                <div className={`pl-2 ${!!!kakaoNickName ? "hidden" : ""}`}>{kakaoNickName} 님 반갑습니다. 😀</div>
+                <div className={`pl-2 text-sm ${!!!kakaoNickName ? "hidden" : ""}`}>{kakaoNickName} 님 반갑습니다. 😀</div>
                 <div className="hidden lg:block">
                     <NavList />
                 </div>
