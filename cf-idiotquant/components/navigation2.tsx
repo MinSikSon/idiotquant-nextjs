@@ -13,6 +13,7 @@ import Link from "next/link";
 
 import { selectKakaoId } from "@/lib/features/login/loginSlice";
 import { useAppSelector } from "@/lib/hooks";
+import { getCookie } from "./util";
 
 interface NavItemPropsType {
     url: string;
@@ -69,6 +70,7 @@ export function NavbarWithSimpleLinks() {
                         idiot<span className="text-blue-500">.</span>quant
                     </Typography>
                 </Link>
+                <div className={`pl-2 ${getCookie("kakaoNickName") ? "" : "hidden"}`}>{getCookie("kakaoNickName")} 님 반갑습니다. 😀</div>
                 <div className="hidden lg:block">
                     <NavList />
                 </div>
