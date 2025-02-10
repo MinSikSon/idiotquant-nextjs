@@ -91,7 +91,6 @@ export default function BackTest() {
 
         const output1 = backTestConditionFinancialInfoList.output1;
 
-        // dispatch(setBackTestConditionFilterResultType({ ...backTestConditionFilterResultType, state: "init", output: {} }));
         // if ("init" == backTestConditionFinancialInfoList.state && output1.length > 0) 
         if (output1.length > 0) {
             // const match = output1[0].match(/_(\d{4})_(\d)Q/); // 처음 값만 사용해서 요청
@@ -167,6 +166,7 @@ export default function BackTest() {
             // console.log(`[handleOnClick] dispatch(reqGetFinancialInfoList())`);
             totalProfit.current = 0;
             dispatch(reqGetFinancialInfoList());
+            dispatch(setBackTestConditionFilterResultType({ ...backTestConditionFilterResultType, state: "init", output: {} }));
         }
 
         return <>
@@ -217,7 +217,9 @@ export default function BackTest() {
             <div className="w-full">
                 <Timeline>
                     <>
-                        <div>최종수익:{totalProfit.current}원</div>
+                        <Typography color="blue-gray" className="text-lg font-bold leading-none pb-4">
+                            최종수익금: {totalProfit.current}원
+                        </Typography>
                         {Object.keys(backTestConditionFilterResultType.output).map((date: any, index1: any) => {
                             let prevDate = ""
                             if (index1 >= 1) {
@@ -242,6 +244,7 @@ export default function BackTest() {
                                         <>
                                             {index1 >= 1 ? Object.keys(backTestConditionFilterResultType.output3[prevDate]).map((stockName: any, index2: any) => {
                                                 const filteredStockInfo = backTestConditionFilterResultType.output2[prevDate]["data"][stockName];
+                                                const filteredStockInfoFinancial = backTestConditionFilterResultType.output3[prevDate][stockName];
                                                 // if (!!!filteredStockInfo) {
                                                 //     console.log(`stockName`, stockName);
                                                 //     console.log(`filteredStockInfo`, filteredStockInfo);
@@ -261,9 +264,9 @@ export default function BackTest() {
                                                 return <>
                                                     {!!filteredStockInfo ?
                                                         <Typography key={index2} color="gray" className="font-normal text-xs text-gray-600">
-                                                            [{stockName}] <span className={`${profit >= 0 ? "text-red-500" : "text-blue-500"} ${!!currentFilteredStockInfo ? "" : "text-purple-500"}`}>수익:{profit}</span> 시가:{Number(filteredStockInfo["시가"]).toFixed(0)} 원, 유동자산:{Util.UnitConversion(filteredStockInfo["유동자산"], true)}, 부채총계:{Util.UnitConversion(filteredStockInfo["부채총계"], true)}
+                                                            [{stockName}] <span className={`${profit >= 0 ? "text-red-500" : "text-blue-500"} ${!!currentFilteredStockInfo ? "" : "text-purple-500"}`}>수익:{profit}</span>
                                                             시가:{Number(filteredStockInfo["시가"]).toFixed(0)} 원,
-                                                            유동자산:{Util.UnitConversion(filteredStockInfo["유동자산"], true)}, 부채총계:{Util.UnitConversion(filteredStockInfo["부채총계"], true)}
+                                                            유동자산:{Util.UnitConversion(filteredStockInfoFinancial["유동자산"], true)}, 부채총계:{Util.UnitConversion(filteredStockInfoFinancial["부채총계"], true)}
                                                         </Typography>
                                                         : <></>}
                                                 </>
