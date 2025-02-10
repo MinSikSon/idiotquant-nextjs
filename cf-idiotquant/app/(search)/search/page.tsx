@@ -10,8 +10,10 @@ import { Button, Input } from "@material-tailwind/react";
 import { reqPostApprovalKey, reqPostToken, reqGetInquireBalance, reqPostOrderCash, reqGetInquirePrice, KoreaInvestmentInquirePrice, getKoreaInvestmentInquirePrice, reqGetInquireDailyItemChartPrice, getKoreaInvestmentInquireDailyItemChartPrice, KoreaInvestmentInquireDailyItemChartPrice, reqGetBalanceSheet, getKoreaInvestmentBalanceSheet, KoreaInvestmentBalanceSheet } from "@/lib/features/koreaInvestment/koreaInvestmentSlice";
 import { getKoreaInvestmentApproval, getKoreaInvestmentToken, getKoreaInvestmentBalance } from "@/lib/features/koreaInvestment/koreaInvestmentSlice";
 import { KoreaInvestmentApproval, KoreaInvestmentToken, KoreaInvestmentBalance } from "@/lib/features/koreaInvestment/koreaInvestmentSlice";
+import { setKoreaInvestmentToken } from "@/lib/features/koreaInvestment/koreaInvestmentSlice";
 
 import corpCodeJson from "@/public/data/corpCode.json"
+import { getCookie, registerCookie } from "@/components/util";
 
 export default function Search() {
   const pathname = usePathname();
@@ -19,10 +21,94 @@ export default function Search() {
   const dispatch = useAppDispatch();
 
   const kiToken: KoreaInvestmentToken = useAppSelector(getKoreaInvestmentToken);
+  const kiBalance: KoreaInvestmentBalance = useAppSelector(getKoreaInvestmentBalance);
+  const kiInquirePrice: KoreaInvestmentInquirePrice = useAppSelector(getKoreaInvestmentInquirePrice);
+  const kiBalanceSheet: KoreaInvestmentBalanceSheet = useAppSelector(getKoreaInvestmentBalanceSheet);
+  const kiInquireDailyItemChartPrice: KoreaInvestmentInquireDailyItemChartPrice = useAppSelector(getKoreaInvestmentInquireDailyItemChartPrice);
+
+  const [time, setTime] = React.useState<any>('');
+
 
   const [stockName, setStockName] = React.useState<any>("");
   const [startDate, setStartDate] = React.useState<any>("2025-02-03");
   const [endDate, setEndDate] = React.useState<any>("2025-02-07");
+  function reload(seq: any) {
+    setTime(new Date());
+
+    // login check ?
+    // if ("init" == kiApproval.state) 
+    {
+      dispatch(reqPostApprovalKey());
+    }
+
+    // console.log(`[OpenApi] ${seq}-1 kiToken`, kiToken);
+    // console.log(`[OpenApi] ${seq}-1 loginState`, loginState);
+
+    const cookieKoreaInvestmentToken = getCookie("koreaInvestmentToken");
+    console.log(`cookieKoreaInvestmentToken`, typeof cookieKoreaInvestmentToken, cookieKoreaInvestmentToken);
+    if (undefined != cookieKoreaInvestmentToken) {
+      const jsonCookieKoreaInvestmentToken = JSON.parse(cookieKoreaInvestmentToken);
+      console.log(`jsonCookieKoreaInvestmentToken`, typeof jsonCookieKoreaInvestmentToken, jsonCookieKoreaInvestmentToken);
+    }
+
+    // const koreaInvestmentToken = sessionStorage.getItem('koreaInvestmentToken');
+    // console.log(`koreaInvestmentToken`, koreaInvestmentToken, typeof koreaInvestmentToken, !!koreaInvestmentToken);
+    if (false == !!cookieKoreaInvestmentToken) {
+      if ("init" == kiBalance.state && "" == kiToken["access_token"]) {
+        dispatch(reqPostToken()); // NOTE: 1분에 한 번씩만 token 발급 가능
+      }
+      else {
+        // sessionStorage.setItem('koreaInvestmentToken', JSON.stringify(kiToken));
+        registerCookie("koreaInvestmentToken", JSON.stringify(kiToken));
+      }
+    }
+    else {
+      const jsonCookieKoreaInvestmentToken = JSON.parse(cookieKoreaInvestmentToken);
+      // const json = JSON.parse(koreaInvestmentToken);
+      const json = jsonCookieKoreaInvestmentToken;
+      // console.log(`json`, json);
+      const currentDate = time;
+      const expiredDate = new Date(json["access_token_token_expired"].replace(" ", "T"));
+      const skipPostToken = (expiredDate > currentDate);
+      console.log(`skipPostToken`, skipPostToken);
+      if (false == skipPostToken) {
+        console.log(`expiredDate`, expiredDate, `currentDate`, currentDate);
+        dispatch(reqPostToken());
+      }
+      else {
+        if (false == !!kiToken["access_token"]) {
+          dispatch(setKoreaInvestmentToken(json));
+        }
+      }
+    }
+
+    console.log(`[OpenApi] ${seq}-2 kiToken`, kiToken);
+    console.log(`[OpenApi] ${seq}-2 loginState`, loginState);
+    // if ("init" == kiBalance.state && "" != kiToken["access_token"] && "init" != loginState) {
+    if ("" != kiToken["access_token"] && "init" != loginState) {
+      dispatch(reqGetInquireBalance(kiToken));
+    }
+
+    console.log(`[OpenApi] kiInquirePrice`, kiInquirePrice);
+    console.log(`[OpenApi] kiInquireDailyItemChartPrice`, kiInquireDailyItemChartPrice);
+    console.log(`[OpenApi] kiBalanceSheet`, kiBalanceSheet);
+  }
+  React.useEffect(() => {
+    console.log(`React.useEffect [kiToken]`, kiToken);
+    reload('1');
+  }, [kiToken]);
+
+  React.useEffect(() => {
+    console.log(`React.useEffect []`);
+  }, [])
+
+  React.useEffect(() => {
+    console.log(`React.useEffect [kiInquireDailyItemChartPrice]`, kiInquireDailyItemChartPrice);
+  }, [kiInquireDailyItemChartPrice])
+  React.useEffect(() => {
+    console.log(`React.useEffect [kiBalanceSheet]`, kiBalanceSheet);
+  }, [kiBalanceSheet])
+
 
 
   const formatDate = (date: string) => {

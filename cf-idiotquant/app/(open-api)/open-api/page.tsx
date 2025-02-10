@@ -64,10 +64,10 @@ export default function OpenApi() {
         else {
             const jsonCookieKoreaInvestmentToken = JSON.parse(cookieKoreaInvestmentToken);
             // const json = JSON.parse(koreaInvestmentToken);
-            const json = jsonCookieKoreaInvestmentToken;
+            const json: KoreaInvestmentToken = jsonCookieKoreaInvestmentToken;
             // console.log(`json`, json);
             const currentDate = time;
-            const expiredDate = new Date(json["access_token_token_expired"]);
+            const expiredDate = new Date(json["access_token_token_expired"].replace(" ", "T"));
             const skipPostToken = (expiredDate > currentDate);
             console.log(`skipPostToken`, skipPostToken);
             if (false == skipPostToken) {
