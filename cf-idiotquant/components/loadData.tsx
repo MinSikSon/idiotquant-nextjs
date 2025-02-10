@@ -92,13 +92,13 @@ export const LoadData = () => {
                 "financialInfo_2019_4Q",
                 "financialInfo_2020_4Q",
                 "financialInfo_2021_4Q",
-                "financialInfo_2022_3Q",
+                // "financialInfo_2022_3Q",
                 "financialInfo_2022_4Q",
-                "financialInfo_2023_1Q",
-                "financialInfo_2023_2Q",
-                "financialInfo_2023_3Q",
+                // "financialInfo_2023_1Q",
+                // "financialInfo_2023_2Q",
+                // "financialInfo_2023_3Q",
                 "financialInfo_2023_4Q",
-                "financialInfo_2024_1Q",
+                // "financialInfo_2024_1Q",
                 "financialInfo_2024_3Q",
             ];
             dispatch(setList(financialInfoList));

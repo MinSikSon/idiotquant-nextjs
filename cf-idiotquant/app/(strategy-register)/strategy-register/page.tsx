@@ -99,7 +99,8 @@ export default function StrategyRegister() {
 
         // return;
         // console.log(`financialInfo`, financialInfo);
-        // console.log(`marketInfo`, marketInfo);
+        console.log(`marketInfo`, marketInfo);
+
         const mergedStockInfo = GetMergedStocksList(financialInfo, marketInfo);
         // console.log(`mergedStockInfo`, mergedStockInfo, Object.keys(mergedStockInfo).length);
         // filter: strategy

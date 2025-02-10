@@ -229,7 +229,7 @@ export default function BackTest() {
                             console.log(`index1`, index1, `date`, date, `prevDate`, prevDate);
                             console.log(`backTestConditionFilterResultType`, backTestConditionFilterResultType);
 
-                            return <TimelineItem key={index1}>
+                            return <TimelineItem key={date}>
                                 <TimelineConnector />
                                 <TimelineHeader className="h-3">
                                     <TimelineIcon className="p-0" variant="ghost" color="green" >
@@ -264,7 +264,7 @@ export default function BackTest() {
                                                 // console.log(`currentFilteredStockInfo`, currentFilteredStockInfo);
                                                 return <>
                                                     {!!filteredStockInfo ?
-                                                        <Typography key={index2} color="gray" className="font-normal text-xs text-gray-600">
+                                                        <Typography key={stockName} color="gray" className="font-normal text-xs text-gray-600">
                                                             [{stockName}] <span className={`${profit >= 0 ? "text-red-500" : "text-blue-500"} ${!!currentFilteredStockInfo ? "" : "text-purple-500"}`}>수익:{profit}</span>
                                                             시가:{Number(filteredStockInfo["시가"]).toFixed(0)} 원,
                                                             유동자산:{Util.UnitConversion(filteredStockInfoFinancial["유동자산"], true)}, 부채총계:{Util.UnitConversion(filteredStockInfoFinancial["부채총계"], true)}
@@ -286,7 +286,7 @@ export default function BackTest() {
                                             const filteredStockInfo = backTestConditionFilterResultType.output3[date][stockName];
                                             return <>
                                                 {!!filteredStockInfo ?
-                                                    <Typography key={index2} color="gray" className="font-normal text-xs text-gray-600">
+                                                    <Typography key={stockName} color="gray" className="font-normal text-xs text-gray-600">
                                                         [{stockName}] 시가:{Number(filteredStockInfo["시가"]).toFixed(0)} 원,
                                                         유동자산:{Util.UnitConversion(filteredStockInfo["유동자산"], true)},
                                                         부채총계:{Util.UnitConversion(filteredStockInfo["부채총계"], true)}

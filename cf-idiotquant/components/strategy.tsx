@@ -52,6 +52,12 @@ export function GetStocksFilteredByStrategyNCAV(stockCompanyInfo: any) {
 }
 
 export function GetMergedStocksList(financialInfo: any, marketInfo: any) {
+    if (null == financialInfo) {
+        new Error(`financialInfo is null`);
+    }
+    if (null == marketInfo) {
+        new Error(`marketInfo is null`);
+    }
     let mergedStockInfo: any = {};
     for (const [key, value] of Object.entries<any>(financialInfo)) {
         if (true == !!!marketInfo[`data`][key]) continue;
