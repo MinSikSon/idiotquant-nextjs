@@ -44,7 +44,7 @@ export default function StrategyRegister() {
     const netIncome = useAppSelector(getNetIncome);
     const netIncomeList: boolean[] = useAppSelector(getNetIncomeList);
 
-    const financialInfo: object = useAppSelector(selectFinancialInfo);
+    const financialInfo: any = useAppSelector(selectFinancialInfo);
     const marketInfo: any = useAppSelector(selectMarketInfo);
 
     const getTitle = () => {
@@ -90,18 +90,10 @@ export default function StrategyRegister() {
 
     // const handleOnClick = (isLastStep: boolean) => {
     const handleOnClick = () => {
-        // if (false == isLastStep) {
-        //     return;
-        // }
-
-        // console.log(`handleOnClick`);
-        // alert(`기능 추가 예정입니다..!`);
-
-        // return;
-        // console.log(`financialInfo`, financialInfo);
+        console.log(`financialInfo`, financialInfo);
         console.log(`marketInfo`, marketInfo);
 
-        const mergedStockInfo = GetMergedStocksList(financialInfo, marketInfo);
+        const mergedStockInfo = GetMergedStocksList(financialInfo["output"], marketInfo);
         // console.log(`mergedStockInfo`, mergedStockInfo, Object.keys(mergedStockInfo).length);
         // filter: strategy
         let filteredByStrategyStocks: any = {};
@@ -111,7 +103,7 @@ export default function StrategyRegister() {
         else {
             filteredByStrategyStocks = mergedStockInfo;
         }
-        // console.log(`defaultStrategy`, defaultStrategy, filteredByStrategyStocks, Object.keys(filteredByStrategyStocks).length);
+        console.log(`defaultStrategy`, defaultStrategy, filteredByStrategyStocks, Object.keys(filteredByStrategyStocks).length);
 
         console.log(`capitalizationMin`, capitalizationMin);
         console.log(`netIncome`, netIncome);

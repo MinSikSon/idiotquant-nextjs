@@ -16,7 +16,7 @@ export const LoadData = () => {
     const dispatch = useAppDispatch();
     const financialInfoState = useAppSelector(selectFinancialInfoState);
 
-    const financialInfo: object = useAppSelector(selectFinancialInfo);
+    const financialInfo: any = useAppSelector(selectFinancialInfo);
     const financialInfoList: string[] = useAppSelector(selectFinancialInfoList);
     const financialLatestDate: any = useAppSelector(selectLatestDate);
 
@@ -28,10 +28,6 @@ export const LoadData = () => {
     const strategyState = useAppSelector(selectStrategyState);
 
     const kakaoId = useAppSelector(selectKakaoId);
-
-    // console.log(`[LoadData 1]`, new Date(), `financialInfoState:`, financialInfoState, `, financialInfo:`, financialInfo, `, financialInfoList:`, financialInfoList);
-    // console.log(`[LoadData 2]`, new Date(), `financialLatestDate:`, financialLatestDate, `, marketInfoState:`, marketInfoState, `, marketInfo:`, marketInfo);
-    // console.log(`[LoadData 3]`, new Date(), `marketInfoList:`, marketInfoList, `, marketLatestDate:`, marketLatestDate, `, strategyState:`, strategyState);
 
     // TODO 1
     // -  date list -> get latest financialInfo date
@@ -64,15 +60,8 @@ export const LoadData = () => {
 
     useEffect(() => {
         if (financialInfoState == "init") {
-            // console.log(`111 []`, new Date(), `financialInfoState:`, financialInfoState, `, marketInfoState:`, marketInfoState);
-
-            // console.log(`kakaoId`, kakaoId, !!kakaoId);
-
-            // const localStorageKakaoId = sessionStorage.getItem('kakaoId');
-            // console.log(`localStorageKakaoId`, localStorageKakaoId, !!localStorageKakaoId);
             const cookieKakaoId = getCookie("kakaoId");
             console.log(`[cookie] coockieKakaoId`, !!cookieKakaoId, cookieKakaoId);
-            // if (false == !!kakaoId && true == !!localStorageKakaoId) {
             if (false == !!kakaoId && true == !!cookieKakaoId) {
                 dispatch(getCloudFlareLoginStatus());
             }
@@ -82,7 +71,6 @@ export const LoadData = () => {
     }, [financialInfoState, marketInfoState])
 
     useEffect(() => {
-        // console.log(`222 [loadData] financialInfoState`, financialInfoState);
         if ("ready-financialInfoList" == financialInfoState) {
         }
         else if ("get-rejected" == financialInfoState) {
@@ -146,10 +134,9 @@ export const LoadData = () => {
     }, [marketInfoState, dispatch, marketLatestDate])
 
     useEffect(() => {
-        // console.log(`444 [LoadData] financialInfo, marketInfo`, financialInfo, !!financialInfo, marketInfo, !!marketInfo);
-        if (true == !!financialInfo && Object.keys(financialInfo).length > 0)
+        if (true == !!financialInfo && true == !!financialInfo["output"] && Object.keys(financialInfo["output"]).length > 0)
             if (true == !!marketInfo && Object.keys(marketInfo).length > 0) {
-                const mergedStockInfo = GetMergedStocksList(financialInfo, marketInfo);
+                const mergedStockInfo = GetMergedStocksList(financialInfo["output"], marketInfo);
                 // console.log(`GetStocksFilteredByStrategyNCAV`, mergedStockInfo);
                 const filteredStocks = GetStocksFilteredByStrategyNCAV(mergedStockInfo);
                 const { year, quarter } = financialLatestDate;
