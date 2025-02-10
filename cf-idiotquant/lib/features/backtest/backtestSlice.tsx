@@ -153,12 +153,15 @@ export const backtestSlice = createAppSlice({
                     const condition = (JSON.stringify(output2) != JSON.stringify(transformedData)); // list 중복 갱신 방지
                     // if (condition)
                     {
-                        // console.log(`[reqGetFinancialInfoList] state.backTestConditionFinancialInfoList`, state.backTestConditionFinancialInfoList);
-                        // console.log(`[reqGetFinancialInfoList] output2`, typeof output2, output2);
-                        // console.log(`[reqGetFinancialInfoList] transformedData`, typeof transformedData, transformedData);
-                        state.backTestConditionFinancialInfoList.output1 = JSON.parse(action.payload);
-                        state.backTestConditionFinancialInfoList.output2 = transformedData;
-                        // state.backTestConditionFinancialInfoList.state = "loading";
+                        console.log(`[reqGetFinancialInfoList] state.backTestConditionFinancialInfoList`, state.backTestConditionFinancialInfoList);
+                        console.log(`[reqGetFinancialInfoList] output2`, typeof output2, output2);
+                        console.log(`[reqGetFinancialInfoList] transformedData`, typeof transformedData, transformedData);
+                        const newFinancialInfoList = { ...state.backTestConditionFinancialInfoList };
+                        newFinancialInfoList.output1 = [...JSON.parse(action.payload)];
+                        newFinancialInfoList.output2 = [...transformedData];
+                        newFinancialInfoList.state = "loading";
+                        console.log(`[reqGetFinancialInfoList] newFinancialInfoList`, typeof newFinancialInfoList, newFinancialInfoList);
+                        state.backTestConditionFinancialInfoList = newFinancialInfoList;
 
                         state.state = "fulfilled";
                     }
@@ -189,12 +192,15 @@ export const backtestSlice = createAppSlice({
                     type OutputType = {
                         [key: string]: any;
                     }
+                    let newFilterResultType = { ...state.backTestConditionFilterResultType };
                     let newDictionary: OutputType = { ...state.backTestConditionFilterResultType.output };
                     newDictionary[key] = output;
-                    state.backTestConditionFilterResultType.output = newDictionary;
+                    newFilterResultType.output = newDictionary;
+                    // state.backTestConditionFilterResultType.output = newDictionary;
                     let newDictionary2: OutputType = { ...state.backTestConditionFilterResultType.output2 };
                     newDictionary2[key] = output2;
-                    state.backTestConditionFilterResultType.output2 = newDictionary2;
+                    newFilterResultType.output2 = newDictionary2;
+                    // state.backTestConditionFilterResultType.output2 = newDictionary2;
 
                     // filter list
                     if ("NCAV" == state.backTestConditionType1.strategy) {
@@ -203,7 +209,7 @@ export const backtestSlice = createAppSlice({
                         const mergedStockInfo = GetMergedStocksList(output, output2);
                         // console.log(`mergedStockInfo`, mergedStockInfo, Object.keys(mergedStockInfo).length);
                         // filter: strategy
-                        let filteredByStrategyStocks: any = GetStocksFilteredByStrategyNCAV(mergedStockInfo);
+                        const filteredByStrategyStocks: any = GetStocksFilteredByStrategyNCAV(mergedStockInfo);
                         // console.log(`defaultStrategy`, defaultStrategy, filteredByStrategyStocks, Object.keys(filteredByStrategyStocks).length);
 
                         // filter: stock information
@@ -212,8 +218,11 @@ export const backtestSlice = createAppSlice({
                         console.log(`filteredStocks`, filteredStocks, Object.keys(filteredStocks).length);
 
                         newDictionary3[key] = filteredStocks;
-                        state.backTestConditionFilterResultType.output3 = newDictionary3;
+                        newFilterResultType.output3 = newDictionary3;
+                        // state.backTestConditionFilterResultType.output3 = newDictionary3;
                     }
+
+                    state.backTestConditionFilterResultType = newFilterResultType;
 
                 },
                 rejected: (state) => {

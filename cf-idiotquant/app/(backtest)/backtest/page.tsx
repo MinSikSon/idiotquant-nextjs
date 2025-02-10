@@ -91,7 +91,9 @@ export default function BackTest() {
 
         const output1 = backTestConditionFinancialInfoList.output1;
 
-        if ("init" == backTestConditionFinancialInfoList.state && output1.length > 0) {
+        // dispatch(setBackTestConditionFilterResultType({ ...backTestConditionFilterResultType, state: "init", output: {} }));
+        // if ("init" == backTestConditionFinancialInfoList.state && output1.length > 0) 
+        if (output1.length > 0) {
             // const match = output1[0].match(/_(\d{4})_(\d)Q/); // 처음 값만 사용해서 요청
             // console.log(`match`, match);
             // dispatch(reqGetFinancialInfo({ year: match[1], quarter: match[2] })); // 요청 결과는 backTestConditionFilterResultType 에 갱신 됨.
@@ -164,7 +166,6 @@ export default function BackTest() {
         const handleOnClick = () => {
             // console.log(`[handleOnClick] dispatch(reqGetFinancialInfoList())`);
             totalProfit.current = 0;
-            dispatch(setBackTestConditionFilterResultType({ ...backTestConditionFilterResultType, state: "init", output: {} }));
             dispatch(reqGetFinancialInfoList());
         }
 
@@ -217,16 +218,15 @@ export default function BackTest() {
                 <Timeline>
                     <>
                         <div>최종수익:{totalProfit.current}원</div>
-                        {Object.keys(backTestConditionFilterResultType.output).map((date: any, index: any) => {
-                            console.log(`index`, index);
-                            console.log(`date`, date);
+                        {Object.keys(backTestConditionFilterResultType.output).map((date: any, index1: any) => {
                             let prevDate = ""
-                            if (index >= 1) {
-                                prevDate = Object.keys(backTestConditionFilterResultType.output)[index - 1];
-                                console.log(`prevDate`, prevDate);
+                            if (index1 >= 1) {
+                                prevDate = Object.keys(backTestConditionFilterResultType.output)[index1 - 1];
                             }
+                            console.log(`index1`, index1, `date`, date, `prevDate`, prevDate);
+                            console.log(`backTestConditionFilterResultType`, backTestConditionFilterResultType);
 
-                            return <TimelineItem key={index}>
+                            return <TimelineItem key={index1}>
                                 <TimelineConnector />
                                 <TimelineHeader className="h-3">
                                     <TimelineIcon className="p-0" variant="ghost" color="green" >
@@ -240,19 +240,35 @@ export default function BackTest() {
                                     <Typography color="blue-gray" className="text-base font-bold leading-none">
                                         전년도 매수 종목 매도
                                         <>
-                                            {index >= 1 ? Object.keys(backTestConditionFilterResultType.output3[prevDate]).map((stockName: any, index: any) => {
-                                                const filteredStockInfo = backTestConditionFilterResultType.output3[prevDate][stockName];
+                                            {index1 >= 1 ? Object.keys(backTestConditionFilterResultType.output3[prevDate]).map((stockName: any, index2: any) => {
+                                                const filteredStockInfo = backTestConditionFilterResultType.output2[prevDate]["data"][stockName];
+                                                // if (!!!filteredStockInfo) {
+                                                //     console.log(`stockName`, stockName);
+                                                //     console.log(`filteredStockInfo`, filteredStockInfo);
+                                                //     console.log(`prevDate`, prevDate, `date`, date);
+                                                //     console.log(`backTestConditionFilterResultType.output2[prevDate]["data"]`, backTestConditionFilterResultType.output2[prevDate]["data"]);
+                                                // }
                                                 const currentFilteredStockInfo = backTestConditionFilterResultType.output2[date]["data"][stockName];
-                                                const profit = !!currentFilteredStockInfo ? (Number(currentFilteredStockInfo["시가"]) - Number(filteredStockInfo["시가"])) : 0;
+                                                // if (!!!currentFilteredStockInfo) {
+                                                //     console.log(`currentFilteredStockInfo`, currentFilteredStockInfo);
+                                                // console.log(`prevDate`,prevDate,`date`, date);
+                                                //     console.log(`backTestConditionFilterResultType.output2[date]["data"]`, backTestConditionFilterResultType.output2[date]["data"]);
+                                                // }
+                                                // !!currentFilteredStockInfo <- 상장폐지? 또는 종목명 변경
+                                                const profit = (!!currentFilteredStockInfo && !!filteredStockInfo) ? Number(((Number(currentFilteredStockInfo["시가총액"]) / Number(filteredStockInfo["시가총액"]) * Number(filteredStockInfo["시가"])) - Number(filteredStockInfo["시가"])).toFixed(0)) : (!!filteredStockInfo ? -Number(filteredStockInfo["시가"]) : 0);
                                                 totalProfit.current += profit;
                                                 // console.log(`currentFilteredStockInfo`, currentFilteredStockInfo);
                                                 return <>
-                                                    <Typography key={index} color="gray" className="font-normal text-xs text-gray-600">
-                                                        [{stockName}] 수익:{profit} 시가:{Number(filteredStockInfo["시가"]).toFixed(0)} 원, 유동자산:{Util.UnitConversion(filteredStockInfo["유동자산"], true)}, 부채총계:{Util.UnitConversion(filteredStockInfo["부채총계"], true)}
-                                                    </Typography>
+                                                    {!!filteredStockInfo ?
+                                                        <Typography key={index2} color="gray" className="font-normal text-xs text-gray-600">
+                                                            [{stockName}] <span className={`${profit >= 0 ? "text-red-500" : "text-blue-500"} ${!!currentFilteredStockInfo ? "" : "text-purple-500"}`}>수익:{profit}</span> 시가:{Number(filteredStockInfo["시가"]).toFixed(0)} 원, 유동자산:{Util.UnitConversion(filteredStockInfo["유동자산"], true)}, 부채총계:{Util.UnitConversion(filteredStockInfo["부채총계"], true)}
+                                                            시가:{Number(filteredStockInfo["시가"]).toFixed(0)} 원,
+                                                            유동자산:{Util.UnitConversion(filteredStockInfo["유동자산"], true)}, 부채총계:{Util.UnitConversion(filteredStockInfo["부채총계"], true)}
+                                                        </Typography>
+                                                        : <></>}
                                                 </>
                                             }) : <>
-                                                <Typography key={index} color="gray" className="font-normal text-xs text-gray-600">
+                                                <Typography key={index1} color="gray" className="font-normal text-xs text-gray-600">
                                                     없음
                                                 </Typography>
                                             </>}
@@ -262,14 +278,21 @@ export default function BackTest() {
                                         매수 종목
                                     </Typography>
                                     <>
-                                        {Object.keys(backTestConditionFilterResultType.output3[date]).map((stockName: any, index: any) => {
+                                        {!!backTestConditionFilterResultType.output3[date] ? Object.keys(backTestConditionFilterResultType.output3[date]).map((stockName: any, index2: any) => {
                                             const filteredStockInfo = backTestConditionFilterResultType.output3[date][stockName];
                                             return <>
-                                                <Typography key={index} color="gray" className="font-normal text-xs text-gray-600">
-                                                    [{stockName}] 시가:{Number(filteredStockInfo["시가"]).toFixed(0)} 원, 유동자산:{Util.UnitConversion(filteredStockInfo["유동자산"], true)}, 부채총계:{Util.UnitConversion(filteredStockInfo["부채총계"], true)}
-                                                </Typography>
+                                                {!!filteredStockInfo ?
+                                                    <Typography key={index2} color="gray" className="font-normal text-xs text-gray-600">
+                                                        [{stockName}] 시가:{Number(filteredStockInfo["시가"]).toFixed(0)} 원,
+                                                        유동자산:{Util.UnitConversion(filteredStockInfo["유동자산"], true)},
+                                                        부채총계:{Util.UnitConversion(filteredStockInfo["부채총계"], true)}
+                                                    </Typography>
+                                                    : <></>}
                                             </>
-                                        })}
+                                        })
+                                            :
+                                            <></>
+                                        }
                                     </>
                                 </TimelineBody>
                             </TimelineItem>
