@@ -189,7 +189,8 @@ export default function BackTest() {
 
     const formatDate = (dateStr: string): string => {
         if (dateStr.length !== 6) {
-            throw new Error("Invalid date format");
+            // throw new Error("Invalid date format");
+            return "";
         }
 
         const year = dateStr.slice(0, 4);  // "2017"
@@ -240,7 +241,7 @@ export default function BackTest() {
                                 </TimelineHeader>
                                 <TimelineBody className="pb-8">
                                     <Typography color="blue-gray" className="text-base font-bold leading-none">
-                                        전년도 매수 종목 매도
+                                        - {formatDate(prevDate)} 종목 일괄 매도
                                         <>
                                             {index1 >= 1 ? Object.keys(backTestConditionFilterResultType.output3[prevDate]).map((stockName: any, index2: any) => {
                                                 const filteredStockInfo = backTestConditionFilterResultType.output2[prevDate]["data"][stockName];
@@ -278,7 +279,7 @@ export default function BackTest() {
                                         </>
                                     </Typography>
                                     <Typography color="blue-gray" className="text-base font-bold leading-none">
-                                        매수 종목
+                                        - {formatDate(date)} 매수
                                     </Typography>
                                     <>
                                         {!!backTestConditionFilterResultType.output3[date] ? Object.keys(backTestConditionFilterResultType.output3[date]).map((stockName: any, index2: any) => {
