@@ -10,7 +10,7 @@ import { getKoreaInvestmentApproval, getKoreaInvestmentToken, getKoreaInvestment
 import { selectState } from "@/lib/features/login/loginSlice";
 
 import { useAppDispatch, useAppSelector } from "@/lib/hooks";
-import { Button, Input } from "@material-tailwind/react";
+import { Button, Input, Typography } from "@material-tailwind/react";
 import React from "react";
 
 import corpCodeJson from "@/public/data/corpCode.json"
@@ -139,10 +139,19 @@ export default function OpenApi() {
             return {
                 digitalAsset: item["prdt_name"], // key
                 detail: item["prdt_name"],
-                closePrice: Number(item["prpr"]).toLocaleString() + " 원",
+                closePrice: Number(item["prpr"]).toLocaleString() + "원",
                 expectedRateOfReturn: `${item['hldg_qty']}/${item['ord_psbl_qty']}`,
                 expectedRateOfReturnColor: '', // x
-                targetPrice: Util.UnitConversion(Number(item["evlu_pfls_amt"]), true),
+                targetPrice: <>
+                    <div className={`font-bold flex justify-between ${Number(Number(item["evlu_amt"]) / Number(item["pchs_amt"]) * 100 - 100) >= 0 ? "text-red-500" : "text-blue-500"}`}>
+                        <div className="pr-1">
+                            ({Number(Number(item["evlu_amt"]) / Number(item["pchs_amt"]) * 100 - 100).toFixed(2)}%)
+                        </div>
+                        <div>
+                            {Util.UnitConversion(Number(item["evlu_pfls_amt"]), true)}
+                        </div>
+                    </div>
+                </>,
                 market: Util.UnitConversion(Number(item["evlu_amt"]), true),
                 netCurrentAssert: Util.UnitConversion(Number(item["pchs_amt"]), true),
                 netIncome: `${(Number(item["pchs_amt"]) / Number(kiBalance.output2[0]["pchs_amt_smtl_amt"]) * 100).toFixed(2)} %`,
@@ -161,24 +170,45 @@ export default function OpenApi() {
     }
 
     // console.log(`example8TableRowType.length`, example8TableRowType.length);
-    let nass_amt = ''; // 순자산
-    let evlu_amt_smtl_amt = ''; // 평가금액
-    let pchs_amt_smtl_amt = ''; // 매입금액
-    let evlu_pfls_smtl_amt = '';// 수입
+    let nass_amt: number = 0; // 순자산
+    let evlu_amt_smtl_amt: number = 0; // 평가금액
+    let pchs_amt_smtl_amt: number = 0; // 매입금액
+    let evlu_pfls_smtl_amt: number = 0;// 수입
+    console.log(`kiBalance.output2`, kiBalance.output2);
+    console.log(`kiBalance.output2.length`, kiBalance.output2.length);
     if (!!kiBalance.output2 && kiBalance.output2.length > 0) {
-        nass_amt = Util.UnitConversion(Number(kiBalance.output2[0]["nass_amt"]), true);
-        evlu_amt_smtl_amt = Util.UnitConversion(Number(kiBalance.output2[0]["evlu_amt_smtl_amt"]), true);
-        pchs_amt_smtl_amt = Util.UnitConversion(Number(kiBalance.output2[0]["pchs_amt_smtl_amt"]), true);
-        evlu_pfls_smtl_amt = Util.UnitConversion(Number(kiBalance.output2[0]["evlu_pfls_smtl_amt"]), true);
+        nass_amt = Number(kiBalance.output2[0]["nass_amt"]);
+        evlu_amt_smtl_amt = Number(kiBalance.output2[0]["evlu_amt_smtl_amt"]);
+        pchs_amt_smtl_amt = Number(kiBalance.output2[0]["pchs_amt_smtl_amt"]);
+        evlu_pfls_smtl_amt = Number(kiBalance.output2[0]["evlu_pfls_smtl_amt"]);
     }
     const props: TablesExample8PropsType = {
         // title: `[OpenApi] 계좌 조회 (${kiBalance.ctx_area_fk100})`,
         title: <div className="flex "><div className="pr-2">[OpenApi] 계좌 조회</div><Button onClick={() => dispatch(reqGetInquireBalance(kiToken))} className="px-2 py-0 m-0" variant="outlined" size="sm">다시 조회</Button></div>,
         subTitle: ``,
-        desc: `순자산금액: ${nass_amt} (수익금:${evlu_pfls_smtl_amt} = 평가금액:${evlu_amt_smtl_amt} - 매입금액:${pchs_amt_smtl_amt})`,
+        // desc: `순자산금액: ${nass_amt} (수익금:${evlu_pfls_smtl_amt} = 평가금액:${evlu_amt_smtl_amt} - 매입금액:${pchs_amt_smtl_amt})`,
+        desc: <>
+            <Typography color="blue-gray" className="text-lg font-bold leading-none pb-3">
+                평가손익: <span className={`${(Number(evlu_amt_smtl_amt) / Number(pchs_amt_smtl_amt) * 100 - 100) >= 0 ? "text-red-500" : "text-blue-500"}`}>
+                    {Number(evlu_pfls_smtl_amt).toLocaleString()}원
+                    ({pchs_amt_smtl_amt == 0 ? "-" : Number(Number(evlu_amt_smtl_amt / pchs_amt_smtl_amt) * 100 - 100).toFixed(2)}%)
+                </span>
+            </Typography>
+            <div className="p-3 border rounded">
+                <Typography color="blue-gray" className="text-sm font-bold leading-none pb-2">
+                    예수금액: {Number(Number(nass_amt) - Number(pchs_amt_smtl_amt)).toLocaleString()}원 순자산금액: {Number(nass_amt).toLocaleString()}원
+                </Typography>
+                <Typography color="blue-gray" className="text-sm font-bold leading-none pb-2">
+                    평가금액: {Number(evlu_amt_smtl_amt).toLocaleString()}원
+                </Typography>
+                <Typography color="blue-gray" className="text-sm font-bold leading-none pb-1">
+                    매입금액: {Number(pchs_amt_smtl_amt).toLocaleString()}원
+                </Typography>
+            </div>
+        </>,
         // desc: ``,
-        financial_date: '-',
-        market_date: time.toString(),
+        financial_date: '',
+        market_date: `- market_date: ${time.toString()}`,
         tableHead: example8TableHeadType,
         tableRow: example8TableRowType,
     }

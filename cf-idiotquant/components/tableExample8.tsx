@@ -148,7 +148,7 @@ export interface Example8TableRowType {
     closePrice: string;
     expectedRateOfReturn: string;
     expectedRateOfReturnColor: string;
-    targetPrice?: string;
+    targetPrice?: any;
     market: string;
     netCurrentAssert?: string;
     netIncome?: string;
@@ -169,7 +169,7 @@ export interface Example8TableHeadType {
 export interface TablesExample8PropsType {
     title: any;
     subTitle: string;
-    desc: string;
+    desc: any;
     financial_date: string;
     market_date: string;
     tableHead: Example8TableHeadType[];
@@ -210,13 +210,13 @@ function TablesExample8({
                             variant="small"
                             className="text-gray-600 font-normal mt-1"
                         >
-                            - financial date: {financial_date}
+                            {financial_date}
                         </Typography>
                         <Typography
                             variant="small"
                             className="text-gray-600 font-normal mt-1"
                         >
-                            - market date: {market_date}
+                            {market_date}
                         </Typography>
                     </div>
                     {/* <div className="flex items-center w-full shrink-0 gap-4 md:w-max">
@@ -315,7 +315,7 @@ function TablesExample8({
                                                             <Typography
                                                                 // variant="small"
                                                                 variant="h6"
-                                                                className="!font-normal text-gray-600"
+                                                                className="!font-normal text-black"
                                                             >
                                                                 <div className="flex">
                                                                     {tag}
@@ -347,7 +347,7 @@ function TablesExample8({
                                                         variant="small"
                                                         className="!font-normal text-gray-600 text-right"
                                                     >
-                                                        {isNaN(Number(targetPrice)) ? targetPrice : Util.UnitConversion(Number(targetPrice), true)}
+                                                        {targetPrice}
                                                     </Typography>
                                                 </td>
                                                 <td className={classes}>

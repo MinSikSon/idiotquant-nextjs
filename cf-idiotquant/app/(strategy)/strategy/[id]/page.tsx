@@ -18,8 +18,8 @@ export default function Item({ params: { id } }: { params: { id: number } }) {
         title: strategyInfoList[Number(id)].title,
         subTitle: strategyInfoList[Number(id)].subTitle,
         desc: strategyInfoList[Number(id)].desc,
-        financial_date: strategyInfoList[Number(id)].financial_date,
-        market_date: strategyInfoList[Number(id)].market_date,
+        financial_date: `- financial date: ${strategyInfoList[Number(id)].financial_date}`,
+        market_date: `- market_date: ${strategyInfoList[Number(id)].market_date}`,
         tableHead: STRATEGY_TABLE_HEAD, // const
         tableRow: strategyInfoList[Number(id)].STRATEGY_TABLE_ROW,
     }
