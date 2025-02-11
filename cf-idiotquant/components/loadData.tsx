@@ -8,7 +8,6 @@ import { getMarketList, initMarketInfo, selectMarketInfo, selectMarketInfoLatest
 import { getStrategyList, addStrategyList, selectStrategyState, setLoading, selectNcavList } from "@/lib/features/strategy/strategySlice";
 import { getCloudFlareLoginStatus } from "@/lib/features/login/loginSlice";
 import { GetMergedStocksList, GetStocksFilteredByStrategyNCAV } from "@/components/strategy";
-// import { setBackTestStrategyList } from "@/lib/features/backtest/backtestSlice";
 import { selectKakaoId } from "@/lib/features/login/loginSlice";
 import { getCookie, isValidCookie } from "./util";
 
@@ -38,13 +37,11 @@ export const LoadData = () => {
     // - ncavList 존재 x ->  + getMarketInfo -> ncavList 구성 -> setNcavList
 
     function checkInCommon() {
-        // console.log(`checkInCommon`);
         if ("ready-financialInfoList" == financialInfoState)
             if ("ready-marketInfoList" == marketInfoState) {
                 const { year, quarter } = financialLatestDate;
                 const date = marketLatestDate;
 
-                // console.log(`year:`, year, `, quarter:`, quarter, `, date:`, date, `, ncavListState:`, ncavListState);
                 if ("init" == strategyState) {
                     dispatch(setLoading());
                     const financialInfoDate = `${year}${quarter}Q`;
@@ -54,15 +51,13 @@ export const LoadData = () => {
 
         if ("ready-financialInfo" == financialInfoState)
             if ("ready-marketInfo" == marketInfoState) {
-                // console.log(`ready financialInfo & marketInfo`);
             }
     }
 
     useEffect(() => {
         if (financialInfoState == "init") {
             const isValidCookieKakaoId = isValidCookie("kakaoId");
-            console.log(`[kakaoId] kakaoId`, !!kakaoId, kakaoId);
-            console.log(`[isValidCookieKakaoId] isValidCookieKakaoId`, !!isValidCookieKakaoId, isValidCookieKakaoId);
+            console.log(`[LoadData]`, `kakaoId:`, kakaoId, `isValidCookieKakaoId`, isValidCookieKakaoId);
             if (false == !!kakaoId && true == isValidCookieKakaoId) {
                 dispatch(getCloudFlareLoginStatus());
             }
@@ -81,13 +76,8 @@ export const LoadData = () => {
                 "financialInfo_2019_4Q",
                 "financialInfo_2020_4Q",
                 "financialInfo_2021_4Q",
-                // "financialInfo_2022_3Q",
                 "financialInfo_2022_4Q",
-                // "financialInfo_2023_1Q",
-                // "financialInfo_2023_2Q",
-                // "financialInfo_2023_3Q",
                 "financialInfo_2023_4Q",
-                // "financialInfo_2024_1Q",
                 "financialInfo_2024_3Q",
             ];
             dispatch(setList(financialInfoList));
@@ -97,9 +87,7 @@ export const LoadData = () => {
     }, [financialInfoState, dispatch])
 
     useEffect(() => {
-        // console.log(`333 [LoadData] marketInfoState`, marketInfoState);
         if ("ready-marketInfoList" == marketInfoState) {
-            // console.log(`[LoadData] [ready-marketInfoList]`, marketLatestDate);
         }
         else if ("get-rejected" == marketInfoState) {
             const marketInfoList: string[] = [
@@ -108,23 +96,7 @@ export const LoadData = () => {
                 "marketInfo_20201214",
                 "marketInfo_20211214",
                 "marketInfo_20221214",
-                "marketInfo_20230111",
-                "marketInfo_20230302",
-                "marketInfo_20230324",
-                "marketInfo_20230417",
-                "marketInfo_20230426",
-                "marketInfo_20230524",
-                "marketInfo_20230622",
-                "marketInfo_20230719",
-                "marketInfo_20230810",
-                "marketInfo_20230825",
-                "marketInfo_20230922",
-                "marketInfo_20231013",
-                "marketInfo_20231106",
                 "marketInfo_20231124",
-                "marketInfo_20240201",
-                "marketInfo_20240327",
-                "marketInfo_20240712",
                 "marketInfo_20241202",
                 "marketInfo_20250115",
             ];
@@ -138,10 +110,8 @@ export const LoadData = () => {
         if (true == !!financialInfo && true == !!financialInfo["output"] && Object.keys(financialInfo["output"]).length > 0)
             if (true == !!marketInfo && Object.keys(marketInfo).length > 0) {
                 const mergedStockInfo = GetMergedStocksList(financialInfo["output"], marketInfo);
-                // console.log(`GetStocksFilteredByStrategyNCAV`, mergedStockInfo);
                 const filteredStocks = GetStocksFilteredByStrategyNCAV(mergedStockInfo);
                 const { year, quarter } = financialLatestDate;
-                // console.log(`financialLatestDate`, financialLatestDate);
 
                 const ncavStrategyList: any = {
                     title: "퀀트 전략 : NCAV",
@@ -151,17 +121,14 @@ export const LoadData = () => {
                     marketInfoDate: marketInfo[`date`],
                     ncavList: JSON.stringify(filteredStocks)
                 }
-                // console.log(`ncavStrategyList`, ncavStrategyList);
                 dispatch(addStrategyList(ncavStrategyList));
             }
     }, [financialInfo, marketInfo, dispatch, financialLatestDate]);
 
     useEffect(() => {
-        // console.log(`555 [LoadData] strategyState`, strategyState);
         switch (strategyState) {
             case "get-rejected":
                 {
-                    // console.log(`[LoadData] get-rejected`);
                     const afinancialInfoList = String(financialInfoList).split(",");
                     const latestFinancialInfoList = afinancialInfoList[afinancialInfoList.length - 1];
                     const splitLatestFinancialInfoList = latestFinancialInfoList.replaceAll("\"", "").replaceAll("[", "").replaceAll("]", "").split("_");
@@ -193,7 +160,3 @@ export const LoadData = () => {
         <></>
     );
 }
-
-
-
-// loadData 를 Home/page.tsx 로 옮기덙디 해야것누
