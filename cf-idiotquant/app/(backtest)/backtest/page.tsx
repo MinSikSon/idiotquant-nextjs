@@ -24,7 +24,17 @@ import { reqGetFinancialInfoWithMarketInfo } from "@/lib/features/backtest/backt
 
 import React from "react";
 import { CurrencyDollarIcon } from "@heroicons/react/24/outline";
-import { Util } from "@/components/util";
+import { isValidCookie, Util } from "@/components/util";
+
+
+import { KoreaInvestmentApproval, KoreaInvestmentToken, KoreaInvestmentBalance } from "@/lib/features/koreaInvestment/koreaInvestmentSlice";
+import { getKoreaInvestmentApproval, getKoreaInvestmentToken, getKoreaInvestmentBalance } from "@/lib/features/koreaInvestment/koreaInvestmentSlice";
+import { reqPostApprovalKey, reqPostToken, reqGetInquireBalance, reqPostOrderCash, reqGetInquirePrice, KoreaInvestmentInquirePrice, getKoreaInvestmentInquirePrice, reqGetInquireDailyItemChartPrice, getKoreaInvestmentInquireDailyItemChartPrice, KoreaInvestmentInquireDailyItemChartPrice, reqGetBalanceSheet, getKoreaInvestmentBalanceSheet, KoreaInvestmentBalanceSheet } from "@/lib/features/koreaInvestment/koreaInvestmentSlice";
+import { selectState } from "@/lib/features/login/loginSlice";
+import Login from "@/app/(login)/login/login";
+import Auth from "@/components/auth";
+import { usePathname } from "next/navigation";
+
 
 export default function BackTest() {
     const dispatch = useAppDispatch();
@@ -207,6 +217,30 @@ export default function BackTest() {
 
         return `${year}년 ${quarterMap[month]}분기`;
     };
+
+
+    const kiToken: KoreaInvestmentToken = useAppSelector(getKoreaInvestmentToken);
+    const loginState = useAppSelector(selectState);
+    const pathname = usePathname();
+
+    React.useEffect(() => {
+        console.log(`[OpenApi]`, `kiToken:`, kiToken);
+        const isValidKiAccessToken = !!kiToken["access_token"];
+        if (true == isValidKiAccessToken) {
+            dispatch(reqGetInquireBalance(kiToken));
+        }
+    }, [kiToken]);
+
+    if ("init" == loginState) {
+        return <>
+            <Login parentUrl={pathname} />
+        </>
+    }
+    if (false == isValidCookie("koreaInvestmentToken") || false == !!kiToken["access_token"]) {
+        return <>
+            <Auth />
+        </>
+    }
 
     // 1. 특정 날짜 기준으로 종목 뽑기
     // - strategy-register 참고

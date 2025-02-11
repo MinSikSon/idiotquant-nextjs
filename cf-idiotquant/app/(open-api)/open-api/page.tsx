@@ -13,8 +13,8 @@ import { useAppDispatch, useAppSelector } from "@/lib/hooks";
 import { Button, Input, Typography } from "@material-tailwind/react";
 import React from "react";
 
-
 import { usePathname } from "next/navigation";
+import Auth from "@/components/auth";
 
 export default function OpenApi() {
     const pathname = usePathname();
@@ -30,69 +30,12 @@ export default function OpenApi() {
     const [time, setTime] = React.useState<any>('');
     const loginState = useAppSelector(selectState);
 
-    function reload(seq: any) {
-        let count = 0;
-        if ("init" == loginState) {
-            console.log(`[OpenApi]`, seq, `-`, count++, `loginState:`, loginState);
-            return;
-        }
-
-        setTime(new Date());
-
-        if ("init" == kiApproval.state) {
-            console.log(`[OpenApi]`, seq, `-`, count++, `kiApproval.state:`, kiApproval.state);
-            dispatch(reqPostApprovalKey());
-            return;
-        }
-
-        console.log(`[OpenApi]`, seq, `-`, count++, `loginState:`, loginState, `kiApproval:`, kiApproval, `kiToken:`, kiToken);
+    React.useEffect(() => {
+        console.log(`[OpenApi]`, `kiToken:`, kiToken);
         const isValidKiAccessToken = !!kiToken["access_token"];
-        // if ("init" == kiBalance.state && "" != kiToken["access_token"]) {
         if (true == isValidKiAccessToken) {
             dispatch(reqGetInquireBalance(kiToken));
-            return;
         }
-
-        if (false == isValidCookie("koreaInvestmentToken")) {
-            if ("init" == kiBalance.state && false == isValidKiAccessToken) {
-                dispatch(reqPostToken()); // NOTE: 1분에 한 번씩만 token 발급 가능
-            }
-            else {
-                registerCookie("koreaInvestmentToken", JSON.stringify(kiToken));
-            }
-
-            return;
-        }
-
-        const cookieKoreaInvestmentToken = getCookie("koreaInvestmentToken");
-        const jsonCookieKoreaInvestmentToken = JSON.parse(cookieKoreaInvestmentToken);
-        console.log(`[OpenApi]`, seq, `-`, count++, `jsonCookieKoreaInvestmentToken:`, jsonCookieKoreaInvestmentToken);
-        const json: KoreaInvestmentToken = jsonCookieKoreaInvestmentToken;
-        const currentDate = time;
-        const expiredDate = new Date(json["access_token_token_expired"].replace(" ", "T"));
-        const skipPostToken = (expiredDate > currentDate);
-        console.log(`[OpenApi]`, seq, `-`, count++, `skipPostToken:`, skipPostToken);
-        if (false == skipPostToken) {
-            console.log(`[OpenApi]`, seq, `-`, count++, `expiredDate:`, expiredDate, `currentDate:`, currentDate);
-            dispatch(reqPostToken());
-        }
-        else if (false == isValidKiAccessToken) {
-            dispatch(setKoreaInvestmentToken(json));
-        }
-
-        console.log(`[OpenApi]`, seq, `-`, count++, `kiInquirePrice:`, kiInquirePrice);
-        console.log(`[OpenApi]`, seq, `-`, count++, `kiInquireDailyItemChartPrice:`, kiInquireDailyItemChartPrice);
-        console.log(`[OpenApi]`, seq, `-`, count++, `kiBalanceSheet:`, kiBalanceSheet);
-    }
-
-    React.useEffect(() => {
-        reload('1');
-    }, [loginState]);
-    React.useEffect(() => {
-        reload('2');
-    }, [kiApproval]);
-    React.useEffect(() => {
-        reload('3');
     }, [kiToken]);
 
     const example8TableHeadType: Example8TableHeadType[] = [
@@ -211,6 +154,12 @@ export default function OpenApi() {
     if ("init" == loginState) {
         return <>
             <Login parentUrl={pathname} />
+        </>
+    }
+
+    if (false == isValidCookie("koreaInvestmentToken") || false == !!kiToken["access_token"]) {
+        return <>
+            <Auth />
         </>
     }
 
