@@ -33,8 +33,8 @@ export default function OpenApi() {
 
     function reload(seq: any) {
         let count = 0;
-        console.log(`[OpenApi] ${seq}-${count++}`, `loginState`, loginState);
-        console.log(`[OpenApi] ${seq}-${count++}`, `kiApproval.state`, kiApproval.state);
+        console.log(`[OpenApi]`, seq, `-`, count++, `loginState:`, loginState);
+        console.log(`[OpenApi]`, seq, `-`, count++, `kiApproval.state`, kiApproval.state);
 
         if ("init" == loginState) {
             return;
@@ -47,41 +47,33 @@ export default function OpenApi() {
             dispatch(reqPostApprovalKey());
         }
 
-        // console.log(`[OpenApi] ${seq}-1 kiToken`, kiToken);
-        // console.log(`[OpenApi] ${seq}-1 loginState`, loginState);
-
         const isValidCookieKoreaInvestmentToken = isValidCookie("koreaInvestmentToken");
         if (true == isValidCookieKoreaInvestmentToken) {
             const cookieKoreaInvestmentToken = getCookie("koreaInvestmentToken");
-            console.log(`[OpenApi] ${seq}-${count++}`, `cookieKoreaInvestmentToken 1`, typeof cookieKoreaInvestmentToken, cookieKoreaInvestmentToken);
+            console.log(`[OpenApi]`, seq, `-`, count++, `typeof cookieKoreaInvestmentToken:`, typeof cookieKoreaInvestmentToken, `cookieKoreaInvestmentToken:`, cookieKoreaInvestmentToken);
             const jsonCookieKoreaInvestmentToken = JSON.parse(cookieKoreaInvestmentToken);
-            console.log(`[OpenApi] ${seq}-${count++}`, typeof jsonCookieKoreaInvestmentToken, jsonCookieKoreaInvestmentToken);
+            console.log(`[OpenApi]`, seq, `-`, count++, `typeof jsonCookieKoreaInvestmentToken:`, typeof jsonCookieKoreaInvestmentToken, `jsonCookieKoreaInvestmentToken:`, jsonCookieKoreaInvestmentToken);
         }
 
-        // const koreaInvestmentToken = sessionStorage.getItem('koreaInvestmentToken');
-        // console.log(`koreaInvestmentToken`, koreaInvestmentToken, typeof koreaInvestmentToken, !!koreaInvestmentToken);
         if (false == isValidCookieKoreaInvestmentToken) {
             if ("init" == kiBalance.state && "" == kiToken["access_token"]) {
                 dispatch(reqPostToken()); // NOTE: 1분에 한 번씩만 token 발급 가능
             }
             else {
-                // sessionStorage.setItem('koreaInvestmentToken', JSON.stringify(kiToken));
                 registerCookie("koreaInvestmentToken", JSON.stringify(kiToken));
             }
         }
         else {
             const cookieKoreaInvestmentToken = getCookie("koreaInvestmentToken");
-            console.log(`[OpenApi] ${seq}-${count++}`, `cookieKoreaInvestmentToken 2`, typeof cookieKoreaInvestmentToken, cookieKoreaInvestmentToken);
+            console.log(`[OpenApi]`, seq, `-`, count++, `typeof cookieKoreaInvestmentToken:`, typeof cookieKoreaInvestmentToken, `cookieKoreaInvestmentToken:`, cookieKoreaInvestmentToken);
             const jsonCookieKoreaInvestmentToken = JSON.parse(cookieKoreaInvestmentToken);
-            // const json = JSON.parse(koreaInvestmentToken);
             const json: KoreaInvestmentToken = jsonCookieKoreaInvestmentToken;
-            // console.log(`json`, json);
             const currentDate = time;
             const expiredDate = new Date(json["access_token_token_expired"].replace(" ", "T"));
             const skipPostToken = (expiredDate > currentDate);
-            console.log(`[OpenApi] ${seq}-${count++}`, `skipPostToken`, skipPostToken);
+            console.log(`[OpenApi]`, seq, `-`, count++, `skipPostToken:`, skipPostToken);
             if (false == skipPostToken) {
-                console.log(`[OpenApi] ${seq}-${count++}`, `expiredDate`, expiredDate, `currentDate`, currentDate);
+                console.log(`[OpenApi]`, seq, `-`, count++, `expiredDate:`, expiredDate, `currentDate:`, currentDate);
                 dispatch(reqPostToken());
             }
             else {
@@ -91,17 +83,18 @@ export default function OpenApi() {
             }
         }
 
-        console.log(`[OpenApi] ${seq}-${count++}`, `kiToken`, kiToken);
-        console.log(`[OpenApi] ${seq}-${count++}`, `loginState`, loginState);
+        console.log(`[OpenApi]`, seq, `-`, count++, `kiToken`, kiToken);
+        console.log(`[OpenApi]`, seq, `-`, count++, `loginState`, loginState);
         // if ("init" == kiBalance.state && "" != kiToken["access_token"]) {
         if ("" != kiToken["access_token"]) {
             dispatch(reqGetInquireBalance(kiToken));
         }
 
-        console.log(`[OpenApi] ${seq}-${count++}`, `kiInquirePrice`, kiInquirePrice);
-        console.log(`[OpenApi] ${seq}-${count++}`, `kiInquireDailyItemChartPrice`, kiInquireDailyItemChartPrice);
-        console.log(`[OpenApi] ${seq}-${count++}`, `kiBalanceSheet`, kiBalanceSheet);
+        console.log(`[OpenApi]`, seq, `-`, count++, `kiInquirePrice:`, kiInquirePrice);
+        console.log(`[OpenApi]`, seq, `-`, count++, `kiInquireDailyItemChartPrice:`, kiInquireDailyItemChartPrice);
+        console.log(`[OpenApi]`, seq, `-`, count++, `kiBalanceSheet:`, kiBalanceSheet);
     }
+
     React.useEffect(() => {
         reload('1');
     }, [kiToken]);
