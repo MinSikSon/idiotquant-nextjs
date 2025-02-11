@@ -5,7 +5,7 @@ import { Button, Card, CardBody, Typography } from '@material-tailwind/react';
 import { useRouter } from "next/navigation";
 import { selectKakaoAuthCode, selectKakaoId, selectKakaoNickName, setKakaoAuthCode, setKakaoId, setKakaoNickName } from "@/lib/features/login/loginSlice";
 import { useAppDispatch, useAppSelector } from "@/lib/hooks";
-import { getCookie, registerCookie } from "@/components/util";
+import { clearCookie, getCookie, registerCookie } from "@/components/util";
 
 async function RequestNickname(_token) {
     if (!!!_token) return;
@@ -95,7 +95,8 @@ export default function Login(props) {
 
     React.useEffect(() => {
         async function callback() {
-            console.log(`[cookie] getCookie("kakaoId")`, getCookie("kakaoId"), `getCookie("kakaoNickName")`, getCookie("kakaoNickName"));
+            console.log(`[cookie] getCookie("kakaoId")`, getCookie("kakaoId"));
+            console.log(`[cookie] getCookie("kakaoNickName")`, getCookie("kakaoNickName"));
             // console.log(`kakaoAuthCode:`, kakaoAuthCode);
             let _authorizeCode = ""
             if ("" == kakaoAuthCode) {

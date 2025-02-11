@@ -13,7 +13,7 @@ import { KoreaInvestmentApproval, KoreaInvestmentToken, KoreaInvestmentBalance }
 import { setKoreaInvestmentToken } from "@/lib/features/koreaInvestment/koreaInvestmentSlice";
 
 import corpCodeJson from "@/public/data/corpCode.json"
-import { getCookie, registerCookie } from "@/components/util";
+import { getCookie, isValidCookie, registerCookie } from "@/components/util";
 import { MagnifyingGlassIcon, XCircleIcon } from "@heroicons/react/24/outline";
 
 export default function Search() {
@@ -32,6 +32,7 @@ export default function Search() {
   const [stockName, setStockName] = React.useState<any>("");
   const [startDate, setStartDate] = React.useState<any>("2025-02-03");
   const [endDate, setEndDate] = React.useState<any>((new Date()).toISOString().split('T')[0]);
+
   function reload(seq: any) {
     setTime(new Date());
 
@@ -41,19 +42,17 @@ export default function Search() {
       dispatch(reqPostApprovalKey());
     }
 
-    // console.log(`[OpenApi] ${seq}-1 kiToken`, kiToken);
-    // console.log(`[OpenApi] ${seq}-1 loginState`, loginState);
-
+    const isValidCookieKoreaInvestmentToken = isValidCookie("koreaInvestmentToken");
     const cookieKoreaInvestmentToken = getCookie("koreaInvestmentToken");
     console.log(`cookieKoreaInvestmentToken`, typeof cookieKoreaInvestmentToken, cookieKoreaInvestmentToken);
-    if (undefined != cookieKoreaInvestmentToken) {
+    if (true == isValidCookieKoreaInvestmentToken) {
       const jsonCookieKoreaInvestmentToken = JSON.parse(cookieKoreaInvestmentToken);
       console.log(`jsonCookieKoreaInvestmentToken`, typeof jsonCookieKoreaInvestmentToken, jsonCookieKoreaInvestmentToken);
     }
 
     // const koreaInvestmentToken = sessionStorage.getItem('koreaInvestmentToken');
     // console.log(`koreaInvestmentToken`, koreaInvestmentToken, typeof koreaInvestmentToken, !!koreaInvestmentToken);
-    if (false == !!cookieKoreaInvestmentToken) {
+    if (false == isValidCookieKoreaInvestmentToken) {
       if ("init" == kiBalance.state && "" == kiToken["access_token"]) {
         dispatch(reqPostToken()); // NOTE: 1분에 한 번씩만 token 발급 가능
       }
