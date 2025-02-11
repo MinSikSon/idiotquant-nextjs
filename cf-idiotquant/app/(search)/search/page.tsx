@@ -36,7 +36,7 @@ export default function Search() {
   const [endDate, setEndDate] = React.useState<any>((new Date()).toISOString().split('T')[0]);
 
   React.useEffect(() => {
-    console.log(`[OpenApi]`, `kiToken:`, kiToken);
+    console.log(`[Search]`, `kiToken:`, kiToken);
     const isValidKiAccessToken = !!kiToken["access_token"];
     if (true == isValidKiAccessToken) {
       dispatch(reqGetInquireBalance(kiToken));

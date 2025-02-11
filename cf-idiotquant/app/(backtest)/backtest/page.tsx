@@ -224,7 +224,7 @@ export default function BackTest() {
     const pathname = usePathname();
 
     React.useEffect(() => {
-        console.log(`[OpenApi]`, `kiToken:`, kiToken);
+        console.log(`[BackTest]`, `kiToken:`, kiToken);
         const isValidKiAccessToken = !!kiToken["access_token"];
         if (true == isValidKiAccessToken) {
             dispatch(reqGetInquireBalance(kiToken));
