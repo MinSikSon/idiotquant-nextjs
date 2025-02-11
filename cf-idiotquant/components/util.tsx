@@ -61,6 +61,10 @@ export const registerCookie = (key: string, value: string) => {
     document.cookie = `${key}=${value}; path=/; expires=Fri, 31 Dec 2025 23:59:59 GMT`; // [NOTE] 만료일 임시 설정
 }
 
+export const clearCookie = (key: string) => {
+    document.cookie = `${key}=""; path=/; expires=Fri, 31 Dec 2025 23:59:59 GMT`; // [NOTE] 만료일 임시 설정
+}
+
 export const getCookie = (name: string) => {
     return document.cookie
         .split("; ")

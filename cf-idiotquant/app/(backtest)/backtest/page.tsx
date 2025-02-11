@@ -101,6 +101,13 @@ export default function BackTest() {
     }, [backTestConditionFinancialInfoList]);
     React.useEffect(() => {
         console.log(`backTestConditionFilterResultType`, backTestConditionFilterResultType);
+        if (!!backTestConditionFilterResultType && !!backTestConditionFilterResultType.output3 && !!Object.keys(backTestConditionFilterResultType.output3)[2]) {
+            const date = Object.keys(backTestConditionFilterResultType.output3)[2];
+            console.log(`[test] `, date);
+            console.log(`[test] backTestConditionFilterResultType.output3[date]`, backTestConditionFilterResultType.output3[date]);
+            console.log(`[test] backTestConditionFilterResultType.output3[date]["조아제약"]`, backTestConditionFilterResultType.output3[date]["조아제약"]);
+        }
+        // 조아제약
 
         const output2 = backTestConditionFinancialInfoList.output2;
         // console.log(`output2`, output2);

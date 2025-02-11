@@ -66,13 +66,13 @@ async function registerUser(id, nickname) {
 
         fetch(fetchUrl, options)
             .then(res => {
-                // console.log(`res`, res);
+                console.log(`res`, res);
                 if (res.ok) {
                     return res.json();
                 }
             })
             .then(res => {
-                // console.log(`res2`, res);
+                console.log(`res2`, res);
             })
             .catch(error => {
                 console.log(`error`, error);
@@ -128,12 +128,8 @@ export default function Login(props) {
                 setAuthorizeCode(_authorizeCode);
             }
 
-            // sessionStorage.setItem('kakaoId', responseNickname.id);
             registerCookie("kakaoId", responseNickname.id);
-            // sessionStorage.setItem('kakaoNickName', responseNickname.properties.nickname);
             registerCookie("kakaoNickName", responseNickname.properties.nickname);
-
-            // localStorage.setItem('kakaoAuthorizeCode', _authorizeCode);
 
             registerUser(responseNickname.id, responseNickname.properties.nickname);
             dispatch(setKakaoNickName(responseNickname.properties.nickname))
@@ -158,12 +154,9 @@ export default function Login(props) {
 
     const Logout = (redirectUrl) => {
         console.log(`Logout`);
-        // sessionStorage.removeItem('kakaoId');
-        registerCookie("kakaoId", "");
-        // sessionStorage.removeItem('kakaoNickName');
-        registerCookie("kakaoNickName", "");
-        // sessionStorage.removeItem('login');
-        registerCookie("login", "");
+        clearCookie("kakaoId");
+        clearCookie("kakaoNickName");
+        clearCookie("koreaInvestmentToken");
 
         dispatch(setKakaoAuthCode(""));
         dispatch(setKakaoNickName(""));
