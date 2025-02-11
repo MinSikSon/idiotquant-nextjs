@@ -474,14 +474,12 @@ export const koreaInvestmentSlice = createAppSlice({
             },
             {
                 pending: (state) => {
-                    console.log(`[reqPostApprovalKey] pending`);
+                    // console.log(`[reqPostApprovalKey] pending`);
                     state.koreaInvestmentApproval.state = "pending";
                 },
                 fulfilled: (state, action) => {
-                    console.log(`[reqPostApprovalKey] fulfilled`);
-                    // console.log(`[reqPostApprovalKey] action.payload`, action.payload);
+                    // console.log(`[reqPostApprovalKey] fulfilled`, `action.payload`, action.payload);
                     const json = action.payload;
-                    // console.log(`json["approval_key"]`, json["approval_key"]);
                     state.koreaInvestmentApproval = { approval_key: json["approval_key"], state: "fulfilled" };
                     state.state = "approval";
                 },
@@ -510,13 +508,13 @@ export const koreaInvestmentSlice = createAppSlice({
             },
             {
                 pending: (state) => {
-                    console.log(`[reqPostToken] pending`);
+                    // console.log(`[reqPostToken] pending`);
                     state.koreaInvestmentToken.state = "pending";
                 },
                 fulfilled: (state, action) => {
-                    console.log(`[reqPostToken] action.payload`, action.payload);
+                    // console.log(`[reqPostToken] fulfilled`, `action.payload`, action.payload);
                     const json = action.payload;
-                    console.log(`json["error_description"]`, !!!json["error_description"], json["error_description"]);
+                    // console.log(`json["error_description"]`, !!!json["error_description"], json["error_description"]);
                     if (!!!json["error_description"]) {
                         state.koreaInvestmentToken = {
                             state: "fulfilled",
