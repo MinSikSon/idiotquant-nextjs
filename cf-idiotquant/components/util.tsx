@@ -66,8 +66,31 @@ export const clearCookie = (key: string) => {
 }
 
 export const getCookie = (name: string) => {
-    return document.cookie
+    const cookie = document.cookie
         .split("; ")
         .find((row) => row.startsWith(name + "="))
         ?.split("=")[1];
+
+    if (undefined == cookie) {
+        return "";
+    }
+
+    return cookie;
+};
+
+export const isValidCookie = (name: string) => {
+    const cookie = getCookie(name);
+    if (undefined == cookie) {
+        return false;
+    }
+
+    if ("\"\"" == cookie) {
+        return false;
+    }
+
+    if ("" == cookie) {
+        return false;
+    }
+
+    return true;
 };

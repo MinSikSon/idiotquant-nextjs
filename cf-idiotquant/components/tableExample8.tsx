@@ -194,47 +194,22 @@ function TablesExample8({
                     className="rounded-none flex flex-wrap gap-4 justify-between mb-4"
                 >
                     <div>
-                        <Typography variant="h6" color="blue-gray">
+                        <div className="text-lg font-bold text-black">
                             {/* Cryptocurrency Market Overview */}
                             {title}
-                        </Typography>
-                        <Typography
-                            variant="small"
-                            className="text-gray-600 font-normal mt-1"
-                        >
+                        </div>
+                        <div className="text-sm text-gray-600 font-normal mt-1">
                             {/* Compare different cryptocurrencies, and make informed investment. */}
                             {/* {subTitle} */}
                             {desc}
-                        </Typography>
-                        <Typography
-                            variant="small"
-                            className="text-gray-600 font-normal mt-1"
-                        >
-                            {financial_date}
-                        </Typography>
-                        <Typography
-                            variant="small"
-                            className="text-gray-600 font-normal mt-1"
-                        >
-                            {market_date}
-                        </Typography>
-                    </div>
-                    {/* <div className="flex items-center w-full shrink-0 gap-4 md:w-max">
-                        <div className="w-full md:w-72">
-                            <Input
-                                size="lg"
-                                label="Search"
-                                icon={<MagnifyingGlassIcon className="h-5 w-5" />}
-                            />
                         </div>
-                        <Button
-                            variant="outlined"
-                            className="flex items-center gap-2"
-                        >
-                            24h
-                            <ChevronDownIcon strokeWidth={3} className="w-3 h-3" />
-                        </Button>
-                    </div> */}
+                        <div className="text-sm text-gray-600 font-normal mt-1">
+                            {financial_date}
+                        </div>
+                        <div className="text-sm text-gray-600 font-normal mt-1">
+                            {market_date}
+                        </div>
+                    </div>
                 </CardHeader>
 
                 {tableRow.length == 0 ?
@@ -251,13 +226,9 @@ function TablesExample8({
                                         >
                                             <Popover>
                                                 <PopoverHandler>
-                                                    <Typography
-                                                        color="blue-gray"
-                                                        variant="small"
-                                                        className="!font-bold cursor-pointer"
-                                                    >
+                                                    <div className="!font-bold text-sm text-black cursor-pointer">
                                                         {head}
-                                                    </Typography>
+                                                    </div>
                                                 </PopoverHandler>
                                                 <PopoverContent>
                                                     {desc}
@@ -299,137 +270,66 @@ function TablesExample8({
                                             <tr key={digitalAsset}>
                                                 <td className={classes}>
                                                     <div className="flex items-center gap-4 text-left">
-                                                        {/* <img
-                                                        src={img}
-                                                        alt={digitalAsset}
-                                                        className="border rounded-md p-1 h-10 w-10"
-                                                    /> */}
                                                         <div>
-                                                            {/* <Typography
-                                                            variant="small"
-                                                            color="blue-gray"
-                                                            className="!font-semibold"
-                                                        >
-                                                            {digitalAsset}
-                                                        </Typography> */}
-                                                            <Typography
-                                                                // variant="small"
-                                                                variant="h6"
-                                                                className="!font-normal text-black"
-                                                            >
+                                                            <div className="text-base font-bold text-black">
                                                                 <div className="flex">
                                                                     {tag}
                                                                     {detail}
                                                                 </div>
-                                                            </Typography>
+                                                            </div>
                                                         </div>
                                                     </div>
                                                 </td>
                                                 <td className={classes}>
-                                                    <Typography
-                                                        variant="small"
-                                                        className="!font-normal text-gray-600 text-right"
-                                                    >
+                                                    <div className="text-sm text-gray-600 text-right">
                                                         {isNaN(Number(closePrice)) ? closePrice : Util.UnitConversion(Number(closePrice), true)}
-                                                    </Typography>
+                                                    </div>
                                                 </td>
                                                 <td className={classes}>
-                                                    <Typography
-                                                        variant="small"
-                                                        color={expectedRateOfReturnColor as TypographyProps["color"]}
-                                                        className="!font-bold text-right"
-                                                    >
+                                                    <div className={`text-sm font-bold text-right ${expectedRateOfReturnColor}`}>
                                                         {expectedRateOfReturn}
-                                                    </Typography>
+                                                    </div>
                                                 </td>
                                                 <td className={classes}>
-                                                    <Typography
-                                                        variant="small"
-                                                        className="!font-normal text-gray-600 text-right"
-                                                    >
+                                                    <div className="text-sm text-gray-600 text-right">
                                                         {targetPrice}
-                                                    </Typography>
+                                                    </div>
                                                 </td>
                                                 <td className={classes}>
-                                                    <Typography
-                                                        variant="small"
-                                                        className="!font-normal text-gray-600 text-right"
-                                                    >
+                                                    <div className="text-sm text-gray-600 text-right">
                                                         {isNaN(Number(market)) ? market : Util.UnitConversion(Number(market), true)}
-                                                    </Typography>
+                                                    </div>
                                                 </td>
                                                 <td className={classes}>
-                                                    <Typography
-                                                        variant="small"
-                                                        className="!font-normal text-gray-600 text-right"
-                                                    >
+                                                    <div className="text-sm text-gray-600 text-right">
                                                         {isNaN(Number(netCurrentAssert)) ? netCurrentAssert : Util.UnitConversion(Number(netCurrentAssert), true)}
-                                                    </Typography>
+                                                    </div>
                                                 </td>
                                                 <td className={classes}>
-                                                    <Typography
-                                                        variant="small"
-                                                        className="!font-normal text-gray-600 text-right"
-                                                    >
+                                                    <div className="text-sm text-gray-600 text-right">
                                                         {isNaN(Number(netIncome)) ? netIncome : Util.UnitConversion(Number(netIncome), true)}
-                                                    </Typography>
+                                                    </div>
                                                 </td>
                                                 <td className={classes}>
-                                                    <Typography
-                                                        variant="small"
-                                                        className="!font-normal text-gray-600 text-right"
-                                                    >
+                                                    <div className="text-sm text-gray-600 text-right">
                                                         {bps}
-                                                    </Typography>
+                                                    </div>
                                                 </td>
                                                 <td className={classes}>
-                                                    <Typography
-                                                        variant="small"
-                                                        className="!font-normal text-gray-600 text-right"
-                                                    >
+                                                    <div className="text-sm text-gray-600 text-right">
                                                         {eps}
-                                                    </Typography>
+                                                    </div>
                                                 </td>
                                                 <td className={classes}>
-                                                    <Typography
-                                                        variant="small"
-                                                        className="!font-normal text-gray-600 text-right"
-                                                    >
+                                                    <div className="text-sm text-gray-600 text-right">
                                                         {pbr}
-                                                    </Typography>
+                                                    </div>
                                                 </td>
                                                 <td className={classes}>
-                                                    <Typography
-                                                        variant="small"
-                                                        className="!font-normal text-gray-600 text-right"
-                                                    >
+                                                    <div className="text-sm text-gray-600 text-right">
                                                         {per}
-                                                    </Typography>
+                                                    </div>
                                                 </td>
-                                                {/* <td className={classes}>
-                                                <div className="max-w-[12rem] ml-auto h-12 -translate-y-6">
-                                                    <AreaChart
-                                                        colors={["#2196F373"]}
-                                                        options={{}}
-                                                        series={[
-                                                            {
-                                                                name: chartName,
-                                                                data: chartData,
-                                                            },
-                                                        ]}
-                                                    />
-                                                </div>
-                                            </td> */}
-                                                {/* <td className={classes}>
-                                                <div className="flex justify-end gap-4">
-                                                    <IconButton variant="text" size="sm">
-                                                        <DocumentMagnifyingGlassIcon className="h-5 w-5 text-gray-900" />
-                                                    </IconButton>
-                                                    <IconButton variant="text" size="sm">
-                                                        <FlagIcon className="h-5 w-5 text-gray-900" />
-                                                    </IconButton>
-                                                </div>
-                                            </td> */}
                                             </tr>
                                         );
                                     }

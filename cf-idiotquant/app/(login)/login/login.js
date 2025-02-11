@@ -5,7 +5,7 @@ import { Button, Card, CardBody, Typography } from '@material-tailwind/react';
 import { useRouter } from "next/navigation";
 import { selectKakaoAuthCode, selectKakaoId, selectKakaoNickName, setKakaoAuthCode, setKakaoId, setKakaoNickName } from "@/lib/features/login/loginSlice";
 import { useAppDispatch, useAppSelector } from "@/lib/hooks";
-import { getCookie, registerCookie } from "@/components/util";
+import { clearCookie, getCookie, registerCookie } from "@/components/util";
 
 async function RequestNickname(_token) {
     if (!!!_token) return;
@@ -20,9 +20,6 @@ async function RequestNickname(_token) {
         },
     }).then((res) => res.json());
 
-    // console.log('_token', _token);
-    // console.log('RequestNickname', response);
-
     return response;
 }
 
@@ -36,14 +33,11 @@ async function RequestToken(_authorizeCode, redirectUrl) {
         },
     }).then((res) => res.json());
 
-    // console.log('[RequestToken] response:', responseToken);
-
     return responseToken;
 }
 
 async function registerUser(id, nickname) {
     async function fetchAndSet(subUrl) {
-        // console.log(`[registerUser]`, `subUrl:`, subUrl);
 
         const data = {
             'id': id,
@@ -85,8 +79,8 @@ async function registerUser(id, nickname) {
 export default function Login(props) {
     const router = useRouter();
 
-    const [nickname, setNickname] = React.useState('');
-    const [authorizeCode, setAuthorizeCode] = React.useState('');
+    const [nickname, setNickname] = React.useState("");
+    const [authorizeCode, setAuthorizeCode] = React.useState("");
 
     const dispatch = useAppDispatch();
     const kakaoAuthCode = useAppSelector(selectKakaoAuthCode);
@@ -95,13 +89,17 @@ export default function Login(props) {
 
     React.useEffect(() => {
         async function callback() {
-            console.log(`[cookie] getCookie("kakaoId")`, getCookie("kakaoId"), `getCookie("kakaoNickName")`, getCookie("kakaoNickName"));
-            // console.log(`kakaoAuthCode:`, kakaoAuthCode);
+            console.log(`[Login]`, `getCookie("kakaoId"):`, getCookie("kakaoId"), `getCookie("kakaoNickName"):`, getCookie("kakaoNickName"));
+            console.log(`[Login]`, `kakaoId:`, kakaoId, `kakaoAuthCode:`, kakaoAuthCode);
             let _authorizeCode = ""
             if ("" == kakaoAuthCode) {
                 _authorizeCode = new URL(window.location.href).searchParams.get('code');
-                // console.log(`_authorizeCode`, _authorizeCode);
-                if (!!!_authorizeCode) return;
+                if (!!!_authorizeCode) {
+                    return;
+                }
+
+                console.log(`[Login]`, `_authorizeCode:`, _authorizeCode);
+
                 dispatch(setKakaoAuthCode(_authorizeCode));
             }
             else {
@@ -110,21 +108,17 @@ export default function Login(props) {
 
             const responseToken = await RequestToken(_authorizeCode, `${window.location.origin}${props.parentUrl}`);
             if (!!responseToken.error_code && "KOE320" == responseToken.error_code) {
-                console.log(`!!!!! responseToken`, responseToken);
+                console.log(`[Login]`, `responseToken:`, responseToken);
                 return;
             }
 
-            // localStorage.setItem('token', responseToken); // accessToken을 local 에 저장하면 안됨
-            // console.log(`localStorage.getItem('token')`, localStorage.getItem('token'));
-
             const responseNickname = await RequestNickname(responseToken.access_token);
-            // console.log(`responseNickname`, responseNickname);
 
-            if ('' == nickname) {
+            if ("" == nickname) {
                 setNickname(responseNickname.properties.nickname);
             }
 
-            if ('' == authorizeCode) {
+            if ("" == authorizeCode) {
                 setAuthorizeCode(_authorizeCode);
             }
 
@@ -167,71 +161,53 @@ export default function Login(props) {
     }
 
     const KakaoIcon = () => {
-        return (
-            <>
-                {
-                    (!!!kakaoNickName) ?
-                        <>
-                            <Card className="mt-6 w-96">
-                                {/* <CardHeader color="blue-gray" className="relative h-20">
-                                    <img
-                                        src="https://images.unsplash.com/photo-1540553016722-983e48a2cd10?ixlib=rb-1.2.1&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=800&q=80"
-                                        alt="card-image"
-                                    />
-                                </CardHeader> */}
-                                <CardBody>
-                                    <Typography variant="h5" color="blue-gray" className="mb-2">
-                                        반갑습니다.
-                                    </Typography>
-                                    <Typography>
-                                        login 하려면 아래 버튼을 눌려주세요.
-                                    </Typography>
-                                </CardBody>
-                                <Button
-                                    size="lg"
-                                    // variant="outlined"
-                                    color="yellow"
-                                    className="flex items-center gap-3"
-                                    onClick={() => onClickLogin(`${window.location.origin}${props.parentUrl}`)}
-                                >
-                                    <img src="/images/kakaotalk_sharing_btn_small.png" alt="metamask" className="h-6 w-6" />
-                                    Continue with Kakao
-                                </Button>
-                            </Card>
-                        </>
-                        :
-                        <>
-                            <Card className="mt-6 w-96">
-                                {/* <CardHeader color="blue-gray" className="relative h-20">
-                                    <img
-                                        src="https://images.unsplash.com/photo-1540553016722-983e48a2cd10?ixlib=rb-1.2.1&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=800&q=80"
-                                        alt="card-image"
-                                    />
-                                </CardHeader> */}
-                                <CardBody>
-                                    <Typography variant="h5" color="blue-gray" className="mb-2">
-                                        {kakaoNickName} 님 반갑습니다.
-                                    </Typography>
-                                    <Typography>
-                                        logout 하려면 아래 버튼을 눌려주세요.
-                                    </Typography>
-                                </CardBody>
-                                <Button
-                                    size="lg"
-                                    variant="outlined"
-                                    color="blue-gray"
-                                    className="flex items-center gap-3"
-                                    onClick={() => Logout(`${window.location.origin}${props.parentUrl}`)}
-                                >
-                                    <img src="/images/kakaotalk_sharing_btn_small.png" alt="metamask" className="h-6 w-6" />
-                                    Logout
-                                </Button>
-                            </Card>
-                        </>
-
-                }
+        if (!!!kakaoNickName) {
+            return <>
+                <Card className="mt-6 w-96">
+                    <CardBody>
+                        <Typography variant="h5" color="blue-gray" className="mb-2">
+                            반갑습니다.
+                        </Typography>
+                        <Typography>
+                            login 하려면 아래 버튼을 눌려주세요.
+                        </Typography>
+                    </CardBody>
+                    <Button
+                        size="lg"
+                        // variant="outlined"
+                        color="yellow"
+                        className="flex items-center gap-3"
+                        onClick={() => onClickLogin(`${window.location.origin}${props.parentUrl}`)}
+                    >
+                        <img src="/images/kakaotalk_sharing_btn_small.png" alt="metamask" className="h-6 w-6" />
+                        Continue with Kakao
+                    </Button>
+                </Card>
             </>
-        );
+        }
+
+        return <>
+            <Card className="mt-6 w-96">
+                <CardBody>
+                    <Typography variant="h5" color="blue-gray" className="mb-2">
+                        {kakaoNickName} 님 반갑습니다.
+                    </Typography>
+                    <Typography>
+                        logout 하려면 아래 버튼을 눌려주세요.
+                    </Typography>
+                </CardBody>
+                <Button
+                    size="lg"
+                    variant="outlined"
+                    color="blue-gray"
+                    className="flex items-center gap-3"
+                    onClick={() => Logout(`${window.location.origin}${props.parentUrl}`)}
+                >
+                    <img src="/images/kakaotalk_sharing_btn_small.png" alt="metamask" className="h-6 w-6" />
+                    Logout
+                </Button>
+            </Card>
+        </>;
     }
 
     return (
