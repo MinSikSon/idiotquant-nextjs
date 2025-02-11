@@ -120,8 +120,7 @@ export default function OpenApi() {
         },
     ];
 
-    function handleOnClick(prdt_name: string, pdno: string, buyOrSell: string) {
-        // console.log(`prdt_name`, prdt_name, `pdno`, pdno);
+    function handleOnClick(pdno: string, buyOrSell: string) {
         if ("buy" == buyOrSell || "sell" == buyOrSell) {
             dispatch(reqPostOrderCash({ koreaInvestmentToken: kiToken, PDNO: pdno, buyOrSell: buyOrSell }));
         }
@@ -152,10 +151,10 @@ export default function OpenApi() {
                 chartName: '',
                 tag: <>
                     <div className="mr-2 gap-1">
-                        <Button className="p-0 py-1 m-0 mr-1" variant="outlined" size="sm" onClick={() => handleOnClick(item["prdt_name"], item["pdno"], "buy")}>
+                        <Button className="p-0 py-1 m-0 mr-1" variant="outlined" size="sm" onClick={() => handleOnClick(item["pdno"], "buy")}>
                             매수
                         </Button>
-                        <Button className="p-0 py-1 m-0" variant="outlined" size="sm" onClick={() => handleOnClick(item["prdt_name"], item["pdno"], "sell")}>
+                        <Button className="p-0 py-1 m-0" variant="outlined" size="sm" onClick={() => handleOnClick(item["pdno"], "sell")}>
                             매도
                         </Button>
                     </div>
@@ -164,12 +163,10 @@ export default function OpenApi() {
         }));
     }
 
-    // console.log(`example8TableRowType.length`, example8TableRowType.length);
     let nass_amt: number = 0; // 순자산
     let evlu_amt_smtl_amt: number = 0; // 평가금액
     let pchs_amt_smtl_amt: number = 0; // 매입금액
     let evlu_pfls_smtl_amt: number = 0;// 수입
-    console.log(`[OpenApi]`, `kiBalance.output2.length:`, kiBalance.output2.length, `kiBalance.output2:`, kiBalance.output2);
     if (!!kiBalance.output2 && kiBalance.output2.length > 0) {
         nass_amt = Number(kiBalance.output2[0]["nass_amt"]);
         evlu_amt_smtl_amt = Number(kiBalance.output2[0]["evlu_amt_smtl_amt"]);
@@ -177,9 +174,8 @@ export default function OpenApi() {
         evlu_pfls_smtl_amt = Number(kiBalance.output2[0]["evlu_pfls_smtl_amt"]);
     }
     const props: TablesExample8PropsType = {
-        // title: `[OpenApi] 계좌 조회 (${kiBalance.ctx_area_fk100})`,
         title: <>
-            <div className="flex ">
+            <div className="flex">
                 <div className="pr-2">[OpenApi] 계좌 조회</div>
                 <Button onClick={() => dispatch(reqGetInquireBalance(kiToken))} className="px-2 py-0 m-0" variant="outlined" size="sm">
                     다시 조회
@@ -206,7 +202,7 @@ export default function OpenApi() {
                 </div>
             </div>
         </>,
-        financial_date: '',
+        financial_date: "",
         market_date: `- market_date: ${time.toString()}`,
         tableHead: example8TableHeadType,
         tableRow: example8TableRowType,

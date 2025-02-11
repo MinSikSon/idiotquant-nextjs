@@ -38,7 +38,6 @@ export const loginSlice = createAppSlice({
         getCloudFlareLoginStatus: create.asyncThunk(
             async () => {
                 const res = await getLoginStatus();
-                console.log(`[getCloudFlareLoginStatus] res:`, res);
                 return res;
             },
             {
@@ -46,7 +45,7 @@ export const loginSlice = createAppSlice({
                     // console.log(`[getCloudFlareLoginStatus] pending`);
                 },
                 fulfilled: (state, action) => {
-                    console.log(`[getCloudFlareLoginStatus] fulfilled`, `typeof action.payload:`, typeof action.payload, `action.payload:`, action.payload);
+                    // console.log(`[getCloudFlareLoginStatus] fulfilled`, `typeof action.payload:`, typeof action.payload, `action.payload:`, action.payload);
                     const id = action.payload['id'];
                     const name = action.payload['name'];
                     state.state = "cf";

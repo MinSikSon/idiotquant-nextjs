@@ -20,9 +20,6 @@ async function RequestNickname(_token) {
         },
     }).then((res) => res.json());
 
-    // console.log('_token', _token);
-    // console.log('RequestNickname', response);
-
     return response;
 }
 
@@ -36,14 +33,11 @@ async function RequestToken(_authorizeCode, redirectUrl) {
         },
     }).then((res) => res.json());
 
-    // console.log('[RequestToken] response:', responseToken);
-
     return responseToken;
 }
 
 async function registerUser(id, nickname) {
     async function fetchAndSet(subUrl) {
-        // console.log(`[registerUser]`, `subUrl:`, subUrl);
 
         const data = {
             'id': id,
@@ -100,8 +94,12 @@ export default function Login(props) {
             let _authorizeCode = ""
             if ("" == kakaoAuthCode) {
                 _authorizeCode = new URL(window.location.href).searchParams.get('code');
+                if (!!!_authorizeCode) {
+                    return;
+                }
+
                 console.log(`[Login]`, `_authorizeCode:`, _authorizeCode);
-                if (!!!_authorizeCode) return;
+
                 dispatch(setKakaoAuthCode(_authorizeCode));
             }
             else {
@@ -209,7 +207,6 @@ export default function Login(props) {
                     Logout
                 </Button>
             </Card>
-
         </>;
     }
 

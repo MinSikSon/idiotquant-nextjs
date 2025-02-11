@@ -542,16 +542,13 @@ export const koreaInvestmentSlice = createAppSlice({
             },
             {
                 pending: (state) => {
-                    console.log(`[getInquireBalance] pending`);
+                    // console.log(`[getInquireBalance] pending`);
                     state.koreaInvestmentBalance.state = "pending";
                 },
                 fulfilled: (state, action) => {
-                    console.log(`[getInquireBalance] fulfilled`);
-                    console.log(`[getInquireBalance] action.payload`, typeof action.payload, action.payload);
-                    // console.log(`[getInquireBalance] action.payload["output1"]`, action.payload["output1"]);
+                    // console.log(`[getInquireBalance] fulfilled`, `action.payload`, typeof action.payload, action.payload);
                     if (undefined != action.payload["output1"]) {
                         const newKoreaInvestBalance: KoreaInvestmentBalance = action.payload;
-                        // console.log(`[getInquireBalance] newKoreaInvestBalance`, typeof newKoreaInvestBalance, newKoreaInvestBalance);
                         state.koreaInvestmentBalance = { ...newKoreaInvestBalance, state: "fulfilled" };
                         state.state = "inquire-balance";
                     }
@@ -567,16 +564,13 @@ export const koreaInvestmentSlice = createAppSlice({
             },
             {
                 pending: (state) => {
-                    console.log(`[reqPostOrderCash] pending`);
+                    // console.log(`[reqPostOrderCash] pending`);
                     state.koreaInvestmentOrderCash.state = "pending";
                 },
                 fulfilled: (state, action) => {
-                    console.log(`[reqPostOrderCash] fulfilled`);
-                    console.log(`[reqPostOrderCash] action.payload`, typeof action.payload, action.payload);
-                    // console.log(`[reqPostOrderCash] action.payload["output1"]`, action.payload["output1"]);
+                    // console.log(`[reqPostOrderCash] fulfilled`,`action.payload`, typeof action.payload, action.payload);
                     if (undefined != action.payload["output1"]) {
                         const newKoreaInvestmentOrderCash: KoreaInvestmentOrderCash = action.payload;
-                        // console.log(`[getInquireBalance] newKoreaInvestBalance`, typeof newKoreaInvestBalance, newKoreaInvestBalance);
                         state.koreaInvestmentOrderCash = { ...newKoreaInvestmentOrderCash, state: "fulfilled" };
                         state.state = "order-cash";
                     }
@@ -592,20 +586,13 @@ export const koreaInvestmentSlice = createAppSlice({
             },
             {
                 pending: (state) => {
-                    console.log(`[reqGetInquirePrice] pending`);
+                    // console.log(`[reqGetInquirePrice] pending`);
                     state.koreaInvestmentOrderCash.state = "pending";
                 },
                 fulfilled: (state, action) => {
-                    console.log(`[reqGetInquirePrice] fulfilled`);
-                    console.log(`[reqGetInquirePrice] action.payload`, typeof action.payload, action.payload);
-                    // console.log(`[reqGetInquirePrice] action.payload["output"]`, action.payload["output"]);
+                    // console.log(`[reqGetInquirePrice] fulfilled`,`action.payload`, typeof action.payload, action.payload);
                     if (undefined != action.payload["output"]) {
                         const newKoreaInvestmentInquirePrice: KoreaInvestmentInquirePrice = action.payload;
-                        // console.log(`[getInquireBalance] newKoreaInvestBalance`, typeof newKoreaInvestBalance, newKoreaInvestBalance);
-                        // state.koreaInvestmentInquirePrice.rt_cd = newKoreaInvestmentInquirePrice.rt_cd;
-                        // state.koreaInvestmentInquirePrice.msg_cd = newKoreaInvestmentInquirePrice.msg_cd;
-                        // state.koreaInvestmentInquirePrice.msg1 = newKoreaInvestmentInquirePrice.msg1;
-                        // state.koreaInvestmentInquirePrice.output = newKoreaInvestmentInquirePrice.output;
                         state.koreaInvestmentInquirePrice = { ...newKoreaInvestmentInquirePrice, state: "fulfilled" };
                         state.state = "inquire-price";
                     }
@@ -621,22 +608,13 @@ export const koreaInvestmentSlice = createAppSlice({
             },
             {
                 pending: (state) => {
-                    console.log(`[reqGetInquireDailyItemChartPrice] pending`);
+                    // console.log(`[reqGetInquireDailyItemChartPrice] pending`);
                     state.koreaInvestmentOrderCash.state = "pending";
                 },
                 fulfilled: (state, action) => {
-                    console.log(`[reqGetInquireDailyItemChartPrice] fulfilled`);
-                    console.log(`[reqGetInquireDailyItemChartPrice] action.payload`, typeof action.payload, action.payload);
-                    // console.log(`[reqGetInquireDailyItemChartPrice] action.payload["output1"]`, action.payload["output1"]);
-                    // console.log(`[reqGetInquireDailyItemChartPrice] action.payload["output2"]`, action.payload["output2"]);
+                    // console.log(`[reqGetInquireDailyItemChartPrice] fulfilled`,`action.payload`, typeof action.payload, action.payload);
                     if (undefined != action.payload["output1"]) {
                         const newKoreaInvestmentInquireDailyItemChartPrice: KoreaInvestmentInquireDailyItemChartPrice = action.payload;
-                        // console.log(`[getInquireBalance] newKoreaInvestBalance`, typeof newKoreaInvestBalance, newKoreaInvestBalance);
-                        // state.koreaInvestmentInquireDailyItemChartPrice.rt_cd = newKoreaInvestmentInquireDailyItemChartPrice.rt_cd;
-                        // state.koreaInvestmentInquireDailyItemChartPrice.msg_cd = newKoreaInvestmentInquireDailyItemChartPrice.msg_cd;
-                        // state.koreaInvestmentInquireDailyItemChartPrice.msg1 = newKoreaInvestmentInquireDailyItemChartPrice.msg1;
-                        // state.koreaInvestmentInquireDailyItemChartPrice.output1 = newKoreaInvestmentInquireDailyItemChartPrice.output1;
-                        // state.koreaInvestmentInquireDailyItemChartPrice.output2 = newKoreaInvestmentInquireDailyItemChartPrice.output2;
                         state.koreaInvestmentInquireDailyItemChartPrice = { ...newKoreaInvestmentInquireDailyItemChartPrice, state: "fulfilled" };
                         state.state = "inquire-daily-itemchartprice";
                     }
@@ -652,13 +630,11 @@ export const koreaInvestmentSlice = createAppSlice({
             },
             {
                 pending: (state) => {
-                    console.log(`[reqGetBalanceSheet] pending`);
+                    // console.log(`[reqGetBalanceSheet] pending`);
                     state.koreaInvestmentBalanceSheet.state = "pending";
                 },
                 fulfilled: (state, action) => {
-                    console.log(`[reqGetBalanceSheet] fulfilled`);
-                    console.log(`[reqGetBalanceSheet] action.payload`, typeof action.payload, action.payload);
-                    console.log(`[reqGetBalanceSheet] action.payload["output"]`, action.payload["output"]);
+                    // console.log(`[reqGetBalanceSheet] fulfilled`, `action.payload`, typeof action.payload, action.payload);
                     if (undefined != action.payload["output"]) {
                         const newKoreaInvestmentBalanceSheet: KoreaInvestmentBalanceSheet = action.payload;
                         state.koreaInvestmentBalanceSheet = { ...newKoreaInvestmentBalanceSheet, state: "fulfilled" };
