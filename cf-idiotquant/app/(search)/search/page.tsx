@@ -14,6 +14,7 @@ import { setKoreaInvestmentToken } from "@/lib/features/koreaInvestment/koreaInv
 
 import corpCodeJson from "@/public/data/corpCode.json"
 import { getCookie, registerCookie } from "@/components/util";
+import { MagnifyingGlassIcon, XCircleIcon } from "@heroicons/react/24/outline";
 
 export default function Search() {
   const pathname = usePathname();
@@ -28,10 +29,9 @@ export default function Search() {
 
   const [time, setTime] = React.useState<any>('');
 
-
   const [stockName, setStockName] = React.useState<any>("");
   const [startDate, setStartDate] = React.useState<any>("2025-02-03");
-  const [endDate, setEndDate] = React.useState<any>("2025-02-07");
+  const [endDate, setEndDate] = React.useState<any>((new Date()).toISOString().split('T')[0]);
   function reload(seq: any) {
     setTime(new Date());
 
@@ -104,9 +104,13 @@ export default function Search() {
 
   React.useEffect(() => {
     console.log(`React.useEffect [kiInquireDailyItemChartPrice]`, kiInquireDailyItemChartPrice);
+    console.log(`kiInquireDailyItemChartPrice.output1.hts_avls`, kiInquireDailyItemChartPrice.output1.hts_avls, `HTS 시가총액 (억)`);
   }, [kiInquireDailyItemChartPrice])
   React.useEffect(() => {
-    console.log(`React.useEffect [kiBalanceSheet]`, kiBalanceSheet);
+    // 날짜별로 분류 필요
+    console.log(`kiBalanceSheet.output[0].cras`, kiBalanceSheet.output.length > 0 ? kiBalanceSheet.output[0].cras : 0, `유동자산 (억)`);
+    console.log(`kiBalanceSheet.output[0].total_lblt`, kiBalanceSheet.output.length > 0 ? kiBalanceSheet.output[0].total_lblt : 0, `부채총계 (억)`);
+
   }, [kiBalanceSheet])
 
 
@@ -138,7 +142,7 @@ export default function Search() {
       dispatch(reqGetBalanceSheet({ koreaInvestmentToken: kiToken, PDNO: stock_code }));
     }
 
-    setStockName("");
+    // setStockName("");
   }
 
   const handleInputStockName = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -159,61 +163,136 @@ export default function Search() {
   };
   const handleInputEndDate = (e: React.ChangeEvent<HTMLInputElement>) => {
     setEndDate(e.target.value);
+    console.log(`Date.now()`, Date.now());
+    const date = new Date(e.target.value);
+
+    // 5일을 빼기 위해 setDate() 사용
+    date.setDate(date.getDate() - 5);
+
+    setStartDate(date.toISOString().split('T')[0]); // 결과: "2025-01-30"
   };
 
+  function isYearMatch(date1: string, date2: string) {
+    const year1 = date1.slice(0, 4); // 첫 번째 날짜의 연도 추출
+    const year2 = date2.slice(0, 4); // 두 번째 날짜의 연도 추출
+
+    return year1 === year2; // 두 연도가 일치하는지 확인
+  }
+
+  function getYearMatchIndex(yearMonthDate: string) {
+    if (kiBalanceSheet.output.length > 0) {
+      for (let i = 0; i < kiBalanceSheet.output.length; ++i) {
+        // console.log(`kiBalanceSheet.output[${i}]`, kiBalanceSheet.output[i]);
+        if (isYearMatch(yearMonthDate, kiBalanceSheet.output[i]["stac_yymm"])) {
+          return i;
+        }
+      }
+    }
+
+    return 0;
+  }
+
+  function getNcav(kiBalanceSheet: any, kiInquireDailyItemChartPrice: any, ratio: number) {
+    const value: number = ((((Number(kiBalanceSheet.output[getYearMatchIndex(kiInquireDailyItemChartPrice.output2[0]["stck_bsop_date"])].cras) * 100000000) - (Number(kiBalanceSheet.output[getYearMatchIndex(kiInquireDailyItemChartPrice.output2[0]["stck_bsop_date"])].total_lblt) * 100000000)) / (Number(Number(kiInquireDailyItemChartPrice.output2[0]["stck_oprc"]) * Number(kiInquireDailyItemChartPrice.output1["lstn_stcn"]) * ratio)) - 1) * 100);
+    return <div>NCAV ({ratio.toFixed(1)}): <span className={`${value >= 0 ? "text-blue-500" : "text-red-500"}`}>{value.toFixed(2)}%</span></div>
+  }
+
+  if ("init" == loginState) {
+    return <Login parentUrl={pathname} />;
+  }
+
   return <>
-    {"init" == loginState ?
-      <Login parentUrl={pathname} />
-      :
+    <div className="flex items-center border m-2 p-2">
+      <div className="flex-1" >
+        <Input
+          className=""
+          color="black"
+          label="주식 검색"
+          type="string"
+          value={stockName}
+          crossOrigin={undefined}
+          onChange={handleInputStockName}
+          onKeyUp={handleInputStockNameOnKeyUp}
+        />
+      </div>
+      <div className="flex" >
+        <Button className="py-2 px-2" variant="outlined" value={stockName} onClick={() => onSearchButton(stockName)}>
+          <MagnifyingGlassIcon className="h-5 w-5" />
+        </Button>
+      </div>
+      <div className="flex" >
+        <Button className="py-2 px-2" variant="outlined" value={stockName} onClick={() => setStockName("")}>
+          <XCircleIcon className="h-5 w-5" />
+        </Button>
+      </div>
+    </div>
+    <div className="flex flex-col justify-between border m-2">
+      <div className="flex-auto p-2">
+        <Input
+          className=""
+          color="black"
+          label="날짜"
+          type="date"
+          value={endDate} crossOrigin={undefined}
+          onChange={handleInputEndDate}
+          min="2004-12-01"
+          max={(new Date()).toISOString().split('T')[0]}
+        />
+      </div>
+    </div>
+    {kiInquireDailyItemChartPrice.output2.length > 0 && kiBalanceSheet.output.length > 0 ?
       <>
-        <div className="flex justify-between border m-2">
-          <div className="flex-auto p-2">
-            <Input
-              className=""
-              color="black"
-              label="주식 검색"
-              type='string'
-              value={stockName}
-              crossOrigin={undefined}
-              onChange={handleInputStockName}
-              onKeyUp={handleInputStockNameOnKeyUp}
-            />
-          </div>
-          <div className="flex-auto p-2">
-            <Button className="" variant="outlined" value={stockName} onClick={() => {
-              // console.log(`stockName`, stockName);
-              onSearchButton(stockName);
-            }}>검색</Button>
+        <div className="flex flex-col justify-between border mx-2 mb-1">
+          <div className="flex-auto pl-2 text-sm font-bold">
+            종목명: {kiInquireDailyItemChartPrice.output1.hts_kor_isnm}
           </div>
         </div>
-        <div className="flex flex-col justify-between border m-2">
-          <div className="flex-auto p-2">
-            <Input
-              className=""
-              color="black"
-              label="시작날짜"
-              type="date"
-              value={startDate} crossOrigin={undefined}
-              onChange={handleInputStartDate}
-            />
+        <div className="flex flex-col justify-between border mx-2 mb-1">
+          <div className="flex-auto pl-2 text-sm font-bold">
+            각종 투자 전략
           </div>
-          <div className="flex-auto p-2">
-            <Input
-              className=""
-              color="black"
-              label="종료날짜"
-              type="date"
-              value={endDate} crossOrigin={undefined}
-              onChange={handleInputEndDate}
-            />
+          <div className="flex-auto pl-4 text-xs">
+            {getNcav(kiBalanceSheet, kiInquireDailyItemChartPrice, 1.0)}
           </div>
-        </div>
-        <div className="flex flex-col justify-between border m-2">
-          <div className="flex-auto p-2">
-            {formatDate(startDate)}~{formatDate(endDate)}
+          <div className="flex-auto pl-4 text-xs">
+            {getNcav(kiBalanceSheet, kiInquireDailyItemChartPrice, 1.5)}
           </div>
         </div>
       </>
+      :
+      <>
+      </>}
+    {kiInquireDailyItemChartPrice.output2.length > 0 ?
+      <div className="flex flex-col justify-between border mx-2 mb-1">
+        <div className="flex-auto pl-2 text-sm font-bold">
+          주가정보 (날짜: {kiInquireDailyItemChartPrice.output2[0]["stck_bsop_date"]})
+        </div>
+        <div className="flex-auto pl-4 text-xs">
+          주가: {Number(Number(kiInquireDailyItemChartPrice.output2[0]["stck_oprc"])).toLocaleString()}원
+        </div>
+        <div className="flex-auto pl-4 text-xs">
+          상장주식수: {Number(Number(kiInquireDailyItemChartPrice.output1["lstn_stcn"])).toLocaleString()}개
+        </div>
+        <div className="flex-auto pl-4 text-xs">
+          시가총액: {Number(Number(kiInquireDailyItemChartPrice.output2[0]["stck_oprc"]) * Number(kiInquireDailyItemChartPrice.output1["lstn_stcn"])).toLocaleString()}원
+        </div>
+      </div>
+      : <></>
+    }
+    {kiInquireDailyItemChartPrice.output2.length > 0 && kiBalanceSheet.output.length > 0 ?
+      <div className="flex flex-col justify-between border mx-2 mb-1">
+        <div className="flex-auto pl-2 text-sm font-bold">
+          재무정보 (날짜: {kiBalanceSheet.output[getYearMatchIndex(kiInquireDailyItemChartPrice.output2[0]["stck_bsop_date"])].stac_yymm})
+        </div>
+        <div className="flex-auto pl-4 text-xs">
+          유동자산: {(Number(kiBalanceSheet.output[getYearMatchIndex(kiInquireDailyItemChartPrice.output2[0]["stck_bsop_date"])].cras) * 100000000).toLocaleString()}원
+        </div>
+        <div className="flex-auto pl-4 text-xs">
+          부채총계: {(Number(kiBalanceSheet.output[getYearMatchIndex(kiInquireDailyItemChartPrice.output2[0]["stck_bsop_date"])].total_lblt) * 100000000).toLocaleString()}원
+        </div>
+
+      </div>
+      : <></>
     }
   </>
 }
