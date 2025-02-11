@@ -77,15 +77,15 @@ function translateJsonToTableRow(json: any) {
         let expectedRateOfReturn = `유동자산 x`;
         let expectedRateOfReturnColor = ``;
         if (true == isNaN(targetPrice)) {
-            expectedRateOfReturnColor = `red`;
+            expectedRateOfReturnColor = `text-red-500`;
         }
         else {
             let expectedRateOfReturnNumber = (((targetPrice / Number(close)) - 1) * 100);
             if (expectedRateOfReturnNumber >= 50) {
-                expectedRateOfReturnColor = `green`;
+                expectedRateOfReturnColor = `text-green-500`;
             }
             else if (expectedRateOfReturnNumber < 0) {
-                expectedRateOfReturnColor = `red`;
+                expectedRateOfReturnColor = `text-red-500`;
             }
 
             expectedRateOfReturn = expectedRateOfReturnNumber.toFixed(1).toString() + `%`;

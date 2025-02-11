@@ -34,6 +34,10 @@ export default function Search() {
   const [endDate, setEndDate] = React.useState<any>((new Date()).toISOString().split('T')[0]);
 
   function reload(seq: any) {
+    if ("init" == loginState) {
+      return;
+    }
+
     setTime(new Date());
 
     // login check ?
@@ -83,8 +87,8 @@ export default function Search() {
 
     console.log(`[OpenApi] ${seq}-2 kiToken`, kiToken);
     console.log(`[OpenApi] ${seq}-2 loginState`, loginState);
-    // if ("init" == kiBalance.state && "" != kiToken["access_token"] && "init" != loginState) {
-    if ("" != kiToken["access_token"] && "init" != loginState) {
+    // if ("init" == kiBalance.state && "" != kiToken["access_token"]) {
+    if ("" != kiToken["access_token"]) {
       dispatch(reqGetInquireBalance(kiToken));
     }
 
@@ -197,7 +201,9 @@ export default function Search() {
   }
 
   if ("init" == loginState) {
-    return <Login parentUrl={pathname} />;
+    return <>
+      <Login parentUrl={pathname} />
+    </>;
   }
 
   return <>

@@ -32,11 +32,18 @@ export default function OpenApi() {
     const loginState = useAppSelector(selectState);
 
     function reload(seq: any) {
+        let count = 0;
+        console.log(`[OpenApi] ${seq}-${count++}`, `loginState`, loginState);
+        console.log(`[OpenApi] ${seq}-${count++}`, `kiApproval.state`, kiApproval.state);
+
+        if ("init" == loginState) {
+            return;
+        }
+
         setTime(new Date());
 
         // login check ?
-        // if ("init" == kiApproval.state) 
-        {
+        if ("init" == kiApproval.state) {
             dispatch(reqPostApprovalKey());
         }
 
@@ -46,9 +53,9 @@ export default function OpenApi() {
         const isValidCookieKoreaInvestmentToken = isValidCookie("koreaInvestmentToken");
         if (true == isValidCookieKoreaInvestmentToken) {
             const cookieKoreaInvestmentToken = getCookie("koreaInvestmentToken");
-            console.log(`[reload] cookieKoreaInvestmentToken 1`, typeof cookieKoreaInvestmentToken, cookieKoreaInvestmentToken);
+            console.log(`[OpenApi] ${seq}-${count++}`, `cookieKoreaInvestmentToken 1`, typeof cookieKoreaInvestmentToken, cookieKoreaInvestmentToken);
             const jsonCookieKoreaInvestmentToken = JSON.parse(cookieKoreaInvestmentToken);
-            console.log(`jsonCookieKoreaInvestmentToken`, typeof jsonCookieKoreaInvestmentToken, jsonCookieKoreaInvestmentToken);
+            console.log(`[OpenApi] ${seq}-${count++}`, typeof jsonCookieKoreaInvestmentToken, jsonCookieKoreaInvestmentToken);
         }
 
         // const koreaInvestmentToken = sessionStorage.getItem('koreaInvestmentToken');
@@ -64,7 +71,7 @@ export default function OpenApi() {
         }
         else {
             const cookieKoreaInvestmentToken = getCookie("koreaInvestmentToken");
-            console.log(`[reload] cookieKoreaInvestmentToken 2`, typeof cookieKoreaInvestmentToken, cookieKoreaInvestmentToken);
+            console.log(`[OpenApi] ${seq}-${count++}`, `cookieKoreaInvestmentToken 2`, typeof cookieKoreaInvestmentToken, cookieKoreaInvestmentToken);
             const jsonCookieKoreaInvestmentToken = JSON.parse(cookieKoreaInvestmentToken);
             // const json = JSON.parse(koreaInvestmentToken);
             const json: KoreaInvestmentToken = jsonCookieKoreaInvestmentToken;
@@ -72,9 +79,9 @@ export default function OpenApi() {
             const currentDate = time;
             const expiredDate = new Date(json["access_token_token_expired"].replace(" ", "T"));
             const skipPostToken = (expiredDate > currentDate);
-            console.log(`skipPostToken`, skipPostToken);
+            console.log(`[OpenApi] ${seq}-${count++}`, `skipPostToken`, skipPostToken);
             if (false == skipPostToken) {
-                console.log(`expiredDate`, expiredDate, `currentDate`, currentDate);
+                console.log(`[OpenApi] ${seq}-${count++}`, `expiredDate`, expiredDate, `currentDate`, currentDate);
                 dispatch(reqPostToken());
             }
             else {
@@ -84,20 +91,24 @@ export default function OpenApi() {
             }
         }
 
-        console.log(`[OpenApi] ${seq}-2 kiToken`, kiToken);
-        console.log(`[OpenApi] ${seq}-2 loginState`, loginState);
-        // if ("init" == kiBalance.state && "" != kiToken["access_token"] && "init" != loginState) {
-        if ("" != kiToken["access_token"] && "init" != loginState) {
+        console.log(`[OpenApi] ${seq}-${count++}`, `kiToken`, kiToken);
+        console.log(`[OpenApi] ${seq}-${count++}`, `loginState`, loginState);
+        // if ("init" == kiBalance.state && "" != kiToken["access_token"]) {
+        if ("" != kiToken["access_token"]) {
             dispatch(reqGetInquireBalance(kiToken));
         }
 
-        console.log(`[OpenApi] kiInquirePrice`, kiInquirePrice);
-        console.log(`[OpenApi] kiInquireDailyItemChartPrice`, kiInquireDailyItemChartPrice);
-        console.log(`[OpenApi] kiBalanceSheet`, kiBalanceSheet);
+        console.log(`[OpenApi] ${seq}-${count++}`, `kiInquirePrice`, kiInquirePrice);
+        console.log(`[OpenApi] ${seq}-${count++}`, `kiInquireDailyItemChartPrice`, kiInquireDailyItemChartPrice);
+        console.log(`[OpenApi] ${seq}-${count++}`, `kiBalanceSheet`, kiBalanceSheet);
     }
     React.useEffect(() => {
         reload('1');
     }, [kiToken]);
+
+    React.useEffect(() => {
+        reload('2');
+    }, [loginState]);
 
     const example8TableHeadType: Example8TableHeadType[] = [
         {
@@ -155,16 +166,17 @@ export default function OpenApi() {
                 netCurrentAssert: Util.UnitConversion(Number(item["pchs_amt"]), true),
                 netIncome: `${(Number(item["pchs_amt"]) / Number(kiBalance.output2[0]["pchs_amt_smtl_amt"]) * 100).toFixed(2)} %`,
                 chartName: '',
-                tag: <div className="mr-2 gap-1">
-                    <Button className="p-0 py-1 m-0 mr-1" variant="outlined" size="sm" onClick={() => handleOnClick(item["prdt_name"], item["pdno"], "buy")}>
-                        매수
-                    </Button>
-                    <Button className="p-0 py-1 m-0" variant="outlined" size="sm" onClick={() => handleOnClick(item["prdt_name"], item["pdno"], "sell")}>
-                        매도
-                    </Button>
-                </div>,
+                tag: <>
+                    <div className="mr-2 gap-1">
+                        <Button className="p-0 py-1 m-0 mr-1" variant="outlined" size="sm" onClick={() => handleOnClick(item["prdt_name"], item["pdno"], "buy")}>
+                            매수
+                        </Button>
+                        <Button className="p-0 py-1 m-0" variant="outlined" size="sm" onClick={() => handleOnClick(item["prdt_name"], item["pdno"], "sell")}>
+                            매도
+                        </Button>
+                    </div>
+                </>,
             }
-            // {item["prdt_name"]} : 현재가{Util.UnitConversion(Number(item["prpr"]), true)} : 평가금액{Util.UnitConversion(Number(item["evlu_amt"]), true)} : 매수금액{Util.UnitConversion(Number(item["pchs_amt"]), true)}
         }));
     }
 
@@ -173,8 +185,8 @@ export default function OpenApi() {
     let evlu_amt_smtl_amt: number = 0; // 평가금액
     let pchs_amt_smtl_amt: number = 0; // 매입금액
     let evlu_pfls_smtl_amt: number = 0;// 수입
-    console.log(`kiBalance.output2`, kiBalance.output2);
-    console.log(`kiBalance.output2.length`, kiBalance.output2.length);
+    console.log(`[OpenApi] kiBalance.output2`, kiBalance.output2);
+    console.log(`[OpenApi] kiBalance.output2.length`, kiBalance.output2.length);
     if (!!kiBalance.output2 && kiBalance.output2.length > 0) {
         nass_amt = Number(kiBalance.output2[0]["nass_amt"]);
         evlu_amt_smtl_amt = Number(kiBalance.output2[0]["evlu_amt_smtl_amt"]);
@@ -183,62 +195,47 @@ export default function OpenApi() {
     }
     const props: TablesExample8PropsType = {
         // title: `[OpenApi] 계좌 조회 (${kiBalance.ctx_area_fk100})`,
-        title: <div className="flex "><div className="pr-2">[OpenApi] 계좌 조회</div><Button onClick={() => dispatch(reqGetInquireBalance(kiToken))} className="px-2 py-0 m-0" variant="outlined" size="sm">다시 조회</Button></div>,
+        title: <>
+            <div className="flex ">
+                <div className="pr-2">[OpenApi] 계좌 조회</div>
+                <Button onClick={() => dispatch(reqGetInquireBalance(kiToken))} className="px-2 py-0 m-0" variant="outlined" size="sm">
+                    다시 조회
+                </Button>
+            </div>
+        </>,
         subTitle: ``,
-        // desc: `순자산금액: ${nass_amt} (수익금:${evlu_pfls_smtl_amt} = 평가금액:${evlu_amt_smtl_amt} - 매입금액:${pchs_amt_smtl_amt})`,
         desc: <>
-            <Typography color="blue-gray" className="text-lg font-bold leading-none pb-3">
+            <div className="text-lg font-bold text-black leading-none pb-3">
                 평가손익: <span className={`${(Number(evlu_amt_smtl_amt) / Number(pchs_amt_smtl_amt) * 100 - 100) >= 0 ? "text-red-500" : "text-blue-500"}`}>
                     {Number(evlu_pfls_smtl_amt).toLocaleString()}원
                     ({pchs_amt_smtl_amt == 0 ? "-" : Number(Number(evlu_amt_smtl_amt / pchs_amt_smtl_amt) * 100 - 100).toFixed(2)}%)
                 </span>
-            </Typography>
+            </div>
             <div className="p-3 border rounded">
-                <Typography color="blue-gray" className="text-sm font-bold leading-none pb-2">
+                <div className="text-sm font-bold text-black leading-none pb-2">
                     예수금액: {Number(Number(nass_amt) - Number(pchs_amt_smtl_amt)).toLocaleString()}원 순자산금액: {Number(nass_amt).toLocaleString()}원
-                </Typography>
-                <Typography color="blue-gray" className="text-sm font-bold leading-none pb-2">
+                </div>
+                <div className="text-sm font-bold text-black leading-none pb-2">
                     평가금액: {Number(evlu_amt_smtl_amt).toLocaleString()}원
-                </Typography>
-                <Typography color="blue-gray" className="text-sm font-bold leading-none pb-1">
+                </div>
+                <div className="text-sm font-bold text-black leading-none pb-1">
                     매입금액: {Number(pchs_amt_smtl_amt).toLocaleString()}원
-                </Typography>
+                </div>
             </div>
         </>,
-        // desc: ``,
         financial_date: '',
         market_date: `- market_date: ${time.toString()}`,
         tableHead: example8TableHeadType,
         tableRow: example8TableRowType,
     }
 
-    // const formatDate = (inputDate: string) => {
-    //     console.log(`inputDate`, inputDate);
-    //     if (!inputDate) return "날짜를 입력하세요.";
-    //     const dateObj = new Date(inputDate);
-    //     return dateObj.toLocaleDateString("ko-KR", {
-    //         year: "numeric",
-    //         month: "long",
-    //         day: "numeric",
-    //         weekday: "long",
-    //     });
-    // };
-
-    const formatDate = (date: string) => {
-        // const arrDate = date.split("-");
-        const YYYYMMDD = date.replaceAll("-", ""); // YYYYMMDD
-        // console.log("YYYYMMDD", YYYYMMDD);
-
-        return YYYYMMDD;
+    if ("init" == loginState) {
+        return <>
+            <Login parentUrl={pathname} />
+        </>
     }
 
     return <>
-        {"init" == loginState ?
-            <Login parentUrl={pathname} />
-            :
-            <>
-                <TablesExample8 {...props} />
-            </>
-        }
+        <TablesExample8 {...props} />
     </>
 }
