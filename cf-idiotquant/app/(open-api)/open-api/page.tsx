@@ -18,7 +18,6 @@ import { usePathname } from "next/navigation";
 
 export default function OpenApi() {
     const pathname = usePathname();
-    console.log(`pathname`, pathname);
 
     const dispatch = useAppDispatch();
     const kiApproval: KoreaInvestmentApproval = useAppSelector(getKoreaInvestmentApproval);
@@ -33,30 +32,30 @@ export default function OpenApi() {
 
     function reload(seq: any) {
         let count = 0;
-        console.log(`[OpenApi]`, seq, `-`, count++, `loginState:`, loginState);
-        console.log(`[OpenApi]`, seq, `-`, count++, `kiApproval.state`, kiApproval.state);
-
         if ("init" == loginState) {
+            console.log(`[OpenApi]`, seq, `-`, count++, `loginState:`, loginState);
             return;
         }
 
         setTime(new Date());
 
-        // login check ?
         if ("init" == kiApproval.state) {
+            console.log(`[OpenApi]`, seq, `-`, count++, `kiApproval.state:`, kiApproval.state);
             dispatch(reqPostApprovalKey());
+            return;
         }
 
-        const isValidCookieKoreaInvestmentToken = isValidCookie("koreaInvestmentToken");
-        if (true == isValidCookieKoreaInvestmentToken) {
-            const cookieKoreaInvestmentToken = getCookie("koreaInvestmentToken");
-            console.log(`[OpenApi]`, seq, `-`, count++, `typeof cookieKoreaInvestmentToken:`, typeof cookieKoreaInvestmentToken, `cookieKoreaInvestmentToken:`, cookieKoreaInvestmentToken);
-            const jsonCookieKoreaInvestmentToken = JSON.parse(cookieKoreaInvestmentToken);
-            console.log(`[OpenApi]`, seq, `-`, count++, `typeof jsonCookieKoreaInvestmentToken:`, typeof jsonCookieKoreaInvestmentToken, `jsonCookieKoreaInvestmentToken:`, jsonCookieKoreaInvestmentToken);
+
+        console.log(`[OpenApi]`, seq, `-`, count++, `loginState:`, loginState, `kiApproval:`, kiApproval, `kiToken:`, kiToken);
+        const isValidKiAccessToken = !!kiToken["access_token"];
+        // if ("init" == kiBalance.state && "" != kiToken["access_token"]) {
+        if (true == isValidKiAccessToken) {
+            dispatch(reqGetInquireBalance(kiToken));
+            return;
         }
 
-        if (false == isValidCookieKoreaInvestmentToken) {
-            if ("init" == kiBalance.state && "" == kiToken["access_token"]) {
+        if (false == isValidCookie("koreaInvestmentToken")) {
+            if ("init" == kiBalance.state && false == isValidKiAccessToken) {
                 dispatch(reqPostToken()); // NOTE: 1분에 한 번씩만 token 발급 가능
             }
             else {
@@ -65,8 +64,8 @@ export default function OpenApi() {
         }
         else {
             const cookieKoreaInvestmentToken = getCookie("koreaInvestmentToken");
-            console.log(`[OpenApi]`, seq, `-`, count++, `typeof cookieKoreaInvestmentToken:`, typeof cookieKoreaInvestmentToken, `cookieKoreaInvestmentToken:`, cookieKoreaInvestmentToken);
             const jsonCookieKoreaInvestmentToken = JSON.parse(cookieKoreaInvestmentToken);
+            console.log(`[OpenApi]`, seq, `-`, count++, `jsonCookieKoreaInvestmentToken:`, jsonCookieKoreaInvestmentToken);
             const json: KoreaInvestmentToken = jsonCookieKoreaInvestmentToken;
             const currentDate = time;
             const expiredDate = new Date(json["access_token_token_expired"].replace(" ", "T"));
@@ -76,18 +75,9 @@ export default function OpenApi() {
                 console.log(`[OpenApi]`, seq, `-`, count++, `expiredDate:`, expiredDate, `currentDate:`, currentDate);
                 dispatch(reqPostToken());
             }
-            else {
-                if (false == !!kiToken["access_token"]) {
-                    dispatch(setKoreaInvestmentToken(json));
-                }
+            else if (false == isValidKiAccessToken) {
+                dispatch(setKoreaInvestmentToken(json));
             }
-        }
-
-        console.log(`[OpenApi]`, seq, `-`, count++, `kiToken`, kiToken);
-        console.log(`[OpenApi]`, seq, `-`, count++, `loginState`, loginState);
-        // if ("init" == kiBalance.state && "" != kiToken["access_token"]) {
-        if ("" != kiToken["access_token"]) {
-            dispatch(reqGetInquireBalance(kiToken));
         }
 
         console.log(`[OpenApi]`, seq, `-`, count++, `kiInquirePrice:`, kiInquirePrice);
@@ -97,11 +87,13 @@ export default function OpenApi() {
 
     React.useEffect(() => {
         reload('1');
-    }, [kiToken]);
-
+    }, [loginState]);
     React.useEffect(() => {
         reload('2');
-    }, [loginState]);
+    }, [kiApproval]);
+    React.useEffect(() => {
+        reload('3');
+    }, [kiToken]);
 
     const example8TableHeadType: Example8TableHeadType[] = [
         {
@@ -129,13 +121,12 @@ export default function OpenApi() {
     ];
 
     function handleOnClick(prdt_name: string, pdno: string, buyOrSell: string) {
-        console.log(`prdt_name`, prdt_name, `pdno`, pdno);
+        // console.log(`prdt_name`, prdt_name, `pdno`, pdno);
         if ("buy" == buyOrSell || "sell" == buyOrSell) {
             dispatch(reqPostOrderCash({ koreaInvestmentToken: kiToken, PDNO: pdno, buyOrSell: buyOrSell }));
         }
     }
 
-    // console.log(`kiBalance.output1`, kiBalance.output1);
     let example8TableRowType: Example8TableRowType[] = [];
     if (!!kiBalance.output1 && kiBalance.output1.length > 0) {
         example8TableRowType = (kiBalance.output1.map((item, index) => {
@@ -178,8 +169,7 @@ export default function OpenApi() {
     let evlu_amt_smtl_amt: number = 0; // 평가금액
     let pchs_amt_smtl_amt: number = 0; // 매입금액
     let evlu_pfls_smtl_amt: number = 0;// 수입
-    console.log(`[OpenApi] kiBalance.output2`, kiBalance.output2);
-    console.log(`[OpenApi] kiBalance.output2.length`, kiBalance.output2.length);
+    console.log(`[OpenApi]`, `kiBalance.output2.length:`, kiBalance.output2.length, `kiBalance.output2:`, kiBalance.output2);
     if (!!kiBalance.output2 && kiBalance.output2.length > 0) {
         nass_amt = Number(kiBalance.output2[0]["nass_amt"]);
         evlu_amt_smtl_amt = Number(kiBalance.output2[0]["evlu_amt_smtl_amt"]);

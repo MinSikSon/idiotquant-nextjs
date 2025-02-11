@@ -85,8 +85,8 @@ async function registerUser(id, nickname) {
 export default function Login(props) {
     const router = useRouter();
 
-    const [nickname, setNickname] = React.useState('');
-    const [authorizeCode, setAuthorizeCode] = React.useState('');
+    const [nickname, setNickname] = React.useState("");
+    const [authorizeCode, setAuthorizeCode] = React.useState("");
 
     const dispatch = useAppDispatch();
     const kakaoAuthCode = useAppSelector(selectKakaoAuthCode);
@@ -95,14 +95,12 @@ export default function Login(props) {
 
     React.useEffect(() => {
         async function callback() {
-            console.log(`[Login] getCookie("kakaoId")`, getCookie("kakaoId"));
-            console.log(`[Login] getCookie("kakaoNickName")`, getCookie("kakaoNickName"));
-            console.log(`[Login] kakaoId`, kakaoId);
-            console.log(`[Login] kakaoAuthCode`, kakaoAuthCode);
+            console.log(`[Login]`, `getCookie("kakaoId"):`, getCookie("kakaoId"), `getCookie("kakaoNickName"):`, getCookie("kakaoNickName"));
+            console.log(`[Login]`, `kakaoId:`, kakaoId, `kakaoAuthCode:`, kakaoAuthCode);
             let _authorizeCode = ""
             if ("" == kakaoAuthCode) {
                 _authorizeCode = new URL(window.location.href).searchParams.get('code');
-                console.log(`[Login] _authorizeCode`, _authorizeCode);
+                console.log(`[Login]`, `_authorizeCode:`, _authorizeCode);
                 if (!!!_authorizeCode) return;
                 dispatch(setKakaoAuthCode(_authorizeCode));
             }
@@ -112,21 +110,17 @@ export default function Login(props) {
 
             const responseToken = await RequestToken(_authorizeCode, `${window.location.origin}${props.parentUrl}`);
             if (!!responseToken.error_code && "KOE320" == responseToken.error_code) {
-                console.log(`!!!!! responseToken`, responseToken);
+                console.log(`[Login]`, `responseToken:`, responseToken);
                 return;
             }
 
-            // localStorage.setItem('token', responseToken); // accessToken을 local 에 저장하면 안됨
-            // console.log(`localStorage.getItem('token')`, localStorage.getItem('token'));
-
             const responseNickname = await RequestNickname(responseToken.access_token);
-            // console.log(`responseNickname`, responseNickname);
 
-            if ('' == nickname) {
+            if ("" == nickname) {
                 setNickname(responseNickname.properties.nickname);
             }
 
-            if ('' == authorizeCode) {
+            if ("" == authorizeCode) {
                 setAuthorizeCode(_authorizeCode);
             }
 
