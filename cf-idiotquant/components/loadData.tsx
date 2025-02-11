@@ -57,7 +57,7 @@ export const LoadData = () => {
     useEffect(() => {
         if (financialInfoState == "init") {
             const isValidCookieKakaoId = isValidCookie("kakaoId");
-            console.log(`[LoadData]`, `kakaoId:`, kakaoId, `isValidCookieKakaoId`, isValidCookieKakaoId);
+            console.log(`[LoadData]`, `kakaoId:`, kakaoId, `isValidCookieKakaoId:`, isValidCookieKakaoId);
             if (false == !!kakaoId && true == isValidCookieKakaoId) {
                 dispatch(getCloudFlareLoginStatus());
             }

@@ -45,7 +45,6 @@ export default function OpenApi() {
             return;
         }
 
-
         console.log(`[OpenApi]`, seq, `-`, count++, `loginState:`, loginState, `kiApproval:`, kiApproval, `kiToken:`, kiToken);
         const isValidKiAccessToken = !!kiToken["access_token"];
         // if ("init" == kiBalance.state && "" != kiToken["access_token"]) {
@@ -61,23 +60,24 @@ export default function OpenApi() {
             else {
                 registerCookie("koreaInvestmentToken", JSON.stringify(kiToken));
             }
+
+            return;
         }
-        else {
-            const cookieKoreaInvestmentToken = getCookie("koreaInvestmentToken");
-            const jsonCookieKoreaInvestmentToken = JSON.parse(cookieKoreaInvestmentToken);
-            console.log(`[OpenApi]`, seq, `-`, count++, `jsonCookieKoreaInvestmentToken:`, jsonCookieKoreaInvestmentToken);
-            const json: KoreaInvestmentToken = jsonCookieKoreaInvestmentToken;
-            const currentDate = time;
-            const expiredDate = new Date(json["access_token_token_expired"].replace(" ", "T"));
-            const skipPostToken = (expiredDate > currentDate);
-            console.log(`[OpenApi]`, seq, `-`, count++, `skipPostToken:`, skipPostToken);
-            if (false == skipPostToken) {
-                console.log(`[OpenApi]`, seq, `-`, count++, `expiredDate:`, expiredDate, `currentDate:`, currentDate);
-                dispatch(reqPostToken());
-            }
-            else if (false == isValidKiAccessToken) {
-                dispatch(setKoreaInvestmentToken(json));
-            }
+
+        const cookieKoreaInvestmentToken = getCookie("koreaInvestmentToken");
+        const jsonCookieKoreaInvestmentToken = JSON.parse(cookieKoreaInvestmentToken);
+        console.log(`[OpenApi]`, seq, `-`, count++, `jsonCookieKoreaInvestmentToken:`, jsonCookieKoreaInvestmentToken);
+        const json: KoreaInvestmentToken = jsonCookieKoreaInvestmentToken;
+        const currentDate = time;
+        const expiredDate = new Date(json["access_token_token_expired"].replace(" ", "T"));
+        const skipPostToken = (expiredDate > currentDate);
+        console.log(`[OpenApi]`, seq, `-`, count++, `skipPostToken:`, skipPostToken);
+        if (false == skipPostToken) {
+            console.log(`[OpenApi]`, seq, `-`, count++, `expiredDate:`, expiredDate, `currentDate:`, currentDate);
+            dispatch(reqPostToken());
+        }
+        else if (false == isValidKiAccessToken) {
+            dispatch(setKoreaInvestmentToken(json));
         }
 
         console.log(`[OpenApi]`, seq, `-`, count++, `kiInquirePrice:`, kiInquirePrice);
