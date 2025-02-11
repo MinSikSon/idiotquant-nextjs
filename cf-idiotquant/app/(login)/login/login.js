@@ -97,7 +97,8 @@ export default function Login(props) {
         async function callback() {
             console.log(`[cookie] getCookie("kakaoId")`, getCookie("kakaoId"));
             console.log(`[cookie] getCookie("kakaoNickName")`, getCookie("kakaoNickName"));
-            // console.log(`kakaoAuthCode:`, kakaoAuthCode);
+            console.log(`[cookie] kakaoId`, kakaoId);
+            console.log(`[cookie] kakaoAuthCode`, kakaoAuthCode);
             let _authorizeCode = ""
             if ("" == kakaoAuthCode) {
                 _authorizeCode = new URL(window.location.href).searchParams.get('code');
@@ -168,71 +169,54 @@ export default function Login(props) {
     }
 
     const KakaoIcon = () => {
-        return (
-            <>
-                {
-                    (!!!kakaoNickName) ?
-                        <>
-                            <Card className="mt-6 w-96">
-                                {/* <CardHeader color="blue-gray" className="relative h-20">
-                                    <img
-                                        src="https://images.unsplash.com/photo-1540553016722-983e48a2cd10?ixlib=rb-1.2.1&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=800&q=80"
-                                        alt="card-image"
-                                    />
-                                </CardHeader> */}
-                                <CardBody>
-                                    <Typography variant="h5" color="blue-gray" className="mb-2">
-                                        반갑습니다.
-                                    </Typography>
-                                    <Typography>
-                                        login 하려면 아래 버튼을 눌려주세요.
-                                    </Typography>
-                                </CardBody>
-                                <Button
-                                    size="lg"
-                                    // variant="outlined"
-                                    color="yellow"
-                                    className="flex items-center gap-3"
-                                    onClick={() => onClickLogin(`${window.location.origin}${props.parentUrl}`)}
-                                >
-                                    <img src="/images/kakaotalk_sharing_btn_small.png" alt="metamask" className="h-6 w-6" />
-                                    Continue with Kakao
-                                </Button>
-                            </Card>
-                        </>
-                        :
-                        <>
-                            <Card className="mt-6 w-96">
-                                {/* <CardHeader color="blue-gray" className="relative h-20">
-                                    <img
-                                        src="https://images.unsplash.com/photo-1540553016722-983e48a2cd10?ixlib=rb-1.2.1&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=800&q=80"
-                                        alt="card-image"
-                                    />
-                                </CardHeader> */}
-                                <CardBody>
-                                    <Typography variant="h5" color="blue-gray" className="mb-2">
-                                        {kakaoNickName} 님 반갑습니다.
-                                    </Typography>
-                                    <Typography>
-                                        logout 하려면 아래 버튼을 눌려주세요.
-                                    </Typography>
-                                </CardBody>
-                                <Button
-                                    size="lg"
-                                    variant="outlined"
-                                    color="blue-gray"
-                                    className="flex items-center gap-3"
-                                    onClick={() => Logout(`${window.location.origin}${props.parentUrl}`)}
-                                >
-                                    <img src="/images/kakaotalk_sharing_btn_small.png" alt="metamask" className="h-6 w-6" />
-                                    Logout
-                                </Button>
-                            </Card>
-                        </>
-
-                }
+        if (!!!kakaoNickName) {
+            return <>
+                <Card className="mt-6 w-96">
+                    <CardBody>
+                        <Typography variant="h5" color="blue-gray" className="mb-2">
+                            반갑습니다.
+                        </Typography>
+                        <Typography>
+                            login 하려면 아래 버튼을 눌려주세요.
+                        </Typography>
+                    </CardBody>
+                    <Button
+                        size="lg"
+                        // variant="outlined"
+                        color="yellow"
+                        className="flex items-center gap-3"
+                        onClick={() => onClickLogin(`${window.location.origin}${props.parentUrl}`)}
+                    >
+                        <img src="/images/kakaotalk_sharing_btn_small.png" alt="metamask" className="h-6 w-6" />
+                        Continue with Kakao
+                    </Button>
+                </Card>
             </>
-        );
+        }
+
+        return <>
+            <Card className="mt-6 w-96">
+                <CardBody>
+                    <Typography variant="h5" color="blue-gray" className="mb-2">
+                        {kakaoNickName} 님 반갑습니다.
+                    </Typography>
+                    <Typography>
+                        logout 하려면 아래 버튼을 눌려주세요.
+                    </Typography>
+                </CardBody>
+                <Button
+                    size="lg"
+                    variant="outlined"
+                    color="blue-gray"
+                    className="flex items-center gap-3"
+                    onClick={() => Logout(`${window.location.origin}${props.parentUrl}`)}
+                >
+                    <img src="/images/kakaotalk_sharing_btn_small.png" alt="metamask" className="h-6 w-6" />
+                    Logout
+                </Button>
+            </Card>
+
+        </>;
     }
 
     return (

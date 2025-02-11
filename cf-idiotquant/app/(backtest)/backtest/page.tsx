@@ -247,8 +247,10 @@ export default function BackTest() {
                                     </Typography>
                                 </TimelineHeader>
                                 <TimelineBody className="pb-8">
-                                    <Typography color="blue-gray" className="text-base font-bold leading-none">
-                                        - {formatDate(prevDate)} 종목 일괄 매도
+                                    <div>
+                                        <Typography color="blue-gray" className="text-base font-bold leading-none">
+                                            - {formatDate(prevDate)} 종목 일괄 매도
+                                        </Typography>
                                         <>
                                             {index1 >= 1 ? Object.keys(backTestConditionFilterResultType.output3[prevDate]).map((stockName: any, index2: any) => {
                                                 const filteredStockInfo = backTestConditionFilterResultType.output2[prevDate]["data"][stockName];
@@ -284,7 +286,7 @@ export default function BackTest() {
                                                 </Typography>
                                             </>}
                                         </>
-                                    </Typography>
+                                    </div>
                                     <Typography color="blue-gray" className="text-base font-bold leading-none">
                                         - {formatDate(date)} 매수
                                     </Typography>

@@ -2,7 +2,7 @@
 
 import Login from "@/app/(login)/login/login";
 import TablesExample8, { Example8TableHeadType, Example8TableRowType, TablesExample8PropsType } from "@/components/tableExample8";
-import { getCookie, registerCookie, Util } from "@/components/util";
+import { getCookie, isValidCookie, registerCookie, Util } from "@/components/util";
 import { reqPostApprovalKey, reqPostToken, reqGetInquireBalance, reqPostOrderCash, reqGetInquirePrice, KoreaInvestmentInquirePrice, getKoreaInvestmentInquirePrice, reqGetInquireDailyItemChartPrice, getKoreaInvestmentInquireDailyItemChartPrice, KoreaInvestmentInquireDailyItemChartPrice, reqGetBalanceSheet, getKoreaInvestmentBalanceSheet, KoreaInvestmentBalanceSheet } from "@/lib/features/koreaInvestment/koreaInvestmentSlice";
 import { KoreaInvestmentApproval, KoreaInvestmentToken, KoreaInvestmentBalance } from "@/lib/features/koreaInvestment/koreaInvestmentSlice";
 import { setKoreaInvestmentToken } from "@/lib/features/koreaInvestment/koreaInvestmentSlice";
@@ -43,16 +43,17 @@ export default function OpenApi() {
         // console.log(`[OpenApi] ${seq}-1 kiToken`, kiToken);
         // console.log(`[OpenApi] ${seq}-1 loginState`, loginState);
 
-        const cookieKoreaInvestmentToken = getCookie("koreaInvestmentToken");
-        console.log(`cookieKoreaInvestmentToken`, typeof cookieKoreaInvestmentToken, cookieKoreaInvestmentToken);
-        if (undefined != cookieKoreaInvestmentToken) {
+        const isValidCookieKoreaInvestmentToken = isValidCookie("koreaInvestmentToken");
+        if (true == isValidCookieKoreaInvestmentToken) {
+            const cookieKoreaInvestmentToken = getCookie("koreaInvestmentToken");
+            console.log(`[reload] cookieKoreaInvestmentToken 1`, typeof cookieKoreaInvestmentToken, cookieKoreaInvestmentToken);
             const jsonCookieKoreaInvestmentToken = JSON.parse(cookieKoreaInvestmentToken);
             console.log(`jsonCookieKoreaInvestmentToken`, typeof jsonCookieKoreaInvestmentToken, jsonCookieKoreaInvestmentToken);
         }
 
         // const koreaInvestmentToken = sessionStorage.getItem('koreaInvestmentToken');
         // console.log(`koreaInvestmentToken`, koreaInvestmentToken, typeof koreaInvestmentToken, !!koreaInvestmentToken);
-        if (false == !!cookieKoreaInvestmentToken) {
+        if (false == isValidCookieKoreaInvestmentToken) {
             if ("init" == kiBalance.state && "" == kiToken["access_token"]) {
                 dispatch(reqPostToken()); // NOTE: 1분에 한 번씩만 token 발급 가능
             }
@@ -62,6 +63,8 @@ export default function OpenApi() {
             }
         }
         else {
+            const cookieKoreaInvestmentToken = getCookie("koreaInvestmentToken");
+            console.log(`[reload] cookieKoreaInvestmentToken 2`, typeof cookieKoreaInvestmentToken, cookieKoreaInvestmentToken);
             const jsonCookieKoreaInvestmentToken = JSON.parse(cookieKoreaInvestmentToken);
             // const json = JSON.parse(koreaInvestmentToken);
             const json: KoreaInvestmentToken = jsonCookieKoreaInvestmentToken;
