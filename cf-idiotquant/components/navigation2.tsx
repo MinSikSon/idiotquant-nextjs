@@ -56,6 +56,7 @@ export function NavbarWithSimpleLinks() {
                 {/* <NavItem url="/article" label="Article" /> */}
                 <NavItem url="/search" label="search" />
                 <NavItem url="/open-api" label="open api" />
+                <NavItem url="/algorithm-trade" label="trade history" />
             </ul>
         );
     }

@@ -97,6 +97,6 @@ export default function Auth() {
 
 
     return <>
-        <Button loading={true}>loading {kiToken["access_token"]}</Button>
+        <Button className="border-0 bg-none" variant="outlined" loading={true}>loading</Button>
     </>
 }
