@@ -86,6 +86,7 @@ export const algorithmTradeSlice = createAppSlice({
         // ),
     }),
     selectors: {
+        selectAlgorithmTraceState: (state) => state.state,
         selectCapitalToken: (state) => state.capital_token,
         selectPurchageLog: (state) => state.purchase_log,
         // getKoreaInvestmentToken: (state) => state.koreaInvestmentToken,
@@ -97,7 +98,7 @@ export const algorithmTradeSlice = createAppSlice({
 });
 
 export const { reqGetCapitalToken, reqGetPurchaseLog } = algorithmTradeSlice.actions;
-export const { selectCapitalToken, selectPurchageLog } = algorithmTradeSlice.selectors;
+export const { selectAlgorithmTraceState, selectCapitalToken, selectPurchageLog } = algorithmTradeSlice.selectors;
 
 // export const { reqPostApprovalKey, reqPostToken, reqGetInquireBalance, reqPostOrderCash, reqGetInquirePrice, reqGetInquireDailyItemChartPrice } = koreaInvestmentSlice.actions;
 // export const { getKoreaInvestmentApproval, getKoreaInvestmentToken, getKoreaInvestmentBalance, getKoreaInvestmentInquirePrice, getKoreaInvestmentInquireDailyItemChartPrice } = koreaInvestmentSlice.selectors;

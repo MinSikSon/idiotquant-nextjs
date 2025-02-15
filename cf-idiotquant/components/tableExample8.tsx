@@ -194,19 +194,16 @@ function TablesExample8({
                     className="rounded-none flex flex-wrap gap-4 justify-between mb-4"
                 >
                     <div>
-                        <div className="text-lg font-bold text-black">
-                            {/* Cryptocurrency Market Overview */}
+                        <div className="">
                             {title}
                         </div>
-                        <div className="text-sm text-gray-600 font-normal mt-1">
-                            {/* Compare different cryptocurrencies, and make informed investment. */}
-                            {/* {subTitle} */}
+                        <div className="">
                             {desc}
                         </div>
-                        <div className="text-sm text-gray-600 font-normal mt-1">
+                        <div className="">
                             {financial_date}
                         </div>
-                        <div className="text-sm text-gray-600 font-normal mt-1">
+                        <div className="">
                             {market_date}
                         </div>
                     </div>

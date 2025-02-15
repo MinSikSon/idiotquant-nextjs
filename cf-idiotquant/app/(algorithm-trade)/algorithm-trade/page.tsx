@@ -70,14 +70,6 @@ export default function AlgorithmTrade() {
         })
     })).reverse().flat();
 
-    // console.log(`example8TableRowType`, example8TableRowType);
-
-    // function formatDateWithDay(date = new Date(), locale = 'en-US') {
-    //     return date.toLocaleDateString(locale, {
-    //         weekday: 'long', year: 'numeric', month: '2-digit', day: '2-digit'
-    //     });
-    // }
-
     const time_stamp: any = capitalToken.time_stamp ?? {};
     const stock_list: any = capitalToken.stock_list ?? [];
     const refill_stock_index = capitalToken.refill_stock_index ?? 0;
@@ -87,7 +79,7 @@ export default function AlgorithmTrade() {
     const props: TablesExample8PropsType = {
         title: <>
             <div className="flex">
-                <div className="pr-2">[TradeLog] 주식 구매 이력</div>
+                <div className="pr-2 font-bold text-black">[TradeLog] 주식 구매 이력</div>
                 <Button onClick={() => handleOnClick()} className="px-2 py-0 m-0" size="sm">
                     다시 조회
                 </Button>
@@ -100,7 +92,7 @@ export default function AlgorithmTrade() {
                 갱신 이력:
                 <div className="flex gap-1">
                     {Object.keys(time_stamp).reverse().map((key, index) => {
-                        return <div key={index} className="text-xs rounded border border-black px-1">{formatDateTime(time_stamp[key])}</div>;
+                        return <div key={index} className={`text-xs rounded border border-black px-1 ${`bg-gray-${200 + index * 200}`}`}>{formatDateTime(time_stamp[key])}</div>;
                     })}
                 </div>
             </div>
