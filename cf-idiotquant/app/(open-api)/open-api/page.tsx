@@ -34,6 +34,7 @@ export default function OpenApi() {
         console.log(`[OpenApi]`, `kiToken:`, kiToken);
         const isValidKiAccessToken = !!kiToken["access_token"];
         if (true == isValidKiAccessToken) {
+            setTime(new Date());
             dispatch(reqGetInquireBalance(kiToken));
         }
     }, [kiToken]);
@@ -41,25 +42,31 @@ export default function OpenApi() {
     const example8TableHeadType: Example8TableHeadType[] = [
         {
             head: "종목명",
-            // desc: "desc",
+            desc: "종목명",
         },
         {
             head: "현재가",
+            desc: "현재가",
         },
         {
             head: "보유수량/매도가능",
+            desc: "보유수량/매도가능",
         },
         {
             head: "평가손익",
+            desc: "평가손익",
         },
         {
             head: "평가금액",
+            desc: "평가금액",
         },
         {
             head: "매수금액",
+            desc: "매수금액",
         },
         {
             head: "비중",
+            desc: "비중",
         },
     ];
 

@@ -231,7 +231,7 @@ function TablesExample8({
                                                     </div>
                                                 </PopoverHandler>
                                                 <PopoverContent>
-                                                    {desc}
+                                                    <span className="text-sm text-red-500">{desc}</span>
                                                 </PopoverContent>
                                             </Popover>
                                         </th>
@@ -282,7 +282,7 @@ function TablesExample8({
                                                 </td>
                                                 <td className={classes}>
                                                     <div className="text-sm text-gray-600 text-right">
-                                                        {isNaN(Number(closePrice)) ? closePrice : Util.UnitConversion(Number(closePrice), true)}
+                                                        {closePrice}
                                                     </div>
                                                 </td>
                                                 <td className={classes}>
@@ -297,17 +297,17 @@ function TablesExample8({
                                                 </td>
                                                 <td className={classes}>
                                                     <div className="text-sm text-gray-600 text-right">
-                                                        {isNaN(Number(market)) ? market : Util.UnitConversion(Number(market), true)}
+                                                        {market}
                                                     </div>
                                                 </td>
                                                 <td className={classes}>
                                                     <div className="text-sm text-gray-600 text-right">
-                                                        {isNaN(Number(netCurrentAssert)) ? netCurrentAssert : Util.UnitConversion(Number(netCurrentAssert), true)}
+                                                        {netCurrentAssert}
                                                     </div>
                                                 </td>
                                                 <td className={classes}>
                                                     <div className="text-sm text-gray-600 text-right">
-                                                        {isNaN(Number(netIncome)) ? netIncome : Util.UnitConversion(Number(netIncome), true)}
+                                                        {netIncome}
                                                     </div>
                                                 </td>
                                                 <td className={classes}>
