@@ -84,8 +84,14 @@ export function NavbarWithSimpleLinks() {
                         idiotquant<span className="text-blue-500">.</span>com
                     </Typography>
                 </Link>
-                <div className={`px-1 text-xs font-bold rounded bg-gray-500 text-white`}>{urlToLabel[splitPathName[1]]}</div>
-                <div className={`pl-2 text-xs ${!!!kakaoNickName ? "hidden" : ""}`}>{kakaoNickName}님 반갑습니다. 😀</div>
+                <div className="flex flex-col px-1">
+                    {!!kakaoNickName ? <>
+                        <div className={`px-1 text-xs font-bold rounded bg-gray-500 text-white`}>{urlToLabel[splitPathName[1]]}</div>
+                        <div className={`pl-1 text-xs`}>{kakaoNickName}님 반갑습니다. 😀</div>
+                    </>
+                        : <div className={`px-1 text-xs font-bold rounded bg-gray-500 text-white`}>{urlToLabel[splitPathName[1]]}</div>
+                    }
+                </div>
                 <div className="hidden lg:block">
                     <NavList />
                 </div>

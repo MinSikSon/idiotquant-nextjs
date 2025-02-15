@@ -158,6 +158,7 @@ export interface Example8TableRowType {
     pbr?: string;
     per?: string;
     tag?: any;
+    bgColor?: string;
 }
 
 export interface Example8TableHeadType {
@@ -170,8 +171,8 @@ export interface TablesExample8PropsType {
     title: any;
     subTitle: string;
     desc: any;
-    financial_date: string;
-    market_date: string;
+    financial_date: any;
+    market_date: any;
     tableHead: Example8TableHeadType[];
     tableRow: Example8TableRowType[];
 }
@@ -194,19 +195,16 @@ function TablesExample8({
                     className="rounded-none flex flex-wrap gap-4 justify-between mb-4"
                 >
                     <div>
-                        <div className="text-lg font-bold text-black">
-                            {/* Cryptocurrency Market Overview */}
+                        <div className="">
                             {title}
                         </div>
-                        <div className="text-sm text-gray-600 font-normal mt-1">
-                            {/* Compare different cryptocurrencies, and make informed investment. */}
-                            {/* {subTitle} */}
+                        <div className="">
                             {desc}
                         </div>
-                        <div className="text-sm text-gray-600 font-normal mt-1">
+                        <div className="">
                             {financial_date}
                         </div>
-                        <div className="text-sm text-gray-600 font-normal mt-1">
+                        <div className="">
                             {market_date}
                         </div>
                     </div>
@@ -215,7 +213,7 @@ function TablesExample8({
                 {tableRow.length == 0 ?
                     <Loading loadingMsg={`loading`} />
                     :
-                    <CardBody className="overflow-scroll !px-0 py-2">
+                    <CardBody className="overflow-scroll !px-0 pt-0 pb-2">
                         <table className="w-full min-w-max table-auto">
                             <thead>
                                 <tr>
@@ -239,7 +237,6 @@ function TablesExample8({
                                 </tr>
                             </thead>
                             <tbody>
-
                                 {tableRow.map(
                                     (
                                         {
@@ -258,20 +255,22 @@ function TablesExample8({
                                             eps,
                                             pbr,
                                             per,
+                                            bgColor,
                                         },
                                         index
                                     ) => {
-                                        const isLast = index === tableRow.length - 1;
-                                        const bgColor = index % 2 ? 'bg-blue-gray-50' : ''
-                                        const classes = isLast
-                                            ? "!pl-2"
-                                            : `!pl-2 border-b border-gray-100 ${bgColor}`;
+                                        // const isLast = index === tableRow.length - 1;
+                                        const _bgColor = !!bgColor ? bgColor : (index % 2 ? 'bg-blue-gray-50' : '')
+                                        // const classes = isLast
+                                        //     ? "!pl-2"
+                                        //     : `!pl-2 border-b border-gray-100 ${_bgColor}`;
+                                        const classes = `!pl-2 border-b border-gray-100 ${_bgColor}`;
                                         return (
                                             <tr key={digitalAsset}>
                                                 <td className={classes}>
                                                     <div className="flex items-center gap-4 text-left">
                                                         <div>
-                                                            <div className="text-base font-bold text-black">
+                                                            <div className="text-sm font-bold text-black">
                                                                 <div className="flex">
                                                                     {tag}
                                                                     {detail}
