@@ -55,11 +55,11 @@ export function NavbarWithSimpleLinks() {
     const urlToLabel: any = {
         "": "main",
         "calculator": "calculator",
-        "login": `${!!!kakaoId ? 'login 🔒' : 'logout 🔓'}`,
-        "backtest": "backtest",
+        "login": `${!!!kakaoId ? "login 🔒" : "logout"}`,
+        "backtest": `backtest ${!!!kakaoId ? "🔒" : ""}`,
         // "article": "Article",
-        "search": "search",
-        "open-api": "open api",
+        "search": `search ${!!!kakaoId ? "🔒" : ""}`,
+        "open-api": `open api ${!!!kakaoId ? "🔒" : ""}`,
         "algorithm-trade": "trade history",
     }
 
