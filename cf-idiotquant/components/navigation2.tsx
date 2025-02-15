@@ -26,8 +26,8 @@ export function NavbarWithSimpleLinks() {
     // console.log(`[NavbarWithSimpleLinks]`);
     const pathname = usePathname();
     const splitPathName = pathname.split("/");
-    console.log(`pathname`, pathname);
-    console.log(`splitPathName`, splitPathName);
+    // console.log(`pathname`, pathname);
+    // console.log(`splitPathName`, splitPathName);
 
     const [open, setOpen] = React.useState(false);
     const handleOpen = () => setOpen((cur) => !cur);
