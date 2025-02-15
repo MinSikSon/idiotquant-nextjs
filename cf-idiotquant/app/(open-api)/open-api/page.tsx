@@ -34,6 +34,7 @@ export default function OpenApi() {
         console.log(`[OpenApi]`, `kiToken:`, kiToken);
         const isValidKiAccessToken = !!kiToken["access_token"];
         if (true == isValidKiAccessToken) {
+            setTime(new Date());
             dispatch(reqGetInquireBalance(kiToken));
         }
     }, [kiToken]);
