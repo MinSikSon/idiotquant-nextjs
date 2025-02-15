@@ -231,7 +231,7 @@ function TablesExample8({
                                                     </div>
                                                 </PopoverHandler>
                                                 <PopoverContent>
-                                                    {desc}
+                                                    <span className="text-sm text-red-500">{desc}</span>
                                                 </PopoverContent>
                                             </Popover>
                                         </th>

@@ -4,7 +4,7 @@ import NavbarWithSimpleLinks from "@/components/navigation2"
 import { LoadData } from "@/components/loadData"
 
 export const metadata = {
-  title: 'idiot.quant',
+  title: 'idiotquant.com',
   description: 'We recommend stock picks derived from a quantitative strategy.',
 }
 

@@ -14,6 +14,8 @@ import Link from "next/link";
 import { selectKakaoId, selectKakaoNickName } from "@/lib/features/login/loginSlice";
 import { useAppSelector } from "@/lib/hooks";
 
+import { usePathname } from "next/navigation";
+
 interface NavItemPropsType {
     url: string;
     label: string;
@@ -22,6 +24,10 @@ interface NavItemPropsType {
 
 export function NavbarWithSimpleLinks() {
     // console.log(`[NavbarWithSimpleLinks]`);
+    const pathname = usePathname();
+    const splitPathName = pathname.split("/");
+    console.log(`pathname`, pathname);
+    console.log(`splitPathName`, splitPathName);
 
     const [open, setOpen] = React.useState(false);
     const handleOpen = () => setOpen((cur) => !cur);
@@ -46,17 +52,23 @@ export function NavbarWithSimpleLinks() {
         );
     }
 
+    const urlToLabel: any = {
+        "": "main",
+        "calculator": "calculator",
+        "login": `${!!!kakaoId ? 'login 🔒' : 'logout 🔓'}`,
+        "backtest": "backtest",
+        // "article": "Article",
+        "search": "search",
+        "open-api": "open api",
+        "algorithm-trade": "trade history",
+    }
+
     function NavList() {
         return (
             <ul className="pl-2 pt-2 mb-4 mt-2 flex flex-col gap-2 lg:mb-0 lg:mt-0 lg:flex-row lg:items-center lg:gap-8">
-                <NavItem url="/" label="idiot.quant" />
-                <NavItem url="/calculator" label="기대 수익 계산기 🎲" />
-                <NavItem url="/login" label={`${!!!kakaoId ? 'login 🔒' : 'logout 🔓'}`} />
-                <NavItem url="/backtest" label="backtest" />
-                {/* <NavItem url="/article" label="Article" /> */}
-                <NavItem url="/search" label="search" />
-                <NavItem url="/open-api" label="open api" />
-                <NavItem url="/algorithm-trade" label="trade history" />
+                {Object.keys(urlToLabel).map((key: string) => {
+                    return <NavItem key={key} url={`/${key}`} label={urlToLabel[key]} />
+                })}
             </ul>
         );
     }
@@ -67,12 +79,13 @@ export function NavbarWithSimpleLinks() {
                 <Link href="/">
                     <Typography
                         color="blue-gray"
-                        className="mr-4 cursor-pointer text-lg font-bold"
+                        className="mr-2 cursor-pointer text-lg font-bold"
                     >
-                        idiot<span className="text-blue-500">.</span>quant
+                        idiotquant<span className="text-blue-500">.</span>com
                     </Typography>
                 </Link>
-                <div className={`pl-2 text-sm ${!!!kakaoNickName ? "hidden" : ""}`}>{kakaoNickName} 님 반갑습니다. 😀</div>
+                <div className={`px-1 text-xs font-bold rounded bg-gray-500 text-white`}>{urlToLabel[splitPathName[1]]}</div>
+                <div className={`pl-2 text-xs ${!!!kakaoNickName ? "hidden" : ""}`}>{kakaoNickName}님 반갑습니다. 😀</div>
                 <div className="hidden lg:block">
                     <NavList />
                 </div>
