@@ -33,7 +33,6 @@ export const ListNodeTemplate = (props: any) => {
         <Link href={props.link}>
             <ListItem className={`p-0 border-b-2 ${props.bgColor}`}>
                 <ListItemPrefix>
-                    {/* <Typography className="ml-3 pl-4" variant="h6">{props.item1}</Typography> */}
                     <Chip className="border-none py-0" size="sm" variant="outlined" value={props.item1} />
                 </ListItemPrefix>
                 <ListItemSuffix>

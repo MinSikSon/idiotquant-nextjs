@@ -7,9 +7,6 @@ import Loading from "@/components/Loading";
 
 export default function Strategy() {
     const strategyInfoList = useAppSelector(getStrategyInfoList);
-    // console.log(`[Home] strategyInfoList`, strategyInfoList, strategyInfoList.length);
-    // console.log(`[Home] strategyInfoList.length`, strategyInfoList.length);
-    // console.log(`[Home] !!strategyInfoList`, !!strategyInfoList);
 
     let propsList: Web3CardPropsType[] = strategyInfoList.map((item: StrategyInfo, key: any) => {
         return {

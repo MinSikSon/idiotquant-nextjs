@@ -1,4 +1,4 @@
-import { Card, CardBody, CardFooter, CardHeader, Typography } from "@material-tailwind/react";
+import { Card, CardBody, CardFooter, CardHeader } from "@material-tailwind/react";
 
 interface RegisterTemplateProps {
     cardBodyFix: boolean;
@@ -17,13 +17,9 @@ export default function RegisterTemplate(props: RegisterTemplateProps) {
                     className="flex overflow-visible gap-y-4 flex-wrap items-start justify-between rounded"
                 >
                     <div>
-                        <Typography
-                            color="blue-gray"
-                            variant="h1"
-                            className="!text-2xl"
-                        >
+                        <div className="font-bold text-2xl">
                             {props.title}
-                        </Typography>
+                        </div>
                         <div>
                             {props.subTitle}
                         </div>

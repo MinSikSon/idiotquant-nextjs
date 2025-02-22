@@ -169,7 +169,7 @@ export interface Example8TableHeadType {
 
 export interface TablesExample8PropsType {
     title: any;
-    subTitle: string;
+    subTitle: any;
     desc: any;
     financial_date: any;
     market_date: any;

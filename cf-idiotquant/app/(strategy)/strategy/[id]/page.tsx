@@ -7,9 +7,6 @@ import NotFound from "@/app/not-found";
 
 export default function Item({ params: { id } }: { params: { id: number } }) {
     const strategyInfoList = useAppSelector(getStrategyInfoList);
-
-    // console.log(`Number(id)`, Number(id));
-    // console.log(`strategyInfoList[Number(id)]`, strategyInfoList[Number(id)]);
     if (undefined == strategyInfoList[Number(id)]) {
         return <NotFound />;
     }
