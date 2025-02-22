@@ -102,14 +102,8 @@ export function Web3Card2({
                     floated={false}
                     className="flex overflow-visible gap-y-4 flex-wrap items-start justify-between rounded-none"
                 >
-                    <div>
-                        <Typography
-                            color="blue-gray"
-                            variant="h1"
-                            className="!text-2xl mb-1"
-                        >
-                            {title}
-                        </Typography>
+                    <div className="font-bold text-2xl mb-1">
+                        {title}
                     </div>
                 </CardHeader>
                 <CardBody className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 px-4">
