@@ -18,6 +18,7 @@ import { MagnifyingGlassIcon, XCircleIcon } from "@heroicons/react/24/outline";
 import Auth from "@/components/auth";
 import { getKoreaInvestmentUsMaretSearchInfo, reqGetQuotationsSearchInfo } from "@/lib/features/koreaInvestmentUsMarket/koreaInvestmentUsMarketSlice";
 import { getKoreaInvestmentUsMaretPriceDetail, reqGetQuotationsPriceDetail } from "@/lib/features/koreaInvestmentUsMarket/koreaInvestmentUsMarketSlice";
+import SearchAutocomplete from "@/components/searchAutoComplete";
 
 export default function Search() {
   const pathname = usePathname();
@@ -184,32 +185,10 @@ export default function Search() {
   }
 
   return <>
-    <div className="flex items-center border m-2 p-2">
-      <div className="flex-1" >
-        <Input
-          className=""
-          color="black"
-          label="주식 검색"
-          type="string"
-          value={stockName}
-          crossOrigin={undefined}
-          onChange={handleInputStockName}
-          onKeyUp={handleInputStockNameOnKeyUp}
-        />
-      </div>
-      <div className="flex" >
-        <Button className="py-2 px-2" variant="outlined" value={stockName} onClick={() => onSearchButton(stockName)}>
-          <MagnifyingGlassIcon className="h-5 w-5" />
-        </Button>
-      </div>
-      <div className="flex" >
-        <Button className="py-2 px-2" variant="outlined" value={stockName} onClick={() => setStockName("")}>
-          <XCircleIcon className="h-5 w-5" />
-        </Button>
-      </div>
-    </div>
+    <SearchAutocomplete onSearchButton={onSearchButton} />
+
     <div className="flex flex-col justify-between border m-2">
-      <div className="flex-auto p-2">
+      <div className="flex-1 p-2">
         <Input
           className=""
           color="black"
@@ -277,5 +256,6 @@ export default function Search() {
       : <></>
     }
     {/* <Foreign /> */}
+
   </>
 }
