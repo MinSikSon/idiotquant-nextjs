@@ -53,15 +53,15 @@ export function NavbarWithSimpleLinks() {
     }
 
     const urlToLabel: any = {
-        "": "main",
-        "calculator": "calculator",
-        "login": `${!!!kakaoId ? `login 🔒` : "logout"}`,
-        "backtest": `backtest ${!!!kakaoId ? "🔒" : ""}`,
+        "": "홈",
+        "calculator": "수익 계산기",
+        "login": `${!!!kakaoId ? `로그인 🔒` : "로그아웃"}`,
+        "backtest": `백테스트 ${!!!kakaoId ? "🔒" : ""}`,
         // "article": "Article",
-        "search": `search ${!!!kakaoId ? "🔒" : ""}`,
-        "open-api": `open api ${!!!kakaoId ? "🔒" : ""}`,
-        "algorithm-trade": "trade history",
-        "strategy": "strategy",
+        "search": `검색 ${!!!kakaoId ? "🔒" : ""}`,
+        "open-api": `계좌 ${!!!kakaoId ? "🔒" : ""}`,
+        "algorithm-trade": "거래 이력",
+        "strategy": "투자 전략",
     }
 
     function NavList() {

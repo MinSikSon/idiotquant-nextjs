@@ -153,6 +153,24 @@ export default function Search() {
     return <div>NCAV ({ratio.toFixed(1)}): <span className={`${value >= 0 ? "text-blue-500" : "text-red-500"}`}>{value.toFixed(2)}%</span></div>
   }
 
+  function Foreign() {
+    return <>
+      <div>해외주식 financial info 갱신 (test: APPL)</div>
+      <Button onClick={() => dispatch(reqGetQuotationsSearchInfo({ koreaInvestmentToken: kiToken, PDNO: "AAPL" }))}>/uapi/overseas-price/v1/quotations/search-info</Button>
+      <div>
+        <div>serach-info</div>
+        <div className="text-xs">{JSON.stringify(kiUsMaretSearchInfo)}</div>
+        <div className="text-xs">{!!kiUsMaretSearchInfo.output ? Object.keys(kiUsMaretSearchInfo.output).map((key: any) => { return <div key={key}>{key} : {kiUsMaretSearchInfo.output[key]}</div> }) : <></>}</div>
+      </div>
+      <Button onClick={() => dispatch(reqGetQuotationsPriceDetail({ koreaInvestmentToken: kiToken, PDNO: "AAPL" }))}>/uapi/overseas-price/v1/quotations/price-detail</Button>
+      <div>
+        <div>price-detail</div>
+        <div className="text-xs">{JSON.stringify(kiUsMaretPriceDetail)}</div>
+        <div className="text-xs">{!!kiUsMaretPriceDetail.output ? Object.keys(kiUsMaretPriceDetail.output).map((key: any) => { return <div key={key}>{key} : {kiUsMaretPriceDetail.output[key]}</div> }) : <></>}</div>
+      </div>
+    </>
+  }
+
   if ("init" == loginState) {
     return <>
       <Login parentUrl={pathname} />
@@ -258,18 +276,6 @@ export default function Search() {
       </div>
       : <></>
     }
-    <div>해외주식 financial info 갱신 (test: APPL)</div>
-    <Button onClick={() => dispatch(reqGetQuotationsSearchInfo({ koreaInvestmentToken: kiToken, PDNO: "AAPL" }))}>/uapi/overseas-price/v1/quotations/search-info</Button>
-    <div>
-      <div>serach-info</div>
-      <div className="text-xs">{JSON.stringify(kiUsMaretSearchInfo)}</div>
-      <div className="text-xs">{!!kiUsMaretSearchInfo.output ? Object.keys(kiUsMaretSearchInfo.output).map((key: any) => { return <div key={key}>{key} : {kiUsMaretSearchInfo.output[key]}</div> }) : <></>}</div>
-    </div>
-    <Button onClick={() => dispatch(reqGetQuotationsPriceDetail({ koreaInvestmentToken: kiToken, PDNO: "AAPL" }))}>/uapi/overseas-price/v1/quotations/price-detail</Button>
-    <div>
-      <div>price-detail</div>
-      <div className="text-xs">{JSON.stringify(kiUsMaretPriceDetail)}</div>
-      <div className="text-xs">{!!kiUsMaretPriceDetail.output ? Object.keys(kiUsMaretPriceDetail.output).map((key: any) => { return <div key={key}>{key} : {kiUsMaretPriceDetail.output[key]}</div> }) : <></>}</div>
-    </div>
+    {/* <Foreign /> */}
   </>
 }
