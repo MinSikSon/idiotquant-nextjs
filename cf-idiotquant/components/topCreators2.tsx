@@ -66,14 +66,6 @@ function Web3Card({
                         </div>
                     </div>
                     <div className="grid grid-cols-3 gap-2">
-                        {/* {imgs.map((img, key) => (
-                        <img
-                            key={key}
-                            src={img}
-                            className="h-full w-full object-cover rounded-xl"
-                            alt="name"
-                        />
-                    ))} */}
                     </div>
                 </CardBody>
                 <CardFooter className="">
