@@ -60,9 +60,9 @@ const initialState: StrategyFilterInterface = {
         subTitle1: "시가총액 최소값",
         subTitle2: "시가총액 최대값",
         capitalizationMin: 'ALL',
-        capitalizationMinList: ['ALL', 10000000000, 50000000000, 100000000000, 500000000000],
+        capitalizationMinList: ['ALL', 10000000000, 50000000000, 100000000000],
         capitalization: 'ALL',
-        capitalizationList: ['ALL', 50000000000, 100000000000, 1000000000000]
+        capitalizationList: ['ALL', 100000000000, 500000000000, 1000000000000]
     },
     step3: {
         title: "당기순이익 고려",
