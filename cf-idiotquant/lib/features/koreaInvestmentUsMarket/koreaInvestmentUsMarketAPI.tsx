@@ -1,5 +1,31 @@
 import { getCookie } from "@/components/util";
-import { KoreaInvestmentToken } from "./koreaInvestmentSlice";
+import { getKoreaInvestmentRequest, postKoreaInvestmentRequest } from "../koreaInvestment/koreaInvestmentAPI";
+import { KoreaInvestmentToken } from "../koreaInvestment/koreaInvestmentSlice";
+
+
+export const getQuotationsPriceDetail: any = async (koreaInvestmentToken: KoreaInvestmentToken, PDNO: string) => {
+    const subUrl = `/uapi/overseas-price/v1/quotations/price-detail`;
+    const additionalHeaders: AdditionalHeaders = {
+        "authorization": koreaInvestmentToken["access_token"],
+        "kakaoId": getCookie("kakaoId"),
+        "PDNO": PDNO,
+        // "buyOrSell": buyOrSell,
+    }
+    return getKoreaInvestmentRequest(subUrl, additionalHeaders);
+}
+
+export const getQuotationsSearchInfo: any = async (koreaInvestmentToken: KoreaInvestmentToken, PDNO: string) => {
+    const subUrl = `/uapi/overseas-price/v1/quotations/search-info`;
+    const additionalHeaders: AdditionalHeaders = {
+        "authorization": koreaInvestmentToken["access_token"],
+        "kakaoId": getCookie("kakaoId"),
+        "PDNO": PDNO,
+        // "buyOrSell": buyOrSell,
+    }
+    return getKoreaInvestmentRequest(subUrl, additionalHeaders);
+}
+
+
 
 export const getBalanceSheet: any = async (koreaInvestmentToken: KoreaInvestmentToken, PDNO: string) => {
     const subUrl = `/uapi/domestic-stock/v1/finance/balance-sheet`;
@@ -79,34 +105,4 @@ interface AdditionalHeaders {
     buyOrSell?: string;
     FID_INPUT_DATE_1?: string;
     FID_INPUT_DATE_2?: string;
-}
-
-export async function postKoreaInvestmentRequest(subUrl: string, additionalHeaders?: AdditionalHeaders) {
-    const url = `${process.env.NEXT_PUBLIC_API_URL}${subUrl}`;
-    const options: RequestInit = {
-        method: "POST",
-        credentials: "include",  // include credentials (like cookies) in the request
-        headers: {
-            "content-type": "application/json; utf-8",
-            ...additionalHeaders
-        },
-    };
-    const res = await fetch(url, options);
-
-    return res.json();
-}
-
-export async function getKoreaInvestmentRequest(subUrl: string, additionalHeaders?: AdditionalHeaders) {
-    const url = `${process.env.NEXT_PUBLIC_API_URL}${subUrl}`;
-    const options: RequestInit = {
-        method: "GET",
-        credentials: "include",  // include credentials (like cookies) in the request
-        headers: {
-            "content-type": "application/json; utf-8",
-            ...additionalHeaders,
-        },
-    };
-    const res = await fetch(url, options);
-
-    return res.json();
 }

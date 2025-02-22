@@ -26,8 +26,8 @@ export function NavbarWithSimpleLinks() {
     // console.log(`[NavbarWithSimpleLinks]`);
     const pathname = usePathname();
     const splitPathName = pathname.split("/");
-    // console.log(`pathname`, pathname);
-    // console.log(`splitPathName`, splitPathName);
+    console.log(`pathname`, pathname);
+    console.log(`splitPathName`, splitPathName);
 
     const [open, setOpen] = React.useState(false);
     const handleOpen = () => setOpen((cur) => !cur);
@@ -53,14 +53,15 @@ export function NavbarWithSimpleLinks() {
     }
 
     const urlToLabel: any = {
-        "": "main",
-        "calculator": "calculator",
-        "login": `${!!!kakaoId ? "login 🔒" : "logout"}`,
-        "backtest": `backtest ${!!!kakaoId ? "🔒" : ""}`,
+        "": "홈",
+        "calculator": "수익 계산기",
+        "login": `${!!!kakaoId ? `로그인 🔒` : "로그아웃"}`,
+        "backtest": `백테스트 ${!!!kakaoId ? "🔒" : ""}`,
         // "article": "Article",
-        "search": `search ${!!!kakaoId ? "🔒" : ""}`,
-        "open-api": `open api ${!!!kakaoId ? "🔒" : ""}`,
-        "algorithm-trade": "trade history",
+        "search": `검색 ${!!!kakaoId ? "🔒" : ""}`,
+        "open-api": `계좌 ${!!!kakaoId ? "🔒" : ""}`,
+        "algorithm-trade": "거래 이력",
+        "strategy": "투자 전략",
     }
 
     function NavList() {
@@ -86,18 +87,15 @@ export function NavbarWithSimpleLinks() {
                 </Link>
                 <div className="flex flex-col px-1">
                     {!!kakaoNickName ? <>
-                        <div className={`px-1 text-xs font-bold rounded bg-gray-500 text-white`}>{urlToLabel[splitPathName[1]]}</div>
+                        <div className={`px-1 text-xs font-bold rounded border border-blue-500 text-black`}>{urlToLabel[splitPathName[1]]}</div>
                         <div className={`pl-1 text-xs`}>{kakaoNickName}님 반갑습니다. 😀</div>
                     </>
-                        : <div className={`px-1 text-xs font-bold rounded bg-gray-500 text-white`}>{urlToLabel[splitPathName[1]]}</div>
+                        : <div className={`px-1 text-xs font-bold rounded border border-blue-500 text-black`}>{urlToLabel[splitPathName[1]]}</div>
                     }
                 </div>
                 <div className="hidden lg:block">
                     <NavList />
                 </div>
-                {/* <Button color="gray" className="hidden lg:inline-block">
-                    Sign in
-                </Button> */}
                 <IconButton
                     size="sm"
                     variant="text"
@@ -122,9 +120,6 @@ export function NavbarWithSimpleLinks() {
                         메뉴
                     </Typography>
                     <NavList />
-                    {/* <Button className="mb-2" fullWidth>
-                        Sign in
-                    </Button> */}
                 </div>
             </Collapse>
         </Navbar>

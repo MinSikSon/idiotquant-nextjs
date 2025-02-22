@@ -13,8 +13,8 @@ import {
 import Link from "next/link";
 
 export interface Web3CardPropsType {
-    title: string;
-    subTitle: string;
+    title: any;
+    subTitle: any;
     imgs: string;
     cardNum: string;
     profileImg: string;
@@ -32,11 +32,7 @@ function Web3Card({
     profileImg,
     summary,
 }: Web3CardPropsType & { parentRouter: string }) {
-    // console.log(`[Web3Card] imgs`, imgs);
     const url: string = imgs;
-    // console.log(`url`, url);
-
-    // console.log(`cardNum`, cardNum);
     return (
         <Link href={`/${parentRouter}/${Number(cardNum)}`}>
             <Card className="border border-gray-300 overflow-hidden shadow-sm">
@@ -93,76 +89,11 @@ function Web3Card({
     );
 }
 
-// const data: Web3Card2DataType[] = [
-//     {
-//         cardNum: "#1",
-//         profileImg: "https://www.material-tailwind.com/img/avatar1.jpg",
-//         name: "Tina Andrew",
-//         desc: "Creator",
-//         imgs: [
-//             "bg-[url('https://www.material-tailwind.com/img/avatar1.jpg')]",
-//             "https://upload.wikimedia.org/wikipedia/commons/2/2a/Benjamin_Graham_%281894-1976%29_portrait_on_23_March_1950.jpg",
-//             "https://upload.wikimedia.org/wikipedia/commons/5/51/Warren_Buffett_KU_Visit.jpg",
-//             // "/image/web3-card-1.svg",
-//             // "/image/web3-card-2.svg",
-//             // "/image/web3-card-3.svg",
-//         ],
-//         summary: "뭘까요?",
-//     },
-//     {
-//         cardNum: "#2",
-//         profileImg: "https://www.material-tailwind.com/image/avatar2.jpg",
-//         name: "Linde Michael",
-//         desc: "Creator",
-//         imgs: [
-//             "bg-[url('https://www.syesd.co.kr/homepage/syStoryImageFolder/1614817264026_fb8ff05cd5914f31981ff8aab95f8219_01.png')]",
-//             "https://www.syesd.co.kr/homepage/syStoryImageFolder/1614817264026_fb8ff05cd5914f31981ff8aab95f8219_01.png",
-//             "https://www.syesd.co.kr/homepage/syStoryImageFolder/1614817264026_fb8ff05cd5914f31981ff8aab95f8219_01.png",
-//             // "/image/web3-card-5-mini.svg",
-//             // "/image/web3-card-6-mini.svg",
-//             // "/image/web3-card-7-mini.svg",
-//         ],
-//         summary: "뭘까유유",
-//     },
-//     {
-//         cardNum: "#3",
-//         profileImg: "https://www.material-tailwind.com/image/avatar7.svg",
-//         name: "Misha Stam",
-//         desc: "Creator",
-//         imgs: [
-//             "bg-[url('https://upload.wikimedia.org/wikipedia/commons/5/51/Warren_Buffett_KU_Visit.jpg')]",
-//             "https://www.syesd.co.kr/homepage/syStoryImageFolder/1614817264026_fb8ff05cd5914f31981ff8aab95f8219_01.png",
-//             "https://upload.wikimedia.org/wikipedia/commons/2/2a/Benjamin_Graham_%281894-1976%29_portrait_on_23_March_1950.jpg",
-//             // "/image/web3-card-4.svg",
-//             // "/image/web3-card-4.svg",
-//             // "/image/web3-card-4.svg",
-//         ],
-//         summary: "뭘까요호우",
-//     },
-//     {
-//         cardNum: "#1",
-//         profileImg: "https://www.material-tailwind.com/img/avatar1.jpg",
-//         name: "Tina Andrew",
-//         desc: "Creator",
-//         imgs: [
-//             "bg-[url('https://www.material-tailwind.com/img/avatar1.jpg')]",
-//             "https://upload.wikimedia.org/wikipedia/commons/2/2a/Benjamin_Graham_%281894-1976%29_portrait_on_23_March_1950.jpg",
-//             "https://upload.wikimedia.org/wikipedia/commons/5/51/Warren_Buffett_KU_Visit.jpg",
-//             // "/image/web3-card-1.svg",
-//             // "/image/web3-card-2.svg",
-//             // "/image/web3-card-3.svg",
-//         ],
-//         summary: "뭘까요?",
-//     },
-// ];
-
 export function Web3Card2({
     title,
     parentRouter,
     data
 }: { title: string, parentRouter: string, data: Web3CardPropsType[] }) {
-    // console.log(`[Web3Card2] data`, data);
-
     return (
         <section className="px-4 py-4">
             <Card shadow={false} className="border border-gray-300">
@@ -179,24 +110,7 @@ export function Web3Card2({
                         >
                             {title}
                         </Typography>
-                        {/* <Typography
-                            color="blue-gray"
-                            className="!text-lg font-normal text-gray-600"
-                        >
-                            The most sought-after collections across the entire ecosystem.
-                        </Typography> */}
                     </div>
-                    {/* <div className="flex shrink-0 gap-2">
-                        <Button size="sm" variant="outlined" className="border-gray-300">
-                            Last 24h
-                        </Button>
-                        <Button size="sm" variant="outlined" className="border-gray-300">
-                            Last week
-                        </Button>
-                        <Button size="sm" variant="outlined">
-                            Last month
-                        </Button>
-                    </div> */}
                 </CardHeader>
                 <CardBody className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 px-4">
                     {data.map((props, key) => (

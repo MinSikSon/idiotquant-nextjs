@@ -122,8 +122,8 @@ function translateJsonToTableRow(json: any) {
 }
 
 export interface StrategyInfo {
-    title: string;
-    subTitle: string;
+    title: any;
+    subTitle: any;
     desc: string;
     img: string;
     profileImg: string;
@@ -185,7 +185,7 @@ export const strategySlice = createAppSlice({
             },
         ),
         addStrategyList: create.asyncThunk(
-            async ({ title, subTitle, desc, financialInfoDate, marketInfoDate, ncavList }: { title: string, subTitle: string, desc: string, financialInfoDate: string, marketInfoDate: string, ncavList: string }) => {
+            async ({ title, subTitle, desc, financialInfoDate, marketInfoDate, ncavList }: { title: any, subTitle: any, desc: string, financialInfoDate: string, marketInfoDate: string, ncavList: string }) => {
                 const res: any = await setNcavList(financialInfoDate, marketInfoDate, ncavList);
                 return { 'title': title, 'subTitle': subTitle, 'desc': desc, 'res': res, 'financial_date': financialInfoDate, 'market_date': marketInfoDate };
             },

@@ -259,9 +259,9 @@ export default function BackTest() {
             <div className="w-full">
                 <Timeline>
                     <>
-                        <Typography color="blue-gray" className="text-lg font-bold leading-none pb-4">
+                        <div className="text-lg font-bold leading-none pb-4">
                             최종수익금: {totalProfit.current}원
-                        </Typography>
+                        </div>
                         {Object.keys(backTestConditionFilterResultType.output).map((date: any, index1: any) => {
                             let prevDate = ""
                             if (index1 >= 1) {
