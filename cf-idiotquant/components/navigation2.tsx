@@ -26,8 +26,8 @@ export function NavbarWithSimpleLinks() {
     // console.log(`[NavbarWithSimpleLinks]`);
     const pathname = usePathname();
     const splitPathName = pathname.split("/");
-    // console.log(`pathname`, pathname);
-    // console.log(`splitPathName`, splitPathName);
+    console.log(`pathname`, pathname);
+    console.log(`splitPathName`, splitPathName);
 
     const [open, setOpen] = React.useState(false);
     const handleOpen = () => setOpen((cur) => !cur);
@@ -61,6 +61,7 @@ export function NavbarWithSimpleLinks() {
         "search": `search ${!!!kakaoId ? "🔒" : ""}`,
         "open-api": `open api ${!!!kakaoId ? "🔒" : ""}`,
         "algorithm-trade": "trade history",
+        "strategy": "strategy",
     }
 
     function NavList() {
@@ -95,9 +96,6 @@ export function NavbarWithSimpleLinks() {
                 <div className="hidden lg:block">
                     <NavList />
                 </div>
-                {/* <Button color="gray" className="hidden lg:inline-block">
-                    Sign in
-                </Button> */}
                 <IconButton
                     size="sm"
                     variant="text"
@@ -122,9 +120,6 @@ export function NavbarWithSimpleLinks() {
                         메뉴
                     </Typography>
                     <NavList />
-                    {/* <Button className="mb-2" fullWidth>
-                        Sign in
-                    </Button> */}
                 </div>
             </Collapse>
         </Navbar>
