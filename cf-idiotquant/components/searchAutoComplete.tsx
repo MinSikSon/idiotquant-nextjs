@@ -12,9 +12,8 @@ const SearchAutocomplete = (props: any) => {
     // 입력값을 기반으로 자동완성 리스트 필터링
     const suggestions = useMemo(() => {
         if (!query.trim()) return [];
-        return validCorpNameArray.filter((item) =>
-            item.toLowerCase().includes(query.toLowerCase())
-        );
+        return validCorpNameArray.filter((item) => item.toLowerCase().includes(query.toLowerCase()))
+            .sort((a, b) => a.localeCompare(b));
     }, [query]);
 
     const handleChange = (e: ChangeEvent<HTMLInputElement>) => {

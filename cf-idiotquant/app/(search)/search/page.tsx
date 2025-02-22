@@ -151,7 +151,7 @@ export default function Search() {
 
   function getNcav(kiBalanceSheet: any, kiInquireDailyItemChartPrice: any, ratio: number) {
     const value: number = ((((Number(kiBalanceSheet.output[getYearMatchIndex(kiInquireDailyItemChartPrice.output2[0]["stck_bsop_date"])].cras) * 100000000) - (Number(kiBalanceSheet.output[getYearMatchIndex(kiInquireDailyItemChartPrice.output2[0]["stck_bsop_date"])].total_lblt) * 100000000)) / (Number(Number(kiInquireDailyItemChartPrice.output2[0]["stck_oprc"]) * Number(kiInquireDailyItemChartPrice.output1["lstn_stcn"]) * ratio)) - 1) * 100);
-    return <div>NCAV ({ratio.toFixed(1)}): <span className={`${value >= 0 ? "text-blue-500" : "text-red-500"}`}>{value.toFixed(2)}%</span></div>
+    return <div>NCAV ({ratio.toFixed(1)}): <span className={`${value >= 0 ? "text-red-500" : "text-blue-500"}`}>{value.toFixed(2)}%</span></div>
   }
 
   function Foreign() {
