@@ -10,7 +10,7 @@ export default function Strategy() {
 
     let propsList: Web3CardPropsType[] = strategyInfoList.map((item: StrategyInfo, key: any) => {
         return {
-            title: item.title,
+            title: <div className="font-bold text-base text-black">{item.title}</div>,
             subTitle: item.subTitle,
             imgs: item.img,
             cardNum: String(key),
@@ -21,7 +21,7 @@ export default function Strategy() {
     });
 
     return <>
-        {!!strategyInfoList.length ? <Web3Card2 title={'Strategy'} parentRouter={'strategy'} data={propsList} /> : <Loading loadingMsg={`loading...`} />}
+        {!!strategyInfoList.length ? <Web3Card2 title={'투자 전략'} parentRouter={'strategy'} data={propsList} /> : <Loading loadingMsg={`loading...`} />}
     </>
 }
 
