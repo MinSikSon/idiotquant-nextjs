@@ -12,10 +12,12 @@ import { getKoreaInvestmentApproval, getKoreaInvestmentToken, getKoreaInvestment
 import { KoreaInvestmentApproval, KoreaInvestmentToken, KoreaInvestmentBalance } from "@/lib/features/koreaInvestment/koreaInvestmentSlice";
 import { setKoreaInvestmentToken } from "@/lib/features/koreaInvestment/koreaInvestmentSlice";
 
-import corpCodeJson from "@/public/data/corpCode.json"
+import corpCodeJson from "@/public/data/validCorpCode.json"
 import { getCookie, isValidCookie, registerCookie } from "@/components/util";
 import { MagnifyingGlassIcon, XCircleIcon } from "@heroicons/react/24/outline";
 import Auth from "@/components/auth";
+import { getKoreaInvestmentUsMaretSearchInfo, reqGetQuotationsSearchInfo } from "@/lib/features/koreaInvestmentUsMarket/koreaInvestmentUsMarketSlice";
+import { getKoreaInvestmentUsMaretPriceDetail, reqGetQuotationsPriceDetail } from "@/lib/features/koreaInvestmentUsMarket/koreaInvestmentUsMarketSlice";
 
 export default function Search() {
   const pathname = usePathname();
@@ -28,6 +30,9 @@ export default function Search() {
   const kiInquirePrice: KoreaInvestmentInquirePrice = useAppSelector(getKoreaInvestmentInquirePrice);
   const kiBalanceSheet: KoreaInvestmentBalanceSheet = useAppSelector(getKoreaInvestmentBalanceSheet);
   const kiInquireDailyItemChartPrice: KoreaInvestmentInquireDailyItemChartPrice = useAppSelector(getKoreaInvestmentInquireDailyItemChartPrice);
+
+  const kiUsMaretSearchInfo: any = useAppSelector(getKoreaInvestmentUsMaretSearchInfo);
+  const kiUsMaretPriceDetail: any = useAppSelector(getKoreaInvestmentUsMaretPriceDetail);
 
   const [time, setTime] = React.useState<any>("");
 
@@ -49,16 +54,22 @@ export default function Search() {
 
   React.useEffect(() => {
     console.log(`React.useEffect [kiInquireDailyItemChartPrice]`, kiInquireDailyItemChartPrice);
-    console.log(`kiInquireDailyItemChartPrice.output1.hts_avls`, kiInquireDailyItemChartPrice.output1.hts_avls, `HTS 시가총액 (억)`);
+    // console.log(`kiInquireDailyItemChartPrice.output1.hts_avls`, kiInquireDailyItemChartPrice.output1.hts_avls, `HTS 시가총액 (억)`);
   }, [kiInquireDailyItemChartPrice])
   React.useEffect(() => {
     // 날짜별로 분류 필요
-    console.log(`kiBalanceSheet.output[0].cras`, kiBalanceSheet.output.length > 0 ? kiBalanceSheet.output[0].cras : 0, `유동자산 (억)`);
-    console.log(`kiBalanceSheet.output[0].total_lblt`, kiBalanceSheet.output.length > 0 ? kiBalanceSheet.output[0].total_lblt : 0, `부채총계 (억)`);
+    console.log(`React.useEffect [kiBalanceSheet]`, kiBalanceSheet);
+    // console.log(`kiBalanceSheet.output[0].cras`, kiBalanceSheet.output.length > 0 ? kiBalanceSheet.output[0].cras : 0, `유동자산 (억)`);
+    // console.log(`kiBalanceSheet.output[0].total_lblt`, kiBalanceSheet.output.length > 0 ? kiBalanceSheet.output[0].total_lblt : 0, `부채총계 (억)`);
 
   }, [kiBalanceSheet])
 
-
+  React.useEffect(() => {
+    console.log(`React.useEffect [kiUsMaretSearchInfo]`, kiUsMaretSearchInfo);
+  }, [kiUsMaretSearchInfo])
+  React.useEffect(() => {
+    console.log(`React.useEffect [kiUsMaretPriceDetail]`, kiUsMaretPriceDetail);
+  }, [kiUsMaretPriceDetail])
 
   const formatDate = (date: string) => {
     // const arrDate = date.split("-");
@@ -247,5 +258,18 @@ export default function Search() {
       </div>
       : <></>
     }
+    <div>해외주식 financial info 갱신 (test: APPL)</div>
+    <Button onClick={() => dispatch(reqGetQuotationsSearchInfo({ koreaInvestmentToken: kiToken, PDNO: "AAPL" }))}>/uapi/overseas-price/v1/quotations/search-info</Button>
+    <div>
+      <div>serach-info</div>
+      <div className="text-xs">{JSON.stringify(kiUsMaretSearchInfo)}</div>
+      <div className="text-xs">{!!kiUsMaretSearchInfo.output ? Object.keys(kiUsMaretSearchInfo.output).map((key: any) => { return <div key={key}>{key} : {kiUsMaretSearchInfo.output[key]}</div> }) : <></>}</div>
+    </div>
+    <Button onClick={() => dispatch(reqGetQuotationsPriceDetail({ koreaInvestmentToken: kiToken, PDNO: "AAPL" }))}>/uapi/overseas-price/v1/quotations/price-detail</Button>
+    <div>
+      <div>price-detail</div>
+      <div className="text-xs">{JSON.stringify(kiUsMaretPriceDetail)}</div>
+      <div className="text-xs">{!!kiUsMaretPriceDetail.output ? Object.keys(kiUsMaretPriceDetail.output).map((key: any) => { return <div key={key}>{key} : {kiUsMaretPriceDetail.output[key]}</div> }) : <></>}</div>
+    </div>
   </>
 }

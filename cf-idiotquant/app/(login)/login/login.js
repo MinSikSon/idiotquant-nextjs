@@ -60,13 +60,13 @@ async function registerUser(id, nickname) {
 
         fetch(fetchUrl, options)
             .then(res => {
-                console.log(`res`, res);
+                // console.log(`res`, res);
                 if (res.ok) {
                     return res.json();
                 }
             })
             .then(res => {
-                console.log(`res2`, res);
+                // console.log(`res2`, res);
             })
             .catch(error => {
                 console.log(`error`, error);

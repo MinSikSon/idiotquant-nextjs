@@ -7,6 +7,7 @@ import { backtestSlice } from "./features/backtest/backtestSlice";
 import { loginSlice } from "./features/login/loginSlice";
 import { filterSlice } from "./features/filter/filterSlice";
 import { koreaInvestmentSlice } from "./features/koreaInvestment/koreaInvestmentSlice";
+import { koreaInvestmentUsMarketSlice } from "./features/koreaInvestmentUsMarket/koreaInvestmentUsMarketSlice";
 import { algorithmTradeSlice } from "./features/algorithmTrade/algorithmTradeSlice";
 
 const rootReducer: any = combineSlices(
@@ -18,6 +19,7 @@ const rootReducer: any = combineSlices(
     loginSlice,
     filterSlice,
     koreaInvestmentSlice,
+    koreaInvestmentUsMarketSlice,
     algorithmTradeSlice,
 );
 
