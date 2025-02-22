@@ -55,7 +55,7 @@ export function NavbarWithSimpleLinks() {
     const urlToLabel: any = {
         "": "main",
         "calculator": "calculator",
-        "login": `${!!!kakaoId ? "login 🔒" : "logout"}`,
+        "login": `${!!!kakaoId ? `login 🔒` : "logout"}`,
         "backtest": `backtest ${!!!kakaoId ? "🔒" : ""}`,
         // "article": "Article",
         "search": `search ${!!!kakaoId ? "🔒" : ""}`,
@@ -86,10 +86,10 @@ export function NavbarWithSimpleLinks() {
                 </Link>
                 <div className="flex flex-col px-1">
                     {!!kakaoNickName ? <>
-                        <div className={`px-1 text-xs font-bold rounded bg-gray-500 text-white`}>{urlToLabel[splitPathName[1]]}</div>
+                        <div className={`px-1 text-xs font-bold rounded border border-blue-500 text-black`}>{urlToLabel[splitPathName[1]]}</div>
                         <div className={`pl-1 text-xs`}>{kakaoNickName}님 반갑습니다. 😀</div>
                     </>
-                        : <div className={`px-1 text-xs font-bold rounded bg-gray-500 text-white`}>{urlToLabel[splitPathName[1]]}</div>
+                        : <div className={`px-1 text-xs font-bold rounded border border-blue-500 text-black`}>{urlToLabel[splitPathName[1]]}</div>
                     }
                 </div>
                 <div className="hidden lg:block">
