@@ -43,7 +43,7 @@ export default function Search() {
   const [endDate, setEndDate] = React.useState<any>((new Date()).toISOString().split('T')[0]);
 
   React.useEffect(() => {
-    console.log(`[Search]`, `kiToken:`, kiToken);
+    // console.log(`[Search]`, `kiToken:`, kiToken);
     const isValidKiAccessToken = !!kiToken["access_token"];
     if (true == isValidKiAccessToken) {
       dispatch(reqGetInquireBalance(kiToken));
@@ -51,30 +51,30 @@ export default function Search() {
   }, [kiToken]);
 
   React.useEffect(() => {
-    console.log(`React.useEffect []`);
+    // console.log(`React.useEffect []`);
   }, [])
 
   React.useEffect(() => {
-    console.log(`React.useEffect [kiInquireDailyItemChartPrice]`, kiInquireDailyItemChartPrice);
+    // console.log(`React.useEffect [kiInquireDailyItemChartPrice]`, kiInquireDailyItemChartPrice);
     // console.log(`kiInquireDailyItemChartPrice.output1.hts_avls`, kiInquireDailyItemChartPrice.output1.hts_avls, `HTS 시가총액 (억)`);
   }, [kiInquireDailyItemChartPrice])
   React.useEffect(() => {
     // 날짜별로 분류 필요
-    console.log(`React.useEffect [kiBalanceSheet]`, kiBalanceSheet);
+    // console.log(`React.useEffect [kiBalanceSheet]`, kiBalanceSheet);
     // console.log(`kiBalanceSheet.output[0].cras`, kiBalanceSheet.output.length > 0 ? kiBalanceSheet.output[0].cras : 0, `유동자산 (억)`);
     // console.log(`kiBalanceSheet.output[0].total_lblt`, kiBalanceSheet.output.length > 0 ? kiBalanceSheet.output[0].total_lblt : 0, `부채총계 (억)`);
 
   }, [kiBalanceSheet])
 
   React.useEffect(() => {
-    console.log(`React.useEffect [kiInquirePrice]`, kiInquirePrice);
+    // console.log(`React.useEffect [kiInquirePrice]`, kiInquirePrice);
   }, [kiInquirePrice])
 
   React.useEffect(() => {
-    console.log(`React.useEffect [kiUsMaretSearchInfo]`, kiUsMaretSearchInfo);
+    // console.log(`React.useEffect [kiUsMaretSearchInfo]`, kiUsMaretSearchInfo);
   }, [kiUsMaretSearchInfo])
   React.useEffect(() => {
-    console.log(`React.useEffect [kiUsMaretPriceDetail]`, kiUsMaretPriceDetail);
+    // console.log(`React.useEffect [kiUsMaretPriceDetail]`, kiUsMaretPriceDetail);
   }, [kiUsMaretPriceDetail])
 
   const formatDate = (date: string) => {
@@ -281,7 +281,7 @@ export default function Search() {
           <div className="flex pl-4 text-xs items-center">
             <Chip className="px-1 py-0" size="sm" variant="outlined" value={`PER`} />
             <div className="ml-1">
-              {Number(Number(kiInquirePrice.output["per"])).toLocaleString()}원
+              {Number(Number(kiInquirePrice.output["per"])).toLocaleString()}배
             </div>
             <Chip className="px-1 ml-2 py-0" size="sm" variant="outlined" value={`EPS`} />
             <div className="ml-1">
@@ -291,7 +291,7 @@ export default function Search() {
           <div className="flex pl-4 text-xs items-center">
             <Chip className="px-1 py-0" size="sm" variant="outlined" value={`PBR`} />
             <div className="ml-1">
-              {Number(Number(kiInquirePrice.output["pbr"])).toLocaleString()}원
+              {Number(Number(kiInquirePrice.output["pbr"])).toLocaleString()}배
             </div>
             <Chip className="px-1 ml-2 py-0" size="sm" variant="outlined" value={`BPS`} />
             <div className="ml-1">

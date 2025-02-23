@@ -1,38 +1,77 @@
 import { PayloadAction } from "@reduxjs/toolkit";
 import { createAppSlice } from "@/lib/createAppSlice";
-import { getCapitalToken, getPurchaseLog } from "./algorithmTradeAPI";
+import { getCapitalToken, getInquirePriceMulti, getPurchaseLog } from "./algorithmTradeAPI";
 import { registerCookie } from "@/components/util";
+import { KoreaInvestmentToken } from "../koreaInvestment/koreaInvestmentSlice";
 
+
+interface CapitalTokenType {
+    state: "init"
+    | "pending" | "fulfilled" | "rejected"
+    ;
+    value: any;
+}
 
 interface AlgorithmTradeType {
     state: "init"
     | "pending" | "fulfilled" | "rejected"
     ;
-    capital_token: any;
+    capital_token: CapitalTokenType;
+    inquire_price_multi: any;
     purchase_log: any;
 }
 const initialState: AlgorithmTradeType = {
     state: "init",
-    capital_token: {},
+    capital_token: {
+        state: "init",
+        value: {}
+    },
+    inquire_price_multi: {},
     purchase_log: {},
 }
 export const algorithmTradeSlice = createAppSlice({
     name: "algorithmTrade",
     initialState,
     reducers: (create) => ({
-        reqGetCapitalToken: create.asyncThunk(
-            async () => {
-                return await getCapitalToken();
+        reqGetInquirePriceMulti: create.asyncThunk(
+            async ({ koreaInvestmentToken, PDNOs }: { koreaInvestmentToken: KoreaInvestmentToken, PDNOs: string[] }) => {
+                return await getInquirePriceMulti(koreaInvestmentToken, PDNOs);
             },
             {
                 pending: (state) => {
-                    console.log(`[reqGetCapitalToken] pending`);
+                    console.log(`[reqGetInquirePriceMulti] pending`);
                     state.state = "pending";
                 },
                 fulfilled: (state, action) => {
-                    // console.log(`[reqGetCapitalToken] fulfilled`, `action.payload`, action.payload);
+                    console.log(`[reqGetInquirePriceMulti] fulfilled`, `action.payload`, typeof action.payload, action.payload);
+                    // const json = JSON.parse(action.payload);
+                    // console.log(`[reqGetInquirePriceMulti] fulfilled json`, json);
+                    state.inquire_price_multi = { ...state.inquire_price_multi, ...action.payload };
+                    // state.inquire_price_multi = json["stock_list"];
+                    state.state = "fulfilled";
+                },
+                rejected: (state) => {
+                    // console.log(`[reqGetInquirePriceMulti] rejected`);
+                    state.state = "rejected";
+                },
+            }
+        ),
+        reqGetCapitalToken: create.asyncThunk(
+            async ({ koreaInvestmentToken }: { koreaInvestmentToken: KoreaInvestmentToken }) => {
+                return await getCapitalToken(koreaInvestmentToken);
+            },
+            {
+                pending: (state) => {
+                    // console.log(`[reqGetCapitalToken] pending`);
+                    state.state = "pending";
+                },
+                fulfilled: (state, action) => {
+                    // console.log(`[reqGetCapitalToken] fulfilled`, `action.payload`, typeof action.payload, action.payload);
                     const json = JSON.parse(action.payload);
-                    state.capital_token = json;
+                    // console.log(`[reqGetCapitalToken] fulfilled json`, json);
+                    // state.capital_token = json["capitalToken"];
+                    state.capital_token = { state: "fulfilled", value: json };
+                    // state.stock_list = json["stock_list"];
                     state.state = "fulfilled";
                 },
                 rejected: (state) => {
@@ -88,19 +127,10 @@ export const algorithmTradeSlice = createAppSlice({
     selectors: {
         selectAlgorithmTraceState: (state) => state.state,
         selectCapitalToken: (state) => state.capital_token,
+        selectInquirePriceMulti: (state) => state.inquire_price_multi,
         selectPurchageLog: (state) => state.purchase_log,
-        // getKoreaInvestmentToken: (state) => state.koreaInvestmentToken,
-        // getKoreaInvestmentBalance: (state) => state.koreaInvestmentBalance,
-        // getKoreaInvestmentInquirePrice: (state) => state.koreaInvestmentInquirePrice,
-        // getKoreaInvestmentInquireDailyItemChartPrice: (state) => state.koreaInvestmentInquireDailyItemChartPrice,
-        // getKoreaInvestmentBalanceSheet: (state) => state.koreaInvestmentBalanceSheet,
     }
 });
 
-export const { reqGetCapitalToken, reqGetPurchaseLog } = algorithmTradeSlice.actions;
-export const { selectAlgorithmTraceState, selectCapitalToken, selectPurchageLog } = algorithmTradeSlice.selectors;
-
-// export const { reqPostApprovalKey, reqPostToken, reqGetInquireBalance, reqPostOrderCash, reqGetInquirePrice, reqGetInquireDailyItemChartPrice } = koreaInvestmentSlice.actions;
-// export const { getKoreaInvestmentApproval, getKoreaInvestmentToken, getKoreaInvestmentBalance, getKoreaInvestmentInquirePrice, getKoreaInvestmentInquireDailyItemChartPrice } = koreaInvestmentSlice.selectors;
-
-// export const { reqGetBalanceSheet } = koreaInvestmentSlice.actions;
+export const { reqGetInquirePriceMulti, reqGetCapitalToken, reqGetPurchaseLog } = algorithmTradeSlice.actions;
+export const { selectAlgorithmTraceState, selectCapitalToken, selectInquirePriceMulti, selectPurchageLog } = algorithmTradeSlice.selectors;
