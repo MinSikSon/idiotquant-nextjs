@@ -72,10 +72,11 @@ export const postTokenApi: any = async () => {
     return postKoreaInvestmentRequest(subUrl);
 }
 
-interface AdditionalHeaders {
+export interface AdditionalHeaders {
     authorization?: string;
     kakaoId?: string;
     PDNO?: string; // 종목 번호
+    PDNOs?: any; // 종목 번호
     buyOrSell?: string;
     FID_INPUT_DATE_1?: string;
     FID_INPUT_DATE_2?: string;
@@ -107,6 +108,6 @@ export async function getKoreaInvestmentRequest(subUrl: string, additionalHeader
         },
     };
     const res = await fetch(url, options);
-
+    // console.log(`getKoreaInvestmentRequest`, `subUrl`, subUrl, res);
     return res.json();
 }

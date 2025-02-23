@@ -6,14 +6,14 @@ import Login from "@/app/(login)/login/login"
 import { selectState } from "@/lib/features/login/loginSlice";
 import { usePathname } from "next/navigation";
 import { useAppDispatch, useAppSelector } from "@/lib/hooks";
-import { Button, Input } from "@material-tailwind/react";
-import { reqPostApprovalKey, reqPostToken, reqGetInquireBalance, reqPostOrderCash, reqGetInquirePrice, KoreaInvestmentInquirePrice, getKoreaInvestmentInquirePrice, reqGetInquireDailyItemChartPrice, getKoreaInvestmentInquireDailyItemChartPrice, KoreaInvestmentInquireDailyItemChartPrice, reqGetBalanceSheet, getKoreaInvestmentBalanceSheet, KoreaInvestmentBalanceSheet } from "@/lib/features/koreaInvestment/koreaInvestmentSlice";
-import { getKoreaInvestmentApproval, getKoreaInvestmentToken, getKoreaInvestmentBalance } from "@/lib/features/koreaInvestment/koreaInvestmentSlice";
+import { Button, Chip, Input } from "@material-tailwind/react";
+import { reqPostApprovalKey, reqPostToken, reqGetInquireBalance, reqPostOrderCash, reqGetInquirePrice, KoreaInvestmentInquirePrice, reqGetInquireDailyItemChartPrice, getKoreaInvestmentInquireDailyItemChartPrice, KoreaInvestmentInquireDailyItemChartPrice, reqGetBalanceSheet, getKoreaInvestmentBalanceSheet, KoreaInvestmentBalanceSheet } from "@/lib/features/koreaInvestment/koreaInvestmentSlice";
+import { getKoreaInvestmentApproval, getKoreaInvestmentToken, getKoreaInvestmentBalance, getKoreaInvestmentInquirePrice } from "@/lib/features/koreaInvestment/koreaInvestmentSlice";
 import { KoreaInvestmentApproval, KoreaInvestmentToken, KoreaInvestmentBalance } from "@/lib/features/koreaInvestment/koreaInvestmentSlice";
 import { setKoreaInvestmentToken } from "@/lib/features/koreaInvestment/koreaInvestmentSlice";
 
 import corpCodeJson from "@/public/data/validCorpCode.json"
-import { getCookie, isValidCookie, registerCookie } from "@/components/util";
+import { getCookie, isValidCookie, registerCookie, Util } from "@/components/util";
 import { MagnifyingGlassIcon, XCircleIcon } from "@heroicons/react/24/outline";
 import Auth from "@/components/auth";
 import { getKoreaInvestmentUsMaretSearchInfo, reqGetQuotationsSearchInfo } from "@/lib/features/koreaInvestmentUsMarket/koreaInvestmentUsMarketSlice";
@@ -32,6 +32,7 @@ export default function Search() {
   const kiBalanceSheet: KoreaInvestmentBalanceSheet = useAppSelector(getKoreaInvestmentBalanceSheet);
   const kiInquireDailyItemChartPrice: KoreaInvestmentInquireDailyItemChartPrice = useAppSelector(getKoreaInvestmentInquireDailyItemChartPrice);
 
+
   const kiUsMaretSearchInfo: any = useAppSelector(getKoreaInvestmentUsMaretSearchInfo);
   const kiUsMaretPriceDetail: any = useAppSelector(getKoreaInvestmentUsMaretPriceDetail);
 
@@ -42,7 +43,7 @@ export default function Search() {
   const [endDate, setEndDate] = React.useState<any>((new Date()).toISOString().split('T')[0]);
 
   React.useEffect(() => {
-    console.log(`[Search]`, `kiToken:`, kiToken);
+    // console.log(`[Search]`, `kiToken:`, kiToken);
     const isValidKiAccessToken = !!kiToken["access_token"];
     if (true == isValidKiAccessToken) {
       dispatch(reqGetInquireBalance(kiToken));
@@ -50,26 +51,30 @@ export default function Search() {
   }, [kiToken]);
 
   React.useEffect(() => {
-    console.log(`React.useEffect []`);
+    // console.log(`React.useEffect []`);
   }, [])
 
   React.useEffect(() => {
-    console.log(`React.useEffect [kiInquireDailyItemChartPrice]`, kiInquireDailyItemChartPrice);
+    // console.log(`React.useEffect [kiInquireDailyItemChartPrice]`, kiInquireDailyItemChartPrice);
     // console.log(`kiInquireDailyItemChartPrice.output1.hts_avls`, kiInquireDailyItemChartPrice.output1.hts_avls, `HTS 시가총액 (억)`);
   }, [kiInquireDailyItemChartPrice])
   React.useEffect(() => {
     // 날짜별로 분류 필요
-    console.log(`React.useEffect [kiBalanceSheet]`, kiBalanceSheet);
+    // console.log(`React.useEffect [kiBalanceSheet]`, kiBalanceSheet);
     // console.log(`kiBalanceSheet.output[0].cras`, kiBalanceSheet.output.length > 0 ? kiBalanceSheet.output[0].cras : 0, `유동자산 (억)`);
     // console.log(`kiBalanceSheet.output[0].total_lblt`, kiBalanceSheet.output.length > 0 ? kiBalanceSheet.output[0].total_lblt : 0, `부채총계 (억)`);
 
   }, [kiBalanceSheet])
 
   React.useEffect(() => {
-    console.log(`React.useEffect [kiUsMaretSearchInfo]`, kiUsMaretSearchInfo);
+    // console.log(`React.useEffect [kiInquirePrice]`, kiInquirePrice);
+  }, [kiInquirePrice])
+
+  React.useEffect(() => {
+    // console.log(`React.useEffect [kiUsMaretSearchInfo]`, kiUsMaretSearchInfo);
   }, [kiUsMaretSearchInfo])
   React.useEffect(() => {
-    console.log(`React.useEffect [kiUsMaretPriceDetail]`, kiUsMaretPriceDetail);
+    // console.log(`React.useEffect [kiUsMaretPriceDetail]`, kiUsMaretPriceDetail);
   }, [kiUsMaretPriceDetail])
 
   const formatDate = (date: string) => {
@@ -201,7 +206,7 @@ export default function Search() {
         />
       </div>
     </div>
-    {kiInquireDailyItemChartPrice.output2.length > 0 && kiBalanceSheet.output.length > 0 ?
+    {"fulfilled" == kiInquireDailyItemChartPrice.state && "fulfilled" == kiBalanceSheet.state ?
       <>
         <div className="flex flex-col justify-between border mx-2 mb-1">
           <div className="flex-auto pl-2 text-sm font-bold">
@@ -223,35 +228,109 @@ export default function Search() {
       :
       <>
       </>}
-    {kiInquireDailyItemChartPrice.output2.length > 0 ?
+    {"fulfilled" == kiInquireDailyItemChartPrice.state ?
       <div className="flex flex-col justify-between border mx-2 mb-1">
-        <div className="flex-auto pl-2 text-sm font-bold">
+        <div className="flex pl-2 text-sm font-bold">
           주가정보 (날짜: {kiInquireDailyItemChartPrice.output2[0]["stck_bsop_date"]})
         </div>
-        <div className="flex-auto pl-4 text-xs">
-          주가: {Number(Number(kiInquireDailyItemChartPrice.output2[0]["stck_oprc"])).toLocaleString()}원
+        <div className="flex pl-4 text-xs items-center">
+          <Chip className="px-1 py-0" size="sm" variant="outlined" value={`주가`} />
+          <div className="ml-1">
+            {Number(Number(kiInquireDailyItemChartPrice.output2[0]["stck_oprc"])).toLocaleString()}원
+          </div>
         </div>
-        <div className="flex-auto pl-4 text-xs">
-          상장주식수: {Number(Number(kiInquireDailyItemChartPrice.output1["lstn_stcn"])).toLocaleString()}개
+        <div className="flex pl-4 text-xs items-center">
+          <Chip className="px-1 py-0" size="sm" variant="outlined" value={`상장주식수`} />
+          <div className="ml-1">
+            {Number(Number(kiInquireDailyItemChartPrice.output1["lstn_stcn"])).toLocaleString()}개
+          </div>
         </div>
-        <div className="flex-auto pl-4 text-xs">
-          시가총액: {Number(Number(kiInquireDailyItemChartPrice.output2[0]["stck_oprc"]) * Number(kiInquireDailyItemChartPrice.output1["lstn_stcn"])).toLocaleString()}원
+        <div className="flex pl-4 text-xs items-center">
+          <Chip className="px-1 py-0" size="sm" variant="outlined" value={`시가총액`} />
+          <div className="ml-1">
+            {(() => {
+              const market_cap = (Number(kiInquireDailyItemChartPrice.output2[0]["stck_oprc"]) * Number(kiInquireDailyItemChartPrice.output1["lstn_stcn"]));
+              return <div className="flex">
+                <div className="ml-1">{market_cap.toLocaleString()}원</div>
+                <div className="ml-1">({Util.UnitConversion(market_cap, true)})</div>
+              </div>
+            })()}
+          </div>
         </div>
       </div>
       : <></>
     }
-    {kiInquireDailyItemChartPrice.output2.length > 0 && kiBalanceSheet.output.length > 0 ?
+    {("fulfilled" == kiInquirePrice.state) ?
+      <>
+        <div className="flex flex-col justify-between border mx-2 mb-1">
+          <div className="flex pl-2 text-sm font-bold">
+            최근 영업일 기준 주가 정보
+          </div>
+          <div className="flex pl-4 text-xs items-center">
+            <Chip className="px-1 py-0" size="sm" variant="outlined" value={`대표 시장 한글 명`} />
+            <div className="ml-1">
+              {kiInquirePrice.output["rprs_mrkt_kor_name"]}
+            </div>
+          </div>
+          <div className="flex pl-4 text-xs items-center">
+            <Chip className="px-1 py-0" size="sm" variant="outlined" value={`업종`} />
+            <div className="ml-1">
+              {kiInquirePrice.output["bstp_kor_isnm"]}
+            </div>
+          </div>
+          <div className="flex pl-4 text-xs items-center">
+            <Chip className="px-1 py-0" size="sm" variant="outlined" value={`PER`} />
+            <div className="ml-1">
+              {Number(Number(kiInquirePrice.output["per"])).toLocaleString()}배
+            </div>
+            <Chip className="px-1 ml-2 py-0" size="sm" variant="outlined" value={`EPS`} />
+            <div className="ml-1">
+              {Number(Number(kiInquirePrice.output["eps"]).toFixed(0)).toLocaleString()}원
+            </div>
+          </div>
+          <div className="flex pl-4 text-xs items-center">
+            <Chip className="px-1 py-0" size="sm" variant="outlined" value={`PBR`} />
+            <div className="ml-1">
+              {Number(Number(kiInquirePrice.output["pbr"])).toLocaleString()}배
+            </div>
+            <Chip className="px-1 ml-2 py-0" size="sm" variant="outlined" value={`BPS`} />
+            <div className="ml-1">
+              {Number(Number(kiInquirePrice.output["bps"]).toFixed(0)).toLocaleString()}원
+            </div>
+          </div>
+          <div className="flex pl-4 text-xs items-center">
+            <Chip className="px-1 py-0" size="sm" variant="outlined" value={`52주 최저가 / 최고가`} />
+            <div className="ml-1">
+              {Number(kiInquirePrice.output["w52_lwpr"]).toLocaleString()}원 / {Number(kiInquirePrice.output["w52_hgpr"]).toLocaleString()}원
+            </div>
+          </div>
+        </div>
+      </>
+      : <></>
+    }
+    {"fulfilled" == kiInquireDailyItemChartPrice.state && "fulfilled" == kiBalanceSheet.state ?
       <div className="flex flex-col justify-between border mx-2 mb-1">
-        <div className="flex-auto pl-2 text-sm font-bold">
+        <div className="flex pl-2 text-sm font-bold items-center">
           재무정보 (날짜: {kiBalanceSheet.output[getYearMatchIndex(kiInquireDailyItemChartPrice.output2[0]["stck_bsop_date"])].stac_yymm})
         </div>
-        <div className="flex-auto pl-4 text-xs">
-          유동자산: {(Number(kiBalanceSheet.output[getYearMatchIndex(kiInquireDailyItemChartPrice.output2[0]["stck_bsop_date"])].cras) * 100000000).toLocaleString()}원
+        <div className="flex pl-4 text-xs items-center">
+          <Chip className="px-1 py-0" size="sm" variant="outlined" value={`유동자산`} /> {(() => {
+            const current_asset = (Number(kiBalanceSheet.output[getYearMatchIndex(kiInquireDailyItemChartPrice.output2[0]["stck_bsop_date"])].cras) * 100000000);
+            return <div className="flex">
+              <div className="ml-1">{current_asset.toLocaleString()}원</div>
+              <div className="ml-1">({Util.UnitConversion(current_asset, true)})</div>
+            </div>
+          })()}
         </div>
-        <div className="flex-auto pl-4 text-xs">
-          부채총계: {(Number(kiBalanceSheet.output[getYearMatchIndex(kiInquireDailyItemChartPrice.output2[0]["stck_bsop_date"])].total_lblt) * 100000000).toLocaleString()}원
+        <div className="flex pl-4 text-xs items-center">
+          <Chip className="px-1 py-0" size="sm" variant="outlined" value={`부채총계`} /> {(() => {
+            const total_liabilities = (Number(kiBalanceSheet.output[getYearMatchIndex(kiInquireDailyItemChartPrice.output2[0]["stck_bsop_date"])].total_lblt) * 100000000);
+            return <div className="flex">
+              <div className="ml-1">{total_liabilities.toLocaleString()}원</div>
+              <div className="ml-1">({Util.UnitConversion(total_liabilities, true)})</div>
+            </div>
+          })()}
         </div>
-
       </div>
       : <></>
     }

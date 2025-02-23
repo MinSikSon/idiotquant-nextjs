@@ -31,13 +31,17 @@ export default function OpenApi() {
     const loginState = useAppSelector(selectState);
 
     React.useEffect(() => {
-        console.log(`[OpenApi]`, `kiToken:`, kiToken);
+        // console.log(`[OpenApi]`, `kiToken:`, kiToken);
         const isValidKiAccessToken = !!kiToken["access_token"];
         if (true == isValidKiAccessToken) {
             setTime(new Date());
             dispatch(reqGetInquireBalance(kiToken));
         }
     }, [kiToken]);
+
+    React.useEffect(() => {
+        // console.log(`kiBalance`, kiBalance);
+    }, [kiBalance]);
 
     const example8TableHeadType: Example8TableHeadType[] = [
         {

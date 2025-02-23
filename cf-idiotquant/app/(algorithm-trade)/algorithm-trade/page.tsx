@@ -1,8 +1,11 @@
 "use client"
 
+import Auth from "@/components/auth";
 import TablesExample8, { Example8TableHeadType, Example8TableRowType, TablesExample8PropsType } from "@/components/tableExample8";
-import { selectCapitalToken } from "@/lib/features/algorithmTrade/algorithmTradeSlice";
-import { reqGetCapitalToken } from "@/lib/features/algorithmTrade/algorithmTradeSlice";
+import { isValidCookie } from "@/components/util";
+import { selectCapitalToken, selectInquirePriceMulti } from "@/lib/features/algorithmTrade/algorithmTradeSlice";
+import { reqGetCapitalToken, reqGetInquirePriceMulti } from "@/lib/features/algorithmTrade/algorithmTradeSlice";
+import { getKoreaInvestmentToken, KoreaInvestmentToken } from "@/lib/features/koreaInvestment/koreaInvestmentSlice";
 import { useAppDispatch, useAppSelector } from "@/lib/hooks";
 import { Button } from "@material-tailwind/react";
 import React from "react";
@@ -11,20 +14,56 @@ export default function AlgorithmTrade() {
     const dispatch = useAppDispatch();
 
     const capitalToken: any = useAppSelector(selectCapitalToken);
+    const inquirePriceMulti: any = useAppSelector(selectInquirePriceMulti);
+    const kiToken: KoreaInvestmentToken = useAppSelector(getKoreaInvestmentToken);
+
     const [time, setTime] = React.useState<any>('');
 
     function handleOnClick() {
         setTime(new Date());
-        dispatch(reqGetCapitalToken());
+        // console.log(`[handleOnClick] kiToken`, kiToken);
+        dispatch(reqGetCapitalToken({ koreaInvestmentToken: kiToken }));
     }
 
     React.useEffect(() => {
         handleOnClick();
     }, []);
 
-    console.log(`capitalToken`, capitalToken);
-    // console.log(`typeof capitalToken`, typeof capitalToken);
-    // console.log(Object.keys(capitalToken).length);
+    React.useEffect(() => {
+        // console.log(`capitalToken`, capitalToken);
+        // console.log(`kiToken`, kiToken);
+
+        if ("fulfilled" == kiToken.state && "fulfilled" == capitalToken.state && capitalToken.value.stock_list.length > 0) {
+            const PDNOs = capitalToken.value.stock_list.map((item: any) => item.PDNO);
+            const filteredPDNOs = PDNOs.filter((item: any) => {
+                if (undefined == inquirePriceMulti[item]) {
+                    return true;
+                }
+
+                if (1 == inquirePriceMulti[item].rt_cd) // fail
+                {
+                    return true;
+                }
+
+                return false;
+            });
+
+            // console.log(`filteredPDNOs`, filteredPDNOs);
+
+            // console.log(`PDNOs`, PDNOs);
+            const chunkSize = 20;
+            for (let i = 0; i < filteredPDNOs.length; i += chunkSize) {
+                const chunk = filteredPDNOs.slice(i, i + chunkSize);
+                console.log(`Dispatching filteredPDNOs:`, chunk);
+
+                dispatch(reqGetInquirePriceMulti({ koreaInvestmentToken: kiToken, PDNOs: chunk }));
+            }
+        }
+    }, [capitalToken, kiToken]);
+
+    React.useEffect(() => {
+        // console.log(`inquirePriceMulti`, inquirePriceMulti);
+    }, [inquirePriceMulti]);
 
     const example8TableHeadType: Example8TableHeadType[] = [
         {
@@ -55,8 +94,7 @@ export default function AlgorithmTrade() {
     }
 
     let cummulative_investment = 0;
-    const purchase_log = capitalToken.purchase_log ?? [];
-    // console.log(`capitalToken.purchase_log`, capitalToken.purchase_log);
+    const purchase_log = capitalToken.value.purchase_log ?? [];
     // console.log(`purchase_log`, purchase_log);
     let example8TableRowType: Example8TableRowType[] = [];
     example8TableRowType = (purchase_log.map((item: any, index: number) => {
@@ -79,11 +117,11 @@ export default function AlgorithmTrade() {
         })
     })).reverse().flat();
 
-    const time_stamp: any = capitalToken.time_stamp ?? {};
-    const stock_list: any = capitalToken.stock_list ?? [];
-    const refill_stock_index = capitalToken.refill_stock_index ?? 0;
+    const time_stamp: any = capitalToken.value.time_stamp ?? {};
+    const stock_list: any = capitalToken.value.stock_list ?? [];
+    const refill_stock_index = capitalToken.value.refill_stock_index ?? 0;
     const stock_list_length = stock_list.length > 0 ? stock_list.length : 1;
-    const capital_charge_rate = capitalToken.capital_charge_rate ?? 0;
+    const capital_charge_rate = capitalToken.value.capital_charge_rate ?? 0;
     // console.log(`stock_list`, stock_list);
     let cummulative_token = 0;
     const props: TablesExample8PropsType = {
@@ -99,7 +137,7 @@ export default function AlgorithmTrade() {
         desc: <>
             <div className="text-sm font-bold text-black leading-none pb-2">
                 token 충전 이력
-                <div className="ml-2 flex gap-1">
+                <div className="ml-1 flex gap-1">
                     {Object.keys(time_stamp).reverse().map((key, index) => {
                         let bgColor = "bg-blue-200";
                         if (1 == index) {
@@ -114,7 +152,7 @@ export default function AlgorithmTrade() {
             </div>
             <div className="text-sm font-bold text-black leading-none pb-2">
                 token 현황 <span className="text-xs font-normal">{`("token >= 시가" 인 경우 구매 시도)`}</span>
-                <div className="ml-2 p-3 border rounded border-black">
+                <div className="ml-1 p-2 border rounded border-black">
                     <div className="flex items-center text-xs font-bold text-black leading-none pb-1">
                         <div>충전 총 token</div>
                         <div className="ml-2 px-1 text-xs font-normal rounded border border-black">{Math.trunc(capital_charge_rate / stock_list_length) * stock_list_length}</div>
@@ -128,7 +166,53 @@ export default function AlgorithmTrade() {
                         [index] 종목명: token <>
                             {stock_list.map((item: any, index: number) => {
                                 cummulative_token += isNaN(Number(item["token"])) ? 0 : Number(item["token"]);
-                                return <div key={index} className="text-xs font-normal pl-2">[{index}] {item["name"]}: {item["token"]}</div>
+                                return <div key={index} className={`flex text-xs font-normal pl-1 items-center gap-x-1 ${index % 2 == 0 ? "bg-white" : "bg-gray-100"}`}>
+                                    <div className="flex min-w-[90px]">
+                                        <div>
+                                            {index})
+                                        </div>
+                                        <div className={`${item["name"].length > 7 ? "text-[0.6rem]" : (item["name"].length > 6 ? "text-[0.7rem]" : "")}`}>
+                                            {item["name"]}
+                                        </div>
+                                    </div>
+                                    <div className="flex items-center min-w-[60px]">
+                                        <div className="border rounded border-black p-0 text-[0.6rem]">
+                                            token
+                                        </div>
+                                        <div className="ml-1">
+                                            {item["token"]}
+                                        </div>
+                                    </div>
+                                    {(() => {
+                                        const priceMulti = inquirePriceMulti[item["PDNO"]];
+                                        if (undefined == priceMulti) {
+                                            return <></>;
+                                        }
+
+                                        if (1 == inquirePriceMulti[item["PDNO"]].rt_cd) {
+                                            return <></>;
+                                        }
+
+                                        return <>
+                                            <div className="flex items-center min-w-[60px]">
+                                                <div className="border rounded border-black p-0 text-[0.6rem]">
+                                                    주가
+                                                </div>
+                                                <div className="ml-1">
+                                                    {inquirePriceMulti[item["PDNO"]].output.stck_prpr}
+                                                </div>
+                                            </div>
+                                            <div className="flex items-center min-w-[60px]">
+                                                <div className="border rounded border-black p-0 text-[0.6rem]">
+                                                    PER
+                                                </div>
+                                                <div className="ml-1">
+                                                    {inquirePriceMulti[item["PDNO"]].output.per}
+                                                </div>
+                                            </div>
+                                        </>
+                                    })()}
+                                </div>
                             })}
                         </>
                     </div>
