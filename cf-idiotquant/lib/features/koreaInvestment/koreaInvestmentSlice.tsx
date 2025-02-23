@@ -181,7 +181,7 @@ interface KoreaInvestmentInquirePriceOutput {
     sltr_yn: string;
 }
 export interface KoreaInvestmentInquirePrice {
-    state: "init" | "req" | "pending" | "fulfilled";
+    state: "init" | "req" | "pending" | "fulfilled" | "rejected";
     rt_cd: string;
     msg_cd: string;
     msg1: string;
@@ -583,7 +583,7 @@ export const koreaInvestmentSlice = createAppSlice({
             {
                 pending: (state) => {
                     // console.log(`[reqGetInquirePrice] pending`);
-                    state.koreaInvestmentOrderCash.state = "pending";
+                    state.koreaInvestmentInquirePrice.state = "pending";
                 },
                 fulfilled: (state, action) => {
                     // console.log(`[reqGetInquirePrice] fulfilled`,`action.payload`, typeof action.payload, action.payload);
@@ -594,7 +594,8 @@ export const koreaInvestmentSlice = createAppSlice({
                     }
                 },
                 rejected: (state) => {
-                    console.log(`[reqPostOrderCash] get-rejected 2`);
+                    console.log(`[reqPostOrderCash] rejected`);
+                    state.koreaInvestmentInquirePrice.state = "rejected";
                 },
             }
         ),
