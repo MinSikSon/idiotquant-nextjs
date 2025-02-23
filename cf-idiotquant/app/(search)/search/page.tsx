@@ -279,13 +279,21 @@ export default function Search() {
             </div>
           </div>
           <div className="flex pl-4 text-xs items-center">
-            <Chip className="px-1 py-0" size="sm" variant="outlined" value={`EPS`} />
+            <Chip className="px-1 py-0" size="sm" variant="outlined" value={`PER`} />
+            <div className="ml-1">
+              {Number(Number(kiInquirePrice.output["per"])).toLocaleString()}원
+            </div>
+            <Chip className="px-1 ml-2 py-0" size="sm" variant="outlined" value={`EPS`} />
             <div className="ml-1">
               {Number(Number(kiInquirePrice.output["eps"]).toFixed(0)).toLocaleString()}원
             </div>
           </div>
           <div className="flex pl-4 text-xs items-center">
-            <Chip className="px-1 py-0" size="sm" variant="outlined" value={`BPS`} />
+            <Chip className="px-1 py-0" size="sm" variant="outlined" value={`PBR`} />
+            <div className="ml-1">
+              {Number(Number(kiInquirePrice.output["pbr"])).toLocaleString()}원
+            </div>
+            <Chip className="px-1 ml-2 py-0" size="sm" variant="outlined" value={`BPS`} />
             <div className="ml-1">
               {Number(Number(kiInquirePrice.output["bps"]).toFixed(0)).toLocaleString()}원
             </div>
