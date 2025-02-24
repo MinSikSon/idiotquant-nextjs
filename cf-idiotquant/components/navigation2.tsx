@@ -60,7 +60,7 @@ export function NavbarWithSimpleLinks() {
         // "article": "Article",
         "search": `검색 ${!!!kakaoId ? "🔒" : ""}`,
         "open-api": `계좌 ${!!!kakaoId ? "🔒" : ""}`,
-        "algorithm-trade": "거래 이력",
+        "algorithm-trade": "알고리즘 투자 이력",
         "strategy": "투자 전략",
     }
 

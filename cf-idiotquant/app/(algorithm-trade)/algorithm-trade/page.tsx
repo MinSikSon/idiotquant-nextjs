@@ -7,7 +7,7 @@ import { selectCapitalToken, selectInquirePriceMulti } from "@/lib/features/algo
 import { reqGetCapitalToken, reqGetInquirePriceMulti } from "@/lib/features/algorithmTrade/algorithmTradeSlice";
 import { getKoreaInvestmentToken, KoreaInvestmentToken } from "@/lib/features/koreaInvestment/koreaInvestmentSlice";
 import { useAppDispatch, useAppSelector } from "@/lib/hooks";
-import { Button } from "@material-tailwind/react";
+import { Button, Popover, PopoverContent, PopoverHandler } from "@material-tailwind/react";
 import React from "react";
 
 export default function AlgorithmTrade() {
@@ -31,7 +31,7 @@ export default function AlgorithmTrade() {
 
     React.useEffect(() => {
         // console.log(`capitalToken`, capitalToken);
-        // console.log(`kiToken`, kiToken);
+        console.log(`kiToken`, kiToken);
 
         if ("fulfilled" == kiToken.state && "fulfilled" == capitalToken.state && capitalToken.value.stock_list.length > 0) {
             const PDNOs = capitalToken.value.stock_list.map((item: any) => item.PDNO);
@@ -126,31 +126,58 @@ export default function AlgorithmTrade() {
     const props: TablesExample8PropsType = {
         title: <>
             <div className="flex pb-2">
-                <div className="pr-2 font-bold text-black">[algo trade log] 주식 구매 이력</div>
-                <Button onClick={() => handleOnClick()} className="px-2 py-0 m-0" size="sm">
-                    다시 조회
+                <Popover>
+                    <PopoverHandler>
+                        <div className="pr-2 font-bold text-black">알고리즘 투자 이력</div>
+                    </PopoverHandler>
+                    <PopoverContent>
+                        <div className="text-xs text-red-500">10분 간격으로 token 충전 및 알고리즘 매매 수행합니다.</div>
+                    </PopoverContent>
+                </Popover>
+                <Button onClick={() => handleOnClick()} className="px-2 py-0 m-0" variant="outlined" size="sm">
+                    다시 조회 {kiToken.state == "fulfilled" ? "+ @" : ""}
                 </Button>
             </div>
         </>,
         subTitle: ``,
         desc: <>
             <div className="text-sm font-bold text-black leading-none pb-2">
-                token 충전 이력
-                <div className="ml-1 flex gap-1">
-                    {Object.keys(time_stamp).reverse().map((key, index) => {
-                        let bgColor = "bg-blue-200";
-                        if (1 == index) {
-                            bgColor = "bg-blue-500";
-                        }
-                        else if (2 == index) {
-                            bgColor = "bg-blue-700";
-                        }
-                        return <div key={index} className={`text-xs rounded border border-black px-1 ${bgColor} text-white`}>{formatDateTime(time_stamp[key])}</div>;
-                    })}
-                </div>
+                <Popover>
+                    <PopoverHandler>
+                        <div className="cursor-pointer">
+                            <>
+                                token 충전 이력
+                            </>
+                            <div className="ml-1 flex gap-1">
+                                {Object.keys(time_stamp).reverse().map((key, index) => {
+                                    let bgColor = "bg-blue-200";
+                                    if (1 == index) {
+                                        bgColor = "bg-blue-500";
+                                    }
+                                    else if (2 == index) {
+                                        bgColor = "bg-blue-700";
+                                    }
+                                    return <div key={index} className={`text-xs rounded border border-black px-1 ${bgColor} text-white`}>{formatDateTime(time_stamp[key])}</div>;
+                                })}
+                            </div>
+                        </div>
+                    </PopoverHandler>
+                    <PopoverContent>
+                        <div className="text-xs text-red-500">10분 간격으로 token 충전 및 알고리즘 매매 수행합니다.</div>
+                    </PopoverContent>
+                </Popover>
             </div>
             <div className="text-sm font-bold text-black leading-none pb-2">
-                token 현황 <span className="text-xs font-normal">{`("token >= 시가" 인 경우 구매 시도)`}</span>
+                <Popover>
+                    <PopoverHandler>
+                        <div className="cursor-pointer">
+                            token 현황
+                        </div>
+                    </PopoverHandler>
+                    <PopoverContent>
+                        <div className="text-xs text-red-500">{`"token >= 주가" 인 경우 구매 시도`}</div>
+                    </PopoverContent>
+                </Popover>
                 <div className="ml-1 p-2 border rounded border-black">
                     <div className="flex items-center text-xs font-bold text-black leading-none pb-1">
                         <div>10분 당 충전 token</div>
@@ -227,7 +254,16 @@ export default function AlgorithmTrade() {
 
         </>,
         financial_date: <><div className="text-sm">market_date</div><div className="ml-4 text-xs">{time.toString()}</div></>,
-        market_date: <div className="pt-4 text-sm font-bold text-black">구매 history <span className="text-xs text-black">{`(누적 알고리즘 매수금: ${cummulative_investment}원)`}</span></div>,
+        market_date: <Popover>
+            <PopoverHandler>
+                <div className="cursor-pointer pt-4 text-sm font-bold text-black">
+                    구매 history <span className="text-xs text-black">{`(누적 알고리즘 매수금: ${cummulative_investment}원)`}</span>
+                </div>
+            </PopoverHandler>
+            <PopoverContent>
+                <div className="text-xs text-red-500">알고리즘 매매 내역</div>
+            </PopoverContent>
+        </Popover>,
         tableHead: example8TableHeadType,
         tableRow: example8TableRowType,
     }
