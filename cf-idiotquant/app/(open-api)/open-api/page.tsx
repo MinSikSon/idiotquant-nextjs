@@ -85,12 +85,12 @@ export default function OpenApi() {
         example8TableRowType = (kiBalance.output1.map((item, index) => {
             return {
                 digitalAsset: item["prdt_name"], // key
-                detail: item["prdt_name"],
-                closePrice: Number(item["prpr"]).toLocaleString() + "원",
-                expectedRateOfReturn: `${item['hldg_qty']}/${item['ord_psbl_qty']}`,
+                detail: <div className="text-xs">{item["prdt_name"]}</div>,
+                closePrice: <div className="text-xs">{Number(item["prpr"]).toLocaleString() + "원"}</div>,
+                expectedRateOfReturn: <div className="text-xs">{item['hldg_qty']}/{item['ord_psbl_qty']}</div>,
                 expectedRateOfReturnColor: '', // x
                 targetPrice: <>
-                    <div className={`font-bold flex justify-between ${Number(Number(item["evlu_amt"]) / Number(item["pchs_amt"]) * 100 - 100) >= 0 ? "text-red-500" : "text-blue-500"}`}>
+                    <div className={`text-xs font-bold flex justify-between ${Number(Number(item["evlu_amt"]) / Number(item["pchs_amt"]) * 100 - 100) >= 0 ? "text-red-500" : "text-blue-500"}`}>
                         <div className="pr-1">
                             ({Number(Number(item["evlu_amt"]) / Number(item["pchs_amt"]) * 100 - 100).toFixed(2)}%)
                         </div>
@@ -99,16 +99,16 @@ export default function OpenApi() {
                         </div>
                     </div>
                 </>,
-                market: Util.UnitConversion(Number(item["evlu_amt"]), true),
-                netCurrentAssert: Util.UnitConversion(Number(item["pchs_amt"]), true),
-                netIncome: `${(Number(item["pchs_amt"]) / Number(kiBalance.output2[0]["pchs_amt_smtl_amt"]) * 100).toFixed(2)} %`,
+                market: <div className="text-xs">{Util.UnitConversion(Number(item["evlu_amt"]), true)}</div>,
+                netCurrentAssert: <div className="text-xs">{Util.UnitConversion(Number(item["pchs_amt"]), true)}</div>,
+                netIncome: <div className="text-xs">{(Number(item["pchs_amt"]) / Number(kiBalance.output2[0]["pchs_amt_smtl_amt"]) * 100).toFixed(2)} %</div>,
                 chartName: '',
                 tag: <>
-                    <div className="mr-2 gap-1">
-                        <Button className="p-0 py-1 m-0 mr-1" variant="outlined" size="sm" onClick={() => handleOnClick(item["pdno"], "buy")}>
+                    <div className="p-0 m-0 gap-1 mr-1">
+                        <Button className="p-0 m-0 mr-1 text-[0.6rem]" variant="outlined" size="sm" onClick={() => handleOnClick(item["pdno"], "buy")}>
                             매수
                         </Button>
-                        <Button className="p-0 py-1 m-0" variant="outlined" size="sm" onClick={() => handleOnClick(item["pdno"], "sell")}>
+                        <Button className="p-0 m-0 text-[0.6rem]" variant="outlined" size="sm" onClick={() => handleOnClick(item["pdno"], "sell")}>
                             매도
                         </Button>
                     </div>
