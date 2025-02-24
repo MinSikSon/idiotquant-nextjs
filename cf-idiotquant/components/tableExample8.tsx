@@ -129,23 +129,23 @@ function AreaChart({
 
 
 export interface Example8TableRowType {
-    img?: string;
-    digitalAsset: string;
-    detail: string;
-    closePrice: string;
-    expectedRateOfReturn: string;
-    expectedRateOfReturnColor: string;
+    img?: any;
+    digitalAsset: any;
+    detail: any;
+    closePrice: any;
+    expectedRateOfReturn: any;
+    expectedRateOfReturnColor: any;
     targetPrice?: any;
-    market: string;
-    netCurrentAssert?: string;
-    netIncome?: string;
-    chartName?: string;
-    bps?: string;
-    eps?: string;
-    pbr?: string;
-    per?: string;
+    market: any;
+    netCurrentAssert?: any;
+    netIncome?: any;
+    chartName?: any;
+    bps?: any;
+    eps?: any;
+    pbr?: any;
+    per?: any;
     tag?: any;
-    bgColor?: string;
+    bgColor?: any;
 }
 
 export interface Example8TableHeadType {
@@ -201,8 +201,8 @@ function TablesExample8({
                     <Loading loadingMsg={`loading`} />
                     :
                     <CardBody className="overflow-scroll !px-0 pt-0 pb-2">
-                        <table className="w-full min-w-max table-auto">
-                            <thead>
+                        <table className="w-full min-w-max table-auto items-center">
+                            <thead className="text-xs">
                                 <tr>
                                     {tableHead.map(({ head, desc, customeStyle }) => (
                                         <th
@@ -211,12 +211,12 @@ function TablesExample8({
                                         >
                                             <Popover>
                                                 <PopoverHandler>
-                                                    <div className="!font-bold text-sm text-black cursor-pointer">
+                                                    <div className="!font-bold text-black cursor-pointer">
                                                         {head}
                                                     </div>
                                                 </PopoverHandler>
                                                 <PopoverContent>
-                                                    <span className="text-sm text-red-500">{desc}</span>
+                                                    <span className="text-red-500">{desc}</span>
                                                 </PopoverContent>
                                             </Popover>
                                         </th>
@@ -251,14 +251,14 @@ function TablesExample8({
                                         // const classes = isLast
                                         //     ? "!pl-2"
                                         //     : `!pl-2 border-b border-gray-100 ${_bgColor}`;
-                                        const classes = `!pl-2 border-b border-gray-100 ${_bgColor}`;
+                                        const classes = `p-0 m-0 pl-2 border-b border-gray-100 ${_bgColor}`;
                                         return (
-                                            <tr key={digitalAsset}>
+                                            <tr key={digitalAsset} className="items-center">
                                                 <td className={classes}>
                                                     <div className="flex items-center gap-4 text-left">
                                                         <div>
                                                             <div className="text-sm font-bold text-black">
-                                                                <div className="flex">
+                                                                <div className="flex items-center">
                                                                     {tag}
                                                                     {detail}
                                                                 </div>

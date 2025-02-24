@@ -40,8 +40,14 @@ export default function OpenApi() {
     }, [kiToken]);
 
     React.useEffect(() => {
-        // console.log(`kiBalance`, kiBalance);
+        console.log(`kiBalance`, kiBalance);
     }, [kiBalance]);
+
+    if ("init" == loginState) {
+        return <>
+            <Login parentUrl={pathname} />
+        </>
+    }
 
     const example8TableHeadType: Example8TableHeadType[] = [
         {
@@ -53,8 +59,8 @@ export default function OpenApi() {
             desc: "현재가",
         },
         {
-            head: "보유수량/매도가능",
-            desc: "보유수량/매도가능",
+            head: "보유/주문가능",
+            desc: "보유/주문가능",
         },
         {
             head: "평가손익",
@@ -81,16 +87,17 @@ export default function OpenApi() {
     }
 
     let example8TableRowType: Example8TableRowType[] = [];
-    if (!!kiBalance.output1 && kiBalance.output1.length > 0) {
-        example8TableRowType = (kiBalance.output1.map((item, index) => {
+    if ("fulfilled" == kiBalance.state) {
+        let kiBalanceOutput1 = [...kiBalance.output1];
+        example8TableRowType = (kiBalanceOutput1.sort((a, b) => Number(b["pchs_amt"]) - Number(a["pchs_amt"])).map((item, index) => {
             return {
                 digitalAsset: item["prdt_name"], // key
-                detail: item["prdt_name"],
-                closePrice: Number(item["prpr"]).toLocaleString() + "원",
-                expectedRateOfReturn: `${item['hldg_qty']}/${item['ord_psbl_qty']}`,
+                detail: <div className="text-xs">{item["prdt_name"]}</div>,
+                closePrice: <div className="text-xs">{Number(item["prpr"]).toLocaleString() + "원"}</div>,
+                expectedRateOfReturn: <div className="text-xs">{item['hldg_qty']}/{item['ord_psbl_qty']}</div>,
                 expectedRateOfReturnColor: '', // x
                 targetPrice: <>
-                    <div className={`font-bold flex justify-between ${Number(Number(item["evlu_amt"]) / Number(item["pchs_amt"]) * 100 - 100) >= 0 ? "text-red-500" : "text-blue-500"}`}>
+                    <div className={`text-xs font-bold flex justify-between ${Number(Number(item["evlu_amt"]) / Number(item["pchs_amt"]) * 100 - 100) >= 0 ? "text-red-500" : "text-blue-500"}`}>
                         <div className="pr-1">
                             ({Number(Number(item["evlu_amt"]) / Number(item["pchs_amt"]) * 100 - 100).toFixed(2)}%)
                         </div>
@@ -99,16 +106,16 @@ export default function OpenApi() {
                         </div>
                     </div>
                 </>,
-                market: Util.UnitConversion(Number(item["evlu_amt"]), true),
-                netCurrentAssert: Util.UnitConversion(Number(item["pchs_amt"]), true),
-                netIncome: `${(Number(item["pchs_amt"]) / Number(kiBalance.output2[0]["pchs_amt_smtl_amt"]) * 100).toFixed(2)} %`,
+                market: <div className="text-xs">{Util.UnitConversion(Number(item["evlu_amt"]), true)}</div>,
+                netCurrentAssert: <div className="text-xs">{Util.UnitConversion(Number(item["pchs_amt"]), true)}</div>,
+                netIncome: <div className="text-xs">{(Number(item["pchs_amt"]) / Number(kiBalance.output2[0]["pchs_amt_smtl_amt"]) * 100).toFixed(2)} %</div>,
                 chartName: '',
                 tag: <>
-                    <div className="mr-2 gap-1">
-                        <Button className="p-0 py-1 m-0 mr-1" variant="outlined" size="sm" onClick={() => handleOnClick(item["pdno"], "buy")}>
+                    <div className="p-0 m-0 gap-1 mr-1">
+                        <Button className="p-0 m-0 mr-1 text-[0.6rem]" variant="outlined" size="sm" onClick={() => handleOnClick(item["pdno"], "buy")}>
                             매수
                         </Button>
-                        <Button className="p-0 py-1 m-0" variant="outlined" size="sm" onClick={() => handleOnClick(item["pdno"], "sell")}>
+                        <Button className="p-0 m-0 text-[0.6rem]" variant="outlined" size="sm" onClick={() => handleOnClick(item["pdno"], "sell")}>
                             매도
                         </Button>
                     </div>
@@ -129,8 +136,8 @@ export default function OpenApi() {
     }
     const props: TablesExample8PropsType = {
         title: <>
-            <div className="flex">
-                <div className="pr-2">[OpenApi] 계좌 조회</div>
+            <div className="flex pb-2">
+                <div className="pr-2 text-black">알고리즘 매매 계좌 조회</div>
                 <Button onClick={() => dispatch(reqGetInquireBalance(kiToken))} className="px-2 py-0 m-0" variant="outlined" size="sm">
                     다시 조회
                 </Button>
@@ -157,15 +164,9 @@ export default function OpenApi() {
             </div>
         </>,
         financial_date: "",
-        market_date: `- market_date: ${time.toString()}`,
+        market_date: <div className="text-xs">- market_date: {time.toString()}</div>,
         tableHead: example8TableHeadType,
         tableRow: example8TableRowType,
-    }
-
-    if ("init" == loginState) {
-        return <>
-            <Login parentUrl={pathname} />
-        </>
     }
 
     if (false == isValidCookie("koreaInvestmentToken") || false == !!kiToken["access_token"]) {
