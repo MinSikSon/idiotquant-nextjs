@@ -136,8 +136,8 @@ export default function OpenApi() {
     }
     const props: TablesExample8PropsType = {
         title: <>
-            <div className="flex">
-                <div className="pr-2">[OpenApi] 계좌 조회</div>
+            <div className="flex pb-2">
+                <div className="pr-2 text-black">알고리즘 매매 계좌 조회</div>
                 <Button onClick={() => dispatch(reqGetInquireBalance(kiToken))} className="px-2 py-0 m-0" variant="outlined" size="sm">
                     다시 조회
                 </Button>
@@ -164,7 +164,7 @@ export default function OpenApi() {
             </div>
         </>,
         financial_date: "",
-        market_date: `- market_date: ${time.toString()}`,
+        market_date: <div className="text-xs">- market_date: {time.toString()}</div>,
         tableHead: example8TableHeadType,
         tableRow: example8TableRowType,
     }

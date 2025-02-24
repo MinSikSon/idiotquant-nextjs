@@ -55,12 +55,12 @@ export function NavbarWithSimpleLinks() {
     const urlToLabel: any = {
         "": "홈",
         "calculator": "수익 계산기",
-        "login": `${!!!kakaoId ? `로그인 🔒` : "로그아웃"}`,
+        "login": `${!!!kakaoId ? "로그인 🔒" : "로그아웃"}`,
         "backtest": `백테스트 ${!!!kakaoId ? "🔒" : ""}`,
         // "article": "Article",
-        "search": `검색 ${!!!kakaoId ? "🔒" : ""}`,
-        "open-api": `계좌 ${!!!kakaoId ? "🔒" : ""}`,
-        "algorithm-trade": "알고리즘 투자 이력",
+        "search": `종목 검색 ${!!!kakaoId ? "🔒" : ""}`,
+        "open-api": `알고리즘 투자 - 계좌 조회 ${!!!kakaoId ? "🔒" : ""}`,
+        "algorithm-trade": "알고리즘 투자 - 매매 이력",
         "strategy": "투자 전략",
     }
 

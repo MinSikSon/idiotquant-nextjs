@@ -31,7 +31,7 @@ export default function AlgorithmTrade() {
 
     React.useEffect(() => {
         // console.log(`capitalToken`, capitalToken);
-        console.log(`kiToken`, kiToken);
+        // console.log(`kiToken`, kiToken);
 
         if ("fulfilled" == kiToken.state && "fulfilled" == capitalToken.state && capitalToken.value.stock_list.length > 0) {
             const PDNOs = capitalToken.value.stock_list.map((item: any) => item.PDNO);
