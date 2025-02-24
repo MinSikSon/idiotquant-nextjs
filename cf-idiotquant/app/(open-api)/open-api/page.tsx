@@ -3,7 +3,7 @@
 import Login from "@/app/(login)/login/login";
 import TablesExample8, { Example8TableHeadType, Example8TableRowType, TablesExample8PropsType } from "@/components/tableExample8";
 import { getCookie, isValidCookie, registerCookie, Util } from "@/components/util";
-import { reqPostApprovalKey, reqPostToken, reqGetInquireBalance, reqPostOrderCash, reqGetInquirePrice, KoreaInvestmentInquirePrice, getKoreaInvestmentInquirePrice, reqGetInquireDailyItemChartPrice, getKoreaInvestmentInquireDailyItemChartPrice, KoreaInvestmentInquireDailyItemChartPrice, reqGetBalanceSheet, getKoreaInvestmentBalanceSheet, KoreaInvestmentBalanceSheet } from "@/lib/features/koreaInvestment/koreaInvestmentSlice";
+import { reqPostApprovalKey, reqPostToken, reqGetInquireBalance, reqPostOrderCash, reqGetInquirePrice, KoreaInvestmentInquirePrice, getKoreaInvestmentInquirePrice, reqGetInquireDailyItemChartPrice, getKoreaInvestmentInquireDailyItemChartPrice, KoreaInvestmentInquireDailyItemChartPrice, reqGetBalanceSheet, getKoreaInvestmentBalanceSheet, KoreaInvestmentBalanceSheet, getKoreaInvestmentOrderCash, KoreaInvestmentOrderCash } from "@/lib/features/koreaInvestment/koreaInvestmentSlice";
 import { KoreaInvestmentApproval, KoreaInvestmentToken, KoreaInvestmentBalance } from "@/lib/features/koreaInvestment/koreaInvestmentSlice";
 import { setKoreaInvestmentToken } from "@/lib/features/koreaInvestment/koreaInvestmentSlice";
 import { getKoreaInvestmentApproval, getKoreaInvestmentToken, getKoreaInvestmentBalance } from "@/lib/features/koreaInvestment/koreaInvestmentSlice";
@@ -27,6 +27,9 @@ export default function OpenApi() {
     const kiInquireDailyItemChartPrice: KoreaInvestmentInquireDailyItemChartPrice = useAppSelector(getKoreaInvestmentInquireDailyItemChartPrice);
     const kiBalanceSheet: KoreaInvestmentBalanceSheet = useAppSelector(getKoreaInvestmentBalanceSheet);
 
+    const kiOrderCash: KoreaInvestmentOrderCash = useAppSelector(getKoreaInvestmentOrderCash);
+    const [orderName, setOrderName] = React.useState<any>("");
+
     const [time, setTime] = React.useState<any>('');
     const loginState = useAppSelector(selectState);
 
@@ -42,6 +45,10 @@ export default function OpenApi() {
     React.useEffect(() => {
         console.log(`kiBalance`, kiBalance);
     }, [kiBalance]);
+
+    React.useEffect(() => {
+        console.log(`kiOrderCash`, kiOrderCash);
+    }, [kiOrderCash])
 
     if ("init" == loginState) {
         return <>
@@ -80,15 +87,18 @@ export default function OpenApi() {
         },
     ];
 
-    function handleOnClick(pdno: string, buyOrSell: string) {
+    function handleOnClick(item: any, buyOrSell: string) {
         if ("buy" == buyOrSell || "sell" == buyOrSell) {
-            dispatch(reqPostOrderCash({ koreaInvestmentToken: kiToken, PDNO: pdno, buyOrSell: buyOrSell }));
+            const korBuyOrSell = "buy" == buyOrSell ? "구매" : "판매";
+            setOrderName(item["prdt_name"] + " " + korBuyOrSell + " 시도");
+            dispatch(reqPostOrderCash({ koreaInvestmentToken: kiToken, PDNO: item["pdno"], buyOrSell: buyOrSell }));
         }
     }
 
     let example8TableRowType: Example8TableRowType[] = [];
     if ("fulfilled" == kiBalance.state) {
         let kiBalanceOutput1 = [...kiBalance.output1];
+        console.log(`kiBalanceOutput1`, kiBalanceOutput1);
         example8TableRowType = (kiBalanceOutput1.sort((a, b) => Number(b["pchs_amt"]) - Number(a["pchs_amt"])).map((item, index) => {
             return {
                 digitalAsset: item["prdt_name"], // key
@@ -113,7 +123,7 @@ export default function OpenApi() {
                 tag: <>
                     <div className="flex p-0 m-0 gap-1 mr-2">
                         <div
-                            onClick={() => handleOnClick(item["pdno"], "buy")}
+                            onClick={() => handleOnClick(item, "buy")}
                             className='mb-2 px-1 button bg-blue-500 rounded-full cursor-pointer select-none
     active:translate-y-1 active:[box-shadow:0_0px_0_0_#1b6ff8,0_0px_0_0_#1b6ff841] active:border-b-[0px]
     transition-all duration-150 [box-shadow:0_4px_0_0_#1b6ff8,0_8px_0_0_#1b6ff841] border-b-[1px] border-blue-400
@@ -121,7 +131,7 @@ export default function OpenApi() {
                             <span className='flex flex-col justify-center items-center h-full text-white font-bold text-[0.5rem]'>구매</span>
                         </div>
                         <div
-                            onClick={() => handleOnClick(item["pdno"], "sell")}
+                            onClick={() => handleOnClick(item, "sell")}
                             className='mb-2 px-1 button bg-red-400 rounded-full cursor-pointer select-none
     active:translate-y-1 active:[box-shadow:0_0px_0_0_#910000,0_0px_0_0_#91000041] active:border-b-[0px]
     transition-all duration-150 [box-shadow:0_4px_0_0_#910000,0_8px_0_0_#91000041] border-b-[1px] border-red-300
@@ -133,6 +143,8 @@ export default function OpenApi() {
             }
         }));
     }
+
+    console.log(`kiOrderCash.msg1`, kiOrderCash.msg1);
 
     let nass_amt: number = 0; // 순자산
     let evlu_amt_smtl_amt: number = 0; // 평가금액
@@ -174,7 +186,10 @@ export default function OpenApi() {
             </div>
         </>,
         financial_date: "",
-        market_date: <div className="text-xs">market_date: {time.toString()}</div>,
+        market_date: <div className="flex flex-col">
+            <div className="text-xs">market_date: {time.toString()}</div>
+            {kiOrderCash.msg1.length > 0 ? <div className="text-xs text-black border rounded border-red-500">{orderName}: {kiOrderCash.msg1}</div> : ""}
+        </div>,
         tableHead: example8TableHeadType,
         tableRow: example8TableRowType,
     }
