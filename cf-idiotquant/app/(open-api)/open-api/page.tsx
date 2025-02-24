@@ -40,8 +40,14 @@ export default function OpenApi() {
     }, [kiToken]);
 
     React.useEffect(() => {
-        // console.log(`kiBalance`, kiBalance);
+        console.log(`kiBalance`, kiBalance);
     }, [kiBalance]);
+
+    if ("init" == loginState) {
+        return <>
+            <Login parentUrl={pathname} />
+        </>
+    }
 
     const example8TableHeadType: Example8TableHeadType[] = [
         {
@@ -53,8 +59,8 @@ export default function OpenApi() {
             desc: "현재가",
         },
         {
-            head: "보유수량/매도가능",
-            desc: "보유수량/매도가능",
+            head: "보유/주문가능",
+            desc: "보유/주문가능",
         },
         {
             head: "평가손익",
@@ -81,8 +87,9 @@ export default function OpenApi() {
     }
 
     let example8TableRowType: Example8TableRowType[] = [];
-    if (!!kiBalance.output1 && kiBalance.output1.length > 0) {
-        example8TableRowType = (kiBalance.output1.map((item, index) => {
+    if ("fulfilled" == kiBalance.state) {
+        let kiBalanceOutput1 = [...kiBalance.output1];
+        example8TableRowType = (kiBalanceOutput1.sort((a, b) => Number(b["pchs_amt"]) - Number(a["pchs_amt"])).map((item, index) => {
             return {
                 digitalAsset: item["prdt_name"], // key
                 detail: <div className="text-xs">{item["prdt_name"]}</div>,
@@ -160,12 +167,6 @@ export default function OpenApi() {
         market_date: `- market_date: ${time.toString()}`,
         tableHead: example8TableHeadType,
         tableRow: example8TableRowType,
-    }
-
-    if ("init" == loginState) {
-        return <>
-            <Login parentUrl={pathname} />
-        </>
     }
 
     if (false == isValidCookie("koreaInvestmentToken") || false == !!kiToken["access_token"]) {

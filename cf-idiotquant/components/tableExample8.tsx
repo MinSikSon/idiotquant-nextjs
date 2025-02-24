@@ -202,7 +202,7 @@ function TablesExample8({
                     :
                     <CardBody className="overflow-scroll !px-0 pt-0 pb-2">
                         <table className="w-full min-w-max table-auto items-center">
-                            <thead>
+                            <thead className="text-xs">
                                 <tr>
                                     {tableHead.map(({ head, desc, customeStyle }) => (
                                         <th
@@ -211,12 +211,12 @@ function TablesExample8({
                                         >
                                             <Popover>
                                                 <PopoverHandler>
-                                                    <div className="!font-bold text-sm text-black cursor-pointer">
+                                                    <div className="!font-bold text-black cursor-pointer">
                                                         {head}
                                                     </div>
                                                 </PopoverHandler>
                                                 <PopoverContent>
-                                                    <span className="text-sm text-red-500">{desc}</span>
+                                                    <span className="text-red-500">{desc}</span>
                                                 </PopoverContent>
                                             </Popover>
                                         </th>

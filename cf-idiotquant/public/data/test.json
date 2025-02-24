@@ -1,0 +1,2358 @@
+{
+    "time_stamp": {
+        "current": "2025-02-23T10:10:08.740Z",
+        "prev": "2025-02-23T10:00:12.245Z",
+        "prevPrev": "2025-02-23T09:50:08.740Z"
+    },
+    "capital_charge_per_year": 12000000,
+    "capital_charge_rate": 228,
+    "refill_stock_index": 1,
+    "stock_list": [
+        {
+            "name": "전방",
+            "PDNO": "000950",
+            "token": 17829,
+            "output_inquirePrice": {
+                "iscd_stat_cls_code": "57",
+                "marg_rate": "100.00",
+                "rprs_mrkt_kor_name": "KOSPI",
+                "bstp_kor_isnm": "섬유·의류",
+                "temp_stop_yn": "N",
+                "oprc_rang_cont_yn": "N",
+                "clpr_rang_cont_yn": "N",
+                "crdt_able_yn": "N",
+                "grmn_rate_cls_code": " ",
+                "elw_pblc_yn": "N",
+                "stck_prpr": "18610",
+                "prdy_vrss": "230",
+                "prdy_vrss_sign": "2",
+                "prdy_ctrt": "1.25",
+                "acml_tr_pbmn": "8946440",
+                "acml_vol": "488",
+                "prdy_vrss_vol_rate": "30.91",
+                "stck_oprc": "18380",
+                "stck_hgpr": "18890",
+                "stck_lwpr": "18300",
+                "stck_mxpr": "23850",
+                "stck_llam": "12870",
+                "stck_sdpr": "18380",
+                "wghn_avrg_stck_prc": "18332.87",
+                "hts_frgn_ehrt": "0.22",
+                "frgn_ntby_qty": "-1",
+                "pgtr_ntby_qty": "-1",
+                "pvt_scnd_dmrs_prc": "19240",
+                "pvt_frst_dmrs_prc": "18810",
+                "pvt_pont_val": "18460",
+                "pvt_frst_dmsp_prc": "18030",
+                "pvt_scnd_dmsp_prc": "17680",
+                "dmrs_val": "18635",
+                "dmsp_val": "17855",
+                "cpfn": "84",
+                "rstc_wdth_prc": "5470",
+                "stck_fcam": "5000",
+                "stck_sspr": "12860",
+                "aspr_unit": "10",
+                "hts_deal_qty_unit_val": "1",
+                "lstn_stcn": "1680000",
+                "hts_avls": "313",
+                "per": "-1.63",
+                "pbr": "0.15",
+                "stac_month": "12",
+                "vol_tnrt": "0.03",
+                "eps": "-11425.00",
+                "bps": "124969.00",
+                "d250_hgpr": "26450",
+                "d250_hgpr_date": "20240208",
+                "d250_hgpr_vrss_prpr_rate": "-29.64",
+                "d250_lwpr": "16700",
+                "d250_lwpr_date": "20241210",
+                "d250_lwpr_vrss_prpr_rate": "11.44",
+                "stck_dryy_hgpr": "19490",
+                "dryy_hgpr_vrss_prpr_rate": "-4.52",
+                "dryy_hgpr_date": "20250107",
+                "stck_dryy_lwpr": "17800",
+                "dryy_lwpr_vrss_prpr_rate": "4.55",
+                "dryy_lwpr_date": "20250117",
+                "w52_hgpr": "26450",
+                "w52_hgpr_vrss_prpr_ctrt": "-29.64",
+                "w52_hgpr_date": "20240226",
+                "w52_lwpr": "16700",
+                "w52_lwpr_vrss_prpr_ctrt": "11.44",
+                "w52_lwpr_date": "20241210",
+                "whol_loan_rmnd_rate": "0.00",
+                "ssts_yn": "N",
+                "stck_shrn_iscd": "000950",
+                "fcam_cnnm": "5,000",
+                "cpfn_cnnm": "84 억",
+                "frgn_hldn_qty": "3692",
+                "vi_cls_code": "N",
+                "ovtm_vi_cls_code": "N",
+                "last_ssts_cntg_qty": "2",
+                "invt_caful_yn": "N",
+                "mrkt_warn_cls_code": "00",
+                "short_over_yn": "N",
+                "sltr_yn": "N"
+            },
+            "output_balanceSheet": [
+                {
+                    "stck_bsop_date": "20250221",
+                    "stck_clpr": "18610",
+                    "stck_oprc": "18380",
+                    "stck_hgpr": "18890",
+                    "stck_lwpr": "18300",
+                    "acml_vol": "488",
+                    "acml_tr_pbmn": "8946440",
+                    "flng_cls_code": "00",
+                    "prtt_rate": "0.00",
+                    "mod_yn": "N",
+                    "prdy_vrss_sign": "2",
+                    "prdy_vrss": "230",
+                    "revl_issu_reas": ""
+                },
+                {
+                    "stck_bsop_date": "20250220",
+                    "stck_clpr": "18380",
+                    "stck_oprc": "18400",
+                    "stck_hgpr": "18890",
+                    "stck_lwpr": "18110",
+                    "acml_vol": "1579",
+                    "acml_tr_pbmn": "28650370",
+                    "flng_cls_code": "00",
+                    "prtt_rate": "0.00",
+                    "mod_yn": "N",
+                    "prdy_vrss_sign": "2",
+                    "prdy_vrss": "160",
+                    "revl_issu_reas": ""
+                },
+                {
+                    "stck_bsop_date": "20250219",
+                    "stck_clpr": "18220",
+                    "stck_oprc": "18190",
+                    "stck_hgpr": "18790",
+                    "stck_lwpr": "18190",
+                    "acml_vol": "807",
+                    "acml_tr_pbmn": "14786080",
+                    "flng_cls_code": "00",
+                    "prtt_rate": "0.00",
+                    "mod_yn": "N",
+                    "prdy_vrss_sign": "2",
+                    "prdy_vrss": "30",
+                    "revl_issu_reas": ""
+                },
+                {
+                    "stck_bsop_date": "20250218",
+                    "stck_clpr": "18190",
+                    "stck_oprc": "18100",
+                    "stck_hgpr": "18960",
+                    "stck_lwpr": "18100",
+                    "acml_vol": "511",
+                    "acml_tr_pbmn": "9379230",
+                    "flng_cls_code": "00",
+                    "prtt_rate": "0.00",
+                    "mod_yn": "N",
+                    "prdy_vrss_sign": "5",
+                    "prdy_vrss": "-50",
+                    "revl_issu_reas": ""
+                },
+                {
+                    "stck_bsop_date": "20250217",
+                    "stck_clpr": "18240",
+                    "stck_oprc": "18250",
+                    "stck_hgpr": "18250",
+                    "stck_lwpr": "18060",
+                    "acml_vol": "265",
+                    "acml_tr_pbmn": "4834950",
+                    "flng_cls_code": "00",
+                    "prtt_rate": "0.00",
+                    "mod_yn": "N",
+                    "prdy_vrss_sign": "5",
+                    "prdy_vrss": "-10",
+                    "revl_issu_reas": ""
+                },
+                {
+                    "stck_bsop_date": "20250214",
+                    "stck_clpr": "18250",
+                    "stck_oprc": "18360",
+                    "stck_hgpr": "18360",
+                    "stck_lwpr": "18200",
+                    "acml_vol": "114",
+                    "acml_tr_pbmn": "2094520",
+                    "flng_cls_code": "00",
+                    "prtt_rate": "0.00",
+                    "mod_yn": "N",
+                    "prdy_vrss_sign": "5",
+                    "prdy_vrss": "-110",
+                    "revl_issu_reas": ""
+                },
+                {
+                    "stck_bsop_date": "20250213",
+                    "stck_clpr": "18360",
+                    "stck_oprc": "18130",
+                    "stck_hgpr": "18470",
+                    "stck_lwpr": "18130",
+                    "acml_vol": "78",
+                    "acml_tr_pbmn": "1422240",
+                    "flng_cls_code": "00",
+                    "prtt_rate": "0.00",
+                    "mod_yn": "N",
+                    "prdy_vrss_sign": "2",
+                    "prdy_vrss": "230",
+                    "revl_issu_reas": ""
+                },
+                {
+                    "stck_bsop_date": "20250212",
+                    "stck_clpr": "18130",
+                    "stck_oprc": "18300",
+                    "stck_hgpr": "18550",
+                    "stck_lwpr": "18100",
+                    "acml_vol": "563",
+                    "acml_tr_pbmn": "10201400",
+                    "flng_cls_code": "00",
+                    "prtt_rate": "0.00",
+                    "mod_yn": "N",
+                    "prdy_vrss_sign": "5",
+                    "prdy_vrss": "-180",
+                    "revl_issu_reas": ""
+                },
+                {
+                    "stck_bsop_date": "20250211",
+                    "stck_clpr": "18310",
+                    "stck_oprc": "18290",
+                    "stck_hgpr": "18870",
+                    "stck_lwpr": "18110",
+                    "acml_vol": "895",
+                    "acml_tr_pbmn": "16368860",
+                    "flng_cls_code": "00",
+                    "prtt_rate": "0.00",
+                    "mod_yn": "N",
+                    "prdy_vrss_sign": "2",
+                    "prdy_vrss": "20",
+                    "revl_issu_reas": ""
+                },
+                {
+                    "stck_bsop_date": "20250210",
+                    "stck_clpr": "18290",
+                    "stck_oprc": "18450",
+                    "stck_hgpr": "18600",
+                    "stck_lwpr": "18260",
+                    "acml_vol": "166",
+                    "acml_tr_pbmn": "3068440",
+                    "flng_cls_code": "00",
+                    "prtt_rate": "0.00",
+                    "mod_yn": "N",
+                    "prdy_vrss_sign": "5",
+                    "prdy_vrss": "-210",
+                    "revl_issu_reas": ""
+                },
+                {
+                    "stck_bsop_date": "20250207",
+                    "stck_clpr": "18500",
+                    "stck_oprc": "18510",
+                    "stck_hgpr": "18520",
+                    "stck_lwpr": "18370",
+                    "acml_vol": "44",
+                    "acml_tr_pbmn": "814410",
+                    "flng_cls_code": "00",
+                    "prtt_rate": "0.00",
+                    "mod_yn": "N",
+                    "prdy_vrss_sign": "5",
+                    "prdy_vrss": "-70",
+                    "revl_issu_reas": ""
+                },
+                {
+                    "stck_bsop_date": "20250206",
+                    "stck_clpr": "18570",
+                    "stck_oprc": "18520",
+                    "stck_hgpr": "18630",
+                    "stck_lwpr": "18300",
+                    "acml_vol": "138",
+                    "acml_tr_pbmn": "2552400",
+                    "flng_cls_code": "00",
+                    "prtt_rate": "0.00",
+                    "mod_yn": "N",
+                    "prdy_vrss_sign": "2",
+                    "prdy_vrss": "40",
+                    "revl_issu_reas": ""
+                },
+                {
+                    "stck_bsop_date": "20250205",
+                    "stck_clpr": "18530",
+                    "stck_oprc": "18530",
+                    "stck_hgpr": "18530",
+                    "stck_lwpr": "18250",
+                    "acml_vol": "1585",
+                    "acml_tr_pbmn": "29057580",
+                    "flng_cls_code": "00",
+                    "prtt_rate": "0.00",
+                    "mod_yn": "N",
+                    "prdy_vrss_sign": "3",
+                    "prdy_vrss": "0",
+                    "revl_issu_reas": ""
+                },
+                {
+                    "stck_bsop_date": "20250204",
+                    "stck_clpr": "18530",
+                    "stck_oprc": "18000",
+                    "stck_hgpr": "18630",
+                    "stck_lwpr": "18000",
+                    "acml_vol": "79",
+                    "acml_tr_pbmn": "1458050",
+                    "flng_cls_code": "00",
+                    "prtt_rate": "0.00",
+                    "mod_yn": "N",
+                    "prdy_vrss_sign": "2",
+                    "prdy_vrss": "530",
+                    "revl_issu_reas": ""
+                },
+                {
+                    "stck_bsop_date": "20250203",
+                    "stck_clpr": "18000",
+                    "stck_oprc": "18340",
+                    "stck_hgpr": "18470",
+                    "stck_lwpr": "17920",
+                    "acml_vol": "195",
+                    "acml_tr_pbmn": "3537120",
+                    "flng_cls_code": "00",
+                    "prtt_rate": "0.00",
+                    "mod_yn": "N",
+                    "prdy_vrss_sign": "5",
+                    "prdy_vrss": "-480",
+                    "revl_issu_reas": ""
+                }
+            ]
+        },
+        {
+            "name": "삼양통상",
+            "token": 36069
+        },
+        {
+            "name": "동일제강",
+            "token": 8859
+        },
+        {
+            "name": "삼정펄프",
+            "token": 10519
+        },
+        {
+            "name": "세보엠이씨",
+            "token": 15589
+        },
+        {
+            "name": "원일특강",
+            "token": 14599
+        },
+        {
+            "name": "삼현철강",
+            "token": 10334
+        },
+        {
+            "name": "세원물산",
+            "token": 11089
+        },
+        {
+            "name": "아세아텍",
+            "token": 9184
+        },
+        {
+            "name": "이니텍",
+            "token": 11224
+        },
+        {
+            "name": "와토스코리아",
+            "token": 10369
+        },
+        {
+            "name": "서원인텍",
+            "token": 9389
+        },
+        {
+            "name": "레이언스",
+            "token": 8739
+        },
+        {
+            "name": "유니드비티플러스",
+            "token": 10524
+        },
+        {
+            "name": "부국철강",
+            "PDNO": "026940",
+            "token": 2749,
+            "output_inquirePrice": {
+                "iscd_stat_cls_code": "57",
+                "marg_rate": "100.00",
+                "rprs_mrkt_kor_name": "KOSPI",
+                "bstp_kor_isnm": "금속",
+                "temp_stop_yn": "N",
+                "oprc_rang_cont_yn": "N",
+                "clpr_rang_cont_yn": "N",
+                "crdt_able_yn": "N",
+                "grmn_rate_cls_code": " ",
+                "elw_pblc_yn": "N",
+                "stck_prpr": "2505",
+                "prdy_vrss": "-25",
+                "prdy_vrss_sign": "5",
+                "prdy_ctrt": "-0.99",
+                "acml_tr_pbmn": "9184424220",
+                "acml_vol": "3417581",
+                "prdy_vrss_vol_rate": "6171.26",
+                "stck_oprc": "2535",
+                "stck_hgpr": "2815",
+                "stck_lwpr": "2505",
+                "stck_mxpr": "3285",
+                "stck_llam": "1775",
+                "stck_sdpr": "2530",
+                "wghn_avrg_stck_prc": "2688.42",
+                "hts_frgn_ehrt": "0.82",
+                "frgn_ntby_qty": "-80923",
+                "pgtr_ntby_qty": "-80567",
+                "pvt_scnd_dmrs_prc": "2576",
+                "pvt_frst_dmrs_prc": "2552",
+                "pvt_pont_val": "2521",
+                "pvt_frst_dmsp_prc": "2497",
+                "pvt_scnd_dmsp_prc": "2466",
+                "dmrs_val": "2565",
+                "dmsp_val": "2510",
+                "cpfn": "100",
+                "rstc_wdth_prc": "755",
+                "stck_fcam": "500",
+                "stck_sspr": "1820",
+                "aspr_unit": "5",
+                "hts_deal_qty_unit_val": "1",
+                "lstn_stcn": "20000000",
+                "hts_avls": "501",
+                "per": "13.84",
+                "pbr": "0.38",
+                "stac_month": "12",
+                "vol_tnrt": "17.09",
+                "eps": "181.00",
+                "bps": "6623.00",
+                "d250_hgpr": "3710",
+                "d250_hgpr_date": "20240213",
+                "d250_hgpr_vrss_prpr_rate": "-32.48",
+                "d250_lwpr": "2125",
+                "d250_lwpr_date": "20241209",
+                "d250_lwpr_vrss_prpr_rate": "17.88",
+                "stck_dryy_hgpr": "2815",
+                "dryy_hgpr_vrss_prpr_rate": "-11.01",
+                "dryy_hgpr_date": "20250221",
+                "stck_dryy_lwpr": "2340",
+                "dryy_lwpr_vrss_prpr_rate": "7.05",
+                "dryy_lwpr_date": "20250102",
+                "w52_hgpr": "3650",
+                "w52_hgpr_vrss_prpr_ctrt": "-31.37",
+                "w52_hgpr_date": "20240228",
+                "w52_lwpr": "2125",
+                "w52_lwpr_vrss_prpr_ctrt": "17.88",
+                "w52_lwpr_date": "20241209",
+                "whol_loan_rmnd_rate": "3.84",
+                "ssts_yn": "N",
+                "stck_shrn_iscd": "026940",
+                "fcam_cnnm": "500",
+                "cpfn_cnnm": "100 억",
+                "frgn_hldn_qty": "163081",
+                "vi_cls_code": "N",
+                "ovtm_vi_cls_code": "N",
+                "last_ssts_cntg_qty": "10",
+                "invt_caful_yn": "N",
+                "mrkt_warn_cls_code": "00",
+                "short_over_yn": "N",
+                "sltr_yn": "N"
+            },
+            "output_balanceSheet": [
+                {
+                    "stac_yymm": "202312",
+                    "cras": "1121.00",
+                    "fxas": "440.00",
+                    "total_aset": "1561.00",
+                    "flow_lblt": "236.00",
+                    "fix_lblt": "0.00",
+                    "total_lblt": "236.00",
+                    "cpfn": "100",
+                    "cfp_surp": "99.99",
+                    "prfi_surp": "99.99",
+                    "total_cptl": "1325.00"
+                },
+                {
+                    "stac_yymm": "202212",
+                    "cras": "1091.00",
+                    "fxas": "445.00",
+                    "total_aset": "1536.00",
+                    "flow_lblt": "276.00",
+                    "fix_lblt": "0.00",
+                    "total_lblt": "276.00",
+                    "cpfn": "100",
+                    "cfp_surp": "99.99",
+                    "prfi_surp": "99.99",
+                    "total_cptl": "1260.00"
+                },
+                {
+                    "stac_yymm": "202112",
+                    "cras": "1143.00",
+                    "fxas": "364.00",
+                    "total_aset": "1507.00",
+                    "flow_lblt": "302.00",
+                    "fix_lblt": "0.00",
+                    "total_lblt": "303.00",
+                    "cpfn": "100",
+                    "cfp_surp": "99.99",
+                    "prfi_surp": "99.99",
+                    "total_cptl": "1204.00"
+                },
+                {
+                    "stac_yymm": "202012",
+                    "cras": "946.00",
+                    "fxas": "376.00",
+                    "total_aset": "1322.00",
+                    "flow_lblt": "185.00",
+                    "fix_lblt": "4.00",
+                    "total_lblt": "189.00",
+                    "cpfn": "100",
+                    "cfp_surp": "99.99",
+                    "prfi_surp": "99.99",
+                    "total_cptl": "1133.00"
+                },
+                {
+                    "stac_yymm": "201912",
+                    "cras": "909.00",
+                    "fxas": "313.00",
+                    "total_aset": "1223.00",
+                    "flow_lblt": "91.00",
+                    "fix_lblt": "6.00",
+                    "total_lblt": "97.00",
+                    "cpfn": "100",
+                    "cfp_surp": "99.99",
+                    "prfi_surp": "99.99",
+                    "total_cptl": "1125.00"
+                },
+                {
+                    "stac_yymm": "201812",
+                    "cras": "922.00",
+                    "fxas": "316.00",
+                    "total_aset": "1238.00",
+                    "flow_lblt": "113.00",
+                    "fix_lblt": "2.00",
+                    "total_lblt": "115.00",
+                    "cpfn": "100",
+                    "cfp_surp": "99.99",
+                    "prfi_surp": "99.99",
+                    "total_cptl": "1123.00"
+                },
+                {
+                    "stac_yymm": "201712",
+                    "cras": "956.00",
+                    "fxas": "341.00",
+                    "total_aset": "1297.00",
+                    "flow_lblt": "167.00",
+                    "fix_lblt": "5.00",
+                    "total_lblt": "172.00",
+                    "cpfn": "100",
+                    "cfp_surp": "99.99",
+                    "prfi_surp": "99.99",
+                    "total_cptl": "1125.00"
+                },
+                {
+                    "stac_yymm": "201612",
+                    "cras": "873.00",
+                    "fxas": "342.00",
+                    "total_aset": "1215.00",
+                    "flow_lblt": "108.00",
+                    "fix_lblt": "6.00",
+                    "total_lblt": "114.00",
+                    "cpfn": "100",
+                    "cfp_surp": "99.99",
+                    "prfi_surp": "99.99",
+                    "total_cptl": "1101.00"
+                },
+                {
+                    "stac_yymm": "201512",
+                    "cras": "874.00",
+                    "fxas": "328.00",
+                    "total_aset": "1202.00",
+                    "flow_lblt": "120.00",
+                    "fix_lblt": "9.00",
+                    "total_lblt": "129.00",
+                    "cpfn": "100",
+                    "cfp_surp": "99.99",
+                    "prfi_surp": "99.99",
+                    "total_cptl": "1073.00"
+                },
+                {
+                    "stac_yymm": "201412",
+                    "cras": "1003.00",
+                    "fxas": "256.00",
+                    "total_aset": "1259.00",
+                    "flow_lblt": "173.00",
+                    "fix_lblt": "12.00",
+                    "total_lblt": "186.00",
+                    "cpfn": "100",
+                    "cfp_surp": "99.99",
+                    "prfi_surp": "99.99",
+                    "total_cptl": "1073.00"
+                },
+                {
+                    "stac_yymm": "201312",
+                    "cras": "1122.00",
+                    "fxas": "256.00",
+                    "total_aset": "1378.00",
+                    "flow_lblt": "301.00",
+                    "fix_lblt": "10.00",
+                    "total_lblt": "311.00",
+                    "cpfn": "100",
+                    "cfp_surp": "99.99",
+                    "prfi_surp": "99.99",
+                    "total_cptl": "1067.00"
+                },
+                {
+                    "stac_yymm": "201212",
+                    "cras": "1124.00",
+                    "fxas": "278.00",
+                    "total_aset": "1401.00",
+                    "flow_lblt": "343.00",
+                    "fix_lblt": "13.00",
+                    "total_lblt": "356.00",
+                    "cpfn": "100",
+                    "cfp_surp": "99.99",
+                    "prfi_surp": "99.99",
+                    "total_cptl": "1045.00"
+                },
+                {
+                    "stac_yymm": "201112",
+                    "cras": "1147.00",
+                    "fxas": "296.00",
+                    "total_aset": "1443.00",
+                    "flow_lblt": "429.00",
+                    "fix_lblt": "11.00",
+                    "total_lblt": "440.00",
+                    "cpfn": "100",
+                    "cfp_surp": "99.99",
+                    "prfi_surp": "99.99",
+                    "total_cptl": "1003.00"
+                },
+                {
+                    "stac_yymm": "201012",
+                    "cras": "1028.00",
+                    "fxas": "333.00",
+                    "total_aset": "1361.00",
+                    "flow_lblt": "367.00",
+                    "fix_lblt": "17.00",
+                    "total_lblt": "384.00",
+                    "cpfn": "100",
+                    "cfp_surp": "99.99",
+                    "prfi_surp": "99.99",
+                    "total_cptl": "977.00"
+                },
+                {
+                    "stac_yymm": "200912",
+                    "cras": "828.00",
+                    "fxas": "407.00",
+                    "total_aset": "1235.00",
+                    "flow_lblt": "282.00",
+                    "fix_lblt": "26.00",
+                    "total_lblt": "309.00",
+                    "cpfn": "100",
+                    "cfp_surp": "99.99",
+                    "prfi_surp": "99.99",
+                    "total_cptl": "926.00"
+                },
+                {
+                    "stac_yymm": "200812",
+                    "cras": "982.00",
+                    "fxas": "402.00",
+                    "total_aset": "1383.00",
+                    "flow_lblt": "562.00",
+                    "fix_lblt": "9.00",
+                    "total_lblt": "571.00",
+                    "cpfn": "100",
+                    "cfp_surp": "99.99",
+                    "prfi_surp": "99.99",
+                    "total_cptl": "812.00"
+                },
+                {
+                    "stac_yymm": "200712",
+                    "cras": "723.00",
+                    "fxas": "498.00",
+                    "total_aset": "1221.00",
+                    "flow_lblt": "380.00",
+                    "fix_lblt": "38.00",
+                    "total_lblt": "418.00",
+                    "cpfn": "100",
+                    "cfp_surp": "99.99",
+                    "prfi_surp": "99.99",
+                    "total_cptl": "803.00"
+                },
+                {
+                    "stac_yymm": "200612",
+                    "cras": "771.00",
+                    "fxas": "290.00",
+                    "total_aset": "1061.00",
+                    "flow_lblt": "341.00",
+                    "fix_lblt": "16.00",
+                    "total_lblt": "357.00",
+                    "cpfn": "100",
+                    "cfp_surp": "99.99",
+                    "prfi_surp": "99.99",
+                    "total_cptl": "704.00"
+                },
+                {
+                    "stac_yymm": "200512",
+                    "cras": "587.00",
+                    "fxas": "236.00",
+                    "total_aset": "823.00",
+                    "flow_lblt": "163.00",
+                    "fix_lblt": "13.00",
+                    "total_lblt": "176.00",
+                    "cpfn": "100",
+                    "cfp_surp": "99.99",
+                    "prfi_surp": "99.99",
+                    "total_cptl": "647.00"
+                },
+                {
+                    "stac_yymm": "200412",
+                    "cras": "689.00",
+                    "fxas": "145.00",
+                    "total_aset": "834.00",
+                    "flow_lblt": "247.00",
+                    "fix_lblt": "28.00",
+                    "total_lblt": "275.00",
+                    "cpfn": "62",
+                    "cfp_surp": "99.99",
+                    "prfi_surp": "99.99",
+                    "total_cptl": "558.00"
+                }
+            ]
+        },
+        {
+            "name": "백금T&A",
+            "PDNO": "046310",
+            "token": 2749,
+            "output_inquirePrice": {
+                "iscd_stat_cls_code": "57",
+                "marg_rate": "100.00",
+                "rprs_mrkt_kor_name": "KOSDAQ",
+                "bstp_kor_isnm": "전기·전자",
+                "temp_stop_yn": "N",
+                "oprc_rang_cont_yn": "N",
+                "clpr_rang_cont_yn": "N",
+                "crdt_able_yn": "N",
+                "grmn_rate_cls_code": " ",
+                "elw_pblc_yn": "N",
+                "stck_prpr": "2555",
+                "prdy_vrss": "-5",
+                "prdy_vrss_sign": "5",
+                "prdy_ctrt": "-0.20",
+                "acml_tr_pbmn": "170530345",
+                "acml_vol": "67059",
+                "prdy_vrss_vol_rate": "297.88",
+                "stck_oprc": "2555",
+                "stck_hgpr": "2595",
+                "stck_lwpr": "2515",
+                "stck_mxpr": "3325",
+                "stck_llam": "1795",
+                "stck_sdpr": "2560",
+                "wghn_avrg_stck_prc": "2542.98",
+                "hts_frgn_ehrt": "2.65",
+                "frgn_ntby_qty": "4014",
+                "pgtr_ntby_qty": "3460",
+                "pvt_scnd_dmrs_prc": "2586",
+                "pvt_frst_dmrs_prc": "2572",
+                "pvt_pont_val": "2551",
+                "pvt_frst_dmsp_prc": "2537",
+                "pvt_scnd_dmsp_prc": "2516",
+                "dmrs_val": "2580",
+                "dmsp_val": "2545",
+                "cpfn": "82",
+                "rstc_wdth_prc": "765",
+                "stck_fcam": "500",
+                "stck_sspr": "1890",
+                "aspr_unit": "5",
+                "hts_deal_qty_unit_val": "1",
+                "lstn_stcn": "16418641",
+                "hts_avls": "419",
+                "per": "3.13",
+                "pbr": "0.68",
+                "stac_month": "12",
+                "vol_tnrt": "0.41",
+                "eps": "817.00",
+                "bps": "3746.00",
+                "d250_hgpr": "3180",
+                "d250_hgpr_date": "20240508",
+                "d250_hgpr_vrss_prpr_rate": "-19.65",
+                "d250_lwpr": "1996",
+                "d250_lwpr_date": "20241209",
+                "d250_lwpr_vrss_prpr_rate": "28.01",
+                "stck_dryy_hgpr": "2640",
+                "dryy_hgpr_vrss_prpr_rate": "-3.22",
+                "dryy_hgpr_date": "20250214",
+                "stck_dryy_lwpr": "2185",
+                "dryy_lwpr_vrss_prpr_rate": "16.93",
+                "dryy_lwpr_date": "20250103",
+                "w52_hgpr": "3180",
+                "w52_hgpr_vrss_prpr_ctrt": "-19.65",
+                "w52_hgpr_date": "20240508",
+                "w52_lwpr": "1996",
+                "w52_lwpr_vrss_prpr_ctrt": "28.01",
+                "w52_lwpr_date": "20241209",
+                "whol_loan_rmnd_rate": "2.17",
+                "ssts_yn": "N",
+                "stck_shrn_iscd": "046310",
+                "fcam_cnnm": "500",
+                "cpfn_cnnm": "82 억",
+                "frgn_hldn_qty": "435043",
+                "vi_cls_code": "N",
+                "ovtm_vi_cls_code": "N",
+                "last_ssts_cntg_qty": "0",
+                "invt_caful_yn": "N",
+                "mrkt_warn_cls_code": "00",
+                "short_over_yn": "N",
+                "sltr_yn": "N"
+            },
+            "output_balanceSheet": [
+                {
+                    "stac_yymm": "202409",
+                    "cras": "1049.00",
+                    "fxas": "215.00",
+                    "total_aset": "1264.00",
+                    "flow_lblt": "282.00",
+                    "fix_lblt": "56.00",
+                    "total_lblt": "338.00",
+                    "cpfn": "82",
+                    "cfp_surp": "99.99",
+                    "prfi_surp": "99.99",
+                    "total_cptl": "926.00"
+                },
+                {
+                    "stac_yymm": "202312",
+                    "cras": "1165.00",
+                    "fxas": "228.00",
+                    "total_aset": "1393.00",
+                    "flow_lblt": "362.00",
+                    "fix_lblt": "51.00",
+                    "total_lblt": "413.00",
+                    "cpfn": "82",
+                    "cfp_surp": "99.99",
+                    "prfi_surp": "99.99",
+                    "total_cptl": "980.00"
+                },
+                {
+                    "stac_yymm": "202212",
+                    "cras": "990.00",
+                    "fxas": "201.00",
+                    "total_aset": "1191.00",
+                    "flow_lblt": "324.00",
+                    "fix_lblt": "57.00",
+                    "total_lblt": "380.00",
+                    "cpfn": "82",
+                    "cfp_surp": "99.99",
+                    "prfi_surp": "99.99",
+                    "total_cptl": "810.00"
+                },
+                {
+                    "stac_yymm": "202112",
+                    "cras": "900.00",
+                    "fxas": "132.00",
+                    "total_aset": "1033.00",
+                    "flow_lblt": "315.00",
+                    "fix_lblt": "73.00",
+                    "total_lblt": "388.00",
+                    "cpfn": "82",
+                    "cfp_surp": "99.99",
+                    "prfi_surp": "99.99",
+                    "total_cptl": "645.00"
+                },
+                {
+                    "stac_yymm": "202012",
+                    "cras": "824.00",
+                    "fxas": "140.00",
+                    "total_aset": "964.00",
+                    "flow_lblt": "371.00",
+                    "fix_lblt": "60.00",
+                    "total_lblt": "430.00",
+                    "cpfn": "82",
+                    "cfp_surp": "99.99",
+                    "prfi_surp": "99.99",
+                    "total_cptl": "534.00"
+                },
+                {
+                    "stac_yymm": "201912",
+                    "cras": "739.00",
+                    "fxas": "195.00",
+                    "total_aset": "933.00",
+                    "flow_lblt": "348.00",
+                    "fix_lblt": "59.00",
+                    "total_lblt": "407.00",
+                    "cpfn": "77",
+                    "cfp_surp": "99.99",
+                    "prfi_surp": "99.99",
+                    "total_cptl": "526.00"
+                },
+                {
+                    "stac_yymm": "201812",
+                    "cras": "510.00",
+                    "fxas": "260.00",
+                    "total_aset": "770.00",
+                    "flow_lblt": "259.00",
+                    "fix_lblt": "66.00",
+                    "total_lblt": "325.00",
+                    "cpfn": "76",
+                    "cfp_surp": "99.99",
+                    "prfi_surp": "99.99",
+                    "total_cptl": "446.00"
+                },
+                {
+                    "stac_yymm": "201712",
+                    "cras": "474.00",
+                    "fxas": "271.00",
+                    "total_aset": "745.00",
+                    "flow_lblt": "285.00",
+                    "fix_lblt": "106.00",
+                    "total_lblt": "392.00",
+                    "cpfn": "72",
+                    "cfp_surp": "99.99",
+                    "prfi_surp": "99.99",
+                    "total_cptl": "354.00"
+                },
+                {
+                    "stac_yymm": "201612",
+                    "cras": "382.00",
+                    "fxas": "268.00",
+                    "total_aset": "650.00",
+                    "flow_lblt": "294.00",
+                    "fix_lblt": "54.00",
+                    "total_lblt": "348.00",
+                    "cpfn": "72",
+                    "cfp_surp": "99.99",
+                    "prfi_surp": "99.99",
+                    "total_cptl": "301.00"
+                },
+                {
+                    "stac_yymm": "201512",
+                    "cras": "352.00",
+                    "fxas": "203.00",
+                    "total_aset": "554.00",
+                    "flow_lblt": "289.00",
+                    "fix_lblt": "34.00",
+                    "total_lblt": "323.00",
+                    "cpfn": "57",
+                    "cfp_surp": "99.99",
+                    "prfi_surp": "99.99",
+                    "total_cptl": "231.00"
+                },
+                {
+                    "stac_yymm": "201412",
+                    "cras": "474.00",
+                    "fxas": "271.00",
+                    "total_aset": "745.00",
+                    "flow_lblt": "390.00",
+                    "fix_lblt": "48.00",
+                    "total_lblt": "439.00",
+                    "cpfn": "57",
+                    "cfp_surp": "99.99",
+                    "prfi_surp": "99.99",
+                    "total_cptl": "306.00"
+                },
+                {
+                    "stac_yymm": "201312",
+                    "cras": "475.00",
+                    "fxas": "254.00",
+                    "total_aset": "729.00",
+                    "flow_lblt": "389.00",
+                    "fix_lblt": "60.00",
+                    "total_lblt": "449.00",
+                    "cpfn": "35",
+                    "cfp_surp": "99.99",
+                    "prfi_surp": "99.99",
+                    "total_cptl": "280.00"
+                },
+                {
+                    "stac_yymm": "201212",
+                    "cras": "559.00",
+                    "fxas": "216.00",
+                    "total_aset": "775.00",
+                    "flow_lblt": "387.00",
+                    "fix_lblt": "51.00",
+                    "total_lblt": "437.00",
+                    "cpfn": "35",
+                    "cfp_surp": "99.99",
+                    "prfi_surp": "99.99",
+                    "total_cptl": "338.00"
+                },
+                {
+                    "stac_yymm": "201112",
+                    "cras": "525.00",
+                    "fxas": "206.00",
+                    "total_aset": "731.00",
+                    "flow_lblt": "353.00",
+                    "fix_lblt": "50.00",
+                    "total_lblt": "403.00",
+                    "cpfn": "35",
+                    "cfp_surp": "99.99",
+                    "prfi_surp": "99.99",
+                    "total_cptl": "328.00"
+                },
+                {
+                    "stac_yymm": "201012",
+                    "cras": "539.00",
+                    "fxas": "194.00",
+                    "total_aset": "733.00",
+                    "flow_lblt": "317.00",
+                    "fix_lblt": "67.00",
+                    "total_lblt": "384.00",
+                    "cpfn": "35",
+                    "cfp_surp": "99.99",
+                    "prfi_surp": "99.99",
+                    "total_cptl": "349.00"
+                },
+                {
+                    "stac_yymm": "200912",
+                    "cras": "328.00",
+                    "fxas": "184.00",
+                    "total_aset": "512.00",
+                    "flow_lblt": "192.00",
+                    "fix_lblt": "35.00",
+                    "total_lblt": "226.00",
+                    "cpfn": "35",
+                    "cfp_surp": "99.99",
+                    "prfi_surp": "99.99",
+                    "total_cptl": "286.00"
+                },
+                {
+                    "stac_yymm": "200812",
+                    "cras": "229.00",
+                    "fxas": "214.00",
+                    "total_aset": "443.00",
+                    "flow_lblt": "131.00",
+                    "fix_lblt": "37.00",
+                    "total_lblt": "168.00",
+                    "cpfn": "35",
+                    "cfp_surp": "99.99",
+                    "prfi_surp": "99.99",
+                    "total_cptl": "275.00"
+                },
+                {
+                    "stac_yymm": "200712",
+                    "cras": "282.00",
+                    "fxas": "180.00",
+                    "total_aset": "462.00",
+                    "flow_lblt": "148.00",
+                    "fix_lblt": "39.00",
+                    "total_lblt": "186.00",
+                    "cpfn": "35",
+                    "cfp_surp": "99.99",
+                    "prfi_surp": "99.99",
+                    "total_cptl": "276.00"
+                },
+                {
+                    "stac_yymm": "200612",
+                    "cras": "280.00",
+                    "fxas": "174.00",
+                    "total_aset": "454.00",
+                    "flow_lblt": "145.00",
+                    "fix_lblt": "34.00",
+                    "total_lblt": "179.00",
+                    "cpfn": "35",
+                    "cfp_surp": "99.99",
+                    "prfi_surp": "99.99",
+                    "total_cptl": "274.00"
+                },
+                {
+                    "stac_yymm": "200512",
+                    "cras": "233.00",
+                    "fxas": "170.00",
+                    "total_aset": "403.00",
+                    "flow_lblt": "114.00",
+                    "fix_lblt": "13.00",
+                    "total_lblt": "128.00",
+                    "cpfn": "35",
+                    "cfp_surp": "99.99",
+                    "prfi_surp": "99.99",
+                    "total_cptl": "275.00"
+                },
+                {
+                    "stac_yymm": "200412",
+                    "cras": "245.00",
+                    "fxas": "146.00",
+                    "total_aset": "392.00",
+                    "flow_lblt": "74.00",
+                    "fix_lblt": "10.00",
+                    "total_lblt": "84.00",
+                    "cpfn": "35",
+                    "cfp_surp": "99.99",
+                    "prfi_surp": "99.99",
+                    "total_cptl": "307.00"
+                }
+            ]
+        },
+        {
+            "name": "삼성공조",
+            "PDNO": "006660",
+            "token": 2483,
+            "output_inquirePrice": {
+                "iscd_stat_cls_code": "57",
+                "marg_rate": "100.00",
+                "rprs_mrkt_kor_name": "KOSPI",
+                "bstp_kor_isnm": "운송장비·부품",
+                "temp_stop_yn": "N",
+                "oprc_rang_cont_yn": "N",
+                "clpr_rang_cont_yn": "N",
+                "crdt_able_yn": "N",
+                "grmn_rate_cls_code": " ",
+                "elw_pblc_yn": "N",
+                "stck_prpr": "13520",
+                "prdy_vrss": "-230",
+                "prdy_vrss_sign": "5",
+                "prdy_ctrt": "-1.67",
+                "acml_tr_pbmn": "10797948400",
+                "acml_vol": "780431",
+                "prdy_vrss_vol_rate": "66.23",
+                "stck_oprc": "13270",
+                "stck_hgpr": "13620",
+                "stck_lwpr": "13050",
+                "stck_mxpr": "17870",
+                "stck_llam": "9630",
+                "stck_sdpr": "13750",
+                "wghn_avrg_stck_prc": "13325.89",
+                "hts_frgn_ehrt": "0.95",
+                "frgn_ntby_qty": "-9282",
+                "pgtr_ntby_qty": "-11228",
+                "pvt_scnd_dmrs_prc": "14416",
+                "pvt_frst_dmrs_prc": "14082",
+                "pvt_pont_val": "13456",
+                "pvt_frst_dmsp_prc": "13122",
+                "pvt_scnd_dmsp_prc": "12496",
+                "dmrs_val": "14250",
+                "dmsp_val": "13290",
+                "cpfn": "41",
+                "rstc_wdth_prc": "4120",
+                "stck_fcam": "500",
+                "stck_sspr": "9070",
+                "aspr_unit": "10",
+                "hts_deal_qty_unit_val": "1",
+                "lstn_stcn": "8126314",
+                "hts_avls": "1099",
+                "per": "7.96",
+                "pbr": "0.41",
+                "stac_month": "12",
+                "vol_tnrt": "9.60",
+                "eps": "1699.00",
+                "bps": "33381.00",
+                "d250_hgpr": "20700",
+                "d250_hgpr_date": "20240626",
+                "d250_hgpr_vrss_prpr_rate": "-34.69",
+                "d250_lwpr": "8110",
+                "d250_lwpr_date": "20241209",
+                "d250_lwpr_vrss_prpr_rate": "66.71",
+                "stck_dryy_hgpr": "15000",
+                "dryy_hgpr_vrss_prpr_rate": "-9.87",
+                "dryy_hgpr_date": "20250113",
+                "stck_dryy_lwpr": "8750",
+                "dryy_lwpr_vrss_prpr_rate": "54.51",
+                "dryy_lwpr_date": "20250102",
+                "w52_hgpr": "20700",
+                "w52_hgpr_vrss_prpr_ctrt": "-34.69",
+                "w52_hgpr_date": "20240626",
+                "w52_lwpr": "8110",
+                "w52_lwpr_vrss_prpr_ctrt": "66.71",
+                "w52_lwpr_date": "20241209",
+                "whol_loan_rmnd_rate": "7.50",
+                "ssts_yn": "N",
+                "stck_shrn_iscd": "006660",
+                "fcam_cnnm": "500",
+                "cpfn_cnnm": "40 억",
+                "frgn_hldn_qty": "77430",
+                "vi_cls_code": "N",
+                "ovtm_vi_cls_code": "N",
+                "last_ssts_cntg_qty": "4",
+                "invt_caful_yn": "N",
+                "mrkt_warn_cls_code": "00",
+                "short_over_yn": "N",
+                "sltr_yn": "N"
+            },
+            "output_balanceSheet": [
+                {
+                    "stac_yymm": "202409",
+                    "cras": "2330.00",
+                    "fxas": "859.00",
+                    "total_aset": "3188.00",
+                    "flow_lblt": "319.00",
+                    "fix_lblt": "65.00",
+                    "total_lblt": "383.00",
+                    "cpfn": "41",
+                    "cfp_surp": "99.99",
+                    "prfi_surp": "99.99",
+                    "total_cptl": "2805.00"
+                },
+                {
+                    "stac_yymm": "202312",
+                    "cras": "2214.00",
+                    "fxas": "920.00",
+                    "total_aset": "3134.00",
+                    "flow_lblt": "352.00",
+                    "fix_lblt": "70.00",
+                    "total_lblt": "423.00",
+                    "cpfn": "41",
+                    "cfp_surp": "99.99",
+                    "prfi_surp": "99.99",
+                    "total_cptl": "2712.00"
+                },
+                {
+                    "stac_yymm": "202212",
+                    "cras": "2016.00",
+                    "fxas": "1070.00",
+                    "total_aset": "3087.00",
+                    "flow_lblt": "410.00",
+                    "fix_lblt": "88.00",
+                    "total_lblt": "498.00",
+                    "cpfn": "41",
+                    "cfp_surp": "99.99",
+                    "prfi_surp": "99.99",
+                    "total_cptl": "2589.00"
+                },
+                {
+                    "stac_yymm": "202112",
+                    "cras": "1589.00",
+                    "fxas": "986.00",
+                    "total_aset": "2575.00",
+                    "flow_lblt": "349.00",
+                    "fix_lblt": "29.00",
+                    "total_lblt": "378.00",
+                    "cpfn": "41",
+                    "cfp_surp": "99.99",
+                    "prfi_surp": "99.99",
+                    "total_cptl": "2198.00"
+                },
+                {
+                    "stac_yymm": "202012",
+                    "cras": "1540.00",
+                    "fxas": "1042.00",
+                    "total_aset": "2582.00",
+                    "flow_lblt": "320.00",
+                    "fix_lblt": "36.00",
+                    "total_lblt": "356.00",
+                    "cpfn": "41",
+                    "cfp_surp": "99.99",
+                    "prfi_surp": "99.99",
+                    "total_cptl": "2226.00"
+                },
+                {
+                    "stac_yymm": "201912",
+                    "cras": "1267.00",
+                    "fxas": "1317.00",
+                    "total_aset": "2584.00",
+                    "flow_lblt": "350.00",
+                    "fix_lblt": "47.00",
+                    "total_lblt": "397.00",
+                    "cpfn": "41",
+                    "cfp_surp": "99.99",
+                    "prfi_surp": "99.99",
+                    "total_cptl": "2187.00"
+                },
+                {
+                    "stac_yymm": "201812",
+                    "cras": "1455.00",
+                    "fxas": "1147.00",
+                    "total_aset": "2602.00",
+                    "flow_lblt": "411.00",
+                    "fix_lblt": "52.00",
+                    "total_lblt": "463.00",
+                    "cpfn": "41",
+                    "cfp_surp": "99.99",
+                    "prfi_surp": "99.99",
+                    "total_cptl": "2139.00"
+                },
+                {
+                    "stac_yymm": "201712",
+                    "cras": "1599.00",
+                    "fxas": "1032.00",
+                    "total_aset": "2631.00",
+                    "flow_lblt": "498.00",
+                    "fix_lblt": "50.00",
+                    "total_lblt": "549.00",
+                    "cpfn": "41",
+                    "cfp_surp": "99.99",
+                    "prfi_surp": "99.99",
+                    "total_cptl": "2082.00"
+                },
+                {
+                    "stac_yymm": "201612",
+                    "cras": "2019.00",
+                    "fxas": "509.00",
+                    "total_aset": "2527.00",
+                    "flow_lblt": "501.00",
+                    "fix_lblt": "39.00",
+                    "total_lblt": "540.00",
+                    "cpfn": "41",
+                    "cfp_surp": "99.99",
+                    "prfi_surp": "99.99",
+                    "total_cptl": "1987.00"
+                },
+                {
+                    "stac_yymm": "201512",
+                    "cras": "1710.00",
+                    "fxas": "731.00",
+                    "total_aset": "2441.00",
+                    "flow_lblt": "483.00",
+                    "fix_lblt": "37.00",
+                    "total_lblt": "519.00",
+                    "cpfn": "41",
+                    "cfp_surp": "99.99",
+                    "prfi_surp": "99.99",
+                    "total_cptl": "1922.00"
+                },
+                {
+                    "stac_yymm": "201412",
+                    "cras": "1503.00",
+                    "fxas": "1024.00",
+                    "total_aset": "2527.00",
+                    "flow_lblt": "625.00",
+                    "fix_lblt": "60.00",
+                    "total_lblt": "684.00",
+                    "cpfn": "41",
+                    "cfp_surp": "99.99",
+                    "prfi_surp": "99.99",
+                    "total_cptl": "1843.00"
+                },
+                {
+                    "stac_yymm": "201312",
+                    "cras": "1796.00",
+                    "fxas": "711.00",
+                    "total_aset": "2506.00",
+                    "flow_lblt": "616.00",
+                    "fix_lblt": "109.00",
+                    "total_lblt": "725.00",
+                    "cpfn": "41",
+                    "cfp_surp": "99.99",
+                    "prfi_surp": "99.99",
+                    "total_cptl": "1781.00"
+                },
+                {
+                    "stac_yymm": "201212",
+                    "cras": "1910.00",
+                    "fxas": "580.00",
+                    "total_aset": "2491.00",
+                    "flow_lblt": "713.00",
+                    "fix_lblt": "123.00",
+                    "total_lblt": "836.00",
+                    "cpfn": "41",
+                    "cfp_surp": "99.99",
+                    "prfi_surp": "99.99",
+                    "total_cptl": "1655.00"
+                },
+                {
+                    "stac_yymm": "201112",
+                    "cras": "1860.00",
+                    "fxas": "740.00",
+                    "total_aset": "2600.00",
+                    "flow_lblt": "775.00",
+                    "fix_lblt": "192.00",
+                    "total_lblt": "967.00",
+                    "cpfn": "41",
+                    "cfp_surp": "99.99",
+                    "prfi_surp": "99.99",
+                    "total_cptl": "1633.00"
+                },
+                {
+                    "stac_yymm": "201012",
+                    "cras": "1719.00",
+                    "fxas": "384.00",
+                    "total_aset": "2103.00",
+                    "flow_lblt": "511.00",
+                    "fix_lblt": "26.00",
+                    "total_lblt": "537.00",
+                    "cpfn": "41",
+                    "cfp_surp": "99.99",
+                    "prfi_surp": "99.99",
+                    "total_cptl": "1566.00"
+                },
+                {
+                    "stac_yymm": "200912",
+                    "cras": "1698.00",
+                    "fxas": "393.00",
+                    "total_aset": "2091.00",
+                    "flow_lblt": "637.00",
+                    "fix_lblt": "40.00",
+                    "total_lblt": "677.00",
+                    "cpfn": "41",
+                    "cfp_surp": "99.99",
+                    "prfi_surp": "99.99",
+                    "total_cptl": "1414.00"
+                },
+                {
+                    "stac_yymm": "200812",
+                    "cras": "1716.00",
+                    "fxas": "403.00",
+                    "total_aset": "2119.00",
+                    "flow_lblt": "722.00",
+                    "fix_lblt": "68.00",
+                    "total_lblt": "790.00",
+                    "cpfn": "41",
+                    "cfp_surp": "99.99",
+                    "prfi_surp": "99.99",
+                    "total_cptl": "1329.00"
+                },
+                {
+                    "stac_yymm": "200712",
+                    "cras": "1773.00",
+                    "fxas": "504.00",
+                    "total_aset": "2277.00",
+                    "flow_lblt": "909.00",
+                    "fix_lblt": "102.00",
+                    "total_lblt": "1011.00",
+                    "cpfn": "41",
+                    "cfp_surp": "99.99",
+                    "prfi_surp": "99.99",
+                    "total_cptl": "1266.00"
+                },
+                {
+                    "stac_yymm": "200612",
+                    "cras": "1893.00",
+                    "fxas": "443.00",
+                    "total_aset": "2337.00",
+                    "flow_lblt": "887.00",
+                    "fix_lblt": "149.00",
+                    "total_lblt": "1036.00",
+                    "cpfn": "41",
+                    "cfp_surp": "99.99",
+                    "prfi_surp": "99.99",
+                    "total_cptl": "1301.00"
+                },
+                {
+                    "stac_yymm": "200512",
+                    "cras": "1844.00",
+                    "fxas": "463.00",
+                    "total_aset": "2307.00",
+                    "flow_lblt": "932.00",
+                    "fix_lblt": "132.00",
+                    "total_lblt": "1064.00",
+                    "cpfn": "41",
+                    "cfp_surp": "99.99",
+                    "prfi_surp": "99.99",
+                    "total_cptl": "1242.00"
+                },
+                {
+                    "stac_yymm": "200412",
+                    "cras": "1733.00",
+                    "fxas": "367.00",
+                    "total_aset": "2099.00",
+                    "flow_lblt": "730.00",
+                    "fix_lblt": "188.00",
+                    "total_lblt": "917.00",
+                    "cpfn": "41",
+                    "cfp_surp": "99.99",
+                    "prfi_surp": "99.99",
+                    "total_cptl": "1182.00"
+                }
+            ]
+        },
+        {
+            "name": "제이엠티",
+            "PDNO": "094970",
+            "token": 1612,
+            "output_inquirePrice": {
+                "iscd_stat_cls_code": "57",
+                "marg_rate": "100.00",
+                "rprs_mrkt_kor_name": "KOSDAQ",
+                "bstp_kor_isnm": "전기·전자",
+                "temp_stop_yn": "N",
+                "oprc_rang_cont_yn": "N",
+                "clpr_rang_cont_yn": "N",
+                "crdt_able_yn": "N",
+                "grmn_rate_cls_code": " ",
+                "elw_pblc_yn": "N",
+                "stck_prpr": "2750",
+                "prdy_vrss": "-10",
+                "prdy_vrss_sign": "5",
+                "prdy_ctrt": "-0.36",
+                "acml_tr_pbmn": "133880600",
+                "acml_vol": "48845",
+                "prdy_vrss_vol_rate": "107.40",
+                "stck_oprc": "2760",
+                "stck_hgpr": "2770",
+                "stck_lwpr": "2715",
+                "stck_mxpr": "3585",
+                "stck_llam": "1935",
+                "stck_sdpr": "2760",
+                "wghn_avrg_stck_prc": "2740.91",
+                "hts_frgn_ehrt": "4.59",
+                "frgn_ntby_qty": "7820",
+                "pgtr_ntby_qty": "7714",
+                "pvt_scnd_dmrs_prc": "2813",
+                "pvt_frst_dmrs_prc": "2786",
+                "pvt_pont_val": "2768",
+                "pvt_frst_dmsp_prc": "2741",
+                "pvt_scnd_dmsp_prc": "2723",
+                "dmrs_val": "2777",
+                "dmsp_val": "2732",
+                "cpfn": "84",
+                "rstc_wdth_prc": "825",
+                "stck_fcam": "500",
+                "stck_sspr": "1930",
+                "aspr_unit": "5",
+                "hts_deal_qty_unit_val": "1",
+                "lstn_stcn": "16748240",
+                "hts_avls": "461",
+                "per": "2.04",
+                "pbr": "0.38",
+                "stac_month": "12",
+                "vol_tnrt": "0.29",
+                "eps": "1346.00",
+                "bps": "7327.00",
+                "d250_hgpr": "7360",
+                "d250_hgpr_date": "20240306",
+                "d250_hgpr_vrss_prpr_rate": "-62.64",
+                "d250_lwpr": "2415",
+                "d250_lwpr_date": "20241209",
+                "d250_lwpr_vrss_prpr_rate": "13.87",
+                "stck_dryy_hgpr": "3050",
+                "dryy_hgpr_vrss_prpr_rate": "-9.84",
+                "dryy_hgpr_date": "20250106",
+                "stck_dryy_lwpr": "2545",
+                "dryy_lwpr_vrss_prpr_rate": "8.06",
+                "dryy_lwpr_date": "20250203",
+                "w52_hgpr": "7360",
+                "w52_hgpr_vrss_prpr_ctrt": "-62.64",
+                "w52_hgpr_date": "20240306",
+                "w52_lwpr": "2415",
+                "w52_lwpr_vrss_prpr_ctrt": "13.87",
+                "w52_lwpr_date": "20241209",
+                "whol_loan_rmnd_rate": "2.89",
+                "ssts_yn": "N",
+                "stck_shrn_iscd": "094970",
+                "fcam_cnnm": "500",
+                "cpfn_cnnm": "83 억",
+                "frgn_hldn_qty": "769311",
+                "vi_cls_code": "N",
+                "ovtm_vi_cls_code": "N",
+                "last_ssts_cntg_qty": "0",
+                "invt_caful_yn": "N",
+                "mrkt_warn_cls_code": "00",
+                "short_over_yn": "N",
+                "sltr_yn": "N"
+            },
+            "output_balanceSheet": [
+                {
+                    "stac_yymm": "202409",
+                    "cras": "1829.00",
+                    "fxas": "739.00",
+                    "total_aset": "2568.00",
+                    "flow_lblt": "818.00",
+                    "fix_lblt": "58.00",
+                    "total_lblt": "876.00",
+                    "cpfn": "84",
+                    "cfp_surp": "99.99",
+                    "prfi_surp": "99.99",
+                    "total_cptl": "1692.00"
+                },
+                {
+                    "stac_yymm": "202312",
+                    "cras": "1523.00",
+                    "fxas": "695.00",
+                    "total_aset": "2218.00",
+                    "flow_lblt": "578.00",
+                    "fix_lblt": "59.00",
+                    "total_lblt": "636.00",
+                    "cpfn": "84",
+                    "cfp_surp": "99.99",
+                    "prfi_surp": "99.99",
+                    "total_cptl": "1582.00"
+                },
+                {
+                    "stac_yymm": "202212",
+                    "cras": "1081.00",
+                    "fxas": "302.00",
+                    "total_aset": "1383.00",
+                    "flow_lblt": "345.00",
+                    "fix_lblt": "3.00",
+                    "total_lblt": "348.00",
+                    "cpfn": "84",
+                    "cfp_surp": "99.99",
+                    "prfi_surp": "99.99",
+                    "total_cptl": "1035.00"
+                },
+                {
+                    "stac_yymm": "202112",
+                    "cras": "991.00",
+                    "fxas": "259.00",
+                    "total_aset": "1251.00",
+                    "flow_lblt": "424.00",
+                    "fix_lblt": "74.00",
+                    "total_lblt": "498.00",
+                    "cpfn": "84",
+                    "cfp_surp": "99.99",
+                    "prfi_surp": "99.99",
+                    "total_cptl": "753.00"
+                },
+                {
+                    "stac_yymm": "202012",
+                    "cras": "923.00",
+                    "fxas": "277.00",
+                    "total_aset": "1200.00",
+                    "flow_lblt": "584.00",
+                    "fix_lblt": "38.00",
+                    "total_lblt": "622.00",
+                    "cpfn": "84",
+                    "cfp_surp": "99.99",
+                    "prfi_surp": "99.99",
+                    "total_cptl": "578.00"
+                },
+                {
+                    "stac_yymm": "201912",
+                    "cras": "413.00",
+                    "fxas": "304.00",
+                    "total_aset": "717.00",
+                    "flow_lblt": "138.00",
+                    "fix_lblt": "26.00",
+                    "total_lblt": "164.00",
+                    "cpfn": "84",
+                    "cfp_surp": "99.99",
+                    "prfi_surp": "99.99",
+                    "total_cptl": "553.00"
+                },
+                {
+                    "stac_yymm": "201812",
+                    "cras": "569.00",
+                    "fxas": "319.00",
+                    "total_aset": "888.00",
+                    "flow_lblt": "313.00",
+                    "fix_lblt": "25.00",
+                    "total_lblt": "338.00",
+                    "cpfn": "84",
+                    "cfp_surp": "99.99",
+                    "prfi_surp": "99.99",
+                    "total_cptl": "550.00"
+                },
+                {
+                    "stac_yymm": "201712",
+                    "cras": "647.00",
+                    "fxas": "344.00",
+                    "total_aset": "991.00",
+                    "flow_lblt": "510.00",
+                    "fix_lblt": "43.00",
+                    "total_lblt": "553.00",
+                    "cpfn": "84",
+                    "cfp_surp": "99.99",
+                    "prfi_surp": "99.99",
+                    "total_cptl": "438.00"
+                },
+                {
+                    "stac_yymm": "201612",
+                    "cras": "280.00",
+                    "fxas": "289.00",
+                    "total_aset": "570.00",
+                    "flow_lblt": "194.00",
+                    "fix_lblt": "4.00",
+                    "total_lblt": "198.00",
+                    "cpfn": "84",
+                    "cfp_surp": "99.99",
+                    "prfi_surp": "99.99",
+                    "total_cptl": "372.00"
+                },
+                {
+                    "stac_yymm": "201512",
+                    "cras": "220.00",
+                    "fxas": "238.00",
+                    "total_aset": "458.00",
+                    "flow_lblt": "94.00",
+                    "fix_lblt": "0.00",
+                    "total_lblt": "94.00",
+                    "cpfn": "84",
+                    "cfp_surp": "99.99",
+                    "prfi_surp": "99.99",
+                    "total_cptl": "364.00"
+                },
+                {
+                    "stac_yymm": "201412",
+                    "cras": "422.00",
+                    "fxas": "392.00",
+                    "total_aset": "814.00",
+                    "flow_lblt": "372.00",
+                    "fix_lblt": "0.00",
+                    "total_lblt": "372.00",
+                    "cpfn": "84",
+                    "cfp_surp": "99.99",
+                    "prfi_surp": "99.99",
+                    "total_cptl": "442.00"
+                },
+                {
+                    "stac_yymm": "201312",
+                    "cras": "461.00",
+                    "fxas": "460.00",
+                    "total_aset": "921.00",
+                    "flow_lblt": "520.00",
+                    "fix_lblt": "0.00",
+                    "total_lblt": "520.00",
+                    "cpfn": "84",
+                    "cfp_surp": "99.99",
+                    "prfi_surp": "99.99",
+                    "total_cptl": "402.00"
+                },
+                {
+                    "stac_yymm": "201212",
+                    "cras": "306.00",
+                    "fxas": "499.00",
+                    "total_aset": "805.00",
+                    "flow_lblt": "447.00",
+                    "fix_lblt": "2.00",
+                    "total_lblt": "450.00",
+                    "cpfn": "84",
+                    "cfp_surp": "99.99",
+                    "prfi_surp": "99.99",
+                    "total_cptl": "355.00"
+                },
+                {
+                    "stac_yymm": "201112",
+                    "cras": "329.00",
+                    "fxas": "524.00",
+                    "total_aset": "854.00",
+                    "flow_lblt": "500.00",
+                    "fix_lblt": "22.00",
+                    "total_lblt": "522.00",
+                    "cpfn": "84",
+                    "cfp_surp": "99.99",
+                    "prfi_surp": "99.99",
+                    "total_cptl": "331.00"
+                },
+                {
+                    "stac_yymm": "201012",
+                    "cras": "430.00",
+                    "fxas": "448.00",
+                    "total_aset": "877.00",
+                    "flow_lblt": "450.00",
+                    "fix_lblt": "60.00",
+                    "total_lblt": "511.00",
+                    "cpfn": "84",
+                    "cfp_surp": "99.99",
+                    "prfi_surp": "99.99",
+                    "total_cptl": "367.00"
+                },
+                {
+                    "stac_yymm": "200912",
+                    "cras": "394.00",
+                    "fxas": "409.00",
+                    "total_aset": "803.00",
+                    "flow_lblt": "377.00",
+                    "fix_lblt": "113.00",
+                    "total_lblt": "491.00",
+                    "cpfn": "83",
+                    "cfp_surp": "99.99",
+                    "prfi_surp": "99.99",
+                    "total_cptl": "312.00"
+                },
+                {
+                    "stac_yymm": "200812",
+                    "cras": "302.00",
+                    "fxas": "253.00",
+                    "total_aset": "554.00",
+                    "flow_lblt": "207.00",
+                    "fix_lblt": "51.00",
+                    "total_lblt": "258.00",
+                    "cpfn": "82",
+                    "cfp_surp": "99.99",
+                    "prfi_surp": "99.99",
+                    "total_cptl": "296.00"
+                },
+                {
+                    "stac_yymm": "200712",
+                    "cras": "162.00",
+                    "fxas": "206.00",
+                    "total_aset": "368.00",
+                    "flow_lblt": "84.00",
+                    "fix_lblt": "15.00",
+                    "total_lblt": "99.00",
+                    "cpfn": "36",
+                    "cfp_surp": "99.99",
+                    "prfi_surp": "99.99",
+                    "total_cptl": "270.00"
+                },
+                {
+                    "stac_yymm": "200612",
+                    "cras": "129.00",
+                    "fxas": "267.00",
+                    "total_aset": "396.00",
+                    "flow_lblt": "128.00",
+                    "fix_lblt": "51.00",
+                    "total_lblt": "179.00",
+                    "cpfn": "24",
+                    "cfp_surp": "99.99",
+                    "prfi_surp": "99.99",
+                    "total_cptl": "217.00"
+                },
+                {
+                    "stac_yymm": "200512",
+                    "cras": "102.00",
+                    "fxas": "97.00",
+                    "total_aset": "199.00",
+                    "flow_lblt": "79.00",
+                    "fix_lblt": "48.00",
+                    "total_lblt": "127.00",
+                    "cpfn": "24",
+                    "cfp_surp": "99.99",
+                    "prfi_surp": "99.99",
+                    "total_cptl": "72.00"
+                },
+                {
+                    "stac_yymm": "200412",
+                    "cras": "106.00",
+                    "fxas": "29.00",
+                    "total_aset": "135.00",
+                    "flow_lblt": "129.00",
+                    "fix_lblt": "4.00",
+                    "total_lblt": "132.00",
+                    "cpfn": "10",
+                    "cfp_surp": "99.99",
+                    "prfi_surp": "99.99",
+                    "total_cptl": "3.00"
+                }
+            ]
+        }
+    ],
+    "purchase_log": [
+        {
+            "time_stamp": "2025-02-14T08:20:33.303Z",
+            "stock_list": [
+                {
+                    "stock_name": "동일제강",
+                    "stock_code": "002690",
+                    "remaining_token": "10320",
+                    "stck_prpr": "1239",
+                    "ORD_QTY": "8"
+                },
+                {
+                    "stock_name": "원일특강",
+                    "stock_code": "012620",
+                    "remaining_token": "10320",
+                    "stck_prpr": "7170",
+                    "ORD_QTY": "1"
+                },
+                {
+                    "stock_name": "삼현철강",
+                    "stock_code": "017480",
+                    "remaining_token": "10320",
+                    "stck_prpr": "4275",
+                    "ORD_QTY": "2"
+                },
+                {
+                    "stock_name": "세원물산",
+                    "stock_code": "024830",
+                    "remaining_token": "10320",
+                    "stck_prpr": "8190",
+                    "ORD_QTY": "1"
+                },
+                {
+                    "stock_name": "아세아텍",
+                    "stock_code": "050860",
+                    "remaining_token": "10320",
+                    "stck_prpr": "2075",
+                    "ORD_QTY": "4"
+                },
+                {
+                    "stock_name": "이니텍",
+                    "stock_code": "053350",
+                    "remaining_token": "10320",
+                    "stck_prpr": "4140",
+                    "ORD_QTY": "2"
+                },
+                {
+                    "stock_name": "와토스코리아",
+                    "stock_code": "079000",
+                    "remaining_token": "10320",
+                    "stck_prpr": "5070",
+                    "ORD_QTY": "2"
+                },
+                {
+                    "stock_name": "서원인텍",
+                    "stock_code": "093920",
+                    "remaining_token": "10320",
+                    "stck_prpr": "5320",
+                    "ORD_QTY": "1"
+                },
+                {
+                    "stock_name": "레이언스",
+                    "stock_code": "228850",
+                    "remaining_token": "10320",
+                    "stck_prpr": "6840",
+                    "ORD_QTY": "1"
+                },
+                {
+                    "stock_name": "유니드비티플러스",
+                    "stock_code": "446070",
+                    "remaining_token": "10320",
+                    "stck_prpr": "3560",
+                    "ORD_QTY": "2"
+                }
+            ]
+        },
+        {
+            "time_stamp": "2025-02-14T09:00:34.592Z",
+            "stock_list": [
+                {
+                    "stock_name": "아세아텍",
+                    "stock_code": "050860",
+                    "remaining_token": "2084",
+                    "stck_prpr": "2080",
+                    "ORD_QTY": "1"
+                }
+            ]
+        },
+        {
+            "time_stamp": "2025-02-14T12:20:33.338Z",
+            "stock_list": [
+                {
+                    "stock_name": "세보엠이씨",
+                    "stock_code": "011560",
+                    "remaining_token": "10416",
+                    "stck_prpr": "10250",
+                    "ORD_QTY": "1"
+                }
+            ]
+        },
+        {
+            "time_stamp": "2025-02-17T08:30:47.876Z",
+            "stock_list": [
+                {
+                    "stock_name": "원일특강",
+                    "stock_code": "012620",
+                    "remaining_token": "9502",
+                    "stck_prpr": "7100",
+                    "ORD_QTY": "1"
+                }
+            ]
+        },
+        {
+            "time_stamp": "2025-02-17T08:40:47.874Z",
+            "stock_list": [
+                {
+                    "stock_name": "삼현철강",
+                    "stock_code": "017480",
+                    "remaining_token": "8138",
+                    "stck_prpr": "4285",
+                    "ORD_QTY": "1"
+                }
+            ]
+        },
+        {
+            "time_stamp": "2025-02-17T08:50:47.873Z",
+            "stock_list": [
+                {
+                    "stock_name": "세원물산",
+                    "stock_code": "024830",
+                    "remaining_token": "8514",
+                    "stck_prpr": "8350",
+                    "ORD_QTY": "1"
+                }
+            ]
+        },
+        {
+            "time_stamp": "2025-02-17T09:00:48.874Z",
+            "stock_list": [
+                {
+                    "stock_name": "아세아텍",
+                    "stock_code": "050860",
+                    "remaining_token": "6340",
+                    "stck_prpr": "2070",
+                    "ORD_QTY": "3"
+                }
+            ]
+        },
+        {
+            "time_stamp": "2025-02-17T09:10:47.875Z",
+            "stock_list": [
+                {
+                    "stock_name": "이니텍",
+                    "stock_code": "053350",
+                    "remaining_token": "8456",
+                    "stck_prpr": "4175",
+                    "ORD_QTY": "2"
+                }
+            ]
+        },
+        {
+            "time_stamp": "2025-02-17T09:20:47.877Z",
+            "stock_list": [
+                {
+                    "stock_name": "와토스코리아",
+                    "stock_code": "079000",
+                    "remaining_token": "6612",
+                    "stck_prpr": "5100",
+                    "ORD_QTY": "1"
+                }
+            ]
+        },
+        {
+            "time_stamp": "2025-02-17T09:30:47.875Z",
+            "stock_list": [
+                {
+                    "stock_name": "서원인텍",
+                    "stock_code": "093920",
+                    "remaining_token": "11448",
+                    "stck_prpr": "5330",
+                    "ORD_QTY": "2"
+                }
+            ]
+        },
+        {
+            "time_stamp": "2025-02-17T09:40:47.876Z",
+            "stock_list": [
+                {
+                    "stock_name": "레이언스",
+                    "stock_code": "228850",
+                    "remaining_token": "9944",
+                    "stck_prpr": "6800",
+                    "ORD_QTY": "1"
+                }
+            ]
+        },
+        {
+            "time_stamp": "2025-02-17T12:30:47.902Z",
+            "stock_list": [
+                {
+                    "stock_name": "유니드비티플러스",
+                    "stock_code": "446070",
+                    "remaining_token": "9680",
+                    "stck_prpr": "3630",
+                    "ORD_QTY": "2"
+                }
+            ]
+        },
+        {
+            "time_stamp": "2025-02-17T13:00:47.899Z",
+            "stock_list": [
+                {
+                    "stock_name": "동일제강",
+                    "stock_code": "002690",
+                    "remaining_token": "6936",
+                    "stck_prpr": "1238",
+                    "ORD_QTY": "5"
+                }
+            ]
+        },
+        {
+            "time_stamp": "2025-02-18T09:00:47.239Z",
+            "stock_list": [
+                {
+                    "stock_name": "유니드비티플러스",
+                    "stock_code": "446070",
+                    "remaining_token": "4212",
+                    "stck_prpr": "3635",
+                    "ORD_QTY": "1"
+                }
+            ]
+        },
+        {
+            "time_stamp": "2025-02-18T09:10:45.032Z",
+            "stock_list": [
+                {
+                    "stock_name": "전방",
+                    "stock_code": "000950",
+                    "remaining_token": "18608",
+                    "stck_prpr": "18240",
+                    "ORD_QTY": "1"
+                }
+            ]
+        },
+        {
+            "time_stamp": "2025-02-18T09:30:45.727Z",
+            "stock_list": [
+                {
+                    "stock_name": "동일제강",
+                    "stock_code": "002690",
+                    "remaining_token": "2538",
+                    "stck_prpr": "1233",
+                    "ORD_QTY": "2"
+                }
+            ]
+        },
+        {
+            "time_stamp": "2025-02-18T10:10:45.033Z",
+            "stock_list": [
+                {
+                    "stock_name": "삼현철강",
+                    "stock_code": "017480",
+                    "remaining_token": "5869",
+                    "stck_prpr": "4290",
+                    "ORD_QTY": "1"
+                }
+            ]
+        },
+        {
+            "time_stamp": "2025-02-18T10:30:12.796Z",
+            "stock_list": [
+                {
+                    "stock_name": "아세아텍",
+                    "stock_code": "050860",
+                    "remaining_token": "2146",
+                    "stck_prpr": "2070",
+                    "ORD_QTY": "1"
+                }
+            ]
+        },
+        {
+            "time_stamp": "2025-02-19T08:30:11.934Z",
+            "stock_list": [
+                {
+                    "stock_name": "동일제강",
+                    "stock_code": "002690",
+                    "remaining_token": "3096",
+                    "stck_prpr": "1238",
+                    "ORD_QTY": "2"
+                }
+            ]
+        },
+        {
+            "time_stamp": "2025-02-19T08:40:11.859Z",
+            "stock_list": [
+                {
+                    "stock_name": "세보엠이씨",
+                    "stock_code": "011560",
+                    "remaining_token": "11430",
+                    "stck_prpr": "10230",
+                    "ORD_QTY": "1"
+                }
+            ]
+        },
+        {
+            "time_stamp": "2025-02-19T08:50:11.927Z",
+            "stock_list": [
+                {
+                    "stock_name": "원일특강",
+                    "stock_code": "012620",
+                    "remaining_token": "7426",
+                    "stck_prpr": "7200",
+                    "ORD_QTY": "1"
+                },
+                {
+                    "stock_name": "삼현철강",
+                    "stock_code": "017480",
+                    "remaining_token": "4571",
+                    "stck_prpr": "4280",
+                    "ORD_QTY": "1"
+                }
+            ]
+        },
+        {
+            "time_stamp": "2025-02-19T09:00:12.227Z",
+            "stock_list": [
+                {
+                    "stock_name": "아세아텍",
+                    "stock_code": "050860",
+                    "remaining_token": "3052",
+                    "stck_prpr": "2070",
+                    "ORD_QTY": "1"
+                }
+            ]
+        },
+        {
+            "time_stamp": "2025-02-19T09:10:11.857Z",
+            "stock_list": [
+                {
+                    "stock_name": "이니텍",
+                    "stock_code": "053350",
+                    "remaining_token": "5098",
+                    "stck_prpr": "4100",
+                    "ORD_QTY": "1"
+                },
+                {
+                    "stock_name": "와토스코리아",
+                    "stock_code": "079000",
+                    "remaining_token": "6488",
+                    "stck_prpr": "5200",
+                    "ORD_QTY": "1"
+                }
+            ]
+        },
+        {
+            "time_stamp": "2025-02-19T09:20:11.858Z",
+            "stock_list": [
+                {
+                    "stock_name": "서원인텍",
+                    "stock_code": "093920",
+                    "remaining_token": "5764",
+                    "stck_prpr": "5320",
+                    "ORD_QTY": "1"
+                },
+                {
+                    "stock_name": "레이언스",
+                    "stock_code": "228850",
+                    "remaining_token": "8104",
+                    "stck_prpr": "6860",
+                    "ORD_QTY": "1"
+                }
+            ]
+        },
+        {
+            "time_stamp": "2025-02-19T09:30:11.932Z",
+            "stock_list": [
+                {
+                    "stock_name": "유니드비티플러스",
+                    "stock_code": "446070",
+                    "remaining_token": "3745",
+                    "stck_prpr": "3720",
+                    "ORD_QTY": "1"
+                }
+            ]
+        },
+        {
+            "time_stamp": "2025-02-19T15:30:20.246Z",
+            "stock_list": [
+                {
+                    "stock_name": "동일제강",
+                    "stock_code": "002690",
+                    "remaining_token": "1292",
+                    "stck_prpr": "1240",
+                    "ORD_QTY": "1"
+                }
+            ]
+        },
+        {
+            "time_stamp": "2025-02-20T08:51:01.465Z",
+            "stock_list": [
+                {
+                    "stock_name": "동일제강",
+                    "stock_code": "002690",
+                    "remaining_token": "2516",
+                    "stck_prpr": "1240",
+                    "ORD_QTY": "2"
+                }
+            ]
+        },
+        {
+            "time_stamp": "2025-02-20T09:21:02.566Z",
+            "stock_list": [
+                {
+                    "stock_name": "아세아텍",
+                    "stock_code": "050860",
+                    "remaining_token": "4118",
+                    "stck_prpr": "2060",
+                    "ORD_QTY": "1"
+                }
+            ]
+        },
+        {
+            "time_stamp": "2025-02-20T09:31:03.778Z",
+            "stock_list": [
+                {
+                    "stock_name": "이니텍",
+                    "stock_code": "053350",
+                    "remaining_token": "4134",
+                    "stck_prpr": "4115",
+                    "ORD_QTY": "1"
+                }
+            ]
+        },
+        {
+            "time_stamp": "2025-02-20T10:31:05.581Z",
+            "stock_list": [
+                {
+                    "stock_name": "아세아텍",
+                    "stock_code": "050860",
+                    "remaining_token": "2170",
+                    "stck_prpr": "2050",
+                    "ORD_QTY": "1"
+                }
+            ]
+        },
+        {
+            "time_stamp": "2025-02-20T11:41:01.669Z",
+            "stock_list": [
+                {
+                    "stock_name": "세원물산",
+                    "stock_code": "024830",
+                    "remaining_token": "8532",
+                    "stck_prpr": "8440",
+                    "ORD_QTY": "1"
+                }
+            ]
+        },
+        {
+            "time_stamp": "2025-02-21T08:20:29.436Z",
+            "stock_list": [
+                {
+                    "stock_name": "동일제강",
+                    "stock_code": "002690",
+                    "remaining_token": "2612",
+                    "stck_prpr": "1223",
+                    "ORD_QTY": "2"
+                }
+            ]
+        },
+        {
+            "time_stamp": "2025-02-21T08:30:29.631Z",
+            "stock_list": [
+                {
+                    "stock_name": "삼정펄프",
+                    "stock_code": "009770",
+                    "remaining_token": "27392",
+                    "stck_prpr": "25550",
+                    "ORD_QTY": "1"
+                }
+            ]
+        },
+        {
+            "time_stamp": "2025-02-21T08:40:29.435Z",
+            "stock_list": [
+                {
+                    "stock_name": "삼현철강",
+                    "stock_code": "017480",
+                    "remaining_token": "6003",
+                    "stck_prpr": "4330",
+                    "ORD_QTY": "1"
+                }
+            ]
+        },
+        {
+            "time_stamp": "2025-02-21T08:50:29.434Z",
+            "stock_list": [
+                {
+                    "stock_name": "아세아텍",
+                    "stock_code": "050860",
+                    "remaining_token": "2584",
+                    "stck_prpr": "2045",
+                    "ORD_QTY": "1"
+                }
+            ]
+        },
+        {
+            "time_stamp": "2025-02-21T09:00:30.711Z",
+            "stock_list": [
+                {
+                    "stock_name": "와토스코리아",
+                    "stock_code": "079000",
+                    "remaining_token": "7000",
+                    "stck_prpr": "5260",
+                    "ORD_QTY": "1"
+                }
+            ]
+        },
+        {
+            "time_stamp": "2025-02-21T09:10:29.435Z",
+            "stock_list": [
+                {
+                    "stock_name": "서원인텍",
+                    "stock_code": "093920",
+                    "remaining_token": "6156",
+                    "stck_prpr": "5380",
+                    "ORD_QTY": "1"
+                },
+                {
+                    "stock_name": "레이언스",
+                    "stock_code": "228850",
+                    "remaining_token": "6956",
+                    "stck_prpr": "6830",
+                    "ORD_QTY": "1"
+                }
+            ]
+        },
+        {
+            "time_stamp": "2025-02-21T09:20:29.434Z",
+            "stock_list": [
+                {
+                    "stock_name": "유니드비티플러스",
+                    "stock_code": "446070",
+                    "remaining_token": "5737",
+                    "stck_prpr": "3810",
+                    "ORD_QTY": "1"
+                }
+            ]
+        }
+    ],
+    "corpScanIndex": 1093
+}
