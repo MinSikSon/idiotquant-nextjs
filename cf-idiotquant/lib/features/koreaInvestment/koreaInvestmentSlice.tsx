@@ -560,11 +560,11 @@ export const koreaInvestmentSlice = createAppSlice({
             },
             {
                 pending: (state) => {
-                    // console.log(`[reqPostOrderCash] pending`);
+                    console.log(`[reqPostOrderCash] pending`);
                     state.koreaInvestmentOrderCash.state = "pending";
                 },
                 fulfilled: (state, action) => {
-                    // console.log(`[reqPostOrderCash] fulfilled`,`action.payload`, typeof action.payload, action.payload);
+                    console.log(`[reqPostOrderCash] fulfilled`, `action.payload`, typeof action.payload, action.payload);
                     if (undefined != action.payload["output1"]) {
                         const newKoreaInvestmentOrderCash: KoreaInvestmentOrderCash = action.payload;
                         state.koreaInvestmentOrderCash = { ...newKoreaInvestmentOrderCash, state: "fulfilled" };

@@ -111,13 +111,23 @@ export default function OpenApi() {
                 netIncome: <div className="text-xs">{(Number(item["pchs_amt"]) / Number(kiBalance.output2[0]["pchs_amt_smtl_amt"]) * 100).toFixed(2)} %</div>,
                 chartName: '',
                 tag: <>
-                    <div className="p-0 m-0 gap-1 mr-1">
-                        <Button className="p-0 m-0 mr-1 text-[0.6rem]" variant="outlined" size="sm" onClick={() => handleOnClick(item["pdno"], "buy")}>
-                            매수
-                        </Button>
-                        <Button className="p-0 m-0 text-[0.6rem]" variant="outlined" size="sm" onClick={() => handleOnClick(item["pdno"], "sell")}>
-                            매도
-                        </Button>
+                    <div className="flex p-0 m-0 gap-1 mr-2">
+                        <div
+                            onClick={() => handleOnClick(item["pdno"], "buy")}
+                            className='mb-2 px-1 button bg-blue-500 rounded-full cursor-pointer select-none
+    active:translate-y-1 active:[box-shadow:0_0px_0_0_#1b6ff8,0_0px_0_0_#1b6ff841] active:border-b-[0px]
+    transition-all duration-150 [box-shadow:0_4px_0_0_#1b6ff8,0_8px_0_0_#1b6ff841] border-b-[1px] border-blue-400
+  '>
+                            <span className='flex flex-col justify-center items-center h-full text-white font-bold text-[0.5rem]'>구매</span>
+                        </div>
+                        <div
+                            onClick={() => handleOnClick(item["pdno"], "sell")}
+                            className='mb-2 px-1 button bg-red-400 rounded-full cursor-pointer select-none
+    active:translate-y-1 active:[box-shadow:0_0px_0_0_#910000,0_0px_0_0_#91000041] active:border-b-[0px]
+    transition-all duration-150 [box-shadow:0_4px_0_0_#910000,0_8px_0_0_#91000041] border-b-[1px] border-red-300
+  '>
+                            <span className='flex flex-col justify-center items-center h-full text-white font-bold text-[0.5rem]'>판매</span>
+                        </div>
                     </div>
                 </>,
             }
@@ -164,7 +174,7 @@ export default function OpenApi() {
             </div>
         </>,
         financial_date: "",
-        market_date: <div className="text-xs">- market_date: {time.toString()}</div>,
+        market_date: <div className="text-xs">market_date: {time.toString()}</div>,
         tableHead: example8TableHeadType,
         tableRow: example8TableRowType,
     }
