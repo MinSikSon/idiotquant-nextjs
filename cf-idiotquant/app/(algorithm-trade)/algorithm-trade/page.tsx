@@ -125,7 +125,7 @@ export default function AlgorithmTrade() {
     let cummulative_token = 0;
     const props: TablesExample8PropsType = {
         title: <>
-            <div className="flex pb-2">
+            <div className="flex pb-2 items-center">
                 <Popover>
                     <PopoverHandler>
                         <div className="text-base font-mono pr-2 text-black">알고리즘 투자 이력</div>
@@ -140,10 +140,12 @@ export default function AlgorithmTrade() {
                     }}
                     className='mb-2 px-2 button bg-green-400 rounded-full cursor-pointer select-none
                     active:translate-y-1 active:[box-shadow:0_0px_0_0_#129600,0_0px_0_0_#12960041] active:border-b-[0px]
-                    transition-all duration-150 [box-shadow:0_4px_0_0_#129600,0_8px_0_0_#12960041] border-b-[1px] border-green-300
-                  '>
+                    transition-all duration-150 [box-shadow:0_4px_0_0_#129600,0_8px_0_0_#12960041] border-b-[1px] border-green-300'>
                     <span className='flex flex-col justify-center items-center h-full text-white text-xs font-mono pt-0.5'>다시 조회 {kiToken.state == "fulfilled" ? "+ @" : ""}</span>
                 </div>
+                {"fulfilled" != capitalToken.state ?
+                    <Button loading={true} className="p-0 px-1 m-0 bg-white text-black text-mono">loading...</Button>
+                    : <></>}
             </div>
         </>,
         subTitle: ``,
@@ -195,19 +197,19 @@ export default function AlgorithmTrade() {
                         <div>마지막 구매 시도 종목</div>
                         <div className="ml-2 px-1 text-xs font-normal rounded border border-black">{refill_stock_index} {!!stock_list[refill_stock_index] ? stock_list[refill_stock_index]["name"] : 0}</div>
                     </div>
-                    <div className="text-xs font-mono text-black leading-none">
-                        <div>
+                    <div className="font-mono text-black leading-none">
+                        <div className="text-xs">
                             알고리즘 매매 대상 종목
                         </div>
                         <>
                             {stock_list.map((item: any, index: number) => {
                                 cummulative_token += isNaN(Number(item["token"])) ? 0 : Number(item["token"]);
-                                return <div key={index} className={`flex text-xs font-normal pl-1 items-center gap-x-1 ${index % 2 == 0 ? "bg-white" : "bg-gray-100"}`}>
-                                    <div className="flex min-w-[95px]">
+                                return <div key={index} className={`flex pl-1 items-center gap-x-1 ${index % 2 == 0 ? "bg-white" : "bg-gray-100"}`}>
+                                    <div className="flex items-center min-w-[95px] text-xs">
                                         <div>
                                             {index})
                                         </div>
-                                        <div className={`${item["name"].length > 7 ? "text-[0.6rem]" : (item["name"].length > 6 ? "text-[0.7rem]" : "")}`}>
+                                        <div className={`${item["name"].length >= 8 ? "text-[0.5rem]" : (item["name"].length >= 7 ? "text-[0.6rem]" : "text-xs")}`}>
                                             {item["name"]}
                                         </div>
                                     </div>
@@ -215,7 +217,7 @@ export default function AlgorithmTrade() {
                                         <div className="border rounded border-black p-0 text-[0.6rem]">
                                             token
                                         </div>
-                                        <div className="ml-1 min-w-[35px] text-right">
+                                        <div className="ml-1 min-w-[35px] text-right text-xs">
                                             {item["token"]}
                                         </div>
                                     </div>
@@ -234,15 +236,15 @@ export default function AlgorithmTrade() {
                                                 <div className="border rounded border-black p-0 text-[0.6rem]">
                                                     주가
                                                 </div>
-                                                <div className={`ml-1 min-w-[45px] text-right ${(inquirePriceMulti[item["PDNO"]].output.stck_prpr).length >= 6 ? "text-[0.6rem]" : ((inquirePriceMulti[item["PDNO"]].output.stck_prpr).length >= 5 ? "text-[0.7rem]" : "")}`}>
+                                                <div className={`ml-1 min-w-[45px] text-right ${(inquirePriceMulti[item["PDNO"]].output.stck_prpr).length >= 7 ? "text-[0.5rem]" : ((inquirePriceMulti[item["PDNO"]].output.stck_prpr).length >= 5 ? "text-[0.6rem]" : "text-xs")}`}>
                                                     {Number(inquirePriceMulti[item["PDNO"]].output.stck_prpr).toLocaleString()}원
                                                 </div>
                                             </div>
-                                            <div className="flex items-center min-w-[60px]">
+                                            <div className="flex items-center min-w-[55px]">
                                                 <div className="border rounded border-black p-0 text-[0.6rem]">
                                                     PER
                                                 </div>
-                                                <div className="ml-1 min-w-[40px] text-right">
+                                                <div className="ml-1 min-w-[40px] text-right text-[0.6rem]">
                                                     {inquirePriceMulti[item["PDNO"]].output.per}
                                                 </div>
                                             </div>

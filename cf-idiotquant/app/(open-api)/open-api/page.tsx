@@ -114,7 +114,7 @@ export default function OpenApi() {
         let kiBalanceOutput1 = [...kiBalance.output1];
         console.log(`kiBalanceOutput1`, kiBalanceOutput1);
         example8TableRowType = (kiBalanceOutput1.sort((a, b) => Number(b["pchs_amt"]) - Number(a["pchs_amt"])).map((item, index) => {
-            console.log(`item["prdt_name"]`, item["prdt_name"], `item["prdt_name"].length`, item["prdt_name"].length);
+            // console.log(`item["prdt_name"]`, item["prdt_name"], `item["prdt_name"].length`, item["prdt_name"].length);
             return {
                 digitalAsset: item["prdt_name"], // key
                 detail: <div className={`font-mono ${item["prdt_name"].length >= 7 ? "text-[0.6rem]" : "text-xs"}`}>{item["prdt_name"]}</div>,
@@ -173,8 +173,9 @@ export default function OpenApi() {
     }
     const props: TablesExample8PropsType = {
         title: <>
-            <div className="flex pb-2">
+            <div className="flex pb-2 items-center">
                 <div className="pr-2 text-black">알고리즘 매매 계좌 조회</div>
+
                 <div
                     onClick={() => {
                         showAlert("지난 주문 확인");
@@ -186,6 +187,9 @@ export default function OpenApi() {
   '>
                     <span className='flex flex-col justify-center items-center h-full text-white text-xs font-mono pt-0.5'>계좌 조회</span>
                 </div>
+                {"pending" == kiBalance.state ?
+                    <Button loading={true} className="p-0 px-1 m-0 bg-white text-black text-mono">loading...</Button>
+                    : <></>}
             </div>
         </>,
         subTitle: ``,
