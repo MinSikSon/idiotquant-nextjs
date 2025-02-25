@@ -64,14 +64,13 @@ export const algorithmTradeSlice = createAppSlice({
                 pending: (state) => {
                     // console.log(`[reqGetCapitalToken] pending`);
                     state.state = "pending";
+                    state.capital_token.state = "pending";
                 },
                 fulfilled: (state, action) => {
                     // console.log(`[reqGetCapitalToken] fulfilled`, `action.payload`, typeof action.payload, action.payload);
                     const json = JSON.parse(action.payload);
                     // console.log(`[reqGetCapitalToken] fulfilled json`, json);
-                    // state.capital_token = json["capitalToken"];
                     state.capital_token = { state: "fulfilled", value: json };
-                    // state.stock_list = json["stock_list"];
                     state.state = "fulfilled";
                 },
                 rejected: (state) => {

@@ -14,11 +14,11 @@ import {
     Popover,
     PopoverHandler,
     PopoverContent,
+    Button,
 } from "@material-tailwind/react";
 
 // deepmerge
 import merge from "deepmerge";
-import Loading from "@/components/Loading";
 
 // area chart
 interface ChartsPropsType {
@@ -198,7 +198,7 @@ function TablesExample8({
                 </CardHeader>
 
                 {tableRow.length == 0 ?
-                    <Loading loadingMsg={`loading`} />
+                    <Button variant="text" loading={true} className="font-mono">loading...</Button>
                     :
                     <CardBody className="overflow-scroll !px-0 pt-0 pb-2">
                         <table className="w-full min-w-max table-auto items-center">
@@ -211,12 +211,12 @@ function TablesExample8({
                                         >
                                             <Popover>
                                                 <PopoverHandler>
-                                                    <div className={`text-mono text-bold text-black cursor-pointer ${head.length >= 6 ? "text-[0.6rem]" : ""}`}>
+                                                    <div className={`font-mono font-bold text-black cursor-pointer ${head.length >= 6 ? "text-[0.6rem]" : ""}`}>
                                                         {head}
                                                     </div>
                                                 </PopoverHandler>
                                                 <PopoverContent>
-                                                    <div className="text-mono text-red-500">{desc}</div>
+                                                    <div className="font-mono text-red-500">{desc}</div>
                                                 </PopoverContent>
                                             </Popover>
                                         </th>
@@ -253,11 +253,11 @@ function TablesExample8({
                                         //     : `!pl-2 border-b border-gray-100 ${_bgColor}`;
                                         const classes = `p-0 m-0 pl-2 border-b border-gray-100 ${_bgColor}`;
                                         return (
-                                            <tr key={digitalAsset} className="items-center">
+                                            <tr key={digitalAsset} className="font-mono text-xs text-black items-center">
                                                 <td className={classes}>
                                                     <div className="flex items-center gap-4 text-left">
                                                         <div>
-                                                            <div className="flex items-center text-black">
+                                                            <div className="flex items-cente">
                                                                 {tag}
                                                                 {detail}
                                                             </div>
@@ -265,52 +265,52 @@ function TablesExample8({
                                                     </div>
                                                 </td>
                                                 <td className={classes}>
-                                                    <div className="text-sm text-gray-600 text-right">
+                                                    <div className="text-right">
                                                         {closePrice}
                                                     </div>
                                                 </td>
                                                 <td className={classes}>
-                                                    <div className={`text-sm font-bold text-right ${expectedRateOfReturnColor}`}>
+                                                    <div className={`text-right ${expectedRateOfReturnColor}`}>
                                                         {expectedRateOfReturn}
                                                     </div>
                                                 </td>
                                                 <td className={classes}>
-                                                    <div className="text-sm text-gray-600 text-right">
+                                                    <div className="text-right">
                                                         {targetPrice}
                                                     </div>
                                                 </td>
                                                 <td className={classes}>
-                                                    <div className="text-sm text-gray-600 text-right">
+                                                    <div className="text-right">
                                                         {market}
                                                     </div>
                                                 </td>
                                                 <td className={classes}>
-                                                    <div className="text-sm text-gray-600 text-right">
+                                                    <div className="text-right">
                                                         {netCurrentAssert}
                                                     </div>
                                                 </td>
                                                 <td className={classes}>
-                                                    <div className="text-sm text-gray-600 text-right">
+                                                    <div className="text-right">
                                                         {netIncome}
                                                     </div>
                                                 </td>
                                                 <td className={classes}>
-                                                    <div className="text-sm text-gray-600 text-right">
+                                                    <div className="text-right">
                                                         {bps}
                                                     </div>
                                                 </td>
                                                 <td className={classes}>
-                                                    <div className="text-sm text-gray-600 text-right">
+                                                    <div className="text-right">
                                                         {eps}
                                                     </div>
                                                 </td>
                                                 <td className={classes}>
-                                                    <div className="text-sm text-gray-600 text-right">
+                                                    <div className="text-right">
                                                         {pbr}
                                                     </div>
                                                 </td>
                                                 <td className={classes}>
-                                                    <div className="text-sm text-gray-600 text-right">
+                                                    <div className="text-right">
                                                         {per}
                                                     </div>
                                                 </td>

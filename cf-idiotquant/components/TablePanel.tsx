@@ -1,8 +1,7 @@
 
-import { Card, Chip, List, ListItem, ListItemPrefix, ListItemSuffix, Typography } from "@material-tailwind/react";
+import { Button, Card, Chip, List, ListItem, ListItemPrefix, ListItemSuffix, Typography } from "@material-tailwind/react";
 import { Util } from "./util";
 import CustomCard from "@/components/CustomCard";
-import Loading from "@/components/Loading";
 import Link from "next/link";
 import { getChangedTicker } from "./tickerMapper";
 import { usePathname } from "next/navigation";
@@ -92,7 +91,11 @@ export default function TablePanel(props: any) {
     // console.log(`[TablePanel] pathname`, props.pathname, stockNameList);
 
     const NUM_OF_STOCK_ITEMS = stockNameList.length;
-    if (0 == NUM_OF_STOCK_ITEMS) return <Loading loadingMsg={props.loadingMsg} />;
+    if (0 == NUM_OF_STOCK_ITEMS) {
+        return <Button variant="text" loading={true} className="font-mono">
+            {props.loadingMsg}
+        </Button>
+    }
 
     let cumulativeRatio = 0;
 

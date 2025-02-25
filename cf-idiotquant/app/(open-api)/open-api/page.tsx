@@ -118,11 +118,11 @@ export default function OpenApi() {
             return {
                 digitalAsset: item["prdt_name"], // key
                 detail: <div className={`font-mono ${item["prdt_name"].length >= 7 ? "text-[0.6rem]" : "text-xs"}`}>{item["prdt_name"]}</div>,
-                closePrice: <div className="font-mono text-xs">{Number(item["prpr"]).toLocaleString() + "원"}</div>,
-                expectedRateOfReturn: <div className="font-mono text-xs">{item['hldg_qty']}/{item['ord_psbl_qty']}</div>,
+                closePrice: <div className="font-mono font-bold text-xs text-black">{Number(item["prpr"]).toLocaleString() + "원"}</div>,
+                expectedRateOfReturn: <div className="font-mono text-xs text-black">{item['hldg_qty']}/{item['ord_psbl_qty']}</div>,
                 expectedRateOfReturnColor: '', // x
                 targetPrice: <>
-                    <div className={`font-mono text-xs flex justify-between ${Number(Number(item["evlu_amt"]) / Number(item["pchs_amt"]) * 100 - 100) >= 0 ? "text-red-500" : "text-blue-500"}`}>
+                    <div className={`font-mono font-bold text-xs flex justify-between ${Number(Number(item["evlu_amt"]) / Number(item["pchs_amt"]) * 100 - 100) >= 0 ? "text-red-500" : "text-blue-500"}`}>
                         <div className="font-mono pr-1">
                             ({Number(Number(item["evlu_amt"]) / Number(item["pchs_amt"]) * 100 - 100).toFixed(2)}%)
                         </div>
@@ -131,9 +131,9 @@ export default function OpenApi() {
                         </div>
                     </div>
                 </>,
-                market: <div className="text-xs font-mono">{Util.UnitConversion(Number(item["evlu_amt"]), true)}</div>,
-                netCurrentAssert: <div className="text-xs font-mono">{Util.UnitConversion(Number(item["pchs_amt"]), true)}</div>,
-                netIncome: <div className="text-xs font-mono">{(Number(item["pchs_amt"]) / Number(kiBalance.output2[0]["pchs_amt_smtl_amt"]) * 100).toFixed(2)} %</div>,
+                market: <div className="text-xs font-mono text-black">{Util.UnitConversion(Number(item["evlu_amt"]), true)}</div>,
+                netCurrentAssert: <div className="text-xs font-mono text-black">{Util.UnitConversion(Number(item["pchs_amt"]), true)}</div>,
+                netIncome: <div className="text-xs font-mono font-bold text-black">{(Number(item["pchs_amt"]) / Number(kiBalance.output2[0]["pchs_amt_smtl_amt"]) * 100).toFixed(2)} %</div>,
                 chartName: '',
                 tag: <>
                     <div className="flex p-0 m-0 gap-1 mr-2 font-mono">
@@ -188,27 +188,27 @@ export default function OpenApi() {
                     <span className='flex flex-col justify-center items-center h-full text-white text-xs font-mono pt-0.5'>계좌 조회</span>
                 </div>
                 {"pending" == kiBalance.state ?
-                    <Button loading={true} className="p-0 px-1 m-0 bg-white text-black text-mono">loading...</Button>
+                    <Button loading={true} className="p-0 px-1 m-0 bg-white text-black font-mono">loading...</Button>
                     : <></>}
             </div>
         </>,
         subTitle: ``,
         desc: <>
             <div className="text-lg font-mono text-black leading-none pb-3">
-                평가손익: <span className={`${(Number(evlu_amt_smtl_amt) / Number(pchs_amt_smtl_amt) * 100 - 100) >= 0 ? "text-red-500" : "text-blue-500"}`}>
+                평가손익:<span className={`${(Number(evlu_amt_smtl_amt) / Number(pchs_amt_smtl_amt) * 100 - 100) >= 0 ? "text-red-500" : "text-blue-500"}`}>
                     {Number(evlu_pfls_smtl_amt).toLocaleString()}원
                     ({pchs_amt_smtl_amt == 0 ? "-" : Number(Number(evlu_amt_smtl_amt / pchs_amt_smtl_amt) * 100 - 100).toFixed(2)}%)
                 </span>
             </div>
-            <div className="p-3 border rounded">
-                <div className="text-sm font-mono text-black leading-none pb-2">
-                    예수금액: {Number(Number(nass_amt) - Number(pchs_amt_smtl_amt)).toLocaleString()}원 순자산금액: {Number(nass_amt).toLocaleString()}원
+            <div className="text-xs font-mono text-black p-3 border rounded">
+                <div className="leading-none pb-2">
+                    예수금액:{Number(Number(nass_amt) - Number(pchs_amt_smtl_amt)).toLocaleString()}원 순자산금액:{Number(nass_amt).toLocaleString()}원
                 </div>
-                <div className="text-sm font-mono text-black leading-none pb-2">
-                    평가금액: {Number(evlu_amt_smtl_amt).toLocaleString()}원
+                <div className="leading-none pb-2">
+                    평가금액:{Number(evlu_amt_smtl_amt).toLocaleString()}원
                 </div>
-                <div className="text-sm font-mono text-black leading-none pb-1">
-                    매입금액: {Number(pchs_amt_smtl_amt).toLocaleString()}원
+                <div className="leading-none pb-1">
+                    매입금액:{Number(pchs_amt_smtl_amt).toLocaleString()}원
                 </div>
             </div>
         </>,
