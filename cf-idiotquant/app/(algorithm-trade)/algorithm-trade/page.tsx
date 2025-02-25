@@ -144,7 +144,7 @@ export default function AlgorithmTrade() {
                     <span className='flex flex-col justify-center items-center h-full text-white text-xs font-mono pt-0.5'>다시 조회 {kiToken.state == "fulfilled" ? "+ @" : ""}</span>
                 </div>
                 {"fulfilled" != capitalToken.state ?
-                    <Button loading={true} className="p-0 px-1 m-0 bg-white text-black text-mono">loading...</Button>
+                    <Button loading={true} className="p-0 px-1 m-0 bg-white text-black font-mono">loading...</Button>
                     : <></>}
             </div>
         </>,

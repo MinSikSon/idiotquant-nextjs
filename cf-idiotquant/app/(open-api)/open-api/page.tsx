@@ -188,7 +188,7 @@ export default function OpenApi() {
                     <span className='flex flex-col justify-center items-center h-full text-white text-xs font-mono pt-0.5'>계좌 조회</span>
                 </div>
                 {"pending" == kiBalance.state ?
-                    <Button loading={true} className="p-0 px-1 m-0 bg-white text-black text-mono">loading...</Button>
+                    <Button loading={true} className="p-0 px-1 m-0 bg-white text-black font-mono">loading...</Button>
                     : <></>}
             </div>
         </>,

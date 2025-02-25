@@ -211,12 +211,12 @@ function TablesExample8({
                                         >
                                             <Popover>
                                                 <PopoverHandler>
-                                                    <div className={`text-mono text-bold text-black cursor-pointer ${head.length >= 6 ? "text-[0.6rem]" : ""}`}>
+                                                    <div className={`font-mono text-bold text-black cursor-pointer ${head.length >= 6 ? "text-[0.6rem]" : ""}`}>
                                                         {head}
                                                     </div>
                                                 </PopoverHandler>
                                                 <PopoverContent>
-                                                    <div className="text-mono text-red-500">{desc}</div>
+                                                    <div className="font-mono text-red-500">{desc}</div>
                                                 </PopoverContent>
                                             </Popover>
                                         </th>

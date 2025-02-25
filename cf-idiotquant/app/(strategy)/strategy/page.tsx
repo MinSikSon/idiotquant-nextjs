@@ -10,8 +10,8 @@ export default function Strategy() {
 
     let propsList: Web3CardPropsType[] = strategyInfoList.map((item: StrategyInfo, key: any) => {
         return {
-            title: <div className="text-mono text-black">{item.title}</div>,
-            subTitle: <div className="text-mono text-sm text-black">{item.subTitle}</div>,
+            title: <div className="font-mono text-black">{item.title}</div>,
+            subTitle: <div className="font-mono text-sm text-black">{item.subTitle}</div>,
             imgs: item.img,
             cardNum: String(key),
             profileImg: item.profileImg,
