@@ -28,10 +28,23 @@ export default function OpenApi() {
     const kiBalanceSheet: KoreaInvestmentBalanceSheet = useAppSelector(getKoreaInvestmentBalanceSheet);
 
     const kiOrderCash: KoreaInvestmentOrderCash = useAppSelector(getKoreaInvestmentOrderCash);
+
+    const [msg, setMsg] = React.useState<any>("");
     const [orderName, setOrderName] = React.useState<any>("");
 
     const [time, setTime] = React.useState<any>('');
     const loginState = useAppSelector(selectState);
+
+    const [show, setShow] = React.useState<boolean>(false);
+
+    const showAlert = (additionalMsg: string) => {
+        setMsg(additionalMsg);
+        setShow(true);
+
+        setTimeout(() => {
+            setShow(false);
+        }, 3000);
+    };
 
     React.useEffect(() => {
         // console.log(`[OpenApi]`, `kiToken:`, kiToken);
@@ -92,6 +105,7 @@ export default function OpenApi() {
             const korBuyOrSell = "buy" == buyOrSell ? "구매" : "판매";
             setOrderName(item["prdt_name"] + " " + korBuyOrSell + " 시도");
             dispatch(reqPostOrderCash({ koreaInvestmentToken: kiToken, PDNO: item["pdno"], buyOrSell: buyOrSell }));
+            showAlert("");
         }
     }
 
@@ -100,15 +114,16 @@ export default function OpenApi() {
         let kiBalanceOutput1 = [...kiBalance.output1];
         console.log(`kiBalanceOutput1`, kiBalanceOutput1);
         example8TableRowType = (kiBalanceOutput1.sort((a, b) => Number(b["pchs_amt"]) - Number(a["pchs_amt"])).map((item, index) => {
+            console.log(`item["prdt_name"]`, item["prdt_name"], `item["prdt_name"].length`, item["prdt_name"].length);
             return {
                 digitalAsset: item["prdt_name"], // key
-                detail: <div className="text-xs">{item["prdt_name"]}</div>,
-                closePrice: <div className="text-xs">{Number(item["prpr"]).toLocaleString() + "원"}</div>,
-                expectedRateOfReturn: <div className="text-xs">{item['hldg_qty']}/{item['ord_psbl_qty']}</div>,
+                detail: <div className={`font-mono ${item["prdt_name"].length >= 7 ? "text-[0.6rem]" : "text-xs"}`}>{item["prdt_name"]}</div>,
+                closePrice: <div className="font-mono text-xs">{Number(item["prpr"]).toLocaleString() + "원"}</div>,
+                expectedRateOfReturn: <div className="font-mono text-xs">{item['hldg_qty']}/{item['ord_psbl_qty']}</div>,
                 expectedRateOfReturnColor: '', // x
                 targetPrice: <>
-                    <div className={`text-xs font-bold flex justify-between ${Number(Number(item["evlu_amt"]) / Number(item["pchs_amt"]) * 100 - 100) >= 0 ? "text-red-500" : "text-blue-500"}`}>
-                        <div className="pr-1">
+                    <div className={`font-mono text-xs flex justify-between ${Number(Number(item["evlu_amt"]) / Number(item["pchs_amt"]) * 100 - 100) >= 0 ? "text-red-500" : "text-blue-500"}`}>
+                        <div className="font-mono pr-1">
                             ({Number(Number(item["evlu_amt"]) / Number(item["pchs_amt"]) * 100 - 100).toFixed(2)}%)
                         </div>
                         <div>
@@ -116,19 +131,19 @@ export default function OpenApi() {
                         </div>
                     </div>
                 </>,
-                market: <div className="text-xs">{Util.UnitConversion(Number(item["evlu_amt"]), true)}</div>,
-                netCurrentAssert: <div className="text-xs">{Util.UnitConversion(Number(item["pchs_amt"]), true)}</div>,
-                netIncome: <div className="text-xs">{(Number(item["pchs_amt"]) / Number(kiBalance.output2[0]["pchs_amt_smtl_amt"]) * 100).toFixed(2)} %</div>,
+                market: <div className="text-xs font-mono">{Util.UnitConversion(Number(item["evlu_amt"]), true)}</div>,
+                netCurrentAssert: <div className="text-xs font-mono">{Util.UnitConversion(Number(item["pchs_amt"]), true)}</div>,
+                netIncome: <div className="text-xs font-mono">{(Number(item["pchs_amt"]) / Number(kiBalance.output2[0]["pchs_amt_smtl_amt"]) * 100).toFixed(2)} %</div>,
                 chartName: '',
                 tag: <>
-                    <div className="flex p-0 m-0 gap-1 mr-2">
+                    <div className="flex p-0 m-0 gap-1 mr-2 font-mono">
                         <div
                             onClick={() => handleOnClick(item, "buy")}
                             className='mb-2 px-1 button bg-blue-500 rounded-full cursor-pointer select-none
     active:translate-y-1 active:[box-shadow:0_0px_0_0_#1b6ff8,0_0px_0_0_#1b6ff841] active:border-b-[0px]
     transition-all duration-150 [box-shadow:0_4px_0_0_#1b6ff8,0_8px_0_0_#1b6ff841] border-b-[1px] border-blue-400
   '>
-                            <span className='flex flex-col justify-center items-center h-full text-white font-bold text-[0.5rem]'>구매</span>
+                            <span className='flex flex-col justify-center items-center h-full text-white font-mono text-[0.5rem]'>buy</span>
                         </div>
                         <div
                             onClick={() => handleOnClick(item, "sell")}
@@ -136,7 +151,7 @@ export default function OpenApi() {
     active:translate-y-1 active:[box-shadow:0_0px_0_0_#910000,0_0px_0_0_#91000041] active:border-b-[0px]
     transition-all duration-150 [box-shadow:0_4px_0_0_#910000,0_8px_0_0_#91000041] border-b-[1px] border-red-300
   '>
-                            <span className='flex flex-col justify-center items-center h-full text-white font-bold text-[0.5rem]'>판매</span>
+                            <span className='flex flex-col justify-center items-center h-full text-white font-mono text-[0.5rem]'>sell</span>
                         </div>
                     </div>
                 </>,
@@ -144,7 +159,7 @@ export default function OpenApi() {
         }));
     }
 
-    console.log(`kiOrderCash.msg1`, kiOrderCash.msg1);
+    console.log(`kiOrderCash.msg1`, kiOrderCash.msg1); // TODO: 클릭한 종목 바로 밑에 msg 뜨게 변경..!!
 
     let nass_amt: number = 0; // 순자산
     let evlu_amt_smtl_amt: number = 0; // 평가금액
@@ -160,27 +175,35 @@ export default function OpenApi() {
         title: <>
             <div className="flex pb-2">
                 <div className="pr-2 text-black">알고리즘 매매 계좌 조회</div>
-                <Button onClick={() => dispatch(reqGetInquireBalance(kiToken))} className="px-2 py-0 m-0" variant="outlined" size="sm">
-                    다시 조회
-                </Button>
+                <div
+                    onClick={() => {
+                        showAlert("지난 주문 확인");
+                        dispatch(reqGetInquireBalance(kiToken));
+                    }}
+                    className='mb-2 px-2 button bg-green-400 rounded-full cursor-pointer select-none
+    active:translate-y-1 active:[box-shadow:0_0px_0_0_#129600,0_0px_0_0_#12960041] active:border-b-[0px]
+    transition-all duration-150 [box-shadow:0_4px_0_0_#129600,0_8px_0_0_#12960041] border-b-[1px] border-green-300
+  '>
+                    <span className='flex flex-col justify-center items-center h-full text-white text-xs font-mono pt-0.5'>계좌 조회</span>
+                </div>
             </div>
         </>,
         subTitle: ``,
         desc: <>
-            <div className="text-lg font-bold text-black leading-none pb-3">
+            <div className="text-lg font-mono text-black leading-none pb-3">
                 평가손익: <span className={`${(Number(evlu_amt_smtl_amt) / Number(pchs_amt_smtl_amt) * 100 - 100) >= 0 ? "text-red-500" : "text-blue-500"}`}>
                     {Number(evlu_pfls_smtl_amt).toLocaleString()}원
                     ({pchs_amt_smtl_amt == 0 ? "-" : Number(Number(evlu_amt_smtl_amt / pchs_amt_smtl_amt) * 100 - 100).toFixed(2)}%)
                 </span>
             </div>
             <div className="p-3 border rounded">
-                <div className="text-sm font-bold text-black leading-none pb-2">
+                <div className="text-sm font-mono text-black leading-none pb-2">
                     예수금액: {Number(Number(nass_amt) - Number(pchs_amt_smtl_amt)).toLocaleString()}원 순자산금액: {Number(nass_amt).toLocaleString()}원
                 </div>
-                <div className="text-sm font-bold text-black leading-none pb-2">
+                <div className="text-sm font-mono text-black leading-none pb-2">
                     평가금액: {Number(evlu_amt_smtl_amt).toLocaleString()}원
                 </div>
-                <div className="text-sm font-bold text-black leading-none pb-1">
+                <div className="text-sm font-mono text-black leading-none pb-1">
                     매입금액: {Number(pchs_amt_smtl_amt).toLocaleString()}원
                 </div>
             </div>
@@ -188,7 +211,6 @@ export default function OpenApi() {
         financial_date: "",
         market_date: <div className="flex flex-col">
             <div className="text-xs">market_date: {time.toString()}</div>
-            {kiOrderCash.msg1.length > 0 ? <div className="text-xs text-black border rounded border-red-500">{orderName}: {kiOrderCash.msg1}</div> : ""}
         </div>,
         tableHead: example8TableHeadType,
         tableRow: example8TableRowType,
@@ -201,6 +223,15 @@ export default function OpenApi() {
     }
 
     return <>
+        <div
+            className={`text-center w-80 z-10 fixed top-32 left-1/2 transform -translate-x-1/2 px-6 py-3 rounded-lg text-white shadow-lg transition-all duration-500 ${show ? "opacity-100 scale-100 bg-green-500" : "opacity-0 scale-95 pointer-events-none"
+                }`}
+        >
+            <div className="">{msg}</div>
+            <div className="text-lg">✅ {orderName}</div>
+            <div className="">{kiOrderCash.msg1}</div>
+        </div>
+
         <TablesExample8 {...props} />
     </>
 }

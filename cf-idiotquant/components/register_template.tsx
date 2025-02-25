@@ -2,7 +2,7 @@ import { Card, CardBody, CardFooter, CardHeader } from "@material-tailwind/react
 
 interface RegisterTemplateProps {
     cardBodyFix: boolean;
-    title: string;
+    title: any;
     subTitle: any;
     content: any;
     footer: any;
@@ -10,14 +10,14 @@ interface RegisterTemplateProps {
 export default function RegisterTemplate(props: RegisterTemplateProps) {
     return <>
         <section className={`px-2`}>
-            <Card shadow={false} className={`border rounded border-gray-100}`}>
+            <Card shadow={false} className={`border rounded-xl border-gray-100}`}>
                 <CardHeader
                     shadow={false}
                     floated={false}
-                    className="flex overflow-visible gap-y-4 flex-wrap items-start justify-between rounded"
+                    className="flex overflow-visible gap-y-2 flex-wrap items-start justify-between rounded"
                 >
                     <div>
-                        <div className="font-bold text-2xl">
+                        <div>
                             {props.title}
                         </div>
                         <div>
@@ -25,7 +25,7 @@ export default function RegisterTemplate(props: RegisterTemplateProps) {
                         </div>
                     </div>
                 </CardHeader>
-                <CardBody className={`grid grid-cols-1 ${props.cardBodyFix ? '' : 'sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4'} gap-4 px-4`}>
+                <CardBody className={`py-4 px-4 grid grid-cols-1 ${props.cardBodyFix ? '' : 'sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4'} gap-4`}>
                     <div>
                         {props.content}
                     </div>

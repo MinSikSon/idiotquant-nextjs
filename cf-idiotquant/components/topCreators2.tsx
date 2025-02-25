@@ -44,24 +44,20 @@ function Web3Card({
                         >
                             {cardNum}
                         </Typography>
-                        <Button className="z-10 border-gray-300 bg-white/70 p-1" color="black" size="sm" variant="outlined">
+                        <Button className="font-mono z-10 border-gray-200 bg-white/70 p-1 px-2" color="black" size="sm" variant="outlined">
                             click to view
                         </Button>
                     </div>
                     <div className="my-4 flex items-start justify-between">
-                        <div className="absolute top-40 left-2 xl:top-72 flex items-center gap-2 bg-white/70 p-1 rounded-xl border-2 border-gray-200 ">
+                        <div className="absolute left-2 top-[10.4rem] xl:top-72 flex items-center gap-2 bg-white/80 p-1 rounded-xl border-2 border-gray-200 ">
                             <Avatar size="sm" src={profileImg} alt={title} />
                             <div className="pr-4">
-                                <Typography color="black" variant="h6">
+                                <div className={`font-mono text-black ${String(title).length > 12 ? "text-sm xl:text-xs" : ""}`}>
                                     {title}
-                                </Typography>
-                                <Typography
-                                    color="gray"
-                                    variant="small"
-                                    className="font-medium"
-                                >
+                                </div>
+                                <div className="font-mono text-xs">
                                     {subTitle}
-                                </Typography>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -87,14 +83,14 @@ export function Web3Card2({
     data
 }: { title: string, parentRouter: string, data: Web3CardPropsType[] }) {
     return (
-        <section className="px-4 py-4">
+        <section className="px-2 py-4">
             <Card shadow={false} className="border border-gray-300">
                 <CardHeader
                     shadow={false}
                     floated={false}
                     className="flex overflow-visible gap-y-4 flex-wrap items-start justify-between rounded-none"
                 >
-                    <div className="font-bold text-2xl mb-1">
+                    <div className="font-mono mb-1">
                         {title}
                     </div>
                 </CardHeader>

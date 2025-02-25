@@ -6,9 +6,9 @@ export default function StrategyRegisterButton() {
         <Link href={`/strategy-register`}>
             <RegisterTemplate
                 cardBodyFix={true}
-                title={`신규 투자 전략 등록`}
+                title={<div className="font-mono">Register <span className="text-blue-500 font-bold">New</span> Investment Strategy</div>}
                 subTitle={``}
-                content={<span className='underline decoration-4 decoration-blue-400 hover:text-blue-500'>나만의 투자 전략을 만들어보세요 🦄</span>}
+                content={<span className='font-mono text-sm underline decoration-4 decoration-blue-400 hover:text-blue-500'>나만의 투자 전략을 만들어보세요 🦄</span>}
                 footer={``}
             />
         </Link>

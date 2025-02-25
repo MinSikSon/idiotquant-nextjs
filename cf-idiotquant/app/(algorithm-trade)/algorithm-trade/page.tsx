@@ -128,20 +128,27 @@ export default function AlgorithmTrade() {
             <div className="flex pb-2">
                 <Popover>
                     <PopoverHandler>
-                        <div className="pr-2 font-bold text-black">알고리즘 투자 이력</div>
+                        <div className="text-base font-mono pr-2 text-black">알고리즘 투자 이력</div>
                     </PopoverHandler>
                     <PopoverContent>
-                        <div className="text-xs text-red-500">10분 간격으로 token 충전 및 알고리즘 매매 수행합니다.</div>
+                        <div className="text-xs font-mono text-red-500">10분 간격으로 token 충전 및 알고리즘 매매 수행합니다.</div>
                     </PopoverContent>
                 </Popover>
-                <Button onClick={() => handleOnClick()} className="px-2 py-0 m-0" variant="outlined" size="sm">
-                    다시 조회 {kiToken.state == "fulfilled" ? "+ @" : ""}
-                </Button>
+                <div
+                    onClick={() => {
+                        handleOnClick()
+                    }}
+                    className='mb-2 px-2 button bg-green-400 rounded-full cursor-pointer select-none
+                    active:translate-y-1 active:[box-shadow:0_0px_0_0_#129600,0_0px_0_0_#12960041] active:border-b-[0px]
+                    transition-all duration-150 [box-shadow:0_4px_0_0_#129600,0_8px_0_0_#12960041] border-b-[1px] border-green-300
+                  '>
+                    <span className='flex flex-col justify-center items-center h-full text-white text-xs font-mono pt-0.5'>다시 조회 {kiToken.state == "fulfilled" ? "+ @" : ""}</span>
+                </div>
             </div>
         </>,
         subTitle: ``,
         desc: <>
-            <div className="text-sm font-bold text-black leading-none pb-2">
+            <div className="text-sm font-mono text-black leading-none pb-2">
                 <Popover>
                     <PopoverHandler>
                         <div className="cursor-pointer">
@@ -167,7 +174,7 @@ export default function AlgorithmTrade() {
                     </PopoverContent>
                 </Popover>
             </div>
-            <div className="text-sm font-bold text-black leading-none pb-2">
+            <div className="text-sm font-mono text-black leading-none pb-2">
                 <Popover>
                     <PopoverHandler>
                         <div className="cursor-pointer">
@@ -179,16 +186,16 @@ export default function AlgorithmTrade() {
                     </PopoverContent>
                 </Popover>
                 <div className="ml-1 p-2 border rounded border-black">
-                    <div className="flex items-center text-xs font-bold text-black leading-none pb-1">
+                    <div className="flex items-center text-xs font-mono text-black leading-none pb-1">
                         <div>10분 당 충전 token</div>
                         <div className="ml-2 px-1 text-xs font-normal rounded border border-black">{Math.trunc(capital_charge_rate / stock_list_length) * stock_list_length}</div>
                         <div className="ml-2">(종목 당 충전 token</div><div className="ml-2 px-1 text-xs font-normal rounded border border-black">{Math.trunc(capital_charge_rate / stock_list_length)}</div>)
                     </div>
-                    <div className="flex items-center text-xs font-bold text-black leading-none pb-1">
+                    <div className="flex items-center text-xs font-mono text-black leading-none pb-1">
                         <div>마지막 구매 시도 종목</div>
                         <div className="ml-2 px-1 text-xs font-normal rounded border border-black">{refill_stock_index} {!!stock_list[refill_stock_index] ? stock_list[refill_stock_index]["name"] : 0}</div>
                     </div>
-                    <div className="text-xs font-bold text-black leading-none">
+                    <div className="text-xs font-mono text-black leading-none">
                         <div>
                             알고리즘 매매 대상 종목
                         </div>
@@ -245,9 +252,9 @@ export default function AlgorithmTrade() {
                             })}
                         </>
                     </div>
-                    <div className="flex items-center text-xs font-bold text-black leading-none pb-1">
+                    <div className="flex items-center text-xs font-mono text-black leading-none pb-1">
                         <div>누적 token</div>
-                        <div className="ml-2 px-1 text-xs font-normal rounded border border-black">{cummulative_token}</div>
+                        <div className="ml-2 px-1 text-xs font-mono rounded border border-black">{cummulative_token}</div>
                     </div>
                 </div>
             </div>
@@ -256,12 +263,12 @@ export default function AlgorithmTrade() {
         financial_date: <><div className="text-sm">market_date</div><div className="ml-4 text-xs">{time.toString()}</div></>,
         market_date: <Popover>
             <PopoverHandler>
-                <div className="cursor-pointer pt-4 text-sm font-bold text-black">
+                <div className="cursor-pointer pt-4 text-sm font-mono text-black">
                     구매 history <span className="text-xs text-black">{`(누적 알고리즘 매수금: ${cummulative_investment}원)`}</span>
                 </div>
             </PopoverHandler>
             <PopoverContent>
-                <div className="text-xs text-red-500">알고리즘 매매 내역</div>
+                <div className="text-xs font-mono text-red-500">알고리즘 매매 내역</div>
             </PopoverContent>
         </Popover>,
         tableHead: example8TableHeadType,
