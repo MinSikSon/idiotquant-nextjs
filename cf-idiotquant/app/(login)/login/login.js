@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import { selectKakaoAuthCode, selectKakaoId, selectKakaoNickName, setKakaoAuthCode, setKakaoId, setKakaoNickName } from "@/lib/features/login/loginSlice";
 import { useAppDispatch, useAppSelector } from "@/lib/hooks";
 import { clearCookie, getCookie, registerCookie } from "@/components/util";
+import { DesignButton } from "@/components/designButton";
 
 async function RequestNickname(_token) {
     if (!!!_token) return;
@@ -171,16 +172,16 @@ export default function Login(props) {
                         <Typography>
                             login 하려면 아래 버튼을 눌려주세요.
                         </Typography>
-                        <div
-                            onClick={() => onClickLogin(`${window.location.origin}${props.parentUrl}`)}
-                            className='flex mt-6 items-center gap-2
-                         mb-2 px-4 button bg-[#ffea04] rounded-full cursor-pointer select-none
-                        active:translate-y-1 active:[box-shadow:0_0px_0_0_#1e1e1e,0_0px_0_0_#1e1e1e41] active:border-b-[0px]
-                        transition-all duration-150 [box-shadow:0_4px_0_0_#1e1e1e,0_8px_0_0_#1e1e1e41] border-b-[1px] border-[#ebd700]
-                      '>
-                            <img src="/images/kakaotalk_sharing_btn_small.png" alt="metamask" className="h-6 w-6 border-2 rounded border-gray-100" />
-                            <span className='flex flex-col justify-center items-center h-full text-[#3c1e1e] text-xs font-mono font-bold py-2'>Continue with Kakao</span>
-                        </div>
+                        <DesignButton
+                            handleOnClick={() => onClickLogin(`${window.location.origin}${props.parentUrl}`)}
+                            buttonName="Continue with Kakao"
+                            buttonBgColor="bg-[#ffea04]"
+                            buttonBorderColor="border-[#ebd700]"
+                            buttonShadowColor="#1e1e1e"
+                            textStyle="font-bold text-xs py-2 text-[#3c1e1e]"
+                            additionalTextTop={<img src="/images/kakaotalk_sharing_btn_small.png" alt="metamask" className="h-6 w-6 border-2 rounded border-gray-100 mx-2" />}
+                            buttonStyle="mt-6"
+                        />
                     </CardBody>
                 </Card>
             </>
@@ -195,16 +196,16 @@ export default function Login(props) {
                     <Typography>
                         logout 하려면 아래 버튼을 눌려주세요.
                     </Typography>
-                    <div
-                        onClick={() => Logout(`${window.location.origin}${props.parentUrl}`)}
-                        className='flex mt-6 items-center gap-2
-                         mb-2 px-4 button bg-[#ffea04] rounded-full cursor-pointer select-none
-                        active:translate-y-1 active:[box-shadow:0_0px_0_0_#1e1e1e,0_0px_0_0_#1e1e1e41] active:border-b-[0px]
-                        transition-all duration-150 [box-shadow:0_4px_0_0_#1e1e1e,0_8px_0_0_#1e1e1e41] border-b-[1px] border-[#ebd700]
-                      '>
-                        <img src="/images/kakaotalk_sharing_btn_small.png" alt="metamask" className="h-6 w-6 border-2 rounded border-gray-100" />
-                        <span className='flex flex-col justify-center items-center h-full text-[#3c1e1e] text-xs font-mono font-bold py-2'>logout</span>
-                    </div>
+                    <DesignButton
+                        handleOnClick={() => Logout(`${window.location.origin}${props.parentUrl}`)}
+                        buttonName="logout"
+                        buttonBgColor="bg-[#ffea04]"
+                        buttonBorderColor="border-[#ebd700]"
+                        buttonShadowColor="#1e1e1e"
+                        textStyle="font-bold text-xs py-2 text-[#3c1e1e]"
+                        additionalTextTop={<img src="/images/kakaotalk_sharing_btn_small.png" alt="metamask" className="h-6 w-6 border-2 rounded border-gray-100 mx-2" />}
+                        buttonStyle="mt-6"
+                    />
                 </CardBody>
             </Card>
         </>;
