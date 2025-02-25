@@ -19,9 +19,9 @@ export default function Item({ params: { id } }: { params: { id: number } }) {
             // return <div>{item}</div>
             return <div key={item} className="flex items-center">{item.split(":").map((item, index) => {
                 if (0 == index) {
-                    return <Chip key={item} className="mr-2" variant="outlined" value={item} />
+                    return <Chip key={item} className="font-mono mr-2" variant="outlined" value={item} />
                 }
-                return <div key={item} className="text-sm">{item}</div>
+                return <div key={item} className="font-mono text-sm">{item}</div>
             })}</div>
         })}</div>,
         financial_date: <div className="font-mono text-xs">financial date: {strategyInfoList[Number(id)].financial_date}</div>,

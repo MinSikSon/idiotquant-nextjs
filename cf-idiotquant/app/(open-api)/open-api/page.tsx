@@ -195,20 +195,20 @@ export default function OpenApi() {
         subTitle: ``,
         desc: <>
             <div className="text-lg font-mono text-black leading-none pb-3">
-                평가손익: <span className={`${(Number(evlu_amt_smtl_amt) / Number(pchs_amt_smtl_amt) * 100 - 100) >= 0 ? "text-red-500" : "text-blue-500"}`}>
+                평가손익:<span className={`${(Number(evlu_amt_smtl_amt) / Number(pchs_amt_smtl_amt) * 100 - 100) >= 0 ? "text-red-500" : "text-blue-500"}`}>
                     {Number(evlu_pfls_smtl_amt).toLocaleString()}원
                     ({pchs_amt_smtl_amt == 0 ? "-" : Number(Number(evlu_amt_smtl_amt / pchs_amt_smtl_amt) * 100 - 100).toFixed(2)}%)
                 </span>
             </div>
             <div className="text-xs font-mono text-black p-3 border rounded">
                 <div className="leading-none pb-2">
-                    예수금액: {Number(Number(nass_amt) - Number(pchs_amt_smtl_amt)).toLocaleString()}원 순자산금액: {Number(nass_amt).toLocaleString()}원
+                    예수금액:{Number(Number(nass_amt) - Number(pchs_amt_smtl_amt)).toLocaleString()}원 순자산금액:{Number(nass_amt).toLocaleString()}원
                 </div>
                 <div className="leading-none pb-2">
-                    평가금액: {Number(evlu_amt_smtl_amt).toLocaleString()}원
+                    평가금액:{Number(evlu_amt_smtl_amt).toLocaleString()}원
                 </div>
                 <div className="leading-none pb-1">
-                    매입금액: {Number(pchs_amt_smtl_amt).toLocaleString()}원
+                    매입금액:{Number(pchs_amt_smtl_amt).toLocaleString()}원
                 </div>
             </div>
         </>,

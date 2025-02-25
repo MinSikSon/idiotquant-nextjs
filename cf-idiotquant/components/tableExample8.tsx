@@ -253,7 +253,7 @@ function TablesExample8({
                                         //     : `!pl-2 border-b border-gray-100 ${_bgColor}`;
                                         const classes = `p-0 m-0 pl-2 border-b border-gray-100 ${_bgColor}`;
                                         return (
-                                            <tr key={digitalAsset} className="items-center">
+                                            <tr key={digitalAsset} className="font-mono text-xs text-black items-center">
                                                 <td className={classes}>
                                                     <div className="flex items-center gap-4 text-left">
                                                         <div>
@@ -265,52 +265,52 @@ function TablesExample8({
                                                     </div>
                                                 </td>
                                                 <td className={classes}>
-                                                    <div className="text-sm text-right">
+                                                    <div className="text-right">
                                                         {closePrice}
                                                     </div>
                                                 </td>
                                                 <td className={classes}>
-                                                    <div className={`text-sm text-right ${expectedRateOfReturnColor}`}>
+                                                    <div className={`text-right ${expectedRateOfReturnColor}`}>
                                                         {expectedRateOfReturn}
                                                     </div>
                                                 </td>
                                                 <td className={classes}>
-                                                    <div className="text-sm text-right">
+                                                    <div className="text-right">
                                                         {targetPrice}
                                                     </div>
                                                 </td>
                                                 <td className={classes}>
-                                                    <div className="text-sm text-right">
+                                                    <div className="text-right">
                                                         {market}
                                                     </div>
                                                 </td>
                                                 <td className={classes}>
-                                                    <div className="text-sm text-right">
+                                                    <div className="text-right">
                                                         {netCurrentAssert}
                                                     </div>
                                                 </td>
                                                 <td className={classes}>
-                                                    <div className="text-sm text-right">
+                                                    <div className="text-right">
                                                         {netIncome}
                                                     </div>
                                                 </td>
                                                 <td className={classes}>
-                                                    <div className="text-sm text-right">
+                                                    <div className="text-right">
                                                         {bps}
                                                     </div>
                                                 </td>
                                                 <td className={classes}>
-                                                    <div className="text-sm text-right">
+                                                    <div className="text-right">
                                                         {eps}
                                                     </div>
                                                 </td>
                                                 <td className={classes}>
-                                                    <div className="text-sm text-right">
+                                                    <div className="text-right">
                                                         {pbr}
                                                     </div>
                                                 </td>
                                                 <td className={classes}>
-                                                    <div className="text-sm text-right">
+                                                    <div className="text-right">
                                                         {per}
                                                     </div>
                                                 </td>
