@@ -29,9 +29,13 @@ export default function NotFound() {
                 </CardHeader>
                 <CardBody>
                     <Link href={`/`}>
-                        <Button>
-                            return to the main page
-                        </Button>
+                        <div
+                            className='mb-2 px-2 button bg-green-400 rounded-full cursor-pointer select-none
+                        active:translate-y-1 active:[box-shadow:0_0px_0_0_#129600,0_0px_0_0_#12960041] active:border-b-[0px]
+                        transition-all duration-150 [box-shadow:0_4px_0_0_#129600,0_8px_0_0_#12960041] border-b-[1px] border-green-300
+                      '>
+                            <span className='flex flex-col justify-center items-center h-full text-white text-xs font-mono font-bold pt-0.5'>return to the main page</span>
+                        </div>
                     </Link>
                 </CardBody>
             </Card>

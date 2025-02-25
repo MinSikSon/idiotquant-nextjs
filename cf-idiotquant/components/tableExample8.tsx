@@ -14,11 +14,11 @@ import {
     Popover,
     PopoverHandler,
     PopoverContent,
+    Button,
 } from "@material-tailwind/react";
 
 // deepmerge
 import merge from "deepmerge";
-import Loading from "@/components/Loading";
 
 // area chart
 interface ChartsPropsType {
@@ -198,7 +198,7 @@ function TablesExample8({
                 </CardHeader>
 
                 {tableRow.length == 0 ?
-                    <Loading loadingMsg={`loading`} />
+                    <Button variant="text" loading={true} className="font-mono">loading...</Button>
                     :
                     <CardBody className="overflow-scroll !px-0 pt-0 pb-2">
                         <table className="w-full min-w-max table-auto items-center">

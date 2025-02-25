@@ -171,17 +171,17 @@ export default function Login(props) {
                         <Typography>
                             login 하려면 아래 버튼을 눌려주세요.
                         </Typography>
+                        <div
+                            onClick={() => onClickLogin(`${window.location.origin}${props.parentUrl}`)}
+                            className='flex mt-6 items-center gap-2
+                         mb-2 px-4 button bg-[#ffea04] rounded-full cursor-pointer select-none
+                        active:translate-y-1 active:[box-shadow:0_0px_0_0_#ccba02,0_0px_0_0_#ccba0241] active:border-b-[0px]
+                        transition-all duration-150 [box-shadow:0_4px_0_0_#ccba02,0_8px_0_0_#ccba0241] border-b-[1px] border-[#ebd700]
+                      '>
+                            <img src="/images/kakaotalk_sharing_btn_small.png" alt="metamask" className="h-6 w-6" />
+                            <span className='flex flex-col justify-center items-center h-full text-[#3c1e1e] text-xs font-mono font-bold pt-0.5'>Continue with Kakao</span>
+                        </div>
                     </CardBody>
-                    <Button
-                        size="lg"
-                        // variant="outlined"
-                        color="yellow"
-                        className="flex items-center gap-3"
-                        onClick={() => onClickLogin(`${window.location.origin}${props.parentUrl}`)}
-                    >
-                        <img src="/images/kakaotalk_sharing_btn_small.png" alt="metamask" className="h-6 w-6" />
-                        Continue with Kakao
-                    </Button>
                 </Card>
             </>
         }
@@ -195,17 +195,17 @@ export default function Login(props) {
                     <Typography>
                         logout 하려면 아래 버튼을 눌려주세요.
                     </Typography>
+                    <div
+                        onClick={() => Logout(`${window.location.origin}${props.parentUrl}`)}
+                        className='flex mt-6 items-center gap-2
+                         mb-2 px-4 button bg-[#ffea04] rounded-full cursor-pointer select-none
+                        active:translate-y-1 active:[box-shadow:0_0px_0_0_#ccba02,0_0px_0_0_#ccba0241] active:border-b-[0px]
+                        transition-all duration-150 [box-shadow:0_4px_0_0_#ccba02,0_8px_0_0_#ccba0241] border-b-[1px] border-[#ebd700]
+                      '>
+                        <img src="/images/kakaotalk_sharing_btn_small.png" alt="metamask" className="h-6 w-6" />
+                        <span className='flex flex-col justify-center items-center h-full text-[#3c1e1e] text-xs font-mono font-bold pt-0.5'>logout</span>
+                    </div>
                 </CardBody>
-                <Button
-                    size="lg"
-                    variant="outlined"
-                    color="blue-gray"
-                    className="flex items-center gap-3"
-                    onClick={() => Logout(`${window.location.origin}${props.parentUrl}`)}
-                >
-                    <img src="/images/kakaotalk_sharing_btn_small.png" alt="metamask" className="h-6 w-6" />
-                    Logout
-                </Button>
             </Card>
         </>;
     }

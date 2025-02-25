@@ -13,9 +13,9 @@ export default function Item({ params: { id } }: { params: { id: number } }) {
     }
 
     const props: TablesExample8PropsType = {
-        title: <div className="font-bold text-xl">{strategyInfoList[Number(id)].title}</div>,
+        title: <div className="font-mono font-bold text-xl">{strategyInfoList[Number(id)].title}</div>,
         subTitle: strategyInfoList[Number(id)].subTitle,
-        desc: <div className="flex flex-col font-bold">{((strategyInfoList[Number(id)].desc).split(",")).map(item => {
+        desc: <div className="font-mono font-bold flex flex-col">{((strategyInfoList[Number(id)].desc).split(",")).map(item => {
             // return <div>{item}</div>
             return <div key={item} className="flex items-center">{item.split(":").map((item, index) => {
                 if (0 == index) {
@@ -24,8 +24,8 @@ export default function Item({ params: { id } }: { params: { id: number } }) {
                 return <div key={item} className="text-sm">{item}</div>
             })}</div>
         })}</div>,
-        financial_date: <div className="text-xs">financial date: {strategyInfoList[Number(id)].financial_date}</div>,
-        market_date: <div className="text-xs">market_date: {strategyInfoList[Number(id)].market_date}</div>,
+        financial_date: <div className="font-mono text-xs">financial date: {strategyInfoList[Number(id)].financial_date}</div>,
+        market_date: <div className="font-mono text-xs">market_date: {strategyInfoList[Number(id)].market_date}</div>,
         tableHead: STRATEGY_TABLE_HEAD, // const
         tableRow: strategyInfoList[Number(id)].STRATEGY_TABLE_ROW,
     }

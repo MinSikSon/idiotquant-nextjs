@@ -48,9 +48,6 @@ export default function AlgorithmTrade() {
                 return false;
             });
 
-            // console.log(`filteredPDNOs`, filteredPDNOs);
-
-            // console.log(`PDNOs`, PDNOs);
             const chunkSize = 20;
             for (let i = 0; i < filteredPDNOs.length; i += chunkSize) {
                 const chunk = filteredPDNOs.slice(i, i + chunkSize);
