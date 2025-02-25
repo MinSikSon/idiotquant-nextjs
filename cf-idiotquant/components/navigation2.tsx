@@ -52,7 +52,7 @@ export function NavbarWithSimpleLinks() {
         );
     }
 
-    const urlToLabel: any = {
+    const navListUrlToLabel: any = {
         "": "홈",
         "calculator": "수익 계산기",
         "login": `${!!!kakaoId ? "로그인 🔒" : "로그아웃"}`,
@@ -61,6 +61,10 @@ export function NavbarWithSimpleLinks() {
         "search": `종목 검색 ${!!!kakaoId ? "🔒" : ""}`,
         "open-api": `알고리즘 투자 - 계좌 조회 ${!!!kakaoId ? "🔒" : ""}`,
         "algorithm-trade": "알고리즘 투자 - 매매 이력",
+    }
+
+    const urlToLabel: any = {
+        ...navListUrlToLabel,
         "strategy": "투자 전략",
         "strategy-register": "투자 전략 등록",
     }
@@ -68,12 +72,8 @@ export function NavbarWithSimpleLinks() {
     function NavList() {
         return (
             <ul className="pl-2 pt-2 mb-4 mt-2 flex flex-col gap-2 lg:mb-0 lg:mt-0 lg:flex-row lg:items-center lg:gap-8">
-                {Object.keys(urlToLabel).map((key: string) => {
-                    if (key === "strategy" || key === "strategy-register") {
-                        return <></>
-                    }
-
-                    return <NavItem key={key} url={`/${key}`} label={urlToLabel[key]} />
+                {Object.keys(navListUrlToLabel).map((key: string) => {
+                    return <NavItem key={key} url={`/${key}`} label={navListUrlToLabel[key]} />
                 })}
             </ul>
         );
