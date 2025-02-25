@@ -1,4 +1,4 @@
-import { useState, useMemo, ChangeEvent, KeyboardEvent } from "react";
+import React, { useState, useMemo, ChangeEvent, KeyboardEvent } from "react";
 import { MagnifyingGlassIcon, XCircleIcon } from "@heroicons/react/24/outline";
 
 import validCorpNameArray from "@/public/data/validCorpNameArray.json";
@@ -59,12 +59,16 @@ const SearchAutocomplete = (props: any) => {
         setQuery("");
         setSelectedIndex(-1);
         setIsFocused(false);
+        inputRef.current?.focus(); // input에 포커스 이동
     };
+
+    const inputRef = React.useRef<HTMLInputElement>(null);
 
     return (
         <div className="flex items-center border m-2 p-2 relative">
-            <div className="flex-1">
+            <div className="relative flex-1 items-center">
                 <input
+                    ref={inputRef}
                     type="text"
                     value={query}
                     onChange={handleChange}
@@ -72,14 +76,14 @@ const SearchAutocomplete = (props: any) => {
                     placeholder="회사명을 검색하세요..."
                     onFocus={() => setIsFocused(true)}
                     onBlur={() => setTimeout(() => setIsFocused(false), 200)}
-                    className="w-full p-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="font-mono w-full p-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-black"
                 />
+                {query && (
+                    <button className="absolute right-2 top-1/2 transform -translate-y-1/2 p-2" onClick={handleClear}>
+                        <XCircleIcon className="h-5 w-5 text-gray-500" />
+                    </button>
+                )}
             </div>
-            {query && (
-                <button className="absolute right-12 py-2 px-2" onClick={handleClear}>
-                    <XCircleIcon className="h-5 w-5 text-black" />
-                </button>
-            )}
             <Button className="py-2 px-2" variant="outlined" onClick={handleSearch}>
                 <MagnifyingGlassIcon className="h-5 w-5 text-black" />
             </Button>
@@ -89,7 +93,7 @@ const SearchAutocomplete = (props: any) => {
                         <li
                             key={index}
                             onMouseDown={() => handleSelect(suggestion)}
-                            className={`p-2 cursor-pointer hover:bg-blue-100 ${selectedIndex === index ? "bg-blue-200" : ""
+                            className={`font-mono p-2 cursor-pointer hover:bg-blue-100 ${selectedIndex === index ? "bg-blue-200" : ""
                                 }`}
                         >
                             {suggestion}
