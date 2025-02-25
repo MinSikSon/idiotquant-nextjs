@@ -211,7 +211,7 @@ function TablesExample8({
                                         >
                                             <Popover>
                                                 <PopoverHandler>
-                                                    <div className={`font-mono text-bold text-black cursor-pointer ${head.length >= 6 ? "text-[0.6rem]" : ""}`}>
+                                                    <div className={`font-mono font-bold text-black cursor-pointer ${head.length >= 6 ? "text-[0.6rem]" : ""}`}>
                                                         {head}
                                                     </div>
                                                 </PopoverHandler>
@@ -257,7 +257,7 @@ function TablesExample8({
                                                 <td className={classes}>
                                                     <div className="flex items-center gap-4 text-left">
                                                         <div>
-                                                            <div className="flex items-center text-black">
+                                                            <div className="flex items-cente">
                                                                 {tag}
                                                                 {detail}
                                                             </div>
@@ -265,52 +265,52 @@ function TablesExample8({
                                                     </div>
                                                 </td>
                                                 <td className={classes}>
-                                                    <div className="text-sm text-gray-600 text-right">
+                                                    <div className="text-sm text-right">
                                                         {closePrice}
                                                     </div>
                                                 </td>
                                                 <td className={classes}>
-                                                    <div className={`text-sm font-bold text-right ${expectedRateOfReturnColor}`}>
+                                                    <div className={`text-sm text-right ${expectedRateOfReturnColor}`}>
                                                         {expectedRateOfReturn}
                                                     </div>
                                                 </td>
                                                 <td className={classes}>
-                                                    <div className="text-sm text-gray-600 text-right">
+                                                    <div className="text-sm text-right">
                                                         {targetPrice}
                                                     </div>
                                                 </td>
                                                 <td className={classes}>
-                                                    <div className="text-sm text-gray-600 text-right">
+                                                    <div className="text-sm text-right">
                                                         {market}
                                                     </div>
                                                 </td>
                                                 <td className={classes}>
-                                                    <div className="text-sm text-gray-600 text-right">
+                                                    <div className="text-sm text-right">
                                                         {netCurrentAssert}
                                                     </div>
                                                 </td>
                                                 <td className={classes}>
-                                                    <div className="text-sm text-gray-600 text-right">
+                                                    <div className="text-sm text-right">
                                                         {netIncome}
                                                     </div>
                                                 </td>
                                                 <td className={classes}>
-                                                    <div className="text-sm text-gray-600 text-right">
+                                                    <div className="text-sm text-right">
                                                         {bps}
                                                     </div>
                                                 </td>
                                                 <td className={classes}>
-                                                    <div className="text-sm text-gray-600 text-right">
+                                                    <div className="text-sm text-right">
                                                         {eps}
                                                     </div>
                                                 </td>
                                                 <td className={classes}>
-                                                    <div className="text-sm text-gray-600 text-right">
+                                                    <div className="text-sm text-right">
                                                         {pbr}
                                                     </div>
                                                 </td>
                                                 <td className={classes}>
-                                                    <div className="text-sm text-gray-600 text-right">
+                                                    <div className="text-sm text-right">
                                                         {per}
                                                     </div>
                                                 </td>
