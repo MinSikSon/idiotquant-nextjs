@@ -211,12 +211,12 @@ function TablesExample8({
                                         >
                                             <Popover>
                                                 <PopoverHandler>
-                                                    <div className="!font-bold text-black cursor-pointer">
+                                                    <div className={`text-mono text-bold text-black cursor-pointer ${head.length >= 6 ? "text-[0.6rem]" : ""}`}>
                                                         {head}
                                                     </div>
                                                 </PopoverHandler>
                                                 <PopoverContent>
-                                                    <span className="text-red-500">{desc}</span>
+                                                    <div className="text-mono text-red-500">{desc}</div>
                                                 </PopoverContent>
                                             </Popover>
                                         </th>
@@ -257,11 +257,9 @@ function TablesExample8({
                                                 <td className={classes}>
                                                     <div className="flex items-center gap-4 text-left">
                                                         <div>
-                                                            <div className="text-sm font-bold text-black">
-                                                                <div className="flex items-center">
-                                                                    {tag}
-                                                                    {detail}
-                                                                </div>
+                                                            <div className="flex items-center text-black">
+                                                                {tag}
+                                                                {detail}
                                                             </div>
                                                         </div>
                                                     </div>

@@ -9,7 +9,7 @@ const DefaultTopPanel = (props: any) => {
     return (
         <div className="flex justify-between">
             <Link className="" href="/">
-                <div>idiotquant<span className='text-green-400'>.</span>com</div>
+                <div className="font-mono">idiotquant<span className='text-green-400'>.</span>com</div>
             </Link>
             {props.search ? <SearchPanel /> : <></>}
         </div>
