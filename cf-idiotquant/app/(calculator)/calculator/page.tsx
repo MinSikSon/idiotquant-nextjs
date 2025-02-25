@@ -7,6 +7,7 @@ import React from "react";
 
 import { Input, Select, Option, Button, ListItem, ListItemSuffix } from "@material-tailwind/react";
 import { CalculationList } from "@/app/(calculator)/calculator/calculationList"
+import { DesignButton } from "@/components/designButton";
 
 export interface CalculationResult {
     index: number,
@@ -199,7 +200,7 @@ export default function Calculator() {
     }
 
     return (
-        <div>
+        <div className="font-mono">
             <Head>
                 <title>기대 수익 계산기 | 미래 수익 예측</title>
                 <link rel="icon" href="/images/icons8-calculator-color-32.png" />
@@ -219,8 +220,8 @@ export default function Calculator() {
             <div className='w-screen flex justify-between items-center px-4 py-0 sm:px-20 md:px-40 lg:px-64 xl:px-80 2xl:px-96'>
                 <div className="w-full h-full rounded-xl bg-white text-gray-700 border border-gray-300 shadow-md">
                     <ListItem className='text-black pb-0 mb-1'>
-                        <div className="w-full font-mono text-md header-contents text-center">
-                            <span className='bg-yellow-500'> 기대 수익 </span> 계산기
+                        <div className="w-full text-md header-contents text-center">
+                            <span className='bg-yellow-500'> 기대 수익</span> 계산기
                         </div>
                         <ListItemSuffix>
                             <img className='h-4 col-span-1 object-fill' src='/images/icons8-calculator.gif' />
@@ -230,25 +231,50 @@ export default function Calculator() {
                         <form className="flex flex-col gap-1.5 m-4">
                             <div className="gap-0">
                                 <div className='flex justify-between my-0'>
-                                    <div className='text-lg underline decoration-4 decoration-yellow-500'>{'최종 수입금:'}</div>
-                                    <div className='text-2xl text-right underline decoration-4 decoration-yellow-500'>{' ' + result.toLocaleString('ko-KR', { maximumFractionDigits: 0 }) + ' 원'}</div>
+                                    <div className='text-base underline decoration-4 decoration-yellow-500'>{'최종 수입금:'}</div>
+                                    <div className='text-xl text-right underline decoration-4 decoration-yellow-500'>{' ' + result.toLocaleString('ko-KR', { maximumFractionDigits: 0 }) + ' 원'}</div>
                                 </div>
                                 <div className='flex justify-between my-0 py-0'>
-                                    <div className='text-md'>{'(최종 수익률:'}</div>
-                                    <div className='text-xl text-right'>{' ' + Number(finalRateOfReturn).toFixed(2) + ' %)'}</div>
+                                    <div className='text-md'>{'최종 수익률:'}</div>
+                                    <div className='text-xl text-right'>{' ' + Number(finalRateOfReturn).toFixed(2) + ' %'}</div>
                                 </div>
                                 <div className='flex justify-between my-0 py-0'>
-                                    <div className='text-lg'>{'누적 투자금:'}</div>
-                                    <div className='text-2xl text-right'>{' ' + totalInvestment.toLocaleString('ko-KR', { maximumFractionDigits: 0 }) + ' 원'}</div>
+                                    <div className='text-base'>{'누적 투자금:'}</div>
+                                    <div className='text-xl text-right'>{' ' + totalInvestment.toLocaleString('ko-KR', { maximumFractionDigits: 0 }) + ' 원'}</div>
                                 </div>
                             </div>
                             <div className='flex'>
                                 <Input color="black" label="투자 시작 금액: (원)" type='number' onChange={(e) => { removeLeftZero(e); setInvestmentAmount(Number(e.target.value)); }} value={Number(investmentAmount) * 1} crossOrigin={undefined} />
-                                {!!investmentAmount ? <Button className="ml-1 py-0" variant="outlined" onClick={() => setInvestmentAmount(Number(0) * 1)} >CLEAR</Button> : <></>}
+                                {!!investmentAmount ?
+                                    <>
+                                        <DesignButton
+                                            handleOnClick={() => setInvestmentAmount(Number(0) * 1)}
+                                            buttonName="CLEAR"
+                                            buttonBgColor="bg-green-400"
+                                            buttonBorderColor="border-green-300"
+                                            buttonShadowColor="#129600"
+                                            textStyle="text-xs pt-0.5 font-bold"
+                                            buttonStyle="rounded-lg px-4 ml-2"
+                                        />
+                                    </>
+                                    :
+                                    <></>}
                             </div>
                             <div className='flex'>
                                 <Input color="black" label="투자 기간: (년)" type='number' onChange={(e) => { removeLeftZero(e); setNumberOfYears(Number(e.target.value)); }} value={numberOfYears} crossOrigin={undefined} />
-                                {!!numberOfYears ? <Button className="ml-1 py-0" variant="outlined" onClick={() => setNumberOfYears(0)}>CLEAR</Button> : <></>}
+                                {!!numberOfYears ? <>
+                                    <DesignButton
+                                        handleOnClick={() => setNumberOfYears(0)}
+                                        buttonName="CLEAR"
+                                        buttonBgColor="bg-green-400"
+                                        buttonBorderColor="border-green-300"
+                                        buttonShadowColor="#129600"
+                                        textStyle="text-xs pt-0.5 font-bold"
+                                        buttonStyle="rounded-lg px-4 ml-2"
+                                    />
+                                    {/* <Button className="font-mono ml-1 py-0" variant="outlined" onClick={() => setNumberOfYears(0)}>CLEAR</Button> */}
+                                </>
+                                    : <></>}
                             </div>
                             <div className='flex-row border-4  border-red-100 pt-1'>
                                 <Select label="복리" value={String(compounding)} onChange={(value) => { setCompounding(Number(value)) }}
@@ -263,7 +289,20 @@ export default function Calculator() {
                                 </Select>
                                 <div className='pt-2 flex'>
                                     <Input color="black" label={`${getInterestRateBenchmark(compounding)} 이자율 (%)`} type='number' onChange={(e) => { removeLeftZero(e); setInterestRate(Number(e.target.value)); }} value={interestRate} crossOrigin={undefined} />
-                                    {!!interestRate ? <Button className="ml-1 py-0" variant="outlined" onClick={() => setInterestRate(0)}>CLEAR</Button> : <></>}
+                                    {!!interestRate ?
+                                        <>
+                                            <DesignButton
+                                                handleOnClick={() => setInterestRate(0)}
+                                                buttonName="CLEAR"
+                                                buttonBgColor="bg-green-400"
+                                                buttonBorderColor="border-green-300"
+                                                buttonShadowColor="#129600"
+                                                textStyle="text-xs pt-0.5 font-bold"
+                                                buttonStyle="rounded-lg px-4 ml-2"
+                                            />
+                                            {/* <Button className="font-mono ml-1 py-0" variant="outlined" onClick={() => setInterestRate(0)}>CLEAR</Button> */}
+                                        </>
+                                        : <></>}
                                 </div>
                             </div>
                             <div className='flex-row border-4  border-blue-100 pt-1'>
@@ -282,28 +321,75 @@ export default function Calculator() {
                                 </Select>
                                 <div className='pt-2 flex bg-white'>
                                     <Input color="black" label={`${getContributeRateBenchmark(frequency)} 추가 납입금`} type='number' onChange={(e) => { removeLeftZero(e); setContributions(Number(e.target.value)); }} value={contributions} crossOrigin={undefined} />
-                                    {!!contributions ? <Button className="ml-1 py-0" variant="outlined" onClick={() => setContributions(0)}>CLEAR</Button> : <></>}
+                                    {!!contributions ?
+                                        <>
+                                            <DesignButton
+                                                handleOnClick={() => setContributions(0)}
+                                                buttonName="CLEAR"
+                                                buttonBgColor="bg-green-400"
+                                                buttonBorderColor="border-green-300"
+                                                buttonShadowColor="#129600"
+                                                textStyle="text-xs pt-0.5 font-bold"
+                                                buttonStyle="rounded-lg px-4 ml-2"
+                                            />
+                                            {/* <Button className="font-mono ml-1 py-0" variant="outlined" onClick={() => setContributions(0)}>CLEAR</Button> */}
+                                        </>
+                                        : <></>}
                                 </div>
                             </div>
                             <div className='flex'>
                                 <Input color="black" label="물가상승률 (%)" type='number' onChange={(e) => { removeLeftZero(e); setInflationRate(Number(e.target.value)); }} value={inflationRate} crossOrigin={undefined} />
-                                {!!inflationRate ? <Button className="ml-1 py-0" variant="outlined" onClick={() => setInflationRate(0)}>CLEAR</Button> : <></>}
+                                {!!inflationRate ?
+                                    <>
+                                        <DesignButton
+                                            handleOnClick={() => setInflationRate(0)}
+                                            buttonName="CLEAR"
+                                            buttonBgColor="bg-green-400"
+                                            buttonBorderColor="border-green-300"
+                                            buttonShadowColor="#129600"
+                                            textStyle="text-xs pt-0.5 font-bold"
+                                            buttonStyle="rounded-lg px-4 ml-2"
+                                        />
+                                        {/* <Button className="font-mono ml-1 py-0" variant="outlined" onClick={() => setInflationRate(0)}>CLEAR</Button> */}
+                                    </>
+                                    : <></>}
                             </div>
                             <div className="flex">
-                                <Button className="w-36 mr-1" color="green" variant="outlined" onClick={handleCalculateSampleData}>
+                                <DesignButton
+                                    handleOnClick={() => handleCalculateSampleData()}
+                                    buttonName="계산 예시"
+                                    buttonBgColor="bg-green-400"
+                                    buttonBorderColor="border-green-300"
+                                    buttonShadowColor="#129600"
+                                    textStyle="text-xs pt-0.5 font-bold"
+                                    buttonStyle="rounded-lg px-6 py-2"
+                                />
+                                {/* <Button className="font-mono w-36 mr-1" color="green" variant="outlined" onClick={handleCalculateSampleData}>
                                     <div>(계산 예시)</div>
-                                    {/* <div>(예시) 시작 금액: {investmentAmount}원, 투자 기간: {numberOfYears}년</div> */}
-                                    {/* <div>이자율: {interestRate}%, 추납금: {contributions}원, 물가 상승률: {annualInflationRate}% </div> */}
-                                </Button>
-                                <div className="w-full grid grid-cols-1">
-                                    <Button className="ml-1 rounded-full" variant="outlined" color="red" onClick={handleClear}>ALL CLEAR</Button>
+                                </Button> */}
+                                <div className="flex-1 grid grid-cols-1">
+                                    <DesignButton
+                                        handleOnClick={() => handleClear()}
+                                        buttonName="ALL CLEAR"
+                                        buttonBgColor="bg-red-400"
+                                        buttonBorderColor="border-red-300"
+                                        buttonShadowColor="#910000"
+                                        textStyle="text-xs pt-0.5 font-bold"
+                                        buttonStyle="rounded-lg px-4 py-2 ml-2"
+                                    />
+                                    {/* <Button className="font-mono ml-1 rounded-full" variant="outlined" color="red" onClick={handleClear}>ALL CLEAR</Button> */}
                                 </div>
                             </div>
-                            <div className="flex">
-                                <div className="w-full grid grid-cols-1">
-                                    <Button variant="outlined" onClick={handleRegister}>계산 결과 등록 🦄</Button>
-                                </div>
-                            </div>
+                            <DesignButton
+                                handleOnClick={() => handleRegister()}
+                                buttonName="계산 결과 등록 🦄"
+                                buttonBgColor="bg-green-400"
+                                buttonBorderColor="border-green-300"
+                                buttonShadowColor="#129600"
+                                textStyle="text-xs pt-0.5 font-bold"
+                                buttonStyle="rounded-lg p-4"
+                            />
+                            {/* <Button className="font-mono" variant="outlined" onClick={handleRegister}>계산 결과 등록 🦄</Button> */}
                         </form>
                     </div>
                 </div>

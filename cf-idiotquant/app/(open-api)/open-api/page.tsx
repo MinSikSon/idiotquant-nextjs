@@ -15,6 +15,7 @@ import React from "react";
 
 import { usePathname } from "next/navigation";
 import Auth from "@/components/auth";
+import { DesignButton } from "@/components/designButton";
 
 export default function OpenApi() {
     const pathname = usePathname();
@@ -137,22 +138,24 @@ export default function OpenApi() {
                 chartName: '',
                 tag: <>
                     <div className="flex p-0 m-0 gap-1 mr-2 font-mono">
-                        <div
-                            onClick={() => handleOnClick(item, "buy")}
-                            className='mb-2 px-1 button bg-blue-500 rounded-full cursor-pointer select-none
-    active:translate-y-1 active:[box-shadow:0_0px_0_0_#1b6ff8,0_0px_0_0_#1b6ff841] active:border-b-[0px]
-    transition-all duration-150 [box-shadow:0_4px_0_0_#1b6ff8,0_8px_0_0_#1b6ff841] border-b-[1px] border-blue-400
-  '>
-                            <span className='flex flex-col justify-center items-center h-full text-white font-mono text-[0.5rem]'>buy</span>
-                        </div>
-                        <div
-                            onClick={() => handleOnClick(item, "sell")}
-                            className='mb-2 px-1 button bg-red-400 rounded-full cursor-pointer select-none
-    active:translate-y-1 active:[box-shadow:0_0px_0_0_#910000,0_0px_0_0_#91000041] active:border-b-[0px]
-    transition-all duration-150 [box-shadow:0_4px_0_0_#910000,0_8px_0_0_#91000041] border-b-[1px] border-red-300
-  '>
-                            <span className='flex flex-col justify-center items-center h-full text-white font-mono text-[0.5rem]'>sell</span>
-                        </div>
+                        <DesignButton
+                            handleOnClick={() => handleOnClick(item, "buy")}
+                            buttonName="buy"
+                            buttonBgColor="bg-blue-500"
+                            buttonBorderColor="border-blue-400"
+                            buttonShadowColor="#1b6ff8"
+                            textStyle="text-[0.5rem]"
+                            buttonStyle="m-0 p-0"
+                        />
+                        <DesignButton
+                            handleOnClick={() => handleOnClick(item, "sell")}
+                            buttonName="sell"
+                            buttonBgColor="bg-red-400"
+                            buttonBorderColor="border-red-300"
+                            buttonShadowColor="#910000"
+                            textStyle="text-[0.5rem]"
+                            buttonStyle="m-0 p-0"
+                        />
                     </div>
                 </>,
             }
@@ -175,18 +178,17 @@ export default function OpenApi() {
         title: <>
             <div className="flex pb-2 items-center">
                 <div className="pr-2 text-black">알고리즘 매매 계좌 조회</div>
-
-                <div
-                    onClick={() => {
+                <DesignButton
+                    handleOnClick={() => {
                         showAlert("지난 주문 확인");
                         dispatch(reqGetInquireBalance(kiToken));
                     }}
-                    className='mb-2 px-2 button bg-green-400 rounded-full cursor-pointer select-none
-    active:translate-y-1 active:[box-shadow:0_0px_0_0_#129600,0_0px_0_0_#12960041] active:border-b-[0px]
-    transition-all duration-150 [box-shadow:0_4px_0_0_#129600,0_8px_0_0_#12960041] border-b-[1px] border-green-300
-  '>
-                    <span className='flex flex-col justify-center items-center h-full text-white text-xs font-mono pt-0.5'>계좌 조회</span>
-                </div>
+                    buttonName="계좌 조회"
+                    buttonBgColor="bg-green-400"
+                    buttonBorderColor="border-green-300"
+                    buttonShadowColor="#129600"
+                    textStyle="text-xs pt-0.5"
+                />
                 {"pending" == kiBalance.state ?
                     <Button loading={true} className="p-0 px-1 m-0 bg-white text-black font-mono">loading...</Button>
                     : <></>}
