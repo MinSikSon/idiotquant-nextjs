@@ -57,11 +57,11 @@ export default function OpenApi() {
     }, [kiToken]);
 
     React.useEffect(() => {
-        console.log(`kiBalance`, kiBalance);
+        // console.log(`kiBalance`, kiBalance);
     }, [kiBalance]);
 
     React.useEffect(() => {
-        console.log(`kiOrderCash`, kiOrderCash);
+        // console.log(`kiOrderCash`, kiOrderCash);
     }, [kiOrderCash])
 
     if ("init" == loginState) {
@@ -113,7 +113,7 @@ export default function OpenApi() {
     let example8TableRowType: Example8TableRowType[] = [];
     if ("fulfilled" == kiBalance.state) {
         let kiBalanceOutput1 = [...kiBalance.output1];
-        console.log(`kiBalanceOutput1`, kiBalanceOutput1);
+        // console.log(`kiBalanceOutput1`, kiBalanceOutput1);
         example8TableRowType = (kiBalanceOutput1.sort((a, b) => Number(b["pchs_amt"]) - Number(a["pchs_amt"])).map((item, index) => {
             // console.log(`item["prdt_name"]`, item["prdt_name"], `item["prdt_name"].length`, item["prdt_name"].length);
             return {
@@ -168,7 +168,7 @@ export default function OpenApi() {
         }));
     }
 
-    console.log(`kiOrderCash.msg1`, kiOrderCash.msg1); // TODO: 클릭한 종목 바로 밑에 msg 뜨게 변경..!!
+    // console.log(`kiOrderCash.msg1`, kiOrderCash.msg1); // TODO: 클릭한 종목 바로 밑에 msg 뜨게 변경..!!
 
     let nass_amt: number = 0; // 순자산
     let evlu_amt_smtl_amt: number = 0; // 평가금액
