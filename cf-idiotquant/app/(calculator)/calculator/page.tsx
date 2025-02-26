@@ -375,7 +375,11 @@ export default function Calculator() {
                                         buttonBorderColor="border-red-300"
                                         buttonShadowColor="#910000"
                                         textStyle="text-white text-xs pt-0.5 font-bold"
-                                        buttonStyle="rounded-lg px-4 py-2 ml-2"
+                                        // buttonStyle="rounded-lg px-4 py-2 ml-2"
+                                        buttonStyle={`rounded-lg px-4 py-2 ml-2 flex items-center justify-center mb-2 px-1 button bg-red-400 rounded-full cursor-pointer select-none
+                                            active:translate-y-1 active:[box-shadow:0_0px_0_0_#910000,0_0px_0_0_#91000041] active:border-b-[0px]
+                                            transition-all duration-150 [box-shadow:0_4px_0_0_#910000,0_8px_0_0_#91000041] border-b-[1px] border-red-300
+                                            `}
                                     />
                                     {/* <Button className="font-mono ml-1 rounded-full" variant="outlined" color="red" onClick={handleClear}>ALL CLEAR</Button> */}
                                 </div>

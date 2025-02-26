@@ -28,9 +28,9 @@ active:translate-y-1 active:[box-shadow:0_0px_0_0_${buttonShadowColor},0_0px_0_0
 transition-all duration-150 [box-shadow:0_4px_0_0_${buttonShadowColor},0_8px_0_0_${buttonShadowColor}41] border-b-[1px] ${buttonBorderColor}
 ${buttonStyle}
 `}
-        style={{
-            boxShadow: `0 4px 0 0 ${buttonShadowColor}, 0 8px 0 0 ${buttonShadowColor}41`
-        }}
+    // style={{
+    //     boxShadow: `0 4px 0 0 ${buttonShadowColor}, 0 8px 0 0 ${buttonShadowColor}41`
+    // }}
     >
         {additionalTextTop}
         <span className={`justify-center items-center font-mono ${textStyle}`}>{buttonName}</span>

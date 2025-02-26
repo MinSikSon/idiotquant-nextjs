@@ -145,7 +145,10 @@ export default function OpenApi() {
                             buttonBorderColor={`border-blue-400`}
                             buttonShadowColor={`#1e78ff`}
                             textStyle={`text-white font-bold text-[0.5rem]`}
-
+                            buttonStyle={`flex items-center justify-center mb-2 px-1 button bg-blue-500 rounded-full cursor-pointer select-none
+                                active:translate-y-1 active:[box-shadow:0_0px_0_0_#1e78ff,0_0px_0_0_#1e78ff41] active:border-b-[0px]
+                                transition-all duration-150 [box-shadow:0_4px_0_0_#1e78ff,0_8px_0_0_#1e78ff41] border-b-[1px]
+                                `}
                         />
                         <DesignButton
                             handleOnClick={() => handleOnClick(item, "sell")}
@@ -154,6 +157,10 @@ export default function OpenApi() {
                             buttonBorderColor={`border-red-300`}
                             buttonShadowColor={`#910000`}
                             textStyle={`text-white font-bold text-[0.5rem]`}
+                            buttonStyle={`flex items-center justify-center mb-2 px-1 button bg-red-400 rounded-full cursor-pointer select-none
+                                active:translate-y-1 active:[box-shadow:0_0px_0_0_#910000,0_0px_0_0_#91000041] active:border-b-[0px]
+                                transition-all duration-150 [box-shadow:0_4px_0_0_#910000,0_8px_0_0_#91000041] border-b-[1px]
+                                `}
                         />
                     </div>
                 </>,
