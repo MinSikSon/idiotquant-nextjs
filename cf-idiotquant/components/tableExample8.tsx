@@ -257,7 +257,7 @@ function TablesExample8({
                                                 <td className={classes}>
                                                     <div className="flex items-center gap-4 text-left">
                                                         <div>
-                                                            <div className="flex items-cente">
+                                                            <div className="flex items-center">
                                                                 {tag}
                                                                 {detail}
                                                             </div>
