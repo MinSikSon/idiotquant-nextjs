@@ -187,9 +187,9 @@ export default function AlgorithmTrade() {
                 </Popover>
                 <div className="ml-1 p-2 border rounded border-black">
                     <div className="flex items-center text-xs font-mono text-black leading-none pb-1">
-                        <div>10분 당 충전 token</div>
-                        <div className="ml-2 px-1 text-xs font-normal rounded border border-black">{Math.trunc(capital_charge_rate / stock_list_length) * stock_list_length}</div>
-                        <div className="ml-2">(종목 당 충전 token</div><div className="ml-2 px-1 text-xs font-normal rounded border border-black">{token_per_stock}</div>)
+                        <div>10분 마다 token 충전</div>
+                        {/* <div className="ml-2 px-1 text-xs font-normal rounded border border-black">{token_per_stock}</div> */}
+                        <div className="ml-2 px-1 text-xs font-normal rounded border border-black">종목 당 충전 token {token_per_stock}</div>
                     </div>
                     <div className="flex items-center text-xs font-mono text-black leading-none pb-1">
                         <div>마지막 구매 시도 종목</div>
