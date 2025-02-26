@@ -141,20 +141,19 @@ export default function OpenApi() {
                         <DesignButton
                             handleOnClick={() => handleOnClick(item, "buy")}
                             buttonName="buy"
-                            buttonBgColor="bg-blue-500"
-                            buttonBorderColor="border-blue-400"
-                            buttonShadowColor="#1b6ff8"
-                            textStyle="text-[0.5rem]"
-                            buttonStyle="m-0 p-0"
+                            buttonBgColor={`bg-blue-500`}
+                            buttonBorderColor={`border-blue-400`}
+                            buttonShadowColor={`#1e78ff`}
+                            textStyle={`text-white font-bold text-[0.5rem]`}
+
                         />
                         <DesignButton
                             handleOnClick={() => handleOnClick(item, "sell")}
                             buttonName="sell"
-                            buttonBgColor="bg-red-400"
-                            buttonBorderColor="border-red-300"
-                            buttonShadowColor="#910000"
-                            textStyle="text-[0.5rem]"
-                            buttonStyle="m-0 p-0"
+                            buttonBgColor={`bg-red-400`}
+                            buttonBorderColor={`border-red-300`}
+                            buttonShadowColor={`#910000`}
+                            textStyle={`text-white font-bold text-[0.5rem]`}
                         />
                     </div>
                 </>,
@@ -187,7 +186,7 @@ export default function OpenApi() {
                     buttonBgColor="bg-green-400"
                     buttonBorderColor="border-green-300"
                     buttonShadowColor="#129600"
-                    textStyle="text-xs pt-0.5"
+                    textStyle="text-white text-xs pt-0.5"
                 />
                 {"pending" == kiBalance.state ?
                     <Button loading={true} className="p-0 px-1 m-0 bg-white text-black font-mono">loading...</Button>

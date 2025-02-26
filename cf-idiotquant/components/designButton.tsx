@@ -10,17 +10,31 @@ export interface DesignButtonProps {
     additionalTextTop?: any;
     additionalTextBottom?: any;
 }
-export const DesignButton = (props: DesignButtonProps) => {
+export const DesignButton = ({
+    handleOnClick,
+    buttonBgColor,
+    buttonShadowColor,
+    buttonBorderColor,
+    buttonStyle,
+    additionalTextTop,
+    additionalTextBottom,
+    textStyle,
+    buttonName,
+}: DesignButtonProps) => {
     return <div
-        onClick={props.handleOnClick}
-        className={`flex items-center justify-center mb-2 px-1 button ${props.buttonBgColor} rounded-full cursor-pointer select-none
-active:translate-y-1 active:[box-shadow:0_0px_0_0_${props.buttonShadowColor},0_0px_0_0_${props.buttonShadowColor}41] active:border-b-[0px]
-transition-all duration-150 [box-shadow:0_4px_0_0_${props.buttonShadowColor},0_8px_0_0_${props.buttonShadowColor}41] border-b-[1px] ${props.buttonBorderColor}
-${props.buttonStyle}
-`}>
-        {props.additionalTextTop}
-        <span className={`flex flex-col justify-center items-center text-white font-mono ${props.textStyle}`}>{props.buttonName}</span>
-        {props.additionalTextBottom}
+        onClick={handleOnClick}
+        className={`flex items-center justify-center mb-2 px-1 button ${buttonBgColor} rounded-full cursor-pointer select-none
+active:translate-y-1 active:[box-shadow:0_0px_0_0_${buttonShadowColor},0_0px_0_0_${buttonShadowColor}41] active:border-b-[0px]
+transition-all duration-150 [box-shadow:0_4px_0_0_${buttonShadowColor},0_8px_0_0_${buttonShadowColor}41] border-b-[1px] ${buttonBorderColor}
+${buttonStyle}
+`}
+        style={{
+            boxShadow: `0 4px 0 0 ${buttonShadowColor}, 0 8px 0 0 ${buttonShadowColor}41`
+        }}
+    >
+        {additionalTextTop}
+        <span className={`justify-center items-center font-mono ${textStyle}`}>{buttonName}</span>
+        {additionalTextBottom}
     </div>
 }
 

@@ -253,7 +253,7 @@ export default function Calculator() {
                                             buttonBgColor="bg-green-400"
                                             buttonBorderColor="border-green-300"
                                             buttonShadowColor="#129600"
-                                            textStyle="text-xs pt-0.5 font-bold"
+                                            textStyle="text-white text-xs pt-0.5 font-bold"
                                             buttonStyle="rounded-lg px-4 ml-2"
                                         />
                                     </>
@@ -269,7 +269,7 @@ export default function Calculator() {
                                         buttonBgColor="bg-green-400"
                                         buttonBorderColor="border-green-300"
                                         buttonShadowColor="#129600"
-                                        textStyle="text-xs pt-0.5 font-bold"
+                                        textStyle="text-white text-xs pt-0.5 font-bold"
                                         buttonStyle="rounded-lg px-4 ml-2"
                                     />
                                     {/* <Button className="font-mono ml-1 py-0" variant="outlined" onClick={() => setNumberOfYears(0)}>CLEAR</Button> */}
@@ -297,7 +297,7 @@ export default function Calculator() {
                                                 buttonBgColor="bg-green-400"
                                                 buttonBorderColor="border-green-300"
                                                 buttonShadowColor="#129600"
-                                                textStyle="text-xs pt-0.5 font-bold"
+                                                textStyle="text-white text-xs pt-0.5 font-bold"
                                                 buttonStyle="rounded-lg px-4 ml-2"
                                             />
                                             {/* <Button className="font-mono ml-1 py-0" variant="outlined" onClick={() => setInterestRate(0)}>CLEAR</Button> */}
@@ -329,7 +329,7 @@ export default function Calculator() {
                                                 buttonBgColor="bg-green-400"
                                                 buttonBorderColor="border-green-300"
                                                 buttonShadowColor="#129600"
-                                                textStyle="text-xs pt-0.5 font-bold"
+                                                textStyle="text-white text-xs pt-0.5 font-bold"
                                                 buttonStyle="rounded-lg px-4 ml-2"
                                             />
                                             {/* <Button className="font-mono ml-1 py-0" variant="outlined" onClick={() => setContributions(0)}>CLEAR</Button> */}
@@ -347,7 +347,7 @@ export default function Calculator() {
                                             buttonBgColor="bg-green-400"
                                             buttonBorderColor="border-green-300"
                                             buttonShadowColor="#129600"
-                                            textStyle="text-xs pt-0.5 font-bold"
+                                            textStyle="text-white text-xs pt-0.5 font-bold"
                                             buttonStyle="rounded-lg px-4 ml-2"
                                         />
                                         {/* <Button className="font-mono ml-1 py-0" variant="outlined" onClick={() => setInflationRate(0)}>CLEAR</Button> */}
@@ -361,7 +361,7 @@ export default function Calculator() {
                                     buttonBgColor="bg-green-400"
                                     buttonBorderColor="border-green-300"
                                     buttonShadowColor="#129600"
-                                    textStyle="text-xs pt-0.5 font-bold"
+                                    textStyle="text-white text-xs pt-0.5 font-bold"
                                     buttonStyle="rounded-lg px-6 py-2"
                                 />
                                 {/* <Button className="font-mono w-36 mr-1" color="green" variant="outlined" onClick={handleCalculateSampleData}>
@@ -374,7 +374,7 @@ export default function Calculator() {
                                         buttonBgColor="bg-red-400"
                                         buttonBorderColor="border-red-300"
                                         buttonShadowColor="#910000"
-                                        textStyle="text-xs pt-0.5 font-bold"
+                                        textStyle="text-white text-xs pt-0.5 font-bold"
                                         buttonStyle="rounded-lg px-4 py-2 ml-2"
                                     />
                                     {/* <Button className="font-mono ml-1 rounded-full" variant="outlined" color="red" onClick={handleClear}>ALL CLEAR</Button> */}
@@ -386,7 +386,7 @@ export default function Calculator() {
                                 buttonBgColor="bg-green-400"
                                 buttonBorderColor="border-green-300"
                                 buttonShadowColor="#129600"
-                                textStyle="text-xs pt-0.5 font-bold"
+                                textStyle="text-white text-xs pt-0.5 font-bold"
                                 buttonStyle="rounded-lg p-4"
                             />
                             {/* <Button className="font-mono" variant="outlined" onClick={handleRegister}>계산 결과 등록 🦄</Button> */}
