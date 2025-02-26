@@ -215,8 +215,8 @@ function TablesExample8({
                                                         {head}
                                                     </div>
                                                 </PopoverHandler>
-                                                <PopoverContent>
-                                                    <div className="font-mono text-red-500">{desc}</div>
+                                                <PopoverContent className="p-2 border border-black rounded shadow shadow-blue-gray-500">
+                                                    <div className="text-xs font-mono text-black">{desc}</div>
                                                 </PopoverContent>
                                             </Popover>
                                         </th>

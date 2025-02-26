@@ -118,6 +118,7 @@ export default function AlgorithmTrade() {
     const refill_stock_index = capitalToken.value.refill_stock_index ?? 0;
     const stock_list_length = stock_list.length > 0 ? stock_list.length : 1;
     const capital_charge_rate = capitalToken.value.capital_charge_rate ?? 0;
+    const token_per_stock = capitalToken.value.tokenPerStock ?? 0;
     // console.log(`stock_list`, stock_list);
     let cummulative_token = 0;
     const props: TablesExample8PropsType = {
@@ -125,10 +126,10 @@ export default function AlgorithmTrade() {
             <div className="flex pb-2 items-center">
                 <Popover>
                     <PopoverHandler>
-                        <div className="text-base font-mono pr-2 text-black">알고리즘 투자 이력</div>
+                        <div className="text-base font-mono pr-2 text-black cursor-pointer">알고리즘 투자 이력</div>
                     </PopoverHandler>
-                    <PopoverContent>
-                        <div className="text-xs font-mono text-red-500">10분 간격으로 token 충전 및 알고리즘 매매 수행합니다.</div>
+                    <PopoverContent className="p-2 border border-black rounded shadow shadow-blue-gray-500">
+                        <div className="text-xs font-mono text-black">10분 간격으로 token 충전 및 알고리즘 매매 수행합니다.</div>
                     </PopoverContent>
                 </Popover>
                 <div
@@ -168,8 +169,8 @@ export default function AlgorithmTrade() {
                             </div>
                         </div>
                     </PopoverHandler>
-                    <PopoverContent>
-                        <div className="text-xs text-red-500">10분 간격으로 token 충전 및 알고리즘 매매 수행합니다.</div>
+                    <PopoverContent className="p-2 border border-black rounded shadow shadow-blue-gray-500">
+                        <div className="text-xs font-mono text-black">10분 간격으로 token 충전 및 알고리즘 매매 수행합니다.</div>
                     </PopoverContent>
                 </Popover>
             </div>
@@ -180,74 +181,85 @@ export default function AlgorithmTrade() {
                             token 현황
                         </div>
                     </PopoverHandler>
-                    <PopoverContent>
-                        <div className="text-xs text-red-500">{`"token >= 주가" 인 경우 구매 시도`}</div>
+                    <PopoverContent className="p-2 border border-black rounded shadow shadow-blue-gray-500">
+                        <div className="text-xs font-mono text-black">{`"token >= 주가" 인 경우 구매 시도`}</div>
                     </PopoverContent>
                 </Popover>
                 <div className="ml-1 p-2 border rounded border-black">
                     <div className="flex items-center text-xs font-mono text-black leading-none pb-1">
                         <div>10분 당 충전 token</div>
                         <div className="ml-2 px-1 text-xs font-normal rounded border border-black">{Math.trunc(capital_charge_rate / stock_list_length) * stock_list_length}</div>
-                        <div className="ml-2">(종목 당 충전 token</div><div className="ml-2 px-1 text-xs font-normal rounded border border-black">{Math.trunc(capital_charge_rate / stock_list_length)}</div>)
+                        <div className="ml-2">(종목 당 충전 token</div><div className="ml-2 px-1 text-xs font-normal rounded border border-black">{token_per_stock}</div>)
                     </div>
                     <div className="flex items-center text-xs font-mono text-black leading-none pb-1">
                         <div>마지막 구매 시도 종목</div>
                         <div className="ml-2 px-1 text-xs font-normal rounded border border-black">{refill_stock_index} {!!stock_list[refill_stock_index] ? stock_list[refill_stock_index]["name"] : 0}</div>
                     </div>
                     <div className="font-mono text-black leading-none">
-                        <div className="text-xs">
-                            알고리즘 매매 대상 종목
-                        </div>
+                        <div className="text-xs cursor-pointer">알고리즘 매매 대상 종목</div>
                         <>
                             {stock_list.map((item: any, index: number) => {
                                 cummulative_token += isNaN(Number(item["token"])) ? 0 : Number(item["token"]);
-                                return <div key={index} className={`flex pl-1 items-center gap-x-1 ${index % 2 == 0 ? "bg-white" : "bg-gray-100"}`}>
-                                    <div className="flex items-center min-w-[95px] text-xs">
-                                        <div>
-                                            {index})
-                                        </div>
-                                        <div className={`${item["name"].length >= 8 ? "text-[0.5rem]" : (item["name"].length >= 7 ? "text-[0.6rem]" : "text-xs")}`}>
-                                            {item["name"]}
-                                        </div>
-                                    </div>
-                                    <div className="flex items-center min-w-[65px]">
-                                        <div className="border rounded border-black p-0 text-[0.6rem]">
-                                            token
-                                        </div>
-                                        <div className="ml-1 min-w-[35px] text-right text-xs">
-                                            {item["token"]}
-                                        </div>
-                                    </div>
-                                    {(() => {
-                                        const priceMulti = inquirePriceMulti[item["PDNO"]];
-                                        if (undefined == priceMulti) {
-                                            return <></>;
-                                        }
+                                return <>
+                                    <Popover>
+                                        <PopoverHandler>
+                                            <div key={index} className={`flex pl-1 items-center gap-x-1 ${index % 2 == 0 ? "bg-white" : "bg-gray-100"} ${item["refill"] ? "" : "font-bold line-through"}`}>
+                                                <div className="flex items-center min-w-[95px] text-xs">
+                                                    <div>
+                                                        {index})
+                                                    </div>
+                                                    <div className={`${item["name"].length >= 8 ? "text-[0.5rem]" : (item["name"].length >= 7 ? "text-[0.6rem]" : "text-xs")}`}>
+                                                        {item["name"]}
+                                                    </div>
+                                                </div>
+                                                <div className="flex items-center min-w-[65px]">
+                                                    <div className="border rounded border-black p-0 text-[0.6rem]">
+                                                        token
+                                                    </div>
+                                                    <div className="ml-1 min-w-[35px] text-right text-xs">
+                                                        {item["token"]}
+                                                    </div>
+                                                </div>
+                                                {(() => {
+                                                    const priceMulti = inquirePriceMulti[item["PDNO"]];
+                                                    if (undefined == priceMulti) {
+                                                        return <></>;
+                                                    }
 
-                                        if (1 == inquirePriceMulti[item["PDNO"]].rt_cd) {
-                                            return <></>;
-                                        }
+                                                    if (1 == inquirePriceMulti[item["PDNO"]].rt_cd) {
+                                                        return <></>;
+                                                    }
 
-                                        return <>
-                                            <div className="flex items-center min-w-[70px]">
-                                                <div className="border rounded border-black p-0 text-[0.6rem]">
-                                                    주가
-                                                </div>
-                                                <div className={`ml-1 min-w-[45px] text-right ${(inquirePriceMulti[item["PDNO"]].output.stck_prpr).length >= 7 ? "text-[0.5rem]" : ((inquirePriceMulti[item["PDNO"]].output.stck_prpr).length >= 5 ? "text-[0.6rem]" : "text-xs")}`}>
-                                                    {Number(inquirePriceMulti[item["PDNO"]].output.stck_prpr).toLocaleString()}원
-                                                </div>
+                                                    return <>
+                                                        <div className="flex items-center min-w-[70px]">
+                                                            <div className="border rounded border-black p-0 text-[0.6rem]">
+                                                                주가
+                                                            </div>
+                                                            <div className={`ml-1 min-w-[45px] text-right ${(inquirePriceMulti[item["PDNO"]].output.stck_prpr).length >= 7 ? "text-[0.5rem]" : ((inquirePriceMulti[item["PDNO"]].output.stck_prpr).length >= 5 ? "text-[0.6rem]" : "text-xs")}`}>
+                                                                {Number(inquirePriceMulti[item["PDNO"]].output.stck_prpr).toLocaleString()}원
+                                                            </div>
+                                                        </div>
+                                                        <div className="flex items-center min-w-[55px]">
+                                                            <div className="border rounded border-black p-0 text-[0.6rem]">
+                                                                PER
+                                                            </div>
+                                                            <div className="ml-1 min-w-[40px] text-right text-[0.6rem]">
+                                                                {inquirePriceMulti[item["PDNO"]].output.per}
+                                                            </div>
+                                                        </div>
+                                                    </>
+                                                })()}
                                             </div>
-                                            <div className="flex items-center min-w-[55px]">
-                                                <div className="border rounded border-black p-0 text-[0.6rem]">
-                                                    PER
-                                                </div>
-                                                <div className="ml-1 min-w-[40px] text-right text-[0.6rem]">
-                                                    {inquirePriceMulti[item["PDNO"]].output.per}
-                                                </div>
-                                            </div>
-                                        </>
-                                    })()}
-                                </div>
+                                        </PopoverHandler>
+                                        <PopoverContent className="p-2 border border-black rounded shadow shadow-blue-gray-500">
+                                            {item["refill"] ?
+                                                <div className="text-xs font-mono text-black">{`${item["name"]} 을(를) "${token_per_stock} token / 10 분" 만큼 리필`}</div>
+                                                :
+                                                <div className="text-xs font-mono text-black">{`${item["name"]} 을(를) 매매 대상에서 임시 제외`}</div>
+                                            }
+                                        </PopoverContent>
+                                    </Popover>
+                                </>
                             })}
                         </>
                     </div>
@@ -266,8 +278,8 @@ export default function AlgorithmTrade() {
                     구매 history <span className="text-xs text-black">{`(누적 알고리즘 매수금: ${cummulative_investment}원)`}</span>
                 </div>
             </PopoverHandler>
-            <PopoverContent>
-                <div className="text-xs font-mono text-red-500">알고리즘 매매 내역</div>
+            <PopoverContent className="p-2 border border-black rounded shadow shadow-blue-gray-500">
+                <div className="text-xs font-mono text-black">알고리즘 매매 내역</div>
             </PopoverContent>
         </Popover>,
         tableHead: example8TableHeadType,
