@@ -191,18 +191,21 @@ export default function Search() {
     {"fulfilled" == kiInquireDailyItemChartPrice.state && "fulfilled" == kiBalanceSheet.state ?
       <>
         <div className="font-mono flex flex-col justify-between border mx-2 mb-1">
-          <div className="flex-auto pl-2 text-sm font-bold">
+          <div className="font-mono font-bold flex-auto pl-2 text-sm">
             종목명: {kiInquireDailyItemChartPrice.output1.hts_kor_isnm}
+          </div>
+          <div className="font-mono flex-auto pl-4 text-sm">
+            현재가: {kiInquireDailyItemChartPrice.output1["stck_prpr"]}원
           </div>
         </div>
         <div className="font-mono flex flex-col justify-between border mx-2 mb-1">
           <div className="flex-auto pl-2 text-sm font-bold">
             각종 투자 전략
           </div>
-          <div className="flex-auto pl-4 text-xs">
+          <div className="font-mono flex-auto pl-4 text-xs">
             {getNcav(kiBalanceSheet, kiInquireDailyItemChartPrice, 1.0)}
           </div>
-          <div className="flex-auto pl-4 text-xs">
+          <div className="font-mono flex-auto pl-4 text-xs">
             {getNcav(kiBalanceSheet, kiInquireDailyItemChartPrice, 1.5)}
           </div>
         </div>
