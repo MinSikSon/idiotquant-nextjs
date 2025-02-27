@@ -39,11 +39,11 @@ export const algorithmTradeSlice = createAppSlice({
             },
             {
                 pending: (state) => {
-                    console.log(`[reqGetInquirePriceMulti] pending`);
+                    // console.log(`[reqGetInquirePriceMulti] pending`);
                     state.state = "pending";
                 },
                 fulfilled: (state, action) => {
-                    console.log(`[reqGetInquirePriceMulti] fulfilled`, `action.payload`, typeof action.payload, action.payload);
+                    // console.log(`[reqGetInquirePriceMulti] fulfilled`, `action.payload`, typeof action.payload, action.payload);
                     // const json = JSON.parse(action.payload);
                     // console.log(`[reqGetInquirePriceMulti] fulfilled json`, json);
                     state.inquire_price_multi = { ...state.inquire_price_multi, ...action.payload };
@@ -51,7 +51,7 @@ export const algorithmTradeSlice = createAppSlice({
                     state.state = "fulfilled";
                 },
                 rejected: (state) => {
-                    // console.log(`[reqGetInquirePriceMulti] rejected`);
+                    console.log(`[reqGetInquirePriceMulti] rejected`);
                     state.state = "rejected";
                 },
             }

@@ -45,7 +45,7 @@ export function NavbarWithSimpleLinks() {
     function NavItem({ url, label }: NavItemPropsType) {
         return (
             <Link href={url} onClick={() => setOpen(false)}>
-                <div className="pl-2 font-serif text-xs text-black hover:text-blue-500">
+                <div className="pl-2 font-serif text-sm text-black hover:text-blue-500">
                     {label}
                 </div>
             </Link>
