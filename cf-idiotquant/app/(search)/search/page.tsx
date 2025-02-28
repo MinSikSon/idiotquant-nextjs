@@ -174,7 +174,7 @@ export default function Search() {
   return <>
     <SearchAutocomplete onSearchButton={onSearchButton} />
 
-    <div className="flex flex-col justify-between border m-2">
+    {/* <div className="flex flex-col justify-between m-2">
       <div className="flex-1 p-2">
         <Input
           className="font-mono"
@@ -187,7 +187,7 @@ export default function Search() {
           max={(new Date()).toISOString().split('T')[0]}
         />
       </div>
-    </div>
+    </div> */}
     {"fulfilled" == kiInquireDailyItemChartPrice.state && "fulfilled" == kiBalanceSheet.state ?
       <>
         <div className="font-mono flex flex-col justify-between border mx-2 mb-1">

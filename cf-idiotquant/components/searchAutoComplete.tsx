@@ -3,6 +3,7 @@ import { MagnifyingGlassIcon, XCircleIcon } from "@heroicons/react/24/outline";
 
 import validCorpNameArray from "@/public/data/validCorpNameArray.json";
 import { Button } from "@material-tailwind/react";
+import { DesignButton } from "./designButton";
 
 const SearchAutocomplete = (props: any) => {
     const [query, setQuery] = useState("");
@@ -65,7 +66,7 @@ const SearchAutocomplete = (props: any) => {
     const inputRef = React.useRef<HTMLInputElement>(null);
 
     return (
-        <div className="flex items-center border m-2 p-2 relative">
+        <div className="flex items-center m-2 p-2 relative">
             <div className="relative flex-1 items-center">
                 <input
                     ref={inputRef}
@@ -73,7 +74,7 @@ const SearchAutocomplete = (props: any) => {
                     value={query}
                     onChange={handleChange}
                     onKeyUp={handleKeyDown}
-                    placeholder="회사명을 검색하세요..."
+                    placeholder={`회사명을 검색하세요...`}
                     onFocus={() => setIsFocused(true)}
                     onBlur={() => setTimeout(() => setIsFocused(false), 200)}
                     className="font-mono w-full p-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-black"
@@ -84,9 +85,21 @@ const SearchAutocomplete = (props: any) => {
                     </button>
                 )}
             </div>
-            <Button className="py-2 px-2" variant="outlined" onClick={handleSearch}>
+            {/* <Button className="py-2 px-2" variant="outlined" onClick={handleSearch}>
                 <MagnifyingGlassIcon className="h-5 w-5 text-black" />
-            </Button>
+            </Button> */}
+            <DesignButton
+                handleOnClick={() => handleSearch()}
+                buttonName={<MagnifyingGlassIcon className="h-6 w-6 text-white" />}
+                buttonBgColor="bg-green-400"
+                buttonBorderColor="border-green-300"
+                buttonShadowColor="#129600"
+                textStyle="text-white text-xs pt-0.5 font-bold"
+                buttonStyle="rounded-lg px-4 py-1 ml-2"
+            />
+            {/* <Button className="py-2 px-2" variant="outlined" onClick={handleSearch}>
+                <MagnifyingGlassIcon className="h-5 w-5 text-black" />
+            </Button> */}
             {isFocused && suggestions.length > 0 && (
                 <ul className="z-10 absolute top-full left-0 w-full mt-1 bg-white border border-gray-300 rounded-lg shadow-lg max-h-60 overflow-auto">
                     {suggestions.map((suggestion, index) => (

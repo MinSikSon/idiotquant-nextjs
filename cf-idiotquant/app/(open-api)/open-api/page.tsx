@@ -121,7 +121,7 @@ export default function OpenApi() {
         example8TableRowType = (kiBalanceOutput1.sort((a, b) => Number(b["pchs_amt"]) - Number(a["pchs_amt"])).map((item, index) => {
             // console.log(`item["prdt_name"]`, item["prdt_name"], `item["prdt_name"].length`, item["prdt_name"].length);
             return {
-                id: item["prdt_name"], // key
+                id: item["prdt_name"],
                 column_1: <>
                     <div className="flex p-0 m-0 gap-1 font-mono">
                         <DesignButton
