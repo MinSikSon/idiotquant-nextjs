@@ -7,9 +7,14 @@ import { getRandomMainImage, getRandomUserImage } from "@/app/(strategy)/strateg
 
 export const STRATEGY_TABLE_HEAD: Example8TableHeadType[] = [
     {
-        head: "종목명",
+        head: "",
         desc: "🥭🍒",
         customeStyle: "text-left",
+    },
+    {
+        head: "종목명",
+        desc: "🥭🍒",
+        customeStyle: "text-right",
     },
     {
         head: "주가",
@@ -98,22 +103,19 @@ function translateJsonToTableRow(json: any) {
         const per = obj[`PER`];
         const netIncome = obj[`당기순이익`];
         const tableRow: Example8TableRowType = {
-            digitalAsset: stockCode,
-            detail: name,
-            closePrice: close,
-            expectedRateOfReturn: expectedRateOfReturn,
+            id: stockCode,
+            column_2: name,
+            column_3: close,
+            column_4: expectedRateOfReturn,
             expectedRateOfReturnColor: expectedRateOfReturnColor,
-            targetPrice: targetPrice.toFixed(0).toString(),
-            market: marketCap,
-            netCurrentAssert: String(netCurrentAssert),
-            netIncome: netIncome,
-            // trend?: number; // optional
-            // chartName?: string;
-            // chartData?: number[];
-            bps: bps,
-            eps: eps,
-            pbr: pbr,
-            per: per,
+            column_5: targetPrice.toFixed(0).toString(),
+            column_6: marketCap,
+            column_7: String(netCurrentAssert),
+            column_8: netIncome,
+            column_9: bps,
+            column_10: eps,
+            column_11: pbr,
+            column_12: per,
         };
         tableRows.push(tableRow);
     }

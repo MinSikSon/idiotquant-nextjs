@@ -64,6 +64,9 @@ export default function AlgorithmTrade() {
 
     const example8TableHeadType: Example8TableHeadType[] = [
         {
+            head: "",
+        },
+        {
             head: "종목명",
         },
         {
@@ -93,21 +96,20 @@ export default function AlgorithmTrade() {
     let cummulative_investment = 0;
     const purchase_log = capitalToken.value.purchase_log ?? [];
     // console.log(`purchase_log`, purchase_log);
-    let example8TableRowType: Example8TableRowType[] = [];
-    example8TableRowType = (purchase_log.map((item: any, index: number) => {
+    let example8TableRowType: Example8TableRowType[] = (purchase_log.map((item: any, index: number) => {
         const bgColor = index % 2 == 0 ? "bg-white" : "bg-gray-100";
         return item["stock_list"].map((subItem: any) => {
             const investment = (subItem["stck_prpr"] * subItem["ORD_QTY"]);
             cummulative_investment += investment;
             return {
-                digitalAsset: item["time_stamp"] + subItem["stock_name"], // key
-                detail: <div className="text-xs">{subItem["stock_name"]}</div>,
-                closePrice: <div className="text-xs">{subItem["remaining_token"]}</div>,
-                expectedRateOfReturn: <div className="text-xs">{Number(subItem["stck_prpr"]).toLocaleString() + "원"}</div>,
+                id: item["time_stamp"] + subItem["stock_name"], // key
+                column_2: <div className="text-xs">{subItem["stock_name"]}</div>,
+                column_3: <div className="text-xs">{subItem["remaining_token"]}</div>,
+                column_4: <div className="text-xs">{Number(subItem["stck_prpr"]).toLocaleString() + "원"}</div>,
                 expectedRateOfReturnColor: '', // x
-                targetPrice: <div className="text-xs">{subItem["ORD_QTY"]}</div>,
-                market: <div className="text-xs">{subItem["remaining_token"] - investment}</div>,
-                netCurrentAssert: <div className="text-xs">{formatDateTime(item["time_stamp"])}</div>,
+                column_5: <div className="text-xs">{subItem["ORD_QTY"]}</div>,
+                column_6: <div className="text-xs">{subItem["remaining_token"] - investment}</div>,
+                column_7: <div className="text-xs">{formatDateTime(item["time_stamp"])}</div>,
                 bgColor: bgColor,
             }
         })

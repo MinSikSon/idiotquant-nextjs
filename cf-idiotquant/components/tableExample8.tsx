@@ -129,22 +129,20 @@ function AreaChart({
 
 
 export interface Example8TableRowType {
-    img?: any;
-    digitalAsset: any;
-    detail: any;
-    closePrice: any;
-    expectedRateOfReturn: any;
+    id: any;
+    column_1?: any;
+    column_2: any;
+    column_3: any;
+    column_4: any;
     expectedRateOfReturnColor: any;
-    targetPrice?: any;
-    market: any;
-    netCurrentAssert?: any;
-    netIncome?: any;
-    chartName?: any;
-    bps?: any;
-    eps?: any;
-    pbr?: any;
-    per?: any;
-    tag?: any;
+    column_5?: any;
+    column_6: any;
+    column_7?: any;
+    column_8?: any;
+    column_9?: any;
+    column_10?: any;
+    column_11?: any;
+    column_12?: any;
     bgColor?: any;
 }
 
@@ -227,21 +225,20 @@ function TablesExample8({
                                 {tableRow.map(
                                     (
                                         {
-                                            img,
-                                            digitalAsset,
-                                            detail,
-                                            tag,
-                                            closePrice,
-                                            expectedRateOfReturn,
+                                            id,
+                                            column_1,
+                                            column_2,
+                                            column_3,
+                                            column_4,
                                             expectedRateOfReturnColor,
-                                            targetPrice,
-                                            market,
-                                            netCurrentAssert,
-                                            netIncome,
-                                            bps,
-                                            eps,
-                                            pbr,
-                                            per,
+                                            column_5,
+                                            column_6,
+                                            column_7,
+                                            column_8,
+                                            column_9,
+                                            column_10,
+                                            column_11,
+                                            column_12,
                                             bgColor,
                                         },
                                         index
@@ -251,67 +248,67 @@ function TablesExample8({
                                         // const classes = isLast
                                         //     ? "!pl-2"
                                         //     : `!pl-2 border-b border-gray-100 ${_bgColor}`;
-                                        const classes = `p-0 m-0 pl-2 border-b border-gray-100 ${_bgColor}`;
+                                        const classes = `p-0 m-0 pl-1 border-b border-gray-100 ${_bgColor}`;
                                         return (
-                                            <tr key={digitalAsset} className="font-mono text-xs text-black items-center">
+                                            <tr key={id} className="font-mono text-xs text-black items-center">
                                                 <td className={classes}>
-                                                    <div className="flex items-center gap-4 text-left">
-                                                        <div>
-                                                            <div className="flex items-center">
-                                                                {tag}
-                                                                {detail}
-                                                            </div>
-                                                        </div>
+                                                    <div className="text-left">
+                                                        {column_1}
                                                     </div>
                                                 </td>
                                                 <td className={classes}>
                                                     <div className="text-right">
-                                                        {closePrice}
+                                                        {column_2}
+                                                    </div>
+                                                </td>
+                                                <td className={classes}>
+                                                    <div className="text-right">
+                                                        {column_3}
                                                     </div>
                                                 </td>
                                                 <td className={classes}>
                                                     <div className={`text-right ${expectedRateOfReturnColor}`}>
-                                                        {expectedRateOfReturn}
+                                                        {column_4}
                                                     </div>
                                                 </td>
                                                 <td className={classes}>
                                                     <div className="text-right">
-                                                        {targetPrice}
+                                                        {column_5}
                                                     </div>
                                                 </td>
                                                 <td className={classes}>
                                                     <div className="text-right">
-                                                        {market}
+                                                        {column_6}
                                                     </div>
                                                 </td>
                                                 <td className={classes}>
                                                     <div className="text-right">
-                                                        {netCurrentAssert}
+                                                        {column_7}
                                                     </div>
                                                 </td>
                                                 <td className={classes}>
                                                     <div className="text-right">
-                                                        {netIncome}
+                                                        {column_8}
                                                     </div>
                                                 </td>
                                                 <td className={classes}>
                                                     <div className="text-right">
-                                                        {bps}
+                                                        {column_9}
                                                     </div>
                                                 </td>
                                                 <td className={classes}>
                                                     <div className="text-right">
-                                                        {eps}
+                                                        {column_10}
                                                     </div>
                                                 </td>
                                                 <td className={classes}>
                                                     <div className="text-right">
-                                                        {pbr}
+                                                        {column_11}
                                                     </div>
                                                 </td>
                                                 <td className={classes}>
                                                     <div className="text-right">
-                                                        {per}
+                                                        {column_12}
                                                     </div>
                                                 </td>
                                             </tr>
