@@ -1,7 +1,7 @@
 
 export interface DesignButtonProps {
     handleOnClick: () => void;
-    buttonName: string;
+    buttonName: any;
     buttonBgColor: string; // bg-green-400
     buttonBorderColor: string; // border-green-300
     buttonShadowColor: string; // #129600

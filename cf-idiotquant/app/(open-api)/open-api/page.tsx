@@ -72,6 +72,10 @@ export default function OpenApi() {
 
     const example8TableHeadType: Example8TableHeadType[] = [
         {
+            head: "",
+            desc: "",
+        },
+        {
             head: "종목명",
             desc: "종목명",
         },
@@ -117,27 +121,9 @@ export default function OpenApi() {
         example8TableRowType = (kiBalanceOutput1.sort((a, b) => Number(b["pchs_amt"]) - Number(a["pchs_amt"])).map((item, index) => {
             // console.log(`item["prdt_name"]`, item["prdt_name"], `item["prdt_name"].length`, item["prdt_name"].length);
             return {
-                digitalAsset: item["prdt_name"], // key
-                detail: <div className={`font-mono ${item["prdt_name"].length >= 7 ? "text-[0.6rem]" : "text-xs"}`}>{item["prdt_name"]}</div>,
-                closePrice: <div className="font-mono font-bold text-xs text-black">{Number(item["prpr"]).toLocaleString() + "원"}</div>,
-                expectedRateOfReturn: <div className="font-mono text-xs text-black">{item['hldg_qty']}/{item['ord_psbl_qty']}</div>,
-                expectedRateOfReturnColor: '', // x
-                targetPrice: <>
-                    <div className={`font-mono font-bold text-xs flex justify-between ${Number(Number(item["evlu_amt"]) / Number(item["pchs_amt"]) * 100 - 100) >= 0 ? "text-red-500" : "text-blue-500"}`}>
-                        <div className="font-mono pr-1">
-                            ({Number(Number(item["evlu_amt"]) / Number(item["pchs_amt"]) * 100 - 100).toFixed(2)}%)
-                        </div>
-                        <div>
-                            {Util.UnitConversion(Number(item["evlu_pfls_amt"]), true)}
-                        </div>
-                    </div>
-                </>,
-                market: <div className="text-xs font-mono text-black">{Util.UnitConversion(Number(item["evlu_amt"]), true)}</div>,
-                netCurrentAssert: <div className="text-xs font-mono text-black">{Util.UnitConversion(Number(item["pchs_amt"]), true)}</div>,
-                netIncome: <div className="text-xs font-mono font-bold text-black">{(Number(item["pchs_amt"]) / Number(kiBalance.output2[0]["pchs_amt_smtl_amt"]) * 100).toFixed(2)} %</div>,
-                chartName: '',
-                tag: <>
-                    <div className="flex p-0 m-0 gap-1 mr-2 font-mono">
+                id: item["prdt_name"],
+                column_1: <>
+                    <div className="flex p-0 m-0 gap-1 font-mono">
                         <DesignButton
                             handleOnClick={() => handleOnClick(item, "buy")}
                             buttonName="buy"
@@ -164,6 +150,21 @@ export default function OpenApi() {
                         />
                     </div>
                 </>,
+                column_2: <div className={`font-mono ${item["prdt_name"].length >= 7 ? "text-[0.6rem]" : "text-xs"}`}>{item["prdt_name"]}</div>,
+                column_3: <div className="font-mono font-bold text-xs text-black">{Number(item["prpr"]).toLocaleString() + "원"}</div>,
+                column_4: <div className="font-mono text-xs text-black">{item['hldg_qty']}/{item['ord_psbl_qty']}</div>,
+                expectedRateOfReturnColor: '', // x
+                column_5: <div className={`font-mono font-bold text-xs flex justify-between ${Number(Number(item["evlu_amt"]) / Number(item["pchs_amt"]) * 100 - 100) >= 0 ? "text-red-500" : "text-blue-500"}`}>
+                    <div className="font-mono pr-1">
+                        ({Number(Number(item["evlu_amt"]) / Number(item["pchs_amt"]) * 100 - 100).toFixed(2)}%)
+                    </div>
+                    <div>
+                        {Util.UnitConversion(Number(item["evlu_pfls_amt"]), true)}
+                    </div>
+                </div>,
+                column_6: <div className="text-xs font-mono text-black">{Util.UnitConversion(Number(item["evlu_amt"]), true)}</div>,
+                column_7: <div className="text-xs font-mono text-black">{Util.UnitConversion(Number(item["pchs_amt"]), true)}</div>,
+                column_8: <div className="text-xs font-mono font-bold text-black">{(Number(item["pchs_amt"]) / Number(kiBalance.output2[0]["pchs_amt_smtl_amt"]) * 100).toFixed(2)} %</div>,
             }
         }));
     }
@@ -194,6 +195,7 @@ export default function OpenApi() {
                     buttonBorderColor="border-green-300"
                     buttonShadowColor="#129600"
                     textStyle="text-white text-xs pt-0.5"
+                    buttonStyle="px-2"
                 />
                 {"pending" == kiBalance.state ?
                     <Button loading={true} className="p-0 px-1 m-0 bg-white text-black font-mono">loading...</Button>

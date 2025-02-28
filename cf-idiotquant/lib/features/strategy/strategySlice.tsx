@@ -7,9 +7,14 @@ import { getRandomMainImage, getRandomUserImage } from "@/app/(strategy)/strateg
 
 export const STRATEGY_TABLE_HEAD: Example8TableHeadType[] = [
     {
-        head: "종목명",
+        head: "",
         desc: "🥭🍒",
         customeStyle: "text-left",
+    },
+    {
+        head: "종목명",
+        desc: "🥭🍒",
+        customeStyle: "text-right",
     },
     {
         head: "주가",
@@ -91,29 +96,20 @@ function translateJsonToTableRow(json: any) {
             expectedRateOfReturn = expectedRateOfReturnNumber.toFixed(1).toString() + `%`;
         }
 
-        const marketCap = obj[`시가총액`];
-        const bps = obj[`BPS`];
-        const eps = obj[`EPS`];
-        const pbr = obj[`PBR`];
-        const per = obj[`PER`];
-        const netIncome = obj[`당기순이익`];
         const tableRow: Example8TableRowType = {
-            digitalAsset: stockCode,
-            detail: name,
-            closePrice: close,
-            expectedRateOfReturn: expectedRateOfReturn,
+            id: stockCode,
+            column_2: name,
+            column_3: close,
+            column_4: expectedRateOfReturn,
             expectedRateOfReturnColor: expectedRateOfReturnColor,
-            targetPrice: targetPrice.toFixed(0).toString(),
-            market: marketCap,
-            netCurrentAssert: String(netCurrentAssert),
-            netIncome: netIncome,
-            // trend?: number; // optional
-            // chartName?: string;
-            // chartData?: number[];
-            bps: bps,
-            eps: eps,
-            pbr: pbr,
-            per: per,
+            column_5: targetPrice.toFixed(0).toString(),
+            column_6: obj[`시가총액`],
+            column_7: String(netCurrentAssert),
+            column_8: obj[`당기순이익`],
+            column_9: obj[`BPS`],
+            column_10: obj[`EPS`],
+            column_11: obj[`PBR`],
+            column_12: obj[`PER`],
         };
         tableRows.push(tableRow);
     }
@@ -218,7 +214,6 @@ export const strategySlice = createAppSlice({
                         STRATEGY_TABLE_ROW: translateJsonToTableRow(json),
                         stockList: translateJsonToTableRow(json)
                     };
-                    // console.log(`newStrategyInfo`, newStrategyInfo);
                     state.strategyInfoList.push(newStrategyInfo);
                     state.strategyCount = state.strategyCount + 1;
                 },
