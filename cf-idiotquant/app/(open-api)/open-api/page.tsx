@@ -195,6 +195,7 @@ export default function OpenApi() {
                     buttonBorderColor="border-green-300"
                     buttonShadowColor="#129600"
                     textStyle="text-white text-xs pt-0.5"
+                    buttonStyle="px-2"
                 />
                 {"pending" == kiBalance.state ?
                     <Button loading={true} className="p-0 px-1 m-0 bg-white text-black font-mono">loading...</Button>
