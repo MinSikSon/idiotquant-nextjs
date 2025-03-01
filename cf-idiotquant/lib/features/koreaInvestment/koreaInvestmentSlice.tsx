@@ -9,7 +9,7 @@ const koreaInvestmentErrorCode = {
     "1": "유효하지 않은 token",// {rt_cd: "1", msg_cd: "EGW00121", msg1: "유효하지 않은 token 입니다."}
 }
 export interface KoreaInvestmentApproval {
-    state: "init" | "req" | "pending" | "fulfilled";
+    state: "init" | "req" | "pending" | "fulfilled" | "rejected";
     approval_key: string;
 }
 export interface KoreaInvestmentToken {
@@ -484,7 +484,8 @@ export const koreaInvestmentSlice = createAppSlice({
                     state.state = "approval";
                 },
                 rejected: (state) => {
-                    console.log(`[reqPostApprovalKey] get-rejected 2`);
+                    console.log(`[reqPostApprovalKey] rejected`);
+                    state.koreaInvestmentApproval.state = "rejected";
                 },
             }
         ),

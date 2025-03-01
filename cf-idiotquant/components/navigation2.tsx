@@ -15,6 +15,7 @@ import { selectKakaoId, selectKakaoNickName } from "@/lib/features/login/loginSl
 import { useAppSelector } from "@/lib/hooks";
 
 import { usePathname } from "next/navigation";
+import { DesignButton } from "./designButton";
 
 interface NavItemPropsType {
     url: string;
@@ -101,19 +102,21 @@ export function NavbarWithSimpleLinks() {
                 <div className="hidden lg:block">
                     <NavList />
                 </div>
-                <IconButton
-                    size="sm"
-                    variant="text"
-                    color="blue-gray"
-                    onClick={handleOpen}
-                    className="ml-auto inline-block text-blue-gray-900 lg:hidden"
-                >
-                    {open ? (
-                        <XMarkIcon className="h-6 w-6" strokeWidth={2} />
-                    ) : (
-                        <Bars3Icon className="h-6 w-6" strokeWidth={2} />
-                    )}
-                </IconButton>
+                <DesignButton
+                    handleOnClick={() => handleOpen()}
+                    buttonName={<>
+                        {open ? (
+                            <XMarkIcon className="h-6 w-6" strokeWidth={2} />
+                        ) : (
+                            <Bars3Icon className="h-6 w-6" strokeWidth={2} />
+                        )}
+                    </>}
+                    buttonBgColor="bg-green-400"
+                    buttonBorderColor="border-green-300"
+                    buttonShadowColor="#129600"
+                    textStyle="text-white text-xs font-bold"
+                    buttonStyle="rounded-lg px-1"
+                />
             </div>
             <Collapse open={open}>
                 <div className="pl-2 mt-2 rounded-xl bg-white border border-gray-500">
