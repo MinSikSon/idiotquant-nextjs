@@ -11,6 +11,7 @@ import {
     CardFooter,
 } from "@material-tailwind/react";
 import Link from "next/link";
+import { DesignButton } from "./designButton";
 
 export interface Web3CardPropsType {
     title: any;
@@ -35,44 +36,41 @@ function Web3Card({
     const url: string = imgs;
     return (
         <Link href={`/${parentRouter}/${Number(cardNum)}`}>
-            <Card className="border border-gray-300 overflow-hidden shadow-sm">
-                <CardBody className={`px-4 pt-4 pb-32 xl:pt-8 xl:pb-64 bg-cover bg-center`}>
-                    <div className="absolute top-0 left-0 h-48 xl:h-80 w-full bg-cover bg-center" style={{ backgroundImage: `url('${url}')` }}></div>
-                    <div className={`flex items-start justify-between`}>
-                        <Typography color="white"
-                            className="!text-base !font-semibold mb-1"
-                        >
-                            {cardNum}
-                        </Typography>
-                        <Button className="font-mono z-10 border-gray-200 bg-white/70 p-1 px-2" color="black" size="sm" variant="outlined">
-                            click to view
-                        </Button>
-                    </div>
-                    <div className="my-4 flex items-start justify-between">
-                        <div className="absolute left-2 top-[10.4rem] xl:top-72 flex items-center gap-2 bg-white/80 p-1 rounded-xl border-2 border-gray-200 ">
-                            <Avatar size="sm" src={profileImg} alt={title} />
-                            <div className="pr-4">
-                                <div className={`font-mono text-black ${String(title).length > 12 ? "text-sm xl:text-xs" : ""}`}>
-                                    {title}
+            <>
+                <DesignButton
+                    handleOnClick={() => { }}
+                    buttonName={<>
+                        <Card className="border border-gray-300 overflow-hidden shadow-sm">
+                            <CardBody className={`bg-cover bg-center p-1`}>
+                                <div className="absolute top-0 left-0 w-full h-48 xl:h-80 bg-cover bg-center" style={{ backgroundImage: `url('${url}')` }} />
+                                <div className="relative flex items-center">
+                                    <Avatar className="shrink-0 object-cover border border-white" size="xl" src={profileImg} alt={title} />
+                                    <div className={`flex flex-col items-start justify-between pl-2`}>
+                                        <div className="z-10 font-mono text-white text-xs mb-1">
+                                            [{cardNum}] click to view
+                                        </div>
+                                        <div className="z-10 font-mono text-white text-xs pl-2">
+                                            <div className={`${String(title).length > 12 ? "text-xs xl:text-xs" : ""}`}>
+                                                <div>{title}</div>
+                                                <div>{subTitle}</div>
+                                                <div className="text-[0.6rem] pr-2">{summary}</div>
+                                            </div>
+                                        </div>
+                                    </div>
                                 </div>
-                                <div className="font-mono text-xs">
-                                    {subTitle}
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                    <div className="grid grid-cols-3 gap-2">
-                    </div>
-                </CardBody>
-                <CardFooter className="">
-                    <Typography
-                        color="black"
-                        variant="small"
-                        className="font-medium">
-                        {summary}
-                    </Typography>
-                </CardFooter>
-            </Card>
+                            </CardBody>
+                        </Card>
+                    </>}
+                    buttonBgColor="bg-white"
+                    buttonBorderColor="border-gray-300"
+                    buttonShadowColor="#D5D5D5"
+                    textStyle="text-white text-xs font-bold"
+                    buttonStyle={`rounded-xl ml-2 flex items-center justify-center mb-2 button bg-white cursor-pointer select-none
+                                            active:translate-y-1 active:[box-shadow:0_0px_0_0_#D5D5D5,0_0px_0_0_#D5D5D541] active:border-b-[0px]
+                                            transition-all duration-150 [box-shadow:0_4px_0_0_#D5D5D5,0_8px_0_0_#D5D5D541] border-b-[1px] border-gray-300
+                                            `}
+                />
+            </>
         </Link>
     );
 }
@@ -88,7 +86,7 @@ export function Web3Card2({
                 <CardHeader
                     shadow={false}
                     floated={false}
-                    className="flex overflow-visible gap-y-4 flex-wrap items-start justify-between rounded-none"
+                    className="flex overflow-visible gap-y-4 flex-wrap items-start justify-between"
                 >
                     <div className="font-mono mb-1">
                         {title}
