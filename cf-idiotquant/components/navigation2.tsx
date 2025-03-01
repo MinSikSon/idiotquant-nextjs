@@ -15,6 +15,7 @@ import { selectKakaoId, selectKakaoNickName } from "@/lib/features/login/loginSl
 import { useAppSelector } from "@/lib/hooks";
 
 import { usePathname } from "next/navigation";
+import { DesignButton } from "./designButton";
 
 interface NavItemPropsType {
     url: string;
@@ -101,19 +102,24 @@ export function NavbarWithSimpleLinks() {
                 <div className="hidden lg:block">
                     <NavList />
                 </div>
-                <IconButton
-                    size="sm"
-                    variant="text"
-                    color="blue-gray"
-                    onClick={handleOpen}
-                    className="ml-auto inline-block text-blue-gray-900 lg:hidden"
-                >
-                    {open ? (
-                        <XMarkIcon className="h-6 w-6" strokeWidth={2} />
-                    ) : (
-                        <Bars3Icon className="h-6 w-6" strokeWidth={2} />
-                    )}
-                </IconButton>
+                <DesignButton
+                    handleOnClick={() => handleOpen()}
+                    buttonName={<>
+                        {open ? (
+                            <XMarkIcon className="h-6 w-6" strokeWidth={2} />
+                        ) : (
+                            <Bars3Icon className="h-6 w-6" strokeWidth={2} />
+                        )}
+                    </>}
+                    buttonBgColor="bg-white"
+                    buttonBorderColor="border-gray-500"
+                    buttonShadowColor="#D5D5D5"
+                    textStyle="text-black text-xs font-bold"
+                    buttonStyle={`rounded-lg px-1 flex items-center justify-center mb-2 button bg-white cursor-pointer select-none
+                        active:translate-y-1 active:[box-shadow:0_0px_0_0_#D5D5D5,0_0px_0_0_#D5D5D541] active:border-[0px]
+                        transition-all duration-150 [box-shadow:0_4px_0_0_#D5D5D5,0_8px_0_0_#D5D5D541] border-[1px]
+                        `}
+                />
             </div>
             <Collapse open={open}>
                 <div className="pl-2 mt-2 rounded-xl bg-white border border-gray-500">

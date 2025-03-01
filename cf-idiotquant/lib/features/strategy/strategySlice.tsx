@@ -121,7 +121,7 @@ export interface StrategyInfo {
     title: any;
     subTitle: any;
     desc: string;
-    img: string;
+    img?: string;
     profileImg: string;
     value: any;
     financial_date: string;
@@ -206,7 +206,7 @@ export const strategySlice = createAppSlice({
                         title: title,
                         subTitle: subTitle,
                         desc: desc,
-                        img: getRandomMainImage(),
+                        // img: getRandomMainImage(),
                         profileImg: getRandomUserImage(),
                         value: json,
                         financial_date: financial_date,
