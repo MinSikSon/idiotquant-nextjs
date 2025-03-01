@@ -15,7 +15,8 @@
     "next-auth": "^5.0.0-beta.20",
     "react": "^18",
     "react-apexcharts": "^1.4.1",
-    "react-dom": "^18"
+    "react-dom": "^18",
+    "three": "^0.174.0"
   },
   "devDependencies": {
     "@heroicons/react": "^2.1.5",
@@ -24,6 +25,7 @@
     "@types/node": "^20",
     "@types/react": "^18.2.42",
     "@types/react-dom": "^18",
+    "@types/three": "^0.174.0",
     "autoprefixer": "^10.0.1",
     "eslint": "^8",
     "eslint-config-next": "14.1.0",

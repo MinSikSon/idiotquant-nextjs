@@ -16,7 +16,7 @@ import { DesignButton } from "./designButton";
 export interface Web3CardPropsType {
     title: any;
     subTitle: any;
-    imgs: string;
+    imgs?: string;
     cardNum: string;
     profileImg: string;
     summary: string;
@@ -33,27 +33,27 @@ function Web3Card({
     profileImg,
     summary,
 }: Web3CardPropsType & { parentRouter: string }) {
-    const url: string = imgs;
+    // const url: string = imgs;
     return (
         <Link href={`/${parentRouter}/${Number(cardNum)}`}>
             <>
                 <DesignButton
                     handleOnClick={() => { }}
                     buttonName={<>
-                        <Card className="border border-gray-300 overflow-hidden shadow-sm">
+                        <Card className="overflow-hidden shadow-sm">
                             <CardBody className={`bg-cover bg-center p-1`}>
-                                <div className="absolute top-0 left-0 w-full h-48 xl:h-80 bg-cover bg-center" style={{ backgroundImage: `url('${url}')` }} />
+                                {/* <div className="absolute top-0 left-0 w-full h-48 xl:h-80 bg-cover bg-center" style={{ backgroundImage: `url('${url}')` }} /> */}
                                 <div className="relative flex items-center">
-                                    <Avatar className="shrink-0 object-cover border border-white" size="xl" src={profileImg} alt={title} />
-                                    <div className={`flex flex-col items-start justify-between pl-2`}>
-                                        <div className="z-10 font-mono text-white text-xs mb-1">
+                                    <Avatar className="shrink-0 object-cover border border-black" size="xl" src={profileImg} alt={title} />
+                                    <div className={`flex flex-col items-start justify-between pl-1`}>
+                                        <div className="z-10 font-mono text-black text-xs mb-1">
                                             [{cardNum}] click to view
                                         </div>
-                                        <div className="z-10 font-mono text-white text-xs pl-2">
+                                        <div className="z-10 font-mono text-black text-xs pl-1">
                                             <div className={`${String(title).length > 12 ? "text-xs xl:text-xs" : ""}`}>
                                                 <div>{title}</div>
                                                 <div>{subTitle}</div>
-                                                <div className="text-[0.6rem] pr-2">{summary}</div>
+                                                <div className="text-[0.6rem] pl-2 pr-2">{summary}</div>
                                             </div>
                                         </div>
                                     </div>
@@ -64,10 +64,11 @@ function Web3Card({
                     buttonBgColor="bg-white"
                     buttonBorderColor="border-gray-300"
                     buttonShadowColor="#D5D5D5"
-                    textStyle="text-white text-xs font-bold"
+                    // textStyle="text-white text-xs font-bold"
+                    textStyle="font-mono text-black text-xs"
                     buttonStyle={`rounded-xl ml-2 flex items-center justify-center mb-2 button bg-white cursor-pointer select-none
-                                            active:translate-y-1 active:[box-shadow:0_0px_0_0_#D5D5D5,0_0px_0_0_#D5D5D541] active:border-b-[0px]
-                                            transition-all duration-150 [box-shadow:0_4px_0_0_#D5D5D5,0_8px_0_0_#D5D5D541] border-b-[1px] border-gray-300
+                                            active:translate-y-1 active:[box-shadow:0_0px_0_0_#D5D5D5,0_0px_0_0_#D5D5D541] active:border-[0px]
+                                            transition-all duration-150 [box-shadow:0_4px_0_0_#D5D5D5,0_8px_0_0_#D5D5D541] border-[1px]
                                             `}
                 />
             </>
@@ -88,7 +89,7 @@ export function Web3Card2({
                     floated={false}
                     className="flex overflow-visible gap-y-4 flex-wrap items-start justify-between"
                 >
-                    <div className="font-mono mb-1">
+                    <div className="font-mono text-black mb-1">
                         {title}
                     </div>
                 </CardHeader>

@@ -111,11 +111,14 @@ export function NavbarWithSimpleLinks() {
                             <Bars3Icon className="h-6 w-6" strokeWidth={2} />
                         )}
                     </>}
-                    buttonBgColor="bg-green-400"
-                    buttonBorderColor="border-green-300"
-                    buttonShadowColor="#129600"
-                    textStyle="text-white text-xs font-bold"
-                    buttonStyle="rounded-lg px-1"
+                    buttonBgColor="bg-white"
+                    buttonBorderColor="border-gray-500"
+                    buttonShadowColor="#D5D5D5"
+                    textStyle="text-black text-xs font-bold"
+                    buttonStyle={`rounded-lg px-1 flex items-center justify-center mb-2 button bg-white cursor-pointer select-none
+                        active:translate-y-1 active:[box-shadow:0_0px_0_0_#D5D5D5,0_0px_0_0_#D5D5D541] active:border-[0px]
+                        transition-all duration-150 [box-shadow:0_4px_0_0_#D5D5D5,0_8px_0_0_#D5D5D541] border-[1px]
+                        `}
                 />
             </div>
             <Collapse open={open}>
