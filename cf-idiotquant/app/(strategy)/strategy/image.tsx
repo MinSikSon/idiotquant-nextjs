@@ -58,7 +58,7 @@ export function getRandomUserImage(idx: any = undefined) {
     if (undefined == idx) {
         const random = Math.random();
         idx = Math.floor(random * imageList.length);
-        console.log(`random`, random, `imageList.length`, imageList.length, `idx`, idx,);
+        // console.log(`random`, random, `imageList.length`, imageList.length, `idx`, idx,);
     }
     else {
         idx = idx % imageList.length;

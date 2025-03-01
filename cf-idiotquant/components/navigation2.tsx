@@ -59,8 +59,9 @@ export function NavbarWithSimpleLinks() {
         "login": `${!!!kakaoId ? "로그인 🔒" : "로그아웃"}`,
         // "article": "Article",
         "search": `종목 검색 ${!!!kakaoId ? "🔒" : ""}`,
-        "open-api": `알고리즘 투자 - 계좌 조회 ${!!!kakaoId ? "🔒" : ""}`,
-        "algorithm-trade": "알고리즘 투자 - 매매 이력",
+        "balance-kr": `알고 투자 - 계좌 조회 (국내) ${!!!kakaoId ? "🔒" : ""}`,
+        "algorithm-trade": "알고 투자 - 매매 내역 (국내)",
+        "balance-us": `알고 투자 - 계좌 조회 (해외) ${!!!kakaoId ? "🔒" : ""}`,
     }
 
     const urlToLabel: any = {

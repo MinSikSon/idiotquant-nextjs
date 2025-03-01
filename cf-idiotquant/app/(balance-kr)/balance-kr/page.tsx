@@ -17,7 +17,7 @@ import { usePathname } from "next/navigation";
 import Auth from "@/components/auth";
 import { DesignButton } from "@/components/designButton";
 
-export default function OpenApi() {
+export default function BalanceKr() {
     const pathname = usePathname();
 
     const dispatch = useAppDispatch();
@@ -48,7 +48,7 @@ export default function OpenApi() {
     };
 
     React.useEffect(() => {
-        // console.log(`[OpenApi]`, `kiToken:`, kiToken);
+        // console.log(`[BalanceKr]`, `kiToken:`, kiToken);
         const isValidKiAccessToken = !!kiToken["access_token"];
         if (true == isValidKiAccessToken) {
             setTime(new Date());
@@ -67,6 +67,12 @@ export default function OpenApi() {
     if ("init" == loginState) {
         return <>
             <Login parentUrl={pathname} />
+        </>
+    }
+
+    if (false == isValidCookie("koreaInvestmentToken") || false == !!kiToken["access_token"]) {
+        return <>
+            <Auth />
         </>
     }
 
@@ -228,12 +234,6 @@ export default function OpenApi() {
         </div>,
         tableHead: example8TableHeadType,
         tableRow: example8TableRowType,
-    }
-
-    if (false == isValidCookie("koreaInvestmentToken") || false == !!kiToken["access_token"]) {
-        return <>
-            <Auth />
-        </>
     }
 
     return <>
