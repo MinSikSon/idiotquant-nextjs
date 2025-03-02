@@ -90,7 +90,7 @@ const SearchAutocomplete = (props: any) => {
             </Button> */}
             <DesignButton
                 handleOnClick={() => handleSearch()}
-                buttonName={<MagnifyingGlassIcon className="h-6 w-6 text-black" />}
+                buttonName={<MagnifyingGlassIcon className="h-5 w-5 text-black" />}
                 buttonBgColor="bg-white"
                 buttonBorderColor="border-black"
                 buttonShadowColor="#D5D5D5"

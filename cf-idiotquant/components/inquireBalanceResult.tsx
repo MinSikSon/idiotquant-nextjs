@@ -38,6 +38,8 @@ export default function InquireBalanceResult(props: InquireBalanceResultProps) {
         }
     }
 
+    const [selectHead, setSelectHead] = React.useState("비중");
+
     const example8TableHead: Example8TableHeadType[] = [
         {
             head: "",
@@ -45,39 +47,64 @@ export default function InquireBalanceResult(props: InquireBalanceResultProps) {
         },
         {
             head: "종목명",
-            desc: "종목명",
+            desc: "종목명 내림차순🔽",
         },
         {
             head: "현재가",
-            desc: "현재가",
+            desc: "현재가 내림차순🔽",
         },
         {
             head: "보유/주문가능",
-            desc: "보유/주문가능",
+            desc: "보유/주문가능 내림차순🔽",
         },
         {
             head: "평가손익",
-            desc: "평가손익",
+            desc: "평가손익 내림차순🔽",
         },
         {
             head: "평가금액",
-            desc: "평가금액",
+            desc: "평가금액 내림차순🔽",
         },
         {
             head: "매수금액",
-            desc: "매수금액",
+            desc: "매수금액 내림차순🔽",
         },
         {
             head: "비중",
-            desc: "비중",
+            desc: "비중 내림차순🔽",
         },
     ];
+
+    // console.log(`selectHead`, selectHead);
 
     let example8TableRow: Example8TableRowType[] = [];
     if ("fulfilled" == props.kiBalance.state) {
         let kiBalanceOutput1 = [...props.kiBalance.output1];
         // console.log(`kiBalanceOutput1`, kiBalanceOutput1);
-        example8TableRow = (kiBalanceOutput1.sort((a, b) => Number(b["pchs_amt"]) - Number(a["pchs_amt"])).map((item, index) => {
+        example8TableRow = (kiBalanceOutput1.sort((a, b) => {
+            if ("종목명" == selectHead) {
+                return String(a.prdt_name).localeCompare(String(b.prdt_name), "ko-KR");
+            }
+            if ("현재가" == selectHead) {
+                return Number(b.prpr) - Number(a.prpr);
+            }
+            if ("보유/주문가능" == selectHead) {
+                return Number(b.hldg_qty) - Number(a.hldg_qty);
+            }
+            if ("평가손익" == selectHead) {
+                return Number(b.evlu_pfls_amt) - Number(a.evlu_pfls_amt);
+            }
+            if ("평가금액" == selectHead) {
+                return Number(b.evlu_amt) - Number(a.evlu_amt);
+            }
+            if ("매수금액" == selectHead) {
+                return Number(b.pchs_amt) - Number(a.pchs_amt);
+            }
+            if ("비중" == selectHead) {
+                return Number(b.pchs_amt) - Number(a.pchs_amt);
+            }
+            return 0;
+        }).map((item, index) => {
             // console.log(`item["prdt_name"]`, item["prdt_name"], `item["prdt_name"].length`, item["prdt_name"].length);
             return {
                 id: item["prdt_name"],
@@ -140,6 +167,7 @@ export default function InquireBalanceResult(props: InquireBalanceResultProps) {
         pchs_amt_smtl_amt = Number(props.kiBalance.output2[0]["pchs_amt_smtl_amt"]);
         evlu_pfls_smtl_amt = Number(props.kiBalance.output2[0]["evlu_pfls_smtl_amt"]);
     }
+
     const tablesExample8Props: TablesExample8PropsType = {
         title: <>
             <div className="flex pb-2 items-center">
@@ -189,6 +217,8 @@ export default function InquireBalanceResult(props: InquireBalanceResultProps) {
             <div className="text-xs">market_date: {props.time.toString()}</div>
         </div>,
         tableHead: example8TableHead,
+        setSelectHead: setSelectHead,
+
         tableRow: example8TableRow,
     }
 

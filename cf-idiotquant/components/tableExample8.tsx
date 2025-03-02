@@ -159,6 +159,8 @@ export interface TablesExample8PropsType {
     financial_date: any;
     market_date: any;
     tableHead: Example8TableHeadType[];
+    setSelectHead?: any;
+
     tableRow: Example8TableRowType[];
 }
 
@@ -169,8 +171,13 @@ function TablesExample8({
     financial_date,
     market_date,
     tableHead,
+    setSelectHead,
     tableRow
 }: TablesExample8PropsType) {
+
+    const MAX_ORDERING = 3;
+    const [ordering, setOrdering] = React.useState(0);
+
     return (
         <section className="">
             <Card className="h-full w-full">
@@ -208,7 +215,14 @@ function TablesExample8({
                                             className={`border-b border-gray-300 pl-3 pb-2 ${customeStyle}`}
                                         >
                                             <Popover>
-                                                <PopoverHandler>
+                                                <PopoverHandler onClick={() => {
+                                                    // console.log(`setSelectHead`, !!setSelectHead, setSelectHead);
+                                                    if (!!!setSelectHead) {
+                                                        return; // do nothing
+                                                    }
+
+                                                    setSelectHead(head)
+                                                }}>
                                                     <div className={`font-mono font-bold text-black cursor-pointer ${head.length >= 6 ? "text-[0.6rem]" : ""}`}>
                                                         {head}
                                                     </div>
