@@ -82,7 +82,7 @@ export function NavbarWithSimpleLinks() {
     }
 
     return (
-        <Navbar color="transparent" fullWidth className="px-2">
+        <Navbar color="transparent" fullWidth className="p-2">
             <div className="container mx-auto flex items-center justify-between text-blue-gray-900">
                 <Link href="/">
                     <Typography
@@ -117,7 +117,7 @@ export function NavbarWithSimpleLinks() {
                         buttonBorderColor="border-gray-500"
                         buttonShadowColor="#D5D5D5"
                         textStyle="text-black text-xs font-bold"
-                        buttonStyle={`rounded-lg px-1 flex items-center justify-center mb-2 button bg-white cursor-pointer select-none
+                        buttonStyle={`rounded-lg p-1 flex items-center justify-center mb-2 button bg-white cursor-pointer select-none
                         active:translate-y-1 active:[box-shadow:0_0px_0_0_#D5D5D5,0_0px_0_0_#D5D5D541] active:border-[0px]
                         transition-all duration-150 [box-shadow:0_4px_0_0_#D5D5D5,0_8px_0_0_#D5D5D541] border-[1px]
                         `}
