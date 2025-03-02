@@ -129,22 +129,16 @@ export default function AlgorithmTrade() {
     const props: TablesExample8PropsType = {
         title: <>
             <div className="flex pb-2 items-center">
-                <Popover>
-                    <PopoverHandler>
-                        <div className="text-base font-mono pr-2 text-black cursor-pointer">알고리즘 투자 이력</div>
-                    </PopoverHandler>
-                    <PopoverContent className="p-2 border border-black rounded shadow shadow-blue-gray-500">
-                        <div className="text-xs font-mono text-black">^_^</div>
-                    </PopoverContent>
-                </Popover>
                 <DesignButton
-                    handleOnClick={() => { handleOnClick() }}
-                    buttonName={`다시 조회 ${kiToken.state == "fulfilled" ? "+ @" : ""}`}
+                    handleOnClick={() => {
+                        handleOnClick()
+                    }}
+                    buttonName={`알고리즘 투자 이력 조회 ${kiToken.state == "fulfilled" ? "+ @" : ""}`}
                     buttonBgColor="bg-white"
-                    buttonBorderColor="border-black"
+                    buttonBorderColor="border-gray-500"
                     buttonShadowColor="#D5D5D5"
-                    textStyle="text-black text-xs font-bold"
-                    buttonStyle={`rounded-lg px-2 py-1 ml-2 flex items-center justify-center mb-2 button bg-white cursor-pointer select-none
+                    textStyle="text-black text-xs"
+                    buttonStyle={`rounded-lg px-2 py-1 flex items-center justify-center mb-2 button bg-white cursor-pointer select-none
                                        active:translate-y-1 active:[box-shadow:0_0px_0_0_#D5D5D5,0_0px_0_0_#D5D5D541] active:border-[0px]
                                        transition-all duration-150 [box-shadow:0_4px_0_0_#D5D5D5,0_8px_0_0_#D5D5D541] border-[1px]
                                        `}
@@ -152,7 +146,9 @@ export default function AlgorithmTrade() {
 
                 {"fulfilled" != capitalToken.state ?
                     <Button loading={true} className="p-0 px-1 m-0 bg-white text-black font-mono">loading...</Button>
-                    : <></>}
+                    : <>
+                        <div className="font-mono text-[0.6rem] text-black ml-2">{time.toLocaleString("ko-KR", { timeZone: "Asia/Seoul" })}</div>
+                    </>}
             </div>
         </>,
         desc: <>
@@ -280,7 +276,7 @@ export default function AlgorithmTrade() {
             </div>
 
         </>,
-        financial_date: <><div className="text-sm">market_date</div><div className="ml-4 text-xs">{time.toString()}</div></>,
+        // financial_date: <><div className="text-sm">market_date</div><div className="ml-4 text-xs">{time.toString()}</div></>,
         market_date: <Popover>
             <PopoverHandler>
                 <div className="cursor-pointer pt-4 text-sm font-mono text-black">
