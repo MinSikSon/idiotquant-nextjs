@@ -35,7 +35,8 @@ const config: Config = withMT({
         },
       },
       fontFamily: {
-        mono: ["Cascadia Code", "Fira Code", "Courier New", "monospace"]
+        mono: ["Cascadia Code", "Fira Code", "Courier New", "monospace"],
+        serif: ["Times New Roman", "Georgia", "serif"],
       },
     },
   },
