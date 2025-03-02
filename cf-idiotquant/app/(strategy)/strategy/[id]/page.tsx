@@ -14,7 +14,6 @@ export default function Item({ params: { id } }: { params: { id: number } }) {
 
     const props: TablesExample8PropsType = {
         title: <div className="font-mono font-bold text-xl">{strategyInfoList[Number(id)].title}</div>,
-        subTitle: strategyInfoList[Number(id)].subTitle,
         desc: <div className="font-mono font-bold flex flex-col">{((strategyInfoList[Number(id)].desc).split(",")).map(item => {
             // return <div>{item}</div>
             return <div key={item} className="flex items-center">{item.split(":").map((item, index) => {
