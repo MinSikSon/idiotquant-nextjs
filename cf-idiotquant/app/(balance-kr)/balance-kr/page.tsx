@@ -17,14 +17,13 @@ import InquireBalanceResult from "@/components/inquireBalanceResult";
 
 export default function BalanceKr() {
     const pathname = usePathname();
+    const loginState = useAppSelector(selectState);
 
     const dispatch = useAppDispatch();
     const kiToken: KoreaInvestmentToken = useAppSelector(getKoreaInvestmentToken);
     const kiBalance: KoreaInvestmentBalance = useAppSelector(getKoreaInvestmentBalance);
 
     const kiOrderCash: KoreaInvestmentOrderCash = useAppSelector(getKoreaInvestmentOrderCash);
-
-    const loginState = useAppSelector(selectState);
 
     React.useEffect(() => {
         // console.log(`[BalanceKr]`, `kiToken:`, kiToken);
@@ -35,11 +34,11 @@ export default function BalanceKr() {
     }, [kiToken]);
 
     React.useEffect(() => {
-        // console.log(`kiBalance`, kiBalance);
+        // console.log(`[BalanceKr]`, `kiBalance`, kiBalance);
     }, [kiBalance]);
 
     React.useEffect(() => {
-        // console.log(`kiOrderCash`, kiOrderCash);
+        // console.log(`[BalanceKr]`, `kiOrderCash`, kiOrderCash);
     }, [kiOrderCash])
 
     if ("init" == loginState) {

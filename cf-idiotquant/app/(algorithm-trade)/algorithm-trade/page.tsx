@@ -155,7 +155,6 @@ export default function AlgorithmTrade() {
                     : <></>}
             </div>
         </>,
-        subTitle: ``,
         desc: <>
             <div className="text-sm font-mono text-black leading-none pb-2">
                 <Popover>

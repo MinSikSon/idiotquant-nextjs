@@ -86,16 +86,16 @@ export const koreaInvestmentUsMarketSlice = createAppSlice({
     initialState,
     reducers: (create) => ({
         reqGetOverseasStockTradingInquireBalance: create.asyncThunk(
-            async ({ koreaInvestmentToken }: { koreaInvestmentToken: KoreaInvestmentToken }) => {
+            async (koreaInvestmentToken: KoreaInvestmentToken) => {
                 return await getOverseasStockTradingInquireBalance(koreaInvestmentToken);
             },
             {
                 pending: (state) => {
-                    console.log(`[reqGetOverseasStockTradingInquireBalance] pending`);
+                    // console.log(`[reqGetOverseasStockTradingInquireBalance] pending`);
                     state.balance.state = "pending";
                 },
                 fulfilled: (state, action) => {
-                    console.log(`[reqGetOverseasStockTradingInquireBalance] fulfilled`, `action.payload`, action.payload);
+                    // console.log(`[reqGetOverseasStockTradingInquireBalance] fulfilled`, `action.payload`, action.payload);
                     state.balance = { ...action.payload, state: "fulfilled" };
                 },
                 rejected: (state) => {
@@ -166,9 +166,3 @@ export const { getKoreaInvestmentUsMaretSearchInfo } = koreaInvestmentUsMarketSl
 
 export const { reqGetQuotationsPriceDetail } = koreaInvestmentUsMarketSlice.actions;
 export const { getKoreaInvestmentUsMaretPriceDetail } = koreaInvestmentUsMarketSlice.selectors;
-// export const { reqPostApprovalKey, reqPostToken, reqGetInquireBalance, reqPostOrderCash, reqGetInquirePrice, reqGetInquireDailyItemChartPrice } = koreaInvestmentSlice.actions;
-// export const { setKoreaInvestmentToken } = koreaInvestmentSlice.actions;
-// export const { getKoreaInvestmentApproval, getKoreaInvestmentToken, getKoreaInvestmentBalance, getKoreaInvestmentInquirePrice, getKoreaInvestmentInquireDailyItemChartPrice } = koreaInvestmentSlice.selectors;
-
-// export const { reqGetBalanceSheet } = koreaInvestmentSlice.actions;
-// export const { getKoreaInvestmentBalanceSheet } = koreaInvestmentSlice.selectors;

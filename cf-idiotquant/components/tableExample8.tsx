@@ -1,10 +1,4 @@
 import React from "react";
-import dynamic from "next/dynamic";
-
-// charts import
-const Chart = dynamic(() => import("react-apexcharts"), {
-    ssr: false,
-});
 
 // @material-tailwind/react
 import {
@@ -16,116 +10,6 @@ import {
     PopoverContent,
     Button,
 } from "@material-tailwind/react";
-
-// deepmerge
-import merge from "deepmerge";
-
-// area chart
-interface ChartsPropsType {
-    height: number;
-    series: object[];
-    options: object;
-}
-
-function AreaChart({
-    height = 90,
-    series,
-    colors,
-    options,
-}: Partial<ChartsPropsType> & {
-    colors: string | string[];
-}) {
-    const chartOptions = React.useMemo(
-        () => ({
-            colors,
-            ...merge(
-                {
-                    chart: {
-                        height: height,
-                        type: "area",
-                        zoom: {
-                            enabled: false,
-                        },
-                        toolbar: {
-                            show: false,
-                        },
-                    },
-                    title: {
-                        show: "",
-                    },
-                    dataLabels: {
-                        enabled: false,
-                    },
-                    legend: {
-                        show: false,
-                    },
-                    markers: {
-                        size: 0,
-                        strokeWidth: 0,
-                        strokeColors: "transparent",
-                    },
-                    stroke: {
-                        curve: "smooth",
-                        width: 2,
-                    },
-                    grid: {
-                        show: false,
-                        xaxis: {
-                            lines: {
-                                show: false,
-                            },
-                        },
-                        padding: {
-                            top: 0,
-                            right: 0,
-                            left: 0,
-                            bottom: 0,
-                        },
-                    },
-                    tooltip: {
-                        theme: "light",
-                    },
-                    yaxis: {
-                        labels: {
-                            show: false,
-                        },
-                    },
-                    xaxis: {
-                        axisTicks: {
-                            show: false,
-                        },
-                        axisBorder: {
-                            show: false,
-                        },
-                        labels: {
-                            show: false,
-                        },
-                    },
-                    fill: {
-                        type: "gradient",
-                        gradient: {
-                            shadeIntensity: 1,
-                            opacityFrom: 0.4,
-                            opacityTo: 0.6,
-                            stops: [0, 100],
-                        },
-                    },
-                },
-                options ? options : {}
-            ),
-        }),
-        [height, colors, options]
-    );
-
-    return (
-        <Chart
-            type="area"
-            height={height}
-            series={series as ApexAxisChartSeries}
-            options={chartOptions as any}
-        />
-    );
-}
 
 
 export interface Example8TableRowType {
@@ -154,7 +38,7 @@ export interface Example8TableHeadType {
 
 export interface TablesExample8PropsType {
     title: any;
-    subTitle: any;
+    msg?: any;
     desc: any;
     financial_date?: any;
     market_date?: any;
@@ -167,7 +51,7 @@ export interface TablesExample8PropsType {
 
 function TablesExample8({
     title,
-    subTitle,
+    msg,
     desc,
     financial_date,
     market_date,
@@ -205,7 +89,7 @@ function TablesExample8({
                 </CardHeader>
 
                 {tableRow.length == 0 ?
-                    <Button variant="text" loading={true} className="font-mono">loading...</Button>
+                    <Button variant="text" loading={!!msg ? false : true} className="font-mono">{!!msg ? msg : "loading..."}</Button>
                     :
                     <CardBody className="overflow-scroll !px-0 pt-0 pb-2">
                         <table className="w-full min-w-max table-auto items-center">

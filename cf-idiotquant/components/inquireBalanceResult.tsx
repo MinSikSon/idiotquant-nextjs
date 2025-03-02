@@ -9,8 +9,8 @@ interface InquireBalanceResultProps {
     kiBalance: any;
     reqGetInquireBalance: any;
     kiToken: any;
-    kiOrderCash: any;
-    reqPostOrderCash: any;
+    kiOrderCash?: any;
+    reqPostOrderCash?: any;
 }
 
 export default function InquireBalanceResult(props: InquireBalanceResultProps) {
@@ -168,6 +168,7 @@ export default function InquireBalanceResult(props: InquireBalanceResultProps) {
     }
 
     const tablesExample8Props: TablesExample8PropsType = {
+        msg: props.kiBalance.msg1,
         title: <>
             <div className="flex pb-2 items-center">
                 <DesignButton
@@ -194,7 +195,6 @@ export default function InquireBalanceResult(props: InquireBalanceResultProps) {
                     </>}
             </div>
         </>,
-        subTitle: ``,
         desc: <>
             <div className="text-lg font-mono text-black leading-none pb-3">
                 평가손익:<span className={`${(Number(evlu_amt_smtl_amt) / Number(pchs_amt_smtl_amt) * 100 - 100) >= 0 ? "text-red-500" : "text-blue-500"}`}>
@@ -222,7 +222,7 @@ export default function InquireBalanceResult(props: InquireBalanceResultProps) {
         <div className={`border border-black text-center w-80 z-10 fixed top-32 left-1/2 transform -translate-x-1/2 px-6 py-3 rounded-lg text-white shadow-lg shadow-blue-gray-500 transition-all duration-500 ${show ? "opacity-100 scale-100 bg-green-500" : "opacity-0 scale-95 pointer-events-none"}`}>
             <div className="">{msg}</div>
             <div className="text-lg">✅ {orderName}</div>
-            <div className="">{props.kiOrderCash.msg1}</div>
+            <div className="">{!!props.kiOrderCash ? props.kiOrderCash.msg1 : ""}</div>
         </div>
 
         <TablesExample8 {...tablesExample8Props} />
