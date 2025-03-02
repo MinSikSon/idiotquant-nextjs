@@ -250,11 +250,14 @@ export default function Calculator() {
                                         <DesignButton
                                             handleOnClick={() => setInvestmentAmount(Number(0) * 1)}
                                             buttonName="CLEAR"
-                                            buttonBgColor="bg-green-400"
-                                            buttonBorderColor="border-green-300"
-                                            buttonShadowColor="#129600"
-                                            textStyle="text-white text-xs pt-0.5 font-bold"
-                                            buttonStyle="rounded-lg px-4 ml-2"
+                                            buttonBgColor="bg-white"
+                                            buttonBorderColor="border-black"
+                                            buttonShadowColor="#D5D5D5"
+                                            textStyle="text-black text-xs font-bold"
+                                            buttonStyle={`rounded-lg  px-4 ml-2 flex items-center justify-center mb-2 button bg-white cursor-pointer select-none
+                                            active:translate-y-1 active:[box-shadow:0_0px_0_0_#D5D5D5,0_0px_0_0_#D5D5D541] active:border-[0px]
+                                            transition-all duration-150 [box-shadow:0_4px_0_0_#D5D5D5,0_8px_0_0_#D5D5D541] border-[1px]
+                                            `}
                                         />
                                     </>
                                     :
@@ -266,11 +269,14 @@ export default function Calculator() {
                                     <DesignButton
                                         handleOnClick={() => setNumberOfYears(0)}
                                         buttonName="CLEAR"
-                                        buttonBgColor="bg-green-400"
-                                        buttonBorderColor="border-green-300"
-                                        buttonShadowColor="#129600"
-                                        textStyle="text-white text-xs pt-0.5 font-bold"
-                                        buttonStyle="rounded-lg px-4 ml-2"
+                                        buttonBgColor="bg-white"
+                                        buttonBorderColor="border-black"
+                                        buttonShadowColor="#D5D5D5"
+                                        textStyle="text-black text-xs font-bold"
+                                        buttonStyle={`rounded-lg  px-4 ml-2 flex items-center justify-center mb-2 button bg-white cursor-pointer select-none
+                                            active:translate-y-1 active:[box-shadow:0_0px_0_0_#D5D5D5,0_0px_0_0_#D5D5D541] active:border-[0px]
+                                            transition-all duration-150 [box-shadow:0_4px_0_0_#D5D5D5,0_8px_0_0_#D5D5D541] border-[1px]
+                                            `}
                                     />
                                     {/* <Button className="font-mono ml-1 py-0" variant="outlined" onClick={() => setNumberOfYears(0)}>CLEAR</Button> */}
                                 </>
@@ -294,11 +300,14 @@ export default function Calculator() {
                                             <DesignButton
                                                 handleOnClick={() => setInterestRate(0)}
                                                 buttonName="CLEAR"
-                                                buttonBgColor="bg-green-400"
-                                                buttonBorderColor="border-green-300"
-                                                buttonShadowColor="#129600"
-                                                textStyle="text-white text-xs pt-0.5 font-bold"
-                                                buttonStyle="rounded-lg px-4 ml-2"
+                                                buttonBgColor="bg-white"
+                                                buttonBorderColor="border-black"
+                                                buttonShadowColor="#D5D5D5"
+                                                textStyle="text-black text-xs font-bold"
+                                                buttonStyle={`rounded-lg  px-4 ml-2 flex items-center justify-center mb-2 button bg-white cursor-pointer select-none
+                                            active:translate-y-1 active:[box-shadow:0_0px_0_0_#D5D5D5,0_0px_0_0_#D5D5D541] active:border-[0px]
+                                            transition-all duration-150 [box-shadow:0_4px_0_0_#D5D5D5,0_8px_0_0_#D5D5D541] border-[1px]
+                                            `}
                                             />
                                             {/* <Button className="font-mono ml-1 py-0" variant="outlined" onClick={() => setInterestRate(0)}>CLEAR</Button> */}
                                         </>
@@ -326,11 +335,14 @@ export default function Calculator() {
                                             <DesignButton
                                                 handleOnClick={() => setContributions(0)}
                                                 buttonName="CLEAR"
-                                                buttonBgColor="bg-green-400"
-                                                buttonBorderColor="border-green-300"
-                                                buttonShadowColor="#129600"
-                                                textStyle="text-white text-xs pt-0.5 font-bold"
-                                                buttonStyle="rounded-lg px-4 ml-2"
+                                                buttonBgColor="bg-white"
+                                                buttonBorderColor="border-black"
+                                                buttonShadowColor="#D5D5D5"
+                                                textStyle="text-black text-xs font-bold"
+                                                buttonStyle={`rounded-lg  px-4 ml-2 flex items-center justify-center mb-2 button bg-white cursor-pointer select-none
+                                            active:translate-y-1 active:[box-shadow:0_0px_0_0_#D5D5D5,0_0px_0_0_#D5D5D541] active:border-[0px]
+                                            transition-all duration-150 [box-shadow:0_4px_0_0_#D5D5D5,0_8px_0_0_#D5D5D541] border-[1px]
+                                            `}
                                             />
                                             {/* <Button className="font-mono ml-1 py-0" variant="outlined" onClick={() => setContributions(0)}>CLEAR</Button> */}
                                         </>
@@ -344,13 +356,15 @@ export default function Calculator() {
                                         <DesignButton
                                             handleOnClick={() => setInflationRate(0)}
                                             buttonName="CLEAR"
-                                            buttonBgColor="bg-green-400"
-                                            buttonBorderColor="border-green-300"
-                                            buttonShadowColor="#129600"
-                                            textStyle="text-white text-xs pt-0.5 font-bold"
-                                            buttonStyle="rounded-lg px-4 ml-2"
+                                            buttonBgColor="bg-white"
+                                            buttonBorderColor="border-black"
+                                            buttonShadowColor="#D5D5D5"
+                                            textStyle="text-black text-xs font-bold"
+                                            buttonStyle={`rounded-lg  px-4 ml-2 flex items-center justify-center mb-2 button bg-white cursor-pointer select-none
+                                            active:translate-y-1 active:[box-shadow:0_0px_0_0_#D5D5D5,0_0px_0_0_#D5D5D541] active:border-[0px]
+                                            transition-all duration-150 [box-shadow:0_4px_0_0_#D5D5D5,0_8px_0_0_#D5D5D541] border-[1px]
+                                            `}
                                         />
-                                        {/* <Button className="font-mono ml-1 py-0" variant="outlined" onClick={() => setInflationRate(0)}>CLEAR</Button> */}
                                     </>
                                     : <></>}
                             </div>
@@ -362,7 +376,7 @@ export default function Calculator() {
                                     buttonBorderColor="border-green-300"
                                     buttonShadowColor="#129600"
                                     textStyle="text-white text-xs pt-0.5 font-bold"
-                                    buttonStyle="rounded-lg px-6 py-2"
+                                    buttonStyle="rounded-lg px-10 py-2"
                                 />
                                 {/* <Button className="font-mono w-36 mr-1" color="green" variant="outlined" onClick={handleCalculateSampleData}>
                                     <div>(계산 예시)</div>
@@ -371,14 +385,13 @@ export default function Calculator() {
                                     <DesignButton
                                         handleOnClick={() => handleClear()}
                                         buttonName="ALL CLEAR"
-                                        buttonBgColor="bg-red-400"
-                                        buttonBorderColor="border-red-300"
-                                        buttonShadowColor="#910000"
-                                        textStyle="text-white text-xs pt-0.5 font-bold"
-                                        // buttonStyle="rounded-lg px-4 py-2 ml-2"
-                                        buttonStyle={`rounded-lg px-4 py-2 ml-2 flex items-center justify-center mb-2 px-1 button bg-red-400 rounded-full cursor-pointer select-none
-                                            active:translate-y-1 active:[box-shadow:0_0px_0_0_#910000,0_0px_0_0_#91000041] active:border-b-[0px]
-                                            transition-all duration-150 [box-shadow:0_4px_0_0_#910000,0_8px_0_0_#91000041] border-b-[1px] border-red-300
+                                        buttonBgColor="bg-white"
+                                        buttonBorderColor="border-black"
+                                        buttonShadowColor="#D5D5D5"
+                                        textStyle="text-black text-xs font-bold"
+                                        buttonStyle={`rounded-lg  px-4 ml-2 flex items-center justify-center mb-2 button bg-white cursor-pointer select-none
+                                            active:translate-y-1 active:[box-shadow:0_0px_0_0_#D5D5D5,0_0px_0_0_#D5D5D541] active:border-[0px]
+                                            transition-all duration-150 [box-shadow:0_4px_0_0_#D5D5D5,0_8px_0_0_#D5D5D541] border-[1px]
                                             `}
                                     />
                                     {/* <Button className="font-mono ml-1 rounded-full" variant="outlined" color="red" onClick={handleClear}>ALL CLEAR</Button> */}

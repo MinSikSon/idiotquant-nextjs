@@ -90,12 +90,15 @@ const SearchAutocomplete = (props: any) => {
             </Button> */}
             <DesignButton
                 handleOnClick={() => handleSearch()}
-                buttonName={<MagnifyingGlassIcon className="h-6 w-6 text-white" />}
-                buttonBgColor="bg-green-400"
-                buttonBorderColor="border-green-300"
-                buttonShadowColor="#129600"
-                textStyle="text-white text-xs pt-0.5 font-bold"
-                buttonStyle="rounded-lg px-4 py-1 ml-2"
+                buttonName={<MagnifyingGlassIcon className="h-5 w-5 text-black" />}
+                buttonBgColor="bg-white"
+                buttonBorderColor="border-black"
+                buttonShadowColor="#D5D5D5"
+                textStyle="text-xs font-bold"
+                buttonStyle={`rounded-lg p-2 ml-2 flex items-center justify-center mb-2 button bg-white cursor-pointer select-none
+                    active:translate-y-1 active:[box-shadow:0_0px_0_0_#D5D5D5,0_0px_0_0_#D5D5D541] active:border-[0px]
+                    transition-all duration-150 [box-shadow:0_4px_0_0_#D5D5D5,0_8px_0_0_#D5D5D541] border-[1px]
+                    `}
             />
             {/* <Button className="py-2 px-2" variant="outlined" onClick={handleSearch}>
                 <MagnifyingGlassIcon className="h-5 w-5 text-black" />

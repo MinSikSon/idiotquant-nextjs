@@ -1,5 +1,6 @@
 "use client"
 
+import { DesignButton } from "@/components/designButton";
 import RegisterTemplate from "@/components/register_template";
 import { GetMergedStocksList, GetStocksFilteredByStrategyNCAV } from "@/components/strategy";
 import { GetStocksFilteredByCustom } from "@/components/strategyCustom";
@@ -135,15 +136,29 @@ export default function StrategyRegister() {
                 <div className="flex flex-col gap-2">
                     <div className="flex justify-between items-center">
                         <Link href={`/`}>
-                            <Button color="red" size="sm" variant="outlined">
-                                {/* prev */}
-                                취소
-                            </Button>
+                            <DesignButton
+                                handleOnClick={() => { }}
+                                buttonName="취소"
+                                buttonBgColor="bg-red-400"
+                                buttonBorderColor="border-red-300"
+                                buttonShadowColor="#910000"
+                                textStyle="text-white text-xs pt-0.5 font-bold"
+                                buttonStyle={`rounded-lg px-4 py-1 ml-2 flex items-center justify-center mb-2 px-1 button bg-red-400 rounded-full cursor-pointer select-none
+                                                                        active:translate-y-1 active:[box-shadow:0_0px_0_0_#910000,0_0px_0_0_#91000041] active:border-b-[0px]
+                                                                        transition-all duration-150 [box-shadow:0_4px_0_0_#910000,0_8px_0_0_#91000041] border-b-[1px] border-red-300
+                                                                        `}
+                            />
                         </Link>
                         <Link href={`/`}>
-                            <Button className="hover:text-blue-500 hover:border-blue-500" color={`black`} onClick={() => handleOnClick()} size="sm" variant="outlined">
-                                등록
-                            </Button>
+                            <DesignButton
+                                handleOnClick={() => handleOnClick()}
+                                buttonName="등록"
+                                buttonBgColor="bg-green-400"
+                                buttonBorderColor="border-green-300"
+                                buttonShadowColor="#129600"
+                                textStyle="text-white text-xs pt-0.5 font-bold"
+                                buttonStyle="rounded-lg px-4 py-1"
+                            />
                         </Link>
                     </div>
                 </div>

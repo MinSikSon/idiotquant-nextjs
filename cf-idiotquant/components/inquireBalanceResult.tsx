@@ -1,42 +1,24 @@
-"use client"
-
-import Login from "@/app/(login)/login/login";
-import TablesExample8, { Example8TableHeadType, Example8TableRowType, TablesExample8PropsType } from "@/components/tableExample8";
-import { getCookie, isValidCookie, registerCookie, Util } from "@/components/util";
-import { reqPostApprovalKey, reqPostToken, reqGetInquireBalance, reqPostOrderCash, reqGetInquirePrice, KoreaInvestmentInquirePrice, getKoreaInvestmentInquirePrice, reqGetInquireDailyItemChartPrice, getKoreaInvestmentInquireDailyItemChartPrice, KoreaInvestmentInquireDailyItemChartPrice, reqGetBalanceSheet, getKoreaInvestmentBalanceSheet, KoreaInvestmentBalanceSheet, getKoreaInvestmentOrderCash, KoreaInvestmentOrderCash } from "@/lib/features/koreaInvestment/koreaInvestmentSlice";
-import { KoreaInvestmentApproval, KoreaInvestmentToken, KoreaInvestmentBalance } from "@/lib/features/koreaInvestment/koreaInvestmentSlice";
-import { setKoreaInvestmentToken } from "@/lib/features/koreaInvestment/koreaInvestmentSlice";
-import { getKoreaInvestmentApproval, getKoreaInvestmentToken, getKoreaInvestmentBalance } from "@/lib/features/koreaInvestment/koreaInvestmentSlice";
-import { selectState } from "@/lib/features/login/loginSlice";
-
+import { Button } from "@material-tailwind/react";
+import { DesignButton } from "./designButton";
+import TablesExample8, { Example8TableHeadType, Example8TableRowType, TablesExample8PropsType } from "./tableExample8";
+import { Util } from "./util";
 import { useAppDispatch, useAppSelector } from "@/lib/hooks";
-import { Button, Input, Typography } from "@material-tailwind/react";
 import React from "react";
 
-import { usePathname } from "next/navigation";
-import Auth from "@/components/auth";
-import { DesignButton } from "@/components/designButton";
+interface InquireBalanceResultProps {
+    time: any;
+    kiBalance: any;
+    reqGetInquireBalance: any;
+    kiToken: any;
+    kiOrderCash: any;
+    reqPostOrderCash: any;
+}
 
-export default function OpenApi() {
-    const pathname = usePathname();
-
+export default function InquireBalanceResult(props: InquireBalanceResultProps) {
     const dispatch = useAppDispatch();
-    const kiApproval: KoreaInvestmentApproval = useAppSelector(getKoreaInvestmentApproval);
-    const kiToken: KoreaInvestmentToken = useAppSelector(getKoreaInvestmentToken);
-    const kiBalance: KoreaInvestmentBalance = useAppSelector(getKoreaInvestmentBalance);
-    const kiInquirePrice: KoreaInvestmentInquirePrice = useAppSelector(getKoreaInvestmentInquirePrice);
-    const kiInquireDailyItemChartPrice: KoreaInvestmentInquireDailyItemChartPrice = useAppSelector(getKoreaInvestmentInquireDailyItemChartPrice);
-    const kiBalanceSheet: KoreaInvestmentBalanceSheet = useAppSelector(getKoreaInvestmentBalanceSheet);
-
-    const kiOrderCash: KoreaInvestmentOrderCash = useAppSelector(getKoreaInvestmentOrderCash);
-
+    const [show, setShow] = React.useState<boolean>(false);
     const [msg, setMsg] = React.useState<any>("");
     const [orderName, setOrderName] = React.useState<any>("");
-
-    const [time, setTime] = React.useState<any>('');
-    const loginState = useAppSelector(selectState);
-
-    const [show, setShow] = React.useState<boolean>(false);
 
     const showAlert = (additionalMsg: string) => {
         setMsg(additionalMsg);
@@ -47,78 +29,82 @@ export default function OpenApi() {
         }, 3000);
     };
 
-    React.useEffect(() => {
-        // console.log(`[OpenApi]`, `kiToken:`, kiToken);
-        const isValidKiAccessToken = !!kiToken["access_token"];
-        if (true == isValidKiAccessToken) {
-            setTime(new Date());
-            dispatch(reqGetInquireBalance(kiToken));
+    function handleOnClick(item: any, buyOrSell: string) {
+        if ("buy" == buyOrSell || "sell" == buyOrSell) {
+            const korBuyOrSell = "buy" == buyOrSell ? "구매" : "판매";
+            setOrderName(item["prdt_name"] + " " + korBuyOrSell + " 시도");
+            dispatch(props.reqPostOrderCash({ koreaInvestmentToken: props.kiToken, PDNO: item["pdno"], buyOrSell: buyOrSell }));
+            showAlert("");
         }
-    }, [kiToken]);
-
-    React.useEffect(() => {
-        // console.log(`kiBalance`, kiBalance);
-    }, [kiBalance]);
-
-    React.useEffect(() => {
-        // console.log(`kiOrderCash`, kiOrderCash);
-    }, [kiOrderCash])
-
-    if ("init" == loginState) {
-        return <>
-            <Login parentUrl={pathname} />
-        </>
     }
 
-    const example8TableHeadType: Example8TableHeadType[] = [
+    const [selectHead, setSelectHead] = React.useState("비중");
+
+    const example8TableHead: Example8TableHeadType[] = [
         {
             head: "",
             desc: "",
         },
         {
             head: "종목명",
-            desc: "종목명",
+            desc: "종목명 내림차순🔽",
         },
         {
             head: "현재가",
-            desc: "현재가",
+            desc: "현재가 내림차순🔽",
         },
         {
             head: "보유/주문가능",
-            desc: "보유/주문가능",
+            desc: "보유/주문가능 내림차순🔽",
         },
         {
             head: "평가손익",
-            desc: "평가손익",
+            desc: "평가손익 내림차순🔽",
         },
         {
             head: "평가금액",
-            desc: "평가금액",
+            desc: "평가금액 내림차순🔽",
         },
         {
             head: "매수금액",
-            desc: "매수금액",
+            desc: "매수금액 내림차순🔽",
         },
         {
             head: "비중",
-            desc: "비중",
+            desc: "비중 내림차순🔽",
         },
     ];
 
-    function handleOnClick(item: any, buyOrSell: string) {
-        if ("buy" == buyOrSell || "sell" == buyOrSell) {
-            const korBuyOrSell = "buy" == buyOrSell ? "구매" : "판매";
-            setOrderName(item["prdt_name"] + " " + korBuyOrSell + " 시도");
-            dispatch(reqPostOrderCash({ koreaInvestmentToken: kiToken, PDNO: item["pdno"], buyOrSell: buyOrSell }));
-            showAlert("");
-        }
-    }
+    // console.log(`selectHead`, selectHead);
 
-    let example8TableRowType: Example8TableRowType[] = [];
-    if ("fulfilled" == kiBalance.state) {
-        let kiBalanceOutput1 = [...kiBalance.output1];
+    let example8TableRow: Example8TableRowType[] = [];
+    if ("fulfilled" == props.kiBalance.state) {
+        let kiBalanceOutput1 = [...props.kiBalance.output1];
         // console.log(`kiBalanceOutput1`, kiBalanceOutput1);
-        example8TableRowType = (kiBalanceOutput1.sort((a, b) => Number(b["pchs_amt"]) - Number(a["pchs_amt"])).map((item, index) => {
+        example8TableRow = (kiBalanceOutput1.sort((a, b) => {
+            if ("종목명" == selectHead) {
+                return String(a.prdt_name).localeCompare(String(b.prdt_name), "ko-KR");
+            }
+            if ("현재가" == selectHead) {
+                return Number(b.prpr) - Number(a.prpr);
+            }
+            if ("보유/주문가능" == selectHead) {
+                return Number(b.hldg_qty) - Number(a.hldg_qty);
+            }
+            if ("평가손익" == selectHead) {
+                return Number(b.evlu_pfls_amt) - Number(a.evlu_pfls_amt);
+            }
+            if ("평가금액" == selectHead) {
+                return Number(b.evlu_amt) - Number(a.evlu_amt);
+            }
+            if ("매수금액" == selectHead) {
+                return Number(b.pchs_amt) - Number(a.pchs_amt);
+            }
+            if ("비중" == selectHead) {
+                return Number(b.pchs_amt) - Number(a.pchs_amt);
+            }
+            return 0;
+        }).map((item, index) => {
             // console.log(`item["prdt_name"]`, item["prdt_name"], `item["prdt_name"].length`, item["prdt_name"].length);
             return {
                 id: item["prdt_name"],
@@ -127,13 +113,13 @@ export default function OpenApi() {
                         <DesignButton
                             handleOnClick={() => handleOnClick(item, "buy")}
                             buttonName="buy"
-                            buttonBgColor={`bg-blue-500`}
-                            buttonBorderColor={`border-blue-400`}
-                            buttonShadowColor={`#1e78ff`}
+                            buttonBgColor={`bg-green-500`}
+                            buttonBorderColor={`border-green-400`}
+                            buttonShadowColor={`#129600`}
                             textStyle={`text-white font-bold text-[0.5rem]`}
-                            buttonStyle={`flex items-center justify-center mb-2 px-1 button bg-blue-500 rounded-full cursor-pointer select-none
-                                active:translate-y-1 active:[box-shadow:0_0px_0_0_#1e78ff,0_0px_0_0_#1e78ff41] active:border-b-[0px]
-                                transition-all duration-150 [box-shadow:0_4px_0_0_#1e78ff,0_8px_0_0_#1e78ff41] border-b-[1px]
+                            buttonStyle={`flex items-center justify-center mb-2 px-1 button rounded-full cursor-pointer select-none
+                                active:translate-y-1 active:[box-shadow:0_0px_0_0_#129600,0_0px_0_0_#12960041] active:border-b-[0px]
+                                transition-all duration-150 [box-shadow:0_4px_0_0_#129600,0_8px_0_0_#12960041] border-b-[1px]
                                 `}
                         />
                         <DesignButton
@@ -164,7 +150,7 @@ export default function OpenApi() {
                 </div>,
                 column_6: <div className="text-xs font-mono text-black">{Util.UnitConversion(Number(item["evlu_amt"]), true)}</div>,
                 column_7: <div className="text-xs font-mono text-black">{Util.UnitConversion(Number(item["pchs_amt"]), true)}</div>,
-                column_8: <div className="text-xs font-mono font-bold text-black">{(Number(item["pchs_amt"]) / Number(kiBalance.output2[0]["pchs_amt_smtl_amt"]) * 100).toFixed(2)} %</div>,
+                column_8: <div className="text-xs font-mono font-bold text-black">{(Number(item["pchs_amt"]) / Number(props.kiBalance.output2[0]["pchs_amt_smtl_amt"]) * 100).toFixed(2)} %</div>,
             }
         }));
     }
@@ -175,29 +161,33 @@ export default function OpenApi() {
     let evlu_amt_smtl_amt: number = 0; // 평가금액
     let pchs_amt_smtl_amt: number = 0; // 매입금액
     let evlu_pfls_smtl_amt: number = 0;// 수입
-    if (!!kiBalance.output2 && kiBalance.output2.length > 0) {
-        nass_amt = Number(kiBalance.output2[0]["nass_amt"]);
-        evlu_amt_smtl_amt = Number(kiBalance.output2[0]["evlu_amt_smtl_amt"]);
-        pchs_amt_smtl_amt = Number(kiBalance.output2[0]["pchs_amt_smtl_amt"]);
-        evlu_pfls_smtl_amt = Number(kiBalance.output2[0]["evlu_pfls_smtl_amt"]);
+    if (!!props.kiBalance.output2 && props.kiBalance.output2.length > 0) {
+        nass_amt = Number(props.kiBalance.output2[0]["nass_amt"]);
+        evlu_amt_smtl_amt = Number(props.kiBalance.output2[0]["evlu_amt_smtl_amt"]);
+        pchs_amt_smtl_amt = Number(props.kiBalance.output2[0]["pchs_amt_smtl_amt"]);
+        evlu_pfls_smtl_amt = Number(props.kiBalance.output2[0]["evlu_pfls_smtl_amt"]);
     }
-    const props: TablesExample8PropsType = {
+
+    const tablesExample8Props: TablesExample8PropsType = {
         title: <>
             <div className="flex pb-2 items-center">
                 <div className="pr-2 text-black">알고리즘 매매 계좌 조회</div>
                 <DesignButton
                     handleOnClick={() => {
                         showAlert("지난 주문 확인");
-                        dispatch(reqGetInquireBalance(kiToken));
+                        dispatch(props.reqGetInquireBalance(props.kiToken));
                     }}
                     buttonName="계좌 조회"
-                    buttonBgColor="bg-green-400"
-                    buttonBorderColor="border-green-300"
-                    buttonShadowColor="#129600"
-                    textStyle="text-white text-xs pt-0.5"
-                    buttonStyle="px-2"
+                    buttonBgColor="bg-white"
+                    buttonBorderColor="border-black"
+                    buttonShadowColor="#D5D5D5"
+                    textStyle="text-black text-xs font-bold"
+                    buttonStyle={`rounded-lg px-2 py-1 ml-2 flex items-center justify-center mb-2 button bg-white cursor-pointer select-none
+                        active:translate-y-1 active:[box-shadow:0_0px_0_0_#D5D5D5,0_0px_0_0_#D5D5D541] active:border-[0px]
+                        transition-all duration-150 [box-shadow:0_4px_0_0_#D5D5D5,0_8px_0_0_#D5D5D541] border-[1px]
+                        `}
                 />
-                {"pending" == kiBalance.state ?
+                {"pending" == props.kiBalance.state ?
                     <Button loading={true} className="p-0 px-1 m-0 bg-white text-black font-mono">loading...</Button>
                     : <></>}
             </div>
@@ -224,25 +214,21 @@ export default function OpenApi() {
         </>,
         financial_date: "",
         market_date: <div className="flex flex-col">
-            <div className="text-xs">market_date: {time.toString()}</div>
+            <div className="text-xs">market_date: {props.time.toString()}</div>
         </div>,
-        tableHead: example8TableHeadType,
-        tableRow: example8TableRowType,
-    }
+        tableHead: example8TableHead,
+        setSelectHead: setSelectHead,
 
-    if (false == isValidCookie("koreaInvestmentToken") || false == !!kiToken["access_token"]) {
-        return <>
-            <Auth />
-        </>
+        tableRow: example8TableRow,
     }
 
     return <>
         <div className={`border border-black text-center w-80 z-10 fixed top-32 left-1/2 transform -translate-x-1/2 px-6 py-3 rounded-lg text-white shadow-lg shadow-blue-gray-500 transition-all duration-500 ${show ? "opacity-100 scale-100 bg-green-500" : "opacity-0 scale-95 pointer-events-none"}`}>
             <div className="">{msg}</div>
             <div className="text-lg">✅ {orderName}</div>
-            <div className="">{kiOrderCash.msg1}</div>
+            <div className="">{props.kiOrderCash.msg1}</div>
         </div>
 
-        <TablesExample8 {...props} />
+        <TablesExample8 {...tablesExample8Props} />
     </>
 }

@@ -32,13 +32,23 @@ export function getRandomMainImage(idx: any = undefined) {
 export function getRandomUserImage(idx: any = undefined) {
     // console.log(`getRandomUserImage`, idx);
     const imageList: string[] = [
-        'https://www.artic.edu/iiif/2/fa3a6e30-09ce-5c9e-5cba-a682ca4d56e7/full/1686,/0/default.jpg',
-        'https://www.artic.edu/iiif/2/900872f5-b9b1-aa21-1d56-401707024644/full/1686,/0/default.jpg',
-        'https://www.artic.edu/iiif/2/25c6ea3d-6703-57ff-ce28-4ec612f56cfe/full/1686,/0/default.jpg',
-        'https://www.artic.edu/iiif/2/9a0fdeae-2f6f-12e9-0f3e-60f1e65a46d9/full/1686,/0/default.jpg',
-        'https://www.artic.edu/iiif/2/2839ccc3-8fbb-73d4-54fc-4fe640b4da3e/full/1686,/0/default.jpg',
-        'https://www.artic.edu/iiif/2/671c6468-27e6-3afb-74cc-0626fdbb03fa/full/1686,/0/default.jpg',
-        'https://www.artic.edu/iiif/2/c038b5e0-c4b7-553c-17dc-a32ac4c3ac06/full/1686,/0/default.jpg',
+        // 'https://louispoulsen-bwgkd4hcfaf0grd6.a01.azurefd.net/images/catalog-images/7642_7642_PH-5-Classic-White-11-2-5-90293.png?height=800&width=800&mode=crop&format=webp&quality=90&lossless=false',
+        'https://louispoulsen-bwgkd4hcfaf0grd6.a01.azurefd.net/images/catalog-images/30610_30610_PH-5-All-Black-BWire-23-2-5-90293.png?height=1200&width=1200&mode=crop&format=webp&quality=90&lossless=false',
+        // 'https://louispoulsen-bwgkd4hcfaf0grd6.a01.azurefd.net/images/catalog-images/9800_14436_PH-Artichoke-White-480-01A-2-5-90145.png?height=800&width=800&mode=crop&format=webp&quality=90&lossless=false',
+        'https://louispoulsen-bwgkd4hcfaf0grd6.a01.azurefd.net/images/catalog-images/60065_60065_PH-Artichoke-480-Pendant-White-Pale-Rose-Brass.png?height=800&width=800&mode=crop&format=webp&quality=90&lossless=false',
+        'https://louispoulsen-bwgkd4hcfaf0grd6.a01.azurefd.net/images/catalog-images/62860_62860_LP-Fendi-EU-PH%202-1-Table-ON-12970.png?height=800&width=800&mode=crop&format=webp&quality=90&lossless=false',
+
+        'https://www.hermanmiller.com/content/dam/hmicom/page_assets/products/aeron_chair/202106/th_prd_aeron_chair_office_chairs_hv.jpg.rendition.1152.1152.jpg',
+
+
+
+        // 'https://www.artic.edu/iiif/2/fa3a6e30-09ce-5c9e-5cba-a682ca4d56e7/full/1686,/0/default.jpg',
+        // 'https://www.artic.edu/iiif/2/900872f5-b9b1-aa21-1d56-401707024644/full/1686,/0/default.jpg',
+        // 'https://www.artic.edu/iiif/2/25c6ea3d-6703-57ff-ce28-4ec612f56cfe/full/1686,/0/default.jpg',
+        // 'https://www.artic.edu/iiif/2/9a0fdeae-2f6f-12e9-0f3e-60f1e65a46d9/full/1686,/0/default.jpg',
+        // 'https://www.artic.edu/iiif/2/2839ccc3-8fbb-73d4-54fc-4fe640b4da3e/full/1686,/0/default.jpg',
+        // 'https://www.artic.edu/iiif/2/671c6468-27e6-3afb-74cc-0626fdbb03fa/full/1686,/0/default.jpg',
+        // 'https://www.artic.edu/iiif/2/c038b5e0-c4b7-553c-17dc-a32ac4c3ac06/full/1686,/0/default.jpg',
 
         // 'https://www.artic.edu/iiif/2/47c5bcb8-62ef-e5d7-55e7-f5121f409a30/full/400,/0/default.jpg',
         // 'https://www.artic.edu/iiif/2/3a608f55-d76e-fa96-d0b1-0789fbc48f1e/full/400,/0/default.jpg',
@@ -58,7 +68,7 @@ export function getRandomUserImage(idx: any = undefined) {
     if (undefined == idx) {
         const random = Math.random();
         idx = Math.floor(random * imageList.length);
-        console.log(`random`, random, `imageList.length`, imageList.length, `idx`, idx,);
+        // console.log(`random`, random, `imageList.length`, imageList.length, `idx`, idx,);
     }
     else {
         idx = idx % imageList.length;

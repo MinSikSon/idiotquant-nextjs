@@ -1,5 +1,6 @@
 "use client"
 
+import { DesignButton } from "@/components/designButton";
 import TablesExample8, { Example8TableHeadType, Example8TableRowType, TablesExample8PropsType } from "@/components/tableExample8";
 import { selectCapitalToken, selectInquirePriceMulti } from "@/lib/features/algorithmTrade/algorithmTradeSlice";
 import { reqGetCapitalToken, reqGetInquirePriceMulti } from "@/lib/features/algorithmTrade/algorithmTradeSlice";
@@ -136,15 +137,19 @@ export default function AlgorithmTrade() {
                         <div className="text-xs font-mono text-black">^_^</div>
                     </PopoverContent>
                 </Popover>
-                <div
-                    onClick={() => {
-                        handleOnClick()
-                    }}
-                    className='mb-2 px-2 button bg-green-400 rounded-full cursor-pointer select-none
-                    active:translate-y-1 active:[box-shadow:0_0px_0_0_#129600,0_0px_0_0_#12960041] active:border-b-[0px]
-                    transition-all duration-150 [box-shadow:0_4px_0_0_#129600,0_8px_0_0_#12960041] border-b-[1px] border-green-300'>
-                    <span className='flex flex-col justify-center items-center h-full text-white text-xs font-mono pt-0.5'>다시 조회 {kiToken.state == "fulfilled" ? "+ @" : ""}</span>
-                </div>
+                <DesignButton
+                    handleOnClick={() => { handleOnClick() }}
+                    buttonName={`다시 조회 ${kiToken.state == "fulfilled" ? "+ @" : ""}`}
+                    buttonBgColor="bg-white"
+                    buttonBorderColor="border-black"
+                    buttonShadowColor="#D5D5D5"
+                    textStyle="text-black text-xs font-bold"
+                    buttonStyle={`rounded-lg px-2 py-1 ml-2 flex items-center justify-center mb-2 button bg-white cursor-pointer select-none
+                                       active:translate-y-1 active:[box-shadow:0_0px_0_0_#D5D5D5,0_0px_0_0_#D5D5D541] active:border-[0px]
+                                       transition-all duration-150 [box-shadow:0_4px_0_0_#D5D5D5,0_8px_0_0_#D5D5D541] border-[1px]
+                                       `}
+                />
+
                 {"fulfilled" != capitalToken.state ?
                     <Button loading={true} className="p-0 px-1 m-0 bg-white text-black font-mono">loading...</Button>
                     : <></>}
