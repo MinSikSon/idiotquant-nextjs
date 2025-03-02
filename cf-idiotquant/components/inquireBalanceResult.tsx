@@ -43,19 +43,19 @@ export default function InquireBalanceResult(props: InquireBalanceResultProps) {
 
     const example8TableHead: Example8TableHeadType[] = [
         {
-            head: "",
-        },
-        {
             head: "종목명",
         },
         {
             head: "현재가",
         },
         {
-            head: "보유/주문가능",
+            head: "평단가",
         },
         {
             head: "평가손익",
+        },
+        {
+            head: "비중",
         },
         {
             head: "평가금액",
@@ -64,7 +64,10 @@ export default function InquireBalanceResult(props: InquireBalanceResultProps) {
             head: "매수금액",
         },
         {
-            head: "비중",
+            head: "보유/주문가능",
+        },
+        {
+            head: "매매",
         },
     ];
 
@@ -81,8 +84,8 @@ export default function InquireBalanceResult(props: InquireBalanceResultProps) {
             if ("현재가" == selectHead) {
                 return Number(b.prpr) - Number(a.prpr);
             }
-            if ("보유/주문가능" == selectHead) {
-                return Number(b.hldg_qty) - Number(a.hldg_qty);
+            if ("평단가" == selectHead) {
+                return Number(b.evlu_amt) / Number(b.hldg_qty) - Number(a.evlu_amt) / Number(a.hldg_qty);
             }
             if ("평가손익" == selectHead) {
                 return Number(b.evlu_pfls_amt) - Number(a.evlu_pfls_amt);
@@ -96,12 +99,30 @@ export default function InquireBalanceResult(props: InquireBalanceResultProps) {
             if ("비중" == selectHead) {
                 return Number(b.pchs_amt) - Number(a.pchs_amt);
             }
+            if ("보유/주문가능" == selectHead) {
+                return Number(b.hldg_qty) - Number(a.hldg_qty);
+            }
             return 0;
         }).map((item, index) => {
             // console.log(`item["prdt_name"]`, item["prdt_name"], `item["prdt_name"].length`, item["prdt_name"].length);
             return {
                 id: item["prdt_name"],
-                column_1: <>
+                column_1: <div className={`font-mono ${item["prdt_name"].length >= 7 ? "text-[0.6rem]" : "text-xs"}`}>{item["prdt_name"]}</div>,
+                column_2: <div className="font-mono font-bold text-xs text-black">{Number(item["prpr"]).toLocaleString() + "원"}</div>,
+                column_3: <div className="font-mono font-bold text-xs text-black">{Number((Number(item["pchs_amt"]) / Number(item['hldg_qty'])).toFixed(0)).toLocaleString() + "원"}</div>,
+                column_4: <div className={`font-mono font-bold text-xs flex justify-between ${Number(Number(item["evlu_amt"]) / Number(item["pchs_amt"]) * 100 - 100) >= 0 ? "text-red-500" : "text-blue-500"}`}>
+                    <div className="font-mono pr-1 text-[0.6rem]">
+                        ({Number(Number(item["evlu_amt"]) / Number(item["pchs_amt"]) * 100 - 100).toFixed(2)}%)
+                    </div>
+                    <div>
+                        {Util.UnitConversion(Number(item["evlu_pfls_amt"]), true)}
+                    </div>
+                </div>,
+                column_5: <div className="text-xs font-mono font-bold text-black">{(Number(item["pchs_amt"]) / Number(props.kiBalance.output2[0]["pchs_amt_smtl_amt"]) * 100).toFixed(2)}%</div>,
+                column_6: <div className="text-xs font-mono text-black">{Util.UnitConversion(Number(item["evlu_amt"]), true)}</div>,
+                column_7: <div className="text-xs font-mono text-black">{Util.UnitConversion(Number(item["pchs_amt"]), true)}</div>,
+                column_8: <div className="font-mono text-xs text-black">{item['hldg_qty']}/{item['ord_psbl_qty']}</div>,
+                column_9: <>
                     <div className="flex p-0 m-0 gap-1 font-mono">
                         <DesignButton
                             handleOnClick={() => handleOnClick(item, "buy")}
@@ -111,9 +132,9 @@ export default function InquireBalanceResult(props: InquireBalanceResultProps) {
                             buttonShadowColor={`#129600`}
                             textStyle={`text-white font-bold text-[0.5rem]`}
                             buttonStyle={`flex items-center justify-center mb-2 px-1 button rounded-full cursor-pointer select-none
-                                active:translate-y-1 active:[box-shadow:0_0px_0_0_#129600,0_0px_0_0_#12960041] active:border-b-[0px]
-                                transition-all duration-150 [box-shadow:0_4px_0_0_#129600,0_8px_0_0_#12960041] border-b-[1px]
-                                `}
+                            active:translate-y-1 active:[box-shadow:0_0px_0_0_#129600,0_0px_0_0_#12960041] active:border-b-[0px]
+                            transition-all duration-150 [box-shadow:0_4px_0_0_#129600,0_8px_0_0_#12960041] border-b-[1px]
+                            `}
                         />
                         <DesignButton
                             handleOnClick={() => handleOnClick(item, "sell")}
@@ -123,27 +144,12 @@ export default function InquireBalanceResult(props: InquireBalanceResultProps) {
                             buttonShadowColor={`#910000`}
                             textStyle={`text-white font-bold text-[0.4rem]`}
                             buttonStyle={`flex items-center justify-center mb-2 px-1 button bg-red-400 rounded-full cursor-pointer select-none
-                                active:translate-y-1 active:[box-shadow:0_0px_0_0_#910000,0_0px_0_0_#91000041] active:border-b-[0px]
-                                transition-all duration-150 [box-shadow:0_4px_0_0_#910000,0_8px_0_0_#91000041] border-b-[1px]
-                                `}
+                            active:translate-y-1 active:[box-shadow:0_0px_0_0_#910000,0_0px_0_0_#91000041] active:border-b-[0px]
+                            transition-all duration-150 [box-shadow:0_4px_0_0_#910000,0_8px_0_0_#91000041] border-b-[1px]
+                            `}
                         />
                     </div>
                 </>,
-                column_2: <div className={`font-mono ${item["prdt_name"].length >= 7 ? "text-[0.6rem]" : "text-xs"}`}>{item["prdt_name"]}</div>,
-                column_3: <div className="font-mono font-bold text-xs text-black">{Number(item["prpr"]).toLocaleString() + "원"}</div>,
-                column_4: <div className="font-mono text-xs text-black">{item['hldg_qty']}/{item['ord_psbl_qty']}</div>,
-                expectedRateOfReturnColor: '', // x
-                column_5: <div className={`font-mono font-bold text-xs flex justify-between ${Number(Number(item["evlu_amt"]) / Number(item["pchs_amt"]) * 100 - 100) >= 0 ? "text-red-500" : "text-blue-500"}`}>
-                    <div className="font-mono pr-1">
-                        ({Number(Number(item["evlu_amt"]) / Number(item["pchs_amt"]) * 100 - 100).toFixed(2)}%)
-                    </div>
-                    <div>
-                        {Util.UnitConversion(Number(item["evlu_pfls_amt"]), true)}
-                    </div>
-                </div>,
-                column_6: <div className="text-xs font-mono text-black">{Util.UnitConversion(Number(item["evlu_amt"]), true)}</div>,
-                column_7: <div className="text-xs font-mono text-black">{Util.UnitConversion(Number(item["pchs_amt"]), true)}</div>,
-                column_8: <div className="text-xs font-mono font-bold text-black">{(Number(item["pchs_amt"]) / Number(props.kiBalance.output2[0]["pchs_amt_smtl_amt"]) * 100).toFixed(2)} %</div>,
             }
         }));
     }

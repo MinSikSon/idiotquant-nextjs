@@ -134,7 +134,7 @@ export interface Example8TableRowType {
     column_2: any;
     column_3: any;
     column_4: any;
-    expectedRateOfReturnColor: any;
+    expectedRateOfReturnColor?: any;
     column_5?: any;
     column_6: any;
     column_7?: any;

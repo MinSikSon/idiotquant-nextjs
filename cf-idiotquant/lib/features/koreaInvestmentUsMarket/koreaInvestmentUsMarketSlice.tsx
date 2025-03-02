@@ -155,8 +155,6 @@ export const koreaInvestmentUsMarketSlice = createAppSlice({
         getKoreaInvestmentUsMaretSearchInfo: (state) => state.searchInfo,
         getKoreaInvestmentUsMaretPriceDetail: (state) => state.priceDetail,
         getKoreaInvestmentUsMaretBalance: (state) => state.balance,
-
-
     }
 });
 
