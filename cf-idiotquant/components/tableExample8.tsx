@@ -156,8 +156,8 @@ export interface TablesExample8PropsType {
     title: any;
     subTitle: any;
     desc: any;
-    financial_date: any;
-    market_date: any;
+    financial_date?: any;
+    market_date?: any;
     tableHead: Example8TableHeadType[];
     selectHead?: any;
     setSelectHead?: any;

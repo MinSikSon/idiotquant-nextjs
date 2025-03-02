@@ -166,12 +166,12 @@ export default function Login(props) {
             return <>
                 <Card className="mt-6 w-96">
                     <CardBody>
-                        <Typography variant="h5" color="blue-gray" className="mb-2">
+                        <div className="font-mono text-xl mb-2">
                             반갑습니다.
-                        </Typography>
-                        <Typography>
+                        </div>
+                        <div className="font-mono">
                             login 하려면 아래 버튼을 눌려주세요.
-                        </Typography>
+                        </div>
                         <DesignButton
                             handleOnClick={() => onClickLogin(`${window.location.origin}${props.parentUrl}`)}
                             buttonName="Continue with Kakao"
@@ -194,12 +194,12 @@ export default function Login(props) {
         return <>
             <Card className="mt-6 w-96">
                 <CardBody>
-                    <Typography variant="h5" color="blue-gray" className="mb-2">
-                        {kakaoNickName} 님 반갑습니다.
-                    </Typography>
-                    <Typography>
+                    <div className="font-mono text-xl mb-2">
+                        {kakaoNickName}님 반갑습니다.
+                    </div>
+                    <div className="font-mono">
                         logout 하려면 아래 버튼을 눌려주세요.
-                    </Typography>
+                    </div>
                     <DesignButton
                         handleOnClick={() => Logout(`${window.location.origin}${props.parentUrl}`)}
                         buttonName="logout"

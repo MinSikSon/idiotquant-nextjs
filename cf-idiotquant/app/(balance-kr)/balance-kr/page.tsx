@@ -24,14 +24,12 @@ export default function BalanceKr() {
 
     const kiOrderCash: KoreaInvestmentOrderCash = useAppSelector(getKoreaInvestmentOrderCash);
 
-    const [time, setTime] = React.useState<any>('');
     const loginState = useAppSelector(selectState);
 
     React.useEffect(() => {
         // console.log(`[BalanceKr]`, `kiToken:`, kiToken);
         const isValidKiAccessToken = !!kiToken["access_token"];
         if (true == isValidKiAccessToken) {
-            setTime(new Date());
             dispatch(reqGetInquireBalance(kiToken));
         }
     }, [kiToken]);
@@ -57,7 +55,6 @@ export default function BalanceKr() {
     }
 
     return <InquireBalanceResult
-        time={time}
         kiBalance={kiBalance}
         reqGetInquireBalance={reqGetInquireBalance}
         kiToken={kiToken}
