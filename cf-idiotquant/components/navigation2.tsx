@@ -94,7 +94,7 @@ export function NavbarWithSimpleLinks() {
                 </Link>
                 <div className="flex flex-col px-1">
                     {!!kakaoNickName ? <>
-                        <div className={`px-1 text-xs font-mono rounded border border-blue-500 text-black`}>{urlToLabel[splitPathName[1]]}</div>
+                        <div className={`px-1 text-[0.6rem] font-mono rounded border border-blue-500 text-black`}>{urlToLabel[splitPathName[1]]}</div>
                         <div className={`pl-1 text-xs font-mono`}>{kakaoNickName}님 반갑습니다. 😀</div>
                     </>
                         : <div className={`px-1 text-xs font-mono rounded border border-blue-500 text-black`}>{urlToLabel[splitPathName[1]]}</div>
@@ -103,24 +103,26 @@ export function NavbarWithSimpleLinks() {
                 <div className="hidden lg:block">
                     <NavList />
                 </div>
-                <DesignButton
-                    handleOnClick={() => handleOpen()}
-                    buttonName={<>
-                        {open ? (
-                            <XMarkIcon className="h-6 w-6" strokeWidth={2} />
-                        ) : (
-                            <Bars3Icon className="h-6 w-6" strokeWidth={2} />
-                        )}
-                    </>}
-                    buttonBgColor="bg-white"
-                    buttonBorderColor="border-gray-500"
-                    buttonShadowColor="#D5D5D5"
-                    textStyle="text-black text-xs font-bold"
-                    buttonStyle={`rounded-lg px-1 flex items-center justify-center mb-2 button bg-white cursor-pointer select-none
+                <div className="lg:hidden">
+                    <DesignButton
+                        handleOnClick={() => handleOpen()}
+                        buttonName={<>
+                            {open ? (
+                                <XMarkIcon className="h-6 w-6" strokeWidth={2} />
+                            ) : (
+                                <Bars3Icon className="h-6 w-6" strokeWidth={2} />
+                            )}
+                        </>}
+                        buttonBgColor="bg-white"
+                        buttonBorderColor="border-gray-500"
+                        buttonShadowColor="#D5D5D5"
+                        textStyle="text-black text-xs font-bold"
+                        buttonStyle={`rounded-lg px-1 flex items-center justify-center mb-2 button bg-white cursor-pointer select-none
                         active:translate-y-1 active:[box-shadow:0_0px_0_0_#D5D5D5,0_0px_0_0_#D5D5D541] active:border-[0px]
                         transition-all duration-150 [box-shadow:0_4px_0_0_#D5D5D5,0_8px_0_0_#D5D5D541] border-[1px]
                         `}
-                />
+                    />
+                </div>
             </div>
             <Collapse open={open}>
                 <div className="pl-2 mt-2 rounded-xl bg-white border border-gray-500">

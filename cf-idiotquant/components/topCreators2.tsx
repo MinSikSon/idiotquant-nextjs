@@ -66,7 +66,7 @@ function Web3Card({
                     buttonShadowColor="#D5D5D5"
                     // textStyle="text-white text-xs font-bold"
                     textStyle="font-mono text-black text-xs"
-                    buttonStyle={`rounded-xl ml-2 flex items-center justify-center mb-2 button bg-white cursor-pointer select-none
+                    buttonStyle={`rounded-xl flex items-center justify-center mb-2 button bg-white cursor-pointer select-none
                                             active:translate-y-1 active:[box-shadow:0_0px_0_0_#D5D5D5,0_0px_0_0_#D5D5D541] active:border-[0px]
                                             transition-all duration-150 [box-shadow:0_4px_0_0_#D5D5D5,0_8px_0_0_#D5D5D541] border-[1px]
                                             `}
@@ -82,7 +82,7 @@ export function Web3Card2({
     data
 }: { title: string, parentRouter: string, data: Web3CardPropsType[] }) {
     return (
-        <section className="px-2 py-4">
+        <section className="px-2 py-2">
             <Card shadow={false} className="border border-gray-300">
                 <CardHeader
                     shadow={false}

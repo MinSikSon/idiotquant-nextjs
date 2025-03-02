@@ -16,7 +16,7 @@ export default function RegisterTemplate(props: RegisterTemplateProps) {
                     floated={false}
                     className="flex overflow-visible gap-y-2 flex-wrap items-start justify-between rounded"
                 >
-                    <div>
+                    <div className="font-mono text-black">
                         <div>
                             {props.title}
                         </div>
