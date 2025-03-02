@@ -159,6 +159,7 @@ export interface TablesExample8PropsType {
     financial_date: any;
     market_date: any;
     tableHead: Example8TableHeadType[];
+    selectHead?: any;
     setSelectHead?: any;
 
     tableRow: Example8TableRowType[];
@@ -171,6 +172,7 @@ function TablesExample8({
     financial_date,
     market_date,
     tableHead,
+    selectHead,
     setSelectHead,
     tableRow
 }: TablesExample8PropsType) {
@@ -224,12 +226,13 @@ function TablesExample8({
                                                     setSelectHead(head)
                                                 }}>
                                                     <div className={`font-mono font-bold text-black cursor-pointer ${head.length >= 6 ? "text-[0.6rem]" : ""}`}>
-                                                        {head}
+                                                        {head} {selectHead == head ? "🔽" : ""}
                                                     </div>
                                                 </PopoverHandler>
-                                                <PopoverContent className="p-2 border border-black rounded shadow shadow-blue-gray-500">
+                                                {!!desc ? <PopoverContent className="p-2 border border-black rounded shadow shadow-blue-gray-500">
                                                     <div className="text-xs font-mono text-black">{desc}</div>
-                                                </PopoverContent>
+                                                </PopoverContent> : <></>}
+
                                             </Popover>
                                         </th>
                                     ))}

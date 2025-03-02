@@ -43,35 +43,27 @@ export default function InquireBalanceResult(props: InquireBalanceResultProps) {
     const example8TableHead: Example8TableHeadType[] = [
         {
             head: "",
-            desc: "",
         },
         {
             head: "종목명",
-            desc: "종목명 내림차순🔽",
         },
         {
             head: "현재가",
-            desc: "현재가 내림차순🔽",
         },
         {
             head: "보유/주문가능",
-            desc: "보유/주문가능 내림차순🔽",
         },
         {
             head: "평가손익",
-            desc: "평가손익 내림차순🔽",
         },
         {
             head: "평가금액",
-            desc: "평가금액 내림차순🔽",
         },
         {
             head: "매수금액",
-            desc: "매수금액 내림차순🔽",
         },
         {
             head: "비중",
-            desc: "비중 내림차순🔽",
         },
     ];
 
@@ -217,6 +209,7 @@ export default function InquireBalanceResult(props: InquireBalanceResultProps) {
             <div className="text-xs">market_date: {props.time.toString()}</div>
         </div>,
         tableHead: example8TableHead,
+        selectHead: selectHead,
         setSelectHead: setSelectHead,
 
         tableRow: example8TableRow,
