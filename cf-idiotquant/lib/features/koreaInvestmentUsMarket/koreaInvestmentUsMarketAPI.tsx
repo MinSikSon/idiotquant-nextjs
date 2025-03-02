@@ -5,7 +5,7 @@ import { KoreaInvestmentToken } from "../koreaInvestment/koreaInvestmentSlice";
 
 // 계좌 조회
 export const getOverseasStockTradingInquireBalance: any = async (koreaInvestmentToken: KoreaInvestmentToken) => {
-    // console.log(`[getInquireBalanceApi] koreaInvestmentToken`, koreaInvestmentToken);
+    // console.log(`[getOverseasStockTradingInquireBalance] koreaInvestmentToken`, koreaInvestmentToken);
     const subUrl = `/uapi/overseas-stock/v1/trading/inquire-balance`;
     const additionalHeaders: AdditionalHeaders = {
         "authorization": koreaInvestmentToken["access_token"],

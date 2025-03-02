@@ -17,6 +17,7 @@ import InquireBalanceResult from "@/components/inquireBalanceResult";
 
 export default function BalanceKr() {
     const pathname = usePathname();
+    const loginState = useAppSelector(selectState);
 
     const dispatch = useAppDispatch();
     const kiToken: KoreaInvestmentToken = useAppSelector(getKoreaInvestmentToken);
@@ -24,24 +25,20 @@ export default function BalanceKr() {
 
     const kiOrderCash: KoreaInvestmentOrderCash = useAppSelector(getKoreaInvestmentOrderCash);
 
-    const [time, setTime] = React.useState<any>('');
-    const loginState = useAppSelector(selectState);
-
     React.useEffect(() => {
         // console.log(`[BalanceKr]`, `kiToken:`, kiToken);
         const isValidKiAccessToken = !!kiToken["access_token"];
         if (true == isValidKiAccessToken) {
-            setTime(new Date());
             dispatch(reqGetInquireBalance(kiToken));
         }
     }, [kiToken]);
 
     React.useEffect(() => {
-        // console.log(`kiBalance`, kiBalance);
+        // console.log(`[BalanceKr]`, `kiBalance`, kiBalance);
     }, [kiBalance]);
 
     React.useEffect(() => {
-        // console.log(`kiOrderCash`, kiOrderCash);
+        // console.log(`[BalanceKr]`, `kiOrderCash`, kiOrderCash);
     }, [kiOrderCash])
 
     if ("init" == loginState) {
@@ -57,7 +54,6 @@ export default function BalanceKr() {
     }
 
     return <InquireBalanceResult
-        time={time}
         kiBalance={kiBalance}
         reqGetInquireBalance={reqGetInquireBalance}
         kiToken={kiToken}
