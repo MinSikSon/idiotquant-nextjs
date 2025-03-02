@@ -126,7 +126,7 @@ export function NavbarWithSimpleLinks() {
             </div>
             <Collapse open={open}>
                 <div className="pl-2 mt-2 rounded-xl bg-white border border-gray-500">
-                    <div className="font-mono font-bold text-xl text-black pt-4 pl-2">
+                    <div className="font-mono font-bold text-xl text-black pt-2 pl-2">
                         menu
                     </div>
                     <NavList />
