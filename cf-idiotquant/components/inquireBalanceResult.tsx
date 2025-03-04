@@ -121,7 +121,7 @@ export default function InquireBalanceResult(props: InquireBalanceResultProps) {
                 id: name,
                 column_1: <div className={`font-mono ${name.length >= 7 ? "text-[0.6rem]" : "text-xs"}`}>{name}</div>,
                 column_2: <div className="font-mono font-bold text-xs text-black">{Number(Number(price).toFixed(0)).toLocaleString() + "원"}</div>,
-                column_3: <div className="font-mono font-bold text-xs text-black">{Number((Number(pchs_amt) / Number(hldg_qty)).toFixed(2)).toLocaleString() + "원"}</div>,
+                column_3: <div className="font-mono font-bold text-xs text-black">{Number((Number(pchs_amt) / Number(hldg_qty)).toFixed(0)).toLocaleString() + "원"}</div>,
                 column_4: <div className={`font-mono font-bold text-xs flex justify-between ${Number(Number(evlu_amt) / Number(pchs_amt) * 100 - 100) >= 0 ? "text-red-500" : "text-blue-500"}`}>
                     <div className="font-mono pr-1 text-[0.6rem]">
                         ({Number(Number(evlu_amt) / Number(pchs_amt) * 100 - 100).toFixed(2)}%)
