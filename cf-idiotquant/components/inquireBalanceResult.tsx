@@ -14,6 +14,8 @@ interface InquireBalanceResultProps {
 }
 
 export default function InquireBalanceResult(props: InquireBalanceResultProps) {
+    console.log(`[InquireBalanceResult]`, `props`, props);
+
     const dispatch = useAppDispatch();
     const [show, setShow] = React.useState<boolean>(false);
     const [msg, setMsg] = React.useState<any>("");
@@ -79,10 +81,11 @@ export default function InquireBalanceResult(props: InquireBalanceResultProps) {
         // console.log(`kiBalanceOutput1`, kiBalanceOutput1);
         example8TableRow = (kiBalanceOutput1.sort((a, b) => {
             if ("종목명" == selectHead) {
-                return String(a.prdt_name).localeCompare(String(b.prdt_name), "ko-KR");
+
+                return String(a.prdt_name ?? a.ovrs_item_name).localeCompare(String(b.prdt_name ?? b.ovrs_item_name), "ko-KR");
             }
             if ("현재가" == selectHead) {
-                return Number(b.prpr) - Number(a.prpr);
+                return Number(b.prpr ?? b.now_pric2) - Number(a.prpr ?? a.now_pric2);
             }
             if ("평단가" == selectHead) {
                 return Number(b.evlu_amt) / Number(b.hldg_qty) - Number(a.evlu_amt) / Number(a.hldg_qty);
@@ -105,23 +108,32 @@ export default function InquireBalanceResult(props: InquireBalanceResultProps) {
             return 0;
         }).map((item, index) => {
             // console.log(`item["prdt_name"]`, item["prdt_name"], `item["prdt_name"].length`, item["prdt_name"].length);
+            const name = item["prdt_name"];
+            const price = !!item["prpr"] ? item["prpr"] : item["ovrs_now_pric1"];
+            const pchs_amt = !!item["pchs_amt"] ? item["pchs_amt"] : item["frcr_pchs_amt"];
+            const hldg_qty = !!item["hldg_qty"] ? item["hldg_qty"] : item["ccld_qty_smtl1"];
+            const ord_psbl_qty = !!item['ord_psbl_qty'] ? item['ord_psbl_qty'] : item["ord_psbl_qty1"];
+            const evlu_amt = !!item["evlu_amt"] ? item["evlu_amt"] : item["frcr_evlu_amt2"];
+            const pchs_amt_smtl_amt = !!props.kiBalance.output3 ? props.kiBalance.output3["pchs_amt_smtl_amt"] : props.kiBalance.output2[0]["pchs_amt_smtl_amt"];
+
+            const evlu_pfls_amt2 = !!item["evlu_pfls_amt2"] ? item["evlu_pfls_amt2"] : item["evlu_pfls_amt"];
             return {
-                id: item["prdt_name"],
-                column_1: <div className={`font-mono ${item["prdt_name"].length >= 7 ? "text-[0.6rem]" : "text-xs"}`}>{item["prdt_name"]}</div>,
-                column_2: <div className="font-mono font-bold text-xs text-black">{Number(item["prpr"]).toLocaleString() + "원"}</div>,
-                column_3: <div className="font-mono font-bold text-xs text-black">{Number((Number(item["pchs_amt"]) / Number(item['hldg_qty'])).toFixed(0)).toLocaleString() + "원"}</div>,
-                column_4: <div className={`font-mono font-bold text-xs flex justify-between ${Number(Number(item["evlu_amt"]) / Number(item["pchs_amt"]) * 100 - 100) >= 0 ? "text-red-500" : "text-blue-500"}`}>
+                id: name,
+                column_1: <div className={`font-mono ${name.length >= 7 ? "text-[0.6rem]" : "text-xs"}`}>{name}</div>,
+                column_2: <div className="font-mono font-bold text-xs text-black">{Number(Number(price).toFixed(0)).toLocaleString() + "원"}</div>,
+                column_3: <div className="font-mono font-bold text-xs text-black">{Number((Number(pchs_amt) / Number(hldg_qty)).toFixed(2)).toLocaleString() + "원"}</div>,
+                column_4: <div className={`font-mono font-bold text-xs flex justify-between ${Number(Number(evlu_amt) / Number(pchs_amt) * 100 - 100) >= 0 ? "text-red-500" : "text-blue-500"}`}>
                     <div className="font-mono pr-1 text-[0.6rem]">
-                        ({Number(Number(item["evlu_amt"]) / Number(item["pchs_amt"]) * 100 - 100).toFixed(2)}%)
+                        ({Number(Number(evlu_amt) / Number(pchs_amt) * 100 - 100).toFixed(2)}%)
                     </div>
                     <div>
-                        {Util.UnitConversion(Number(item["evlu_pfls_amt"]), true)}
+                        {Util.UnitConversion(Number(evlu_pfls_amt2), true)}
                     </div>
                 </div>,
-                column_5: <div className="text-xs font-mono font-bold text-black">{(Number(item["pchs_amt"]) / Number(props.kiBalance.output2[0]["pchs_amt_smtl_amt"]) * 100).toFixed(2)}%</div>,
-                column_6: <div className="text-xs font-mono text-black">{Util.UnitConversion(Number(item["evlu_amt"]), true)}</div>,
-                column_7: <div className="text-xs font-mono text-black">{Util.UnitConversion(Number(item["pchs_amt"]), true)}</div>,
-                column_8: <div className="font-mono text-xs text-black">{item['hldg_qty']}/{item['ord_psbl_qty']}</div>,
+                column_5: <div className="text-xs font-mono font-bold text-black">{(Number(pchs_amt) / Number(pchs_amt_smtl_amt) * 100).toFixed(2)}%</div>,
+                column_6: <div className="text-xs font-mono text-black">{Util.UnitConversion(Number(evlu_amt), true)}</div>,
+                column_7: <div className="text-xs font-mono text-black">{Util.UnitConversion(Number(pchs_amt), true)}</div>,
+                column_8: <div className="font-mono text-xs text-black">{Number(hldg_qty).toFixed(0)}/{Number(ord_psbl_qty).toFixed(0)}</div>,
                 column_9: <>
                     <div className="flex p-0 m-0 gap-1 font-mono">
                         <DesignButton
@@ -160,11 +172,21 @@ export default function InquireBalanceResult(props: InquireBalanceResultProps) {
     let evlu_amt_smtl_amt: number = 0; // 평가금액
     let pchs_amt_smtl_amt: number = 0; // 매입금액
     let evlu_pfls_smtl_amt: number = 0;// 수입
-    if (!!props.kiBalance.output2 && props.kiBalance.output2.length > 0) {
-        nass_amt = Number(props.kiBalance.output2[0]["nass_amt"]);
-        evlu_amt_smtl_amt = Number(props.kiBalance.output2[0]["evlu_amt_smtl_amt"]);
-        pchs_amt_smtl_amt = Number(props.kiBalance.output2[0]["pchs_amt_smtl_amt"]);
-        evlu_pfls_smtl_amt = Number(props.kiBalance.output2[0]["evlu_pfls_smtl_amt"]);
+    // if (!!props.kiBalance.output2 && props.kiBalance.output2.length > 0) {
+    if ("fulfilled" == props.kiBalance.state) {
+        // nass_amt = Number(props.kiBalance.output2[0]["nass_amt"]);
+        nass_amt = !!props.kiBalance.output3 ? props.kiBalance.output3["frcr_evlu_tota"] : props.kiBalance.output2[0]["nass_amt"];
+        nass_amt = Number(nass_amt);
+        // evlu_amt_smtl_amt = Number(props.kiBalance.output2[0]["evlu_amt_smtl_amt"]);
+        evlu_amt_smtl_amt = !!props.kiBalance.output3 ? props.kiBalance.output3["evlu_amt_smtl_amt"] : props.kiBalance.output2[0]["evlu_amt_smtl_amt"];
+        evlu_amt_smtl_amt = Number(evlu_amt_smtl_amt);
+        // pchs_amt_smtl_amt = Number(props.kiBalance.output2[0]["pchs_amt_smtl_amt"]);
+        pchs_amt_smtl_amt = !!props.kiBalance.output3 ? props.kiBalance.output3["pchs_amt_smtl_amt"] : props.kiBalance.output2[0]["pchs_amt_smtl_amt"];
+        pchs_amt_smtl_amt = Number(pchs_amt_smtl_amt);
+
+        // evlu_pfls_smtl_amt = Number(props.kiBalance.output2[0]["evlu_pfls_smtl_amt"]);
+        evlu_pfls_smtl_amt = !!props.kiBalance.output3 ? props.kiBalance.output3["evlu_pfls_amt_smtl"] : props.kiBalance.output2[0]["evlu_pfls_smtl_amt"];
+        evlu_pfls_smtl_amt = Number(evlu_pfls_smtl_amt);
     }
 
     const tablesExample8Props: TablesExample8PropsType = {

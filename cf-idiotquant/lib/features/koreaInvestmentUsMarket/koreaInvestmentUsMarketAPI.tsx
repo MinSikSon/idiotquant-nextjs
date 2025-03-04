@@ -3,6 +3,16 @@ import { getKoreaInvestmentRequest, postKoreaInvestmentRequest } from "../koreaI
 import { KoreaInvestmentToken } from "../koreaInvestment/koreaInvestmentSlice";
 
 
+export const getOverseasStockTradingInquirePresentBalance: any = async (koreaInvestmentToken: KoreaInvestmentToken) => {
+    // console.log(`[getOverseasStockTradingInquireBalance] koreaInvestmentToken`, koreaInvestmentToken);
+    const subUrl = `/uapi/overseas-stock/v1/trading/inquire-present-balance`;
+    const additionalHeaders: AdditionalHeaders = {
+        "authorization": koreaInvestmentToken["access_token"],
+        "kakaoId": getCookie("kakaoId"),
+    }
+    return getKoreaInvestmentRequest(subUrl, additionalHeaders);
+}
+
 // 계좌 조회
 export const getOverseasStockTradingInquireBalance: any = async (koreaInvestmentToken: KoreaInvestmentToken) => {
     // console.log(`[getOverseasStockTradingInquireBalance] koreaInvestmentToken`, koreaInvestmentToken);

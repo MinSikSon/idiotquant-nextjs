@@ -5,7 +5,7 @@ import Auth from "@/components/auth";
 import InquireBalanceResult from "@/components/inquireBalanceResult";
 import { isValidCookie } from "@/components/util";
 import { getKoreaInvestmentToken, KoreaInvestmentToken } from "@/lib/features/koreaInvestment/koreaInvestmentSlice";
-import { reqGetOverseasStockTradingInquireBalance, getKoreaInvestmentUsMaretBalance, KoreaInvestmentOverseasBalance } from "@/lib/features/koreaInvestmentUsMarket/koreaInvestmentUsMarketSlice";
+import { reqGetOverseasStockTradingInquirePresentBalance, getKoreaInvestmentUsMaretPresentBalance, KoreaInvestmentOverseasPresentBalance } from "@/lib/features/koreaInvestmentUsMarket/koreaInvestmentUsMarketSlice";
 
 
 import { selectState } from "@/lib/features/login/loginSlice";
@@ -18,7 +18,7 @@ export default function BalanceUs() {
     const loginState = useAppSelector(selectState);
 
     const kiToken: KoreaInvestmentToken = useAppSelector(getKoreaInvestmentToken);
-    const kiBalance: KoreaInvestmentOverseasBalance = useAppSelector(getKoreaInvestmentUsMaretBalance);
+    const kiBalance: KoreaInvestmentOverseasPresentBalance = useAppSelector(getKoreaInvestmentUsMaretPresentBalance);
 
     const dispatch = useAppDispatch();
 
@@ -26,7 +26,7 @@ export default function BalanceUs() {
         // console.log(`[BalanceUs]`, `kiToken:`, kiToken);
         const isValidKiAccessToken = !!kiToken["access_token"];
         if (true == isValidKiAccessToken) {
-            dispatch(reqGetOverseasStockTradingInquireBalance(kiToken));
+            dispatch(reqGetOverseasStockTradingInquirePresentBalance(kiToken));
         }
     }, [kiToken]);
 
@@ -48,7 +48,7 @@ export default function BalanceUs() {
 
     return <InquireBalanceResult
         kiBalance={kiBalance}
-        reqGetInquireBalance={reqGetOverseasStockTradingInquireBalance}
+        reqGetInquireBalance={reqGetOverseasStockTradingInquirePresentBalance}
         kiToken={kiToken}
     //    kiOrderCash={kiOrderCash}
     //    reqPostOrderCash={reqPostOrderCash}

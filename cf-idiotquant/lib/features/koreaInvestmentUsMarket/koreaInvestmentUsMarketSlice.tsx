@@ -1,7 +1,7 @@
 import { PayloadAction } from "@reduxjs/toolkit";
 import { createAppSlice } from "@/lib/createAppSlice";
 import { registerCookie } from "@/components/util";
-import { getOverseasStockTradingInquireBalance, getQuotationsPriceDetail, getQuotationsSearchInfo } from "./koreaInvestmentUsMarketAPI";
+import { getOverseasStockTradingInquireBalance, getOverseasStockTradingInquirePresentBalance, getQuotationsPriceDetail, getQuotationsSearchInfo } from "./koreaInvestmentUsMarketAPI";
 import { KoreaInvestmentToken } from "../koreaInvestment/koreaInvestmentSlice";
 
 interface KoreaInvestmentOverseasBalanceOutput1 {
@@ -48,6 +48,85 @@ export interface KoreaInvestmentOverseasBalance {
     msg1: string;
 }
 
+interface KoreaInvestmentOverseasPresentBalanceOutput1 {
+    prdt_name: string;
+    cblc_qty13: string;
+    thdt_buy_ccld_qty1: string;
+    thdt_sll_ccld_qty1: string;
+    ccld_qty_smtl1: string;
+    ord_psbl_qty1: string;
+    frcr_pchs_amt: string;
+    frcr_evlu_amt2: string;
+    evlu_pfls_amt2: string;
+    evlu_pfls_rt1: string;
+    pdno: string;
+    bass_exrt: string;
+    buy_crcy_cd: string;
+    ovrs_now_pric1: string;
+    avg_unpr3: string;
+    tr_mket_name: string;
+    natn_kor_name: string;
+    pchs_rmnd_wcrc_amt: string;
+    thdt_buy_ccld_frcr_amt: string;
+    thdt_sll_ccld_frcr_amt: string;
+    unit_amt: string;
+    std_pdno: string;
+    prdt_type_cd: string;
+    scts_dvsn_name: string;
+    loan_rmnd: string;
+    loan_dt: string;
+    loan_expd_dt: string;
+    ovrs_excg_cd: string;
+    item_lnkg_excg_cd: string;
+    prdt_dvsn: string;
+}
+interface KoreaInvestmentOverseasPresentBalanceOutput2 {
+    crcy_cd: string;
+    crcy_cd_name: string;
+    frcr_buy_amt_smtl: string;
+    frcr_sll_amt_smtl: string;
+    frcr_dncl_amt_2: string;
+    frst_bltn_exrt: string;
+    frcr_buy_mgn_amt: string;
+    frcr_etc_mgna: string;
+    frcr_drwg_psbl_amt_1: string;
+    frcr_evlu_amt2: string;
+    acpl_cstd_crcy_yn: string;
+    nxdy_frcr_drwg_psbl_amt: string;
+}
+interface KoreaInvestmentOverseasPresentBalanceOutput3 {
+    pchs_amt_smtl: string;
+    evlu_amt_smtl: string;
+    evlu_pfls_amt_smtl: string;
+    dncl_amt: string;
+    cma_evlu_amt: string;
+    tot_dncl_amt: string;
+    etc_mgna: string;
+    wdrw_psbl_tot_amt: string;
+    frcr_evlu_tota: string;
+    evlu_erng_rt1: string;
+    pchs_amt_smtl_amt: string;
+    evlu_amt_smtl_amt: string;
+    tot_evlu_pfls_amt: string;
+    tot_asst_amt: string;
+    buy_mgn_amt: string;
+    mgna_tota: string;
+    frcr_use_psbl_amt: string;
+    ustl_sll_amt_smtl: string;
+    ustl_buy_amt_smtl: string;
+    tot_frcr_cblc_smtl: string;
+    tot_loan_amt: string;
+}
+export interface KoreaInvestmentOverseasPresentBalance {
+    state: "init" | "req" | "pending" | "fulfilled" | "rejected";
+    output1: KoreaInvestmentOverseasPresentBalanceOutput1[];
+    output2: KoreaInvestmentOverseasPresentBalanceOutput2[];
+    output3: KoreaInvestmentOverseasPresentBalanceOutput3;
+    rt_cd: string;
+    msg_cd: string;
+    msg1: string;
+}
+
 interface KoreaInvestmentUsMaretType {
     state: "init"
     | "pending" | "fulfilled" | "rejected"
@@ -55,6 +134,7 @@ interface KoreaInvestmentUsMaretType {
     searchInfo: any;
     priceDetail: any;
     balance: KoreaInvestmentOverseasBalance;
+    presentBalance: KoreaInvestmentOverseasPresentBalance;
 }
 const initialState: KoreaInvestmentUsMaretType = {
     state: "init",
@@ -79,12 +159,62 @@ const initialState: KoreaInvestmentUsMaretType = {
         rt_cd: "",
         msg_cd: "",
         msg1: "",
+    },
+    presentBalance: {
+        state: "init",
+        output1: [],
+        output2: [],
+        output3: {
+            pchs_amt_smtl: "",
+            evlu_amt_smtl: "",
+            evlu_pfls_amt_smtl: "",
+            dncl_amt: "",
+            cma_evlu_amt: "",
+            tot_dncl_amt: "",
+            etc_mgna: "",
+            wdrw_psbl_tot_amt: "",
+            frcr_evlu_tota: "",
+            evlu_erng_rt1: "",
+            pchs_amt_smtl_amt: "",
+            evlu_amt_smtl_amt: "",
+            tot_evlu_pfls_amt: "",
+            tot_asst_amt: "",
+            buy_mgn_amt: "",
+            mgna_tota: "",
+            frcr_use_psbl_amt: "",
+            ustl_sll_amt_smtl: "",
+            ustl_buy_amt_smtl: "",
+            tot_frcr_cblc_smtl: "",
+            tot_loan_amt: "",
+        },
+        rt_cd: "",
+        msg_cd: "",
+        msg1: "",
     }
 }
 export const koreaInvestmentUsMarketSlice = createAppSlice({
     name: "koreaInvestmentUsMarket",
     initialState,
     reducers: (create) => ({
+        reqGetOverseasStockTradingInquirePresentBalance: create.asyncThunk(
+            async (koreaInvestmentToken: KoreaInvestmentToken) => {
+                return await getOverseasStockTradingInquirePresentBalance(koreaInvestmentToken);
+            },
+            {
+                pending: (state) => {
+                    // console.log(`[reqGetOverseasStockTradingInquirePresentBalance] pending`);
+                    state.presentBalance.state = "pending";
+                },
+                fulfilled: (state, action) => {
+                    console.log(`[reqGetOverseasStockTradingInquirePresentBalance] fulfilled`, `action.payload`, action.payload);
+                    state.presentBalance = { ...action.payload, state: "fulfilled" };
+                },
+                rejected: (state) => {
+                    console.log(`[reqGetOverseasStockTradingInquirePresentBalance] rejected`);
+                    state.presentBalance.state = "rejected";
+                },
+            }
+        ),
         reqGetOverseasStockTradingInquireBalance: create.asyncThunk(
             async (koreaInvestmentToken: KoreaInvestmentToken) => {
                 return await getOverseasStockTradingInquireBalance(koreaInvestmentToken);
@@ -95,7 +225,7 @@ export const koreaInvestmentUsMarketSlice = createAppSlice({
                     state.balance.state = "pending";
                 },
                 fulfilled: (state, action) => {
-                    // console.log(`[reqGetOverseasStockTradingInquireBalance] fulfilled`, `action.payload`, action.payload);
+                    console.log(`[reqGetOverseasStockTradingInquireBalance] fulfilled`, `action.payload`, action.payload);
                     state.balance = { ...action.payload, state: "fulfilled" };
                 },
                 rejected: (state) => {
@@ -155,8 +285,15 @@ export const koreaInvestmentUsMarketSlice = createAppSlice({
         getKoreaInvestmentUsMaretSearchInfo: (state) => state.searchInfo,
         getKoreaInvestmentUsMaretPriceDetail: (state) => state.priceDetail,
         getKoreaInvestmentUsMaretBalance: (state) => state.balance,
+        getKoreaInvestmentUsMaretPresentBalance: (state) => state.presentBalance,
     }
 });
+
+
+
+
+export const { reqGetOverseasStockTradingInquirePresentBalance } = koreaInvestmentUsMarketSlice.actions;
+export const { getKoreaInvestmentUsMaretPresentBalance } = koreaInvestmentUsMarketSlice.selectors;
 
 export const { reqGetOverseasStockTradingInquireBalance } = koreaInvestmentUsMarketSlice.actions;
 export const { getKoreaInvestmentUsMaretBalance } = koreaInvestmentUsMarketSlice.selectors;
