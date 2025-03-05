@@ -5,6 +5,9 @@ import { Util } from "./util";
 import { useAppDispatch, useAppSelector } from "@/lib/hooks";
 import React from "react";
 
+function formatNumber(num: number) {
+    return num % 1 === 0 ? num.toLocaleString() : num.toFixed(2);
+}
 interface InquireBalanceResultProps {
     kiBalance: any;
     reqGetInquireBalance: any;
@@ -110,29 +113,33 @@ export default function InquireBalanceResult(props: InquireBalanceResultProps) {
             // console.log(`item["prdt_name"]`, item["prdt_name"], `item["prdt_name"].length`, item["prdt_name"].length);
             const name = item["prdt_name"];
             const price = !!item["prpr"] ? item["prpr"] : item["ovrs_now_pric1"];
+            // const crcy_cd = !!props.kiBalance.output2[0]["crcy_cd"] ? <span className="text-[0.6rem]">{"" + props.kiBalance.output2[0]["crcy_cd"]}</span> : <span className="text-[0.6rem]">{"원"}</span>;
+            const crcy_cd = <span className="text-[0.6rem]">{"원"}</span>;
             const pchs_amt = !!item["pchs_amt"] ? item["pchs_amt"] : item["frcr_pchs_amt"];
             const hldg_qty = !!item["hldg_qty"] ? item["hldg_qty"] : item["ccld_qty_smtl1"];
             const ord_psbl_qty = !!item['ord_psbl_qty'] ? item['ord_psbl_qty'] : item["ord_psbl_qty1"];
             const evlu_amt = !!item["evlu_amt"] ? item["evlu_amt"] : item["frcr_evlu_amt2"];
-            const pchs_amt_smtl_amt = !!props.kiBalance.output3 ? props.kiBalance.output3["pchs_amt_smtl_amt"] : props.kiBalance.output2[0]["pchs_amt_smtl_amt"];
+            const pchs_amt_smtl_amt = !!props.kiBalance.output3 ? props.kiBalance.output3["pchs_amt_smtl"] : props.kiBalance.output2[0]["pchs_amt_smtl_amt"];
 
             const evlu_pfls_amt2 = !!item["evlu_pfls_amt2"] ? item["evlu_pfls_amt2"] : item["evlu_pfls_amt"];
+
+            const frst_bltn_exrt = !!props.kiBalance.output2 ? props.kiBalance.output2[0]["frst_bltn_exrt"] : 0;
             return {
                 id: name,
                 column_1: <div className={`font-mono ${name.length >= 7 ? "text-[0.6rem]" : "text-xs"}`}>{name}</div>,
-                column_2: <div className="font-mono font-bold text-xs text-black">{Number(Number(price).toFixed(0)).toLocaleString() + "원"}</div>,
-                column_3: <div className="font-mono font-bold text-xs text-black">{Number((Number(pchs_amt) / Number(hldg_qty)).toFixed(0)).toLocaleString() + "원"}</div>,
+                column_2: <div className="font-mono font-bold text-xs text-black">{Number(Number(price).toFixed(0)).toLocaleString()}{crcy_cd}{!!frst_bltn_exrt ? <span className="text-[0.6rem]"> ({formatNumber(Number(price) / Number(frst_bltn_exrt))} USD)</span> : ""}</div>,
+                column_3: <div className="font-mono font-bold text-xs text-black">{Number((Number(pchs_amt) / Number(hldg_qty)).toFixed(0)).toLocaleString()}{crcy_cd}{!!frst_bltn_exrt ? <span className="text-[0.6rem]"> ({formatNumber((Number(pchs_amt) / Number(hldg_qty) / Number(frst_bltn_exrt)))} USD)</span> : ""}</div>,
                 column_4: <div className={`font-mono font-bold text-xs flex justify-between ${Number(Number(evlu_amt) / Number(pchs_amt) * 100 - 100) >= 0 ? "text-red-500" : "text-blue-500"}`}>
                     <div className="font-mono pr-1 text-[0.6rem]">
-                        ({Number(Number(evlu_amt) / Number(pchs_amt) * 100 - 100).toFixed(2)}%)
+                        ({formatNumber(Number(Number(evlu_amt) / Number(pchs_amt) * 100 - 100))}%)
                     </div>
                     <div>
-                        {Util.UnitConversion(Number(evlu_pfls_amt2), true)}
+                        {formatNumber(Number(evlu_pfls_amt2))}{crcy_cd}{!!frst_bltn_exrt ? <span className="text-[0.6rem]"> ({formatNumber(Number(evlu_pfls_amt2) / Number(frst_bltn_exrt))} USD)</span> : ""}
                     </div>
                 </div>,
-                column_5: <div className="text-xs font-mono font-bold text-black">{(Number(pchs_amt) / Number(pchs_amt_smtl_amt) * 100).toFixed(2)}%</div>,
-                column_6: <div className="text-xs font-mono text-black">{Util.UnitConversion(Number(evlu_amt), true)}</div>,
-                column_7: <div className="text-xs font-mono text-black">{Util.UnitConversion(Number(pchs_amt), true)}</div>,
+                column_5: <div className="text-xs font-mono font-bold text-black">{formatNumber((Number(pchs_amt) / Number(pchs_amt_smtl_amt) * 100))}%</div>,
+                column_6: <div className="text-xs font-mono text-black">{formatNumber(Number(evlu_amt))}{crcy_cd}{!!frst_bltn_exrt ? <span className="text-[0.6rem]"> ({formatNumber(Number(evlu_amt) / Number(frst_bltn_exrt))} USD)</span> : ""}</div>,
+                column_7: <div className="text-xs font-mono text-black">{formatNumber(Number(pchs_amt))}{crcy_cd}{!!frst_bltn_exrt ? <span className="text-[0.6rem]"> ({formatNumber(Number(pchs_amt) / Number(frst_bltn_exrt))} USD)</span> : ""}</div>,
                 column_8: <div className="font-mono text-xs text-black">{Number(hldg_qty).toFixed(0)}/{Number(ord_psbl_qty).toFixed(0)}</div>,
                 column_9: <>
                     <div className="flex p-0 m-0 gap-1 font-mono">
@@ -168,25 +175,32 @@ export default function InquireBalanceResult(props: InquireBalanceResultProps) {
 
     // console.log(`kiOrderCash.msg1`, kiOrderCash.msg1); // TODO: 클릭한 종목 바로 밑에 msg 뜨게 변경..!!
 
+
+    let crcy_cd: string = ""; // 단위
     let nass_amt: number = 0; // 순자산
     let evlu_amt_smtl_amt: number = 0; // 평가금액
     let pchs_amt_smtl_amt: number = 0; // 매입금액
     let evlu_pfls_smtl_amt: number = 0;// 수입
+    let frst_bltn_exrt: number = 0; // us 환율
     // if (!!props.kiBalance.output2 && props.kiBalance.output2.length > 0) {
     if ("fulfilled" == props.kiBalance.state) {
+        // crcy_cd = !!props.kiBalance.output2[0]["crcy_cd"] ? " " + props.kiBalance.output2[0]["crcy_cd"] : "원";
+        crcy_cd = "원";
         // nass_amt = Number(props.kiBalance.output2[0]["nass_amt"]);
         nass_amt = !!props.kiBalance.output3 ? props.kiBalance.output3["frcr_evlu_tota"] : props.kiBalance.output2[0]["nass_amt"];
         nass_amt = Number(nass_amt);
         // evlu_amt_smtl_amt = Number(props.kiBalance.output2[0]["evlu_amt_smtl_amt"]);
-        evlu_amt_smtl_amt = !!props.kiBalance.output3 ? props.kiBalance.output3["evlu_amt_smtl_amt"] : props.kiBalance.output2[0]["evlu_amt_smtl_amt"];
+        evlu_amt_smtl_amt = !!props.kiBalance.output3 ? props.kiBalance.output3["evlu_amt_smtl"] : props.kiBalance.output2[0]["evlu_amt_smtl_amt"];
         evlu_amt_smtl_amt = Number(evlu_amt_smtl_amt);
         // pchs_amt_smtl_amt = Number(props.kiBalance.output2[0]["pchs_amt_smtl_amt"]);
-        pchs_amt_smtl_amt = !!props.kiBalance.output3 ? props.kiBalance.output3["pchs_amt_smtl_amt"] : props.kiBalance.output2[0]["pchs_amt_smtl_amt"];
+        pchs_amt_smtl_amt = !!props.kiBalance.output3 ? props.kiBalance.output3["pchs_amt_smtl"] : props.kiBalance.output2[0]["pchs_amt_smtl_amt"];
         pchs_amt_smtl_amt = Number(pchs_amt_smtl_amt);
 
         // evlu_pfls_smtl_amt = Number(props.kiBalance.output2[0]["evlu_pfls_smtl_amt"]);
         evlu_pfls_smtl_amt = !!props.kiBalance.output3 ? props.kiBalance.output3["evlu_pfls_amt_smtl"] : props.kiBalance.output2[0]["evlu_pfls_smtl_amt"];
         evlu_pfls_smtl_amt = Number(evlu_pfls_smtl_amt);
+
+        frst_bltn_exrt = !!props.kiBalance.output2[0] ? props.kiBalance.output2[0]["frst_bltn_exrt"] : 0;
     }
 
     const tablesExample8Props: TablesExample8PropsType = {
@@ -220,16 +234,17 @@ export default function InquireBalanceResult(props: InquireBalanceResultProps) {
         desc: <>
             <div className="text-lg font-mono text-black leading-none pb-3">
                 평가손익:<span className={`${(Number(evlu_amt_smtl_amt) / Number(pchs_amt_smtl_amt) * 100 - 100) >= 0 ? "text-red-500" : "text-blue-500"}`}>
-                    {Number(evlu_pfls_smtl_amt).toLocaleString()}원
-                    ({pchs_amt_smtl_amt == 0 ? "-" : Number(Number(evlu_amt_smtl_amt / pchs_amt_smtl_amt) * 100 - 100).toFixed(2)}%)
+                    {Number(evlu_pfls_smtl_amt).toLocaleString()}{crcy_cd}
+                    ({pchs_amt_smtl_amt == 0 ? "-" : formatNumber(Number(Number(evlu_amt_smtl_amt / pchs_amt_smtl_amt) * 100 - 100))}%)
                 </span>
+                <span className="text-sm">{!!frst_bltn_exrt ? `us환율:${formatNumber(Number(frst_bltn_exrt))}원` : ""}</span>
             </div>
             <div className="text-xs font-mono text-black p-3 border rounded">
                 <div className="leading-none pb-2">
-                    매입금액:{Number(pchs_amt_smtl_amt).toLocaleString()}원 평가금액:<span className={`${Number(evlu_amt_smtl_amt) > Number(pchs_amt_smtl_amt) ? "text-red-500" : "text-blue-500"}`}>{Number(evlu_amt_smtl_amt).toLocaleString()}원</span>
+                    매입금액:{Number(pchs_amt_smtl_amt).toLocaleString()}{crcy_cd} 평가금액:<span className={`${Number(evlu_amt_smtl_amt) > Number(pchs_amt_smtl_amt) ? "text-red-500" : "text-blue-500"}`}>{Number(evlu_amt_smtl_amt).toLocaleString()}{crcy_cd}</span>
                 </div>
                 <div className="leading-none pb-0">
-                    예수금액:{Number(Number(nass_amt) - Number(pchs_amt_smtl_amt)).toLocaleString()}원 순자산금액:{Number(nass_amt).toLocaleString()}원
+                    예수금액:{Number(Number(nass_amt) - Number(pchs_amt_smtl_amt)).toLocaleString()}{crcy_cd} 순자산금액:{Number(nass_amt).toLocaleString()}{crcy_cd}
                 </div>
             </div>
         </>,
