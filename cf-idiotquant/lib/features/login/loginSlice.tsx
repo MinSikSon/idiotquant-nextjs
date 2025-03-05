@@ -4,6 +4,7 @@ import { getLoginStatus } from "./loginAPI";
 
 interface LoginInfo {
     state: "init"
+    | "pending"
     | "get-rejected"
     | "loading" | "loaded" | "rejected"
     | "kakao"
@@ -37,23 +38,22 @@ export const loginSlice = createAppSlice({
         }),
         getCloudFlareLoginStatus: create.asyncThunk(
             async () => {
-                const res = await getLoginStatus();
-                return res;
+                return await getLoginStatus();
             },
             {
                 pending: (state) => {
                     // console.log(`[getCloudFlareLoginStatus] pending`);
+                    state.state = "pending"
                 },
                 fulfilled: (state, action) => {
                     // console.log(`[getCloudFlareLoginStatus] fulfilled`, `typeof action.payload:`, typeof action.payload, `action.payload:`, action.payload);
-                    const id = action.payload['id'];
-                    const name = action.payload['name'];
                     state.state = "cf";
-                    state.id = id;
-                    state.nickName = name;
+                    state.id = action.payload['id'];
+                    state.nickName = action.payload['name'];
                 },
                 rejected: (state) => {
                     console.log(`[getCloudFlareLoginStatus] get-rejected 2`);
+                    state.state = "rejected"
                 }
             }
         ),
