@@ -41,7 +41,7 @@ export default function BalanceKr() {
         // console.log(`[BalanceKr]`, `kiOrderCash`, kiOrderCash);
     }, [kiOrderCash])
 
-    if ("init" == loginState) {
+    if ("init" == loginState || "rejected" == loginState) {
         return <>
             <Login parentUrl={pathname} />
         </>

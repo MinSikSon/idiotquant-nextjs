@@ -555,7 +555,7 @@ export const koreaInvestmentSlice = createAppSlice({
             }
         ),
         reqPostOrderCash: create.asyncThunk(
-            async ({ koreaInvestmentToken, PDNO, buyOrSell }: { koreaInvestmentToken: KoreaInvestmentToken, PDNO: string, buyOrSell: string }) => {
+            async ({ koreaInvestmentToken, PDNO, buyOrSell, excg_cd, price }: { koreaInvestmentToken: KoreaInvestmentToken, PDNO: string, buyOrSell: string, excg_cd: string, price: string }) => {
                 return await postOrderCash(koreaInvestmentToken, PDNO, buyOrSell);
             },
             {

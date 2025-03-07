@@ -1,7 +1,7 @@
 import { PayloadAction } from "@reduxjs/toolkit";
 import { createAppSlice } from "@/lib/createAppSlice";
 import { registerCookie } from "@/components/util";
-import { getOverseasStockTradingInquireBalance, getOverseasStockTradingInquirePresentBalance, getQuotationsPriceDetail, getQuotationsSearchInfo } from "./koreaInvestmentUsMarketAPI";
+import { getOverseasStockTradingInquireBalance, getOverseasStockTradingInquirePresentBalance, getQuotationsPriceDetail, getQuotationsSearchInfo, postOrderUs } from "./koreaInvestmentUsMarketAPI";
 import { KoreaInvestmentToken } from "../koreaInvestment/koreaInvestmentSlice";
 
 interface KoreaInvestmentOverseasBalanceOutput1 {
@@ -127,15 +127,32 @@ export interface KoreaInvestmentOverseasPresentBalance {
     msg1: string;
 }
 
+interface KoreaInvestmentUsOrderOutput {
+    "KRX_FWDG_ORD_ORGNO": string;
+    "ODNO": string;
+    "ORD_TMD": string;
+}
+export interface KoreaInvestmentUsOrder {
+    state: "init"
+    | "pending" | "fulfilled" | "rejected"
+    ;
+    "rt_cd": string;
+    "msg_cd": string;
+    "msg1": string;
+    "output": KoreaInvestmentUsOrderOutput;
+}
 interface KoreaInvestmentUsMaretType {
     state: "init"
     | "pending" | "fulfilled" | "rejected"
+    | "order-cash"
     ;
     searchInfo: any;
     priceDetail: any;
     balance: KoreaInvestmentOverseasBalance;
     presentBalance: KoreaInvestmentOverseasPresentBalance;
+    usOrder: KoreaInvestmentUsOrder;
 }
+
 const initialState: KoreaInvestmentUsMaretType = {
     state: "init",
     searchInfo: {},
@@ -190,12 +207,46 @@ const initialState: KoreaInvestmentUsMaretType = {
         rt_cd: "",
         msg_cd: "",
         msg1: "",
+    },
+    usOrder: {
+        state: "init",
+        rt_cd: "",
+        msg_cd: "",
+        msg1: "",
+        output: {
+            "KRX_FWDG_ORD_ORGNO": "",
+            "ODNO": "",
+            "ORD_TMD": "",
+        },
     }
 }
 export const koreaInvestmentUsMarketSlice = createAppSlice({
     name: "koreaInvestmentUsMarket",
     initialState,
     reducers: (create) => ({
+        reqPostOrderUs: create.asyncThunk(
+            async ({ koreaInvestmentToken, PDNO, buyOrSell, excg_cd, price }: { koreaInvestmentToken: KoreaInvestmentToken, PDNO: string, buyOrSell: string, excg_cd: string, price: string }) => {
+                return await postOrderUs(koreaInvestmentToken, PDNO, buyOrSell, excg_cd, price);
+            },
+            {
+                pending: (state) => {
+                    // console.log(`[reqPostOrderUs] pending`);
+                    state.usOrder.state = "pending";
+                },
+                fulfilled: (state, action) => {
+                    // console.log(`[reqPostOrderUs] fulfilled`, `action.payload`, typeof action.payload, action.payload);
+                    // if (undefined != action.payload["output1"]) 
+                    {
+                        state.state = "order-cash";
+                        state.usOrder = { ...state.usOrder, ...action.payload, state: "fulfilled" };
+                    }
+                },
+                rejected: (state) => {
+                    console.log(`[reqPostOrderUs] rejected`);
+                    state.state = "rejected";
+                },
+            }
+        ),
         reqGetOverseasStockTradingInquirePresentBalance: create.asyncThunk(
             async (koreaInvestmentToken: KoreaInvestmentToken) => {
                 return await getOverseasStockTradingInquirePresentBalance(koreaInvestmentToken);
@@ -206,7 +257,7 @@ export const koreaInvestmentUsMarketSlice = createAppSlice({
                     state.presentBalance.state = "pending";
                 },
                 fulfilled: (state, action) => {
-                    console.log(`[reqGetOverseasStockTradingInquirePresentBalance] fulfilled`, `action.payload`, action.payload);
+                    // console.log(`[reqGetOverseasStockTradingInquirePresentBalance] fulfilled`, `action.payload`, action.payload);
                     state.presentBalance = { ...action.payload, state: "fulfilled" };
                 },
                 rejected: (state) => {
@@ -225,7 +276,7 @@ export const koreaInvestmentUsMarketSlice = createAppSlice({
                     state.balance.state = "pending";
                 },
                 fulfilled: (state, action) => {
-                    console.log(`[reqGetOverseasStockTradingInquireBalance] fulfilled`, `action.payload`, action.payload);
+                    // console.log(`[reqGetOverseasStockTradingInquireBalance] fulfilled`, `action.payload`, action.payload);
                     state.balance = { ...action.payload, state: "fulfilled" };
                 },
                 rejected: (state) => {
@@ -240,12 +291,12 @@ export const koreaInvestmentUsMarketSlice = createAppSlice({
             },
             {
                 pending: (state) => {
-                    console.log(`[reqGetQuotationsSearchInfo] pending`);
+                    // console.log(`[reqGetQuotationsSearchInfo] pending`);
                     state.state = "pending";
                     // state.koreaInvestmentApproval.state = "pending";
                 },
                 fulfilled: (state, action) => {
-                    console.log(`[reqGetQuotationsSearchInfo] fulfilled`, `action.payload`, action.payload);
+                    // console.log(`[reqGetQuotationsSearchInfo] fulfilled`, `action.payload`, action.payload);
                     const json = action.payload;
                     state.searchInfo = json;
                     state.state = "fulfilled";
@@ -262,12 +313,12 @@ export const koreaInvestmentUsMarketSlice = createAppSlice({
             },
             {
                 pending: (state) => {
-                    console.log(`[reqGetQuotationsPriceDetail] pending`);
+                    // console.log(`[reqGetQuotationsPriceDetail] pending`);
                     state.state = "pending";
                     // state.koreaInvestmentApproval.state = "pending";
                 },
                 fulfilled: (state, action) => {
-                    console.log(`[reqGetQuotationsPriceDetail] fulfilled`, `action.payload`, action.payload);
+                    // console.log(`[reqGetQuotationsPriceDetail] fulfilled`, `action.payload`, action.payload);
                     const json = action.payload;
                     state.priceDetail = json;
                     state.state = "fulfilled";
@@ -286,11 +337,13 @@ export const koreaInvestmentUsMarketSlice = createAppSlice({
         getKoreaInvestmentUsMaretPriceDetail: (state) => state.priceDetail,
         getKoreaInvestmentUsMaretBalance: (state) => state.balance,
         getKoreaInvestmentUsMaretPresentBalance: (state) => state.presentBalance,
+
+        getKoreaInvestmentUsOrder: (state) => state.usOrder,
     }
 });
 
-
-
+export const { reqPostOrderUs } = koreaInvestmentUsMarketSlice.actions;
+export const { getKoreaInvestmentUsOrder } = koreaInvestmentUsMarketSlice.selectors;
 
 export const { reqGetOverseasStockTradingInquirePresentBalance } = koreaInvestmentUsMarketSlice.actions;
 export const { getKoreaInvestmentUsMaretPresentBalance } = koreaInvestmentUsMarketSlice.selectors;

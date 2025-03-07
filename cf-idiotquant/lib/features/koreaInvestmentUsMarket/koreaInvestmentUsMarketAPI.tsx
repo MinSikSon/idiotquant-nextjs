@@ -2,6 +2,19 @@ import { getCookie } from "@/components/util";
 import { getKoreaInvestmentRequest, postKoreaInvestmentRequest } from "../koreaInvestment/koreaInvestmentAPI";
 import { KoreaInvestmentToken } from "../koreaInvestment/koreaInvestmentSlice";
 
+// 주문
+export const postOrderUs: any = async (koreaInvestmentToken: KoreaInvestmentToken, PDNO: string, buyOrSell: string, excg_cd: string, price: string) => {
+    const subUrl = `/uapi/overseas-stock/v1/trading/order`;
+    const additionalHeaders: AdditionalHeaders = {
+        "authorization": koreaInvestmentToken["access_token"],
+        "kakaoId": getCookie("kakaoId"),
+        "PDNO": PDNO,
+        "buyOrSell": buyOrSell,
+        "excg_cd": excg_cd,
+        "price": price,
+    }
+    return postKoreaInvestmentRequest(subUrl, additionalHeaders);
+}
 
 export const getOverseasStockTradingInquirePresentBalance: any = async (koreaInvestmentToken: KoreaInvestmentToken) => {
     // console.log(`[getOverseasStockTradingInquireBalance] koreaInvestmentToken`, koreaInvestmentToken);
@@ -85,18 +98,6 @@ export const getInquirePrice: any = async (koreaInvestmentToken: KoreaInvestment
     return getKoreaInvestmentRequest(subUrl, additionalHeaders);
 }
 
-// 주문
-export const postOrderCash: any = async (koreaInvestmentToken: KoreaInvestmentToken, PDNO: string, buyOrSell: string) => {
-    const subUrl = `/uapi/domestic-stock/v1/trading/order-cash`;
-    const additionalHeaders: AdditionalHeaders = {
-        "authorization": koreaInvestmentToken["access_token"],
-        "kakaoId": getCookie("kakaoId"),
-        "PDNO": PDNO,
-        "buyOrSell": buyOrSell,
-    }
-    return postKoreaInvestmentRequest(subUrl, additionalHeaders);
-}
-
 // 인증 및 토큰 요청
 export const postApprovalKeyApi: any = async () => {
     const subUrl = `/oauth2/Approval`;
@@ -115,4 +116,6 @@ interface AdditionalHeaders {
     buyOrSell?: string;
     FID_INPUT_DATE_1?: string;
     FID_INPUT_DATE_2?: string;
+    excg_cd?: string;
+    price?: string;
 }

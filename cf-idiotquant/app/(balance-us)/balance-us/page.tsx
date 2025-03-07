@@ -5,7 +5,7 @@ import Auth from "@/components/auth";
 import InquireBalanceResult from "@/components/inquireBalanceResult";
 import { isValidCookie } from "@/components/util";
 import { getKoreaInvestmentToken, KoreaInvestmentToken } from "@/lib/features/koreaInvestment/koreaInvestmentSlice";
-import { reqGetOverseasStockTradingInquirePresentBalance, getKoreaInvestmentUsMaretPresentBalance, KoreaInvestmentOverseasPresentBalance } from "@/lib/features/koreaInvestmentUsMarket/koreaInvestmentUsMarketSlice";
+import { reqGetOverseasStockTradingInquirePresentBalance, getKoreaInvestmentUsMaretPresentBalance, KoreaInvestmentOverseasPresentBalance, reqPostOrderUs, getKoreaInvestmentUsOrder, KoreaInvestmentUsOrder } from "@/lib/features/koreaInvestmentUsMarket/koreaInvestmentUsMarketSlice";
 
 
 import { selectState } from "@/lib/features/login/loginSlice";
@@ -19,6 +19,8 @@ export default function BalanceUs() {
 
     const kiToken: KoreaInvestmentToken = useAppSelector(getKoreaInvestmentToken);
     const kiBalance: KoreaInvestmentOverseasPresentBalance = useAppSelector(getKoreaInvestmentUsMaretPresentBalance);
+
+    const kiUsOrder: KoreaInvestmentUsOrder = useAppSelector(getKoreaInvestmentUsOrder);
 
     const dispatch = useAppDispatch();
 
@@ -34,7 +36,13 @@ export default function BalanceUs() {
         // console.log(`[BalanceUs]`, `kiBalance`, kiBalance);
     }, [kiBalance]);
 
-    if ("init" == loginState) {
+    React.useEffect(() => {
+        // console.log(`[BalanceUs]`, `loginState`, loginState);
+    }, [loginState]);
+
+
+    // console.log(`loginState`, loginState);
+    if ("init" == loginState || "rejected" == loginState) {
         return <>
             <Login parentUrl={pathname} />
         </>
@@ -50,7 +58,7 @@ export default function BalanceUs() {
         kiBalance={kiBalance}
         reqGetInquireBalance={reqGetOverseasStockTradingInquirePresentBalance}
         kiToken={kiToken}
-    //    kiOrderCash={kiOrderCash}
-    //    reqPostOrderCash={reqPostOrderCash}
+        kiOrderCash={kiUsOrder}
+        reqPostOrderCash={reqPostOrderUs}
     />
 }
