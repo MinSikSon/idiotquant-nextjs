@@ -6,7 +6,6 @@ import Login from "@/app/(login)/login/login"
 import { selectState } from "@/lib/features/login/loginSlice";
 import { usePathname } from "next/navigation";
 import { useAppDispatch, useAppSelector } from "@/lib/hooks";
-import { Button, Chip, Input } from "@material-tailwind/react";
 import { reqPostApprovalKey, reqPostToken, reqGetInquireBalance, reqPostOrderCash, reqGetInquirePrice, KoreaInvestmentInquirePrice, reqGetInquireDailyItemChartPrice, getKoreaInvestmentInquireDailyItemChartPrice, KoreaInvestmentInquireDailyItemChartPrice, reqGetBalanceSheet, getKoreaInvestmentBalanceSheet, KoreaInvestmentBalanceSheet } from "@/lib/features/koreaInvestment/koreaInvestmentSlice";
 import { getKoreaInvestmentApproval, getKoreaInvestmentToken, getKoreaInvestmentBalance, getKoreaInvestmentInquirePrice } from "@/lib/features/koreaInvestment/koreaInvestmentSlice";
 import { KoreaInvestmentApproval, KoreaInvestmentToken, KoreaInvestmentBalance } from "@/lib/features/koreaInvestment/koreaInvestmentSlice";
@@ -14,9 +13,9 @@ import { KoreaInvestmentApproval, KoreaInvestmentToken, KoreaInvestmentBalance }
 import corpCodeJson from "@/public/data/validCorpCode.json"
 import { isValidCookie, Util } from "@/components/util";
 import Auth from "@/components/auth";
-import { getKoreaInvestmentUsMaretSearchInfo, reqGetQuotationsSearchInfo } from "@/lib/features/koreaInvestmentUsMarket/koreaInvestmentUsMarketSlice";
-import { getKoreaInvestmentUsMaretPriceDetail, reqGetQuotationsPriceDetail } from "@/lib/features/koreaInvestmentUsMarket/koreaInvestmentUsMarketSlice";
 import SearchAutocomplete from "@/components/searchAutoComplete";
+
+import validCorpNameArray from "@/public/data/validCorpNameArray.json";
 
 export default function Search() {
   const pathname = usePathname();
@@ -29,12 +28,6 @@ export default function Search() {
   const kiInquirePrice: KoreaInvestmentInquirePrice = useAppSelector(getKoreaInvestmentInquirePrice);
   const kiBalanceSheet: KoreaInvestmentBalanceSheet = useAppSelector(getKoreaInvestmentBalanceSheet);
   const kiInquireDailyItemChartPrice: KoreaInvestmentInquireDailyItemChartPrice = useAppSelector(getKoreaInvestmentInquireDailyItemChartPrice);
-
-
-  const kiUsMaretSearchInfo: any = useAppSelector(getKoreaInvestmentUsMaretSearchInfo);
-  const kiUsMaretPriceDetail: any = useAppSelector(getKoreaInvestmentUsMaretPriceDetail);
-
-  const [time, setTime] = React.useState<any>("");
 
   const [stockName, setStockName] = React.useState<any>("");
   const [startDate, setStartDate] = React.useState<any>("2025-02-03");
@@ -67,13 +60,6 @@ export default function Search() {
   React.useEffect(() => {
     // console.log(`React.useEffect [kiInquirePrice]`, kiInquirePrice);
   }, [kiInquirePrice])
-
-  React.useEffect(() => {
-    // console.log(`React.useEffect [kiUsMaretSearchInfo]`, kiUsMaretSearchInfo);
-  }, [kiUsMaretSearchInfo])
-  React.useEffect(() => {
-    // console.log(`React.useEffect [kiUsMaretPriceDetail]`, kiUsMaretPriceDetail);
-  }, [kiUsMaretPriceDetail])
 
   const formatDate = (date: string) => {
     // const arrDate = date.split("-");
@@ -144,25 +130,7 @@ export default function Search() {
     </>
   }
 
-  function Foreign() {
-    return <>
-      <div>해외주식 financial info 갱신 (test: APPL)</div>
-      <Button onClick={() => dispatch(reqGetQuotationsSearchInfo({ koreaInvestmentToken: kiToken, PDNO: "AAPL" }))}>/uapi/overseas-price/v1/quotations/search-info</Button>
-      <div>
-        <div>serach-info</div>
-        <div className="text-xs">{JSON.stringify(kiUsMaretSearchInfo)}</div>
-        <div className="text-xs">{!!kiUsMaretSearchInfo.output ? Object.keys(kiUsMaretSearchInfo.output).map((key: any) => { return <div key={key}>{key} : {kiUsMaretSearchInfo.output[key]}</div> }) : <></>}</div>
-      </div>
-      <Button onClick={() => dispatch(reqGetQuotationsPriceDetail({ koreaInvestmentToken: kiToken, PDNO: "AAPL" }))}>/uapi/overseas-price/v1/quotations/price-detail</Button>
-      <div>
-        <div>price-detail</div>
-        <div className="text-xs">{JSON.stringify(kiUsMaretPriceDetail)}</div>
-        <div className="text-xs">{!!kiUsMaretPriceDetail.output ? Object.keys(kiUsMaretPriceDetail.output).map((key: any) => { return <div key={key}>{key} : {kiUsMaretPriceDetail.output[key]}</div> }) : <></>}</div>
-      </div>
-    </>
-  }
-
-  if ("init" == loginState) {
+  if ("init" == loginState || "rejected" == loginState) {
     return <>
       <Login parentUrl={pathname} />
     </>;
@@ -173,17 +141,18 @@ export default function Search() {
       <Auth />
     </>
   }
+
   if (("fulfilled" != kiInquireDailyItemChartPrice.state)
     || ("fulfilled" != kiBalanceSheet.state)
     || ("fulfilled" != kiInquirePrice.state)
   ) {
     return <>
-      <SearchAutocomplete onSearchButton={onSearchButton} />
+      <SearchAutocomplete onSearchButton={onSearchButton} validCorpNameArray={validCorpNameArray} />
     </>
   }
 
   return <>
-    <SearchAutocomplete onSearchButton={onSearchButton} />
+    <SearchAutocomplete onSearchButton={onSearchButton} validCorpNameArray={validCorpNameArray} />
 
     <div className="font-mono flex flex-col justify-between border mx-2 mb-1">
       <div className="font-mono flex pl-2 text-xs items-center">
@@ -281,7 +250,5 @@ export default function Search() {
         })()}
       </div>
     </div>
-
-    {/* <Foreign /> */}
   </>
 }

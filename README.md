@@ -54,3 +54,7 @@
 2. CSR : client side rendering
 3. SSG : static site generation. dev 환경에서는 마치 server side rendering 하는 것처럼 보이지만 아니라네..?
 4. ISR :
+
+
+# 미국장 ticker 참고
+- https://github.com/rreichel3/US-Stock-Symbols/tree/main

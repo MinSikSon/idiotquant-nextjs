@@ -231,7 +231,7 @@ export default function BackTest() {
         }
     }, [kiToken]);
 
-    if ("init" == loginState) {
+    if ("init" == loginState || "rejected" == loginState) {
         return <>
             <Login parentUrl={pathname} />
         </>

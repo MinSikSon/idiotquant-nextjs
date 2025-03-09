@@ -46,7 +46,7 @@ export function NavbarWithSimpleLinks() {
     function NavItem({ url, label }: NavItemPropsType) {
         return (
             <Link href={url} onClick={() => setOpen(false)}>
-                <div className="pl-2 font-serif text-sm text-black hover:text-blue-500">
+                <div className="pl-2 font-mono text-sm text-black hover:text-blue-500">
                     {label}
                 </div>
             </Link>
@@ -59,6 +59,7 @@ export function NavbarWithSimpleLinks() {
         "login": `${!!!kakaoId ? "로그인 🔒" : "로그아웃"}`,
         // "article": "Article",
         "search": `종목 검색 ${!!!kakaoId ? "🔒" : ""}`,
+        "search-nasdaq": `종목 검색 (nasdaq) ${!!!kakaoId ? "🔒" : ""}`,
         "balance-kr": `알고 투자 - 계좌 조회 (국내) ${!!!kakaoId ? "🔒" : ""}`,
         "algorithm-trade": "알고 투자 - 매매 내역 (국내)",
         "balance-us": `알고 투자 - 계좌 조회 (해외) ${!!!kakaoId ? "🔒" : ""}`,

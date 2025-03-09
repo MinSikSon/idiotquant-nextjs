@@ -1,7 +1,6 @@
 import React, { useState, useMemo, ChangeEvent, KeyboardEvent } from "react";
 import { MagnifyingGlassIcon, XCircleIcon } from "@heroicons/react/24/outline";
 
-import validCorpNameArray from "@/public/data/validCorpNameArray.json";
 import { Button } from "@material-tailwind/react";
 import { DesignButton } from "./designButton";
 
@@ -13,8 +12,8 @@ const SearchAutocomplete = (props: any) => {
     // 입력값을 기반으로 자동완성 리스트 필터링
     const suggestions = useMemo(() => {
         if (!query.trim()) return [];
-        return validCorpNameArray.filter((item) => item.toLowerCase().includes(query.toLowerCase()))
-            .sort((a, b) => a.localeCompare(b));
+        return props.validCorpNameArray.filter((item: any) => item.toLowerCase().includes(query.toLowerCase()))
+            .sort((a: any, b: any) => a.localeCompare(b));
     }, [query]);
 
     const handleChange = (e: ChangeEvent<HTMLInputElement>) => {
@@ -105,7 +104,7 @@ const SearchAutocomplete = (props: any) => {
             </Button> */}
             {isFocused && suggestions.length > 0 && (
                 <ul className="z-10 absolute top-full left-0 w-full mt-1 bg-white border border-gray-300 rounded-lg shadow-lg max-h-60 overflow-auto">
-                    {suggestions.map((suggestion, index) => (
+                    {suggestions.map((suggestion: any, index: any) => (
                         <li
                             key={index}
                             onMouseDown={() => handleSelect(suggestion)}
