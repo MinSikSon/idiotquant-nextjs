@@ -46,7 +46,7 @@ export function NavbarWithSimpleLinks() {
     function NavItem({ url, label }: NavItemPropsType) {
         return (
             <Link href={url} onClick={() => setOpen(false)}>
-                <div className="pl-2 font-mono text-sm text-black hover:text-blue-500">
+                <div className="pl-2 font-mono text-[0.8rem] text-black hover:text-blue-500">
                     {label}
                 </div>
             </Link>
@@ -61,8 +61,8 @@ export function NavbarWithSimpleLinks() {
         "search": `종목 검색 ${!!!kakaoId ? "🔒" : ""}`,
         "search-nasdaq": `종목 검색 (nasdaq) ${!!!kakaoId ? "🔒" : ""}`,
         "balance-kr": `알고 투자 - 계좌 조회 (국내) ${!!!kakaoId ? "🔒" : ""}`,
-        "algorithm-trade": "알고 투자 - 매매 내역 (국내)",
         "balance-us": `알고 투자 - 계좌 조회 (해외) ${!!!kakaoId ? "🔒" : ""}`,
+        "algorithm-trade": "알고 투자 - 매매 내역",
     }
 
     const urlToLabel: any = {
@@ -96,9 +96,9 @@ export function NavbarWithSimpleLinks() {
                 <div className="flex flex-col px-1">
                     {!!kakaoNickName ? <>
                         <div className={`px-1 text-[0.6rem] font-mono rounded border border-blue-500 text-black`}>{urlToLabel[splitPathName[1]]}</div>
-                        <div className={`pl-1 text-xs font-mono`}>{kakaoNickName}님 반갑습니다. 😀</div>
+                        <div className={`pl-1 text-[0.6rem] font-mono`}>{kakaoNickName}님 반갑습니다. 😀</div>
                     </>
-                        : <div className={`px-1 text-xs font-mono rounded border border-blue-500 text-black`}>{urlToLabel[splitPathName[1]]}</div>
+                        : <div className={`px-1 text-[0.6rem] font-mono rounded border border-blue-500 text-black`}>{urlToLabel[splitPathName[1]]}</div>
                     }
                 </div>
                 <div className="hidden lg:block">
