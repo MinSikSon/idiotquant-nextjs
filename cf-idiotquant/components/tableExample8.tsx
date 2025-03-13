@@ -45,6 +45,8 @@ export interface TablesExample8PropsType {
     tableHead: Example8TableHeadType[];
     selectHead?: any;
     setSelectHead?: any;
+    prevSelectHead?: any;
+    setPrevSelectHead?: any;
 
     tableRow: Example8TableRowType[];
 }
@@ -58,6 +60,8 @@ function TablesExample8({
     tableHead,
     selectHead,
     setSelectHead,
+    prevSelectHead,
+    setPrevSelectHead,
     tableRow
 }: TablesExample8PropsType) {
 
@@ -106,11 +110,16 @@ function TablesExample8({
                                                     if (!!!setSelectHead) {
                                                         return; // do nothing
                                                     }
-
+                                                    if (prevSelectHead == selectHead) {
+                                                        setPrevSelectHead("");
+                                                    }
+                                                    else {
+                                                        setPrevSelectHead(selectHead);
+                                                    }
                                                     setSelectHead(head)
                                                 }}>
                                                     <div className={`font-mono font-bold text-black cursor-pointer ${head.length >= 6 ? "text-[0.6rem]" : ""}`}>
-                                                        {head} {selectHead == head ? "🔽" : ""}
+                                                        {head} {(prevSelectHead == head && selectHead == head) ? "🔼" : (selectHead == head ? "🔽" : "")}
                                                     </div>
                                                 </PopoverHandler>
                                                 {!!desc ? <PopoverContent className="p-2 border border-black rounded shadow shadow-blue-gray-500">

@@ -50,6 +50,7 @@ export default function InquireBalanceResult(props: InquireBalanceResultProps) {
     }
 
     const [selectHead, setSelectHead] = React.useState("비중");
+    const [prevSelectHead, setPrevSelectHead] = React.useState("");
 
     const example8TableHead: Example8TableHeadType[] = [
         {
@@ -89,29 +90,46 @@ export default function InquireBalanceResult(props: InquireBalanceResultProps) {
         // console.log(`kiBalanceOutput1`, kiBalanceOutput1);
         example8TableRow = (kiBalanceOutput1.sort((a, b) => {
             if ("종목명" == selectHead) {
-
+                if (prevSelectHead == selectHead) {
+                    return String(b.prdt_name ?? b.ovrs_item_name).localeCompare(String(a.prdt_name ?? a.ovrs_item_name), "ko-KR");
+                }
                 return String(a.prdt_name ?? a.ovrs_item_name).localeCompare(String(b.prdt_name ?? b.ovrs_item_name), "ko-KR");
             }
             if ("현재가" == selectHead) {
-                return Number(b.prpr ?? b.now_pric2) - Number(a.prpr ?? a.now_pric2);
+                if (prevSelectHead == selectHead) {
+                    return Number(a.prpr ?? a.ovrs_now_pric1) - Number(b.prpr ?? b.ovrs_now_pric1);
+                }
+                return Number(b.prpr ?? b.ovrs_now_pric1) - Number(a.prpr ?? a.ovrs_now_pric1);
             }
             if ("평단가" == selectHead) {
-                return Number(b.evlu_amt) / Number(b.hldg_qty) - Number(a.evlu_amt) / Number(a.hldg_qty);
+                if (prevSelectHead == selectHead) {
+                    return Number(a.evlu_amt ?? a.frcr_evlu_amt2) / Number(a.hldg_qty ?? a.ccld_qty_smtl1) - Number(b.evlu_amt ?? b.frcr_evlu_amt2) / Number(b.hldg_qty ?? b.ccld_qty_smtl1);
+                }
+                return Number(b.evlu_amt ?? b.frcr_evlu_amt2) / Number(b.hldg_qty ?? b.ccld_qty_smtl1) - Number(a.evlu_amt ?? a.frcr_evlu_amt2) / Number(a.hldg_qty ?? a.ccld_qty_smtl1);
             }
             if ("평가손익" == selectHead) {
-                return Number(b.evlu_pfls_amt) - Number(a.evlu_pfls_amt);
+                if (prevSelectHead == selectHead) {
+                    return Number(a.evlu_pfls_amt2 ?? a.evlu_pfls_amt) - Number(b.evlu_pfls_amt2 ?? b.evlu_pfls_amt);
+                }
+                return Number(b.evlu_pfls_amt2 ?? b.evlu_pfls_amt) - Number(a.evlu_pfls_amt2 ?? a.evlu_pfls_amt);
             }
             if ("평가금액" == selectHead) {
-                return Number(b.evlu_amt) - Number(a.evlu_amt);
+                if (prevSelectHead == selectHead) {
+                    return Number(a.evlu_amt ?? a.frcr_evlu_amt2) - Number(b.evlu_amt ?? b.frcr_evlu_amt2);
+                }
+                return Number(b.evlu_amt ?? b.frcr_evlu_amt2) - Number(a.evlu_amt ?? a.frcr_evlu_amt2);
             }
-            if ("매수금액" == selectHead) {
-                return Number(b.pchs_amt) - Number(a.pchs_amt);
-            }
-            if ("비중" == selectHead) {
-                return Number(b.pchs_amt) - Number(a.pchs_amt);
+            if ("매수금액" == selectHead || "비중" == selectHead) {
+                if (prevSelectHead == selectHead) {
+                    return Number(a.pchs_amt ?? a.frcr_pchs_amt) - Number(b.pchs_amt ?? b.frcr_pchs_amt);
+                }
+                return Number(b.pchs_amt ?? b.frcr_pchs_amt) - Number(a.pchs_amt ?? a.frcr_pchs_amt);
             }
             if ("보유/주문가능" == selectHead) {
-                return Number(b.hldg_qty) - Number(a.hldg_qty);
+                if (prevSelectHead == selectHead) {
+                    return Number(a.hldg_qty ?? a.ccld_qty_smtl1) - Number(b.hldg_qty ?? b.ccld_qty_smtl1);
+                }
+                return Number(b.hldg_qty ?? b.ccld_qty_smtl1) - Number(a.hldg_qty ?? a.ccld_qty_smtl1);
             }
             return 0;
         }).map((item, index) => {
@@ -330,7 +348,9 @@ export default function InquireBalanceResult(props: InquireBalanceResultProps) {
         </>,
         tableHead: example8TableHead,
         selectHead: selectHead,
+        prevSelectHead: prevSelectHead,
         setSelectHead: setSelectHead,
+        setPrevSelectHead: setPrevSelectHead,
 
         tableRow: example8TableRow,
     }

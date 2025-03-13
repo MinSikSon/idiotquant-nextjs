@@ -53,9 +53,10 @@ export default function Search() {
         </>
     }
 
-    function onSearchButton() {
-        dispatch(reqGetQuotationsSearchInfo({ koreaInvestmentToken: kiToken, PDNO: "AAPL" }));
-        dispatch(reqGetQuotationsPriceDetail({ koreaInvestmentToken: kiToken, PDNO: "AAPL" }));
+    function onSearchButton(stockName: any) {
+        console.log(`[onSearchButton]`, `stockName`, stockName);
+        dispatch(reqGetQuotationsSearchInfo({ koreaInvestmentToken: kiToken, PDNO: stockName }));
+        dispatch(reqGetQuotationsPriceDetail({ koreaInvestmentToken: kiToken, PDNO: stockName }));
     }
 
     return <>
