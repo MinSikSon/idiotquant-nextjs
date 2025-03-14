@@ -121,10 +121,19 @@ export default function Search() {
   }
 
   function getNcav(kiBalanceSheet: any, kiInquireDailyItemChartPrice: any, ratio: number) {
-    const value: number = ((((Number(kiBalanceSheet.output[getYearMatchIndex(kiInquireDailyItemChartPrice.output2[0]["stck_bsop_date"])].cras) * 100000000) - (Number(kiBalanceSheet.output[getYearMatchIndex(kiInquireDailyItemChartPrice.output2[0]["stck_bsop_date"])].total_lblt) * 100000000)) / (Number(Number(kiInquireDailyItemChartPrice.output2[0]["stck_oprc"]) * Number(kiInquireDailyItemChartPrice.output1["lstn_stcn"]) * ratio)) - 1) * 100);
+    const stck_bsop_date = kiInquireDailyItemChartPrice.output2[0]["stck_bsop_date"]; // 주식 영업 일자
+    const stck_oprc = Number(kiInquireDailyItemChartPrice.output2[0]["stck_oprc"]); // 주식 시가2
+    const lstn_stcn = Number(kiInquireDailyItemChartPrice.output1["lstn_stcn"]); // 상장 주수
+    const cras = Number(kiBalanceSheet.output[getYearMatchIndex(stck_bsop_date)].cras) * 100000000; // 유동 자산
+    const total_lblt = Number(kiBalanceSheet.output[getYearMatchIndex(stck_bsop_date)].total_lblt) * 100000000; // 부채 총계
+
+    const value: number = (((cras - total_lblt) / (stck_oprc * lstn_stcn * ratio) - 1) * 100);
+    const target_price = (cras - total_lblt) / lstn_stcn;
+
     return <>
       <div className="font-mono flex text-xs items-center">
         <div className="border border-black rounded-md p-0 px-1 m-0">투자 전략 - NCAV ({ratio.toFixed(1)})</div>
+        <div className={`pl-1`}>목표가:<span className={`${value >= 0 ? "text-red-500" : "text-blue-500"}`}>{(Number(target_price.toFixed(0)).toLocaleString())}원</span></div>
         <div className={`pl-1 ${value >= 0 ? "text-red-500" : "text-blue-500"}`}>{value.toFixed(2)}%</div>
       </div>
     </>
