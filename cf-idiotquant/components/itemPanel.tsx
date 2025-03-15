@@ -1,6 +1,6 @@
 
 import React from "react";
-import { Chip, ListItem, ListItemPrefix, ListItemSuffix } from "@material-tailwind/react";
+import { Chip, List, List } from "@material-tailwind/react";
 
 export default function ItemPanel(props: any) {
     // console.log(`%ItemPanel`, `color : white; background : blue`);
@@ -40,21 +40,29 @@ export default function ItemPanel(props: any) {
         }
 
         return (
-            <ListItem className={`p-0 px-1 m-0 mx-1 w-11/12 rounded-full border-b-2 border-gray-200 ${bgColor}`}>
-                <ListItemPrefix className="p-0 pl-1 m-0">
-                    <Chip className={`text-xs m-0 p-0 border-none ${titleTextColor}`} variant="outlined" value={props.title} />
-                </ListItemPrefix>
-                <ListItemSuffix className="p-0 pr-1 my-0">
-                    <Chip className={`text-xs m-0 p-0 border-none ${itemTextColor}`} variant="outlined" value={item} />
-                </ListItemSuffix>
-            </ListItem>
+            <List.Item className={`p-0 px-1 m-0 mx-1 w-11/12 rounded-full border-b-2 border-gray-200 ${bgColor}`}>
+                <List.ItemStart className="p-0 pl-1 m-0">
+                    <Chip className={`text-xs m-0 p-0 border-none ${titleTextColor}`} variant="outline">
+                        <Chip.Label>{props.title}</Chip.Label>
+                    </Chip>
+                </List.ItemStart>
+                <List.ItemEnd className="p-0 pr-1 my-0">
+                    <Chip className={`text-xs m-0 p-0 border-none ${itemTextColor}`} variant="outline">
+                        <Chip.Label>{item}</Chip.Label>
+                    </Chip>
+                </List.ItemEnd>
+            </List.Item>
         );
     }
 
     return (
         <div className={`z-10 w-full`}>
-            <Chip className="w-fit border-none text-black text-md pb-0 my-0" variant="outlined" value={jsonSearchResult['종목명']} />
-            <Chip className="border-none text-black text-2xl b-0 py-0 m-0" variant="outlined" value={`${Number(jsonSearchResult['종가']).toLocaleString('ko-KR', { maximumFractionDigits: 0 })}원`} />
+            <Chip className="w-fit border-none text-black text-md pb-0 my-0" variant="outline">
+                <Chip.Label>{jsonSearchResult['종목명']}</Chip.Label>
+            </Chip>
+            <Chip className="border-none text-black text-2xl b-0 py-0 m-0" variant="outline">
+                <Chip.Label>{Number(jsonSearchResult['종가']).toLocaleString('ko-KR', { maximumFractionDigits: 0 })}원</Chip.Label>
+            </Chip>
             <div className={`grid grid-cols-2 pr-1`}>
                 {Object.keys(jsonSearchResult).map((key, index) => <CustomDiv key={index} title={key} item={jsonSearchResult[key]} />)}
             </div>
