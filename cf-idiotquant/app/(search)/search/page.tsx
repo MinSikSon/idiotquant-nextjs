@@ -3,7 +3,7 @@
 import React from "react";
 
 import Login from "@/app/(login)/login/login"
-import { selectState } from "@/lib/features/login/loginSlice";
+import { selectLoginState } from "@/lib/features/login/loginSlice";
 import { usePathname } from "next/navigation";
 import { useAppDispatch, useAppSelector } from "@/lib/hooks";
 import { reqPostApprovalKey, reqPostToken, reqGetInquireBalance, reqPostOrderCash, reqGetInquirePrice, KoreaInvestmentInquirePrice, reqGetInquireDailyItemChartPrice, getKoreaInvestmentInquireDailyItemChartPrice, KoreaInvestmentInquireDailyItemChartPrice, reqGetBalanceSheet, getKoreaInvestmentBalanceSheet, KoreaInvestmentBalanceSheet } from "@/lib/features/koreaInvestment/koreaInvestmentSlice";
@@ -21,7 +21,7 @@ export default function Search() {
   const pathname = usePathname();
   const dispatch = useAppDispatch();
 
-  const loginState = useAppSelector(selectState);
+  const loginState = useAppSelector(selectLoginState);
   const kiApproval: KoreaInvestmentApproval = useAppSelector(getKoreaInvestmentApproval);
   const kiToken: KoreaInvestmentToken = useAppSelector(getKoreaInvestmentToken);
   const kiBalance: KoreaInvestmentBalance = useAppSelector(getKoreaInvestmentBalance);

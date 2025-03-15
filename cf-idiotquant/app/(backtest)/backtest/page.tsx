@@ -30,7 +30,7 @@ import { isValidCookie, Util } from "@/components/util";
 import { KoreaInvestmentApproval, KoreaInvestmentToken, KoreaInvestmentBalance } from "@/lib/features/koreaInvestment/koreaInvestmentSlice";
 import { getKoreaInvestmentApproval, getKoreaInvestmentToken, getKoreaInvestmentBalance } from "@/lib/features/koreaInvestment/koreaInvestmentSlice";
 import { reqPostApprovalKey, reqPostToken, reqGetInquireBalance, reqPostOrderCash, reqGetInquirePrice, KoreaInvestmentInquirePrice, getKoreaInvestmentInquirePrice, reqGetInquireDailyItemChartPrice, getKoreaInvestmentInquireDailyItemChartPrice, KoreaInvestmentInquireDailyItemChartPrice, reqGetBalanceSheet, getKoreaInvestmentBalanceSheet, KoreaInvestmentBalanceSheet } from "@/lib/features/koreaInvestment/koreaInvestmentSlice";
-import { selectState } from "@/lib/features/login/loginSlice";
+import { selectLoginState } from "@/lib/features/login/loginSlice";
 import Login from "@/app/(login)/login/login";
 import Auth from "@/components/auth";
 import { usePathname } from "next/navigation";
@@ -220,7 +220,7 @@ export default function BackTest() {
 
 
     const kiToken: KoreaInvestmentToken = useAppSelector(getKoreaInvestmentToken);
-    const loginState = useAppSelector(selectState);
+    const loginState = useAppSelector(selectLoginState);
     const pathname = usePathname();
 
     React.useEffect(() => {

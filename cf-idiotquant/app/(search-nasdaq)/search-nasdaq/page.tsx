@@ -3,7 +3,7 @@
 import React from "react";
 
 import { useAppDispatch, useAppSelector } from "@/lib/hooks";
-import { selectState } from "@/lib/features/login/loginSlice";
+import { selectLoginState } from "@/lib/features/login/loginSlice";
 import { usePathname } from "next/navigation";
 import { isValidCookie } from "@/components/util";
 import { getKoreaInvestmentUsMaretSearchInfo, reqGetQuotationsSearchInfo } from "@/lib/features/koreaInvestmentUsMarket/koreaInvestmentUsMarketSlice";
@@ -19,7 +19,7 @@ export default function Search() {
     const pathname = usePathname();
     const dispatch = useAppDispatch();
 
-    const loginState = useAppSelector(selectState);
+    const loginState = useAppSelector(selectLoginState);
 
     const kiToken: KoreaInvestmentToken = useAppSelector(getKoreaInvestmentToken);
 

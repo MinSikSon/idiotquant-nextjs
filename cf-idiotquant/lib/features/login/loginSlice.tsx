@@ -52,7 +52,7 @@ export const loginSlice = createAppSlice({
                     state.nickName = action.payload['name'];
                 },
                 rejected: (state) => {
-                    console.log(`[getCloudFlareLoginStatus] get-rejected 2`);
+                    console.log(`[getCloudFlareLoginStatus] rejected`);
                     state.state = "rejected"
                 }
             }
@@ -62,9 +62,9 @@ export const loginSlice = createAppSlice({
         selectKakaoAuthCode: (state) => state.kakaoAuthCode,
         selectKakaoNickName: (state) => state.nickName,
         selectKakaoId: (state) => state.id,
-        selectState: (state) => state.state,
+        selectLoginState: (state) => state.state,
     }
 });
 
 export const { setKakaoAuthCode, setKakaoNickName, setKakaoId, getCloudFlareLoginStatus } = loginSlice.actions;
-export const { selectKakaoAuthCode, selectKakaoNickName, selectKakaoId, selectState } = loginSlice.selectors;
+export const { selectKakaoAuthCode, selectKakaoNickName, selectKakaoId, selectLoginState } = loginSlice.selectors;

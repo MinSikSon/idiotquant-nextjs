@@ -5,7 +5,7 @@ import { reqPostApprovalKey, reqPostToken, reqGetInquireBalance, reqPostOrderCas
 import { KoreaInvestmentApproval, KoreaInvestmentToken, KoreaInvestmentBalance } from "@/lib/features/koreaInvestment/koreaInvestmentSlice";
 import { setKoreaInvestmentToken } from "@/lib/features/koreaInvestment/koreaInvestmentSlice";
 import { getKoreaInvestmentApproval, getKoreaInvestmentToken, getKoreaInvestmentBalance } from "@/lib/features/koreaInvestment/koreaInvestmentSlice";
-import { selectState } from "@/lib/features/login/loginSlice";
+import { selectLoginState } from "@/lib/features/login/loginSlice";
 
 import { useAppDispatch, useAppSelector } from "@/lib/hooks";
 import { Button, Input, Typography } from "@material-tailwind/react";
@@ -25,7 +25,7 @@ export default function Auth() {
     const kiBalanceSheet: KoreaInvestmentBalanceSheet = useAppSelector(getKoreaInvestmentBalanceSheet);
 
     const [time, setTime] = React.useState<any>('');
-    const loginState = useAppSelector(selectState);
+    const loginState = useAppSelector(selectLoginState);
 
     function reload(seq: any) {
         let count = 0;
