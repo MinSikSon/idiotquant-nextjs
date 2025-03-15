@@ -1,6 +1,6 @@
 
 import React from "react";
-import { Chip, List, List } from "@material-tailwind/react";
+import { Chip, List } from "@material-tailwind/react";
 
 export default function ItemPanel(props: any) {
     // console.log(`%ItemPanel`, `color : white; background : blue`);
