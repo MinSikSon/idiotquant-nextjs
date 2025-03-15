@@ -32,8 +32,8 @@ export default function NotFound() {
                             <DesignButton
                                 handleOnClick={() => { }}
                                 buttonName="return to the main page"
-                                buttonBgColor="bg-green-400"
-                                buttonBorderColor="border-green-300"
+                                buttonBgColor="bg-green-500"
+                                buttonBorderColor="border-green-400"
                                 buttonShadowColor="#129600"
                                 textStyle="text-white text-xs pt-0.5 font-bold"
                                 buttonStyle="rounded-lg px-4 ml-2"
