@@ -25,20 +25,19 @@ export default function BalanceUs() {
     const dispatch = useAppDispatch();
 
     React.useEffect(() => {
+        // console.log(`[BalanceUs]`, `loginState`, loginState);
         // console.log(`[BalanceUs]`, `kiToken:`, kiToken);
         const isValidKiAccessToken = !!kiToken["access_token"];
-        if (true == isValidKiAccessToken) {
-            dispatch(reqGetOverseasStockTradingInquirePresentBalance(kiToken));
+        if ("cf" == loginState || "kakao" == loginState) {
+            if (true == isValidKiAccessToken) {
+                dispatch(reqGetOverseasStockTradingInquirePresentBalance(kiToken));
+            }
         }
-    }, [kiToken]);
+    }, [kiToken, loginState]);
 
     React.useEffect(() => {
         // console.log(`[BalanceUs]`, `kiBalance`, kiBalance);
     }, [kiBalance]);
-
-    React.useEffect(() => {
-        // console.log(`[BalanceUs]`, `loginState`, loginState);
-    }, [loginState]);
 
 
     // console.log(`loginState`, loginState);

@@ -26,12 +26,15 @@ export default function BalanceKr() {
     const kiOrderCash: KoreaInvestmentOrderCash = useAppSelector(getKoreaInvestmentOrderCash);
 
     React.useEffect(() => {
+        // console.log(`[BalanceKr]`, `loginState`, loginState);
         // console.log(`[BalanceKr]`, `kiToken:`, kiToken);
-        const isValidKiAccessToken = !!kiToken["access_token"];
-        if (true == isValidKiAccessToken) {
-            dispatch(reqGetInquireBalance(kiToken));
+        if ("cf" == loginState || "kakao" == loginState) {
+            const isValidKiAccessToken = !!kiToken["access_token"];
+            if (true == isValidKiAccessToken) {
+                dispatch(reqGetInquireBalance(kiToken));
+            }
         }
-    }, [kiToken]);
+    }, [kiToken, loginState]);
 
     React.useEffect(() => {
         // console.log(`[BalanceKr]`, `kiBalance`, kiBalance);
