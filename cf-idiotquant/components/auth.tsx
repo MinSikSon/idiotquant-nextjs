@@ -29,20 +29,19 @@ export default function Auth() {
 
     function reload(seq: any) {
         console.log(`[reload]`, `loginState`, loginState);
-        let count = 0;
         if ("init" == loginState) {
-            console.log(`[Auth]`, seq, `-`, count++, `loginState:`, loginState);
+            console.log(`[Auth]`, seq, `- 1`, `loginState:`, loginState);
             return;
         }
 
         if ("init" == kiApproval.state) {
-            console.log(`[Auth]`, seq, `-`, count++, `kiApproval.state:`, kiApproval.state);
+            console.log(`[Auth]`, seq, `- 2`, `kiApproval.state:`, kiApproval.state);
             dispatch(reqPostApprovalKey());
             return;
         }
 
         const isValidKiAccessToken = !!kiToken["access_token"];
-        console.log(`[Auth]`, seq, `-`, count++, `loginState:`, loginState, `kiApproval:`, kiApproval, `kiToken:`, kiToken, `isValidKiAccessToken:`, isValidKiAccessToken);
+        console.log(`[Auth]`, seq, `- 3`, `loginState:`, loginState, `kiApproval:`, kiApproval, `kiToken:`, kiToken, `isValidKiAccessToken:`, isValidKiAccessToken);
         // if ("init" == kiBalance.state && "" != kiToken["access_token"]) {
         if (true == isValidKiAccessToken) {
             dispatch(reqGetInquireBalance(kiToken));
@@ -51,11 +50,11 @@ export default function Auth() {
 
         if (false == isValidCookie("koreaInvestmentToken")) {
             if ("init" == kiBalance.state && "init" == kiToken.state && false == isValidKiAccessToken) {
-                console.log(`[Auth]`, seq, `-`, count++, `dispatch(reqPostToken())`);
+                console.log(`[Auth]`, seq, `- 4`, `dispatch(reqPostToken())`);
                 dispatch(reqPostToken()); // NOTE: 1분에 한 번씩만 token 발급 가능
             }
             else if ("fulfilled" == kiToken.state) {
-                console.log(`[Auth]`, seq, `-`, count++, `registerCookie("koreaInvestmentToken", JSON.stringify(kiToken))`);
+                console.log(`[Auth]`, seq, `- 5`, `registerCookie("koreaInvestmentToken", JSON.stringify(kiToken))`);
                 registerCookie("koreaInvestmentToken", JSON.stringify(kiToken));
             }
 
@@ -64,24 +63,24 @@ export default function Auth() {
 
         const cookieKoreaInvestmentToken = getCookie("koreaInvestmentToken");
         const jsonCookieKoreaInvestmentToken = JSON.parse(cookieKoreaInvestmentToken);
-        console.log(`[Auth]`, seq, `-`, count++, `jsonCookieKoreaInvestmentToken:`, jsonCookieKoreaInvestmentToken);
+        console.log(`[Auth]`, seq, `- 6`, `jsonCookieKoreaInvestmentToken:`, jsonCookieKoreaInvestmentToken);
         const json: KoreaInvestmentToken = jsonCookieKoreaInvestmentToken;
         const currentDate = new Date();
         setTime(currentDate);
         const expiredDate = new Date(json["access_token_token_expired"].replace(" ", "T"));
         const skipPostToken = (expiredDate > currentDate);
-        console.log(`[Auth]`, seq, `-`, count++, `skipPostToken:`, skipPostToken);
+        console.log(`[Auth]`, seq, `- 7`, `skipPostToken:`, skipPostToken);
         if (false == skipPostToken) {
-            console.log(`[Auth]`, seq, `-`, count++, `expiredDate:`, expiredDate, `currentDate:`, currentDate);
+            console.log(`[Auth]`, seq, `- 8`, `expiredDate:`, expiredDate, `currentDate:`, currentDate);
             dispatch(reqPostToken());
         }
         else if (false == isValidKiAccessToken) {
             dispatch(setKoreaInvestmentToken(json));
         }
 
-        console.log(`[Auth]`, seq, `-`, count++, `kiInquirePrice:`, kiInquirePrice);
-        console.log(`[Auth]`, seq, `-`, count++, `kiInquireDailyItemChartPrice:`, kiInquireDailyItemChartPrice);
-        console.log(`[Auth]`, seq, `-`, count++, `kiBalanceSheet:`, kiBalanceSheet);
+        console.log(`[Auth]`, seq, `- 9`, `kiInquirePrice:`, kiInquirePrice);
+        console.log(`[Auth]`, seq, `- 10`, `kiInquireDailyItemChartPrice:`, kiInquireDailyItemChartPrice);
+        console.log(`[Auth]`, seq, `- 11`, `kiBalanceSheet:`, kiBalanceSheet);
     }
 
     React.useEffect(() => {

@@ -35,11 +35,13 @@ export default function Search() {
 
   React.useEffect(() => {
     // console.log(`[Search]`, `kiToken:`, kiToken);
-    const isValidKiAccessToken = !!kiToken["access_token"];
-    if (true == isValidKiAccessToken) {
-      dispatch(reqGetInquireBalance(kiToken));
+    if ("cf" == loginState || "kakao" == loginState) {
+      const isValidKiAccessToken = !!kiToken["access_token"];
+      if (true == isValidKiAccessToken) {
+        dispatch(reqGetInquireBalance(kiToken));
+      }
     }
-  }, [kiToken]);
+  }, [kiToken, loginState]);
 
   React.useEffect(() => {
     // console.log(`React.useEffect []`);
@@ -91,7 +93,7 @@ export default function Search() {
 
   const handleInputEndDate = (e: React.ChangeEvent<HTMLInputElement>) => {
     setEndDate(e.target.value);
-    console.log(`Date.now()`, Date.now());
+    // console.log(`Date.now()`, Date.now());
     const date = new Date(e.target.value);
 
     // 5일을 빼기 위해 setDate() 사용

@@ -28,11 +28,13 @@ export default function Search() {
 
     React.useEffect(() => {
         // console.log(`[Search]`, `kiToken:`, kiToken);
-        const isValidKiAccessToken = !!kiToken["access_token"];
-        if (true == isValidKiAccessToken) {
-            dispatch(reqGetInquireBalance(kiToken));
+        if ("cf" == loginState || "kakao" == loginState) {
+            const isValidKiAccessToken = !!kiToken["access_token"];
+            if (true == isValidKiAccessToken) {
+                dispatch(reqGetInquireBalance(kiToken));
+            }
         }
-    }, [kiToken]);
+    }, [kiToken, loginState]);
 
     React.useEffect(() => {
         // console.log(`React.useEffect [kiUsMaretSearchInfo]`, kiUsMaretSearchInfo);
@@ -59,18 +61,22 @@ export default function Search() {
         dispatch(reqGetQuotationsPriceDetail({ koreaInvestmentToken: kiToken, PDNO: stockName }));
     }
 
+    if (!!!kiUsMaretSearchInfo.output && !!!kiUsMaretPriceDetail.output) {
+        <SearchAutocomplete onSearchButton={onSearchButton} validCorpNameArray={nasdaq_tickers} />
+    }
+
     return <>
         <SearchAutocomplete onSearchButton={onSearchButton} validCorpNameArray={nasdaq_tickers} />
-        <div className="text-xs text-red-500">test run</div>
+        <div className="font-mono">{kiUsMaretSearchInfo.output.prdt_name} ({kiUsMaretSearchInfo.output.prdt_eng_name})</div>
         <div>
-            <div className="text-xs">/uapi/overseas-price/v1/quotations/search-info</div>
-            <div className="text-[0.5rem]">{JSON.stringify(kiUsMaretSearchInfo)}</div>
-            <div className="text-[0.5rem]">{!!kiUsMaretSearchInfo.output ? Object.keys(kiUsMaretSearchInfo.output).map((key: any) => { return <div key={key}>{key} : {kiUsMaretSearchInfo.output[key]}</div> }) : <></>}</div>
+            {/* <div className="text-xs">/uapi/overseas-price/v1/quotations/search-info</div> */}
+            {/* <div className="text-[0.5rem]">{JSON.stringify(kiUsMaretSearchInfo)}</div> */}
+            <div className="text-[0.5rem]">{Object.keys(kiUsMaretSearchInfo.output).map((key: any) => { return <div key={key}>{key} : {kiUsMaretSearchInfo.output[key]}</div> })}</div>
         </div>
         <div>
-            <div className="text-xs">/uapi/overseas-price/v1/quotations/price-detail</div>
-            <div className="text-[0.5rem]">{JSON.stringify(kiUsMaretPriceDetail)}</div>
-            <div className="text-[0.5rem]">{!!kiUsMaretPriceDetail.output ? Object.keys(kiUsMaretPriceDetail.output).map((key: any) => { return <div key={key}>{key} : {kiUsMaretPriceDetail.output[key]}</div> }) : <></>}</div>
+            {/* <div className="text-xs">/uapi/overseas-price/v1/quotations/price-detail</div> */}
+            {/* <div className="text-[0.5rem]">{JSON.stringify(kiUsMaretPriceDetail)}</div> */}
+            <div className="text-[0.5rem]">{Object.keys(kiUsMaretPriceDetail.output).map((key: any) => { return <div key={key}>{key} : {kiUsMaretPriceDetail.output[key]}</div> })}</div>
         </div>
     </>
 }
