@@ -1,7 +1,7 @@
 "use client"
 
 import { useAppDispatch, useAppSelector } from "@/lib/hooks";
-import { Button, ButtonGroup, Input } from "@material-tailwind/react";
+import { Button, ButtonGroup, Input, Spinner } from "@material-tailwind/react";
 import RegisterTemplate from "@/components/register_template";
 import Link from "next/link";
 
@@ -60,7 +60,7 @@ export default function BackTest() {
         return <div className="flex flex-col">
             <div className="flex flex-col justify-between items-left mt-2 text-black hover:text-blue-500">
                 <div>{title}</div>
-                <ButtonGroup color="blue" variant="outlined" size="sm" fullWidth>
+                <ButtonGroup color="primary" variant="outline" size="sm">
                     {list.map((item, key) => <Button key={key} className={selectValue == item ? `bg-blue-500 text-white` : ``} onClick={() => handleOnClick(item)}>{`${item}`}</Button>)}
                 </ButtonGroup>
             </div>
@@ -72,7 +72,7 @@ export default function BackTest() {
             <div className="flex flex-col justify-between items-left mt-2 text-black hover:text-blue-500">
                 <Input
                     className=""
-                    color="black"
+                    color="primary"
                     label={title}
                     type="date"
                     value={selectValue} crossOrigin={undefined}
@@ -191,12 +191,12 @@ export default function BackTest() {
                 <div className="flex flex-col gap-2">
                     <div className="flex justify-between items-center">
                         <Link href={`/`}>
-                            <Button color="red" size="sm" variant="outlined">
+                            <Button color="error" size="sm" variant="outline">
                                 취소
                             </Button>
                         </Link>
-                        <Button className="hover:text-blue-500 hover:border-blue-500" disabled={"loading" == backTestConditionFilterResultType.state ? true : false} loading={"loading" == backTestConditionFilterResultType.state ? true : false} color={`black`} onClick={() => handleOnClick()} size="sm" variant="outlined">
-                            {"loading" == backTestConditionFilterResultType.state ? "등록 중" : "등록"}
+                        <Button color="info" size="sm" variant="outline" className="hover:text-blue-500 hover:border-blue-500" disabled={"loading" == backTestConditionFilterResultType.state ? true : false} onClick={() => handleOnClick()}>
+                            {"loading" == backTestConditionFilterResultType.state ? <div className="flex"><Spinner size="sm" /><div>등록 중</div></div> : "등록"}
                         </Button>
                     </div>
                 </div>
@@ -276,13 +276,13 @@ export default function BackTest() {
                                     <TimelineIcon className="p-0" variant="ghost" color="green" >
                                         <CurrencyDollarIcon className="h-4 w-4" />
                                     </TimelineIcon>
-                                    <Typography color="blue-gray" className="text-base font-bold leading-none">
+                                    <Typography color="primary" className="text-base font-bold leading-none">
                                         {formatDate(date)}
                                     </Typography>
                                 </TimelineHeader>
                                 <TimelineBody className="pb-8">
                                     <div>
-                                        <Typography color="blue-gray" className="text-base font-bold leading-none">
+                                        <Typography color="primary" className="text-base font-bold leading-none">
                                             - {formatDate(prevDate)} 종목 일괄 매도
                                         </Typography>
                                         <>
@@ -307,7 +307,7 @@ export default function BackTest() {
                                                 // console.log(`currentFilteredStockInfo`, currentFilteredStockInfo);
                                                 return <>
                                                     {!!filteredStockInfo ?
-                                                        <Typography key={stockName} color="gray" className="font-normal text-xs text-gray-600">
+                                                        <Typography key={stockName} color="primary" className="font-normal text-xs text-gray-600">
                                                             [{stockName}] <span className={`${profit >= 0 ? "text-red-500" : "text-blue-500"} ${!!currentFilteredStockInfo ? "" : "text-purple-500"}`}>수익:{profit}</span>
                                                             시가:{Number(filteredStockInfo["시가"]).toFixed(0)} 원,
                                                             유동자산:{Util.UnitConversion(filteredStockInfoFinancial["유동자산"], true)}, 부채총계:{Util.UnitConversion(filteredStockInfoFinancial["부채총계"], true)}
@@ -315,13 +315,13 @@ export default function BackTest() {
                                                         : <></>}
                                                 </>
                                             }) : <>
-                                                <Typography key={index1} color="gray" className="font-normal text-xs text-gray-600">
+                                                <Typography key={index1} color="primary" className="font-normal text-xs text-gray-600">
                                                     없음
                                                 </Typography>
                                             </>}
                                         </>
                                     </div>
-                                    <Typography color="blue-gray" className="text-base font-bold leading-none">
+                                    <Typography color="primary" className="text-base font-bold leading-none">
                                         - {formatDate(date)} 매수
                                     </Typography>
                                     <>
@@ -329,7 +329,7 @@ export default function BackTest() {
                                             const filteredStockInfo = backTestConditionFilterResultType.output3[date][stockName];
                                             return <>
                                                 {!!filteredStockInfo ?
-                                                    <Typography key={stockName} color="gray" className="font-normal text-xs text-gray-600">
+                                                    <Typography key={stockName} color="primary" className="font-normal text-xs text-gray-600">
                                                         [{stockName}] 시가:{Number(filteredStockInfo["시가"]).toFixed(0)} 원,
                                                         유동자산:{Util.UnitConversion(filteredStockInfo["유동자산"], true)},
                                                         부채총계:{Util.UnitConversion(filteredStockInfo["부채총계"], true)}

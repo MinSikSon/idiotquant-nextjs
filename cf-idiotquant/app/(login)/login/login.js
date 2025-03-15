@@ -1,7 +1,7 @@
 "use client"
 
 import React from "react";
-import { Button, Card, CardBody, Typography } from '@material-tailwind/react';
+import { Button, Card } from '@material-tailwind/react';
 import { useRouter } from "next/navigation";
 import { selectKakaoAuthCode, selectKakaoId, selectKakaoNickName, setKakaoAuthCode, setKakaoId, setKakaoNickName } from "@/lib/features/login/loginSlice";
 import { useAppDispatch, useAppSelector } from "@/lib/hooks";
@@ -165,7 +165,7 @@ export default function Login(props) {
         if (!!!kakaoNickName) {
             return <>
                 <Card className="mt-6 w-96">
-                    <CardBody>
+                    <Card.Body>
                         <div className="font-mono text-xl mb-2">
                             반갑습니다.
                         </div>
@@ -186,14 +186,14 @@ export default function Login(props) {
                                 transition-all duration-150 [box-shadow:0_4px_0_0_#1e1e1e,0_8px_0_0_#1e1e1e41] border-b-[1px]
                                 `}
                         />
-                    </CardBody>
+                    </Card.Body>
                 </Card>
             </>
         }
 
         return <>
             <Card className="mt-6 w-96">
-                <CardBody>
+                <Card.Body>
                     <div className="font-mono text-xl mb-2">
                         {kakaoNickName}님 반갑습니다.
                     </div>
@@ -214,7 +214,7 @@ export default function Login(props) {
                             transition-all duration-150 [box-shadow:0_4px_0_0_#1e1e1e,0_8px_0_0_#1e1e1e41] border-b-[1px]
                             `}
                     />
-                </CardBody>
+                </Card.Body>
             </Card>
         </>;
     }

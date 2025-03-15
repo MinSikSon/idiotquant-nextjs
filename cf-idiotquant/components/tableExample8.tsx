@@ -3,12 +3,9 @@ import React from "react";
 // @material-tailwind/react
 import {
     Card,
-    CardHeader,
-    CardBody,
     Popover,
-    PopoverHandler,
-    PopoverContent,
     Button,
+    Spinner,
 } from "@material-tailwind/react";
 
 
@@ -71,11 +68,7 @@ function TablesExample8({
     return (
         <section className="">
             <Card className="h-full w-full">
-                <CardHeader
-                    floated={false}
-                    shadow={false}
-                    className="rounded-none flex flex-wrap gap-4 justify-between mb-4"
-                >
+                <Card.Header className="rounded-none flex flex-wrap gap-4 justify-between mb-4 shadow-none">
                     <div>
                         <div className="">
                             {title}
@@ -90,12 +83,12 @@ function TablesExample8({
                             {market_date}
                         </div>
                     </div>
-                </CardHeader>
+                </Card.Header>
 
                 {tableRow.length == 0 ?
-                    <Button variant="text" loading={!!msg ? false : true} className="font-mono">{!!msg ? msg : "loading..."}</Button>
+                    <Button variant="ghost" className="font-mono flex">{!!msg ? <>{msg}</> : <><Spinner size="sm" />loading...</>}</Button>
                     :
-                    <CardBody className="overflow-scroll !px-0 pt-0 pb-2">
+                    <Card.Body className="overflow-scroll !px-0 pt-0 pb-2">
                         <table className="w-full min-w-max table-auto items-center">
                             <thead className="text-xs">
                                 <tr>
@@ -105,7 +98,7 @@ function TablesExample8({
                                             className={`border-b border-gray-300 pl-3 pb-2 ${customeStyle}`}
                                         >
                                             <Popover>
-                                                <PopoverHandler onClick={() => {
+                                                <Popover.Trigger onClick={() => {
                                                     // console.log(`setSelectHead`, !!setSelectHead, setSelectHead);
                                                     if (!!!setSelectHead) {
                                                         return; // do nothing
@@ -121,10 +114,10 @@ function TablesExample8({
                                                     <div className={`font-mono font-bold text-black cursor-pointer ${head.length >= 6 ? "text-[0.6rem]" : ""}`}>
                                                         {head} {(prevSelectHead == head && selectHead == head) ? "🔼" : (selectHead == head ? "🔽" : "")}
                                                     </div>
-                                                </PopoverHandler>
-                                                {!!desc ? <PopoverContent className="p-2 border border-black rounded shadow shadow-blue-gray-500">
+                                                </Popover.Trigger>
+                                                {!!desc ? <Popover.Content className="p-2 border border-black rounded shadow shadow-blue-gray-500">
                                                     <div className="text-xs font-mono text-black">{desc}</div>
-                                                </PopoverContent> : <></>}
+                                                </Popover.Content> : <></>}
 
                                             </Popover>
                                         </th>
@@ -227,7 +220,7 @@ function TablesExample8({
                                 )}
                             </tbody>
                         </table>
-                    </CardBody>
+                    </Card.Body>
                 }
             </Card>
         </section>

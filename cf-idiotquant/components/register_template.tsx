@@ -1,4 +1,4 @@
-import { Card, CardBody, CardFooter, CardHeader } from "@material-tailwind/react";
+import { Card } from "@material-tailwind/react";
 
 interface RegisterTemplateProps {
     cardBodyFix: boolean;
@@ -10,12 +10,8 @@ interface RegisterTemplateProps {
 export default function RegisterTemplate(props: RegisterTemplateProps) {
     return <>
         <section className={`px-2`}>
-            <Card shadow={false} className={`border rounded-xl border-gray-100}`}>
-                <CardHeader
-                    shadow={false}
-                    floated={false}
-                    className="flex overflow-visible gap-y-2 flex-wrap items-start justify-between rounded"
-                >
+            <Card className={`border rounded-xl border-gray-100 shadow-none`}>
+                <Card.Header className="flex overflow-visible gap-y-2 flex-wrap items-start justify-between rounded shadow-none">
                     <div className="font-mono text-black">
                         <div>
                             {props.title}
@@ -24,16 +20,16 @@ export default function RegisterTemplate(props: RegisterTemplateProps) {
                             {props.subTitle}
                         </div>
                     </div>
-                </CardHeader>
-                <CardBody className={`py-4 px-4 grid grid-cols-1 ${props.cardBodyFix ? '' : 'sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4'} gap-4`}>
-                    <div>
+                </Card.Header>
+                <Card.Body className={`py-4 px-4 grid grid-cols-1 ${props.cardBodyFix ? '' : 'sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4'} gap-4`}>
+                    <div className="w-full">
                         {props.content}
                     </div>
-                </CardBody>
+                </Card.Body>
                 {!!props.footer ?
-                    <CardFooter className="py-2">
+                    <Card.Footer className="py-2">
                         {props.footer}
-                    </CardFooter>
+                    </Card.Footer>
                     :
                     <></>
                 }

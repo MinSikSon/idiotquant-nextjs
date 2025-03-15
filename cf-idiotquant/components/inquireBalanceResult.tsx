@@ -1,4 +1,4 @@
-import { Button } from "@material-tailwind/react";
+import { Button, Spinner } from "@material-tailwind/react";
 import { DesignButton } from "./designButton";
 import TablesExample8, { Example8TableHeadType, Example8TableRowType, TablesExample8PropsType } from "./tableExample8";
 import { Util } from "./util";
@@ -17,7 +17,7 @@ interface InquireBalanceResultProps {
 }
 
 export default function InquireBalanceResult(props: InquireBalanceResultProps) {
-    console.log(`[InquireBalanceResult]`, `props`, props);
+    // console.log(`[InquireBalanceResult]`, `props`, props);
 
     const dispatch = useAppDispatch();
     const [show, setShow] = React.useState<boolean>(false);
@@ -289,7 +289,7 @@ export default function InquireBalanceResult(props: InquireBalanceResultProps) {
                         `}
                 />
                 {"pending" == props.kiBalance.state ?
-                    <Button loading={true} className="p-0 px-1 m-0 bg-white text-black font-mono">loading...</Button>
+                    <Button variant="ghost" className="p-0 px-1 m-0 bg-white text-black font-mono flex"><Spinner size="sm" />loading...</Button>
                     : <>
                         <div className="font-mono text-[0.6rem] text-black ml-4">{time.toLocaleString("ko-KR", { timeZone: "Asia/Seoul" })}</div>
                     </>}

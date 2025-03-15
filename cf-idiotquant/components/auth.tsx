@@ -8,7 +8,7 @@ import { getKoreaInvestmentApproval, getKoreaInvestmentToken, getKoreaInvestment
 import { selectLoginState } from "@/lib/features/login/loginSlice";
 
 import { useAppDispatch, useAppSelector } from "@/lib/hooks";
-import { Button, Input, Typography } from "@material-tailwind/react";
+import { Button, Input, Spinner, Typography } from "@material-tailwind/react";
 import React from "react";
 
 import { usePathname } from "next/navigation";
@@ -28,6 +28,7 @@ export default function Auth() {
     const loginState = useAppSelector(selectLoginState);
 
     function reload(seq: any) {
+        console.log(`[reload]`, `loginState`, loginState);
         let count = 0;
         if ("init" == loginState) {
             console.log(`[Auth]`, seq, `-`, count++, `loginState:`, loginState);
@@ -95,6 +96,6 @@ export default function Auth() {
 
 
     return <>
-        <Button className="border-0 bg-none" variant="outlined" loading={true}>loading</Button>
+        <Button className="border-0 bg-none" variant="outline"><Spinner size="sm" />loading</Button>
     </>
 }
