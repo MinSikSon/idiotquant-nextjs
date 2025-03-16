@@ -11,6 +11,8 @@ import { GetMergedStocksList, GetStocksFilteredByStrategyNCAV } from "@/componen
 import { selectKakaoId } from "@/lib/features/login/loginSlice";
 import { getCookie, isValidCookie } from "./util";
 
+const DEBUG = false;
+
 export const LoadData = () => {
     const dispatch = useAppDispatch();
     const financialInfoState = useAppSelector(selectFinancialInfoState);
@@ -57,7 +59,7 @@ export const LoadData = () => {
     useEffect(() => {
         if (financialInfoState == "init") {
             const isValidCookieKakaoId = isValidCookie("kakaoId");
-            console.log(`[LoadData]`, `kakaoId:`, kakaoId, `isValidCookieKakaoId:`, isValidCookieKakaoId);
+            if (DEBUG) console.log(`[LoadData]`, `kakaoId:`, kakaoId, `isValidCookieKakaoId:`, isValidCookieKakaoId);
             if (false == !!kakaoId && true == isValidCookieKakaoId) {
                 dispatch(getCloudFlareLoginStatus());
             }
