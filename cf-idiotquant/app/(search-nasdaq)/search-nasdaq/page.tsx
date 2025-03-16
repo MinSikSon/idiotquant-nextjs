@@ -80,7 +80,9 @@ export default function Search() {
     return <>
         <SearchAutocomplete onSearchButton={onSearchButton} validCorpNameArray={nasdaq_tickers} />
         <div className="border border-black rounded p-1 m-1">
-            <div className="text-base">{kiUsMaretSearchInfoOutput.prdt_name}({kiUsMaretSearchInfoOutput.prdt_eng_name}) - {kiUsMaretSearchInfoOutput.tr_mket_name}</div>
+            <div className="text-base">
+                {kiUsMaretSearchInfoOutput.prdt_name}({kiUsMaretSearchInfoOutput.prdt_eng_name}) - {kiUsMaretSearchInfoOutput.tr_mket_name}
+            </div>
             <div className="text-xs border border-black rounded p-1 m-1">
                 <div className="flex gap-2">
                     <div className="w-3/12 bg-yellow-200 text-right">현재가</div>
