@@ -104,7 +104,7 @@ export default function Login(props) {
                 dispatch(setKakaoAuthCode(_authorizeCode));
             }
             else {
-                _authorizeCode = selectKakaoAuthCode;
+                _authorizeCode = kakaoAuthCode;
             }
 
             const responseToken = await RequestToken(_authorizeCode, `${window.location.origin}${props.parentUrl}`);
