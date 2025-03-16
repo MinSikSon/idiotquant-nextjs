@@ -63,6 +63,9 @@ export default function InquireBalanceResult(props: InquireBalanceResultProps) {
             head: "평단가",
         },
         {
+            head: "수익률",
+        },
+        {
             head: "평가손익",
         },
         {
@@ -95,45 +98,41 @@ export default function InquireBalanceResult(props: InquireBalanceResultProps) {
                 }
                 return String(a.prdt_name ?? a.ovrs_item_name).localeCompare(String(b.prdt_name ?? b.ovrs_item_name), "ko-KR");
             }
+
+            let cond_a = 0;
+            let cond_b = 0;
             if ("현재가" == selectHead) {
-                if (prevSelectHead == selectHead) {
-                    return Number(a.prpr ?? a.ovrs_now_pric1) - Number(b.prpr ?? b.ovrs_now_pric1);
-                }
-                return Number(b.prpr ?? b.ovrs_now_pric1) - Number(a.prpr ?? a.ovrs_now_pric1);
+                cond_a = Number(a.prpr ?? a.ovrs_now_pric1);
+                cond_b = Number(b.prpr ?? b.ovrs_now_pric1);
             }
-            if ("평단가" == selectHead) {
-                if (prevSelectHead == selectHead) {
-                    return Number(a.evlu_amt ?? a.frcr_evlu_amt2) / Number(a.hldg_qty ?? a.ccld_qty_smtl1) - Number(b.evlu_amt ?? b.frcr_evlu_amt2) / Number(b.hldg_qty ?? b.ccld_qty_smtl1);
-                }
-                return Number(b.evlu_amt ?? b.frcr_evlu_amt2) / Number(b.hldg_qty ?? b.ccld_qty_smtl1) - Number(a.evlu_amt ?? a.frcr_evlu_amt2) / Number(a.hldg_qty ?? a.ccld_qty_smtl1);
+            else if ("평단가" == selectHead) {
+                cond_a = Number(a.evlu_amt ?? a.frcr_evlu_amt2) / Number(a.hldg_qty ?? a.ccld_qty_smtl1);
+                cond_b = Number(b.evlu_amt ?? b.frcr_evlu_amt2) / Number(b.hldg_qty ?? b.ccld_qty_smtl1);
             }
-            if ("평가손익" == selectHead) {
-                if (prevSelectHead == selectHead) {
-                    return Number(a.evlu_pfls_amt2 ?? a.evlu_pfls_amt) - Number(b.evlu_pfls_amt2 ?? b.evlu_pfls_amt);
-                }
-                return Number(b.evlu_pfls_amt2 ?? b.evlu_pfls_amt) - Number(a.evlu_pfls_amt2 ?? a.evlu_pfls_amt);
+            else if ("수익률" == selectHead) {
+                cond_a = Number(a.evlu_amt ?? a.frcr_evlu_amt2) / Number(a.pchs_amt ?? a.frcr_pchs_amt);
+                cond_b = Number(b.evlu_amt ?? b.frcr_evlu_amt2) / Number(b.pchs_amt ?? b.frcr_pchs_amt);
             }
-            if ("평가금액" == selectHead) {
-                if (prevSelectHead == selectHead) {
-                    return Number(a.evlu_amt ?? a.frcr_evlu_amt2) - Number(b.evlu_amt ?? b.frcr_evlu_amt2);
-                }
-                return Number(b.evlu_amt ?? b.frcr_evlu_amt2) - Number(a.evlu_amt ?? a.frcr_evlu_amt2);
+            else if ("평가손익" == selectHead) {
+                cond_a = Number(a.evlu_pfls_amt2 ?? a.evlu_pfls_amt);
+                cond_b = Number(b.evlu_pfls_amt2 ?? b.evlu_pfls_amt);
             }
-            if ("매수금액" == selectHead || "비중" == selectHead) {
-                if (prevSelectHead == selectHead) {
-                    return Number(a.pchs_amt ?? a.frcr_pchs_amt) - Number(b.pchs_amt ?? b.frcr_pchs_amt);
-                }
-                return Number(b.pchs_amt ?? b.frcr_pchs_amt) - Number(a.pchs_amt ?? a.frcr_pchs_amt);
+            else if ("평가금액" == selectHead) {
+                cond_a = Number(a.evlu_amt ?? a.frcr_evlu_amt2);
+                cond_b = Number(b.evlu_amt ?? b.frcr_evlu_amt2);
             }
-            if ("보유/주문가능" == selectHead) {
-                if (prevSelectHead == selectHead) {
-                    return Number(a.hldg_qty ?? a.ccld_qty_smtl1) - Number(b.hldg_qty ?? b.ccld_qty_smtl1);
-                }
-                return Number(b.hldg_qty ?? b.ccld_qty_smtl1) - Number(a.hldg_qty ?? a.ccld_qty_smtl1);
+            else if ("매수금액" == selectHead || "비중" == selectHead) {
+                cond_a = Number(a.pchs_amt ?? a.frcr_pchs_amt);
+                cond_b = Number(b.pchs_amt ?? b.frcr_pchs_amt);
             }
-            return 0;
+            else if ("보유/주문가능" == selectHead) {
+                cond_a = Number(a.hldg_qty ?? a.ccld_qty_smtl1);
+                cond_b = Number(b.hldg_qty ?? b.ccld_qty_smtl1);
+            }
+
+            return (prevSelectHead == selectHead) ? cond_a - cond_b : cond_b - cond_a;
         }).map((item, index) => {
-            if (DEBUG) console.log(`item["prdt_name"]`, item["prdt_name"], `item["prdt_name"].length`, item["prdt_name"].length);
+            // if (DEBUG) console.log(`item["prdt_name"]`, item["prdt_name"], `item["prdt_name"].length`, item["prdt_name"].length);
             const name = item["prdt_name"];
             const price = !!item["prpr"] ? item["prpr"] : item["ovrs_now_pric1"];
             // const crcy_cd = !!props.kiBalance.output2[0]["crcy_cd"] ? <span className="text-[0.6rem]">{"" + props.kiBalance.output2[0]["crcy_cd"]}</span> : <span className="text-[0.6rem]">{"원"}</span>;
@@ -162,6 +161,7 @@ export default function InquireBalanceResult(props: InquireBalanceResultProps) {
                         </div>
                     </div>
                 </>,
+
                 column_3: <>
                     <div className="flex flex-col font-mono font-bold text-xs text-black">
                         <div className="mb-0 pb-0">
@@ -172,10 +172,15 @@ export default function InquireBalanceResult(props: InquireBalanceResultProps) {
                         </div>
                     </div>
                 </>,
-                column_4: <div className={`font-mono font-bold text-xs flex justify-between ${Number(Number(evlu_amt) / Number(pchs_amt) * 100 - 100) >= 0 ? "text-red-500" : "text-blue-500"}`}>
-                    <div className="font-mono pr-1 text-[0.6rem]">
-                        ({formatNumber(Number(Number(evlu_amt) / Number(pchs_amt) * 100 - 100))}%)
+                column_4: <>
+                    <div className={`flex flex-col font-mono font-bold text-xs text-black ${Number(Number(evlu_amt) / Number(pchs_amt) * 100 - 100) >= 0 ? "text-red-500" : "text-blue-500"}`}>
+                        <div className="font-mono pr-1 text-[0.6rem]">
+                            {formatNumber(Number(Number(evlu_amt) / Number(pchs_amt) * 100 - 100))}%
+                        </div>
                     </div>
+                </>,
+                column_5: <div className={`font-mono font-bold text-xs flex justify-between ${Number(Number(evlu_amt) / Number(pchs_amt) * 100 - 100) >= 0 ? "text-red-500" : "text-blue-500"}`}>
+
                     <div className="flex flex-col">
                         <div>
                             {formatNumber(Number(evlu_pfls_amt2))}{crcy_cd}
@@ -185,8 +190,8 @@ export default function InquireBalanceResult(props: InquireBalanceResultProps) {
                         </div>
                     </div>
                 </div>,
-                column_5: <div className="text-xs font-mono font-bold text-black">{formatNumber((Number(pchs_amt) / Number(pchs_amt_smtl_amt) * 100))}%</div>,
-                column_6: <div className="flex flex-col text-xs font-mono text-black">
+                column_6: <div className="text-xs font-mono font-bold text-black">{formatNumber((Number(pchs_amt) / Number(pchs_amt_smtl_amt) * 100))}%</div>,
+                column_7: <div className="flex flex-col text-xs font-mono text-black">
                     <div>
                         {formatNumber(Number(evlu_amt))}{crcy_cd}
                     </div>
@@ -194,7 +199,7 @@ export default function InquireBalanceResult(props: InquireBalanceResultProps) {
                         {!!frst_bltn_exrt ? <span>({formatNumber(Number(evlu_amt) / Number(frst_bltn_exrt))} USD)</span> : ""}
                     </div>
                 </div>,
-                column_7: <div className="flex flex-col text-xs font-mono text-black">
+                column_8: <div className="flex flex-col text-xs font-mono text-black">
                     <div>
                         {formatNumber(Number(pchs_amt))}{crcy_cd}
                     </div>
@@ -202,8 +207,8 @@ export default function InquireBalanceResult(props: InquireBalanceResultProps) {
                         {!!frst_bltn_exrt ? <span>({formatNumber(Number(pchs_amt) / Number(frst_bltn_exrt))} USD)</span> : ""}
                     </div>
                 </div>,
-                column_8: <div className="font-mono text-xs text-black">{Number(hldg_qty).toFixed(0)}/{Number(ord_psbl_qty).toFixed(0)}</div>,
-                column_9: <>
+                column_9: <div className="font-mono text-xs text-black">{Number(hldg_qty).toFixed(0)}/{Number(ord_psbl_qty).toFixed(0)}</div>,
+                column_10: <>
                     <div className="flex p-0 m-0 gap-1 font-mono">
                         <DesignButton
                             handleOnClick={() => handleOnClick(item, "buy")}

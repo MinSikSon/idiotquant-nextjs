@@ -97,29 +97,23 @@ function TablesExample8({
                                             key={head}
                                             className={`border-b border-gray-300 pl-3 pb-2 ${customeStyle}`}
                                         >
-                                            <Popover>
-                                                <Popover.Trigger onClick={() => {
-                                                    // console.log(`setSelectHead`, !!setSelectHead, setSelectHead);
-                                                    if (!!!setSelectHead) {
-                                                        return; // do nothing
-                                                    }
-                                                    if (prevSelectHead == selectHead) {
-                                                        setPrevSelectHead("");
-                                                    }
-                                                    else {
-                                                        setPrevSelectHead(selectHead);
-                                                    }
-                                                    setSelectHead(head)
-                                                }}>
-                                                    <div className={`font-mono font-bold text-black cursor-pointer ${head.length >= 6 ? "text-[0.6rem]" : ""}`}>
-                                                        {head} {(prevSelectHead == head && selectHead == head) ? "🔼" : (selectHead == head ? "🔽" : "")}
-                                                    </div>
-                                                </Popover.Trigger>
-                                                {!!desc ? <Popover.Content className="p-2 border border-black rounded shadow shadow-blue-gray-500">
-                                                    <div className="text-xs font-mono text-black">{desc}</div>
-                                                </Popover.Content> : <></>}
-
-                                            </Popover>
+                                            <div onClick={() => {
+                                                console.log(`setSelectHead`, !!setSelectHead, setSelectHead);
+                                                if (!!!setSelectHead) {
+                                                    return; // do nothing
+                                                }
+                                                if (prevSelectHead == selectHead) {
+                                                    setPrevSelectHead("");
+                                                }
+                                                else {
+                                                    setPrevSelectHead(selectHead);
+                                                }
+                                                setSelectHead(head)
+                                            }}>
+                                                <div className={`font-mono font-bold text-black cursor-pointer ${head.length >= 6 ? "text-[0.6rem]" : ""}`}>
+                                                    {head} {(prevSelectHead == head && selectHead == head) ? "🔼" : (selectHead == head ? "🔽" : "")}
+                                                </div>
+                                            </div>
                                         </th>
                                     ))}
                                 </tr>
