@@ -99,6 +99,9 @@ export default function AlgorithmTrade() {
 
     function formatDateTime(date: string) {
         // console.log(`formatDateTime`, `date`, date);
+        if (!!!date) {
+            return "";
+        }
         date = date.replaceAll("\"", "").replaceAll("-", "/");
         const dateArr = date.split("T");
         const dateArr2 = dateArr[1].split(".");
@@ -119,7 +122,7 @@ export default function AlgorithmTrade() {
                 id: item["time_stamp"] + subItem["stock_name"], // key
                 column_2: <div className="text-xs">{subItem["stock_name"]}</div>,
                 column_3: <div className="text-xs">{subItem["remaining_token"]}</div>,
-                column_4: <div className="text-xs">{Number(subItem["stck_prpr"]).toLocaleString() + "원"}</div>,
+                column_4: <div className="text-xs">{Number(subItem["stck_prpr"]).toLocaleString() + " "}<span className="text-[0.6rem]">{market == "KR" ? "원" : "USD"}</span></div>,
                 expectedRateOfReturnColor: '', // x
                 column_5: <div className="text-xs">{subItem["ORD_QTY"]}</div>,
                 column_6: <div className="text-xs">{subItem["remaining_token"] - investment}</div>,
@@ -131,9 +134,9 @@ export default function AlgorithmTrade() {
     })).reverse().flat();
 
     if (DEBUG) console.log(`capitalToken.state`, capitalToken.state);
-    if ("fulfilled" != capitalToken.state) {
-        return <Button variant="ghost"><Spinner size="sm" /> loading...</Button>;
-    }
+    // if ("fulfilled" != capitalToken.state) {
+    //     return <Button variant="ghost"><Spinner size="sm" /> loading...</Button>;
+    // }
 
     const time_stamp: any = capitalToken.value.time_stamp ?? {};
     const stock_list: any = capitalToken.value.stock_list ?? [];
@@ -158,18 +161,16 @@ export default function AlgorithmTrade() {
                                        transition-all duration-150 [box-shadow:0_4px_0_0_#D5D5D5,0_8px_0_0_#D5D5D541] border-[1px]
                                        `}
                 />
-
+                <ButtonGroup isPill color="secondary" size="xs" variant="outline" className="pl-1">
+                    <Button onClick={() => setMarket(market == "KR" ? "US" : "KR")} className={`text-[0.7rem] p-1 ${market == "KR" ? "text-blue-500" : "text-gray-400"}`}>KR</Button>
+                    <Button onClick={() => setMarket(market == "KR" ? "US" : "KR")} className={`text-[0.7rem] p-1 ${market == "US" ? "text-blue-500" : "text-gray-400"}`}>US</Button>
+                </ButtonGroup>
                 {"fulfilled" != capitalToken.state ?
                     <Button variant="ghost"><Spinner size="sm" /> loading...</Button>
                     : <>
                         <div className="text-[0.6rem] text-black ml-1">{time.toLocaleString("ko-KR", { timeZone: "Asia/Seoul" })}</div>
                     </>}
-                <ButtonGroup isPill color="secondary" size="xs" variant="outline" className="pl-1">
-                    <Button onClick={() => setMarket("KR")} className={`px-1 py-0 ${market == "KR" ? "text-blue-500" : "text-gray-500"}`}>KR</Button>
-                    <Button onClick={() => setMarket("US")} className={`px-1 py-0 ${market == "US" ? "text-blue-500" : "text-gray-500"}`}>US</Button>
-                </ButtonGroup>
             </div>
-
         </>,
         desc: <>
             <div className="border border-black rounded p-1 m-1">
@@ -286,7 +287,7 @@ export default function AlgorithmTrade() {
         market_date: <Popover>
             <Popover.Trigger>
                 <div className="cursor-pointer pt-4 text-sm text-black">
-                    구매 history <span className="text-xs text-black">{`(누적 알고리즘 매수금: ${cummulative_investment}원)`}</span>
+                    구매 history <span className="text-xs text-black">{`(누적 알고리즘 매수금: ${Number(cummulative_investment).toFixed(4)} ${market == "KR" ? "원" : "USD"})`}</span>
                 </div>
             </Popover.Trigger>
             <Popover.Content className="p-2 border border-black rounded shadow shadow-blue-gray-500">
