@@ -33,7 +33,11 @@ const config = {
         },
       },
       fontFamily: {
-        mono: ["Cascadia Code", "Fira Code", "Courier New", "monospace"],
+        // mono: ["Cascadia Code", "Fira Code", "Courier New", "monospace"],
+        // mono: ['D2Coding', 'Noto Sans Mono', 'IBM Plex Mono', 'monospace'],
+        // mono: ['Noto Sans Mono', 'D2Coding', 'IBM Plex Mono', 'monospace'],
+        // mono: ['Courier New', 'Courier', 'monospace'],
+        // mono: ['Courier New', 'Courier', 'monospace', 'Nanum Gothic Coding', 'Source Code Pro'],  // 한글을 고려한 고정폭 폰트 추가
         serif: ["Times New Roman", "Georgia", "serif"],
       },
     },

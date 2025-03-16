@@ -66,24 +66,95 @@ export default function Search() {
         dispatch(reqGetQuotationsPriceDetail({ koreaInvestmentToken: kiToken, PDNO: stockName }));
     }
 
-    const kiUsMaretSearchInfoOutput: KoreaInvestmentOverseasSearchInfoOutput = kiUsMaretSearchInfo.output;
-    const kiUsMaretPriceDetailOutput: KoreaInvestmentOverseasPriceDetailOutput = kiUsMaretPriceDetail.output;
-    if (!!!kiUsMaretSearchInfoOutput && !!!kiUsMaretPriceDetailOutput) {
-        <SearchAutocomplete onSearchButton={onSearchButton} validCorpNameArray={nasdaq_tickers} />
+    if (!!!kiUsMaretSearchInfo.rt_cd && !!!kiUsMaretPriceDetail.rt_cd) {
+        return <SearchAutocomplete onSearchButton={onSearchButton} validCorpNameArray={nasdaq_tickers} />
     }
 
+    const kiUsMaretSearchInfoOutput: KoreaInvestmentOverseasSearchInfoOutput = kiUsMaretSearchInfo.output;
+    const kiUsMaretPriceDetailOutput: KoreaInvestmentOverseasPriceDetailOutput = kiUsMaretPriceDetail.output;
+
+
+    const texts = ["종가", "시가총액", "상장추식수"];
+    const maxLength = Math.max(...texts.map(text => text.length * 2));
+    console.log(`maxLength`, maxLength);
     return <>
         <SearchAutocomplete onSearchButton={onSearchButton} validCorpNameArray={nasdaq_tickers} />
-        <div className="font-mono">{kiUsMaretSearchInfoOutput.prdt_name} ({kiUsMaretSearchInfoOutput.prdt_eng_name})</div>
-        <div>
-            {/* <div className="text-xs">/uapi/overseas-price/v1/quotations/search-info</div> */}
-            {/* <div className="text-[0.5rem]">{JSON.stringify(kiUsMaretSearchInfo)}</div> */}
-            <div className="text-[0.5rem]">{Object.keys(kiUsMaretSearchInfoOutput).map(key => { return <div key={key}>{key}:{kiUsMaretSearchInfoOutput[key as keyof typeof kiUsMaretSearchInfoOutput]}</div> })}</div>
-        </div>
-        <div>
-            {/* <div className="text-xs">/uapi/overseas-price/v1/quotations/price-detail</div> */}
-            {/* <div className="text-[0.5rem]">{JSON.stringify(kiUsMaretPriceDetail)}</div> */}
-            <div className="text-[0.5rem]">{Object.keys(kiUsMaretPriceDetailOutput).map(key => { return <div key={key}>{key}:{kiUsMaretPriceDetailOutput[key as keyof typeof kiUsMaretPriceDetailOutput]}</div> })}</div>
+        <div className="border border-black rounded p-1 m-1">
+            <div className="text-base">{kiUsMaretSearchInfoOutput.prdt_name}({kiUsMaretSearchInfoOutput.prdt_eng_name}) - {kiUsMaretSearchInfoOutput.tr_mket_name}</div>
+            <div className="text-xs border border-black rounded p-1 m-1">
+                <div className="flex gap-2">
+                    <div className="w-3/12 bg-yellow-200 text-right">현재가</div>
+                    <div className="w-5/12 bg-yellow-100 text-right">{kiUsMaretPriceDetailOutput.last} {kiUsMaretPriceDetailOutput.curr}</div>
+                    <div className="w-4/12"></div>
+                </div>
+                <div className="flex gap-2">
+                    <div className="w-3/12 text-right">시가총액</div>
+                    <div className="w-5/12 text-right">{kiUsMaretPriceDetailOutput.tomv} {kiUsMaretPriceDetailOutput.curr}</div>
+                    <div className="w-4/12"></div>
+                </div>
+                <div className="flex gap-2">
+                    <div className="w-3/12 text-right">상장주식수</div>
+                    <div className="w-5/12 text-right">{kiUsMaretSearchInfoOutput.lstg_stck_num} 개</div>
+                    <div className="w-4/12"></div>
+                </div>
+            </div>
+            <div className="text-xs border border-black rounded p-1 m-1">
+                <div className="flex gap-2">
+                    <div className="w-3/12 text-right">52주 최저가</div>
+                    <div className="w-5/12 text-right">{kiUsMaretPriceDetailOutput.l52p} {kiUsMaretPriceDetailOutput.curr}</div>
+                    <div className="w-4/12 text-[0.6rem]">({kiUsMaretPriceDetailOutput.l52d})</div>
+                </div>
+                <div className="flex gap-2">
+                    <div className="w-3/12 text-right bg-red-300">52주 최고가</div>
+                    <div className="w-5/12 text-right bg-red-200">{kiUsMaretPriceDetailOutput.h52p} {kiUsMaretPriceDetailOutput.curr}</div>
+                    <div className="w-4/12 text-[0.6rem]">({kiUsMaretPriceDetailOutput.h52d})</div>
+                </div>
+            </div>
+            <div className="text-xs border border-black rounded p-1 m-1">
+                <div className="flex gap-2">
+                    <div className="w-3/12 text-right">PER</div>
+                    <div className="w-5/12 text-right">{kiUsMaretPriceDetailOutput.perx} 배</div>
+                    <div className="w-4/12"></div>
+                </div>
+                <div className="flex gap-2">
+                    <div className="w-3/12 text-right">PBR</div>
+                    <div className="w-5/12 text-right">{kiUsMaretPriceDetailOutput.pbrx} 배</div>
+                    <div className="w-4/12"></div>
+                </div>
+                <div className="flex gap-2">
+                    <div className="w-3/12 text-right">EPS</div>
+                    <div className="w-5/12 text-right">{kiUsMaretPriceDetailOutput.epsx} {kiUsMaretPriceDetailOutput.curr}</div>
+                    <div className="w-4/12"></div>
+                </div>
+                <div className="flex gap-2">
+                    <div className="w-3/12 text-right">BPS</div>
+                    <div className="w-5/12 text-right">{kiUsMaretPriceDetailOutput.bpsx} {kiUsMaretPriceDetailOutput.curr}</div>
+                    <div className="w-4/12"></div>
+                </div>
+            </div>
+            <div className="text-xs border border-black rounded p-1 m-1">
+                <div className="flex gap-2">
+                    <div className="w-3/12 text-right">거래량</div>
+                    <div className="w-5/12 text-right">{Number(kiUsMaretPriceDetailOutput.tvol)} 회</div>
+                    <div className="w-4/12"></div>
+                </div>
+                <div className="flex gap-2">
+                    <div className="w-3/12 text-right">전일 거래대금</div>
+                    <div className="w-5/12 text-right">{kiUsMaretPriceDetailOutput.pamt} {kiUsMaretPriceDetailOutput.curr}</div>
+                    <div className="w-4/12"></div>
+                </div>
+                <div className="flex gap-2">
+                    <div className="w-3/12 text-right text-[0.6rem]">거래대금/시가총액</div>
+                    <div className="w-5/12 text-right">{(Number(Number(kiUsMaretPriceDetailOutput.pamt) / Number(kiUsMaretPriceDetailOutput.tomv)) * 100).toFixed(3)} %</div>
+                    <div className="w-4/12"></div>
+                </div>
+            </div>
+            <div className="text-xs border border-black rounded p-1 m-1">
+                <div className="flex gap-2">
+                    <div className="w-3/12 text-right">업종(섹터)</div>
+                    <div className="w-9/12 text-left">{kiUsMaretPriceDetailOutput.e_icod}</div>
+                </div>
+            </div>
         </div>
     </>
 }

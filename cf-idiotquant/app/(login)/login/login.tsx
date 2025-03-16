@@ -90,6 +90,13 @@ export default function Login(props: any) {
     const kakaoNickName = useAppSelector(selectKakaoNickName);
     const kakaoId = useAppSelector(selectKakaoId);
 
+    interface KakaoLoginErrorInterface {
+        error: string;
+        error_description: string; // "authorization code not found for code=AnZhlhnF7IzjA81_K-gxDx2w3wY4ShoMUUikaIk9pMDx70iBIQH7WQAAAAQKFxAvAAABlZ0Pu28h5oEAb4_jFQ",
+        error_code: string //  "KOE320"
+    }
+    const [responseToken, setResponseToken] = React.useState<KakaoLoginErrorInterface>({ error: "", error_description: "", error_code: "" });
+
     React.useEffect(() => {
         async function callback() {
             if (DEBUG) console.log(`[Login]`, `getCookie("kakaoId"):`, getCookie("kakaoId"), `getCookie("kakaoNickName"):`, getCookie("kakaoNickName"));
@@ -110,8 +117,10 @@ export default function Login(props: any) {
             }
 
             const responseToken = await RequestToken(_authorizeCode, `${window.location.origin}${props.parentUrl}`);
+            setResponseToken(responseToken);
             if (!!responseToken.error_code && "KOE320" == responseToken.error_code) {
                 if (DEBUG) console.log(`[Login]`, `responseToken:`, responseToken);
+                dispatch(setKakaoAuthCode(""));
                 return;
             }
 
