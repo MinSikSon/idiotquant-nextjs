@@ -1,4 +1,3 @@
-
 "use client"
 
 import React from "react";
@@ -11,7 +10,7 @@ import { DesignButton } from "@/components/designButton";
 
 const DEBUG = false;
 
-async function RequestNickname(_token) {
+async function RequestNickname(_token: any) {
     if (!!!_token) return;
 
     const requestUrl = `https://kapi.kakao.com/v2/user/me`;
@@ -27,7 +26,7 @@ async function RequestNickname(_token) {
     return response;
 }
 
-async function RequestToken(_authorizeCode, redirectUrl) {
+async function RequestToken(_authorizeCode: any, redirectUrl: any) {
     const tokenUrl = `https://kauth.kakao.com/oauth/token?grant_type=authorization_code&client_id=${process.env.NEXT_PUBLIC_KAKAO_REST_API_KEY}&redirect_uri=${encodeURIComponent(redirectUrl)}&code=${_authorizeCode}`;
 
     const responseToken = await fetch(tokenUrl, {
@@ -40,15 +39,15 @@ async function RequestToken(_authorizeCode, redirectUrl) {
     return responseToken;
 }
 
-async function registerUser(id, nickname) {
-    async function fetchAndSet(subUrl) {
+async function registerUser(id: any, nickname: any) {
+    async function fetchAndSet(subUrl: any) {
 
         const data = {
             'id': id,
             'nickname': nickname,
         };
 
-        const options = {
+        const options: any = {
             method: "POST",
             credentials: "include",  // include credentials (like cookies) in the request
             headers: {
@@ -80,7 +79,7 @@ async function registerUser(id, nickname) {
     fetchAndSet('login');
 }
 
-export default function Login(props) {
+export default function Login(props: any) {
     const router = useRouter();
 
     const [nickname, setNickname] = React.useState("");
@@ -95,7 +94,7 @@ export default function Login(props) {
         async function callback() {
             if (DEBUG) console.log(`[Login]`, `getCookie("kakaoId"):`, getCookie("kakaoId"), `getCookie("kakaoNickName"):`, getCookie("kakaoNickName"));
             if (DEBUG) console.log(`[Login]`, `kakaoId:`, kakaoId, `kakaoAuthCode:`, kakaoAuthCode);
-            let _authorizeCode = ""
+            let _authorizeCode: any = ""
             if ("" == kakaoAuthCode) {
                 _authorizeCode = new URL(window.location.href).searchParams.get('code');
                 if (!!!_authorizeCode) {
@@ -143,14 +142,14 @@ export default function Login(props) {
         callback();
     }, []);
 
-    function onClickLogin(redirectUrl) {
+    function onClickLogin(redirectUrl: any) {
         if (DEBUG) console.log(`Login`);
         const authorizeEndpoint = `https://kauth.kakao.com/oauth/authorize?response_type=code&client_id=${process.env.NEXT_PUBLIC_KAKAO_REST_API_KEY}&redirect_uri=${redirectUrl}`;
 
         router.push(authorizeEndpoint);
     }
 
-    const Logout = (redirectUrl) => {
+    const Logout = (redirectUrl: any) => {
         if (DEBUG) console.log(`Logout`);
         clearCookie("kakaoId");
         clearCookie("kakaoNickName");

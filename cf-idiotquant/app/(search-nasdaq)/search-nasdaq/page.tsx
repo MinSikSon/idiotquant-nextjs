@@ -15,6 +15,8 @@ import nasdaq_tickers from "@/public/data/usStockSymbols/nasdaq_tickers.json";
 import Login from "@/app/(login)/login/login";
 import Auth from "@/components/auth";
 
+const DEBUG = true;
+
 export default function Search() {
     const pathname = usePathname();
     const dispatch = useAppDispatch();
@@ -27,7 +29,7 @@ export default function Search() {
     const kiUsMaretPriceDetail: any = useAppSelector(getKoreaInvestmentUsMaretPriceDetail);
 
     React.useEffect(() => {
-        // console.log(`[Search]`, `kiToken:`, kiToken);
+        if (DEBUG) console.log(`[Search]`, `kiToken:`, kiToken);
         if ("cf" == loginState || "kakao" == loginState) {
             const isValidKiAccessToken = !!kiToken["access_token"];
             if (true == isValidKiAccessToken) {
@@ -37,10 +39,10 @@ export default function Search() {
     }, [kiToken, loginState]);
 
     React.useEffect(() => {
-        // console.log(`React.useEffect [kiUsMaretSearchInfo]`, kiUsMaretSearchInfo);
+        if (DEBUG) console.log(`React.useEffect [kiUsMaretSearchInfo]`, kiUsMaretSearchInfo);
     }, [kiUsMaretSearchInfo])
     React.useEffect(() => {
-        // console.log(`React.useEffect [kiUsMaretPriceDetail]`, kiUsMaretPriceDetail);
+        if (DEBUG) console.log(`React.useEffect [kiUsMaretPriceDetail]`, kiUsMaretPriceDetail);
     }, [kiUsMaretPriceDetail])
 
     if ("init" == loginState || "rejected" == loginState) {
@@ -56,7 +58,7 @@ export default function Search() {
     }
 
     function onSearchButton(stockName: any) {
-        console.log(`[onSearchButton]`, `stockName`, stockName);
+        if (DEBUG) console.log(`[onSearchButton]`, `stockName`, stockName);
         dispatch(reqGetQuotationsSearchInfo({ koreaInvestmentToken: kiToken, PDNO: stockName }));
         dispatch(reqGetQuotationsPriceDetail({ koreaInvestmentToken: kiToken, PDNO: stockName }));
     }
