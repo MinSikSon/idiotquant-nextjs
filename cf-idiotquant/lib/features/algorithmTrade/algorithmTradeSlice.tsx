@@ -1,6 +1,6 @@
 import { PayloadAction } from "@reduxjs/toolkit";
 import { createAppSlice } from "@/lib/createAppSlice";
-import { getCapitalToken, getInquirePriceMulti, getPurchaseLog } from "./algorithmTradeAPI";
+import { getCapitalToken, getInquirePriceMulti, getUsCapitalToken } from "./algorithmTradeAPI";
 import { registerCookie } from "@/components/util";
 import { KoreaInvestmentToken } from "../koreaInvestment/koreaInvestmentSlice";
 import { string } from "three/tsl";
@@ -15,6 +15,8 @@ interface CapitalTokenTypeValueStock {
     "name": string; //"전방"
     "PDNO": string; // "000950"
     "token": number; // 292
+    "output_inquirePrice"?: any;
+    "output_balanceSheet"?: any;
 }
 
 interface CapitalTokenTypeValuePurchaseLogStockList {
@@ -54,6 +56,7 @@ interface AlgorithmTradeType {
     capital_token: CapitalTokenType;
     inquire_price_multi: any;
     purchase_log: any;
+    us_capital_token: CapitalTokenType;
 }
 const initialState: AlgorithmTradeType = {
     state: "init",
@@ -72,6 +75,19 @@ const initialState: AlgorithmTradeType = {
     },
     inquire_price_multi: {},
     purchase_log: {},
+    us_capital_token: {
+        state: "init",
+        value: {
+            time_stamp: { current: "", prev: "", prevPrev: "" },
+            capital_charge_per_year: 0,
+            capital_charge_rate: 0,
+            refill_stock_index: 0,
+            stock_list: [],
+            purchase_log: [],
+            corp_scan_index: 0,
+            token_per_stock: 0,
+        }
+    }
 }
 export const algorithmTradeSlice = createAppSlice({
     name: "algorithmTrade",
@@ -123,57 +139,37 @@ export const algorithmTradeSlice = createAppSlice({
                 },
             }
         ),
-        reqGetPurchaseLog: create.asyncThunk(
-            async () => {
-                return await getPurchaseLog();
+        reqGetUsCapitalToken: create.asyncThunk(
+            async ({ koreaInvestmentToken }: { koreaInvestmentToken: KoreaInvestmentToken }) => {
+                return await getUsCapitalToken(koreaInvestmentToken);
             },
             {
                 pending: (state) => {
-                    // console.log(`[reqGetPurchaseLog] pending`);
+                    // console.log(`[reqGetCapitalToken] pending`);
                     state.state = "pending";
+                    state.us_capital_token.state = "pending";
                 },
                 fulfilled: (state, action) => {
-                    console.log(`[reqGetPurchaseLog] fulfilled`, `action.payload`, action.payload);
-                    const json = action.payload;
-                    state.purchase_log = json;
+                    // console.log(`[reqGetCapitalToken] fulfilled`, `action.payload`, typeof action.payload, action.payload);
+                    const json = JSON.parse(action.payload);
+                    console.log(`[reqGetCapitalToken] fulfilled json`, json);
+                    state.us_capital_token = { state: "fulfilled", value: json };
                     state.state = "fulfilled";
                 },
                 rejected: (state) => {
-                    console.log(`[reqGetPurchaseLog]rejected`);
+                    // console.log(`[reqGetCapitalToken] rejected`);
                     state.state = "rejected";
                 },
             }
         ),
-        // reqPostOrderCash: create.asyncThunk(
-        //     async ({ koreaInvestmentToken, PDNO, buyOrSell }: { koreaInvestmentToken: KoreaInvestmentToken, PDNO: string, buyOrSell: string }) => {
-        //         return await postOrderCash(koreaInvestmentToken, PDNO, buyOrSell);
-        //     },
-        //     {
-        //         pending: (state) => {
-        //             // console.log(`[reqPostOrderCash] pending`);
-        //             state.koreaInvestmentOrderCash.state = "pending";
-        //         },
-        //         fulfilled: (state, action) => {
-        //             // console.log(`[reqPostOrderCash] fulfilled`,`action.payload`, typeof action.payload, action.payload);
-        //             if (undefined != action.payload["output1"]) {
-        //                 const newKoreaInvestmentOrderCash: KoreaInvestmentOrderCash = action.payload;
-        //                 state.koreaInvestmentOrderCash = { ...newKoreaInvestmentOrderCash, state: "fulfilled" };
-        //                 state.state = "order-cash";
-        //             }
-        //         },
-        //         rejected: (state) => {
-        //             console.log(`[reqPostOrderCash] get-rejected 2`);
-        //         },
-        //     }
-        // ),
     }),
     selectors: {
         selectAlgorithmTraceState: (state) => state.state,
         selectCapitalToken: (state) => state.capital_token,
+        selectUsCapitalToken: (state) => state.us_capital_token,
         selectInquirePriceMulti: (state) => state.inquire_price_multi,
-        selectPurchageLog: (state) => state.purchase_log,
     }
 });
 
-export const { reqGetInquirePriceMulti, reqGetCapitalToken, reqGetPurchaseLog } = algorithmTradeSlice.actions;
-export const { selectAlgorithmTraceState, selectCapitalToken, selectInquirePriceMulti, selectPurchageLog } = algorithmTradeSlice.selectors;
+export const { reqGetInquirePriceMulti, reqGetCapitalToken, reqGetUsCapitalToken } = algorithmTradeSlice.actions;
+export const { selectAlgorithmTraceState, selectCapitalToken, selectInquirePriceMulti, selectUsCapitalToken } = algorithmTradeSlice.selectors;

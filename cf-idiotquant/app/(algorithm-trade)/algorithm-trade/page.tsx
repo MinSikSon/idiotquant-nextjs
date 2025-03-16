@@ -2,28 +2,32 @@
 
 import { DesignButton } from "@/components/designButton";
 import TablesExample8, { Example8TableHeadType, Example8TableRowType, TablesExample8PropsType } from "@/components/tableExample8";
-import { CapitalTokenType, selectCapitalToken, selectInquirePriceMulti } from "@/lib/features/algorithmTrade/algorithmTradeSlice";
+import { CapitalTokenType, reqGetUsCapitalToken, selectCapitalToken, selectInquirePriceMulti, selectUsCapitalToken } from "@/lib/features/algorithmTrade/algorithmTradeSlice";
 import { reqGetCapitalToken, reqGetInquirePriceMulti } from "@/lib/features/algorithmTrade/algorithmTradeSlice";
 import { getKoreaInvestmentToken, KoreaInvestmentToken } from "@/lib/features/koreaInvestment/koreaInvestmentSlice";
 import { useAppDispatch, useAppSelector } from "@/lib/hooks";
-import { Button, Popover, Spinner } from "@material-tailwind/react";
+import { Button, ButtonGroup, Popover, Spinner } from "@material-tailwind/react";
 import React from "react";
 
-const DEBUG = true;
+const DEBUG = false;
 
 export default function AlgorithmTrade() {
     const dispatch = useAppDispatch();
 
-    const capitalToken: CapitalTokenType = useAppSelector(selectCapitalToken);
+    const kr_capital_token: CapitalTokenType = useAppSelector(selectCapitalToken);
+    const us_capital_token: CapitalTokenType = useAppSelector(selectUsCapitalToken);
     const inquirePriceMulti: any = useAppSelector(selectInquirePriceMulti);
     const kiToken: KoreaInvestmentToken = useAppSelector(getKoreaInvestmentToken);
 
     const [time, setTime] = React.useState<any>('');
 
+    const [market, setMarket] = React.useState<"KR" | "US">("KR");
+
     function handleOnClick() {
         setTime(new Date());
         if (DEBUG) console.log(`[handleOnClick] kiToken`, kiToken);
         dispatch(reqGetCapitalToken({ koreaInvestmentToken: kiToken }));
+        dispatch(reqGetUsCapitalToken({ koreaInvestmentToken: kiToken }));
     }
 
     React.useEffect(() => {
@@ -31,33 +35,36 @@ export default function AlgorithmTrade() {
     }, []);
 
     React.useEffect(() => {
-        if (DEBUG) console.log(`capitalToken`, capitalToken);
+        if (DEBUG) console.log(`kr_capital_token`, kr_capital_token);
+        if (DEBUG) console.log(`us_capital_token`, us_capital_token);
         if (DEBUG) console.log(`kiToken`, kiToken);
 
-        if ("fulfilled" == kiToken.state && "fulfilled" == capitalToken.state && capitalToken.value.stock_list.length > 0) {
-            const PDNOs = capitalToken.value.stock_list.map((item: any) => item.PDNO);
-            const filteredPDNOs = PDNOs.filter((item: any) => {
-                if (undefined == inquirePriceMulti[item]) {
-                    return true;
-                }
+        // if ("fulfilled" == kiToken.state) {
+        //     if ("fulfilled" == kr_capital_token.state && kr_capital_token.value.stock_list.length > 0) {
+        //         const PDNOs = kr_capital_token.value.stock_list.map((item: any) => item.PDNO);
+        //         const filteredPDNOs = PDNOs.filter((item: any) => {
+        //             if (undefined == inquirePriceMulti[item]) {
+        //                 return true;
+        //             }
 
-                if (1 == inquirePriceMulti[item].rt_cd) // fail
-                {
-                    return true;
-                }
+        //             if (1 == inquirePriceMulti[item].rt_cd) // fail
+        //             {
+        //                 return true;
+        //             }
 
-                return false;
-            });
+        //             return false;
+        //         });
 
-            const chunkSize = 20;
-            for (let i = 0; i < filteredPDNOs.length; i += chunkSize) {
-                const chunk = filteredPDNOs.slice(i, i + chunkSize);
-                console.log(`Dispatching filteredPDNOs:`, chunk);
+        //         const chunkSize = 20;
+        //         for (let i = 0; i < filteredPDNOs.length; i += chunkSize) {
+        //             const chunk = filteredPDNOs.slice(i, i + chunkSize);
+        //             console.log(`Dispatching filteredPDNOs:`, chunk);
 
-                dispatch(reqGetInquirePriceMulti({ koreaInvestmentToken: kiToken, PDNOs: chunk }));
-            }
-        }
-    }, [capitalToken, kiToken]);
+        //             dispatch(reqGetInquirePriceMulti({ koreaInvestmentToken: kiToken, PDNOs: chunk }));
+        //         }
+        //     }
+        // }
+    }, [kr_capital_token, us_capital_token, kiToken]);
 
     React.useEffect(() => {
         if (DEBUG) console.log(`inquirePriceMulti`, inquirePriceMulti);
@@ -98,6 +105,8 @@ export default function AlgorithmTrade() {
         return `${dateArr[0]} ${dateArr2[0]}`;
     }
 
+    const capitalToken = "KR" == market ? kr_capital_token : us_capital_token;
+
     let cummulative_investment = 0;
     const purchase_log = capitalToken.value.purchase_log ?? [];
     if (DEBUG) console.log(`purchase_log`, purchase_log);
@@ -134,7 +143,7 @@ export default function AlgorithmTrade() {
     let cummulative_token = 0;
     const props: TablesExample8PropsType = {
         title: <>
-            <div className="flex pb-2 items-center">
+            <div className="flex items-center">
                 <DesignButton
                     handleOnClick={() => {
                         handleOnClick()
@@ -153,9 +162,14 @@ export default function AlgorithmTrade() {
                 {"fulfilled" != capitalToken.state ?
                     <Button variant="ghost"><Spinner size="sm" /> loading...</Button>
                     : <>
-                        <div className="text-[0.6rem] text-black ml-2">{time.toLocaleString("ko-KR", { timeZone: "Asia/Seoul" })}</div>
+                        <div className="text-[0.6rem] text-black ml-1">{time.toLocaleString("ko-KR", { timeZone: "Asia/Seoul" })}</div>
                     </>}
+                <ButtonGroup isPill color="secondary" size="xs" variant="outline" className="pl-1">
+                    <Button onClick={() => setMarket("KR")} className={`px-1 py-0 ${market == "KR" ? "text-blue-500" : "text-gray-500"}`}>KR</Button>
+                    <Button onClick={() => setMarket("US")} className={`px-1 py-0 ${market == "US" ? "text-blue-500" : "text-gray-500"}`}>US</Button>
+                </ButtonGroup>
             </div>
+
         </>,
         desc: <>
             <div className="border border-black rounded p-1 m-1">
