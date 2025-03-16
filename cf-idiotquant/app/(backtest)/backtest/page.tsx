@@ -258,7 +258,7 @@ export default function BackTest() {
                             </Button>
                         </Link>
                         <Button color="info" size="sm" variant="outline" className="hover:text-blue-500 hover:border-blue-500" disabled={"loading" == backTestConditionFilterResultType.state ? true : false} onClick={() => handleOnClick()}>
-                            {"loading" == backTestConditionFilterResultType.state ? <div className="flex"><Spinner size="sm" /><div>등록 중</div></div> : "등록"}
+                            {"loading" == backTestConditionFilterResultType.state ? <div className="flex"><Spinner size="sm" /> 등록 중</div> : "등록"}
                         </Button>
                     </div>
                 </div>

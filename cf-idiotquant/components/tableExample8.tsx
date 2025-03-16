@@ -86,7 +86,7 @@ function TablesExample8({
                 </Card.Header>
 
                 {tableRow.length == 0 ?
-                    <Button variant="ghost" className="font-mono flex">{!!msg ? <>{msg}</> : <><Spinner size="sm" />loading...</>}</Button>
+                    <Button variant="ghost">{!!msg ? <>{msg}</> : <><Spinner size="sm" /> loading...</>}</Button>
                     :
                     <Card.Body className="overflow-scroll !px-0 pt-0 pb-2">
                         <table className="w-full min-w-max table-auto items-center">

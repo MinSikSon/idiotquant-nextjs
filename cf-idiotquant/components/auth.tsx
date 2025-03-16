@@ -97,6 +97,6 @@ export default function Auth() {
 
 
     return <>
-        <Button className="border-0 bg-none" variant="outline"><Spinner size="sm" />loading</Button>
+        <Button variant="ghost"><Spinner size="sm" /> loading...</Button>
     </>
 }

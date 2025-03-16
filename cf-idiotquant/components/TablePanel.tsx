@@ -102,7 +102,7 @@ export default function TablePanel(props: any) {
 
     const NUM_OF_STOCK_ITEMS = stockNameList.length;
     if (0 == NUM_OF_STOCK_ITEMS) {
-        return <Button variant="solid" className="font-mono"><Spinner size="sm" />{props.loadingMsg}</Button>
+        return <Button variant="ghost"><Spinner size="sm" /> {props.loadingMsg}</Button>
     }
 
     let cumulativeRatio = 0;

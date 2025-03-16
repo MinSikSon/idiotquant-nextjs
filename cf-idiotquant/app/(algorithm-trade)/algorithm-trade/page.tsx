@@ -151,7 +151,7 @@ export default function AlgorithmTrade() {
                 />
 
                 {"fulfilled" != capitalToken.state ?
-                    <Button variant="ghost" className="p-0 px-1 m-0 bg-white text-black font-mono flex"><Spinner size="sm" />loading...</Button>
+                    <Button variant="ghost"><Spinner size="sm" /> loading...</Button>
                     : <>
                         <div className="font-mono text-[0.6rem] text-black ml-2">{time.toLocaleString("ko-KR", { timeZone: "Asia/Seoul" })}</div>
                     </>}
