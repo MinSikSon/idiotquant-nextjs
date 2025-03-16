@@ -1,3 +1,4 @@
+
 "use client"
 
 import React from "react";
@@ -7,6 +8,8 @@ import { selectKakaoAuthCode, selectKakaoId, selectKakaoNickName, setKakaoAuthCo
 import { useAppDispatch, useAppSelector } from "@/lib/hooks";
 import { clearCookie, getCookie, registerCookie } from "@/components/util";
 import { DesignButton } from "@/components/designButton";
+
+const DEBUG = false;
 
 async function RequestNickname(_token) {
     if (!!!_token) return;
@@ -90,8 +93,8 @@ export default function Login(props) {
 
     React.useEffect(() => {
         async function callback() {
-            console.log(`[Login]`, `getCookie("kakaoId"):`, getCookie("kakaoId"), `getCookie("kakaoNickName"):`, getCookie("kakaoNickName"));
-            console.log(`[Login]`, `kakaoId:`, kakaoId, `kakaoAuthCode:`, kakaoAuthCode);
+            if (DEBUG) console.log(`[Login]`, `getCookie("kakaoId"):`, getCookie("kakaoId"), `getCookie("kakaoNickName"):`, getCookie("kakaoNickName"));
+            if (DEBUG) console.log(`[Login]`, `kakaoId:`, kakaoId, `kakaoAuthCode:`, kakaoAuthCode);
             let _authorizeCode = ""
             if ("" == kakaoAuthCode) {
                 _authorizeCode = new URL(window.location.href).searchParams.get('code');
@@ -99,7 +102,7 @@ export default function Login(props) {
                     return;
                 }
 
-                console.log(`[Login]`, `_authorizeCode:`, _authorizeCode);
+                if (DEBUG) console.log(`[Login]`, `_authorizeCode:`, _authorizeCode);
 
                 dispatch(setKakaoAuthCode(_authorizeCode));
             }
@@ -109,7 +112,7 @@ export default function Login(props) {
 
             const responseToken = await RequestToken(_authorizeCode, `${window.location.origin}${props.parentUrl}`);
             if (!!responseToken.error_code && "KOE320" == responseToken.error_code) {
-                console.log(`[Login]`, `responseToken:`, responseToken);
+                if (DEBUG) console.log(`[Login]`, `responseToken:`, responseToken);
                 return;
             }
 
@@ -141,14 +144,14 @@ export default function Login(props) {
     }, []);
 
     function onClickLogin(redirectUrl) {
-        console.log(`Login`);
+        if (DEBUG) console.log(`Login`);
         const authorizeEndpoint = `https://kauth.kakao.com/oauth/authorize?response_type=code&client_id=${process.env.NEXT_PUBLIC_KAKAO_REST_API_KEY}&redirect_uri=${redirectUrl}`;
 
         router.push(authorizeEndpoint);
     }
 
     const Logout = (redirectUrl) => {
-        console.log(`Logout`);
+        if (DEBUG) console.log(`Logout`);
         clearCookie("kakaoId");
         clearCookie("kakaoNickName");
         clearCookie("koreaInvestmentToken");
