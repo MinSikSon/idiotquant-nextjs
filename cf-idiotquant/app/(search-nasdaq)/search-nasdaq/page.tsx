@@ -67,7 +67,7 @@ export default function Search() {
     }
 
     if (!!!kiUsMaretSearchInfo.rt_cd && !!!kiUsMaretPriceDetail.rt_cd) {
-        return <SearchAutocomplete onSearchButton={onSearchButton} validCorpNameArray={nasdaq_tickers} />
+        return <SearchAutocomplete placeHolder={"NASDAQ ticker 를 입력하세요..."} onSearchButton={onSearchButton} validCorpNameArray={nasdaq_tickers} />
     }
 
     const kiUsMaretSearchInfoOutput: KoreaInvestmentOverseasSearchInfoOutput = kiUsMaretSearchInfo.output;
@@ -78,7 +78,7 @@ export default function Search() {
     const maxLength = Math.max(...texts.map(text => text.length * 2));
     console.log(`maxLength`, maxLength);
     return <>
-        <SearchAutocomplete onSearchButton={onSearchButton} validCorpNameArray={nasdaq_tickers} />
+        <SearchAutocomplete placeHolder={"NASDAQ ticker 를 입력하세요..."} onSearchButton={onSearchButton} validCorpNameArray={nasdaq_tickers} />
         <div className="border border-black rounded p-1 m-1">
             <div className="text-base">
                 {kiUsMaretSearchInfoOutput.prdt_name}({kiUsMaretSearchInfoOutput.prdt_eng_name}) - {kiUsMaretSearchInfoOutput.tr_mket_name}

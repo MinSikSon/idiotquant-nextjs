@@ -1,11 +1,10 @@
 import { Button, Spinner } from "@material-tailwind/react";
 import { DesignButton } from "./designButton";
 import TablesExample8, { Example8TableHeadType, Example8TableRowType, TablesExample8PropsType } from "./tableExample8";
-import { Util } from "./util";
 import { useAppDispatch, useAppSelector } from "@/lib/hooks";
 import React from "react";
 
-const DEBUG = true;
+const DEBUG = false;
 function formatNumber(num: number) {
     return num % 1 === 0 ? num.toLocaleString() : num.toFixed(2);
 }

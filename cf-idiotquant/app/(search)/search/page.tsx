@@ -158,12 +158,12 @@ export default function Search() {
     || ("fulfilled" != kiInquirePrice.state)
   ) {
     return <>
-      <SearchAutocomplete onSearchButton={onSearchButton} validCorpNameArray={validCorpNameArray} />
+      <SearchAutocomplete placeHolder={"회사명을 검색하세요..."} onSearchButton={onSearchButton} validCorpNameArray={validCorpNameArray} />
     </>
   }
 
   return <>
-    <SearchAutocomplete onSearchButton={onSearchButton} validCorpNameArray={validCorpNameArray} />
+    <SearchAutocomplete placeHolder={"회사명을 검색하세요..."} onSearchButton={onSearchButton} validCorpNameArray={validCorpNameArray} />
     <div className="border border-black rounded p-1 m-1">
       <div className="text-base">
         {kiInquireDailyItemChartPrice.output1.hts_kor_isnm} - {kiInquirePrice.output["rprs_mrkt_kor_name"]}
