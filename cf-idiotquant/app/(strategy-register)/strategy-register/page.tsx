@@ -57,10 +57,10 @@ export default function StrategyRegister() {
     }
 
     const getStepContents = (title: string, list: any[], selectValue: any, handleOnClick: any) => {
-        return <div className="flex flex-col">
-            <div className="flex flex-col justify-between items-left mt-2 text-black hover:text-blue-500">
-                <div>{title}</div>
-                <ButtonGroup color="blue" variant="outlined" size="sm" fullWidth>
+        return <div className="font-mono">
+            <div className="">{title}</div>
+            <div className="flex w-full flex-col gap-4">
+                <ButtonGroup isFullWidth color="info" variant="outline" size="xs">
                     {list.map((item, key) => <Button key={key} className={selectValue == item ? `bg-blue-500 text-white` : ``} onClick={() => handleOnClick(item)}>{`${item}`}</Button>)}
                 </ButtonGroup>
             </div>
@@ -68,11 +68,11 @@ export default function StrategyRegister() {
     }
 
     const getStepContentsType2 = (title: string, list: any[], selectValue: any, handleOnClick: any) => {
-        return <div className="flex flex-col">
-            <div className="flex flex-col justify-between items-left mt-2 text-black hover:text-blue-500">
-                <div>{title}</div>
-                <ButtonGroup color="blue" variant="outlined" size="sm" fullWidth>
-                    {list.map((item, key) => <Button key={key} className={`px-0 ${selectValue == item ? `bg-blue-500 text-white` : ``}`} onClick={() => handleOnClick(item)}>{`${Util.UnitConversion(Number(item), true)}`}</Button>)}
+        return <div className="font-mono">
+            <div>{title}</div>
+            <div className="flex w-full flex-col gap-4">
+                <ButtonGroup isFullWidth color="info" variant="outline">
+                    {list.map((item, key) => <Button key={key} className={`text-[0.7rem] ${selectValue == item ? `bg-blue-500 text-white` : ``}`} onClick={() => handleOnClick(item)}>{`${Util.UnitConversion(Number(item), true)}`}</Button>)}
                 </ButtonGroup>
             </div>
         </div>
@@ -153,8 +153,8 @@ export default function StrategyRegister() {
                             <DesignButton
                                 handleOnClick={() => handleOnClick()}
                                 buttonName="등록"
-                                buttonBgColor="bg-green-400"
-                                buttonBorderColor="border-green-300"
+                                buttonBgColor="bg-green-500"
+                                buttonBorderColor="border-green-400"
                                 buttonShadowColor="#129600"
                                 textStyle="text-white text-xs pt-0.5 font-bold"
                                 buttonStyle="rounded-lg px-4 py-1"

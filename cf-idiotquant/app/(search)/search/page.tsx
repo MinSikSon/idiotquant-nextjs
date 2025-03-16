@@ -3,7 +3,7 @@
 import React from "react";
 
 import Login from "@/app/(login)/login/login"
-import { selectState } from "@/lib/features/login/loginSlice";
+import { selectLoginState } from "@/lib/features/login/loginSlice";
 import { usePathname } from "next/navigation";
 import { useAppDispatch, useAppSelector } from "@/lib/hooks";
 import { reqPostApprovalKey, reqPostToken, reqGetInquireBalance, reqPostOrderCash, reqGetInquirePrice, KoreaInvestmentInquirePrice, reqGetInquireDailyItemChartPrice, getKoreaInvestmentInquireDailyItemChartPrice, KoreaInvestmentInquireDailyItemChartPrice, reqGetBalanceSheet, getKoreaInvestmentBalanceSheet, KoreaInvestmentBalanceSheet } from "@/lib/features/koreaInvestment/koreaInvestmentSlice";
@@ -21,7 +21,7 @@ export default function Search() {
   const pathname = usePathname();
   const dispatch = useAppDispatch();
 
-  const loginState = useAppSelector(selectState);
+  const loginState = useAppSelector(selectLoginState);
   const kiApproval: KoreaInvestmentApproval = useAppSelector(getKoreaInvestmentApproval);
   const kiToken: KoreaInvestmentToken = useAppSelector(getKoreaInvestmentToken);
   const kiBalance: KoreaInvestmentBalance = useAppSelector(getKoreaInvestmentBalance);
@@ -35,11 +35,13 @@ export default function Search() {
 
   React.useEffect(() => {
     // console.log(`[Search]`, `kiToken:`, kiToken);
-    const isValidKiAccessToken = !!kiToken["access_token"];
-    if (true == isValidKiAccessToken) {
-      dispatch(reqGetInquireBalance(kiToken));
+    if ("cf" == loginState || "kakao" == loginState) {
+      const isValidKiAccessToken = !!kiToken["access_token"];
+      if (true == isValidKiAccessToken) {
+        dispatch(reqGetInquireBalance(kiToken));
+      }
     }
-  }, [kiToken]);
+  }, [kiToken, loginState]);
 
   React.useEffect(() => {
     // console.log(`React.useEffect []`);
@@ -91,7 +93,7 @@ export default function Search() {
 
   const handleInputEndDate = (e: React.ChangeEvent<HTMLInputElement>) => {
     setEndDate(e.target.value);
-    console.log(`Date.now()`, Date.now());
+    // console.log(`Date.now()`, Date.now());
     const date = new Date(e.target.value);
 
     // 5일을 빼기 위해 setDate() 사용
@@ -131,15 +133,15 @@ export default function Search() {
     const target_price = (cras - total_lblt) / lstn_stcn;
 
     return <>
-      <div className="font-mono flex text-xs items-center">
-        <div className="border border-black rounded-md p-0 px-1 m-0">투자 전략 - NCAV ({ratio.toFixed(1)})</div>
-        <div className={`pl-1`}>목표가:<span className={`${value >= 0 ? "text-red-500" : "text-blue-500"}`}>{(Number(target_price.toFixed(0)).toLocaleString())}원</span></div>
-        <div className={`pl-1 ${value >= 0 ? "text-red-500" : "text-blue-500"}`}>{value.toFixed(2)}%</div>
+      <div className="flex gap-2">
+        <div className="w-3/12 text-right text-[0.6rem]">전략-NCAV({ratio.toFixed(1)})</div>
+        <div className="w-5/12 text-right">목표가: <span className={`${value >= 0 ? "text-red-500" : "text-blue-500"}`}>{(Number(target_price.toFixed(0)).toLocaleString())}원</span></div>
+        <div className="w-4/12"><span className={`${value >= 0 ? "text-red-500" : "text-blue-500"}`}>{value.toFixed(2)}%</span></div>
       </div>
     </>
   }
 
-  if ("init" == loginState || "rejected" == loginState) {
+  if ("init" == loginState || "rejected" == loginState || "pending" == loginState) {
     return <>
       <Login parentUrl={pathname} />
     </>;
@@ -156,107 +158,130 @@ export default function Search() {
     || ("fulfilled" != kiInquirePrice.state)
   ) {
     return <>
-      <SearchAutocomplete onSearchButton={onSearchButton} validCorpNameArray={validCorpNameArray} />
+      <SearchAutocomplete placeHolder={"회사명을 검색하세요..."} onSearchButton={onSearchButton} validCorpNameArray={validCorpNameArray} />
     </>
   }
 
   return <>
-    <SearchAutocomplete onSearchButton={onSearchButton} validCorpNameArray={validCorpNameArray} />
-
-    <div className="font-mono flex flex-col justify-between border mx-2 mb-1">
-      <div className="font-mono flex pl-2 text-xs items-center">
-        {kiInquireDailyItemChartPrice.output1.hts_kor_isnm}
-        <div className="font-mono flex pl-4 text-xs items-center">
-          <div className="border border-black rounded-md p-0 px-1 m-0">현재가</div>
-          <div className="ml-1">
-            {Number(kiInquireDailyItemChartPrice.output1["stck_prpr"]).toLocaleString()}원
+    <SearchAutocomplete placeHolder={"회사명을 검색하세요..."} onSearchButton={onSearchButton} validCorpNameArray={validCorpNameArray} />
+    <div className="border border-black rounded p-1 m-1">
+      <div className="text-base">
+        {kiInquireDailyItemChartPrice.output1.hts_kor_isnm} - {kiInquirePrice.output["rprs_mrkt_kor_name"]}
+      </div>
+      <div className="text-xs border border-black rounded p-1 m-1">
+        <div className="flex gap-2">
+          <div className="w-3/12 bg-yellow-200 text-right">현재가</div>
+          <div className="w-5/12 bg-yellow-100 text-right">{Number(kiInquireDailyItemChartPrice.output1["stck_prpr"]).toLocaleString()} 원</div>
+          <div className="w-4/12 text-[0.6rem]">{kiInquireDailyItemChartPrice.output2[0]["stck_bsop_date"]}</div>
+        </div>
+        <div className="flex gap-2">
+          <div className="w-3/12 text-right">시가총액</div>
+          <div className="w-9/12 text-right">
+            {(() => {
+              const market_cap = (Number(kiInquireDailyItemChartPrice.output2[0]["stck_oprc"]) * Number(kiInquireDailyItemChartPrice.output1["lstn_stcn"]));
+              return <div className="flex gap-2">
+                <div className="w-7/12 text-[0.6rem]">{market_cap.toLocaleString()} 원</div>
+                <div className="w-5/12 text-[0.6rem] text-left">({Util.UnitConversion(market_cap, true)})</div>
+              </div>
+            })()}
           </div>
-          <div className="ml-1 flex text-[0.6rem]">
-            (
-            <div className="mr-1">
-              {kiInquireDailyItemChartPrice.output2[0]["stck_bsop_date"]}
-            </div>
-            <div className="mr-1">
-              {kiInquirePrice.output["rprs_mrkt_kor_name"]}
-            </div>
-            <div className="">
-              {kiInquirePrice.output["bstp_kor_isnm"]}
-            </div>
-            )
-          </div>
+        </div>
+        <div className="flex gap-2">
+          <div className="w-3/12 text-right">상장주식수</div>
+          <div className="w-5/12 text-right">{Number(Number(kiInquireDailyItemChartPrice.output1["lstn_stcn"])).toLocaleString()} 개</div>
+          <div className="w-4/12"></div>
         </div>
       </div>
-      <div className="font-mono flex pl-4 text-xs items-center">
-        <div className="ml-1">
-
+      <div className="text-xs border border-black rounded p-1 m-1">
+        <div className="flex gap-2">
+          <div className="w-3/12 text-right">52주 최저가</div>
+          <div className="w-5/12 text-right">{Number(kiInquirePrice.output["w52_lwpr"]).toLocaleString()} 원</div>
+          <div className="w-4/12 text-[0.6rem]">({kiInquirePrice.output["dryy_lwpr_date"]})</div>
         </div>
-        <div className="ml-1">
-
-        </div>
-      </div>
-      <div className="font-mono flex pl-4 text-xs items-center">
-        <div className="border border-black rounded-md p-0 px-1 m-0">52주 최저가 / 최고가</div>
-        <div className="ml-1">{Number(kiInquirePrice.output["w52_lwpr"]).toLocaleString()}원 / {Number(kiInquirePrice.output["w52_hgpr"]).toLocaleString()}원</div>
-      </div>
-      <div className="flex pl-4 text-xs items-center">
-        <div className="border border-black rounded-md p-0 px-1 m-0">시가총액</div>
-        <div className="ml-1">
-          {(() => {
-            const market_cap = (Number(kiInquireDailyItemChartPrice.output2[0]["stck_oprc"]) * Number(kiInquireDailyItemChartPrice.output1["lstn_stcn"]));
-            return <div className="flex">
-              <div className="ml-1">{market_cap.toLocaleString()}원</div>
-              <div className="ml-1">({Util.UnitConversion(market_cap, true)})</div>
-            </div>
-          })()}
+        <div className="flex gap-2">
+          <div className="w-3/12 text-right bg-red-300">52주 최고가</div>
+          <div className="w-5/12 text-right bg-red-200">{Number(kiInquirePrice.output["w52_hgpr"]).toLocaleString()} 원</div>
+          <div className="w-4/12 text-[0.6rem]">({kiInquirePrice.output["w52_hgpr_date"]})</div>
         </div>
       </div>
-      <div className="font-mono flex pl-8 text-xs items-center">
-        <div className="border border-black rounded-md p-0 px-1 m-0">상장주식수</div>
-        <div className="ml-1">{Number(Number(kiInquireDailyItemChartPrice.output1["lstn_stcn"])).toLocaleString()}개</div>
+      <div className="text-xs border border-black rounded p-1 m-1">
+        <div className="flex gap-2">
+          <div className="w-3/12 text-right">PER</div>
+          <div className="w-5/12 text-right">{Number(Number(kiInquirePrice.output["per"])).toLocaleString()} 배</div>
+          <div className="w-4/12"></div>
+        </div>
+        <div className="flex gap-2">
+          <div className="w-3/12 text-right">PBR</div>
+          <div className="w-5/12 text-right">{Number(Number(kiInquirePrice.output["pbr"])).toLocaleString()} 배</div>
+          <div className="w-4/12"></div>
+        </div>
+        <div className="flex gap-2">
+          <div className="w-3/12 text-right">EPS</div>
+          <div className="w-5/12 text-right">{Number(Number(kiInquirePrice.output["eps"])).toLocaleString()} 원</div>
+          <div className="w-4/12"></div>
+        </div>
+        <div className="flex gap-2">
+          <div className="w-3/12 text-right">BPS</div>
+          <div className="w-5/12 text-right">{Number(Number(kiInquirePrice.output["bps"])).toLocaleString()} 원</div>
+          <div className="w-4/12"></div>
+        </div>
       </div>
-      <div className="font-mono flex pl-4 text-xs items-center">
+      <div className="text-xs border border-black rounded p-1 m-1">
+        <div className="flex gap-2">
+          <div className="w-3/12 text-right">업종</div>
+          <div className="w-9/12 text-left">{kiInquirePrice.output["bstp_kor_isnm"]}</div>
+          {/* <div className="w-4/12"></div> */}
+        </div>
+      </div>
+      <div className="text-xs border border-black rounded p-1 m-1">
+        <div className="flex gap-2">
+          <div className="w-3/12 text-right">거래량</div>
+          <div className="w-5/12 text-right">{Number(kiInquirePrice.output["acml_vol"]).toLocaleString()} 회</div>
+          <div className="w-4/12"></div>
+        </div>
+        <div className="flex gap-2">
+          <div className="w-3/12 text-right">전일 거래대금</div>
+          <div className="w-5/12 text-right">{Number(kiInquirePrice.output["acml_tr_pbmn"]).toLocaleString()} 원</div>
+          <div className="w-4/12"></div>
+        </div>
+        <div className="flex gap-2">
+          <div className="w-3/12 text-right text-[0.6rem]">거래대금/시가총액</div>
+          <div className="w-5/12 text-right">{(100 * Number(kiInquirePrice.output["acml_tr_pbmn"]) / (Number(kiInquireDailyItemChartPrice.output2[0]["stck_oprc"]) * Number(kiInquireDailyItemChartPrice.output1["lstn_stcn"]))).toFixed(3)} %</div>
+          <div className="w-4/12"></div>
+        </div>
+      </div>
+      <div className="text-xs border border-red-500 rounded p-1 m-1">
         {getNcav(kiBalanceSheet, kiInquireDailyItemChartPrice, 1.0)}
-      </div>
-      <div className="font-mono flex pl-4 text-xs items-center">
         {getNcav(kiBalanceSheet, kiInquireDailyItemChartPrice, 1.5)}
       </div>
-      <div className="font-mono flex pl-4 text-xs items-center">
-        <div className="border border-black rounded-md p-0 px-1 m-0">PER</div>
-        <div className="mx-1 text-[0.6rem]">
-          {Number(Number(kiInquirePrice.output["per"])).toLocaleString()}배
-        </div>
-        <div className="border border-black rounded-md p-0 px-1 m-0">EPS</div>
-        <div className="mx-1 text-[0.6rem]">
-          {Number(Number(kiInquirePrice.output["eps"]).toFixed(0)).toLocaleString()}원
-        </div>
-        <div className="border border-black rounded-md p-0 px-1 m-0">PBR</div>
-        <div className="mx-1 text-[0.6rem]">
-          {Number(Number(kiInquirePrice.output["pbr"])).toLocaleString()}배
-        </div>
-        <div className="border border-black rounded-md p-0 px-1 m-0">BPS</div>
-        <div className="mx-1 text-[0.6rem]">
-          {Number(Number(kiInquirePrice.output["bps"]).toFixed(0)).toLocaleString()}원
-        </div>
-      </div>
-      <div className="flex pl-4 text-xs items-center">
-        <div className="border border-black rounded-md p-0 px-1 m-0">재무-유동자산</div>
-        {(() => {
-          const current_asset = (Number(kiBalanceSheet.output[getYearMatchIndex(kiInquireDailyItemChartPrice.output2[0]["stck_bsop_date"])].cras) * 100000000);
-          return <div className="flex">
-            <div className="ml-1">{current_asset.toLocaleString()}원</div>
-            <div className="ml-1">({Util.UnitConversion(current_asset, true)})</div>
+      <div className="text-xs border border-black rounded p-1 m-1">
+        <div className="flex gap-2">
+          <div className="w-3/12 text-right">재무-유동자산</div>
+          <div className="w-9/12 text-right">
+            {(() => {
+              const current_asset = (Number(kiBalanceSheet.output[getYearMatchIndex(kiInquireDailyItemChartPrice.output2[0]["stck_bsop_date"])].cras) * 100000000);
+              return <div className="flex gap-2">
+                <div className="w-8/12 text-right">{current_asset.toLocaleString()} 원</div>
+                <div className="w-4/12 text-right">({Util.UnitConversion(current_asset, true)})</div>
+                {/* <div className="w-1/12"></div> */}
+              </div>
+            })()}
           </div>
-        })()}
-      </div>
-      <div className="flex pl-4 text-xs items-center">
-        <div className="border border-black rounded-md p-0 px-1 m-0">재무-부채총계</div>
-        {(() => {
-          const total_liabilities = (Number(kiBalanceSheet.output[getYearMatchIndex(kiInquireDailyItemChartPrice.output2[0]["stck_bsop_date"])].total_lblt) * 100000000);
-          return <div className="flex">
-            <div className="ml-1">{total_liabilities.toLocaleString()}원</div>
-            <div className="ml-1">({Util.UnitConversion(total_liabilities, true)})</div>
+          {/* <div className="w-4/12"></div> */}
+        </div>
+        <div className="flex gap-2">
+          <div className="w-3/12 text-right">재무-부채총계</div>
+          <div className="w-9/12 text-right">
+            {(() => {
+              const total_liabilities = (Number(kiBalanceSheet.output[getYearMatchIndex(kiInquireDailyItemChartPrice.output2[0]["stck_bsop_date"])].total_lblt) * 100000000);
+              return <div className="flex gap-2">
+                <div className="w-8/12 text-right">{total_liabilities.toLocaleString()} 원</div>
+                <div className="w-4/12 text-right">({Util.UnitConversion(total_liabilities, true)})</div>
+                {/* <div className="w-1/12"></div> */}
+              </div>
+            })()}
           </div>
-        })()}
+        </div>
       </div>
     </div>
   </>

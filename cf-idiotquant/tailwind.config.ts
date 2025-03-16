@@ -1,17 +1,15 @@
-import type { Config } from "tailwindcss";
-const withMT = require("@material-tailwind/react/utils/withMT");
+import { mtConfig } from "@material-tailwind/react";
 
-const config: Config = withMT({
+const config = {
   content: [
     "./pages/**/*.{js,ts,jsx,tsx,mdx}",
     "./components/**/*.{js,ts,jsx,tsx,mdx}",
     "./app/**/*.{js,ts,jsx,tsx,mdx}",
 
     "./src/**/*.{js,ts,jsx,tsx,mdx}",
-
-    "./node_modules/@material-tailwind/react/components/**/*.{js,ts,jsx,tsx}",
-    "./node_modules/@material-tailwind/react/theme/components/**/*.{js,ts,jsx,tsx}",
+    "./node_modules/@material-tailwind/react/**/*.{js,ts,jsx,tsx}"
   ],
+  plugins: [mtConfig],
   mode: 'jit',
   theme: {
     extend: {
@@ -35,15 +33,14 @@ const config: Config = withMT({
         },
       },
       fontFamily: {
-        mono: ["Cascadia Code", "Fira Code", "Courier New", "monospace"],
+        // mono: ["Cascadia Code", "Fira Code", "Courier New", "monospace"],
+        // mono: ['D2Coding', 'Noto Sans Mono', 'IBM Plex Mono', 'monospace'],
+        // mono: ['Noto Sans Mono', 'D2Coding', 'IBM Plex Mono', 'monospace'],
+        // mono: ['Courier New', 'Courier', 'monospace'],
+        // mono: ['Courier New', 'Courier', 'monospace', 'Nanum Gothic Coding', 'Source Code Pro'],  // 한글을 고려한 고정폭 폰트 추가
         serif: ["Times New Roman", "Georgia", "serif"],
       },
     },
   },
-  plugins: [],
-});
+};
 export default config;
-
-
-// NOTE (material-tailwind 와 typescript 호환성 문제) : https://github.com/creativetimofficial/material-tailwind/issues/528
-// - package.json 에서 "@types/react": "18.2.19", 로 변경

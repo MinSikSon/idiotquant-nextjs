@@ -1,14 +1,16 @@
 "use client"
 
 import React from "react";
-import { Button, Card, CardBody, Typography } from '@material-tailwind/react';
+import { Button, Card } from '@material-tailwind/react';
 import { useRouter } from "next/navigation";
 import { selectKakaoAuthCode, selectKakaoId, selectKakaoNickName, setKakaoAuthCode, setKakaoId, setKakaoNickName } from "@/lib/features/login/loginSlice";
 import { useAppDispatch, useAppSelector } from "@/lib/hooks";
 import { clearCookie, getCookie, registerCookie } from "@/components/util";
 import { DesignButton } from "@/components/designButton";
 
-async function RequestNickname(_token) {
+const DEBUG = false;
+
+async function RequestNickname(_token: any) {
     if (!!!_token) return;
 
     const requestUrl = `https://kapi.kakao.com/v2/user/me`;
@@ -24,7 +26,7 @@ async function RequestNickname(_token) {
     return response;
 }
 
-async function RequestToken(_authorizeCode, redirectUrl) {
+async function RequestToken(_authorizeCode: any, redirectUrl: any) {
     const tokenUrl = `https://kauth.kakao.com/oauth/token?grant_type=authorization_code&client_id=${process.env.NEXT_PUBLIC_KAKAO_REST_API_KEY}&redirect_uri=${encodeURIComponent(redirectUrl)}&code=${_authorizeCode}`;
 
     const responseToken = await fetch(tokenUrl, {
@@ -37,15 +39,15 @@ async function RequestToken(_authorizeCode, redirectUrl) {
     return responseToken;
 }
 
-async function registerUser(id, nickname) {
-    async function fetchAndSet(subUrl) {
+async function registerUser(id: any, nickname: any) {
+    async function fetchAndSet(subUrl: any) {
 
         const data = {
             'id': id,
             'nickname': nickname,
         };
 
-        const options = {
+        const options: any = {
             method: "POST",
             credentials: "include",  // include credentials (like cookies) in the request
             headers: {
@@ -77,7 +79,7 @@ async function registerUser(id, nickname) {
     fetchAndSet('login');
 }
 
-export default function Login(props) {
+export default function Login(props: any) {
     const router = useRouter();
 
     const [nickname, setNickname] = React.useState("");
@@ -88,28 +90,37 @@ export default function Login(props) {
     const kakaoNickName = useAppSelector(selectKakaoNickName);
     const kakaoId = useAppSelector(selectKakaoId);
 
+    interface KakaoLoginErrorInterface {
+        error: string;
+        error_description: string; // "authorization code not found for code=AnZhlhnF7IzjA81_K-gxDx2w3wY4ShoMUUikaIk9pMDx70iBIQH7WQAAAAQKFxAvAAABlZ0Pu28h5oEAb4_jFQ",
+        error_code: string //  "KOE320"
+    }
+    const [responseToken, setResponseToken] = React.useState<KakaoLoginErrorInterface>({ error: "", error_description: "", error_code: "" });
+
     React.useEffect(() => {
         async function callback() {
-            console.log(`[Login]`, `getCookie("kakaoId"):`, getCookie("kakaoId"), `getCookie("kakaoNickName"):`, getCookie("kakaoNickName"));
-            console.log(`[Login]`, `kakaoId:`, kakaoId, `kakaoAuthCode:`, kakaoAuthCode);
-            let _authorizeCode = ""
+            if (DEBUG) console.log(`[Login]`, `getCookie("kakaoId"):`, getCookie("kakaoId"), `getCookie("kakaoNickName"):`, getCookie("kakaoNickName"));
+            if (DEBUG) console.log(`[Login]`, `kakaoId:`, kakaoId, `kakaoAuthCode:`, kakaoAuthCode);
+            let _authorizeCode: any = ""
             if ("" == kakaoAuthCode) {
                 _authorizeCode = new URL(window.location.href).searchParams.get('code');
                 if (!!!_authorizeCode) {
                     return;
                 }
 
-                console.log(`[Login]`, `_authorizeCode:`, _authorizeCode);
+                if (DEBUG) console.log(`[Login]`, `_authorizeCode:`, _authorizeCode);
 
                 dispatch(setKakaoAuthCode(_authorizeCode));
             }
             else {
-                _authorizeCode = selectKakaoAuthCode;
+                _authorizeCode = kakaoAuthCode;
             }
 
             const responseToken = await RequestToken(_authorizeCode, `${window.location.origin}${props.parentUrl}`);
+            setResponseToken(responseToken);
             if (!!responseToken.error_code && "KOE320" == responseToken.error_code) {
-                console.log(`[Login]`, `responseToken:`, responseToken);
+                if (DEBUG) console.log(`[Login]`, `responseToken:`, responseToken);
+                dispatch(setKakaoAuthCode(""));
                 return;
             }
 
@@ -140,15 +151,15 @@ export default function Login(props) {
         callback();
     }, []);
 
-    function onClickLogin(redirectUrl) {
-        console.log(`Login`);
+    function onClickLogin(redirectUrl: any) {
+        if (DEBUG) console.log(`Login`);
         const authorizeEndpoint = `https://kauth.kakao.com/oauth/authorize?response_type=code&client_id=${process.env.NEXT_PUBLIC_KAKAO_REST_API_KEY}&redirect_uri=${redirectUrl}`;
 
         router.push(authorizeEndpoint);
     }
 
-    const Logout = (redirectUrl) => {
-        console.log(`Logout`);
+    const Logout = (redirectUrl: any) => {
+        if (DEBUG) console.log(`Logout`);
         clearCookie("kakaoId");
         clearCookie("kakaoNickName");
         clearCookie("koreaInvestmentToken");
@@ -165,7 +176,7 @@ export default function Login(props) {
         if (!!!kakaoNickName) {
             return <>
                 <Card className="mt-6 w-96">
-                    <CardBody>
+                    <Card.Body>
                         <div className="font-mono text-xl mb-2">
                             반갑습니다.
                         </div>
@@ -186,14 +197,14 @@ export default function Login(props) {
                                 transition-all duration-150 [box-shadow:0_4px_0_0_#1e1e1e,0_8px_0_0_#1e1e1e41] border-b-[1px]
                                 `}
                         />
-                    </CardBody>
+                    </Card.Body>
                 </Card>
             </>
         }
 
         return <>
             <Card className="mt-6 w-96">
-                <CardBody>
+                <Card.Body>
                     <div className="font-mono text-xl mb-2">
                         {kakaoNickName}님 반갑습니다.
                     </div>
@@ -214,7 +225,7 @@ export default function Login(props) {
                             transition-all duration-150 [box-shadow:0_4px_0_0_#1e1e1e,0_8px_0_0_#1e1e1e41] border-b-[1px]
                             `}
                     />
-                </CardBody>
+                </Card.Body>
             </Card>
         </>;
     }

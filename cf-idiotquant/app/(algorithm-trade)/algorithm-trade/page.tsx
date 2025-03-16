@@ -2,26 +2,32 @@
 
 import { DesignButton } from "@/components/designButton";
 import TablesExample8, { Example8TableHeadType, Example8TableRowType, TablesExample8PropsType } from "@/components/tableExample8";
-import { selectCapitalToken, selectInquirePriceMulti } from "@/lib/features/algorithmTrade/algorithmTradeSlice";
+import { CapitalTokenType, reqGetUsCapitalToken, selectCapitalToken, selectInquirePriceMulti, selectUsCapitalToken } from "@/lib/features/algorithmTrade/algorithmTradeSlice";
 import { reqGetCapitalToken, reqGetInquirePriceMulti } from "@/lib/features/algorithmTrade/algorithmTradeSlice";
 import { getKoreaInvestmentToken, KoreaInvestmentToken } from "@/lib/features/koreaInvestment/koreaInvestmentSlice";
 import { useAppDispatch, useAppSelector } from "@/lib/hooks";
-import { Button, Popover, PopoverContent, PopoverHandler } from "@material-tailwind/react";
+import { Button, ButtonGroup, Popover, Spinner } from "@material-tailwind/react";
 import React from "react";
+
+const DEBUG = false;
 
 export default function AlgorithmTrade() {
     const dispatch = useAppDispatch();
 
-    const capitalToken: any = useAppSelector(selectCapitalToken);
+    const kr_capital_token: CapitalTokenType = useAppSelector(selectCapitalToken);
+    const us_capital_token: CapitalTokenType = useAppSelector(selectUsCapitalToken);
     const inquirePriceMulti: any = useAppSelector(selectInquirePriceMulti);
     const kiToken: KoreaInvestmentToken = useAppSelector(getKoreaInvestmentToken);
 
     const [time, setTime] = React.useState<any>('');
 
+    const [market, setMarket] = React.useState<"KR" | "US">("KR");
+
     function handleOnClick() {
         setTime(new Date());
-        // console.log(`[handleOnClick] kiToken`, kiToken);
+        if (DEBUG) console.log(`[handleOnClick] kiToken`, kiToken);
         dispatch(reqGetCapitalToken({ koreaInvestmentToken: kiToken }));
+        dispatch(reqGetUsCapitalToken({ koreaInvestmentToken: kiToken }));
     }
 
     React.useEffect(() => {
@@ -29,36 +35,39 @@ export default function AlgorithmTrade() {
     }, []);
 
     React.useEffect(() => {
-        console.log(`capitalToken`, capitalToken);
-        console.log(`kiToken`, kiToken);
+        if (DEBUG) console.log(`kr_capital_token`, kr_capital_token);
+        if (DEBUG) console.log(`us_capital_token`, us_capital_token);
+        if (DEBUG) console.log(`kiToken`, kiToken);
 
-        if ("fulfilled" == kiToken.state && "fulfilled" == capitalToken.state && capitalToken.value.stock_list.length > 0) {
-            const PDNOs = capitalToken.value.stock_list.map((item: any) => item.PDNO);
-            const filteredPDNOs = PDNOs.filter((item: any) => {
-                if (undefined == inquirePriceMulti[item]) {
-                    return true;
-                }
+        // if ("fulfilled" == kiToken.state) {
+        //     if ("fulfilled" == kr_capital_token.state && kr_capital_token.value.stock_list.length > 0) {
+        //         const PDNOs = kr_capital_token.value.stock_list.map((item: any) => item.PDNO);
+        //         const filteredPDNOs = PDNOs.filter((item: any) => {
+        //             if (undefined == inquirePriceMulti[item]) {
+        //                 return true;
+        //             }
 
-                if (1 == inquirePriceMulti[item].rt_cd) // fail
-                {
-                    return true;
-                }
+        //             if (1 == inquirePriceMulti[item].rt_cd) // fail
+        //             {
+        //                 return true;
+        //             }
 
-                return false;
-            });
+        //             return false;
+        //         });
 
-            const chunkSize = 20;
-            for (let i = 0; i < filteredPDNOs.length; i += chunkSize) {
-                const chunk = filteredPDNOs.slice(i, i + chunkSize);
-                console.log(`Dispatching filteredPDNOs:`, chunk);
+        //         const chunkSize = 20;
+        //         for (let i = 0; i < filteredPDNOs.length; i += chunkSize) {
+        //             const chunk = filteredPDNOs.slice(i, i + chunkSize);
+        //             console.log(`Dispatching filteredPDNOs:`, chunk);
 
-                dispatch(reqGetInquirePriceMulti({ koreaInvestmentToken: kiToken, PDNOs: chunk }));
-            }
-        }
-    }, [capitalToken, kiToken]);
+        //             dispatch(reqGetInquirePriceMulti({ koreaInvestmentToken: kiToken, PDNOs: chunk }));
+        //         }
+        //     }
+        // }
+    }, [kr_capital_token, us_capital_token, kiToken]);
 
     React.useEffect(() => {
-        // console.log(`inquirePriceMulti`, inquirePriceMulti);
+        if (DEBUG) console.log(`inquirePriceMulti`, inquirePriceMulti);
     }, [inquirePriceMulti]);
 
     const example8TableHead: Example8TableHeadType[] = [
@@ -89,15 +98,18 @@ export default function AlgorithmTrade() {
     ];
 
     function formatDateTime(date: string) {
+        // console.log(`formatDateTime`, `date`, date);
         date = date.replaceAll("\"", "").replaceAll("-", "/");
         const dateArr = date.split("T");
         const dateArr2 = dateArr[1].split(".");
         return `${dateArr[0]} ${dateArr2[0]}`;
     }
 
+    const capitalToken = "KR" == market ? kr_capital_token : us_capital_token;
+
     let cummulative_investment = 0;
     const purchase_log = capitalToken.value.purchase_log ?? [];
-    // console.log(`purchase_log`, purchase_log);
+    if (DEBUG) console.log(`purchase_log`, purchase_log);
     let example8TableRow: Example8TableRowType[] = (purchase_log.map((item: any, index: number) => {
         const bgColor = index % 2 == 0 ? "bg-white" : "bg-gray-100";
         return item["stock_list"].map((subItem: any) => {
@@ -118,17 +130,20 @@ export default function AlgorithmTrade() {
         })
     })).reverse().flat();
 
+    if (DEBUG) console.log(`capitalToken.state`, capitalToken.state);
+    if ("fulfilled" != capitalToken.state) {
+        return <Button variant="ghost"><Spinner size="sm" /> loading...</Button>;
+    }
+
     const time_stamp: any = capitalToken.value.time_stamp ?? {};
     const stock_list: any = capitalToken.value.stock_list ?? [];
     const refill_stock_index = capitalToken.value.refill_stock_index ?? 0;
-    const stock_list_length = stock_list.length > 0 ? stock_list.length : 1;
-    const capital_charge_rate = capitalToken.value.capital_charge_rate ?? 0;
-    const token_per_stock = capitalToken.value.tokenPerStock ?? 0;
-    // console.log(`stock_list`, stock_list);
+    const token_per_stock = capitalToken.value.token_per_stock ?? 0;
+    if (DEBUG) console.log(`stock_list`, stock_list);
     let cummulative_token = 0;
     const props: TablesExample8PropsType = {
         title: <>
-            <div className="flex pb-2 items-center">
+            <div className="flex items-center">
                 <DesignButton
                     handleOnClick={() => {
                         handleOnClick()
@@ -145,71 +160,63 @@ export default function AlgorithmTrade() {
                 />
 
                 {"fulfilled" != capitalToken.state ?
-                    <Button loading={true} className="p-0 px-1 m-0 bg-white text-black font-mono">loading...</Button>
+                    <Button variant="ghost"><Spinner size="sm" /> loading...</Button>
                     : <>
-                        <div className="font-mono text-[0.6rem] text-black ml-2">{time.toLocaleString("ko-KR", { timeZone: "Asia/Seoul" })}</div>
+                        <div className="text-[0.6rem] text-black ml-1">{time.toLocaleString("ko-KR", { timeZone: "Asia/Seoul" })}</div>
                     </>}
+                <ButtonGroup isPill color="secondary" size="xs" variant="outline" className="pl-1">
+                    <Button onClick={() => setMarket("KR")} className={`px-1 py-0 ${market == "KR" ? "text-blue-500" : "text-gray-500"}`}>KR</Button>
+                    <Button onClick={() => setMarket("US")} className={`px-1 py-0 ${market == "US" ? "text-blue-500" : "text-gray-500"}`}>US</Button>
+                </ButtonGroup>
             </div>
+
         </>,
         desc: <>
-            <div className="text-sm font-mono text-black leading-none pb-2">
-                <Popover>
-                    <PopoverHandler>
-                        <div className="cursor-pointer">
-                            <div className="pb-1"><span className="underline decoration-4 decoration-yellow-500">주식 구매 포인트</span> 적립 이력</div>
-                            <div className="ml-1 flex gap-1">
-                                {Object.keys(time_stamp).reverse().map((key, index) => {
-                                    let bgColor = "bg-blue-200";
-                                    if (1 == index) {
-                                        bgColor = "bg-blue-500";
-                                    }
-                                    else if (2 == index) {
-                                        bgColor = "bg-blue-700";
-                                    }
-                                    return <div key={index} className={`text-xs rounded border border-black px-1 ${bgColor} text-white`}>{formatDateTime(time_stamp[key])}</div>;
-                                })}
-                            </div>
+            <div className="border border-black rounded p-1 m-1">
+                <div className="text-base">
+                    <span className="underline decoration-4 decoration-yellow-500">주식 구매 포인트</span> 적립 이력
+                </div>
+                <div className="text-xs border border-black rounded p-1 m-1">
+                    {Object.keys(time_stamp).reverse().map((key, index) => {
+                        let bgColor = "bg-blue-300";
+                        if (1 == index) {
+                            bgColor = "bg-blue-400";
+                        }
+                        else if (2 == index) {
+                            bgColor = "bg-blue-500";
+                        }
+
+                        return <div key={index} className={`flex gap-2 ${bgColor} text-white`}>
+                            <div className="w-3/12 text-right">{key}</div>
+                            <div className="w-7/12 text-right">{formatDateTime(time_stamp[key])}</div>
+                            <div className="w-2/12"></div>
                         </div>
-                    </PopoverHandler>
-                    <PopoverContent className="p-2 border border-black rounded shadow shadow-blue-gray-500">
-                        <div className="text-xs font-mono text-black">10분 간격으로 <span className="underline decoration-4 decoration-yellow-500">주식 구매 포인트</span> 적립 및 알고리즘 매매 수행합니다.</div>
-                    </PopoverContent>
-                </Popover>
-            </div>
-            <div className="text-sm font-mono text-black leading-none pb-2">
-                <Popover>
-                    <PopoverHandler>
-                        <div className="cursor-pointer pb-1">
-                            <span className="underline decoration-4 decoration-yellow-500">주식 구매 포인트</span> 적립 현황
-                        </div>
-                    </PopoverHandler>
-                    <PopoverContent className="p-2 border border-black rounded shadow shadow-blue-gray-500">
-                        <div className="text-xs font-mono text-black">{`"주식 구매 포인트 >= 주가" 인 경우 구매 시도`}</div>
-                    </PopoverContent>
-                </Popover>
-                <div className="ml-1 p-2 border rounded border-black">
-                    <div className="flex items-center text-xs font-mono text-black leading-none pb-1">
-                        <div>10분 마다 <span className="underline decoration-4 decoration-yellow-500">주식 구매 포인트</span> 충전</div>
-                        {/* <div className="ml-2 px-1 text-xs font-normal rounded border border-black">{token_per_stock}</div> */}
-                        <div className="ml-2 px-1 font-normal rounded border border-black"><span className="text-[0.6rem]">종목 당 충전 포인트:</span> {token_per_stock}</div>
+                    })}
+                </div>
+                <div className="text-base">
+                    <span className="underline decoration-4 decoration-yellow-500">주식 구매 포인트</span> 적립 현황
+                </div>
+                <div className="text-xs border border-black rounded p-1 m-1">
+                    <div className={`flex gap-2`}>
+                        <div className="w-5/12 text-right">종목 당 충전 포인트:</div>
+                        <div className="w-5/12 text-right">{token_per_stock} point / 10 min</div>
+                        <div className="w-2/12"></div>
                     </div>
-                    <div className="flex items-center text-xs font-mono text-black leading-none pb-1">
-                        <div>마지막 구매 시도 종목</div>
-                        <div className="ml-2 px-1 text-xs font-normal rounded border border-black">{refill_stock_index}) {!!stock_list[refill_stock_index] ? stock_list[refill_stock_index]["name"] : 0}</div>
+                    <div className={`flex gap-2`}>
+                        <div className="w-5/12 text-right">마지막 구매 시도 종목:</div>
+                        <div className="w-5/12 text-right">{refill_stock_index}) {!!stock_list[refill_stock_index] ? stock_list[refill_stock_index]["name"] : 0}</div>
+                        <div className="w-2/12"></div>
                     </div>
-                    <div className="font-mono text-black leading-none">
-                        <Popover >
-                            <PopoverHandler>
-                                <div className="text-xs cursor-pointer">알고리즘 매매 대상 종목</div>
-                            </PopoverHandler>
-                            <PopoverContent className="p-2 border border-black rounded shadow shadow-blue-gray-500">
-                                <div className="text-xs font-mono text-black pb-1">10 분 마다 종목당 <span className="underline decoration-4 decoration-yellow-500">주식 구매 포인트</span> {token_per_stock} 적립</div>
-                            </PopoverContent>
-                        </Popover>
+                </div>
+                <div className="text-base">
+                    <div className="">알고리즘 매매 대상 종목</div>
+                </div>
+                <div className="text-xs border border-black rounded p-1 m-1">
+                    <div className="text-black leading-none">
                         {stock_list.map((item: any, index: number) => {
                             cummulative_token += isNaN(Number(item["token"])) ? 0 : Number(item["token"]);
                             return <Popover key={index}>
-                                <PopoverHandler>
+                                <Popover.Trigger>
                                     <div className={`flex pl-1 items-center gap-x-1 ${index % 2 == 0 ? "bg-white" : "bg-gray-100"} ${item["refill"] ? "" : "font-bold line-through"}`}>
                                         <div className="flex items-center min-w-[95px] text-xs">
                                             <div>
@@ -257,35 +264,34 @@ export default function AlgorithmTrade() {
                                             </>
                                         })()}
                                     </div>
-                                </PopoverHandler>
-                                <PopoverContent className="p-2 border border-black rounded shadow shadow-blue-gray-500">
+                                </Popover.Trigger>
+                                <Popover.Content className="p-2 border border-black rounded shadow shadow-blue-gray-500">
                                     {item["refill"] ?
-                                        <div className="text-xs font-mono text-black">{`${item["name"]} 을(를) "${token_per_stock} token / 10 분" 만큼 리필`}</div>
+                                        <div className="text-xs text-black">{`${item["name"]} 을(를) "${token_per_stock} token / 10 분" 만큼 리필`}</div>
                                         :
-                                        <div className="text-xs font-mono text-black">{`${item["name"]} 을(를) 매매 대상에서 임시 제외`}</div>
+                                        <div className="text-xs text-black">{`${item["name"]} 을(를) 매매 대상에서 임시 제외`}</div>
                                     }
-                                </PopoverContent>
+                                </Popover.Content>
                             </Popover>
                         })}
                     </div>
-                    <div className="flex items-center text-xs font-mono text-black leading-none pb-1">
+                    <div className="flex items-center text-xs text-black leading-none pb-1">
                         <div>누적 token</div>
-                        <div className="ml-2 px-1 text-xs font-mono rounded border border-black">{cummulative_token}</div>
+                        <div className="ml-2 px-1 text-xs rounded border border-black">{cummulative_token}</div>
                     </div>
                 </div>
             </div>
-
         </>,
         // financial_date: <><div className="text-sm">market_date</div><div className="ml-4 text-xs">{time.toString()}</div></>,
         market_date: <Popover>
-            <PopoverHandler>
-                <div className="cursor-pointer pt-4 text-sm font-mono text-black">
+            <Popover.Trigger>
+                <div className="cursor-pointer pt-4 text-sm text-black">
                     구매 history <span className="text-xs text-black">{`(누적 알고리즘 매수금: ${cummulative_investment}원)`}</span>
                 </div>
-            </PopoverHandler>
-            <PopoverContent className="p-2 border border-black rounded shadow shadow-blue-gray-500">
-                <div className="text-xs font-mono text-black">알고리즘 매매 내역</div>
-            </PopoverContent>
+            </Popover.Trigger>
+            <Popover.Content className="p-2 border border-black rounded shadow shadow-blue-gray-500">
+                <div className="text-xs text-black">알고리즘 매매 내역</div>
+            </Popover.Content>
         </Popover>,
         tableHead: example8TableHead,
         tableRow: example8TableRow,

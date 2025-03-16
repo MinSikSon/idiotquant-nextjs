@@ -83,12 +83,10 @@ export function NavbarWithSimpleLinks() {
     }
 
     return (
-        <Navbar color="transparent" fullWidth className="p-2">
+        <Navbar className="p-2">
             <div className="container mx-auto flex items-center justify-between text-blue-gray-900">
                 <Link href="/">
-                    <Typography
-                        color="blue-gray"
-                        className="mr-2 cursor-pointer font-mono font-bold"
+                    <Typography color="primary" className="mr-2 cursor-pointer font-mono font-bold"
                     >
                         idiotquant<span className="text-blue-500">.</span>com
                     </Typography>

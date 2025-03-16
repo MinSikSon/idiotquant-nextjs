@@ -2,7 +2,7 @@
 
 import { DesignButton } from "@/components/designButton";
 import FuzzyText from "@/components/design/FuzzyText";
-import { Button, Card, CardBody, CardHeader, Typography } from "@material-tailwind/react";
+import { Button, Card, Typography } from "@material-tailwind/react";
 import { Metadata } from "next";
 import Link from "next/link";
 
@@ -13,12 +13,8 @@ export const metadata: Metadata = {
 export default function NotFound() {
     return <>
         <section className={`px-4`}>
-            <Card shadow={false} className={`border-2 border-gray-100}`}>
-                <CardHeader
-                    shadow={false}
-                    floated={false}
-                    className=""
-                >
+            <Card className={`border-2 border-gray-100 shadow-none`}>
+                <Card.Header>
                     <div className="flex items-center justify-center text-xl">
                         <FuzzyText
                             baseIntensity={0.2}
@@ -29,22 +25,22 @@ export default function NotFound() {
                             Oops! Not Found!
                         </FuzzyText>
                     </div>
-                </CardHeader>
-                <CardBody>
+                </Card.Header>
+                <Card.Body>
                     <div className="mx-6">
                         <Link href={`/`}>
                             <DesignButton
                                 handleOnClick={() => { }}
                                 buttonName="return to the main page"
-                                buttonBgColor="bg-green-400"
-                                buttonBorderColor="border-green-300"
+                                buttonBgColor="bg-green-500"
+                                buttonBorderColor="border-green-400"
                                 buttonShadowColor="#129600"
                                 textStyle="text-white text-xs pt-0.5 font-bold"
                                 buttonStyle="rounded-lg px-4 ml-2"
                             />
                         </Link>
                     </div>
-                </CardBody>
+                </Card.Body>
             </Card>
         </section>
     </>;

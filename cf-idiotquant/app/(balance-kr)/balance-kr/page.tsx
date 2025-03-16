@@ -1,7 +1,7 @@
 "use client"
 
 import Login from "@/app/(login)/login/login";
-import { selectState } from "@/lib/features/login/loginSlice";
+import { selectLoginState } from "@/lib/features/login/loginSlice";
 import { isValidCookie, } from "@/components/util";
 import { getKoreaInvestmentToken, KoreaInvestmentToken, } from "@/lib/features/koreaInvestment/koreaInvestmentSlice";
 import { reqGetInquireBalance, getKoreaInvestmentBalance, KoreaInvestmentBalance } from "@/lib/features/koreaInvestment/koreaInvestmentSlice";
@@ -17,7 +17,7 @@ import InquireBalanceResult from "@/components/inquireBalanceResult";
 
 export default function BalanceKr() {
     const pathname = usePathname();
-    const loginState = useAppSelector(selectState);
+    const loginState = useAppSelector(selectLoginState);
 
     const dispatch = useAppDispatch();
     const kiToken: KoreaInvestmentToken = useAppSelector(getKoreaInvestmentToken);
@@ -26,12 +26,15 @@ export default function BalanceKr() {
     const kiOrderCash: KoreaInvestmentOrderCash = useAppSelector(getKoreaInvestmentOrderCash);
 
     React.useEffect(() => {
+        // console.log(`[BalanceKr]`, `loginState`, loginState);
         // console.log(`[BalanceKr]`, `kiToken:`, kiToken);
-        const isValidKiAccessToken = !!kiToken["access_token"];
-        if (true == isValidKiAccessToken) {
-            dispatch(reqGetInquireBalance(kiToken));
+        if ("cf" == loginState || "kakao" == loginState) {
+            const isValidKiAccessToken = !!kiToken["access_token"];
+            if (true == isValidKiAccessToken) {
+                dispatch(reqGetInquireBalance(kiToken));
+            }
         }
-    }, [kiToken]);
+    }, [kiToken, loginState]);
 
     React.useEffect(() => {
         // console.log(`[BalanceKr]`, `kiBalance`, kiBalance);

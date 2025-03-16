@@ -5,10 +5,6 @@ import {
     Card,
     Avatar,
     Button,
-    CardBody,
-    CardHeader,
-    Typography,
-    CardFooter,
 } from "@material-tailwind/react";
 import Link from "next/link";
 import { DesignButton } from "./designButton";
@@ -41,15 +37,18 @@ function Web3Card({
                     handleOnClick={() => { }}
                     buttonName={<>
                         <Card className="overflow-hidden shadow-sm">
-                            <CardBody className={`bg-cover bg-center p-1`}>
+                            <Card.Body className="bg-cover bg-center p-1 flex">
                                 {/* <div className="absolute top-0 left-0 w-full h-48 xl:h-80 bg-cover bg-center" style={{ backgroundImage: `url('${url}')` }} /> */}
-                                <div className="relative flex items-center">
-                                    <Avatar className="shrink-0 object-cover border border-black" size="xl" src={profileImg} alt={title} />
-                                    <div className={`flex flex-col items-start justify-between pl-1`}>
-                                        <div className="z-10 font-mono text-black text-xs mb-1">
+                                {/* <Avatar className="shrink-0 object-cover border border-black" size="sm" src={profileImg} alt={title} /> */}
+                                <div className="shrink-0 object-cover">
+                                    <Avatar shape="circular" size="xl" src={profileImg} alt={title} className="border border-black shadow" />
+                                </div>
+                                <div className="flex items-center">
+                                    <div className={`z-10 flex flex-col items-start justify-between pl-1`}>
+                                        <div className="font-mono text-black text-xs mb-1">
                                             [{cardNum}] click to view
                                         </div>
-                                        <div className="z-10 font-mono text-black text-xs pl-1">
+                                        <div className="font-mono text-black text-xs pl-1">
                                             <div className={`${String(title).length > 12 ? "text-xs xl:text-xs" : ""}`}>
                                                 <div>{title}</div>
                                                 <div>{subTitle}</div>
@@ -58,7 +57,7 @@ function Web3Card({
                                         </div>
                                     </div>
                                 </div>
-                            </CardBody>
+                            </Card.Body>
                         </Card>
                     </>}
                     buttonBgColor="bg-white"
@@ -83,21 +82,17 @@ export function Web3Card2({
 }: { title: string, parentRouter: string, data: Web3CardPropsType[] }) {
     return (
         <section className="px-2 py-2">
-            <Card shadow={false} className="border border-gray-300">
-                <CardHeader
-                    shadow={false}
-                    floated={false}
-                    className="flex overflow-visible gap-y-4 flex-wrap items-start justify-between"
-                >
+            <Card className="border border-gray-300 overflow-hidden shadow-sm">
+                <Card.Header className="flex overflow-visible gap-y-4 flex-wrap items-start justify-between shadow-none">
                     <div className="font-mono text-black mb-1">
                         {title}
                     </div>
-                </CardHeader>
-                <CardBody className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 px-4">
+                </Card.Header>
+                <Card.Body className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 px-4">
                     {data.map((props, key) => (
                         <Web3Card key={key} parentRouter={parentRouter} {...props} />
                     ))}
-                </CardBody>
+                </Card.Body>
             </Card>
         </section>
     );

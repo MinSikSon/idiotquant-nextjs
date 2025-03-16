@@ -4,6 +4,119 @@ import { registerCookie } from "@/components/util";
 import { getOverseasStockTradingInquireBalance, getOverseasStockTradingInquirePresentBalance, getQuotationsPriceDetail, getQuotationsSearchInfo, postOrderUs } from "./koreaInvestmentUsMarketAPI";
 import { KoreaInvestmentToken } from "../koreaInvestment/koreaInvestmentSlice";
 
+
+export interface KoreaInvestmentOverseasSearchInfoOutput {
+    std_pdno: string;
+    prdt_eng_name: string;
+    natn_cd: string;
+    natn_name: string;
+    tr_mket_cd: string;
+    tr_mket_name: string;
+    ovrs_excg_cd: string;
+    ovrs_excg_name: string;
+    tr_crcy_cd: string;
+    ovrs_papr: string;
+    crcy_name: string;
+    ovrs_stck_dvsn_cd: string;
+    prdt_clsf_cd: string;
+    prdt_clsf_name: string;
+    sll_unit_qty: string;
+    buy_unit_qty: string;
+    tr_unit_amt: string;
+    lstg_stck_num: string;
+    lstg_dt: string;
+    ovrs_stck_tr_stop_dvsn_cd: string;
+    lstg_abol_item_yn: string;
+    ovrs_stck_prdt_grp_no: string;
+    lstg_yn: string;
+    tax_levy_yn: string;
+    ovrs_stck_erlm_rosn_cd: string;
+    ovrs_stck_hist_rght_dvsn_cd: string;
+    chng_bf_pdno: string;
+    prdt_type_cd_2: string;
+    ovrs_item_name: string;
+    sedol_no: string;
+    blbg_tckr_text: string;
+    ovrs_stck_etf_risk_drtp_cd: string;
+    etp_chas_erng_rt_dbnb: string;
+    istt_usge_isin_cd: string;
+    mint_svc_yn: string;
+    mint_svc_yn_chng_dt: string;
+    prdt_name: string;
+    lei_cd: string;
+    ovrs_stck_stop_rson_cd: string;
+    lstg_abol_dt: string;
+    mini_stk_tr_stat_dvsn_cd: string;
+    mint_frst_svc_erlm_dt: string;
+    mint_dcpt_trad_psbl_yn: string;
+    mint_fnum_trad_psbl_yn: string;
+    mint_cblc_cvsn_ipsb_yn: string;
+    ptp_item_yn: string;
+    ptp_item_trfx_exmt_yn: string;
+    ptp_item_trfx_exmt_strt_dt: string;
+    ptp_item_trfx_exmt_end_dt: string;
+    dtm_tr_psbl_yn: string;
+    sdrf_stop_ecls_yn: string;
+    sdrf_stop_ecls_erlm_dt: string;
+}
+export interface KoreaInvestmentOverseasSearchInfo {
+    output: KoreaInvestmentOverseasSearchInfoOutput
+    rt_cd: string;
+    msg_cd: string;
+    msg1: string;
+}
+
+export interface KoreaInvestmentOverseasPriceDetailOutput {
+    rsym: string;
+    zdiv: string;
+    curr: string;
+    vnit: string;
+    open: string;
+    high: string;
+    low: string;
+    last: string;
+    base: string;
+    pvol: string;
+    pamt: string;
+    uplp: string;
+    dnlp: string;
+    h52p: string;
+    h52d: string;
+    l52p: string;
+    l52d: string;
+    perx: string;
+    pbrx: string;
+    epsx: string;
+    bpsx: string;
+    shar: string;
+    mcap: string;
+    tomv: string;
+    t_xprc: string;
+    t_xdif: string;
+    t_xrat: string;
+    p_xprc: string;
+    p_xdif: string;
+    p_xrat: string;
+    t_rate: string;
+    p_rate: string;
+    t_xsgn: string;
+    p_xsng: string;
+    e_ordyn: string;
+    e_hogau: string;
+    e_icod: string;
+    e_parp: string;
+    tvol: string;
+    tamt: string;
+    etyp_nm: string;
+}
+
+export interface KoreaInvestmentOverseasPriceDetail {
+    output: KoreaInvestmentOverseasPriceDetailOutput;
+    rt_cd: string;
+    msg_cd: string;
+    msg1: string;
+}
+
 interface KoreaInvestmentOverseasBalanceOutput1 {
     cano: string;
     acnt_prdt_cd: string;
@@ -146,8 +259,8 @@ interface KoreaInvestmentUsMaretType {
     | "pending" | "fulfilled" | "rejected"
     | "order-cash"
     ;
-    searchInfo: any;
-    priceDetail: any;
+    searchInfo: KoreaInvestmentOverseasSearchInfo;
+    priceDetail: KoreaInvestmentOverseasPriceDetail;
     balance: KoreaInvestmentOverseasBalance;
     presentBalance: KoreaInvestmentOverseasPresentBalance;
     usOrder: KoreaInvestmentUsOrder;
@@ -155,8 +268,113 @@ interface KoreaInvestmentUsMaretType {
 
 const initialState: KoreaInvestmentUsMaretType = {
     state: "init",
-    searchInfo: {},
-    priceDetail: {},
+    searchInfo: {
+        output: {
+            std_pdno: "",
+            prdt_eng_name: "",
+            natn_cd: "",
+            natn_name: "",
+            tr_mket_cd: "",
+            tr_mket_name: "",
+            ovrs_excg_cd: "",
+            ovrs_excg_name: "",
+            tr_crcy_cd: "",
+            ovrs_papr: "",
+            crcy_name: "",
+            ovrs_stck_dvsn_cd: "",
+            prdt_clsf_cd: "",
+            prdt_clsf_name: "",
+            sll_unit_qty: "",
+            buy_unit_qty: "",
+            tr_unit_amt: "",
+            lstg_stck_num: "",
+            lstg_dt: "",
+            ovrs_stck_tr_stop_dvsn_cd: "",
+            lstg_abol_item_yn: "",
+            ovrs_stck_prdt_grp_no: "",
+            lstg_yn: "",
+            tax_levy_yn: "",
+            ovrs_stck_erlm_rosn_cd: "",
+            ovrs_stck_hist_rght_dvsn_cd: "",
+            chng_bf_pdno: "",
+            prdt_type_cd_2: "",
+            ovrs_item_name: "",
+            sedol_no: "",
+            blbg_tckr_text: "",
+            ovrs_stck_etf_risk_drtp_cd: "",
+            etp_chas_erng_rt_dbnb: "",
+            istt_usge_isin_cd: "",
+            mint_svc_yn: "",
+            mint_svc_yn_chng_dt: "",
+            prdt_name: "",
+            lei_cd: "",
+            ovrs_stck_stop_rson_cd: "",
+            lstg_abol_dt: "",
+            mini_stk_tr_stat_dvsn_cd: "",
+            mint_frst_svc_erlm_dt: "",
+            mint_dcpt_trad_psbl_yn: "",
+            mint_fnum_trad_psbl_yn: "",
+            mint_cblc_cvsn_ipsb_yn: "",
+            ptp_item_yn: "",
+            ptp_item_trfx_exmt_yn: "",
+            ptp_item_trfx_exmt_strt_dt: "",
+            ptp_item_trfx_exmt_end_dt: "",
+            dtm_tr_psbl_yn: "",
+            sdrf_stop_ecls_yn: "",
+            sdrf_stop_ecls_erlm_dt: "",
+        },
+        rt_cd: "",
+        msg_cd: "",
+        msg1: "",
+    },
+    priceDetail: {
+        output: {
+            rsym: "",
+            zdiv: "",
+            curr: "",
+            vnit: "",
+            open: "",
+            high: "",
+            low: "",
+            last: "",
+            base: "",
+            pvol: "",
+            pamt: "",
+            uplp: "",
+            dnlp: "",
+            h52p: "",
+            h52d: "",
+            l52p: "",
+            l52d: "",
+            perx: "",
+            pbrx: "",
+            epsx: "",
+            bpsx: "",
+            shar: "",
+            mcap: "",
+            tomv: "",
+            t_xprc: "",
+            t_xdif: "",
+            t_xrat: "",
+            p_xprc: "",
+            p_xdif: "",
+            p_xrat: "",
+            t_rate: "",
+            p_rate: "",
+            t_xsgn: "",
+            p_xsng: "",
+            e_ordyn: "",
+            e_hogau: "",
+            e_icod: "",
+            e_parp: "",
+            tvol: "",
+            tamt: "",
+            etyp_nm: "",
+        },
+        rt_cd: "",
+        msg_cd: "",
+        msg1: "",
+    },
     balance: {
         state: "init",
         ctx_area_fk200: "",

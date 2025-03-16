@@ -8,6 +8,20 @@ export const metadata = {
   description: 'We recommend stock picks derived from a quantitative strategy.',
 }
 
+import { Roboto_Mono } from 'next/font/google';
+const roboto_mono = Roboto_Mono({
+  weight: '400',
+  subsets: ['latin'],
+  display: 'swap',
+})
+
+// import { Noto_Sans_KR } from 'next/font/google';
+// const noto_sans_kr = Noto_Sans_KR({
+//   weight: '400',
+//   subsets: ['latin'],
+//   display: 'swap',
+// })
+
 export default function RootLayout({
   children,
 }: {
@@ -18,7 +32,7 @@ export default function RootLayout({
       <LoadData />
       <html lang="en">
         <body>
-          <div>
+          <div className={`${roboto_mono.className}`}>
             <NavbarWithSimpleLinks />
             {/* <TopPanel /> */}
             <div className="w-full y-full scroll-auto">
@@ -29,6 +43,6 @@ export default function RootLayout({
           </div>
         </body>
       </html>
-    </StoreProvider>
+    </StoreProvider >
   )
 }

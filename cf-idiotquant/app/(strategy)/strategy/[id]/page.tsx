@@ -18,7 +18,9 @@ export default function Item({ params: { id } }: { params: { id: number } }) {
             // return <div>{item}</div>
             return <div key={item} className="flex items-center">{item.split(":").map((item, index) => {
                 if (0 == index) {
-                    return <Chip key={item} className="font-mono mr-2" variant="outlined" value={item} />
+                    return <Chip key={item} className="font-mono mr-2" variant="ghost">
+                        <Chip.Label>{item}</Chip.Label>
+                    </Chip>
                 }
                 return <div key={item} className="font-mono text-sm">{item}</div>
             })}</div>

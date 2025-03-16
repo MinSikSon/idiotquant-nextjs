@@ -1,5 +1,5 @@
 
-import { Button, Card, Chip, List, ListItem, ListItemPrefix, ListItemSuffix, Typography } from "@material-tailwind/react";
+import { Button, Card, Chip, List, Spinner, Typography } from "@material-tailwind/react";
 import { Util } from "./util";
 import CustomCard from "@/components/CustomCard";
 import Link from "next/link";
@@ -30,23 +30,33 @@ const MarQueue2 = (props: any) => {
 export const ListNodeTemplate = (props: any) => {
     return (
         <Link href={props.link}>
-            <ListItem className={`p-0 border-b-2 ${props.bgColor}`}>
-                <ListItemPrefix>
-                    <Chip className="border-none py-0" size="sm" variant="outlined" value={props.item1} />
-                </ListItemPrefix>
-                <ListItemSuffix>
-                    <Chip className="border-none py-0 pr-2" size="sm" variant="outlined" value={props.item2} />
-                </ListItemSuffix>
+            <List.Item className={`p-0 border-b-2 ${props.bgColor}`}>
+                <List.ItemStart>
+                    <Chip className="border-none py-0" size="sm" variant="outline">
+                        <Chip.Label>{props.item1}</Chip.Label>
+                    </Chip>
+                </List.ItemStart>
+                <List.ItemEnd>
+                    <Chip className="border-none py-0 pr-2" size="sm" variant="outline">
+                        <Chip.Label>{props.item2}</Chip.Label>
+                    </Chip>
+                </List.ItemEnd>
                 <div className="mr-2 w-3">
-                    <Chip className="border-none py-0" size="sm" variant="outlined" value={props.item3} />
+                    <Chip className="border-none py-0" size="sm" variant="outline">
+                        <Chip.Label>{props.item3}</Chip.Label>
+                    </Chip>
                 </div>
                 <div className="mr-2 w-28">
-                    <Chip className="border-none py-0" size="sm" variant="outlined" color={props.color} value={props.item4} />
+                    <Chip className="border-none py-0" size="sm" variant="outline" color={props.color}>
+                        <Chip.Label>{props.item4}</Chip.Label>
+                    </Chip>
                 </div>
                 {!!props.item5 ? <div className="mr-2 w-16">
-                    <Chip className="border-none py-0" size="sm" variant="outlined" value={props.item5} />
+                    <Chip className="border-none py-0" size="sm" variant="outline">
+                        <Chip.Label>{props.item5}</Chip.Label>
+                    </Chip>
                 </div> : <></>}
-            </ListItem >
+            </List.Item >
         </Link>
     );
 }
@@ -92,9 +102,7 @@ export default function TablePanel(props: any) {
 
     const NUM_OF_STOCK_ITEMS = stockNameList.length;
     if (0 == NUM_OF_STOCK_ITEMS) {
-        return <Button variant="text" loading={true} className="font-mono">
-            {props.loadingMsg}
-        </Button>
+        return <Button variant="ghost"><Spinner size="sm" /> {props.loadingMsg}</Button>
     }
 
     let cumulativeRatio = 0;
@@ -196,18 +204,30 @@ export default function TablePanel(props: any) {
                 ]} />
                 : <>
                     <div className="flex w-full">
-                        <Chip className="w-1/2" variant="outlined" size="sm" value={`재무정보 일자: ${thstrm_dt}`} />
+                        <Chip className="w-1/2" variant="outline" size="sm">
+                            <Chip.Label>재무정보 일자: {thstrm_dt}</Chip.Label>
+                        </Chip>
                     </div>
                     <div className="flex w-full">
-                        <Chip className="w-1/2" variant="outlined" size="sm" value={`최근 주가 일자: ${bsnsDate}`} />
-                        <Chip className="w-1/2" variant="outlined" size="sm" value={`최근 주가 일자: ${(props.endDate).split(`_`)[1]}`} />
+                        <Chip className="w-1/2" variant="outline" size="sm">
+                            <Chip.Label>최근 주가 일자: {bsnsDate}</Chip.Label>
+                        </Chip>
+                        <Chip className="w-1/2" variant="outline" size="sm">
+                            <Chip.Label>최근 주가 일자: {(props.endDate).split(`_`)[1]}</Chip.Label>
+                        </Chip>
                     </div>
                     <div className="flex w-full">
-                        <Chip className="w-1/2" variant="outlined" size="sm" value={`추천 종목수: ${NUM_OF_STOCK_ITEMS} 개`} />
+                        <Chip className="w-1/2" variant="outline" size="sm">
+                            <Chip.Label>추천 종목수: {NUM_OF_STOCK_ITEMS} 개</Chip.Label>
+                        </Chip>
                     </div>
                     <div className="flex w-full">
-                        <Chip className="w-1/2" variant="outlined" size="sm" value={`목표수익률: ${기대수익}`} />
-                        <Chip className="w-1/2" variant="outlined" size="sm" value={`실수익률: ${실수익}`} />
+                        <Chip className="w-1/2" variant="outline" size="sm">
+                            <Chip.Label>목표수익률: {기대수익}</Chip.Label>
+                        </Chip>
+                        <Chip className="w-1/2" variant="outline" size="sm">
+                            <Chip.Label>실수익률: {실수익}</Chip.Label>
+                        </Chip>
                     </div>
                 </>
             }

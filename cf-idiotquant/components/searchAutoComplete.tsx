@@ -73,7 +73,7 @@ const SearchAutocomplete = (props: any) => {
                     value={query}
                     onChange={handleChange}
                     onKeyUp={handleKeyDown}
-                    placeholder={`회사명을 검색하세요...`}
+                    placeholder={props.placeHolder}
                     onFocus={() => setIsFocused(true)}
                     onBlur={() => setTimeout(() => setIsFocused(false), 200)}
                     className="font-mono w-full p-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-black"
