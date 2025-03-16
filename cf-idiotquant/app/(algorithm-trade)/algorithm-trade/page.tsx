@@ -2,17 +2,19 @@
 
 import { DesignButton } from "@/components/designButton";
 import TablesExample8, { Example8TableHeadType, Example8TableRowType, TablesExample8PropsType } from "@/components/tableExample8";
-import { selectCapitalToken, selectInquirePriceMulti } from "@/lib/features/algorithmTrade/algorithmTradeSlice";
+import { CapitalTokenType, selectCapitalToken, selectInquirePriceMulti } from "@/lib/features/algorithmTrade/algorithmTradeSlice";
 import { reqGetCapitalToken, reqGetInquirePriceMulti } from "@/lib/features/algorithmTrade/algorithmTradeSlice";
 import { getKoreaInvestmentToken, KoreaInvestmentToken } from "@/lib/features/koreaInvestment/koreaInvestmentSlice";
 import { useAppDispatch, useAppSelector } from "@/lib/hooks";
 import { Button, Popover, Spinner } from "@material-tailwind/react";
 import React from "react";
 
+const DEBUG = true;
+
 export default function AlgorithmTrade() {
     const dispatch = useAppDispatch();
 
-    const capitalToken: any = useAppSelector(selectCapitalToken);
+    const capitalToken: CapitalTokenType = useAppSelector(selectCapitalToken);
     const inquirePriceMulti: any = useAppSelector(selectInquirePriceMulti);
     const kiToken: KoreaInvestmentToken = useAppSelector(getKoreaInvestmentToken);
 
@@ -20,7 +22,7 @@ export default function AlgorithmTrade() {
 
     function handleOnClick() {
         setTime(new Date());
-        // console.log(`[handleOnClick] kiToken`, kiToken);
+        if (DEBUG) console.log(`[handleOnClick] kiToken`, kiToken);
         dispatch(reqGetCapitalToken({ koreaInvestmentToken: kiToken }));
     }
 
@@ -29,8 +31,8 @@ export default function AlgorithmTrade() {
     }, []);
 
     React.useEffect(() => {
-        console.log(`capitalToken`, capitalToken);
-        console.log(`kiToken`, kiToken);
+        if (DEBUG) console.log(`capitalToken`, capitalToken);
+        if (DEBUG) console.log(`kiToken`, kiToken);
 
         if ("fulfilled" == kiToken.state && "fulfilled" == capitalToken.state && capitalToken.value.stock_list.length > 0) {
             const PDNOs = capitalToken.value.stock_list.map((item: any) => item.PDNO);
@@ -58,7 +60,7 @@ export default function AlgorithmTrade() {
     }, [capitalToken, kiToken]);
 
     React.useEffect(() => {
-        // console.log(`inquirePriceMulti`, inquirePriceMulti);
+        if (DEBUG) console.log(`inquirePriceMulti`, inquirePriceMulti);
     }, [inquirePriceMulti]);
 
     const example8TableHead: Example8TableHeadType[] = [
@@ -89,6 +91,7 @@ export default function AlgorithmTrade() {
     ];
 
     function formatDateTime(date: string) {
+        // console.log(`formatDateTime`, `date`, date);
         date = date.replaceAll("\"", "").replaceAll("-", "/");
         const dateArr = date.split("T");
         const dateArr2 = dateArr[1].split(".");
@@ -97,7 +100,7 @@ export default function AlgorithmTrade() {
 
     let cummulative_investment = 0;
     const purchase_log = capitalToken.value.purchase_log ?? [];
-    // console.log(`purchase_log`, purchase_log);
+    if (DEBUG) console.log(`purchase_log`, purchase_log);
     let example8TableRow: Example8TableRowType[] = (purchase_log.map((item: any, index: number) => {
         const bgColor = index % 2 == 0 ? "bg-white" : "bg-gray-100";
         return item["stock_list"].map((subItem: any) => {
@@ -118,13 +121,16 @@ export default function AlgorithmTrade() {
         })
     })).reverse().flat();
 
+    if (DEBUG) console.log(`capitalToken.state`, capitalToken.state);
+    if ("fulfilled" != capitalToken.state) {
+        return <Button variant="ghost"><Spinner size="sm" /> loading...</Button>;
+    }
+
     const time_stamp: any = capitalToken.value.time_stamp ?? {};
     const stock_list: any = capitalToken.value.stock_list ?? [];
     const refill_stock_index = capitalToken.value.refill_stock_index ?? 0;
-    const stock_list_length = stock_list.length > 0 ? stock_list.length : 1;
-    const capital_charge_rate = capitalToken.value.capital_charge_rate ?? 0;
-    const token_per_stock = capitalToken.value.tokenPerStock ?? 0;
-    // console.log(`stock_list`, stock_list);
+    const token_per_stock = capitalToken.value.token_per_stock ?? 0;
+    if (DEBUG) console.log(`stock_list`, stock_list);
     let cummulative_token = 0;
     const props: TablesExample8PropsType = {
         title: <>
