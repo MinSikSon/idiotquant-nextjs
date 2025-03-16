@@ -5,6 +5,7 @@ import { Util } from "./util";
 import { useAppDispatch, useAppSelector } from "@/lib/hooks";
 import React from "react";
 
+const DEBUG = true;
 function formatNumber(num: number) {
     return num % 1 === 0 ? num.toLocaleString() : num.toFixed(2);
 }
@@ -17,7 +18,7 @@ interface InquireBalanceResultProps {
 }
 
 export default function InquireBalanceResult(props: InquireBalanceResultProps) {
-    // console.log(`[InquireBalanceResult]`, `props`, props);
+    if (DEBUG) console.log(`[InquireBalanceResult]`, `props`, props);
 
     const dispatch = useAppDispatch();
     const [show, setShow] = React.useState<boolean>(false);
@@ -82,12 +83,12 @@ export default function InquireBalanceResult(props: InquireBalanceResultProps) {
         },
     ];
 
-    // console.log(`selectHead`, selectHead);
+    if (DEBUG) console.log(`selectHead`, selectHead);
 
     let example8TableRow: Example8TableRowType[] = [];
     if ("fulfilled" == props.kiBalance.state) {
         let kiBalanceOutput1 = [...props.kiBalance.output1];
-        // console.log(`kiBalanceOutput1`, kiBalanceOutput1);
+        if (DEBUG) console.log(`kiBalanceOutput1`, kiBalanceOutput1);
         example8TableRow = (kiBalanceOutput1.sort((a, b) => {
             if ("종목명" == selectHead) {
                 if (prevSelectHead == selectHead) {
@@ -133,7 +134,7 @@ export default function InquireBalanceResult(props: InquireBalanceResultProps) {
             }
             return 0;
         }).map((item, index) => {
-            // console.log(`item["prdt_name"]`, item["prdt_name"], `item["prdt_name"].length`, item["prdt_name"].length);
+            if (DEBUG) console.log(`item["prdt_name"]`, item["prdt_name"], `item["prdt_name"].length`, item["prdt_name"].length);
             const name = item["prdt_name"];
             const price = !!item["prpr"] ? item["prpr"] : item["ovrs_now_pric1"];
             // const crcy_cd = !!props.kiBalance.output2[0]["crcy_cd"] ? <span className="text-[0.6rem]">{"" + props.kiBalance.output2[0]["crcy_cd"]}</span> : <span className="text-[0.6rem]">{"원"}</span>;
@@ -149,7 +150,9 @@ export default function InquireBalanceResult(props: InquireBalanceResultProps) {
             const frst_bltn_exrt = !!props.kiBalance.output2 ? props.kiBalance.output2[0]["frst_bltn_exrt"] : 0;
             return {
                 id: name,
-                column_1: <div className={`font-mono ${name.length >= 7 ? "text-[0.6rem]" : "text-xs"}`}>{name}</div>,
+                column_1: <>
+                    <div className={`font-mono ${name.length >= 7 ? "text-[0.6rem]" : "text-xs"}`}>{name}</div>
+                </>,
                 column_2: <>
                     <div className="flex flex-col font-mono font-bold text-xs text-black">
                         <div className="mb-0 pb-0">
@@ -233,8 +236,7 @@ export default function InquireBalanceResult(props: InquireBalanceResultProps) {
         }));
     }
 
-    // console.log(`kiOrderCash.msg1`, kiOrderCash.msg1); // TODO: 클릭한 종목 바로 밑에 msg 뜨게 변경..!!
-
+    if (DEBUG) console.log(`props.kiOrderCash.msg1`, props.kiOrderCash.msg1); // TODO: 클릭한 종목 바로 밑에 msg 뜨게 변경..!!
 
     let crcy_cd: string = ""; // 단위
     let nass_amt: number = 0; // 순자산
@@ -248,14 +250,11 @@ export default function InquireBalanceResult(props: InquireBalanceResultProps) {
         // crcy_cd = !!props.kiBalance.output2[0]["crcy_cd"] ? " " + props.kiBalance.output2[0]["crcy_cd"] : "원";
         crcy_cd = "원";
 
-        // evlu_amt_smtl_amt = Number(props.kiBalance.output2[0]["evlu_amt_smtl_amt"]);
         evlu_amt_smtl_amt = !!props.kiBalance.output3 ? props.kiBalance.output3["evlu_amt_smtl"] : props.kiBalance.output2[0]["evlu_amt_smtl_amt"];
         evlu_amt_smtl_amt = Number(evlu_amt_smtl_amt);
-        // pchs_amt_smtl_amt = Number(props.kiBalance.output2[0]["pchs_amt_smtl_amt"]);
         pchs_amt_smtl_amt = !!props.kiBalance.output3 ? props.kiBalance.output3["pchs_amt_smtl"] : props.kiBalance.output2[0]["pchs_amt_smtl_amt"];
         pchs_amt_smtl_amt = Number(pchs_amt_smtl_amt);
 
-        // evlu_pfls_smtl_amt = Number(props.kiBalance.output2[0]["evlu_pfls_smtl_amt"]);
         evlu_pfls_smtl_amt = !!props.kiBalance.output3 ? props.kiBalance.output3["evlu_pfls_amt_smtl"] : props.kiBalance.output2[0]["evlu_pfls_smtl_amt"];
         evlu_pfls_smtl_amt = Number(evlu_pfls_smtl_amt);
 
@@ -263,7 +262,6 @@ export default function InquireBalanceResult(props: InquireBalanceResultProps) {
 
         dnca_tot_amt = !!props.kiBalance.output3 ? props.kiBalance.output3["frcr_use_psbl_amt"] : props.kiBalance.output2[0]["dnca_tot_amt"];
 
-        // nass_amt = Number(props.kiBalance.output2[0]["nass_amt"]);
         nass_amt = Number(evlu_amt_smtl_amt) + Number(dnca_tot_amt);
     }
 
@@ -308,39 +306,59 @@ export default function InquireBalanceResult(props: InquireBalanceResultProps) {
                 </div>
                 : <></>}
             <div className="text-xs font-mono text-black p-3 border rounded">
-                <div className="flex leading-none pb-2">
+                <div className="flex leading-none pb-2 gap-4">
                     <div className="flex-1 flex-col">
-                        <div>
-                            매입:{Number(pchs_amt_smtl_amt).toLocaleString()}{crcy_cd}
-                        </div>
-                        <div className="text-center">
-                            {!!frst_bltn_exrt ? <span className="text-[0.5rem]"> ({formatNumber(Number(pchs_amt_smtl_amt) / Number(frst_bltn_exrt))} USD)</span> : ""}
+                        <div className="flex gap-2">
+                            <div className="w-4/12 text-right">
+                                매입
+                            </div>
+                            <div className="w-8/12 text-right">
+                                {Number(pchs_amt_smtl_amt).toLocaleString()}{crcy_cd}
+                                <div className="text-right">
+                                    {!!frst_bltn_exrt ? <span className="text-[0.5rem]"> ({formatNumber(Number(pchs_amt_smtl_amt) / Number(frst_bltn_exrt))} USD)</span> : ""}
+                                </div>
+                            </div>
                         </div>
                     </div>
                     <div className="flex-1 flex-col">
-                        <div>
-                            평가:<span className={`${Number(evlu_amt_smtl_amt) > Number(pchs_amt_smtl_amt) ? "text-red-500" : "text-blue-500"}`}>{Number(evlu_amt_smtl_amt).toLocaleString()}{crcy_cd}</span>
-                        </div>
-                        <div className="text-center">
-                            {!!frst_bltn_exrt ? <span className="text-[0.5rem]"> ({formatNumber(Number(evlu_amt_smtl_amt) / Number(frst_bltn_exrt))} USD)</span> : ""}
+                        <div className="flex gap-2">
+                            <div className="w-4/12 text-right">
+                                평가
+                            </div>
+                            <div className="w-8/12 text-right">
+                                <span className={`${Number(evlu_amt_smtl_amt) > Number(pchs_amt_smtl_amt) ? "text-red-500" : "text-blue-500"}`}>{Number(evlu_amt_smtl_amt).toLocaleString()}{crcy_cd}</span>
+                                <div className="text-right">
+                                    {!!frst_bltn_exrt ? <span className="text-[0.5rem]"> ({formatNumber(Number(evlu_amt_smtl_amt) / Number(frst_bltn_exrt))} USD)</span> : ""}
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </div>
-                <div className="flex leading-none pb-0">
+                <div className="flex leading-none pb-0 gap-4">
                     <div className="flex-1 flex-col">
-                        <div>
-                            예수금:{Number(dnca_tot_amt).toLocaleString()}{crcy_cd}
-                        </div>
-                        <div className="text-center">
-                            {!!frst_bltn_exrt ? <span className="text-[0.5rem]"> ({formatNumber(Number(dnca_tot_amt) / Number(frst_bltn_exrt))} USD)</span> : ""}
+                        <div className="flex gap-2">
+                            <div className="w-4/12 text-right">
+                                예수금
+                            </div>
+                            <div className="w-8/12 text-right">
+                                {Number(dnca_tot_amt).toLocaleString()}{crcy_cd}
+                                <div className="text-right">
+                                    {!!frst_bltn_exrt ? <span className="text-[0.5rem]"> ({formatNumber(Number(dnca_tot_amt) / Number(frst_bltn_exrt))} USD)</span> : ""}
+                                </div>
+                            </div>
                         </div>
                     </div>
                     <div className="flex-1 flex-col">
-                        <div>
-                            순자산:{Number(nass_amt).toLocaleString()}{crcy_cd}
-                        </div>
-                        <div className="text-center">
-                            {!!frst_bltn_exrt ? <span className="text-[0.5rem]"> ({formatNumber(Number(nass_amt) / Number(frst_bltn_exrt))} USD)</span> : ""}
+                        <div className="flex gap-2">
+                            <div className="w-4/12 text-right">
+                                순자산
+                            </div>
+                            <div className="w-8/12 text-right">
+                                {Number(nass_amt).toLocaleString()}{crcy_cd}
+                                <div className="text-right">
+                                    {!!frst_bltn_exrt ? <span className="text-[0.5rem]"> ({formatNumber(Number(nass_amt) / Number(frst_bltn_exrt))} USD)</span> : ""}
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </div>
