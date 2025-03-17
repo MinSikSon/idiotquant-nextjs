@@ -6,7 +6,7 @@ import { CapitalTokenType, reqGetUsCapitalToken, selectCapitalToken, selectInqui
 import { reqGetCapitalToken, reqGetInquirePriceMulti } from "@/lib/features/algorithmTrade/algorithmTradeSlice";
 import { getKoreaInvestmentToken, KoreaInvestmentToken } from "@/lib/features/koreaInvestment/koreaInvestmentSlice";
 import { useAppDispatch, useAppSelector } from "@/lib/hooks";
-import { Button, ButtonGroup, Popover, Spinner } from "@material-tailwind/react";
+import { Button, ButtonGroup, Popover, Spinner, Switch, Tabs, Typography } from "@material-tailwind/react";
 import React from "react";
 
 const DEBUG = false;
@@ -151,7 +151,7 @@ export default function AlgorithmTrade() {
                     handleOnClick={() => {
                         handleOnClick()
                     }}
-                    buttonName={`알고리즘 투자 이력 조회 ${kiToken.state == "fulfilled" ? "+ @" : ""}`}
+                    buttonName={`알고리즘 투자 이력 조회`}
                     buttonBgColor="bg-white"
                     buttonBorderColor="border-gray-500"
                     buttonShadowColor="#D5D5D5"
@@ -161,10 +161,17 @@ export default function AlgorithmTrade() {
                                        transition-all duration-150 [box-shadow:0_4px_0_0_#D5D5D5,0_8px_0_0_#D5D5D541] border-[1px]
                                        `}
                 />
-                <ButtonGroup isPill color="secondary" size="xs" variant="outline" className="pl-1">
-                    <Button onClick={() => setMarket(market == "KR" ? "US" : "KR")} className={`text-[0.7rem] p-1 ${market == "KR" ? "text-blue-500" : "text-gray-400"}`}>KR</Button>
-                    <Button onClick={() => setMarket(market == "KR" ? "US" : "KR")} className={`text-[0.7rem] p-1 ${market == "US" ? "text-blue-500" : "text-gray-400"}`}>US</Button>
-                </ButtonGroup>
+                <Tabs defaultValue="KR" className="ml-1">
+                    <Tabs.List className="w-full bg-gray-300 py-0">
+                        <Tabs.Trigger className="w-full p-1 text-white" value="KR" onClick={() => setMarket("KR")}>
+                            KR
+                        </Tabs.Trigger>
+                        <Tabs.Trigger className="w-full p-1 text-white" value="US" onClick={() => setMarket("US")}>
+                            US
+                        </Tabs.Trigger>
+                        <Tabs.TriggerIndicator className="bg-blue-500 p-1" />
+                    </Tabs.List>
+                </Tabs>
                 {"fulfilled" != capitalToken.state ?
                     <Button variant="ghost"><Spinner size="sm" /> loading...</Button>
                     : <>
