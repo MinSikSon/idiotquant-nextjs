@@ -44,26 +44,33 @@ export default function LineChart(props: any) {
 
     function getCumulateTokenArray() {
         let cumulateToken = 0
-        return (props.market == "KR" ? props.purchase_log_kr : props.purchase_log_us).map((entry: any) => {
+        const purchase_log = (props.market == "KR" ? props.purchase_log_kr : props.purchase_log_us);
+        const cumulateTokenArray = purchase_log.map((entry: any) => {
             cumulateToken += entry.stock_list.reduce((sum: any, stock: any) => sum + Number(stock.remaining_token), 0);
-            return cumulateToken;
+            return Number(cumulateToken).toFixed(0);
         }
-        )
+        );
+        // console.log(`cumulateTokenArray`, cumulateTokenArray);
+        return cumulateTokenArray;
     }
 
     function getCumulatePurchaseArray() {
         let cumulatePurchase = 0
-        return (props.market == "KR" ? props.purchase_log_kr : props.purchase_log_us).map((entry: any) => {
+        const purchase_log = (props.market == "KR" ? props.purchase_log_kr : props.purchase_log_us);
+        const cumulatePurchaseArray = purchase_log.map((entry: any) => {
             cumulatePurchase += entry.stock_list.reduce((sum: any, stock: any) => {
-                return sum + (Number(stock.stck_prpr) * Number(stock.ORD_QTY)) * (stock.buyOrSell == "sell" ? -1 : 1);
+                return sum + (Number(stock.stck_prpr) * Number(stock.ORD_QTY)) * (stock.buyOrSell == "sell" ? -1 : 1) * (props.market == "KR" ? 1 : props.frst_bltn_exrt);
             }, 0);
-            return cumulatePurchase;
+            return Number(cumulatePurchase).toFixed(0);
         }
-        )
+        );
+        // console.log(`cumulatePurchaseArray`, cumulatePurchaseArray);
+        return cumulatePurchaseArray;
     }
 
     function getCategoryArray() {
-        return (props.market == "KR" ? props.purchase_log_kr : props.purchase_log_us).map((entry: any) => entry.time_stamp);
+        const purchase_log = (props.market == "KR" ? props.purchase_log_kr : props.purchase_log_us);
+        return purchase_log.map((entry: any) => entry.time_stamp);
     }
 
     const chartConfig = React.useMemo(
@@ -174,8 +181,7 @@ export default function LineChart(props: any) {
                     },
                 },
             }) as ApexOptions,
-        [chartColor, textColor, lineColor],
-    );
+        [props.market, props.purchase_log_kr, props.purchase_log_us]);
 
     return (
         <Card>

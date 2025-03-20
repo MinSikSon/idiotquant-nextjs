@@ -310,19 +310,20 @@ export default function AlgorithmTrade() {
                 <div className="text-xs border border-black rounded p-1 m-1">
                     <div className={`flex gap-2`}>
                         <div className="w-5/12 text-right">누적 알고리즘 매수:</div>
-                        <div className="w-4/12 text-right">{market == "KR" ? `${Number(Number(cummulative_investment).toFixed(0)).toLocaleString()} 원` : `${Number(Number(cummulative_investment).toFixed(4)).toLocaleString()} USD`}</div>
-                        <div className="w-3/12"></div>
+                        <div className="w-4/12 text-right">{market == "KR" ? `${Number(Number(cummulative_investment).toFixed(0)).toLocaleString()} 원` : `${Number(Number(cummulative_investment).toFixed(0)).toLocaleString()} 원`}</div>
+                        <div className="w-3/12 text-right text-[0.6rem]">{market == "KR" ? "" : `(${Number(Number(cummulative_investment) / Number(us_capital_token.value.frst_bltn_exrt)).toFixed(3)} USD)`}</div>
                     </div>
                     <div className={`flex gap-2`}>
                         <div className="w-5/12 text-right">누적 알고리즘 매도:</div>
-                        <div className="w-4/12 text-right">{market == "KR" ? `${Number(Number(cummulative_investment_sell).toFixed(0)).toLocaleString()} 원` : `${Number(Number(cummulative_investment_sell).toFixed(4)).toLocaleString()} USD`}</div>
-                        <div className="w-3/12"></div>
+                        <div className="w-4/12 text-right">{market == "KR" ? `${Number(Number(cummulative_investment_sell).toFixed(0)).toLocaleString()} 원` : `${Number(Number(cummulative_investment_sell).toFixed(0)).toLocaleString()} 원`}</div>
+                        <div className="w-3/12 text-right text-[0.6rem]">{market == "KR" ? "" : `(${Number(Number(cummulative_investment_sell) / Number(us_capital_token.value.frst_bltn_exrt)).toFixed(3)} USD)`}</div>
                     </div>
                 </div>
                 <LineChart
                     purchase_log_kr={kr_capital_token.value.purchase_log}
                     purchase_log_us={us_capital_token.value.purchase_log}
                     market={market}
+                    frst_bltn_exrt={us_capital_token.value.frst_bltn_exrt}
                 />
             </div>
         </>,
@@ -332,13 +333,13 @@ export default function AlgorithmTrade() {
                 <div className="text-xs border border-black rounded p-1 m-1">
                     <div className={`flex gap-2`}>
                         <div className="w-5/12 text-right">누적 알고리즘 매수:</div>
-                        <div className="w-4/12 text-right">{market == "KR" ? `${Number(Number(cummulative_investment).toFixed(0)).toLocaleString()} 원` : `${Number(Number(cummulative_investment).toFixed(4)).toLocaleString()} USD`}</div>
-                        <div className="w-3/12"></div>
+                        <div className="w-4/12 text-right">{market == "KR" ? `${Number(Number(cummulative_investment).toFixed(0)).toLocaleString()} 원` : `${Number(Number(cummulative_investment).toFixed(0)).toLocaleString()} 원`}</div>
+                        <div className="w-3/12 text-right text-[0.6rem]">{market == "KR" ? "" : `(${Number(Number(cummulative_investment) / Number(us_capital_token.value.frst_bltn_exrt)).toFixed(3)} USD)`}</div>
                     </div>
                     <div className={`flex gap-2`}>
                         <div className="w-5/12 text-right">누적 알고리즘 매도:</div>
-                        <div className="w-4/12 text-right">{market == "KR" ? `${Number(Number(cummulative_investment_sell).toFixed(0)).toLocaleString()} 원` : `${Number(Number(cummulative_investment_sell).toFixed(4)).toLocaleString()} USD`}</div>
-                        <div className="w-3/12"></div>
+                        <div className="w-4/12 text-right">{market == "KR" ? `${Number(Number(cummulative_investment_sell).toFixed(0)).toLocaleString()} 원` : `${Number(Number(cummulative_investment_sell).toFixed(0)).toLocaleString()} 원`}</div>
+                        <div className="w-3/12 text-right text-[0.6rem]">{market == "KR" ? "" : `(${Number(Number(cummulative_investment_sell) / Number(us_capital_token.value.frst_bltn_exrt)).toFixed(3)} USD)`}</div>
                     </div>
                 </div>
             </div>
