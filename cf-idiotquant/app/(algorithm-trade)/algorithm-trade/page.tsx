@@ -1,12 +1,13 @@
 "use client"
 
 import { DesignButton } from "@/components/designButton";
+import LineChart from "@/components/LineChart";
 import TablesExample8, { Example8TableHeadType, Example8TableRowType, TablesExample8PropsType } from "@/components/tableExample8";
 import { CapitalTokenType, reqGetUsCapitalToken, selectCapitalToken, selectInquirePriceMulti, selectUsCapitalToken } from "@/lib/features/algorithmTrade/algorithmTradeSlice";
 import { reqGetCapitalToken, reqGetInquirePriceMulti } from "@/lib/features/algorithmTrade/algorithmTradeSlice";
 import { getKoreaInvestmentToken, KoreaInvestmentToken } from "@/lib/features/koreaInvestment/koreaInvestmentSlice";
 import { useAppDispatch, useAppSelector } from "@/lib/hooks";
-import { Button, ButtonGroup, Popover, Spinner } from "@material-tailwind/react";
+import { Button, ButtonGroup, Popover, Spinner, Switch, Tabs, Typography } from "@material-tailwind/react";
 import React from "react";
 
 const DEBUG = false;
@@ -111,21 +112,33 @@ export default function AlgorithmTrade() {
     const capitalToken = "KR" == market ? kr_capital_token : us_capital_token;
 
     let cummulative_investment = 0;
+    let cummulative_investment_sell = 0;
     const purchase_log = capitalToken.value.purchase_log ?? [];
     if (DEBUG) console.log(`purchase_log`, purchase_log);
     let example8TableRow: Example8TableRowType[] = (purchase_log.map((item: any, index: number) => {
         const bgColor = index % 2 == 0 ? "bg-white" : "bg-gray-100";
         return item["stock_list"].map((subItem: any) => {
-            const investment = (subItem["stck_prpr"] * subItem["ORD_QTY"]);
-            cummulative_investment += investment;
+            const frst_bltn_exrt = "KR" == market ? 1 : capitalToken.value.frst_bltn_exrt;
+            const investment = (subItem["stck_prpr"] * subItem["ORD_QTY"] * frst_bltn_exrt);
+            if ("buy" == (subItem["buyOrSell"] ?? "buy")) {
+                cummulative_investment += investment;
+            }
+            else {
+                cummulative_investment_sell += investment;
+            }
+
             return {
                 id: item["time_stamp"] + subItem["stock_name"], // key
                 column_2: <div className="text-xs">{subItem["stock_name"]}</div>,
                 column_3: <div className="text-xs">{subItem["remaining_token"]}</div>,
-                column_4: <div className="text-xs">{Number(subItem["stck_prpr"]).toLocaleString() + " "}<span className="text-[0.6rem]">{market == "KR" ? "원" : "USD"}</span></div>,
+                column_4: <>
+                    <div className="text-xs">
+                        {Number(subItem["stck_prpr"]).toLocaleString() + " "}<span className="text-[0.6rem]">{market == "KR" ? "원" : `USD (${Number(Number(subItem["stck_prpr"]) * capitalToken.value.frst_bltn_exrt).toFixed(0)} 원)`}</span>
+                    </div>
+                </>,
                 expectedRateOfReturnColor: '', // x
                 column_5: <div className="text-xs">{subItem["ORD_QTY"]}</div>,
-                column_6: <div className="text-xs">{subItem["remaining_token"] - investment}</div>,
+                column_6: <div className="text-xs">{Number(subItem["remaining_token"] - investment).toFixed(0)}</div>,
                 column_7: <div className="text-xs">{formatDateTime(item["time_stamp"])}</div>,
                 column_8: <div className="text-xs">{subItem["buyOrSell"] ?? "buy"}</div>,
                 bgColor: bgColor,
@@ -151,7 +164,7 @@ export default function AlgorithmTrade() {
                     handleOnClick={() => {
                         handleOnClick()
                     }}
-                    buttonName={`알고리즘 투자 이력 조회 ${kiToken.state == "fulfilled" ? "+ @" : ""}`}
+                    buttonName={`알고리즘 투자 이력 조회`}
                     buttonBgColor="bg-white"
                     buttonBorderColor="border-gray-500"
                     buttonShadowColor="#D5D5D5"
@@ -161,10 +174,17 @@ export default function AlgorithmTrade() {
                                        transition-all duration-150 [box-shadow:0_4px_0_0_#D5D5D5,0_8px_0_0_#D5D5D541] border-[1px]
                                        `}
                 />
-                <ButtonGroup isPill color="secondary" size="xs" variant="outline" className="pl-1">
-                    <Button onClick={() => setMarket(market == "KR" ? "US" : "KR")} className={`text-[0.7rem] p-1 ${market == "KR" ? "text-blue-500" : "text-gray-400"}`}>KR</Button>
-                    <Button onClick={() => setMarket(market == "KR" ? "US" : "KR")} className={`text-[0.7rem] p-1 ${market == "US" ? "text-blue-500" : "text-gray-400"}`}>US</Button>
-                </ButtonGroup>
+                <Tabs defaultValue="KR" className="mx-1">
+                    <Tabs.List className="w-full bg-gray-300 py-0">
+                        <Tabs.Trigger className="w-full p-1 text-white" value="KR" onClick={() => setMarket("KR")}>
+                            KR
+                        </Tabs.Trigger>
+                        <Tabs.Trigger className="w-full p-1 text-white" value="US" onClick={() => setMarket("US")}>
+                            US
+                        </Tabs.Trigger>
+                        <Tabs.TriggerIndicator className="bg-blue-500 p-1" />
+                    </Tabs.List>
+                </Tabs>
                 {"fulfilled" != capitalToken.state ?
                     <Button variant="ghost"><Spinner size="sm" /> loading...</Button>
                     : <>
@@ -283,17 +303,46 @@ export default function AlgorithmTrade() {
                 </div>
             </div>
         </>,
-        // financial_date: <><div className="text-sm">market_date</div><div className="ml-4 text-xs">{time.toString()}</div></>,
-        market_date: <Popover>
-            <Popover.Trigger>
-                <div className="cursor-pointer pt-4 text-sm text-black">
-                    구매 history <span className="text-xs text-black">{`(누적 알고리즘 매수금: ${Number(cummulative_investment).toFixed(4)} ${market == "KR" ? "원" : "USD"})`}</span>
+        financial_date: <>
+            <div className="cursor-pointer pt-4 text-sm text-black">
+                구매 history graph (종목 별 매 가격)
+                {/* purchase_log */}
+                <div className="text-xs border border-black rounded p-1 m-1">
+                    <div className={`flex gap-2`}>
+                        <div className="w-5/12 text-right">누적 알고리즘 매수:</div>
+                        <div className="w-4/12 text-right">{market == "KR" ? `${Number(Number(cummulative_investment).toFixed(0)).toLocaleString()} 원` : `${Number(Number(cummulative_investment).toFixed(4)).toLocaleString()} USD`}</div>
+                        <div className="w-3/12"></div>
+                    </div>
+                    <div className={`flex gap-2`}>
+                        <div className="w-5/12 text-right">누적 알고리즘 매도:</div>
+                        <div className="w-4/12 text-right">{market == "KR" ? `${Number(Number(cummulative_investment_sell).toFixed(0)).toLocaleString()} 원` : `${Number(Number(cummulative_investment_sell).toFixed(4)).toLocaleString()} USD`}</div>
+                        <div className="w-3/12"></div>
+                    </div>
                 </div>
-            </Popover.Trigger>
-            <Popover.Content className="p-2 border border-black rounded shadow shadow-blue-gray-500">
-                <div className="text-xs text-black">알고리즘 매매 내역</div>
-            </Popover.Content>
-        </Popover>,
+                <LineChart
+                    purchase_log_kr={kr_capital_token.value.purchase_log}
+                    purchase_log_us={us_capital_token.value.purchase_log}
+                    market={market}
+                />
+            </div>
+        </>,
+        market_date: <>
+            <div className="cursor-pointer pt-4 text-sm text-black">
+                구매 history
+                <div className="text-xs border border-black rounded p-1 m-1">
+                    <div className={`flex gap-2`}>
+                        <div className="w-5/12 text-right">누적 알고리즘 매수:</div>
+                        <div className="w-4/12 text-right">{market == "KR" ? `${Number(Number(cummulative_investment).toFixed(0)).toLocaleString()} 원` : `${Number(Number(cummulative_investment).toFixed(4)).toLocaleString()} USD`}</div>
+                        <div className="w-3/12"></div>
+                    </div>
+                    <div className={`flex gap-2`}>
+                        <div className="w-5/12 text-right">누적 알고리즘 매도:</div>
+                        <div className="w-4/12 text-right">{market == "KR" ? `${Number(Number(cummulative_investment_sell).toFixed(0)).toLocaleString()} 원` : `${Number(Number(cummulative_investment_sell).toFixed(4)).toLocaleString()} USD`}</div>
+                        <div className="w-3/12"></div>
+                    </div>
+                </div>
+            </div>
+        </>,
         tableHead: example8TableHead,
         tableRow: example8TableRow,
     }
