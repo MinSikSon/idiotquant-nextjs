@@ -40,6 +40,7 @@ export interface CapitalTokenTypeValue {
     "purchase_log": CapitalTokenTypeValuePurchaseLog[];
     "corp_scan_index": number;// 1169,
     "token_per_stock": number;//27
+    "frst_bltn_exrt"?: any;
 }
 
 export interface CapitalTokenType {
@@ -86,6 +87,7 @@ const initialState: AlgorithmTradeType = {
             purchase_log: [],
             corp_scan_index: 0,
             token_per_stock: 0,
+            frst_bltn_exrt: 0,
         }
     }
 }
