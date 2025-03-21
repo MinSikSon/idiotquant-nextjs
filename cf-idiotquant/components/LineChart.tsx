@@ -47,8 +47,12 @@ export default function LineChart(props: any) {
         () =>
             ({
                 type: "line",
+                // type: "bar",
                 // height: 240, // chart 높이
                 height: 120, // chart 높이
+                zoom: {
+                    enabled: false, // 줌 비활성화
+                },
                 series: props.data_array,
                 options: {
                     chart: {
@@ -66,7 +70,7 @@ export default function LineChart(props: any) {
                     stroke: {
                         curve: "smooth",
                         lineCap: "round",
-                        width: 3,
+                        width: 4,
                     },
                     markers: {
                         size: 0,
@@ -115,13 +119,14 @@ export default function LineChart(props: any) {
                         },
                     },
                     grid: {
-                        // show: true,
-                        show: false,
+                        show: true,
+                        // show: false,
                         borderColor: lineColor,
-                        strokeDashArray: 5,
+                        strokeDashArray: 0,
                         xaxis: {
                             lines: {
-                                show: true,
+                                // show: true,
+                                show: false,
                             },
                         },
                         // padding: {
