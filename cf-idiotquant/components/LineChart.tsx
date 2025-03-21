@@ -42,62 +42,12 @@ export default function LineChart(props: any) {
         ? rgbToHex(vars.getPropertyValue("--color-surface").split(" "))
         : "";
 
-    function getCumulateTokenArray() {
-        let cumulateToken = 0
-        const purchase_log = (props.market == "KR" ? props.purchase_log_kr : props.purchase_log_us);
-        const cumulateTokenArray = purchase_log.map((entry: any) => {
-            cumulateToken += entry.stock_list.reduce((sum: any, stock: any) => sum + Number(stock.remaining_token), 0);
-            return Number(cumulateToken).toFixed(0);
-        }
-        );
-        // console.log(`cumulateTokenArray`, cumulateTokenArray);
-        return cumulateTokenArray;
-    }
-
-    function getCumulatePurchaseArray() {
-        let cumulatePurchase = 0
-        const purchase_log = (props.market == "KR" ? props.purchase_log_kr : props.purchase_log_us);
-        const cumulatePurchaseArray = purchase_log.map((entry: any) => {
-            cumulatePurchase += entry.stock_list.reduce((sum: any, stock: any) => {
-                return sum + (Number(stock.stck_prpr) * Number(stock.ORD_QTY)) * (stock.buyOrSell == "sell" ? -1 : 1) * (props.market == "KR" ? 1 : props.frst_bltn_exrt);
-            }, 0);
-            return Number(cumulatePurchase).toFixed(0);
-        }
-        );
-        // console.log(`cumulatePurchaseArray`, cumulatePurchaseArray);
-        return cumulatePurchaseArray;
-    }
-
-    function getCategoryArray() {
-        const purchase_log = (props.market == "KR" ? props.purchase_log_kr : props.purchase_log_us);
-        return purchase_log.map((entry: any) => entry.time_stamp);
-    }
-
     const chartConfig = React.useMemo(
         () =>
             ({
                 type: "line",
                 height: 240,
-                series: [
-                    {
-                        name: "누적 포인트",
-                        // data: test_data.stock_list.map((stock: any) => stock.remaining_token),
-                        // data: [10, 20, 30, 40, 50, 60, 70, 80, 90],
-                        data: getCumulateTokenArray(),
-                        color: "#FF4560",
-                    },
-                    {
-                        name: "매수 - 매도",
-                        // data: test_data.stock_list.map((stock: any) => stock.stck_prpr * stock.ORD_QTY),
-                        // data: [50, 60, 70, 80, 90, 10, 20, 30, 40],
-                        data: getCumulatePurchaseArray(),
-                        color: "#0088CC",
-                    },
-                    // {
-                    //     name: "Sales_b",
-                    //     data: [350, 200, 230, 500, 50, 40, 300, 320, 500],
-                    // },
-                ],
+                series: props.data_array,
                 options: {
                     chart: {
                         toolbar: {
@@ -146,8 +96,7 @@ export default function LineChart(props: any) {
                         //     "Nov",
                         //     "Dec",
                         // ],
-                        // categories: test_data.stock_list.map((stock: any) => stock.stock_name),
-                        categories: getCategoryArray(),
+                        categories: props.data_category,
                     },
                     yaxis: {
                         labels: {

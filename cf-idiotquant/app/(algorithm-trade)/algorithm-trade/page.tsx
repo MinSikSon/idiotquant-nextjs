@@ -109,6 +109,57 @@ export default function AlgorithmTrade() {
         return `${dateArr[0]} ${dateArr2[0]}`;
     }
 
+    function getCumulateTokenArray() {
+        let cumulateToken = 0
+        const cumulateTokenArray = purchase_log.map((entry: any) => {
+            cumulateToken += entry.stock_list.reduce((sum: any, stock: any) => sum + Number(stock.remaining_token), 0);
+            return Number(cumulateToken).toFixed(0);
+        }
+        );
+        // console.log(`cumulateTokenArray`, cumulateTokenArray);
+        return cumulateTokenArray;
+    }
+
+    function getCumulatePurchaseArray() {
+        let cumulatePurchase = 0
+        const cumulatePurchaseArray = purchase_log.map((entry: any) => {
+            cumulatePurchase += entry.stock_list.reduce((sum: any, stock: any) => {
+                return sum + (Number(stock.stck_prpr) * Number(stock.ORD_QTY)) * (stock.buyOrSell == "sell" ? -1 : 1) * (market == "KR" ? 1 : capitalToken.value.frst_bltn_exrt);
+            }, 0);
+            return Number(cumulatePurchase).toFixed(0);
+        }
+        );
+        // console.log(`cumulatePurchaseArray`, cumulatePurchaseArray);
+        return cumulatePurchaseArray;
+    }
+
+    function getLineDataArray() {
+        return [
+            {
+                name: "누적 포인트",
+                // data: test_data.stock_list.map((stock: any) => stock.remaining_token),
+                // data: [10, 20, 30, 40, 50, 60, 70, 80, 90],
+                data: getCumulateTokenArray(),
+                color: "#FF4560",
+            },
+            {
+                name: "매수 - 매도",
+                // data: test_data.stock_list.map((stock: any) => stock.stck_prpr * stock.ORD_QTY),
+                // data: [50, 60, 70, 80, 90, 10, 20, 30, 40],
+                data: getCumulatePurchaseArray(),
+                color: "#0088CC",
+            },
+            // {
+            //     name: "Sales_b",
+            //     data: [350, 200, 230, 500, 50, 40, 300, 320, 500],
+            // },
+        ];
+    }
+
+    function getCategoryArray() {
+        return purchase_log.map((entry: any) => entry.time_stamp);
+    }
+
     const capitalToken = "KR" == market ? kr_capital_token : us_capital_token;
 
     let cummulative_investment = 0;
@@ -303,10 +354,11 @@ export default function AlgorithmTrade() {
                 </div>
             </div>
         </>,
-        financial_date: <>
+        financial_date: <></>,
+        market_date: <>
             <div className="cursor-pointer pt-4 text-sm text-black">
-                구매 history graph (종목 별 매 가격)
-                {/* purchase_log */}
+                구매 history
+
                 <div className="text-xs border border-black rounded p-1 m-1">
                     <div className={`flex gap-2`}>
                         <div className="w-5/12 text-right">누적 알고리즘 매수:</div>
@@ -320,28 +372,9 @@ export default function AlgorithmTrade() {
                     </div>
                 </div>
                 <LineChart
-                    purchase_log_kr={kr_capital_token.value.purchase_log}
-                    purchase_log_us={us_capital_token.value.purchase_log}
-                    market={market}
-                    frst_bltn_exrt={us_capital_token.value.frst_bltn_exrt}
+                    data_array={getLineDataArray()}
+                    data_category={getCategoryArray()}
                 />
-            </div>
-        </>,
-        market_date: <>
-            <div className="cursor-pointer pt-4 text-sm text-black">
-                구매 history
-                <div className="text-xs border border-black rounded p-1 m-1">
-                    <div className={`flex gap-2`}>
-                        <div className="w-5/12 text-right">누적 알고리즘 매수:</div>
-                        <div className="w-4/12 text-right">{market == "KR" ? `${Number(Number(cummulative_investment).toFixed(0)).toLocaleString()} 원` : `${Number(Number(cummulative_investment).toFixed(0)).toLocaleString()} 원`}</div>
-                        <div className="w-3/12 text-right text-[0.6rem]">{market == "KR" ? "" : `(${Number(Number(cummulative_investment) / Number(us_capital_token.value.frst_bltn_exrt)).toFixed(3)} USD)`}</div>
-                    </div>
-                    <div className={`flex gap-2`}>
-                        <div className="w-5/12 text-right">누적 알고리즘 매도:</div>
-                        <div className="w-4/12 text-right">{market == "KR" ? `${Number(Number(cummulative_investment_sell).toFixed(0)).toLocaleString()} 원` : `${Number(Number(cummulative_investment_sell).toFixed(0)).toLocaleString()} 원`}</div>
-                        <div className="w-3/12 text-right text-[0.6rem]">{market == "KR" ? "" : `(${Number(Number(cummulative_investment_sell) / Number(us_capital_token.value.frst_bltn_exrt)).toFixed(3)} USD)`}</div>
-                    </div>
-                </div>
             </div>
         </>,
         tableHead: example8TableHead,
