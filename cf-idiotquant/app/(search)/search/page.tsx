@@ -16,6 +16,9 @@ import Auth from "@/components/auth";
 import SearchAutocomplete from "@/components/searchAutoComplete";
 
 import validCorpNameArray from "@/public/data/validCorpNameArray.json";
+import LineChart from "@/components/LineChart";
+
+const DEBUG = false;
 
 export default function Search() {
   const pathname = usePathname();
@@ -34,7 +37,7 @@ export default function Search() {
   const [endDate, setEndDate] = React.useState<any>((new Date()).toISOString().split('T')[0]);
 
   React.useEffect(() => {
-    // console.log(`[Search]`, `kiToken:`, kiToken);
+    if (DEBUG) console.log(`[Search]`, `kiToken:`, kiToken);
     if ("cf" == loginState || "kakao" == loginState) {
       const isValidKiAccessToken = !!kiToken["access_token"];
       if (true == isValidKiAccessToken) {
@@ -44,23 +47,19 @@ export default function Search() {
   }, [kiToken, loginState]);
 
   React.useEffect(() => {
-    // console.log(`React.useEffect []`);
-  }, [])
-
-  React.useEffect(() => {
-    // console.log(`React.useEffect [kiInquireDailyItemChartPrice]`, kiInquireDailyItemChartPrice);
-    // console.log(`kiInquireDailyItemChartPrice.output1.hts_avls`, kiInquireDailyItemChartPrice.output1.hts_avls, `HTS 시가총액 (억)`);
+    if (DEBUG) console.log(`React.useEffect [kiInquireDailyItemChartPrice]`, kiInquireDailyItemChartPrice);
+    if (DEBUG) console.log(`kiInquireDailyItemChartPrice.output1.hts_avls`, kiInquireDailyItemChartPrice.output1.hts_avls, `HTS 시가총액 (억)`);
   }, [kiInquireDailyItemChartPrice])
   React.useEffect(() => {
     // 날짜별로 분류 필요
-    // console.log(`React.useEffect [kiBalanceSheet]`, kiBalanceSheet);
-    // console.log(`kiBalanceSheet.output[0].cras`, kiBalanceSheet.output.length > 0 ? kiBalanceSheet.output[0].cras : 0, `유동자산 (억)`);
-    // console.log(`kiBalanceSheet.output[0].total_lblt`, kiBalanceSheet.output.length > 0 ? kiBalanceSheet.output[0].total_lblt : 0, `부채총계 (억)`);
+    if (DEBUG) console.log(`React.useEffect [kiBalanceSheet]`, kiBalanceSheet);
+    if (DEBUG) console.log(`kiBalanceSheet.output[0].cras`, kiBalanceSheet.output.length > 0 ? kiBalanceSheet.output[0].cras : 0, `유동자산 (억)`);
+    if (DEBUG) console.log(`kiBalanceSheet.output[0].total_lblt`, kiBalanceSheet.output.length > 0 ? kiBalanceSheet.output[0].total_lblt : 0, `부채총계 (억)`);
 
   }, [kiBalanceSheet])
 
   React.useEffect(() => {
-    // console.log(`React.useEffect [kiInquirePrice]`, kiInquirePrice);
+    if (DEBUG) console.log(`React.useEffect [kiInquirePrice]`, kiInquirePrice);
   }, [kiInquirePrice])
 
   const formatDate = (date: string) => {
@@ -80,8 +79,7 @@ export default function Search() {
 
     const corpCode: any = corpCodeJson;
     const jsonStock: CorpCodeType = corpCode[stockName];
-    // console.log(`jsonStock`, jsonStock);
-    // console.log(`stockName`, stockName, `jsonStock`, jsonStock);
+    if (DEBUG) console.log(`stockName`, stockName, `jsonStock`, jsonStock);
     if (!!jsonStock) {
       const { stock_code } = jsonStock;
       // console.log(`stockCode`, stock_code);
@@ -93,7 +91,7 @@ export default function Search() {
 
   const handleInputEndDate = (e: React.ChangeEvent<HTMLInputElement>) => {
     setEndDate(e.target.value);
-    // console.log(`Date.now()`, Date.now());
+    if (DEBUG) console.log(`Date.now()`, Date.now());
     const date = new Date(e.target.value);
 
     // 5일을 빼기 위해 setDate() 사용
@@ -190,6 +188,22 @@ export default function Search() {
           <div className="w-3/12 text-right">상장주식수</div>
           <div className="w-5/12 text-right">{Number(Number(kiInquireDailyItemChartPrice.output1["lstn_stcn"])).toLocaleString()} 개</div>
           <div className="w-4/12"></div>
+        </div>
+        <div className="flex gap-2">
+          <div className="w-full">
+            <LineChart
+              data_array={[
+                {
+                  name: "주가",
+                  // data: test_data.stock_list.map((stock: any) => stock.remaining_token),
+                  // data: [10, 20, 30, 40, 50, 60, 70, 80, 90],
+                  data: kiInquireDailyItemChartPrice.output2.map((item: any) => item.stck_oprc).reverse(),
+                  color: "#000000",
+                }
+              ]}
+              category_array={kiInquireDailyItemChartPrice.output2.map((item: any) => item.stck_bsop_date).reverse()}
+            />
+          </div>
         </div>
       </div>
       <div className="text-xs border border-black rounded p-1 m-1">

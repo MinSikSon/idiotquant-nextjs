@@ -370,11 +370,15 @@ export default function AlgorithmTrade() {
                         <div className="w-4/12 text-right">{market == "KR" ? `${Number(Number(cummulative_investment_sell).toFixed(0)).toLocaleString()} 원` : `${Number(Number(cummulative_investment_sell).toFixed(0)).toLocaleString()} 원`}</div>
                         <div className="w-3/12 text-right text-[0.6rem]">{market == "KR" ? "" : `(${Number(Number(cummulative_investment_sell) / Number(us_capital_token.value.frst_bltn_exrt)).toFixed(3)} USD)`}</div>
                     </div>
+                    <div className={`flex gap-2`}>
+                        <div className="w-full">
+                            <LineChart
+                                data_array={getLineDataArray()}
+                                category_array={getCategoryArray()}
+                            />
+                        </div>
+                    </div>
                 </div>
-                <LineChart
-                    data_array={getLineDataArray()}
-                    data_category={getCategoryArray()}
-                />
             </div>
         </>,
         tableHead: example8TableHead,

@@ -8,6 +8,7 @@ import { Card, Typography } from "@material-tailwind/react";
 // import { SelectFace3d } from "iconoir-react";
 import type { ApexOptions } from "apexcharts";
 import { useTheme } from "next-themes";
+import { SelectFace3d } from "iconoir-react";
 
 function rgbToHex(rgb: any) {
     return (
@@ -46,7 +47,8 @@ export default function LineChart(props: any) {
         () =>
             ({
                 type: "line",
-                height: 240,
+                // height: 240, // chart 높이
+                height: 120, // chart 높이
                 series: props.data_array,
                 options: {
                     chart: {
@@ -64,6 +66,7 @@ export default function LineChart(props: any) {
                     stroke: {
                         curve: "smooth",
                         lineCap: "round",
+                        width: 3,
                     },
                     markers: {
                         size: 0,
@@ -85,6 +88,7 @@ export default function LineChart(props: any) {
                             },
                             show: false,
                         },
+                        // tickAmount: 2, // 최소 2개의 tick만 표시 (시작과 끝)
                         // categories: [
                         //     "Apr",
                         //     "May",
@@ -96,7 +100,7 @@ export default function LineChart(props: any) {
                         //     "Nov",
                         //     "Dec",
                         // ],
-                        categories: props.data_category,
+                        categories: props.category_array,
                     },
                     yaxis: {
                         labels: {
@@ -106,10 +110,12 @@ export default function LineChart(props: any) {
                                 fontFamily: "inherit",
                                 fontWeight: 400,
                             },
+                            // offsetY: -5,
                         },
                     },
                     grid: {
-                        show: true,
+                        // show: true,
+                        show: false,
                         borderColor: lineColor,
                         strokeDashArray: 5,
                         xaxis: {
@@ -117,8 +123,13 @@ export default function LineChart(props: any) {
                                 show: true,
                             },
                         },
+                        // padding: {
+                        //     top: 5,
+                        //     right: 20,
+                        // },
                         padding: {
-                            top: 5,
+                            top: -20, // 상단 여백 제거
+                            bottom: -20, // 하단 여백 제거
                             right: 20,
                         },
                     },
@@ -130,11 +141,14 @@ export default function LineChart(props: any) {
                     },
                 },
             }) as ApexOptions,
-        [props.market, props.purchase_log_kr, props.purchase_log_us]);
+        [props.data_array, props.category_array]);
 
-    return (
-        <Card>
-            {/* <Card.Header className="m-0 flex flex-wrap items-center gap-4 p-4">
+    return <>
+        <div className="">
+            <Chart {...chartConfig} />
+        </div>
+        {/* <Card>
+            <Card.Header className="m-0 flex flex-wrap items-center gap-4 p-4">
                 <Card
                     color="primary"
                     className="grid h-16 w-16 shrink-0 place-items-center rounded-md text-primary-foreground md:h-20 md:w-20"
@@ -148,10 +162,10 @@ export default function LineChart(props: any) {
                         @material-tailwind/react chart plugin.
                     </Typography>
                 </div>
-            </Card.Header> */}
+            </Card.Header>
             <Card.Body>
                 <Chart {...chartConfig} />
             </Card.Body>
-        </Card>
-    );
+        </Card> */}
+    </>;
 }
