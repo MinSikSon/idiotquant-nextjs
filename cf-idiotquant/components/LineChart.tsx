@@ -70,6 +70,7 @@ export default function LineChart(props: any) {
                     },
                     markers: {
                         size: 0,
+                        ...props.markers,
                     },
                     xaxis: {
                         axisTicks: {

@@ -202,6 +202,23 @@ export default function Search() {
                 }
               ]}
               category_array={kiInquireDailyItemChartPrice.output2.map((item: any) => item.stck_bsop_date).reverse()}
+              markers={
+                {
+                  size: 0,
+                  // colors: kiInquireDailyItemChartPrice.output2.map((_, index, arr) =>
+                  //   index === arr.length - 1 ? "" : "yellow"
+                  // ).reverse(), // 마지막 값만 빨간색, 나머지는 파란색
+                  discrete: [
+                    {
+                      seriesIndex: 0,
+                      dataPointIndex: kiInquireDailyItemChartPrice.output2.length - 1, // 마지막 값만 적용
+                      fillColor: "yellow", // 마지막 마커 색상
+                      strokeColor: "black", // 마커 테두리 색상
+                      size: 4, // 마지막 마커 크기
+                    },
+                  ],
+                }
+              }
             />
           </div>
         </div>
