@@ -134,6 +134,7 @@ export default function InquireBalanceResult(props: InquireBalanceResultProps) {
         }).map((item, index) => {
             // if (DEBUG) console.log(`item["prdt_name"]`, item["prdt_name"], `item["prdt_name"].length`, item["prdt_name"].length);
             const name = item["prdt_name"];
+            const pdno = item["pdno"];
             const price = !!item["prpr"] ? item["prpr"] : item["ovrs_now_pric1"];
             // const crcy_cd = !!props.kiBalance.output2[0]["crcy_cd"] ? <span className="text-[0.6rem]">{"" + props.kiBalance.output2[0]["crcy_cd"]}</span> : <span className="text-[0.6rem]">{"원"}</span>;
             const crcy_cd = <span className="text-[0.6rem]">{"원"}</span>;
@@ -149,10 +150,13 @@ export default function InquireBalanceResult(props: InquireBalanceResultProps) {
             return {
                 id: name,
                 column_1: <>
-                    <div className={`font-mono ${name.length >= 7 ? "text-[0.6rem]" : "text-xs"}`}>{name}</div>
+                    <div className="flex flex-col text-xs text-black">
+                        <div className={`font-bold ${name.length >= 7 ? "text-[0.6rem]" : "text-xs"}`}>{name}</div>
+                        <div className="text-[0.5rem]">({pdno})</div>
+                    </div>
                 </>,
                 column_2: <>
-                    <div className="flex flex-col font-mono font-bold text-xs text-black">
+                    <div className="flex flex-col font-bold text-xs text-black">
                         <div className="mb-0 pb-0">
                             {Number(Number(price).toFixed(0)).toLocaleString()}{crcy_cd}
                         </div>
@@ -163,7 +167,7 @@ export default function InquireBalanceResult(props: InquireBalanceResultProps) {
                 </>,
 
                 column_3: <>
-                    <div className="flex flex-col font-mono font-bold text-xs text-black">
+                    <div className="flex flex-col font-bold text-xs text-black">
                         <div className="mb-0 pb-0">
                             {Number((Number(pchs_amt) / Number(hldg_qty)).toFixed(0)).toLocaleString()}{crcy_cd}
                         </div>
@@ -173,13 +177,13 @@ export default function InquireBalanceResult(props: InquireBalanceResultProps) {
                     </div>
                 </>,
                 column_4: <>
-                    <div className={`flex flex-col font-mono font-bold text-xs text-black ${Number(Number(evlu_amt) / Number(pchs_amt) * 100 - 100) >= 0 ? "text-red-500" : "text-blue-500"}`}>
-                        <div className="font-mono pr-1 text-[0.6rem]">
+                    <div className={`flex flex-col font-bold text-xs text-black ${Number(Number(evlu_amt) / Number(pchs_amt) * 100 - 100) >= 0 ? "text-red-500" : "text-blue-500"}`}>
+                        <div className="pr-1 text-[0.6rem]">
                             {formatNumber(Number(Number(evlu_amt) / Number(pchs_amt) * 100 - 100))}%
                         </div>
                     </div>
                 </>,
-                column_5: <div className={`font-mono font-bold text-xs flex justify-between ${Number(Number(evlu_amt) / Number(pchs_amt) * 100 - 100) >= 0 ? "text-red-500" : "text-blue-500"}`}>
+                column_5: <div className={`font-bold text-xs flex justify-between ${Number(Number(evlu_amt) / Number(pchs_amt) * 100 - 100) >= 0 ? "text-red-500" : "text-blue-500"}`}>
 
                     <div className="flex flex-col">
                         <div>
@@ -190,8 +194,8 @@ export default function InquireBalanceResult(props: InquireBalanceResultProps) {
                         </div>
                     </div>
                 </div>,
-                column_6: <div className="text-xs font-mono font-bold text-black">{formatNumber((Number(pchs_amt) / Number(pchs_amt_smtl_amt) * 100))}%</div>,
-                column_7: <div className="flex flex-col text-xs font-mono text-black">
+                column_6: <div className="text-xs font-bold text-black">{formatNumber((Number(pchs_amt) / Number(pchs_amt_smtl_amt) * 100))}%</div>,
+                column_7: <div className="flex flex-col text-xs text-black">
                     <div>
                         {formatNumber(Number(evlu_amt))}{crcy_cd}
                     </div>
@@ -199,7 +203,7 @@ export default function InquireBalanceResult(props: InquireBalanceResultProps) {
                         {!!frst_bltn_exrt ? <span>({formatNumber(Number(evlu_amt) / Number(frst_bltn_exrt))} USD)</span> : ""}
                     </div>
                 </div>,
-                column_8: <div className="flex flex-col text-xs font-mono text-black">
+                column_8: <div className="flex flex-col text-xs text-black">
                     <div>
                         {formatNumber(Number(pchs_amt))}{crcy_cd}
                     </div>
@@ -207,7 +211,7 @@ export default function InquireBalanceResult(props: InquireBalanceResultProps) {
                         {!!frst_bltn_exrt ? <span>({formatNumber(Number(pchs_amt) / Number(frst_bltn_exrt))} USD)</span> : ""}
                     </div>
                 </div>,
-                column_9: <div className="font-mono text-xs text-black">{Number(hldg_qty).toFixed(0)}/{Number(ord_psbl_qty).toFixed(0)}</div>,
+                column_9: <div className="text-xs text-black">{Number(hldg_qty).toFixed(0)}/{Number(ord_psbl_qty).toFixed(0)}</div>,
                 column_10: <>
                     <div className="flex p-0 m-0 gap-1 font-mono">
                         <DesignButton
@@ -293,23 +297,23 @@ export default function InquireBalanceResult(props: InquireBalanceResultProps) {
                 {"pending" == props.kiBalance.state ?
                     <Button variant="ghost"><Spinner size="sm" /> loading...</Button>
                     : <>
-                        <div className="font-mono text-[0.6rem] text-black ml-4">{time.toLocaleString("ko-KR", { timeZone: "Asia/Seoul" })}</div>
+                        <div className="text-[0.6rem] text-black ml-4">{time.toLocaleString("ko-KR", { timeZone: "Asia/Seoul" })}</div>
                     </>}
             </div>
         </>,
         desc: <>
-            <div className="text-lg font-mono text-black leading-none pb-3">
+            <div className="text-lg text-black leading-none pb-3">
                 평가손익:<span className={`${(Number(evlu_amt_smtl_amt) / Number(pchs_amt_smtl_amt) * 100 - 100) >= 0 ? "text-red-500" : "text-blue-500"}`}>
                     {Number(evlu_pfls_smtl_amt).toLocaleString()}{crcy_cd}
                     ({pchs_amt_smtl_amt == 0 ? "-" : formatNumber(Number(Number(evlu_amt_smtl_amt / pchs_amt_smtl_amt) * 100 - 100))}%)
                 </span>
             </div>
             {!!frst_bltn_exrt ?
-                <div className="text-lg font-mono text-black leading-none pb-3 ml-2">
+                <div className="text-lg text-black leading-none pb-3 ml-2">
                     <span className="text-sm">us환율:{formatNumber(Number(frst_bltn_exrt))}원</span>
                 </div>
                 : <></>}
-            <div className="text-xs font-mono text-black p-3 border rounded">
+            <div className="text-xs text-black p-3 border rounded">
                 <div className="flex leading-none pb-2 gap-4">
                     <div className="flex-1 flex-col">
                         <div className="flex gap-2">

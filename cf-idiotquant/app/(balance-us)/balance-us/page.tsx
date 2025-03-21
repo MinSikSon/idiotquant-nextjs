@@ -13,6 +13,8 @@ import { useAppDispatch, useAppSelector } from "@/lib/hooks";
 import { usePathname } from "next/navigation";
 import React from "react";
 
+const DEBUG = false;
+
 export default function BalanceUs() {
     const pathname = usePathname();
     const loginState = useAppSelector(selectLoginState);
@@ -25,8 +27,8 @@ export default function BalanceUs() {
     const dispatch = useAppDispatch();
 
     React.useEffect(() => {
-        // console.log(`[BalanceUs]`, `loginState`, loginState);
-        // console.log(`[BalanceUs]`, `kiToken:`, kiToken);
+        if (DEBUG) console.log(`[BalanceUs]`, `loginState`, loginState);
+        if (DEBUG) console.log(`[BalanceUs]`, `kiToken:`, kiToken);
         const isValidKiAccessToken = !!kiToken["access_token"];
         if ("cf" == loginState || "kakao" == loginState) {
             if (true == isValidKiAccessToken) {
@@ -36,7 +38,7 @@ export default function BalanceUs() {
     }, [kiToken, loginState]);
 
     React.useEffect(() => {
-        // console.log(`[BalanceUs]`, `kiBalance`, kiBalance);
+        if (DEBUG) console.log(`[BalanceUs]`, `kiBalance`, kiBalance);
     }, [kiBalance]);
 
 
