@@ -48,9 +48,9 @@ export default function Search() {
     React.useEffect(() => {
         if (DEBUG) console.log(`React.useEffect [kiUsMaretPriceDetail]`, kiUsMaretPriceDetail);
     }, [kiUsMaretPriceDetail])
-    React.useEffect(() => {
-        if (DEBUG) console.log(`React.useEffect [fmpUsBalanceSheetStatement]`, fmpUsBalanceSheetStatement);
-    }, [fmpUsBalanceSheetStatement])
+    // React.useEffect(() => {
+    //     if (DEBUG) console.log(`React.useEffect [fmpUsBalanceSheetStatement]`, fmpUsBalanceSheetStatement);
+    // }, [fmpUsBalanceSheetStatement])
 
     if (DEBUG) console.log(`kiUsMaretSearchInfo`, kiUsMaretSearchInfo);
     if (DEBUG) console.log(`kiUsMaretPriceDetail`, kiUsMaretPriceDetail);
