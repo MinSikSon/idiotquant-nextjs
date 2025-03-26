@@ -80,11 +80,11 @@ export default function Search() {
     const kiUsMaretSearchInfoOutput: KoreaInvestmentOverseasSearchInfoOutput = kiUsMaretSearchInfo.output;
     const kiUsMaretPriceDetailOutput: KoreaInvestmentOverseasPriceDetailOutput = kiUsMaretPriceDetail.output;
 
-    function getNcav(fmpUsBalanceSheetStatement: any, kiUsMaretPriceDetail: any, ratio: number) {
-        const stck_oprc = Number(kiUsMaretPriceDetail.output["last"] ?? 1); // 주식 시가2
-        const lstn_stcn = Number(kiUsMaretPriceDetail.output["shar"] ?? 1); // 상장 주수
-        const cras = Number(fmpUsBalanceSheetStatement[0].totalCurrentAssets ?? 1); // 유동 자산
-        const total_lblt = Number(fmpUsBalanceSheetStatement[0].totalLiabilities ?? 1); // 부채 총계
+    function getNcav(balanceSheetStatement: FmpBalanceSheetStatementType[], maretPriceDetail: any, ratio: number) {
+        const stck_oprc = Number(maretPriceDetail.output["last"] ?? 1); // 주식 시가2
+        const lstn_stcn = Number(maretPriceDetail.output["shar"] ?? 1); // 상장 주수
+        const cras = Number(balanceSheetStatement[0].totalCurrentAssets ?? 1); // 유동 자산
+        const total_lblt = Number(balanceSheetStatement[0].totalLiabilities ?? 1); // 부채 총계
 
         const value: number = (((cras - total_lblt) / (stck_oprc * lstn_stcn * ratio) - 1) * 100);
         const target_price = (cras - total_lblt) / lstn_stcn;
