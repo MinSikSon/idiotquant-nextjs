@@ -208,6 +208,7 @@ export default function Search() {
                   // colors: kiInquireDailyItemChartPrice.output2.map((_, index, arr) =>
                   //   index === arr.length - 1 ? "" : "yellow"
                   // ).reverse(), // 마지막 값만 빨간색, 나머지는 파란색
+                  // colors: "black",
                   discrete: [
                     {
                       seriesIndex: 0,
