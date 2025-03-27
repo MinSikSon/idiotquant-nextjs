@@ -182,8 +182,8 @@ export default function Search() {
                 </div>
             </div>
             <div className="text-xs border border-red-500 rounded p-1 m-1">
-                {getNcav(fmpUsBalanceSheetStatement, kiUsMaretPriceDetail, 1.0)}
-                {getNcav(fmpUsBalanceSheetStatement, kiUsMaretPriceDetail, 1.5)}
+                {/* {getNcav(fmpUsBalanceSheetStatement, kiUsMaretPriceDetail, 1.0)} */}
+                {/* {getNcav(fmpUsBalanceSheetStatement, kiUsMaretPriceDetail, 1.5)} */}
             </div>
         </div>
     </>
