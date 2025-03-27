@@ -187,10 +187,28 @@ export default function Search() {
                 </div>
             </div>
             {"fulfilled" == fmpState ?
-                <div className="text-xs border border-red-500 rounded p-1 m-1">
-                    {getNcav(fmpUsBalanceSheetStatement, kiUsMaretPriceDetail, 1.0)}
-                    {getNcav(fmpUsBalanceSheetStatement, kiUsMaretPriceDetail, 1.5)}
-                </div>
+                <>
+                    <div className="text-xs border border-red-500 rounded p-1 m-1">
+                        {getNcav(fmpUsBalanceSheetStatement, kiUsMaretPriceDetail, 1.0)}
+                        {getNcav(fmpUsBalanceSheetStatement, kiUsMaretPriceDetail, 1.5)}
+                    </div>
+                    <div className="text-xs border border-black rounded p-1 m-1">
+                        <div className="flex gap-2">
+                            <div className="w-3/12 text-right">재무-유동자산</div>
+                            <div className="w-5/12 text-right">
+                                {Number(fmpUsBalanceSheetStatement[0].totalCurrentAssets).toLocaleString()}
+                            </div>
+                            <div className="w-4/12 text-left">USD</div>
+                        </div>
+                        <div className="flex gap-2">
+                            <div className="w-3/12 text-right">재무-부채총계</div>
+                            <div className="w-5/12 text-right">
+                                {Number(fmpUsBalanceSheetStatement[0].totalLiabilities).toLocaleString()}
+                            </div>
+                            <div className="w-4/12 text-left">USD</div>
+                        </div>
+                    </div>
+                </>
                 : <></>
             }
         </div>
