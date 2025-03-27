@@ -3,7 +3,7 @@ import { getFmpBalanceSheetStatement } from "./fmpUsMarketAPI";
 
 
 export interface FmpBalanceSheetStatementType {
-    "    acceptedDate": string;
+    "acceptedDate": string;
     "accountPayables": string;
     "accumulatedOtherComprehensiveIncomeLoss": string;
     "calendarYear": string;
@@ -88,8 +88,8 @@ export const fmpUsMarketSlice = createAppSlice({
                     console.log(`[reqGetFmpBalanceSheetStatement] fulfilled`, `action.payload`, typeof action.payload, action.payload);
                     // if (undefined != action.payload["output1"]) 
                     {
-                        state.state = "order-cash";
                         state.fmpBalanceSheetStatement = { ...state.fmpBalanceSheetStatement, ...action.payload };
+                        state.state = "fulfilled";
                     }
                 },
                 rejected: (state) => {
@@ -101,9 +101,10 @@ export const fmpUsMarketSlice = createAppSlice({
     }),
 
     selectors: {
+        selectFmpState: (state) => state.state,
         selectFmpBalanceSheetStatement: (state) => state.fmpBalanceSheetStatement,
     }
 });
 
 export const { reqGetFmpBalanceSheetStatement } = fmpUsMarketSlice.actions;
-export const { selectFmpBalanceSheetStatement } = fmpUsMarketSlice.selectors;
+export const { selectFmpState, selectFmpBalanceSheetStatement } = fmpUsMarketSlice.selectors;

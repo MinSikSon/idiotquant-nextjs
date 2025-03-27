@@ -14,7 +14,7 @@ import SearchAutocomplete from "@/components/searchAutoComplete";
 import nasdaq_tickers from "@/public/data/usStockSymbols/nasdaq_tickers.json";
 import Login from "@/app/(login)/login/login";
 import Auth from "@/components/auth";
-import { FmpBalanceSheetStatementType, reqGetFmpBalanceSheetStatement, selectFmpBalanceSheetStatement } from "@/lib/features/fmpUsMarket/fmpUsMarketSlice";
+import { FmpBalanceSheetStatementType, reqGetFmpBalanceSheetStatement, selectFmpBalanceSheetStatement, selectFmpState } from "@/lib/features/fmpUsMarket/fmpUsMarketSlice";
 
 const DEBUG = true;
 
@@ -29,7 +29,9 @@ export default function Search() {
     const kiUsMaretSearchInfo: KoreaInvestmentOverseasSearchInfo = useAppSelector(getKoreaInvestmentUsMaretSearchInfo);
     const kiUsMaretPriceDetail: KoreaInvestmentOverseasPriceDetail = useAppSelector(getKoreaInvestmentUsMaretPriceDetail);
 
+    const fmpState: any = useAppSelector(selectFmpState);
     const fmpUsBalanceSheetStatement: FmpBalanceSheetStatementType[] = useAppSelector(selectFmpBalanceSheetStatement);
+    // 
 
     React.useEffect(() => {
         if (DEBUG) console.log(`[Search]`, `kiToken:`, kiToken);
@@ -48,9 +50,12 @@ export default function Search() {
     React.useEffect(() => {
         if (DEBUG) console.log(`React.useEffect [kiUsMaretPriceDetail]`, kiUsMaretPriceDetail);
     }, [kiUsMaretPriceDetail])
-    // React.useEffect(() => {
-    //     if (DEBUG) console.log(`React.useEffect [fmpUsBalanceSheetStatement]`, fmpUsBalanceSheetStatement);
-    // }, [fmpUsBalanceSheetStatement])
+    React.useEffect(() => {
+        if (DEBUG) console.log(`React.useEffect [fmpState]`, fmpState);
+    }, [fmpState])
+    React.useEffect(() => {
+        if (DEBUG) console.log(`React.useEffect [fmpUsBalanceSheetStatement]`, fmpUsBalanceSheetStatement);
+    }, [fmpUsBalanceSheetStatement])
 
     if (DEBUG) console.log(`kiUsMaretSearchInfo`, kiUsMaretSearchInfo);
     if (DEBUG) console.log(`kiUsMaretPriceDetail`, kiUsMaretPriceDetail);
@@ -181,10 +186,13 @@ export default function Search() {
                     <div className="w-4/12"></div>
                 </div>
             </div>
-            <div className="text-xs border border-red-500 rounded p-1 m-1">
-                {/* {getNcav(fmpUsBalanceSheetStatement, kiUsMaretPriceDetail, 1.0)} */}
-                {/* {getNcav(fmpUsBalanceSheetStatement, kiUsMaretPriceDetail, 1.5)} */}
-            </div>
+            {"fulfilled" == fmpState ?
+                <div className="text-xs border border-red-500 rounded p-1 m-1">
+                    {getNcav(fmpUsBalanceSheetStatement, kiUsMaretPriceDetail, 1.0)}
+                    {getNcav(fmpUsBalanceSheetStatement, kiUsMaretPriceDetail, 1.5)}
+                </div>
+                : <></>
+            }
         </div>
     </>
 }
