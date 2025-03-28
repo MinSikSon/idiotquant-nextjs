@@ -245,130 +245,128 @@ export default function AlgorithmTrade() {
         </>,
         desc: <>
             <div className="border border-black rounded p-1 m-1">
-                <div className="text-base">
-                    <span className="underline decoration-4 decoration-yellow-500">주식 구매 포인트</span> 적립 이력
-                </div>
-                <div className="text-xs border border-black rounded p-1 m-1">
-                    {Object.keys(time_stamp).reverse().map((key, index) => {
-                        let bgColor = "bg-blue-300";
-                        if (1 == index) {
-                            bgColor = "bg-blue-400";
-                        }
-                        else if (2 == index) {
-                            bgColor = "bg-blue-500";
-                        }
-
-                        return <div key={index} className={`flex gap-2 ${bgColor} text-white`}>
-                            <div className="w-3/12 text-right">{key}</div>
-                            <div className="w-7/12 text-right">{formatDateTime(time_stamp[key])}</div>
-                            <div className="w-2/12"></div>
-                        </div>
-                    })}
-                </div>
-                <div className="text-base">
-                    <span className="underline decoration-4 decoration-yellow-500">주식 구매 포인트</span> 적립 현황
-                </div>
-                <div className="text-xs border border-black rounded p-1 m-1">
-                    <div className={`flex gap-2`}>
-                        <div className="w-5/12 text-right">종목 당 충전 포인트:</div>
-                        <div className="w-5/12 text-right">{token_per_stock} point / 10 min</div>
-                        <div className="w-2/12"></div>
+                <div className="rounded px-2 pb-1 m-2 shadow">
+                    <div className="text-xl">
+                        <span className="underline decoration-4 decoration-yellow-100">주식 구매 포인트</span> 적립 이력
                     </div>
-                    <div className={`flex gap-2`}>
-                        <div className="w-5/12 text-right">마지막 구매 시도 종목:</div>
-                        <div className="w-5/12 text-right">{refill_stock_index}) {!!stock_list[refill_stock_index] ? stock_list[refill_stock_index]["name"] : 0}</div>
-                        <div className="w-2/12"></div>
-                    </div>
-                </div>
-                <div className="text-base">
-                    <div className="">알고리즘 매매 대상 종목</div>
-                </div>
-                <div className="text-xs border border-black rounded p-1 m-1">
-                    <div className="text-black leading-none">
-                        {stock_list.map((item: any, index: number) => {
-                            cummulative_token += isNaN(Number(item["token"])) ? 0 : Number(item["token"]);
-                            return <Popover key={index}>
-                                <Popover.Trigger>
-                                    <div className={`flex pl-1 items-center gap-x-1 ${index % 2 == 0 ? "bg-white" : "bg-gray-100"} ${item["refill"] ? "" : "font-bold line-through"}`}>
-                                        <div className="flex items-center min-w-[95px] text-xs">
-                                            <div>
-                                                {index})
-                                            </div>
-                                            <div className={`${item["name"].length >= 8 ? "text-[0.5rem]" : (item["name"].length >= 7 ? "text-[0.6rem]" : "text-xs")}`}>
-                                                {item["name"]}
-                                            </div>
-                                        </div>
-                                        <div className="flex items-center min-w-[65px]">
-                                            <div className="border rounded border-black p-0 text-[0.6rem]">
-                                                포인트
-                                            </div>
-                                            <div className="ml-1 min-w-[35px] text-right text-xs">
-                                                {item["token"]}
-                                            </div>
-                                        </div>
-                                        {(() => {
-                                            const priceMulti = inquirePriceMulti[item["PDNO"]];
-                                            if (undefined == priceMulti) {
-                                                return <></>;
-                                            }
-
-                                            if (1 == inquirePriceMulti[item["PDNO"]].rt_cd) {
-                                                return <></>;
-                                            }
-
-                                            return <>
-                                                <div className="flex items-center min-w-[70px]">
-                                                    <div className="border rounded border-black p-0 text-[0.6rem]">
-                                                        주가
-                                                    </div>
-                                                    <div className={`ml-1 min-w-[45px] text-right ${(inquirePriceMulti[item["PDNO"]].output.stck_prpr).length >= 7 ? "text-[0.5rem]" : ((inquirePriceMulti[item["PDNO"]].output.stck_prpr).length >= 5 ? "text-[0.6rem]" : "text-xs")}`}>
-                                                        {Number(inquirePriceMulti[item["PDNO"]].output.stck_prpr).toLocaleString()}원
-                                                    </div>
-                                                </div>
-                                                <div className="flex items-center min-w-[55px]">
-                                                    <div className="border rounded border-black p-0 text-[0.6rem]">
-                                                        PER
-                                                    </div>
-                                                    <div className="ml-1 min-w-[40px] text-right text-[0.6rem]">
-                                                        {inquirePriceMulti[item["PDNO"]].output.per}
-                                                    </div>
-                                                </div>
-                                            </>
-                                        })()}
-                                    </div>
-                                </Popover.Trigger>
-                                <Popover.Content className="p-2 border border-black rounded shadow shadow-blue-gray-500">
-                                    {item["refill"] ?
-                                        <div className="text-xs text-black">{`${item["name"]} 을(를) "${token_per_stock} token / 10 분" 만큼 리필`}</div>
-                                        :
-                                        <div className="text-xs text-black">{`${item["name"]} 을(를) 매매 대상에서 임시 제외`}</div>
-                                    }
-                                </Popover.Content>
-                            </Popover>
+                    <div className="text-sm">
+                        {Object.keys(time_stamp).reverse().map((key, index) => {
+                            return <div key={index} className={`flex gap-2`}>
+                                <div className="w-1/12"></div>
+                                <div className="w-3/12 text-right text-[0.6rem]">{key}</div>
+                                <div className="w-8/12 text-left">{formatDateTime(time_stamp[key])}</div>
+                            </div>
                         })}
                     </div>
-                    <div className="flex items-center text-xs text-black leading-none pb-1">
-                        <div>누적 token</div>
-                        <div className="ml-2 px-1 text-xs rounded border border-black">{cummulative_token}</div>
+                </div>
+                <div className="rounded px-2 pb-1 m-2 shadow">
+                    <div className="text-xl">
+                        <span className="underline decoration-4 decoration-yellow-100">주식 구매 포인트</span> 적립 현황
+                    </div>
+                    <div className="rounded px-2 pb-1 m-2 shadow">
+                        <div className="text-[0.6rem]">종목 당 충전 포인트</div>
+                        <div className="">{token_per_stock} point / 10 min</div>
+                    </div>
+                    <div className="rounded px-2 pb-1 m-2 shadow">
+                        <div className="text-[0.6rem]">마지막 구매 시도 종목</div>
+                        <div className="">{refill_stock_index}) {!!stock_list[refill_stock_index] ? stock_list[refill_stock_index]["name"] : 0}</div>
+                    </div>
+                </div>
+                <div className="rounded px-2 pb-1 m-2 shadow">
+                    <div className="text-xl">
+                        <div className="">알고리즘 매매 대상 종목</div>
+                    </div>
+                    <div className="rounded px-2 pb-1 m-2 shadow">
+                        <div className="text-black leading-none">
+                            {stock_list.map((item: any, index: number) => {
+                                cummulative_token += isNaN(Number(item["token"])) ? 0 : Number(item["token"]);
+                                return <Popover key={index}>
+                                    <Popover.Trigger>
+                                        <div className={`flex pl-1 items-center gap-x-1 ${index % 2 == 0 ? "bg-white" : "bg-gray-100"} ${item["refill"] ? "" : "font-bold line-through"}`}>
+                                            <div className="flex items-center min-w-[95px] text-xs">
+                                                <div>
+                                                    {index})
+                                                </div>
+                                                <div className={`${item["name"].length >= 8 ? "text-[0.5rem]" : (item["name"].length >= 7 ? "text-[0.6rem]" : "text-xs")}`}>
+                                                    {item["name"]}
+                                                </div>
+                                            </div>
+                                            <div className="flex items-center min-w-[65px]">
+                                                <div className="border rounded border-black p-0 text-[0.6rem]">
+                                                    포인트
+                                                </div>
+                                                <div className="ml-1 min-w-[35px] text-right text-xs">
+                                                    {item["token"]}
+                                                </div>
+                                            </div>
+                                            {(() => {
+                                                const priceMulti = inquirePriceMulti[item["PDNO"]];
+                                                if (undefined == priceMulti) {
+                                                    return <></>;
+                                                }
+
+                                                if (1 == inquirePriceMulti[item["PDNO"]].rt_cd) {
+                                                    return <></>;
+                                                }
+
+                                                return <>
+                                                    <div className="flex items-center min-w-[70px]">
+                                                        <div className="border rounded border-black p-0 text-[0.6rem]">
+                                                            주가
+                                                        </div>
+                                                        <div className={`ml-1 min-w-[45px] text-right ${(inquirePriceMulti[item["PDNO"]].output.stck_prpr).length >= 7 ? "text-[0.5rem]" : ((inquirePriceMulti[item["PDNO"]].output.stck_prpr).length >= 5 ? "text-[0.6rem]" : "text-xs")}`}>
+                                                            {Number(inquirePriceMulti[item["PDNO"]].output.stck_prpr).toLocaleString()}원
+                                                        </div>
+                                                    </div>
+                                                    <div className="flex items-center min-w-[55px]">
+                                                        <div className="border rounded border-black p-0 text-[0.6rem]">
+                                                            PER
+                                                        </div>
+                                                        <div className="ml-1 min-w-[40px] text-right text-[0.6rem]">
+                                                            {inquirePriceMulti[item["PDNO"]].output.per}
+                                                        </div>
+                                                    </div>
+                                                </>
+                                            })()}
+                                        </div>
+                                    </Popover.Trigger>
+                                    <Popover.Content className="p-2 border border-black rounded shadow shadow-blue-gray-500">
+                                        {item["refill"] ?
+                                            <div className="text-xs text-black">{`${item["name"]} 을(를) "${token_per_stock} token / 10 분" 만큼 리필`}</div>
+                                            :
+                                            <div className="text-xs text-black">{`${item["name"]} 을(를) 매매 대상에서 임시 제외`}</div>
+                                        }
+                                    </Popover.Content>
+                                </Popover>
+                            })}
+                        </div>
+                        <div className="flex items-center text-xs text-black leading-none pb-1">
+                            <div>누적 token</div>
+                            <div className="ml-2 px-1 text-xs rounded border border-black">{cummulative_token}</div>
+                        </div>
                     </div>
                 </div>
             </div>
         </>,
         financial_date: <></>,
         market_date: <>
-            <div className="cursor-pointer pt-4 text-sm text-black">
+            <div className="rounded px-2 pb-1 m-2 shadow">
                 구매 history
 
-                <div className="text-xs border border-black rounded p-1 m-1">
-                    <div className={`flex gap-2`}>
-                        <div className="w-5/12 text-right">누적 알고리즘 매수:</div>
-                        <div className="w-4/12 text-right">{market == "KR" ? `${Number(Number(cummulative_investment).toFixed(0)).toLocaleString()} 원` : `${Number(Number(cummulative_investment).toFixed(0)).toLocaleString()} 원`}</div>
-                        <div className="w-3/12 text-right text-[0.6rem]">{market == "KR" ? "" : `(${Number(Number(cummulative_investment) / Number(us_capital_token.value.frst_bltn_exrt)).toFixed(3)} USD)`}</div>
+                <div className="rounded px-2 pb-1 m-2 shadow">
+                    <div className="rounded px-2 pb-1 m-2 shadow">
+                        <div className="text-[0.6rem]">누적 알고리즘 매수</div>
+                        <div className="flex gap-2 items-center">
+                            <div className="">{market == "KR" ? `${Number(Number(cummulative_investment).toFixed(0)).toLocaleString()} 원` : `${Number(Number(cummulative_investment).toFixed(0)).toLocaleString()} 원`}</div>
+                            <div className="text-sm">{market == "KR" ? "" : `(${Number(Number(cummulative_investment) / Number(us_capital_token.value.frst_bltn_exrt)).toFixed(3)} USD)`}</div>
+                        </div>
                     </div>
-                    <div className={`flex gap-2`}>
-                        <div className="w-5/12 text-right">누적 알고리즘 매도:</div>
-                        <div className="w-4/12 text-right">{market == "KR" ? `${Number(Number(cummulative_investment_sell).toFixed(0)).toLocaleString()} 원` : `${Number(Number(cummulative_investment_sell).toFixed(0)).toLocaleString()} 원`}</div>
-                        <div className="w-3/12 text-right text-[0.6rem]">{market == "KR" ? "" : `(${Number(Number(cummulative_investment_sell) / Number(us_capital_token.value.frst_bltn_exrt)).toFixed(3)} USD)`}</div>
+                    <div className="rounded px-2 pb-1 m-2 shadow">
+                        <div className="text-[0.6rem]">누적 알고리즘 매도:</div>
+                        <div className="flex gap-2 items-center">
+                            <div className="">{market == "KR" ? `${Number(Number(cummulative_investment_sell).toFixed(0)).toLocaleString()} 원` : `${Number(Number(cummulative_investment_sell).toFixed(0)).toLocaleString()} 원`}</div>
+                            <div className="text-sm">{market == "KR" ? "" : `(${Number(Number(cummulative_investment_sell) / Number(us_capital_token.value.frst_bltn_exrt)).toFixed(3)} USD)`}</div>
+                        </div>
                     </div>
                     <div className={`flex gap-2`}>
                         <div className="w-full">
