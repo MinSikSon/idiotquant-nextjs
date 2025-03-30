@@ -61,6 +61,11 @@ export default function LineChart(props: any) {
                         },
                     },
                     title: {
+                        text: `${props.category_array[0] ?? ""} ~ ${props.category_array[props.category_array.length - 1] ?? ""}`,
+                        align: "right",  // 정렬 (left, center, right)
+                        style: {
+                            fontSize: "10px",
+                        },
                         show: "",
                     },
                     dataLabels: {
@@ -70,10 +75,13 @@ export default function LineChart(props: any) {
                     stroke: {
                         curve: "smooth",
                         lineCap: "round",
-                        width: 4,
+                        width: 2, // 선 두께
                     },
                     markers: {
                         size: 0,
+                        sizeOnHover: 0, // 마우스 오버 시에도 마커 표시 안 함
+                        colors: "transparent", // 마커 색상을 투명하게 설정하여 흰색 마커 방지
+                        strokeColors: "transparent", // 테두리도 투명하게 설정
                         ...props.markers,
                     },
                     xaxis: {
@@ -140,7 +148,8 @@ export default function LineChart(props: any) {
                         },
                     },
                     fill: {
-                        opacity: 0.8,
+                        // opacity: 0.8,
+                        opacity: 1,
                     },
                     tooltip: {
                         theme: "dark",
