@@ -161,7 +161,7 @@ export default function Search() {
     </>
   }
 
-  const market_cap = (Number(kiInquireDailyItemChartPrice.output2[0]["stck_oprc"]) * Number(kiInquireDailyItemChartPrice.output1["lstn_stcn"]));
+  const market_cap = (Number(kiInquireDailyItemChartPrice.output1["stck_oprc"]) * Number(kiInquireDailyItemChartPrice.output1["lstn_stcn"]));
   const current_asset = (Number(kiBalanceSheet.output[getYearMatchIndex(kiInquireDailyItemChartPrice.output2[0]["stck_bsop_date"])].cras) * 100000000);
   const total_liabilities = (Number(kiBalanceSheet.output[getYearMatchIndex(kiInquireDailyItemChartPrice.output2[0]["stck_bsop_date"])].total_lblt) * 100000000);
 
