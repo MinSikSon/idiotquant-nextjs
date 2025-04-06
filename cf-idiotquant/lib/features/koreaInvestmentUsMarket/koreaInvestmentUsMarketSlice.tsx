@@ -1,7 +1,7 @@
 import { PayloadAction } from "@reduxjs/toolkit";
 import { createAppSlice } from "@/lib/createAppSlice";
 import { registerCookie } from "@/components/util";
-import { getOverseasStockTradingInquireBalance, getOverseasStockTradingInquirePresentBalance, getQuotationsPriceDetail, getQuotationsSearchInfo, postOrderUs } from "./koreaInvestmentUsMarketAPI";
+import { getOverseasPriceQuotationsDailyPrice, getOverseasStockTradingInquireBalance, getOverseasStockTradingInquirePresentBalance, getQuotationsPriceDetail, getQuotationsSearchInfo, postOrderUs } from "./koreaInvestmentUsMarketAPI";
 import { KoreaInvestmentToken } from "../koreaInvestment/koreaInvestmentSlice";
 
 
@@ -60,6 +60,7 @@ export interface KoreaInvestmentOverseasSearchInfoOutput {
     sdrf_stop_ecls_erlm_dt: string;
 }
 export interface KoreaInvestmentOverseasSearchInfo {
+    state: "init" | "req" | "pending" | "fulfilled" | "rejected";
     output: KoreaInvestmentOverseasSearchInfoOutput
     rt_cd: string;
     msg_cd: string;
@@ -254,6 +255,67 @@ export interface KoreaInvestmentUsOrder {
     "msg1": string;
     "output": KoreaInvestmentUsOrderOutput;
 }
+
+interface KoreaInvestmentOverseasPriceQuotationsInquireDailyChartPriceOutput1 {
+    "acml_vol": string;
+    "hts_kor_isnm": string;
+    "ovrs_nmix_prdy_clpr": string;
+    "ovrs_nmix_prdy_vrss": string;
+    "ovrs_nmix_prpr": string;
+    "ovrs_prod_hgpr": string;
+    "ovrs_prod_lwpr": string;
+    "ovrs_prod_oprc": string;
+    "prdy_ctrt": string;
+    "prdy_vrss_sign": string;
+    "stck_shrn_iscd": string;
+}
+interface KoreaInvestmentOverseasPriceQuotationsInquireDailyChartPriceOutput2 {
+    "acml_vol": string;
+    "mod_yn": string;
+    "ovrs_nmix_hgpr": string;
+    "ovrs_nmix_lwpr": string;
+    "ovrs_nmix_oprc": string;
+    "ovrs_nmix_prpr": string;
+    "stck_bsop_date": string;
+}
+export interface KoreaInvestmentOverseasPriceQuotationsInquireDailyChartPrice {
+    state: "init"
+    | "pending" | "fulfilled" | "rejected"
+    ;
+    "output1": KoreaInvestmentOverseasPriceQuotationsInquireDailyChartPriceOutput1;
+    "output2": KoreaInvestmentOverseasPriceQuotationsInquireDailyChartPriceOutput2[];
+}
+
+interface KoreaInvestmentOverseasPriceQuotationsDailyPriceOutput1 {
+    "rsym": string;
+    "zdiv": string;
+    "nrec": string;
+}
+
+interface KoreaInvestmentOverseasPriceQuotationsDailyPriceOutput2 {
+    "xymd": string;
+    "clos": string;
+    "sign": string;
+    "diff": string;
+    "rate": string;
+    "open": string;
+    "high": string;
+    "low": string;
+    "tvol": string;
+    "tamt": string;
+    "pbid": string;
+    "vbid": string;
+    "pask": string;
+    "vask": string;
+}
+
+export interface KoreaInvestmentOverseasPriceQuotationsDailyPrice {
+    state: "init"
+    | "pending" | "fulfilled" | "rejected"
+    ;
+    "output1": KoreaInvestmentOverseasPriceQuotationsDailyPriceOutput1;
+    "output2": KoreaInvestmentOverseasPriceQuotationsDailyPriceOutput2[];
+}
 interface KoreaInvestmentUsMaretType {
     state: "init"
     | "pending" | "fulfilled" | "rejected"
@@ -264,11 +326,16 @@ interface KoreaInvestmentUsMaretType {
     balance: KoreaInvestmentOverseasBalance;
     presentBalance: KoreaInvestmentOverseasPresentBalance;
     usOrder: KoreaInvestmentUsOrder;
+
+    dailyChartPrice: KoreaInvestmentOverseasPriceQuotationsInquireDailyChartPrice; // not used
+
+    dailyPrice: KoreaInvestmentOverseasPriceQuotationsDailyPrice;
 }
 
 const initialState: KoreaInvestmentUsMaretType = {
     state: "init",
     searchInfo: {
+        state: "init",
         output: {
             std_pdno: "",
             prdt_eng_name: "",
@@ -436,12 +503,78 @@ const initialState: KoreaInvestmentUsMaretType = {
             "ODNO": "",
             "ORD_TMD": "",
         },
+    },
+    dailyChartPrice: {
+        state: "init",
+        output1: {
+            "acml_vol": "",
+            "hts_kor_isnm": "",
+            "ovrs_nmix_prdy_clpr": "",
+            "ovrs_nmix_prdy_vrss": "",
+            "ovrs_nmix_prpr": "",
+            "ovrs_prod_hgpr": "",
+            "ovrs_prod_lwpr": "",
+            "ovrs_prod_oprc": "",
+            "prdy_ctrt": "",
+            "prdy_vrss_sign": "",
+            "stck_shrn_iscd": ""
+        },
+        output2: []
+    },
+    dailyPrice: {
+        state: "init",
+        output1: {
+            "rsym": "",
+            "zdiv": "",
+            "nrec": "",
+        },
+        output2: []
     }
 }
 export const koreaInvestmentUsMarketSlice = createAppSlice({
     name: "koreaInvestmentUsMarket",
     initialState,
     reducers: (create) => ({
+        reqGetOverseasPriceQuotationsDailyPrice: create.asyncThunk(
+            async ({ koreaInvestmentToken, PDNO, FID_INPUT_DATE_1 }: { koreaInvestmentToken: KoreaInvestmentToken, PDNO: string, FID_INPUT_DATE_1: string }) => {
+                return await getOverseasPriceQuotationsDailyPrice(koreaInvestmentToken, PDNO, FID_INPUT_DATE_1);
+            },
+            {
+                pending: (state) => {
+                    // console.log(`[reqGetOverseasPriceQuotationsDailyPrice] pending`);
+                    state.dailyPrice.state = "pending";
+                },
+                fulfilled: (state, action) => {
+                    console.log(`[reqGetOverseasPriceQuotationsDailyPrice] fulfilled`, `action.payload`, action.payload);
+                    const json = action.payload;
+                    state.dailyPrice = { ...json, state: "fulfilled" };
+                },
+                rejected: (state) => {
+                    console.log(`[reqGetOverseasPriceQuotationsDailyPrice] rejected`);
+                    state.dailyPrice.state = "rejected";
+                },
+            }
+        ),
+        // reqGetOverseasPriceQuotationsInquireDailyChartPrice: create.asyncThunk(
+        //     async ({ koreaInvestmentToken, PDNO, FID_INPUT_DATE_1, FID_INPUT_DATE_2 }: { koreaInvestmentToken: KoreaInvestmentToken, PDNO: string, FID_INPUT_DATE_1: string, FID_INPUT_DATE_2: string }) => {
+        //         return await getOverseasPriceQuotationsInquireDailyChartPrice(koreaInvestmentToken, PDNO, FID_INPUT_DATE_1, FID_INPUT_DATE_2);
+        //     },
+        //     {
+        //         pending: (state) => {
+        //             // console.log(`[reqGetOverseasPriceQuotationsInquireDailyChartPrice] pending`);
+        //             state.dailyChartPrice.state = "pending";
+        //         },
+        //         fulfilled: (state, action) => {
+        //             console.log(`[reqGetOverseasPriceQuotationsInquireDailyChartPrice] fulfilled`, `action.payload`, action.payload);
+        //             const json = action.payload;
+        //             state.dailyChartPrice = { ...json, state: "fulfilled" };
+        //         },
+        //         rejected: (state) => {
+        //             console.log(`[reqGetOverseasPriceQuotationsInquireDailyChartPrice] rejected`);
+        //             state.dailyChartPrice.state = "rejected";
+        //         },
+        //     }
+        // ),
         reqPostOrderUs: create.asyncThunk(
             async ({ koreaInvestmentToken, PDNO, buyOrSell, excg_cd, price }: { koreaInvestmentToken: KoreaInvestmentToken, PDNO: string, buyOrSell: string, excg_cd: string, price: string }) => {
                 return await postOrderUs(koreaInvestmentToken, PDNO, buyOrSell, excg_cd, price);
@@ -510,18 +643,17 @@ export const koreaInvestmentUsMarketSlice = createAppSlice({
             {
                 pending: (state) => {
                     // console.log(`[reqGetQuotationsSearchInfo] pending`);
-                    state.state = "pending";
+                    state.searchInfo.state = "pending";
                     // state.koreaInvestmentApproval.state = "pending";
                 },
                 fulfilled: (state, action) => {
                     // console.log(`[reqGetQuotationsSearchInfo] fulfilled`, `action.payload`, action.payload);
                     const json = action.payload;
-                    state.searchInfo = json;
-                    state.state = "fulfilled";
+                    state.searchInfo = { ...json, state: "fulfilled" };
                 },
                 rejected: (state) => {
                     console.log(`[reqGetQuotationsSearchInfo] rejected`);
-                    state.state = "rejected";
+                    state.searchInfo.state = "rejected";
                 },
             }
         ),
@@ -557,8 +689,16 @@ export const koreaInvestmentUsMarketSlice = createAppSlice({
         getKoreaInvestmentUsMaretPresentBalance: (state) => state.presentBalance,
 
         getKoreaInvestmentUsOrder: (state) => state.usOrder,
+
+        // getKoreaInvestmentUsMarketDailyChartPrice: (state) => state.dailyChartPrice,
+        getKoreaInvestmentUsMarketDailyPrice: (state) => state.dailyPrice,
     }
 });
+export const { reqGetOverseasPriceQuotationsDailyPrice } = koreaInvestmentUsMarketSlice.actions;
+export const { getKoreaInvestmentUsMarketDailyPrice } = koreaInvestmentUsMarketSlice.selectors;
+
+// export const { reqGetOverseasPriceQuotationsInquireDailyChartPrice } = koreaInvestmentUsMarketSlice.actions;
+// export const { getKoreaInvestmentUsMarketDailyChartPrice } = koreaInvestmentUsMarketSlice.selectors;
 
 export const { reqPostOrderUs } = koreaInvestmentUsMarketSlice.actions;
 export const { getKoreaInvestmentUsOrder } = koreaInvestmentUsMarketSlice.selectors;

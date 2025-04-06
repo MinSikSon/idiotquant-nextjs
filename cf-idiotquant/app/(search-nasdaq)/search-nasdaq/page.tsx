@@ -6,7 +6,7 @@ import { useAppDispatch, useAppSelector } from "@/lib/hooks";
 import { selectLoginState } from "@/lib/features/login/loginSlice";
 import { usePathname } from "next/navigation";
 import { isValidCookie } from "@/components/util";
-import { getKoreaInvestmentUsMaretSearchInfo, KoreaInvestmentOverseasPriceDetail, KoreaInvestmentOverseasPriceDetailOutput, KoreaInvestmentOverseasSearchInfo, KoreaInvestmentOverseasSearchInfoOutput, reqGetQuotationsSearchInfo } from "@/lib/features/koreaInvestmentUsMarket/koreaInvestmentUsMarketSlice";
+import { getKoreaInvestmentUsMaretSearchInfo, getKoreaInvestmentUsMarketDailyPrice, KoreaInvestmentOverseasPriceDetail, KoreaInvestmentOverseasPriceDetailOutput, KoreaInvestmentOverseasPriceQuotationsDailyPrice, KoreaInvestmentOverseasPriceQuotationsInquireDailyChartPrice, KoreaInvestmentOverseasSearchInfo, KoreaInvestmentOverseasSearchInfoOutput, reqGetOverseasPriceQuotationsDailyPrice, reqGetQuotationsSearchInfo } from "@/lib/features/koreaInvestmentUsMarket/koreaInvestmentUsMarketSlice";
 import { getKoreaInvestmentUsMaretPriceDetail, reqGetQuotationsPriceDetail } from "@/lib/features/koreaInvestmentUsMarket/koreaInvestmentUsMarketSlice";
 import { getKoreaInvestmentToken, KoreaInvestmentToken, reqGetInquireBalance } from "@/lib/features/koreaInvestment/koreaInvestmentSlice";
 import SearchAutocomplete from "@/components/searchAutoComplete";
@@ -15,6 +15,7 @@ import nasdaq_tickers from "@/public/data/usStockSymbols/nasdaq_tickers.json";
 import Login from "@/app/(login)/login/login";
 import Auth from "@/components/auth";
 import { FmpBalanceSheetStatementType, reqGetFmpBalanceSheetStatement, selectFmpBalanceSheetStatement, selectFmpState } from "@/lib/features/fmpUsMarket/fmpUsMarketSlice";
+import LineChart from "@/components/LineChart";
 
 const DEBUG = true;
 
@@ -28,10 +29,22 @@ export default function Search() {
 
     const kiUsMaretSearchInfo: KoreaInvestmentOverseasSearchInfo = useAppSelector(getKoreaInvestmentUsMaretSearchInfo);
     const kiUsMaretPriceDetail: KoreaInvestmentOverseasPriceDetail = useAppSelector(getKoreaInvestmentUsMaretPriceDetail);
+    const kiUsDailyPrice: KoreaInvestmentOverseasPriceQuotationsDailyPrice = useAppSelector(getKoreaInvestmentUsMarketDailyPrice);
 
     const fmpState: any = useAppSelector(selectFmpState);
     const fmpUsBalanceSheetStatement: FmpBalanceSheetStatementType[] = useAppSelector(selectFmpBalanceSheetStatement);
-    // 
+
+    // const [startDate, setStartDate] = React.useState<any>("2024-01-03");
+    const [startDate, setStartDate] = React.useState<any>((new Date()).toISOString().split('T')[0]);
+    // const [endDate, setEndDate] = React.useState<any>((new Date()).toISOString().split('T')[0]);
+
+    const formatDate = (date: string) => {
+        // const arrDate = date.split("-");
+        const YYYYMMDD = date.replaceAll("-", ""); // YYYYMMDD
+        // console.log("YYYYMMDD", YYYYMMDD);
+
+        return YYYYMMDD;
+    }
 
     React.useEffect(() => {
         if (DEBUG) console.log(`[Search]`, `kiToken:`, kiToken);
@@ -50,6 +63,9 @@ export default function Search() {
     React.useEffect(() => {
         if (DEBUG) console.log(`React.useEffect [kiUsMaretPriceDetail]`, kiUsMaretPriceDetail);
     }, [kiUsMaretPriceDetail])
+    React.useEffect(() => {
+        if (DEBUG) console.log(`React.useEffect [kiUsDailyPrice]`, kiUsDailyPrice);
+    }, [kiUsDailyPrice])
     React.useEffect(() => {
         if (DEBUG) console.log(`React.useEffect [fmpState]`, fmpState);
     }, [fmpState])
@@ -75,6 +91,9 @@ export default function Search() {
         if (DEBUG) console.log(`[onSearchButton]`, `stockName`, stockName);
         dispatch(reqGetQuotationsSearchInfo({ koreaInvestmentToken: kiToken, PDNO: stockName }));
         dispatch(reqGetQuotationsPriceDetail({ koreaInvestmentToken: kiToken, PDNO: stockName }));
+        dispatch(reqGetOverseasPriceQuotationsDailyPrice({ koreaInvestmentToken: kiToken, PDNO: stockName, FID_INPUT_DATE_1: formatDate(startDate) }));
+        // export const { reqGetOverseasPriceQuotationsInquireDailyChartPrice } = koreaInvestmentUsMarketSlice.actions;
+
         dispatch(reqGetFmpBalanceSheetStatement(stockName));
     }
 
@@ -103,6 +122,16 @@ export default function Search() {
         </>
     }
 
+    if (("fulfilled" != kiUsDailyPrice.state)
+        // || ("fulfilled" != kiBalanceSheet.state)
+        || ("fulfilled" != fmpState)
+        || ("fulfilled" != kiUsMaretSearchInfo.state)
+    ) {
+        return <>
+            <SearchAutocomplete placeHolder={"NASDAQ ticker 를 입력하세요..."} onSearchButton={onSearchButton} validCorpNameArray={nasdaq_tickers} />
+        </>
+    }
+
     const texts = ["종가", "시가총액", "상장추식수"];
     const maxLength = Math.max(...texts.map(text => text.length * 2));
     console.log(`maxLength`, maxLength);
@@ -124,6 +153,41 @@ export default function Search() {
                     </div>
                 </div>
                 <div className="text-xs rounded px-2 pb-1 m-2 shadow">
+                    <div className="flex gap-2">
+                        <div className="w-11/12">
+                            <LineChart
+                                data_array={[
+                                    {
+                                        name: "주가",
+                                        // data: test_data.stock_list.map((stock: any) => stock.remaining_token),
+                                        // data: [10, 20, 30, 40, 50, 60, 70, 80, 90],
+                                        data: kiUsDailyPrice.output2.map((item: any) => item.clos).reverse(),
+                                        color: "#000000",
+                                    }
+                                ]}
+                                category_array={kiUsDailyPrice.output2.map((item: any) => item.xymd).reverse()}
+                                markers={
+                                    {
+                                        size: 0,
+                                        // colors: kiInquireDailyItemChartPrice.output2.map((_, index, arr) =>
+                                        //   index === arr.length - 1 ? "" : "yellow"
+                                        // ).reverse(), // 마지막 값만 빨간색, 나머지는 파란색
+                                        // colors: "black",
+                                        discrete: [
+                                            {
+                                                seriesIndex: 0,
+                                                dataPointIndex: kiUsDailyPrice.output2.length - 1, // 마지막 값만 적용
+                                                fillColor: "yellow", // 마지막 마커 색상
+                                                strokeColor: "black", // 마커 테두리 색상
+                                                size: 3, // 마지막 마커 크기
+                                            },
+                                        ],
+                                    }
+                                }
+                            />
+                        </div>
+                        <div className="w-1/12"></div>
+                    </div>
                     <div className="flex gap-2">
                         <div className="w-4/12 bg-yellow-200 text-right">현재가</div>
                         <div className="w-6/12 bg-yellow-100 text-right">{kiUsMaretPriceDetailOutput.last}</div>

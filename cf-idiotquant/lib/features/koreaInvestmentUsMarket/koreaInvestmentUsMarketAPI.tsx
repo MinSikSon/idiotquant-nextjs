@@ -2,6 +2,31 @@ import { getCookie } from "@/components/util";
 import { getKoreaInvestmentRequest, postKoreaInvestmentRequest } from "../koreaInvestment/koreaInvestmentAPI";
 import { KoreaInvestmentToken } from "../koreaInvestment/koreaInvestmentSlice";
 
+export const getOverseasPriceQuotationsDailyPrice: any = async (koreaInvestmentToken: KoreaInvestmentToken, PDNO: string, FID_INPUT_DATE_1: string) => {
+    const subUrl = `/uapi/overseas-price/v1/quotations/dailyprice`;
+    const additionalHeaders: AdditionalHeaders = {
+        "authorization": koreaInvestmentToken["access_token"],
+        "kakaoId": getCookie("kakaoId"),
+        "PDNO": PDNO,
+        "FID_INPUT_DATE_1": FID_INPUT_DATE_1,
+        // "buyOrSell": buyOrSell,
+    }
+    return getKoreaInvestmentRequest(subUrl, additionalHeaders);
+}
+
+// export const getOverseasPriceQuotationsInquireDailyChartPrice: any = async (koreaInvestmentToken: KoreaInvestmentToken, PDNO: string, FID_INPUT_DATE_1: string, FID_INPUT_DATE_2: string) => {
+//     const subUrl = `/uapi/overseas-price/v1/quotations/inquire-daily-chartprice`;
+//     const additionalHeaders: AdditionalHeaders = {
+//         "authorization": koreaInvestmentToken["access_token"],
+//         "kakaoId": getCookie("kakaoId"),
+//         "PDNO": PDNO,
+//         "FID_INPUT_DATE_1": FID_INPUT_DATE_1,
+//         "FID_INPUT_DATE_2": FID_INPUT_DATE_2,
+//         // "buyOrSell": buyOrSell,
+//     }
+//     return getKoreaInvestmentRequest(subUrl, additionalHeaders);
+// }
+
 // 주문
 export const postOrderUs: any = async (koreaInvestmentToken: KoreaInvestmentToken, PDNO: string, buyOrSell: string, excg_cd: string, price: string) => {
     const subUrl = `/uapi/overseas-stock/v1/trading/order`;
@@ -67,20 +92,6 @@ export const getBalanceSheet: any = async (koreaInvestmentToken: KoreaInvestment
         "authorization": koreaInvestmentToken["access_token"],
         "kakaoId": getCookie("kakaoId"),
         "PDNO": PDNO,
-        // "buyOrSell": buyOrSell,
-    }
-    return getKoreaInvestmentRequest(subUrl, additionalHeaders);
-}
-
-// 국내주식기간별시세(일/주/월/년)[v1_국내주식-016]
-export const getInquireDailyItemChartPrice: any = async (koreaInvestmentToken: KoreaInvestmentToken, PDNO: string, FID_INPUT_DATE_1: string, FID_INPUT_DATE_2: string) => {
-    const subUrl = `/uapi/domestic-stock/v1/quotations/inquire-daily-itemchartprice`;
-    const additionalHeaders: AdditionalHeaders = {
-        "authorization": koreaInvestmentToken["access_token"],
-        "kakaoId": getCookie("kakaoId"),
-        "PDNO": PDNO,
-        "FID_INPUT_DATE_1": FID_INPUT_DATE_1,
-        "FID_INPUT_DATE_2": FID_INPUT_DATE_2,
         // "buyOrSell": buyOrSell,
     }
     return getKoreaInvestmentRequest(subUrl, additionalHeaders);
