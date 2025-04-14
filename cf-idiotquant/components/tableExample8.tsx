@@ -141,7 +141,8 @@ function TablesExample8({
                                         index
                                     ) => {
                                         // const isLast = index === tableRow.length - 1;
-                                        const _bgColor = !!bgColor ? bgColor : (index % 2 ? 'bg-blue-gray-50' : '')
+                                        // const _bgColor = !!bgColor ? bgColor : (index % 2 ? 'bg-blue-gray-50' : '')
+                                        const _bgColor = (index % 2 ? 'bg-gray-100' : '');
                                         // const classes = isLast
                                         //     ? "!pl-2"
                                         //     : `!pl-2 border-b border-gray-100 ${_bgColor}`;

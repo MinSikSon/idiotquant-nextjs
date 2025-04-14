@@ -150,70 +150,67 @@ export default function InquireBalanceResult(props: InquireBalanceResultProps) {
             return {
                 id: name,
                 column_1: <>
-                    <div className="flex flex-col text-xs text-black">
-                        <div className={`font-bold ${name.length >= 7 ? "text-[0.6rem]" : "text-xs"}`}>{name}</div>
+                    <div className="font-mono flex flex-col text-xs text-black">
+                        <div className={`${name.length >= 7 ? "text-[0.6rem]" : "text-xs"}`}>{name}</div>
                         <div className="text-[0.5rem]">({pdno})</div>
                     </div>
                 </>,
                 column_2: <>
-                    <div className="flex flex-col font-bold text-xs text-black">
+                    <div className="font-mono flex flex-col font-bold text-xs text-black">
                         <div className="mb-0 pb-0">
                             {Number(Number(price).toFixed(0)).toLocaleString()}{crcy_cd}
                         </div>
-                        <div className="text-center text-[0.5rem]">
+                        <div className="text-right text-[0.5rem]">
                             {!!frst_bltn_exrt ? <span>({formatNumber(Number(price) / Number(frst_bltn_exrt))} USD)</span> : ""}
                         </div>
                     </div>
                 </>,
 
                 column_3: <>
-                    <div className="flex flex-col font-bold text-xs text-black">
+                    <div className="font-mono flex flex-col text-xs text-black">
                         <div className="mb-0 pb-0">
                             {Number((Number(pchs_amt) / Number(hldg_qty)).toFixed(0)).toLocaleString()}{crcy_cd}
                         </div>
-                        <div className="text-center text-[0.5rem]">
+                        <div className="text-right text-[0.5rem]">
                             {!!frst_bltn_exrt ? <span>({formatNumber((Number(pchs_amt) / Number(hldg_qty) / Number(frst_bltn_exrt)))} USD)</span> : ""}
                         </div>
                     </div>
                 </>,
                 column_4: <>
-                    <div className={`flex flex-col font-bold text-xs text-black ${Number(Number(evlu_amt) / Number(pchs_amt) * 100 - 100) >= 0 ? "text-red-500" : "text-blue-500"}`}>
+                    <div className={`font-mono flex flex-col font-bold text-xs text-black ${Number(Number(evlu_amt) / Number(pchs_amt) * 100 - 100) >= 0 ? "text-red-500" : "text-blue-500"}`}>
                         <div className="pr-1 text-[0.6rem]">
                             {formatNumber(Number(Number(evlu_amt) / Number(pchs_amt) * 100 - 100))}%
                         </div>
                     </div>
                 </>,
-                column_5: <div className={`font-bold text-xs flex justify-between ${Number(Number(evlu_amt) / Number(pchs_amt) * 100 - 100) >= 0 ? "text-red-500" : "text-blue-500"}`}>
-
-                    <div className="flex flex-col">
-                        <div>
-                            {formatNumber(Number(evlu_pfls_amt2))}{crcy_cd}
-                        </div>
-                        <div className="text-center text-[0.5rem]">
-                            {!!frst_bltn_exrt ? <span>({formatNumber(Number(evlu_pfls_amt2) / Number(frst_bltn_exrt))} USD)</span> : ""}
-                        </div>
+                column_5: <div className={`font-mono flex flex-col font-bold text-xs ${Number(Number(evlu_amt) / Number(pchs_amt) * 100 - 100) >= 0 ? "text-red-500" : "text-blue-500"}`}>
+                    <div>
+                        {formatNumber(Number(evlu_pfls_amt2))}{crcy_cd}
+                    </div>
+                    <div className="text-right text-[0.5rem]">
+                        {!!frst_bltn_exrt ? <span>({formatNumber(Number(evlu_pfls_amt2) / Number(frst_bltn_exrt))} USD)</span> : ""}
                     </div>
                 </div>,
-                column_6: <div className="text-xs font-bold text-black">{formatNumber((Number(pchs_amt) / Number(pchs_amt_smtl_amt) * 100))}%</div>,
-                column_7: <div className="flex flex-col text-xs text-black">
+                column_6: <div className="font-mono text-xs text-black">{formatNumber((Number(pchs_amt) / Number(pchs_amt_smtl_amt) * 100))}%</div>,
+                column_7: <div className="font-mono flex flex-col text-xs text-black">
                     <div>
                         {formatNumber(Number(evlu_amt))}{crcy_cd}
                     </div>
-                    <div className="text-center text-[0.5rem]">
+                    <div className="text-right text-[0.5rem]">
                         {!!frst_bltn_exrt ? <span>({formatNumber(Number(evlu_amt) / Number(frst_bltn_exrt))} USD)</span> : ""}
                     </div>
                 </div>,
-                column_8: <div className="flex flex-col text-xs text-black">
+                column_8: <div className="font-mono flex flex-col text-xs text-black">
                     <div>
                         {formatNumber(Number(pchs_amt))}{crcy_cd}
                     </div>
-                    <div className="text-center text-[0.5rem]">
+                    <div className="text-right text-[0.5rem]">
                         {!!frst_bltn_exrt ? <span>({formatNumber(Number(pchs_amt) / Number(frst_bltn_exrt))} USD)</span> : ""}
                     </div>
                 </div>,
-                column_9: <div className="text-xs text-black">{Number(hldg_qty).toFixed(0)}/{Number(ord_psbl_qty).toFixed(0)}</div>,
+                column_9: <div className="font-mono text-xs text-black">{Number(hldg_qty).toFixed(0)}/{Number(ord_psbl_qty).toFixed(0)}</div>,
                 column_10: <>
-                    <div className="flex p-0 m-0 gap-1 font-mono">
+                    <div className="font-mono flex p-0 m-0 gap-1">
                         <DesignButton
                             handleOnClick={() => handleOnClick(item, "buy")}
                             buttonName="buy"
@@ -233,7 +230,7 @@ export default function InquireBalanceResult(props: InquireBalanceResultProps) {
                             buttonBorderColor={`border-red-300`}
                             buttonShadowColor={`#910000`}
                             textStyle={`text-white font-bold text-[0.4rem]`}
-                            buttonStyle={`flex items-center justify-center mb-2 px-1 button bg-red-400 rounded-full cursor-pointer select-none
+                            buttonStyle={`font-mono flex items-center justify-center mb-2 px-1 button bg-red-400 rounded-full cursor-pointer select-none
                             active:translate-y-1 active:[box-shadow:0_0px_0_0_#910000,0_0px_0_0_#91000041] active:border-b-[0px]
                             transition-all duration-150 [box-shadow:0_4px_0_0_#910000,0_8px_0_0_#91000041] border-b-[1px]
                             `}
@@ -276,7 +273,7 @@ export default function InquireBalanceResult(props: InquireBalanceResultProps) {
     const tablesExample8Props: TablesExample8PropsType = {
         msg: props.kiBalance.msg1,
         title: <>
-            <div className="flex pb-2 items-center">
+            <div className="font-mono flex pb-2 items-center">
                 <DesignButton
                     handleOnClick={() => {
                         showAlert("지난 주문 확인");
@@ -302,19 +299,18 @@ export default function InquireBalanceResult(props: InquireBalanceResultProps) {
             </div>
         </>,
         desc: <>
-            <div className="rounded px-2 pb-1 m-1 shadow">
+            <div className="font-mono rounded px-2 pb-1 m-1 shadow">
                 {/* <div className="text-lg text-black leading-none pb-3"> */}
                 <div>
-                    평가손익:<span className={`${(Number(evlu_amt_smtl_amt) / Number(pchs_amt_smtl_amt) * 100 - 100) >= 0 ? "text-red-500" : "text-blue-500"}`}>
-                        {Number(evlu_pfls_smtl_amt).toLocaleString()}{crcy_cd}
-                        ({pchs_amt_smtl_amt == 0 ? "-" : formatNumber(Number(Number(evlu_amt_smtl_amt / pchs_amt_smtl_amt) * 100 - 100))}%)
+                    평가손익: <span className={`${(Number(evlu_amt_smtl_amt) / Number(pchs_amt_smtl_amt) * 100 - 100) >= 0 ? "text-red-500" : "text-blue-500"}`}>
+                        {Number(evlu_pfls_smtl_amt).toLocaleString()}{crcy_cd} ({pchs_amt_smtl_amt == 0 ? "-" : formatNumber(Number(Number(evlu_amt_smtl_amt / pchs_amt_smtl_amt) * 100 - 100))}%)
                     </span>
                 </div>
-                {!!frst_bltn_exrt ? <div className="text-right text-sm">us환율:{formatNumber(Number(frst_bltn_exrt))}원</div> : <></>}
+                {!!frst_bltn_exrt ? <div className="font-mono text-right text-sm">us환율:{formatNumber(Number(frst_bltn_exrt))}원</div> : <></>}
             </div>
             {/* <div className="rounded px-2 pb-1 m-2 shadow"> */}
             {/* <div className="text-xs text-black p-3 border rounded"> */}
-            <div className="flex rounded px-2 pb-1 m-1 shadow">
+            <div className="font-mono flex rounded px-2 pb-1 m-1 shadow">
                 <div>
                     <div className="rounded px-2 pb-1 m-1 shadow">
                         <div className="text-[0.6rem]">
@@ -369,7 +365,7 @@ export default function InquireBalanceResult(props: InquireBalanceResultProps) {
     }
 
     return <>
-        <div className={`border border-black text-center w-80 z-10 fixed top-32 left-1/2 transform -translate-x-1/2 px-6 py-3 rounded-lg text-white shadow-lg shadow-blue-gray-500 transition-all duration-500 ${show ? "opacity-100 scale-100 bg-green-500" : "opacity-0 scale-95 pointer-events-none"}`}>
+        <div className={`font-mono border border-black text-center w-80 z-10 fixed top-32 left-1/2 transform -translate-x-1/2 px-6 py-3 rounded-lg text-white shadow-lg shadow-blue-gray-500 transition-all duration-500 ${show ? "opacity-100 scale-100 bg-green-500" : "opacity-0 scale-95 pointer-events-none"}`}>
             <div className="">{msg}</div>
             <div className="text-lg">✅ {orderName}</div>
             <div className="">{!!props.kiOrderCash ? props.kiOrderCash.msg1 : ""}</div>

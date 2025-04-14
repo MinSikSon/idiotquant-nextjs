@@ -33,6 +33,7 @@ const config = {
         },
       },
       fontFamily: {
+        mono: ["Noto Sans, Inter, Pretendard"],
         // mono: ["Cascadia Code", "Fira Code", "Courier New", "monospace"],
         // mono: ['D2Coding', 'Noto Sans Mono', 'IBM Plex Mono', 'monospace'],
         // mono: ['Noto Sans Mono', 'D2Coding', 'IBM Plex Mono', 'monospace'],
