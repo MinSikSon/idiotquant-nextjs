@@ -6,7 +6,8 @@ import React from "react";
 import { useAppDispatch, useAppSelector } from "@/lib/hooks";
 import { Button } from "@material-tailwind/react";
 
-import ReactMarkdown from 'react-markdown'
+import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
 
 export default function Laboratory() {
 
@@ -28,8 +29,7 @@ export default function Laboratory() {
 
     function onClick(user_content: string) {
         console.log(`[Laboratory]`, `onClick`, user_content);
-        // dispatch(reqPostLaboratory({ system_content: "질문에 답하는 역할", user_content: "삼고초려가 어디서 나온 말이야?" }));
-        dispatch(reqPostLaboratory({ system_content: "investment. stock. quant", user_content: user_content }));
+        dispatch(reqPostLaboratory({ system_content: "답변은 한글로, 투자, 주식, 퀀트 투자", user_content: user_content }));
         setWaitResponse(true);
     }
 
@@ -43,20 +43,21 @@ export default function Laboratory() {
                 onChange={(e) => setUserContent(e.target.value)}
             />
             <Button color="info" disabled={waitResponse} className="p-2 m-2" onClick={() => onClick(userContent)}>삼고초려</Button>
-            <div className="p-2 m-2">
+
+            <div className="p-1 m-1">
                 {aiOutput.state == "fulfilled" ?
                     <>
-                        <div className="p-2 m-2 border rounded-lg border-gray-200">
+                        <div className="border rounded-lg border-gray-200">
                             <div>
                                 응답
                             </div>
                             <div className="text-xs">
-                                <ReactMarkdown>
+                                <ReactMarkdown remarkPlugins={[remarkGfm]}>
                                     {aiOutput.result.response}
                                 </ReactMarkdown>
                             </div>
                         </div>
-                        <div className="p-2 m-2 border rounded-lg border-gray-200">
+                        <div className="p-1 m-1 border rounded-lg border-gray-200">
                             <div>
                                 사용 token
                             </div>
@@ -68,7 +69,7 @@ export default function Laboratory() {
                     :
                     <>
                         <div>
-                            wait response
+                            {waitResponse ? "wait response" : ""}
                         </div>
                     </>
                 }
