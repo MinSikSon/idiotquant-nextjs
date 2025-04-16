@@ -75,7 +75,7 @@ export default function LineChart(props: any) {
                     stroke: {
                         curve: "smooth",
                         lineCap: "round",
-                        width: 2, // 선 두께
+                        width: 3, // 선 두께
                     },
                     markers: {
                         size: 0,

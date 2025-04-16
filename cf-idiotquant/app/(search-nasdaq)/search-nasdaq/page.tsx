@@ -17,7 +17,7 @@ import Auth from "@/components/auth";
 import { FmpBalanceSheetStatementType, reqGetFmpBalanceSheetStatement, selectFmpBalanceSheetStatement, selectFmpState } from "@/lib/features/fmpUsMarket/fmpUsMarketSlice";
 import LineChart from "@/components/LineChart";
 
-const DEBUG = true;
+const DEBUG = false;
 
 export default function Search() {
     const pathname = usePathname();
