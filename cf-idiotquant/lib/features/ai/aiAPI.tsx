@@ -26,8 +26,9 @@ async function postAiRequest(subUrl: string, additionalHeaders?: AiHeaders) {
         credentials: "include",  // include credentials (like cookies) in the request
         headers: {
             "content-type": "application/json; utf-8",
-            ...additionalHeaders,
+            // ...additionalHeaders,
         },
+        body: JSON.stringify({ system_content: additionalHeaders?.system_content, user_content: additionalHeaders?.user_content }),
     };
     const res = await fetch(url, options);
     return res.json();

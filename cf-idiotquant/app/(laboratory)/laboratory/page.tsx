@@ -6,6 +6,7 @@ import React from "react";
 import { useAppDispatch, useAppSelector } from "@/lib/hooks";
 import { Button } from "@material-tailwind/react";
 
+import ReactMarkdown from 'react-markdown'
 
 export default function Laboratory() {
 
@@ -13,6 +14,7 @@ export default function Laboratory() {
     const aiOutput: AiOutputType = useAppSelector(selectAiOutput);
 
     const [userContent, setUserContent] = React.useState("");
+    const [waitResponse, setWaitResponse] = React.useState(false);
 
     React.useEffect(() => {
         console.log(`[Laboratory]`);
@@ -20,6 +22,7 @@ export default function Laboratory() {
 
     React.useEffect(() => {
         console.log(`[aiOutput]`, aiOutput);
+        setWaitResponse(false);
     }, [aiOutput]);
 
 
@@ -27,6 +30,7 @@ export default function Laboratory() {
         console.log(`[Laboratory]`, `onClick`, user_content);
         // dispatch(reqPostLaboratory({ system_content: "질문에 답하는 역할", user_content: "삼고초려가 어디서 나온 말이야?" }));
         dispatch(reqPostLaboratory({ system_content: "investment. stock. quant", user_content: user_content }));
+        setWaitResponse(true);
     }
 
     return <>
@@ -38,7 +42,7 @@ export default function Laboratory() {
                 value={userContent}
                 onChange={(e) => setUserContent(e.target.value)}
             />
-            <Button color="info" className="p-2 m-2" onClick={() => onClick(userContent)}>삼고초려</Button>
+            <Button color="info" disabled={waitResponse} className="p-2 m-2" onClick={() => onClick(userContent)}>삼고초려</Button>
             <div className="p-2 m-2">
                 {aiOutput.state == "fulfilled" ?
                     <>
@@ -47,7 +51,9 @@ export default function Laboratory() {
                                 응답
                             </div>
                             <div className="text-xs">
-                                {aiOutput.result.response}
+                                <ReactMarkdown>
+                                    {aiOutput.result.response}
+                                </ReactMarkdown>
                             </div>
                         </div>
                         <div className="p-2 m-2 border rounded-lg border-gray-200">
