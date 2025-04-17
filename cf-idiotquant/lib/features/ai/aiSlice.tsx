@@ -1,5 +1,6 @@
 import { createAppSlice } from "@/lib/createAppSlice";
 import { postLaboratory } from "./aiAPI";
+import { PayloadAction } from "@reduxjs/toolkit";
 
 interface AiOutputResultUsageType {
     completion_tokens: number;
@@ -22,12 +23,20 @@ export interface AiOutputType {
     success: any;
 }
 
+export interface AiHistoryType {
+    question: string;
+    response: string;
+    usage: AiOutputResultUsageType;
+    timestamp: string;
+}
+
 interface AiType {
     state: "init"
     | "pending" | "fulfilled" | "rejected"
     ;
 
     aiOutput: AiOutputType;
+    aiHistory: AiHistoryType[];
 }
 
 const initialState: AiType = {
@@ -45,7 +54,8 @@ const initialState: AiType = {
             }
         },
         success: null,
-    }
+    },
+    aiHistory: [] as AiHistoryType[],
 }
 
 export const aiSlice = createAppSlice({
@@ -75,13 +85,19 @@ export const aiSlice = createAppSlice({
                 },
             }
         ),
+        pushAiHistory: create.reducer((state, action: PayloadAction<AiHistoryType>) => {
+            // console.log(`[setPer]`)
+            state.aiHistory.push(action.payload);
+        }),
     }),
 
     selectors: {
         selectAiState: (state) => state.state,
         selectAiOutput: (state) => state.aiOutput,
+
+        selectAiHistory: (state) => state.aiHistory,
     }
 });
 
-export const { reqPostLaboratory } = aiSlice.actions;
-export const { selectAiState, selectAiOutput } = aiSlice.selectors;
+export const { reqPostLaboratory, pushAiHistory } = aiSlice.actions;
+export const { selectAiState, selectAiOutput, selectAiHistory } = aiSlice.selectors;

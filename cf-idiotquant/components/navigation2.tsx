@@ -63,6 +63,7 @@ export function NavbarWithSimpleLinks() {
         "balance-kr": `알고 투자 - 계좌 조회 (국내) ${!!!kakaoId ? "🔒" : ""}`,
         "balance-us": `알고 투자 - 계좌 조회 (해외) ${!!!kakaoId ? "🔒" : ""}`,
         "algorithm-trade": "알고 투자 - 매매 내역",
+        "chat": "Chat 🤖"
     }
 
     const urlToLabel: any = {

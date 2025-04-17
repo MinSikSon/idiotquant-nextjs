@@ -9,7 +9,7 @@ import { Button } from "@material-tailwind/react";
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 
-export default function Laboratory() {
+export default function Chat() {
 
     const dispatch = useAppDispatch();
     const aiOutput: AiOutputType = useAppSelector(selectAiOutput);
@@ -22,7 +22,7 @@ export default function Laboratory() {
     const [history, setHistory] = React.useState<any>([]);
 
     React.useEffect(() => {
-        console.log(`[Laboratory]`);
+        console.log(`[Chat]`);
     }, []);
 
     React.useEffect(() => {
@@ -93,7 +93,7 @@ export default function Laboratory() {
                             className={`px-4 py-2 rounded-xl text-sm font-semibold transition
     ${waitResponse || !userContent.trim()
                                     ? "bg-gray-300 text-gray-500 cursor-not-allowed"
-                                    : "bg-blue-400 hover:bg-blue-500 text-white shadow"}`}
+                                    : "bg-blue-500 hover:bg-blue-600 text-white shadow"}`}
                         >
                             {waitResponse ? "⏳ 응답 생성 중..." : "🤖 AI에게 묻기"}
                         </button>
@@ -117,7 +117,7 @@ export default function Laboratory() {
                                 🙋 질문
                             </div>
                             {/* <div className="text-sm font-medium text-gray-800 whitespace-pre-wrap"> */}
-                            <div className="text-base font-semibold text-gray-800 whitespace-pre-wrap">
+                            <div className="text-[14px] font-semibold text-gray-800 whitespace-pre-wrap">
                                 {item.question}
                             </div>
                         </div>
@@ -128,7 +128,7 @@ export default function Laboratory() {
                                 🤖 응답
                             </div>
                             {/* <div className="prose prose-sm max-w-none text-gray-800"> */}
-                            <div className="prose prose-sm max-w-none text-gray-800 leading-relaxed">
+                            <div className="text-[14px] prose prose-sm max-w-none text-gray-800 leading-relaxed">
                                 <ReactMarkdown remarkPlugins={[remarkGfm]}>
                                     {item.response}
                                 </ReactMarkdown>
