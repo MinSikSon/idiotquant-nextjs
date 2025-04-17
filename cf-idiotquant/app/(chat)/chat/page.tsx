@@ -27,9 +27,8 @@ export default function Chat() {
 
     React.useEffect(() => {
         console.log(`[aiOutput]`, aiOutput);
-        setWaitResponse(false);
 
-        if (aiOutput.state == "fulfilled") {
+        if (true == waitResponse && aiOutput.state == "fulfilled") {
             const newAiHistory: AiHistoryType = {
                 question,
                 response: aiOutput.result.response,
@@ -42,6 +41,7 @@ export default function Chat() {
             ]);
             dispatch(pushAiHistory(newAiHistory));
         }
+        setWaitResponse(false);
 
     }, [aiOutput]);
 
