@@ -31,5 +31,6 @@ async function postAiRequest(subUrl: string, additionalHeaders?: AiHeaders) {
         body: JSON.stringify({ system_content: additionalHeaders?.system_content, user_content: additionalHeaders?.user_content }),
     };
     const res = await fetch(url, options);
-    return res.json();
+    // return res.json();
+    return res;
 }

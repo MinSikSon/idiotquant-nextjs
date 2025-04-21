@@ -11,6 +11,7 @@ import { koreaInvestmentUsMarketSlice } from "./features/koreaInvestmentUsMarket
 import { algorithmTradeSlice } from "./features/algorithmTrade/algorithmTradeSlice";
 import { fmpUsMarketSlice } from "./features/fmpUsMarket/fmpUsMarketSlice";
 import { aiSlice } from "./features/ai/aiSlice";
+import { aiStreamSlice } from "./features/ai/aiStreamSlice";
 
 const rootReducer: any = combineSlices(
     financialInfoSlice,
@@ -25,6 +26,7 @@ const rootReducer: any = combineSlices(
     algorithmTradeSlice,
     fmpUsMarketSlice,
     aiSlice,
+    aiStreamSlice,
 );
 
 export type RootState = ReturnType<typeof rootReducer>;
