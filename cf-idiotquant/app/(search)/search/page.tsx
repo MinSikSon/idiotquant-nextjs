@@ -84,7 +84,7 @@ export default function Search() {
       if (true == waitResponse && !!name) {
         if (DEBUG) console.log(`reqPostLaboratory`);
 
-        const last_price = Number(kiInquireDailyItemChartPrice.output2[0]["stck_oprc"]);
+        const stck_oprc = Number(kiInquireDailyItemChartPrice.output2[0]["stck_oprc"]);
         const market_cap = (Number(kiInquireDailyItemChartPrice.output1["stck_prpr"]) * Number(kiInquireDailyItemChartPrice.output1["lstn_stcn"]));
         const current_asset = (Number(kiBalanceSheet.output[getYearMatchIndex(kiInquireDailyItemChartPrice.output2[0]["stck_bsop_date"])].cras) * 100000000);
         const total_liabilities = (Number(kiBalanceSheet.output[getYearMatchIndex(kiInquireDailyItemChartPrice.output2[0]["stck_bsop_date"])].total_lblt) * 100000000);
@@ -92,7 +92,7 @@ export default function Search() {
         // console.log(`market_cap`, market_cap);
         // console.log(`current_asset`, current_asset);
         // console.log(`total_liabilities`, total_liabilities);
-        const prompt = `(기본 조건: 두괄식, markdown, 한글, 색상 강조, 목차 순서, 숫자 단위) 종목명은 ${name}이고, 현재가는 ${last_price}원, 시가총액은 ${market_cap}원, 유동자산은 ${current_asset}원, 부채총계는 ${total_liabilities}원입니다. 이 종목의 매수/매도 의견을 알려주세요.`;
+        const prompt = `(기본 조건: 두괄식, markdown, 한글, 색상 강조, 목차 순서, 숫자 단위) 종목명은 ${name}이고, 현재가는 ${stck_oprc}원, 시가총액은 ${market_cap}원, 유동자산은 ${current_asset}원, 부채총계는 ${total_liabilities}원입니다. 이 종목의 매수/매도 의견을 알려주세요.`;
         dispatch(reqPostLaboratory({ system_content: prompt, user_content: prompt }));
       }
     }
