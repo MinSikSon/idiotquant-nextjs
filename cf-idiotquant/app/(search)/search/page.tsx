@@ -27,7 +27,7 @@ import 'katex/dist/katex.min.css';
 import { reqPostLaboratory } from "@/lib/features/ai/aiSlice";
 import { AiOutputResultUsageType, selectAiStreamOutput } from "@/lib/features/ai/aiStreamSlice";
 
-const DEBUG = true;
+const DEBUG = false;
 
 export default function Search() {
   const pathname = usePathname();
