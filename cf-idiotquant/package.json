@@ -10,6 +10,7 @@
   },
   "dependencies": {
     "@floating-ui/react": "^0.26.19",
+    "@tailwindcss/typography": "^0.5.16",
     "and": "^0.0.3",
     "apexcharts": "^4.5.0",
     "date-fns": "^4.1.0",
@@ -23,7 +24,9 @@
     "react-day-picker": "^9.6.2",
     "react-dom": "^18",
     "react-markdown": "^10.1.0",
+    "rehype-katex": "^7.0.1",
     "remark-gfm": "^4.0.1",
+    "remark-math": "^6.0.0",
     "three": "^0.174.0"
   },
   "devDependencies": {

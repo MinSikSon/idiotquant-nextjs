@@ -9,7 +9,8 @@ const config = {
     "./src/**/*.{js,ts,jsx,tsx,mdx}",
     "./node_modules/@material-tailwind/react/**/*.{js,ts,jsx,tsx}"
   ],
-  plugins: [mtConfig],
+  plugins: [mtConfig, require('@tailwindcss/typography')],
+
   mode: 'jit',
   theme: {
     extend: {

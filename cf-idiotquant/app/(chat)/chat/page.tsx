@@ -8,6 +8,9 @@ import { Button } from "@material-tailwind/react";
 
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
+import remarkMath from 'remark-math';
+import rehypeKatex from 'rehype-katex';
+import 'katex/dist/katex.min.css';
 import { AiHistoryType, AiOutputResultUsageType, pushAiHistory, selectAiHistory, selectAiStreamOutput } from "@/lib/features/ai/aiStreamSlice";
 
 export default function Chat() {
@@ -130,7 +133,11 @@ export default function Chat() {
             </div>
             <div className="rounded-3xl border border-gray-100 shadow-md bg-gradient-to-br from-white to-gray-50 p-6 hover:shadow-lg transition-shadow duration-300">
                 <div className="text-[14px] prose prose-sm max-w-none text-gray-800 leading-relaxed">
-                    <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                    <ReactMarkdown
+                        remarkPlugins={[remarkGfm, remarkMath]}
+                        rehypePlugins={[rehypeKatex]}
+                        skipHtml={false} // HTML 태그도 렌더링하도록
+                    >
                         {response}
                     </ReactMarkdown>
                 </div>
@@ -164,7 +171,11 @@ export default function Chat() {
                             </div>
                             {/* <div className="prose prose-sm max-w-none text-gray-800"> */}
                             <div className="text-[14px] prose prose-sm max-w-none text-gray-800 leading-relaxed">
-                                <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                                <ReactMarkdown
+                                    remarkPlugins={[remarkGfm, remarkMath]}
+                                    rehypePlugins={[rehypeKatex]}
+                                    skipHtml={false} // HTML 태그도 렌더링하도록
+                                >
                                     {item.response}
                                 </ReactMarkdown>
                             </div>
