@@ -9,9 +9,12 @@ import { Button } from "@material-tailwind/react";
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import remarkMath from 'remark-math';
+import rehypeRaw from 'rehype-raw';
 import rehypeKatex from 'rehype-katex';
 import 'katex/dist/katex.min.css';
 import { AiHistoryType, AiOutputResultUsageType, pushAiHistory, selectAiHistory, selectAiStreamOutput } from "@/lib/features/ai/aiStreamSlice";
+
+const DEBUG = false;
 
 export default function Chat() {
 
@@ -28,7 +31,7 @@ export default function Chat() {
     const [response, setResponse] = React.useState<string>("");
 
     React.useEffect(() => {
-        console.log(`[Chat]`);
+        if (DEBUG) console.log(`[Chat]`);
     }, []);
 
     React.useEffect(() => {
@@ -65,7 +68,7 @@ export default function Chat() {
                     const parsed = JSON.parse(jsonStr);
                     const content = parsed.response;
                     if (content) {
-                        // console.log('응답 추가:', content);
+                        if (DEBUG) console.log('응답 추가:', content, `, typeof jsonStr`, typeof jsonStr, `, parsed`, parsed);
                         outputContent += content;
                         // 여기서 바로 파싱하거나 UI에 반영
                     }
@@ -135,7 +138,7 @@ export default function Chat() {
                 <div className="text-[14px] prose prose-sm max-w-none text-gray-800 leading-relaxed">
                     <ReactMarkdown
                         remarkPlugins={[remarkGfm, remarkMath]}
-                        rehypePlugins={[rehypeKatex]}
+                        rehypePlugins={[rehypeRaw, rehypeKatex]}
                         skipHtml={false} // HTML 태그도 렌더링하도록
                     >
                         {response}
@@ -173,7 +176,7 @@ export default function Chat() {
                             <div className="text-[14px] prose prose-sm max-w-none text-gray-800 leading-relaxed">
                                 <ReactMarkdown
                                     remarkPlugins={[remarkGfm, remarkMath]}
-                                    rehypePlugins={[rehypeKatex]}
+                                    rehypePlugins={[rehypeRaw, rehypeKatex]}
                                     skipHtml={false} // HTML 태그도 렌더링하도록
                                 >
                                     {item.response}

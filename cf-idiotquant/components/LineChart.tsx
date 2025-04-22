@@ -10,6 +10,8 @@ import type { ApexOptions } from "apexcharts";
 import { useTheme } from "next-themes";
 import { SelectFace3d } from "iconoir-react";
 
+const DEBUG = false;
+
 function rgbToHex(rgb: any) {
     return (
         "#" +
@@ -23,7 +25,7 @@ function rgbToHex(rgb: any) {
 }
 
 export default function LineChart(props: any) {
-    console.log(`[LineChart]`, `props`, props);
+    if (DEBUG) console.log(`[LineChart]`, `props`, props);
     const { theme } = useTheme();
     const [vars, setVars] = React.useState<CSSStyleDeclaration | null>(null);
 

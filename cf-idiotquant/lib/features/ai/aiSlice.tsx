@@ -26,7 +26,7 @@ export const aiSlice = createAppSlice({
                 const decoder = new TextDecoder('utf-8');
                 let output = '';
 
-                console.log("Stream processing");
+                // console.log(`[reqPostLaboratory]`, `Stream processing`);
                 while (true) {
                     const { done, value } = await reader.read();
                     if (done) break;
