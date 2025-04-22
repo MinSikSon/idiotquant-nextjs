@@ -84,7 +84,7 @@ export default function Search() {
       if (true == waitResponse && !!name) {
         if (DEBUG) console.log(`reqPostLaboratory`);
 
-        const last_price = Number(kiInquireDailyItemChartPrice.output2[0]["stck_bsop_date"]);
+        const last_price = Number(kiInquireDailyItemChartPrice.output2[0]["stck_oprc"]);
         const market_cap = (Number(kiInquireDailyItemChartPrice.output1["stck_prpr"]) * Number(kiInquireDailyItemChartPrice.output1["lstn_stcn"]));
         const current_asset = (Number(kiBalanceSheet.output[getYearMatchIndex(kiInquireDailyItemChartPrice.output2[0]["stck_bsop_date"])].cras) * 100000000);
         const total_liabilities = (Number(kiBalanceSheet.output[getYearMatchIndex(kiInquireDailyItemChartPrice.output2[0]["stck_bsop_date"])].total_lblt) * 100000000);
