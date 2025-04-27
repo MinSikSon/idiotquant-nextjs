@@ -253,16 +253,16 @@ export default function AlgorithmTrade() {
                 <div className="flex">
                     <div className="flex-1 rounded px-2 pb-1 m-2 shadow">
                         <div className="text-[0.6rem]">누적 알고리즘 매수</div>
-                        <div className="flex gap-2 items-right">
+                        <div className="flex flex-col justify-end items-end">
                             <div className="">{market == "KR" ? `${Number(Number(cummulative_investment).toFixed(0)).toLocaleString()} 원` : `${Number(Number(cummulative_investment).toFixed(0)).toLocaleString()} 원`}</div>
-                            <div className="text-sm">{market == "KR" ? "" : `(${Number(Number(cummulative_investment) / Number(us_capital_token.value.frst_bltn_exrt)).toFixed(3)} USD)`}</div>
+                            <div className="text-[0.6rem]">{market == "KR" ? "" : `(${Number(Number(cummulative_investment) / Number(us_capital_token.value.frst_bltn_exrt)).toFixed(3)} USD)`}</div>
                         </div>
                     </div>
                     <div className="flex-1 rounded px-2 pb-1 m-2 shadow">
                         <div className="text-[0.6rem]">누적 알고리즘 매도</div>
-                        <div className="flex gap-2 items-right">
+                        <div className="flex flex-col justify-end items-end">
                             <div className="">{market == "KR" ? `${Number(Number(cummulative_investment_sell).toFixed(0)).toLocaleString()} 원` : `${Number(Number(cummulative_investment_sell).toFixed(0)).toLocaleString()} 원`}</div>
-                            <div className="text-sm">{market == "KR" ? "" : `(${Number(Number(cummulative_investment_sell) / Number(us_capital_token.value.frst_bltn_exrt)).toFixed(3)} USD)`}</div>
+                            <div className="text-[0.6rem]">{market == "KR" ? "" : `(${Number(Number(cummulative_investment_sell) / Number(us_capital_token.value.frst_bltn_exrt)).toFixed(3)} USD)`}</div>
                         </div>
                     </div>
                 </div>
