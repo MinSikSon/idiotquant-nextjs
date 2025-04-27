@@ -71,6 +71,7 @@ function TablesExample8({
     const MAX_ORDERING = 3;
     const [ordering, setOrdering] = React.useState(0);
 
+    const ADD_COUNT = 20;
     return (
         <section className="">
             <Card className="h-full w-full">
@@ -224,8 +225,8 @@ function TablesExample8({
                             </table>
                         </Card.Body>
                         {!!setVisibleCount ? <DesignButton
-                            handleOnClick={() => setVisibleCount((prev: any) => prev + 20)}
-                            buttonName={"더보기"}
+                            handleOnClick={() => setVisibleCount((prev: any) => prev + ADD_COUNT)}
+                            buttonName={`더보기 +${ADD_COUNT}`}
                             buttonBgColor="bg-white"
                             buttonBorderColor="border-black"
                             buttonShadowColor="#D5D5D5"
