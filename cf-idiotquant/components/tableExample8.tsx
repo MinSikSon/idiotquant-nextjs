@@ -7,6 +7,7 @@ import {
     Button,
     Spinner,
 } from "@material-tailwind/react";
+import { DesignButton } from "./designButton";
 
 
 export interface Example8TableRowType {
@@ -46,6 +47,9 @@ export interface TablesExample8PropsType {
     setPrevSelectHead?: any;
 
     tableRow: Example8TableRowType[];
+
+    visibleCount?: any;
+    setVisibleCount?: any;
 }
 
 function TablesExample8({
@@ -59,7 +63,9 @@ function TablesExample8({
     setSelectHead,
     prevSelectHead,
     setPrevSelectHead,
-    tableRow
+    tableRow,
+    visibleCount,
+    setVisibleCount,
 }: TablesExample8PropsType) {
 
     const MAX_ORDERING = 3;
@@ -119,7 +125,7 @@ function TablesExample8({
                                 </tr>
                             </thead>
                             <tbody>
-                                {tableRow.map(
+                                {tableRow.slice(0, visibleCount).map(
                                     (
                                         {
                                             id,
@@ -218,6 +224,19 @@ function TablesExample8({
                     </Card.Body>
                 }
             </Card>
+            {/* <button className="justify-center" onClick={() => setVisibleCount((prev: any) => prev + 20)}></button> */}
+            <DesignButton
+                handleOnClick={() => setVisibleCount((prev: any) => prev + 20)}
+                buttonName={"더보기"}
+                buttonBgColor="bg-white"
+                buttonBorderColor="border-black"
+                buttonShadowColor="#D5D5D5"
+                textStyle="text-xs font-bold"
+                buttonStyle={`rounded-lg p-2 ml-2 flex items-center justify-center mb-2 button bg-white cursor-pointer select-none
+                                active:translate-y-1 active:[box-shadow:0_0px_0_0_#D5D5D5,0_0px_0_0_#D5D5D541] active:border-[0px]
+                                transition-all duration-150 [box-shadow:0_4px_0_0_#D5D5D5,0_8px_0_0_#D5D5D541] border-[1px]
+                                `}
+            />
         </section>
     );
 }
