@@ -24,7 +24,8 @@ interface CapitalTokenTypeValuePurchaseLogStockList {
     "stock_code": string;//"002690",
     "remaining_token": string;// "10320",
     "stck_prpr": string;//"1239",
-    "ORD_QTY": string //"8"
+    "ORD_QTY": string; //"8"
+    "buyOrSell"?: string;
 }
 interface CapitalTokenTypeValuePurchaseLog {
     "time_stamp": string;

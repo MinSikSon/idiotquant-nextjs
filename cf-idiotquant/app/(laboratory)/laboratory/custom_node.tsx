@@ -1,8 +1,8 @@
 import { Handle, Position } from "@xyflow/react";
 
 // const DEFAULT_NODE_STYLE = "font-mono p-1 flex flex-col bg-white shadow-md border rounded-lg";
-const DEFAULT_DATE_NODE_STYLE = `font-mono p-1 flex flex-col bg-white shadow-md border rounded-lg text-[0.7rem]`;
-const DEFAULT_STOCK_NODE_STYLE = `font-mono p-1 flex flex-col bg-white shadow-md border rounded-lg text-[0.6rem]`;
+const DEFAULT_DATE_NODE_STYLE = `font-mono p-1 flex flex-col bg-white shadow-md border rounded-lg text-[0.6rem]`;
+const DEFAULT_STOCK_NODE_STYLE = `font-mono p-1 flex flex-col bg-white shadow-md border rounded-lg text-[0.5rem]`;
 
 export const CustomSourceNode = ({ data, isConnectable }: any) => {
     return (
@@ -67,10 +67,8 @@ export function StockNode({ data, isConnectable }: { data: any, isConnectable: a
                 isConnectable={isConnectable}
             />
             <div className={`${DEFAULT_STOCK_NODE_STYLE} ${isBuy ? 'bg-green-100' : 'bg-red-100'}`}>
-                <div>{isBuy ? '매수' : '매도'}: {data.stockName}</div>
-                <div>{data.quantity}주 @ {data.price.toLocaleString()}원</div>
-                <div>수익률: {data.profitRate}%</div>
-                <div>포인트: {data.points}</div>
+                <div>{isBuy ? '매수' : '매도'}.{data.stockName}.{data.quantity}주.{data.price.toLocaleString()}원.{data.points}포인트</div>
+                {/* <div>수익률: {data.profitRate}%</div> */}
             </div>
             <Handle
                 type="source"
