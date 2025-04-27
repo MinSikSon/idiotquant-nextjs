@@ -1,6 +1,7 @@
 "use client"
 
 import Login from "@/app/(login)/login/login";
+import NotFound from "@/app/not-found";
 import Auth from "@/components/auth";
 import InquireBalanceResult from "@/components/inquireBalanceResult";
 import { isValidCookie } from "@/components/util";
@@ -52,6 +53,13 @@ export default function BalanceUs() {
     if (false == isValidCookie("koreaInvestmentToken") || false == !!kiToken["access_token"]) {
         return <>
             <Auth />
+        </>
+    }
+
+    // console.log(`kiBalance.state`, kiBalance.state);
+    if (kiBalance.state == "rejected") {
+        return <>
+            <NotFound warnText={"계좌 조회 권한이 없습니다"} />
         </>
     }
 
