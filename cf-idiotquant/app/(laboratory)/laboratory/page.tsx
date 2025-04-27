@@ -154,6 +154,7 @@ function Flow() {
 
     const [variant, setVariant] = useState<any>('cross');
 
+    const PANEL_DESIGN = "font-mono text-[0.6rem]";
     return <div style={{ width: '100%', height: '90vh' }}>
         <ReactFlow nodes={nodes}
             edges={edges}
@@ -171,16 +172,16 @@ function Flow() {
             <MiniMap nodeColor={nodeColor} nodeStrokeWidth={3} zoomable pannable />
             <Controls />
 
-            <Panel position="top-left">top-left</Panel>
-            <Panel position="top-center">
+            <Panel position="top-left" className={`${PANEL_DESIGN}`}>top-left</Panel>
+            <Panel position="top-center" className={`${PANEL_DESIGN}`}>
                 <button className="border-2 rounded-lg border-black" onClick={() => setVariant('dots')}>dots</button>
                 <button className="border-2 rounded-lg border-black" onClick={() => setVariant('lines')}>lines</button>
                 <button className="border-2 rounded-lg border-black" onClick={() => setVariant('cross')}>cross</button>
             </Panel>
-            <Panel position="top-right">top-right</Panel>
-            <Panel position="bottom-left">bottom-left</Panel>
-            <Panel position="bottom-center">bottom-center</Panel>
-            <Panel position="bottom-right">bottom-right</Panel>
+            <Panel position="top-right" className={`${PANEL_DESIGN}`}>top-right</Panel>
+            <Panel position="bottom-left" className={`${PANEL_DESIGN}`}>bottom-left</Panel>
+            <Panel position="bottom-center" className={`${PANEL_DESIGN}`}>bottom-center</Panel>
+            <Panel position="bottom-right" className={`${PANEL_DESIGN}`}>bottom-right</Panel>
             <Background color="#ccc" variant={variant} />
         </ReactFlow>
     </div>

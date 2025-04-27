@@ -210,6 +210,8 @@ export default function AlgorithmTrade() {
     const token_per_stock = capitalToken.value.token_per_stock ?? 0;
     if (DEBUG) console.log(`stock_list`, stock_list);
     let cummulative_token = 0;
+    let exclude_count = 0;
+    let exclude_token = 0;
     const props: TablesExample8PropsType = {
         title: <>
             <div className="flex items-center">
@@ -255,14 +257,14 @@ export default function AlgorithmTrade() {
                         <div className="text-[0.6rem]">누적 알고리즘 매수</div>
                         <div className="flex flex-col justify-end items-end">
                             <div className="">{market == "KR" ? `${Number(Number(cummulative_investment).toFixed(0)).toLocaleString()} 원` : `${Number(Number(cummulative_investment).toFixed(0)).toLocaleString()} 원`}</div>
-                            <div className="text-[0.7rem]">{market == "KR" ? "" : `(${Number(Number(cummulative_investment) / Number(us_capital_token.value.frst_bltn_exrt)).toFixed(3)} USD)`}</div>
+                            <div className="text-[0.6rem]">{market == "KR" ? "" : `(${Number(Number(cummulative_investment) / Number(us_capital_token.value.frst_bltn_exrt)).toFixed(3)} USD)`}</div>
                         </div>
                     </div>
                     <div className="flex-1 rounded px-2 pb-1 m-2 shadow">
                         <div className="text-[0.6rem]">누적 알고리즘 매도</div>
                         <div className="flex flex-col justify-end items-end">
                             <div className="">{market == "KR" ? `${Number(Number(cummulative_investment_sell).toFixed(0)).toLocaleString()} 원` : `${Number(Number(cummulative_investment_sell).toFixed(0)).toLocaleString()} 원`}</div>
-                            <div className="text-[0.7rem]">{market == "KR" ? "" : `(${Number(Number(cummulative_investment_sell) / Number(us_capital_token.value.frst_bltn_exrt)).toFixed(3)} USD)`}</div>
+                            <div className="text-[0.6rem]">{market == "KR" ? "" : `(${Number(Number(cummulative_investment_sell) / Number(us_capital_token.value.frst_bltn_exrt)).toFixed(3)} USD)`}</div>
                         </div>
                     </div>
                 </div>
@@ -312,55 +314,29 @@ export default function AlgorithmTrade() {
                 <div className="rounded px-2 pb-1 m-2 shadow">
                     <div className="text-black leading-none">
                         {stock_list.map((item: any, index: number) => {
-                            cummulative_token += isNaN(Number(item["token"])) ? 0 : Number(item["token"]);
+                            const token = isNaN(Number(item["token"])) ? 0 : Number(item["token"]);
+                            cummulative_token += token;
+                            exclude_count += item["refill"] ? 0 : 1;
+                            exclude_token += item["refill"] ? 0 : token;
                             return <Popover key={index}>
                                 <Popover.Trigger>
                                     <div className={`flex pl-1 items-center gap-x-1 ${index % 2 == 0 ? "bg-white" : "bg-gray-100"} ${item["refill"] ? "" : "font-bold line-through"}`}>
-                                        <div className="flex items-center min-w-[95px] text-xs">
+                                        <div className="flex items-center min-w-[115px] text-xs">
                                             <div>
-                                                {index})
+                                                ({String(index).padStart(3, "0")}-
                                             </div>
-                                            <div className={`${item["name"].length >= 8 ? "text-[0.5rem]" : (item["name"].length >= 7 ? "text-[0.6rem]" : "text-xs")}`}>
+                                            <div className={`${item["name"].length >= 8 ? "text-[0.6rem]" : (item["name"].length >= 7 ? "text-[0.7rem]" : "text-xs")}`}>
                                                 {item["name"]}
                                             </div>
                                         </div>
-                                        <div className="flex items-center min-w-[65px]">
+                                        <div className="flex items-center min-w-[85px]">
                                             <div className="border rounded border-black p-0 text-[0.6rem]">
                                                 포인트
                                             </div>
-                                            <div className="ml-1 min-w-[35px] text-right text-xs">
-                                                {item["token"]}
+                                            <div className="ml-1 min-w-[50px] text-right text-xs">
+                                                {item["token"]})
                                             </div>
                                         </div>
-                                        {(() => {
-                                            const priceMulti = inquirePriceMulti[item["PDNO"]];
-                                            if (undefined == priceMulti) {
-                                                return <></>;
-                                            }
-
-                                            if (1 == inquirePriceMulti[item["PDNO"]].rt_cd) {
-                                                return <></>;
-                                            }
-
-                                            return <>
-                                                <div className="flex items-center min-w-[70px]">
-                                                    <div className="border rounded border-black p-0 text-[0.6rem]">
-                                                        주가
-                                                    </div>
-                                                    <div className={`ml-1 min-w-[45px] text-right ${(inquirePriceMulti[item["PDNO"]].output.stck_prpr).length >= 7 ? "text-[0.5rem]" : ((inquirePriceMulti[item["PDNO"]].output.stck_prpr).length >= 5 ? "text-[0.6rem]" : "text-xs")}`}>
-                                                        {Number(inquirePriceMulti[item["PDNO"]].output.stck_prpr).toLocaleString()}원
-                                                    </div>
-                                                </div>
-                                                <div className="flex items-center min-w-[55px]">
-                                                    <div className="border rounded border-black p-0 text-[0.6rem]">
-                                                        PER
-                                                    </div>
-                                                    <div className="ml-1 min-w-[40px] text-right text-[0.6rem]">
-                                                        {inquirePriceMulti[item["PDNO"]].output.per}
-                                                    </div>
-                                                </div>
-                                            </>
-                                        })()}
                                     </div>
                                 </Popover.Trigger>
                                 <Popover.Content className="p-2 border border-black rounded shadow shadow-blue-gray-500">
@@ -374,8 +350,10 @@ export default function AlgorithmTrade() {
                         })}
                     </div>
                     <div className="flex items-center text-xs text-black leading-none pb-1">
-                        <div>누적 token</div>
-                        <div className="ml-2 px-1 text-xs rounded border border-black">{cummulative_token}</div>
+                        <div>종목 개수</div>
+                        <div className="mx-1 mr-2 px-1 text-xs rounded border border-black">{stock_list.length - exclude_count} / {stock_list.length}</div>
+                        <div>누적 포인트</div>
+                        <div className="mx-1 mr-2 px-1 text-xs rounded border border-black">{cummulative_token - exclude_token} / {cummulative_token}</div>
                     </div>
                 </div>
             </div>
