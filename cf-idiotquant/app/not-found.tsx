@@ -10,9 +10,9 @@ export const metadata: Metadata = {
     title: "Not found",
 }
 
-export default function NotFound() {
+export default function NotFound({ warnText = "Oops! Not Found!" }) {
     return <>
-        <section className={`px-4`}>
+        <div className="flex justify-center items-center">
             <Card className={`border-2 border-gray-100 shadow-none`}>
                 <Card.Header>
                     <div className="flex items-center justify-center text-xl">
@@ -22,7 +22,7 @@ export default function NotFound() {
                             enableHover={true}
                             color="#000"
                         >
-                            Oops! Not Found!
+                            {warnText}
                         </FuzzyText>
                     </div>
                 </Card.Header>
@@ -35,14 +35,14 @@ export default function NotFound() {
                                 buttonBgColor="bg-green-500"
                                 buttonBorderColor="border-green-400"
                                 buttonShadowColor="#129600"
-                                textStyle="text-white text-xs pt-0.5 font-bold"
+                                textStyle="font-mono text-white text-lg pt-0.5 font-bold"
                                 buttonStyle="rounded-lg px-4 ml-2"
                             />
                         </Link>
                     </div>
                 </Card.Body>
             </Card>
-        </section>
+        </div>
     </>;
 }
 

@@ -76,7 +76,7 @@ interface KoreaInvestmentBalanceOutput2 {
     tot_stln_slng_chgs: string;
 }
 export interface KoreaInvestmentBalance {
-    state: "init" | "req" | "pending" | "fulfilled";
+    state: "init" | "req" | "pending" | "fulfilled" | "rejected";
     ctx_area_fk100: string;
     ctx_area_nk100: string;
     msg1: string;
@@ -550,7 +550,8 @@ export const koreaInvestmentSlice = createAppSlice({
                     }
                 },
                 rejected: (state) => {
-                    console.log(`[getInquireBalance] get-rejected 2`);
+                    console.log(`[getInquireBalance] rejected`);
+                    state.koreaInvestmentBalance.state = "rejected";
                 },
             }
         ),

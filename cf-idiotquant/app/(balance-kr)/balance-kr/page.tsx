@@ -14,6 +14,7 @@ import { usePathname } from "next/navigation";
 import Auth from "@/components/auth";
 
 import InquireBalanceResult from "@/components/inquireBalanceResult";
+import NotFound from "@/app/not-found";
 
 export default function BalanceKr() {
     const pathname = usePathname();
@@ -53,6 +54,13 @@ export default function BalanceKr() {
     if (false == isValidCookie("koreaInvestmentToken") || false == !!kiToken["access_token"]) {
         return <>
             <Auth />
+        </>
+    }
+
+    // console.log(`kiBalance.state`, kiBalance.state);
+    if (kiBalance.state == "rejected") {
+        return <>
+            <NotFound warnText={"계좌 조회 권한이 없습니다"} />
         </>
     }
 
