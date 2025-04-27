@@ -11,6 +11,7 @@
   "dependencies": {
     "@floating-ui/react": "^0.26.19",
     "@tailwindcss/typography": "^0.5.16",
+    "@xyflow/react": "^12.6.0",
     "and": "^0.0.3",
     "apexcharts": "^4.5.0",
     "date-fns": "^4.1.0",
