@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useState } from 'react';
+import React, { useCallback, useState } from 'react';
 
 import { ReactFlow, MiniMap, Controls, Background, Panel, Handle } from '@xyflow/react';
 import { addEdge, applyEdgeChanges, applyNodeChanges, useEdgesState, useNodesState } from '@xyflow/react';
@@ -8,6 +8,9 @@ import { Position } from '@xyflow/react';
 
 import '@xyflow/react/dist/style.css';
 import { CustomSourceNode, DateNode, StockNode } from './custom_node';
+import { useAppDispatch, useAppSelector } from '@/lib/hooks';
+import { CapitalTokenType, reqGetCapitalToken, reqGetUsCapitalToken, selectCapitalToken, selectUsCapitalToken } from '@/lib/features/algorithmTrade/algorithmTradeSlice';
+import { getKoreaInvestmentToken, KoreaInvestmentToken } from '@/lib/features/koreaInvestment/koreaInvestmentSlice';
 
 const initialNodes = [
     {
@@ -108,26 +111,112 @@ const initialEdges = [
 // const defaultEdgeOptions = { animated: true, style: { stroke: '#f6ab00', strokeWidth: 2 }, type: 'step' };
 const defaultEdgeOptions = { animated: true, style: { stroke: '#f6ab00', strokeWidth: 2 } };
 
+const DEBUG = true;
 function Flow() {
+    const dispatch = useAppDispatch();
+
+    const kiToken: KoreaInvestmentToken = useAppSelector(getKoreaInvestmentToken);
+
+    const kr_capital_token: CapitalTokenType = useAppSelector(selectCapitalToken);
+    const us_capital_token: CapitalTokenType = useAppSelector(selectUsCapitalToken);
+
+    const [time, setTime] = React.useState<any>('');
+    function handleOnClick() {
+        setTime(new Date());
+        if (DEBUG) console.log(`[handleOnClick] kiToken`, kiToken);
+        dispatch(reqGetCapitalToken({ koreaInvestmentToken: kiToken }));
+        dispatch(reqGetUsCapitalToken({ koreaInvestmentToken: kiToken }));
+    }
+
+    React.useEffect(() => {
+        handleOnClick();
+    }, []);
+
+    React.useEffect(() => {
+        console.log(`kr_capital_token`, kr_capital_token);
+        const capitalToken = "KR" == market ? kr_capital_token : us_capital_token;
+        let purchase_log = capitalToken.value.purchase_log ?? [];
+        let purchase_log_reverse = purchase_log.length > 0 ? [...purchase_log].reverse() : [];
+        console.log(`purchase_log`, purchase_log);
+        console.log(`purchase_log_reverse`, purchase_log_reverse);
+        let purchase_nodes: any[] = [];
+        let purchase_edges: any[] = [];
+
+        let date_index = 0;
+        purchase_log_reverse.slice(0, 50).map((item) => {
+            const time_stamp = item.time_stamp;
+            const stock_list = item.stock_list;
+
+            const new_date_node = {
+                id: time_stamp,
+                type: 'dateNode',
+                data: { label: time_stamp },
+                position: { x: 160 * date_index, y: 0 }
+            };
+            purchase_nodes.push(new_date_node);
+
+            for (let i = 0; i < stock_list.length; i++) {
+                const new_stock_node = {
+                    id: time_stamp + "-" + stock_list[i].stock_name,
+                    type: 'stockNode',
+                    data: {
+                        action: stock_list[i].buyOrSell,
+                        stockName: stock_list[i].stock_name,
+                        quantity: stock_list[i].ORD_QTY,
+                        price: stock_list[i].stck_prpr,
+                        // profitRate: 5.4, // 수익률
+                        points: stock_list[i].remaining_token, // 포인트 적립
+                    },
+                    position: { x: 160 * date_index, y: (i + 1) * 30 }
+                };
+
+                if (0 == i) {
+                    const new_edge = { id: `e-${new_date_node.id}--${new_stock_node.id}`, source: new_date_node.id, sourceHandle: 'b', target: new_stock_node.id };
+                    purchase_edges.push(new_edge);
+                }
+                else {
+                    const prev_node_id = time_stamp + "-" + stock_list[i - 1].stock_name;
+                    const new_edge = { id: `e-${prev_node_id}--${new_stock_node.id}`, source: prev_node_id, target: new_stock_node.id };
+                    purchase_edges.push(new_edge);
+                }
+
+                purchase_nodes.push(new_stock_node);
+            }
+
+            date_index++;
+        });
+
+        console.log(`purchase_nodes`, purchase_nodes);
+        console.log(`purchase_edges`, purchase_edges);
+        setNodes(purchase_nodes);
+        setEdges(purchase_edges);
+    }, [kr_capital_token]);
+
+    const [market, setMarket] = React.useState<"KR" | "US">("KR");
+
+    // console.log(`purchase_log`, purchase_log);
+
     const nodeTypes = {
         dateNode: DateNode,
         stockNode: StockNode,
         customSourceNode: CustomSourceNode,
     };
 
-    const [nodes, setNodes] = useState(initialNodes);
-    const [edges, setEdges] = useState(initialEdges);
+    // const [nodes, setNodes] = useState(initialNodes);
+    // const [edges, setEdges] = useState(initialEdges);
+    const [nodes, setNodes] = useState<any>([]);
+    const [edges, setEdges] = useState<any>([]);
     const onNodesChange = useCallback(
         (changes: any) => {
-            console.log(`[onNodesChange]`, `changes`, changes);
-            setNodes((nds) => applyNodeChanges(changes, nds))
+            // console.log(`[onNodesChange]`, `changes`, changes);
+            setNodes((nds: any) => applyNodeChanges(changes, nds))
         },
         [setNodes],
     );
     const onEdgesChange = useCallback(
         (changes: any) => {
             console.log(`[onEdgesChange]`, `changes`, changes);
-            setEdges((eds) => applyEdgeChanges(changes, eds))
+            setEdges((eds: any) => applyEdgeChanges(changes, eds))
         },
         [setEdges],
     );
@@ -136,7 +225,7 @@ function Flow() {
     const onConnect = useCallback(
         (connection: any) => {
             console.log(`[onConnect]`, `connection`, connection);
-            setEdges((eds) => addEdge({ ...connection }, eds))
+            setEdges((eds: any) => addEdge({ ...connection }, eds))
         },
         [setEdges],
     );

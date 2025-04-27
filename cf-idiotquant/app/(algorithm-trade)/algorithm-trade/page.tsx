@@ -112,6 +112,8 @@ export default function AlgorithmTrade() {
     }
 
     function getCumulateTokenArray() {
+        const capitalToken = "KR" == market ? kr_capital_token : us_capital_token;
+        const purchase_log = capitalToken.value.purchase_log ?? [];
         let cumulateToken = 0
         const cumulateTokenArray = purchase_log.map((entry: any) => {
             cumulateToken += entry.stock_list.reduce((sum: any, stock: any) => sum + Number(stock.remaining_token), 0);
@@ -123,6 +125,8 @@ export default function AlgorithmTrade() {
     }
 
     function getCumulatePurchaseArray() {
+        const capitalToken = "KR" == market ? kr_capital_token : us_capital_token;
+        const purchase_log = capitalToken.value.purchase_log ?? [];
         let cumulatePurchase = 0
         const cumulatePurchaseArray = purchase_log.map((entry: any) => {
             cumulatePurchase += entry.stock_list.reduce((sum: any, stock: any) => {
@@ -159,13 +163,15 @@ export default function AlgorithmTrade() {
     }
 
     function getCategoryArray() {
+        const capitalToken = "KR" == market ? kr_capital_token : us_capital_token;
+        const purchase_log = capitalToken.value.purchase_log ?? [];
         return purchase_log.map((entry: any) => entry.time_stamp);
     }
 
-    const capitalToken = "KR" == market ? kr_capital_token : us_capital_token;
-
     let cummulative_investment = 0;
     let cummulative_investment_sell = 0;
+
+    const capitalToken = "KR" == market ? kr_capital_token : us_capital_token;
     const purchase_log = capitalToken.value.purchase_log ?? [];
     if (DEBUG) console.log(`purchase_log`, purchase_log);
     let example8TableRow: Example8TableRowType[] = (purchase_log.map((item: any, index: number) => {
@@ -363,6 +369,9 @@ export default function AlgorithmTrade() {
         visibleCount: visibleCount,
         setVisibleCount: setVisibleCount,
     }
+
+    // console.log(`example8TableRow`, example8TableRow);
+    console.log(`purchase_log`, purchase_log);
 
     return <>
         <TablesExample8 {...props} />
