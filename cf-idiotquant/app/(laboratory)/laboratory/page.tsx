@@ -111,7 +111,7 @@ const initialEdges = [
 // const defaultEdgeOptions = { animated: true, style: { stroke: '#f6ab00', strokeWidth: 2 }, type: 'step' };
 const defaultEdgeOptions = { animated: true, style: { stroke: '#f6ab00', strokeWidth: 2 } };
 
-const DEBUG = true;
+const DEBUG = false;
 function Flow() {
     const dispatch = useAppDispatch();
 
@@ -132,29 +132,62 @@ function Flow() {
         handleOnClick();
     }, []);
 
-    React.useEffect(() => {
-        console.log(`kr_capital_token`, kr_capital_token);
+    const ADDITIONAL_VISIBLE_COUNT: number = 100;
+    const [visibleCount, setVisibleCount] = React.useState<number>(ADDITIONAL_VISIBLE_COUNT);
+
+    function reDraw() {
+        if (DEBUG) console.log(`kr_capital_token`, kr_capital_token);
         const capitalToken = "KR" == market ? kr_capital_token : us_capital_token;
-        let purchase_log = capitalToken.value.purchase_log ?? [];
+
+        let purchase_log: any = capitalToken.value.purchase_log ?? [];
+        if (DEBUG) console.log(`!!purchase_log`, !!purchase_log, `purchase_log`, purchase_log);
+        if (!!!purchase_log) {
+            return;
+        }
+
         let purchase_log_reverse = purchase_log.length > 0 ? [...purchase_log].reverse() : [];
-        console.log(`purchase_log`, purchase_log);
-        console.log(`purchase_log_reverse`, purchase_log_reverse);
+        if (DEBUG) console.log(`purchase_log`, purchase_log);
+        if (DEBUG) console.log(`purchase_log_reverse`, purchase_log_reverse);
         let purchase_nodes: any[] = [];
         let purchase_edges: any[] = [];
 
         let date_index = 0;
-        purchase_log_reverse.slice(0, 50).map((item) => {
+        let prev_time_stamp = "";
+        let prev_date = "";
+        let edge_index = 0;
+
+        let additional_y = 0;
+        purchase_log_reverse.slice(0, 100 + visibleCount).map((item, index) => {
             const time_stamp = item.time_stamp;
+            const date = time_stamp.split('T')[0];
             const stock_list = item.stock_list;
 
-            const new_date_node = {
-                id: time_stamp,
-                type: 'dateNode',
-                data: { label: time_stamp },
-                position: { x: 160 * date_index, y: 0 }
-            };
-            purchase_nodes.push(new_date_node);
+            const foundIndex = purchase_nodes.findIndex((node: any) => node.id === date);
 
+            if (index > 0) {
+                if (date != prev_date) {
+                    date_index++;
+                }
+            }
+
+            const new_date_node = {
+                id: date,
+                type: 'dateNode',
+                data: { label: date },
+                position: { x: 180 * date_index, y: 0 }
+            };
+            if (-1 == foundIndex) {
+                purchase_nodes.push(new_date_node);
+            }
+
+            const prev_item: any = (date == prev_date) ? purchase_log_reverse[index - 1] : [];
+            if (date == prev_date) {
+                additional_y += prev_item.stock_list.length
+            }
+            else {
+                additional_y = 0;
+            }
+            if (DEBUG) console.log(`additional_y`, additional_y);
             for (let i = 0; i < stock_list.length; i++) {
                 const new_stock_node = {
                     id: time_stamp + "-" + stock_list[i].stock_name,
@@ -167,34 +200,45 @@ function Flow() {
                         // profitRate: 5.4, // 수익률
                         points: stock_list[i].remaining_token, // 포인트 적립
                     },
-                    position: { x: 160 * date_index, y: (i + 1) * 30 }
+                    position: { x: 180 * date_index, y: (additional_y + i + 1) * 30 }
                 };
 
                 if (0 == i) {
-                    const new_edge = { id: `e-${new_date_node.id}--${new_stock_node.id}`, source: new_date_node.id, sourceHandle: 'b', target: new_stock_node.id };
-                    purchase_edges.push(new_edge);
+                    if (date == prev_date) {
+                        const prev_item_stock_list = prev_item.stock_list;
+                        if (DEBUG) console.log(`date`, date, `, index`, index, `, prev_item_stock_list.length`, prev_item_stock_list.length, `, purchase_log_reverse`, purchase_log_reverse);
+                        const prev_node_id = prev_time_stamp + "-" + prev_item_stock_list[prev_item_stock_list.length - 1].stock_name;
+                        const new_edge = { id: `e-${edge_index++}-${prev_node_id}--${new_stock_node.id}`, source: prev_node_id, target: new_stock_node.id };
+                        purchase_edges.push(new_edge);
+                    }
+                    else {
+                        const new_edge = { id: `e-${edge_index++}-${new_date_node.id}--${new_stock_node.id}`, source: new_date_node.id, sourceHandle: 'b', target: new_stock_node.id };
+                        purchase_edges.push(new_edge);
+                    }
                 }
                 else {
-                    const prev_node_id = time_stamp + "-" + stock_list[i - 1].stock_name;
-                    const new_edge = { id: `e-${prev_node_id}--${new_stock_node.id}`, source: prev_node_id, target: new_stock_node.id };
+                    const prev_node_id = prev_time_stamp + "-" + stock_list[i - 1].stock_name;
+                    const new_edge = { id: `e-${edge_index++}-${prev_node_id}--${new_stock_node.id}`, source: prev_node_id, target: new_stock_node.id };
                     purchase_edges.push(new_edge);
                 }
 
                 purchase_nodes.push(new_stock_node);
             }
 
-            date_index++;
+            prev_time_stamp = time_stamp;
+            prev_date = date;
         });
 
-        console.log(`purchase_nodes`, purchase_nodes);
-        console.log(`purchase_edges`, purchase_edges);
+        if (DEBUG) console.log(`purchase_nodes`, purchase_nodes);
+        if (DEBUG) console.log(`purchase_edges`, purchase_edges);
         setNodes(purchase_nodes);
         setEdges(purchase_edges);
+    }
+    React.useEffect(() => {
+        reDraw();
     }, [kr_capital_token]);
 
     const [market, setMarket] = React.useState<"KR" | "US">("KR");
-
-    // console.log(`purchase_log`, purchase_log);
 
     const nodeTypes = {
         dateNode: DateNode,
@@ -208,14 +252,14 @@ function Flow() {
     const [edges, setEdges] = useState<any>([]);
     const onNodesChange = useCallback(
         (changes: any) => {
-            // console.log(`[onNodesChange]`, `changes`, changes);
+            if (DEBUG) console.log(`[onNodesChange]`, `changes`, changes);
             setNodes((nds: any) => applyNodeChanges(changes, nds))
         },
         [setNodes],
     );
     const onEdgesChange = useCallback(
         (changes: any) => {
-            console.log(`[onEdgesChange]`, `changes`, changes);
+            if (DEBUG) console.log(`[onEdgesChange]`, `changes`, changes);
             setEdges((eds: any) => applyEdgeChanges(changes, eds))
         },
         [setEdges],
@@ -224,7 +268,7 @@ function Flow() {
     // const [edges, setEdges, onEdgesChange] = useEdgesState(initialEdges);
     const onConnect = useCallback(
         (connection: any) => {
-            console.log(`[onConnect]`, `connection`, connection);
+            if (DEBUG) console.log(`[onConnect]`, `connection`, connection);
             setEdges((eds: any) => addEdge({ ...connection }, eds))
         },
         [setEdges],
@@ -267,7 +311,13 @@ function Flow() {
                 <button className="border-2 rounded-lg border-black" onClick={() => setVariant('lines')}>lines</button>
                 <button className="border-2 rounded-lg border-black" onClick={() => setVariant('cross')}>cross</button>
             </Panel>
-            <Panel position="top-right" className={`${PANEL_DESIGN}`}>top-right</Panel>
+            <Panel position="top-right" className={`${PANEL_DESIGN}`}>
+                <button className="border-2 rounded-lg border-black" onClick={() => {
+                    console.log(`visibleCount`, visibleCount);
+                    setVisibleCount(visibleCount + ADDITIONAL_VISIBLE_COUNT);
+                    reDraw();
+                }}>{ADDITIONAL_VISIBLE_COUNT}개 더보기</button>
+            </Panel>
             <Panel position="bottom-left" className={`${PANEL_DESIGN}`}>bottom-left</Panel>
             <Panel position="bottom-center" className={`${PANEL_DESIGN}`}>bottom-center</Panel>
             <Panel position="bottom-right" className={`${PANEL_DESIGN}`}>bottom-right</Panel>
