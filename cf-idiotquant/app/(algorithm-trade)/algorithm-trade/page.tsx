@@ -24,7 +24,7 @@ export default function AlgorithmTrade() {
 
     const [market, setMarket] = React.useState<"KR" | "US">("KR");
 
-    const [visibleCount, setVisibleCount] = React.useState(20);
+    const [visibleCount, setVisibleCount] = React.useState(50);
 
     function handleOnClick() {
         setTime(new Date());

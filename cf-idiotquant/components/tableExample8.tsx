@@ -68,10 +68,7 @@ function TablesExample8({
     setVisibleCount,
 }: TablesExample8PropsType) {
 
-    const MAX_ORDERING = 3;
-    const [ordering, setOrdering] = React.useState(0);
-
-    const ADD_COUNT = 20;
+    const ADD_COUNT = 50;
     return (
         <section className="">
             <Card className="h-full w-full">
