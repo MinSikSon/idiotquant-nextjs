@@ -201,7 +201,7 @@ export default function Calculator() {
     }
 
     return (
-        <div className="font-mono">
+        <div className="font-mono dark:bg-black dark:text-white">
             <Head>
                 <title>기대 수익 계산기 | 미래 수익 예측</title>
                 <link rel="icon" href="/images/icons8-calculator-color-32.png" />
@@ -219,8 +219,8 @@ export default function Calculator() {
             /> */}
 
             <div className='w-screen flex justify-between items-center px-4 py-0 sm:px-20 md:px-40 lg:px-64 xl:px-80 2xl:px-96'>
-                <div className="w-full h-full rounded-xl bg-white text-gray-700 border border-gray-300 shadow-md">
-                    <List.Item className='text-black pb-0 mb-1'>
+                <div className="w-full h-full rounded-xl border border-gray-300 shadow-md">
+                    <List.Item className='pb-0 mb-1'>
                         <div className="w-full text-md header-contents text-center">
                             <span className='bg-yellow-300'> 기대 수익</span> 계산기
                         </div>

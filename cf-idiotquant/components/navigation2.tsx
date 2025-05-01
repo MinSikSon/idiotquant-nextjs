@@ -16,6 +16,7 @@ import { useAppSelector } from "@/lib/hooks";
 
 import { usePathname } from "next/navigation";
 import { DesignButton } from "./designButton";
+import ThemeChanger from "./theme_changer";
 
 interface NavItemPropsType {
     url: string;
@@ -46,7 +47,7 @@ export function NavbarWithSimpleLinks() {
     function NavItem({ url, label }: NavItemPropsType) {
         return (
             <Link href={url} onClick={() => setOpen(false)}>
-                <div className="pl-2 font-mono text-[0.8rem] text-black hover:text-blue-500">
+                <div className="dark:text-white font-mono pl-2 text-[0.8rem] text-black hover:text-blue-500">
                     {label}
                 </div>
             </Link>
@@ -84,7 +85,7 @@ export function NavbarWithSimpleLinks() {
     }
 
     return (
-        <Navbar className="p-2">
+        <Navbar className="dark:bg-black p-2 rounded-none">
             <div className="container mx-auto flex items-center justify-between text-blue-gray-900">
                 <Link href="/">
                     <Typography color="primary" className="mr-2 cursor-pointer font-mono font-bold"
@@ -94,12 +95,15 @@ export function NavbarWithSimpleLinks() {
                 </Link>
                 <div className="flex flex-col px-1">
                     {!!kakaoNickName ? <>
-                        <div className={`px-1 text-[0.6rem] font-mono rounded border border-blue-500 text-black`}>{urlToLabel[splitPathName[1]]}</div>
-                        <div className={`pl-1 text-[0.6rem] font-mono`}>{kakaoNickName}님 반갑습니다. 😀</div>
+                        <div className={`px-1 text-[0.6rem] font-mono rounded border border-blue-500 text-black dark:text-white`}>{urlToLabel[splitPathName[1]]}</div>
+                        <div className={`pl-1 text-[0.6rem] font-mono dark:text-white`}>{kakaoNickName}님 반갑습니다. 😀</div>
                     </>
-                        : <div className={`px-1 text-[0.6rem] font-mono rounded border border-blue-500 text-black`}>{urlToLabel[splitPathName[1]]}</div>
+                        : <div className={`px-1 text-[0.6rem] font-mono rounded border border-blue-500 text-black dark:text-white`}>{urlToLabel[splitPathName[1]]}</div>
                     }
                 </div>
+                <div></div>
+                <div></div>
+                <ThemeChanger />
                 <div className="hidden lg:block">
                     <NavList />
                 </div>
@@ -125,8 +129,8 @@ export function NavbarWithSimpleLinks() {
                 </div>
             </div>
             <Collapse open={open}>
-                <div className="pl-2 mt-2 rounded-xl bg-white border border-gray-500">
-                    <div className="font-mono font-bold text-xl text-black pt-2 pl-2">
+                <div className="dark:bg-black pl-2 mt-2 rounded-xl bg-white border border-gray-500">
+                    <div className="dark:text-white font-mono font-bold text-xl text-black pt-2 pl-2">
                         menu
                     </div>
                     <NavList />

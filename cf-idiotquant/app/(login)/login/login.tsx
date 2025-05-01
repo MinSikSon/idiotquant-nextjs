@@ -175,69 +175,62 @@ export default function Login(props: any) {
     const KakaoIcon = () => {
         if (!!!kakaoNickName) {
             return <>
-                <Card className="mt-6 w-96">
-                    <Card.Body>
-                        <div className="font-mono text-xl mb-2">
-                            반갑습니다.
-                        </div>
-                        <div className="font-mono">
-                            login 하려면 아래 버튼을 눌려주세요.
-                        </div>
-                        <DesignButton
-                            handleOnClick={() => onClickLogin(`${window.location.origin}${props.parentUrl}`)}
-                            buttonName="Continue with Kakao"
-                            buttonBgColor="bg-[#ffea04]"
-                            buttonBorderColor="border-[#ebd700]"
-                            buttonShadowColor="#1e1e1e"
-                            textStyle="font-bold text-xs py-2 text-[#3c1e1e]"
-                            additionalTextTop={<img src="/images/kakaotalk_sharing_btn_small.png" alt="metamask" className="h-6 w-6 border-2 rounded border-gray-100 mx-2" />}
-                            // buttonStyle="mt-6"
-                            buttonStyle={`mt-6 flex items-center justify-center mb-2 px-1 button bg-[#ffea04] rounded-full cursor-pointer select-none
-                                active:translate-y-1 active:[box-shadow:0_0px_0_0_#1e1e1e,0_0px_0_0_#1e1e1e41] active:border-b-[0px]
-                                transition-all duration-150 [box-shadow:0_4px_0_0_#1e1e1e,0_8px_0_0_#1e1e1e41] border-b-[1px]
-                                `}
-                        />
-                    </Card.Body>
-                </Card>
-            </>
-        }
-
-        return <>
-            <Card className="mt-6 w-96">
-                <Card.Body>
+                <div className="p-5">
                     <div className="font-mono text-xl mb-2">
-                        {kakaoNickName}님 반갑습니다.
+                        반갑습니다.
                     </div>
                     <div className="font-mono">
-                        logout 하려면 아래 버튼을 눌려주세요.
+                        login 하려면 아래 버튼을 눌려주세요.
                     </div>
                     <DesignButton
-                        handleOnClick={() => Logout(`${window.location.origin}${props.parentUrl}`)}
-                        buttonName="logout"
+                        handleOnClick={() => onClickLogin(`${window.location.origin}${props.parentUrl}`)}
+                        buttonName="Continue with Kakao"
                         buttonBgColor="bg-[#ffea04]"
                         buttonBorderColor="border-[#ebd700]"
                         buttonShadowColor="#1e1e1e"
                         textStyle="font-bold text-xs py-2 text-[#3c1e1e]"
-                        additionalTextTop={<img src="/images/kakaotalk_sharing_btn_small.png" alt="metamask" className="h-6 w-6 border-2 rounded border-gray-100 mx-2" />}
+                        additionalTextTop={<img src="/images/kakaotalk_sharing_btn_small.png" alt="metamask" className="h-6 w-6 mx-2" />}
                         // buttonStyle="mt-6"
                         buttonStyle={`mt-6 flex items-center justify-center mb-2 px-1 button bg-[#ffea04] rounded-full cursor-pointer select-none
+                                active:translate-y-1 active:[box-shadow:0_0px_0_0_#1e1e1e,0_0px_0_0_#1e1e1e41] active:border-b-[0px]
+                                transition-all duration-150 [box-shadow:0_4px_0_0_#1e1e1e,0_8px_0_0_#1e1e1e41] border-b-[1px]
+                                `}
+                    />
+                </div>
+            </>;
+        }
+
+        return <>
+            <div className="p-5">
+                <div className="font-mono text-xl mb-2">
+                    {kakaoNickName}님 반갑습니다.
+                </div>
+                <div className="font-mono">
+                    logout 하려면 아래 버튼을 눌려주세요.
+                </div>
+                <DesignButton
+                    handleOnClick={() => Logout(`${window.location.origin}${props.parentUrl}`)}
+                    buttonName="logout"
+                    buttonBgColor="bg-[#ffea04]"
+                    buttonBorderColor="border-[#ebd700]"
+                    buttonShadowColor="#1e1e1e"
+                    textStyle="font-bold text-xs py-2 text-[#3c1e1e]"
+                    additionalTextTop={<img src="/images/kakaotalk_sharing_btn_small.png" alt="metamask" className="h-6 w-6 mx-2" />}
+                    // buttonStyle="mt-6"
+                    buttonStyle={`mt-6 flex items-center justify-center mb-2 px-1 button bg-[#ffea04] rounded-full cursor-pointer select-none
                             active:translate-y-1 active:[box-shadow:0_0px_0_0_#1e1e1e,0_0px_0_0_#1e1e1e41] active:border-b-[0px]
                             transition-all duration-150 [box-shadow:0_4px_0_0_#1e1e1e,0_8px_0_0_#1e1e1e41] border-b-[1px]
                             `}
-                    />
-                </Card.Body>
-            </Card>
+                />
+            </div>
         </>;
     }
 
     return (
         <>
-            <div className='grid grid-cols-8 grid-rows-4 place-content-center h-32'>
-                <div className='col-span-8' />
-                <div className='col-span-8' />
-                <div className='col-span-8 flex justify-center items-center'>
-                    <KakaoIcon />
-                </div>
+            <div className="w-full h-screen items-center dark:bg-black dark:text-white">
+                <KakaoIcon />
+                <div></div>
             </div>
         </>
     );

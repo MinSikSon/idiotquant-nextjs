@@ -1,6 +1,7 @@
 import { mtConfig } from "@material-tailwind/react";
 
 const config = {
+  darkMode: ["class"], // class 기반으로 제어
   content: [
     "./pages/**/*.{js,ts,jsx,tsx,mdx}",
     "./components/**/*.{js,ts,jsx,tsx,mdx}",
@@ -41,6 +42,10 @@ const config = {
         // mono: ['Courier New', 'Courier', 'monospace'],
         // mono: ['Courier New', 'Courier', 'monospace', 'Nanum Gothic Coding', 'Source Code Pro'],  // 한글을 고려한 고정폭 폰트 추가
         serif: ["Times New Roman", "Georgia", "serif"],
+      },
+      colors: {
+        background: "var(--background)",
+        foreground: "var(--foreground)",
       },
     },
   },

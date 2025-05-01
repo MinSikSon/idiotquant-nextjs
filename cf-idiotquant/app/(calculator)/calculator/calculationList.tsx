@@ -3,10 +3,10 @@ import { CalculationResult } from "@/app/(calculator)/calculator/page"
 
 export const CalculationList = (props: any) => {
     return <>
-        <div className='font-mono w-screen flex justify-between items-center p-4 sm:px-20 md:px-40 lg:px-64 xl:px-80 2xl:px-96'>
-            <div className="w-full h-full rounded-xl bg-white text-gray-700 border border-gray-300 shadow-md">
-                <List.Item className='text-black pb-0 mb-1'>
-                    <div className="w-full text-md header-contents text-center">
+        <div className='font-mono dark:bg-black dark:text-white w-screen flex justify-between items-center p-4 sm:px-20 md:px-40 lg:px-64 xl:px-80 2xl:px-96'>
+            <div className="w-full h-full rounded-xl text-gray-700 border border-gray-300 shadow-md">
+                <List.Item className='pb-0 mb-1'>
+                    <div className="font-mono dark:text-white w-full text-md header-contents text-center">
                         기대 수익 계산 <span className='bg-yellow-500'> 결과</span>
                     </div>
                     <List.ItemStart>

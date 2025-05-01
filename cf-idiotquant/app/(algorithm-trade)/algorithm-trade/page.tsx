@@ -226,10 +226,10 @@ export default function AlgorithmTrade() {
                         handleOnClick()
                     }}
                     buttonName={`알고리즘 투자 이력 조회`}
-                    buttonBgColor="bg-white"
+                    buttonBgColor="bg-white dark:bg-black"
                     buttonBorderColor="border-gray-500"
                     buttonShadowColor="#D5D5D5"
-                    textStyle="text-black text-xs"
+                    textStyle="text-black dark:text-white text-xs"
                     buttonStyle={`rounded-lg px-2 py-1 flex items-center justify-center mb-2 button bg-white cursor-pointer select-none
                                        active:translate-y-1 active:[box-shadow:0_0px_0_0_#D5D5D5,0_0px_0_0_#D5D5D541] active:border-[0px]
                                        transition-all duration-150 [box-shadow:0_4px_0_0_#D5D5D5,0_8px_0_0_#D5D5D541] border-[1px]
@@ -249,7 +249,7 @@ export default function AlgorithmTrade() {
                 {"fulfilled" != capitalToken.state ?
                     <Button variant="ghost"><Spinner size="sm" /> loading...</Button>
                     : <>
-                        <div className="text-[0.6rem] text-black ml-1">{time.toLocaleString("ko-KR", { timeZone: "Asia/Seoul" })}</div>
+                        <div className="text-[0.6rem] text-black dark:text-white ml-1">{time.toLocaleString("ko-KR", { timeZone: "Asia/Seoul" })}</div>
                     </>}
             </div>
         </>,
@@ -275,7 +275,7 @@ export default function AlgorithmTrade() {
                     </div>
                 </div>
                 <div className={`flex gap-2`}>
-                    <div className="w-full">
+                    <div className="w-full bg-white border rounded-lg">
                         <LineChart
                             data_array={getLineDataArray()}
                             category_array={getCategoryArray()}
@@ -345,21 +345,21 @@ export default function AlgorithmTrade() {
                                         </div>
                                     </div>
                                 </Popover.Trigger>
-                                <Popover.Content className="p-2 border border-black rounded shadow shadow-blue-gray-500">
+                                <Popover.Content className="p-2 border border-black dark:text-white rounded shadow shadow-blue-gray-500">
                                     {item["refill"] ?
-                                        <div className="text-xs text-black">{`${item["name"]} 을(를) "${token_per_stock} token / 10 분" 만큼 리필`}</div>
+                                        <div className="text-xs text-black dark:text-white">{`${item["name"]} 을(를) "${token_per_stock} token / 10 분" 만큼 리필`}</div>
                                         :
-                                        <div className="text-xs text-black">{`${item["name"]} 을(를) 매매 대상에서 임시 제외`}</div>
+                                        <div className="text-xs text-black dark:text-white">{`${item["name"]} 을(를) 매매 대상에서 임시 제외`}</div>
                                     }
                                 </Popover.Content>
                             </Popover>
                         })}
                     </div>
-                    <div className="flex items-center text-xs text-black leading-none pb-1">
+                    <div className="flex items-center text-xs text-black dark:text-white leading-none pb-1">
                         <div>종목 개수</div>
-                        <div className="mx-1 mr-2 px-1 text-xs rounded border border-black">{stock_list.length - exclude_count} / {stock_list.length}</div>
+                        <div className="mx-1 mr-2 px-1 text-xs rounded border border-black dark:border-white">{stock_list.length - exclude_count} / {stock_list.length}</div>
                         <div>누적 포인트</div>
-                        <div className="mx-1 mr-2 px-1 text-xs rounded border border-black">{cummulative_token - exclude_token} / {cummulative_token}</div>
+                        <div className="mx-1 mr-2 px-1 text-xs rounded border border-black dark:border-white">{cummulative_token - exclude_token} / {cummulative_token}</div>
                     </div>
                 </div>
             </div>
@@ -371,7 +371,7 @@ export default function AlgorithmTrade() {
     }
 
     // console.log(`example8TableRow`, example8TableRow);
-    console.log(`purchase_log`, purchase_log);
+    if (DEBUG) console.log(`purchase_log`, purchase_log);
 
     return <>
         <TablesExample8 {...props} />

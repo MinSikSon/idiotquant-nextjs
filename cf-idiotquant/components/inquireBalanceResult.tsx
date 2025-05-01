@@ -150,13 +150,13 @@ export default function InquireBalanceResult(props: InquireBalanceResultProps) {
             return {
                 id: name,
                 column_1: <>
-                    <div className="font-mono flex flex-col text-xs text-black">
+                    <div className="font-mono flex flex-col text-xs dark:text-white">
                         <div className={`${name.length >= 7 ? "text-[0.6rem]" : "text-xs"}`}>{name}</div>
                         <div className="text-[0.5rem]">({pdno})</div>
                     </div>
                 </>,
                 column_2: <>
-                    <div className="font-mono flex flex-col font-bold text-xs text-black">
+                    <div className="font-mono flex flex-col font-bold text-xs dark:text-white">
                         <div className="mb-0 pb-0">
                             {Number(Number(price).toFixed(0)).toLocaleString()}{crcy_cd}
                         </div>
@@ -167,7 +167,7 @@ export default function InquireBalanceResult(props: InquireBalanceResultProps) {
                 </>,
 
                 column_3: <>
-                    <div className="font-mono flex flex-col text-xs text-black">
+                    <div className="font-mono flex flex-col text-xs dark:text-white">
                         <div className="mb-0 pb-0">
                             {Number((Number(pchs_amt) / Number(hldg_qty)).toFixed(0)).toLocaleString()}{crcy_cd}
                         </div>
@@ -177,7 +177,7 @@ export default function InquireBalanceResult(props: InquireBalanceResultProps) {
                     </div>
                 </>,
                 column_4: <>
-                    <div className={`font-mono flex flex-col font-bold text-xs text-black ${Number(Number(evlu_amt) / Number(pchs_amt) * 100 - 100) >= 0 ? "text-red-500" : "text-blue-500"}`}>
+                    <div className={`font-mono flex flex-col font-bold text-xs dark:text-white ${Number(Number(evlu_amt) / Number(pchs_amt) * 100 - 100) >= 0 ? "text-red-500" : "text-blue-500"}`}>
                         <div className="pr-1 text-[0.6rem]">
                             {formatNumber(Number(Number(evlu_amt) / Number(pchs_amt) * 100 - 100))}%
                         </div>
@@ -191,8 +191,8 @@ export default function InquireBalanceResult(props: InquireBalanceResultProps) {
                         {!!frst_bltn_exrt ? <span>({formatNumber(Number(evlu_pfls_amt2) / Number(frst_bltn_exrt))} USD)</span> : ""}
                     </div>
                 </div>,
-                column_6: <div className="font-mono text-xs text-black">{formatNumber((Number(pchs_amt) / Number(pchs_amt_smtl_amt) * 100))}%</div>,
-                column_7: <div className="font-mono flex flex-col text-xs text-black">
+                column_6: <div className="font-mono text-xs dark:text-white">{formatNumber((Number(pchs_amt) / Number(pchs_amt_smtl_amt) * 100))}%</div>,
+                column_7: <div className="font-mono flex flex-col text-xs dark:text-white">
                     <div>
                         {formatNumber(Number(evlu_amt))}{crcy_cd}
                     </div>
@@ -200,7 +200,7 @@ export default function InquireBalanceResult(props: InquireBalanceResultProps) {
                         {!!frst_bltn_exrt ? <span>({formatNumber(Number(evlu_amt) / Number(frst_bltn_exrt))} USD)</span> : ""}
                     </div>
                 </div>,
-                column_8: <div className="font-mono flex flex-col text-xs text-black">
+                column_8: <div className="font-mono flex flex-col text-xs dark:text-white">
                     <div>
                         {formatNumber(Number(pchs_amt))}{crcy_cd}
                     </div>
@@ -208,7 +208,7 @@ export default function InquireBalanceResult(props: InquireBalanceResultProps) {
                         {!!frst_bltn_exrt ? <span>({formatNumber(Number(pchs_amt) / Number(frst_bltn_exrt))} USD)</span> : ""}
                     </div>
                 </div>,
-                column_9: <div className="font-mono text-xs text-black">{Number(hldg_qty).toFixed(0)}/{Number(ord_psbl_qty).toFixed(0)}</div>,
+                column_9: <div className="font-mono text-xs dark:text-white">{Number(hldg_qty).toFixed(0)}/{Number(ord_psbl_qty).toFixed(0)}</div>,
                 column_10: <>
                     <div className="font-mono flex p-0 m-0 gap-1">
                         <DesignButton
@@ -294,7 +294,7 @@ export default function InquireBalanceResult(props: InquireBalanceResultProps) {
                 {"pending" == props.kiBalance.state ?
                     <Button variant="ghost"><Spinner size="sm" /> loading...</Button>
                     : <>
-                        <div className="text-[0.6rem] text-black ml-4">{time.toLocaleString("ko-KR", { timeZone: "Asia/Seoul" })}</div>
+                        <div className="text-[0.6rem] dark:text-white ml-4">{time.toLocaleString("ko-KR", { timeZone: "Asia/Seoul" })}</div>
                     </>}
             </div>
         </>,

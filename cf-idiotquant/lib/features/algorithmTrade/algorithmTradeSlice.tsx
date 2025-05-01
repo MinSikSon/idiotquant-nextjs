@@ -132,7 +132,7 @@ export const algorithmTradeSlice = createAppSlice({
                 fulfilled: (state, action) => {
                     // console.log(`[reqGetCapitalToken] fulfilled`, `action.payload`, typeof action.payload, action.payload);
                     const json = JSON.parse(action.payload);
-                    console.log(`[reqGetCapitalToken] fulfilled json`, json);
+                    // console.log(`[reqGetCapitalToken] fulfilled json`, json);
                     state.capital_token = { state: "fulfilled", value: json };
                     state.state = "fulfilled";
                 },
