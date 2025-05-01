@@ -21,9 +21,9 @@ export default function RootLayout({
       >
         <head>
         </head>
-        <body>
+        <body className="lg:flex">
           <NavbarWithSimpleLinks />
-          <div className="w-full h-full scroll-auto">
+          <div className="lg:flex-1 w-full h-full scroll-auto">
             {children}
           </div>
         </body>
