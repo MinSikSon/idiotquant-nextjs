@@ -65,7 +65,7 @@ const SearchAutocomplete = (props: any) => {
     const inputRef = React.useRef<HTMLInputElement>(null);
 
     return (
-        <div className="flex items-center m-2 p-2 relative">
+        <div className="dark:bg-black dark:text-white flex items-center p-4 relative">
             <div className="relative flex-1 items-center">
                 <input
                     ref={inputRef}
@@ -76,17 +76,14 @@ const SearchAutocomplete = (props: any) => {
                     placeholder={props.placeHolder}
                     onFocus={() => setIsFocused(true)}
                     onBlur={() => setTimeout(() => setIsFocused(false), 200)}
-                    className="font-mono w-full p-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-black"
+                    className="dark:bg-black dark:text-white font-mono w-full p-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-black"
                 />
                 {query && (
-                    <button className="absolute right-2 top-1/2 transform -translate-y-1/2 p-2" onClick={handleClear}>
-                        <XCircleIcon className="h-5 w-5 text-gray-500" />
+                    <button className="dark:bg-black dark:text-white absolute right-2 top-1/2 transform -translate-y-1/2 p-2" onClick={handleClear}>
+                        <XCircleIcon className="dark:bg-black dark:text-white h-5 w-5 text-gray-500" />
                     </button>
                 )}
             </div>
-            {/* <Button className="py-2 px-2" variant="outlined" onClick={handleSearch}>
-                <MagnifyingGlassIcon className="h-5 w-5 text-black" />
-            </Button> */}
             <DesignButton
                 handleOnClick={() => handleSearch()}
                 buttonName={<MagnifyingGlassIcon className="h-5 w-5 text-black" />}
@@ -99,11 +96,8 @@ const SearchAutocomplete = (props: any) => {
                     transition-all duration-150 [box-shadow:0_4px_0_0_#D5D5D5,0_8px_0_0_#D5D5D541] border-[1px]
                     `}
             />
-            {/* <Button className="py-2 px-2" variant="outlined" onClick={handleSearch}>
-                <MagnifyingGlassIcon className="h-5 w-5 text-black" />
-            </Button> */}
             {isFocused && suggestions.length > 0 && (
-                <ul className="z-10 absolute top-full left-0 w-full mt-1 bg-white border border-gray-300 rounded-lg shadow-lg max-h-60 overflow-auto">
+                <ul className="dark:bg-black dark:text-white z-10 absolute top-full left-0 w-11/12 ml-4 mt-1 bg-white border border-gray-300 rounded-lg shadow-lg max-h-60 overflow-auto">
                     {suggestions.map((suggestion: any, index: any) => (
                         <li
                             key={index}

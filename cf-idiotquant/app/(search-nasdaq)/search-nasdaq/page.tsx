@@ -98,7 +98,10 @@ export default function Search() {
     }
 
     if (!!!kiUsMaretSearchInfo.rt_cd && !!!kiUsMaretPriceDetail.rt_cd) {
-        return <SearchAutocomplete placeHolder={"NASDAQ ticker 를 입력하세요..."} onSearchButton={onSearchButton} validCorpNameArray={nasdaq_tickers} />
+        return <>
+            <SearchAutocomplete placeHolder={"NASDAQ ticker 를 입력하세요..."} onSearchButton={onSearchButton} validCorpNameArray={nasdaq_tickers} />
+            <div className="dark:bg-black h-lvh"></div>
+        </>
     }
 
     const kiUsMaretSearchInfoOutput: KoreaInvestmentOverseasSearchInfoOutput = kiUsMaretSearchInfo.output;
@@ -129,6 +132,7 @@ export default function Search() {
     ) {
         return <>
             <SearchAutocomplete placeHolder={"NASDAQ ticker 를 입력하세요..."} onSearchButton={onSearchButton} validCorpNameArray={nasdaq_tickers} />
+            <div className="dark:bg-black h-lvh"></div>
         </>
     }
 
@@ -139,12 +143,12 @@ export default function Search() {
         <SearchAutocomplete placeHolder={"NASDAQ ticker 를 입력하세요..."} onSearchButton={onSearchButton} validCorpNameArray={nasdaq_tickers} />
         {"0" != kiUsMaretSearchInfo.rt_cd ?
             <>
-                <div className="rounded px-2 pb-1 m-2 shadow">
+                <div className="dark:bg-black dark:text-white p-3 shadow">
                     {kiUsMaretSearchInfo.msg1}
                 </div>
             </>
             : <>
-                <div className="rounded px-2 pb-1 m-2 shadow">
+                <div className="dark:bg-black dark:text-white p-3 shadow">
                     <div className="text-[0.6rem]">
                         {kiUsMaretSearchInfoOutput.ovrs_excg_cd} {kiUsMaretSearchInfoOutput.tr_mket_name} | {kiUsMaretSearchInfoOutput.prdt_eng_name}
                     </div>
@@ -152,7 +156,7 @@ export default function Search() {
                         {kiUsMaretSearchInfoOutput.prdt_name}
                     </div>
                 </div>
-                <div className="text-xs rounded px-2 pb-1 m-2 shadow">
+                <div className="dark:bg-gray-200 text-xs p-3 shadow">
                     <div className="flex gap-2">
                         <div className="w-11/12">
                             <LineChart
@@ -188,9 +192,12 @@ export default function Search() {
                         </div>
                         <div className="w-1/12"></div>
                     </div>
+
+                </div>
+                <div className="dark:bg-black dark:text-white text-xs p-3 shadow">
                     <div className="flex gap-2">
-                        <div className="w-4/12 bg-yellow-200 text-right">현재가</div>
-                        <div className="w-6/12 bg-yellow-100 text-right">{kiUsMaretPriceDetailOutput.last}</div>
+                        <div className="w-4/12 bg-yellow-200 text-right dark:bg-gray-500">현재가</div>
+                        <div className="w-6/12 bg-yellow-100 text-right dark:bg-gray-500">{kiUsMaretPriceDetailOutput.last}</div>
                         <div className="w-2/12 text-left text-[0.6rem]">{kiUsMaretPriceDetailOutput.curr}</div>
                     </div>
                     <div className="flex gap-2">
@@ -204,19 +211,19 @@ export default function Search() {
                         <div className="w-2/12 text-left text-[0.6rem]">개</div>
                     </div>
                 </div>
-                <div className="text-xs rounded px-2 pb-1 m-2 shadow">
+                <div className="dark:bg-black dark:text-white text-xs p-3 shadow">
                     <div className="flex gap-2">
                         <div className="w-4/12 text-right">52주 최저가</div>
                         <div className="w-6/12 text-right">({kiUsMaretPriceDetailOutput.l52d}) {kiUsMaretPriceDetailOutput.l52p}</div>
                         <div className="w-2/12 text-left text-[0.6rem]">{kiUsMaretPriceDetailOutput.curr}</div>
                     </div>
                     <div className="flex gap-2">
-                        <div className="w-4/12 text-right bg-red-300">52주 최고가</div>
-                        <div className="w-6/12 text-right bg-red-200">({kiUsMaretPriceDetailOutput.h52d}) {kiUsMaretPriceDetailOutput.h52p} </div>
+                        <div className="w-4/12 text-right bg-red-300 dark:bg-gray-500">52주 최고가</div>
+                        <div className="w-6/12 text-right bg-red-200 dark:bg-gray-500">({kiUsMaretPriceDetailOutput.h52d}) {kiUsMaretPriceDetailOutput.h52p} </div>
                         <div className="w-2/12 text-left text-[0.6rem]">{kiUsMaretPriceDetailOutput.curr}</div>
                     </div>
                 </div>
-                <div className="text-xs rounded px-2 pb-1 m-2 shadow">
+                <div className="dark:bg-black dark:text-white text-xs p-3 shadow">
                     <div className="flex gap-2">
                         <div className="w-4/12 text-right">PER</div>
                         <div className="w-6/12 text-right">{kiUsMaretPriceDetailOutput.perx}</div>
@@ -238,14 +245,14 @@ export default function Search() {
                         <div className="w-2/12 text-left text-[0.6rem]">{kiUsMaretPriceDetailOutput.curr}</div>
                     </div>
                 </div>
-                <div className="text-xs rounded px-2 pb-1 m-2 shadow">
+                <div className="dark:bg-black dark:text-white text-xs p-3 shadow">
                     <div className="flex gap-2">
                         <div className="w-4/12 text-right">업종(섹터)</div>
                         <div className="w-6/12 text-right text-[0.6rem]">{kiUsMaretPriceDetailOutput.e_icod}</div>
                         <div className="w-2/12 text-left text-[0.6rem]"></div>
                     </div>
                 </div>
-                <div className="text-xs rounded px-2 pb-1 m-2 shadow">
+                <div className="dark:bg-black dark:text-white text-xs p-3 shadow">
                     <div className="flex gap-2">
                         <div className="w-4/12 text-right">거래량</div>
                         <div className="w-6/12 text-right">{Number(kiUsMaretPriceDetailOutput.tvol).toLocaleString()}</div>
@@ -264,11 +271,11 @@ export default function Search() {
                 </div>
                 {"fulfilled" == fmpState ?
                     <>
-                        <div className="text-xs rounded px-2 pb-1 m-2 shadow">
+                        <div className="dark:bg-black dark:text-white text-xs p-3 shadow">
                             {getNcav(fmpUsBalanceSheetStatement, kiUsMaretPriceDetail, 1.0)}
                             {getNcav(fmpUsBalanceSheetStatement, kiUsMaretPriceDetail, 1.5)}
                         </div>
-                        <div className="text-xs rounded px-2 pb-1 m-2 shadow">
+                        <div className="dark:bg-black dark:text-white text-xs p-3 shadow">
                             <div className="flex gap-2">
                                 <div className="w-4/12 text-right">재무-유동자산</div>
                                 <div className="w-6/12 text-right">{Number(fmpUsBalanceSheetStatement[0].totalCurrentAssets).toLocaleString()}</div>
@@ -285,5 +292,6 @@ export default function Search() {
                 }
             </>
         }
+        <div className="dark:bg-black h-lvh"></div>
     </>
 }

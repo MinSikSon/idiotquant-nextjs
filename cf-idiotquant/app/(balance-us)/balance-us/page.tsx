@@ -63,11 +63,14 @@ export default function BalanceUs() {
         </>
     }
 
-    return <InquireBalanceResult
-        kiBalance={kiBalance}
-        reqGetInquireBalance={reqGetOverseasStockTradingInquirePresentBalance}
-        kiToken={kiToken}
-        kiOrderCash={kiUsOrder}
-        reqPostOrderCash={reqPostOrderUs}
-    />
+    return <>
+        <InquireBalanceResult
+            kiBalance={kiBalance}
+            reqGetInquireBalance={reqGetOverseasStockTradingInquirePresentBalance}
+            kiToken={kiToken}
+            kiOrderCash={kiUsOrder}
+            reqPostOrderCash={reqPostOrderUs}
+        />
+        <div className="dark:bg-black h-lvh"></div>
+    </>
 }

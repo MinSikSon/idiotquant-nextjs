@@ -173,17 +173,6 @@ export default function Search() {
     }
   }
 
-  // const handleInputEndDate = (e: React.ChangeEvent<HTMLInputElement>) => {
-  //   setEndDate(e.target.value);
-  //   if (DEBUG) console.log(`Date.now()`, Date.now());
-  //   const date = new Date(e.target.value);
-
-  //   // 5일을 빼기 위해 setDate() 사용
-  //   date.setDate(date.getDate() - 5);
-
-  //   setStartDate(date.toISOString().split('T')[0]); // 결과: "2025-01-30"
-  // };
-
   function isYearMatch(date1: string, date2: string) {
     const year1 = date1.slice(0, 4); // 첫 번째 날짜의 연도 추출
     const year2 = date2.slice(0, 4); // 두 번째 날짜의 연도 추출
@@ -194,7 +183,6 @@ export default function Search() {
   function getYearMatchIndex(yearMonthDate: string) {
     if (kiBalanceSheet.output.length > 0) {
       for (let i = 0; i < kiBalanceSheet.output.length; ++i) {
-        // console.log(`kiBalanceSheet.output[${i}]`, kiBalanceSheet.output[i]);
         if (isYearMatch(yearMonthDate, kiBalanceSheet.output[i]["stac_yymm"])) {
           return i;
         }
@@ -241,6 +229,7 @@ export default function Search() {
   ) {
     return <>
       <SearchAutocomplete placeHolder={"회사명을 검색하세요..."} onSearchButton={onSearchButton} validCorpNameArray={validCorpNameArray} />
+      <div className="dark:bg-black h-lvh"></div>
     </>
   }
 
@@ -250,7 +239,7 @@ export default function Search() {
 
   return <>
     <SearchAutocomplete placeHolder={"회사명을 검색하세요..."} onSearchButton={onSearchButton} validCorpNameArray={validCorpNameArray} />
-    <div className="rounded px-2 pb-1 m-2 shadow font-mono">
+    <div className="dark:bg-black dark:text-white p-3 shadow font-mono">
       <div className="text-[0.6rem]">
         {kiInquirePrice.output["rprs_mrkt_kor_name"]}
       </div>
@@ -258,7 +247,7 @@ export default function Search() {
         {kiInquireDailyItemChartPrice.output1.hts_kor_isnm}
       </div>
     </div>
-    <div className="text-xs rounded px-2 pb-1 m-2 shadow font-mono">
+    <div className="dark:bg-gray-200 text-xs p-3 shadow font-mono">
       <div className="flex gap-2">
         <div className="w-11/12">
           <LineChart
@@ -294,85 +283,87 @@ export default function Search() {
         </div>
         <div className="w-1/12"></div>
       </div>
-      <div className="flex gap-2 font-mono">
-        <div className="w-4/12 bg-yellow-200 text-right">현재가</div>
-        <div className="w-6/12 bg-yellow-100 text-right"><span className="text-[0.6rem]">({kiInquireDailyItemChartPrice.output2[0]["stck_bsop_date"]})</span> {Number(kiInquireDailyItemChartPrice.output1["stck_prpr"]).toLocaleString()}</div>
+    </div>
+    <div className="dark:bg-black dark:text-white text-xs p-3 shadow">
+      <div className="dark:bg-black dark:text-white flex gap-2 font-mono">
+        <div className="w-4/12 bg-yellow-200 dark:bg-gray-500 text-right">현재가</div>
+        <div className="w-6/12 bg-yellow-100 dark:bg-gray-500 text-right"><span className="text-[0.6rem]">({kiInquireDailyItemChartPrice.output2[0]["stck_bsop_date"]})</span> {Number(kiInquireDailyItemChartPrice.output1["stck_prpr"]).toLocaleString()}</div>
         <div className="w-2/12 text-left text-[0.6rem]">원</div>
       </div>
-      <div className="flex gap-2 font-mono">
+      <div className="dark:bg-black dark:text-white flex gap-2 font-mono">
         <div className="w-4/12 text-right">시가총액</div>
         <div className="w-6/12 text-right">{market_cap.toLocaleString()}</div>
         <div className="w-2/12 text-left text-[0.6rem]">원</div>
       </div>
-      <div className="flex gap-2 font-mono">
+      <div className="dark:bg-black dark:text-white flex gap-2 font-mono">
         <div className="w-4/12 text-right">상장주식수</div>
         <div className="w-6/12 text-right">{Number(Number(kiInquireDailyItemChartPrice.output1["lstn_stcn"])).toLocaleString()}</div>
         <div className="w-2/12 text-left text-[0.6rem]">개</div>
       </div>
     </div>
-    <div className="text-xs rounded px-2 pb-1 m-2 shadow">
+    <div className="dark:bg-black dark:text-white text-xs p-3 shadow">
       <div className="flex gap-2 font-mono">
         <div className="w-4/12 text-right">52주 최저가</div>
         <div className="w-6/12 text-right"><span className="text-[0.6rem]">({kiInquirePrice.output["dryy_lwpr_date"]})</span> {Number(kiInquirePrice.output["w52_lwpr"]).toLocaleString()}</div>
         <div className="w-2/12 text-[0.6rem]">원</div>
       </div>
-      <div className="flex gap-2 font-mono">
-        <div className="w-4/12 text-right bg-red-300">52주 최고가</div>
-        <div className="w-6/12 text-right bg-red-200"><span className="text-[0.6rem]">({kiInquirePrice.output["w52_hgpr_date"]})</span> {Number(kiInquirePrice.output["w52_hgpr"]).toLocaleString()}</div>
+      <div className="dark:bg-black dark:text-white flex gap-2 font-mono">
+        <div className="w-4/12 text-right bg-red-300 dark:bg-gray-500">52주 최고가</div>
+        <div className="w-6/12 text-right bg-red-200 dark:bg-gray-500"><span className="text-[0.6rem]">({kiInquirePrice.output["w52_hgpr_date"]})</span> {Number(kiInquirePrice.output["w52_hgpr"]).toLocaleString()}</div>
         <div className="w-2/12 text-left text-[0.6rem]">원</div>
       </div>
     </div>
-    <div className="text-xs rounded px-2 pb-1 m-2 shadow">
+    <div className="dark:bg-black dark:text-white text-xs p-3 shadow">
       <div className="flex gap-2 font-mono">
         <div className="w-4/12 text-right">PER</div>
         <div className="w-6/12 text-right">{Number(Number(kiInquirePrice.output["per"])).toLocaleString()}</div>
         <div className="w-2/12 text-left">배</div>
       </div>
-      <div className="flex gap-2 font-mono">
+      <div className="dark:bg-black dark:text-white flex gap-2 font-mono">
         <div className="w-4/12 text-right">PBR</div>
         <div className="w-6/12 text-right">{Number(Number(kiInquirePrice.output["pbr"])).toLocaleString()}</div>
         <div className="w-2/12 text-left">배</div>
       </div>
-      <div className="flex gap-2 font-mono">
+      <div className="dark:bg-black dark:text-white flex gap-2 font-mono">
         <div className="w-4/12 text-right">EPS</div>
         <div className="w-6/12 text-right">{Number(Number(kiInquirePrice.output["eps"])).toLocaleString()}</div>
         <div className="w-2/12 text-left">원</div>
       </div>
-      <div className="flex gap-2 font-mono">
+      <div className="dark:bg-black dark:text-white flex gap-2 font-mono">
         <div className="w-4/12 text-right">BPS</div>
         <div className="w-6/12 text-right">{Number(Number(kiInquirePrice.output["bps"])).toLocaleString()}</div>
         <div className="w-2/12 text-left">원</div>
       </div>
     </div>
-    <div className="text-xs rounded px-2 pb-1 m-2 shadow">
+    <div className="dark:bg-black dark:text-white text-xs p-3 shadow">
       <div className="flex gap-2 font-mono">
         <div className="w-4/12 text-right">업종</div>
         <div className="w-6/12 text-right">{kiInquirePrice.output["bstp_kor_isnm"]}</div>
         <div className="w-2/12 text-left"></div>
       </div>
     </div>
-    <div className="text-xs rounded px-2 pb-1 m-2 shadow">
+    <div className="dark:bg-black dark:text-white text-xs p-3 shadow">
       <div className="flex gap-2 font-mono">
         <div className="w-4/12 text-right">거래량</div>
         <div className="w-6/12 text-right">{Number(kiInquirePrice.output["acml_vol"]).toLocaleString()}</div>
         <div className="w-2/12 text-left">회</div>
       </div>
-      <div className="flex gap-2 font-mono">
+      <div className="dark:bg-black dark:text-white flex gap-2 font-mono">
         <div className="w-4/12 text-right">전일 거래대금</div>
         <div className="w-6/12 text-right">{Number(kiInquirePrice.output["acml_tr_pbmn"]).toLocaleString()}</div>
         <div className="w-2/12 text-left">원</div>
       </div>
-      <div className="flex gap-2 font-mono">
+      <div className="dark:bg-black dark:text-white flex gap-2 font-mono">
         <div className="w-4/12 text-right text-[0.6rem]">거래대금/시가총액</div>
         <div className="w-6/12 text-right">{(100 * Number(kiInquirePrice.output["acml_tr_pbmn"]) / (Number(kiInquireDailyItemChartPrice.output2[0]["stck_oprc"]) * Number(kiInquireDailyItemChartPrice.output1["lstn_stcn"]))).toFixed(3)}</div>
         <div className="w-2/12 text-left">%</div>
       </div>
     </div>
-    <div className="text-xs rounded px-2 pb-1 m-2 shadow">
+    <div className="dark:bg-black dark:text-white text-xs p-3 shadow">
       {getNcav(kiBalanceSheet, kiInquireDailyItemChartPrice, 1.0)}
       {getNcav(kiBalanceSheet, kiInquireDailyItemChartPrice, 1.5)}
     </div>
-    <div className="text-xs rounded px-2 pb-1 m-2 shadow">
+    <div className="dark:bg-black dark:text-white text-xs p-3 shadow">
       <div className="flex gap-2 font-mono">
         <div className="w-4/12 text-right">재무-유동자산</div>
         <div className="w-6/12 text-right">{current_asset.toLocaleString()}</div>
@@ -384,20 +375,21 @@ export default function Search() {
         <div className="w-2/12 text-left text-[0.6rem]">원</div>
       </div>
     </div>
-    {/* <div className="text-xs rounded px-2 pb-1 m-2 shadow"> */}
-    <div className="bg-white rounded-2xl shadow-md p-6 space-y-4 max-w-2xl mx-auto">
-      <div className="w-fit text-[0.5rem] px-1 font-mono text-gray-500 tracking-wider mb-1 border rounded-xl">
+    <div className="dark:bg-gray-300 text-black text-xs p-3 shadow">
+      <div className="dark:bg-gray-300 text-gray-500 w-fit text-[0.5rem] font-mono tracking-wider px-1 mb-2 border rounded-xl">
         🤖 Generated by LLaMA 4. <span className="uppercase">🧮 token(total:{token.total_tokens} = prompt:{token.prompt_tokens} + completion:{token.completion_tokens})</span>
       </div>
-      <div className="w-full font-mono text-[12px] prose prose-sm max-w-none text-gray-800 leading-relaxed">
+      <div className="dark:bg-gray-300 p-2 w-full font-mono text-[12px] prose prose-sm max-w-none leading-relaxed">
         <ReactMarkdown
           remarkPlugins={[remarkGfm, remarkMath]}
           rehypePlugins={[rehypeRaw, rehypeKatex]}
           skipHtml={false} // HTML 태그도 렌더링하도록
+
         >
           {response}
         </ReactMarkdown>
       </div>
     </div>
+    <div className="dark:bg-black h-lvh"></div>
   </>
 }

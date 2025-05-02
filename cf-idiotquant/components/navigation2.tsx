@@ -26,9 +26,9 @@ interface NavItemPropsType {
 export function NavbarWithSimpleLinks() {
     // console.log(`[NavbarWithSimpleLinks]`);
     const pathname = usePathname();
-    const splitPathName = pathname.split("/");
     // console.log(`pathname`, pathname);
-    console.log(`splitPathName`, splitPathName);
+    const splitPathName = pathname.split("/");
+    // console.log(`splitPathName`, splitPathName);
 
     const [open, setOpen] = React.useState(false);
     const handleOpen = () => setOpen((cur) => !cur);
@@ -46,13 +46,11 @@ export function NavbarWithSimpleLinks() {
     }, []);
 
     React.useEffect(() => {
-        if (!!!open) {
-            setSelectPath(splitPathName[1]);
-        }
+        setSelectPath(splitPathName[1]);
     }, [open]);
     React.useEffect(() => {
-        console.log(`selectPath`, selectPath);
-    }, [selectPath]);
+        setSelectPath(splitPathName[1]);
+    }, [splitPathName]);
 
     function NavItem({ url, label }: NavItemPropsType) {
         return (
@@ -87,7 +85,7 @@ export function NavbarWithSimpleLinks() {
 
     function NavList() {
         return (
-            <div className="flex flex-col lg:mb-0 lg:mt-0 lg:flex-col lg:items-left">
+            <div className="flex flex-col md:mb-0 md:mt-0 md:flex-col lg:mb-0 lg:mt-0 lg:flex-col lg:items-left">
                 {Object.keys(navListUrlToLabel).map((key: string) => {
                     return <NavItem key={key} url={`/${key}`} label={navListUrlToLabel[key]} />
                 })}
@@ -96,8 +94,8 @@ export function NavbarWithSimpleLinks() {
     }
 
     return (
-        <Navbar className="flex-none lg:w-60 dark:bg-black p-2 rounded-none">
-            <div className="container mx-auto flex lg:flex-col items-center justify-between text-blue-gray-900">
+        <Navbar className="flex-none md:w-60 lg:w-60 dark:bg-black p-2 rounded-none">
+            <div className="container mx-auto flex md:flex-col lg:flex-col items-center justify-between text-blue-gray-900">
                 <div className="h-2"></div>
                 <Link href="/">
                     <Typography color="primary" className="mr-2 cursor-pointer font-mono font-bold"
@@ -110,13 +108,14 @@ export function NavbarWithSimpleLinks() {
                         : <></>
                     }
                 </div>
-                <div className="hidden lg:block">
+                <div className="hidden md:block lg:block">
                     <div className="w-full my-2 border border-b border-black"></div>
-                    <div className="w-full p-2 ">
+                    <div className="w-full p-2 justify-items-center">
                         <NavList />
+                        <ThemeChanger />
                     </div>
                 </div>
-                <div className="lg:hidden">
+                <div className="md:hidden lg:hidden">
                     <DesignButton
                         handleOnClick={() => handleOpen()}
                         buttonName={<>
@@ -136,10 +135,12 @@ export function NavbarWithSimpleLinks() {
                         `}
                     />
                 </div>
-                <ThemeChanger />
             </div>
             <Collapse open={open}>
-                <NavList />
+                <div className="pl-2">
+                    <NavList />
+                    <ThemeChanger />
+                </div>
             </Collapse>
         </Navbar>
     );

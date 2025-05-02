@@ -64,11 +64,14 @@ export default function BalanceKr() {
         </>
     }
 
-    return <InquireBalanceResult
-        kiBalance={kiBalance}
-        reqGetInquireBalance={reqGetInquireBalance}
-        kiToken={kiToken}
-        kiOrderCash={kiOrderCash}
-        reqPostOrderCash={reqPostOrderCash}
-    />
+    return <>
+        <InquireBalanceResult
+            kiBalance={kiBalance}
+            reqGetInquireBalance={reqGetInquireBalance}
+            kiToken={kiToken}
+            kiOrderCash={kiOrderCash}
+            reqPostOrderCash={reqPostOrderCash}
+        />
+        <div className="dark:bg-black h-lvh"></div>
+    </>
 }

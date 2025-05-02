@@ -12,7 +12,7 @@ export default function ThemeChanger() {
     }, []);
 
     return (
-        <button className="p-1 border rounded-lg text-center border-black dark:border-white" onClick={handleThemeChange}>
+        <button className="p-1 m-2 w-36 border rounded-xl text-center border-black dark:border-white" onClick={handleThemeChange}>
             {toggleTheme === false ? "☀️" : "🌙"}
         </button>
     );
