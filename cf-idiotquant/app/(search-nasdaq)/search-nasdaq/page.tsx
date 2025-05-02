@@ -138,7 +138,7 @@ export default function Search() {
 
     const texts = ["종가", "시가총액", "상장추식수"];
     const maxLength = Math.max(...texts.map(text => text.length * 2));
-    console.log(`maxLength`, maxLength);
+    if (DEBUG) console.log(`maxLength`, maxLength);
     return <>
         <SearchAutocomplete placeHolder={"NASDAQ ticker 를 입력하세요..."} onSearchButton={onSearchButton} validCorpNameArray={nasdaq_tickers} />
         {"0" != kiUsMaretSearchInfo.rt_cd ?
