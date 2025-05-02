@@ -8,6 +8,7 @@ import {
     Spinner,
 } from "@material-tailwind/react";
 import { DesignButton } from "./designButton";
+import { ArrowDownIcon, ArrowUpIcon } from "@heroicons/react/24/outline";
 
 
 export interface Example8TableRowType {
@@ -114,8 +115,11 @@ function TablesExample8({
                                                 }
                                                 setSelectHead(head)
                                             }}>
-                                                <div className={`font-mono font-bold dark:text-white cursor-pointer ${head.length >= 6 ? "text-[0.6rem]" : ""}`}>
-                                                    {head} {(prevSelectHead == head && selectHead == head) ? "🔼" : (selectHead == head ? "🔽" : "")}
+                                                <div className={`font-mono flex font-bold dark:text-white cursor-pointer ${head.length >= 6 ? "text-[0.6rem]" : ""}`}>
+                                                    <div className="flex-none items-end">
+                                                        {(prevSelectHead == head && selectHead == head) ? <ArrowUpIcon className="h-4 w-4" /> : (selectHead == head ? <ArrowDownIcon className="h-4 w-4" /> : "")}
+                                                    </div>
+                                                    <div className="flex-1">{head}</div>
                                                 </div>
                                             </div>
                                         </th>
