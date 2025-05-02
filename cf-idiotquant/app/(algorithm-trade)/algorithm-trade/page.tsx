@@ -279,6 +279,9 @@ export default function AlgorithmTrade() {
                         <LineChart
                             data_array={getLineDataArray()}
                             category_array={getCategoryArray()}
+                            // type="bar"
+                            type="line"
+                            height={200}
                         />
                     </div>
                 </div>

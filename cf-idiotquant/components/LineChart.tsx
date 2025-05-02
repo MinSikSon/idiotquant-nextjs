@@ -48,10 +48,27 @@ export default function LineChart(props: any) {
     const chartConfig = React.useMemo(
         () =>
             ({
-                type: "line",
+                // type: !!props.type ? props.type : "line",
+                type: "area",
+                // stacked: true,
+                background: "transparent",
                 // type: "bar",
+                stroke: {
+                    curve: "smooth",
+                    width: 2,
+                },
+                fill: {
+                    type: "gradient",
+                    gradient: {
+                        shadeIntensity: 1,
+                        opacityFrom: 0.6,
+                        opacityTo: 0.2,
+                        stops: [0, 90, 100],
+                    },
+                },
                 // height: 240, // chart 높이
-                height: 120, // chart 높이
+                // height: 120, // chart 높이
+                height: !!props.height ? props.height : 120, // chart 높이
                 zoom: {
                     enabled: false, // 줌 비활성화
                 },
@@ -74,11 +91,12 @@ export default function LineChart(props: any) {
                         enabled: false,
                     },
                     colors: [chartColor],
-                    stroke: {
-                        curve: "smooth",
-                        lineCap: "round",
-                        width: 3, // 선 두께
-                    },
+                    // stroke: {
+                    //     curve: "smooth",
+                    //     lineCap: "round",
+                    //     width: 3, // 선 두께
+                    // },
+
                     markers: {
                         size: 0,
                         sizeOnHover: 0, // 마우스 오버 시에도 마커 표시 안 함
@@ -149,10 +167,10 @@ export default function LineChart(props: any) {
                             right: 20,
                         },
                     },
-                    fill: {
-                        // opacity: 0.8,
-                        opacity: 1,
-                    },
+                    // fill: {
+                    //     // opacity: 0.8,
+                    //     opacity: 1,
+                    // },
                     tooltip: {
                         theme: "dark",
                     },
