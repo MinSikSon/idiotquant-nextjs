@@ -379,5 +379,6 @@ export default function AlgorithmTrade() {
 
     return <>
         <TablesExample8 {...props} />
+        <div className="dark:bg-black h-lvh"></div>
     </>
 }
