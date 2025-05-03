@@ -47,12 +47,14 @@ export default function BalanceUs() {
     if ("init" == loginState || "rejected" == loginState) {
         return <>
             <Login parentUrl={pathname} />
+            <div className="dark:bg-black h-lvh"></div>
         </>
     }
 
     if (false == isValidCookie("koreaInvestmentToken") || false == !!kiToken["access_token"]) {
         return <>
             <Auth />
+            <div className="dark:bg-black h-lvh"></div>
         </>
     }
 
@@ -60,6 +62,7 @@ export default function BalanceUs() {
     if (kiBalance.state == "rejected") {
         return <>
             <NotFound warnText={"계좌 조회 권한이 없습니다"} />
+            <div className="dark:bg-black h-lvh"></div>
         </>
     }
 

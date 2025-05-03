@@ -95,15 +95,13 @@ export function NavbarWithSimpleLinks() {
 
     return (
         <Navbar className="flex-none md:w-60 lg:w-60 dark:bg-black p-2 rounded-none">
-            <div className="container mx-auto flex md:flex-col lg:flex-col items-center justify-between text-blue-gray-900">
-                <div className="h-2"></div>
+            <div className="container mx-auto flex md:flex-col lg:flex-col items-center justify-evenly text-blue-gray-900">
                 <Link href="/">
-                    <Typography color="primary" className="mr-2 cursor-pointer font-mono font-bold"
-                    >
+                    <div className="font-mono font-bold cursor-pointer">
                         idiotquant<span className="text-blue-500">.</span>com
-                    </Typography>
+                    </div>
                 </Link>
-                <div className="font-mono h-2 pl-1 text-[0.6rem] dark:text-white">
+                <div className="font-mono text-[0.6rem] dark:text-white min-w-32 text-center">
                     {!!kakaoNickName ? <>{kakaoNickName}님 반갑습니다. 😀</>
                         : <></>
                     }

@@ -254,19 +254,19 @@ export default function AlgorithmTrade() {
             </div>
         </>,
         desc: <>
-            <div className="rounded px-2 pb-1 m-2 shadow">
+            <div className="dark:border-gray-700 border rounded-lg px-2 pb-1 m-2 shadow">
                 <div className="text-xl">
                     주식 거래 이력
                 </div>
                 <div className="flex">
-                    <div className="flex-1 rounded px-2 pb-1 m-2 shadow">
+                    <div className="dark:border-gray-700 border flex-1 rounded-lg px-2 pb-1 mx-1 mb-2 shadow">
                         <div className="text-[0.6rem]">누적 알고리즘 매수</div>
                         <div className="flex flex-col justify-end items-end">
                             <div className="">{market == "KR" ? `${Number(Number(cummulative_investment).toFixed(0)).toLocaleString()} 원` : `${Number(Number(cummulative_investment).toFixed(0)).toLocaleString()} 원`}</div>
                             <div className="text-[0.6rem]">{market == "KR" ? "" : `(${Number(Number(cummulative_investment) / Number(us_capital_token.value.frst_bltn_exrt)).toFixed(3)} USD)`}</div>
                         </div>
                     </div>
-                    <div className="flex-1 rounded px-2 pb-1 m-2 shadow">
+                    <div className="dark:border-gray-700 border flex-1 rounded-lg px-2 pb-1 mx-1 mb-2 shadow">
                         <div className="text-[0.6rem]">누적 알고리즘 매도</div>
                         <div className="flex flex-col justify-end items-end">
                             <div className="">{market == "KR" ? `${Number(Number(cummulative_investment_sell).toFixed(0)).toLocaleString()} 원` : `${Number(Number(cummulative_investment_sell).toFixed(0)).toLocaleString()} 원`}</div>
@@ -275,7 +275,7 @@ export default function AlgorithmTrade() {
                     </div>
                 </div>
                 <div className={`flex gap-2`}>
-                    <div className="w-full bg-white border rounded-lg">
+                    <div className="dark:bg-gray-200 bg-white w-full border rounded-lg mx-1">
                         <LineChart
                             data_array={getLineDataArray()}
                             category_array={getCategoryArray()}
@@ -288,35 +288,36 @@ export default function AlgorithmTrade() {
             </div>
         </>,
         financial_date: <></>,
-        market_date: <>
-            <div className="rounded px-2 pb-1 m-2 shadow">
+        market_date: <div >
+            <div className="dark:border-gray-700 border rounded-lg px-2 pb-1 m-2 shadow">
                 <div className="text-xl">
                     <span className="underline decoration-4 decoration-yellow-100">주식 구매 포인트</span> 적립 이력
                 </div>
-                <div className="text-sm">
+                <div className="flex">
                     {Object.keys(time_stamp).reverse().map((key, index) => {
-                        return <div key={index} className={`flex gap-2`}>
-                            <div className="w-1/12"></div>
-                            <div className="w-3/12 text-right text-[0.6rem]">{key}</div>
-                            <div className="w-8/12 text-left">{formatDateTime(time_stamp[key])}</div>
+                        return <div key={index} className="dark:border-gray-700 border flex-1 rounded-lg px-2 pb-1 mx-1 mb-2 shadow">
+                            <div className="text-[0.6rem]">{key}</div>
+                            <div className="flex flex-col justify-end items-end">{formatDateTime(time_stamp[key])}</div>
                         </div>
                     })}
                 </div>
             </div>
-            <div className="rounded px-2 pb-1 m-2 shadow">
+            <div className="dark:border-gray-700 border rounded-lg px-2 pb-1 m-2 shadow">
                 <div className="text-xl">
                     <span className="underline decoration-4 decoration-yellow-100">주식 구매 포인트</span> 적립 현황
                 </div>
-                <div className="rounded px-2 pb-1 m-2 shadow">
-                    <div className="text-[0.6rem]">종목 당 충전 포인트</div>
-                    <div className="">{token_per_stock} point / 10 min</div>
-                </div>
-                <div className="rounded px-2 pb-1 m-2 shadow">
-                    <div className="text-[0.6rem]">마지막 구매 시도 종목</div>
-                    <div className="">{refill_stock_index}) {!!stock_list[refill_stock_index] ? stock_list[refill_stock_index]["name"] : 0}</div>
+                <div className="flex">
+                    <div className="dark:border-gray-700 border flex-1 rounded-lg px-2 pb-1 mr-2 mx-1 shadow">
+                        <div className="text-[0.6rem]">종목 당 충전 포인트</div>
+                        <div className="flex flex-col justify-end items-end">{token_per_stock} point / 10 min</div>
+                    </div>
+                    <div className="dark:border-gray-700 border flex-1 rounded-lg px-2 pb-1 mr-2 mx-1 shadow">
+                        <div className="text-[0.6rem]">마지막 구매 시도 종목</div>
+                        <div className="flex flex-col justify-end items-end">{refill_stock_index}) {!!stock_list[refill_stock_index] ? stock_list[refill_stock_index]["name"] : 0}</div>
+                    </div>
                 </div>
             </div>
-            <div className="rounded px-2 pb-1 m-2 shadow">
+            <div className="dark:border-gray-700 border rounded-lg px-2 pb-1 m-2 shadow">
                 <div className="text-xl">
                     <div className="">알고리즘 매매 대상 종목</div>
                 </div>
@@ -360,13 +361,13 @@ export default function AlgorithmTrade() {
                     </div>
                     <div className="flex items-center text-xs text-black dark:text-white leading-none pb-1">
                         <div>종목 개수</div>
-                        <div className="mx-1 mr-2 px-1 text-xs rounded border border-black dark:border-white">{stock_list.length - exclude_count} / {stock_list.length}</div>
+                        <div className="mx-1 mr-2 px-1 text-xs rounded border border-black border-white">{stock_list.length - exclude_count} / {stock_list.length}</div>
                         <div>누적 포인트</div>
-                        <div className="mx-1 mr-2 px-1 text-xs rounded border border-black dark:border-white">{cummulative_token - exclude_token} / {cummulative_token}</div>
+                        <div className="mx-1 mr-2 px-1 text-xs rounded border border-black border-white">{cummulative_token - exclude_token} / {cummulative_token}</div>
                     </div>
                 </div>
             </div>
-        </>,
+        </div>,
         tableHead: example8TableHead,
         tableRow: example8TableRow,
         visibleCount: visibleCount,

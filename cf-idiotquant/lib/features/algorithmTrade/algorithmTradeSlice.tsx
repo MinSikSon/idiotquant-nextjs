@@ -5,6 +5,8 @@ import { registerCookie } from "@/components/util";
 import { KoreaInvestmentToken } from "../koreaInvestment/koreaInvestmentSlice";
 import { string } from "three/tsl";
 
+const DEBUG = false;
+
 interface CapitalTokenTypeValueTimestamp {
     "current": string;
     "prev": string;
@@ -148,19 +150,19 @@ export const algorithmTradeSlice = createAppSlice({
             },
             {
                 pending: (state) => {
-                    // console.log(`[reqGetCapitalToken] pending`);
+                    if (DEBUG) console.log(`[reqGetCapitalToken] pending`);
                     state.state = "pending";
                     state.us_capital_token.state = "pending";
                 },
                 fulfilled: (state, action) => {
-                    // console.log(`[reqGetCapitalToken] fulfilled`, `action.payload`, typeof action.payload, action.payload);
+                    if (DEBUG) console.log(`[reqGetCapitalToken] fulfilled`, `action.payload`, typeof action.payload, action.payload);
                     const json = JSON.parse(action.payload);
-                    console.log(`[reqGetCapitalToken] fulfilled json`, json);
+                    if (DEBUG) console.log(`[reqGetCapitalToken] fulfilled json`, json);
                     state.us_capital_token = { state: "fulfilled", value: json };
                     state.state = "fulfilled";
                 },
                 rejected: (state) => {
-                    // console.log(`[reqGetCapitalToken] rejected`);
+                    if (DEBUG) console.log(`[reqGetCapitalToken] rejected`);
                     state.state = "rejected";
                 },
             }
