@@ -4,9 +4,6 @@ import React from "react";
 import {
     Navbar,
     Collapse,
-    Typography,
-    Button,
-    IconButton,
 } from "@material-tailwind/react";
 import { Bars3Icon, CalculatorIcon, HomeIcon, LockClosedIcon, LockOpenIcon, MagnifyingGlassCircleIcon, SparklesIcon, WalletIcon, XMarkIcon } from "@heroicons/react/24/outline";
 import Link from "next/link";
@@ -58,22 +55,23 @@ export function NavbarWithSimpleLinks() {
                 setOpen(false)
                 setSelectPath(url.split("/")[1]);
             }}>
-                <div className={`p-2 rounded-lg dark:text-white font-mono text-[0.8rem] hover:bg-gray-400 hover:text-white ${selectPath == url.split("/")[1] ? "bg-gray-500 text-white" : ""} `}>
+                <div className={`px-2 py-1.5 rounded-lg dark:text-white font-mono text-[0.8rem] hover:bg-gray-100 ${selectPath == url.split("/")[1] ? "bg-slate-100 dark:bg-gray-500" : ""} `}>
                     {label}
                 </div>
             </Link>
         );
     }
 
+    const navListDesign = "font-mono flex gap-2 justify-items-center";
     const navListUrlToLabel: any = {
-        "": <div className="flex gap-1 justify-items-center"><HomeIcon className="h-4 w-4" strokeWidth={2} /><div>홈</div></div>,
-        "calculator": <div className="flex gap-1 justify-items-center"><CalculatorIcon className="h-4 w-4" strokeWidth={2} /><div>수익계산기</div></div>,
-        "login": <div className="flex gap-1 justify-items-center">{!!!kakaoId ? <LockClosedIcon className="h-4 w-4" strokeWidth={2} /> : <LockOpenIcon className="h-4 w-4" strokeWidth={2} />}<div>로그인</div></div>,
-        "search": <div className="flex gap-1 justify-items-center"><MagnifyingGlassCircleIcon className="h-4 w-4" strokeWidth={2} /><div>종목검색</div></div>,
-        "search-nasdaq": <div className="flex gap-1 justify-items-center"><MagnifyingGlassCircleIcon className="h-4 w-4" strokeWidth={2} /><div>종목검색(nasdaq)</div></div>,
-        "balance-kr": <div className="flex gap-1 justify-items-center"><WalletIcon className="h-4 w-4" strokeWidth={2} /><div>알고투자-계좌조회(국내)</div></div>,
-        "balance-us": <div className="flex gap-1 justify-items-center"><WalletIcon className="h-4 w-4" strokeWidth={2} /><div>알고투자-계좌조회(해외)</div></div>,
-        "chat": <div className="flex gap-1 justify-items-center"><SparklesIcon className="h-4 w-4" strokeWidth={2} /><div>LLM</div></div>,
+        "": <div className={navListDesign}><HomeIcon className="h-4 w-4" strokeWidth={2} /><div>Home</div></div>,
+        "calculator": <div className={navListDesign}><CalculatorIcon className="h-4 w-4" strokeWidth={2} /><div>수익계산기</div></div>,
+        "login": <div className={navListDesign}>{!!!kakaoId ? <LockClosedIcon className="h-4 w-4" strokeWidth={2} /> : <LockOpenIcon className="h-4 w-4" strokeWidth={2} />}<div>로그인</div></div>,
+        "search": <div className={navListDesign}><MagnifyingGlassCircleIcon className="h-4 w-4" strokeWidth={2} /><div>종목검색</div></div>,
+        "search-nasdaq": <div className={navListDesign}><MagnifyingGlassCircleIcon className="h-4 w-4" strokeWidth={2} /><div>종목검색(nasdaq)</div></div>,
+        "balance-kr": <div className={navListDesign}><WalletIcon className="h-4 w-4" strokeWidth={2} /><div>알고투자-계좌조회(국내)</div></div>,
+        "balance-us": <div className={navListDesign}><WalletIcon className="h-4 w-4" strokeWidth={2} /><div>알고투자-계좌조회(해외)</div></div>,
+        "chat": <div className={navListDesign}><SparklesIcon className="h-4 w-4" strokeWidth={2} /><div>LLM</div></div>,
     }
 
     const urlToLabel: any = {
@@ -85,7 +83,7 @@ export function NavbarWithSimpleLinks() {
 
     function NavList() {
         return (
-            <div className="flex flex-col md:mb-0 md:mt-0 md:flex-col lg:mb-0 lg:mt-0 lg:flex-col lg:items-left">
+            <div className="flex flex-col md:mb-0 md:mt-0 md:flex-col lg:mb-0 lg:mt-0 lg:flex-col lg:items-left justify-center content-center">
                 {Object.keys(navListUrlToLabel).map((key: string) => {
                     return <NavItem key={key} url={`/${key}`} label={navListUrlToLabel[key]} />
                 })}
@@ -94,26 +92,31 @@ export function NavbarWithSimpleLinks() {
     }
 
     return (
-        <Navbar className="flex-none md:w-60 lg:w-60 dark:bg-black p-2 rounded-none">
-            <div className="container mx-auto flex md:flex-col lg:flex-col items-center justify-evenly text-blue-gray-900">
-                <Link href="/">
-                    <div className="font-mono font-bold cursor-pointer">
-                        idiotquant<span className="text-blue-500">.</span>com
-                    </div>
-                </Link>
-                <div className="font-mono text-[0.6rem] dark:text-white min-w-32 text-center">
-                    {!!kakaoNickName ? <>{kakaoNickName}님 반갑습니다. 😀</>
-                        : <></>
-                    }
-                </div>
-                <div className="hidden md:block lg:block">
-                    <div className="w-full my-2 border border-b border-black"></div>
-                    <div className="w-full p-2 justify-items-center">
-                        <NavList />
-                        <ThemeChanger />
+        <>
+            <div className="bg-slate-50 dark:bg-gray-900 dark:text-white flex md:flex-col lg:flex-col items-center justify-start text-blue-gray-900 min-w-56">
+                <div className="p-3 w-full border-b border-gray-200">
+                    <div className="bg-white dark:bg-black flex md:flex-col lg:flex-col border rounded-lg items-center py-2 w-full">
+                        <Link href="/">
+                            <div className="px-2 font-mono font-bold cursor-pointer">
+                                idiotquant<span className="text-blue-500">.</span>com
+                            </div>
+                        </Link>
+                        <div className="font-mono text-[0.6rem] dark:text-white min-w-32 text-center">
+                            {!!kakaoNickName ? <>{kakaoNickName}님 반갑습니다. 😀</>
+                                : <></>
+                            }
+                        </div>
                     </div>
                 </div>
-                <div className="md:hidden lg:hidden">
+                <div className="hidden md:block lg:block w-full">
+                    <div className="flex flex-col w-full p-2 justify-items-center">
+                        <div className="flex flex-col p-2 h-96 justify-between">
+                            <NavList />
+                            <ThemeChanger />
+                        </div>
+                    </div>
+                </div>
+                <div className="md:hidden lg:hidden dark:bg-gray-900 border-b pr-2 py-3">
                     <DesignButton
                         handleOnClick={() => handleOpen()}
                         buttonName={<>
@@ -135,12 +138,14 @@ export function NavbarWithSimpleLinks() {
                 </div>
             </div>
             <Collapse open={open}>
-                <div className="pl-2">
-                    <NavList />
-                    <ThemeChanger />
+                <div className="dark:bg-black dark:text-white flex flex-col w-full p-2 justify-items-center">
+                    <div className="dark:bg-black dark:text-white flex flex-col p-2 h-96 justify-between">
+                        <NavList />
+                        <ThemeChanger />
+                    </div>
                 </div>
             </Collapse>
-        </Navbar>
+        </>
     );
 }
 
