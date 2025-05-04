@@ -1,32 +1,147 @@
 "use client"
 
 import React from "react";
+import {
+    Navbar,
+    Collapse,
+    Typography,
+    Button,
+    IconButton,
+} from "@material-tailwind/react";
+import { Bars3Icon, CalculatorIcon, HomeIcon, LockClosedIcon, LockOpenIcon, MagnifyingGlassCircleIcon, SparklesIcon, WalletIcon, XMarkIcon } from "@heroicons/react/24/outline";
 import Link from "next/link";
+
+import { selectKakaoId, selectKakaoNickName } from "@/lib/features/login/loginSlice";
+import { useAppSelector } from "@/lib/hooks";
+
 import { usePathname } from "next/navigation";
+import { DesignButton } from "./designButton";
+import ThemeChanger from "./theme_changer";
 
-const DefaultNav = (props: any) => {
+interface NavItemPropsType {
+    url: string;
+    label: string;
+}
 
-    const defaultDeco = 'pr-1';
-    const decorations = 'underline decoration-green-400';
-    const hoverDecorations = 'hover:underline hover:decoration-green-400';
-    return (
-        <nav className='bg-white flex justify-center text-xl'>
-            <div className='flex'>
-                <Link className={`flex-auto ${defaultDeco} ${hoverDecorations} ${props.pathname === "/" ? decorations : ""}`} href="/">home</Link>
-                <Link className={`flex-auto ${defaultDeco} ${hoverDecorations} ${props.pathname === "/backtest" ? decorations : ""}`} href="/backtest">backtest</Link>
-                <Link className={`flex-auto ${defaultDeco} ${hoverDecorations} ${props.pathname === "/calculator" ? decorations : ""}`} href="/calculator">calculator</Link>
-                <Link className={`flex-auto ${defaultDeco} ${hoverDecorations}  ${props.pathname === "/article" ? decorations : ""}`} href="/article">article</Link>
+export function NavbarWithSimpleLinks() {
+    // console.log(`[NavbarWithSimpleLinks]`);
+    const pathname = usePathname();
+    // console.log(`pathname`, pathname);
+    const splitPathName = pathname.split("/");
+    // console.log(`splitPathName`, splitPathName);
+
+    const [open, setOpen] = React.useState(false);
+    const handleOpen = () => setOpen((cur) => !cur);
+
+    const [selectPath, setSelectPath] = React.useState<string>(splitPathName[1]);
+
+    const kakaoId = useAppSelector(selectKakaoId);
+    const kakaoNickName = useAppSelector(selectKakaoNickName);
+
+    React.useEffect(() => {
+        window.addEventListener(
+            "resize",
+            () => window.innerWidth >= 960 && setOpen(false)
+        );
+    }, []);
+
+    React.useEffect(() => {
+        setSelectPath(splitPathName[1]);
+    }, [open]);
+    React.useEffect(() => {
+        setSelectPath(splitPathName[1]);
+    }, [splitPathName]);
+
+    function NavItem({ url, label }: NavItemPropsType) {
+        return (
+            <Link href={url} onClick={() => {
+                setOpen(false)
+                setSelectPath(url.split("/")[1]);
+            }}>
+                <div className={`p-2 rounded-lg dark:text-white font-mono text-[0.8rem] hover:bg-gray-400 hover:text-white ${selectPath == url.split("/")[1] ? "bg-gray-500 text-white" : ""} `}>
+                    {label}
+                </div>
+            </Link>
+        );
+    }
+
+    const navListUrlToLabel: any = {
+        "": <div className="flex gap-1 justify-items-center"><HomeIcon className="h-4 w-4" strokeWidth={2} /><div>홈</div></div>,
+        "calculator": <div className="flex gap-1 justify-items-center"><CalculatorIcon className="h-4 w-4" strokeWidth={2} /><div>수익계산기</div></div>,
+        "login": <div className="flex gap-1 justify-items-center">{!!!kakaoId ? <LockClosedIcon className="h-4 w-4" strokeWidth={2} /> : <LockOpenIcon className="h-4 w-4" strokeWidth={2} />}<div>로그인</div></div>,
+        "search": <div className="flex gap-1 justify-items-center"><MagnifyingGlassCircleIcon className="h-4 w-4" strokeWidth={2} /><div>종목검색</div></div>,
+        "search-nasdaq": <div className="flex gap-1 justify-items-center"><MagnifyingGlassCircleIcon className="h-4 w-4" strokeWidth={2} /><div>종목검색(nasdaq)</div></div>,
+        "balance-kr": <div className="flex gap-1 justify-items-center"><WalletIcon className="h-4 w-4" strokeWidth={2} /><div>알고투자-계좌조회(국내)</div></div>,
+        "balance-us": <div className="flex gap-1 justify-items-center"><WalletIcon className="h-4 w-4" strokeWidth={2} /><div>알고투자-계좌조회(해외)</div></div>,
+        "chat": <div className="flex gap-1 justify-items-center"><SparklesIcon className="h-4 w-4" strokeWidth={2} /><div>LLM</div></div>,
+    }
+
+    const urlToLabel: any = {
+        ...navListUrlToLabel,
+        "backtest": `백테스트 ${!!!kakaoId ? "🔒" : ""}`,
+        "strategy": "투자 전략",
+        "strategy-register": "투자 전략 등록",
+    }
+
+    function NavList() {
+        return (
+            <div className="flex flex-col md:mb-0 md:mt-0 md:flex-col lg:mb-0 lg:mt-0 lg:flex-col lg:items-left">
+                {Object.keys(navListUrlToLabel).map((key: string) => {
+                    return <NavItem key={key} url={`/${key}`} label={navListUrlToLabel[key]} />
+                })}
             </div>
-        </nav>
+        );
+    }
+
+    return (
+        <Navbar className="flex-none md:w-60 lg:w-60 dark:bg-black p-2 rounded-none">
+            <div className="container mx-auto flex md:flex-col lg:flex-col items-center justify-evenly text-blue-gray-900">
+                <Link href="/">
+                    <div className="font-mono font-bold cursor-pointer">
+                        idiotquant<span className="text-blue-500">.</span>com
+                    </div>
+                </Link>
+                <div className="font-mono text-[0.6rem] dark:text-white min-w-32 text-center">
+                    {!!kakaoNickName ? <>{kakaoNickName}님 반갑습니다. 😀</>
+                        : <></>
+                    }
+                </div>
+                <div className="hidden md:block lg:block">
+                    <div className="w-full my-2 border border-b border-black"></div>
+                    <div className="w-full p-2 justify-items-center">
+                        <NavList />
+                        <ThemeChanger />
+                    </div>
+                </div>
+                <div className="md:hidden lg:hidden">
+                    <DesignButton
+                        handleOnClick={() => handleOpen()}
+                        buttonName={<>
+                            {open ? (
+                                <XMarkIcon className="h-6 w-6" strokeWidth={2} />
+                            ) : (
+                                <Bars3Icon className="h-6 w-6" strokeWidth={2} />
+                            )}
+                        </>}
+                        buttonBgColor="bg-white"
+                        buttonBorderColor="border-gray-500"
+                        buttonShadowColor="#D5D5D5"
+                        textStyle="text-black text-xs font-bold"
+                        buttonStyle={`rounded-lg p-1 flex items-center justify-center mb-2 button bg-white cursor-pointer select-none
+                        active:translate-y-1 active:[box-shadow:0_0px_0_0_#D5D5D5,0_0px_0_0_#D5D5D541] active:border-[0px]
+                        transition-all duration-150 [box-shadow:0_4px_0_0_#D5D5D5,0_8px_0_0_#D5D5D541] border-[1px]
+                        `}
+                    />
+                </div>
+            </div>
+            <Collapse open={open}>
+                <div className="pl-2">
+                    <NavList />
+                    <ThemeChanger />
+                </div>
+            </Collapse>
+        </Navbar>
     );
 }
 
-export const Nav = () => {
-    const pathname = usePathname();
-
-    return <>
-        <div className="fixed bottom-0 z-40 w-full border-t-2 border-r-2 rounded-t-lg">
-            <DefaultNav pathname={pathname} />
-        </div>
-    </>
-}
+export default NavbarWithSimpleLinks;

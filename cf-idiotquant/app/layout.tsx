@@ -1,6 +1,6 @@
 import "@/app/global.css"
 import { StoreProvider } from "./StoreProvider"
-import NavbarWithSimpleLinks from "@/components/navigation2"
+import NavbarWithSimpleLinks from "@/components/navigation"
 import { LoadData } from "@/components/loadData"
 
 export const metadata = {
