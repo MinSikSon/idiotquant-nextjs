@@ -55,7 +55,7 @@ export function NavbarWithSimpleLinks() {
                 setOpen(false)
                 setSelectPath(url.split("/")[1]);
             }}>
-                <div className={`px-2 py-1.5 rounded-lg dark:text-white font-mono text-[0.8rem] hover:bg-gray-100 ${selectPath == url.split("/")[1] ? "bg-slate-100 dark:bg-gray-500" : ""} `}>
+                <div className={`px-2 py-1.5 rounded-lg dark:text-white font-mono text-[0.8rem] hover:bg-gray-100 hover:dark:bg-gray-700 ${selectPath == url.split("/")[1] ? "bg-slate-100 dark:bg-gray-500" : ""} `}>
                     {label}
                 </div>
             </Link>
@@ -94,8 +94,8 @@ export function NavbarWithSimpleLinks() {
     return (
         <>
             <div className="bg-slate-50 dark:bg-gray-900 dark:text-white flex md:flex-col lg:flex-col items-center justify-start text-blue-gray-900 min-w-56">
-                <div className="p-3 w-full border-b border-gray-200">
-                    <div className="bg-white dark:bg-black flex md:flex-col lg:flex-col border rounded-lg items-center py-2 w-full">
+                <div className="p-3 w-full border-b dark:border-gray-600">
+                    <div className="bg-white dark:bg-black flex md:flex-col lg:flex-col border dark:border-gray-600 rounded-lg items-center py-2 w-full">
                         <Link href="/">
                             <div className="px-2 font-mono font-bold cursor-pointer">
                                 idiotquant<span className="text-blue-500">.</span>com
