@@ -3,20 +3,18 @@ import { CalculationResult } from "@/app/(calculator)/calculator/page"
 
 export const CalculationList = (props: any) => {
     return <>
-        <div className='font-mono dark:bg-black dark:text-white w-screen flex justify-between items-center p-4 sm:px-20 md:px-40 lg:px-64 xl:px-80 2xl:px-96'>
+        <div className="font-mono dark:bg-black dark:text-white flex justify-between p-1 m-1">
             <div className="w-full h-full rounded-xl text-gray-700 border border-gray-300 shadow-md">
-                <List.Item className='pb-0 mb-1'>
+                <div className='flex items-center p-1 m-1'>
                     <div className="font-mono dark:text-white w-full text-md header-contents text-center">
-                        기대 수익 계산 <span className='bg-yellow-500'> 결과</span>
+                        기대 수익 계산 <span className="bg-yellow-500 dark:bg-gray-500"> 결과</span>
                     </div>
-                    <List.ItemStart>
-                        <img className='h-4 col-span-1 object-fill' src='/images/icons8-calculator.gif' />
-                    </List.ItemStart>
-                </List.Item>
-                <List>
+                    <img className='h-4 col-span-1 object-fill' src='/images/icons8-calculator.gif' />
+                </div>
+                <div>
                     {props.resultList.length > 0 ?
                         props.resultList.map((element: CalculationResult, key: any) => {
-                            return <List.Item className='p-1 border-2 border-gray-300 mb-1' key={key} onClick={(e) => props.handleOnClickResultList(e, key)}>
+                            return <div className='p-1 border-2 border-gray-300 mb-1' key={key} onClick={(e) => props.handleOnClickResultList(e, key)}>
                                 <div className='flex-col'>
                                     <div className="flex gap-1 pb-1">
                                         <Chip size='lg' color="warning" className="font-mono text-md">
@@ -55,17 +53,16 @@ export const CalculationList = (props: any) => {
                                         </Chip>
                                     </div>
                                 </div>
-                            </List.Item>
+                            </div>
                         })
                         :
-                        <List.Item>
-                            <div>
-                                <Typography variant="h6" color="info">
-                                    <span className='font-mono border border-1 border-black rounded p-1'>계산 결과 등록 🦄</span> 버튼을 눌려주세요.
-                                </Typography>
-                            </div>
-                        </List.Item>}
-                </List>
+                        <div>
+                            <Typography variant="h6" color="info">
+                                <span className='font-mono border border-1 border-black rounded p-1'>계산 결과 등록 🦄</span> 버튼을 눌려주세요.
+                            </Typography>
+                        </div>
+                    }
+                </div>
             </div>
         </div>
     </>
