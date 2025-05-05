@@ -93,7 +93,7 @@ function TablesExample8({
                 <Button variant="ghost">{!!msg ? <>{msg}</> : <><Spinner size="sm" /> loading...</>}</Button>
                 :
                 <>
-                    <Card.Body className="overflow-scroll !px-0 pt-0 pb-2 dark:bg-black">
+                    <Card.Body className="overflow-scroll [scrollbar-width:thin] [scrollbar-color:#888_transparent] !px-0 pt-0 pb-2 dark:bg-black">
                         <table className="w-full min-w-max table-auto items-center">
                             <thead className="text-xs">
                                 <tr>
