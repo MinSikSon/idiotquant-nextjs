@@ -110,7 +110,7 @@ export function NavbarWithSimpleLinks() {
                 </div>
                 <div className="hidden md:block lg:block w-full">
                     <div className="flex flex-col w-full p-2 justify-items-center">
-                        <div className="flex flex-col p-2 h-96 justify-between">
+                        <div className="flex flex-col p-2 min-h-80 justify-between">
                             <NavList />
                             <ThemeChanger />
                         </div>
@@ -139,7 +139,7 @@ export function NavbarWithSimpleLinks() {
             </div>
             <Collapse open={open}>
                 <div className="dark:bg-black dark:text-white flex flex-col w-full p-2 justify-items-center">
-                    <div className="dark:bg-black dark:text-white flex flex-col p-2 h-96 justify-between">
+                    <div className="dark:bg-black dark:text-white flex flex-col p-2 min-h-80 justify-between">
                         <NavList />
                         <ThemeChanger />
                     </div>

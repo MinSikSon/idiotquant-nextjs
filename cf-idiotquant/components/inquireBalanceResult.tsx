@@ -273,7 +273,7 @@ export default function InquireBalanceResult(props: InquireBalanceResultProps) {
     const tablesExample8Props: TablesExample8PropsType = {
         msg: props.kiBalance.msg1,
         title: <>
-            <div className="font-mono flex pb-2 items-center">
+            <div className="font-mono flex p-2 items-center">
                 <DesignButton
                     handleOnClick={() => {
                         showAlert("지난 주문 확인");
@@ -299,61 +299,65 @@ export default function InquireBalanceResult(props: InquireBalanceResultProps) {
             </div>
         </>,
         desc: <>
-            <div className="font-mono rounded px-2 pb-1 m-1 shadow">
-                {/* <div className="text-lg text-black leading-none pb-3"> */}
-                <div>
-                    평가손익: <span className={`${(Number(evlu_amt_smtl_amt) / Number(pchs_amt_smtl_amt) * 100 - 100) >= 0 ? "text-red-500" : "text-blue-500"}`}>
-                        {Number(evlu_pfls_smtl_amt).toLocaleString()}{crcy_cd} ({pchs_amt_smtl_amt == 0 ? "-" : formatNumber(Number(Number(evlu_amt_smtl_amt / pchs_amt_smtl_amt) * 100 - 100))}%)
-                    </span>
-                </div>
-                {!!frst_bltn_exrt ? <div className="font-mono text-right text-sm">us환율:{formatNumber(Number(frst_bltn_exrt))}원</div> : <></>}
-            </div>
-            {/* <div className="rounded px-2 pb-1 m-2 shadow"> */}
-            {/* <div className="text-xs text-black p-3 border rounded"> */}
-            <div className="font-mono flex rounded px-2 pb-1 m-1 shadow">
-                <div>
-                    <div className="rounded px-2 pb-1 m-1 shadow">
-                        <div className="text-[0.6rem]">
-                            매입
+            <div className="font-mono flex flex-col w-full">
+                <div className="flex w-full justify-center">
+                    <div className="flex flex-col mx-10 min-w-96 rounded-lg justify-between">
+                        <div className="flex flex-col px-12">
+                            <div className="text-[0.6rem] text-left">평가손익</div>
+                            <div className={`${(Number(evlu_amt_smtl_amt) / Number(pchs_amt_smtl_amt) * 100 - 100) >= 0 ? "text-red-500" : "text-blue-500"}`}>
+                                {Number(evlu_pfls_smtl_amt).toLocaleString()}{crcy_cd} ({pchs_amt_smtl_amt == 0 ? "-" : formatNumber(Number(Number(evlu_amt_smtl_amt / pchs_amt_smtl_amt) * 100 - 100))}%)
+                            </div>
+                            {!!frst_bltn_exrt ? <div className="font-mono text-right text-[0.6rem]">1 $ = {formatNumber(Number(frst_bltn_exrt))} ₩</div> : <></>}
                         </div>
-                        <div className="text-right">
-                            {Number(pchs_amt_smtl_amt).toLocaleString()}{crcy_cd}
-                        </div>
-                        {!!frst_bltn_exrt ? <div className="text-right text-[0.5rem]"> ({formatNumber(Number(pchs_amt_smtl_amt) / Number(frst_bltn_exrt))} USD)</div> : ""}
-                    </div>
-                    <div className="rounded px-2 pb-1 m-1 shadow">
-                        <div className="text-[0.6rem]">
-                            평가
-                        </div>
-                        <div className="text-right">
-                            <span className={`${Number(evlu_amt_smtl_amt) > Number(pchs_amt_smtl_amt) ? "text-red-500" : "text-blue-500"}`}>{Number(evlu_amt_smtl_amt).toLocaleString()}{crcy_cd}</span>
-                        </div>
-                        {!!frst_bltn_exrt ? <div className="text-right text-[0.5rem]"> ({formatNumber(Number(evlu_amt_smtl_amt) / Number(frst_bltn_exrt))} USD)</div> : ""}
-                    </div>
-                </div>
-                <div>
-                    <div className="rounded px-2 pb-1 m-1 shadow">
-                        <div className="text-[0.6rem]">
-                            예수금
-                        </div>
-                        <div className="text-right">
-                            {Number(dnca_tot_amt).toLocaleString()}{crcy_cd}
-                        </div>
-                        {!!frst_bltn_exrt ? <div className="text-right text-[0.5rem]"> ({formatNumber(Number(dnca_tot_amt) / Number(frst_bltn_exrt))} USD)</div> : ""}
-                    </div>
-                    <div className="rounded px-2 pb-1 m-1 shadow">
-                        <div className="text-[0.6rem]">
-                            순자산
-                        </div>
-                        <div className="text-right">
-                            {Number(nass_amt).toLocaleString()}{crcy_cd}
-                        </div>
-                        {!!frst_bltn_exrt ? <div className="text-right text-[0.5rem]"> ({formatNumber(Number(nass_amt) / Number(frst_bltn_exrt))} USD)</div> : ""}
                     </div>
                 </div>
             </div>
-
-            {/* </div> */}
+            <div className="font-mono flex flex-col w-full">
+                <div className="flex mb-2 w-full justify-center">
+                    <div className="flex flex-col mx-10 min-w-96 rounded-lg justify-between">
+                        <div className="flex justify-evenly px-3">
+                            <div className="border dark:border-gray-700 rounded-lg px-2 mb-2 min-w-32">
+                                <div className="text-[0.6rem]">
+                                    매입
+                                </div>
+                                <div className="text-right">
+                                    {Number(pchs_amt_smtl_amt).toLocaleString()}{crcy_cd}
+                                </div>
+                                {!!frst_bltn_exrt ? <div className="text-right text-[0.5rem]"> ({formatNumber(Number(pchs_amt_smtl_amt) / Number(frst_bltn_exrt))} USD)</div> : ""}
+                            </div>
+                            <div className="border dark:border-gray-700 rounded-lg px-2 mb-2 min-w-32">
+                                <div className="text-[0.6rem]">
+                                    예수금
+                                </div>
+                                <div className="text-right">
+                                    {Number(dnca_tot_amt).toLocaleString()}{crcy_cd}
+                                </div>
+                                {!!frst_bltn_exrt ? <div className="text-right text-[0.5rem]"> ({formatNumber(Number(dnca_tot_amt) / Number(frst_bltn_exrt))} USD)</div> : ""}
+                            </div>
+                        </div>
+                        <div className="flex justify-evenly px-3">
+                            <div className="border dark:border-gray-700 rounded-lg px-2 mb-2 min-w-32">
+                                <div className="text-[0.6rem]">
+                                    평가
+                                </div>
+                                <div className="text-right">
+                                    <span className={`${Number(evlu_amt_smtl_amt) > Number(pchs_amt_smtl_amt) ? "text-red-500" : "text-blue-500"}`}>{Number(evlu_amt_smtl_amt).toLocaleString()}{crcy_cd}</span>
+                                </div>
+                                {!!frst_bltn_exrt ? <div className="text-right text-[0.5rem]"> ({formatNumber(Number(evlu_amt_smtl_amt) / Number(frst_bltn_exrt))} USD)</div> : ""}
+                            </div>
+                            <div className="border dark:border-gray-700 rounded-lg px-2 mb-2 min-w-32">
+                                <div className="text-[0.6rem]">
+                                    순자산
+                                </div>
+                                <div className="text-right">
+                                    {Number(nass_amt).toLocaleString()}{crcy_cd}
+                                </div>
+                                {!!frst_bltn_exrt ? <div className="text-right text-[0.5rem]"> ({formatNumber(Number(nass_amt) / Number(frst_bltn_exrt))} USD)</div> : ""}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
         </>,
         tableHead: example8TableHead,
         selectHead: selectHead,
@@ -365,7 +369,7 @@ export default function InquireBalanceResult(props: InquireBalanceResultProps) {
     }
 
     return <>
-        <div className={`font-mono border border-black text-center w-80 z-10 fixed top-32 left-1/2 transform -translate-x-1/2 px-6 py-3 rounded-lg text-white shadow-lg shadow-blue-gray-500 transition-all duration-500 ${show ? "opacity-100 scale-100 bg-green-500" : "opacity-0 scale-95 pointer-events-none"}`}>
+        <div className={`font-mono border border-black text-center w-80 z-10 fixed top-32 left-1/2 transform -translate-x-1/2 px-6 py-3 rounded-lg text-white transition-all duration-500 ${show ? "opacity-100 scale-100 bg-green-500" : "opacity-0 scale-95 pointer-events-none"}`}>
             <div className="">{msg}</div>
             <div className="text-lg">✅ {orderName}</div>
             <div className="">{!!props.kiOrderCash ? props.kiOrderCash.msg1 : ""}</div>

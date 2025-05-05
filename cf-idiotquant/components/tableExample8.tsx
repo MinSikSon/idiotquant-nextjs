@@ -71,24 +71,21 @@ function TablesExample8({
 
     const ADD_COUNT = 50;
     return (
-        <Card className="dark:bg-black dark:text-white h-full w-full rounded-none">
-            <Card.Header className="rounded-none flex flex-wrap gap-4 justify-between mb-4 shadow-none">
-                <div>
-                    <div className="">
-                        {title}
-                    </div>
-                    <div className="">
-                        {desc}
-                    </div>
-                    <div className="">
-                        {financial_date}
-                    </div>
-                    <div className="">
-                        {market_date}
-                    </div>
+        <Card className="flex flex-col dark:bg-black dark:text-white h-full w-full rounded-none p-0 m-0">
+            <Card.Header className="flex flex-col justify-between w-full p-0 m-0">
+                <div className="">
+                    {title}
+                </div>
+                <div className="">
+                    {desc}
+                </div>
+                <div className="">
+                    {financial_date}
+                </div>
+                <div className="">
+                    {market_date}
                 </div>
             </Card.Header>
-
             {tableRow.length == 0 ?
                 <Button variant="ghost">{!!msg ? <>{msg}</> : <><Spinner size="sm" /> loading...</>}</Button>
                 :
@@ -100,7 +97,7 @@ function TablesExample8({
                                     {tableHead.map(({ head, desc, customeStyle }) => (
                                         <th
                                             key={head}
-                                            className={`border-b border-gray-300 pl-3 pb-2 ${customeStyle} dark:text-white`}
+                                            className={`border-b dark:border-gray-700 pl-3 pb-2 ${customeStyle} dark:text-white`}
                                         >
                                             <div onClick={() => {
                                                 console.log(`setSelectHead`, !!setSelectHead, setSelectHead);
