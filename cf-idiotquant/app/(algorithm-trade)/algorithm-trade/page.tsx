@@ -220,7 +220,7 @@ export default function AlgorithmTrade() {
     let exclude_token = 0;
     const props: TablesExample8PropsType = {
         title: <>
-            <div className="flex items-center">
+            <div className="flex items-center p-2">
                 <DesignButton
                     handleOnClick={() => {
                         handleOnClick()
