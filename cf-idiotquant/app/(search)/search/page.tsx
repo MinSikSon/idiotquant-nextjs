@@ -86,13 +86,37 @@ export default function Search() {
 
         const stck_oprc = Number(kiInquireDailyItemChartPrice.output2[0]["stck_oprc"]);
         const market_cap = (Number(kiInquireDailyItemChartPrice.output1["stck_prpr"]) * Number(kiInquireDailyItemChartPrice.output1["lstn_stcn"]));
-        const current_asset = (Number(kiBalanceSheet.output[getYearMatchIndex(kiInquireDailyItemChartPrice.output2[0]["stck_bsop_date"])].cras) * 100000000);
-        const total_liabilities = (Number(kiBalanceSheet.output[getYearMatchIndex(kiInquireDailyItemChartPrice.output2[0]["stck_bsop_date"])].total_lblt) * 100000000);
-        // console.log(`last_price`, last_price);
-        // console.log(`market_cap`, market_cap);
-        // console.log(`current_asset`, current_asset);
-        // console.log(`total_liabilities`, total_liabilities);
-        const prompt = `(기본 조건: 두괄식, markdown, 한글, 색상 강조, 목차 순서, 숫자 단위) 종목명은 ${name}이고, 현재가는 ${stck_oprc}원, 시가총액은 ${market_cap}원, 유동자산은 ${current_asset}원, 부채총계는 ${total_liabilities}원입니다. 이 종목의 매수/매도 의견을 알려주세요.`;
+        const bstp_kor_isnm = kiInquirePrice.output.bstp_kor_isnm; // 업종 한글 종목명
+
+        const yearMatchIndex = getYearMatchIndex(kiInquireDailyItemChartPrice.output2[0]["stck_bsop_date"]);
+        const latestBalanceSheet = kiBalanceSheet.output[yearMatchIndex];
+        const ONE_HUNDRED_MILLION = 100000000;
+
+        const stac_yymm = latestBalanceSheet.stac_yymm; // stac_yymm: str    #결산 년월
+        const current_asset = (Number(latestBalanceSheet.cras) * ONE_HUNDRED_MILLION); // cras: str    #유동자산
+        const fxas = (Number(latestBalanceSheet.fxas) * ONE_HUNDRED_MILLION); // fxas: str    #고정자산
+        const total_aset = (Number(latestBalanceSheet.total_aset) * ONE_HUNDRED_MILLION); // total_aset: str    #자산총계
+        const flow_lblt = (Number(latestBalanceSheet.flow_lblt) * ONE_HUNDRED_MILLION); // flow_lblt: str    #유동부채
+        const fix_lblt = (Number(latestBalanceSheet.fix_lblt) * ONE_HUNDRED_MILLION); // fix_lblt: str    #고정부채
+        const total_liabilities = (Number(latestBalanceSheet.total_lblt) * ONE_HUNDRED_MILLION); // total_lblt: str    #부채총계
+        const cpfn = (Number(latestBalanceSheet.cpfn) * ONE_HUNDRED_MILLION);// cpfn: str    #자본금
+        const cfp_surp = (Number(latestBalanceSheet.cfp_surp) * ONE_HUNDRED_MILLION);// cfp_surp: str    #자본잉여금
+        const prfi_surp = (Number(latestBalanceSheet.prfi_surp) * ONE_HUNDRED_MILLION); // prfi_surp: str    #이익잉여금
+        const total_cptl = (Number(latestBalanceSheet.total_cptl) * ONE_HUNDRED_MILLION); // total_cptl: str    #자본총계
+
+        // const default_condition = `다음 조건들에 따라 한국어로 분석해줘: 두괄식 요약, Markdown 형식 사용, 핵심 숫자는 굵게 강조, 항목별 소제목 및 목차 포함, 금액 단위는 원(₩)으로 표기)`;
+        // const balance_condition = `(재무재표: 결산년월 ${stac_yymm}, 유동자산 ${current_asset}원, 고정자산 ${fxas}원, 자산총계 ${total_aset}원, 유동부채 ${flow_lblt}원, 
+        // 고정부채 ${fix_lblt}원, 부채총계 ${total_liabilities}원, 자본금 ${cpfn}원, 자본잉여금 ${cfp_surp}원, 이익잉여금 ${prfi_surp}원, 자본총계 ${total_cptl}원)`;
+        // const stock_condition = `종목명: ${name}, 업종: ${bstp_kor_isnm}. ${balance_condition} 현재가는 ${stck_oprc}원, 시가총액은 ${market_cap}원.`;
+        // const requirement = `이 종목의 재무정보 기반으로 매수/매도 의견을 알려줘.`;
+        // const prompt = `${default_condition} ${stock_condition} ${requirement}`;
+
+        const prompt = `다음 정보를 기반으로 종목의 매수/매도 의견을 한국어로 알려줘. (그리고 두괄식 요약, Markdown 형식, 핵심 숫자 강조(굵게), 금액 단위는 원(₩)으로 표기해줘. 그리고 중복된 설명을 좀 줄여줘.)
+          종목명은 ${name} ,업종은 ${bstp_kor_isnm}. 주가는 ${stck_oprc.toLocaleString()}원, 시가총액은 ${market_cap.toLocaleString()}원, 결산일은: ${stac_yymm},
+          유동자산은 ${current_asset.toLocaleString()}원 고정자산은 ${fxas.toLocaleString()}원, 자산총계는 ${total_aset.toLocaleString()}원,
+          유동부채는 ${flow_lblt.toLocaleString()}원, 고정부채는 ${fix_lblt.toLocaleString()}원, 부채총계는 ${total_liabilities.toLocaleString()}원,
+          자본금은 ${cpfn.toLocaleString()}원, 자본잉여금은 ${cfp_surp.toLocaleString()}원, 이익잉여금은 ${prfi_surp.toLocaleString()}원, 자본총계는 ${total_cptl.toLocaleString()}원`;
+
         dispatch(reqPostLaboratory({ system_content: prompt, user_content: prompt }));
       }
     }
