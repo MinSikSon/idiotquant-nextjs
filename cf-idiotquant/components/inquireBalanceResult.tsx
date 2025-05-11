@@ -151,7 +151,10 @@ export default function InquireBalanceResult(props: InquireBalanceResultProps) {
                 id: name,
                 column_1: <>
                     <div className="font-mono flex flex-col text-xs dark:text-white">
-                        <div className={`${name.length >= 7 ? "text-[0.6rem]" : "text-xs"}`}>{name}</div>
+                        <div className="flex gap-1">
+                            <div className="text-[0.5rem]">{index}</div>
+                            <div className={`${name.length >= 7 ? "text-[0.6rem]" : "text-xs"}`}>{name}</div>
+                        </div>
                         <div className="text-[0.5rem]">({pdno})</div>
                     </div>
                 </>,
