@@ -165,7 +165,6 @@ export default function InquireBalanceResult(props: InquireBalanceResultProps) {
                         </div>
                     </div>
                 </>,
-
                 column_3: <>
                     <div className="font-mono flex flex-col text-xs dark:text-white">
                         <div className="mb-0 pb-0">
@@ -316,40 +315,38 @@ export default function InquireBalanceResult(props: InquireBalanceResultProps) {
                 <div className="flex mb-2 w-full justify-center">
                     <div className="flex flex-col mx-10 min-w-96 rounded-lg justify-between">
                         <div className="flex justify-evenly px-3">
-                            <div className="border dark:border-gray-700 rounded-lg px-2 mb-2 min-w-32">
+                            <div className="border dark:border-gray-700 rounded-lg px-2 mb-2 min-w-20 md:min-w-32 lg:min-w-32">
                                 <div className="text-[0.6rem]">
                                     매입
                                 </div>
-                                <div className="text-right">
+                                <div className="text-right text-xs md:text-base lg:text-base">
                                     {Number(pchs_amt_smtl_amt).toLocaleString()}{crcy_cd}
                                 </div>
                                 {!!frst_bltn_exrt ? <div className="text-right text-[0.5rem]"> ({formatNumber(Number(pchs_amt_smtl_amt) / Number(frst_bltn_exrt))} USD)</div> : ""}
                             </div>
-                            <div className="border dark:border-gray-700 rounded-lg px-2 mb-2 min-w-32">
+                            <div className="border dark:border-gray-700 rounded-lg px-2 mb-2 min-w-20 md:min-w-32 lg:min-w-32">
                                 <div className="text-[0.6rem]">
                                     예수금
                                 </div>
-                                <div className="text-right">
+                                <div className="text-right text-xs md:text-base lg:text-base">
                                     {Number(dnca_tot_amt).toLocaleString()}{crcy_cd}
                                 </div>
                                 {!!frst_bltn_exrt ? <div className="text-right text-[0.5rem]"> ({formatNumber(Number(dnca_tot_amt) / Number(frst_bltn_exrt))} USD)</div> : ""}
                             </div>
-                        </div>
-                        <div className="flex justify-evenly px-3">
-                            <div className="border dark:border-gray-700 rounded-lg px-2 mb-2 min-w-32">
+                            <div className="border dark:border-gray-700 rounded-lg px-2 mb-2 min-w-20 md:min-w-32 lg:min-w-32">
                                 <div className="text-[0.6rem]">
                                     평가
                                 </div>
-                                <div className="text-right">
+                                <div className="text-right text-xs md:text-base lg:text-base">
                                     <span className={`${Number(evlu_amt_smtl_amt) > Number(pchs_amt_smtl_amt) ? "text-red-500" : "text-blue-500"}`}>{Number(evlu_amt_smtl_amt).toLocaleString()}{crcy_cd}</span>
                                 </div>
                                 {!!frst_bltn_exrt ? <div className="text-right text-[0.5rem]"> ({formatNumber(Number(evlu_amt_smtl_amt) / Number(frst_bltn_exrt))} USD)</div> : ""}
                             </div>
-                            <div className="border dark:border-gray-700 rounded-lg px-2 mb-2 min-w-32">
+                            <div className="border dark:border-gray-700 rounded-lg px-2 mb-2 min-w-20 md:min-w-32 lg:min-w-32">
                                 <div className="text-[0.6rem]">
                                     순자산
                                 </div>
-                                <div className="text-right">
+                                <div className="text-right text-xs md:text-base lg:text-base">
                                     {Number(nass_amt).toLocaleString()}{crcy_cd}
                                 </div>
                                 {!!frst_bltn_exrt ? <div className="text-right text-[0.5rem]"> ({formatNumber(Number(nass_amt) / Number(frst_bltn_exrt))} USD)</div> : ""}
