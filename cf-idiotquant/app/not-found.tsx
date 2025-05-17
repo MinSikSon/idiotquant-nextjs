@@ -1,6 +1,6 @@
 "use client"
 
-import { DesignButton } from "@/components/designButton";
+import { DesignButton } from "@/components/DesignButton";
 import FuzzyText from "@/components/design/FuzzyText";
 import { Button, Card, Typography } from "@material-tailwind/react";
 import { Metadata } from "next";
