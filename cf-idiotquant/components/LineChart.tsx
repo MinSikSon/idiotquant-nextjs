@@ -21,6 +21,7 @@ interface LineChartProps {
         colors?: string;
         strokeColors?: string;
     };
+    type?: any;
 }
 
 function rgbToHex(rgb: string[]): string {
@@ -39,7 +40,8 @@ const LineChartComponent = ({
     data_array,
     category_array,
     height = 120,
-    markers = {}
+    markers = {},
+    type = "area"
 }: LineChartProps) => {
     const { theme } = useTheme();
     const [vars, setVars] = React.useState<CSSStyleDeclaration | null>(null);
@@ -66,7 +68,7 @@ const LineChartComponent = ({
 
     const chartConfig = React.useMemo(
         () => ({
-            type: "area",
+            type: type,
             background: "transparent",
             stroke: {
                 curve: "smooth",
