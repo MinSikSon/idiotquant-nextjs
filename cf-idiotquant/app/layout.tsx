@@ -1,7 +1,7 @@
 import "@/app/global.css"
 import { StoreProvider } from "./StoreProvider"
 import { LoadData } from "@/components/loadData"
-import Navigation from "@/components/Navigation"
+import NavbarWithSimpleLinks from "@/components/Navigation"
 
 export const metadata = {
   title: 'idiotquant.com',
@@ -22,7 +22,7 @@ export default function RootLayout({
         <head>
         </head>
         <body className="md:flex lg:flex">
-          <Navigation />
+          <NavbarWithSimpleLinks />
           <div className="md:flex-1 lg:flex-1 w-full h-full scroll-auto">
             {children}
           </div>

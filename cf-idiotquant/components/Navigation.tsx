@@ -12,8 +12,8 @@ import { selectKakaoId, selectKakaoNickName } from "@/lib/features/login/loginSl
 import { useAppSelector } from "@/lib/hooks";
 
 import { usePathname } from "next/navigation";
-import { DesignButton } from "./DesignButton";
 import ThemeToggle from "./ThemeToggle";
+import { DesignButton } from "./DesignButton";
 
 interface NavItemPropsType {
     url: string;
