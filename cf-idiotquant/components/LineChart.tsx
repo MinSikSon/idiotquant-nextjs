@@ -1,4 +1,3 @@
-
 "use client";
 
 import * as React from "react";
@@ -12,11 +11,23 @@ import { SelectFace3d } from "iconoir-react";
 
 const DEBUG = false;
 
-function rgbToHex(rgb: any) {
+interface LineChartProps {
+    data_array: any[];
+    category_array: string[];
+    height?: number;
+    markers?: {
+        size?: number;
+        sizeOnHover?: number;
+        colors?: string;
+        strokeColors?: string;
+    };
+}
+
+function rgbToHex(rgb: string[]): string {
     return (
         "#" +
         rgb
-            .map((x: any) => {
+            .map((x) => {
                 const hex = parseInt(x, 10).toString(16);
                 return hex.length === 1 ? "0" + hex : hex;
             })
@@ -24,183 +35,140 @@ function rgbToHex(rgb: any) {
     );
 }
 
-export default function LineChart(props: any) {
-    if (DEBUG) console.log(`[LineChart]`, `props`, props);
+const LineChartComponent = ({
+    data_array,
+    category_array,
+    height = 120,
+    markers = {}
+}: LineChartProps) => {
     const { theme } = useTheme();
     const [vars, setVars] = React.useState<CSSStyleDeclaration | null>(null);
 
     React.useEffect(() => {
         const cssVarValue = window.getComputedStyle(document.documentElement);
-
         setVars(cssVarValue);
     }, [theme]);
 
-    const chartColor = vars
-        ? rgbToHex(vars.getPropertyValue("--color-primary").split(" "))
-        : "";
-    const textColor = vars
-        ? rgbToHex(vars.getPropertyValue("--color-foreground").split(" "))
-        : "";
-    const lineColor = vars
-        ? rgbToHex(vars.getPropertyValue("--color-surface").split(" "))
-        : "";
+    const chartColor = React.useMemo(() =>
+        vars ? rgbToHex(vars.getPropertyValue("--color-primary").split(" ")) : "",
+        [vars]
+    );
+
+    const textColor = React.useMemo(() =>
+        vars ? rgbToHex(vars.getPropertyValue("--color-foreground").split(" ")) : "",
+        [vars]
+    );
+
+    const lineColor = React.useMemo(() =>
+        vars ? rgbToHex(vars.getPropertyValue("--color-surface").split(" ")) : "",
+        [vars]
+    );
 
     const chartConfig = React.useMemo(
-        () =>
-            ({
-                // type: !!props.type ? props.type : "line",
-                type: "area",
-                // stacked: true,
-                background: "transparent",
-                // type: "bar",
-                stroke: {
-                    curve: "smooth",
-                    width: 2,
+        () => ({
+            type: "area",
+            background: "transparent",
+            stroke: {
+                curve: "smooth",
+                width: 2,
+            },
+            fill: {
+                type: "gradient",
+                gradient: {
+                    shadeIntensity: 1,
+                    opacityFrom: 0.6,
+                    opacityTo: 0.2,
+                    stops: [0, 90, 100],
                 },
-                fill: {
-                    type: "gradient",
-                    gradient: {
-                        shadeIntensity: 1,
-                        opacityFrom: 0.6,
-                        opacityTo: 0.2,
-                        stops: [0, 90, 100],
+            },
+            height,
+            zoom: {
+                enabled: false,
+            },
+            series: data_array,
+            options: {
+                chart: {
+                    toolbar: {
+                        show: false,
                     },
                 },
-                // height: 240, // chart 높이
-                // height: 120, // chart 높이
-                height: !!props.height ? props.height : 120, // chart 높이
-                zoom: {
-                    enabled: false, // 줌 비활성화
-                },
-                series: props.data_array,
-                options: {
-                    chart: {
-                        toolbar: {
-                            show: false,
-                        },
+                title: {
+                    text: `${category_array[0] ?? ""} ~ ${category_array[category_array.length - 1] ?? ""}`,
+                    align: "right",
+                    style: {
+                        fontSize: "10px",
                     },
-                    title: {
-                        text: `${props.category_array[0] ?? ""} ~ ${props.category_array[props.category_array.length - 1] ?? ""}`,
-                        align: "right",  // 정렬 (left, center, right)
+                    show: "",
+                },
+                dataLabels: {
+                    enabled: false,
+                },
+                colors: [chartColor],
+                markers: {
+                    size: 0,
+                    sizeOnHover: 0,
+                    colors: "transparent",
+                    strokeColors: "transparent",
+                    ...markers,
+                },
+                xaxis: {
+                    axisTicks: {
+                        show: false,
+                    },
+                    axisBorder: {
+                        show: false,
+                    },
+                    labels: {
                         style: {
-                            fontSize: "10px",
+                            colors: textColor,
+                            fontSize: "6px",
+                            fontFamily: "inherit",
+                            fontWeight: 400,
                         },
-                        show: "",
+                        show: false,
                     },
-                    dataLabels: {
-                        enabled: false,
-                    },
-                    colors: [chartColor],
-                    // stroke: {
-                    //     curve: "smooth",
-                    //     lineCap: "round",
-                    //     width: 3, // 선 두께
-                    // },
-
-                    markers: {
-                        size: 0,
-                        sizeOnHover: 0, // 마우스 오버 시에도 마커 표시 안 함
-                        colors: "transparent", // 마커 색상을 투명하게 설정하여 흰색 마커 방지
-                        strokeColors: "transparent", // 테두리도 투명하게 설정
-                        ...props.markers,
-                    },
-                    xaxis: {
-                        axisTicks: {
-                            show: false,
+                    categories: category_array,
+                },
+                yaxis: {
+                    labels: {
+                        style: {
+                            colors: textColor,
+                            fontSize: "8px",
+                            fontFamily: "inherit",
+                            fontWeight: 400,
                         },
-                        axisBorder: {
-                            show: false,
-                        },
-                        labels: {
-                            style: {
-                                colors: textColor,
-                                // fontSize: "12px",
-                                fontSize: "6px",
-                                fontFamily: "inherit",
-                                fontWeight: 400,
-                            },
-                            show: false,
-                        },
-                        // tickAmount: 2, // 최소 2개의 tick만 표시 (시작과 끝)
-                        // categories: [
-                        //     "Apr",
-                        //     "May",
-                        //     "Jun",
-                        //     "Jul",
-                        //     "Aug",
-                        //     "Sep",
-                        //     "Oct",
-                        //     "Nov",
-                        //     "Dec",
-                        // ],
-                        categories: props.category_array,
-                    },
-                    yaxis: {
-                        labels: {
-                            style: {
-                                colors: textColor,
-                                fontSize: "8px",
-                                fontFamily: "inherit",
-                                fontWeight: 400,
-                            },
-                            // offsetY: -5,
-                        },
-                    },
-                    grid: {
-                        show: true,
-                        // show: false,
-                        borderColor: lineColor,
-                        strokeDashArray: 0,
-                        xaxis: {
-                            lines: {
-                                // show: true,
-                                show: false,
-                            },
-                        },
-                        // padding: {
-                        //     top: 5,
-                        //     right: 20,
-                        // },
-                        padding: {
-                            top: -20, // 상단 여백 제거
-                            bottom: -20, // 하단 여백 제거
-                            right: 20,
-                        },
-                    },
-                    // fill: {
-                    //     // opacity: 0.8,
-                    //     opacity: 1,
-                    // },
-                    tooltip: {
-                        theme: "dark",
                     },
                 },
-            }) as ApexOptions,
-        [props.data_array, props.category_array]);
+                grid: {
+                    show: true,
+                    borderColor: lineColor,
+                    strokeDashArray: 0,
+                    xaxis: {
+                        lines: {
+                            show: false,
+                        },
+                    },
+                    padding: {
+                        top: -20,
+                        bottom: -20,
+                        right: 20,
+                    },
+                },
+                tooltip: {
+                    theme: "dark",
+                },
+            },
+        }) as ApexOptions,
+        [data_array, category_array, height, markers, chartColor, textColor, lineColor]
+    );
 
-    return <>
+    return (
         <div className="">
             <Chart {...chartConfig} />
         </div>
-        {/* <Card>
-            <Card.Header className="m-0 flex flex-wrap items-center gap-4 p-4">
-                <Card
-                    color="primary"
-                    className="grid h-16 w-16 shrink-0 place-items-center rounded-md text-primary-foreground md:h-20 md:w-20"
-                >
-                    <SelectFace3d className="h-6 w-6 md:h-8 md:w-8" />
-                </Card>
-                <div>
-                    <Typography type="h6">Line Chart</Typography>
-                    <Typography className="mt-1 max-w-sm text-foreground">
-                        Visualize your data in a simple way using the
-                        @material-tailwind/react chart plugin.
-                    </Typography>
-                </div>
-            </Card.Header>
-            <Card.Body>
-                <Chart {...chartConfig} />
-            </Card.Body>
-        </Card> */}
-    </>;
-}
+    );
+};
+
+LineChartComponent.displayName = 'LineChart';
+
+export default React.memo(LineChartComponent);
