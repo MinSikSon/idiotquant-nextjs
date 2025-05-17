@@ -13,7 +13,7 @@ import { useAppSelector } from "@/lib/hooks";
 
 import { usePathname } from "next/navigation";
 import { DesignButton } from "./designButton";
-import ThemeChanger from "./theme_changer";
+import ThemeToggle from "./ThemeToggle";
 
 interface NavItemPropsType {
     url: string;
@@ -112,7 +112,7 @@ export function NavbarWithSimpleLinks() {
                     <div className="flex flex-col w-full p-2 justify-items-center">
                         <div className="flex flex-col p-2 min-h-80 justify-between">
                             <NavList />
-                            <ThemeChanger />
+                            <ThemeToggle />
                         </div>
                     </div>
                 </div>
@@ -141,7 +141,7 @@ export function NavbarWithSimpleLinks() {
                 <div className="dark:bg-black dark:text-white flex flex-col w-full p-2 justify-items-center">
                     <div className="dark:bg-black dark:text-white flex flex-col p-2 min-h-80 justify-between">
                         <NavList />
-                        <ThemeChanger />
+                        <ThemeToggle />
                     </div>
                 </div>
             </Collapse>

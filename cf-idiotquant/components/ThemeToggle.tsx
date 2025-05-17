@@ -2,7 +2,7 @@
 
 import { useCallback, useState } from "react";
 
-export default function ThemeChanger() {
+export default function ThemeToggle() {
     const [toggleTheme, setToggleTheme] = useState(false);
     const handleThemeChange = useCallback(() => {
         const theme = document.cookie.includes("theme=light") ? "dark" : "light";
@@ -16,4 +16,4 @@ export default function ThemeChanger() {
             {toggleTheme === false ? "☀️" : "🌙"}
         </button>
     );
-}
+} 
