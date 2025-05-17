@@ -14,7 +14,8 @@ import { useAppDispatch, useAppSelector } from "@/lib/hooks";
 import { usePathname } from "next/navigation";
 import React from "react";
 
-const DEBUG = false;
+// const DEBUG = false;
+const DEBUG = true;
 
 export default function BalanceUs() {
     const pathname = usePathname();
