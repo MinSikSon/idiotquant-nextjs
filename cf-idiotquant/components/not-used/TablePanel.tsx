@@ -1,9 +1,9 @@
 
 import { Button, Card, Chip, List, Spinner, Typography } from "@material-tailwind/react";
-import { Util } from "./util";
+import { Util } from "../util";
 import CustomCard from "@/components/CustomCard";
 import Link from "next/link";
-import { getChangedTicker } from "./tickerMapper";
+import { getChangedTicker } from "../tickerMapper";
 import { usePathname } from "next/navigation";
 
 const MarQueue2 = (props: any) => {
