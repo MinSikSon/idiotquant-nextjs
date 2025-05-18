@@ -7,7 +7,7 @@ import {
     Button,
     Spinner,
 } from "@material-tailwind/react";
-import { DesignButton } from "./designButton";
+import { DesignButton } from "./DesignButton";
 import { ArrowDownIcon, ArrowUpIcon } from "@heroicons/react/24/outline";
 
 

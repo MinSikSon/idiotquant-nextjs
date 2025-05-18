@@ -7,7 +7,7 @@ import {
     Button,
 } from "@material-tailwind/react";
 import Link from "next/link";
-import { DesignButton } from "./designButton";
+import { DesignButton } from "./DesignButton";
 
 export interface Web3CardPropsType {
     title: any;

@@ -7,7 +7,7 @@ import React from "react";
 
 import { Input, Select, List, Typography } from "@material-tailwind/react";
 import { CalculationList } from "@/app/(calculator)/calculator/calculationList"
-import { DesignButton } from "@/components/designButton";
+import { DesignButton } from "@/components/DesignButton";
 
 export interface CalculationResult {
     index: number,

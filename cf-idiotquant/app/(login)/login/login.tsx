@@ -6,7 +6,7 @@ import { useRouter } from "next/navigation";
 import { selectKakaoAuthCode, selectKakaoId, selectKakaoNickName, setKakaoAuthCode, setKakaoId, setKakaoNickName } from "@/lib/features/login/loginSlice";
 import { useAppDispatch, useAppSelector } from "@/lib/hooks";
 import { clearCookie, getCookie, registerCookie } from "@/components/util";
-import { DesignButton } from "@/components/designButton";
+import { DesignButton } from "@/components/DesignButton";
 
 const DEBUG = false;
 

@@ -2,7 +2,7 @@ import React, { useState, useMemo, ChangeEvent, KeyboardEvent } from "react";
 import { MagnifyingGlassIcon, XCircleIcon } from "@heroicons/react/24/outline";
 
 import { Button } from "@material-tailwind/react";
-import { DesignButton } from "./designButton";
+import { DesignButton } from "./DesignButton";
 
 const SearchAutocomplete = (props: any) => {
     const [query, setQuery] = useState("");

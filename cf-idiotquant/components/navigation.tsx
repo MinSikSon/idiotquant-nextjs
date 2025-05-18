@@ -12,7 +12,7 @@ import { selectKakaoId, selectKakaoNickName } from "@/lib/features/login/loginSl
 import { useAppSelector } from "@/lib/hooks";
 
 import { usePathname } from "next/navigation";
-import { DesignButton } from "./designButton";
+import { DesignButton } from "./DesignButton";
 import ThemeChanger from "./theme_changer";
 
 interface NavItemPropsType {
