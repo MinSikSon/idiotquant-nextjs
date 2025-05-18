@@ -4,7 +4,7 @@ import { DesignButton } from "@/components/DesignButton";
 import RegisterTemplate from "@/components/RegisterTemplate";
 import { GetMergedStocksList, GetStocksFilteredByStrategyNCAV } from "@/components/Strategy";
 import { GetStocksFilteredByCustom } from "@/components/StrategyCustom";
-import { Util } from "@/components/util";
+import { Util } from "@/app/utils/util";
 import { getDefaultStrategy, getCapitalization, getPbr, getPer, getNetIncome, getNetIncomeList, getStep3Title, getStep3SubTitle, getCapitalizationMin, getCapitalizationMinList } from "@/lib/features/filter/filterSlice";
 import { setDefaultStrategy, setCapitalizationMin, setCapitalization, setPer, setPbr, setNetIncome } from "@/lib/features/filter/filterSlice";
 import { getDefaultStrategyList, getPerList, getPbrList, getCapitalizationList } from "@/lib/features/filter/filterSlice";

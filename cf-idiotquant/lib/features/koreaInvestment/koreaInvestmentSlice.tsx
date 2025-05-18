@@ -1,7 +1,7 @@
 import { PayloadAction } from "@reduxjs/toolkit";
 import { createAppSlice } from "@/lib/createAppSlice";
 import { getInquireBalanceApi, postTokenApi, postApprovalKeyApi, postOrderCash, getInquirePrice, getInquireDailyItemChartPrice, getBalanceSheet } from "./koreaInvestmentAPI";
-import { registerCookie } from "@/components/util";
+import { registerCookie } from "@/app/utils/util";
 
 // rt_cd
 const koreaInvestmentErrorCode = {

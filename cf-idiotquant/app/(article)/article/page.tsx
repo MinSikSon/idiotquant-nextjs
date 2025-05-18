@@ -4,7 +4,7 @@ import React from "react";
 
 import { useAppSelector } from "@/lib/hooks";
 import { selectArticleList, } from "@/lib/features/article/articleSlice";
-import { Web3Card2 } from "@/components/topCreators2";
+import { Web3Card2 } from "@/components/TopCreators2";
 
 export default function ArticlePage() {
     const articleList: any = useAppSelector(selectArticleList);

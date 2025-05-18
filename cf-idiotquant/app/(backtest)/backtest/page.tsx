@@ -19,7 +19,7 @@ import { reqGetFinancialInfoWithMarketInfo } from "@/lib/features/backtest/backt
 
 import React from "react";
 import { ArrowLeftIcon, ArrowRightIcon, CurrencyDollarIcon } from "@heroicons/react/24/outline";
-import { isValidCookie, Util } from "@/components/util";
+import { isValidCookie, Util } from "@/app/utils/util";
 
 
 import { KoreaInvestmentApproval, KoreaInvestmentToken, KoreaInvestmentBalance } from "@/lib/features/koreaInvestment/koreaInvestmentSlice";

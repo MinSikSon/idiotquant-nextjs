@@ -1,7 +1,7 @@
 // import { getCookie } from "@/components/util";
 // import { KoreaInvestmentToken } from "./algorithmTradeSlice";
 
-import { getCookie } from "@/components/util";
+import { getCookie } from "@/app/utils/util";
 import { KoreaInvestmentToken } from "../koreaInvestment/koreaInvestmentSlice";
 import { AdditionalHeaders, getKoreaInvestmentRequest } from "../koreaInvestment/koreaInvestmentAPI";
 

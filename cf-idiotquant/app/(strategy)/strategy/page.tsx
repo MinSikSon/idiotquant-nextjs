@@ -1,6 +1,6 @@
 "use client"
 
-import { Web3Card2, Web3CardPropsType } from "@/components/topCreators2";
+import { Web3Card2, Web3CardPropsType } from "@/components/TopCreators2";
 import { getStrategyInfoList, StrategyInfo } from "@/lib/features/strategy/strategySlice";
 import { useAppSelector } from "@/lib/hooks";
 import { Button, Spinner } from "@material-tailwind/react";

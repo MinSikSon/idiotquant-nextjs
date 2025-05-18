@@ -1,7 +1,7 @@
 "use client"
 
 import { useAppSelector } from "@/lib/hooks"
-import TablesExample8, { TablesExample8PropsType } from "@/components/tableExample8";
+import TablesExample8, { TablesExample8PropsType } from "@/components/TableExample8";
 import { getStrategyInfoList, STRATEGY_TABLE_HEAD } from "@/lib/features/strategy/strategySlice";
 import NotFound from "@/app/not-found";
 import { Chip } from "@material-tailwind/react";

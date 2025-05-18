@@ -1,6 +1,6 @@
 import { PayloadAction } from "@reduxjs/toolkit";
 import { createAppSlice } from "@/lib/createAppSlice";
-import { Web3CardPropsType } from "@/components/topCreators2";
+import { Web3CardPropsType } from "@/components/TopCreators2";
 
 interface ArticleList {
     index: number;

@@ -1,5 +1,5 @@
 
-import { getCookie } from "@/components/util";
+import { getCookie } from "@/app/utils/util";
 
 interface AiHeaders {
     authorization?: string;

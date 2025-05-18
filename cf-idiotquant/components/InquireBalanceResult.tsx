@@ -1,6 +1,6 @@
 import { Button, Spinner } from "@material-tailwind/react";
 import { DesignButton } from "./DesignButton";
-import TablesExample8, { Example8TableHeadType, Example8TableRowType, TablesExample8PropsType } from "./tableExample8";
+import TablesExample8, { Example8TableHeadType, Example8TableRowType, TablesExample8PropsType } from "./TableExample8";
 import { useAppDispatch, useAppSelector } from "@/lib/hooks";
 import React from "react";
 

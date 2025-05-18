@@ -1,6 +1,6 @@
 import { createAppSlice } from "@/lib/createAppSlice";
 import { setNcavList, getNcavList } from "./strategyAPI";
-import { Example8TableHeadType, Example8TableRowType } from "@/components/tableExample8";
+import { Example8TableHeadType, Example8TableRowType } from "@/components/TableExample8";
 import { PayloadAction } from "@reduxjs/toolkit";
 import { getRandomMainImage, getRandomUserImage } from "@/app/(strategy)/strategy/image";
 

@@ -1,6 +1,6 @@
 // fmp : financial modeling prep (https://site.financialmodelingprep.com/)
 
-import { getCookie } from "@/components/util";
+import { getCookie } from "@/app/utils/util";
 import { getKoreaInvestmentRequest, postKoreaInvestmentRequest } from "../koreaInvestment/koreaInvestmentAPI";
 
 // const url = `fmp/api/v3/balance-sheet-statement/${symbol}?period=annual&apikey=${key}`;

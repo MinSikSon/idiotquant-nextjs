@@ -2,7 +2,7 @@
 
 import { DesignButton } from "@/components/DesignButton";
 import LineChart from "@/components/LineChart";
-import TablesExample8, { Example8TableHeadType, Example8TableRowType, TablesExample8PropsType } from "@/components/tableExample8";
+import TablesExample8, { Example8TableHeadType, Example8TableRowType, TablesExample8PropsType } from "@/components/TableExample8";
 import { CapitalTokenType, reqGetUsCapitalToken, selectCapitalToken, selectInquirePriceMulti, selectUsCapitalToken } from "@/lib/features/algorithmTrade/algorithmTradeSlice";
 import { reqGetCapitalToken, reqGetInquirePriceMulti } from "@/lib/features/algorithmTrade/algorithmTradeSlice";
 import { getKoreaInvestmentToken, KoreaInvestmentToken } from "@/lib/features/koreaInvestment/koreaInvestmentSlice";

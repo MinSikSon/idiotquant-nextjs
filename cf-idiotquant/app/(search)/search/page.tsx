@@ -11,7 +11,7 @@ import { getKoreaInvestmentApproval, getKoreaInvestmentToken, getKoreaInvestment
 import { KoreaInvestmentApproval, KoreaInvestmentToken, KoreaInvestmentBalance } from "@/lib/features/koreaInvestment/koreaInvestmentSlice";
 
 import corpCodeJson from "@/public/data/validCorpCode.json"
-import { isValidCookie, Util } from "@/components/util";
+import { isValidCookie, Util } from "@/app/utils/util";
 import Auth from "@/components/auth";
 import SearchAutoComplete from "@/components/SearchAutoComplete";
 
