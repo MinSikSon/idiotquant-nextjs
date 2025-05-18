@@ -1,8 +1,7 @@
 import "@/app/global.css"
 import { StoreProvider } from "./StoreProvider"
 import NavbarWithSimpleLinks from "@/components/navigation"
-import { LoadData } from "@/components/loadData"
-
+import { LoadData } from "@/components/LoadData"
 export const metadata = {
   title: 'idiotquant.com',
   description: 'We recommend stock picks derived from a quantitative strategy.',
