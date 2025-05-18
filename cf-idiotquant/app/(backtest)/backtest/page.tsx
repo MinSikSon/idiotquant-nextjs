@@ -2,7 +2,7 @@
 
 import { useAppDispatch, useAppSelector } from "@/lib/hooks";
 import { Button, ButtonGroup, Input, Spinner } from "@material-tailwind/react";
-import RegisterTemplate from "@/components/register_template";
+import RegisterTemplate from "@/components/RegisterTemplate";
 import Link from "next/link";
 
 import {

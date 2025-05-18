@@ -1,6 +1,6 @@
 import "@/app/global.css"
 import { StoreProvider } from "./StoreProvider"
-import NavbarWithSimpleLinks from "@/components/navigation"
+import NavbarWithSimpleLinks from "@/components/Navigation"
 import { LoadData } from "@/components/LoadData"
 export const metadata = {
   title: 'idiotquant.com',

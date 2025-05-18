@@ -1,7 +1,7 @@
 "use client"
 
 import { DesignButton } from "@/components/DesignButton";
-import RegisterTemplate from "@/components/register_template";
+import RegisterTemplate from "@/components/RegisterTemplate";
 import { GetMergedStocksList, GetStocksFilteredByStrategyNCAV } from "@/components/strategy";
 import { GetStocksFilteredByCustom } from "@/components/strategyCustom";
 import { Util } from "@/components/util";

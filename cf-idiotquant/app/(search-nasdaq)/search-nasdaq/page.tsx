@@ -9,7 +9,7 @@ import { isValidCookie } from "@/components/util";
 import { getKoreaInvestmentUsMaretSearchInfo, getKoreaInvestmentUsMarketDailyPrice, KoreaInvestmentOverseasPriceDetail, KoreaInvestmentOverseasPriceDetailOutput, KoreaInvestmentOverseasPriceQuotationsDailyPrice, KoreaInvestmentOverseasPriceQuotationsInquireDailyChartPrice, KoreaInvestmentOverseasSearchInfo, KoreaInvestmentOverseasSearchInfoOutput, reqGetOverseasPriceQuotationsDailyPrice, reqGetQuotationsSearchInfo } from "@/lib/features/koreaInvestmentUsMarket/koreaInvestmentUsMarketSlice";
 import { getKoreaInvestmentUsMaretPriceDetail, reqGetQuotationsPriceDetail } from "@/lib/features/koreaInvestmentUsMarket/koreaInvestmentUsMarketSlice";
 import { getKoreaInvestmentToken, KoreaInvestmentToken, reqGetInquireBalance } from "@/lib/features/koreaInvestment/koreaInvestmentSlice";
-import SearchAutocomplete from "@/components/searchAutoComplete";
+import SearchAutoComplete from "@/components/SearchAutoComplete";
 
 import nasdaq_tickers from "@/public/data/usStockSymbols/nasdaq_tickers.json";
 import Login from "@/app/(login)/login/login";
@@ -99,7 +99,7 @@ export default function Search() {
 
     if (!!!kiUsMaretSearchInfo.rt_cd && !!!kiUsMaretPriceDetail.rt_cd) {
         return <>
-            <SearchAutocomplete placeHolder={"NASDAQ ticker 를 입력하세요..."} onSearchButton={onSearchButton} validCorpNameArray={nasdaq_tickers} />
+            <SearchAutoComplete placeHolder={"NASDAQ ticker 를 입력하세요..."} onSearchButton={onSearchButton} validCorpNameArray={nasdaq_tickers} />
             <div className="dark:bg-black h-lvh"></div>
         </>
     }
@@ -131,7 +131,7 @@ export default function Search() {
         || ("fulfilled" != kiUsMaretSearchInfo.state)
     ) {
         return <>
-            <SearchAutocomplete placeHolder={"NASDAQ ticker 를 입력하세요..."} onSearchButton={onSearchButton} validCorpNameArray={nasdaq_tickers} />
+            <SearchAutoComplete placeHolder={"NASDAQ ticker 를 입력하세요..."} onSearchButton={onSearchButton} validCorpNameArray={nasdaq_tickers} />
             <div className="dark:bg-black h-lvh"></div>
         </>
     }
@@ -140,7 +140,7 @@ export default function Search() {
     const maxLength = Math.max(...texts.map(text => text.length * 2));
     if (DEBUG) console.log(`maxLength`, maxLength);
     return <>
-        <SearchAutocomplete placeHolder={"NASDAQ ticker 를 입력하세요..."} onSearchButton={onSearchButton} validCorpNameArray={nasdaq_tickers} />
+        <SearchAutoComplete placeHolder={"NASDAQ ticker 를 입력하세요..."} onSearchButton={onSearchButton} validCorpNameArray={nasdaq_tickers} />
         {"0" != kiUsMaretSearchInfo.rt_cd ?
             <>
                 <div className="dark:bg-black dark:text-white p-3 shadow">

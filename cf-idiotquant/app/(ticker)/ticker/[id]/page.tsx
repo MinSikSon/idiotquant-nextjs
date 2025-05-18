@@ -1,6 +1,6 @@
 "use client"
 
-import ItemPanel from "@/components/itemPanel";
+import ItemPanel from "@/components/ItemPanel";
 import { selectNcavList } from "@/lib/features/strategy/strategySlice";
 import { useAppSelector } from "@/lib/hooks";
 

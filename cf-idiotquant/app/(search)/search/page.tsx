@@ -13,7 +13,7 @@ import { KoreaInvestmentApproval, KoreaInvestmentToken, KoreaInvestmentBalance }
 import corpCodeJson from "@/public/data/validCorpCode.json"
 import { isValidCookie, Util } from "@/components/util";
 import Auth from "@/components/auth";
-import SearchAutocomplete from "@/components/searchAutoComplete";
+import SearchAutoComplete from "@/components/SearchAutoComplete";
 
 import validCorpNameArray from "@/public/data/validCorpNameArray.json";
 import LineChart from "@/components/LineChart";
@@ -252,7 +252,7 @@ export default function Search() {
     || ("fulfilled" != kiInquirePrice.state)
   ) {
     return <>
-      <SearchAutocomplete placeHolder={"회사명을 검색하세요..."} onSearchButton={onSearchButton} validCorpNameArray={validCorpNameArray} />
+      <SearchAutoComplete placeHolder={"회사명을 검색하세요..."} onSearchButton={onSearchButton} validCorpNameArray={validCorpNameArray} />
       <div className="dark:bg-black h-lvh"></div>
     </>
   }
@@ -262,7 +262,7 @@ export default function Search() {
   const total_liabilities = (Number(kiBalanceSheet.output[getYearMatchIndex(kiInquireDailyItemChartPrice.output2[0]["stck_bsop_date"])].total_lblt) * 100000000);
 
   return <>
-    <SearchAutocomplete placeHolder={"회사명을 검색하세요..."} onSearchButton={onSearchButton} validCorpNameArray={validCorpNameArray} />
+    <SearchAutoComplete placeHolder={"회사명을 검색하세요..."} onSearchButton={onSearchButton} validCorpNameArray={validCorpNameArray} />
     <div className="dark:bg-black dark:text-white p-3 shadow font-mono">
       <div className="text-[0.6rem]">
         {kiInquirePrice.output["rprs_mrkt_kor_name"]}
