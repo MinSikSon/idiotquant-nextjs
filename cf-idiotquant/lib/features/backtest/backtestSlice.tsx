@@ -2,7 +2,7 @@ import { createAppSlice } from "@/lib/createAppSlice";
 import { PayloadAction } from "@reduxjs/toolkit";
 import { getFinancialInfoList } from "../financialInfo/financialInfoAPI";
 import { getFinancialInfoWithMarketInfo } from "./backtestAPI";
-import { GetMergedStocksList, GetStocksFilteredByStrategyNCAV } from "@/components/strategy";
+import { GetMergedStocksList, GetStocksFilteredByStrategyNCAV } from "@/components/Strategy";
 
 export interface BackTestConditionType1 {
     state: string;

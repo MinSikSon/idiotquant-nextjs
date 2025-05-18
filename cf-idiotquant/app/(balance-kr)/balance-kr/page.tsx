@@ -13,7 +13,7 @@ import React from "react";
 import { usePathname } from "next/navigation";
 import Auth from "@/components/auth";
 
-import InquireBalanceResult from "@/components/inquireBalanceResult";
+import InquireBalanceResult from "@/components/InquireBalanceResult";
 import NotFound from "@/app/not-found";
 
 export default function BalanceKr() {

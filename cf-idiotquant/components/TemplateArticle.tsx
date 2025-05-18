@@ -2,19 +2,19 @@
 import Link from 'next/link';
 import React from 'react';
 
-export function TemplateArticle(props) {
+export function TemplateArticle(props: any) {
     // console.log(`%cTemplateArticle`, 'color:blue;background:white;');
     const title = props.title;
     const subTitle = props.subTitle;
     const detail = props.detail;
     const link = props.link;
 
-    const SubList = (props) => {
+    const SubList = (props: any) => {
         const item = props.item;
         if ('object' == typeof item) {
             return (
                 <ul className='list-disc list-inside pl-4'>
-                    {item.map((subItem, index) => {
+                    {item.map((subItem: any, index: any) => {
                         return (<li key={index.toString()}>{subItem}</li>);
                     })}
                 </ul>
@@ -27,7 +27,7 @@ export function TemplateArticle(props) {
     const [mouse, setMouse] = React.useState([0, 0]);
     const mouseX = React.useRef(0);
     const mouseY = React.useRef(0);
-    const CustomImage = (props) => {
+    const CustomImage = (props: any) => {
         return (
             <>
                 <div className="relative col-start-1 row-start-1 flex flex-col-reverse rounded-lg sm:bg-none sm:row-start-2 sm:p-0 lg:row-start-1">
@@ -41,7 +41,7 @@ export function TemplateArticle(props) {
                 </div>
 
                 <div
-                    onMouseMove={(e) => {
+                    onMouseMove={(e: any) => {
                         // console.log(`onMouseMove e`, e);
                         const x = e.pageX - e.target.x;
                         const y = e.pageY - e.target.y;
@@ -52,10 +52,10 @@ export function TemplateArticle(props) {
                         const rotateX = 1 / 20 * y - 5;
                         e.target.style.transform = `perspective(350px) rotateX(${rotateX}deg) rotateY(${rotateY}deg)`;
                     }}
-                    onMouseOut={(e) => {
+                    onMouseOut={(e: any) => {
                         e.target.style.transform = `perspective(350px) rotateX(0deg) rotateY(0deg)`;
                     }}
-                    onTouchMove={(e) => {
+                    onTouchMove={(e: any) => {
                         // console.log(`onTouchMove e`, e);
                         const x = e.targetTouches[0].pageX - e.target.x;
                         const y = e.targetTouches[0].pageY - e.target.y;
@@ -66,7 +66,7 @@ export function TemplateArticle(props) {
                         const rotateX = 1 / 20 * y - 5;
                         e.target.style.transform = `perspective(350px) rotateX(${rotateX}deg) rotateY(${rotateY}deg)`;
                     }}
-                    onTouchEnd={(e) => {
+                    onTouchEnd={(e: any) => {
                         e.target.style.transform = `perspective(350px) rotateX(0deg) rotateY(0deg)`;
                     }}
                 >
@@ -88,7 +88,7 @@ export function TemplateArticle(props) {
             <CustomImage img={props.img} />
             <div className="mt-4 text-sm leading-6 col-start-1 sm:col-span-2 lg:mt-6 lg:row-start-4 lg:col-span-1 bg-gray-100 rounded-lg">
                 <ul className='list-disc list-inside'>
-                    {detail.map((item, index) => <SubList key={index.toString()} item={item} />)}
+                    {detail.map((item: any, index: any) => <SubList key={index.toString()} item={item} />)}
                 </ul>
             </div>
         </div>

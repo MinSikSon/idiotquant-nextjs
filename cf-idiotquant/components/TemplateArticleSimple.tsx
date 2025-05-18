@@ -1,6 +1,6 @@
 
 
-export function TemplateArticleSimple(props) {
+export function TemplateArticleSimple(props: any) {
     const title = props.title;
     const subTitle = props.subTitle;
     const link = props.link;
