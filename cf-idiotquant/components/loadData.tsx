@@ -9,7 +9,7 @@ import { getStrategyList, addStrategyList, selectStrategyState, setLoading, sele
 import { getCloudFlareLoginStatus } from "@/lib/features/login/loginSlice";
 import { GetMergedStocksList, GetStocksFilteredByStrategyNCAV } from "@/components/Strategy";
 import { selectKakaoId } from "@/lib/features/login/loginSlice";
-import { getCookie, isValidCookie } from "../app/utils/util";
+import { isValidCookie } from "@/utils/Cookie";
 
 const DEBUG = false;
 

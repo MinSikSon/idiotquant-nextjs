@@ -4,7 +4,6 @@ import { DesignButton } from "@/components/DesignButton";
 import RegisterTemplate from "@/components/RegisterTemplate";
 import { GetMergedStocksList, GetStocksFilteredByStrategyNCAV } from "@/components/Strategy";
 import { GetStocksFilteredByCustom } from "@/components/StrategyCustom";
-import { Util } from "@/app/utils/util";
 import { getDefaultStrategy, getCapitalization, getPbr, getPer, getNetIncome, getNetIncomeList, getStep3Title, getStep3SubTitle, getCapitalizationMin, getCapitalizationMinList } from "@/lib/features/filter/filterSlice";
 import { setDefaultStrategy, setCapitalizationMin, setCapitalization, setPer, setPbr, setNetIncome } from "@/lib/features/filter/filterSlice";
 import { getDefaultStrategyList, getPerList, getPbrList, getCapitalizationList } from "@/lib/features/filter/filterSlice";
@@ -16,6 +15,7 @@ import { addStrategyList } from "@/lib/features/strategy/strategySlice";
 import { useAppDispatch, useAppSelector } from "@/lib/hooks";
 import { Button, ButtonGroup } from "@material-tailwind/react";
 import Link from "next/link";
+import { UnitConversion } from "@/utils/ConvertUnits";
 
 export default function StrategyRegister() {
     const dispatch = useAppDispatch();
@@ -72,7 +72,7 @@ export default function StrategyRegister() {
             <div>{title}</div>
             <div className="flex w-full flex-col gap-4">
                 <ButtonGroup isFullWidth color="info" variant="outline">
-                    {list.map((item, key) => <Button key={key} className={`text-[0.7rem] ${selectValue == item ? `bg-blue-500 text-white` : ``}`} onClick={() => handleOnClick(item)}>{`${Util.UnitConversion(Number(item), true)}`}</Button>)}
+                    {list.map((item, key) => <Button key={key} className={`text-[0.7rem] ${selectValue == item ? `bg-blue-500 text-white` : ``}`} onClick={() => handleOnClick(item)}>{`${UnitConversion(Number(item), true)}`}</Button>)}
                 </ButtonGroup>
             </div>
         </div>
@@ -112,7 +112,7 @@ export default function StrategyRegister() {
         const filteredStocks = GetStocksFilteredByCustom(filteredByStrategyStocks, ["PER", "PBR", "시가총액최소값", "시가총액", "당기순이익"], [per, pbr, capitalizationMin, capitalization, netIncome]);
         console.log(`filteredStocks`, filteredStocks, Object.keys(filteredStocks).length);
 
-        const filterOption: string = `전략:${defaultStrategy}, PER:${per}, PBR:${pbr}, 시가총액:${isNaN(capitalizationMin) ? capitalizationMin : Util.UnitConversion(capitalizationMin, true)}~${isNaN(capitalization) ? capitalization : Util.UnitConversion(capitalization, true)}`;
+        const filterOption: string = `전략:${defaultStrategy}, PER:${per}, PBR:${pbr}, 시가총액:${isNaN(capitalizationMin) ? capitalizationMin : UnitConversion(capitalizationMin, true)}~${isNaN(capitalization) ? capitalization : UnitConversion(capitalization, true)}`;
         const { year, quarter } = financialLatestDate;
         const newStrategyList: any = {
             title: `(custom) base: ${defaultStrategy}`,

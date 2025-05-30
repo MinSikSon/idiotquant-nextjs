@@ -3,7 +3,7 @@
 import { ArrowUturnLeftIcon } from "@heroicons/react/24/outline";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { SearchPanel } from "@/components/panel/search";
+import { SearchPanel } from "@/components/not-used/panel/search";
 
 const DefaultTopPanel = (props: any) => {
     return (

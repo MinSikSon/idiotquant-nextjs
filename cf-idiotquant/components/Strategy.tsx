@@ -96,7 +96,7 @@ export function GetArrayFilteredByStrategyExample(stockCompanyInfo: any) {
     addWeight(arraySorted2);
     // 시가총액 하위 20% cut-line
     const cutLine = Number(arraySorted2.length * 0.2).toFixed(0);
-    // console.log(`cut-line(${cutLine}) 시가총액: ${Util.UnitConversion(arraySorted2[cutLine]['시가총액'], true)}, `, arraySorted2[cutLine]);
+    // console.log(`cut-line(${cutLine}) 시가총액: ${UnitConversion(arraySorted2[cutLine]['시가총액'], true)}, `, arraySorted2[cutLine]);
 
     // sort(PER)
     let arraySorted3 = new Array(...arraySorted2);

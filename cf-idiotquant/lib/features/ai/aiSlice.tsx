@@ -1,6 +1,5 @@
 import { createAppSlice } from "@/lib/createAppSlice";
 import { postLaboratory } from "./aiAPI";
-import { PayloadAction } from "@reduxjs/toolkit";
 import { clearStream, updateStreamingOutput } from "./aiStreamSlice";
 
 interface AiType {

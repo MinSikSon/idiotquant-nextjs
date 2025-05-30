@@ -1,9 +1,9 @@
 // import { getCookie } from "@/components/util";
 // import { KoreaInvestmentToken } from "./algorithmTradeSlice";
 
-import { getCookie } from "@/app/utils/util";
 import { KoreaInvestmentToken } from "../koreaInvestment/koreaInvestmentSlice";
 import { AdditionalHeaders, getKoreaInvestmentRequest } from "../koreaInvestment/koreaInvestmentAPI";
+import { getCookie } from "@/utils/Cookie";
 
 export const getInquirePriceMulti: any = async (koreaInvestmentToken: KoreaInvestmentToken, PDNOs: string[]) => {
     const subUrl = `/uapi/domestic-stock/v1/quotations/inquire-price-multi`;

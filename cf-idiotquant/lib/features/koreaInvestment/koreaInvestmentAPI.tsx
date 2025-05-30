@@ -1,4 +1,4 @@
-import { getCookie } from "@/app/utils/util";
+import { getCookie } from "@/utils/Cookie";
 import { KoreaInvestmentToken } from "./koreaInvestmentSlice";
 
 export const getBalanceSheet: any = async (koreaInvestmentToken: KoreaInvestmentToken, PDNO: string) => {

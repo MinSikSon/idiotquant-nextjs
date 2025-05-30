@@ -5,7 +5,7 @@ import { Button, Card } from '@material-tailwind/react';
 import { useRouter } from "next/navigation";
 import { selectKakaoAuthCode, selectKakaoId, selectKakaoNickName, setKakaoAuthCode, setKakaoId, setKakaoNickName } from "@/lib/features/login/loginSlice";
 import { useAppDispatch, useAppSelector } from "@/lib/hooks";
-import { clearCookie, getCookie, registerCookie } from "@/app/utils/util";
+import { clearCookie, getCookie, registerCookie } from "@/utils/Cookie";
 import { DesignButton } from "@/components/DesignButton";
 
 const DEBUG = false;

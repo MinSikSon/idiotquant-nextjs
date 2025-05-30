@@ -19,7 +19,8 @@ import { reqGetFinancialInfoWithMarketInfo } from "@/lib/features/backtest/backt
 
 import React from "react";
 import { ArrowLeftIcon, ArrowRightIcon, CurrencyDollarIcon } from "@heroicons/react/24/outline";
-import { isValidCookie, Util } from "@/app/utils/util";
+import { isValidCookie } from "@/utils/Cookie";
+import { UnitConversion } from "@/utils/ConvertUnits";
 
 
 import { KoreaInvestmentApproval, KoreaInvestmentToken, KoreaInvestmentBalance } from "@/lib/features/koreaInvestment/koreaInvestmentSlice";
@@ -380,8 +381,8 @@ export default function BackTest() {
                                                     <Typography key={stockName} color="primary" className="font-mono text-[0.6rem]">
                                                         {stockName}|<span className={`${profit >= 0 ? "text-red-500" : "text-blue-500"} ${!!currentFilteredStockInfo ? "" : "text-purple-500"}`}>수익:{profit}</span>
                                                         |시가:{Number(filteredStockInfo["시가"]).toFixed(0)}원
-                                                        |유동자산:{Util.UnitConversion(filteredStockInfoFinancial["유동자산"], false)}
-                                                        |부채총계:{Util.UnitConversion(filteredStockInfoFinancial["부채총계"], false)}
+                                                        |유동자산:{UnitConversion(filteredStockInfoFinancial["유동자산"], false)}
+                                                        |부채총계:{UnitConversion(filteredStockInfoFinancial["부채총계"], false)}
                                                     </Typography>
                                                     : <></>}
                                             </>
@@ -401,8 +402,8 @@ export default function BackTest() {
                                             {!!filteredStockInfo ?
                                                 <Typography key={stockName + index2} color="primary" className="font-mono text-[0.6rem]">
                                                     {stockName}| 시가:{Number(filteredStockInfo["시가"]).toFixed(0)}원
-                                                    |유동자산:{Util.UnitConversion(filteredStockInfo["유동자산"], false)}
-                                                    |부채총계:{Util.UnitConversion(filteredStockInfo["부채총계"], false)}
+                                                    |유동자산:{UnitConversion(filteredStockInfo["유동자산"], false)}
+                                                    |부채총계:{UnitConversion(filteredStockInfo["부채총계"], false)}
                                                 </Typography>
                                                 : <></>}
                                         </>

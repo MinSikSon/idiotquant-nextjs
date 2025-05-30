@@ -4,7 +4,7 @@ import Login from "@/app/(login)/login/login";
 import NotFound from "@/app/not-found";
 import Auth from "@/components/auth";
 import InquireBalanceResult from "@/components/InquireBalanceResult";
-import { isValidCookie } from "@/app/utils/util";
+import { isValidCookie } from "@/utils/Cookie";
 import { getKoreaInvestmentToken, KoreaInvestmentToken } from "@/lib/features/koreaInvestment/koreaInvestmentSlice";
 import { reqGetOverseasStockTradingInquirePresentBalance, getKoreaInvestmentUsMaretPresentBalance, KoreaInvestmentOverseasPresentBalance, reqPostOrderUs, getKoreaInvestmentUsOrder, KoreaInvestmentUsOrder } from "@/lib/features/koreaInvestmentUsMarket/koreaInvestmentUsMarketSlice";
 

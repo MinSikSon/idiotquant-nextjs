@@ -1,5 +1,4 @@
-
-import { getCookie } from "@/app/utils/util";
+import { getCookie } from "@/utils/Cookie";
 
 interface AiHeaders {
     authorization?: string;

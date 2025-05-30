@@ -1,9 +1,9 @@
 
 import { Button, Card, Chip, List, Spinner } from "@material-tailwind/react";
-import { Util } from "../app/utils/util";
 import CustomCard from "@/components/CustomCard";
 import Link from "next/link";
 import { getChangedTicker } from "@/components/TickerMapper";
+import { UnitConversion } from "@/utils/ConvertUnits";
 
 const MarQueue2 = (props: any) => {
     const CardList = () => {
@@ -159,10 +159,10 @@ export default function TablePanel(props: any) {
             ratio: Number(ratio * 100).toFixed(0),
             close: Number(종가).toLocaleString(),
             fairPrice: Number(fairPrice).toLocaleString(),
-            currentAssets: Util.UnitConversion(유동자산, false),
-            liabilities: Util.UnitConversion(부채총계, false),
-            netIncome: Util.UnitConversion(당기순이익, false),
-            // marketCapitalization: Util.UnitConversion(시가총액),
+            currentAssets: UnitConversion(유동자산, false),
+            liabilities: UnitConversion(부채총계, false),
+            netIncome: UnitConversion(당기순이익, false),
+            // marketCapitalization: UnitConversion(시가총액),
             marketCapitalization: 시가총액,
 
             PER: Number(PER),

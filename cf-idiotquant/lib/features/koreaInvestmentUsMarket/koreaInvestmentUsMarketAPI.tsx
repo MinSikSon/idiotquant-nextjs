@@ -1,4 +1,4 @@
-import { getCookie } from "@/app/utils/util";
+import { getCookie } from "@/utils/Cookie";
 import { getKoreaInvestmentRequest, postKoreaInvestmentRequest } from "../koreaInvestment/koreaInvestmentAPI";
 import { KoreaInvestmentToken } from "../koreaInvestment/koreaInvestmentSlice";
 
