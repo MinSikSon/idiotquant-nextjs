@@ -5,7 +5,7 @@ import React from "react";
 import { useAppDispatch, useAppSelector } from "@/lib/hooks";
 import { selectLoginState } from "@/lib/features/login/loginSlice";
 import { usePathname } from "next/navigation";
-import { isValidCookie } from "@/app/utils/util";
+import { isValidCookie } from "@/utils/Cookie";
 import { getKoreaInvestmentUsMaretSearchInfo, getKoreaInvestmentUsMarketDailyPrice, KoreaInvestmentOverseasPriceDetail, KoreaInvestmentOverseasPriceDetailOutput, KoreaInvestmentOverseasPriceQuotationsDailyPrice, KoreaInvestmentOverseasPriceQuotationsInquireDailyChartPrice, KoreaInvestmentOverseasSearchInfo, KoreaInvestmentOverseasSearchInfoOutput, reqGetOverseasPriceQuotationsDailyPrice, reqGetQuotationsSearchInfo } from "@/lib/features/koreaInvestmentUsMarket/koreaInvestmentUsMarketSlice";
 import { getKoreaInvestmentUsMaretPriceDetail, reqGetQuotationsPriceDetail } from "@/lib/features/koreaInvestmentUsMarket/koreaInvestmentUsMarketSlice";
 import { getKoreaInvestmentToken, KoreaInvestmentToken, reqGetInquireBalance } from "@/lib/features/koreaInvestment/koreaInvestmentSlice";
