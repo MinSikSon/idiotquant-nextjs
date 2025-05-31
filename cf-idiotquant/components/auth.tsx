@@ -1,6 +1,5 @@
 "use client"
 
-import { getCookie, isValidCookie, registerCookie, Util } from "@/app/utils/util";
 import { reqPostApprovalKey, reqPostToken, reqGetInquireBalance, reqPostOrderCash, reqGetInquirePrice, KoreaInvestmentInquirePrice, getKoreaInvestmentInquirePrice, reqGetInquireDailyItemChartPrice, getKoreaInvestmentInquireDailyItemChartPrice, KoreaInvestmentInquireDailyItemChartPrice, reqGetBalanceSheet, getKoreaInvestmentBalanceSheet, KoreaInvestmentBalanceSheet } from "@/lib/features/koreaInvestment/koreaInvestmentSlice";
 import { KoreaInvestmentApproval, KoreaInvestmentToken, KoreaInvestmentBalance } from "@/lib/features/koreaInvestment/koreaInvestmentSlice";
 import { setKoreaInvestmentToken } from "@/lib/features/koreaInvestment/koreaInvestmentSlice";
@@ -12,6 +11,7 @@ import { Button, Input, Spinner, Typography } from "@material-tailwind/react";
 import React from "react";
 
 import { usePathname } from "next/navigation";
+import { getCookie, isValidCookie, registerCookie } from "@/utils/Cookie";
 
 const DEBUG = false;
 
