@@ -83,7 +83,7 @@ export default function Chat() {
         }
 
         setResponse(outputContent);
-    }, [aiStreamOutput]);
+    }, [aiStreamOutput, dispatch, question]);
 
     React.useEffect(() => {
         // console.log(`aiHistory`, aiHistory);

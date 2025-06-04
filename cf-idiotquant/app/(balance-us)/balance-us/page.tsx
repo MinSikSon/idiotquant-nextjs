@@ -36,7 +36,7 @@ export default function BalanceUs() {
                 dispatch(reqGetOverseasStockTradingInquirePresentBalance(kiToken));
             }
         }
-    }, [kiToken, loginState]);
+    }, [kiToken, loginState, dispatch]);
 
     React.useEffect(() => {
         if (DEBUG) console.log(`[BalanceUs]`, `kiBalance`, kiBalance);

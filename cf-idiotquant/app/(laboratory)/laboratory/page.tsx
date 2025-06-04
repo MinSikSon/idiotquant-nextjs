@@ -134,8 +134,9 @@ function Flow() {
 
     const ADDITIONAL_VISIBLE_COUNT: number = 100;
     const [visibleCount, setVisibleCount] = React.useState<number>(ADDITIONAL_VISIBLE_COUNT);
+    const [market, setMarket] = React.useState<"KR" | "US">("KR");
 
-    function reDraw() {
+    const reDraw = useCallback(() => {
         if (DEBUG) console.log(`kr_capital_token`, kr_capital_token);
         const capitalToken = "KR" == market ? kr_capital_token : us_capital_token;
 
@@ -233,12 +234,11 @@ function Flow() {
         if (DEBUG) console.log(`purchase_edges`, purchase_edges);
         setNodes(purchase_nodes);
         setEdges(purchase_edges);
-    }
+    }, [kr_capital_token, us_capital_token, market, visibleCount]);
+
     React.useEffect(() => {
         reDraw();
-    }, [kr_capital_token]);
-
-    const [market, setMarket] = React.useState<"KR" | "US">("KR");
+    }, [kr_capital_token, reDraw]);
 
     const nodeTypes = {
         dateNode: DateNode,

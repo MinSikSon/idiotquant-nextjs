@@ -148,15 +148,15 @@ export default function BackTest() {
         </div>
     };
 
-    React.useEffect(() => {
-        // console.log(`backTestConditionType1`, backTestConditionType1);
-    }, [backTestConditionType1]);
-    React.useEffect(() => {
-        // console.log(`backTestConditionType2`, backTestConditionType2);
-    }, [backTestConditionType2]);
-    React.useEffect(() => {
-        // console.log(`backTestConditionType3`, backTestConditionType3);
-    }, [backTestConditionType3]);
+    // React.useEffect(() => {
+    //     console.log(`backTestConditionType1`, backTestConditionType1);
+    // }, [backTestConditionType1]);
+    // React.useEffect(() => {
+    //     console.log(`backTestConditionType2`, backTestConditionType2);
+    // }, [backTestConditionType2]);
+    // React.useEffect(() => {
+    //     console.log(`backTestConditionType3`, backTestConditionType3);
+    // }, [backTestConditionType3]);
     React.useEffect(() => {
         // console.log(`backTestConditionFinancialInfoList`, backTestConditionFinancialInfoList);
         const output2 = backTestConditionFinancialInfoList.output2;
@@ -172,7 +172,7 @@ export default function BackTest() {
             // dispatch(reqGetFinancialInfo({ year: match[1], quarter: match[2] })); // 요청 결과는 backTestConditionFilterResultType 에 갱신 됨.
             dispatch(setBackTestConditionFilterResultType({ ...backTestConditionFilterResultType, startDate: backTestConditionType2.startDate, endDate: backTestConditionType3.endDate, state: "loading" }));
         }
-    }, [backTestConditionFinancialInfoList]);
+    }, [backTestConditionFinancialInfoList, backTestConditionFilterResultType, backTestConditionType2, backTestConditionType3, dispatch]);
     React.useEffect(() => {
         console.log(`backTestConditionFilterResultType`, backTestConditionFilterResultType);
         if (!!backTestConditionFilterResultType && !!backTestConditionFilterResultType.output3 && !!Object.keys(backTestConditionFilterResultType.output3)[2]) {
@@ -294,7 +294,7 @@ export default function BackTest() {
                 dispatch(reqGetInquireBalance(kiToken));
             }
         }
-    }, [kiToken, loginState]);
+    }, [kiToken, loginState, dispatch]);
 
     if ("init" == loginState || "rejected" == loginState) {
         return <>

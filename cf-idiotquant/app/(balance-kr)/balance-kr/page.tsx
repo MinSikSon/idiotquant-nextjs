@@ -35,15 +35,15 @@ export default function BalanceKr() {
                 dispatch(reqGetInquireBalance(kiToken));
             }
         }
-    }, [kiToken, loginState]);
+    }, [kiToken, loginState, dispatch]);
 
-    React.useEffect(() => {
-        // console.log(`[BalanceKr]`, `kiBalance`, kiBalance);
-    }, [kiBalance]);
+    // React.useEffect(() => {
+    //     console.log(`[BalanceKr]`, `kiBalance`, kiBalance);
+    // }, [kiBalance]);
 
-    React.useEffect(() => {
-        // console.log(`[BalanceKr]`, `kiOrderCash`, kiOrderCash);
-    }, [kiOrderCash])
+    // React.useEffect(() => {
+    //     console.log(`[BalanceKr]`, `kiOrderCash`, kiOrderCash);
+    // }, [kiOrderCash])
 
     if ("init" == loginState || "rejected" == loginState) {
         return <>
