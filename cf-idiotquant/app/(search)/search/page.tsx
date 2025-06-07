@@ -26,6 +26,7 @@ import rehypeKatex from 'rehype-katex';
 import 'katex/dist/katex.min.css';
 import { reqPostLaboratory } from "@/lib/features/ai/aiSlice";
 import { AiOutputResultUsageType, selectAiStreamOutput } from "@/lib/features/ai/aiStreamSlice";
+import { addKrMarketHistory, selectKrMarketHistory, selectUsMarketHistory } from "@/lib/features/searchHistory/searchHistorySlice";
 
 const DEBUG = false;
 
@@ -49,6 +50,8 @@ export default function Search() {
   const aiStreamOutput: string = useAppSelector(selectAiStreamOutput);
   const [response, setResponse] = React.useState<string>("");
   const [token, setToken] = React.useState<AiOutputResultUsageType>({ total_tokens: 0, prompt_tokens: 0, completion_tokens: 0 });
+
+  const krMarketHistory = useAppSelector(selectKrMarketHistory);
 
   React.useEffect(() => {
     if (DEBUG) console.log(`[Search]`, `kiToken:`, kiToken);
@@ -85,7 +88,7 @@ export default function Search() {
         if (DEBUG) console.log(`reqPostLaboratory`);
 
         const stck_oprc = Number(kiInquireDailyItemChartPrice.output2[0]["stck_oprc"]);
-        const market_cap = (Number(kiInquireDailyItemChartPrice.output1["stck_prpr"]) * Number(kiInquireDailyItemChartPrice.output1["lstn_stcn"]));
+        const MARKET_CAP = (Number(kiInquireDailyItemChartPrice.output1["stck_prpr"]) * Number(kiInquireDailyItemChartPrice.output1["lstn_stcn"]));
         const bstp_kor_isnm = kiInquirePrice.output.bstp_kor_isnm; // 업종 한글 종목명
 
         const yearMatchIndex = getYearMatchIndex(kiInquireDailyItemChartPrice.output2[0]["stck_bsop_date"]);
@@ -93,28 +96,28 @@ export default function Search() {
         const ONE_HUNDRED_MILLION = 100000000;
 
         const stac_yymm = latestBalanceSheet.stac_yymm; // stac_yymm: str    #결산 년월
-        const current_asset = (Number(latestBalanceSheet.cras) * ONE_HUNDRED_MILLION); // cras: str    #유동자산
+        const CURRENT_ASSET = (Number(latestBalanceSheet.cras) * ONE_HUNDRED_MILLION); // cras: str    #유동자산
         const fxas = (Number(latestBalanceSheet.fxas) * ONE_HUNDRED_MILLION); // fxas: str    #고정자산
         const total_aset = (Number(latestBalanceSheet.total_aset) * ONE_HUNDRED_MILLION); // total_aset: str    #자산총계
         const flow_lblt = (Number(latestBalanceSheet.flow_lblt) * ONE_HUNDRED_MILLION); // flow_lblt: str    #유동부채
         const fix_lblt = (Number(latestBalanceSheet.fix_lblt) * ONE_HUNDRED_MILLION); // fix_lblt: str    #고정부채
-        const total_liabilities = (Number(latestBalanceSheet.total_lblt) * ONE_HUNDRED_MILLION); // total_lblt: str    #부채총계
+        const TOTAL_LIABILITIES = (Number(latestBalanceSheet.total_lblt) * ONE_HUNDRED_MILLION); // total_lblt: str    #부채총계
         const cpfn = (Number(latestBalanceSheet.cpfn) * ONE_HUNDRED_MILLION);// cpfn: str    #자본금
         const cfp_surp = (Number(latestBalanceSheet.cfp_surp) * ONE_HUNDRED_MILLION);// cfp_surp: str    #자본잉여금
         const prfi_surp = (Number(latestBalanceSheet.prfi_surp) * ONE_HUNDRED_MILLION); // prfi_surp: str    #이익잉여금
         const total_cptl = (Number(latestBalanceSheet.total_cptl) * ONE_HUNDRED_MILLION); // total_cptl: str    #자본총계
 
         // const default_condition = `다음 조건들에 따라 한국어로 분석해줘: 두괄식 요약, Markdown 형식 사용, 핵심 숫자는 굵게 강조, 항목별 소제목 및 목차 포함, 금액 단위는 원(₩)으로 표기)`;
-        // const balance_condition = `(재무재표: 결산년월 ${stac_yymm}, 유동자산 ${current_asset}원, 고정자산 ${fxas}원, 자산총계 ${total_aset}원, 유동부채 ${flow_lblt}원, 
-        // 고정부채 ${fix_lblt}원, 부채총계 ${total_liabilities}원, 자본금 ${cpfn}원, 자본잉여금 ${cfp_surp}원, 이익잉여금 ${prfi_surp}원, 자본총계 ${total_cptl}원)`;
-        // const stock_condition = `종목명: ${name}, 업종: ${bstp_kor_isnm}. ${balance_condition} 현재가는 ${stck_oprc}원, 시가총액은 ${market_cap}원.`;
+        // const balance_condition = `(재무재표: 결산년월 ${stac_yymm}, 유동자산 ${CURRENT_ASSET}원, 고정자산 ${fxas}원, 자산총계 ${total_aset}원, 유동부채 ${flow_lblt}원, 
+        // 고정부채 ${fix_lblt}원, 부채총계 ${TOTAL_LIABILITIES}원, 자본금 ${cpfn}원, 자본잉여금 ${cfp_surp}원, 이익잉여금 ${prfi_surp}원, 자본총계 ${total_cptl}원)`;
+        // const stock_condition = `종목명: ${name}, 업종: ${bstp_kor_isnm}. ${balance_condition} 현재가는 ${stck_oprc}원, 시가총액은 ${MARKET_CAP}원.`;
         // const requirement = `이 종목의 재무정보 기반으로 매수/매도 의견을 알려줘.`;
         // const prompt = `${default_condition} ${stock_condition} ${requirement}`;
 
         const prompt = `다음 정보를 기반으로 종목의 매수/매도 의견을 한국어로 알려줘. (그리고 두괄식 요약, Markdown 형식, 핵심 숫자 강조(굵게), 금액 단위는 원(₩)으로 표기해줘. 그리고 중복된 설명을 좀 줄여줘.)
-          종목명은 ${name} ,업종은 ${bstp_kor_isnm}. 주가는 ${stck_oprc.toLocaleString()}원, 시가총액은 ${market_cap.toLocaleString()}원, 결산일은: ${stac_yymm},
-          유동자산은 ${current_asset.toLocaleString()}원 고정자산은 ${fxas.toLocaleString()}원, 자산총계는 ${total_aset.toLocaleString()}원,
-          유동부채는 ${flow_lblt.toLocaleString()}원, 고정부채는 ${fix_lblt.toLocaleString()}원, 부채총계는 ${total_liabilities.toLocaleString()}원,
+          종목명은 ${name} ,업종은 ${bstp_kor_isnm}. 주가는 ${stck_oprc.toLocaleString()}원, 시가총액은 ${MARKET_CAP.toLocaleString()}원, 결산일은: ${stac_yymm},
+          유동자산은 ${CURRENT_ASSET.toLocaleString()}원 고정자산은 ${fxas.toLocaleString()}원, 자산총계는 ${total_aset.toLocaleString()}원,
+          유동부채는 ${flow_lblt.toLocaleString()}원, 고정부채는 ${fix_lblt.toLocaleString()}원, 부채총계는 ${TOTAL_LIABILITIES.toLocaleString()}원,
           자본금은 ${cpfn.toLocaleString()}원, 자본잉여금은 ${cfp_surp.toLocaleString()}원, 이익잉여금은 ${prfi_surp.toLocaleString()}원, 자본총계는 ${total_cptl.toLocaleString()}원`;
 
         dispatch(reqPostLaboratory({ system_content: prompt, user_content: prompt }));
@@ -175,6 +178,7 @@ export default function Search() {
   }
 
   function onSearchButton(stockName: any) {
+    console.log(`검색 1`, stockName);
     type CorpCodeType = {
       corp_code: string;
       stock_code: string;
@@ -185,6 +189,7 @@ export default function Search() {
     const jsonStock: CorpCodeType = corpCode[stockName];
     if (DEBUG) console.log(`stockName`, stockName, `jsonStock`, jsonStock);
     if (!!jsonStock) {
+      console.log(`검색 2`, stockName);
       const { stock_code } = jsonStock;
       // console.log(`stockCode`, stock_code);
       if (DEBUG) console.log(`startDate`, startDate, `, endDate`, endDate);
@@ -194,6 +199,8 @@ export default function Search() {
 
       setName(stockName);
       setWaitResponse(true);
+
+      dispatch(addKrMarketHistory(stockName));
     }
   }
 
@@ -247,173 +254,211 @@ export default function Search() {
     </>
   }
 
+  let bShowResult = true;
   if (("fulfilled" != kiInquireDailyItemChartPrice.state)
     || ("fulfilled" != kiBalanceSheet.state)
     || ("fulfilled" != kiInquirePrice.state)
   ) {
-    return <>
-      <SearchAutocomplete placeHolder={"회사명을 검색하세요..."} onSearchButton={onSearchButton} validCorpNameArray={validCorpNameArray} />
-      <div className="dark:bg-black h-lvh"></div>
-    </>
+    bShowResult = false;
+    // return <>
+    //   <SearchAutocomplete placeHolder={"회사명을 검색하세요..."} onSearchButton={onSearchButton} validCorpNameArray={validCorpNameArray} />
+    //   <div className="dark:bg-black h-lvh"></div>
+    // </>
   }
 
-  const market_cap = (Number(kiInquireDailyItemChartPrice.output1["stck_prpr"]) * Number(kiInquireDailyItemChartPrice.output1["lstn_stcn"]));
-  const current_asset = (Number(kiBalanceSheet.output[getYearMatchIndex(kiInquireDailyItemChartPrice.output2[0]["stck_bsop_date"])].cras) * 100000000);
-  const total_liabilities = (Number(kiBalanceSheet.output[getYearMatchIndex(kiInquireDailyItemChartPrice.output2[0]["stck_bsop_date"])].total_lblt) * 100000000);
+  const MARKET_CAP = bShowResult ? (Number(kiInquireDailyItemChartPrice.output1["stck_prpr"]) * Number(kiInquireDailyItemChartPrice.output1["lstn_stcn"])) : 0;
+  const CURRENT_ASSET = bShowResult ? (Number(kiBalanceSheet.output[getYearMatchIndex(kiInquireDailyItemChartPrice.output2[0]["stck_bsop_date"])].cras) * 100000000) : 0;
+  const TOTAL_LIABILITIES = bShowResult ? (Number(kiBalanceSheet.output[getYearMatchIndex(kiInquireDailyItemChartPrice.output2[0]["stck_bsop_date"])].total_lblt) * 100000000) : 0;
 
   return <>
-    <SearchAutocomplete placeHolder={"회사명을 검색하세요..."} onSearchButton={onSearchButton} validCorpNameArray={validCorpNameArray} />
-    <div className="dark:bg-black dark:text-white p-3 shadow font-mono">
-      <div className="text-[0.6rem]">
-        {kiInquirePrice.output["rprs_mrkt_kor_name"]}
-      </div>
-      <div className="text-xl">
-        {kiInquireDailyItemChartPrice.output1.hts_kor_isnm}
-      </div>
-    </div>
-    <div className="dark:bg-gray-200 text-xs p-3 shadow font-mono">
-      <div className="flex gap-2">
-        <div className="w-11/12">
-          <LineChart
-            data_array={[
-              {
-                name: "주가",
-                // data: test_data.stock_list.map((stock: any) => stock.remaining_token),
-                // data: [10, 20, 30, 40, 50, 60, 70, 80, 90],
-                data: kiInquireDailyItemChartPrice.output2.map((item: any) => item.stck_oprc).reverse(),
-                color: "#000000",
-              }
-            ]}
-            category_array={kiInquireDailyItemChartPrice.output2.map((item: any) => item.stck_bsop_date).reverse()}
-            markers={
-              {
-                size: 0,
-                // colors: kiInquireDailyItemChartPrice.output2.map((_, index, arr) =>
-                //   index === arr.length - 1 ? "" : "yellow"
-                // ).reverse(), // 마지막 값만 빨간색, 나머지는 파란색
-                // colors: "black",
-                discrete: [
-                  {
-                    seriesIndex: 0,
-                    dataPointIndex: kiInquireDailyItemChartPrice.output2.length - 1, // 마지막 값만 적용
-                    fillColor: "yellow", // 마지막 마커 색상
-                    strokeColor: "black", // 마커 테두리 색상
-                    size: 3, // 마지막 마커 크기
-                  },
-                ],
-              }
-            }
-          />
-        </div>
-        <div className="w-1/12"></div>
-      </div>
-    </div>
-    <div className="dark:bg-black dark:text-white text-xs p-3 shadow">
-      <div className="dark:bg-black dark:text-white flex gap-2 font-mono">
-        <div className="w-4/12 bg-yellow-200 dark:bg-gray-500 text-right">현재가</div>
-        <div className="w-6/12 bg-yellow-100 dark:bg-gray-500 text-right"><span className="text-[0.6rem]">({kiInquireDailyItemChartPrice.output2[0]["stck_bsop_date"]})</span> {Number(kiInquireDailyItemChartPrice.output1["stck_prpr"]).toLocaleString()}</div>
-        <div className="w-2/12 text-left text-[0.6rem]">원</div>
-      </div>
-      <div className="dark:bg-black dark:text-white flex gap-2 font-mono">
-        <div className="w-4/12 text-right">시가총액</div>
-        <div className="w-6/12 text-right">{market_cap.toLocaleString()}</div>
-        <div className="w-2/12 text-left text-[0.6rem]">원</div>
-      </div>
-      <div className="dark:bg-black dark:text-white flex gap-2 font-mono">
-        <div className="w-4/12 text-right">상장주식수</div>
-        <div className="w-6/12 text-right">{Number(Number(kiInquireDailyItemChartPrice.output1["lstn_stcn"])).toLocaleString()}</div>
-        <div className="w-2/12 text-left text-[0.6rem]">개</div>
-      </div>
-    </div>
-    <div className="dark:bg-black dark:text-white text-xs p-3 shadow">
-      <div className="flex gap-2 font-mono">
-        <div className="w-4/12 text-right">52주 최저가</div>
-        <div className="w-6/12 text-right"><span className="text-[0.6rem]">({kiInquirePrice.output["dryy_lwpr_date"]})</span> {Number(kiInquirePrice.output["w52_lwpr"]).toLocaleString()}</div>
-        <div className="w-2/12 text-[0.6rem]">원</div>
-      </div>
-      <div className="dark:bg-black dark:text-white flex gap-2 font-mono">
-        <div className="w-4/12 text-right bg-red-300 dark:bg-gray-500">52주 최고가</div>
-        <div className="w-6/12 text-right bg-red-200 dark:bg-gray-500"><span className="text-[0.6rem]">({kiInquirePrice.output["w52_hgpr_date"]})</span> {Number(kiInquirePrice.output["w52_hgpr"]).toLocaleString()}</div>
-        <div className="w-2/12 text-left text-[0.6rem]">원</div>
-      </div>
-    </div>
-    <div className="dark:bg-black dark:text-white text-xs p-3 shadow">
-      <div className="flex gap-2 font-mono">
-        <div className="w-4/12 text-right">PER</div>
-        <div className="w-6/12 text-right">{Number(Number(kiInquirePrice.output["per"])).toLocaleString()}</div>
-        <div className="w-2/12 text-left">배</div>
-      </div>
-      <div className="dark:bg-black dark:text-white flex gap-2 font-mono">
-        <div className="w-4/12 text-right">PBR</div>
-        <div className="w-6/12 text-right">{Number(Number(kiInquirePrice.output["pbr"])).toLocaleString()}</div>
-        <div className="w-2/12 text-left">배</div>
-      </div>
-      <div className="dark:bg-black dark:text-white flex gap-2 font-mono">
-        <div className="w-4/12 text-right">EPS</div>
-        <div className="w-6/12 text-right">{Number(Number(kiInquirePrice.output["eps"])).toLocaleString()}</div>
-        <div className="w-2/12 text-left">원</div>
-      </div>
-      <div className="dark:bg-black dark:text-white flex gap-2 font-mono">
-        <div className="w-4/12 text-right">BPS</div>
-        <div className="w-6/12 text-right">{Number(Number(kiInquirePrice.output["bps"])).toLocaleString()}</div>
-        <div className="w-2/12 text-left">원</div>
-      </div>
-    </div>
-    <div className="dark:bg-black dark:text-white text-xs p-3 shadow">
-      <div className="flex gap-2 font-mono">
-        <div className="w-4/12 text-right">업종</div>
-        <div className="w-6/12 text-right">{kiInquirePrice.output["bstp_kor_isnm"]}</div>
-        <div className="w-2/12 text-left"></div>
-      </div>
-    </div>
-    <div className="dark:bg-black dark:text-white text-xs p-3 shadow">
-      <div className="flex gap-2 font-mono">
-        <div className="w-4/12 text-right">거래량</div>
-        <div className="w-6/12 text-right">{Number(kiInquirePrice.output["acml_vol"]).toLocaleString()}</div>
-        <div className="w-2/12 text-left">회</div>
-      </div>
-      <div className="dark:bg-black dark:text-white flex gap-2 font-mono">
-        <div className="w-4/12 text-right">전일 거래대금</div>
-        <div className="w-6/12 text-right">{Number(kiInquirePrice.output["acml_tr_pbmn"]).toLocaleString()}</div>
-        <div className="w-2/12 text-left">원</div>
-      </div>
-      <div className="dark:bg-black dark:text-white flex gap-2 font-mono">
-        <div className="w-4/12 text-right text-[0.6rem]">거래대금/시가총액</div>
-        <div className="w-6/12 text-right">{(100 * Number(kiInquirePrice.output["acml_tr_pbmn"]) / (Number(kiInquireDailyItemChartPrice.output2[0]["stck_oprc"]) * Number(kiInquireDailyItemChartPrice.output1["lstn_stcn"]))).toFixed(3)}</div>
-        <div className="w-2/12 text-left">%</div>
-      </div>
-    </div>
-    <div className="dark:bg-black dark:text-white text-xs p-3 shadow">
-      {getNcav(kiBalanceSheet, kiInquireDailyItemChartPrice, 1.0)}
-      {getNcav(kiBalanceSheet, kiInquireDailyItemChartPrice, 1.5)}
-    </div>
-    <div className="dark:bg-black dark:text-white text-xs p-3 shadow">
-      <div className="flex gap-2 font-mono">
-        <div className="w-4/12 text-right">재무-유동자산</div>
-        <div className="w-6/12 text-right">{current_asset.toLocaleString()}</div>
-        <div className="w-2/12 text-left text-[0.6rem]">원</div>
-      </div>
-      <div className="flex gap-2 font-mono">
-        <div className="w-4/12 text-right">재무-부채총계</div>
-        <div className="w-6/12 text-right">{total_liabilities.toLocaleString()}</div>
-        <div className="w-2/12 text-left text-[0.6rem]">원</div>
-      </div>
-    </div>
-    <div className="dark:bg-gray-300 text-black text-xs p-3 shadow">
-      <div className="dark:bg-gray-300 text-gray-500 w-fit text-[0.5rem] font-mono tracking-wider px-1 mb-2 border rounded-xl">
-        🤖 Generated by LLaMA 4. <span className="uppercase">🧮 token(total:{token.total_tokens} = prompt:{token.prompt_tokens} + completion:{token.completion_tokens})</span>
-      </div>
-      <div className="dark:bg-gray-300 p-2 w-full font-mono text-[12px] prose prose-sm max-w-none leading-relaxed">
-        <ReactMarkdown
-          remarkPlugins={[remarkGfm, remarkMath]}
-          rehypePlugins={[rehypeRaw, rehypeKatex]}
-          skipHtml={false} // HTML 태그도 렌더링하도록
+    <div className="flex">
+      <div className="md:w-1/2 lg:w-1/2">
+        <SearchAutocomplete placeHolder={"회사명을 검색하세요..."} onSearchButton={onSearchButton} validCorpNameArray={validCorpNameArray} />
+        {(false == bShowResult) ?
+          <>
+            <div className="dark:bg-black h-lvh"></div>
 
-        >
-          {response}
-        </ReactMarkdown>
+          </> :
+          <>
+            <div className="dark:bg-black dark:text-white p-3 shadow font-mono">
+              <div className="text-[0.6rem]">
+                {kiInquirePrice.output["rprs_mrkt_kor_name"]}
+              </div>
+              <div className="text-xl">
+                {kiInquireDailyItemChartPrice.output1.hts_kor_isnm}
+              </div>
+            </div>
+            <div className="dark:bg-gray-200 text-xs p-3 shadow font-mono">
+              <div className="flex gap-2">
+                <div className="w-11/12">
+                  <LineChart
+                    data_array={[
+                      {
+                        name: "주가",
+                        // data: test_data.stock_list.map((stock: any) => stock.remaining_token),
+                        // data: [10, 20, 30, 40, 50, 60, 70, 80, 90],
+                        data: kiInquireDailyItemChartPrice.output2.map((item: any) => item.stck_oprc).reverse(),
+                        color: "#000000",
+                      }
+                    ]}
+                    category_array={kiInquireDailyItemChartPrice.output2.map((item: any) => item.stck_bsop_date).reverse()}
+                    markers={
+                      {
+                        size: 0,
+                        // colors: kiInquireDailyItemChartPrice.output2.map((_, index, arr) =>
+                        //   index === arr.length - 1 ? "" : "yellow"
+                        // ).reverse(), // 마지막 값만 빨간색, 나머지는 파란색
+                        // colors: "black",
+                        discrete: [
+                          {
+                            seriesIndex: 0,
+                            dataPointIndex: kiInquireDailyItemChartPrice.output2.length - 1, // 마지막 값만 적용
+                            fillColor: "yellow", // 마지막 마커 색상
+                            strokeColor: "black", // 마커 테두리 색상
+                            size: 3, // 마지막 마커 크기
+                          },
+                        ],
+                      }
+                    }
+                  />
+                </div>
+                <div className="w-1/12"></div>
+              </div>
+            </div>
+            <div className="dark:bg-black dark:text-white text-xs p-3 shadow">
+              <div className="dark:bg-black dark:text-white flex gap-2 font-mono">
+                <div className="w-4/12 bg-yellow-200 dark:bg-gray-500 text-right">현재가</div>
+                <div className="w-6/12 bg-yellow-100 dark:bg-gray-500 text-right"><span className="text-[0.6rem]">({kiInquireDailyItemChartPrice.output2[0]["stck_bsop_date"]})</span> {Number(kiInquireDailyItemChartPrice.output1["stck_prpr"]).toLocaleString()}</div>
+                <div className="w-2/12 text-left text-[0.6rem]">원</div>
+              </div>
+              <div className="dark:bg-black dark:text-white flex gap-2 font-mono">
+                <div className="w-4/12 text-right">시가총액</div>
+                <div className="w-6/12 text-right">{MARKET_CAP.toLocaleString()}</div>
+                <div className="w-2/12 text-left text-[0.6rem]">원</div>
+              </div>
+              <div className="dark:bg-black dark:text-white flex gap-2 font-mono">
+                <div className="w-4/12 text-right">상장주식수</div>
+                <div className="w-6/12 text-right">{Number(Number(kiInquireDailyItemChartPrice.output1["lstn_stcn"])).toLocaleString()}</div>
+                <div className="w-2/12 text-left text-[0.6rem]">개</div>
+              </div>
+            </div>
+            <div className="dark:bg-black dark:text-white text-xs p-3 shadow">
+              <div className="flex gap-2 font-mono">
+                <div className="w-4/12 text-right">52주 최저가</div>
+                <div className="w-6/12 text-right"><span className="text-[0.6rem]">({kiInquirePrice.output["dryy_lwpr_date"]})</span> {Number(kiInquirePrice.output["w52_lwpr"]).toLocaleString()}</div>
+                <div className="w-2/12 text-[0.6rem]">원</div>
+              </div>
+              <div className="dark:bg-black dark:text-white flex gap-2 font-mono">
+                <div className="w-4/12 text-right bg-red-300 dark:bg-gray-500">52주 최고가</div>
+                <div className="w-6/12 text-right bg-red-200 dark:bg-gray-500"><span className="text-[0.6rem]">({kiInquirePrice.output["w52_hgpr_date"]})</span> {Number(kiInquirePrice.output["w52_hgpr"]).toLocaleString()}</div>
+                <div className="w-2/12 text-left text-[0.6rem]">원</div>
+              </div>
+            </div>
+            <div className="dark:bg-black dark:text-white text-xs p-3 shadow">
+              <div className="flex gap-2 font-mono">
+                <div className="w-4/12 text-right">PER</div>
+                <div className="w-6/12 text-right">{Number(Number(kiInquirePrice.output["per"])).toLocaleString()}</div>
+                <div className="w-2/12 text-left">배</div>
+              </div>
+              <div className="dark:bg-black dark:text-white flex gap-2 font-mono">
+                <div className="w-4/12 text-right">PBR</div>
+                <div className="w-6/12 text-right">{Number(Number(kiInquirePrice.output["pbr"])).toLocaleString()}</div>
+                <div className="w-2/12 text-left">배</div>
+              </div>
+              <div className="dark:bg-black dark:text-white flex gap-2 font-mono">
+                <div className="w-4/12 text-right">EPS</div>
+                <div className="w-6/12 text-right">{Number(Number(kiInquirePrice.output["eps"])).toLocaleString()}</div>
+                <div className="w-2/12 text-left">원</div>
+              </div>
+              <div className="dark:bg-black dark:text-white flex gap-2 font-mono">
+                <div className="w-4/12 text-right">BPS</div>
+                <div className="w-6/12 text-right">{Number(Number(kiInquirePrice.output["bps"])).toLocaleString()}</div>
+                <div className="w-2/12 text-left">원</div>
+              </div>
+            </div>
+            <div className="dark:bg-black dark:text-white text-xs p-3 shadow">
+              <div className="flex gap-2 font-mono">
+                <div className="w-4/12 text-right">업종</div>
+                <div className="w-6/12 text-right">{kiInquirePrice.output["bstp_kor_isnm"]}</div>
+                <div className="w-2/12 text-left"></div>
+              </div>
+            </div>
+            <div className="dark:bg-black dark:text-white text-xs p-3 shadow">
+              <div className="flex gap-2 font-mono">
+                <div className="w-4/12 text-right">거래량</div>
+                <div className="w-6/12 text-right">{Number(kiInquirePrice.output["acml_vol"]).toLocaleString()}</div>
+                <div className="w-2/12 text-left">회</div>
+              </div>
+              <div className="dark:bg-black dark:text-white flex gap-2 font-mono">
+                <div className="w-4/12 text-right">전일 거래대금</div>
+                <div className="w-6/12 text-right">{Number(kiInquirePrice.output["acml_tr_pbmn"]).toLocaleString()}</div>
+                <div className="w-2/12 text-left">원</div>
+              </div>
+              <div className="dark:bg-black dark:text-white flex gap-2 font-mono">
+                <div className="w-4/12 text-right text-[0.6rem]">거래대금/시가총액</div>
+                <div className="w-6/12 text-right">{(100 * Number(kiInquirePrice.output["acml_tr_pbmn"]) / (Number(kiInquireDailyItemChartPrice.output2[0]["stck_oprc"]) * Number(kiInquireDailyItemChartPrice.output1["lstn_stcn"]))).toFixed(3)}</div>
+                <div className="w-2/12 text-left">%</div>
+              </div>
+            </div>
+            <div className="dark:bg-black dark:text-white text-xs p-3 shadow">
+              {getNcav(kiBalanceSheet, kiInquireDailyItemChartPrice, 1.0)}
+              {getNcav(kiBalanceSheet, kiInquireDailyItemChartPrice, 1.5)}
+            </div>
+            <div className="dark:bg-black dark:text-white text-xs p-3 shadow">
+              <div className="flex gap-2 font-mono">
+                <div className="w-4/12 text-right">재무-유동자산</div>
+                <div className="w-6/12 text-right">{CURRENT_ASSET.toLocaleString()}</div>
+                <div className="w-2/12 text-left text-[0.6rem]">원</div>
+              </div>
+              <div className="flex gap-2 font-mono">
+                <div className="w-4/12 text-right">재무-부채총계</div>
+                <div className="w-6/12 text-right">{TOTAL_LIABILITIES.toLocaleString()}</div>
+                <div className="w-2/12 text-left text-[0.6rem]">원</div>
+              </div>
+            </div>
+            <div className="dark:bg-gray-300 text-black text-xs p-3 shadow">
+              <div className="dark:bg-gray-300 text-gray-500 w-fit text-[0.5rem] font-mono tracking-wider px-1 mb-2 border rounded-xl">
+                🤖 Generated by LLaMA 4. <span className="uppercase">🧮 token(total:{token.total_tokens} = prompt:{token.prompt_tokens} + completion:{token.completion_tokens})</span>
+              </div>
+              <div className="dark:bg-gray-300 p-2 w-full font-mono text-[12px] prose prose-sm max-w-none leading-relaxed">
+                <ReactMarkdown
+                  remarkPlugins={[remarkGfm, remarkMath]}
+                  rehypePlugins={[rehypeRaw, rehypeKatex]}
+                  skipHtml={false} // HTML 태그도 렌더링하도록
+
+                >
+                  {response}
+                </ReactMarkdown>
+              </div>
+            </div>
+            <div className="dark:bg-black h-lvh"></div>
+          </>
+        }
+      </div>
+      <div className="md:w-1/2 lg:w-1/2">
+        <div className="dark:bg-black dark:text-white flex items-center p-4 relative">
+          search history
+        </div>
+        {krMarketHistory.map((stockName: string, index: number) => {
+          return (
+            <div key={index} className="dark:bg-black dark:text-white p-3 shadow font-mono">
+              {/* <div className="text-[0.6rem]">
+                {stockName}
+              </div> */}
+              <div className="text-xl">
+                <button
+                  className="text-blue-500 hover:underline"
+                  onClick={() => {
+                    onSearchButton(stockName);
+                  }}
+                >
+                  {stockName}
+                </button>
+              </div>
+            </div>
+          );
+        }).reverse()}
       </div>
     </div>
-    <div className="dark:bg-black h-lvh"></div>
   </>
 }

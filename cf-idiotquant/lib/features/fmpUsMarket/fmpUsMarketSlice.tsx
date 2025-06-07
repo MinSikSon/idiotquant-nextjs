@@ -1,7 +1,6 @@
 import { createAppSlice } from "@/lib/createAppSlice";
 import { getFmpBalanceSheetStatement } from "./fmpUsMarketAPI";
 
-
 export interface FmpBalanceSheetStatementType {
     // "acceptedDate": string;
     // "accountPayables": string;

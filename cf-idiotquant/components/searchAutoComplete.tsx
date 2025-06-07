@@ -72,7 +72,11 @@ const SearchAutocomplete = (props: any) => {
                     type="text"
                     value={query}
                     onChange={handleChange}
-                    onKeyUp={handleKeyDown}
+                    onKeyUp={(e) => {
+                        if (isFocused) {
+                            handleKeyDown(e)
+                        }
+                    }}
                     placeholder={props.placeHolder}
                     onFocus={() => setIsFocused(true)}
                     onBlur={() => setTimeout(() => setIsFocused(false), 200)}
