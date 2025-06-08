@@ -5,6 +5,7 @@ import NotFound from "@/app/not-found";
 import Auth from "@/components/auth";
 import InquireBalanceResult from "@/components/inquireBalanceResult";
 import { isValidCookie } from "@/components/util";
+import { CapitalTokenType, reqGetUsCapitalToken, selectUsCapitalToken } from "@/lib/features/algorithmTrade/algorithmTradeSlice";
 import { getKoreaInvestmentToken, KoreaInvestmentToken } from "@/lib/features/koreaInvestment/koreaInvestmentSlice";
 import { reqGetOverseasStockTradingInquirePresentBalance, getKoreaInvestmentUsMaretPresentBalance, KoreaInvestmentOverseasPresentBalance, reqPostOrderUs, getKoreaInvestmentUsOrder, KoreaInvestmentUsOrder } from "@/lib/features/koreaInvestmentUsMarket/koreaInvestmentUsMarketSlice";
 
@@ -27,6 +28,8 @@ export default function BalanceUs() {
 
     const dispatch = useAppDispatch();
 
+    const us_capital_token: CapitalTokenType = useAppSelector(selectUsCapitalToken);
+
     React.useEffect(() => {
         if (DEBUG) console.log(`[BalanceUs]`, `loginState`, loginState);
         if (DEBUG) console.log(`[BalanceUs]`, `kiToken:`, kiToken);
@@ -42,6 +45,12 @@ export default function BalanceUs() {
         if (DEBUG) console.log(`[BalanceUs]`, `kiBalance`, kiBalance);
     }, [kiBalance]);
 
+    React.useEffect(() => {
+        console.log(`[BalanceKr]`, `kr_capital_token`, us_capital_token);
+        if ("init" == us_capital_token.state) {
+            dispatch(reqGetUsCapitalToken({ koreaInvestmentToken: kiToken }));
+        }
+    }, [us_capital_token])
 
     // console.log(`loginState`, loginState);
     if ("init" == loginState || "rejected" == loginState) {
@@ -73,6 +82,7 @@ export default function BalanceUs() {
             kiToken={kiToken}
             kiOrderCash={kiUsOrder}
             reqPostOrderCash={reqPostOrderUs}
+            stock_list={us_capital_token.value.stock_list}
         />
         <div className="dark:bg-black h-lvh"></div>
     </>

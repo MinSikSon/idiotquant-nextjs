@@ -27,6 +27,9 @@ export interface Example8TableRowType {
     column_11?: any;
     column_12?: any;
     bgColor?: any;
+    column_13?: any;
+    column_14?: any;
+    column_15?: any;
 }
 
 export interface Example8TableHeadType {
@@ -141,6 +144,9 @@ function TablesExample8({
                                             column_10,
                                             column_11,
                                             column_12,
+                                            column_13,
+                                            column_14,
+                                            column_15,
                                             bgColor,
                                         },
                                         index
@@ -212,6 +218,21 @@ function TablesExample8({
                                                 <td className={classes}>
                                                     <div className="text-right">
                                                         {column_12}
+                                                    </div>
+                                                </td>
+                                                <td className={classes}>
+                                                    <div className="text-right">
+                                                        {column_13}
+                                                    </div>
+                                                </td>
+                                                <td className={classes}>
+                                                    <div className="text-right">
+                                                        {column_14}
+                                                    </div>
+                                                </td>
+                                                <td className={classes}>
+                                                    <div className="text-right">
+                                                        {column_15}
                                                     </div>
                                                 </td>
                                             </tr>

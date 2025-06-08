@@ -15,6 +15,7 @@ import Auth from "@/components/auth";
 
 import InquireBalanceResult from "@/components/inquireBalanceResult";
 import NotFound from "@/app/not-found";
+import { CapitalTokenType, reqGetCapitalToken, selectCapitalToken } from "@/lib/features/algorithmTrade/algorithmTradeSlice";
 
 export default function BalanceKr() {
     const pathname = usePathname();
@@ -26,11 +27,14 @@ export default function BalanceKr() {
 
     const kiOrderCash: KoreaInvestmentOrderCash = useAppSelector(getKoreaInvestmentOrderCash);
 
+    const kr_capital_token: CapitalTokenType = useAppSelector(selectCapitalToken);
+
     React.useEffect(() => {
-        // console.log(`[BalanceKr]`, `loginState`, loginState);
+        console.log(`[BalanceKr]`, `loginState`, loginState);
         // console.log(`[BalanceKr]`, `kiToken:`, kiToken);
         if ("cf" == loginState || "kakao" == loginState) {
             const isValidKiAccessToken = !!kiToken["access_token"];
+            console.log(`[BalanceKr]`, `isValidKiAccessToken`, isValidKiAccessToken);
             if (true == isValidKiAccessToken) {
                 dispatch(reqGetInquireBalance(kiToken));
             }
@@ -44,6 +48,13 @@ export default function BalanceKr() {
     React.useEffect(() => {
         // console.log(`[BalanceKr]`, `kiOrderCash`, kiOrderCash);
     }, [kiOrderCash])
+
+    React.useEffect(() => {
+        console.log(`[BalanceKr]`, `kr_capital_token`, kr_capital_token);
+        if ("init" == kr_capital_token.state) {
+            dispatch(reqGetCapitalToken({ koreaInvestmentToken: kiToken }));
+        }
+    }, [kr_capital_token])
 
     if ("init" == loginState || "rejected" == loginState) {
         return <>
@@ -67,6 +78,13 @@ export default function BalanceKr() {
         </>
     }
 
+    if ("fulfilled" != kr_capital_token.state) {
+        return <>
+            <Login parentUrl={pathname} />
+            <div className="dark:bg-black h-lvh"></div>
+        </>
+    }
+
     return <>
         <InquireBalanceResult
             kiBalance={kiBalance}
@@ -74,6 +92,7 @@ export default function BalanceKr() {
             kiToken={kiToken}
             kiOrderCash={kiOrderCash}
             reqPostOrderCash={reqPostOrderCash}
+            stock_list={kr_capital_token.value.stock_list}
         />
         <div className="dark:bg-black h-lvh"></div>
     </>

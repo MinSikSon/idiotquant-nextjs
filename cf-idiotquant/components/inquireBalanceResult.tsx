@@ -3,6 +3,7 @@ import { DesignButton } from "./designButton";
 import TablesExample8, { Example8TableHeadType, Example8TableRowType, TablesExample8PropsType } from "./tableExample8";
 import { useAppDispatch, useAppSelector } from "@/lib/hooks";
 import React from "react";
+import { Util } from "./util";
 
 const DEBUG = false;
 function formatNumber(num: number) {
@@ -14,6 +15,7 @@ interface InquireBalanceResultProps {
     kiToken: any;
     kiOrderCash?: any;
     reqPostOrderCash?: any;
+    stock_list?: any;
 }
 
 export default function InquireBalanceResult(props: InquireBalanceResultProps) {
@@ -83,6 +85,21 @@ export default function InquireBalanceResult(props: InquireBalanceResultProps) {
         {
             head: "매매",
         },
+        {
+            head: "시가총액",
+        },
+        {
+            head: "EPS",
+        },
+        {
+            head: "PER",
+        },
+        {
+            head: "BPS",
+        },
+        {
+            head: "PBR",
+        },
     ];
 
     if (DEBUG) console.log(`selectHead`, selectHead);
@@ -147,6 +164,30 @@ export default function InquireBalanceResult(props: InquireBalanceResultProps) {
             const evlu_pfls_amt2 = !!item["evlu_pfls_amt2"] ? item["evlu_pfls_amt2"] : item["evlu_pfls_amt"];
 
             const frst_bltn_exrt = !!props.kiBalance.output2 ? props.kiBalance.output2[0]["frst_bltn_exrt"] : 0;
+
+            const stock_info = !!props.stock_list ? props.stock_list.filter((stock: any) => stock.PDNO == pdno) : [];
+            console.log(name, pdno, `stock_info`, stock_info);
+
+            let eps = 0;
+            let per = 0;
+            let bps = 0;
+            let pbr = 0;
+            let hts_avls = 0;
+            let stck_prpr = 0;
+            let lstn_stcn = 1;
+            if (stock_info.length > 0) {
+                const inquire_price = stock_info[0]["output_inquirePrice"]["output"];
+                eps = inquire_price["eps"] ? inquire_price["eps"] : Number(inquire_price["epsx"]) * frst_bltn_exrt;
+                per = inquire_price["per"] ? inquire_price["per"] : inquire_price["perx"];
+                bps = inquire_price["bps"] ? inquire_price["bps"] : Number(inquire_price["bpsx"]) * frst_bltn_exrt;
+                pbr = inquire_price["pbr"] ? inquire_price["pbr"] : inquire_price["pbrx"];
+
+                hts_avls = Number(inquire_price["hts_avls"]) * 100000000; // HTS 시가총액
+                stck_prpr = inquire_price["stck_prpr"] ? inquire_price["stck_prpr"] : Number(inquire_price["last"]) * frst_bltn_exrt;// 현재가
+                lstn_stcn = inquire_price["lstn_stcn"] ? inquire_price["lstn_stcn"] : inquire_price["shar"]; // 상장주식수
+                // const balance_sheet = stock_info[0]["output_balanceSheet"]["output"][0];
+            }
+
             return {
                 id: name,
                 column_1: <>
@@ -237,6 +278,31 @@ export default function InquireBalanceResult(props: InquireBalanceResultProps) {
                             transition-all duration-150 [box-shadow:0_4px_0_0_#910000,0_8px_0_0_#91000041] border-b-[1px]
                             `}
                         />
+                    </div>
+                </>,
+                column_11: <>
+                    <div className="font-mono flex flex-col text-xs dark:text-white">
+                        <div className="text-[0.6rem]">{Util.UnitConversion(hts_avls, true)}</div>
+                    </div>
+                </>,
+                column_12: <>
+                    <div className="font-mono flex flex-col text-xs dark:text-white">
+                        <div className="text-[0.6rem]">{Util.UnitConversion(eps, true)}</div>
+                    </div>
+                </>,
+                column_13: <>
+                    <div className="font-mono flex flex-col text-xs dark:text-white">
+                        <div className="text-[0.6rem]">{per}</div>
+                    </div>
+                </>,
+                column_14: <>
+                    <div className="font-mono flex flex-col text-xs dark:text-white">
+                        <div className="text-[0.6rem]">{Util.UnitConversion(bps, true)}</div>
+                    </div>
+                </>,
+                column_15: <>
+                    <div className="font-mono flex flex-col text-xs dark:text-white">
+                        <div className="text-[0.6rem]">{pbr}</div>
                     </div>
                 </>,
             }
