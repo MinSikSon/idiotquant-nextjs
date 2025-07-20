@@ -166,7 +166,7 @@ export default function InquireBalanceResult(props: InquireBalanceResultProps) {
             const frst_bltn_exrt = !!props.kiBalance.output2 ? props.kiBalance.output2[0]["frst_bltn_exrt"] : 0;
 
             const stock_info = !!props.stock_list ? props.stock_list.filter((stock: any) => stock.PDNO == pdno) : [];
-            console.log(name, pdno, `stock_info`, stock_info);
+            // console.log(name, pdno, `stock_info`, stock_info);
 
             let eps = 0;
             let per = 0;
