@@ -17,6 +17,8 @@ import InquireBalanceResult from "@/components/inquireBalanceResult";
 import NotFound from "@/app/not-found";
 import { CapitalTokenType, reqGetCapitalToken, selectCapitalToken } from "@/lib/features/algorithmTrade/algorithmTradeSlice";
 
+let DEBUG = false;
+
 export default function BalanceKr() {
     const pathname = usePathname();
     const loginState = useAppSelector(selectLoginState);
