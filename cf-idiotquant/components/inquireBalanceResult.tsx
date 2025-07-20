@@ -82,9 +82,9 @@ export default function InquireBalanceResult(props: InquireBalanceResultProps) {
         {
             head: "보유/주문가능",
         },
-        {
-            head: "매매",
-        },
+        // {
+        //     head: "매매",
+        // },
         {
             head: "시가총액",
         },
@@ -252,34 +252,34 @@ export default function InquireBalanceResult(props: InquireBalanceResultProps) {
                     </div>
                 </div>,
                 column_9: <div className="font-mono text-xs dark:text-white">{Number(hldg_qty).toFixed(0)}/{Number(ord_psbl_qty).toFixed(0)}</div>,
-                column_10: <>
-                    <div className="font-mono flex p-0 m-0 gap-1">
-                        <DesignButton
-                            handleOnClick={() => handleOnClick(item, "buy")}
-                            buttonName="buy"
-                            buttonBgColor={`bg-green-500`}
-                            buttonBorderColor={`border-green-400`}
-                            buttonShadowColor={`#129600`}
-                            textStyle={`text-white font-bold text-[0.5rem]`}
-                            buttonStyle={`flex items-center justify-center mb-2 px-1 button rounded-full cursor-pointer select-none
-                            active:translate-y-1 active:[box-shadow:0_0px_0_0_#129600,0_0px_0_0_#12960041] active:border-b-[0px]
-                            transition-all duration-150 [box-shadow:0_4px_0_0_#129600,0_8px_0_0_#12960041] border-b-[1px]
-                            `}
-                        />
-                        <DesignButton
-                            handleOnClick={() => handleOnClick(item, "sell")}
-                            buttonName="sell"
-                            buttonBgColor={`bg-red-400`}
-                            buttonBorderColor={`border-red-300`}
-                            buttonShadowColor={`#910000`}
-                            textStyle={`text-white font-bold text-[0.4rem]`}
-                            buttonStyle={`font-mono flex items-center justify-center mb-2 px-1 button bg-red-400 rounded-full cursor-pointer select-none
-                            active:translate-y-1 active:[box-shadow:0_0px_0_0_#910000,0_0px_0_0_#91000041] active:border-b-[0px]
-                            transition-all duration-150 [box-shadow:0_4px_0_0_#910000,0_8px_0_0_#91000041] border-b-[1px]
-                            `}
-                        />
-                    </div>
-                </>,
+                // column_10: <>
+                //     <div className="font-mono flex p-0 m-0 gap-1">
+                //         <DesignButton
+                //             handleOnClick={() => handleOnClick(item, "buy")}
+                //             buttonName="buy"
+                //             buttonBgColor={`bg-green-500`}
+                //             buttonBorderColor={`border-green-400`}
+                //             buttonShadowColor={`#129600`}
+                //             textStyle={`text-white font-bold text-[0.5rem]`}
+                //             buttonStyle={`flex items-center justify-center mb-2 px-1 button rounded-full cursor-pointer select-none
+                //             active:translate-y-1 active:[box-shadow:0_0px_0_0_#129600,0_0px_0_0_#12960041] active:border-b-[0px]
+                //             transition-all duration-150 [box-shadow:0_4px_0_0_#129600,0_8px_0_0_#12960041] border-b-[1px]
+                //             `}
+                //         />
+                //         <DesignButton
+                //             handleOnClick={() => handleOnClick(item, "sell")}
+                //             buttonName="sell"
+                //             buttonBgColor={`bg-red-400`}
+                //             buttonBorderColor={`border-red-300`}
+                //             buttonShadowColor={`#910000`}
+                //             textStyle={`text-white font-bold text-[0.4rem]`}
+                //             buttonStyle={`font-mono flex items-center justify-center mb-2 px-1 button bg-red-400 rounded-full cursor-pointer select-none
+                //             active:translate-y-1 active:[box-shadow:0_0px_0_0_#910000,0_0px_0_0_#91000041] active:border-b-[0px]
+                //             transition-all duration-150 [box-shadow:0_4px_0_0_#910000,0_8px_0_0_#91000041] border-b-[1px]
+                //             `}
+                //         />
+                //     </div>
+                // </>,
                 column_11: <>
                     <div className="font-mono flex flex-col text-xs dark:text-white">
                         <div className="text-[0.6rem]">{Util.UnitConversion(hts_avls, true)}</div>
@@ -344,7 +344,7 @@ export default function InquireBalanceResult(props: InquireBalanceResultProps) {
             <div className="font-mono flex p-2 items-center">
                 <DesignButton
                     handleOnClick={() => {
-                        showAlert("지난 주문 확인");
+                        // showAlert("지난 주문 확인");
                         setTime(new Date());
 
                         dispatch(props.reqGetInquireBalance(props.kiToken));
