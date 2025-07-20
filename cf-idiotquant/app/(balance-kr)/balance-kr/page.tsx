@@ -42,7 +42,7 @@ export default function BalanceKr() {
     }, [kiToken, loginState]);
 
     React.useEffect(() => {
-        // console.log(`[BalanceKr]`, `kiBalance`, kiBalance);
+        if (true == DEBUG) console.log(`[BalanceKr]`, `kiBalance`, kiBalance);
     }, [kiBalance]);
 
     React.useEffect(() => {
