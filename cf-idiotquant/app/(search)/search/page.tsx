@@ -31,7 +31,7 @@ import { reqPostLaboratory } from "@/lib/features/ai/aiSlice";
 import { AiOutputResultUsageType, selectAiStreamOutput } from "@/lib/features/ai/aiStreamSlice";
 import { addKrMarketHistory, selectKrMarketHistory, selectUsMarketHistory } from "@/lib/features/searchHistory/searchHistorySlice";
 
-const DEBUG = false;
+const DEBUG = true;
 
 export default function Search() {
   const pathname = usePathname();
@@ -95,6 +95,7 @@ export default function Search() {
         const bstp_kor_isnm = kiInquirePrice.output.bstp_kor_isnm; // 업종 한글 종목명
 
         const yearMatchIndex = getYearMatchIndex(kiInquireDailyItemChartPrice.output2[0]["stck_bsop_date"]);
+        console.log(`yearMatchIndex`, yearMatchIndex, `kiBalanceSheet.output.length`, kiBalanceSheet.output.length);
         const latestBalanceSheet = kiBalanceSheet.output[yearMatchIndex];
         const ONE_HUNDRED_MILLION = 100000000;
 
@@ -269,9 +270,19 @@ export default function Search() {
     // </>
   }
 
-  const MARKET_CAP = bShowResult ? (Number(kiInquireDailyItemChartPrice.output1["stck_prpr"]) * Number(kiInquireDailyItemChartPrice.output1["lstn_stcn"])) : 0;
-  const CURRENT_ASSET = bShowResult ? (Number(kiBalanceSheet.output[getYearMatchIndex(kiInquireDailyItemChartPrice.output2[0]["stck_bsop_date"])].cras) * 100000000) : 0;
-  const TOTAL_LIABILITIES = bShowResult ? (Number(kiBalanceSheet.output[getYearMatchIndex(kiInquireDailyItemChartPrice.output2[0]["stck_bsop_date"])].total_lblt) * 100000000) : 0;
+  let MARKET_CAP = 0;
+  // let CURRENT_ASSET_LIST = []; // 유동자산
+  // let TOTAL_LIABILITIES_LIST = []; // 부채총계
+  if (true == bShowResult) {
+    MARKET_CAP = (Number(kiInquireDailyItemChartPrice.output1["stck_prpr"]) * Number(kiInquireDailyItemChartPrice.output1["lstn_stcn"]));
+    // const yearIndex = getYearMatchIndex(kiInquireDailyItemChartPrice.output2[0]["stck_bsop_date"]);
+    // for (let i = 0; i < kiBalanceSheet.output.length; ++i) {
+    //   {
+    //     CURRENT_ASSET_LIST.push(Number(kiBalanceSheet.output[i].cras) * 100000000); // 유동자산 (억)
+    //     TOTAL_LIABILITIES_LIST.push(Number(kiBalanceSheet.output[i].total_lblt) * 100000000); // 부채총계 (억)
+    //   }
+    // }
+  }
 
   return <>
     <div className="flex flex-col w-full">
@@ -427,17 +438,64 @@ export default function Search() {
                 {getNcav(kiBalanceSheet, kiInquireDailyItemChartPrice, 1.0)}
                 {getNcav(kiBalanceSheet, kiInquireDailyItemChartPrice, 1.5)}
               </div>
+              <div className="dark:bg-black dark:text-white text-md p-3 shadow">
+                <div className="flex gap-2 font-mono">
+                  <div className="w-full text-center">재무 정보</div>
+                  {/* <div className="w-6/12 text-right"></div> */}
+                  {/* <div className="w-2/12 text-left text-[0.6rem]"></div> */}
+                </div>
+              </div>
+              {/* <div className="dark:bg-black dark:text-white text-xs p-3 shadow">
+                <div className="flex gap-2 font-mono">
+                  <div className="w-4/12 text-right">유동자산</div>
+                  <div className="w-6/12 text-right">{CURRENT_ASSET_LIST[0].toLocaleString()}</div>
+                  <div className="w-2/12 text-left text-[0.6rem]">원</div>
+                </div>
+                <div className="flex gap-2 font-mono">
+                  <div className="w-4/12 text-right">부채총계</div>
+                  <div className="w-6/12 text-right">{TOTAL_LIABILITIES_LIST[0].toLocaleString()}</div>
+                  <div className="w-2/12 text-left text-[0.6rem]">원</div>
+                </div>
+              </div> */}
               <div className="dark:bg-black dark:text-white text-xs p-3 shadow">
-                <div className="flex gap-2 font-mono">
-                  <div className="w-4/12 text-right">재무-유동자산</div>
-                  <div className="w-6/12 text-right">{CURRENT_ASSET.toLocaleString()}</div>
-                  <div className="w-2/12 text-left text-[0.6rem]">원</div>
-                </div>
-                <div className="flex gap-2 font-mono">
-                  <div className="w-4/12 text-right">재무-부채총계</div>
-                  <div className="w-6/12 text-right">{TOTAL_LIABILITIES.toLocaleString()}</div>
-                  <div className="w-2/12 text-left text-[0.6rem]">원</div>
-                </div>
+                {bShowResult && <table className="table-auto w-full text-right font-mono border border-gray-300">
+                  <thead className="bg-gray-100">
+                    <tr>
+                      <th className="border px-2 py-1 text-left">항목</th>
+                      {kiBalanceSheet.output.slice(0, 5).map((item: any, index: number) => (
+                        <th key={index} className="border pr-1 py-1">
+                          {item.stac_yymm}
+                        </th>
+                      ))}
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {[
+                      { label: "유동자산", key: "cras" },
+                      { label: "고정자산", key: "fxas" },
+                      { label: "자산총계", key: "total_aset" },
+                      { label: "유동부채", key: "flow_lblt" },
+                      { label: "고정부채", key: "fix_lblt" },
+                      { label: "부채총계", key: "total_lblt" },
+                      { label: "자본금", key: "cpfn" },
+                      { label: "자본잉여금", key: "cfp_surp" },
+                      { label: "이익잉여금", key: "prfi_surp" },
+                      { label: "자본총계", key: "total_cptl" },
+                    ].map((row, rowIndex) => (
+                      <tr key={rowIndex}>
+                        <td className="border pr-1 py-1 text-left">{row.label}</td>
+                        {kiBalanceSheet.output.slice(0, 5).map((item: any, colIndex: number) => {
+                          const value = Number(item[row.key]) * 100000000;
+                          return (
+                            <td key={colIndex} className="border pr-1 py-1">
+                              {Util.UnitConversion(value, false)}
+                            </td>
+                          );
+                        })}
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>}
               </div>
             </div>
             <div className="flex-1 dark:bg-gray-300 text-black text-xs m-3 shadow">
