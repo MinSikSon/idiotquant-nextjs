@@ -205,11 +205,11 @@ function TablesExample8({
                                                         {column_9}
                                                     </div>
                                                 </td>
-                                                {/* <td className={classes}>
+                                                <td className={classes}>
                                                     <div className="text-right">
                                                         {column_10}
                                                     </div>
-                                                </td> */}
+                                                </td>
                                                 <td className={classes}>
                                                     <div className="text-right">
                                                         {column_11}
