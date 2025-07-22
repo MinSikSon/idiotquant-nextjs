@@ -344,7 +344,7 @@ export default function InquireBalanceResult(props: InquireBalanceResultProps) {
             <div className="font-mono flex p-2 items-center">
                 <DesignButton
                     handleOnClick={() => {
-                        // showAlert("지난 주문 확인");
+                        showAlert("지난 주문 확인");
                         setTime(new Date());
 
                         dispatch(props.reqGetInquireBalance(props.kiToken));
