@@ -312,7 +312,7 @@ export default function AlgorithmTrade() {
                         <div className="flex flex-col justify-end items-end">{token_per_stock} point / 10 min</div>
                     </div>
                     <div className="dark:border-gray-700 border flex-1 rounded-lg px-2 pb-1 mr-2 mx-1 shadow">
-                        <div className="text-[0.6rem]">마지막 구매 시도 종목</div>
+                        <div className="text-[0.6rem]">다음 구매 시도 종목</div>
                         <div className="flex flex-col justify-end items-end">{refill_stock_index}) {!!stock_list[refill_stock_index] ? stock_list[refill_stock_index]["name"] : 0}</div>
                     </div>
                 </div>
