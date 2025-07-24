@@ -282,7 +282,6 @@ export default function AlgorithmTrade() {
                                                 <span className="font-bold">{key}(={quant_rule.value[typedKey]}): </span>{quant_rule_desc.value[typedKey] ?? "설명 없음"}
                                             </Popover.Content>
                                         </Popover>
-
                                     </th>
                                 );
                             })}
@@ -294,14 +293,21 @@ export default function AlgorithmTrade() {
                                 const typedKey = key as keyof QuantRuleValue;
                                 return (
                                     <td key={key} className="text-center border py-1">
-                                        {quant_rule.value[typedKey]}
+                                        <Popover>
+                                            <Popover.Trigger className="cursor-pointer">
+                                                {quant_rule.value[typedKey]}
+                                            </Popover.Trigger>
+                                            <Popover.Content className="text-[0.6rem] p-2 bg-white dark:bg-gray-800 text-black dark:text-white shadow-xl rounded">
+                                                <span className="font-bold">{key}(={quant_rule.value[typedKey]}): </span>{quant_rule_desc.value[typedKey] ?? "설명 없음"}
+                                            </Popover.Content>
+                                        </Popover>
                                     </td>
                                 );
                             })}
                         </tr>
                     </tbody>
                 </table>
-                <div className="text-xl">
+                <div className="text-xl pt-2">
                     주식 거래 이력
                 </div>
                 <div className="flex">
