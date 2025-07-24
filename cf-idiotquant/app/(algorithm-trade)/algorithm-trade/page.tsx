@@ -3,12 +3,16 @@
 import { DesignButton } from "@/components/designButton";
 import LineChart from "@/components/LineChart";
 import TablesExample8, { Example8TableHeadType, Example8TableRowType, TablesExample8PropsType } from "@/components/tableExample8";
-import { CapitalTokenType, QuantRule, QuantRuleValue, reqGetQuantRule, reqGetUsCapitalToken, selectCapitalToken, selectInquirePriceMulti, selectQuantRule, selectUsCapitalToken } from "@/lib/features/algorithmTrade/algorithmTradeSlice";
+import { CapitalTokenType, QuantRule, QuantRuleValue, reqGetQuantRule, reqGetQuantRuleDesc, reqGetUsCapitalToken, selectCapitalToken, selectInquirePriceMulti, selectQuantRule, selectQuantRuleDesc, selectUsCapitalToken } from "@/lib/features/algorithmTrade/algorithmTradeSlice";
 import { reqGetCapitalToken, reqGetInquirePriceMulti } from "@/lib/features/algorithmTrade/algorithmTradeSlice";
 import { getKoreaInvestmentToken, KoreaInvestmentToken } from "@/lib/features/koreaInvestment/koreaInvestmentSlice";
 import { useAppDispatch, useAppSelector } from "@/lib/hooks";
-import { Button, ButtonGroup, Popover, Spinner, Switch, Tabs, Typography } from "@material-tailwind/react";
+import { Button, ButtonGroup, Spinner, Switch, Tabs, Typography } from "@material-tailwind/react";
 import React from "react";
+
+import {
+    Popover,
+} from "@material-tailwind/react";
 
 const DEBUG = false;
 
@@ -20,6 +24,7 @@ export default function AlgorithmTrade() {
     const inquirePriceMulti: any = useAppSelector(selectInquirePriceMulti);
     const kiToken: KoreaInvestmentToken = useAppSelector(getKoreaInvestmentToken);
     const quant_rule: QuantRule = useAppSelector(selectQuantRule);
+    const quant_rule_desc: QuantRule = useAppSelector(selectQuantRuleDesc);
 
     const [time, setTime] = React.useState<any>('');
 
@@ -36,6 +41,7 @@ export default function AlgorithmTrade() {
 
     React.useEffect(() => {
         dispatch(reqGetQuantRule());
+        dispatch(reqGetQuantRuleDesc());
         handleOnClick();
     }, []);
 
@@ -261,46 +267,40 @@ export default function AlgorithmTrade() {
                 <div className="text-xl">
                     알고리즘 매매 전략
                 </div>
-                <div className="flex">
-                    <div className="dark:border-gray-700 border flex-1 rounded-lg px-2 pb-1 mx-1 mb-2 shadow">
-                        <div className="text-[0.6rem]"></div>
-                        <div className="flex flex-col justify-end items-end">
-                            <table className="text-[0.6rem] border border-gray-300 w-full text-left">
-                                <thead>
-                                    <tr>
-                                        {Object.keys(quant_rule.value).map((key) => {
-                                            const typedKey = key as keyof QuantRuleValue;
-                                            return (
-                                                <th key={key} className="border px-2 py-1 font-medium">
-                                                    {key}
-                                                </th>
-                                            );
-                                        })}
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    <tr>
-                                        {Object.keys(quant_rule.value).map((key) => {
-                                            const typedKey = key as keyof QuantRuleValue;
-                                            return (
-                                                <td key={key} className="border px-2 py-1">
-                                                    {quant_rule.value[typedKey]}
-                                                </td>
-                                            );
-                                        })}
-                                    </tr>
-                                </tbody>
-                            </table>
-                        </div>
-                    </div>
-                    {/* <div className="dark:border-gray-700 border flex-1 rounded-lg px-2 pb-1 mx-1 mb-2 shadow">
-                        <div className="text-[0.6rem]">누적 알고리즘 매도</div>
-                        <div className="flex flex-col justify-end items-end">
-                            <div className="">{market == "KR" ? `${Number(Number(cummulative_investment_sell).toFixed(0)).toLocaleString()} 원` : `${Number(Number(cummulative_investment_sell).toFixed(0)).toLocaleString()} 원`}</div>
-                            <div className="text-[0.6rem]">{market == "KR" ? "" : `(${Number(Number(cummulative_investment_sell) / Number(us_capital_token.value.frst_bltn_exrt)).toFixed(3)} USD)`}</div>
-                        </div>
-                    </div> */}
-                </div>
+                <table className="text-[0.5rem] border-none border-gray-300 w-full text-left">
+                    <thead>
+                        <tr>
+                            {Object.keys(quant_rule.value).map((key) => {
+                                const typedKey = key as keyof QuantRuleValue;
+                                return (
+                                    <th key={key} className="border py-1 text-center">
+                                        <Popover>
+                                            <Popover.Trigger className="cursor-pointer">
+                                                {key}
+                                            </Popover.Trigger>
+                                            <Popover.Content className="text-[0.6rem] p-2 bg-white dark:bg-gray-800 text-black dark:text-white shadow-xl rounded">
+                                                <span className="font-bold">{key}(={quant_rule.value[typedKey]}): </span>{quant_rule_desc.value[typedKey] ?? "설명 없음"}
+                                            </Popover.Content>
+                                        </Popover>
+
+                                    </th>
+                                );
+                            })}
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            {Object.keys(quant_rule.value).map((key) => {
+                                const typedKey = key as keyof QuantRuleValue;
+                                return (
+                                    <td key={key} className="text-center border py-1">
+                                        {quant_rule.value[typedKey]}
+                                    </td>
+                                );
+                            })}
+                        </tr>
+                    </tbody>
+                </table>
                 <div className="text-xl">
                     주식 거래 이력
                 </div>

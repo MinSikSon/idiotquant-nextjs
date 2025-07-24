@@ -36,7 +36,12 @@ export const getQuantRule: any = async () => {
     }
     return getAlgorithmTradeRequest(subUrl, additionalHeaders);
 }
-
+export const getQuantRuleDesc: any = async () => {
+    const subUrl = `/algorithm-trade/quant-rule-desc`;
+    const additionalHeaders: AdditionalHeaders = {
+    }
+    return getAlgorithmTradeRequest(subUrl, additionalHeaders);
+}
 async function getAlgorithmTradeRequest(subUrl: string, additionalHeaders?: AdditionalHeaders) {
     const url = `${process.env.NEXT_PUBLIC_API_URL}${subUrl}`;
     const options: RequestInit = {

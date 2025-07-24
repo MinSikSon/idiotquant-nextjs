@@ -1,6 +1,6 @@
 import { PayloadAction } from "@reduxjs/toolkit";
 import { createAppSlice } from "@/lib/createAppSlice";
-import { getCapitalToken, getInquirePriceMulti, getQuantRule, getUsCapitalToken } from "./algorithmTradeAPI";
+import { getCapitalToken, getInquirePriceMulti, getQuantRule, getQuantRuleDesc, getUsCapitalToken } from "./algorithmTradeAPI";
 import { registerCookie } from "@/components/util";
 import { KoreaInvestmentToken } from "../koreaInvestment/koreaInvestmentSlice";
 import { string } from "three/tsl";
@@ -77,6 +77,7 @@ interface AlgorithmTradeType {
     purchase_log: any;
     us_capital_token: CapitalTokenType;
     quant_rule: QuantRule;
+    quant_rule_desc: QuantRule;
 }
 const initialState: AlgorithmTradeType = {
     state: "init",
@@ -119,6 +120,18 @@ const initialState: AlgorithmTradeType = {
             ncav_ratio: "1.5",
             portfolio_weight: "5",
             exclude_call_warrants: "true",
+        }
+    },
+    quant_rule_desc: {
+        state: "init",
+        value: {
+            max_pbr: "",
+            min_tomv: "",
+            min_tomv_nasdaq: "",
+            min_eps: "",
+            ncav_ratio: "",
+            portfolio_weight: "",
+            exclude_call_warrants: "",
         }
     }
 }
@@ -218,6 +231,30 @@ export const algorithmTradeSlice = createAppSlice({
                 },
             }
         ),
+        reqGetQuantRuleDesc: create.asyncThunk(
+            async () => {
+                return await getQuantRuleDesc();
+            },
+            {
+                pending: (state) => {
+                    if (DEBUG) console.log(`[reqGetQuantRuleDesc] pending`);
+                    state.state = "pending";
+                    state.quant_rule_desc.state = "pending";
+                },
+                fulfilled: (state, action) => {
+                    if (DEBUG) console.log(`[reqGetQuantRuleDesc] fulfilled`, `action.payload`, typeof action.payload, action.payload);
+                    const json = JSON.parse(action.payload);
+                    if (DEBUG) console.log(`[reqGetQuantRuleDesc] fulfilled json`, json);
+                    state.quant_rule_desc = { state: "fulfilled", value: json };
+                    state.state = "fulfilled";
+                },
+                rejected: (state) => {
+                    if (DEBUG) console.log(`[reqGetQuantRuleDesc] rejected`);
+                    state.state = "rejected";
+                },
+            }
+        ),
+
     }),
     selectors: {
         selectAlgorithmTraceState: (state) => state.state,
@@ -225,8 +262,9 @@ export const algorithmTradeSlice = createAppSlice({
         selectUsCapitalToken: (state) => state.us_capital_token,
         selectInquirePriceMulti: (state) => state.inquire_price_multi,
         selectQuantRule: (state) => state.quant_rule,
+        selectQuantRuleDesc: (state) => state.quant_rule_desc,
     }
 });
 
-export const { reqGetInquirePriceMulti, reqGetCapitalToken, reqGetUsCapitalToken, reqGetQuantRule } = algorithmTradeSlice.actions;
-export const { selectAlgorithmTraceState, selectCapitalToken, selectInquirePriceMulti, selectUsCapitalToken, selectQuantRule } = algorithmTradeSlice.selectors;
+export const { reqGetInquirePriceMulti, reqGetCapitalToken, reqGetUsCapitalToken, reqGetQuantRule, reqGetQuantRuleDesc } = algorithmTradeSlice.actions;
+export const { selectAlgorithmTraceState, selectCapitalToken, selectInquirePriceMulti, selectUsCapitalToken, selectQuantRule, selectQuantRuleDesc } = algorithmTradeSlice.selectors;
