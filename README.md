@@ -1,3 +1,6 @@
+# 서비스 구조
+- https://deepwiki.com/MinSikSon/idiotquant-nextjs/2-core-trading-systems
+
 # 서비스 확인
 - https://idiotquant.com
 
