@@ -38,17 +38,18 @@ export default function InquireBalanceResult(props: InquireBalanceResultProps) {
     };
 
     function handleOnClick(item: any, buyOrSell: string) {
-        if ("buy" == buyOrSell || "sell" == buyOrSell) {
-            const korBuyOrSell = "buy" == buyOrSell ? "구매" : "판매";
-            const excg_cd = !!item["ovrs_excg_cd"] ? item["ovrs_excg_cd"] : "";
-            const frst_bltn_exrt = !!props.kiBalance.output2 ? props.kiBalance.output2[0]["frst_bltn_exrt"] : 1;
-            let price = !!item["prpr"] ? item["prpr"] : item["ovrs_now_pric1"];
-            price = price / frst_bltn_exrt;
+        showAlert("주문 비활성화");
+        // if ("buy" == buyOrSell || "sell" == buyOrSell) {
+        //     const korBuyOrSell = "buy" == buyOrSell ? "구매" : "판매";
+        //     const excg_cd = !!item["ovrs_excg_cd"] ? item["ovrs_excg_cd"] : "";
+        //     const frst_bltn_exrt = !!props.kiBalance.output2 ? props.kiBalance.output2[0]["frst_bltn_exrt"] : 1;
+        //     let price = !!item["prpr"] ? item["prpr"] : item["ovrs_now_pric1"];
+        //     price = price / frst_bltn_exrt;
 
-            setOrderName(item["prdt_name"] + " " + korBuyOrSell + " 시도" + "(" + formatNumber(Number(price)) + `${(1 != frst_bltn_exrt) ? "USD" : ""}` + ")");
-            dispatch(props.reqPostOrderCash({ koreaInvestmentToken: props.kiToken, PDNO: item["pdno"], buyOrSell: buyOrSell, excg_cd: excg_cd, price: price }));
-            showAlert("");
-        }
+        //     setOrderName(item["prdt_name"] + " " + korBuyOrSell + " 시도" + "(" + formatNumber(Number(price)) + `${(1 != frst_bltn_exrt) ? "USD" : ""}` + ")");
+        //     dispatch(props.reqPostOrderCash({ koreaInvestmentToken: props.kiToken, PDNO: item["pdno"], buyOrSell: buyOrSell, excg_cd: excg_cd, price: price }));
+        //     showAlert("");
+        // }
     }
 
     const [selectHead, setSelectHead] = React.useState("비중");
