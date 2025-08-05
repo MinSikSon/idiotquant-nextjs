@@ -264,8 +264,17 @@ export default function AlgorithmTrade() {
         </>,
         desc: <>
             <div className="dark:border-gray-700 border rounded-lg px-2 pb-1 m-2 shadow">
+                <div className="text-sm">
+                    정량적 데이터로 선별된, 감정 없는 종목 추천
+                </div>
+                <div className="text-xs pl-2">
+                    idiotquant는 수익성, 저평가, 거래량 등 다양한 투자 지표를 기반으로
+                    유망 종목을 자동 선별하고, 당신만의 매매 전략에 따라 맞춤형 포트폴리오를 구성합니다.
+                </div>
+            </div>
+            <div className="dark:border-gray-700 border rounded-lg px-2 pb-1 m-2 shadow">
                 <div className="text-xl">
-                    알고리즘 매매 전략
+                    매매 전략
                 </div>
                 <table className="text-[0.5rem] border-none border-gray-300 w-full text-left">
                     <thead>
@@ -343,7 +352,7 @@ export default function AlgorithmTrade() {
         market_date: <div >
             <div className="dark:border-gray-700 border rounded-lg px-2 pb-1 m-2 shadow">
                 <div className="text-xl">
-                    <span className="underline decoration-4 decoration-yellow-100">주식 구매 포인트</span> 적립 이력
+                    주식 구매 포인트 적립 이력
                 </div>
                 <div className="flex">
                     {Object.keys(time_stamp).reverse().map((key, index) => {
@@ -356,7 +365,7 @@ export default function AlgorithmTrade() {
             </div>
             <div className="dark:border-gray-700 border rounded-lg px-2 pb-1 m-2 shadow">
                 <div className="text-xl">
-                    <span className="underline decoration-4 decoration-yellow-100">주식 구매 포인트</span> 적립 현황
+                    주식 구매 포인트 적립 현황
                 </div>
                 <div className="flex">
                     <div className="dark:border-gray-700 border flex-1 rounded-lg px-2 pb-1 mr-2 mx-1 shadow">
