@@ -53,7 +53,8 @@ export default function Search() {
     React.useEffect(() => {
         if (DEBUG) console.log(`[Search]`, `kiToken:`, kiToken);
         if (DEBUG) console.log(`[Search]`, `loginState:`, loginState);
-        if ("cf" == loginState || "kakao" == loginState) {
+        // if ("cf" == loginState || "kakao" == loginState)
+        {
             const isValidKiAccessToken = !!kiToken["access_token"];
             if (true == isValidKiAccessToken) {
                 dispatch(reqGetInquireBalance(kiToken));
@@ -79,11 +80,11 @@ export default function Search() {
 
     if (DEBUG) console.log(`kiUsMaretSearchInfo`, kiUsMaretSearchInfo);
     if (DEBUG) console.log(`kiUsMaretPriceDetail`, kiUsMaretPriceDetail);
-    if ("init" == loginState || "rejected" == loginState || "pending" == loginState) {
-        return <>
-            <Login parentUrl={pathname} />
-        </>;
-    }
+    // if ("init" == loginState || "rejected" == loginState || "pending" == loginState) {
+    //     return <>
+    //         <Login parentUrl={pathname} />
+    //     </>;
+    // }
 
     if (false == isValidCookie("koreaInvestmentToken") || false == !!kiToken["access_token"]) {
         return <>

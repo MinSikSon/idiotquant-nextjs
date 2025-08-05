@@ -34,7 +34,8 @@ export default function BalanceKr() {
     React.useEffect(() => {
         console.log(`[BalanceKr]`, `loginState`, loginState);
         // console.log(`[BalanceKr]`, `kiToken:`, kiToken);
-        if ("cf" == loginState || "kakao" == loginState) {
+        // if ("cf" == loginState || "kakao" == loginState)
+        {
             const isValidKiAccessToken = !!kiToken["access_token"];
             console.log(`[BalanceKr]`, `isValidKiAccessToken`, isValidKiAccessToken);
             if (true == isValidKiAccessToken) {
@@ -58,12 +59,12 @@ export default function BalanceKr() {
         }
     }, [kr_capital_token])
 
-    if ("init" == loginState || "rejected" == loginState) {
-        return <>
-            <Login parentUrl={pathname} />
-            <div className="dark:bg-black h-lvh"></div>
-        </>
-    }
+    // if ("init" == loginState || "rejected" == loginState) {
+    //     return <>
+    //         <Login parentUrl={pathname} />
+    //         <div className="dark:bg-black h-lvh"></div>
+    //     </>
+    // }
 
     if (false == isValidCookie("koreaInvestmentToken") || false == !!kiToken["access_token"]) {
         return <>
@@ -80,12 +81,12 @@ export default function BalanceKr() {
         </>
     }
 
-    if ("fulfilled" != kr_capital_token.state) {
-        return <>
-            <Login parentUrl={pathname} />
-            <div className="dark:bg-black h-lvh"></div>
-        </>
-    }
+    // if ("fulfilled" != kr_capital_token.state) {
+    //     return <>
+    //         <Login parentUrl={pathname} />
+    //         <div className="dark:bg-black h-lvh"></div>
+    //     </>
+    // }
 
     return <>
         <InquireBalanceResult

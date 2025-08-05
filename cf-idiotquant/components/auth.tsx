@@ -30,11 +30,11 @@ export default function Auth() {
     const loginState = useAppSelector(selectLoginState);
 
     function reload(seq: any) {
-        if (DEBUG) console.log(`[reload]`, `loginState`, loginState);
-        if ("init" == loginState) {
-            if (DEBUG) console.log(`[Auth]`, seq, `- 1`, `loginState:`, loginState);
-            return;
-        }
+        if (DEBUG) console.log(`[Auth]`, `loginState`, loginState);
+        // if ("init" == loginState){
+        //     if (DEBUG) console.log(`[Auth]`, seq, `- 1`, `loginState:`, loginState);
+        //     return;
+        // }
 
         if ("init" == kiApproval.state) {
             if (DEBUG) console.log(`[Auth]`, seq, `- 2`, `kiApproval.state:`, kiApproval.state);
@@ -43,7 +43,7 @@ export default function Auth() {
         }
 
         const isValidKiAccessToken = !!kiToken["access_token"];
-        if (DEBUG) console.log(`[Auth]`, seq, `- 3`, `loginState:`, loginState, `kiApproval:`, kiApproval, `kiToken:`, kiToken, `isValidKiAccessToken:`, isValidKiAccessToken);
+        if (DEBUG) console.log(`[Auth]`, seq, `- 3`, `kiApproval:`, kiApproval, `kiToken:`, kiToken, `isValidKiAccessToken:`, isValidKiAccessToken);
         // if ("init" == kiBalance.state && "" != kiToken["access_token"]) {
         if (true == isValidKiAccessToken) {
             dispatch(reqGetInquireBalance(kiToken));

@@ -31,7 +31,7 @@ import { reqPostLaboratory } from "@/lib/features/ai/aiSlice";
 import { AiOutputResultUsageType, selectAiStreamOutput } from "@/lib/features/ai/aiStreamSlice";
 import { addKrMarketHistory, selectKrMarketHistory, selectUsMarketHistory } from "@/lib/features/searchHistory/searchHistorySlice";
 
-const DEBUG = true;
+const DEBUG = false;
 
 export default function Search() {
   const pathname = usePathname();
@@ -58,8 +58,10 @@ export default function Search() {
 
   React.useEffect(() => {
     if (DEBUG) console.log(`[Search]`, `kiToken:`, kiToken);
-    if ("cf" == loginState || "kakao" == loginState) {
+    // if ("cf" == loginState || "kakao" == loginState)
+    {
       const isValidKiAccessToken = !!kiToken["access_token"];
+      if (DEBUG) console.log(`[Search]`, `isValidKiAccessToken`, isValidKiAccessToken);
       if (true == isValidKiAccessToken) {
         dispatch(reqGetInquireBalance(kiToken));
       }
@@ -246,11 +248,11 @@ export default function Search() {
     </>
   }
 
-  if ("init" == loginState || "rejected" == loginState || "pending" == loginState) {
-    return <>
-      <Login parentUrl={pathname} />
-    </>;
-  }
+  // if ("init" == loginState || "rejected" == loginState || "pending" == loginState) {
+  //   return <>
+  //     <Login parentUrl={pathname} />
+  //   </>;
+  // }
 
   if (false == isValidCookie("koreaInvestmentToken") || false == !!kiToken["access_token"]) {
     return <>

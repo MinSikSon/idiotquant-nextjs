@@ -34,7 +34,8 @@ export default function BalanceUs() {
         if (DEBUG) console.log(`[BalanceUs]`, `loginState`, loginState);
         if (DEBUG) console.log(`[BalanceUs]`, `kiToken:`, kiToken);
         const isValidKiAccessToken = !!kiToken["access_token"];
-        if ("cf" == loginState || "kakao" == loginState) {
+        // if ("cf" == loginState || "kakao" == loginState)
+        {
             if (true == isValidKiAccessToken) {
                 dispatch(reqGetOverseasStockTradingInquirePresentBalance(kiToken));
             }
@@ -53,12 +54,12 @@ export default function BalanceUs() {
     }, [us_capital_token])
 
     // console.log(`loginState`, loginState);
-    if ("init" == loginState || "rejected" == loginState) {
-        return <>
-            <Login parentUrl={pathname} />
-            <div className="dark:bg-black h-lvh"></div>
-        </>
-    }
+    // if ("init" == loginState || "rejected" == loginState) {
+    //     return <>
+    //         <Login parentUrl={pathname} />
+    //         <div className="dark:bg-black h-lvh"></div>
+    //     </>
+    // }
 
     if (false == isValidCookie("koreaInvestmentToken") || false == !!kiToken["access_token"]) {
         return <>
