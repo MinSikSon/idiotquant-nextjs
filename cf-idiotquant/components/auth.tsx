@@ -5,7 +5,7 @@ import { reqPostApprovalKey, reqPostToken, reqGetInquireBalance, reqPostOrderCas
 import { KoreaInvestmentApproval, KoreaInvestmentToken, KoreaInvestmentBalance } from "@/lib/features/koreaInvestment/koreaInvestmentSlice";
 import { setKoreaInvestmentToken } from "@/lib/features/koreaInvestment/koreaInvestmentSlice";
 import { getKoreaInvestmentApproval, getKoreaInvestmentToken, getKoreaInvestmentBalance } from "@/lib/features/koreaInvestment/koreaInvestmentSlice";
-import { selectLoginState } from "@/lib/features/login/loginSlice";
+// import { selectLoginState } from "@/lib/features/login/loginSlice";
 
 import { useAppDispatch, useAppSelector } from "@/lib/hooks";
 import { Button, Input, Spinner, Typography } from "@material-tailwind/react";
@@ -27,10 +27,10 @@ export default function Auth() {
     const kiBalanceSheet: KoreaInvestmentBalanceSheet = useAppSelector(getKoreaInvestmentBalanceSheet);
 
     const [time, setTime] = React.useState<any>('');
-    const loginState = useAppSelector(selectLoginState);
+    // const loginState = useAppSelector(selectLoginState);
 
     function reload(seq: any) {
-        if (DEBUG) console.log(`[Auth]`, `loginState`, loginState);
+        // if (DEBUG) console.log(`[Auth]`, `loginState`, loginState);
         // if ("init" == loginState){
         //     if (DEBUG) console.log(`[Auth]`, seq, `- 1`, `loginState:`, loginState);
         //     return;
@@ -85,9 +85,9 @@ export default function Auth() {
         if (DEBUG) console.log(`[Auth]`, seq, `- 11`, `kiBalanceSheet:`, kiBalanceSheet);
     }
 
-    React.useEffect(() => {
-        reload('1');
-    }, [loginState]);
+    // React.useEffect(() => {
+    //     reload('1');
+    // }, [loginState]);
     React.useEffect(() => {
         reload('2');
     }, [kiApproval]);
