@@ -12,7 +12,7 @@ import { getKoreaInvestmentToken, KoreaInvestmentToken, reqGetInquireBalance } f
 import SearchAutocomplete from "@/components/searchAutoComplete";
 
 import nasdaq_tickers from "@/public/data/usStockSymbols/nasdaq_tickers.json";
-import Login from "@/app/(login)/login/login";
+// import Login from "@/app/(login)/login/login";
 import Auth from "@/components/auth";
 import { FmpBalanceSheetStatementType, reqGetFmpBalanceSheetStatement, selectFmpBalanceSheetStatement, selectFmpState } from "@/lib/features/fmpUsMarket/fmpUsMarketSlice";
 import LineChart from "@/components/LineChart";
