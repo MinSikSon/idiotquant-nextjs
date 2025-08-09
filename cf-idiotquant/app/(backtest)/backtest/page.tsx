@@ -18,7 +18,6 @@ import { getBackTestConditionFilterResultType } from "@/lib/features/backtest/ba
 import { reqGetFinancialInfoWithMarketInfo } from "@/lib/features/backtest/backtestSlice";
 
 import React from "react";
-import { ArrowLeftIcon, ArrowRightIcon, CurrencyDollarIcon } from "@heroicons/react/24/outline";
 import { isValidCookie, Util } from "@/components/util";
 
 
@@ -30,7 +29,6 @@ import Login from "@/app/(login)/login/login";
 import Auth from "@/components/auth";
 import { usePathname } from "next/navigation";
 
-import { format } from "date-fns";
 import { DayPicker } from "react-day-picker";
 // import { NavArrowRight, NavArrowLeft } from "iconoir-react";
 import { Popover } from "@material-tailwind/react";
