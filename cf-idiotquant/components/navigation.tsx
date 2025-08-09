@@ -8,7 +8,7 @@ import {
 import { Bars3Icon, CalculatorIcon, HomeIcon, LockClosedIcon, LockOpenIcon, MagnifyingGlassCircleIcon, SparklesIcon, WalletIcon, XMarkIcon } from "@heroicons/react/24/outline";
 import Link from "next/link";
 
-import { selectKakaoId, selectKakaoNickName } from "@/lib/features/login/loginSlice";
+// import { selectKakaoId, selectKakaoNickName } from "@/lib/features/login/loginSlice";
 import { useAppSelector } from "@/lib/hooks";
 
 import { usePathname } from "next/navigation";
@@ -32,8 +32,8 @@ export function NavbarWithSimpleLinks() {
 
     const [selectPath, setSelectPath] = React.useState<string>(splitPathName[1]);
 
-    const kakaoId = useAppSelector(selectKakaoId);
-    const kakaoNickName = useAppSelector(selectKakaoNickName);
+    // const kakaoId = useAppSelector(selectKakaoId);
+    // const kakaoNickName = useAppSelector(selectKakaoNickName);
 
     React.useEffect(() => {
         window.addEventListener(
@@ -84,7 +84,7 @@ export function NavbarWithSimpleLinks() {
 
     const urlToLabel: any = {
         ...navListUrlToLabel,
-        "backtest": `백테스트 ${!!!kakaoId ? "🔒" : ""}`,
+        // "backtest": `백테스트 ${!!!kakaoId ? "🔒" : ""}`,
         "strategy": "투자 전략",
         "strategy-register": "투자 전략 등록",
     }
@@ -109,11 +109,11 @@ export function NavbarWithSimpleLinks() {
                                 idiotquant<span className="text-blue-500">.</span>com
                             </div>
                         </Link>
-                        <div className="font-mono text-[0.6rem] dark:text-white min-w-32 text-center">
+                        {/* <div className="font-mono text-[0.6rem] dark:text-white min-w-32 text-center">
                             {!!kakaoNickName ? <>{kakaoNickName}님 반갑습니다. 😀</>
                                 : <></>
                             }
-                        </div>
+                        </div> */}
                     </div>
                 </div>
                 <div className="hidden md:block lg:block w-full">
