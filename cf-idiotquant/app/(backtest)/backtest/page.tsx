@@ -56,6 +56,7 @@ export default function BackTest() {
     };
 
     const [date, setDate] = React.useState<Date>();
+    const [validCookie, setValidCookie] = React.useState<any>(false);
 
     const getDateContents = (title: string, selectValue: any, min: any, max: any, handleOnChange: any) => {
         return <div className="flex flex-col">
@@ -293,12 +294,16 @@ export default function BackTest() {
         }
     }, [kiToken, loginState]);
 
+    React.useEffect(()=>{
+        setValidCookie(isValidCookie("koreaInvestmentToken"));
+    },[]);
+
     if ("init" == loginState || "rejected" == loginState) {
         return <>
             <Login parentUrl={pathname} />
         </>
     }
-    if (false == isValidCookie("koreaInvestmentToken") || false == !!kiToken["access_token"]) {
+    if (false == validCookie || false == !!kiToken["access_token"]) {
         return <>
             <Auth />
         </>

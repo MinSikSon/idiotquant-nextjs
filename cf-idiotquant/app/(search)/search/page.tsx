@@ -254,7 +254,11 @@ export default function Search() {
   //   </>;
   // }
 
-  if (false == isValidCookie("koreaInvestmentToken") || false == !!kiToken["access_token"]) {
+  const [validCookie, setValidCookie]=React.useState<any>(false);
+  React.useEffect(()=>{
+    setValidCookie(isValidCookie("koreaInvestmentToken"));
+  }, []);
+  if (false == validCookie|| false == !!kiToken["access_token"]) {
     return <>
       <Auth />
     </>

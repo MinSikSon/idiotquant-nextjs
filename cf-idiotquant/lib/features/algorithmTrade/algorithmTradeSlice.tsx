@@ -1,7 +1,7 @@
 import { PayloadAction } from "@reduxjs/toolkit";
 import { createAppSlice } from "@/lib/createAppSlice";
 import { getCapitalToken, getInquirePriceMulti, getQuantRule, getQuantRuleDesc, getUsCapitalToken } from "./algorithmTradeAPI";
-import { registerCookie } from "@/components/util";
+// import { registerCookie } from "@/components/util";
 import { KoreaInvestmentToken } from "../koreaInvestment/koreaInvestmentSlice";
 import { string } from "three/tsl";
 
