@@ -245,7 +245,7 @@ function TablesExample8({
                     </Card.Body>
                     {!!setVisibleCount ? <DesignButton
                         handleOnClick={() => setVisibleCount((prev: any) => prev + ADD_COUNT)}
-                        buttonName={`더보기 +${ADD_COUNT}`}
+                        buttonName={`more +${ADD_COUNT}`}
                         buttonBgColor="bg-white dark:bg-black"
                         buttonBorderColor="border-black dark:border-white"
                         buttonShadowColor="#D5D5D5"

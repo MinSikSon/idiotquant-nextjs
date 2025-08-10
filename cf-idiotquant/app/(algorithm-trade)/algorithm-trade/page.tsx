@@ -157,13 +157,13 @@ export default function AlgorithmTrade() {
                 data: getCumulateTokenArray(),
                 color: "#FF4560",
             },
-            {
-                name: "매수 - 매도",
-                // data: test_data.stock_list.map((stock: any) => stock.stck_prpr * stock.ORD_QTY),
-                // data: [50, 60, 70, 80, 90, 10, 20, 30, 40],
-                data: getCumulatePurchaseArray(),
-                color: "#0088CC",
-            },
+            // {
+            //     name: "매수 - 매도",
+            //     // data: test_data.stock_list.map((stock: any) => stock.stck_prpr * stock.ORD_QTY),
+            //     // data: [50, 60, 70, 80, 90, 10, 20, 30, 40],
+            //     data: getCumulatePurchaseArray(),
+            //     color: "#0088CC",
+            // },
             // {
             //     name: "Sales_b",
             //     data: [350, 200, 230, 500, 50, 40, 300, 320, 500],
@@ -201,7 +201,7 @@ export default function AlgorithmTrade() {
                 column_3: <div className="text-xs">{subItem["remaining_token"]}</div>,
                 column_4: <>
                     <div className="text-xs">
-                        {Number(subItem["stck_prpr"]).toLocaleString() + " "}<span className="text-[0.6rem]">{market == "KR" ? "원" : `USD (${Number(Number(subItem["stck_prpr"]) * capitalToken.value.frst_bltn_exrt).toFixed(0)} 원)`}</span>
+                        {Number(subItem["stck_prpr"]).toLocaleString() + " "}<span className="text-[0.6rem]">{market == "KR" ? "KRW" : `USD (${Number(Number(subItem["stck_prpr"]) * capitalToken.value.frst_bltn_exrt).toFixed(0)} KRW)`}</span>
                     </div>
                 </>,
                 expectedRateOfReturnColor: '', // x
@@ -234,7 +234,7 @@ export default function AlgorithmTrade() {
                     handleOnClick={() => {
                         handleOnClick()
                     }}
-                    buttonName={`알고리즘 투자 이력 조회`}
+                    buttonName={`refresh data`}
                     buttonBgColor="bg-white dark:bg-black"
                     buttonBorderColor="border-gray-500"
                     buttonShadowColor="#D5D5D5"
@@ -247,10 +247,10 @@ export default function AlgorithmTrade() {
                 <Tabs defaultValue="KR" className="mx-1">
                     <Tabs.List className="w-full bg-gray-300 py-0">
                         <Tabs.Trigger className="w-full p-1 text-white" value="KR" onClick={() => setMarket("KR")}>
-                            KR
+                            kospi/kosdaq/konex
                         </Tabs.Trigger>
                         <Tabs.Trigger className="w-full p-1 text-white" value="US" onClick={() => setMarket("US")}>
-                            US
+                            nasdaq
                         </Tabs.Trigger>
                         <Tabs.TriggerIndicator className="bg-blue-500 p-1" />
                     </Tabs.List>
@@ -258,23 +258,22 @@ export default function AlgorithmTrade() {
                 {"fulfilled" != capitalToken.state ?
                     <Button variant="ghost"><Spinner size="sm" /> loading... {DEBUG ? "2" : ""}</Button>
                     : <>
-                        <div className="text-[0.6rem] text-black dark:text-white ml-1">{time.toLocaleString("ko-KR", { timeZone: "Asia/Seoul" })}</div>
+                        <div className="text-[0.6rem] text-black dark:text-white ml-1">{time.toLocaleString("en-US", { timeZone: "Asia/Seoul" })}</div>
                     </>}
             </div>
         </>,
         desc: <>
             <div className="dark:border-gray-700 border rounded-lg px-2 pb-1 m-2 shadow">
                 <div className="text-sm">
-                    정량적 데이터로 선별된, 감정 없는 종목 추천
+                    Emotion-Free Stock Recommendations, Selected by Quantitative Data
                 </div>
                 <div className="text-xs pl-2">
-                    idiotquant는 수익성, 저평가, 거래량 등 다양한 투자 지표를 기반으로
-                    유망 종목을 자동 선별하고, 당신만의 매매 전략에 따라 맞춤형 포트폴리오를 구성합니다.
+                    idiotquant automatically identifies promising stocks based on a variety of investment indicators such as profitability, undervaluation, and trading volume, and builds a customized portfolio tailored to your unique trading strategy.
                 </div>
             </div>
             <div className="dark:border-gray-700 border rounded-lg px-2 pb-1 m-2 shadow">
                 <div className="text-xl">
-                    매매 전략
+                    Trading Strategy
                 </div>
                 <table className="text-[0.5rem] border-none border-gray-300 w-full text-left">
                     <thead>
@@ -317,20 +316,20 @@ export default function AlgorithmTrade() {
                     </tbody>
                 </table>
                 <div className="text-xl pt-2">
-                    주식 거래 이력
+                    Stock Trading History
                 </div>
                 <div className="flex">
                     <div className="dark:border-gray-700 border flex-1 rounded-lg px-2 pb-1 mx-1 mb-2 shadow">
-                        <div className="text-[0.6rem]">누적 알고리즘 매수</div>
+                        <div className="text-[0.6rem]">Total Algorithmic Buys</div>
                         <div className="flex flex-col justify-end items-end">
-                            <div className="">{market == "KR" ? `${Number(Number(cummulative_investment).toFixed(0)).toLocaleString()} 원` : `${Number(Number(cummulative_investment).toFixed(0)).toLocaleString()} 원`}</div>
+                            <div className="">{market == "KR" ? `${Number(Number(cummulative_investment).toFixed(0)).toLocaleString()} KRW` : `${Number(Number(cummulative_investment).toFixed(0)).toLocaleString()} KRW`}</div>
                             <div className="text-[0.6rem]">{market == "KR" ? "" : `(${Number(Number(cummulative_investment) / Number(us_capital_token.value.frst_bltn_exrt)).toFixed(3)} USD)`}</div>
                         </div>
                     </div>
                     <div className="dark:border-gray-700 border flex-1 rounded-lg px-2 pb-1 mx-1 mb-2 shadow">
-                        <div className="text-[0.6rem]">누적 알고리즘 매도</div>
+                        <div className="text-[0.6rem]">Total Algorithmic Sells</div>
                         <div className="flex flex-col justify-end items-end">
-                            <div className="">{market == "KR" ? `${Number(Number(cummulative_investment_sell).toFixed(0)).toLocaleString()} 원` : `${Number(Number(cummulative_investment_sell).toFixed(0)).toLocaleString()} 원`}</div>
+                            <div className="">{market == "KR" ? `${Number(Number(cummulative_investment_sell).toFixed(0)).toLocaleString()} KRW` : `${Number(Number(cummulative_investment_sell).toFixed(0)).toLocaleString()} KRW`}</div>
                             <div className="text-[0.6rem]">{market == "KR" ? "" : `(${Number(Number(cummulative_investment_sell) / Number(us_capital_token.value.frst_bltn_exrt)).toFixed(3)} USD)`}</div>
                         </div>
                     </div>
@@ -352,12 +351,12 @@ export default function AlgorithmTrade() {
         market_date: <div >
             <div className="dark:border-gray-700 border rounded-lg px-2 pb-1 m-2 shadow">
                 <div className="text-xl">
-                    주식 구매 포인트 적립 이력
+                    Stock Purchase Point Accumulation History
                 </div>
                 <div className="flex">
                     {Object.keys(time_stamp).reverse().map((key, index) => {
                         return <div key={index} className="dark:border-gray-700 border flex-1 rounded-lg px-2 pb-1 mx-1 mb-2 shadow">
-                            <div className="text-[0.6rem]">{key}</div>
+                            <div className="text-[0.6rem]">{key == "prevPrev" ? "Two Periods Ago" : (key == "prev" ? "Previous Period" : "Current Data")}</div>
                             <div className="flex flex-col justify-end items-end">{formatDateTime(time_stamp[key])}</div>
                         </div>
                     })}
@@ -365,22 +364,22 @@ export default function AlgorithmTrade() {
             </div>
             <div className="dark:border-gray-700 border rounded-lg px-2 pb-1 m-2 shadow">
                 <div className="text-xl">
-                    주식 구매 포인트 적립 현황
+                    Current Stock Purchase Points
                 </div>
                 <div className="flex">
                     <div className="dark:border-gray-700 border flex-1 rounded-lg px-2 pb-1 mr-2 mx-1 shadow">
-                        <div className="text-[0.6rem]">종목 당 충전 포인트</div>
+                        <div className="text-[0.6rem]">Points per stock</div>
                         <div className="flex flex-col justify-end items-end">{token_per_stock} point / 10 min</div>
                     </div>
                     <div className="dark:border-gray-700 border flex-1 rounded-lg px-2 pb-1 mr-2 mx-1 shadow">
-                        <div className="text-[0.6rem]">다음 구매 시도 종목</div>
+                        <div className="text-[0.6rem]">Next Stock to Attempt Purchase</div>
                         <div className="flex flex-col justify-end items-end">{refill_stock_index}) {!!stock_list[refill_stock_index] ? stock_list[refill_stock_index]["name"] : 0}</div>
                     </div>
                 </div>
             </div>
             <div className="dark:border-gray-700 border rounded-lg px-2 pb-1 m-2 shadow">
                 <div className="text-xl">
-                    <div className="">알고리즘 매매 대상 종목</div>
+                    <div className="">Stocks Targeted for Algorithmic Trading</div>
                 </div>
                 <div className="rounded px-2 pb-1 m-2 shadow">
                     <div className="text-black leading-none">
@@ -421,9 +420,9 @@ export default function AlgorithmTrade() {
                         })}
                     </div>
                     <div className="flex items-center text-xs text-black dark:text-white leading-none pb-1">
-                        <div>종목 개수</div>
+                        <div>Number of Stocks</div>
                         <div className="mx-1 mr-2 px-1 text-xs rounded border border-black border-white">{stock_list.length - exclude_count} / {stock_list.length}</div>
-                        <div>누적 포인트</div>
+                        <div>Total Points Accumulated</div>
                         <div className="mx-1 mr-2 px-1 text-xs rounded border border-black border-white">{cummulative_token - exclude_token} / {cummulative_token}</div>
                     </div>
                 </div>
