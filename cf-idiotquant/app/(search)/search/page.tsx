@@ -271,7 +271,7 @@ export default function Search() {
   ) {
     bShowResult = false;
     // return <>
-    //   <SearchAutocomplete placeHolder={"회사명을 검색하세요..."} onSearchButton={onSearchButton} validCorpNameArray={validCorpNameArray} />
+    //   <SearchAutocomplete placeHolder={"Please enter the KOSPI/KOSDAQ/KONEX stock name."} onSearchButton={onSearchButton} validCorpNameArray={validCorpNameArray} />
     //   <div className="dark:bg-black h-lvh"></div>
     // </>
   }
@@ -293,7 +293,7 @@ export default function Search() {
   return <>
     <div className="flex flex-col w-full">
       <div className="flex flex-col w-full">
-        <SearchAutocomplete placeHolder={"회사명을 검색하세요..."} onSearchButton={onSearchButton} validCorpNameArray={validCorpNameArray} />
+        <SearchAutocomplete placeHolder={"Enter KOSPI/KOSDAQ/KONEX stock name."} onSearchButton={onSearchButton} validCorpNameArray={validCorpNameArray} />
         <div className="dark:bg-black flex px-4 gap-1 overflow-x-auto">
           {krMarketHistory.map((stockName: string, index: number) => {
             return (

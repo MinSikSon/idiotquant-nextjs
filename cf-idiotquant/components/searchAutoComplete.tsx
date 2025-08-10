@@ -65,7 +65,7 @@ const SearchAutocomplete = (props: any) => {
     const inputRef = React.useRef<HTMLInputElement>(null);
 
     return (
-        <div className="dark:bg-black dark:text-white flex items-center p-4 relative">
+        <div className="dark:bg-black dark:text-white flex items-center p-2 relative">
             <div className="relative flex-1 items-center">
                 <input
                     ref={inputRef}

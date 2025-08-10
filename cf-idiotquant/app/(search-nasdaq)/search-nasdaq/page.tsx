@@ -87,7 +87,7 @@ export default function Search() {
     // }
 
     const [validCookie, setValidCookie] = React.useState<any>(false);
-    React.useEffect(()=>{
+    React.useEffect(() => {
         setValidCookie(isValidCookie("koreaInvestmentToken"));
     }, []);
 
@@ -111,7 +111,7 @@ export default function Search() {
 
     if (!!!kiUsMaretSearchInfo.rt_cd && !!!kiUsMaretPriceDetail.rt_cd) {
         return <>
-            <SearchAutocomplete placeHolder={"NASDAQ ticker 를 입력하세요..."} onSearchButton={onSearchButton} validCorpNameArray={nasdaq_tickers} />
+            <SearchAutocomplete placeHolder={"Please enter the NASDAQ ticker."} onSearchButton={onSearchButton} validCorpNameArray={nasdaq_tickers} />
             <div className="dark:bg-black h-lvh"></div>
         </>
     }
@@ -152,7 +152,7 @@ export default function Search() {
     return <>
         <div className="flex flex-col w-full">
             <div className="flex flex-col w-full">
-                <SearchAutocomplete placeHolder={"NASDAQ ticker 를 입력하세요..."} onSearchButton={onSearchButton} validCorpNameArray={nasdaq_tickers} />
+                <SearchAutocomplete placeHolder={"Please enter the NASDAQ ticker."} onSearchButton={onSearchButton} validCorpNameArray={nasdaq_tickers} />
                 <div className="dark:bg-black flex px-4 gap-1 overflow-x-auto">
                     {usMarketHistory.map((stockName: string, index: number) => {
                         return (
