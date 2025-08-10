@@ -90,7 +90,7 @@ function TablesExample8({
                 </div>
             </Card.Header>
             {tableRow.length == 0 ?
-                <Button variant="ghost">{!!msg ? <>{msg}</> : <><Spinner size="sm" /> loading...</>}</Button>
+                <Button variant="ghost">{!!msg ? <>{msg}</> : <><Spinner size="sm" />loading... 6</>}</Button>
                 :
                 <>
                     <Card.Body className="overflow-scroll [scrollbar-width:thin] [scrollbar-color:#888_transparent] !px-0 pt-0 pb-2 dark:bg-black">

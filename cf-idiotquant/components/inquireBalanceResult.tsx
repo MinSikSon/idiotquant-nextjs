@@ -363,7 +363,7 @@ export default function InquireBalanceResult(props: InquireBalanceResultProps) {
                         `}
                 />
                 {"pending" == props.kiBalance.state ?
-                    <Button variant="ghost"><Spinner size="sm" /> loading...</Button>
+                    <Button variant="ghost"><Spinner size="sm" /> loading... 5</Button>
                     : <>
                         <div className="text-[0.6rem] dark:text-white ml-4">{time.toLocaleString("ko-KR", { timeZone: "Asia/Seoul" })}</div>
                     </>}

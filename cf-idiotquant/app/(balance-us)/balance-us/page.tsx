@@ -10,7 +10,7 @@ import { getKoreaInvestmentToken, KoreaInvestmentToken } from "@/lib/features/ko
 import { reqGetOverseasStockTradingInquirePresentBalance, getKoreaInvestmentUsMaretPresentBalance, KoreaInvestmentOverseasPresentBalance, reqPostOrderUs, getKoreaInvestmentUsOrder, KoreaInvestmentUsOrder } from "@/lib/features/koreaInvestmentUsMarket/koreaInvestmentUsMarketSlice";
 
 
-import { selectLoginState } from "@/lib/features/login/loginSlice";
+// import { selectLoginState } from "@/lib/features/login/loginSlice";
 import { useAppDispatch, useAppSelector } from "@/lib/hooks";
 import { usePathname } from "next/navigation";
 import React from "react";
@@ -19,7 +19,7 @@ const DEBUG = false;
 
 export default function BalanceUs() {
     const pathname = usePathname();
-    const loginState = useAppSelector(selectLoginState);
+    // const loginState = useAppSelector(selectLoginState);
 
     const kiToken: KoreaInvestmentToken = useAppSelector(getKoreaInvestmentToken);
     const kiBalance: KoreaInvestmentOverseasPresentBalance = useAppSelector(getKoreaInvestmentUsMaretPresentBalance);
@@ -30,8 +30,13 @@ export default function BalanceUs() {
 
     const us_capital_token: CapitalTokenType = useAppSelector(selectUsCapitalToken);
 
+    const [validCookie, setValidCookie] = React.useState<any>(false);
     React.useEffect(() => {
-        if (DEBUG) console.log(`[BalanceUs]`, `loginState`, loginState);
+        setValidCookie(isValidCookie("koreaInvestmentToken"));
+    }, []);
+
+    React.useEffect(() => {
+        // if (DEBUG) console.log(`[BalanceUs]`, `loginState`, loginState);
         if (DEBUG) console.log(`[BalanceUs]`, `kiToken:`, kiToken);
         const isValidKiAccessToken = !!kiToken["access_token"];
         // if ("cf" == loginState || "kakao" == loginState)
@@ -40,7 +45,13 @@ export default function BalanceUs() {
                 dispatch(reqGetOverseasStockTradingInquirePresentBalance(kiToken));
             }
         }
-    }, [kiToken, loginState]);
+
+        if (DEBUG) console.log(`[BalanceUs]`, `validCookie:`, validCookie);
+        if (false == validCookie) {
+            setValidCookie(isValidCookie("koreaInvestmentToken"));
+        }
+    }, [kiToken]);
+    // }, [kiToken, loginState]);
 
     React.useEffect(() => {
         if (DEBUG) console.log(`[BalanceUs]`, `kiBalance`, kiBalance);
@@ -61,10 +72,9 @@ export default function BalanceUs() {
     //     </>
     // }
 
-    const [validCookie, setValidCookie] = React.useState<any>(false);
-    React.useEffect(()=>{
-        setValidCookie(isValidCookie("koreaInvestmentToken"));
-    }, []);
+    if (DEBUG) console.log(`[BalanceUs]`, `validCookie`, validCookie);
+    if (DEBUG) console.log(`[BalanceUs]`, `kiToken["access_token"]`, kiToken["access_token"]);
+    if (DEBUG) console.log(`[BalanceUs]`, `!!kiToken["access_token"]`, !!kiToken["access_token"]);
     if (false == validCookie || false == !!kiToken["access_token"]) {
         return <>
             <Auth />
@@ -72,7 +82,7 @@ export default function BalanceUs() {
         </>
     }
 
-    // console.log(`kiBalance.state`, kiBalance.state);
+    if (DEBUG) console.log(`kiBalance.state`, kiBalance.state);
     if (kiBalance.state == "rejected") {
         return <>
             <NotFound warnText={"계좌 조회 권한이 없습니다"} />

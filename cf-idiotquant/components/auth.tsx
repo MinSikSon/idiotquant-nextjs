@@ -29,38 +29,67 @@ export default function Auth() {
     const [time, setTime] = React.useState<any>('');
     // const loginState = useAppSelector(selectLoginState);
 
+    const [complete, setComplete] = React.useState<boolean>(false);
+    const [step, setStep] = React.useState<number>(0);
+    const [validCookie, setValidCookie] = React.useState<any>(false);
+    React.useEffect(() => {
+        if (DEBUG) console.log(`[Auth]`, `kiApproval:`, kiApproval);
+        if (DEBUG) console.log(`[Auth]`, `kiToken:`, kiToken);
+        if (DEBUG) console.log(`[Auth]`, `kiBalance:`, kiBalance);
+        if (DEBUG) console.log(`[Auth]`, `kiInquirePrice:`, kiInquirePrice);
+        if (DEBUG) console.log(`[Auth]`, `kiInquireDailyItemChartPrice:`, kiInquireDailyItemChartPrice);
+        if (DEBUG) console.log(`[Auth]`, `kiBalanceSheet:`, kiBalanceSheet);
+
+        if (DEBUG) console.log(`[Auth]`, `validCookie:`, validCookie);
+        if (false == validCookie) {
+            setValidCookie(isValidCookie("koreaInvestmentToken"));
+        }
+    }, []);
+
     function reload(seq: any) {
+        if (DEBUG) console.log(`[Auth]`, seq, `- 0`, `complete:`, complete);
+        if (DEBUG) console.log(`[Auth]`, seq, `- 0`, `step:`, step);
+        if (true == complete) {
+            return;
+        }
         // if (DEBUG) console.log(`[Auth]`, `loginState`, loginState);
         // if ("init" == loginState){
         //     if (DEBUG) console.log(`[Auth]`, seq, `- 1`, `loginState:`, loginState);
         //     return;
         // }
 
+        if (DEBUG) console.log(`[Auth]`, seq, `- 2`, `kiApproval.state:`, kiApproval.state);
         if ("init" == kiApproval.state) {
-            if (DEBUG) console.log(`[Auth]`, seq, `- 2`, `kiApproval.state:`, kiApproval.state);
             dispatch(reqPostApprovalKey());
+            setStep(1);
             return;
         }
 
         const isValidKiAccessToken = !!kiToken["access_token"];
         if (DEBUG) console.log(`[Auth]`, seq, `- 3`, `kiApproval:`, kiApproval, `kiToken:`, kiToken, `isValidKiAccessToken:`, isValidKiAccessToken);
-        // if ("init" == kiBalance.state && "" != kiToken["access_token"]) {
-        if (true == isValidKiAccessToken) {
+        if ("init" == kiBalance.state && "" != kiToken["access_token"]) {
+            // if (true == isValidKiAccessToken) {
             dispatch(reqGetInquireBalance(kiToken));
+            setStep(2);
             return;
         }
 
-        if (false == isValidCookie("koreaInvestmentToken")) {
+        if (false == validCookie) {
             if ("init" == kiBalance.state && "init" == kiToken.state && false == isValidKiAccessToken) {
                 if (DEBUG) console.log(`[Auth]`, seq, `- 4`, `dispatch(reqPostToken())`);
                 dispatch(reqPostToken()); // NOTE: 1분에 한 번씩만 token 발급 가능
+                return;
+            }
+            else if ("pending" == kiToken.state) {
+                setStep(3);
+                return;
             }
             else if ("fulfilled" == kiToken.state) {
                 if (DEBUG) console.log(`[Auth]`, seq, `- 5`, `registerCookie("koreaInvestmentToken", JSON.stringify(kiToken))`);
                 registerCookie("koreaInvestmentToken", JSON.stringify(kiToken));
             }
 
-            return;
+            setStep(4);
         }
 
         const cookieKoreaInvestmentToken = getCookie("koreaInvestmentToken");
@@ -83,6 +112,11 @@ export default function Auth() {
         if (DEBUG) console.log(`[Auth]`, seq, `- 9`, `kiInquirePrice:`, kiInquirePrice);
         if (DEBUG) console.log(`[Auth]`, seq, `- 10`, `kiInquireDailyItemChartPrice:`, kiInquireDailyItemChartPrice);
         if (DEBUG) console.log(`[Auth]`, seq, `- 11`, `kiBalanceSheet:`, kiBalanceSheet);
+
+        if (false == complete) {
+            setStep(5);
+            setComplete(true);
+        }
     }
 
     // React.useEffect(() => {
@@ -94,9 +128,14 @@ export default function Auth() {
     React.useEffect(() => {
         reload('3');
     }, [kiToken]);
-
+    React.useEffect(() => {
+        reload('4');
+    }, [kiBalance]);
+    React.useEffect(() => {
+        reload('5');
+    }, [validCookie]);
 
     return <>
-        <Button variant="ghost"><Spinner size="sm" /> loading...</Button>
+        <Button variant="ghost"><Spinner size="sm" /> loading... 4</Button>
     </>
 }

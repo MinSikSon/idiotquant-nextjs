@@ -216,7 +216,7 @@ export default function AlgorithmTrade() {
 
     if (DEBUG) console.log(`capitalToken.state`, capitalToken.state);
     // if ("fulfilled" != capitalToken.state) {
-    //     return <Button variant="ghost"><Spinner size="sm" /> loading...</Button>;
+    //     return <Button variant="ghost"><Spinner size="sm" /> loading... 1</Button>;
     // }
 
     const time_stamp: any = capitalToken.value.time_stamp ?? {};
@@ -256,7 +256,7 @@ export default function AlgorithmTrade() {
                     </Tabs.List>
                 </Tabs>
                 {"fulfilled" != capitalToken.state ?
-                    <Button variant="ghost"><Spinner size="sm" /> loading...</Button>
+                    <Button variant="ghost"><Spinner size="sm" /> loading... 2</Button>
                     : <>
                         <div className="text-[0.6rem] text-black dark:text-white ml-1">{time.toLocaleString("ko-KR", { timeZone: "Asia/Seoul" })}</div>
                     </>}

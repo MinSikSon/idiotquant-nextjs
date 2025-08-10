@@ -24,7 +24,7 @@ export default function Strategy() {
         {!!strategyInfoList.length ?
             <Web3Card2 title={'Investment strategy'} parentRouter={'strategy'} data={propsList} />
             :
-            <Button variant="ghost"><Spinner size="sm" /> loading...</Button>
+            <Button variant="ghost"><Spinner size="sm" /> loading... 3</Button>
         }
     </>
 }
