@@ -11,6 +11,7 @@ import { DesignButton } from "./designButton";
 import { ArrowDownIcon, ArrowUpIcon } from "@heroicons/react/24/outline";
 
 
+const DEBUG = false;
 export interface Example8TableRowType {
     id: any;
     column_1?: any;
@@ -90,7 +91,7 @@ function TablesExample8({
                 </div>
             </Card.Header>
             {tableRow.length == 0 ?
-                <Button variant="ghost">{!!msg ? <>{msg}</> : <><Spinner size="sm" />loading... 6</>}</Button>
+                <Button variant="ghost">{!!msg ? <>{msg}</> : <><Spinner size="sm" /> {DEBUG ? "6" : ""}</>}</Button>
                 :
                 <>
                     <Card.Body className="overflow-scroll [scrollbar-width:thin] [scrollbar-color:#888_transparent] !px-0 pt-0 pb-2 dark:bg-black">

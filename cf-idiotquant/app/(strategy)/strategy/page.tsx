@@ -5,6 +5,8 @@ import { getStrategyInfoList, StrategyInfo } from "@/lib/features/strategy/strat
 import { useAppSelector } from "@/lib/hooks";
 import { Button, Spinner } from "@material-tailwind/react";
 
+const DEBUG = false;
+
 export default function Strategy() {
     const strategyInfoList = useAppSelector(getStrategyInfoList);
 
@@ -24,7 +26,7 @@ export default function Strategy() {
         {!!strategyInfoList.length ?
             <Web3Card2 title={'Investment strategy'} parentRouter={'strategy'} data={propsList} />
             :
-            <Button variant="ghost"><Spinner size="sm" /> loading... 3</Button>
+            <Button variant="ghost"><Spinner size="sm" /> loading...  {DEBUG ? "3" : ""}</Button>
         }
     </>
 }

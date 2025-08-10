@@ -1,6 +1,6 @@
 "use client"
 
-// import Login from "@/app/(login)/login/login";
+import Login from "@/app/(login)/login/login";
 import { selectLoginState } from "@/lib/features/login/loginSlice";
 import { isValidCookie, } from "@/components/util";
 import { getKoreaInvestmentToken, KoreaInvestmentToken, } from "@/lib/features/koreaInvestment/koreaInvestmentSlice";
@@ -34,8 +34,7 @@ export default function BalanceKr() {
     React.useEffect(() => {
         console.log(`[BalanceKr]`, `loginState`, loginState);
         // console.log(`[BalanceKr]`, `kiToken:`, kiToken);
-        // if ("cf" == loginState || "kakao" == loginState)
-        {
+        if ("cf" == loginState || "kakao" == loginState) {
             const isValidKiAccessToken = !!kiToken["access_token"];
             console.log(`[BalanceKr]`, `isValidKiAccessToken`, isValidKiAccessToken);
             if (true == isValidKiAccessToken) {
@@ -59,17 +58,18 @@ export default function BalanceKr() {
         }
     }, [kr_capital_token])
 
-    // if ("init" == loginState || "rejected" == loginState) {
-    //     return <>
-    //         <Login parentUrl={pathname} />
-    //         <div className="dark:bg-black h-lvh"></div>
-    //     </>
-    // }
-
     const [validCookie, setValidCookie] = React.useState<any>(false);
-    React.useEffect(()=>{
+    React.useEffect(() => {
         setValidCookie(isValidCookie("koreaInvestmentToken"));
     }, []);
+
+    if ("init" == loginState || "rejected" == loginState) {
+        return <>
+            <Login parentUrl={pathname} />
+            <div className="dark:bg-black h-lvh"></div>
+        </>
+    }
+
     if (false == validCookie || false == !!kiToken["access_token"]) {
         return <>
             <Auth />
@@ -85,12 +85,12 @@ export default function BalanceKr() {
         </>
     }
 
-    // if ("fulfilled" != kr_capital_token.state) {
-    //     return <>
-    //         <Login parentUrl={pathname} />
-    //         <div className="dark:bg-black h-lvh"></div>
-    //     </>
-    // }
+    if ("fulfilled" != kr_capital_token.state) {
+        return <>
+            <Login parentUrl={pathname} />
+            <div className="dark:bg-black h-lvh"></div>
+        </>
+    }
 
     return <>
         <InquireBalanceResult

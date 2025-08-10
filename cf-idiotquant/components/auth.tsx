@@ -136,6 +136,6 @@ export default function Auth() {
     }, [validCookie]);
 
     return <>
-        <Button variant="ghost"><Spinner size="sm" /> loading... 4</Button>
+        <Button variant="ghost"><Spinner size="sm" /> loading...  {DEBUG ? "4" : ""}</Button>
     </>
 }

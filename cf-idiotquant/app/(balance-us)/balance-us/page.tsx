@@ -1,6 +1,6 @@
 "use client"
 
-// import Login from "@/app/(login)/login/login";
+import Login from "@/app/(login)/login/login";
 import NotFound from "@/app/not-found";
 import Auth from "@/components/auth";
 import InquireBalanceResult from "@/components/inquireBalanceResult";
@@ -10,7 +10,7 @@ import { getKoreaInvestmentToken, KoreaInvestmentToken } from "@/lib/features/ko
 import { reqGetOverseasStockTradingInquirePresentBalance, getKoreaInvestmentUsMaretPresentBalance, KoreaInvestmentOverseasPresentBalance, reqPostOrderUs, getKoreaInvestmentUsOrder, KoreaInvestmentUsOrder } from "@/lib/features/koreaInvestmentUsMarket/koreaInvestmentUsMarketSlice";
 
 
-// import { selectLoginState } from "@/lib/features/login/loginSlice";
+import { selectLoginState } from "@/lib/features/login/loginSlice";
 import { useAppDispatch, useAppSelector } from "@/lib/hooks";
 import { usePathname } from "next/navigation";
 import React from "react";
@@ -19,7 +19,7 @@ const DEBUG = false;
 
 export default function BalanceUs() {
     const pathname = usePathname();
-    // const loginState = useAppSelector(selectLoginState);
+    const loginState = useAppSelector(selectLoginState);
 
     const kiToken: KoreaInvestmentToken = useAppSelector(getKoreaInvestmentToken);
     const kiBalance: KoreaInvestmentOverseasPresentBalance = useAppSelector(getKoreaInvestmentUsMaretPresentBalance);
@@ -36,11 +36,10 @@ export default function BalanceUs() {
     }, []);
 
     React.useEffect(() => {
-        // if (DEBUG) console.log(`[BalanceUs]`, `loginState`, loginState);
+        if (DEBUG) console.log(`[BalanceUs]`, `loginState`, loginState);
         if (DEBUG) console.log(`[BalanceUs]`, `kiToken:`, kiToken);
         const isValidKiAccessToken = !!kiToken["access_token"];
-        // if ("cf" == loginState || "kakao" == loginState)
-        {
+        if ("cf" == loginState || "kakao" == loginState) {
             if (true == isValidKiAccessToken) {
                 dispatch(reqGetOverseasStockTradingInquirePresentBalance(kiToken));
             }
@@ -50,8 +49,8 @@ export default function BalanceUs() {
         if (false == validCookie) {
             setValidCookie(isValidCookie("koreaInvestmentToken"));
         }
-    }, [kiToken]);
-    // }, [kiToken, loginState]);
+        // }, [kiToken]);
+    }, [kiToken, loginState]);
 
     React.useEffect(() => {
         if (DEBUG) console.log(`[BalanceUs]`, `kiBalance`, kiBalance);
@@ -64,13 +63,13 @@ export default function BalanceUs() {
         }
     }, [us_capital_token])
 
-    // console.log(`loginState`, loginState);
-    // if ("init" == loginState || "rejected" == loginState) {
-    //     return <>
-    //         <Login parentUrl={pathname} />
-    //         <div className="dark:bg-black h-lvh"></div>
-    //     </>
-    // }
+    if (DEBUG) console.log(`loginState`, loginState);
+    if ("init" == loginState || "rejected" == loginState) {
+        return <>
+            <Login parentUrl={pathname} />
+            <div className="dark:bg-black h-lvh"></div>
+        </>
+    }
 
     if (DEBUG) console.log(`[BalanceUs]`, `validCookie`, validCookie);
     if (DEBUG) console.log(`[BalanceUs]`, `kiToken["access_token"]`, kiToken["access_token"]);
