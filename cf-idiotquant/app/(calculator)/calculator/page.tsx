@@ -1,11 +1,9 @@
 "use client"
 
 // code 출처 : https://reactjsexample.com/a-simple-calculator-app-built-using-tailwind-css-and-react-js/
-import Head from "next/head";
-import Script from "next/script.js";
-import React from "react";
+import { useState, useEffect } from "react";
 
-import { Input, Select, List, Typography } from "@material-tailwind/react";
+import { Input, Select, Typography } from "@material-tailwind/react";
 import { CalculationList } from "@/app/(calculator)/calculator/calculationList"
 import { DesignButton } from "@/components/designButton";
 
@@ -24,7 +22,7 @@ export interface CalculationResult {
 }
 
 export default function Calculator() {
-    React.useEffect(() => {
+    useEffect(() => {
         handleCalculate();
     });
 
@@ -51,21 +49,21 @@ export default function Calculator() {
     const DEFAULT_INTEREST_RATE_BENCHMARK = InterestRateBenchmarkTermPerHour.eANNUALLY;
     const DEFAULT_CONTRIBUTION_RATE_BENCHMARK = ContributionRateBenchmarkTermPerHour.eMONTHLY;
 
-    const [investmentAmount, setInvestmentAmount] = React.useState<number>(50000000);
-    const [totalInvestment, setTotalInvestment] = React.useState<number>(0);
-    const [finalRateOfReturn, setFinalRateOfReturn] = React.useState<number>(0);
+    const [investmentAmount, setInvestmentAmount] = useState<number>(50000000);
+    const [totalInvestment, setTotalInvestment] = useState<number>(0);
+    const [finalRateOfReturn, setFinalRateOfReturn] = useState<number>(0);
 
-    const [numberOfYears, setNumberOfYears] = React.useState<number>(12);
-    const [interestRate, setInterestRate] = React.useState<number>(24);
-    const [compounding, setCompounding] = React.useState<number>(DEFAULT_INTEREST_RATE_BENCHMARK);
-    const [contributions, setContributions] = React.useState<number>(3000000);
-    const [frequency, setFrequency] = React.useState<number>(DEFAULT_CONTRIBUTION_RATE_BENCHMARK);
-    const [inflationRate, setInflationRate] = React.useState<number>(3);
-    const [result, setResult] = React.useState<number>(0);
-    const [resultList, setResultList] = React.useState<CalculationResult[]>([]);
+    const [numberOfYears, setNumberOfYears] = useState<number>(12);
+    const [interestRate, setInterestRate] = useState<number>(24);
+    const [compounding, setCompounding] = useState<number>(DEFAULT_INTEREST_RATE_BENCHMARK);
+    const [contributions, setContributions] = useState<number>(3000000);
+    const [frequency, setFrequency] = useState<number>(DEFAULT_CONTRIBUTION_RATE_BENCHMARK);
+    const [inflationRate, setInflationRate] = useState<number>(3);
+    const [result, setResult] = useState<number>(0);
+    const [resultList, setResultList] = useState<CalculationResult[]>([]);
 
-    const [interestRateBenchmarkFrequency, setInterestRateBenchmarkFrequency] = React.useState("");
-    const [interestRateBenchmarkCompound, setInterestRateBenchmarkCompound] = React.useState("");
+    const [interestRateBenchmarkFrequency, setInterestRateBenchmarkFrequency] = useState("");
+    const [interestRateBenchmarkCompound, setInterestRateBenchmarkCompound] = useState("");
     function handleCalculateSampleData() {
         setInvestmentAmount(Number(50000000) * 1);
         setNumberOfYears(12);

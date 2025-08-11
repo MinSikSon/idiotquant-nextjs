@@ -1,6 +1,6 @@
 "use client"
 
-import React from "react";
+import { useState, useEffect } from "react";
 
 // import Login from "@/app/(login)/login/login"
 import { selectLoginState } from "@/lib/features/login/loginSlice";
@@ -45,18 +45,18 @@ export default function Search() {
   const kiBalanceSheet: KoreaInvestmentBalanceSheet = useAppSelector(getKoreaInvestmentBalanceSheet);
   const kiInquireDailyItemChartPrice: KoreaInvestmentInquireDailyItemChartPrice = useAppSelector(getKoreaInvestmentInquireDailyItemChartPrice);
 
-  const [name, setName] = React.useState<any>("");
-  const [startDate, setStartDate] = React.useState<any>("2024-01-03");
-  const [endDate, setEndDate] = React.useState<any>((new Date()).toISOString().split('T')[0]);
+  const [name, setName] = useState<any>("");
+  const [startDate, setStartDate] = useState<any>("2024-01-03");
+  const [endDate, setEndDate] = useState<any>((new Date()).toISOString().split('T')[0]);
 
-  const [waitResponse, setWaitResponse] = React.useState(false);
+  const [waitResponse, setWaitResponse] = useState(false);
   const aiStreamOutput: string = useAppSelector(selectAiStreamOutput);
-  const [response, setResponse] = React.useState<string>("");
-  const [token, setToken] = React.useState<AiOutputResultUsageType>({ total_tokens: 0, prompt_tokens: 0, completion_tokens: 0 });
+  const [response, setResponse] = useState<string>("");
+  const [token, setToken] = useState<AiOutputResultUsageType>({ total_tokens: 0, prompt_tokens: 0, completion_tokens: 0 });
 
   const krMarketHistory = useAppSelector(selectKrMarketHistory);
 
-  React.useEffect(() => {
+  useEffect(() => {
     if (DEBUG) console.log(`[Search]`, `kiToken:`, kiToken);
     // if ("cf" == loginState || "kakao" == loginState)
     {
@@ -68,25 +68,25 @@ export default function Search() {
     }
   }, [kiToken, loginState]);
 
-  React.useEffect(() => {
-    if (DEBUG) console.log(`React.useEffect [kiInquireDailyItemChartPrice]`, kiInquireDailyItemChartPrice);
+  useEffect(() => {
+    if (DEBUG) console.log(`useEffect [kiInquireDailyItemChartPrice]`, kiInquireDailyItemChartPrice);
     if (DEBUG) console.log(`kiInquireDailyItemChartPrice.output1.hts_avls`, kiInquireDailyItemChartPrice.output1.hts_avls, `HTS 시가총액 (억)`);
   }, [kiInquireDailyItemChartPrice])
-  React.useEffect(() => {
+  useEffect(() => {
     // 날짜별로 분류 필요
-    if (DEBUG) console.log(`React.useEffect [kiBalanceSheet]`, kiBalanceSheet);
+    if (DEBUG) console.log(`useEffect [kiBalanceSheet]`, kiBalanceSheet);
     if (DEBUG) console.log(`kiBalanceSheet.output[0].cras`, kiBalanceSheet.output.length > 0 ? kiBalanceSheet.output[0].cras : 0, `유동자산 (억)`);
     if (DEBUG) console.log(`kiBalanceSheet.output[0].total_lblt`, kiBalanceSheet.output.length > 0 ? kiBalanceSheet.output[0].total_lblt : 0, `부채총계 (억)`);
 
   }, [kiBalanceSheet])
 
-  React.useEffect(() => {
-    if (DEBUG) console.log(`React.useEffect [kiInquirePrice]`, kiInquirePrice);
+  useEffect(() => {
+    if (DEBUG) console.log(`useEffect [kiInquirePrice]`, kiInquirePrice);
   }, [kiInquirePrice])
-  React.useEffect(() => {
-    if (DEBUG) console.log(`React.useEffect [kiInquirePrice]`, kiInquirePrice);
-    if (DEBUG) console.log(`React.useEffect [kiInquireDailyItemChartPrice]`, kiInquireDailyItemChartPrice);
-    if (DEBUG) console.log(`React.useEffect [kiBalanceSheet]`, kiBalanceSheet);
+  useEffect(() => {
+    if (DEBUG) console.log(`useEffect [kiInquirePrice]`, kiInquirePrice);
+    if (DEBUG) console.log(`useEffect [kiInquireDailyItemChartPrice]`, kiInquireDailyItemChartPrice);
+    if (DEBUG) console.log(`useEffect [kiBalanceSheet]`, kiBalanceSheet);
     if (DEBUG) console.log(`waitResponse`, waitResponse, `, name`, name, `!!name`, !!name);
     if ("fulfilled" == kiBalanceSheet.state && "fulfilled" == kiInquirePrice.state && "fulfilled" == kiInquireDailyItemChartPrice.state) {
       if (true == waitResponse && !!name) {
@@ -131,7 +131,7 @@ export default function Search() {
     }
   }, [kiInquirePrice, kiInquireDailyItemChartPrice, kiBalanceSheet])
 
-  React.useEffect(() => {
+  useEffect(() => {
     // console.log(`aiStreamOutput`, aiStreamOutput);
     let buffer: string = aiStreamOutput;
     const lines = buffer.split('\n');
@@ -254,8 +254,8 @@ export default function Search() {
   //   </>;
   // }
 
-  const [validCookie, setValidCookie] = React.useState<any>(false);
-  React.useEffect(() => {
+  const [validCookie, setValidCookie] = useState<any>(false);
+  useEffect(() => {
     setValidCookie(isValidCookie("koreaInvestmentToken"));
   }, []);
   if (false == validCookie || false == !!kiToken["access_token"]) {

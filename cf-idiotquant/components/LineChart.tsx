@@ -1,14 +1,11 @@
 
 "use client";
 
-import * as React from "react";
+import { useState, useEffect, useMemo } from "react";
 import dynamic from "next/dynamic";
 const Chart = dynamic(() => import("react-apexcharts"), { ssr: false });
-import { Card, Typography } from "@material-tailwind/react";
-// import { SelectFace3d } from "iconoir-react";
 import type { ApexOptions } from "apexcharts";
 import { useTheme } from "next-themes";
-import { SelectFace3d } from "iconoir-react";
 
 const DEBUG = false;
 
@@ -27,9 +24,9 @@ function rgbToHex(rgb: any) {
 export default function LineChart(props: any) {
     if (DEBUG) console.log(`[LineChart]`, `props`, props);
     const { theme } = useTheme();
-    const [vars, setVars] = React.useState<CSSStyleDeclaration | null>(null);
+    const [vars, setVars] = useState<CSSStyleDeclaration | null>(null);
 
-    React.useEffect(() => {
+    useEffect(() => {
         const cssVarValue = window.getComputedStyle(document.documentElement);
 
         setVars(cssVarValue);
@@ -45,7 +42,7 @@ export default function LineChart(props: any) {
         ? rgbToHex(vars.getPropertyValue("--color-surface").split(" "))
         : "";
 
-    const chartConfig = React.useMemo(
+    const chartConfig = useMemo(
         () =>
             ({
                 // type: !!props.type ? props.type : "line",

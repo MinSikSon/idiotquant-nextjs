@@ -1,8 +1,7 @@
 "use client"
 
-import React from "react";
+import { useState, useEffect } from "react";
 import {
-    Navbar,
     Collapse,
 } from "@material-tailwind/react";
 import { Bars3Icon, CalculatorIcon, HomeIcon, LockClosedIcon, LockOpenIcon, MagnifyingGlassCircleIcon, SparklesIcon, WalletIcon, XMarkIcon } from "@heroicons/react/24/outline";
@@ -27,25 +26,25 @@ export function NavbarWithSimpleLinks() {
     const splitPathName = pathname.split("/");
     // console.log(`splitPathName`, splitPathName);
 
-    const [open, setOpen] = React.useState(false);
+    const [open, setOpen] = useState(false);
     const handleOpen = () => setOpen((cur) => !cur);
 
-    const [selectPath, setSelectPath] = React.useState<string>(splitPathName[1]);
+    const [selectPath, setSelectPath] = useState<string>(splitPathName[1]);
 
     const kakaoId = useAppSelector(selectKakaoId);
     const kakaoNickName = useAppSelector(selectKakaoNickName);
 
-    React.useEffect(() => {
+    useEffect(() => {
         window.addEventListener(
             "resize",
             () => window.innerWidth >= 960 && setOpen(false)
         );
     }, []);
 
-    React.useEffect(() => {
+    useEffect(() => {
         setSelectPath(splitPathName[1]);
     }, [open]);
-    React.useEffect(() => {
+    useEffect(() => {
         setSelectPath(splitPathName[1]);
     }, [splitPathName]);
 

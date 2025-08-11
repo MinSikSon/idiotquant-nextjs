@@ -1,7 +1,6 @@
-import React, { useState, useMemo, ChangeEvent, KeyboardEvent } from "react";
+import { useState, useMemo, ChangeEvent, KeyboardEvent, useRef } from "react";
 import { MagnifyingGlassIcon, XCircleIcon } from "@heroicons/react/24/outline";
 
-import { Button } from "@material-tailwind/react";
 import { DesignButton } from "./designButton";
 
 const SearchAutocomplete = (props: any) => {
@@ -62,7 +61,7 @@ const SearchAutocomplete = (props: any) => {
         inputRef.current?.focus(); // input에 포커스 이동
     };
 
-    const inputRef = React.useRef<HTMLInputElement>(null);
+    const inputRef = useRef<HTMLInputElement>(null);
 
     return (
         <div className="dark:bg-black dark:text-white flex items-center p-2 relative">

@@ -13,7 +13,7 @@ import { reqGetOverseasStockTradingInquirePresentBalance, getKoreaInvestmentUsMa
 import { selectLoginState } from "@/lib/features/login/loginSlice";
 import { useAppDispatch, useAppSelector } from "@/lib/hooks";
 import { usePathname } from "next/navigation";
-import React from "react";
+import { useState, useEffect } from "react";
 
 const DEBUG = false;
 
@@ -30,12 +30,12 @@ export default function BalanceUs() {
 
     const us_capital_token: CapitalTokenType = useAppSelector(selectUsCapitalToken);
 
-    const [validCookie, setValidCookie] = React.useState<any>(false);
-    React.useEffect(() => {
+    const [validCookie, setValidCookie] = useState<any>(false);
+    useEffect(() => {
         setValidCookie(isValidCookie("koreaInvestmentToken"));
     }, []);
 
-    React.useEffect(() => {
+    useEffect(() => {
         if (DEBUG) console.log(`[BalanceUs]`, `loginState`, loginState);
         if (DEBUG) console.log(`[BalanceUs]`, `kiToken:`, kiToken);
         const isValidKiAccessToken = !!kiToken["access_token"];
@@ -52,11 +52,11 @@ export default function BalanceUs() {
         // }, [kiToken]);
     }, [kiToken, loginState]);
 
-    React.useEffect(() => {
+    useEffect(() => {
         if (DEBUG) console.log(`[BalanceUs]`, `kiBalance`, kiBalance);
     }, [kiBalance]);
 
-    React.useEffect(() => {
+    useEffect(() => {
         console.log(`[BalanceKr]`, `kr_capital_token`, us_capital_token);
         if ("init" == us_capital_token.state) {
             dispatch(reqGetUsCapitalToken({ koreaInvestmentToken: kiToken }));

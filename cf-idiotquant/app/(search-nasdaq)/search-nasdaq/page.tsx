@@ -1,6 +1,6 @@
 "use client"
 
-import React from "react";
+import { useState, useEffect } from "react";
 
 import { useAppDispatch, useAppSelector } from "@/lib/hooks";
 import { selectLoginState } from "@/lib/features/login/loginSlice";
@@ -36,9 +36,9 @@ export default function Search() {
     const fmpState: any = useAppSelector(selectFmpState);
     const fmpUsBalanceSheetStatement: FmpBalanceSheetStatementType[] = useAppSelector(selectFmpBalanceSheetStatement);
 
-    // const [startDate, setStartDate] = React.useState<any>("2024-01-03");
-    const [startDate, setStartDate] = React.useState<any>((new Date()).toISOString().split('T')[0]);
-    // const [endDate, setEndDate] = React.useState<any>((new Date()).toISOString().split('T')[0]);
+    // const [startDate, setStartDate] = useState<any>("2024-01-03");
+    const [startDate, setStartDate] = useState<any>((new Date()).toISOString().split('T')[0]);
+    // const [endDate, setEndDate] = useState<any>((new Date()).toISOString().split('T')[0]);
 
     const usMarketHistory = useAppSelector(selectUsMarketHistory);
 
@@ -50,7 +50,7 @@ export default function Search() {
         return YYYYMMDD;
     }
 
-    React.useEffect(() => {
+    useEffect(() => {
         if (DEBUG) console.log(`[Search]`, `kiToken:`, kiToken);
         if (DEBUG) console.log(`[Search]`, `loginState:`, loginState);
         // if ("cf" == loginState || "kakao" == loginState)
@@ -62,20 +62,20 @@ export default function Search() {
         }
     }, [kiToken, loginState]);
 
-    React.useEffect(() => {
-        if (DEBUG) console.log(`React.useEffect [kiUsMaretSearchInfo]`, kiUsMaretSearchInfo);
+    useEffect(() => {
+        if (DEBUG) console.log(`useEffect [kiUsMaretSearchInfo]`, kiUsMaretSearchInfo);
     }, [kiUsMaretSearchInfo])
-    React.useEffect(() => {
-        if (DEBUG) console.log(`React.useEffect [kiUsMaretPriceDetail]`, kiUsMaretPriceDetail);
+    useEffect(() => {
+        if (DEBUG) console.log(`useEffect [kiUsMaretPriceDetail]`, kiUsMaretPriceDetail);
     }, [kiUsMaretPriceDetail])
-    React.useEffect(() => {
-        if (DEBUG) console.log(`React.useEffect [kiUsDailyPrice]`, kiUsDailyPrice);
+    useEffect(() => {
+        if (DEBUG) console.log(`useEffect [kiUsDailyPrice]`, kiUsDailyPrice);
     }, [kiUsDailyPrice])
-    React.useEffect(() => {
-        if (DEBUG) console.log(`React.useEffect [fmpState]`, fmpState);
+    useEffect(() => {
+        if (DEBUG) console.log(`useEffect [fmpState]`, fmpState);
     }, [fmpState])
-    React.useEffect(() => {
-        if (DEBUG) console.log(`React.useEffect [fmpUsBalanceSheetStatement]`, fmpUsBalanceSheetStatement);
+    useEffect(() => {
+        if (DEBUG) console.log(`useEffect [fmpUsBalanceSheetStatement]`, fmpUsBalanceSheetStatement);
     }, [fmpUsBalanceSheetStatement])
 
     if (DEBUG) console.log(`kiUsMaretSearchInfo`, kiUsMaretSearchInfo);
@@ -86,8 +86,8 @@ export default function Search() {
     //     </>;
     // }
 
-    const [validCookie, setValidCookie] = React.useState<any>(false);
-    React.useEffect(() => {
+    const [validCookie, setValidCookie] = useState<any>(false);
+    useEffect(() => {
         setValidCookie(isValidCookie("koreaInvestmentToken"));
     }, []);
 

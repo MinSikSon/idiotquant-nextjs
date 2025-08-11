@@ -9,7 +9,7 @@ import { getKoreaInvestmentApproval, getKoreaInvestmentToken, getKoreaInvestment
 
 import { useAppDispatch, useAppSelector } from "@/lib/hooks";
 import { Button, Input, Spinner, Typography } from "@material-tailwind/react";
-import React from "react";
+import { useState, useEffect } from "react";
 
 import { usePathname } from "next/navigation";
 
@@ -26,13 +26,13 @@ export default function Auth() {
     const kiInquireDailyItemChartPrice: KoreaInvestmentInquireDailyItemChartPrice = useAppSelector(getKoreaInvestmentInquireDailyItemChartPrice);
     const kiBalanceSheet: KoreaInvestmentBalanceSheet = useAppSelector(getKoreaInvestmentBalanceSheet);
 
-    const [time, setTime] = React.useState<any>('');
+    const [time, setTime] = useState<any>('');
     // const loginState = useAppSelector(selectLoginState);
 
-    const [complete, setComplete] = React.useState<boolean>(false);
-    const [step, setStep] = React.useState<number>(0);
-    const [validCookie, setValidCookie] = React.useState<any>(false);
-    React.useEffect(() => {
+    const [complete, setComplete] = useState<boolean>(false);
+    const [step, setStep] = useState<number>(0);
+    const [validCookie, setValidCookie] = useState<any>(false);
+    useEffect(() => {
         if (DEBUG) console.log(`[Auth]`, `kiApproval:`, kiApproval);
         if (DEBUG) console.log(`[Auth]`, `kiToken:`, kiToken);
         if (DEBUG) console.log(`[Auth]`, `kiBalance:`, kiBalance);
@@ -119,19 +119,19 @@ export default function Auth() {
         }
     }
 
-    // React.useEffect(() => {
+    // useEffect(() => {
     //     reload('1');
     // }, [loginState]);
-    React.useEffect(() => {
+    useEffect(() => {
         reload('2');
     }, [kiApproval]);
-    React.useEffect(() => {
+    useEffect(() => {
         reload('3');
     }, [kiToken]);
-    React.useEffect(() => {
+    useEffect(() => {
         reload('4');
     }, [kiBalance]);
-    React.useEffect(() => {
+    useEffect(() => {
         reload('5');
     }, [validCookie]);
 

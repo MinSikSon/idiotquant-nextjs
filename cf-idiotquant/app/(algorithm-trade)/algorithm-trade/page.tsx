@@ -1,14 +1,19 @@
 "use client"
 
+
+import dynamic from 'next/dynamic';
+
+const LineChart = dynamic(() => import('@/components/LineChart'));
+// import LineChart from "@/components/LineChart";
+
 import { DesignButton } from "@/components/designButton";
-import LineChart from "@/components/LineChart";
 import TablesExample8, { Example8TableHeadType, Example8TableRowType, TablesExample8PropsType } from "@/components/tableExample8";
 import { CapitalTokenType, QuantRule, QuantRuleValue, reqGetQuantRule, reqGetQuantRuleDesc, reqGetUsCapitalToken, selectCapitalToken, selectInquirePriceMulti, selectQuantRule, selectQuantRuleDesc, selectUsCapitalToken } from "@/lib/features/algorithmTrade/algorithmTradeSlice";
 import { reqGetCapitalToken, reqGetInquirePriceMulti } from "@/lib/features/algorithmTrade/algorithmTradeSlice";
 import { getKoreaInvestmentToken, KoreaInvestmentToken } from "@/lib/features/koreaInvestment/koreaInvestmentSlice";
 import { useAppDispatch, useAppSelector } from "@/lib/hooks";
 import { Button, ButtonGroup, Spinner, Switch, Tabs, Typography } from "@material-tailwind/react";
-import React from "react";
+import { useState, useEffect } from "react";
 
 import {
     Popover,
@@ -26,11 +31,11 @@ export default function AlgorithmTrade() {
     const quant_rule: QuantRule = useAppSelector(selectQuantRule);
     const quant_rule_desc: QuantRule = useAppSelector(selectQuantRuleDesc);
 
-    const [time, setTime] = React.useState<any>('');
+    const [time, setTime] = useState<any>('');
 
-    const [market, setMarket] = React.useState<"KR" | "US">("KR");
+    const [market, setMarket] = useState<"KR" | "US">("KR");
 
-    const [visibleCount, setVisibleCount] = React.useState(50);
+    const [visibleCount, setVisibleCount] = useState(50);
 
     function handleOnClick() {
         setTime(new Date());
@@ -39,13 +44,13 @@ export default function AlgorithmTrade() {
         dispatch(reqGetUsCapitalToken({ koreaInvestmentToken: kiToken }));
     }
 
-    React.useEffect(() => {
+    useEffect(() => {
         dispatch(reqGetQuantRule());
         dispatch(reqGetQuantRuleDesc());
         handleOnClick();
     }, []);
 
-    React.useEffect(() => {
+    useEffect(() => {
         if (DEBUG) console.log(`kr_capital_token`, kr_capital_token);
         if (DEBUG) console.log(`us_capital_token`, us_capital_token);
         if (DEBUG) console.log(`kiToken`, kiToken);
@@ -78,7 +83,7 @@ export default function AlgorithmTrade() {
         // }
     }, [kr_capital_token, us_capital_token, kiToken]);
 
-    React.useEffect(() => {
+    useEffect(() => {
         if (DEBUG) console.log(`inquirePriceMulti`, inquirePriceMulti);
     }, [inquirePriceMulti]);
 

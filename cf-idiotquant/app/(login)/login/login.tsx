@@ -1,11 +1,11 @@
 "use client"
 
-import React from "react";
-import { Button, Card } from '@material-tailwind/react';
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { selectKakaoAuthCode, selectKakaoId, selectKakaoNickName, setKakaoAuthCode, setKakaoId, setKakaoNickName } from "@/lib/features/login/loginSlice";
 import { useAppDispatch, useAppSelector } from "@/lib/hooks";
 import { clearCookie, getCookie, registerCookie } from "@/components/util";
+
 import { DesignButton } from "@/components/designButton";
 
 const DEBUG = false;
@@ -82,8 +82,8 @@ async function registerUser(id: any, nickname: any) {
 export default function Login(props: any) {
     const router = useRouter();
 
-    const [nickname, setNickname] = React.useState("");
-    const [authorizeCode, setAuthorizeCode] = React.useState("");
+    const [nickname, setNickname] = useState("");
+    const [authorizeCode, setAuthorizeCode] = useState("");
 
     const dispatch = useAppDispatch();
     const kakaoAuthCode = useAppSelector(selectKakaoAuthCode);
@@ -95,9 +95,9 @@ export default function Login(props: any) {
         error_description: string; // "authorization code not found for code=AnZhlhnF7IzjA81_K-gxDx2w3wY4ShoMUUikaIk9pMDx70iBIQH7WQAAAAQKFxAvAAABlZ0Pu28h5oEAb4_jFQ",
         error_code: string //  "KOE320"
     }
-    const [responseToken, setResponseToken] = React.useState<KakaoLoginErrorInterface>({ error: "", error_description: "", error_code: "" });
+    const [responseToken, setResponseToken] = useState<KakaoLoginErrorInterface>({ error: "", error_description: "", error_code: "" });
 
-    React.useEffect(() => {
+    useEffect(() => {
         async function callback() {
             if (DEBUG) console.log(`[Login]`, `getCookie("kakaoId"):`, getCookie("kakaoId"), `getCookie("kakaoNickName"):`, getCookie("kakaoNickName"));
             if (DEBUG) console.log(`[Login]`, `kakaoId:`, kakaoId, `kakaoAuthCode:`, kakaoAuthCode);

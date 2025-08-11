@@ -1,12 +1,15 @@
 "use client";
 
 import { reqPostLaboratory } from "@/lib/features/ai/aiSlice";
-import React from "react";
+import { useState, useEffect } from "react";
 
 import { useAppDispatch, useAppSelector } from "@/lib/hooks";
 import { Button } from "@material-tailwind/react";
 
-import ReactMarkdown from 'react-markdown';
+import dynamic from 'next/dynamic';
+
+const ReactMarkdown = dynamic(() => import('react-markdown'));
+// import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import remarkMath from 'remark-math';
 import rehypeRaw from 'rehype-raw';
@@ -21,19 +24,19 @@ export default function Chat() {
     // const aiOutput: AiOutputType = useAppSelector(selectAiOutput);
     const aiHistory: AiHistoryType[] = useAppSelector(selectAiHistory);
 
-    const [question, setQuestion] = React.useState("");
-    const [userContent, setUserContent] = React.useState("");
-    const [waitResponse, setWaitResponse] = React.useState(false);
+    const [question, setQuestion] = useState("");
+    const [userContent, setUserContent] = useState("");
+    const [waitResponse, setWaitResponse] = useState(false);
 
     const aiStreamOutput: string = useAppSelector(selectAiStreamOutput);
 
-    const [response, setResponse] = React.useState<string>("");
+    const [response, setResponse] = useState<string>("");
 
-    React.useEffect(() => {
+    useEffect(() => {
         if (DEBUG) console.log(`[Chat]`);
     }, []);
 
-    React.useEffect(() => {
+    useEffect(() => {
         // console.log(`aiStreamOutput`, aiStreamOutput);
         let buffer: string = aiStreamOutput;
         const lines = buffer.split('\n');
@@ -85,7 +88,7 @@ export default function Chat() {
         setResponse(outputContent);
     }, [aiStreamOutput]);
 
-    React.useEffect(() => {
+    useEffect(() => {
         // console.log(`aiHistory`, aiHistory);
     }, [aiHistory]);
 
@@ -98,7 +101,7 @@ export default function Chat() {
         // setUserContent("");
     }
 
-    const handleKeyDown = (e: React.KeyboardEvent) => {
+    const handleKeyDown = (e: KeyboardEvent) => {
         if (e.key === 'Enter' && userContent.trim()) {
             onClick(userContent); // 엔터 키 누르면 검색 버튼 클릭
         }

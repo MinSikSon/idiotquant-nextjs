@@ -8,7 +8,7 @@ import { reqGetInquireBalance, getKoreaInvestmentBalance, KoreaInvestmentBalance
 import { reqPostOrderCash, getKoreaInvestmentOrderCash, KoreaInvestmentOrderCash } from "@/lib/features/koreaInvestment/koreaInvestmentSlice";
 
 import { useAppDispatch, useAppSelector } from "@/lib/hooks";
-import React from "react";
+import { useState, useEffect } from "react";
 
 import { usePathname } from "next/navigation";
 import Auth from "@/components/auth";
@@ -31,7 +31,7 @@ export default function BalanceKr() {
 
     const kr_capital_token: CapitalTokenType = useAppSelector(selectCapitalToken);
 
-    React.useEffect(() => {
+    useEffect(() => {
         console.log(`[BalanceKr]`, `loginState`, loginState);
         // console.log(`[BalanceKr]`, `kiToken:`, kiToken);
         if ("cf" == loginState || "kakao" == loginState) {
@@ -43,23 +43,23 @@ export default function BalanceKr() {
         }
     }, [kiToken, loginState]);
 
-    React.useEffect(() => {
+    useEffect(() => {
         if (true == DEBUG) console.log(`[BalanceKr]`, `kiBalance`, kiBalance);
     }, [kiBalance]);
 
-    React.useEffect(() => {
+    useEffect(() => {
         // console.log(`[BalanceKr]`, `kiOrderCash`, kiOrderCash);
     }, [kiOrderCash])
 
-    React.useEffect(() => {
+    useEffect(() => {
         console.log(`[BalanceKr]`, `kr_capital_token`, kr_capital_token);
         if ("init" == kr_capital_token.state) {
             dispatch(reqGetCapitalToken({ koreaInvestmentToken: kiToken }));
         }
     }, [kr_capital_token])
 
-    const [validCookie, setValidCookie] = React.useState<any>(false);
-    React.useEffect(() => {
+    const [validCookie, setValidCookie] = useState<any>(false);
+    useEffect(() => {
         setValidCookie(isValidCookie("koreaInvestmentToken"));
     }, []);
 

@@ -3,8 +3,8 @@
 import { Button, Spinner } from "@material-tailwind/react";
 import { DesignButton } from "./designButton";
 import TablesExample8, { Example8TableHeadType, Example8TableRowType, TablesExample8PropsType } from "./tableExample8";
-import { useAppDispatch, useAppSelector } from "@/lib/hooks";
-import React from "react";
+import { useAppDispatch } from "@/lib/hooks";
+import { useState } from "react";
 import { Util } from "./util";
 
 const DEBUG = false;
@@ -24,11 +24,11 @@ export default function InquireBalanceResult(props: InquireBalanceResultProps) {
     if (DEBUG) console.log(`[InquireBalanceResult]`, `props`, props);
 
     const dispatch = useAppDispatch();
-    const [show, setShow] = React.useState<boolean>(false);
-    const [msg, setMsg] = React.useState<any>("");
-    const [orderName, setOrderName] = React.useState<any>("");
+    const [show, setShow] = useState<boolean>(false);
+    const [msg, setMsg] = useState<any>("");
+    const [orderName, setOrderName] = useState<any>("");
 
-    const [time, setTime] = React.useState<any>(new Date());
+    const [time, setTime] = useState<any>(new Date());
 
     const showAlert = (additionalMsg: string) => {
         setMsg(additionalMsg);
@@ -54,8 +54,8 @@ export default function InquireBalanceResult(props: InquireBalanceResultProps) {
         // }
     }
 
-    const [selectHead, setSelectHead] = React.useState("비중");
-    const [prevSelectHead, setPrevSelectHead] = React.useState("");
+    const [selectHead, setSelectHead] = useState("비중");
+    const [prevSelectHead, setPrevSelectHead] = useState("");
 
     const example8TableHead: Example8TableHeadType[] = [
         {

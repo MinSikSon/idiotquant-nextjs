@@ -21,6 +21,13 @@ const nextConfig = {
         KOREA_INVESTMENT_TEST_API_APPSECRET: process.env.KOREA_INVESTMENT_TEST_API_APPSECRET,
     },
     reactStrictMode: false,
+    // reactStrictMode: true,
 };
 
-export default nextConfig;
+import bundleAnalyzer from '@next/bundle-analyzer';
+
+const withBundleAnalyzer = bundleAnalyzer({
+    enabled: process.env.ANALYZE === 'true', // 환경변수로 켜고 끄기
+});
+
+export default withBundleAnalyzer(nextConfig);

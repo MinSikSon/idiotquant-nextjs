@@ -17,7 +17,7 @@ import { getBackTestConditionFilterResultType } from "@/lib/features/backtest/ba
 
 import { reqGetFinancialInfoWithMarketInfo } from "@/lib/features/backtest/backtestSlice";
 
-import React from "react";
+import { useState, useEffect, useRef } from "react";
 import { isValidCookie, Util } from "@/components/util";
 
 
@@ -42,7 +42,7 @@ export default function BackTest() {
     const backTestConditionFinancialInfoList: BackTestConditionFinancialInfoList = useAppSelector(getBackTestConditionFinancialInfoList);
     const backTestConditionFilterResultType: BackTestConditionFilterResultType = useAppSelector(getBackTestConditionFilterResultType);
 
-    const totalProfit = React.useRef(0);
+    const totalProfit = useRef(0);
 
     const getStepContents = (title: string, list: any[], selectValue: any, handleOnClick: any) => {
         return <div className="flex flex-col">
@@ -55,8 +55,8 @@ export default function BackTest() {
         </div>
     };
 
-    const [date, setDate] = React.useState<Date>();
-    const [validCookie, setValidCookie] = React.useState<any>(false);
+    const [date, setDate] = useState<Date>();
+    const [validCookie, setValidCookie] = useState<any>(false);
 
     const getDateContents = (title: string, selectValue: any, min: any, max: any, handleOnChange: any) => {
         return <div className="flex flex-col">
@@ -146,16 +146,16 @@ export default function BackTest() {
         </div>
     };
 
-    React.useEffect(() => {
+    useEffect(() => {
         // console.log(`backTestConditionType1`, backTestConditionType1);
     }, [backTestConditionType1]);
-    React.useEffect(() => {
+    useEffect(() => {
         // console.log(`backTestConditionType2`, backTestConditionType2);
     }, [backTestConditionType2]);
-    React.useEffect(() => {
+    useEffect(() => {
         // console.log(`backTestConditionType3`, backTestConditionType3);
     }, [backTestConditionType3]);
-    React.useEffect(() => {
+    useEffect(() => {
         // console.log(`backTestConditionFinancialInfoList`, backTestConditionFinancialInfoList);
         const output2 = backTestConditionFinancialInfoList.output2;
         const transformedData = output2.filter(item => item.endsWith("12"));
@@ -171,7 +171,7 @@ export default function BackTest() {
             dispatch(setBackTestConditionFilterResultType({ ...backTestConditionFilterResultType, startDate: backTestConditionType2.startDate, endDate: backTestConditionType3.endDate, state: "loading" }));
         }
     }, [backTestConditionFinancialInfoList]);
-    React.useEffect(() => {
+    useEffect(() => {
         console.log(`backTestConditionFilterResultType`, backTestConditionFilterResultType);
         if (!!backTestConditionFilterResultType && !!backTestConditionFilterResultType.output3 && !!Object.keys(backTestConditionFilterResultType.output3)[2]) {
             const date = Object.keys(backTestConditionFilterResultType.output3)[2];
@@ -283,7 +283,7 @@ export default function BackTest() {
     const loginState = useAppSelector(selectLoginState);
     const pathname = usePathname();
 
-    React.useEffect(() => {
+    useEffect(() => {
         // console.log(`[BackTest]`, `kiToken:`, kiToken);
         // console.log(`[BackTest]`, `loginState`, loginState);
         if ("cf" == loginState || "kakao" == loginState) {
@@ -294,9 +294,9 @@ export default function BackTest() {
         }
     }, [kiToken, loginState]);
 
-    React.useEffect(()=>{
+    useEffect(() => {
         setValidCookie(isValidCookie("koreaInvestmentToken"));
-    },[]);
+    }, []);
 
     if ("init" == loginState || "rejected" == loginState) {
         return <>
