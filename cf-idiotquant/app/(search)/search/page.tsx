@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 
-// import Login from "@/app/(login)/login/login"
+import Login from "@/app/(login)/login/login"
 import { selectLoginState } from "@/lib/features/login/loginSlice";
 import { usePathname } from "next/navigation";
 import { useAppDispatch, useAppSelector } from "@/lib/hooks";
@@ -58,8 +58,7 @@ export default function Search() {
 
   useEffect(() => {
     if (DEBUG) console.log(`[Search]`, `kiToken:`, kiToken);
-    // if ("cf" == loginState || "kakao" == loginState)
-    {
+    if ("cf" == loginState || "kakao" == loginState) {
       const isValidKiAccessToken = !!kiToken["access_token"];
       if (DEBUG) console.log(`[Search]`, `isValidKiAccessToken`, isValidKiAccessToken);
       if (true == isValidKiAccessToken) {
@@ -248,16 +247,17 @@ export default function Search() {
     </>
   }
 
-  // if ("init" == loginState || "rejected" == loginState || "pending" == loginState) {
-  //   return <>
-  //     <Login parentUrl={pathname} />
-  //   </>;
-  // }
-
   const [validCookie, setValidCookie] = useState<any>(false);
   useEffect(() => {
     setValidCookie(isValidCookie("koreaInvestmentToken"));
   }, []);
+
+  if ("init" == loginState || "rejected" == loginState || "pending" == loginState) {
+    return <>
+      <Login parentUrl={pathname} />
+    </>;
+  }
+
   if (false == validCookie || false == !!kiToken["access_token"]) {
     return <>
       <Auth />

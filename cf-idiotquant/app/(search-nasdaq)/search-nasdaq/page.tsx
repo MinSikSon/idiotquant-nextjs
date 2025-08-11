@@ -12,7 +12,7 @@ import { getKoreaInvestmentToken, KoreaInvestmentToken, reqGetInquireBalance } f
 import SearchAutocomplete from "@/components/searchAutoComplete";
 
 import nasdaq_tickers from "@/public/data/usStockSymbols/nasdaq_tickers.json";
-// import Login from "@/app/(login)/login/login";
+import Login from "@/app/(login)/login/login";
 import Auth from "@/components/auth";
 import { FmpBalanceSheetStatementType, reqGetFmpBalanceSheetStatement, selectFmpBalanceSheetStatement, selectFmpState } from "@/lib/features/fmpUsMarket/fmpUsMarketSlice";
 import LineChart from "@/components/LineChart";
@@ -53,8 +53,7 @@ export default function Search() {
     useEffect(() => {
         if (DEBUG) console.log(`[Search]`, `kiToken:`, kiToken);
         if (DEBUG) console.log(`[Search]`, `loginState:`, loginState);
-        // if ("cf" == loginState || "kakao" == loginState)
-        {
+        if ("cf" == loginState || "kakao" == loginState) {
             const isValidKiAccessToken = !!kiToken["access_token"];
             if (true == isValidKiAccessToken) {
                 dispatch(reqGetInquireBalance(kiToken));
@@ -80,16 +79,17 @@ export default function Search() {
 
     if (DEBUG) console.log(`kiUsMaretSearchInfo`, kiUsMaretSearchInfo);
     if (DEBUG) console.log(`kiUsMaretPriceDetail`, kiUsMaretPriceDetail);
-    // if ("init" == loginState || "rejected" == loginState || "pending" == loginState) {
-    //     return <>
-    //         <Login parentUrl={pathname} />
-    //     </>;
-    // }
 
     const [validCookie, setValidCookie] = useState<any>(false);
     useEffect(() => {
         setValidCookie(isValidCookie("koreaInvestmentToken"));
     }, []);
+
+    if ("init" == loginState || "rejected" == loginState || "pending" == loginState) {
+        return <>
+            <Login parentUrl={pathname} />
+        </>;
+    }
 
     if (false == validCookie || false == !!kiToken["access_token"]) {
         return <>
