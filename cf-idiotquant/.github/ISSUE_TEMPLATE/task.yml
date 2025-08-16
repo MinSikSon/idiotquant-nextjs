@@ -1,0 +1,25 @@
+name: Task
+description: 오늘의 핵심 작업 단위
+title: "[Task] "
+labels: ["todo"]
+body:
+  - type: input
+    id: goal
+    attributes:
+      label: 오늘의 목표
+      description: 이 작업으로 무엇을 달성하려는가?
+      placeholder: ex) 로그인 API 80% 완성
+  - type: textarea
+    id: checklist
+    attributes:
+      label: 체크리스트
+      description: 이슈 완료 조건을 작성해주세요.
+      value: |
+        - [ ] 최소 기능 동작 확인
+        - [ ] 30분 내 해결 안 되면 보류
+        - [ ] 내일 오전 리뷰
+  - type: textarea
+    id: notes
+    attributes:
+      label: 메모
+      description: 보류 사유, 시행착오 등을 간단히 기록
