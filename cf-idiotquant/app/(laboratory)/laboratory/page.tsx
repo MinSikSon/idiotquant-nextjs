@@ -1,17 +1,17 @@
 "use client";
 
-import SplitText from "@/src/TextAnimations/SplitText/SplitText";
+import Balatro from "@/src/Backgrounds/Balatro/Balatro";
+
 export default function Laboratory() {
     return (
         <>
             <div>
                 laboratory
             </div>
-
-            <SplitText
-                text="Hello, you!"
-                delay={100}
-                duration={0.6}
+            <Balatro
+                isRotate={false}
+                mouseInteraction={true}
+                pixelFilter={700}
             />
         </>
     );
