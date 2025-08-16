@@ -269,14 +269,6 @@ export default function AlgorithmTrade() {
         </>,
         desc: <>
             <div className="dark:border-gray-700 border rounded-lg px-2 pb-1 m-2 shadow">
-                <div className="text-sm">
-                    Emotion-Free Stock Recommendations, Selected by Quantitative Data
-                </div>
-                <div className="text-xs pl-2">
-                    idiotquant automatically identifies promising stocks based on a variety of investment indicators such as profitability, undervaluation, and trading volume, and builds a customized portfolio tailored to your unique trading strategy.
-                </div>
-            </div>
-            <div className="dark:border-gray-700 border rounded-lg px-2 pb-1 m-2 shadow">
                 <div className="text-xl">
                     Trading Strategy
                 </div>
