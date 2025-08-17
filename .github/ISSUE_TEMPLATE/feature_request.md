@@ -1,20 +1,18 @@
 ---
-name: Feature request
-about: Suggest an idea for this project
-title: ''
+name: "Task"
+about: "오늘의 핵심 작업 단위"
+title: "[Task] "
 labels: feature
-assignees: MinSikSon
-
+assignees: "MinSikSon"
 ---
 
-**Is your feature request related to a problem? Please describe.**
-A clear and concise description of what the problem is. Ex. I'm always frustrated when [...]
+## 오늘의 목표
+- ex) 로그인 API 80% 완성
 
-**Describe the solution you'd like**
-A clear and concise description of what you want to happen.
+## 체크리스트
+- [ ] 최소 기능 동작 확인
+- [ ] 30분 내 해결 안 되면 보류
+- [ ] 내일 오전 리뷰
 
-**Describe alternatives you've considered**
-A clear and concise description of any alternative solutions or features you've considered.
-
-**Additional context**
-Add any other context or screenshots about the feature request here.
+## 메모
+- 시행착오, 보류 사유 등 기록
