@@ -7,17 +7,27 @@ import TextType from "@/src/TextAnimations/TextType/TextType";
 
 export default function Home() {
   return <>
-    <div className="dark:border-gray-700 dark:bg-black dark:text-white border px-2 pb-1 shadow">
-      <SplitText
-        text="Emotion-Free Stock Recommendations, Selected by Quantitative Data"
-        delay={10}
-        duration={0.6}
-      />
-      <SplitText
-        className="text-[0.7rem]"
-        text="idiotquant automatically identifies promising stocks based on a variety of investment indicators such as profitability, undervaluation, and trading volume, and builds a customized portfolio tailored to your unique trading strategy."
-        delay={10}
-        duration={0.6}
+    <div className="dark:border-gray-700 dark:bg-black dark:text-white px-2 p-2 min-h-16">
+      <TextType
+        className="text-sm md:text-lg lg:text-xl xl:text-2xl 2xl:text-3xl dark:bg-white"
+        text={[
+          "Emotion-Free Quant Investing"
+          , "Stock recommendations driven purely by data."
+          , "idiotquant applies NCAV strategy along with other quantitative indicators."
+          , "It analyzes profitability, undervaluation, and trading volume to automatically spot promising stocks."
+          , "A customized portfolio is then built to match your unique investment style."
+        ]}
+        typingSpeed={75}
+        pauseDuration={1500}
+        showCursor={true}
+        cursorCharacter="|"
+        textColors={[
+          "#000",
+          "#000",
+          "#000",
+          "#000",
+          "#000"
+        ]}
       />
     </div>
     <AlgorithmTrade />
