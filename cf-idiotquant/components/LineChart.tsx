@@ -6,6 +6,7 @@ import dynamic from "next/dynamic";
 const Chart = dynamic(() => import("react-apexcharts"), { ssr: false });
 import type { ApexOptions } from "apexcharts";
 import { useTheme } from "next-themes";
+import { enAU } from "date-fns/locale";
 
 const DEBUG = false;
 
@@ -72,8 +73,14 @@ export default function LineChart(props: any) {
                 series: props.data_array,
                 options: {
                     chart: {
+                        zoom: {
+                            enabled: false, // 줌 비활성화
+                        },
                         toolbar: {
                             show: false,
+                            zoom: false,
+                            zoomin: false,
+                            zoomout: false,
                         },
                     },
                     title: {

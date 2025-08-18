@@ -85,11 +85,11 @@ export default function Search() {
         setValidCookie(isValidCookie("koreaInvestmentToken"));
     }, []);
 
-    if ("init" == loginState || "rejected" == loginState || "pending" == loginState) {
-        return <>
-            <Login parentUrl={pathname} />
-        </>;
-    }
+    // if ("init" == loginState || "rejected" == loginState || "pending" == loginState) {
+    //     return <>
+    //         <Login parentUrl={pathname} />
+    //     </>;
+    // }
 
     if (false == validCookie || false == !!kiToken["access_token"]) {
         return <>
