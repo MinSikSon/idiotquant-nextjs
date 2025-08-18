@@ -18,6 +18,7 @@ import { useState, useEffect } from "react";
 import {
     Popover,
 } from "@material-tailwind/react";
+import CountUp from '@/src/TextAnimations/CountUp/CountUp';
 
 const DEBUG = false;
 
@@ -319,17 +320,42 @@ export default function AlgorithmTrade() {
                     <div className="dark:border-gray-700 border flex-1 rounded-lg px-2 pb-1 mx-1 mb-2 shadow">
                         <div className="text-[0.6rem]">Total Algorithmic Buys</div>
                         <div className="flex flex-col justify-end items-end">
-                            <div className="">{market == "KR" ? `${Number(Number(cummulative_investment).toFixed(0)).toLocaleString()} KRW` : `${Number(Number(cummulative_investment).toFixed(0)).toLocaleString()} KRW`}</div>
-                            <div className="text-[0.6rem]">{market == "KR" ? "" : `(${Number(Number(cummulative_investment) / Number(us_capital_token.value.frst_bltn_exrt)).toFixed(3)} USD)`}</div>
+                            <div className="">{market == "KR" ?
+                                <div><CountUp
+                                    from={0}
+                                    to={Number(Number(cummulative_investment).toFixed(0))}
+                                    separator=","
+                                    direction="up"
+                                    duration={1}
+                                    className="count-up-text"
+                                /> KRW</div>
+                                : <div>
+                                    <CountUp
+                                        from={0}
+                                        to={Number(Number(cummulative_investment).toFixed(0))}
+                                        separator=","
+                                        direction="up"
+                                        duration={2}
+                                        className="count-up-text"
+                                    /> KRW</div>
+                            }</div>
+                            <div className="text-[0.6rem]">{market == "KR" ? "" : <div><CountUp
+                                from={0}
+                                to={Number(Number(Number(cummulative_investment) / Number(us_capital_token.value.frst_bltn_exrt)).toFixed(3))}
+                                separator=","
+                                direction="up"
+                                duration={1}
+                                className="count-up-text"
+                            /> USD</div>}</div>
                         </div>
                     </div>
-                    <div className="dark:border-gray-700 border flex-1 rounded-lg px-2 pb-1 mx-1 mb-2 shadow">
+                    {/* <div className="dark:border-gray-700 border flex-1 rounded-lg px-2 pb-1 mx-1 mb-2 shadow">
                         <div className="text-[0.6rem]">Total Algorithmic Sells</div>
                         <div className="flex flex-col justify-end items-end">
                             <div className="">{market == "KR" ? `${Number(Number(cummulative_investment_sell).toFixed(0)).toLocaleString()} KRW` : `${Number(Number(cummulative_investment_sell).toFixed(0)).toLocaleString()} KRW`}</div>
                             <div className="text-[0.6rem]">{market == "KR" ? "" : `(${Number(Number(cummulative_investment_sell) / Number(us_capital_token.value.frst_bltn_exrt)).toFixed(3)} USD)`}</div>
                         </div>
-                    </div>
+                    </div> */}
                 </div>
                 <div className={`flex gap-2`}>
                     <div className="dark:bg-gray-200 bg-white w-full border rounded-lg mx-1">

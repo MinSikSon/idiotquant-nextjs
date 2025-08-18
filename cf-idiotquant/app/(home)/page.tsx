@@ -7,7 +7,7 @@ import TextType from "@/src/TextAnimations/TextType/TextType";
 
 export default function Home() {
   return <>
-    <div className="dark:border-gray-700 dark:bg-black dark:text-white px-2 p-2 min-h-16">
+    <div className="dark:border-gray-700 dark:bg-black dark:text-white p-3">
       <TextType
         className="text-sm md:text-lg lg:text-xl xl:text-2xl 2xl:text-3xl dark:bg-white"
         text={[
