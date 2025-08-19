@@ -19,6 +19,7 @@ import {
     Popover,
 } from "@material-tailwind/react";
 import CountUp from '@/src/TextAnimations/CountUp/CountUp';
+import GradientText from '@/src/TextAnimations/GradientText/GradientText';
 
 const DEBUG = false;
 
@@ -139,20 +140,20 @@ export default function AlgorithmTrade() {
         return cumulateTokenArray;
     }
 
-    function getCumulatePurchaseArray() {
-        const capitalToken = "KR" == market ? kr_capital_token : us_capital_token;
-        const purchase_log = capitalToken.value.purchase_log ?? [];
-        let cumulatePurchase = 0
-        const cumulatePurchaseArray = purchase_log.map((entry: any) => {
-            cumulatePurchase += entry.stock_list.reduce((sum: any, stock: any) => {
-                return sum + (Number(stock.stck_prpr) * Number(stock.ORD_QTY)) * (stock.buyOrSell == "sell" ? -1 : 1) * (market == "KR" ? 1 : capitalToken.value.frst_bltn_exrt);
-            }, 0);
-            return Number(cumulatePurchase).toFixed(0);
-        }
-        );
-        // console.log(`cumulatePurchaseArray`, cumulatePurchaseArray);
-        return cumulatePurchaseArray;
-    }
+    // function getCumulatePurchaseArray() {
+    //     const capitalToken = "KR" == market ? kr_capital_token : us_capital_token;
+    //     const purchase_log = capitalToken.value.purchase_log ?? [];
+    //     let cumulatePurchase = 0
+    //     const cumulatePurchaseArray = purchase_log.map((entry: any) => {
+    //         cumulatePurchase += entry.stock_list.reduce((sum: any, stock: any) => {
+    //             return sum + (Number(stock.stck_prpr) * Number(stock.ORD_QTY)) * (stock.buyOrSell == "sell" ? -1 : 1) * (market == "KR" ? 1 : capitalToken.value.frst_bltn_exrt);
+    //         }, 0);
+    //         return Number(cumulatePurchase).toFixed(0);
+    //     }
+    //     );
+    //     // console.log(`cumulatePurchaseArray`, cumulatePurchaseArray);
+    //     return cumulatePurchaseArray;
+    // }
 
     function getLineDataArray() {
         return [
@@ -269,6 +270,7 @@ export default function AlgorithmTrade() {
             </div>
         </>,
         desc: <>
+
             <div className="dark:border-gray-700 border rounded-lg px-2 pb-1 m-2 shadow">
                 <div className="text-xl">
                     Trading Strategy
@@ -321,15 +323,24 @@ export default function AlgorithmTrade() {
                         <div className="text-[0.6rem]">Total Algorithmic Buys</div>
                         <div className="flex flex-col justify-end items-end">
                             <div className="">{market == "KR" ?
-                                <div><CountUp
-                                    from={0}
-                                    to={Number(Number(cummulative_investment).toFixed(0))}
-                                    separator=","
-                                    direction="up"
-                                    duration={1}
-                                    className="count-up-text"
-                                /> KRW</div>
-                                : <div>
+                                <GradientText
+                                    colors={["#40ffaa", "#4079ff", "#40ffaa", "#4079ff", "#40ffaa"]}
+                                    animationSpeed={3}
+                                    showBorder={false}
+                                ><CountUp
+                                        from={0}
+                                        to={Number(Number(cummulative_investment).toFixed(0))}
+                                        separator=","
+                                        direction="up"
+                                        duration={1}
+                                        className="count-up-text"
+                                    /> KRW
+                                </GradientText>
+                                : <GradientText
+                                    colors={["#40ffaa", "#4079ff", "#40ffaa", "#4079ff", "#40ffaa"]}
+                                    animationSpeed={3}
+                                    showBorder={false}
+                                >
                                     <CountUp
                                         from={0}
                                         to={Number(Number(cummulative_investment).toFixed(0))}
@@ -337,16 +348,21 @@ export default function AlgorithmTrade() {
                                         direction="up"
                                         duration={2}
                                         className="count-up-text"
-                                    /> KRW</div>
+                                    /> KRW</GradientText>
                             }</div>
-                            <div className="text-[0.6rem]">{market == "KR" ? "" : <div><CountUp
-                                from={0}
-                                to={Number(Number(Number(cummulative_investment) / Number(us_capital_token.value.frst_bltn_exrt)).toFixed(3))}
-                                separator=","
-                                direction="up"
-                                duration={1}
-                                className="count-up-text"
-                            /> USD</div>}</div>
+                            <div className="text-[0.6rem]">{market == "KR" ? ""
+                                : <GradientText
+                                    colors={["#40ffaa", "#4079ff", "#40ffaa", "#4079ff", "#40ffaa"]}
+                                    animationSpeed={3}
+                                    showBorder={false}
+                                ><CountUp
+                                        from={0}
+                                        to={Number(Number(Number(cummulative_investment) / Number(us_capital_token.value.frst_bltn_exrt)).toFixed(3))}
+                                        separator=","
+                                        direction="up"
+                                        duration={1}
+                                        className="count-up-text"
+                                    /> USD</GradientText>}</div>
                         </div>
                     </div>
                     {/* <div className="dark:border-gray-700 border flex-1 rounded-lg px-2 pb-1 mx-1 mb-2 shadow">
