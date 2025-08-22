@@ -17,15 +17,15 @@ export const CalculationList = (props: any) => {
                             return <div className='p-1 border-2 border-gray-300 mb-1' key={key} onClick={(e) => props.handleOnClickResultList(e, key)}>
                                 <div className='flex-col'>
                                     <div className="flex gap-1 pb-1">
-                                        <Chip size='lg' color="warning" className="font-mono text-md">
-                                            <Chip.Label>{`최종수입금: ${element['totalValue'].toLocaleString('ko-KR', { maximumFractionDigits: 0 })}원`}</Chip.Label>
+                                        <Chip size='lg' color="info" className="font-mono text-md">
+                                            <Chip.Label>{`수입금: ${element['totalValue'].toLocaleString('ko-KR', { maximumFractionDigits: 0 })}원`}</Chip.Label>
                                         </Chip>
                                     </div>
                                     <div className="flex gap-1 pb-1">
-                                        <Chip color="warning" className="font-mono text-md" >
+                                        <Chip color="info" className="font-mono text-md" >
                                             <Chip.Label>{`투자기간: ${element['numberOfYears']}년`} </Chip.Label>
                                         </Chip>
-                                        <Chip color="warning" className="font-mono text-md">
+                                        <Chip color="info" className="font-mono text-md">
                                             <Chip.Label>{`최종수익률: ${Number(element['finalRateOfReturn']).toFixed(2)}%`}</Chip.Label>
                                         </Chip>
                                     </div>
@@ -35,7 +35,7 @@ export const CalculationList = (props: any) => {
                                         </Chip>
                                     </div>
                                     <div className="flex gap-1 pb-1">
-                                        <Chip className="font-mono" variant="outline" color="error" >
+                                        <Chip className="font-mono" variant="outline" color="info" >
                                             <Chip.Label>{`이자율: ${element['interestRate']}%`}</Chip.Label>
                                         </Chip>
                                         <Chip className="font-mono" variant="outline" color="info"  >
