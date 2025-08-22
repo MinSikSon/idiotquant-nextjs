@@ -204,7 +204,7 @@ export default function Calculator() {
                 <div className="h-full border-gray-300 shadow-md">
                     <div className='flex p-1 m-1'>
                         <div className="w-full text-md header-contents text-center">
-                            <span className="bg-yellow-500 dark:bg-gray-500"> 기대 수익</span> 계산기
+                            <span className="bg-blue-500 dark:bg-gray-500 text-white"> 기대 수익</span> 계산기
                         </div>
                         <img className='h-4 col-span-1 object-fill' src='/images/icons8-calculator.gif' />
                     </div>
@@ -212,8 +212,8 @@ export default function Calculator() {
                         <form className="flex flex-col gap-1.5 m-4">
                             <div className="gap-0">
                                 <div className='flex justify-between my-0'>
-                                    <div className='text-base underline decoration-4 decoration-yellow-500 dark:decoration-gray-500'>{'최종 수입금:'}</div>
-                                    <div className='text-xl text-right underline decoration-4 decoration-yellow-500 dark:decoration-gray-500'>{' ' + result.toLocaleString('ko-KR', { maximumFractionDigits: 0 }) + ' 원'}</div>
+                                    <div className='text-base underline decoration-4 decoration-blue-500 dark:decoration-gray-500'>{'최종 수입금:'}</div>
+                                    <div className='text-xl text-right underline decoration-4 decoration-blue-500 dark:decoration-gray-500'>{' ' + result.toLocaleString('ko-KR', { maximumFractionDigits: 0 }) + ' 원'}</div>
                                 </div>
                                 <div className='flex justify-between my-0 py-0'>
                                     <div className='text-md'>{'최종 수익률:'}</div>
@@ -235,13 +235,13 @@ export default function Calculator() {
                                             <DesignButton
                                                 handleOnClick={() => setInvestmentAmount(Number(0) * 1)}
                                                 buttonName="CLEAR"
-                                                buttonBgColor="bg-red-500"
-                                                buttonBorderColor="border-red-400"
-                                                buttonShadowColor="#DB0000"
-                                                textStyle="text-white text-xs font-bold"
+                                                buttonBgColor="bg-white"
+                                                buttonBorderColor="border-gray-500"
+                                                buttonShadowColor="#D5D5D5"
+                                                textStyle="text-black text-xs font-bold"
                                                 buttonStyle={`rounded-lg px-4 ml-2 flex items-center justify-center mb-2 button cursor-pointer select-none
-                                            active:translate-y-1 active:[box-shadow:0_0px_0_0_#DB0000,0_0px_0_0_#DB000041] active:border-[0px]
-                                            transition-all duration-150 [box-shadow:0_4px_0_0_#DB0000,0_8px_0_0_#DB000041] border-[1px]
+                                            active:translate-y-1 active:[box-shadow:0_0px_0_0_#D5D5D5,0_0px_0_0_#D5D5D541] active:border-[0px]
+                                            transition-all duration-150 [box-shadow:0_4px_0_0_#D5D5D5,0_8px_0_0_#D5D5D541] border-[1px]
                                             `} />
                                         </>
                                         :
@@ -258,19 +258,19 @@ export default function Calculator() {
                                         <DesignButton
                                             handleOnClick={() => setNumberOfYears(0)}
                                             buttonName="CLEAR"
-                                            buttonBgColor="bg-red-500"
-                                            buttonBorderColor="border-red-400"
-                                            buttonShadowColor="#DB0000"
-                                            textStyle="text-white text-xs font-bold"
+                                            buttonBgColor="bg-white"
+                                            buttonBorderColor="border-gray-500"
+                                            buttonShadowColor="#D5D5D5"
+                                            textStyle="text-black text-xs font-bold"
                                             buttonStyle={`rounded-lg px-4 ml-2 flex items-center justify-center mb-2 button cursor-pointer select-none
-                                            active:translate-y-1 active:[box-shadow:0_0px_0_0_#DB0000,0_0px_0_0_#DB000041] active:border-[0px]
-                                            transition-all duration-150 [box-shadow:0_4px_0_0_#DB0000,0_8px_0_0_#DB000041] border-[1px]
+                                            active:translate-y-1 active:[box-shadow:0_0px_0_0_#D5D5D5,0_0px_0_0_#D5D5D541] active:border-[0px]
+                                            transition-all duration-150 [box-shadow:0_4px_0_0_#D5D5D5,0_8px_0_0_#D5D5D541] border-[1px]
                                             `} />
                                     </>
                                         : <></>}
                                 </div>
                             </div>
-                            <div className='flex-row border-4 border-red-100 pt-1'>
+                            <div className='flex-row border-4 border-blue-100 pt-1'>
                                 <Typography type="small" color="primary" className="font-mono text-[0.7rem] ml-2">
                                     복리
                                 </Typography>
@@ -298,13 +298,13 @@ export default function Calculator() {
                                                 <DesignButton
                                                     handleOnClick={() => setInterestRate(0)}
                                                     buttonName="CLEAR"
-                                                    buttonBgColor="bg-red-500"
-                                                    buttonBorderColor="border-red-400"
-                                                    buttonShadowColor="#DB0000"
-                                                    textStyle="text-white text-xs font-bold"
+                                                    buttonBgColor="bg-white"
+                                                    buttonBorderColor="border-gray-500"
+                                                    buttonShadowColor="#D5D5D5"
+                                                    textStyle="text-black text-xs font-bold"
                                                     buttonStyle={`rounded-lg px-4 ml-2 flex items-center justify-center mb-2 button cursor-pointer select-none
-                                            active:translate-y-1 active:[box-shadow:0_0px_0_0_#DB0000,0_0px_0_0_#DB000041] active:border-[0px]
-                                            transition-all duration-150 [box-shadow:0_4px_0_0_#DB0000,0_8px_0_0_#DB000041] border-[1px]
+                                            active:translate-y-1 active:[box-shadow:0_0px_0_0_#D5D5D5,0_0px_0_0_#D5D5D541] active:border-[0px]
+                                            transition-all duration-150 [box-shadow:0_4px_0_0_#D5D5D5,0_8px_0_0_#D5D5D541] border-[1px]
                                             `} />
                                             </>
                                             : <></>}
@@ -342,13 +342,13 @@ export default function Calculator() {
                                                 <DesignButton
                                                     handleOnClick={() => setContributions(0)}
                                                     buttonName="CLEAR"
-                                                    buttonBgColor="bg-red-500"
-                                                    buttonBorderColor="border-red-400"
-                                                    buttonShadowColor="#DB0000"
-                                                    textStyle="text-white text-xs font-bold"
+                                                    buttonBgColor="bg-white"
+                                                    buttonBorderColor="border-gray-500"
+                                                    buttonShadowColor="#D5D5D5"
+                                                    textStyle="text-black text-xs font-bold"
                                                     buttonStyle={`rounded-lg px-4 ml-2 flex items-center justify-center mb-2 button cursor-pointer select-none
-                                            active:translate-y-1 active:[box-shadow:0_0px_0_0_#DB0000,0_0px_0_0_#DB000041] active:border-[0px]
-                                            transition-all duration-150 [box-shadow:0_4px_0_0_#DB0000,0_8px_0_0_#DB000041] border-[1px]
+                                            active:translate-y-1 active:[box-shadow:0_0px_0_0_#D5D5D5,0_0px_0_0_#D5D5D541] active:border-[0px]
+                                            transition-all duration-150 [box-shadow:0_4px_0_0_#D5D5D5,0_8px_0_0_#D5D5D541] border-[1px]
                                             `} />
                                             </>
                                             : <></>}
@@ -366,13 +366,13 @@ export default function Calculator() {
                                             <DesignButton
                                                 handleOnClick={() => setInflationRate(0)}
                                                 buttonName="CLEAR"
-                                                buttonBgColor="bg-red-500"
-                                                buttonBorderColor="border-red-400"
-                                                buttonShadowColor="#DB0000"
-                                                textStyle="text-white text-xs font-bold"
+                                                buttonBgColor="bg-white"
+                                                buttonBorderColor="border-gray-500"
+                                                buttonShadowColor="#D5D5D5"
+                                                textStyle="text-black text-xs font-bold"
                                                 buttonStyle={`rounded-lg px-4 ml-2 flex items-center justify-center mb-2 button cursor-pointer select-none
-                                            active:translate-y-1 active:[box-shadow:0_0px_0_0_#DB0000,0_0px_0_0_#DB000041] active:border-[0px]
-                                            transition-all duration-150 [box-shadow:0_4px_0_0_#DB0000,0_8px_0_0_#DB000041] border-[1px]
+                                            active:translate-y-1 active:[box-shadow:0_0px_0_0_#D5D5D5,0_0px_0_0_#D5D5D541] active:border-[0px]
+                                            transition-all duration-150 [box-shadow:0_4px_0_0_#D5D5D5,0_8px_0_0_#D5D5D541] border-[1px]
                                             `} />
                                         </>
                                         : <></>}
@@ -395,13 +395,13 @@ export default function Calculator() {
                                     <DesignButton
                                         handleOnClick={() => handleClear()}
                                         buttonName="ALL CLEAR"
-                                        buttonBgColor="bg-red-500"
-                                        buttonBorderColor="border-red-400"
-                                        buttonShadowColor="#DB0000"
-                                        textStyle="text-white text-xs font-bold"
+                                        buttonBgColor="bg-white"
+                                        buttonBorderColor="border-gray-500"
+                                        buttonShadowColor="#D5D5D5"
+                                        textStyle="text-black text-xs font-bold"
                                         buttonStyle={`rounded-lg px-4 ml-2 flex items-center justify-center mb-2 button cursor-pointer select-none
-                                            active:translate-y-1 active:[box-shadow:0_0px_0_0_#DB0000,0_0px_0_0_#DB000041] active:border-[0px]
-                                            transition-all duration-150 [box-shadow:0_4px_0_0_#DB0000,0_8px_0_0_#DB000041] border-[1px]
+                                            active:translate-y-1 active:[box-shadow:0_0px_0_0_#D5D5D5,0_0px_0_0_#D5D5D541] active:border-[0px]
+                                            transition-all duration-150 [box-shadow:0_4px_0_0_#D5D5D5,0_8px_0_0_#D5D5D541] border-[1px]
                                             `}
                                     />
                                 </div>
@@ -409,9 +409,9 @@ export default function Calculator() {
                             <DesignButton
                                 handleOnClick={() => handleRegister()}
                                 buttonName="계산 결과 등록 🦄"
-                                buttonBgColor="bg-green-500"
-                                buttonBorderColor="border-green-400"
-                                buttonShadowColor="#129600"
+                                buttonBgColor="bg-blue-500"
+                                buttonBorderColor="border-gray-500"
+                                buttonShadowColor="#D5D5D5"
                                 textStyle="text-white text-xs pt-0.5 font-bold"
                                 buttonStyle="rounded-lg p-4"
                             />
