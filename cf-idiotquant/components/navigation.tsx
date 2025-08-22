@@ -104,7 +104,7 @@ export function NavbarWithSimpleLinks() {
     return (
         <>
             <div className="bg-slate-50 dark:bg-gray-900 dark:text-white flex md:flex-col lg:flex-col items-center justify-start text-blue-gray-900 min-w-56">
-                <div className="p-3 w-full border-b dark:border-gray-600">
+                <div className="p-3 w-full dark:border-gray-600">
                     <div className="bg-white dark:bg-black flex md:flex-col lg:flex-col border dark:border-gray-600 rounded-lg items-center py-2 w-full">
                         <Link href="/">
                             <div className="flex items-center gap-2 px-2 font-mono font-bold cursor-pointer">
@@ -138,7 +138,7 @@ export function NavbarWithSimpleLinks() {
                         </div>
                     </div>
                 </div>
-                <div className="md:hidden lg:hidden dark:bg-gray-900 border-b pr-2 py-3">
+                <div className="md:hidden lg:hidden dark:bg-gray-900 pr-2 py-3">
                     <DesignButton
                         handleOnClick={() => handleOpen()}
                         buttonName={<>
