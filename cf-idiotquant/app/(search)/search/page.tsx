@@ -1,22 +1,11 @@
 "use client"
 
-import { useState, useEffect } from "react";
-
-import { usePathname } from "next/navigation";
-import { useAppDispatch, useAppSelector } from "@/lib/hooks";
 import SpotlightCard from "@/src/Components/SpotlightCard/SpotlightCard";
 import Link from "next/link";
 
 const DEBUG = false;
 
 export default function Search() {
-  const pathname = usePathname();
-  const dispatch = useAppDispatch();
-
-  useEffect(() => {
-
-  }, []);
-
   return (
     <>
       <div className="grid grid-cols-2 items-center justify-center h-full p-6 gap-6 sm:p-8 sm:gap-8 md:p-10 md:gap-10 lg:p-12 lg:gap-12">
