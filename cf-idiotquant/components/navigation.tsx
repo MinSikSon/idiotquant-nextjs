@@ -187,8 +187,8 @@ export function NavbarWithSimpleLinks() {
                         />
                     </div> */}
                 </div>
-                <div className="dark:bg-black dark:text-white flex flex-col w-full px-2 justify-items-center">
-                    <div className="dark:bg-black dark:text-white flex flex-col px-2 justify-between">
+                <div className="dark:bg-black dark:text-white flex flex-col w-full p-1 justify-items-center">
+                    <div className="dark:bg-black dark:text-white flex flex-col p-1 justify-between">
                         <NavList />
                         {/* <ThemeChanger /> */}
                     </div>
