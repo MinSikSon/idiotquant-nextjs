@@ -6,6 +6,7 @@ import TablesExample8, { Example8TableHeadType, Example8TableRowType, TablesExam
 import { useAppDispatch } from "@/lib/hooks";
 import { useState } from "react";
 import { Util } from "./util";
+import Loading from "@/components/loading";
 
 const DEBUG = false;
 function formatNumber(num: number) {
@@ -363,7 +364,7 @@ export default function InquireBalanceResult(props: InquireBalanceResultProps) {
                         `}
                 />
                 {"pending" == props.kiBalance.state ?
-                    <Button variant="ghost"><Spinner size="sm" /> loading... {DEBUG ? "5" : ""}</Button>
+                    <Loading />
                     : <>
                         <div className="text-[0.6rem] dark:text-white ml-4">{time.toLocaleString("ko-KR", { timeZone: "Asia/Seoul" })}</div>
                     </>}
