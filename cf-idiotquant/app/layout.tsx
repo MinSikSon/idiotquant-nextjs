@@ -23,7 +23,7 @@ export default function RootLayout({
         </head>
         <body className="md:flex lg:flex">
           <NavbarWithSimpleLinks />
-          <div className="md:flex-1 lg:flex-1 w-full h-full scroll-auto">
+          <div className="pt-28 md:flex-1 lg:flex-1 w-full h-full scroll-auto">
             {children}
           </div>
         </body>
