@@ -110,7 +110,7 @@ export function NavbarWithSimpleLinks() {
 
     function NavList() {
         return (
-            <div className="gap-2 flex md:mb-0 md:mt-0 md:flex-col lg:mb-0 lg:mt-0 lg:flex-col lg:items-left justify-center content-center">
+            <div className="gap-2 flex md:mb-0 md:mt-0 lg:mb-0 lg:mt-0 lg:items-left justify-center content-center">
                 {Object.keys(navListUrlToLabel).map((key: string) => {
                     return <NavItem key={key} url={`/${key}`} label={navListUrlToLabel[key]} />
                 })}
@@ -130,7 +130,7 @@ export function NavbarWithSimpleLinks() {
 
     return (
         <>
-            <div>
+            <div className="fixed top-0 left-0 h-full w-full z-50 border-r dark:border-gray-600">
                 <div className="bg-slate-50 dark:bg-gray-900 dark:text-white flex md:flex-col lg:flex-col items-center justify-start text-blue-gray-900 min-w-56">
                     <div className="p-3 w-full dark:border-gray-600">
                         <div className="bg-white dark:bg-black flex md:flex-col lg:flex-col border dark:border-gray-600 rounded-lg items-center py-2 w-full">
