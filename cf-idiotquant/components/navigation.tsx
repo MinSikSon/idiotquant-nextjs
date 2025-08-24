@@ -12,7 +12,7 @@ import { useAppSelector } from "@/lib/hooks";
 
 import { usePathname } from "next/navigation";
 import { DesignButton } from "./designButton";
-import ThemeChanger from "./theme_changer";
+import ThemeChanger from "@/components/theme_changer";
 import RotatingText from "@/src/TextAnimations/RotatingText/RotatingText";
 
 interface NavItemPropsType {
@@ -35,6 +35,9 @@ export function NavbarWithSimpleLinks() {
     const kakaoId = useAppSelector(selectKakaoId);
     const kakaoNickName = useAppSelector(selectKakaoNickName);
 
+    const [visible, setVisible] = useState(true);
+    const [lastScrollY, setLastScrollY] = useState(0);
+
     useEffect(() => {
         window.addEventListener(
             "resize",
@@ -48,6 +51,26 @@ export function NavbarWithSimpleLinks() {
     useEffect(() => {
         setSelectPath(splitPathName[1]);
     }, [splitPathName]);
+
+
+    useEffect(() => {
+        const handleScroll = () => {
+            const currentScrollY = window.scrollY;
+
+            if (currentScrollY > lastScrollY && currentScrollY > 100) {
+                // 스크롤 내릴 때
+                setVisible(false);
+            } else {
+                // 스크롤 올릴 때
+                setVisible(true);
+            }
+
+            setLastScrollY(currentScrollY);
+        };
+
+        window.addEventListener("scroll", handleScroll);
+        return () => window.removeEventListener("scroll", handleScroll);
+    }, [lastScrollY]);
 
     function NavItem({ url, label }: NavItemPropsType) {
         return (
@@ -67,7 +90,7 @@ export function NavbarWithSimpleLinks() {
                 setOpen(false)
                 setSelectPath(url.split("/")[1]);
             }}>
-                <div className={`px-2 py-1.5 rounded-lg dark:text-white font-mono text-[0.8rem] hover:bg-gray-100 hover:dark:bg-gray-700 ${selectPath == url.split("/")[1] ? "bg-slate-100 dark:bg-gray-500" : ""} `}>
+                <div className={`px-2 py-1.5 rounded dark:text-white font-mono text-[0.8rem] hover:bg-gray-100 hover:dark:bg-gray-700 ${selectPath == url.split("/")[1] ? "bg-slate-100 dark:bg-gray-500" : ""} `}>
                     {label}
                 </div>
             </Link>
@@ -97,7 +120,7 @@ export function NavbarWithSimpleLinks() {
     }
 
     const navListUrlToLabelHanburgerButton: any = {
-        "login": <div className={navListDesign}><div>로그인</div> {!!!kakaoId ? <LockClosedIcon className="h-4 w-4" strokeWidth={2} /> : <LockOpenIcon className="h-4 w-4" strokeWidth={2} />}</div>,
+        "login": <div className={navListDesign}><div>kakao login</div> {!!!kakaoId ? <LockClosedIcon className="h-4 w-4" strokeWidth={2} /> : <LockOpenIcon className="h-4 w-4" strokeWidth={2} />}</div>,
     }
 
 
@@ -110,7 +133,7 @@ export function NavbarWithSimpleLinks() {
 
     function NavList() {
         return (
-            <div className="gap-2 flex md:mb-0 md:mt-0 lg:mb-0 lg:mt-0 lg:items-left justify-center content-center">
+            <div className="gap-2 flex justify-center content-center">
                 {Object.keys(navListUrlToLabel).map((key: string) => {
                     return <NavItem key={key} url={`/${key}`} label={navListUrlToLabel[key]} />
                 })}
@@ -120,7 +143,7 @@ export function NavbarWithSimpleLinks() {
 
     function NavListFlexCol() {
         return (
-            <div className="flex flex-col md:mb-0 md:mt-0 md:flex-col lg:mb-0 lg:mt-0 lg:flex-col lg:items-left justify-center content-center">
+            <div className="flex flex-col justify-center content-center">
                 {Object.keys(navListUrlToLabelHanburgerButton).map((key: string) => {
                     return <NavItemFlexCol key={key} url={`/${key}`} label={navListUrlToLabelHanburgerButton[key]} />
                 })}
@@ -130,8 +153,8 @@ export function NavbarWithSimpleLinks() {
 
     return (
         <>
-            <div className="fixed top-0 left-0 h-full w-full z-50 border-r dark:border-gray-600">
-                <div className="bg-slate-50 dark:bg-gray-900 dark:text-white flex md:flex-col lg:flex-col items-center justify-start text-blue-gray-900 min-w-56">
+            <div className="fixed top-0 left-0 w-full z-30 border-r dark:border-gray-600">
+                <div className={`${visible ? "opacity-100 translate-y-0" : "opacity-0 -translate-y-10"} transition-all duration-300 ease-in-out bg-slate-50 dark:bg-gray-900 dark:text-white flex items-center justify-start text-blue-gray-900 min-w-56`}>
                     <div className="p-3 w-full dark:border-gray-600">
                         <div className="bg-white dark:bg-black flex md:flex-col lg:flex-col border dark:border-gray-600 rounded-lg items-center py-2 w-full">
                             <Link href="/">
@@ -166,7 +189,8 @@ export function NavbarWithSimpleLinks() {
                         </div>
                     </div>
                 </div> */}
-                    {/* <div className="md:hidden lg:hidden dark:bg-gray-900 pr-2 py-3">
+                    {/* <div className="md:hidden lg:hidden dark:bg-gray-900 pr-2 py-3"> */}
+                    <div className="dark:bg-gray-900 pr-2 py-3">
                         <DesignButton
                             handleOnClick={() => handleOpen()}
                             buttonName={<>
@@ -185,23 +209,21 @@ export function NavbarWithSimpleLinks() {
                         transition-all duration-150 [box-shadow:0_4px_0_0_#D5D5D5,0_8px_0_0_#D5D5D541] border-[1px]
                         `}
                         />
-                    </div> */}
+                    </div>
                 </div>
-                <div className="dark:bg-black dark:text-white flex flex-col w-full p-1 justify-items-center">
-                    <div className="dark:bg-black dark:text-white flex flex-col p-1 justify-between">
+                <div className={` transition-all duration-300 ease-in-out`}>
+                    <div className={`${visible ? "translate-y-0" : "-translate-y-16 bg-[radial-gradient(circle,_#d1d5db_1px,transparent_1px)] bg-[size:5px_5px]"} dark:text-white flex flex-col w-full p-2 justify-items-center justify-between`}>
                         <NavList />
                         {/* <ThemeChanger /> */}
                     </div>
                 </div>
             </div>
-            {/* <Collapse open={open}>
-                <div className="dark:bg-black dark:text-white flex flex-col w-full p-2 justify-items-center">
-                    <div className="dark:bg-black dark:text-white flex flex-col p-2 min-h-44 justify-between">
-                        <NavListFlexCol />
-                        <ThemeChanger />
-                    </div>
+            <Collapse open={open} className="fixed z-50">
+                <div className="dark:border gap-2 fixed top-14 right-2 z-40 w-fit shadow-[0_0_10px_2px_rgba(0,0,0,0.2)] rounded-xl bg-white dark:bg-black dark:text-white flex flex-col p-2 justify-items-center justify-between">
+                    <NavListFlexCol />
+                    <ThemeChanger />
                 </div>
-            </Collapse> */}
+            </Collapse>
         </>
     );
 }
