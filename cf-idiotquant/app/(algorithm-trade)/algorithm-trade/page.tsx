@@ -20,7 +20,7 @@ import {
 } from "@material-tailwind/react";
 import CountUp from '@/src/TextAnimations/CountUp/CountUp';
 import GradientText from '@/src/TextAnimations/GradientText/GradientText';
-import CircularText from '@/src/TextAnimations/CircularText/CircularText';
+import Loading from '@/components/loading';
 
 const DEBUG = false;
 
@@ -224,7 +224,7 @@ export default function AlgorithmTrade() {
 
     if (DEBUG) console.log(`capitalToken.state`, capitalToken.state);
     // if ("fulfilled" != capitalToken.state) {
-    //     return <Button variant="ghost"><Spinner size="sm" /> loading... 1</Button>;
+    //     return <Loading />
     // }
 
     const time_stamp: any = capitalToken.value.time_stamp ?? {};
@@ -264,13 +264,7 @@ export default function AlgorithmTrade() {
                     </Tabs.List>
                 </Tabs>
                 {"fulfilled" != capitalToken.state ?
-                    <CircularText
-                        text="IDIOT*QUANT*LOADING*"
-                        // onHover="pause"
-                        onHover="goBonkers"
-                        spinDuration={20}
-                        className="!fixed inset-0 z-50 top-1/4 -translate-x-1/2 -translate-y-1/2 flex flex-col items-center justify-center !text-black dark:!text-white"
-                    />
+                    <Loading />
                     : <>
                         <div className="text-[0.6rem] text-black dark:text-white ml-1">{time.toLocaleString("en-US", { timeZone: "Asia/Seoul" })}</div>
                     </>}

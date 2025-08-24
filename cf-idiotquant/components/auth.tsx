@@ -12,6 +12,7 @@ import { Button, Input, Spinner, Typography } from "@material-tailwind/react";
 import { useState, useEffect } from "react";
 
 import { usePathname } from "next/navigation";
+import Loading from "@/components/loading";
 
 const DEBUG = false;
 
@@ -136,6 +137,6 @@ export default function Auth() {
     }, [validCookie]);
 
     return <>
-        <Button variant="ghost"><Spinner size="sm" /> loading...  {DEBUG ? "4" : ""}</Button>
+        <Loading />
     </>
 }
