@@ -374,28 +374,8 @@ export default function SearchKor() {
                 </div>
               </div>
               <div className="dark:bg-black dark:text-white text-xs p-3 shadow">
-                <div className="dark:bg-black dark:text-white flex gap-2 font-mono">
-                  <div className="w-4/12 text-right">시가총액</div>
-                  <div className="w-6/12 text-right">{MARKET_CAP.toLocaleString()}</div>
-                  <div className="w-2/12 text-left text-[0.6rem]">원</div>
-                </div>
-                <div className="dark:bg-black dark:text-white flex gap-2 font-mono">
-                  <div className="w-4/12 text-right">상장주식수</div>
-                  <div className="w-6/12 text-right">{Number(Number(kiInquireDailyItemChartPrice.output1["lstn_stcn"])).toLocaleString()}</div>
-                  <div className="w-2/12 text-left text-[0.6rem]">개</div>
-                </div>
-              </div>
-              <div className="dark:bg-black dark:text-white text-xs p-3 shadow">
-                <div className="flex gap-2 font-mono">
-                  <div className="w-4/12 text-right">52주 최저가</div>
-                  <div className="w-6/12 text-right"><span className="text-[0.6rem]">({kiInquirePrice.output["dryy_lwpr_date"]})</span> {Number(kiInquirePrice.output["w52_lwpr"]).toLocaleString()}</div>
-                  <div className="w-2/12 text-[0.6rem]">원</div>
-                </div>
-                <div className="dark:bg-black dark:text-white flex gap-2 font-mono">
-                  <div className="w-4/12 text-right bg-red-300 dark:bg-gray-500">52주 최고가</div>
-                  <div className="w-6/12 text-right bg-red-200 dark:bg-gray-500"><span className="text-[0.6rem]">({kiInquirePrice.output["w52_hgpr_date"]})</span> {Number(kiInquirePrice.output["w52_hgpr"]).toLocaleString()}</div>
-                  <div className="w-2/12 text-left text-[0.6rem]">원</div>
-                </div>
+                {getNcav(kiBalanceSheet, kiInquireDailyItemChartPrice, 1.0)}
+                {getNcav(kiBalanceSheet, kiInquireDailyItemChartPrice, 1.5)}
               </div>
               <div className="dark:bg-black dark:text-white text-xs p-3 shadow">
                 <div className="flex gap-2 font-mono">
@@ -421,6 +401,30 @@ export default function SearchKor() {
               </div>
               <div className="dark:bg-black dark:text-white text-xs p-3 shadow">
                 <div className="flex gap-2 font-mono">
+                  <div className="w-4/12 text-right">52주 최저가</div>
+                  <div className="w-6/12 text-right"><span className="text-[0.6rem]">({kiInquirePrice.output["dryy_lwpr_date"]})</span> {Number(kiInquirePrice.output["w52_lwpr"]).toLocaleString()}</div>
+                  <div className="w-2/12 text-[0.6rem]">원</div>
+                </div>
+                <div className="dark:bg-black dark:text-white flex gap-2 font-mono">
+                  <div className="w-4/12 text-right bg-red-300 dark:bg-gray-500">52주 최고가</div>
+                  <div className="w-6/12 text-right bg-red-200 dark:bg-gray-500"><span className="text-[0.6rem]">({kiInquirePrice.output["w52_hgpr_date"]})</span> {Number(kiInquirePrice.output["w52_hgpr"]).toLocaleString()}</div>
+                  <div className="w-2/12 text-left text-[0.6rem]">원</div>
+                </div>
+              </div>
+              <div className="dark:bg-black dark:text-white text-xs p-3 shadow">
+                <div className="dark:bg-black dark:text-white flex gap-2 font-mono">
+                  <div className="w-4/12 text-right">시가총액</div>
+                  <div className="w-6/12 text-right">{MARKET_CAP.toLocaleString()}</div>
+                  <div className="w-2/12 text-left text-[0.6rem]">원</div>
+                </div>
+                <div className="dark:bg-black dark:text-white flex gap-2 font-mono">
+                  <div className="w-4/12 text-right">상장주식수</div>
+                  <div className="w-6/12 text-right">{Number(Number(kiInquireDailyItemChartPrice.output1["lstn_stcn"])).toLocaleString()}</div>
+                  <div className="w-2/12 text-left text-[0.6rem]">개</div>
+                </div>
+              </div>
+              <div className="dark:bg-black dark:text-white text-xs p-3 shadow">
+                <div className="flex gap-2 font-mono">
                   <div className="w-4/12 text-right">거래량</div>
                   <div className="w-6/12 text-right">{Number(kiInquirePrice.output["acml_vol"]).toLocaleString()}</div>
                   <div className="w-2/12 text-left">회</div>
@@ -435,10 +439,6 @@ export default function SearchKor() {
                   <div className="w-6/12 text-right">{(100 * Number(kiInquirePrice.output["acml_tr_pbmn"]) / (Number(kiInquireDailyItemChartPrice.output2[0]["stck_oprc"]) * Number(kiInquireDailyItemChartPrice.output1["lstn_stcn"]))).toFixed(3)}</div>
                   <div className="w-2/12 text-left">%</div>
                 </div>
-              </div>
-              <div className="dark:bg-black dark:text-white text-xs p-3 shadow">
-                {getNcav(kiBalanceSheet, kiInquireDailyItemChartPrice, 1.0)}
-                {getNcav(kiBalanceSheet, kiInquireDailyItemChartPrice, 1.5)}
               </div>
               <div className="dark:bg-black dark:text-white text-md p-3 shadow">
                 <div className="flex gap-2 font-mono">
