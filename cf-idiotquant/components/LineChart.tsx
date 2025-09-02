@@ -51,10 +51,6 @@ export default function LineChart(props: any) {
                 // stacked: true,
                 background: "transparent",
                 // type: "bar",
-                stroke: {
-                    curve: "smooth",
-                    width: 1,
-                },
                 // fill: {
                 // type: "gradient",
                 // gradient: {
@@ -88,11 +84,12 @@ export default function LineChart(props: any) {
                         enabled: false,
                     },
                     colors: [chartColor],
-                    // stroke: {
-                    //     curve: "smooth",
-                    //     lineCap: "round",
-                    //     width: 3, // 선 두께
-                    // },
+                    stroke: {
+                        curve: "smooth",
+                        lineCap: "round",
+                        width: 2, // 선 두께
+                        color: "white"
+                    },
 
                     markers: {
                         size: 0,
@@ -166,7 +163,7 @@ export default function LineChart(props: any) {
                     //     opacity: 1,
                     // },
                     tooltip: {
-                        // theme: "dark",
+                        theme: "dark",
                     },
                 },
             }) as ApexOptions,

@@ -327,19 +327,18 @@ export default function SearchKor() {
           <div className="dark:bg-black flex flex-col md:flex-row lg:flex-row">
             <div className="sm:flex-col md:flex-1 lg:flex-1">
               <div className="flex shadow">
-                <div className="w-6/12 dark:bg-black dark:text-white p-3 font-mono">
-                  <div className="text-[0.6rem]">
-                    {kiInquirePrice.output["rprs_mrkt_kor_name"]}
+                <div className="w-7/12 dark:bg-black dark:text-white p-3 font-mono">
+                  <div className="flex items-center">
+                    <div className="text-[0.6rem]">{kiInquirePrice.output["rprs_mrkt_kor_name"]} | {kiInquirePrice.output["bstp_kor_isnm"]} </div>
                   </div>
                   <div className="text-xl">
                     {kiInquireDailyItemChartPrice.output1.hts_kor_isnm}
                   </div>
                   <div className="dark:bg-black dark:text-white flex gap-2 font-mono items-center">
-                    <div className="text-right"> {Number(kiInquireDailyItemChartPrice.output1["stck_prpr"]).toLocaleString()}원</div>
-                    <span className="text-[0.7rem]">| {kiInquireDailyItemChartPrice.output2[0]["stck_bsop_date"]}</span>
+                    <div className="text-right"> {Number(kiInquireDailyItemChartPrice.output1["stck_prpr"]).toLocaleString()}원 <span className="text-[0.7rem]">| {kiInquireDailyItemChartPrice.output2[0]["stck_bsop_date"]}</span></div>
                   </div>
                 </div>
-                <div className="w-6/12">
+                <div className="w-5/12">
                   <LineChart
                     data_array={[
                       {
@@ -418,13 +417,6 @@ export default function SearchKor() {
                   <div className="w-4/12 text-right">BPS</div>
                   <div className="w-6/12 text-right">{Number(Number(kiInquirePrice.output["bps"])).toLocaleString()}</div>
                   <div className="w-2/12 text-left">원</div>
-                </div>
-              </div>
-              <div className="dark:bg-black dark:text-white text-xs p-3 shadow">
-                <div className="flex gap-2 font-mono">
-                  <div className="w-4/12 text-right">업종</div>
-                  <div className="w-6/12 text-right">{kiInquirePrice.output["bstp_kor_isnm"]}</div>
-                  <div className="w-2/12 text-left"></div>
                 </div>
               </div>
               <div className="dark:bg-black dark:text-white text-xs p-3 shadow">
