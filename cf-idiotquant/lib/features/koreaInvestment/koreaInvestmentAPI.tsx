@@ -11,6 +11,16 @@ export const getBalanceSheet: any = async (koreaInvestmentToken: KoreaInvestment
     }
     return getKoreaInvestmentRequest(subUrl, additionalHeaders);
 }
+export const getIncomeStatement: any = async (koreaInvestmentToken: KoreaInvestmentToken, PDNO: string) => {
+    const subUrl = `/uapi/domestic-stock/v1/finance/income-statement`;
+    const additionalHeaders: AdditionalHeaders = {
+        "authorization": koreaInvestmentToken["access_token"],
+        "kakaoId": getCookie("kakaoId"),
+        "PDNO": PDNO,
+        // "buyOrSell": buyOrSell,
+    }
+    return getKoreaInvestmentRequest(subUrl, additionalHeaders);
+}
 
 // 국내주식기간별시세(일/주/월/년)[v1_국내주식-016]
 export const getInquireDailyItemChartPrice: any = async (koreaInvestmentToken: KoreaInvestmentToken, PDNO: string, FID_INPUT_DATE_1: string, FID_INPUT_DATE_2: string) => {

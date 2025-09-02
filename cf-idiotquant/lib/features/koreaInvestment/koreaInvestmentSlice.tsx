@@ -1,6 +1,6 @@
 import { PayloadAction } from "@reduxjs/toolkit";
 import { createAppSlice } from "@/lib/createAppSlice";
-import { getInquireBalanceApi, postTokenApi, postApprovalKeyApi, postOrderCash, getInquirePrice, getInquireDailyItemChartPrice, getBalanceSheet } from "./koreaInvestmentAPI";
+import { getInquireBalanceApi, postTokenApi, postApprovalKeyApi, postOrderCash, getInquirePrice, getInquireDailyItemChartPrice, getBalanceSheet, getIncomeStatement } from "./koreaInvestmentAPI";
 import { registerCookie } from "@/components/util";
 
 // rt_cd
@@ -267,6 +267,29 @@ export interface KoreaInvestmentBalanceSheet {
     output: KoreaInvestmentBalanceSheetOutput[];
 }
 
+interface KoreaInvestmentIncomeStatementOutput {
+    stac_yymm: string; //    #결산 년월
+    sale_account: string; //    #매출액
+    sale_cost: string; //    #매출 원가
+    sale_totl_prfi: string; //    #매출 총 이익
+    depr_cost: string; //    #감가상각비
+    sell_mang: string; //    #판매 및 관리비
+    bsop_prti: string; //    #영업 이익
+    bsop_non_ernn: string; //    #영업 외 수익
+    bsop_non_expn: string; //    #영업 외 비용
+    op_prfi: string; //    #경상 이익
+    spec_prfi: string; //    #특별 이익
+    spec_loss: string; //    #특별 손실
+    thtr_ntin: string; //    #당기순이익
+}
+export interface KoreaInvestmentIncomeStatement {
+    state: "init" | "req" | "pending" | "fulfilled";
+    rt_cd: string; //    #성공 실패 여부
+    msg_cd: string; //    #응답코드
+    msg1: string; //    #응답메세지
+    output: KoreaInvestmentIncomeStatementOutput[];
+}
+
 interface KoreaInvestmentInfo {
     state: "init"
     | "get-rejected"
@@ -278,6 +301,7 @@ interface KoreaInvestmentInfo {
     | "inquire-price"
     | "inquire-daily-itemchartprice"
     | "balance-sheet"
+    | "income-statement"
     ;
     id: string;
     nickName: string;
@@ -288,6 +312,7 @@ interface KoreaInvestmentInfo {
     koreaInvestmentInquirePrice: KoreaInvestmentInquirePrice;
     koreaInvestmentInquireDailyItemChartPrice: KoreaInvestmentInquireDailyItemChartPrice;
     koreaInvestmentBalanceSheet: KoreaInvestmentBalanceSheet;
+    koreaInvestmentIncomeStatement: KoreaInvestmentIncomeStatement;
 }
 const initialState: KoreaInvestmentInfo = {
     state: "init",
@@ -453,6 +478,13 @@ const initialState: KoreaInvestmentInfo = {
         output2: []
     },
     koreaInvestmentBalanceSheet: {
+        state: "init",
+        rt_cd: "",
+        msg_cd: "",
+        msg1: "",
+        output: []
+    },
+    koreaInvestmentIncomeStatement: {
         state: "init",
         rt_cd: "",
         msg_cd: "",
@@ -642,6 +674,27 @@ export const koreaInvestmentSlice = createAppSlice({
                 },
             }
         ),
+        reqGetIncomeStatement: create.asyncThunk(
+            async ({ koreaInvestmentToken, PDNO }: { koreaInvestmentToken: KoreaInvestmentToken, PDNO: string }) => {
+                return await getIncomeStatement(koreaInvestmentToken, PDNO);
+            },
+            {
+                pending: (state) => {
+                    console.log(`[reqGetIncomeStatement] pending`);
+                    state.koreaInvestmentIncomeStatement.state = "pending";
+                },
+                fulfilled: (state, action) => {
+                    console.log(`[reqGetIncomeStatement] fulfilled`, `action.payload`, typeof action.payload, action.payload);
+                    if (undefined != action.payload["output"]) {
+                        state.koreaInvestmentIncomeStatement = { ...state.koreaInvestmentIncomeStatement, ...action.payload, state: "fulfilled" };
+                        state.state = "income-statement";
+                    }
+                },
+                rejected: (state) => {
+                    console.log(`[reqGet IncomeStatement] get-rejected 2`);
+                },
+            }
+        ),
     }),
     selectors: {
         getKoreaInvestmentApproval: (state) => state.koreaInvestmentApproval,
@@ -650,6 +703,7 @@ export const koreaInvestmentSlice = createAppSlice({
         getKoreaInvestmentInquirePrice: (state) => state.koreaInvestmentInquirePrice,
         getKoreaInvestmentInquireDailyItemChartPrice: (state) => state.koreaInvestmentInquireDailyItemChartPrice,
         getKoreaInvestmentBalanceSheet: (state) => state.koreaInvestmentBalanceSheet,
+        getKoreaInvestmentIncomeStatement: (state) => state.koreaInvestmentIncomeStatement,
         getKoreaInvestmentOrderCash: (state) => state.koreaInvestmentOrderCash,
     }
 });
@@ -663,3 +717,6 @@ export const { getKoreaInvestmentApproval, getKoreaInvestmentToken, getKoreaInve
 
 export const { reqGetBalanceSheet } = koreaInvestmentSlice.actions;
 export const { getKoreaInvestmentBalanceSheet } = koreaInvestmentSlice.selectors;
+
+export const { reqGetIncomeStatement } = koreaInvestmentSlice.actions;
+export const { getKoreaInvestmentIncomeStatement } = koreaInvestmentSlice.selectors;

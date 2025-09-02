@@ -6,7 +6,7 @@ import Login from "@/app/(login)/login/login"
 import { selectLoginState } from "@/lib/features/login/loginSlice";
 import { usePathname } from "next/navigation";
 import { useAppDispatch, useAppSelector } from "@/lib/hooks";
-import { reqPostApprovalKey, reqPostToken, reqGetInquireBalance, reqPostOrderCash, reqGetInquirePrice, KoreaInvestmentInquirePrice, reqGetInquireDailyItemChartPrice, getKoreaInvestmentInquireDailyItemChartPrice, KoreaInvestmentInquireDailyItemChartPrice, reqGetBalanceSheet, getKoreaInvestmentBalanceSheet, KoreaInvestmentBalanceSheet } from "@/lib/features/koreaInvestment/koreaInvestmentSlice";
+import { reqPostApprovalKey, reqPostToken, reqGetInquireBalance, reqPostOrderCash, reqGetInquirePrice, KoreaInvestmentInquirePrice, reqGetInquireDailyItemChartPrice, getKoreaInvestmentInquireDailyItemChartPrice, KoreaInvestmentInquireDailyItemChartPrice, reqGetBalanceSheet, getKoreaInvestmentBalanceSheet, KoreaInvestmentBalanceSheet, getKoreaInvestmentIncomeStatement, KoreaInvestmentIncomeStatement, reqGetIncomeStatement } from "@/lib/features/koreaInvestment/koreaInvestmentSlice";
 import { getKoreaInvestmentApproval, getKoreaInvestmentToken, getKoreaInvestmentBalance, getKoreaInvestmentInquirePrice } from "@/lib/features/koreaInvestment/koreaInvestmentSlice";
 import { KoreaInvestmentApproval, KoreaInvestmentToken, KoreaInvestmentBalance } from "@/lib/features/koreaInvestment/koreaInvestmentSlice";
 
@@ -31,7 +31,7 @@ import { reqPostLaboratory } from "@/lib/features/ai/aiSlice";
 import { AiOutputResultUsageType, selectAiStreamOutput } from "@/lib/features/ai/aiStreamSlice";
 import { addKrMarketHistory, selectKrMarketHistory, selectUsMarketHistory } from "@/lib/features/searchHistory/searchHistorySlice";
 
-const DEBUG = false;
+const DEBUG = true;
 
 export default function SearchKor() {
   const pathname = usePathname();
@@ -43,6 +43,7 @@ export default function SearchKor() {
   const kiBalance: KoreaInvestmentBalance = useAppSelector(getKoreaInvestmentBalance);
   const kiInquirePrice: KoreaInvestmentInquirePrice = useAppSelector(getKoreaInvestmentInquirePrice);
   const kiBalanceSheet: KoreaInvestmentBalanceSheet = useAppSelector(getKoreaInvestmentBalanceSheet);
+  const kiIncomeStatement: KoreaInvestmentIncomeStatement = useAppSelector(getKoreaInvestmentIncomeStatement);
   const kiInquireDailyItemChartPrice: KoreaInvestmentInquireDailyItemChartPrice = useAppSelector(getKoreaInvestmentInquireDailyItemChartPrice);
 
   const [name, setName] = useState<any>("");
@@ -78,7 +79,9 @@ export default function SearchKor() {
     if (DEBUG) console.log(`kiBalanceSheet.output[0].total_lblt`, kiBalanceSheet.output.length > 0 ? kiBalanceSheet.output[0].total_lblt : 0, `부채총계 (억)`);
 
   }, [kiBalanceSheet])
-
+  useEffect(() => {
+    if (DEBUG) console.log(`useEffect [kiIncomeStatement]`, kiIncomeStatement);
+  }, [kiIncomeStatement])
   useEffect(() => {
     if (DEBUG) console.log(`useEffect [kiInquirePrice]`, kiInquirePrice);
   }, [kiInquirePrice])
@@ -87,7 +90,7 @@ export default function SearchKor() {
     if (DEBUG) console.log(`useEffect [kiInquireDailyItemChartPrice]`, kiInquireDailyItemChartPrice);
     if (DEBUG) console.log(`useEffect [kiBalanceSheet]`, kiBalanceSheet);
     if (DEBUG) console.log(`waitResponse`, waitResponse, `, name`, name, `!!name`, !!name);
-    if ("fulfilled" == kiBalanceSheet.state && "fulfilled" == kiInquirePrice.state && "fulfilled" == kiInquireDailyItemChartPrice.state) {
+    if ("fulfilled" == kiIncomeStatement.state && "fulfilled" == kiBalanceSheet.state && "fulfilled" == kiInquirePrice.state && "fulfilled" == kiInquireDailyItemChartPrice.state) {
       if (true == waitResponse && !!name) {
         if (DEBUG) console.log(`reqPostLaboratory`);
 
@@ -102,6 +105,11 @@ export default function SearchKor() {
         if (undefined == latestBalanceSheet) {
           return;
         }
+        const latestIncomeStatement = kiIncomeStatement.output[yearMatchIndex];
+        if (undefined == latestIncomeStatement) {
+          return;
+        }
+
         const ONE_HUNDRED_MILLION = 100000000;
 
         const stac_yymm = latestBalanceSheet.stac_yymm; // stac_yymm: str    #결산 년월
@@ -205,6 +213,7 @@ export default function SearchKor() {
       dispatch(reqGetInquirePrice({ koreaInvestmentToken: kiToken, PDNO: stock_code }));
       dispatch(reqGetInquireDailyItemChartPrice({ koreaInvestmentToken: kiToken, PDNO: stock_code, FID_INPUT_DATE_1: formatDate(startDate), FID_INPUT_DATE_2: formatDate(endDate) }))
       dispatch(reqGetBalanceSheet({ koreaInvestmentToken: kiToken, PDNO: stock_code }));
+      dispatch(reqGetIncomeStatement({ koreaInvestmentToken: kiToken, PDNO: stock_code }));
 
       setName(stockName);
       setWaitResponse(true);
@@ -232,7 +241,9 @@ export default function SearchKor() {
     return 0;
   }
 
-  function getNcav(kiBalanceSheet: any, kiInquireDailyItemChartPrice: any, ratio: number) {
+  function getNcav(kiBalanceSheet: KoreaInvestmentBalanceSheet,
+    kiInquireDailyItemChartPrice: KoreaInvestmentInquireDailyItemChartPrice,
+    ratio: number) {
     // console.log(`getNcav`, `kiBalanceSheet`, kiBalanceSheet, kiBalanceSheet.output, !!kiBalanceSheet.output);
 
     const stck_bsop_date = kiInquireDailyItemChartPrice.output2[0]["stck_bsop_date"]; // 주식 영업 일자
@@ -246,9 +257,32 @@ export default function SearchKor() {
 
     return <>
       <div className="flex gap-2">
-        <div className="w-4/12 text-right text-[0.6rem]">전략-NCAV({ratio.toFixed(1)})</div>
+        <div className="w-4/12 text-right text-[0.6rem]">전략| NCAV({ratio.toFixed(1)})</div>
         <div className="w-6/12 text-right"><span className={`text-[0.6rem] ${value >= 0 ? "text-red-500" : "text-blue-500"}`}>({value.toFixed(2)}%) 목표가: </span><span className={`${value >= 0 ? "text-red-500" : "text-blue-500"}`}>{(Number(target_price.toFixed(0)).toLocaleString())}</span></div>
         <div className="w-2/12 text-left text-[0.6rem]">원</div>
+      </div>
+    </>
+  }
+  function getSRIM(
+    kiBalanceSheet: KoreaInvestmentBalanceSheet,
+    kiIncomeStatement: KoreaInvestmentIncomeStatement,
+    kiInquireDailyItemChartPrice: KoreaInvestmentInquireDailyItemChartPrice,
+    ratio: number) {
+    // S-RIM: S-RIM (Simple Residual Income Model)
+    // V0 = B0 + B0 * (ROE - Ke) / Ke
+
+    const ONE_HUNDRED_MILLION = 100000000;
+    const total_cptl = (Number(kiBalanceSheet.output[0].total_cptl) * ONE_HUNDRED_MILLION); // 자본총계
+    const thtr_ntin = Number(kiIncomeStatement.output[0].thtr_ntin) * ONE_HUNDRED_MILLION; // 당기순이익
+
+    const result = total_cptl * (1 + (((thtr_ntin / total_cptl) - ratio) / ratio));
+    return <>
+      <div className="flex gap-2">
+        <div className="w-4/12 text-right text-[0.6rem]">전략| S-RIM({ratio.toFixed(3)})</div>
+        <div className="w-6/12 text-right flex flex-col">
+          <div>{Util.UnitConversion(Number(result), true)}</div>
+        </div>
+        <div className="w-2/12 text-left text-[0.6rem]"></div>
       </div>
     </>
   }
@@ -376,6 +410,18 @@ export default function SearchKor() {
               <div className="dark:bg-black dark:text-white text-xs p-3 shadow">
                 {getNcav(kiBalanceSheet, kiInquireDailyItemChartPrice, 1.0)}
                 {getNcav(kiBalanceSheet, kiInquireDailyItemChartPrice, 1.5)}
+              </div>
+              <div className="dark:bg-black dark:text-white text-xs p-3 shadow">
+                <div className="flex gap-2 font-mono">
+                  <div className="w-1/12 text-right"></div>
+                  <div className="w-10/12 text-right">자본총계: {Util.UnitConversion(Number(kiBalanceSheet.output[0].total_cptl) * 100000000, true)} | 당기순이익: {Util.UnitConversion(Number(kiIncomeStatement.output[0].thtr_ntin) * 100000000, true)}</div>
+                  <div className="w-1/12 text-right"></div>
+                </div>
+                {getSRIM(kiBalanceSheet, kiIncomeStatement, kiInquireDailyItemChartPrice, 0.01)}
+                {getSRIM(kiBalanceSheet, kiIncomeStatement, kiInquireDailyItemChartPrice, 0.02)}
+                {getSRIM(kiBalanceSheet, kiIncomeStatement, kiInquireDailyItemChartPrice, 0.03)}
+                {getSRIM(kiBalanceSheet, kiIncomeStatement, kiInquireDailyItemChartPrice, 0.05)}
+                {getSRIM(kiBalanceSheet, kiIncomeStatement, kiInquireDailyItemChartPrice, 0.10)}
               </div>
               <div className="dark:bg-black dark:text-white text-xs p-3 shadow">
                 <div className="flex gap-2 font-mono">
