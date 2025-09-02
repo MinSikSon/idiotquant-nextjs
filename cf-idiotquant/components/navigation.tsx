@@ -28,6 +28,7 @@ export function NavbarWithSimpleLinks() {
     // console.log(`splitPathName`, splitPathName);
 
     const [open, setOpen] = useState(false);
+    const [toggleTheme, setToggleTheme] = useState(false);
     const handleOpen = () => setOpen((cur) => !cur);
 
     const [selectPath, setSelectPath] = useState<string>(splitPathName[1]);
@@ -221,7 +222,11 @@ export function NavbarWithSimpleLinks() {
             <Collapse open={open} className="fixed z-50">
                 <div className="dark:border gap-2 fixed top-14 right-2 z-40 w-fit shadow-[0_0_10px_2px_rgba(0,0,0,0.2)] rounded-xl bg-white dark:bg-black dark:text-white flex flex-col p-2 justify-items-center justify-between">
                     <NavListFlexCol />
-                    <ThemeChanger />
+                    <ThemeChanger
+                        handleOpen={handleOpen}
+                        toggleTheme={toggleTheme}
+                        setToggleTheme={setToggleTheme}
+                    />
                 </div>
             </Collapse>
         </>
