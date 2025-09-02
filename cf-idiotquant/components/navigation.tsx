@@ -58,7 +58,7 @@ export function NavbarWithSimpleLinks() {
         const handleScroll = () => {
             const currentScrollY = window.scrollY;
 
-            if (currentScrollY > lastScrollY && currentScrollY > 80) {
+            if (currentScrollY > lastScrollY && currentScrollY > 30) {
                 // 스크롤 내릴 때
                 setVisible(false);
             } else {
