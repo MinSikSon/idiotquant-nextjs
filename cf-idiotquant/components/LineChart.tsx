@@ -6,7 +6,7 @@ import dynamic from "next/dynamic";
 const Chart = dynamic(() => import("react-apexcharts"), { ssr: false });
 import type { ApexOptions } from "apexcharts";
 import { useTheme } from "next-themes";
-import { enAU } from "date-fns/locale";
+// import { enAU } from "date-fns/locale";
 
 const DEBUG = false;
 
@@ -51,22 +51,19 @@ export default function LineChart(props: any) {
                 // stacked: true,
                 background: "transparent",
                 // type: "bar",
-                stroke: {
-                    curve: "smooth",
-                    width: 2,
-                },
-                fill: {
-                    type: "gradient",
-                    gradient: {
-                        shadeIntensity: 1,
-                        opacityFrom: 0.6,
-                        opacityTo: 0.2,
-                        stops: [0, 90, 100],
-                    },
-                },
+                // fill: {
+                // type: "gradient",
+                // gradient: {
+                //     shadeIntensity: 1,
+                //     opacityFrom: 0.6,
+                //     opacityTo: 0.2,
+                //     stops: [0, 90, 100],
+                // },
+                // },
                 // height: 240, // chart 높이
                 // height: 120, // chart 높이
-                height: !!props.height ? props.height : 120, // chart 높이
+                height: props.height ?? 120, // chart 높이
+                width: props.width ?? "100%", // chart 너비
                 zoom: {
                     enabled: false, // 줌 비활성화
                 },
@@ -83,23 +80,16 @@ export default function LineChart(props: any) {
                             zoomout: false,
                         },
                     },
-                    title: {
-                        text: `${props.category_array[0] ?? ""} ~ ${props.category_array[props.category_array.length - 1] ?? ""}`,
-                        align: "right",  // 정렬 (left, center, right)
-                        style: {
-                            fontSize: "10px",
-                        },
-                        show: "",
-                    },
                     dataLabels: {
                         enabled: false,
                     },
                     colors: [chartColor],
-                    // stroke: {
-                    //     curve: "smooth",
-                    //     lineCap: "round",
-                    //     width: 3, // 선 두께
-                    // },
+                    stroke: {
+                        curve: "smooth",
+                        lineCap: "round",
+                        width: 2, // 선 두께
+                        color: "white"
+                    },
 
                     markers: {
                         size: 0,
@@ -148,6 +138,7 @@ export default function LineChart(props: any) {
                                 fontWeight: 400,
                             },
                             // offsetY: -5,
+                            show: props.show_yaxis_label ?? true,
                         },
                     },
                     grid: {
@@ -161,13 +152,9 @@ export default function LineChart(props: any) {
                                 show: false,
                             },
                         },
-                        // padding: {
-                        //     top: 5,
-                        //     right: 20,
-                        // },
                         padding: {
-                            top: -20, // 상단 여백 제거
-                            bottom: -20, // 하단 여백 제거
+                            top: -35, // 상단 여백 제거
+                            bottom: -25, // 하단 여백 제거
                             right: 20,
                         },
                     },
@@ -183,28 +170,6 @@ export default function LineChart(props: any) {
         [props.data_array, props.category_array]);
 
     return <>
-        <div className="">
-            <Chart {...chartConfig} />
-        </div>
-        {/* <Card>
-            <Card.Header className="m-0 flex flex-wrap items-center gap-4 p-4">
-                <Card
-                    color="primary"
-                    className="grid h-16 w-16 shrink-0 place-items-center rounded-md text-primary-foreground md:h-20 md:w-20"
-                >
-                    <SelectFace3d className="h-6 w-6 md:h-8 md:w-8" />
-                </Card>
-                <div>
-                    <Typography type="h6">Line Chart</Typography>
-                    <Typography className="mt-1 max-w-sm text-foreground">
-                        Visualize your data in a simple way using the
-                        @material-tailwind/react chart plugin.
-                    </Typography>
-                </div>
-            </Card.Header>
-            <Card.Body>
-                <Chart {...chartConfig} />
-            </Card.Body>
-        </Card> */}
+        <Chart {...chartConfig} />
     </>;
 }
