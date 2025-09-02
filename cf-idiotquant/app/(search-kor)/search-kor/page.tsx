@@ -96,8 +96,12 @@ export default function SearchKor() {
         const bstp_kor_isnm = kiInquirePrice.output.bstp_kor_isnm; // 업종 한글 종목명
 
         const yearMatchIndex = getYearMatchIndex(kiInquireDailyItemChartPrice.output2[0]["stck_bsop_date"]);
-        console.log(`yearMatchIndex`, yearMatchIndex, `kiBalanceSheet.output.length`, kiBalanceSheet.output.length);
+        if (DEBUG) console.log(`yearMatchIndex`, yearMatchIndex, `kiBalanceSheet.output.length`, kiBalanceSheet.output.length);
         const latestBalanceSheet = kiBalanceSheet.output[yearMatchIndex];
+        if (DEBUG) console.log(`latestBalanceSheet`, latestBalanceSheet);
+        if (undefined == latestBalanceSheet) {
+          return;
+        }
         const ONE_HUNDRED_MILLION = 100000000;
 
         const stac_yymm = latestBalanceSheet.stac_yymm; // stac_yymm: str    #결산 년월
@@ -183,7 +187,7 @@ export default function SearchKor() {
   }
 
   function onSearchButton(stockName: any) {
-    console.log(`검색 1`, stockName);
+    if (DEBUG) console.log(`검색 1`, stockName);
     type CorpCodeType = {
       corp_code: string;
       stock_code: string;
@@ -194,7 +198,7 @@ export default function SearchKor() {
     const jsonStock: CorpCodeType = corpCode[stockName];
     if (DEBUG) console.log(`stockName`, stockName, `jsonStock`, jsonStock);
     if (!!jsonStock) {
-      console.log(`검색 2`, stockName);
+      if (DEBUG) console.log(`검색 2`, stockName);
       const { stock_code } = jsonStock;
       // console.log(`stockCode`, stock_code);
       if (DEBUG) console.log(`startDate`, startDate, `, endDate`, endDate);
@@ -229,11 +233,13 @@ export default function SearchKor() {
   }
 
   function getNcav(kiBalanceSheet: any, kiInquireDailyItemChartPrice: any, ratio: number) {
+    // console.log(`getNcav`, `kiBalanceSheet`, kiBalanceSheet, kiBalanceSheet.output, !!kiBalanceSheet.output);
+
     const stck_bsop_date = kiInquireDailyItemChartPrice.output2[0]["stck_bsop_date"]; // 주식 영업 일자
     const stck_oprc = Number(kiInquireDailyItemChartPrice.output2[0]["stck_oprc"]); // 주식 시가2
     const lstn_stcn = Number(kiInquireDailyItemChartPrice.output1["lstn_stcn"]); // 상장 주수
-    const cras = Number(kiBalanceSheet.output[getYearMatchIndex(stck_bsop_date)].cras) * 100000000; // 유동 자산
-    const total_lblt = Number(kiBalanceSheet.output[getYearMatchIndex(stck_bsop_date)].total_lblt) * 100000000; // 부채 총계
+    const cras = Number(kiBalanceSheet.output.length > 0 ? kiBalanceSheet.output[getYearMatchIndex(stck_bsop_date)].cras : 0) * 100000000; // 유동 자산
+    const total_lblt = Number(kiBalanceSheet.output.length > 0 ? kiBalanceSheet.output[getYearMatchIndex(stck_bsop_date)].total_lblt : 0) * 100000000; // 부채 총계
 
     const value: number = (((cras - total_lblt) / (stck_oprc * lstn_stcn * ratio) - 1) * 100);
     const target_price = (cras - total_lblt) / lstn_stcn;
@@ -320,57 +326,55 @@ export default function SearchKor() {
         <>
           <div className="dark:bg-black flex flex-col md:flex-row lg:flex-row">
             <div className="sm:flex-col md:flex-1 lg:flex-1">
-              <div className="dark:bg-black dark:text-white p-3 shadow font-mono">
-                <div className="text-[0.6rem]">
-                  {kiInquirePrice.output["rprs_mrkt_kor_name"]}
-                </div>
-                <div className="text-xl">
-                  {kiInquireDailyItemChartPrice.output1.hts_kor_isnm}
-                </div>
-              </div>
-              <div className="dark:bg-gray-200 text-xs p-3 shadow font-mono">
-                <div className="flex gap-2">
-                  <div className="w-11/12">
-                    <LineChart
-                      data_array={[
-                        {
-                          name: "주가",
-                          // data: test_data.stock_list.map((stock: any) => stock.remaining_token),
-                          // data: [10, 20, 30, 40, 50, 60, 70, 80, 90],
-                          data: kiInquireDailyItemChartPrice.output2.map((item: any) => item.stck_oprc).reverse(),
-                          color: "#000000",
-                        }
-                      ]}
-                      category_array={kiInquireDailyItemChartPrice.output2.map((item: any) => item.stck_bsop_date).reverse()}
-                      markers={
-                        {
-                          size: 0,
-                          // colors: kiInquireDailyItemChartPrice.output2.map((_, index, arr) =>
-                          //   index === arr.length - 1 ? "" : "yellow"
-                          // ).reverse(), // 마지막 값만 빨간색, 나머지는 파란색
-                          // colors: "black",
-                          discrete: [
-                            {
-                              seriesIndex: 0,
-                              dataPointIndex: kiInquireDailyItemChartPrice.output2.length - 1, // 마지막 값만 적용
-                              fillColor: "yellow", // 마지막 마커 색상
-                              strokeColor: "black", // 마커 테두리 색상
-                              size: 3, // 마지막 마커 크기
-                            },
-                          ],
-                        }
-                      }
-                    />
+              <div className="flex shadow">
+                <div className="w-6/12 dark:bg-black dark:text-white p-3 font-mono">
+                  <div className="text-[0.6rem]">
+                    {kiInquirePrice.output["rprs_mrkt_kor_name"]}
                   </div>
-                  <div className="w-1/12"></div>
+                  <div className="text-xl">
+                    {kiInquireDailyItemChartPrice.output1.hts_kor_isnm}
+                  </div>
+                  <div className="dark:bg-black dark:text-white flex gap-2 font-mono items-center">
+                    <div className="text-right"> {Number(kiInquireDailyItemChartPrice.output1["stck_prpr"]).toLocaleString()}원</div>
+                    <span className="text-[0.7rem]">| {kiInquireDailyItemChartPrice.output2[0]["stck_bsop_date"]}</span>
+                  </div>
+                </div>
+                <div className="w-6/12">
+                  <LineChart
+                    data_array={[
+                      {
+                        name: "주가",
+                        // data: test_data.stock_list.map((stock: any) => stock.remaining_token),
+                        // data: [10, 20, 30, 40, 50, 60, 70, 80, 90],
+                        data: kiInquireDailyItemChartPrice.output2.map((item: any) => item.stck_oprc).reverse(),
+                        color: "#000000",
+                      }
+                    ]}
+                    category_array={kiInquireDailyItemChartPrice.output2.map((item: any) => item.stck_bsop_date).reverse()}
+                    markers={
+                      {
+                        size: 0,
+                        // colors: kiInquireDailyItemChartPrice.output2.map((_, index, arr) =>
+                        //   index === arr.length - 1 ? "" : "yellow"
+                        // ).reverse(), // 마지막 값만 빨간색, 나머지는 파란색
+                        // colors: "black",
+                        discrete: [
+                          {
+                            seriesIndex: 0,
+                            dataPointIndex: kiInquireDailyItemChartPrice.output2.length - 1, // 마지막 값만 적용
+                            fillColor: "yellow", // 마지막 마커 색상
+                            strokeColor: "black", // 마커 테두리 색상
+                            size: 3, // 마지막 마커 크기
+                          },
+                        ],
+                      }
+                    }
+                    height={80}
+                    show_yaxis_label={false}
+                  />
                 </div>
               </div>
               <div className="dark:bg-black dark:text-white text-xs p-3 shadow">
-                <div className="dark:bg-black dark:text-white flex gap-2 font-mono">
-                  <div className="w-4/12 bg-yellow-200 dark:bg-gray-500 text-right">현재가</div>
-                  <div className="w-6/12 bg-yellow-100 dark:bg-gray-500 text-right"><span className="text-[0.6rem]">({kiInquireDailyItemChartPrice.output2[0]["stck_bsop_date"]})</span> {Number(kiInquireDailyItemChartPrice.output1["stck_prpr"]).toLocaleString()}</div>
-                  <div className="w-2/12 text-left text-[0.6rem]">원</div>
-                </div>
                 <div className="dark:bg-black dark:text-white flex gap-2 font-mono">
                   <div className="w-4/12 text-right">시가총액</div>
                   <div className="w-6/12 text-right">{MARKET_CAP.toLocaleString()}</div>
