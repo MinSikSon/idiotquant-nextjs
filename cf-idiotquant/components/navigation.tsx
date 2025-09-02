@@ -58,7 +58,7 @@ export function NavbarWithSimpleLinks() {
         const handleScroll = () => {
             const currentScrollY = window.scrollY;
 
-            if (currentScrollY > lastScrollY && currentScrollY > 100) {
+            if (currentScrollY > lastScrollY && currentScrollY > 80) {
                 // 스크롤 내릴 때
                 setVisible(false);
             } else {
@@ -154,7 +154,7 @@ export function NavbarWithSimpleLinks() {
 
     return (
         <>
-            <div className="fixed top-0 left-0 w-full z-30 border-r dark:border-gray-600">
+            <div className="fixed top-0 left-0 w-full z-30 border-r dark:border-gray-600 dark:bg-black">
                 <div className={`${visible ? "opacity-100 translate-y-0" : "opacity-0 -translate-y-10"} transition-all duration-300 ease-in-out bg-slate-50 dark:bg-gray-900 dark:text-white flex items-center justify-start text-blue-gray-900 min-w-56`}>
                     <div className="p-3 w-full dark:border-gray-600">
                         <div className="bg-white dark:bg-black flex md:flex-col lg:flex-col border dark:border-gray-600 rounded-lg items-center py-2 w-full">
@@ -212,7 +212,7 @@ export function NavbarWithSimpleLinks() {
                         />
                     </div>
                 </div>
-                <div className={` transition-all duration-300 ease-in-out`}>
+                <div className="transition-all duration-300 ease-in-out">
                     <div className={`${visible ? "translate-y-0" : "-translate-y-16 bg-[radial-gradient(circle,_#d1d5db_1px,transparent_1px)] bg-[size:5px_5px]"} dark:text-white flex flex-col w-full p-2 justify-items-center justify-between`}>
                         <NavList />
                         {/* <ThemeChanger /> */}
