@@ -257,8 +257,8 @@ export default function SearchKor() {
 
     return <>
       <div className="flex gap-2">
-        <div className="w-4/12 text-right text-[0.6rem]">전략| NCAV({ratio.toFixed(1)})</div>
-        <div className="w-6/12 text-right"><span className={`text-[0.6rem] ${value >= 0 ? "text-red-500" : "text-blue-500"}`}>({value.toFixed(2)}%) 목표가: </span><span className={`${value >= 0 ? "text-red-500" : "text-blue-500"}`}>{(Number(target_price.toFixed(0)).toLocaleString())}</span></div>
+        <div className="w-4/12 text-right text-[0.6rem]">(ratio: {ratio.toFixed(1)})</div>
+        <div className="w-6/12 text-right"><span className={`text-[0.6rem] ${value >= 0 ? "text-red-500" : "text-blue-500"}`}>({value.toFixed(2)}%) 적정 주가: </span><span className={`${value >= 0 ? "text-red-500" : "text-blue-500"}`}>{(Number(target_price.toFixed(0)).toLocaleString())}</span></div>
         <div className="w-2/12 text-left text-[0.6rem]">원</div>
       </div>
     </>
@@ -275,14 +275,18 @@ export default function SearchKor() {
     const total_cptl = (Number(kiBalanceSheet.output[0].total_cptl) * ONE_HUNDRED_MILLION); // 자본총계
     const thtr_ntin = Number(kiIncomeStatement.output[0].thtr_ntin) * ONE_HUNDRED_MILLION; // 당기순이익
 
+    const stck_oprc = Number(kiInquireDailyItemChartPrice.output2[0]["stck_oprc"]); // 주식 시가2
+    const lstn_stcn = Number(kiInquireDailyItemChartPrice.output1["lstn_stcn"]); // 상장 주수
+
     const result = total_cptl * (1 + (((thtr_ntin / total_cptl) - ratio) / ratio));
+    const target_price = result / lstn_stcn;
+
+    const value = target_price / stck_oprc * 100 - 100;
     return <>
       <div className="flex gap-2">
         <div className="w-4/12 text-right text-[0.6rem]">전략| S-RIM({ratio.toFixed(3)})</div>
-        <div className="w-6/12 text-right flex flex-col">
-          <div>{Util.UnitConversion(Number(result), true)}</div>
-        </div>
-        <div className="w-2/12 text-left text-[0.6rem]"></div>
+        <div className="w-6/12 text-right"><span className={`text-[0.6rem] ${target_price >= stck_oprc ? "text-red-500" : "text-blue-500"}`}>({value.toFixed(2)}%) 적정 주가: </span><span className={`${target_price >= stck_oprc ? "text-red-500" : "text-blue-500"}`}>{(Number(target_price.toFixed(0)).toLocaleString())}</span></div>
+        <div className="w-2/12 text-left text-[0.6rem]">원</div>
       </div>
     </>
   }
@@ -329,7 +333,27 @@ export default function SearchKor() {
     //   }
     // }
   }
+  const md_ncav = String.raw`
+전략 1: NCAV 모형 (Net Current Asset Value Model):
 
+$$
+NCAV = (유동자산 − 총부채) > (시가총액 \times ratio)
+$$
+`;
+
+  const md_srim = String.raw`
+전략 2: S-RIM 모형 (Simple Residual Income Model):
+
+$$
+\small 기업가치 = 자기자본 + \frac{초과이익}{할인율} = B_0 + \frac{B_0 \cdot (ROE - K_e)}{K_e}
+$$
+
+$\tiny B_0 = 현재 자기자본 (Book Value of Equity)$
+
+$\tiny ROE = \frac{당기순이익 (Net Income)}{자기자본 (Equity)} \times {100}$
+
+$\tiny K_e = 할인율$
+`;
   return <>
     <div className="flex flex-col w-full">
       <div className="flex flex-col w-full">
@@ -408,13 +432,25 @@ export default function SearchKor() {
                 </div>
               </div>
               <div className="dark:bg-black dark:text-white text-xs p-3 shadow">
+                <ReactMarkdown
+                  remarkPlugins={[remarkMath]}
+                  rehypePlugins={[rehypeKatex]}
+                >
+                  {md_ncav}
+                </ReactMarkdown>
                 {getNcav(kiBalanceSheet, kiInquireDailyItemChartPrice, 1.0)}
                 {getNcav(kiBalanceSheet, kiInquireDailyItemChartPrice, 1.5)}
               </div>
               <div className="dark:bg-black dark:text-white text-xs p-3 shadow">
+                <ReactMarkdown
+                  remarkPlugins={[remarkMath]}
+                  rehypePlugins={[rehypeKatex]}
+                >
+                  {md_srim}
+                </ReactMarkdown>
                 <div className="flex gap-2 font-mono">
-                  <div className="w-1/12 text-right"></div>
-                  <div className="w-10/12 text-right">자본총계: {Util.UnitConversion(Number(kiBalanceSheet.output[0].total_cptl) * 100000000, true)} | 당기순이익: {Util.UnitConversion(Number(kiIncomeStatement.output[0].thtr_ntin) * 100000000, true)}</div>
+                  <div className="w-3/12 text-right">{kiBalanceSheet.output[0].stac_yymm}</div>
+                  <div className="w-8/12 text-right">자본총계: {Util.UnitConversion(Number(kiBalanceSheet.output[0].total_cptl) * 100000000, true)} | 당기순이익: {Util.UnitConversion(Number(kiIncomeStatement.output[0].thtr_ntin) * 100000000, true)}</div>
                   <div className="w-1/12 text-right"></div>
                 </div>
                 {getSRIM(kiBalanceSheet, kiIncomeStatement, kiInquireDailyItemChartPrice, 0.01)}
@@ -489,22 +525,8 @@ export default function SearchKor() {
               <div className="dark:bg-black dark:text-white text-md p-3 shadow">
                 <div className="flex gap-2 font-mono">
                   <div className="w-full text-center">재무 정보</div>
-                  {/* <div className="w-6/12 text-right"></div> */}
-                  {/* <div className="w-2/12 text-left text-[0.6rem]"></div> */}
                 </div>
               </div>
-              {/* <div className="dark:bg-black dark:text-white text-xs p-3 shadow">
-                <div className="flex gap-2 font-mono">
-                  <div className="w-4/12 text-right">유동자산</div>
-                  <div className="w-6/12 text-right">{CURRENT_ASSET_LIST[0].toLocaleString()}</div>
-                  <div className="w-2/12 text-left text-[0.6rem]">원</div>
-                </div>
-                <div className="flex gap-2 font-mono">
-                  <div className="w-4/12 text-right">부채총계</div>
-                  <div className="w-6/12 text-right">{TOTAL_LIABILITIES_LIST[0].toLocaleString()}</div>
-                  <div className="w-2/12 text-left text-[0.6rem]">원</div>
-                </div>
-              </div> */}
               <div className="dark:bg-black dark:text-white text-xs p-3 shadow">
                 {bShowResult && <table className="table-auto w-full text-right font-mono border border-gray-300">
                   <thead className="bg-gray-100">
@@ -533,6 +555,54 @@ export default function SearchKor() {
                       <tr key={rowIndex}>
                         <td className="border pr-1 py-1 text-left">{row.label}</td>
                         {kiBalanceSheet.output.slice(0, 5).map((item: any, colIndex: number) => {
+                          const value = Number(item[row.key]) * 100000000;
+                          return (
+                            <td key={colIndex} className="border pr-1 py-1">
+                              {Util.UnitConversion(value, false)}
+                            </td>
+                          );
+                        })}
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>}
+              </div>
+              <div className="dark:bg-black dark:text-white text-md p-3 shadow">
+                <div className="flex gap-2 font-mono">
+                  <div className="w-full text-center">손익 정보</div>
+                </div>
+              </div>
+              <div className="dark:bg-black dark:text-white text-xs p-3 shadow">
+                {bShowResult && <table className="table-auto w-full text-right font-mono border border-gray-300">
+                  <thead className="bg-gray-100">
+                    <tr>
+                      <th className="border px-2 py-1 text-left">항목</th>
+                      {kiIncomeStatement.output.slice(0, 5).map((item: any, index: number) => (
+                        <th key={index} className="border pr-1 py-1">
+                          {item.stac_yymm}
+                        </th>
+                      ))}
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {[
+                      { label: "매출액", key: "sale_account" },
+                      { label: "매출원가", key: "sale_cost" },
+                      { label: "매출 총 이익", key: "sale_totl_prfi" },
+                      { label: "감가상각비", key: "depr_cost" },
+                      { label: "판매 및 관리비", key: "sell_mang" },
+                      { label: "영업 이익", key: "bsop_prti" },
+                      { label: "영업 외 수익", key: "bsop_non_ernn" },
+                      { label: "영업 외 비용", key: "bsop_non_expn" },
+                      { label: "경상 이익", key: "op_prfi" },
+                      { label: "영업", key: "bsop_prti" },
+                      { label: "특별 이익", key: "spec_prfi" },
+                      { label: "특별 손실", key: "spec_loss" },
+                      { label: "당기순이익", key: "thtr_ntin" },
+                    ].map((row, rowIndex) => (
+                      <tr key={rowIndex}>
+                        <td className="border pr-1 py-1 text-left">{row.label}</td>
+                        {kiIncomeStatement.output.slice(0, 5).map((item: any, colIndex: number) => {
                           const value = Number(item[row.key]) * 100000000;
                           return (
                             <td key={colIndex} className="border pr-1 py-1">
