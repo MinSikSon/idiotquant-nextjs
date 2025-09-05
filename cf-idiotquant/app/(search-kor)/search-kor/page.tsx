@@ -256,7 +256,8 @@ export default function SearchKor() {
           <td className="px-4 py-2 border-b border-gray-200 text-right" {...props} />
         ),
         tr: ({ node, ...props }) => {
-          const percentageCell = node.children[1]?.children[0]?.value;
+          const nodeChildren: any = node?.children[1];
+          const percentageCell: any = nodeChildren?.children[0]?.value;
           let bgClass = "";
           if (percentageCell) {
             const num = parseFloat(percentageCell.replace("%", ""));
