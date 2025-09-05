@@ -438,7 +438,7 @@ ${md}
                         // data: test_data.stock_list.map((stock: any) => stock.remaining_token),
                         // data: [10, 20, 30, 40, 50, 60, 70, 80, 90],
                         data: kiInquireDailyItemChartPrice.output2.map((item: any) => item.stck_oprc).reverse(),
-                        color: "#000000",
+                        color: "rgb(138,92,236)", // chart 데이터 선 색
                       }
                     ]}
                     category_array={kiInquireDailyItemChartPrice.output2.map((item: any) => item.stck_bsop_date).reverse()}
@@ -462,6 +462,7 @@ ${md}
                     }
                     height={80}
                     show_yaxis_label={false}
+                    type={"line"}
                   />
                 </div>
               </div>

@@ -46,20 +46,20 @@ export default function LineChart(props: any) {
     const chartConfig = useMemo(
         () =>
             ({
-                // type: !!props.type ? props.type : "line",
-                type: "area",
+                type: !!props.type ? props.type : "area",
+                // type: "area",
                 // stacked: true,
                 background: "transparent",
                 // type: "bar",
-                // fill: {
-                // type: "gradient",
-                // gradient: {
-                //     shadeIntensity: 1,
-                //     opacityFrom: 0.6,
-                //     opacityTo: 0.2,
-                //     stops: [0, 90, 100],
-                // },
-                // },
+                fill: {
+                    type: "gradient",
+                    gradient: {
+                        shadeIntensity: 1,
+                        opacityFrom: 0.6,
+                        opacityTo: 0.2,
+                        stops: [0, 90, 100],
+                    },
+                },
                 // height: 240, // chart 높이
                 // height: 120, // chart 높이
                 height: props.height ?? 120, // chart 높이
@@ -83,12 +83,13 @@ export default function LineChart(props: any) {
                     dataLabels: {
                         enabled: false,
                     },
+                    // colors: [chartColor],
                     colors: [chartColor],
                     stroke: {
                         curve: "smooth",
                         lineCap: "round",
                         width: 2, // 선 두께
-                        color: "white"
+                        color: !!props.stroke_color ? props.stroke_color : "white"
                     },
 
                     markers: {
@@ -142,8 +143,8 @@ export default function LineChart(props: any) {
                         },
                     },
                     grid: {
-                        show: true,
-                        // show: false,
+                        // show: true,
+                        show: false,
                         borderColor: lineColor,
                         strokeDashArray: 0,
                         xaxis: {
@@ -153,7 +154,7 @@ export default function LineChart(props: any) {
                             },
                         },
                         padding: {
-                            top: -35, // 상단 여백 제거
+                            top: -25, // 상단 여백 제거
                             bottom: -25, // 하단 여백 제거
                             right: 20,
                         },
