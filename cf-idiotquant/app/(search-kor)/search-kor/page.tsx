@@ -295,8 +295,8 @@ export default function SearchKor() {
     }).join("\n");
 
     const md_main = String.raw`
-| ratio | percentage | price(won) |
-|-------|------------|------------|
+| ratio | Expected return (%) | price (won) |
+|-------|---------------------|-------------|
 ${md}
 `;
     return <>
@@ -317,20 +317,21 @@ ${md}
     const ONE_HUNDRED_MILLION = 100000000;
     const total_cptl = (Number(kiBalanceSheet.output[0].total_cptl) * ONE_HUNDRED_MILLION); // 자본총계
     const thtr_ntin = Number(kiIncomeStatement.output[0].thtr_ntin) * ONE_HUNDRED_MILLION; // 당기순이익
+    const ROE = thtr_ntin / total_cptl * 100;
 
     const stck_oprc = Number(kiInquireDailyItemChartPrice.output2[0]["stck_oprc"]); // 주식 시가2
     const lstn_stcn = Number(kiInquireDailyItemChartPrice.output1["lstn_stcn"]); // 상장 주수
 
     const md = ratioList.map(ratio => {
-      const result = total_cptl * (1 + (((thtr_ntin / total_cptl) - ratio) / ratio));
+      const result = total_cptl * (1 + ((ROE - ratio) / ratio));
       const target_price = result / lstn_stcn;
       const percentage = target_price / stck_oprc * 100 - 100;
-      return `|${ratio.toFixed(2)}|${percentage.toFixed(2)}%|${Number(target_price.toFixed(0)).toLocaleString()}|`;
+      return `|${ratio.toFixed(2)}%|${percentage.toFixed(2)}%|${Number(target_price.toFixed(0)).toLocaleString()}|`;
     }).join("\n");
 
     const md_main = String.raw`
-| $K_e$ | percentage | price(won) |
-|-------|------------|------------|
+| $K_e$ (%) | Expected return (%) | Target price (won) |
+|-----------|---------------------|--------------------|
 ${md}
 `;
 
@@ -477,14 +478,18 @@ ${md}
 전략 1: NCAV 모형 (Net Current Asset Value Model):
 
 $$
-NCAV = (유동자산 − 총부채) > (시가총액 \times ratio)
+NCAV = 유동자산 − 총부채
+$$
+
+$$
+투자 여부 = NCAV > 시가총액 \times ratio
 $$
   
 ---
 `})()}
                   </ReactMarkdown>
                 </div>
-                <div className="p-4 pb-0">
+                <div className="px-4">
                   <ReactMarkdown
                     remarkPlugins={[remarkGfm, remarkMath]}
                     rehypePlugins={[rehypeRaw, [rehypeKatex, { strict: "ignore" }], rehypeHighlight]}
@@ -496,9 +501,14 @@ $$
                       const cras = Number(kiBalanceSheet.output.length > 0 ? kiBalanceSheet.output[getYearMatchIndex(stck_bsop_date)].cras : 0) * 100000000; // 유동 자산
                       const total_lblt = Number(kiBalanceSheet.output.length > 0 ? kiBalanceSheet.output[getYearMatchIndex(stck_bsop_date)].total_lblt : 0) * 100000000; // 부채 총계
                       return String.raw`
-$ \small 적정주가 = \frac{(유동자산 − 총부채)}{상장주식수}
-= \frac{${Util.UnitConversion(cras, true)} - ${Util.UnitConversion(total_lblt, true)}}{${lstn_stcn}}
-= ${((cras - total_lblt) / lstn_stcn).toFixed(0)} 원$
+$$
+\small 적정주가 = \frac{(유동자산 − 총부채)}{상장주식수}
+$$
+
+$$
+\small = \frac{${Util.UnitConversion(cras, true)} - ${Util.UnitConversion(total_lblt, true)}}{${lstn_stcn} 개}
+= ${((cras - total_lblt) / lstn_stcn).toFixed(0)} 원
+$$
 `})()}
                   </ReactMarkdown>
                 </div>
@@ -512,13 +522,6 @@ $ \small 적정주가 = \frac{(유동자산 − 총부채)}{상장주식수}
                       rehypePlugins={[rehypeRaw, [rehypeKatex, { strict: "ignore" }], rehypeHighlight]}
                     >
                       {(() => {
-                        const ONE_HUNDRED_MILLION = 100000000;
-                        const total_cptl = (Number(kiBalanceSheet.output[0].total_cptl) * ONE_HUNDRED_MILLION); // 자본총계
-                        const thtr_ntin = Number(kiIncomeStatement.output[0].thtr_ntin) * ONE_HUNDRED_MILLION; // 당기순이익
-
-                        const ROE = thtr_ntin / total_cptl * 100;
-                        const str_ROE = Number(ROE).toFixed(2);
-
                         return String.raw`
 전략 2: S-RIM 모형 (Simple Residual Income Model):
 
@@ -530,7 +533,7 @@ $$
                       })()}
                     </ReactMarkdown>
                   </div>
-                  <div className="p-4 pb-0">
+                  <div className="px-4">
                     <ReactMarkdown
                       remarkPlugins={[remarkGfm, remarkMath]}
                       rehypePlugins={[rehypeRaw, [rehypeKatex, { strict: "ignore" }], rehypeHighlight]}
@@ -548,7 +551,9 @@ $$
                         const stck_oprc = Number(kiInquireDailyItemChartPrice.output2[0]["stck_oprc"]); // 주식 시가2
 
                         return String.raw`
-$적정주가 = \frac{기업가치}{상장주식수} = \frac{${str_total_cptl} + \frac{${str_total_cptl} \cdot (${str_ROE} - K_e)}{K_e}}{${lstn_stcn}}$
+$$
+\small 적정주가 = \frac{기업가치}{상장주식수} = \frac{${str_total_cptl} + \frac{${str_total_cptl} \cdot (${str_ROE} - K_e)}{K_e}}{${lstn_stcn} 개}
+$$
 
 $\tiny B_0 = 현재 자기자본 (Book Value of Equity) = ${Util.UnitConversion(total_cptl, true)}$
 
@@ -562,7 +567,7 @@ $\tiny K_e = 할인율$
                     </ReactMarkdown>
                   </div>
                 </div>
-                {getSRIM(kiBalanceSheet, kiIncomeStatement, kiInquireDailyItemChartPrice, [0.01, 0.02, 0.03, 0.04, 0.05, 0.06, 0.07, 0.08, 0.09, 0.10])}
+                {getSRIM(kiBalanceSheet, kiIncomeStatement, kiInquireDailyItemChartPrice, [1, 2, 3, 4, 5, 6, 7, 8, 9, 10])}
               </div>
               <div className="dark:bg-black dark:text-white text-xs p-3 shadow">
                 <div className="flex gap-2 font-mono">
