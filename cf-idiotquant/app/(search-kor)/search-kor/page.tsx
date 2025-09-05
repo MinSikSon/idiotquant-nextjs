@@ -31,7 +31,7 @@ import { reqPostLaboratory } from "@/lib/features/ai/aiSlice";
 import { AiOutputResultUsageType, selectAiStreamOutput } from "@/lib/features/ai/aiStreamSlice";
 import { addKrMarketHistory, selectKrMarketHistory, selectUsMarketHistory } from "@/lib/features/searchHistory/searchHistorySlice";
 
-const DEBUG = true;
+const DEBUG = false;
 
 export default function SearchKor() {
   const pathname = usePathname();
@@ -241,9 +241,45 @@ export default function SearchKor() {
     return 0;
   }
 
+  function MdTableTemplate(props: any) {
+    return <ReactMarkdown
+      remarkPlugins={[remarkGfm, remarkMath]}
+      rehypePlugins={[rehypeRaw, [rehypeKatex, { strict: "ignore" }], rehypeHighlight]}
+      components={{
+        table: ({ node, ...props }) => (
+          <table className="w-full table-auto border-collapse shadow-lg rounded-lg overflow-hidden text-xs md:text-sm lg:text-base" {...props} />
+        ),
+        th: ({ node, ...props }) => (
+          <th className="px-4 py-2 bg-gradient-to-r from-gray-100 to-gray-200 font-semibold uppercase text-left border-b border-gray-300" {...props} />
+        ),
+        td: ({ node, ...props }) => (
+          <td className="px-4 py-2 border-b border-gray-200 text-right" {...props} />
+        ),
+        tr: ({ node, ...props }) => {
+          const nodeChildren: any = node?.children[1];
+          const percentageCell: any = nodeChildren?.children[0]?.value;
+          let bgClass = "";
+          if (percentageCell) {
+            const num = parseFloat(percentageCell.replace("%", ""));
+            if (num > 0) bgClass = "bg-green-100";
+            else if (num < 0) bgClass = "bg-red-100";
+          }
+          return (
+            <tr
+              className={`${bgClass} hover:bg-gray-100 transition-colors duration-200`}
+              {...props}
+            />
+          );
+        },
+      }}
+    >
+      {props.md_main}
+    </ReactMarkdown>
+  }
+
   function getNcav(kiBalanceSheet: KoreaInvestmentBalanceSheet,
     kiInquireDailyItemChartPrice: KoreaInvestmentInquireDailyItemChartPrice,
-    ratio: number) {
+    ratioList: number[]) {
     // console.log(`getNcav`, `kiBalanceSheet`, kiBalanceSheet, kiBalanceSheet.output, !!kiBalanceSheet.output);
 
     const stck_bsop_date = kiInquireDailyItemChartPrice.output2[0]["stck_bsop_date"]; // 주식 영업 일자
@@ -252,41 +288,56 @@ export default function SearchKor() {
     const cras = Number(kiBalanceSheet.output.length > 0 ? kiBalanceSheet.output[getYearMatchIndex(stck_bsop_date)].cras : 0) * 100000000; // 유동 자산
     const total_lblt = Number(kiBalanceSheet.output.length > 0 ? kiBalanceSheet.output[getYearMatchIndex(stck_bsop_date)].total_lblt : 0) * 100000000; // 부채 총계
 
-    const value: number = (((cras - total_lblt) / (stck_oprc * lstn_stcn * ratio) - 1) * 100);
-    const target_price = (cras - total_lblt) / lstn_stcn;
+    const md = ratioList.map(ratio => {
+      const target_price = (cras - total_lblt) / lstn_stcn;
+      const percentage: number = (((cras - total_lblt) / (stck_oprc * lstn_stcn * ratio) - 1) * 100);
+      return `|${ratio.toFixed(2)}|${percentage.toFixed(2)}%|${Number(target_price.toFixed(0)).toLocaleString()}|`;
+    }).join("\n");
 
+    const md_main = String.raw`
+| ratio | Expected return (%) | price (won) |
+|-------|---------------------|-------------|
+${md}
+`;
     return <>
-      <div className="flex gap-2">
-        <div className="w-4/12 text-right text-[0.6rem]">(ratio: {ratio.toFixed(1)})</div>
-        <div className="w-6/12 text-right"><span className={`text-[0.6rem] ${value >= 0 ? "text-red-500" : "text-blue-500"}`}>({value.toFixed(2)}%) 적정 주가: </span><span className={`${value >= 0 ? "text-red-500" : "text-blue-500"}`}>{(Number(target_price.toFixed(0)).toLocaleString())}</span></div>
-        <div className="w-2/12 text-left text-[0.6rem]">원</div>
+      <div className="w-full text-right p-4">
+        <MdTableTemplate md_main={md_main} />
       </div>
     </>
   }
+
   function getSRIM(
     kiBalanceSheet: KoreaInvestmentBalanceSheet,
     kiIncomeStatement: KoreaInvestmentIncomeStatement,
     kiInquireDailyItemChartPrice: KoreaInvestmentInquireDailyItemChartPrice,
-    ratio: number) {
+    ratioList: number[]) {
     // S-RIM: S-RIM (Simple Residual Income Model)
     // V0 = B0 + B0 * (ROE - Ke) / Ke
 
     const ONE_HUNDRED_MILLION = 100000000;
     const total_cptl = (Number(kiBalanceSheet.output[0].total_cptl) * ONE_HUNDRED_MILLION); // 자본총계
     const thtr_ntin = Number(kiIncomeStatement.output[0].thtr_ntin) * ONE_HUNDRED_MILLION; // 당기순이익
+    const ROE = thtr_ntin / total_cptl * 100;
 
     const stck_oprc = Number(kiInquireDailyItemChartPrice.output2[0]["stck_oprc"]); // 주식 시가2
     const lstn_stcn = Number(kiInquireDailyItemChartPrice.output1["lstn_stcn"]); // 상장 주수
 
-    const result = total_cptl * (1 + (((thtr_ntin / total_cptl) - ratio) / ratio));
-    const target_price = result / lstn_stcn;
+    const md = ratioList.map(ratio => {
+      const result = total_cptl * (1 + ((ROE - ratio) / ratio));
+      const target_price = result / lstn_stcn;
+      const percentage = target_price / stck_oprc * 100 - 100;
+      return `|${ratio.toFixed(2)}%|${percentage.toFixed(2)}%|${Number(target_price.toFixed(0)).toLocaleString()}|`;
+    }).join("\n");
 
-    const value = target_price / stck_oprc * 100 - 100;
+    const md_main = String.raw`
+| $K_e$ (%) | Expected return (%) | Target price (won) |
+|-----------|---------------------|--------------------|
+${md}
+`;
+
     return <>
-      <div className="flex gap-2">
-        <div className="w-4/12 text-right text-[0.6rem]">전략| S-RIM({ratio.toFixed(3)})</div>
-        <div className="w-6/12 text-right"><span className={`text-[0.6rem] ${target_price >= stck_oprc ? "text-red-500" : "text-blue-500"}`}>({value.toFixed(2)}%) 적정 주가: </span><span className={`${target_price >= stck_oprc ? "text-red-500" : "text-blue-500"}`}>{(Number(target_price.toFixed(0)).toLocaleString())}</span></div>
-        <div className="w-2/12 text-left text-[0.6rem]">원</div>
+      <div className="w-full text-right p-4">
+        <MdTableTemplate md_main={md_main} />
       </div>
     </>
   }
@@ -312,6 +363,7 @@ export default function SearchKor() {
   if (("fulfilled" != kiInquireDailyItemChartPrice.state)
     || ("fulfilled" != kiBalanceSheet.state)
     || ("fulfilled" != kiInquirePrice.state)
+    || ("fulfilled" != kiIncomeStatement.state)
   ) {
     bShowResult = false;
     // return <>
@@ -333,27 +385,7 @@ export default function SearchKor() {
     //   }
     // }
   }
-  const md_ncav = String.raw`
-전략 1: NCAV 모형 (Net Current Asset Value Model):
 
-$$
-NCAV = (유동자산 − 총부채) > (시가총액 \times ratio)
-$$
-`;
-
-  const md_srim = String.raw`
-전략 2: S-RIM 모형 (Simple Residual Income Model):
-
-$$
-\small 기업가치 = 자기자본 + \frac{초과이익}{할인율} = B_0 + \frac{B_0 \cdot (ROE - K_e)}{K_e}
-$$
-
-$\tiny B_0 = 현재 자기자본 (Book Value of Equity)$
-
-$\tiny ROE = \frac{당기순이익 (Net Income)}{자기자본 (Equity)} \times {100}$
-
-$\tiny K_e = 할인율$
-`;
   return <>
     <div className="flex flex-col w-full">
       <div className="flex flex-col w-full">
@@ -393,7 +425,10 @@ $\tiny K_e = 할인율$
                     {kiInquireDailyItemChartPrice.output1.hts_kor_isnm}
                   </div>
                   <div className="dark:bg-black dark:text-white flex gap-2 font-mono items-center">
-                    <div className="text-right"> {Number(kiInquireDailyItemChartPrice.output1["stck_prpr"]).toLocaleString()}원 <span className="text-[0.7rem]">| {kiInquireDailyItemChartPrice.output2[0]["stck_bsop_date"]}</span></div>
+                    <div className="text-right">
+                      <span className="underline decoration-dotted decoration-4 decoration-violet-500">{Number(kiInquireDailyItemChartPrice.output1["stck_prpr"]).toLocaleString()}</span>
+                      <span> </span><span className="text-[0.7rem]">원 | {kiInquireDailyItemChartPrice.output2[0]["stck_bsop_date"]}</span>
+                    </div>
                   </div>
                 </div>
                 <div className="w-5/12">
@@ -404,7 +439,7 @@ $\tiny K_e = 할인율$
                         // data: test_data.stock_list.map((stock: any) => stock.remaining_token),
                         // data: [10, 20, 30, 40, 50, 60, 70, 80, 90],
                         data: kiInquireDailyItemChartPrice.output2.map((item: any) => item.stck_oprc).reverse(),
-                        color: "#000000",
+                        color: "rgb(138,92,236)", // chart 데이터 선 색
                       }
                     ]}
                     category_array={kiInquireDailyItemChartPrice.output2.map((item: any) => item.stck_bsop_date).reverse()}
@@ -428,36 +463,111 @@ $\tiny K_e = 할인율$
                     }
                     height={80}
                     show_yaxis_label={false}
+                    type={"line"}
                   />
                 </div>
               </div>
               <div className="dark:bg-black dark:text-white text-xs p-3 shadow">
-                <ReactMarkdown
-                  remarkPlugins={[remarkMath]}
-                  rehypePlugins={[rehypeKatex]}
-                >
-                  {md_ncav}
-                </ReactMarkdown>
-                {getNcav(kiBalanceSheet, kiInquireDailyItemChartPrice, 1.0)}
-                {getNcav(kiBalanceSheet, kiInquireDailyItemChartPrice, 1.5)}
+                <div>
+                  <ReactMarkdown
+                    remarkPlugins={[remarkGfm, remarkMath]}
+                    rehypePlugins={[rehypeRaw, [rehypeKatex, { strict: "ignore" }], rehypeHighlight]}
+                  >
+                    {(() => {
+                      return String.raw`
+전략 1: NCAV 모형 (Net Current Asset Value Model):
+
+$$
+NCAV = 유동자산 − 총부채
+$$
+
+$$
+투자 여부 = NCAV > 시가총액 \times ratio
+$$
+  
+---
+`})()}
+                  </ReactMarkdown>
+                </div>
+                <div className="px-4">
+                  <ReactMarkdown
+                    remarkPlugins={[remarkGfm, remarkMath]}
+                    rehypePlugins={[rehypeRaw, [rehypeKatex, { strict: "ignore" }], rehypeHighlight]}
+                  >
+                    {(() => {
+                      const stck_bsop_date = kiInquireDailyItemChartPrice.output2[0]["stck_bsop_date"]; // 주식 영업 일자
+                      const stck_oprc = Number(kiInquireDailyItemChartPrice.output2[0]["stck_oprc"]); // 주식 시가2
+                      const lstn_stcn = Number(kiInquireDailyItemChartPrice.output1["lstn_stcn"]); // 상장 주수
+                      const cras = Number(kiBalanceSheet.output.length > 0 ? kiBalanceSheet.output[getYearMatchIndex(stck_bsop_date)].cras : 0) * 100000000; // 유동 자산
+                      const total_lblt = Number(kiBalanceSheet.output.length > 0 ? kiBalanceSheet.output[getYearMatchIndex(stck_bsop_date)].total_lblt : 0) * 100000000; // 부채 총계
+                      return String.raw`
+$$
+\small 적정주가 = \frac{(유동자산 − 총부채)}{상장주식수}
+$$
+
+$$
+\small = \frac{${Util.UnitConversion(cras, true)} - ${Util.UnitConversion(total_lblt, true)}}{${lstn_stcn} 개}
+= ${((cras - total_lblt) / lstn_stcn).toFixed(0)} 원
+$$
+`})()}
+                  </ReactMarkdown>
+                </div>
+                {getNcav(kiBalanceSheet, kiInquireDailyItemChartPrice, [1.0, 1.5, 2.0])}
               </div>
               <div className="dark:bg-black dark:text-white text-xs p-3 shadow">
-                <ReactMarkdown
-                  remarkPlugins={[remarkMath]}
-                  rehypePlugins={[rehypeKatex]}
-                >
-                  {md_srim}
-                </ReactMarkdown>
-                <div className="flex gap-2 font-mono">
-                  <div className="w-3/12 text-right">{kiBalanceSheet.output[0].stac_yymm}</div>
-                  <div className="w-8/12 text-right">자본총계: {Util.UnitConversion(Number(kiBalanceSheet.output[0].total_cptl) * 100000000, true)} | 당기순이익: {Util.UnitConversion(Number(kiIncomeStatement.output[0].thtr_ntin) * 100000000, true)}</div>
-                  <div className="w-1/12 text-right"></div>
+                <div className="flex flex-col">
+                  <div>
+                    <ReactMarkdown
+                      remarkPlugins={[remarkGfm, remarkMath]}
+                      rehypePlugins={[rehypeRaw, [rehypeKatex, { strict: "ignore" }], rehypeHighlight]}
+                    >
+                      {(() => {
+                        return String.raw`
+전략 2: S-RIM 모형 (Simple Residual Income Model):
+
+$$
+\small 기업가치 = 자기자본 + \frac{초과이익}{할인율} = B_0 + \frac{B_0 \cdot (ROE - K_e)}{K_e}
+$$
+---
+`
+                      })()}
+                    </ReactMarkdown>
+                  </div>
+                  <div className="px-4">
+                    <ReactMarkdown
+                      remarkPlugins={[remarkGfm, remarkMath]}
+                      rehypePlugins={[rehypeRaw, [rehypeKatex, { strict: "ignore" }], rehypeHighlight]}
+                    >
+                      {(() => {
+                        const ONE_HUNDRED_MILLION = 100000000;
+                        const total_cptl = (Number(kiBalanceSheet.output[0].total_cptl) * ONE_HUNDRED_MILLION); // 자본총계
+                        const str_total_cptl = Util.UnitConversion(total_cptl, true);
+                        const thtr_ntin = Number(kiIncomeStatement.output[0].thtr_ntin) * ONE_HUNDRED_MILLION; // 당기순이익
+
+                        const ROE = thtr_ntin / total_cptl * 100;
+                        const str_ROE = Number(ROE).toFixed(2);
+
+                        const lstn_stcn = Number(kiInquireDailyItemChartPrice.output1["lstn_stcn"]); // 상장 주수
+                        const stck_oprc = Number(kiInquireDailyItemChartPrice.output2[0]["stck_oprc"]); // 주식 시가2
+
+                        return String.raw`
+$$
+\small 적정주가 = \frac{기업가치}{상장주식수} = \frac{${str_total_cptl} + \frac{${str_total_cptl} \cdot (${str_ROE} - K_e)}{K_e}}{${lstn_stcn} 개}
+$$
+
+$\tiny B_0 = 현재 자기자본 (Book Value of Equity) = ${Util.UnitConversion(total_cptl, true)}$
+
+$\tiny ROE = \frac{당기순이익 (Net Income)}{자기자본 (Equity)} \times {100} 
+= \frac{${Util.UnitConversion(thtr_ntin, true)}}{${Util.UnitConversion(total_cptl, true)}} \times {100}
+= {${str_ROE}}$
+
+$\tiny K_e = 할인율$
+`
+                      })()}
+                    </ReactMarkdown>
+                  </div>
                 </div>
-                {getSRIM(kiBalanceSheet, kiIncomeStatement, kiInquireDailyItemChartPrice, 0.01)}
-                {getSRIM(kiBalanceSheet, kiIncomeStatement, kiInquireDailyItemChartPrice, 0.02)}
-                {getSRIM(kiBalanceSheet, kiIncomeStatement, kiInquireDailyItemChartPrice, 0.03)}
-                {getSRIM(kiBalanceSheet, kiIncomeStatement, kiInquireDailyItemChartPrice, 0.05)}
-                {getSRIM(kiBalanceSheet, kiIncomeStatement, kiInquireDailyItemChartPrice, 0.10)}
+                {getSRIM(kiBalanceSheet, kiIncomeStatement, kiInquireDailyItemChartPrice, [1, 2, 3, 4, 5, 6, 7, 8, 9, 10])}
               </div>
               <div className="dark:bg-black dark:text-white text-xs p-3 shadow">
                 <div className="flex gap-2 font-mono">
@@ -624,7 +734,7 @@ $\tiny K_e = 할인율$
               <div className="dark:bg-gray-300 p-2 w-full font-mono text-[12px] prose prose-sm max-w-none leading-relaxed">
                 <ReactMarkdown
                   remarkPlugins={[remarkGfm, remarkMath]}
-                  rehypePlugins={[rehypeRaw, rehypeKatex, rehypeHighlight]}
+                  rehypePlugins={[rehypeRaw, [rehypeKatex, { strict: "ignore" }], rehypeHighlight]}
                   skipHtml={false} // HTML 태그도 렌더링하도록
                 >
                   {response}
@@ -635,6 +745,6 @@ $\tiny K_e = 할인율$
           </div>
         </>
       }
-    </div>
+    </div >
   </>
 }

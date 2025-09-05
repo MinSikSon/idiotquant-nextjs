@@ -154,7 +154,7 @@ export function NavbarWithSimpleLinks() {
 
     return (
         <>
-            <div className="fixed top-0 left-0 w-full z-30 border-r dark:border-gray-600 dark:bg-black">
+            <div className="fixed top-0 left-0 w-full z-30 border-r dark:border-gray-600">
                 <div className={`${visible ? "opacity-100 translate-y-0" : "opacity-0 -translate-y-10"} transition-all duration-300 ease-in-out bg-slate-50 dark:bg-gray-900 dark:text-white flex items-center justify-start text-blue-gray-900 min-w-56`}>
                     <div className="p-3 w-full dark:border-gray-600">
                         <div className="bg-white dark:bg-black flex md:flex-col lg:flex-col border dark:border-gray-600 rounded-lg items-center py-2 w-full">
