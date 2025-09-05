@@ -31,7 +31,7 @@ import { reqPostLaboratory } from "@/lib/features/ai/aiSlice";
 import { AiOutputResultUsageType, selectAiStreamOutput } from "@/lib/features/ai/aiStreamSlice";
 import { addKrMarketHistory, selectKrMarketHistory, selectUsMarketHistory } from "@/lib/features/searchHistory/searchHistorySlice";
 
-const DEBUG = true;
+const DEBUG = false;
 
 export default function SearchKor() {
   const pathname = usePathname();
@@ -244,7 +244,7 @@ export default function SearchKor() {
   function MdTableTemplate(props: any) {
     return <ReactMarkdown
       remarkPlugins={[remarkGfm, remarkMath]}
-      rehypePlugins={[rehypeRaw, rehypeKatex, rehypeHighlight]}
+      rehypePlugins={[rehypeRaw, [rehypeKatex, { strict: "ignore" }], rehypeHighlight]}
       components={{
         table: ({ node, ...props }) => (
           <table className="w-full table-auto border-collapse shadow-lg rounded-lg overflow-hidden text-xs md:text-sm lg:text-base" {...props} />
@@ -362,6 +362,7 @@ ${md}
   if (("fulfilled" != kiInquireDailyItemChartPrice.state)
     || ("fulfilled" != kiBalanceSheet.state)
     || ("fulfilled" != kiInquirePrice.state)
+    || ("fulfilled" != kiIncomeStatement.state)
   ) {
     bShowResult = false;
     // return <>
@@ -465,17 +466,12 @@ ${md}
                 </div>
               </div>
               <div className="dark:bg-black dark:text-white text-xs p-3 shadow">
-                <div className="pb-2">
+                <div>
                   <ReactMarkdown
                     remarkPlugins={[remarkGfm, remarkMath]}
-                    rehypePlugins={[rehypeRaw, rehypeKatex, rehypeHighlight]}
+                    rehypePlugins={[rehypeRaw, [rehypeKatex, { strict: "ignore" }], rehypeHighlight]}
                   >
                     {(() => {
-                      const stck_bsop_date = kiInquireDailyItemChartPrice.output2[0]["stck_bsop_date"]; // 주식 영업 일자
-                      const stck_oprc = Number(kiInquireDailyItemChartPrice.output2[0]["stck_oprc"]); // 주식 시가2
-                      const lstn_stcn = Number(kiInquireDailyItemChartPrice.output1["lstn_stcn"]); // 상장 주수
-                      const cras = Number(kiBalanceSheet.output.length > 0 ? kiBalanceSheet.output[getYearMatchIndex(stck_bsop_date)].cras : 0) * 100000000; // 유동 자산
-                      const total_lblt = Number(kiBalanceSheet.output.length > 0 ? kiBalanceSheet.output[getYearMatchIndex(stck_bsop_date)].total_lblt : 0) * 100000000; // 부채 총계
                       return String.raw`
 전략 1: NCAV 모형 (Net Current Asset Value Model):
 
@@ -484,21 +480,35 @@ NCAV = (유동자산 − 총부채) > (시가총액 \times ratio)
 $$
   
 ---
-
+`})()}
+                  </ReactMarkdown>
+                </div>
+                <div className="p-4 pb-0">
+                  <ReactMarkdown
+                    remarkPlugins={[remarkGfm, remarkMath]}
+                    rehypePlugins={[rehypeRaw, [rehypeKatex, { strict: "ignore" }], rehypeHighlight]}
+                  >
+                    {(() => {
+                      const stck_bsop_date = kiInquireDailyItemChartPrice.output2[0]["stck_bsop_date"]; // 주식 영업 일자
+                      const stck_oprc = Number(kiInquireDailyItemChartPrice.output2[0]["stck_oprc"]); // 주식 시가2
+                      const lstn_stcn = Number(kiInquireDailyItemChartPrice.output1["lstn_stcn"]); // 상장 주수
+                      const cras = Number(kiBalanceSheet.output.length > 0 ? kiBalanceSheet.output[getYearMatchIndex(stck_bsop_date)].cras : 0) * 100000000; // 유동 자산
+                      const total_lblt = Number(kiBalanceSheet.output.length > 0 ? kiBalanceSheet.output[getYearMatchIndex(stck_bsop_date)].total_lblt : 0) * 100000000; // 부채 총계
+                      return String.raw`
 $ \small 적정주가 = \frac{(유동자산 − 총부채)}{상장주식수}
 = \frac{${Util.UnitConversion(cras, true)} - ${Util.UnitConversion(total_lblt, true)}}{${lstn_stcn}}
 = ${((cras - total_lblt) / lstn_stcn).toFixed(0)} 원$
 `})()}
                   </ReactMarkdown>
                 </div>
-                {getNcav(kiBalanceSheet, kiInquireDailyItemChartPrice, [1.0, 1.5])}
+                {getNcav(kiBalanceSheet, kiInquireDailyItemChartPrice, [1.0, 1.5, 2.0])}
               </div>
               <div className="dark:bg-black dark:text-white text-xs p-3 shadow">
-                <div className="pb-2 flex flex-col">
+                <div className="flex flex-col">
                   <div>
                     <ReactMarkdown
                       remarkPlugins={[remarkGfm, remarkMath]}
-                      rehypePlugins={[rehypeRaw, rehypeKatex, rehypeHighlight]}
+                      rehypePlugins={[rehypeRaw, [rehypeKatex, { strict: "ignore" }], rehypeHighlight]}
                     >
                       {(() => {
                         const ONE_HUNDRED_MILLION = 100000000;
@@ -519,10 +529,10 @@ $$
                       })()}
                     </ReactMarkdown>
                   </div>
-                  <div className="pl-4">
+                  <div className="p-4 pb-0">
                     <ReactMarkdown
                       remarkPlugins={[remarkGfm, remarkMath]}
-                      rehypePlugins={[rehypeRaw, rehypeKatex, rehypeHighlight]}
+                      rehypePlugins={[rehypeRaw, [rehypeKatex, { strict: "ignore" }], rehypeHighlight]}
                     >
                       {(() => {
                         const ONE_HUNDRED_MILLION = 100000000;
@@ -537,8 +547,7 @@ $$
                         const stck_oprc = Number(kiInquireDailyItemChartPrice.output2[0]["stck_oprc"]); // 주식 시가2
 
                         return String.raw`
-$\small 적정주가 = \frac{기업가치}{상장주식수} = \frac{${str_total_cptl} + \frac{${str_total_cptl} \cdot (${str_ROE} - K_e)}{K_e}}{${lstn_stcn}}$
-
+$적정주가 = \frac{기업가치}{상장주식수} = \frac{${str_total_cptl} + \frac{${str_total_cptl} \cdot (${str_ROE} - K_e)}{K_e}}{${lstn_stcn}}$
 
 $\tiny B_0 = 현재 자기자본 (Book Value of Equity) = ${Util.UnitConversion(total_cptl, true)}$
 
@@ -719,7 +728,7 @@ $\tiny K_e = 할인율$
               <div className="dark:bg-gray-300 p-2 w-full font-mono text-[12px] prose prose-sm max-w-none leading-relaxed">
                 <ReactMarkdown
                   remarkPlugins={[remarkGfm, remarkMath]}
-                  rehypePlugins={[rehypeRaw, rehypeKatex, rehypeHighlight]}
+                  rehypePlugins={[rehypeRaw, [rehypeKatex, { strict: "ignore" }], rehypeHighlight]}
                   skipHtml={false} // HTML 태그도 렌더링하도록
                 >
                   {response}
@@ -730,6 +739,6 @@ $\tiny K_e = 할인율$
           </div>
         </>
       }
-    </div>
+    </div >
   </>
 }
