@@ -262,7 +262,7 @@ export default function SearchKor() {
       rehypePlugins={[rehypeRaw, [rehypeKatex, { strict: "ignore" }], rehypeHighlight]}
       components={{
         table: ({ node, ...props }) => (
-          <table className="w-full table-auto border-collapse shadow-lg rounded-lg overflow-hidden text-xs md:text-sm lg:text-base" {...props} />
+          <table className="dark:text-black w-full table-auto border-collapse shadow-lg rounded-lg overflow-hidden text-xs md:text-sm lg:text-base" {...props} />
         ),
         th: ({ node, ...props }) => (
           <th className="px-4 py-2 bg-gradient-to-r from-gray-100 to-gray-200 font-semibold uppercase text-left border-b border-gray-300" {...props} />
@@ -433,12 +433,12 @@ ${md}
         <>
           <div className="dark:bg-black flex flex-col md:flex-row lg:flex-row">
             <div className="sm:flex-col md:flex-1 lg:flex-1">
-              <div className={`flex shadow ${fixed ? "z-40 w-full fixed top-20 left-0 shadow-md bg-white dark:bg-black" : "relative"}`}>
+              <div className={`flex shadow ${fixed ? "z-40 w-full fixed top-20 left-0 shadow-md bg-white dark:bg-black dark:border-b dark:border-gray-500" : "relative"}`}>
                 <div className={`${fixed ? "w-7/12 p-3 py-1" : "w-7/12 p-3"} dark:bg-black dark:text-white font-mono`}>
                   <div className={`flex items-center ${fixed ? "hidden" : ""}`}>
                     <div className="text-[0.6rem]">{kiInquirePrice.output["rprs_mrkt_kor_name"]} | {kiInquirePrice.output["bstp_kor_isnm"]} </div>
                   </div>
-                  <div className={`${fixed ? "" : ""}`}>
+                  <div className="">
                     <div className="text-xl">
                       {kiInquireDailyItemChartPrice.output1.hts_kor_isnm}
                     </div>
@@ -487,6 +487,7 @@ ${md}
                   />
                 </div>
               </div>
+              <div className={`${fixed ? "h-52" : ""}`}></div>
               <div className="dark:bg-black dark:text-white text-xs p-3 shadow">
                 <div>
                   <ReactMarkdown
