@@ -57,6 +57,21 @@ export default function SearchKor() {
 
   const krMarketHistory = useAppSelector(selectKrMarketHistory);
 
+  const [fixed, setFixed] = useState(false);
+
+  useEffect(() => {
+    const handleScroll = () => {
+      if (window.scrollY > 160) {
+        setFixed(true);
+      } else {
+        setFixed(false);
+      }
+    };
+
+    window.addEventListener("scroll", handleScroll, { passive: true });
+    return () => window.removeEventListener("scroll", handleScroll);
+  }, []);
+
   useEffect(() => {
     if (DEBUG) console.log(`[Search]`, `kiToken:`, kiToken);
     if ("cf" == loginState || "kakao" == loginState) {
@@ -388,25 +403,27 @@ ${md}
 
   return <>
     <div className="flex flex-col w-full">
-      <div className="flex flex-col w-full">
-        <SearchAutocomplete placeHolder={"Enter KOSPI/KOSDAQ/KONEX stock name."} onSearchButton={onSearchButton} validCorpNameArray={validCorpNameArray} />
-        <div className="dark:bg-black flex px-4 gap-1 overflow-x-auto">
-          {krMarketHistory.map((stockName: string, index: number) => {
-            return (
-              <div key={index} className="dark:bg-black dark:text-white shadow border text-blue-500 hover:text-blue-700 hover:bg-blue-100 rounded-xl px-1 py-0.5 transition-all duration-200 min-w-fit">
-                <div className="text-xs">
-                  <button
-                    className="text-blue-500 hover:text-blue-700 transition-colors duration-200"
-                    onClick={() => {
-                      onSearchButton(stockName);
-                    }}
-                  >
-                    {stockName}
-                  </button>
+      <div className={`${fixed ? "z-50 w-full fixed top-0 left-0 bg-white dark:bg-black" : "relative"}`}>
+        <div className="flex flex-col w-full">
+          <SearchAutocomplete placeHolder={"Enter KOSPI/KOSDAQ/KONEX stock name."} onSearchButton={onSearchButton} validCorpNameArray={validCorpNameArray} />
+          <div className="dark:bg-black flex px-4 gap-1 overflow-x-auto">
+            {krMarketHistory.map((stockName: string, index: number) => {
+              return (
+                <div key={index} className="dark:bg-black dark:text-white border text-blue-500 hover:text-blue-700 hover:bg-blue-100 rounded-xl px-1 py-0.5 transition-all duration-200 min-w-fit">
+                  <div className="text-xs">
+                    <button
+                      className="text-blue-500 hover:text-blue-700 transition-colors duration-200"
+                      onClick={() => {
+                        onSearchButton(stockName);
+                      }}
+                    >
+                      {stockName}
+                    </button>
+                  </div>
                 </div>
-              </div>
-            );
-          }).reverse()}
+              );
+            }).reverse()}
+          </div>
         </div>
       </div>
       {(false == bShowResult) ?
@@ -416,22 +433,25 @@ ${md}
         <>
           <div className="dark:bg-black flex flex-col md:flex-row lg:flex-row">
             <div className="sm:flex-col md:flex-1 lg:flex-1">
-              <div className="flex shadow">
-                <div className="w-7/12 dark:bg-black dark:text-white p-3 font-mono">
-                  <div className="flex items-center">
+              <div className={`flex shadow ${fixed ? "z-40 w-full fixed top-20 left-0 shadow-md bg-white dark:bg-black" : "relative"}`}>
+                <div className={`${fixed ? "w-7/12 p-3 py-1" : "w-7/12 p-3"} dark:bg-black dark:text-white font-mono`}>
+                  <div className={`flex items-center ${fixed ? "hidden" : ""}`}>
                     <div className="text-[0.6rem]">{kiInquirePrice.output["rprs_mrkt_kor_name"]} | {kiInquirePrice.output["bstp_kor_isnm"]} </div>
                   </div>
-                  <div className="text-xl">
-                    {kiInquireDailyItemChartPrice.output1.hts_kor_isnm}
-                  </div>
-                  <div className="dark:bg-black dark:text-white flex gap-2 font-mono items-center">
-                    <div className="text-right">
-                      <span className="underline decoration-dotted decoration-4 decoration-violet-500">{Number(kiInquireDailyItemChartPrice.output1["stck_prpr"]).toLocaleString()}</span>
-                      <span> </span><span className="text-[0.7rem]">원 | {kiInquireDailyItemChartPrice.output2[0]["stck_bsop_date"]}</span>
+                  <div className={`${fixed ? "" : ""}`}>
+                    <div className="text-xl">
+                      {kiInquireDailyItemChartPrice.output1.hts_kor_isnm}
+                    </div>
+                    <div className="dark:bg-black dark:text-white flex gap-2 font-mono items-center">
+                      <div className="text-right">
+                        {/* <span className={`${fixed ? "visible" : "invisible"} text-[0.7rem]`}> | </span> */}
+                        <span className="underline decoration-dotted decoration-4 decoration-violet-500">{Number(kiInquireDailyItemChartPrice.output1["stck_prpr"]).toLocaleString()}</span>
+                        <span> </span><span className="text-[0.7rem]">원 | {kiInquireDailyItemChartPrice.output2[0]["stck_bsop_date"]}</span>
+                      </div>
                     </div>
                   </div>
                 </div>
-                <div className="w-5/12">
+                <div className={`${fixed ? "w-5/12" : "w-5/12"}`}>
                   <LineChart
                     data_array={[
                       {
@@ -461,7 +481,7 @@ ${md}
                         ],
                       }
                     }
-                    height={80}
+                    height={`${fixed ? "40" : "80"}`}
                     show_yaxis_label={false}
                     type={"line"}
                   />
