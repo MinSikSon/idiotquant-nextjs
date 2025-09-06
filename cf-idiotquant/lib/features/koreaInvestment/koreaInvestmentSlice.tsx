@@ -680,18 +680,18 @@ export const koreaInvestmentSlice = createAppSlice({
             },
             {
                 pending: (state) => {
-                    console.log(`[reqGetIncomeStatement] pending`);
+                    // console.log(`[reqGetIncomeStatement] pending`);
                     state.koreaInvestmentIncomeStatement.state = "pending";
                 },
                 fulfilled: (state, action) => {
-                    console.log(`[reqGetIncomeStatement] fulfilled`, `action.payload`, typeof action.payload, action.payload);
+                    // console.log(`[reqGetIncomeStatement] fulfilled`, `action.payload`, typeof action.payload, action.payload);
                     if (undefined != action.payload["output"]) {
                         state.koreaInvestmentIncomeStatement = { ...state.koreaInvestmentIncomeStatement, ...action.payload, state: "fulfilled" };
                         state.state = "income-statement";
                     }
                 },
                 rejected: (state) => {
-                    console.log(`[reqGet IncomeStatement] get-rejected 2`);
+                    // console.log(`[reqGet IncomeStatement] get-rejected 2`);
                 },
             }
         ),
