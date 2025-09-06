@@ -265,13 +265,13 @@ export default function SearchKor() {
       rehypePlugins={[rehypeRaw, [rehypeKatex, { strict: "ignore" }], rehypeHighlight]}
       components={{
         table: ({ node, ...props }) => (
-          <table className="dark:text-black w-full table-auto border-collapse shadow-lg rounded-lg overflow-hidden text-xs md:text-sm lg:text-base" {...props} />
+          <table className="dark:text-black w-full table-auto border-collapse shadow-lg rounded-lg overflow-hidden text-[0.6rem] sm:text-sm md:text-sm lg:text-sm" {...props} />
         ),
         th: ({ node, ...props }) => (
-          <th className="px-4 py-2 bg-gradient-to-r from-gray-100 to-gray-200 font-semibold uppercase text-left border-b border-gray-300" {...props} />
+          <th className="pl-1 py-1 bg-gradient-to-r from-gray-100 to-gray-200 font-semibold uppercase text-left border-b border-gray-300" {...props} />
         ),
         td: ({ node, ...props }) => (
-          <td className="px-4 py-2 border-b border-gray-200 text-right" {...props} />
+          <td className="pl-1 py-1 border-b border-gray-200 text-right" {...props} />
         ),
         tr: ({ node, ...props }) => {
           const nodeChildren: any = node?.children[1];
@@ -313,8 +313,8 @@ export default function SearchKor() {
     }).join("\n");
 
     const md_main = String.raw`
-| ratio (%) | Expected return (%) | Target price (won) |
-|-----------|---------------------|--------------------|
+| ratio (%) | Expected return(%) | Target price(₩) |
+|-----------|--------------------|-----------------|
 ${md}
 `;
     return <>
@@ -333,23 +333,40 @@ ${md}
     // V0 = B0 + B0 * (ROE - Ke) / Ke
 
     const ONE_HUNDRED_MILLION = 100000000;
+    const stac_yymm_list = kiBalanceSheet.output.slice(0, 5).map(item => item.stac_yymm);
     const total_cptl = (Number(kiBalanceSheet.output[0].total_cptl) * ONE_HUNDRED_MILLION); // 자본총계
+    const total_cptl_list = kiBalanceSheet.output.slice(0, 5).map(item => Number(item.total_cptl) * ONE_HUNDRED_MILLION);
     const thtr_ntin = Number(kiIncomeStatement.output[0].thtr_ntin) * ONE_HUNDRED_MILLION; // 당기순이익
+    const thtr_ntin_list = kiIncomeStatement.output.slice(0, 5).map(item => Number(item.thtr_ntin) * ONE_HUNDRED_MILLION);
     const ROE = thtr_ntin / total_cptl * 100;
+    const ROE_list = thtr_ntin_list.map((item, index) => item / total_cptl_list[index] * 100);
 
     const stck_oprc = Number(kiInquireDailyItemChartPrice.output2[0]["stck_oprc"]); // 주식 시가2
     const lstn_stcn = Number(kiInquireDailyItemChartPrice.output1["lstn_stcn"]); // 상장 주수
 
-    const md = ratioList.map(ratio => {
-      const result = total_cptl * (1 + ((ROE - ratio) / ratio));
-      const target_price = result / lstn_stcn;
-      const percentage = target_price / stck_oprc * 100 - 100;
-      return `|${ratio.toFixed(2)}%|${percentage.toFixed(2)}%|${Number(target_price.toFixed(0)).toLocaleString()}|`;
+    const md_date = (stac_yymm_list.map(item => item).join(" Target price(₩)|")) + " Target price(₩)|";
+    // console.log(`md_date`, md_date);
+
+    const md = ratioList.map((ratio, index) => {
+      // const result = total_cptl * (1 + ((ROE - ratio) / ratio));
+      const result_list = ROE_list.map((roe, index) => total_cptl_list[index] * (1 + ((roe - ratio) / ratio)));
+      // console.log(`result_list`, result_list);
+      // const target_price = result / lstn_stcn;
+      const target_price_list = result_list.map(item => item / lstn_stcn);
+      const percentage = (result_list[0] / lstn_stcn) / stck_oprc * 100 - 100;
+
+      // console.log(`index`, index, `target_price_list`, target_price_list);
+
+      // return `|${ratio.toFixed(2)}%|${percentage.toFixed(2)}%|${Number(target_price.toFixed(0)).toLocaleString()}|`;
+      return `|${ratio.toFixed(2)}%|${percentage.toFixed(2)}%|${target_price_list.map(target_price => Number(target_price.toFixed(0)).toLocaleString()).join("|")}|`;
     }).join("\n");
 
+
+    // console.log(`md`, md);
+
     const md_main = String.raw`
-| $K_e$ (%) | Expected return (%) | Target price (won) |
-|-----------|---------------------|--------------------|
+| $K_e$ (%) | ${stac_yymm_list[0]} Expected return(%) |${md_date}
+|-----------|-----------------------------------------|-|-|-|-|--|
 ${md}
 `;
 
