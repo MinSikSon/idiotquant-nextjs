@@ -214,44 +214,7 @@ ${md}
                 <MdTableTemplate md_main={md_main} />
             </div>
         </>
-
-        // return <>
-        //     <div className="flex gap-2">
-        //         <div className="w-4/12 text-right text-[0.6rem]">전략-NCAV({ratio.toFixed(1)})</div>
-        //         <div className="w-6/12 text-right"><span className="text-[0.6rem]">({value.toFixed(2)}%) 목표가: </span><span className={`${value >= 0 ? "text-red-500" : "text-blue-500"}`}>{(Number(target_price.toFixed(5)).toLocaleString())}</span></div>
-        //         <div className="w-2/12 text-left text-[0.6rem]">USD</div>
-        //     </div>
-        // </>
     }
-
-    // function getNcav(kiBalanceSheet: KoreaInvestmentBalanceSheet,
-    //     kiInquireDailyItemChartPrice: KoreaInvestmentInquireDailyItemChartPrice,
-    //     ratioList: number[]) {
-    //     // console.log(`getNcav`, `kiBalanceSheet`, kiBalanceSheet, kiBalanceSheet.output, !!kiBalanceSheet.output);
-
-    //     const stck_bsop_date = kiInquireDailyItemChartPrice.output2[0]["stck_bsop_date"]; // 주식 영업 일자
-    //     const stck_oprc = Number(kiInquireDailyItemChartPrice.output2[0]["stck_oprc"]); // 주식 시가2
-    //     const lstn_stcn = Number(kiInquireDailyItemChartPrice.output1["lstn_stcn"]); // 상장 주수
-    //     const cras = Number(kiBalanceSheet.output.length > 0 ? kiBalanceSheet.output[getYearMatchIndex(stck_bsop_date)].cras : 0) * 100000000; // 유동 자산
-    //     const total_lblt = Number(kiBalanceSheet.output.length > 0 ? kiBalanceSheet.output[getYearMatchIndex(stck_bsop_date)].total_lblt : 0) * 100000000; // 부채 총계
-
-    //     const md = ratioList.map(ratio => {
-    //         const target_price = (cras - total_lblt) / lstn_stcn;
-    //         const percentage: number = (((cras - total_lblt) / (stck_oprc * lstn_stcn * ratio) - 1) * 100);
-    //         return `|${ratio.toFixed(2)}|${percentage.toFixed(2)}%|${Number(target_price.toFixed(0)).toLocaleString()}|`;
-    //     }).join("\n");
-
-    //     const md_main = String.raw`
-    // | ratio (%) | Expected return(%) | Target price(₩) |
-    // |-----------|--------------------|-----------------|
-    // ${md}
-    // `;
-    //     return <>
-    //         <div className="w-full text-right p-4">
-    //             <MdTableTemplate md_main={md_main} />
-    //         </div>
-    //     </>
-    // }
 
     let bShowResult = false;
     if (("fulfilled" == kiUsDailyPrice.state)
@@ -289,7 +252,7 @@ ${md}
                     </div>
                 </div>
             </div>
-            {true == bShowResult && "0" != kiUsMaretSearchInfo.rt_cd ?
+            {false == bShowResult || "0" != kiUsMaretSearchInfo.rt_cd ?
                 <>
                     <div className="dark:bg-black dark:text-white p-3 shadow">
                         {kiUsMaretSearchInfo.msg1}
@@ -489,7 +452,7 @@ $$
                                 </div>
                             </div>
                             <div className="dark:bg-black dark:text-white text-xs p-3 shadow">
-                                {bShowResult && <table className="table-auto w-full text-right font-mono border border-gray-300">
+                                {true == bShowResult && <table className="table-auto w-full text-right font-mono border border-gray-300">
                                     <thead className="bg-gray-100">
                                         <tr>
                                             <th className="border px-2 py-1 text-left">항목</th>
