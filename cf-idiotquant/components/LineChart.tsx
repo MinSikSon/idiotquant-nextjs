@@ -155,7 +155,7 @@ export default function LineChart(props: any) {
                         },
                         padding: {
                             top: -25, // 상단 여백 제거
-                            bottom: -25, // 하단 여백 제거
+                            bottom: -35, // 하단 여백 제거
                             right: 20,
                         },
                     },

@@ -57,6 +57,24 @@ export default function SearchKor() {
 
   const krMarketHistory = useAppSelector(selectKrMarketHistory);
 
+  const [fixed, setFixed] = useState(false);
+
+  const [openNCAV, setOpenNCAV] = useState(false);
+  const [openSRIM, setOpenSRIM] = useState(false);
+
+  useEffect(() => {
+    const handleScroll = () => {
+      if (window.scrollY > 160) {
+        setFixed(true);
+      } else {
+        setFixed(false);
+      }
+    };
+
+    window.addEventListener("scroll", handleScroll, { passive: true });
+    return () => window.removeEventListener("scroll", handleScroll);
+  }, []);
+
   useEffect(() => {
     if (DEBUG) console.log(`[Search]`, `kiToken:`, kiToken);
     if ("cf" == loginState || "kakao" == loginState) {
@@ -247,7 +265,7 @@ export default function SearchKor() {
       rehypePlugins={[rehypeRaw, [rehypeKatex, { strict: "ignore" }], rehypeHighlight]}
       components={{
         table: ({ node, ...props }) => (
-          <table className="w-full table-auto border-collapse shadow-lg rounded-lg overflow-hidden text-xs md:text-sm lg:text-base" {...props} />
+          <table className="dark:text-black w-full table-auto border-collapse shadow-lg rounded-lg overflow-hidden text-xs md:text-sm lg:text-base" {...props} />
         ),
         th: ({ node, ...props }) => (
           <th className="px-4 py-2 bg-gradient-to-r from-gray-100 to-gray-200 font-semibold uppercase text-left border-b border-gray-300" {...props} />
@@ -295,8 +313,8 @@ export default function SearchKor() {
     }).join("\n");
 
     const md_main = String.raw`
-| ratio | Expected return (%) | price (won) |
-|-------|---------------------|-------------|
+| ratio (%) | Expected return (%) | Target price (won) |
+|-----------|---------------------|--------------------|
 ${md}
 `;
     return <>
@@ -388,25 +406,27 @@ ${md}
 
   return <>
     <div className="flex flex-col w-full">
-      <div className="flex flex-col w-full">
-        <SearchAutocomplete placeHolder={"Enter KOSPI/KOSDAQ/KONEX stock name."} onSearchButton={onSearchButton} validCorpNameArray={validCorpNameArray} />
-        <div className="dark:bg-black flex px-4 gap-1 overflow-x-auto">
-          {krMarketHistory.map((stockName: string, index: number) => {
-            return (
-              <div key={index} className="dark:bg-black dark:text-white shadow border text-blue-500 hover:text-blue-700 hover:bg-blue-100 rounded-xl px-1 py-0.5 transition-all duration-200 min-w-fit">
-                <div className="text-xs">
-                  <button
-                    className="text-blue-500 hover:text-blue-700 transition-colors duration-200"
-                    onClick={() => {
-                      onSearchButton(stockName);
-                    }}
-                  >
-                    {stockName}
-                  </button>
+      <div className={`${fixed ? "z-50 w-full fixed top-0 left-0 bg-white dark:bg-black" : "relative"}`}>
+        <div className="flex flex-col w-full">
+          <SearchAutocomplete placeHolder={"Enter KOSPI/KOSDAQ/KONEX stock name."} onSearchButton={onSearchButton} validCorpNameArray={validCorpNameArray} />
+          <div className="dark:bg-black flex px-4 gap-1 overflow-x-auto">
+            {krMarketHistory.map((stockName: string, index: number) => {
+              return (
+                <div key={index} className="dark:bg-black dark:text-white border text-blue-500 hover:text-blue-700 hover:bg-blue-100 rounded-xl px-1 py-0.5 transition-all duration-200 min-w-fit">
+                  <div className="text-xs">
+                    <button
+                      className="text-blue-500 hover:text-blue-700 transition-colors duration-200"
+                      onClick={() => {
+                        onSearchButton(stockName);
+                      }}
+                    >
+                      {stockName}
+                    </button>
+                  </div>
                 </div>
-              </div>
-            );
-          }).reverse()}
+              );
+            }).reverse()}
+          </div>
         </div>
       </div>
       {(false == bShowResult) ?
@@ -416,22 +436,25 @@ ${md}
         <>
           <div className="dark:bg-black flex flex-col md:flex-row lg:flex-row">
             <div className="sm:flex-col md:flex-1 lg:flex-1">
-              <div className="flex shadow">
-                <div className="w-7/12 dark:bg-black dark:text-white p-3 font-mono">
-                  <div className="flex items-center">
+              <div className={`flex shadow transition-all duration-500 ease-in-out ${fixed ? "z-40 w-full fixed top-20 left-0 shadow-md bg-white dark:bg-black dark:border-b dark:border-gray-500" : "relative"}`}>
+                <div className={`${fixed ? "w-7/12 p-3 py-1" : "w-7/12 p-3"} dark:bg-black dark:text-white font-mono`}>
+                  <div className={`flex items-center ${fixed ? "hidden" : ""}`}>
                     <div className="text-[0.6rem]">{kiInquirePrice.output["rprs_mrkt_kor_name"]} | {kiInquirePrice.output["bstp_kor_isnm"]} </div>
                   </div>
-                  <div className="text-xl">
-                    {kiInquireDailyItemChartPrice.output1.hts_kor_isnm}
-                  </div>
-                  <div className="dark:bg-black dark:text-white flex gap-2 font-mono items-center">
-                    <div className="text-right">
-                      <span className="underline decoration-dotted decoration-4 decoration-violet-500">{Number(kiInquireDailyItemChartPrice.output1["stck_prpr"]).toLocaleString()}</span>
-                      <span> </span><span className="text-[0.7rem]">원 | {kiInquireDailyItemChartPrice.output2[0]["stck_bsop_date"]}</span>
+                  <div className="">
+                    <div className="text-xl">
+                      {kiInquireDailyItemChartPrice.output1.hts_kor_isnm}
+                    </div>
+                    <div className="dark:bg-black dark:text-white flex gap-2 font-mono items-center">
+                      <div className="text-right">
+                        {/* <span className={`${fixed ? "visible" : "invisible"} text-[0.7rem]`}> | </span> */}
+                        <span className="underline decoration-dotted decoration-4 decoration-violet-500">{Number(kiInquireDailyItemChartPrice.output1["stck_prpr"]).toLocaleString()}</span>
+                        <span> </span><span className="text-[0.7rem]">원 | {kiInquireDailyItemChartPrice.output2[0]["stck_bsop_date"]}</span>
+                      </div>
                     </div>
                   </div>
                 </div>
-                <div className="w-5/12">
+                <div className={`${fixed ? "w-5/12" : "w-5/12"}`}>
                   <LineChart
                     data_array={[
                       {
@@ -461,14 +484,18 @@ ${md}
                         ],
                       }
                     }
-                    height={80}
+                    height={`${fixed ? "40" : "80"}`}
                     show_yaxis_label={false}
                     type={"line"}
                   />
                 </div>
               </div>
+              <div className={`${fixed ? "h-52" : ""}`}></div>
               <div className="dark:bg-black dark:text-white text-xs p-3 shadow">
-                <div>
+                <div className="flex cursor-pointer hover:bg-gray-200" onClick={() => setOpenNCAV(!openNCAV)}>
+                  <span className={`transform transition-transform ${openNCAV ? "rotate-0" : "-rotate-90"}`}>
+                    ▼
+                  </span>
                   <ReactMarkdown
                     remarkPlugins={[remarkGfm, remarkMath]}
                     rehypePlugins={[rehypeRaw, [rehypeKatex, { strict: "ignore" }], rehypeHighlight]}
@@ -476,20 +503,10 @@ ${md}
                     {(() => {
                       return String.raw`
 전략 1: NCAV 모형 (Net Current Asset Value Model):
-
-$$
-NCAV = 유동자산 − 총부채
-$$
-
-$$
-투자 여부 = NCAV > 시가총액 \times ratio
-$$
-  
----
 `})()}
                   </ReactMarkdown>
                 </div>
-                <div className="px-4">
+                <div className={`px-4 overflow-hidden transition-all duration-500 ease-in-out ${openNCAV ? "max-h-44 p-4" : "max-h-0 p-0"}`}>
                   <ReactMarkdown
                     remarkPlugins={[remarkGfm, remarkMath]}
                     rehypePlugins={[rehypeRaw, [rehypeKatex, { strict: "ignore" }], rehypeHighlight]}
@@ -501,6 +518,15 @@ $$
                       const cras = Number(kiBalanceSheet.output.length > 0 ? kiBalanceSheet.output[getYearMatchIndex(stck_bsop_date)].cras : 0) * 100000000; // 유동 자산
                       const total_lblt = Number(kiBalanceSheet.output.length > 0 ? kiBalanceSheet.output[getYearMatchIndex(stck_bsop_date)].total_lblt : 0) * 100000000; // 부채 총계
                       return String.raw`
+$$
+NCAV = 유동자산 − 총부채
+$$
+
+$$
+투자 여부 = NCAV > 시가총액 \times ratio
+$$
+  
+---
 $$
 \small 적정주가 = \frac{(유동자산 − 총부채)}{상장주식수}
 $$
@@ -516,7 +542,10 @@ $$
               </div>
               <div className="dark:bg-black dark:text-white text-xs p-3 shadow">
                 <div className="flex flex-col">
-                  <div>
+                  <div className="flex cursor-pointer hover:bg-gray-200" onClick={() => setOpenSRIM(!openSRIM)}>
+                    <span className={`transform transition-transform ${openSRIM ? "rotate-0" : "-rotate-90"}`}>
+                      ▼
+                    </span>
                     <ReactMarkdown
                       remarkPlugins={[remarkGfm, remarkMath]}
                       rehypePlugins={[rehypeRaw, [rehypeKatex, { strict: "ignore" }], rehypeHighlight]}
@@ -524,16 +553,11 @@ $$
                       {(() => {
                         return String.raw`
 전략 2: S-RIM 모형 (Simple Residual Income Model):
-
-$$
-\small 기업가치 = 자기자본 + \frac{초과이익}{할인율} = B_0 + \frac{B_0 \cdot (ROE - K_e)}{K_e}
-$$
----
 `
                       })()}
                     </ReactMarkdown>
                   </div>
-                  <div className="px-4">
+                  <div className={`px-4 overflow-hidden transition-all duration-500 ease-in-out ${openSRIM ? "max-h-48 p-4" : "max-h-0 p-0"}`}>
                     <ReactMarkdown
                       remarkPlugins={[remarkGfm, remarkMath]}
                       rehypePlugins={[rehypeRaw, [rehypeKatex, { strict: "ignore" }], rehypeHighlight]}
@@ -551,6 +575,11 @@ $$
                         const stck_oprc = Number(kiInquireDailyItemChartPrice.output2[0]["stck_oprc"]); // 주식 시가2
 
                         return String.raw`
+$$
+\small 기업가치 = 자기자본 + \frac{초과이익}{할인율} = B_0 + \frac{B_0 \cdot (ROE - K_e)}{K_e}
+$$
+---
+
 $$
 \small 적정주가 = \frac{기업가치}{상장주식수} = \frac{${str_total_cptl} + \frac{${str_total_cptl} \cdot (${str_ROE} - K_e)}{K_e}}{${lstn_stcn} 개}
 $$
