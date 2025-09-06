@@ -149,11 +149,29 @@ export default function SearchKor() {
         // const requirement = `이 종목의 재무정보 기반으로 매수/매도 의견을 알려줘.`;
         // const prompt = `${default_condition} ${stock_condition} ${requirement}`;
 
+        // const stac_yymm = latestIncomeStatement.stac_yymm; // str    #결산 년월
+        const sale_account = Number(latestIncomeStatement.sale_account) * ONE_HUNDRED_MILLION; // str    #매출액
+        const sale_cost = Number(latestIncomeStatement.sale_cost) * ONE_HUNDRED_MILLION; // str    #매출 원가
+        const sale_totl_prfi = Number(latestIncomeStatement.sale_totl_prfi) * ONE_HUNDRED_MILLION; // str    #매출 총 이익
+        const depr_cost = Number(latestIncomeStatement.depr_cost) * ONE_HUNDRED_MILLION; // str    #감가상각비
+        const sell_mang = Number(latestIncomeStatement.sell_mang) * ONE_HUNDRED_MILLION; // str    #판매 및 관리비
+        const bsop_prti = Number(latestIncomeStatement.bsop_prti) * ONE_HUNDRED_MILLION; // str    #영업 이익
+        const bsop_non_ernn = Number(latestIncomeStatement.bsop_non_ernn) * ONE_HUNDRED_MILLION; // str    #영업 외 수익
+        const bsop_non_expn = Number(latestIncomeStatement.bsop_non_expn) * ONE_HUNDRED_MILLION; // str    #영업 외 비용
+        const op_prfi = Number(latestIncomeStatement.op_prfi) * ONE_HUNDRED_MILLION; // str    #경상 이익
+        const spec_prfi = Number(latestIncomeStatement.spec_prfi) * ONE_HUNDRED_MILLION; // str    #특별 이익
+        const spec_loss = Number(latestIncomeStatement.spec_loss) * ONE_HUNDRED_MILLION; // str    #특별 손실
+        const thtr_ntin = Number(latestIncomeStatement.thtr_ntin) * ONE_HUNDRED_MILLION; // str    #당기순이익
+
         const prompt = `다음 정보를 기반으로 종목의 매수/매도 의견을 한국어로 알려줘. (그리고 두괄식 요약, Markdown 형식, 핵심 숫자 강조(굵게), 금액 단위는 원(₩)으로 표기해줘. 그리고 중복된 설명을 좀 줄여줘.)
           종목명은 ${name} ,업종은 ${bstp_kor_isnm}. 주가는 ${stck_oprc.toLocaleString()}원, 시가총액은 ${MARKET_CAP.toLocaleString()}원, 결산일은: ${stac_yymm},
           유동자산은 ${CURRENT_ASSET.toLocaleString()}원 고정자산은 ${fxas.toLocaleString()}원, 자산총계는 ${total_aset.toLocaleString()}원,
           유동부채는 ${flow_lblt.toLocaleString()}원, 고정부채는 ${fix_lblt.toLocaleString()}원, 부채총계는 ${TOTAL_LIABILITIES.toLocaleString()}원,
-          자본금은 ${cpfn.toLocaleString()}원, 자본잉여금은 ${cfp_surp.toLocaleString()}원, 이익잉여금은 ${prfi_surp.toLocaleString()}원, 자본총계는 ${total_cptl.toLocaleString()}원`;
+          자본금은 ${cpfn.toLocaleString()}원, 자본잉여금은 ${cfp_surp.toLocaleString()}원, 이익잉여금은 ${prfi_surp.toLocaleString()}원, 자본총계는 ${total_cptl.toLocaleString()}원,
+          손익정보는 매출액은 ${sale_account.toLocaleString()}원, 매출원가는 ${sale_cost.toLocaleString()}원, 매출총이익은 ${sale_totl_prfi.toLocaleString()}원,
+          감가상각비는 ${depr_cost.toLocaleString()}원, 판매및관리비는 ${sell_mang.toLocaleString()}원, 영업이익은 ${bsop_prti.toLocaleString()}원,
+          영업외수익은 ${bsop_non_ernn.toLocaleString()}원, 영업외비용은 ${bsop_non_expn.toLocaleString()}원, 경상이익은 ${op_prfi.toLocaleString()}원,
+          특별이익은 ${spec_prfi.toLocaleString()}원, 특별손실은 ${spec_loss.toLocaleString()}원, 당기순이익은 ${thtr_ntin.toLocaleString()}원.`;
 
         dispatch(reqPostLaboratory({ system_content: prompt, user_content: prompt }));
       }
