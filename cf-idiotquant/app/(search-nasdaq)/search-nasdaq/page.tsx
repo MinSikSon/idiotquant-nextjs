@@ -5,7 +5,7 @@ import { useState, useEffect } from "react";
 import { useAppDispatch, useAppSelector } from "@/lib/hooks";
 import { selectLoginState } from "@/lib/features/login/loginSlice";
 import { usePathname } from "next/navigation";
-import { isValidCookie } from "@/components/util";
+import { isValidCookie, Util } from "@/components/util";
 import { getKoreaInvestmentUsMaretSearchInfo, getKoreaInvestmentUsMarketDailyPrice, KoreaInvestmentOverseasPriceDetail, KoreaInvestmentOverseasPriceDetailOutput, KoreaInvestmentOverseasPriceQuotationsDailyPrice, KoreaInvestmentOverseasPriceQuotationsInquireDailyChartPrice, KoreaInvestmentOverseasSearchInfo, KoreaInvestmentOverseasSearchInfoOutput, reqGetOverseasPriceQuotationsDailyPrice, reqGetQuotationsSearchInfo } from "@/lib/features/koreaInvestmentUsMarket/koreaInvestmentUsMarketSlice";
 import { getKoreaInvestmentUsMaretPriceDetail, reqGetQuotationsPriceDetail } from "@/lib/features/koreaInvestmentUsMarket/koreaInvestmentUsMarketSlice";
 import { getKoreaInvestmentToken, KoreaInvestmentToken, reqGetInquireBalance } from "@/lib/features/koreaInvestment/koreaInvestmentSlice";
@@ -19,7 +19,16 @@ import LineChart from "@/components/LineChart";
 import { addUsMarketHistory, selectUsMarketHistory } from "@/lib/features/searchHistory/searchHistorySlice";
 import { getFmpBalanceSheetStatement } from "@/lib/features/fmpUsMarket/fmpUsMarketAPI";
 
-const DEBUG = false;
+import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
+import remarkMath from 'remark-math';
+import rehypeRaw from 'rehype-raw';
+import rehypeKatex from 'rehype-katex';
+import 'katex/dist/katex.min.css';
+import rehypeHighlight from 'rehype-highlight';
+import 'highlight.js/styles/github.css';
+
+const DEBUG = true;
 
 export default function Search() {
     const pathname = usePathname();
@@ -41,6 +50,24 @@ export default function Search() {
     // const [endDate, setEndDate] = useState<any>((new Date()).toISOString().split('T')[0]);
 
     const usMarketHistory = useAppSelector(selectUsMarketHistory);
+
+    const [openNCAV, setOpenNCAV] = useState(false);
+    const [openSRIM, setOpenSRIM] = useState(false);
+
+    const [fixed, setFixed] = useState(false);
+
+    useEffect(() => {
+        const handleScroll = () => {
+            if (window.scrollY > 160) {
+                setFixed(true);
+            } else {
+                setFixed(false);
+            }
+        };
+
+        window.addEventListener("scroll", handleScroll, { passive: true });
+        return () => window.removeEventListener("scroll", handleScroll);
+    }, []);
 
     const formatDate = (date: string) => {
         // const arrDate = date.split("-");
@@ -75,6 +102,8 @@ export default function Search() {
     }, [fmpState])
     useEffect(() => {
         if (DEBUG) console.log(`useEffect [fmpUsBalanceSheetStatement]`, fmpUsBalanceSheetStatement);
+        if (DEBUG) console.log(`useEffectObject.values(fmpUsBalanceSheetStatement)`, Object.values(fmpUsBalanceSheetStatement));
+
     }, [fmpUsBalanceSheetStatement])
 
     if (DEBUG) console.log(`kiUsMaretSearchInfo`, kiUsMaretSearchInfo);
@@ -119,29 +148,115 @@ export default function Search() {
     const kiUsMaretSearchInfoOutput: KoreaInvestmentOverseasSearchInfoOutput = kiUsMaretSearchInfo.output;
     const kiUsMaretPriceDetailOutput: KoreaInvestmentOverseasPriceDetailOutput = kiUsMaretPriceDetail.output;
 
-    function getNcav(balanceSheetStatement: FmpBalanceSheetStatementType[], maretPriceDetail: any, ratio: number) {
+    function MdTableTemplate(props: any) {
+        return <ReactMarkdown
+            remarkPlugins={[remarkGfm, remarkMath]}
+            rehypePlugins={[rehypeRaw, [rehypeKatex, { strict: "ignore" }], rehypeHighlight]}
+            components={{
+                table: ({ node, ...props }) => (
+                    <table className="dark:text-black w-full table-auto border-collapse shadow-lg rounded-lg overflow-hidden text-[0.6rem] sm:text-sm md:text-sm lg:text-sm" {...props} />
+                ),
+                th: ({ node, ...props }) => (
+                    <th className="pl-1 py-1 bg-gradient-to-r from-gray-100 to-gray-200 font-semibold uppercase text-left border-b border-gray-300" {...props} />
+                ),
+                td: ({ node, ...props }) => (
+                    <td className="pl-1 py-1 border-b border-gray-200 text-right" {...props} />
+                ),
+                tr: ({ node, ...props }) => {
+                    const nodeChildren: any = node?.children[1];
+                    const percentageCell: any = nodeChildren?.children[0]?.value;
+                    let bgClass = "";
+                    if (percentageCell) {
+                        const num = parseFloat(percentageCell.replace("%", ""));
+                        if (num > 0) bgClass = "bg-green-100";
+                        else if (num < 0) bgClass = "bg-red-100";
+                    }
+                    return (
+                        <tr
+                            className={`${bgClass} hover:bg-gray-100 transition-colors duration-200`}
+                            {...props}
+                        />
+                    );
+                },
+            }}
+        >
+            {props.md_main}
+        </ReactMarkdown>
+    }
+
+    function getNcav(balanceSheetStatement: FmpBalanceSheetStatementType[], maretPriceDetail: any, ratioList: number[]) {
         const stck_oprc = Number(maretPriceDetail.output["last"] ?? 1); // 주식 시가2
         const lstn_stcn = Number(maretPriceDetail.output["shar"] ?? 1); // 상장 주수
         const cras = Number(balanceSheetStatement[0].totalCurrentAssets ?? 1); // 유동 자산
         const total_lblt = Number(balanceSheetStatement[0].totalLiabilities ?? 1); // 부채 총계
 
-        const value: number = (((cras - total_lblt) / (stck_oprc * lstn_stcn * ratio) - 1) * 100);
-        const target_price = (cras - total_lblt) / lstn_stcn;
+        // const value: number = (((cras - total_lblt) / (stck_oprc * lstn_stcn * ratio) - 1) * 100);
+        // const target_price = (cras - total_lblt) / lstn_stcn;
+        // const md = ratioList.map(ratio => {
+        //     const target_price = (cras - total_lblt) / lstn_stcn;
+        //     const percentage: number = (((cras - total_lblt) / (stck_oprc * lstn_stcn * ratio) - 1) * 100);
+        //     return `|${ratio.toFixed(2)}|${percentage.toFixed(2)}%|${Number(target_price.toFixed(0)).toLocaleString()}|`;
+        // }).join("\n");
 
+        const md = ratioList.map(ratio => {
+            const target_price = (cras - total_lblt) / lstn_stcn;
+            const percentage: number = (((cras - total_lblt) / (stck_oprc * lstn_stcn * ratio) - 1) * 100);
+            return `|${ratio.toFixed(2)}|${percentage.toFixed(2)}%|${Number(target_price.toFixed(0)).toLocaleString()}|`;
+        }).join("\n");
+
+        const md_main = String.raw`
+| ratio (%) | Expected return(%) | Target price($) |
+|-----------|--------------------|-----------------|
+${md}
+`;
         return <>
-            <div className="flex gap-2">
-                <div className="w-4/12 text-right text-[0.6rem]">전략-NCAV({ratio.toFixed(1)})</div>
-                <div className="w-6/12 text-right"><span className="text-[0.6rem]">({value.toFixed(2)}%) 목표가: </span><span className={`${value >= 0 ? "text-red-500" : "text-blue-500"}`}>{(Number(target_price.toFixed(5)).toLocaleString())}</span></div>
-                <div className="w-2/12 text-left text-[0.6rem]">USD</div>
+            <div className="w-full text-right p-4">
+                <MdTableTemplate md_main={md_main} />
             </div>
         </>
+
+        // return <>
+        //     <div className="flex gap-2">
+        //         <div className="w-4/12 text-right text-[0.6rem]">전략-NCAV({ratio.toFixed(1)})</div>
+        //         <div className="w-6/12 text-right"><span className="text-[0.6rem]">({value.toFixed(2)}%) 목표가: </span><span className={`${value >= 0 ? "text-red-500" : "text-blue-500"}`}>{(Number(target_price.toFixed(5)).toLocaleString())}</span></div>
+        //         <div className="w-2/12 text-left text-[0.6rem]">USD</div>
+        //     </div>
+        // </>
     }
 
-    let bShowResult = getFmpBalanceSheetStatement;
-    if (("fulfilled" != kiUsDailyPrice.state)
-        // || ("fulfilled" != kiBalanceSheet.state)
-        || ("fulfilled" != fmpState)
-        || ("fulfilled" != kiUsMaretSearchInfo.state)
+    // function getNcav(kiBalanceSheet: KoreaInvestmentBalanceSheet,
+    //     kiInquireDailyItemChartPrice: KoreaInvestmentInquireDailyItemChartPrice,
+    //     ratioList: number[]) {
+    //     // console.log(`getNcav`, `kiBalanceSheet`, kiBalanceSheet, kiBalanceSheet.output, !!kiBalanceSheet.output);
+
+    //     const stck_bsop_date = kiInquireDailyItemChartPrice.output2[0]["stck_bsop_date"]; // 주식 영업 일자
+    //     const stck_oprc = Number(kiInquireDailyItemChartPrice.output2[0]["stck_oprc"]); // 주식 시가2
+    //     const lstn_stcn = Number(kiInquireDailyItemChartPrice.output1["lstn_stcn"]); // 상장 주수
+    //     const cras = Number(kiBalanceSheet.output.length > 0 ? kiBalanceSheet.output[getYearMatchIndex(stck_bsop_date)].cras : 0) * 100000000; // 유동 자산
+    //     const total_lblt = Number(kiBalanceSheet.output.length > 0 ? kiBalanceSheet.output[getYearMatchIndex(stck_bsop_date)].total_lblt : 0) * 100000000; // 부채 총계
+
+    //     const md = ratioList.map(ratio => {
+    //         const target_price = (cras - total_lblt) / lstn_stcn;
+    //         const percentage: number = (((cras - total_lblt) / (stck_oprc * lstn_stcn * ratio) - 1) * 100);
+    //         return `|${ratio.toFixed(2)}|${percentage.toFixed(2)}%|${Number(target_price.toFixed(0)).toLocaleString()}|`;
+    //     }).join("\n");
+
+    //     const md_main = String.raw`
+    // | ratio (%) | Expected return(%) | Target price(₩) |
+    // |-----------|--------------------|-----------------|
+    // ${md}
+    // `;
+    //     return <>
+    //         <div className="w-full text-right p-4">
+    //             <MdTableTemplate md_main={md_main} />
+    //         </div>
+    //     </>
+    // }
+
+    let bShowResult = false;
+    if (("fulfilled" == kiUsDailyPrice.state)
+        && ("fulfilled" == fmpState)
+        && ("fulfilled" == kiUsMaretSearchInfo.state)
     ) {
         bShowResult = true;
     }
@@ -151,25 +266,27 @@ export default function Search() {
     if (DEBUG) console.log(`maxLength`, maxLength);
     return <>
         <div className="flex flex-col w-full">
-            <div className="flex flex-col w-full">
-                <SearchAutocomplete placeHolder={"Please enter the NASDAQ ticker."} onSearchButton={onSearchButton} validCorpNameArray={nasdaq_tickers} />
-                <div className="dark:bg-black flex px-4 gap-1 overflow-x-auto">
-                    {usMarketHistory.map((stockName: string, index: number) => {
-                        return (
-                            <div key={index} className="dark:bg-black dark:text-white shadow border text-blue-500 hover:text-blue-700 hover:bg-blue-100 rounded-xl px-1 py-0.5 transition-all duration-200 min-w-fit">
-                                <div className="text-sm">
-                                    <button
-                                        className="text-blue-500 hover:text-blue-700 transition-colors duration-200"
-                                        onClick={() => {
-                                            onSearchButton(stockName);
-                                        }}
-                                    >
-                                        {stockName}
-                                    </button>
+            <div className={`${fixed ? "z-50 w-full fixed top-0 left-0 bg-white dark:bg-black" : "relative"}`}>
+                <div className="flex flex-col w-full">
+                    <SearchAutocomplete placeHolder={"Please enter the NASDAQ ticker."} onSearchButton={onSearchButton} validCorpNameArray={nasdaq_tickers} />
+                    <div className="dark:bg-black flex px-4 gap-1 overflow-x-auto">
+                        {usMarketHistory.map((stockName: string, index: number) => {
+                            return (
+                                <div key={index} className="dark:bg-black dark:text-white shadow border text-blue-500 hover:text-blue-700 hover:bg-blue-100 rounded-xl px-1 py-0.5 transition-all duration-200 min-w-fit">
+                                    <div className="text-xs">
+                                        <button
+                                            className="text-blue-500 hover:text-blue-700 transition-colors duration-200"
+                                            onClick={() => {
+                                                onSearchButton(stockName);
+                                            }}
+                                        >
+                                            {stockName}
+                                        </button>
+                                    </div>
                                 </div>
-                            </div>
-                        );
-                    }).reverse()}
+                            );
+                        }).reverse()}
+                    </div>
                 </div>
             </div>
             {true == bShowResult && "0" != kiUsMaretSearchInfo.rt_cd ?
@@ -179,80 +296,116 @@ export default function Search() {
                     </div>
                 </>
                 : <>
-                    <div className="dark:bg-black dark:text-white p-3 shadow">
-                        <div className="text-[0.6rem]">
-                            {kiUsMaretSearchInfoOutput.ovrs_excg_cd} {kiUsMaretSearchInfoOutput.tr_mket_name} | {kiUsMaretSearchInfoOutput.prdt_eng_name}
-                        </div>
-                        <div className="text-xl">
-                            {kiUsMaretSearchInfoOutput.prdt_name}
-                        </div>
-                    </div>
-                    <div className="dark:bg-gray-200 text-xs p-3 shadow">
-                        <div className="flex gap-2">
-                            <div className="w-11/12">
-                                <LineChart
-                                    data_array={[
-                                        {
-                                            name: "주가",
-                                            // data: test_data.stock_list.map((stock: any) => stock.remaining_token),
-                                            // data: [10, 20, 30, 40, 50, 60, 70, 80, 90],
-                                            data: kiUsDailyPrice.output2.map((item: any) => item.clos).reverse(),
-                                            color: "#000000",
-                                        }
-                                    ]}
-                                    category_array={kiUsDailyPrice.output2.map((item: any) => item.xymd).reverse()}
-                                    markers={
-                                        {
-                                            size: 0,
-                                            // colors: kiInquireDailyItemChartPrice.output2.map((_, index, arr) =>
-                                            //   index === arr.length - 1 ? "" : "yellow"
-                                            // ).reverse(), // 마지막 값만 빨간색, 나머지는 파란색
-                                            // colors: "black",
-                                            discrete: [
-                                                {
-                                                    seriesIndex: 0,
-                                                    dataPointIndex: kiUsDailyPrice.output2.length - 1, // 마지막 값만 적용
-                                                    fillColor: "yellow", // 마지막 마커 색상
-                                                    strokeColor: "black", // 마커 테두리 색상
-                                                    size: 3, // 마지막 마커 크기
-                                                },
-                                            ],
-                                        }
-                                    }
-                                />
+                    <div className={`flex shadow transition-all duration-500 ease-in-out ${fixed ? "z-40 w-full fixed top-20 left-0 shadow-md bg-white dark:bg-black dark:border-b dark:border-gray-500" : "relative"}`}>
+                        <div className={`w-7/12 p-3 ${fixed ? "py-1" : ""} dark:bg-black dark:text-white font-mono`}>
+                            <div className={`flex flex-col text-[0.6rem] ${fixed ? "hidden" : ""}`}>
+                                <div>
+                                    {kiUsMaretSearchInfoOutput.ovrs_excg_cd} {kiUsMaretSearchInfoOutput.tr_mket_name} | {kiUsMaretPriceDetailOutput.e_icod}
+                                </div>
+                                <div>
+                                    {kiUsMaretSearchInfoOutput.prdt_eng_name}
+                                </div>
                             </div>
-                            <div className="w-1/12"></div>
+                            <div>
+                                <div className="text-xl">
+                                    {kiUsMaretSearchInfoOutput.prdt_name}
+                                </div>
+                                <div className="dark:bg-black dark:text-white flex gap-2 font-mono items-center">
+                                    <div className="text-right">
+                                        {/* <span className={`${fixed ? "visible" : "invisible"} text-[0.7rem]`}> | </span> */}
+                                        <span className="underline decoration-dotted decoration-4 decoration-violet-500">{Number(kiUsMaretPriceDetailOutput.last).toFixed(2)}</span>
+                                        <span> </span><span className="text-[0.7rem]">{kiUsMaretPriceDetailOutput.curr}</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div className={`w-5/12 ${fixed ? "" : ""}`}>
+                            <LineChart
+                                data_array={[
+                                    {
+                                        name: "주가",
+                                        // data: test_data.stock_list.map((stock: any) => stock.remaining_token),
+                                        // data: [10, 20, 30, 40, 50, 60, 70, 80, 90],
+                                        data: kiUsDailyPrice.output2.map((item: any) => item.clos).reverse(),
+                                        color: "rgb(138,92,236)", // chart 데이터 선 색
+                                        // color: "#000000",
+                                    }
+                                ]}
+                                category_array={kiUsDailyPrice.output2.map((item: any) => item.xymd).reverse()}
+                                markers={
+                                    {
+                                        size: 0,
+                                        // colors: kiInquireDailyItemChartPrice.output2.map((_, index, arr) =>
+                                        //   index === arr.length - 1 ? "" : "yellow"
+                                        // ).reverse(), // 마지막 값만 빨간색, 나머지는 파란색
+                                        // colors: "black",
+                                        discrete: [
+                                            {
+                                                seriesIndex: 0,
+                                                dataPointIndex: kiUsDailyPrice.output2.length - 1, // 마지막 값만 적용
+                                                fillColor: "yellow", // 마지막 마커 색상
+                                                strokeColor: "black", // 마커 테두리 색상
+                                                size: 3, // 마지막 마커 크기
+                                            },
+                                        ],
+                                    }
+                                }
+                                height={`${fixed ? "40" : "80"}`}
+                                show_yaxis_label={false}
+                                type={"line"}
+                            />
                         </div>
                     </div>
+                    <div className={`${fixed ? "h-52" : ""}`}></div>
                     <div className="dark:bg-black dark:text-white text-xs p-3 shadow">
-                        <div className="flex gap-2">
-                            <div className="w-4/12 bg-yellow-200 text-right dark:bg-gray-500">현재가</div>
-                            <div className="w-6/12 bg-yellow-100 text-right dark:bg-gray-500">{kiUsMaretPriceDetailOutput.last}</div>
-                            <div className="w-2/12 text-left text-[0.6rem]">{kiUsMaretPriceDetailOutput.curr}</div>
+                        <div className="flex cursor-pointer hover:bg-gray-200" onClick={() => setOpenNCAV(!openNCAV)}>
+                            <span className={`transform transition-transform ${openNCAV ? "rotate-0" : "-rotate-90"}`}>
+                                ▼
+                            </span>
+                            <ReactMarkdown
+                                remarkPlugins={[remarkGfm, remarkMath]}
+                                rehypePlugins={[rehypeRaw, [rehypeKatex, { strict: "ignore" }], rehypeHighlight]}
+                            >
+                                {(() => {
+                                    return String.raw`
+전략 1: NCAV 모형 (Net Current Asset Value Model):
+`})()}
+                            </ReactMarkdown>
                         </div>
-                        <div className="flex gap-2">
-                            <div className="w-4/12 text-right">시가총액</div>
-                            <div className="w-6/12 text-right">{Number(kiUsMaretPriceDetailOutput.tomv).toLocaleString()}</div>
-                            <div className="w-2/12 text-left text-[0.6rem]">{kiUsMaretPriceDetailOutput.curr}</div>
-                        </div>
-                        <div className="flex gap-2">
-                            <div className="w-4/12 text-right">상장주식수</div>
-                            <div className="w-6/12 text-right">{Number(kiUsMaretSearchInfoOutput.lstg_stck_num).toLocaleString()}</div>
-                            <div className="w-2/12 text-left text-[0.6rem]">개</div>
+                        <div className={`px-4 overflow-hidden transition-all duration-500 ease-in-out ${openNCAV ? "max-h-44 p-4" : "max-h-0 p-0"}`}>
+                            <ReactMarkdown
+                                remarkPlugins={[remarkGfm, remarkMath]}
+                                rehypePlugins={[rehypeRaw, [rehypeKatex, { strict: "ignore" }], rehypeHighlight]}
+                            >
+                                {(() => {
+                                    const stck_oprc = Number(kiUsMaretPriceDetail.output["last"] ?? 1); // 주식 시가2
+                                    const lstn_stcn = Number(kiUsMaretPriceDetail.output["shar"] ?? 1); // 상장 주수
+                                    const cras = Number(Object.values(fmpUsBalanceSheetStatement)[0].totalCurrentAssets ?? 1); // 유동 자산
+                                    const total_lblt = Number(Object.values(fmpUsBalanceSheetStatement)[0].totalLiabilities ?? 1); // 부채 총계
+
+                                    return String.raw`
+$$
+NCAV = 유동자산 − 총부채
+$$
+
+$$
+투자 여부 = NCAV > 시가총액 \times ratio
+$$
+
+---
+$$
+\small 적정주가 = \frac{(유동자산 − 총부채)}{상장주식수}
+$$
+
+$$
+\small = \frac{${cras} \tiny USD \small - ${total_lblt} \tiny USD}{${lstn_stcn} \tiny 개}
+= {${((cras - total_lblt) / lstn_stcn).toFixed(0)} \tiny USD}
+$$
+`})()}
+                            </ReactMarkdown>
                         </div>
                     </div>
-                    <div className="dark:bg-black dark:text-white text-xs p-3 shadow">
-                        <div className="flex gap-2">
-                            <div className="w-4/12 text-right">52주 최저가</div>
-                            <div className="w-6/12 text-right">({kiUsMaretPriceDetailOutput.l52d}) {kiUsMaretPriceDetailOutput.l52p}</div>
-                            <div className="w-2/12 text-left text-[0.6rem]">{kiUsMaretPriceDetailOutput.curr}</div>
-                        </div>
-                        <div className="flex gap-2">
-                            <div className="w-4/12 text-right bg-red-300 dark:bg-gray-500">52주 최고가</div>
-                            <div className="w-6/12 text-right bg-red-200 dark:bg-gray-500">({kiUsMaretPriceDetailOutput.h52d}) {kiUsMaretPriceDetailOutput.h52p} </div>
-                            <div className="w-2/12 text-left text-[0.6rem]">{kiUsMaretPriceDetailOutput.curr}</div>
-                        </div>
-                    </div>
+                    {getNcav(fmpUsBalanceSheetStatement, kiUsMaretPriceDetail, [1.0, 1.5])}
                     <div className="dark:bg-black dark:text-white text-xs p-3 shadow">
                         <div className="flex gap-2">
                             <div className="w-4/12 text-right">PER</div>
@@ -277,9 +430,26 @@ export default function Search() {
                     </div>
                     <div className="dark:bg-black dark:text-white text-xs p-3 shadow">
                         <div className="flex gap-2">
-                            <div className="w-4/12 text-right">업종(섹터)</div>
-                            <div className="w-6/12 text-right text-[0.6rem]">{kiUsMaretPriceDetailOutput.e_icod}</div>
-                            <div className="w-2/12 text-left text-[0.6rem]"></div>
+                            <div className="w-4/12 text-right">52주 최저가</div>
+                            <div className="w-6/12 text-right">({kiUsMaretPriceDetailOutput.l52d}) {kiUsMaretPriceDetailOutput.l52p}</div>
+                            <div className="w-2/12 text-left text-[0.6rem]">{kiUsMaretPriceDetailOutput.curr}</div>
+                        </div>
+                        <div className="flex gap-2">
+                            <div className="w-4/12 text-right bg-red-300 dark:bg-gray-500">52주 최고가</div>
+                            <div className="w-6/12 text-right bg-red-200 dark:bg-gray-500">({kiUsMaretPriceDetailOutput.h52d}) {kiUsMaretPriceDetailOutput.h52p} </div>
+                            <div className="w-2/12 text-left text-[0.6rem]">{kiUsMaretPriceDetailOutput.curr}</div>
+                        </div>
+                    </div>
+                    <div className="dark:bg-black dark:text-white text-xs p-3 shadow">
+                        <div className="flex gap-2">
+                            <div className="w-4/12 text-right">시가총액</div>
+                            <div className="w-6/12 text-right">{Number(kiUsMaretPriceDetailOutput.tomv).toLocaleString()}</div>
+                            <div className="w-2/12 text-left text-[0.6rem]">{kiUsMaretPriceDetailOutput.curr}</div>
+                        </div>
+                        <div className="flex gap-2">
+                            <div className="w-4/12 text-right">상장주식수</div>
+                            <div className="w-6/12 text-right">{Number(kiUsMaretSearchInfoOutput.lstg_stck_num).toLocaleString()}</div>
+                            <div className="w-2/12 text-left text-[0.6rem]">개</div>
                         </div>
                     </div>
                     <div className="dark:bg-black dark:text-white text-xs p-3 shadow">
@@ -301,9 +471,10 @@ export default function Search() {
                     </div>
                     {"fulfilled" == fmpState ?
                         <>
-                            <div className="dark:bg-black dark:text-white text-xs p-3 shadow">
-                                {getNcav(fmpUsBalanceSheetStatement, kiUsMaretPriceDetail, 1.0)}
-                                {getNcav(fmpUsBalanceSheetStatement, kiUsMaretPriceDetail, 1.5)}
+                            <div className="dark:bg-black dark:text-white text-md p-3 shadow">
+                                <div className="flex gap-2 font-mono">
+                                    <div className="w-full text-center">재무 정보</div>
+                                </div>
                             </div>
                             <div className="dark:bg-black dark:text-white text-xs p-3 shadow">
                                 <div className="flex gap-2">
@@ -316,6 +487,47 @@ export default function Search() {
                                     <div className="w-6/12 text-right">{Number(fmpUsBalanceSheetStatement[0].totalLiabilities).toLocaleString()}</div>
                                     <div className="w-2/12 text-left text-[0.6rem]">USD</div>
                                 </div>
+                            </div>
+                            <div className="dark:bg-black dark:text-white text-xs p-3 shadow">
+                                {bShowResult && <table className="table-auto w-full text-right font-mono border border-gray-300">
+                                    <thead className="bg-gray-100">
+                                        <tr>
+                                            <th className="border px-2 py-1 text-left">항목</th>
+                                            {Object.values(fmpUsBalanceSheetStatement).map((item: any, index: number) => (
+                                                <th key={index} className="border pr-1 py-1">
+                                                    {item.date}
+                                                </th>
+                                            ))}
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {[
+                                            { label: "유동자산", key: "totalCurrentAssets" }, // cras
+                                            { label: "고정자산", key: "totalNonCurrentAssets" }, // fxas
+                                            { label: "자산총계", key: "totalAssets" }, // total_aset
+                                            { label: "유동부채", key: "totalCurrentLiabilities" }, // flow_lblt
+                                            { label: "고정부채", key: "totalNonCurrentLiabilities" }, // fix_lblt
+                                            { label: "부채총계", key: "totalLiabilities" }, // total_lblt
+                                            { label: "자본금", key: "commonStock" }, // cpfn
+                                            { label: "자본잉여금", key: "cfp_surp" },
+                                            { label: "이익잉여금", key: "retainedEarnings" }, // prfi_surp
+                                            { label: "자본총계", key: "totalEquity" }, // total_cptl
+                                        ].map((row, rowIndex) => (
+                                            <tr key={rowIndex}>
+                                                <td className="border pr-1 py-1 text-left">{row.label}</td>
+                                                {Object.values(fmpUsBalanceSheetStatement).map((item: any, colIndex: number) => {
+                                                    // const value = Number(item[row.key]) * 100000000;
+                                                    const value = Number(item[row.key]);
+                                                    return (
+                                                        <td key={colIndex} className="border pr-1 py-1">
+                                                            {Util.UnitConversion(value, false)}
+                                                        </td>
+                                                    );
+                                                })}
+                                            </tr>
+                                        ))}
+                                    </tbody>
+                                </table>}
                             </div>
                         </>
                         : <></>

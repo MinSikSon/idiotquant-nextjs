@@ -57,10 +57,10 @@ export default function SearchKor() {
 
   const krMarketHistory = useAppSelector(selectKrMarketHistory);
 
-  const [fixed, setFixed] = useState(false);
-
   const [openNCAV, setOpenNCAV] = useState(false);
   const [openSRIM, setOpenSRIM] = useState(false);
+
+  const [fixed, setFixed] = useState(false);
 
   useEffect(() => {
     const handleScroll = () => {
@@ -472,11 +472,9 @@ ${md}
           <div className="dark:bg-black flex flex-col md:flex-row lg:flex-row">
             <div className="sm:flex-col md:flex-1 lg:flex-1">
               <div className={`flex shadow transition-all duration-500 ease-in-out ${fixed ? "z-40 w-full fixed top-20 left-0 shadow-md bg-white dark:bg-black dark:border-b dark:border-gray-500" : "relative"}`}>
-                <div className={`${fixed ? "w-7/12 p-3 py-1" : "w-7/12 p-3"} dark:bg-black dark:text-white font-mono`}>
-                  <div className={`flex items-center ${fixed ? "hidden" : ""}`}>
-                    <div className="text-[0.6rem]">{kiInquirePrice.output["rprs_mrkt_kor_name"]} | {kiInquirePrice.output["bstp_kor_isnm"]} </div>
-                  </div>
-                  <div className="">
+                <div className={`w-7/12 p-3 ${fixed ? "py-1" : ""} dark:bg-black dark:text-white font-mono`}>
+                  <div className={`text-[0.6rem] ${fixed ? "hidden" : ""}`}>{kiInquirePrice.output["rprs_mrkt_kor_name"]} | {kiInquirePrice.output["bstp_kor_isnm"]} </div>
+                  <div>
                     <div className="text-xl">
                       {kiInquireDailyItemChartPrice.output1.hts_kor_isnm}
                     </div>
@@ -489,7 +487,7 @@ ${md}
                     </div>
                   </div>
                 </div>
-                <div className={`${fixed ? "w-5/12" : "w-5/12"}`}>
+                <div className={`w-5/12 ${fixed ? "" : ""}`}>
                   <LineChart
                     data_array={[
                       {
@@ -567,8 +565,8 @@ $$
 $$
 
 $$
-\small = \frac{${Util.UnitConversion(cras, true)} - ${Util.UnitConversion(total_lblt, true)}}{${lstn_stcn} 개}
-= ${((cras - total_lblt) / lstn_stcn).toFixed(0)} 원
+\small = \frac{${Util.UnitConversion(cras, true)} - ${Util.UnitConversion(total_lblt, true)}}{${lstn_stcn} \tiny 개}
+= {${((cras - total_lblt) / lstn_stcn).toFixed(0)} \tiny 원}
 $$
 `})()}
                   </ReactMarkdown>
