@@ -133,11 +133,11 @@ export const fmpUsMarketSlice = createAppSlice({
             },
             {
                 pending: (state) => {
-                    console.log(`[reqGetFmpBalanceSheetStatement] pending`);
+                    // console.log(`[reqGetFmpBalanceSheetStatement] pending`);
                     state.state = "pending";
                 },
                 fulfilled: (state, action) => {
-                    console.log(`[reqGetFmpBalanceSheetStatement] fulfilled`, `action.payload`, typeof action.payload, action.payload);
+                    // console.log(`[reqGetFmpBalanceSheetStatement] fulfilled`, `action.payload`, typeof action.payload, action.payload);
                     // if (undefined != action.payload["output1"]) 
                     {
                         state.fmpBalanceSheetStatement = { ...state.fmpBalanceSheetStatement, ...action.payload };
@@ -145,7 +145,7 @@ export const fmpUsMarketSlice = createAppSlice({
                     }
                 },
                 rejected: (state) => {
-                    console.log(`[reqGetFmpBalanceSheetStatement] rejected`);
+                    // console.log(`[reqGetFmpBalanceSheetStatement] rejected`);
                     state.state = "rejected";
                 },
             }

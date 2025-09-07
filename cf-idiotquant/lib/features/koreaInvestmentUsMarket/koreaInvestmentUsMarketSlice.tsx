@@ -545,12 +545,12 @@ export const koreaInvestmentUsMarketSlice = createAppSlice({
                     state.dailyPrice.state = "pending";
                 },
                 fulfilled: (state, action) => {
-                    console.log(`[reqGetOverseasPriceQuotationsDailyPrice] fulfilled`, `action.payload`, action.payload);
+                    // console.log(`[reqGetOverseasPriceQuotationsDailyPrice] fulfilled`, `action.payload`, action.payload);
                     const json = action.payload;
                     state.dailyPrice = { ...json, state: "fulfilled" };
                 },
                 rejected: (state) => {
-                    console.log(`[reqGetOverseasPriceQuotationsDailyPrice] rejected`);
+                    // console.log(`[reqGetOverseasPriceQuotationsDailyPrice] rejected`);
                     state.dailyPrice.state = "rejected";
                 },
             }

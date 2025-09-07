@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import {
     Collapse,
 } from "@material-tailwind/react";
@@ -37,7 +37,8 @@ export function NavbarWithSimpleLinks() {
     const kakaoNickName = useAppSelector(selectKakaoNickName);
 
     const [visible, setVisible] = useState(true);
-    const [lastScrollY, setLastScrollY] = useState(0);
+    // const [lastScrollY, setLastScrollY] = useState(0);
+    const lastScrollY = useRef(0);
 
     useEffect(() => {
         window.addEventListener(
@@ -58,7 +59,7 @@ export function NavbarWithSimpleLinks() {
         const handleScroll = () => {
             const currentScrollY = window.scrollY;
 
-            if (currentScrollY > lastScrollY && currentScrollY > 30) {
+            if (currentScrollY > lastScrollY.current && currentScrollY > 30) {
                 // 스크롤 내릴 때
                 setVisible(false);
             } else {
@@ -66,7 +67,7 @@ export function NavbarWithSimpleLinks() {
                 setVisible(true);
             }
 
-            setLastScrollY(currentScrollY);
+            lastScrollY.current = currentScrollY;
         };
 
         window.addEventListener("scroll", handleScroll);

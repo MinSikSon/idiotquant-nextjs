@@ -52,7 +52,7 @@ export const loginSlice = createAppSlice({
                     state.nickName = action.payload['name'];
                 },
                 rejected: (state) => {
-                    console.log(`[getCloudFlareLoginStatus] rejected`);
+                    // console.log(`[getCloudFlareLoginStatus] rejected`);
                     state.state = "rejected"
                 }
             }
