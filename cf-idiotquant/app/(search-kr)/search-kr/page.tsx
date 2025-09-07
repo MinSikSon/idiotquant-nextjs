@@ -443,7 +443,7 @@ ${md}
     <div className="flex flex-col w-full">
       <div className={`${fixed ? "z-50 w-full fixed top-0 left-0 bg-white dark:bg-black" : "relative"}`}>
         <div className="flex flex-col w-full">
-          <SearchAutocomplete placeHolder={"Enter KOSPI/KOSDAQ/KONEX stock name."} onSearchButton={onSearchButton} validCorpNameArray={validCorpNameArray} />
+          <SearchAutocomplete placeHolder={"Please enter the stock name."} onSearchButton={onSearchButton} validCorpNameArray={validCorpNameArray} />
           <div className="dark:bg-black flex px-4 gap-1 overflow-x-auto">
             {krMarketHistory.map((stockName: string, index: number) => {
               return (

@@ -31,7 +31,7 @@ import 'katex/dist/katex.min.css';
 import rehypeHighlight from 'rehype-highlight';
 import 'highlight.js/styles/github.css';
 
-const DEBUG = true;
+const DEBUG = false;
 
 export default function Search() {
     const pathname = usePathname();
@@ -143,7 +143,7 @@ export default function Search() {
 
     if (!!!kiUsMaretSearchInfo.rt_cd && !!!kiUsMaretPriceDetail.rt_cd) {
         return <>
-            <SearchAutocomplete placeHolder={"Please enter NASDAQ/NYSE/AMEX ticker."} onSearchButton={onSearchButton} validCorpNameArray={all_tickers} />
+            <SearchAutocomplete placeHolder={"Please enter the stock ticker."} onSearchButton={onSearchButton} validCorpNameArray={all_tickers} />
             <div className="dark:bg-black h-lvh"></div>
         </>
     }
