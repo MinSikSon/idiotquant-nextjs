@@ -33,7 +33,7 @@ import 'highlight.js/styles/github.css';
 
 const DEBUG = false;
 
-export default function Search() {
+export default function SearchUs() {
     const pathname = usePathname();
     const dispatch = useAppDispatch();
 
