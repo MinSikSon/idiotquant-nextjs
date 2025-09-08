@@ -234,7 +234,7 @@ ${md}
         <div className="flex flex-col w-full">
             <div className={`${fixed ? "z-50 w-full fixed top-0 left-0 bg-white dark:bg-black" : "relative"}`}>
                 <div className="flex flex-col w-full">
-                    <SearchAutocomplete placeHolder={"Please enter the NASDAQ ticker."} onSearchButton={onSearchButton} validCorpNameArray={nasdaq_tickers} />
+                    <SearchAutocomplete placeHolder={"Please enter the NASDAQ ticker."} onSearchButton={onSearchButton} validCorpNameArray={all_tickers} />
                     <div className="dark:bg-black flex px-4 gap-1 overflow-x-auto">
                         {usMarketHistory.map((stockName: string, index: number) => {
                             return (
