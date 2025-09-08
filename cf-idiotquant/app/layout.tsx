@@ -15,7 +15,7 @@ export default function RootLayout({
 }) {
   return (
     <StoreProvider>
-      <LoadData />
+      {/* <LoadData /> */}
       <html lang="en"
       // suppressHydrationWarning
       >
