@@ -1,13 +1,19 @@
 "use client";
 
 import { DesignButton } from "@/components/designButton";
+import { useEffect, useState } from "react";
 
-const DEBUG = true;
+const DEBUG = false;
 
 export default function UserPage(props: any) {
-    if (DEBUG) console.log(`[UserPage]`, `window.location.origin`, window.location.origin);
+
+    const [windowLocationOrigin, setWindowLocationOrigin] = useState("");
     if (DEBUG) console.log(`[UserPage]`, `props.parentUrl`, props.parentUrl);
 
+    useEffect(() => {
+        if (DEBUG) console.log(`[UserPage]`, `window.location.origin`, window.location.origin);
+        setWindowLocationOrigin(window.location.origin);
+    }, []);
     return <>
         <div className="p-5">
             <div className="font-mono text-xl mb-2">
@@ -17,7 +23,7 @@ export default function UserPage(props: any) {
                 logout 하려면 아래 버튼을 눌려주세요.
             </div>
             <DesignButton
-                handleOnClick={() => props.Logout(`${window.location.origin}${props.parentUrl}`)}
+                handleOnClick={() => props.Logout(`${windowLocationOrigin}${props.parentUrl}`)}
                 buttonName="logout"
                 buttonBgColor="bg-[#ffea04]"
                 buttonBorderColor="border-[#ebd700]"
