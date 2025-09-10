@@ -1,3 +1,5 @@
+"use client";
+
 import { DesignButton } from "@/components/designButton";
 
 const DEBUG = true;
