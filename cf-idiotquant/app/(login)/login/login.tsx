@@ -68,6 +68,9 @@ export default function Login(props: any) {
     // }
 
     useEffect(() => {
+        dispatch(getCloudFlareLoginStatus());
+    }, []);
+    useEffect(() => {
         if (DEBUG) console.log(`[Login]`, `loginState:`, loginState);
         if (DEBUG) console.log(`[Login]`, `kakaoNickName:`, kakaoNickName, `kakaoId:`, kakaoId);
 
@@ -95,7 +98,7 @@ export default function Login(props: any) {
         callback();
 
         dispatch(getCloudFlareLoginStatus());
-    }, []);
+    }, [kakaoId, kakaoNickName, loginState]);
 
     async function onClickLogin() {
         if (DEBUG) console.log(`[Login] onClickLogin`, `redirectUrl:`, redirectUrl);
