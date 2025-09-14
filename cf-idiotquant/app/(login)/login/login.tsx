@@ -43,10 +43,8 @@ async function RequestToken(_authorizeCode: any, redirectUrl: any) {
     return responseToken;
 }
 
-// const redirectUrl = `${window.location.origin}${props.parentUrl}`;
-// const redirectUrl = "https://idiotquant-backend.tofu89223.workers.dev/kakao";
-const redirectUrl = "https://idiotquant-backend.tofu89223.workers.dev/kakao-login";
-const redirectLogoutUrl = "https://idiotquant-backend.tofu89223.workers.dev/kakao-logout";
+const redirectUrl = `${process.env.NEXT_PUBLIC_API_URL}/kakao-login`;
+const redirectLogoutUrl = `${process.env.NEXT_PUBLIC_API_URL}/kakao-logout`;
 
 export default function Login(props: any) {
     const router = useRouter();

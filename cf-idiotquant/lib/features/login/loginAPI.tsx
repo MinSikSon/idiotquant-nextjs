@@ -13,6 +13,7 @@ export const getLoginStatus: any = async () => {
             // ...additionalHeaders,
             "authToken": authToken,
         },
+        body: JSON.stringify({})
     };
     // const res = await fetch(url, options);
     const res = await fetch(url, options);
@@ -21,6 +22,7 @@ export const getLoginStatus: any = async () => {
 }
 
 export const setLogoutStatus: any = async (startList: string[]) => {
+    const authToken = getCookie("authToken");
     console.log(`[setLogoutStatus]`);
     const url = `${process.env.NEXT_PUBLIC_API_URL}/logout`
     const additionalHeaders: any = {
@@ -32,7 +34,7 @@ export const setLogoutStatus: any = async (startList: string[]) => {
         headers: {
             "content-type": "application/json; utf-8",
             ...additionalHeaders,
-            "authToken": getCookie("authToken"),
+            "authToken": authToken,
         },
     };
 
