@@ -115,6 +115,7 @@ export async function getKoreaInvestmentRequest(subUrl: string, additionalHeader
         headers: {
             "content-type": "application/json; utf-8",
             ...additionalHeaders,
+            "authToken": getCookie("authToken"),
         },
     };
     const res = await fetch(url, options);
