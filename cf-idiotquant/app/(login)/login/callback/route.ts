@@ -50,3 +50,7 @@ export async function GET(req: NextRequest) {
 }
 
 export const runtime = 'edge';
+// 🛠 언제 Edge Runtime 쓰면 좋은가?
+// Cloudflare Workers, Vercel Edge 같은 글로벌 CDN 네트워크에서 실행하고 싶을 때
+// 빠른 cold start, 짧은 응답 시간 필요할 때
+// cookies(), headers() 같은 Web API 기반 기능을 활용해야 할 때 (JWT 검사 등)
