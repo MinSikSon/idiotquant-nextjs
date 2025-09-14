@@ -61,17 +61,11 @@ export default function Login(props: any) {
 
     const pathname = usePathname();
 
-    interface KakaoLoginErrorInterface {
-        error: string;
-        error_description: string; // "authorization code not found for code=AnZhlhnF7IzjA81_K-gxDx2w3wY4ShoMUUikaIk9pMDx70iBIQH7WQAAAAQKFxAvAAABlZ0Pu28h5oEAb4_jFQ",
-        error_code: string //  "KOE320"
-    }
-    const [responseToken, setResponseToken] = useState<KakaoLoginErrorInterface>({ error: "", error_description: "", error_code: "" });
-
-    useEffect(() => {
-        if (DEBUG) console.log(`[Login] getCloudFlareLoginStatus`);
-        dispatch(getCloudFlareLoginStatus());
-    }, []);
+    // interface KakaoLoginErrorInterface {
+    //     error: string;
+    //     error_description: string; // "authorization code not found for code=AnZhlhnF7IzjA81_K-gxDx2w3wY4ShoMUUikaIk9pMDx70iBIQH7WQAAAAQKFxAvAAABlZ0Pu28h5oEAb4_jFQ",
+    //     error_code: string //  "KOE320"
+    // }
 
     useEffect(() => {
         if (DEBUG) console.log(`[Login]`, `loginState:`, loginState);
@@ -99,7 +93,9 @@ export default function Login(props: any) {
             }
         }
         callback();
-    }, [loginState]);
+
+        dispatch(getCloudFlareLoginStatus());
+    }, []);
 
     async function onClickLogin() {
         if (DEBUG) console.log(`[Login] onClickLogin`, `redirectUrl:`, redirectUrl);
