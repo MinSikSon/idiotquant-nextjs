@@ -84,8 +84,6 @@ export const getQuotationsSearchInfo: any = async (koreaInvestmentToken: KoreaIn
     return getKoreaInvestmentRequest(subUrl, additionalHeaders);
 }
 
-
-
 export const getBalanceSheet: any = async (koreaInvestmentToken: KoreaInvestmentToken, PDNO: string) => {
     const subUrl = `/uapi/domestic-stock/v1/finance/balance-sheet`;
     const additionalHeaders: AdditionalHeaders = {

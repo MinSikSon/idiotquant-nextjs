@@ -33,7 +33,7 @@ import { addKrMarketHistory, selectKrMarketHistory, selectUsMarketHistory } from
 
 const DEBUG = false;
 
-export default function SearchKor() {
+export default function SearchKr() {
   const pathname = usePathname();
   const dispatch = useAppDispatch();
 

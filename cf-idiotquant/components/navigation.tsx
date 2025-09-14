@@ -120,9 +120,8 @@ export function NavbarWithSimpleLinks() {
         // "balance-kr": <div className={navListDesign}>{!!!kakaoId ? <LockClosedIcon className="h-4 w-4" strokeWidth={2} /> : <LockOpenIcon className="h-4 w-4" strokeWidth={2} />}<WalletIcon className="h-4 w-4" strokeWidth={2} /><div>account inquiry (Korea)</div></div>,
         // "balance-us": <div className={navListDesign}>{!!!kakaoId ? <LockClosedIcon className="h-4 w-4" strokeWidth={2} /> : <LockOpenIcon className="h-4 w-4" strokeWidth={2} />}<WalletIcon className="h-4 w-4" strokeWidth={2} /><div>account inquiry (US)</div></div>,
     }
-
     const navListUrlToLabelHanburgerButton: any = {
-        "login": <div className={navListDesign}><div>kakao login</div> {!!!kakaoId ? <LockClosedIcon className="h-4 w-4" strokeWidth={2} /> : <LockOpenIcon className="h-4 w-4" strokeWidth={2} />}</div>,
+        "login": <div className={navListDesign}>{!!!kakaoId ? <><div>kakao login</div> <LockClosedIcon className="h-4 w-4" strokeWidth={2} /></> : <><div>{kakaoNickName}<span className="text-[0.5rem]">님 반갑습니다.</span></div><LockOpenIcon className="h-4 w-4" strokeWidth={2} /></>}</div>,
     }
 
 

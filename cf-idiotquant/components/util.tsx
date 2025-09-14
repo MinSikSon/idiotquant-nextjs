@@ -2,6 +2,8 @@
 
 //////////////////////////////////////////////////////////////////////////////
 // Util
+
+const DEBUG = false;
 export class Util {
     static UnitConversion(num: number, addWon: boolean) {
         if (isNaN(num)) {
@@ -68,6 +70,8 @@ export const clearCookie = (key: string) => {
 }
 
 export const getCookie = (name: string) => {
+    if (DEBUG) console.log(`[getCookie] name:`, name);
+    if (DEBUG) console.log(`[getCookie] document.cookie:`, document.cookie);
     const cookie = document.cookie
         .split("; ")
         .find((row) => row.startsWith(name + "="))

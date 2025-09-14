@@ -32,11 +32,11 @@ export default function BalanceKr() {
     const kr_capital_token: CapitalTokenType = useAppSelector(selectCapitalToken);
 
     useEffect(() => {
-        console.log(`[BalanceKr]`, `loginState`, loginState);
+        if (DEBUG) console.log(`[BalanceKr]`, `loginState`, loginState);
         // console.log(`[BalanceKr]`, `kiToken:`, kiToken);
         if ("cf" == loginState || "kakao" == loginState) {
             const isValidKiAccessToken = !!kiToken["access_token"];
-            console.log(`[BalanceKr]`, `isValidKiAccessToken`, isValidKiAccessToken);
+            if (DEBUG) console.log(`[BalanceKr]`, `isValidKiAccessToken`, isValidKiAccessToken);
             if (true == isValidKiAccessToken) {
                 dispatch(reqGetInquireBalance(kiToken));
             }
@@ -52,7 +52,7 @@ export default function BalanceKr() {
     }, [kiOrderCash])
 
     useEffect(() => {
-        console.log(`[BalanceKr]`, `kr_capital_token`, kr_capital_token);
+        if (DEBUG) console.log(`[BalanceKr]`, `kr_capital_token`, kr_capital_token);
         if ("init" == kr_capital_token.state) {
             dispatch(reqGetCapitalToken({ koreaInvestmentToken: kiToken }));
         }
