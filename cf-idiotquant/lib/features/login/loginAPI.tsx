@@ -13,7 +13,7 @@ export const getLoginStatus: any = async () => {
             // ...additionalHeaders,
             "authToken": authToken,
         },
-        body: JSON.stringify({})
+        // body: JSON.stringify({})
     };
     // const res = await fetch(url, options);
     const res = await fetch(url, options);
