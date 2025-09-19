@@ -439,9 +439,11 @@ export default function InquireBalanceResult(props: InquireBalanceResultProps) {
     }
 
     return <>
-        <div className={`font-mono border border-black text-center w-80 z-10 fixed top-32 left-1/2 transform -translate-x-1/2 px-6 py-3 rounded-lg text-white transition-all duration-500 ${show ? "opacity-100 scale-100 bg-green-500" : "opacity-0 scale-95 pointer-events-none"}`}>
-            <div className="">{msg}</div>
-            <div className="text-lg">✅ {orderName}</div>
+        <div className={`font-mono border border-black text-center w-min-40 z-10 fixed top-32 left-1/2 transform -translate-x-1/2 px-5 py-2 rounded-xl text-white transition-all duration-100 ease-out bg-green-500 ${show ? "opacity-100 scale-100" : "opacity-0 scale-100 pointer-events-none"}`}>
+            <div className="flex gap-2 items-center">
+                <div className="">{msg}</div>
+                <div className="text-lg">✅ {orderName}</div>
+            </div>
             <div className="">{!!props.kiOrderCash ? props.kiOrderCash.msg1 : ""}</div>
         </div>
 

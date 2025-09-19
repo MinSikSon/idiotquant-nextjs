@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 
 import { useAppDispatch, useAppSelector } from "@/lib/hooks";
 import { selectLoginState } from "@/lib/features/login/loginSlice";
@@ -46,7 +46,7 @@ export default function SearchUs() {
     const kiUsDailyPrice: KoreaInvestmentOverseasPriceQuotationsDailyPrice = useAppSelector(getKoreaInvestmentUsMarketDailyPrice);
 
     const fmpState: any = useAppSelector(selectFmpState);
-    const fmpUsBalanceSheetStatement: FmpBalanceSheetStatementType[] = useAppSelector(selectFmpBalanceSheetStatement);
+    const fmpUsBalanceSheetStatement: Record<string, FmpBalanceSheetStatementType> = useAppSelector(selectFmpBalanceSheetStatement);
 
     // const [startDate, setStartDate] = useState<any>("2024-01-03");
     const [startDate, setStartDate] = useState<any>((new Date()).toISOString().split('T')[0]);
@@ -58,8 +58,11 @@ export default function SearchUs() {
     const [openSRIM, setOpenSRIM] = useState(false);
 
     const [fixed, setFixed] = useState(false);
+    const scrollListenerAdded = useRef(false);
 
     useEffect(() => {
+        if (scrollListenerAdded.current) return; // 이미 등록되어 있으면 무시
+        scrollListenerAdded.current = true;
         const handleScroll = () => {
             if (window.scrollY > 160) {
                 setFixed(true);
@@ -69,7 +72,10 @@ export default function SearchUs() {
         };
 
         window.addEventListener("scroll", handleScroll, { passive: true });
-        return () => window.removeEventListener("scroll", handleScroll);
+        return () => {
+            window.removeEventListener("scroll", handleScroll);
+            scrollListenerAdded.current = false; // cleanup 시 플래그 초기화
+        }
     }, []);
 
     const formatDate = (date: string) => {
@@ -106,11 +112,7 @@ export default function SearchUs() {
     useEffect(() => {
         if (DEBUG) console.log(`useEffect [fmpUsBalanceSheetStatement]`, fmpUsBalanceSheetStatement);
         if (DEBUG) console.log(`useEffectObject.values(fmpUsBalanceSheetStatement)`, Object.values(fmpUsBalanceSheetStatement));
-
     }, [fmpUsBalanceSheetStatement])
-
-    if (DEBUG) console.log(`kiUsMaretSearchInfo`, kiUsMaretSearchInfo);
-    if (DEBUG) console.log(`kiUsMaretPriceDetail`, kiUsMaretPriceDetail);
 
     const [validCookie, setValidCookie] = useState<any>(false);
     useEffect(() => {
@@ -187,11 +189,20 @@ export default function SearchUs() {
         </ReactMarkdown>
     }
 
-    function getNcav(balanceSheetStatement: FmpBalanceSheetStatementType[], maretPriceDetail: any, ratioList: number[]) {
+    function getNcav(balanceSheetStatement: Record<string, FmpBalanceSheetStatementType>, maretPriceDetail: any, ratioList: number[]) {
         const stck_oprc = Number(maretPriceDetail.output["last"] ?? 1); // 주식 시가2
         const lstn_stcn = Number(maretPriceDetail.output["shar"] ?? 1); // 상장 주수
-        const cras = Number(balanceSheetStatement[0].totalCurrentAssets ?? 1); // 유동 자산
-        const total_lblt = Number(balanceSheetStatement[0].totalLiabilities ?? 1); // 부채 총계
+        let cras = 1
+        let total_lblt = 1
+        let msg = "유동 자산 = 1, 부채 총계 = 1"
+        if (DEBUG) console.log(`[getNcav]`, `balanceSheetStatement`, balanceSheetStatement,);
+        const balanceSheetStatementValues = Object.values(balanceSheetStatement ?? {});
+        if (DEBUG) console.log(`[getNcav]`, `balanceSheetStatementValues`, balanceSheetStatementValues,);
+        if (0 < balanceSheetStatementValues.length) {
+            cras = Number(balanceSheetStatementValues[0].totalCurrentAssets ?? 1); // 유동 자산
+            total_lblt = Number(balanceSheetStatementValues[0].totalLiabilities ?? 1); // 부채 총계
+            msg = ""
+        }
 
         // const value: number = (((cras - total_lblt) / (stck_oprc * lstn_stcn * ratio) - 1) * 100);
         // const target_price = (cras - total_lblt) / lstn_stcn;
@@ -208,6 +219,7 @@ export default function SearchUs() {
         }).join("\n");
 
         const md_main = String.raw`
+        ${msg}
 | ratio (%) | Expected return(%) | Target price($) |
 |-----------|--------------------|-----------------|
 ${md}
@@ -227,15 +239,17 @@ ${md}
         bShowResult = true;
     }
 
+    if (DEBUG) console.log(`[SearchUs]`, `bShowResult`, bShowResult);
+
     const texts = ["종가", "시가총액", "상장추식수"];
     const maxLength = Math.max(...texts.map(text => text.length * 2));
-    if (DEBUG) console.log(`maxLength`, maxLength);
+    if (DEBUG) console.log(`[SearchUs]`, `maxLength`, maxLength);
     return <>
         <div className="flex flex-col w-full">
             <div className={`${fixed ? "z-50 w-full fixed top-0 left-0 bg-white dark:bg-black" : "relative"}`}>
                 <div className="flex flex-col w-full">
                     <SearchAutocomplete placeHolder={"Please enter the stock ticker."} onSearchButton={onSearchButton} validCorpNameArray={all_tickers} />
-                    <div className="dark:bg-black flex px-4 gap-1 overflow-x-auto">
+                    <div className="dark:bg-black flex px-4 py-0 gap-1 overflow-x-auto">
                         {usMarketHistory.map((stockName: string, index: number) => {
                             return (
                                 <div key={index} className="dark:bg-black dark:text-white shadow border text-blue-500 hover:text-blue-700 hover:bg-blue-100 rounded-xl px-1 py-0.5 transition-all duration-200 min-w-fit">
@@ -262,7 +276,7 @@ ${md}
                     </div>
                 </>
                 : <>
-                    <div className={`flex shadow transition-all duration-500 ease-in-out ${fixed ? "z-40 w-full fixed top-20 left-0 shadow-md bg-white dark:bg-black dark:border-b dark:border-gray-500" : "relative"}`}>
+                    <div className={`flex shadow transition-all duration-500 ease-in-out ${fixed ? "z-40 w-full fixed pt-4 top-20 left-0 shadow-md bg-white dark:bg-black dark:border-b dark:border-gray-500" : "relative"}`}>
                         <div className={`w-7/12 p-3 ${fixed ? "py-1" : ""} dark:bg-black dark:text-white font-mono`}>
                             <div className={`flex flex-col text-[0.6rem] ${fixed ? "hidden" : ""}`}>
                                 <div>
@@ -346,8 +360,16 @@ ${md}
                                 {(() => {
                                     const stck_oprc = Number(kiUsMaretPriceDetail.output["last"] ?? 1); // 주식 시가2
                                     const lstn_stcn = Number(kiUsMaretPriceDetail.output["shar"] ?? 1); // 상장 주수
-                                    const cras = Number(Object.values(fmpUsBalanceSheetStatement)[0].totalCurrentAssets ?? 1); // 유동 자산
-                                    const total_lblt = Number(Object.values(fmpUsBalanceSheetStatement)[0].totalLiabilities ?? 1); // 부채 총계
+                                    if (DEBUG) console.log(`[ReactMarkdown]`, `fmpUsBalanceSheetStatement`, fmpUsBalanceSheetStatement, `, !!fmpUsBalanceSheetStatement`, !!fmpUsBalanceSheetStatement);
+                                    const fmpUsBalanceSheetStatementValues = Object.values(fmpUsBalanceSheetStatement ?? {});
+                                    let cras = 1;
+                                    let total_lblt = 1;
+                                    if (0 < fmpUsBalanceSheetStatementValues.length) {
+                                        cras = Number(fmpUsBalanceSheetStatementValues[0].totalCurrentAssets ?? 1); // 유동 자산
+                                        total_lblt = Number(fmpUsBalanceSheetStatementValues[0].totalLiabilities ?? 1); // 부채 총계
+                                    }
+                                    if (DEBUG) console.log(`[ReactMarkdown]`, `cras`, cras);
+                                    if (DEBUG) console.log(`[ReactMarkdown]`, `total_lblt`, total_lblt);
 
                                     return String.raw`
 $$
