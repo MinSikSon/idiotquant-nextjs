@@ -249,7 +249,7 @@ ${md}
             <div className={`${fixed ? "z-50 w-full fixed top-0 left-0 bg-white dark:bg-black" : "relative"}`}>
                 <div className="flex flex-col w-full">
                     <SearchAutocomplete placeHolder={"Please enter the stock ticker."} onSearchButton={onSearchButton} validCorpNameArray={all_tickers} />
-                    <div className="dark:bg-black flex px-4 gap-1 overflow-x-auto">
+                    <div className="dark:bg-black flex px-4 py-0 gap-1 overflow-x-auto">
                         {usMarketHistory.map((stockName: string, index: number) => {
                             return (
                                 <div key={index} className="dark:bg-black dark:text-white shadow border text-blue-500 hover:text-blue-700 hover:bg-blue-100 rounded-xl px-1 py-0.5 transition-all duration-200 min-w-fit">
@@ -276,7 +276,7 @@ ${md}
                     </div>
                 </>
                 : <>
-                    <div className={`flex shadow transition-all duration-500 ease-in-out ${fixed ? "z-40 w-full fixed top-20 left-0 shadow-md bg-white dark:bg-black dark:border-b dark:border-gray-500" : "relative"}`}>
+                    <div className={`flex shadow transition-all duration-500 ease-in-out ${fixed ? "z-40 w-full fixed pt-4 top-20 left-0 shadow-md bg-white dark:bg-black dark:border-b dark:border-gray-500" : "relative"}`}>
                         <div className={`w-7/12 p-3 ${fixed ? "py-1" : ""} dark:bg-black dark:text-white font-mono`}>
                             <div className={`flex flex-col text-[0.6rem] ${fixed ? "hidden" : ""}`}>
                                 <div>
