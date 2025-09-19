@@ -254,10 +254,10 @@ export default function AlgorithmTrade() {
                 <Tabs defaultValue="KR" className="mx-1">
                     <Tabs.List className="w-full bg-gray-300 py-0">
                         <Tabs.Trigger className="w-full p-1 text-white" value="KR" onClick={() => setMarket("KR")}>
-                            kospi/kosdaq/konex
+                            KR
                         </Tabs.Trigger>
                         <Tabs.Trigger className="w-full p-1 text-white" value="US" onClick={() => setMarket("US")}>
-                            nasdaq
+                            US
                         </Tabs.Trigger>
                         <Tabs.TriggerIndicator className="bg-blue-500 p-1" />
                     </Tabs.List>
