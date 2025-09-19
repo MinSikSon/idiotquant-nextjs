@@ -116,12 +116,12 @@ interface FmpUsMaretType {
     | "pending" | "fulfilled" | "rejected"
     | "order-cash"
     ;
-    fmpBalanceSheetStatement: FmpBalanceSheetStatementType[];
+    fmpBalanceSheetStatement: Record<string, FmpBalanceSheetStatementType>;
 }
 
 const initialState: FmpUsMaretType = {
     state: "init",
-    fmpBalanceSheetStatement: [],
+    fmpBalanceSheetStatement: {},
 }
 export const fmpUsMarketSlice = createAppSlice({
     name: "fmpUsMarketSlice",
