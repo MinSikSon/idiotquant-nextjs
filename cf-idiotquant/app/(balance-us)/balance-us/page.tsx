@@ -64,7 +64,7 @@ export default function BalanceUs() {
     }, [us_capital_token])
 
     if (DEBUG) console.log(`loginState`, loginState);
-    if ("init" == loginState || "rejected" == loginState) {
+    if ("init" == loginState || "rejected" == loginState || "pending" == loginState) {
         return <>
             <Login parentUrl={pathname} />
             <div className="dark:bg-black h-lvh"></div>

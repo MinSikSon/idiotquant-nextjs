@@ -63,7 +63,8 @@ export default function BalanceKr() {
         setValidCookie(isValidCookie("koreaInvestmentToken"));
     }, []);
 
-    if ("init" == loginState || "rejected" == loginState) {
+    if (DEBUG) console.log(`[BalanceKr]`, `loginState:`, loginState);
+    if ("init" == loginState || "rejected" == loginState || "pending" == loginState) {
         return <>
             <Login parentUrl={pathname} />
             <div className="dark:bg-black h-lvh"></div>

@@ -50,7 +50,13 @@ export const loginSlice = createAppSlice({
                 fulfilled: (state, action) => {
                     // console.log(`[getCloudFlareLoginStatus] fulfilled`, `, typeof action.payload:`, typeof action.payload, `, action.payload:`, action.payload);
                     // NOTE: get cookie (cf_token)
-                    state.state = "cf";
+                    const info = action.payload;
+                    if ("need kakao login" == info) {
+
+                    }
+                    else {
+                        state.state = "cf";
+                    }
                 },
                 rejected: (state) => {
                     // console.log(`[getCloudFlareLoginStatus] rejected`);
