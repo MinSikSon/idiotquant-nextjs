@@ -9,7 +9,7 @@ import { clearCookie, getCookie, registerCookie } from "@/components/util";
 import { DesignButton } from "@/components/designButton";
 import UserPage from "@/app/(user)/user/page";
 
-const DEBUG = false;
+const DEBUG = true;
 
 import { usePathname } from "next/navigation";
 import { verifyJWT } from "@/lib/jwt";
