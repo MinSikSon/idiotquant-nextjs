@@ -9,7 +9,7 @@ import { clearCookie, getCookie, registerCookie } from "@/components/util";
 import { DesignButton } from "@/components/designButton";
 import UserPage from "@/app/(user)/user/page";
 
-const DEBUG = true;
+const DEBUG = false;
 
 import { usePathname } from "next/navigation";
 import { verifyJWT } from "@/lib/jwt";
@@ -76,7 +76,6 @@ export default function Login(props: any) {
             const cf_token = getCookie("authToken");
             if (DEBUG) console.log(`[Login]`, `cf_token:`, cf_token);
             if (!!cf_token) {
-                if (DEBUG) console.log(`process.env.NEXT_PUBLIC_JWT_SECRET_KEY`, process.env.NEXT_PUBLIC_JWT_SECRET_KEY);
                 result = await verifyJWT(cf_token, process.env.NEXT_PUBLIC_JWT_SECRET_KEY);
                 if (DEBUG) console.log(`[Login] result:`, result, `, !!result:`, !!result);
                 if (true == !!result) {
