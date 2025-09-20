@@ -57,7 +57,7 @@ export default function BalanceUs() {
     }, [kiBalance]);
 
     useEffect(() => {
-        console.log(`[BalanceKr]`, `kr_capital_token`, us_capital_token);
+        if (DEBUG) console.log(`[BalanceKr]`, `kr_capital_token`, us_capital_token);
         if ("init" == us_capital_token.state) {
             dispatch(reqGetUsCapitalToken({ koreaInvestmentToken: kiToken }));
         }
