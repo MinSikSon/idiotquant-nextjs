@@ -64,12 +64,6 @@ export default function BalanceKr() {
     }, []);
 
     if (DEBUG) console.log(`[BalanceKr]`, `loginState:`, loginState);
-    if ("init" == loginState || "rejected" == loginState || "pending" == loginState) {
-        return <>
-            <Login parentUrl={pathname} />
-            <div className="dark:bg-black h-lvh"></div>
-        </>
-    }
 
     if (false == validCookie || false == !!kiToken["access_token"]) {
         return <>

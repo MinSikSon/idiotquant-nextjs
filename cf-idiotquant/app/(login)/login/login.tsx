@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { getCloudFlareLoginStatus, selectKakaoAuthCode, selectKakaoId, selectKakaoNickName, selectLoginState, selectUserInfo, setKakaoAuthCode, setKakaoId, setKakaoNickName } from "@/lib/features/login/loginSlice";
 import { useAppDispatch, useAppSelector } from "@/lib/hooks";
-import { clearCookie, getCookie, registerCookie } from "@/components/util";
+import { clearCookie, getCookie } from "@/components/util";
 
 import { DesignButton } from "@/components/designButton";
 import UserPage from "@/app/(user)/user/page";
@@ -112,9 +112,6 @@ export default function Login(props: any) {
     const Logout = () => {
         if (DEBUG) console.log(`Logout`);
         clearCookie("authToken");
-        clearCookie("cf_token");
-        clearCookie("kakaoId");
-        clearCookie("kakaoNickName");
         clearCookie("koreaInvestmentToken");
 
         dispatch(setKakaoAuthCode(""));

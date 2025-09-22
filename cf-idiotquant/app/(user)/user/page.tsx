@@ -14,14 +14,13 @@ export default function UserPage(props: any) {
         if (DEBUG) console.log(`[UserPage]`, `window.location.origin`, window.location.origin);
         setWindowLocationOrigin(window.location.origin);
     }, []);
+
     return <>
         <div className="p-5">
             <div className="font-mono text-xl mb-2">
                 {props.kakaoNickName}님 반갑습니다.
             </div>
-            <div className="font-mono">
-                logout 하려면 아래 버튼을 눌려주세요.
-            </div>
+            <UserInfo kakaoNickName={props.kakaoNickName} />
             <DesignButton
                 handleOnClick={() => props.Logout(`${windowLocationOrigin}${props.parentUrl}`)}
                 buttonName="logout"

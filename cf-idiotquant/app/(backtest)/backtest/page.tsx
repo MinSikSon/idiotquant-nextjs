@@ -298,11 +298,6 @@ export default function BackTest() {
         setValidCookie(isValidCookie("koreaInvestmentToken"));
     }, []);
 
-    if ("init" == loginState || "rejected" == loginState) {
-        return <>
-            <Login parentUrl={pathname} />
-        </>
-    }
     if (false == validCookie || false == !!kiToken["access_token"]) {
         return <>
             <Auth />
