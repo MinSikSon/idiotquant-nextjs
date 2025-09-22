@@ -2,6 +2,7 @@
 
 import { DesignButton } from "@/components/designButton";
 import { useEffect, useState } from "react";
+import User from "./user";
 
 const DEBUG = false;
 
@@ -20,7 +21,7 @@ export default function UserPage(props: any) {
             <div className="font-mono text-xl mb-2">
                 {props.kakaoNickName}님 반갑습니다.
             </div>
-            <UserInfo kakaoNickName={props.kakaoNickName} />
+            <User kakaoNickName={props.kakaoNickName} />
             <DesignButton
                 handleOnClick={() => props.Logout(`${windowLocationOrigin}${props.parentUrl}`)}
                 buttonName="logout"

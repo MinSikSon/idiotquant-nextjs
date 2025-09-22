@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { getCloudFlareLoginStatus, selectKakaoAuthCode, selectKakaoId, selectKakaoNickName, selectLoginState, selectUserInfo, setKakaoAuthCode, setKakaoId, setKakaoNickName } from "@/lib/features/login/loginSlice";
+import { getCloudFlareLoginStatus, selectKakaoAuthCode, selectKakaoId, selectKakaoNickName, selectLoginState, setKakaoAuthCode, setKakaoId, setKakaoNickName } from "@/lib/features/login/loginSlice";
 import { useAppDispatch, useAppSelector } from "@/lib/hooks";
 import { clearCookie, getCookie } from "@/components/util";
 
@@ -56,7 +56,6 @@ export default function Login(props: any) {
     const kakaoAuthCode = useAppSelector(selectKakaoAuthCode);
     const kakaoNickName = useAppSelector(selectKakaoNickName);
     const kakaoId = useAppSelector(selectKakaoId);
-    const userInfo = useAppSelector(selectUserInfo);
     const loginState = useAppSelector(selectLoginState);
 
     const pathname = usePathname();

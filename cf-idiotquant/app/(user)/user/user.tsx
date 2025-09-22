@@ -12,7 +12,7 @@ interface User {
     bio?: string;
 }
 
-export default function UserInfo(props: any) {
+export default function User(props: any) {
     const [user, setUser] = useState<User>({
         name: props.kakaoNickName,
         email: 'iq@idiotquant.com',

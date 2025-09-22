@@ -1,6 +1,5 @@
 "use client"
 
-import React from "react";
 import AlgorithmTrade from "../(algorithm-trade)/algorithm-trade/page";
 import HomeThumbnail from "@/components/homeThumbnail";
 
