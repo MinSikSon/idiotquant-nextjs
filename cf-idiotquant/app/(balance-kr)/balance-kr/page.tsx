@@ -80,13 +80,6 @@ export default function BalanceKr() {
         </>
     }
 
-    if ("fulfilled" != kr_capital_token.state) {
-        return <>
-            <Login parentUrl={pathname} />
-            <div className="dark:bg-black h-lvh"></div>
-        </>
-    }
-
     return <>
         <InquireBalanceResult
             kiBalance={kiBalance}

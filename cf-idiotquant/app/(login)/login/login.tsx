@@ -72,16 +72,16 @@ export default function Login(props: any) {
 
         async function callback() {
             let result = { valid: false, payload: "" };
-            const cf_token = getCookie("authToken");
-            if (DEBUG) console.log(`[Login]`, `cf_token:`, cf_token);
-            if (!!cf_token) {
+            const authToken = getCookie("authToken");
+            if (DEBUG) console.log(`[Login]`, `authToken:`, authToken);
+            if (!!authToken) {
                 const secretKey = process.env.NEXT_PUBLIC_JWT_SECRET_KEY;
                 if (!secretKey || secretKey.length === 0) {
                     console.error("❌ JWT secret key가 비어 있습니다. verifyJWT를 실행할 수 없습니다.");
                     return;
                 }
 
-                result = await verifyJWT(cf_token, secretKey);
+                result = await verifyJWT(authToken, secretKey);
                 if (DEBUG) console.log(`[Login] result:`, result, `, !!result:`, !!result);
                 if (true == !!result) {
                     if (true == result.valid) {
