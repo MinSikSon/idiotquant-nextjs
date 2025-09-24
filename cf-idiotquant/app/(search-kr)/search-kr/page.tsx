@@ -2,8 +2,6 @@
 
 import { useState, useEffect } from "react";
 
-import Login from "@/app/(login)/login/login"
-import { selectLoginState } from "@/lib/features/login/loginSlice";
 import { usePathname } from "next/navigation";
 import { useAppDispatch, useAppSelector } from "@/lib/hooks";
 import { reqPostApprovalKey, reqPostToken, reqGetInquireBalance, reqPostOrderCash, reqGetInquirePrice, KoreaInvestmentInquirePrice, reqGetInquireDailyItemChartPrice, getKoreaInvestmentInquireDailyItemChartPrice, KoreaInvestmentInquireDailyItemChartPrice, reqGetBalanceSheet, getKoreaInvestmentBalanceSheet, KoreaInvestmentBalanceSheet, getKoreaInvestmentIncomeStatement, KoreaInvestmentIncomeStatement, reqGetIncomeStatement } from "@/lib/features/koreaInvestment/koreaInvestmentSlice";
@@ -37,7 +35,6 @@ export default function SearchKr() {
   const pathname = usePathname();
   const dispatch = useAppDispatch();
 
-  const loginState = useAppSelector(selectLoginState);
   const kiApproval: KoreaInvestmentApproval = useAppSelector(getKoreaInvestmentApproval);
   const kiToken: KoreaInvestmentToken = useAppSelector(getKoreaInvestmentToken);
   const kiBalance: KoreaInvestmentBalance = useAppSelector(getKoreaInvestmentBalance);
@@ -77,14 +74,12 @@ export default function SearchKr() {
 
   useEffect(() => {
     if (DEBUG) console.log(`[Search]`, `kiToken:`, kiToken);
-    if ("cf" == loginState || "kakao" == loginState) {
-      const isValidKiAccessToken = !!kiToken["access_token"];
-      if (DEBUG) console.log(`[Search]`, `isValidKiAccessToken`, isValidKiAccessToken);
-      if (true == isValidKiAccessToken) {
-        dispatch(reqGetInquireBalance(kiToken));
-      }
+    const isValidKiAccessToken = !!kiToken["access_token"];
+    if (DEBUG) console.log(`[Search]`, `isValidKiAccessToken`, isValidKiAccessToken);
+    if (true == isValidKiAccessToken) {
+      dispatch(reqGetInquireBalance(kiToken));
     }
-  }, [kiToken, loginState]);
+  }, [kiToken]);
 
   useEffect(() => {
     if (DEBUG) console.log(`useEffect [kiInquireDailyItemChartPrice]`, kiInquireDailyItemChartPrice);

@@ -1,7 +1,5 @@
 "use client"
 
-import Login from "@/app/(login)/login/login";
-import { selectLoginState } from "@/lib/features/login/loginSlice";
 import { isValidCookie, } from "@/components/util";
 import { getKoreaInvestmentToken, KoreaInvestmentToken, } from "@/lib/features/koreaInvestment/koreaInvestmentSlice";
 import { reqGetInquireBalance, getKoreaInvestmentBalance, KoreaInvestmentBalance } from "@/lib/features/koreaInvestment/koreaInvestmentSlice";
@@ -21,7 +19,6 @@ let DEBUG = false;
 
 export default function BalanceKr() {
     const pathname = usePathname();
-    const loginState = useAppSelector(selectLoginState);
 
     const dispatch = useAppDispatch();
     const kiToken: KoreaInvestmentToken = useAppSelector(getKoreaInvestmentToken);
@@ -32,16 +29,14 @@ export default function BalanceKr() {
     const kr_capital_token: CapitalTokenType = useAppSelector(selectCapitalToken);
 
     useEffect(() => {
-        if (DEBUG) console.log(`[BalanceKr]`, `loginState`, loginState);
-        // console.log(`[BalanceKr]`, `kiToken:`, kiToken);
-        if ("cf" == loginState || "kakao" == loginState) {
-            const isValidKiAccessToken = !!kiToken["access_token"];
-            if (DEBUG) console.log(`[BalanceKr]`, `isValidKiAccessToken`, isValidKiAccessToken);
-            if (true == isValidKiAccessToken) {
-                dispatch(reqGetInquireBalance(kiToken));
-            }
+
+        const isValidKiAccessToken = !!kiToken["access_token"];
+        if (DEBUG) console.log(`[BalanceKr]`, `isValidKiAccessToken`, isValidKiAccessToken);
+        if (true == isValidKiAccessToken) {
+            dispatch(reqGetInquireBalance(kiToken));
         }
-    }, [kiToken, loginState]);
+
+    }, [kiToken]);
 
     useEffect(() => {
         if (true == DEBUG) console.log(`[BalanceKr]`, `kiBalance`, kiBalance);
@@ -62,8 +57,6 @@ export default function BalanceKr() {
     useEffect(() => {
         setValidCookie(isValidCookie("koreaInvestmentToken"));
     }, []);
-
-    if (DEBUG) console.log(`[BalanceKr]`, `loginState:`, loginState);
 
     if (false == validCookie || false == !!kiToken["access_token"]) {
         return <>

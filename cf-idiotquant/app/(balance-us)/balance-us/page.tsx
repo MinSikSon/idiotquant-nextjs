@@ -9,8 +9,6 @@ import { CapitalTokenType, reqGetUsCapitalToken, selectUsCapitalToken } from "@/
 import { getKoreaInvestmentToken, KoreaInvestmentToken } from "@/lib/features/koreaInvestment/koreaInvestmentSlice";
 import { reqGetOverseasStockTradingInquirePresentBalance, getKoreaInvestmentUsMaretPresentBalance, KoreaInvestmentOverseasPresentBalance, reqPostOrderUs, getKoreaInvestmentUsOrder, KoreaInvestmentUsOrder } from "@/lib/features/koreaInvestmentUsMarket/koreaInvestmentUsMarketSlice";
 
-
-import { selectLoginState } from "@/lib/features/login/loginSlice";
 import { useAppDispatch, useAppSelector } from "@/lib/hooks";
 import { usePathname } from "next/navigation";
 import { useState, useEffect } from "react";
@@ -19,7 +17,6 @@ const DEBUG = false;
 
 export default function BalanceUs() {
     const pathname = usePathname();
-    const loginState = useAppSelector(selectLoginState);
 
     const kiToken: KoreaInvestmentToken = useAppSelector(getKoreaInvestmentToken);
     const kiBalance: KoreaInvestmentOverseasPresentBalance = useAppSelector(getKoreaInvestmentUsMaretPresentBalance);
@@ -36,13 +33,10 @@ export default function BalanceUs() {
     }, []);
 
     useEffect(() => {
-        if (DEBUG) console.log(`[BalanceUs]`, `loginState`, loginState);
         if (DEBUG) console.log(`[BalanceUs]`, `kiToken:`, kiToken);
         const isValidKiAccessToken = !!kiToken["access_token"];
-        if ("cf" == loginState || "kakao" == loginState) {
-            if (true == isValidKiAccessToken) {
-                dispatch(reqGetOverseasStockTradingInquirePresentBalance(kiToken));
-            }
+        if (true == isValidKiAccessToken) {
+            dispatch(reqGetOverseasStockTradingInquirePresentBalance(kiToken));
         }
 
         if (DEBUG) console.log(`[BalanceUs]`, `validCookie:`, validCookie);
@@ -50,7 +44,7 @@ export default function BalanceUs() {
             setValidCookie(isValidCookie("koreaInvestmentToken"));
         }
         // }, [kiToken]);
-    }, [kiToken, loginState]);
+    }, [kiToken]);
 
     useEffect(() => {
         if (DEBUG) console.log(`[BalanceUs]`, `kiBalance`, kiBalance);
@@ -62,8 +56,6 @@ export default function BalanceUs() {
             dispatch(reqGetUsCapitalToken({ koreaInvestmentToken: kiToken }));
         }
     }, [us_capital_token])
-
-    if (DEBUG) console.log(`loginState`, loginState);
 
     if (DEBUG) console.log(`[BalanceUs]`, `validCookie`, validCookie);
     if (DEBUG) console.log(`[BalanceUs]`, `kiToken["access_token"]`, kiToken["access_token"]);

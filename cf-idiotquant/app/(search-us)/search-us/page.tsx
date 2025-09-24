@@ -3,7 +3,6 @@
 import { useState, useEffect, useRef } from "react";
 
 import { useAppDispatch, useAppSelector } from "@/lib/hooks";
-import { selectLoginState } from "@/lib/features/login/loginSlice";
 import { usePathname } from "next/navigation";
 import { isValidCookie, Util } from "@/components/util";
 import { getKoreaInvestmentUsMaretSearchInfo, getKoreaInvestmentUsMarketDailyPrice, KoreaInvestmentOverseasPriceDetail, KoreaInvestmentOverseasPriceDetailOutput, KoreaInvestmentOverseasPriceQuotationsDailyPrice, KoreaInvestmentOverseasPriceQuotationsInquireDailyChartPrice, KoreaInvestmentOverseasSearchInfo, KoreaInvestmentOverseasSearchInfoOutput, reqGetOverseasPriceQuotationsDailyPrice, reqGetQuotationsSearchInfo } from "@/lib/features/koreaInvestmentUsMarket/koreaInvestmentUsMarketSlice";
@@ -15,7 +14,6 @@ import nasdaq_tickers from "@/public/data/usStockSymbols/nasdaq_tickers.json";
 import nyse_tickers from "@/public/data/usStockSymbols/nyse_tickers.json";
 import amex_tickers from "@/public/data/usStockSymbols/amex_tickers.json";
 const all_tickers = [...nasdaq_tickers, ...nyse_tickers, ...amex_tickers];
-import Login from "@/app/(login)/login/login";
 import Auth from "@/components/auth";
 import { FmpBalanceSheetStatementType, reqGetFmpBalanceSheetStatement, selectFmpBalanceSheetStatement, selectFmpState } from "@/lib/features/fmpUsMarket/fmpUsMarketSlice";
 import LineChart from "@/components/LineChart";
@@ -36,8 +34,6 @@ const DEBUG = false;
 export default function SearchUs() {
     const pathname = usePathname();
     const dispatch = useAppDispatch();
-
-    const loginState = useAppSelector(selectLoginState);
 
     const kiToken: KoreaInvestmentToken = useAppSelector(getKoreaInvestmentToken);
 
@@ -88,14 +84,11 @@ export default function SearchUs() {
 
     useEffect(() => {
         if (DEBUG) console.log(`[Search]`, `kiToken:`, kiToken);
-        if (DEBUG) console.log(`[Search]`, `loginState:`, loginState);
-        if ("cf" == loginState || "kakao" == loginState) {
-            const isValidKiAccessToken = !!kiToken["access_token"];
-            if (true == isValidKiAccessToken) {
-                dispatch(reqGetInquireBalance(kiToken));
-            }
+        const isValidKiAccessToken = !!kiToken["access_token"];
+        if (true == isValidKiAccessToken) {
+            dispatch(reqGetInquireBalance(kiToken));
         }
-    }, [kiToken, loginState]);
+    }, [kiToken]);
 
     useEffect(() => {
         if (DEBUG) console.log(`useEffect [kiUsMaretSearchInfo]`, kiUsMaretSearchInfo);
