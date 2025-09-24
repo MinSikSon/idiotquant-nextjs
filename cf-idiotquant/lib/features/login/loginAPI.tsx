@@ -1,8 +1,8 @@
 import { getCookie } from "@/components/util";
 
-export const getLoginStatus: any = async () => {
+export const setLoginStatus: any = async () => {
     const authToken = getCookie("authToken");
-    // console.log(`[getLoginStatus] authToken:`, authToken);
+    // console.log(`[setLoginStatus] authToken:`, authToken);
 
     const url = `${process.env.NEXT_PUBLIC_API_URL}/login`
     const options: RequestInit = {
