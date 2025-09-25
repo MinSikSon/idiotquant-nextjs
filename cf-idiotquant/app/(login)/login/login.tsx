@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { getCloudFlareLoginStatus, selectKakaoAuthCode, selectKakaoId, selectKakaoNickName, selectLoginState, setKakaoAuthCode, setKakaoId, setKakaoNickName } from "@/lib/features/login/loginSlice";
+import { setCloudFlareLoginStatus, selectKakaoAuthCode, selectKakaoId, selectKakaoNickName, selectLoginState, setKakaoAuthCode, setKakaoId, setKakaoNickName } from "@/lib/features/login/loginSlice";
 import { useAppDispatch, useAppSelector } from "@/lib/hooks";
 import { clearCookie, getCookie } from "@/components/util";
 
@@ -72,16 +72,16 @@ export default function Login(props: any) {
 
         async function callback() {
             let result = { valid: false, payload: "" };
-            const cf_token = getCookie("authToken");
-            if (DEBUG) console.log(`[Login]`, `cf_token:`, cf_token);
-            if (!!cf_token) {
+            const authToken = getCookie("authToken");
+            if (DEBUG) console.log(`[Login]`, `authToken:`, authToken, `, !!authToken:`, !!authToken);
+            if (!!authToken) {
                 const secretKey = process.env.NEXT_PUBLIC_JWT_SECRET_KEY;
                 if (!secretKey || secretKey.length === 0) {
                     console.error("❌ JWT secret key가 비어 있습니다. verifyJWT를 실행할 수 없습니다.");
                     return;
                 }
 
-                result = await verifyJWT(cf_token, secretKey);
+                result = await verifyJWT(authToken, secretKey);
                 if (DEBUG) console.log(`[Login] result:`, result, `, !!result:`, !!result);
                 if (true == !!result) {
                     if (true == result.valid) {
@@ -95,10 +95,14 @@ export default function Login(props: any) {
                     }
                 }
             }
+            else {
+                dispatch(setKakaoId(""));
+                dispatch(setKakaoNickName(""));
+            }
         }
         callback();
 
-        dispatch(getCloudFlareLoginStatus());
+        dispatch(setCloudFlareLoginStatus());
     }, []);
 
     async function onClickLogin() {
@@ -154,6 +158,7 @@ export default function Login(props: any) {
         </>;
     }
 
+    if (DEBUG) console.log(`[Login] render`, `kakaoNickName:`, kakaoNickName, `, loginState:`, loginState);
     return (
         <>
             <div className="w-full h-screen items-center dark:bg-black dark:text-white">

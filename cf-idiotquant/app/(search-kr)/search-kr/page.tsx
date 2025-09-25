@@ -2,11 +2,9 @@
 
 import { useState, useEffect } from "react";
 
-import Login from "@/app/(login)/login/login"
-import { selectLoginState } from "@/lib/features/login/loginSlice";
 import { usePathname } from "next/navigation";
 import { useAppDispatch, useAppSelector } from "@/lib/hooks";
-import { reqPostApprovalKey, reqPostToken, reqGetInquireBalance, reqPostOrderCash, reqGetInquirePrice, KoreaInvestmentInquirePrice, reqGetInquireDailyItemChartPrice, getKoreaInvestmentInquireDailyItemChartPrice, KoreaInvestmentInquireDailyItemChartPrice, reqGetBalanceSheet, getKoreaInvestmentBalanceSheet, KoreaInvestmentBalanceSheet, getKoreaInvestmentIncomeStatement, KoreaInvestmentIncomeStatement, reqGetIncomeStatement } from "@/lib/features/koreaInvestment/koreaInvestmentSlice";
+import { reqPostToken, reqGetInquireBalance, reqPostOrderCash, reqGetInquirePrice, KoreaInvestmentInquirePrice, reqGetInquireDailyItemChartPrice, getKoreaInvestmentInquireDailyItemChartPrice, KoreaInvestmentInquireDailyItemChartPrice, reqGetBalanceSheet, getKoreaInvestmentBalanceSheet, KoreaInvestmentBalanceSheet, getKoreaInvestmentIncomeStatement, KoreaInvestmentIncomeStatement, reqGetIncomeStatement } from "@/lib/features/koreaInvestment/koreaInvestmentSlice";
 import { getKoreaInvestmentApproval, getKoreaInvestmentToken, getKoreaInvestmentBalance, getKoreaInvestmentInquirePrice } from "@/lib/features/koreaInvestment/koreaInvestmentSlice";
 import { KoreaInvestmentApproval, KoreaInvestmentToken, KoreaInvestmentBalance } from "@/lib/features/koreaInvestment/koreaInvestmentSlice";
 
@@ -37,7 +35,6 @@ export default function SearchKr() {
   const pathname = usePathname();
   const dispatch = useAppDispatch();
 
-  const loginState = useAppSelector(selectLoginState);
   const kiApproval: KoreaInvestmentApproval = useAppSelector(getKoreaInvestmentApproval);
   const kiToken: KoreaInvestmentToken = useAppSelector(getKoreaInvestmentToken);
   const kiBalance: KoreaInvestmentBalance = useAppSelector(getKoreaInvestmentBalance);
@@ -77,14 +74,12 @@ export default function SearchKr() {
 
   useEffect(() => {
     if (DEBUG) console.log(`[Search]`, `kiToken:`, kiToken);
-    if ("cf" == loginState || "kakao" == loginState) {
-      const isValidKiAccessToken = !!kiToken["access_token"];
-      if (DEBUG) console.log(`[Search]`, `isValidKiAccessToken`, isValidKiAccessToken);
-      if (true == isValidKiAccessToken) {
-        dispatch(reqGetInquireBalance(kiToken));
-      }
+    const isValidKiAccessToken = !!kiToken["access_token"];
+    if (DEBUG) console.log(`[Search]`, `isValidKiAccessToken`, isValidKiAccessToken);
+    if (true == isValidKiAccessToken) {
+      dispatch(reqGetInquireBalance(kiToken));
     }
-  }, [kiToken, loginState]);
+  }, [kiToken]);
 
   useEffect(() => {
     if (DEBUG) console.log(`useEffect [kiInquireDailyItemChartPrice]`, kiInquireDailyItemChartPrice);
@@ -95,7 +90,6 @@ export default function SearchKr() {
     if (DEBUG) console.log(`useEffect [kiBalanceSheet]`, kiBalanceSheet);
     if (DEBUG) console.log(`kiBalanceSheet.output[0].cras`, kiBalanceSheet.output.length > 0 ? kiBalanceSheet.output[0].cras : 0, `유동자산 (억)`);
     if (DEBUG) console.log(`kiBalanceSheet.output[0].total_lblt`, kiBalanceSheet.output.length > 0 ? kiBalanceSheet.output[0].total_lblt : 0, `부채총계 (억)`);
-
   }, [kiBalanceSheet])
   useEffect(() => {
     if (DEBUG) console.log(`useEffect [kiIncomeStatement]`, kiIncomeStatement);
@@ -258,14 +252,15 @@ export default function SearchKr() {
     }
   }
 
-  function isYearMatch(date1: string, date2: string) {
-    const year1 = date1.slice(0, 4); // 첫 번째 날짜의 연도 추출
-    const year2 = date2.slice(0, 4); // 두 번째 날짜의 연도 추출
-
-    return year1 === year2; // 두 연도가 일치하는지 확인
-  }
-
   function getYearMatchIndex(yearMonthDate: string) {
+
+    function isYearMatch(date1: string, date2: string) {
+      const year1 = date1.slice(0, 4); // 첫 번째 날짜의 연도 추출
+      const year2 = date2.slice(0, 4); // 두 번째 날짜의 연도 추출
+
+      return year1 === year2; // 두 연도가 일치하는지 확인
+    }
+
     if (kiBalanceSheet.output.length > 0) {
       for (let i = 0; i < kiBalanceSheet.output.length; ++i) {
         if (isYearMatch(yearMonthDate, kiBalanceSheet.output[i]["stac_yymm"])) {
@@ -379,7 +374,6 @@ ${md}
       return `|${ratio.toFixed(2)}%|${percentage.toFixed(2)}%|${target_price_list.map(target_price => Number(target_price.toFixed(0)).toLocaleString()).join("|")}|`;
     }).join("\n");
 
-
     // console.log(`md`, md);
 
     const md_main = String.raw`
@@ -395,17 +389,17 @@ ${md}
     </>
   }
 
-  const [validCookie, setValidCookie] = useState<any>(false);
-  useEffect(() => {
-    setValidCookie(isValidCookie("koreaInvestmentToken"));
-  }, []);
-
-  if (false == validCookie || false == !!kiToken["access_token"]) {
+  if (DEBUG) console.log(`isValidCookie("koreaInvestmentToken") 1`, isValidCookie("koreaInvestmentToken"));
+  if (DEBUG) console.log(`kiToken`, kiToken, `, !!kiToken["access_token"]`, !!kiToken["access_token"]);
+  if (false == !!kiToken["access_token"]) {
     return <>
       <Auth />
     </>
   }
 
+  if (DEBUG) console.log(`isValidCookie("koreaInvestmentToken") 2`, isValidCookie("koreaInvestmentToken"));
+
+  if (DEBUG) console.log(`rendering SearchKr ...`, pathname, `kiApproval`, kiApproval, `kiToken`, kiToken, `kiBalance`, kiBalance);
   let bShowResult = true;
   if (("fulfilled" != kiInquireDailyItemChartPrice.state)
     || ("fulfilled" != kiBalanceSheet.state)
@@ -418,6 +412,12 @@ ${md}
     //   <div className="dark:bg-black h-lvh"></div>
     // </>
   }
+
+  if (DEBUG) console.log(`bShowResult`, bShowResult);
+  if (DEBUG) console.log(`kiInquireDailyItemChartPrice`, kiInquireDailyItemChartPrice);
+  if (DEBUG) console.log(`kiBalanceSheet`, kiBalanceSheet);
+  if (DEBUG) console.log(`kiInquirePrice`, kiInquirePrice);
+  if (DEBUG) console.log(`kiIncomeStatement`, kiIncomeStatement);
 
   let MARKET_CAP = 0;
   // let CURRENT_ASSET_LIST = []; // 유동자산

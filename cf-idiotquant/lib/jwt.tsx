@@ -129,6 +129,10 @@ function base64UrlDecode(str: any) {
 }
 
 export async function verifyJWT(token: any, secretKey: any) {
+    if (!secretKey || secretKey.length === 0) {
+        throw new Error("❌ secretKey가 비어 있습니다. HMAC 서명을 만들 수 없습니다.");
+    }
+
     const [encodedHeader, encodedPayload, receivedSignature] = token.split('.');
 
     // 서버에서 동일하게 서명 생성

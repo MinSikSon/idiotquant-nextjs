@@ -18,9 +18,8 @@ import { verifyJWT } from './lib/jwt';
 
 export async function middleware(req: NextRequest) {
     const url = new URL(req.url);
-    console.log(`[middleware] url:`, url, `, req.url:`, req.url);
     const path = req.nextUrl.pathname;
-    console.log(`[middleware] path:`, path);
+
     if (
         path.startsWith("/_next")
         || path.startsWith("/.well-known")
@@ -31,15 +30,21 @@ export async function middleware(req: NextRequest) {
     ) {
         return NextResponse.next(); // login 없이 접근 허용
     }
-    else if (
+    if (
         path === "/"
         || path === "/search"
         || path === "/search-kr"
         || path === "/search-us"
     ) {
         // TODO: 한국 투자 조회 가능
+        console.log(`[middleware] url:`, url, `, req.url:`, req.url);
+        console.log(`[middleware] path:`, path);
+
         return NextResponse.next(); // login 없이 접근 허용
     }
+
+    console.log(`[middleware] url:`, url, `, req.url:`, req.url);
+    console.log(`[middleware] path:`, path);
 
     // console.log(`[middleware] req.cookies:`, req.cookies); // req.cookies == req.headers.get('cookie')
     // console.log(`[middleware] req.headers.get('authToken'):`, req.headers.get('authToken'));

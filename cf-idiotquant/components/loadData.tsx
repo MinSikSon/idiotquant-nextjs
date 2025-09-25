@@ -6,7 +6,7 @@ import { getList, initFinancialInfo, selectFinancialInfo, selectFinancialInfoLis
 
 import { getMarketList, initMarketInfo, selectMarketInfo, selectMarketInfoLatestDate, selectMarketInfoList, selectMarketInfoLoaded, selectMarketInfoState, setMarketInfoStateLoading, setMarketList } from "@/lib/features/marketInfo/marketInfoSlice";
 import { getStrategyList, addStrategyList, selectStrategyState, setLoading, selectNcavList } from "@/lib/features/strategy/strategySlice";
-import { getCloudFlareLoginStatus } from "@/lib/features/login/loginSlice";
+import { setCloudFlareLoginStatus } from "@/lib/features/login/loginSlice";
 import { GetMergedStocksList, GetStocksFilteredByStrategyNCAV } from "@/components/strategy";
 import { selectKakaoId } from "@/lib/features/login/loginSlice";
 import { getCookie, isValidCookie } from "./util";
@@ -61,7 +61,7 @@ export const LoadData = () => {
             const isValidCookieKakaoId = isValidCookie("kakaoId");
             if (DEBUG) console.log(`[LoadData]`, `kakaoId:`, kakaoId, `isValidCookieKakaoId:`, isValidCookieKakaoId);
             if (false == !!kakaoId && true == isValidCookieKakaoId) {
-                dispatch(getCloudFlareLoginStatus());
+                dispatch(setCloudFlareLoginStatus());
             }
             dispatch(getList());
             dispatch(getMarketList());
