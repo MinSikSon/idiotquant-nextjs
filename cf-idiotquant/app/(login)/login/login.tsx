@@ -30,19 +30,6 @@ async function RequestNickname(_token: any) {
     return response;
 }
 
-async function RequestToken(_authorizeCode: any, redirectUrl: any) {
-    const tokenUrl = `https://kauth.kakao.com/oauth/token?grant_type=authorization_code&client_id=${process.env.NEXT_PUBLIC_KAKAO_REST_API_KEY}&redirect_uri=${encodeURIComponent(redirectUrl)}&code=${_authorizeCode}`;
-
-    const responseToken = await fetch(tokenUrl, {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/x-www-form-urlencoded;charset=utf-8'
-        },
-    }).then((res) => res.json());
-
-    return responseToken;
-}
-
 const redirectUrl = `${process.env.NEXT_PUBLIC_API_URL}/kakao-login`;
 const redirectLogoutUrl = `${process.env.NEXT_PUBLIC_API_URL}/kakao-logout`;
 
