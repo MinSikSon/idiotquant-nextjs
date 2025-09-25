@@ -73,7 +73,7 @@ export default function Login(props: any) {
         async function callback() {
             let result = { valid: false, payload: "" };
             const authToken = getCookie("authToken");
-            if (DEBUG) console.log(`[Login]`, `authToken:`, authToken);
+            if (DEBUG) console.log(`[Login]`, `authToken:`, authToken, `, !!authToken:`, !!authToken);
             if (!!authToken) {
                 const secretKey = process.env.NEXT_PUBLIC_JWT_SECRET_KEY;
                 if (!secretKey || secretKey.length === 0) {
@@ -94,6 +94,10 @@ export default function Login(props: any) {
                         }
                     }
                 }
+            }
+            else {
+                dispatch(setKakaoId(""));
+                dispatch(setKakaoNickName(""));
             }
         }
         callback();
@@ -154,6 +158,7 @@ export default function Login(props: any) {
         </>;
     }
 
+    if (DEBUG) console.log(`[Login] render`, `kakaoNickName:`, kakaoNickName, `, loginState:`, loginState);
     return (
         <>
             <div className="w-full h-screen items-center dark:bg-black dark:text-white">

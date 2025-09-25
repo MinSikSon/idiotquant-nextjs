@@ -1,6 +1,19 @@
 import { PayloadAction } from "@reduxjs/toolkit";
 import { createAppSlice } from "@/lib/createAppSlice";
-import { setLoginStatus, setLogoutStatus } from "./loginAPI";
+import { getUserInfo, setLoginStatus, setLogoutStatus, setUserInfo } from "./loginAPI";
+
+export interface UserInfo {
+    state: "init"
+    | "pending" | "fulfilled" | "rejected" | "updating" | "updated" | "update-rejected"
+    ;
+    nickname: string;
+    email?: string;
+    avatarUrl?: string;
+    joinedAt: number;
+    lastLoginAt: number;
+    desc: string;
+    point: number;
+}
 
 interface LoginInfo {
     state: "init"
@@ -12,15 +25,24 @@ interface LoginInfo {
     id: string;
     nickName: string;
     kakaoAuthCode: string;
-    info: any;
+    userInfo: UserInfo;
 }
+
 const initialState: LoginInfo = {
     state: "init",
     id: "",
     nickName: "",
     kakaoAuthCode: "",
-    info: {}
+    userInfo: {
+        state: "init",
+        nickname: "",
+        joinedAt: 0,
+        lastLoginAt: 0,
+        desc: "",
+        point: 0,
+    }
 }
+
 export const loginSlice = createAppSlice({
     name: "login",
     initialState,
@@ -44,14 +66,15 @@ export const loginSlice = createAppSlice({
             },
             {
                 pending: (state) => {
-                    // console.log(`[setCloudFlareLoginStatus] pending`);
+                    console.log(`[setCloudFlareLoginStatus] pending`);
                     state.state = "pending"
                 },
                 fulfilled: (state, action) => {
-                    // console.log(`[setCloudFlareLoginStatus] fulfilled`, `, typeof action.payload:`, typeof action.payload, `, action.payload:`, action.payload);
+                    console.log(`[setCloudFlareLoginStatus] fulfilled`, `, typeof action.payload:`, typeof action.payload, `, action.payload:`, action.payload);
                     // NOTE: get cookie (cf_token)
-                    const info = action.payload;
-                    if ("need kakao login" == info) {
+                    const msg = action.payload.msg;
+                    // if ("need kakao login" == info.msg) {
+                    if ("need kakao login" == msg) {
 
                     }
                     else {
@@ -59,7 +82,7 @@ export const loginSlice = createAppSlice({
                     }
                 },
                 rejected: (state) => {
-                    // console.log(`[setCloudFlareLoginStatus] rejected`);
+                    console.log(`[setCloudFlareLoginStatus] rejected`);
                     state.state = "rejected"
                 }
             }
@@ -86,15 +109,60 @@ export const loginSlice = createAppSlice({
                 }
             }
         ),
+        getCloudFlareUserInfo: create.asyncThunk(
+            async () => {
+                return await getUserInfo();
+            },
+            {
+                pending: (state) => {
+                    console.log(`[getCloudFlareUserInfo] pending`);
+                    state.userInfo.state = "pending"
+                },
+                fulfilled: (state, action) => {
+                    console.log(`[getCloudFlareUserInfo] fulfilled`, `typeof action.payload:`, typeof action.payload, `action.payload:`, action.payload);
+                    // state.id = action.payload['id'];
+                    // state.nickName = action.payload['name'];
+                    // state.info = action.payload['info'];
+                    state.userInfo = { ...state.userInfo, ...action.payload };
+                    state.userInfo.state = "fulfilled";
+                },
+                rejected: (state) => {
+                    console.log(`[getCloudFlareUserInfo] rejected`);
+                    state.userInfo.state = "rejected"
+                }
+            }
+        ),
+        setCloudFlareUserInfo: create.asyncThunk(
+            async (userInfo: UserInfo) => {
+                return await setUserInfo(userInfo);
+            },
+            {
+                pending: (state) => {
+                    console.log(`[setCloudFlareUserInfo] updating`);
+                    state.userInfo.state = "updating"
+                },
+                fulfilled: (state, action) => {
+                    console.log(`[setCloudFlareUserInfo] updated`, `typeof action.payload:`, typeof action.payload, `action.payload:`, action.payload);
+                    state.userInfo.state = "updated";
+                    // state.id = action.payload['id'];
+                    // state.nickName = action.payload['name'];
+                    // state.info = action.payload['info'];
+                },
+                rejected: (state) => {
+                    console.log(`[setCloudFlareUserInfo] update-rejected`);
+                    state.userInfo.state = "update-rejected"
+                }
+            }
+        ),
     }),
     selectors: {
         selectKakaoAuthCode: (state) => state.kakaoAuthCode,
         selectKakaoNickName: (state) => state.nickName,
         selectKakaoId: (state) => state.id,
         selectLoginState: (state) => state.state,
-        selectUserInfo: (state) => state.info,
+        selectUserInfo: (state) => state.userInfo,
     }
 });
 
-export const { setKakaoAuthCode, setKakaoNickName, setKakaoId, setCloudFlareLoginStatus } = loginSlice.actions;
+export const { setKakaoAuthCode, setKakaoNickName, setKakaoId, setCloudFlareLoginStatus, getCloudFlareUserInfo, setCloudFlareUserInfo } = loginSlice.actions;
 export const { selectKakaoAuthCode, selectKakaoNickName, selectKakaoId, selectLoginState, selectUserInfo } = loginSlice.selectors;

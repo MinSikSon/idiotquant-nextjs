@@ -21,7 +21,7 @@ export default function UserPage(props: any) {
             <div className="font-mono text-xl mb-2">
                 {props.kakaoNickName}님 반갑습니다.
             </div>
-            <User kakaoNickName={props.kakaoNickName} />
+            <User />
             <DesignButton
                 handleOnClick={() => props.Logout(`${windowLocationOrigin}${props.parentUrl}`)}
                 buttonName="logout"
