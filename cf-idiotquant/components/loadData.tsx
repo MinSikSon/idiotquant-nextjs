@@ -6,9 +6,8 @@ import { getList, initFinancialInfo, selectFinancialInfo, selectFinancialInfoLis
 
 import { getMarketList, initMarketInfo, selectMarketInfo, selectMarketInfoLatestDate, selectMarketInfoList, selectMarketInfoLoaded, selectMarketInfoState, setMarketInfoStateLoading, setMarketList } from "@/lib/features/marketInfo/marketInfoSlice";
 import { getStrategyList, addStrategyList, selectStrategyState, setLoading, selectNcavList } from "@/lib/features/strategy/strategySlice";
-import { setCloudFlareLoginStatus } from "@/lib/features/login/loginSlice";
+import { selectKakaoTotal, setCloudFlareLoginStatus } from "@/lib/features/login/loginSlice";
 import { GetMergedStocksList, GetStocksFilteredByStrategyNCAV } from "@/components/strategy";
-import { selectKakaoId } from "@/lib/features/login/loginSlice";
 import { getCookie, isValidCookie } from "./util";
 
 const DEBUG = false;
@@ -28,7 +27,7 @@ export const LoadData = () => {
 
     const strategyState = useAppSelector(selectStrategyState);
 
-    const kakaoId = useAppSelector(selectKakaoId);
+    const kakaoTotal = useAppSelector(selectKakaoTotal);
 
     // TODO 1
     // -  date list -> get latest financialInfo date
@@ -59,8 +58,8 @@ export const LoadData = () => {
     useEffect(() => {
         if (financialInfoState == "init") {
             const isValidCookieKakaoId = isValidCookie("kakaoId");
-            if (DEBUG) console.log(`[LoadData]`, `kakaoId:`, kakaoId, `isValidCookieKakaoId:`, isValidCookieKakaoId);
-            if (false == !!kakaoId && true == isValidCookieKakaoId) {
+            if (DEBUG) console.log(`[LoadData]`, `kakaoTotal?.id:`, kakaoTotal?.id, `isValidCookieKakaoId:`, isValidCookieKakaoId);
+            if (false == !!kakaoTotal?.id && true == isValidCookieKakaoId) {
                 dispatch(setCloudFlareLoginStatus());
             }
             dispatch(getList());

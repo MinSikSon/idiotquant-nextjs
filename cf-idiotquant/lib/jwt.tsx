@@ -1,4 +1,4 @@
-
+const DEBUG = false;
 
 // Base64Url 디코딩 함수
 

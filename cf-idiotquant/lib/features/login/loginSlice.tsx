@@ -22,7 +22,7 @@ interface KakaoAccountProfile {
     profile_image_url: string;
     thumbnail_image_url: string;
 }
-interface KakaoAccount {
+export interface KakaoAccount {
     profile: KakaoAccountProfile;
     profile_image_needs_agreement: boolean;
     profile_nickname_needs_agreement: boolean;
@@ -33,6 +33,20 @@ interface KakaoProperties {
     profile_image: string;
     thumbnail_image: string;
 }
+
+export interface KakaoTotal {
+    access_token: string;
+    connected_at: string;
+    expires_in: number;
+    id: number;
+    kakao_account: KakaoAccount;
+    properties: KakaoProperties;
+    refresh_token: string;
+    refresh_token_expires_in: number;
+    scope: string;
+    token_type: string;
+}
+
 
 interface KakaoMessageResponse {
     state: "init"
@@ -93,8 +107,8 @@ export interface KakaoMessage {
     object_type: "feed";
     content: KakaoMessageContent;
     item_content: KakaoMessageItemContent;
-    social: KakaoMessageSocial;
-    buttons: KakaoMessageButton[];
+    social?: KakaoMessageSocial;
+    buttons?: KakaoMessageButton[];
 }
 
 interface LoginInfo {
@@ -104,30 +118,16 @@ interface LoginInfo {
     | "loading" | "loaded" | "rejected"
     | "kakao"
     | "cf";
-    id: string;
-    nickName: string;
     kakaoAuthCode: string;
     userInfo: UserInfo;
-    kakaoAccount: KakaoAccount;
+    kakaoTotal: KakaoTotal;
     kakaoMessageResponse: KakaoMessageResponse;
 }
 
 const initialState: LoginInfo = {
     state: "init",
-    id: "",
-    nickName: "",
     kakaoAuthCode: "",
-    kakaoAccount: {
-        profile: {
-            is_default_image: true,
-            is_default_nickname: true,
-            nickname: "",
-            profile_image_url: "",
-            thumbnail_image_url: "",
-        },
-        profile_image_needs_agreement: false,
-        profile_nickname_needs_agreement: false,
-    },
+    kakaoTotal: {} as KakaoTotal,
     userInfo: {
         state: "init",
         nickname: "",
@@ -152,12 +152,6 @@ export const loginSlice = createAppSlice({
         setKakaoAuthCode: create.reducer((state, action: PayloadAction<string>) => {
             state.state = "kakao";
             state.kakaoAuthCode = action.payload;
-        }),
-        setKakaoNickName: create.reducer((state, action: PayloadAction<string>) => {
-            state.nickName = action.payload;
-        }),
-        setKakaoId: create.reducer((state, action: PayloadAction<string>) => {
-            state.id = action.payload;
         }),
         setCloudFlareLoginStatus: create.asyncThunk(
             async () => {
@@ -273,16 +267,19 @@ export const loginSlice = createAppSlice({
                 }
             }
         ),
+        setKakaoTotal: create.reducer((state, action: PayloadAction<KakaoTotal>) => {
+            console.log(`[setKakaoAccount] action.payload:`, action.payload);
+            state.kakaoTotal = action.payload;
+        }),
 
     }),
     selectors: {
         selectKakaoAuthCode: (state) => state.kakaoAuthCode,
-        selectKakaoNickName: (state) => state.nickName,
-        selectKakaoId: (state) => state.id,
         selectLoginState: (state) => state.state,
         selectUserInfo: (state) => state.userInfo,
+        selectKakaoTotal: (state) => state.kakaoTotal,
     }
 });
 
-export const { setKakaoAuthCode, setKakaoNickName, setKakaoId, setCloudFlareLoginStatus, getCloudFlareUserInfo, setCloudFlareUserInfo, setKakaoMessage } = loginSlice.actions;
-export const { selectKakaoAuthCode, selectKakaoNickName, selectKakaoId, selectLoginState, selectUserInfo } = loginSlice.selectors;
+export const { setKakaoAuthCode, setCloudFlareLoginStatus, getCloudFlareUserInfo, setCloudFlareUserInfo, setKakaoMessage, setKakaoTotal } = loginSlice.actions;
+export const { selectKakaoAuthCode, selectLoginState, selectUserInfo, selectKakaoTotal } = loginSlice.selectors;

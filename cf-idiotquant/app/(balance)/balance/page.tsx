@@ -1,6 +1,6 @@
 "use client"
 
-import { selectKakaoId } from "@/lib/features/login/loginSlice";
+import { selectKakaoTotal } from "@/lib/features/login/loginSlice";
 import { useAppSelector } from "@/lib/hooks";
 import SpotlightCard from "@/src/Components/SpotlightCard/SpotlightCard";
 import { LockClosedIcon, LockOpenIcon, WalletIcon } from "@heroicons/react/24/outline";
@@ -9,7 +9,7 @@ import Link from "next/link";
 const DEBUG = false;
 
 export default function Balance() {
-    const kakaoId = useAppSelector(selectKakaoId);
+    const kakaoTotal = useAppSelector(selectKakaoTotal);
 
     return (
         <>
@@ -17,7 +17,7 @@ export default function Balance() {
                 <div className="text-2xl flex items-center justify-left gap-2 p-6 sm:p-8 md:p-10 lg:p-12 ">
                     <WalletIcon className="h-5 w-5" strokeWidth={2} />
                     <div>account inquiry</div>
-                    {!!!kakaoId ? <LockClosedIcon className="h-5 w-5" strokeWidth={2} /> : <LockOpenIcon className="h-5 w-5" strokeWidth={2} />}
+                    {!!!kakaoTotal?.id ? <LockClosedIcon className="h-5 w-5" strokeWidth={2} /> : <LockOpenIcon className="h-5 w-5" strokeWidth={2} />}
                 </div>
                 <div className="grid grid-cols-2 items-center justify-center h-full p-6 gap-6 sm:p-8 sm:gap-8 md:p-10 md:gap-10 lg:p-12 lg:gap-12">
                     <Link href="/balance-kr">

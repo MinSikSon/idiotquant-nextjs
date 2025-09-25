@@ -29,7 +29,6 @@ export default function BalanceKr() {
     const kr_capital_token: CapitalTokenType = useAppSelector(selectCapitalToken);
 
     useEffect(() => {
-
         const isValidKiAccessToken = !!kiToken["access_token"];
         if (DEBUG) console.log(`[BalanceKr]`, `isValidKiAccessToken`, isValidKiAccessToken);
         if (true == isValidKiAccessToken) {
