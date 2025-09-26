@@ -85,15 +85,15 @@ export default function ReportPage() {
                     title_image_text: "주간 부부투자",
                     title_image_category: "리포트",
                     items: [
-                        { item: "KR 평가/매입", item_op: `${Util.UnitConversion(evlu_amt_smtl_amt[COUNTRY.eKR], true)} / ${Util.UnitConversion(pchs_amt_smtl_amt[COUNTRY.eKR], true)} (${(evlu_amt_smtl_amt[COUNTRY.eKR] / pchs_amt_smtl_amt[COUNTRY.eKR] * 100).toFixed(2)}%)` },
+                        { item: "KR 평가/매입", item_op: `${Util.UnitConversion(evlu_amt_smtl_amt[COUNTRY.eKR], true)} / ${Util.UnitConversion(pchs_amt_smtl_amt[COUNTRY.eKR], true)} (${(evlu_amt_smtl_amt[COUNTRY.eKR] / pchs_amt_smtl_amt[COUNTRY.eKR] * 100 - 100).toFixed(2)}%)` },
                         // { item: "KR 예수금", item_op: `${Util.UnitConversion(dnca_tot_amt[COUNTRY.eKR], true)}` },
                         { item: "KR 순자산", item_op: `${Util.UnitConversion(nass_amt[COUNTRY.eKR], true)}` },
-                        { item: "US 평가/매입", item_op: `${Util.UnitConversion(evlu_amt_smtl_amt[COUNTRY.eUS], true)} / ${Util.UnitConversion(pchs_amt_smtl_amt[COUNTRY.eUS], true)} (${(evlu_amt_smtl_amt[COUNTRY.eUS] / pchs_amt_smtl_amt[COUNTRY.eUS] * 100).toFixed(2)}%)` },
+                        { item: "US 평가/매입", item_op: `${Util.UnitConversion(evlu_amt_smtl_amt[COUNTRY.eUS], true)} / ${Util.UnitConversion(pchs_amt_smtl_amt[COUNTRY.eUS], true)} (${(evlu_amt_smtl_amt[COUNTRY.eUS] / pchs_amt_smtl_amt[COUNTRY.eUS] * 100 - 100).toFixed(2)}%)` },
                         // { item: "US 예수금", item_op: `${Util.UnitConversion(dnca_tot_amt[COUNTRY.eUS], true)}` },
                         { item: "US 순자산", item_op: `${Util.UnitConversion(nass_amt[COUNTRY.eUS], true)}` },
                     ],
                     sum: "총 수익률 (%)",
-                    sum_op: `${((evlu_amt_smtl_amt[COUNTRY.eKR] + evlu_amt_smtl_amt[COUNTRY.eUS]) / (pchs_amt_smtl_amt[COUNTRY.eKR] + pchs_amt_smtl_amt[COUNTRY.eUS]) * 100).toFixed(2)}%`,
+                    sum_op: `${((evlu_amt_smtl_amt[COUNTRY.eKR] + evlu_amt_smtl_amt[COUNTRY.eUS]) / (pchs_amt_smtl_amt[COUNTRY.eKR] + pchs_amt_smtl_amt[COUNTRY.eUS]) * 100 - 100).toFixed(2)}%`,
                     // TODO: 지난주 대비 수익률
                     // TODO: 각 장 지수대비 수익률
                     // TODO: report page 들어오면 더 자세한 정보 볼 수 있도록..!
