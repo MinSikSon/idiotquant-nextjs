@@ -31,11 +31,6 @@ export function SendKakaoMessage(props: DefaultProps) {
     </>
 }
 
-
-interface KakaoFeedProps {
-    template: any; // 실제로는 타입을 더 구체적으로 정의해도 좋음
-}
-
 export function KakaoFeed(props: DefaultProps) {
     const content = props.message.content;
     const itemContent = props.message.item_content;
