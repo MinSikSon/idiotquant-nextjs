@@ -1,5 +1,6 @@
 import { getCookie } from "@/components/util";
-import { KakaoMessage, UserInfo } from "./loginSlice";
+import { UserInfo } from "../cloudflare/cloudflareSlice";
+import { KakaoMessage } from "../login/loginSlice";
 
 export const setLoginStatus: any = async () => {
     const authToken = getCookie("authToken");
