@@ -1,13 +1,13 @@
 import { getCookie } from "@/components/util";
-import { KakaoMessage } from "./loginSlice";
+import { UserInfo } from "./cloudflareSlice";
 
-export const setLoginStatus: any = async () => {
+export const getUserInfo: any = async () => {
     const authToken = getCookie("authToken");
     // console.log(`[setLoginStatus] authToken:`, authToken);
 
-    const url = `${process.env.NEXT_PUBLIC_API_URL}/login`
+    const url = `${process.env.NEXT_PUBLIC_API_URL}/user-info`
     const options: RequestInit = {
-        method: "POST", // GET -> OPTION -> POST
+        method: "GET", // GET -> OPTION -> POST
         credentials: "include",  // include credentials (like cookies) in the request
         headers: {
             "content-type": "application/json; utf-8",
@@ -22,33 +22,11 @@ export const setLoginStatus: any = async () => {
     return res.json();
 }
 
-export const setLogoutStatus: any = async (startList: string[]) => {
-    const authToken = getCookie("authToken");
-    console.log(`[setLogoutStatus]`);
-    const url = `${process.env.NEXT_PUBLIC_API_URL}/logout`
-    const additionalHeaders: any = {
-        "startList": JSON.stringify(startList)
-    }
-    const options: RequestInit = {
-        method: "POST",
-        credentials: "include",  // include credentials (like cookies) in the request
-        headers: {
-            "content-type": "application/json; utf-8",
-            ...additionalHeaders,
-            "authToken": authToken,
-        },
-    };
-
-    const res = await fetch(url, options);
-
-    return res.json();
-}
-
-export const postKakaoMessage: any = async (kakaoMessage: KakaoMessage) => {
+export const setUserInfo: any = async (userInfo: UserInfo) => {
     const authToken = getCookie("authToken");
     // console.log(`[setLoginStatus] authToken:`, authToken);
 
-    const url = `${process.env.NEXT_PUBLIC_API_URL}/kakao-message`
+    const url = `${process.env.NEXT_PUBLIC_API_URL}/user-info`
     const options: RequestInit = {
         method: "POST", // GET -> OPTION -> POST
         credentials: "include",  // include credentials (like cookies) in the request
@@ -57,7 +35,7 @@ export const postKakaoMessage: any = async (kakaoMessage: KakaoMessage) => {
             // ...additionalHeaders,
             "authToken": authToken,
         },
-        body: JSON.stringify(kakaoMessage)
+        body: JSON.stringify(userInfo)
     };
     // const res = await fetch(url, options);
     const res = await fetch(url, options);

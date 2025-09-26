@@ -1,6 +1,6 @@
 "use client"
 
-import { selectKakaoTotal } from "@/lib/features/login/loginSlice";
+import { selectKakaoTotal } from "@/lib/features/kakao/kakaoSlice";
 import { useAppSelector } from "@/lib/hooks";
 import SpotlightCard from "@/src/Components/SpotlightCard/SpotlightCard";
 import { LockClosedIcon, LockOpenIcon, WalletIcon } from "@heroicons/react/24/outline";

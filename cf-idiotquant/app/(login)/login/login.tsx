@@ -1,8 +1,8 @@
 "use client"
 
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { setCloudFlareLoginStatus, selectLoginState, setKakaoAuthCode, setKakaoTotal, selectKakaoTotal, KakaoTotal } from "@/lib/features/login/loginSlice";
+import { setCloudFlareLoginStatus, selectLoginState } from "@/lib/features/login/loginSlice";
 import { useAppDispatch, useAppSelector } from "@/lib/hooks";
 import { clearCookie, getCookie } from "@/components/util";
 
@@ -13,6 +13,7 @@ const DEBUG = false;
 
 import { usePathname } from "next/navigation";
 import { verifyJWT } from "@/lib/jwt";
+import { KakaoTotal, selectKakaoTotal, setKakaoTotal } from "@/lib/features/kakao/kakaoSlice";
 
 const redirectUrl = `${process.env.NEXT_PUBLIC_API_URL}/kakao-login`;
 const redirectLogoutUrl = `${process.env.NEXT_PUBLIC_API_URL}/kakao-logout`;
@@ -22,7 +23,7 @@ export default function Login(props: any) {
 
     const dispatch = useAppDispatch();
     const loginState = useAppSelector(selectLoginState);
-    const kakaoTotal = useAppSelector(selectKakaoTotal);
+    const kakaoTotal: KakaoTotal = useAppSelector(selectKakaoTotal);
 
     const pathname = usePathname();
 
@@ -34,7 +35,6 @@ export default function Login(props: any) {
 
     useEffect(() => {
         if (DEBUG) console.log(`[Login]`, `loginState:`, loginState);
-        if (DEBUG) console.log(`[Login]`, `kakaoNickkakaoTotal?.kakao_account?.profile?.nicknameName:`, kakaoTotal?.kakao_account?.profile?.nickname, `kakaoTotal?.id:`, kakaoTotal?.id);
 
         async function callback() {
             let result = { valid: false, payload: "" };
@@ -53,19 +53,43 @@ export default function Login(props: any) {
                     if (true == result.valid) {
                         const payload: string = result.payload;
                         if ('undefined' != payload) {
-                            const jsonPayload = JSON.parse(payload);
-                            if (DEBUG) console.log(`[Login] jsonPayload:`, jsonPayload);
-                            dispatch(setKakaoTotal(jsonPayload));
+                            const jsonPayload: KakaoTotal = JSON.parse(payload);
+                            if (DEBUG) console.log(`[Login] typeof jsonPayload:`, typeof jsonPayload, `, jsonPayload:`, jsonPayload);
+
+                            const base = new Date(jsonPayload.access_date);
+                            const plusSeconds = jsonPayload.expires_in * 1000;
+                            const target: any = new Date(base.getTime() + plusSeconds);
+
+                            console.log(`기준 + ${jsonPayload.expires_in}초:`, target.toISOString());
+
+                            const now: any = new Date();
+                            const diffMs = now - target;
+                            const diffSec = Math.floor(diffMs / 1000);
+
+                            console.log("현재와 차이(초):", diffSec);
+                            console.log("현재와 차이(분):", (diffSec / 60).toFixed(2));
+                            console.log("현재와 차이(시간):", (diffSec / 3600).toFixed(2));
+
+                            if (diffSec > 0) {
+                                console.log(`need to refresh`);
+
+                                clearCookie("authToken");
+                                clearCookie("koreaInvestmentToken");
+                                // dispatch(setKakaoTotal({} as KakaoTotal));
+                            }
+                            else {
+                                dispatch(setKakaoTotal(jsonPayload));
+                            }
                         }
                     }
                 }
             }
             else {
-                dispatch(setKakaoTotal({} as KakaoTotal));
+                // dispatch(setKakaoTotal({} as KakaoTotal));
             }
         }
-        callback();
 
+        callback();
         dispatch(setCloudFlareLoginStatus());
     }, []);
 
@@ -85,15 +109,15 @@ export default function Login(props: any) {
         clearCookie("authToken");
         clearCookie("koreaInvestmentToken");
 
-        dispatch(setKakaoAuthCode(""));
-        dispatch(setKakaoTotal({} as KakaoTotal));
+        // dispatch(setKakaoTotal({} as KakaoTotal));
 
         const authorizeEndpoint = `https://kauth.kakao.com/oauth/logout?client_id=${process.env.NEXT_PUBLIC_KAKAO_REST_API_KEY}&logout_redirect_uri=${redirectLogoutUrl}`;
         router.push(authorizeEndpoint);
     }
 
+    if (DEBUG) console.log(`[Login] kakaoTotal:`, kakaoTotal, `, undefined == kakaoTotal`, undefined == kakaoTotal);
     const KakaoIcon = () => {
-        if (!!!kakaoTotal?.kakao_account?.profile?.nickname) {
+        if (undefined == kakaoTotal || !!!kakaoTotal?.kakao_account?.profile?.nickname) {
             return <>
                 <div className="p-5">
                     <div className="font-mono text-xl mb-2">

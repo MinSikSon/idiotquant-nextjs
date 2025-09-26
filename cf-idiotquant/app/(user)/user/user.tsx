@@ -4,14 +4,15 @@ import { useState, useEffect } from 'react';
 import { Badge, Button } from "@material-tailwind/react";
 import { Input, Textarea, Card, CardHeader, CardBody, CardFooter, Typography } from "@material-tailwind/react";
 import { useAppDispatch, useAppSelector } from '@/lib/hooks';
-import { getCloudFlareUserInfo, KakaoTotal, selectKakaoTotal, selectUserInfo, setCloudFlareUserInfo, UserInfo } from '@/lib/features/login/loginSlice';
 import Link from 'next/link';
+import { KakaoTotal, selectKakaoTotal } from '@/lib/features/kakao/kakaoSlice';
+import { getCloudFlareUserInfo, selectCloudflare, setCloudFlareUserInfo, UserInfo } from '@/lib/features/cloudflare/cloudflareSlice';
 
 const DEBUG = false;
 
 export default function User() {
     const dispatch = useAppDispatch();
-    const cfUserInfo: UserInfo = useAppSelector(selectUserInfo);
+    const cfUserInfo: UserInfo = useAppSelector(selectCloudflare);
     const kakaoTotal: KakaoTotal = useAppSelector(selectKakaoTotal);
 
     const [user, setUser] = useState<UserInfo>({
@@ -30,13 +31,13 @@ export default function User() {
     const [editing, setEditing] = useState(false);
     const [draft, setDraft] = useState<UserInfo>(user);
     useEffect(() => {
-        if (DEBUG) console.log(`[User] getCloudFlareUserInfo`);
+        if (DEBUG) console.log(`[User] getCloudFlareUserInfo cfUserInfo:`, cfUserInfo);
         dispatch(getCloudFlareUserInfo());
     }, []);
 
     useEffect(() => {
-        if (cfUserInfo.state === "fulfilled") {
-            if (DEBUG) console.log(`[User] cfUserInfo:`, cfUserInfo);
+        if (DEBUG) console.log(`[User] cfUserInfo:`, cfUserInfo);
+        if (cfUserInfo?.state === "fulfilled") {
             setUser({ ...user, ...cfUserInfo });
             setDraft({ ...draft, ...cfUserInfo });
         }

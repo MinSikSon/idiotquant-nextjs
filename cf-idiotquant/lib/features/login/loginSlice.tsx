@@ -1,52 +1,6 @@
 import { PayloadAction } from "@reduxjs/toolkit";
 import { createAppSlice } from "@/lib/createAppSlice";
-import { getUserInfo, postKakaoMessage, setLoginStatus, setLogoutStatus, setUserInfo } from "./loginAPI";
-
-export interface UserInfo {
-    state: "init"
-    | "pending" | "fulfilled" | "rejected" | "updating" | "updated" | "update-rejected"
-    ;
-    nickname: string;
-    email?: string;
-    avatarUrl?: string;
-    joinedAt: number;
-    lastLoginAt: number;
-    desc: string;
-    point: number;
-}
-
-interface KakaoAccountProfile {
-    is_default_image: boolean;
-    is_default_nickname: boolean;
-    nickname: string;
-    profile_image_url: string;
-    thumbnail_image_url: string;
-}
-export interface KakaoAccount {
-    profile: KakaoAccountProfile;
-    profile_image_needs_agreement: boolean;
-    profile_nickname_needs_agreement: boolean;
-}
-
-interface KakaoProperties {
-    nickname: string;
-    profile_image: string;
-    thumbnail_image: string;
-}
-
-export interface KakaoTotal {
-    access_token: string;
-    connected_at: string;
-    expires_in: number;
-    id: number;
-    kakao_account: KakaoAccount;
-    properties: KakaoProperties;
-    refresh_token: string;
-    refresh_token_expires_in: number;
-    scope: string;
-    token_type: string;
-}
-
+import { postKakaoMessage, setLoginStatus, setLogoutStatus } from "./loginAPI";
 
 interface KakaoMessageResponse {
     state: "init"
@@ -54,7 +8,6 @@ interface KakaoMessageResponse {
     ;
     msg: any;
 }
-
 
 interface KakaoMessageContentLink {
     web_url: string; // "http://www.daum.net",
@@ -119,23 +72,12 @@ interface LoginInfo {
     | "kakao"
     | "cf";
     kakaoAuthCode: string;
-    userInfo: UserInfo;
-    kakaoTotal: KakaoTotal;
     kakaoMessageResponse: KakaoMessageResponse;
 }
 
 const initialState: LoginInfo = {
     state: "init",
     kakaoAuthCode: "",
-    kakaoTotal: {} as KakaoTotal,
-    userInfo: {
-        state: "init",
-        nickname: "",
-        joinedAt: 0,
-        lastLoginAt: 0,
-        desc: "",
-        point: 0,
-    },
     kakaoMessageResponse: {
         state: "init",
         msg: ""
@@ -148,10 +90,6 @@ export const loginSlice = createAppSlice({
     reducers: (create) => ({
         setLoading: create.reducer((state) => {
             state.state = "loading";
-        }),
-        setKakaoAuthCode: create.reducer((state, action: PayloadAction<string>) => {
-            state.state = "kakao";
-            state.kakaoAuthCode = action.payload;
         }),
         setCloudFlareLoginStatus: create.asyncThunk(
             async () => {
@@ -202,51 +140,6 @@ export const loginSlice = createAppSlice({
                 }
             }
         ),
-        getCloudFlareUserInfo: create.asyncThunk(
-            async () => {
-                return await getUserInfo();
-            },
-            {
-                pending: (state) => {
-                    console.log(`[getCloudFlareUserInfo] pending`);
-                    state.userInfo.state = "pending"
-                },
-                fulfilled: (state, action) => {
-                    console.log(`[getCloudFlareUserInfo] fulfilled`, `typeof action.payload:`, typeof action.payload, `action.payload:`, action.payload);
-                    // state.id = action.payload['id'];
-                    // state.nickName = action.payload['name'];
-                    // state.info = action.payload['info'];
-                    state.userInfo = { ...state.userInfo, ...action.payload };
-                    state.userInfo.state = "fulfilled";
-                },
-                rejected: (state) => {
-                    console.log(`[getCloudFlareUserInfo] rejected`);
-                    state.userInfo.state = "rejected"
-                }
-            }
-        ),
-        setCloudFlareUserInfo: create.asyncThunk(
-            async (userInfo: UserInfo) => {
-                return await setUserInfo(userInfo);
-            },
-            {
-                pending: (state) => {
-                    console.log(`[setCloudFlareUserInfo] updating`);
-                    state.userInfo.state = "updating"
-                },
-                fulfilled: (state, action) => {
-                    console.log(`[setCloudFlareUserInfo] updated`, `typeof action.payload:`, typeof action.payload, `action.payload:`, action.payload);
-                    state.userInfo.state = "updated";
-                    // state.id = action.payload['id'];
-                    // state.nickName = action.payload['name'];
-                    // state.info = action.payload['info'];
-                },
-                rejected: (state) => {
-                    console.log(`[setCloudFlareUserInfo] update-rejected`);
-                    state.userInfo.state = "update-rejected"
-                }
-            }
-        ),
         setKakaoMessage: create.asyncThunk(
             async (kakaoMessage: KakaoMessage) => {
                 return await postKakaoMessage(kakaoMessage);
@@ -258,8 +151,7 @@ export const loginSlice = createAppSlice({
                 },
                 fulfilled: (state, action) => {
                     console.log(`[postKakaoMessage] fulfilled`, `typeof action.payload:`, typeof action.payload, `action.payload:`, action.payload);
-                    state.kakaoMessageResponse.state = "fulfilled";
-                    state.kakaoMessageResponse.msg = action.payload;
+                    state.kakaoMessageResponse = { ...state.kakaoMessageResponse, state: "fulfilled", msg: action.payload }
                 },
                 rejected: (state) => {
                     console.log(`[postKakaoMessage] rejected`);
@@ -267,19 +159,12 @@ export const loginSlice = createAppSlice({
                 }
             }
         ),
-        setKakaoTotal: create.reducer((state, action: PayloadAction<KakaoTotal>) => {
-            console.log(`[setKakaoAccount] action.payload:`, action.payload);
-            state.kakaoTotal = action.payload;
-        }),
-
     }),
     selectors: {
         selectKakaoAuthCode: (state) => state.kakaoAuthCode,
         selectLoginState: (state) => state.state,
-        selectUserInfo: (state) => state.userInfo,
-        selectKakaoTotal: (state) => state.kakaoTotal,
     }
 });
 
-export const { setKakaoAuthCode, setCloudFlareLoginStatus, getCloudFlareUserInfo, setCloudFlareUserInfo, setKakaoMessage, setKakaoTotal } = loginSlice.actions;
-export const { selectKakaoAuthCode, selectLoginState, selectUserInfo, selectKakaoTotal } = loginSlice.selectors;
+export const { setCloudFlareLoginStatus, setKakaoMessage } = loginSlice.actions;
+export const { selectKakaoAuthCode, selectLoginState } = loginSlice.selectors;
