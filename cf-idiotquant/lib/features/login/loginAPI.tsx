@@ -1,5 +1,5 @@
 import { getCookie } from "@/components/util";
-import { UserInfo } from "./loginSlice";
+import { KakaoMessage, UserInfo } from "./loginSlice";
 
 export const setLoginStatus: any = async () => {
     const authToken = getCookie("authToken");
@@ -79,6 +79,27 @@ export const setUserInfo: any = async (userInfo: UserInfo) => {
             "authToken": authToken,
         },
         body: JSON.stringify(userInfo)
+    };
+    // const res = await fetch(url, options);
+    const res = await fetch(url, options);
+
+    return res.json();
+}
+
+export const postKakaoMessage: any = async (kakaoMessage: KakaoMessage) => {
+    const authToken = getCookie("authToken");
+    // console.log(`[setLoginStatus] authToken:`, authToken);
+
+    const url = `${process.env.NEXT_PUBLIC_API_URL}/kakao-message`
+    const options: RequestInit = {
+        method: "POST", // GET -> OPTION -> POST
+        credentials: "include",  // include credentials (like cookies) in the request
+        headers: {
+            "content-type": "application/json; utf-8",
+            // ...additionalHeaders,
+            "authToken": authToken,
+        },
+        body: JSON.stringify(kakaoMessage)
     };
     // const res = await fetch(url, options);
     const res = await fetch(url, options);

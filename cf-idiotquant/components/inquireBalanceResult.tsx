@@ -327,17 +327,18 @@ export default function InquireBalanceResult(props: InquireBalanceResultProps) {
         // crcy_cd = !!props.kiBalance.output2[0]["crcy_cd"] ? " " + props.kiBalance.output2[0]["crcy_cd"] : "원";
         crcy_cd = "원";
 
-        evlu_amt_smtl_amt = !!props.kiBalance.output3 ? props.kiBalance.output3["evlu_amt_smtl"] : props.kiBalance.output2[0]["evlu_amt_smtl_amt"];
+        const isUsBalance = !!props.kiBalance.output3;
+        evlu_amt_smtl_amt = (true == isUsBalance) ? props.kiBalance.output3["evlu_amt_smtl"] : props.kiBalance.output2[0]["evlu_amt_smtl_amt"];
         evlu_amt_smtl_amt = Number(evlu_amt_smtl_amt);
-        pchs_amt_smtl_amt = !!props.kiBalance.output3 ? props.kiBalance.output3["pchs_amt_smtl"] : props.kiBalance.output2[0]["pchs_amt_smtl_amt"];
+        pchs_amt_smtl_amt = (true == isUsBalance) ? props.kiBalance.output3["pchs_amt_smtl"] : props.kiBalance.output2[0]["pchs_amt_smtl_amt"];
         pchs_amt_smtl_amt = Number(pchs_amt_smtl_amt);
 
-        evlu_pfls_smtl_amt = !!props.kiBalance.output3 ? props.kiBalance.output3["evlu_pfls_amt_smtl"] : props.kiBalance.output2[0]["evlu_pfls_smtl_amt"];
+        evlu_pfls_smtl_amt = (true == isUsBalance) ? props.kiBalance.output3["evlu_pfls_amt_smtl"] : props.kiBalance.output2[0]["evlu_pfls_smtl_amt"];
         evlu_pfls_smtl_amt = Number(evlu_pfls_smtl_amt);
 
         frst_bltn_exrt = !!props.kiBalance.output2[0] ? props.kiBalance.output2[0]["frst_bltn_exrt"] : 0;
 
-        dnca_tot_amt = !!props.kiBalance.output3 ? props.kiBalance.output3["frcr_use_psbl_amt"] : props.kiBalance.output2[0]["dnca_tot_amt"];
+        dnca_tot_amt = (true == isUsBalance) ? props.kiBalance.output3["frcr_use_psbl_amt"] : props.kiBalance.output2[0]["dnca_tot_amt"];
 
         nass_amt = Number(evlu_amt_smtl_amt) + Number(dnca_tot_amt);
     }

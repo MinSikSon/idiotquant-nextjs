@@ -7,7 +7,6 @@ import User from "./user";
 const DEBUG = false;
 
 export default function UserPage(props: any) {
-
     const [windowLocationOrigin, setWindowLocationOrigin] = useState("");
     if (DEBUG) console.log(`[UserPage]`, `props.parentUrl`, props.parentUrl);
 

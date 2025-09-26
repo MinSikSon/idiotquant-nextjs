@@ -7,7 +7,7 @@ import {
 import { Bars3Icon, CalculatorIcon, HomeIcon, LockClosedIcon, LockOpenIcon, MagnifyingGlassCircleIcon, SparklesIcon, WalletIcon, XMarkIcon } from "@heroicons/react/24/outline";
 import Link from "next/link";
 
-import { selectKakaoId, selectKakaoNickName } from "@/lib/features/login/loginSlice";
+import { selectKakaoTotal } from "@/lib/features/login/loginSlice";
 import { useAppSelector } from "@/lib/hooks";
 
 import { usePathname } from "next/navigation";
@@ -33,8 +33,7 @@ export function NavbarWithSimpleLinks() {
 
     const [selectPath, setSelectPath] = useState<string>(splitPathName[1]);
 
-    const kakaoId = useAppSelector(selectKakaoId);
-    const kakaoNickName = useAppSelector(selectKakaoNickName);
+    const kakaoTotal = useAppSelector(selectKakaoTotal);
 
     const [visible, setVisible] = useState(true);
     // const [lastScrollY, setLastScrollY] = useState(0);
@@ -103,11 +102,11 @@ export function NavbarWithSimpleLinks() {
     // const navListUrlToLabel: any = {
     //     "": <div className={navListDesign}><HomeIcon className="h-4 w-4" strokeWidth={2} /><div>Home</div></div>,
     //     "calculator": <div className={navListDesign}><CalculatorIcon className="h-4 w-4" strokeWidth={2} /><div>수익계산기</div></div>,
-    //     "login": <div className={navListDesign}>{!!!kakaoId ? <LockClosedIcon className="h-4 w-4" strokeWidth={2} /> : <LockOpenIcon className="h-4 w-4" strokeWidth={2} />}<div>로그인</div></div>,
-    //     "search": <div className={navListDesign}>{!!!kakaoId ? <LockClosedIcon className="h-4 w-4" strokeWidth={2} /> : <LockOpenIcon className="h-4 w-4" strokeWidth={2} />}<MagnifyingGlassCircleIcon className="h-4 w-4" strokeWidth={2} /><div>종목검색</div></div>,
-    //     "search-nasdaq": <div className={navListDesign}>{!!!kakaoId ? <LockClosedIcon className="h-4 w-4" strokeWidth={2} /> : <LockOpenIcon className="h-4 w-4" strokeWidth={2} />}<MagnifyingGlassCircleIcon className="h-4 w-4" strokeWidth={2} /><div>종목검색(nasdaq)</div></div>,
-    //     "balance-kr": <div className={navListDesign}>{!!!kakaoId ? <LockClosedIcon className="h-4 w-4" strokeWidth={2} /> : <LockOpenIcon className="h-4 w-4" strokeWidth={2} />}<WalletIcon className="h-4 w-4" strokeWidth={2} /><div>알고투자-계좌조회(국내)</div></div>,
-    //     "balance-us": <div className={navListDesign}>{!!!kakaoId ? <LockClosedIcon className="h-4 w-4" strokeWidth={2} /> : <LockOpenIcon className="h-4 w-4" strokeWidth={2} />}<WalletIcon className="h-4 w-4" strokeWidth={2} /><div>알고투자-계좌조회(해외)</div></div>,
+    //     "login": <div className={navListDesign}>{!!!kakaoTotal?.id ? <LockClosedIcon className="h-4 w-4" strokeWidth={2} /> : <LockOpenIcon className="h-4 w-4" strokeWidth={2} />}<div>로그인</div></div>,
+    //     "search": <div className={navListDesign}>{!!!kakaoTotal?.id ? <LockClosedIcon className="h-4 w-4" strokeWidth={2} /> : <LockOpenIcon className="h-4 w-4" strokeWidth={2} />}<MagnifyingGlassCircleIcon className="h-4 w-4" strokeWidth={2} /><div>종목검색</div></div>,
+    //     "search-nasdaq": <div className={navListDesign}>{!!!kakaoTotal?.id ? <LockClosedIcon className="h-4 w-4" strokeWidth={2} /> : <LockOpenIcon className="h-4 w-4" strokeWidth={2} />}<MagnifyingGlassCircleIcon className="h-4 w-4" strokeWidth={2} /><div>종목검색(nasdaq)</div></div>,
+    //     "balance-kr": <div className={navListDesign}>{!!!kakaoTotal?.id ? <LockClosedIcon className="h-4 w-4" strokeWidth={2} /> : <LockOpenIcon className="h-4 w-4" strokeWidth={2} />}<WalletIcon className="h-4 w-4" strokeWidth={2} /><div>알고투자-계좌조회(국내)</div></div>,
+    //     "balance-us": <div className={navListDesign}>{!!!kakaoTotal?.id ? <LockClosedIcon className="h-4 w-4" strokeWidth={2} /> : <LockOpenIcon className="h-4 w-4" strokeWidth={2} />}<WalletIcon className="h-4 w-4" strokeWidth={2} /><div>알고투자-계좌조회(해외)</div></div>,
     //     // "chat": <div className={navListDesign}><SparklesIcon className="h-4 w-4" strokeWidth={2} /><div>LLM</div></div>,
     // }
     const navListUrlToLabel: any = {
@@ -116,18 +115,18 @@ export function NavbarWithSimpleLinks() {
         // "search-kr": <div className={navListDesign}><MagnifyingGlassCircleIcon className="h-4 w-4" strokeWidth={2} /><div>stock search (kospi/kosdaq/konex)</div></div>,
         // "search-nasdaq": <div className={navListDesign}><MagnifyingGlassCircleIcon className="h-4 w-4" strokeWidth={2} /><div>stock search (nasdaq)</div></div>,
         "calculator": <div className={navListDesign}><CalculatorIcon className="h-4 w-4" strokeWidth={2} /><div>profit</div></div>,
-        "balance": <div className={navListDesign}><WalletIcon className="h-4 w-4" strokeWidth={2} /><div>account</div> {!!!kakaoId ? <LockClosedIcon className="h-4 w-4" strokeWidth={2} /> : <LockOpenIcon className="h-4 w-4" strokeWidth={2} />}</div>,
-        // "balance-kr": <div className={navListDesign}>{!!!kakaoId ? <LockClosedIcon className="h-4 w-4" strokeWidth={2} /> : <LockOpenIcon className="h-4 w-4" strokeWidth={2} />}<WalletIcon className="h-4 w-4" strokeWidth={2} /><div>account inquiry (Korea)</div></div>,
-        // "balance-us": <div className={navListDesign}>{!!!kakaoId ? <LockClosedIcon className="h-4 w-4" strokeWidth={2} /> : <LockOpenIcon className="h-4 w-4" strokeWidth={2} />}<WalletIcon className="h-4 w-4" strokeWidth={2} /><div>account inquiry (US)</div></div>,
+        "balance": <div className={navListDesign}><WalletIcon className="h-4 w-4" strokeWidth={2} /><div>account</div> {!!!kakaoTotal?.id ? <LockClosedIcon className="h-4 w-4" strokeWidth={2} /> : <LockOpenIcon className="h-4 w-4" strokeWidth={2} />}</div>,
+        // "balance-kr": <div className={navListDesign}>{!!!kakaoTotal?.id ? <LockClosedIcon className="h-4 w-4" strokeWidth={2} /> : <LockOpenIcon className="h-4 w-4" strokeWidth={2} />}<WalletIcon className="h-4 w-4" strokeWidth={2} /><div>account inquiry (Korea)</div></div>,
+        // "balance-us": <div className={navListDesign}>{!!!kakaoTotal?.id ? <LockClosedIcon className="h-4 w-4" strokeWidth={2} /> : <LockOpenIcon className="h-4 w-4" strokeWidth={2} />}<WalletIcon className="h-4 w-4" strokeWidth={2} /><div>account inquiry (US)</div></div>,
     }
     const navListUrlToLabelHanburgerButton: any = {
-        "login": <div className={navListDesign}>{!!!kakaoId ? <><div>kakao login</div> <LockClosedIcon className="h-4 w-4" strokeWidth={2} /></> : <><div>{kakaoNickName}<span className="text-[0.5rem]">님 반갑습니다.</span></div><LockOpenIcon className="h-4 w-4" strokeWidth={2} /></>}</div>,
+        "login": <div className={navListDesign}>{!!!kakaoTotal?.id ? <><div>kakao login</div> <LockClosedIcon className="h-4 w-4" strokeWidth={2} /></> : <><div>{kakaoTotal?.kakao_account?.profile?.nickname}<span className="text-[0.5rem]">님 반갑습니다.</span></div><LockOpenIcon className="h-4 w-4" strokeWidth={2} /></>}</div>,
     }
 
 
     const urlToLabel: any = {
         ...navListUrlToLabel,
-        // "backtest": `백테스트 ${!!!kakaoId ? "🔒" : ""}`,
+        // "backtest": `백테스트 ${!!!kakaoTotal?.id ? "🔒" : ""}`,
         "strategy": "투자 전략",
         "strategy-register": "투자 전략 등록",
     }

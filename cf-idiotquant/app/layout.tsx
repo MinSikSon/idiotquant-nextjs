@@ -1,7 +1,6 @@
 import "@/app/global.css"
 import { StoreProvider } from "./StoreProvider"
 import NavbarWithSimpleLinks from "@/components/navigation"
-import { LoadData } from "@/components/loadData"
 
 export const metadata = {
   title: 'idiotquant.com',
@@ -15,7 +14,6 @@ export default function RootLayout({
 }) {
   return (
     <StoreProvider>
-      {/* <LoadData /> */}
       <html lang="en"
       // suppressHydrationWarning
       >

@@ -1,8 +1,8 @@
 "use client"
 
-import { useState, useEffect } from "react";
+import { useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { setCloudFlareLoginStatus, selectKakaoAuthCode, selectKakaoId, selectKakaoNickName, selectLoginState, setKakaoAuthCode, setKakaoId, setKakaoNickName } from "@/lib/features/login/loginSlice";
+import { setCloudFlareLoginStatus, selectLoginState, setKakaoAuthCode, setKakaoTotal, selectKakaoTotal, KakaoTotal } from "@/lib/features/login/loginSlice";
 import { useAppDispatch, useAppSelector } from "@/lib/hooks";
 import { clearCookie, getCookie } from "@/components/util";
 
@@ -13,35 +13,7 @@ const DEBUG = false;
 
 import { usePathname } from "next/navigation";
 import { verifyJWT } from "@/lib/jwt";
-
-async function RequestNickname(_token: any) {
-    if (!!!_token) return;
-
-    const requestUrl = `https://kapi.kakao.com/v2/user/me`;
-
-    const response = await fetch(requestUrl, {
-        method: 'GET',
-        // credentials: 'include',  // include credentials (like cookies) in the request
-        headers: {
-            'Authorization': `Bearer ${_token}`
-        },
-    }).then((res) => res.json());
-
-    return response;
-}
-
-async function RequestToken(_authorizeCode: any, redirectUrl: any) {
-    const tokenUrl = `https://kauth.kakao.com/oauth/token?grant_type=authorization_code&client_id=${process.env.NEXT_PUBLIC_KAKAO_REST_API_KEY}&redirect_uri=${encodeURIComponent(redirectUrl)}&code=${_authorizeCode}`;
-
-    const responseToken = await fetch(tokenUrl, {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/x-www-form-urlencoded;charset=utf-8'
-        },
-    }).then((res) => res.json());
-
-    return responseToken;
-}
+import Report from "./report";
 
 const redirectUrl = `${process.env.NEXT_PUBLIC_API_URL}/kakao-login`;
 const redirectLogoutUrl = `${process.env.NEXT_PUBLIC_API_URL}/kakao-logout`;
@@ -49,14 +21,9 @@ const redirectLogoutUrl = `${process.env.NEXT_PUBLIC_API_URL}/kakao-logout`;
 export default function Login(props: any) {
     const router = useRouter();
 
-    const [nickname, setNickname] = useState("");
-    const [authorizeCode, setAuthorizeCode] = useState("");
-
     const dispatch = useAppDispatch();
-    const kakaoAuthCode = useAppSelector(selectKakaoAuthCode);
-    const kakaoNickName = useAppSelector(selectKakaoNickName);
-    const kakaoId = useAppSelector(selectKakaoId);
     const loginState = useAppSelector(selectLoginState);
+    const kakaoTotal = useAppSelector(selectKakaoTotal);
 
     const pathname = usePathname();
 
@@ -68,7 +35,7 @@ export default function Login(props: any) {
 
     useEffect(() => {
         if (DEBUG) console.log(`[Login]`, `loginState:`, loginState);
-        if (DEBUG) console.log(`[Login]`, `kakaoNickName:`, kakaoNickName, `kakaoId:`, kakaoId);
+        if (DEBUG) console.log(`[Login]`, `kakaoNickkakaoTotal?.kakao_account?.profile?.nicknameName:`, kakaoTotal?.kakao_account?.profile?.nickname, `kakaoTotal?.id:`, kakaoTotal?.id);
 
         async function callback() {
             let result = { valid: false, payload: "" };
@@ -89,21 +56,23 @@ export default function Login(props: any) {
                         if ('undefined' != payload) {
                             const jsonPayload = JSON.parse(payload);
                             if (DEBUG) console.log(`[Login] jsonPayload:`, jsonPayload);
-                            dispatch(setKakaoId(jsonPayload.id));
-                            dispatch(setKakaoNickName(jsonPayload.properties.nickname));
+                            dispatch(setKakaoTotal(jsonPayload));
                         }
                     }
                 }
             }
             else {
-                dispatch(setKakaoId(""));
-                dispatch(setKakaoNickName(""));
+                dispatch(setKakaoTotal({} as KakaoTotal));
             }
         }
         callback();
 
         dispatch(setCloudFlareLoginStatus());
     }, []);
+
+    useEffect(() => {
+        if (DEBUG) console.log(`[Login] kakaoTotal:`, kakaoTotal);
+    }, [kakaoTotal]);
 
     async function onClickLogin() {
         if (DEBUG) console.log(`[Login] onClickLogin`, `redirectUrl:`, redirectUrl);
@@ -118,15 +87,14 @@ export default function Login(props: any) {
         clearCookie("koreaInvestmentToken");
 
         dispatch(setKakaoAuthCode(""));
-        dispatch(setKakaoNickName(""));
-        dispatch(setKakaoId(""));
+        dispatch(setKakaoTotal({} as KakaoTotal));
 
         const authorizeEndpoint = `https://kauth.kakao.com/oauth/logout?client_id=${process.env.NEXT_PUBLIC_KAKAO_REST_API_KEY}&logout_redirect_uri=${redirectLogoutUrl}`;
         router.push(authorizeEndpoint);
     }
 
     const KakaoIcon = () => {
-        if (!!!kakaoNickName) {
+        if (!!!kakaoTotal?.kakao_account?.profile?.nickname) {
             return <>
                 <div className="p-5">
                     <div className="font-mono text-xl mb-2">
@@ -154,17 +122,16 @@ export default function Login(props: any) {
         }
 
         return <>
-            <UserPage kakaoNickName={kakaoNickName} Logout={Logout} parentUrl={pathname} />
+            <Report />
+            <UserPage kakaoNickName={kakaoTotal?.kakao_account?.profile?.nickname} Logout={Logout} parentUrl={pathname} />
         </>;
     }
 
-    if (DEBUG) console.log(`[Login] render`, `kakaoNickName:`, kakaoNickName, `, loginState:`, loginState);
+    if (DEBUG) console.log(`[Login] render`, `kakaoTotal?.kakao_account?.profile?.nickname:`, kakaoTotal?.kakao_account?.profile?.nickname, `, loginState:`, loginState);
     return (
-        <>
-            <div className="w-full h-screen items-center dark:bg-black dark:text-white">
-                <KakaoIcon />
-                <div></div>
-            </div>
-        </>
+        <div className="w-full h-screen items-center dark:bg-black dark:text-white">
+            <KakaoIcon />
+            <div></div>
+        </div>
     );
 }
