@@ -145,7 +145,7 @@ export default function ReportPage() {
         return <Login />;
     }
 
-    if (kiBalanceKr.state !== "fulfilled" || kiBalanceUs.state !== "fulfilled") {
+    if (kiBalanceKr.state !== "fulfilled" || kiBalanceUs.state !== "fulfilled" || undefined == message) {
         return <Loading />
     }
 
