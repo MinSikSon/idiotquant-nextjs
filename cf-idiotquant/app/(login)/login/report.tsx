@@ -9,7 +9,7 @@ import { isValidCookie, Util } from "@/components/util";
 import { getKoreaInvestmentBalance, getKoreaInvestmentToken, KoreaInvestmentBalance, KoreaInvestmentToken, reqGetInquireBalance } from "@/lib/features/koreaInvestment/koreaInvestmentSlice";
 import { getKoreaInvestmentUsMaretPresentBalance, KoreaInvestmentOverseasPresentBalance, reqGetOverseasStockTradingInquirePresentBalance } from "@/lib/features/koreaInvestmentUsMarket/koreaInvestmentUsMarketSlice";
 
-const DEBUG = true;
+const DEBUG = false;
 
 export default function Report() {
     const dispatch = useAppDispatch();
@@ -43,9 +43,9 @@ export default function Report() {
 
     useEffect(() => {
         if (kiBalanceKr.state === "fulfilled" && kiBalanceUs.state === "fulfilled") {
-            if (true == DEBUG) console.log(`[Report]`, `kiBalanceKr`, kiBalanceKr);
-            if (true == DEBUG) console.log(`[Report]`, `kiBalanceUs`, kiBalanceUs);
-            if (true == DEBUG) console.log(`[Report]`, `kakaoTotal`, kakaoTotal);
+            if (DEBUG) console.log(`[Report]`, `kiBalanceKr`, kiBalanceKr);
+            if (DEBUG) console.log(`[Report]`, `kiBalanceUs`, kiBalanceUs);
+            if (DEBUG) console.log(`[Report]`, `kakaoTotal`, kakaoTotal);
 
             // const isUsBalance = !!props.kiBalance.output3;
             // evlu_amt_smtl_amt = (true == isUsBalance) ? props.kiBalance.output3["evlu_amt_smtl"] : props.kiBalance.output2[0]["evlu_amt_smtl_amt"];
