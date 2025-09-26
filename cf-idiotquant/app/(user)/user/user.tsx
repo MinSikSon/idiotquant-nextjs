@@ -4,13 +4,14 @@ import { useState, useEffect } from 'react';
 import { Badge, Button } from "@material-tailwind/react";
 import { Input, Textarea, Card, CardHeader, CardBody, CardFooter, Typography } from "@material-tailwind/react";
 import { useAppDispatch, useAppSelector } from '@/lib/hooks';
-import { getCloudFlareUserInfo, selectUserInfo, setCloudFlareUserInfo, UserInfo } from '@/lib/features/login/loginSlice';
+import { getCloudFlareUserInfo, KakaoTotal, selectKakaoTotal, selectUserInfo, setCloudFlareUserInfo, UserInfo } from '@/lib/features/login/loginSlice';
 
 const DEBUG = false;
 
 export default function User() {
     const dispatch = useAppDispatch();
     const cfUserInfo: UserInfo = useAppSelector(selectUserInfo);
+    const kakaoTotal: KakaoTotal = useAppSelector(selectKakaoTotal);
 
     const [user, setUser] = useState<UserInfo>({
         state: "init",
@@ -40,6 +41,11 @@ export default function User() {
         }
     }, [cfUserInfo]);
 
+    useEffect(() => {
+        if (DEBUG) console.log(`[User] kakaoTotal:`, kakaoTotal);
+        // TODO: kakaoTotal에 있는 정보 활용해도 좋을 듯 함.
+    }, [kakaoTotal]);
+
     function getInitials(name: string) {
         const parts = name.trim().split(/\s+/);
         if (parts.length === 0) return '';
@@ -67,13 +73,11 @@ export default function User() {
     return (
         <div className="flex items-center justify-center bg-gray-50 dark:bg-black dark:text-white p-6">
             <Card className="w-full max-w-2xl">
-                <CardHeader floated={false} shadow={false} className="pb-0">
-                    {/* <Typography variant="h4" color="blue-gray"> */}
-                    {/* <Typography variant="h4" >
+                {/* <CardHeader floated={false} shadow={false} className="pb-0">
+                    <Typography variant="h4" >
                         User Info
-                    </Typography> */}
-                </CardHeader>
-
+                    </Typography>
+                </CardHeader> */}
                 <CardBody className="flex flex-col md:flex-row gap-6">
                     <div className="flex flex-col items-center space-y-1">
                         <div>

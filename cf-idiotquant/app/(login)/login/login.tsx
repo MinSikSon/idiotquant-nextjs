@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react";
+import { useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { setCloudFlareLoginStatus, selectLoginState, setKakaoAuthCode, setKakaoTotal, selectKakaoTotal, KakaoTotal } from "@/lib/features/login/loginSlice";
 import { useAppDispatch, useAppSelector } from "@/lib/hooks";
@@ -129,11 +129,9 @@ export default function Login(props: any) {
 
     if (DEBUG) console.log(`[Login] render`, `kakaoTotal?.kakao_account?.profile?.nickname:`, kakaoTotal?.kakao_account?.profile?.nickname, `, loginState:`, loginState);
     return (
-        <>
-            <div className="w-full h-screen items-center dark:bg-black dark:text-white">
-                <KakaoIcon />
-                <div></div>
-            </div>
-        </>
+        <div className="w-full h-screen items-center dark:bg-black dark:text-white">
+            <KakaoIcon />
+            <div></div>
+        </div>
     );
 }
