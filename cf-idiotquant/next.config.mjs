@@ -9,6 +9,15 @@ const nextConfig = {
                 pathname: '/sih/fit-in/458x0/pdt/9780060555665.jpg',
             },
         ],
+        domains: [
+            'cdn.pixabay.com',
+            'encrypted-tbn0.gstatic.com',
+            'encrypted-tbn1.gstatic.com',
+            'encrypted-tbn2.gstatic.com',
+            'encrypted-tbn3.gstatic.com',
+            'mud-kage.kakao.com',
+            'example.com',
+        ],
     },
     env: {
         NEXT_PUBLIC_API_URL: process.env.NEXT_PUBLIC_API_URL,

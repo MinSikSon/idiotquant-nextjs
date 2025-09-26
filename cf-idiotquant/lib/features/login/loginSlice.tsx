@@ -76,11 +76,11 @@ interface KakaoMessageItemContentItem {
     item_op: string; // "1000원"
 }
 interface KakaoMessageItemContent {
-    profile_text?: string; // "Kakao",
-    profile_image_url?: string; // "https://mud-kage.kakao.com/dn/Q2iNx/btqgeRgV54P/VLdBs9cvyn8BJXB3o7N8UK/kakaolink40_original.png",
-    title_image_url?: string; // "https://mud-kage.kakao.com/dn/Q2iNx/btqgeRgV54P/VLdBs9cvyn8BJXB3o7N8UK/kakaolink40_original.png",
-    title_image_text?: string; // "Cheese cake",
-    title_image_category?: string; // "Cake",
+    profile_text: string; // "Kakao",
+    profile_image_url: string; // "https://mud-kage.kakao.com/dn/Q2iNx/btqgeRgV54P/VLdBs9cvyn8BJXB3o7N8UK/kakaolink40_original.png",
+    title_image_url: string; // "https://mud-kage.kakao.com/dn/Q2iNx/btqgeRgV54P/VLdBs9cvyn8BJXB3o7N8UK/kakaolink40_original.png",
+    title_image_text: string; // "Cheese cake",
+    title_image_category: string; // "Cake",
     items: KakaoMessageItemContentItem[];
     sum: string; // "Total",
     sum_op: string; // "15000원"
@@ -108,7 +108,7 @@ export interface KakaoMessage {
     content: KakaoMessageContent;
     item_content: KakaoMessageItemContent;
     social?: KakaoMessageSocial;
-    buttons?: KakaoMessageButton[];
+    buttons: KakaoMessageButton[];
 }
 
 interface LoginInfo {
