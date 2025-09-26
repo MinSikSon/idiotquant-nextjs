@@ -13,7 +13,6 @@ const DEBUG = false;
 
 import { usePathname } from "next/navigation";
 import { verifyJWT } from "@/lib/jwt";
-import Report from "./report";
 
 const redirectUrl = `${process.env.NEXT_PUBLIC_API_URL}/kakao-login`;
 const redirectLogoutUrl = `${process.env.NEXT_PUBLIC_API_URL}/kakao-logout`;
@@ -122,7 +121,6 @@ export default function Login(props: any) {
         }
 
         return <>
-            <Report />
             <UserPage kakaoNickName={kakaoTotal?.kakao_account?.profile?.nickname} Logout={Logout} parentUrl={pathname} />
         </>;
     }

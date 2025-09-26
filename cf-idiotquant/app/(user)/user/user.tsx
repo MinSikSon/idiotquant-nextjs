@@ -5,6 +5,7 @@ import { Badge, Button } from "@material-tailwind/react";
 import { Input, Textarea, Card, CardHeader, CardBody, CardFooter, Typography } from "@material-tailwind/react";
 import { useAppDispatch, useAppSelector } from '@/lib/hooks';
 import { getCloudFlareUserInfo, KakaoTotal, selectKakaoTotal, selectUserInfo, setCloudFlareUserInfo, UserInfo } from '@/lib/features/login/loginSlice';
+import Link from 'next/link';
 
 const DEBUG = false;
 
@@ -164,7 +165,9 @@ export default function User() {
                     </div>
                 </CardBody>
 
-                <CardFooter className="pt-0"></CardFooter>
+                <CardFooter className="w-full pt-0 flex items-center justify-center">
+                    {(kakaoTotal?.kakao_account?.profile?.nickname === process.env.NEXT_PUBLIC_MASTER) && <Link href="/report" ><Button>ReportPage</Button></Link>}
+                </CardFooter>
             </Card>
         </div>
     );
