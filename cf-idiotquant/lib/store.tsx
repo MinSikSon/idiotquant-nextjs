@@ -5,6 +5,8 @@ import { articleSlice } from "./features/article/articleSlice";
 import { strategySlice } from "./features/strategy/strategySlice";
 import { backtestSlice } from "./features/backtest/backtestSlice";
 import { loginSlice } from "./features/login/loginSlice";
+import { kakaoSlice } from "./features/kakao/kakaoSlice";
+import { cloudflareSlice } from "./features/cloudflare/cloudflareSlice";
 import { filterSlice } from "./features/filter/filterSlice";
 import { koreaInvestmentSlice } from "./features/koreaInvestment/koreaInvestmentSlice";
 import { koreaInvestmentUsMarketSlice } from "./features/koreaInvestmentUsMarket/koreaInvestmentUsMarketSlice";
@@ -13,6 +15,7 @@ import { fmpUsMarketSlice } from "./features/fmpUsMarket/fmpUsMarketSlice";
 import { aiSlice } from "./features/ai/aiSlice";
 import { aiStreamSlice } from "./features/ai/aiStreamSlice";
 import { searchHistorySlice } from "./features/searchHistory/searchHistorySlice";
+import { timestampSlice } from "./features/timestamp/timestampSlice";
 
 const rootReducer: any = combineSlices(
     financialInfoSlice,
@@ -21,6 +24,8 @@ const rootReducer: any = combineSlices(
     strategySlice,
     backtestSlice,
     loginSlice,
+    kakaoSlice,
+    cloudflareSlice,
     filterSlice,
     koreaInvestmentSlice,
     koreaInvestmentUsMarketSlice,
@@ -29,6 +34,7 @@ const rootReducer: any = combineSlices(
     aiSlice,
     aiStreamSlice,
     searchHistorySlice,
+    timestampSlice,
 );
 
 export type RootState = ReturnType<typeof rootReducer>;

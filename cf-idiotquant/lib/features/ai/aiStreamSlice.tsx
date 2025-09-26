@@ -52,7 +52,7 @@ interface StreamOutputType {
 }
 
 export const aiStreamSlice = createAppSlice({
-    name: "aiSlice",
+    name: "aiStreamSlice",
     initialState,
     reducers: (create) => ({
         updateStreamingOutput: create.reducer((state, action: PayloadAction<any>) => {

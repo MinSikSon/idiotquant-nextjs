@@ -7,13 +7,13 @@ import {
 import { Bars3Icon, CalculatorIcon, HomeIcon, LockClosedIcon, LockOpenIcon, MagnifyingGlassCircleIcon, SparklesIcon, WalletIcon, XMarkIcon } from "@heroicons/react/24/outline";
 import Link from "next/link";
 
-import { selectKakaoTotal } from "@/lib/features/login/loginSlice";
 import { useAppSelector } from "@/lib/hooks";
 
 import { usePathname } from "next/navigation";
 import { DesignButton } from "./designButton";
 import ThemeChanger from "@/components/theme_changer";
 import RotatingText from "@/src/TextAnimations/RotatingText/RotatingText";
+import { selectKakaoTotal } from "@/lib/features/kakao/kakaoSlice";
 
 interface NavItemPropsType {
     url: string;

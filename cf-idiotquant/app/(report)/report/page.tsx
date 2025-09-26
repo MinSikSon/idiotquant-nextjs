@@ -1,6 +1,6 @@
 "use client";
 
-import { KakaoMessage, KakaoTotal, selectKakaoTotal } from "@/lib/features/login/loginSlice";
+import { KakaoMessage } from "@/lib/features/login/loginSlice";
 import { useAppDispatch, useAppSelector } from "@/lib/hooks";
 import { useEffect, useState } from "react";
 import Login from "@/app/(login)/login/login";
@@ -10,6 +10,7 @@ import Auth from "@/components/auth";
 import { isValidCookie, Util } from "@/components/util";
 import { KakaoFeed, SendKakaoMessage } from "./report";
 import Loading from "@/components/loading";
+import { KakaoTotal, selectKakaoTotal } from "@/lib/features/kakao/kakaoSlice";
 
 const DEBUG = false;
 
@@ -22,7 +23,6 @@ export default function ReportPage() {
 
     const kakaoTotal: KakaoTotal = useAppSelector(selectKakaoTotal);
 
-    const [ready, setReady] = useState<boolean>(false);
     const [message, setMessage] = useState<KakaoMessage>({} as KakaoMessage);
     const [validCookie, setValidCookie] = useState<any>(false);
     useEffect(() => {
@@ -40,9 +40,12 @@ export default function ReportPage() {
             dispatch(reqGetOverseasStockTradingInquirePresentBalance(kiToken));
         }
     }, [kiToken]);
-    // useEffect(() => {
-    //     if (true == DEBUG) console.log(`[Report]`, `kiBalanceKr`, kiBalanceKr);
-    // }, [kiBalanceKr]);
+    useEffect(() => {
+        if (true == DEBUG) console.log(`[Report]`, `kiBalanceKr:`, kiBalanceKr);
+    }, [kiBalanceKr]);
+    useEffect(() => {
+        if (true == DEBUG) console.log(`[Report]`, `kiBalanceUs:`, kiBalanceUs);
+    }, [kiBalanceUs]);
 
     useEffect(() => {
         if (kiBalanceKr.state === "fulfilled" && kiBalanceUs.state === "fulfilled") {
@@ -124,10 +127,11 @@ export default function ReportPage() {
             };
 
             setMessage(newMessage);
-            setReady(true);
         }
     }, [kiBalanceKr, kiBalanceUs, kakaoTotal]);
 
+    console.log(`[ReportPage] validCookie:`, validCookie);
+    console.log(`[ReportPage] kiToken["access_token"]:`, kiToken["access_token"], `, !!kiToken["access_token"]:`, !!kiToken["access_token"]);
     if (false == validCookie || false == !!kiToken["access_token"]) {
         return <>
             <Auth />
@@ -135,11 +139,13 @@ export default function ReportPage() {
         </>
     }
 
+    console.log(`[ReportPage] Object.keys(kakaoTotal).length:`, Object.keys(kakaoTotal).length);
+    console.log(`[ReportPage] Object.keys(kakaoTotal).length === 0:`, Object.keys(kakaoTotal).length === 0);
     if (Object.keys(kakaoTotal).length === 0) {
         return <Login />;
     }
 
-    if (kiBalanceKr.state !== "fulfilled" || kiBalanceUs.state !== "fulfilled" || false === ready) {
+    if (kiBalanceKr.state !== "fulfilled" || kiBalanceUs.state !== "fulfilled") {
         return <Loading />
     }
 

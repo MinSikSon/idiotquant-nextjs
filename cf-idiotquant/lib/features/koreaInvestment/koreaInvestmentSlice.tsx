@@ -292,6 +292,7 @@ export interface KoreaInvestmentIncomeStatement {
 
 interface KoreaInvestmentInfo {
     state: "init"
+    | "fulfilled"
     | "get-rejected"
     | "loading" | "loaded" | "rejected"
     | "approval"

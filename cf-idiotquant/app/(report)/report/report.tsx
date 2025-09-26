@@ -1,11 +1,13 @@
 "use client";
 
 import { KakaoMessage, setKakaoMessage } from "@/lib/features/login/loginSlice";
-import { useAppDispatch } from "@/lib/hooks";
+import { selectTimestamp, setTimestamp } from "@/lib/features/timestamp/timestampSlice";
+import { useAppDispatch, useAppSelector } from "@/lib/hooks";
 import { Button, Card, CardBody, CardFooter, CardHeader } from "@material-tailwind/react";
 
 import Image from "next/image";
 import Link from "next/link";
+import { useEffect } from "react";
 
 const DEBUG = false;
 
@@ -16,12 +18,19 @@ interface DefaultProps {
 export function SendKakaoMessage(props: DefaultProps) {
     const dispatch = useAppDispatch();
 
+    const timestamp: any = useAppSelector(selectTimestamp);
+
     function onClick() {
         if (DEBUG) console.log(`[Report] setKakaoMessage`);
         if (DEBUG) console.log(`[Report] message:`, props.message);
 
         dispatch(setKakaoMessage(props.message));
+        dispatch(setTimestamp(props.message));
     }
+
+    useEffect(() => {
+        if (DEBUG) console.log(`[Report] timestamp:`, timestamp);
+    }, [timestamp]);
 
     return <>
         <div className="flex flex-col dark:bg-black h-fit justify-center items-center">
