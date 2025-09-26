@@ -41,10 +41,10 @@ export default function ReportPage() {
         }
     }, [kiToken]);
     useEffect(() => {
-        if (true == DEBUG) console.log(`[Report]`, `kiBalanceKr:`, kiBalanceKr);
+        if (DEBUG) console.log(`[Report]`, `kiBalanceKr:`, kiBalanceKr);
     }, [kiBalanceKr]);
     useEffect(() => {
-        if (true == DEBUG) console.log(`[Report]`, `kiBalanceUs:`, kiBalanceUs);
+        if (DEBUG) console.log(`[Report]`, `kiBalanceUs:`, kiBalanceUs);
     }, [kiBalanceUs]);
 
     useEffect(() => {
