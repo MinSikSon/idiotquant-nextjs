@@ -35,6 +35,10 @@ export default function BalanceKr() {
             dispatch(reqGetInquireBalance(kiToken));
         }
 
+        if (DEBUG) console.log(`[BalanceUs]`, `validCookie:`, validCookie);
+        if (false == validCookie) {
+            setValidCookie(isValidCookie("koreaInvestmentToken"));
+        }
     }, [kiToken]);
 
     useEffect(() => {

@@ -1,6 +1,7 @@
 import "@/app/global.css"
 import { StoreProvider } from "./StoreProvider"
 import NavbarWithSimpleLinks from "@/components/navigation"
+import LoadKakaoTotal from "@/components/loadKakaoTotal"
 
 export const metadata = {
   title: 'idiotquant.com',
@@ -20,6 +21,7 @@ export default function RootLayout({
         <head>
         </head>
         <body className="md:flex lg:flex">
+          <LoadKakaoTotal />
           <NavbarWithSimpleLinks />
           <div className="pt-28 md:flex-1 lg:flex-1 w-full h-full scroll-auto dark:bg-black">
             {children}

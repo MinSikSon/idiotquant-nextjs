@@ -11,6 +11,7 @@ import { isValidCookie, Util } from "@/components/util";
 import { KakaoFeed, SendKakaoMessage } from "./report";
 import Loading from "@/components/loading";
 import { KakaoTotal, selectKakaoTotal } from "@/lib/features/kakao/kakaoSlice";
+import { queryTimestampList, selectTimestampList } from "@/lib/features/timestamp/timestampSlice";
 
 const DEBUG = false;
 
@@ -21,37 +22,47 @@ export default function ReportPage() {
     const kiBalanceKr: KoreaInvestmentBalance = useAppSelector(getKoreaInvestmentBalance);
     const kiBalanceUs: KoreaInvestmentOverseasPresentBalance = useAppSelector(getKoreaInvestmentUsMaretPresentBalance);
 
-    const kakaoTotal: KakaoTotal = useAppSelector(selectKakaoTotal);
+    const kakaoTotal: KakaoTotal = useAppSelector(selectKakaoTotal); // NOTE: authToken 이 발행 됐지만, login step skip된 경우 값 setting 안 됨.
+    const timestampList = useAppSelector(selectTimestampList);
 
     const [message, setMessage] = useState<KakaoMessage>({} as KakaoMessage);
     const [validCookie, setValidCookie] = useState<any>(false);
     useEffect(() => {
+        if (DEBUG) console.log(`[ReportPage] isValidCookie("koreaInvestmentToken"):`, isValidCookie("koreaInvestmentToken"));
         setValidCookie(isValidCookie("koreaInvestmentToken"));
     }, []);
     useEffect(() => {
-        if (DEBUG) console.log(`[Report] message`, message);
+        if (DEBUG) console.log(`[ReportPage] message`, message);
     }, [message]);
 
     useEffect(() => {
         const isValidKiAccessToken = !!kiToken["access_token"];
-        if (DEBUG) console.log(`[Report]`, `isValidKiAccessToken`, isValidKiAccessToken);
+        if (DEBUG) console.log(`[ReportPage]`, `isValidKiAccessToken`, isValidKiAccessToken);
         if (true == isValidKiAccessToken) {
             dispatch(reqGetInquireBalance(kiToken));
             dispatch(reqGetOverseasStockTradingInquirePresentBalance(kiToken));
+            dispatch(queryTimestampList("5"));
+            setValidCookie(isValidCookie("koreaInvestmentToken"));
         }
     }, [kiToken]);
     useEffect(() => {
-        if (DEBUG) console.log(`[Report]`, `kiBalanceKr:`, kiBalanceKr);
+        if (DEBUG) console.log(`[ReportPage]`, `kiBalanceKr:`, kiBalanceKr);
     }, [kiBalanceKr]);
     useEffect(() => {
-        if (DEBUG) console.log(`[Report]`, `kiBalanceUs:`, kiBalanceUs);
+        if (DEBUG) console.log(`[ReportPage]`, `kiBalanceUs:`, kiBalanceUs);
     }, [kiBalanceUs]);
+    useEffect(() => {
+        if (DEBUG) console.log(`[ReportPage]`, `timestampList:`, timestampList);
+        if (timestampList?.state == "fulfilled") {
+
+        }
+    }, [timestampList]);
 
     useEffect(() => {
         if (kiBalanceKr.state === "fulfilled" && kiBalanceUs.state === "fulfilled") {
-            if (DEBUG) console.log(`[Report]`, `kiBalanceKr`, kiBalanceKr);
-            if (DEBUG) console.log(`[Report]`, `kiBalanceUs`, kiBalanceUs);
-            if (DEBUG) console.log(`[Report]`, `kakaoTotal`, kakaoTotal);
+            if (DEBUG) console.log(`[ReportPage]`, `kiBalanceKr`, kiBalanceKr);
+            if (DEBUG) console.log(`[ReportPage]`, `kiBalanceUs`, kiBalanceUs);
+            if (DEBUG) console.log(`[ReportPage]`, `kakaoTotal`, kakaoTotal);
 
             const COUNTRY = {
                 eKR: 0,
@@ -138,6 +149,7 @@ export default function ReportPage() {
             <div className="dark:bg-black h-lvh"></div>
         </>
     }
+
 
     if (DEBUG) console.log(`[ReportPage] Object.keys(kakaoTotal).length:`, Object.keys(kakaoTotal).length);
     if (DEBUG) console.log(`[ReportPage] Object.keys(kakaoTotal).length === 0:`, Object.keys(kakaoTotal).length === 0);

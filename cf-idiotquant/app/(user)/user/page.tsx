@@ -2,13 +2,16 @@
 
 import { DesignButton } from "@/components/designButton";
 import { useEffect, useState } from "react";
+import { Logout } from "./logout";
+import { useRouter } from "next/navigation";
 import User from "./user";
 
 const DEBUG = false;
 
 export default function UserPage(props: any) {
+    const router = useRouter();
+
     const [windowLocationOrigin, setWindowLocationOrigin] = useState("");
-    if (DEBUG) console.log(`[UserPage]`, `props.parentUrl`, props.parentUrl);
 
     useEffect(() => {
         if (DEBUG) console.log(`[UserPage]`, `window.location.origin`, window.location.origin);
@@ -17,12 +20,9 @@ export default function UserPage(props: any) {
 
     return <>
         <div className="p-5">
-            <div className="font-mono text-xl mb-2">
-                {props.kakaoNickName}님 반갑습니다.
-            </div>
             <User />
             <DesignButton
-                handleOnClick={() => props.Logout(`${windowLocationOrigin}${props.parentUrl}`)}
+                handleOnClick={() => Logout(router, `${windowLocationOrigin}/login`)}
                 buttonName="logout"
                 buttonBgColor="bg-[#ffea04]"
                 buttonBorderColor="border-[#ebd700]"

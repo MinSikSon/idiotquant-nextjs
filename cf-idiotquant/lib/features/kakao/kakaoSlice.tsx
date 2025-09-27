@@ -43,8 +43,7 @@ export interface KakaoTotal {
 }
 
 interface KakaoInfo {
-    state: "init"
-    | "pending" | "fulfilled" | "rejected";
+    state: "init" | "pending" | "fulfilled" | "rejected";
     kakaoTotal: KakaoTotal;
 }
 
@@ -96,8 +95,9 @@ export const kakaoSlice = createAppSlice({
     }),
     selectors: {
         selectKakaoTotal: (state) => state.kakaoTotal,
+        selectKakaoTatalState: (state) => state.state,
     }
 });
 
 export const { setKakaoTotal } = kakaoSlice.actions;
-export const { selectKakaoTotal } = kakaoSlice.selectors;
+export const { selectKakaoTotal, selectKakaoTatalState } = kakaoSlice.selectors;

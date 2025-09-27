@@ -43,7 +43,6 @@ export default function BalanceUs() {
         if (false == validCookie) {
             setValidCookie(isValidCookie("koreaInvestmentToken"));
         }
-        // }, [kiToken]);
     }, [kiToken]);
 
     useEffect(() => {

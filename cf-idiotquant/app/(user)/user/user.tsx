@@ -73,7 +73,10 @@ export default function User() {
     }
 
     return (
-        <div className="flex items-center justify-center bg-gray-50 dark:bg-black dark:text-white p-6">
+        <div className="flex flex-col items-center justify-center bg-gray-50 dark:bg-black dark:text-white px-6 py-0">
+            <div className="w-full font-mono text-xl mb-2 text-left">
+                {user.nickname}님 반갑습니다.
+            </div>
             <Card className="w-full max-w-2xl">
                 {/* <CardHeader floated={false} shadow={false} className="pb-0">
                     <Typography variant="h4" >
