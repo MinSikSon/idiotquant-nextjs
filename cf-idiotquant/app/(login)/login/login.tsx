@@ -11,7 +11,6 @@ import { KakaoTotal, selectKakaoTotal } from "@/lib/features/kakao/kakaoSlice";
 const DEBUG = true;
 
 const redirectUrl = `${process.env.NEXT_PUBLIC_API_URL}/kakao-login`;
-const redirectLogoutUrl = `${process.env.NEXT_PUBLIC_API_URL}/kakao-logout`;
 
 export default function Login(props: any) {
     const router = useRouter();

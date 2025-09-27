@@ -22,7 +22,7 @@ export default function UserPage(props: any) {
         <div className="p-5">
             <User />
             <DesignButton
-                handleOnClick={() => Logout(router, `${windowLocationOrigin}/login`)}
+                handleOnClick={() => Logout(router)}
                 buttonName="logout"
                 buttonBgColor="bg-[#ffea04]"
                 buttonBorderColor="border-[#ebd700]"
