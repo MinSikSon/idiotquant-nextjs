@@ -104,7 +104,6 @@ export const loginSlice = createAppSlice({
                     console.log(`[setCloudFlareLoginStatus] fulfilled`, `, typeof action.payload:`, typeof action.payload, `, action.payload:`, action.payload);
                     // NOTE: get cookie (cf_token)
                     const msg = action.payload.msg;
-                    // if ("need kakao login" == info.msg) {
                     if ("need kakao login" == msg) {
 
                     }

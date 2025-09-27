@@ -53,6 +53,9 @@ export default function ReportPage() {
     }, [kiBalanceUs]);
     useEffect(() => {
         if (DEBUG) console.log(`[ReportPage]`, `timestampList:`, timestampList);
+        if (timestampList?.state == "fulfilled") {
+
+        }
     }, [timestampList]);
 
     useEffect(() => {
