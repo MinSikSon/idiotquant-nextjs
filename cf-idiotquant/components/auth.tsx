@@ -10,7 +10,7 @@ import { useState, useEffect } from "react";
 
 import Loading from "@/components/loading";
 
-const DEBUG = false;
+const DEBUG = true;
 
 export default function Auth() {
     const dispatch = useAppDispatch();

@@ -13,7 +13,7 @@ import { KakaoTotal, selectKakaoTatalState, selectKakaoTotal } from "@/lib/featu
 import { queryTimestampList, selectTimestampList } from "@/lib/features/timestamp/timestampSlice";
 import LoadKakaoTotal from "@/components/loadKakaoTotal";
 
-const DEBUG = false;
+const DEBUG = true;
 
 export default function Report() {
     const dispatch = useAppDispatch();

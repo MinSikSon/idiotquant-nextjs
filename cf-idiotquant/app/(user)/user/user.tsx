@@ -8,7 +8,7 @@ import Link from 'next/link';
 import { KakaoTotal, selectKakaoTotal } from '@/lib/features/kakao/kakaoSlice';
 import { selectCloudflare, setCloudFlareUserInfo, UserInfo } from '@/lib/features/cloudflare/cloudflareSlice';
 
-const DEBUG = false;
+const DEBUG = true;
 
 export default function User() {
     const dispatch = useAppDispatch();

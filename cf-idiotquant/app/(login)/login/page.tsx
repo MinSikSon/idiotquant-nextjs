@@ -11,7 +11,7 @@ import Auth from "@/components/auth";
 import { getKoreaInvestmentToken, KoreaInvestmentToken } from "@/lib/features/koreaInvestment/koreaInvestmentSlice";
 import LoadKakaoTotal from "@/components/loadKakaoTotal";
 
-const DEBUG = false;
+const DEBUG = true;
 
 export default function LoginPage() {
     const router = useRouter();

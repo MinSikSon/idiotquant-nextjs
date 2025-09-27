@@ -7,7 +7,7 @@ import { useRouter } from "next/navigation";
 import User from "./user";
 import LoadKakaoTotal from "@/components/loadKakaoTotal";
 
-const DEBUG = false;
+const DEBUG = true;
 
 export default function UserPage(props: any) {
     const router = useRouter();
