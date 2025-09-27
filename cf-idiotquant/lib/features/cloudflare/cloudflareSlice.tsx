@@ -43,19 +43,16 @@ export const cloudflareSlice = createAppSlice({
             },
             {
                 pending: (state) => {
-                    console.log(`[getCloudFlareUserInfo] pending`);
+                    // console.log(`[getCloudFlareUserInfo] pending`);
                     state.userInfo.state = "pending";
                 },
                 fulfilled: (state, action) => {
-                    console.log(`[getCloudFlareUserInfo] fulfilled`, `typeof action.payload:`, typeof action.payload, `action.payload:`, action.payload);
-                    // state.id = action.payload['id'];
-                    // state.nickName = action.payload['name'];
-                    // state.info = action.payload['info'];
+                    // console.log(`[getCloudFlareUserInfo] fulfilled`, `typeof action.payload:`, typeof action.payload, `action.payload:`, action.payload);
                     state.userInfo = action.payload;
                     state.userInfo.state = "fulfilled";
                 },
                 rejected: (state) => {
-                    console.log(`[getCloudFlareUserInfo] rejected`);
+                    // console.log(`[getCloudFlareUserInfo] rejected`);
                     state.userInfo.state = "rejected";
                 }
             }

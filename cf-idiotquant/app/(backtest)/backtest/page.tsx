@@ -17,14 +17,13 @@ import { getBackTestConditionFilterResultType } from "@/lib/features/backtest/ba
 
 import { reqGetFinancialInfoWithMarketInfo } from "@/lib/features/backtest/backtestSlice";
 
-import { useState, useEffect, useRef } from "react";
-import { isValidCookie, Util } from "@/components/util";
+import { useEffect, useRef } from "react";
+import { Util } from "@/components/util";
 
 
-import { KoreaInvestmentApproval, KoreaInvestmentToken, KoreaInvestmentBalance } from "@/lib/features/koreaInvestment/koreaInvestmentSlice";
-import { getKoreaInvestmentToken, getKoreaInvestmentBalance } from "@/lib/features/koreaInvestment/koreaInvestmentSlice";
-import { reqPostToken, reqGetInquireBalance, reqPostOrderCash, reqGetInquirePrice, KoreaInvestmentInquirePrice, getKoreaInvestmentInquirePrice, reqGetInquireDailyItemChartPrice, getKoreaInvestmentInquireDailyItemChartPrice, KoreaInvestmentInquireDailyItemChartPrice, reqGetBalanceSheet, getKoreaInvestmentBalanceSheet, KoreaInvestmentBalanceSheet } from "@/lib/features/koreaInvestment/koreaInvestmentSlice";
-import Login from "@/app/(login)/login/login";
+import { KoreaInvestmentToken } from "@/lib/features/koreaInvestment/koreaInvestmentSlice";
+import { getKoreaInvestmentToken } from "@/lib/features/koreaInvestment/koreaInvestmentSlice";
+import { reqGetInquireBalance } from "@/lib/features/koreaInvestment/koreaInvestmentSlice";
 import Auth from "@/components/auth";
 import { usePathname } from "next/navigation";
 
@@ -53,9 +52,6 @@ export default function BackTest() {
             </div>
         </div>
     };
-
-    const [date, setDate] = useState<Date>();
-    const [validCookie, setValidCookie] = useState<any>(false);
 
     const getDateContents = (title: string, selectValue: any, min: any, max: any, handleOnChange: any) => {
         return <div className="flex flex-col">
@@ -289,11 +285,7 @@ export default function BackTest() {
         }
     }, [kiToken]);
 
-    useEffect(() => {
-        setValidCookie(isValidCookie("koreaInvestmentToken"));
-    }, []);
-
-    if (false == validCookie || false == !!kiToken["access_token"]) {
+    if (false == !!kiToken["access_token"]) {
         return <>
             <Auth />
         </>

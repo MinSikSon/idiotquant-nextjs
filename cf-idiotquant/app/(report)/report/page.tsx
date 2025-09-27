@@ -25,10 +25,8 @@ export default function Report() {
     const timestampList = useAppSelector(selectTimestampList);
 
     const [message, setMessage] = useState<KakaoMessage>({} as KakaoMessage);
-    const [validCookie, setValidCookie] = useState<any>(false);
     useEffect(() => {
         if (DEBUG) console.log(`[Report] isValidCookie("koreaInvestmentToken"):`, isValidCookie("koreaInvestmentToken"));
-        setValidCookie(isValidCookie("koreaInvestmentToken"));
     }, []);
     useEffect(() => {
         if (DEBUG) console.log(`[Report] message`, message);
@@ -41,7 +39,6 @@ export default function Report() {
             dispatch(reqGetInquireBalance(kiToken));
             dispatch(reqGetOverseasStockTradingInquirePresentBalance(kiToken));
             dispatch(queryTimestampList("5"));
-            setValidCookie(isValidCookie("koreaInvestmentToken"));
         }
     }, [kiToken]);
     useEffect(() => {
@@ -139,9 +136,8 @@ export default function Report() {
         }
     }, [kiBalanceKr, kiBalanceUs, kakaoTotal]);
 
-    if (DEBUG) console.log(`[Report] validCookie:`, validCookie);
     if (DEBUG) console.log(`[Report] kiToken["access_token"]:`, kiToken["access_token"], `, !!kiToken["access_token"]:`, !!kiToken["access_token"]);
-    if (false == validCookie || false == !!kiToken["access_token"]) {
+    if (false == !!kiToken["access_token"]) {
         return <>
             <Auth />
             <div className="dark:bg-black h-lvh"></div>

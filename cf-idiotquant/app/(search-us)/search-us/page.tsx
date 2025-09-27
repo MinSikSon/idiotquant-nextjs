@@ -4,7 +4,7 @@ import { useState, useEffect, useRef } from "react";
 
 import { useAppDispatch, useAppSelector } from "@/lib/hooks";
 import { usePathname } from "next/navigation";
-import { isValidCookie, Util } from "@/components/util";
+import { Util } from "@/components/util";
 import { getKoreaInvestmentUsMaretSearchInfo, getKoreaInvestmentUsMarketDailyPrice, KoreaInvestmentOverseasPriceDetail, KoreaInvestmentOverseasPriceDetailOutput, KoreaInvestmentOverseasPriceQuotationsDailyPrice, KoreaInvestmentOverseasPriceQuotationsInquireDailyChartPrice, KoreaInvestmentOverseasSearchInfo, KoreaInvestmentOverseasSearchInfoOutput, reqGetOverseasPriceQuotationsDailyPrice, reqGetQuotationsSearchInfo } from "@/lib/features/koreaInvestmentUsMarket/koreaInvestmentUsMarketSlice";
 import { getKoreaInvestmentUsMaretPriceDetail, reqGetQuotationsPriceDetail } from "@/lib/features/koreaInvestmentUsMarket/koreaInvestmentUsMarketSlice";
 import { getKoreaInvestmentToken, KoreaInvestmentToken, reqGetInquireBalance } from "@/lib/features/koreaInvestment/koreaInvestmentSlice";
@@ -18,7 +18,6 @@ import Auth from "@/components/auth";
 import { FmpBalanceSheetStatementType, reqGetFmpBalanceSheetStatement, selectFmpBalanceSheetStatement, selectFmpState } from "@/lib/features/fmpUsMarket/fmpUsMarketSlice";
 import LineChart from "@/components/LineChart";
 import { addUsMarketHistory, selectUsMarketHistory } from "@/lib/features/searchHistory/searchHistorySlice";
-import { getFmpBalanceSheetStatement } from "@/lib/features/fmpUsMarket/fmpUsMarketAPI";
 
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
@@ -107,12 +106,7 @@ export default function SearchUs() {
         if (DEBUG) console.log(`useEffectObject.values(fmpUsBalanceSheetStatement)`, Object.values(fmpUsBalanceSheetStatement));
     }, [fmpUsBalanceSheetStatement])
 
-    const [validCookie, setValidCookie] = useState<any>(false);
-    useEffect(() => {
-        setValidCookie(isValidCookie("koreaInvestmentToken"));
-    }, []);
-
-    if (false == validCookie || false == !!kiToken["access_token"]) {
+    if (false == !!kiToken["access_token"]) {
         return <>
             <Auth />
         </>

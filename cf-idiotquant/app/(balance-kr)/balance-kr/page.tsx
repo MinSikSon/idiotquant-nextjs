@@ -1,12 +1,11 @@
 "use client"
 
-import { isValidCookie, } from "@/components/util";
 import { getKoreaInvestmentToken, KoreaInvestmentToken, } from "@/lib/features/koreaInvestment/koreaInvestmentSlice";
 import { reqGetInquireBalance, getKoreaInvestmentBalance, KoreaInvestmentBalance } from "@/lib/features/koreaInvestment/koreaInvestmentSlice";
 import { reqPostOrderCash, getKoreaInvestmentOrderCash, KoreaInvestmentOrderCash } from "@/lib/features/koreaInvestment/koreaInvestmentSlice";
 
 import { useAppDispatch, useAppSelector } from "@/lib/hooks";
-import { useState, useEffect } from "react";
+import { useEffect } from "react";
 
 import { usePathname } from "next/navigation";
 import Auth from "@/components/auth";
@@ -34,11 +33,6 @@ export default function BalanceKr() {
         if (true == isValidKiAccessToken) {
             dispatch(reqGetInquireBalance(kiToken));
         }
-
-        if (DEBUG) console.log(`[BalanceUs]`, `validCookie:`, validCookie);
-        if (false == validCookie) {
-            setValidCookie(isValidCookie("koreaInvestmentToken"));
-        }
     }, [kiToken]);
 
     useEffect(() => {
@@ -56,12 +50,7 @@ export default function BalanceKr() {
         }
     }, [kr_capital_token])
 
-    const [validCookie, setValidCookie] = useState<any>(false);
-    useEffect(() => {
-        setValidCookie(isValidCookie("koreaInvestmentToken"));
-    }, []);
-
-    if (false == validCookie || false == !!kiToken["access_token"]) {
+    if (false == !!kiToken["access_token"]) {
         return <>
             <Auth />
             <div className="dark:bg-black h-lvh"></div>

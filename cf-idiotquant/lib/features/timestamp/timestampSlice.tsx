@@ -63,16 +63,16 @@ export const timestampSlice = createAppSlice({
             },
             {
                 pending: (state) => {
-                    console.log(`[getTimestampList] pending`);
+                    // console.log(`[getTimestampList] pending`);
                     state.prevTimestampList.state = "pending"
                 },
                 fulfilled: (state, action) => {
-                    console.log(`[getTimestampList] fulfilled`, `, typeof action.payload:`, typeof action.payload, `, action.payload:`, action.payload);
+                    // console.log(`[getTimestampList] fulfilled`, `, typeof action.payload:`, typeof action.payload, `, action.payload:`, action.payload);
                     state.prevTimestampList.state = "fulfilled";
                     state.prevTimestampList.data = action.payload;
                 },
                 rejected: (state) => {
-                    console.log(`[getTimestampList] rejected`);
+                    // console.log(`[getTimestampList] rejected`);
                     state.prevTimestampList.state = "rejected"
                 }
             }

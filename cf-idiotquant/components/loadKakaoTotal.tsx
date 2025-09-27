@@ -39,18 +39,18 @@ export default function LoadKakaoTotal() {
                         const plusSeconds = jsonPayload.expires_in * 1000;
                         const target: any = new Date(base.getTime() + plusSeconds);
 
-                        console.log(`기준 + ${jsonPayload.expires_in}초:`, target.toISOString());
+                        if (DEBUG) console.log(`기준 + ${jsonPayload.expires_in}초:`, target.toISOString());
 
                         const now: any = new Date();
                         const diffMs = now - target;
                         const diffSec = Math.floor(diffMs / 1000);
 
-                        console.log("현재와 차이(초):", diffSec);
-                        console.log("현재와 차이(분):", (diffSec / 60).toFixed(2));
-                        console.log("현재와 차이(시간):", (diffSec / 3600).toFixed(2));
+                        if (DEBUG) console.log("현재와 차이(초):", diffSec);
+                        if (DEBUG) console.log("현재와 차이(분):", (diffSec / 60).toFixed(2));
+                        if (DEBUG) console.log("현재와 차이(시간):", (diffSec / 3600).toFixed(2));
 
                         if (diffSec > 0) {
-                            console.log(`need to refresh`);
+                            if (DEBUG) console.log(`need to refresh`);
 
                             clearCookie("authToken");
                             clearCookie("koreaInvestmentToken");
