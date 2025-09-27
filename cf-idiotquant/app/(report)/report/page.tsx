@@ -13,9 +13,9 @@ import Loading from "@/components/loading";
 import { KakaoTotal, selectKakaoTotal } from "@/lib/features/kakao/kakaoSlice";
 import { queryTimestampList, selectTimestampList } from "@/lib/features/timestamp/timestampSlice";
 
-const DEBUG = false;
+const DEBUG = true;
 
-export default function ReportPage() {
+export default function Report() {
     const dispatch = useAppDispatch();
 
     const kiToken: KoreaInvestmentToken = useAppSelector(getKoreaInvestmentToken);
@@ -28,16 +28,16 @@ export default function ReportPage() {
     const [message, setMessage] = useState<KakaoMessage>({} as KakaoMessage);
     const [validCookie, setValidCookie] = useState<any>(false);
     useEffect(() => {
-        if (DEBUG) console.log(`[ReportPage] isValidCookie("koreaInvestmentToken"):`, isValidCookie("koreaInvestmentToken"));
+        if (DEBUG) console.log(`[Report] isValidCookie("koreaInvestmentToken"):`, isValidCookie("koreaInvestmentToken"));
         setValidCookie(isValidCookie("koreaInvestmentToken"));
     }, []);
     useEffect(() => {
-        if (DEBUG) console.log(`[ReportPage] message`, message);
+        if (DEBUG) console.log(`[Report] message`, message);
     }, [message]);
 
     useEffect(() => {
         const isValidKiAccessToken = !!kiToken["access_token"];
-        if (DEBUG) console.log(`[ReportPage]`, `isValidKiAccessToken`, isValidKiAccessToken);
+        if (DEBUG) console.log(`[Report]`, `isValidKiAccessToken`, isValidKiAccessToken);
         if (true == isValidKiAccessToken) {
             dispatch(reqGetInquireBalance(kiToken));
             dispatch(reqGetOverseasStockTradingInquirePresentBalance(kiToken));
@@ -46,24 +46,23 @@ export default function ReportPage() {
         }
     }, [kiToken]);
     useEffect(() => {
-        if (DEBUG) console.log(`[ReportPage]`, `kiBalanceKr:`, kiBalanceKr);
+        if (DEBUG) console.log(`[Report]`, `kiBalanceKr:`, kiBalanceKr);
     }, [kiBalanceKr]);
     useEffect(() => {
-        if (DEBUG) console.log(`[ReportPage]`, `kiBalanceUs:`, kiBalanceUs);
+        if (DEBUG) console.log(`[Report]`, `kiBalanceUs:`, kiBalanceUs);
     }, [kiBalanceUs]);
     useEffect(() => {
-        if (DEBUG) console.log(`[ReportPage]`, `timestampList:`, timestampList);
+        if (DEBUG) console.log(`[Report]`, `timestampList:`, timestampList);
         if (timestampList?.state == "fulfilled") {
 
         }
     }, [timestampList]);
 
     useEffect(() => {
-        if (kiBalanceKr.state === "fulfilled" && kiBalanceUs.state === "fulfilled") {
-            if (DEBUG) console.log(`[ReportPage]`, `kiBalanceKr`, kiBalanceKr);
-            if (DEBUG) console.log(`[ReportPage]`, `kiBalanceUs`, kiBalanceUs);
-            if (DEBUG) console.log(`[ReportPage]`, `kakaoTotal`, kakaoTotal);
-
+        if (DEBUG) console.log(`[Report]`, `kiBalanceKr`, kiBalanceKr);
+        if (DEBUG) console.log(`[Report]`, `kiBalanceUs`, kiBalanceUs);
+        if (DEBUG) console.log(`[Report]`, `kakaoTotal`, kakaoTotal);
+        if (kiBalanceKr.state === "fulfilled" && kiBalanceUs.state === "fulfilled" && kakaoTotal?.id != 0) {
             const COUNTRY = {
                 eKR: 0,
                 eUS: 1,
@@ -141,8 +140,8 @@ export default function ReportPage() {
         }
     }, [kiBalanceKr, kiBalanceUs, kakaoTotal]);
 
-    if (DEBUG) console.log(`[ReportPage] validCookie:`, validCookie);
-    if (DEBUG) console.log(`[ReportPage] kiToken["access_token"]:`, kiToken["access_token"], `, !!kiToken["access_token"]:`, !!kiToken["access_token"]);
+    if (DEBUG) console.log(`[Report] validCookie:`, validCookie);
+    if (DEBUG) console.log(`[Report] kiToken["access_token"]:`, kiToken["access_token"], `, !!kiToken["access_token"]:`, !!kiToken["access_token"]);
     if (false == validCookie || false == !!kiToken["access_token"]) {
         return <>
             <Auth />
@@ -150,16 +149,15 @@ export default function ReportPage() {
         </>
     }
 
-
-    if (DEBUG) console.log(`[ReportPage] Object.keys(kakaoTotal).length:`, Object.keys(kakaoTotal).length);
-    if (DEBUG) console.log(`[ReportPage] Object.keys(kakaoTotal).length === 0:`, Object.keys(kakaoTotal).length === 0);
-    if (Object.keys(kakaoTotal).length === 0) {
+    if (DEBUG) console.log(`[Report] Object.keys(kakaoTotal).length:`, Object.keys(kakaoTotal).length);
+    if (DEBUG) console.log(`[Report] Object.keys(kakaoTotal).length === 0:`, Object.keys(kakaoTotal).length === 0);
+    if (Object.keys(kakaoTotal).length === 0 || kakaoTotal?.id == 0) {
         return <Login />;
     }
 
-    if (DEBUG) console.log(`[ReportPage] kiBalanceKr`, kiBalanceKr);
-    if (DEBUG) console.log(`[ReportPage] kiBalanceUs`, kiBalanceUs);
-    if (DEBUG) console.log(`[ReportPage] message`, message);
+    if (DEBUG) console.log(`[Report] kiBalanceKr`, kiBalanceKr);
+    if (DEBUG) console.log(`[Report] kiBalanceUs`, kiBalanceUs);
+    if (DEBUG) console.log(`[Report] message`, message);
     if (kiBalanceKr.state !== "fulfilled" || kiBalanceUs.state !== "fulfilled" || undefined == message || Object.keys(message).length === 0) {
         return <Loading />
     }
