@@ -58,7 +58,7 @@ export default function LoginPage() {
     }
 
     if (DEBUG) console.log(`kiToken`, kiToken, `, !!kiToken["access_token"]`, !!kiToken["access_token"]);
-    if (false == !!kiToken["access_token"]) {
+    if ("fulfilled" != kakaoTotalState || false == !!kiToken["access_token"]) {
         return <>
             <Auth />
             <div className="dark:bg-black h-lvh"></div>

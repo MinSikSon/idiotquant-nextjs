@@ -9,7 +9,7 @@ import Auth from "@/components/auth";
 import { isValidCookie, Util } from "@/components/util";
 import { KakaoFeed, SendKakaoMessage } from "./report";
 import Loading from "@/components/loading";
-import { KakaoTotal, selectKakaoTotal } from "@/lib/features/kakao/kakaoSlice";
+import { KakaoTotal, selectKakaoTatalState, selectKakaoTotal } from "@/lib/features/kakao/kakaoSlice";
 import { queryTimestampList, selectTimestampList } from "@/lib/features/timestamp/timestampSlice";
 
 const DEBUG = false;
@@ -23,6 +23,8 @@ export default function Report() {
 
     const kakaoTotal: KakaoTotal = useAppSelector(selectKakaoTotal); // NOTE: authToken 이 발행 됐지만, login step skip된 경우 값 setting 안 됨.
     const timestampList = useAppSelector(selectTimestampList);
+
+    const kakaoTotalState = useAppSelector(selectKakaoTatalState);
 
     const [message, setMessage] = useState<KakaoMessage>({} as KakaoMessage);
     useEffect(() => {
@@ -162,7 +164,7 @@ export default function Report() {
     }, [kiBalanceKr, kiBalanceUs, kakaoTotal]);
 
     if (DEBUG) console.log(`[Report] kiToken["access_token"]:`, kiToken["access_token"], `, !!kiToken["access_token"]:`, !!kiToken["access_token"]);
-    if (false == !!kiToken["access_token"]) {
+    if ("fulfilled" != kakaoTotalState || false == !!kiToken["access_token"]) {
         return <>
             <Auth />
             <div className="dark:bg-black h-lvh"></div>

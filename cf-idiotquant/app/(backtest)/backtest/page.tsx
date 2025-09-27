@@ -30,6 +30,7 @@ import { usePathname } from "next/navigation";
 import { DayPicker } from "react-day-picker";
 // import { NavArrowRight, NavArrowLeft } from "iconoir-react";
 import { Popover } from "@material-tailwind/react";
+import { selectKakaoTatalState } from "@/lib/features/kakao/kakaoSlice";
 
 export default function BackTest() {
     const dispatch = useAppDispatch();
@@ -275,7 +276,7 @@ export default function BackTest() {
     };
 
     const kiToken: KoreaInvestmentToken = useAppSelector(getKoreaInvestmentToken);
-    const pathname = usePathname();
+    const kakaoTotalState = useAppSelector(selectKakaoTatalState);
 
     useEffect(() => {
         // console.log(`[BackTest]`, `kiToken:`, kiToken);
@@ -285,7 +286,7 @@ export default function BackTest() {
         }
     }, [kiToken]);
 
-    if (false == !!kiToken["access_token"]) {
+    if ("fulfilled" != kakaoTotalState || false == !!kiToken["access_token"]) {
         return <>
             <Auth />
         </>

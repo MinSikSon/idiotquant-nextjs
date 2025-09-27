@@ -27,6 +27,7 @@ import rehypeKatex from 'rehype-katex';
 import 'katex/dist/katex.min.css';
 import rehypeHighlight from 'rehype-highlight';
 import 'highlight.js/styles/github.css';
+import { selectKakaoTatalState } from "@/lib/features/kakao/kakaoSlice";
 
 const DEBUG = false;
 
@@ -48,6 +49,8 @@ export default function SearchUs() {
     // const [endDate, setEndDate] = useState<any>((new Date()).toISOString().split('T')[0]);
 
     const usMarketHistory = useAppSelector(selectUsMarketHistory);
+
+    const kakaoTotalState = useAppSelector(selectKakaoTatalState);
 
     const [openNCAV, setOpenNCAV] = useState(false);
     const [openSRIM, setOpenSRIM] = useState(false);
@@ -106,7 +109,7 @@ export default function SearchUs() {
         if (DEBUG) console.log(`useEffectObject.values(fmpUsBalanceSheetStatement)`, Object.values(fmpUsBalanceSheetStatement));
     }, [fmpUsBalanceSheetStatement])
 
-    if (false == !!kiToken["access_token"]) {
+    if ("fulfilled" != kakaoTotalState || false == !!kiToken["access_token"]) {
         return <>
             <Auth />
         </>

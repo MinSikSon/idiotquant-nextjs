@@ -28,6 +28,7 @@ import 'highlight.js/styles/github.css';
 import { reqPostLaboratory } from "@/lib/features/ai/aiSlice";
 import { AiOutputResultUsageType, selectAiStreamOutput } from "@/lib/features/ai/aiStreamSlice";
 import { addKrMarketHistory, selectKrMarketHistory, selectUsMarketHistory } from "@/lib/features/searchHistory/searchHistorySlice";
+import { selectKakaoTatalState } from "@/lib/features/kakao/kakaoSlice";
 
 const DEBUG = false;
 
@@ -58,6 +59,8 @@ export default function SearchKr() {
   const [openSRIM, setOpenSRIM] = useState(false);
 
   const [fixed, setFixed] = useState(false);
+
+  const kakaoTotalState = useAppSelector(selectKakaoTatalState);
 
   useEffect(() => {
     const handleScroll = () => {
@@ -391,7 +394,7 @@ ${md}
 
   if (DEBUG) console.log(`isValidCookie("koreaInvestmentToken") 1`, isValidCookie("koreaInvestmentToken"));
   if (DEBUG) console.log(`kiToken`, kiToken, `, !!kiToken["access_token"]`, !!kiToken["access_token"]);
-  if (false == !!kiToken["access_token"]) {
+  if ("fulfilled" != kakaoTotalState || false == !!kiToken["access_token"]) {
     return <>
       <Auth />
     </>

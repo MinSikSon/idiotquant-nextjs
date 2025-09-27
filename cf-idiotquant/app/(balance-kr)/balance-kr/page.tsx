@@ -13,6 +13,7 @@ import Auth from "@/components/auth";
 import InquireBalanceResult from "@/components/inquireBalanceResult";
 import NotFound from "@/app/not-found";
 import { CapitalTokenType, reqGetCapitalToken, selectCapitalToken } from "@/lib/features/algorithmTrade/algorithmTradeSlice";
+import { selectKakaoTatalState } from "@/lib/features/kakao/kakaoSlice";
 
 let DEBUG = false;
 
@@ -26,6 +27,8 @@ export default function BalanceKr() {
     const kiOrderCash: KoreaInvestmentOrderCash = useAppSelector(getKoreaInvestmentOrderCash);
 
     const kr_capital_token: CapitalTokenType = useAppSelector(selectCapitalToken);
+
+    const kakaoTotalState = useAppSelector(selectKakaoTatalState);
 
     useEffect(() => {
         const isValidKiAccessToken = !!kiToken["access_token"];
@@ -50,7 +53,7 @@ export default function BalanceKr() {
         }
     }, [kr_capital_token])
 
-    if (false == !!kiToken["access_token"]) {
+    if ("fulfilled" != kakaoTotalState || false == !!kiToken["access_token"]) {
         return <>
             <Auth />
             <div className="dark:bg-black h-lvh"></div>
