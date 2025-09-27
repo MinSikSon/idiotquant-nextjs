@@ -57,6 +57,7 @@ export default function LoadKakaoTotal() {
                         }
                         else {
                             dispatch(setKakaoTotal(jsonPayload));
+                            dispatch(getCloudFlareUserInfo());
                         }
                     }
                 }
@@ -66,10 +67,10 @@ export default function LoadKakaoTotal() {
 
     useEffect(() => {
         callback();
-        dispatch(getCloudFlareUserInfo());
     }, []);
 
     useEffect(() => {
+        if (DEBUG) console.log(`[LoadKakaoTotal] cloudFlareUserInfo:`, cloudFlareUserInfo);
         callback();
     }, [cloudFlareUserInfo]);
 

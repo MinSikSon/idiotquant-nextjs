@@ -48,7 +48,6 @@ export default function Login(props: any) {
     }
 
     if (DEBUG) console.log(`[Login] kakaoTotal:`, kakaoTotal, `, undefined == kakaoTotal`, undefined == kakaoTotal);
-    if (DEBUG) console.log(`[Login] kakaoTotal:`, kakaoTotal, `, undefined == kakaoTotal`, undefined == kakaoTotal);
     const KakaoIcon = () => {
         if (undefined == kakaoTotal || kakaoTotal?.id == 0 || !!!kakaoTotal?.kakao_account?.profile?.nickname) {
             return <>
