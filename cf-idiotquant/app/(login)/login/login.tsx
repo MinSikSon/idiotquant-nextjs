@@ -8,7 +8,7 @@ import { useAppDispatch, useAppSelector } from "@/lib/hooks";
 import { DesignButton } from "@/components/designButton";
 import { KakaoTotal, selectKakaoTotal } from "@/lib/features/kakao/kakaoSlice";
 
-const DEBUG = false;
+const DEBUG = true;
 
 const redirectUrl = `${process.env.NEXT_PUBLIC_API_URL}/kakao-login`;
 const redirectLogoutUrl = `${process.env.NEXT_PUBLIC_API_URL}/kakao-logout`;
