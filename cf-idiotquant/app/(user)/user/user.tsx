@@ -6,7 +6,7 @@ import { Input, Textarea, Card, CardHeader, CardBody, CardFooter, Typography } f
 import { useAppDispatch, useAppSelector } from '@/lib/hooks';
 import Link from 'next/link';
 import { KakaoTotal, selectKakaoTotal } from '@/lib/features/kakao/kakaoSlice';
-import { getCloudFlareUserInfo, selectCloudflare, setCloudFlareUserInfo, UserInfo } from '@/lib/features/cloudflare/cloudflareSlice';
+import { selectCloudflare, setCloudFlareUserInfo, UserInfo } from '@/lib/features/cloudflare/cloudflareSlice';
 
 const DEBUG = false;
 
@@ -30,10 +30,6 @@ export default function User() {
 
     const [editing, setEditing] = useState(false);
     const [draft, setDraft] = useState<UserInfo>(user);
-    useEffect(() => {
-        if (DEBUG) console.log(`[User] getCloudFlareUserInfo cfUserInfo:`, cfUserInfo);
-        dispatch(getCloudFlareUserInfo());
-    }, []);
 
     useEffect(() => {
         if (DEBUG) console.log(`[User] cfUserInfo:`, cfUserInfo);

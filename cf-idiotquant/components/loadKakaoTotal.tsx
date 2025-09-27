@@ -6,6 +6,7 @@ import { verifyJWT } from "@/lib/jwt";
 import { clearCookie, getCookie } from "./util";
 import { KakaoTotal, setKakaoTotal } from "@/lib/features/kakao/kakaoSlice";
 import { useAppDispatch } from "@/lib/hooks";
+import { getCloudFlareUserInfo } from "@/lib/features/cloudflare/cloudflareSlice";
 
 const DEBUG = false;
 
@@ -65,6 +66,7 @@ export default function LoadKakaoTotal() {
         }
 
         callback();
+        dispatch(getCloudFlareUserInfo());
     }, []);
 
     return <></>;
