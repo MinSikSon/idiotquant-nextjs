@@ -12,7 +12,6 @@ const DEBUG = false;
 export default function UserPage(props: any) {
     const router = useRouter();
 
-
     return <>
         <div className="p-5">
             <User />
@@ -30,7 +29,6 @@ export default function UserPage(props: any) {
                             transition-all duration-150 [box-shadow:0_4px_0_0_#1e1e1e,0_8px_0_0_#1e1e1e41] border-b-[1px]
                             `}
             />
-            <LoadKakaoTotal />
         </div>
     </>
 }

@@ -138,6 +138,5 @@ export default function Auth() {
 
     return <>
         <Loading />
-        <LoadKakaoTotal />
     </>
 }

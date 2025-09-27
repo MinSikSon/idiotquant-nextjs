@@ -7,6 +7,7 @@ import { useAppDispatch, useAppSelector } from "@/lib/hooks";
 
 import { DesignButton } from "@/components/designButton";
 import { KakaoTotal, selectKakaoTotal } from "@/lib/features/kakao/kakaoSlice";
+import LoadKakaoTotal from "@/components/loadKakaoTotal";
 
 const DEBUG = true;
 
@@ -51,6 +52,7 @@ export default function Login(props: any) {
     const KakaoIcon = () => {
         if (undefined == kakaoTotal || kakaoTotal?.id == 0 || !!!kakaoTotal?.kakao_account?.profile?.nickname) {
             return <>
+                <LoadKakaoTotal />
                 <div className="p-5">
                     <div className="font-mono text-xl mb-2">
                         반갑습니다.
@@ -81,7 +83,6 @@ export default function Login(props: any) {
     return (
         <div className="w-full h-screen items-center dark:bg-black dark:text-white">
             <KakaoIcon />
-            <div></div>
         </div>
     );
 }
