@@ -44,6 +44,9 @@ export function KakaoFeed(props: DefaultProps) {
     const content = props.message.content;
     const itemContent = props.message.item_content;
     const social = props.message.social;
+    if (DEBUG) console.log(`[KakaoFeed] content:`, content);
+    if (DEBUG) console.log(`[KakaoFeed] itemContent:`, itemContent);
+    if (DEBUG) console.log(`[KakaoFeed] social:`, social);
 
     return (
         <Card className="w-full max-w-lg mx-auto shadow-xl rounded-2xl">

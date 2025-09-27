@@ -130,8 +130,8 @@ export default function ReportPage() {
         }
     }, [kiBalanceKr, kiBalanceUs, kakaoTotal]);
 
-    console.log(`[ReportPage] validCookie:`, validCookie);
-    console.log(`[ReportPage] kiToken["access_token"]:`, kiToken["access_token"], `, !!kiToken["access_token"]:`, !!kiToken["access_token"]);
+    if (DEBUG) console.log(`[ReportPage] validCookie:`, validCookie);
+    if (DEBUG) console.log(`[ReportPage] kiToken["access_token"]:`, kiToken["access_token"], `, !!kiToken["access_token"]:`, !!kiToken["access_token"]);
     if (false == validCookie || false == !!kiToken["access_token"]) {
         return <>
             <Auth />
@@ -139,13 +139,16 @@ export default function ReportPage() {
         </>
     }
 
-    console.log(`[ReportPage] Object.keys(kakaoTotal).length:`, Object.keys(kakaoTotal).length);
-    console.log(`[ReportPage] Object.keys(kakaoTotal).length === 0:`, Object.keys(kakaoTotal).length === 0);
+    if (DEBUG) console.log(`[ReportPage] Object.keys(kakaoTotal).length:`, Object.keys(kakaoTotal).length);
+    if (DEBUG) console.log(`[ReportPage] Object.keys(kakaoTotal).length === 0:`, Object.keys(kakaoTotal).length === 0);
     if (Object.keys(kakaoTotal).length === 0) {
         return <Login />;
     }
 
-    if (kiBalanceKr.state !== "fulfilled" || kiBalanceUs.state !== "fulfilled" || undefined == message) {
+    if (DEBUG) console.log(`[ReportPage] kiBalanceKr`, kiBalanceKr);
+    if (DEBUG) console.log(`[ReportPage] kiBalanceUs`, kiBalanceUs);
+    if (DEBUG) console.log(`[ReportPage] message`, message);
+    if (kiBalanceKr.state !== "fulfilled" || kiBalanceUs.state !== "fulfilled" || undefined == message || Object.keys(message).length === 0) {
         return <Loading />
     }
 
