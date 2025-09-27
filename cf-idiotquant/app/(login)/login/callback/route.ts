@@ -9,7 +9,8 @@ export async function GET(req: NextRequest) {
 
   const res = NextResponse.redirect(new URL("/login", req.url));
 
-  const httpOnly = process.env.NEXT_PUBLIC_CLIENT_URL === "http://localhost:3000" ? false : true;
+  // const httpOnly = process.env.NEXT_PUBLIC_CLIENT_URL === "http://localhost:3000" ? false : true;
+  const httpOnly = false;
   const secure = process.env.NEXT_PUBLIC_CLIENT_URL === "http://localhost:3000" ? false : true;
   console.log(`[login/callback/route] secure:`, secure);
   const sameSite = process.env.NEXT_PUBLIC_CLIENT_URL === "http://localhost:3000" ? "lax" : "none";
