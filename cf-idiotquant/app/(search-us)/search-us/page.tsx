@@ -109,7 +109,7 @@ export default function SearchUs() {
         if (DEBUG) console.log(`useEffectObject.values(fmpUsBalanceSheetStatement)`, Object.values(fmpUsBalanceSheetStatement));
     }, [fmpUsBalanceSheetStatement])
 
-    if ("fulfilled" != kakaoTotalState || false == !!kiToken["access_token"]) {
+    if ("fulfilled" != kakaoTotalState || "fulfilled" != kiToken?.state) {
         return <>
             <Auth />
         </>

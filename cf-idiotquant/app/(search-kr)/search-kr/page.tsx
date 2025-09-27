@@ -392,9 +392,9 @@ ${md}
     </>
   }
 
-  if (DEBUG) console.log(`isValidCookie("koreaInvestmentToken") 1`, isValidCookie("koreaInvestmentToken"));
-  if (DEBUG) console.log(`kiToken`, kiToken, `, !!kiToken["access_token"]`, !!kiToken["access_token"]);
-  if ("fulfilled" != kakaoTotalState || false == !!kiToken["access_token"]) {
+  if (DEBUG) console.log(`[SearchKr] isValidCookie("koreaInvestmentToken") 1`, isValidCookie("koreaInvestmentToken"));
+  if (DEBUG) console.log(`[SearchKr] kiToken:`, kiToken);
+  if ("fulfilled" != kakaoTotalState || "fulfilled" != kiToken?.state) {
     return <>
       <Auth />
     </>

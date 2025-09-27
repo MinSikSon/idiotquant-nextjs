@@ -163,8 +163,8 @@ export default function Report() {
         }
     }, [kiBalanceKr, kiBalanceUs, kakaoTotal]);
 
-    if (DEBUG) console.log(`[Report] kiToken["access_token"]:`, kiToken["access_token"], `, !!kiToken["access_token"]:`, !!kiToken["access_token"]);
-    if ("fulfilled" != kakaoTotalState || false == !!kiToken["access_token"]) {
+    if (DEBUG) console.log(`[Report] kiToken:`, kiToken);
+    if ("fulfilled" != kakaoTotalState || "fulfilled" != kiToken?.state) {
         return <>
             <Auth />
             <div className="dark:bg-black h-lvh"></div>

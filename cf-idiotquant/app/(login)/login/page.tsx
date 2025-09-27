@@ -10,7 +10,7 @@ import { KakaoTotal, selectKakaoTatalState, selectKakaoTotal } from "@/lib/featu
 import Auth from "@/components/auth";
 import { getKoreaInvestmentToken, KoreaInvestmentToken } from "@/lib/features/koreaInvestment/koreaInvestmentSlice";
 
-const DEBUG = false;
+const DEBUG = true;
 
 export default function LoginPage() {
     const router = useRouter();
@@ -57,8 +57,8 @@ export default function LoginPage() {
         router.push(authorizeEndpoint);
     }
 
-    if (DEBUG) console.log(`kiToken`, kiToken, `, !!kiToken["access_token"]`, !!kiToken["access_token"]);
-    if ("fulfilled" != kakaoTotalState || false == !!kiToken["access_token"]) {
+    if (DEBUG) console.log(`kiToken`, kiToken);
+    if ("fulfilled" != kakaoTotalState || "fulfilled" != kiToken?.state) {
         return <>
             <Auth />
             <div className="dark:bg-black h-lvh"></div>

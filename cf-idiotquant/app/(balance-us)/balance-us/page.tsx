@@ -59,10 +59,9 @@ export default function BalanceUs() {
         }
     }, [us_capital_token])
 
-    if (DEBUG) console.log(`[BalanceUs]`, `validCookie`, validCookie);
-    if (DEBUG) console.log(`[BalanceUs]`, `kiToken["access_token"]`, kiToken["access_token"]);
-    if (DEBUG) console.log(`[BalanceUs]`, `!!kiToken["access_token"]`, !!kiToken["access_token"]);
-    if ("fulfilled" != kakaoTotalState || false == !!kiToken["access_token"]) {
+    if (DEBUG) console.log(`[BalanceUs] validCookie:`, validCookie);
+    if (DEBUG) console.log(`[BalanceUs] kiToken:`, kiToken);
+    if ("fulfilled" != kakaoTotalState || "fulfilled" != kiToken?.state) {
         return <>
             <Auth />
             <div className="dark:bg-black h-lvh"></div>
