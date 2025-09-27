@@ -30,11 +30,11 @@ export async function middleware(req: NextRequest) {
     ) {
         return NextResponse.next(); // login 없이 접근 허용
     }
-    if (
-        path === "/report"
-    ) {
-        return NextResponse.next(); // login 없이 접근 허용
-    }
+    // if (
+    //     path === "/report"
+    // ) {
+    //     return NextResponse.next(); // login 없이 접근 허용
+    // }
     if (
         path === "/"
         || path === "/search"

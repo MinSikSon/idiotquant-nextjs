@@ -52,6 +52,7 @@ export default function Login(props: any) {
                 if (true == !!result) {
                     if (true == result.valid) {
                         const payload: string = result.payload;
+                        if (DEBUG) console.log(`[Login] typeof payload:`, typeof payload, `, payload:`, payload);
                         if ('undefined' != payload) {
                             const jsonPayload: KakaoTotal = JSON.parse(payload);
                             if (DEBUG) console.log(`[Login] typeof jsonPayload:`, typeof jsonPayload, `, jsonPayload:`, jsonPayload);
@@ -83,9 +84,6 @@ export default function Login(props: any) {
                         }
                     }
                 }
-            }
-            else {
-                // dispatch(setKakaoTotal({} as KakaoTotal));
             }
         }
 
