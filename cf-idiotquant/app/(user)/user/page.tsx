@@ -5,18 +5,13 @@ import { useEffect, useState } from "react";
 import { Logout } from "./logout";
 import { useRouter } from "next/navigation";
 import User from "./user";
+import LoadKakaoTotal from "@/components/loadKakaoTotal";
 
 const DEBUG = false;
 
 export default function UserPage(props: any) {
     const router = useRouter();
 
-    const [windowLocationOrigin, setWindowLocationOrigin] = useState("");
-
-    useEffect(() => {
-        if (DEBUG) console.log(`[UserPage]`, `window.location.origin`, window.location.origin);
-        setWindowLocationOrigin(window.location.origin);
-    }, []);
 
     return <>
         <div className="p-5">
@@ -35,6 +30,7 @@ export default function UserPage(props: any) {
                             transition-all duration-150 [box-shadow:0_4px_0_0_#1e1e1e,0_8px_0_0_#1e1e1e41] border-b-[1px]
                             `}
             />
+            <LoadKakaoTotal />
         </div>
     </>
 }

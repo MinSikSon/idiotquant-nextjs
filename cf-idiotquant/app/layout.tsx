@@ -1,12 +1,7 @@
 import "@/app/global.css"
 import { StoreProvider } from "./StoreProvider"
 
-import dynamic from "next/dynamic"
-// import NavbarWithSimpleLinks from "@/components/navigation"
-const NavbarWithSimpleLinks = dynamic(
-  () => import("@/components/navigation"),
-  { ssr: false }
-);
+import NavbarWithSimpleLinks from "@/components/navigation"
 
 export const metadata = {
   title: 'idiotquant.com',
