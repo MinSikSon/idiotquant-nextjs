@@ -30,7 +30,7 @@ export default function LoginPage() {
 
     useEffect(() => {
         if (DEBUG) console.log(`[LoginPage] loginState:`, loginState);
-        if ("cf-need-retry" == loginState) {
+        if ("init" == kakaoTotalState && "cf-need-retry" == loginState) {
             dispatch(setCloudFlareLoginStatus());
         }
     }, [loginState]);
