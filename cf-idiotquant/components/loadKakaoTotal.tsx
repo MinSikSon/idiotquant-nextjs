@@ -8,7 +8,7 @@ import { KakaoTotal, setKakaoTotal } from "@/lib/features/kakao/kakaoSlice";
 import { useAppDispatch, useAppSelector } from "@/lib/hooks";
 import { getCloudFlareUserInfo, selectCloudflare } from "@/lib/features/cloudflare/cloudflareSlice";
 
-const DEBUG = true;
+const DEBUG = false;
 
 export default function LoadKakaoTotal() {
     const dispatch = useAppDispatch();

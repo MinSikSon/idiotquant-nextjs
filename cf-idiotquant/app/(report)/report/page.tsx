@@ -3,7 +3,6 @@
 import { KakaoMessage } from "@/lib/features/login/loginSlice";
 import { useAppDispatch, useAppSelector } from "@/lib/hooks";
 import { useEffect, useState } from "react";
-import Login from "@/app/(login)/login/login";
 import { getKoreaInvestmentBalance, getKoreaInvestmentToken, KoreaInvestmentBalance, KoreaInvestmentToken, reqGetInquireBalance } from "@/lib/features/koreaInvestment/koreaInvestmentSlice";
 import { getKoreaInvestmentUsMaretPresentBalance, KoreaInvestmentOverseasPresentBalance, reqGetOverseasStockTradingInquirePresentBalance } from "@/lib/features/koreaInvestmentUsMarket/koreaInvestmentUsMarketSlice";
 import Auth from "@/components/auth";
@@ -13,7 +12,7 @@ import Loading from "@/components/loading";
 import { KakaoTotal, selectKakaoTotal } from "@/lib/features/kakao/kakaoSlice";
 import { queryTimestampList, selectTimestampList } from "@/lib/features/timestamp/timestampSlice";
 
-const DEBUG = true;
+const DEBUG = false;
 
 export default function Report() {
     const dispatch = useAppDispatch();
@@ -151,10 +150,6 @@ export default function Report() {
 
     if (DEBUG) console.log(`[Report] Object.keys(kakaoTotal).length:`, Object.keys(kakaoTotal).length);
     if (DEBUG) console.log(`[Report] Object.keys(kakaoTotal).length === 0:`, Object.keys(kakaoTotal).length === 0);
-    if (Object.keys(kakaoTotal).length === 0 || kakaoTotal?.id == 0) {
-        return <Login />;
-    }
-
     if (DEBUG) console.log(`[Report] kiBalanceKr`, kiBalanceKr);
     if (DEBUG) console.log(`[Report] kiBalanceUs`, kiBalanceUs);
     if (DEBUG) console.log(`[Report] message`, message);
