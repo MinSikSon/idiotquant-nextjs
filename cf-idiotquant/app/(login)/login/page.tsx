@@ -1,4 +1,4 @@
-"use client"
+"use client";
 
 import { useEffect } from "react";
 import { useRouter } from "next/navigation";
@@ -9,6 +9,7 @@ import { DesignButton } from "@/components/designButton";
 import { KakaoTotal, selectKakaoTatalState, selectKakaoTotal } from "@/lib/features/kakao/kakaoSlice";
 import Auth from "@/components/auth";
 import { getKoreaInvestmentToken, KoreaInvestmentToken } from "@/lib/features/koreaInvestment/koreaInvestmentSlice";
+import LoadKakaoTotal from "@/components/loadKakaoTotal";
 
 const DEBUG = true;
 
@@ -30,6 +31,10 @@ export default function LoginPage() {
     useEffect(() => {
         if (DEBUG) console.log(`[LoginPage] loginState:`, loginState);
     }, [loginState]);
+
+    useEffect(() => {
+        if (DEBUG) console.log(`[LoginPage] loginState:`, loginState);
+    }, [loginState]);
     useEffect(() => {
         if (DEBUG) console.log(`[LoginPage] kakaoTotal:`, kakaoTotal);
         if (undefined == kakaoTotal || kakaoTotal?.id == 0 || !!!kakaoTotal?.kakao_account?.profile?.nickname) {
@@ -46,6 +51,12 @@ export default function LoginPage() {
     }, [kakaoTotal]);
 
     useEffect(() => {
+        if (DEBUG) console.log(`[LoginPage] kiToken:`, kiToken);
+        if ("fulfilled" == kiToken?.state) {
+            if (DEBUG) console.log(`[LoginPage] kiToken?.state:`, kiToken?.state);
+        }
+    }, [kiToken]);
+    useEffect(() => {
         if (DEBUG) console.log(`[LoginPage] kakaoTotalState:`, kakaoTotalState);
     }, [kakaoTotalState]);
 
@@ -57,8 +68,7 @@ export default function LoginPage() {
         router.push(authorizeEndpoint);
     }
 
-    if (DEBUG) console.log(`kiToken`, kiToken);
-    if ("fulfilled" != kakaoTotalState || "fulfilled" != kiToken?.state) {
+    if ("fulfilled" != kiToken?.state) {
         return <>
             <Auth />
             <div className="dark:bg-black h-lvh"></div>
@@ -69,6 +79,7 @@ export default function LoginPage() {
     const KakaoIcon = () => {
         if (undefined == kakaoTotal || kakaoTotal?.id == 0 || !!!kakaoTotal?.kakao_account?.profile?.nickname) {
             return <>
+                {("cf-login" == loginState) && <LoadKakaoTotal />}
                 <div className="p-5">
                     <div className="font-mono text-xl mb-2">
                         반갑습니다.

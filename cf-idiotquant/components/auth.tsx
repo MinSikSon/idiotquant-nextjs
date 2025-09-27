@@ -10,15 +10,12 @@ import { getKoreaInvestmentApproval, getKoreaInvestmentToken, getKoreaInvestment
 import { useAppDispatch, useAppSelector } from "@/lib/hooks";
 import { useState, useEffect } from "react";
 
-import { usePathname } from "next/navigation";
 import Loading from "@/components/loading";
 import LoadKakaoTotal from "./loadKakaoTotal";
 
-const DEBUG = false;
+const DEBUG = true;
 
 export default function Auth() {
-    const pathname = usePathname();
-
     const dispatch = useAppDispatch();
     const kiApproval: KoreaInvestmentApproval = useAppSelector(getKoreaInvestmentApproval);
     const kiToken: KoreaInvestmentToken = useAppSelector(getKoreaInvestmentToken);
@@ -32,7 +29,6 @@ export default function Auth() {
 
     const [complete, setComplete] = useState<boolean>(false);
     const [step, setStep] = useState<number>(0);
-    const [validCookie, setValidCookie] = useState<any>(false);
     useEffect(() => {
         if (DEBUG) console.log(`[Auth]`, `kiApproval:`, kiApproval);
         if (DEBUG) console.log(`[Auth]`, `kiToken:`, kiToken);
@@ -40,19 +36,15 @@ export default function Auth() {
         if (DEBUG) console.log(`[Auth]`, `kiInquirePrice:`, kiInquirePrice);
         if (DEBUG) console.log(`[Auth]`, `kiInquireDailyItemChartPrice:`, kiInquireDailyItemChartPrice);
         if (DEBUG) console.log(`[Auth]`, `kiBalanceSheet:`, kiBalanceSheet);
-
-        if (DEBUG) console.log(`[Auth]`, `validCookie:`, validCookie);
-        if (false == validCookie) {
-            setValidCookie(isValidCookie("koreaInvestmentToken"));
-        }
+        if (DEBUG) console.log(`[Auth]`, `complete:`, complete);
     }, []);
 
     function reload(seq: any) {
         if (DEBUG) console.log(`[Auth]`, seq, `- 0`, `complete:`, complete);
         if (DEBUG) console.log(`[Auth]`, seq, `- 0`, `step:`, step);
-        if (true == complete) {
-            return;
-        }
+        // if (true == complete) {
+        //     return;
+        // }
         // if (DEBUG) console.log(`[Auth]`, `loginState`, loginState);
         // if ("init" == loginState){
         //     if (DEBUG) console.log(`[Auth]`, seq, `- 1`, `loginState:`, loginState);
@@ -68,15 +60,18 @@ export default function Auth() {
 
         const isValidKiAccessToken = !!kiToken["access_token"];
         if (DEBUG) console.log(`[Auth]`, seq, `- 3`, `kiApproval:`, kiApproval, `kiToken:`, kiToken, `isValidKiAccessToken:`, isValidKiAccessToken);
-        if ("init" == kiBalance.state && "" != kiToken["access_token"]) {
+        if (DEBUG) console.log(`[Auth]`, seq, `- 3`, `kiBalance:`, kiBalance);
+        if ("init" == kiBalance.state && "fulfilled" != kiToken?.state) {
             // if (true == isValidKiAccessToken) {
             dispatch(reqGetInquireBalance(kiToken));
             setStep(2);
             return;
         }
 
-        if (false == validCookie) {
-            if ("init" == kiBalance.state && "init" == kiToken.state && false == isValidKiAccessToken) {
+        const isValidCookieKoreaInvestmentToken = isValidCookie("koreaInvestmentToken");
+        if (DEBUG) console.log(`[Auth]`, seq, `- 4`, `isValidCookieKoreaInvestmentToken:`, isValidCookieKoreaInvestmentToken);
+        if (false == isValidCookieKoreaInvestmentToken) {
+            if ("fulfilled" != kiBalance.state && "init" == kiToken.state && false == isValidKiAccessToken) {
                 if (DEBUG) console.log(`[Auth]`, seq, `- 4`, `dispatch(reqPostToken())`);
                 dispatch(reqPostToken()); // NOTE: 1분에 한 번씩만 token 발급 가능
                 return;
@@ -94,6 +89,7 @@ export default function Auth() {
         }
 
         const cookieKoreaInvestmentToken = getCookie("koreaInvestmentToken");
+        if (DEBUG) console.log(`[Auth]`, seq, `- 6`, `cookieKoreaInvestmentToken:`, cookieKoreaInvestmentToken);
         const jsonCookieKoreaInvestmentToken = JSON.parse(cookieKoreaInvestmentToken);
         if (DEBUG) console.log(`[Auth]`, seq, `- 6`, `jsonCookieKoreaInvestmentToken:`, jsonCookieKoreaInvestmentToken);
         const json: KoreaInvestmentToken = jsonCookieKoreaInvestmentToken;
@@ -114,6 +110,7 @@ export default function Auth() {
         if (DEBUG) console.log(`[Auth]`, seq, `- 10`, `kiInquireDailyItemChartPrice:`, kiInquireDailyItemChartPrice);
         if (DEBUG) console.log(`[Auth]`, seq, `- 11`, `kiBalanceSheet:`, kiBalanceSheet);
 
+        console.log(`[Auth]`, seq, `- 12`, `complete`, complete);
         if (false == complete) {
             setStep(5);
             setComplete(true);
@@ -133,11 +130,13 @@ export default function Auth() {
         reload('4');
     }, [kiBalance]);
     useEffect(() => {
-        reload('5');
-    }, [validCookie]);
+        if (DEBUG) console.log(`[Auth] kiToken:`, kiToken);
+        if ("fulfilled" == kiToken?.state) {
+            // registerCookie("authToken", kiToken.access_token);
+        }
+    }, [kiToken]);
 
     return <>
         <Loading />
-        <LoadKakaoTotal />
     </>
 }

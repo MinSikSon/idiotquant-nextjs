@@ -70,7 +70,9 @@ interface LoginInfo {
     | "get-rejected"
     | "loading" | "loaded" | "rejected"
     | "kakao"
-    | "cf";
+    | "cf"
+    | "cf-login"
+    | "cf-logout";
     kakaoAuthCode: string;
     kakaoMessageResponse: KakaoMessageResponse;
 }
@@ -108,7 +110,7 @@ export const loginSlice = createAppSlice({
 
                     }
                     else {
-                        state.state = "cf";
+                        state.state = "cf-login";
                     }
                 },
                 rejected: (state) => {
@@ -128,7 +130,7 @@ export const loginSlice = createAppSlice({
                 },
                 fulfilled: (state, action) => {
                     console.log(`[setCloudFlareLogoutStatus] fulfilled`, `typeof action.payload:`, typeof action.payload, `action.payload:`, action.payload);
-                    state.state = "cf";
+                    state.state = "cf-logout";
                     // state.id = action.payload['id'];
                     // state.nickName = action.payload['name'];
                     // state.info = action.payload['info'];
