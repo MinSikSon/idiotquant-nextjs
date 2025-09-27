@@ -58,7 +58,9 @@ export default function Report() {
         if (DEBUG) console.log(`[Report]`, `kiBalanceKr`, kiBalanceKr);
         if (DEBUG) console.log(`[Report]`, `kiBalanceUs`, kiBalanceUs);
         if (DEBUG) console.log(`[Report]`, `kakaoTotal`, kakaoTotal);
-        if (kiBalanceKr.state === "fulfilled" && kiBalanceUs.state === "fulfilled" && kakaoTotal?.id != 0) {
+        if (DEBUG) console.log(`[Report]`, `kakaoTotal`, timestampList);
+
+        if (kiBalanceKr.state === "fulfilled" && kiBalanceUs.state === "fulfilled" && kakaoTotal?.id != 0 && timestampList?.state == "fulfilled") {
             const COUNTRY = {
                 eKR: 0,
                 eUS: 1,
@@ -72,6 +74,29 @@ export default function Report() {
                 Number(evlu_amt_smtl_amt[COUNTRY.eUS]) + Number(dnca_tot_amt[COUNTRY.eUS])
             ]; // 순자산
 
+            let date_diff = 0;
+            let prev_index = 0;
+            if (DEBUG) console.log(`[Report] timestampList.data.length:`, timestampList.data.length);
+            if (timestampList.data.length >= 8) {
+                prev_index = timestampList.data.length - 8;
+                date_diff = 7;
+            }
+            else if (timestampList.data.length >= 2) {
+                prev_index = timestampList.data.length - 2;
+                date_diff = 1;
+            }
+
+            const prev_total_income_diff = timestampList.data[prev_index].value?.item_content?.sum_op;
+            const parts = prev_total_income_diff.split("->");
+            let prev_total_income = ""; // 총 수익률 (%)
+            if (parts.length == 2) {
+                prev_total_income = parts[1];
+            }
+            else {
+                prev_total_income = prev_total_income_diff; // 총 수익률 (%)
+            }
+            let latest_total_income = `${((evlu_amt_smtl_amt[COUNTRY.eKR] + evlu_amt_smtl_amt[COUNTRY.eUS]) / (pchs_amt_smtl_amt[COUNTRY.eKR] + pchs_amt_smtl_amt[COUNTRY.eUS]) * 100 - 100).toFixed(2)}%`; // 총 수익률 (%)
+            let total_income = `${prev_total_income}(${date_diff}d ago) -> ${latest_total_income}`; // 총 수익률 (%)
             const newMessage: KakaoMessage = {
                 object_type: "feed",
                 content: {
@@ -102,7 +127,7 @@ export default function Report() {
                         { item: "US 순자산", item_op: `${Util.UnitConversion(nass_amt[COUNTRY.eUS], true)}` },
                     ],
                     sum: "총 수익률 (%)",
-                    sum_op: `${((evlu_amt_smtl_amt[COUNTRY.eKR] + evlu_amt_smtl_amt[COUNTRY.eUS]) / (pchs_amt_smtl_amt[COUNTRY.eKR] + pchs_amt_smtl_amt[COUNTRY.eUS]) * 100 - 100).toFixed(2)}%`,
+                    sum_op: total_income,
                     // TODO: 지난주 대비 수익률
                     // TODO: 각 장 지수대비 수익률
                     // TODO: report page 들어오면 더 자세한 정보 볼 수 있도록..!
