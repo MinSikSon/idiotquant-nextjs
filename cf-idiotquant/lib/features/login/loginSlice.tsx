@@ -72,6 +72,7 @@ interface LoginInfo {
     | "kakao"
     | "cf"
     | "cf-login"
+    | "cf-need-retry"
     | "cf-logout";
     kakaoAuthCode: string;
     kakaoMessageResponse: KakaoMessageResponse;
@@ -107,7 +108,7 @@ export const loginSlice = createAppSlice({
                     // NOTE: get cookie (cf_token)
                     const msg = action.payload.msg;
                     if ("need kakao login" == msg) {
-
+                        state.state = "cf-need-retry";
                     }
                     else {
                         state.state = "cf-login";
