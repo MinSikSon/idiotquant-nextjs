@@ -12,6 +12,7 @@ import { useState, useEffect } from "react";
 
 import { usePathname } from "next/navigation";
 import Loading from "@/components/loading";
+import LoadKakaoTotal from "./loadKakaoTotal";
 
 const DEBUG = false;
 
@@ -137,5 +138,6 @@ export default function Auth() {
 
     return <>
         <Loading />
+        <LoadKakaoTotal />
     </>
 }

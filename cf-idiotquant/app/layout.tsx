@@ -7,11 +7,6 @@ const NavbarWithSimpleLinks = dynamic(
   () => import("@/components/navigation"),
   { ssr: false }
 );
-// import LoadKakaoTotal from "@/components/loadKakaoTotal"
-const LoadKakaoTotal = dynamic(
-  () => import("@/components/loadKakaoTotal"),
-  { ssr: false }
-);
 
 export const metadata = {
   title: 'idiotquant.com',
@@ -31,7 +26,6 @@ export default function RootLayout({
         <head>
         </head>
         <body className="md:flex lg:flex">
-          <LoadKakaoTotal />
           <NavbarWithSimpleLinks />
           <div className="pt-28 md:flex-1 lg:flex-1 w-full h-full scroll-auto dark:bg-black">
             {children}
