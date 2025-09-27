@@ -9,7 +9,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { useEffect } from "react";
 
-const DEBUG = true;
+const DEBUG = false;
 
 interface DefaultProps {
     message: KakaoMessage;

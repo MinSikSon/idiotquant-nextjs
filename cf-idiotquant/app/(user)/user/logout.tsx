@@ -1,7 +1,7 @@
 import { clearCookie } from "@/components/util";
 import { AppRouterInstance } from "next/dist/shared/lib/app-router-context.shared-runtime";
 
-const DEBUG = true;
+const DEBUG = false;
 
 export function Logout(router: AppRouterInstance) {
     if (DEBUG) console.log(`[Logout]`);
