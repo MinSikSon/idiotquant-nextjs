@@ -5,15 +5,12 @@ import { reqPostApprovalKey, reqPostToken, reqGetInquireBalance, KoreaInvestment
 import { KoreaInvestmentApproval, KoreaInvestmentToken, KoreaInvestmentBalance } from "@/lib/features/koreaInvestment/koreaInvestmentSlice";
 import { setKoreaInvestmentToken } from "@/lib/features/koreaInvestment/koreaInvestmentSlice";
 import { getKoreaInvestmentApproval, getKoreaInvestmentToken, getKoreaInvestmentBalance } from "@/lib/features/koreaInvestment/koreaInvestmentSlice";
-// import { selectLoginState } from "@/lib/features/login/loginSlice";
-
 import { useAppDispatch, useAppSelector } from "@/lib/hooks";
 import { useState, useEffect } from "react";
 
 import Loading from "@/components/loading";
-import LoadKakaoTotal from "./loadKakaoTotal";
 
-const DEBUG = true;
+const DEBUG = false;
 
 export default function Auth() {
     const dispatch = useAppDispatch();
@@ -42,15 +39,6 @@ export default function Auth() {
     function reload(seq: any) {
         if (DEBUG) console.log(`[Auth]`, seq, `- 0`, `complete:`, complete);
         if (DEBUG) console.log(`[Auth]`, seq, `- 0`, `step:`, step);
-        // if (true == complete) {
-        //     return;
-        // }
-        // if (DEBUG) console.log(`[Auth]`, `loginState`, loginState);
-        // if ("init" == loginState){
-        //     if (DEBUG) console.log(`[Auth]`, seq, `- 1`, `loginState:`, loginState);
-        //     return;
-        // }
-
         if (DEBUG) console.log(`[Auth]`, seq, `- 2`, `kiApproval.state:`, kiApproval.state);
         if ("init" == kiApproval.state) {
             dispatch(reqPostApprovalKey());
@@ -110,7 +98,7 @@ export default function Auth() {
         if (DEBUG) console.log(`[Auth]`, seq, `- 10`, `kiInquireDailyItemChartPrice:`, kiInquireDailyItemChartPrice);
         if (DEBUG) console.log(`[Auth]`, seq, `- 11`, `kiBalanceSheet:`, kiBalanceSheet);
 
-        console.log(`[Auth]`, seq, `- 12`, `complete`, complete);
+        if (DEBUG) console.log(`[Auth]`, seq, `- 12`, `complete`, complete);
         if (false == complete) {
             setStep(5);
             setComplete(true);

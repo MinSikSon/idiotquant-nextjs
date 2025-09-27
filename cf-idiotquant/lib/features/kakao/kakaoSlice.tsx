@@ -87,8 +87,12 @@ export const kakaoSlice = createAppSlice({
     name: "kakao",
     initialState,
     reducers: (create) => ({
+        setKakaoStatePending: create.reducer((state) => {
+            console.log(`[setKakaoStatePending]`);
+            state.state = "pending";
+        }),
         setKakaoTotal: create.reducer((state, action: PayloadAction<KakaoTotal>) => {
-            console.log(`[setKakaoAccount] typeof action.payload:`, typeof action.payload, `, action.payload:`, action.payload);
+            // console.log(`[setKakaoAccount] typeof action.payload:`, typeof action.payload, `, action.payload:`, action.payload);
             state.kakaoTotal = action.payload;
             state.state = "fulfilled";
         }),
@@ -99,5 +103,5 @@ export const kakaoSlice = createAppSlice({
     }
 });
 
-export const { setKakaoTotal } = kakaoSlice.actions;
+export const { setKakaoTotal, setKakaoStatePending } = kakaoSlice.actions;
 export const { selectKakaoTotal, selectKakaoTatalState } = kakaoSlice.selectors;

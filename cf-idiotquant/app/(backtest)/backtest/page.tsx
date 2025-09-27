@@ -286,7 +286,7 @@ export default function BackTest() {
         }
     }, [kiToken]);
 
-    if ("fulfilled" != kakaoTotalState || "fulfilled" != kiToken?.state) {
+    if ("fulfilled" != kiToken?.state) {
         return <>
             <Auth />
         </>

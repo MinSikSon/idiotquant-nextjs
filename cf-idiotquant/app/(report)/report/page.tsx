@@ -1,6 +1,6 @@
 "use client";
 
-import { KakaoMessage } from "@/lib/features/login/loginSlice";
+import { KakaoMessage, selectLoginState } from "@/lib/features/login/loginSlice";
 import { useAppDispatch, useAppSelector } from "@/lib/hooks";
 import { useEffect, useState } from "react";
 import { getKoreaInvestmentBalance, getKoreaInvestmentToken, KoreaInvestmentBalance, KoreaInvestmentToken, reqGetInquireBalance } from "@/lib/features/koreaInvestment/koreaInvestmentSlice";
@@ -11,6 +11,7 @@ import { KakaoFeed, SendKakaoMessage } from "./report";
 import Loading from "@/components/loading";
 import { KakaoTotal, selectKakaoTatalState, selectKakaoTotal } from "@/lib/features/kakao/kakaoSlice";
 import { queryTimestampList, selectTimestampList } from "@/lib/features/timestamp/timestampSlice";
+import LoadKakaoTotal from "@/components/loadKakaoTotal";
 
 const DEBUG = false;
 
@@ -25,22 +26,30 @@ export default function Report() {
     const timestampList = useAppSelector(selectTimestampList);
 
     const kakaoTotalState = useAppSelector(selectKakaoTatalState);
+    const loginState = useAppSelector(selectLoginState);
 
     const [message, setMessage] = useState<KakaoMessage>({} as KakaoMessage);
+    const [lock, setLock] = useState<boolean>(false);
     useEffect(() => {
         if (DEBUG) console.log(`[Report] isValidCookie("koreaInvestmentToken"):`, isValidCookie("koreaInvestmentToken"));
     }, []);
     useEffect(() => {
         if (DEBUG) console.log(`[Report] message`, message);
     }, [message]);
+    useEffect(() => {
+        if (DEBUG) console.log(`[Report] loginState`, loginState);
+    }, [loginState]);
 
     useEffect(() => {
-        const isValidKiAccessToken = !!kiToken["access_token"];
-        if (DEBUG) console.log(`[Report]`, `isValidKiAccessToken`, isValidKiAccessToken);
-        if (true == isValidKiAccessToken) {
-            dispatch(reqGetInquireBalance(kiToken));
-            dispatch(reqGetOverseasStockTradingInquirePresentBalance(kiToken));
-            dispatch(queryTimestampList("5"));
+        if (DEBUG) console.log(`[Report]`, `kiToken:`, kiToken);
+        if (false == lock) {
+            if ("fulfilled" == kiToken?.state) {
+                dispatch(reqGetInquireBalance(kiToken));
+                dispatch(reqGetOverseasStockTradingInquirePresentBalance(kiToken));
+                dispatch(queryTimestampList("5"));
+
+                setLock(true);
+            }
         }
     }, [kiToken]);
     useEffect(() => {
@@ -163,21 +172,31 @@ export default function Report() {
         }
     }, [kiBalanceKr, kiBalanceUs, kakaoTotal]);
 
+    useEffect(() => {
+        if (DEBUG) console.log(`[Report] kakaoTotal:`, kakaoTotal);
+        if (0 == kakaoTotal?.id) {
+
+        }
+    }, [kakaoTotal]);
+
     if (DEBUG) console.log(`[Report] kiToken:`, kiToken);
-    if ("fulfilled" != kakaoTotalState || "fulfilled" != kiToken?.state) {
+    if ("fulfilled" != kiToken?.state) {
         return <>
             <Auth />
             <div className="dark:bg-black h-lvh"></div>
         </>
     }
 
-    if (DEBUG) console.log(`[Report] Object.keys(kakaoTotal).length:`, Object.keys(kakaoTotal).length);
-    if (DEBUG) console.log(`[Report] Object.keys(kakaoTotal).length === 0:`, Object.keys(kakaoTotal).length === 0);
+
+    if (DEBUG) console.log(`[Report] loginState`, loginState);
     if (DEBUG) console.log(`[Report] kiBalanceKr`, kiBalanceKr);
     if (DEBUG) console.log(`[Report] kiBalanceUs`, kiBalanceUs);
     if (DEBUG) console.log(`[Report] message`, message);
     if (kiBalanceKr.state !== "fulfilled" || kiBalanceUs.state !== "fulfilled" || undefined == message || Object.keys(message).length === 0) {
-        return <Loading />
+        return <>
+            {("init" == kakaoTotalState) && <LoadKakaoTotal />}
+            <Loading />
+        </>
     }
 
     return <>

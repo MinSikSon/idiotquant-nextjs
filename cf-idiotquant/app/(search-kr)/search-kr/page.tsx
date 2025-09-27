@@ -394,7 +394,7 @@ ${md}
 
   if (DEBUG) console.log(`[SearchKr] isValidCookie("koreaInvestmentToken") 1`, isValidCookie("koreaInvestmentToken"));
   if (DEBUG) console.log(`[SearchKr] kiToken:`, kiToken);
-  if ("fulfilled" != kakaoTotalState || "fulfilled" != kiToken?.state) {
+  if ("fulfilled" != kiToken?.state) {
     return <>
       <Auth />
     </>

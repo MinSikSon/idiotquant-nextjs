@@ -53,7 +53,7 @@ export default function BalanceKr() {
         }
     }, [kr_capital_token])
 
-    if ("fulfilled" != kakaoTotalState || "fulfilled" != kiToken?.state) {
+    if ("fulfilled" != kiToken?.state) {
         return <>
             <Auth />
             <div className="dark:bg-black h-lvh"></div>

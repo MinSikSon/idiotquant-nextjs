@@ -61,7 +61,7 @@ export default function BalanceUs() {
 
     if (DEBUG) console.log(`[BalanceUs] validCookie:`, validCookie);
     if (DEBUG) console.log(`[BalanceUs] kiToken:`, kiToken);
-    if ("fulfilled" != kakaoTotalState || "fulfilled" != kiToken?.state) {
+    if ("fulfilled" != kiToken?.state) {
         return <>
             <Auth />
             <div className="dark:bg-black h-lvh"></div>
