@@ -1,6 +1,5 @@
 "use client"
 
-import Login from "@/app/(login)/login/login";
 import NotFound from "@/app/not-found";
 import Auth from "@/components/auth";
 import InquireBalanceResult from "@/components/inquireBalanceResult";
@@ -59,7 +58,7 @@ export default function BalanceUs() {
     if (DEBUG) console.log(`[BalanceUs]`, `validCookie`, validCookie);
     if (DEBUG) console.log(`[BalanceUs]`, `kiToken["access_token"]`, kiToken["access_token"]);
     if (DEBUG) console.log(`[BalanceUs]`, `!!kiToken["access_token"]`, !!kiToken["access_token"]);
-    if (false == validCookie || false == !!kiToken["access_token"]) {
+    if (false == !!kiToken["access_token"]) {
         return <>
             <Auth />
             <div className="dark:bg-black h-lvh"></div>
