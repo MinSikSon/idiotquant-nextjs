@@ -66,14 +66,23 @@ export default function Calculator() {
         const hoursPerYear = 365 * 24;
         const totalHours = years * hoursPerYear;
 
-        const safeCompounding = compounding > 0 ? compounding : InterestRateBenchmarkTermPerHour.eANNUALLY;
-        const safeFrequency = frequency > 0 ? frequency : ContributionRateBenchmarkTermPerHour.eMONTHLY;
+        const safeCompounding =
+            compounding > 0 ? compounding : InterestRateBenchmarkTermPerHour.eANNUALLY;
+        const safeFrequency =
+            frequency > 0 ? frequency : ContributionRateBenchmarkTermPerHour.eMONTHLY;
 
-        let principal = Number(investmentAmount);
+        let principal = Number(investmentAmount); // ✅ 초기 투자금
         let additional = 0;
         let cumulativeInvestment = Number(investmentAmount);
 
         const yearlySnapshots: ChartDataItem[] = [];
+
+        // ✅ 초기값을 첫 데이터로 추가
+        yearlySnapshots.push({
+            year: 0,
+            totalValue: principal, // 초기 투자금 그대로
+            profitRate: 0,         // 아직 수익률 없음
+        });
 
         for (let hour = 1; hour <= totalHours; hour++) {
             if (safeFrequency > 0 && hour % safeFrequency === 0) {
@@ -90,7 +99,10 @@ export default function Calculator() {
             if (hour % hoursPerYear === 0) {
                 const yearIndex = hour / hoursPerYear;
                 const totalValue = Math.round(principal + additional);
-                const profitRate = cumulativeInvestment > 0 ? (totalValue / cumulativeInvestment - 1) * 100 : 0;
+                const profitRate =
+                    cumulativeInvestment > 0
+                        ? (totalValue / cumulativeInvestment - 1) * 100
+                        : 0;
 
                 yearlySnapshots.push({
                     year: yearIndex,
@@ -104,7 +116,11 @@ export default function Calculator() {
 
         setTotalInvestment(Math.round(cumulativeInvestment));
         setFinalValue(finalTotal);
-        setFinalRateOfReturn(cumulativeInvestment === 0 ? 0 : Number(((finalTotal / cumulativeInvestment) * 100 - 100).toFixed(2)));
+        setFinalRateOfReturn(
+            cumulativeInvestment === 0
+                ? 0
+                : Number(((finalTotal / cumulativeInvestment) * 100 - 100).toFixed(2))
+        );
         setChartData(yearlySnapshots);
     };
 
@@ -172,7 +188,7 @@ export default function Calculator() {
                                 <Input type="number" value={interestRate} onChange={(e) => { removeLeftZero(e); setInterestRate(Number(e.target.value)); }} />
                             </div>
                             <div className="flex flex-col w-full">
-                                <Typography type="small" color="primary" className="font-mono text-[0.7rem] ml-2">추가 납입금 (원)</Typography>
+                                <Typography type="small" color="primary" className="font-mono text-[0.7rem] ml-2">추가 납입금 (원/매달)</Typography>
                                 <Input type="number" value={contributions} onChange={(e) => { removeLeftZero(e); setContributions(Number(e.target.value)); }} />
                             </div>
                             <div className="flex flex-col w-full">
