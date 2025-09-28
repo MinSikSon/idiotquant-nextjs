@@ -150,7 +150,7 @@ export default function Report() {
                     profile_text: `${kakaoTotal?.kakao_account?.profile?.nickname}님 오늘의 리포트 입니다.`,
                     profile_image_url: cfUserInfo?.avatarUrl ?? "https://encrypted-tbn3.gstatic.com/images?q=tbn:ANd9GcQC204t6uH7yxBhAKuLIDmnkoH889H4CltDoKCyx62wGyv0n1hVglreFD0DYT3evs4GNc0xxVGM2dVnyPoa4LNBmlNoS8y44LtHmIRUUk7C",
                     title_image_url: "https://encrypted-tbn1.gstatic.com/images?q=tbn:ANd9GcQ8PwlYqDGozO1pGQfRbVXN0O5N036AFzK8CtVJ1mya3u6xj_9ChpHQBsSWA6hboAyIssBaROErkwuv7E25GIRY2V6a--8sD-0CcO_LBoF-",
-                    title_image_text: "주간 부부투자",
+                    title_image_text: "요세미티 리트리버 투자클럽",
                     title_image_category: "리포트",
                     items: [
                         { item: "KR 평가/매입", item_op: `${Util.UnitConversion(evlu_amt_smtl_amt[COUNTRY.eKR], true)} / ${Util.UnitConversion(pchs_amt_smtl_amt[COUNTRY.eKR], true)} (${(evlu_amt_smtl_amt[COUNTRY.eKR] / pchs_amt_smtl_amt[COUNTRY.eKR] * 100 - 100).toFixed(2)}%)` },
