@@ -12,6 +12,7 @@ import Loading from "@/components/loading";
 import { KakaoTotal, selectKakaoTatalState, selectKakaoTotal } from "@/lib/features/kakao/kakaoSlice";
 import { queryTimestampList, selectTimestampList } from "@/lib/features/timestamp/timestampSlice";
 import LoadKakaoTotal from "@/components/loadKakaoTotal";
+import { selectCloudflare, UserInfo } from "@/lib/features/cloudflare/cloudflareSlice";
 
 const DEBUG = false;
 
@@ -28,6 +29,9 @@ export default function Report() {
     const kakaoTotalState = useAppSelector(selectKakaoTatalState);
     const loginState = useAppSelector(selectLoginState);
 
+    const cfUserInfo: UserInfo = useAppSelector(selectCloudflare);
+
+
     const [message, setMessage] = useState<KakaoMessage>({} as KakaoMessage);
     const [lock, setLock] = useState<boolean>(false);
     useEffect(() => {
@@ -39,6 +43,9 @@ export default function Report() {
     useEffect(() => {
         if (DEBUG) console.log(`[Report] loginState`, loginState);
     }, [loginState]);
+    useEffect(() => {
+        if (DEBUG) console.log(`[Report] cfUserInfo`, cfUserInfo);
+    }, [cfUserInfo]);
 
     useEffect(() => {
         if (DEBUG) console.log(`[Report]`, `kiToken:`, kiToken);
@@ -69,9 +76,10 @@ export default function Report() {
         if (DEBUG) console.log(`[Report]`, `kiBalanceKr`, kiBalanceKr);
         if (DEBUG) console.log(`[Report]`, `kiBalanceUs`, kiBalanceUs);
         if (DEBUG) console.log(`[Report]`, `kakaoTotal`, kakaoTotal);
-        if (DEBUG) console.log(`[Report]`, `kakaoTotal`, timestampList);
+        if (DEBUG) console.log(`[Report]`, `timestampList`, timestampList);
+        if (DEBUG) console.log(`[Report]`, `cfUserInfo`, cfUserInfo);
 
-        if (kiBalanceKr.state === "fulfilled" && kiBalanceUs.state === "fulfilled" && kakaoTotal?.id != 0 && timestampList?.state == "fulfilled") {
+        if (kiBalanceKr.state === "fulfilled" && kiBalanceUs.state === "fulfilled" && kakaoTotal?.id != 0 && timestampList?.state == "fulfilled" && cfUserInfo?.state == "fulfilled") {
             const COUNTRY = {
                 eKR: 0,
                 eUS: 1,
@@ -128,7 +136,7 @@ export default function Report() {
                 content: {
                     title: `수익금:${Util.UnitConversion(evlu_amt_smtl_amt[COUNTRY.eKR] + evlu_amt_smtl_amt[COUNTRY.eUS] - pchs_amt_smtl_amt[COUNTRY.eKR] - pchs_amt_smtl_amt[COUNTRY.eUS], true)}`,
                     description: `매입금:${Util.UnitConversion(pchs_amt_smtl_amt[COUNTRY.eKR] + pchs_amt_smtl_amt[COUNTRY.eUS], true)}, 예수금:${Util.UnitConversion(dnca_tot_amt[COUNTRY.eKR] + dnca_tot_amt[COUNTRY.eUS], true)}`,
-                    image_url: "https://encrypted-tbn1.gstatic.com/images?q=tbn:ANd9GcQ8PwlYqDGozO1pGQfRbVXN0O5N036AFzK8CtVJ1mya3u6xj_9ChpHQBsSWA6hboAyIssBaROErkwuv7E25GIRY2V6a--8sD-0CcO_LBoF-",
+                    image_url: "https://cdn.pixabay.com/photo/2016/11/23/18/00/yosemite-national-park-1854097_1280.jpg",
                     image_width: 640,
                     image_height: 640,
                     link: {
@@ -140,8 +148,8 @@ export default function Report() {
                 },
                 item_content: {
                     profile_text: `${kakaoTotal?.kakao_account?.profile?.nickname}님 오늘의 리포트 입니다.`,
-                    profile_image_url: "https://encrypted-tbn3.gstatic.com/images?q=tbn:ANd9GcQC204t6uH7yxBhAKuLIDmnkoH889H4CltDoKCyx62wGyv0n1hVglreFD0DYT3evs4GNc0xxVGM2dVnyPoa4LNBmlNoS8y44LtHmIRUUk7C",
-                    title_image_url: "https://cdn.pixabay.com/photo/2016/11/23/18/00/yosemite-national-park-1854097_1280.jpg",
+                    profile_image_url: cfUserInfo?.avatarUrl ?? "https://encrypted-tbn3.gstatic.com/images?q=tbn:ANd9GcQC204t6uH7yxBhAKuLIDmnkoH889H4CltDoKCyx62wGyv0n1hVglreFD0DYT3evs4GNc0xxVGM2dVnyPoa4LNBmlNoS8y44LtHmIRUUk7C",
+                    title_image_url: "https://encrypted-tbn1.gstatic.com/images?q=tbn:ANd9GcQ8PwlYqDGozO1pGQfRbVXN0O5N036AFzK8CtVJ1mya3u6xj_9ChpHQBsSWA6hboAyIssBaROErkwuv7E25GIRY2V6a--8sD-0CcO_LBoF-",
                     title_image_text: "주간 부부투자",
                     title_image_category: "리포트",
                     items: [

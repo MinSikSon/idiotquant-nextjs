@@ -74,13 +74,13 @@ export function KakaoFeed(props: DefaultProps) {
                 {/* 아이템 리스트 */}
                 {itemContent && (
                     <div className="space-y-1">
-                        <div className="pt-1 pb-2 flex items-center gap-2 border-b">
+                        <div className="pt-0 pb-2 flex items-center gap-1 border-b">
                             <Image
                                 src={itemContent.profile_image_url}
                                 alt="profile"
-                                width={32}
-                                height={32}
-                                className="rounded-full"
+                                width={40}
+                                height={40}
+                                className="rounded-full object-cover h-8 w-8"
                             />
                             <span className="text-sm font-semibold">{itemContent.profile_text}</span>
                         </div>
