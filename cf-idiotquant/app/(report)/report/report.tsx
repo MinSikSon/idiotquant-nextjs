@@ -33,10 +33,18 @@ export function SendKakaoMessage(props: DefaultProps) {
     }, [timestamp]);
 
     return <>
-        <div className="flex flex-col dark:bg-black h-fit justify-center items-center">
-            <span className="text-gray-500">Report page is under construction...</span>
-            <Button onClick={onClick}>testSendKakaoMessage</Button>
-        </div>
+        <Card className="w-full max-w-lg mx-auto shadow-xl rounded-2xl">
+            {/* 이미지 */}
+            <CardHeader className="p-0">
+                <div className="rounded-t-2xl object-cover w-full">관리자</div>
+            </CardHeader>
+
+            {/* 텍스트 내용 */}
+            <CardBody className="space-y-1">
+                <span className="rounded-t-2xl object-cover w-full text-gray-500">금일 Report KV DB 등록 및 카카오 메시지 발송</span>
+                <Button onClick={onClick}>Send KakaoMessage Report</Button>
+            </CardBody>
+        </Card>
     </>
 }
 

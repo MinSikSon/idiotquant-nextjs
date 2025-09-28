@@ -215,7 +215,7 @@ export default function Report() {
     }
 
     return <>
-        {(kakaoTotal?.kakao_account?.profile?.nickname === process.env.NEXT_PUBLIC_MASTER) && <SendKakaoMessage message={message} />}
+        {(kakaoTotal?.kakao_account?.profile?.nickname === process.env.NEXT_PUBLIC_MASTER) && <div className="pb-2"><SendKakaoMessage message={message} /></div>}
         <KakaoFeed message={message} />
     </>
 }
