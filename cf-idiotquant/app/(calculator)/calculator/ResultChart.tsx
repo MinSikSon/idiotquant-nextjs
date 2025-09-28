@@ -1,5 +1,6 @@
 "use client";
 
+import { Util } from "@/components/util";
 import { FC } from "react";
 import {
     ResponsiveContainer,
@@ -47,7 +48,18 @@ const ResultChart: FC<ResultChartProps> = ({ data }) => {
                         tick={{ fontSize: 14, fill: "#333" }} // 글자 크기, 색상 변경
                     />
                     <Tooltip
-                        formatter={(value) => value.toLocaleString()}
+                        // formatter={(value) => value.toLocaleString()}
+                        formatter={(value: any, name: string) => {
+                            // value는 숫자, name은 <Line name="..."> 값
+                            if (typeof value === "number") {
+                                if (name.includes("수익률")) {
+                                    return [`${value > 0 ? ("+" + value.toFixed(2)) : (value.toFixed(2))} %`, name]; // 퍼센트 표시
+                                }
+                                return [`${value.toLocaleString()} 원 (${Util.UnitConversion(value, true)})`, name]; // 금액은 원 단위
+                            }
+                            return [value, name];
+                        }}
+                        labelFormatter={(label) => `투자 ${label}년차`} // X축 값(연도) 포맷
                     />
                     <Legend
                         layout="horizontal"
