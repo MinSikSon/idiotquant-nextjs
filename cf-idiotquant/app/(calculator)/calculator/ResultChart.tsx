@@ -28,12 +28,12 @@ const ResultChart: FC<ResultChartProps> = ({ data }) => {
 
     return (
         <div className="w-full h-96 bg-white dark:bg-gray-900 rounded-2xl shadow-md">
-            <h2 className="text-lg font-semibold dark:text-white">
+            <h2 className="pt-2 px-3 text-lg font-semibold dark:text-white">
                 연도별 수익 차트
             </h2>
             <ResponsiveContainer width="100%" height="100%">
                 <LineChart data={data}
-                    margin={{ top: 10, right: 0, bottom: 20, left: 10 }} // ← left 값 늘리기
+                    margin={{ top: 10, right: 0, bottom: 30, left: 10 }} // ← left 값 늘리기
                 >
                     <CartesianGrid strokeDasharray="3 3" />
                     <XAxis dataKey="year"
