@@ -27,7 +27,7 @@ const ResultChart: FC<ResultChartProps> = ({ data }) => {
     if (!data || data.length === 0) return null;
 
     return (
-        <div className="w-full h-96 bg-white dark:bg-gray-900 rounded-2xl shadow-md">
+        <div className="w-full h-96 bg-white dark:bg-gray-900 rounded-2xl">
             <h2 className="pt-2 px-3 text-lg font-semibold dark:text-white">
                 연도별 수익 차트
             </h2>

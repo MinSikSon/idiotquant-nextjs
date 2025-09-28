@@ -171,49 +171,57 @@ export default function Calculator() {
 
             <div className="md:flex lg:flex xl:flex 2xl:flex">
                 <Card className="max-w-lg mx-auto shadow-xl rounded-2xl">
-                    <CardHeader className="p-0"></CardHeader>
+                    {/* <CardHeader className="p-0"></CardHeader> */}
                     <CardBody className="space-y-4">
-                        <div className="flex flex-col gap-4">
+                        <div className="flex flex-col gap-1">
                             {/* 입력폼 */}
-                            <div className="flex flex-col w-full">
-                                <Typography type="small" color="primary" className="font-mono text-[0.7rem] ml-2">투자 시작 금액 (원)</Typography>
+                            <div className="w-full flex justify-between items-center">
+                                <Typography type="small" color="primary" className="font-mono text-[0.8rem] mx-4 min-w-28 text-right">투자 시작 금액</Typography>
                                 <Input type="number" value={investmentAmount} onChange={(e) => { removeLeftZero(e); setInvestmentAmount(Number(e.target.value)); }} />
+                                <Typography type="small" color="primary" className="font-mono text-[0.8rem] ml-2 min-w-8">(원)</Typography>
                             </div>
-                            <div className="flex flex-col w-full">
-                                <Typography type="small" color="primary" className="font-mono text-[0.7rem] ml-2">투자 기간 (년)</Typography>
+                            <div className="w-full flex justify-between items-center">
+                                <Typography type="small" color="primary" className="font-mono text-[0.8rem] mx-4 min-w-28 text-right">투자 기간</Typography>
                                 <Input type="number" value={numberOfYears} onChange={(e) => { removeLeftZero(e); setNumberOfYears(Number(e.target.value)); }} />
+                                <Typography type="small" color="primary" className="font-mono text-[0.8rem] ml-2 min-w-8">(년)</Typography>
                             </div>
-                            <div className="flex flex-col w-full">
-                                <Typography type="small" color="primary" className="font-mono text-[0.7rem] ml-2">연 이자율 (%)</Typography>
+                            <div className="w-full flex justify-between items-center">
+                                <Typography type="small" color="primary" className="font-mono text-[0.8rem] mx-4 min-w-28 text-right">연 이자율</Typography>
                                 <Input type="number" value={interestRate} onChange={(e) => { removeLeftZero(e); setInterestRate(Number(e.target.value)); }} />
+                                <Typography type="small" color="primary" className="font-mono text-[0.8rem] ml-2 min-w-8">(%)</Typography>
                             </div>
-                            <div className="flex flex-col w-full">
-                                <Typography type="small" color="primary" className="font-mono text-[0.7rem] ml-2">추가 납입금 (원/매달)</Typography>
+                            <div className="w-full flex justify-between items-center">
+                                <Typography type="small" color="primary" className="font-mono text-[0.8rem] mx-4 min-w-28 text-right">추가 납입금 (매달)</Typography>
                                 <Input type="number" value={contributions} onChange={(e) => { removeLeftZero(e); setContributions(Number(e.target.value)); }} />
+                                <Typography type="small" color="primary" className="font-mono text-[0.8rem] ml-2 min-w-8">(원)</Typography>
                             </div>
-                            <div className="flex flex-col w-full">
-                                <Typography type="small" color="primary" className="font-mono text-[0.7rem] ml-2">물가상승률 (%)</Typography>
+                            <div className="w-full flex justify-between items-center">
+                                <Typography type="small" color="primary" className="font-mono text-[0.8rem] mx-4 min-w-28 text-right">물가상승률</Typography>
                                 <Input type="number" value={inflationRate} onChange={(e) => { removeLeftZero(e); setInflationRate(Number(e.target.value)); }} />
+                                <Typography type="small" color="primary" className="font-mono text-[0.8rem] ml-2 min-w-8">(%)</Typography>
                             </div>
 
                             {/* 계산 결과 */}
-                            <div className="border-t py-2 px-6 rounded-lg border">
-                                <div className="w-full flex justify-between">
-                                    <Typography className="text-base text-right">최종 수입금:</Typography>
-                                    <Typography className="text-base text-right">{finalValue.toLocaleString()} 원</Typography>
+                            <div className="border-t py-1 pl-1 rounded-lg border">
+                                <div className="w-full flex justify-between items-center">
+                                    <Typography className="text-[0.8rem] mx-4 min-w-28 text-right">최종 수입금:</Typography>
+                                    <Typography className="text-base text-right min-w-28">{finalValue.toLocaleString()}</Typography>
+                                    <Typography className="text-[0.8rem] ml-2 min-w-8">원</Typography>
                                 </div>
-                                <div className="w-full flex justify-between">
-                                    <Typography className="text-base text-right">누적 투자금:</Typography>
-                                    <Typography className="text-base text-right">{totalInvestment.toLocaleString()} 원</Typography>
+                                <div className="w-full flex justify-between items-center">
+                                    <Typography className="text-[0.8rem] mx-4 min-w-28 text-right">누적 투자금:</Typography>
+                                    <Typography className="text-base text-right min-w-28">{totalInvestment.toLocaleString()}</Typography>
+                                    <Typography className="text-[0.8rem] ml-2 min-w-8">원</Typography>
                                 </div>
-                                <div className="w-full flex justify-between">
-                                    <Typography className="text-base text-right">최종 수익률:</Typography>
-                                    <Typography className="text-base text-right">{finalRateOfReturn.toFixed(2)} %</Typography>
+                                <div className="w-full flex justify-between items-center">
+                                    <Typography className="text-[0.8rem] mx-4 min-w-28 text-right">최종 수익률:</Typography>
+                                    <Typography className="text-base text-right min-w-28">{finalRateOfReturn.toFixed(2)}</Typography>
+                                    <Typography className="text-[0.8rem] ml-2 min-w-8">%</Typography>
                                 </div>
                             </div>
 
                             {/* 차트 */}
-                            <div className="pb-8 md:hidden">
+                            <div className="mb-4 md:hidden border rounded-md">
                                 <ResultChart data={chartData} />
                             </div>
                             {/* 히스토리 등록 버튼 */}
