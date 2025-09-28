@@ -1,431 +1,230 @@
-"use client"
+"use client";
 
-// code 출처 : https://reactjsexample.com/a-simple-calculator-app-built-using-tailwind-css-and-react-js/
-import { useState, useEffect } from "react";
-
-import { Input, Select, Typography } from "@material-tailwind/react";
-import { CalculationList } from "@/app/(calculator)/calculator/calculationList"
-import { DesignButton } from "@/components/designButton";
+import React, { useState, useEffect } from "react";
+import { Card, CardBody, CardHeader, Input, Typography } from "@material-tailwind/react";
 import { CalculatorIcon } from "@heroicons/react/24/outline";
+import ResultChart, { ChartDataItem } from "./ResultChart";
+import { DesignButton } from "@/components/designButton";
 
 export interface CalculationResult {
-    index: number,
-    investmentAmount: number,
-    numberOfYears: number,
-    interestRate: number,
-    compounding: number,
-    contributions: number,
-    frequency: number,
-    inflationRate: number,
-    totalInvestment: number,
-    totalValue: number,
-    finalRateOfReturn: number,
+    investmentAmount: number;
+    numberOfYears: number;
+    interestRate: number;
+    compounding: number;
+    contributions: number;
+    frequency: number;
+    inflationRate: number;
+    totalInvestment: number;
+    finalValue: number;
+    finalRateOfReturn: number;
+    chartData: ChartDataItem[];
 }
 
 export default function Calculator() {
-    useEffect(() => {
-        handleCalculate();
-    });
-
-    const InterestRateBenchmarkTermPerHour =
-    {
-        // eDAILY360: 1, //"(Daily 360/Yr)"
-        eDAILY365: 24,    // 365 day * 24 hour / 365 day = 24 hour
-        eMONTHLY: 730,    // 365 day * 24 hour / 12 month = 730 hour
-        eQUARTERLY: 2190, // 365 day * 24 hour / 4 quarter = 2190 hour
-        eANNUALLY: 8760,  // 365 day * 24 hour / 1 year = 8760 hour
-    }
+    const InterestRateBenchmarkTermPerHour = {
+        eDAILY365: 24,
+        eMONTHLY: 730,
+        eQUARTERLY: 2190,
+        eANNUALLY: 8760,
+    } as const;
 
     const ContributionRateBenchmarkTermPerHour = {
-        eWEEKLY: 168,         // 7 day * 24 hour = 168 hour
-        eBIWEEKLY: 336,       // 14 day * 24 hour = 336 hour
-        eSEMIMONTHLY: 1460,   // 365 day * 24 hour / 6 month = 1460 hour
-        eMONTHLY: 730,        // 365 day * 24 hour / 12 month = 730 hour
-        eQUARTERLY: 2190,     // 365 day * 24 hour / 4 quarter = 2190 hour
-        eSEMIANNUALLY: 17520, // 365 day * 24 hour / 2 year = 17520 hour
-        eANNUALLY: 8760,      // 365 day * 24 hour / 1 year = 8760 hour
-    }
+        eWEEKLY: 168,
+        eBIWEEKLY: 336,
+        eSEMIMONTHLY: 1460,
+        eMONTHLY: 730,
+        eQUARTERLY: 2190,
+        eSEMIANNUALLY: 17520,
+        eANNUALLY: 8760,
+    } as const;
 
-
-    const DEFAULT_INTEREST_RATE_BENCHMARK = InterestRateBenchmarkTermPerHour.eANNUALLY;
-    const DEFAULT_CONTRIBUTION_RATE_BENCHMARK = ContributionRateBenchmarkTermPerHour.eMONTHLY;
-
+    // 입력값 상태
     const [investmentAmount, setInvestmentAmount] = useState<number>(50000000);
-    const [totalInvestment, setTotalInvestment] = useState<number>(0);
-    const [finalRateOfReturn, setFinalRateOfReturn] = useState<number>(0);
-
     const [numberOfYears, setNumberOfYears] = useState<number>(12);
     const [interestRate, setInterestRate] = useState<number>(24);
-    const [compounding, setCompounding] = useState<number>(DEFAULT_INTEREST_RATE_BENCHMARK);
+    const [compounding, setCompounding] = useState<number>(InterestRateBenchmarkTermPerHour.eANNUALLY);
     const [contributions, setContributions] = useState<number>(3000000);
-    const [frequency, setFrequency] = useState<number>(DEFAULT_CONTRIBUTION_RATE_BENCHMARK);
+    const [frequency, setFrequency] = useState<number>(ContributionRateBenchmarkTermPerHour.eMONTHLY);
     const [inflationRate, setInflationRate] = useState<number>(3);
-    const [result, setResult] = useState<number>(0);
+
+    // 계산 결과
+    const [totalInvestment, setTotalInvestment] = useState<number>(0);
+    const [finalValue, setFinalValue] = useState<number>(0);
+    const [finalRateOfReturn, setFinalRateOfReturn] = useState<number>(0);
+    const [chartData, setChartData] = useState<ChartDataItem[]>([]);
+
+    // 히스토리
     const [resultList, setResultList] = useState<CalculationResult[]>([]);
 
-    const [interestRateBenchmarkFrequency, setInterestRateBenchmarkFrequency] = useState("");
-    const [interestRateBenchmarkCompound, setInterestRateBenchmarkCompound] = useState("");
-    function handleCalculateSampleData() {
-        setInvestmentAmount(Number(50000000) * 1);
-        setNumberOfYears(12);
-        setInterestRate(24);
-        setCompounding(DEFAULT_INTEREST_RATE_BENCHMARK);
-        setContributions(3000000);
-        setFrequency(DEFAULT_CONTRIBUTION_RATE_BENCHMARK);
-        setInflationRate(3);
-    }
-
-    function getInterestRateBenchmark(interestRateBenchmark: number) {
-        // console.log(`interestRateBenchmark`, interestRateBenchmark);
-        switch (interestRateBenchmark) {
-            case InterestRateBenchmarkTermPerHour.eDAILY365:
-                return "Daily (365/Yr)";
-            case InterestRateBenchmarkTermPerHour.eMONTHLY:
-                return "Monthly (12/Yr)";
-            case InterestRateBenchmarkTermPerHour.eQUARTERLY:
-                return "Quarterly (4/Yr)";
-            case InterestRateBenchmarkTermPerHour.eANNUALLY:
-                return "Annually (1/Yr)";
-            default:
-                return "Unknown";
-        }
-    }
-
-    function getContributeRateBenchmark(contributeRateBenchmark: number) {
-        // console.log(`interestRateBenchmark`, interestRateBenchmark);
-        switch (contributeRateBenchmark) {
-            case ContributionRateBenchmarkTermPerHour.eWEEKLY:
-                return "WEEKLY";
-            case ContributionRateBenchmarkTermPerHour.eBIWEEKLY:
-                return "BI-WEEKLY";
-            case ContributionRateBenchmarkTermPerHour.eSEMIMONTHLY:
-                return "SEMI-MONTHLY";
-            case ContributionRateBenchmarkTermPerHour.eMONTHLY:
-                return "MONTHLY";
-            case ContributionRateBenchmarkTermPerHour.eQUARTERLY:
-                return "QUARTERLY";
-            case ContributionRateBenchmarkTermPerHour.eSEMIANNUALLY:
-                return "SEMI-ANNUALLY";
-            case ContributionRateBenchmarkTermPerHour.eANNUALLY:
-                return "ANNUALLY";
-            default:
-                return "Unknown";
-        }
-    }
-
-    function handleCalculate() {
-        const numberOfDay = numberOfYears * 365;
-        const numberOfHour = numberOfDay * 24;
-
-        // 원금 수익 계산
-        let principalReturn = Number(investmentAmount);
-        let totalInvestmentReturn = principalReturn;
-        for (let i = 0; i <= numberOfHour; ++i) {
-            if (i > 0 && (0 == (i % compounding))) {
-                principalReturn = principalReturn * (1 + ((interestRate - inflationRate) / 100));
-            }
-        }
-
-        // 추가납입금 수익 계산
-        let additionalPaymentReturn = 0;
-        for (let i = 0; i <= numberOfHour; ++i) {
-            if (i > 0 && (0 == (i % compounding))) {
-                additionalPaymentReturn = additionalPaymentReturn * (1 + ((interestRate - inflationRate) / 100));
-            }
-
-            if (i > 0 && (0 == (i % frequency))) {
-                totalInvestmentReturn += Number(contributions);
-                additionalPaymentReturn += Number(contributions);
-            }
-        }
-
-        const totalValue: number = Number(principalReturn.toFixed(0)) + Number(additionalPaymentReturn.toFixed(0));
-        setResult(totalValue);
-        setTotalInvestment(totalInvestmentReturn);
-        setFinalRateOfReturn(0 == totalInvestmentReturn ? 0 : ((totalValue / totalInvestmentReturn) * 100 - 100));
-    }
-
-    function handleClear() {
-        setInvestmentAmount(Number(0) * 1);
-        setNumberOfYears(0);
-        setInterestRate(0);
-        setCompounding(DEFAULT_INTEREST_RATE_BENCHMARK);
-        setContributions(0);
-        setFrequency(DEFAULT_CONTRIBUTION_RATE_BENCHMARK);
-        setInflationRate(0);
-        setTotalInvestment(0);
-        setResult(0);
-        setFinalRateOfReturn(0);
-    }
-
-    function handleRegister() {
-        console.log(`resultList`, resultList);
-        const index = resultList.length;
-        let registerValue: CalculationResult = {
-            'index': index,
-            'investmentAmount': investmentAmount,
-            'numberOfYears': numberOfYears,
-            'interestRate': interestRate,
-            'compounding': compounding,
-            'contributions': contributions,
-            'frequency': frequency,
-            'inflationRate': inflationRate,
-            'totalInvestment': totalInvestment,
-            'totalValue': result,
-            'finalRateOfReturn': finalRateOfReturn,
-        }
-        console.log(`계산 결과 등록`, registerValue);
-
-        const NewResultList = [registerValue, ...resultList];
-        console.log(`NewResultList`, NewResultList);
-        setResultList(NewResultList);
-    }
-
-    function handleOnClickResultList(e: any, key: any) {
-        console.log(`[handleOnClickResultList]`, `e:`, e, `, key:`, key);
-
-        setInvestmentAmount(resultList[key].investmentAmount);
-        setNumberOfYears(resultList[key].numberOfYears);
-        setInterestRate(resultList[key].interestRate);
-        setCompounding(resultList[key].compounding);
-        setContributions(resultList[key].contributions);
-        setFrequency(resultList[key].frequency);
-        setInflationRate(resultList[key].inflationRate);
-
-        setResult(resultList[key].totalValue);
-    }
-
-    function removeLeftZero(e: any) {
+    const removeLeftZero = (e: React.ChangeEvent<HTMLInputElement>) => {
         e.target.value = (Number(e.target.value) * 1).toString();
-    }
+    };
+
+    // 계산 함수
+    const calculateResult = () => {
+        const years = Math.max(0, Math.floor(numberOfYears));
+        const hoursPerYear = 365 * 24;
+        const totalHours = years * hoursPerYear;
+
+        const safeCompounding = compounding > 0 ? compounding : InterestRateBenchmarkTermPerHour.eANNUALLY;
+        const safeFrequency = frequency > 0 ? frequency : ContributionRateBenchmarkTermPerHour.eMONTHLY;
+
+        let principal = Number(investmentAmount);
+        let additional = 0;
+        let cumulativeInvestment = Number(investmentAmount);
+
+        const yearlySnapshots: ChartDataItem[] = [];
+
+        for (let hour = 1; hour <= totalHours; hour++) {
+            if (safeFrequency > 0 && hour % safeFrequency === 0) {
+                additional += contributions;
+                cumulativeInvestment += contributions;
+            }
+
+            if (safeCompounding > 0 && hour % safeCompounding === 0) {
+                const netRate = (interestRate - inflationRate) / 100;
+                principal = principal * (1 + netRate);
+                additional = additional * (1 + netRate);
+            }
+
+            if (hour % hoursPerYear === 0) {
+                const yearIndex = hour / hoursPerYear;
+                const totalValue = Math.round(principal + additional);
+                const profitRate = cumulativeInvestment > 0 ? (totalValue / cumulativeInvestment - 1) * 100 : 0;
+
+                yearlySnapshots.push({
+                    year: yearIndex,
+                    totalValue,
+                    profitRate: Number(profitRate.toFixed(2)),
+                });
+            }
+        }
+
+        const finalTotal = Math.round(principal + additional);
+
+        setTotalInvestment(Math.round(cumulativeInvestment));
+        setFinalValue(finalTotal);
+        setFinalRateOfReturn(cumulativeInvestment === 0 ? 0 : Number(((finalTotal / cumulativeInvestment) * 100 - 100).toFixed(2)));
+        setChartData(yearlySnapshots);
+    };
+
+    // 입력값 변경 시 자동 계산
+    useEffect(() => {
+        calculateResult();
+    }, [investmentAmount, numberOfYears, interestRate, compounding, contributions, frequency, inflationRate]);
+
+    // 히스토리에 저장
+    const registerResult = () => {
+        const newResult: CalculationResult = {
+            investmentAmount,
+            numberOfYears,
+            interestRate,
+            compounding,
+            contributions,
+            frequency,
+            inflationRate,
+            totalInvestment,
+            finalValue,
+            finalRateOfReturn,
+            chartData,
+        };
+        setResultList([newResult, ...resultList]);
+    };
+
+    // 히스토리 클릭 시 복원
+    const loadHistory = (res: CalculationResult) => {
+        setInvestmentAmount(res.investmentAmount);
+        setNumberOfYears(res.numberOfYears);
+        setInterestRate(res.interestRate);
+        setCompounding(res.compounding);
+        setContributions(res.contributions);
+        setFrequency(res.frequency);
+        setInflationRate(res.inflationRate);
+        setTotalInvestment(res.totalInvestment);
+        setFinalValue(res.finalValue);
+        setFinalRateOfReturn(res.finalRateOfReturn);
+        setChartData(res.chartData);
+    };
 
     return (
         <div className="flex flex-col dark:bg-black h-full dark:text-white">
             <div className="text-2xl flex items-center justify-left gap-2 p-6 sm:p-8 md:p-10 lg:p-12 ">
                 <CalculatorIcon className="h-5 w-5" strokeWidth={2} />
-                <div>profit calculator</div>
+                <div>Profit Calculator</div>
             </div>
-            <div className="flex flex-col font-mono dark:bg-black dark:text-white">
-                <div className='flex flex-col px-4 py-0'>
-                    <div className="h-full border-gray-300 shadow-md">
-                        <div className="w-full m-1 mb-1">
-                            <form className="flex flex-col gap-1.5 m-4">
-                                <div className="gap-0">
-                                    <div className='flex justify-between my-0'>
-                                        <div className='text-base underline decoration-4 decoration-blue-500 dark:decoration-gray-500'>{'최종 수입금:'}</div>
-                                        <div className='text-xl text-right underline decoration-4 decoration-blue-500 dark:decoration-gray-500'>{' ' + result.toLocaleString('ko-KR', { maximumFractionDigits: 0 }) + ' 원'}</div>
-                                    </div>
-                                    <div className='flex justify-between my-0 py-0'>
-                                        <div className='text-md'>{'최종 수익률:'}</div>
-                                        <div className='text-xl text-right'>{' ' + Number(finalRateOfReturn).toFixed(2) + ' %'}</div>
-                                    </div>
-                                    <div className='flex justify-between my-0 py-0'>
-                                        <div className='text-base'>{'누적 투자금:'}</div>
-                                        <div className='text-xl text-right'>{' ' + totalInvestment.toLocaleString('ko-KR', { maximumFractionDigits: 0 }) + ' 원'}</div>
-                                    </div>
-                                </div>
-                                <div className="flex flex-col w-full">
-                                    <Typography type="small" color="primary" className="font-mono text-[0.7rem] ml-2">
-                                        투자 시작 금액: (원)
-                                    </Typography>
-                                    <div className='flex'>
-                                        <Input color="primary" placeholder="투자 시작 금액: (원)" type='number' onChange={(e) => { removeLeftZero(e); setInvestmentAmount(Number(e.target.value)); }} value={Number(investmentAmount) * 1} />
-                                        {!!investmentAmount ?
-                                            <>
-                                                <DesignButton
-                                                    handleOnClick={() => setInvestmentAmount(Number(0) * 1)}
-                                                    buttonName="CLEAR"
-                                                    buttonBgColor="bg-white"
-                                                    buttonBorderColor="border-gray-500"
-                                                    buttonShadowColor="#D5D5D5"
-                                                    textStyle="text-black text-xs font-bold"
-                                                    buttonStyle={`rounded-lg px-4 ml-2 flex items-center justify-center mb-2 button cursor-pointer select-none
-                                            active:translate-y-1 active:[box-shadow:0_0px_0_0_#D5D5D5,0_0px_0_0_#D5D5D541] active:border-[0px]
-                                            transition-all duration-150 [box-shadow:0_4px_0_0_#D5D5D5,0_8px_0_0_#D5D5D541] border-[1px]
-                                            `} />
-                                            </>
-                                            :
-                                            <></>}
-                                    </div>
-                                </div>
-                                <div className="flex flex-col w-full">
-                                    <Typography type="small" color="primary" className="font-mono text-[0.7rem] ml-2">
-                                        투자 기간: (년)
-                                    </Typography>
-                                    <div className='flex'>
-                                        <Input color="primary" placeholder="투자 기간: (년)" type='number' onChange={(e) => { removeLeftZero(e); setNumberOfYears(Number(e.target.value)); }} value={numberOfYears} />
-                                        {!!numberOfYears ? <>
-                                            <DesignButton
-                                                handleOnClick={() => setNumberOfYears(0)}
-                                                buttonName="CLEAR"
-                                                buttonBgColor="bg-white"
-                                                buttonBorderColor="border-gray-500"
-                                                buttonShadowColor="#D5D5D5"
-                                                textStyle="text-black text-xs font-bold"
-                                                buttonStyle={`rounded-lg px-4 ml-2 flex items-center justify-center mb-2 button cursor-pointer select-none
-                                            active:translate-y-1 active:[box-shadow:0_0px_0_0_#D5D5D5,0_0px_0_0_#D5D5D541] active:border-[0px]
-                                            transition-all duration-150 [box-shadow:0_4px_0_0_#D5D5D5,0_8px_0_0_#D5D5D541] border-[1px]
-                                            `} />
-                                        </>
-                                            : <></>}
-                                    </div>
-                                </div>
-                                <div className='flex-row border-4 border-blue-100 pt-1'>
-                                    <Typography type="small" color="primary" className="font-mono text-[0.7rem] ml-2">
-                                        복리
-                                    </Typography>
-                                    <Select color="error" value={String(compounding)} onValueChange={(value: any) => {
-                                        // console.log(`onValueChange setCompounding`, value);
-                                        setCompounding(Number(value));
-                                        setInterestRateBenchmarkCompound(getInterestRateBenchmark(Number(value)));
-                                    }}>
-                                        <Select.Trigger className="w-72" placeholder="복리" />
-                                        <Select.List>
-                                            <Select.Option value={String(InterestRateBenchmarkTermPerHour.eDAILY365)}>Daily (365/Yr)</Select.Option>
-                                            <Select.Option value={String(InterestRateBenchmarkTermPerHour.eMONTHLY)}>Monthly (12/Yr)</Select.Option>
-                                            <Select.Option value={String(InterestRateBenchmarkTermPerHour.eQUARTERLY)}>Quarterly (4/Yr)</Select.Option>
-                                            <Select.Option value={String(InterestRateBenchmarkTermPerHour.eANNUALLY)}>Annually (1/Yr)</Select.Option>
-                                        </Select.List>
-                                    </Select>
-                                    <div className='pt-2 flex flex-col w-full'>
-                                        <Typography type="small" color="primary" className="font-mono text-[0.7rem] ml-2">
-                                            {interestRateBenchmarkCompound} 이자율 (%)
-                                        </Typography>
-                                        <div className='flex'>
-                                            <Input color="error" placeholder={`${interestRateBenchmarkCompound} 이자율 (%)`} type='number' onChange={(e) => { removeLeftZero(e); setInterestRate(Number(e.target.value)); }} value={interestRate} />
-                                            {!!interestRate ?
-                                                <>
-                                                    <DesignButton
-                                                        handleOnClick={() => setInterestRate(0)}
-                                                        buttonName="CLEAR"
-                                                        buttonBgColor="bg-white"
-                                                        buttonBorderColor="border-gray-500"
-                                                        buttonShadowColor="#D5D5D5"
-                                                        textStyle="text-black text-xs font-bold"
-                                                        buttonStyle={`rounded-lg px-4 ml-2 flex items-center justify-center mb-2 button cursor-pointer select-none
-                                            active:translate-y-1 active:[box-shadow:0_0px_0_0_#D5D5D5,0_0px_0_0_#D5D5D541] active:border-[0px]
-                                            transition-all duration-150 [box-shadow:0_4px_0_0_#D5D5D5,0_8px_0_0_#D5D5D541] border-[1px]
-                                            `} />
-                                                </>
-                                                : <></>}
-                                        </div>
-                                    </div>
-                                </div>
-                                <div className='flex-row border-4  border-blue-100 pt-1'>
-                                    <Typography type="small" color="primary" className="font-mono text-[0.7rem] ml-2">
-                                        추가 납입금 납입 빈도
-                                    </Typography>
-                                    <Select color="info" value={String(frequency)} onValueChange={(value: any) => {
-                                        // console.log(`onValueChange setFrequency`, value);
-                                        setFrequency(Number(value));
-                                        setInterestRateBenchmarkFrequency(getContributeRateBenchmark(Number(value)));
-                                    }}>
-                                        <Select.Trigger className="w-72" placeholder="추가 납입금 납입 빈도" />
-                                        <Select.List>
-                                            <Select.Option value={String(ContributionRateBenchmarkTermPerHour.eWEEKLY)}>Weekly</Select.Option>
-                                            <Select.Option value={String(ContributionRateBenchmarkTermPerHour.eBIWEEKLY)}>Bi-Weekly</Select.Option>
-                                            <Select.Option value={String(ContributionRateBenchmarkTermPerHour.eSEMIMONTHLY)}>Semi-Monthly</Select.Option>
-                                            <Select.Option value={String(ContributionRateBenchmarkTermPerHour.eMONTHLY)}>Monthly</Select.Option>
-                                            <Select.Option value={String(ContributionRateBenchmarkTermPerHour.eQUARTERLY)}>Quarterly</Select.Option>
-                                            <Select.Option value={String(ContributionRateBenchmarkTermPerHour.eSEMIANNUALLY)}>Semi-Annually</Select.Option>
-                                            <Select.Option value={String(ContributionRateBenchmarkTermPerHour.eANNUALLY)}>Annually</Select.Option>
-                                        </Select.List>
-                                    </Select>
-                                    <div className="pt-2 flex flex-col w-full">
-                                        <Typography type="small" color="primary" className="font-mono text-[0.7rem] ml-2">
-                                            {interestRateBenchmarkFrequency} 추가 납입금
-                                        </Typography>
-                                        <div className='flex'>
-                                            <Input color="info" placeholder={`${interestRateBenchmarkFrequency} 추가 납입금`} type='number' onChange={(e) => { removeLeftZero(e); setContributions(Number(e.target.value)); }} value={contributions} />
-                                            {!!contributions ?
-                                                <>
-                                                    <DesignButton
-                                                        handleOnClick={() => setContributions(0)}
-                                                        buttonName="CLEAR"
-                                                        buttonBgColor="bg-white"
-                                                        buttonBorderColor="border-gray-500"
-                                                        buttonShadowColor="#D5D5D5"
-                                                        textStyle="text-black text-xs font-bold"
-                                                        buttonStyle={`rounded-lg px-4 ml-2 flex items-center justify-center mb-2 button cursor-pointer select-none
-                                            active:translate-y-1 active:[box-shadow:0_0px_0_0_#D5D5D5,0_0px_0_0_#D5D5D541] active:border-[0px]
-                                            transition-all duration-150 [box-shadow:0_4px_0_0_#D5D5D5,0_8px_0_0_#D5D5D541] border-[1px]
-                                            `} />
-                                                </>
-                                                : <></>}
-                                        </div>
-                                    </div>
-                                </div>
-                                <div className="flex flex-col w-full">
-                                    <Typography type="small" color="primary" className="font-mono text-[0.7rem] ml-2">
-                                        물가상승률 (%)
-                                    </Typography>
-                                    <div className='flex'>
-                                        <Input color="info" placeholder="물가상승률 (%)" type='number' onChange={(e) => { removeLeftZero(e); setInflationRate(Number(e.target.value)); }} value={inflationRate} />
-                                        {!!inflationRate ?
-                                            <>
-                                                <DesignButton
-                                                    handleOnClick={() => setInflationRate(0)}
-                                                    buttonName="CLEAR"
-                                                    buttonBgColor="bg-white"
-                                                    buttonBorderColor="border-gray-500"
-                                                    buttonShadowColor="#D5D5D5"
-                                                    textStyle="text-black text-xs font-bold"
-                                                    buttonStyle={`rounded-lg px-4 ml-2 flex items-center justify-center mb-2 button cursor-pointer select-none
-                                            active:translate-y-1 active:[box-shadow:0_0px_0_0_#D5D5D5,0_0px_0_0_#D5D5D541] active:border-[0px]
-                                            transition-all duration-150 [box-shadow:0_4px_0_0_#D5D5D5,0_8px_0_0_#D5D5D541] border-[1px]
-                                            `} />
-                                            </>
-                                            : <></>}
-                                    </div>
-                                </div>
-                                <div className="flex">
-                                    <DesignButton
-                                        handleOnClick={() => handleCalculateSampleData()}
-                                        buttonName="계산 예시"
-                                        buttonBgColor="bg-white"
-                                        buttonBorderColor="border-black"
-                                        buttonShadowColor="#D5D5D5"
-                                        textStyle="text-black text-xs font-bold"
-                                        buttonStyle={`rounded-lg px-4 ml-2 flex items-center justify-center mb-2 button cursor-pointer select-none
-                                            active:translate-y-1 active:[box-shadow:0_0px_0_0_#D5D5D5,0_0px_0_0_#D5D5D541] active:border-[0px]
-                                            transition-all duration-150 [box-shadow:0_4px_0_0_#D5D5D5,0_8px_0_0_#D5D5D541] border-[1px]
-                                            `}
-                                    />
-                                    <div className="flex-1 grid grid-cols-1">
-                                        <DesignButton
-                                            handleOnClick={() => handleClear()}
-                                            buttonName="ALL CLEAR"
-                                            buttonBgColor="bg-white"
-                                            buttonBorderColor="border-gray-500"
-                                            buttonShadowColor="#D5D5D5"
-                                            textStyle="text-black text-xs font-bold"
-                                            buttonStyle={`rounded-lg px-4 ml-2 flex items-center justify-center mb-2 button cursor-pointer select-none
-                                            active:translate-y-1 active:[box-shadow:0_0px_0_0_#D5D5D5,0_0px_0_0_#D5D5D541] active:border-[0px]
-                                            transition-all duration-150 [box-shadow:0_4px_0_0_#D5D5D5,0_8px_0_0_#D5D5D541] border-[1px]
-                                            `}
-                                        />
-                                    </div>
-                                </div>
-                                <DesignButton
-                                    handleOnClick={() => handleRegister()}
-                                    buttonName="계산 결과 등록 🦄"
-                                    buttonBgColor="bg-blue-500"
-                                    buttonBorderColor="border-gray-500"
-                                    buttonShadowColor="#D5D5D5"
-                                    textStyle="text-white text-xs pt-0.5 font-bold"
-                                    buttonStyle="rounded-lg p-4"
-                                />
-                            </form>
+
+            <Card className="w-full max-w-lg mx-auto shadow-xl rounded-2xl">
+                <CardHeader className="p-0"></CardHeader>
+                <CardBody className="space-y-4">
+                    <div className="flex flex-col gap-4">
+                        {/* 입력폼 */}
+                        <div className="flex flex-col w-full">
+                            <Typography type="small" color="primary" className="font-mono text-[0.7rem] ml-2">투자 시작 금액 (원)</Typography>
+                            <Input type="number" value={investmentAmount} onChange={(e) => { removeLeftZero(e); setInvestmentAmount(Number(e.target.value)); }} />
                         </div>
+                        <div className="flex flex-col w-full">
+                            <Typography type="small" color="primary" className="font-mono text-[0.7rem] ml-2">투자 기간 (년)</Typography>
+                            <Input type="number" value={numberOfYears} onChange={(e) => { removeLeftZero(e); setNumberOfYears(Number(e.target.value)); }} />
+                        </div>
+                        <div className="flex flex-col w-full">
+                            <Typography type="small" color="primary" className="font-mono text-[0.7rem] ml-2">연 이자율 (%)</Typography>
+                            <Input type="number" value={interestRate} onChange={(e) => { removeLeftZero(e); setInterestRate(Number(e.target.value)); }} />
+                        </div>
+                        <div className="flex flex-col w-full">
+                            <Typography type="small" color="primary" className="font-mono text-[0.7rem] ml-2">추가 납입금 (원)</Typography>
+                            <Input type="number" value={contributions} onChange={(e) => { removeLeftZero(e); setContributions(Number(e.target.value)); }} />
+                        </div>
+                        <div className="flex flex-col w-full">
+                            <Typography type="small" color="primary" className="font-mono text-[0.7rem] ml-2">물가상승률 (%)</Typography>
+                            <Input type="number" value={inflationRate} onChange={(e) => { removeLeftZero(e); setInflationRate(Number(e.target.value)); }} />
+                        </div>
+
+                        {/* 계산 결과 */}
+                        <div className="border-t py-2 px-6 rounded-lg border">
+                            <div className="w-full flex justify-between">
+                                <Typography className="text-base text-right">최종 수입금:</Typography>
+                                <Typography className="text-base text-right">{finalValue.toLocaleString()} 원</Typography>
+                            </div>
+                            <div className="w-full flex justify-between">
+                                <Typography className="text-base text-right">누적 투자금:</Typography>
+                                <Typography className="text-base text-right">{totalInvestment.toLocaleString()} 원</Typography>
+                            </div>
+                            <div className="w-full flex justify-between">
+                                <Typography className="text-base text-right">최종 수익률:</Typography>
+                                <Typography className="text-base text-right">{finalRateOfReturn.toFixed(2)} %</Typography>
+                            </div>
+                        </div>
+
+                        {/* 차트 */}
+                        <div className="pb-8">
+                            <ResultChart data={chartData} />
+                        </div>
+                        {/* 히스토리 등록 버튼 */}
+                        <DesignButton
+                            handleOnClick={registerResult}
+                            buttonName="계산 결과 등록 🦄"
+                            buttonBgColor="bg-blue-500"
+                            buttonBorderColor="border-gray-500"
+                            buttonShadowColor="#D5D5D5"
+                            textStyle="text-white text-xs pt-0.5 font-bold"
+                            buttonStyle="rounded-lg p-4"
+                        />
+
+                        {/* 히스토리 리스트 */}
+                        <div className="mt-4">
+                            <Typography className="font-bold text-sm">계산 결과 히스토리:</Typography>
+                            <ul className="list-disc list-inside">
+                                {resultList.map((res, idx) => (
+                                    <li key={idx} className="text-xs cursor-pointer hover:text-blue-400" onClick={() => loadHistory(res)}>
+                                        투자: {res.investmentAmount.toLocaleString()}원, 기간: {res.numberOfYears}년, 연 이자율: {res.interestRate}%, 물가상승률: {res.inflationRate}%, 누적 투자금: {res.totalInvestment.toLocaleString()}원, 최종: {res.finalValue.toLocaleString()}원 ({res.finalRateOfReturn.toFixed(2)}%)
+                                    </li>
+                                ))}
+                            </ul>
+                        </div>
+
                     </div>
-                </div>
-                <CalculationList
-                    resultList={resultList}
-                    handleOnClickResultList={handleOnClickResultList}
-                    getInterestRateBenchmark={getInterestRateBenchmark}
-                    getContributeRateBenchmark={getContributeRateBenchmark}
-                />
-            </div>
+                </CardBody>
+            </Card>
         </div>
     );
 }

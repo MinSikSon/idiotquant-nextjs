@@ -29,6 +29,7 @@
     "react-day-picker": "^9.6.2",
     "react-dom": "^18",
     "react-markdown": "^10.1.0",
+    "recharts": "^3.2.1",
     "rehype-highlight": "^7.0.2",
     "rehype-katex": "^7.0.1",
     "rehype-raw": "^7.0.0",
