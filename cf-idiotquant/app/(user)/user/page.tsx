@@ -1,11 +1,9 @@
 "use client";
 
 import { DesignButton } from "@/components/designButton";
-import { useEffect, useState } from "react";
 import { Logout } from "./logout";
 import { useRouter } from "next/navigation";
 import User from "./user";
-import LoadKakaoTotal from "@/components/loadKakaoTotal";
 
 const DEBUG = false;
 

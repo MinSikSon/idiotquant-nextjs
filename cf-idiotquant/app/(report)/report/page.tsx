@@ -98,16 +98,31 @@ export default function Report() {
             }
 
             const prev_total_income_diff = timestampList.data[prev_index].value?.item_content?.sum_op;
-            const parts = prev_total_income_diff.split("->");
-            let prev_total_income = ""; // 총 수익률 (%)
-            if (parts.length == 2) {
-                prev_total_income = parts[1];
+            if (DEBUG) console.log(`[Report] prev_total_income_diff:`, prev_total_income_diff);
+            const parts = prev_total_income_diff.split("%");
+            let prev_total_income = 0; // 총 수익률 (%)
+            if (parts.length >= 2) {
+                prev_total_income = parts[0];
+            }
+
+            if (DEBUG) console.log(`[Report] prev_total_income:`, prev_total_income);
+
+            let latest_total_income = Number(((evlu_amt_smtl_amt[COUNTRY.eKR] + evlu_amt_smtl_amt[COUNTRY.eUS]) / (pchs_amt_smtl_amt[COUNTRY.eKR] + pchs_amt_smtl_amt[COUNTRY.eUS]) * 100 - 100).toFixed(2)); // 총 수익률
+            let diff_percentage = (Number(latest_total_income) - Number(prev_total_income)).toFixed(2);
+            if (0 == Number(diff_percentage)) {
+                diff_percentage = "변동 없음"
             }
             else {
-                prev_total_income = prev_total_income_diff; // 총 수익률 (%)
+                if (Number(diff_percentage) > 0) {
+                    diff_percentage = "+" + diff_percentage + "%";
+                }
+                else {
+                    diff_percentage = "-" + diff_percentage + "%";
+                }
             }
-            let latest_total_income = `${((evlu_amt_smtl_amt[COUNTRY.eKR] + evlu_amt_smtl_amt[COUNTRY.eUS]) / (pchs_amt_smtl_amt[COUNTRY.eKR] + pchs_amt_smtl_amt[COUNTRY.eUS]) * 100 - 100).toFixed(2)}%`; // 총 수익률 (%)
-            let total_income = `${prev_total_income}(${date_diff}d ago) -> ${latest_total_income}`; // 총 수익률 (%)
+
+            let total_income = `${latest_total_income}%(${diff_percentage})`; // 총 수익률 (%)
+            if (DEBUG) console.log(`[Report] total_income:`, total_income);
             const newMessage: KakaoMessage = {
                 object_type: "feed",
                 content: {
