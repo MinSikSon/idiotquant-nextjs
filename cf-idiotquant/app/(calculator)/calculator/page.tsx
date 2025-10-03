@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import { Card, CardBody, CardHeader, Input, Typography } from "@material-tailwind/react";
+import { Button, Card, CardBody, CardHeader, Input, Typography } from "@material-tailwind/react";
 import { CalculatorIcon } from "@heroicons/react/24/outline";
 import ResultChart, { ChartDataItem } from "./ResultChart";
 import { DesignButton } from "@/components/designButton";
@@ -162,6 +162,22 @@ export default function Calculator() {
         setChartData(res.chartData);
     };
 
+    const increaseInvestment = (amount: number) => {
+        setInvestmentAmount((prev) => prev + amount);
+    };
+    const increaseNumberOfYears = (amount: number) => {
+        setNumberOfYears((prev) => prev + amount);
+    };
+    const increaseInterestRate = (amount: number) => {
+        setInterestRate((prev) => prev + amount);
+    };
+    const increaseContributions = (amount: number) => {
+        setContributions((prev) => prev + amount);
+    };
+    const increaseInflationRate = (amount: number) => {
+        setInflationRate((prev) => prev + amount);
+    };
+
     return (
         <div className="flex flex-col dark:bg-black h-full dark:text-white">
             <div className="text-2xl flex items-center justify-left gap-2 p-6 sm:p-8 md:p-10 lg:p-12 ">
@@ -175,28 +191,192 @@ export default function Calculator() {
                     <CardBody className="space-y-4">
                         <div className="flex flex-col gap-1">
                             {/* 입력폼 */}
-                            <div className="w-full flex justify-between items-center">
-                                <Typography type="small" color="primary" className="font-mono text-[0.8rem] mx-4 min-w-28 text-right">투자 시작 금액</Typography>
-                                <Input type="number" value={investmentAmount} onChange={(e) => { removeLeftZero(e); setInvestmentAmount(Number(e.target.value)); }} />
-                                <Typography type="small" color="primary" className="font-mono text-[0.8rem] ml-2 min-w-8">(원)</Typography>
+                            <div className="flex flex-col gap-1 border-b pb-1">
+                                <div className="flex gap-1 text-xs">
+                                    <div className="flex w-full justify-between min-w-32">
+                                        <Button
+                                            onClick={() => increaseInvestment(1000000)}
+                                            className="px-1 py-1 text-[0.8rem] rounded min-w-14"
+                                            variant="outline"
+                                        >
+                                            +100만
+                                        </Button>
+                                        <Button
+                                            onClick={() => increaseInvestment(2000000)}
+                                            className="px-1 py-1 text-[0.8rem] rounded min-w-14"
+                                            variant="outline"
+                                        >
+                                            +200만
+                                        </Button>
+                                        <Button
+                                            onClick={() => increaseInvestment(5000000)}
+                                            className="px-1 py-1 text-[0.8rem] rounded min-w-14"
+                                            variant="outline"
+                                        >
+                                            +500만
+                                        </Button>
+                                        <Button
+                                            onClick={() => increaseInvestment(10000000)}
+                                            className="px-1 py-1 text-[0.8rem] rounded min-w-14"
+                                            variant="outline"
+                                        >
+                                            +1000만
+                                        </Button>
+                                        <Button
+                                            onClick={() => increaseInvestment(20000000)}
+                                            className="px-1 py-1 text-[0.8rem] rounded min-w-14"
+                                            variant="outline"
+                                        >
+                                            +2000만
+                                        </Button>
+                                    </div>
+                                    <div className="ml-2 min-w-8">
+                                    </div>
+                                </div>
+                                <div className="w-full flex justify-between items-center">
+                                    <div className="flex gap-1 min-w-16">
+                                        <Button
+                                            onClick={() => setInvestmentAmount(0)}
+                                            className="px-1 py-1 text-[0.8rem] rounded min-w-14"
+                                            // variant="outline"
+                                            color="error"
+                                        >
+                                            CLEAR
+                                        </Button>
+                                    </div>
+                                    <Typography type="small" color="primary" className="font-mono text-[0.8rem] mx-4 min-w-20 text-right">투자 시작 금액</Typography>
+                                    <Input type="number" value={investmentAmount} onChange={(e) => { removeLeftZero(e); setInvestmentAmount(Number(e.target.value)); }} />
+                                    <Typography type="small" color="primary" className="font-mono text-[0.8rem] ml-2 min-w-8">(원)</Typography>
+
+                                </div>
                             </div>
                             <div className="w-full flex justify-between items-center">
-                                <Typography type="small" color="primary" className="font-mono text-[0.8rem] mx-4 min-w-28 text-right">투자 기간</Typography>
+                                <div className="flex gap-1 min-w-16">
+                                    <Button
+                                        onClick={() => increaseNumberOfYears(1)}
+                                        className="px-1 py-1 text-[0.8rem] rounded min-w-7"
+                                        color="info"
+                                        variant="outline"
+                                    >
+                                        +1
+                                    </Button>
+                                    <Button
+                                        onClick={() => increaseNumberOfYears(-1)}
+                                        className="px-1 py-1 text-[0.8rem] rounded min-w-7"
+                                        color="info"
+                                        variant="outline"
+                                    >
+                                        -1
+                                    </Button>
+                                </div>
+                                <Typography type="small" color="primary" className="font-mono text-[0.8rem] mx-4 min-w-20 text-right">투자 기간</Typography>
                                 <Input type="number" value={numberOfYears} onChange={(e) => { removeLeftZero(e); setNumberOfYears(Number(e.target.value)); }} />
                                 <Typography type="small" color="primary" className="font-mono text-[0.8rem] ml-2 min-w-8">(년)</Typography>
                             </div>
-                            <div className="w-full flex justify-between items-center">
-                                <Typography type="small" color="primary" className="font-mono text-[0.8rem] mx-4 min-w-28 text-right">연 이자율</Typography>
+                            <div className="w-full flex justify-between items-center border-b pb-1">
+                                <div className="flex gap-1 min-w-16">
+                                    <Button
+                                        onClick={() => increaseInterestRate(1)}
+                                        className="px-1 py-1 text-[0.8rem] rounded min-w-7"
+                                        color="info"
+                                        variant="outline"
+                                    >
+                                        +1
+                                    </Button>
+                                    <Button
+                                        onClick={() => increaseInterestRate(-1)}
+                                        className="px-1 py-1 text-[0.8rem] rounded min-w-7"
+                                        color="info"
+                                        variant="outline"
+                                    >
+                                        -1
+                                    </Button>
+                                </div>
+                                <Typography type="small" color="primary" className="font-mono text-[0.8rem] mx-4 min-w-20 text-right">연 이자율</Typography>
                                 <Input type="number" value={interestRate} onChange={(e) => { removeLeftZero(e); setInterestRate(Number(e.target.value)); }} />
                                 <Typography type="small" color="primary" className="font-mono text-[0.8rem] ml-2 min-w-8">(%)</Typography>
                             </div>
-                            <div className="w-full flex justify-between items-center">
-                                <Typography type="small" color="primary" className="font-mono text-[0.8rem] mx-4 min-w-28 text-right">추가 납입금 (매달)</Typography>
-                                <Input type="number" value={contributions} onChange={(e) => { removeLeftZero(e); setContributions(Number(e.target.value)); }} />
-                                <Typography type="small" color="primary" className="font-mono text-[0.8rem] ml-2 min-w-8">(원)</Typography>
+                            <div className="flex flex-col gap-1 border-b pb-1">
+                                <div className="flex gap-1 text-xs">
+                                    <div className="flex w-full justify-between min-w-32">
+                                        <Button
+                                            onClick={() => increaseContributions(1000000)}
+                                            className="px-1 py-1 text-[0.8rem] rounded min-w-14"
+                                            variant="outline"
+                                        >
+                                            +100만
+                                        </Button>
+                                        <Button
+                                            onClick={() => increaseContributions(2000000)}
+                                            className="px-1 py-1 text-[0.8rem] rounded min-w-14"
+                                            variant="outline"
+                                        >
+                                            +200만
+                                        </Button>
+                                        <Button
+                                            onClick={() => increaseContributions(5000000)}
+                                            className="px-1 py-1 text-[0.8rem] rounded min-w-14"
+                                            variant="outline"
+                                        >
+                                            +500만
+                                        </Button>
+                                        <Button
+                                            onClick={() => increaseContributions(10000000)}
+                                            className="px-1 py-1 text-[0.8rem] rounded min-w-14"
+                                            variant="outline"
+                                        >
+                                            +1000만
+                                        </Button>
+                                        <Button
+                                            onClick={() => increaseContributions(20000000)}
+                                            className="px-1 py-1 text-[0.8rem] rounded min-w-14"
+                                            variant="outline"
+                                        >
+                                            +2000만
+                                        </Button>
+                                    </div>
+                                    <div className="ml-2 min-w-8">
+                                    </div>
+                                </div>
+                                <div className="w-full flex justify-between items-center">
+                                    <div className="flex gap-1 min-w-16">
+                                        <Button
+                                            onClick={() => setContributions(0)}
+                                            className="px-1 py-1 text-[0.8rem] rounded min-w-14"
+                                            // variant="outline"
+                                            color="error"
+                                        >
+                                            CLEAR
+                                        </Button>
+                                    </div>
+                                    <div className="flex flex-col font-mono text-[0.8rem] mx-4 min-w-20 text-right">
+                                        <Typography type="small" color="primary" className="">추가 납입금</Typography>
+                                        <Typography type="small" color="primary" className="text-[0.7rem]">(매달)</Typography>
+                                    </div>
+                                    <Input type="number" value={contributions} onChange={(e) => { removeLeftZero(e); setContributions(Number(e.target.value)); }} />
+                                    <Typography type="small" color="primary" className="font-mono text-[0.8rem] ml-2 min-w-8">(원)</Typography>
+                                </div>
                             </div>
-                            <div className="w-full flex justify-between items-center">
-                                <Typography type="small" color="primary" className="font-mono text-[0.8rem] mx-4 min-w-28 text-right">물가상승률</Typography>
+                            <div className="w-full flex justify-between items-center border-b pb-1">
+                                <div className="flex gap-1 min-w-16">
+                                    <Button
+                                        onClick={() => increaseInflationRate(1)}
+                                        className="px-1 py-1 text-[0.8rem] rounded min-w-7"
+                                        color="info"
+                                        variant="outline"
+                                    >
+                                        +1
+                                    </Button>
+                                    <Button
+                                        onClick={() => increaseInflationRate(-1)}
+                                        className="px-1 py-1 text-[0.8rem] rounded min-w-7"
+                                        color="info"
+                                        variant="outline"
+                                    >
+                                        -1
+                                    </Button>
+                                </div>
+                                <Typography type="small" color="primary" className="font-mono text-[0.8rem] mx-4 min-w-20 text-right">물가상승률</Typography>
                                 <Input type="number" value={inflationRate} onChange={(e) => { removeLeftZero(e); setInflationRate(Number(e.target.value)); }} />
                                 <Typography type="small" color="primary" className="font-mono text-[0.8rem] ml-2 min-w-8">(%)</Typography>
                             </div>
