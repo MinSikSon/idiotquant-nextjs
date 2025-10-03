@@ -253,20 +253,20 @@ export default function Calculator() {
                             <div className="w-full flex justify-between items-center">
                                 <div className="flex gap-1 min-w-16">
                                     <Button
-                                        onClick={() => increaseNumberOfYears(1)}
-                                        className="px-1 py-1 text-[0.8rem] rounded min-w-7"
-                                        color="info"
-                                        variant="outline"
-                                    >
-                                        +1
-                                    </Button>
-                                    <Button
                                         onClick={() => increaseNumberOfYears(-1)}
                                         className="px-1 py-1 text-[0.8rem] rounded min-w-7"
                                         color="info"
                                         variant="outline"
                                     >
                                         -1
+                                    </Button>
+                                    <Button
+                                        onClick={() => increaseNumberOfYears(1)}
+                                        className="px-1 py-1 text-[0.8rem] rounded min-w-7"
+                                        color="info"
+                                        variant="outline"
+                                    >
+                                        +1
                                     </Button>
                                 </div>
                                 <Typography type="small" color="primary" className="font-mono text-[0.8rem] mx-4 min-w-20 text-right">투자 기간</Typography>
@@ -276,20 +276,20 @@ export default function Calculator() {
                             <div className="w-full flex justify-between items-center border-b pb-1">
                                 <div className="flex gap-1 min-w-16">
                                     <Button
-                                        onClick={() => increaseInterestRate(1)}
-                                        className="px-1 py-1 text-[0.8rem] rounded min-w-7"
-                                        color="info"
-                                        variant="outline"
-                                    >
-                                        +1
-                                    </Button>
-                                    <Button
                                         onClick={() => increaseInterestRate(-1)}
                                         className="px-1 py-1 text-[0.8rem] rounded min-w-7"
                                         color="info"
                                         variant="outline"
                                     >
                                         -1
+                                    </Button>
+                                    <Button
+                                        onClick={() => increaseInterestRate(1)}
+                                        className="px-1 py-1 text-[0.8rem] rounded min-w-7"
+                                        color="info"
+                                        variant="outline"
+                                    >
+                                        +1
                                     </Button>
                                 </div>
                                 <Typography type="small" color="primary" className="font-mono text-[0.8rem] mx-4 min-w-20 text-right">연 이자율</Typography>
@@ -360,20 +360,20 @@ export default function Calculator() {
                             <div className="w-full flex justify-between items-center border-b pb-1">
                                 <div className="flex gap-1 min-w-16">
                                     <Button
-                                        onClick={() => increaseInflationRate(1)}
-                                        className="px-1 py-1 text-[0.8rem] rounded min-w-7"
-                                        color="info"
-                                        variant="outline"
-                                    >
-                                        +1
-                                    </Button>
-                                    <Button
                                         onClick={() => increaseInflationRate(-1)}
                                         className="px-1 py-1 text-[0.8rem] rounded min-w-7"
                                         color="info"
                                         variant="outline"
                                     >
                                         -1
+                                    </Button>
+                                    <Button
+                                        onClick={() => increaseInflationRate(1)}
+                                        className="px-1 py-1 text-[0.8rem] rounded min-w-7"
+                                        color="info"
+                                        variant="outline"
+                                    >
+                                        +1
                                     </Button>
                                 </div>
                                 <Typography type="small" color="primary" className="font-mono text-[0.8rem] mx-4 min-w-20 text-right">물가상승률</Typography>
