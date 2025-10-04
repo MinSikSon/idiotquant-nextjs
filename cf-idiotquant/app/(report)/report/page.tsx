@@ -125,7 +125,7 @@ export default function Report() {
                     diff_percentage = "+" + diff_percentage + "%";
                 }
                 else {
-                    diff_percentage = "-" + diff_percentage + "%";
+                    diff_percentage = diff_percentage + "%";
                 }
             }
 
