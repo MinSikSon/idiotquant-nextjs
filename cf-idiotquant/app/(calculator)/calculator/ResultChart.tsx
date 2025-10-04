@@ -21,13 +21,14 @@ export interface ChartDataItem {
 
 interface ResultChartProps {
     data: ChartDataItem[];
+    height: string;
 }
 
-const ResultChart: FC<ResultChartProps> = ({ data }) => {
+const ResultChart: FC<ResultChartProps> = ({ data, height }) => {
     if (!data || data.length === 0) return null;
 
     return (
-        <div className="w-full h-96 bg-white dark:bg-gray-900 rounded-2xl">
+        <div className={`w-full bg-white dark:bg-gray-900 rounded-2xl ${height}`}>
             <h2 className="pt-2 px-3 text-lg font-semibold dark:text-white">
                 연도별 수익 차트
             </h2>

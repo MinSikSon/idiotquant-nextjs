@@ -195,6 +195,13 @@ export default function Calculator() {
                                 <div className="flex gap-1 text-xs">
                                     <div className="flex w-full justify-between min-w-32">
                                         <Button
+                                            onClick={() => increaseInvestment(100000)}
+                                            className="px-1 py-1 text-[0.8rem] rounded min-w-14"
+                                            variant="outline"
+                                        >
+                                            +10만
+                                        </Button>
+                                        <Button
                                             onClick={() => increaseInvestment(1000000)}
                                             className="px-1 py-1 text-[0.8rem] rounded min-w-14"
                                             variant="outline"
@@ -229,8 +236,6 @@ export default function Calculator() {
                                         >
                                             +2000만
                                         </Button>
-                                    </div>
-                                    <div className="ml-2 min-w-8">
                                     </div>
                                 </div>
                                 <div className="w-full flex justify-between items-center">
@@ -300,6 +305,13 @@ export default function Calculator() {
                                 <div className="flex gap-1 text-xs">
                                     <div className="flex w-full justify-between min-w-32">
                                         <Button
+                                            onClick={() => increaseContributions(100000)}
+                                            className="px-1 py-1 text-[0.8rem] rounded min-w-14"
+                                            variant="outline"
+                                        >
+                                            +10만
+                                        </Button>
+                                        <Button
                                             onClick={() => increaseContributions(1000000)}
                                             className="px-1 py-1 text-[0.8rem] rounded min-w-14"
                                             variant="outline"
@@ -334,8 +346,6 @@ export default function Calculator() {
                                         >
                                             +2000만
                                         </Button>
-                                    </div>
-                                    <div className="ml-2 min-w-8">
                                     </div>
                                 </div>
                                 <div className="w-full flex justify-between items-center">
@@ -384,25 +394,25 @@ export default function Calculator() {
                             {/* 계산 결과 */}
                             <div className="border-t py-1 pl-1 rounded-lg border">
                                 <div className="w-full flex justify-between items-center">
-                                    <Typography className="text-[0.8rem] mx-4 min-w-28 text-right">최종 수입금:</Typography>
-                                    <Typography className="text-base text-right min-w-28">{finalValue.toLocaleString()}</Typography>
+                                    <Typography className="text-[0.8rem] mx-4 min-w-32 text-right">최종 수입금:</Typography>
+                                    <Typography className="tabular-nums text-base text-right min-w-32">{finalValue.toLocaleString()}</Typography>
                                     <Typography className="text-[0.8rem] ml-2 min-w-8">원</Typography>
                                 </div>
                                 <div className="w-full flex justify-between items-center">
-                                    <Typography className="text-[0.8rem] mx-4 min-w-28 text-right">누적 투자금:</Typography>
-                                    <Typography className="text-base text-right min-w-28">{totalInvestment.toLocaleString()}</Typography>
+                                    <Typography className="text-[0.8rem] mx-4 min-w-32 text-right">누적 투자금:</Typography>
+                                    <Typography className="tabular-nums text-base text-right min-w-32">{totalInvestment.toLocaleString()}</Typography>
                                     <Typography className="text-[0.8rem] ml-2 min-w-8">원</Typography>
                                 </div>
                                 <div className="w-full flex justify-between items-center">
-                                    <Typography className="text-[0.8rem] mx-4 min-w-28 text-right">최종 수익률:</Typography>
-                                    <Typography className="text-base text-right min-w-28">{finalRateOfReturn.toFixed(2)}</Typography>
+                                    <Typography className="text-[0.8rem] mx-4 min-w-32 text-right">최종 수익률:</Typography>
+                                    <Typography className="tabular-nums text-base text-right min-w-32">{finalRateOfReturn.toFixed(2)}</Typography>
                                     <Typography className="text-[0.8rem] ml-2 min-w-8">%</Typography>
                                 </div>
                             </div>
 
                             {/* 차트 */}
                             <div className="mb-4 md:hidden border rounded-md">
-                                <ResultChart data={chartData} />
+                                <ResultChart data={chartData} height={"h-80"} />
                             </div>
                             {/* 히스토리 등록 버튼 */}
                             <DesignButton
@@ -433,7 +443,7 @@ export default function Calculator() {
                 <Card className="hidden md:block max-w-lg mx-auto shadow-xl rounded-2xl">
                     {/* 차트 */}
                     <div className="pb-8">
-                        <ResultChart data={chartData} />
+                        <ResultChart data={chartData} height={"h-96"} />
                     </div>
                 </Card>
             </div>
