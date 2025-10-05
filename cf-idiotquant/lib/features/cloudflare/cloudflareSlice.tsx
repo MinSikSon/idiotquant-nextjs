@@ -108,7 +108,12 @@ export const cloudflareSlice = createAppSlice({
                 },
                 fulfilled: (state, action) => {
                     // console.log(`[getStarredStocks] fulfilled`, `typeof action.payload:`, typeof action.payload, `action.payload:`, action.payload);
-                    state.starredStocks = { ...state.starredStocks, state: "fulfilled", starredStock: action.payload };
+                    if (action.payload.msg && "need kakao login" == action.payload.msg) {
+                        state.starredStocks.state = "rejected";
+                    }
+                    else {
+                        state.starredStocks = { ...state.starredStocks, state: "fulfilled", starredStock: action.payload };
+                    }
                 },
                 rejected: (state) => {
                     // console.log(`[getStarredStocks] rejected`);
@@ -127,7 +132,12 @@ export const cloudflareSlice = createAppSlice({
                 },
                 fulfilled: (state, action) => {
                     // console.log(`[setCloudFlareStarredStocks] fulfilled`, `typeof action.payload:`, typeof action.payload, `action.payload:`, action.payload);
-                    state.starredStocks = { ...state.starredStocks, state: "fulfilled", starredStock: action.payload };
+                    if (action.payload.msg && "need kakao login" == action.payload.msg) {
+                        state.starredStocks.state = "rejected";
+                    }
+                    else {
+                        state.starredStocks = { ...state.starredStocks, state: "fulfilled", starredStock: action.payload };
+                    }
                     // state.id = action.payload['id'];
                     // state.nickName = action.payload['name'];
                     // state.info = action.payload['info'];
