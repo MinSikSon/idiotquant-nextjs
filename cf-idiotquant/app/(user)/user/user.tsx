@@ -6,13 +6,13 @@ import { Input, Textarea, Card, CardHeader, CardBody, CardFooter, Typography } f
 import { useAppDispatch, useAppSelector } from '@/lib/hooks';
 import Link from 'next/link';
 import { KakaoTotal, selectKakaoTotal } from '@/lib/features/kakao/kakaoSlice';
-import { selectCloudflare, setCloudFlareUserInfo, UserInfo } from '@/lib/features/cloudflare/cloudflareSlice';
+import { selectCloudflareUserInfo, setCloudFlareUserInfo, UserInfo } from '@/lib/features/cloudflare/cloudflareSlice';
 
 const DEBUG = false;
 
 export default function User() {
     const dispatch = useAppDispatch();
-    const cfUserInfo: UserInfo = useAppSelector(selectCloudflare);
+    const cfUserInfo: UserInfo = useAppSelector(selectCloudflareUserInfo);
     const kakaoTotal: KakaoTotal = useAppSelector(selectKakaoTotal);
 
     const [user, setUser] = useState<UserInfo>({

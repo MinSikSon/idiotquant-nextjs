@@ -29,8 +29,12 @@ import { reqPostLaboratory } from "@/lib/features/ai/aiSlice";
 import { AiOutputResultUsageType, selectAiStreamOutput } from "@/lib/features/ai/aiStreamSlice";
 import { addKrMarketHistory, selectKrMarketHistory, selectUsMarketHistory } from "@/lib/features/searchHistory/searchHistorySlice";
 import { selectKakaoTatalState } from "@/lib/features/kakao/kakaoSlice";
+import { selectCloudflareUserInfo, UserInfo, selectCloudflareStarredStocks, StarredStocks, getCloudFlareStarredStocks, setCloudFlareStarredStocks, StarredStock } from "@/lib/features/cloudflare/cloudflareSlice";
+import { StarIcon } from "@heroicons/react/24/outline";
+import { StarIcon as StarSolid } from "@heroicons/react/24/solid";
 
 const DEBUG = false;
+const DEBUG_LLM = false;
 
 export default function SearchKr() {
   const pathname = usePathname();
@@ -43,6 +47,8 @@ export default function SearchKr() {
   const kiBalanceSheet: KoreaInvestmentBalanceSheet = useAppSelector(getKoreaInvestmentBalanceSheet);
   const kiIncomeStatement: KoreaInvestmentIncomeStatement = useAppSelector(getKoreaInvestmentIncomeStatement);
   const kiInquireDailyItemChartPrice: KoreaInvestmentInquireDailyItemChartPrice = useAppSelector(getKoreaInvestmentInquireDailyItemChartPrice);
+  const cfUserInfo: UserInfo = useAppSelector(selectCloudflareUserInfo);
+  const cfStarredStocks: StarredStocks = useAppSelector(selectCloudflareStarredStocks);
 
   const [name, setName] = useState<any>("");
   const [startDate, setStartDate] = useState<any>("2024-01-03");
@@ -63,6 +69,8 @@ export default function SearchKr() {
   const kakaoTotalState = useAppSelector(selectKakaoTatalState);
 
   useEffect(() => {
+    if (DEBUG) console.log(`[SearchKr] isValidCookie("koreaInvestmentToken") 1`, isValidCookie("koreaInvestmentToken"));
+
     const handleScroll = () => {
       if (window.scrollY > 160) {
         setFixed(true);
@@ -85,14 +93,8 @@ export default function SearchKr() {
   }, [kiToken]);
 
   useEffect(() => {
-    if (DEBUG) console.log(`useEffect [kiInquireDailyItemChartPrice]`, kiInquireDailyItemChartPrice);
-    if (DEBUG) console.log(`kiInquireDailyItemChartPrice.output1.hts_avls`, kiInquireDailyItemChartPrice.output1.hts_avls, `HTS 시가총액 (억)`);
-  }, [kiInquireDailyItemChartPrice])
-  useEffect(() => {
     // 날짜별로 분류 필요
     if (DEBUG) console.log(`useEffect [kiBalanceSheet]`, kiBalanceSheet);
-    if (DEBUG) console.log(`kiBalanceSheet.output[0].cras`, kiBalanceSheet.output.length > 0 ? kiBalanceSheet.output[0].cras : 0, `유동자산 (억)`);
-    if (DEBUG) console.log(`kiBalanceSheet.output[0].total_lblt`, kiBalanceSheet.output.length > 0 ? kiBalanceSheet.output[0].total_lblt : 0, `부채총계 (억)`);
   }, [kiBalanceSheet])
   useEffect(() => {
     if (DEBUG) console.log(`useEffect [kiIncomeStatement]`, kiIncomeStatement);
@@ -190,7 +192,7 @@ export default function SearchKr() {
         const jsonStr = line.slice(6).trim();
 
         if (jsonStr === '[DONE]') {
-          if (DEBUG) console.log('Stream ended', `outputContent:`, outputContent);
+          if (DEBUG_LLM) console.log('Stream ended', `outputContent:`, outputContent);
           setWaitResponse(false);
           break;
         }
@@ -218,6 +220,25 @@ export default function SearchKr() {
 
     setResponse(outputContent);
   }, [aiStreamOutput]);
+
+  useEffect(() => {
+    if (DEBUG) console.log(`useEffect [kiInquireDailyItemChartPrice] kiInquireDailyItemChartPrice:`, kiInquireDailyItemChartPrice);
+    if (DEBUG) console.log(`useEffect [kiInquireDailyItemChartPrice] kiInquireDailyItemChartPrice.output1.hts_avls:`, kiInquireDailyItemChartPrice.output1.hts_avls, `HTS 시가총액 (억)`);
+    if ("init" == cfStarredStocks?.state) {
+      if (DEBUG) console.log(`useEffect [kiInquireDailyItemChartPrice] cfStarredStocks?.state:`, cfStarredStocks?.state);
+      dispatch(getCloudFlareStarredStocks());
+    }
+  }, [kiInquireDailyItemChartPrice]);
+  useEffect(() => {
+    if ("fulfilled" == cfUserInfo?.state) {
+      if (DEBUG) console.log(`[SearchKr] cfUserInfo`, cfUserInfo);
+    }
+  }, [cfUserInfo]);
+  useEffect(() => {
+    if (DEBUG) console.log(`[SearchKr] cfStarredStocks:`, cfStarredStocks);
+    const isStarred = cfStarredStocks?.starredStock?.some(item => item.name === kiInquireDailyItemChartPrice.output1.hts_kor_isnm)
+    if (DEBUG) console.log(`[SearchKr] isStarred:`, isStarred);
+  }, [cfStarredStocks])
 
   const formatDate = (date: string) => {
     // const arrDate = date.split("-");
@@ -392,8 +413,31 @@ ${md}
     </>
   }
 
-  if (DEBUG) console.log(`[SearchKr] isValidCookie("koreaInvestmentToken") 1`, isValidCookie("koreaInvestmentToken"));
-  if (DEBUG) console.log(`[SearchKr] kiToken:`, kiToken);
+  function handleOnClickStarredIcon() {
+    console.log(`[handleOnClickStarredIcon] kiInquireDailyItemChartPrice.output1.hts_kor_isnm:`, kiInquireDailyItemChartPrice.output1.hts_kor_isnm);
+    console.log(`[handleOnClickStarredIcon] cfStarredStocks:`, cfStarredStocks);
+    const prevStarredStocks: StarredStock[] = cfStarredStocks.starredStock;
+    let newStarredStocks: StarredStock[] = [];
+    const isStarred = (cfStarredStocks?.starredStock?.some(item => item.name === kiInquireDailyItemChartPrice.output1.hts_kor_isnm));
+    console.log(`[handleOnClickStarredIcon] isStarred:`, isStarred);
+    if (true == isStarred) {
+      newStarredStocks = prevStarredStocks.filter(item => item.name !== kiInquireDailyItemChartPrice.output1.hts_kor_isnm);
+      console.log(`[handleOnClickStarredIcon] newStarredStocks:`, newStarredStocks)
+    }
+    else {
+      const newStock: StarredStock = {
+        name: kiInquireDailyItemChartPrice.output1.hts_kor_isnm,
+        date: new Date().toString(),
+        isFavorite: true
+      }
+
+      newStarredStocks = [...prevStarredStocks, newStock];
+    }
+
+    console.log(`[handleOnClickStarredIcon] newStarredStocks:`, newStarredStocks);
+    dispatch(setCloudFlareStarredStocks({ starredStocks: newStarredStocks }));
+  }
+
   if ("fulfilled" != kiToken?.state) {
     return <>
       <Auth />
@@ -417,10 +461,6 @@ ${md}
   }
 
   if (DEBUG) console.log(`bShowResult`, bShowResult);
-  if (DEBUG) console.log(`kiInquireDailyItemChartPrice`, kiInquireDailyItemChartPrice);
-  if (DEBUG) console.log(`kiBalanceSheet`, kiBalanceSheet);
-  if (DEBUG) console.log(`kiInquirePrice`, kiInquirePrice);
-  if (DEBUG) console.log(`kiIncomeStatement`, kiIncomeStatement);
 
   let MARKET_CAP = 0;
   // let CURRENT_ASSET_LIST = []; // 유동자산
@@ -472,8 +512,18 @@ ${md}
                 <div className={`w-7/12 p-3 ${fixed ? "py-1" : ""} dark:bg-black dark:text-white font-mono`}>
                   <div className={`text-[0.6rem] ${fixed ? "hidden" : ""}`}>{kiInquirePrice.output["rprs_mrkt_kor_name"]} | {kiInquirePrice.output["bstp_kor_isnm"]} </div>
                   <div>
-                    <div className="text-xl">
-                      {kiInquireDailyItemChartPrice.output1.hts_kor_isnm}
+                    <div className="flex justify-between">
+                      <div className="text-xl">
+                        {kiInquireDailyItemChartPrice.output1.hts_kor_isnm}
+                      </div>
+                      {"fulfilled" == cfUserInfo?.state && <button onClick={handleOnClickStarredIcon}>
+                        {("fulfilled" == cfStarredStocks?.state) && (cfStarredStocks?.starredStock?.some(item => item.name === kiInquireDailyItemChartPrice.output1.hts_kor_isnm))
+                          ? <StarSolid className="h-5 w-5 hover:bg-gray-100 rounded-full" strokeWidth={2} />
+                          :
+                          <StarIcon className="h-5 w-5 hover:bg-gray-100 rounded-full" strokeWidth={2} />
+                        }
+                      </button>
+                      }
                     </div>
                     <div className="dark:bg-black dark:text-white flex gap-2 font-mono items-center">
                       <div className="text-right">

@@ -6,13 +6,13 @@ import { verifyJWT } from "@/lib/jwt";
 import { clearCookie, getCookie } from "./util";
 import { KakaoTotal, selectKakaoTatalState, setKakaoTotal } from "@/lib/features/kakao/kakaoSlice";
 import { useAppDispatch, useAppSelector } from "@/lib/hooks";
-import { getCloudFlareUserInfo, selectCloudflare } from "@/lib/features/cloudflare/cloudflareSlice";
+import { getCloudFlareUserInfo, selectCloudflareUserInfo } from "@/lib/features/cloudflare/cloudflareSlice";
 
 const DEBUG = false;
 
 export default function LoadKakaoTotal() {
     const dispatch = useAppDispatch();
-    const cloudFlareUserInfo = useAppSelector(selectCloudflare);
+    const cloudFlareUserInfo = useAppSelector(selectCloudflareUserInfo);
     const kakaoTotalState = useAppSelector(selectKakaoTatalState);
 
     const [mount, setMount] = useState<boolean>(false);

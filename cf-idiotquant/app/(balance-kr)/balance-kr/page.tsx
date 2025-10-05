@@ -13,7 +13,6 @@ import Auth from "@/components/auth";
 import InquireBalanceResult from "@/components/inquireBalanceResult";
 import NotFound from "@/app/not-found";
 import { CapitalTokenType, reqGetCapitalToken, selectCapitalToken } from "@/lib/features/algorithmTrade/algorithmTradeSlice";
-import { selectKakaoTatalState } from "@/lib/features/kakao/kakaoSlice";
 
 let DEBUG = false;
 
@@ -28,8 +27,6 @@ export default function BalanceKr() {
 
     const kr_capital_token: CapitalTokenType = useAppSelector(selectCapitalToken);
 
-    const kakaoTotalState = useAppSelector(selectKakaoTatalState);
-
     useEffect(() => {
         const isValidKiAccessToken = !!kiToken["access_token"];
         if (DEBUG) console.log(`[BalanceKr]`, `isValidKiAccessToken`, isValidKiAccessToken);
@@ -37,15 +34,12 @@ export default function BalanceKr() {
             dispatch(reqGetInquireBalance(kiToken));
         }
     }, [kiToken]);
-
     useEffect(() => {
         if (true == DEBUG) console.log(`[BalanceKr]`, `kiBalance`, kiBalance);
     }, [kiBalance]);
-
     useEffect(() => {
         // console.log(`[BalanceKr]`, `kiOrderCash`, kiOrderCash);
     }, [kiOrderCash])
-
     useEffect(() => {
         if (DEBUG) console.log(`[BalanceKr]`, `kr_capital_token`, kr_capital_token);
         if ("init" == kr_capital_token.state) {

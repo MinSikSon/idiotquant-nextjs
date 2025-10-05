@@ -51,40 +51,18 @@ export default function AlgorithmTrade() {
         dispatch(reqGetQuantRuleDesc());
         handleOnClick();
     }, []);
-
     useEffect(() => {
         if (DEBUG) console.log(`kr_capital_token`, kr_capital_token);
+    }, [kr_capital_token]);
+    useEffect(() => {
         if (DEBUG) console.log(`us_capital_token`, us_capital_token);
+    }, [us_capital_token]);
+    useEffect(() => {
         if (DEBUG) console.log(`kiToken`, kiToken);
+    }, [kiToken]);
+    useEffect(() => {
         if (DEBUG) console.log(`quant_rule`, quant_rule);
-
-        // if ("fulfilled" == kiToken.state) {
-        //     if ("fulfilled" == kr_capital_token.state && kr_capital_token.value.stock_list.length > 0) {
-        //         const PDNOs = kr_capital_token.value.stock_list.map((item: any) => item.PDNO);
-        //         const filteredPDNOs = PDNOs.filter((item: any) => {
-        //             if (undefined == inquirePriceMulti[item]) {
-        //                 return true;
-        //             }
-
-        //             if (1 == inquirePriceMulti[item].rt_cd) // fail
-        //             {
-        //                 return true;
-        //             }
-
-        //             return false;
-        //         });
-
-        //         const chunkSize = 20;
-        //         for (let i = 0; i < filteredPDNOs.length; i += chunkSize) {
-        //             const chunk = filteredPDNOs.slice(i, i + chunkSize);
-        //             console.log(`Dispatching filteredPDNOs:`, chunk);
-
-        //             dispatch(reqGetInquirePriceMulti({ koreaInvestmentToken: kiToken, PDNOs: chunk }));
-        //         }
-        //     }
-        // }
-    }, [kr_capital_token, us_capital_token, kiToken]);
-
+    }, [quant_rule]);
     useEffect(() => {
         if (DEBUG) console.log(`inquirePriceMulti`, inquirePriceMulti);
     }, [inquirePriceMulti]);
@@ -417,44 +395,30 @@ export default function AlgorithmTrade() {
             </div>
             <div className="dark:border-gray-700 border rounded-lg px-2 pb-1 m-2 shadow">
                 <div className="text-xl">
-                    <div className="">Stocks Targeted for Algorithmic Trading</div>
+                    <div>Stocks Targeted for Algorithmic Trading</div>
                 </div>
                 <div className="rounded px-2 pb-1 m-2 shadow">
-                    <div className="text-black leading-none">
+                    <div className="">
                         {stock_list.map((item: any, index: number) => {
                             const token = isNaN(Number(item["token"])) ? 0 : Number(item["token"]);
                             cummulative_token += token;
                             exclude_count += item["refill"] ? 0 : 1;
                             exclude_token += item["refill"] ? 0 : token;
-                            return <Popover key={index}>
-                                <Popover.Trigger>
-                                    <div className={`flex pl-1 items-center gap-x-1 ${index % 2 == 0 ? "bg-white" : "bg-gray-100"} ${item["refill"] ? "" : "font-bold line-through"}`}>
-                                        <div className="flex items-center min-w-[115px] text-xs">
-                                            <div>
-                                                ({String(index).padStart(3, "0")}-
-                                            </div>
-                                            <div className={`${item["name"].length >= 8 ? "text-[0.6rem]" : (item["name"].length >= 7 ? "text-[0.7rem]" : "text-xs")}`}>
-                                                {item["name"]}
-                                            </div>
-                                        </div>
-                                        <div className="flex items-center min-w-[85px]">
-                                            <div className="border rounded border-black p-0 text-[0.6rem]">
-                                                포인트
-                                            </div>
-                                            <div className="ml-1 min-w-[50px] text-right text-xs">
-                                                {item["token"]})
-                                            </div>
-                                        </div>
-                                    </div>
-                                </Popover.Trigger>
-                                <Popover.Content className="p-2 border border-black dark:text-white rounded shadow shadow-blue-gray-500">
-                                    {item["refill"] ?
-                                        <div className="text-xs text-black dark:text-white">{`${item["name"]} 을(를) "${token_per_stock} token / 10 분" 만큼 리필`}</div>
-                                        :
-                                        <div className="text-xs text-black dark:text-white">{`${item["name"]} 을(를) 매매 대상에서 임시 제외`}</div>
-                                    }
-                                </Popover.Content>
-                            </Popover>
+                            return <div key={index} className={`flex justify-between gap-x-1 px-1 text-xs ${index % 2 == 0 ? "bg-white" : "bg-gray-100"} ${item["refill"] ? "" : "line-through"} `}>
+                                <div className="font-mono min-w-10 text-right">
+                                    {String(index).padStart(3, "0")}
+                                </div>
+                                {/* <div className={`min-w-28 ${item["name"].length >= 8 ? "text-[0.6rem]" : (item["name"].length >= 7 ? "text-[0.7rem]" : "text-xs")}`}> */}
+                                <div className={`min-w-32`}>
+                                    {item["name"]}
+                                </div>
+                                <div className="min-w-12 text-right">
+                                    {item["token"]}
+                                </div>
+                                <div className="min-w-12 text-right">
+                                    {item["action"]}
+                                </div>
+                            </div>
                         })}
                     </div>
                     <div className="flex items-center text-xs text-black dark:text-white leading-none pb-1">

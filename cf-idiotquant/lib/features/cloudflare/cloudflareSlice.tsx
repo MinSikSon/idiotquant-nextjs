@@ -1,6 +1,6 @@
 import { PayloadAction } from "@reduxjs/toolkit";
 import { createAppSlice } from "@/lib/createAppSlice";
-import { getUserInfo, setUserInfo } from "./cloudflareAPI";
+import { getStarredStocks, getUserInfo, setStarredStocks, setUserInfo } from "./cloudflareAPI";
 
 export interface UserInfo {
     state: "init"
@@ -14,11 +14,25 @@ export interface UserInfo {
     desc: string;
     point: number;
 }
+
+export interface StarredStock {
+    name: string;
+    date: string;
+    isFavorite: boolean;
+}
+export interface StarredStocks {
+    state: "init"
+    | "pending" | "fulfilled" | "rejected" | "updating" | "updated" | "update-rejected"
+    ;
+    starredStock: StarredStock[];
+}
+
 interface cloudflareInfo {
     state: "init"
     | "pending" | "fulfilled" | "rejected" | "updating" | "updated" | "update-rejected"
     ;
     userInfo: UserInfo;
+    starredStocks: StarredStocks;
 }
 
 const initialState: cloudflareInfo = {
@@ -30,6 +44,10 @@ const initialState: cloudflareInfo = {
         lastLoginAt: 0,
         desc: "",
         point: 0
+    },
+    starredStocks: {
+        state: "init",
+        starredStock: []
     }
 }
 
@@ -63,27 +81,69 @@ export const cloudflareSlice = createAppSlice({
             },
             {
                 pending: (state) => {
-                    console.log(`[setCloudFlareUserInfo] updating`);
+                    // console.log(`[setCloudFlareUserInfo] updating`);
                     state.userInfo.state = "updating"
                 },
                 fulfilled: (state, action) => {
-                    console.log(`[setCloudFlareUserInfo] updated`, `typeof action.payload:`, typeof action.payload, `action.payload:`, action.payload);
+                    // console.log(`[setCloudFlareUserInfo] updated`, `typeof action.payload:`, typeof action.payload, `action.payload:`, action.payload);
                     state.userInfo.state = "updated";
                     // state.id = action.payload['id'];
                     // state.nickName = action.payload['name'];
                     // state.info = action.payload['info'];
                 },
                 rejected: (state) => {
-                    console.log(`[setCloudFlareUserInfo] update-rejected`);
+                    // console.log(`[setCloudFlareUserInfo] update-rejected`);
                     state.userInfo.state = "update-rejected"
+                }
+            }
+        ),
+        getCloudFlareStarredStocks: create.asyncThunk(
+            async () => {
+                return await getStarredStocks();
+            },
+            {
+                pending: (state) => {
+                    // console.log(`[getStarredStocks] pending`);
+                    state.starredStocks.state = "pending";
+                },
+                fulfilled: (state, action) => {
+                    // console.log(`[getStarredStocks] fulfilled`, `typeof action.payload:`, typeof action.payload, `action.payload:`, action.payload);
+                    state.starredStocks = { ...state.starredStocks, state: "fulfilled", starredStock: action.payload };
+                },
+                rejected: (state) => {
+                    // console.log(`[getStarredStocks] rejected`);
+                    state.starredStocks.state = "rejected";
+                }
+            }
+        ),
+        setCloudFlareStarredStocks: create.asyncThunk(
+            async ({ starredStocks }: { starredStocks: StarredStock[] }) => {
+                return await setStarredStocks(starredStocks);
+            },
+            {
+                pending: (state) => {
+                    // console.log(`[setCloudFlareStarredStocks] pending`);
+                    state.starredStocks.state = "pending"
+                },
+                fulfilled: (state, action) => {
+                    // console.log(`[setCloudFlareStarredStocks] fulfilled`, `typeof action.payload:`, typeof action.payload, `action.payload:`, action.payload);
+                    state.starredStocks = { ...state.starredStocks, state: "fulfilled", starredStock: action.payload };
+                    // state.id = action.payload['id'];
+                    // state.nickName = action.payload['name'];
+                    // state.info = action.payload['info'];
+                },
+                rejected: (state) => {
+                    // console.log(`[setCloudFlareStarredStocks] rejected`);
+                    state.starredStocks.state = "rejected"
                 }
             }
         ),
     }),
     selectors: {
-        selectCloudflare: (state) => state.userInfo,
+        selectCloudflareUserInfo: (state) => state.userInfo,
+        selectCloudflareStarredStocks: (state) => state.starredStocks,
     }
 });
 
-export const { setCloudFlareUserInfo, getCloudFlareUserInfo } = cloudflareSlice.actions;
-export const { selectCloudflare } = cloudflareSlice.selectors;
+export const { setCloudFlareUserInfo, getCloudFlareUserInfo, setCloudFlareStarredStocks, getCloudFlareStarredStocks } = cloudflareSlice.actions;
+export const { selectCloudflareUserInfo, selectCloudflareStarredStocks } = cloudflareSlice.selectors;

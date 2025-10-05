@@ -12,7 +12,7 @@ import Loading from "@/components/loading";
 import { KakaoTotal, selectKakaoTatalState, selectKakaoTotal } from "@/lib/features/kakao/kakaoSlice";
 import { queryTimestampList, selectTimestampList } from "@/lib/features/timestamp/timestampSlice";
 import LoadKakaoTotal from "@/components/loadKakaoTotal";
-import { selectCloudflare, UserInfo } from "@/lib/features/cloudflare/cloudflareSlice";
+import { selectCloudflareUserInfo, UserInfo } from "@/lib/features/cloudflare/cloudflareSlice";
 
 const DEBUG = false;
 
@@ -29,8 +29,7 @@ export default function Report() {
     const kakaoTotalState = useAppSelector(selectKakaoTatalState);
     const loginState = useAppSelector(selectLoginState);
 
-    const cfUserInfo: UserInfo = useAppSelector(selectCloudflare);
-
+    const cfUserInfo: UserInfo = useAppSelector(selectCloudflareUserInfo);
 
     const [message, setMessage] = useState<KakaoMessage>({} as KakaoMessage);
     const [lock, setLock] = useState<boolean>(false);
