@@ -66,7 +66,8 @@ export default function LoginPage() {
     async function onClickLogin() {
         const redirectUrl = `${process.env.NEXT_PUBLIC_API_URL}/kakao-login`;
         if (DEBUG) console.log(`[LoginPage] onClickLogin`, `redirectUrl:`, redirectUrl);
-        const authorizeEndpoint = `https://kauth.kakao.com/oauth/authorize?response_type=code&client_id=${process.env.NEXT_PUBLIC_KAKAO_REST_API_KEY}&redirect_uri=${redirectUrl}`;
+        const scopeParam = "&scope=friends";
+        const authorizeEndpoint = `https://kauth.kakao.com/oauth/authorize?response_type=code&client_id=${process.env.NEXT_PUBLIC_KAKAO_REST_API_KEY}&redirect_uri=${redirectUrl}${scopeParam}`;
 
         router.push(authorizeEndpoint);
     }
