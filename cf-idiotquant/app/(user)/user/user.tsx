@@ -1,12 +1,13 @@
 'use client'
 
 import { useState, useEffect } from 'react';
-import { Badge, Button } from "@material-tailwind/react";
+import { Badge, Button, Progress } from "@material-tailwind/react";
 import { Input, Textarea, Card, CardHeader, CardBody, CardFooter, Typography } from "@material-tailwind/react";
 import { useAppDispatch, useAppSelector } from '@/lib/hooks';
 import Link from 'next/link';
 import { KakaoTotal, selectKakaoTotal } from '@/lib/features/kakao/kakaoSlice';
 import { selectCloudflareUserInfo, setCloudFlareUserInfo, UserInfo } from '@/lib/features/cloudflare/cloudflareSlice';
+import { getBadgeColor, getLevel, getProgress } from './level';
 
 const DEBUG = false;
 
@@ -82,7 +83,7 @@ export default function User() {
                 <CardBody className="flex flex-col md:flex-row gap-6">
                     <div className="flex flex-col items-center space-y-1">
                         <div>
-                            <Badge color="secondary">
+                            <Badge color={getBadgeColor(user.point)}>
                                 <Badge.Content>
                                     {user.avatarUrl ? (
                                         <img src={user.avatarUrl} alt={user.nickname} className="h-28 w-28 rounded-full object-cover" />
@@ -93,10 +94,22 @@ export default function User() {
                                     )}
 
                                 </Badge.Content>
-                                <Badge.Indicator>{user.point}</Badge.Indicator>
+                                <Badge.Indicator className="shadow-md border-black">
+                                    <div className="w-full flex flex-col items-center justify-center">
+                                        <div>
+                                            {getLevel(user.point)}
+                                        </div>
+                                        <Progress
+                                            value={getProgress(user.point)}
+                                            className="border border-gray-900/10 bg-gray-900/5 p-0 h-1 dark:border-gray-800 dark:bg-gray-900"
+                                        >
+                                            <Progress.Bar className="rounded-full" />
+                                        </Progress>
+                                    </div>
+                                </Badge.Indicator>
                             </Badge>
-                        </div>
 
+                        </div>
                         <div className="w-full flex items-center justify-center">
                             <Typography className="min-w-16 font-semibold text-xs text-right">가입일</Typography>
                             <Input readOnly className="py-1 border-none shadow-none text-black dark:text-white text-sm" value={formatDate(user.joinedAt)} />
