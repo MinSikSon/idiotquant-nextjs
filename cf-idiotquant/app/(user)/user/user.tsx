@@ -83,7 +83,7 @@ export default function User() {
                 <CardBody className="flex flex-col md:flex-row gap-6">
                     <div className="flex flex-col items-center space-y-1">
                         <div>
-                            <Badge color={getBadgeColor(user.point)}>
+                            <Badge color={getBadgeColor(Number(user.point))}>
                                 <Badge.Content>
                                     {user.avatarUrl ? (
                                         <img src={user.avatarUrl} alt={user.nickname} className="h-28 w-28 rounded-full object-cover" />
@@ -97,10 +97,10 @@ export default function User() {
                                 <Badge.Indicator className="shadow-md border-black">
                                     <div className="w-full flex flex-col items-center justify-center">
                                         <div>
-                                            {getLevel(user.point)}
+                                            {getLevel(Number(user.point))}
                                         </div>
                                         <Progress
-                                            value={getProgress(user.point)}
+                                            value={getProgress(Number(user.point))}
                                             className="border border-gray-900/10 bg-gray-900/5 p-0 h-1 dark:border-gray-800 dark:bg-gray-900"
                                         >
                                             <Progress.Bar className="rounded-full" />
