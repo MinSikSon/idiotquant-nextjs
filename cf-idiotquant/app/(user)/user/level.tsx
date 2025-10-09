@@ -37,15 +37,15 @@ export function getLevel(point: number) {
 export function getProgress(point: number) {
     let targetPoint = 49000;
     if (100 > point) targetPoint = 100;
-    if (200 > point) targetPoint = 200;
-    if (400 > point) targetPoint = 400;
-    if (800 > point) targetPoint = 800;
-    if (1500 > point) targetPoint = 1500;
-    if (3000 > point) targetPoint = 3000;
-    if (6000 > point) targetPoint = 6000;
-    if (12000 > point) targetPoint = 12000;
-    if (25000 > point) targetPoint = 25000;
-    if (49000 <= point) targetPoint = point;
+    else if (200 > point) targetPoint = 200;
+    else if (400 > point) targetPoint = 400;
+    else if (800 > point) targetPoint = 800;
+    else if (1500 > point) targetPoint = 1500;
+    else if (3000 > point) targetPoint = 3000;
+    else if (6000 > point) targetPoint = 6000;
+    else if (12000 > point) targetPoint = 12000;
+    else if (25000 > point) targetPoint = 25000;
+    else if (49000 <= point) targetPoint = point;
 
     return Number(((100 * point) / targetPoint).toFixed(0));
 }
