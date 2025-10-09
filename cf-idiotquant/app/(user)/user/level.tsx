@@ -53,36 +53,16 @@ export function getProgress(point: number) {
 export function getBadgeColor(point: number) {
     let color: "primary" | "secondary" | "info" | "success" | "warning" | "error" | undefined = undefined;
 
-    if (100 > point) {
-        color = undefined;
-    }
-    if (200 > point) {
-        color = "info";
-    }
-    if (400 > point) {
-        color = "success";
-    }
-    if (800 > point) {
-        color = "warning";
-    }
-    if (1500 > point) {
-        color = "error";
-    }
-    if (3000 > point) {
-        color = "primary";
-    }
-    if (6000 > point) {
-        color = "secondary";
-    }
-    if (12000 > point) {
-        color = "secondary";
-    }
-    if (25000 > point) {
-        color = "secondary";
-    }
-    if (49000 <= point) {
-        color = "secondary";
-    }
+    if (100 > point) color = undefined;
+    else if (200 > point) color = "info";
+    else if (400 > point) color = "success";
+    else if (800 > point) color = "warning";
+    else if (1500 > point) color = "error";
+    else if (3000 > point) color = "primary";
+    else if (6000 > point) color = "secondary";
+    else if (12000 > point) color = "secondary";
+    else if (25000 > point) color = "secondary";
+    else if (49000 <= point) color = "secondary";
 
     return color;
 }
