@@ -47,7 +47,7 @@ export function getProgress(point: number) {
     if (25000 > point) targetPoint = 25000;
     if (49000 <= point) targetPoint = point;
 
-    return (100 * point) / targetPoint;
+    return Number(((100 * point) / targetPoint).toFixed(0));
 }
 
 export function getBadgeColor(point: number) {
