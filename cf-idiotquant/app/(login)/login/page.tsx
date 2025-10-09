@@ -81,8 +81,7 @@ export default function LoginPage() {
 
     if (DEBUG) console.log(`[LoginPage] kakaoTotal:`, kakaoTotal, `, undefined == kakaoTotal`, undefined == kakaoTotal);
     const KakaoIcon = () => {
-        // if ("cf-need-retry" == loginState || undefined == kakaoTotal || kakaoTotal?.id == 0 || !!!kakaoTotal?.kakao_account?.profile?.nickname)
-        {
+        if ("cf-need-retry" == loginState || undefined == kakaoTotal || kakaoTotal?.id == 0 || !!!kakaoTotal?.kakao_account?.profile?.nickname) {
             return <>
                 {("cf-login" == loginState) && <LoadKakaoTotal />}
                 <div className="p-5">
