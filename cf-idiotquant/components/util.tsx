@@ -1,11 +1,13 @@
 "use client"
 
+import { defined } from "three/tsl";
+
 //////////////////////////////////////////////////////////////////////////////
 // Util
 
 const DEBUG = false;
 export class Util {
-    static UnitConversion(num: number, addWon: boolean) {
+    static UnitConversion(num: number, addWon: boolean, _conversionCount?: number) {
         if (isNaN(num)) {
             return '0원';
         }
@@ -39,7 +41,7 @@ export class Util {
         const koreanUnit = ['', '만', '억', '조', '경'];
         const fixed = [0, 1, 0, 2, 5];
 
-        return Number(n).toFixed(fixed[conversionCount]) + koreanUnit[conversionCount] + currencyUnit;
+        return Number(n).toFixed(_conversionCount != undefined ? _conversionCount : fixed[conversionCount]) + koreanUnit[conversionCount] + currencyUnit;
 
         switch (conversionCount) {
             case 1: return `${Number(n).toFixed(1)}만${currencyUnit}`;

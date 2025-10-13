@@ -5,6 +5,7 @@ import { Button, Card, CardBody, CardHeader, Input, Typography } from "@material
 import { CalculatorIcon } from "@heroicons/react/24/outline";
 import ResultChart, { ChartDataItem } from "./ResultChart";
 import { DesignButton } from "@/components/designButton";
+import { Util } from "@/components/util";
 
 export interface CalculationResult {
     investmentAmount: number;
@@ -39,13 +40,13 @@ export default function Calculator() {
     } as const;
 
     // 입력값 상태
-    const [investmentAmount, setInvestmentAmount] = useState<number>(50000000);
+    const [investmentAmount, setInvestmentAmount] = useState<number>(5000);
     const [numberOfYears, setNumberOfYears] = useState<number>(12);
     const [interestRate, setInterestRate] = useState<number>(24);
     const [compounding, setCompounding] = useState<number>(InterestRateBenchmarkTermPerHour.eANNUALLY);
-    const [contributions, setContributions] = useState<number>(3000000);
+    const [contributions, setContributions] = useState<number>(300);
     const [frequency, setFrequency] = useState<number>(ContributionRateBenchmarkTermPerHour.eMONTHLY);
-    const [inflationRate, setInflationRate] = useState<number>(3);
+    const [inflationRate, setInflationRate] = useState<number>(0);
 
     // 계산 결과
     const [totalInvestment, setTotalInvestment] = useState<number>(0);
@@ -71,9 +72,9 @@ export default function Calculator() {
         const safeFrequency =
             frequency > 0 ? frequency : ContributionRateBenchmarkTermPerHour.eMONTHLY;
 
-        let principal = Number(investmentAmount); // ✅ 초기 투자금
+        let principal = Number(investmentAmount) * 10000; // ✅ 초기 투자금
         let additional = 0;
-        let cumulativeInvestment = Number(investmentAmount);
+        let cumulativeInvestment = Number(investmentAmount) * 10000;
 
         const yearlySnapshots: ChartDataItem[] = [];
 
@@ -86,8 +87,8 @@ export default function Calculator() {
 
         for (let hour = 1; hour <= totalHours; hour++) {
             if (safeFrequency > 0 && hour % safeFrequency === 0) {
-                additional += contributions;
-                cumulativeInvestment += contributions;
+                additional += (contributions * 10000); // 만원 단위 변환
+                cumulativeInvestment += (contributions * 10000); // 만원 단위 변환
             }
 
             if (safeCompounding > 0 && hour % safeCompounding === 0) {
@@ -195,42 +196,42 @@ export default function Calculator() {
                                 <div className="flex gap-1 text-xs">
                                     <div className="flex w-full justify-between min-w-32">
                                         <Button
-                                            onClick={() => increaseInvestment(100000)}
+                                            onClick={() => increaseInvestment(10)}
                                             className="px-1 py-1 text-[0.8rem] rounded min-w-14"
                                             variant="outline"
                                         >
                                             +10만
                                         </Button>
                                         <Button
-                                            onClick={() => increaseInvestment(1000000)}
+                                            onClick={() => increaseInvestment(100)}
                                             className="px-1 py-1 text-[0.8rem] rounded min-w-14"
                                             variant="outline"
                                         >
                                             +100만
                                         </Button>
                                         <Button
-                                            onClick={() => increaseInvestment(2000000)}
+                                            onClick={() => increaseInvestment(200)}
                                             className="px-1 py-1 text-[0.8rem] rounded min-w-14"
                                             variant="outline"
                                         >
                                             +200만
                                         </Button>
                                         <Button
-                                            onClick={() => increaseInvestment(5000000)}
+                                            onClick={() => increaseInvestment(500)}
                                             className="px-1 py-1 text-[0.8rem] rounded min-w-14"
                                             variant="outline"
                                         >
                                             +500만
                                         </Button>
                                         <Button
-                                            onClick={() => increaseInvestment(10000000)}
+                                            onClick={() => increaseInvestment(1000)}
                                             className="px-1 py-1 text-[0.8rem] rounded min-w-14"
                                             variant="outline"
                                         >
                                             +1000만
                                         </Button>
                                         <Button
-                                            onClick={() => increaseInvestment(20000000)}
+                                            onClick={() => increaseInvestment(2000)}
                                             className="px-1 py-1 text-[0.8rem] rounded min-w-14"
                                             variant="outline"
                                         >
@@ -251,7 +252,7 @@ export default function Calculator() {
                                     </div>
                                     <Typography type="small" color="primary" className="font-mono text-[0.8rem] mx-4 min-w-20 text-right">투자 시작 금액</Typography>
                                     <Input type="number" value={investmentAmount} onChange={(e) => { removeLeftZero(e); setInvestmentAmount(Number(e.target.value)); }} />
-                                    <Typography type="small" color="primary" className="font-mono text-[0.8rem] ml-2 min-w-8">(원)</Typography>
+                                    <Typography type="small" color="primary" className="font-mono text-[0.8rem] ml-2 min-w-20">({Util.UnitConversion(Number(investmentAmount) * 10000, true, investmentAmount >= 10000 ? 1 : 0)})</Typography>
 
                                 </div>
                             </div>
@@ -276,7 +277,7 @@ export default function Calculator() {
                                 </div>
                                 <Typography type="small" color="primary" className="font-mono text-[0.8rem] mx-4 min-w-20 text-right">투자 기간</Typography>
                                 <Input type="number" value={numberOfYears} onChange={(e) => { removeLeftZero(e); setNumberOfYears(Number(e.target.value)); }} />
-                                <Typography type="small" color="primary" className="font-mono text-[0.8rem] ml-2 min-w-8">(년)</Typography>
+                                <Typography type="small" color="primary" className="font-mono text-[0.8rem] ml-2 min-w-20">(년)</Typography>
                             </div>
                             <div className="w-full flex justify-between items-center border-b pb-1">
                                 <div className="flex gap-1 min-w-16">
@@ -299,48 +300,48 @@ export default function Calculator() {
                                 </div>
                                 <Typography type="small" color="primary" className="font-mono text-[0.8rem] mx-4 min-w-20 text-right">연 이자율</Typography>
                                 <Input type="number" value={interestRate} onChange={(e) => { removeLeftZero(e); setInterestRate(Number(e.target.value)); }} />
-                                <Typography type="small" color="primary" className="font-mono text-[0.8rem] ml-2 min-w-8">(%)</Typography>
+                                <Typography type="small" color="primary" className="font-mono text-[0.8rem] ml-2 min-w-20">(%)</Typography>
                             </div>
                             <div className="flex flex-col gap-1 border-b pb-1">
                                 <div className="flex gap-1 text-xs">
                                     <div className="flex w-full justify-between min-w-32">
                                         <Button
-                                            onClick={() => increaseContributions(100000)}
+                                            onClick={() => increaseContributions(10)}
                                             className="px-1 py-1 text-[0.8rem] rounded min-w-14"
                                             variant="outline"
                                         >
                                             +10만
                                         </Button>
                                         <Button
-                                            onClick={() => increaseContributions(1000000)}
+                                            onClick={() => increaseContributions(100)}
                                             className="px-1 py-1 text-[0.8rem] rounded min-w-14"
                                             variant="outline"
                                         >
                                             +100만
                                         </Button>
                                         <Button
-                                            onClick={() => increaseContributions(2000000)}
+                                            onClick={() => increaseContributions(200)}
                                             className="px-1 py-1 text-[0.8rem] rounded min-w-14"
                                             variant="outline"
                                         >
                                             +200만
                                         </Button>
                                         <Button
-                                            onClick={() => increaseContributions(5000000)}
+                                            onClick={() => increaseContributions(500)}
                                             className="px-1 py-1 text-[0.8rem] rounded min-w-14"
                                             variant="outline"
                                         >
                                             +500만
                                         </Button>
                                         <Button
-                                            onClick={() => increaseContributions(10000000)}
+                                            onClick={() => increaseContributions(1000)}
                                             className="px-1 py-1 text-[0.8rem] rounded min-w-14"
                                             variant="outline"
                                         >
                                             +1000만
                                         </Button>
                                         <Button
-                                            onClick={() => increaseContributions(20000000)}
+                                            onClick={() => increaseContributions(2000)}
                                             className="px-1 py-1 text-[0.8rem] rounded min-w-14"
                                             variant="outline"
                                         >
@@ -364,7 +365,7 @@ export default function Calculator() {
                                         <Typography type="small" color="primary" className="text-[0.7rem]">(매달)</Typography>
                                     </div>
                                     <Input type="number" value={contributions} onChange={(e) => { removeLeftZero(e); setContributions(Number(e.target.value)); }} />
-                                    <Typography type="small" color="primary" className="font-mono text-[0.8rem] ml-2 min-w-8">(원)</Typography>
+                                    <Typography type="small" color="primary" className="font-mono text-[0.8rem] ml-2 min-w-20">({Util.UnitConversion(Number(contributions) * 10000, true, contributions >= 10000 ? 1 : 0)})</Typography>
                                 </div>
                             </div>
                             <div className="w-full flex justify-between items-center border-b pb-1">
@@ -388,24 +389,24 @@ export default function Calculator() {
                                 </div>
                                 <Typography type="small" color="primary" className="font-mono text-[0.8rem] mx-4 min-w-20 text-right">물가상승률</Typography>
                                 <Input type="number" value={inflationRate} onChange={(e) => { removeLeftZero(e); setInflationRate(Number(e.target.value)); }} />
-                                <Typography type="small" color="primary" className="font-mono text-[0.8rem] ml-2 min-w-8">(%)</Typography>
+                                <Typography type="small" color="primary" className="font-mono text-[0.8rem] ml-2 min-w-20">(%)</Typography>
                             </div>
 
                             {/* 계산 결과 */}
                             <div className="border-t py-1 pl-1 rounded-lg border">
                                 <div className="w-full flex justify-between items-center">
                                     <Typography className="text-[0.8rem] mx-4 min-w-32 text-right">최종 수입금:</Typography>
-                                    <Typography className="tabular-nums text-base text-right min-w-32">{finalValue.toLocaleString()}</Typography>
+                                    <Typography className="!font-mono !tabular-nums tracking-tight text-right min-w-32">{finalValue.toLocaleString()}</Typography>
                                     <Typography className="text-[0.8rem] ml-2 min-w-8">원</Typography>
                                 </div>
                                 <div className="w-full flex justify-between items-center">
                                     <Typography className="text-[0.8rem] mx-4 min-w-32 text-right">누적 투자금:</Typography>
-                                    <Typography className="tabular-nums text-base text-right min-w-32">{totalInvestment.toLocaleString()}</Typography>
+                                    <Typography className="!font-mono !tabular-nums tracking-tight text-right min-w-32">{totalInvestment.toLocaleString()}</Typography>
                                     <Typography className="text-[0.8rem] ml-2 min-w-8">원</Typography>
                                 </div>
                                 <div className="w-full flex justify-between items-center">
                                     <Typography className="text-[0.8rem] mx-4 min-w-32 text-right">최종 수익률:</Typography>
-                                    <Typography className="tabular-nums text-base text-right min-w-32">{finalRateOfReturn.toFixed(2)}</Typography>
+                                    <Typography className="!font-mono !tabular-nums tracking-tight text-right min-w-32">{finalRateOfReturn.toFixed(2)}</Typography>
                                     <Typography className="text-[0.8rem] ml-2 min-w-8">%</Typography>
                                 </div>
                             </div>
