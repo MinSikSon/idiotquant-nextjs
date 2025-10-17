@@ -192,10 +192,10 @@
     material-ripple-effects "2.0.1"
     tailwind-merge "1.8.1"
 
-"@next/bundle-analyzer@^15.4.6":
-  version "15.4.6"
-  resolved "https://registry.npmjs.org/@next/bundle-analyzer/-/bundle-analyzer-15.4.6.tgz"
-  integrity sha512-LZWqTQgIpfhblT77VVc1r4qtHJY1pfZOAIx8zNtliU7L3pMjpNrG4rYWikJ7AyAI/RgYyt2sCVWqkeOZmFp7Zg==
+"@next/bundle-analyzer@^15.5.6":
+  version "15.5.6"
+  resolved "https://registry.npmjs.org/@next/bundle-analyzer/-/bundle-analyzer-15.5.6.tgz"
+  integrity sha512-IHeyk2s9/fVDAGDLNbBkCSG8XBabhuMajiaJggjsg4GyFIswh78DzLo5Nl5th8QTs3U/teYeczvfeV9w1Tx3qA==
   dependencies:
     webpack-bundle-analyzer "4.10.1"
 

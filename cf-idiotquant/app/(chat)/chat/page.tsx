@@ -4,7 +4,6 @@ import { reqPostLaboratory } from "@/lib/features/ai/aiSlice";
 import { useState, useEffect, KeyboardEvent } from "react";
 
 import { useAppDispatch, useAppSelector } from "@/lib/hooks";
-import { Button } from "@material-tailwind/react";
 
 import dynamic from 'next/dynamic';
 

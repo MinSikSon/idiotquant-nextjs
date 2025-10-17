@@ -357,7 +357,7 @@ export default function AlgorithmTrade() {
                             data_array={getLineDataArray()}
                             category_array={getCategoryArray()}
                             type={"area"}
-                            height={200}
+                            height={110}
                         />
                     </div>
                 </div>
