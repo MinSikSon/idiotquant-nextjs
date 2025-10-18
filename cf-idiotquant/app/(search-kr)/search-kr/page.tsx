@@ -564,9 +564,10 @@ ${md}
                         ],
                       }
                     }
-                    height={`${fixed ? "40" : "80"}`}
+                    height={fixed ? 40 : 80}
                     show_yaxis_label={false}
                     type={"line"}
+                    legend_disable={true}
                   />
                 </div>
               </div>

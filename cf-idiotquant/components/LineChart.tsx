@@ -61,66 +61,64 @@ export default function LineChart(props: any) {
     }, [props.data_array, props.category_array]);
 
     return (
-        <div className="w-full h-[120px] bg-white dark:bg-gray-900 rounded-2xl p-3 shadow-sm">
-            <ResponsiveContainer width={props.width ?? "100%"} height={props.height ?? 120}>
-                <AreaChart data={data}>
-                    <defs>
-                        {props.data_array?.map((_: any, index: number) => (
-                            <linearGradient
-                                key={index}
-                                id={`grad_${index}`}
-                                x1="0"
-                                y1="0"
-                                x2="0"
-                                y2="1"
-                            >
-                                <stop offset="0%" stopColor={colorPalette[index]} stopOpacity={0.6} />
-                                <stop offset="100%" stopColor={colorPalette[index]} stopOpacity={0.2} />
-                            </linearGradient>
-                        ))}
-                    </defs>
-
-                    <XAxis
-                        dataKey="label"
-                        hide={true}
-                        tick={{ fill: textColor, fontSize: 8 }}
-                    />
-                    <YAxis
-                        hide={props.show_yaxis_label === false}
-                        tick={{ fill: textColor, fontSize: 8 }}
-                    />
-                    <Tooltip
-                        contentStyle={{
-                            backgroundColor: mode === "dark" ? "#111827" : "#f9fafb",
-                            border: "none",
-                            borderRadius: "8px",
-                            fontSize: "0.75rem",
-                        }}
-                        labelStyle={{ color: textColor }}
-                    />
-                    <Legend
-                        wrapperStyle={{
-                            fontSize: "10px",
-                            paddingTop: "4px",
-                            color: textColor,
-                        }}
-                    />
-
-                    {props.data_array?.map((s: any, index: number) => (
-                        <Area
-                            key={s.name}
-                            type="monotone"
-                            dataKey={s.name}
-                            name={s.name}
-                            stroke={colorPalette[index]}
-                            strokeWidth={2}
-                            fill={`url(#grad_${index})`}
-                            isAnimationActive={false}
-                            dot={false}
-                        />
+        <ResponsiveContainer width={props.width ?? "100%"} height={props.height ?? 120}>
+            <AreaChart data={data}>
+                <defs>
+                    {props.data_array?.map((_: any, index: number) => (
+                        <linearGradient
+                            key={index}
+                            id={`grad_${index}`}
+                            x1="0"
+                            y1="0"
+                            x2="0"
+                            y2="1"
+                        >
+                            <stop offset="0%" stopColor={colorPalette[index]} stopOpacity={0.6} />
+                            <stop offset="100%" stopColor={colorPalette[index]} stopOpacity={0.2} />
+                        </linearGradient>
                     ))}
-                </AreaChart>
-            </ResponsiveContainer>
-        </div>
+                </defs>
+
+                <XAxis
+                    dataKey="label"
+                    hide={true}
+                    tick={{ fill: textColor, fontSize: 8 }}
+                />
+                <YAxis
+                    hide={props.show_yaxis_label === false}
+                    tick={{ fill: textColor, fontSize: 8 }}
+                />
+                <Tooltip
+                    contentStyle={{
+                        backgroundColor: mode === "dark" ? "#111827" : "#f9fafb",
+                        border: "none",
+                        borderRadius: "8px",
+                        fontSize: "0.75rem",
+                    }}
+                    labelStyle={{ color: textColor }}
+                />
+                {!!!props.legend_disable && <Legend
+                    wrapperStyle={{
+                        fontSize: "10px",
+                        paddingTop: "4px",
+                        color: textColor,
+                    }}
+                />}
+
+                {props.data_array?.map((s: any, index: number) => (
+                    <Area
+                        key={s.name}
+                        type="monotone"
+                        dataKey={s.name}
+                        name={s.name}
+                        stroke={colorPalette[index]}
+                        strokeWidth={2}
+                        fill={`url(#grad_${index})`}
+                        isAnimationActive={false}
+                        dot={false}
+                    />
+                ))}
+            </AreaChart>
+        </ResponsiveContainer>
     );
 }

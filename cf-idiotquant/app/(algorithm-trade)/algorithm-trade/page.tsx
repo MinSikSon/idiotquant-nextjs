@@ -1,10 +1,5 @@
 "use client"
 
-import dynamic from 'next/dynamic';
-
-const LineChart = dynamic(() => import('@/components/LineChart'));
-// import LineChart from "@/components/LineChart";
-
 import { DesignButton } from "@/components/designButton";
 import TablesExample8, { Example8TableHeadType, Example8TableRowType, TablesExample8PropsType } from "@/components/tableExample8";
 import { CapitalTokenType, QuantRule, QuantRuleValue, reqGetQuantRule, reqGetQuantRuleDesc, reqGetUsCapitalToken, selectCapitalToken, selectInquirePriceMulti, selectQuantRule, selectQuantRuleDesc, selectUsCapitalToken } from "@/lib/features/algorithmTrade/algorithmTradeSlice";
@@ -20,6 +15,7 @@ import {
 import CountUp from '@/src/TextAnimations/CountUp/CountUp';
 import GradientText from '@/src/TextAnimations/GradientText/GradientText';
 import Loading from '@/components/loading';
+import LineChart from '@/components/LineChart';
 
 const DEBUG = false;
 
