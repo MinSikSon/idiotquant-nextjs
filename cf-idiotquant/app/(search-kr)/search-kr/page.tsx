@@ -21,7 +21,6 @@ import remarkGfm from 'remark-gfm';
 import remarkMath from 'remark-math';
 import rehypeRaw from 'rehype-raw';
 import rehypeKatex from 'rehype-katex';
-import 'katex/dist/katex.min.css';
 import rehypeHighlight from 'rehype-highlight';
 import 'highlight.js/styles/github.css';
 
@@ -69,6 +68,8 @@ export default function SearchKr() {
   const kakaoTotalState = useAppSelector(selectKakaoTatalState);
 
   useEffect(() => {
+    import('katex/dist/katex.min.css');
+
     if (DEBUG) console.log(`[SearchKr] isValidCookie("koreaInvestmentToken") 1`, isValidCookie("koreaInvestmentToken"));
 
     const handleScroll = () => {

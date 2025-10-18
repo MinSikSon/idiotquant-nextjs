@@ -13,7 +13,6 @@ import remarkGfm from 'remark-gfm';
 import remarkMath from 'remark-math';
 import rehypeRaw from 'rehype-raw';
 import rehypeKatex from 'rehype-katex';
-import 'katex/dist/katex.min.css';
 import { AiHistoryType, AiOutputResultUsageType, pushAiHistory, selectAiHistory, selectAiStreamOutput } from "@/lib/features/ai/aiStreamSlice";
 
 const DEBUG = false;
@@ -33,6 +32,7 @@ export default function Chat() {
 
     useEffect(() => {
         if (DEBUG) console.log(`[Chat]`);
+        import('katex/dist/katex.min.css');
     }, []);
 
     useEffect(() => {

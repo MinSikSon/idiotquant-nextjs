@@ -24,7 +24,6 @@ import remarkGfm from 'remark-gfm';
 import remarkMath from 'remark-math';
 import rehypeRaw from 'rehype-raw';
 import rehypeKatex from 'rehype-katex';
-import 'katex/dist/katex.min.css';
 import rehypeHighlight from 'rehype-highlight';
 import 'highlight.js/styles/github.css';
 import { selectKakaoTatalState } from "@/lib/features/kakao/kakaoSlice";
@@ -59,6 +58,8 @@ export default function SearchUs() {
     const scrollListenerAdded = useRef(false);
 
     useEffect(() => {
+        import('katex/dist/katex.min.css');
+
         if (scrollListenerAdded.current) return; // 이미 등록되어 있으면 무시
         scrollListenerAdded.current = true;
         const handleScroll = () => {
