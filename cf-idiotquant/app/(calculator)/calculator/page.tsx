@@ -1,10 +1,10 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import { Button, Card, CardBody, CardHeader, Input, Typography } from "@material-tailwind/react";
+import { Box, Button, Card, Text, TextField } from "@radix-ui/themes";
+
 import { CalculatorIcon } from "@heroicons/react/24/outline";
 import ResultChart, { ChartDataItem } from "./ResultChart";
-import { DesignButton } from "@/components/designButton";
 import { Util } from "@/components/util";
 
 export interface CalculationResult {
@@ -187,9 +187,9 @@ export default function Calculator() {
             </div>
 
             <div className="md:flex lg:flex xl:flex 2xl:flex">
-                <Card className="max-w-lg mx-auto shadow-xl rounded-2xl">
+                <Card className="w-full mx-auto shadow-xl rounded-2xl">
                     {/* <CardHeader className="p-0"></CardHeader> */}
-                    <CardBody className="space-y-4">
+                    <Box className="space-y-4">
                         <div className="flex flex-col gap-1">
                             {/* 입력폼 */}
                             <div className="flex flex-col gap-1 border-b pb-1">
@@ -197,45 +197,57 @@ export default function Calculator() {
                                     <div className="flex w-full justify-between min-w-32">
                                         <Button
                                             onClick={() => increaseInvestment(10)}
-                                            className="px-1 py-1 text-[0.8rem] rounded min-w-14"
                                             variant="outline"
+                                            radius="full"
                                         >
-                                            +10만
+                                            <span className="text-[0.6rem]">
+                                                +10만
+                                            </span>
                                         </Button>
                                         <Button
                                             onClick={() => increaseInvestment(100)}
-                                            className="px-1 py-1 text-[0.8rem] rounded min-w-14"
                                             variant="outline"
+                                            radius="full"
                                         >
-                                            +100만
+                                            <span className="text-[0.6rem]">
+                                                +100만
+                                            </span>
                                         </Button>
                                         <Button
                                             onClick={() => increaseInvestment(200)}
-                                            className="px-1 py-1 text-[0.8rem] rounded min-w-14"
                                             variant="outline"
+                                            radius="full"
                                         >
-                                            +200만
+                                            <span className="text-[0.6rem]">
+                                                +200만
+                                            </span>
                                         </Button>
                                         <Button
                                             onClick={() => increaseInvestment(500)}
-                                            className="px-1 py-1 text-[0.8rem] rounded min-w-14"
                                             variant="outline"
+                                            radius="full"
                                         >
-                                            +500만
+                                            <span className="text-[0.6rem]">
+                                                +500만
+                                            </span>
                                         </Button>
                                         <Button
                                             onClick={() => increaseInvestment(1000)}
-                                            className="px-1 py-1 text-[0.8rem] rounded min-w-14"
                                             variant="outline"
+                                            radius="full"
                                         >
-                                            +1000만
+                                            <span className="text-[0.6rem]">
+                                                +1000만
+                                            </span>
                                         </Button>
                                         <Button
                                             onClick={() => increaseInvestment(2000)}
-                                            className="px-1 py-1 text-[0.8rem] rounded min-w-14"
                                             variant="outline"
+                                            radius="full"
                                         >
-                                            +2000만
+                                            <span className="text-[0.6rem]">
+                                                +2000만
+                                            </span>
                                         </Button>
                                     </div>
                                 </div>
@@ -245,14 +257,17 @@ export default function Calculator() {
                                             onClick={() => setInvestmentAmount(0)}
                                             className="px-1 py-1 text-[0.8rem] rounded min-w-14"
                                             // variant="outline"
-                                            color="error"
+                                            // color="error"
+                                            color="crimson"
+                                            variant="classic"
+                                            radius="full"
                                         >
                                             CLEAR
                                         </Button>
                                     </div>
-                                    <Typography type="small" color="primary" className="font-mono text-[0.8rem] mx-4 min-w-20 text-right">투자 시작 금액</Typography>
-                                    <Input type="number" value={investmentAmount} onChange={(e) => { removeLeftZero(e); setInvestmentAmount(Number(e.target.value)); }} />
-                                    <Typography type="small" color="primary" className="font-mono text-[0.8rem] ml-2 min-w-20">({Util.UnitConversion(Number(investmentAmount) * 10000, true, investmentAmount >= 10000 ? 1 : 0)})</Typography>
+                                    <Text className="font-mono text-[0.8rem] mx-4 min-w-20 text-right">투자 시작 금액</Text>
+                                    <TextField.Root type="number" value={investmentAmount} onChange={(e) => { removeLeftZero(e); setInvestmentAmount(Number(e.target.value)); }} />
+                                    <Text className="font-mono text-[0.8rem] ml-2 min-w-20">({Util.UnitConversion(Number(investmentAmount) * 10000, true, investmentAmount >= 10000 ? 1 : 0)})</Text>
 
                                 </div>
                             </div>
@@ -261,91 +276,107 @@ export default function Calculator() {
                                     <Button
                                         onClick={() => increaseNumberOfYears(-1)}
                                         className="px-1 py-1 text-[0.8rem] rounded min-w-7"
-                                        color="info"
+                                        // color="info"
                                         variant="outline"
+                                        radius="full"
                                     >
                                         -1
                                     </Button>
                                     <Button
                                         onClick={() => increaseNumberOfYears(1)}
                                         className="px-1 py-1 text-[0.8rem] rounded min-w-7"
-                                        color="info"
+                                        // color="info"
                                         variant="outline"
+                                        radius="full"
                                     >
                                         +1
                                     </Button>
                                 </div>
-                                <Typography type="small" color="primary" className="font-mono text-[0.8rem] mx-4 min-w-20 text-right">투자 기간</Typography>
-                                <Input type="number" value={numberOfYears} onChange={(e) => { removeLeftZero(e); setNumberOfYears(Number(e.target.value)); }} />
-                                <Typography type="small" color="primary" className="font-mono text-[0.8rem] ml-2 min-w-20">(년)</Typography>
+                                <Text className="font-mono text-[0.8rem] mx-4 min-w-20 text-right">투자 기간</Text>
+                                <TextField.Root type="number" value={numberOfYears} onChange={(e) => { removeLeftZero(e); setNumberOfYears(Number(e.target.value)); }} />
+                                <Text className="font-mono text-[0.8rem] ml-2 min-w-20">(년)</Text>
                             </div>
                             <div className="w-full flex justify-between items-center border-b pb-1">
                                 <div className="flex gap-1 min-w-16">
                                     <Button
                                         onClick={() => increaseInterestRate(-1)}
                                         className="px-1 py-1 text-[0.8rem] rounded min-w-7"
-                                        color="info"
+                                        // color="info"
                                         variant="outline"
+                                        radius="full"
                                     >
                                         -1
                                     </Button>
                                     <Button
                                         onClick={() => increaseInterestRate(1)}
                                         className="px-1 py-1 text-[0.8rem] rounded min-w-7"
-                                        color="info"
+                                        // color="info"
                                         variant="outline"
+                                        radius="full"
                                     >
                                         +1
                                     </Button>
                                 </div>
-                                <Typography type="small" color="primary" className="font-mono text-[0.8rem] mx-4 min-w-20 text-right">연 이자율</Typography>
-                                <Input type="number" value={interestRate} onChange={(e) => { removeLeftZero(e); setInterestRate(Number(e.target.value)); }} />
-                                <Typography type="small" color="primary" className="font-mono text-[0.8rem] ml-2 min-w-20">(%)</Typography>
+                                <Text className="font-mono text-[0.8rem] mx-4 min-w-20 text-right">연 이자율</Text>
+                                <TextField.Root type="number" value={interestRate} onChange={(e) => { removeLeftZero(e); setInterestRate(Number(e.target.value)); }} />
+                                <Text className="font-mono text-[0.8rem] ml-2 min-w-20">(%)</Text>
                             </div>
                             <div className="flex flex-col gap-1 border-b pb-1">
                                 <div className="flex gap-1 text-xs">
                                     <div className="flex w-full justify-between min-w-32">
                                         <Button
                                             onClick={() => increaseContributions(10)}
-                                            className="px-1 py-1 text-[0.8rem] rounded min-w-14"
                                             variant="outline"
+                                            radius="full"
                                         >
-                                            +10만
+                                            <span className="text-[0.6rem]">
+                                                +10만
+                                            </span>
                                         </Button>
                                         <Button
                                             onClick={() => increaseContributions(100)}
-                                            className="px-1 py-1 text-[0.8rem] rounded min-w-14"
                                             variant="outline"
+                                            radius="full"
                                         >
-                                            +100만
+                                            <span className="text-[0.6rem]">
+                                                +100만
+                                            </span>
                                         </Button>
                                         <Button
                                             onClick={() => increaseContributions(200)}
-                                            className="px-1 py-1 text-[0.8rem] rounded min-w-14"
                                             variant="outline"
+                                            radius="full"
                                         >
-                                            +200만
+                                            <span className="text-[0.6rem]">
+                                                +200만
+                                            </span>
                                         </Button>
                                         <Button
                                             onClick={() => increaseContributions(500)}
-                                            className="px-1 py-1 text-[0.8rem] rounded min-w-14"
                                             variant="outline"
+                                            radius="full"
                                         >
-                                            +500만
+                                            <span className="text-[0.6rem]">
+                                                +500만
+                                            </span>
                                         </Button>
                                         <Button
                                             onClick={() => increaseContributions(1000)}
-                                            className="px-1 py-1 text-[0.8rem] rounded min-w-14"
                                             variant="outline"
+                                            radius="full"
                                         >
-                                            +1000만
+                                            <span className="text-[0.6rem]">
+                                                +1000만
+                                            </span>
                                         </Button>
                                         <Button
                                             onClick={() => increaseContributions(2000)}
-                                            className="px-1 py-1 text-[0.8rem] rounded min-w-14"
                                             variant="outline"
+                                            radius="full"
                                         >
-                                            +2000만
+                                            <span className="text-[0.6rem]">
+                                                +2000만
+                                            </span>
                                         </Button>
                                     </div>
                                 </div>
@@ -355,17 +386,20 @@ export default function Calculator() {
                                             onClick={() => setContributions(0)}
                                             className="px-1 py-1 text-[0.8rem] rounded min-w-14"
                                             // variant="outline"
-                                            color="error"
+                                            // color="error"
+                                            color="crimson"
+                                            variant="classic"
+                                            radius="full"
                                         >
                                             CLEAR
                                         </Button>
                                     </div>
                                     <div className="flex flex-col font-mono text-[0.8rem] mx-4 min-w-20 text-right">
-                                        <Typography type="small" color="primary" className="">추가 납입금</Typography>
-                                        <Typography type="small" color="primary" className="text-[0.7rem]">(매달)</Typography>
+                                        <Text className="">추가 납입금</Text>
+                                        <Text className="text-[0.7rem]">(매달)</Text>
                                     </div>
-                                    <Input type="number" value={contributions} onChange={(e) => { removeLeftZero(e); setContributions(Number(e.target.value)); }} />
-                                    <Typography type="small" color="primary" className="font-mono text-[0.8rem] ml-2 min-w-20">({Util.UnitConversion(Number(contributions) * 10000, true, contributions >= 10000 ? 1 : 0)})</Typography>
+                                    <TextField.Root type="number" value={contributions} onChange={(e) => { removeLeftZero(e); setContributions(Number(e.target.value)); }} />
+                                    <Text className="font-mono text-[0.8rem] ml-2 min-w-20">({Util.UnitConversion(Number(contributions) * 10000, true, contributions >= 10000 ? 1 : 0)})</Text>
                                 </div>
                             </div>
                             <div className="w-full flex justify-between items-center border-b pb-1">
@@ -373,7 +407,7 @@ export default function Calculator() {
                                     <Button
                                         onClick={() => increaseInflationRate(-1)}
                                         className="px-1 py-1 text-[0.8rem] rounded min-w-7"
-                                        color="info"
+                                        // color="info"
                                         variant="outline"
                                     >
                                         -1
@@ -381,33 +415,33 @@ export default function Calculator() {
                                     <Button
                                         onClick={() => increaseInflationRate(1)}
                                         className="px-1 py-1 text-[0.8rem] rounded min-w-7"
-                                        color="info"
+                                        // color="info"
                                         variant="outline"
                                     >
                                         +1
                                     </Button>
                                 </div>
-                                <Typography type="small" color="primary" className="font-mono text-[0.8rem] mx-4 min-w-20 text-right">물가상승률</Typography>
-                                <Input type="number" value={inflationRate} onChange={(e) => { removeLeftZero(e); setInflationRate(Number(e.target.value)); }} />
-                                <Typography type="small" color="primary" className="font-mono text-[0.8rem] ml-2 min-w-20">(%)</Typography>
+                                <Text className="font-mono text-[0.8rem] mx-4 min-w-20 text-right">물가상승률</Text>
+                                <TextField.Root type="number" value={inflationRate} onChange={(e) => { removeLeftZero(e); setInflationRate(Number(e.target.value)); }} />
+                                <Text className="font-mono text-[0.8rem] ml-2 min-w-20">(%)</Text>
                             </div>
 
                             {/* 계산 결과 */}
                             <div className="border-t py-1 pl-1 rounded-lg border">
                                 <div className="w-full flex justify-between items-center">
-                                    <Typography className="text-[0.8rem] mx-4 min-w-32 text-right">최종 수입금:</Typography>
-                                    <Typography className="!font-mono !tabular-nums tracking-tight text-right min-w-32">{finalValue.toLocaleString()}</Typography>
-                                    <Typography className="text-[0.8rem] ml-2 min-w-8">원</Typography>
+                                    <Text className="text-[0.8rem] mx-4 min-w-32 text-right">최종 수입금:</Text>
+                                    <Text className="!font-mono !tabular-nums tracking-tight text-right min-w-32">{finalValue.toLocaleString()}</Text>
+                                    <Text className="text-[0.8rem] ml-2 min-w-8">원</Text>
                                 </div>
                                 <div className="w-full flex justify-between items-center">
-                                    <Typography className="text-[0.8rem] mx-4 min-w-32 text-right">누적 투자금:</Typography>
-                                    <Typography className="!font-mono !tabular-nums tracking-tight text-right min-w-32">{totalInvestment.toLocaleString()}</Typography>
-                                    <Typography className="text-[0.8rem] ml-2 min-w-8">원</Typography>
+                                    <Text className="text-[0.8rem] mx-4 min-w-32 text-right">누적 투자금:</Text>
+                                    <Text className="!font-mono !tabular-nums tracking-tight text-right min-w-32">{totalInvestment.toLocaleString()}</Text>
+                                    <Text className="text-[0.8rem] ml-2 min-w-8">원</Text>
                                 </div>
                                 <div className="w-full flex justify-between items-center">
-                                    <Typography className="text-[0.8rem] mx-4 min-w-32 text-right">최종 수익률:</Typography>
-                                    <Typography className="!font-mono !tabular-nums tracking-tight text-right min-w-32">{finalRateOfReturn.toFixed(2)}</Typography>
-                                    <Typography className="text-[0.8rem] ml-2 min-w-8">%</Typography>
+                                    <Text className="text-[0.8rem] mx-4 min-w-32 text-right">최종 수익률:</Text>
+                                    <Text className="!font-mono !tabular-nums tracking-tight text-right min-w-32">{finalRateOfReturn.toFixed(2)}</Text>
+                                    <Text className="text-[0.8rem] ml-2 min-w-8">%</Text>
                                 </div>
                             </div>
 
@@ -416,7 +450,7 @@ export default function Calculator() {
                                 <ResultChart data={chartData} height={"h-80"} />
                             </div>
                             {/* 히스토리 등록 버튼 */}
-                            <DesignButton
+                            {/* <DesignButton
                                 handleOnClick={registerResult}
                                 buttonName="계산 결과 등록 🦄"
                                 buttonBgColor="bg-blue-500"
@@ -424,11 +458,19 @@ export default function Calculator() {
                                 buttonShadowColor="#D5D5D5"
                                 textStyle="text-white text-xs pt-0.5 font-bold"
                                 buttonStyle="rounded-lg p-4"
-                            />
+                            /> */}
+                            <Button
+                                onClick={registerResult}
+                                className="w-full mt-2 mb-1 py-2 text-[0.9rem] rounded-lg"
+                                variant="classic"
+                                color="blue"
+                            >
+                                계산 결과 등록 🦄
+                            </Button>
 
                             {/* 히스토리 리스트 */}
                             <div className="mt-4">
-                                <Typography className="font-bold text-sm">계산 결과 히스토리:</Typography>
+                                <Text className="font-bold text-sm">계산 결과 히스토리:</Text>
                                 <ul className="list-disc list-inside">
                                     {resultList.map((res, idx) => (
                                         <li key={idx} className="text-xs cursor-pointer hover:text-blue-400" onClick={() => loadHistory(res)}>
@@ -438,15 +480,16 @@ export default function Calculator() {
                                 </ul>
                             </div>
                         </div>
-
-                    </CardBody>
+                    </Box>
                 </Card>
-                <Card className="hidden md:block max-w-lg mx-auto shadow-xl rounded-2xl">
-                    {/* 차트 */}
-                    <div className="pb-8">
-                        <ResultChart data={chartData} height={"h-96"} />
-                    </div>
-                </Card>
+                <div className="mb-4 hidden md:block border rounded-md w-full">
+                    <Card className="max-w-lg mx-auto shadow-xl rounded-2xl w-full">
+                        {/* 차트 */}
+                        <div className="pb-8">
+                            <ResultChart data={chartData} height={"h-96"} />
+                        </div>
+                    </Card>
+                </div>
             </div>
         </div>
     );

@@ -1,15 +1,8 @@
 import React from "react";
 
-// @material-tailwind/react
-import {
-    Card,
-    Popover,
-    Button,
-    Spinner,
-} from "@material-tailwind/react";
 import { DesignButton } from "./designButton";
 import { ArrowDownIcon, ArrowUpIcon } from "@heroicons/react/24/outline";
-
+import { Box, Button, Card, Spinner } from "@radix-ui/themes";
 
 const DEBUG = false;
 export interface Example8TableRowType {
@@ -76,7 +69,7 @@ function TablesExample8({
     const ADD_COUNT = 50;
     return (
         <Card className="flex flex-col dark:bg-black dark:text-white h-full w-full rounded-none p-0 m-0">
-            <Card.Header className="flex flex-col justify-between w-full p-0 m-0">
+            <Box className="flex flex-col justify-between w-full p-0 m-0">
                 <div className="">
                     {title}
                 </div>
@@ -89,12 +82,12 @@ function TablesExample8({
                 <div className="">
                     {market_date}
                 </div>
-            </Card.Header>
+            </Box>
             {tableRow.length == 0 ?
-                <Button variant="ghost">{!!msg ? <>{msg}</> : <><Spinner size="sm" /> {DEBUG ? "6" : ""}</>}</Button>
+                <Button variant="ghost">{!!msg ? <>{msg}</> : <><Spinner /> {DEBUG ? "6" : ""}</>}</Button>
                 :
                 <>
-                    <Card.Body className="overflow-scroll [scrollbar-width:thin] [scrollbar-color:#888_transparent] !px-0 pt-0 pb-2 dark:bg-black">
+                    <Box className="overflow-scroll [scrollbar-width:thin] [scrollbar-color:#888_transparent] !px-0 pt-0 pb-2 dark:bg-black">
                         <table className="w-full min-w-max table-auto items-center">
                             <thead className="text-xs">
                                 <tr>
@@ -242,7 +235,7 @@ function TablesExample8({
                                 )}
                             </tbody>
                         </table>
-                    </Card.Body>
+                    </Box>
                     {!!setVisibleCount ? <DesignButton
                         handleOnClick={() => setVisibleCount((prev: any) => prev + ADD_COUNT)}
                         buttonName={`more +${ADD_COUNT}`}

@@ -2,9 +2,9 @@
 
 import { DesignButton } from "@/components/designButton";
 import FuzzyText from "@/components/design/FuzzyText";
-import { Button, Card, Typography } from "@material-tailwind/react";
 import { Metadata } from "next";
 import Link from "next/link";
+import { Card, Box } from "@radix-ui/themes";
 
 export const metadata: Metadata = {
     title: "Not found",
@@ -14,7 +14,7 @@ export default function NotFound({ warnText = "Oops! Not Found!" }) {
     return <>
         <div className="flex justify-center items-center">
             <Card className={`border-2 border-gray-100 shadow-none`}>
-                <Card.Header>
+                <Box>
                     <div className="flex items-center justify-center text-xl">
                         <FuzzyText
                             baseIntensity={0.2}
@@ -25,8 +25,8 @@ export default function NotFound({ warnText = "Oops! Not Found!" }) {
                             {warnText}
                         </FuzzyText>
                     </div>
-                </Card.Header>
-                <Card.Body>
+                </Box>
+                <Box>
                     <div className="mx-6">
                         <Link href={`/`}>
                             <DesignButton
@@ -40,7 +40,7 @@ export default function NotFound({ warnText = "Oops! Not Found!" }) {
                             />
                         </Link>
                     </div>
-                </Card.Body>
+                </Box>
             </Card>
         </div>
     </>;

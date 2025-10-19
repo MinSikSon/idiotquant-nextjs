@@ -1,5 +1,3 @@
-import { mtConfig } from "@material-tailwind/react";
-
 const config = {
   darkMode: ["class"], // class 기반으로 제어
   content: [
@@ -8,9 +6,8 @@ const config = {
     "./app/**/*.{js,ts,jsx,tsx,mdx}",
 
     "./src/**/*.{js,ts,jsx,tsx,mdx}",
-    "./node_modules/@material-tailwind/react/**/*.{js,ts,jsx,tsx}"
   ],
-  plugins: [mtConfig, require('@tailwindcss/typography')],
+  plugins: [require('@tailwindcss/typography')],
 
   mode: 'jit',
   theme: {

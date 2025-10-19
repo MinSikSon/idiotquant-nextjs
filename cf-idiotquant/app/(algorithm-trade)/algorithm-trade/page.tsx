@@ -6,18 +6,72 @@ import { CapitalTokenType, QuantRule, QuantRuleValue, reqGetQuantRule, reqGetQua
 import { reqGetCapitalToken, reqGetInquirePriceMulti } from "@/lib/features/algorithmTrade/algorithmTradeSlice";
 import { getKoreaInvestmentToken, KoreaInvestmentToken } from "@/lib/features/koreaInvestment/koreaInvestmentSlice";
 import { useAppDispatch, useAppSelector } from "@/lib/hooks";
-import { Button, ButtonGroup, Spinner, Switch, Tabs, Typography } from "@material-tailwind/react";
-import { useState, useEffect } from "react";
 
-import {
-    Popover,
-} from "@material-tailwind/react";
+import { useState, useEffect } from "react";
+import * as Tabs from "@radix-ui/react-tabs";
+import * as Popover from "@radix-ui/react-popover";
+
 import CountUp from '@/src/TextAnimations/CountUp/CountUp';
 import GradientText from '@/src/TextAnimations/GradientText/GradientText';
 import Loading from '@/components/loading';
 import LineChart from '@/components/LineChart';
 
 const DEBUG = false;
+
+function MarketTabs({ setMarket }: { setMarket: (m: "KR" | "US") => void }) {
+    return (
+        <Tabs.Root defaultValue="KR" className="mx-1">
+            <Tabs.List className="w-full flex bg-gray-300">
+                <Tabs.Trigger
+                    value="KR"
+                    onClick={() => setMarket("KR")}
+                    className="flex-1 p-1 text-white transition 
+                     data-[state=active]:bg-blue-500 data-[state=active]:font-bold"
+                >
+                    KR
+                </Tabs.Trigger>
+                <Tabs.Trigger
+                    value="US"
+                    onClick={() => setMarket("US")}
+                    className="flex-1 p-1 text-white transition 
+                     data-[state=active]:bg-blue-500 data-[state=active]:font-bold"
+                >
+                    US
+                </Tabs.Trigger>
+            </Tabs.List>
+        </Tabs.Root>
+    );
+}
+
+function RulePopover({
+    keyLabel,
+    value,
+    desc,
+}: {
+    keyLabel: string;
+    value: string | number;
+    desc?: string;
+}) {
+    return (
+        <Popover.Root>
+            <Popover.Trigger className="cursor-pointer">
+                {keyLabel}
+            </Popover.Trigger>
+
+            <Popover.Content
+                side="top"
+                sideOffset={6}
+                className="text-[0.6rem] p-2 bg-white dark:bg-gray-800 text-black dark:text-white shadow-xl rounded transition data-[state=open]:animate-in data-[state=closed]:animate-out"
+            >
+                <span className="font-bold">
+                    {keyLabel}(={value}):{" "}
+                </span>
+                {desc ?? "설명 없음"}
+                <Popover.Arrow className="fill-white dark:fill-gray-800" />
+            </Popover.Content>
+        </Popover.Root>
+    );
+}
 
 export default function AlgorithmTrade() {
     const dispatch = useAppDispatch();
@@ -225,17 +279,7 @@ export default function AlgorithmTrade() {
                                        transition-all duration-150 [box-shadow:0_4px_0_0_#D5D5D5,0_8px_0_0_#D5D5D541] border-[1px]
                                        `}
                 />
-                <Tabs defaultValue="KR" className="mx-1">
-                    <Tabs.List className="w-full bg-gray-300 py-0">
-                        <Tabs.Trigger className="w-full p-1 text-white" value="KR" onClick={() => setMarket("KR")}>
-                            KR
-                        </Tabs.Trigger>
-                        <Tabs.Trigger className="w-full p-1 text-white" value="US" onClick={() => setMarket("US")}>
-                            US
-                        </Tabs.Trigger>
-                        <Tabs.TriggerIndicator className="bg-blue-500 p-1" />
-                    </Tabs.List>
-                </Tabs>
+                <MarketTabs setMarket={setMarket} />
                 {"fulfilled" != capitalToken.state ?
                     <Loading />
                     : <>
@@ -256,14 +300,7 @@ export default function AlgorithmTrade() {
                                 const typedKey = key as keyof QuantRuleValue;
                                 return (
                                     <th key={key} className="border py-1 text-center">
-                                        <Popover>
-                                            <Popover.Trigger className="cursor-pointer">
-                                                {key}
-                                            </Popover.Trigger>
-                                            <Popover.Content className="text-[0.6rem] p-2 bg-white dark:bg-gray-800 text-black dark:text-white shadow-xl rounded">
-                                                <span className="font-bold">{key}(={quant_rule.value[typedKey]}): </span>{quant_rule_desc.value[typedKey] ?? "설명 없음"}
-                                            </Popover.Content>
-                                        </Popover>
+                                        <RulePopover keyLabel={key} value={quant_rule.value[typedKey]} desc={quant_rule_desc.value[typedKey] ?? "설명 없음"} />
                                     </th>
                                 );
                             })}
@@ -275,14 +312,7 @@ export default function AlgorithmTrade() {
                                 const typedKey = key as keyof QuantRuleValue;
                                 return (
                                     <td key={key} className="text-center border py-1">
-                                        <Popover>
-                                            <Popover.Trigger className="cursor-pointer">
-                                                {quant_rule.value[typedKey]}
-                                            </Popover.Trigger>
-                                            <Popover.Content className="text-[0.6rem] p-2 bg-white dark:bg-gray-800 text-black dark:text-white shadow-xl rounded">
-                                                <span className="font-bold">{key}(={quant_rule.value[typedKey]}): </span>{quant_rule_desc.value[typedKey] ?? "설명 없음"}
-                                            </Popover.Content>
-                                        </Popover>
+                                        <RulePopover keyLabel={key} value={quant_rule.value[typedKey]} desc={quant_rule_desc.value[typedKey] ?? "설명 없음"} />
                                     </td>
                                 );
                             })}

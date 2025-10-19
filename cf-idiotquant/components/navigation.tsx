@@ -1,10 +1,7 @@
 "use client"
 
 import { useState, useEffect, useRef } from "react";
-import {
-    Collapse,
-} from "@material-tailwind/react";
-import { Bars3Icon, CalculatorIcon, HomeIcon, LockClosedIcon, LockOpenIcon, MagnifyingGlassCircleIcon, SparklesIcon, WalletIcon, XMarkIcon } from "@heroicons/react/24/outline";
+import { Bars3Icon, CalculatorIcon, LockClosedIcon, LockOpenIcon, MagnifyingGlassCircleIcon, WalletIcon, XMarkIcon } from "@heroicons/react/24/outline";
 import Link from "next/link";
 
 import { useAppSelector } from "@/lib/hooks";
@@ -14,6 +11,7 @@ import { DesignButton } from "./designButton";
 import ThemeChanger from "@/components/theme_changer";
 import RotatingText from "@/src/TextAnimations/RotatingText/RotatingText";
 import { selectKakaoTotal } from "@/lib/features/kakao/kakaoSlice";
+import { Button, DropdownMenu } from "@radix-ui/themes";
 
 interface NavItemPropsType {
     url: string;
@@ -191,7 +189,7 @@ export function NavbarWithSimpleLinks() {
                 </div> */}
                     {/* <div className="md:hidden lg:hidden dark:bg-gray-900 pr-2 py-3"> */}
                     <div className="dark:bg-gray-900 pr-2 py-3">
-                        <DesignButton
+                        {/* <DesignButton
                             handleOnClick={() => handleOpen()}
                             buttonName={<>
                                 {open ? (
@@ -208,7 +206,26 @@ export function NavbarWithSimpleLinks() {
                         active:translate-y-1 active:[box-shadow:0_0px_0_0_#D5D5D5,0_0px_0_0_#D5D5D541] active:border-[0px]
                         transition-all duration-150 [box-shadow:0_4px_0_0_#D5D5D5,0_8px_0_0_#D5D5D541] border-[1px]
                         `}
-                        />
+                        /> */}
+                        <DropdownMenu.Root>
+                            <DropdownMenu.Trigger>
+                                <Button variant="soft">
+                                    Options
+                                    <DropdownMenu.TriggerIcon />
+                                </Button>
+                            </DropdownMenu.Trigger>
+                            <DropdownMenu.Content>
+                                <DropdownMenu.Item shortcut="⌘ E"><NavListFlexCol /></DropdownMenu.Item>
+                                <DropdownMenu.Item shortcut="⌘ D"><ThemeChanger
+                                    handleOpen={handleOpen}
+                                    toggleTheme={toggleTheme}
+                                    setToggleTheme={setToggleTheme}
+                                />
+                                </DropdownMenu.Item>
+                                <DropdownMenu.Separator />
+
+                            </DropdownMenu.Content>
+                        </DropdownMenu.Root>
                     </div>
                 </div>
                 <div className="transition-all duration-300 ease-in-out">
@@ -217,8 +234,10 @@ export function NavbarWithSimpleLinks() {
                         {/* <ThemeChanger /> */}
                     </div>
                 </div>
+
             </div>
-            <Collapse open={open} className="fixed z-50">
+
+            {/* <Collapse open={open} className="fixed z-50">
                 <div className="dark:border gap-2 fixed top-14 right-2 z-40 w-fit shadow-[0_0_10px_2px_rgba(0,0,0,0.2)] rounded-xl bg-white dark:bg-black dark:text-white flex flex-col p-2 justify-items-center justify-between">
                     <NavListFlexCol />
                     <ThemeChanger
@@ -227,7 +246,8 @@ export function NavbarWithSimpleLinks() {
                         setToggleTheme={setToggleTheme}
                     />
                 </div>
-            </Collapse>
+            </Collapse> */}
+
         </>
     );
 }

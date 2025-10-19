@@ -3,7 +3,8 @@
 import { KakaoMessage, setKakaoMessage } from "@/lib/features/login/loginSlice";
 import { selectTimestamp, setTimestamp } from "@/lib/features/timestamp/timestampSlice";
 import { useAppDispatch, useAppSelector } from "@/lib/hooks";
-import { Button, Card, CardBody, CardFooter, CardHeader } from "@material-tailwind/react";
+
+import { Box, Button, Card } from "@radix-ui/themes";
 
 import Image from "next/image";
 import Link from "next/link";
@@ -35,15 +36,15 @@ export function SendKakaoMessage(props: DefaultProps) {
     return <>
         <Card className="w-full max-w-lg mx-auto shadow-xl rounded-2xl">
             {/* 이미지 */}
-            <CardHeader className="p-0">
+            <Box className="p-0">
                 <div className="rounded-t-2xl object-cover w-full">관리자</div>
-            </CardHeader>
+            </Box>
 
             {/* 텍스트 내용 */}
-            <CardBody className="space-y-1">
+            <Box className="space-y-1">
                 <span className="rounded-t-2xl object-cover w-full text-gray-500">금일 Report KV DB 등록 및 카카오 메시지 발송</span>
                 <Button onClick={onClick}>Send KakaoMessage Report</Button>
-            </CardBody>
+            </Box>
         </Card>
     </>
 }
@@ -59,7 +60,7 @@ export function KakaoFeed(props: DefaultProps) {
     return (
         <Card className="w-full max-w-lg mx-auto shadow-xl rounded-2xl">
             {/* 이미지 */}
-            <CardHeader className="p-0">
+            <Box className="p-0">
                 <Image
                     src={content.image_url}
                     alt={content.title}
@@ -67,14 +68,14 @@ export function KakaoFeed(props: DefaultProps) {
                     height={content.image_height}
                     className="rounded-t-2xl object-cover w-full"
                 />
-            </CardHeader>
+            </Box>
 
             {/* 텍스트 내용 */}
-            <CardBody className="space-y-1">
+            <Box className="space-y-1">
                 {/* 아이템 리스트 */}
                 {itemContent && (
                     <div className="space-y-1">
-                        <div className="pt-0 pb-2 flex items-center gap-1 border-b">
+                        <div className="pt-1 pb-2 flex items-center gap-1 border-b">
                             <Image
                                 src={itemContent.profile_image_url}
                                 alt="profile"
@@ -126,11 +127,11 @@ export function KakaoFeed(props: DefaultProps) {
                         <span>👀 {social.view_count}</span>
                     </div>
                 )}
-            </CardBody>
+            </Box>
 
             {/* 버튼 */}
             {props.message.buttons?.length > 0 && (
-                <CardFooter className="flex gap-3 justify-center">
+                <Box className="flex gap-3 justify-center">
                     {props.message.buttons.map((btn: any, idx: number) => (
                         <Link
                             key={idx}
@@ -143,7 +144,7 @@ export function KakaoFeed(props: DefaultProps) {
                             </Button>
                         </Link>
                     ))}
-                </CardFooter>
+                </Box>
             )}
         </Card>
     );
