@@ -1,13 +1,12 @@
 'use client'
 
 import { useState, useEffect } from 'react';
-import { Badge, Button, Progress } from "@material-tailwind/react";
-import { Input, Textarea, Card, CardHeader, CardBody, CardFooter, Typography } from "@material-tailwind/react";
 import { useAppDispatch, useAppSelector } from '@/lib/hooks';
 import Link from 'next/link';
 import { KakaoTotal, selectKakaoTotal } from '@/lib/features/kakao/kakaoSlice';
 import { selectCloudflareUserInfo, setCloudFlareUserInfo, UserInfo } from '@/lib/features/cloudflare/cloudflareSlice';
 import { getBadgeColor, getLevel, getProgress } from './level';
+import { Button, Card, Box, Text, TextField, TextArea, Progress, Avatar } from '@radix-ui/themes';
 
 const DEBUG = false;
 
@@ -46,6 +45,14 @@ export default function User() {
     }, [kakaoTotal]);
 
     function getInitials(name: string) {
+        console.log('name', name, !!name);
+        if (!name)
+            return <Box width="24px" height="24px">
+                <svg viewBox="0 0 64 64" fill="currentColor">
+                    <path d="M41.5 14c4.687 0 8.5 4.038 8.5 9s-3.813 9-8.5 9S33 27.962 33 23 36.813 14 41.5 14zM56.289 43.609C57.254 46.21 55.3 49 52.506 49c-2.759 0-11.035 0-11.035 0 .689-5.371-4.525-10.747-8.541-13.03 2.388-1.171 5.149-1.834 8.07-1.834C48.044 34.136 54.187 37.944 56.289 43.609zM37.289 46.609C38.254 49.21 36.3 52 33.506 52c-5.753 0-17.259 0-23.012 0-2.782 0-4.753-2.779-3.783-5.392 2.102-5.665 8.245-9.472 15.289-9.472S35.187 40.944 37.289 46.609zM21.5 17c4.687 0 8.5 4.038 8.5 9s-3.813 9-8.5 9S13 30.962 13 26 16.813 17 21.5 17z" />
+                </svg>
+            </Box>
+
         const parts = name.trim().split(/\s+/);
         if (parts.length === 0) return '';
         if (parts.length === 1) return parts[0][0].toUpperCase();
@@ -76,47 +83,43 @@ export default function User() {
             </div>
             <Card className="w-full max-w-2xl">
                 {/* <CardHeader floated={false} shadow={false} className="pb-0">
-                    <Typography variant="h4" >
+                    <Text variant="h4" >
                         User Info
-                    </Typography>
+                    </Text>
                 </CardHeader> */}
-                <CardBody className="flex flex-col md:flex-row gap-6">
+                <div className="flex flex-col md:flex-row gap-6">
                     <div className="flex flex-col items-center space-y-1">
                         <div>
-                            <Badge color={getBadgeColor(Number(user.point))}>
-                                <Badge.Content>
-                                    {user.avatarUrl ? (
-                                        <img src={user.avatarUrl} alt={user.nickname} className="h-28 w-28 rounded-full object-cover" />
-                                    ) : (
-                                        <div className="h-28 w-28 rounded-full bg-gray-200 flex items-center justify-center text-2xl font-semibold text-gray-700">
-                                            {getInitials(user.nickname)}
-                                        </div>
-                                    )}
-
-                                </Badge.Content>
-                                <Badge.Indicator className="shadow-md border-black">
-                                    <div className="w-full flex flex-col items-center justify-center">
-                                        <div>
-                                            {getLevel(Number(user.point))}
-                                        </div>
-                                        <Progress
-                                            value={getProgress(Number(user.point))}
-                                            className="border border-gray-900/10 bg-gray-900/5 p-0 h-1 dark:border-gray-800 dark:bg-gray-900"
-                                        >
-                                            <Progress.Bar className="rounded-full" />
-                                        </Progress>
-                                    </div>
-                                </Badge.Indicator>
-                            </Badge>
-
+                            <div className="w-full flex flex-col items-center justify-center pb-1">
+                                <div>
+                                    {getLevel(Number(user.point))}
+                                </div>
+                                <div className="w-full">
+                                    <Progress
+                                        value={getProgress(Number(user.point))}
+                                        // color="crimson"
+                                        className="border border-gray-900/10 bg-gray-900/5 p-0 h-1 dark:border-gray-800 dark:bg-gray-900"
+                                        size="3"
+                                    />
+                                </div>
+                            </div>
+                            <Avatar
+                                size="9"
+                                src={user.avatarUrl}
+                                fallback={getInitials(user.nickname)}
+                            />
                         </div>
                         <div className="w-full flex items-center justify-center">
-                            <Typography className="min-w-16 font-semibold text-xs text-right">가입일</Typography>
-                            <Input readOnly className="py-1 border-none shadow-none text-black dark:text-white text-sm" value={formatDate(user.joinedAt)} />
+                            <Text className="min-w-16 font-semibold text-xs text-right">가입일</Text>
+                            <div className="pl-1 w-60">
+                                <TextField.Root readOnly className="border-none shadow-none text-black dark:text-white text-sm" value={formatDate(user.joinedAt)} />
+                            </div>
                         </div>
                         <div className="w-full flex items-center justify-center">
-                            <Typography className="min-w-16 font-semibold text-xs text-right">마지막 접속</Typography>
-                            <Input readOnly className="py-1 border-none shadow-none text-black dark:text-white text-sm" value={formatDate(user.lastLoginAt)} />
+                            <Text className="min-w-16 font-semibold text-xs text-right">마지막 접속</Text>
+                            <div className="pl-1 w-60">
+                                <TextField.Root readOnly className="border-none shadow-none text-black dark:text-white text-sm" value={formatDate(user.lastLoginAt)} />
+                            </div>
                         </div>
                     </div>
 
@@ -124,19 +127,24 @@ export default function User() {
                         {!editing ? (
                             <div className="space-y-1">
                                 <div className="w-full flex items-center justify-center">
-                                    <Typography className="min-w-16 font-semibold text-xs text-right text-blue-500">이름</Typography>
-                                    <Input readOnly className="py-1 border-none shadow-none text-sm" value={user.nickname} />
+                                    <Text className="min-w-16 font-semibold text-xs text-right text-blue-500">이름</Text>
+                                    <div className="pl-1 w-60">
+                                        <TextField.Root readOnly className="border-none shadow-none text-sm" value={user.nickname} />
+                                    </div>
                                 </div>
                                 <div className="w-full flex items-center justify-center">
-                                    <Typography className="min-w-16 font-semibold text-xs text-right">이메일</Typography>
-                                    <Input readOnly className="py-1 border-none shadow-none text-sm" value={user.email} />
+                                    <Text className="min-w-16 font-semibold text-xs text-right">이메일</Text>
+                                    <div className="pl-1 w-60">
+                                        <TextField.Root readOnly className="border-none shadow-none text-sm" value={user.email} />
+                                    </div>
                                 </div>
                                 <div className="w-full flex items-center justify-center">
-                                    <Typography className="min-w-16 font-semibold text-xs text-right">한줄 소개</Typography>
-                                    <Input readOnly className="py-1 border-none shadow-none text-sm" value={user.desc} />
+                                    <Text className="min-w-16 font-semibold text-xs text-right">한줄 소개</Text>
+                                    <div className="pl-1 w-60">
+                                        <TextField.Root readOnly className="border-none shadow-none text-sm" value={user.desc} />
+                                    </div>
                                 </div>
                                 <div className="mt-4 flex gap-3 justify-center">
-                                    {/* <Button color="blue" onClick={() => setEditing(true)}>프로필 수정</Button> */}
                                     <Button onClick={() => setEditing(true)}>프로필 수정</Button>
                                 </div>
                             </div>
@@ -152,35 +160,35 @@ export default function User() {
                                 className="space-y-1"
                             >
                                 <div className="w-full flex items-center justify-center">
-                                    <Typography className="min-w-16 font-semibold text-xs text-right text-blue-500">이름</Typography>
-                                    <Input placeholder="이름" value={draft.nickname} onChange={(e) => setDraft({ ...draft, nickname: e.target.value })} />
+                                    <Text className="min-w-16 font-semibold text-xs text-right text-blue-500">이름</Text>
+                                    <TextField.Root placeholder="이름" value={draft.nickname} onChange={(e) => setDraft({ ...draft, nickname: e.target.value })} />
                                 </div>
                                 <div className="w-full flex items-center justify-center">
-                                    <Typography className="min-w-16 font-semibold text-xs text-right">이메일</Typography>
-                                    <Input placeholder="이메일" value={draft.email} onChange={(e) => setDraft({ ...draft, email: e.target.value })} />
+                                    <Text className="min-w-16 font-semibold text-xs text-right">이메일</Text>
+                                    <TextField.Root placeholder="이메일" value={draft.email} onChange={(e) => setDraft({ ...draft, email: e.target.value })} />
                                 </div>
-                                {/* <Input label="Avatar URL" value={draft.avatarUrl} onChange={(e) => setDraft({ ...draft, avatarUrl: e.target.value })} /> */}
+                                {/* <TextField.Root label="Avatar URL" value={draft.avatarUrl} onChange={(e) => setDraft({ ...draft, avatarUrl: e.target.value })} /> */}
                                 <div className="w-full flex items-center justify-center">
-                                    <Typography className="min-w-16 font-semibold text-xs text-right">Avatar URL</Typography>
-                                    <Input placeholder="Avatar URL" value={draft.avatarUrl} onChange={(e) => setDraft({ ...draft, avatarUrl: e.target.value })} />
+                                    <Text className="min-w-16 font-semibold text-xs text-right">Avatar URL</Text>
+                                    <TextField.Root placeholder="Avatar URL" value={draft.avatarUrl} onChange={(e) => setDraft({ ...draft, avatarUrl: e.target.value })} />
                                 </div>
                                 <div className="w-full flex items-center justify-center">
-                                    <Typography className="min-w-16 font-semibold text-xs text-right">한줄 소개</Typography>
-                                    <Textarea placeholder="한줄 소개" value={draft.desc} onChange={(e) => setDraft({ ...draft, desc: e.target.value })} />
+                                    <Text className="min-w-16 font-semibold text-xs text-right">한줄 소개</Text>
+                                    <TextArea placeholder="한줄 소개" value={draft.desc} onChange={(e) => setDraft({ ...draft, desc: e.target.value })} />
                                 </div>
 
                                 <div className="flex gap-3">
-                                    <Button type="submit" color="info">저장</Button>
-                                    <Button variant="outline" color="primary" onClick={() => setEditing(false)}>취소</Button>
+                                    <Button type="submit" >저장</Button>
+                                    <Button variant="outline" onClick={() => setEditing(false)}>취소</Button>
                                 </div>
                             </form>
                         )}
                     </div>
-                </CardBody>
+                </div>
 
-                <CardFooter className="w-full pt-0 flex items-center justify-center">
+                <div className="w-full pt-1 flex items-center justify-center">
                     {(kakaoTotal?.kakao_account?.profile?.nickname === process.env.NEXT_PUBLIC_MASTER) && <Link href="/report" ><Button>ReportPage</Button></Link>}
-                </CardFooter>
+                </div>
             </Card>
         </div>
     );

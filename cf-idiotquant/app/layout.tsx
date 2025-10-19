@@ -1,4 +1,7 @@
 import "@/app/global.css"
+import "@radix-ui/themes/styles.css";
+import { Theme } from "@radix-ui/themes";
+
 import { StoreProvider } from "./StoreProvider"
 
 import NavbarWithSimpleLinks from "@/components/navigation"
@@ -21,10 +24,12 @@ export default function RootLayout({
         <head>
         </head>
         <body className="md:flex lg:flex">
-          <NavbarWithSimpleLinks />
-          <div className="pt-28 md:flex-1 lg:flex-1 w-full h-full scroll-auto dark:bg-black">
-            {children}
-          </div>
+          <Theme className="w-full">
+            <NavbarWithSimpleLinks />
+            <div className="pt-28 md:flex-1 lg:flex-1 w-full h-full scroll-auto dark:bg-black">
+              {children}
+            </div>
+          </Theme>
         </body>
       </html>
     </StoreProvider >

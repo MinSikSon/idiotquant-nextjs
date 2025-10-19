@@ -1,7 +1,6 @@
 import { Action, combineSlices, configureStore, ThunkAction } from "@reduxjs/toolkit"
 import { financialInfoSlice } from "./features/financialInfo/financialInfoSlice";
 import { marketInfoSlice } from "./features/marketInfo/marketInfoSlice";
-import { articleSlice } from "./features/article/articleSlice";
 import { strategySlice } from "./features/strategy/strategySlice";
 import { backtestSlice } from "./features/backtest/backtestSlice";
 import { loginSlice } from "./features/login/loginSlice";
@@ -20,7 +19,6 @@ import { timestampSlice } from "./features/timestamp/timestampSlice";
 const rootReducer: any = combineSlices(
     financialInfoSlice,
     marketInfoSlice,
-    articleSlice,
     strategySlice,
     backtestSlice,
     loginSlice,
