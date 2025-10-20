@@ -1,7 +1,7 @@
 import { useState, useMemo, ChangeEvent, KeyboardEvent, useRef } from "react";
 import { MagnifyingGlassIcon, XCircleIcon } from "@heroicons/react/24/outline";
 
-import { DesignButton } from "./designButton";
+// import { DesignButton } from "./designButton";
 import { IconButton } from "@radix-ui/themes";
 
 const SearchAutocomplete = (props: any) => {
