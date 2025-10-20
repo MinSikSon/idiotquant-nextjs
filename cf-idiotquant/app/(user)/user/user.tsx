@@ -45,7 +45,7 @@ export default function User() {
     }, [kakaoTotal]);
 
     function getInitials(name: string) {
-        console.log('name', name, !!name);
+        if (DEBUG) console.log('name', name, !!name);
         if (!name)
             return <Box width="24px" height="24px">
                 <svg viewBox="0 0 64 64" fill="currentColor">
