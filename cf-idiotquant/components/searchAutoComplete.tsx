@@ -2,6 +2,7 @@ import { useState, useMemo, ChangeEvent, KeyboardEvent, useRef } from "react";
 import { MagnifyingGlassIcon, XCircleIcon } from "@heroicons/react/24/outline";
 
 import { DesignButton } from "./designButton";
+import { IconButton } from "@radix-ui/themes";
 
 const SearchAutocomplete = (props: any) => {
     const [query, setQuery] = useState("");
@@ -64,7 +65,7 @@ const SearchAutocomplete = (props: any) => {
     const inputRef = useRef<HTMLInputElement>(null);
 
     return (
-        <div className="dark:bg-black dark:text-white flex items-center p-2 relative">
+        <div className="dark:bg-black dark:text-white flex items-center p-2 relative gap-1">
             <div className="relative flex-1 items-center">
                 <input
                     ref={inputRef}
@@ -79,15 +80,25 @@ const SearchAutocomplete = (props: any) => {
                     placeholder={props.placeHolder}
                     onFocus={() => setIsFocused(true)}
                     onBlur={() => setTimeout(() => setIsFocused(false), 200)}
-                    className="dark:bg-black dark:text-white font-mono w-full p-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-black"
+                    className="dark:bg-black dark:text-white font-mono w-full p-2 border rounded-full focus:outline-none focus:ring-2 focus:ring-black"
                 />
                 {query && (
-                    <button className="dark:bg-black dark:text-white absolute right-2 top-1/2 transform -translate-y-1/2 p-2" onClick={handleClear}>
-                        <XCircleIcon className="dark:bg-black dark:text-white h-5 w-5 text-gray-500" />
-                    </button>
+                    <div
+                        className="absolute right-2 top-1/2 transform -translate-y-1/2 p-0"
+                    >
+                        <IconButton
+                            size="3"
+                            variant="ghost"
+                            onClick={handleClear}
+                        >
+                            {/* <button className="dark:bg-black dark:text-white absolute right-2 top-1/2 transform -translate-y-1/2 p-2" onClick={handleClear}> */}
+                            <XCircleIcon className="dark:bg-black dark:text-white h-6 w-6 text-gray-500" />
+                            {/* </button> */}
+                        </IconButton>
+                    </div>
                 )}
             </div>
-            <DesignButton
+            {/* <DesignButton
                 handleOnClick={() => handleSearch()}
                 buttonName={<MagnifyingGlassIcon className="h-5 w-5 text-black" />}
                 buttonBgColor="bg-white"
@@ -98,7 +109,15 @@ const SearchAutocomplete = (props: any) => {
                     active:translate-y-1 active:[box-shadow:0_0px_0_0_#D5D5D5,0_0px_0_0_#D5D5D541] active:border-[0px]
                     transition-all duration-150 [box-shadow:0_4px_0_0_#D5D5D5,0_8px_0_0_#D5D5D541] border-[1px]
                     `}
-            />
+            /> */}
+            <IconButton
+                size="3"
+                // variant="outline"
+                radius="full"
+                onClick={() => handleSearch()}
+            >
+                <MagnifyingGlassIcon width="22" height="22" />
+            </IconButton>
             {isFocused && suggestions.length > 0 && (
                 <ul className="dark:bg-black dark:text-white z-10 absolute top-full left-0 w-11/12 ml-4 mt-1 bg-white border border-gray-300 rounded-lg shadow-lg max-h-60 overflow-auto">
                     {suggestions.map((suggestion: any, index: any) => (
