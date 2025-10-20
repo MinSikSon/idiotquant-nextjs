@@ -1,3 +1,5 @@
+"use client";
+
 import { clearCookie } from "@/components/util";
 import { AppRouterInstance } from "next/dist/shared/lib/app-router-context.shared-runtime";
 
@@ -10,5 +12,7 @@ export function Logout(router: AppRouterInstance) {
 
     const redirectLogoutUrl = `${process.env.NEXT_PUBLIC_API_URL}/kakao-logout`;
     const authorizeEndpoint = `https://kauth.kakao.com/oauth/logout?client_id=${process.env.NEXT_PUBLIC_KAKAO_REST_API_KEY}&logout_redirect_uri=${redirectLogoutUrl}`;
-    router.push(authorizeEndpoint);
+    // router.push(authorizeEndpoint);
+    window.location.href = authorizeEndpoint; // 외부 OAuth/logout URL 이동 시 권장
+
 }

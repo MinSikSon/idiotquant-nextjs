@@ -1,10 +1,9 @@
 import "@/app/global.css"
 import "@radix-ui/themes/styles.css";
 import { Theme } from "@radix-ui/themes";
-
 import { StoreProvider } from "./StoreProvider"
-
 import NavbarWithSimpleLinks from "@/components/navigation"
+import { ThemeProviderClient } from "./ThemeProviderClient";
 
 export const metadata = {
   title: 'idiotquant.com',
@@ -17,21 +16,21 @@ export default function RootLayout({
   children: React.ReactNode
 }) {
   return (
-    <StoreProvider>
-      <html lang="en"
-      // suppressHydrationWarning
-      >
-        <head>
-        </head>
-        <body className="md:flex lg:flex">
-          <Theme className="w-full">
+    <html lang="en"
+    // suppressHydrationWarning
+    >
+      <head>
+      </head>
+      <body className="md:flex lg:flex">
+        <StoreProvider>
+          <ThemeProviderClient>
             <NavbarWithSimpleLinks />
             <div className="pt-28 md:flex-1 lg:flex-1 w-full h-full scroll-auto dark:bg-black">
               {children}
             </div>
-          </Theme>
-        </body>
-      </html>
-    </StoreProvider >
+          </ThemeProviderClient>
+        </StoreProvider >
+      </body>
+    </html>
   )
 }
