@@ -5,8 +5,7 @@ import { useAppDispatch, useAppSelector } from "@/lib/hooks";
 import { useEffect, useState } from "react";
 import { getKoreaInvestmentBalance, getKoreaInvestmentToken, KoreaInvestmentBalance, KoreaInvestmentToken, reqGetInquireBalance } from "@/lib/features/koreaInvestment/koreaInvestmentSlice";
 import { getKoreaInvestmentUsMaretPresentBalance, KoreaInvestmentOverseasPresentBalance, reqGetOverseasStockTradingInquirePresentBalance } from "@/lib/features/koreaInvestmentUsMarket/koreaInvestmentUsMarketSlice";
-import Auth from "@/components/auth";
-import { isValidCookie, Util } from "@/components/util";
+import { Util } from "@/components/util";
 import { KakaoFeed, SendKakaoMessage } from "./report";
 import Loading from "@/components/loading";
 import { KakaoTotal, selectKakaoTatalState, selectKakaoTotal } from "@/lib/features/kakao/kakaoSlice";
@@ -32,7 +31,17 @@ export default function Report() {
     const cfUserInfo: UserInfo = useAppSelector(selectCloudflareUserInfo);
 
     const [message, setMessage] = useState<KakaoMessage>({} as KakaoMessage);
-    const [lock, setLock] = useState<boolean>(false);
+    useEffect(() => {
+        if ("init" == kiBalanceKr.state) {
+            dispatch(reqGetInquireBalance());
+        }
+        if ("init" == kiBalanceUs.state) {
+            dispatch(reqGetOverseasStockTradingInquirePresentBalance());
+        }
+        if ("init" == timestampList.state) {
+            dispatch(queryTimestampList("5"));
+        }
+    }, []);
     useEffect(() => {
         if (DEBUG) console.log(`[Report] message`, message);
     }, [message]);
@@ -42,19 +51,6 @@ export default function Report() {
     useEffect(() => {
         if (DEBUG) console.log(`[Report] cfUserInfo`, cfUserInfo);
     }, [cfUserInfo]);
-
-    useEffect(() => {
-        if (DEBUG) console.log(`[Report]`, `kiToken:`, kiToken);
-        if (false == lock) {
-            if ("fulfilled" == kiToken?.state) {
-                dispatch(reqGetInquireBalance());
-                dispatch(reqGetOverseasStockTradingInquirePresentBalance());
-                dispatch(queryTimestampList("5"));
-
-                setLock(true);
-            }
-        }
-    }, [kiToken]);
     useEffect(() => {
         if (DEBUG) console.log(`[Report]`, `kiBalanceKr:`, kiBalanceKr);
     }, [kiBalanceKr]);
