@@ -34,9 +34,6 @@ export default function Report() {
     const [message, setMessage] = useState<KakaoMessage>({} as KakaoMessage);
     const [lock, setLock] = useState<boolean>(false);
     useEffect(() => {
-        if (DEBUG) console.log(`[Report] isValidCookie("koreaInvestmentToken"):`, isValidCookie("koreaInvestmentToken"));
-    }, []);
-    useEffect(() => {
         if (DEBUG) console.log(`[Report] message`, message);
     }, [message]);
     useEffect(() => {
@@ -50,8 +47,8 @@ export default function Report() {
         if (DEBUG) console.log(`[Report]`, `kiToken:`, kiToken);
         if (false == lock) {
             if ("fulfilled" == kiToken?.state) {
-                dispatch(reqGetInquireBalance(kiToken));
-                dispatch(reqGetOverseasStockTradingInquirePresentBalance(kiToken));
+                dispatch(reqGetInquireBalance());
+                dispatch(reqGetOverseasStockTradingInquirePresentBalance());
                 dispatch(queryTimestampList("5"));
 
                 setLock(true);
@@ -200,15 +197,6 @@ export default function Report() {
 
         }
     }, [kakaoTotal]);
-
-    if (DEBUG) console.log(`[Report] kiToken:`, kiToken);
-    if ("fulfilled" != kiToken?.state) {
-        return <>
-            <Auth />
-            <div className="dark:bg-black h-lvh"></div>
-        </>
-    }
-
 
     if (DEBUG) console.log(`[Report] loginState`, loginState);
     if (DEBUG) console.log(`[Report] kiBalanceKr`, kiBalanceKr);

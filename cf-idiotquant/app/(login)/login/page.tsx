@@ -19,7 +19,6 @@ export default function LoginPage() {
     const dispatch = useAppDispatch();
     const loginState = useAppSelector(selectLoginState);
     const kakaoTotal: KakaoTotal = useAppSelector(selectKakaoTotal);
-    const kiToken: KoreaInvestmentToken = useAppSelector(getKoreaInvestmentToken);
     const kakaoTotalState = useAppSelector(selectKakaoTatalState);
 
     useEffect(() => {
@@ -53,12 +52,7 @@ export default function LoginPage() {
         }
     }, [kakaoTotal]);
 
-    useEffect(() => {
-        if (DEBUG) console.log(`[LoginPage] kiToken:`, kiToken);
-        if ("fulfilled" == kiToken?.state) {
-            if (DEBUG) console.log(`[LoginPage] kiToken?.state:`, kiToken?.state);
-        }
-    }, [kiToken]);
+
     useEffect(() => {
         if (DEBUG) console.log(`[LoginPage] kakaoTotalState:`, kakaoTotalState);
     }, [kakaoTotalState]);
@@ -70,13 +64,6 @@ export default function LoginPage() {
         const authorizeEndpoint = `https://kauth.kakao.com/oauth/authorize?response_type=code&client_id=${process.env.NEXT_PUBLIC_KAKAO_REST_API_KEY}&redirect_uri=${redirectUrl}${scopeParam}`;
 
         router.push(authorizeEndpoint);
-    }
-
-    if ("fulfilled" != kiToken?.state) {
-        return <>
-            <Auth />
-            <div className="dark:bg-black h-lvh"></div>
-        </>
     }
 
     if (DEBUG) console.log(`[LoginPage] kakaoTotal:`, kakaoTotal, `, undefined == kakaoTotal`, undefined == kakaoTotal);

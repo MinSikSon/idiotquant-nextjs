@@ -567,8 +567,8 @@ export const koreaInvestmentSlice = createAppSlice({
             }
         ),
         reqGetInquireBalance: create.asyncThunk(
-            async (koreaInvestmentToken: KoreaInvestmentToken) => {
-                return await getInquireBalanceApi(koreaInvestmentToken);
+            async () => {
+                return await getInquireBalanceApi();
             },
             {
                 pending: (state) => {
@@ -589,8 +589,8 @@ export const koreaInvestmentSlice = createAppSlice({
             }
         ),
         reqPostOrderCash: create.asyncThunk(
-            async ({ koreaInvestmentToken, PDNO, buyOrSell, excg_cd, price }: { koreaInvestmentToken: KoreaInvestmentToken, PDNO: string, buyOrSell: string, excg_cd: string, price: string }) => {
-                return await postOrderCash(koreaInvestmentToken, PDNO, buyOrSell);
+            async ({ PDNO, buyOrSell, excg_cd, price }: { PDNO: string, buyOrSell: string, excg_cd: string, price: string }) => {
+                return await postOrderCash(PDNO, buyOrSell);
             },
             {
                 pending: (state) => {
@@ -612,8 +612,8 @@ export const koreaInvestmentSlice = createAppSlice({
             }
         ),
         reqGetInquirePrice: create.asyncThunk(
-            async ({ koreaInvestmentToken, PDNO }: { koreaInvestmentToken: KoreaInvestmentToken, PDNO: string }) => {
-                return await getInquirePrice(koreaInvestmentToken, PDNO);
+            async ({ PDNO }: { PDNO: string }) => {
+                return await getInquirePrice(PDNO);
             },
             {
                 pending: (state) => {
@@ -634,8 +634,8 @@ export const koreaInvestmentSlice = createAppSlice({
             }
         ),
         reqGetInquireDailyItemChartPrice: create.asyncThunk(
-            async ({ koreaInvestmentToken, PDNO, FID_INPUT_DATE_1, FID_INPUT_DATE_2 }: { koreaInvestmentToken: KoreaInvestmentToken, PDNO: string, FID_INPUT_DATE_1: string, FID_INPUT_DATE_2: string }) => {
-                return await getInquireDailyItemChartPrice(koreaInvestmentToken, PDNO, FID_INPUT_DATE_1, FID_INPUT_DATE_2);
+            async ({ PDNO, FID_INPUT_DATE_1, FID_INPUT_DATE_2 }: { PDNO: string, FID_INPUT_DATE_1: string, FID_INPUT_DATE_2: string }) => {
+                return await getInquireDailyItemChartPrice(PDNO, FID_INPUT_DATE_1, FID_INPUT_DATE_2);
             },
             {
                 pending: (state) => {
@@ -655,8 +655,8 @@ export const koreaInvestmentSlice = createAppSlice({
             }
         ),
         reqGetBalanceSheet: create.asyncThunk(
-            async ({ koreaInvestmentToken, PDNO }: { koreaInvestmentToken: KoreaInvestmentToken, PDNO: string }) => {
-                return await getBalanceSheet(koreaInvestmentToken, PDNO);
+            async ({ PDNO }: { PDNO: string }) => {
+                return await getBalanceSheet(PDNO);
             },
             {
                 pending: (state) => {
@@ -676,8 +676,8 @@ export const koreaInvestmentSlice = createAppSlice({
             }
         ),
         reqGetIncomeStatement: create.asyncThunk(
-            async ({ koreaInvestmentToken, PDNO }: { koreaInvestmentToken: KoreaInvestmentToken, PDNO: string }) => {
-                return await getIncomeStatement(koreaInvestmentToken, PDNO);
+            async ({ PDNO }: { PDNO: string }) => {
+                return await getIncomeStatement(PDNO);
             },
             {
                 pending: (state) => {

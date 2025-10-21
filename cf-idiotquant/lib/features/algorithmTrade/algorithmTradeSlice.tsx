@@ -162,8 +162,8 @@ export const algorithmTradeSlice = createAppSlice({
             }
         ),
         reqGetCapitalToken: create.asyncThunk(
-            async ({ koreaInvestmentToken }: { koreaInvestmentToken: KoreaInvestmentToken }) => {
-                return await getCapitalToken(koreaInvestmentToken);
+            async () => {
+                return await getCapitalToken();
             },
             {
                 pending: (state) => {
@@ -185,8 +185,8 @@ export const algorithmTradeSlice = createAppSlice({
             }
         ),
         reqGetUsCapitalToken: create.asyncThunk(
-            async ({ koreaInvestmentToken }: { koreaInvestmentToken: KoreaInvestmentToken }) => {
-                return await getUsCapitalToken(koreaInvestmentToken);
+            async () => {
+                return await getUsCapitalToken();
             },
             {
                 pending: (state) => {

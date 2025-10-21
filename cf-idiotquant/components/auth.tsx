@@ -46,12 +46,12 @@ export default function Auth() {
             return;
         }
 
-        const isValidKiAccessToken = !!kiToken["access_token"];
-        if (DEBUG) console.log(`[Auth]`, seq, `- 3`, `kiApproval:`, kiApproval, `kiToken:`, kiToken, `isValidKiAccessToken:`, isValidKiAccessToken);
+        const isVaalidKiAccessToken = !!kiToken["access_token"];
+        if (DEBUG) console.log(`[Auth]`, seq, `- 3`, `kiApproval:`, kiApproval, `kiToken:`, kiToken);
         if (DEBUG) console.log(`[Auth]`, seq, `- 3`, `kiBalance:`, kiBalance);
-        if ("init" == kiBalance.state && "fulfilled" != kiToken?.state) {
+        if ("init" == kiBalance.state) {
             // if (true == isValidKiAccessToken) {
-            dispatch(reqGetInquireBalance(kiToken));
+            dispatch(reqGetInquireBalance());
             setStep(2);
             return;
         }
@@ -59,7 +59,7 @@ export default function Auth() {
         const isValidCookieKoreaInvestmentToken = isValidCookie("koreaInvestmentToken");
         if (DEBUG) console.log(`[Auth]`, seq, `- 4`, `isValidCookieKoreaInvestmentToken:`, isValidCookieKoreaInvestmentToken);
         if (false == isValidCookieKoreaInvestmentToken) {
-            if ("fulfilled" != kiBalance.state && "init" == kiToken.state && false == isValidKiAccessToken) {
+            if ("fulfilled" != kiBalance.state && "init" == kiToken.state) {
                 if (DEBUG) console.log(`[Auth]`, seq, `- 4`, `dispatch(reqPostToken())`);
                 dispatch(reqPostToken()); // NOTE: 1분에 한 번씩만 token 발급 가능
                 return;
@@ -90,7 +90,7 @@ export default function Auth() {
             if (DEBUG) console.log(`[Auth]`, seq, `- 8`, `expiredDate:`, expiredDate, `currentDate:`, currentDate);
             dispatch(reqPostToken());
         }
-        else if (false == isValidKiAccessToken) {
+        else {
             dispatch(setKoreaInvestmentToken(json));
         }
 

@@ -4,13 +4,12 @@ import { useState, useEffect } from "react";
 
 import { usePathname } from "next/navigation";
 import { useAppDispatch, useAppSelector } from "@/lib/hooks";
-import { reqPostToken, reqGetInquireBalance, reqPostOrderCash, reqGetInquirePrice, KoreaInvestmentInquirePrice, reqGetInquireDailyItemChartPrice, getKoreaInvestmentInquireDailyItemChartPrice, KoreaInvestmentInquireDailyItemChartPrice, reqGetBalanceSheet, getKoreaInvestmentBalanceSheet, KoreaInvestmentBalanceSheet, getKoreaInvestmentIncomeStatement, KoreaInvestmentIncomeStatement, reqGetIncomeStatement } from "@/lib/features/koreaInvestment/koreaInvestmentSlice";
-import { getKoreaInvestmentApproval, getKoreaInvestmentToken, getKoreaInvestmentBalance, getKoreaInvestmentInquirePrice } from "@/lib/features/koreaInvestment/koreaInvestmentSlice";
-import { KoreaInvestmentApproval, KoreaInvestmentToken, KoreaInvestmentBalance } from "@/lib/features/koreaInvestment/koreaInvestmentSlice";
+import { reqGetInquireBalance, reqGetInquirePrice, KoreaInvestmentInquirePrice, reqGetInquireDailyItemChartPrice, getKoreaInvestmentInquireDailyItemChartPrice, KoreaInvestmentInquireDailyItemChartPrice, reqGetBalanceSheet, getKoreaInvestmentBalanceSheet, KoreaInvestmentBalanceSheet, getKoreaInvestmentIncomeStatement, KoreaInvestmentIncomeStatement, reqGetIncomeStatement } from "@/lib/features/koreaInvestment/koreaInvestmentSlice";
+import { getKoreaInvestmentBalance, getKoreaInvestmentInquirePrice } from "@/lib/features/koreaInvestment/koreaInvestmentSlice";
+import { KoreaInvestmentBalance } from "@/lib/features/koreaInvestment/koreaInvestmentSlice";
 
 import corpCodeJson from "@/public/data/validCorpCode.json"
-import { isValidCookie, Util } from "@/components/util";
-import Auth from "@/components/auth";
+import { Util } from "@/components/util";
 import SearchAutocomplete from "@/components/searchAutoComplete";
 
 import validCorpNameArray from "@/public/data/validCorpNameArray.json";
@@ -39,8 +38,6 @@ export default function SearchKr() {
   const pathname = usePathname();
   const dispatch = useAppDispatch();
 
-  const kiApproval: KoreaInvestmentApproval = useAppSelector(getKoreaInvestmentApproval);
-  const kiToken: KoreaInvestmentToken = useAppSelector(getKoreaInvestmentToken);
   const kiBalance: KoreaInvestmentBalance = useAppSelector(getKoreaInvestmentBalance);
   const kiInquirePrice: KoreaInvestmentInquirePrice = useAppSelector(getKoreaInvestmentInquirePrice);
   const kiBalanceSheet: KoreaInvestmentBalanceSheet = useAppSelector(getKoreaInvestmentBalanceSheet);
@@ -70,7 +67,7 @@ export default function SearchKr() {
   useEffect(() => {
     import('katex/dist/katex.min.css');
 
-    if (DEBUG) console.log(`[SearchKr] isValidCookie("koreaInvestmentToken") 1`, isValidCookie("koreaInvestmentToken"));
+    dispatch(reqGetInquireBalance());
 
     const handleScroll = () => {
       if (window.scrollY > 160) {
@@ -83,15 +80,6 @@ export default function SearchKr() {
     window.addEventListener("scroll", handleScroll, { passive: true });
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
-
-  useEffect(() => {
-    if (DEBUG) console.log(`[Search]`, `kiToken:`, kiToken);
-    const isValidKiAccessToken = !!kiToken["access_token"];
-    if (DEBUG) console.log(`[Search]`, `isValidKiAccessToken`, isValidKiAccessToken);
-    if (true == isValidKiAccessToken) {
-      dispatch(reqGetInquireBalance(kiToken));
-    }
-  }, [kiToken]);
 
   useEffect(() => {
     // 날짜별로 분류 필요
@@ -265,10 +253,10 @@ export default function SearchKr() {
       const { stock_code } = jsonStock;
       // console.log(`stockCode`, stock_code);
       if (DEBUG) console.log(`startDate`, startDate, `, endDate`, endDate);
-      dispatch(reqGetInquirePrice({ koreaInvestmentToken: kiToken, PDNO: stock_code }));
-      dispatch(reqGetInquireDailyItemChartPrice({ koreaInvestmentToken: kiToken, PDNO: stock_code, FID_INPUT_DATE_1: formatDate(startDate), FID_INPUT_DATE_2: formatDate(endDate) }))
-      dispatch(reqGetBalanceSheet({ koreaInvestmentToken: kiToken, PDNO: stock_code }));
-      dispatch(reqGetIncomeStatement({ koreaInvestmentToken: kiToken, PDNO: stock_code }));
+      dispatch(reqGetInquirePrice({ PDNO: stock_code }));
+      dispatch(reqGetInquireDailyItemChartPrice({ PDNO: stock_code, FID_INPUT_DATE_1: formatDate(startDate), FID_INPUT_DATE_2: formatDate(endDate) }))
+      dispatch(reqGetBalanceSheet({ PDNO: stock_code }));
+      dispatch(reqGetIncomeStatement({ PDNO: stock_code }));
 
       setName(stockName);
       setWaitResponse(true);
@@ -439,15 +427,7 @@ ${md}
     dispatch(setCloudFlareStarredStocks({ starredStocks: newStarredStocks }));
   }
 
-  if ("fulfilled" != kiToken?.state) {
-    return <>
-      <Auth />
-    </>
-  }
-
-  if (DEBUG) console.log(`isValidCookie("koreaInvestmentToken") 2`, isValidCookie("koreaInvestmentToken"));
-
-  if (DEBUG) console.log(`rendering SearchKr ...`, pathname, `kiApproval`, kiApproval, `kiToken`, kiToken, `kiBalance`, kiBalance);
+  if (DEBUG) console.log(`rendering SearchKr ...`, pathname, `kiBalance`, kiBalance);
   let bShowResult = true;
   if (("fulfilled" != kiInquireDailyItemChartPrice.state)
     || ("fulfilled" != kiBalanceSheet.state)

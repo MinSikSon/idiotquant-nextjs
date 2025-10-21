@@ -1,8 +1,6 @@
 import { PayloadAction } from "@reduxjs/toolkit";
 import { createAppSlice } from "@/lib/createAppSlice";
 import { getOverseasPriceQuotationsDailyPrice, getOverseasStockTradingInquireBalance, getOverseasStockTradingInquirePresentBalance, getQuotationsPriceDetail, getQuotationsSearchInfo, postOrderUs } from "./koreaInvestmentUsMarketAPI";
-import { KoreaInvestmentToken } from "../koreaInvestment/koreaInvestmentSlice";
-
 
 export interface KoreaInvestmentOverseasSearchInfoOutput {
     std_pdno: string;
@@ -535,8 +533,8 @@ export const koreaInvestmentUsMarketSlice = createAppSlice({
     initialState,
     reducers: (create) => ({
         reqGetOverseasPriceQuotationsDailyPrice: create.asyncThunk(
-            async ({ koreaInvestmentToken, PDNO, FID_INPUT_DATE_1 }: { koreaInvestmentToken: KoreaInvestmentToken, PDNO: string, FID_INPUT_DATE_1: string }) => {
-                return await getOverseasPriceQuotationsDailyPrice(koreaInvestmentToken, PDNO, FID_INPUT_DATE_1);
+            async ({ PDNO, FID_INPUT_DATE_1 }: { PDNO: string, FID_INPUT_DATE_1: string }) => {
+                return await getOverseasPriceQuotationsDailyPrice(PDNO, FID_INPUT_DATE_1);
             },
             {
                 pending: (state) => {
@@ -575,8 +573,8 @@ export const koreaInvestmentUsMarketSlice = createAppSlice({
         //     }
         // ),
         reqPostOrderUs: create.asyncThunk(
-            async ({ koreaInvestmentToken, PDNO, buyOrSell, excg_cd, price }: { koreaInvestmentToken: KoreaInvestmentToken, PDNO: string, buyOrSell: string, excg_cd: string, price: string }) => {
-                return await postOrderUs(koreaInvestmentToken, PDNO, buyOrSell, excg_cd, price);
+            async ({ PDNO, buyOrSell, excg_cd, price }: { PDNO: string, buyOrSell: string, excg_cd: string, price: string }) => {
+                return await postOrderUs(PDNO, buyOrSell, excg_cd, price);
             },
             {
                 pending: (state) => {
@@ -598,8 +596,8 @@ export const koreaInvestmentUsMarketSlice = createAppSlice({
             }
         ),
         reqGetOverseasStockTradingInquirePresentBalance: create.asyncThunk(
-            async (koreaInvestmentToken: KoreaInvestmentToken) => {
-                return await getOverseasStockTradingInquirePresentBalance(koreaInvestmentToken);
+            async () => {
+                return await getOverseasStockTradingInquirePresentBalance();
             },
             {
                 pending: (state) => {
@@ -617,8 +615,8 @@ export const koreaInvestmentUsMarketSlice = createAppSlice({
             }
         ),
         reqGetOverseasStockTradingInquireBalance: create.asyncThunk(
-            async (koreaInvestmentToken: KoreaInvestmentToken) => {
-                return await getOverseasStockTradingInquireBalance(koreaInvestmentToken);
+            async () => {
+                return await getOverseasStockTradingInquireBalance();
             },
             {
                 pending: (state) => {
@@ -636,8 +634,8 @@ export const koreaInvestmentUsMarketSlice = createAppSlice({
             }
         ),
         reqGetQuotationsSearchInfo: create.asyncThunk(
-            async ({ koreaInvestmentToken, PDNO }: { koreaInvestmentToken: KoreaInvestmentToken, PDNO: string }) => {
-                return await getQuotationsSearchInfo(koreaInvestmentToken, PDNO);
+            async ({ PDNO }: { PDNO: string }) => {
+                return await getQuotationsSearchInfo(PDNO);
             },
             {
                 pending: (state) => {
@@ -657,8 +655,8 @@ export const koreaInvestmentUsMarketSlice = createAppSlice({
             }
         ),
         reqGetQuotationsPriceDetail: create.asyncThunk(
-            async ({ koreaInvestmentToken, PDNO }: { koreaInvestmentToken: KoreaInvestmentToken, PDNO: string }) => {
-                return await getQuotationsPriceDetail(koreaInvestmentToken, PDNO);
+            async ({ PDNO }: { PDNO: string }) => {
+                return await getQuotationsPriceDetail(PDNO);
             },
             {
                 pending: (state) => {

@@ -3,7 +3,7 @@
 import { DesignButton } from "@/components/designButton";
 import TablesExample8, { Example8TableHeadType, Example8TableRowType, TablesExample8PropsType } from "@/components/tableExample8";
 import { CapitalTokenType, QuantRule, QuantRuleValue, reqGetQuantRule, reqGetQuantRuleDesc, reqGetUsCapitalToken, selectCapitalToken, selectInquirePriceMulti, selectQuantRule, selectQuantRuleDesc, selectUsCapitalToken } from "@/lib/features/algorithmTrade/algorithmTradeSlice";
-import { reqGetCapitalToken, reqGetInquirePriceMulti } from "@/lib/features/algorithmTrade/algorithmTradeSlice";
+import { reqGetCapitalToken } from "@/lib/features/algorithmTrade/algorithmTradeSlice";
 import { getKoreaInvestmentToken, KoreaInvestmentToken } from "@/lib/features/koreaInvestment/koreaInvestmentSlice";
 import { useAppDispatch, useAppSelector } from "@/lib/hooks";
 
@@ -92,8 +92,8 @@ export default function AlgorithmTrade() {
     function handleOnClick() {
         setTime(new Date());
         if (DEBUG) console.log(`[handleOnClick] kiToken`, kiToken);
-        dispatch(reqGetCapitalToken({ koreaInvestmentToken: kiToken }));
-        dispatch(reqGetUsCapitalToken({ koreaInvestmentToken: kiToken }));
+        dispatch(reqGetCapitalToken());
+        dispatch(reqGetUsCapitalToken());
     }
 
     useEffect(() => {

@@ -1,6 +1,5 @@
 "use client"
 
-import { getKoreaInvestmentToken, KoreaInvestmentToken, } from "@/lib/features/koreaInvestment/koreaInvestmentSlice";
 import { reqGetInquireBalance, getKoreaInvestmentBalance, KoreaInvestmentBalance } from "@/lib/features/koreaInvestment/koreaInvestmentSlice";
 import { reqPostOrderCash, getKoreaInvestmentOrderCash, KoreaInvestmentOrderCash } from "@/lib/features/koreaInvestment/koreaInvestmentSlice";
 
@@ -8,7 +7,6 @@ import { useAppDispatch, useAppSelector } from "@/lib/hooks";
 import { useEffect } from "react";
 
 import { usePathname } from "next/navigation";
-import Auth from "@/components/auth";
 
 import InquireBalanceResult from "@/components/inquireBalanceResult";
 import NotFound from "@/app/not-found";
@@ -20,7 +18,6 @@ export default function BalanceKr() {
     const pathname = usePathname();
 
     const dispatch = useAppDispatch();
-    const kiToken: KoreaInvestmentToken = useAppSelector(getKoreaInvestmentToken);
     const kiBalance: KoreaInvestmentBalance = useAppSelector(getKoreaInvestmentBalance);
 
     const kiOrderCash: KoreaInvestmentOrderCash = useAppSelector(getKoreaInvestmentOrderCash);
@@ -28,14 +25,13 @@ export default function BalanceKr() {
     const kr_capital_token: CapitalTokenType = useAppSelector(selectCapitalToken);
 
     useEffect(() => {
-        const isValidKiAccessToken = !!kiToken["access_token"];
-        if (DEBUG) console.log(`[BalanceKr]`, `isValidKiAccessToken`, isValidKiAccessToken);
-        if (true == isValidKiAccessToken) {
-            dispatch(reqGetInquireBalance(kiToken));
-        }
-    }, [kiToken]);
+
+    }, []);
     useEffect(() => {
         if (true == DEBUG) console.log(`[BalanceKr]`, `kiBalance`, kiBalance);
+        if ("fulfilled" != kiBalance.state) {
+            dispatch(reqGetInquireBalance());
+        }
     }, [kiBalance]);
     useEffect(() => {
         // console.log(`[BalanceKr]`, `kiOrderCash`, kiOrderCash);
@@ -43,16 +39,9 @@ export default function BalanceKr() {
     useEffect(() => {
         if (DEBUG) console.log(`[BalanceKr]`, `kr_capital_token`, kr_capital_token);
         if ("init" == kr_capital_token.state) {
-            dispatch(reqGetCapitalToken({ koreaInvestmentToken: kiToken }));
+            dispatch(reqGetCapitalToken());
         }
     }, [kr_capital_token])
-
-    if ("fulfilled" != kiToken?.state) {
-        return <>
-            <Auth />
-            <div className="dark:bg-black h-lvh"></div>
-        </>
-    }
 
     // console.log(`kiBalance.state`, kiBalance.state);
     if (kiBalance.state == "rejected") {
@@ -66,7 +55,6 @@ export default function BalanceKr() {
         <InquireBalanceResult
             kiBalance={kiBalance}
             reqGetInquireBalance={reqGetInquireBalance}
-            kiToken={kiToken}
             kiOrderCash={kiOrderCash}
             reqPostOrderCash={reqPostOrderCash}
             stock_list={kr_capital_token.value.stock_list}

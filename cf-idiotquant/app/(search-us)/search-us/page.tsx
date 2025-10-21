@@ -86,12 +86,8 @@ export default function SearchUs() {
     }
 
     useEffect(() => {
-        if (DEBUG) console.log(`[Search]`, `kiToken:`, kiToken);
-        const isValidKiAccessToken = !!kiToken["access_token"];
-        if (true == isValidKiAccessToken) {
-            dispatch(reqGetInquireBalance(kiToken));
-        }
-    }, [kiToken]);
+        dispatch(reqGetInquireBalance());
+    }, []);
 
     useEffect(() => {
         if (DEBUG) console.log(`useEffect [kiUsMaretSearchInfo]`, kiUsMaretSearchInfo);
@@ -110,17 +106,11 @@ export default function SearchUs() {
         if (DEBUG) console.log(`useEffectObject.values(fmpUsBalanceSheetStatement)`, Object.values(fmpUsBalanceSheetStatement));
     }, [fmpUsBalanceSheetStatement])
 
-    if ("fulfilled" != kiToken?.state) {
-        return <>
-            <Auth />
-        </>
-    }
-
     function onSearchButton(stockName: any) {
         if (DEBUG) console.log(`[onSearchButton]`, `stockName`, stockName);
-        dispatch(reqGetQuotationsSearchInfo({ koreaInvestmentToken: kiToken, PDNO: stockName }));
-        dispatch(reqGetQuotationsPriceDetail({ koreaInvestmentToken: kiToken, PDNO: stockName }));
-        dispatch(reqGetOverseasPriceQuotationsDailyPrice({ koreaInvestmentToken: kiToken, PDNO: stockName, FID_INPUT_DATE_1: formatDate(startDate) }));
+        dispatch(reqGetQuotationsSearchInfo({ PDNO: stockName }));
+        dispatch(reqGetQuotationsPriceDetail({ PDNO: stockName }));
+        dispatch(reqGetOverseasPriceQuotationsDailyPrice({ PDNO: stockName, FID_INPUT_DATE_1: formatDate(startDate) }));
         // export const { reqGetOverseasPriceQuotationsInquireDailyChartPrice } = koreaInvestmentUsMarketSlice.actions;
 
         dispatch(reqGetFmpBalanceSheetStatement(stockName));

@@ -3,7 +3,7 @@
 import { DesignButton } from "./designButton";
 import TablesExample8, { Example8TableHeadType, Example8TableRowType, TablesExample8PropsType } from "./tableExample8";
 import { useAppDispatch } from "@/lib/hooks";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Util } from "./util";
 import Loading from "@/components/loading";
 
@@ -14,7 +14,6 @@ function formatNumber(num: number) {
 interface InquireBalanceResultProps {
     kiBalance: any;
     reqGetInquireBalance: any;
-    kiToken: any;
     kiOrderCash?: any;
     reqPostOrderCash?: any;
     stock_list?: any;
@@ -29,6 +28,11 @@ export default function InquireBalanceResult(props: InquireBalanceResultProps) {
     const [orderName, setOrderName] = useState<any>("");
 
     const [time, setTime] = useState<any>(new Date());
+
+    const [mounted, setMounted] = useState(false);
+    useEffect(() => {
+        setMounted(true);
+    }, []);
 
     const showAlert = (additionalMsg: string) => {
         setMsg(additionalMsg);
@@ -351,7 +355,7 @@ export default function InquireBalanceResult(props: InquireBalanceResultProps) {
                         showAlert("지난 주문 확인");
                         setTime(new Date());
 
-                        dispatch(props.reqGetInquireBalance(props.kiToken));
+                        dispatch(props.reqGetInquireBalance());
                     }}
                     buttonName="알고리즘 매매 계좌 조회"
                     buttonBgColor="bg-white"

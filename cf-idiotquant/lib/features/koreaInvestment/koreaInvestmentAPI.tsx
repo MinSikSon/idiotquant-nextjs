@@ -1,20 +1,17 @@
 import { getCookie } from "@/components/util";
-import { KoreaInvestmentToken } from "./koreaInvestmentSlice";
 
-export const getBalanceSheet: any = async (koreaInvestmentToken: KoreaInvestmentToken, PDNO: string) => {
+export const getBalanceSheet: any = async (PDNO: string) => {
     const subUrl = `/uapi/domestic-stock/v1/finance/balance-sheet`;
     const additionalHeaders: AdditionalHeaders = {
-        "authorization": koreaInvestmentToken["access_token"],
         "kakaoId": getCookie("kakaoId"),
         "PDNO": PDNO,
         // "buyOrSell": buyOrSell,
     }
     return getKoreaInvestmentRequest(subUrl, additionalHeaders);
 }
-export const getIncomeStatement: any = async (koreaInvestmentToken: KoreaInvestmentToken, PDNO: string) => {
+export const getIncomeStatement: any = async (PDNO: string) => {
     const subUrl = `/uapi/domestic-stock/v1/finance/income-statement`;
     const additionalHeaders: AdditionalHeaders = {
-        "authorization": koreaInvestmentToken["access_token"],
         "kakaoId": getCookie("kakaoId"),
         "PDNO": PDNO,
         // "buyOrSell": buyOrSell,
@@ -23,10 +20,9 @@ export const getIncomeStatement: any = async (koreaInvestmentToken: KoreaInvestm
 }
 
 // 국내주식기간별시세(일/주/월/년)[v1_국내주식-016]
-export const getInquireDailyItemChartPrice: any = async (koreaInvestmentToken: KoreaInvestmentToken, PDNO: string, FID_INPUT_DATE_1: string, FID_INPUT_DATE_2: string) => {
+export const getInquireDailyItemChartPrice: any = async (PDNO: string, FID_INPUT_DATE_1: string, FID_INPUT_DATE_2: string) => {
     const subUrl = `/uapi/domestic-stock/v1/quotations/inquire-daily-itemchartprice`;
     const additionalHeaders: AdditionalHeaders = {
-        "authorization": koreaInvestmentToken["access_token"],
         "kakaoId": getCookie("kakaoId"),
         "PDNO": PDNO,
         "FID_INPUT_DATE_1": FID_INPUT_DATE_1,
@@ -37,10 +33,9 @@ export const getInquireDailyItemChartPrice: any = async (koreaInvestmentToken: K
 }
 
 // 시세 조회
-export const getInquirePrice: any = async (koreaInvestmentToken: KoreaInvestmentToken, PDNO: string) => {
+export const getInquirePrice: any = async (PDNO: string) => {
     const subUrl = `/uapi/domestic-stock/v1/quotations/inquire-price`;
     const additionalHeaders: AdditionalHeaders = {
-        "authorization": koreaInvestmentToken["access_token"],
         "kakaoId": getCookie("kakaoId"),
         "PDNO": PDNO,
         // "buyOrSell": buyOrSell,
@@ -49,10 +44,9 @@ export const getInquirePrice: any = async (koreaInvestmentToken: KoreaInvestment
 }
 
 // 주문
-export const postOrderCash: any = async (koreaInvestmentToken: KoreaInvestmentToken, PDNO: string, buyOrSell: string) => {
+export const postOrderCash: any = async (PDNO: string, buyOrSell: string) => {
     const subUrl = `/uapi/domestic-stock/v1/trading/order-cash`;
     const additionalHeaders: AdditionalHeaders = {
-        "authorization": koreaInvestmentToken["access_token"],
         "kakaoId": getCookie("kakaoId"),
         "PDNO": PDNO,
         "buyOrSell": buyOrSell,
@@ -61,11 +55,10 @@ export const postOrderCash: any = async (koreaInvestmentToken: KoreaInvestmentTo
 }
 
 // 계좌 조회
-export const getInquireBalanceApi: any = async (koreaInvestmentToken: KoreaInvestmentToken) => {
-    // console.log(`[getInquireBalanceApi] koreaInvestmentToken`, koreaInvestmentToken);
+export const getInquireBalanceApi: any = async () => {
+    // console.log(`[getInquireBalanceApi]`);
     const subUrl = `/uapi/domestic-stock/v1/trading/inquire-balance`;
     const additionalHeaders: AdditionalHeaders = {
-        "authorization": koreaInvestmentToken["access_token"],
         "kakaoId": getCookie("kakaoId"),
     }
     return getKoreaInvestmentRequest(subUrl, additionalHeaders);
