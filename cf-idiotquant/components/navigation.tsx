@@ -158,8 +158,8 @@ export function NavbarWithSimpleLinks() {
                         <div className="bg-white dark:bg-black flex md:flex-col lg:flex-col border dark:border-gray-600 rounded-lg items-center py-2 w-full">
                             <Link href="/">
                                 <div className="flex items-center justify-center gap-2 px-2 font-mono font-bold cursor-pointer">
-                                    <div className="pt-0.5">idiot</div>
-                                    <RotatingText
+                                    {/* <div className="pt-0.5">idiot</div> */}
+                                    {/* <RotatingText
                                         texts={['quant', '퀀트', 'quant investing', 'ncav strategy', '순자산가치 전략', 'emotion-free', 'profitability', '수익성', 'undervaluation', '저평가', 'volume', '거래량']}
                                         mainClassName="px-2 sm:px-2 md:px-3 pt-0.5 pt-1 justify-center rounded-md bg-blue-500 text-white overflow-hidden "
                                         staggerFrom={"last"}
@@ -170,7 +170,9 @@ export function NavbarWithSimpleLinks() {
                                         splitLevelClassName="overflow-hidden pb-0.5 sm:pb-1 md:pb-1"
                                         transition={{ type: "spring", damping: 30, stiffness: 400 }}
                                         rotationInterval={10000}
-                                    />
+                                    /> */}
+                                    <div className="pt-0.5">이디엇</div>
+                                    <div className="pt-0.5">퀀트</div>
                                 </div>
                             </Link>
                             {/* <div className="font-mono text-[0.6rem] dark:text-white min-w-32 text-center">

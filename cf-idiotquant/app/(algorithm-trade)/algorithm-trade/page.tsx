@@ -9,7 +9,7 @@ import { useAppDispatch, useAppSelector } from "@/lib/hooks";
 
 import { useState, useEffect } from "react";
 import * as Tabs from "@radix-ui/react-tabs";
-import * as Popover from "@radix-ui/react-popover";
+// import * as Popover from "@radix-ui/react-popover";
 
 import CountUp from '@/src/TextAnimations/CountUp/CountUp';
 import GradientText from '@/src/TextAnimations/GradientText/GradientText';
@@ -53,24 +53,28 @@ function RulePopover({
     desc?: string;
 }) {
     return (
-        <Popover.Root>
-            <Popover.Trigger className="cursor-pointer">
-                {keyLabel}
-            </Popover.Trigger>
+        <>
+            {keyLabel}
+        </>);
+    // return (
+    //     <Popover.Root>
+    //         <Popover.Trigger className="cursor-pointer">
+    //             {keyLabel}
+    //         </Popover.Trigger>
 
-            <Popover.Content
-                side="top"
-                sideOffset={6}
-                className="text-[0.6rem] p-2 bg-white dark:bg-gray-800 text-black dark:text-white shadow-xl rounded transition data-[state=open]:animate-in data-[state=closed]:animate-out"
-            >
-                <span className="font-bold">
-                    {keyLabel}(={value}):{" "}
-                </span>
-                {desc ?? "설명 없음"}
-                <Popover.Arrow className="fill-white dark:fill-gray-800" />
-            </Popover.Content>
-        </Popover.Root>
-    );
+    //         <Popover.Content
+    //             side="top"
+    //             sideOffset={6}
+    //             className="text-[0.6rem] p-2 bg-white dark:bg-gray-800 text-black dark:text-white shadow-xl rounded transition data-[state=open]:animate-in data-[state=closed]:animate-out"
+    //         >
+    //             <span className="font-bold">
+    //                 {keyLabel}(={value}):{" "}
+    //             </span>
+    //             {desc ?? "설명 없음"}
+    //             <Popover.Arrow className="fill-white dark:fill-gray-800" />
+    //         </Popover.Content>
+    //     </Popover.Root>
+    // );
 }
 
 export default function AlgorithmTrade() {
@@ -87,7 +91,7 @@ export default function AlgorithmTrade() {
 
     const [market, setMarket] = useState<"KR" | "US">("KR");
 
-    const [visibleCount, setVisibleCount] = useState(50);
+    const [visibleCount, setVisibleCount] = useState(0);
 
     function handleOnClick() {
         setTime(new Date());
@@ -218,7 +222,7 @@ export default function AlgorithmTrade() {
     const capitalToken = "KR" == market ? kr_capital_token : us_capital_token;
     const purchase_log = capitalToken.value.purchase_log ?? [];
     if (DEBUG) console.log(`purchase_log`, purchase_log);
-    let example8TableRow: Example8TableRowType[] = (purchase_log.map((item: any, index: number) => {
+    let example8TableRow: Example8TableRowType[] = (purchase_log.slice(-50).map((item: any, index: number) => {
         const bgColor = index % 2 == 0 ? "bg-white" : "bg-gray-100";
         return item["stock_list"].map((subItem: any) => {
             const frst_bltn_exrt = "KR" == market ? 1 : capitalToken.value.frst_bltn_exrt;
@@ -377,7 +381,7 @@ export default function AlgorithmTrade() {
                         </div>
                     </div> */}
                 </div>
-                <div className={`flex gap-2`}>
+                {/* <div className={`flex gap-2`}>
                     <div className="dark:bg-gray-200 bg-white w-full border rounded-lg mx-1">
                         <LineChart
                             data_array={getLineDataArray()}
@@ -386,7 +390,7 @@ export default function AlgorithmTrade() {
                             height={110}
                         />
                     </div>
-                </div>
+                </div> */}
             </div>
         </>,
         financial_date: <></>,

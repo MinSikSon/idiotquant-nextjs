@@ -238,7 +238,7 @@ function TablesExample8({
                     </Box>
                     {!!setVisibleCount ? <DesignButton
                         handleOnClick={() => setVisibleCount((prev: any) => prev + ADD_COUNT)}
-                        buttonName={`more +${ADD_COUNT}`}
+                        buttonName={`trade history (more +${ADD_COUNT})`}
                         buttonBgColor="bg-white dark:bg-black"
                         buttonBorderColor="border-black dark:border-white"
                         buttonShadowColor="#D5D5D5"

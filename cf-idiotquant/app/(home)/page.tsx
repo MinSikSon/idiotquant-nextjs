@@ -6,7 +6,7 @@ import HomeThumbnail from "@/components/homeThumbnail";
 export default function Home() {
   return <>
     <div className="flex flex-col dark:bg-black h-full dark:text-white">
-      <HomeThumbnail />
+      {/* <HomeThumbnail /> */}
       <AlgorithmTrade />
     </div>
   </>
