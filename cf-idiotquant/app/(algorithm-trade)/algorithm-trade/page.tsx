@@ -14,7 +14,7 @@ import * as Tabs from "@radix-ui/react-tabs";
 import CountUp from '@/src/TextAnimations/CountUp/CountUp';
 import GradientText from '@/src/TextAnimations/GradientText/GradientText';
 import Loading from '@/components/loading';
-import LineChart from '@/components/LineChart';
+// import LineChart from '@/components/LineChart';
 
 const DEBUG = false;
 
@@ -88,9 +88,7 @@ export default function AlgorithmTrade() {
     const quant_rule_desc: QuantRule = useAppSelector(selectQuantRuleDesc);
 
     const [time, setTime] = useState<any>('');
-
     const [market, setMarket] = useState<"KR" | "US">("KR");
-
     const [visibleCount, setVisibleCount] = useState(0);
 
     function handleOnClick() {
@@ -187,28 +185,17 @@ export default function AlgorithmTrade() {
     //     return cumulatePurchaseArray;
     // }
 
-    function getLineDataArray() {
-        return [
-            {
-                name: "누적 포인트",
-                // data: test_data.stock_list.map((stock: any) => stock.remaining_token),
-                // data: [10, 20, 30, 40, 50, 60, 70, 80, 90],
-                data: getCumulateTokenArray(),
-                color: "#FF4560",
-            },
-            // {
-            //     name: "매수 - 매도",
-            //     // data: test_data.stock_list.map((stock: any) => stock.stck_prpr * stock.ORD_QTY),
-            //     // data: [50, 60, 70, 80, 90, 10, 20, 30, 40],
-            //     data: getCumulatePurchaseArray(),
-            //     color: "#0088CC",
-            // },
-            // {
-            //     name: "Sales_b",
-            //     data: [350, 200, 230, 500, 50, 40, 300, 320, 500],
-            // },
-        ];
-    }
+    // function getLineDataArray() {
+    //     return [
+    //         {
+    //             name: "누적 포인트",
+    //             // data: test_data.stock_list.map((stock: any) => stock.remaining_token),
+    //             // data: [10, 20, 30, 40, 50, 60, 70, 80, 90],
+    //             data: getCumulateTokenArray(),
+    //             color: "#FF4560",
+    //         },
+    //     ];
+    // }
 
     function getCategoryArray() {
         const capitalToken = "KR" == market ? kr_capital_token : us_capital_token;
@@ -222,7 +209,7 @@ export default function AlgorithmTrade() {
     const capitalToken = "KR" == market ? kr_capital_token : us_capital_token;
     const purchase_log = capitalToken.value.purchase_log ?? [];
     if (DEBUG) console.log(`purchase_log`, purchase_log);
-    let example8TableRow: Example8TableRowType[] = (purchase_log.slice(-50).map((item: any, index: number) => {
+    let example8TableRow: Example8TableRowType[] = (purchase_log.slice(-60).map((item: any, index: number) => {
         const bgColor = index % 2 == 0 ? "bg-white" : "bg-gray-100";
         return item["stock_list"].map((subItem: any) => {
             const frst_bltn_exrt = "KR" == market ? 1 : capitalToken.value.frst_bltn_exrt;
