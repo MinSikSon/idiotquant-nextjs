@@ -332,15 +332,23 @@ export default function AlgorithmTrade() {
                 <Text>
                     Current Stock Purchase Points
                 </Text>
-                <Flex>
-                    <div className="dark:border-gray-700 border flex-1 rounded-lg px-2 pb-1 mr-2 mx-1 shadow">
-                        <div className="text-[0.6rem]">Points per stock</div>
-                        <div className="flex flex-col justify-end items-end">{token_per_stock} point / 10 min</div>
-                    </div>
-                    <div className="dark:border-gray-700 border flex-1 rounded-lg px-2 pb-1 mr-2 mx-1 shadow">
-                        <div className="text-[0.6rem]">Next Stock to Attempt Purchase</div>
-                        <div className="flex flex-col justify-end items-end">{refill_stock_index}) {!!stock_list[refill_stock_index] ? stock_list[refill_stock_index]["name"] : 0}</div>
-                    </div>
+                <Flex direction="column">
+                    <Flex direction="row" px="1" mx="1" gap="1" className="dark:border-gray-700 border rounded-lg shadow">
+                        <Box minWidth="180px">
+                            <Text size="1">Points per stock</Text>
+                        </Box>
+                        <Box>
+                            <Text size="1">{token_per_stock} point / 10 min</Text>
+                        </Box>
+                    </Flex>
+                    <Flex direction="row" px="1" mx="1" gap="1" className="dark:border-gray-700 border rounded-lg shadow">
+                        <Box minWidth="180px">
+                            <Text size="1">Next Stock to Attempt Purchase</Text>
+                        </Box>
+                        <Box>
+                            <Text size="1">{refill_stock_index}) {!!stock_list[refill_stock_index] ? stock_list[refill_stock_index]["name"] : 0}</Text>
+                        </Box>
+                    </Flex>
                 </Flex>
             </Box>
             <Box p="2" className="dark:border-gray-700 border rounded-lg shadow">
