@@ -90,86 +90,88 @@ function TablesExample8({
                     {/* <Box className="overflow-scroll [scrollbar-width:thin] [scrollbar-color:#888_transparent] !px-0 pt-0 pb-2 dark:bg-black"> */}
                     <Box>
                         {/* <Table.Root className="w-full min-w-max table-auto items-center"> */}
-                        <Table.Root layout="auto">
-                            <Table.Header>
-                                <Table.Row>
-                                    {tableHead.map(({ head }) => (
-                                        <Table.ColumnHeaderCell key={head} minWidth="130px">
-                                            <div onClick={() => {
-                                                console.log(`setSelectHead`, !!setSelectHead, setSelectHead);
-                                                if (!!!setSelectHead) {
-                                                    return; // do nothing
-                                                }
-                                                if (prevSelectHead == selectHead) {
-                                                    setPrevSelectHead("");
-                                                }
-                                                else {
-                                                    setPrevSelectHead(selectHead);
-                                                }
-                                                setSelectHead(head)
-                                            }}>
-                                                {/* <div className={`font-mono flex font-bold dark:text-white cursor-pointer ${head.length >= 6 ? "text-[0.6rem]" : ""}`}> */}
-                                                <Flex className="cursor-pointer">
-                                                    <div className="flex-none items-end">
-                                                        {(prevSelectHead == head && selectHead == head) ? <ArrowUpIcon className="h-4 w-4" /> : (selectHead == head ? <ArrowDownIcon className="h-4 w-4" /> : "")}
-                                                    </div>
-                                                    <div className="flex-1">{head}</div>
-                                                </Flex>
-                                            </div>
-                                        </Table.ColumnHeaderCell>
-                                    ))}
-                                </Table.Row>
-                            </Table.Header>
-                            <Table.Body>
-                                {tableRow.slice(0, visibleCount).map(
-                                    (
-                                        {
-                                            id,
-                                            column_1,
-                                            column_2,
-                                            column_3,
-                                            column_4,
-                                            expectedRateOfReturnColor,
-                                            column_5,
-                                            column_6,
-                                            column_7,
-                                            column_8,
-                                            column_9,
-                                            column_10,
-                                            column_11,
-                                            column_12,
-                                            column_13,
-                                            column_14,
-                                            column_15,
-                                            bgColor,
-                                        },
-                                        index
-                                    ) => {
-                                        return (
-                                            <Table.Row key={id}>
-                                                <Table.RowHeaderCell>{column_1}</Table.RowHeaderCell>
-                                                <Table.RowHeaderCell>{column_2}</Table.RowHeaderCell>
-                                                <Table.Cell>{column_3}</Table.Cell>
-                                                <Table.Cell className={`${expectedRateOfReturnColor}`} >
-                                                    {column_4}
-                                                </Table.Cell>
-                                                <Table.Cell>{column_5}</Table.Cell>
-                                                <Table.Cell>{column_6}</Table.Cell>
-                                                <Table.Cell>{column_7}</Table.Cell>
-                                                <Table.Cell>{column_8}</Table.Cell>
-                                                <Table.Cell>{column_9}</Table.Cell>
-                                                <Table.Cell>{column_10}</Table.Cell>
-                                                <Table.Cell>{column_11}</Table.Cell>
-                                                <Table.Cell>{column_12}</Table.Cell>
-                                                <Table.Cell>{column_13}</Table.Cell>
-                                                <Table.Cell>{column_14}</Table.Cell>
-                                                <Table.Cell>{column_15}</Table.Cell>
-                                            </Table.Row>
-                                        );
-                                    }
-                                )}
-                            </Table.Body>
-                        </Table.Root>
+                        {!!visibleCount && visibleCount > 0 ?
+                            <Table.Root layout="auto">
+                                <Table.Header>
+                                    <Table.Row>
+                                        {tableHead.map(({ head }) => (
+                                            <Table.ColumnHeaderCell key={head} minWidth="130px">
+                                                <div onClick={() => {
+                                                    console.log(`setSelectHead`, !!setSelectHead, setSelectHead);
+                                                    if (!!!setSelectHead) {
+                                                        return; // do nothing
+                                                    }
+                                                    if (prevSelectHead == selectHead) {
+                                                        setPrevSelectHead("");
+                                                    }
+                                                    else {
+                                                        setPrevSelectHead(selectHead);
+                                                    }
+                                                    setSelectHead(head)
+                                                }}>
+                                                    {/* <div className={`font-mono flex font-bold dark:text-white cursor-pointer ${head.length >= 6 ? "text-[0.6rem]" : ""}`}> */}
+                                                    <Flex className="cursor-pointer">
+                                                        <div className="flex-none items-end">
+                                                            {(prevSelectHead == head && selectHead == head) ? <ArrowUpIcon className="h-4 w-4" /> : (selectHead == head ? <ArrowDownIcon className="h-4 w-4" /> : "")}
+                                                        </div>
+                                                        <div className="flex-1">{head}</div>
+                                                    </Flex>
+                                                </div>
+                                            </Table.ColumnHeaderCell>
+                                        ))}
+                                    </Table.Row>
+                                </Table.Header>
+                                <Table.Body>
+                                    {tableRow.slice(0, visibleCount).map(
+                                        (
+                                            {
+                                                id,
+                                                column_1,
+                                                column_2,
+                                                column_3,
+                                                column_4,
+                                                expectedRateOfReturnColor,
+                                                column_5,
+                                                column_6,
+                                                column_7,
+                                                column_8,
+                                                column_9,
+                                                column_10,
+                                                column_11,
+                                                column_12,
+                                                column_13,
+                                                column_14,
+                                                column_15,
+                                                bgColor,
+                                            },
+                                            index
+                                        ) => {
+                                            return (
+                                                <Table.Row key={id}>
+                                                    <Table.RowHeaderCell>{column_1}</Table.RowHeaderCell>
+                                                    <Table.RowHeaderCell>{column_2}</Table.RowHeaderCell>
+                                                    <Table.Cell>{column_3}</Table.Cell>
+                                                    <Table.Cell className={`${expectedRateOfReturnColor}`} >
+                                                        {column_4}
+                                                    </Table.Cell>
+                                                    <Table.Cell>{column_5}</Table.Cell>
+                                                    <Table.Cell>{column_6}</Table.Cell>
+                                                    <Table.Cell>{column_7}</Table.Cell>
+                                                    <Table.Cell>{column_8}</Table.Cell>
+                                                    <Table.Cell>{column_9}</Table.Cell>
+                                                    <Table.Cell>{column_10}</Table.Cell>
+                                                    <Table.Cell>{column_11}</Table.Cell>
+                                                    <Table.Cell>{column_12}</Table.Cell>
+                                                    <Table.Cell>{column_13}</Table.Cell>
+                                                    <Table.Cell>{column_14}</Table.Cell>
+                                                    <Table.Cell>{column_15}</Table.Cell>
+                                                </Table.Row>
+                                            );
+                                        }
+                                    )}
+                                </Table.Body>
+                            </Table.Root>
+                            : <></>}
                     </Box>
                     {!!setVisibleCount ? <DesignButton
                         handleOnClick={() => setVisibleCount((prev: any) => prev + ADD_COUNT)}

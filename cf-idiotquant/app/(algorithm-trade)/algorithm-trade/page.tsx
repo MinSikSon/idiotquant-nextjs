@@ -2,19 +2,18 @@
 
 import { DesignButton } from "@/components/designButton";
 import TablesExample8, { Example8TableHeadType, Example8TableRowType, TablesExample8PropsType } from "@/components/tableExample8";
-import { CapitalTokenType, QuantRule, QuantRuleValue, reqGetQuantRule, reqGetQuantRuleDesc, reqGetUsCapitalToken, selectCapitalToken, selectInquirePriceMulti, selectQuantRule, selectQuantRuleDesc, selectUsCapitalToken } from "@/lib/features/algorithmTrade/algorithmTradeSlice";
+import { CapitalTokenType, QuantRule, reqGetQuantRule, reqGetQuantRuleDesc, reqGetUsCapitalToken, selectCapitalToken, selectInquirePriceMulti, selectQuantRule, selectQuantRuleDesc, selectUsCapitalToken } from "@/lib/features/algorithmTrade/algorithmTradeSlice";
 import { reqGetCapitalToken } from "@/lib/features/algorithmTrade/algorithmTradeSlice";
 import { getKoreaInvestmentToken, KoreaInvestmentToken } from "@/lib/features/koreaInvestment/koreaInvestmentSlice";
 import { useAppDispatch, useAppSelector } from "@/lib/hooks";
 
 import { useState, useEffect } from "react";
 import * as Tabs from "@radix-ui/react-tabs";
-// import * as Popover from "@radix-ui/react-popover";
 
 import CountUp from '@/src/TextAnimations/CountUp/CountUp';
 import GradientText from '@/src/TextAnimations/GradientText/GradientText';
 import Loading from '@/components/loading';
-// import LineChart from '@/components/LineChart';
+import { Box, Flex, Text } from "@radix-ui/themes";
 
 const DEBUG = false;
 
@@ -41,40 +40,6 @@ function MarketTabs({ setMarket }: { setMarket: (m: "KR" | "US") => void }) {
             </Tabs.List>
         </Tabs.Root>
     );
-}
-
-function RulePopover({
-    keyLabel,
-    value,
-    desc,
-}: {
-    keyLabel: string;
-    value: string | number;
-    desc?: string;
-}) {
-    return (
-        <>
-            {keyLabel}
-        </>);
-    // return (
-    //     <Popover.Root>
-    //         <Popover.Trigger className="cursor-pointer">
-    //             {keyLabel}
-    //         </Popover.Trigger>
-
-    //         <Popover.Content
-    //             side="top"
-    //             sideOffset={6}
-    //             className="text-[0.6rem] p-2 bg-white dark:bg-gray-800 text-black dark:text-white shadow-xl rounded transition data-[state=open]:animate-in data-[state=closed]:animate-out"
-    //         >
-    //             <span className="font-bold">
-    //                 {keyLabel}(={value}):{" "}
-    //             </span>
-    //             {desc ?? "설명 없음"}
-    //             <Popover.Arrow className="fill-white dark:fill-gray-800" />
-    //         </Popover.Content>
-    //     </Popover.Root>
-    // );
 }
 
 export default function AlgorithmTrade() {
@@ -170,39 +135,6 @@ export default function AlgorithmTrade() {
         return cumulateTokenArray;
     }
 
-    // function getCumulatePurchaseArray() {
-    //     const capitalToken = "KR" == market ? kr_capital_token : us_capital_token;
-    //     const purchase_log = capitalToken.value.purchase_log ?? [];
-    //     let cumulatePurchase = 0
-    //     const cumulatePurchaseArray = purchase_log.map((entry: any) => {
-    //         cumulatePurchase += entry.stock_list.reduce((sum: any, stock: any) => {
-    //             return sum + (Number(stock.stck_prpr) * Number(stock.ORD_QTY)) * (stock.buyOrSell == "sell" ? -1 : 1) * (market == "KR" ? 1 : capitalToken.value.frst_bltn_exrt);
-    //         }, 0);
-    //         return Number(cumulatePurchase).toFixed(0);
-    //     }
-    //     );
-    //     // console.log(`cumulatePurchaseArray`, cumulatePurchaseArray);
-    //     return cumulatePurchaseArray;
-    // }
-
-    // function getLineDataArray() {
-    //     return [
-    //         {
-    //             name: "누적 포인트",
-    //             // data: test_data.stock_list.map((stock: any) => stock.remaining_token),
-    //             // data: [10, 20, 30, 40, 50, 60, 70, 80, 90],
-    //             data: getCumulateTokenArray(),
-    //             color: "#FF4560",
-    //         },
-    //     ];
-    // }
-
-    // function getCategoryArray() {
-    //     const capitalToken = "KR" == market ? kr_capital_token : us_capital_token;
-    //     const purchase_log = capitalToken.value.purchase_log ?? [];
-    //     return purchase_log.map((entry: any) => entry.time_stamp);
-    // }
-
     let cummulative_investment = 0;
     let cummulative_investment_sell = 0;
 
@@ -241,9 +173,6 @@ export default function AlgorithmTrade() {
     })).reverse().flat();
 
     if (DEBUG) console.log(`capitalToken.state`, capitalToken.state);
-    // if ("fulfilled" != capitalToken.state) {
-    //     return <Loading />
-    // }
 
     const time_stamp: any = capitalToken.value.time_stamp ?? {};
     const stock_list: any = capitalToken.value.stock_list ?? [];
@@ -279,9 +208,8 @@ export default function AlgorithmTrade() {
             </div>
         </>,
         desc: <>
-
-            <div className="dark:border-gray-700 border rounded-lg px-2 pb-1 m-2 shadow">
-                <div className="text-xl">
+            <Box p="2" className="dark:border-gray-700 border rounded-lg shadow">
+                {/* <div className="text-xl">
                     Trading Strategy
                 </div>
                 <table className="text-[0.5rem] border-none border-gray-300 w-full text-left">
@@ -309,13 +237,12 @@ export default function AlgorithmTrade() {
                             })}
                         </tr>
                     </tbody>
-                </table>
-                <div className="text-xl pt-2">
-                    Stock Trading History
-                </div>
-                <div className="flex">
-                    <div className="dark:border-gray-700 border flex-1 rounded-lg px-2 pb-1 mx-1 mb-2 shadow">
-                        <div className="text-[0.6rem]">Total Algorithmic Buys</div>
+                </table> */}
+                <Box p="2">
+                    <Flex direction="column" className="dark:text-white">
+                        <Text size="2">
+                            Total Algorithmic Buys
+                        </Text>
                         <div className="flex flex-col justify-end items-end">
                             <div className="">{market == "KR" ?
                                 <GradientText
@@ -345,8 +272,8 @@ export default function AlgorithmTrade() {
                                         className="count-up-text"
                                     /> KRW</GradientText>
                             }</div>
-                            <div className="text-[0.6rem]">{market == "KR" ? ""
-                                : <GradientText
+                            {market == "KR" ? <></>
+                                : <Text size="1"><GradientText
                                     colors={["#40ffaa", "#4079ff", "#40ffaa", "#4079ff", "#40ffaa"]}
                                     animationSpeed={3}
                                     showBorder={false}
@@ -357,17 +284,17 @@ export default function AlgorithmTrade() {
                                         direction="up"
                                         duration={1}
                                         className="count-up-text"
-                                    /> USD</GradientText>}</div>
+                                    /> USD</GradientText></Text>}
                         </div>
-                    </div>
-                    {/* <div className="dark:border-gray-700 border flex-1 rounded-lg px-2 pb-1 mx-1 mb-2 shadow">
+                        {/* <div className="dark:border-gray-700 border flex-1 rounded-lg px-2 pb-1 mx-1 mb-2 shadow">
                         <div className="text-[0.6rem]">Total Algorithmic Sells</div>
                         <div className="flex flex-col justify-end items-end">
                             <div className="">{market == "KR" ? `${Number(Number(cummulative_investment_sell).toFixed(0)).toLocaleString()} KRW` : `${Number(Number(cummulative_investment_sell).toFixed(0)).toLocaleString()} KRW`}</div>
                             <div className="text-[0.6rem]">{market == "KR" ? "" : `(${Number(Number(cummulative_investment_sell) / Number(us_capital_token.value.frst_bltn_exrt)).toFixed(3)} USD)`}</div>
                         </div>
                     </div> */}
-                </div>
+                    </Flex>
+                </Box>
                 {/* <div className={`flex gap-2`}>
                     <div className="dark:bg-gray-200 bg-white w-full border rounded-lg mx-1">
                         <LineChart
@@ -378,28 +305,34 @@ export default function AlgorithmTrade() {
                         />
                     </div>
                 </div> */}
-            </div>
+            </Box>
         </>,
         financial_date: <></>,
-        market_date: <div >
-            <div className="dark:border-gray-700 border rounded-lg px-2 pb-1 m-2 shadow">
-                <div className="text-xl">
+        market_date: < >
+            <Box p="2" className="dark:border-gray-700 border rounded-lg shadow">
+                <Text>
                     Stock Purchase Point Accumulation History
-                </div>
-                <div className="flex">
+                </Text>
+                <Flex direction="column">
                     {Object.keys(time_stamp).reverse().map((key, index) => {
-                        return <div key={index} className="dark:border-gray-700 border flex-1 rounded-lg px-2 pb-1 mx-1 mb-2 shadow">
-                            <div className="text-[0.6rem]">{key == "prevPrev" ? "Two Periods Ago" : (key == "prev" ? "Previous Period" : "Current Data")}</div>
-                            <div className="flex flex-col justify-end items-end">{formatDateTime(time_stamp[key])}</div>
-                        </div>
+                        return <>
+                            <Flex key={index} px="2" mx="2" className="dark:border-gray-700 border rounded-lg shadow">
+                                <Box minWidth="160px">
+                                    <Text size="1">{key == "prevPrev" ? "Two Periods Ago" : (key == "prev" ? "Previous Period" : "Current Data")}</Text>
+                                </Box>
+                                <Box>
+                                    <Text size="1">{formatDateTime(time_stamp[key])}</Text>
+                                </Box>
+                            </Flex>
+                        </>
                     })}
-                </div>
-            </div>
-            <div className="dark:border-gray-700 border rounded-lg px-2 pb-1 m-2 shadow">
-                <div className="text-xl">
+                </Flex>
+            </Box>
+            <Box p="2" className="dark:border-gray-700 border rounded-lg shadow">
+                <Text>
                     Current Stock Purchase Points
-                </div>
-                <div className="flex">
+                </Text>
+                <Flex>
                     <div className="dark:border-gray-700 border flex-1 rounded-lg px-2 pb-1 mr-2 mx-1 shadow">
                         <div className="text-[0.6rem]">Points per stock</div>
                         <div className="flex flex-col justify-end items-end">{token_per_stock} point / 10 min</div>
@@ -408,14 +341,14 @@ export default function AlgorithmTrade() {
                         <div className="text-[0.6rem]">Next Stock to Attempt Purchase</div>
                         <div className="flex flex-col justify-end items-end">{refill_stock_index}) {!!stock_list[refill_stock_index] ? stock_list[refill_stock_index]["name"] : 0}</div>
                     </div>
-                </div>
-            </div>
-            <div className="dark:border-gray-700 border rounded-lg px-2 pb-1 m-2 shadow">
-                <div className="text-xl">
+                </Flex>
+            </Box>
+            <Box p="2" className="dark:border-gray-700 border rounded-lg shadow">
+                <Text>
                     <div>Stocks Targeted for Algorithmic Trading</div>
-                </div>
+                </Text>
                 <div className="rounded px-2 pb-1 m-2 shadow">
-                    <div className="">
+                    <Box>
                         {stock_list.map((item: any, index: number) => {
                             const token = isNaN(Number(item["token"])) ? 0 : Number(item["token"]);
                             cummulative_token += token;
@@ -437,16 +370,32 @@ export default function AlgorithmTrade() {
                                 </div>
                             </div>
                         })}
-                    </div>
-                    <div className="flex items-center text-xs text-black dark:text-white leading-none pb-1">
-                        <div>Number of Stocks</div>
-                        <div className="mx-1 mr-2 px-1 text-xs rounded border border-black border-white">{stock_list.length - exclude_count} / {stock_list.length}</div>
-                        <div>Total Points Accumulated</div>
-                        <div className="mx-1 mr-2 px-1 text-xs rounded border border-black border-white">{cummulative_token - exclude_token} / {cummulative_token}</div>
-                    </div>
-                </div>
-            </div>
-        </div>,
+                    </Box>
+                    <Flex direction="column" justify="between" p="1" align="start" className="dark:text-white">
+                        <Box>
+                            <Flex direction="row" justify="between" gap="1">
+                                <Box minWidth="160px">
+                                    <Text size="1">Number of Stocks</Text>
+                                </Box>
+                                <Box>
+                                    <Text size="1">{stock_list.length - exclude_count} / {stock_list.length}</Text>
+                                </Box>
+                            </Flex>
+                        </Box>
+                        <Box>
+                            <Flex direction="row" justify="between" gap="1">
+                                <Box minWidth="160px">
+                                    <Text size="1">Total Points Accumulated</Text>
+                                </Box>
+                                <Box>
+                                    <Text size="1">{cummulative_token - exclude_token} / {cummulative_token}</Text>
+                                </Box>
+                            </Flex>
+                        </Box>
+                    </Flex>
+                </div >
+            </Box >
+        </>,
         tableHead: example8TableHead,
         tableRow: example8TableRow,
         visibleCount: visibleCount,
