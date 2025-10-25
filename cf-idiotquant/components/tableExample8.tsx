@@ -2,7 +2,7 @@ import React from "react";
 
 import { DesignButton } from "./designButton";
 import { ArrowDownIcon, ArrowUpIcon } from "@heroicons/react/24/outline";
-import { Box, Button, Card, Spinner } from "@radix-ui/themes";
+import { Box, Button, Card, Flex, Spinner, Table } from "@radix-ui/themes";
 
 const DEBUG = false;
 export interface Example8TableRowType {
@@ -87,15 +87,14 @@ function TablesExample8({
                 <Button variant="ghost">{!!msg ? <>{msg}</> : <><Spinner /> {DEBUG ? "6" : ""}</>}</Button>
                 :
                 <>
-                    <Box className="overflow-scroll [scrollbar-width:thin] [scrollbar-color:#888_transparent] !px-0 pt-0 pb-2 dark:bg-black">
-                        <table className="w-full min-w-max table-auto items-center">
-                            <thead className="text-xs">
-                                <tr>
-                                    {tableHead.map(({ head, desc, customeStyle }) => (
-                                        <th
-                                            key={head}
-                                            className={`border-b dark:border-gray-700 pl-3 pb-2 ${customeStyle} dark:text-white`}
-                                        >
+                    {/* <Box className="overflow-scroll [scrollbar-width:thin] [scrollbar-color:#888_transparent] !px-0 pt-0 pb-2 dark:bg-black"> */}
+                    <Box>
+                        {/* <Table.Root className="w-full min-w-max table-auto items-center"> */}
+                        <Table.Root layout="auto">
+                            <Table.Header>
+                                <Table.Row>
+                                    {tableHead.map(({ head }) => (
+                                        <Table.ColumnHeaderCell key={head} minWidth="110px">
                                             <div onClick={() => {
                                                 console.log(`setSelectHead`, !!setSelectHead, setSelectHead);
                                                 if (!!!setSelectHead) {
@@ -109,18 +108,19 @@ function TablesExample8({
                                                 }
                                                 setSelectHead(head)
                                             }}>
-                                                <div className={`font-mono flex font-bold dark:text-white cursor-pointer ${head.length >= 6 ? "text-[0.6rem]" : ""}`}>
+                                                {/* <div className={`font-mono flex font-bold dark:text-white cursor-pointer ${head.length >= 6 ? "text-[0.6rem]" : ""}`}> */}
+                                                <Flex className="cursor-pointer">
                                                     <div className="flex-none items-end">
                                                         {(prevSelectHead == head && selectHead == head) ? <ArrowUpIcon className="h-4 w-4" /> : (selectHead == head ? <ArrowDownIcon className="h-4 w-4" /> : "")}
                                                     </div>
                                                     <div className="flex-1">{head}</div>
-                                                </div>
+                                                </Flex>
                                             </div>
-                                        </th>
+                                        </Table.ColumnHeaderCell>
                                     ))}
-                                </tr>
-                            </thead>
-                            <tbody>
+                                </Table.Row>
+                            </Table.Header>
+                            <Table.Body>
                                 {tableRow.slice(0, visibleCount).map(
                                     (
                                         {
@@ -145,96 +145,31 @@ function TablesExample8({
                                         },
                                         index
                                     ) => {
-                                        // const isLast = index === tableRow.length - 1;
-                                        // const _bgColor = !!bgColor ? bgColor : (index % 2 ? 'bg-blue-gray-50' : '')
-                                        const _bgColor = (index % 2 ? 'bg-gray-100 dark:bg-gray-700' : '');
-                                        // const classes = isLast
-                                        //     ? "!pl-2"
-                                        //     : `!pl-2 border-b border-gray-100 ${_bgColor}`;
-                                        const classes = `p-0 m-0 pl-1 ${_bgColor}`;
                                         return (
-                                            <tr key={id} className="font-mono text-xs text-black dark:text-white dark:bg-black items-center">
-                                                <td className={classes}>
-                                                    <div className="text-left">
-                                                        {column_1}
-                                                    </div>
-                                                </td>
-                                                <td className={classes}>
-                                                    <div className="text-right">
-                                                        {column_2}
-                                                    </div>
-                                                </td>
-                                                <td className={classes}>
-                                                    <div className="text-right">
-                                                        {column_3}
-                                                    </div>
-                                                </td>
-                                                <td className={classes}>
-                                                    <div className={`text-right ${expectedRateOfReturnColor}`}>
-                                                        {column_4}
-                                                    </div>
-                                                </td>
-                                                <td className={classes}>
-                                                    <div className="text-right">
-                                                        {column_5}
-                                                    </div>
-                                                </td>
-                                                <td className={classes}>
-                                                    <div className="text-right">
-                                                        {column_6}
-                                                    </div>
-                                                </td>
-                                                <td className={classes}>
-                                                    <div className="text-right">
-                                                        {column_7}
-                                                    </div>
-                                                </td>
-                                                <td className={classes}>
-                                                    <div className="text-right">
-                                                        {column_8}
-                                                    </div>
-                                                </td>
-                                                <td className={classes}>
-                                                    <div className="text-right">
-                                                        {column_9}
-                                                    </div>
-                                                </td>
-                                                <td className={classes}>
-                                                    <div className="text-right">
-                                                        {column_10}
-                                                    </div>
-                                                </td>
-                                                <td className={classes}>
-                                                    <div className="text-right">
-                                                        {column_11}
-                                                    </div>
-                                                </td>
-                                                <td className={classes}>
-                                                    <div className="text-right">
-                                                        {column_12}
-                                                    </div>
-                                                </td>
-                                                <td className={classes}>
-                                                    <div className="text-right">
-                                                        {column_13}
-                                                    </div>
-                                                </td>
-                                                <td className={classes}>
-                                                    <div className="text-right">
-                                                        {column_14}
-                                                    </div>
-                                                </td>
-                                                <td className={classes}>
-                                                    <div className="text-right">
-                                                        {column_15}
-                                                    </div>
-                                                </td>
-                                            </tr>
+                                            <Table.Row key={id}>
+                                                <Table.RowHeaderCell>{column_1}</Table.RowHeaderCell>
+                                                <Table.RowHeaderCell>{column_2}</Table.RowHeaderCell>
+                                                <Table.Cell>{column_3}</Table.Cell>
+                                                <Table.Cell className={`${expectedRateOfReturnColor}`} >
+                                                    {column_4}
+                                                </Table.Cell>
+                                                <Table.Cell>{column_5}</Table.Cell>
+                                                <Table.Cell>{column_6}</Table.Cell>
+                                                <Table.Cell>{column_7}</Table.Cell>
+                                                <Table.Cell>{column_8}</Table.Cell>
+                                                <Table.Cell>{column_9}</Table.Cell>
+                                                <Table.Cell>{column_10}</Table.Cell>
+                                                <Table.Cell>{column_11}</Table.Cell>
+                                                <Table.Cell>{column_12}</Table.Cell>
+                                                <Table.Cell>{column_13}</Table.Cell>
+                                                <Table.Cell>{column_14}</Table.Cell>
+                                                <Table.Cell>{column_15}</Table.Cell>
+                                            </Table.Row>
                                         );
                                     }
                                 )}
-                            </tbody>
-                        </table>
+                            </Table.Body>
+                        </Table.Root>
                     </Box>
                     {!!setVisibleCount ? <DesignButton
                         handleOnClick={() => setVisibleCount((prev: any) => prev + ADD_COUNT)}

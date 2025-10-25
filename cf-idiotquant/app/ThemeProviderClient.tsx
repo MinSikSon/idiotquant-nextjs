@@ -4,5 +4,12 @@
 import { Theme } from "@radix-ui/themes";
 
 export function ThemeProviderClient({ children }: { children: React.ReactNode }) {
-    return <Theme className="w-full">{children}</Theme>;
+    return <Theme
+        accentColor="mint"
+        grayColor="gray"
+        panelBackground="solid"
+        scaling="100%"
+        radius="full"
+        className="w-full"
+    >{children}</Theme>;
 }

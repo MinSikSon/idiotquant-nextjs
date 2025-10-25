@@ -197,11 +197,11 @@ export default function AlgorithmTrade() {
     //     ];
     // }
 
-    function getCategoryArray() {
-        const capitalToken = "KR" == market ? kr_capital_token : us_capital_token;
-        const purchase_log = capitalToken.value.purchase_log ?? [];
-        return purchase_log.map((entry: any) => entry.time_stamp);
-    }
+    // function getCategoryArray() {
+    //     const capitalToken = "KR" == market ? kr_capital_token : us_capital_token;
+    //     const purchase_log = capitalToken.value.purchase_log ?? [];
+    //     return purchase_log.map((entry: any) => entry.time_stamp);
+    // }
 
     let cummulative_investment = 0;
     let cummulative_investment_sell = 0;
