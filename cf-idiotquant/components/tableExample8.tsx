@@ -94,7 +94,7 @@ function TablesExample8({
                             <Table.Header>
                                 <Table.Row>
                                     {tableHead.map(({ head }) => (
-                                        <Table.ColumnHeaderCell key={head} minWidth="110px">
+                                        <Table.ColumnHeaderCell key={head} minWidth="130px">
                                             <div onClick={() => {
                                                 console.log(`setSelectHead`, !!setSelectHead, setSelectHead);
                                                 if (!!!setSelectHead) {

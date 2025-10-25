@@ -199,69 +199,82 @@ export default function InquireBalanceResult(props: InquireBalanceResultProps) {
             return {
                 id: name,
                 column_1: <>
-                    <div className="font-mono flex flex-col text-xs dark:text-white">
-                        <div className="flex gap-1">
-                            <div className="text-[0.5rem]">{index}</div>
-                            <div className={`${name.length >= 7 ? "text-[0.6rem]" : "text-xs"}`}>{name}</div>
-                        </div>
-                        <div className="text-[0.5rem]">({pdno})</div>
-                    </div>
+                    <Flex direction="column" className="dark:text-white">
+                        <Flex direction="row" gap="1">
+                            <Text>{index}</Text>
+                            <Text>{pdno}</Text>
+                        </Flex>
+                        <Flex>
+                            <Text>{name}</Text>
+                        </Flex>
+                    </Flex>
                 </>,
                 column_2: <>
-                    <div className="font-mono flex flex-col font-bold text-xs dark:text-white">
-                        <div className="mb-0 pb-0">
+                    <Flex direction="column" className="dark:text-white">
+                        <Text>
                             {Number(Number(price).toFixed(0)).toLocaleString()}{crcy_cd}
-                        </div>
-                        <div className="text-right text-[0.5rem]">
-                            {!!frst_bltn_exrt ? <span>({formatNumber(Number(price) / Number(frst_bltn_exrt))} USD)</span> : ""}
-                        </div>
-                    </div>
+                        </Text>
+                        {!!frst_bltn_exrt ? <Text>{formatNumber(Number(price) / Number(frst_bltn_exrt))} USD</Text>
+                            : <></>}
+                    </Flex>
                 </>,
                 column_3: <>
-                    <div className="font-mono flex flex-col text-xs dark:text-white">
-                        <div className="mb-0 pb-0">
+                    <Flex direction="column" className="dark:text-white">
+                        <Text>
                             {Number((Number(pchs_amt) / Number(hldg_qty)).toFixed(0)).toLocaleString()}{crcy_cd}
-                        </div>
-                        <div className="text-right text-[0.5rem]">
-                            {!!frst_bltn_exrt ? <span>({formatNumber((Number(pchs_amt) / Number(hldg_qty) / Number(frst_bltn_exrt)))} USD)</span> : ""}
-                        </div>
-                    </div>
+                        </Text>
+                        {!!frst_bltn_exrt ? <Text>{formatNumber((Number(pchs_amt) / Number(hldg_qty) / Number(frst_bltn_exrt)))} USD</Text>
+                            : <></>}
+                    </Flex>
                 </>,
                 column_4: <>
-                    <div className={`font-mono flex flex-col font-bold text-xs dark:text-white ${Number(Number(evlu_amt) / Number(pchs_amt) * 100 - 100) >= 0 ? "text-red-500" : "text-blue-500"}`}>
-                        <div className="pr-1 text-[0.6rem]">
+                    <Flex direction="column" className={`dark:text-white ${Number(Number(evlu_amt) / Number(pchs_amt) * 100 - 100) >= 0 ? "text-red-500" : "text-blue-500"}`}>
+                        <Text>
                             {formatNumber(Number(Number(evlu_amt) / Number(pchs_amt) * 100 - 100))}%
-                        </div>
-                    </div>
+                        </Text>
+                    </Flex>
                 </>,
-                column_5: <div className={`font-mono flex flex-col font-bold text-xs ${Number(Number(evlu_amt) / Number(pchs_amt) * 100 - 100) >= 0 ? "text-red-500" : "text-blue-500"}`}>
-                    <div>
-                        {formatNumber(Number(evlu_pfls_amt2))}{crcy_cd}
-                    </div>
-                    <div className="text-right text-[0.5rem]">
-                        {!!frst_bltn_exrt ? <span>({formatNumber(Number(evlu_pfls_amt2) / Number(frst_bltn_exrt))} USD)</span> : ""}
-                    </div>
-                </div>,
-                column_6: <div className="font-mono text-xs dark:text-white">{formatNumber((Number(pchs_amt) / Number(pchs_amt_smtl_amt) * 100))}%</div>,
-                column_7: <div className="font-mono flex flex-col text-xs dark:text-white">
-                    <div>
-                        {formatNumber(Number(evlu_amt))}{crcy_cd}
-                    </div>
-                    <div className="text-right text-[0.5rem]">
-                        {!!frst_bltn_exrt ? <span>({formatNumber(Number(evlu_amt) / Number(frst_bltn_exrt))} USD)</span> : ""}
-                    </div>
-                </div>,
-                column_8: <div className="font-mono flex flex-col text-xs dark:text-white">
-                    <div>
-                        {formatNumber(Number(pchs_amt))}{crcy_cd}
-                    </div>
-                    <div className="text-right text-[0.5rem]">
-                        {!!frst_bltn_exrt ? <span>({formatNumber(Number(pchs_amt) / Number(frst_bltn_exrt))} USD)</span> : ""}
-                    </div>
-                </div>,
-                column_9: <div className="font-mono text-xs dark:text-white">{Number(hldg_qty).toFixed(0)}/{Number(ord_psbl_qty).toFixed(0)}</div>,
+                column_5: <>
+                    <Flex direction="column" className={`${Number(Number(evlu_amt) / Number(pchs_amt) * 100 - 100) >= 0 ? "text-red-500" : "text-blue-500"}`}>
+                        <Text>
+                            {formatNumber(Number(evlu_pfls_amt2))}{crcy_cd}
+                        </Text>
+                        <Text>
+                            {!!frst_bltn_exrt ? <span>({formatNumber(Number(evlu_pfls_amt2) / Number(frst_bltn_exrt))} USD)</span> : ""}
+                        </Text>
+                    </Flex>
+                </>,
+                column_6: <>
+                    <Flex direction="column" className="dark:text-white">
+                        <Text> {formatNumber((Number(pchs_amt) / Number(pchs_amt_smtl_amt) * 100))}%</Text>
+                    </Flex>
+                </>,
+
+                column_7: <>
+                    <Flex direction="column" className="dark:text-white">
+                        <Text>
+                            {formatNumber(Number(evlu_amt))}{crcy_cd}
+                        </Text>
+                        {!!frst_bltn_exrt ? <Text>{formatNumber(Number(evlu_amt) / Number(frst_bltn_exrt))} USD</Text>
+                            : <></>}
+                    </Flex>
+                </>,
+                column_8: <>
+                    <Flex direction="column" className="dark:text-white">
+                        <Text>
+                            {formatNumber(Number(pchs_amt))}{crcy_cd}
+                        </Text>
+                        {!!frst_bltn_exrt ? <Text>({formatNumber(Number(pchs_amt) / Number(frst_bltn_exrt))} USD)</Text>
+                            : <></>}
+                    </Flex>
+                </>,
+                column_9: <>
+                    <Flex direction="column" className="dark:text-white">
+                        <Text>{Number(hldg_qty).toFixed(0)}/{Number(ord_psbl_qty).toFixed(0)}</Text>
+                    </Flex>
+                </>,
                 column_10: <>
-                    <div className="font-mono flex p-0 m-0 gap-1">
+                    <Flex direction="row" gap="1">
                         <DesignButton
                             handleOnClick={() => handleOnClick(item, "buy")}
                             buttonName="buy"
@@ -286,32 +299,42 @@ export default function InquireBalanceResult(props: InquireBalanceResultProps) {
                             transition-all duration-150 [box-shadow:0_4px_0_0_#910000,0_8px_0_0_#91000041] border-b-[1px]
                             `}
                         />
-                    </div>
+                    </Flex>
                 </>,
                 column_11: <>
-                    <div className="font-mono flex flex-col text-xs dark:text-white">
-                        <div className="text-[0.6rem]">{Util.UnitConversion(hts_avls, true)}</div>
-                    </div>
+                    <Flex direction="column" className="dark:text-white">
+                        <Text>
+                            {Util.UnitConversion(hts_avls, true)}
+                        </Text>
+                    </Flex>
                 </>,
                 column_12: <>
-                    <div className="font-mono flex flex-col text-xs dark:text-white">
-                        <div className="text-[0.6rem]">{Util.UnitConversion(eps, true)}</div>
-                    </div>
+                    <Flex direction="column" className="dark:text-white">
+                        <Text>
+                            {Util.UnitConversion(eps, true)}
+                        </Text>
+                    </Flex>
                 </>,
                 column_13: <>
-                    <div className="font-mono flex flex-col text-xs dark:text-white">
-                        <div className="text-[0.6rem]">{per}</div>
-                    </div>
+                    <Flex direction="column" className="dark:text-white">
+                        <Text>
+                            {per}
+                        </Text>
+                    </Flex>
                 </>,
                 column_14: <>
-                    <div className="font-mono flex flex-col text-xs dark:text-white">
-                        <div className="text-[0.6rem]">{Util.UnitConversion(bps, true)}</div>
-                    </div>
+                    <Flex direction="column" className="dark:text-white">
+                        <Text>
+                            {Util.UnitConversion(bps, true)}
+                        </Text>
+                    </Flex>
                 </>,
                 column_15: <>
-                    <div className="font-mono flex flex-col text-xs dark:text-white">
-                        <div className="text-[0.6rem]">{pbr}</div>
-                    </div>
+                    <Flex direction="column" className="dark:text-white">
+                        <Text>
+                            {pbr}
+                        </Text>
+                    </Flex>
                 </>,
             }
         }));
