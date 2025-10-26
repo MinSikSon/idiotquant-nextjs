@@ -1,7 +1,5 @@
 "use client"
 
-import { DesignButton } from "@/components/designButton";
-import TablesExample8, { Example8TableHeadType, Example8TableRowType, TablesExample8PropsType } from "@/components/tableExample8";
 import { CapitalTokenType, QuantRule, reqGetQuantRule, reqGetQuantRuleDesc, reqGetUsCapitalToken, selectCapitalToken, selectInquirePriceMulti, selectQuantRule, selectQuantRuleDesc, selectUsCapitalToken } from "@/lib/features/algorithmTrade/algorithmTradeSlice";
 import { reqGetCapitalToken } from "@/lib/features/algorithmTrade/algorithmTradeSlice";
 import { getKoreaInvestmentToken, KoreaInvestmentToken } from "@/lib/features/koreaInvestment/koreaInvestmentSlice";
@@ -10,10 +8,8 @@ import { useAppDispatch, useAppSelector } from "@/lib/hooks";
 import { useState, useEffect } from "react";
 import * as Tabs from "@radix-ui/react-tabs";
 
-import CountUp from '@/src/TextAnimations/CountUp/CountUp';
-import GradientText from '@/src/TextAnimations/GradientText/GradientText';
-import Loading from '@/components/loading';
-import { Box, Flex, Text } from "@radix-ui/themes";
+import { Badge, Box, Card, Flex, Grid, Heading, Text } from "@radix-ui/themes";
+import { ArrowDownIcon, ArrowRightIcon, ArrowUpIcon } from "@heroicons/react/24/outline";
 
 const DEBUG = false;
 
@@ -55,6 +51,7 @@ export default function AlgorithmTrade() {
     const [time, setTime] = useState<any>('');
     const [market, setMarket] = useState<"KR" | "US">("KR");
     const [visibleCount, setVisibleCount] = useState(0);
+    const [mergedResult, setMergedResult] = useState<any>([]);
 
     function handleOnClick() {
         setTime(new Date());
@@ -70,7 +67,80 @@ export default function AlgorithmTrade() {
     }, []);
     useEffect(() => {
         if (DEBUG) console.log(`kr_capital_token`, kr_capital_token);
+
+        if (DEBUG) console.log(`mergedResult`, mergedResult);
+        if (DEBUG) console.log(`mergedResult.length`, mergedResult.length);
+        if ("fulfilled" == kr_capital_token.state && 0 == mergedResult.length) {
+            const oldestMerged = new Set();
+            const seen = new Set();
+            const oldestPurchageLog = kr_capital_token.value.purchase_log.slice(60, 90).flat();
+
+            if (DEBUG) console.log(`oldestPurchageLog`, oldestPurchageLog);
+            oldestPurchageLog.forEach(item => {
+                item.stock_list.forEach(stock => {
+                    if (!seen.has(stock.stock_name)) {
+                        seen.add(stock.stock_name);
+                        oldestMerged.add({
+                            ...stock,
+                            time_stamp: item.time_stamp, // 필요시 언제 등장했는지도 같이 저장
+                        });
+                    }
+                });
+            });
+
+            if (DEBUG) console.log(`oldestMerged`, oldestMerged);
+            if (DEBUG) console.log(`seen`, seen);
+            if (DEBUG) console.log(`seen.size`, seen.size);
+
+            const latestMerged = new Set();
+            const latestSeen = new Set();
+            const latestPurchageLog = kr_capital_token.value.purchase_log.slice(-30).flat();
+            if (DEBUG) console.log(`latestPurchageLog`, latestPurchageLog);
+            latestPurchageLog.forEach(item => {
+                item.stock_list.forEach(stock => {
+                    if (!latestSeen.has(stock.stock_name)) {
+                        latestSeen.add(stock.stock_name);
+                        latestMerged.add({
+                            ...stock,
+                            time_stamp: item.time_stamp, // 필요시 언제 등장했는지도 같이 저장
+                        });
+                    }
+                });
+            });
+
+            if (DEBUG) console.log(`latestMerged`, latestMerged);
+            if (DEBUG) console.log(`latestSeen`, latestSeen);
+            if (DEBUG) console.log(`latestSeen.size`, latestSeen.size);
+
+            // Set → Array로 변환 (Set은 직접 index 접근이 불가하므로)
+            const oldestArr: any = [...oldestMerged];
+            const latestArr: any = [...latestMerged];
+
+            // latest를 빠르게 찾기 위한 Map 생성
+            const latestMap = new Map(
+                latestArr.map((item: { stock_name: unknown }) => [item.stock_name, item])
+            );
+
+            const tmpMergedResult: any = [];
+
+            oldestArr.forEach((oldItem: { stock_name: unknown; }) => {
+                const match = latestMap.get(oldItem.stock_name);
+                if (match) {
+                    tmpMergedResult.push({
+                        stock_name: oldItem.stock_name,
+                        oldest: oldItem,
+                        latest: match,
+                    });
+                }
+            });
+
+            if (DEBUG) console.log("tmpMergedResult", tmpMergedResult);
+            setMergedResult(tmpMergedResult);
+        }
     }, [kr_capital_token]);
+    useEffect(() => {
+        if (DEBUG) console.log(`mergedResult`, mergedResult);
+    }, [mergedResult]);
     useEffect(() => {
         if (DEBUG) console.log(`us_capital_token`, us_capital_token);
     }, [us_capital_token]);
@@ -84,339 +154,101 @@ export default function AlgorithmTrade() {
         if (DEBUG) console.log(`inquirePriceMulti`, inquirePriceMulti);
     }, [inquirePriceMulti]);
 
-    const example8TableHead: Example8TableHeadType[] = [
-        {
-            head: "",
-        },
-        {
-            head: "종목명",
-        },
-        {
-            head: "구매전 토큰",
-        },
-        {
-            head: "구매가격",
-        },
-        {
-            head: "개수",
-        },
-        {
-            head: "구매후 토큰",
-        },
-        {
-            head: "구매 날짜 및 시간",
-        },
-        {
-            head: "buyOrSell",
-        },
-    ];
-
-    function formatDateTime(date: string) {
-        // console.log(`formatDateTime`, `date`, date);
-        if (!!!date) {
-            return "";
-        }
-        date = date.replaceAll("\"", "").replaceAll("-", "/");
-        const dateArr = date.split("T");
-        const dateArr2 = dateArr[1].split(".");
-        return `${dateArr[0]} ${dateArr2[0]}`;
-    }
-
-    function getCumulateTokenArray() {
-        const capitalToken = "KR" == market ? kr_capital_token : us_capital_token;
-        const purchase_log = capitalToken.value.purchase_log ?? [];
-        let cumulateToken = 0
-        const cumulateTokenArray = purchase_log.map((entry: any) => {
-            cumulateToken += entry.stock_list.reduce((sum: any, stock: any) => sum + Number(stock.remaining_token), 0);
-            return Number(cumulateToken).toFixed(0);
-        }
-        );
-        // console.log(`cumulateTokenArray`, cumulateTokenArray);
-        return cumulateTokenArray;
-    }
-
-    let cummulative_investment = 0;
-    let cummulative_investment_sell = 0;
-
-    const capitalToken = "KR" == market ? kr_capital_token : us_capital_token;
-    const purchase_log = capitalToken.value.purchase_log ?? [];
-    if (DEBUG) console.log(`purchase_log`, purchase_log);
-    let example8TableRow: Example8TableRowType[] = (purchase_log.slice(-60).map((item: any, index: number) => {
-        const bgColor = index % 2 == 0 ? "bg-white" : "bg-gray-100";
-        return item["stock_list"].map((subItem: any) => {
-            const frst_bltn_exrt = "KR" == market ? 1 : capitalToken.value.frst_bltn_exrt;
-            const investment = (subItem["stck_prpr"] * subItem["ORD_QTY"] * frst_bltn_exrt);
-            if ("buy" == (subItem["buyOrSell"] ?? "buy")) {
-                cummulative_investment += investment;
-            }
-            else {
-                cummulative_investment_sell += investment;
-            }
-
-            return {
-                id: item["time_stamp"] + subItem["stock_name"], // key
-                column_2: <div className="text-xs">{subItem["stock_name"]}</div>,
-                column_3: <div className="text-xs">{subItem["remaining_token"]}</div>,
-                column_4: <>
-                    <div className="text-xs">
-                        {Number(subItem["stck_prpr"]).toLocaleString() + " "}<span className="text-[0.6rem]">{market == "KR" ? "KRW" : `USD (${Number(Number(subItem["stck_prpr"]) * capitalToken.value.frst_bltn_exrt).toFixed(0)} KRW)`}</span>
-                    </div>
-                </>,
-                expectedRateOfReturnColor: '', // x
-                column_5: <div className="text-xs">{subItem["ORD_QTY"]}</div>,
-                column_6: <div className="text-xs">{Number(subItem["remaining_token"] - investment).toFixed(0)}</div>,
-                column_7: <div className="text-xs">{formatDateTime(item["time_stamp"])}</div>,
-                column_8: <div className="text-xs">{subItem["buyOrSell"] ?? "buy"}</div>,
-                bgColor: bgColor,
-            }
-        })
-    })).reverse().flat();
-
-    if (DEBUG) console.log(`capitalToken.state`, capitalToken.state);
-
-    const time_stamp: any = capitalToken.value.time_stamp ?? {};
-    const stock_list: any = capitalToken.value.stock_list ?? [];
-    const refill_stock_index = capitalToken.value.refill_stock_index ?? 0;
-    const token_per_stock = capitalToken.value.token_per_stock ?? 0;
-    if (DEBUG) console.log(`stock_list`, stock_list);
-    let cummulative_token = 0;
-    let exclude_count = 0;
-    let exclude_token = 0;
-    const props: TablesExample8PropsType = {
-        title: <>
-            <div className="flex items-center p-2">
-                <DesignButton
-                    handleOnClick={() => {
-                        handleOnClick()
-                    }}
-                    buttonName={`refresh data`}
-                    buttonBgColor="bg-white dark:bg-black"
-                    buttonBorderColor="border-gray-500"
-                    buttonShadowColor="#D5D5D5"
-                    textStyle="text-black dark:text-white text-xs"
-                    buttonStyle={`rounded-lg px-2 py-1 flex items-center justify-center mb-2 button bg-white cursor-pointer select-none
-                                       active:translate-y-1 active:[box-shadow:0_0px_0_0_#D5D5D5,0_0px_0_0_#D5D5D541] active:border-[0px]
-                                       transition-all duration-150 [box-shadow:0_4px_0_0_#D5D5D5,0_8px_0_0_#D5D5D541] border-[1px]
-                                       `}
-                />
-                <MarketTabs setMarket={setMarket} />
-                {"fulfilled" != capitalToken.state ?
-                    <Loading />
-                    : <>
-                        <div className="text-[0.6rem] text-black dark:text-white ml-1">{time.toLocaleString("en-US", { timeZone: "Asia/Seoul" })}</div>
-                    </>}
-            </div>
-        </>,
-        desc: <>
-            <Box p="2" className="dark:border-gray-700 border rounded-lg shadow">
-                {/* <div className="text-xl">
-                    Trading Strategy
-                </div>
-                <table className="text-[0.5rem] border-none border-gray-300 w-full text-left">
-                    <thead>
-                        <tr>
-                            {Object.keys(quant_rule.value).map((key) => {
-                                const typedKey = key as keyof QuantRuleValue;
-                                return (
-                                    <th key={key} className="border py-1 text-center">
-                                        <RulePopover keyLabel={key} value={quant_rule.value[typedKey]} desc={quant_rule_desc.value[typedKey] ?? "설명 없음"} />
-                                    </th>
-                                );
-                            })}
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <tr>
-                            {Object.keys(quant_rule.value).map((key) => {
-                                const typedKey = key as keyof QuantRuleValue;
-                                return (
-                                    <td key={key} className="text-center border py-1">
-                                        <RulePopover keyLabel={key} value={quant_rule.value[typedKey]} desc={quant_rule_desc.value[typedKey] ?? "설명 없음"} />
-                                    </td>
-                                );
-                            })}
-                        </tr>
-                    </tbody>
-                </table> */}
-                <Box p="2">
-                    <Flex direction="column" className="dark:text-white">
-                        <Text size="2">
-                            Total Algorithmic Buys
-                        </Text>
-                        <div className="flex flex-col justify-end items-end">
-                            <div className="">{market == "KR" ?
-                                <GradientText
-                                    colors={["#40ffaa", "#4079ff", "#40ffaa", "#4079ff", "#40ffaa"]}
-                                    animationSpeed={3}
-                                    showBorder={false}
-                                ><CountUp
-                                        from={0}
-                                        to={Number(Number(cummulative_investment).toFixed(0))}
-                                        separator=","
-                                        direction="up"
-                                        duration={1}
-                                        className="count-up-text"
-                                    /> KRW
-                                </GradientText>
-                                : <GradientText
-                                    colors={["#40ffaa", "#4079ff", "#40ffaa", "#4079ff", "#40ffaa"]}
-                                    animationSpeed={3}
-                                    showBorder={false}
-                                >
-                                    <CountUp
-                                        from={0}
-                                        to={Number(Number(cummulative_investment).toFixed(0))}
-                                        separator=","
-                                        direction="up"
-                                        duration={2}
-                                        className="count-up-text"
-                                    /> KRW</GradientText>
-                            }</div>
-                            {market == "KR" ? <></>
-                                : <Text size="1"><GradientText
-                                    colors={["#40ffaa", "#4079ff", "#40ffaa", "#4079ff", "#40ffaa"]}
-                                    animationSpeed={3}
-                                    showBorder={false}
-                                ><CountUp
-                                        from={0}
-                                        to={Number(Number(Number(cummulative_investment) / Number(us_capital_token.value.frst_bltn_exrt)).toFixed(3))}
-                                        separator=","
-                                        direction="up"
-                                        duration={1}
-                                        className="count-up-text"
-                                    /> USD</GradientText></Text>}
-                        </div>
-                        {/* <div className="dark:border-gray-700 border flex-1 rounded-lg px-2 pb-1 mx-1 mb-2 shadow">
-                        <div className="text-[0.6rem]">Total Algorithmic Sells</div>
-                        <div className="flex flex-col justify-end items-end">
-                            <div className="">{market == "KR" ? `${Number(Number(cummulative_investment_sell).toFixed(0)).toLocaleString()} KRW` : `${Number(Number(cummulative_investment_sell).toFixed(0)).toLocaleString()} KRW`}</div>
-                            <div className="text-[0.6rem]">{market == "KR" ? "" : `(${Number(Number(cummulative_investment_sell) / Number(us_capital_token.value.frst_bltn_exrt)).toFixed(3)} USD)`}</div>
-                        </div>
-                    </div> */}
-                    </Flex>
-                </Box>
-                {/* <div className={`flex gap-2`}>
-                    <div className="dark:bg-gray-200 bg-white w-full border rounded-lg mx-1">
-                        <LineChart
-                            data_array={getLineDataArray()}
-                            category_array={getCategoryArray()}
-                            type={"area"}
-                            height={110}
-                        />
-                    </div>
-                </div> */}
-            </Box>
-        </>,
-        financial_date: <></>,
-        market_date: < >
-            <Box p="2" className="dark:border-gray-700 border rounded-lg shadow">
-                <Text>
-                    Stock Purchase Point Accumulation History
-                </Text>
-                <Flex direction="column">
-                    {Object.keys(time_stamp).reverse().map((key) => {
-                        return <>
-                            <Box key={key} >
-                                <Flex px="2" mx="2" className="dark:border-gray-700 border rounded-lg shadow">
-                                    <Box minWidth="160px">
-                                        <Text size="1">{key == "prevPrev" ? "Two Periods Ago" : (key == "prev" ? "Previous Period" : "Current Data")}</Text>
-                                    </Box>
-                                    <Box>
-                                        <Text size="1">{formatDateTime(time_stamp[key])}</Text>
-                                    </Box>
-                                </Flex>
-                            </Box>
-                        </>
-                    })}
-                </Flex>
-            </Box>
-            <Box p="2" className="dark:border-gray-700 border rounded-lg shadow">
-                <Text>
-                    Current Stock Purchase Points
-                </Text>
-                <Flex direction="column">
-                    <Flex direction="row" px="1" mx="1" gap="1" className="dark:border-gray-700 border rounded-lg shadow">
-                        <Box minWidth="180px">
-                            <Text size="1">Points per stock</Text>
-                        </Box>
-                        <Box>
-                            <Text size="1">{token_per_stock} point / 10 min</Text>
-                        </Box>
-                    </Flex>
-                    <Flex direction="row" px="1" mx="1" gap="1" className="dark:border-gray-700 border rounded-lg shadow">
-                        <Box minWidth="180px">
-                            <Text size="1">Next Stock to Attempt Purchase</Text>
-                        </Box>
-                        <Box>
-                            <Text size="1">{refill_stock_index}) {!!stock_list[refill_stock_index] ? stock_list[refill_stock_index]["name"] : 0}</Text>
-                        </Box>
-                    </Flex>
-                </Flex>
-            </Box>
-            <Box p="2" className="dark:border-gray-700 border rounded-lg shadow">
-                <Text>
-                    <div>Stocks Targeted for Algorithmic Trading</div>
-                </Text>
-                <div className="rounded px-2 pb-1 m-2 shadow">
-                    <Box>
-                        {stock_list.map((item: any, index: number) => {
-                            const token = isNaN(Number(item["token"])) ? 0 : Number(item["token"]);
-                            cummulative_token += token;
-                            exclude_count += item["refill"] ? 0 : 1;
-                            exclude_token += item["refill"] ? 0 : token;
-                            return <div key={index} className={`flex justify-between gap-x-1 px-1 text-xs ${index % 2 == 0 ? "bg-white" : "bg-gray-100"} ${item["refill"] ? "" : "line-through"} `}>
-                                <div className="font-mono min-w-10 text-right">
-                                    {String(index).padStart(3, "0")}
-                                </div>
-                                {/* <div className={`min-w-28 ${item["name"].length >= 8 ? "text-[0.6rem]" : (item["name"].length >= 7 ? "text-[0.7rem]" : "text-xs")}`}> */}
-                                <div className={`min-w-32`}>
-                                    {item["name"]}
-                                </div>
-                                <div className="min-w-12 text-right">
-                                    {item["token"]}
-                                </div>
-                                <div className="min-w-12 text-right">
-                                    {item["action"]}
-                                </div>
-                            </div>
-                        })}
-                    </Box>
-                    <Flex direction="column" justify="between" p="1" align="start" className="dark:text-white">
-                        <Box>
-                            <Flex direction="row" justify="between" gap="1">
-                                <Box minWidth="160px">
-                                    <Text size="1">Number of Stocks</Text>
-                                </Box>
-                                <Box>
-                                    <Text size="1">{stock_list.length - exclude_count} / {stock_list.length}</Text>
-                                </Box>
-                            </Flex>
-                        </Box>
-                        <Box>
-                            <Flex direction="row" justify="between" gap="1">
-                                <Box minWidth="160px">
-                                    <Text size="1">Total Points Accumulated</Text>
-                                </Box>
-                                <Box>
-                                    <Text size="1">{cummulative_token - exclude_token} / {cummulative_token}</Text>
-                                </Box>
-                            </Flex>
-                        </Box>
-                    </Flex>
-                </div >
-            </Box >
-        </>,
-        tableHead: example8TableHead,
-        tableRow: example8TableRow,
-        visibleCount: visibleCount,
-        setVisibleCount: setVisibleCount,
-    }
-
-    // console.log(`example8TableRow`, example8TableRow);
-    if (DEBUG) console.log(`purchase_log`, purchase_log);
-
     return <>
-        <TablesExample8 {...props} />
-        <div className="dark:bg-black h-lvh"></div>
+        <Flex align="center" gap="6" >
+            {/* <Flex flexShrink="0" gap="6" direction="column" width="640px">
+                first
+            </Flex> */}
+            {/* <Flex flexShrink="0" gap="6" direction="column" width="640px"> */}
+
+            <Flex flexShrink="0" gap="6" direction="column" width="100%">
+                <Card size="4">
+                    <Heading as="h3" size="6" trim="start" mb="2">
+                        NCAV 전략 기반 추천 종목
+                    </Heading>
+                    <Text as="p" size="1" mb="1" color="gray">
+                        {/* Review your company’s KPIs compared to the month before. */}
+                        연초 대비 상승/하락 정도 표시
+                    </Text>
+                    <Text as="p" size="1" mb="6">
+                        {/* Review your company’s KPIs compared to the month before. */}
+                        stock 메뉴에서 적정 주가 확인 가능
+                    </Text>
+                    {/* <Grid columns="3" gap="5"> */}
+                    <div className="gap-5 grid grid-cols-2 sm:grid-cols-2 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 2xl:grid-cols-7">
+                        {mergedResult.length > 0 && mergedResult.map((item: any, i: any) => (
+                            <Box key={i}>
+                                <Flex gap="2" mb="2" align="center">
+                                    <Text size="2" color="gray">
+                                        {item.latest.stock_name}
+                                    </Text>
+                                    <Badge
+                                        color={`${Number(item.latest.stck_prpr) - Number(item.oldest.stck_prpr) >= 0 ? "red" : "teal"}` as any}
+                                        // variant={item.variant ?? "solid"}
+                                        radius="full"
+                                    >
+                                        {Number(item.latest.stck_prpr) - Number(item.oldest.stck_prpr) >= 0 && (
+                                            <ArrowUpIcon width="12" height="12" style={{ marginLeft: -2 }} />
+                                        )}
+                                        {Number(item.latest.stck_prpr) - Number(item.oldest.stck_prpr) < 0 && (
+                                            <ArrowDownIcon width="12" height="12" style={{ marginLeft: -2 }} />
+                                        )}
+                                        {((Number(item.latest.stck_prpr) - Number(item.oldest.stck_prpr)) / Number(item.latest.stck_prpr) * 100).toFixed(2)}%
+                                    </Badge>
+                                </Flex>
+                                <Text as="div" mb="2" size="3" weight="bold">
+                                    <Flex direction="row" align="center" gap="1">
+                                        {`${item.oldest.stck_prpr}원`}<ArrowRightIcon width="14" height="14" style={{ marginLeft: -2 }} />{`${item.latest.stck_prpr}원`}
+                                    </Flex>
+                                </Text>
+                                <Text as="div" mb="2" size="1" weight="bold">
+                                    <Flex direction="row" align="center" gap="1">
+                                        {`${item.oldest.time_stamp.slice(0, 10)}`}<ArrowRightIcon width="12" height="12" style={{ marginLeft: -2 }} />{`${item.latest.time_stamp.slice(5, 10)}`}
+                                    </Flex>
+                                </Text>
+
+                            </Box>
+                        ))}
+                    </div>
+                    {/* <div className="gap-5 grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6">
+                        {[
+                            { label: "MRR", value: "$350K", change: "3.2%", color: "teal", icon: "up" },
+                            { label: "OpEx", value: "$211K", change: "12.8%", color: "red", icon: "up" },
+                            { label: "CapEx", value: "$94K", change: "8.8%", color: "teal", icon: "down" },
+                            { label: "GPM", value: "44.6%", change: "1.2%", color: "red", icon: "down" },
+                            { label: "NPM", value: "9.1%", change: "0.0%", color: "gray", variant: "surface" },
+                            { label: "EBITDA", value: "$443K", change: "4.1%", color: "teal", icon: "up" },
+                            { label: "CAC", value: "$146", change: "11.0%", color: "teal", icon: "down" },
+                            { label: "LTV", value: "$1,849", change: "3%", color: "teal", icon: "up" },
+                            { label: "Churn", value: "12.4%", change: "1.1%", color: "red", icon: "up" },
+                        ].map((item, i) => (
+                            <Box key={i}>
+                                <Flex gap="2" mb="2" align="center">
+                                    <Text size="2" color="gray">
+                                        {item.label}
+                                    </Text>
+                                    <Badge
+                                        color={item.color as any}
+                                        // variant={item.variant ?? "solid"}
+                                        radius="full"
+                                    >
+                                        {item.icon === "up" && (
+                                            <ArrowUpIcon width="12" height="12" style={{ marginLeft: -2 }} />
+                                        )}
+                                        {item.icon === "down" && (
+                                            <ArrowDownIcon width="12" height="12" style={{ marginLeft: -2 }} />
+                                        )}
+                                        {item.change}
+                                    </Badge>
+                                </Flex>
+                                <Text as="div" mb="2" size="8" weight="bold">
+                                    {item.value}
+                                </Text>
+                            </Box>
+                        ))}
+                    </div> */}
+                </Card>
+            </Flex>
+        </Flex>
     </>
 }
