@@ -314,16 +314,18 @@ export default function AlgorithmTrade() {
                     Stock Purchase Point Accumulation History
                 </Text>
                 <Flex direction="column">
-                    {Object.keys(time_stamp).reverse().map((key, index) => {
+                    {Object.keys(time_stamp).reverse().map((key) => {
                         return <>
-                            <Flex key={index} px="2" mx="2" className="dark:border-gray-700 border rounded-lg shadow">
-                                <Box minWidth="160px">
-                                    <Text size="1">{key == "prevPrev" ? "Two Periods Ago" : (key == "prev" ? "Previous Period" : "Current Data")}</Text>
-                                </Box>
-                                <Box>
-                                    <Text size="1">{formatDateTime(time_stamp[key])}</Text>
-                                </Box>
-                            </Flex>
+                            <Box key={key} >
+                                <Flex px="2" mx="2" className="dark:border-gray-700 border rounded-lg shadow">
+                                    <Box minWidth="160px">
+                                        <Text size="1">{key == "prevPrev" ? "Two Periods Ago" : (key == "prev" ? "Previous Period" : "Current Data")}</Text>
+                                    </Box>
+                                    <Box>
+                                        <Text size="1">{formatDateTime(time_stamp[key])}</Text>
+                                    </Box>
+                                </Flex>
+                            </Box>
                         </>
                     })}
                 </Flex>

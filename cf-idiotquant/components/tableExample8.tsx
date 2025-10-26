@@ -90,7 +90,7 @@ function TablesExample8({
                     {/* <Box className="overflow-scroll [scrollbar-width:thin] [scrollbar-color:#888_transparent] !px-0 pt-0 pb-2 dark:bg-black"> */}
                     <Box>
                         {/* <Table.Root className="w-full min-w-max table-auto items-center"> */}
-                        {!!visibleCount && visibleCount > 0 ?
+                        {undefined == visibleCount || visibleCount > 0 ?
                             <Table.Root layout="auto">
                                 <Table.Header>
                                     <Table.Row>
