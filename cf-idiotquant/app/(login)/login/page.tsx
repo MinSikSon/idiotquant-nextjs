@@ -7,8 +7,6 @@ import { useAppDispatch, useAppSelector } from "@/lib/hooks";
 
 import { DesignButton } from "@/components/designButton";
 import { KakaoTotal, selectKakaoTatalState, selectKakaoTotal } from "@/lib/features/kakao/kakaoSlice";
-import Auth from "@/components/auth";
-import { getKoreaInvestmentToken, KoreaInvestmentToken } from "@/lib/features/koreaInvestment/koreaInvestmentSlice";
 import LoadKakaoTotal from "@/components/loadKakaoTotal";
 
 const DEBUG = false;

@@ -155,62 +155,77 @@ export default function AlgorithmTrade() {
     }, [inquirePriceMulti]);
 
     return <>
-        <Flex align="center" gap="6" >
+        <Flex align="center" gap="0" p="1">
             {/* <Flex flexShrink="0" gap="6" direction="column" width="640px">
                 first
             </Flex> */}
             {/* <Flex flexShrink="0" gap="6" direction="column" width="640px"> */}
-
-            <Flex flexShrink="0" gap="6" direction="column" width="100%">
-                <Card size="4">
-                    <Heading as="h3" size="6" trim="start" mb="2">
-                        NCAV 전략 기반 추천 종목
-                    </Heading>
-                    <Text as="p" size="1" mb="1" color="gray">
-                        {/* Review your company’s KPIs compared to the month before. */}
-                        연초 대비 상승/하락 정도 표시
-                    </Text>
-                    <Text as="p" size="1" mb="6">
-                        {/* Review your company’s KPIs compared to the month before. */}
-                        stock 메뉴에서 적정 주가 확인 가능
-                    </Text>
-                    {/* <Grid columns="3" gap="5"> */}
-                    <div className="gap-5 grid grid-cols-2 sm:grid-cols-2 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 2xl:grid-cols-7">
-                        {mergedResult.length > 0 && mergedResult.map((item: any, i: any) => (
-                            <Box key={i}>
-                                <Flex gap="2" mb="2" align="center">
-                                    <Text size="2" color="gray">
-                                        {item.latest.stock_name}
-                                    </Text>
-                                    <Badge
-                                        color={`${Number(item.latest.stck_prpr) - Number(item.oldest.stck_prpr) >= 0 ? "red" : "teal"}` as any}
-                                        // variant={item.variant ?? "solid"}
-                                        radius="full"
-                                    >
-                                        {Number(item.latest.stck_prpr) - Number(item.oldest.stck_prpr) >= 0 && (
-                                            <ArrowUpIcon width="12" height="12" style={{ marginLeft: -2 }} />
-                                        )}
-                                        {Number(item.latest.stck_prpr) - Number(item.oldest.stck_prpr) < 0 && (
-                                            <ArrowDownIcon width="12" height="12" style={{ marginLeft: -2 }} />
-                                        )}
-                                        {((Number(item.latest.stck_prpr) - Number(item.oldest.stck_prpr)) / Number(item.latest.stck_prpr) * 100).toFixed(2)}%
-                                    </Badge>
-                                </Flex>
-                                <Text as="div" mb="2" size="3" weight="bold">
-                                    <Flex direction="row" align="center" gap="1">
-                                        {`${item.oldest.stck_prpr}원`}<ArrowRightIcon width="14" height="14" style={{ marginLeft: -2 }} />{`${item.latest.stck_prpr}원`}
+            <Flex flexShrink="0" gap="0" direction="column" width="100%">
+                <Flex direction="row" width="100%" align="center" className="!justify-between">
+                    <Box px="1">
+                        <Text as="p" className="text-sm sm:text-sm md:text-base lg:text-lg xl:text-xl 2xl:text-2xl font-bold">
+                            NCAV 전략 기반 추천 종목
+                        </Text>
+                    </Box>
+                    <Box px="1">
+                        <Flex direction="column">
+                            <Text as="p" color="gray" className="text-[0.5rem] sm:text-xs md:text-sm lg:text-base xl:text-lg 2xl:text-xl">
+                                연초 대비 상승/하락 정도 표시
+                            </Text>
+                            <Text as="p" color="gray" className="text-[0.5rem] sm:text-xs md:text-sm lg:text-base xl:text-lg 2xl:text-xl">
+                                stock 메뉴에서 적정 주가 확인 가능
+                            </Text>
+                        </Flex>
+                    </Box>
+                </Flex>
+                {/* <Grid columns="3" gap="5"> */}
+                <div className="grid grid-cols-3 sm:grid-cols-3 md:grid-cols-5 lg:grid-cols-7 xl:grid-cols-9 2xl:grid-cols-11">
+                    {mergedResult.length > 0 && mergedResult.map((item: any, i: any) => (
+                        <Box key={i} className="border rounded-xl" pb="1" ml="1" mb="1">
+                            <Flex width="100%" gap="1" mb="0" align="center" className="!justify-center">
+                                <Text color="gray" className="text-[0.7rem] sm:text-sm md:text-base lg:text-lg xl:text-xl 2xl:text-2xl">
+                                    {item.latest.stock_name}
+                                </Text>
+                            </Flex>
+                            <Box>
+                                <Text className="text-[0.5rem] sm:text-sm md:text-base lg:text-lg xl:text-xl 2xl:text-2xl">
+                                    <Flex width="100%" direction="row" gap="1" align="center" className="!justify-evenly">
+                                        <Text
+                                            className={`text-[0.4rem] sm:text-sm md:text-base lg:text-lg xl:text-xl 2xl:text-2xl 
+                                            rounded-full p-1
+                                            ${Number(item.latest.stck_prpr) - Number(item.oldest.stck_prpr) >= 0 ? "bg-red-50" : "bg-teal-50"}`}
+                                        >
+                                            {((Number(item.latest.stck_prpr) - Number(item.oldest.stck_prpr)) / Number(item.latest.stck_prpr) * 100).toFixed(2)}%
+                                        </Text>
+                                        <Box>
+                                            {`${item.oldest.stck_prpr}원`}
+                                        </Box>
+                                        <Box>
+                                            <ArrowRightIcon width="10" height="10" />
+                                        </Box>
+                                        <Box>
+                                            {`${item.latest.stck_prpr}원`}
+                                        </Box>
                                     </Flex>
                                 </Text>
-                                <Text as="div" mb="2" size="1" weight="bold">
-                                    <Flex direction="row" align="center" gap="1">
-                                        {`${item.oldest.time_stamp.slice(0, 10)}`}<ArrowRightIcon width="12" height="12" style={{ marginLeft: -2 }} />{`${item.latest.time_stamp.slice(5, 10)}`}
-                                    </Flex>
-                                </Text>
-
                             </Box>
-                        ))}
-                    </div>
-                    {/* <div className="gap-5 grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6">
+                            <Text mb="0" className="text-[0.4rem] sm:text-sm md:text-base lg:text-lg xl:text-xl 2xl:text-2xl">
+                                <Flex width="100%" direction="row" align="center" gap="1" className="!justify-end">
+                                    <Box>
+                                        {`${item.oldest.time_stamp.slice(0, 10)}`}
+                                    </Box>
+                                    <Box>
+                                        <ArrowRightIcon width="10" height="10" />
+                                    </Box>
+                                    <Box>
+                                        {`${item.latest.time_stamp.slice(5, 10)}`}
+                                    </Box>
+                                </Flex>
+                            </Text>
+                        </Box>
+                    ))}
+                </div>
+                {/* <div className="gap-5 grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6">
                         {[
                             { label: "MRR", value: "$350K", change: "3.2%", color: "teal", icon: "up" },
                             { label: "OpEx", value: "$211K", change: "12.8%", color: "red", icon: "up" },
@@ -247,7 +262,6 @@ export default function AlgorithmTrade() {
                             </Box>
                         ))}
                     </div> */}
-                </Card>
             </Flex>
         </Flex>
     </>
