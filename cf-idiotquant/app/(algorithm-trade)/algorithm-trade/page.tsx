@@ -20,7 +20,7 @@ function MarketTabs({ setMarket }: { setMarket: (m: "KR" | "US") => void }) {
                 <Tabs.Trigger
                     value="KR"
                     onClick={() => setMarket("KR")}
-                    className="flex-1 p-1 text-white transition 
+                    className="flex-1 p-1 transition 
                      data-[state=active]:bg-blue-500 data-[state=active]:font-bold"
                 >
                     KR
@@ -28,7 +28,7 @@ function MarketTabs({ setMarket }: { setMarket: (m: "KR" | "US") => void }) {
                 <Tabs.Trigger
                     value="US"
                     onClick={() => setMarket("US")}
-                    className="flex-1 p-1 text-white transition 
+                    className="flex-1 p-1 transition 
                      data-[state=active]:bg-blue-500 data-[state=active]:font-bold"
                 >
                     US
@@ -179,90 +179,40 @@ export default function AlgorithmTrade() {
                     </Box>
                 </Flex>
                 {/* <Grid columns="3" gap="5"> */}
-                <div className="grid grid-cols-3 sm:grid-cols-3 md:grid-cols-5 lg:grid-cols-7 xl:grid-cols-9 2xl:grid-cols-11">
+                <div className="grid grid-cols-4 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-7 xl:grid-cols-9 2xl:grid-cols-11">
                     {mergedResult.length > 0 && mergedResult.map((item: any, i: any) => (
-                        <Box key={i} className="border rounded-xl" pb="1" ml="1" mb="1">
-                            <Flex width="100%" gap="1" mb="0" align="center" className="!justify-center">
-                                <Text color="gray" className="text-[0.7rem] sm:text-sm md:text-base lg:text-lg xl:text-xl 2xl:text-2xl">
+                        <Box key={i} className="border-b border-r" pb="0" ml="0" mb="0">
+                            <Flex width="100%" gap="0" mb="0" align="center" className="!justify-center">
+                                <Text className="text-[0.6rem] sm:text-sm md:text-base lg:text-lg xl:text-xl 2xl:text-2xl">
                                     {item.latest.stock_name}
                                 </Text>
                             </Flex>
-                            <Box>
+                            <Flex width="100%" gap="0" mb="0" align="center" className="!justify-center">
+                                <Text
+                                    className={`text-[0.4rem] sm:text-sm md:text-base lg:text-lg xl:text-xl 2xl:text-2xl 
+                                            rounded-full
+                                            border
+                                            ${Number(item.latest.stck_prpr) - Number(item.oldest.stck_prpr) >= 0 ? "border-red-50" : "border-teal-50"}`}
+                                >
+                                    {((Number(item.latest.stck_prpr) - Number(item.oldest.stck_prpr)) / Number(item.latest.stck_prpr) * 100).toFixed(2)}%
+                                </Text>
+                            </Flex>
+                            <Flex width="100%" gap="0" mb="0" align="center" className="!justify-center">
                                 <Text className="text-[0.5rem] sm:text-sm md:text-base lg:text-lg xl:text-xl 2xl:text-2xl">
-                                    <Flex width="100%" direction="row" gap="1" align="center" className="!justify-evenly">
-                                        <Text
-                                            className={`text-[0.4rem] sm:text-sm md:text-base lg:text-lg xl:text-xl 2xl:text-2xl 
-                                            rounded-full p-1
-                                            ${Number(item.latest.stck_prpr) - Number(item.oldest.stck_prpr) >= 0 ? "bg-red-50" : "bg-teal-50"}`}
-                                        >
-                                            {((Number(item.latest.stck_prpr) - Number(item.oldest.stck_prpr)) / Number(item.latest.stck_prpr) * 100).toFixed(2)}%
-                                        </Text>
-                                        <Box>
-                                            {`${item.oldest.stck_prpr}원`}
-                                        </Box>
-                                        <Box>
-                                            <ArrowRightIcon width="10" height="10" />
-                                        </Box>
-                                        <Box>
-                                            {`${item.latest.stck_prpr}원`}
-                                        </Box>
+                                    <Flex width="100%" direction="row" align="center" gap="1">
+                                        {`${item.oldest.stck_prpr}원`}→{`${item.latest.stck_prpr}원`}
                                     </Flex>
                                 </Text>
-                            </Box>
+                            </Flex>
                             <Text mb="0" className="text-[0.4rem] sm:text-sm md:text-base lg:text-lg xl:text-xl 2xl:text-2xl">
-                                <Flex width="100%" direction="row" align="center" gap="1" className="!justify-end">
-                                    <Box>
-                                        {`${item.oldest.time_stamp.slice(0, 10)}`}
-                                    </Box>
-                                    <Box>
-                                        <ArrowRightIcon width="10" height="10" />
-                                    </Box>
-                                    <Box>
-                                        {`${item.latest.time_stamp.slice(5, 10)}`}
-                                    </Box>
+                                <Flex width="100%" direction="row" align="center" gap="1" className="!justify-center">
+                                    {`${item.oldest.time_stamp.slice(0, 10)}`}→{`${item.latest.time_stamp.slice(5, 10)}`}
                                 </Flex>
                             </Text>
                         </Box>
                     ))}
                 </div>
-                {/* <div className="gap-5 grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6">
-                        {[
-                            { label: "MRR", value: "$350K", change: "3.2%", color: "teal", icon: "up" },
-                            { label: "OpEx", value: "$211K", change: "12.8%", color: "red", icon: "up" },
-                            { label: "CapEx", value: "$94K", change: "8.8%", color: "teal", icon: "down" },
-                            { label: "GPM", value: "44.6%", change: "1.2%", color: "red", icon: "down" },
-                            { label: "NPM", value: "9.1%", change: "0.0%", color: "gray", variant: "surface" },
-                            { label: "EBITDA", value: "$443K", change: "4.1%", color: "teal", icon: "up" },
-                            { label: "CAC", value: "$146", change: "11.0%", color: "teal", icon: "down" },
-                            { label: "LTV", value: "$1,849", change: "3%", color: "teal", icon: "up" },
-                            { label: "Churn", value: "12.4%", change: "1.1%", color: "red", icon: "up" },
-                        ].map((item, i) => (
-                            <Box key={i}>
-                                <Flex gap="2" mb="2" align="center">
-                                    <Text size="2" color="gray">
-                                        {item.label}
-                                    </Text>
-                                    <Badge
-                                        color={item.color as any}
-                                        // variant={item.variant ?? "solid"}
-                                        radius="full"
-                                    >
-                                        {item.icon === "up" && (
-                                            <ArrowUpIcon width="12" height="12" style={{ marginLeft: -2 }} />
-                                        )}
-                                        {item.icon === "down" && (
-                                            <ArrowDownIcon width="12" height="12" style={{ marginLeft: -2 }} />
-                                        )}
-                                        {item.change}
-                                    </Badge>
-                                </Flex>
-                                <Text as="div" mb="2" size="8" weight="bold">
-                                    {item.value}
-                                </Text>
-                            </Box>
-                        ))}
-                    </div> */}
             </Flex>
-        </Flex>
+        </Flex >
     </>
 }

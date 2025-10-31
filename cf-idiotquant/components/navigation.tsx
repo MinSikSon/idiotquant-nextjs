@@ -223,11 +223,7 @@ export function NavbarWithSimpleLinks() {
                                 </DropdownMenu.Item>
                                 <DropdownMenu.Separator />
                                 <DropdownMenu.Item shortcut="">
-                                    <ThemeChanger
-                                        handleOpen={handleOpen}
-                                        toggleTheme={toggleTheme}
-                                        setToggleTheme={setToggleTheme}
-                                    />
+                                    <ThemeChanger />
                                 </DropdownMenu.Item>
                             </DropdownMenu.Content>
                         </DropdownMenu.Root>
