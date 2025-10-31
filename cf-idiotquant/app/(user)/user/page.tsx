@@ -4,6 +4,7 @@ import { DesignButton } from "@/components/designButton";
 import { Logout } from "./logout";
 import { useRouter } from "next/navigation";
 import User from "./user";
+import AlgorithmTradeLegacy from "@/app/(algorithm-trade-legacy)/algorithm-trade-legacy/page";
 
 const DEBUG = false;
 
@@ -27,6 +28,7 @@ export default function UserPage(props: any) {
                             transition-all duration-150 [box-shadow:0_4px_0_0_#1e1e1e,0_8px_0_0_#1e1e1e41] border-b-[1px]
                             `}
             />
+            <AlgorithmTradeLegacy />
         </div>
     </>
 }

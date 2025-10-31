@@ -42,7 +42,7 @@ function MarketTabs({ setMarket }: { setMarket: (m: "KR" | "US") => void }) {
     );
 }
 
-export default function AlgorithmTrade() {
+export default function AlgorithmTradeLegacy() {
     const dispatch = useAppDispatch();
 
     const kr_capital_token: CapitalTokenType = useAppSelector(selectCapitalToken);
