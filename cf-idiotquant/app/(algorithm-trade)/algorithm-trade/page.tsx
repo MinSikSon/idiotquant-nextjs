@@ -178,24 +178,27 @@ export default function AlgorithmTrade() {
                         </Flex>
                     </Box>
                 </Flex>
-                {/* <Grid columns="3" gap="5"> */}
-                <div className="grid grid-cols-4 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-7 xl:grid-cols-9 2xl:grid-cols-11">
+                <Grid columns="4" gap="0">
+                    {/* <div className="grid grid-cols-4 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-7 xl:grid-cols-9 2xl:grid-cols-11"> */}
                     {mergedResult.length > 0 && mergedResult.map((item: any, i: any) => (
                         <Box key={i} className="border-b border-r" pb="0" ml="0" mb="0">
                             <Flex width="100%" gap="0" mb="0" align="center" className="!justify-center">
-                                <Text className="text-[0.6rem] sm:text-sm md:text-base lg:text-lg xl:text-xl 2xl:text-2xl">
+                                <Text weight={"bold"} className="text-[0.6rem] sm:text-sm md:text-base lg:text-lg xl:text-xl 2xl:text-2xl">
                                     {item.latest.stock_name}
                                 </Text>
                             </Flex>
                             <Flex width="100%" gap="0" mb="0" align="center" className="!justify-center">
-                                <Text
+                                {/* <Text
                                     className={`text-[0.4rem] sm:text-sm md:text-base lg:text-lg xl:text-xl 2xl:text-2xl 
                                             rounded-full
                                             border
                                             ${Number(item.latest.stck_prpr) - Number(item.oldest.stck_prpr) >= 0 ? "border-red-50" : "border-teal-50"}`}
                                 >
                                     {((Number(item.latest.stck_prpr) - Number(item.oldest.stck_prpr)) / Number(item.latest.stck_prpr) * 100).toFixed(2)}%
-                                </Text>
+                                </Text> */}
+                                <Badge color={`${Number(item.latest.stck_prpr) - Number(item.oldest.stck_prpr) >= 0 ? "red" : "teal"}`} radius="full">
+                                    {((Number(item.latest.stck_prpr) - Number(item.oldest.stck_prpr)) / Number(item.latest.stck_prpr) * 100).toFixed(2)}%
+                                </Badge>
                             </Flex>
                             <Flex width="100%" gap="0" mb="0" align="center" className="!justify-center">
                                 <Text className="text-[0.5rem] sm:text-sm md:text-base lg:text-lg xl:text-xl 2xl:text-2xl">
@@ -204,14 +207,15 @@ export default function AlgorithmTrade() {
                                     </Flex>
                                 </Text>
                             </Flex>
-                            <Text mb="0" className="text-[0.4rem] sm:text-sm md:text-base lg:text-lg xl:text-xl 2xl:text-2xl">
+                            <Text color="gray" mb="0" className="text-[0.4rem] sm:text-sm md:text-base lg:text-lg xl:text-xl 2xl:text-2xl">
                                 <Flex width="100%" direction="row" align="center" gap="1" className="!justify-center">
                                     {`${item.oldest.time_stamp.slice(0, 10)}`}→{`${item.latest.time_stamp.slice(5, 10)}`}
                                 </Flex>
                             </Text>
                         </Box>
                     ))}
-                </div>
+                    {/* </div> */}
+                </Grid>
             </Flex>
         </Flex >
     </>
