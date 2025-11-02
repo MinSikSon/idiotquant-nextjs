@@ -7,13 +7,13 @@ import { reqGetCapitalToken } from "@/lib/features/algorithmTrade/algorithmTrade
 import { getKoreaInvestmentToken, KoreaInvestmentToken } from "@/lib/features/koreaInvestment/koreaInvestmentSlice";
 import { useAppDispatch, useAppSelector } from "@/lib/hooks";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import * as Tabs from "@radix-ui/react-tabs";
 
 import CountUp from '@/src/TextAnimations/CountUp/CountUp';
 import GradientText from '@/src/TextAnimations/GradientText/GradientText';
 import Loading from '@/components/loading';
-import { Box, Flex, Text } from "@radix-ui/themes";
+import { Badge, Box, Flex, Grid, Text } from "@radix-ui/themes";
 
 const DEBUG = false;
 
@@ -122,19 +122,6 @@ export default function AlgorithmTradeLegacy() {
         return `${dateArr[0]} ${dateArr2[0]}`;
     }
 
-    function getCumulateTokenArray() {
-        const capitalToken = "KR" == market ? kr_capital_token : us_capital_token;
-        const purchase_log = capitalToken.value.purchase_log ?? [];
-        let cumulateToken = 0
-        const cumulateTokenArray = purchase_log.map((entry: any) => {
-            cumulateToken += entry.stock_list.reduce((sum: any, stock: any) => sum + Number(stock.remaining_token), 0);
-            return Number(cumulateToken).toFixed(0);
-        }
-        );
-        // console.log(`cumulateTokenArray`, cumulateTokenArray);
-        return cumulateTokenArray;
-    }
-
     let cummulative_investment = 0;
     let cummulative_investment_sell = 0;
 
@@ -182,9 +169,68 @@ export default function AlgorithmTradeLegacy() {
     let cummulative_token = 0;
     let exclude_count = 0;
     let exclude_token = 0;
+
+    const tokenList = stock_list.map((item: any, index: number) => {
+        const token = isNaN(Number(item["token"])) ? 0 : Number(item["token"]);
+        cummulative_token += token;
+        exclude_count += item["refill"] ? 0 : 1;
+        exclude_token += item["refill"] ? 0 : token;
+        let badgeColor: "ruby" | "gray" | "gold" | "bronze" | "brown" | "yellow" | "amber" | "orange" | "tomato" | "red" | "crimson" | "pink" | "plum" | "purple" | "violet" | "iris" | "indigo" | "blue" | "cyan" | "teal" | "jade" | "green" | "grass" | "lime" | "mint" | "sky" | undefined
+            = "gray";
+
+        if (item["refill"]) {
+            if (item["token"] >= 200000) {
+                badgeColor = "pink";
+            }
+            else if (item["token"] >= 100000) {
+                badgeColor = "ruby";
+            }
+            else if (item["token"] >= 70000) {
+                badgeColor = "amber";
+            }
+            else if (item["token"] >= 50000) {
+                badgeColor = "yellow";
+            }
+            else if (item["token"] >= 30000) {
+                badgeColor = "grass";
+            }
+            else if (item["token"] >= 20000) {
+                badgeColor = "sky";
+            }
+            else if (item["token"] >= 10000) {
+                badgeColor = "green";
+            }
+            else if (item["token"] >= 5000) {
+                badgeColor = "bronze";
+            }
+        }
+        return <>
+            <Box className="border-b border-r border-gray-300">
+                <Flex direction="column" key={index}
+                // className={`!justify-between text-xs ${index % 2 == 0 ? "bg-white" : "bg-gray-100"} ${item["refill"] ? "" : "line-through"} `}
+                >
+                    <Text align={"center"} className="text-[0.5rem]">
+                        {item["action"]}
+                    </Text>
+                    <Text align={"center"} className="text-[0.6rem]">
+                        {String(index).padStart(3, "0")}
+                    </Text>
+                    {/* <div className={`min-w-28 ${item["name"].length >= 8 ? "text-[0.6rem]" : (item["name"].length >= 7 ? "text-[0.7rem]" : "text-xs")}`}> */}
+                    <Text align={"center"} className="text-[0.6rem]">
+                        {item["name"]}
+                    </Text>
+                    <Flex width="100%" gap="0" mb="0" align="center" className="!justify-center">
+                        <Badge color={badgeColor} radius="full" className={`${item["refill"] ? "" : "line-through"}`}>
+                            {item["token"]}
+                        </Badge>
+                    </Flex>
+                </Flex>
+            </Box>
+        </>
+    });
     const props: TablesExample8PropsType = {
         title: <>
-            <div className="flex items-center p-2">
+            <Flex p="2" className="!items-center">
                 <DesignButton
                     handleOnClick={() => {
                         handleOnClick()
@@ -203,41 +249,12 @@ export default function AlgorithmTradeLegacy() {
                 {"fulfilled" != capitalToken.state ?
                     <Loading />
                     : <>
-                        <div className="text-[0.6rem] text-black dark:text-white ml-1">{time.toLocaleString("en-US", { timeZone: "Asia/Seoul" })}</div>
+                        <Text className="text-[0.6rem] text-black dark:text-white ml-1">{time.toLocaleString("en-US", { timeZone: "Asia/Seoul" })}</Text>
                     </>}
-            </div>
+            </Flex>
         </>,
         desc: <>
             <Box p="2" className="dark:border-gray-700 border rounded-lg shadow">
-                {/* <div className="text-xl">
-                    Trading Strategy
-                </div>
-                <table className="text-[0.5rem] border-none border-gray-300 w-full text-left">
-                    <thead>
-                        <tr>
-                            {Object.keys(quant_rule.value).map((key) => {
-                                const typedKey = key as keyof QuantRuleValue;
-                                return (
-                                    <th key={key} className="border py-1 text-center">
-                                        <RulePopover keyLabel={key} value={quant_rule.value[typedKey]} desc={quant_rule_desc.value[typedKey] ?? "설명 없음"} />
-                                    </th>
-                                );
-                            })}
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <tr>
-                            {Object.keys(quant_rule.value).map((key) => {
-                                const typedKey = key as keyof QuantRuleValue;
-                                return (
-                                    <td key={key} className="text-center border py-1">
-                                        <RulePopover keyLabel={key} value={quant_rule.value[typedKey]} desc={quant_rule_desc.value[typedKey] ?? "설명 없음"} />
-                                    </td>
-                                );
-                            })}
-                        </tr>
-                    </tbody>
-                </table> */}
                 <Box p="2">
                     <Flex direction="column" className="dark:text-white">
                         <Text size="2">
@@ -286,49 +303,28 @@ export default function AlgorithmTradeLegacy() {
                                         className="count-up-text"
                                     /> USD</GradientText></Text>}
                         </div>
-                        {/* <div className="dark:border-gray-700 border flex-1 rounded-lg px-2 pb-1 mx-1 mb-2 shadow">
-                        <div className="text-[0.6rem]">Total Algorithmic Sells</div>
-                        <div className="flex flex-col justify-end items-end">
-                            <div className="">{market == "KR" ? `${Number(Number(cummulative_investment_sell).toFixed(0)).toLocaleString()} KRW` : `${Number(Number(cummulative_investment_sell).toFixed(0)).toLocaleString()} KRW`}</div>
-                            <div className="text-[0.6rem]">{market == "KR" ? "" : `(${Number(Number(cummulative_investment_sell) / Number(us_capital_token.value.frst_bltn_exrt)).toFixed(3)} USD)`}</div>
-                        </div>
-                    </div> */}
                     </Flex>
                 </Box>
-                {/* <div className={`flex gap-2`}>
-                    <div className="dark:bg-gray-200 bg-white w-full border rounded-lg mx-1">
-                        <LineChart
-                            data_array={getLineDataArray()}
-                            category_array={getCategoryArray()}
-                            type={"area"}
-                            height={110}
-                        />
-                    </div>
-                </div> */}
             </Box>
         </>,
         financial_date: <></>,
         market_date: < >
-            <Box p="2" className="dark:border-gray-700 border rounded-lg shadow">
+            <Box p="0" className="dark:border-gray-700 border rounded-lg shadow">
                 <Text>
                     Stock Purchase Point Accumulation History
                 </Text>
-                <Flex direction="column">
+                <Flex direction="row" gap="1" align="center" className="!justify-between">
                     {Object.keys(time_stamp).reverse().map((key) => {
                         return <>
-                            <Flex key={key} px="2" mx="2" className="dark:border-gray-700 border rounded-lg shadow">
-                                <Box minWidth="160px">
-                                    <Text size="1">{key == "prevPrev" ? "Two Periods Ago" : (key == "prev" ? "Previous Period" : "Current Data")}</Text>
-                                </Box>
-                                <Box>
-                                    <Text size="1">{formatDateTime(time_stamp[key])}</Text>
-                                </Box>
+                            <Flex direction="column" p="1" align="center" key={key} className="dark:border-gray-700 border rounded-lg shadow">
+                                <Text className="text-[0.6rem]">{key == "prevPrev" ? "Two Periods Ago" : (key == "prev" ? "Previous Period" : "Current Data")}</Text>
+                                <Text className="text-[0.5rem]">{formatDateTime(time_stamp[key])}</Text>
                             </Flex>
                         </>
                     })}
                 </Flex>
             </Box>
-            <Box p="2" className="dark:border-gray-700 border rounded-lg shadow">
+            <Box p="0" className="dark:border-gray-700 border rounded-lg shadow">
                 <Text>
                     Current Stock Purchase Points
                 </Text>
@@ -351,35 +347,11 @@ export default function AlgorithmTradeLegacy() {
                     </Flex>
                 </Flex>
             </Box>
-            <Box p="2" className="dark:border-gray-700 border rounded-lg shadow">
-                <Text>
-                    <div>Stocks Targeted for Algorithmic Trading</div>
+            <Box p="0" className="dark:border-gray-700 border rounded-lg shadow">
+                <Text>Stocks Targeted for Algorithmic Trading
                 </Text>
-                <div className="rounded px-2 pb-1 m-2 shadow">
-                    <Box>
-                        {stock_list.map((item: any, index: number) => {
-                            const token = isNaN(Number(item["token"])) ? 0 : Number(item["token"]);
-                            cummulative_token += token;
-                            exclude_count += item["refill"] ? 0 : 1;
-                            exclude_token += item["refill"] ? 0 : token;
-                            return <div key={index} className={`flex justify-between gap-x-1 px-1 text-xs ${index % 2 == 0 ? "bg-white" : "bg-gray-100"} ${item["refill"] ? "" : "line-through"} `}>
-                                <div className="font-mono min-w-10 text-right">
-                                    {String(index).padStart(3, "0")}
-                                </div>
-                                {/* <div className={`min-w-28 ${item["name"].length >= 8 ? "text-[0.6rem]" : (item["name"].length >= 7 ? "text-[0.7rem]" : "text-xs")}`}> */}
-                                <div className={`min-w-32`}>
-                                    {item["name"]}
-                                </div>
-                                <div className="min-w-12 text-right">
-                                    {item["token"]}
-                                </div>
-                                <div className="min-w-12 text-right">
-                                    {item["action"]}
-                                </div>
-                            </div>
-                        })}
-                    </Box>
-                    <Flex direction="column" justify="between" p="1" align="start" className="dark:text-white">
+                <div className="rounded shadow">
+                    <Flex direction="column" justify="between" p="1" align="start">
                         <Box>
                             <Flex direction="row" justify="between" gap="1">
                                 <Box minWidth="160px">
@@ -401,6 +373,9 @@ export default function AlgorithmTradeLegacy() {
                             </Flex>
                         </Box>
                     </Flex>
+                    <Grid columns="4" gap="0">
+                        {tokenList}
+                    </Grid>
                 </div >
             </Box >
         </>,

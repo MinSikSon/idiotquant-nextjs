@@ -2,7 +2,7 @@ import React from "react";
 
 import { DesignButton } from "./designButton";
 import { ArrowDownIcon, ArrowUpIcon } from "@heroicons/react/24/outline";
-import { Box, Button, Card, Flex, Spinner, Table } from "@radix-ui/themes";
+import { Box, Button, Card, Flex, Spinner, Table, Text } from "@radix-ui/themes";
 
 const DEBUG = false;
 export interface Example8TableRowType {
@@ -95,8 +95,8 @@ function TablesExample8({
                                 <Table.Header>
                                     <Table.Row>
                                         {tableHead.map(({ head }) => (
-                                            <Table.ColumnHeaderCell key={head} minWidth="130px">
-                                                <div onClick={() => {
+                                            <Table.ColumnHeaderCell align="center" p="0" pr="1" key={head} className="!items-center">
+                                                <Box onClick={() => {
                                                     console.log(`setSelectHead`, !!setSelectHead, setSelectHead);
                                                     if (!!!setSelectHead) {
                                                         return; // do nothing
@@ -110,13 +110,11 @@ function TablesExample8({
                                                     setSelectHead(head)
                                                 }}>
                                                     {/* <div className={`font-mono flex font-bold dark:text-white cursor-pointer ${head.length >= 6 ? "text-[0.6rem]" : ""}`}> */}
-                                                    <Flex className="cursor-pointer">
-                                                        <div className="flex-none items-end">
-                                                            {(prevSelectHead == head && selectHead == head) ? <ArrowUpIcon className="h-4 w-4" /> : (selectHead == head ? <ArrowDownIcon className="h-4 w-4" /> : "")}
-                                                        </div>
-                                                        <div className="flex-1">{head}</div>
+                                                    <Flex direction="row" className="cursor-pointer" align="center">
+                                                        {(prevSelectHead == head && selectHead == head) ? <ArrowUpIcon className="h-2 w-4" /> : (selectHead == head ? <ArrowDownIcon className="h-2 w-2" /> : "")}
+                                                        <Text className="text-[0.6rem]">{head}</Text>
                                                     </Flex>
-                                                </div>
+                                                </Box>
                                             </Table.ColumnHeaderCell>
                                         ))}
                                     </Table.Row>
@@ -147,24 +145,24 @@ function TablesExample8({
                                             index
                                         ) => {
                                             return (
-                                                <Table.Row key={id}>
-                                                    <Table.RowHeaderCell>{column_1}</Table.RowHeaderCell>
-                                                    <Table.RowHeaderCell>{column_2}</Table.RowHeaderCell>
-                                                    <Table.Cell>{column_3}</Table.Cell>
-                                                    <Table.Cell className={`${expectedRateOfReturnColor}`} >
+                                                <Table.Row key={id} className="text-[0.6rem]">
+                                                    <Table.RowHeaderCell p="0" pr="1">{column_1}</Table.RowHeaderCell>
+                                                    <Table.RowHeaderCell p="0" pr="1">{column_2}</Table.RowHeaderCell>
+                                                    <Table.Cell p="0" pr="1">{column_3}</Table.Cell>
+                                                    <Table.Cell p="0" pr="1" className={`${expectedRateOfReturnColor}`} >
                                                         {column_4}
                                                     </Table.Cell>
-                                                    <Table.Cell>{column_5}</Table.Cell>
-                                                    <Table.Cell>{column_6}</Table.Cell>
-                                                    <Table.Cell>{column_7}</Table.Cell>
-                                                    <Table.Cell>{column_8}</Table.Cell>
-                                                    <Table.Cell>{column_9}</Table.Cell>
-                                                    <Table.Cell>{column_10}</Table.Cell>
-                                                    <Table.Cell>{column_11}</Table.Cell>
-                                                    <Table.Cell>{column_12}</Table.Cell>
-                                                    <Table.Cell>{column_13}</Table.Cell>
-                                                    <Table.Cell>{column_14}</Table.Cell>
-                                                    <Table.Cell>{column_15}</Table.Cell>
+                                                    <Table.Cell p="0" pr="1">{column_5}</Table.Cell>
+                                                    <Table.Cell p="0" pr="1">{column_6}</Table.Cell>
+                                                    <Table.Cell p="0" pr="1">{column_7}</Table.Cell>
+                                                    <Table.Cell p="0" pr="1">{column_8}</Table.Cell>
+                                                    <Table.Cell p="0" pr="1">{column_9}</Table.Cell>
+                                                    <Table.Cell p="0" pr="1">{column_10}</Table.Cell>
+                                                    <Table.Cell p="0" pr="1">{column_11}</Table.Cell>
+                                                    <Table.Cell p="0" pr="1">{column_12}</Table.Cell>
+                                                    <Table.Cell p="0" pr="1">{column_13}</Table.Cell>
+                                                    <Table.Cell p="0" pr="1">{column_14}</Table.Cell>
+                                                    <Table.Cell p="0" pr="1">{column_15}</Table.Cell>
                                                 </Table.Row>
                                             );
                                         }

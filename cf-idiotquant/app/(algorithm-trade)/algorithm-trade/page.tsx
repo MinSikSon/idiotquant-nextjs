@@ -73,7 +73,7 @@ export default function AlgorithmTrade() {
         if ("fulfilled" == kr_capital_token.state && 0 == mergedResult.length) {
             const oldestMerged = new Set();
             const seen = new Set();
-            const oldestPurchageLog = kr_capital_token.value.purchase_log.slice(60, 90).flat();
+            const oldestPurchageLog = kr_capital_token.value.purchase_log.slice(60, 120).flat();
 
             if (DEBUG) console.log(`oldestPurchageLog`, oldestPurchageLog);
             oldestPurchageLog.forEach(item => {
@@ -94,7 +94,7 @@ export default function AlgorithmTrade() {
 
             const latestMerged = new Set();
             const latestSeen = new Set();
-            const latestPurchageLog = kr_capital_token.value.purchase_log.slice(-30).flat();
+            const latestPurchageLog = kr_capital_token.value.purchase_log.slice(-60).flat();
             if (DEBUG) console.log(`latestPurchageLog`, latestPurchageLog);
             latestPurchageLog.forEach(item => {
                 item.stock_list.forEach(stock => {
