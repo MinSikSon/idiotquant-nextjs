@@ -22,7 +22,10 @@ export const DesignButton = ({
     buttonName,
 }: DesignButtonProps) => {
     return <div
-        onClick={handleOnClick}
+        onClick={(e) => {
+            e.stopPropagation();
+            handleOnClick();
+        }}
         className={`flex items-center justify-center mb-2 button ${buttonBgColor} rounded-full cursor-pointer select-none
 active:translate-y-1 active:[box-shadow:0_0px_0_0_${buttonShadowColor},0_0px_0_0_${buttonShadowColor}41] active:border-b-[0px]
 transition-all duration-150 [box-shadow:0_4px_0_0_${buttonShadowColor},0_8px_0_0_${buttonShadowColor}41] border-b-[1px] ${buttonBorderColor}

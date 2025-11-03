@@ -68,7 +68,7 @@ function TablesExample8({
 
     const ADD_COUNT = 50;
     return (
-        <Card className="flex flex-col dark:bg-black dark:text-white h-full w-full rounded-none p-0 m-0">
+        <>
             <Box className="flex flex-col justify-between w-full p-0 m-0">
                 <div className="">
                     {title}
@@ -88,7 +88,7 @@ function TablesExample8({
                 :
                 <>
                     {/* <Box className="overflow-scroll [scrollbar-width:thin] [scrollbar-color:#888_transparent] !px-0 pt-0 pb-2 dark:bg-black"> */}
-                    <Box>
+                    <Box p="1">
                         {/* <Table.Root className="w-full min-w-max table-auto items-center"> */}
                         {undefined == visibleCount || visibleCount > 0 ?
                             <Table.Root layout="auto">
@@ -186,7 +186,7 @@ function TablesExample8({
                         : <></>}
                 </>
             }
-        </Card>
+        </>
     );
 }
 

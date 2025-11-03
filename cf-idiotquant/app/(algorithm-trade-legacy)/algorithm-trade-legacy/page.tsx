@@ -12,8 +12,7 @@ import * as Tabs from "@radix-ui/react-tabs";
 
 import CountUp from '@/src/TextAnimations/CountUp/CountUp';
 import GradientText from '@/src/TextAnimations/GradientText/GradientText';
-import Loading from '@/components/loading';
-import { Badge, Box, Flex, Grid, Text } from "@radix-ui/themes";
+import { Badge, Box, Flex, Grid, Spinner, Text } from "@radix-ui/themes";
 
 const DEBUG = false;
 
@@ -247,7 +246,7 @@ export default function AlgorithmTradeLegacy() {
                 />
                 <MarketTabs setMarket={setMarket} />
                 {"fulfilled" != capitalToken.state ?
-                    <Loading />
+                    <Spinner loading />
                     : <>
                         <Text className="text-[0.6rem] text-black dark:text-white ml-1">{time.toLocaleString("en-US", { timeZone: "Asia/Seoul" })}</Text>
                     </>}

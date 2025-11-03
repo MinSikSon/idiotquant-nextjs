@@ -6,7 +6,7 @@ import Link from 'next/link';
 import { KakaoTotal, selectKakaoTotal } from '@/lib/features/kakao/kakaoSlice';
 import { selectCloudflareUserInfo, setCloudFlareUserInfo, UserInfo } from '@/lib/features/cloudflare/cloudflareSlice';
 import { getBadgeColor, getLevel, getProgress } from './level';
-import { Button, Card, Box, Text, TextField, TextArea, Progress, Avatar } from '@radix-ui/themes';
+import { Button, Card, Box, Text, TextField, TextArea, Progress, Avatar, Flex } from '@radix-ui/themes';
 
 const DEBUG = false;
 
@@ -82,48 +82,43 @@ export default function User() {
                 {user.nickname}님 반갑습니다.
             </div>
             <Card className="w-full max-w-2xl">
-                {/* <CardHeader floated={false} shadow={false} className="pb-0">
-                    <Text variant="h4" >
-                        User Info
-                    </Text>
-                </CardHeader> */}
-                <div className="flex flex-col md:flex-row gap-6">
-                    <div className="flex flex-col items-center space-y-1">
-                        <div>
-                            <div className="w-full flex flex-col items-center justify-center pb-1">
-                                <div>
+                <Flex gap="6" className="flex-col md:flex-row">
+                    <Flex direction="column" className="!items-center space-y-1">
+                        <Box>
+                            <Flex direction="column" width="100%" pb="1" className="!items-center !justify-center">
+                                <Text>
                                     {getLevel(Number(user.point))}
-                                </div>
-                                <div className="w-full">
+                                </Text>
+                                <Box width="100%">
                                     <Progress
                                         value={getProgress(Number(user.point))}
                                         // color="crimson"
                                         className="border border-gray-900/10 bg-gray-900/5 p-0 h-1 dark:border-gray-800 dark:bg-gray-900"
                                         size="3"
                                     />
-                                </div>
-                            </div>
+                                </Box>
+                            </Flex>
                             <Avatar
                                 size="9"
                                 src={user.avatarUrl}
                                 fallback={getInitials(user.nickname)}
                             />
-                        </div>
-                        <div className="w-full flex items-center justify-center">
+                        </Box>
+                        <Flex width="100%" className="!items-center !justify-center">
                             <Text className="min-w-16 font-semibold text-xs text-right">가입일</Text>
                             <div className="pl-1 w-60">
                                 <TextField.Root readOnly className="border-none shadow-none text-black dark:text-white text-sm" value={formatDate(user.joinedAt)} />
                             </div>
-                        </div>
+                        </Flex>
                         <div className="w-full flex items-center justify-center">
                             <Text className="min-w-16 font-semibold text-xs text-right">마지막 접속</Text>
                             <div className="pl-1 w-60">
                                 <TextField.Root readOnly className="border-none shadow-none text-black dark:text-white text-sm" value={formatDate(user.lastLoginAt)} />
                             </div>
                         </div>
-                    </div>
+                    </Flex>
 
-                    <div className="flex-1">
+                    <Flex direction="column">
                         {!editing ? (
                             <div className="space-y-1">
                                 <div className="w-full flex items-center justify-center">
@@ -183,12 +178,23 @@ export default function User() {
                                 </div>
                             </form>
                         )}
-                    </div>
-                </div>
+                        {(kakaoTotal?.kakao_account?.profile?.nickname === process.env.NEXT_PUBLIC_MASTER) && <>
+                            <Box mt="2">
+                                <Card>
+                                    <Flex direction="column">
+                                        <Box>
+                                            <Text align={"center"}>master dashboard</Text>
+                                        </Box>
+                                        <Box className="w-full pt-1 items-center justify-center">
+                                            <Link href="/report" ><Button>ReportPage</Button></Link>
+                                        </Box>
+                                    </Flex>
+                                </Card>
+                            </Box>
+                        </>}
+                    </Flex>
 
-                <div className="w-full pt-1 flex items-center justify-center">
-                    {(kakaoTotal?.kakao_account?.profile?.nickname === process.env.NEXT_PUBLIC_MASTER) && <Link href="/report" ><Button>ReportPage</Button></Link>}
-                </div>
+                </Flex>
             </Card>
         </div>
     );

@@ -7,11 +7,11 @@ import { getKoreaInvestmentBalance, getKoreaInvestmentToken, KoreaInvestmentBala
 import { getKoreaInvestmentUsMaretPresentBalance, KoreaInvestmentOverseasPresentBalance, reqGetOverseasStockTradingInquirePresentBalance } from "@/lib/features/koreaInvestmentUsMarket/koreaInvestmentUsMarketSlice";
 import { Util } from "@/components/util";
 import { KakaoFeed, SendKakaoMessage } from "./report";
-import Loading from "@/components/loading";
 import { KakaoTotal, selectKakaoTatalState, selectKakaoTotal } from "@/lib/features/kakao/kakaoSlice";
 import { queryTimestampList, selectTimestampList } from "@/lib/features/timestamp/timestampSlice";
 import LoadKakaoTotal from "@/components/loadKakaoTotal";
 import { selectCloudflareUserInfo, UserInfo } from "@/lib/features/cloudflare/cloudflareSlice";
+import { Spinner } from "@radix-ui/themes";
 
 const DEBUG = false;
 
@@ -201,7 +201,7 @@ export default function Report() {
     if (kiBalanceKr.state !== "fulfilled" || kiBalanceUs.state !== "fulfilled" || undefined == message || Object.keys(message).length === 0) {
         return <>
             {("init" == kakaoTotalState) && <LoadKakaoTotal />}
-            <Loading />
+            <Spinner loading />
         </>
     }
 

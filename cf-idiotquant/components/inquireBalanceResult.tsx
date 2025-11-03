@@ -5,10 +5,10 @@ import TablesExample8, { Example8TableHeadType, Example8TableRowType, TablesExam
 import { useAppDispatch } from "@/lib/hooks";
 import { useEffect, useState } from "react";
 import { Util } from "./util";
-import Loading from "@/components/loading";
-import { Box, Card, Flex, Text } from "@radix-ui/themes";
+import { Box, Button, Card, Flex, Spinner, Text } from "@radix-ui/themes";
 
 const DEBUG = false;
+
 function formatNumber(num: number) {
     return num % 1 === 0 ? num.toLocaleString() : num.toFixed(2);
 }
@@ -35,17 +35,8 @@ export default function InquireBalanceResult(props: InquireBalanceResultProps) {
         setMounted(true);
     }, []);
 
-    const showAlert = (additionalMsg: string) => {
-        setMsg(additionalMsg);
-        setShow(true);
-
-        setTimeout(() => {
-            setShow(false);
-        }, 3000);
-    };
-
     function handleOnClick(item: any, buyOrSell: string) {
-        showAlert("주문 비활성화");
+        setMsg("주문 비활성화");
         // if ("buy" == buyOrSell || "sell" == buyOrSell) {
         //     const korBuyOrSell = "buy" == buyOrSell ? "구매" : "판매";
         //     const excg_cd = !!item["ovrs_excg_cd"] ? item["ovrs_excg_cd"] : "";
@@ -55,7 +46,6 @@ export default function InquireBalanceResult(props: InquireBalanceResultProps) {
 
         //     setOrderName(item["prdt_name"] + " " + korBuyOrSell + " 시도" + "(" + formatNumber(Number(price)) + `${(1 != frst_bltn_exrt) ? "USD" : ""}` + ")");
         //     dispatch(props.reqPostOrderCash({ koreaInvestmentToken: props.kiToken, PDNO: item["pdno"], buyOrSell: buyOrSell, excg_cd: excg_cd, price: price }));
-        //     showAlert("");
         // }
     }
 
@@ -376,30 +366,35 @@ export default function InquireBalanceResult(props: InquireBalanceResultProps) {
     const tablesExample8Props: TablesExample8PropsType = {
         msg: props.kiBalance.msg1,
         title: <>
-            <div className="font-mono flex p-2 items-center">
-                <DesignButton
-                    handleOnClick={() => {
-                        showAlert("지난 주문 확인");
+            <Flex p="2" className="!font-mono !items-center">
+                <Button
+                    onClick={() => {
+                        if (DEBUG) console.log("clicked");
+                        setMsg("지난 주문 확인");
                         setTime(new Date());
-
                         dispatch(props.reqGetInquireBalance());
                     }}
-                    buttonName="알고리즘 매매 계좌 조회"
-                    buttonBgColor="bg-white"
-                    buttonBorderColor="border-gray-500"
-                    buttonShadowColor="#D5D5D5"
-                    textStyle="text-black text-xs"
-                    buttonStyle={`rounded-lg px-2 py-1 flex items-center justify-center mb-2 button bg-white cursor-pointer select-none
-                        active:translate-y-1 active:[box-shadow:0_0px_0_0_#D5D5D5,0_0px_0_0_#D5D5D541] active:border-[0px]
-                        transition-all duration-150 [box-shadow:0_4px_0_0_#D5D5D5,0_8px_0_0_#D5D5D541] border-[1px]
-                        `}
-                />
+                    variant="outline"
+                    radius="full"
+                >
+                    <Text>
+                        알고리즘 매매 계좌 조회
+                    </Text>
+                </Button>
                 {"pending" == props.kiBalance.state ?
-                    <Loading />
+                    <>
+                        <Box pl="1">
+                            <Flex direction={"row"} gap="1" align="center">
+                                <Spinner loading />{msg}
+                            </Flex>
+                        </Box>
+                    </>
                     : <>
-                        <div className="text-[0.6rem] dark:text-white ml-4">{time.toLocaleString("ko-KR", { timeZone: "Asia/Seoul" })}</div>
+                        <Text ml="4">
+                            {time.toLocaleString("ko-KR", { timeZone: "Asia/Seoul" })}
+                        </Text>
                     </>}
-            </div>
+            </Flex>
         </>,
         desc: <>
             <Card size="1">

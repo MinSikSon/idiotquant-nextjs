@@ -11,6 +11,7 @@ import { usePathname } from "next/navigation";
 import InquireBalanceResult from "@/components/inquireBalanceResult";
 import NotFound from "@/app/not-found";
 import { CapitalTokenType, reqGetCapitalToken, selectCapitalToken } from "@/lib/features/algorithmTrade/algorithmTradeSlice";
+import { Box } from "@radix-ui/themes";
 
 let DEBUG = false;
 
@@ -28,26 +29,21 @@ export default function BalanceKr() {
 
     }, []);
     useEffect(() => {
-        if (true == DEBUG) console.log(`[BalanceKr]`, `kiBalance`, kiBalance);
-        if ("fulfilled" != kiBalance.state) {
-            dispatch(reqGetInquireBalance());
-        }
-    }, [kiBalance]);
+        dispatch(reqGetInquireBalance());
+        dispatch(reqGetCapitalToken());
+    }, []);
     useEffect(() => {
-        // console.log(`[BalanceKr]`, `kiOrderCash`, kiOrderCash);
-    }, [kiOrderCash])
+        if (true == DEBUG) console.log(`[BalanceKr]`, `kiBalance`, kiBalance);
+    }, [kiBalance])
     useEffect(() => {
         if (DEBUG) console.log(`[BalanceKr]`, `kr_capital_token`, kr_capital_token);
-        if ("init" == kr_capital_token.state) {
-            dispatch(reqGetCapitalToken());
-        }
     }, [kr_capital_token])
 
     // console.log(`kiBalance.state`, kiBalance.state);
     if (kiBalance.state == "rejected") {
         return <>
             <NotFound warnText={"계좌 조회 권한이 없습니다"} />
-            <div className="dark:bg-black h-lvh"></div>
+            <Box className="dark:bg-black h-lvh"></Box>
         </>
     }
 
@@ -59,6 +55,6 @@ export default function BalanceKr() {
             reqPostOrderCash={reqPostOrderCash}
             stock_list={kr_capital_token.value.stock_list}
         />
-        <div className="dark:bg-black h-lvh"></div>
+        <Box className="dark:bg-black h-lvh"></Box>
     </>
 }

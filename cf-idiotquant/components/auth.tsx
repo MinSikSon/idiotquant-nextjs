@@ -6,9 +6,8 @@ import { KoreaInvestmentApproval, KoreaInvestmentToken, KoreaInvestmentBalance }
 import { setKoreaInvestmentToken } from "@/lib/features/koreaInvestment/koreaInvestmentSlice";
 import { getKoreaInvestmentApproval, getKoreaInvestmentToken, getKoreaInvestmentBalance } from "@/lib/features/koreaInvestment/koreaInvestmentSlice";
 import { useAppDispatch, useAppSelector } from "@/lib/hooks";
+import { Spinner } from "@radix-ui/themes";
 import { useState, useEffect } from "react";
-
-import Loading from "@/components/loading";
 
 const DEBUG = false;
 
@@ -125,6 +124,6 @@ export default function Auth() {
     }, [kiToken]);
 
     return <>
-        <Loading />
+        <Spinner loading />
     </>
 }
