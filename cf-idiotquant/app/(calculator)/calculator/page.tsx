@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import { Box, Button, Card, Text, TextField } from "@radix-ui/themes";
+import { Badge, Box, Button, Card, DataList, Flex, Text, TextField } from "@radix-ui/themes";
 
 import { CalculatorIcon } from "@heroicons/react/24/outline";
 import ResultChart, { ChartDataItem } from "./ResultChart";
@@ -449,16 +449,6 @@ export default function Calculator() {
                             <div className="mb-4 md:hidden border rounded-md">
                                 <ResultChart data={chartData} height={"h-80"} />
                             </div>
-                            {/* 히스토리 등록 버튼 */}
-                            {/* <DesignButton
-                                handleOnClick={registerResult}
-                                buttonName="계산 결과 등록 🦄"
-                                buttonBgColor="bg-blue-500"
-                                buttonBorderColor="border-gray-500"
-                                buttonShadowColor="#D5D5D5"
-                                textStyle="text-white text-xs pt-0.5 font-bold"
-                                buttonStyle="rounded-lg p-4"
-                            /> */}
                             <Button
                                 onClick={registerResult}
                                 className="w-full mt-2 mb-1 py-2 text-[0.9rem] rounded-lg"
@@ -469,16 +459,42 @@ export default function Calculator() {
                             </Button>
 
                             {/* 히스토리 리스트 */}
-                            <div className="mt-4">
-                                <Text className="font-bold text-sm">계산 결과 히스토리:</Text>
-                                <ul className="list-disc list-inside">
+                            <Box mt="4" p="1" className="border rounded-md">
+                                <Box p="1">
+                                    <Text className="font-bold text-sm">히스토리</Text>
+                                </Box>
+                                <DataList.Root>
                                     {resultList.map((res, idx) => (
-                                        <li key={idx} className="text-xs cursor-pointer hover:text-blue-400" onClick={() => loadHistory(res)}>
-                                            투자: {res.investmentAmount.toLocaleString()}원, 기간: {res.numberOfYears}년, 연 이자율: {res.interestRate}%, 물가상승률: {res.inflationRate}%, 누적 투자금: {res.totalInvestment.toLocaleString()}원, 최종: {res.finalValue.toLocaleString()}원 ({res.finalRateOfReturn.toFixed(2)}%)
-                                        </li>
+                                        <DataList.Item align="center" key={idx} className="text-xs cursor-pointer hover:text-blue-400" onClick={() => loadHistory(res)}>
+                                            <DataList.Label minWidth="40px">
+                                                <Flex direction="column">
+                                                    <Text>
+                                                        시작금액: {res.investmentAmount.toLocaleString()}만원
+                                                    </Text>
+                                                    <Text>
+                                                        기간: {res.numberOfYears}년
+                                                    </Text>
+                                                    <Text>
+                                                        이자율: {res.interestRate}% | 물가상승률: {res.inflationRate}%
+                                                    </Text>
+                                                    <Text>
+                                                        누적 투자금: {Util.UnitConversion(Number(res.totalInvestment), true)}
+                                                    </Text>
+                                                </Flex>
+                                            </DataList.Label>
+                                            <DataList.Value>
+                                                <Flex direction="column">
+                                                    <Text>
+                                                        최종 수익금: {res.finalValue.toLocaleString()}원 ({res.finalRateOfReturn.toFixed(2)}%)
+                                                    </Text>
+                                                </Flex>
+                                            </DataList.Value>
+                                        </DataList.Item>
                                     ))}
-                                </ul>
-                            </div>
+                                </DataList.Root>
+
+
+                            </Box>
                         </div>
                     </Box>
                 </Card>

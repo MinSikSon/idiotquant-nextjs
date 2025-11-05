@@ -1,6 +1,7 @@
 "use client";
 
 import { Util } from "@/components/util";
+import { Box, Text } from "@radix-ui/themes";
 import { FC } from "react";
 import {
     ResponsiveContainer,
@@ -28,25 +29,27 @@ const ResultChart: FC<ResultChartProps> = ({ data, height }) => {
     if (!data || data.length === 0) return null;
 
     return (
-        <div className={`w-full bg-white dark:bg-gray-900 rounded-2xl ${height}`}>
-            <h2 className="pt-2 px-3 text-lg font-semibold dark:text-white">
-                연도별 수익 차트
-            </h2>
+        <Box className={`w-full rounded-2xl ${height}`}>
+            <Box pt="2" px="3" >
+                <Text size="2" weight="medium">
+                    연도별 수익 차트
+                </Text>
+            </Box>
             <ResponsiveContainer width="100%" height="100%">
                 <LineChart data={data}
                     margin={{ top: 10, right: 0, bottom: 30, left: 10 }} // ← left 값 늘리기
                 >
                     <CartesianGrid strokeDasharray="3 3" />
                     <XAxis dataKey="year"
-                        tick={{ fontSize: 14, fill: "#333" }} // 글자 크기, 색상 변경
+                        tick={{ fontSize: 14 }} // 글자 크기, 색상 변경
                     />
                     <YAxis yAxisId="left"
-                        tick={{ fontSize: 12, fill: "#333" }} // 글자 크기, 색상 변경
+                        tick={{ fontSize: 12 }} // 글자 크기, 색상 변경
                         angle={-45}           // 글자 기울이기
                         textAnchor="end"       // 글자 기준점 조정
                     />
                     <YAxis yAxisId="right" orientation="right"
-                        tick={{ fontSize: 14, fill: "#333" }} // 글자 크기, 색상 변경
+                        tick={{ fontSize: 14 }} // 글자 크기, 색상 변경
                     />
                     <Tooltip
                         // formatter={(value) => value.toLocaleString()}
@@ -88,7 +91,7 @@ const ResultChart: FC<ResultChartProps> = ({ data, height }) => {
                     />
                 </LineChart>
             </ResponsiveContainer>
-        </div>
+        </Box>
     );
 };
 
