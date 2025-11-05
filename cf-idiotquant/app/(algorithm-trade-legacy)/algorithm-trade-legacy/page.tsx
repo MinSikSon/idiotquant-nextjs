@@ -48,8 +48,8 @@ export default function AlgorithmTradeLegacy() {
     const us_capital_token: CapitalTokenType = useAppSelector(selectUsCapitalToken);
     const inquirePriceMulti: any = useAppSelector(selectInquirePriceMulti);
     const kiToken: KoreaInvestmentToken = useAppSelector(getKoreaInvestmentToken);
-    const quant_rule: QuantRule = useAppSelector(selectQuantRule);
-    const quant_rule_desc: QuantRule = useAppSelector(selectQuantRuleDesc);
+    // const quant_rule: QuantRule = useAppSelector(selectQuantRule);
+    // const quant_rule_desc: QuantRule = useAppSelector(selectQuantRuleDesc);
 
     const [time, setTime] = useState<any>('');
     const [market, setMarket] = useState<"KR" | "US">("KR");
@@ -63,8 +63,8 @@ export default function AlgorithmTradeLegacy() {
     }
 
     useEffect(() => {
-        dispatch(reqGetQuantRule());
-        dispatch(reqGetQuantRuleDesc());
+        // dispatch(reqGetQuantRule());
+        // dispatch(reqGetQuantRuleDesc());
         handleOnClick();
     }, []);
     useEffect(() => {
@@ -76,9 +76,9 @@ export default function AlgorithmTradeLegacy() {
     useEffect(() => {
         if (DEBUG) console.log(`kiToken`, kiToken);
     }, [kiToken]);
-    useEffect(() => {
-        if (DEBUG) console.log(`quant_rule`, quant_rule);
-    }, [quant_rule]);
+    // useEffect(() => {
+    //     if (DEBUG) console.log(`quant_rule`, quant_rule);
+    // }, [quant_rule]);
     useEffect(() => {
         if (DEBUG) console.log(`inquirePriceMulti`, inquirePriceMulti);
     }, [inquirePriceMulti]);
