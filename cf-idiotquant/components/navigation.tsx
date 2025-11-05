@@ -11,8 +11,7 @@ import { usePathname } from "next/navigation";
 import ThemeChanger from "@/components/theme_changer";
 import RotatingText from "@/src/TextAnimations/RotatingText/RotatingText";
 import { selectKakaoTotal } from "@/lib/features/kakao/kakaoSlice";
-import { Button, DropdownMenu } from "@radix-ui/themes";
-
+import { Box, Button, DropdownMenu, Flex, Text } from "@radix-ui/themes";
 interface NavItemPropsType {
     url: string;
     label: string;
@@ -85,15 +84,15 @@ export function NavbarWithSimpleLinks() {
     }
     function NavItemFlexCol({ url, label }: NavItemPropsType) {
         return (
-            <Link href={url} onClick={() => {
-                setOpen(false)
-                setSelectPath(url.split("/")[1]);
-            }}>
-                {/* <div className={`px-2 py-1.5 rounded dark:text-white font-mono text-[0.8rem] hover:bg-gray-100 hover:dark:bg-gray-700 ${selectPath == url.split("/")[1] ? "bg-slate-100 dark:bg-gray-500" : ""} `}> */}
-                <div>
+            <Box width="100%">
+                <Link href={url} onClick={() => {
+                    setOpen(false)
+                    setSelectPath(url.split("/")[1]);
+                }}>
+                    {/* <div className={`px-2 py-1.5 rounded dark:text-white font-mono text-[0.8rem] hover:bg-gray-100 hover:dark:bg-gray-700 ${selectPath == url.split("/")[1] ? "bg-slate-100 dark:bg-gray-500" : ""} `}> */}
                     {label}
-                </div>
-            </Link>
+                </Link>
+            </Box>
         );
     }
 
@@ -119,7 +118,25 @@ export function NavbarWithSimpleLinks() {
         // "balance-us": <div className={navListDesign}>{!!!kakaoTotal?.id ? <LockClosedIcon className="h-4 w-4" strokeWidth={2} /> : <LockOpenIcon className="h-4 w-4" strokeWidth={2} />}<WalletIcon className="h-4 w-4" strokeWidth={2} /><div>account inquiry (US)</div></div>,
     }
     const navListUrlToLabelHanburgerButton: any = {
-        "login": <div className={navListDesign}>{!!!kakaoTotal?.id ? <><div>kakao login</div> <LockClosedIcon className="h-4 w-4" strokeWidth={2} /></> : <><div>{kakaoTotal?.kakao_account?.profile?.nickname}<span className="text-[0.5rem]">님 반갑습니다.</span></div><LockOpenIcon className="h-4 w-4" strokeWidth={2} /></>}</div>,
+        "login": <Box width="100%" className={navListDesign}>
+            {!!!kakaoTotal?.id ?
+                <>
+                    <Box width="100%">
+                        <Flex gap="1" align="center">
+                            <Text>kakao login</Text>
+                            <LockClosedIcon className="h-4 w-4" strokeWidth={2} />
+                        </Flex>
+                    </Box>
+                </>
+                : <>
+                    <Box width="100%">
+                        <Flex gap="1">
+                            <Text>{kakaoTotal?.kakao_account?.profile?.nickname}님 반갑습니다.</Text>
+                            <LockOpenIcon className="h-4 w-4" strokeWidth={2} />
+                        </Flex>
+                    </Box>
+                </>}
+        </Box>,
     }
 
 
@@ -142,113 +159,78 @@ export function NavbarWithSimpleLinks() {
 
     function NavListFlexCol() {
         return (
-            <div className="flex flex-col justify-center content-center">
-                {Object.keys(navListUrlToLabelHanburgerButton).map((key: string) => {
-                    return <NavItemFlexCol key={key} url={`/${key}`} label={navListUrlToLabelHanburgerButton[key]} />
-                })}
-            </div>
+            <Box width="100%" >
+                <Flex className="!justify-center !content-center">
+                    {Object.keys(navListUrlToLabelHanburgerButton).map((key: string) => {
+                        return <NavItemFlexCol key={key} url={`/${key}`} label={navListUrlToLabelHanburgerButton[key]} />
+                    })}
+                </Flex>
+            </Box>
         );
     }
 
     return (
         <>
-            <div className="fixed top-0 left-0 w-full z-30 border-r dark:border-gray-600">
-                <div className={`${visible ? "opacity-100 translate-y-0" : "opacity-0 -translate-y-10"} transition-all duration-300 ease-in-out bg-slate-50 dark:bg-gray-900 dark:text-white flex items-center justify-start text-blue-gray-900 min-w-56`}>
-                    <div className="p-3 w-full dark:border-gray-600">
-                        <div className="bg-white dark:bg-black flex md:flex-col lg:flex-col border dark:border-gray-600 rounded-lg items-center py-2 w-full">
-                            <Link href="/">
-                                <div className="flex items-center justify-center gap-2 px-2 font-mono font-bold cursor-pointer">
-                                    {/* <div className="pt-0.5">idiot</div> */}
-                                    {/* <RotatingText
-                                        texts={['quant', '퀀트', 'quant investing', 'ncav strategy', '순자산가치 전략', 'emotion-free', 'profitability', '수익성', 'undervaluation', '저평가', 'volume', '거래량']}
-                                        mainClassName="px-2 sm:px-2 md:px-3 pt-0.5 pt-1 justify-center rounded-md bg-blue-500 text-white overflow-hidden "
-                                        staggerFrom={"last"}
-                                        initial={{ y: "100%" }}
-                                        animate={{ y: 0 }}
-                                        exit={{ y: "-120%" }}
-                                        staggerDuration={0.025}
-                                        splitLevelClassName="overflow-hidden pb-0.5 sm:pb-1 md:pb-1"
-                                        transition={{ type: "spring", damping: 30, stiffness: 400 }}
-                                        rotationInterval={10000}
-                                    /> */}
-                                    <div className="pt-0.5">이디엇</div>
-                                    <div className="pt-0.5">퀀트</div>
-                                </div>
+            <div className="w-full fixed top-0 left-0 px-2 border-r dark:border-gray-600">
+                <Box p="1" className={`${visible ? "opacity-100 translate-y-0" : "opacity-0 -translate-y-10"} transition-all duration-300 ease-in-out items-center justify-start`}>
+                    <Flex align="center" gap="2" width="100%" className="!justify-between">
+                        <Box p="2" width="100%" className="!items-center">
+                            <Link href="/" className="cursor-pointer">
+                                <Flex align="center" gap="1">
+                                    <Text>idiotquant.com</Text>
+                                </Flex>
                             </Link>
-                            {/* <div className="font-mono text-[0.6rem] dark:text-white min-w-32 text-center">
-                            {!!kakaoNickName ? <>{kakaoNickName}님 반갑습니다. 😀</>
-                                : <></>
-                            }
-                        </div> */}
-                        </div>
-                    </div>
-                    {/* <div className="hidden md:block lg:block w-full">
-                    <div className="flex flex-col w-full p-2 justify-items-center">
-                        <div className="flex flex-col p-2 min-h-44 justify-between">
-                            <NavListFlexCol />
-                            <ThemeChanger />
-                        </div>
-                    </div>
-                </div> */}
-                    {/* <div className="md:hidden lg:hidden dark:bg-gray-900 pr-2 py-3"> */}
-                    <div className="dark:bg-gray-900 pr-2 py-3">
-                        {/* <DesignButton
-                            handleOnClick={() => handleOpen()}
-                            buttonName={<>
-                                {open ? (
-                                    <XMarkIcon className="h-6 w-6" strokeWidth={2} />
-                                ) : (
-                                    <Bars3Icon className="h-6 w-6" strokeWidth={2} />
-                                )}
-                            </>}
-                            buttonBgColor="bg-white"
-                            buttonBorderColor="border-gray-500"
-                            buttonShadowColor="#D5D5D5"
-                            textStyle="text-black text-xs font-bold"
-                            buttonStyle={`rounded-lg p-1 flex items-center justify-center mb-2 button bg-white cursor-pointer select-none
-                        active:translate-y-1 active:[box-shadow:0_0px_0_0_#D5D5D5,0_0px_0_0_#D5D5D541] active:border-[0px]
-                        transition-all duration-150 [box-shadow:0_4px_0_0_#D5D5D5,0_8px_0_0_#D5D5D541] border-[1px]
-                        `}
-                        /> */}
-                        <DropdownMenu.Root>
-                            <DropdownMenu.Trigger>
-                                <Button variant="soft">
-                                    <svg width="15" height="15" viewBox="0 0 15 15" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M1.5 3C1.22386 3 1 3.22386 1 3.5C1 3.77614 1.22386 4 1.5 4H13.5C13.7761 4 14 3.77614 14 3.5C14 3.22386 13.7761 3 13.5 3H1.5ZM1 7.5C1 7.22386 1.22386 7 1.5 7H13.5C13.7761 7 14 7.22386 14 7.5C14 7.77614 13.7761 8 13.5 8H1.5C1.22386 8 1 7.77614 1 7.5ZM1 11.5C1 11.2239 1.22386 11 1.5 11H13.5C13.7761 11 14 11.2239 14 11.5C14 11.7761 13.7761 12 13.5 12H1.5C1.22386 12 1 11.7761 1 11.5Z" fill="currentColor" fillRule="evenodd" clipRule="evenodd"></path></svg>
-                                    <DropdownMenu.TriggerIcon />
-                                </Button>
-                            </DropdownMenu.Trigger>
-                            <DropdownMenu.Content>
-                                <DropdownMenu.Item shortcut="">
-                                    <NavListFlexCol />
-                                </DropdownMenu.Item>
-                                <DropdownMenu.Separator />
-                                <DropdownMenu.Item shortcut="">
-                                    <ThemeChanger />
-                                </DropdownMenu.Item>
-                            </DropdownMenu.Content>
-                        </DropdownMenu.Root>
-                    </div>
-                </div>
-                <div className="transition-all duration-300 ease-in-out">
-                    <div className={`${visible ? "translate-y-0" : "-translate-y-16 bg-[radial-gradient(circle,_#d1d5db_1px,transparent_1px)] bg-[size:5px_5px]"} dark:text-white flex flex-col w-full p-2 justify-items-center justify-between`}>
-                        <NavList />
-                        {/* <ThemeChanger /> */}
-                    </div>
-                </div>
-
+                        </Box>
+                        <Box>
+                            <DropdownMenu.Root>
+                                <DropdownMenu.Trigger>
+                                    <Button variant="soft">
+                                        <svg width="15" height="15" viewBox="0 0 15 15" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M1.5 3C1.22386 3 1 3.22386 1 3.5C1 3.77614 1.22386 4 1.5 4H13.5C13.7761 4 14 3.77614 14 3.5C14 3.22386 13.7761 3 13.5 3H1.5ZM1 7.5C1 7.22386 1.22386 7 1.5 7H13.5C13.7761 7 14 7.22386 14 7.5C14 7.77614 13.7761 8 13.5 8H1.5C1.22386 8 1 7.77614 1 7.5ZM1 11.5C1 11.2239 1.22386 11 1.5 11H13.5C13.7761 11 14 11.2239 14 11.5C14 11.7761 13.7761 12 13.5 12H1.5C1.22386 12 1 11.7761 1 11.5Z" fill="currentColor" fillRule="evenodd" clipRule="evenodd"></path></svg>
+                                        <DropdownMenu.TriggerIcon />
+                                    </Button>
+                                </DropdownMenu.Trigger>
+                                <DropdownMenu.Content>
+                                    <DropdownMenu.Sub>
+                                        <DropdownMenu.SubTrigger><MagnifyingGlassCircleIcon className="h-4 w-4" strokeWidth={2} /> search</DropdownMenu.SubTrigger>
+                                        <DropdownMenu.SubContent>
+                                            <Link href="/search-kr">
+                                                <DropdownMenu.Item>🇰🇷</DropdownMenu.Item>
+                                            </Link>
+                                            <Link href="/search-us">
+                                                <DropdownMenu.Item>🇺🇸</DropdownMenu.Item>
+                                            </Link>
+                                        </DropdownMenu.SubContent>
+                                    </DropdownMenu.Sub>
+                                    <Link href="/calculator">
+                                        <DropdownMenu.Item shortcut="">
+                                            <CalculatorIcon className="h-4 w-4" strokeWidth={2} /> calculator
+                                        </DropdownMenu.Item>
+                                    </Link>
+                                    <DropdownMenu.Sub>
+                                        <DropdownMenu.SubTrigger><WalletIcon className="h-4 w-4" strokeWidth={2} /> account</DropdownMenu.SubTrigger>
+                                        <DropdownMenu.SubContent>
+                                            <Link href="/balance-kr">
+                                                <DropdownMenu.Item>🇰🇷</DropdownMenu.Item>
+                                            </Link>
+                                            <Link href="/balance-us">
+                                                <DropdownMenu.Item>🇺🇸</DropdownMenu.Item>
+                                            </Link>
+                                        </DropdownMenu.SubContent>
+                                    </DropdownMenu.Sub>
+                                    <DropdownMenu.Separator />
+                                    <DropdownMenu.Item shortcut="">
+                                        <NavListFlexCol />
+                                    </DropdownMenu.Item>
+                                    <DropdownMenu.Separator />
+                                    <DropdownMenu.Item shortcut="">
+                                        <ThemeChanger />
+                                    </DropdownMenu.Item>
+                                </DropdownMenu.Content>
+                            </DropdownMenu.Root>
+                        </Box>
+                    </Flex>
+                </Box>
             </div>
-
-            {/* <Collapse open={open} className="fixed z-50">
-                <div className="dark:border gap-2 fixed top-14 right-2 z-40 w-fit shadow-[0_0_10px_2px_rgba(0,0,0,0.2)] rounded-xl bg-white dark:bg-black dark:text-white flex flex-col p-2 justify-items-center justify-between">
-                    <NavListFlexCol />
-                    <ThemeChanger
-                        handleOpen={handleOpen}
-                        toggleTheme={toggleTheme}
-                        setToggleTheme={setToggleTheme}
-                    />
-                </div>
-            </Collapse> */}
-
         </>
     );
 }

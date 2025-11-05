@@ -489,7 +489,7 @@ ${md}
         <>
           <div className="dark:bg-black flex flex-col md:flex-row lg:flex-row">
             <div className="sm:flex-col md:flex-1 lg:flex-1">
-              <div className={`flex shadow transition-all duration-500 ease-in-out ${fixed ? "z-40 w-full fixed pt-4 top-20 left-0 shadow-md bg-white dark:bg-black dark:border-b dark:border-gray-500" : "relative"}`}>
+              <div className={`flex shadow transition-all duration-500 ease-in-out ${fixed ? "z-40 w-full fixed pt-4 top-[66px] left-0 shadow-md bg-white dark:bg-black dark:border-b dark:border-gray-500" : "relative"}`}>
                 <div className={`w-7/12 p-3 ${fixed ? "py-1" : ""} dark:bg-black dark:text-white font-mono`}>
                   <div className={`text-[0.6rem] ${fixed ? "hidden" : ""}`}>{kiInquirePrice.output["rprs_mrkt_kor_name"]} | {kiInquirePrice.output["bstp_kor_isnm"]} </div>
                   <div>
