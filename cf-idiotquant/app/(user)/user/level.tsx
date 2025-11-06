@@ -40,14 +40,21 @@ export function getProgress(point: number) {
     else if (200 > point) targetPoint = 200;
     else if (400 > point) targetPoint = 400;
     else if (800 > point) targetPoint = 800;
-    else if (1500 > point) targetPoint = 1500;
-    else if (3000 > point) targetPoint = 3000;
-    else if (6000 > point) targetPoint = 6000;
-    else if (12000 > point) targetPoint = 12000;
-    else if (25000 > point) targetPoint = 25000;
-    else if (49000 <= point) targetPoint = point;
+    else if (1600 > point) targetPoint = 1600;
+    else if (3200 > point) targetPoint = 3300;
+    else if (6400 > point) targetPoint = 6400;
+    else if (12800 > point) targetPoint = 12800;
+    else if (25600 > point) targetPoint = 25600;
+    else if (51200 <= point) targetPoint = point;
 
-    return Number(((100 * point) / targetPoint).toFixed(0));
+    let progress = 0
+    if (0 != point) {
+        const diff = (100 <= targetPoint) ? targetPoint / 2 : 0;
+        progress = Number((100 * (point - diff) / (targetPoint - diff)).toFixed(0));
+    }
+
+    console.log(`point:`, point, `, targetPoint:`, targetPoint, `, progress:`, progress);
+    return progress;
 }
 
 export function getBadgeColor(point: number) {

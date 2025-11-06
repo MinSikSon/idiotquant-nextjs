@@ -86,9 +86,10 @@ export default function User() {
                     <Flex direction="column" className="!items-center space-y-1">
                         <Box>
                             <Flex direction="column" width="100%" pb="1" className="!items-center !justify-center">
-                                <Text>
-                                    {getLevel(Number(user.point))}
-                                </Text>
+                                <Flex align="baseline" gap="1" pl="6">
+                                    <Text>{getLevel(Number(user.point))}</Text>
+                                    <Text className="text-[0.6rem]">{user.point} / {Number((Number(user.point) / 200).toFixed(0)) * 400}</Text>
+                                </Flex>
                                 <Box width="100%">
                                     <Progress
                                         value={getProgress(Number(user.point))}
