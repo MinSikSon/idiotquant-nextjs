@@ -90,6 +90,7 @@ const SearchAutocomplete = (props: any) => {
                         }
                     }}
                     value={query}
+                    size="3"
                 >
                     <TextField.Slot>
                         <MagnifyingGlassIcon height="16" width="16" />
@@ -112,7 +113,7 @@ const SearchAutocomplete = (props: any) => {
                 )}
             </div>
             <IconButton
-                size="2"
+                size="3"
                 // variant="outline"
                 radius="full"
                 onClick={() => handleSearch()}
