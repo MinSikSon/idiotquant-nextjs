@@ -27,6 +27,7 @@ import rehypeKatex from 'rehype-katex';
 import rehypeHighlight from 'rehype-highlight';
 import 'highlight.js/styles/github.css';
 import { selectKakaoTatalState } from "@/lib/features/kakao/kakaoSlice";
+import { AspectRatio } from "@radix-ui/themes";
 
 const DEBUG = false;
 
@@ -120,8 +121,20 @@ export default function SearchUs() {
 
     if (!!!kiUsMaretSearchInfo.rt_cd && !!!kiUsMaretPriceDetail.rt_cd) {
         return <>
-            <SearchAutocomplete placeHolder={"Please enter the stock ticker."} onSearchButton={onSearchButton} validCorpNameArray={all_tickers} />
-            <div className="dark:bg-black h-lvh"></div>
+            <SearchAutocomplete placeHolder={"🇺🇸 please enter the stock ticker 🇺🇸"} onSearchButton={onSearchButton} validCorpNameArray={all_tickers} />
+            <AspectRatio ratio={16 / 8}>
+                <img
+                    // src="https://images.unsplash.com/photo-1479030160180-b1860951d696?&auto=format&fit=crop&w=1200&q=80"
+                    src="https://cdn.pixabay.com/photo/2016/11/23/18/00/yosemite-national-park-1854097_1280.jpg"
+                    alt="A house in a forest"
+                    style={{
+                        objectFit: "cover",
+                        width: "100%",
+                        height: "100vh",
+                        // borderRadius: "var(--radius-2)",
+                    }}
+                />
+            </AspectRatio>
         </>
     }
 
@@ -497,7 +510,6 @@ $$
                     }
                 </>
             }
-            <div className="dark:bg-black h-lvh"></div>
         </div >
     </>
 }

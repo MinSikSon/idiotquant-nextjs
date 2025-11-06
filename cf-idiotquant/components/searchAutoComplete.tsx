@@ -120,12 +120,12 @@ const SearchAutocomplete = (props: any) => {
                 <MagnifyingGlassIcon width="16" height="16" />
             </IconButton>
             {isFocused && suggestions.length > 0 && (
-                <ul className="z-10 absolute top-10 left-2 w-10/12 ml-4 mt-0 bg-white border border-gray-300 rounded-lg shadow-lg max-h-60 overflow-auto">
+                <ul className="z-10 absolute top-10 left-2 w-10/12 ml-4 mt-0 bg-white dark:bg-black border border-gray-300 rounded-lg shadow-lg max-h-60 overflow-auto">
                     {suggestions.map((suggestion: any, index: any) => (
                         <li
                             key={index}
                             onMouseDown={() => handleSelect(suggestion)}
-                            className={`text-sm py-2 pl-3 cursor-pointer hover:bg-blue-100 ${selectedIndex === index ? "bg-blue-200" : ""
+                            className={`text-sm py-2 pl-3 dark:text-white cursor-pointer hover:bg-blue-100 ${selectedIndex === index ? "bg-blue-200" : ""
                                 }`}
                         >
                             {suggestion}

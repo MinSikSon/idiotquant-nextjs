@@ -30,6 +30,7 @@ import { selectKakaoTatalState } from "@/lib/features/kakao/kakaoSlice";
 import { selectCloudflareUserInfo, UserInfo, selectCloudflareStarredStocks, StarredStocks, getCloudFlareStarredStocks, setCloudFlareStarredStocks, StarredStock } from "@/lib/features/cloudflare/cloudflareSlice";
 import { StarIcon } from "@heroicons/react/24/outline";
 import { StarIcon as StarSolid } from "@heroicons/react/24/solid";
+import { AspectRatio, Box } from "@radix-ui/themes";
 
 const DEBUG = false;
 const DEBUG_LLM = false;
@@ -461,7 +462,7 @@ ${md}
     <div className="flex flex-col w-full">
       <div className={`${fixed ? "z-50 w-full fixed top-0 left-0 bg-white dark:bg-black" : "relative"}`}>
         <div className="flex flex-col w-full">
-          <SearchAutocomplete placeHolder={"Please enter the stock name."} onSearchButton={onSearchButton} validCorpNameArray={validCorpNameArray} />
+          <SearchAutocomplete placeHolder={"🇰🇷 please enter the stock name 🇰🇷"} onSearchButton={onSearchButton} validCorpNameArray={validCorpNameArray} />
           <div className="dark:bg-black flex px-4 py-0 gap-1 overflow-x-auto">
             {krMarketHistory.map((stockName: string, index: number) => {
               return (
@@ -484,7 +485,21 @@ ${md}
       </div>
       {(false == bShowResult) ?
         <>
-          <div className="dark:bg-black h-lvh"></div>
+          <Box>
+            <AspectRatio ratio={16 / 8}>
+              <img
+                // src="https://images.unsplash.com/photo-1479030160180-b1860951d696?&auto=format&fit=crop&w=1200&q=80"
+                src="https://i.namu.wiki/i/qzyfgIrcWxurJYab02HNJ6_YU4cKzu4cg9Vl3XjejIFTWf1sY7UD4vPmXphoO4CNyQJMQ8Pr1lc05kkfqJJ7IQipioSbydqnV253t5c2JB7kAUidKU_3VSVMgpxPs9jhQbbstYOORlAI8-EfMeIuXw.webp"
+                alt="A house in a forest"
+                style={{
+                  objectFit: "cover",
+                  width: "100%",
+                  height: "100vh",
+                  // borderRadius: "var(--radius-2)",
+                }}
+              />
+            </AspectRatio>
+          </Box>
         </> :
         <>
           <div className="dark:bg-black flex flex-col md:flex-row lg:flex-row">
@@ -831,7 +846,6 @@ $\tiny K_e = 할인율$
                   {response}
                 </ReactMarkdown>
               </div>
-              <div className="dark:bg-black h-lvh"></div>
             </div>
           </div>
         </>
