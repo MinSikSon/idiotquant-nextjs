@@ -2,7 +2,7 @@ import { useState, useMemo, ChangeEvent, KeyboardEvent, useRef } from "react";
 import { MagnifyingGlassIcon, XCircleIcon } from "@heroicons/react/24/outline";
 
 // import { DesignButton } from "./designButton";
-import { IconButton } from "@radix-ui/themes";
+import { IconButton, TextField } from "@radix-ui/themes";
 
 const SearchAutocomplete = (props: any) => {
     const [query, setQuery] = useState("");
@@ -65,9 +65,9 @@ const SearchAutocomplete = (props: any) => {
     const inputRef = useRef<HTMLInputElement>(null);
 
     return (
-        <div className="dark:bg-black dark:text-white flex items-center p-2 relative gap-1">
+        <div className="flex items-center p-2 relative gap-1">
             <div className="relative flex-1 items-center">
-                <input
+                {/* <input
                     ref={inputRef}
                     type="text"
                     value={query}
@@ -81,7 +81,20 @@ const SearchAutocomplete = (props: any) => {
                     onFocus={() => setIsFocused(true)}
                     onBlur={() => setTimeout(() => setIsFocused(false), 200)}
                     className="dark:bg-black dark:text-white font-mono w-full p-2 border rounded-full focus:outline-none focus:ring-2 focus:ring-black"
-                />
+                /> */}
+                <TextField.Root placeholder={props.placeHolder}
+                    onChange={handleChange}
+                    onKeyUp={(e) => {
+                        if (isFocused) {
+                            handleKeyDown(e)
+                        }
+                    }}
+                    value={query}
+                >
+                    <TextField.Slot>
+                        <MagnifyingGlassIcon height="16" width="16" />
+                    </TextField.Slot>
+                </TextField.Root>
                 {query && (
                     <div
                         className="absolute right-2 top-1/2 transform -translate-y-1/2 p-0"
@@ -98,33 +111,21 @@ const SearchAutocomplete = (props: any) => {
                     </div>
                 )}
             </div>
-            {/* <DesignButton
-                handleOnClick={() => handleSearch()}
-                buttonName={<MagnifyingGlassIcon className="h-5 w-5 text-black" />}
-                buttonBgColor="bg-white"
-                buttonBorderColor="border-black"
-                buttonShadowColor="#D5D5D5"
-                textStyle="text-xs font-bold"
-                buttonStyle={`rounded-lg p-2 ml-2 flex items-center justify-center mb-2 button bg-white cursor-pointer select-none
-                    active:translate-y-1 active:[box-shadow:0_0px_0_0_#D5D5D5,0_0px_0_0_#D5D5D541] active:border-[0px]
-                    transition-all duration-150 [box-shadow:0_4px_0_0_#D5D5D5,0_8px_0_0_#D5D5D541] border-[1px]
-                    `}
-            /> */}
             <IconButton
-                size="3"
+                size="2"
                 // variant="outline"
                 radius="full"
                 onClick={() => handleSearch()}
             >
-                <MagnifyingGlassIcon width="22" height="22" />
+                <MagnifyingGlassIcon width="16" height="16" />
             </IconButton>
             {isFocused && suggestions.length > 0 && (
-                <ul className="dark:bg-black dark:text-white z-10 absolute top-full left-0 w-11/12 ml-4 mt-1 bg-white border border-gray-300 rounded-lg shadow-lg max-h-60 overflow-auto">
+                <ul className="z-10 absolute top-10 left-2 w-10/12 ml-4 mt-0 bg-white border border-gray-300 rounded-lg shadow-lg max-h-60 overflow-auto">
                     {suggestions.map((suggestion: any, index: any) => (
                         <li
                             key={index}
                             onMouseDown={() => handleSelect(suggestion)}
-                            className={`font-mono p-2 cursor-pointer hover:bg-blue-100 ${selectedIndex === index ? "bg-blue-200" : ""
+                            className={`text-sm py-2 pl-3 cursor-pointer hover:bg-blue-100 ${selectedIndex === index ? "bg-blue-200" : ""
                                 }`}
                         >
                             {suggestion}
