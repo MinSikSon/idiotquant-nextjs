@@ -1,5 +1,6 @@
 "use client";
 
+import { KakaoTotal, selectKakaoTotal } from "@/lib/features/kakao/kakaoSlice";
 import { KakaoMessage, setKakaoMessage } from "@/lib/features/login/loginSlice";
 import { selectTimestamp, setTimestamp } from "@/lib/features/timestamp/timestampSlice";
 import { useAppDispatch, useAppSelector } from "@/lib/hooks";
@@ -20,6 +21,7 @@ export function SendKakaoMessage(props: DefaultProps) {
     const dispatch = useAppDispatch();
 
     const timestamp: any = useAppSelector(selectTimestamp);
+    const kakaoTotal: KakaoTotal = useAppSelector(selectKakaoTotal);
 
     function onClick() {
         if (DEBUG) console.log(`[Report] setKakaoMessage`);
@@ -32,6 +34,12 @@ export function SendKakaoMessage(props: DefaultProps) {
     useEffect(() => {
         if (DEBUG) console.log(`[Report] timestamp:`, timestamp);
     }, [timestamp]);
+    useEffect(() => {
+        if (DEBUG) console.log(`[Report] kakaoTotal:`, kakaoTotal);
+        console.log(`kakaoTotal?.kakao_account?.profile?.nickname === process.env.NEXT_PUBLIC_MASTER`, kakaoTotal?.kakao_account?.profile?.nickname === process.env.NEXT_PUBLIC_MASTER);
+    }, [kakaoTotal]);
+
+
 
     return <>
         <Card className="w-full max-w-lg mx-auto shadow-xl rounded-2xl">

@@ -1,5 +1,6 @@
 import { PayloadAction } from "@reduxjs/toolkit";
 import { createAppSlice } from "@/lib/createAppSlice";
+import { getKakaoMemberList } from "./kakaoAPI";
 
 interface KakaoAccountProfile {
     is_default_image: boolean;
@@ -42,9 +43,15 @@ export interface KakaoTotal {
     token_type: string;
 }
 
+interface KakaoMemberList {
+    state: "init" | "pending" | "fulfilled" | "rejected";
+    list: any;
+}
+
 interface KakaoInfo {
     state: "init" | "pending" | "fulfilled" | "rejected";
     kakaoTotal: KakaoTotal;
+    kakaoMemberList: KakaoMemberList;
 }
 
 const initialState: KakaoInfo = {
@@ -81,6 +88,10 @@ const initialState: KakaoInfo = {
         scope: "", // string;
         token_type: "", // string;
     },
+    kakaoMemberList: {
+        state: "init",
+        list: ""
+    }
 }
 
 export const kakaoSlice = createAppSlice({
@@ -96,12 +107,34 @@ export const kakaoSlice = createAppSlice({
             state.kakaoTotal = action.payload;
             state.state = "fulfilled";
         }),
+        reqGetKakaoMemberList: create.asyncThunk(
+            async () => {
+                return await getKakaoMemberList();
+            },
+            {
+                pending: (state) => {
+                    console.log(`[getKakaoMemberList] pending`);
+                    state.kakaoMemberList.state = "pending"
+                },
+                fulfilled: (state, action) => {
+                    console.log(`[getKakaoMemberList] fulfilled`, `, typeof action.payload:`, typeof action.payload, `, action.payload:`, action.payload);
+                    // NOTE: get cookie (cf_token)
+                    state.kakaoMemberList.list = action.payload;
+                    state.kakaoMemberList.state = "fulfilled";
+                },
+                rejected: (state) => {
+                    console.log(`[getKakaoMemberList] rejected`);
+                    state.state = "rejected"
+                }
+            }
+        ),
     }),
     selectors: {
         selectKakaoTotal: (state) => state.kakaoTotal,
         selectKakaoTatalState: (state) => state.state,
+        selectKakaoMemberList: (state) => state.kakaoMemberList,
     }
 });
 
-export const { setKakaoTotal, setKakaoStatePending } = kakaoSlice.actions;
-export const { selectKakaoTotal, selectKakaoTatalState } = kakaoSlice.selectors;
+export const { setKakaoTotal, setKakaoStatePending, reqGetKakaoMemberList } = kakaoSlice.actions;
+export const { selectKakaoTotal, selectKakaoTatalState, selectKakaoMemberList } = kakaoSlice.selectors;

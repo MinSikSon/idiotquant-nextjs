@@ -5,7 +5,7 @@ import TablesExample8, { Example8TableHeadType, Example8TableRowType, TablesExam
 import { useAppDispatch } from "@/lib/hooks";
 import { useEffect, useState } from "react";
 import { Util } from "./util";
-import { Box, Button, Card, Flex, Spinner, Text } from "@radix-ui/themes";
+import { Box, Button, Card, Flex, Select, Spinner, Text } from "@radix-ui/themes";
 
 const DEBUG = false;
 
@@ -18,6 +18,8 @@ interface InquireBalanceResultProps {
     kiOrderCash?: any;
     reqPostOrderCash?: any;
     stock_list?: any;
+    kakaoTotal?: any;
+    kakaoMemberList?: any;
 }
 
 export default function InquireBalanceResult(props: InquireBalanceResultProps) {
@@ -31,9 +33,20 @@ export default function InquireBalanceResult(props: InquireBalanceResultProps) {
     const [time, setTime] = useState<any>(new Date());
 
     const [mounted, setMounted] = useState(false);
+
+    const [balanceKey, setBalanceKey] = useState(String(props.kakaoTotal?.id));
+
     useEffect(() => {
         setMounted(true);
+
+        console.log(`[InquireBalanceResult] props.kakaoTotal:`, props.kakaoTotal);
+        console.log(`[InquireBalanceResult] props.kakaoTotal?.kakao_account?.profile?.nickname:`, props.kakaoTotal?.kakao_account?.profile?.nickname);
+        console.log(`[InquireBalanceResult] props.kakaoMemberList:`, props.kakaoMemberList);
     }, []);
+    useEffect(() => {
+        console.log(`[InquireBalanceResult] balanceKey:`, balanceKey)
+    }, [balanceKey]);
+
 
     function handleOnClick(item: any, buyOrSell: string) {
         setMsg("주문 비활성화");
@@ -360,40 +373,84 @@ export default function InquireBalanceResult(props: InquireBalanceResultProps) {
         nass_amt = Number(evlu_amt_smtl_amt) + Number(dnca_tot_amt);
     }
 
-    const defaultTitleClassName = "border rounded-xl border-gray-300 dark:border-gray-600 bg-gray-100 dark:bg-gray-800";
-    const defaultTitleSubClassName = "border rounded-xl bg-white dark:bg-gray-900 border-gray-300 dark:border-gray-600";
+    const defaultTitleClassName = "border rounded-2xl border-gray-300";
+    const defaultTitleSubClassName = "border rounded-2xl border-gray-300";
 
     const tablesExample8Props: TablesExample8PropsType = {
         msg: props.kiBalance.msg1,
         title: <>
-            <Flex p="2" className="!font-mono !items-center">
-                <Button
-                    onClick={() => {
-                        if (DEBUG) console.log("clicked");
-                        setMsg("지난 주문 확인");
-                        setTime(new Date());
-                        dispatch(props.reqGetInquireBalance());
-                    }}
-                    variant="outline"
-                    radius="full"
-                >
-                    <Text>
-                        알고리즘 매매 계좌 조회
-                    </Text>
-                </Button>
-                {"pending" == props.kiBalance.state ?
-                    <>
-                        <Box pl="1">
-                            <Flex direction={"row"} gap="1" align="center">
-                                <Spinner loading />{msg}
-                            </Flex>
+            <Flex direction="column">
+                <Box>
+                    <Flex p="2" className="!font-mono !items-center">
+                        <Button
+                            onClick={() => {
+                                if (DEBUG) console.log("clicked");
+                                setMsg("지난 주문 확인");
+                                setTime(new Date());
+                                dispatch(props.reqGetInquireBalance(balanceKey));
+                            }}
+                            variant="outline"
+                            radius="full"
+                        >
+                            <Text size="3">
+                                알고리즘 매매 계좌 조회
+                            </Text>
+                        </Button>
+                        {"pending" == props.kiBalance.state ?
+                            <>
+                                <Box pl="1">
+                                    <Flex direction={"row"} gap="1" align="center">
+                                        <Spinner loading />{msg}
+                                    </Flex>
+                                </Box>
+                            </>
+                            : <>
+                                <Text ml="4">
+                                    {time.toLocaleString("ko-KR", { timeZone: "Asia/Seoul" })}
+                                </Text>
+                            </>}
+                    </Flex>
+                </Box>
+                {(props.kakaoTotal?.kakao_account?.profile?.nickname === process.env.NEXT_PUBLIC_MASTER) && <Box>
+                    <Flex p="2" className="!font-mono !items-center">
+                        <Box mt="2" width="100%">
+                            <Card>
+                                <Flex direction="column">
+                                    <Box>
+                                        <Text align={"center"}>master dashboard</Text>
+                                    </Box>
+                                    <Box p="1">
+                                        {/* <Link href="/report" ><Button>ReportPage</Button></Link> */}
+                                        <Flex align="center" gap="1">
+                                            <Text size="3">계좌 선택</Text>
+                                            <Select.Root
+                                                size="3"
+                                                defaultValue={balanceKey}
+                                                onValueChange={(value) => setBalanceKey(value)} // ✅ 선택 시 이벤트
+                                            >
+                                                <Select.Trigger />
+                                                <Select.Content>
+                                                    <Select.Group>
+                                                        <Select.Label>사용자명</Select.Label>
+                                                        {!!props.kakaoMemberList && "fulfilled" == props.kakaoMemberList.state && props.kakaoMemberList?.list?.map((item: any) => {
+                                                            return <Select.Item value={item.key} key={item.key}>{item.key} - {item.value.nickname}</Select.Item>
+                                                        })}
+                                                    </Select.Group>
+                                                    {/* <Select.Separator />
+                                                    <Select.Group>
+                                                        <Select.Label>Vegetables</Select.Label>
+                                                        <Select.Item value="carrot">Carrot</Select.Item>
+                                                        <Select.Item value="potato">Potato</Select.Item>
+                                                    </Select.Group> */}
+                                                </Select.Content>
+                                            </Select.Root>
+                                        </Flex>
+                                    </Box>
+                                </Flex>
+                            </Card>
                         </Box>
-                    </>
-                    : <>
-                        <Text ml="4">
-                            {time.toLocaleString("ko-KR", { timeZone: "Asia/Seoul" })}
-                        </Text>
-                    </>}
+                    </Flex>
+                </Box>}
             </Flex>
         </>,
         desc: <>
@@ -416,7 +473,7 @@ export default function InquireBalanceResult(props: InquireBalanceResultProps) {
                             </Box>
                             <Flex direction="row" gap="1" wrap="wrap" justify="center" align="center">
                                 <Box minWidth="8px" className="text-center text-[0.6rem]">=</Box>
-                                <Box p="2" minWidth="80px" className={`${defaultTitleSubClassName}`}>
+                                <Box px="2" py="1" minWidth="80px" className={`${defaultTitleSubClassName}`}>
                                     <Flex direction="row" gap="1">
                                         <Text className="text-[0.7rem]">
                                             평가
@@ -432,7 +489,7 @@ export default function InquireBalanceResult(props: InquireBalanceResultProps) {
                                         : <></>}
                                 </Box>
                                 <Box minWidth="8px"><Text className="text-center text-[0.6rem]">-</Text></Box>
-                                <Box p="2" minWidth="80px" className={`${defaultTitleSubClassName}`}>
+                                <Box px="2" py="1" minWidth="80px" className={`${defaultTitleSubClassName}`}>
                                     <Flex direction="row" gap="1">
                                         <Text className="text-[0.7rem]">
                                             매입
@@ -467,8 +524,8 @@ export default function InquireBalanceResult(props: InquireBalanceResultProps) {
                             </Box>
                             <Flex direction="row" gap="1" wrap="wrap" justify="center" align="center">
                                 <Box minWidth="8px" className="text-center text-[0.6rem]">=</Box>
-                                <Box p="2" minWidth="80px" className={`${defaultTitleSubClassName}`}>
-                                    <Flex direction="row">
+                                <Box px="2" py="1" minWidth="80px" className={`${defaultTitleSubClassName}`}>
+                                    <Flex direction="row" gap="1">
                                         <Text className="text-[0.7rem]">
                                             평가
                                         </Text>
@@ -483,7 +540,7 @@ export default function InquireBalanceResult(props: InquireBalanceResultProps) {
                                         : <></>}
                                 </Box>
                                 <Box minWidth="8px" className="text-center text-[0.6rem]">+</Box>
-                                <Box p="2" minWidth="80px" className={`${defaultTitleSubClassName}`}>
+                                <Box px="2" py="1" minWidth="80px" className={`${defaultTitleSubClassName}`}>
                                     <Flex direction="row" gap="1">
                                         <Text className="text-[0.7rem]">
                                             예수금

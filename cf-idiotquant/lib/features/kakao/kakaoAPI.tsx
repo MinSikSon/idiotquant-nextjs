@@ -107,3 +107,24 @@ export const postKakaoMessage: any = async (kakaoMessage: KakaoMessage) => {
 
     return res.json();
 }
+
+
+export const getKakaoMemberList: any = async () => {
+    const authToken = getCookie("authToken");
+
+    const url = `${process.env.NEXT_PUBLIC_API_URL}/kakao/member/list`
+    const options: RequestInit = {
+        method: "GET", // GET -> OPTION -> POST
+        credentials: "include",  // include credentials (like cookies) in the request
+        headers: {
+            "content-type": "application/json; utf-8",
+            // ...additionalHeaders,
+            "authToken": authToken,
+        },
+        // body: JSON.stringify({})
+    };
+    // const res = await fetch(url, options);
+    const res = await fetch(url, options);
+
+    return res.json();
+}

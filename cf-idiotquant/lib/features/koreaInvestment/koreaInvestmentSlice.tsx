@@ -567,8 +567,8 @@ export const koreaInvestmentSlice = createAppSlice({
             }
         ),
         reqGetInquireBalance: create.asyncThunk(
-            async () => {
-                return await getInquireBalanceApi();
+            async (key?: string) => {
+                return await getInquireBalanceApi(key);
             },
             {
                 pending: (state) => {

@@ -55,11 +55,11 @@ export const postOrderCash: any = async (PDNO: string, buyOrSell: string) => {
 }
 
 // 계좌 조회
-export const getInquireBalanceApi: any = async () => {
+export const getInquireBalanceApi: any = async (key: string) => {
     // console.log(`[getInquireBalanceApi]`);
     const subUrl = `/uapi/domestic-stock/v1/trading/inquire-balance`;
     const additionalHeaders: AdditionalHeaders = {
-        "kakaoId": getCookie("kakaoId"),
+        "kakaoId": key,
     }
     return getKoreaInvestmentRequest(subUrl, additionalHeaders);
 }

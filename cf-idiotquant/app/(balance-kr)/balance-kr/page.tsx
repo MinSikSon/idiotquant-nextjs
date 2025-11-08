@@ -12,6 +12,7 @@ import InquireBalanceResult from "@/components/inquireBalanceResult";
 import NotFound from "@/app/not-found";
 import { CapitalTokenType, reqGetCapitalToken, selectCapitalToken } from "@/lib/features/algorithmTrade/algorithmTradeSlice";
 import { Box } from "@radix-ui/themes";
+import { KakaoTotal, reqGetKakaoMemberList, selectKakaoMemberList, selectKakaoTotal } from "@/lib/features/kakao/kakaoSlice";
 
 let DEBUG = false;
 
@@ -24,6 +25,9 @@ export default function BalanceKr() {
     const kiOrderCash: KoreaInvestmentOrderCash = useAppSelector(getKoreaInvestmentOrderCash);
 
     const kr_capital_token: CapitalTokenType = useAppSelector(selectCapitalToken);
+
+    const kakaoTotal: KakaoTotal = useAppSelector(selectKakaoTotal);
+    const kakaoMemberList = useAppSelector(selectKakaoMemberList);
 
     useEffect(() => {
 
@@ -38,6 +42,15 @@ export default function BalanceKr() {
     useEffect(() => {
         if (DEBUG) console.log(`[BalanceKr]`, `kr_capital_token`, kr_capital_token);
     }, [kr_capital_token])
+    useEffect(() => {
+        if (DEBUG) console.log(`[BalanceKr]`, `kakaoTotal`, kakaoTotal);
+        if (kakaoTotal?.kakao_account?.profile?.nickname === process.env.NEXT_PUBLIC_MASTER) {
+            dispatch(reqGetKakaoMemberList());
+        }
+    }, [kakaoTotal])
+    useEffect(() => {
+        if (DEBUG) console.log(`[BalanceKr]`, `kakaoMemberList`, kakaoMemberList);
+    }, [kakaoMemberList])
 
     // console.log(`kiBalance.state`, kiBalance.state);
     if (kiBalance.state == "rejected") {
@@ -54,6 +67,8 @@ export default function BalanceKr() {
             kiOrderCash={kiOrderCash}
             reqPostOrderCash={reqPostOrderCash}
             stock_list={kr_capital_token.value.stock_list}
+            kakaoTotal={kakaoTotal}
+            kakaoMemberList={kakaoMemberList}
         />
         <Box className="dark:bg-black h-lvh"></Box>
     </>

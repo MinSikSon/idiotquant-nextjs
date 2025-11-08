@@ -53,7 +53,7 @@ export function getProgress(point: number) {
         progress = Number((100 * (point - diff) / (targetPoint - diff)).toFixed(0));
     }
 
-    console.log(`point:`, point, `, targetPoint:`, targetPoint, `, progress:`, progress);
+    // console.log(`point:`, point, `, targetPoint:`, targetPoint, `, progress:`, progress);
     return progress;
 }
 

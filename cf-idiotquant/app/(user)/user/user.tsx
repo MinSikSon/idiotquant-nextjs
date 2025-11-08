@@ -30,12 +30,16 @@ export default function User() {
 
     const [editing, setEditing] = useState(false);
     const [draft, setDraft] = useState<UserInfo>(user);
+    const [load, setLoad] = useState(false);
 
     useEffect(() => {
-        if (DEBUG) console.log(`[User] cfUserInfo:`, cfUserInfo);
         if (cfUserInfo?.state === "fulfilled") {
-            setUser({ ...user, ...cfUserInfo });
-            setDraft({ ...draft, ...cfUserInfo });
+            if (false == load) {
+                if (DEBUG) console.log(`[User] cfUserInfo:`, cfUserInfo);
+                setUser({ ...user, ...cfUserInfo });
+                setDraft({ ...draft, ...cfUserInfo });
+                setLoad(true);
+            }
         }
     }, [cfUserInfo]);
 
@@ -45,7 +49,7 @@ export default function User() {
     }, [kakaoTotal]);
 
     function getInitials(name: string) {
-        if (DEBUG) console.log('name', name, !!name);
+        // if (DEBUG) console.log('name', name, !!name);
         if (!name)
             return <Box width="24px" height="24px">
                 <svg viewBox="0 0 64 64" fill="currentColor">
@@ -194,7 +198,6 @@ export default function User() {
                             </Box>
                         </>}
                     </Flex>
-
                 </Flex>
             </Card>
         </div>
