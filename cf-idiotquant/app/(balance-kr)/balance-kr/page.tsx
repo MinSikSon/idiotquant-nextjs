@@ -61,6 +61,7 @@ export default function BalanceKr() {
     }
 
     return <>
+        <Box>🇰🇷</Box>
         <InquireBalanceResult
             kiBalance={kiBalance}
             reqGetInquireBalance={reqGetInquireBalance}

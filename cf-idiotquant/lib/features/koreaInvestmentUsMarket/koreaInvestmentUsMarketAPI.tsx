@@ -39,21 +39,21 @@ export const postOrderUs: any = async (PDNO: string, buyOrSell: string, excg_cd:
     return postKoreaInvestmentRequest(subUrl, additionalHeaders);
 }
 
-export const getOverseasStockTradingInquirePresentBalance: any = async () => {
+export const getOverseasStockTradingInquirePresentBalance: any = async (key: string) => {
     // console.log(`[getOverseasStockTradingInquireBalance] koreaInvestmentToken`, koreaInvestmentToken);
     const subUrl = `/uapi/overseas-stock/v1/trading/inquire-present-balance`;
     const additionalHeaders: AdditionalHeaders = {
-        "kakaoId": getCookie("kakaoId"),
+        "kakaoId": key,
     }
     return getKoreaInvestmentRequest(subUrl, additionalHeaders);
 }
 
 // 계좌 조회
-export const getOverseasStockTradingInquireBalance: any = async () => {
+export const getOverseasStockTradingInquireBalance: any = async (key: string) => {
     // console.log(`[getOverseasStockTradingInquireBalance] koreaInvestmentToken`, koreaInvestmentToken);
     const subUrl = `/uapi/overseas-stock/v1/trading/inquire-balance`;
     const additionalHeaders: AdditionalHeaders = {
-        "kakaoId": getCookie("kakaoId"),
+        "kakaoId": key,
     }
     return getKoreaInvestmentRequest(subUrl, additionalHeaders);
 }

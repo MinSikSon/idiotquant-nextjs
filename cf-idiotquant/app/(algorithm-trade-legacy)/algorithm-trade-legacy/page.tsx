@@ -203,7 +203,7 @@ export default function AlgorithmTradeLegacy() {
                 badgeColor = "bronze";
             }
         }
-        return <>
+        return <div key={index}>
             <Box className="border-b border-r border-gray-300">
                 <Flex direction="column" key={index}
                 // className={`!justify-between text-xs ${index % 2 == 0 ? "bg-white" : "bg-gray-100"} ${item["refill"] ? "" : "line-through"} `}
@@ -225,7 +225,7 @@ export default function AlgorithmTradeLegacy() {
                     </Flex>
                 </Flex>
             </Box>
-        </>
+        </div>
     });
     const props: TablesExample8PropsType = {
         title: <>
@@ -313,13 +313,13 @@ export default function AlgorithmTradeLegacy() {
                     Stock Purchase Point Accumulation History
                 </Text>
                 <Flex direction="row" gap="1" align="center" className="!justify-between">
-                    {Object.keys(time_stamp).reverse().map((key) => {
-                        return <>
-                            <Flex direction="column" p="1" align="center" key={key} className="dark:border-gray-700 border rounded-lg shadow">
+                    {Object.keys(time_stamp).reverse().map((key, index) => {
+                        return <div key={index}>
+                            <Flex direction="column" p="1" align="center" className="dark:border-gray-700 border rounded-lg shadow">
                                 <Text className="text-[0.6rem]">{key == "prevPrev" ? "Two Periods Ago" : (key == "prev" ? "Previous Period" : "Current Data")}</Text>
                                 <Text className="text-[0.5rem]">{formatDateTime(time_stamp[key])}</Text>
                             </Flex>
-                        </>
+                        </div>
                     })}
                 </Flex>
             </Box>

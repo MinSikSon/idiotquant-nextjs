@@ -3,10 +3,11 @@
 import NotFound from "@/app/not-found";
 import InquireBalanceResult from "@/components/inquireBalanceResult";
 import { CapitalTokenType, reqGetUsCapitalToken, selectUsCapitalToken } from "@/lib/features/algorithmTrade/algorithmTradeSlice";
-import { selectKakaoTatalState } from "@/lib/features/kakao/kakaoSlice";
+import { KakaoTotal, reqGetKakaoMemberList, selectKakaoMemberList, selectKakaoTatalState, selectKakaoTotal } from "@/lib/features/kakao/kakaoSlice";
 import { reqGetOverseasStockTradingInquirePresentBalance, getKoreaInvestmentUsMaretPresentBalance, KoreaInvestmentOverseasPresentBalance, reqPostOrderUs, getKoreaInvestmentUsOrder, KoreaInvestmentUsOrder } from "@/lib/features/koreaInvestmentUsMarket/koreaInvestmentUsMarketSlice";
 
 import { useAppDispatch, useAppSelector } from "@/lib/hooks";
+import { Box } from "@radix-ui/themes";
 import { usePathname } from "next/navigation";
 import { useState, useEffect } from "react";
 
@@ -23,7 +24,8 @@ export default function BalanceUs() {
 
     const us_capital_token: CapitalTokenType = useAppSelector(selectUsCapitalToken);
 
-    const kakaoTotalState = useAppSelector(selectKakaoTatalState);
+    const kakaoTotal: KakaoTotal = useAppSelector(selectKakaoTotal);
+    const kakaoMemberList = useAppSelector(selectKakaoMemberList);
 
     useEffect(() => {
     }, []);
@@ -41,6 +43,15 @@ export default function BalanceUs() {
             dispatch(reqGetUsCapitalToken());
         }
     }, [us_capital_token])
+    useEffect(() => {
+        if (DEBUG) console.log(`[BalanceKr]`, `kakaoTotal`, kakaoTotal);
+        if (kakaoTotal?.kakao_account?.profile?.nickname === process.env.NEXT_PUBLIC_MASTER) {
+            dispatch(reqGetKakaoMemberList());
+        }
+    }, [kakaoTotal])
+    useEffect(() => {
+        if (DEBUG) console.log(`[BalanceKr]`, `kakaoMemberList`, kakaoMemberList);
+    }, [kakaoMemberList])
 
     if (DEBUG) console.log(`kiBalance.state`, kiBalance.state);
     if (kiBalance.state == "rejected") {
@@ -51,12 +62,15 @@ export default function BalanceUs() {
     }
 
     return <>
+        <Box>🇺🇸</Box>
         <InquireBalanceResult
             kiBalance={kiBalance}
             reqGetInquireBalance={reqGetOverseasStockTradingInquirePresentBalance}
             kiOrderCash={kiUsOrder}
             reqPostOrderCash={reqPostOrderUs}
             stock_list={us_capital_token.value.stock_list}
+            kakaoTotal={kakaoTotal}
+            kakaoMemberList={kakaoMemberList}
         />
         <div className="dark:bg-black h-lvh"></div>
     </>

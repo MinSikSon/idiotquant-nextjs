@@ -596,8 +596,8 @@ export const koreaInvestmentUsMarketSlice = createAppSlice({
             }
         ),
         reqGetOverseasStockTradingInquirePresentBalance: create.asyncThunk(
-            async () => {
-                return await getOverseasStockTradingInquirePresentBalance();
+            async (key?: string) => {
+                return await getOverseasStockTradingInquirePresentBalance(key);
             },
             {
                 pending: (state) => {
@@ -615,8 +615,8 @@ export const koreaInvestmentUsMarketSlice = createAppSlice({
             }
         ),
         reqGetOverseasStockTradingInquireBalance: create.asyncThunk(
-            async () => {
-                return await getOverseasStockTradingInquireBalance();
+            async (key?: string) => {
+                return await getOverseasStockTradingInquireBalance(key);
             },
             {
                 pending: (state) => {
