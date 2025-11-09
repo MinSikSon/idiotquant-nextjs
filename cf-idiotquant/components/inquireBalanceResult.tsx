@@ -1,7 +1,7 @@
 "use client"
 
 import { DesignButton } from "./designButton";
-import TablesExample8, { Example8TableHeadType, Example8TableRowType, TablesExample8PropsType } from "./tableExample8";
+import TableTemplate, { Example8TableHeadType, Example8TableRowType, TablesExample8PropsType } from "./tableExample8";
 import { useAppDispatch } from "@/lib/hooks";
 import { useEffect, useState } from "react";
 import { Util } from "./util";
@@ -584,6 +584,6 @@ export default function InquireBalanceResult(props: InquireBalanceResultProps) {
             <div className="">{!!props.kiOrderCash ? props.kiOrderCash.msg1 : ""}</div>
         </div>
 
-        <TablesExample8 {...tablesExample8Props} />
+        <TableTemplate {...tablesExample8Props} />
     </>
 }

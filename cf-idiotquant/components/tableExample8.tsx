@@ -50,7 +50,7 @@ export interface TablesExample8PropsType {
     setVisibleCount?: any;
 }
 
-function TablesExample8({
+export default function TableTemplate({
     title,
     msg,
     desc,
@@ -189,5 +189,3 @@ function TablesExample8({
         </>
     );
 }
-
-export default TablesExample8;

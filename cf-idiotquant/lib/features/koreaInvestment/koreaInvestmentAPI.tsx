@@ -36,7 +36,7 @@ export const getInquireDailyItemChartPrice: any = async (PDNO: string, FID_INPUT
 export const getInquirePrice: any = async (PDNO: string) => {
     const subUrl = `/uapi/domestic-stock/v1/quotations/inquire-price`;
     const additionalHeaders: AdditionalHeaders = {
-        "kakaoId": getCookie("kakaoId"),
+        // "kakaoId": getCookie("kakaoId"),
         "PDNO": PDNO,
         // "buyOrSell": buyOrSell,
     }

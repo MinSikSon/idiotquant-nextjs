@@ -33,9 +33,6 @@ export default function LoginPage() {
     }, [loginState]);
 
     useEffect(() => {
-        if (DEBUG) console.log(`[LoginPage] loginState:`, loginState);
-    }, [loginState]);
-    useEffect(() => {
         if (DEBUG) console.log(`[LoginPage] kakaoTotal:`, kakaoTotal);
         if (undefined == kakaoTotal || kakaoTotal?.id == 0 || !!!kakaoTotal?.kakao_account?.profile?.nickname) {
             if (DEBUG) console.log(`[LoginPage] 1`);
@@ -96,7 +93,6 @@ export default function LoginPage() {
         }
     }
 
-    if (DEBUG) console.log(`[LoginPage] render`, `kakaoTotal?.kakao_account?.profile?.nickname:`, kakaoTotal?.kakao_account?.profile?.nickname, `, loginState:`, loginState);
     return (
         <div className="w-full h-screen items-center dark:bg-black dark:text-white">
             <KakaoIcon />

@@ -5,8 +5,7 @@ import { useState, useEffect } from "react";
 import { usePathname } from "next/navigation";
 import { useAppDispatch, useAppSelector } from "@/lib/hooks";
 import { reqGetInquireBalance, reqGetInquirePrice, KoreaInvestmentInquirePrice, reqGetInquireDailyItemChartPrice, getKoreaInvestmentInquireDailyItemChartPrice, KoreaInvestmentInquireDailyItemChartPrice, reqGetBalanceSheet, getKoreaInvestmentBalanceSheet, KoreaInvestmentBalanceSheet, getKoreaInvestmentIncomeStatement, KoreaInvestmentIncomeStatement, reqGetIncomeStatement } from "@/lib/features/koreaInvestment/koreaInvestmentSlice";
-import { getKoreaInvestmentBalance, getKoreaInvestmentInquirePrice } from "@/lib/features/koreaInvestment/koreaInvestmentSlice";
-import { KoreaInvestmentBalance } from "@/lib/features/koreaInvestment/koreaInvestmentSlice";
+import { getKoreaInvestmentInquirePrice } from "@/lib/features/koreaInvestment/koreaInvestmentSlice";
 
 import corpCodeJson from "@/public/data/validCorpCode.json"
 import { Util } from "@/components/util";
@@ -39,7 +38,6 @@ export default function SearchKr() {
   const pathname = usePathname();
   const dispatch = useAppDispatch();
 
-  const kiBalance: KoreaInvestmentBalance = useAppSelector(getKoreaInvestmentBalance);
   const kiInquirePrice: KoreaInvestmentInquirePrice = useAppSelector(getKoreaInvestmentInquirePrice);
   const kiBalanceSheet: KoreaInvestmentBalanceSheet = useAppSelector(getKoreaInvestmentBalanceSheet);
   const kiIncomeStatement: KoreaInvestmentIncomeStatement = useAppSelector(getKoreaInvestmentIncomeStatement);
@@ -68,7 +66,7 @@ export default function SearchKr() {
   useEffect(() => {
     import('katex/dist/katex.min.css');
 
-    dispatch(reqGetInquireBalance());
+    // dispatch(reqGetInquireBalance());
 
     const handleScroll = () => {
       if (window.scrollY > 160) {
@@ -428,7 +426,7 @@ ${md}
     dispatch(setCloudFlareStarredStocks({ starredStocks: newStarredStocks }));
   }
 
-  if (DEBUG) console.log(`rendering SearchKr ...`, pathname, `kiBalance`, kiBalance);
+  if (DEBUG) console.log(`rendering SearchKr ...`, pathname);
   let bShowResult = true;
   if (("fulfilled" != kiInquireDailyItemChartPrice.state)
     || ("fulfilled" != kiBalanceSheet.state)

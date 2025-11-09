@@ -1,7 +1,7 @@
 "use client"
 
 import { DesignButton } from "@/components/designButton";
-import TablesExample8, { Example8TableHeadType, Example8TableRowType, TablesExample8PropsType } from "@/components/tableExample8";
+import TableTemplate, { Example8TableHeadType, Example8TableRowType, TablesExample8PropsType } from "@/components/tableExample8";
 import { CapitalTokenType, QuantRule, reqGetQuantRule, reqGetQuantRuleDesc, reqGetUsCapitalToken, selectCapitalToken, selectInquirePriceMulti, selectQuantRule, selectQuantRuleDesc, selectUsCapitalToken } from "@/lib/features/algorithmTrade/algorithmTradeSlice";
 import { reqGetCapitalToken } from "@/lib/features/algorithmTrade/algorithmTradeSlice";
 import { getKoreaInvestmentToken, KoreaInvestmentToken } from "@/lib/features/koreaInvestment/koreaInvestmentSlice";
@@ -388,7 +388,7 @@ export default function AlgorithmTradeLegacy() {
     if (DEBUG) console.log(`purchase_log`, purchase_log);
 
     return <>
-        <TablesExample8 {...props} />
+        <TableTemplate {...props} />
         <div className="dark:bg-black h-lvh"></div>
     </>
 }

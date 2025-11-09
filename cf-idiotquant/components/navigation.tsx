@@ -84,15 +84,15 @@ export function NavbarWithSimpleLinks() {
     }
     function NavItemFlexCol({ url, label }: NavItemPropsType) {
         return (
-            <Box width="100%">
-                <Link href={url} onClick={() => {
-                    setOpen(false)
-                    setSelectPath(url.split("/")[1]);
-                }}>
+            <Link href={url} onClick={() => {
+                setOpen(false)
+                setSelectPath(url.split("/")[1]);
+            }}>
+                <Box width="100%">
                     {/* <div className={`px-2 py-1.5 rounded dark:text-white font-mono text-[0.8rem] hover:bg-gray-100 hover:dark:bg-gray-700 ${selectPath == url.split("/")[1] ? "bg-slate-100 dark:bg-gray-500" : ""} `}> */}
                     {label}
-                </Link>
-            </Box>
+                </Box>
+            </Link>
         );
     }
 
@@ -160,7 +160,7 @@ export function NavbarWithSimpleLinks() {
     function NavListFlexCol() {
         return (
             <Box width="100%" >
-                <Flex className="!justify-center !content-center">
+                <Flex width="100%" className="!justify-center !content-center">
                     {Object.keys(navListUrlToLabelHanburgerButton).map((key: string) => {
                         return <NavItemFlexCol key={key} url={`/${key}`} label={navListUrlToLabelHanburgerButton[key]} />
                     })}
