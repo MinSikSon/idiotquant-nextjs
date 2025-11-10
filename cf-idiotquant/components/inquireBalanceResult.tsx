@@ -138,8 +138,14 @@ export default function InquireBalanceResult(props: InquireBalanceResultProps) {
                 cond_b = Number(b.evlu_amt ?? b.frcr_evlu_amt2) / Number(b.hldg_qty ?? b.ccld_qty_smtl1);
             }
             else if ("수익률" == selectHead) {
-                cond_a = Number(a.evlu_amt ?? a.frcr_evlu_amt2) / Number(a.pchs_amt ?? a.frcr_pchs_amt);
-                cond_b = Number(b.evlu_amt ?? b.frcr_evlu_amt2) / Number(b.pchs_amt ?? b.frcr_pchs_amt);
+                const aEval = Number(a.evlu_amt ?? a.frcr_evlu_amt2) || 0; // 평가금액 없으면 0
+                const aPurchase = Number(a.pchs_amt ?? a.frcr_pchs_amt) || 1; // 매입금액 없으면 1로 나눠서 NaN 방지
+                cond_a = aEval / aPurchase;
+
+                // b 수익률 계산
+                const bEval = Number(b.evlu_amt ?? b.frcr_evlu_amt2) || 0;
+                const bPurchase = Number(b.pchs_amt ?? b.frcr_pchs_amt) || 1;
+                cond_b = bEval / bPurchase;
             }
             else if ("평가손익" == selectHead) {
                 cond_a = Number(a.evlu_pfls_amt2 ?? a.evlu_pfls_amt);
@@ -233,7 +239,7 @@ export default function InquireBalanceResult(props: InquireBalanceResultProps) {
                 column_4: <>
                     <Flex direction="column" className={`dark:text-white ${Number(Number(evlu_amt) / Number(pchs_amt) * 100 - 100) >= 0 ? "text-red-500" : "text-blue-500"}`}>
                         <Text>
-                            {formatNumber(Number(Number(evlu_amt) / Number(pchs_amt) * 100 - 100))}%
+                            {formatNumber(Number(Number(evlu_amt) / (Number(pchs_amt) || 1) * 100 - 100))}%
                         </Text>
                     </Flex>
                 </>,
@@ -364,7 +370,7 @@ export default function InquireBalanceResult(props: InquireBalanceResultProps) {
         pchs_amt_smtl_amt = Number(pchs_amt_smtl_amt);
 
         evlu_pfls_smtl_amt = (true == isUsBalance) ? props.kiBalance.output3["evlu_pfls_amt_smtl"] : props.kiBalance.output2[0]["evlu_pfls_smtl_amt"];
-        evlu_pfls_smtl_amt = Number(evlu_pfls_smtl_amt);
+        evlu_pfls_smtl_amt = isNaN(evlu_pfls_smtl_amt) ? 0 : Number(evlu_pfls_smtl_amt);
 
         frst_bltn_exrt = !!props.kiBalance.output2[0] ? props.kiBalance.output2[0]["frst_bltn_exrt"] : 0;
 
