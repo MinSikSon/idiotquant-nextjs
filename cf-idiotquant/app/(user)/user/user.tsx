@@ -7,11 +7,15 @@ import { KakaoTotal, selectKakaoTotal } from '@/lib/features/kakao/kakaoSlice';
 import { selectCloudflareUserInfo, setCloudFlareUserInfo, UserInfo } from '@/lib/features/cloudflare/cloudflareSlice';
 import { getBadgeColor, getLevel, getProgress } from './level';
 import { Button, Card, Box, Text, TextField, TextArea, Progress, Avatar, Flex } from '@radix-ui/themes';
+import { setCloudFlareLoginStatus } from '@/lib/features/login/loginSlice';
+import { useRouter } from "next/navigation";
 
 const DEBUG = false;
 
 export default function User() {
     const dispatch = useAppDispatch();
+    const router = useRouter();
+
     const cfUserInfo: UserInfo = useAppSelector(selectCloudflareUserInfo);
     const kakaoTotal: KakaoTotal = useAppSelector(selectKakaoTotal);
 
@@ -33,6 +37,9 @@ export default function User() {
     const [load, setLoad] = useState(false);
 
     useEffect(() => {
+        dispatch(setCloudFlareLoginStatus());
+    }, []);
+    useEffect(() => {
         if (cfUserInfo?.state === "fulfilled") {
             if (false == load) {
                 if (DEBUG) console.log(`[User] cfUserInfo:`, cfUserInfo);
@@ -46,6 +53,10 @@ export default function User() {
     useEffect(() => {
         if (DEBUG) console.log(`[User] kakaoTotal:`, kakaoTotal);
         // TODO: kakaoTotal에 있는 정보 활용해도 좋을 듯 함.
+        if (kakaoTotal?.id == 0) {
+            router.push(`${process.env.NEXT_PUBLIC_CLIENT_URL}/login`); // NOTE: 로그인 성공 시 userpage 로 이동
+
+        }
     }, [kakaoTotal]);
 
     function getInitials(name: string) {
@@ -92,7 +103,7 @@ export default function User() {
                             <Flex direction="column" width="100%" pb="1" className="!items-center !justify-center">
                                 <Flex align="baseline" gap="1" pl="6">
                                     <Text>{getLevel(Number(user.point))}</Text>
-                                    <Text className="text-[0.6rem]">{user.point} / {Number((Number(user.point) / 200).toFixed(0)) * 400}</Text>
+                                    <Text className="text-[0.6rem]">{user.point} / {user.point >= 100 ? Number((Number(user.point) / 200).toFixed(0)) * 400 : 100}</Text>
                                 </Flex>
                                 <Box width="100%">
                                     <Progress
