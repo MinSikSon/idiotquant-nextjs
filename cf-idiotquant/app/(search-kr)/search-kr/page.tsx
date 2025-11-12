@@ -46,8 +46,9 @@ export default function SearchKr() {
   const cfStarredStocks: StarredStocks = useAppSelector(selectCloudflareStarredStocks);
 
   const [name, setName] = useState<any>("");
-  const [startDate, setStartDate] = useState<any>("2024-01-03");
+  const [startDate, setStartDate] = useState<any>("20170101");
   const [endDate, setEndDate] = useState<any>((new Date()).toISOString().split('T')[0]);
+  // const [endDate, setEndDate] = useState<any>("20240401");
 
   const [waitResponse, setWaitResponse] = useState(false);
   const aiStreamOutput: string = useAppSelector(selectAiStreamOutput);
