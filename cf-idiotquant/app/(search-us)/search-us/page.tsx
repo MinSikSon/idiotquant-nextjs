@@ -456,12 +456,12 @@ $$
                             <div className="dark:bg-black dark:text-white text-xs p-3 shadow">
                                 <div className="flex gap-2">
                                     <div className="w-4/12 text-right">재무-유동자산</div>
-                                    <div className="w-6/12 text-right">{Number(fmpUsBalanceSheetStatement[0].totalCurrentAssets).toLocaleString()}</div>
+                                    <div className="w-6/12 text-right">{Number(fmpUsBalanceSheetStatement?.[0]?.totalCurrentAssets ?? 0).toLocaleString()}</div>
                                     <div className="w-2/12 text-left text-[0.6rem]">USD</div>
                                 </div>
                                 <div className="flex gap-2">
                                     <div className="w-4/12 text-right">재무-부채총계</div>
-                                    <div className="w-6/12 text-right">{Number(fmpUsBalanceSheetStatement[0].totalLiabilities).toLocaleString()}</div>
+                                    <div className="w-6/12 text-right">{Number(fmpUsBalanceSheetStatement?.[0]?.totalLiabilities ?? 0).toLocaleString()}</div>
                                     <div className="w-2/12 text-left text-[0.6rem]">USD</div>
                                 </div>
                             </div>
