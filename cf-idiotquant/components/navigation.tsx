@@ -119,23 +119,17 @@ export function NavbarWithSimpleLinks() {
     }
     const navListUrlToLabelHanburgerButton: any = {
         "login": <Box width="100%" className={navListDesign}>
-            {!!!kakaoTotal?.id ?
-                <>
-                    <Box width="100%">
-                        <Flex gap="1" align="center">
-                            <Text>kakao login</Text>
-                            <LockClosedIcon className="h-4 w-4" strokeWidth={2} />
-                        </Flex>
-                    </Box>
-                </>
-                : <>
-                    <Box width="100%">
-                        <Flex gap="1">
-                            <Text>{kakaoTotal?.kakao_account?.profile?.nickname}님 반갑습니다.</Text>
-                            <LockOpenIcon className="h-4 w-4" strokeWidth={2} />
-                        </Flex>
-                    </Box>
-                </>}
+            <Flex gap="1" align="center">
+                {!!!kakaoTotal?.id ?
+                    <>
+                        <Text>kakao login</Text>
+                        <LockClosedIcon className="h-4 w-4" strokeWidth={2} />
+                    </>
+                    : <>
+                        <Text>{kakaoTotal?.kakao_account?.profile?.nickname}님 반갑습니다.</Text>
+                        <LockOpenIcon className="h-4 w-4" strokeWidth={2} />
+                    </>}
+            </Flex>
         </Box>,
     }
 
@@ -218,9 +212,21 @@ export function NavbarWithSimpleLinks() {
                                         </DropdownMenu.SubContent>
                                     </DropdownMenu.Sub>
                                     <DropdownMenu.Separator />
-                                    <DropdownMenu.Item shortcut="">
-                                        <NavListFlexCol />
-                                    </DropdownMenu.Item>
+                                    <Link href={"/login"} onClick={() => { setSelectPath("login") }}>
+                                        <DropdownMenu.Item shortcut="">
+                                            <Flex gap="1" align="center">
+                                                {!!!kakaoTotal?.id ?
+                                                    <>
+                                                        <LockClosedIcon className="h-4 w-4" strokeWidth={2} />
+                                                        <Text>kakao login</Text>
+                                                    </>
+                                                    : <>
+                                                        <LockOpenIcon className="h-4 w-4" strokeWidth={2} />
+                                                        <Text>{kakaoTotal?.kakao_account?.profile?.nickname}님 반갑습니다.</Text>
+                                                    </>}
+                                            </Flex>
+                                        </DropdownMenu.Item>
+                                    </Link>
                                     <DropdownMenu.Separator />
                                     <DropdownMenu.Item shortcut="">
                                         <ThemeChanger />
