@@ -7,15 +7,13 @@ import { usePathname } from "next/navigation";
 import { Util } from "@/components/util";
 import { getKoreaInvestmentUsMaretSearchInfo, getKoreaInvestmentUsMarketDailyPrice, KoreaInvestmentOverseasPriceDetail, KoreaInvestmentOverseasPriceDetailOutput, KoreaInvestmentOverseasPriceQuotationsDailyPrice, KoreaInvestmentOverseasPriceQuotationsInquireDailyChartPrice, KoreaInvestmentOverseasSearchInfo, KoreaInvestmentOverseasSearchInfoOutput, reqGetOverseasPriceQuotationsDailyPrice, reqGetQuotationsSearchInfo } from "@/lib/features/koreaInvestmentUsMarket/koreaInvestmentUsMarketSlice";
 import { getKoreaInvestmentUsMaretPriceDetail, reqGetQuotationsPriceDetail } from "@/lib/features/koreaInvestmentUsMarket/koreaInvestmentUsMarketSlice";
-import { getKoreaInvestmentToken, KoreaInvestmentToken, reqGetInquireBalance } from "@/lib/features/koreaInvestment/koreaInvestmentSlice";
+import { getKoreaInvestmentToken, KoreaInvestmentToken } from "@/lib/features/koreaInvestment/koreaInvestmentSlice";
 import SearchAutocomplete from "@/components/searchAutoComplete";
 
 import nasdaq_tickers from "@/public/data/usStockSymbols/nasdaq_tickers.json";
 import nyse_tickers from "@/public/data/usStockSymbols/nyse_tickers.json";
 import amex_tickers from "@/public/data/usStockSymbols/amex_tickers.json";
 const all_tickers = [...nasdaq_tickers, ...nyse_tickers, ...amex_tickers];
-import Auth from "@/components/auth";
-import { FmpBalanceSheetStatementType, reqGetFmpBalanceSheetStatement, selectFmpBalanceSheetStatement, selectFmpState } from "@/lib/features/fmpUsMarket/fmpUsMarketSlice";
 import LineChart from "@/components/LineChart";
 import { addUsMarketHistory, selectUsMarketHistory } from "@/lib/features/searchHistory/searchHistorySlice";
 
@@ -28,6 +26,9 @@ import rehypeHighlight from 'rehype-highlight';
 import 'highlight.js/styles/github.css';
 import { selectKakaoTatalState } from "@/lib/features/kakao/kakaoSlice";
 import { AspectRatio } from "@radix-ui/themes";
+// import { FmpBalanceSheetStatementType, reqGetFmpBalanceSheetStatement, selectFmpBalanceSheetStatement, selectFmpState } from "@/lib/features/fmpUsMarket/fmpUsMarketSlice";
+import { FinnhubFinancialsAsReportedType, reqGetFinnhubUsFinancialsReported, selectFinnhubFinancialsAsReported } from "@/lib/features/finnhubUsMarket/finnhubUsMarketSlice";
+import FinnhubBalanceSheetTable from "./table";
 
 const DEBUG = false;
 
@@ -41,8 +42,9 @@ export default function SearchUs() {
     const kiUsMaretPriceDetail: KoreaInvestmentOverseasPriceDetail = useAppSelector(getKoreaInvestmentUsMaretPriceDetail);
     const kiUsDailyPrice: KoreaInvestmentOverseasPriceQuotationsDailyPrice = useAppSelector(getKoreaInvestmentUsMarketDailyPrice);
 
-    const fmpState: any = useAppSelector(selectFmpState);
-    const fmpUsBalanceSheetStatement: Record<string, FmpBalanceSheetStatementType> = useAppSelector(selectFmpBalanceSheetStatement);
+    // const fmpState: any = useAppSelector(selectFmpState);
+    // const fmpUsBalanceSheetStatement: Record<string, FmpBalanceSheetStatementType> = useAppSelector(selectFmpBalanceSheetStatement);
+    const finnhubFinancialsAsReported: FinnhubFinancialsAsReportedType = useAppSelector(selectFinnhubFinancialsAsReported);
 
     // const [startDate, setStartDate] = useState<any>("2024-01-03");
     const [startDate, setStartDate] = useState<any>((new Date()).toISOString().split('T')[0]);
@@ -87,7 +89,6 @@ export default function SearchUs() {
     }
 
     useEffect(() => {
-        dispatch(reqGetInquireBalance());
     }, []);
 
     useEffect(() => {
@@ -99,13 +100,16 @@ export default function SearchUs() {
     useEffect(() => {
         if (DEBUG) console.log(`useEffect [kiUsDailyPrice]`, kiUsDailyPrice);
     }, [kiUsDailyPrice])
+    // useEffect(() => {
+    //     if (DEBUG) console.log(`useEffect [fmpState]`, fmpState);
+    // }, [fmpState])
+    // useEffect(() => {
+    //     if (DEBUG) console.log(`useEffect [fmpUsBalanceSheetStatement]`, fmpUsBalanceSheetStatement);
+    //     if (DEBUG) console.log(`useEffectObject.values(fmpUsBalanceSheetStatement)`, Object.values(fmpUsBalanceSheetStatement));
+    // }, [fmpUsBalanceSheetStatement])
     useEffect(() => {
-        if (DEBUG) console.log(`useEffect [fmpState]`, fmpState);
-    }, [fmpState])
-    useEffect(() => {
-        if (DEBUG) console.log(`useEffect [fmpUsBalanceSheetStatement]`, fmpUsBalanceSheetStatement);
-        if (DEBUG) console.log(`useEffectObject.values(fmpUsBalanceSheetStatement)`, Object.values(fmpUsBalanceSheetStatement));
-    }, [fmpUsBalanceSheetStatement])
+        if (DEBUG) console.log(`useEffect [finnhubFinancialsAsReported]`, finnhubFinancialsAsReported);
+    }, [finnhubFinancialsAsReported])
 
     function onSearchButton(stockName: any) {
         if (DEBUG) console.log(`[onSearchButton]`, `stockName`, stockName);
@@ -114,7 +118,8 @@ export default function SearchUs() {
         dispatch(reqGetOverseasPriceQuotationsDailyPrice({ PDNO: stockName, FID_INPUT_DATE_1: formatDate(startDate) }));
         // export const { reqGetOverseasPriceQuotationsInquireDailyChartPrice } = koreaInvestmentUsMarketSlice.actions;
 
-        dispatch(reqGetFmpBalanceSheetStatement(stockName));
+        // dispatch(reqGetFmpBalanceSheetStatement(stockName));
+        dispatch(reqGetFinnhubUsFinancialsReported(stockName));
 
         dispatch(addUsMarketHistory(stockName));
     }
@@ -177,28 +182,24 @@ export default function SearchUs() {
         </ReactMarkdown>
     }
 
-    function getNcav(balanceSheetStatement: Record<string, FmpBalanceSheetStatementType>, maretPriceDetail: any, ratioList: number[]) {
+    function getNcav(financialsAsReported: FinnhubFinancialsAsReportedType, maretPriceDetail: any, ratioList: number[]) {
         const stck_oprc = Number(maretPriceDetail.output["last"] ?? 1); // 주식 시가2
         const lstn_stcn = Number(maretPriceDetail.output["shar"] ?? 1); // 상장 주수
         let cras = 1
         let total_lblt = 1
         let msg = "유동 자산 = 1, 부채 총계 = 1"
-        if (DEBUG) console.log(`[getNcav]`, `balanceSheetStatement`, balanceSheetStatement,);
-        const balanceSheetStatementValues = Object.values(balanceSheetStatement ?? {});
+        if (DEBUG) console.log(`[getNcav]`, `financialsAsReported`, financialsAsReported,);
+        // const balanceSheetStatementValues = Object.values(balanceSheetStatement ?? {});
+        const balanceSheetStatementValues = financialsAsReported?.data?.[0]?.report?.bs;
         if (DEBUG) console.log(`[getNcav]`, `balanceSheetStatementValues`, balanceSheetStatementValues,);
         if (0 < balanceSheetStatementValues.length) {
-            cras = Number(balanceSheetStatementValues[0].totalCurrentAssets ?? 1); // 유동 자산
-            total_lblt = Number(balanceSheetStatementValues[0].totalLiabilities ?? 1); // 부채 총계
+            // cras = Number(balanceSheetStatementValues[0].totalCurrentAssets ?? 1); // 유동 자산
+            // total_lblt = Number(balanceSheetStatementValues[0].totalLiabilities ?? 1); // 부채 총계
+            cras = Number(finnhubFinancialsAsReported?.data?.[0]?.report?.bs?.[5]?.value ?? 1); // 유동 자산
+            total_lblt = Number(finnhubFinancialsAsReported?.data?.[0]?.report?.bs?.[18]?.value ?? 1); // 부채 총계
+
             msg = ""
         }
-
-        // const value: number = (((cras - total_lblt) / (stck_oprc * lstn_stcn * ratio) - 1) * 100);
-        // const target_price = (cras - total_lblt) / lstn_stcn;
-        // const md = ratioList.map(ratio => {
-        //     const target_price = (cras - total_lblt) / lstn_stcn;
-        //     const percentage: number = (((cras - total_lblt) / (stck_oprc * lstn_stcn * ratio) - 1) * 100);
-        //     return `|${ratio.toFixed(2)}|${percentage.toFixed(2)}%|${Number(target_price.toFixed(0)).toLocaleString()}|`;
-        // }).join("\n");
 
         const md = ratioList.map(ratio => {
             const target_price = (cras - total_lblt) / lstn_stcn;
@@ -221,8 +222,9 @@ ${md}
 
     let bShowResult = false;
     if (("fulfilled" == kiUsDailyPrice.state)
-        && ("fulfilled" == fmpState)
+        // && ("fulfilled" == fmpState)
         && ("fulfilled" == kiUsMaretSearchInfo.state)
+        && ("fulfilled" == finnhubFinancialsAsReported.state)
     ) {
         bShowResult = true;
     }
@@ -349,13 +351,17 @@ ${md}
                                 {(() => {
                                     const stck_oprc = Number(kiUsMaretPriceDetail.output["last"] ?? 1); // 주식 시가2
                                     const lstn_stcn = Number(kiUsMaretPriceDetail.output["shar"] ?? 1); // 상장 주수
-                                    if (DEBUG) console.log(`[ReactMarkdown]`, `fmpUsBalanceSheetStatement`, fmpUsBalanceSheetStatement, `, !!fmpUsBalanceSheetStatement`, !!fmpUsBalanceSheetStatement);
-                                    const fmpUsBalanceSheetStatementValues = Object.values(fmpUsBalanceSheetStatement ?? {});
+                                    // if (DEBUG) console.log(`[ReactMarkdown]`, `fmpUsBalanceSheetStatement`, fmpUsBalanceSheetStatement, `, !!fmpUsBalanceSheetStatement`, !!fmpUsBalanceSheetStatement);
+                                    // const fmpUsBalanceSheetStatementValues = Object.values(fmpUsBalanceSheetStatement ?? {});
+                                    if (DEBUG) console.log(`[ReactMarkdown]`, `finnhubFinancialsAsReported`, finnhubFinancialsAsReported, `, !!finnhubFinancialsAsReported`, !!finnhubFinancialsAsReported);
+                                    const fmpUsBalanceSheetStatementValues = finnhubFinancialsAsReported?.data ?? [];
                                     let cras = 1;
                                     let total_lblt = 1;
                                     if (0 < fmpUsBalanceSheetStatementValues.length) {
-                                        cras = Number(fmpUsBalanceSheetStatementValues[0].totalCurrentAssets ?? 1); // 유동 자산
-                                        total_lblt = Number(fmpUsBalanceSheetStatementValues[0].totalLiabilities ?? 1); // 부채 총계
+                                        // cras = Number(fmpUsBalanceSheetStatementValues[0].totalCurrentAssets ?? 1); // 유동 자산
+                                        // total_lblt = Number(fmpUsBalanceSheetStatementValues[0].totalLiabilities ?? 1); // 부채 총계
+                                        cras = Number(finnhubFinancialsAsReported?.data?.[0]?.report?.bs?.[5]?.value ?? 1); // 유동 자산
+                                        total_lblt = Number(finnhubFinancialsAsReported?.data?.[0]?.report?.bs?.[18]?.value ?? 1); // 부채 총계
                                     }
                                     if (DEBUG) console.log(`[ReactMarkdown]`, `cras`, cras);
                                     if (DEBUG) console.log(`[ReactMarkdown]`, `total_lblt`, total_lblt);
@@ -382,7 +388,7 @@ $$
                             </ReactMarkdown>
                         </div>
                     </div>
-                    {getNcav(fmpUsBalanceSheetStatement, kiUsMaretPriceDetail, [1.0, 1.5])}
+                    {getNcav(finnhubFinancialsAsReported, kiUsMaretPriceDetail, [1.0, 1.5])}
                     <div className="dark:bg-black dark:text-white text-xs p-3 shadow">
                         <div className="flex gap-2">
                             <div className="w-4/12 text-right">PER</div>
@@ -446,27 +452,35 @@ $$
                             <div className="w-2/12 text-left text-[0.6rem]">%</div>
                         </div>
                     </div>
-                    {"fulfilled" == fmpState ?
+                    {"fulfilled" == finnhubFinancialsAsReported.state ?
                         <>
                             <div className="dark:bg-black dark:text-white text-md p-3 shadow">
                                 <div className="flex gap-2 font-mono">
                                     <div className="w-full text-center">재무 정보</div>
                                 </div>
+                                <div className="flex gap-2 font-mono">
+                                    <div className="w-3/12 text-center"></div>
+                                    <div className="w-3/12 text-center">{finnhubFinancialsAsReported?.data?.[0]?.year}년</div>
+                                    <div className="w-3/12 text-center">{finnhubFinancialsAsReported?.data?.[0]?.quarter}분기</div>
+                                    <div className="w-3/12 text-center"></div>
+                                </div>
                             </div>
                             <div className="dark:bg-black dark:text-white text-xs p-3 shadow">
                                 <div className="flex gap-2">
                                     <div className="w-4/12 text-right">재무-유동자산</div>
-                                    <div className="w-6/12 text-right">{Number(fmpUsBalanceSheetStatement?.[0]?.totalCurrentAssets ?? 0).toLocaleString()}</div>
+                                    {/* <div className="w-6/12 text-right">{Number(fmpUsBalanceSheetStatement?.[0]?.totalCurrentAssets ?? 0).toLocaleString()}</div> */}
+                                    <div className="w-6/12 text-right">{Number(finnhubFinancialsAsReported?.data?.[0]?.report?.bs?.[5]?.value ?? 0).toLocaleString()}</div>
                                     <div className="w-2/12 text-left text-[0.6rem]">USD</div>
                                 </div>
                                 <div className="flex gap-2">
                                     <div className="w-4/12 text-right">재무-부채총계</div>
-                                    <div className="w-6/12 text-right">{Number(fmpUsBalanceSheetStatement?.[0]?.totalLiabilities ?? 0).toLocaleString()}</div>
+                                    {/* <div className="w-6/12 text-right">{Number(fmpUsBalanceSheetStatement?.[0]?.totalLiabilities ?? 0).toLocaleString()}</div> */}
+                                    <div className="w-6/12 text-right">{Number(finnhubFinancialsAsReported?.data?.[0]?.report?.bs?.[18]?.value ?? 0).toLocaleString()}</div>
                                     <div className="w-2/12 text-left text-[0.6rem]">USD</div>
                                 </div>
                             </div>
                             <div className="dark:bg-black dark:text-white text-xs p-3 shadow">
-                                {true == bShowResult && <table className="table-auto w-full text-right font-mono border border-gray-300">
+                                {/* {true == bShowResult && <table className="table-auto w-full text-right font-mono border border-gray-300">
                                     <thead className="bg-gray-100">
                                         <tr>
                                             <th className="border px-2 py-1 text-left">항목</th>
@@ -504,7 +518,9 @@ $$
                                             </tr>
                                         ))}
                                     </tbody>
-                                </table>}
+                                </table>} */}
+                                <FinnhubBalanceSheetTable data={finnhubFinancialsAsReported?.data} />
+
                             </div>
                         </>
                         : <></>

@@ -11,6 +11,7 @@ import { koreaInvestmentSlice } from "./features/koreaInvestment/koreaInvestment
 import { koreaInvestmentUsMarketSlice } from "./features/koreaInvestmentUsMarket/koreaInvestmentUsMarketSlice";
 import { algorithmTradeSlice } from "./features/algorithmTrade/algorithmTradeSlice";
 import { fmpUsMarketSlice } from "./features/fmpUsMarket/fmpUsMarketSlice";
+import { finnhubUsMarketSlice } from "./features/finnhubUsMarket/finnhubUsMarketSlice";
 import { aiSlice } from "./features/ai/aiSlice";
 import { aiStreamSlice } from "./features/ai/aiStreamSlice";
 import { searchHistorySlice } from "./features/searchHistory/searchHistorySlice";
@@ -30,6 +31,7 @@ const rootReducer: any = combineSlices(
     koreaInvestmentUsMarketSlice,
     algorithmTradeSlice,
     fmpUsMarketSlice,
+    finnhubUsMarketSlice,
     aiSlice,
     aiStreamSlice,
     searchHistorySlice,

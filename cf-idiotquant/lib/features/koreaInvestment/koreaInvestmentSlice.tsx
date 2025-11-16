@@ -1,6 +1,6 @@
 import { PayloadAction } from "@reduxjs/toolkit";
 import { createAppSlice } from "@/lib/createAppSlice";
-import { getInquireBalanceApi, postTokenApi, postApprovalKeyApi, postOrderCash, getInquirePrice, getInquireDailyItemChartPrice, getBalanceSheet, getIncomeStatement } from "./koreaInvestmentAPI";
+import { getInquireBalanceApi, postTokenApi, postApprovalKeyApi, postOrderCash, getInquirePrice, getInquireDailyItemChartPrice, getBalanceSheet, getIncomeStatement, getSearchStockInfo } from "./koreaInvestmentAPI";
 import { registerCookie } from "@/components/util";
 
 // rt_cd
@@ -98,6 +98,75 @@ export interface KoreaInvestmentOrderCash {
     msg1: string;
     output: KoreaInvestmentOrderCashOutput;
 }
+interface KoreaInvestmentSearchStockInfoOutput {
+    pdno: string; //    #상품번호
+    prdt_type_cd: string; //    #상품유형코드
+    mket_id_cd: string; //    #시장ID코드
+    scty_grp_id_cd: string; //    #증권그룹ID코드
+    excg_dvsn_cd: string; //    #거래소구분코드
+    setl_mmdd: string; //    #결산월일
+    lstg_stqt: string; //    #상장주수
+    lstg_cptl_amt: string; //    #상장자본금액
+    cpta: string; //    #자본금
+    papr: string; //    #액면가
+    issu_pric: string; //    #발행가격
+    kospi200_item_yn: string; //    #코스피200종목여부
+    scts_mket_lstg_dt: string; //    #유가증권시장상장일자
+    scts_mket_lstg_abol_dt: string; //    #유가증권시장상장폐지일자
+    kosdaq_mket_lstg_dt: string; //    #코스닥시장상장일자
+    kosdaq_mket_lstg_abol_dt: string; //    #코스닥시장상장폐지일자
+    frbd_mket_lstg_dt: string; //    #프리보드시장상장일자
+    frbd_mket_lstg_abol_dt: string; //    #프리보드시장상장폐지일자
+    reits_kind_cd: string; //    #리츠종류코드
+    etf_dvsn_cd: string; //    #ETF구분코드
+    oilf_fund_yn: string; //    #유전펀드여부
+    idx_bztp_lcls_cd: string; //    #지수업종대분류코드
+    idx_bztp_mcls_cd: string; //    #지수업종중분류코드
+    idx_bztp_scls_cd: string; //    #지수업종소분류코드
+    stck_kind_cd: string; //    #주식종류코드
+    mfnd_opng_dt: string; //    #뮤추얼펀드개시일자
+    mfnd_end_dt: string; //    #뮤추얼펀드종료일자
+    dpsi_erlm_cncl_dt: string; //    #예탁등록취소일자
+    etf_cu_qty: string; //    #ETFCU수량
+    prdt_name: string; //    #상품명
+    prdt_name120: string; //    #상품명120
+    prdt_abrv_name: string; //    #상품약어명
+    std_pdno: string; //    #표준상품번호
+    prdt_eng_name: string; //    #상품영문명
+    prdt_eng_name120: string; //    #상품영문명120
+    prdt_eng_abrv_name: string; //    #상품영문약어명
+    dpsi_aptm_erlm_yn: string; //    #예탁지정등록여부
+    etf_txtn_type_cd: string; //    #ETF과세유형코드
+    etf_type_cd: string; //    #ETF유형코드
+    lstg_abol_dt: string; //    #상장폐지일자
+    nwst_odst_dvsn_cd: string; //    #신주구주구분코드
+    sbst_pric: string; //    #대용가격
+    thco_sbst_pric: string; //    #당사대용가격
+    thco_sbst_pric_chng_dt: string; //    #당사대용가격변경일자
+    tr_stop_yn: string; //    #거래정지여부
+    admn_item_yn: string; //    #관리종목여부
+    thdt_clpr: string; //    #당일종가
+    bfdy_clpr: string; //    #전일종가
+    clpr_chng_dt: string; //    #종가변경일자
+    std_idst_clsf_cd: string; //    #표준산업분류코드
+    std_idst_clsf_cd_name: string; //    #표준산업분류코드명
+    idx_bztp_lcls_cd_name: string; //    #지수업종대분류코드명
+    idx_bztp_mcls_cd_name: string; //    #지수업종중분류코드명
+    idx_bztp_scls_cd_name: string; //    #지수업종소분류코드명
+    ocr_no: string; //    #OCR번호
+    crfd_item_yn: string; //    #크라우드펀딩종목여부
+    elec_scty_yn: string; //    #전자증권여부
+    issu_istt_cd: string; //    #발행기관코드
+    etf_chas_erng_rt_dbnb: string; //    #ETF추적수익율배수
+    etf_etn_ivst_heed_item_yn: string; //    #ETFETN투자유의종목여부
+    stln_int_rt_dvsn_cd: string; //    #대주이자율구분코드
+    frnr_psnl_lmt_rt: string; //    #외국인개인한도비율
+    lstg_rqsr_issu_istt_cd: string; //    #상장신청인발행기관코드
+    lstg_rqsr_item_cd: string; //    #상장신청인종목코드
+    trst_istt_issu_istt_cd: string; //    #신탁기관발행기관코드
+    cptt_trad_tr_psbl_yn: string; //    #NXT 거래종목여부
+    nxt_tr_stop_yn: string; //    #NXT 거래정지여부
+}
 
 interface KoreaInvestmentInquirePriceOutput {
     iscd_stat_cls_code: string;
@@ -179,6 +248,14 @@ interface KoreaInvestmentInquirePriceOutput {
     mrkt_warn_cls_code: string;
     short_over_yn: string;
     sltr_yn: string;
+}
+
+export interface KoreaInvestmentSearchStockInfo {
+    state: "init" | "req" | "pending" | "fulfilled" | "rejected";
+    rt_cd: string;
+    msg_cd: string;
+    msg1: string;
+    output: KoreaInvestmentSearchStockInfoOutput;
 }
 export interface KoreaInvestmentInquirePrice {
     state: "init" | "req" | "pending" | "fulfilled" | "rejected";
@@ -310,6 +387,7 @@ interface KoreaInvestmentInfo {
     koreaInvestmentToken: KoreaInvestmentToken;
     koreaInvestmentBalance: KoreaInvestmentBalance;
     koreaInvestmentOrderCash: KoreaInvestmentOrderCash;
+    koreaInvestmentSearchStockInfo: KoreaInvestmentSearchStockInfo;
     koreaInvestmentInquirePrice: KoreaInvestmentInquirePrice;
     koreaInvestmentInquireDailyItemChartPrice: KoreaInvestmentInquireDailyItemChartPrice;
     koreaInvestmentBalanceSheet: KoreaInvestmentBalanceSheet;
@@ -349,6 +427,81 @@ const initialState: KoreaInvestmentInfo = {
             KRX_FWDG_ORD_ORGNO: "",
             ODNO: "",
             ORD_TMD: ""
+        }
+    },
+    koreaInvestmentSearchStockInfo: {
+        state: "init",
+        rt_cd: "",
+        msg_cd: "",
+        msg1: "",
+        output: {
+            pdno: "",
+            prdt_type_cd: "",
+            mket_id_cd: "",
+            scty_grp_id_cd: "",
+            excg_dvsn_cd: "",
+            setl_mmdd: "",
+            lstg_stqt: "",
+            lstg_cptl_amt: "",
+            cpta: "",
+            papr: "",
+            issu_pric: "",
+            kospi200_item_yn: "",
+            scts_mket_lstg_dt: "",
+            scts_mket_lstg_abol_dt: "",
+            kosdaq_mket_lstg_dt: "",
+            kosdaq_mket_lstg_abol_dt: "",
+            frbd_mket_lstg_dt: "",
+            frbd_mket_lstg_abol_dt: "",
+            reits_kind_cd: "",
+            etf_dvsn_cd: "",
+            oilf_fund_yn: "",
+            idx_bztp_lcls_cd: "",
+            idx_bztp_mcls_cd: "",
+            idx_bztp_scls_cd: "",
+            stck_kind_cd: "",
+            mfnd_opng_dt: "",
+            mfnd_end_dt: "",
+            dpsi_erlm_cncl_dt: "",
+            etf_cu_qty: "",
+            prdt_name: "",
+            prdt_name120: "",
+            prdt_abrv_name: "",
+            std_pdno: "",
+            prdt_eng_name: "",
+            prdt_eng_name120: "",
+            prdt_eng_abrv_name: "",
+            dpsi_aptm_erlm_yn: "",
+            etf_txtn_type_cd: "",
+            etf_type_cd: "",
+            lstg_abol_dt: "",
+            nwst_odst_dvsn_cd: "",
+            sbst_pric: "",
+            thco_sbst_pric: "",
+            thco_sbst_pric_chng_dt: "",
+            tr_stop_yn: "",
+            admn_item_yn: "",
+            thdt_clpr: "",
+            bfdy_clpr: "",
+            clpr_chng_dt: "",
+            std_idst_clsf_cd: "",
+            std_idst_clsf_cd_name: "",
+            idx_bztp_lcls_cd_name: "",
+            idx_bztp_mcls_cd_name: "",
+            idx_bztp_scls_cd_name: "",
+            ocr_no: "",
+            crfd_item_yn: "",
+            elec_scty_yn: "",
+            issu_istt_cd: "",
+            etf_chas_erng_rt_dbnb: "",
+            etf_etn_ivst_heed_item_yn: "",
+            stln_int_rt_dvsn_cd: "",
+            frnr_psnl_lmt_rt: "",
+            lstg_rqsr_issu_istt_cd: "",
+            lstg_rqsr_item_cd: "",
+            trst_istt_issu_istt_cd: "",
+            cptt_trad_tr_psbl_yn: "",
+            nxt_tr_stop_yn: ""
         }
     },
     koreaInvestmentInquirePrice: {
@@ -611,6 +764,28 @@ export const koreaInvestmentSlice = createAppSlice({
                 },
             }
         ),
+        reqGetSearchStockInfo: create.asyncThunk(
+            async ({ PDNO }: { PDNO: string }) => {
+                return await getSearchStockInfo(PDNO);
+            },
+            {
+                pending: (state) => {
+                    console.log(`[reqGetSearchStockInfo] pending`);
+                    state.koreaInvestmentSearchStockInfo.state = "pending";
+                },
+                fulfilled: (state, action) => {
+                    console.log(`[reqGetSearchStockInfo] fulfilled`, `action.payload`, typeof action.payload, action.payload);
+                    if (undefined != action.payload["output"]) {
+                        state.koreaInvestmentSearchStockInfo = { ...state.koreaInvestmentSearchStockInfo, ...action.payload, state: "fulfilled" };
+                        state.state = "inquire-price";
+                    }
+                },
+                rejected: (state) => {
+                    console.log(`[reqGetSearchStockInfo] rejected`);
+                    state.koreaInvestmentSearchStockInfo.state = "rejected";
+                },
+            }
+        ),
         reqGetInquirePrice: create.asyncThunk(
             async ({ PDNO }: { PDNO: string }) => {
                 return await getInquirePrice(PDNO);
@@ -701,6 +876,7 @@ export const koreaInvestmentSlice = createAppSlice({
         getKoreaInvestmentApproval: (state) => state.koreaInvestmentApproval,
         getKoreaInvestmentToken: (state) => state.koreaInvestmentToken,
         getKoreaInvestmentBalance: (state) => state.koreaInvestmentBalance,
+        getKoreaInvestmentSearchStockInfo: (state) => state.koreaInvestmentSearchStockInfo,
         getKoreaInvestmentInquirePrice: (state) => state.koreaInvestmentInquirePrice,
         getKoreaInvestmentInquireDailyItemChartPrice: (state) => state.koreaInvestmentInquireDailyItemChartPrice,
         getKoreaInvestmentBalanceSheet: (state) => state.koreaInvestmentBalanceSheet,
@@ -712,9 +888,9 @@ export const koreaInvestmentSlice = createAppSlice({
 export const { reqPostOrderCash } = koreaInvestmentSlice.actions;
 export const { getKoreaInvestmentOrderCash } = koreaInvestmentSlice.selectors;
 
-export const { reqPostApprovalKey, reqPostToken, reqGetInquireBalance, reqGetInquirePrice, reqGetInquireDailyItemChartPrice } = koreaInvestmentSlice.actions;
+export const { reqPostApprovalKey, reqPostToken, reqGetInquireBalance, reqGetSearchStockInfo, reqGetInquirePrice, reqGetInquireDailyItemChartPrice } = koreaInvestmentSlice.actions;
 export const { setKoreaInvestmentToken } = koreaInvestmentSlice.actions;
-export const { getKoreaInvestmentApproval, getKoreaInvestmentToken, getKoreaInvestmentBalance, getKoreaInvestmentInquirePrice, getKoreaInvestmentInquireDailyItemChartPrice } = koreaInvestmentSlice.selectors;
+export const { getKoreaInvestmentApproval, getKoreaInvestmentToken, getKoreaInvestmentBalance, getKoreaInvestmentSearchStockInfo, getKoreaInvestmentInquirePrice, getKoreaInvestmentInquireDailyItemChartPrice } = koreaInvestmentSlice.selectors;
 
 export const { reqGetBalanceSheet } = koreaInvestmentSlice.actions;
 export const { getKoreaInvestmentBalanceSheet } = koreaInvestmentSlice.selectors;

@@ -39,12 +39,12 @@ export default function InquireBalanceResult(props: InquireBalanceResultProps) {
     useEffect(() => {
         setMounted(true);
 
-        console.log(`[InquireBalanceResult] props.kakaoTotal:`, props.kakaoTotal);
-        console.log(`[InquireBalanceResult] props.kakaoTotal?.kakao_account?.profile?.nickname:`, props.kakaoTotal?.kakao_account?.profile?.nickname);
-        console.log(`[InquireBalanceResult] props.kakaoMemberList:`, props.kakaoMemberList);
+        if (DEBUG) console.log(`[InquireBalanceResult] props.kakaoTotal:`, props.kakaoTotal);
+        if (DEBUG) console.log(`[InquireBalanceResult] props.kakaoTotal?.kakao_account?.profile?.nickname:`, props.kakaoTotal?.kakao_account?.profile?.nickname);
+        if (DEBUG) console.log(`[InquireBalanceResult] props.kakaoMemberList:`, props.kakaoMemberList);
     }, []);
     useEffect(() => {
-        console.log(`[InquireBalanceResult] balanceKey:`, balanceKey)
+        if (DEBUG) console.log(`[InquireBalanceResult] balanceKey:`, balanceKey)
     }, [balanceKey]);
 
 

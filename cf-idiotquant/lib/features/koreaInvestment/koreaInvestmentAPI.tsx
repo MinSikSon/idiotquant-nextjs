@@ -32,6 +32,17 @@ export const getInquireDailyItemChartPrice: any = async (PDNO: string, FID_INPUT
     return getKoreaInvestmentRequest(subUrl, additionalHeaders);
 }
 
+// 주식기본조회[v1_국내주식-067]
+export const getSearchStockInfo: any = async (PDNO: string) => {
+    const subUrl = `/uapi/domestic-stock/v1/quotations/search-stock-info`;
+    const additionalHeaders: AdditionalHeaders = {
+        // "kakaoId": getCookie("kakaoId"),
+        "PDNO": PDNO,
+        // "buyOrSell": buyOrSell,
+    }
+    return getKoreaInvestmentRequest(subUrl, additionalHeaders);
+}
+
 // 시세 조회
 export const getInquirePrice: any = async (PDNO: string) => {
     const subUrl = `/uapi/domestic-stock/v1/quotations/inquire-price`;

@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 
 import { usePathname } from "next/navigation";
 import { useAppDispatch, useAppSelector } from "@/lib/hooks";
-import { reqGetInquireBalance, reqGetInquirePrice, KoreaInvestmentInquirePrice, reqGetInquireDailyItemChartPrice, getKoreaInvestmentInquireDailyItemChartPrice, KoreaInvestmentInquireDailyItemChartPrice, reqGetBalanceSheet, getKoreaInvestmentBalanceSheet, KoreaInvestmentBalanceSheet, getKoreaInvestmentIncomeStatement, KoreaInvestmentIncomeStatement, reqGetIncomeStatement } from "@/lib/features/koreaInvestment/koreaInvestmentSlice";
+import { reqGetInquirePrice, KoreaInvestmentInquirePrice, reqGetInquireDailyItemChartPrice, getKoreaInvestmentInquireDailyItemChartPrice, KoreaInvestmentInquireDailyItemChartPrice, reqGetBalanceSheet, getKoreaInvestmentBalanceSheet, KoreaInvestmentBalanceSheet, getKoreaInvestmentIncomeStatement, KoreaInvestmentIncomeStatement, reqGetIncomeStatement } from "@/lib/features/koreaInvestment/koreaInvestmentSlice";
 import { getKoreaInvestmentInquirePrice } from "@/lib/features/koreaInvestment/koreaInvestmentSlice";
 
 import corpCodeJson from "@/public/data/validCorpCode.json"
@@ -66,8 +66,6 @@ export default function SearchKr() {
 
   useEffect(() => {
     import('katex/dist/katex.min.css');
-
-    // dispatch(reqGetInquireBalance());
 
     const handleScroll = () => {
       if (window.scrollY > 160) {
