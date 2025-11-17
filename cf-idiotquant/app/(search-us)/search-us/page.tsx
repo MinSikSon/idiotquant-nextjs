@@ -4,10 +4,8 @@ import { useState, useEffect, useRef } from "react";
 
 import { useAppDispatch, useAppSelector } from "@/lib/hooks";
 import { usePathname } from "next/navigation";
-import { Util } from "@/components/util";
-import { getKoreaInvestmentUsMaretSearchInfo, getKoreaInvestmentUsMarketDailyPrice, KoreaInvestmentOverseasPriceDetail, KoreaInvestmentOverseasPriceDetailOutput, KoreaInvestmentOverseasPriceQuotationsDailyPrice, KoreaInvestmentOverseasPriceQuotationsInquireDailyChartPrice, KoreaInvestmentOverseasSearchInfo, KoreaInvestmentOverseasSearchInfoOutput, reqGetOverseasPriceQuotationsDailyPrice, reqGetQuotationsSearchInfo } from "@/lib/features/koreaInvestmentUsMarket/koreaInvestmentUsMarketSlice";
+import { getKoreaInvestmentUsMaretSearchInfo, getKoreaInvestmentUsMarketDailyPrice, KoreaInvestmentOverseasPriceDetail, KoreaInvestmentOverseasPriceDetailOutput, KoreaInvestmentOverseasPriceQuotationsDailyPrice, KoreaInvestmentOverseasSearchInfo, KoreaInvestmentOverseasSearchInfoOutput, reqGetOverseasPriceQuotationsDailyPrice, reqGetQuotationsSearchInfo } from "@/lib/features/koreaInvestmentUsMarket/koreaInvestmentUsMarketSlice";
 import { getKoreaInvestmentUsMaretPriceDetail, reqGetQuotationsPriceDetail } from "@/lib/features/koreaInvestmentUsMarket/koreaInvestmentUsMarketSlice";
-import { getKoreaInvestmentToken, KoreaInvestmentToken } from "@/lib/features/koreaInvestment/koreaInvestmentSlice";
 import SearchAutocomplete from "@/components/searchAutoComplete";
 
 import nasdaq_tickers from "@/public/data/usStockSymbols/nasdaq_tickers.json";
@@ -35,8 +33,6 @@ const DEBUG = false;
 export default function SearchUs() {
     const pathname = usePathname();
     const dispatch = useAppDispatch();
-
-    const kiToken: KoreaInvestmentToken = useAppSelector(getKoreaInvestmentToken);
 
     const kiUsMaretSearchInfo: KoreaInvestmentOverseasSearchInfo = useAppSelector(getKoreaInvestmentUsMaretSearchInfo);
     const kiUsMaretPriceDetail: KoreaInvestmentOverseasPriceDetail = useAppSelector(getKoreaInvestmentUsMaretPriceDetail);
@@ -190,13 +186,25 @@ export default function SearchUs() {
         let msg = "유동 자산 = 1, 부채 총계 = 1"
         if (DEBUG) console.log(`[getNcav]`, `financialsAsReported`, financialsAsReported,);
         // const balanceSheetStatementValues = Object.values(balanceSheetStatement ?? {});
-        const balanceSheetStatementValues = financialsAsReported?.data?.[0]?.report?.bs;
+        const balanceSheetStatementValues = financialsAsReported?.data?.[0]?.report?.bs ?? [];
         if (DEBUG) console.log(`[getNcav]`, `balanceSheetStatementValues`, balanceSheetStatementValues,);
         if (0 < balanceSheetStatementValues.length) {
             // cras = Number(balanceSheetStatementValues[0].totalCurrentAssets ?? 1); // 유동 자산
             // total_lblt = Number(balanceSheetStatementValues[0].totalLiabilities ?? 1); // 부채 총계
-            cras = Number(finnhubFinancialsAsReported?.data?.[0]?.report?.bs?.[5]?.value ?? 1); // 유동 자산
-            total_lblt = Number(finnhubFinancialsAsReported?.data?.[0]?.report?.bs?.[18]?.value ?? 1); // 부채 총계
+
+            const balanceSheet = balanceSheetStatementValues;
+            for (let i = 0; i < balanceSheet.length; ++i) {
+                if ("us-gaap_AssetsCurrent" == balanceSheet[i].concept) {
+                    cras = Number(balanceSheet[i].value); // 유동 자산
+                    console.log(`[getNcav] cras. balanceSheet[`, i, `]:`, balanceSheet[i]);
+                }
+                else if ("us-gaap_LiabilitiesCurrent" == balanceSheet[i].concept) {
+                    total_lblt = Number(balanceSheet[i].value); // 부채 총계
+                    console.log(`[getNcav] total_lblt. balanceSheet[`, i, `]:`, balanceSheet[i]);
+                }
+            }
+            // cras = Number(balanceSheetStatementValues[5]?.value ?? 1); // 유동 자산
+            // total_lblt = Number(balanceSheetStatementValues[18]?.value ?? 1); // 부채 총계
 
             msg = ""
         }
@@ -358,10 +366,22 @@ ${md}
                                     let cras = 1;
                                     let total_lblt = 1;
                                     if (0 < fmpUsBalanceSheetStatementValues.length) {
+                                        const balanceSheetStatementValues = fmpUsBalanceSheetStatementValues?.[0]?.report?.bs;
+                                        const balanceSheet = balanceSheetStatementValues;
+                                        for (let i = 0; i < balanceSheet.length; ++i) {
+                                            if ("us-gaap_AssetsCurrent" == balanceSheet[i].concept) {
+                                                cras = Number(balanceSheet[i].value); // 유동 자산
+                                                console.log(`[getNcav] cras. balanceSheet[`, i, `]:`, balanceSheet[i]);
+                                            }
+                                            else if ("us-gaap_LiabilitiesCurrent" == balanceSheet[i].concept) {
+                                                total_lblt = Number(balanceSheet[i].value); // 부채 총계
+                                                console.log(`[getNcav] total_lblt. balanceSheet[`, i, `]:`, balanceSheet[i]);
+                                            }
+                                        }
                                         // cras = Number(fmpUsBalanceSheetStatementValues[0].totalCurrentAssets ?? 1); // 유동 자산
                                         // total_lblt = Number(fmpUsBalanceSheetStatementValues[0].totalLiabilities ?? 1); // 부채 총계
-                                        cras = Number(finnhubFinancialsAsReported?.data?.[0]?.report?.bs?.[5]?.value ?? 1); // 유동 자산
-                                        total_lblt = Number(finnhubFinancialsAsReported?.data?.[0]?.report?.bs?.[18]?.value ?? 1); // 부채 총계
+                                        // cras = Number(finnhubFinancialsAsReported?.data?.[0]?.report?.bs?.[5]?.value ?? 1); // 유동 자산
+                                        // total_lblt = Number(finnhubFinancialsAsReported?.data?.[0]?.report?.bs?.[18]?.value ?? 1); // 부채 총계
                                     }
                                     if (DEBUG) console.log(`[ReactMarkdown]`, `cras`, cras);
                                     if (DEBUG) console.log(`[ReactMarkdown]`, `total_lblt`, total_lblt);
