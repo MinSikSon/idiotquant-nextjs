@@ -127,11 +127,12 @@ export default function AlgorithmTradeLegacy() {
     const capitalToken = "KR" == market ? kr_capital_token : us_capital_token;
     const purchase_log = capitalToken.value.purchase_log ?? [];
     if (DEBUG) console.log(`purchase_log`, purchase_log);
-    let example8TableRow: Example8TableRowType[] = (purchase_log.slice(-60).map((item: any, index: number) => {
+    // purchase_log.slice(-60) 에서 -60은 일자가 아님.
+    let example8TableRow: Example8TableRowType[] = (purchase_log.map((item: any, index: number) => {
         const bgColor = index % 2 == 0 ? "bg-white" : "bg-gray-100";
         return item["stock_list"].map((subItem: any) => {
             const frst_bltn_exrt = "KR" == market ? 1 : capitalToken.value.frst_bltn_exrt;
-            const investment = (subItem["stck_prpr"] * subItem["ORD_QTY"] * frst_bltn_exrt);
+            const investment = (Number(subItem["stck_prpr"]) * Number(subItem["ORD_QTY"]) * Number(frst_bltn_exrt));
             if ("buy" == (subItem["buyOrSell"] ?? "buy")) {
                 cummulative_investment += investment;
             }
@@ -253,27 +254,48 @@ export default function AlgorithmTradeLegacy() {
             </Flex>
         </>,
         desc: <>
-            <Box p="2" className="dark:border-gray-700 border rounded-lg shadow">
+            <Box p="2" className="dark:border-gray-700 border shadow">
                 <Box p="2">
                     <Flex direction="column" className="dark:text-white">
-                        <Text size="2">
+                        <Text size="3">
                             Total Algorithmic Buys
                         </Text>
                         <div className="flex flex-col justify-end items-end">
                             <div className="">{market == "KR" ?
-                                <GradientText
-                                    colors={["#40ffaa", "#4079ff", "#40ffaa", "#4079ff", "#40ffaa"]}
-                                    animationSpeed={3}
-                                    showBorder={false}
-                                ><CountUp
-                                        from={0}
-                                        to={Number(Number(cummulative_investment).toFixed(0))}
-                                        separator=","
-                                        direction="up"
-                                        duration={1}
-                                        className="count-up-text"
-                                    /> KRW
-                                </GradientText>
+                                <Flex direction="column" gap="1" align="end">
+                                    <Box>
+                                        <Flex gap="1" align="end">
+                                            <Text>BUY:</Text>
+                                            <GradientText
+                                                colors={["#40ffaa", "#4079ff", "#40ffaa", "#4079ff", "#40ffaa"]}
+                                                animationSpeed={3}
+                                                showBorder={false}
+                                            >
+                                                <CountUp
+                                                    from={0}
+                                                    to={Number(Number(cummulative_investment).toFixed(0))}
+                                                    separator=","
+                                                    direction="up"
+                                                    duration={1}
+                                                    className="count-up-text"
+                                                />
+                                            </GradientText>
+                                            <Text>KRW</Text>
+                                        </Flex>
+                                    </Box>
+                                    <Flex gap="1" align="end">
+                                        <Text>SELL:</Text>
+                                        <CountUp
+                                            from={0}
+                                            to={Number(Number(cummulative_investment_sell).toFixed(0))}
+                                            separator=","
+                                            direction="up"
+                                            duration={1}
+                                            className="count-up-text"
+                                        />
+                                        <Text>KRW</Text>
+                                    </Flex>
+                                </Flex>
                                 : <GradientText
                                     colors={["#40ffaa", "#4079ff", "#40ffaa", "#4079ff", "#40ffaa"]}
                                     animationSpeed={3}
@@ -303,12 +325,12 @@ export default function AlgorithmTradeLegacy() {
                                     /> USD</GradientText></Text>}
                         </div>
                     </Flex>
-                </Box>
-            </Box>
+                </Box >
+            </Box >
         </>,
         financial_date: <></>,
         market_date: < >
-            <Box p="0" className="dark:border-gray-700 border rounded-lg shadow">
+            <Box p="0" className="dark:border-gray-700 border shadow">
                 <Text>
                     Stock Purchase Point Accumulation History
                 </Text>
