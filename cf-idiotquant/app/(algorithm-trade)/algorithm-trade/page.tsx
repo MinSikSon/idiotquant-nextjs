@@ -71,10 +71,16 @@ export default function AlgorithmTrade() {
                     <Box>
                         <Flex direction="column">
                             <Text as="p" color="gray" className="text-[0.5rem] sm:text-xs md:text-sm lg:text-base xl:text-lg 2xl:text-xl">
-                                단위: USD
+                                NCAV: Net Current Asset Value (순유동자산가치)
+                            </Text>
+                            <Text as="p" color="gray" className="text-[0.5rem] sm:text-xs md:text-sm lg:text-base xl:text-lg 2xl:text-xl">
+                                순유동자산가치: 유동자산 - 총부채
                             </Text>
                             <Text as="p" color="gray" className="text-[0.5rem] sm:text-xs md:text-sm lg:text-base xl:text-lg 2xl:text-xl">
                                 Q:0: 연간보고서
+                            </Text>
+                            <Text as="p" color="gray" className="text-[0.5rem] sm:text-xs md:text-sm lg:text-base xl:text-lg 2xl:text-xl">
+                                단위: USD
                             </Text>
                         </Flex>
                     </Box>
