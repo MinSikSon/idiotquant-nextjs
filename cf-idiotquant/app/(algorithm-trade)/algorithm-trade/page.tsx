@@ -113,7 +113,7 @@ export default function AlgorithmTrade() {
                                                     {`${Number(Number(item.condition.LastPrice) * ncavRatio).toFixed(2)}`} USD
                                                 </Text>
                                                 <Text size="1" color="green">
-                                                    (+{Number(ncavRatio * 100).toFixed(2)}%)
+                                                    (+{Number((ncavRatio - 1) * 100).toFixed(2)}%)
                                                 </Text>
                                             </Flex>
                                             <Text size="1" color="gray">
