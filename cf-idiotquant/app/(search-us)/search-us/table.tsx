@@ -82,7 +82,7 @@ const DEFAULT_CONCEPTS_IC: { label: string; concept: string[] }[] = [
     { label: "총포괄손익", concept: ["us-gaap_ComprehensiveIncomeNetOfTax", "ComprehensiveIncomeNetOfTax"] },
 ];
 
-const DEFAULT_CONCEPTS_CF = [
+const DEFAULT_CONCEPTS_CF: { label: string; concept: string[] }[] = [
     { label: "순손익", concept: ["us-gaap_NetIncomeLoss", "NetIncomeLoss"] },
     { label: "감가상각비", concept: ["us-gaap_DepreciationAndAmortization", "DepreciationAndAmortization"] },
     { label: "주식보상비", concept: ["us-gaap_ShareBasedCompensation", "ShareBasedCompensation"] },
