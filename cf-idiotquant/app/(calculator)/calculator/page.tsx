@@ -266,7 +266,7 @@ export default function Calculator() {
                                         </Button>
                                     </div>
                                     <Text size="3" className="font-mono mx-4 min-w-20 text-right">투자 시작 금액</Text>
-                                    <TextField.Root type="number" value={investmentAmount} onChange={(e) => { removeLeftZero(e); setInvestmentAmount(Number(e.target.value)); }} />
+                                    <TextField.Root size="3" type="number" value={investmentAmount} onChange={(e) => { removeLeftZero(e); setInvestmentAmount(Number(e.target.value)); }} />
                                     <Text className="font-mono text-[0.8rem] ml-2 min-w-20">({Util.UnitConversion(Number(investmentAmount) * 10000, true, investmentAmount >= 10000 ? 1 : 0)})</Text>
 
                                 </div>
@@ -293,7 +293,7 @@ export default function Calculator() {
                                     </Button>
                                 </div>
                                 <Text size="3" className="font-mono mx-4 min-w-20 text-right">투자 기간</Text>
-                                <TextField.Root type="number" value={numberOfYears} onChange={(e) => { removeLeftZero(e); setNumberOfYears(Number(e.target.value)); }} />
+                                <TextField.Root size="3" type="number" value={numberOfYears} onChange={(e) => { removeLeftZero(e); setNumberOfYears(Number(e.target.value)); }} />
                                 <Text className="font-mono text-[0.8rem] ml-2 min-w-20">(년)</Text>
                             </div>
                             <div className="w-full flex justify-between items-center border-b pb-1">
@@ -318,7 +318,7 @@ export default function Calculator() {
                                     </Button>
                                 </div>
                                 <Text size="3" className="font-mono mx-4 min-w-20 text-right">연 이자율</Text>
-                                <TextField.Root type="number" value={interestRate} onChange={(e) => { removeLeftZero(e); setInterestRate(Number(e.target.value)); }} />
+                                <TextField.Root size="3" type="number" value={interestRate} onChange={(e) => { removeLeftZero(e); setInterestRate(Number(e.target.value)); }} />
                                 <Text className="font-mono text-[0.8rem] ml-2 min-w-20">(%)</Text>
                             </div>
                             <div className="flex flex-col gap-1 border-b pb-1">
@@ -398,7 +398,7 @@ export default function Calculator() {
                                         <Text size="3">추가 납입금</Text>
                                         <Text className="text-[0.7rem]">(매달)</Text>
                                     </div>
-                                    <TextField.Root type="number" value={contributions} onChange={(e) => { removeLeftZero(e); setContributions(Number(e.target.value)); }} />
+                                    <TextField.Root size="3" type="number" value={contributions} onChange={(e) => { removeLeftZero(e); setContributions(Number(e.target.value)); }} />
                                     <Text className="font-mono text-[0.8rem] ml-2 min-w-20">({Util.UnitConversion(Number(contributions) * 10000, true, contributions >= 10000 ? 1 : 0)})</Text>
                                 </div>
                             </div>
@@ -422,7 +422,7 @@ export default function Calculator() {
                                     </Button>
                                 </div>
                                 <Text size="3" className="font-mono mx-4 min-w-20 text-right">물가상승률</Text>
-                                <TextField.Root type="number" value={inflationRate} onChange={(e) => { removeLeftZero(e); setInflationRate(Number(e.target.value)); }} />
+                                <TextField.Root size="3" type="number" value={inflationRate} onChange={(e) => { removeLeftZero(e); setInflationRate(Number(e.target.value)); }} />
                                 <Text className="font-mono text-[0.8rem] ml-2 min-w-20">(%)</Text>
                             </div>
 
