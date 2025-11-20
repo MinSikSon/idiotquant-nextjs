@@ -36,22 +36,22 @@ interface Props {
 }
 
 // 기본 보여줄 항목들 — Finnhub의 `concept` 값을 기준으로 매핑
-const DEFAULT_CONCEPTS: { label: string; concept: string }[] = [
-    { label: "현금및현금성자산", concept: "us-gaap_CashAndCashEquivalentsAtCarryingValue" },
-    { label: "단기금융자산", concept: "us-gaap_ShortTermInvestments" },
-    { label: "매출채권", concept: "us-gaap_AccountsReceivableNetCurrent" },
-    { label: "재고자산", concept: "us-gaap_InventoriesNet" },
-    { label: "유동자산합계", concept: "us-gaap_AssetsCurrent" },
-    { label: "비유동자산합계", concept: "us-gaap_NoncurrentAssets" },
-    { label: "자산총계", concept: "us-gaap_Assets" },
-    { label: "매입채무", concept: "us-gaap_AccountsPayableCurrent" },
-    { label: "유동부채합계", concept: "us-gaap_LiabilitiesCurrent" },
-    { label: "비유동부채합계", concept: "us-gaap_NoncurrentLiabilities" },
-    { label: "부채총계", concept: "us-gaap_Liabilities" },
-    { label: "자본금(주식자본)", concept: "us-gaap_CommonStockValue" },
-    { label: "자본잉여금", concept: "us-gaap_AdditionalPaidInCapital" },
-    { label: "이익잉여금", concept: "us-gaap_RetainedEarningsAccumulatedDeficit" },
-    { label: "자본총계", concept: "us-gaap_StockholdersEquity" },
+const DEFAULT_CONCEPTS: { label: string; concept: string[] }[] = [
+    { label: "현금및현금성자산", concept: ["us-gaap_CashAndCashEquivalentsAtCarryingValue", "CashAndCashEquivalentsAtCarryingValue"] },
+    { label: "단기금융자산", concept: ["us-gaap_ShortTermInvestments", "ShortTermInvestments"] },
+    { label: "매출채권", concept: ["us-gaap_AccountsReceivableNetCurrent", "AccountsReceivableNetCurrent"] },
+    { label: "재고자산", concept: ["us-gaap_InventoriesNet", "InventoriesNet"] },
+    { label: "유동자산합계", concept: ["us-gaap_AssetsCurrent", "AssetsCurrent"] },
+    { label: "비유동자산합계", concept: ["us-gaap_NoncurrentAssets", "NoncurrentAssets"] },
+    { label: "자산총계", concept: ["us-gaap_Assets", "Assets"] },
+    { label: "매입채무", concept: ["us-gaap_AccountsPayableCurrent", "AccountsPayableCurrent"] },
+    { label: "유동부채합계", concept: ["us-gaap_LiabilitiesCurrent", "LiabilitiesCurrent"] },
+    { label: "비유동부채합계", concept: ["us-gaap_NoncurrentLiabilities", "NoncurrentLiabilities"] },
+    { label: "부채총계", concept: ["us-gaap_Liabilities", "Liabilities"] },
+    { label: "자본금(주식자본)", concept: ["us-gaap_CommonStockValue", "CommonStockValue"] },
+    { label: "자본잉여금", concept: ["us-gaap_AdditionalPaidInCapital", "AdditionalPaidInCapital"] },
+    { label: "이익잉여금", concept: ["us-gaap_RetainedEarningsAccumulatedDeficit", "RetainedEarningsAccumulatedDeficit"] },
+    { label: "자본총계", concept: ["us-gaap_StockholdersEquity", "StockholdersEquity"] },
 ];
 
 function defaultFormatNumber(v: number | null | undefined) {
@@ -100,7 +100,7 @@ export default function FinnhubBalanceSheetTable({ data = [], className = "", fo
                         <tr key={rowIndex} className="odd:bg-white even:bg-gray-50 dark:odd:bg-black dark:even:bg-gray-700">
                             <td className="border pr-1 py-1 text-left">{row.label}</td>
                             {columns.map((col, colIndex) => {
-                                const v = col.map.get(row.concept) ?? null;
+                                const v = col.map.get(row.concept[0]) ?? col.map.get(row.concept[1]) ?? null;
                                 return (
                                     <td key={colIndex} className="border pr-1 py-1">
                                         {v === null ? "-" : <span title={String(v)}>{fmt(v)}</span>}
