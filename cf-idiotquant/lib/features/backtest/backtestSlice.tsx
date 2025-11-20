@@ -1,7 +1,7 @@
 import { createAppSlice } from "@/lib/createAppSlice";
 import { PayloadAction } from "@reduxjs/toolkit";
 import { getFinancialInfoList } from "../financialInfo/financialInfoAPI";
-import { getFinancialInfoWithMarketInfo } from "./backtestAPI";
+import { getFinancialInfoWithMarketInfo, getUsNcavLatest, getUsNcavList } from "./backtestAPI";
 import { GetMergedStocksList, GetStocksFilteredByStrategyNCAV } from "@/components/strategy";
 
 export interface BackTestConditionType1 {
@@ -50,6 +50,78 @@ export interface BackTestConditionFinancialInfoList {
     output2: string[];
 }
 
+export interface StrategyUsNcavListType {
+    state: "init"
+    | "pending"
+    | "fulfilled"
+    | "rejected"
+    ;
+
+    keys?: string[];
+}
+
+export interface StrategyUsNcavCanditateConditionType {
+    AssetsCurrent: number;
+    LastPrice: number;
+    date: string;
+    LiabilitiesCurrent: number;
+    MarketCapitalization: number;
+    NetIncome: number;
+    bps: number;
+    eps: number;
+    pbr: number;
+    per: number;
+}
+export interface CanditateType {
+    condition: StrategyUsNcavCanditateConditionType;
+    key: string;
+    ncavRatio: string;
+    symbol: string;
+}
+export interface DataSourceType {
+    balanceSheet: string;     // ex) 'finnhub'
+    prices: string;           // ex) 'koreainvestment'
+    fetchedAt: string;        // ISO8601 datetime
+}
+export interface KvFilterType {
+    year: string;
+    quarter: string;
+}
+export interface NcavStrategyParamsType {
+    ncavToMarketCapMin: number; // 최소 NCAV 비율
+    minMarketCap: number;       // 최소 시가총액 (usd)
+    minAvgVol30d: number;       // 최소 30일 평균 거래량
+}
+export interface StrategyUsNcavLatestItemType {
+
+    asOfDate: string;
+    candidates: Record<string, CanditateType>;
+    dataSource: DataSourceType;
+    key: string;
+    kvFilter: KvFilterType;
+    lastRun: any;
+    lastSearchIndex: number;
+    name: string;
+    notes: string;
+    numAllKeys: number;
+    numCandidates: number;
+    numFilteredKeys: number;
+    params: NcavStrategyParamsType;
+    searchCountPerRequest: number
+    status: string;
+    strategyId: string;
+    universe: string;
+}
+export interface StrategyUsNcavLatestType {
+    state: "init"
+    | "pending"
+    | "fulfilled"
+    | "rejected"
+    ;
+
+    list?: StrategyUsNcavLatestItemType[];
+}
+
 interface BackTestInfo {
     state: "init"
     | "pending"
@@ -66,6 +138,10 @@ interface BackTestInfo {
 
     backTestConditionFilterResultType: BackTestConditionFilterResultType;
     backTestConditionFinancialInfoList: BackTestConditionFinancialInfoList;
+
+    // US NCAV
+    strategyUsNcavList: StrategyUsNcavListType;
+    strategyUsNcavLatest: StrategyUsNcavLatestType;
 }
 
 const initialState: BackTestInfo = {
@@ -105,6 +181,14 @@ const initialState: BackTestInfo = {
         title: "재무정보 리스트",
         output1: [],
         output2: [],
+    },
+    strategyUsNcavList: {
+        state: "init",
+        keys: [],
+    },
+    strategyUsNcavLatest: {
+        state: "init",
+        list: [],
     }
 }
 export const backtestSlice = createAppSlice({
@@ -231,6 +315,51 @@ export const backtestSlice = createAppSlice({
                 }
             },
         ),
+        reqGetUsNcavList: create.asyncThunk(
+            async () => {
+                // console.log(`[reqGetStartFinancialInfo]`, year, quarter);
+                const res: any = await getUsNcavList();
+                return res;
+            },
+            {
+                pending: (state) => {
+                    console.log(`[reqGetUsNcavList] pending`);
+                    state.strategyUsNcavList.state = "pending";
+                },
+                fulfilled: (state, action) => {
+                    console.log(`[reqGetUsNcavList] fulfilled action.payload:`, typeof action.payload, action.payload);
+                    state.strategyUsNcavList.keys = action.payload;
+                    state.strategyUsNcavList.state = "fulfilled";
+                },
+                rejected: (state) => {
+                    console.log(`[reqGetUsNcavList] rejected`);
+                    state.strategyUsNcavList.state = "rejected";
+                }
+            },
+        ),
+        reqGetUsNcavLatest: create.asyncThunk(
+            async () => {
+                // console.log(`[reqGetStartFinancialInfo]`, year, quarter);
+                const res: any = await getUsNcavLatest();
+                return res;
+            },
+            {
+                pending: (state) => {
+                    console.log(`[reqGetUsNcavLatest] pending`);
+                    state.strategyUsNcavLatest.state = "pending";
+                },
+                fulfilled: (state, action) => {
+                    console.log(`[reqGetUsNcavLatest] fulfilled action.payload:`, typeof action.payload, action.payload);
+                    state.strategyUsNcavLatest.list = action.payload;
+                    state.strategyUsNcavLatest.state = "fulfilled";
+                },
+                rejected: (state) => {
+                    console.log(`[reqGetUsNcavLatest] rejected`);
+                    state.strategyUsNcavLatest.state = "rejected";
+                }
+            },
+        ),
+
     }),
     selectors: {
         getBackTestConditionType1: (state) => state.backTestConditionType1,
@@ -239,6 +368,9 @@ export const backtestSlice = createAppSlice({
         getBackTestConditionFilterResultType: (state) => state.backTestConditionFilterResultType,
 
         getBackTestConditionFinancialInfoList: (state) => state.backTestConditionFinancialInfoList,
+
+        selectStrategyUsNcavList: (state) => state.strategyUsNcavList,
+        selectStrategyUsNcavLatest: (state) => state.strategyUsNcavLatest,
     }
 });
 export const { setBackTestConditionType1 } = backtestSlice.actions;
@@ -255,5 +387,10 @@ export const { reqGetFinancialInfoList } = backtestSlice.actions;
 export const { getBackTestConditionFinancialInfoList } = backtestSlice.selectors;
 export const { reqGetFinancialInfoWithMarketInfo } = backtestSlice.actions;
 
+export const { reqGetUsNcavList } = backtestSlice.actions;
+export const { selectStrategyUsNcavList } = backtestSlice.selectors;
+
+export const { reqGetUsNcavLatest } = backtestSlice.actions;
+export const { selectStrategyUsNcavLatest } = backtestSlice.selectors;
 
 

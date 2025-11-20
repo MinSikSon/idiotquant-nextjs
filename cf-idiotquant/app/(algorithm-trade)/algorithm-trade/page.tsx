@@ -1,8 +1,5 @@
 "use client"
 
-import { CapitalTokenType, QuantRule, reqGetQuantRule, reqGetQuantRuleDesc, reqGetUsCapitalToken, selectCapitalToken, selectInquirePriceMulti, selectQuantRule, selectQuantRuleDesc, selectUsCapitalToken } from "@/lib/features/algorithmTrade/algorithmTradeSlice";
-import { reqGetCapitalToken } from "@/lib/features/algorithmTrade/algorithmTradeSlice";
-import { getKoreaInvestmentToken, KoreaInvestmentToken } from "@/lib/features/koreaInvestment/koreaInvestmentSlice";
 import { useAppDispatch, useAppSelector } from "@/lib/hooks";
 
 import { useState, useEffect } from "react";
@@ -10,6 +7,8 @@ import * as Tabs from "@radix-ui/react-tabs";
 
 import { Badge, Box, Card, Flex, Grid, Heading, Text } from "@radix-ui/themes";
 import { ArrowDownIcon, ArrowRightIcon, ArrowUpIcon } from "@heroicons/react/24/outline";
+import { selectStrategyUsNcavList, reqGetUsNcavList, selectStrategyUsNcavLatest, reqGetUsNcavLatest, StrategyUsNcavLatestType, StrategyUsNcavListType, StrategyUsNcavLatestItemType, CanditateType } from "@/lib/features/backtest/backtestSlice";
+import { Util } from "@/components/util";
 
 const DEBUG = false;
 
@@ -41,118 +40,20 @@ function MarketTabs({ setMarket }: { setMarket: (m: "KR" | "US") => void }) {
 export default function AlgorithmTrade() {
     const dispatch = useAppDispatch();
 
-    const kr_capital_token: CapitalTokenType = useAppSelector(selectCapitalToken);
-    const us_capital_token: CapitalTokenType = useAppSelector(selectUsCapitalToken);
-    const inquirePriceMulti: any = useAppSelector(selectInquirePriceMulti);
-    const kiToken: KoreaInvestmentToken = useAppSelector(getKoreaInvestmentToken);
-    const quant_rule: QuantRule = useAppSelector(selectQuantRule);
-    const quant_rule_desc: QuantRule = useAppSelector(selectQuantRuleDesc);
-
-    const [time, setTime] = useState<any>('');
-    const [market, setMarket] = useState<"KR" | "US">("KR");
-    const [visibleCount, setVisibleCount] = useState(0);
-    const [mergedResult, setMergedResult] = useState<any>([]);
-
-    function handleOnClick() {
-        setTime(new Date());
-        if (DEBUG) console.log(`[handleOnClick] kiToken`, kiToken);
-        dispatch(reqGetCapitalToken());
-        dispatch(reqGetUsCapitalToken());
-    }
+    const strategyUsNcavList: StrategyUsNcavListType = useAppSelector(selectStrategyUsNcavList);
+    const strategyUsNcavLatest: StrategyUsNcavLatestType = useAppSelector(selectStrategyUsNcavLatest);
 
     useEffect(() => {
-        dispatch(reqGetQuantRule());
-        dispatch(reqGetQuantRuleDesc());
-        handleOnClick();
+        dispatch(reqGetUsNcavList());
+        dispatch(reqGetUsNcavLatest());
     }, []);
+
     useEffect(() => {
-        if (DEBUG) console.log(`kr_capital_token`, kr_capital_token);
-
-        if (DEBUG) console.log(`mergedResult`, mergedResult);
-        if (DEBUG) console.log(`mergedResult.length`, mergedResult.length);
-        if ("fulfilled" == kr_capital_token.state && 0 == mergedResult.length) {
-            const oldestMerged = new Set();
-            const seen = new Set();
-            const oldestPurchageLog = kr_capital_token.value.purchase_log.slice(60, 120).flat();
-
-            if (DEBUG) console.log(`oldestPurchageLog`, oldestPurchageLog);
-            oldestPurchageLog.forEach(item => {
-                item.stock_list.forEach(stock => {
-                    if (!seen.has(stock.stock_name)) {
-                        seen.add(stock.stock_name);
-                        oldestMerged.add({
-                            ...stock,
-                            time_stamp: item.time_stamp, // 필요시 언제 등장했는지도 같이 저장
-                        });
-                    }
-                });
-            });
-
-            if (DEBUG) console.log(`oldestMerged`, oldestMerged);
-            if (DEBUG) console.log(`seen`, seen);
-            if (DEBUG) console.log(`seen.size`, seen.size);
-
-            const latestMerged = new Set();
-            const latestSeen = new Set();
-            const latestPurchageLog = kr_capital_token.value.purchase_log.slice(-60).flat();
-            if (DEBUG) console.log(`latestPurchageLog`, latestPurchageLog);
-            latestPurchageLog.forEach(item => {
-                item.stock_list.forEach(stock => {
-                    if (!latestSeen.has(stock.stock_name)) {
-                        latestSeen.add(stock.stock_name);
-                        latestMerged.add({
-                            ...stock,
-                            time_stamp: item.time_stamp, // 필요시 언제 등장했는지도 같이 저장
-                        });
-                    }
-                });
-            });
-
-            if (DEBUG) console.log(`latestMerged`, latestMerged);
-            if (DEBUG) console.log(`latestSeen`, latestSeen);
-            if (DEBUG) console.log(`latestSeen.size`, latestSeen.size);
-
-            // Set → Array로 변환 (Set은 직접 index 접근이 불가하므로)
-            const oldestArr: any = [...oldestMerged];
-            const latestArr: any = [...latestMerged];
-
-            // latest를 빠르게 찾기 위한 Map 생성
-            const latestMap = new Map(
-                latestArr.map((item: { stock_name: unknown }) => [item.stock_name, item])
-            );
-
-            const tmpMergedResult: any = [];
-
-            oldestArr.forEach((oldItem: { stock_name: unknown; }) => {
-                const match = latestMap.get(oldItem.stock_name);
-                if (match) {
-                    tmpMergedResult.push({
-                        stock_name: oldItem.stock_name,
-                        oldest: oldItem,
-                        latest: match,
-                    });
-                }
-            });
-
-            if (DEBUG) console.log("tmpMergedResult", tmpMergedResult);
-            setMergedResult(tmpMergedResult);
-        }
-    }, [kr_capital_token]);
+        if (DEBUG) console.log(`[AlgorithmTrade] strategyUsNcavList:`, strategyUsNcavList);
+    }, [strategyUsNcavList]);
     useEffect(() => {
-        if (DEBUG) console.log(`mergedResult`, mergedResult);
-    }, [mergedResult]);
-    useEffect(() => {
-        if (DEBUG) console.log(`us_capital_token`, us_capital_token);
-    }, [us_capital_token]);
-    useEffect(() => {
-        if (DEBUG) console.log(`kiToken`, kiToken);
-    }, [kiToken]);
-    useEffect(() => {
-        if (DEBUG) console.log(`quant_rule`, quant_rule);
-    }, [quant_rule]);
-    useEffect(() => {
-        if (DEBUG) console.log(`inquirePriceMulti`, inquirePriceMulti);
-    }, [inquirePriceMulti]);
+        if (DEBUG) console.log(`[AlgorithmTrade] strategyUsNcavLatest:`, strategyUsNcavLatest);
+    }, [strategyUsNcavLatest]);
 
     return <>
         <Flex align="center" gap="0" p="1">
@@ -162,60 +63,109 @@ export default function AlgorithmTrade() {
             {/* <Flex flexShrink="0" gap="6" direction="column" width="640px"> */}
             <Flex flexShrink="0" gap="0" direction="column" width="100%">
                 <Flex direction="row" width="100%" align="center" className="!justify-between">
-                    <Box px="1">
-                        <Text as="p" className="text-sm sm:text-sm md:text-base lg:text-lg xl:text-xl 2xl:text-2xl font-bold">
+                    <Box>
+                        <Text size="5">
                             NCAV 전략 기반 추천 종목
                         </Text>
                     </Box>
-                    <Box px="1">
+                    <Box>
                         <Flex direction="column">
                             <Text as="p" color="gray" className="text-[0.5rem] sm:text-xs md:text-sm lg:text-base xl:text-lg 2xl:text-xl">
-                                연초 대비 상승/하락 정도 표시
+                                단위: USD
                             </Text>
                             <Text as="p" color="gray" className="text-[0.5rem] sm:text-xs md:text-sm lg:text-base xl:text-lg 2xl:text-xl">
-                                stock 메뉴에서 적정 주가 확인 가능
+                                Q:0: 연간보고서
                             </Text>
                         </Flex>
                     </Box>
                 </Flex>
-                <Grid columns="4" gap="0">
-                    {/* <div className="grid grid-cols-4 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-7 xl:grid-cols-9 2xl:grid-cols-11"> */}
-                    {mergedResult.length > 0 && mergedResult.map((item: any, i: any) => (
-                        <Box key={i} className="border-b border-r" pb="0" ml="0" mb="0">
-                            <Flex width="100%" gap="0" mb="0" align="center" className="!justify-center">
-                                <Text weight={"bold"} className="text-[0.6rem] sm:text-sm md:text-base lg:text-lg xl:text-xl 2xl:text-2xl">
-                                    {item.latest.stock_name}
-                                </Text>
-                            </Flex>
-                            <Flex width="100%" gap="0" mb="0" align="center" className="!justify-center">
-                                {/* <Text
-                                    className={`text-[0.4rem] sm:text-sm md:text-base lg:text-lg xl:text-xl 2xl:text-2xl 
-                                            rounded-full
-                                            border
-                                            ${Number(item.latest.stck_prpr) - Number(item.oldest.stck_prpr) >= 0 ? "border-red-50" : "border-teal-50"}`}
-                                >
-                                    {((Number(item.latest.stck_prpr) - Number(item.oldest.stck_prpr)) / Number(item.latest.stck_prpr) * 100).toFixed(2)}%
-                                </Text> */}
-                                <Badge color={`${Number(item.latest.stck_prpr) - Number(item.oldest.stck_prpr) >= 0 ? "red" : "teal"}`} radius="full">
-                                    {((Number(item.latest.stck_prpr) - Number(item.oldest.stck_prpr)) / Number(item.latest.stck_prpr) * 100).toFixed(2)}%
-                                </Badge>
-                            </Flex>
-                            <Flex width="100%" gap="0" mb="0" align="center" className="!justify-center">
-                                <Text className="text-[0.5rem] sm:text-sm md:text-base lg:text-lg xl:text-xl 2xl:text-2xl">
-                                    <Flex width="100%" direction="row" align="center" gap="1">
-                                        {`${item.oldest.stck_prpr}원`}→{`${item.latest.stck_prpr}원`}
+                {(strategyUsNcavLatest?.list?.length ?? 0) > 0 && (strategyUsNcavLatest?.list ?? []).map((list: StrategyUsNcavLatestItemType, i: any) => (
+                    <Box key={i} className="border m-1 p-1 rounded-lg shadow-md hover:shadow-xl transition-shadow duration-300 border-gray-300">
+                        <Flex align="center" className="!justify-between">
+                            <Text size="4">{list.name}</Text>
+                            <Text size="2">{list.strategyId}</Text>
+                            <Text size="1">YEAR:{list.kvFilter.year} Q:{list.kvFilter.quarter}</Text>
+                        </Flex>
+                        <Grid columns="1" gap="0">
+                            {Object.keys(list.candidates).map((key: any, j: any) => {
+                                const item: CanditateType = list.candidates[key];
+                                const ncavRatio = Number((Number(item.condition.AssetsCurrent) - Number(item.condition.LiabilitiesCurrent)) / (Number(item.condition.MarketCapitalization) * 1.5));
+
+                                return <Box key={j} className="border-b border-r" pb="1" ml="0" mb="0">
+                                    <Flex direction="column" width="100%" gap="0" mb="0" align="center" className="!justify-center">
+                                        <Flex width="100%" gap="0" mb="0" align="center" className="!justify-between">
+                                            <Flex align="center" gap="1">
+                                                <Text size="4" weight={"bold"}>
+                                                    {/* {item.latest.stock_name} */}
+                                                    {item.symbol}
+                                                </Text>
+                                                <Text size="1" color="gray">
+                                                    {`${item.condition.LastPrice}`}
+                                                </Text>
+                                                <Text size="1">→</Text>
+                                                <Text size="1" weight="bold" color="green">
+                                                    {`${Number(Number(item.condition.LastPrice) * ncavRatio).toFixed(2)}`} USD
+                                                </Text>
+                                                <Text size="1" color="green">
+                                                    (+{Number(ncavRatio * 100).toFixed(2)}%)
+                                                </Text>
+                                            </Flex>
+                                            <Text size="1" color="gray">
+                                                {item.condition.date ?? new Date().toISOString().split("T")[0]}
+                                            </Text>
+                                        </Flex>
+                                        <Flex align="center" className="!justify-start">
+                                            <Text size="1">
+                                                <Badge radius="medium">
+                                                    <Flex direction="column" align="center">
+                                                        <Text className="text-[0.6rem]">NCAV1.5</Text>
+                                                        <Text className="text-[0.5rem]">
+                                                            {ncavRatio.toFixed(2)}
+                                                        </Text>
+                                                    </Flex>
+                                                </Badge>
+                                                =
+                                                (<Badge radius="medium">
+                                                    <Flex direction="column" align="center">
+                                                        <Text className="text-[0.6rem]">유동자산</Text>
+                                                        <Text className="text-[0.5rem]">
+                                                            {Number(item.condition.AssetsCurrent).toLocaleString()}
+                                                        </Text>
+                                                    </Flex>
+                                                </Badge>
+                                                -
+                                                <Badge radius="medium" color="ruby">
+                                                    <Flex direction="column" align="center">
+                                                        <Text className="text-[0.6rem]">총부채</Text>
+                                                        <Text className="text-[0.5rem]">
+                                                            {Number(item.condition.LiabilitiesCurrent).toLocaleString()}
+                                                        </Text>
+                                                    </Flex>
+                                                </Badge>)
+                                                /
+                                                (1.5 *
+                                                <Badge radius="medium" >
+                                                    <Flex direction="column" align="center">
+                                                        <Text className="text-[0.6rem]">시가총액</Text>
+                                                        <Text className="text-[0.5rem]">
+                                                            {Number(item.condition.MarketCapitalization).toLocaleString()}
+                                                        </Text>
+                                                    </Flex>
+                                                </Badge>
+                                                )
+                                            </Text>
+                                        </Flex>
                                     </Flex>
-                                </Text>
-                            </Flex>
-                            <Text color="gray" mb="0" className="text-[0.4rem] sm:text-sm md:text-base lg:text-lg xl:text-xl 2xl:text-2xl">
-                                <Flex width="100%" direction="row" align="center" gap="1" className="!justify-center">
-                                    {`${item.oldest.time_stamp.slice(0, 10)}`}→{`${item.latest.time_stamp.slice(5, 10)}`}
-                                </Flex>
-                            </Text>
-                        </Box>
-                    ))}
-                    {/* </div> */}
-                </Grid>
+                                    <Text color="gray" mb="0" className="text-[0.4rem] sm:text-sm md:text-base lg:text-lg xl:text-xl 2xl:text-2xl">
+                                        <Flex width="100%" direction="row" align="center" gap="1" className="!justify-center">
+
+                                        </Flex>
+                                    </Text>
+                                </Box>
+                            })}</Grid>
+                    </Box>
+                ))
+                }
             </Flex>
         </Flex >
     </>
