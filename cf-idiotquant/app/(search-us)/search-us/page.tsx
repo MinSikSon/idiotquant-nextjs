@@ -96,13 +96,6 @@ export default function SearchUs() {
     useEffect(() => {
         if (DEBUG) console.log(`useEffect [kiUsDailyPrice]`, kiUsDailyPrice);
     }, [kiUsDailyPrice])
-    // useEffect(() => {
-    //     if (DEBUG) console.log(`useEffect [fmpState]`, fmpState);
-    // }, [fmpState])
-    // useEffect(() => {
-    //     if (DEBUG) console.log(`useEffect [fmpUsBalanceSheetStatement]`, fmpUsBalanceSheetStatement);
-    //     if (DEBUG) console.log(`useEffectObject.values(fmpUsBalanceSheetStatement)`, Object.values(fmpUsBalanceSheetStatement));
-    // }, [fmpUsBalanceSheetStatement])
     useEffect(() => {
         if (DEBUG) console.log(`useEffect [finnhubFinancialsAsReported]`, finnhubFinancialsAsReported);
     }, [finnhubFinancialsAsReported])
@@ -228,16 +221,16 @@ ${md}
         </>
     }
 
-    let bShowResult = false;
+    let bReadyUsShowResult = false;
     if (("fulfilled" == kiUsDailyPrice.state)
         // && ("fulfilled" == fmpState)
         && ("fulfilled" == kiUsMaretSearchInfo.state)
         && ("fulfilled" == finnhubFinancialsAsReported.state)
     ) {
-        bShowResult = true;
+        bReadyUsShowResult = true;
     }
 
-    if (DEBUG) console.log(`[SearchUs]`, `bShowResult`, bShowResult);
+    if (DEBUG) console.log(`[SearchUs]`, `bReadyUsShowResult`, bReadyUsShowResult);
 
     const texts = ["종가", "시가총액", "상장추식수"];
     const maxLength = Math.max(...texts.map(text => text.length * 2));
@@ -246,7 +239,7 @@ ${md}
         <div className="flex flex-col w-full">
             <div className={`${fixed ? "z-50 w-full fixed top-0 left-0 bg-white dark:bg-black" : "relative"}`}>
                 <div className="flex flex-col w-full">
-                    <SearchAutocomplete placeHolder={"Please enter the stock ticker."} onSearchButton={onSearchButton} validCorpNameArray={all_tickers} />
+                    <SearchAutocomplete placeHolder={"🇺🇸 please enter the stock ticker 🇺🇸"} onSearchButton={onSearchButton} validCorpNameArray={all_tickers} />
                     <div className="dark:bg-black flex px-4 py-0 gap-1 overflow-x-auto">
                         {usMarketHistory.map((stockName: string, index: number) => {
                             return (
@@ -267,7 +260,7 @@ ${md}
                     </div>
                 </div>
             </div>
-            {false == bShowResult || "0" != kiUsMaretSearchInfo.rt_cd ?
+            {false == bReadyUsShowResult || "0" != kiUsMaretSearchInfo.rt_cd ?
                 <>
                     <div className="dark:bg-black dark:text-white p-3 shadow">
                         {kiUsMaretSearchInfo.msg1}
@@ -500,47 +493,7 @@ $$
                                 </div>
                             </div>
                             <div className="dark:bg-black dark:text-white text-xs p-3 shadow">
-                                {/* {true == bShowResult && <table className="table-auto w-full text-right font-mono border border-gray-300">
-                                    <thead className="bg-gray-100">
-                                        <tr>
-                                            <th className="border px-2 py-1 text-left">항목</th>
-                                            {Object.values(fmpUsBalanceSheetStatement).map((item: any, index: number) => (
-                                                <th key={index} className="border pr-1 py-1">
-                                                    {item.date}
-                                                </th>
-                                            ))}
-                                        </tr>
-                                    </thead>
-                                    <tbody>
-                                        {[
-                                            { label: "유동자산", key: "totalCurrentAssets" }, // cras
-                                            { label: "고정자산", key: "totalNonCurrentAssets" }, // fxas
-                                            { label: "자산총계", key: "totalAssets" }, // total_aset
-                                            { label: "유동부채", key: "totalCurrentLiabilities" }, // flow_lblt
-                                            { label: "고정부채", key: "totalNonCurrentLiabilities" }, // fix_lblt
-                                            { label: "부채총계", key: "totalLiabilities" }, // total_lblt
-                                            { label: "자본금", key: "commonStock" }, // cpfn
-                                            { label: "자본잉여금", key: "cfp_surp" },
-                                            { label: "이익잉여금", key: "retainedEarnings" }, // prfi_surp
-                                            { label: "자본총계", key: "totalEquity" }, // total_cptl
-                                        ].map((row, rowIndex) => (
-                                            <tr key={rowIndex}>
-                                                <td className="border pr-1 py-1 text-left">{row.label}</td>
-                                                {Object.values(fmpUsBalanceSheetStatement).map((item: any, colIndex: number) => {
-                                                    // const value = Number(item[row.key]) * 100000000;
-                                                    const value = Number(item[row.key]);
-                                                    return (
-                                                        <td key={colIndex} className="border pr-1 py-1">
-                                                            {Util.UnitConversion(value, false)}
-                                                        </td>
-                                                    );
-                                                })}
-                                            </tr>
-                                        ))}
-                                    </tbody>
-                                </table>} */}
                                 <FinnhubBalanceSheetTable data={finnhubFinancialsAsReported?.data} />
-
                             </div>
                         </>
                         : <></>

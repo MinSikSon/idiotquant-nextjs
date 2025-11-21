@@ -184,7 +184,7 @@ export function NavbarWithSimpleLinks() {
                                     </Button>
                                 </DropdownMenu.Trigger>
                                 <DropdownMenu.Content>
-                                    <DropdownMenu.Sub>
+                                    {/* <DropdownMenu.Sub>
                                         <DropdownMenu.SubTrigger><MagnifyingGlassCircleIcon className="h-4 w-4" strokeWidth={2} /> search</DropdownMenu.SubTrigger>
                                         <DropdownMenu.SubContent>
                                             <Link href="/search-kr">
@@ -194,7 +194,13 @@ export function NavbarWithSimpleLinks() {
                                                 <DropdownMenu.Item>🇺🇸</DropdownMenu.Item>
                                             </Link>
                                         </DropdownMenu.SubContent>
-                                    </DropdownMenu.Sub>
+                                    </DropdownMenu.Sub> */}
+                                    <Link href="/search">
+                                        <DropdownMenu.Item shortcut="">
+                                            <MagnifyingGlassCircleIcon className="h-4 w-4" strokeWidth={2} /> search
+                                        </DropdownMenu.Item>
+                                    </Link>
+
                                     <Link href="/calculator">
                                         <DropdownMenu.Item shortcut="">
                                             <CalculatorIcon className="h-4 w-4" strokeWidth={2} /> calculator

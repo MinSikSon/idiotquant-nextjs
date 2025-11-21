@@ -139,6 +139,7 @@ export default function FinnhubBalanceSheetTable({ data = [], className = "", fo
 
     // 안전성: data 역순(최근 항목 먼저) 또는 그대로 사용
     const reports = Array.isArray(data) ? data : [];
+    console.log(`[FinnhubBalanceSheetTable]`, `reports.length`, reports.length, reports);
 
     // 각 report에서 bs 배열을 사용하여 concept -> value 매핑을 만들자
     const columns = reports.map((r) => {
@@ -174,6 +175,8 @@ export default function FinnhubBalanceSheetTable({ data = [], className = "", fo
 
         return { key: endDate, label: formatColumnLabel(endDate, r), map };
     });
+
+    console.log(`[FinnhubBalanceSheetTable]`, `columns`, columns);
 
     return (
         <div className={`overflow-x-auto ${className}`}>
