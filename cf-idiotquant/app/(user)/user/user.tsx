@@ -35,6 +35,7 @@ export default function User() {
     const [editing, setEditing] = useState(false);
     const [draft, setDraft] = useState<UserInfo>(user);
     const [load, setLoad] = useState(false);
+    const [xpInfo, setXpInfo] = useState<{ xp: number; denom: number; num: number; progressRatio: number }>({ xp: 0, denom: 100, num: 0, progressRatio: 0 });
 
     useEffect(() => {
         dispatch(setCloudFlareLoginStatus());
@@ -46,6 +47,7 @@ export default function User() {
                 setUser({ ...user, ...cfUserInfo });
                 setDraft({ ...draft, ...cfUserInfo });
                 setLoad(true);
+                setXpInfo(xpBucket(Number(cfUserInfo.point)));
             }
         }
     }, [cfUserInfo]);
@@ -108,15 +110,15 @@ export default function User() {
                                 <Box width="100%">
                                     <Flex align="center">
                                         <Progress
-                                            value={xpBucket(user.point).progressRatio * 100}
+                                            value={xpInfo.progressRatio * 100}
                                             // color="crimson"
                                             className="border border-gray-900/10 bg-gray-900/5 p-0 h-1 dark:border-gray-800 dark:bg-gray-900"
                                             size="3"
                                         />
                                         <Text className="text-[0.5rem]">
-                                            {xpBucket(user.point).num}
+                                            {xpInfo.num}
                                             /
-                                            {xpBucket(user.point).denom}
+                                            {xpInfo.denom}
                                         </Text>
                                     </Flex>
                                 </Box>
