@@ -5,7 +5,7 @@ import { useAppDispatch, useAppSelector } from '@/lib/hooks';
 import Link from 'next/link';
 import { KakaoTotal, selectKakaoTotal } from '@/lib/features/kakao/kakaoSlice';
 import { selectCloudflareUserInfo, setCloudFlareUserInfo, UserInfo } from '@/lib/features/cloudflare/cloudflareSlice';
-import { getBadgeColor, getLevel, getProgress } from './level';
+import { getBadgeColor, getLevel, xpBucket } from './level';
 import { Button, Card, Box, Text, TextField, TextArea, Progress, Avatar, Flex } from '@radix-ui/themes';
 import { setCloudFlareLoginStatus } from '@/lib/features/login/loginSlice';
 import { useRouter } from "next/navigation";
@@ -101,17 +101,24 @@ export default function User() {
                     <Flex direction="column" className="!items-center space-y-1">
                         <Box>
                             <Flex direction="column" width="100%" pb="1" className="!items-center !justify-center">
-                                <Flex align="baseline" gap="1" pl="6">
+                                <Flex align="baseline" gap="1" pl="3">
                                     <Text>{getLevel(Number(user.point))}</Text>
-                                    <Text className="text-[0.6rem]">{user.point} / {user.point >= 100 ? Number((Number(user.point) / 200).toFixed(0)) * 400 : 100}</Text>
+                                    <Text className="text-[0.6rem]">{user.point} XP</Text>
                                 </Flex>
                                 <Box width="100%">
-                                    <Progress
-                                        value={getProgress(Number(user.point))}
-                                        // color="crimson"
-                                        className="border border-gray-900/10 bg-gray-900/5 p-0 h-1 dark:border-gray-800 dark:bg-gray-900"
-                                        size="3"
-                                    />
+                                    <Flex align="center">
+                                        <Progress
+                                            value={xpBucket(user.point).progressRatio * 100}
+                                            // color="crimson"
+                                            className="border border-gray-900/10 bg-gray-900/5 p-0 h-1 dark:border-gray-800 dark:bg-gray-900"
+                                            size="3"
+                                        />
+                                        <Text className="text-[0.5rem]">
+                                            {xpBucket(user.point).num}
+                                            /
+                                            {xpBucket(user.point).denom}
+                                        </Text>
+                                    </Flex>
                                 </Box>
                             </Flex>
                             <Avatar

@@ -34,27 +34,18 @@ export function getLevel(point: number) {
     return "Lv 0. (신생아)";
 }
 
-export function getProgress(point: number) {
-    let targetPoint = 49000;
-    if (100 > point) targetPoint = 100;
-    else if (200 > point) targetPoint = 200;
-    else if (400 > point) targetPoint = 400;
-    else if (800 > point) targetPoint = 800;
-    else if (1600 > point) targetPoint = 1600;
-    else if (3200 > point) targetPoint = 3300;
-    else if (6400 > point) targetPoint = 6400;
-    else if (12800 > point) targetPoint = 12800;
-    else if (25600 > point) targetPoint = 25600;
-    else if (51200 <= point) targetPoint = point;
-
-    let progress = 0
-    if (0 != point) {
-        const diff = (100 <= targetPoint) ? targetPoint / 2 : 0;
-        progress = Number((100 * (point - diff) / (targetPoint - diff)).toFixed(0));
+export function xpBucket(xp: any) {
+    if (typeof xp !== "number" || Number.isNaN(xp) || xp < 0) {
+        throw new Error("xp must be a non-negative number");
     }
 
-    // console.log(`point:`, point, `, targetPoint:`, targetPoint, `, progress:`, progress);
-    return progress;
+    const n = Math.floor(xp / 100);            // 0,1,2,...
+    const k = n <= 0 ? 0 : Math.floor(Math.log2(n)); // n==0 -> k=0
+    const denom = 100 * (2 ** k);
+    const num = xp % denom;
+    const progressRatio = denom === 0 ? 0 : num / denom;
+
+    return { xp, denom, num, progressRatio };
 }
 
 export function getBadgeColor(point: number) {
