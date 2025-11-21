@@ -103,6 +103,7 @@ export interface StrategyUsNcavLatestItemType {
     lastSearchIndex: number;
     name: string;
     notes: string;
+    numAllTickers: string;
     numAllKeys: number;
     numCandidates: number;
     numFilteredKeys: number;
