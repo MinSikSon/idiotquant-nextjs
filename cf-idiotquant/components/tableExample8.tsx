@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useEffect, useState } from "react";
 
 import { DesignButton } from "./designButton";
 import { ArrowDownIcon, ArrowUpIcon } from "@heroicons/react/24/outline";
@@ -24,6 +24,7 @@ export interface Example8TableRowType {
     column_13?: any;
     column_14?: any;
     column_15?: any;
+    column_16?: any;
 }
 
 export interface Example8TableHeadType {
@@ -66,6 +67,21 @@ export default function TableTemplate({
     setVisibleCount,
 }: TablesExample8PropsType) {
 
+    const [fixed, setFixed] = useState(false);
+
+    useEffect(() => {
+        const handleScroll = () => {
+            if (window.scrollY > 160) {
+                setFixed(true);
+            } else {
+                setFixed(false);
+            }
+        };
+
+        window.addEventListener("scroll", handleScroll, { passive: true });
+        return () => window.removeEventListener("scroll", handleScroll);
+    }, []);
+
     const ADD_COUNT = 50;
     return (
         <>
@@ -94,8 +110,8 @@ export default function TableTemplate({
                             <Table.Root layout="auto">
                                 <Table.Header>
                                     <Table.Row>
-                                        {tableHead.map(({ head }) => (
-                                            <Table.ColumnHeaderCell align="center" p="0" pr="1" key={head} className="!items-center">
+                                        {tableHead.map(({ head }, idx) => (
+                                            <Table.ColumnHeaderCell minWidth="100px" align="center" p="0" pr="1" key={head} className={`!items-center !bg-white dark:!bg-black sticky ${0 == idx || 1 == idx ? `left-0 z-10` : ""}`}>
                                                 <Box onClick={() => {
                                                     console.log(`setSelectHead`, !!setSelectHead, setSelectHead);
                                                     if (!!!setSelectHead) {
@@ -110,9 +126,11 @@ export default function TableTemplate({
                                                     setSelectHead(head)
                                                 }}>
                                                     {/* <div className={`font-mono flex font-bold dark:text-white cursor-pointer ${head.length >= 6 ? "text-[0.6rem]" : ""}`}> */}
-                                                    <Flex direction="row" className="cursor-pointer" align="center">
-                                                        {(prevSelectHead == head && selectHead == head) ? <ArrowUpIcon className="h-2 w-4" /> : (selectHead == head ? <ArrowDownIcon className="h-2 w-2" /> : "")}
-                                                        <Text className="text-[0.6rem]">{head}</Text>
+                                                    <Flex minWidth="64px" direction="row" className="cursor-pointer" align="center">
+                                                        <Text size="3">
+                                                            {(prevSelectHead == head && selectHead == head) ? "↑" : (selectHead == head ? "↓" : "")}
+                                                            {head}
+                                                        </Text>
                                                     </Flex>
                                                 </Box>
                                             </Table.ColumnHeaderCell>
@@ -140,14 +158,15 @@ export default function TableTemplate({
                                                 column_13,
                                                 column_14,
                                                 column_15,
+                                                column_16,
                                                 bgColor,
                                             },
                                             index
                                         ) => {
                                             return (
-                                                <Table.Row key={id} className="text-[0.6rem]">
-                                                    <Table.RowHeaderCell p="0" pr="1">{column_1}</Table.RowHeaderCell>
-                                                    <Table.RowHeaderCell p="0" pr="1">{column_2}</Table.RowHeaderCell>
+                                                <Table.Row key={id} className="text-[0.8rem]">
+                                                    <Table.RowHeaderCell p="0" pr="1" className="sticky z-0 left-0 !bg-white dark:!bg-black">{column_1}</Table.RowHeaderCell>
+                                                    <Table.RowHeaderCell p="0" pr="1" className="sticky z-10 left-0 !bg-white dark:!bg-black">{column_2}</Table.RowHeaderCell>
                                                     <Table.Cell p="0" pr="1">{column_3}</Table.Cell>
                                                     <Table.Cell p="0" pr="1" className={`${expectedRateOfReturnColor}`} >
                                                         {column_4}
@@ -163,6 +182,7 @@ export default function TableTemplate({
                                                     <Table.Cell p="0" pr="1">{column_13}</Table.Cell>
                                                     <Table.Cell p="0" pr="1">{column_14}</Table.Cell>
                                                     <Table.Cell p="0" pr="1">{column_15}</Table.Cell>
+                                                    <Table.Cell p="0" pr="1">{column_16}</Table.Cell>
                                                 </Table.Row>
                                             );
                                         }

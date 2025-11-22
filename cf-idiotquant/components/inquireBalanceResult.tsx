@@ -67,6 +67,9 @@ export default function InquireBalanceResult(props: InquireBalanceResultProps) {
 
     const example8TableHead: Example8TableHeadType[] = [
         {
+            head: "#",
+        },
+        {
             head: "종목명",
         },
         {
@@ -91,7 +94,7 @@ export default function InquireBalanceResult(props: InquireBalanceResultProps) {
             head: "매수금액",
         },
         {
-            head: "보유/주문가능",
+            head: "보유/" + "\n\n" + "주문가능",
         },
         {
             head: "매매",
@@ -208,18 +211,20 @@ export default function InquireBalanceResult(props: InquireBalanceResultProps) {
             return {
                 id: name,
                 column_1: <>
-                    <Flex direction="column" className="dark:text-white">
+                    <Flex direction="column">
                         <Flex direction="row" gap="1">
                             <Text>{index}</Text>
-                            <Text>{pdno}</Text>
-                        </Flex>
-                        <Flex>
-                            <Text>{name}</Text>
                         </Flex>
                     </Flex>
                 </>,
                 column_2: <>
-                    <Flex direction="column" className="dark:text-white">
+                    <Flex direction="column">
+                        <Text>{name}</Text>
+                        <Text>{pdno}</Text>
+                    </Flex>
+                </>,
+                column_3: <>
+                    <Flex direction="column">
                         <Text>
                             {Number(Number(price).toFixed(0)).toLocaleString()}{crcy_cd}
                         </Text>
@@ -227,8 +232,8 @@ export default function InquireBalanceResult(props: InquireBalanceResultProps) {
                             : <></>}
                     </Flex>
                 </>,
-                column_3: <>
-                    <Flex direction="column" className="dark:text-white">
+                column_4: <>
+                    <Flex direction="column">
                         <Text>
                             {Number((Number(pchs_amt) / Number(hldg_qty)).toFixed(0)).toLocaleString()}{crcy_cd}
                         </Text>
@@ -236,14 +241,14 @@ export default function InquireBalanceResult(props: InquireBalanceResultProps) {
                             : <></>}
                     </Flex>
                 </>,
-                column_4: <>
+                column_5: <>
                     <Flex direction="column" className={`dark:text-white ${Number(Number(evlu_amt) / Number(pchs_amt) * 100 - 100) >= 0 ? "text-red-500" : "text-blue-500"}`}>
                         <Text>
                             {formatNumber(Number(Number(evlu_amt) / (Number(pchs_amt) || 1) * 100 - 100))}%
                         </Text>
                     </Flex>
                 </>,
-                column_5: <>
+                column_6: <>
                     <Flex direction="column" className={`${Number(Number(evlu_amt) / Number(pchs_amt) * 100 - 100) >= 0 ? "text-red-500" : "text-blue-500"}`}>
                         <Text>
                             {formatNumber(Number(evlu_pfls_amt2))}{crcy_cd}
@@ -253,14 +258,14 @@ export default function InquireBalanceResult(props: InquireBalanceResultProps) {
                         </Text>
                     </Flex>
                 </>,
-                column_6: <>
-                    <Flex direction="column" className="dark:text-white">
+                column_7: <>
+                    <Flex direction="column">
                         <Text> {formatNumber((Number(pchs_amt) / Number(pchs_amt_smtl_amt) * 100))}%</Text>
                     </Flex>
                 </>,
 
-                column_7: <>
-                    <Flex direction="column" className="dark:text-white">
+                column_8: <>
+                    <Flex direction="column">
                         <Text>
                             {formatNumber(Number(evlu_amt))}{crcy_cd}
                         </Text>
@@ -268,8 +273,8 @@ export default function InquireBalanceResult(props: InquireBalanceResultProps) {
                             : <></>}
                     </Flex>
                 </>,
-                column_8: <>
-                    <Flex direction="column" className="dark:text-white">
+                column_9: <>
+                    <Flex direction="column">
                         <Text>
                             {formatNumber(Number(pchs_amt))}{crcy_cd}
                         </Text>
@@ -277,12 +282,12 @@ export default function InquireBalanceResult(props: InquireBalanceResultProps) {
                             : <></>}
                     </Flex>
                 </>,
-                column_9: <>
-                    <Flex direction="column" className="dark:text-white">
+                column_10: <>
+                    <Flex direction="column">
                         <Text>{Number(hldg_qty).toFixed(0)}/{Number(ord_psbl_qty).toFixed(0)}</Text>
                     </Flex>
                 </>,
-                column_10: <>
+                column_11: <>
                     <Flex direction="row" gap="1">
                         <DesignButton
                             handleOnClick={() => handleOnClick(item, "buy")}
@@ -310,36 +315,36 @@ export default function InquireBalanceResult(props: InquireBalanceResultProps) {
                         />
                     </Flex>
                 </>,
-                column_11: <>
-                    <Flex direction="column" className="dark:text-white">
+                column_12: <>
+                    <Flex direction="column">
                         <Text>
                             {Util.UnitConversion(hts_avls, true)}
                         </Text>
                     </Flex>
                 </>,
-                column_12: <>
-                    <Flex direction="column" className="dark:text-white">
+                column_13: <>
+                    <Flex direction="column">
                         <Text>
                             {Util.UnitConversion(eps, true)}
                         </Text>
                     </Flex>
                 </>,
-                column_13: <>
-                    <Flex direction="column" className="dark:text-white">
+                column_14: <>
+                    <Flex direction="column">
                         <Text>
                             {per}
                         </Text>
                     </Flex>
                 </>,
-                column_14: <>
-                    <Flex direction="column" className="dark:text-white">
+                column_15: <>
+                    <Flex direction="column">
                         <Text>
                             {Util.UnitConversion(bps, true)}
                         </Text>
                     </Flex>
                 </>,
-                column_15: <>
-                    <Flex direction="column" className="dark:text-white">
+                column_16: <>
+                    <Flex direction="column">
                         <Text>
                             {pbr}
                         </Text>
