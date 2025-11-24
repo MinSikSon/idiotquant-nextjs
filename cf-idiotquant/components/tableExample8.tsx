@@ -81,14 +81,14 @@ export default function TableTemplate({
                 </Button>
             ) : (
                 <>
-                    <div className="w-full max-h-[60vh] overflow-auto rounded">
+                    <div className="w-full max-h-[80vh] overflow-auto rounded">
                         <table className="min-w-full border-collapse">
                             <thead className="bg-slate-50 dark:bg-slate-900 sticky top-0 z-30">
                                 <tr>
                                     {tableHead.map((h, idx) => (
                                         <th
                                             key={h.head}
-                                            className={`min-w-24 p-2 text-center font-medium cursor-pointer
+                                            className={`min-w-24 px-2 py-1 text-center font-medium cursor-pointer
                                             ${idx <= 1 ? "min-w-32 sticky left-0 z-40 bg-slate-50 dark:bg-slate-900" : ""}`}
                                             onClick={() => {
                                                 if (!setSelectHead) return;
