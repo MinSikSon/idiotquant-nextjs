@@ -71,6 +71,5 @@ export default function BalanceKr() {
             kakaoTotal={kakaoTotal}
             kakaoMemberList={kakaoMemberList}
         />
-        <Box className="dark:bg-black h-lvh"></Box>
     </>
 }
