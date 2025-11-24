@@ -174,7 +174,7 @@ export default function InquireBalanceResult(props: InquireBalanceResultProps) {
             const pdno = item["pdno"];
             const price = !!item["prpr"] ? item["prpr"] : item["ovrs_now_pric1"];
             // const crcy_cd = !!props.kiBalance.output2[0]["crcy_cd"] ? <span className="text-[0.6rem]">{"" + props.kiBalance.output2[0]["crcy_cd"]}</span> : <span className="text-[0.6rem]">{"원"}</span>;
-            const crcy_cd = <span className="text-[0.6rem]">{"원"}</span>;
+            const crcy_cd = <span className="text-[0.6rem]">{"₩"}</span>;
             const pchs_amt = !!item["pchs_amt"] ? item["pchs_amt"] : item["frcr_pchs_amt"];
             const hldg_qty = !!item["hldg_qty"] ? item["hldg_qty"] : item["ccld_qty_smtl1"];
             const ord_psbl_qty = !!item['ord_psbl_qty'] ? item['ord_psbl_qty'] : item["ord_psbl_qty1"];
@@ -211,10 +211,8 @@ export default function InquireBalanceResult(props: InquireBalanceResultProps) {
             return {
                 id: name,
                 column_1: <>
-                    <Flex direction="column">
-                        <Flex direction="row" gap="1">
-                            <Text>{index}</Text>
-                        </Flex>
+                    <Flex direction="column" align="center" justify="center">
+                        <Text align="center">{index}</Text>
                     </Flex>
                 </>,
                 column_2: <>
@@ -226,18 +224,18 @@ export default function InquireBalanceResult(props: InquireBalanceResultProps) {
                 column_3: <>
                     <Flex direction="column">
                         <Text>
-                            {Number(Number(price).toFixed(0)).toLocaleString()}{crcy_cd}
+                            {crcy_cd}{Number(Number(price).toFixed(0)).toLocaleString()}
                         </Text>
-                        {!!frst_bltn_exrt ? <Text>{formatNumber(Number(price) / Number(frst_bltn_exrt))} USD</Text>
+                        {!!frst_bltn_exrt ? <Text>${formatNumber(Number(price) / Number(frst_bltn_exrt))}</Text>
                             : <></>}
                     </Flex>
                 </>,
                 column_4: <>
                     <Flex direction="column">
                         <Text>
-                            {Number((Number(pchs_amt) / Number(hldg_qty)).toFixed(0)).toLocaleString()}{crcy_cd}
+                            {crcy_cd}{Number((Number(pchs_amt) / Number(hldg_qty)).toFixed(0)).toLocaleString()}
                         </Text>
-                        {!!frst_bltn_exrt ? <Text>{formatNumber((Number(pchs_amt) / Number(hldg_qty) / Number(frst_bltn_exrt)))} USD</Text>
+                        {!!frst_bltn_exrt ? <Text>${formatNumber((Number(pchs_amt) / Number(hldg_qty) / Number(frst_bltn_exrt)))}</Text>
                             : <></>}
                     </Flex>
                 </>,
@@ -251,10 +249,10 @@ export default function InquireBalanceResult(props: InquireBalanceResultProps) {
                 column_6: <>
                     <Flex direction="column" className={`${Number(Number(evlu_amt) / Number(pchs_amt) * 100 - 100) >= 0 ? "text-red-500" : "text-blue-500"}`}>
                         <Text>
-                            {formatNumber(Number(evlu_pfls_amt2))}{crcy_cd}
+                            {crcy_cd}{formatNumber(Number(evlu_pfls_amt2))}
                         </Text>
                         <Text>
-                            {!!frst_bltn_exrt ? <span>({formatNumber(Number(evlu_pfls_amt2) / Number(frst_bltn_exrt))} USD)</span> : ""}
+                            {!!frst_bltn_exrt ? <span>${formatNumber(Number(evlu_pfls_amt2) / Number(frst_bltn_exrt))}</span> : ""}
                         </Text>
                     </Flex>
                 </>,
@@ -267,18 +265,18 @@ export default function InquireBalanceResult(props: InquireBalanceResultProps) {
                 column_8: <>
                     <Flex direction="column">
                         <Text>
-                            {formatNumber(Number(evlu_amt))}{crcy_cd}
+                            {crcy_cd}{formatNumber(Number(evlu_amt))}
                         </Text>
-                        {!!frst_bltn_exrt ? <Text>{formatNumber(Number(evlu_amt) / Number(frst_bltn_exrt))} USD</Text>
+                        {!!frst_bltn_exrt ? <Text>${formatNumber(Number(evlu_amt) / Number(frst_bltn_exrt))}</Text>
                             : <></>}
                     </Flex>
                 </>,
                 column_9: <>
                     <Flex direction="column">
                         <Text>
-                            {formatNumber(Number(pchs_amt))}{crcy_cd}
+                            {crcy_cd}{formatNumber(Number(pchs_amt))}
                         </Text>
-                        {!!frst_bltn_exrt ? <Text>({formatNumber(Number(pchs_amt) / Number(frst_bltn_exrt))} USD)</Text>
+                        {!!frst_bltn_exrt ? <Text>${formatNumber(Number(pchs_amt) / Number(frst_bltn_exrt))}</Text>
                             : <></>}
                     </Flex>
                 </>,
@@ -289,30 +287,8 @@ export default function InquireBalanceResult(props: InquireBalanceResultProps) {
                 </>,
                 column_11: <>
                     <Flex direction="row" gap="1">
-                        <DesignButton
-                            handleOnClick={() => handleOnClick(item, "buy")}
-                            buttonName="buy"
-                            buttonBgColor={`bg-green-500`}
-                            buttonBorderColor={`border-green-400`}
-                            buttonShadowColor={`#129600`}
-                            textStyle={`text-white font-bold text-[0.5rem]`}
-                            buttonStyle={`flex items-center justify-center mb-2 px-1 button rounded-full cursor-pointer select-none
-                            active:translate-y-1 active:[box-shadow:0_0px_0_0_#129600,0_0px_0_0_#12960041] active:border-b-[0px]
-                            transition-all duration-150 [box-shadow:0_4px_0_0_#129600,0_8px_0_0_#12960041] border-b-[1px]
-                            `}
-                        />
-                        <DesignButton
-                            handleOnClick={() => handleOnClick(item, "sell")}
-                            buttonName="sell"
-                            buttonBgColor={`bg-red-400`}
-                            buttonBorderColor={`border-red-300`}
-                            buttonShadowColor={`#910000`}
-                            textStyle={`text-white font-bold text-[0.4rem]`}
-                            buttonStyle={`font-mono flex items-center justify-center mb-2 px-1 button bg-red-400 rounded-full cursor-pointer select-none
-                            active:translate-y-1 active:[box-shadow:0_0px_0_0_#910000,0_0px_0_0_#91000041] active:border-b-[0px]
-                            transition-all duration-150 [box-shadow:0_4px_0_0_#910000,0_8px_0_0_#91000041] border-b-[1px]
-                            `}
-                        />
+                        <Button disabled size="1" color="blue" onClick={() => handleOnClick(item, "buy")}>buy</Button>
+                        <Button disabled size="1" color="ruby" onClick={() => handleOnClick(item, "sell")}>sell</Button>
                     </Flex>
                 </>,
                 column_12: <>
@@ -366,7 +342,7 @@ export default function InquireBalanceResult(props: InquireBalanceResultProps) {
     // if (!!props.kiBalance.output2 && props.kiBalance.output2.length > 0) {
     if ("fulfilled" == props.kiBalance.state) {
         // crcy_cd = !!props.kiBalance.output2[0]["crcy_cd"] ? " " + props.kiBalance.output2[0]["crcy_cd"] : "원";
-        crcy_cd = "원";
+        crcy_cd = "₩";
 
         const isUsBalance = !!props.kiBalance.output3;
         evlu_amt_smtl_amt = (true == isUsBalance) ? props.kiBalance.output3["evlu_amt_smtl"] : props.kiBalance.output2[0]["evlu_amt_smtl_amt"];
@@ -383,9 +359,6 @@ export default function InquireBalanceResult(props: InquireBalanceResultProps) {
 
         nass_amt = Number(evlu_amt_smtl_amt) + Number(dnca_tot_amt);
     }
-
-    const defaultTitleClassName = "border rounded-2xl border-gray-300";
-    const defaultTitleSubClassName = "border rounded-2xl border-gray-300";
 
     const tablesExample8Props: TablesExample8PropsType = {
         msg: props.kiBalance.msg1,
@@ -465,117 +438,68 @@ export default function InquireBalanceResult(props: InquireBalanceResultProps) {
             </Flex>
         </>,
         desc: <>
-            <Card size="1">
-                <Flex direction="column" justify="between" align="center" gap="1" >
-                    <Box p="1" className={`${defaultTitleClassName}`}>
-                        <Flex direction="column" gap="1" wrap="wrap" justify="center" align="start" minWidth="260px">
-                            <Box p="2" minWidth="110px" className={`${defaultTitleSubClassName}`}>
-                                <Flex direction="row" gap="1">
-                                    <Text size="2">
-                                        평가손익
-                                    </Text>
-                                    <Text size="2" weight="bold" className={`${(Number(evlu_amt_smtl_amt) / Number(pchs_amt_smtl_amt) * 100 - 100) >= 0 ? "text-red-500" : "text-blue-500"}`}>
-                                        {Number(evlu_pfls_smtl_amt).toLocaleString()}{crcy_cd}
-                                    </Text>
-                                    <Text size="2" className={`${(Number(evlu_amt_smtl_amt) / Number(pchs_amt_smtl_amt) * 100 - 100) >= 0 ? "text-red-500" : "text-blue-500"}`}>
-                                        ({pchs_amt_smtl_amt == 0 ? "-" : formatNumber(Number(Number(evlu_amt_smtl_amt / pchs_amt_smtl_amt) * 100 - 100))}%)
+            <Flex direction="column" justify="between" align="center" gap="1" >
+                <Box p="1">
+                    <Flex direction="row" gap="1" wrap="wrap" justify="center" align="center" minWidth="260px">
+                        <Box p="0" m="0" className={`${(Number(evlu_amt_smtl_amt) / Number(pchs_amt_smtl_amt) * 100 - 100) >= 0 ? "text-red-500" : "text-blue-500"}`}>
+                            <Flex direction="column" align="end" gap="0">
+                                <Text size="1">
+                                    평가손익 {pchs_amt_smtl_amt == 0 ? "-" : formatNumber(Number(Number(evlu_amt_smtl_amt / pchs_amt_smtl_amt) * 100 - 100))}%
+                                </Text>
+                                <Text size="4" weight="bold">
+                                    {crcy_cd}{Number(evlu_pfls_smtl_amt).toLocaleString()}
+                                </Text>
+                            </Flex>
+                        </Box>
+                        <Box minWidth="8px" className="text-center text-[0.6rem]">=</Box>
+                        <Box p="0" m="0">
+                            <Flex direction="column" align="end" gap="0">
+                                <Text size="1" color="gray">평가 {!!frst_bltn_exrt ? `$${formatNumber(Number(evlu_amt_smtl_amt) / Number(frst_bltn_exrt))}` : ""}</Text>
+                                <Text size="2">{crcy_cd}{Number(evlu_amt_smtl_amt).toLocaleString()}</Text>
+                            </Flex>
+                        </Box>
+                        <Box minWidth="8px"><Text className="text-center text-[0.6rem]">-</Text></Box>
+                        <Box p="0" m="0">
+                            <Flex direction="column" align="end" gap="0">
+                                <Text size="1" color="gray">매입 {!!frst_bltn_exrt ? `$${formatNumber(Number(pchs_amt_smtl_amt) / Number(frst_bltn_exrt))}` : ""}</Text>
+                                <Text size="2">{crcy_cd}{Number(pchs_amt_smtl_amt).toLocaleString()}</Text>
+                            </Flex>
+                        </Box>
+                    </Flex>
+                </Box>
+                <Box p="1">
+                    <Flex direction="row" gap="1" wrap="wrap" justify="center" align="center" minWidth="260px">
+                        <Box>
+                            <Flex direction="column" align="end" gap="0">
+                                <Text size="1" color="gray">순자산 {!!frst_bltn_exrt ? `$${formatNumber(Number(nass_amt) / Number(frst_bltn_exrt))}` : ""}</Text>
+                                <Text size="4" weight="bold">
+                                    {crcy_cd}{Number(nass_amt).toLocaleString()}
+                                </Text>
+                            </Flex>
+                        </Box>
+                        <Flex direction="row" gap="1" wrap="wrap" justify="center" align="center">
+                            <Box minWidth="8px" className="text-center text-[0.6rem]">=</Box>
+                            <Box p="0" m="0">
+                                <Flex direction="column" align="end" gap="0">
+                                    <Text size="1" color="gray">평가 {!!frst_bltn_exrt ? `$${formatNumber(Number(evlu_amt_smtl_amt) / Number(frst_bltn_exrt))}` : ""}</Text>
+                                    <Text size="2" className="">
+                                        {crcy_cd}{Number(evlu_amt_smtl_amt).toLocaleString()}
                                     </Text>
                                 </Flex>
                             </Box>
-                            <Flex direction="row" gap="1" wrap="wrap" justify="center" align="center">
-                                <Box minWidth="8px" className="text-center text-[0.6rem]">=</Box>
-                                <Box px="2" py="1" minWidth="80px" className={`${defaultTitleSubClassName}`}>
-                                    <Flex direction="row" gap="1">
-                                        <Text className="text-[0.7rem]">
-                                            평가
-                                        </Text>
-                                        <Text className="text-[0.7rem]">
-                                            {Number(evlu_amt_smtl_amt).toLocaleString()}{crcy_cd}
-                                        </Text>
-                                    </Flex>
-                                    {!!frst_bltn_exrt ?
-                                        <Flex direction="row-reverse">
-                                            <Text color="gray" className="text-[0.5rem]"> ({formatNumber(Number(evlu_amt_smtl_amt) / Number(frst_bltn_exrt))} USD)</Text>
-                                        </Flex>
-                                        : <></>}
-                                </Box>
-                                <Box minWidth="8px"><Text className="text-center text-[0.6rem]">-</Text></Box>
-                                <Box px="2" py="1" minWidth="80px" className={`${defaultTitleSubClassName}`}>
-                                    <Flex direction="row" gap="1">
-                                        <Text className="text-[0.7rem]">
-                                            매입
-                                        </Text>
-                                        <Text className="text-[0.7rem]">
-                                            {Number(pchs_amt_smtl_amt).toLocaleString()}{crcy_cd}
-                                        </Text>
-                                    </Flex>
-                                    <Flex direction="row-reverse">
-                                        {!!frst_bltn_exrt ?
-                                            <Text color="gray" className="text-[0.5rem]">({formatNumber(Number(pchs_amt_smtl_amt) / Number(frst_bltn_exrt))} USD)</Text>
-                                            : <></>}
-                                    </Flex>
-                                </Box>
-                            </Flex>
-                        </Flex>
-                    </Box>
-                    <Box p="1" className={`${defaultTitleClassName}`}>
-                        <Flex direction="column" gap="1" wrap="wrap" justify="center" align="start" minWidth="260px">
-                            <Box p="2" minWidth="110px" className={`${defaultTitleSubClassName}`}>
-                                <Flex direction="row" gap="1">
+                            <Box minWidth="8px" className="text-center text-[0.6rem]">+</Box>
+                            <Box p="0" m="0">
+                                <Flex direction="column" align="end" gap="0">
+                                    <Text size="1" color="gray" >예수금 {!!frst_bltn_exrt ? `$${formatNumber(Number(dnca_tot_amt) / Number(frst_bltn_exrt))}` : ""}</Text>
                                     <Text size="2">
-                                        순자산
+                                        {crcy_cd}{Number(dnca_tot_amt).toLocaleString()}
                                     </Text>
-                                    <Text size="2" weight="bold">
-                                        {Number(nass_amt).toLocaleString()}{crcy_cd}
-                                    </Text>
-                                    {!!frst_bltn_exrt ?
-                                        <Text size="2" color="gray">({formatNumber(Number(nass_amt) / Number(frst_bltn_exrt))} USD)</Text>
-                                        : <></>}
                                 </Flex>
                             </Box>
-                            <Flex direction="row" gap="1" wrap="wrap" justify="center" align="center">
-                                <Box minWidth="8px" className="text-center text-[0.6rem]">=</Box>
-                                <Box px="2" py="1" minWidth="80px" className={`${defaultTitleSubClassName}`}>
-                                    <Flex direction="row" gap="1">
-                                        <Text className="text-[0.7rem]">
-                                            평가
-                                        </Text>
-                                        <Text className="text-[0.7rem]">
-                                            {Number(evlu_amt_smtl_amt).toLocaleString()}{crcy_cd}
-                                        </Text>
-                                    </Flex>
-                                    {!!frst_bltn_exrt ?
-                                        <Flex direction="row-reverse">
-                                            <Text color="gray" className="text-[0.5rem]">({formatNumber(Number(evlu_amt_smtl_amt) / Number(frst_bltn_exrt))} USD)</Text>
-                                        </Flex>
-                                        : <></>}
-                                </Box>
-                                <Box minWidth="8px" className="text-center text-[0.6rem]">+</Box>
-                                <Box px="2" py="1" minWidth="80px" className={`${defaultTitleSubClassName}`}>
-                                    <Flex direction="row" gap="1">
-                                        <Text className="text-[0.7rem]">
-                                            예수금
-                                        </Text>
-                                        <Text className="text-[0.7rem]">
-                                            {Number(dnca_tot_amt).toLocaleString()}{crcy_cd}
-                                        </Text>
-                                    </Flex>
-                                    <Flex direction="row-reverse" gap="1">
-                                        {!!frst_bltn_exrt ?
-                                            <Text color="gray" className="text-[0.5rem]">({formatNumber(Number(dnca_tot_amt) / Number(frst_bltn_exrt))} USD)</Text>
-                                            : <></>}
-                                    </Flex>
-                                </Box>
-                            </Flex>
                         </Flex>
-                    </Box>
-                    {!!frst_bltn_exrt ?
-                        <Flex direction="row-reverse" align="end">
-                            <Text size="1" color="gray" >(1 $ = {formatNumber(Number(frst_bltn_exrt))} ₩)</Text>
-                        </Flex>
-                        : <></>}
-                </Flex>
-            </Card >
+                    </Flex>
+                </Box>
+            </Flex>
         </>,
         tableHead: example8TableHead,
         selectHead: selectHead,

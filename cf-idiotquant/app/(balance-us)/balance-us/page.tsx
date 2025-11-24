@@ -7,11 +7,11 @@ import { KakaoTotal, reqGetKakaoMemberList, selectKakaoMemberList, selectKakaoTa
 import { reqGetOverseasStockTradingInquirePresentBalance, getKoreaInvestmentUsMaretPresentBalance, KoreaInvestmentOverseasPresentBalance, reqPostOrderUs, getKoreaInvestmentUsOrder, KoreaInvestmentUsOrder } from "@/lib/features/koreaInvestmentUsMarket/koreaInvestmentUsMarketSlice";
 
 import { useAppDispatch, useAppSelector } from "@/lib/hooks";
-import { Box } from "@radix-ui/themes";
+import { Box, Flex, Text } from "@radix-ui/themes";
 import { usePathname } from "next/navigation";
 import { useState, useEffect } from "react";
 
-const DEBUG = false;
+let DEBUG = false;
 
 export default function BalanceUs() {
     const pathname = usePathname();
@@ -60,9 +60,10 @@ export default function BalanceUs() {
             <div className="dark:bg-black h-lvh"></div>
         </>
     }
-
     return <>
-        <Box>🇺🇸</Box>
+        <Box px="1"><Text size="3">🇺🇸 {!!kiBalance?.output2?.[0]?.frst_bltn_exrt ?
+            `$1 = ₩${formatNumber(Number(kiBalance?.output2?.[0]?.frst_bltn_exrt))}`
+            : ""}</Text></Box>
         <InquireBalanceResult
             kiBalance={kiBalance}
             reqGetInquireBalance={reqGetOverseasStockTradingInquirePresentBalance}
@@ -73,4 +74,8 @@ export default function BalanceUs() {
             kakaoMemberList={kakaoMemberList}
         />
     </>
+}
+
+function formatNumber(num: number) {
+    return num % 1 === 0 ? num.toLocaleString() : num.toFixed(2);
 }

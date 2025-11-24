@@ -117,8 +117,8 @@ export default function TableTemplate({
                             <tbody>
                                 {tableRow.slice(0, visibleCount).map((row) => (
                                     <tr key={row.id} className="text-sm text-center items-center justify-center border-b border-gray-200">
-                                        <td className="sticky left-0 z-20 bg-slate-50 dark:bg-slate-900 p-2">{row.column_1}</td>
-                                        <td className="sticky left-0 z-20 bg-slate-50 dark:bg-slate-900 p-2">{row.column_2}</td>
+                                        <td className="text-center sticky left-0 z-20 bg-slate-50 dark:bg-slate-900 p-2">{row.column_1}</td>
+                                        <td className="text-center sticky left-0 z-20 bg-slate-50 dark:bg-slate-900 p-2">{row.column_2}</td>
                                         <td className="p-2">{row.column_3}</td>
                                         <td className={`p-2 ${row.expectedRateOfReturnColor || ""}`}>{row.column_4}</td>
                                         <td className="p-2">{row.column_5}</td>
