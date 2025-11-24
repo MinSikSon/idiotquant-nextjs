@@ -186,7 +186,7 @@ export default function NCAVTable({ strategies }: { strategies?: any | any[] }) 
                                             onClick={() => setSelectedIndex(idx)}
                                             className={`w-full text-left px-3 py-2 rounded-md hover: ${idx === selectedIndex ? 'ring-1 ring-slate-200' : ''}`}
                                         >
-                                            <div className="text-sm font-medium">{s.name}</div>
+                                            <div className="text-sm font-medium">{s.strategyId}</div>
                                             <div className="text-xs ">{s.asOfDate} • {s.universe}</div>
                                         </button>
                                     </li>
