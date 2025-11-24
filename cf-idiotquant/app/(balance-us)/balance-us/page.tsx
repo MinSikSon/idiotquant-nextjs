@@ -72,6 +72,5 @@ export default function BalanceUs() {
             kakaoTotal={kakaoTotal}
             kakaoMemberList={kakaoMemberList}
         />
-        <div className="dark:bg-black h-lvh"></div>
     </>
 }
