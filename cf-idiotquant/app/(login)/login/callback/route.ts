@@ -7,7 +7,7 @@ export async function GET(req: NextRequest) {
     return NextResponse.redirect(new URL("/login?error=missing_token", req.url));
   }
 
-  const res = NextResponse.redirect(new URL("/login", req.url));
+  const res = NextResponse.redirect(new URL("/user", req.url));
 
   // const httpOnly = process.env.NEXT_PUBLIC_CLIENT_URL === "http://localhost:3000" ? false : true;
   const httpOnly = false;
