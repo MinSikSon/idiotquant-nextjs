@@ -48,7 +48,7 @@ export const postKakaoMessage: any = async (kakaoMessage: KakaoMessage) => {
     const authToken = getCookie("authToken");
     // console.log(`[setLoginStatus] authToken:`, authToken);
 
-    const url = `${process.env.NEXT_PUBLIC_API_URL}/kakao-message`
+    const url = `${process.env.NEXT_PUBLIC_API_URL}/kakao/message`
     const options: RequestInit = {
         method: "POST", // GET -> OPTION -> POST
         credentials: "include",  // include credentials (like cookies) in the request

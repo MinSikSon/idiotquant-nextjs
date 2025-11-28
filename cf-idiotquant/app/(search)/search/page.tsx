@@ -41,7 +41,7 @@ import FinnhubBalanceSheetTable from "@/app/(search-us)/search-us/table";
 const DEBUG = false;
 const DEBUG_LLM = false;
 
-export default function SearchKr() {
+export default function Search() {
   // START COMMON
   const pathname = usePathname();
   const dispatch = useAppDispatch();
@@ -420,35 +420,12 @@ ${md}
   }
 
   function getUsNcav(financialsAsReported: FinnhubFinancialsAsReportedType, maretPriceDetail: any, ratioList: number[]) {
-    const stck_oprc = Number(maretPriceDetail.output["last"] ?? 1); // 주식 시가2
-    const lstn_stcn = Number(maretPriceDetail.output["shar"] ?? 1); // 상장 주수
-    let cras = 1
-    let total_lblt = 1
-    let msg = "유동 자산 = 1, 부채 총계 = 1"
-    if (DEBUG) console.log(`[getNcav]`, `financialsAsReported`, financialsAsReported,);
-    // const balanceSheetStatementValues = Object.values(balanceSheetStatement ?? {});
-    const balanceSheetStatementValues = financialsAsReported?.data?.[0]?.report?.bs ?? [];
-    if (DEBUG) console.log(`[getNcav]`, `balanceSheetStatementValues`, balanceSheetStatementValues,);
-    if (0 < balanceSheetStatementValues.length) {
-      // cras = Number(balanceSheetStatementValues[0].totalCurrentAssets ?? 1); // 유동 자산
-      // total_lblt = Number(balanceSheetStatementValues[0].totalLiabilities ?? 1); // 부채 총계
+    const stck_oprc = Number(maretPriceDetail?.output?.last ?? 1); // 주식 시가2
+    const lstn_stcn = Number(maretPriceDetail?.output?.shar ?? 1); // 상장 주수
+    const cras = getUsCras() // 유동자산
+    const total_lblt = getUsLblt() // 부채총계
 
-      const balanceSheet = balanceSheetStatementValues;
-      for (let i = 0; i < balanceSheet.length; ++i) {
-        if ("us-gaap_AssetsCurrent" == balanceSheet[i].concept) {
-          cras = Number(balanceSheet[i].value); // 유동 자산
-          if (DEBUG) console.log(`[getNcav] cras. balanceSheet[`, i, `]:`, balanceSheet[i]);
-        }
-        else if ("us-gaap_LiabilitiesCurrent" == balanceSheet[i].concept) {
-          total_lblt = Number(balanceSheet[i].value); // 부채 총계
-          if (DEBUG) console.log(`[getNcav] total_lblt. balanceSheet[`, i, `]:`, balanceSheet[i]);
-        }
-      }
-      // cras = Number(balanceSheetStatementValues[5]?.value ?? 1); // 유동 자산
-      // total_lblt = Number(balanceSheetStatementValues[18]?.value ?? 1); // 부채 총계
-
-      msg = ""
-    }
+    const msg = (1 == cras && 1 == total_lblt) ? "유동 자산 = 1, 부채 총계 = 1" : "";
 
     const md = ratioList.map(ratio => {
       const target_price = (cras - total_lblt) / lstn_stcn;
@@ -544,6 +521,35 @@ ${md}
 
     if (DEBUG) console.log(`[handleOnClickStarredIcon] newStarredStocks:`, newStarredStocks);
     dispatch(setCloudFlareStarredStocks({ starredStocks: newStarredStocks }));
+  }
+
+  function getUsCras() {
+    let cras = 1;
+    const bs = finnhubFinancialsAsReported?.data?.[0]?.report?.bs ?? [];
+
+    for (let i = 0; i < bs.length; ++i) {
+      if ("us-gaap_AssetsCurrent" == bs[i].concept) {
+        cras = Number(bs[i].value); // 유동 자산
+        if (DEBUG) console.log(`[getNcav] cras. bs[`, i, `]:`, bs[i]);
+        break;
+      }
+    }
+
+    return cras;
+  }
+
+  function getUsLblt() {
+    const bs = finnhubFinancialsAsReported?.data?.[0]?.report?.bs ?? [];
+    let total_lblt = 1;
+    for (let i = 0; i < bs.length; ++i) {
+      if ("us-gaap_LiabilitiesCurrent" == bs[i].concept) {
+        total_lblt = Number(bs[i].value); // 부채 총계
+        if (DEBUG) console.log(`[getNcav] total_lblt. bs[`, i, `]:`, bs[i]);
+        break;
+      }
+    }
+
+    return total_lblt;
   }
 
   if (DEBUG) console.log(`rendering SearchKr ...`, pathname);
@@ -1122,32 +1128,8 @@ $\tiny K_e = 할인율$
                   {(() => {
                     const stck_oprc = Number(kiUsMaretPriceDetail.output["last"] ?? 1); // 주식 시가2
                     const lstn_stcn = Number(kiUsMaretPriceDetail.output["shar"] ?? 1); // 상장 주수
-                    // if (DEBUG) console.log(`[ReactMarkdown]`, `fmpUsBalanceSheetStatement`, fmpUsBalanceSheetStatement, `, !!fmpUsBalanceSheetStatement`, !!fmpUsBalanceSheetStatement);
-                    // const fmpUsBalanceSheetStatementValues = Object.values(fmpUsBalanceSheetStatement ?? {});
-                    if (DEBUG) console.log(`[ReactMarkdown]`, `finnhubFinancialsAsReported`, finnhubFinancialsAsReported, `, !!finnhubFinancialsAsReported`, !!finnhubFinancialsAsReported);
-                    const fmpUsBalanceSheetStatementValues = finnhubFinancialsAsReported?.data ?? [];
-                    let cras = 1;
-                    let total_lblt = 1;
-                    if (0 < fmpUsBalanceSheetStatementValues.length) {
-                      const balanceSheetStatementValues = fmpUsBalanceSheetStatementValues?.[0]?.report?.bs;
-                      const balanceSheet = balanceSheetStatementValues;
-                      for (let i = 0; i < balanceSheet.length; ++i) {
-                        if ("us-gaap_AssetsCurrent" == balanceSheet[i].concept) {
-                          cras = Number(balanceSheet[i].value); // 유동 자산
-                          if (DEBUG) console.log(`[getNcav] cras. balanceSheet[`, i, `]:`, balanceSheet[i]);
-                        }
-                        else if ("us-gaap_LiabilitiesCurrent" == balanceSheet[i].concept) {
-                          total_lblt = Number(balanceSheet[i].value); // 부채 총계
-                          if (DEBUG) console.log(`[getNcav] total_lblt. balanceSheet[`, i, `]:`, balanceSheet[i]);
-                        }
-                      }
-                      // cras = Number(fmpUsBalanceSheetStatementValues[0].totalCurrentAssets ?? 1); // 유동 자산
-                      // total_lblt = Number(fmpUsBalanceSheetStatementValues[0].totalLiabilities ?? 1); // 부채 총계
-                      // cras = Number(finnhubFinancialsAsReported?.data?.[0]?.report?.bs?.[5]?.value ?? 1); // 유동 자산
-                      // total_lblt = Number(finnhubFinancialsAsReported?.data?.[0]?.report?.bs?.[18]?.value ?? 1); // 부채 총계
-                    }
-                    if (DEBUG) console.log(`[ReactMarkdown]`, `cras`, cras);
-                    if (DEBUG) console.log(`[ReactMarkdown]`, `total_lblt`, total_lblt);
+                    let cras = getUsCras();
+                    let total_lblt = getUsLblt();
 
                     return String.raw`
 $$
@@ -1252,13 +1234,13 @@ $$
                   <div className="flex gap-2">
                     <div className="w-4/12 text-right">재무-유동자산</div>
                     {/* <div className="w-6/12 text-right">{Number(fmpUsBalanceSheetStatement?.[0]?.totalCurrentAssets ?? 0).toLocaleString()}</div> */}
-                    <div className="w-6/12 text-right">{Number(finnhubFinancialsAsReported?.data?.[0]?.report?.bs?.[5]?.value ?? 0).toLocaleString()}</div>
+                    <div className="w-6/12 text-right">{Number(getUsCras()).toLocaleString()}</div>
                     <div className="w-2/12 text-left text-[0.6rem]">USD</div>
                   </div>
                   <div className="flex gap-2">
                     <div className="w-4/12 text-right">재무-부채총계</div>
                     {/* <div className="w-6/12 text-right">{Number(fmpUsBalanceSheetStatement?.[0]?.totalLiabilities ?? 0).toLocaleString()}</div> */}
-                    <div className="w-6/12 text-right">{Number(finnhubFinancialsAsReported?.data?.[0]?.report?.bs?.[18]?.value ?? 0).toLocaleString()}</div>
+                    <div className="w-6/12 text-right">{Number(getUsLblt()).toLocaleString()}</div>
                     <div className="w-2/12 text-left text-[0.6rem]">USD</div>
                   </div>
                 </div>

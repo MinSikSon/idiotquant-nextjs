@@ -59,7 +59,7 @@ export default function LoginPage() {
 
         setIsSubmitting(true);
 
-        const redirectUrl = `${process.env.NEXT_PUBLIC_API_URL}/kakao-login`;
+        const redirectUrl = `${process.env.NEXT_PUBLIC_API_URL}/kakao/login`;
         if (DEBUG) console.log(`[LoginPage] onClickLogin`, `redirectUrl:`, redirectUrl);
         const scopeParam = "&scope=friends";
         const authorizeEndpoint = `https://kauth.kakao.com/oauth/authorize?response_type=code&client_id=${process.env.NEXT_PUBLIC_KAKAO_REST_API_KEY}&redirect_uri=${redirectUrl}${scopeParam}`;
@@ -68,43 +68,33 @@ export default function LoginPage() {
     }
 
     if (DEBUG) console.log(`[LoginPage] kakaoTotal:`, kakaoTotal, `, undefined == kakaoTotal`, undefined == kakaoTotal);
-    const KakaoIcon = () => {
-        // if ("cf-need-retry" == loginState || undefined == kakaoTotal || kakaoTotal?.id == 0 || !!!kakaoTotal?.kakao_account?.profile?.nickname)
-        {
-            return <>
-                {("cf-login" == loginState) && <LoadKakaoTotal />}
-                <div className="p-5">
-                    <div className="font-mono text-xl mb-2">
-                        반갑습니다.
-                    </div>
-                    <div className="font-mono">
-                        login 하려면 아래 버튼을 눌려주세요.
-                    </div>
-                    {isSubmitting ? "처리 중..." :
-                        <DesignButton
-                            handleOnClick={() => onClickLogin()}
-                            buttonName="Continue with Kakao"
-                            buttonBgColor="bg-[#ffea04]"
-                            buttonBorderColor="border-[#ebd700]"
-                            buttonShadowColor="#1e1e1e"
-                            textStyle="font-bold text-xs py-2 text-[#3c1e1e]"
-                            additionalTextTop={<img src="/images/kakaotalk_sharing_btn_small.png" alt="metamask" className="h-6 w-6 mx-2" />}
-                            // buttonStyle="mt-6"
-                            buttonStyle={`mt-6 flex items-center justify-center mb-2 px-1 button bg-[#ffea04] rounded-full cursor-pointer select-none
-                                active:translate-y-1 active:[box-shadow:0_0px_0_0_#1e1e1e,0_0px_0_0_#1e1e1e41] active:border-b-[0px]
-                                transition-all duration-150 [box-shadow:0_4px_0_0_#1e1e1e,0_8px_0_0_#1e1e1e41] border-b-[1px]
-                                `}
-                        />}
-
-
-                </div>
-            </>;
-        }
-    }
 
     return (
         <div className="w-full h-screen items-center dark:bg-black dark:text-white">
-            <KakaoIcon />
+            {("cf-login" == loginState) && <LoadKakaoTotal />}
+            <div className="p-5">
+                <div className="font-mono text-xl mb-2">
+                    반갑습니다.
+                </div>
+                <div className="font-mono">
+                    login 하려면 아래 버튼을 눌려주세요.
+                </div>
+                {isSubmitting ? "처리 중..." :
+                    <DesignButton
+                        handleOnClick={() => onClickLogin()}
+                        buttonName="Continue with Kakao"
+                        buttonBgColor="bg-[#ffea04]"
+                        buttonBorderColor="border-[#ebd700]"
+                        buttonShadowColor="#1e1e1e"
+                        textStyle="font-bold text-xs py-2 text-[#3c1e1e]"
+                        additionalTextTop={<img src="/images/kakaotalk_sharing_btn_small.png" alt="metamask" className="h-6 w-6 mx-2" />}
+                        // buttonStyle="mt-6"
+                        buttonStyle={`mt-6 flex items-center justify-center mb-2 px-1 button bg-[#ffea04] rounded-full cursor-pointer select-none
+                                active:translate-y-1 active:[box-shadow:0_0px_0_0_#1e1e1e,0_0px_0_0_#1e1e1e41] active:border-b-[0px]
+                                transition-all duration-150 [box-shadow:0_4px_0_0_#1e1e1e,0_8px_0_0_#1e1e1e41] border-b-[1px]
+                                `}
+                    />}
+            </div>
         </div>
     );
 }
