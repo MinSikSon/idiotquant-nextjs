@@ -10,14 +10,12 @@ export const metadata: Metadata = {
 
 export default function NotFound({ warnText = "Oops! Not Found!" }) {
     return <>
-        <Flex align="center" justify="center" gap="4">
+        <Flex direction="column" align="center" justify="center" gap="4">
             <Text size="5">
                 <Code>{warnText} </Code>
             </Text>
             <Link href={`/`}>
-                <Box>
-                    <Button>return to the main page</Button>
-                </Box>
+                <Button>return to the main page</Button>
             </Link>
         </Flex>
     </>;
