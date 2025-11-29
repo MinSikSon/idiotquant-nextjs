@@ -8,6 +8,8 @@ import { useAppDispatch, useAppSelector } from "@/lib/hooks";
 import { DesignButton } from "@/components/designButton";
 import { KakaoTotal, selectKakaoTatalState, selectKakaoTotal } from "@/lib/features/kakao/kakaoSlice";
 import LoadKakaoTotal from "@/components/loadKakaoTotal";
+import { Box, Button, Code, Flex, Text } from "@radix-ui/themes";
+import Image from "next/image";
 
 const DEBUG = false;
 
@@ -23,8 +25,6 @@ export default function LoginPage() {
 
     useEffect(() => {
         if (DEBUG) console.log(`[LoginPage] loginState:`, loginState);
-
-        dispatch(setCloudFlareLoginStatus());
     }, []);
 
     useEffect(() => {
@@ -70,31 +70,25 @@ export default function LoginPage() {
     if (DEBUG) console.log(`[LoginPage] kakaoTotal:`, kakaoTotal, `, undefined == kakaoTotal`, undefined == kakaoTotal);
 
     return (
-        <div className="w-full h-screen items-center dark:bg-black dark:text-white">
+        <Flex direction="column" align="center" justify="center" gap="6">
             {("cf-login" == loginState) && <LoadKakaoTotal />}
-            <div className="p-5">
-                <div className="font-mono text-xl mb-2">
-                    반갑습니다.
-                </div>
-                <div className="font-mono">
-                    login 하려면 아래 버튼을 눌려주세요.
-                </div>
-                {isSubmitting ? "처리 중..." :
-                    <DesignButton
-                        handleOnClick={() => onClickLogin()}
-                        buttonName="Continue with Kakao"
-                        buttonBgColor="bg-[#ffea04]"
-                        buttonBorderColor="border-[#ebd700]"
-                        buttonShadowColor="#1e1e1e"
-                        textStyle="font-bold text-xs py-2 text-[#3c1e1e]"
-                        additionalTextTop={<img src="/images/kakaotalk_sharing_btn_small.png" alt="metamask" className="h-6 w-6 mx-2" />}
-                        // buttonStyle="mt-6"
-                        buttonStyle={`mt-6 flex items-center justify-center mb-2 px-1 button bg-[#ffea04] rounded-full cursor-pointer select-none
-                                active:translate-y-1 active:[box-shadow:0_0px_0_0_#1e1e1e,0_0px_0_0_#1e1e1e41] active:border-b-[0px]
-                                transition-all duration-150 [box-shadow:0_4px_0_0_#1e1e1e,0_8px_0_0_#1e1e1e41] border-b-[1px]
-                                `}
-                    />}
-            </div>
-        </div>
+            <Box>
+                <Text size="6"><Code>로그인</Code></Text>
+                {/* <Text size="3">하려면 아래 버튼을 눌려주세요.</Text> */}
+            </Box>
+            {isSubmitting ? <Text size="3">처리 중...</Text> :
+                <Button
+                    onClick={() => onClickLogin()}
+                    variant="outline"
+                    radius="medium"
+                    className="!px-16 !py-6"
+                >
+                    <Flex align="center" justify="center">
+                        <Image src="/images/kakaotalk_sharing_btn_small.png" width="12" height="12" alt="metamask" className="h-6 w-6 mx-2" />
+                        <Text size="3" weight="bold">kakao로 계속하기</Text>
+                    </Flex>
+                </Button>
+            }
+        </Flex>
     );
 }

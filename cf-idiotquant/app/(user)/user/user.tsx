@@ -7,7 +7,7 @@ import { KakaoTotal, selectKakaoTotal } from '@/lib/features/kakao/kakaoSlice';
 import { selectCloudflareUserInfo, setCloudFlareUserInfo, UserInfo } from '@/lib/features/cloudflare/cloudflareSlice';
 import { getBadgeColor, getLevel, xpBucket } from './level';
 import { Button, Card, Box, Text, TextField, TextArea, Progress, Avatar, Flex } from '@radix-ui/themes';
-import { setCloudFlareLoginStatus } from '@/lib/features/login/loginSlice';
+import { selectLoginState, setCloudFlareLoginStatus } from '@/lib/features/login/loginSlice';
 import { useRouter } from "next/navigation";
 
 const DEBUG = false;
@@ -37,8 +37,13 @@ export default function User() {
     const [load, setLoad] = useState(false);
     const [xpInfo, setXpInfo] = useState<{ xp: number; denom: number; num: number; progressRatio: number }>({ xp: 0, denom: 100, num: 0, progressRatio: 0 });
 
+    const loginState = useAppSelector(selectLoginState);
+
     useEffect(() => {
-        dispatch(setCloudFlareLoginStatus());
+        if (DEBUG) console.log(`[User] loginState:`, loginState);
+        if ("init" == loginState) {
+            dispatch(setCloudFlareLoginStatus());
+        }
     }, []);
     useEffect(() => {
         if (cfUserInfo?.state === "fulfilled") {
