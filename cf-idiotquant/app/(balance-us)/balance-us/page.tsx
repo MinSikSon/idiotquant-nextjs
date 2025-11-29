@@ -7,7 +7,7 @@ import { KakaoTotal, reqGetKakaoMemberList, selectKakaoMemberList, selectKakaoTa
 import { reqGetOverseasStockTradingInquirePresentBalance, getKoreaInvestmentUsMaretPresentBalance, KoreaInvestmentOverseasPresentBalance, reqPostOrderUs, getKoreaInvestmentUsOrder, KoreaInvestmentUsOrder } from "@/lib/features/koreaInvestmentUsMarket/koreaInvestmentUsMarketSlice";
 
 import { useAppDispatch, useAppSelector } from "@/lib/hooks";
-import { Box, Flex, Text } from "@radix-ui/themes";
+import { Box, Code, Flex, Text } from "@radix-ui/themes";
 import { usePathname } from "next/navigation";
 import { useState, useEffect } from "react";
 
@@ -56,8 +56,7 @@ export default function BalanceUs() {
     if (DEBUG) console.log(`kiBalance.state`, kiBalance.state);
     if (kiBalance.state == "rejected") {
         return <>
-            <NotFound warnText={"계좌 조회 권한이 없습니다"} />
-            <div className="dark:bg-black h-lvh"></div>
+            <NotFound warnText="계좌 조회 권한이 없습니다" />
         </>
     }
     return <>

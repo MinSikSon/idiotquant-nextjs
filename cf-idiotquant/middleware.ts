@@ -27,6 +27,7 @@ export async function middleware(req: NextRequest) {
         || path === "/favicon.ico"
         || path === "/login"
         || path === "/calculator"
+        || path === "/not-found"
     ) {
         return NextResponse.next(); // login 없이 접근 허용
     }

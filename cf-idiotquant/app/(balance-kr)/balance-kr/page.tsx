@@ -11,7 +11,7 @@ import { usePathname } from "next/navigation";
 import InquireBalanceResult from "@/components/inquireBalanceResult";
 import NotFound from "@/app/not-found";
 import { CapitalTokenType, reqGetCapitalToken, selectCapitalToken } from "@/lib/features/algorithmTrade/algorithmTradeSlice";
-import { Box, Text } from "@radix-ui/themes";
+import { Box, Code, Text } from "@radix-ui/themes";
 import { KakaoTotal, reqGetKakaoMemberList, selectKakaoMemberList, selectKakaoTotal } from "@/lib/features/kakao/kakaoSlice";
 
 let DEBUG = false;
@@ -55,8 +55,7 @@ export default function BalanceKr() {
     // console.log(`kiBalance.state`, kiBalance.state);
     if (kiBalance.state == "rejected") {
         return <>
-            <NotFound warnText={"계좌 조회 권한이 없습니다"} />
-            <Box className="dark:bg-black h-lvh"></Box>
+            <NotFound warnText="계좌 조회 권한이 없습니다" />
         </>
     }
 
