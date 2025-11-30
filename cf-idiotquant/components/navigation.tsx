@@ -166,7 +166,7 @@ export function NavbarWithSimpleLinks() {
     return (
         <>
             <div className="w-full fixed top-0 left-0 px-2 border-r dark:border-gray-600">
-                <Box p="1" className={`${visible ? "opacity-100 translate-y-0" : "opacity-0 -translate-y-10"} transition-all duration-300 ease-in-out items-center justify-start`}>
+                <Box p="1" className={`bg-white dark:bg-black ${visible ? "opacity-100 translate-y-0" : "opacity-0 -translate-y-10"} transition-all duration-300 ease-in-out items-center justify-start`}>
                     <Flex align="center" gap="2" width="100%" className="!justify-between">
                         <Box p="2" width="100%" className="!items-center">
                             <Link href="/" className="cursor-pointer">

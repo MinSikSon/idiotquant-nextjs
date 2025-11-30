@@ -1,12 +1,6 @@
 import React, { useMemo, useState } from "react";
 
 // Next.js + Radix UI + Tailwind — candidates 테이블 버전
-// 반영된 내용:
-// - user가 제공한 최신 JSON 구조에 맞게 candidates 렌더링 수정
-// - candidates를 테이블로 보여주고, 행 클릭으로 상세(JSON) 토글
-// - Actions: Details 토글, Copy JSON, Download CSV (condition 기준)
-// - 중복 버튼 제거 및 타입 안전성 보강
-
 import * as ScrollArea from "@radix-ui/react-scroll-area";
 import * as Tooltip from "@radix-ui/react-tooltip";
 import { Flex, Text } from "@radix-ui/themes";
@@ -75,7 +69,6 @@ const sample: Strategy = {
 };
 
 function jsonToCSV(obj: unknown) {
-    // for a candidate we often want condition fields => flatten object
     const flattened: Record<string, string> = {};
     if (typeof obj === "object" && obj !== null) {
         const o = obj as Record<string, any>;
@@ -91,12 +84,32 @@ function jsonToCSV(obj: unknown) {
     return rows.join('\n');
 }
 
+/**
+ * LoadingGrayText: 텍스트 자리 Skeleton (회색 깜빡임)
+ * className으로 width/height 조절하세요 (예: w-40 h-4)
+ */
+function LoadingGrayText({ className = "" }: { className?: string }) {
+    return (
+        <span className={`inline-block bg-gray-300 rounded animate-pulse align-middle ${className}`}>&nbsp;</span>
+    );
+}
+
 export default function NCAVTable({ strategies }: { strategies?: any | any[] }) {
     const list = useMemo(() => {
         if (!strategies) return [sample];
         if (Array.isArray(strategies)) return strategies.length ? strategies : [sample];
         return [strategies];
     }, [strategies]);
+
+    // isUsingSample: 현재 화면에 보여지는 전략이 fallback sample인지 여부
+    const isUsingSample = useMemo(() => {
+        // list이 sample 하나만 있고, 원래 전달된 strategies 값이 falsy거나 빈 배열이거나
+        // 또는 사용자가 명시적으로 sample 객체(동일 참조) 를 전달한 경우를 체크
+        const onlySample = list.length === 1 && list[0] === sample;
+        const explicitSample = strategies === sample;
+        const emptyOrAbsent = !strategies || (Array.isArray(strategies) && strategies.length === 0);
+        return onlySample && (explicitSample || emptyOrAbsent);
+    }, [list, strategies]);
 
     const [selectedIndex, setSelectedIndex] = useState(0);
     const data = list[selectedIndex] ?? sample;
@@ -138,7 +151,7 @@ export default function NCAVTable({ strategies }: { strategies?: any | any[] }) 
     function showToast(msg: string) {
         const t = document.createElement('div');
         t.textContent = msg;
-        t.className = 'fixed bottom-6 right-6  px-4 py-2 rounded shadow-lg text-sm';
+        t.className = 'fixed bottom-6 right-6  pl-3 py-2 rounded shadow-lg text-sm';
         document.body.appendChild(t);
         setTimeout(() => t.remove(), 1600);
     }
@@ -146,18 +159,37 @@ export default function NCAVTable({ strategies }: { strategies?: any | any[] }) 
     const overviewMaxHeight = 'calc(100vh - 220px)';
 
     return (
-        <div className="min-h-screen p-6">
+        <div className="min-h-screen p-4">
             <div className="max-w-7xl mx-auto">
                 <div className="flex items-start justify-between gap-4 mb-6">
                     <div>
-                        <h1 className="text-2xl font-semibold leading-tight">{data.name}</h1>
-                        <p className="text-sm ">{data.key} • As of {data.asOfDate}</p>
+                        <h1 className="text-2xl font-semibold leading-tight">
+                            {isUsingSample ? <LoadingGrayText className="w-72 h-6" /> : data.name}
+                        </h1>
+                        <p className="text-sm ">
+                            {isUsingSample ? (
+                                <span className="flex gap-2 items-center">
+                                    <LoadingGrayText className="w-56 h-4" />
+                                </span>
+                            ) : (
+                                <><div className="flex flex-col">
+                                    <div>
+                                        {data.key}</div>
+                                    <div>
+                                        • As of {data.asOfDate}</div>
+                                </div></>
+                            )}
+                        </p>
                     </div>
 
                     <div className="flex items-center gap-2">
                         <Tooltip.Root>
                             <Tooltip.Trigger asChild>
-                                <button onClick={copyJSON} className="flex items-center gap-2 px-3 py-2 rounded-lg border border-slate-200 shadow-sm hover:brightness-95">
+                                <button
+                                    onClick={copyJSON}
+                                    className="flex items-center gap-2 px-3 py-2 rounded-lg border border-slate-200 shadow-sm hover:brightness-95"
+                                    disabled={isUsingSample}
+                                >
                                     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden>
                                         <rect x="9" y="9" width="10" height="10" rx="2" stroke="currentColor" strokeWidth="1.5" />
                                         <rect x="5" y="5" width="10" height="10" rx="2" stroke="currentColor" strokeWidth="1.5" />
@@ -175,19 +207,21 @@ export default function NCAVTable({ strategies }: { strategies?: any | any[] }) 
                     </div>
                 </div>
 
-                <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
+                <div className="grid grid-cols-1 lg:grid-cols-4 gap-0">
                     {list.length > 1 && (
                         <nav className="lg:col-span-1 rounded-2xl p-3 shadow min-h-[220px]">
-                            <h3 className="text-sm font-medium mb-2">Strategies</h3>
+                            <h3 className="text-lg font-medium mb-2">Strategies</h3>
                             <ul className="space-y-2">
                                 {list.map((s, idx) => (
                                     <li key={s.strategyId || idx}>
                                         <button
                                             onClick={() => setSelectedIndex(idx)}
-                                            className={`w-full text-left px-3 py-2 rounded-md hover: ${idx === selectedIndex ? 'ring-1 ring-slate-200' : ''}`}
+                                            className={`w-full text-left pl-3 py-1 rounded-md ${idx === selectedIndex ? 'ring-1 ring-slate-200' : 'hover:'}`}
                                         >
-                                            <div className="text-sm font-medium">{s.strategyId}</div>
-                                            <div className="text-xs ">{s.asOfDate} • {s.universe}</div>
+                                            <div className="items-center gap-1">
+                                                <div className="text-sm font-medium">{s.strategyId}</div>
+                                                <div className="text-[0.6rem] ">{s.asOfDate} • {s.universe}</div>
+                                            </div>
                                         </button>
                                     </li>
                                 ))}
@@ -200,67 +234,19 @@ export default function NCAVTable({ strategies }: { strategies?: any | any[] }) 
 
                         <div className="border rounded-lg overflow-scroll">
                             <div className="grid grid-cols-[220px_1fr] border-b sticky top-0 z-10">
-                                <div className="px-4 py-3 text-sm font-medium bg-slate-50 dark:bg-slate-900">Field</div>
-                                <div className="px-4 py-3 text-sm font-medium bg-slate-50 dark:bg-slate-900">Value</div>
+                                <div className="pl-3 py-1 text-sm font-medium bg-slate-50 dark:bg-slate-900">Field</div>
+                                <div className="pl-3 py-1 text-sm font-medium bg-slate-50 dark:bg-slate-900">Value</div>
                             </div>
 
                             <ScrollArea.Root className="w-full" style={{ maxHeight: overviewMaxHeight }}>
                                 <ScrollArea.Viewport>
                                     <table className="w-full table-auto text-sm">
                                         <tbody>
-                                            {metaRows.map(([k, v], idx) => (
-                                                <tr key={k} className={`${idx % 2 === 0 ? '' : ''}`}>
-                                                    <td className="px-4 py-3 align-top w-52 font-medium ">{k}</td>
-                                                    <td className="px-4 py-3 align-top  whitespace-pre-wrap">{v}</td>
-                                                </tr>
-                                            ))}
-
-                                            <tr className="">
-                                                <td className="px-4 py-3 font-medium">kvFilter</td>
-                                                <td className="px-4 py-3">
-                                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                                                        {kvFilterEntries.map(([k, v]) => (
-                                                            <div key={k} className="rounded-md p-2 border">
-                                                                <div className="text-xs ">{k}</div>
-                                                                <div className="text-sm font-medium">{v}</div>
-                                                            </div>
-                                                        ))}
-                                                    </div>
-                                                </td>
-                                            </tr>
-
-                                            <tr>
-                                                <td className="px-4 py-3 font-medium">params</td>
-                                                <td className="px-4 py-3">
-                                                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
-                                                        {paramsEntries.map(([k, v]) => (
-                                                            <div key={k} className="rounded-md p-2 border">
-                                                                <div className="text-xs ">{k}</div>
-                                                                <div className="text-sm font-medium">{v}</div>
-                                                            </div>
-                                                        ))}
-                                                    </div>
-                                                </td>
-                                            </tr>
-
-                                            <tr className="">
-                                                <td className="px-4 py-3 font-medium">dataSource</td>
-                                                <td className="px-4 py-3">
-                                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                                                        {dataSourceEntries.map(([k, v]) => (
-                                                            <div key={k} className="rounded-md p-2 border">
-                                                                <div className="text-xs ">{k}</div>
-                                                                <div className="text-sm font-medium">{v}</div>
-                                                            </div>
-                                                        ))}
-                                                    </div>
-                                                </td>
-                                            </tr>
 
                                             {/* CANDIDATES TABLE SECTION */}
                                             <tr className="">
-                                                <td className="px-4 py-3 font-medium align-top">candidates</td>
-                                                <td className="px-4 py-3">
+                                                <td className="pl-3 py-3 font-medium align-top">candidates</td>
+                                                <td className="pl-3 py-3">
                                                     {candidateEntries.length === 0 ? (
                                                         <div className="text-sm ">No candidates available</div>
                                                     ) : (
@@ -268,84 +254,182 @@ export default function NCAVTable({ strategies }: { strategies?: any | any[] }) 
                                                             <table className="min-w-full text-sm">
                                                                 <thead className="">
                                                                     <tr>
-                                                                        <th className="text-left px-3 py-2 ">Ticker</th>
-                                                                        <th className="text-left px-3 py-2 ">Last Price</th>
-                                                                        <th className="text-left px-3 py-2 ">Market Cap</th>
-                                                                        <th className="text-left px-3 py-2 ">NCAV Ratio</th>
-                                                                        <th className="text-left px-3 py-2 ">P/E</th>
-                                                                        <th className="text-left px-3 py-2 ">P/B</th>
-                                                                        <th className="text-left px-3 py-2 ">Actions</th>
+                                                                        <th className="text-left pl-3 py-2 ">Ticker</th>
+                                                                        <th className="text-left pl-3 py-2 ">Last Price</th>
+                                                                        <th className="text-left pl-3 py-2 ">Market Cap</th>
+                                                                        <th className="text-left pl-3 py-2 ">NCAV Ratio</th>
+                                                                        <th className="text-left pl-3 py-2 ">P/E</th>
+                                                                        <th className="text-left pl-3 py-2 ">P/B</th>
+                                                                        <th className="text-left pl-3 py-2 ">Actions</th>
                                                                     </tr>
                                                                 </thead>
                                                                 <tbody>
-                                                                    {candidateEntries.map(([ticker, info]) => {
-                                                                        const isOpen = expandedCandidate === String(ticker);
-                                                                        const cond = info?.condition ?? {};
-                                                                        const lastPrice = cond?.LastPrice ?? cond?.Lastprice ?? "-";
-                                                                        const marketCap = cond?.MarketCapitalization ?? cond?.marketCapitalization ?? "-";
-                                                                        const ncavRatio = info?.ncavRatio ?? "-";
-                                                                        const per = cond?.per ?? cond?.PER ?? "-";
-                                                                        const pbr = cond?.pbr ?? cond?.PBR ?? "-";
+                                                                    {isUsingSample ? (
+                                                                        // Skeleton rows when sample 사용 중
+                                                                        Array.from({ length: 3 }).map((_, idx) => (
+                                                                            <tr key={`skeleton-${idx}`} className="border-t">
+                                                                                <td className="pl-3 py-2 font-medium"><LoadingGrayText className="w-16 h-4" /></td>
+                                                                                <td className="pl-3 py-2"><LoadingGrayText className="w-12 h-4" /></td>
+                                                                                <td className="pl-3 py-2"><LoadingGrayText className="w-24 h-4" /></td>
+                                                                                <td className="pl-3 py-2"><LoadingGrayText className="w-12 h-4" /></td>
+                                                                                <td className="pl-3 py-2"><LoadingGrayText className="w-12 h-4" /></td>
+                                                                                <td className="pl-3 py-2"><LoadingGrayText className="w-12 h-4" /></td>
+                                                                                <td className="pl-3 py-2">
+                                                                                    <div className="flex items-center gap-2">
+                                                                                        <span className="text-xs px-2 py-1 rounded border"><LoadingGrayText className="w-12 h-3" /></span>
+                                                                                        <span className="text-xs px-2 py-1 rounded border"><LoadingGrayText className="w-12 h-3" /></span>
+                                                                                        <span className="text-xs px-2 py-1 rounded border"><LoadingGrayText className="w-12 h-3" /></span>
+                                                                                    </div>
+                                                                                </td>
+                                                                            </tr>
+                                                                        ))
+                                                                    ) : (
+                                                                        // 실제 데이터 렌더링
+                                                                        candidateEntries.map(([ticker, info]) => {
+                                                                            const isOpen = expandedCandidate === String(ticker);
+                                                                            const cond = info?.condition ?? {};
+                                                                            const lastPrice = cond?.LastPrice ?? cond?.Lastprice ?? "-";
+                                                                            const marketCap = cond?.MarketCapitalization ?? cond?.marketCapitalization ?? "-";
+                                                                            const ncavRatio = info?.ncavRatio ?? "-";
+                                                                            const per = cond?.per ?? cond?.PER ?? "-";
+                                                                            const pbr = cond?.pbr ?? cond?.PBR ?? "-";
 
-                                                                        return (
-                                                                            <React.Fragment key={ticker}>
-                                                                                <tr className={`border-t hover: ${isOpen ? '' : ''}`}>
-                                                                                    <td className="px-3 py-2 font-medium">{ticker}</td>
-                                                                                    <td className="px-3 py-2">{typeof lastPrice === 'number' ? String(lastPrice) : String(lastPrice)}</td>
-                                                                                    <td className="px-3 py-2">{typeof marketCap === 'number' ? marketCap.toLocaleString() : String(marketCap)}</td>
-                                                                                    <td className="px-3 py-2">{String(ncavRatio)}</td>
-                                                                                    <td className="px-3 py-2">{String(per)}</td>
-                                                                                    <td className="px-3 py-2">{String(pbr)}</td>
-                                                                                    <td className="px-3 py-2">
-                                                                                        <div className="flex items-center gap-2">
-                                                                                            <button
-                                                                                                onClick={() => setExpandedCandidate(isOpen ? null : String(ticker))}
-                                                                                                className="text-xs px-2 py-1 rounded border"
-                                                                                            >
-                                                                                                {isOpen ? 'Hide' : 'Details'}
-                                                                                            </button>
-                                                                                            <button
-                                                                                                onClick={() => navigator.clipboard.writeText(JSON.stringify(info, null, 2))}
-                                                                                                className="text-xs px-2 py-1 rounded border"
-                                                                                            >
-                                                                                                Copy
-                                                                                            </button>
-                                                                                            <button
-                                                                                                onClick={() => {
-                                                                                                    const csv = jsonToCSV(info?.condition ?? info ?? {});
-                                                                                                    if (!csv) { showToast('No data to download'); return; }
-                                                                                                    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
-                                                                                                    const url = URL.createObjectURL(blob);
-                                                                                                    const a = document.createElement('a');
-                                                                                                    a.href = url;
-                                                                                                    a.download = `${ticker}.csv`;
-                                                                                                    a.click();
-                                                                                                    URL.revokeObjectURL(url);
-                                                                                                }}
-                                                                                                className="text-xs px-2 py-1 rounded border"
-                                                                                            >
-                                                                                                CSV
-                                                                                            </button>
-                                                                                        </div>
-                                                                                    </td>
-                                                                                </tr>
-
-                                                                                {isOpen && (
-                                                                                    <tr className="">
-                                                                                        <td colSpan={7} className="px-3 py-3 border-t">
-                                                                                            <div className="text-xs  p-3 rounded">
-                                                                                                <pre className="whitespace-pre-wrap">{JSON.stringify(info, null, 2)}</pre>
+                                                                            return (
+                                                                                <React.Fragment key={ticker}>
+                                                                                    <tr className={`border-t hover: ${isOpen ? '' : ''}`}>
+                                                                                        <td className="pl-3 py-2 font-medium">{ticker}</td>
+                                                                                        <td className="pl-3 py-2">{typeof lastPrice === 'number' ? String(lastPrice) : String(lastPrice)}</td>
+                                                                                        <td className="pl-3 py-2">{typeof marketCap === 'number' ? marketCap.toLocaleString() : String(marketCap)}</td>
+                                                                                        <td className="pl-3 py-2">{String(ncavRatio)}</td>
+                                                                                        <td className="pl-3 py-2">{String(per)}</td>
+                                                                                        <td className="pl-3 py-2">{String(pbr)}</td>
+                                                                                        <td className="pl-3 py-2">
+                                                                                            <div className="flex items-center gap-2">
+                                                                                                <button
+                                                                                                    onClick={() => setExpandedCandidate(isOpen ? null : String(ticker))}
+                                                                                                    className="text-xs px-2 py-1 rounded border"
+                                                                                                >
+                                                                                                    {isOpen ? 'Hide' : 'Details'}
+                                                                                                </button>
+                                                                                                <button
+                                                                                                    onClick={() => navigator.clipboard.writeText(JSON.stringify(info, null, 2))}
+                                                                                                    className="text-xs px-2 py-1 rounded border"
+                                                                                                >
+                                                                                                    Copy
+                                                                                                </button>
+                                                                                                <button
+                                                                                                    onClick={() => {
+                                                                                                        const csv = jsonToCSV(info?.condition ?? info ?? {});
+                                                                                                        if (!csv) { showToast('No data to download'); return; }
+                                                                                                        const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+                                                                                                        const url = URL.createObjectURL(blob);
+                                                                                                        const a = document.createElement('a');
+                                                                                                        a.href = url;
+                                                                                                        a.download = `${ticker}.csv`;
+                                                                                                        a.click();
+                                                                                                        URL.revokeObjectURL(url);
+                                                                                                    }}
+                                                                                                    className="text-xs px-2 py-1 rounded border"
+                                                                                                >
+                                                                                                    CSV
+                                                                                                </button>
                                                                                             </div>
                                                                                         </td>
                                                                                     </tr>
-                                                                                )}
-                                                                            </React.Fragment>
-                                                                        );
-                                                                    })}
+
+                                                                                    {isOpen && (
+                                                                                        <tr className="">
+                                                                                            <td colSpan={7} className="pl-3 py-3 border-t">
+                                                                                                <div className="text-xs  p-3 rounded">
+                                                                                                    <pre className="whitespace-pre-wrap">{JSON.stringify(info, null, 2)}</pre>
+                                                                                                </div>
+                                                                                            </td>
+                                                                                        </tr>
+                                                                                    )}
+                                                                                </React.Fragment>
+                                                                            );
+                                                                        })
+                                                                    )}
                                                                 </tbody>
                                                             </table>
                                                         </div>
                                                     )}
+                                                </td>
+                                            </tr>
+                                            {metaRows.map(([k, v], idx) => (
+                                                <tr key={k} className={`${idx % 2 === 0 ? '' : ''}`}>
+                                                    <td className="pl-3 py-1 align-top w-52 font-medium ">{k}</td>
+                                                    <td className="pl-3 py-1 align-top  whitespace-pre-wrap">
+                                                        {isUsingSample ? <LoadingGrayText className="w-40 h-4" /> : v}
+                                                    </td>
+                                                </tr>
+                                            ))}
+
+                                            <tr className="">
+                                                <td className="pl-3 py-3 font-medium">kvFilter</td>
+                                                <td className="pl-3 py-3">
+                                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                                                        {isUsingSample ? (
+                                                            <>
+                                                                <div className="rounded-md p-2 border">
+                                                                    <LoadingGrayText className="w-24 h-4" />
+                                                                </div>
+                                                                <div className="rounded-md p-2 border">
+                                                                    <LoadingGrayText className="w-20 h-4" />
+                                                                </div>
+                                                            </>
+                                                        ) : (
+                                                            kvFilterEntries.map(([k, v]) => (
+                                                                <div key={k} className="rounded-md p-2 border">
+                                                                    <div className="text-xs ">{k}</div>
+                                                                    <div className="text-sm font-medium">{v}</div>
+                                                                </div>
+                                                            ))
+                                                        )}
+                                                    </div>
+                                                </td>
+                                            </tr>
+
+                                            <tr>
+                                                <td className="pl-3 py-3 font-medium">params</td>
+                                                <td className="pl-3 py-3">
+                                                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                                                        {isUsingSample ? (
+                                                            <>
+                                                                <div className="rounded-md p-2 border"><LoadingGrayText className="w-28 h-4" /></div>
+                                                                <div className="rounded-md p-2 border"><LoadingGrayText className="w-20 h-4" /></div>
+                                                                <div className="rounded-md p-2 border"><LoadingGrayText className="w-24 h-4" /></div>
+                                                            </>
+                                                        ) : (
+                                                            paramsEntries.map(([k, v]) => (
+                                                                <div key={k} className="rounded-md p-2 border">
+                                                                    <div className="text-xs ">{k}</div>
+                                                                    <div className="text-sm font-medium">{v}</div>
+                                                                </div>
+                                                            ))
+                                                        )}
+                                                    </div>
+                                                </td>
+                                            </tr>
+
+                                            <tr className="">
+                                                <td className="pl-3 py-3 font-medium">dataSource</td>
+                                                <td className="pl-3 py-3">
+                                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                                                        {isUsingSample ? (
+                                                            <>
+                                                                <div className="rounded-md p-2 border"><LoadingGrayText className="w-36 h-4" /></div>
+                                                                <div className="rounded-md p-2 border"><LoadingGrayText className="w-28 h-4" /></div>
+                                                            </>
+                                                        ) : (
+                                                            dataSourceEntries.map(([k, v]) => (
+                                                                <div key={k} className="rounded-md p-2 border">
+                                                                    <div className="text-xs ">{k}</div>
+                                                                    <div className="text-sm font-medium">{v}</div>
+                                                                </div>
+                                                            ))
+                                                        )}
+                                                    </div>
                                                 </td>
                                             </tr>
 
@@ -361,7 +445,9 @@ export default function NCAVTable({ strategies }: { strategies?: any | any[] }) 
 
                         <details className="mt-4 p-3 rounded">
                             <summary className="cursor-pointer text-sm font-medium">Raw JSON</summary>
-                            <pre className="mt-2 max-h-60 overflow-auto text-xs  p-3 rounded">{JSON.stringify(data, null, 2)}</pre>
+                            <pre className="mt-2 max-h-60 overflow-auto text-xs  p-3 rounded">
+                                {isUsingSample ? <LoadingGrayText className="w-full h-24" /> : JSON.stringify(data, null, 2)}
+                            </pre>
                         </details>
                     </section>
 
@@ -371,21 +457,24 @@ export default function NCAVTable({ strategies }: { strategies?: any | any[] }) 
                         <div className="space-y-3 text-sm ">
                             <div className="flex justify-between gap-2">
                                 <span className="">Candidates</span>
-                                <span className="font-medium">{data.numCandidates}</span>
+                                <span className="font-medium">{isUsingSample ? <LoadingGrayText className="w-8 h-4" /> : data.numCandidates}</span>
                             </div>
                             <div className="flex justify-between gap-2">
                                 <span className="">Status</span>
-                                <span className="font-medium capitalize">{data.status}</span>
+                                <span className="font-medium capitalize">{isUsingSample ? <LoadingGrayText className="w-12 h-4" /> : data.status}</span>
                             </div>
                             <div className="flex justify-between gap-2">
                                 <span className="">Fetched at</span>
-                                <span className="font-medium">{data.dataSource.fetchedAt}</span>
+                                <span className="font-medium">{isUsingSample ? <LoadingGrayText className="w-28 h-4" /> : data.dataSource.fetchedAt}</span>
                             </div>
                         </div>
 
                         <div className="mt-4">
-                            <button onClick={() => navigator.clipboard.writeText(JSON.stringify(data, null, 2))}
-                                className="w-full text-sm px-3 py-2 rounded-lg border hover:">
+                            <button
+                                onClick={() => navigator.clipboard.writeText(JSON.stringify(data, null, 2))}
+                                className="w-full text-sm px-3 py-2 rounded-lg border hover:"
+                                disabled={isUsingSample}
+                            >
                                 Quick Copy JSON
                             </button>
                         </div>
