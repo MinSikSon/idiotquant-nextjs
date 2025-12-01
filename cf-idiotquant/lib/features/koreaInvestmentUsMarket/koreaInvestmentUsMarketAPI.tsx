@@ -58,6 +58,16 @@ export const getOverseasStockTradingInquireBalance: any = async (key: string) =>
     return getKoreaInvestmentRequest(subUrl, additionalHeaders);
 }
 
+// 해외주식 미체결내역[v1_해외주식-005]
+export const getOverseasStockTradingInquireNccs: any = async (key: string) => {
+    // console.log(`[getOverseasStockTradingInquireBalance] koreaInvestmentToken`, koreaInvestmentToken);
+    const subUrl = `/uapi/overseas-stock/v1/trading/inquire-nccs`;
+    const additionalHeaders: AdditionalHeaders = {
+        "kakaoId": key,
+    }
+    return getKoreaInvestmentRequest(subUrl, additionalHeaders);
+}
+
 export const getQuotationsPriceDetail: any = async (PDNO: string) => {
     const subUrl = `/uapi/overseas-price/v1/quotations/price-detail`;
     const additionalHeaders: AdditionalHeaders = {

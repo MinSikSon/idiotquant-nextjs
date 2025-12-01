@@ -1,6 +1,6 @@
 import { PayloadAction } from "@reduxjs/toolkit";
 import { createAppSlice } from "@/lib/createAppSlice";
-import { getOverseasPriceQuotationsDailyPrice, getOverseasStockTradingInquireBalance, getOverseasStockTradingInquirePresentBalance, getQuotationsPriceDetail, getQuotationsSearchInfo, postOrderUs } from "./koreaInvestmentUsMarketAPI";
+import { getOverseasPriceQuotationsDailyPrice, getOverseasStockTradingInquireBalance, getOverseasStockTradingInquireNccs, getOverseasStockTradingInquirePresentBalance, getQuotationsPriceDetail, getQuotationsSearchInfo, postOrderUs } from "./koreaInvestmentUsMarketAPI";
 
 export interface KoreaInvestmentOverseasSearchInfoOutput {
     std_pdno: string;
@@ -157,6 +157,48 @@ export interface KoreaInvestmentOverseasBalance {
     rt_cd: string;
     msg_cd: string;
     msg1: string;
+}
+
+export interface KoreaInvestmentOverseasNccsOutput {
+    ord_dt: string; // #주문일자
+    ord_gno_brno: string; // #주문채번지점번호
+    odno: string; // #주문번호
+    orgn_odno: string; // #원주문번호
+    pdno: string; // #상품번호
+    prdt_name: string; // #상품명
+    sll_buy_dvsn_cd: string; // #매도매수구분코드
+    sll_buy_dvsn_cd_name: string; // #매도매수구분코드명
+    rvse_cncl_dvsn_cd: string; // #정정취소구분코드
+    rvse_cncl_dvsn_cd_name: string; // #정정취소구분코드명
+    rjct_rson: string; // #거부사유
+    rjct_rson_name: string; // #거부사유명
+    ord_tmd: string; // #주문시각
+    tr_mket_name: string; // #거래시장명
+    tr_crcy_cd: string; // #거래통화코드
+    natn_cd: string; // #국가코드
+    natn_kor_name: string; // #국가한글명
+    ft_ord_qty: string; // #FT주문수량
+    ft_ccld_qty: string; // #FT체결수량
+    nccs_qty: string; // #미체결수량
+    ft_ord_unpr3: string; // #FT주문단가3
+    ft_ccld_unpr3: string; // #FT체결단가3
+    ft_ccld_amt3: string; // #FT체결금액3
+    ovrs_excg_cd: string; // #해외거래소코드
+    prcs_stat_name: string; // #처리상태명
+    loan_type_cd: string; // #대출유형코드
+    loan_dt: string; // #대출일자
+    usa_amk_exts_rqst_yn: string; // #미국애프터마켓연장신청여부
+    splt_buy_attr_name: string; // #분할매수속성명
+}
+
+export interface KoreaInvestmentOverseasNccs {
+    state: "init" | "req" | "pending" | "fulfilled" | "rejected";
+    rt_cd: string; // #성공 실패 여부
+    msg_cd: string; // #응답코드
+    msg1: string; // #응답메세지
+    ctx_area_fk200: string; // #연속조회검색조건200
+    ctx_area_nk200: string; // #연속조회키200
+    output: KoreaInvestmentOverseasNccsOutput[]; // #응답상세
 }
 
 interface KoreaInvestmentOverseasPresentBalanceOutput1 {
@@ -321,6 +363,7 @@ interface KoreaInvestmentUsMaretType {
     searchInfo: KoreaInvestmentOverseasSearchInfo;
     priceDetail: KoreaInvestmentOverseasPriceDetail;
     balance: KoreaInvestmentOverseasBalance;
+    nccs: KoreaInvestmentOverseasNccs;
     presentBalance: KoreaInvestmentOverseasPresentBalance;
     usOrder: KoreaInvestmentUsOrder;
 
@@ -458,6 +501,15 @@ const initialState: KoreaInvestmentUsMaretType = {
         rt_cd: "",
         msg_cd: "",
         msg1: "",
+    },
+    nccs: {
+        state: "init",
+        rt_cd: "",
+        msg_cd: "",
+        msg1: "",
+        ctx_area_fk200: "",
+        ctx_area_nk200: "",
+        output: [],
     },
     presentBalance: {
         state: "init",
@@ -633,6 +685,25 @@ export const koreaInvestmentUsMarketSlice = createAppSlice({
                 },
             }
         ),
+        reqGetOverseasStockTradingInquireNccs: create.asyncThunk(
+            async (key?: string) => {
+                return await getOverseasStockTradingInquireNccs(key);
+            },
+            {
+                pending: (state) => {
+                    console.log(`[reqGetOverseasStockTradingInquireNccs] pending`);
+                    state.nccs.state = "pending";
+                },
+                fulfilled: (state, action) => {
+                    console.log(`[reqGetOverseasStockTradingInquireNccs] fulfilled`, `action.payload`, action.payload);
+                    state.nccs = { ...action.payload, state: "fulfilled" };
+                },
+                rejected: (state) => {
+                    console.log(`[reqGetOverseasStockTradingInquireNccs] rejected`);
+                    state.nccs.state = "rejected";
+                },
+            }
+        ),
         reqGetQuotationsSearchInfo: create.asyncThunk(
             async ({ PDNO }: { PDNO: string }) => {
                 return await getQuotationsSearchInfo(PDNO);
@@ -683,6 +754,7 @@ export const koreaInvestmentUsMarketSlice = createAppSlice({
         getKoreaInvestmentUsMaretSearchInfo: (state) => state.searchInfo,
         getKoreaInvestmentUsMaretPriceDetail: (state) => state.priceDetail,
         getKoreaInvestmentUsMaretBalance: (state) => state.balance,
+        getKoreaInvestmentUsMaretNccs: (state) => state.nccs,
         getKoreaInvestmentUsMaretPresentBalance: (state) => state.presentBalance,
 
         getKoreaInvestmentUsOrder: (state) => state.usOrder,
@@ -705,6 +777,9 @@ export const { getKoreaInvestmentUsMaretPresentBalance } = koreaInvestmentUsMark
 
 export const { reqGetOverseasStockTradingInquireBalance } = koreaInvestmentUsMarketSlice.actions;
 export const { getKoreaInvestmentUsMaretBalance } = koreaInvestmentUsMarketSlice.selectors;
+
+export const { reqGetOverseasStockTradingInquireNccs } = koreaInvestmentUsMarketSlice.actions;
+export const { getKoreaInvestmentUsMaretNccs } = koreaInvestmentUsMarketSlice.selectors;
 
 export const { reqGetQuotationsSearchInfo } = koreaInvestmentUsMarketSlice.actions;
 export const { getKoreaInvestmentUsMaretSearchInfo } = koreaInvestmentUsMarketSlice.selectors;

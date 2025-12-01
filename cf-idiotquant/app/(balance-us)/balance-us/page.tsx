@@ -2,12 +2,13 @@
 
 import NotFound from "@/app/not-found";
 import InquireBalanceResult from "@/components/inquireBalanceResult";
+import OverseasNccsTable from "@/components/nccsTable";
 import { CapitalTokenType, reqGetUsCapitalToken, selectUsCapitalToken } from "@/lib/features/algorithmTrade/algorithmTradeSlice";
 import { KakaoTotal, reqGetKakaoMemberList, selectKakaoMemberList, selectKakaoTatalState, selectKakaoTotal } from "@/lib/features/kakao/kakaoSlice";
-import { reqGetOverseasStockTradingInquirePresentBalance, getKoreaInvestmentUsMaretPresentBalance, KoreaInvestmentOverseasPresentBalance, reqPostOrderUs, getKoreaInvestmentUsOrder, KoreaInvestmentUsOrder } from "@/lib/features/koreaInvestmentUsMarket/koreaInvestmentUsMarketSlice";
+import { reqGetOverseasStockTradingInquirePresentBalance, getKoreaInvestmentUsMaretPresentBalance, KoreaInvestmentOverseasPresentBalance, reqPostOrderUs, getKoreaInvestmentUsOrder, KoreaInvestmentUsOrder, KoreaInvestmentOverseasNccs, getKoreaInvestmentUsMaretNccs, reqGetOverseasStockTradingInquireNccs } from "@/lib/features/koreaInvestmentUsMarket/koreaInvestmentUsMarketSlice";
 
 import { useAppDispatch, useAppSelector } from "@/lib/hooks";
-import { Box, Code, Flex, Text } from "@radix-ui/themes";
+import { Box, Button, Code, Flex, Text } from "@radix-ui/themes";
 import { usePathname } from "next/navigation";
 import { useState, useEffect } from "react";
 
@@ -17,6 +18,7 @@ export default function BalanceUs() {
     const pathname = usePathname();
 
     const kiBalance: KoreaInvestmentOverseasPresentBalance = useAppSelector(getKoreaInvestmentUsMaretPresentBalance);
+    const kiNccs: KoreaInvestmentOverseasNccs = useAppSelector(getKoreaInvestmentUsMaretNccs);
 
     const kiUsOrder: KoreaInvestmentUsOrder = useAppSelector(getKoreaInvestmentUsOrder);
 
@@ -27,6 +29,8 @@ export default function BalanceUs() {
     const kakaoTotal: KakaoTotal = useAppSelector(selectKakaoTotal);
     const kakaoMemberList = useAppSelector(selectKakaoMemberList);
 
+    const [balanceKey, setBalanceKey] = useState(String(kakaoTotal?.id));
+
     useEffect(() => {
     }, []);
 
@@ -36,6 +40,12 @@ export default function BalanceUs() {
             dispatch(reqGetOverseasStockTradingInquirePresentBalance());
         }
     }, [kiBalance]);
+    useEffect(() => {
+        if (DEBUG) console.log(`[BalanceUs]`, `kiNccs`, kiNccs);
+        if ("init" == kiNccs.state) {
+            dispatch(reqGetOverseasStockTradingInquireNccs());
+        }
+    }, [kiNccs]);
 
     useEffect(() => {
         if (DEBUG) console.log(`[BalanceKr]`, `kr_capital_token`, us_capital_token);
@@ -66,12 +76,14 @@ export default function BalanceUs() {
         <InquireBalanceResult
             kiBalance={kiBalance}
             reqGetInquireBalance={reqGetOverseasStockTradingInquirePresentBalance}
+            reqGetInquireNccs={reqGetOverseasStockTradingInquireNccs}
             kiOrderCash={kiUsOrder}
             reqPostOrderCash={reqPostOrderUs}
             stock_list={us_capital_token.value.stock_list}
             kakaoTotal={kakaoTotal}
             kakaoMemberList={kakaoMemberList}
         />
+        <OverseasNccsTable data={kiNccs} />
     </>
 }
 
