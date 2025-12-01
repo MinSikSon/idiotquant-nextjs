@@ -113,17 +113,17 @@ export const kakaoSlice = createAppSlice({
             },
             {
                 pending: (state) => {
-                    console.log(`[getKakaoMemberList] pending`);
+                    // console.log(`[getKakaoMemberList] pending`);
                     state.kakaoMemberList.state = "pending"
                 },
                 fulfilled: (state, action) => {
-                    console.log(`[getKakaoMemberList] fulfilled`, `, typeof action.payload:`, typeof action.payload, `, action.payload:`, action.payload);
+                    // console.log(`[getKakaoMemberList] fulfilled`, `, typeof action.payload:`, typeof action.payload, `, action.payload:`, action.payload);
                     // NOTE: get cookie (cf_token)
                     state.kakaoMemberList.list = action.payload;
                     state.kakaoMemberList.state = "fulfilled";
                 },
                 rejected: (state) => {
-                    console.log(`[getKakaoMemberList] rejected`);
+                    // console.log(`[getKakaoMemberList] rejected`);
                     state.state = "rejected"
                 }
             }
