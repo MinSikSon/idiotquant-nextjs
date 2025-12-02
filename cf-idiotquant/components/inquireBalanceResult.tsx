@@ -15,6 +15,7 @@ function formatNumber(num: number) {
 interface InquireBalanceResultProps {
     kiBalance: any;
     reqGetInquireBalance: any;
+    reqGetInquireCcnl?: any;
     reqGetInquireNccs?: any;
     kiOrderCash?: any;
     reqPostOrderCash?: any;
@@ -373,6 +374,9 @@ export default function InquireBalanceResult(props: InquireBalanceResultProps) {
                                 setMsg("지난 주문 확인");
                                 setTime(new Date());
                                 dispatch(props.reqGetInquireBalance(balanceKey));
+                                if (!!props.reqGetInquireCcnl) {
+                                    dispatch(props.reqGetInquireCcnl(balanceKey));
+                                }
                                 if (!!props.reqGetInquireNccs) {
                                     dispatch(props.reqGetInquireNccs(balanceKey));
                                 }

@@ -1,6 +1,6 @@
 import { PayloadAction } from "@reduxjs/toolkit";
 import { createAppSlice } from "@/lib/createAppSlice";
-import { getOverseasPriceQuotationsDailyPrice, getOverseasStockTradingInquireBalance, getOverseasStockTradingInquireNccs, getOverseasStockTradingInquirePresentBalance, getQuotationsPriceDetail, getQuotationsSearchInfo, postOrderUs } from "./koreaInvestmentUsMarketAPI";
+import { getOverseasPriceQuotationsDailyPrice, getOverseasStockTradingInquireBalance, getOverseasStockTradingInquireNccs, getOverseasStockTradingInquireCcnl, getOverseasStockTradingInquirePresentBalance, getQuotationsPriceDetail, getQuotationsSearchInfo, postOrderUs } from "./koreaInvestmentUsMarketAPI";
 
 export interface KoreaInvestmentOverseasSearchInfoOutput {
     std_pdno: string;
@@ -157,6 +157,52 @@ export interface KoreaInvestmentOverseasBalance {
     rt_cd: string;
     msg_cd: string;
     msg1: string;
+}
+
+export interface KoreaInvestmentOverseasCcnlOutput {
+    ord_dt: string;
+    ord_gno_brno: string;
+    odno: string;
+    orgn_odno: string;
+    sll_buy_dvsn_cd: string;
+    sll_buy_dvsn_cd_name: string;
+    rvse_cncl_dvsn: string;
+    rvse_cncl_dvsn_name: string;
+    pdno: string;
+    prdt_name: string;
+    ft_ord_qty: string;
+    ft_ord_unpr3: string;
+    ft_ccld_qty: string;
+    ft_ccld_unpr3: string;
+    ft_ccld_amt3: string;
+    nccs_qty: string;
+    prcs_stat_name: string;
+    rjct_rson: string;
+    rjct_rson_name: string;
+    ord_tmd: string;
+    tr_mket_name: string;
+    tr_natn: string;
+    tr_natn_name: string;
+    ovrs_excg_cd: string;
+    tr_crcy_cd: string;
+    dmst_ord_dt: string;
+    thco_ord_tmd: string;
+    loan_type_cd: string;
+    loan_dt: string;
+    mdia_dvsn_name: string;
+    usa_amk_exts_rqst_yn: string;
+    splt_buy_attr_name: string;
+}
+
+
+export interface KoreaInvestmentOverseasCcnl {
+    state: "init" | "req" | "pending" | "fulfilled" | "rejected";
+    rt_cd: string;
+    msg_cd: string;
+    msg1: string;
+    ctx_area_fk200: string;
+    ctx_area_nk200: string;
+    output: KoreaInvestmentOverseasCcnlOutput[];
 }
 
 export interface KoreaInvestmentOverseasNccsOutput {
@@ -363,6 +409,7 @@ interface KoreaInvestmentUsMaretType {
     searchInfo: KoreaInvestmentOverseasSearchInfo;
     priceDetail: KoreaInvestmentOverseasPriceDetail;
     balance: KoreaInvestmentOverseasBalance;
+    ccnl: KoreaInvestmentOverseasCcnl;
     nccs: KoreaInvestmentOverseasNccs;
     presentBalance: KoreaInvestmentOverseasPresentBalance;
     usOrder: KoreaInvestmentUsOrder;
@@ -501,6 +548,15 @@ const initialState: KoreaInvestmentUsMaretType = {
         rt_cd: "",
         msg_cd: "",
         msg1: "",
+    },
+    ccnl: {
+        state: "init",
+        rt_cd: "",
+        msg_cd: "",
+        msg1: "",
+        ctx_area_fk200: "",
+        ctx_area_nk200: "",
+        output: []
     },
     nccs: {
         state: "init",
@@ -685,6 +741,25 @@ export const koreaInvestmentUsMarketSlice = createAppSlice({
                 },
             }
         ),
+        reqGetOverseasStockTradingInquireCcnl: create.asyncThunk(
+            async (key?: string) => {
+                return await getOverseasStockTradingInquireCcnl(key);
+            },
+            {
+                pending: (state) => {
+                    console.log(`[reqGetOverseasStockTradingInquireCcnl] pending`);
+                    state.ccnl.state = "pending";
+                },
+                fulfilled: (state, action) => {
+                    console.log(`[reqGetOverseasStockTradingInquireCcnl] fulfilled`, `action.payload`, action.payload);
+                    state.ccnl = { ...action.payload, state: "fulfilled" };
+                },
+                rejected: (state) => {
+                    console.log(`[reqGetOverseasStockTradingInquireCcnl] rejected`);
+                    state.ccnl.state = "rejected";
+                },
+            }
+        ),
         reqGetOverseasStockTradingInquireNccs: create.asyncThunk(
             async (key?: string) => {
                 return await getOverseasStockTradingInquireNccs(key);
@@ -754,7 +829,10 @@ export const koreaInvestmentUsMarketSlice = createAppSlice({
         getKoreaInvestmentUsMaretSearchInfo: (state) => state.searchInfo,
         getKoreaInvestmentUsMaretPriceDetail: (state) => state.priceDetail,
         getKoreaInvestmentUsMaretBalance: (state) => state.balance,
+
+        getKoreaInvestmentUsMaretCcnl: (state) => state.ccnl,
         getKoreaInvestmentUsMaretNccs: (state) => state.nccs,
+
         getKoreaInvestmentUsMaretPresentBalance: (state) => state.presentBalance,
 
         getKoreaInvestmentUsOrder: (state) => state.usOrder,
@@ -777,6 +855,9 @@ export const { getKoreaInvestmentUsMaretPresentBalance } = koreaInvestmentUsMark
 
 export const { reqGetOverseasStockTradingInquireBalance } = koreaInvestmentUsMarketSlice.actions;
 export const { getKoreaInvestmentUsMaretBalance } = koreaInvestmentUsMarketSlice.selectors;
+
+export const { reqGetOverseasStockTradingInquireCcnl } = koreaInvestmentUsMarketSlice.actions;
+export const { getKoreaInvestmentUsMaretCcnl } = koreaInvestmentUsMarketSlice.selectors;
 
 export const { reqGetOverseasStockTradingInquireNccs } = koreaInvestmentUsMarketSlice.actions;
 export const { getKoreaInvestmentUsMaretNccs } = koreaInvestmentUsMarketSlice.selectors;
