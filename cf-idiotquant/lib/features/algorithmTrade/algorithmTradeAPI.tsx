@@ -17,27 +17,37 @@ export const getInquirePriceMulti: any = async (koreaInvestmentToken: KoreaInves
 }
 
 export const getCapitalToken: any = async () => {
-    const subUrl = `/algorithm-trade/capital-token`;
+    const subUrl = `/algorithm/trade/kr/capital/token`;
     const additionalHeaders: AdditionalHeaders = {
     }
     return getAlgorithmTradeRequest(subUrl, additionalHeaders);
 }
 
+export const getKrPurchaseLogLatest: any = async (key?: any) => {
+    const subUrl = `/algorithm/trade/kr/purchase/log/latest`;
+    const additionalHeaders: AdditionalHeaders = {
+        "kakaoId": key,
+    }
+    return getAlgorithmTradeRequest(subUrl, additionalHeaders);
+}
+
+
+
 export const getUsCapitalToken: any = async () => {
-    const subUrl = `/algorithm-trade/us-capital-token`;
+    const subUrl = `/algorithm/trade/us/capital/token`;
     const additionalHeaders: AdditionalHeaders = {
     }
     return getAlgorithmTradeRequest(subUrl, additionalHeaders);
 }
 
 export const getQuantRule: any = async () => {
-    const subUrl = `/algorithm-trade/quant-rule`;
+    const subUrl = `/algorithm/trade/quant-rule`;
     const additionalHeaders: AdditionalHeaders = {
     }
     return getAlgorithmTradeRequest(subUrl, additionalHeaders);
 }
 export const getQuantRuleDesc: any = async () => {
-    const subUrl = `/algorithm-trade/quant-rule-desc`;
+    const subUrl = `/algorithm/trade/quant-rule-desc`;
     const additionalHeaders: AdditionalHeaders = {
     }
     return getAlgorithmTradeRequest(subUrl, additionalHeaders);

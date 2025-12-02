@@ -2,7 +2,7 @@
 
 import { DesignButton } from "@/components/designButton";
 import TableTemplate, { Example8TableHeadType, Example8TableRowType, TablesExample8PropsType } from "@/components/tableExample8";
-import { CapitalTokenType, QuantRule, reqGetQuantRule, reqGetQuantRuleDesc, reqGetUsCapitalToken, selectCapitalToken, selectInquirePriceMulti, selectQuantRule, selectQuantRuleDesc, selectUsCapitalToken } from "@/lib/features/algorithmTrade/algorithmTradeSlice";
+import { CapitalTokenType, PurchaseLogType, QuantRule, reqGetKrPurchaseLogLatest, reqGetQuantRule, reqGetQuantRuleDesc, reqGetUsCapitalToken, selectCapitalToken, selectInquirePriceMulti, selectkrPurchaseLogLatest, selectQuantRule, selectQuantRuleDesc, selectUsCapitalToken } from "@/lib/features/algorithmTrade/algorithmTradeSlice";
 import { reqGetCapitalToken } from "@/lib/features/algorithmTrade/algorithmTradeSlice";
 import { getKoreaInvestmentToken, KoreaInvestmentToken } from "@/lib/features/koreaInvestment/koreaInvestmentSlice";
 import { useAppDispatch, useAppSelector } from "@/lib/hooks";
@@ -45,6 +45,8 @@ export default function AlgorithmTradeLegacy() {
     const dispatch = useAppDispatch();
 
     const kr_capital_token: CapitalTokenType = useAppSelector(selectCapitalToken);
+    const krPurchaseLogLatest: PurchaseLogType = useAppSelector(selectkrPurchaseLogLatest);
+
     const us_capital_token: CapitalTokenType = useAppSelector(selectUsCapitalToken);
     const inquirePriceMulti: any = useAppSelector(selectInquirePriceMulti);
     const kiToken: KoreaInvestmentToken = useAppSelector(getKoreaInvestmentToken);
@@ -60,6 +62,7 @@ export default function AlgorithmTradeLegacy() {
         if (DEBUG) console.log(`[handleOnClick] kiToken`, kiToken);
         dispatch(reqGetCapitalToken());
         dispatch(reqGetUsCapitalToken());
+        dispatch(reqGetKrPurchaseLogLatest());
     }
 
     useEffect(() => {
@@ -70,6 +73,10 @@ export default function AlgorithmTradeLegacy() {
     useEffect(() => {
         if (DEBUG) console.log(`kr_capital_token`, kr_capital_token);
     }, [kr_capital_token]);
+    useEffect(() => {
+        if (DEBUG) console.log(`krPurchaseLogLatest`, krPurchaseLogLatest);
+    }, [krPurchaseLogLatest]);
+
     useEffect(() => {
         if (DEBUG) console.log(`us_capital_token`, us_capital_token);
     }, [us_capital_token]);
@@ -121,44 +128,86 @@ export default function AlgorithmTradeLegacy() {
         return `${dateArr[0]} ${dateArr2[0]}`;
     }
 
+    function yyyymmddhhmiss(d: Date) {
+        const yyyy = d.getFullYear();
+        const mm = String(d.getMonth() + 1).padStart(2, "0");
+        const dd = String(d.getDate()).padStart(2, "0");
+        const hh = String(d.getHours()).padStart(2, "0");
+        const mi = String(d.getMinutes()).padStart(2, "0");
+        const ss = String(d.getSeconds()).padStart(2, "0");
+
+        return `${yyyy}-${mm}-${dd} ${hh}:${mi}:${ss}`;
+    }
+
+
     let cummulative_investment = 0;
     let cummulative_investment_sell = 0;
 
     const capitalToken = "KR" == market ? kr_capital_token : us_capital_token;
     // const purchase_log = capitalToken.value.purchase_log ?? [];
-    const purchase_log: Example8TableRowType[] = [];
+    const purchase_log = "KR" == market ? krPurchaseLogLatest.value : [];
+    // const purchase_log: Example8TableRowType[] = [];
     if (DEBUG) console.log(`purchase_log`, purchase_log);
     // purchase_log.slice(-60) 에서 -60은 일자가 아님.
-    let example8TableRow: Example8TableRowType[] = (purchase_log.map((item: any, index: number) => {
-        const bgColor = index % 2 == 0 ? "bg-white" : "bg-gray-100";
-        return item["stock_list"].map((subItem: any) => {
-            const frst_bltn_exrt = "KR" == market ? 1 : capitalToken.value.frst_bltn_exrt;
-            const investment = (Number(subItem["stck_prpr"]) * Number(subItem["ORD_QTY"]) * Number(frst_bltn_exrt));
-            if ("buy" == (subItem["buyOrSell"] ?? "buy")) {
-                cummulative_investment += investment;
-            }
-            else {
-                cummulative_investment_sell += investment;
-            }
+    // let example8TableRow: Example8TableRowType[] = (purchase_log.map((item: any, index: number) => {
+    //     const bgColor = index % 2 == 0 ? "bg-white" : "bg-gray-100";
+    //     return item["stock_list"].map((subItem: any) => {
+    //         const frst_bltn_exrt = "KR" == market ? 1 : capitalToken.value.frst_bltn_exrt;
+    //         const investment = (Number(subItem["stck_prpr"]) * Number(subItem["ORD_QTY"]) * Number(frst_bltn_exrt));
+    //         if ("buy" == (subItem["buyOrSell"] ?? "buy")) {
+    //             cummulative_investment += investment;
+    //         }
+    //         else {
+    //             cummulative_investment_sell += investment;
+    //         }
 
-            return {
-                id: item["time_stamp"] + subItem["stock_name"], // key
-                column_2: <div className="text-xs">{subItem["stock_name"]}</div>,
-                column_3: <div className="text-xs">{subItem["remaining_token"]}</div>,
-                column_4: <>
-                    <div className="text-xs">
-                        {market == "KR" ? "₩" : "$"}{Number(subItem["stck_prpr"]).toLocaleString() + " "}<span className="text-[0.6rem]">{market == "KR" ? "" : `(₩${Number(Number(subItem["stck_prpr"]) * capitalToken.value.frst_bltn_exrt).toFixed(0)})`}</span>
-                    </div>
-                </>,
-                expectedRateOfReturnColor: '', // x
-                column_5: <div className="text-xs">{subItem["ORD_QTY"]}</div>,
-                column_6: <div className="text-xs">{Number(subItem["remaining_token"] - investment).toFixed(0)}</div>,
-                column_7: <div className="text-xs">{formatDateTime(item["time_stamp"])}</div>,
-                column_8: <div className="text-xs">{subItem["buyOrSell"] ?? "buy"}</div>,
-                bgColor: bgColor,
-            }
-        })
-    })).reverse().flat();
+    //         return {
+    //             id: item["time_stamp"] + subItem["stock_name"], // key
+    //             column_2: <div className="text-xs">{subItem["stock_name"]}</div>,
+    //             column_3: <div className="text-xs">{subItem["remaining_token"]}</div>,
+    //             column_4: <>
+    //                 <div className="text-xs">
+    //                     {market == "KR" ? "₩" : "$"}{Number(subItem["stck_prpr"]).toLocaleString() + " "}<span className="text-[0.6rem]">{market == "KR" ? "" : `(₩${Number(Number(subItem["stck_prpr"]) * capitalToken.value.frst_bltn_exrt).toFixed(0)})`}</span>
+    //                 </div>
+    //             </>,
+    //             expectedRateOfReturnColor: '', // x
+    //             column_5: <div className="text-xs">{subItem["ORD_QTY"]}</div>,
+    //             column_6: <div className="text-xs">{Number(subItem["remaining_token"] - investment).toFixed(0)}</div>,
+    //             column_7: <div className="text-xs">{formatDateTime(item["time_stamp"])}</div>,
+    //             column_8: <div className="text-xs">{subItem["buyOrSell"] ?? "buy"}</div>,
+    //             bgColor: bgColor,
+    //         }
+    //     })
+    // })).reverse().flat();
+    let example8TableRow: Example8TableRowType[] = purchase_log.map((subItem: any, index: number) => {
+        const bgColor = index % 2 == 0 ? "bg-white" : "bg-gray-100";
+
+        const frst_bltn_exrt = "KR" == market ? 1 : capitalToken.value.frst_bltn_exrt;
+        const investment = (Number(subItem["stck_prpr"]) * Number(subItem["ORD_QTY"]) * Number(frst_bltn_exrt));
+        if ("buy" == (subItem["buyOrSell"] ?? "buy")) {
+            cummulative_investment += investment;
+        }
+        else {
+            cummulative_investment_sell += investment;
+        }
+
+        return {
+            id: subItem["key"], // key
+            column_2: <div className="text-xs">{subItem["stock_name"]}</div>,
+            column_3: <div className="text-xs">{subItem["remaining_token"]}</div>,
+            column_4: <>
+                <div className="text-xs">
+                    {market == "KR" ? "₩" : "$"}{Number(subItem["stck_prpr"]).toLocaleString() + " "}<span className="text-[0.6rem]">{market == "KR" ? "" : `(₩${Number(Number(subItem["stck_prpr"]) * capitalToken.value.frst_bltn_exrt).toFixed(0)})`}</span>
+                </div>
+            </>,
+            expectedRateOfReturnColor: '', // x
+            column_5: <div className="text-xs">{subItem["ORD_QTY"]}</div>,
+            column_6: <div className="text-xs">{Number(subItem["remaining_token"] - investment).toFixed(0)}</div>,
+            column_7: <div className="text-xs">{yyyymmddhhmiss(new Date(Number(subItem["key"]?.split(":").pop() ?? 0)))}</div>,
+            column_8: <div className="text-xs">{subItem["buyOrSell"] ?? "buy"}</div>,
+            bgColor: bgColor,
+        }
+    }).flat();
 
     if (DEBUG) console.log(`capitalToken.state`, capitalToken.state);
 

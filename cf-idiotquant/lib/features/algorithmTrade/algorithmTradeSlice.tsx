@@ -1,8 +1,7 @@
 import { PayloadAction } from "@reduxjs/toolkit";
 import { createAppSlice } from "@/lib/createAppSlice";
-import { getCapitalToken, getInquirePriceMulti, getQuantRule, getQuantRuleDesc, getUsCapitalToken } from "./algorithmTradeAPI";
+import { getCapitalToken, getInquirePriceMulti, getKrPurchaseLogLatest, getQuantRule, getQuantRuleDesc, getUsCapitalToken } from "./algorithmTradeAPI";
 import { KoreaInvestmentToken } from "../koreaInvestment/koreaInvestmentSlice";
-import { string } from "three/tsl";
 
 const DEBUG = false;
 
@@ -52,6 +51,11 @@ export interface CapitalTokenType {
     value: CapitalTokenTypeValue;
 }
 
+export interface PurchaseLogType {
+    state: "init" | "pending" | "fulfilled" | "rejected";
+    value: any[];
+}
+
 export interface QuantRuleValue {
     max_pbr: string;
     min_tomv: string;
@@ -72,6 +76,7 @@ interface AlgorithmTradeType {
     | "pending" | "fulfilled" | "rejected"
     ;
     capital_token: CapitalTokenType;
+    krPurchaseLog: PurchaseLogType;
     inquire_price_multi: any;
     purchase_log: any;
     us_capital_token: CapitalTokenType;
@@ -92,6 +97,10 @@ const initialState: AlgorithmTradeType = {
             corp_scan_index: 0,
             token_per_stock: 0,
         }
+    },
+    krPurchaseLog: {
+        state: "init",
+        value: []
     },
     inquire_price_multi: {},
     purchase_log: {},
@@ -207,6 +216,29 @@ export const algorithmTradeSlice = createAppSlice({
                 },
             }
         ),
+        reqGetKrPurchaseLogLatest: create.asyncThunk(
+            async (key?: string) => {
+                return await getKrPurchaseLogLatest(key);
+            },
+            {
+                pending: (state) => {
+                    if (DEBUG) console.log(`[reqGetKrPurchaseLogLatest] pending`);
+                    state.krPurchaseLog.state = "pending";
+                },
+                fulfilled: (state, action) => {
+                    if (DEBUG) console.log(`[reqGetKrPurchaseLogLatest] fulfilled`, `action.payload`, typeof action.payload, action.payload);
+                    // const json = JSON.parse(action.payload);
+                    // state.krPurchaseLog.value = json;
+                    state.krPurchaseLog.value = action.payload;
+
+                    state.krPurchaseLog.state = "fulfilled";
+                },
+                rejected: (state) => {
+                    if (DEBUG) console.log(`[reqGetKrPurchaseLogLatest] rejected`);
+                    state.krPurchaseLog.state = "rejected";
+                },
+            }
+        ),
         reqGetQuantRule: create.asyncThunk(
             async () => {
                 return await getQuantRule();
@@ -258,6 +290,7 @@ export const algorithmTradeSlice = createAppSlice({
     selectors: {
         selectAlgorithmTraceState: (state) => state.state,
         selectCapitalToken: (state) => state.capital_token,
+        selectkrPurchaseLogLatest: (state) => state.krPurchaseLog,
         selectUsCapitalToken: (state) => state.us_capital_token,
         selectInquirePriceMulti: (state) => state.inquire_price_multi,
         selectQuantRule: (state) => state.quant_rule,
@@ -265,5 +298,5 @@ export const algorithmTradeSlice = createAppSlice({
     }
 });
 
-export const { reqGetInquirePriceMulti, reqGetCapitalToken, reqGetUsCapitalToken, reqGetQuantRule, reqGetQuantRuleDesc } = algorithmTradeSlice.actions;
-export const { selectAlgorithmTraceState, selectCapitalToken, selectInquirePriceMulti, selectUsCapitalToken, selectQuantRule, selectQuantRuleDesc } = algorithmTradeSlice.selectors;
+export const { reqGetInquirePriceMulti, reqGetCapitalToken, reqGetUsCapitalToken, reqGetQuantRule, reqGetQuantRuleDesc, reqGetKrPurchaseLogLatest } = algorithmTradeSlice.actions;
+export const { selectAlgorithmTraceState, selectCapitalToken, selectInquirePriceMulti, selectUsCapitalToken, selectQuantRule, selectQuantRuleDesc, selectkrPurchaseLogLatest } = algorithmTradeSlice.selectors;
