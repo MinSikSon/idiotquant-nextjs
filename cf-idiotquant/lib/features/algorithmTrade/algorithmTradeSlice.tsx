@@ -1,6 +1,6 @@
 import { PayloadAction } from "@reduxjs/toolkit";
 import { createAppSlice } from "@/lib/createAppSlice";
-import { getCapitalToken, getInquirePriceMulti, getKrPurchaseLogLatest, getQuantRule, getQuantRuleDesc, getUsCapitalToken } from "./algorithmTradeAPI";
+import { getCapitalToken, getInquirePriceMulti, getKrPurchaseLogLatest, getQuantRule, getQuantRuleDesc, getUsCapitalToken, getUsPurchaseLogLatest } from "./algorithmTradeAPI";
 import { KoreaInvestmentToken } from "../koreaInvestment/koreaInvestmentSlice";
 
 const DEBUG = false;
@@ -77,6 +77,7 @@ interface AlgorithmTradeType {
     ;
     capital_token: CapitalTokenType;
     krPurchaseLog: PurchaseLogType;
+    usPurchaseLog: PurchaseLogType;
     inquire_price_multi: any;
     purchase_log: any;
     us_capital_token: CapitalTokenType;
@@ -99,6 +100,10 @@ const initialState: AlgorithmTradeType = {
         }
     },
     krPurchaseLog: {
+        state: "init",
+        value: []
+    },
+    usPurchaseLog: {
         state: "init",
         value: []
     },
@@ -230,12 +235,33 @@ export const algorithmTradeSlice = createAppSlice({
                     // const json = JSON.parse(action.payload);
                     // state.krPurchaseLog.value = json;
                     state.krPurchaseLog.value = action.payload;
-
                     state.krPurchaseLog.state = "fulfilled";
                 },
                 rejected: (state) => {
                     if (DEBUG) console.log(`[reqGetKrPurchaseLogLatest] rejected`);
                     state.krPurchaseLog.state = "rejected";
+                },
+            }
+        ),
+        reqGetUsPurchaseLogLatest: create.asyncThunk(
+            async (key?: string) => {
+                return await getUsPurchaseLogLatest(key);
+            },
+            {
+                pending: (state) => {
+                    if (DEBUG) console.log(`[reqGetUsPurchaseLogLatest] pending`);
+                    state.usPurchaseLog.state = "pending";
+                },
+                fulfilled: (state, action) => {
+                    if (DEBUG) console.log(`[reqGetUsPurchaseLogLatest] fulfilled`, `action.payload`, typeof action.payload, action.payload);
+                    // const json = JSON.parse(action.payload);
+                    // state.krPurchaseLog.value = json;
+                    state.usPurchaseLog.value = action.payload;
+                    state.usPurchaseLog.state = "fulfilled";
+                },
+                rejected: (state) => {
+                    if (DEBUG) console.log(`[reqGetUsPurchaseLogLatest] rejected`);
+                    state.usPurchaseLog.state = "rejected";
                 },
             }
         ),
@@ -291,6 +317,7 @@ export const algorithmTradeSlice = createAppSlice({
         selectAlgorithmTraceState: (state) => state.state,
         selectCapitalToken: (state) => state.capital_token,
         selectkrPurchaseLogLatest: (state) => state.krPurchaseLog,
+        selectusPurchaseLogLatest: (state) => state.usPurchaseLog,
         selectUsCapitalToken: (state) => state.us_capital_token,
         selectInquirePriceMulti: (state) => state.inquire_price_multi,
         selectQuantRule: (state) => state.quant_rule,
@@ -298,5 +325,5 @@ export const algorithmTradeSlice = createAppSlice({
     }
 });
 
-export const { reqGetInquirePriceMulti, reqGetCapitalToken, reqGetUsCapitalToken, reqGetQuantRule, reqGetQuantRuleDesc, reqGetKrPurchaseLogLatest } = algorithmTradeSlice.actions;
-export const { selectAlgorithmTraceState, selectCapitalToken, selectInquirePriceMulti, selectUsCapitalToken, selectQuantRule, selectQuantRuleDesc, selectkrPurchaseLogLatest } = algorithmTradeSlice.selectors;
+export const { reqGetInquirePriceMulti, reqGetCapitalToken, reqGetUsCapitalToken, reqGetQuantRule, reqGetQuantRuleDesc, reqGetKrPurchaseLogLatest, reqGetUsPurchaseLogLatest } = algorithmTradeSlice.actions;
+export const { selectAlgorithmTraceState, selectCapitalToken, selectInquirePriceMulti, selectUsCapitalToken, selectQuantRule, selectQuantRuleDesc, selectkrPurchaseLogLatest, selectusPurchaseLogLatest } = algorithmTradeSlice.selectors;

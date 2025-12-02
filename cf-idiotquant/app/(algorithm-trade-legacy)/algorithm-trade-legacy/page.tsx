@@ -2,7 +2,7 @@
 
 import { DesignButton } from "@/components/designButton";
 import TableTemplate, { Example8TableHeadType, Example8TableRowType, TablesExample8PropsType } from "@/components/tableExample8";
-import { CapitalTokenType, PurchaseLogType, QuantRule, reqGetKrPurchaseLogLatest, reqGetQuantRule, reqGetQuantRuleDesc, reqGetUsCapitalToken, selectCapitalToken, selectInquirePriceMulti, selectkrPurchaseLogLatest, selectQuantRule, selectQuantRuleDesc, selectUsCapitalToken } from "@/lib/features/algorithmTrade/algorithmTradeSlice";
+import { CapitalTokenType, PurchaseLogType, QuantRule, reqGetKrPurchaseLogLatest, reqGetQuantRule, reqGetQuantRuleDesc, reqGetUsCapitalToken, reqGetUsPurchaseLogLatest, selectCapitalToken, selectInquirePriceMulti, selectkrPurchaseLogLatest, selectQuantRule, selectQuantRuleDesc, selectUsCapitalToken, selectusPurchaseLogLatest } from "@/lib/features/algorithmTrade/algorithmTradeSlice";
 import { reqGetCapitalToken } from "@/lib/features/algorithmTrade/algorithmTradeSlice";
 import { getKoreaInvestmentToken, KoreaInvestmentToken } from "@/lib/features/koreaInvestment/koreaInvestmentSlice";
 import { useAppDispatch, useAppSelector } from "@/lib/hooks";
@@ -46,6 +46,7 @@ export default function AlgorithmTradeLegacy() {
 
     const kr_capital_token: CapitalTokenType = useAppSelector(selectCapitalToken);
     const krPurchaseLogLatest: PurchaseLogType = useAppSelector(selectkrPurchaseLogLatest);
+    const usPurchaseLogLatest: PurchaseLogType = useAppSelector(selectusPurchaseLogLatest);
 
     const us_capital_token: CapitalTokenType = useAppSelector(selectUsCapitalToken);
     const inquirePriceMulti: any = useAppSelector(selectInquirePriceMulti);
@@ -63,6 +64,7 @@ export default function AlgorithmTradeLegacy() {
         dispatch(reqGetCapitalToken());
         dispatch(reqGetUsCapitalToken());
         dispatch(reqGetKrPurchaseLogLatest());
+        dispatch(reqGetUsPurchaseLogLatest());
     }
 
     useEffect(() => {
@@ -76,6 +78,9 @@ export default function AlgorithmTradeLegacy() {
     useEffect(() => {
         if (DEBUG) console.log(`krPurchaseLogLatest`, krPurchaseLogLatest);
     }, [krPurchaseLogLatest]);
+    useEffect(() => {
+        if (DEBUG) console.log(`usPurchaseLogLatest`, usPurchaseLogLatest);
+    }, [usPurchaseLogLatest]);
 
     useEffect(() => {
         if (DEBUG) console.log(`us_capital_token`, us_capital_token);
@@ -145,7 +150,7 @@ export default function AlgorithmTradeLegacy() {
 
     const capitalToken = "KR" == market ? kr_capital_token : us_capital_token;
     // const purchase_log = capitalToken.value.purchase_log ?? [];
-    const purchase_log = "KR" == market ? krPurchaseLogLatest.value : [];
+    const purchase_log = "KR" == market ? krPurchaseLogLatest.value : usPurchaseLogLatest.value;
     // const purchase_log: Example8TableRowType[] = [];
     if (DEBUG) console.log(`purchase_log`, purchase_log);
     // purchase_log.slice(-60) 에서 -60은 일자가 아님.
@@ -193,7 +198,7 @@ export default function AlgorithmTradeLegacy() {
 
         return {
             id: subItem["key"], // key
-            column_2: <div className="text-xs">{subItem["stock_name"]}</div>,
+            column_2: <div className="text-xs">{subItem?.stock_name ?? subItem.symbol ?? ""}</div>,
             column_3: <div className="text-xs">{subItem["remaining_token"]}</div>,
             column_4: <>
                 <div className="text-xs">

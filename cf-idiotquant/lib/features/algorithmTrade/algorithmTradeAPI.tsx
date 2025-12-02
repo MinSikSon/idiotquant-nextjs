@@ -31,6 +31,13 @@ export const getKrPurchaseLogLatest: any = async (key?: any) => {
     return getAlgorithmTradeRequest(subUrl, additionalHeaders);
 }
 
+export const getUsPurchaseLogLatest: any = async (key?: any) => {
+    const subUrl = `/algorithm/trade/us/purchase/log/latest`;
+    const additionalHeaders: AdditionalHeaders = {
+        "kakaoId": key,
+    }
+    return getAlgorithmTradeRequest(subUrl, additionalHeaders);
+}
 
 
 export const getUsCapitalToken: any = async () => {
