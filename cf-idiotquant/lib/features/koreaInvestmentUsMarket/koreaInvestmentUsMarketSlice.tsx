@@ -395,9 +395,7 @@ interface KoreaInvestmentOverseasPriceQuotationsDailyPriceOutput2 {
 }
 
 export interface KoreaInvestmentOverseasPriceQuotationsDailyPrice {
-    state: "init"
-    | "pending" | "fulfilled" | "rejected"
-    ;
+    state: "init" | "pending" | "fulfilled" | "rejected";
     "output1": KoreaInvestmentOverseasPriceQuotationsDailyPriceOutput1;
     "output2": KoreaInvestmentOverseasPriceQuotationsDailyPriceOutput2[];
 }

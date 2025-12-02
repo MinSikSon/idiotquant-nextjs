@@ -17,6 +17,7 @@ interface InquireBalanceResultProps {
     reqGetInquireBalance: any;
     reqGetInquireCcnl?: any;
     reqGetInquireNccs?: any;
+    reqGetCapitalUs?: any;
     kiOrderCash?: any;
     reqPostOrderCash?: any;
     stock_list?: any;
@@ -379,6 +380,9 @@ export default function InquireBalanceResult(props: InquireBalanceResultProps) {
                                 }
                                 if (!!props.reqGetInquireNccs) {
                                     dispatch(props.reqGetInquireNccs(balanceKey));
+                                }
+                                if (!!props.reqGetCapitalUs) {
+                                    dispatch(props.reqGetCapitalUs(balanceKey));
                                 }
                             }}
                             variant="outline"

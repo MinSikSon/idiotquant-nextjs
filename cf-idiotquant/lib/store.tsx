@@ -17,6 +17,7 @@ import { aiStreamSlice } from "./features/ai/aiStreamSlice";
 import { searchHistorySlice } from "./features/searchHistory/searchHistorySlice";
 import { timestampSlice } from "./features/timestamp/timestampSlice";
 import { controlSlice } from "./features/control/controlSlice";
+import { capitalSlice } from "./features/capital/capitalSlice";
 
 const rootReducer: any = combineSlices(
     financialInfoSlice,
@@ -36,7 +37,8 @@ const rootReducer: any = combineSlices(
     aiStreamSlice,
     searchHistorySlice,
     timestampSlice,
-    controlSlice
+    controlSlice,
+    capitalSlice
 );
 
 export type RootState = ReturnType<typeof rootReducer>;
