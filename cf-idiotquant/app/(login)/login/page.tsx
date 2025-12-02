@@ -81,7 +81,7 @@ export default function LoginPage() {
                     onClick={() => onClickLogin()}
                     variant="outline"
                     radius="medium"
-                    className="!px-16 !py-6"
+                    className="!px-16 !py-6 !cursor-pointer !hover:brightness-95"
                 >
                     <Flex align="center" justify="center">
                         <Image src="/images/kakaotalk_sharing_btn_small.png" width="12" height="12" alt="metamask" className="h-6 w-6 mx-2" />

@@ -12,7 +12,7 @@ import * as Tabs from "@radix-ui/react-tabs";
 
 import CountUp from '@/src/TextAnimations/CountUp/CountUp';
 import GradientText from '@/src/TextAnimations/GradientText/GradientText';
-import { Badge, Box, Flex, Grid, Spinner, Text } from "@radix-ui/themes";
+import { Badge, Box, Button, Flex, Grid, Spinner, Text } from "@radix-ui/themes";
 
 const DEBUG = false;
 
@@ -125,7 +125,8 @@ export default function AlgorithmTradeLegacy() {
     let cummulative_investment_sell = 0;
 
     const capitalToken = "KR" == market ? kr_capital_token : us_capital_token;
-    const purchase_log = capitalToken.value.purchase_log ?? [];
+    // const purchase_log = capitalToken.value.purchase_log ?? [];
+    const purchase_log: Example8TableRowType[] = [];
     if (DEBUG) console.log(`purchase_log`, purchase_log);
     // purchase_log.slice(-60) 에서 -60은 일자가 아님.
     let example8TableRow: Example8TableRowType[] = (purchase_log.map((item: any, index: number) => {
@@ -146,7 +147,7 @@ export default function AlgorithmTradeLegacy() {
                 column_3: <div className="text-xs">{subItem["remaining_token"]}</div>,
                 column_4: <>
                     <div className="text-xs">
-                        {Number(subItem["stck_prpr"]).toLocaleString() + " "}<span className="text-[0.6rem]">{market == "KR" ? "KRW" : `USD (${Number(Number(subItem["stck_prpr"]) * capitalToken.value.frst_bltn_exrt).toFixed(0)} KRW)`}</span>
+                        {market == "KR" ? "₩" : "$"}{Number(subItem["stck_prpr"]).toLocaleString() + " "}<span className="text-[0.6rem]">{market == "KR" ? "" : `(₩${Number(Number(subItem["stck_prpr"]) * capitalToken.value.frst_bltn_exrt).toFixed(0)})`}</span>
                     </div>
                 </>,
                 expectedRateOfReturnColor: '', // x
@@ -231,23 +232,11 @@ export default function AlgorithmTradeLegacy() {
     const props: TablesExample8PropsType = {
         title: <>
             <Flex p="2" className="!items-center">
-                <DesignButton
-                    handleOnClick={() => {
-                        handleOnClick()
-                    }}
-                    buttonName={`refresh data`}
-                    buttonBgColor="bg-white dark:bg-black"
-                    buttonBorderColor="border-gray-500"
-                    buttonShadowColor="#D5D5D5"
-                    textStyle="text-black dark:text-white text-xs"
-                    buttonStyle={`rounded-lg px-2 py-1 flex items-center justify-center mb-2 button bg-white cursor-pointer select-none
-                                       active:translate-y-1 active:[box-shadow:0_0px_0_0_#D5D5D5,0_0px_0_0_#D5D5D541] active:border-[0px]
-                                       transition-all duration-150 [box-shadow:0_4px_0_0_#D5D5D5,0_8px_0_0_#D5D5D541] border-[1px]
-                                       `}
-                />
+                <Button onClick={() => handleOnClick()}>refresh data</Button>
                 <MarketTabs setMarket={setMarket} />
-                {"fulfilled" != capitalToken.state ?
-                    <Spinner loading />
+                {"fulfilled" != capitalToken?.state ?
+                    // <Spinner loading />
+                    <></>
                     : <>
                         <Text className="text-[0.6rem] text-black dark:text-white ml-1">{time.toLocaleString("en-US", { timeZone: "Asia/Seoul" })}</Text>
                     </>}
@@ -266,6 +255,7 @@ export default function AlgorithmTradeLegacy() {
                                     <Box>
                                         <Flex gap="1" align="end">
                                             <Text>BUY:</Text>
+                                            <Text>₩</Text>
                                             <GradientText
                                                 colors={["#40ffaa", "#4079ff", "#40ffaa", "#4079ff", "#40ffaa"]}
                                                 animationSpeed={3}
@@ -280,11 +270,11 @@ export default function AlgorithmTradeLegacy() {
                                                     className="count-up-text"
                                                 />
                                             </GradientText>
-                                            <Text>KRW</Text>
                                         </Flex>
                                     </Box>
                                     <Flex gap="1" align="end">
                                         <Text>SELL:</Text>
+                                        <Text>₩</Text>
                                         <CountUp
                                             from={0}
                                             to={Number(Number(cummulative_investment_sell).toFixed(0))}
@@ -293,7 +283,6 @@ export default function AlgorithmTradeLegacy() {
                                             duration={1}
                                             className="count-up-text"
                                         />
-                                        <Text>KRW</Text>
                                     </Flex>
                                 </Flex>
                                 : <GradientText
@@ -301,28 +290,28 @@ export default function AlgorithmTradeLegacy() {
                                     animationSpeed={3}
                                     showBorder={false}
                                 >
-                                    <CountUp
+                                    ₩<CountUp
                                         from={0}
                                         to={Number(Number(cummulative_investment).toFixed(0))}
                                         separator=","
                                         direction="up"
                                         duration={2}
                                         className="count-up-text"
-                                    /> KRW</GradientText>
+                                    /></GradientText>
                             }</div>
                             {market == "KR" ? <></>
                                 : <Text size="1"><GradientText
                                     colors={["#40ffaa", "#4079ff", "#40ffaa", "#4079ff", "#40ffaa"]}
                                     animationSpeed={3}
                                     showBorder={false}
-                                ><CountUp
+                                >$<CountUp
                                         from={0}
                                         to={Number(Number(Number(cummulative_investment) / Number(us_capital_token.value.frst_bltn_exrt)).toFixed(3))}
                                         separator=","
                                         direction="up"
                                         duration={1}
                                         className="count-up-text"
-                                    /> USD</GradientText></Text>}
+                                    /></GradientText></Text>}
                         </div>
                     </Flex>
                 </Box >

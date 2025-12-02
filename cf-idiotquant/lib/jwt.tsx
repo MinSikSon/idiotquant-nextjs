@@ -2,23 +2,6 @@ const DEBUG = false;
 
 // Base64Url 디코딩 함수
 
-export function decodeJWT(token: any) {
-    const [encodedHeader, encodedPayload, encodedSignature] = token.split('.');
-
-    // 헤더와 페이로드 디코딩
-    const decodedHeader = JSON.parse(base64UrlDecode(encodedHeader));
-    const decodedPayload = decodeURIComponent(escape(base64UrlDecode(encodedPayload)));
-    if (DEBUG) console.log(`[decodeJWT] typeof decodedPayload:`, typeof decodedPayload);
-    if (DEBUG) console.log(`[decodeJWT] decodedPayload:`, decodedPayload);
-    if (DEBUG) console.log(`[decodeJWT] JSON.stringify(decodedPayload):`, JSON.stringify(decodedPayload));
-
-    return {
-        header: decodedHeader,
-        payload: JSON.parse(decodedPayload),
-        signature: encodedSignature // 서명은 디코딩 없이 반환
-    };
-}
-
 function base64UrlDecode(str: any) {
     str = str.replace(/-/g, '+').replace(/_/g, '/');
     return decodeURIComponent(

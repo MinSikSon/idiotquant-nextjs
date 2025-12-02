@@ -1,4 +1,3 @@
-import { decodeJWT } from "@/lib/jwt";
 import { NextRequest, NextResponse } from "next/server";
 
 export async function GET(req: NextRequest) {
@@ -23,29 +22,6 @@ export async function GET(req: NextRequest) {
     sameSite: sameSite,
     maxAge: 60 * 60, // 1시간
   });
-
-  // const jwt = decodeJWT(token);
-  // console.log(`[login/callback/route] jwt:`, jwt, `, typeof jwt:`, typeof jwt);
-  // const payload = jwt.payload;
-  // const jsonPayload = JSON.parse(payload) as any;
-  // console.log(`[login/callback/route] payload:`, payload, `, typeof payload:`, typeof payload);
-  // console.log(`[login/callback/route] jsonPayload:`, jsonPayload, `, typeof jsonPayload:`, typeof jsonPayload);
-
-  // res.cookies.set("kakaoId", jsonPayload.id, {
-  //   path: "/",
-  //   httpOnly: httpOnly,
-  //   secure: secure,
-  //   sameSite: sameSite,
-  //   maxAge: 60 * 60, // 1시간
-  // });
-
-  // res.cookies.set("kakaoNickName", jsonPayload.properties?.nickname, {
-  //   path: "/",
-  //   httpOnly: httpOnly,
-  //   secure: secure,
-  //   sameSite: sameSite,
-  //   maxAge: 60 * 60, // 1시간
-  // });
 
   return res;
 }
