@@ -64,7 +64,8 @@ export interface StrategyUsNcavCanditateConditionType {
     AssetsCurrent: number;
     LastPrice: number;
     date: string;
-    LiabilitiesCurrent: number;
+    Liabilities?: number;
+    LiabilitiesCurrent?: number;
     MarketCapitalization: number;
     NetIncome: number;
     bps: number;
