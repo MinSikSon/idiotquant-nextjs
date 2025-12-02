@@ -528,7 +528,7 @@ ${md}
     const bs = finnhubFinancialsAsReported?.data?.[0]?.report?.bs ?? [];
 
     for (let i = 0; i < bs.length; ++i) {
-      if ("us-gaap_AssetsCurrent" == bs[i].concept) {
+      if ("us-gaap_AssetsCurrent" == bs[i].concept || "AssetsCurrent" == bs[i].concept) {
         cras = Number(bs[i].value); // 유동 자산
         if (DEBUG) console.log(`[getNcav] cras. bs[`, i, `]:`, bs[i]);
         break;
@@ -542,7 +542,7 @@ ${md}
     const bs = finnhubFinancialsAsReported?.data?.[0]?.report?.bs ?? [];
     let total_lblt = 1;
     for (let i = 0; i < bs.length; ++i) {
-      if ("us-gaap_LiabilitiesCurrent" == bs[i].concept) {
+      if ("us-gaap_Liabilities" == bs[i].concept || "Liabilities" == bs[i].concept) {
         total_lblt = Number(bs[i].value); // 부채 총계
         if (DEBUG) console.log(`[getNcav] total_lblt. bs[`, i, `]:`, bs[i]);
         break;
