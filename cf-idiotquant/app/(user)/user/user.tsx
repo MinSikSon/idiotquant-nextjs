@@ -61,7 +61,7 @@ export default function User() {
         if (DEBUG) console.log(`[User] kakaoTotal:`, kakaoTotal);
         // TODO: kakaoTotal에 있는 정보 활용해도 좋을 듯 함.
         if (kakaoTotal?.id == 0) {
-            router.push(`${process.env.NEXT_PUBLIC_CLIENT_URL}/login`); // NOTE: 로그인 성공 시 userpage 로 이동
+            router.push(`${process.env.NEXT_PUBLIC_CLIENT_URL}/login/`); // NOTE: 로그인 성공 시 userpage 로 이동
 
         }
     }, [kakaoTotal]);

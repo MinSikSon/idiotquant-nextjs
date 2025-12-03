@@ -5,7 +5,7 @@ export const setLoginStatus: any = async () => {
     const authToken = getCookie("authToken");
     // console.log(`[setLoginStatus] authToken:`, authToken);
 
-    const url = `${process.env.NEXT_PUBLIC_API_URL}/login`
+    const url = `${process.env.NEXT_PUBLIC_API_URL}/login/`
     const options: RequestInit = {
         method: "POST", // GET -> OPTION -> POST
         credentials: "include",  // include credentials (like cookies) in the request
