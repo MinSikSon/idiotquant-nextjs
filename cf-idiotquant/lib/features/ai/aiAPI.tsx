@@ -9,7 +9,7 @@ interface AiHeaders {
 }
 
 export const postLaboratory: any = async (system_content: string, user_content: string) => {
-    const subUrl = `/laboratory`;
+    const subUrl = `/laboratory/`;
     const additionalHeaders: AiHeaders = {
         // "authorization": koreaInvestmentToken["access_token"],
         "kakaoId": getCookie("kakaoId"),
