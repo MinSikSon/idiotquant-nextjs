@@ -4,7 +4,7 @@ import { reqGetInquireBalance, getKoreaInvestmentBalance, KoreaInvestmentBalance
 import { reqPostOrderCash, getKoreaInvestmentOrderCash, KoreaInvestmentOrderCash } from "@/lib/features/koreaInvestment/koreaInvestmentSlice";
 
 import { useAppDispatch, useAppSelector } from "@/lib/hooks";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 
 import { usePathname } from "next/navigation";
 
@@ -28,6 +28,8 @@ export default function BalanceKr() {
 
     const kakaoTotal: KakaoTotal = useAppSelector(selectKakaoTotal);
     const kakaoMemberList = useAppSelector(selectKakaoMemberList);
+
+    const [balanceKey, setBalanceKey] = useState(String(kakaoTotal?.id));
 
     useEffect(() => {
 
@@ -67,6 +69,8 @@ export default function BalanceKr() {
             <Text size="3">🇰🇷</Text>
         </Flex>
         <InquireBalanceResult
+            balanceKey={balanceKey}
+            setBalanceKey={setBalanceKey}
             kiBalance={kiBalance}
             reqGetInquireBalance={reqGetInquireBalance}
             kiOrderCash={kiOrderCash}

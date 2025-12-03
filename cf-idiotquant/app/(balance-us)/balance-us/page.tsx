@@ -12,10 +12,10 @@ import { useAppDispatch, useAppSelector } from "@/lib/hooks";
 import { Box, Button, Code, Flex, Text } from "@radix-ui/themes";
 import { usePathname } from "next/navigation";
 import { useState, useEffect } from "react";
-import { CapitalUsType, reqGetCapitalUs, selectCapitalUs } from "@/lib/features/capital/capitalSlice";
+import { UsCapitalType, reqGetUsCapital, reqPostUsCapitalTokenAllPlus, reqPostUsCapitalTokenAllMinus, selectUsCapital, selectUsCapitalTokenAllMinus, selectUsCapitalTokenAllPlus } from "@/lib/features/capital/capitalSlice";
 import StockListTable from "@/components/balance/stockListTable";
 
-let DEBUG = true;
+let DEBUG = false;
 
 export default function BalanceUs() {
     const pathname = usePathname();
@@ -33,9 +33,11 @@ export default function BalanceUs() {
     const kakaoTotal: KakaoTotal = useAppSelector(selectKakaoTotal);
     const kakaoMemberList = useAppSelector(selectKakaoMemberList);
 
-    // const [balanceKey, setBalanceKey] = useState(String(kakaoTotal?.id));
+    const [balanceKey, setBalanceKey] = useState(String(kakaoTotal?.id));
 
-    const capitalUs: CapitalUsType = useAppSelector(selectCapitalUs);
+    const usCapital: UsCapitalType = useAppSelector(selectUsCapital);
+    const usCapitalTokenAllPlus = useAppSelector(selectUsCapitalTokenAllPlus);
+    const usCapitalTokenAllMinus = useAppSelector(selectUsCapitalTokenAllMinus);
 
     useEffect(() => {
     }, []);
@@ -59,33 +61,55 @@ export default function BalanceUs() {
         }
     }, [kiNccs]);
     useEffect(() => {
-        if (DEBUG) console.log(`[BalanceUs]`, `capitalUs`, capitalUs);
+        if (DEBUG) console.log(`[BalanceUs]`, `usCapital`, usCapital);
         if ("init" == kiNccs.state) {
-            dispatch(reqGetCapitalUs());
+            dispatch(reqGetUsCapital());
         }
-    }, [capitalUs]);
+    }, [usCapital]);
 
     useEffect(() => {
-        if (DEBUG) console.log(`[BalanceKr]`, `kr_capital_token`, us_capital_token);
+        if (DEBUG) console.log(`[BalanceUs]`, `kr_capital_token`, us_capital_token);
         if ("init" == us_capital_token.state) {
             dispatch(reqGetUsCapitalToken());
         }
     }, [us_capital_token])
     useEffect(() => {
-        if (DEBUG) console.log(`[BalanceKr]`, `kakaoTotal`, kakaoTotal);
+        if (DEBUG) console.log(`[BalanceUs]`, `kakaoTotal`, kakaoTotal);
         if (kakaoTotal?.kakao_account?.profile?.nickname === process.env.NEXT_PUBLIC_MASTER) {
             dispatch(reqGetKakaoMemberList());
         }
     }, [kakaoTotal])
     useEffect(() => {
-        if (DEBUG) console.log(`[BalanceKr]`, `kakaoMemberList`, kakaoMemberList);
+        if (DEBUG) console.log(`[BalanceUs]`, `kakaoMemberList`, kakaoMemberList);
     }, [kakaoMemberList])
+    useEffect(() => {
+        if (DEBUG) console.log(`[BalanceUs]`, `usCapitalTokenAllPlus`, usCapitalTokenAllPlus);
+        if ("fulfilled" == usCapitalTokenAllPlus?.state) {
+            dispatch(reqGetUsCapital(balanceKey));
+        }
+    }, [usCapitalTokenAllPlus])
+    useEffect(() => {
+        if (DEBUG) console.log(`[BalanceUs]`, `usCapitalTokenAllMinus`, usCapitalTokenAllMinus);
+        if ("fulfilled" == usCapitalTokenAllMinus?.state) {
+            dispatch(reqGetUsCapital(balanceKey));
+        }
+    }, [usCapitalTokenAllMinus])
+
 
     if (DEBUG) console.log(`kiBalance.state`, kiBalance.state);
     if (kiBalance.state == "rejected") {
         return <>
             <NotFound warnText="계좌 조회 권한이 없습니다" />
         </>
+    }
+
+    function doAllTokenPlus(num: number) {
+        console.log(`doAllTokenPlus`);
+        dispatch(reqPostUsCapitalTokenAllPlus({ key: balanceKey, num: num }));
+    }
+    function doAllTokenMinus(num: number) {
+        console.log(`doAllTokenMinus`);
+        dispatch(reqPostUsCapitalTokenAllMinus({ key: balanceKey, num: num }));
     }
     return <>
         <Flex direction="column" align="center" justify="center" gap="2">
@@ -100,11 +124,13 @@ export default function BalanceUs() {
 
         </Flex>
         <InquireBalanceResult
+            balanceKey={balanceKey}
+            setBalanceKey={setBalanceKey}
             kiBalance={kiBalance}
             reqGetInquireBalance={reqGetOverseasStockTradingInquirePresentBalance}
             reqGetInquireCcnl={reqGetOverseasStockTradingInquireCcnl}
             reqGetInquireNccs={reqGetOverseasStockTradingInquireNccs}
-            reqGetCapitalUs={reqGetCapitalUs}
+            reqGetUsCapital={reqGetUsCapital}
             kiOrderCash={kiUsOrder}
             reqPostOrderCash={reqPostOrderUs}
             stock_list={us_capital_token.value.stock_list}
@@ -113,7 +139,7 @@ export default function BalanceUs() {
         />
         <OverseasCcnlTable data={kiCcnl} />
         <OverseasNccsTable data={kiNccs} />
-        <StockListTable data={capitalUs} />
+        <StockListTable data={usCapital} doAllTokenPlus={doAllTokenPlus} doAllTokenMinus={doAllTokenMinus} />
     </>
 }
 

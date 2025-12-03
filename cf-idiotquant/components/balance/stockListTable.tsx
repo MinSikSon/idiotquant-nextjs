@@ -3,14 +3,17 @@
 import React, { useEffect, useState } from "react";
 import * as ScrollArea from "@radix-ui/react-scroll-area";
 import * as Tooltip from "@radix-ui/react-tooltip";
-import { CapitalUsStockItem, CapitalUsType } from "@/lib/features/capital/capitalSlice";
+import { UsCapitalStockItem, UsCapitalType } from "@/lib/features/capital/capitalSlice";
+import { Box, Button, Flex, Grid, Text } from "@radix-ui/themes";
 
 interface Props {
-  data: CapitalUsType;
+  data: UsCapitalType;
+  doAllTokenPlus: any;
+  doAllTokenMinus: any;
   className?: string;
 }
 
-const HEADERS: { key: keyof CapitalUsStockItem | "actions"; label: string }[] = [
+const HEADERS: { key: keyof UsCapitalStockItem | "actions"; label: string }[] = [
   { key: "symbol", label: "심볼" },
   { key: "key", label: "Key" },
   { key: "ncavRatio", label: "NCAV 비율" },
@@ -20,11 +23,11 @@ const HEADERS: { key: keyof CapitalUsStockItem | "actions"; label: string }[] = 
   { key: "actions", label: "동작" },
 ];
 
-export default function StockListTable({ data, className = "" }: Props) {
+export default function StockListTable({ data, doAllTokenPlus, doAllTokenMinus, className = "" }: Props) {
   const rows = data?.stock_list ?? [];
 
   // 선택된 항목과 모달 열림 상태
-  const [selected, setSelected] = useState<CapitalUsStockItem | null>(null);
+  const [selected, setSelected] = useState<UsCapitalStockItem | null>(null);
   const [isOpen, setIsOpen] = useState(false);
 
   // Esc로 닫기
@@ -37,7 +40,7 @@ export default function StockListTable({ data, className = "" }: Props) {
   }, [isOpen]);
 
   // 상세 버튼 클릭 핸들러
-  const openDetail = (item: CapitalUsStockItem) => {
+  const openDetail = (item: UsCapitalStockItem) => {
     setSelected(item);
     setIsOpen(true);
   };
@@ -54,12 +57,42 @@ export default function StockListTable({ data, className = "" }: Props) {
         <div className="text-sm">
           상태: {data?.state}
         </div>
-        <div className="text-sm">
-          현재시간: <span className="font-medium">{data.time_stamp.current}</span>
-        </div>
-        <div className="text-sm">
-          Token per Stock: {data.token_info.token_per_stock} • Refill Index: {data.token_info.refill_stock_index}
-        </div>
+        <Flex direction="column" align="center" justify="center" gap="1">
+          <Text>time_stamp:</Text>
+          <div className="text-sm">
+            <span className="font-medium">{new Date(data.time_stamp.prevPrev).toLocaleString()}</span>
+          </div>
+          <div className="text-sm">
+            <span className="font-medium">{new Date(data.time_stamp.prev).toLocaleString()}</span>
+          </div> <div className="text-sm">
+            <span className="font-medium">{new Date(data.time_stamp.current).toLocaleString()}</span>
+          </div>
+        </Flex>
+        <Flex direction="column">
+          <div className="text-sm">
+            Token per Stock: {data.token_info.token_per_stock} • Refill Index: {data.token_info.refill_stock_index}
+          </div>
+          <Flex direction="column" align="center" justify="center" py="1" my="1" className="border-2 rounded-xl">
+            <Text>all TOKEN</Text>
+            <Grid columns="1" gap="1" align="center" justify="center">
+              <Flex gap="1" align="center" justify="end">
+                <Text>₩10,000</Text>
+                <Button onClick={() => doAllTokenPlus(10_000)} size="2">+</Button>
+                <Button onClick={() => doAllTokenMinus(10_000)} size="2" color="tomato" >-</Button>
+              </Flex>
+              <Flex gap="1" align="center" justify="end">
+                <Text>₩100,000</Text>
+                <Button onClick={() => doAllTokenPlus(100_000)} size="2" >+</Button>
+                <Button onClick={() => doAllTokenMinus(100_000)} size="2" color="tomato" >-</Button>
+              </Flex>
+              <Flex gap="1" align="center" justify="end">
+                <Text>₩1,000,000</Text>
+                <Button onClick={() => doAllTokenPlus(1_000_000)} size="2" >+</Button>
+                <Button onClick={() => doAllTokenMinus(1_000_000)} size="2" color="tomato"  >-</Button>
+              </Flex>
+            </Grid>
+          </Flex>
+        </Flex>
       </div>
 
       <ScrollArea.Root className="rounded-md border border-slate-200">
@@ -94,7 +127,7 @@ export default function StockListTable({ data, className = "" }: Props) {
                           return (
                             <td key={`cell-${rIndex}-${cIndex}`} className="px-3 py-2 whitespace-nowrap border-b">
                               <div className="flex gap-2">
-                                <button className="text-xs px-2 py-1 rounded-md bg-blue-50 dark:bg-slate-800 hover:bg-blue-100">refill TOEKN</button>
+                                <Button size="1" disabled>refill TOKEN</Button>
                               </div>
                             </td>
                           );
@@ -105,19 +138,13 @@ export default function StockListTable({ data, className = "" }: Props) {
                             <td key={`cell-${rIndex}-${cIndex}`} className="px-3 py-2 whitespace-nowrap border-b">
                               <div className="flex gap-2">
                                 {/* 상세 버튼에 openDetail 연결 */}
-                                <button
-                                  onClick={() => openDetail(row)}
-                                  className="text-xs px-2 py-1 rounded-md bg-slate-100 dark:bg-slate-800 hover:bg-slate-200"
-                                  aria-haspopup="dialog"
-                                >
-                                  상세
-                                </button>
+                                <Button size="1" onClick={() => openDetail(row)} aria-haspopup="dialog">상세</Button>
                               </div>
                             </td>
                           );
                         }
 
-                        const key = h.key as keyof CapitalUsStockItem;
+                        const key = h.key as keyof UsCapitalStockItem;
                         const value = row[key] ?? "-";
 
                         return (
@@ -157,48 +184,49 @@ export default function StockListTable({ data, className = "" }: Props) {
       {/* -----------------------------
           상세 모달 (간단한 Overlay)
          ----------------------------- */}
-      {isOpen && selected && (
-        <div
-          role="dialog"
-          aria-modal="true"
-          className="fixed inset-0 z-50 flex items-center justify-center"
-        >
-          {/* dim */}
+      {
+        isOpen && selected && (
           <div
-            className="absolute inset-0 bg-black/40"
-            onClick={closeDetail}
-            aria-hidden="true"
-          />
+            role="dialog"
+            aria-modal="true"
+            className="fixed inset-0 z-50 flex items-center justify-center"
+          >
+            {/* dim */}
+            <div
+              className="absolute inset-0 bg-black/40"
+              onClick={closeDetail}
+              aria-hidden="true"
+            />
 
-          {/* content */}
-          <div className="relative z-10 w-[min(90%,800px)] max-h-[80vh] overflow-auto rounded-lg p-4 shadow-lg. bg-white dark:bg-slate-900">
-            <div className="flex items-start justify-between gap-4">
-              <h3 className="text-lg font-semibold">상세 정보 — {selected.symbol}</h3>
-              <div className="ml-auto flex gap-2">
-                <button
-                  onClick={() => {
-                    // 모달 내에서 raw JSON 복사 기능(선택사항)
-                    navigator.clipboard?.writeText(JSON.stringify(selected, null, 2));
-                  }}
-                  className="text-xs px-2 py-1 rounded-md bg-slate-100 dark:bg-slate-800 hover:bg-slate-200"
-                >
-                  복사
-                </button>
-                <button onClick={closeDetail} className="text-xs px-2 py-1 rounded-md bg-red-50 dark:bg-slate-800 hover:bg-red-100">
-                  닫기
-                </button>
+            {/* content */}
+            <div className="relative z-10 w-[min(90%,800px)] max-h-[80vh] overflow-auto rounded-lg p-4 shadow-lg. bg-white dark:bg-slate-900">
+              <div className="flex items-start justify-between gap-4">
+                <h3 className="text-lg font-semibold">상세 정보 — {selected.symbol}</h3>
+                <div className="ml-auto flex gap-2">
+                  <Button size="1"
+                    onClick={() => {
+                      // 모달 내에서 raw JSON 복사 기능(선택사항)
+                      navigator.clipboard?.writeText(JSON.stringify(selected, null, 2));
+                    }}
+                  >
+                    복사
+                  </Button>
+                  <Button size="1" color="amber" onClick={closeDetail}>
+                    닫기
+                  </Button>
+                </div>
               </div>
+
+              <hr className="my-3" />
+
+              {/* JSON pretty 출력 */}
+              <pre className="whitespace-pre-wrap text-sm overflow-auto rounded-md bg-slate-50 p-3 dark:bg-slate-800">
+                {JSON.stringify(selected, null, 2)}
+              </pre>
             </div>
-
-            <hr className="my-3" />
-
-            {/* JSON pretty 출력 */}
-            <pre className="whitespace-pre-wrap text-sm overflow-auto rounded-md bg-slate-50 p-3 dark:bg-slate-800">
-              {JSON.stringify(selected, null, 2)}
-            </pre>
           </div>
-        </div>
-      )}
-    </div>
+        )
+      }
+    </div >
   );
 }

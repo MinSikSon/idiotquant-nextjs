@@ -13,11 +13,13 @@ function formatNumber(num: number) {
     return num % 1 === 0 ? num.toLocaleString() : num.toFixed(2);
 }
 interface InquireBalanceResultProps {
+    balanceKey: any;
+    setBalanceKey: any;
     kiBalance: any;
     reqGetInquireBalance: any;
     reqGetInquireCcnl?: any;
     reqGetInquireNccs?: any;
-    reqGetCapitalUs?: any;
+    reqGetUsCapital?: any;
     kiOrderCash?: any;
     reqPostOrderCash?: any;
     stock_list?: any;
@@ -37,8 +39,6 @@ export default function InquireBalanceResult(props: InquireBalanceResultProps) {
 
     const [mounted, setMounted] = useState(false);
 
-    const [balanceKey, setBalanceKey] = useState(String(props.kakaoTotal?.id));
-
     useEffect(() => {
         setMounted(true);
 
@@ -47,8 +47,8 @@ export default function InquireBalanceResult(props: InquireBalanceResultProps) {
         if (DEBUG) console.log(`[InquireBalanceResult] props.kakaoMemberList:`, props.kakaoMemberList);
     }, []);
     useEffect(() => {
-        if (DEBUG) console.log(`[InquireBalanceResult] balanceKey:`, balanceKey)
-    }, [balanceKey]);
+        if (DEBUG) console.log(`[InquireBalanceResult] props.balanceKey:`, props.balanceKey)
+    }, [props.balanceKey]);
 
 
     function handleOnClick(item: any, buyOrSell: string) {
@@ -372,15 +372,15 @@ export default function InquireBalanceResult(props: InquireBalanceResultProps) {
                                 if (DEBUG) console.log("clicked");
                                 setMsg("지난 주문 확인");
                                 setTime(new Date());
-                                dispatch(props.reqGetInquireBalance(balanceKey));
+                                dispatch(props.reqGetInquireBalance(props.balanceKey));
                                 if (!!props.reqGetInquireCcnl) {
-                                    dispatch(props.reqGetInquireCcnl(balanceKey));
+                                    dispatch(props.reqGetInquireCcnl(props.balanceKey));
                                 }
                                 if (!!props.reqGetInquireNccs) {
-                                    dispatch(props.reqGetInquireNccs(balanceKey));
+                                    dispatch(props.reqGetInquireNccs(props.balanceKey));
                                 }
-                                if (!!props.reqGetCapitalUs) {
-                                    dispatch(props.reqGetCapitalUs(balanceKey));
+                                if (!!props.reqGetUsCapital) {
+                                    dispatch(props.reqGetUsCapital(props.balanceKey));
                                 }
                             }}
                             variant="outline"
@@ -419,8 +419,8 @@ export default function InquireBalanceResult(props: InquireBalanceResultProps) {
                                             <Text size="3">계좌 선택</Text>
                                             <Select.Root
                                                 size="3"
-                                                defaultValue={balanceKey}
-                                                onValueChange={(value) => setBalanceKey(value)} // ✅ 선택 시 이벤트
+                                                defaultValue={props.balanceKey}
+                                                onValueChange={(value) => props.setBalanceKey(value)} // ✅ 선택 시 이벤트
                                             >
                                                 <Select.Trigger />
                                                 <Select.Content>

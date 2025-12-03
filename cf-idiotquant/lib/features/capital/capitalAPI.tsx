@@ -1,10 +1,25 @@
-import { AdditionalHeaders, getKoreaInvestmentRequest } from "../koreaInvestment/koreaInvestmentAPI";
+import { AdditionalHeaders, getKoreaInvestmentRequest, postKoreaInvestmentRequest } from "../koreaInvestment/koreaInvestmentAPI";
 
-// 해외주식 미체결내역[v1_해외주식-005]
-export const getCapitalUs: any = async (key: string) => {
+export const getUsCapital: any = async (key: string) => {
     const subUrl = `/us/capital/`;
     const additionalHeaders: AdditionalHeaders = {
         "kakaoId": key,
     }
     return getKoreaInvestmentRequest(subUrl, additionalHeaders);
+}
+
+export const postUsCapitalTokenAllPlus: any = async (key: string, num: number) => {
+    const subUrl = `/us/capital/token/all/plus/${num}/`;
+    const additionalHeaders: AdditionalHeaders = {
+        "kakaoId": key,
+    }
+    return postKoreaInvestmentRequest(subUrl, additionalHeaders);
+}
+
+export const postUsCapitalTokenAllMinus: any = async (key: string, num: number) => {
+    const subUrl = `/us/capital/token/all/minus/${num}/`;
+    const additionalHeaders: AdditionalHeaders = {
+        "kakaoId": key,
+    }
+    return postKoreaInvestmentRequest(subUrl, additionalHeaders);
 }
