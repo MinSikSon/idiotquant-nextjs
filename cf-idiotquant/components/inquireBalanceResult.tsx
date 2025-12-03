@@ -342,25 +342,23 @@ export default function InquireBalanceResult(props: InquireBalanceResultProps) {
     let evlu_pfls_smtl_amt: number = 0;// 수입
     let frst_bltn_exrt: number = 0; // us 환율
     let dnca_tot_amt: number = 0; // 예수금
+    let ustl_sll_amt_smtl: number = 0; // 미결제매도금액합계
     // if (!!props.kiBalance.output2 && props.kiBalance.output2.length > 0) {
     if ("fulfilled" == props.kiBalance.state) {
         // crcy_cd = !!props.kiBalance.output2[0]["crcy_cd"] ? " " + props.kiBalance.output2[0]["crcy_cd"] : "원";
         crcy_cd = "₩";
 
         const isUsBalance = !!props.kiBalance.output3;
-        evlu_amt_smtl_amt = (true == isUsBalance) ? props.kiBalance.output3["evlu_amt_smtl"] : props.kiBalance.output2[0]["evlu_amt_smtl_amt"];
-        evlu_amt_smtl_amt = Number(evlu_amt_smtl_amt);
-        pchs_amt_smtl_amt = (true == isUsBalance) ? props.kiBalance.output3["pchs_amt_smtl"] : props.kiBalance.output2[0]["pchs_amt_smtl_amt"];
-        pchs_amt_smtl_amt = Number(pchs_amt_smtl_amt);
+        evlu_amt_smtl_amt = Number(props.kiBalance?.output3?.["evlu_amt_smtl"] ?? props.kiBalance?.output2?.[0]?.["evlu_amt_smtl_amt"] ?? 0);
+        pchs_amt_smtl_amt = Number(props.kiBalance?.output3?.["pchs_amt_smtl"] ?? props.kiBalance?.output2?.[0]?.["pchs_amt_smtl_amt"] ?? 0);
+        evlu_pfls_smtl_amt = Number(props.kiBalance?.output3?.["evlu_pfls_amt_smtl"] ?? props.kiBalance?.output2?.[0]?.["evlu_pfls_smtl_amt"] ?? 0);
 
-        evlu_pfls_smtl_amt = (true == isUsBalance) ? props.kiBalance.output3["evlu_pfls_amt_smtl"] : props.kiBalance.output2[0]["evlu_pfls_smtl_amt"];
-        evlu_pfls_smtl_amt = isNaN(evlu_pfls_smtl_amt) ? 0 : Number(evlu_pfls_smtl_amt);
+        frst_bltn_exrt = Number(props.kiBalance?.output2?.[0]?.["frst_bltn_exrt"] ?? 0); // $1 = ₩?
+        dnca_tot_amt = Number(props.kiBalance?.output3?.["frcr_use_psbl_amt"] ?? props.kiBalance?.output2?.[0]?.["dnca_tot_amt"] ?? 0);
 
-        frst_bltn_exrt = !!props.kiBalance.output2[0] ? props.kiBalance.output2[0]["frst_bltn_exrt"] : 0;
+        ustl_sll_amt_smtl = Number(props.kiBalance?.output3?.ustl_sll_amt_smtl ?? 0);
 
-        dnca_tot_amt = (true == isUsBalance) ? props.kiBalance.output3["frcr_use_psbl_amt"] : props.kiBalance.output2[0]["dnca_tot_amt"];
-
-        nass_amt = Number(evlu_amt_smtl_amt) + Number(dnca_tot_amt);
+        nass_amt = evlu_amt_smtl_amt + dnca_tot_amt + ustl_sll_amt_smtl;
     }
 
     const tablesExample8Props: TablesExample8PropsType = {
@@ -484,17 +482,18 @@ export default function InquireBalanceResult(props: InquireBalanceResultProps) {
                         <Box>
                             <Flex direction="column" align="end" gap="0">
                                 <Text size="1" color="gray">순자산 {!!frst_bltn_exrt ? `$${formatNumber(Number(nass_amt) / Number(frst_bltn_exrt))}` : ""}</Text>
-                                <Text size="4" weight="bold">
+                                <Text size="3" weight="bold">
                                     {crcy_cd}{Number(nass_amt).toLocaleString()}
                                 </Text>
                             </Flex>
                         </Box>
-                        <Flex direction="row" gap="1" wrap="wrap" justify="center" align="center">
+                        <Flex direction="row" gap="0" wrap="wrap" justify="center" align="center">
                             <Box minWidth="8px" className="text-center text-[0.6rem]">=</Box>
                             <Box p="0" m="0">
                                 <Flex direction="column" align="end" gap="0">
-                                    <Text size="1" color="gray">평가 {!!frst_bltn_exrt ? `$${formatNumber(Number(evlu_amt_smtl_amt) / Number(frst_bltn_exrt))}` : ""}</Text>
-                                    <Text size="2" className="">
+                                    <Text size="1" color="gray">평가</Text>
+                                    <Text size="1" color="gray">{!!frst_bltn_exrt ? `$${formatNumber(Number(evlu_amt_smtl_amt) / Number(frst_bltn_exrt))}` : ""}</Text>
+                                    <Text size="1" className="">
                                         {crcy_cd}{Number(evlu_amt_smtl_amt).toLocaleString()}
                                     </Text>
                                 </Flex>
@@ -502,12 +501,24 @@ export default function InquireBalanceResult(props: InquireBalanceResultProps) {
                             <Box minWidth="8px" className="text-center text-[0.6rem]">+</Box>
                             <Box p="0" m="0">
                                 <Flex direction="column" align="end" gap="0">
-                                    <Text size="1" color="gray" >예수금 {!!frst_bltn_exrt ? `$${formatNumber(Number(dnca_tot_amt) / Number(frst_bltn_exrt))}` : ""}</Text>
-                                    <Text size="2">
+                                    <Text size="1" color="gray" >예수금</Text>
+                                    <Text size="1" color="gray" >{!!frst_bltn_exrt ? `$${formatNumber(Number(dnca_tot_amt) / Number(frst_bltn_exrt))}` : ""}</Text>
+                                    <Text size="1">
                                         {crcy_cd}{Number(dnca_tot_amt).toLocaleString()}
                                     </Text>
                                 </Flex>
                             </Box>
+                            <Box minWidth="8px" className="text-center text-[0.6rem]">+</Box>
+                            <Box p="0" m="0">
+                                <Flex direction="column" align="end" gap="0">
+                                    <Text size="1" color="gray">미결제매도금</Text>
+                                    <Text size="1" color="gray">{!!frst_bltn_exrt ? `$${formatNumber(Number(ustl_sll_amt_smtl) / Number(frst_bltn_exrt))}` : ""}</Text>
+                                    <Text size="1">
+                                        {crcy_cd}{Number(ustl_sll_amt_smtl).toLocaleString()}
+                                    </Text>
+                                </Flex>
+                            </Box>
+
                         </Flex>
                     </Flex>
                 </Box>
