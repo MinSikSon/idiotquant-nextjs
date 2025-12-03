@@ -41,9 +41,9 @@ export default function OverseasCcnlTable({ data, className = "" }: Props) {
         <div className={`w-full ${className}`}>
             {/* 상태 바 */}
             <div className="flex items-center justify-between mb-2">
-                <div className="text-sm text-slate-600">[주문체결내역]</div>
-                <div className="text-sm text-slate-600">상태: <span className="font-medium">{data?.state}</span></div>
-                <div className="text-sm text-slate-500">응답코드: {data?.rt_cd} • {data?.msg1}</div>
+                <div className="text-sm">[주문체결내역]</div>
+                <div className="text-sm">상태: <span className="font-medium">{data?.state}</span></div>
+                <div className="text-sm">응답코드: {data?.rt_cd} • {data?.msg1}</div>
             </div>
 
             <ScrollArea.Root className="rounded-md border border-slate-200">
@@ -53,7 +53,7 @@ export default function OverseasCcnlTable({ data, className = "" }: Props) {
                             <thead>
                                 <tr>
                                     {HEADERS.map((h, idx) => (
-                                        <th key={String(h.key)} className={`px-3 py-2 text-left text-xs font-medium uppercase tracking-wider bg-white border-b sticky top-0 z-20`} style={idx === 0 ? { position: "sticky", left: 0, zIndex: 30 } : {}}>
+                                        <th key={String(h.key)} className={`px-3 py-2 text-left text-xs font-medium uppercase tracking-wider border-b sticky top-0 z-20 bg-white dark:bg-black`} style={idx === 0 ? { position: "sticky", left: 0, zIndex: 30 } : {}}>
                                             {h.label}
                                         </th>
                                     ))}
@@ -62,20 +62,20 @@ export default function OverseasCcnlTable({ data, className = "" }: Props) {
                             <tbody>
                                 {rows.length === 0 ? (
                                     <tr>
-                                        <td colSpan={HEADERS.length} className="p-6 text-center text-sm text-slate-500">
+                                        <td colSpan={HEADERS.length} className="p-6 text-center text-sm">
                                             결과가 없습니다.
                                         </td>
                                     </tr>
                                 ) : (
                                     rows.map((row, rIndex) => (
-                                        <tr key={`${row.odno ?? rIndex}-${rIndex}`} className={rIndex % 2 === 0 ? "bg-white" : "bg-slate-50"}>
+                                        <tr key={`${row.odno ?? rIndex}-${rIndex}`} className={rIndex % 2 === 0 ? "bg-white dark:bg-black" : "bg-slate-50 dark:bg-slate-900"}>
                                             {HEADERS.map((h, cIndex) => {
                                                 if (h.key === "actions") {
                                                     return (
                                                         <td key={`cell-${rIndex}-${cIndex}`} className="px-3 py-2 whitespace-nowrap border-b">
                                                             <div className="flex gap-2">
-                                                                <button className="text-xs px-2 py-1 rounded-md bg-slate-100 hover:bg-slate-200">상세</button>
-                                                                <button className="text-xs px-2 py-1 rounded-md bg-blue-50 hover:bg-blue-100">취소</button>
+                                                                <button className="text-xs px-2 py-1 rounded-md bg-slate-100 dark:bg-slate-900 hover:bg-slate-200">상세</button>
+                                                                <button className="text-xs px-2 py-1 rounded-md bg-blue-50 dark:bg-slate-900 hover:bg-blue-100">취소</button>
                                                             </div>
                                                         </td>
                                                     );
@@ -86,17 +86,17 @@ export default function OverseasCcnlTable({ data, className = "" }: Props) {
                                                 const small = !!h.small;
 
                                                 return (
-                                                    <td key={`cell-${rIndex}-${cIndex}`} className="px-3 py-2 align-top border-b" style={cIndex === 0 ? { position: "sticky", left: 0, zIndex: 10, background: rIndex % 2 === 0 ? "white" : "#F8FAFC" } : {}}>
+                                                    <td key={`cell-${rIndex}-${cIndex}`} className={`px-3 py-2 align-top border-b ${rIndex % 2 === 0 ? "bg-white dark:bg-black" : "bg-slate-50 dark:bg-slate-900"}`} style={cIndex === 0 ? { position: "sticky", left: 0, zIndex: 10 } : {}}>
                                                         <Tooltip.Root>
                                                             <Tooltip.Trigger asChild>
                                                                 <div className="max-w-[220px] truncate" title={String(value)}>
-                                                                    <div className={`text-sm ${small ? "text-xs text-slate-500" : "text-sm text-slate-700"}`}>{String(value)}</div>
+                                                                    <div className={`text-sm ${small ? "text-xs" : "text-sm"}`}>{String(value)}</div>
                                                                 </div>
                                                             </Tooltip.Trigger>
                                                             <Tooltip.Portal>
-                                                                <Tooltip.Content side="top" align="center" className="rounded-md px-2 py-1 text-xs bg-slate-800 text-white">
+                                                                <Tooltip.Content side="top" align="center" className="rounded-md px-2 py-1 text-xs dark:bg-slate-800">
                                                                     {String(value)}
-                                                                    <Tooltip.Arrow className="fill-current text-slate-800" />
+                                                                    <Tooltip.Arrow className="fill-current" />
                                                                 </Tooltip.Content>
                                                             </Tooltip.Portal>
                                                         </Tooltip.Root>
@@ -111,8 +111,8 @@ export default function OverseasCcnlTable({ data, className = "" }: Props) {
                     </div>
                 </ScrollArea.Viewport>
 
-                <ScrollArea.Scrollbar orientation="horizontal" className="flex select-none touch-none p-0.5 bg-slate-100" />
-                <ScrollArea.Scrollbar orientation="vertical" className="flex select-none touch-none p-0.5 bg-slate-100" />
+                <ScrollArea.Scrollbar orientation="horizontal" className="flex select-none touch-none p-0.5 bg-slate-100 dark:bg-slate-900" />
+                <ScrollArea.Scrollbar orientation="vertical" className="flex select-none touch-none p-0.5 bg-slate-100 dark:bg-slate-900" />
                 <ScrollArea.Corner />
             </ScrollArea.Root>
         </div>

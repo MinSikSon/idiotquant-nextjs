@@ -11,7 +11,7 @@ import { usePathname } from "next/navigation";
 import InquireBalanceResult from "@/components/inquireBalanceResult";
 import NotFound from "@/app/not-found";
 import { CapitalTokenType, reqGetCapitalToken, selectCapitalToken } from "@/lib/features/algorithmTrade/algorithmTradeSlice";
-import { Box, Code, Text } from "@radix-ui/themes";
+import { Box, Code, Flex, Text } from "@radix-ui/themes";
 import { KakaoTotal, reqGetKakaoMemberList, selectKakaoMemberList, selectKakaoTotal } from "@/lib/features/kakao/kakaoSlice";
 
 let DEBUG = false;
@@ -60,7 +60,12 @@ export default function BalanceKr() {
     }
 
     return <>
-        <Box px="1"><Text size="3">🇰🇷</Text></Box>
+        <Flex direction="column" align="center" justify="center" gap="2">
+            <Text size="6">
+                <Code>로그인</Code>
+            </Text>
+            <Text size="3">🇰🇷</Text>
+        </Flex>
         <InquireBalanceResult
             kiBalance={kiBalance}
             reqGetInquireBalance={reqGetInquireBalance}

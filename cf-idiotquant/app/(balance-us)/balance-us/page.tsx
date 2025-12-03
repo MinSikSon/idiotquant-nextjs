@@ -88,9 +88,17 @@ export default function BalanceUs() {
         </>
     }
     return <>
-        <Box px="1"><Text size="3">🇺🇸 {!!kiBalance?.output2?.[0]?.frst_bltn_exrt ?
-            `$1 = ₩${formatNumber(Number(kiBalance?.output2?.[0]?.frst_bltn_exrt))}`
-            : ""}</Text></Box>
+        <Flex direction="column" align="center" justify="center" gap="2">
+            <Text size="6">
+                <Code>로그인</Code>
+            </Text>
+            <Text size="3">
+                🇺🇸{" "}
+                {!!kiBalance?.output2?.[0]?.frst_bltn_exrt ?
+                    `$1 = ₩${formatNumber(Number(kiBalance?.output2?.[0]?.frst_bltn_exrt))}`
+                    : ""}</Text>
+
+        </Flex>
         <InquireBalanceResult
             kiBalance={kiBalance}
             reqGetInquireBalance={reqGetOverseasStockTradingInquirePresentBalance}
