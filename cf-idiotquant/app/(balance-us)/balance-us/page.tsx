@@ -12,7 +12,7 @@ import { useAppDispatch, useAppSelector } from "@/lib/hooks";
 import { Box, Button, Code, Flex, Text } from "@radix-ui/themes";
 import { usePathname } from "next/navigation";
 import { useState, useEffect } from "react";
-import { UsCapitalType, reqGetUsCapital, reqPostUsCapitalTokenAllPlus, reqPostUsCapitalTokenAllMinus, selectUsCapital, selectUsCapitalTokenAllMinus, selectUsCapitalTokenAllPlus } from "@/lib/features/capital/capitalSlice";
+import { UsCapitalType, reqGetUsCapital, reqPostUsCapitalTokenPlusAll, reqPostUsCapitalTokenPlusOne, reqPostUsCapitalTokenMinusAll, reqPostUsCapitalTokenMinusOne, selectUsCapital, selectUsCapitalTokenMinusAll, selectUsCapitalTokenPlusAll, selectUsCapitalTokenPlusOne, selectUsCapitalTokenMinusOne } from "@/lib/features/capital/capitalSlice";
 import StockListTable from "@/components/balance/stockListTable";
 
 let DEBUG = false;
@@ -36,8 +36,10 @@ export default function BalanceUs() {
     const [balanceKey, setBalanceKey] = useState(String(kakaoTotal?.id));
 
     const usCapital: UsCapitalType = useAppSelector(selectUsCapital);
-    const usCapitalTokenAllPlus = useAppSelector(selectUsCapitalTokenAllPlus);
-    const usCapitalTokenAllMinus = useAppSelector(selectUsCapitalTokenAllMinus);
+    const usCapitalTokenPlusAll = useAppSelector(selectUsCapitalTokenPlusAll);
+    const usCapitalTokenPlusOne = useAppSelector(selectUsCapitalTokenPlusOne);
+    const usCapitalTokenMinusAll = useAppSelector(selectUsCapitalTokenMinusAll);
+    const usCapitalTokenMinusOne = useAppSelector(selectUsCapitalTokenMinusOne);
 
     useEffect(() => {
     }, []);
@@ -83,17 +85,29 @@ export default function BalanceUs() {
         if (DEBUG) console.log(`[BalanceUs]`, `kakaoMemberList`, kakaoMemberList);
     }, [kakaoMemberList])
     useEffect(() => {
-        if (DEBUG) console.log(`[BalanceUs]`, `usCapitalTokenAllPlus`, usCapitalTokenAllPlus);
-        if ("fulfilled" == usCapitalTokenAllPlus?.state) {
+        if (DEBUG) console.log(`[BalanceUs]`, `usCapitalTokenPlusAll`, usCapitalTokenPlusAll);
+        if ("fulfilled" == usCapitalTokenPlusAll?.state) {
             dispatch(reqGetUsCapital(balanceKey));
         }
-    }, [usCapitalTokenAllPlus])
+    }, [usCapitalTokenPlusAll])
     useEffect(() => {
-        if (DEBUG) console.log(`[BalanceUs]`, `usCapitalTokenAllMinus`, usCapitalTokenAllMinus);
-        if ("fulfilled" == usCapitalTokenAllMinus?.state) {
+        if (DEBUG) console.log(`[BalanceUs]`, `usCapitalTokenPlusOne`, usCapitalTokenPlusOne);
+        if ("fulfilled" == usCapitalTokenPlusOne?.state) {
             dispatch(reqGetUsCapital(balanceKey));
         }
-    }, [usCapitalTokenAllMinus])
+    }, [usCapitalTokenPlusOne])
+    useEffect(() => {
+        if (DEBUG) console.log(`[BalanceUs]`, `usCapitalTokenMinusAll`, usCapitalTokenMinusAll);
+        if ("fulfilled" == usCapitalTokenMinusAll?.state) {
+            dispatch(reqGetUsCapital(balanceKey));
+        }
+    }, [usCapitalTokenMinusAll])
+    useEffect(() => {
+        if (DEBUG) console.log(`[BalanceUs]`, `usCapitalTokenMinusOne`, usCapitalTokenMinusOne);
+        if ("fulfilled" == usCapitalTokenMinusOne?.state) {
+            dispatch(reqGetUsCapital(balanceKey));
+        }
+    }, [usCapitalTokenMinusOne])
 
 
     if (DEBUG) console.log(`kiBalance.state`, kiBalance.state);
@@ -103,14 +117,30 @@ export default function BalanceUs() {
         </>
     }
 
-    function doAllTokenPlus(num: number) {
-        console.log(`doAllTokenPlus`);
-        dispatch(reqPostUsCapitalTokenAllPlus({ key: balanceKey, num: num }));
+    function doTokenPlusAll(num: number) {
+        console.log(`doTokenPlusAll`);
+        dispatch(reqPostUsCapitalTokenPlusAll({ key: balanceKey, num: num }));
     }
-    function doAllTokenMinus(num: number) {
-        console.log(`doAllTokenMinus`);
-        dispatch(reqPostUsCapitalTokenAllMinus({ key: balanceKey, num: num }));
+    function doTokenPlusOne(num: number, ticker: string) {
+        console.log(`doTokenPlusOne ticker:`, ticker);
+        if (undefined == ticker) {
+            return;
+        }
+        dispatch(reqPostUsCapitalTokenPlusOne({ key: balanceKey, num: num, ticker: ticker }));
     }
+    function doTokenMinusAll(num: number) {
+        console.log(`doTokenMinusAll`);
+        dispatch(reqPostUsCapitalTokenMinusAll({ key: balanceKey, num: num }));
+    }
+
+    function doTokenMinusOne(num: number, ticker: string) {
+        console.log(`doTokenMinusOne ticker:`, ticker);
+        if (undefined == ticker) {
+            return;
+        }
+        dispatch(reqPostUsCapitalTokenMinusOne({ key: balanceKey, num: num, ticker: ticker }));
+    }
+
     return <>
         <Flex direction="column" align="center" justify="center" gap="2">
             <Text size="6">
@@ -137,9 +167,13 @@ export default function BalanceUs() {
             kakaoTotal={kakaoTotal}
             kakaoMemberList={kakaoMemberList}
         />
+        <StockListTable data={usCapital}
+            kakaoTotal={kakaoTotal}
+            doTokenPlusAll={doTokenPlusAll} doTokenMinusAll={doTokenMinusAll}
+            doTokenPlusOne={doTokenPlusOne} doTokenMinusOne={doTokenMinusOne}
+        />
         <OverseasCcnlTable data={kiCcnl} />
         <OverseasNccsTable data={kiNccs} />
-        <StockListTable data={usCapital} doAllTokenPlus={doAllTokenPlus} doAllTokenMinus={doAllTokenMinus} />
     </>
 }
 

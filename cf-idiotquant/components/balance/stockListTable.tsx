@@ -8,27 +8,33 @@ import { Box, Button, Flex, Grid, Text } from "@radix-ui/themes";
 
 interface Props {
   data: UsCapitalType;
-  doAllTokenPlus: any;
-  doAllTokenMinus: any;
+  kakaoTotal: any;
+  doTokenPlusAll: any;
+  doTokenPlusOne: any;
+  doTokenMinusAll: any;
+  doTokenMinusOne: any;
   className?: string;
 }
 
-const HEADERS: { key: keyof UsCapitalStockItem | "actions"; label: string }[] = [
+const HEADERS: { key: "index" | keyof UsCapitalStockItem | "actions"; label: string }[] = [
+  { key: "index", label: "#" },
   { key: "symbol", label: "심볼" },
   { key: "key", label: "Key" },
   { key: "ncavRatio", label: "NCAV 비율" },
   { key: "token", label: "Token" },
   { key: "action", label: "Action" },
   { key: "condition", label: "Condition" },
-  { key: "actions", label: "동작" },
+  { key: "actions", label: "동작: 개별종목 TOKEN refill" },
 ];
 
-export default function StockListTable({ data, doAllTokenPlus, doAllTokenMinus, className = "" }: Props) {
+export default function StockListTable({ data, kakaoTotal, doTokenPlusAll, doTokenPlusOne, doTokenMinusAll, doTokenMinusOne, className = "" }: Props) {
   const rows = data?.stock_list ?? [];
 
   // 선택된 항목과 모달 열림 상태
   const [selected, setSelected] = useState<UsCapitalStockItem | null>(null);
   const [isOpen, setIsOpen] = useState(false);
+
+  const [master, setMaster] = useState(kakaoTotal?.kakao_account?.profile?.nickname === process.env.NEXT_PUBLIC_MASTER);
 
   // Esc로 닫기
   useEffect(() => {
@@ -51,6 +57,7 @@ export default function StockListTable({ data, doAllTokenPlus, doAllTokenMinus, 
     // setSelected(null);
   };
 
+
   return (
     <div className={`w-full ${className}`}>
       <div className="flex items-center justify-between mb-2">
@@ -72,26 +79,28 @@ export default function StockListTable({ data, doAllTokenPlus, doAllTokenMinus, 
           <div className="text-sm">
             Token per Stock: {data.token_info.token_per_stock} • Refill Index: {data.token_info.refill_stock_index}
           </div>
-          <Flex direction="column" align="center" justify="center" py="1" my="1" className="border-2 rounded-xl">
-            <Text>all TOKEN</Text>
-            <Grid columns="1" gap="1" align="center" justify="center">
-              <Flex gap="1" align="center" justify="end">
-                <Text>₩10,000</Text>
-                <Button onClick={() => doAllTokenPlus(10_000)} size="2">+</Button>
-                <Button onClick={() => doAllTokenMinus(10_000)} size="2" color="tomato" >-</Button>
-              </Flex>
-              <Flex gap="1" align="center" justify="end">
-                <Text>₩100,000</Text>
-                <Button onClick={() => doAllTokenPlus(100_000)} size="2" >+</Button>
-                <Button onClick={() => doAllTokenMinus(100_000)} size="2" color="tomato" >-</Button>
-              </Flex>
-              <Flex gap="1" align="center" justify="end">
-                <Text>₩1,000,000</Text>
-                <Button onClick={() => doAllTokenPlus(1_000_000)} size="2" >+</Button>
-                <Button onClick={() => doAllTokenMinus(1_000_000)} size="2" color="tomato"  >-</Button>
-              </Flex>
-            </Grid>
-          </Flex>
+          {(kakaoTotal?.kakao_account?.profile?.nickname === process.env.NEXT_PUBLIC_MASTER) ?
+            <Flex direction="column" align="center" justify="center" py="1" my="1" className="border-2 rounded-xl">
+              <Text>all TOKEN</Text>
+              <Grid columns="1" gap="1" align="center" justify="center">
+                <Flex gap="1" align="center" justify="end">
+                  <Text>₩10,000</Text>
+                  <Button disabled={false == master} onClick={() => doTokenPlusAll(10_000)} size="2">+</Button>
+                  <Button disabled={false == master} onClick={() => doTokenMinusAll(10_000)} size="2" color="tomato" >-</Button>
+                </Flex>
+                <Flex gap="1" align="center" justify="end">
+                  <Text>₩100,000</Text>
+                  <Button disabled={false == master} onClick={() => doTokenPlusAll(100_000)} size="2" >+</Button>
+                  <Button disabled={false == master} onClick={() => doTokenMinusAll(100_000)} size="2" color="tomato" >-</Button>
+                </Flex>
+                <Flex gap="1" align="center" justify="end">
+                  <Text>₩1,000,000</Text>
+                  <Button disabled={false == master} onClick={() => doTokenPlusAll(1_000_000)} size="2" >+</Button>
+                  <Button disabled={false == master} onClick={() => doTokenMinusAll(1_000_000)} size="2" color="tomato"  >-</Button>
+                </Flex>
+              </Grid>
+            </Flex>
+            : <></>}
         </Flex>
       </div>
 
@@ -104,8 +113,8 @@ export default function StockListTable({ data, doAllTokenPlus, doAllTokenMinus, 
                   {HEADERS.map((h, idx) => (
                     <th
                       key={String(h.key)}
-                      className="px-3 py-2 text-left text-xs font-medium uppercase tracking-wider bg-white dark:bg-black border-b sticky top-0 z-20"
-                      style={idx === 0 ? { position: "sticky", left: 0, zIndex: 30 } : {}}
+                      className="px-3 py-1.5 text-left text-xs font-medium uppercase tracking-wider bg-white dark:bg-black border-b sticky top-0 z-20"
+                      style={idx === 1 || idx === 4 ? { position: "sticky", left: (idx - 1) * 20, zIndex: 30 } : {}}
                     >
                       {h.label}
                     </th>
@@ -122,12 +131,31 @@ export default function StockListTable({ data, doAllTokenPlus, doAllTokenMinus, 
                 ) : (
                   rows.map((row, rIndex) => (
                     <tr key={`${row.key}-${rIndex}`} className={rIndex % 2 === 0 ? "bg-white dark:bg-black" : "bg-slate-50 dark:bg-slate-800"}>
-                      {HEADERS.map((h, cIndex) => {
+                      {HEADERS.map((h: any, cIndex) => {
                         if (h.key === "actions") {
                           return (
-                            <td key={`cell-${rIndex}-${cIndex}`} className="px-3 py-2 whitespace-nowrap border-b">
+                            <td key={`cell-${rIndex}-${cIndex}`} className="px-3 py-1.5 whitespace-nowrap border-b">
                               <div className="flex gap-2">
-                                <Button size="1" disabled>refill TOKEN</Button>
+                                <>
+                                  <Flex gap="1" align="center" justify="end">
+                                    <Text>|</Text>
+                                    <Text size="2">₩10,000</Text>
+                                    <Button size="2" disabled={false == master} onClick={() => doTokenPlusOne(10_000, row?.symbol)}>+</Button>
+                                    <Button size="2" disabled={false == master} onClick={() => doTokenMinusOne(10_000, row?.symbol)} color="tomato" >-</Button>
+                                  </Flex>
+                                  <Flex gap="1" align="center" justify="end">
+                                    <Text>|</Text>
+                                    <Text size="2">₩100,000</Text>
+                                    <Button size="2" disabled={false == master} onClick={() => doTokenPlusOne(100_000, row?.symbol)} >+</Button>
+                                    <Button size="2" disabled={false == master} onClick={() => doTokenMinusOne(100_000, row?.symbol)} color="tomato" >-</Button>
+                                  </Flex>
+                                  <Flex gap="1" align="center" justify="end">
+                                    <Text>|</Text>
+                                    <Text size="2">₩1,000,000</Text>
+                                    <Button size="2" disabled={false == master} onClick={() => doTokenPlusOne(1_000_000, row?.symbol)} >+</Button>
+                                    <Button size="2" disabled={false == master} onClick={() => doTokenMinusOne(1_000_000, row?.symbol)} color="tomato"  >-</Button>
+                                  </Flex>
+                                </>
                               </div>
                             </td>
                           );
@@ -135,11 +163,22 @@ export default function StockListTable({ data, doAllTokenPlus, doAllTokenMinus, 
 
                         if (h.key === "condition") {
                           return (
-                            <td key={`cell-${rIndex}-${cIndex}`} className="px-3 py-2 whitespace-nowrap border-b">
+                            <td key={`cell-${rIndex}-${cIndex}`} className="px-3 py-1.5 whitespace-nowrap border-b">
                               <div className="flex gap-2">
                                 {/* 상세 버튼에 openDetail 연결 */}
                                 <Button size="1" onClick={() => openDetail(row)} aria-haspopup="dialog">상세</Button>
                               </div>
+                            </td>
+                          );
+                        }
+
+                        if (h.key === "index") {
+                          return (
+                            <td key={`cell-${rIndex}-${cIndex}`}
+                              className={`px-3 py-1.5 border-b ${rIndex % 2 === 0 ? "bg-white dark:bg-black" : "bg-slate-50 dark:bg-slate-800"}`}
+                              style={cIndex === 1 || cIndex === 4 ? { position: "sticky", left: (cIndex - 1) * 20, zIndex: 10 } : {}}
+                            >
+                              {rIndex}
                             </td>
                           );
                         }
@@ -150,22 +189,10 @@ export default function StockListTable({ data, doAllTokenPlus, doAllTokenMinus, 
                         return (
                           <td
                             key={`cell-${rIndex}-${cIndex}`}
-                            className={`px-3 py-2 align-top border-b ${rIndex % 2 === 0 ? "bg-white dark:bg-black" : "bg-slate-50 dark:bg-slate-800"}`}
-                            style={cIndex === 0 ? { position: "sticky", left: 0, zIndex: 10 } : {}}
+                            className={`px-3 py-1.5 border-b ${rIndex % 2 === 0 ? "bg-white dark:bg-black" : "bg-slate-50 dark:bg-slate-800"}`}
+                            style={cIndex === 1 || cIndex === 4 ? { position: "sticky", left: (cIndex - 1) * 20, zIndex: 10 } : {}}
                           >
-                            <Tooltip.Root>
-                              <Tooltip.Trigger asChild>
-                                <div className="max-w-[180px] truncate" title={String(value)}>
-                                  <div className="text-sm">{String(value)}</div>
-                                </div>
-                              </Tooltip.Trigger>
-                              <Tooltip.Portal>
-                                <Tooltip.Content side="top" align="center" className="rounded-md px-2 py-1 text-xs bg-slate-800 text-white">
-                                  {String(value)}
-                                  <Tooltip.Arrow className="fill-current" />
-                                </Tooltip.Content>
-                              </Tooltip.Portal>
-                            </Tooltip.Root>
+                            <div className="text-sm">{String(value)}</div>
                           </td>
                         );
                       })}

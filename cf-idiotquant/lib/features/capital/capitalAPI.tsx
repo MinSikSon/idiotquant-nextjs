@@ -8,16 +8,33 @@ export const getUsCapital: any = async (key: string) => {
     return getKoreaInvestmentRequest(subUrl, additionalHeaders);
 }
 
-export const postUsCapitalTokenAllPlus: any = async (key: string, num: number) => {
-    const subUrl = `/us/capital/token/all/plus/${num}/`;
+export const postUsCapitalTokenPlusAll: any = async (key: string, num: number) => {
+    const subUrl = `/us/capital/token/plus/${num}/all/`;
     const additionalHeaders: AdditionalHeaders = {
         "kakaoId": key,
     }
     return postKoreaInvestmentRequest(subUrl, additionalHeaders);
 }
 
-export const postUsCapitalTokenAllMinus: any = async (key: string, num: number) => {
-    const subUrl = `/us/capital/token/all/minus/${num}/`;
+export const postUsCapitalTokenPlusOne: any = async (key: string, num: number, ticker: string) => {
+    const subUrl = `/us/capital/token/plus/${num}/ticker/${ticker}/`;
+    const additionalHeaders: AdditionalHeaders = {
+        "kakaoId": key,
+    }
+    return postKoreaInvestmentRequest(subUrl, additionalHeaders);
+}
+
+export const postUsCapitalTokenMinusAll: any = async (key: string, num: number) => {
+    const subUrl = `/us/capital/token/minus/${num}/all/`;
+    const additionalHeaders: AdditionalHeaders = {
+        "kakaoId": key,
+    }
+    return postKoreaInvestmentRequest(subUrl, additionalHeaders);
+}
+
+
+export const postUsCapitalTokenMinusOne: any = async (key: string, num: number, ticker: string) => {
+    const subUrl = `/us/capital/token/minus/${num}/ticker/${ticker}/`;
     const additionalHeaders: AdditionalHeaders = {
         "kakaoId": key,
     }

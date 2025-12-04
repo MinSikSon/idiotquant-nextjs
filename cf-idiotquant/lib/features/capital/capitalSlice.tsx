@@ -1,6 +1,6 @@
 import { PayloadAction } from "@reduxjs/toolkit";
 import { createAppSlice } from "@/lib/createAppSlice";
-import { getUsCapital, postUsCapitalTokenAllMinus, postUsCapitalTokenAllPlus } from "./capitalAPI";
+import { getUsCapital, postUsCapitalTokenMinusAll, postUsCapitalTokenMinusOne, postUsCapitalTokenPlusAll, postUsCapitalTokenPlusOne } from "./capitalAPI";
 
 export interface StockCondition {
     AssetsCurrent: number;
@@ -34,15 +34,17 @@ export interface UsCapitalType {
     frst_bltn_exrt: number;
 }
 
-interface UsCapitalTokenAllType {
+interface UsCapitalTokenRefillType {
     state: "init" | "pending" | "fulfilled" | "rejected";
 }
 
 export interface CapitalType {
     state: "init" | "pending" | "fulfilled" | "rejected";
     usCapital: UsCapitalType;
-    usCapitalTokenAllPlus: UsCapitalTokenAllType;
-    usCapitalTokenAllMinus: UsCapitalTokenAllType;
+    usCapitalTokenPlusAll: UsCapitalTokenRefillType;
+    usCapitalTokenPlusOne: UsCapitalTokenRefillType;
+    usCapitalTokenMinusAll: UsCapitalTokenRefillType;
+    usCapitalTokenMinusOne: UsCapitalTokenRefillType;
 }
 
 const initialState: CapitalType = {
@@ -67,10 +69,16 @@ const initialState: CapitalType = {
         corp_scan_index: 0,
         frst_bltn_exrt: 0
     },
-    usCapitalTokenAllPlus: {
+    usCapitalTokenPlusAll: {
         state: "init"
     },
-    usCapitalTokenAllMinus: {
+    usCapitalTokenPlusOne: {
+        state: "init"
+    },
+    usCapitalTokenMinusAll: {
+        state: "init"
+    },
+    usCapitalTokenMinusOne: {
         state: "init"
     }
 }
@@ -99,53 +107,96 @@ export const capitalSlice = createAppSlice({
                 }
             }
         ),
-        reqPostUsCapitalTokenAllPlus: create.asyncThunk(
+        reqPostUsCapitalTokenPlusAll: create.asyncThunk(
             async ({ key, num }: { key?: string, num: number }) => {
-                return await postUsCapitalTokenAllPlus(key, num);
+                return await postUsCapitalTokenPlusAll(key, num);
             },
             {
                 pending: (state) => {
-                    console.log(`[reqPostUsCapitalTokenAllPlus] pending`);
-                    state.usCapitalTokenAllPlus.state = "pending"
+                    console.log(`[reqPostUsCapitalTokenPlusAll] pending`);
+                    state.usCapitalTokenPlusAll.state = "pending"
                 },
                 fulfilled: (state, action) => {
-                    console.log(`[reqPostUsCapitalTokenAllPlus] fulfilled`, `, typeof action.payload:`, typeof action.payload, `, action.payload:`, action.payload);
+                    console.log(`[reqPostUsCapitalTokenPlusAll] fulfilled`, `, typeof action.payload:`, typeof action.payload, `, action.payload:`, action.payload);
                     // const json = action.payload;
-                    state.usCapitalTokenAllPlus.state = "fulfilled";
+                    state.usCapitalTokenPlusAll.state = "fulfilled";
                 },
                 rejected: (state) => {
-                    console.log(`[reqPostUsCapitalTokenAllPlus] rejected`);
-                    state.usCapitalTokenAllPlus.state = "rejected"
+                    console.log(`[reqPostUsCapitalTokenPlusAll] rejected`);
+                    state.usCapitalTokenPlusAll.state = "rejected"
                 }
             }
         ),
-        reqPostUsCapitalTokenAllMinus: create.asyncThunk(
-            async ({ key, num }: { key?: string, num: number }) => {
-                return await postUsCapitalTokenAllMinus(key, num);
+
+        reqPostUsCapitalTokenPlusOne: create.asyncThunk(
+            async ({ key, num, ticker }: { key?: string, num: number, ticker: string }) => {
+                return await postUsCapitalTokenPlusOne(key, num, ticker);
             },
             {
                 pending: (state) => {
-                    console.log(`[reqPostUsCapitalTokenAllMinus] pending`);
-                    state.usCapitalTokenAllMinus.state = "pending"
+                    console.log(`[reqPostUsCapitalTokenPlusOne] pending`);
+                    state.usCapitalTokenPlusOne.state = "pending"
                 },
                 fulfilled: (state, action) => {
-                    console.log(`[reqPostUsCapitalTokenAllMinus] fulfilled`, `, typeof action.payload:`, typeof action.payload, `, action.payload:`, action.payload);
+                    console.log(`[reqPostUsCapitalTokenPlusOne] fulfilled`, `, typeof action.payload:`, typeof action.payload, `, action.payload:`, action.payload);
                     // const json = action.payload;
-                    state.usCapitalTokenAllMinus.state = "fulfilled";
+                    state.usCapitalTokenPlusOne.state = "fulfilled";
                 },
                 rejected: (state) => {
-                    console.log(`[reqPostUsCapitalTokenAllMinus] rejected`);
-                    state.usCapitalTokenAllMinus.state = "rejected"
+                    console.log(`[reqPostUsCapitalTokenPlusOne] rejected`);
+                    state.usCapitalTokenPlusOne.state = "rejected"
+                }
+            }
+        ),
+        reqPostUsCapitalTokenMinusAll: create.asyncThunk(
+            async ({ key, num }: { key?: string, num: number }) => {
+                return await postUsCapitalTokenMinusAll(key, num);
+            },
+            {
+                pending: (state) => {
+                    console.log(`[reqPostUsCapitalTokenMinusAll] pending`);
+                    state.usCapitalTokenMinusAll.state = "pending"
+                },
+                fulfilled: (state, action) => {
+                    console.log(`[reqPostUsCapitalTokenMinusAll] fulfilled`, `, typeof action.payload:`, typeof action.payload, `, action.payload:`, action.payload);
+                    // const json = action.payload;
+                    state.usCapitalTokenMinusAll.state = "fulfilled";
+                },
+                rejected: (state) => {
+                    console.log(`[reqPostUsCapitalTokenMinusAll] rejected`);
+                    state.usCapitalTokenMinusAll.state = "rejected"
+                }
+            }
+        ),
+        reqPostUsCapitalTokenMinusOne: create.asyncThunk(
+            async ({ key, num, ticker }: { key?: string, num: number, ticker: string }) => {
+                return await postUsCapitalTokenMinusOne(key, num, ticker);
+            },
+            {
+                pending: (state) => {
+                    console.log(`[reqPostUsCapitalTokenMinusOne] pending`);
+                    state.usCapitalTokenMinusOne.state = "pending"
+                },
+                fulfilled: (state, action) => {
+                    console.log(`[reqPostUsCapitalTokenMinusOne] fulfilled`, `, typeof action.payload:`, typeof action.payload, `, action.payload:`, action.payload);
+                    // const json = action.payload;
+                    state.usCapitalTokenMinusOne.state = "fulfilled";
+                },
+                rejected: (state) => {
+                    console.log(`[reqPostUsCapitalTokenMinusOne] rejected`);
+                    state.usCapitalTokenMinusOne.state = "rejected"
                 }
             }
         ),
     }),
     selectors: {
         selectUsCapital: (state) => state.usCapital,
-        selectUsCapitalTokenAllPlus: (state) => state.usCapitalTokenAllPlus,
-        selectUsCapitalTokenAllMinus: (state) => state.usCapitalTokenAllMinus,
+        selectUsCapitalTokenPlusAll: (state) => state.usCapitalTokenPlusAll,
+        selectUsCapitalTokenPlusOne: (state) => state.usCapitalTokenPlusOne,
+        selectUsCapitalTokenMinusAll: (state) => state.usCapitalTokenMinusAll,
+        selectUsCapitalTokenMinusOne: (state) => state.usCapitalTokenMinusOne,
     }
 });
 
-export const { reqGetUsCapital, reqPostUsCapitalTokenAllPlus, reqPostUsCapitalTokenAllMinus } = capitalSlice.actions;
-export const { selectUsCapital, selectUsCapitalTokenAllPlus, selectUsCapitalTokenAllMinus } = capitalSlice.selectors;
+export const { reqGetUsCapital, reqPostUsCapitalTokenPlusAll, reqPostUsCapitalTokenPlusOne, reqPostUsCapitalTokenMinusAll, reqPostUsCapitalTokenMinusOne } = capitalSlice.actions;
+export const { selectUsCapital, selectUsCapitalTokenPlusAll, selectUsCapitalTokenPlusOne, selectUsCapitalTokenMinusAll, selectUsCapitalTokenMinusOne } = capitalSlice.selectors;
