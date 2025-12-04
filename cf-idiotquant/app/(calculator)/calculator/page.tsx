@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import { Badge, Box, Button, Card, DataList, Flex, Text, TextField } from "@radix-ui/themes";
+import { Badge, Box, Button, Card, Code, DataList, Flex, Text, TextField } from "@radix-ui/themes";
 
 import { CalculatorIcon } from "@heroicons/react/24/outline";
 import ResultChart, { ChartDataItem } from "./ResultChart";
@@ -181,10 +181,12 @@ export default function Calculator() {
 
     return (
         <div className="flex flex-col dark:bg-black h-full dark:text-white">
-            <div className="text-2xl flex items-center justify-left gap-2 p-6 sm:p-8 md:p-10 lg:p-12 ">
-                <CalculatorIcon className="h-5 w-5" strokeWidth={2} />
-                <div>Profit Calculator</div>
-            </div>
+            <Flex align="center" justify="center">
+                <Text className="text-2xl flex items-center justify-left gap-2 p-6 sm:p-8 md:p-10 lg:p-12 ">
+                    <CalculatorIcon className="h-5 w-5" strokeWidth={2} />
+                    <Code>Profit Calculator</Code>
+                </Text>
+            </Flex>
 
             <div className="md:flex lg:flex xl:flex 2xl:flex">
                 <Card className="w-full mx-auto shadow-xl rounded-2xl">

@@ -3,7 +3,7 @@ import React, { useMemo, useState } from "react";
 // Next.js + Radix UI + Tailwind — candidates 테이블 버전
 import * as ScrollArea from "@radix-ui/react-scroll-area";
 import * as Tooltip from "@radix-ui/react-tooltip";
-import { Flex, Text } from "@radix-ui/themes";
+import { Button, Flex, Text } from "@radix-ui/themes";
 
 type CandidateInfo = {
     symbol?: string;
@@ -123,12 +123,15 @@ export default function NCAVTable({ strategies }: { strategies?: any | any[] }) 
         ["name", data.name],
         ["asOfDate", data.asOfDate],
         ["universe", data.universe],
-        ["numAllKeys", String(data.numAllKeys)],
-        ["numFilteredKeys", String(data.numFilteredKeys)],
-        ["numCandidates", String(data.numCandidates)],
-        ["status", data.status],
-        ["lastRun", String(data.lastRun ?? "-")],
-        ["notes", data.notes || "-"],
+        // ["numAllKeys", String(data.numAllKeys)],
+        ["전체종목", String(data.numAllKeys)],
+        // ["numFilteredKeys", String(data.numFilteredKeys)],
+        ["전체종목(연도 필터)", String(data.numFilteredKeys)],
+        // ["numCandidates", String(data.numCandidates)],
+        ["추천 종목 개수", String(data.numCandidates)],
+        // ["status", data.status],
+        // ["lastRun", String(data.lastRun ?? "-")],
+        // ["notes", data.notes || "-"],
         ["lastSearchIndex", String(data.lastSearchIndex)],
         ["searchCountPerRequest", String(data.searchCountPerRequest)],
     ];
@@ -163,39 +166,39 @@ export default function NCAVTable({ strategies }: { strategies?: any | any[] }) 
             <div className="max-w-7xl mx-auto">
                 <div className="flex items-start justify-between gap-4 mb-6">
                     <div>
-                        <h1 className="text-2xl font-semibold leading-tight">
-                            {isUsingSample ? <LoadingGrayText className="w-72 h-6" /> : data.name}
+                        <h1 className="text-xl font-semibold leading-tight">
+                            {/* {isUsingSample ? <LoadingGrayText className="w-72 h-6" /> : data.name} */}
+                            {isUsingSample ? <LoadingGrayText className="w-72 h-6" /> : data.strategyId}
                         </h1>
-                        <p className="text-sm ">
+                        <div className="text-sm ">
                             {isUsingSample ? (
                                 <span className="flex gap-2 items-center">
                                     <LoadingGrayText className="w-56 h-4" />
                                 </span>
                             ) : (
                                 <><div className="flex flex-col">
-                                    <div>
-                                        {data.key}</div>
-                                    <div>
-                                        • As of {data.asOfDate}</div>
+                                    {/* <div>{data.key}</div> */}
+                                    <div>• As of {data.asOfDate}</div>
                                 </div></>
                             )}
-                        </p>
+                        </div>
                     </div>
 
                     <div className="flex items-center gap-2">
                         <Tooltip.Root>
                             <Tooltip.Trigger asChild>
-                                <button
+                                <Button
+                                    variant="soft"
                                     onClick={copyJSON}
-                                    className="flex items-center gap-2 px-3 py-2 rounded-lg border border-slate-200 shadow-sm hover:brightness-95"
+                                    // className="flex items-center gap-2 px-3 py-2 rounded-lg border border-slate-200 shadow-sm hover:brightness-95"
                                     disabled={isUsingSample}
                                 >
                                     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden>
                                         <rect x="9" y="9" width="10" height="10" rx="2" stroke="currentColor" strokeWidth="1.5" />
                                         <rect x="5" y="5" width="10" height="10" rx="2" stroke="currentColor" strokeWidth="1.5" />
                                     </svg>
-                                    <span className="text-sm">Copy JSON</span>
-                                </button>
+                                    <span className="text-sm">JSON</span>
+                                </Button>
                             </Tooltip.Trigger>
                             <Tooltip.Portal>
                                 <Tooltip.Content side="bottom" align="center" className="rounded-md p-2 text-xs ">
@@ -209,8 +212,9 @@ export default function NCAVTable({ strategies }: { strategies?: any | any[] }) 
 
                 <div className="grid grid-cols-1 lg:grid-cols-4 gap-0">
                     {list.length > 1 && (
-                        <nav className="lg:col-span-1 rounded-2xl p-3 shadow min-h-[220px]">
-                            <h3 className="text-lg font-medium mb-2">Strategies</h3>
+                        <nav className="lg:col-span-1 rounded-2xl p-3 shadow min-h-[200px]">
+                            {/* <h3 className="text-lg font-medium mb-2">Strategies</h3> */}
+                            <h3 className="text-lg font-medium mb-2">투자 전략</h3>
                             <ul className="space-y-2">
                                 {list.map((s, idx) => (
                                     <li key={s.strategyId || idx}>
@@ -226,18 +230,26 @@ export default function NCAVTable({ strategies }: { strategies?: any | any[] }) 
                                     </li>
                                 ))}
                             </ul>
+                            <Flex direction="column" pl="9" align="start">
+                                <Text as="p" color="bronze" className="text-[0.5rem] sm:text-xs md:text-sm lg:text-base xl:text-lg 2xl:text-xl">
+                                    🚀 IQ_NCAV1_2024_Q0_MCAP0 : IdiotQuant 제안, NCAV ratio 1 인 2024년 연간 시가총액이 0 이상인 종목 추천
+                                </Text>
+                                <Flex direction="column" pl="3">
+                                    <Text as="p" color="green" className="text-[0.5rem] sm:text-xs md:text-sm lg:text-base xl:text-lg 2xl:text-xl">
+                                        🦄 NCAV = Net Current Asset Value = 유동자산 - 총부채
+                                    </Text>
+                                    <Text as="p" color="green" className="text-[0.5rem] sm:text-xs md:text-sm lg:text-base xl:text-lg 2xl:text-xl">
+                                        🦄 Q:0: 연간보고서를 의미
+                                    </Text>
+                                </Flex>
+                            </Flex>
                         </nav>
                     )}
 
-                    <section className={`rounded-2xl p-4 shadow ${list.length > 1 ? 'lg:col-span-3' : 'lg:col-span-4'}`}>
-                        <h2 className="text-lg font-medium mb-3">Overview</h2>
+                    <section className={`rounded-2xl p-3 shadow ${list.length > 1 ? 'lg:col-span-3' : 'lg:col-span-4'}`}>
+                        <h2 className="text-lg font-medium mb-3">개요</h2>
 
                         <div className="border rounded-lg overflow-scroll">
-                            <div className="grid grid-cols-[220px_1fr] border-b sticky top-0 z-10">
-                                <div className="pl-3 py-1 text-sm font-medium bg-slate-50 dark:bg-slate-900">Field</div>
-                                <div className="pl-3 py-1 text-sm font-medium bg-slate-50 dark:bg-slate-900">Value</div>
-                            </div>
-
                             <ScrollArea.Root className="w-full" style={{ maxHeight: overviewMaxHeight }}>
                                 <ScrollArea.Viewport>
                                     <table className="w-full table-auto text-sm">
@@ -245,7 +257,7 @@ export default function NCAVTable({ strategies }: { strategies?: any | any[] }) 
 
                                             {/* CANDIDATES TABLE SECTION */}
                                             <tr className="">
-                                                <td className="pl-3 py-3 font-medium align-top">candidates</td>
+                                                <td className="pl-3 py-3 font-medium align-top">추천 종목</td>
                                                 <td className="pl-3 py-3">
                                                     {candidateEntries.length === 0 ? (
                                                         <div className="text-sm ">No candidates available</div>
@@ -305,19 +317,25 @@ export default function NCAVTable({ strategies }: { strategies?: any | any[] }) 
                                                                                         <td className="pl-3 py-2">{String(pbr)}</td>
                                                                                         <td className="pl-3 py-2">
                                                                                             <div className="flex items-center gap-2">
-                                                                                                <button
+                                                                                                <Button
+                                                                                                    size="1"
+                                                                                                    variant="soft"
                                                                                                     onClick={() => setExpandedCandidate(isOpen ? null : String(ticker))}
                                                                                                     className="text-xs px-2 py-1 rounded border"
                                                                                                 >
                                                                                                     {isOpen ? 'Hide' : 'Details'}
-                                                                                                </button>
-                                                                                                <button
+                                                                                                </Button>
+                                                                                                <Button
+                                                                                                    size="1"
+                                                                                                    variant="soft"
                                                                                                     onClick={() => navigator.clipboard.writeText(JSON.stringify(info, null, 2))}
                                                                                                     className="text-xs px-2 py-1 rounded border"
                                                                                                 >
                                                                                                     Copy
-                                                                                                </button>
-                                                                                                <button
+                                                                                                </Button>
+                                                                                                <Button
+                                                                                                    size="1"
+                                                                                                    variant="soft"
                                                                                                     onClick={() => {
                                                                                                         const csv = jsonToCSV(info?.condition ?? info ?? {});
                                                                                                         if (!csv) { showToast('No data to download'); return; }
@@ -332,7 +350,7 @@ export default function NCAVTable({ strategies }: { strategies?: any | any[] }) 
                                                                                                     className="text-xs px-2 py-1 rounded border"
                                                                                                 >
                                                                                                     CSV
-                                                                                                </button>
+                                                                                                </Button>
                                                                                             </div>
                                                                                         </td>
                                                                                     </tr>
@@ -484,16 +502,7 @@ export default function NCAVTable({ strategies }: { strategies?: any | any[] }) 
                 <footer className="mt-6 text-sm ">
                     <Flex direction="column">
                         <Text as="p" color="gray" className="text-[0.5rem] sm:text-xs md:text-sm lg:text-base xl:text-lg 2xl:text-xl">
-                            NCAV: Net Current Asset Value (순유동자산가치)
-                        </Text>
-                        <Text as="p" color="gray" className="text-[0.5rem] sm:text-xs md:text-sm lg:text-base xl:text-lg 2xl:text-xl">
-                            순유동자산가치: 유동자산 - 총부채
-                        </Text>
-                        <Text as="p" color="gray" className="text-[0.5rem] sm:text-xs md:text-sm lg:text-base xl:text-lg 2xl:text-xl">
-                            Q:0: 연간보고서
-                        </Text>
-                        <Text as="p" color="gray" className="text-[0.5rem] sm:text-xs md:text-sm lg:text-base xl:text-lg 2xl:text-xl">
-                            단위: USD
+                            통화 단위: $ (USD)
                         </Text>
                     </Flex>
                 </footer>
