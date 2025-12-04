@@ -9,6 +9,8 @@ import { getBadgeColor, getLevel, xpBucket } from './level';
 import { Button, Card, Box, Text, TextField, TextArea, Progress, Avatar, Flex } from '@radix-ui/themes';
 import { selectLoginState, setCloudFlareLoginStatus } from '@/lib/features/login/loginSlice';
 import { useRouter } from "next/navigation";
+import Image from 'next/image';
+import { Logout } from "./logout";
 
 const DEBUG = false;
 
@@ -100,9 +102,6 @@ export default function User() {
 
     return (
         <div className="flex flex-col items-center justify-center bg-gray-50 dark:bg-black dark:text-white px-6 py-0">
-            <div className="w-full font-mono text-xl mb-2 text-left">
-                {user.nickname}님 반갑습니다.
-            </div>
             <Card className="w-full max-w-2xl">
                 <Flex gap="6" className="flex-col md:flex-row">
                     <Flex direction="column" className="!items-center space-y-1">
@@ -134,24 +133,27 @@ export default function User() {
                                 fallback={getInitials(user.nickname)}
                             />
                         </Box>
-                        <Flex width="100%" className="!items-center !justify-center">
-                            <Text className="min-w-16 font-semibold text-xs text-right">가입일</Text>
-                            <div className="pl-1 w-60">
-                                <TextField.Root readOnly className="border-none shadow-none text-black dark:text-white text-sm" value={formatDate(user.joinedAt)} />
-                            </div>
-                        </Flex>
-                        <div className="w-full flex items-center justify-center">
-                            <Text className="min-w-16 font-semibold text-xs text-right">마지막 접속</Text>
-                            <div className="pl-1 w-60">
-                                <TextField.Root readOnly className="border-none shadow-none text-black dark:text-white text-sm" value={formatDate(user.lastLoginAt)} />
-                            </div>
-                        </div>
                     </Flex>
 
                     <Flex direction="column">
                         {!editing ? (
                             <div className="space-y-1">
+                                <div className="w-full font-mono text-xl mb-2 text-left">
+                                    {user.nickname}님 반갑습니다.
+                                </div>
+                                <Flex width="100%" className="!items-center !justify-center">
+                                    <Text className="min-w-16 font-semibold text-xs text-right">가입일</Text>
+                                    <div className="pl-1 w-60">
+                                        <TextField.Root readOnly className="border-none shadow-none text-black dark:text-white text-sm" value={formatDate(user.joinedAt)} />
+                                    </div>
+                                </Flex>
                                 <div className="w-full flex items-center justify-center">
+                                    <Text className="min-w-16 font-semibold text-xs text-right">마지막 접속</Text>
+                                    <div className="pl-1 w-60">
+                                        <TextField.Root readOnly className="border-none shadow-none text-black dark:text-white text-sm" value={formatDate(user.lastLoginAt)} />
+                                    </div>
+                                </div>
+                                {/* <div className="w-full flex items-center justify-center">
                                     <Text className="min-w-16 font-semibold text-xs text-right text-blue-500">이름</Text>
                                     <div className="pl-1 w-60">
                                         <TextField.Root readOnly className="border-none shadow-none text-sm" value={user.nickname} />
@@ -171,7 +173,7 @@ export default function User() {
                                 </div>
                                 <div className="mt-4 flex gap-3 justify-center">
                                     <Button onClick={() => setEditing(true)}>프로필 수정</Button>
-                                </div>
+                                </div> */}
                             </div>
                         ) : (
                             <form
@@ -222,6 +224,19 @@ export default function User() {
                                 </Card>
                             </Box>
                         </>}
+                        <Flex align="center" justify="center">
+                            <Button
+                                onClick={() => Logout(router)}
+                                variant="outline"
+                                radius="medium"
+                                className="!px-16 !py-6 !cursor-pointer !hover:brightness-95"
+                            >
+                                <Flex align="center" justify="center">
+                                    <Image src="/images/kakaotalk_sharing_btn_small.png" width="12" height="12" alt="metamask" className="h-6 w-6 mx-2" />
+                                    <Text size="3" weight="bold">kakao 로그아웃</Text>
+                                </Flex>
+                            </Button>
+                        </Flex>
                     </Flex>
                 </Flex>
             </Card>
