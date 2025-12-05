@@ -13,6 +13,7 @@ import NotFound from "@/app/not-found";
 import { CapitalTokenType, reqGetCapitalToken, selectCapitalToken } from "@/lib/features/algorithmTrade/algorithmTradeSlice";
 import { Box, Code, Flex, Text } from "@radix-ui/themes";
 import { KakaoTotal, reqGetKakaoMemberList, selectKakaoMemberList, selectKakaoTotal } from "@/lib/features/kakao/kakaoSlice";
+import StockListTable from "@/components/balance/stockListTable";
 
 let DEBUG = false;
 
@@ -61,6 +62,18 @@ export default function BalanceKr() {
         </>
     }
 
+    function doTokenPlusAll() {
+        if (DEBUG) console.log(`doTokenPlusAll`);
+    }
+    function doTokenPlusOne() {
+        if (DEBUG) console.log(`doTokenPlusOne`);
+    }
+    function doTokenMinusAll() {
+        if (DEBUG) console.log(`doTokenMinusAll`);
+    }
+    function doTokenMinusOne() {
+        if (DEBUG) console.log(`doTokenMinusOne`);
+    }
     return <>
         <Flex direction="column" align="center" justify="center" gap="2">
             <Text size="6">
@@ -78,6 +91,12 @@ export default function BalanceKr() {
             stock_list={kr_capital_token.value.stock_list}
             kakaoTotal={kakaoTotal}
             kakaoMemberList={kakaoMemberList}
+        />
+        <StockListTable
+            dataKr={kr_capital_token}
+            kakaoTotal={kakaoTotal}
+            doTokenPlusAll={doTokenPlusAll} doTokenMinusAll={doTokenMinusAll}
+            doTokenPlusOne={doTokenPlusOne} doTokenMinusOne={doTokenMinusOne}
         />
     </>
 }

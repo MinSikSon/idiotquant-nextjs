@@ -11,7 +11,7 @@ interface CapitalTokenTypeValueTimestamp {
     "prevPrev": string;
 }
 
-interface CapitalTokenTypeValueStock {
+export interface CapitalTokenTypeValueStock {
     "name": string; //"전방"
     "PDNO": string; // "000950"
     "token": number; // 292

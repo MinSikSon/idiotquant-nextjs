@@ -5,9 +5,11 @@ import * as ScrollArea from "@radix-ui/react-scroll-area";
 import * as Tooltip from "@radix-ui/react-tooltip";
 import { UsCapitalStockItem, UsCapitalType } from "@/lib/features/capital/capitalSlice";
 import { Box, Button, Flex, Grid, Text } from "@radix-ui/themes";
+import { CapitalTokenType, CapitalTokenTypeValue, CapitalTokenTypeValueStock } from "@/lib/features/algorithmTrade/algorithmTradeSlice";
 
 interface Props {
-  data: UsCapitalType;
+  data?: UsCapitalType;
+  dataKr?: CapitalTokenType;
   kakaoTotal: any;
   doTokenPlusAll: any;
   doTokenPlusOne: any;
@@ -16,19 +18,25 @@ interface Props {
   className?: string;
 }
 
-const HEADERS: { key: "index" | keyof UsCapitalStockItem | "actions"; label: string }[] = [
+const HEADERS: { key: "index" | keyof UsCapitalStockItem | keyof CapitalTokenTypeValueStock | "actions"; label: string }[] = [
   { key: "index", label: "#" },
   { key: "symbol", label: "심볼" },
-  { key: "key", label: "Key" },
-  { key: "ncavRatio", label: "NCAV 비율" },
+  { key: "PDNO", label: "심볼2" },
+  { key: "name", label: "회사명" },
   { key: "token", label: "Token" },
+  { key: "key", label: "Key" },
+  { key: "output_balanceSheet", label: "bs" },
+  { key: "output_inquirePrice", label: "price" },
+  { key: "ncavRatio", label: "NCAV 비율" },
   { key: "action", label: "Action" },
   { key: "condition", label: "Condition" },
   { key: "actions", label: "동작: 개별종목 TOKEN refill" },
+
+  // "symbol" | "key" | "condition" | "ncavRatio" | "name" | "index" | "token" | "action" | "PDNO" | "output_inquirePrice" | "output_balanceSheet" | "actions"
 ];
 
-export default function StockListTable({ data, kakaoTotal, doTokenPlusAll, doTokenPlusOne, doTokenMinusAll, doTokenMinusOne, className = "" }: Props) {
-  const rows = data?.stock_list ?? [];
+export default function StockListTable({ data, dataKr, kakaoTotal, doTokenPlusAll, doTokenPlusOne, doTokenMinusAll, doTokenMinusOne, className = "" }: Props) {
+  const rows = data?.stock_list ?? dataKr?.value?.stock_list ?? [];
 
   // 선택된 항목과 모달 열림 상태
   const [selected, setSelected] = useState<UsCapitalStockItem | null>(null);
@@ -67,17 +75,17 @@ export default function StockListTable({ data, kakaoTotal, doTokenPlusAll, doTok
         <Flex direction="column" align="center" justify="center" gap="1">
           <Text>time_stamp:</Text>
           <div className="text-sm">
-            <span className="font-medium">{new Date(data.time_stamp.prevPrev).toLocaleString()}</span>
+            <span className="font-medium">{new Date(data?.time_stamp?.prevPrev ?? dataKr?.value?.time_stamp?.prevPrev ?? 0).toLocaleString()}</span>
           </div>
           <div className="text-sm">
-            <span className="font-medium">{new Date(data.time_stamp.prev).toLocaleString()}</span>
+            <span className="font-medium">{new Date(data?.time_stamp?.prev ?? dataKr?.value?.time_stamp?.prev ?? 0).toLocaleString()}</span>
           </div> <div className="text-sm">
-            <span className="font-medium">{new Date(data.time_stamp.current).toLocaleString()}</span>
+            <span className="font-medium">{new Date(data?.time_stamp?.current ?? dataKr?.value?.time_stamp?.current ?? 0).toLocaleString()}</span>
           </div>
         </Flex>
         <Flex direction="column">
           <div className="text-sm">
-            Token per Stock: {data.token_info.token_per_stock} • Refill Index: {data.token_info.refill_stock_index}
+            Token per Stock: {data?.token_info?.token_per_stock ?? dataKr?.value?.token_per_stock ?? 0} • Refill Index: {data?.token_info?.refill_stock_index ?? dataKr?.value?.refill_stock_index ?? 0}
           </div>
           {(kakaoTotal?.kakao_account?.profile?.nickname === process.env.NEXT_PUBLIC_MASTER) ?
             <Flex direction="column" align="center" justify="center" py="1" my="1" className="border-2 rounded-xl">
@@ -129,75 +137,130 @@ export default function StockListTable({ data, kakaoTotal, doTokenPlusAll, doTok
                     </td>
                   </tr>
                 ) : (
-                  rows.map((row, rIndex) => (
-                    <tr key={`${row.key}-${rIndex}`} className={rIndex % 2 === 0 ? "bg-white dark:bg-black" : "bg-slate-50 dark:bg-slate-800"}>
-                      {HEADERS.map((h: any, cIndex) => {
-                        if (h.key === "actions") {
-                          return (
-                            <td key={`cell-${rIndex}-${cIndex}`} className="px-3 py-1.5 whitespace-nowrap border-b">
-                              <div className="flex gap-2">
-                                <>
-                                  <Flex gap="1" align="center" justify="end">
-                                    <Text>|</Text>
-                                    <Text size="2">₩10,000</Text>
-                                    <Button size="2" disabled={false == master} onClick={() => doTokenPlusOne(10_000, row?.symbol)}>+</Button>
-                                    <Button size="2" disabled={false == master} onClick={() => doTokenMinusOne(10_000, row?.symbol)} color="tomato" >-</Button>
-                                  </Flex>
-                                  <Flex gap="1" align="center" justify="end">
-                                    <Text>|</Text>
-                                    <Text size="2">₩100,000</Text>
-                                    <Button size="2" disabled={false == master} onClick={() => doTokenPlusOne(100_000, row?.symbol)} >+</Button>
-                                    <Button size="2" disabled={false == master} onClick={() => doTokenMinusOne(100_000, row?.symbol)} color="tomato" >-</Button>
-                                  </Flex>
-                                  <Flex gap="1" align="center" justify="end">
-                                    <Text>|</Text>
-                                    <Text size="2">₩1,000,000</Text>
-                                    <Button size="2" disabled={false == master} onClick={() => doTokenPlusOne(1_000_000, row?.symbol)} >+</Button>
-                                    <Button size="2" disabled={false == master} onClick={() => doTokenMinusOne(1_000_000, row?.symbol)} color="tomato"  >-</Button>
-                                  </Flex>
-                                </>
-                              </div>
-                            </td>
-                          );
-                        }
+                  rows.map((row: any, rIndex) => {
+                    let cras = 0;
+                    let total_lblt = 0;
+                    let hts_avls = 0;
+                    return (
+                      <tr key={`${row.key}-${rIndex}`} className={rIndex % 2 === 0 ? "bg-white dark:bg-black" : "bg-slate-50 dark:bg-slate-800"}>
+                        {HEADERS.map((h, cIndex) => {
+                          if (h.key === "actions") {
+                            return (
+                              <td key={`cell-${rIndex}-${cIndex}`} className="px-3 py-1.5 whitespace-nowrap border-b">
+                                <div className="flex gap-2">
+                                  <>
+                                    <Flex gap="1" align="center" justify="end">
+                                      <Text>|</Text>
+                                      <Text size="2">₩10,000</Text>
+                                      <Button size="2" disabled={false == master} onClick={() => doTokenPlusOne(10_000, row?.symbol ?? row?.PDNO ?? "")}>+</Button>
+                                      <Button size="2" disabled={false == master} onClick={() => doTokenMinusOne(10_000, row?.symbol ?? row?.PDNO ?? "")} color="tomato" >-</Button>
+                                    </Flex>
+                                    <Flex gap="1" align="center" justify="end">
+                                      <Text>|</Text>
+                                      <Text size="2">₩100,000</Text>
+                                      <Button size="2" disabled={false == master} onClick={() => doTokenPlusOne(100_000, row?.symbol ?? row?.PDNO ?? "")} >+</Button>
+                                      <Button size="2" disabled={false == master} onClick={() => doTokenMinusOne(100_000, row?.symbol ?? row?.PDNO ?? "")} color="tomato" >-</Button>
+                                    </Flex>
+                                    <Flex gap="1" align="center" justify="end">
+                                      <Text>|</Text>
+                                      <Text size="2">₩1,000,000</Text>
+                                      <Button size="2" disabled={false == master} onClick={() => doTokenPlusOne(1_000_000, row?.symbol ?? row?.PDNO ?? "")} >+</Button>
+                                      <Button size="2" disabled={false == master} onClick={() => doTokenMinusOne(1_000_000, row?.symbol ?? row?.PDNO ?? "")} color="tomato"  >-</Button>
+                                    </Flex>
+                                  </>
+                                </div>
+                              </td>
+                            );
+                          }
 
-                        if (h.key === "condition") {
-                          return (
-                            <td key={`cell-${rIndex}-${cIndex}`} className="px-3 py-1.5 whitespace-nowrap border-b">
-                              <div className="flex gap-2">
-                                {/* 상세 버튼에 openDetail 연결 */}
-                                <Button size="1" onClick={() => openDetail(row)} aria-haspopup="dialog">상세</Button>
-                              </div>
-                            </td>
-                          );
-                        }
+                          if (h.key === "condition") {
+                            return (
+                              <td key={`cell-${rIndex}-${cIndex}`} className="px-3 py-1.5 whitespace-nowrap border-b">
+                                <div className="flex gap-2">
+                                  {/* 상세 버튼에 openDetail 연결 */}
+                                  <Button size="1" onClick={() => openDetail(row)} aria-haspopup="dialog">상세</Button>
+                                </div>
+                              </td>
+                            );
+                          }
 
-                        if (h.key === "index") {
+                          if (h.key === "index") {
+                            return (
+                              <td key={`cell-${rIndex}-${cIndex}`}
+                                className={`px-3 py-1.5 border-b ${rIndex % 2 === 0 ? "bg-white dark:bg-black" : "bg-slate-50 dark:bg-slate-800"}`}
+                                style={cIndex === 1 || cIndex === 4 ? { position: "sticky", left: (cIndex - 1) * 20, zIndex: 10 } : {}}
+                              >
+                                {rIndex}
+                              </td>
+                            );
+                          }
+
+
+                          const key = h.key as (keyof UsCapitalStockItem | keyof CapitalTokenTypeValueStock);
+                          const value = row[key] ?? "-";
+
+                          if (h.key === "output_balanceSheet") {
+                            const latestBs = value?.output?.[0] ?? {};
+                            const stac_yymm = latestBs?.stac_yymm ?? "";
+                            cras = Number(latestBs?.cras ?? 0); // 유동자산
+                            total_lblt = Number(latestBs?.total_lblt ?? 0); // 부채총계
+                            return (
+                              <td key={`cell-${rIndex}-${cIndex}`} className="px-3 py-1.5 whitespace-nowrap border-b">
+                                <div className="flex gap-2">
+                                  {/* 상세 버튼에 openDetail 연결 */}
+                                  <Flex direction="column">
+                                    <Text className="text-[0.6rem]">({stac_yymm})</Text>
+                                    <Text size="1">유동자산: ₩{cras.toLocaleString()}억</Text>
+                                    <Text size="1">부채총계: ₩{total_lblt.toLocaleString()}억</Text>
+                                  </Flex>
+                                </div>
+                              </td>
+                            );
+                          }
+
+                          if (h.key === "output_inquirePrice") {
+                            const inquirePrice = value?.output ?? {};
+
+                            const stck_prpr = Number(inquirePrice?.stck_prpr ?? 0); // 현재가
+                            hts_avls = Number(inquirePrice?.hts_avls ?? 0); // 시가총액
+                            const lstn_stcn = Number(inquirePrice?.lstn_stcn ?? 0); // 상장주수
+                            return (
+                              <td key={`cell-${rIndex}-${cIndex}`} className="px-3 py-1.5 whitespace-nowrap border-b">
+                                <div className="flex gap-2">
+                                  {/* 상세 버튼에 openDetail 연결 */}
+                                  <Flex direction="column">
+                                    <Text size="1">현재가: ₩{stck_prpr.toLocaleString()}</Text>
+                                    <Text size="1">시가총액: ₩{hts_avls.toLocaleString()}억</Text>
+                                    <Text size="1">상장주수: {Number(lstn_stcn).toLocaleString()}개</Text>
+                                  </Flex>
+                                </div>
+                              </td>
+                            );
+                          }
+
+                          if ("-" === value && "ncavRatio" === key) {
+                            return (
+                              <td key={`cell-${rIndex}-${cIndex}`} className="px-3 py-1.5 whitespace-nowrap border-b">
+                                <div className="flex gap-2">
+                                  {/* 상세 버튼에 openDetail 연결 */}
+                                  <Text>{Number(0 == hts_avls ? 0 : (cras - total_lblt) / hts_avls).toFixed(2)}</Text>
+                                </div>
+                              </td>
+                            );
+                          }
+
                           return (
-                            <td key={`cell-${rIndex}-${cIndex}`}
+                            <td
+                              key={`cell-${rIndex}-${cIndex}`}
                               className={`px-3 py-1.5 border-b ${rIndex % 2 === 0 ? "bg-white dark:bg-black" : "bg-slate-50 dark:bg-slate-800"}`}
                               style={cIndex === 1 || cIndex === 4 ? { position: "sticky", left: (cIndex - 1) * 20, zIndex: 10 } : {}}
                             >
-                              {rIndex}
+                              <div className="text-sm">{String(value)}</div>
                             </td>
                           );
-                        }
-
-                        const key = h.key as keyof UsCapitalStockItem;
-                        const value = row[key] ?? "-";
-
-                        return (
-                          <td
-                            key={`cell-${rIndex}-${cIndex}`}
-                            className={`px-3 py-1.5 border-b ${rIndex % 2 === 0 ? "bg-white dark:bg-black" : "bg-slate-50 dark:bg-slate-800"}`}
-                            style={cIndex === 1 || cIndex === 4 ? { position: "sticky", left: (cIndex - 1) * 20, zIndex: 10 } : {}}
-                          >
-                            <div className="text-sm">{String(value)}</div>
-                          </td>
-                        );
-                      })}
-                    </tr>
-                  ))
+                        })}
+                      </tr>);
+                  })
                 )}
               </tbody>
             </table>
