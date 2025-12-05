@@ -7,6 +7,7 @@ import { Button, Flex, Text } from "@radix-ui/themes";
 
 type CandidateInfo = {
     symbol?: string;
+    name?: string;
     key?: string;
     condition?: Record<string, any> | null;
     ncavRatio?: string;
@@ -254,7 +255,6 @@ export default function NCAVTable({ strategies }: { strategies?: any | any[] }) 
                                 <ScrollArea.Viewport>
                                     <table className="w-full table-auto text-sm">
                                         <tbody>
-
                                             {/* CANDIDATES TABLE SECTION */}
                                             <tr className="">
                                                 <td className="pl-3 py-3 font-medium align-top">추천 종목</td>
@@ -267,6 +267,7 @@ export default function NCAVTable({ strategies }: { strategies?: any | any[] }) 
                                                                 <thead className="">
                                                                     <tr>
                                                                         <th className="text-left pl-3 py-2 ">Ticker</th>
+                                                                        <th className="text-left pl-3 py-2 ">Name</th>
                                                                         <th className="text-left pl-3 py-2 ">Last Price</th>
                                                                         <th className="text-left pl-3 py-2 ">Market Cap</th>
                                                                         <th className="text-left pl-3 py-2 ">NCAV Ratio</th>
@@ -300,8 +301,9 @@ export default function NCAVTable({ strategies }: { strategies?: any | any[] }) 
                                                                         candidateEntries.map(([ticker, info]) => {
                                                                             const isOpen = expandedCandidate === String(ticker);
                                                                             const cond = info?.condition ?? {};
-                                                                            const lastPrice = cond?.LastPrice ?? cond?.Lastprice ?? "-";
-                                                                            const marketCap = cond?.MarketCapitalization ?? cond?.marketCapitalization ?? "-";
+                                                                            const name = info?.name ?? "-";
+                                                                            const lastPrice = cond?.LastPrice ?? "-";
+                                                                            const marketCap = cond?.MarketCapitalization ?? "-";
                                                                             const ncavRatio = info?.ncavRatio ?? "-";
                                                                             const per = cond?.per ?? cond?.PER ?? "-";
                                                                             const pbr = cond?.pbr ?? cond?.PBR ?? "-";
@@ -309,6 +311,7 @@ export default function NCAVTable({ strategies }: { strategies?: any | any[] }) 
                                                                             return (
                                                                                 <React.Fragment key={ticker}>
                                                                                     <tr className={`border-t hover: ${isOpen ? '' : ''}`}>
+                                                                                        <td className="pl-3 py-2 font-medium">{ticker}</td>
                                                                                         <td className="pl-3 py-2 font-medium">{ticker}</td>
                                                                                         <td className="pl-3 py-2">{typeof lastPrice === 'number' ? String(lastPrice) : String(lastPrice)}</td>
                                                                                         <td className="pl-3 py-2">{typeof marketCap === 'number' ? marketCap.toLocaleString() : String(marketCap)}</td>
