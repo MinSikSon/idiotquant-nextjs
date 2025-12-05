@@ -21,8 +21,8 @@ export const getUsNcavList: any = async () => {
     return res.json();
 }
 
-export const getUsNcavLatest: any = async () => {
-    const url = `${process.env.NEXT_PUBLIC_API_URL}/strategy/us/ncav/date/latest`
+export const getNcavLatest: any = async () => {
+    const url = `${process.env.NEXT_PUBLIC_API_URL}/strategy/all/ncav/date/latest`
     const res = await fetch(url, {
         credentials: "include",  // include credentials (like cookies) in the request
     });
