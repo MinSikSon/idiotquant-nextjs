@@ -312,7 +312,7 @@ export default function NCAVTable({ strategies }: { strategies?: any | any[] }) 
                                                                                 <React.Fragment key={ticker}>
                                                                                     <tr className={`border-t hover: ${isOpen ? '' : ''}`}>
                                                                                         <td className="pl-3 py-2 font-medium">{ticker}</td>
-                                                                                        <td className="pl-3 py-2 font-medium">{ticker}</td>
+                                                                                        <td className="pl-3 py-2 font-medium">{name}</td>
                                                                                         <td className="pl-3 py-2">{typeof lastPrice === 'number' ? String(lastPrice) : String(lastPrice)}</td>
                                                                                         <td className="pl-3 py-2">{typeof marketCap === 'number' ? marketCap.toLocaleString() : String(marketCap)}</td>
                                                                                         <td className="pl-3 py-2">{String(ncavRatio)}</td>
