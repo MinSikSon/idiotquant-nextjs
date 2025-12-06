@@ -1,3 +1,5 @@
+"use client";
+
 import React, { useMemo, useState } from "react";
 
 // Next.js + Radix UI + Tailwind — candidates 테이블 버전
@@ -95,6 +97,28 @@ function LoadingGrayText({ className = "" }: { className?: string }) {
     );
 }
 
+/**
+ * 정렬 가능한 헤더 정의
+ * key: 내부 sortKey (accessor)
+ * label: 화면에 보일 텍스트
+ * accessor: row에서 값을 꺼내는 함수
+ * numeric: 숫자 비교로 정렬할지 여부
+ */
+const SORTABLE_HEADERS = [
+    { key: "ticker", label: "Ticker", accessor: (r: [string, CandidateInfo]) => r[0], numeric: false },
+    { key: "name", label: "Name", accessor: (r: [string, CandidateInfo]) => r[1]?.name ?? "-", numeric: false },
+    { key: "lastPrice", label: "Last Price", accessor: (r: [string, CandidateInfo]) => r[1]?.condition?.LastPrice ?? r[1]?.condition?.LastPrice ?? null, numeric: true },
+    { key: "marketCap", label: "Market Cap", accessor: (r: [string, CandidateInfo]) => r[1]?.condition?.MarketCapitalization ?? null, numeric: true },
+    {
+        key: "ncavRatio", label: "NCAV Ratio", accessor: (r: [string, CandidateInfo]) => {
+            const v = r[1]?.ncavRatio ?? r[1]?.ncavRatio;
+            return v == null ? null : Number(String(v));
+        }, numeric: true
+    },
+    { key: "per", label: "P/E", accessor: (r: [string, CandidateInfo]) => r[1]?.condition?.per ?? r[1]?.condition?.PER ?? null, numeric: true },
+    { key: "pbr", label: "P/B", accessor: (r: [string, CandidateInfo]) => r[1]?.condition?.pbr ?? r[1]?.condition?.PBR ?? null, numeric: true },
+];
+
 export default function NCAVTable({ strategies }: { strategies?: any | any[] }) {
     const list = useMemo(() => {
         if (!strategies) return [sample];
@@ -104,8 +128,6 @@ export default function NCAVTable({ strategies }: { strategies?: any | any[] }) 
 
     // isUsingSample: 현재 화면에 보여지는 전략이 fallback sample인지 여부
     const isUsingSample = useMemo(() => {
-        // list이 sample 하나만 있고, 원래 전달된 strategies 값이 falsy거나 빈 배열이거나
-        // 또는 사용자가 명시적으로 sample 객체(동일 참조) 를 전달한 경우를 체크
         const onlySample = list.length === 1 && list[0] === sample;
         const explicitSample = strategies === sample;
         const emptyOrAbsent = !strategies || (Array.isArray(strategies) && strategies.length === 0);
@@ -124,15 +146,9 @@ export default function NCAVTable({ strategies }: { strategies?: any | any[] }) 
         ["name", data.name],
         ["asOfDate", data.asOfDate],
         ["universe", data.universe],
-        // ["numAllKeys", String(data.numAllKeys)],
         ["전체종목", String(data.numAllKeys)],
-        // ["numFilteredKeys", String(data.numFilteredKeys)],
         ["전체종목(연도 필터)", String(data.numFilteredKeys)],
-        // ["numCandidates", String(data.numCandidates)],
         ["추천 종목 개수", String(data.numCandidates)],
-        // ["status", data.status],
-        // ["lastRun", String(data.lastRun ?? "-")],
-        // ["notes", data.notes || "-"],
         ["lastSearchIndex", String(data.lastSearchIndex)],
         ["searchCountPerRequest", String(data.searchCountPerRequest)],
     ];
@@ -162,13 +178,78 @@ export default function NCAVTable({ strategies }: { strategies?: any | any[] }) 
 
     const overviewMaxHeight = 'calc(100vh - 220px)';
 
+    // ---------- Sorting state ----------
+    const [sortKey, setSortKey] = useState<string>("ticker"); // 기본: ticker
+    const [sortDir, setSortDir] = useState<"asc" | "desc">("asc");
+
+    const onHeaderClick = (key: string) => {
+        if (sortKey === key) {
+            setSortDir(prev => (prev === "asc" ? "desc" : "asc"));
+        } else {
+            setSortKey(key);
+            setSortDir("asc");
+        }
+    };
+
+    // ---------- compute sorted rows ----------
+    const sortedCandidates = useMemo(() => {
+        // map to item + value cache for accessor
+        const items = candidateEntries.map(entry => {
+            const mapEntry = { entry, values: {} as Record<string, any> };
+            for (const h of SORTABLE_HEADERS) {
+                try {
+                    mapEntry.values[h.key] = h.accessor(entry);
+                } catch {
+                    mapEntry.values[h.key] = null;
+                }
+            }
+            return mapEntry;
+        });
+
+        // find header meta
+        const headerMeta = SORTABLE_HEADERS.find(h => h.key === sortKey) ?? SORTABLE_HEADERS[0];
+
+        // comparator
+        const cmp = (a: typeof items[0], b: typeof items[0]) => {
+            const va = a.values[headerMeta.key];
+            const vb = b.values[headerMeta.key];
+
+            // handle null/undefined
+            const aNull = va === null || va === undefined;
+            const bNull = vb === null || vb === undefined;
+            if (aNull && bNull) return 0;
+            if (aNull) return 1; // nulls go to the end
+            if (bNull) return -1;
+
+            if (headerMeta.numeric) {
+                const na = Number(va);
+                const nb = Number(vb);
+                if (Number.isNaN(na) && Number.isNaN(nb)) return 0;
+                if (Number.isNaN(na)) return 1;
+                if (Number.isNaN(nb)) return -1;
+                return na - nb;
+            } else {
+                const sa = String(va);
+                const sb = String(vb);
+                return sa.localeCompare(sb, undefined, { numeric: true, sensitivity: "base" });
+            }
+        };
+
+        items.sort((a, b) => {
+            const r = cmp(a, b);
+            return sortDir === "asc" ? r : -r;
+        });
+
+        // return sorted entries (original [ticker, info])
+        return items.map(it => it.entry);
+    }, [candidateEntries, sortKey, sortDir]);
+
     return (
         <div className="min-h-screen p-4">
             <div className="max-w-7xl mx-auto">
                 <div className="flex items-start justify-between gap-4 mb-6">
                     <div>
                         <h1 className="text-xl font-semibold leading-tight">
-                            {/* {isUsingSample ? <LoadingGrayText className="w-72 h-6" /> : data.name} */}
                             {isUsingSample ? <LoadingGrayText className="w-72 h-6" /> : data.strategyId}
                         </h1>
                         <div className="text-sm ">
@@ -178,7 +259,6 @@ export default function NCAVTable({ strategies }: { strategies?: any | any[] }) 
                                 </span>
                             ) : (
                                 <><div className="flex flex-col">
-                                    {/* <div>{data.key}</div> */}
                                     <div>• As of {data.asOfDate}</div>
                                 </div></>
                             )}
@@ -191,7 +271,6 @@ export default function NCAVTable({ strategies }: { strategies?: any | any[] }) 
                                 <Button
                                     variant="soft"
                                     onClick={copyJSON}
-                                    // className="flex items-center gap-2 px-3 py-2 rounded-lg border border-slate-200 shadow-sm hover:brightness-95"
                                     disabled={isUsingSample}
                                 >
                                     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden>
@@ -214,7 +293,6 @@ export default function NCAVTable({ strategies }: { strategies?: any | any[] }) 
                 <div className="grid grid-cols-1 lg:grid-cols-4 gap-0">
                     {list.length > 1 && (
                         <nav className="lg:col-span-1 rounded-2xl p-3 shadow min-h-[200px]">
-                            {/* <h3 className="text-lg font-medium mb-2">Strategies</h3> */}
                             <h3 className="text-lg font-medium mb-2">투자 전략</h3>
                             <ul className="space-y-2">
                                 {list.map((s, idx) => (
@@ -266,14 +344,24 @@ export default function NCAVTable({ strategies }: { strategies?: any | any[] }) 
                                                             <table className="min-w-full text-sm">
                                                                 <thead className="">
                                                                     <tr>
-                                                                        <th className="text-left pl-3 py-2 ">Ticker</th>
-                                                                        <th className="text-left pl-3 py-2 ">Name</th>
-                                                                        <th className="text-left pl-3 py-2 ">Last Price</th>
-                                                                        <th className="text-left pl-3 py-2 ">Market Cap</th>
-                                                                        <th className="text-left pl-3 py-2 ">NCAV Ratio</th>
-                                                                        <th className="text-left pl-3 py-2 ">P/E</th>
-                                                                        <th className="text-left pl-3 py-2 ">P/B</th>
-                                                                        <th className="text-left pl-3 py-2 ">Actions</th>
+                                                                        {SORTABLE_HEADERS.map(h => (
+                                                                            <th
+                                                                                key={h.key}
+                                                                                className="text-left pl-3 py-2 cursor-pointer select-none"
+                                                                                onClick={() => onHeaderClick(h.key)}
+                                                                            >
+                                                                                <div className="inline-flex items-center gap-2">
+                                                                                    <span>{h.label}</span>
+                                                                                    {sortKey === h.key && (
+                                                                                        <span className="text-xs opacity-80">
+                                                                                            {sortDir === "asc" ? "▲" : "▼"}
+                                                                                        </span>
+                                                                                    )}
+                                                                                </div>
+                                                                            </th>
+                                                                        ))}
+
+                                                                        <th className="text-left pl-3 py-2">Actions</th>
                                                                     </tr>
                                                                 </thead>
                                                                 <tbody>
@@ -297,8 +385,8 @@ export default function NCAVTable({ strategies }: { strategies?: any | any[] }) 
                                                                             </tr>
                                                                         ))
                                                                     ) : (
-                                                                        // 실제 데이터 렌더링
-                                                                        candidateEntries.map(([ticker, info]) => {
+                                                                        // 실제 데이터 렌더링 (정렬된 리스트 활용)
+                                                                        sortedCandidates.map(([ticker, info]) => {
                                                                             const isOpen = expandedCandidate === String(ticker);
                                                                             const cond = info?.condition ?? {};
                                                                             const name = info?.name ?? "-";
