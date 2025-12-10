@@ -97,9 +97,24 @@ export default function StockListTable({ data, dataKr, kakaoTotal, doTokenPlusAl
                   <Button disabled={false == master} onClick={() => doTokenMinusAll(10_000)} size="2" color="tomato" >-</Button>
                 </Flex>
                 <Flex gap="1" align="center" justify="end">
+                  <Text>₩50,000</Text>
+                  <Button disabled={false == master} onClick={() => doTokenPlusAll(50_000)} size="2">+</Button>
+                  <Button disabled={false == master} onClick={() => doTokenMinusAll(50_000)} size="2" color="tomato" >-</Button>
+                </Flex>
+                <Flex gap="1" align="center" justify="end">
                   <Text>₩100,000</Text>
                   <Button disabled={false == master} onClick={() => doTokenPlusAll(100_000)} size="2" >+</Button>
                   <Button disabled={false == master} onClick={() => doTokenMinusAll(100_000)} size="2" color="tomato" >-</Button>
+                </Flex>
+                <Flex gap="1" align="center" justify="end">
+                  <Text>₩200,000</Text>
+                  <Button disabled={false == master} onClick={() => doTokenPlusAll(200_000)} size="2" >+</Button>
+                  <Button disabled={false == master} onClick={() => doTokenMinusAll(200_000)} size="2" color="tomato" >-</Button>
+                </Flex>
+                <Flex gap="1" align="center" justify="end">
+                  <Text>₩500,000</Text>
+                  <Button disabled={false == master} onClick={() => doTokenPlusAll(500_000)} size="2" >+</Button>
+                  <Button disabled={false == master} onClick={() => doTokenMinusAll(500_000)} size="2" color="tomato" >-</Button>
                 </Flex>
                 <Flex gap="1" align="center" justify="end">
                   <Text>₩1,000,000</Text>
@@ -122,7 +137,7 @@ export default function StockListTable({ data, dataKr, kakaoTotal, doTokenPlusAl
                     <th
                       key={String(h.key)}
                       className="px-3 py-1.5 text-left text-xs font-medium uppercase tracking-wider bg-white dark:bg-black border-b sticky top-0 z-20"
-                      style={idx === 1 || idx === 4 ? { position: "sticky", left: (idx - 1) * 20, zIndex: 30 } : {}}
+                      style={idx >= 1 && idx <= 4 ? { position: "sticky", left: (idx - 1) * 20, zIndex: 30 } : {}}
                     >
                       {h.label}
                     </th>
@@ -188,7 +203,7 @@ export default function StockListTable({ data, dataKr, kakaoTotal, doTokenPlusAl
                             return (
                               <td key={`cell-${rIndex}-${cIndex}`}
                                 className={`px-3 py-1.5 border-b ${rIndex % 2 === 0 ? "bg-white dark:bg-black" : "bg-slate-50 dark:bg-slate-800"}`}
-                                style={cIndex === 1 || cIndex === 4 ? { position: "sticky", left: (cIndex - 1) * 20, zIndex: 10 } : {}}
+                                style={cIndex >= 1 && cIndex <= 4 ? { position: "sticky", left: (cIndex - 1) * 20, zIndex: 10 } : {}}
                               >
                                 {rIndex}
                               </td>
@@ -253,7 +268,7 @@ export default function StockListTable({ data, dataKr, kakaoTotal, doTokenPlusAl
                             <td
                               key={`cell-${rIndex}-${cIndex}`}
                               className={`px-3 py-1.5 border-b ${rIndex % 2 === 0 ? "bg-white dark:bg-black" : "bg-slate-50 dark:bg-slate-800"}`}
-                              style={cIndex === 1 || cIndex === 4 ? { position: "sticky", left: (cIndex - 1) * 20, zIndex: 10 } : {}}
+                              style={cIndex >= 1 && cIndex <= 4 ? { position: "sticky", left: (cIndex - 1) * 20, zIndex: 10 } : {}}
                             >
                               <div className="text-sm">{String(value)}</div>
                             </td>
