@@ -745,15 +745,15 @@ export const koreaInvestmentUsMarketSlice = createAppSlice({
             },
             {
                 pending: (state) => {
-                    console.log(`[reqGetOverseasStockTradingInquireCcnl] pending`);
+                    // console.log(`[reqGetOverseasStockTradingInquireCcnl] pending`);
                     state.ccnl.state = "pending";
                 },
                 fulfilled: (state, action) => {
-                    console.log(`[reqGetOverseasStockTradingInquireCcnl] fulfilled`, `action.payload`, action.payload);
+                    // console.log(`[reqGetOverseasStockTradingInquireCcnl] fulfilled`, `action.payload`, action.payload);
                     state.ccnl = { ...action.payload, state: "fulfilled" };
                 },
                 rejected: (state) => {
-                    console.log(`[reqGetOverseasStockTradingInquireCcnl] rejected`);
+                    // console.log(`[reqGetOverseasStockTradingInquireCcnl] rejected`);
                     state.ccnl.state = "rejected";
                 },
             }
@@ -764,15 +764,15 @@ export const koreaInvestmentUsMarketSlice = createAppSlice({
             },
             {
                 pending: (state) => {
-                    console.log(`[reqGetOverseasStockTradingInquireNccs] pending`);
+                    // console.log(`[reqGetOverseasStockTradingInquireNccs] pending`);
                     state.nccs.state = "pending";
                 },
                 fulfilled: (state, action) => {
-                    console.log(`[reqGetOverseasStockTradingInquireNccs] fulfilled`, `action.payload`, action.payload);
+                    // console.log(`[reqGetOverseasStockTradingInquireNccs] fulfilled`, `action.payload`, action.payload);
                     state.nccs = { ...action.payload, state: "fulfilled" };
                 },
                 rejected: (state) => {
-                    console.log(`[reqGetOverseasStockTradingInquireNccs] rejected`);
+                    // console.log(`[reqGetOverseasStockTradingInquireNccs] rejected`);
                     state.nccs.state = "rejected";
                 },
             }

@@ -93,16 +93,16 @@ export const capitalSlice = createAppSlice({
             },
             {
                 pending: (state) => {
-                    console.log(`[reqGetUsCapital] pending`);
+                    // console.log(`[reqGetUsCapital] pending`);
                     state.usCapital.state = "pending"
                 },
                 fulfilled: (state, action) => {
-                    console.log(`[reqGetUsCapital] fulfilled`, `, typeof action.payload:`, typeof action.payload, `, action.payload:`, action.payload);
+                    // console.log(`[reqGetUsCapital] fulfilled`, `, typeof action.payload:`, typeof action.payload, `, action.payload:`, action.payload);
                     const json = action.payload;
                     state.usCapital = { ...json, state: "fulfilled" };
                 },
                 rejected: (state) => {
-                    console.log(`[reqGetUsCapital] rejected`);
+                    // console.log(`[reqGetUsCapital] rejected`);
                     state.usCapital.state = "rejected"
                 }
             }
