@@ -15,6 +15,8 @@ import React from "react";
 //   ...
 // ]
 
+const DEBUG = false;
+
 type FinnhubReport = {
     acceptedDate?: string;
     filedDate?: string;

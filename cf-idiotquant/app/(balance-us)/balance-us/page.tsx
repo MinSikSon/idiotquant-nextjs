@@ -167,7 +167,8 @@ export default function BalanceUs() {
             kakaoTotal={kakaoTotal}
             kakaoMemberList={kakaoMemberList}
         />
-        <StockListTable data={usCapital}
+        <StockListTable
+            data={usCapital}
             kakaoTotal={kakaoTotal}
             doTokenPlusAll={doTokenPlusAll} doTokenMinusAll={doTokenMinusAll}
             doTokenPlusOne={doTokenPlusOne} doTokenMinusOne={doTokenMinusOne}

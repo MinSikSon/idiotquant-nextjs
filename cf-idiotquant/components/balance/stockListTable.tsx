@@ -65,7 +65,6 @@ export default function StockListTable({ data, dataKr, kakaoTotal, doTokenPlusAl
     // setSelected(null);
   };
 
-
   return (
     <div className={`w-full ${className}`}>
       <div className="flex items-center justify-between mb-2">
@@ -75,12 +74,12 @@ export default function StockListTable({ data, dataKr, kakaoTotal, doTokenPlusAl
         <Flex direction="column" align="center" justify="center" gap="1">
           <Text>time_stamp:</Text>
           <div className="text-sm">
-            <span className="font-medium">{new Date(data?.time_stamp?.prevPrev ?? dataKr?.value?.time_stamp?.prevPrev ?? 0).toLocaleString()}</span>
+            <span className="font-medium">{new Date(data?.time_stamp?.prevPrev ?? dataKr?.value?.time_stamp?.prevPrev ?? 0).toLocaleString("ko-KR", { timeZone: "Asia/Seoul" })}</span>
           </div>
           <div className="text-sm">
-            <span className="font-medium">{new Date(data?.time_stamp?.prev ?? dataKr?.value?.time_stamp?.prev ?? 0).toLocaleString()}</span>
+            <span className="font-medium">{new Date(data?.time_stamp?.prev ?? dataKr?.value?.time_stamp?.prev ?? 0).toLocaleString("ko-KR", { timeZone: "Asia/Seoul" })}</span>
           </div> <div className="text-sm">
-            <span className="font-medium">{new Date(data?.time_stamp?.current ?? dataKr?.value?.time_stamp?.current ?? 0).toLocaleString()}</span>
+            <span className="font-medium">{new Date(data?.time_stamp?.current ?? dataKr?.value?.time_stamp?.current ?? 0).toLocaleString("ko-KR", { timeZone: "Asia/Seoul" })}</span>
           </div>
         </Flex>
         <Flex direction="column">
