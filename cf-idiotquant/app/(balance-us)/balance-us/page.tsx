@@ -12,7 +12,7 @@ import { useAppDispatch, useAppSelector } from "@/lib/hooks";
 import { Box, Button, Code, Flex, Text } from "@radix-ui/themes";
 import { usePathname } from "next/navigation";
 import { useState, useEffect } from "react";
-import { UsCapitalType, reqGetUsCapital, reqPostUsCapitalTokenPlusAll, reqPostUsCapitalTokenPlusOne, reqPostUsCapitalTokenMinusAll, reqPostUsCapitalTokenMinusOne, selectUsCapital, selectUsCapitalTokenMinusAll, selectUsCapitalTokenPlusAll, selectUsCapitalTokenPlusOne, selectUsCapitalTokenMinusOne } from "@/lib/features/capital/capitalSlice";
+import { KrUsCapitalType, reqGetUsCapital, reqPostUsCapitalTokenPlusAll, reqPostUsCapitalTokenPlusOne, reqPostUsCapitalTokenMinusAll, reqPostUsCapitalTokenMinusOne, selectUsCapital, selectUsCapitalTokenMinusAll, selectUsCapitalTokenPlusAll, selectUsCapitalTokenPlusOne, selectUsCapitalTokenMinusOne } from "@/lib/features/capital/capitalSlice";
 import StockListTable from "@/components/balance/stockListTable";
 
 let DEBUG = false;
@@ -35,7 +35,7 @@ export default function BalanceUs() {
 
     const [balanceKey, setBalanceKey] = useState(String(kakaoTotal?.id));
 
-    const usCapital: UsCapitalType = useAppSelector(selectUsCapital);
+    const usCapital: KrUsCapitalType = useAppSelector(selectUsCapital);
     const usCapitalTokenPlusAll = useAppSelector(selectUsCapitalTokenPlusAll);
     const usCapitalTokenPlusOne = useAppSelector(selectUsCapitalTokenPlusOne);
     const usCapitalTokenMinusAll = useAppSelector(selectUsCapitalTokenMinusAll);
@@ -69,12 +69,12 @@ export default function BalanceUs() {
         }
     }, [usCapital]);
 
-    useEffect(() => {
-        if (DEBUG) console.log(`[BalanceUs]`, `kr_capital_token`, us_capital_token);
-        if ("init" == us_capital_token.state) {
-            dispatch(reqGetUsCapitalToken());
-        }
-    }, [us_capital_token])
+    // useEffect(() => {
+    //     if (DEBUG) console.log(`[BalanceUs]`, `kr_capital_token`, us_capital_token);
+    //     if ("init" == us_capital_token.state) {
+    //         dispatch(reqGetUsCapitalToken());
+    //     }
+    // }, [us_capital_token])
     useEffect(() => {
         if (DEBUG) console.log(`[BalanceUs]`, `kakaoTotal`, kakaoTotal);
         if (kakaoTotal?.kakao_account?.profile?.nickname === process.env.NEXT_PUBLIC_MASTER) {
@@ -163,7 +163,7 @@ export default function BalanceUs() {
             reqGetUsCapital={reqGetUsCapital}
             kiOrderCash={kiUsOrder}
             reqPostOrderCash={reqPostOrderUs}
-            stock_list={us_capital_token.value.stock_list}
+            // stock_list={us_capital_token.value.stock_list}
             kakaoTotal={kakaoTotal}
             kakaoMemberList={kakaoMemberList}
         />

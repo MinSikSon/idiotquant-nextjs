@@ -1,6 +1,6 @@
 import { PayloadAction } from "@reduxjs/toolkit";
 import { createAppSlice } from "@/lib/createAppSlice";
-import { getUsCapital, postUsCapitalTokenMinusAll, postUsCapitalTokenMinusOne, postUsCapitalTokenPlusAll, postUsCapitalTokenPlusOne } from "./capitalAPI";
+import { getKrCapital, getUsCapital, postKrCapitalTokenMinusAll, postKrCapitalTokenMinusOne, postKrCapitalTokenPlusAll, postKrCapitalTokenPlusOne, postUsCapitalTokenMinusAll, postUsCapitalTokenMinusOne, postUsCapitalTokenPlusAll, postUsCapitalTokenPlusOne } from "./capitalAPI";
 
 export interface StockCondition {
     AssetsCurrent: number;
@@ -24,7 +24,7 @@ export interface UsCapitalStockItem {
     action?: string;
 }
 
-export interface UsCapitalType {
+export interface KrUsCapitalType {
     state: "init" | "pending" | "fulfilled" | "rejected";
     time_stamp: { current: string; prev: string; prevPrev: string };
     token_info: { token_per_stock: number; refill_stock_index: number };
@@ -34,21 +34,58 @@ export interface UsCapitalType {
     frst_bltn_exrt: number;
 }
 
-interface UsCapitalTokenRefillType {
+interface CapitalTokenRefillType {
     state: "init" | "pending" | "fulfilled" | "rejected";
 }
 
 export interface CapitalType {
     state: "init" | "pending" | "fulfilled" | "rejected";
-    usCapital: UsCapitalType;
-    usCapitalTokenPlusAll: UsCapitalTokenRefillType;
-    usCapitalTokenPlusOne: UsCapitalTokenRefillType;
-    usCapitalTokenMinusAll: UsCapitalTokenRefillType;
-    usCapitalTokenMinusOne: UsCapitalTokenRefillType;
+    krCapital: KrUsCapitalType;
+    usCapital: KrUsCapitalType;
+    krCapitalTokenPlusAll: CapitalTokenRefillType;
+    krCapitalTokenPlusOne: CapitalTokenRefillType;
+    krCapitalTokenMinusAll: CapitalTokenRefillType;
+    krCapitalTokenMinusOne: CapitalTokenRefillType;
+    usCapitalTokenPlusAll: CapitalTokenRefillType;
+    usCapitalTokenPlusOne: CapitalTokenRefillType;
+    usCapitalTokenMinusAll: CapitalTokenRefillType;
+    usCapitalTokenMinusOne: CapitalTokenRefillType;
 }
 
 const initialState: CapitalType = {
     state: "init",
+    krCapital: {
+        state: "init",
+        time_stamp: {
+            current: "",
+            prev: "",
+            prevPrev: ""
+        },
+        token_info: {
+            token_per_stock: 0,
+            refill_stock_index: 0
+        },
+        charge_info: {
+            capital_charge_per_year: "",
+            capital_charge_per_month: 0,
+            capital_charge_rate: 0
+        },
+        stock_list: [],
+        corp_scan_index: 0,
+        frst_bltn_exrt: 0
+    },
+    krCapitalTokenPlusAll: {
+        state: "init"
+    },
+    krCapitalTokenPlusOne: {
+        state: "init"
+    },
+    krCapitalTokenMinusAll: {
+        state: "init"
+    },
+    krCapitalTokenMinusOne: {
+        state: "init"
+    },
     usCapital: {
         state: "init",
         time_stamp: {
@@ -87,6 +124,109 @@ export const capitalSlice = createAppSlice({
     name: "capital",
     initialState,
     reducers: (create) => ({
+        // KR
+        reqGetKrCapital: create.asyncThunk(
+            async (key?: string) => {
+                return await getKrCapital(key);
+            },
+            {
+                pending: (state) => {
+                    // console.log(`[reqGetKrCapital] pending`);
+                    state.krCapital.state = "pending"
+                },
+                fulfilled: (state, action) => {
+                    // console.log(`[reqGetKrCapital] fulfilled`, `, typeof action.payload:`, typeof action.payload, `, action.payload:`, action.payload);
+                    const json = action.payload;
+                    state.krCapital = { ...json, state: "fulfilled" };
+                },
+                rejected: (state) => {
+                    // console.log(`[reqGetKrCapital] rejected`);
+                    state.krCapital.state = "rejected"
+                }
+            }
+        ),
+        reqPostKrCapitalTokenPlusAll: create.asyncThunk(
+            async ({ key, num }: { key?: string, num: number }) => {
+                return await postKrCapitalTokenPlusAll(key, num);
+            },
+            {
+                pending: (state) => {
+                    console.log(`[reqPostKrCapitalTokenPlusAll] pending`);
+                    state.krCapitalTokenPlusAll.state = "pending"
+                },
+                fulfilled: (state, action) => {
+                    console.log(`[reqPostKrCapitalTokenPlusAll] fulfilled`, `, typeof action.payload:`, typeof action.payload, `, action.payload:`, action.payload);
+                    // const json = action.payload;
+                    state.krCapitalTokenPlusAll.state = "fulfilled";
+                },
+                rejected: (state) => {
+                    console.log(`[reqPostKrCapitalTokenPlusAll] rejected`);
+                    state.krCapitalTokenPlusAll.state = "rejected"
+                }
+            }
+        ),
+        reqPostKrCapitalTokenPlusOne: create.asyncThunk(
+            async ({ key, num, ticker }: { key?: string, num: number, ticker: string }) => {
+                return await postKrCapitalTokenPlusOne(key, num, ticker);
+            },
+            {
+                pending: (state) => {
+                    console.log(`[reqPostKrCapitalTokenPlusOne] pending`);
+                    state.krCapitalTokenPlusOne.state = "pending"
+                },
+                fulfilled: (state, action) => {
+                    console.log(`[reqPostKrCapitalTokenPlusOne] fulfilled`, `, typeof action.payload:`, typeof action.payload, `, action.payload:`, action.payload);
+                    // const json = action.payload;
+                    state.krCapitalTokenPlusOne.state = "fulfilled";
+                },
+                rejected: (state) => {
+                    console.log(`[reqPostKrCapitalTokenPlusOne] rejected`);
+                    state.krCapitalTokenPlusOne.state = "rejected"
+                }
+            }
+        ),
+        reqPostKrCapitalTokenMinusAll: create.asyncThunk(
+            async ({ key, num }: { key?: string, num: number }) => {
+                return await postKrCapitalTokenMinusAll(key, num);
+            },
+            {
+                pending: (state) => {
+                    console.log(`[reqPostKrCapitalTokenMinusAll] pending`);
+                    state.krCapitalTokenMinusAll.state = "pending"
+                },
+                fulfilled: (state, action) => {
+                    console.log(`[reqPostKrCapitalTokenMinusAll] fulfilled`, `, typeof action.payload:`, typeof action.payload, `, action.payload:`, action.payload);
+                    // const json = action.payload;
+                    state.krCapitalTokenMinusAll.state = "fulfilled";
+                },
+                rejected: (state) => {
+                    console.log(`[reqPostKrCapitalTokenMinusAll] rejected`);
+                    state.krCapitalTokenMinusAll.state = "rejected"
+                }
+            }
+        ),
+        reqPostKrCapitalTokenMinusOne: create.asyncThunk(
+            async ({ key, num, ticker }: { key?: string, num: number, ticker: string }) => {
+                return await postKrCapitalTokenMinusOne(key, num, ticker);
+            },
+            {
+                pending: (state) => {
+                    console.log(`[reqPostKrCapitalTokenMinusOne] pending`);
+                    state.krCapitalTokenMinusOne.state = "pending"
+                },
+                fulfilled: (state, action) => {
+                    console.log(`[reqPostKrCapitalTokenMinusOne] fulfilled`, `, typeof action.payload:`, typeof action.payload, `, action.payload:`, action.payload);
+                    // const json = action.payload;
+                    state.krCapitalTokenMinusOne.state = "fulfilled";
+                },
+                rejected: (state) => {
+                    console.log(`[reqPostKrCapitalTokenMinusOne] rejected`);
+                    state.krCapitalTokenMinusOne.state = "rejected"
+                }
+            }
+        ),
+
+        // US
         reqGetUsCapital: create.asyncThunk(
             async (key?: string) => {
                 return await getUsCapital(key);
@@ -127,7 +267,6 @@ export const capitalSlice = createAppSlice({
                 }
             }
         ),
-
         reqPostUsCapitalTokenPlusOne: create.asyncThunk(
             async ({ key, num, ticker }: { key?: string, num: number, ticker: string }) => {
                 return await postUsCapitalTokenPlusOne(key, num, ticker);
@@ -190,6 +329,11 @@ export const capitalSlice = createAppSlice({
         ),
     }),
     selectors: {
+        selectKrCapital: (state) => state.krCapital,
+        selectKrCapitalTokenPlusAll: (state) => state.krCapitalTokenPlusAll,
+        selectKrCapitalTokenPlusOne: (state) => state.krCapitalTokenPlusOne,
+        selectKrCapitalTokenMinusAll: (state) => state.krCapitalTokenMinusAll,
+        selectKrCapitalTokenMinusOne: (state) => state.krCapitalTokenMinusOne,
         selectUsCapital: (state) => state.usCapital,
         selectUsCapitalTokenPlusAll: (state) => state.usCapitalTokenPlusAll,
         selectUsCapitalTokenPlusOne: (state) => state.usCapitalTokenPlusOne,
@@ -198,5 +342,7 @@ export const capitalSlice = createAppSlice({
     }
 });
 
+export const { reqGetKrCapital, reqPostKrCapitalTokenPlusAll, reqPostKrCapitalTokenPlusOne, reqPostKrCapitalTokenMinusAll, reqPostKrCapitalTokenMinusOne } = capitalSlice.actions;
+export const { selectKrCapital, selectKrCapitalTokenPlusAll, selectKrCapitalTokenPlusOne, selectKrCapitalTokenMinusAll, selectKrCapitalTokenMinusOne } = capitalSlice.selectors;
 export const { reqGetUsCapital, reqPostUsCapitalTokenPlusAll, reqPostUsCapitalTokenPlusOne, reqPostUsCapitalTokenMinusAll, reqPostUsCapitalTokenMinusOne } = capitalSlice.actions;
 export const { selectUsCapital, selectUsCapitalTokenPlusAll, selectUsCapitalTokenPlusOne, selectUsCapitalTokenMinusAll, selectUsCapitalTokenMinusOne } = capitalSlice.selectors;

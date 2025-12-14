@@ -14,6 +14,7 @@ import { CapitalTokenType, reqGetCapitalToken, selectCapitalToken } from "@/lib/
 import { Box, Code, Flex, Text } from "@radix-ui/themes";
 import { KakaoTotal, reqGetKakaoMemberList, selectKakaoMemberList, selectKakaoTotal } from "@/lib/features/kakao/kakaoSlice";
 import StockListTable from "@/components/balance/stockListTable";
+import { KrUsCapitalType, reqGetKrCapital, selectKrCapital, selectKrCapitalTokenMinusAll, selectKrCapitalTokenMinusOne, selectKrCapitalTokenPlusAll, selectKrCapitalTokenPlusOne } from "@/lib/features/capital/capitalSlice";
 
 let DEBUG = false;
 
@@ -25,7 +26,14 @@ export default function BalanceKr() {
 
     const kiOrderCash: KoreaInvestmentOrderCash = useAppSelector(getKoreaInvestmentOrderCash);
 
-    const kr_capital_token: CapitalTokenType = useAppSelector(selectCapitalToken);
+    // const kr_capital_token: CapitalTokenType = useAppSelector(selectCapitalToken);
+
+
+    const krCapital: KrUsCapitalType = useAppSelector(selectKrCapital);
+    const krCapitalTokenPlusAll = useAppSelector(selectKrCapitalTokenPlusAll);
+    const krCapitalTokenPlusOne = useAppSelector(selectKrCapitalTokenPlusOne);
+    const krCapitalTokenMinusAll = useAppSelector(selectKrCapitalTokenMinusAll);
+    const krCapitalTokenMinusOne = useAppSelector(selectKrCapitalTokenMinusOne);
 
     const kakaoTotal: KakaoTotal = useAppSelector(selectKakaoTotal);
     const kakaoMemberList = useAppSelector(selectKakaoMemberList);
@@ -42,9 +50,15 @@ export default function BalanceKr() {
     useEffect(() => {
         if (true == DEBUG) console.log(`[BalanceKr]`, `kiBalance`, kiBalance);
     }, [kiBalance])
+    // useEffect(() => {
+    //     if (DEBUG) console.log(`[BalanceKr]`, `kr_capital_token`, kr_capital_token);
+    // }, [kr_capital_token])
     useEffect(() => {
-        if (DEBUG) console.log(`[BalanceKr]`, `kr_capital_token`, kr_capital_token);
-    }, [kr_capital_token])
+        if (DEBUG) console.log(`[BalanceKr]`, `krCapital`, krCapital);
+        if ("init" == krCapital.state) {
+            dispatch(reqGetKrCapital());
+        }
+    }, [krCapital]);
     useEffect(() => {
         if (DEBUG) console.log(`[BalanceKr]`, `kakaoTotal`, kakaoTotal);
         if (kakaoTotal?.kakao_account?.profile?.nickname === process.env.NEXT_PUBLIC_MASTER) {
@@ -54,6 +68,30 @@ export default function BalanceKr() {
     useEffect(() => {
         if (DEBUG) console.log(`[BalanceKr]`, `kakaoMemberList`, kakaoMemberList);
     }, [kakaoMemberList])
+    useEffect(() => {
+        if (DEBUG) console.log(`[BalanceKr]`, `krCapitalTokenPlusAll`, krCapitalTokenPlusAll);
+        if ("fulfilled" == krCapitalTokenPlusAll?.state) {
+            dispatch(reqGetKrCapital(balanceKey));
+        }
+    }, [krCapitalTokenPlusAll])
+    useEffect(() => {
+        if (DEBUG) console.log(`[BalanceKr]`, `krCapitalTokenPlusOne`, krCapitalTokenPlusOne);
+        if ("fulfilled" == krCapitalTokenPlusOne?.state) {
+            dispatch(reqGetKrCapital(balanceKey));
+        }
+    }, [krCapitalTokenPlusOne])
+    useEffect(() => {
+        if (DEBUG) console.log(`[BalanceKr]`, `krCapitalTokenMinusAll`, krCapitalTokenMinusAll);
+        if ("fulfilled" == krCapitalTokenMinusAll?.state) {
+            dispatch(reqGetKrCapital(balanceKey));
+        }
+    }, [krCapitalTokenMinusAll])
+    useEffect(() => {
+        if (DEBUG) console.log(`[BalanceKr]`, `krCapitalTokenMinusOne`, krCapitalTokenMinusOne);
+        if ("fulfilled" == krCapitalTokenMinusOne?.state) {
+            dispatch(reqGetKrCapital(balanceKey));
+        }
+    }, [krCapitalTokenMinusOne])
 
     // console.log(`kiBalance.state`, kiBalance.state);
     if (kiBalance.state == "rejected") {
@@ -88,12 +126,13 @@ export default function BalanceKr() {
             reqGetInquireBalance={reqGetInquireBalance}
             kiOrderCash={kiOrderCash}
             reqPostOrderCash={reqPostOrderCash}
-            stock_list={kr_capital_token.value.stock_list}
+            // stock_list={kr_capital_token.value.stock_list}
             kakaoTotal={kakaoTotal}
             kakaoMemberList={kakaoMemberList}
         />
         <StockListTable
-            dataKr={kr_capital_token}
+            // dataKr={kr_capital_token}
+            data={krCapital}
             kakaoTotal={kakaoTotal}
             doTokenPlusAll={doTokenPlusAll} doTokenMinusAll={doTokenMinusAll}
             doTokenPlusOne={doTokenPlusOne} doTokenMinusOne={doTokenMinusOne}

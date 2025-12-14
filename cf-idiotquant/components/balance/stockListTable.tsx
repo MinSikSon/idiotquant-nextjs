@@ -3,12 +3,12 @@
 import React, { useEffect, useState } from "react";
 import * as ScrollArea from "@radix-ui/react-scroll-area";
 import * as Tooltip from "@radix-ui/react-tooltip";
-import { UsCapitalStockItem, UsCapitalType } from "@/lib/features/capital/capitalSlice";
+import { UsCapitalStockItem, KrUsCapitalType } from "@/lib/features/capital/capitalSlice";
 import { Box, Button, Flex, Grid, Text } from "@radix-ui/themes";
 import { CapitalTokenType, CapitalTokenTypeValue, CapitalTokenTypeValueStock } from "@/lib/features/algorithmTrade/algorithmTradeSlice";
 
 interface Props {
-  data?: UsCapitalType;
+  data?: KrUsCapitalType;
   dataKr?: CapitalTokenType;
   kakaoTotal: any;
   doTokenPlusAll: any;
