@@ -31,6 +31,7 @@ export interface KrUsCapitalType {
     charge_info: { capital_charge_per_year: string; capital_charge_per_month: number; capital_charge_rate: number };
     stock_list: UsCapitalStockItem[];
     corp_scan_index: number;
+    action: string;
     frst_bltn_exrt: number;
 }
 
@@ -72,6 +73,7 @@ const initialState: CapitalType = {
         },
         stock_list: [],
         corp_scan_index: 0,
+        action: "",
         frst_bltn_exrt: 0
     },
     krCapitalTokenPlusAll: {
@@ -104,6 +106,7 @@ const initialState: CapitalType = {
         },
         stock_list: [],
         corp_scan_index: 0,
+        action: "",
         frst_bltn_exrt: 0
     },
     usCapitalTokenPlusAll: {

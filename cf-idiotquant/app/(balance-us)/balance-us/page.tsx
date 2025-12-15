@@ -144,7 +144,7 @@ export default function BalanceUs() {
     return <>
         <Flex direction="column" align="center" justify="center" gap="2">
             <Text size="6">
-                <Code>로그인</Code>
+                <Code>계좌조회</Code>
             </Text>
             <Text size="3">
                 🇺🇸{" "}

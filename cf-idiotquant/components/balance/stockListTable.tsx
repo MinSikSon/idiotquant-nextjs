@@ -68,26 +68,27 @@ export default function StockListTable({ data, dataKr, kakaoTotal, doTokenPlusAl
   return (
     <div className={`w-full ${className}`}>
       <div className="flex items-center justify-between mb-2">
-        <div className="text-sm">
-          상태: {data?.state}
-        </div>
-        <Flex direction="column" align="center" justify="center" gap="1">
-          <Text>time_stamp:</Text>
-          <div className="text-sm">
-            <span className="font-medium">{new Date(data?.time_stamp?.prevPrev ?? dataKr?.value?.time_stamp?.prevPrev ?? 0).toLocaleString("ko-KR", { timeZone: "Asia/Seoul" })}</span>
-          </div>
-          <div className="text-sm">
-            <span className="font-medium">{new Date(data?.time_stamp?.prev ?? dataKr?.value?.time_stamp?.prev ?? 0).toLocaleString("ko-KR", { timeZone: "Asia/Seoul" })}</span>
-          </div> <div className="text-sm">
-            <span className="font-medium">{new Date(data?.time_stamp?.current ?? dataKr?.value?.time_stamp?.current ?? 0).toLocaleString("ko-KR", { timeZone: "Asia/Seoul" })}</span>
-          </div>
+        <Flex direction="column" justify="center" gap="1">
+          <Text>
+            상태: {data?.state}
+          </Text>
+          <Flex direction="column" justify="center" gap="1" className="border-2 rounded-xl px-1 py-2">
+            <Text>
+              action: {data?.action}
+            </Text>
+            <Text>time_stamp:</Text>
+            <Text size="1" className="pl-2">{new Date(data?.time_stamp?.prevPrev ?? dataKr?.value?.time_stamp?.prevPrev ?? 0).toISOString().replace("T", " ").replace(".000Z", "")}</Text>
+            <Text size="1" className="pl-2">{new Date(data?.time_stamp?.prev ?? dataKr?.value?.time_stamp?.prev ?? 0).toISOString().replace("T", " ").replace(".000Z", "")}</Text>
+            <Text size="1" className="pl-2">{new Date(data?.time_stamp?.current ?? dataKr?.value?.time_stamp?.current ?? 0).toISOString().replace("T", " ").replace(".000Z", "")}</Text>
+          </Flex>
         </Flex>
         <Flex direction="column">
-          <div className="text-sm">
-            Token per Stock: {data?.token_info?.token_per_stock ?? dataKr?.value?.token_per_stock ?? 0} • Refill Index: {data?.token_info?.refill_stock_index ?? dataKr?.value?.refill_stock_index ?? 0}
-          </div>
+          <Flex direction="column">
+            <Text>Token per Stock: {data?.token_info?.token_per_stock ?? dataKr?.value?.token_per_stock ?? 0}</Text>
+            <Text className="pl-2">• Refill Index: {data?.token_info?.refill_stock_index ?? dataKr?.value?.refill_stock_index ?? 0}</Text>
+          </Flex>
           {(kakaoTotal?.kakao_account?.profile?.nickname === process.env.NEXT_PUBLIC_MASTER) ?
-            <Flex direction="column" align="center" justify="center" py="1" my="1" className="border-2 rounded-xl">
+            <Flex direction="column" align="center" justify="center" p="1" my="1" className="border-2 rounded-xl">
               <Text>all TOKEN (active only)</Text>
               <Grid columns="1" gap="1" align="center" justify="center">
                 <Flex gap="1" align="center" justify="end">
