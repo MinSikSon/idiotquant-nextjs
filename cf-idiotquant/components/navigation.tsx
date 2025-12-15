@@ -110,8 +110,6 @@ export function NavbarWithSimpleLinks() {
     const navListUrlToLabel: any = {
         // "": <div className={navListDesign}><HomeIcon className="h-4 w-4" strokeWidth={2} /><div>home</div></div>,
         "search": <div className={navListDesign}><MagnifyingGlassCircleIcon className="h-4 w-4" strokeWidth={2} /><div>stock</div></div>,
-        // "search-kr": <div className={navListDesign}><MagnifyingGlassCircleIcon className="h-4 w-4" strokeWidth={2} /><div>stock search (kospi/kosdaq/konex)</div></div>,
-        // "search-nasdaq": <div className={navListDesign}><MagnifyingGlassCircleIcon className="h-4 w-4" strokeWidth={2} /><div>stock search (nasdaq)</div></div>,
         "calculator": <div className={navListDesign}><CalculatorIcon className="h-4 w-4" strokeWidth={2} /><div>profit</div></div>,
         "balance": <div className={navListDesign}><WalletIcon className="h-4 w-4" strokeWidth={2} /><div>account</div> {!!!kakaoTotal?.id ? <LockClosedIcon className="h-4 w-4" strokeWidth={2} /> : <LockOpenIcon className="h-4 w-4" strokeWidth={2} />}</div>,
         // "balance-kr": <div className={navListDesign}>{!!!kakaoTotal?.id ? <LockClosedIcon className="h-4 w-4" strokeWidth={2} /> : <LockOpenIcon className="h-4 w-4" strokeWidth={2} />}<WalletIcon className="h-4 w-4" strokeWidth={2} /><div>account inquiry (Korea)</div></div>,
@@ -184,17 +182,6 @@ export function NavbarWithSimpleLinks() {
                                     </Button>
                                 </DropdownMenu.Trigger>
                                 <DropdownMenu.Content>
-                                    {/* <DropdownMenu.Sub>
-                                        <DropdownMenu.SubTrigger><MagnifyingGlassCircleIcon className="h-4 w-4" strokeWidth={2} /> search</DropdownMenu.SubTrigger>
-                                        <DropdownMenu.SubContent>
-                                            <Link href="/search-kr">
-                                                <DropdownMenu.Item>🇰🇷</DropdownMenu.Item>
-                                            </Link>
-                                            <Link href="/search-us">
-                                                <DropdownMenu.Item>🇺🇸</DropdownMenu.Item>
-                                            </Link>
-                                        </DropdownMenu.SubContent>
-                                    </DropdownMenu.Sub> */}
                                     <Link href="/search">
                                         <DropdownMenu.Item shortcut="">
                                             <MagnifyingGlassCircleIcon className="h-4 w-4" strokeWidth={2} /> search

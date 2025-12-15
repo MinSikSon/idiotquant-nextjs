@@ -36,7 +36,7 @@ import { StarIcon } from "@heroicons/react/24/outline";
 import { StarIcon as StarSolid } from "@heroicons/react/24/solid";
 import { getKoreaInvestmentUsMaretPriceDetail, getKoreaInvestmentUsMaretSearchInfo, getKoreaInvestmentUsMarketDailyPrice, KoreaInvestmentOverseasPriceDetail, KoreaInvestmentOverseasPriceDetailOutput, KoreaInvestmentOverseasPriceQuotationsDailyPrice, KoreaInvestmentOverseasSearchInfo, KoreaInvestmentOverseasSearchInfoOutput, reqGetOverseasPriceQuotationsDailyPrice, reqGetQuotationsPriceDetail, reqGetQuotationsSearchInfo } from "@/lib/features/koreaInvestmentUsMarket/koreaInvestmentUsMarketSlice";
 import { FinnhubFinancialsAsReportedType, reqGetFinnhubUsFinancialsReported, selectFinnhubFinancialsAsReported } from "@/lib/features/finnhubUsMarket/finnhubUsMarketSlice";
-import FinnhubBalanceSheetTable from "@/app/(search-us)/search-us/table";
+import FinnhubBalanceSheetTable from "./table";
 
 const DEBUG = false;
 const DEBUG_LLM = false;

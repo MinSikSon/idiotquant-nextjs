@@ -39,8 +39,6 @@ export async function middleware(req: NextRequest) {
     if (
         path === "/"
         || path === "/search"
-        || path === "/search-kr"
-        || path === "/search-us"
     ) {
         // TODO: 한국 투자 조회 가능
         console.log(`[middleware] url:`, url, `, req.url:`, req.url);

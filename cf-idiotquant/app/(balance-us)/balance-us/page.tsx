@@ -64,7 +64,7 @@ export default function BalanceUs() {
     }, [kiNccs]);
     useEffect(() => {
         if (DEBUG) console.log(`[BalanceUs]`, `usCapital`, usCapital);
-        if ("init" == kiNccs.state) {
+        if ("init" == usCapital.state) {
             dispatch(reqGetUsCapital());
         }
     }, [usCapital]);

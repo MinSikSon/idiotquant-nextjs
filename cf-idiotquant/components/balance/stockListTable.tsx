@@ -88,8 +88,13 @@ export default function StockListTable({ data, dataKr, kakaoTotal, doTokenPlusAl
           </div>
           {(kakaoTotal?.kakao_account?.profile?.nickname === process.env.NEXT_PUBLIC_MASTER) ?
             <Flex direction="column" align="center" justify="center" py="1" my="1" className="border-2 rounded-xl">
-              <Text>all TOKEN</Text>
+              <Text>all TOKEN (active only)</Text>
               <Grid columns="1" gap="1" align="center" justify="center">
+                <Flex gap="1" align="center" justify="end">
+                  <Text>₩5,000</Text>
+                  <Button disabled={false == master} onClick={() => doTokenPlusAll(5_000)} size="2">+</Button>
+                  <Button disabled={false == master} onClick={() => doTokenMinusAll(5_000)} size="2" color="tomato" >-</Button>
+                </Flex>
                 <Flex gap="1" align="center" justify="end">
                   <Text>₩10,000</Text>
                   <Button disabled={false == master} onClick={() => doTokenPlusAll(10_000)} size="2">+</Button>

@@ -14,7 +14,7 @@ import { CapitalTokenType, reqGetCapitalToken, selectCapitalToken } from "@/lib/
 import { Box, Code, Flex, Text } from "@radix-ui/themes";
 import { KakaoTotal, reqGetKakaoMemberList, selectKakaoMemberList, selectKakaoTotal } from "@/lib/features/kakao/kakaoSlice";
 import StockListTable from "@/components/balance/stockListTable";
-import { KrUsCapitalType, reqGetKrCapital, selectKrCapital, selectKrCapitalTokenMinusAll, selectKrCapitalTokenMinusOne, selectKrCapitalTokenPlusAll, selectKrCapitalTokenPlusOne } from "@/lib/features/capital/capitalSlice";
+import { KrUsCapitalType, reqGetKrCapital, reqPostKrCapitalTokenMinusAll, reqPostKrCapitalTokenMinusOne, reqPostKrCapitalTokenPlusAll, reqPostKrCapitalTokenPlusOne, selectKrCapital, selectKrCapitalTokenMinusAll, selectKrCapitalTokenMinusOne, selectKrCapitalTokenPlusAll, selectKrCapitalTokenPlusOne } from "@/lib/features/capital/capitalSlice";
 
 let DEBUG = false;
 
@@ -99,18 +99,28 @@ export default function BalanceKr() {
             <NotFound warnText="계좌 조회 권한이 없습니다" />
         </>
     }
+    function doTokenPlusAll(num: number) {
+        console.log(`doTokenPlusAll`);
+        dispatch(reqPostKrCapitalTokenPlusAll({ key: balanceKey, num: num }));
+    }
+    function doTokenPlusOne(num: number, ticker: string) {
+        console.log(`doTokenPlusOne ticker:`, ticker);
+        if (undefined == ticker) {
+            return;
+        }
+        dispatch(reqPostKrCapitalTokenPlusOne({ key: balanceKey, num: num, ticker: ticker }));
+    }
+    function doTokenMinusAll(num: number) {
+        console.log(`doTokenMinusAll`);
+        dispatch(reqPostKrCapitalTokenMinusAll({ key: balanceKey, num: num }));
+    }
 
-    function doTokenPlusAll() {
-        if (DEBUG) console.log(`doTokenPlusAll`);
-    }
-    function doTokenPlusOne() {
-        if (DEBUG) console.log(`doTokenPlusOne`);
-    }
-    function doTokenMinusAll() {
-        if (DEBUG) console.log(`doTokenMinusAll`);
-    }
-    function doTokenMinusOne() {
-        if (DEBUG) console.log(`doTokenMinusOne`);
+    function doTokenMinusOne(num: number, ticker: string) {
+        console.log(`doTokenMinusOne ticker:`, ticker);
+        if (undefined == ticker) {
+            return;
+        }
+        dispatch(reqPostKrCapitalTokenMinusOne({ key: balanceKey, num: num, ticker: ticker }));
     }
     return <>
         <Flex direction="column" align="center" justify="center" gap="2">
