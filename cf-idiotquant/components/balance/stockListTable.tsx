@@ -9,7 +9,6 @@ import { CapitalTokenType, CapitalTokenTypeValue, CapitalTokenTypeValueStock } f
 
 interface Props {
   data?: KrUsCapitalType;
-  dataKr?: CapitalTokenType;
   kakaoTotal: any;
   doTokenPlusAll: any;
   doTokenPlusOne: any;
@@ -35,8 +34,8 @@ const HEADERS: { key: "index" | keyof UsCapitalStockItem | keyof CapitalTokenTyp
   // "symbol" | "key" | "condition" | "ncavRatio" | "name" | "index" | "token" | "action" | "PDNO" | "output_inquirePrice" | "output_balanceSheet" | "actions"
 ];
 
-export default function StockListTable({ data, dataKr, kakaoTotal, doTokenPlusAll, doTokenPlusOne, doTokenMinusAll, doTokenMinusOne, className = "" }: Props) {
-  const rows = data?.stock_list ?? dataKr?.value?.stock_list ?? [];
+export default function StockListTable({ data, kakaoTotal, doTokenPlusAll, doTokenPlusOne, doTokenMinusAll, doTokenMinusOne, className = "" }: Props) {
+  const rows = data?.stock_list ?? [];
 
   // 선택된 항목과 모달 열림 상태
   const [selected, setSelected] = useState<UsCapitalStockItem | null>(null);
@@ -77,15 +76,15 @@ export default function StockListTable({ data, dataKr, kakaoTotal, doTokenPlusAl
               action: {data?.action}
             </Text>
             <Text>time_stamp:</Text>
-            <Text size="1" className="pl-2">{new Date(data?.time_stamp?.prevPrev ?? dataKr?.value?.time_stamp?.prevPrev ?? 0).toISOString().replace("T", " ").replace(".000Z", "")}</Text>
-            <Text size="1" className="pl-2">{new Date(data?.time_stamp?.prev ?? dataKr?.value?.time_stamp?.prev ?? 0).toISOString().replace("T", " ").replace(".000Z", "")}</Text>
-            <Text size="1" className="pl-2">{new Date(data?.time_stamp?.current ?? dataKr?.value?.time_stamp?.current ?? 0).toISOString().replace("T", " ").replace(".000Z", "")}</Text>
+            <Text size="1" className="pl-2">{data?.time_stamp?.prevPrev ?? ""}</Text>
+            <Text size="1" className="pl-2">{data?.time_stamp?.prev ?? ""}</Text>
+            <Text size="1" className="pl-2">{data?.time_stamp?.current ?? ""}</Text>
           </Flex>
         </Flex>
         <Flex direction="column">
           <Flex direction="column">
-            <Text>Token per Stock: {data?.token_info?.token_per_stock ?? dataKr?.value?.token_per_stock ?? 0}</Text>
-            <Text className="pl-2">• Refill Index: {data?.token_info?.refill_stock_index ?? dataKr?.value?.refill_stock_index ?? 0}</Text>
+            <Text>Token per Stock: {data?.token_info?.token_per_stock ?? 0}</Text>
+            <Text className="pl-2">• Refill Index: {data?.token_info?.refill_stock_index ?? 0}</Text>
           </Flex>
           {(kakaoTotal?.kakao_account?.profile?.nickname === process.env.NEXT_PUBLIC_MASTER) ?
             <Flex direction="column" align="center" justify="center" p="1" my="1" className="border-2 rounded-xl">
