@@ -28,6 +28,7 @@ export async function middleware(req: NextRequest) {
         || path === "/login"
         || path === "/calculator"
         || path === "/not-found"
+        || path === "/laboratory"
     ) {
         return NextResponse.next(); // login 없이 접근 허용
     }
