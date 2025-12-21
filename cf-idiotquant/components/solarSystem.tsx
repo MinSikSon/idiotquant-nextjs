@@ -53,22 +53,22 @@ const SolarSystem = () => {
         sun.material = sunMat;
 
         // 애니메이션 업데이트를 위해 행성 피벗들을 담을 배열
-        var planetElements = [];
+        let planetElements: any = [];
 
         // 6. 행성 생성 루프: 위 배열 데이터를 바탕으로 실제 메쉬 생성
         planetsData.forEach((data) => {
             // [중요] 피벗 노드: 행성 자체가 아닌 이 노드를 회전시켜 공전을 구현함
-            var orbitPivot = new BABYLON.TransformNode(data.name + "Pivot");
+            let orbitPivot = new BABYLON.TransformNode(data.name + "Pivot");
             // 명왕성 같은 경우 궤도 자체를 기울임
             if (data.tilt) orbitPivot.rotation.z = data.tilt;
 
             // 행성 메쉬 생성 (diameter는 반지름*2)
-            var planet = BABYLON.MeshBuilder.CreateSphere(data.name, { diameter: data.size * 2 }, scene);
+            let planet = BABYLON.MeshBuilder.CreateSphere(data.name, { diameter: data.size * 2 }, scene);
             planet.parent = orbitPivot; // 피벗의 자식으로 설정
             planet.position.x = data.dist; // 태양으로부터의 거리만큼 이동
 
             // 행성 재질 설정
-            var mat = new BABYLON.StandardMaterial(data.name + "Mat", scene);
+            let mat = new BABYLON.StandardMaterial(data.name + "Mat", scene);
             mat.diffuseColor = data.color;
             planet.material = mat;
 
@@ -80,14 +80,14 @@ const SolarSystem = () => {
 
             // 고리가 있는 행성 처리 (토성 등)
             if (data.hasRing) {
-                var ring = BABYLON.MeshBuilder.CreateTorus(data.name + "Ring", {
+                let ring = BABYLON.MeshBuilder.CreateTorus(data.name + "Ring", {
                     diameter: data.size * 4.5,
                     thickness: 0.2,
                     tessellation: 64
                 }, scene);
                 ring.parent = planet; // 행성을 따라다니도록 설정
                 ring.scaling.y = 0.05; // 도넛 형태를 얇게 눌러 고리 모양으로 만듦
-                var ringMat = new BABYLON.StandardMaterial(data.name + "RingMat", scene);
+                let ringMat = new BABYLON.StandardMaterial(data.name + "RingMat", scene);
                 ringMat.diffuseColor = data.ringColor;
                 ringMat.alpha = 0.6; // 투명도 부여
                 ring.material = ringMat;
@@ -95,10 +95,10 @@ const SolarSystem = () => {
 
             // 지구의 달 처리
             if (data.hasMoon) {
-                var moonPivot = new BABYLON.TransformNode("MoonPivot");
+                let moonPivot = new BABYLON.TransformNode("MoonPivot");
                 moonPivot.parent = orbitPivot; // 지구의 공전 피벗을 따름
                 moonPivot.position.x = data.dist; // 지구의 위치에 피벗 배치
-                var moon = BABYLON.MeshBuilder.CreateSphere("Moon", { diameter: 0.6 }, scene);
+                let moon = BABYLON.MeshBuilder.CreateSphere("Moon", { diameter: 0.6 }, scene);
                 moon.parent = moonPivot;
                 moon.position.x = 4; // 지구로부터의 거리
                 // 달의 공전 속도 정보 저장
@@ -159,7 +159,7 @@ const SolarSystem = () => {
         scene.onBeforeRenderObservable.add(() => {
             // 프레임 간 경과 시간(deltaTime)에 속도 상수를 곱함
             const deltaTime = scene.getEngine().getDeltaTime() * 0.1 * timeScale;
-            planetElements.forEach(p => {
+            planetElements.forEach((p: any) => {
                 // 각 피벗 노드를 Y축(수직축) 기준으로 회전시켜 공전 구현
                 p.pivot.rotation.y += p.revSpeed * deltaTime;
             });
