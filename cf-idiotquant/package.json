@@ -9,6 +9,8 @@
     "lint": "next lint"
   },
   "dependencies": {
+    "@babylonjs/core": "^8.42.0",
+    "@babylonjs/materials": "^8.42.0",
     "@floating-ui/react": "^0.26.19",
     "@radix-ui/react-popover": "^1.1.15",
     "@radix-ui/react-tabs": "^1.1.13",
