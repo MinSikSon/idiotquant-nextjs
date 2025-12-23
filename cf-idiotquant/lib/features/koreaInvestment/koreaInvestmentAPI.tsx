@@ -75,6 +75,16 @@ export const getInquireBalanceApi: any = async (key: string) => {
     return getKoreaInvestmentRequest(subUrl, additionalHeaders);
 }
 
+// 주식잔고조회_실현손익[v1_국내주식-041]
+export const getInquireBalanceRlzPl: any = async (key: string) => {
+    // console.log(`[getInquireBalanceRlzPl]`);
+    const subUrl = `/uapi/domestic-stock/v1/trading/inquire-balance-rlz-pl`;
+    const additionalHeaders: AdditionalHeaders = {
+        "kakaoId": key,
+    }
+    return getKoreaInvestmentRequest(subUrl, additionalHeaders);
+}
+
 // 인증 및 토큰 요청
 export const postApprovalKeyApi: any = async () => {
     const subUrl = `/oauth2/Approval`;

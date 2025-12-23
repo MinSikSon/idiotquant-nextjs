@@ -1,6 +1,6 @@
 import { PayloadAction } from "@reduxjs/toolkit";
 import { createAppSlice } from "@/lib/createAppSlice";
-import { getInquireBalanceApi, postTokenApi, postApprovalKeyApi, postOrderCash, getInquirePrice, getInquireDailyItemChartPrice, getBalanceSheet, getIncomeStatement, getSearchStockInfo } from "./koreaInvestmentAPI";
+import { getInquireBalanceApi, postTokenApi, postApprovalKeyApi, postOrderCash, getInquirePrice, getInquireDailyItemChartPrice, getBalanceSheet, getIncomeStatement, getSearchStockInfo, getInquireBalanceRlzPl } from "./koreaInvestmentAPI";
 import { registerCookie } from "@/components/util";
 
 // rt_cd
@@ -367,6 +367,73 @@ export interface KoreaInvestmentIncomeStatement {
     output: KoreaInvestmentIncomeStatementOutput[];
 }
 
+export interface KiInquireBalanceRlzPlResponseBody {
+    state: "init" | "req" | "pending" | "fulfilled" | "rejected";
+    rt_cd: string;          // 성공 실패 여부
+    msg_cd: string;         // 응답코드
+    msg1: string;           // 응답메세지
+    output1: KiInquireBalanceRlzPlResponseBodyOutput1[]; // 응답상세
+    output2: KiInquireBalanceRlzPlResponseBodyOutput2[]; // 응답상세2
+}
+
+export interface KiInquireBalanceRlzPlResponseBodyOutput1 {
+    pdno: string;           // 상품번호
+    prdt_name: string;      // 상품명
+    trad_dvsn_name: string; // 매매구분명
+    bfdy_buy_qty: string;   // 전일매수수량
+    bfdy_sll_qty: string;   // 전일매도수량
+    thdt_buyqty: string;    // 금일매수수량
+    thdt_sll_qty: string;   // 금일매도수량
+    hldg_qty: string;       // 보유수량
+    ord_psbl_qty: string;   // 주문가능수량
+    pchs_avg_pric: string;  // 매입평균가격
+    pchs_amt: string;       // 매입금액
+    prpr: string;           // 현재가
+    evlu_amt: string;       // 평가금액
+    evlu_pfls_amt: string;  // 평가손익금액
+    evlu_pfls_rt: string;   // 평가손익율
+    evlu_erng_rt: string;   // 평가수익율
+    loan_dt: string;        // 대출일자
+    loan_amt: string;       // 대출금액
+    stln_slng_chgs: string; // 대주매각대금
+    expd_dt: string;        // 만기일자
+    stck_loan_unpr: string; // 주식대출단가
+    bfdy_cprs_icdc: string; // 전일대비증감
+    fltt_rt: string;        // 등락율
+}
+
+export interface KiInquireBalanceRlzPlResponseBodyOutput2 {
+    dnca_tot_amt: string;               // 예수금총금액
+    nxdy_excc_amt: string;              // 익일정산금액
+    prvs_rcdl_excc_amt: string;         // 가수도정산금액
+    cma_evlu_amt: string;               // CMA평가금액
+    bfdy_buy_amt: string;               // 전일매수금액
+    thdt_buy_amt: string;               // 금일매수금액
+    nxdy_auto_rdpt_amt: string;          // 익일자동상환금액
+    bfdy_sll_amt: string;               // 전일매도금액
+    thdt_sll_amt: string;               // 금일매도금액
+    d2_auto_rdpt_amt: string;            // D+2자동상환금액
+    bfdy_tlex_amt: string;              // 전일제비용금액
+    thdt_tlex_amt: string;              // 금일제비용금액
+    tot_loan_amt: string;               // 총대출금액
+    scts_evlu_amt: string;               // 유가평가금액
+    tot_evlu_amt: string;                // 총평가금액
+    nass_amt: string;                    // 순자산금액
+    fncg_gld_auto_rdpt_yn: string;       // 융자금자동상환여부
+    pchs_amt_smtl_amt: string;           // 매입금액합계금액
+    evlu_amt_smtl_amt: string;           // 평가금액합계금액
+    evlu_pfls_smtl_amt: string;          // 평가손익합계금액
+    tot_stln_slng_chgs: string;          // 총대주매각대금
+    bfdy_tot_asst_evlu_amt: string;      // 전일총자산평가금액
+    asst_icdc_amt: string;               // 자산증감액
+    asst_icdc_erng_rt: string;           // 자산증감수익율
+    rlzt_pfls: string;                   // 실현손익
+    rlzt_erng_rt: string;                // 실현수익율
+    real_evlu_pfls: string;              // 실평가손익
+    real_evlu_pfls_erng_rt: string;      // 실평가손익수익율
+}
+
+
 interface KoreaInvestmentInfo {
     state: "init"
     | "fulfilled"
@@ -392,6 +459,7 @@ interface KoreaInvestmentInfo {
     koreaInvestmentInquireDailyItemChartPrice: KoreaInvestmentInquireDailyItemChartPrice;
     koreaInvestmentBalanceSheet: KoreaInvestmentBalanceSheet;
     koreaInvestmentIncomeStatement: KoreaInvestmentIncomeStatement;
+    kiInquireBalanceRlzPlResponseBody: KiInquireBalanceRlzPlResponseBody;
 }
 const initialState: KoreaInvestmentInfo = {
     state: "init",
@@ -509,8 +577,7 @@ const initialState: KoreaInvestmentInfo = {
         rt_cd: "",
         msg_cd: "",
         msg1: "",
-        output:
-        {
+        output: {
             iscd_stat_cls_code: "",
             marg_rate: "",
             rprs_mrkt_kor_name: "",
@@ -644,6 +711,14 @@ const initialState: KoreaInvestmentInfo = {
         msg_cd: "",
         msg1: "",
         output: []
+    },
+    kiInquireBalanceRlzPlResponseBody: {
+        state: "init",
+        rt_cd: "",
+        msg_cd: "",
+        msg1: "",
+        output1: [],
+        output2: []
     }
 }
 export const koreaInvestmentSlice = createAppSlice({
@@ -738,6 +813,28 @@ export const koreaInvestmentSlice = createAppSlice({
                 rejected: (state) => {
                     console.log(`[getInquireBalance] rejected`);
                     state.koreaInvestmentBalance.state = "rejected";
+                },
+            }
+        ),
+        reqGetInquireBalanceRlzPl: create.asyncThunk(
+            async (key?: string) => {
+                return await getInquireBalanceRlzPl(key);
+            },
+            {
+                pending: (state) => {
+                    console.log(`[reqGetInquireBalanceRlzPl] pending`);
+                    state.kiInquireBalanceRlzPlResponseBody.state = "pending";
+                },
+                fulfilled: (state, action) => {
+                    console.log(`[reqGetInquireBalanceRlzPl] fulfilled`, `action.payload`, typeof action.payload, action.payload);
+                    if (undefined != action.payload["output"]) {
+                        state.kiInquireBalanceRlzPlResponseBody = { ...state.kiInquireBalanceRlzPlResponseBody, ...action.payload, state: "fulfilled" };
+                        state.state = "income-statement";
+                    }
+                },
+                rejected: (state) => {
+                    console.log(`[reqGet reqGetInquireBalanceRlzPl] rejected`);
+                    state.kiInquireBalanceRlzPlResponseBody.state = "rejected";
                 },
             }
         ),
@@ -871,6 +968,7 @@ export const koreaInvestmentSlice = createAppSlice({
                 },
             }
         ),
+
     }),
     selectors: {
         getKoreaInvestmentApproval: (state) => state.koreaInvestmentApproval,
@@ -882,15 +980,16 @@ export const koreaInvestmentSlice = createAppSlice({
         getKoreaInvestmentBalanceSheet: (state) => state.koreaInvestmentBalanceSheet,
         getKoreaInvestmentIncomeStatement: (state) => state.koreaInvestmentIncomeStatement,
         getKoreaInvestmentOrderCash: (state) => state.koreaInvestmentOrderCash,
+        getKiInquireBalanceRlzPlResponseBody: (state) => state.kiInquireBalanceRlzPlResponseBody,
     }
 });
 
 export const { reqPostOrderCash } = koreaInvestmentSlice.actions;
 export const { getKoreaInvestmentOrderCash } = koreaInvestmentSlice.selectors;
 
-export const { reqPostApprovalKey, reqPostToken, reqGetInquireBalance, reqGetSearchStockInfo, reqGetInquirePrice, reqGetInquireDailyItemChartPrice } = koreaInvestmentSlice.actions;
+export const { reqPostApprovalKey, reqPostToken, reqGetInquireBalance, reqGetInquireBalanceRlzPl, reqGetSearchStockInfo, reqGetInquirePrice, reqGetInquireDailyItemChartPrice } = koreaInvestmentSlice.actions;
 export const { setKoreaInvestmentToken } = koreaInvestmentSlice.actions;
-export const { getKoreaInvestmentApproval, getKoreaInvestmentToken, getKoreaInvestmentBalance, getKoreaInvestmentSearchStockInfo, getKoreaInvestmentInquirePrice, getKoreaInvestmentInquireDailyItemChartPrice } = koreaInvestmentSlice.selectors;
+export const { getKoreaInvestmentApproval, getKoreaInvestmentToken, getKoreaInvestmentBalance, getKiInquireBalanceRlzPlResponseBody, getKoreaInvestmentSearchStockInfo, getKoreaInvestmentInquirePrice, getKoreaInvestmentInquireDailyItemChartPrice } = koreaInvestmentSlice.selectors;
 
 export const { reqGetBalanceSheet } = koreaInvestmentSlice.actions;
 export const { getKoreaInvestmentBalanceSheet } = koreaInvestmentSlice.selectors;

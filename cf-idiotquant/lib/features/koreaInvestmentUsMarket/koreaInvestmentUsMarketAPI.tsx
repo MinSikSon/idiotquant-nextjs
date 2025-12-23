@@ -47,6 +47,14 @@ export const getOverseasStockTradingInquirePresentBalance: any = async (key: str
     }
     return getKoreaInvestmentRequest(subUrl, additionalHeaders);
 }
+export const getkiOverseasInquirePeriodProfit: any = async (key: string) => {
+    // console.log(`[getOverseasStockTradingInquireBalance] koreaInvestmentToken`, koreaInvestmentToken);
+    const subUrl = `/uapi/overseas-stock/v1/trading/inquire-period-profit`;
+    const additionalHeaders: AdditionalHeaders = {
+        "kakaoId": key,
+    }
+    return getKoreaInvestmentRequest(subUrl, additionalHeaders);
+}
 
 // 계좌 조회
 export const getOverseasStockTradingInquireBalance: any = async (key: string) => {

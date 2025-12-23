@@ -3,8 +3,8 @@
 import { KakaoMessage, selectLoginState } from "@/lib/features/login/loginSlice";
 import { useAppDispatch, useAppSelector } from "@/lib/hooks";
 import { useEffect, useState } from "react";
-import { getKoreaInvestmentBalance, getKoreaInvestmentToken, KoreaInvestmentBalance, KoreaInvestmentToken, reqGetInquireBalance } from "@/lib/features/koreaInvestment/koreaInvestmentSlice";
-import { getKoreaInvestmentUsMaretPresentBalance, KoreaInvestmentOverseasPresentBalance, reqGetOverseasStockTradingInquirePresentBalance } from "@/lib/features/koreaInvestmentUsMarket/koreaInvestmentUsMarketSlice";
+import { getKiInquireBalanceRlzPlResponseBody, getKoreaInvestmentBalance, getKoreaInvestmentToken, KiInquireBalanceRlzPlResponseBody, KoreaInvestmentBalance, KoreaInvestmentToken, reqGetInquireBalance, reqGetInquireBalanceRlzPl } from "@/lib/features/koreaInvestment/koreaInvestmentSlice";
+import { getKiOverseasInquirePeriodProfitResponseBody, getKoreaInvestmentUsMaretPresentBalance, KiOverseasInquirePeriodProfitResponseBody, KoreaInvestmentOverseasPresentBalance, reqGetkiOverseasInquirePeriodProfit, reqGetOverseasStockTradingInquirePresentBalance } from "@/lib/features/koreaInvestmentUsMarket/koreaInvestmentUsMarketSlice";
 import { Util } from "@/components/util";
 import { KakaoFeed, SendKakaoMessage } from "./report";
 import { KakaoTotal, selectKakaoTatalState, selectKakaoTotal } from "@/lib/features/kakao/kakaoSlice";
@@ -20,7 +20,10 @@ export default function Report() {
 
     const kiToken: KoreaInvestmentToken = useAppSelector(getKoreaInvestmentToken);
     const kiBalanceKr: KoreaInvestmentBalance = useAppSelector(getKoreaInvestmentBalance);
+    const krKiBalanceRlzPl: KiInquireBalanceRlzPlResponseBody = useAppSelector(getKiInquireBalanceRlzPlResponseBody);
+
     const kiBalanceUs: KoreaInvestmentOverseasPresentBalance = useAppSelector(getKoreaInvestmentUsMaretPresentBalance);
+    const usKiOverseasInquirePeriodProfit: KiOverseasInquirePeriodProfitResponseBody = useAppSelector(getKiOverseasInquirePeriodProfitResponseBody);
 
     const kakaoTotal: KakaoTotal = useAppSelector(selectKakaoTotal); // NOTE: authToken 이 발행 됐지만, login step skip된 경우 값 setting 안 됨.
     const timestampList = useAppSelector(selectTimestampList);
@@ -35,8 +38,14 @@ export default function Report() {
         if ("init" == kiBalanceKr.state) {
             dispatch(reqGetInquireBalance());
         }
+        if ("init" == krKiBalanceRlzPl.state) {
+            dispatch(reqGetInquireBalanceRlzPl());
+        }
         if ("init" == kiBalanceUs.state) {
             dispatch(reqGetOverseasStockTradingInquirePresentBalance());
+        }
+        if ("init" == usKiOverseasInquirePeriodProfit.state) {
+            dispatch(reqGetkiOverseasInquirePeriodProfit());
         }
         if ("init" == timestampList.state) {
             dispatch(queryTimestampList("5"));
@@ -55,8 +64,14 @@ export default function Report() {
         if (DEBUG) console.log(`[Report]`, `kiBalanceKr:`, kiBalanceKr);
     }, [kiBalanceKr]);
     useEffect(() => {
+        if (DEBUG) console.log(`[Report]`, `krKiBalanceRlzPl:`, krKiBalanceRlzPl);
+    }, [krKiBalanceRlzPl]);
+    useEffect(() => {
         if (DEBUG) console.log(`[Report]`, `kiBalanceUs:`, kiBalanceUs);
     }, [kiBalanceUs]);
+    useEffect(() => {
+        if (DEBUG) console.log(`[Report]`, `usKiOverseasInquirePeriodProfit:`, usKiOverseasInquirePeriodProfit);
+    }, [usKiOverseasInquirePeriodProfit]);
     useEffect(() => {
         if (DEBUG) console.log(`[Report]`, `timestampList:`, timestampList);
         if (timestampList?.state == "fulfilled") {
@@ -121,13 +136,13 @@ export default function Report() {
                 }
             }
 
-            let total_income = `${latest_total_income}%(${diff_percentage})`; // 총 수익률 (%)
+            let total_income = `${latest_total_income}%`; // 총 수익률 (%)
             if (DEBUG) console.log(`[Report] total_income:`, total_income);
             const newMessage: KakaoMessage = {
                 object_type: "feed",
                 content: {
-                    title: `수익금:${Util.UnitConversion(evlu_amt_smtl_amt[COUNTRY.eKR] + evlu_amt_smtl_amt[COUNTRY.eUS] - pchs_amt_smtl_amt[COUNTRY.eKR] - pchs_amt_smtl_amt[COUNTRY.eUS], true)}`,
-                    description: `매입금:${Util.UnitConversion(pchs_amt_smtl_amt[COUNTRY.eKR] + pchs_amt_smtl_amt[COUNTRY.eUS], true)}, 예수금:${Util.UnitConversion(dnca_tot_amt[COUNTRY.eKR] + dnca_tot_amt[COUNTRY.eUS], true)}`,
+                    title: `수익금:₩${Number(evlu_amt_smtl_amt[COUNTRY.eKR] + evlu_amt_smtl_amt[COUNTRY.eUS] - pchs_amt_smtl_amt[COUNTRY.eKR] - pchs_amt_smtl_amt[COUNTRY.eUS]).toLocaleString()}`,
+                    description: `매입금:₩${Number(pchs_amt_smtl_amt[COUNTRY.eKR] + pchs_amt_smtl_amt[COUNTRY.eUS]).toLocaleString()}, 예수금:₩${Number(dnca_tot_amt[COUNTRY.eKR] + dnca_tot_amt[COUNTRY.eUS]).toLocaleString()}`,
                     image_url: "https://cdn.pixabay.com/photo/2016/11/23/18/00/yosemite-national-park-1854097_1280.jpg",
                     image_width: 640,
                     image_height: 640,
@@ -145,14 +160,14 @@ export default function Report() {
                     title_image_text: "요세미티 리트리버 투자클럽",
                     title_image_category: "리포트",
                     items: [
-                        { item: "KR 평가/매입", item_op: `${Util.UnitConversion(evlu_amt_smtl_amt[COUNTRY.eKR], true)} / ${Util.UnitConversion(pchs_amt_smtl_amt[COUNTRY.eKR], true)} (${(evlu_amt_smtl_amt[COUNTRY.eKR] / pchs_amt_smtl_amt[COUNTRY.eKR] * 100 - 100).toFixed(2)}%)` },
+                        { item: "KR 평가/매입", item_op: `₩${Number(evlu_amt_smtl_amt[COUNTRY.eKR]).toLocaleString()} / ₩${Number(pchs_amt_smtl_amt[COUNTRY.eKR]).toLocaleString()} (${(evlu_amt_smtl_amt[COUNTRY.eKR] / pchs_amt_smtl_amt[COUNTRY.eKR] * 100 - 100).toFixed(2)}%)` },
                         // { item: "KR 예수금", item_op: `${Util.UnitConversion(dnca_tot_amt[COUNTRY.eKR], true)}` },
-                        { item: "KR 순자산", item_op: `${Util.UnitConversion(nass_amt[COUNTRY.eKR], true)}` },
-                        { item: "US 평가/매입", item_op: `${Util.UnitConversion(evlu_amt_smtl_amt[COUNTRY.eUS], true)} / ${Util.UnitConversion(pchs_amt_smtl_amt[COUNTRY.eUS], true)} (${(evlu_amt_smtl_amt[COUNTRY.eUS] / pchs_amt_smtl_amt[COUNTRY.eUS] * 100 - 100).toFixed(2)}%)` },
+                        { item: "KR 순자산", item_op: `₩${Number(nass_amt[COUNTRY.eKR]).toLocaleString()}` },
+                        { item: "US 평가/매입", item_op: `₩${Number(evlu_amt_smtl_amt[COUNTRY.eUS]).toLocaleString()} / ₩${Number(pchs_amt_smtl_amt[COUNTRY.eUS]).toLocaleString()} (${(evlu_amt_smtl_amt[COUNTRY.eUS] / pchs_amt_smtl_amt[COUNTRY.eUS] * 100 - 100).toFixed(2)}%)` },
                         // { item: "US 예수금", item_op: `${Util.UnitConversion(dnca_tot_amt[COUNTRY.eUS], true)}` },
-                        { item: "US 순자산", item_op: `${Util.UnitConversion(nass_amt[COUNTRY.eUS], true)}` },
+                        { item: "US 순자산", item_op: `₩${Number(nass_amt[COUNTRY.eUS]).toLocaleString()}` },
                     ],
-                    sum: "총 수익률 (%)",
+                    sum: "현재 수익률 (%)",
                     sum_op: total_income,
                     // TODO: 지난주 대비 수익률
                     // TODO: 각 장 지수대비 수익률

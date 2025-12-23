@@ -1,6 +1,6 @@
 import { PayloadAction } from "@reduxjs/toolkit";
 import { createAppSlice } from "@/lib/createAppSlice";
-import { getOverseasPriceQuotationsDailyPrice, getOverseasStockTradingInquireBalance, getOverseasStockTradingInquireNccs, getOverseasStockTradingInquireCcnl, getOverseasStockTradingInquirePresentBalance, getQuotationsPriceDetail, getQuotationsSearchInfo, postOrderUs } from "./koreaInvestmentUsMarketAPI";
+import { getOverseasPriceQuotationsDailyPrice, getOverseasStockTradingInquireBalance, getOverseasStockTradingInquireNccs, getOverseasStockTradingInquireCcnl, getOverseasStockTradingInquirePresentBalance, getQuotationsPriceDetail, getQuotationsSearchInfo, postOrderUs, getkiOverseasInquirePeriodProfit } from "./koreaInvestmentUsMarketAPI";
 
 export interface KoreaInvestmentOverseasSearchInfoOutput {
     std_pdno: string;
@@ -399,6 +399,44 @@ export interface KoreaInvestmentOverseasPriceQuotationsDailyPrice {
     "output1": KoreaInvestmentOverseasPriceQuotationsDailyPriceOutput1;
     "output2": KoreaInvestmentOverseasPriceQuotationsDailyPriceOutput2[];
 }
+
+export interface KiOverseasInquirePeriodProfitResponseBody {
+    state: "init" | "pending" | "fulfilled" | "rejected";
+    rt_cd: string;   // 성공 실패 여부
+    msg_cd: string;  // 응답코드
+    msg1: string;    // 응답메세지
+    Output1: KiOverseasInquirePeriodProfitResponseBodyOutput1[]; // 응답상세
+    Output2: KiOverseasInquirePeriodProfitResponseBodyOutput2;   // 응답상세2
+}
+
+export interface KiOverseasInquirePeriodProfitResponseBodyOutput1 {
+    trad_day: string;               // 매매일
+    ovrs_pdno: string;              // 해외상품번호
+    ovrs_item_name: string;         // 해외종목명
+    slcl_qty: string;               // 매도청산수량
+    pchs_avg_pric: string;          // 매입평균가격
+    frcr_pchs_amt1: string;         // 외화매입금액1
+    avg_sll_unpr: string;           // 평균매도단가
+    frcr_sll_amt_smtl1: string;     // 외화매도금액합계1
+    stck_sll_tlex: string;          // 주식매도제비용
+    ovrs_rlzt_pfls_amt: string;     // 해외실현손익금액
+    pftrt: string;                  // 수익률
+    exrt: string;                   // 환율
+    ovrs_excg_cd: string;           // 해외거래소코드
+    frst_bltn_exrt: string;         // 최초고시환율
+}
+
+export interface KiOverseasInquirePeriodProfitResponseBodyOutput2 {
+    stck_sll_amt_smtl: string;      // 주식매도금액합계
+    stck_buy_amt_smtl: string;      // 주식매수금액합계
+    smtl_fee1: string;              // 합계수수료1
+    excc_dfrm_amt: string;          // 정산지급금액
+    ovrs_rlzt_pfls_tot_amt: string; // 해외실현손익총금액
+    tot_pftrt: string;              // 총수익률
+    bass_dt: string;                // 기준일자
+    exrt: string;                   // 환율
+}
+
 interface KoreaInvestmentUsMaretType {
     state: "init"
     | "pending" | "fulfilled" | "rejected"
@@ -415,6 +453,7 @@ interface KoreaInvestmentUsMaretType {
     dailyChartPrice: KoreaInvestmentOverseasPriceQuotationsInquireDailyChartPrice; // not used
 
     dailyPrice: KoreaInvestmentOverseasPriceQuotationsDailyPrice;
+    kiOverseasInquirePeriodProfitResponseBody: KiOverseasInquirePeriodProfitResponseBody;
 }
 
 const initialState: KoreaInvestmentUsMaretType = {
@@ -632,6 +671,23 @@ const initialState: KoreaInvestmentUsMaretType = {
             "nrec": "",
         },
         output2: []
+    },
+    kiOverseasInquirePeriodProfitResponseBody: {
+        state: "init",
+        rt_cd: "",
+        msg_cd: "",
+        msg1: "",
+        Output1: [],
+        Output2: {
+            stck_sll_amt_smtl: "",
+            stck_buy_amt_smtl: "",
+            smtl_fee1: "",
+            excc_dfrm_amt: "",
+            ovrs_rlzt_pfls_tot_amt: "",
+            tot_pftrt: "",
+            bass_dt: "",
+            exrt: "",
+        }
     }
 }
 export const koreaInvestmentUsMarketSlice = createAppSlice({
@@ -717,6 +773,25 @@ export const koreaInvestmentUsMarketSlice = createAppSlice({
                 rejected: (state) => {
                     console.log(`[reqGetOverseasStockTradingInquirePresentBalance] rejected`);
                     state.presentBalance.state = "rejected";
+                },
+            }
+        ),
+        reqGetkiOverseasInquirePeriodProfit: create.asyncThunk(
+            async (key?: string) => {
+                return await getkiOverseasInquirePeriodProfit(key);
+            },
+            {
+                pending: (state) => {
+                    console.log(`[reqGetkiOverseasInquirePeriodProfit] pending`);
+                    state.kiOverseasInquirePeriodProfitResponseBody.state = "pending";
+                },
+                fulfilled: (state, action) => {
+                    console.log(`[reqGetkiOverseasInquirePeriodProfit] fulfilled`, `action.payload`, action.payload);
+                    state.kiOverseasInquirePeriodProfitResponseBody = { ...action.payload, state: "fulfilled" };
+                },
+                rejected: (state) => {
+                    console.log(`[reqGetkiOverseasInquirePeriodProfit] rejected`);
+                    state.kiOverseasInquirePeriodProfitResponseBody.state = "rejected";
                 },
             }
         ),
@@ -832,6 +907,7 @@ export const koreaInvestmentUsMarketSlice = createAppSlice({
         getKoreaInvestmentUsMaretNccs: (state) => state.nccs,
 
         getKoreaInvestmentUsMaretPresentBalance: (state) => state.presentBalance,
+        getKiOverseasInquirePeriodProfitResponseBody: (state) => state.kiOverseasInquirePeriodProfitResponseBody,
 
         getKoreaInvestmentUsOrder: (state) => state.usOrder,
 
@@ -850,6 +926,9 @@ export const { getKoreaInvestmentUsOrder } = koreaInvestmentUsMarketSlice.select
 
 export const { reqGetOverseasStockTradingInquirePresentBalance } = koreaInvestmentUsMarketSlice.actions;
 export const { getKoreaInvestmentUsMaretPresentBalance } = koreaInvestmentUsMarketSlice.selectors;
+
+export const { reqGetkiOverseasInquirePeriodProfit } = koreaInvestmentUsMarketSlice.actions;
+export const { getKiOverseasInquirePeriodProfitResponseBody } = koreaInvestmentUsMarketSlice.selectors;
 
 export const { reqGetOverseasStockTradingInquireBalance } = koreaInvestmentUsMarketSlice.actions;
 export const { getKoreaInvestmentUsMaretBalance } = koreaInvestmentUsMarketSlice.selectors;
