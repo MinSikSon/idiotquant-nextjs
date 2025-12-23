@@ -1,26 +1,54 @@
-'use client'
+"use client";
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, FormEvent } from 'react';
 import { useAppDispatch, useAppSelector } from '@/lib/hooks';
 import Link from 'next/link';
+import Image from 'next/image';
+import { useRouter } from "next/navigation";
+
+// Blueprintjs Components
+import {
+    Card,
+    Button,
+    ProgressBar,
+    Divider,
+    Tag,
+    InputGroup,
+    TextArea,
+    H3,
+    H6,
+    Elevation,
+    Icon,
+    Intent,
+    Callout,
+    Section,
+    SectionCard
+} from "@blueprintjs/core";
+
+// CSS Imports (Global layout에 없다면 여기서 호출 가능)
+import "@blueprintjs/core/lib/css/blueprint.css";
+import "@blueprintjs/icons/lib/css/blueprint-icons.css";
+
+// Project Redux/Utils
 import { KakaoTotal, selectKakaoTotal } from '@/lib/features/kakao/kakaoSlice';
 import { selectCloudflareUserInfo, setCloudFlareUserInfo, UserInfo } from '@/lib/features/cloudflare/cloudflareSlice';
-import { getBadgeColor, getLevel, xpBucket } from './level';
-import { Button, Card, Box, Text, TextField, TextArea, Progress, Avatar, Flex } from '@radix-ui/themes';
 import { selectLoginState, setCloudFlareLoginStatus } from '@/lib/features/login/loginSlice';
-import { useRouter } from "next/navigation";
-import Image from 'next/image';
+import { getLevel, xpBucket } from './level'; // 기존 파일 경로 확인 필요
 import { Logout } from "./logout";
+import { IconNames } from '@blueprintjs/icons';
 
-const DEBUG = false;
+const DEBUG = true;
 
-export default function User() {
+export default function UserPage() {
     const dispatch = useAppDispatch();
     const router = useRouter();
 
+    // Redux Selectors
     const cfUserInfo: UserInfo = useAppSelector(selectCloudflareUserInfo);
     const kakaoTotal: KakaoTotal = useAppSelector(selectKakaoTotal);
+    const loginState = useAppSelector(selectLoginState);
 
+    // Local States
     const [user, setUser] = useState<UserInfo>({
         state: "init",
         nickname: "",
@@ -30,216 +58,248 @@ export default function User() {
         lastLoginAt: 0,
         desc: "",
         point: 0,
-        // desc: 'Frontend engineer. Next.js + Tailwind enthusiast.',
-        // bio: cfUserInfo.desc ?? "Frontend engineer. Next.js + Tailwind enthusiast.",
     });
 
     const [editing, setEditing] = useState(false);
     const [draft, setDraft] = useState<UserInfo>(user);
-    const [load, setLoad] = useState(false);
-    const [xpInfo, setXpInfo] = useState<{ xp: number; denom: number; num: number; progressRatio: number }>({ xp: 0, denom: 100, num: 0, progressRatio: 0 });
+    const [isLoaded, setIsLoaded] = useState(false);
+    const [xpInfo, setXpInfo] = useState({ xp: 0, denom: 100, num: 0, progressRatio: 0 });
 
-    const loginState = useAppSelector(selectLoginState);
-
+    // Initial Login Check
     useEffect(() => {
         if (DEBUG) console.log(`[User] loginState:`, loginState);
-        if ("init" == loginState) {
+        if ("init" === loginState) {
             dispatch(setCloudFlareLoginStatus());
         }
-    }, []);
+    }, [loginState, dispatch]);
+
+    // Data Sync: Redux to Local State
     useEffect(() => {
-        if (cfUserInfo?.state === "fulfilled") {
-            if (false == load) {
-                if (DEBUG) console.log(`[User] cfUserInfo:`, cfUserInfo);
-                setUser({ ...user, ...cfUserInfo });
-                setDraft({ ...draft, ...cfUserInfo });
-                setLoad(true);
-                setXpInfo(xpBucket(Number(cfUserInfo.point)));
-            }
+        if (cfUserInfo?.state === "fulfilled" && !isLoaded) {
+            const newUser = { ...user, ...cfUserInfo };
+            setUser(newUser);
+            setDraft(newUser);
+            setIsLoaded(true);
+            setXpInfo(xpBucket(Number(cfUserInfo.point)));
         }
-    }, [cfUserInfo]);
+    }, [cfUserInfo, isLoaded, user, draft]);
 
+    // Auth Redirect
     useEffect(() => {
-        if (DEBUG) console.log(`[User] kakaoTotal:`, kakaoTotal);
-        // TODO: kakaoTotal에 있는 정보 활용해도 좋을 듯 함.
-        if (kakaoTotal?.id == 0) {
-            router.push(`${process.env.NEXT_PUBLIC_CLIENT_URL}/login/`); // NOTE: 로그인 성공 시 userpage 로 이동
-
+        if (kakaoTotal?.id === 0) {
+            router.push(`${process.env.NEXT_PUBLIC_CLIENT_URL}/login/`);
         }
-    }, [kakaoTotal]);
+    }, [kakaoTotal, router]);
 
-    function getInitials(name: string) {
-        // if (DEBUG) console.log('name', name, !!name);
-        if (!name)
-            return <Box width="24px" height="24px">
-                <svg viewBox="0 0 64 64" fill="currentColor">
-                    <path d="M41.5 14c4.687 0 8.5 4.038 8.5 9s-3.813 9-8.5 9S33 27.962 33 23 36.813 14 41.5 14zM56.289 43.609C57.254 46.21 55.3 49 52.506 49c-2.759 0-11.035 0-11.035 0 .689-5.371-4.525-10.747-8.541-13.03 2.388-1.171 5.149-1.834 8.07-1.834C48.044 34.136 54.187 37.944 56.289 43.609zM37.289 46.609C38.254 49.21 36.3 52 33.506 52c-5.753 0-17.259 0-23.012 0-2.782 0-4.753-2.779-3.783-5.392 2.102-5.665 8.245-9.472 15.289-9.472S35.187 40.944 37.289 46.609zM21.5 17c4.687 0 8.5 4.038 8.5 9s-3.813 9-8.5 9S13 30.962 13 26 16.813 17 21.5 17z" />
-                </svg>
-            </Box>
+    const handleSave = (e: FormEvent) => {
+        e.preventDefault();
+        if (DEBUG) console.log(`[User] Saving draft:`, draft);
+        setUser(draft);
+        dispatch(setCloudFlareUserInfo(draft));
+        setEditing(false);
+    };
 
-        const parts = name.trim().split(/\s+/);
-        if (parts.length === 0) return '';
-        if (parts.length === 1) return parts[0][0].toUpperCase();
-        return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
-    }
-
-    function formatDate(dateStr: number) {
-        const d = new Date(dateStr);
-        // const formatted = d.toLocaleDateString();
-        const formatted = d.toLocaleString("ko-KR", {
-            timeZone: "Asia/Seoul",
-            year: "numeric",
-            month: "2-digit",
-            day: "2-digit",
-            hour: "2-digit",
-            minute: "2-digit",
-            second: "2-digit"
+    const formatDate = (dateNum: number) => {
+        if (!dateNum || dateNum === 0) return "정보 없음";
+        return new Date(dateNum).toLocaleString("ko-KR", {
+            year: "numeric", month: "2-digit", day: "2-digit",
+            hour: "2-digit", minute: "2-digit"
         });
-        // const formatted = d.toString();
+    };
 
-        return formatted;
-    }
+    const isMaster = kakaoTotal?.kakao_account?.profile?.nickname === process.env.NEXT_PUBLIC_MASTER;
 
     return (
-        <div className="flex flex-col items-center justify-center bg-gray-50 dark:bg-black dark:text-white px-6 py-0">
-            <Card className="w-full max-w-2xl">
-                <Flex gap="6" className="flex-col md:flex-row">
-                    <Flex direction="column" className="!items-center space-y-1">
-                        <Box>
-                            <Flex direction="column" width="100%" pb="1" className="!items-center !justify-center">
-                                <Flex align="baseline" gap="1" pl="3">
-                                    <Text>{getLevel(Number(user.point))}</Text>
-                                    <Text className="text-[0.6rem]">{user.point} XP</Text>
-                                </Flex>
-                                <Box width="100%">
-                                    <Flex align="center">
-                                        <Progress
-                                            value={xpInfo.progressRatio * 100}
-                                            // color="crimson"
-                                            className="border border-gray-900/10 bg-gray-900/5 p-0 h-1 dark:border-gray-800 dark:bg-gray-900"
-                                            size="3"
-                                        />
-                                        <Text className="text-[0.5rem]">
-                                            {xpInfo.num}
-                                            /
-                                            {xpInfo.denom}
-                                        </Text>
-                                    </Flex>
-                                </Box>
-                            </Flex>
-                            <Avatar
-                                size="9"
-                                src={user.avatarUrl}
-                                fallback={getInitials(user.nickname)}
-                            />
-                        </Box>
-                    </Flex>
+        <div className="min-h-screen bg-gray-50 dark:bg-zinc-950 p-6 md:p-12">
+            <div className="max-w-4xl mx-auto space-y-6">
 
-                    <Flex direction="column">
-                        {!editing ? (
-                            <div className="space-y-1">
-                                <div className="w-full font-mono text-xl mb-2 text-left">
-                                    {user.nickname}님 반갑습니다.
+                {/* 1. Profile Header Card */}
+                <Card elevation={Elevation.ONE} className="!p-0 overflow-hidden border-none shadow-md bg-white dark:bg-zinc-900">
+                    <div className="h-32 bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-700" />
+                    <div className="px-8 pb-8">
+                        <div className="relative flex flex-col md:flex-row items-end -mt-12 gap-6">
+                            <div className="relative">
+                                <img
+                                    src={user.avatarUrl}
+                                    alt="Profile Avatar"
+                                    className="w-32 h-32 rounded-2xl border-4 border-white dark:border-zinc-900 shadow-xl object-cover bg-white"
+                                />
+                                <div className="absolute -bottom-2 -right-2">
+                                    <Tag round large intent={Intent.PRIMARY}>
+                                        {`LEVEL ${getLevel(Number(user.point))}`}
+                                    </Tag>
                                 </div>
-                                <Flex width="100%" className="!items-center !justify-center">
-                                    <Text className="min-w-16 font-semibold text-xs text-right">가입일</Text>
-                                    <div className="pl-1 w-60">
-                                        <TextField.Root readOnly className="border-none shadow-none text-black dark:text-white text-sm" value={formatDate(user.joinedAt)} />
-                                    </div>
-                                </Flex>
-                                <div className="w-full flex items-center justify-center">
-                                    <Text className="min-w-16 font-semibold text-xs text-right">마지막 접속</Text>
-                                    <div className="pl-1 w-60">
-                                        <TextField.Root readOnly className="border-none shadow-none text-black dark:text-white text-sm" value={formatDate(user.lastLoginAt)} />
-                                    </div>
-                                </div>
-                                {/* <div className="w-full flex items-center justify-center">
-                                    <Text className="min-w-16 font-semibold text-xs text-right text-blue-500">이름</Text>
-                                    <div className="pl-1 w-60">
-                                        <TextField.Root readOnly className="border-none shadow-none text-sm" value={user.nickname} />
-                                    </div>
-                                </div>
-                                <div className="w-full flex items-center justify-center">
-                                    <Text className="min-w-16 font-semibold text-xs text-right">이메일</Text>
-                                    <div className="pl-1 w-60">
-                                        <TextField.Root readOnly className="border-none shadow-none text-sm" value={user.email} />
-                                    </div>
-                                </div>
-                                <div className="w-full flex items-center justify-center">
-                                    <Text className="min-w-16 font-semibold text-xs text-right">한줄 소개</Text>
-                                    <div className="pl-1 w-60">
-                                        <TextField.Root readOnly className="border-none shadow-none text-sm" value={user.desc} />
-                                    </div>
-                                </div>
-                                <div className="mt-4 flex gap-3 justify-center">
-                                    <Button onClick={() => setEditing(true)}>프로필 수정</Button>
-                                </div> */}
                             </div>
-                        ) : (
-                            <form
-                                onSubmit={(e) => {
-                                    e.preventDefault();
-                                    if (DEBUG) console.log(`[User] handleSave draft:`, draft);
-                                    setUser(draft);
-                                    dispatch(setCloudFlareUserInfo(draft));
-                                    setEditing(false);
-                                }}
-                                className="space-y-1"
-                            >
-                                <div className="w-full flex items-center justify-center">
-                                    <Text className="min-w-16 font-semibold text-xs text-right text-blue-500">이름</Text>
-                                    <TextField.Root placeholder="이름" value={draft.nickname} onChange={(e) => setDraft({ ...draft, nickname: e.target.value })} />
-                                </div>
-                                <div className="w-full flex items-center justify-center">
-                                    <Text className="min-w-16 font-semibold text-xs text-right">이메일</Text>
-                                    <TextField.Root placeholder="이메일" value={draft.email} onChange={(e) => setDraft({ ...draft, email: e.target.value })} />
-                                </div>
-                                {/* <TextField.Root label="Avatar URL" value={draft.avatarUrl} onChange={(e) => setDraft({ ...draft, avatarUrl: e.target.value })} /> */}
-                                <div className="w-full flex items-center justify-center">
-                                    <Text className="min-w-16 font-semibold text-xs text-right">Avatar URL</Text>
-                                    <TextField.Root placeholder="Avatar URL" value={draft.avatarUrl} onChange={(e) => setDraft({ ...draft, avatarUrl: e.target.value })} />
-                                </div>
-                                <div className="w-full flex items-center justify-center">
-                                    <Text className="min-w-16 font-semibold text-xs text-right">한줄 소개</Text>
-                                    <TextArea placeholder="한줄 소개" value={draft.desc} onChange={(e) => setDraft({ ...draft, desc: e.target.value })} />
-                                </div>
 
-                                <div className="flex gap-3">
-                                    <Button type="submit" >저장</Button>
-                                    <Button variant="outline" onClick={() => setEditing(false)}>취소</Button>
+                            <div className="flex-1 pb-2">
+                                <div className="flex justify-between items-center flex-wrap gap-4">
+                                    <div>
+                                        <H3 className="!m-0 dark:text-white font-bold">{user.nickname || "사용자"}</H3>
+                                        <p className="text-gray-500 font-medium">{user.email}</p>
+                                    </div>
+                                    <div className="flex gap-2">
+                                        <Button
+                                            icon="edit"
+                                            text="프로필 편집"
+                                            onClick={() => setEditing(true)}
+                                            outlined
+                                        />
+                                        <Button
+                                            icon="log-out"
+                                            intent={Intent.DANGER}
+                                            minimal
+                                            onClick={() => Logout(router)}
+                                        />
+                                    </div>
                                 </div>
-                            </form>
-                        )}
-                        {(kakaoTotal?.kakao_account?.profile?.nickname === process.env.NEXT_PUBLIC_MASTER) && <>
-                            <Box mt="2">
-                                <Card>
-                                    <Flex direction="column">
-                                        <Box>
-                                            <Text align={"center"}>master dashboard</Text>
-                                        </Box>
-                                        <Box className="w-full pt-1 items-center justify-center">
-                                            <Link href="/report" ><Button>ReportPage</Button></Link>
-                                        </Box>
-                                    </Flex>
-                                </Card>
-                            </Box>
-                        </>}
-                        <Flex align="center" justify="center">
-                            <Button
-                                onClick={() => Logout(router)}
-                                variant="outline"
-                                radius="medium"
-                                className="!px-16 !py-6 !cursor-pointer !hover:brightness-95"
-                            >
-                                <Flex align="center" justify="center">
-                                    <Image src="/images/kakaotalk_sharing_btn_small.png" width="12" height="12" alt="metamask" className="h-6 w-6 mx-2" />
-                                    <Text size="3" weight="bold">kakao 로그아웃</Text>
-                                </Flex>
-                            </Button>
-                        </Flex>
-                    </Flex>
-                </Flex>
-            </Card>
+                            </div>
+                        </div>
+                    </div>
+                </Card>
+
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    {/* 2. Left Column: Stats & Security */}
+                    <div className="md:col-span-1 space-y-6">
+                        <Section title="성장 리포트" icon={IconNames.TIMELINE_EVENTS}>
+                            <SectionCard>
+                                <div className="space-y-4">
+                                    <div className="flex justify-between items-end">
+                                        <span className="text-xs font-bold text-gray-400 uppercase">Total XP</span>
+                                        <span className="text-xl font-mono font-bold text-blue-600">{user.point.toLocaleString()}</span>
+                                    </div>
+                                    <Divider />
+                                    <div className="space-y-2">
+                                        <div className="flex justify-between text-xs font-semibold">
+                                            <span>다음 레벨까지</span>
+                                            <span>{Math.round(xpInfo.progressRatio * 100)}%</span>
+                                        </div>
+                                        <ProgressBar
+                                            intent={Intent.PRIMARY}
+                                            value={xpInfo.progressRatio}
+                                            animate={false}
+                                            stripes={false}
+                                        />
+                                        <p className="text-[11px] text-gray-500 text-center">
+                                            {xpInfo.num} / {xpInfo.denom} XP
+                                        </p>
+                                    </div>
+                                </div>
+                            </SectionCard>
+                        </Section>
+
+                        <Callout intent={Intent.SUCCESS} icon="shield" title="계정 보호 중" className="text-xs">
+                            본 계정은 카카오 소셜 인증으로 안전하게 보호되고 있습니다.
+                        </Callout>
+                    </div>
+
+                    {/* 3. Right Column: Detailed Info / Edit Form */}
+                    <div className="md:col-span-2">
+                        <Card className="h-full bg-white dark:bg-zinc-900 shadow-sm" elevation={Elevation.ZERO}>
+                            {editing ? (
+                                <form className="space-y-5" onSubmit={handleSave}>
+                                    <H6 className="uppercase text-gray-400 tracking-widest border-b pb-2">Profile Settings</H6>
+                                    <div className="space-y-4">
+                                        <div>
+                                            <label className="text-xs font-bold mb-1.5 block text-gray-600 dark:text-gray-400">닉네임</label>
+                                            <InputGroup
+                                                large
+                                                leftIcon="user"
+                                                value={draft.nickname}
+                                                onChange={(e) => setDraft({ ...draft, nickname: e.target.value })}
+                                            />
+                                        </div>
+                                        <div>
+                                            <label className="text-xs font-bold mb-1.5 block text-gray-600 dark:text-gray-400">아바타 URL</label>
+                                            <InputGroup
+                                                leftIcon="media"
+                                                value={draft.avatarUrl}
+                                                onChange={(e) => setDraft({ ...draft, avatarUrl: e.target.value })}
+                                            />
+                                        </div>
+                                        <div>
+                                            <label className="text-xs font-bold mb-1.5 block text-gray-600 dark:text-gray-400">한줄 소개</label>
+                                            <TextArea
+                                                fill
+                                                rows={4}
+                                                value={draft.desc}
+                                                onChange={(e) => setDraft({ ...draft, desc: e.target.value })}
+                                            />
+                                        </div>
+                                    </div>
+                                    <div className="flex gap-3 pt-4">
+                                        <Button intent={Intent.PRIMARY} type="submit" text="변경사항 저장" large className="px-8" />
+                                        <Button onClick={() => setEditing(false)} text="취소" large minimal />
+                                    </div>
+                                </form>
+                            ) : (
+                                <div className="space-y-8">
+                                    <div>
+                                        <H6 className="uppercase text-gray-400 tracking-widest mb-4">Account Details</H6>
+                                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-y-6">
+                                            <InfoField icon="envelope" label="이메일 주소" value={user.email ?? "이메일 정보 없음"} />
+                                            <InfoField icon="id-number" label="닉네임" value={user.nickname} />
+                                            <InfoField icon="calendar" label="최초 가입일" value={formatDate(user.joinedAt)} />
+                                            <InfoField icon="history" label="최근 로그인" value={formatDate(user.lastLoginAt)} />
+                                        </div>
+                                    </div>
+
+                                    <Divider />
+
+                                    <div>
+                                        <H6 className="uppercase text-gray-400 tracking-widest mb-3">About Me</H6>
+                                        <div className="p-4 bg-gray-50 dark:bg-zinc-800/50 rounded-lg min-h-[80px]">
+                                            <p className="text-gray-700 dark:text-gray-300 leading-relaxed italic text-sm">
+                                                {user.desc || "등록된 소개글이 없습니다. 프로필 수정을 통해 자신을 소개해 보세요."}
+                                            </p>
+                                        </div>
+                                    </div>
+
+                                    {/* Admin Dashboard Entry */}
+                                    {isMaster && (
+                                        <Link href="/report" className="no-underline block">
+                                            <Callout intent={Intent.WARNING} icon="shield" title="관리자 권한 확인됨" className="hover:bg-orange-100 transition-colors cursor-pointer">
+                                                <p className="text-xs mb-2">마스터 대시보드에서 시스템 리포트를 확인할 수 있습니다.</p>
+                                                <Button text="대시보드 바로가기" rightIcon="chevron-right" small minimal />
+                                            </Callout>
+                                        </Link>
+                                    )}
+                                </div>
+                            )}
+                        </Card>
+                    </div>
+                </div>
+
+                {/* Logout Action Area */}
+                <div className="flex flex-col items-center pt-10 gap-4">
+                    <Button
+                        large
+                        outlined
+                        onClick={() => Logout(router)}
+                        className="!px-12 !py-6 group"
+                    >
+                        <div className="flex items-center gap-3">
+                            <Image src="/images/kakaotalk_sharing_btn_small.png" width="20" height="20" alt="kakao" />
+                            <span className="font-bold text-gray-700 dark:text-gray-300 group-hover:text-black">kakao 로그아웃</span>
+                        </div>
+                    </Button>
+                    <p className="text-[10px] text-gray-400">ID: {kakaoTotal?.id} | Device: Web Browser</p>
+                </div>
+            </div>
+        </div>
+    );
+}
+
+// Reusable Info Field Component for Professional look
+function InfoField({ icon, label, value }: { icon: any, label: string, value: string }) {
+    return (
+        <div className="flex items-center group">
+            <div className="w-10 h-10 rounded-xl bg-gray-100 dark:bg-zinc-800 flex items-center justify-center mr-4 group-hover:bg-blue-100 dark:group-hover:bg-blue-900/40 transition-all">
+                <Icon icon={icon} size={16} className="text-gray-500 dark:text-gray-400 group-hover:text-blue-600" />
+            </div>
+            <div className="overflow-hidden">
+                <p className="text-[10px] uppercase font-black text-gray-400 mb-0.5 tracking-tighter">{label}</p>
+                <p className="text-sm font-semibold dark:text-zinc-200 truncate">{value}</p>
+            </div>
         </div>
     );
 }
