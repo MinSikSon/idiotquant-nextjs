@@ -1,35 +1,55 @@
 "use client";
 
 import React, { useMemo, useState } from "react";
+import {
+    Card,
+    Elevation,
+    Button,
+    HTMLTable,
+    Tag,
+    H4,
+    Icon,
+    Intent,
+    Divider,
+    ButtonGroup,
+    Callout,
+    Section,
+    SectionCard,
+    Position,
+    Tooltip,
+} from "@blueprintjs/core";
+import { IconNames } from "@blueprintjs/icons";
 
-// Next.js + Radix UI + Tailwind — candidates 테이블 버전
-import * as ScrollArea from "@radix-ui/react-scroll-area";
-import * as Tooltip from "@radix-ui/react-tooltip";
-import { Button, Flex, Text } from "@radix-ui/themes";
+// --- 스타일 임포트 (전역 설정이 되어있지 않다면 필요) ---
+import "@blueprintjs/core/lib/css/blueprint.css";
+import "@blueprintjs/icons/lib/css/blueprint-icons.css";
 
+// --- 타입 정의 (에러 방지를 위해 옵셔널 처리 강화) ---
 type CandidateInfo = {
     symbol?: string;
     name?: string;
     key?: string;
     condition?: Record<string, any> | null;
-    ncavRatio?: string;
+    ncavRatio?: string | number;
     [k: string]: any;
 };
 
+// 1. 기존의 Strategy 타입을 Redux에서 오는 데이터 구조와 일치시킵니다.
 type Strategy = {
     strategyId: string;
     key: string;
     name: string;
     asOfDate: string;
-    kvFilter: Record<string, string | number>;
-    numAllTickers?: number;
-    numNasdaqTickers?: number;
-    numNyseTickers?: number;
-    numAmexTickers?: number;
-    numAllKeys: number;
-    numFilteredKeys: number;
+    // Record 대신 any를 사용하거나, 구체적인 타입을 지정하여 인덱스 시그니처 에러 방지
+    kvFilter: {
+        year?: string | number;
+        quarter?: string | number;
+        [key: string]: any; // 인덱스 시그니처 추가
+    };
     universe: string;
-    params: Record<string, number>;
+    params: {
+        [key: string]: number;
+    };
     dataSource: {
         balanceSheet: string;
         prices: string;
@@ -37,567 +57,292 @@ type Strategy = {
     };
     candidates: Record<string, CandidateInfo>;
     numCandidates: number;
-    lastRun: string | null;
+    numFilteredKeys: number;
     status: string;
-    notes: string;
-    lastSearchIndex: number;
-    searchCountPerRequest: number;
 };
 
+// --- 샘플 데이터 ---
 const sample: Strategy = {
     strategyId: "IQ_NCAV1.5_MCAP0",
     key: "US:NCAV:2024:Q0:20251115:MCAP:0",
-    name: "NCAV - NASDAQ/NYSE/AMEX",
+    name: "NCAV Strategy",
     asOfDate: "2025-11-15",
     kvFilter: { year: "2024", quarter: 0 },
-    numAllTickers: 6951,
-    numNasdaqTickers: 3922,
-    numNyseTickers: 2737,
-    numAmexTickers: 292,
-    numAllKeys: 4405,
-    numFilteredKeys: 3643,
     universe: "NASDAQ/NYSE/AMEX",
     params: { ncavToMarketCapMin: 1.5, minMarketCap: 0, minAvgVol30d: 50000 },
     dataSource: { balanceSheet: "finnhub", prices: "koreainvestment", fetchedAt: "2025-11-16T00:00:00+09:00" },
     candidates: {
-        AP: { symbol: "AP", key: "US:AP:2024:Q0", condition: { AssetsCurrent: 236787000, LiabilitiesCurrent: 125216000, NetIncome: 438000, MarketCapitalization: 48173568, LastPrice: 2.37, per: 9.04, pbr: 0.8, eps: 0.26, bps: 2.97, date: "Mon Nov 24 2025 07:04:21 GMT+0000 (UTC)" }, ncavRatio: "2.31602" },
-        BRLT: { symbol: "BRLT", key: "US:BRLT:2024:Q0", condition: { AssetsCurrent: 211413000, LiabilitiesCurrent: 78169000, NetIncome: 541000, MarketCapitalization: 25334256, LastPrice: 1.67, per: 7.34, pbr: 13.95, eps: 0.23, bps: 0.12, date: "Mon Nov 24 2025 07:28:22 GMT+0000 (UTC)" }, ncavRatio: "5.25944" }
+        AP: { symbol: "AP", name: "Ampco-Pittsburgh", condition: { LastPrice: 2.37, MarketCapitalization: 48173568, per: 9.04, pbr: 0.8 }, ncavRatio: "2.31602" },
+        BRLT: { symbol: "BRLT", name: "Brilliant Earth", condition: { LastPrice: 1.67, MarketCapitalization: 25334256, per: 7.34, pbr: 13.95 }, ncavRatio: "5.25944" }
     },
     numCandidates: 2,
-    lastRun: null,
+    numFilteredKeys: 3643,
     status: "idle",
-    notes: "",
-    lastSearchIndex: 2850,
-    searchCountPerRequest: 30,
 };
 
-function jsonToCSV(obj: unknown) {
-    const flattened: Record<string, string> = {};
-    if (typeof obj === "object" && obj !== null) {
-        const o = obj as Record<string, any>;
-        for (const k of Object.keys(o)) {
-            const v = o[k];
-            if (typeof v === "object") flattened[k] = JSON.stringify(v);
-            else flattened[k] = String(v ?? "");
-        }
-    }
-    const headers = Object.keys(flattened);
-    if (headers.length === 0) return "";
-    const rows = [headers.join(','), headers.map(h => `"${String(flattened[h]).replace(/"/g, '""')}"`).join(',')];
-    return rows.join('\n');
-}
+// --- 유틸리티 함수 ---
+const formatNum = (v: any) => (typeof v === 'number' ? v.toLocaleString() : String(v ?? "-"));
 
-/**
- * LoadingGrayText: 텍스트 자리 Skeleton (회색 깜빡임)
- * className으로 width/height 조절하세요 (예: w-40 h-4)
- */
-function LoadingGrayText({ className = "" }: { className?: string }) {
-    return (
-        <span className={`inline-block bg-gray-300 rounded animate-pulse align-middle ${className}`}>&nbsp;</span>
-    );
-}
-
-/**
- * 정렬 가능한 헤더 정의
- * key: 내부 sortKey (accessor)
- * label: 화면에 보일 텍스트
- * accessor: row에서 값을 꺼내는 함수
- * numeric: 숫자 비교로 정렬할지 여부
- */
-const SORTABLE_HEADERS = [
-    { key: "ticker", label: "Ticker", accessor: (r: [string, CandidateInfo]) => r[0], numeric: false },
-    { key: "name", label: "Name", accessor: (r: [string, CandidateInfo]) => r[1]?.name ?? "-", numeric: false },
-    { key: "lastPrice", label: "Last Price", accessor: (r: [string, CandidateInfo]) => r[1]?.condition?.LastPrice ?? r[1]?.condition?.LastPrice ?? null, numeric: true },
-    { key: "marketCap", label: "Market Cap", accessor: (r: [string, CandidateInfo]) => r[1]?.condition?.MarketCapitalization ?? null, numeric: true },
-    {
-        key: "ncavRatio", label: "NCAV Ratio", accessor: (r: [string, CandidateInfo]) => {
-            const v = r[1]?.ncavRatio ?? r[1]?.ncavRatio;
-            return v == null ? null : Number(String(v));
-        }, numeric: true
-    },
-    { key: "per", label: "P/E", accessor: (r: [string, CandidateInfo]) => r[1]?.condition?.per ?? r[1]?.condition?.PER ?? null, numeric: true },
-    { key: "pbr", label: "P/B", accessor: (r: [string, CandidateInfo]) => r[1]?.condition?.pbr ?? r[1]?.condition?.PBR ?? null, numeric: true },
-];
-
-export default function NCAVTable({ strategies }: { strategies?: any | any[] }) {
+export default function ResponsiveNCAV({ strategies }: { strategies?: Strategy | Strategy[] }) {
+    // 1. 데이터 초기화 및 에러 방지
     const list = useMemo(() => {
         if (!strategies) return [sample];
-        if (Array.isArray(strategies)) return strategies.length ? strategies : [sample];
-        return [strategies];
+        return Array.isArray(strategies) ? (strategies.length ? strategies : [sample]) : [strategies];
     }, [strategies]);
-
-    // isUsingSample: 현재 화면에 보여지는 전략이 fallback sample인지 여부
-    const isUsingSample = useMemo(() => {
-        const onlySample = list.length === 1 && list[0] === sample;
-        const explicitSample = strategies === sample;
-        const emptyOrAbsent = !strategies || (Array.isArray(strategies) && strategies.length === 0);
-        return onlySample && (explicitSample || emptyOrAbsent);
-    }, [list, strategies]);
 
     const [selectedIndex, setSelectedIndex] = useState(0);
     const data = list[selectedIndex] ?? sample;
+    const [expandedTicker, setExpandedTicker] = useState<string | null>(null);
 
-    // expanded candidate ticker
-    const [expandedCandidate, setExpandedCandidate] = useState<string | null>(null);
-
-    const metaRows: Array<[string, string]> = [
-        ["strategyId", data.strategyId],
-        ["key", data.key],
-        ["name", data.name],
-        ["asOfDate", data.asOfDate],
-        ["universe", data.universe],
-        ["전체종목", String(data.numAllKeys)],
-        ["전체종목(연도 필터)", String(data.numFilteredKeys)],
-        ["추천 종목 개수", String(data.numCandidates)],
-        ["lastSearchIndex", String(data.lastSearchIndex)],
-        ["searchCountPerRequest", String(data.searchCountPerRequest)],
-    ];
-
-    const kvFilterEntries = Object.entries(data.kvFilter).map(([k, v]) => [k, String(v)] as [string, string]);
-    const paramsEntries = Object.entries(data.params).map(([k, v]) => [k, String(v)] as [string, string]);
-    const dataSourceEntries = Object.entries(data.dataSource).map(([k, v]) => [k, String(v)] as [string, string]);
-
-    const candidateEntries = Object.entries(data.candidates ?? {}) as [string, CandidateInfo][];
-
-    const copyJSON = async () => {
-        try {
-            await navigator.clipboard.writeText(JSON.stringify(data, null, 2));
-            showToast('JSON이 복사되었습니다');
-        } catch (e) {
-            alert("복사 실패: 브라우저가 클립보드 접근을 허용하지 않습니다.");
-        }
-    };
-
-    function showToast(msg: string) {
-        const t = document.createElement('div');
-        t.textContent = msg;
-        t.className = 'fixed bottom-6 right-6  pl-3 py-2 rounded shadow-lg text-sm';
-        document.body.appendChild(t);
-        setTimeout(() => t.remove(), 1600);
-    }
-
-    const overviewMaxHeight = 'calc(100vh - 220px)';
-
-    // ---------- Sorting state ----------
-    const [sortKey, setSortKey] = useState<string>("ticker"); // 기본: ticker
+    // 2. 정렬 로직 (에러 방지용 안전한 접근)
+    const [sortKey, setSortKey] = useState<string>("ticker");
     const [sortDir, setSortDir] = useState<"asc" | "desc">("asc");
 
-    const onHeaderClick = (key: string) => {
-        if (sortKey === key) {
-            setSortDir(prev => (prev === "asc" ? "desc" : "asc"));
-        } else {
-            setSortKey(key);
-            setSortDir("asc");
-        }
-    };
+    const candidateEntries = Object.entries(data.candidates ?? {});
 
-    // ---------- compute sorted rows ----------
     const sortedCandidates = useMemo(() => {
-        // map to item + value cache for accessor
-        const items = candidateEntries.map(entry => {
-            const mapEntry = { entry, values: {} as Record<string, any> };
-            for (const h of SORTABLE_HEADERS) {
-                try {
-                    mapEntry.values[h.key] = h.accessor(entry);
-                } catch {
-                    mapEntry.values[h.key] = null;
-                }
-            }
-            return mapEntry;
-        });
-
-        // find header meta
-        const headerMeta = SORTABLE_HEADERS.find(h => h.key === sortKey) ?? SORTABLE_HEADERS[0];
-
-        // comparator
-        const cmp = (a: typeof items[0], b: typeof items[0]) => {
-            const va = a.values[headerMeta.key];
-            const vb = b.values[headerMeta.key];
-
-            // handle null/undefined
-            const aNull = va === null || va === undefined;
-            const bNull = vb === null || vb === undefined;
-            if (aNull && bNull) return 0;
-            if (aNull) return 1; // nulls go to the end
-            if (bNull) return -1;
-
-            if (headerMeta.numeric) {
-                const na = Number(va);
-                const nb = Number(vb);
-                if (Number.isNaN(na) && Number.isNaN(nb)) return 0;
-                if (Number.isNaN(na)) return 1;
-                if (Number.isNaN(nb)) return -1;
-                return na - nb;
-            } else {
-                const sa = String(va);
-                const sb = String(vb);
-                return sa.localeCompare(sb, undefined, { numeric: true, sensitivity: "base" });
-            }
-        };
-
+        const items = [...candidateEntries];
         items.sort((a, b) => {
-            const r = cmp(a, b);
-            return sortDir === "asc" ? r : -r;
-        });
+            let va: any = a[0];
+            let vb: any = b[0];
 
-        // return sorted entries (original [ticker, info])
-        return items.map(it => it.entry);
+            if (sortKey !== "ticker") {
+                va = (a[1] as any).condition?.[sortKey] ?? (a[1] as any)[sortKey];
+                vb = (b[1] as any).condition?.[sortKey] ?? (b[1] as any)[sortKey];
+            }
+
+            if (va == null) return 1;
+            if (vb == null) return -1;
+            const res = va < vb ? -1 : va > vb ? 1 : 0;
+            return sortDir === "asc" ? res : -res;
+        });
+        return items;
     }, [candidateEntries, sortKey, sortDir]);
 
     return (
-        <div className="min-h-screen p-4">
-            <div className="max-w-7xl mx-auto">
-                <div className="flex items-start justify-between gap-4 mb-6">
-                    <div>
-                        <h1 className="text-xl font-semibold leading-tight">
-                            {isUsingSample ? <LoadingGrayText className="w-72 h-6" /> : data.strategyId}
-                        </h1>
-                        <div className="text-sm ">
-                            {isUsingSample ? (
-                                <span className="flex gap-2 items-center">
-                                    <LoadingGrayText className="w-56 h-4" />
-                                </span>
-                            ) : (
-                                <><div className="flex flex-col">
-                                    <div>• As of {data.asOfDate}</div>
-                                </div></>
-                            )}
+        <div className="min-h-screen bg-gray-50 dark:bg-zinc-950 p-2 sm:p-4 md:p-8">
+            <div className="max-w-[1400px] mx-auto space-y-4 md:space-y-6">
+
+                {/* [상단 헤더] 모바일: 세로적재, 데스크톱: 가로배치 */}
+                <Card elevation={Elevation.ONE} className="!p-4 md:!p-6 border-none shadow-sm dark:bg-zinc-900">
+                    <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+                        <div>
+                            <div className="flex items-center gap-2 flex-wrap">
+                                <Icon icon={IconNames.CHART} intent={Intent.PRIMARY} size={20} />
+                                <H4 className="!m-0 text-lg md:text-xl font-bold truncate max-w-[280px] sm:max-w-none">
+                                    {data.strategyId || "전략 정보 없음"}
+                                </H4>
+                                <Tag intent={Intent.SUCCESS} minimal round size="medium">{data.status}</Tag>
+                            </div>
+                            <p className="text-gray-500 text-xs mt-1 font-medium">
+                                <Icon icon={IconNames.CALENDAR} size={12} className="mr-1" />
+                                {`As of ${data.asOfDate} • ${data.universe}`}
+                            </p>
                         </div>
+                        <ButtonGroup fill className="w-full md:w-auto">
+                            <Button icon={IconNames.DUPLICATE} onClick={() => navigator.clipboard.writeText(JSON.stringify(data))}>JSON</Button>
+                            <Button icon={IconNames.DOWNLOAD} intent={Intent.PRIMARY}>CSV</Button>
+                        </ButtonGroup>
                     </div>
+                </Card>
 
-                    <div className="flex items-center gap-2">
-                        <Tooltip.Root>
-                            <Tooltip.Trigger asChild>
-                                <Button
-                                    variant="soft"
-                                    onClick={copyJSON}
-                                    disabled={isUsingSample}
-                                >
-                                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden>
-                                        <rect x="9" y="9" width="10" height="10" rx="2" stroke="currentColor" strokeWidth="1.5" />
-                                        <rect x="5" y="5" width="10" height="10" rx="2" stroke="currentColor" strokeWidth="1.5" />
-                                    </svg>
-                                    <span className="text-sm">JSON</span>
-                                </Button>
-                            </Tooltip.Trigger>
-                            <Tooltip.Portal>
-                                <Tooltip.Content side="bottom" align="center" className="rounded-md p-2 text-xs ">
-                                    Clipboard에 JSON 복사
-                                    <Tooltip.Arrow className="fill-slate-900" />
-                                </Tooltip.Content>
-                            </Tooltip.Portal>
-                        </Tooltip.Root>
-                    </div>
-                </div>
+                <div className="grid grid-cols-12 gap-4 md:gap-6">
 
-                <div className="grid grid-cols-1 lg:grid-cols-4 gap-0">
-                    {list.length > 1 && (
-                        <nav className="lg:col-span-1 rounded-2xl p-3 shadow min-h-[200px]">
-                            <h3 className="text-lg font-medium mb-2">투자 전략</h3>
-                            <ul className="space-y-2">
+                    {/* [사이드바] 모바일: 수평 스크롤 칩, 데스크톱: 수직 리스트 */}
+                    <div className="col-span-12 lg:col-span-3">
+                        <Section title="Strategy List" icon={IconNames.LAYERS} compact>
+                            <div className="flex lg:flex-col overflow-x-auto lg:overflow-x-visible p-2 gap-2 no-scrollbar">
                                 {list.map((s, idx) => (
-                                    <li key={s.strategyId || idx}>
-                                        <button
-                                            onClick={() => setSelectedIndex(idx)}
-                                            className={`w-full text-left pl-3 py-1 rounded-md ${idx === selectedIndex ? 'ring-1 ring-slate-200' : 'hover:'}`}
-                                        >
-                                            <div className="items-center gap-1">
-                                                <div className="text-sm font-medium">{s.strategyId}</div>
-                                                <div className="text-[0.6rem] ">{s.asOfDate} • {s.universe}</div>
-                                            </div>
-                                        </button>
-                                    </li>
+                                    <Card
+                                        key={idx}
+                                        interactive
+                                        onClick={() => setSelectedIndex(idx)}
+                                        className={`!p-3 min-w-[160px] lg:min-w-0 transition-all border-none ${idx === selectedIndex ? 'bg-blue-600 text-white shadow-lg scale-[1.02]' : 'bg-white dark:bg-zinc-800'}`}
+                                    >
+                                        <div className={`text-xs font-bold truncate ${idx === selectedIndex ? 'text-white' : ''}`}>{s.strategyId}</div>
+                                        <div className={`text-[10px] mt-1 font-medium ${idx === selectedIndex ? 'text-blue-100' : 'text-gray-400'}`}>
+                                            {`Q${s.kvFilter.quarter} • ${s.asOfDate}`}
+                                        </div>
+                                    </Card>
                                 ))}
-                            </ul>
-                            <Flex direction="column" pl="9" align="start">
-                                <Text as="p" color="bronze" className="text-[0.5rem] sm:text-xs md:text-sm lg:text-base xl:text-lg 2xl:text-xl">
-                                    🚀 IQ_NCAV1_2024_Q0_MCAP0 : IdiotQuant 제안, NCAV ratio 1 인 2024년 연간 시가총액이 0 이상인 종목 추천
-                                </Text>
-                                <Flex direction="column" pl="3">
-                                    <Text as="p" color="green" className="text-[0.5rem] sm:text-xs md:text-sm lg:text-base xl:text-lg 2xl:text-xl">
-                                        🦄 NCAV = Net Current Asset Value = 유동자산 - 총부채
-                                    </Text>
-                                    <Text as="p" color="green" className="text-[0.5rem] sm:text-xs md:text-sm lg:text-base xl:text-lg 2xl:text-xl">
-                                        🦄 Q:0: 연간보고서를 의미
-                                    </Text>
-                                </Flex>
-                            </Flex>
-                        </nav>
-                    )}
+                            </div>
+                        </Section>
+                    </div>
 
-                    <section className={`rounded-2xl p-3 shadow ${list.length > 1 ? 'lg:col-span-3' : 'lg:col-span-4'}`}>
-                        <h2 className="text-lg font-medium mb-3">개요</h2>
+                    {/* [본문 컨텐츠] */}
+                    <div className="col-span-12 lg:col-span-9 space-y-4 md:space-y-6">
 
-                        <div className="border rounded-lg overflow-scroll">
-                            <ScrollArea.Root className="w-full" style={{ maxHeight: overviewMaxHeight }}>
-                                <ScrollArea.Viewport>
-                                    <table className="w-full table-auto text-sm">
-                                        <tbody>
-                                            {/* CANDIDATES TABLE SECTION */}
-                                            <tr className="">
-                                                <td className="pl-3 py-3 font-medium align-top">추천 종목</td>
-                                                <td className="pl-3 py-3">
-                                                    {candidateEntries.length === 0 ? (
-                                                        <div className="text-sm ">No candidates available</div>
-                                                    ) : (
-                                                        <div className="overflow-auto border rounded-md">
-                                                            <table className="min-w-full text-sm">
-                                                                <thead className="">
-                                                                    <tr>
-                                                                        {SORTABLE_HEADERS.map(h => (
-                                                                            <th
-                                                                                key={h.key}
-                                                                                className="text-left pl-3 py-2 cursor-pointer select-none"
-                                                                                onClick={() => onHeaderClick(h.key)}
-                                                                            >
-                                                                                <div className="inline-flex items-center gap-2">
-                                                                                    <span>{h.label}</span>
-                                                                                    {sortKey === h.key && (
-                                                                                        <span className="text-xs opacity-80">
-                                                                                            {sortDir === "asc" ? "▲" : "▼"}
-                                                                                        </span>
-                                                                                    )}
-                                                                                </div>
-                                                                            </th>
-                                                                        ))}
+                        {/* 메트릭 그리드: 모바일 2열, 데스크톱 4열 */}
+                        <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4">
+                            <MetricCard label="추천 종목" value={data.numCandidates} icon={IconNames.TH_DERIVED} intent={Intent.PRIMARY} />
+                            <MetricCard label="필터 통과" value={data.numFilteredKeys} icon={IconNames.FILTER_LIST} />
+                            <MetricCard label="데이터 소스" value={data.dataSource.balanceSheet} icon={IconNames.DATABASE} />
+                            <MetricCard label="마지막 실행" value={data.asOfDate.slice(5)} icon={IconNames.TIME} />
+                        </div>
 
-                                                                        <th className="text-left pl-3 py-2">Actions</th>
-                                                                    </tr>
-                                                                </thead>
-                                                                <tbody>
-                                                                    {isUsingSample ? (
-                                                                        // Skeleton rows when sample 사용 중
-                                                                        Array.from({ length: 3 }).map((_, idx) => (
-                                                                            <tr key={`skeleton-${idx}`} className="border-t">
-                                                                                <td className="pl-3 py-2 font-medium"><LoadingGrayText className="w-16 h-4" /></td>
-                                                                                <td className="pl-3 py-2"><LoadingGrayText className="w-12 h-4" /></td>
-                                                                                <td className="pl-3 py-2"><LoadingGrayText className="w-24 h-4" /></td>
-                                                                                <td className="pl-3 py-2"><LoadingGrayText className="w-12 h-4" /></td>
-                                                                                <td className="pl-3 py-2"><LoadingGrayText className="w-12 h-4" /></td>
-                                                                                <td className="pl-3 py-2"><LoadingGrayText className="w-12 h-4" /></td>
-                                                                                <td className="pl-3 py-2">
-                                                                                    <div className="flex items-center gap-2">
-                                                                                        <span className="text-xs px-2 py-1 rounded border"><LoadingGrayText className="w-12 h-3" /></span>
-                                                                                        <span className="text-xs px-2 py-1 rounded border"><LoadingGrayText className="w-12 h-3" /></span>
-                                                                                        <span className="text-xs px-2 py-1 rounded border"><LoadingGrayText className="w-12 h-3" /></span>
-                                                                                    </div>
-                                                                                </td>
-                                                                            </tr>
-                                                                        ))
-                                                                    ) : (
-                                                                        // 실제 데이터 렌더링 (정렬된 리스트 활용)
-                                                                        sortedCandidates.map(([ticker, info]) => {
-                                                                            const isOpen = expandedCandidate === String(ticker);
-                                                                            const cond = info?.condition ?? {};
-                                                                            const name = info?.name ?? "-";
-                                                                            const lastPrice = cond?.LastPrice ?? "-";
-                                                                            const marketCap = cond?.MarketCapitalization ?? "-";
-                                                                            const ncavRatio = info?.ncavRatio ?? "-";
-                                                                            const per = cond?.per ?? cond?.PER ?? "-";
-                                                                            const pbr = cond?.pbr ?? cond?.PBR ?? "-";
+                        {/* [반응형 리스트 섹션] */}
+                        <Section
+                            title="Recommended Candidates"
+                            icon={IconNames.LIST_COLUMNS}
+                            rightElement={<Tag minimal round>{`${sortedCandidates.length} Items`}</Tag>}
+                        >
+                            <SectionCard className="!p-0 border-none overflow-hidden">
 
-                                                                            return (
-                                                                                <React.Fragment key={ticker}>
-                                                                                    <tr className={`border-t hover: ${isOpen ? '' : ''}`}>
-                                                                                        <td className="pl-3 py-2 font-medium">{ticker}</td>
-                                                                                        <td className="pl-3 py-2 font-medium">{name}</td>
-                                                                                        <td className="pl-3 py-2">{typeof lastPrice === 'number' ? String(lastPrice) : String(lastPrice)}</td>
-                                                                                        <td className="pl-3 py-2">{typeof marketCap === 'number' ? marketCap.toLocaleString() : String(marketCap)}</td>
-                                                                                        <td className="pl-3 py-2">{String(ncavRatio)}</td>
-                                                                                        <td className="pl-3 py-2">{String(per)}</td>
-                                                                                        <td className="pl-3 py-2">{String(pbr)}</td>
-                                                                                        <td className="pl-3 py-2">
-                                                                                            <div className="flex items-center gap-2">
-                                                                                                <Button
-                                                                                                    size="1"
-                                                                                                    variant="soft"
-                                                                                                    onClick={() => setExpandedCandidate(isOpen ? null : String(ticker))}
-                                                                                                    className="text-xs px-2 py-1 rounded border"
-                                                                                                >
-                                                                                                    {isOpen ? 'Hide' : 'Details'}
-                                                                                                </Button>
-                                                                                                <Button
-                                                                                                    size="1"
-                                                                                                    variant="soft"
-                                                                                                    onClick={() => navigator.clipboard.writeText(JSON.stringify(info, null, 2))}
-                                                                                                    className="text-xs px-2 py-1 rounded border"
-                                                                                                >
-                                                                                                    Copy
-                                                                                                </Button>
-                                                                                                <Button
-                                                                                                    size="1"
-                                                                                                    variant="soft"
-                                                                                                    onClick={() => {
-                                                                                                        const csv = jsonToCSV(info?.condition ?? info ?? {});
-                                                                                                        if (!csv) { showToast('No data to download'); return; }
-                                                                                                        const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
-                                                                                                        const url = URL.createObjectURL(blob);
-                                                                                                        const a = document.createElement('a');
-                                                                                                        a.href = url;
-                                                                                                        a.download = `${ticker}.csv`;
-                                                                                                        a.click();
-                                                                                                        URL.revokeObjectURL(url);
-                                                                                                    }}
-                                                                                                    className="text-xs px-2 py-1 rounded border"
-                                                                                                >
-                                                                                                    CSV
-                                                                                                </Button>
-                                                                                            </div>
-                                                                                        </td>
-                                                                                    </tr>
-
-                                                                                    {isOpen && (
-                                                                                        <tr className="">
-                                                                                            <td colSpan={7} className="pl-3 py-3 border-t">
-                                                                                                <div className="text-xs  p-3 rounded">
-                                                                                                    <pre className="whitespace-pre-wrap">{JSON.stringify(info, null, 2)}</pre>
-                                                                                                </div>
-                                                                                            </td>
-                                                                                        </tr>
-                                                                                    )}
-                                                                                </React.Fragment>
-                                                                            );
-                                                                        })
-                                                                    )}
-                                                                </tbody>
-                                                            </table>
-                                                        </div>
-                                                    )}
-                                                </td>
-                                            </tr>
-                                            {metaRows.map(([k, v], idx) => (
-                                                <tr key={k} className={`${idx % 2 === 0 ? '' : ''}`}>
-                                                    <td className="pl-3 py-1 align-top w-52 font-medium ">{k}</td>
-                                                    <td className="pl-3 py-1 align-top  whitespace-pre-wrap">
-                                                        {isUsingSample ? <LoadingGrayText className="w-40 h-4" /> : v}
-                                                    </td>
-                                                </tr>
-                                            ))}
-
-                                            <tr className="">
-                                                <td className="pl-3 py-3 font-medium">kvFilter</td>
-                                                <td className="pl-3 py-3">
-                                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                                                        {isUsingSample ? (
-                                                            <>
-                                                                <div className="rounded-md p-2 border">
-                                                                    <LoadingGrayText className="w-24 h-4" />
-                                                                </div>
-                                                                <div className="rounded-md p-2 border">
-                                                                    <LoadingGrayText className="w-20 h-4" />
-                                                                </div>
-                                                            </>
-                                                        ) : (
-                                                            kvFilterEntries.map(([k, v]) => (
-                                                                <div key={k} className="rounded-md p-2 border">
-                                                                    <div className="text-xs ">{k}</div>
-                                                                    <div className="text-sm font-medium">{v}</div>
-                                                                </div>
-                                                            ))
-                                                        )}
-                                                    </div>
-                                                </td>
-                                            </tr>
-
+                                {/* 1. 데스크톱 뷰 (Table) - md 이상에서 표시 */}
+                                <div className="hidden md:block overflow-x-auto">
+                                    <HTMLTable interactive striped className="w-full text-sm">
+                                        <thead>
                                             <tr>
-                                                <td className="pl-3 py-3 font-medium">params</td>
-                                                <td className="pl-3 py-3">
-                                                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
-                                                        {isUsingSample ? (
-                                                            <>
-                                                                <div className="rounded-md p-2 border"><LoadingGrayText className="w-28 h-4" /></div>
-                                                                <div className="rounded-md p-2 border"><LoadingGrayText className="w-20 h-4" /></div>
-                                                                <div className="rounded-md p-2 border"><LoadingGrayText className="w-24 h-4" /></div>
-                                                            </>
-                                                        ) : (
-                                                            paramsEntries.map(([k, v]) => (
-                                                                <div key={k} className="rounded-md p-2 border">
-                                                                    <div className="text-xs ">{k}</div>
-                                                                    <div className="text-sm font-medium">{v}</div>
-                                                                </div>
-                                                            ))
-                                                        )}
-                                                    </div>
-                                                </td>
+                                                <SortHeader label="Ticker" id="ticker" current={sortKey} dir={sortDir} onSort={setSortKey} onDir={setSortDir} />
+                                                <SortHeader label="Price" id="LastPrice" current={sortKey} dir={sortDir} onSort={setSortKey} onDir={setSortDir} />
+                                                <SortHeader label="Market Cap" id="MarketCapitalization" current={sortKey} dir={sortDir} onSort={setSortKey} onDir={setSortDir} />
+                                                <SortHeader label="NCAV Ratio" id="ncavRatio" current={sortKey} dir={sortDir} onSort={setSortKey} onDir={setSortDir} />
+                                                <th className="text-right pr-6">Details</th>
                                             </tr>
-
-                                            <tr className="">
-                                                <td className="pl-3 py-3 font-medium">dataSource</td>
-                                                <td className="pl-3 py-3">
-                                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                                                        {isUsingSample ? (
-                                                            <>
-                                                                <div className="rounded-md p-2 border"><LoadingGrayText className="w-36 h-4" /></div>
-                                                                <div className="rounded-md p-2 border"><LoadingGrayText className="w-28 h-4" /></div>
-                                                            </>
-                                                        ) : (
-                                                            dataSourceEntries.map(([k, v]) => (
-                                                                <div key={k} className="rounded-md p-2 border">
-                                                                    <div className="text-xs ">{k}</div>
-                                                                    <div className="text-sm font-medium">{v}</div>
-                                                                </div>
-                                                            ))
-                                                        )}
-                                                    </div>
-                                                </td>
-                                            </tr>
-
+                                        </thead>
+                                        <tbody>
+                                            {sortedCandidates.map(([ticker, info]: any) => (
+                                                <React.Fragment key={ticker}>
+                                                    <tr className={expandedTicker === ticker ? 'bg-blue-50/30 dark:bg-blue-900/10' : ''}>
+                                                        <td className="font-bold text-blue-600">{ticker}</td>
+                                                        <td className="font-mono text-xs">{`$${formatNum(info.condition?.LastPrice)}`}</td>
+                                                        <td className="font-mono text-xs text-gray-500">{formatNum(info.condition?.MarketCapitalization)}</td>
+                                                        <td>
+                                                            <Tag minimal intent={Number(info.ncavRatio) > 1.5 ? Intent.SUCCESS : Intent.NONE}>
+                                                                {String(info.ncavRatio)}
+                                                            </Tag>
+                                                        </td>
+                                                        <td className="text-right pr-4">
+                                                            <Button
+                                                                minimal
+                                                                small
+                                                                icon={expandedTicker === ticker ? IconNames.CHEVRON_UP : IconNames.CHEVRON_DOWN}
+                                                                onClick={() => setExpandedTicker(expandedTicker === ticker ? null : ticker)}
+                                                            />
+                                                        </td>
+                                                    </tr>
+                                                    {expandedTicker === ticker && (
+                                                        <tr>
+                                                            <td colSpan={5} className="!p-6 bg-gray-50 dark:bg-zinc-800/30 shadow-inner">
+                                                                <pre className="text-[11px] font-mono leading-relaxed bg-white dark:bg-black p-4 rounded-lg border border-gray-200 dark:border-zinc-800 overflow-auto max-h-80">
+                                                                    {JSON.stringify(info, null, 2)}
+                                                                </pre>
+                                                            </td>
+                                                        </tr>
+                                                    )}
+                                                </React.Fragment>
+                                            ))}
                                         </tbody>
-                                    </table>
-                                </ScrollArea.Viewport>
+                                    </HTMLTable>
+                                </div>
 
-                                <ScrollArea.Scrollbar orientation="horizontal" className="w-2 bg-transparent p-1">
-                                    <ScrollArea.Thumb className="flex-1 rounded-full" />
-                                </ScrollArea.Scrollbar>
-                            </ScrollArea.Root>
+                                {/* 2. 모바일 뷰 (Card List) - md 미만에서 표시 */}
+                                <div className="md:hidden divide-y divide-gray-100 dark:divide-zinc-800">
+                                    {sortedCandidates.map(([ticker, info]: any) => (
+                                        <div key={ticker} className="p-4 space-y-3">
+                                            <div className="flex justify-between items-start">
+                                                <div>
+                                                    <span className="text-lg font-black text-blue-600 mr-2">{ticker}</span>
+                                                    <span className="text-[10px] text-gray-400 uppercase font-bold">{info.name || "N/A"}</span>
+                                                </div>
+                                                <Tag intent={Intent.SUCCESS} minimal size="medium">{info.ncavRatio}</Tag>
+                                            </div>
+                                            <div className="grid grid-cols-2 gap-2">
+                                                <div className="bg-gray-50 dark:bg-zinc-800/50 p-2 rounded">
+                                                    <p className="text-[9px] text-gray-400 font-bold uppercase mb-1">Price</p>
+                                                    <p className="text-xs font-mono font-bold">{`$${formatNum(info.condition?.LastPrice)}`}</p>
+                                                </div>
+                                                <div className="bg-gray-50 dark:bg-zinc-800/50 p-2 rounded">
+                                                    <p className="text-[9px] text-gray-400 font-bold uppercase mb-1">Market Cap</p>
+                                                    <p className="text-xs font-mono font-bold">{formatNum(info.condition?.MarketCapitalization)}</p>
+                                                </div>
+                                            </div>
+                                            <Button
+                                                fill
+                                                minimal
+                                                small
+                                                rightIcon={expandedTicker === ticker ? IconNames.EYE_OFF : IconNames.EYE_OPEN}
+                                                text={expandedTicker === ticker ? "상세 정보 닫기" : "데이터 원본 보기"}
+                                                onClick={() => setExpandedTicker(expandedTicker === ticker ? null : ticker)}
+                                            />
+                                            {expandedTicker === ticker && (
+                                                <div className="mt-2 p-3 bg-zinc-900 text-green-400 text-[10px] font-mono rounded-lg overflow-x-auto shadow-inner">
+                                                    <pre>{JSON.stringify(info.condition, null, 2)}</pre>
+                                                </div>
+                                            )}
+                                        </div>
+                                    ))}
+                                </div>
+                            </SectionCard>
+                        </Section>
+
+                        {/* 하단 상세 설정 파라미터 */}
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <Callout title="Strategy Rules" icon={IconNames.SETTINGS} className="border-none shadow-sm dark:bg-zinc-900">
+                                <div className="mt-2 space-y-2">
+                                    {Object.entries(data.params).map(([k, v]) => (
+                                        <div key={k} className="flex justify-between items-center text-xs border-b border-gray-50 dark:border-zinc-800 pb-1.5">
+                                            <span className="text-gray-500 font-medium uppercase text-[10px]">{k}</span>
+                                            <span className="font-mono font-bold text-blue-600">{v}</span>
+                                        </div>
+                                    ))}
+                                </div>
+                            </Callout>
+                            <Callout title="Data Integrity" icon={IconNames.SHIELD} intent={Intent.NONE} className="border-none shadow-sm dark:bg-zinc-900">
+                                <div className="mt-2 text-[11px] space-y-2 text-gray-600 dark:text-gray-400">
+                                    <p className="flex justify-between"><span>BS Source:</span> <b className="text-gray-900 dark:text-white">{data.dataSource.balanceSheet}</b></p>
+                                    <p className="flex justify-between"><span>Price Source:</span> <b className="text-gray-900 dark:text-white">{data.dataSource.prices}</b></p>
+                                    <p className="flex justify-between"><span>Last Sync:</span> <b className="text-gray-900 dark:text-white">{new Date(data.dataSource.fetchedAt).toLocaleTimeString()}</b></p>
+                                </div>
+                            </Callout>
                         </div>
-
-                        <details className="mt-4 p-3 rounded">
-                            <summary className="cursor-pointer text-sm font-medium">Raw JSON</summary>
-                            <pre className="mt-2 max-h-60 overflow-auto text-xs  p-3 rounded">
-                                {isUsingSample ? <LoadingGrayText className="w-full h-24" /> : JSON.stringify(data, null, 2)}
-                            </pre>
-                        </details>
-                    </section>
-
-                    <aside className="hidden lg:block rounded-2xl p-4 shadow">
-                        <h2 className="text-lg font-medium mb-3">Meta</h2>
-
-                        <div className="space-y-3 text-sm ">
-                            <div className="flex justify-between gap-2">
-                                <span className="">Candidates</span>
-                                <span className="font-medium">{isUsingSample ? <LoadingGrayText className="w-8 h-4" /> : data.numCandidates}</span>
-                            </div>
-                            <div className="flex justify-between gap-2">
-                                <span className="">Status</span>
-                                <span className="font-medium capitalize">{isUsingSample ? <LoadingGrayText className="w-12 h-4" /> : data.status}</span>
-                            </div>
-                            <div className="flex justify-between gap-2">
-                                <span className="">Fetched at</span>
-                                <span className="font-medium">{isUsingSample ? <LoadingGrayText className="w-28 h-4" /> : data.dataSource.fetchedAt}</span>
-                            </div>
-                        </div>
-
-                        <div className="mt-4">
-                            <button
-                                onClick={() => navigator.clipboard.writeText(JSON.stringify(data, null, 2))}
-                                className="w-full text-sm px-3 py-2 rounded-lg border hover:"
-                                disabled={isUsingSample}
-                            >
-                                Quick Copy JSON
-                            </button>
-                        </div>
-                    </aside>
+                    </div>
                 </div>
 
-                <footer className="mt-6 text-sm ">
-                    <Flex direction="column">
-                        <Text as="p" color="gray" className="text-[0.5rem] sm:text-xs md:text-sm lg:text-base xl:text-lg 2xl:text-xl">
-                            통화 단위: $ (USD)
-                        </Text>
-                    </Flex>
+                <footer className="py-10 text-center">
+                    <Divider className="mb-6" />
+                    <p className="text-[10px] text-gray-400 uppercase tracking-[0.2em] font-bold">
+                        Powered by IdiotQuant Engine • Currency in USD ($)
+                    </p>
                 </footer>
             </div>
         </div>
+    );
+}
+
+// --- 하위 도우미 컴포넌트 (에러 방지 적용) ---
+
+function MetricCard({ label, value, icon, intent = Intent.NONE }: any) {
+    return (
+        <Card elevation={Elevation.ZERO} className="flex flex-col sm:flex-row items-center p-3 md:p-4 border-none shadow-sm dark:bg-zinc-900 text-center sm:text-left">
+            <div className={`w-10 h-10 rounded-lg flex items-center justify-center sm:mr-4 mb-2 sm:mb-0 ${intent === Intent.PRIMARY ? 'bg-blue-100 text-blue-600' : 'bg-gray-100 dark:bg-zinc-800 text-gray-500'}`}>
+                <Icon icon={icon} size={16} />
+            </div>
+            <div className="min-w-0 flex-1">
+                <p className="text-[9px] md:text-[10px] uppercase font-black text-gray-400 mb-0 tracking-tight">{label}</p>
+                <p className="text-sm md:text-lg font-bold !m-0 truncate dark:text-white">{formatNum(value)}</p>
+            </div>
+        </Card>
+    );
+}
+
+function SortHeader({ label, id, current, dir, onSort, onDir }: any) {
+    const isActive = current === id;
+    const handleToggle = () => {
+        if (isActive) onDir(dir === "asc" ? "desc" : "asc");
+        else onSort(id);
+    };
+
+    return (
+        <th className="cursor-pointer select-none py-4 hover:bg-gray-50 dark:hover:bg-zinc-800 transition-colors" onClick={handleToggle}>
+            <div className="flex items-center gap-2">
+                <span className={isActive ? "text-blue-600 font-bold" : "text-gray-600 dark:text-gray-400"}>{label}</span>
+                <Icon
+                    icon={isActive ? (dir === "asc" ? IconNames.CHEVRON_UP : IconNames.CHEVRON_DOWN) : IconNames.DOUBLE_CARET_VERTICAL}
+                    size={12}
+                    className={isActive ? "text-blue-600" : "text-gray-300"}
+                />
+            </div>
+        </th>
     );
 }
