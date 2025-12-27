@@ -1,235 +1,150 @@
-"use client"
+"use client";
 
 import { useState, useEffect, useRef } from "react";
-import { CalculatorIcon, LockClosedIcon, LockOpenIcon, MagnifyingGlassCircleIcon, WalletIcon } from "@heroicons/react/24/outline";
 import Link from "next/link";
+import { usePathname } from "next/navigation";
+import {
+    Navbar,
+    Button,
+    Alignment,
+    Menu,
+    MenuItem,
+    MenuDivider,
+    Drawer,
+    Position,
+    Classes,
+    Icon,
+    Text,
+} from "@blueprintjs/core";
+import { IconNames } from "@blueprintjs/icons";
 
 import { useAppSelector } from "@/lib/hooks";
-
-import { usePathname } from "next/navigation";
-import ThemeChanger from "@/components/theme_changer";
 import { selectKakaoTotal } from "@/lib/features/kakao/kakaoSlice";
-import { Box, Button, DropdownMenu, Flex, Text } from "@radix-ui/themes";
-interface NavItemPropsType {
-    url: string;
-    label: string;
-}
+import ThemeChanger from "@/components/theme_changer";
 
 export function NavbarWithSimpleLinks() {
-    // console.log(`[NavbarWithSimpleLinks]`);
     const pathname = usePathname();
-    // console.log(`pathname`, pathname);
-    const splitPathName = pathname.split("/");
-    // console.log(`splitPathName`, splitPathName);
-
-    const [open, setOpen] = useState(false);
-    const [toggleTheme, setToggleTheme] = useState(false);
-    const handleOpen = () => setOpen((cur) => !cur);
-
-    const [selectPath, setSelectPath] = useState<string>(splitPathName[1]);
-
-    const kakaoTotal = useAppSelector(selectKakaoTotal);
-
+    const [isDrawerOpen, setIsDrawerOpen] = useState(false);
     const [visible, setVisible] = useState(true);
-    // const [lastScrollY, setLastScrollY] = useState(0);
     const lastScrollY = useRef(0);
 
-    useEffect(() => {
-        window.addEventListener(
-            "resize",
-            () => window.innerWidth >= 960 && setOpen(false)
-        );
-    }, []);
+    const kakaoTotal = useAppSelector(selectKakaoTotal);
+    const isLoggedIn = !!kakaoTotal?.id;
 
-    useEffect(() => {
-        setSelectPath(splitPathName[1]);
-    }, [open]);
-    useEffect(() => {
-        setSelectPath(splitPathName[1]);
-    }, [splitPathName]);
-
-
+    // 스크롤 감지 로직 (Navbar 숨김/노출)
     useEffect(() => {
         const handleScroll = () => {
             const currentScrollY = window.scrollY;
-
-            if (currentScrollY > lastScrollY.current && currentScrollY > 30) {
-                // 스크롤 내릴 때
-                setVisible(false);
+            if (currentScrollY > lastScrollY.current && currentScrollY > 50) {
+                setVisible(false); // 스크롤 내릴 때 숨김
             } else {
-                // 스크롤 올릴 때
-                setVisible(true);
+                setVisible(true); // 스크롤 올릴 때 노출
             }
-
             lastScrollY.current = currentScrollY;
         };
 
         window.addEventListener("scroll", handleScroll);
         return () => window.removeEventListener("scroll", handleScroll);
-    }, [lastScrollY]);
+    }, []);
 
-    function NavItem({ url, label }: NavItemPropsType) {
-        return (
-            <Link href={url} onClick={() => {
-                setOpen(false)
-                setSelectPath(url.split("/")[1]);
-            }}>
-                <div className={`border sm:border-none md:border-none lg:border-none px-2 py-1.5 rounded-2xl dark:text-white font-mono text-[0.8rem] hover:bg-gray-100 hover:dark:bg-gray-700 ${selectPath == url.split("/")[1] ? "bg-slate-100 dark:bg-gray-500" : ""} `}>
-                    {label}
-                </div>
-            </Link>
-        );
-    }
-    function NavItemFlexCol({ url, label }: NavItemPropsType) {
-        return (
-            <Link href={url} onClick={() => {
-                setOpen(false)
-                setSelectPath(url.split("/")[1]);
-            }}>
-                <Box width="100%">
-                    {/* <div className={`px-2 py-1.5 rounded dark:text-white font-mono text-[0.8rem] hover:bg-gray-100 hover:dark:bg-gray-700 ${selectPath == url.split("/")[1] ? "bg-slate-100 dark:bg-gray-500" : ""} `}> */}
-                    {label}
-                </Box>
-            </Link>
-        );
-    }
-
-    const navListDesign = "font-mono flex gap-2 justify-items-center";
-    // const navListUrlToLabel: any = {
-    //     "": <div className={navListDesign}><HomeIcon className="h-4 w-4" strokeWidth={2} /><div>Home</div></div>,
-    //     "calculator": <div className={navListDesign}><CalculatorIcon className="h-4 w-4" strokeWidth={2} /><div>수익계산기</div></div>,
-    //     "login": <div className={navListDesign}>{!!!kakaoTotal?.id ? <LockClosedIcon className="h-4 w-4" strokeWidth={2} /> : <LockOpenIcon className="h-4 w-4" strokeWidth={2} />}<div>로그인</div></div>,
-    //     "search": <div className={navListDesign}>{!!!kakaoTotal?.id ? <LockClosedIcon className="h-4 w-4" strokeWidth={2} /> : <LockOpenIcon className="h-4 w-4" strokeWidth={2} />}<MagnifyingGlassCircleIcon className="h-4 w-4" strokeWidth={2} /><div>종목검색</div></div>,
-    //     "search-nasdaq": <div className={navListDesign}>{!!!kakaoTotal?.id ? <LockClosedIcon className="h-4 w-4" strokeWidth={2} /> : <LockOpenIcon className="h-4 w-4" strokeWidth={2} />}<MagnifyingGlassCircleIcon className="h-4 w-4" strokeWidth={2} /><div>종목검색(nasdaq)</div></div>,
-    //     "balance-kr": <div className={navListDesign}>{!!!kakaoTotal?.id ? <LockClosedIcon className="h-4 w-4" strokeWidth={2} /> : <LockOpenIcon className="h-4 w-4" strokeWidth={2} />}<WalletIcon className="h-4 w-4" strokeWidth={2} /><div>알고투자-계좌조회(국내)</div></div>,
-    //     "balance-us": <div className={navListDesign}>{!!!kakaoTotal?.id ? <LockClosedIcon className="h-4 w-4" strokeWidth={2} /> : <LockOpenIcon className="h-4 w-4" strokeWidth={2} />}<WalletIcon className="h-4 w-4" strokeWidth={2} /><div>알고투자-계좌조회(해외)</div></div>,
-    //     // "chat": <div className={navListDesign}><SparklesIcon className="h-4 w-4" strokeWidth={2} /><div>LLM</div></div>,
-    // }
-    const navListUrlToLabel: any = {
-        // "": <div className={navListDesign}><HomeIcon className="h-4 w-4" strokeWidth={2} /><div>home</div></div>,
-        "search": <div className={navListDesign}><MagnifyingGlassCircleIcon className="h-4 w-4" strokeWidth={2} /><div>stock</div></div>,
-        "calculator": <div className={navListDesign}><CalculatorIcon className="h-4 w-4" strokeWidth={2} /><div>profit</div></div>,
-        "balance": <div className={navListDesign}><WalletIcon className="h-4 w-4" strokeWidth={2} /><div>account</div> {!!!kakaoTotal?.id ? <LockClosedIcon className="h-4 w-4" strokeWidth={2} /> : <LockOpenIcon className="h-4 w-4" strokeWidth={2} />}</div>,
-        // "balance-kr": <div className={navListDesign}>{!!!kakaoTotal?.id ? <LockClosedIcon className="h-4 w-4" strokeWidth={2} /> : <LockOpenIcon className="h-4 w-4" strokeWidth={2} />}<WalletIcon className="h-4 w-4" strokeWidth={2} /><div>account inquiry (Korea)</div></div>,
-        // "balance-us": <div className={navListDesign}>{!!!kakaoTotal?.id ? <LockClosedIcon className="h-4 w-4" strokeWidth={2} /> : <LockOpenIcon className="h-4 w-4" strokeWidth={2} />}<WalletIcon className="h-4 w-4" strokeWidth={2} /><div>account inquiry (US)</div></div>,
-    }
-    const navListUrlToLabelHanburgerButton: any = {
-        "login": <Box width="100%" className={navListDesign}>
-            <Flex gap="1" align="center">
-                {!!!kakaoTotal?.id ?
-                    <>
-                        <Text>kakao login</Text>
-                        <LockClosedIcon className="h-4 w-4" strokeWidth={2} />
-                    </>
-                    : <>
-                        <Text>{kakaoTotal?.kakao_account?.profile?.nickname}님 반갑습니다.</Text>
-                        <LockOpenIcon className="h-4 w-4" strokeWidth={2} />
-                    </>}
-            </Flex>
-        </Box>,
-    }
-
-
-    const urlToLabel: any = {
-        ...navListUrlToLabel,
-        // "backtest": `백테스트 ${!!!kakaoTotal?.id ? "🔒" : ""}`,
-        "strategy": "투자 전략",
-        "strategy-register": "투자 전략 등록",
-    }
-
-    function NavList() {
-        return (
-            <div className="gap-2 flex justify-center content-center">
-                {Object.keys(navListUrlToLabel).map((key: string) => {
-                    return <NavItem key={key} url={`/${key}`} label={navListUrlToLabel[key]} />
-                })}
-            </div>
-        );
-    }
-
-    function NavListFlexCol() {
-        return (
-            <Box width="100%" >
-                <Flex width="100%" className="!justify-center !content-center">
-                    {Object.keys(navListUrlToLabelHanburgerButton).map((key: string) => {
-                        return <NavItemFlexCol key={key} url={`/${key}`} label={navListUrlToLabelHanburgerButton[key]} />
-                    })}
-                </Flex>
-            </Box>
-        );
-    }
+    // 메뉴 닫기 핸들러
+    const closeDrawer = () => setIsDrawerOpen(false);
 
     return (
         <>
-            <div className="z-50 w-full fixed top-0 left-0 border-r dark:border-gray-600">
-                <Box p="1" className={`bg-white dark:bg-black ${visible ? "opacity-100 translate-y-0" : "opacity-0 -translate-y-10"} transition-all duration-300 ease-in-out items-center justify-start`}>
-                    <Flex align="center" gap="2" width="100%" className="!justify-between">
-                        <Box p="2" width="100%" className="!items-center">
-                            <Link href="/" className="cursor-pointer">
-                                <Flex align="center" gap="1">
-                                    <Text>idiotquant.com</Text>
-                                </Flex>
-                            </Link>
-                        </Box>
-                        <Box>
-                            <DropdownMenu.Root>
-                                <DropdownMenu.Trigger>
-                                    <Button variant="soft">
-                                        <svg width="15" height="15" viewBox="0 0 15 15" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M1.5 3C1.22386 3 1 3.22386 1 3.5C1 3.77614 1.22386 4 1.5 4H13.5C13.7761 4 14 3.77614 14 3.5C14 3.22386 13.7761 3 13.5 3H1.5ZM1 7.5C1 7.22386 1.22386 7 1.5 7H13.5C13.7761 7 14 7.22386 14 7.5C14 7.77614 13.7761 8 13.5 8H1.5C1.22386 8 1 7.77614 1 7.5ZM1 11.5C1 11.2239 1.22386 11 1.5 11H13.5C13.7761 11 14 11.2239 14 11.5C14 11.7761 13.7761 12 13.5 12H1.5C1.22386 12 1 11.7761 1 11.5Z" fill="currentColor" fillRule="evenodd" clipRule="evenodd"></path></svg>
-                                        <DropdownMenu.TriggerIcon />
-                                    </Button>
-                                </DropdownMenu.Trigger>
-                                <DropdownMenu.Content>
-                                    <Link href="/search">
-                                        <DropdownMenu.Item shortcut="">
-                                            <MagnifyingGlassCircleIcon className="h-4 w-4" strokeWidth={2} /> search
-                                        </DropdownMenu.Item>
-                                    </Link>
+            <div
+                className={`fixed top-0 left-0 right-0 z-[100] transition-transform duration-300 ease-in-out ${visible ? "translate-y-0" : "-translate-y-full"
+                    }`}
+            >
+                <Navbar className="bp5-dark bg-white dark:bg-zinc-950 border-b dark:border-zinc-800 shadow-sm">
+                    <Navbar.Group align={Alignment.LEFT}>
+                        <Link href="/" className="no-underline">
+                            <Navbar.Heading className="font-black tracking-tighter text-blue-600 dark:text-blue-400">
+                                IDIOTQUANT
+                            </Navbar.Heading>
+                        </Link>
+                    </Navbar.Group>
 
-                                    <Link href="/calculator">
-                                        <DropdownMenu.Item shortcut="">
-                                            <CalculatorIcon className="h-4 w-4" strokeWidth={2} /> calculator
-                                        </DropdownMenu.Item>
-                                    </Link>
-                                    <DropdownMenu.Sub>
-                                        <DropdownMenu.SubTrigger><WalletIcon className="h-4 w-4" strokeWidth={2} /> account</DropdownMenu.SubTrigger>
-                                        <DropdownMenu.SubContent>
-                                            <Link href="/balance-kr">
-                                                <DropdownMenu.Item>🇰🇷</DropdownMenu.Item>
-                                            </Link>
-                                            <Link href="/balance-us">
-                                                <DropdownMenu.Item>🇺🇸</DropdownMenu.Item>
-                                            </Link>
-                                        </DropdownMenu.SubContent>
-                                    </DropdownMenu.Sub>
-                                    <DropdownMenu.Separator />
-                                    <Link href={"/login"} onClick={() => { setSelectPath("login") }}>
-                                        <DropdownMenu.Item shortcut="">
-                                            <Flex gap="1" align="center">
-                                                {!!!kakaoTotal?.id ?
-                                                    <>
-                                                        <LockClosedIcon className="h-4 w-4" strokeWidth={2} />
-                                                        <Text>kakao login</Text>
-                                                    </>
-                                                    : <>
-                                                        <LockOpenIcon className="h-4 w-4" strokeWidth={2} />
-                                                        <Text>{kakaoTotal?.kakao_account?.profile?.nickname}님 반갑습니다.</Text>
-                                                    </>}
-                                            </Flex>
-                                        </DropdownMenu.Item>
-                                    </Link>
-                                    <DropdownMenu.Separator />
-                                    <DropdownMenu.Item shortcut="">
-                                        <ThemeChanger />
-                                    </DropdownMenu.Item>
-                                </DropdownMenu.Content>
-                            </DropdownMenu.Root>
-                        </Box>
-                    </Flex>
-                </Box>
+                    <Navbar.Group align={Alignment.RIGHT}>
+                        {/* 데스크탑 메뉴 (MD 이상 노출) */}
+                        <div className="hidden md:flex gap-1 mr-4">
+                            <Link href="/search"><Button minimal icon={IconNames.SEARCH} text="Stock" /></Link>
+                            <Link href="/calculator"><Button minimal icon={IconNames.CALCULATOR} text="Profit" /></Link>
+                            <Link href="/balance-kr"><Button minimal icon={IconNames.DOLLAR} text="Account" /></Link>
+                        </div>
+
+                        <Divider className="hidden md:block mx-2" />
+
+                        {/* 모바일 햄버거 버튼 */}
+                        <Button
+                            minimal
+                            icon={IconNames.MENU}
+                            onClick={() => setIsDrawerOpen(true)}
+                            className="md:hidden"
+                        />
+
+                        {/* 테마 체인저 (데스크탑 상시 노출 가능) */}
+                        <div className="hidden md:block">
+                            <ThemeChanger />
+                        </div>
+                    </Navbar.Group>
+                </Navbar>
             </div>
+
+            {/* 모바일 전용 Drawer (사이드 메뉴) */}
+            <Drawer
+                isOpen={isDrawerOpen}
+                onClose={closeDrawer}
+                title="Menu"
+                icon={IconNames.MENU_OPEN}
+                position={Position.RIGHT}
+                size="75%"
+                className="bp5-dark dark:bg-zinc-900"
+            >
+                <div className={Classes.DRAWER_BODY}>
+                    <Menu className="bg-transparent border-none">
+                        <Text className="px-3 py-2 opacity-50 font-bold text-[10px] uppercase">Main Services</Text>
+                        <Link href="/search" onClick={closeDrawer}>
+                            <MenuItem icon={IconNames.SEARCH} text="Stock Search" labelElement={<Icon icon={IconNames.CHEVRON_RIGHT} />} />
+                        </Link>
+                        <Link href="/calculator" onClick={closeDrawer}>
+                            <MenuItem icon={IconNames.CALCULATOR} text="Profit Calculator" labelElement={<Icon icon={IconNames.CHEVRON_RIGHT} />} />
+                        </Link>
+
+                        <MenuDivider title="Trading Account" />
+                        <Link href="/balance-kr" onClick={closeDrawer}>
+                            <MenuItem icon={IconNames.CHART} text="Korea Market" />
+                        </Link>
+                        <Link href="/balance-us" onClick={closeDrawer}>
+                            <MenuItem icon={IconNames.GLOBE} text="US Market" />
+                        </Link>
+
+                        <MenuDivider />
+                        <Link href="/login" onClick={closeDrawer}>
+                            <MenuItem
+                                icon={isLoggedIn ? IconNames.UNLOCK : IconNames.LOCK}
+                                intent={isLoggedIn ? "none" : "primary"}
+                                text={isLoggedIn ? `${kakaoTotal?.kakao_account?.profile?.nickname} (Logout)` : "Kakao Login"}
+                            />
+                        </Link>
+
+                        <div className="mt-8 p-4 bg-zinc-100 dark:bg-zinc-800 rounded-xl mx-2 flex justify-between items-center">
+                            <Text className="text-xs font-bold">Theme Mode</Text>
+                            <ThemeChanger />
+                        </div>
+                    </Menu>
+                </div>
+            </Drawer>
+
+            {/* Navbar 높이만큼의 여백 확보 */}
+            <div className="h-[50px]" />
         </>
     );
+}
+
+// 헬퍼 컴포넌트: 구분선
+function Divider({ className }: { className?: string }) {
+    return <div className={`w-[1px] h-6 bg-zinc-200 dark:bg-zinc-800 ${className}`} />;
 }
 
 export default NavbarWithSimpleLinks;

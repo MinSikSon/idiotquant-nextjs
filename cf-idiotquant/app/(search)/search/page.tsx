@@ -252,7 +252,7 @@ export default function Search() {
       <div className="animate-in fade-in slide-in-from-bottom-2 duration-500">
         {/* KR Header & Chart */}
         <Card elevation={Elevation.ONE} className="dark:bg-zinc-900 p-0 overflow-hidden rounded-xl border-none mb-4">
-          <div className={`flex transition-all duration-300 ${fixed ? "fixed top-[66px] left-0 w-full z-40 bg-white/90 dark:bg-zinc-900/90 backdrop-blur shadow-md px-4 py-2" : "p-4"}`}>
+          <div className={`flex transition-all duration-300 ${fixed ? "fixed top-[74px] left-0 w-full z-40 bg-white/90 dark:bg-zinc-900/90 backdrop-blur shadow-md px-4 py-2" : "p-4"}`}>
             <div className="w-7/12">
               {!fixed && <div className="text-[10px] text-zinc-500">{kiPrice.output.rprs_mrkt_kor_name} | {kiPrice.output.bstp_kor_isnm}</div>}
               <div className="flex items-center gap-2">
@@ -390,21 +390,21 @@ export default function Search() {
 
     return (
       <div className="animate-in fade-in duration-500">
-        <Card className="dark:bg-zinc-900 border-none rounded-xl p-6 mb-6">
-          <div className="flex justify-between items-start">
-            <div>
-              <Tag intent="primary" minimal className="mb-2">{usSearchInfo.output.tr_mket_name} | {usDetail.output.e_icod}</Tag>
-              <h2 className="text-3xl font-black dark:text-white leading-tight">{usSearchInfo.output.prdt_name}</h2>
+        <Card elevation={Elevation.ONE} className="dark:bg-zinc-900 p-0 overflow-hidden rounded-xl border-none mb-4">
+          <div className={`flex transition-all duration-300 ${fixed ? "fixed top-[74px] left-0 w-full z-40 bg-white/90 dark:bg-zinc-900/90 backdrop-blur shadow-md px-4 py-2" : "p-4"}`}>
+            <div className="w-7/12">
+              {!fixed && <Tag intent="primary" minimal className="text-[10px] text-zinc-500">{usSearchInfo.output.tr_mket_name} | {usDetail.output.e_icod}</Tag>}
+              <h2 className="text-xl md:text-2xl font-black dark:text-white">{usSearchInfo.output.prdt_name}</h2>
               <p className="text-zinc-500 font-mono mt-1">{usSearchInfo.output.prdt_eng_name}</p>
-              <div className="text-3xl font-mono font-bold text-blue-500 mt-4">
-                {Number(usDetail.output.last).toFixed(2)} <span className="text-sm">{usDetail.output.curr}</span>
+              <div className="text-xl font-mono font-bold text-blue-600 dark:text-blue-400 underline decoration-dotted decoration-2">
+                {Number(usDetail.output.last).toFixed(2)} <span className="text-xs">{usDetail.output.curr}</span>
               </div>
             </div>
-            <div className="w-1/2 h-32">
+            <div className="w-5/12 h-20">
               <LineChart
                 data_array={[{ name: "Price", data: usDaily.output2.map(i => i.clos).reverse(), color: "#818cf8" }]}
                 category_array={usDaily.output2.map(i => i.xymd).reverse()}
-                height={120} show_yaxis_label={false} legend_disable
+                height={fixed ? 60 : 80} show_yaxis_label={false} legend_disable
               />
             </div>
           </div>
