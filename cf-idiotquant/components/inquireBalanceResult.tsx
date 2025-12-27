@@ -21,6 +21,7 @@ import {
 import { IconNames } from "@blueprintjs/icons";
 import { useAppDispatch } from "@/lib/hooks";
 import { Util } from "./util";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
 
 // --- Helpers ---
 const formatNumber = (num: number, isUs: boolean = false) => {
@@ -72,6 +73,40 @@ export default function InquireBalanceResult(props: InquireBalanceResultProps) {
     const cash = Number(props.kiBalance?.output3?.frcr_use_psbl_amt ?? props.kiBalance?.output2?.[0]?.dnca_tot_amt ?? 0);
     const totalProfitRate = pchs_smtl === 0 ? 0 : (evlu_smtl / pchs_smtl * 100 - 100);
 
+    const router = useRouter();
+    const pathname = usePathname();
+    const searchParams = useSearchParams();
+
+    // URL에서 'key' 파라미터를 가져옴 (없으면 null)
+    const urlKey = searchParams.get("key");
+
+    // 1. URL 파라미터와 Redux/State 동기화
+    useEffect(() => {
+        if (urlKey) {
+            // URL에 키가 있으면 해당 키로 balanceKey 설정
+            props.setBalanceKey(urlKey);
+        } else if (props.kakaoTotal?.id) {
+            // URL에 키가 없고 내 정보가 로드되면 내 ID를 URL에 주입
+            const params = new URLSearchParams(searchParams);
+            params.set("key", String(props.kakaoTotal.id));
+            router.replace(`${pathname}?${params.toString()}`);
+        }
+    }, [urlKey, props.kakaoTotal?.id]);
+
+    // 2. 관리자가 다른 계좌를 선택했을 때 실행되는 핸들러
+    const handleMasterSelectChange = (newKey: string) => {
+        const params = new URLSearchParams(searchParams);
+        params.set("key", newKey);
+
+        // URL 업데이트 (상태 유지의 핵심)
+        router.push(`${pathname}?${params.toString()}`);
+        props.setBalanceKey(newKey);
+
+        // 새로운 키로 데이터 요청
+        dispatch(props.reqGetInquireBalance(newKey));
+        if (props.reqGetUsCapital) dispatch(props.reqGetUsCapital(newKey));
+    };
+
     return (
         <div className="bp5-dark bg-zinc-50 dark:bg-black p-2 md:p-6 transition-colors">
             <Section
@@ -93,18 +128,30 @@ export default function InquireBalanceResult(props: InquireBalanceResultProps) {
             >
                 <SectionCard className="p-0">
                     {/* 마스터 대시보드 */}
+                    {/* InquireBalanceResult.tsx 내부 Selector 부분 */}
                     {props.kakaoTotal?.kakao_account?.profile?.nickname === process.env.NEXT_PUBLIC_MASTER && (
                         <div className="p-4 border-b dark:border-zinc-800 bg-zinc-100/50 dark:bg-zinc-900/50 flex items-center gap-4">
-                            <Tag minimal intent={Intent.WARNING}>MASTER</Tag>
+                            <Tag minimal intent={Intent.WARNING} icon={IconNames.KEY}>MASTER MODE</Tag>
                             <HTMLSelect
+                                // props로 내려온 balanceKey가 value가 되어야 Selector UI가 유지됨
                                 value={props.balanceKey}
-                                onChange={(e) => props.setBalanceKey(e.target.value)}
+                                onChange={(e) => {
+                                    const newKey = e.target.value;
+                                    props.setBalanceKey(newKey); // 부모의 상태를 변경 -> 부모의 useEffect 실행 -> URL 변경 및 데이터 리프레시
+                                }}
+                                iconName="caret-down"
                                 minimal
+                                className="font-bold"
                             >
-                                {Array.isArray(props.kakaoMemberList?.list) ?
+                                {Array.isArray(props.kakaoMemberList?.list) ? (
                                     props.kakaoMemberList.list.map((item: any) => (
-                                        <option key={item.key} value={item.key}>{item.value?.nickname}</option>
-                                    )) : <option>로딩 중...</option>}
+                                        <option key={item.key} value={String(item.key)}>
+                                            {item.value?.nickname} ({item.key})
+                                        </option>
+                                    ))
+                                ) : (
+                                    <option value="">계좌 목록 로딩 중...</option>
+                                )}
                             </HTMLSelect>
                         </div>
                     )}

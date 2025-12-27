@@ -1,7 +1,7 @@
 "use client"
 
 import { useEffect, useState } from "react";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import {
     H3,
     Text,
@@ -35,6 +35,7 @@ import {
 import {
     KrUsCapitalType,
     reqGetKrCapital,
+    reqGetUsCapital,
     reqPostKrCapitalTokenMinusAll,
     reqPostKrCapitalTokenMinusOne,
     reqPostKrCapitalTokenPlusAll,
@@ -66,7 +67,38 @@ export default function BalanceKr() {
     const krCapitalTokenMinusAll = useAppSelector(selectKrCapitalTokenMinusAll);
     const krCapitalTokenMinusOne = useAppSelector(selectKrCapitalTokenMinusOne);
 
-    const [balanceKey, setBalanceKey] = useState(String(kakaoTotal?.id || ""));
+
+    // BalanceKr.tsx 또는 BalanceUs.tsx 상단 부분
+    const router = useRouter();
+    const searchParams = useSearchParams();
+    const pathname = usePathname();
+
+    // URL에 key가 있으면 그 값을, 없으면 내 카카오 ID를 초기값으로 사용
+    const [balanceKey, setBalanceKey] = useState(searchParams.get("key") || String(kakaoTotal?.id || ""));
+
+    // 1. URL 파라미터와 balanceKey 상태 동기화
+    useEffect(() => {
+        const urlKey = searchParams.get("key");
+        if (urlKey && urlKey !== balanceKey) {
+            setBalanceKey(urlKey);
+        }
+    }, [searchParams]);
+
+    // 2. balanceKey가 변경될 때마다 URL 업데이트 및 데이터 리프레시
+    useEffect(() => {
+        if (balanceKey && balanceKey !== "undefined") {
+            // URL 업데이트 (뒤로가기 기록 방지를 위해 replace 사용 가능)
+            const params = new URLSearchParams(searchParams.toString());
+            params.set("key", balanceKey);
+            router.replace(`${pathname}?${params.toString()}`);
+
+            // 해당 사용자의 데이터 요청
+            dispatch(reqGetInquireBalance(balanceKey));
+            // 한국/미국 여부에 따라 적절한 Capital 요청
+            if (pathname.includes("kr")) dispatch(reqGetKrCapital(balanceKey));
+            else dispatch(reqGetUsCapital(balanceKey));
+        }
+    }, [balanceKey]);
 
     // 초기 데이터 로딩
     useEffect(() => {
