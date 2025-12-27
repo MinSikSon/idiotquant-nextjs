@@ -1,95 +1,71 @@
-"use client"
+"use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useCallback, useRef } from "react";
 
-import { verifyJWT } from "@/lib/jwt";
-import { clearCookie, getCookie } from "./util";
-import { KakaoTotal, selectKakaoTatalState, setKakaoTotal } from "@/lib/features/kakao/kakaoSlice";
+import { getCookie, clearCookie } from "./util";
+import { selectKakaoTatalState, setKakaoTotal } from "@/lib/features/kakao/kakaoSlice";
 import { useAppDispatch, useAppSelector } from "@/lib/hooks";
 import { getCloudFlareUserInfo, selectCloudflareUserInfo } from "@/lib/features/cloudflare/cloudflareSlice";
-
-const DEBUG = false;
+import { verifyJWT } from "@/lib/jwt";
 
 export default function LoadKakaoTotal() {
     const dispatch = useAppDispatch();
-    const cloudFlareUserInfo = useAppSelector(selectCloudflareUserInfo);
     const kakaoTotalState = useAppSelector(selectKakaoTatalState);
+    const cloudFlareUserInfo = useAppSelector(selectCloudflareUserInfo);
 
-    const [mount, setMount] = useState<boolean>(false);
+    // 이미 처리를 시작했는지 확인하기 위한 useRef (리렌더링 방지)
+    const isProcessing = useRef(false);
 
-    const callback = async () => {
+    const loadData = useCallback(async () => {
+        // 이미 로드 중이거나 로드가 완료되었다면 실행 중단
+        if (isProcessing.current || kakaoTotalState !== "init") return;
+
+        isProcessing.current = true;
+
         try {
             const authToken = getCookie("authToken");
-            if (DEBUG) console.log(`[LoadKakaoTotal]`, `authToken:`, authToken, `, !!authToken:`, !!authToken);
-            if (!!authToken) {
-                const secretKey = process.env.NEXT_PUBLIC_JWT_SECRET_KEY;
-                if (!secretKey || secretKey.length === 0) {
-                    console.error("❌ JWT secret key가 비어 있습니다. verifyJWT를 실행할 수 없습니다.");
-                    return;
-                }
+            if (!authToken) {
+                isProcessing.current = false;
+                return;
+            }
 
-                let result = { valid: false, payload: "" };
-                result = await verifyJWT(authToken, secretKey);
-                if (DEBUG) console.log(`[LoadKakaoTotal] result:`, result, `, !!result:`, !!result);
-                if (true == !!result) {
-                    if (true == result.valid) {
-                        const payload: string = result.payload;
-                        if (DEBUG) console.log(`[LoadKakaoTotal] typeof payload:`, typeof payload, `, payload:`, payload);
-                        if ('undefined' != payload) {
-                            const jsonPayload: KakaoTotal = JSON.parse(payload);
-                            if (DEBUG) console.log(`[LoadKakaoTotal] typeof jsonPayload:`, typeof jsonPayload, `, jsonPayload:`, jsonPayload);
+            const secretKey = process.env.NEXT_PUBLIC_JWT_SECRET_KEY;
+            if (!secretKey) {
+                console.error("❌ JWT secret key missing");
+                isProcessing.current = false;
+                return;
+            }
 
-                            const base = new Date(jsonPayload.access_date);
-                            const plusSeconds = jsonPayload.expires_in * 1000;
-                            const target: any = new Date(base.getTime() + plusSeconds);
+            const result = await verifyJWT(authToken, secretKey);
 
-                            if (DEBUG) console.log(`기준 + ${jsonPayload.expires_in}초:`, target.toISOString());
+            if (result?.valid && result.payload && result.payload !== 'undefined') {
+                const jsonPayload = JSON.parse(result.payload);
 
-                            const now: any = new Date();
-                            const diffMs = now - target;
-                            const diffSec = Math.floor(diffMs / 1000);
+                // 유효기간 체크
+                const targetTime = new Date(jsonPayload.access_date).getTime() + (jsonPayload.expires_in * 1000);
+                const now = new Date().getTime();
 
-                            if (DEBUG) console.log("현재와 차이(초):", diffSec);
-                            if (DEBUG) console.log("현재와 차이(분):", (diffSec / 60).toFixed(2));
-                            if (DEBUG) console.log("현재와 차이(시간):", (diffSec / 3600).toFixed(2));
-
-                            if (diffSec > 0) {
-                                if (DEBUG) console.log(`[LoadKakaoTotal] need to refresh`);
-
-                                clearCookie("authToken");
-                                clearCookie("koreaInvestmentToken");
-                            }
-                            else {
-                                if (DEBUG) console.log(`[LoadKakaoTotal] jsonPayload:`, jsonPayload);
-                                if ("init" == kakaoTotalState) {
-                                    dispatch(setKakaoTotal(jsonPayload));
-                                }
-                                dispatch(getCloudFlareUserInfo());
-                            }
-                        }
-                    }
+                if (now > targetTime) {
+                    clearCookie("authToken");
+                    clearCookie("koreaInvestmentToken");
+                } else {
+                    // ✅ 데이터 로드 성공
+                    dispatch(setKakaoTotal(jsonPayload));
+                    // 필요한 경우에만 추가 정보 호출
+                    dispatch(getCloudFlareUserInfo());
                 }
             }
         } catch (err) {
-            console.log(`[LoadKakaoTotal] err:`, err);
+            console.error(`[LoadKakaoTotal] Error:`, err);
+        } finally {
+            isProcessing.current = false;
         }
+    }, [dispatch, kakaoTotalState]);
 
-        setMount(true);
-    }
-
+    // 1. 마운트 시 최초 실행
     useEffect(() => {
-        if (DEBUG) console.log(`[LoadKakaoTotal] []`);
-        callback();
-    }, []);
+        loadData();
+    }, [loadData]);
 
-    useEffect(() => {
-        if (DEBUG) console.log(`[LoadKakaoTotal] cloudFlareUserInfo:`, cloudFlareUserInfo);
-        callback();
-    }, [cloudFlareUserInfo]);
-
-    useEffect(() => {
-        if (DEBUG) console.log(`[LoadKakaoTotal] mount:`, mount);
-    }, [mount]);
-
-    return <></>;
+    return null; // UI 불필요
 }

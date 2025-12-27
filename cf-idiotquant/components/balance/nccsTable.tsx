@@ -129,15 +129,6 @@ export default function OverseasNccsTable({ data, className = "" }: Props) {
                 <ScrollArea.Scrollbar orientation="vertical" className="flex select-none touch-none p-0.5 bg-slate-100" />
                 <ScrollArea.Corner />
             </ScrollArea.Root>
-
-            {/* 간단한 사용 예시 (코드 주석으로 포함) */}
-            {/*
-        사용 예:
-        <OverseasNccsTable data={apiResponse} />
-
-        - @radix-ui/react-scroll-area, @radix-ui/react-tooltip 설치 필요
-        - TailwindCSS 설정이 되어 있어야 함
-      */}
         </div>
     );
 }

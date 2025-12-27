@@ -25,15 +25,15 @@ import {
     SectionCard
 } from "@blueprintjs/core";
 
-// CSS Imports (Global layout에 없다면 여기서 호출 가능)
+// CSS Imports
 import "@blueprintjs/core/lib/css/blueprint.css";
 import "@blueprintjs/icons/lib/css/blueprint-icons.css";
 
 // Project Redux/Utils
-import { KakaoTotal, selectKakaoTotal } from '@/lib/features/kakao/kakaoSlice';
+import { KakaoTotal, selectKakaoTatalState, selectKakaoTotal } from '@/lib/features/kakao/kakaoSlice';
 import { selectCloudflareUserInfo, setCloudFlareUserInfo, UserInfo } from '@/lib/features/cloudflare/cloudflareSlice';
 import { selectLoginState, setCloudFlareLoginStatus } from '@/lib/features/login/loginSlice';
-import { getLevel, xpBucket } from './level'; // 기존 파일 경로 확인 필요
+import { getLevel, xpBucket } from './level';
 import { Logout } from "./logout";
 import { IconNames } from '@blueprintjs/icons';
 
@@ -47,13 +47,14 @@ export default function UserPage() {
     const cfUserInfo: UserInfo = useAppSelector(selectCloudflareUserInfo);
     const kakaoTotal: KakaoTotal = useAppSelector(selectKakaoTotal);
     const loginState = useAppSelector(selectLoginState);
+    const kakaoTotalState = useAppSelector(selectKakaoTatalState);
 
     // Local States
     const [user, setUser] = useState<UserInfo>({
         state: "init",
         nickname: "",
         email: 'iq@idiotquant.com',
-        avatarUrl: 'https://encrypted-tbn1.gstatic.com/images?q=tbn:ANd9GcTWTMKWOI02K1eyzfFPVHno1lfEDeV4-a1ZqgZhMHWgqSDMnMgBvRclRcqQtyTJ6V82hhaCP4ZWsD4El5v8neJiS-y52uFAFlDSBR79gw',
+        avatarUrl: '',
         joinedAt: 0,
         lastLoginAt: 0,
         desc: "",
@@ -67,7 +68,6 @@ export default function UserPage() {
 
     // Initial Login Check
     useEffect(() => {
-        if (DEBUG) console.log(`[User] loginState:`, loginState);
         if ("init" === loginState) {
             dispatch(setCloudFlareLoginStatus());
         }
@@ -82,18 +82,17 @@ export default function UserPage() {
             setIsLoaded(true);
             setXpInfo(xpBucket(Number(cfUserInfo.point)));
         }
-    }, [cfUserInfo, isLoaded, user, draft]);
+    }, [cfUserInfo, isLoaded, user]);
 
     // Auth Redirect
     useEffect(() => {
-        if (kakaoTotal?.id === 0) {
+        if (kakaoTotalState === "fulfilled" && (!kakaoTotal || kakaoTotal.id === 0)) {
             router.push(`${process.env.NEXT_PUBLIC_CLIENT_URL}/login/`);
         }
-    }, [kakaoTotal, router]);
+    }, [kakaoTotal, kakaoTotalState, router]);
 
     const handleSave = (e: FormEvent) => {
         e.preventDefault();
-        if (DEBUG) console.log(`[User] Saving draft:`, draft);
         setUser(draft);
         dispatch(setCloudFlareUserInfo(draft));
         setEditing(false);
@@ -106,6 +105,71 @@ export default function UserPage() {
             hour: "2-digit", minute: "2-digit"
         });
     };
+
+    // --- SKELETON RENDER ---
+    if (kakaoTotalState === "pending" || !isLoaded) {
+        return (
+            <div className="min-h-screen bg-gray-50 dark:bg-zinc-950 p-6 md:p-12">
+                <div className="max-w-4xl mx-auto space-y-6">
+                    {/* Header Card Skeleton */}
+                    <Card elevation={Elevation.ONE} className="!p-0 overflow-hidden border-none shadow-md bg-white dark:bg-zinc-900">
+                        <div className="h-32 bg-gray-200 dark:bg-zinc-800 bp5-skeleton" />
+                        <div className="px-8 pb-8">
+                            <div className="relative flex flex-col md:flex-row items-end -mt-12 gap-6">
+                                <div className="w-32 h-32 rounded-2xl border-4 border-white dark:border-zinc-900 bg-gray-300 dark:bg-zinc-700 bp5-skeleton shadow-xl" />
+                                <div className="flex-1 pb-2 space-y-3">
+                                    <div className="h-8 w-48 bp5-skeleton" />
+                                    <div className="h-4 w-32 bp5-skeleton" />
+                                </div>
+                            </div>
+                        </div>
+                    </Card>
+
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                        {/* Left Column Skeleton */}
+                        <div className="md:col-span-1 space-y-6">
+                            <SectionCard className="space-y-6">
+                                <div className="flex justify-between h-5 bp5-skeleton w-24" />
+                                <div className="space-y-4">
+                                    <div className="flex justify-between h-6 bp5-skeleton" />
+                                    <Divider />
+                                    <div className="space-y-3">
+                                        <div className="h-4 w-full bp5-skeleton" />
+                                        <div className="h-2 w-full bp5-skeleton" />
+                                    </div>
+                                </div>
+                            </SectionCard>
+                        </div>
+
+                        {/* Right Column Skeleton */}
+                        <div className="md:col-span-2">
+                            <Card className="h-full bg-white dark:bg-zinc-900 shadow-sm min-h-[400px]">
+                                <div className="space-y-8">
+                                    <div className="h-5 w-32 bp5-skeleton" />
+                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-8">
+                                        {[1, 2, 3, 4].map((i) => (
+                                            <div key={i} className="flex items-center gap-4">
+                                                <div className="w-10 h-10 rounded-xl bp5-skeleton" />
+                                                <div className="space-y-2 flex-1">
+                                                    <div className="h-3 w-12 bp5-skeleton" />
+                                                    <div className="h-4 w-24 bp5-skeleton" />
+                                                </div>
+                                            </div>
+                                        ))}
+                                    </div>
+                                    <Divider />
+                                    <div className="space-y-3">
+                                        <div className="h-5 w-24 bp5-skeleton" />
+                                        <div className="h-20 w-full bp5-skeleton rounded-lg" />
+                                    </div>
+                                </div>
+                            </Card>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        );
+    }
 
     const isMaster = kakaoTotal?.kakao_account?.profile?.nickname === process.env.NEXT_PUBLIC_MASTER;
 
@@ -120,7 +184,7 @@ export default function UserPage() {
                         <div className="relative flex flex-col md:flex-row items-end -mt-12 gap-6">
                             <div className="relative">
                                 <img
-                                    src={user.avatarUrl}
+                                    src={user.avatarUrl || 'https://via.placeholder.com/150'}
                                     alt="Profile Avatar"
                                     className="w-32 h-32 rounded-2xl border-4 border-white dark:border-zinc-900 shadow-xl object-cover bg-white"
                                 />
@@ -257,7 +321,7 @@ export default function UserPage() {
                                     {/* Admin Dashboard Entry */}
                                     {isMaster && (
                                         <Link href="/report" className="no-underline block">
-                                            <Callout intent={Intent.WARNING} icon="shield" title="관리자 권한 확인됨" className="hover:bg-orange-100 transition-colors cursor-pointer">
+                                            <Callout intent={Intent.WARNING} icon="shield" title="관리자 권한 확인됨" className="hover:bg-orange-100 dark:hover:bg-orange-900/20 transition-colors cursor-pointer">
                                                 <p className="text-xs mb-2">마스터 대시보드에서 시스템 리포트를 확인할 수 있습니다.</p>
                                                 <Button text="대시보드 바로가기" rightIcon="chevron-right" small minimal />
                                             </Callout>
@@ -289,7 +353,7 @@ export default function UserPage() {
     );
 }
 
-// Reusable Info Field Component for Professional look
+// Reusable Info Field Component
 function InfoField({ icon, label, value }: { icon: any, label: string, value: string }) {
     return (
         <div className="flex items-center group">

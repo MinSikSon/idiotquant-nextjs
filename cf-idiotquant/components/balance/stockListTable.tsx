@@ -2,10 +2,9 @@
 
 import React, { useEffect, useState } from "react";
 import * as ScrollArea from "@radix-ui/react-scroll-area";
-import * as Tooltip from "@radix-ui/react-tooltip";
 import { UsCapitalStockItem, KrUsCapitalType } from "@/lib/features/capital/capitalSlice";
-import { Box, Button, Flex, Grid, Text } from "@radix-ui/themes";
-import { CapitalTokenType, CapitalTokenTypeValue, CapitalTokenTypeValueStock } from "@/lib/features/algorithmTrade/algorithmTradeSlice";
+import { Button, Flex, Grid, Text } from "@radix-ui/themes";
+import { CapitalTokenTypeValueStock } from "@/lib/features/algorithmTrade/algorithmTradeSlice";
 
 interface Props {
   data?: KrUsCapitalType;

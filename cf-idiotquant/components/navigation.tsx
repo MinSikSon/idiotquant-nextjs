@@ -7,9 +7,7 @@ import Link from "next/link";
 import { useAppSelector } from "@/lib/hooks";
 
 import { usePathname } from "next/navigation";
-// import { DesignButton } from "./designButton";
 import ThemeChanger from "@/components/theme_changer";
-import RotatingText from "@/src/TextAnimations/RotatingText/RotatingText";
 import { selectKakaoTotal } from "@/lib/features/kakao/kakaoSlice";
 import { Box, Button, DropdownMenu, Flex, Text } from "@radix-ui/themes";
 interface NavItemPropsType {
