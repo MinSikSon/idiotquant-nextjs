@@ -1,151 +1,176 @@
 "use client"
 
-import { reqGetInquireBalance, getKoreaInvestmentBalance, KoreaInvestmentBalance } from "@/lib/features/koreaInvestment/koreaInvestmentSlice";
-import { reqPostOrderCash, getKoreaInvestmentOrderCash, KoreaInvestmentOrderCash } from "@/lib/features/koreaInvestment/koreaInvestmentSlice";
+import { useEffect, useState } from "react";
+import { usePathname } from "next/navigation";
+import {
+    H3,
+    Text,
+    Divider,
+    NonIdealState,
+    Icon,
+    Intent,
+    Breadcrumbs,
+    BreadcrumbProps
+} from "@blueprintjs/core";
+import { IconNames } from "@blueprintjs/icons";
 
 import { useAppDispatch, useAppSelector } from "@/lib/hooks";
-import { useEffect, useState } from "react";
-
-import { usePathname } from "next/navigation";
+import {
+    reqGetInquireBalance,
+    getKoreaInvestmentBalance,
+    KoreaInvestmentBalance,
+    getKoreaInvestmentOrderCash,
+    KoreaInvestmentOrderCash,
+    reqPostOrderCash
+} from "@/lib/features/koreaInvestment/koreaInvestmentSlice";
+import {
+    reqGetCapitalToken
+} from "@/lib/features/algorithmTrade/algorithmTradeSlice";
+import {
+    KakaoTotal,
+    reqGetKakaoMemberList,
+    selectKakaoMemberList,
+    selectKakaoTotal
+} from "@/lib/features/kakao/kakaoSlice";
+import {
+    KrUsCapitalType,
+    reqGetKrCapital,
+    reqPostKrCapitalTokenMinusAll,
+    reqPostKrCapitalTokenMinusOne,
+    reqPostKrCapitalTokenPlusAll,
+    reqPostKrCapitalTokenPlusOne,
+    selectKrCapital,
+    selectKrCapitalTokenMinusAll,
+    selectKrCapitalTokenMinusOne,
+    selectKrCapitalTokenPlusAll,
+    selectKrCapitalTokenPlusOne
+} from "@/lib/features/capital/capitalSlice";
 
 import InquireBalanceResult from "@/components/inquireBalanceResult";
-import NotFound from "@/app/not-found";
-import { CapitalTokenType, reqGetCapitalToken, selectCapitalToken } from "@/lib/features/algorithmTrade/algorithmTradeSlice";
-import { Box, Code, Flex, Text } from "@radix-ui/themes";
-import { KakaoTotal, reqGetKakaoMemberList, selectKakaoMemberList, selectKakaoTotal } from "@/lib/features/kakao/kakaoSlice";
 import StockListTable from "@/components/balance/stockListTable";
-import { KrUsCapitalType, reqGetKrCapital, reqPostKrCapitalTokenMinusAll, reqPostKrCapitalTokenMinusOne, reqPostKrCapitalTokenPlusAll, reqPostKrCapitalTokenPlusOne, selectKrCapital, selectKrCapitalTokenMinusAll, selectKrCapitalTokenMinusOne, selectKrCapitalTokenPlusAll, selectKrCapitalTokenPlusOne } from "@/lib/features/capital/capitalSlice";
 
-let DEBUG = false;
+const DEBUG = false;
 
 export default function BalanceKr() {
-    const pathname = usePathname();
-
     const dispatch = useAppDispatch();
+
+    // Selectors
     const kiBalance: KoreaInvestmentBalance = useAppSelector(getKoreaInvestmentBalance);
-
     const kiOrderCash: KoreaInvestmentOrderCash = useAppSelector(getKoreaInvestmentOrderCash);
-
-    // const kr_capital_token: CapitalTokenType = useAppSelector(selectCapitalToken);
-
-
     const krCapital: KrUsCapitalType = useAppSelector(selectKrCapital);
+    const kakaoTotal: KakaoTotal = useAppSelector(selectKakaoTotal);
+    const kakaoMemberList = useAppSelector(selectKakaoMemberList);
+
     const krCapitalTokenPlusAll = useAppSelector(selectKrCapitalTokenPlusAll);
     const krCapitalTokenPlusOne = useAppSelector(selectKrCapitalTokenPlusOne);
     const krCapitalTokenMinusAll = useAppSelector(selectKrCapitalTokenMinusAll);
     const krCapitalTokenMinusOne = useAppSelector(selectKrCapitalTokenMinusOne);
 
-    const kakaoTotal: KakaoTotal = useAppSelector(selectKakaoTotal);
-    const kakaoMemberList = useAppSelector(selectKakaoMemberList);
+    const [balanceKey, setBalanceKey] = useState(String(kakaoTotal?.id || ""));
 
-    const [balanceKey, setBalanceKey] = useState(String(kakaoTotal?.id));
-
-    useEffect(() => {
-
-    }, []);
+    // 초기 데이터 로딩
     useEffect(() => {
         dispatch(reqGetInquireBalance());
         dispatch(reqGetCapitalToken());
-    }, []);
+        if (kakaoTotal?.id) setBalanceKey(String(kakaoTotal.id));
+    }, [dispatch, kakaoTotal?.id]);
+
     useEffect(() => {
-        if (true == DEBUG) console.log(`[BalanceKr]`, `kiBalance`, kiBalance);
-    }, [kiBalance])
-    // useEffect(() => {
-    //     if (DEBUG) console.log(`[BalanceKr]`, `kr_capital_token`, kr_capital_token);
-    // }, [kr_capital_token])
-    useEffect(() => {
-        if (DEBUG) console.log(`[BalanceKr]`, `krCapital`, krCapital);
-        if ("init" == krCapital.state) {
+        if (krCapital.state === "init") {
             dispatch(reqGetKrCapital());
         }
-    }, [krCapital]);
+    }, [krCapital.state, dispatch]);
+
     useEffect(() => {
-        if (DEBUG) console.log(`[BalanceKr]`, `kakaoTotal`, kakaoTotal);
         if (kakaoTotal?.kakao_account?.profile?.nickname === process.env.NEXT_PUBLIC_MASTER) {
             dispatch(reqGetKakaoMemberList());
         }
-    }, [kakaoTotal])
-    useEffect(() => {
-        if (DEBUG) console.log(`[BalanceKr]`, `kakaoMemberList`, kakaoMemberList);
-    }, [kakaoMemberList])
-    useEffect(() => {
-        if (DEBUG) console.log(`[BalanceKr]`, `krCapitalTokenPlusAll`, krCapitalTokenPlusAll);
-        if ("fulfilled" == krCapitalTokenPlusAll?.state) {
-            dispatch(reqGetKrCapital(balanceKey));
-        }
-    }, [krCapitalTokenPlusAll])
-    useEffect(() => {
-        if (DEBUG) console.log(`[BalanceKr]`, `krCapitalTokenPlusOne`, krCapitalTokenPlusOne);
-        if ("fulfilled" == krCapitalTokenPlusOne?.state) {
-            dispatch(reqGetKrCapital(balanceKey));
-        }
-    }, [krCapitalTokenPlusOne])
-    useEffect(() => {
-        if (DEBUG) console.log(`[BalanceKr]`, `krCapitalTokenMinusAll`, krCapitalTokenMinusAll);
-        if ("fulfilled" == krCapitalTokenMinusAll?.state) {
-            dispatch(reqGetKrCapital(balanceKey));
-        }
-    }, [krCapitalTokenMinusAll])
-    useEffect(() => {
-        if (DEBUG) console.log(`[BalanceKr]`, `krCapitalTokenMinusOne`, krCapitalTokenMinusOne);
-        if ("fulfilled" == krCapitalTokenMinusOne?.state) {
-            dispatch(reqGetKrCapital(balanceKey));
-        }
-    }, [krCapitalTokenMinusOne])
+    }, [kakaoTotal, dispatch]);
 
-    // console.log(`kiBalance.state`, kiBalance.state);
-    if (kiBalance.state == "rejected") {
-        return <>
-            <NotFound warnText="계좌 조회 권한이 없습니다" />
-        </>
-    }
-    function doTokenPlusAll(num: number) {
-        console.log(`doTokenPlusAll`);
-        dispatch(reqPostKrCapitalTokenPlusAll({ key: balanceKey, num: num }));
-    }
-    function doTokenPlusOne(num: number, ticker: string) {
-        console.log(`doTokenPlusOne ticker:`, ticker);
-        if (undefined == ticker) {
-            return;
+    // 토큰 변동 시 데이터 리프레시 로직
+    const refreshStates = [krCapitalTokenPlusAll, krCapitalTokenPlusOne, krCapitalTokenMinusAll, krCapitalTokenMinusOne];
+    useEffect(() => {
+        if (refreshStates.some(s => s?.state === "fulfilled")) {
+            dispatch(reqGetKrCapital(balanceKey));
         }
-        dispatch(reqPostKrCapitalTokenPlusOne({ key: balanceKey, num: num, ticker: ticker }));
-    }
-    function doTokenMinusAll(num: number) {
-        console.log(`doTokenMinusAll`);
-        dispatch(reqPostKrCapitalTokenMinusAll({ key: balanceKey, num: num }));
+    }, [refreshStates, balanceKey, dispatch]);
+
+    // 권한 없음 처리 (Blueprintjs NonIdealState)
+    if (kiBalance.state === "rejected") {
+        return (
+            <div className="h-[70vh] flex items-center justify-center">
+                <NonIdealState
+                    icon={IconNames.LOCK}
+                    title="접근 권한 없음"
+                    description="계좌 조회 권한이 없거나 토큰이 만료되었습니다."
+                    action={<Text className="opacity-50">관리자에게 문의하세요.</Text>}
+                />
+            </div>
+        );
     }
 
-    function doTokenMinusOne(num: number, ticker: string) {
-        console.log(`doTokenMinusOne ticker:`, ticker);
-        if (undefined == ticker) {
-            return;
-        }
-        dispatch(reqPostKrCapitalTokenMinusOne({ key: balanceKey, num: num, ticker: ticker }));
-    }
-    return <>
-        <Flex direction="column" align="center" justify="center" gap="2">
-            <Text size="6">
-                <Code>계좌조회</Code>
-            </Text>
-            <Text size="3">🇰🇷</Text>
-        </Flex>
-        <InquireBalanceResult
-            balanceKey={balanceKey}
-            setBalanceKey={setBalanceKey}
-            kiBalance={kiBalance}
-            reqGetInquireBalance={reqGetInquireBalance}
-            kiOrderCash={kiOrderCash}
-            reqPostOrderCash={reqPostOrderCash}
-            // stock_list={kr_capital_token.value.stock_list}
-            kakaoTotal={kakaoTotal}
-            kakaoMemberList={kakaoMemberList}
-        />
-        <StockListTable
-            // dataKr={kr_capital_token}
-            data={krCapital}
-            kakaoTotal={kakaoTotal}
-            doTokenPlusAll={doTokenPlusAll} doTokenMinusAll={doTokenMinusAll}
-            doTokenPlusOne={doTokenPlusOne} doTokenMinusOne={doTokenMinusOne}
-        />
-    </>
+    // 핸들러 함수들
+    const doTokenPlusAll = (num: number) => dispatch(reqPostKrCapitalTokenPlusAll({ key: balanceKey, num }));
+    const doTokenPlusOne = (num: number, ticker: string) => ticker && dispatch(reqPostKrCapitalTokenPlusOne({ key: balanceKey, num, ticker }));
+    const doTokenMinusAll = (num: number) => dispatch(reqPostKrCapitalTokenMinusAll({ key: balanceKey, num }));
+    const doTokenMinusOne = (num: number, ticker: string) => ticker && dispatch(reqPostKrCapitalTokenMinusOne({ key: balanceKey, num, ticker }));
+
+    const BREADCRUMBS: BreadcrumbProps[] = [
+        { icon: IconNames.CHART, text: "투자 현황" },
+        { icon: IconNames.MAP_MARKER, text: "한국(KR) 계좌", current: true },
+    ];
+
+    return (
+        <div className="bp5-dark bg-zinc-50 dark:bg-black min-h-screen transition-colors duration-200">
+            {/* Header Section */}
+            <div className="max-w-7xl mx-auto px-4 py-6 md:py-10">
+                <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 mb-8">
+                    <div className="space-y-2">
+                        <Breadcrumbs items={BREADCRUMBS} className="mb-2" />
+                        <div className="flex items-center gap-3">
+                            <H3 className="m-0 font-black tracking-tight uppercase">Portfolio Balance</H3>
+                            <span className="text-2xl">🇰🇷</span>
+                        </div>
+                    </div>
+                    <Text className="opacity-50 text-xs font-mono">
+                        REAL-TIME KOREA INVESTMENT DATA
+                    </Text>
+                </div>
+
+                <Divider className="mb-8" />
+
+                {/* 메인 잔고 결과 섹션 */}
+                <div className="space-y-10">
+                    <section className="animate-in fade-in slide-in-from-bottom-4 duration-500">
+                        <InquireBalanceResult
+                            balanceKey={balanceKey}
+                            setBalanceKey={setBalanceKey}
+                            kiBalance={kiBalance}
+                            reqGetInquireBalance={reqGetInquireBalance}
+                            kiOrderCash={kiOrderCash}
+                            reqPostOrderCash={reqPostOrderCash}
+                            kakaoTotal={kakaoTotal}
+                            kakaoMemberList={kakaoMemberList}
+                        />
+                    </section>
+
+                    {/* 알고리즘 및 토큰 관리 섹션 */}
+                    <section className="animate-in fade-in slide-in-from-bottom-4 duration-700">
+                        <div className="flex items-center gap-2 mb-4 px-2">
+                            <Icon icon={IconNames.Layers} intent={Intent.PRIMARY} />
+                            <Text className="font-bold text-lg">알고리즘 운용 종목 관리</Text>
+                        </div>
+                        <StockListTable
+                            data={krCapital}
+                            kakaoTotal={kakaoTotal}
+                            doTokenPlusAll={doTokenPlusAll}
+                            doTokenMinusAll={doTokenMinusAll}
+                            doTokenPlusOne={doTokenPlusOne}
+                            doTokenMinusOne={doTokenMinusOne}
+                        />
+                    </section>
+                </div>
+            </div>
+        </div>
+    );
 }

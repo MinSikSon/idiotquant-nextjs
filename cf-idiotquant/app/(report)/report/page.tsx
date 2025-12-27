@@ -141,7 +141,7 @@ export default function Report() {
             const newMessage: KakaoMessage = {
                 object_type: "feed",
                 content: {
-                    title: `수익금:₩${Number(evlu_amt_smtl_amt[COUNTRY.eKR] + evlu_amt_smtl_amt[COUNTRY.eUS] - pchs_amt_smtl_amt[COUNTRY.eKR] - pchs_amt_smtl_amt[COUNTRY.eUS]).toLocaleString()}`,
+                    title: `현재 수익금:₩${Number(evlu_amt_smtl_amt[COUNTRY.eKR] + evlu_amt_smtl_amt[COUNTRY.eUS] - pchs_amt_smtl_amt[COUNTRY.eKR] - pchs_amt_smtl_amt[COUNTRY.eUS]).toLocaleString()}`,
                     description: `매입금:₩${Number(pchs_amt_smtl_amt[COUNTRY.eKR] + pchs_amt_smtl_amt[COUNTRY.eUS]).toLocaleString()}, 예수금:₩${Number(dnca_tot_amt[COUNTRY.eKR] + dnca_tot_amt[COUNTRY.eUS]).toLocaleString()}`,
                     image_url: "https://cdn.pixabay.com/photo/2016/11/23/18/00/yosemite-national-park-1854097_1280.jpg",
                     image_width: 640,

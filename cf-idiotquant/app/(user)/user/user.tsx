@@ -37,7 +37,7 @@ import { getLevel, xpBucket } from './level'; // 기존 파일 경로 확인 필
 import { Logout } from "./logout";
 import { IconNames } from '@blueprintjs/icons';
 
-const DEBUG = true;
+const DEBUG = false;
 
 export default function UserPage() {
     const dispatch = useAppDispatch();

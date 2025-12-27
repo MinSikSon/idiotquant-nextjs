@@ -94,7 +94,6 @@ export interface NcavStrategyParamsType {
     minAvgVol30d: number;       // 최소 30일 평균 거래량
 }
 export interface StrategyNcavLatestItemType {
-
     asOfDate: string;
     candidates: Record<string, CanditateType>;
     dataSource: DataSourceType;

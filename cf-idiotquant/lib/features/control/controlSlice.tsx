@@ -11,8 +11,8 @@ const initialState: Control = {
     value: 0,
     stockCount: 0,
     realRateOfReturn: 0,
-    // theme: "light",
-    theme: "dark",
+    theme: "light",
+    // theme: "dark",
 
 }
 export const controlSlice = createAppSlice({
