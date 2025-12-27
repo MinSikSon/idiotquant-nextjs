@@ -1,340 +1,280 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
-import * as ScrollArea from "@radix-ui/react-scroll-area";
+import React, { useState, useMemo } from "react";
+import {
+  Button,
+  ButtonGroup,
+  Card,
+  Elevation,
+  HTMLTable,
+  Tag,
+  Divider,
+  Dialog,
+  Text,
+  H5,
+  H6,
+  Intent,
+  Icon,
+  Section,
+  SectionCard,
+  Tooltip,
+  NonIdealState,
+} from "@blueprintjs/core";
+import { IconNames } from "@blueprintjs/icons";
 import { UsCapitalStockItem, KrUsCapitalType } from "@/lib/features/capital/capitalSlice";
-import { Button, Flex, Grid, Text } from "@radix-ui/themes";
-import { CapitalTokenTypeValueStock } from "@/lib/features/algorithmTrade/algorithmTradeSlice";
 
 interface Props {
   data?: KrUsCapitalType;
   kakaoTotal: any;
-  doTokenPlusAll: any;
-  doTokenPlusOne: any;
-  doTokenMinusAll: any;
-  doTokenMinusOne: any;
+  doTokenPlusAll: (val: number) => void;
+  doTokenPlusOne: (val: number, sym: string) => void;
+  doTokenMinusAll: (val: number) => void;
+  doTokenMinusOne: (val: number, sym: string) => void;
   className?: string;
 }
 
-const HEADERS: { key: "index" | keyof UsCapitalStockItem | keyof CapitalTokenTypeValueStock | "actions"; label: string }[] = [
-  { key: "index", label: "#" },
-  { key: "symbol", label: "심볼" },
-  { key: "PDNO", label: "심볼2" },
-  { key: "name", label: "회사명" },
-  { key: "token", label: "Token" },
-  { key: "key", label: "Key" },
-  { key: "output_balanceSheet", label: "bs" },
-  { key: "output_inquirePrice", label: "price" },
-  { key: "ncavRatio", label: "NCAV 비율" },
-  { key: "action", label: "Action" },
-  { key: "condition", label: "Condition" },
-  { key: "actions", label: "동작: 개별종목 TOKEN refill" },
-
-  // "symbol" | "key" | "condition" | "ncavRatio" | "name" | "index" | "token" | "action" | "PDNO" | "output_inquirePrice" | "output_balanceSheet" | "actions"
-];
-
-export default function StockListTable({ data, kakaoTotal, doTokenPlusAll, doTokenPlusOne, doTokenMinusAll, doTokenMinusOne, className = "" }: Props) {
+export default function StockListTable({
+  data,
+  kakaoTotal,
+  doTokenPlusAll,
+  doTokenPlusOne,
+  doTokenMinusAll,
+  doTokenMinusOne,
+  className = "",
+}: Props) {
   const rows = data?.stock_list ?? [];
-
-  // 선택된 항목과 모달 열림 상태
   const [selected, setSelected] = useState<UsCapitalStockItem | null>(null);
   const [isOpen, setIsOpen] = useState(false);
 
-  const [master, setMaster] = useState(kakaoTotal?.kakao_account?.profile?.nickname === process.env.NEXT_PUBLIC_MASTER);
+  // 관리자 여부 확인
+  const isMaster = useMemo(() =>
+    kakaoTotal?.kakao_account?.profile?.nickname === process.env.NEXT_PUBLIC_MASTER,
+    [kakaoTotal]);
 
-  // Esc로 닫기
-  useEffect(() => {
-    function onKey(e: KeyboardEvent) {
-      if (e.key === "Escape") setIsOpen(false);
-    }
-    if (isOpen) window.addEventListener("keydown", onKey);
-    return () => window.removeEventListener("keydown", onKey);
-  }, [isOpen]);
-
-  // 상세 버튼 클릭 핸들러
-  const openDetail = (item: UsCapitalStockItem) => {
-    setSelected(item);
-    setIsOpen(true);
-  };
-
-  const closeDetail = () => {
-    setIsOpen(false);
-    // 선택값은 닫을 때 유지하거나 null로 리셋하고 싶으면 아래 주석 해제
-    // setSelected(null);
-  };
+  const tokenAmounts = [10000, 100000, 1000000];
 
   return (
     <div className={`w-full ${className}`}>
-      <div className="flex items-center justify-between mb-2">
-        <Flex direction="column" justify="center" gap="1">
-          <Text>
-            상태: {data?.state}
-          </Text>
-          <Flex direction="column" justify="center" gap="1" className="border-2 rounded-xl px-1 py-2">
-            <Text>
-              action: {data?.action}
-            </Text>
-            <Text>time_stamp:</Text>
-            <Text size="1" className="pl-2">{data?.time_stamp?.prevPrev ?? ""}</Text>
-            <Text size="1" className="pl-2">{data?.time_stamp?.prev ?? ""}</Text>
-            <Text size="1" className="pl-2">{data?.time_stamp?.current ?? ""}</Text>
-          </Flex>
-        </Flex>
-        <Flex direction="column">
-          <Flex direction="column">
-            <Text>Token per Stock: {data?.token_info?.token_per_stock ?? 0}</Text>
-            <Text className="pl-2">• Refill Index: {data?.token_info?.refill_stock_index ?? 0}</Text>
-          </Flex>
-          {(kakaoTotal?.kakao_account?.profile?.nickname === process.env.NEXT_PUBLIC_MASTER) ?
-            <Flex direction="column" align="center" justify="center" p="1" my="1" className="border-2 rounded-xl">
-              <Text>all TOKEN (active only)</Text>
-              <Grid columns="1" gap="1" align="center" justify="center">
-                <Flex gap="1" align="center" justify="end">
-                  <Text>₩5,000</Text>
-                  <Button disabled={false == master} onClick={() => doTokenPlusAll(5_000)} size="2">+</Button>
-                  <Button disabled={false == master} onClick={() => doTokenMinusAll(5_000)} size="2" color="tomato" >-</Button>
-                </Flex>
-                <Flex gap="1" align="center" justify="end">
-                  <Text>₩10,000</Text>
-                  <Button disabled={false == master} onClick={() => doTokenPlusAll(10_000)} size="2">+</Button>
-                  <Button disabled={false == master} onClick={() => doTokenMinusAll(10_000)} size="2" color="tomato" >-</Button>
-                </Flex>
-                <Flex gap="1" align="center" justify="end">
-                  <Text>₩50,000</Text>
-                  <Button disabled={false == master} onClick={() => doTokenPlusAll(50_000)} size="2">+</Button>
-                  <Button disabled={false == master} onClick={() => doTokenMinusAll(50_000)} size="2" color="tomato" >-</Button>
-                </Flex>
-                <Flex gap="1" align="center" justify="end">
-                  <Text>₩100,000</Text>
-                  <Button disabled={false == master} onClick={() => doTokenPlusAll(100_000)} size="2" >+</Button>
-                  <Button disabled={false == master} onClick={() => doTokenMinusAll(100_000)} size="2" color="tomato" >-</Button>
-                </Flex>
-                <Flex gap="1" align="center" justify="end">
-                  <Text>₩200,000</Text>
-                  <Button disabled={false == master} onClick={() => doTokenPlusAll(200_000)} size="2" >+</Button>
-                  <Button disabled={false == master} onClick={() => doTokenMinusAll(200_000)} size="2" color="tomato" >-</Button>
-                </Flex>
-                <Flex gap="1" align="center" justify="end">
-                  <Text>₩500,000</Text>
-                  <Button disabled={false == master} onClick={() => doTokenPlusAll(500_000)} size="2" >+</Button>
-                  <Button disabled={false == master} onClick={() => doTokenMinusAll(500_000)} size="2" color="tomato" >-</Button>
-                </Flex>
-                <Flex gap="1" align="center" justify="end">
-                  <Text>₩1,000,000</Text>
-                  <Button disabled={false == master} onClick={() => doTokenPlusAll(1_000_000)} size="2" >+</Button>
-                  <Button disabled={false == master} onClick={() => doTokenMinusAll(1_000_000)} size="2" color="tomato"  >-</Button>
-                </Flex>
-              </Grid>
-            </Flex>
-            : <></>}
-        </Flex>
-      </div>
-
-      <ScrollArea.Root className="rounded-md border border-slate-200">
-        <ScrollArea.Viewport className="w-full h-[420px]">
-          <div className="min-w-[800px]">
-            <table className="w-full table-auto border-collapse">
-              <thead>
-                <tr>
-                  {HEADERS.map((h, idx) => (
-                    <th
-                      key={String(h.key)}
-                      className="px-3 py-1.5 text-left text-xs font-medium uppercase tracking-wider bg-white dark:bg-black border-b sticky top-0 z-20"
-                      style={idx >= 1 && idx <= 4 ? { position: "sticky", left: (idx - 1) * 20, zIndex: 30 } : {}}
-                    >
-                      {h.label}
-                    </th>
-                  ))}
-                </tr>
-              </thead>
-              <tbody>
-                {rows.length === 0 ? (
-                  <tr>
-                    <td colSpan={HEADERS.length} className="p-6 text-center text-sm">
-                      결과가 없습니다.
-                    </td>
-                  </tr>
-                ) : (
-                  rows.map((row: any, rIndex) => {
-                    let cras = 0;
-                    let total_lblt = 0;
-                    let hts_avls = 0;
-                    return (
-                      <tr key={`${row.key}-${rIndex}`} className={rIndex % 2 === 0 ? "bg-white dark:bg-black" : "bg-slate-50 dark:bg-slate-800"}>
-                        {HEADERS.map((h, cIndex) => {
-                          if (h.key === "actions") {
-                            return (
-                              <td key={`cell-${rIndex}-${cIndex}`} className="px-3 py-1.5 whitespace-nowrap border-b">
-                                <div className="flex gap-2">
-                                  <>
-                                    <Flex gap="1" align="center" justify="end">
-                                      <Text>|</Text>
-                                      <Text size="2">₩10,000</Text>
-                                      <Button size="2" disabled={false == master} onClick={() => doTokenPlusOne(10_000, row?.symbol ?? row?.PDNO ?? "")}>+</Button>
-                                      <Button size="2" disabled={false == master} onClick={() => doTokenMinusOne(10_000, row?.symbol ?? row?.PDNO ?? "")} color="tomato" >-</Button>
-                                    </Flex>
-                                    <Flex gap="1" align="center" justify="end">
-                                      <Text>|</Text>
-                                      <Text size="2">₩100,000</Text>
-                                      <Button size="2" disabled={false == master} onClick={() => doTokenPlusOne(100_000, row?.symbol ?? row?.PDNO ?? "")} >+</Button>
-                                      <Button size="2" disabled={false == master} onClick={() => doTokenMinusOne(100_000, row?.symbol ?? row?.PDNO ?? "")} color="tomato" >-</Button>
-                                    </Flex>
-                                    <Flex gap="1" align="center" justify="end">
-                                      <Text>|</Text>
-                                      <Text size="2">₩1,000,000</Text>
-                                      <Button size="2" disabled={false == master} onClick={() => doTokenPlusOne(1_000_000, row?.symbol ?? row?.PDNO ?? "")} >+</Button>
-                                      <Button size="2" disabled={false == master} onClick={() => doTokenMinusOne(1_000_000, row?.symbol ?? row?.PDNO ?? "")} color="tomato"  >-</Button>
-                                    </Flex>
-                                  </>
-                                </div>
-                              </td>
-                            );
-                          }
-
-                          if (h.key === "condition") {
-                            return (
-                              <td key={`cell-${rIndex}-${cIndex}`} className="px-3 py-1.5 whitespace-nowrap border-b">
-                                <div className="flex gap-2">
-                                  {/* 상세 버튼에 openDetail 연결 */}
-                                  <Button size="1" onClick={() => openDetail(row)} aria-haspopup="dialog">상세</Button>
-                                </div>
-                              </td>
-                            );
-                          }
-
-                          if (h.key === "index") {
-                            return (
-                              <td key={`cell-${rIndex}-${cIndex}`}
-                                className={`px-3 py-1.5 border-b ${rIndex % 2 === 0 ? "bg-white dark:bg-black" : "bg-slate-50 dark:bg-slate-800"}`}
-                                style={cIndex >= 1 && cIndex <= 4 ? { position: "sticky", left: (cIndex - 1) * 20, zIndex: 10 } : {}}
-                              >
-                                {rIndex}
-                              </td>
-                            );
-                          }
-
-
-                          const key = h.key as (keyof UsCapitalStockItem | keyof CapitalTokenTypeValueStock);
-                          const value = row[key] ?? "-";
-
-                          if (h.key === "output_balanceSheet") {
-                            const latestBs = value?.output?.[0] ?? {};
-                            const stac_yymm = latestBs?.stac_yymm ?? "";
-                            cras = Number(latestBs?.cras ?? 0); // 유동자산
-                            total_lblt = Number(latestBs?.total_lblt ?? 0); // 부채총계
-                            return (
-                              <td key={`cell-${rIndex}-${cIndex}`} className="px-3 py-1.5 whitespace-nowrap border-b">
-                                <div className="flex gap-2">
-                                  {/* 상세 버튼에 openDetail 연결 */}
-                                  <Flex direction="column">
-                                    <Text className="text-[0.6rem]">({stac_yymm})</Text>
-                                    <Text size="1">유동자산: ₩{cras.toLocaleString()}억</Text>
-                                    <Text size="1">부채총계: ₩{total_lblt.toLocaleString()}억</Text>
-                                  </Flex>
-                                </div>
-                              </td>
-                            );
-                          }
-
-                          if (h.key === "output_inquirePrice") {
-                            const inquirePrice = value?.output ?? {};
-
-                            const stck_prpr = Number(inquirePrice?.stck_prpr ?? 0); // 현재가
-                            hts_avls = Number(inquirePrice?.hts_avls ?? 0); // 시가총액
-                            const lstn_stcn = Number(inquirePrice?.lstn_stcn ?? 0); // 상장주수
-                            return (
-                              <td key={`cell-${rIndex}-${cIndex}`} className="px-3 py-1.5 whitespace-nowrap border-b">
-                                <div className="flex gap-2">
-                                  {/* 상세 버튼에 openDetail 연결 */}
-                                  <Flex direction="column">
-                                    <Text size="1">현재가: ₩{stck_prpr.toLocaleString()}</Text>
-                                    <Text size="1">시가총액: ₩{hts_avls.toLocaleString()}억</Text>
-                                    <Text size="1">상장주수: {Number(lstn_stcn).toLocaleString()}개</Text>
-                                  </Flex>
-                                </div>
-                              </td>
-                            );
-                          }
-
-                          if ("-" === value && "ncavRatio" === key) {
-                            return (
-                              <td key={`cell-${rIndex}-${cIndex}`} className="px-3 py-1.5 whitespace-nowrap border-b">
-                                <div className="flex gap-2">
-                                  {/* 상세 버튼에 openDetail 연결 */}
-                                  <Text>{Number(0 == hts_avls ? 0 : (cras - total_lblt) / hts_avls).toFixed(2)}</Text>
-                                </div>
-                              </td>
-                            );
-                          }
-
-                          return (
-                            <td
-                              key={`cell-${rIndex}-${cIndex}`}
-                              className={`px-3 py-1.5 border-b ${rIndex % 2 === 0 ? "bg-white dark:bg-black" : "bg-slate-50 dark:bg-slate-800"}`}
-                              style={cIndex >= 1 && cIndex <= 4 ? { position: "sticky", left: (cIndex - 1) * 20, zIndex: 10 } : {}}
-                            >
-                              <div className="text-sm">{String(value)}</div>
-                            </td>
-                          );
-                        })}
-                      </tr>);
-                  })
-                )}
-              </tbody>
-            </table>
-          </div>
-        </ScrollArea.Viewport>
-        <ScrollArea.Scrollbar orientation="horizontal" className="flex select-none touch-none p-0.5 bg-slate-100" />
-        <ScrollArea.Scrollbar orientation="vertical" className="flex select-none touch-none p-0.5 bg-slate-100" />
-        <ScrollArea.Corner />
-      </ScrollArea.Root>
-
-      {/* -----------------------------
-          상세 모달 (간단한 Overlay)
-         ----------------------------- */}
-      {
-        isOpen && selected && (
-          <div
-            role="dialog"
-            aria-modal="true"
-            className="fixed inset-0 z-50 flex items-center justify-center"
+      {/* 1. Global Token Control (Only for Master) */}
+      {isMaster && (
+        <div className="mb-6 animate-in slide-in-from-top-2 duration-500">
+          <Section
+            title="Global Token Master Control"
+            icon={IconNames.KEY_COMMAND}
+            rightElement={
+              <Tag intent={Intent.DANGER} minimal className="font-mono">MASTER ONLY</Tag>
+            }
           >
-            {/* dim */}
-            <div
-              className="absolute inset-0 bg-black/40"
-              onClick={closeDetail}
-              aria-hidden="true"
-            />
+            <SectionCard className="flex flex-wrap items-center gap-3 bg-zinc-100/50 dark:bg-zinc-900/50">
+              <Text className="text-xs font-bold opacity-60 uppercase">Batch Refill:</Text>
+              {[50000, 100000, 500000, 1000000].map(amt => (
+                <ButtonGroup key={`batch-${amt}`} className="shadow-sm">
+                  <Button
+                    text={`+${amt / 10000}만`}
+                    small
+                    onClick={() => doTokenPlusAll(amt)}
+                    intent={Intent.PRIMARY}
+                  />
+                  <Button
+                    icon={IconNames.MINUS}
+                    small
+                    onClick={() => doTokenMinusAll(amt)}
+                    intent={Intent.DANGER}
+                  />
+                </ButtonGroup>
+              ))}
+            </SectionCard>
+          </Section>
+        </div>
+      )}
 
-            {/* content */}
-            <div className="relative z-10 w-[min(90%,800px)] max-h-[80vh] overflow-auto rounded-lg p-4 shadow-lg. bg-white dark:bg-slate-900">
-              <div className="flex items-start justify-between gap-4">
-                <h3 className="text-lg font-semibold">상세 정보 — {selected.symbol}</h3>
-                <div className="ml-auto flex gap-2">
-                  <Button size="1"
-                    onClick={() => {
-                      // 모달 내에서 raw JSON 복사 기능(선택사항)
-                      navigator.clipboard?.writeText(JSON.stringify(selected, null, 2));
-                    }}
-                  >
-                    복사
-                  </Button>
-                  <Button size="1" color="amber" onClick={closeDetail}>
-                    닫기
-                  </Button>
+      {/* 2. Data Display Area */}
+
+      {/* --- Mobile View (Card List) --- */}
+      <div className="block md:hidden space-y-4">
+        {rows.length === 0 ? (
+          <NonIdealState icon={IconNames.SEARCH} title="운용 종목 없음" description="현재 알고리즘이 관리 중인 종목이 없습니다." />
+        ) : (
+          rows.map((row, idx) => (
+            <Card key={`card-${idx}`} elevation={Elevation.ONE} className="p-4 border-t-2 border-primary bg-white dark:bg-zinc-900">
+              <div className="flex justify-between items-center mb-4">
+                <H5 className="m-0 font-black text-blue-600 tracking-tighter">{row.symbol}</H5>
+                <Tag minimal intent={Number(row.ncavRatio) > 1 ? Intent.SUCCESS : Intent.NONE}>
+                  NCAV {row.ncavRatio}
+                </Tag>
+              </div>
+
+              <div className="grid grid-cols-2 gap-3 text-xs mb-4">
+                <div className="bg-zinc-50 dark:bg-zinc-800 p-2 rounded">
+                  <p className="opacity-50 mb-1 font-bold">Price</p>
+                  <p className="font-mono">₩{Number(row.condition?.LastPrice || 0).toLocaleString()}</p>
+                </div>
+                <div className="bg-zinc-50 dark:bg-zinc-800 p-2 rounded">
+                  <p className="opacity-50 mb-1 font-bold">Token</p>
+                  <p className="font-mono text-blue-500 font-bold">{row.token?.toLocaleString()}</p>
                 </div>
               </div>
 
-              <hr className="my-3" />
+              <div className="flex justify-between items-center pt-2">
+                <Button icon={IconNames.EYE_OPEN} minimal text="상세" onClick={() => { setSelected(row); setIsOpen(true); }} />
+                {isMaster && (
+                  tokenAmounts.map(amt => (
+                    <ButtonGroup key={`dt-${amt}`} className="shadow-xs">
+                      <Button
+                        small
+                        text={`${amt / 10000}만`}
+                        onClick={() => doTokenPlusOne(amt, row.symbol)}
+                      />
+                      <Button
+                        small
+                        icon={IconNames.MINUS}
+                        intent={Intent.DANGER}
+                        onClick={() => doTokenMinusOne(amt, row.symbol)}
+                      />
+                    </ButtonGroup>
+                  )))
+                }
+              </div>
+            </Card>
+          ))
+        )}
+      </div>
 
-              {/* JSON pretty 출력 */}
-              <pre className="whitespace-pre-wrap text-sm overflow-auto rounded-md bg-slate-50 p-3 dark:bg-slate-800">
-                {JSON.stringify(selected, null, 2)}
-              </pre>
-            </div>
+      {/* --- Desktop View (Table) --- */}
+      <div className="hidden md:block overflow-hidden border rounded-xl shadow-sm bg-white dark:bg-zinc-900 border-zinc-200 dark:border-zinc-800">
+        <HTMLTable interactive className="w-full text-[11px]" striped>
+          <thead className="bg-zinc-50 dark:bg-zinc-800">
+            <tr>
+              <th className="p-4">종목</th>
+              <th>PER</th>
+              <th>PBR</th>
+              <th>BPS / EPS</th>
+              <th>시가총액</th>
+              <th>NCAV 비율</th>
+              <th>Token</th>
+              {isMaster && <th className="text-right p-4">Individual Refill</th>}
+            </tr>
+          </thead>
+          <tbody>
+            {rows.map((row, idx) => (
+              <tr key={`row-${idx}`}>
+                <td className="p-4">
+                  <div
+                    className="flex items-center gap-2 cursor-pointer hover:text-blue-500 transition-colors"
+                    onClick={() => { setSelected(row); setIsOpen(true); }}
+                  >
+                    <Icon icon={IconNames.DOCUMENT_SHARE} size={14} className="opacity-50" />
+                    <span className="font-black text-sm tracking-tight">{row.symbol}</span>
+                  </div>
+                </td>
+                <td className="font-mono">{row.condition?.per || "-"}</td>
+                <td className="font-mono">{row.condition?.pbr || "-"}</td>
+                <td>
+                  <div className="flex flex-col leading-tight">
+                    <span className="font-mono font-bold">B: {row.condition?.bps?.toLocaleString()}</span>
+                    <span className="opacity-40 text-[9px]">E: {row.condition?.eps?.toLocaleString()}</span>
+                  </div>
+                </td>
+                <td className="font-mono">₩{(row.condition?.MarketCapitalization || 0).toLocaleString()}억</td>
+                <td>
+                  <Tooltip content={`NCAV Ratio: ${row.ncavRatio}`} position="top">
+                    <Tag
+                      minimal
+                      intent={Number(row.ncavRatio) > 1 ? Intent.SUCCESS : Intent.NONE}
+                      className="font-bold font-mono"
+                    >
+                      {row.ncavRatio}
+                    </Tag>
+                  </Tooltip>
+                </td>
+                <td className="font-mono font-black text-blue-500">{row.token?.toLocaleString()}</td>
+                {isMaster && (
+                  <td className="p-4 text-right">
+                    <div className="flex justify-end gap-1">
+                      {tokenAmounts.map(amt => (
+                        <ButtonGroup key={`dt-${amt}`} className="shadow-xs">
+                          <Button
+                            small
+                            text={`${amt / 10000}만`}
+                            onClick={() => doTokenPlusOne(amt, row.symbol)}
+                          />
+                          <Button
+                            small
+                            icon={IconNames.MINUS}
+                            intent={Intent.DANGER}
+                            onClick={() => doTokenMinusOne(amt, row.symbol)}
+                          />
+                        </ButtonGroup>
+                      ))}
+                    </div>
+                  </td>
+                )}
+              </tr>
+            ))}
+          </tbody>
+        </HTMLTable>
+      </div>
+
+      {/* 3. Detail Analysis Dialog */}
+      <Dialog
+        isOpen={isOpen}
+        onClose={() => setIsOpen(false)}
+        title={`Strategy Analysis: ${selected?.symbol}`}
+        icon={IconNames.CHART}
+        className="bp5-dark w-[95%] max-w-3xl"
+      >
+        <div className="p-6">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-6 mb-8">
+            <StatItem
+              label="유동자산"
+              value={`${(selected?.condition?.AssetsCurrent || 0).toLocaleString()}억`}
+              icon={IconNames.CUBE}
+            />
+            <StatItem
+              label="유동부채"
+              value={`${(selected?.condition?.LiabilitiesCurrent || 0).toLocaleString()}억`}
+              icon={IconNames.RESOLVE}
+            />
+            <StatItem
+              label="당기순이익"
+              value={`${(selected?.condition?.NetIncome || 0).toLocaleString()}억`}
+              icon={IconNames.BANK_ACCOUNT}
+            />
+            <StatItem
+              label="현재가"
+              value={`₩${Number(selected?.condition?.LastPrice || 0).toLocaleString()}`}
+              icon={IconNames.DOLLAR}
+            />
           </div>
-        )
-      }
-    </div >
+
+          <Divider />
+
+          <div className="mt-6 space-y-4">
+            <H6 className="uppercase opacity-40 font-black tracking-widest text-[10px]">Technical Metadata</H6>
+            <pre className="p-5 bg-zinc-100 dark:bg-zinc-800/50 rounded-xl text-[11px] overflow-auto max-h-[40vh] font-mono border border-zinc-200 dark:border-zinc-700 leading-relaxed">
+              {JSON.stringify(selected, null, 2)}
+            </pre>
+          </div>
+
+          <div className="flex justify-between items-center mt-8 pt-4 border-t dark:border-zinc-800">
+            <Button icon={IconNames.DUPLICATE} text="JSON 복사" onClick={() => navigator.clipboard.writeText(JSON.stringify(selected))} minimal />
+            <Button text="확인" intent={Intent.PRIMARY} large className="px-10" onClick={() => setIsOpen(false)} />
+          </div>
+        </div>
+      </Dialog>
+    </div>
+  );
+}
+
+// 상세 페이지용 스탯 컴포넌트
+function StatItem({ label, value, icon }: { label: string, value: string, icon: any }) {
+  return (
+    <div className="flex flex-col gap-1">
+      <div className="flex items-center gap-1.5 opacity-50">
+        <Icon icon={icon} size={12} />
+        <span className="text-[10px] font-black uppercase tracking-tighter">{label}</span>
+      </div>
+      <Text className="text-lg font-mono font-black">{value}</Text>
+    </div>
   );
 }
