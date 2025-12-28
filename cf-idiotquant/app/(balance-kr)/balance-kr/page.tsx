@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useState } from "react";
+import { Suspense, useEffect, useState } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import {
     H3,
@@ -10,7 +10,8 @@ import {
     Icon,
     Intent,
     Breadcrumbs,
-    BreadcrumbProps
+    BreadcrumbProps,
+    Spinner
 } from "@blueprintjs/core";
 import { IconNames } from "@blueprintjs/icons";
 
@@ -52,7 +53,28 @@ import StockListTable from "@/components/balance/stockListTable";
 
 const DEBUG = false;
 
-export default function BalanceKr() {
+export default function Page() {
+    return (
+        // 핵심: useSearchParams를 사용하는 컴포넌트를 Suspense로 감쌉니다.
+        <Suspense fallback={<LoadingState />}>
+            <BalanceKr />
+        </Suspense>
+    );
+}
+
+function LoadingState() {
+    return (
+        <div className="h-screen flex items-center justify-center bp5-dark bg-black">
+            <NonIdealState
+                icon={<Spinner size={50} />}
+                title="데이터를 불러오는 중..."
+                description="잠시만 기다려 주세요."
+            />
+        </div>
+    );
+}
+
+function BalanceKr() {
     const dispatch = useAppDispatch();
 
     // Selectors

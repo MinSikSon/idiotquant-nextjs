@@ -1,5 +1,4 @@
 import "@/app/global.css"
-import "@radix-ui/themes/styles.css";
 import { StoreProvider } from "./StoreProvider"
 import NavbarWithSimpleLinks from "@/components/navigation"
 import { ThemeProviderClient } from "./ThemeProviderClient";

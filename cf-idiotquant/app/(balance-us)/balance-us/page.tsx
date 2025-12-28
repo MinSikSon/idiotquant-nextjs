@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, Suspense } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import {
     H3,
@@ -12,7 +12,8 @@ import {
     Breadcrumbs,
     Section,
     SectionCard,
-    Code
+    Code,
+    Spinner
 } from "@blueprintjs/core";
 import { IconNames } from "@blueprintjs/icons";
 
@@ -60,7 +61,28 @@ function formatNumber(num: number) {
     return num % 1 === 0 ? num.toLocaleString() : num.toFixed(2);
 }
 
-export default function BalanceUs() {
+export default function Page() {
+    return (
+        // 핵심: useSearchParams를 사용하는 컴포넌트를 Suspense로 감쌉니다.
+        <Suspense fallback={<LoadingState />}>
+            <BalanceUs />
+        </Suspense>
+    );
+}
+
+function LoadingState() {
+    return (
+        <div className="h-screen flex items-center justify-center bp5-dark bg-black">
+            <NonIdealState
+                icon={<Spinner size={50} />}
+                title="데이터를 불러오는 중..."
+                description="잠시만 기다려 주세요."
+            />
+        </div>
+    );
+}
+
+function BalanceUs() {
     const dispatch = useAppDispatch();
     const router = useRouter();
     const pathname = usePathname();
