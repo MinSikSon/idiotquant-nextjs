@@ -7,6 +7,7 @@ import type { NextRequest } from 'next/server'
 import { verifyJWT } from './lib/jwt';
 // import { decodeJWT } from '@/lib/jwt' // jwt.verify 래퍼 함수
 
+// export { auth as middleware } from "@/auth"
 
 // This function can be marked `async` if using `await` inside
 // export async function middleware(request: NextRequest) {
@@ -20,6 +21,11 @@ export async function middleware(req: NextRequest) {
     const url = new URL(req.url);
     const path = req.nextUrl.pathname;
 
+    console.log(`[middleware] req.url:`, req.url, `, path:`, path);
+    console.log(`[middleware] path.startsWith("/_next"):`, path.startsWith("/_next")
+        , `, path.startsWith("/.well-known"):`, path.startsWith("/.well-known"),
+        `, path.startsWith("/images"):`, path.startsWith("/images")
+    );
     if (
         path.startsWith("/_next")
         || path.startsWith("/.well-known")
@@ -29,6 +35,10 @@ export async function middleware(req: NextRequest) {
         || path === "/calculator"
         || path === "/not-found"
         || path === "/laboratory"
+        || path === "/api/auth/providers"
+        || path === "/api/auth/csrf"
+        || path === "/api/auth/signin/kakao"
+        || path === "/api/auth/callback/kakao"
     ) {
         return NextResponse.next(); // login 없이 접근 허용
     }
