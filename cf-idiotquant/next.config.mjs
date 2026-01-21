@@ -8,6 +8,16 @@ const nextConfig = {
                 port: '',
                 pathname: '/sih/fit-in/458x0/pdt/9780060555665.jpg',
             },
+            {
+                protocol: 'http',
+                hostname: 'k.kakaocdn.net',
+                pathname: '/**',
+            },
+            {
+                protocol: 'https',
+                hostname: 'k.kakaocdn.net',
+                pathname: '/**',
+            },
         ],
         domains: [
             'cdn.pixabay.com',

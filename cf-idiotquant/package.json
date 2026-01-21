@@ -43,6 +43,24 @@
     "remark-math": "^6.0.0",
     "three": "^0.167.1"
   },
+  "overrides": {
+    "react": "$react",
+    "react-dom": "$react-dom",
+    "@reduxjs/toolkit": {
+      "react": "$react"
+    },
+    "recharts": {
+      "react": "$react"
+    },
+    "@blueprintjs/core": {
+      "react": "$react",
+      "react-dom": "$react-dom"
+    },
+    "@blueprintjs/icons": {
+      "react": "$react",
+      "react-dom": "$react-dom"
+    }
+  },
   "devDependencies": {
     "@heroicons/react": "^2.1.5",
     "@next/bundle-analyzer": "^15.5.6",

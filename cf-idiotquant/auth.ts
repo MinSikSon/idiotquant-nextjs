@@ -1,32 +1,25 @@
+// auth.ts
 import NextAuth from "next-auth"
-import Kakao from "next-auth/providers/kakao"
 import { D1Adapter } from "@auth/d1-adapter"
+import { authConfig } from "./auth.config"
 
 export const { handlers, auth, signIn, signOut } = NextAuth((req) => {
-    // Cloudflare 대시보드에서 설정한 D1 바인딩 이름이 'db'일 때
-    const env = (req as any).context?.env;
-    const db = env?.db;
+    // Cloudflare Pages 배포 환경에서 전달되는 env
+    // const env = (req as any).context?.env;
 
-    // 디버깅용 로그: 배포 후 Cloudflare 로그에서 확인 가능
-    if (!db) {
-        console.error("❌ D1 데이터베이스 객체를 찾을 수 없습니다. 대시보드 바인딩을 확인하세요.");
-    }
+    // 1순위: Cloudflare 배포 환경의 db 바인딩
+    // 2순위: 로컬 환경(wrangler)의 process.env.db
+    // console.log(`❌❌ env?.db`, env?.db);
+    // const db = env?.db || (process.env as any).db;
+    // const db = env?.db;
+
+    // if (!db) {
+    //     console.error("❌ 데이터베이스 바인딩 'db'를 찾을 수 없습니다.");
+    // }
 
     return {
-        adapter: D1Adapter(db),
-        providers: [
-            Kakao({
-                clientId: process.env.AUTH_KAKAO_ID,
-                clientSecret: process.env.AUTH_KAKAO_SECRET,
-            }),
-        ],
-        session: { strategy: "database" },
-        secret: process.env.AUTH_SECRET,
-        callbacks: {
-            async session({ session, user }) {
-                session.user.id = user.id;
-                return session;
-            },
-        },
+        ...authConfig,
+        // adapter: D1Adapter(db),
+        trustHost: true, // immutable 에러 완화
     }
 })

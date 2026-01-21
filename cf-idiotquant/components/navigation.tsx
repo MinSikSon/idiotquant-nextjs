@@ -21,15 +21,22 @@ import { IconNames } from "@blueprintjs/icons";
 import { useAppSelector } from "@/lib/hooks";
 import { selectKakaoTotal } from "@/lib/features/kakao/kakaoSlice";
 import ThemeChanger from "@/components/theme_changer";
+import { useSession, signIn, signOut } from "next-auth/react";
+import { redirect } from "next/navigation";
+
+const DEBUG = true;
 
 export function NavbarWithSimpleLinks() {
+    const { data: session, status } = useSession();
+    if (DEBUG) console.log(`[NavbarWithSimpleLinks]`, `session:`, session);
+    if (DEBUG) console.log(`[NavbarWithSimpleLinks]`, `status:`, status);
     const pathname = usePathname();
     const [isDrawerOpen, setIsDrawerOpen] = useState(false);
     const [visible, setVisible] = useState(true);
     const lastScrollY = useRef(0);
 
-    const kakaoTotal = useAppSelector(selectKakaoTotal);
-    const isLoggedIn = !!kakaoTotal?.id;
+    // const kakaoTotal = useAppSelector(selectKakaoTotal);
+    // const isLoggedIn = !!kakaoTotal?.id;
 
     // 스크롤 감지 로직 (Navbar 숨김/노출)
     useEffect(() => {
@@ -122,9 +129,9 @@ export function NavbarWithSimpleLinks() {
                         <MenuDivider />
                         <Link href="/login" onClick={closeDrawer}>
                             <MenuItem
-                                icon={isLoggedIn ? IconNames.UNLOCK : IconNames.LOCK}
-                                intent={isLoggedIn ? "none" : "primary"}
-                                text={isLoggedIn ? `${kakaoTotal?.kakao_account?.profile?.nickname} (Logout)` : "Kakao Login"}
+                                icon={"authenticated" === status ? IconNames.UNLOCK : IconNames.LOCK}
+                                intent={"authenticated" === status ? "none" : "primary"}
+                                text={"authenticated" === status ? `${session?.user?.name} (Logout)` : "Kakao Login"}
                             />
                         </Link>
 

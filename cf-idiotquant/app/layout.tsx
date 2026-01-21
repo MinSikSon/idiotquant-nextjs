@@ -9,6 +9,7 @@ import "@blueprintjs/icons/lib/css/blueprint-icons.css";
 // Normalize는 선택사항이지만 Blueprint와 잘 어우러집니다.
 import "normalize.css/normalize.css";
 import LoadKakaoTotal from "@/components/loadKakaoTotal";
+import { AuthProvider } from "@/components/auth-provider";
 
 export const metadata = {
   title: 'idiotquant.com',
@@ -29,11 +30,13 @@ export default function RootLayout({
       <body className="md:flex lg:flex bp5-body">
         <StoreProvider>
           <ThemeProviderClient>
-            <NavbarWithSimpleLinks />
-            <LoadKakaoTotal />
-            <div className="pt-12 md:flex-1 lg:flex-1 w-full h-full scroll-auto dark:bg-black">
-              {children}
-            </div>
+            <AuthProvider>
+              <NavbarWithSimpleLinks />
+              <LoadKakaoTotal />
+              <div className="pt-12 md:flex-1 lg:flex-1 w-full h-full scroll-auto dark:bg-black">
+                {children}
+              </div>
+            </AuthProvider>
           </ThemeProviderClient>
         </StoreProvider >
       </body>

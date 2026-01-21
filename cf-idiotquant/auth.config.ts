@@ -1,35 +1,24 @@
-import type { NextAuthConfig } from "next-auth";
+import type { NextAuthConfig } from "next-auth"
+import Kakao from "next-auth/providers/kakao"
 
 export const authConfig = {
+    providers: [
+        Kakao({
+            clientId: process.env.AUTH_KAKAO_ID,
+            clientSecret: process.env.AUTH_KAKAO_SECRET,
+        }),
+    ],
+    // 페이지 설정 (선택 사항)
     pages: {
-        signIn: '/login',
+        signIn: "/login", // 커스텀 로그인 페이지를 사용할 경우
+    },
+    session: {
+        strategy: "jwt", // 🚀 DB 없이 토큰 방식으로 세션 관리
     },
     callbacks: {
-        authorized({ auth, request: { nextUrl } }) {
-            console.log(`*** [${__filename}][auth.config.ts] callbacks - authorized`);
-            const isLoggedIn = !!auth?.user;
-            console.info(`*** auth: ${auth}, nextUrl: ${nextUrl}`);
-            console.info(`*** auth:`, auth);
-            console.info(`*** isLoggedIn:`, isLoggedIn);
-
-            console.info(`*** nextUrl:`, nextUrl);
-            const isOnProtected = !(nextUrl.pathname.startsWith('login'));
-            console.info(`*** isOnProtected:`, isOnProtected);
-
-            if (isOnProtected) {
-                return true;
-                // return (isLoggedIn) ? true : false; // NOTE: login 무조건 하게 만드는 동작
-            }
-
-            console.info(`*** isLoggedIn:`, isLoggedIn);
-            if (isLoggedIn) {
-                return Response.redirect(new URL('/', nextUrl));
-            }
-
-            return true;
+        async session({ session, token }) {
+            // 필요한 경우 세션 객체에 유저 ID 등을 추가 저장 가능
+            return session;
         },
     },
-    providers: [
-    ],
-    secret: process.env.AUTH_SECRET
 } satisfies NextAuthConfig;
