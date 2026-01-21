@@ -1,7 +1,7 @@
 "use client"
-import UserPage from "@/app/(user)/user/page"
 import { useSession, signIn } from "next-auth/react"
 import { useState } from "react"
+import UserProfile from "./user-profile"
 
 export default function AuthButton() {
     const { data: session, status } = useSession()
@@ -34,7 +34,7 @@ export default function AuthButton() {
 
     // 2. 로그인 완료 상태
     if (session) {
-        return <UserPage />
+        return <UserProfile user={session.user} />
     }
 
     // 3. 로그인 미완료 상태 (로그인 버튼)
