@@ -1,7 +1,7 @@
 name = "idiotquant-nextjs"
 compatibility_date = "2024-04-03"
 compatibility_flags = ["nodejs_compat"]
-pages_build_output_dir = ".next"
+pages_build_output_dir = ".vercel/output"
 
 [[d1_databases]]
 binding = "db" # 코드에서 env.db로 쓸 이름
