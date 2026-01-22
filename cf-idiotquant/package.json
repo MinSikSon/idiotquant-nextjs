@@ -41,7 +41,8 @@
     "rehype-raw": "^7.0.0",
     "remark-gfm": "^4.0.1",
     "remark-math": "^6.0.0",
-    "three": "^0.167.1"
+    "three": "^0.167.1",
+    "@cloudflare/next-on-pages": "1.12.1"
   },
   "overrides": {
     "react": "$react",
