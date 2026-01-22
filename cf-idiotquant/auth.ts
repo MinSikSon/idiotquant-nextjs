@@ -2,7 +2,7 @@
 import NextAuth from "next-auth"
 import { authConfig } from "./auth.config"
 import { D1Adapter } from "@auth/d1-adapter"
-export const { handlers, auth, signIn, signOut } = NextAuth((req) => {
+export const { handlers, auth, signIn, signOut } = NextAuth((req: any) => {
     // Cloudflare Pages 배포 환경에서 전달되는 env
     const env = (req as any).context?.env;
 
