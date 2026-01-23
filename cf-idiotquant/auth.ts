@@ -1,5 +1,4 @@
 import NextAuth from "next-auth";
-import Kakao from "next-auth/providers/kakao";
 import { D1Adapter } from "@auth/d1-adapter";
 import { authConfig } from "./auth.config";
 
@@ -17,9 +16,16 @@ export const { handlers, auth, signIn, signOut } = NextAuth((req: any) => {
     console.log("Is Adapter assigned?:", db, !!db, env?.DB, env?.db);
     console.log("------------------------");
 
+    // 💡 중요: 환경 변수가 제대로 안 읽힐 경우를 대비해 로그 출력
+    if (!env?.AUTH_SECRET) {
+        console.error("CRITICAL: AUTH_SECRET is missing from environment!");
+    }
+
     return {
         ...authConfig,
-        // 어댑터를 조건부 없이 일단 db가 있으면 할당
+        secret: env?.AUTH_SECRET, // 💡 명시적 주입
+        trustHost: true,
+        basePath: "/api/auth",
         adapter: db && "development" != node_env ? D1Adapter(db) : undefined,
         callbacks: {
             async jwt({ token, user }) {
@@ -55,7 +61,5 @@ export const { handlers, auth, signIn, signOut } = NextAuth((req: any) => {
                 }
             }
         },
-        trustHost: true,
-        secret: env?.AUTH_SECRET, // 💡 명시적 주입
     };
 });
