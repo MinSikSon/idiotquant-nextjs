@@ -22,17 +22,6 @@ export const { handlers, auth, signIn, signOut } = NextAuth((req: any) => {
         session: { strategy: "jwt" },
         callbacks: {
             async signIn({ user }) {
-                // 💡 DB 바인딩이 존재하는 실제 API 요청 시점에만 실행
-                if (db && user?.id) {
-                    try {
-                        await db.prepare(`
-              INSERT OR IGNORE INTO usage_limits (userId, usageCount, maxLimit)
-              VALUES (?, 0, 10)
-            `).bind(user.id).run();
-                    } catch (e) {
-                        console.error("D1 Persistence Error:", e);
-                    }
-                }
                 return true;
             },
             async jwt({ token, user }) {
@@ -48,6 +37,22 @@ export const { handlers, auth, signIn, signOut } = NextAuth((req: any) => {
                     (session.user as any).plan = token.plan;
                 }
                 return session;
+            }
+        },
+        events: {
+            async createUser({ user }) {
+                if (db && user.id) {
+                    try {
+                        // 유저 생성이 완료된 후 호출되므로 안전하게 실행됩니다.
+                        await db.prepare(`
+              INSERT INTO usage_limits (userId, usageCount, maxLimit)
+              VALUES (?, 0, 10)
+            `).bind(user.id).run();
+                        console.log(`Usage limits created for user: ${user.id}`);
+                    } catch (e) {
+                        console.error("Failed to create usage limits in event:", e);
+                    }
+                }
             }
         },
         trustHost: true,
