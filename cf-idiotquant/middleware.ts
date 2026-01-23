@@ -4,11 +4,13 @@ import { authConfig } from '@/auth.config';
 
 import { NextResponse } from 'next/server'
 import type { NextRequest } from 'next/server'
-import { verifyJWT } from './lib/jwt';
-
-import { auth } from "@/auth" // 👈 Auth.js의 auth 함수를 가져옵니다.
 
 export async function middleware(req: NextRequest) {
+    const { auth } = NextAuth(authConfig);
+    const session = await auth();
+    const isLoggedIn = !!session;
+    console.log(`[middleware] session:`, session, `, isLoggedIn:`, isLoggedIn);
+
     const url = new URL(req.url);
     const path = req.nextUrl.pathname;
 
@@ -17,11 +19,6 @@ export async function middleware(req: NextRequest) {
         , `, path.startsWith("/.well-known"):`, path.startsWith("/.well-known"),
         `, path.startsWith("/images"):`, path.startsWith("/images")
     );
-
-
-    const session = await auth();
-    const isLoggedIn = !!session;
-    console.log(`[middleware] session:`, session, `, isLoggedIn:`, isLoggedIn);
 
     if (path.startsWith("/api/auth")) {
         // || path === "/api/auth/providers"
