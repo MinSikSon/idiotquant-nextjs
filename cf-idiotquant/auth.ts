@@ -56,5 +56,6 @@ export const { handlers, auth, signIn, signOut } = NextAuth((req: any) => {
             }
         },
         trustHost: true,
+        secret: env?.AUTH_SECRET, // 💡 명시적 주입
     };
 });

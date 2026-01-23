@@ -6,6 +6,7 @@ export const authConfig = {
         Kakao({
             clientId: process.env.AUTH_KAKAO_ID,
             clientSecret: process.env.AUTH_KAKAO_SECRET,
+            allowDangerousEmailAccountLinking: true,
         }),
     ],
     // 페이지 설정 (선택 사항)
