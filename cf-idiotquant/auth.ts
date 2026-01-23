@@ -3,16 +3,20 @@ import Kakao from "next-auth/providers/kakao";
 import { D1Adapter } from "@auth/d1-adapter";
 
 export const { handlers, auth, signIn, signOut } = NextAuth((req: any) => {
-    // Cloudflare 환경 변수 및 DB 바인딩 추출
-    const env = req?.context?.env || process.env;
-    const db = env?.DB || env?.db; // 대문자/소문자 모두 대응
+    // 1. 모든 경로를 통해 env 확보 시도
+    const env = req?.context?.env || (process as any).env;
+    const db = env?.DB || env?.db;
 
-    // 1. 미들웨어 체크: req.auth가 있으면 미들웨어에서 호출된 것임
-    const isMiddleware = !req?.context;
+    // 💡 상세 로그 추가 (데이터가 안 들어올 때 원인 파악용)
+    console.log("--- Auth Debug Logic ---");
+    console.log("Path:", req?.nextUrl?.pathname);
+    console.log("DB Binding Type:", typeof db);
+    console.log("Is Adapter assigned?:", !!db);
+    console.log("------------------------");
 
     return {
-        // 💡 미들웨어가 아닐 때(즉, API 요청일 때)만 Adapter를 연결합니다.
-        adapter: !isMiddleware && db ? D1Adapter(db) : undefined,
+        // 어댑터를 조건부 없이 일단 db가 있으면 할당
+        adapter: db ? D1Adapter(db) : undefined,
         providers: [
             Kakao({
                 clientId: env?.AUTH_KAKAO_ID,
@@ -21,9 +25,6 @@ export const { handlers, auth, signIn, signOut } = NextAuth((req: any) => {
         ],
         session: { strategy: "jwt" },
         callbacks: {
-            async signIn({ user }) {
-                return true;
-            },
             async jwt({ token, user }) {
                 if (user) {
                     token.id = user.id;
@@ -41,17 +42,19 @@ export const { handlers, auth, signIn, signOut } = NextAuth((req: any) => {
         },
         events: {
             async createUser({ user }) {
-                if (db && user.id) {
+                console.log("!!! createUser Event Triggered !!!", user.id);
+                if (db) {
                     try {
-                        // 유저 생성이 완료된 후 호출되므로 안전하게 실행됩니다.
-                        await db.prepare(`
-              INSERT INTO usage_limits (userId, usageCount, maxLimit)
-              VALUES (?, 0, 10)
-            `).bind(user.id).run();
-                        console.log(`Usage limits created for user: ${user.id}`);
+                        const res = await db.prepare(`
+                          INSERT OR IGNORE INTO usage_limits (userId, usageCount, maxLimit)
+                          VALUES (?, 0, 10)
+                        `).bind(user.id).run();
+                        console.log("D1 Success:", res);
                     } catch (e) {
-                        console.error("Failed to create usage limits in event:", e);
+                        console.error("D1 Insert Error:", e);
                     }
+                } else {
+                    console.error("DB Binding lost in createUser event");
                 }
             }
         },
