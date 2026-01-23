@@ -1,29 +1,26 @@
 import NextAuth from "next-auth";
 import Kakao from "next-auth/providers/kakao";
 import { D1Adapter } from "@auth/d1-adapter";
+import { authConfig } from "./auth.config";
 
 export const { handlers, auth, signIn, signOut } = NextAuth((req: any) => {
     // 1. 모든 경로를 통해 env 확보 시도
     const env = req?.context?.env || (process as any).env;
+    const node_env = env?.NODE_ENV;
     const db = env?.DB || env?.db;
 
     // 💡 상세 로그 추가 (데이터가 안 들어올 때 원인 파악용)
     console.log("--- Auth Debug Logic ---");
     console.log("Path:", req?.nextUrl?.pathname);
+    console.log(`node_env:`, node_env);
     console.log("DB Binding Type:", typeof db);
-    console.log("Is Adapter assigned?:", !!db);
+    console.log("Is Adapter assigned?:", db, !!db, env?.DB, env?.db);
     console.log("------------------------");
 
     return {
+        ...authConfig,
         // 어댑터를 조건부 없이 일단 db가 있으면 할당
-        adapter: db ? D1Adapter(db) : undefined,
-        providers: [
-            Kakao({
-                clientId: env?.AUTH_KAKAO_ID,
-                clientSecret: env?.AUTH_KAKAO_SECRET,
-            }),
-        ],
-        session: { strategy: "jwt" },
+        adapter: db && "development" != node_env ? D1Adapter(db) : undefined,
         callbacks: {
             async jwt({ token, user }) {
                 if (user) {
