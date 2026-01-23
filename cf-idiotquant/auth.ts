@@ -1,64 +1,55 @@
-// auth.ts
-import NextAuth from "next-auth"
-import { authConfig } from "./auth.config"
-import { D1Adapter } from "@auth/d1-adapter"
+import NextAuth from "next-auth";
+import Kakao from "next-auth/providers/kakao";
+import { D1Adapter } from "@auth/d1-adapter";
+
 export const { handlers, auth, signIn, signOut } = NextAuth((req: any) => {
-    // 1. context와 env가 존재하는지 안전하게 확인
-    const env = (req as any)?.context?.env;
-    const db = env?.db;
+    // Cloudflare 환경 변수 및 DB 바인딩 추출
+    const env = req?.context?.env || process.env;
+    const db = env?.DB || env?.db; // 대문자/소문자 모두 대응
 
-    // 💡 로그로 현재 환경 확인
-    console.log("--- Cloudflare Context Check ---");
-    console.log("Is Context available?:", !!(req as any)?.context);
-    console.log("Is Env available?:", !!env);
-    console.log("Is D1 Binding (db) available?:", !!env?.db);
-    console.log("---------------------------------");
+    // 1. 미들웨어 체크: req.auth가 있으면 미들웨어에서 호출된 것임
+    const isMiddleware = !req?.context;
 
-    // 2. env나 env.db가 없다면 어댑터 없이 기본 설정만 반환 (Middleware 대응)
-    if (!env || !db) {
-        return {
-            ...authConfig,
-            trustHost: true,
-        }
-    }
-
-    // 3. DB가 있는 환경(Route Handler 등)에서만 어댑터 적용
     return {
-        ...authConfig,
-        adapter: D1Adapter(db),
+        // 💡 미들웨어가 아닐 때(즉, API 요청일 때)만 Adapter를 연결합니다.
+        adapter: !isMiddleware && db ? D1Adapter(db) : undefined,
+        providers: [
+            Kakao({
+                clientId: env?.AUTH_KAKAO_ID,
+                clientSecret: env?.AUTH_KAKAO_SECRET,
+            }),
+        ],
+        session: { strategy: "jwt" },
         callbacks: {
-            // 1. JWT에 D1의 추가 정보(plan 등)를 담습니다.
+            async signIn({ user }) {
+                // 💡 DB 바인딩이 존재하는 실제 API 요청 시점에만 실행
+                if (db && user?.id) {
+                    try {
+                        await db.prepare(`
+              INSERT OR IGNORE INTO usage_limits (userId, usageCount, maxLimit)
+              VALUES (?, 0, 10)
+            `).bind(user.id).run();
+                    } catch (e) {
+                        console.error("D1 Persistence Error:", e);
+                    }
+                }
+                return true;
+            },
             async jwt({ token, user }) {
                 if (user) {
                     token.id = user.id;
-                    // @ts-ignore (D1Adapter가 users 테이블에서 가져온 plan 필드)
-                    token.plan = user.plan || "free";
+                    token.plan = (user as any).plan || "free";
                 }
                 return token;
             },
-            // 2. 클라이언트 사이드에서 session.user.plan으로 접근 가능하게 합니다.
             async session({ session, token }) {
                 if (session.user) {
                     session.user.id = token.id as string;
                     (session.user as any).plan = token.plan;
                 }
                 return session;
-            },
-            // 3. 최초 로그인 시 usage_limits 테이블 생성
-            async signIn({ user }) {
-                if (!db) return true;
-                try {
-                    await db.prepare(`
-            INSERT OR IGNORE INTO usage_limits (userId, usageCount, maxLimit)
-            VALUES (?, 0, 10)
-          `).bind(user.id).run();
-                    return true;
-                } catch (e) {
-                    console.error("usage_limits 생성 에러:", e);
-                    return true;
-                }
             }
         },
         trustHost: true,
-    }
-})
+    };
+});
