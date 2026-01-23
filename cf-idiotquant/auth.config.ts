@@ -15,10 +15,4 @@ export const authConfig = {
     session: {
         strategy: "jwt", // 🚀 DB 없이 토큰 방식으로 세션 관리
     },
-    callbacks: {
-        async session({ session, token }) {
-            // 필요한 경우 세션 객체에 유저 ID 등을 추가 저장 가능
-            return session;
-        },
-    },
 } satisfies NextAuthConfig;
