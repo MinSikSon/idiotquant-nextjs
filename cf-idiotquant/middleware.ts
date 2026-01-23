@@ -5,9 +5,10 @@ import { authConfig } from '@/auth.config';
 import { NextResponse } from 'next/server'
 import type { NextRequest } from 'next/server'
 
+const { auth: middlewareAuth } = NextAuth(authConfig);
 export async function middleware(req: NextRequest) {
-    const { auth } = NextAuth(authConfig);
-    const session = await auth();
+    // middlewareAuth()는 내부적으로 JWT만 확인하며 DB에 접근하지 않습니다.
+    const session = await middlewareAuth();
     const isLoggedIn = !!session;
     console.log(`[middleware] session:`, session, `, isLoggedIn:`, isLoggedIn);
 
