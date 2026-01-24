@@ -11,6 +11,9 @@ export async function middleware(req: NextRequest) {
     const session = await middlewareAuth();
     const isLoggedIn = !!session;
     console.log(`[middleware] session:`, session, `, isLoggedIn:`, isLoggedIn);
+    const isAdmin = (session?.user as any)?.role === "admin";
+    console.log(`[middleware] isAdmin:`, isAdmin);
+
 
     const url = new URL(req.url);
     const path = req.nextUrl.pathname;
@@ -20,6 +23,17 @@ export async function middleware(req: NextRequest) {
         , `, path.startsWith("/.well-known"):`, path.startsWith("/.well-known"),
         `, path.startsWith("/images"):`, path.startsWith("/images")
     );
+
+    // /admin 경로 접근 제어
+    if (path.startsWith("/admin")) {
+        if (!isLoggedIn) {
+            return Response.redirect(new URL("/login", req.nextUrl));
+        }
+        if (!isAdmin) {
+            // 관리자가 아니면 홈으로 튕겨내기
+            return Response.redirect(new URL("/", req.nextUrl));
+        }
+    }
 
     if (path.startsWith("/api/auth")) {
         // || path === "/api/auth/providers"
