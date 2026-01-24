@@ -10,13 +10,7 @@ const ADMIN_EMAILS = ["funkydj3@naver.com"];
 
 export default function AdminPage() {
     const { data: session, status } = useSession()
-
-    // 1. 보안 체크: 로그인 여부 및 이메일 확인
-    if (!session || !session.user || !ADMIN_EMAILS.includes(session.user.email ?? "")) {
-        redirect("/"); // 권한 없으면 홈으로 튕겨냄
-    }
-
-    const { user } = session;
+    const user = (session?.user as any);
 
     return (
         <div className="max-w-2xl mx-auto p-6">
