@@ -1,3 +1,5 @@
+"use client";
+
 import Image from "next/image";
 import KakaoSignOut from "@/components/sign-out";
 import { useSession } from "next-auth/react";
