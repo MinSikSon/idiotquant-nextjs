@@ -32,6 +32,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth((req: any) => {
                 if (user) {
                     token.id = user.id;
                     token.plan = (user as any).plan || "free";
+                    token.role = (user as any).role;
                 }
                 return token;
             },

@@ -13,7 +13,8 @@ CREATE TABLE IF NOT EXISTS users (
     expiresAt INTEGER,                 -- 구독 만료 시점 (Unix Timestamp)
     
     createdAt INTEGER DEFAULT (strftime('%s', 'now')), -- 가입일
-    updatedAt INTEGER DEFAULT (strftime('%s', 'now'))  -- 수정일
+    updatedAt INTEGER DEFAULT (strftime('%s', 'now')),  -- 수정일
+    role TEXT DEFAULT 'user'           -- 역할: user, admin 등
 );
 
 -- 2. 소셜 계정 연결 정보 (OAuth 관련)
@@ -30,7 +31,9 @@ CREATE TABLE IF NOT EXISTS accounts (
     scope TEXT,
     id_token TEXT,
     session_state TEXT,
-    FOREIGN KEY (userId) REFERENCES users (id) ON DELETE CASCADE
+    oauth_token_secret TEXT,
+    oauth_token TEXT,
+    FOREIGN KEY (userId) REFERENCES users(id) ON DELETE CASCADE
 );
 
 -- 3. 결제 이력 테이블 (영수증 및 매출 통계)
