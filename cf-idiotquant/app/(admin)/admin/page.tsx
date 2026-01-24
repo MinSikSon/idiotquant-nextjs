@@ -1,16 +1,21 @@
-"use client";
-
-import { redirect } from "next/navigation";
 import Image from "next/image";
 import KakaoSignOut from "@/components/sign-out";
 import { useSession } from "next-auth/react";
 
-// ⚠️ 본인의 카카오 이메일 주소를 입력하세요
-const ADMIN_EMAILS = ["funkydj3@naver.com"];
-
 export default function AdminPage() {
-    const { data: session, status } = useSession()
-    const user = (session?.user as any);
+    const { data: session, status } = useSession();
+
+    // 1. 로딩 중일 때 표시할 UI
+    if (status === "loading") {
+        return <div className="p-10 text-center">권한 확인 중...</div>;
+    }
+
+    // 2. 세션이 없거나 관리자가 아닐 때 (미들웨어가 막아주지만 이중 보안)
+    if (!session || (session.user as any).role !== "admin") {
+        return <div className="p-10 text-center text-red-500">접근 권한이 없습니다.</div>;
+    }
+
+    const user = session.user as any;
 
     return (
         <div className="max-w-2xl mx-auto p-6">
