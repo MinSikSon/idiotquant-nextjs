@@ -1,9 +1,6 @@
 import { useState, useMemo, ChangeEvent, KeyboardEvent, useRef } from "react";
 import { MagnifyingGlassIcon, XCircleIcon } from "@heroicons/react/24/outline";
 
-// import { DesignButton } from "./designButton";
-import { IconButton, TextField } from "@radix-ui/themes";
-
 const SearchAutocomplete = (props: any) => {
     const [query, setQuery] = useState("");
     const [isFocused, setIsFocused] = useState(false);
@@ -65,24 +62,9 @@ const SearchAutocomplete = (props: any) => {
     const inputRef = useRef<HTMLInputElement>(null);
 
     return (
-        <div className="flex items-center p-2 relative gap-1">
-            <div className="relative flex-1 items-center">
-                {/* <input
-                    ref={inputRef}
-                    type="text"
-                    value={query}
-                    onChange={handleChange}
-                    onKeyUp={(e) => {
-                        if (isFocused) {
-                            handleKeyDown(e)
-                        }
-                    }}
-                    placeholder={props.placeHolder}
-                    onFocus={() => setIsFocused(true)}
-                    onBlur={() => setTimeout(() => setIsFocused(false), 200)}
-                    className="dark:bg-black dark:text-white font-mono w-full p-2 border rounded-full focus:outline-none focus:ring-2 focus:ring-black"
-                /> */}
-                <TextField.Root placeholder={props.placeHolder}
+        <div className="flex items-center relative gap-1 w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-black dark:text-white">
+            <div className="relative flex-1 items-center w-full">
+                <input placeholder={props.placeHolder}
                     onChange={handleChange}
                     onKeyUp={(e) => {
                         if (isFocused) {
@@ -90,36 +72,29 @@ const SearchAutocomplete = (props: any) => {
                         }
                     }}
                     value={query}
-                    size="3"
+                    className="w-full"
                 >
-                    <TextField.Slot>
-                        <MagnifyingGlassIcon height="16" width="16" />
-                    </TextField.Slot>
-                </TextField.Root>
+                </input>
                 {query && (
                     <div
                         className="absolute right-2 top-1/2 transform -translate-y-1/2 p-0"
                     >
-                        <IconButton
-                            size="3"
-                            variant="ghost"
+                        <button
                             onClick={handleClear}
                         >
                             {/* <button className="dark:bg-black dark:text-white absolute right-2 top-1/2 transform -translate-y-1/2 p-2" onClick={handleClear}> */}
-                            <XCircleIcon className="dark:bg-black dark:text-white h-6 w-6 text-gray-500" />
+                            <XCircleIcon className="dark:bg-black dark:text-white h-6 w-6 text-gray-500 pt-1" />
                             {/* </button> */}
-                        </IconButton>
+                        </button>
                     </div>
                 )}
             </div>
-            <IconButton
-                size="3"
+            <button
                 // variant="outline"
-                radius="full"
                 onClick={() => handleSearch()}
             >
                 <MagnifyingGlassIcon width="16" height="16" />
-            </IconButton>
+            </button>
             {isFocused && suggestions.length > 0 && (
                 <ul className="z-10 absolute top-10 left-2 w-10/12 ml-4 mt-0 bg-white dark:bg-black border border-gray-300 rounded-lg shadow-lg max-h-60 overflow-auto">
                     {suggestions.map((suggestion: any, index: any) => (

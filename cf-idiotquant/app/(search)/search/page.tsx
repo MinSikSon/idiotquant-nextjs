@@ -105,7 +105,7 @@ export default function Search() {
 
   // --- Handlers & Helpers ---
   useEffect(() => {
-    const handleScroll = () => setFixed(window.scrollY > 160);
+    const handleScroll = () => setFixed(window.scrollY > 140);
     window.addEventListener("scroll", handleScroll, { passive: true });
     if (cfStarred?.state === "init") dispatch(getCloudFlareStarredStocks());
     return () => window.removeEventListener("scroll", handleScroll);
@@ -252,7 +252,7 @@ export default function Search() {
       <div className="animate-in fade-in slide-in-from-bottom-2 duration-500">
         {/* KR Header & Chart */}
         <Card elevation={Elevation.ONE} className="dark:bg-zinc-900 p-0 overflow-hidden rounded-xl border-none mb-4">
-          <div className={`flex transition-all duration-300 ${fixed ? "fixed top-[74px] left-0 w-full z-40 bg-white/90 dark:bg-zinc-900/90 backdrop-blur shadow-md px-4 py-2" : "p-4"}`}>
+          <div className={`flex transition-all duration-300 ${fixed ? "fixed top-[64px] left-0 w-full z-40 bg-white/90 dark:bg-zinc-900/90 backdrop-blur shadow-md px-4 py-2" : "p-4"}`}>
             <div className="w-7/12">
               {!fixed && <div className="text-[10px] text-zinc-500">{kiPrice.output.rprs_mrkt_kor_name} | {kiPrice.output.bstp_kor_isnm}</div>}
               <div className="flex items-center gap-2">
@@ -436,10 +436,10 @@ export default function Search() {
   return (
     <div className="w-full min-h-screen bg-gray-50 dark:bg-zinc-950 transition-colors duration-300">
       {/* Header & Search */}
-      <div className={`z-50 w-full transition-all duration-300 ${fixed ? "fixed top-0 bg-white/80 dark:bg-zinc-950/80 backdrop-blur shadow-sm" : "relative bg-white dark:bg-zinc-900"}`}>
+      <div className={`z-10 w-full transition-all duration-300 ${fixed ? "fixed top-0 bg-white/80 dark:bg-zinc-950/80 backdrop-blur shadow-sm" : "relative bg-white dark:bg-zinc-900"}`}>
         <SearchAutocomplete placeHolder="🇰🇷 종목명 또는 🇺🇸 티커" onSearchButton={onSearchButton} validCorpNameArray={all_tickers} />
         <div className="flex px-4 py-1 gap-1 overflow-x-auto no-scrollbar border-t dark:border-zinc-800">
-          {krMarketHistory.slice().reverse().map((s, i) => (
+          {krMarketHistory.slice(-6).reverse().map((s, i) => (
             <Tag key={i} interactive round minimal onClick={() => onSearchButton(s)} className="cursor-pointer !text-black dark:!text-white hover:bg-blue-50 dark:hover:bg-zinc-800 transition-colors">
               {s}
             </Tag>
