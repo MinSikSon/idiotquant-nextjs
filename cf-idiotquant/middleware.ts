@@ -18,7 +18,7 @@ export async function middleware(req: NextRequest) {
     const url = new URL(req.url);
     const path = req.nextUrl.pathname;
 
-    console.log(`[middleware] req.url:`, req.url, `, path:`, path);
+    console.log(`[middleware] req.url:`, req.url, `, path:`, path, `, req.nextUrl:`, req.nextUrl);
     console.log(`[middleware] path.startsWith("/_next"):`, path.startsWith("/_next")
         , `, path.startsWith("/.well-known"):`, path.startsWith("/.well-known"),
         `, path.startsWith("/images"):`, path.startsWith("/images")
@@ -32,6 +32,16 @@ export async function middleware(req: NextRequest) {
         if (!isAdmin) {
             // 관리자가 아니면 홈으로 튕겨내기
             return Response.redirect(new URL("/", req.nextUrl));
+        }
+    }
+
+    if (path.startsWith("/balance-kr") || path.startsWith("/balance-us")) {
+        const can_search_account = (session?.user as any)?.can_search_account;
+        console.log(`[middleware] can_search_account:`, can_search_account);
+
+        if (!can_search_account) {
+            // 홈으로 보냄
+            return Response.redirect(new URL("/", req.url));
         }
     }
 
