@@ -27,26 +27,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth((req: any) => {
         trustHost: true,
         basePath: "/api/auth",
         adapter: db && "development" != node_env ? D1Adapter(db) : undefined,
-        callbacks: {
-            async jwt({ token, user }) {
-                if (user) {
-                    token.id = user.id;
-                    token.plan = (user as any).plan || "free";
-                    token.role = (user as any).role;
-                    token.can_search_account = (user as any).can_search_account;
-                }
-                return token;
-            },
-            async session({ session, token }) {
-                if (session.user) {
-                    session.user.id = token.id as string;
-                    (session.user as any).plan = token.plan;
-                    (session.user as any).role = token.role;
-                    (session.user as any).can_search_account = token.can_search_account;
-                }
-                return session;
-            }
-        },
+
         events: {
             async createUser({ user }) {
                 console.log("!!! createUser Event Triggered !!!", user.id);
