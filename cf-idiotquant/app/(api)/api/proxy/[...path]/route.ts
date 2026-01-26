@@ -72,9 +72,9 @@ async function handleProxy(req: Request, { params }: { params: { path: string[] 
         const response = await fetch(backendUrl, fetchOptions);
 
         // 백엔드의 응답 데이터 파싱
-        const data = await response.json();
+        // const data = await response.json();
 
-        return NextResponse.json(data, { status: response.status });
+        return new NextResponse(response.body, { status: response.status });
     } catch (error) {
         console.error("Proxy Error:", error);
         return NextResponse.json({ error: "Backend Connection Error" }, { status: 500 });

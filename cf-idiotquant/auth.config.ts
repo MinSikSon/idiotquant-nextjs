@@ -22,7 +22,7 @@ export const authConfig = {
                 console.log(`[auth.config.ts] user:`, user);
                 token.id = (user as any).id;
                 token.plan = (user as any).plan || "free";
-                token.role = (user as any).role;
+                token.role = (user as any).role || "user";
                 token.can_search_account = (user as any).can_search_account;
             }
             return token;
