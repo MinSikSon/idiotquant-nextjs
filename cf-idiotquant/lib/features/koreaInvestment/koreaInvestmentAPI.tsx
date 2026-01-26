@@ -107,7 +107,7 @@ export interface AdditionalHeaders {
 }
 
 export async function postKoreaInvestmentRequest(subUrl: string, additionalHeaders?: AdditionalHeaders) {
-    const url = `${process.env.NEXT_PUBLIC_API_URL}${subUrl}`;
+    const url = `/api/proxy/${subUrl}`;
     const options: RequestInit = {
         method: "POST",
         credentials: "include",  // include credentials (like cookies) in the request
@@ -122,7 +122,7 @@ export async function postKoreaInvestmentRequest(subUrl: string, additionalHeade
 }
 
 export async function getKoreaInvestmentRequest(subUrl: string, additionalHeaders?: AdditionalHeaders) {
-    const url = `${process.env.NEXT_PUBLIC_API_URL}${subUrl}`;
+    const url = `/api/proxy/${subUrl}`;
     const options: RequestInit = {
         method: "GET",
         credentials: "include",  // include credentials (like cookies) in the request
