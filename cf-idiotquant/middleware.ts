@@ -46,10 +46,10 @@ export async function middleware(req: NextRequest) {
     }
 
     if (path.startsWith("/api/auth")) {
-        // || path === "/api/auth/providers"
-        // || path === "/api/auth/csrf"
-        // || path === "/api/auth/signin/kakao"
-        // || path === "/api/auth/callback/kakao"
+        return NextResponse.next();
+    }
+
+    if (path.startsWith("/api/proxy")) {
         return NextResponse.next();
     }
 
