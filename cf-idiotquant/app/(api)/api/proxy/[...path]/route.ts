@@ -5,7 +5,7 @@ import { SignJWT } from 'jose';
 import { NextResponse } from "next/server";
 
 // 로컬 테스트 시에는 아래 줄을 주석 처리하세요.
-// export const runtime = "edge";
+export const runtime = "edge";
 
 // 1. 로컬 개발 환경일 때만 보안 검증 해제 (Node.js 환경용)
 if (process.env.NODE_ENV === "development") {
