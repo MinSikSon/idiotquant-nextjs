@@ -5,7 +5,7 @@ import { SignJWT } from 'jose';
 import { NextResponse } from "next/server";
 
 // 로컬 테스트 시에는 아래 줄을 주석 처리하세요.
-export const runtime = "edge";
+// export const runtime = "edge";
 
 // 1. 로컬 개발 환경일 때만 보안 검증 해제 (Node.js 환경용)
 if (process.env.NODE_ENV === "development") {
@@ -14,45 +14,50 @@ if (process.env.NODE_ENV === "development") {
 
 async function handleProxy(req: Request, { params }: { params: { path: string[] } }) {
     const session = await auth();
-    if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    // if (!session) {
+    //     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    // }
+
+    console.log(`[proxy/route.ts] session:`, session);
 
     const { searchParams } = new URL(req.url);
     console.log(`[proxy/route.ts] searchParams:`, searchParams.toString());
     const path = params.path.join('/');
     console.log(`[proxy/route.ts] path:`, path);
-
-    // 1. 서버 간 인증용 S2S JWT 생성
-    const secret = new TextEncoder().encode(process.env.NEXT_PUBLIC_JWT_SECRET_KEY);
-    const s2sToken = await new SignJWT({
-        userId: (session.user as any).id,
-        role: (session.user as any).role
-    })
-        .setProtectedHeader({ alg: 'HS256' })
-        .setExpirationTime('1m')
-        .sign(secret);
-
-    // 2. 백엔드로 보낼 헤더 초기화
     const backendHeaders = new Headers();
-    backendHeaders.set('Authorization', `Bearer ${s2sToken}`);
     backendHeaders.set('Content-Type', 'application/json');
+    if (!!session) {
+        // 1. 서버 간 인증용 S2S JWT 생성
+        const secret = new TextEncoder().encode(process.env.NEXT_PUBLIC_JWT_SECRET_KEY);
+        const s2sToken = await new SignJWT({
+            userId: (session.user as any).id,
+            role: (session.user as any).role
+        })
+            .setProtectedHeader({ alg: 'HS256' })
+            .setExpirationTime('1m')
+            .sign(secret);
 
-    backendHeaders.set("X-User-Id", (session.user as any).id);
-    backendHeaders.set("X-User-Role", (session.user as any).role);
-    backendHeaders.set("X-User-Plan", (session.user as any).plan || "free");
-    // 4. (보안 팁) 백엔드와 약속한 시크릿 키가 있다면 추가
-    // 백엔드는 이 키가 있는 요청만 'Proxy가 보낸 것'으로 간주함
-    backendHeaders.set("X-Internal-Secret", process.env.NEXT_PUBLIC_JWT_SECRET_KEY || "");
+        // 2. 백엔드로 보낼 헤더 초기화
+        backendHeaders.set('Authorization', `Bearer ${s2sToken}`);
 
-    // 3. 클라이언트 커스텀 헤더 일괄 복사 (핵심!)
-    // const CUSTOM_HEADERS = ['idiot-user-id', 'strategy-name', 'auth-context'];
+        backendHeaders.set("X-User-Id", (session.user as any).id);
+        backendHeaders.set("X-User-Role", (session.user as any).role);
+        backendHeaders.set("X-User-Plan", (session.user as any).plan || "free");
+        // 4. (보안 팁) 백엔드와 약속한 시크릿 키가 있다면 추가
+        // 백엔드는 이 키가 있는 요청만 'Proxy가 보낸 것'으로 간주함
+        backendHeaders.set("X-Internal-Secret", process.env.NEXT_PUBLIC_JWT_SECRET_KEY || "");
 
-    req.headers.forEach((value, key) => {
-        // 소문자로 변환하여 비교 (HTTP 헤더는 대소문자를 구분하지 않음)
-        // if (CUSTOM_HEADERS.includes(key.toLowerCase()))
-        {
-            backendHeaders.set(key, value);
-        }
-    });
+        // 3. 클라이언트 커스텀 헤더 일괄 복사 (핵심!)
+        // const CUSTOM_HEADERS = ['idiot-user-id', 'strategy-name', 'auth-context'];
+
+        req.headers.forEach((value, key) => {
+            // 소문자로 변환하여 비교 (HTTP 헤더는 대소문자를 구분하지 않음)
+            // if (CUSTOM_HEADERS.includes(key.toLowerCase()))
+            {
+                backendHeaders.set(key, value);
+            }
+        });
+    }
 
     // const backendUrl = `${process.env.NEXT_PUBLIC_API_URL}/api/${path}?${searchParams.toString()}`;
     const backendUrl = `${process.env.NEXT_PUBLIC_API_URL}/${path}?${searchParams.toString()}`;
