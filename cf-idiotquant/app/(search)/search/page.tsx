@@ -474,8 +474,8 @@ function getNcavTable(kiBS: any, kiChart: any) {
 }
 
 function getSRIMTable(kiBS: any, kiIS: any, kiChart: any) {
-  const total_cptl = Number(kiBS.output[0].total_cptl) * ONE_HUNDRED_MILLION;
-  const thtr_ntin = Number(kiIS.output[0].thtr_ntin) * ONE_HUNDRED_MILLION;
+  const total_cptl = Number(kiBS?.output[0]?.total_cptl ?? 1) * ONE_HUNDRED_MILLION;
+  const thtr_ntin = Number(kiIS?.output[0]?.thtr_ntin ?? 0) * ONE_HUNDRED_MILLION;
   const ROE = (thtr_ntin / total_cptl) * 100;
   const lstn = Number(kiChart.output1.lstn_stcn);
   const prpr = Number(kiChart.output1.stck_prpr);
