@@ -239,6 +239,7 @@ function BalanceUs() {
                                 doTokenMinusAll={doTokenMinusAll}
                                 doTokenPlusOne={doTokenPlusOne}
                                 doTokenMinusOne={doTokenMinusOne}
+                                session={session}
                             />
                         </SectionCard>
                     </Section>

@@ -224,6 +224,7 @@ function BalanceKr() {
                             doTokenMinusAll={doTokenMinusAll}
                             doTokenPlusOne={doTokenPlusOne}
                             doTokenMinusOne={doTokenMinusOne}
+                            session={session}
                         />
                     </section>
                 </div>

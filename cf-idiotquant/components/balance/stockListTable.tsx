@@ -22,7 +22,6 @@ import {
 } from "@blueprintjs/core";
 import { IconNames } from "@blueprintjs/icons";
 import { UsCapitalStockItem, KrUsCapitalType } from "@/lib/features/capital/capitalSlice";
-import { useSession } from "next-auth/react";
 
 interface Props {
   data?: KrUsCapitalType;
@@ -32,6 +31,7 @@ interface Props {
   doTokenMinusAll: (val: number) => void;
   doTokenMinusOne: (val: number, sym: string) => void;
   className?: string;
+  session: any;
 }
 
 export default function StockListTable({
@@ -42,8 +42,8 @@ export default function StockListTable({
   doTokenMinusAll,
   doTokenMinusOne,
   className = "",
+  session,
 }: Props) {
-  const { data: session, status } = useSession();
 
   const rows = data?.stock_list ?? [];
   const [selected, setSelected] = useState<UsCapitalStockItem | null>(null);
