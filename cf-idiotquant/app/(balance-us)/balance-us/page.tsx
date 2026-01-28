@@ -109,11 +109,11 @@ function BalanceUs() {
         const urlKey = searchParams.get("key");
         if (urlKey) {
             setBalanceKey(urlKey);
-        } else if (kakaoTotal?.id) {
+        } else if (session?.user?.id) {
             // URL에 키가 없으면 내 카카오 ID로 설정
-            setBalanceKey(String(kakaoTotal.id));
+            setBalanceKey(String(session.user.id));
         }
-    }, [kakaoTotal?.id]);
+    }, []);
 
     // 2. balanceKey가 확정/변경될 때마다 데이터 호출 및 URL 업데이트
     useEffect(() => {

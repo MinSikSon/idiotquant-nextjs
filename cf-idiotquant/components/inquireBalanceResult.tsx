@@ -88,13 +88,13 @@ export default function InquireBalanceResult(props: InquireBalanceResultProps) {
         if (urlKey) {
             // URL에 키가 있으면 해당 키로 balanceKey 설정
             props.setBalanceKey(urlKey);
-        } else if (props.kakaoTotal?.id) {
+        } else if (session?.user?.id) {
             // URL에 키가 없고 내 정보가 로드되면 내 ID를 URL에 주입
             const params = new URLSearchParams(searchParams);
-            params.set("key", String(props.kakaoTotal.id));
+            params.set("key", String(session.user.id));
             router.replace(`${pathname}?${params.toString()}`);
         }
-    }, [urlKey, props.kakaoTotal?.id]);
+    }, []);
 
     // 2. 관리자가 다른 계좌를 선택했을 때 실행되는 핸들러
     const handleMasterSelectChange = (newKey: string) => {

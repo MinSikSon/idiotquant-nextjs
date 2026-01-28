@@ -35,9 +35,6 @@ export function NavbarWithSimpleLinks() {
     const [visible, setVisible] = useState(true);
     const lastScrollY = useRef(0);
 
-    // const kakaoTotal = useAppSelector(selectKakaoTotal);
-    // const isLoggedIn = !!kakaoTotal?.id;
-
     // 스크롤 감지 로직 (Navbar 숨김/노출)
     useEffect(() => {
         const handleScroll = () => {

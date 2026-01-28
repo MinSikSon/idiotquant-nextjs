@@ -99,7 +99,7 @@ function BalanceKr() {
     const pathname = usePathname();
 
     // URL에 key가 있으면 그 값을, 없으면 내 카카오 ID를 초기값으로 사용
-    const [balanceKey, setBalanceKey] = useState(searchParams.get("key") || String(kakaoTotal?.id || ""));
+    const [balanceKey, setBalanceKey] = useState(searchParams.get("key") || String(session?.user?.id || ""));
 
     // 1. URL 파라미터와 balanceKey 상태 동기화
     useEffect(() => {
@@ -129,8 +129,8 @@ function BalanceKr() {
     useEffect(() => {
         dispatch(reqGetInquireBalance());
         dispatch(reqGetCapitalToken());
-        if (kakaoTotal?.id) setBalanceKey(String(kakaoTotal.id));
-    }, [dispatch, kakaoTotal?.id]);
+        if (session?.user?.id) setBalanceKey(String(session.user.id));
+    }, [dispatch, session?.user?.id]);
 
     useEffect(() => {
         if (krCapital.state === "init") {

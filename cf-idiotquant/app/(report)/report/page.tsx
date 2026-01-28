@@ -89,7 +89,7 @@ export default function Report() {
         if (DEBUG) console.log(`[Report]`, `timestampList`, timestampList);
         if (DEBUG) console.log(`[Report]`, `cfUserInfo`, cfUserInfo);
 
-        if (kiBalanceKr.state === "fulfilled" && kiBalanceUs.state === "fulfilled" && kakaoTotal?.id != 0 && timestampList?.state == "fulfilled" && cfUserInfo?.state == "fulfilled") {
+        if (kiBalanceKr.state === "fulfilled" && kiBalanceUs.state === "fulfilled" && !!session?.user?.id && timestampList?.state == "fulfilled" && cfUserInfo?.state == "fulfilled") {
             const COUNTRY = {
                 eKR: 0,
                 eUS: 1,
@@ -207,9 +207,6 @@ export default function Report() {
 
     useEffect(() => {
         if (DEBUG) console.log(`[Report] kakaoTotal:`, kakaoTotal);
-        if (0 == kakaoTotal?.id) {
-
-        }
     }, [kakaoTotal]);
 
     if (DEBUG) console.log(`[Report] loginState`, loginState);
