@@ -20,10 +20,13 @@ async function handleProxy(req: Request, { params }: { params: { path: string[] 
 
     console.log(`[proxy/route.ts] session:`, session);
 
-    const { searchParams } = new URL(req.url);
-    console.log(`[proxy/route.ts] searchParams:`, searchParams.toString());
+    // const { searchParams } = new URL(req.url);
+    // console.log(`[proxy/route.ts] searchParams:`, searchParams.toString());
+    const { search } = new URL(req.url);
+    console.log(`[proxy/route.ts] search:`, search);
     const path = params.path.join('/');
     console.log(`[proxy/route.ts] path:`, path);
+
     const backendHeaders = new Headers();
     backendHeaders.set('Content-Type', 'application/json');
     if (!!session) {
@@ -60,8 +63,8 @@ async function handleProxy(req: Request, { params }: { params: { path: string[] 
     }
 
     // const backendUrl = `${process.env.NEXT_PUBLIC_API_URL}/api/${path}?${searchParams.toString()}`;
-    // const backendUrl = `${process.env.NEXT_PUBLIC_API_URL}/${path}?${searchParams.toString()}`;
-    const backendUrl = `${process.env.NEXT_PUBLIC_API_URL}/${path}`;
+    const backendUrl = `${process.env.NEXT_PUBLIC_API_URL}/${path}${search}`;
+    // const backendUrl = `${process.env.NEXT_PUBLIC_API_URL}/${path}`;
 
     const fetchOptions: RequestInit = {
         method: req.method,

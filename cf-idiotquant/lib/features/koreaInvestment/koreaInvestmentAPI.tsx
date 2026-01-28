@@ -21,12 +21,11 @@ export const getIncomeStatement: any = async (PDNO: string) => {
 
 // 국내주식기간별시세(일/주/월/년)[v1_국내주식-016]
 export const getInquireDailyItemChartPrice: any = async (PDNO: string, FID_INPUT_DATE_1: string, FID_INPUT_DATE_2: string) => {
-    const subUrl = `/uapi/domestic-stock/v1/quotations/inquire-daily-itemchartprice`;
+    const subUrl = `/uapi/domestic-stock/v1/quotations/inquire-daily-itemchartprice?PDNO=${PDNO}&FID_INPUT_DATE_1=${FID_INPUT_DATE_1}&FID_INPUT_DATE_2=${FID_INPUT_DATE_2}`;
     const additionalHeaders: AdditionalHeaders = {
-        "kakaoId": getCookie("kakaoId"),
-        "PDNO": PDNO,
-        "FID_INPUT_DATE_1": FID_INPUT_DATE_1,
-        "FID_INPUT_DATE_2": FID_INPUT_DATE_2,
+        // "PDNO": PDNO,
+        // "FID_INPUT_DATE_1": FID_INPUT_DATE_1,
+        // "FID_INPUT_DATE_2": FID_INPUT_DATE_2,
         // "buyOrSell": buyOrSell,
     }
     return getKoreaInvestmentRequest(subUrl, additionalHeaders);
@@ -129,7 +128,7 @@ export async function getKoreaInvestmentRequest(subUrl: string, additionalHeader
         headers: {
             "content-type": "application/json; utf-8",
             ...additionalHeaders,
-            "authToken": getCookie("authToken"),
+            // "authToken": getCookie("authToken"),
         },
     };
     const res = await fetch(url, options);
