@@ -50,6 +50,7 @@ import {
 
 import InquireBalanceResult from "@/components/inquireBalanceResult";
 import StockListTable from "@/components/balance/stockListTable";
+import { useSession } from "next-auth/react";
 
 const DEBUG = false;
 
@@ -75,6 +76,8 @@ function LoadingState() {
 }
 
 function BalanceKr() {
+    const { data: session, status } = useSession();
+
     const dispatch = useAppDispatch();
 
     // Selectors
@@ -136,7 +139,7 @@ function BalanceKr() {
     }, [krCapital.state, dispatch]);
 
     useEffect(() => {
-        if (kakaoTotal?.kakao_account?.profile?.nickname === process.env.NEXT_PUBLIC_MASTER) {
+        if (session?.user?.name === process.env.NEXT_PUBLIC_MASTER) {
             dispatch(reqGetKakaoMemberList());
         }
     }, [kakaoTotal, dispatch]);

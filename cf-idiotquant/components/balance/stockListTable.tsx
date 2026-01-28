@@ -22,6 +22,7 @@ import {
 } from "@blueprintjs/core";
 import { IconNames } from "@blueprintjs/icons";
 import { UsCapitalStockItem, KrUsCapitalType } from "@/lib/features/capital/capitalSlice";
+import { useSession } from "next-auth/react";
 
 interface Props {
   data?: KrUsCapitalType;
@@ -42,13 +43,15 @@ export default function StockListTable({
   doTokenMinusOne,
   className = "",
 }: Props) {
+  const { data: session, status } = useSession();
+
   const rows = data?.stock_list ?? [];
   const [selected, setSelected] = useState<UsCapitalStockItem | null>(null);
   const [isOpen, setIsOpen] = useState(false);
 
   // 관리자 여부 확인
   const isMaster = useMemo(() =>
-    kakaoTotal?.kakao_account?.profile?.nickname === process.env.NEXT_PUBLIC_MASTER,
+    session?.user?.name === process.env.NEXT_PUBLIC_MASTER,
     [kakaoTotal]);
 
   const tokenAmounts = [10000, 100000, 1000000];

@@ -12,10 +12,13 @@ import { queryTimestampList, selectTimestampList } from "@/lib/features/timestam
 import LoadKakaoTotal from "@/components/loadKakaoTotal";
 import { selectCloudflareUserInfo, UserInfo } from "@/lib/features/cloudflare/cloudflareSlice";
 import { Spinner } from "@radix-ui/themes";
+import { useSession } from "next-auth/react";
 
 const DEBUG = false;
 
 export default function Report() {
+    const { data: session, status } = useSession();
+
     const dispatch = useAppDispatch();
 
     const kiToken: KoreaInvestmentToken = useAppSelector(getKoreaInvestmentToken);
@@ -221,7 +224,7 @@ export default function Report() {
     }
 
     return <>
-        {(kakaoTotal?.kakao_account?.profile?.nickname === process.env.NEXT_PUBLIC_MASTER) && <div className="pb-2"><SendKakaoMessage message={message} /></div>}
+        {(session?.user?.name === process.env.NEXT_PUBLIC_MASTER) && <div className="pb-2"><SendKakaoMessage message={message} /></div>}
         <KakaoFeed message={message} />
     </>
 }

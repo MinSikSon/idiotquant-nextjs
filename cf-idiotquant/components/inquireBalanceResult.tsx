@@ -22,6 +22,7 @@ import { IconNames } from "@blueprintjs/icons";
 import { useAppDispatch } from "@/lib/hooks";
 import { Util } from "./util";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
+import { useSession } from "next-auth/react";
 
 // --- Helpers ---
 const formatNumber = (num: number, isUs: boolean = false) => {
@@ -59,6 +60,8 @@ interface InquireBalanceResultProps {
 }
 
 export default function InquireBalanceResult(props: InquireBalanceResultProps) {
+    const { data: session, status } = useSession();
+
     const dispatch = useAppDispatch();
     const [time] = useState<any>(new Date());
 
@@ -129,7 +132,7 @@ export default function InquireBalanceResult(props: InquireBalanceResultProps) {
                 <SectionCard className="p-0">
                     {/* 마스터 대시보드 */}
                     {/* InquireBalanceResult.tsx 내부 Selector 부분 */}
-                    {props.kakaoTotal?.kakao_account?.profile?.nickname === process.env.NEXT_PUBLIC_MASTER && (
+                    {session?.user?.name === process.env.NEXT_PUBLIC_MASTER && (
                         <div className="p-4 border-b dark:border-zinc-800 bg-zinc-100/50 dark:bg-zinc-900/50 flex items-center gap-4">
                             <Tag minimal intent={Intent.WARNING} icon={IconNames.KEY}>MASTER MODE</Tag>
                             <HTMLSelect

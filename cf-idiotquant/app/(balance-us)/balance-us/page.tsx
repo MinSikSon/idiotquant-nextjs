@@ -56,6 +56,7 @@ import InquireBalanceResult from "@/components/inquireBalanceResult";
 import OverseasCcnlTable from "@/components/balance/ccnlTable";
 import OverseasNccsTable from "@/components/balance/nccsTable";
 import StockListTable from "@/components/balance/stockListTable";
+import { useSession } from "next-auth/react";
 
 function formatNumber(num: number) {
     return num % 1 === 0 ? num.toLocaleString() : num.toFixed(2);
@@ -83,6 +84,8 @@ function LoadingState() {
 }
 
 function BalanceUs() {
+    const { data: session, status } = useSession();
+
     const dispatch = useAppDispatch();
     const router = useRouter();
     const pathname = usePathname();
@@ -130,7 +133,7 @@ function BalanceUs() {
         dispatch(reqGetUsCapital(balanceKey));
 
         // 마스터인 경우 멤버 리스트 로드
-        if (kakaoTotal?.kakao_account?.profile?.nickname === process.env.NEXT_PUBLIC_MASTER) {
+        if (session?.user?.name === process.env.NEXT_PUBLIC_MASTER) {
             dispatch(reqGetKakaoMemberList());
         }
     }, [balanceKey, dispatch, pathname, router, searchParams, kakaoTotal?.kakao_account?.profile?.nickname]);
