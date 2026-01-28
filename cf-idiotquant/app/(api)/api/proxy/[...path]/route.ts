@@ -60,7 +60,8 @@ async function handleProxy(req: Request, { params }: { params: { path: string[] 
     }
 
     // const backendUrl = `${process.env.NEXT_PUBLIC_API_URL}/api/${path}?${searchParams.toString()}`;
-    const backendUrl = `${process.env.NEXT_PUBLIC_API_URL}/${path}?${searchParams.toString()}`;
+    // const backendUrl = `${process.env.NEXT_PUBLIC_API_URL}/${path}?${searchParams.toString()}`;
+    const backendUrl = `${process.env.NEXT_PUBLIC_API_URL}/${path}`;
 
     const fetchOptions: RequestInit = {
         method: req.method,
