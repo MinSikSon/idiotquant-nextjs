@@ -1,20 +1,18 @@
 import { getCookie } from "@/components/util";
 
 export const getBalanceSheet: any = async (PDNO: string) => {
-    const subUrl = `/uapi/domestic-stock/v1/finance/balance-sheet`;
+    const subUrl = `/uapi/domestic-stock/v1/finance/balance-sheet?PDNO=${PDNO}`;
     const additionalHeaders: AdditionalHeaders = {
-        "kakaoId": getCookie("kakaoId"),
-        "PDNO": PDNO,
-        // "buyOrSell": buyOrSell,
+        // "kakaoId": getCookie("kakaoId"),
+        // "PDNO": PDNO,
     }
     return getKoreaInvestmentRequest(subUrl, additionalHeaders);
 }
 export const getIncomeStatement: any = async (PDNO: string) => {
-    const subUrl = `/uapi/domestic-stock/v1/finance/income-statement`;
+    const subUrl = `/uapi/domestic-stock/v1/finance/income-statement?PDNO=${PDNO}`;
     const additionalHeaders: AdditionalHeaders = {
-        "kakaoId": getCookie("kakaoId"),
-        "PDNO": PDNO,
-        // "buyOrSell": buyOrSell,
+        // "kakaoId": getCookie("kakaoId"),
+        // "PDNO": PDNO,
     }
     return getKoreaInvestmentRequest(subUrl, additionalHeaders);
 }
@@ -33,10 +31,10 @@ export const getInquireDailyItemChartPrice: any = async (PDNO: string, FID_INPUT
 
 // 주식기본조회[v1_국내주식-067]
 export const getSearchStockInfo: any = async (PDNO: string) => {
-    const subUrl = `/uapi/domestic-stock/v1/quotations/search-stock-info`;
+    const subUrl = `/uapi/domestic-stock/v1/quotations/search-stock-info?PDNO=${PDNO}`;
     const additionalHeaders: AdditionalHeaders = {
         // "kakaoId": getCookie("kakaoId"),
-        "PDNO": PDNO,
+        // "PDNO": PDNO,
         // "buyOrSell": buyOrSell,
     }
     return getKoreaInvestmentRequest(subUrl, additionalHeaders);
@@ -55,11 +53,11 @@ export const getInquirePrice: any = async (PDNO: string) => {
 
 // 주문
 export const postOrderCash: any = async (PDNO: string, buyOrSell: string) => {
-    const subUrl = `/uapi/domestic-stock/v1/trading/order-cash`;
+    const subUrl = `/uapi/domestic-stock/v1/trading/order-cash?PDNO=${PDNO}&buyOrSell=${buyOrSell}`;
     const additionalHeaders: AdditionalHeaders = {
-        "kakaoId": getCookie("kakaoId"),
-        "PDNO": PDNO,
-        "buyOrSell": buyOrSell,
+        // "kakaoId": getCookie("kakaoId"),
+        // "PDNO": PDNO,
+        // "buyOrSell": buyOrSell,
     }
     return postKoreaInvestmentRequest(subUrl, additionalHeaders);
 }
@@ -67,9 +65,9 @@ export const postOrderCash: any = async (PDNO: string, buyOrSell: string) => {
 // 계좌 조회
 export const getInquireBalanceApi: any = async (key: string) => {
     // console.log(`[getInquireBalanceApi]`);
-    const subUrl = `/uapi/domestic-stock/v1/trading/inquire-balance`;
+    const subUrl = `/uapi/domestic-stock/v1/trading/inquire-balance?kakao-id=${key}`;
     const additionalHeaders: AdditionalHeaders = {
-        "kakaoId": key,
+        // "kakaoId": key,
     }
     return getKoreaInvestmentRequest(subUrl, additionalHeaders);
 }
@@ -77,9 +75,9 @@ export const getInquireBalanceApi: any = async (key: string) => {
 // 주식잔고조회_실현손익[v1_국내주식-041]
 export const getInquireBalanceRlzPl: any = async (key: string) => {
     // console.log(`[getInquireBalanceRlzPl]`);
-    const subUrl = `/uapi/domestic-stock/v1/trading/inquire-balance-rlz-pl`;
+    const subUrl = `/uapi/domestic-stock/v1/trading/inquire-balance-rlz-pl?kakao-id=${key}`;
     const additionalHeaders: AdditionalHeaders = {
-        "kakaoId": key,
+        // "kakaoId": key,
     }
     return getKoreaInvestmentRequest(subUrl, additionalHeaders);
 }
