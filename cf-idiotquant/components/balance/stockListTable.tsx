@@ -52,7 +52,7 @@ export default function StockListTable({
   // 관리자 여부 확인
   const isMaster = useMemo(() =>
     session?.user?.name === process.env.NEXT_PUBLIC_MASTER,
-    [kakaoTotal]);
+    [session]);
 
   const tokenAmounts = [10000, 100000, 1000000];
 

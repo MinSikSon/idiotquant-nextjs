@@ -113,6 +113,11 @@ function BalanceUs() {
             // URL에 키가 없으면 내 카카오 ID로 설정
             setBalanceKey(String(session.user.id));
         }
+
+        // 마스터인 경우 멤버 리스트 로드
+        if (session?.user?.name === process.env.NEXT_PUBLIC_MASTER) {
+            dispatch(reqGetKakaoMemberList());
+        }
     }, []);
 
     // 2. balanceKey가 확정/변경될 때마다 데이터 호출 및 URL 업데이트
@@ -130,10 +135,7 @@ function BalanceUs() {
         dispatch(reqGetOverseasStockTradingInquireNccs(balanceKey));
         dispatch(reqGetUsCapital(balanceKey));
 
-        // 마스터인 경우 멤버 리스트 로드
-        if (session?.user?.name === process.env.NEXT_PUBLIC_MASTER) {
-            dispatch(reqGetKakaoMemberList());
-        }
+
     }, [balanceKey, dispatch, pathname, router, searchParams, kakaoTotal?.kakao_account?.profile?.nickname]);
 
     // 3. 토큰 조작 후 데이터 리프레시 로직
