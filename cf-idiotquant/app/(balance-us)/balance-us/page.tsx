@@ -114,11 +114,14 @@ function BalanceUs() {
             setBalanceKey(String(session.user.id));
         }
 
+
+    }, []);
+    useEffect(() => {
         // 마스터인 경우 멤버 리스트 로드
         if (session?.user?.name === process.env.NEXT_PUBLIC_MASTER) {
             dispatch(reqGetKakaoMemberList());
         }
-    }, []);
+    }, [session]);
 
     // 2. balanceKey가 확정/변경될 때마다 데이터 호출 및 URL 업데이트
     useEffect(() => {

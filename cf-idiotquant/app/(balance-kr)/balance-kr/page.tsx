@@ -104,7 +104,7 @@ function BalanceKr() {
         if (session?.user?.name === process.env.NEXT_PUBLIC_MASTER) {
             dispatch(reqGetKakaoMemberList());
         }
-    }, []);
+    }, [session]);
 
     // 1. URL 파라미터와 balanceKey 상태 동기화
     useEffect(() => {
