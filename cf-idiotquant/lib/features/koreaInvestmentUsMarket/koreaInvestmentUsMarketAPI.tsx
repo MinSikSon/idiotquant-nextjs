@@ -1,6 +1,4 @@
-import { getCookie } from "@/components/util";
 import { getKoreaInvestmentRequest, postKoreaInvestmentRequest } from "../koreaInvestment/koreaInvestmentAPI";
-import { KoreaInvestmentToken } from "../koreaInvestment/koreaInvestmentSlice";
 
 export const getOverseasPriceQuotationsDailyPrice: any = async (PDNO: string, FID_INPUT_DATE_1: string) => {
     const subUrl = `/uapi/overseas-price/v1/quotations/dailyprice?PDNO=${PDNO}&FID_INPUT_DATE_1=${FID_INPUT_DATE_1}`;
@@ -41,17 +39,17 @@ export const postOrderUs: any = async (PDNO: string, buyOrSell: string, excg_cd:
 
 export const getOverseasStockTradingInquirePresentBalance: any = async (key: string) => {
     // console.log(`[getOverseasStockTradingInquireBalance] koreaInvestmentToken`, koreaInvestmentToken);
-    const subUrl = `/uapi/overseas-stock/v1/trading/inquire-present-balance`;
+    const subUrl = `/uapi/overseas-stock/v1/trading/inquire-present-balance?kakao-id=${key}`;
     const additionalHeaders: AdditionalHeaders = {
-        "kakaoId": key,
+        // "kakaoId": key,
     }
     return getKoreaInvestmentRequest(subUrl, additionalHeaders);
 }
 export const getkiOverseasInquirePeriodProfit: any = async (key: string) => {
     // console.log(`[getOverseasStockTradingInquireBalance] koreaInvestmentToken`, koreaInvestmentToken);
-    const subUrl = `/uapi/overseas-stock/v1/trading/inquire-period-profit`;
+    const subUrl = `/uapi/overseas-stock/v1/trading/inquire-period-profit?kakao-id=${key}`;
     const additionalHeaders: AdditionalHeaders = {
-        "kakaoId": key,
+        // "kakaoId": key,
     }
     return getKoreaInvestmentRequest(subUrl, additionalHeaders);
 }
@@ -59,18 +57,18 @@ export const getkiOverseasInquirePeriodProfit: any = async (key: string) => {
 // 계좌 조회
 export const getOverseasStockTradingInquireBalance: any = async (key: string) => {
     // console.log(`[getOverseasStockTradingInquireBalance] koreaInvestmentToken`, koreaInvestmentToken);
-    const subUrl = `/uapi/overseas-stock/v1/trading/inquire-balance`;
+    const subUrl = `/uapi/overseas-stock/v1/trading/inquire-balance?kakao-id=${key}`;
     const additionalHeaders: AdditionalHeaders = {
-        "kakaoId": key,
+        // "kakaoId": key,
     }
     return getKoreaInvestmentRequest(subUrl, additionalHeaders);
 }
 
 // 해외주식 미체결내역[v1_해외주식-005]
 export const getOverseasStockTradingInquireCcnl: any = async (key: string) => {
-    const subUrl = `/uapi/overseas-stock/v1/trading/inquire-ccnl`;
+    const subUrl = `/uapi/overseas-stock/v1/trading/inquire-ccnl?kakao-id=${key}`;
     const additionalHeaders: AdditionalHeaders = {
-        "kakaoId": key,
+        // "kakaoId": key,
     }
     return getKoreaInvestmentRequest(subUrl, additionalHeaders);
 }
@@ -78,9 +76,9 @@ export const getOverseasStockTradingInquireCcnl: any = async (key: string) => {
 // 해외주식 미체결내역[v1_해외주식-005]
 export const getOverseasStockTradingInquireNccs: any = async (key: string) => {
     // console.log(`[getOverseasStockTradingInquireBalance] koreaInvestmentToken`, koreaInvestmentToken);
-    const subUrl = `/uapi/overseas-stock/v1/trading/inquire-nccs`;
+    const subUrl = `/uapi/overseas-stock/v1/trading/inquire-nccs?kakao-id=${key}`;
     const additionalHeaders: AdditionalHeaders = {
-        "kakaoId": key,
+        // "kakaoId": key,
     }
     return getKoreaInvestmentRequest(subUrl, additionalHeaders);
 }
@@ -107,10 +105,10 @@ export const getQuotationsSearchInfo: any = async (PDNO: string) => {
 
 // 시세 조회
 export const getInquirePrice: any = async (PDNO: string) => {
-    const subUrl = `/uapi/domestic-stock/v1/quotations/inquire-price`;
+    const subUrl = `/uapi/domestic-stock/v1/quotations/inquire-price?PDNO=${PDNO}`;
     const additionalHeaders: AdditionalHeaders = {
-        "kakaoId": getCookie("kakaoId"),
-        "PDNO": PDNO,
+        // "kakaoId": getCookie("kakaoId"),
+        // "PDNO": PDNO,
         // "buyOrSell": buyOrSell,
     }
     return getKoreaInvestmentRequest(subUrl, additionalHeaders);
