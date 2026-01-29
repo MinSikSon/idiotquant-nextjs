@@ -1,9 +1,5 @@
-// import { getCookie } from "@/components/util";
-// import { KoreaInvestmentToken } from "./algorithmTradeSlice";
 
-import { getCookie } from "@/components/util";
-import { KoreaInvestmentToken } from "../koreaInvestment/koreaInvestmentSlice";
-import { AdditionalHeaders, getKoreaInvestmentRequest } from "../koreaInvestment/koreaInvestmentAPI";
+import { AdditionalHeaders } from "../koreaInvestment/koreaInvestmentAPI";
 
 export const getCapitalToken: any = async () => {
     const subUrl = `/algorithm/trade/kr/capital/token`;
@@ -49,7 +45,7 @@ export const getQuantRuleDesc: any = async () => {
     return getAlgorithmTradeRequest(subUrl, additionalHeaders);
 }
 async function getAlgorithmTradeRequest(subUrl: string, additionalHeaders?: AdditionalHeaders) {
-    const url = `${process.env.NEXT_PUBLIC_API_URL}${subUrl}`;
+    const url = `/api/proxy/${process.env.NEXT_PUBLIC_API_URL}${subUrl}`;
     const options: RequestInit = {
         method: "GET",
         credentials: "include",  // include credentials (like cookies) in the request

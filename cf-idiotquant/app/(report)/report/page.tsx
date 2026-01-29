@@ -5,7 +5,6 @@ import { useAppDispatch, useAppSelector } from "@/lib/hooks";
 import { useEffect, useState } from "react";
 import { getKiInquireBalanceRlzPlResponseBody, getKoreaInvestmentBalance, getKoreaInvestmentToken, KiInquireBalanceRlzPlResponseBody, KoreaInvestmentBalance, KoreaInvestmentToken, reqGetInquireBalance, reqGetInquireBalanceRlzPl } from "@/lib/features/koreaInvestment/koreaInvestmentSlice";
 import { getKiOverseasInquirePeriodProfitResponseBody, getKoreaInvestmentUsMaretPresentBalance, KiOverseasInquirePeriodProfitResponseBody, KoreaInvestmentOverseasPresentBalance, reqGetkiOverseasInquirePeriodProfit, reqGetOverseasStockTradingInquirePresentBalance } from "@/lib/features/koreaInvestmentUsMarket/koreaInvestmentUsMarketSlice";
-import { Util } from "@/components/util";
 import { KakaoFeed, SendKakaoMessage } from "./report";
 import { KakaoTotal, selectKakaoTatalState, selectKakaoTotal } from "@/lib/features/kakao/kakaoSlice";
 import { queryTimestampList, selectTimestampList } from "@/lib/features/timestamp/timestampSlice";
