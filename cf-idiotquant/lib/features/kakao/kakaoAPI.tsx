@@ -119,7 +119,7 @@ export const getKakaoMemberList: any = async () => {
         headers: {
             "content-type": "application/json; utf-8",
             // ...additionalHeaders,
-            "authToken": authToken,
+            // "authToken": authToken,
         },
         // body: JSON.stringify({})
     };
