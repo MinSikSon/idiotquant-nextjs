@@ -37,11 +37,11 @@ export async function middleware(req: NextRequest) {
 
     if (path.startsWith("/balance-kr") || path.startsWith("/balance-us")) {
         const can_search_account = (session?.user as any)?.can_search_account;
-        console.log(`[middleware] can_search_account:`, can_search_account);
+        console.log(`[middleware] can_search_account:`, can_search_account, !can_search_account);
 
         if (!can_search_account) {
             // 홈으로 보냄
-            return Response.redirect(new URL("/", req.url));
+            return Response.redirect(new URL("/login", req.nextUrl));
         }
     }
 
