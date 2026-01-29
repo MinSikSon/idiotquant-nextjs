@@ -62,8 +62,9 @@ async function handleProxy(req: Request, { params }: { params: { path: string[] 
         });
     }
 
-    // const backendUrl = `${process.env.NEXT_PUBLIC_API_URL}/api/${path}?${searchParams.toString()}`;
-    const backendUrl = `${process.env.NEXT_PUBLIC_API_URL}/${path}${search}`;
+    const baseUrl = process.env.NEXT_PUBLIC_API_URL?.replace(/\/$/, "");
+    const backendUrl = `${baseUrl}/${path}${search}`;
+    // const backendUrl = `${process.env.NEXT_PUBLIC_API_URL}/${path}${search}`;
     // const backendUrl = `${process.env.NEXT_PUBLIC_API_URL}/${path}`;
 
     const fetchOptions: RequestInit = {

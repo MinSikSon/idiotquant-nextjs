@@ -9,17 +9,17 @@ export const getCapitalToken: any = async () => {
 }
 
 export const getKrPurchaseLogLatest: any = async (key?: any) => {
-    const subUrl = `/algorithm/trade/kr/purchase/log/latest`;
+    const subUrl = `/algorithm/trade/kr/purchase/log/latest?kakao-id=${key}`;
     const additionalHeaders: AdditionalHeaders = {
-        "kakaoId": key,
+        // "kakaoId": key,
     }
     return getAlgorithmTradeRequest(subUrl, additionalHeaders);
 }
 
 export const getUsPurchaseLogLatest: any = async (key?: any) => {
-    const subUrl = `/algorithm/trade/us/purchase/log/latest`;
+    const subUrl = `/algorithm/trade/us/purchase/log/latest?kakao-id=${key}`;
     const additionalHeaders: AdditionalHeaders = {
-        "kakaoId": key,
+        // "kakaoId": key,
     }
     return getAlgorithmTradeRequest(subUrl, additionalHeaders);
 }
@@ -45,7 +45,7 @@ export const getQuantRuleDesc: any = async () => {
     return getAlgorithmTradeRequest(subUrl, additionalHeaders);
 }
 async function getAlgorithmTradeRequest(subUrl: string, additionalHeaders?: AdditionalHeaders) {
-    const url = `/api/proxy/${process.env.NEXT_PUBLIC_API_URL}${subUrl}`;
+    const url = `/api/proxy${subUrl}`;
     const options: RequestInit = {
         method: "GET",
         credentials: "include",  // include credentials (like cookies) in the request
