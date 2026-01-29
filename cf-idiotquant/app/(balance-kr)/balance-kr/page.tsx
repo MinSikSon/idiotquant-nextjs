@@ -113,9 +113,7 @@ function BalanceKr() {
     useEffect(() => {
         if (balanceKey && balanceKey !== "undefined") {
             // URL 업데이트 (뒤로가기 기록 방지를 위해 replace 사용 가능)
-            const params = new URLSearchParams(searchParams.toString());
-            params.set("key", balanceKey);
-            router.replace(`${pathname}?${params.toString()}`);
+            router.replace(`${pathname}?key=${balanceKey}`);
 
             // 해당 사용자의 데이터 요청
             dispatch(reqGetInquireBalance(balanceKey));

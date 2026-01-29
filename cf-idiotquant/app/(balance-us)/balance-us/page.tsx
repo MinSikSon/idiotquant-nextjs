@@ -120,10 +120,8 @@ function BalanceUs() {
         if (!balanceKey || balanceKey === "undefined") return;
 
         // URL 업데이트 (Master 상태 유지)
-        const params = new URLSearchParams(searchParams.toString());
-        if (params.get("key") !== balanceKey) {
-            params.set("key", balanceKey);
-            router.replace(`${pathname}?${params.toString()}`);
+        if (searchParams.get("key") !== balanceKey) {
+            router.replace(`${pathname}?key=${balanceKey}`);
         }
 
         // 미국 주식 관련 API 호출 (balanceKey 인자 전달)

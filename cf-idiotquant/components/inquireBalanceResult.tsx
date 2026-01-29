@@ -90,19 +90,14 @@ export default function InquireBalanceResult(props: InquireBalanceResultProps) {
             props.setBalanceKey(urlKey);
         } else if (session?.user?.id) {
             // URL에 키가 없고 내 정보가 로드되면 내 ID를 URL에 주입
-            const params = new URLSearchParams(searchParams);
-            params.set("key", String(session.user.id));
-            router.replace(`${pathname}?${params.toString()}`);
+            router.replace(`${pathname}?key=${session.user.id}`);
         }
     }, []);
 
     // 2. 관리자가 다른 계좌를 선택했을 때 실행되는 핸들러
     const handleMasterSelectChange = (newKey: string) => {
-        const params = new URLSearchParams(searchParams);
-        params.set("key", newKey);
-
         // URL 업데이트 (상태 유지의 핵심)
-        router.push(`${pathname}?${params.toString()}`);
+        router.push(`${pathname}?key=${newKey}`);
         props.setBalanceKey(newKey);
 
         // 새로운 키로 데이터 요청
