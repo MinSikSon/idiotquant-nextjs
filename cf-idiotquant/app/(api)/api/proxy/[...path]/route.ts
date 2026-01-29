@@ -19,6 +19,7 @@ async function handleProxy(req: Request, { params }: { params: { path: string[] 
     // }
 
     console.log(`[proxy/route.ts] session:`, session);
+    console.log(`[proxy/route.ts] params:`, params);
 
     // const { searchParams } = new URL(req.url);
     // console.log(`[proxy/route.ts] searchParams:`, searchParams.toString());
