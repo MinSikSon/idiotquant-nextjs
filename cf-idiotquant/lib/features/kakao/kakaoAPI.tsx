@@ -110,7 +110,7 @@ export const postKakaoMessage: any = async (kakaoMessage: KakaoMessage) => {
 
 
 export const getKakaoMemberList: any = async () => {
-    const authToken = getCookie("authToken");
+    // const authToken = getCookie("authToken");
 
     const url = `/api/proxy/kakao/member/list`
     const options: RequestInit = {
