@@ -149,6 +149,41 @@ export default function Search() {
         setName(stockName);
         setWaitResponse(true);
         dispatch(addKrMarketHistory(stockName));
+
+        const systemPrompt = ``; // server side에서 고정됨
+        const userPrompt = `
+아래 제공된 [종목 기본 정보], [재무상태표], [손익계산서] 데이터를 바탕으로 이 종목에 대한 종합적인 '퀀트 및 펀더멘털 분석 리포트'를 작성해줘.
+
+### [종목 기본 및 시세 정보]
+- 종목명: ${stockName}
+- 시장/업종명: ${kiPrice?.output?.rprs_mrkt_kor_name} (${kiPrice?.output?.bstp_kor_isnm})
+- 현재가: ${kiPrice?.output?.stck_prpr}원 (전일대비 ${kiPrice?.output?.prdy_ctrt}%)
+- 시가총액: ${kiPrice?.output?.hts_avls}억
+- 상장주식수: ${kiPrice?.output?.lstn_stcn}주
+- 주요지표: PER(${kiPrice?.output?.per}), PBR(${kiPrice?.output?.pbr}), EPS(${kiPrice?.output?.eps}), BPS(${kiPrice?.output?.bps})
+- 52주 최고/최저: ${kiPrice?.output?.w52_hgpr} / ${kiPrice?.output?.w52_lwpr}
+
+### [재무상태표 (최근 결산)]
+- 유동자산: ${kiBS?.output[0]?.cras} (단기 자금 동원력)
+- 자산총계: ${kiBS?.output[0]?.total_aset}
+- 부채총계: ${kiBS?.output[0]?.total_lblt}
+- 자본총계: ${kiBS?.output[0]?.total_cptl}
+- 이익잉여금: ${kiBS?.output[0]?.prfi_surp} (내부 유보 자금)
+
+### [손익계산서 (최근 결산)]
+- 매출액: ${kiIS?.output[0]?.sale_account}
+- 영업이익: ${kiIS?.output[0]?.bsop_prti}
+- 당기순이익: ${kiIS?.output[0]?.thtr_ntin}
+- 판매비와관리비: ${kiIS?.output[0]?.sell_mang}
+
+---
+[요청 사항]
+1. 수익성 분석: 매출액 대비 영업이익률과 당기순이익의 추이를 분석해줘.
+2. 재무 안정성: 부채비율(부채총계/자본총계)과 유동성 수준을 평가해줘.
+3. 가치 평가: 현재 주가 수준이 PER, PBR 및 BPS 대비 저평가인지 고평가인지 의견을 줘.
+4. 종합 결론: 이 종목의 강점과 리스크 요인을 요약하고, 단기/장기 투자 관점에서의 의견을 마크다운 형식으로 작성해줘.
+        `;
+        dispatch(reqPostLaboratory({ system_content: systemPrompt, user_content: userPrompt }));
       }
     } else {
       setKrOrUs("US");
@@ -233,7 +268,7 @@ export default function Search() {
   const renderKrContent = () => {
     if (kiChart.state !== "fulfilled" || kiBS.state !== "fulfilled" || kiPrice.state !== "fulfilled") {
       // return <div className="py-20 text-center"><Spinner intent={Intent.PRIMARY} size={40} /></div>;
-      return <></>;
+      return <><SearchGuide /></>;
     }
 
     // 1. 테이블에 표시할 모든 항목 정의 (기존 코드에서 누락된 항목 포함)
@@ -250,11 +285,20 @@ export default function Search() {
       { label: "자본총계", key: "total_cptl" },
     ];
 
+    const isRows = [
+      { label: "매출액", key: "sale_account" },
+      { label: "매출원가", key: "sale_cost" },
+      { label: "매출총이익", key: "sale_totl_prfi" },
+      { label: "판매 및 관리비", key: "sell_mang" },
+      { label: "영업이익", key: "bsop_prti" },
+      { label: "당기순이익", key: "thtr_ntin" },
+    ];
+
     return (
       <div className="animate-in fade-in slide-in-from-bottom-2 duration-500">
         {/* KR Header & Chart */}
         <Card elevation={Elevation.ONE} className="dark:bg-zinc-900 p-0 overflow-hidden rounded-xl border-none mb-4">
-          <div className={`flex transition-all duration-300 ${fixed ? "fixed top-[64px] left-0 w-full z-40 bg-white/90 dark:bg-zinc-900/90 backdrop-blur shadow-md px-4 py-2" : "p-4"}`}>
+          <div className={`flex transition-all duration-300 ${fixed ? "fixed top-[64px] left-0 w-full z-20 bg-white/90 dark:bg-zinc-900/90 backdrop-blur shadow-md px-4 py-0" : "p-4"}`}>
             <div className="w-7/12">
               {!fixed && <div className="text-[10px] text-zinc-500">{kiPrice.output.rprs_mrkt_kor_name} | {kiPrice.output.bstp_kor_isnm}</div>}
               <div className="flex items-center gap-2">
@@ -274,7 +318,7 @@ export default function Search() {
                 <span className="text-xs text-zinc-500">원 | {kiChart.output2[0].stck_bsop_date}</span>
               </div>
             </div>
-            <div className="w-5/12 h-20">
+            <div className="w-5/12 h-16">
               <LineChart
                 data_array={[{ name: "Price", data: kiChart.output2.map(i => i.stck_oprc).reverse(), color: "#6366f1" }]}
                 category_array={kiChart.output2.map(i => i.stck_bsop_date).reverse()}
@@ -369,6 +413,43 @@ export default function Search() {
           </SectionCard>
         </Section>
 
+        {/* 손익계산서 상세 (최근 5개년) */}
+        <Section title="손익계산서 상세 (최근 5개년)" className="dark:bg-zinc-900 rounded-xl mb-6">
+          <SectionCard className="p-0 overflow-x-auto dark:bg-zinc-950">
+            <HTMLTable bordered striped interactive className="w-full text-right font-mono text-xs dark:text-zinc-300">
+              <thead>
+                <tr className="bg-gray-100 dark:bg-zinc-800">
+                  <th className="text-left p-2 border-none min-w-[120px] text-zinc-500 dark:text-zinc-200">계정항목 (단위: 억)</th>
+                  {kiIS.output.slice(0, 5).map((v, i) => (
+                    <th key={i} className="text-right p-2 border-none text-zinc-500 dark:text-zinc-200">{v.stac_yymm}</th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {isRows.map((row) => (
+                  <tr key={row.key} className="hover:bg-zinc-100 dark:hover:bg-zinc-800/50">
+                    <td className="text-left p-2 border-none font-sans text-zinc-500 dark:text-zinc-200">
+                      {row.label}
+                    </td>
+                    {kiIS.output.slice(0, 5).map((v, i) => {
+                      const rawValue = v[row.key as keyof typeof v] || 0;
+                      // EPS는 '억' 단위 변환을 하지 않고 그대로 표시하거나 원 단위로 표시
+                      const isEps = row.key === "eps";
+                      const val = isEps ? Number(rawValue) : Number(rawValue) * ONE_HUNDRED_MILLION;
+
+                      return (
+                        <td key={i} className={`p-2 border-none ${Number(rawValue) < 0 ? 'text-red-500' : 'text-zinc-500 dark:text-zinc-200'}`}>
+                          {isEps ? Number(val).toLocaleString() : Util.UnitConversion(val, false)}
+                        </td>
+                      );
+                    })}
+                  </tr>
+                ))}
+              </tbody>
+            </HTMLTable>
+          </SectionCard>
+        </Section>
+
         {/* AI Insight */}
         {response && (
           <Card elevation={Elevation.TWO} className="mt-8 border-t-4 border-blue-500 dark:bg-zinc-900">
@@ -388,13 +469,13 @@ export default function Search() {
   const renderUsContent = () => {
     if (usSearchInfo.state !== "fulfilled") {
       // return <div className="py-20 text-center"><Spinner size={40} /></div>;
-      return <></>;
+      return <><SearchGuide /></>;
     }
 
     return (
       <div className="animate-in fade-in duration-500">
         <Card elevation={Elevation.ONE} className="dark:bg-zinc-900 p-0 overflow-hidden rounded-xl border-none mb-4">
-          <div className={`flex transition-all duration-300 ${fixed ? "fixed top-[74px] left-0 w-full z-40 bg-white/90 dark:bg-zinc-900/90 backdrop-blur shadow-md px-4 py-2" : "p-4"}`}>
+          <div className={`flex transition-all duration-300 ${fixed ? "fixed top-[64px] left-0 w-full z-20 bg-white/90 dark:bg-zinc-900/90 backdrop-blur shadow-md px-4 py-0" : "p-4"}`}>
             <div className="w-7/12">
               {!fixed && <Tag intent="primary" minimal className="text-[10px] text-zinc-500">{usSearchInfo?.output?.tr_mket_name} | {usDetail?.output?.e_icod}</Tag>}
               <h2 className="text-xl md:text-2xl font-black dark:text-white">{usSearchInfo?.output?.prdt_name}</h2>
@@ -403,7 +484,7 @@ export default function Search() {
                 {Number(usDetail?.output?.last).toFixed(2)} <span className="text-xs">{usDetail?.output?.curr}</span>
               </div>
             </div>
-            <div className="w-5/12 h-20">
+            <div className="w-5/12 h-16">
               <LineChart
                 data_array={[{ name: "Price", data: usDaily?.output2?.map(i => i.clos).reverse(), color: "#818cf8" }]}
                 category_array={usDaily?.output2?.map(i => i.xymd).reverse()}
@@ -439,7 +520,7 @@ export default function Search() {
   return (
     <div className="w-full min-h-screen bg-gray-50 dark:bg-zinc-950 transition-colors duration-300">
       {/* Header & Search */}
-      <div className={`z-10 w-full transition-all duration-300 ${fixed ? "fixed top-0 bg-white/80 dark:bg-zinc-950/80 backdrop-blur shadow-sm" : "relative bg-white dark:bg-zinc-900"}`}>
+      <div className={`z-30 w-full transition-all duration-300 ${fixed ? "fixed top-0 bg-white/80 dark:bg-zinc-950/80 backdrop-blur shadow-sm" : "relative bg-white dark:bg-zinc-900"}`}>
         <SearchAutocomplete placeHolder="🇰🇷 종목명 또는 🇺🇸 티커" onSearchButton={onSearchButton} validCorpNameArray={all_tickers} />
         <div className="flex px-4 py-1 gap-1 overflow-x-auto no-scrollbar border-t dark:border-zinc-800">
           {krMarketHistory.slice(-6).reverse().map((s, i) => (
@@ -510,3 +591,33 @@ function getUsNcavTable(finnhub: any, detail: any) {
 
   return `| ratio | Exp. Return | Target Price($) |\n|---|---|---|\n${rows}`;
 }
+
+
+const SearchGuide = () => (
+  <div className="flex flex-col items-center justify-center py-20 px-4 text-center animate-in fade-in duration-700">
+    <div className="bg-blue-50 dark:bg-zinc-900 p-6 rounded-full mb-6">
+      <Icon icon={IconNames.SEARCH_TEMPLATE} size={48} className="text-blue-500 opacity-80" />
+    </div>
+    <h2 className="text-2xl font-bold text-zinc-800 dark:text-zinc-200 mb-2">
+      스마트한 주식 분석의 시작
+    </h2>
+    <p className="text-zinc-500 dark:text-zinc-400 max-w-md mb-8">
+      국내 종목명 또는 미국 티커(Ticker)를 입력하세요. <br />
+      AI 리서치 리포트와 NCAV/S-RIM 전략 기반의 적정 주가를 계산해 드립니다.
+    </p>
+
+    <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 w-full max-w-3xl">
+      {[
+        { icon: IconNames.CHART, title: "기술적 분석", desc: "실시간 차트 및 가격 변동" },
+        { icon: IconNames.CALCULATOR, title: "가치 평가", desc: "NCAV 및 S-RIM 모델링" },
+        { icon: IconNames.LIGHTBULB, title: "AI 인사이트", desc: "LLM 기반 기업 분석 리포트" }
+      ].map((item, i) => (
+        <Card key={i} elevation={Elevation.ZERO} className="dark:bg-zinc-900 border-none">
+          <Icon icon={item.icon} size={20} className="mb-2 text-blue-400" />
+          <div className="font-bold text-sm mb-1 dark:text-zinc-300">{item.title}</div>
+          <div className="text-[11px] text-zinc-500">{item.desc}</div>
+        </Card>
+      ))}
+    </div>
+  </div>
+);
