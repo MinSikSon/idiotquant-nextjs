@@ -233,6 +233,7 @@ function SortableBalanceTable({ inventoryData, isUs, currencySign }: { inventory
                     <th className="cursor-pointer" onClick={() => handleSort("name")}>종목명</th>
                     <th className="text-right cursor-pointer" onClick={() => handleSort("price")}>현재가</th>
                     <th className="text-right cursor-pointer" onClick={() => handleSort("profit_rt")}>수익률</th>
+                    <th className="text-right cursor-pointer" onClick={() => handleSort("pchs_amt")}>매입금액</th>
                     <th className="text-right cursor-pointer" onClick={() => handleSort("evlu_amt")}>평가금액</th>
                     <th className="text-center">액션</th>
                 </tr>
@@ -252,6 +253,9 @@ function SortableBalanceTable({ inventoryData, isUs, currencySign }: { inventory
                             <td className="text-right font-mono">{currencySign}{Number(getFieldValue(item, "price")).toLocaleString()}</td>
                             <td className={`text-right font-mono font-bold ${profitRt >= 0 ? "text-red-500" : "text-blue-500"}`}>
                                 {profitRt.toFixed(2)}%
+                            </td>
+                            <td className="text-right font-mono font-bold">
+                                ₩{Number(getFieldValue(item, "pchs_amt")).toLocaleString()}
                             </td>
                             <td className="text-right font-mono font-bold">
                                 {/* {currencySign}{Number(getFieldValue(item, "evlu_amt")).toLocaleString()} */}
