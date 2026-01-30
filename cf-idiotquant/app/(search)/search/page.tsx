@@ -232,8 +232,10 @@ export default function Search() {
   // --- Main Rendering Logic ---
   const renderKrContent = () => {
     if (kiChart.state !== "fulfilled" || kiBS.state !== "fulfilled" || kiPrice.state !== "fulfilled") {
-      return <div className="py-20 text-center"><Spinner intent={Intent.PRIMARY} size={40} /></div>;
+      // return <div className="py-20 text-center"><Spinner intent={Intent.PRIMARY} size={40} /></div>;
+      return <></>;
     }
+
     // 1. 테이블에 표시할 모든 항목 정의 (기존 코드에서 누락된 항목 포함)
     const bsRows = [
       { label: "유동자산", key: "cras" },
@@ -385,7 +387,8 @@ export default function Search() {
 
   const renderUsContent = () => {
     if (usSearchInfo.state !== "fulfilled") {
-      return <div className="py-20 text-center"><Spinner size={40} /></div>;
+      // return <div className="py-20 text-center"><Spinner size={40} /></div>;
+      return <></>;
     }
 
     return (
