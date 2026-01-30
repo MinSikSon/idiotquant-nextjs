@@ -67,7 +67,8 @@ export default function InquireBalanceResult(props: InquireBalanceResultProps) {
 
     // 미국 주식 여부 판별 (output3 존재 여부 또는 특정 필드로 판별)
     const isUs = !!props.kiBalance?.output3 || !!props.kiBalance?.output1?.[0]?.ovrs_item_name;
-    const currencySign = isUs ? "$" : "₩";
+    // const currencySign = isUs ? "$" : "₩";
+    const currencySign = "₩";
     const exRate = Number(props.kiBalance?.output2?.[0]?.frst_bltn_exrt || 0);
 
     // 자산 요약 데이터 계산
@@ -175,7 +176,7 @@ export default function InquireBalanceResult(props: InquireBalanceResultProps) {
                             // value={`${currencySign}${(evlu_smtl + cash).toLocaleString()}`}
                             // subValue={isUs && exRate ? `약 ₩${Math.round((evlu_smtl + cash) * exRate).toLocaleString()}` : ""}
                             value={`₩${(evlu_smtl + cash).toLocaleString()}`}
-                            subValue={isUs && exRate ? `약 ₩${Math.round((evlu_smtl + cash) * exRate).toLocaleString()}` : ""}
+                            subValue={isUs && exRate ? `약 $${Math.round((evlu_smtl + cash) / exRate).toLocaleString()}` : ""}
                             intent="text-indigo-500"
                         />
                     </div>
