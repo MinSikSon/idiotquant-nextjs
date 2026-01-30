@@ -37,9 +37,11 @@ export default function Report() {
 
     const [message, setMessage] = useState<KakaoMessage>({} as KakaoMessage);
     useEffect(() => {
-        if ("init" == kiBalanceKr.state) {
-            dispatch(reqGetInquireBalance());
+        if (session?.user?.id) {
+            dispatch(reqGetInquireBalance(session.user.id));
         }
+    }, [session]);
+    useEffect(() => {
         if ("init" == krKiBalanceRlzPl.state) {
             dispatch(reqGetInquireBalanceRlzPl());
         }

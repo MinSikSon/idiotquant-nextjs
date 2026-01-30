@@ -130,10 +130,13 @@ function BalanceKr() {
 
     // 초기 데이터 로딩
     useEffect(() => {
-        dispatch(reqGetInquireBalance());
+        if (session?.user?.id) {
+            dispatch(reqGetInquireBalance(session.user.id));
+            setBalanceKey(String(session.user.id));
+        }
+
         dispatch(reqGetCapitalToken());
-        if (session?.user?.id) setBalanceKey(String(session.user.id));
-    }, [dispatch, session?.user?.id]);
+    }, [dispatch, session]);
 
     useEffect(() => {
         if (krCapital.state === "init") {
