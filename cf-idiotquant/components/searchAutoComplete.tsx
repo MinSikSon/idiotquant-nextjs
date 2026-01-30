@@ -72,7 +72,7 @@ const SearchAutocomplete = (props: any) => {
                         }
                     }}
                     value={query}
-                    className="w-full"
+                    className="w-full text-base"
                 >
                 </input>
                 {query && (
@@ -101,7 +101,7 @@ const SearchAutocomplete = (props: any) => {
                         <li
                             key={index}
                             onMouseDown={() => handleSelect(suggestion)}
-                            className={`text-sm py-2 pl-3 dark:text-white cursor-pointer hover:bg-blue-100 ${selectedIndex === index ? "bg-blue-200" : ""
+                            className={`text-base py-2 pl-3 dark:text-white cursor-pointer hover:bg-blue-100 ${selectedIndex === index ? "bg-blue-200" : ""
                                 }`}
                         >
                             {suggestion}
