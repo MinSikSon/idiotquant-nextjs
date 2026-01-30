@@ -57,7 +57,7 @@ export function NavbarWithSimpleLinks() {
     return (
         <>
             <div
-                className={`fixed top-0 left-0 right-0 z-[100] transition-transform duration-300 ease-in-out ${visible ? "translate-y-0" : "-translate-y-full"
+                className={`fixed top-0 left-0 right-0 z-40 transition-transform duration-300 ease-in-out ${visible ? "translate-y-0" : "-translate-y-full"
                     }`}
             >
                 <Navbar className="bp5-dark bg-white dark:bg-zinc-950 border-b dark:border-zinc-800 shadow-sm">
@@ -74,7 +74,12 @@ export function NavbarWithSimpleLinks() {
                         <div className="hidden md:flex gap-1 mr-4">
                             <Link href="/search"><Button minimal icon={IconNames.SEARCH} text="Stock" /></Link>
                             <Link href="/calculator"><Button minimal icon={IconNames.CALCULATOR} text="Profit" /></Link>
-                            <Link href="/balance-kr"><Button minimal icon={IconNames.DOLLAR} text="Account" /></Link>
+                            {session?.user?.name === process.env.NEXT_PUBLIC_MASTER &&
+                                <>
+                                    <Link href="/balance-kr"><Button minimal icon={IconNames.DOLLAR} text="kr" /></Link>
+                                    <Link href="/balance-us"><Button minimal icon={IconNames.DOLLAR} text="us" /></Link>
+                                </>
+                            }
                         </div>
 
                         <Divider className="hidden md:block mx-2" />
@@ -103,7 +108,7 @@ export function NavbarWithSimpleLinks() {
                 icon={IconNames.MENU_OPEN}
                 position={Position.RIGHT}
                 size="75%"
-                className="bp5-dark dark:bg-zinc-900"
+                className="!z-50 bp5-dark dark:bg-zinc-900"
             >
                 <div className={Classes.DRAWER_BODY}>
                     <Menu className="bg-transparent border-none">
@@ -115,14 +120,15 @@ export function NavbarWithSimpleLinks() {
                             <MenuItem icon={IconNames.CALCULATOR} text="Profit Calculator" labelElement={<Icon icon={IconNames.CHEVRON_RIGHT} />} />
                         </Link>
 
-                        <MenuDivider title="Trading Account" />
-                        <Link href="/balance-kr" onClick={closeDrawer}>
-                            <MenuItem icon={IconNames.CHART} text="Korea Market" />
-                        </Link>
-                        <Link href="/balance-us" onClick={closeDrawer}>
-                            <MenuItem icon={IconNames.GLOBE} text="US Market" />
-                        </Link>
-
+                        {session?.user?.name === process.env.NEXT_PUBLIC_MASTER && <>
+                            <MenuDivider title="Trading Account" />
+                            <Link href="/balance-kr" onClick={closeDrawer}>
+                                <MenuItem icon={IconNames.CHART} text="Korea Market" />
+                            </Link>
+                            <Link href="/balance-us" onClick={closeDrawer}>
+                                <MenuItem icon={IconNames.GLOBE} text="US Market" />
+                            </Link>
+                        </>}
                         <MenuDivider />
                         <Link href="/login" onClick={closeDrawer}>
                             <MenuItem
