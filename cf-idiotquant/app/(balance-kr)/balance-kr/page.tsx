@@ -100,12 +100,6 @@ function BalanceKr() {
     // URL에 key가 있으면 그 값을, 없으면 내 카카오 ID를 초기값으로 사용
     const [balanceKey, setBalanceKey] = useState(searchParams.get("key") || String(session?.user?.id || ""));
 
-    useEffect(() => {
-        if (session?.user?.name === process.env.NEXT_PUBLIC_MASTER) {
-            dispatch(reqGetKakaoMemberList());
-        }
-    }, [session]);
-
     // 1. URL 파라미터와 balanceKey 상태 동기화
     useEffect(() => {
         const urlKey = searchParams.get("key");
@@ -113,6 +107,12 @@ function BalanceKr() {
             setBalanceKey(urlKey);
         }
     }, [searchParams]);
+
+    useEffect(() => {
+        if (session?.user?.name === process.env.NEXT_PUBLIC_MASTER) {
+            dispatch(reqGetKakaoMemberList());
+        }
+    }, [session]);
 
     // 2. balanceKey가 변경될 때마다 URL 업데이트 및 데이터 리프레시
     useEffect(() => {
@@ -139,10 +139,10 @@ function BalanceKr() {
     }, [dispatch, session]);
 
     useEffect(() => {
-        if (krCapital.state === "init") {
-            dispatch(reqGetKrCapital());
+        if (krCapital.state === "init" && session?.user?.id) {
+            dispatch(reqGetKrCapital(session.user.id));
         }
-    }, [krCapital.state, dispatch]);
+    }, [krCapital.state, session, dispatch]);
 
     // 토큰 변동 시 데이터 리프레시 로직
     const refreshStates = [krCapitalTokenPlusAll, krCapitalTokenPlusOne, krCapitalTokenMinusAll, krCapitalTokenMinusOne];

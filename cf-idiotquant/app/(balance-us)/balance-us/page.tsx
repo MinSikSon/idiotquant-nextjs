@@ -113,9 +113,8 @@ function BalanceUs() {
             // URL에 키가 없으면 내 카카오 ID로 설정
             setBalanceKey(String(session.user.id));
         }
-
-
     }, []);
+
     useEffect(() => {
         // 마스터인 경우 멤버 리스트 로드
         if (session?.user?.name === process.env.NEXT_PUBLIC_MASTER) {
