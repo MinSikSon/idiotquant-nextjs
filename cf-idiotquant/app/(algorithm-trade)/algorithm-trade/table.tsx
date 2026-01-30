@@ -189,7 +189,8 @@ export default function ResponsiveNCAV({ strategies }: { strategies?: Strategy |
                             <SectionCard className="!p-0 border-none overflow-hidden">
 
                                 {/* 1. 데스크톱 뷰 (Table) - md 이상에서 표시 */}
-                                <div className="hidden md:block overflow-x-auto">
+                                {/* <div className="hidden md:block overflow-x-auto"> */}
+                                <div className="block overflow-x-auto">
                                     <HTMLTable interactive striped className="w-full text-sm">
                                         <thead>
                                             <tr>
@@ -204,7 +205,7 @@ export default function ResponsiveNCAV({ strategies }: { strategies?: Strategy |
                                             {sortedCandidates.map(([ticker, info]: any) => (
                                                 <React.Fragment key={ticker}>
                                                     <tr className={expandedTicker === ticker ? 'bg-blue-50/30 dark:bg-blue-900/10' : ''}>
-                                                        <td className="font-bold text-blue-600">{ticker}</td>
+                                                        <td className="font-bold text-sm text-blue-600">{ticker}{info?.name ? " (" + info.name + ")" : ""}</td>
                                                         <td className="font-mono text-xs">{`$${formatNum(info.condition?.LastPrice)}`}</td>
                                                         <td className="font-mono text-xs text-gray-500">{formatNum(info.condition?.MarketCapitalization)}</td>
                                                         <td>
@@ -237,7 +238,7 @@ export default function ResponsiveNCAV({ strategies }: { strategies?: Strategy |
                                 </div>
 
                                 {/* 2. 모바일 뷰 (Card List) - md 미만에서 표시 */}
-                                <div className="md:hidden divide-y divide-gray-100 dark:divide-zinc-800">
+                                {/* <div className="md:hidden divide-y divide-gray-100 dark:divide-zinc-800">
                                     {sortedCandidates.map(([ticker, info]: any) => (
                                         <div key={ticker} className="p-4 space-y-3">
                                             <div className="flex justify-between items-start">
@@ -272,7 +273,7 @@ export default function ResponsiveNCAV({ strategies }: { strategies?: Strategy |
                                             )}
                                         </div>
                                     ))}
-                                </div>
+                                </div> */}
                             </SectionCard>
                         </Section>
 
