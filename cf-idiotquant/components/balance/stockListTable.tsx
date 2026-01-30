@@ -94,7 +94,7 @@ export default function StockListTable({
       {/* 2. Data Display Area */}
 
       {/* --- Mobile View (Card List) --- */}
-      <div className="block md:hidden space-y-4">
+      {/* <div className="block md:hidden space-y-4">
         {rows.length === 0 ? (
           <NonIdealState icon={IconNames.SEARCH} title="운용 종목 없음" description="현재 알고리즘이 관리 중인 종목이 없습니다." />
         ) : (
@@ -141,10 +141,11 @@ export default function StockListTable({
             </Card>
           ))
         )}
-      </div>
+      </div> */}
 
       {/* --- Desktop View (Table) --- */}
-      <div className="hidden md:block overflow-hidden border rounded-xl shadow-sm bg-white dark:bg-zinc-900 border-zinc-200 dark:border-zinc-800">
+      {/* <div className="hidden md:block overflow-hidden border rounded-xl shadow-sm bg-white dark:bg-zinc-900 border-zinc-200 dark:border-zinc-800"> */}
+      <div className="block overflow-hidden border rounded-xl shadow-sm bg-white dark:bg-zinc-900 border-zinc-200 dark:border-zinc-800">
         <HTMLTable interactive className="w-full text-[11px]" striped>
           <thead className="bg-zinc-50 dark:bg-zinc-800">
             <tr>
