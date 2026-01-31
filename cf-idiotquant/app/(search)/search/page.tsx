@@ -328,7 +328,7 @@ export default function Search() {
           </div>
         </Card>
 
-        {fixed && <div className="h-32" />}
+        {/* {fixed && <div className="h-32" />} */}
 
         {/* Strategies */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
@@ -594,30 +594,32 @@ function getUsNcavTable(finnhub: any, detail: any) {
 
 
 const SearchGuide = () => (
-  <div className="flex flex-col items-center justify-center py-20 px-4 text-center animate-in fade-in duration-700">
-    <div className="!bg-blue-50 dark:!bg-zinc-900 p-6 rounded-full mb-6">
-      <Icon icon={IconNames.SEARCH_TEMPLATE} size={48} className="text-blue-500 opacity-80" />
+  <div className="flex flex-col items-center justify-center py-3 px-4 text-center animate-in fade-in duration-700">
+    <div className="flex items-center justify-center gap-3 mb-2">
+      <Icon icon={IconNames.TRENDING_DOWN} size={20} />
+      <h2 className="text-2xl font-bold !text-zinc-800 dark:!text-zinc-200">
+        스마트한 주식 분석의 시작
+      </h2>
+      <Icon icon={IconNames.TRENDING_UP} size={20} />
     </div>
-    <h2 className="text-2xl font-bold !text-zinc-800 dark:!text-zinc-200 mb-2">
-      스마트한 주식 분석의 시작
-    </h2>
-    <p className="text-zinc-500 dark:!text-zinc-400 max-w-md mb-8">
-      국내 종목명 또는 미국 티커(Ticker)를 입력하세요. <br />
-      AI 리서치 리포트와 NCAV/S-RIM 전략 기반의 적정 주가를 계산해 드립니다.
+    <p className="!text-zinc-500 dark:!text-zinc-400 max-w-md mb-8">
+      <span className="font-bold">국내 종목명</span> 또는 <span className="font-bold">미국 티커(Ticker)</span>를 입력하세요. <br />
+      AI 리서치 리포트와 <span className="!text-blue-600 font-bold">NCAV/S-RIM 전략</span> 기반의 적정 주가를 계산해 드립니다.
     </p>
 
-    <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 w-full max-w-3xl">
+    <div className="grid grid-cols-3 sm:grid-cols-3 gap-2 w-full max-w-3xl">
       {[
-        { icon: IconNames.CHART, title: "기술적 분석", desc: "실시간 차트 및 가격 변동" },
-        { icon: IconNames.CALCULATOR, title: "가치 평가", desc: "NCAV 및 S-RIM 모델링" },
+        // { icon: IconNames.CHART, title: "기술적 분석", desc: "차트 및 가격 변동" },
+        { icon: IconNames.CALCULATOR, title: "가치 평가", desc: "NCAV 모델링" },
+        { icon: IconNames.CALCULATOR, title: "가치 평가", desc: "S-RIM 모델링" },
         { icon: IconNames.LIGHTBULB, title: "AI 인사이트", desc: "LLM 기반 기업 분석 리포트" }
       ].map((item, i) => (
-        <Card key={i} elevation={Elevation.ZERO} className="dark:!bg-zinc-900 border-none">
+        <Card key={i} elevation={Elevation.ZERO} className="dark:!bg-zinc-900 border-none !px-3">
           <Icon icon={item.icon} size={20} className="mb-2 !text-blue-400" />
           <div className="font-bold text-sm mb-1 dark:!text-zinc-300">{item.title}</div>
           <div className="text-[11px] !text-zinc-500">{item.desc}</div>
         </Card>
       ))}
     </div>
-  </div>
+  </div >
 );

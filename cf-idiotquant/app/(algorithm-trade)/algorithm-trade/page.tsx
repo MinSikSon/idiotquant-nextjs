@@ -53,7 +53,7 @@ export default function AlgorithmTrade() {
                     </h2>
                 </div>
                 <p className="!text-gray-500 dark:!text-zinc-400 text-sm md:!text-base">
-                    IdiotQuant 알고리즘이 분석한 현재 가장 저평가된 종목 리스트입니다.
+                    <span className="font-bold">idiot quant 알고리즘</span>이 분석한 <span className="text-blue-600 font-bold">현재 가장 저평가된 종목</span> 리스트입니다.
                 </p>
             </div>
 

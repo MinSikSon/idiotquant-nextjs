@@ -150,7 +150,7 @@ export default function ResponsiveNCAV({ strategies }: { strategies?: Strategy |
 
                     {/* [사이드바] 모바일: 수평 스크롤 칩, 데스크톱: 수직 리스트 */}
                     <div className="col-span-12 lg:col-span-3">
-                        <Section title="Strategy List" icon={IconNames.LAYERS} compact>
+                        <Section title="퀀트 투자 전략 목록" icon={IconNames.LAYERS} compact>
                             <div className="flex lg:flex-col overflow-x-auto lg:overflow-x-visible p-2 gap-2 no-scrollbar">
                                 {list.map((s, idx) => (
                                     <Card
@@ -174,15 +174,15 @@ export default function ResponsiveNCAV({ strategies }: { strategies?: Strategy |
 
                         {/* 메트릭 그리드: 모바일 2열, 데스크톱 4열 */}
                         <div className="grid grid-cols-4 md:grid-cols-4 gap-3 md:gap-4">
-                            <MetricCard label="추천 종목" value={data.numCandidates} icon={IconNames.TH_DERIVED} intent={Intent.PRIMARY} />
-                            <MetricCard label="필터 통과" value={data.numFilteredKeys} icon={IconNames.FILTER_LIST} />
+                            <MetricCard label="추천 종목" value={data.numCandidates} icon={IconNames.STAR} intent={Intent.PRIMARY} />
+                            <MetricCard label="전체 종목" value={data.numFilteredKeys} icon={IconNames.SQUARE} />
                             <MetricCard label="데이터 소스" value={data.dataSource.balanceSheet} icon={IconNames.DATABASE} />
-                            <MetricCard label="마지막 실행" value={data.asOfDate.slice(5)} icon={IconNames.TIME} />
+                            <MetricCard label="마지막 실행" value={data.asOfDate} icon={IconNames.TIME} />
                         </div>
 
                         {/* [반응형 리스트 섹션] */}
                         <Section
-                            title="Recommended Candidates"
+                            title="추천 종목"
                             icon={IconNames.LIST_COLUMNS}
                             rightElement={<Tag minimal round>{`${sortedCandidates.length} Items`}</Tag>}
                         >
@@ -279,7 +279,7 @@ export default function ResponsiveNCAV({ strategies }: { strategies?: Strategy |
 
                         {/* 하단 상세 설정 파라미터 */}
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            <Callout title="Strategy Rules" icon={IconNames.SETTINGS} className="border-none shadow-sm dark:!bg-zinc-900">
+                            <Callout title="퀀트 투자 전략 규칙" icon={IconNames.SETTINGS} className="border-none shadow-sm dark:!bg-zinc-900">
                                 <div className="mt-2 space-y-2">
                                     {Object.entries(data.params).map(([k, v]) => (
                                         <div key={k} className="flex justify-between items-center text-xs border-b border-gray-50 dark:border-zinc-800 pb-1.5">
@@ -289,11 +289,11 @@ export default function ResponsiveNCAV({ strategies }: { strategies?: Strategy |
                                     ))}
                                 </div>
                             </Callout>
-                            <Callout title="Data Integrity" icon={IconNames.SHIELD} intent={Intent.NONE} className="border-none shadow-sm dark:!bg-zinc-900">
+                            <Callout title="데이터 출처" icon={IconNames.SHIELD} intent={Intent.NONE} className="border-none shadow-sm dark:!bg-zinc-900">
                                 <div className="mt-2 text-[11px] space-y-2 text-gray-600 dark:!text-gray-400">
-                                    <p className="flex justify-between"><span>BS Source:</span> <b className="text-gray-900 dark:!text-white">{data.dataSource.balanceSheet}</b></p>
-                                    <p className="flex justify-between"><span>Price Source:</span> <b className="text-gray-900 dark:!text-white">{data.dataSource.prices}</b></p>
-                                    <p className="flex justify-between"><span>Last Sync:</span> <b className="text-gray-900 dark:!text-white">{new Date(data.dataSource.fetchedAt).toLocaleTimeString()}</b></p>
+                                    <p className="flex justify-between"><span>Balance Sheet Source:</span> <b className="!text-gray-900 dark:!text-white">{data.dataSource.balanceSheet}</b></p>
+                                    <p className="flex justify-between"><span>Price Source:</span> <b className="!text-gray-900 dark:!text-white">{data.dataSource.prices}</b></p>
+                                    <p className="flex justify-between"><span>Last Sync:</span> <b className="!text-gray-900 dark:!text-white">{new Date(data.dataSource.fetchedAt).toLocaleDateString()}</b></p>
                                 </div>
                             </Callout>
                         </div>
@@ -321,7 +321,7 @@ function MetricCard({ label, value, icon, intent = Intent.NONE }: any) {
             </div>
             <div className="min-w-0 flex-1">
                 <p className="text-[9px] md:!text-[10px] uppercase font-black text-gray-400 mb-0 tracking-tight">{label}</p>
-                <p className="text-sm md:!text-lg font-bold !m-0 truncate dark:!text-white">{formatNum(value)}</p>
+                <p className="!text-sm md:!text-lg font-bold !m-0 truncate dark:!text-white">{formatNum(value)}</p>
             </div>
         </Card>
     );
