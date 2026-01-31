@@ -114,10 +114,10 @@ export function NavbarWithSimpleLinks() {
                     <Menu className="bg-transparent border-none">
                         <Text className="px-3 py-2 opacity-50 font-bold text-[10px] uppercase">Main Services</Text>
                         <Link href="/search" onClick={closeDrawer}>
-                            <MenuItem icon={IconNames.SEARCH} text="Stock Search" labelElement={<Icon icon={IconNames.CHEVRON_RIGHT} />} />
+                            <MenuItem icon={IconNames.SEARCH} text="적정 주가 분석" labelElement={<Icon icon={IconNames.CHEVRON_RIGHT} />} />
                         </Link>
                         <Link href="/calculator" onClick={closeDrawer}>
-                            <MenuItem icon={IconNames.CALCULATOR} text="Profit Calculator" labelElement={<Icon icon={IconNames.CHEVRON_RIGHT} />} />
+                            <MenuItem icon={IconNames.CALCULATOR} text="수익률 계산기" labelElement={<Icon icon={IconNames.CHEVRON_RIGHT} />} />
                         </Link>
 
                         {session?.user?.name === process.env.NEXT_PUBLIC_MASTER && <>
