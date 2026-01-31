@@ -111,6 +111,12 @@ export default function Search() {
     return () => window.removeEventListener("scroll", handleScroll);
   }, [cfStarred?.state, dispatch]);
 
+  if (DEBUG) {
+    useEffect(() => {
+      console.log(`[Search] kiPrice:`, kiPrice);
+    }, [kiPrice]);
+  }
+
   const formatDate = (date: string) => date.replaceAll("-", "");
 
   const getYearMatchIndex = (yearMonthDate: string) => {
@@ -335,7 +341,7 @@ export default function Search() {
           <Section title="NCAV 청산가치 전략" collapsible className="dark:!bg-zinc-400 rounded-xl overflow-hidden">
             <SectionCard className="dark:!bg-zinc-950 ">
               <div className="prose prose-sm dark:prose-invert max-w-none">
-                <ReactMarkdown remarkPlugins={[remarkMath]} rehypePlugins={[rehypeKatex]}>
+                <ReactMarkdown remarkPlugins={[remarkMath]} rehypePlugins={[[rehypeKatex, { strict: "ignore" }]]}>
                   {`$$ 적정주가 = \\frac{(유동자산 - 총부채)}{상장주식수} $$`}
                 </ReactMarkdown>
               </div>
@@ -346,7 +352,7 @@ export default function Search() {
           <Section title="S-RIM 적정주가 전략" collapsible className="dark:!bg-zinc-400 rounded-xl overflow-hidden">
             <SectionCard className="dark:!bg-zinc-950">
               <div className="prose prose-sm dark:prose-invert max-w-none">
-                <ReactMarkdown remarkPlugins={[remarkMath]} rehypePlugins={[rehypeKatex]}>
+                <ReactMarkdown remarkPlugins={[remarkMath]} rehypePlugins={[[rehypeKatex, { strict: "ignore" }]]}>
                   {`$$ 기업가치 = 자기자본 + \\frac{자기자본 \\cdot (ROE - K_e)}{K_e} $$`}
                 </ReactMarkdown>
               </div>

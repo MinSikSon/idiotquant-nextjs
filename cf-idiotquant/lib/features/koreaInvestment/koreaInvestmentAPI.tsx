@@ -42,10 +42,10 @@ export const getSearchStockInfo: any = async (PDNO: string) => {
 
 // 시세 조회
 export const getInquirePrice: any = async (PDNO: string) => {
-    const subUrl = `/uapi/domestic-stock/v1/quotations/inquire-price`;
+    const subUrl = `/uapi/domestic-stock/v1/quotations/inquire-price?PDNO=${PDNO}`;
     const additionalHeaders: AdditionalHeaders = {
         // "kakaoId": getCookie("kakaoId"),
-        "PDNO": PDNO,
+        // "PDNO": PDNO,
         // "buyOrSell": buyOrSell,
     }
     return getKoreaInvestmentRequest(subUrl, additionalHeaders);
