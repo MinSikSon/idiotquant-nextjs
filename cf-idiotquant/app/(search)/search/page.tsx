@@ -235,7 +235,7 @@ export default function Search() {
           <table className="w-full table-auto border-collapse shadow-sm rounded-lg overflow-hidden text-[0.65rem] sm:text-sm dark:text-zinc-300" {...p} />
         ),
         th: ({ node, ...p }) => (
-          <th className="px-2 py-2 bg-gray-100 dark:bg-zinc-800 font-bold text-left border-b dark:border-zinc-700" {...p} />
+          <th className="px-2 py-2 !bg-gray-100 dark:!bg-zinc-800 font-bold text-left border-b dark:border-zinc-700" {...p} />
         ),
         td: ({ node, ...p }) => (
           <td className="px-2 py-2 border-b dark:border-zinc-800 text-right font-mono" {...p} />
@@ -245,10 +245,10 @@ export default function Search() {
           let bg = "";
           if (cellVal?.includes("%")) {
             const n = parseFloat(cellVal);
-            if (n > 0) bg = "bg-green-50 dark:bg-green-900/10";
-            else if (n < 0) bg = "bg-red-50 dark:bg-red-900/10";
+            if (n > 0) bg = "!bg-green-50 dark:!bg-green-900/10";
+            else if (n < 0) bg = "!bg-red-50 dark:!bg-red-900/10";
           }
-          return <tr className={`${bg} hover:bg-gray-50 dark:hover:bg-zinc-800/50`} {...p} />;
+          return <tr className={`${bg} hover:!bg-gray-50 dark:hover:!bg-zinc-800/50`} {...p} />;
         }
       }}
     >
@@ -297,8 +297,8 @@ export default function Search() {
     return (
       <div className="animate-in fade-in slide-in-from-bottom-2 duration-500">
         {/* KR Header & Chart */}
-        <Card elevation={Elevation.ONE} className="dark:bg-zinc-900 p-0 overflow-hidden rounded-xl border-none mb-4">
-          <div className={`flex transition-all duration-300 ${fixed ? "fixed top-[64px] left-0 w-full z-20 bg-white/90 dark:bg-zinc-900/90 backdrop-blur shadow-md px-4 py-0" : "p-4"}`}>
+        <Card elevation={Elevation.ONE} className="dark:!bg-zinc-900 p-0 overflow-hidden rounded-xl border-none mb-4">
+          <div className={`flex transition-all duration-300 ${fixed ? "fixed top-[64px] left-0 w-full z-20 !bg-white/90 dark:!bg-zinc-900/90 backdrop-blur shadow-md px-4 py-0" : "p-4"}`}>
             <div className="w-7/12">
               {!fixed && <div className="text-[10px] text-zinc-500">{kiPrice.output.rprs_mrkt_kor_name} | {kiPrice.output.bstp_kor_isnm}</div>}
               <div className="flex items-center gap-2">
@@ -312,10 +312,10 @@ export default function Search() {
                 )}
               </div>
               <div className="flex items-center gap-2 mt-1">
-                <span className="text-xl font-mono font-bold text-blue-600 dark:text-blue-400 underline decoration-dotted decoration-2">
+                <span className="text-xl font-mono font-bold !text-blue-600 dark:!text-blue-400 underline decoration-dotted decoration-2">
                   {Number(kiChart.output1.stck_prpr).toLocaleString()}
                 </span>
-                <span className="text-xs text-zinc-500">원 | {kiChart.output2[0].stck_bsop_date}</span>
+                <span className="text-xs !text-zinc-500">원 | {kiChart.output2[0].stck_bsop_date}</span>
               </div>
             </div>
             <div className="w-5/12 h-16">
@@ -332,8 +332,8 @@ export default function Search() {
 
         {/* Strategies */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
-          <Section title="NCAV 청산가치 전략" collapsible className="dark:bg-zinc-400 rounded-xl overflow-hidden">
-            <SectionCard className="dark:bg-zinc-950 ">
+          <Section title="NCAV 청산가치 전략" collapsible className="dark:!bg-zinc-400 rounded-xl overflow-hidden">
+            <SectionCard className="dark:!bg-zinc-950 ">
               <div className="prose prose-sm dark:prose-invert max-w-none">
                 <ReactMarkdown remarkPlugins={[remarkMath]} rehypePlugins={[rehypeKatex]}>
                   {`$$ 적정주가 = \\frac{(유동자산 - 총부채)}{상장주식수} $$`}
@@ -343,8 +343,8 @@ export default function Search() {
             </SectionCard>
           </Section>
 
-          <Section title="S-RIM 적정주가 전략" collapsible className="dark:bg-zinc-400 rounded-xl overflow-hidden">
-            <SectionCard className="dark:bg-zinc-950">
+          <Section title="S-RIM 적정주가 전략" collapsible className="dark:!bg-zinc-400 rounded-xl overflow-hidden">
+            <SectionCard className="dark:!bg-zinc-950">
               <div className="prose prose-sm dark:prose-invert max-w-none">
                 <ReactMarkdown remarkPlugins={[remarkMath]} rehypePlugins={[rehypeKatex]}>
                   {`$$ 기업가치 = 자기자본 + \\frac{자기자본 \\cdot (ROE - K_e)}{K_e} $$`}
@@ -357,19 +357,19 @@ export default function Search() {
 
         {/* Market Data Rows */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mb-8">
-          <Card elevation={Elevation.ZERO} className="dark:bg-zinc-900 border-none rounded-xl">
+          <Card elevation={Elevation.ZERO} className="dark:!bg-zinc-900 border-none rounded-xl">
             <InfoRow label="PER" value={kiPrice.output.per} unit="배" />
             <InfoRow label="PBR" value={kiPrice.output.pbr} unit="배" />
             <InfoRow label="EPS" value={Number(kiPrice.output.eps).toLocaleString()} unit="원" />
             <InfoRow label="BPS" value={Number(kiPrice.output.bps).toLocaleString()} unit="원" />
           </Card>
-          <Card elevation={Elevation.ZERO} className="dark:bg-zinc-900 border-none rounded-xl">
+          <Card elevation={Elevation.ZERO} className="dark:!bg-zinc-900 border-none rounded-xl">
             <InfoRow label="52주 최저" value={`${Number(kiPrice.output.w52_lwpr).toLocaleString()}`} unit={`원 (${kiPrice.output.dryy_lwpr_date})`} />
             <InfoRow label="52주 최고" value={`${Number(kiPrice.output.w52_hgpr).toLocaleString()}`} unit={`원 (${kiPrice.output.w52_hgpr_date})`} className="bg-red-50 dark:bg-red-900/10" />
             <InfoRow label="시가총액" value={(Number(kiChart.output1.stck_prpr) * Number(kiChart.output1.lstn_stcn)).toLocaleString()} unit="원" />
             <InfoRow label="상장주식수" value={Number(kiChart.output1.lstn_stcn).toLocaleString()} unit="개" />
           </Card>
-          <Card elevation={Elevation.ZERO} className="dark:bg-zinc-900 border-none rounded-xl">
+          <Card elevation={Elevation.ZERO} className="dark:!bg-zinc-900 border-none rounded-xl">
             <InfoRow label="거래량" value={Number(kiPrice.output.acml_vol).toLocaleString()} unit="회" />
             <InfoRow label="전일 거래대금" value={Number(kiPrice.output.acml_tr_pbmn).toLocaleString()} unit="원" />
             <InfoRow label="대금/시총" value={(100 * Number(kiPrice.output.acml_tr_pbmn) / (Number(kiChart.output1.stck_prpr) * Number(kiChart.output1.lstn_stcn))).toFixed(3)} unit="%" />
@@ -379,21 +379,21 @@ export default function Search() {
         {/* Financial Tables */}
 
         {/* 2. 렌더링 부분 */}
-        <Section title="재무상태표 상세 (최근 5개년)" className="dark:bg-zinc-900 rounded-xl mb-6">
-          <SectionCard className="p-0 overflow-x-auto dark:bg-zinc-950">
-            <HTMLTable bordered striped interactive className="w-full text-right font-mono text-xs dark:text-zinc-300">
+        <Section title="재무상태표 상세 (최근 5개년)" className="dark:!bg-zinc-900 rounded-xl mb-6">
+          <SectionCard className="p-0 overflow-x-auto dark:!bg-zinc-950">
+            <HTMLTable bordered striped interactive className="w-full text-right font-mono text-xs dark:!text-zinc-300">
               <thead>
-                <tr className="bg-gray-100 dark:bg-zinc-800">
-                  <th className="text-left p-2 border-none min-w-[120px] text-zinc-500 dark:text-zinc-200">계정항목 (단위: 억)</th>
+                <tr className="!bg-gray-100 dark:!bg-zinc-800">
+                  <th className="text-left p-2 border-none min-w-[120px] !text-zinc-500 dark:!text-zinc-200">계정항목 (단위: 억)</th>
                   {kiBS.output.slice(0, 5).map((v, i) => (
-                    <th key={i} className="text-right p-2 border-none text-zinc-500 dark:text-zinc-200">{v.stac_yymm}</th>
+                    <th key={i} className="text-right p-2 border-none !text-zinc-500 dark:!text-zinc-200">{v.stac_yymm}</th>
                   ))}
                 </tr>
               </thead>
               <tbody>
                 {bsRows.map((row) => (
-                  <tr key={row.key} className="hover:bg-zinc-100 dark:hover:bg-zinc-800/50">
-                    <td className="text-left p-2 border-none font-sans text-zinc-500 dark:text-zinc-200">
+                  <tr key={row.key} className="hover:!bg-zinc-100 dark:hover:!bg-zinc-800/50">
+                    <td className="text-left p-2 border-none font-sans !text-zinc-500 dark:!text-zinc-200">
                       {row.label}
                     </td>
                     {kiBS.output.slice(0, 5).map((v, i) => {
@@ -401,7 +401,7 @@ export default function Search() {
                       // v[row.key] 대신 v[row.key as keyof typeof v] 사용
                       const val = Number(v[row.key as keyof typeof v] || 0) * ONE_HUNDRED_MILLION;
                       return (
-                        <td key={i} className="p-2 border-none text-zinc-500 dark:text-zinc-200">
+                        <td key={i} className="p-2 border-none !text-zinc-500 dark:!text-zinc-200">
                           {Util.UnitConversion(val, false)}
                         </td>
                       );
@@ -414,21 +414,21 @@ export default function Search() {
         </Section>
 
         {/* 손익계산서 상세 (최근 5개년) */}
-        <Section title="손익계산서 상세 (최근 5개년)" className="dark:bg-zinc-900 rounded-xl mb-6">
-          <SectionCard className="p-0 overflow-x-auto dark:bg-zinc-950">
-            <HTMLTable bordered striped interactive className="w-full text-right font-mono text-xs dark:text-zinc-300">
+        <Section title="손익계산서 상세 (최근 5개년)" className="dark:!bg-zinc-900 rounded-xl mb-6">
+          <SectionCard className="p-0 overflow-x-auto dark:!bg-zinc-950">
+            <HTMLTable bordered striped interactive className="w-full text-right font-mono text-xs dark:!text-zinc-300">
               <thead>
-                <tr className="bg-gray-100 dark:bg-zinc-800">
-                  <th className="text-left p-2 border-none min-w-[120px] text-zinc-500 dark:text-zinc-200">계정항목 (단위: 억)</th>
+                <tr className="!bg-gray-100 dark:!bg-zinc-800">
+                  <th className="text-left p-2 border-none min-w-[120px] !text-zinc-500 dark:!text-zinc-200">계정항목 (단위: 억)</th>
                   {kiIS.output.slice(0, 5).map((v, i) => (
-                    <th key={i} className="text-right p-2 border-none text-zinc-500 dark:text-zinc-200">{v.stac_yymm}</th>
+                    <th key={i} className="text-right p-2 border-none !text-zinc-500 dark:!text-zinc-200">{v.stac_yymm}</th>
                   ))}
                 </tr>
               </thead>
               <tbody>
                 {isRows.map((row) => (
-                  <tr key={row.key} className="hover:bg-zinc-100 dark:hover:bg-zinc-800/50">
-                    <td className="text-left p-2 border-none font-sans text-zinc-500 dark:text-zinc-200">
+                  <tr key={row.key} className="hover:!bg-zinc-100 dark:hover:!bg-zinc-800/50">
+                    <td className="text-left p-2 border-none font-sans !text-zinc-500 dark:!text-zinc-200">
                       {row.label}
                     </td>
                     {kiIS.output.slice(0, 5).map((v, i) => {
@@ -438,7 +438,7 @@ export default function Search() {
                       const val = isEps ? Number(rawValue) : Number(rawValue) * ONE_HUNDRED_MILLION;
 
                       return (
-                        <td key={i} className={`p-2 border-none ${Number(rawValue) < 0 ? 'text-red-500' : 'text-zinc-500 dark:text-zinc-200'}`}>
+                        <td key={i} className={`p-2 border-none ${Number(rawValue) < 0 ? '!text-red-500' : '!text-zinc-500 dark:!text-zinc-200'}`}>
                           {isEps ? Number(val).toLocaleString() : Util.UnitConversion(val, false)}
                         </td>
                       );
@@ -452,8 +452,8 @@ export default function Search() {
 
         {/* AI Insight */}
         {response && (
-          <Card elevation={Elevation.TWO} className="mt-8 border-t-4 border-blue-500 dark:bg-zinc-900">
-            <div className="flex items-center gap-2 mb-3 text-blue-500">
+          <Card elevation={Elevation.TWO} className="mt-8 border-t-4 !border-blue-500 dark:!bg-zinc-900">
+            <div className="flex items-center gap-2 mb-3 !text-blue-500">
               <Icon icon={IconNames.CHAT} />
               <h3 className="text-sm font-bold m-0">AI 리서치 리포트</h3>
             </div>
@@ -474,13 +474,13 @@ export default function Search() {
 
     return (
       <div className="animate-in fade-in duration-500">
-        <Card elevation={Elevation.ONE} className="dark:bg-zinc-900 p-0 overflow-hidden rounded-xl border-none mb-4">
-          <div className={`flex transition-all duration-300 ${fixed ? "fixed top-[64px] left-0 w-full z-20 bg-white/90 dark:bg-zinc-900/90 backdrop-blur shadow-md px-4 py-0" : "p-4"}`}>
+        <Card elevation={Elevation.ONE} className="dark:!bg-zinc-900 p-0 overflow-hidden rounded-xl border-none mb-4">
+          <div className={`flex transition-all duration-300 ${fixed ? "fixed top-[64px] left-0 w-full z-20 !bg-white/90 dark:!bg-zinc-900/90 backdrop-blur shadow-md px-4 py-0" : "p-4"}`}>
             <div className="w-7/12">
-              {!fixed && <Tag intent="primary" minimal className="text-[10px] text-zinc-500">{usSearchInfo?.output?.tr_mket_name} | {usDetail?.output?.e_icod}</Tag>}
-              <h2 className="text-xl md:text-2xl font-black dark:text-white">{usSearchInfo?.output?.prdt_name}</h2>
-              <p className="text-zinc-500 font-mono mt-1">{usSearchInfo?.output?.prdt_eng_name}</p>
-              <div className="text-xl font-mono font-bold text-blue-600 dark:text-blue-400 underline decoration-dotted decoration-2">
+              {!fixed && <Tag intent="primary" minimal className="text-[10px] !text-zinc-500">{usSearchInfo?.output?.tr_mket_name} | {usDetail?.output?.e_icod}</Tag>}
+              <h2 className="text-xl md:text-2xl font-black dark:!text-white">{usSearchInfo?.output?.prdt_name}</h2>
+              <p className="!text-zinc-500 font-mono mt-1">{usSearchInfo?.output?.prdt_eng_name}</p>
+              <div className="text-xl font-mono font-bold !text-blue-600 dark:!text-blue-400 underline decoration-dotted decoration-2">
                 {Number(usDetail?.output?.last).toFixed(2)} <span className="text-xs">{usDetail?.output?.curr}</span>
               </div>
             </div>
@@ -495,12 +495,12 @@ export default function Search() {
         </Card>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
-          <Section title="US NCAV 모형" className="dark:bg-zinc-400 rounded-xl">
-            <SectionCard className="dark:bg-zinc-950">
+          <Section title="US NCAV 모형" className="dark:!bg-zinc-400 rounded-xl">
+            <SectionCard className="dark:!bg-zinc-950">
               <MdTableTemplate md_main={getUsNcavTable(finnhubData, usDetail)} />
             </SectionCard>
           </Section>
-          <Card className="dark:bg-zinc-900 border-none rounded-xl grid grid-cols-1 gap-1">
+          <Card className="dark:!bg-zinc-900 border-none rounded-xl grid grid-cols-1 gap-1">
             <InfoRow label="PER" value={usDetail?.output?.perx} unit="배" />
             <InfoRow label="PBR" value={usDetail?.output?.pbrx} unit="배" />
             <InfoRow label="EPS" value={usDetail?.output?.epsx} unit={usDetail?.output?.curr} />
@@ -509,7 +509,7 @@ export default function Search() {
         </div>
 
         {finnhubData.state === "fulfilled" && (
-          <Section title="Finnhub Financials (As Reported)" className="dark:bg-zinc-900 rounded-xl">
+          <Section title="Finnhub Financials (As Reported)" className="dark:!bg-zinc-900 rounded-xl">
             <FinnhubBalanceSheetTable data={finnhubData.data} />
           </Section>
         )}
@@ -518,13 +518,13 @@ export default function Search() {
   };
 
   return (
-    <div className="w-full min-h-screen bg-gray-50 dark:bg-zinc-950 transition-colors duration-300">
+    <div className="w-full min-h-screen !bg-gray-50 dark:!bg-zinc-950 transition-colors duration-300">
       {/* Header & Search */}
-      <div className={`z-30 w-full transition-all duration-300 ${fixed ? "fixed top-0 bg-white/80 dark:bg-zinc-950/80 backdrop-blur shadow-sm" : "relative bg-white dark:bg-zinc-900"}`}>
+      <div className={`z-30 w-full transition-all duration-300 ${fixed ? "fixed top-0 !bg-white/80 dark:!bg-zinc-950/80 backdrop-blur shadow-sm" : "relative !bg-white dark:!bg-zinc-900"}`}>
         <SearchAutocomplete placeHolder="🇰🇷 종목명 또는 🇺🇸 티커" onSearchButton={onSearchButton} validCorpNameArray={all_tickers} />
         <div className="flex px-4 py-1 gap-1 overflow-x-auto no-scrollbar border-t dark:border-zinc-800">
           {krMarketHistory.slice(-6).reverse().map((s, i) => (
-            <Tag key={i} interactive round minimal onClick={() => onSearchButton(s)} className="cursor-pointer !text-black dark:!text-white hover:bg-blue-50 dark:hover:bg-zinc-800 transition-colors">
+            <Tag key={i} interactive round minimal onClick={() => onSearchButton(s)} className="cursor-pointer !text-black dark:!text-white hover:!bg-blue-50 dark:hover:!bg-zinc-800 transition-colors">
               {s}
             </Tag>
           ))}
@@ -595,7 +595,7 @@ function getUsNcavTable(finnhub: any, detail: any) {
 
 const SearchGuide = () => (
   <div className="flex flex-col items-center justify-center py-20 px-4 text-center animate-in fade-in duration-700">
-    <div className="bg-blue-50 dark:bg-zinc-900 p-6 rounded-full mb-6">
+    <div className="!bg-blue-50 dark:!bg-zinc-900 p-6 rounded-full mb-6">
       <Icon icon={IconNames.SEARCH_TEMPLATE} size={48} className="text-blue-500 opacity-80" />
     </div>
     <h2 className="text-2xl font-bold text-zinc-800 dark:text-zinc-200 mb-2">
@@ -612,7 +612,7 @@ const SearchGuide = () => (
         { icon: IconNames.CALCULATOR, title: "가치 평가", desc: "NCAV 및 S-RIM 모델링" },
         { icon: IconNames.LIGHTBULB, title: "AI 인사이트", desc: "LLM 기반 기업 분석 리포트" }
       ].map((item, i) => (
-        <Card key={i} elevation={Elevation.ZERO} className="dark:bg-zinc-900 border-none">
+        <Card key={i} elevation={Elevation.ZERO} className="dark:!bg-zinc-900 border-none">
           <Icon icon={item.icon} size={20} className="mb-2 text-blue-400" />
           <div className="font-bold text-sm mb-1 dark:text-zinc-300">{item.title}</div>
           <div className="text-[11px] text-zinc-500">{item.desc}</div>

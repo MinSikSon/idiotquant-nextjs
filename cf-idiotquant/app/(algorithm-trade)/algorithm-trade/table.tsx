@@ -124,7 +124,7 @@ export default function ResponsiveNCAV({ strategies }: { strategies?: Strategy |
             <div className="max-w-[1400px] mx-auto space-y-4 md:space-y-6">
 
                 {/* [상단 헤더] 모바일: 세로적재, 데스크톱: 가로배치 */}
-                <Card elevation={Elevation.ONE} className="!p-4 md:!p-6 border-none shadow-sm dark:bg-zinc-900">
+                {/* <Card elevation={Elevation.ONE} className="!p-4 md:!p-6 border-none shadow-sm dark:bg-zinc-900">
                     <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
                         <div>
                             <div className="flex items-center gap-2 flex-wrap">
@@ -144,7 +144,7 @@ export default function ResponsiveNCAV({ strategies }: { strategies?: Strategy |
                             <Button icon={IconNames.DOWNLOAD} intent={Intent.PRIMARY}>CSV</Button>
                         </ButtonGroup>
                     </div>
-                </Card>
+                </Card> */}
 
                 <div className="grid grid-cols-12 gap-4 md:gap-6">
 
@@ -157,7 +157,7 @@ export default function ResponsiveNCAV({ strategies }: { strategies?: Strategy |
                                         key={idx}
                                         interactive
                                         onClick={() => setSelectedIndex(idx)}
-                                        className={`!p-3 min-w-[160px] lg:min-w-0 transition-all border-none ${idx === selectedIndex ? 'bg-blue-600 text-white shadow-lg scale-[1.02]' : 'bg-white dark:bg-zinc-800'}`}
+                                        className={`!p-3 min-w-[160px] lg:min-w-0 transition-all border-none ${idx === selectedIndex ? '!bg-blue-600 !text-white !shadow-lg scale-[1.02]' : '!bg-white dark:!bg-zinc-800'}`}
                                     >
                                         <div className={`text-xs font-bold truncate ${idx === selectedIndex ? 'text-white' : ''}`}>{s.strategyId}</div>
                                         <div className={`text-[10px] mt-1 font-medium ${idx === selectedIndex ? 'text-blue-100' : 'text-gray-400'}`}>
@@ -173,7 +173,7 @@ export default function ResponsiveNCAV({ strategies }: { strategies?: Strategy |
                     <div className="col-span-12 lg:col-span-9 space-y-4 md:space-y-6">
 
                         {/* 메트릭 그리드: 모바일 2열, 데스크톱 4열 */}
-                        <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4">
+                        <div className="grid grid-cols-4 md:grid-cols-4 gap-3 md:gap-4">
                             <MetricCard label="추천 종목" value={data.numCandidates} icon={IconNames.TH_DERIVED} intent={Intent.PRIMARY} />
                             <MetricCard label="필터 통과" value={data.numFilteredKeys} icon={IconNames.FILTER_LIST} />
                             <MetricCard label="데이터 소스" value={data.dataSource.balanceSheet} icon={IconNames.DATABASE} />

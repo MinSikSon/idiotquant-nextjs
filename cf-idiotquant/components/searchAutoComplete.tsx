@@ -62,7 +62,7 @@ const SearchAutocomplete = (props: any) => {
     const inputRef = useRef<HTMLInputElement>(null);
 
     return (
-        <div className="flex items-center relative gap-1 w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-black dark:text-white">
+        <div className="flex items-center relative gap-1 w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 dark:!bg-black dark:!text-white">
             <div className="relative flex-1 items-center w-full">
                 <input placeholder={props.placeHolder}
                     onChange={handleChange}
@@ -72,7 +72,7 @@ const SearchAutocomplete = (props: any) => {
                         }
                     }}
                     value={query}
-                    className="w-full text-md"
+                    className="w-full text-lg dark:!bg-black dark:!text-white focus:outline-none"
                 >
                 </input>
                 {query && (
@@ -83,7 +83,7 @@ const SearchAutocomplete = (props: any) => {
                             onClick={handleClear}
                         >
                             {/* <button className="dark:bg-black dark:text-white absolute right-2 top-1/2 transform -translate-y-1/2 p-2" onClick={handleClear}> */}
-                            <XCircleIcon className="dark:bg-black dark:text-white h-6 w-6 text-gray-500 pt-1" />
+                            <XCircleIcon className="dark:!bg-black dark:!text-white h-6 w-6 !text-gray-500 pt-1" />
                             {/* </button> */}
                         </button>
                     </div>
@@ -96,12 +96,12 @@ const SearchAutocomplete = (props: any) => {
                 <MagnifyingGlassIcon width="16" height="16" />
             </button>
             {isFocused && suggestions.length > 0 && (
-                <ul className="z-10 absolute top-10 left-2 w-10/12 ml-4 mt-0 bg-white dark:bg-black border border-gray-300 rounded-lg shadow-lg max-h-60 overflow-auto">
+                <ul className="z-10 absolute top-10 left-2 w-10/12 ml-4 mt-0 !bg-white dark:!bg-black border border-gray-300 rounded-lg shadow-lg max-h-60 overflow-auto">
                     {suggestions.map((suggestion: any, index: any) => (
                         <li
                             key={index}
                             onMouseDown={() => handleSelect(suggestion)}
-                            className={`text-md py-2 pl-3 dark:text-white cursor-pointer hover:bg-blue-100 ${selectedIndex === index ? "bg-blue-200" : ""
+                            className={`text-md py-2 pl-3 dark:!text-white cursor-pointer hover:!bg-blue-100 ${selectedIndex === index ? "!bg-blue-200" : ""
                                 }`}
                         >
                             {suggestion}

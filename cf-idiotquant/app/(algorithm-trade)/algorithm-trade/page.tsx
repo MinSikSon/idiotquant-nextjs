@@ -43,16 +43,16 @@ export default function AlgorithmTrade() {
     const isLoading = !strategyNcavLatest?.list;
 
     return (
-        <div className="flex flex-col w-full min-h-screen bg-gray-50 dark:bg-zinc-950">
+        <div className="flex flex-col w-full min-h-screen !bg-gray-50 dark:!bg-zinc-950">
             {/* 상단 타이틀 영역: 모바일 고려 여백 조절 */}
-            <div className="py-6 px-4 md:py-10 text-center">
+            <div className="py-3 px-4 md:py-5 text-center">
                 <div className="flex items-center justify-center gap-3 mb-2">
                     <Icon icon={IconNames.LIGHTBULB} intent={Intent.WARNING} size={24} />
-                    <h2 className="text-2xl md:text-3xl font-black tracking-tight dark:text-white">
+                    <h2 className="!text-2xl md:!text-3xl !font-black !tracking-tight dark:!text-white">
                         종목 추천
                     </h2>
                 </div>
-                <p className="text-gray-500 dark:text-zinc-400 text-sm md:text-base">
+                <p className="!text-gray-500 dark:!text-zinc-400 text-sm md:text-base">
                     IdiotQuant 알고리즘이 분석한 현재 가장 저평가된 종목 리스트입니다.
                 </p>
             </div>
