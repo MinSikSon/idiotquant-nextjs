@@ -31,7 +31,7 @@ export default function RootLayout({
           <ThemeProviderClient>
             <AuthProvider>
               <NavbarWithSimpleLinks />
-              <div className="md:flex-1 lg:flex-1 w-full h-full scroll-auto dark:bg-black">
+              <div className="md:flex-1 lg:flex-1 w-full h-full scroll-auto dark:!bg-black">
                 {children}
               </div>
             </AuthProvider>

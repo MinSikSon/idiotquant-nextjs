@@ -68,7 +68,7 @@
 //     };
 
 //     return (
-//         <div className="bp5-dark min-h-screen bg-zinc-50 dark:bg-black flex flex-col justify-center items-center p-6">
+//         <div className="bp5-dark min-h-screen bg-zinc-50 dark:!bg-black flex flex-col justify-center items-center p-6">
 //             {/* 데이터 로딩 핸들러 (숨김 처리 또는 오버레이) */}
 //             {/* 중요: 데이터 로딩 중이거나 이미 성공했다면 로그인 버튼 대신 스피너를 보여줌 */}
 //             {(kakaoTotalState === "pending" || kakaoTotalState === "fulfilled") ? (
@@ -91,7 +91,7 @@
 //                         </Text>
 //                     </div>
 
-//                     <Card elevation={Elevation.FOUR} className="p-8 rounded-2xl dark:bg-zinc-900/80 backdrop-blur-md border-none shadow-2xl">
+//                     <Card elevation={Elevation.FOUR} className="p-8 rounded-2xl dark:!bg-zinc-900/80 backdrop-blur-md border-none shadow-2xl">
 //                         <div className="space-y-6">
 //                             <div className="text-center">
 //                                 <Text className="text-lg font-semibold">서비스를 시작합니다</Text>
@@ -103,7 +103,7 @@
 //                             {isSubmitting ? (
 //                                 <div className="flex flex-col items-center py-4 gap-4">
 //                                     <Spinner size={40} intent={Intent.PRIMARY} />
-//                                     <Text className="font-mono text-xs animate-pulse text-blue-500">카카오 인증 페이지로 이동 중...</Text>
+//                                     <Text className="font-mono text-xs animate-pulse !text-blue-500">카카오 인증 페이지로 이동 중...</Text>
 //                                 </div>
 //                             ) : (
 //                                 <Button

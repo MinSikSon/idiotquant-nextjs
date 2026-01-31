@@ -177,7 +177,7 @@ function BalanceUs() {
     const exRate = kiBalance?.output2?.[0]?.frst_bltn_exrt;
 
     return (
-        <div className="bp5-dark bg-zinc-50 dark:bg-black min-h-screen transition-colors duration-200">
+        <div className="bp5-dark bg-zinc-50 dark:!bg-black min-h-screen transition-colors duration-200">
             <div className="max-w-7xl mx-auto px-4 py-6 md:py-10">
 
                 {/* Header: Breadcrumbs & Exchange Rate */}
@@ -195,7 +195,7 @@ function BalanceUs() {
                         </div>
                     </div>
                     {exRate && (
-                        <div className="flex items-center gap-3 bg-zinc-200/50 dark:bg-zinc-800/50 px-4 py-2 rounded-xl border border-zinc-300 dark:border-zinc-700">
+                        <div className="flex items-center gap-3 bg-zinc-200/50 dark:!bg-zinc-800/50 px-4 py-2 rounded-xl border border-zinc-300 dark:border-zinc-700">
                             <Text className="text-xs opacity-60 font-bold uppercase tracking-tighter">Current Exchange Rate</Text>
                             <Code className="text-blue-500 font-mono font-bold text-base bg-transparent p-0">
                                 ₩{formatNumber(Number(exRate))}

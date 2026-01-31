@@ -120,16 +120,16 @@ export default function ResponsiveNCAV({ strategies }: { strategies?: Strategy |
     }, [candidateEntries, sortKey, sortDir]);
 
     return (
-        <div className="min-h-screen bg-gray-50 dark:bg-zinc-950 p-2 sm:p-4 md:p-8">
+        <div className="min-h-screen bg-gray-50 dark:!bg-zinc-950 p-2 sm:p-4 md:p-8">
             <div className="max-w-[1400px] mx-auto space-y-4 md:space-y-6">
 
                 {/* [상단 헤더] 모바일: 세로적재, 데스크톱: 가로배치 */}
-                {/* <Card elevation={Elevation.ONE} className="!p-4 md:!p-6 border-none shadow-sm dark:bg-zinc-900">
+                {/* <Card elevation={Elevation.ONE} className="!p-4 md:!p-6 border-none shadow-sm dark:!bg-zinc-900">
                     <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
                         <div>
                             <div className="flex items-center gap-2 flex-wrap">
                                 <Icon icon={IconNames.CHART} intent={Intent.PRIMARY} size={20} />
-                                <H4 className="!m-0 text-lg md:text-xl font-bold truncate max-w-[280px] sm:max-w-none">
+                                <H4 className="!m-0 text-lg md:!text-xl font-bold truncate max-w-[280px] sm:max-w-none">
                                     {data.strategyId || "전략 정보 없음"}
                                 </H4>
                                 <Tag intent={Intent.SUCCESS} minimal round size="medium">{data.status}</Tag>
@@ -204,8 +204,8 @@ export default function ResponsiveNCAV({ strategies }: { strategies?: Strategy |
                                         <tbody>
                                             {sortedCandidates.map(([ticker, info]: any) => (
                                                 <React.Fragment key={ticker}>
-                                                    <tr className={expandedTicker === ticker ? 'bg-blue-50/30 dark:bg-blue-900/10' : ''}>
-                                                        <td className="font-bold text-sm text-blue-600">{ticker}{info?.name ? " (" + info.name + ")" : ""}</td>
+                                                    <tr className={expandedTicker === ticker ? 'bg-blue-50/30 dark:!bg-blue-900/10' : ''}>
+                                                        <td className="font-bold text-sm !text-blue-600">{ticker}{info?.name ? " (" + info.name + ")" : ""}</td>
                                                         <td className="font-mono text-xs">{`$${formatNum(info.condition?.LastPrice)}`}</td>
                                                         <td className="font-mono text-xs text-gray-500">{formatNum(info.condition?.MarketCapitalization)}</td>
                                                         <td>
@@ -224,8 +224,8 @@ export default function ResponsiveNCAV({ strategies }: { strategies?: Strategy |
                                                     </tr>
                                                     {expandedTicker === ticker && (
                                                         <tr>
-                                                            <td colSpan={5} className="!p-6 bg-gray-50 dark:bg-zinc-800/30 shadow-inner">
-                                                                <pre className="text-[11px] font-mono leading-relaxed bg-white dark:bg-black p-4 rounded-lg border border-gray-200 dark:border-zinc-800 overflow-auto max-h-80">
+                                                            <td colSpan={5} className="!p-6 bg-gray-50 dark:!bg-zinc-800/30 shadow-inner">
+                                                                <pre className="text-[11px] font-mono leading-relaxed bg-white dark:!bg-black p-4 rounded-lg border border-gray-200 dark:border-zinc-800 overflow-auto max-h-80">
                                                                     {JSON.stringify(info, null, 2)}
                                                                 </pre>
                                                             </td>
@@ -243,17 +243,17 @@ export default function ResponsiveNCAV({ strategies }: { strategies?: Strategy |
                                         <div key={ticker} className="p-4 space-y-3">
                                             <div className="flex justify-between items-start">
                                                 <div>
-                                                    <span className="text-lg font-black text-blue-600 mr-2">{ticker}</span>
+                                                    <span className="text-lg font-black !text-blue-600 mr-2">{ticker}</span>
                                                     <span className="text-[10px] text-gray-400 uppercase font-bold">{info.name || "N/A"}</span>
                                                 </div>
                                                 <Tag intent={Intent.SUCCESS} minimal size="medium">{info.ncavRatio}</Tag>
                                             </div>
                                             <div className="grid grid-cols-2 gap-2">
-                                                <div className="bg-gray-50 dark:bg-zinc-800/50 p-2 rounded">
+                                                <div className="bg-gray-50 dark:!bg-zinc-800/50 p-2 rounded">
                                                     <p className="text-[9px] text-gray-400 font-bold uppercase mb-1">Price</p>
                                                     <p className="text-xs font-mono font-bold">{`$${formatNum(info.condition?.LastPrice)}`}</p>
                                                 </div>
-                                                <div className="bg-gray-50 dark:bg-zinc-800/50 p-2 rounded">
+                                                <div className="bg-gray-50 dark:!bg-zinc-800/50 p-2 rounded">
                                                     <p className="text-[9px] text-gray-400 font-bold uppercase mb-1">Market Cap</p>
                                                     <p className="text-xs font-mono font-bold">{formatNum(info.condition?.MarketCapitalization)}</p>
                                                 </div>
@@ -267,7 +267,7 @@ export default function ResponsiveNCAV({ strategies }: { strategies?: Strategy |
                                                 onClick={() => setExpandedTicker(expandedTicker === ticker ? null : ticker)}
                                             />
                                             {expandedTicker === ticker && (
-                                                <div className="mt-2 p-3 bg-zinc-900 text-green-400 text-[10px] font-mono rounded-lg overflow-x-auto shadow-inner">
+                                                <div className="mt-2 p-3 bg-zinc-900 !text-green-400 text-[10px] font-mono rounded-lg overflow-x-auto shadow-inner">
                                                     <pre>{JSON.stringify(info.condition, null, 2)}</pre>
                                                 </div>
                                             )}
@@ -279,21 +279,21 @@ export default function ResponsiveNCAV({ strategies }: { strategies?: Strategy |
 
                         {/* 하단 상세 설정 파라미터 */}
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            <Callout title="Strategy Rules" icon={IconNames.SETTINGS} className="border-none shadow-sm dark:bg-zinc-900">
+                            <Callout title="Strategy Rules" icon={IconNames.SETTINGS} className="border-none shadow-sm dark:!bg-zinc-900">
                                 <div className="mt-2 space-y-2">
                                     {Object.entries(data.params).map(([k, v]) => (
                                         <div key={k} className="flex justify-between items-center text-xs border-b border-gray-50 dark:border-zinc-800 pb-1.5">
                                             <span className="text-gray-500 font-medium uppercase text-[10px]">{k}</span>
-                                            <span className="font-mono font-bold text-blue-600">{v}</span>
+                                            <span className="font-mono font-bold !text-blue-600">{v}</span>
                                         </div>
                                     ))}
                                 </div>
                             </Callout>
-                            <Callout title="Data Integrity" icon={IconNames.SHIELD} intent={Intent.NONE} className="border-none shadow-sm dark:bg-zinc-900">
-                                <div className="mt-2 text-[11px] space-y-2 text-gray-600 dark:text-gray-400">
-                                    <p className="flex justify-between"><span>BS Source:</span> <b className="text-gray-900 dark:text-white">{data.dataSource.balanceSheet}</b></p>
-                                    <p className="flex justify-between"><span>Price Source:</span> <b className="text-gray-900 dark:text-white">{data.dataSource.prices}</b></p>
-                                    <p className="flex justify-between"><span>Last Sync:</span> <b className="text-gray-900 dark:text-white">{new Date(data.dataSource.fetchedAt).toLocaleTimeString()}</b></p>
+                            <Callout title="Data Integrity" icon={IconNames.SHIELD} intent={Intent.NONE} className="border-none shadow-sm dark:!bg-zinc-900">
+                                <div className="mt-2 text-[11px] space-y-2 text-gray-600 dark:!text-gray-400">
+                                    <p className="flex justify-between"><span>BS Source:</span> <b className="text-gray-900 dark:!text-white">{data.dataSource.balanceSheet}</b></p>
+                                    <p className="flex justify-between"><span>Price Source:</span> <b className="text-gray-900 dark:!text-white">{data.dataSource.prices}</b></p>
+                                    <p className="flex justify-between"><span>Last Sync:</span> <b className="text-gray-900 dark:!text-white">{new Date(data.dataSource.fetchedAt).toLocaleTimeString()}</b></p>
                                 </div>
                             </Callout>
                         </div>
@@ -315,13 +315,13 @@ export default function ResponsiveNCAV({ strategies }: { strategies?: Strategy |
 
 function MetricCard({ label, value, icon, intent = Intent.NONE }: any) {
     return (
-        <Card elevation={Elevation.ZERO} className="flex flex-col sm:flex-row items-center p-3 md:p-4 border-none shadow-sm dark:bg-zinc-900 text-center sm:text-left">
-            <div className={`w-10 h-10 rounded-lg flex items-center justify-center sm:mr-4 mb-2 sm:mb-0 ${intent === Intent.PRIMARY ? 'bg-blue-100 text-blue-600' : 'bg-gray-100 dark:bg-zinc-800 text-gray-500'}`}>
+        <Card elevation={Elevation.ZERO} className="flex flex-col sm:flex-row items-center p-3 md:p-4 border-none shadow-sm dark:!bg-zinc-900 text-center sm:!text-left">
+            <div className={`w-10 h-10 rounded-lg flex items-center justify-center sm:mr-4 mb-2 sm:mb-0 ${intent === Intent.PRIMARY ? 'bg-blue-100 !text-blue-600' : 'bg-gray-100 dark:!bg-zinc-800 text-gray-500'}`}>
                 <Icon icon={icon} size={16} />
             </div>
             <div className="min-w-0 flex-1">
-                <p className="text-[9px] md:text-[10px] uppercase font-black text-gray-400 mb-0 tracking-tight">{label}</p>
-                <p className="text-sm md:text-lg font-bold !m-0 truncate dark:text-white">{formatNum(value)}</p>
+                <p className="text-[9px] md:!text-[10px] uppercase font-black text-gray-400 mb-0 tracking-tight">{label}</p>
+                <p className="text-sm md:!text-lg font-bold !m-0 truncate dark:!text-white">{formatNum(value)}</p>
             </div>
         </Card>
     );
@@ -335,9 +335,9 @@ function SortHeader({ label, id, current, dir, onSort, onDir }: any) {
     };
 
     return (
-        <th className="cursor-pointer select-none py-4 hover:bg-gray-50 dark:hover:bg-zinc-800 transition-colors" onClick={handleToggle}>
+        <th className="cursor-pointer select-none py-4 hover:!bg-gray-50 dark:hover:!bg-zinc-800 transition-colors" onClick={handleToggle}>
             <div className="flex items-center gap-2">
-                <span className={isActive ? "text-blue-600 font-bold" : "text-gray-600 dark:text-gray-400"}>{label}</span>
+                <span className={isActive ? "text-blue-600 font-bold" : "text-gray-600 dark:!text-gray-400"}>{label}</span>
                 <Icon
                     icon={isActive ? (dir === "asc" ? IconNames.CHEVRON_UP : IconNames.CHEVRON_DOWN) : IconNames.DOUBLE_CARET_VERTICAL}
                     size={12}

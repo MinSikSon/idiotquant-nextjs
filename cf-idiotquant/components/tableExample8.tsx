@@ -83,13 +83,13 @@ export default function TableTemplate({
                 <>
                     <div className="w-full max-h-[80vh] overflow-auto rounded">
                         <table className="min-w-full border-collapse">
-                            <thead className="bg-slate-50 dark:bg-slate-900 sticky top-0 z-30">
+                            <thead className="!bg-slate-50 dark:!bg-slate-900 sticky top-0 z-30">
                                 <tr>
                                     {tableHead.map((h, idx) => (
                                         <th
                                             key={h.head}
                                             className={`min-w-24 px-2 py-1 text-center font-medium cursor-pointer
-                                            ${idx <= 1 ? "min-w-32 sticky left-0 z-40 bg-slate-50 dark:bg-slate-900" : ""}`}
+                                            ${idx <= 1 ? "min-w-32 sticky left-0 z-40 !bg-slate-50 dark:!bg-slate-900" : ""}`}
                                             onClick={() => {
                                                 if (!setSelectHead) return;
                                                 if (prevSelectHead === selectHead) {
@@ -117,8 +117,8 @@ export default function TableTemplate({
                             <tbody>
                                 {tableRow.slice(0, visibleCount).map((row) => (
                                     <tr key={row.id} className="text-sm text-center items-center justify-center border-b border-gray-200">
-                                        <td className="text-center sticky left-0 z-20 bg-slate-50 dark:bg-slate-900 p-2">{row.column_1}</td>
-                                        <td className="text-center sticky left-0 z-20 bg-slate-50 dark:bg-slate-900 p-2">{row.column_2}</td>
+                                        <td className="text-center sticky left-0 z-20 !bg-slate-50 dark:!bg-slate-900 p-2">{row.column_1}</td>
+                                        <td className="text-center sticky left-0 z-20 !bg-slate-50 dark:!bg-slate-900 p-2">{row.column_2}</td>
                                         <td className="p-2">{row.column_3}</td>
                                         <td className={`p-2 ${row.expectedRateOfReturnColor || ""}`}>{row.column_4}</td>
                                         <td className="p-2">{row.column_5}</td>
@@ -143,10 +143,10 @@ export default function TableTemplate({
                         <DesignButton
                             handleOnClick={() => setVisibleCount((prev: any) => prev + ADD_COUNT)}
                             buttonName={`trade history (more +${ADD_COUNT})`}
-                            buttonBgColor="bg-white dark:bg-black"
+                            buttonBgColor="bg-white dark:!bg-black"
                             buttonBorderColor="border-black dark:border-white"
                             buttonShadowColor="#D5D5D5"
-                            textStyle="text-xs font-bold dark:text-white"
+                            textStyle="text-xs font-bold dark:!text-white"
                             buttonStyle={`rounded-lg p-2 ml-2 flex items-center justify-center mb-2 button bg-white cursor-pointer select-none
                                 active:translate-y-1 active:[box-shadow:0_0px_0_0_#D5D5D5,0_0px_0_0_#D5D5D541] active:border-[0px]
                                 transition-all duration-150 [box-shadow:0_4px_0_0_#D5D5D5,0_8px_0_0_#D5D5D541] border-[1px]`}

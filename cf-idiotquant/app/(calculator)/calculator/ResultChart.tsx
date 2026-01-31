@@ -34,10 +34,10 @@ const ResultChart: FC<ResultChartProps> = ({ data, height }) => {
     return (
         <Card
             elevation={Elevation.ZERO}
-            className={`w-full flex flex-col p-0 border-none bg-transparent dark:bg-black ${height}`}
+            className={`w-full flex flex-col p-0 border-none bg-transparent dark:!bg-black ${height}`}
         >
             <div className="pt-2 px-4 mb-4">
-                <Text className="font-bold opacity-80 uppercase tracking-wider text-xs dark:text-white">
+                <Text className="font-bold opacity-80 uppercase tracking-wider text-xs dark:!text-white">
                     Annual Growth Insight
                 </Text>
             </div>

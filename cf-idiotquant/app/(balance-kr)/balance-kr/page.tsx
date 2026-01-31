@@ -178,7 +178,7 @@ function BalanceKr() {
     ];
 
     return (
-        <div className="bp5-dark bg-zinc-50 dark:bg-black min-h-screen transition-colors duration-200">
+        <div className="bp5-dark bg-zinc-50 dark:!bg-black min-h-screen transition-colors duration-200">
             {/* Header Section */}
             <div className="max-w-7xl mx-auto px-4 py-6 md:py-10">
                 <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 mb-8">

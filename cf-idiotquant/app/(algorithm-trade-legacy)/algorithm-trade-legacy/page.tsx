@@ -24,7 +24,7 @@ function MarketTabs({ setMarket }: { setMarket: (m: "KR" | "US") => void }) {
                     value="KR"
                     onClick={() => setMarket("KR")}
                     className="flex-1 p-1 text-white transition 
-                     data-[state=active]:bg-blue-500 data-[state=active]:font-bold"
+                     data-[state=active]:!bg-blue-500 data-[state=active]:font-bold"
                 >
                     KR
                 </Tabs.Trigger>
@@ -32,7 +32,7 @@ function MarketTabs({ setMarket }: { setMarket: (m: "KR" | "US") => void }) {
                     value="US"
                     onClick={() => setMarket("US")}
                     className="flex-1 p-1 text-white transition 
-                     data-[state=active]:bg-blue-500 data-[state=active]:font-bold"
+                     data-[state=active]:!bg-blue-500 data-[state=active]:font-bold"
                 >
                     US
                 </Tabs.Trigger>
@@ -292,14 +292,14 @@ export default function AlgorithmTradeLegacy() {
                     // <Spinner loading />
                     <></>
                     : <>
-                        <Text className="text-[0.6rem] text-black dark:text-white ml-1">{time.toLocaleString("en-US", { timeZone: "Asia/Seoul" })}</Text>
+                        <Text className="text-[0.6rem] text-black dark:!text-white ml-1">{time.toLocaleString("en-US", { timeZone: "Asia/Seoul" })}</Text>
                     </>}
             </Flex>
         </>,
         desc: <>
             <Box p="2" className="dark:border-gray-700 border shadow">
                 <Box p="2">
-                    <Flex direction="column" className="dark:text-white">
+                    <Flex direction="column" className="dark:!text-white">
                         <Text size="3">
                             Total Algorithmic Buys
                         </Text>
@@ -454,6 +454,6 @@ export default function AlgorithmTradeLegacy() {
 
     return <>
         <TableTemplate {...props} />
-        <div className="dark:bg-black h-lvh"></div>
+        <div className="dark:!bg-black h-lvh"></div>
     </>
 }

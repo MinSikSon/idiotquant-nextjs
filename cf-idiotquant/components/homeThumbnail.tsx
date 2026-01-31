@@ -4,7 +4,7 @@ export default function HomeThumbnail() {
     return (
         <div className="text-2xl flex items-center justify-left gap-2 p-6 sm:p-8 md:p-10 lg:p-12 ">
             <TextType
-                className="text-sm md:text-lg lg:text-xl xl:text-2xl 2xl:text-3xl dark:bg-white"
+                className="text-sm md:!text-lg lg:!text-xl xl:!text-2xl 2xl:!text-3xl dark:!bg-white"
                 text={[
                     "Emotion-Free Quant Investing"
                     , "Stock recommendations driven purely by data."

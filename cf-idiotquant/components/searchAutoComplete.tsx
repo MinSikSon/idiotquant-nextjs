@@ -82,7 +82,7 @@ const SearchAutocomplete = (props: any) => {
                         <button
                             onClick={handleClear}
                         >
-                            {/* <button className="dark:bg-black dark:text-white absolute right-2 top-1/2 transform -translate-y-1/2 p-2" onClick={handleClear}> */}
+                            {/* <button className="dark:!bg-black dark:!text-white absolute right-2 top-1/2 transform -translate-y-1/2 p-2" onClick={handleClear}> */}
                             <XCircleIcon className="dark:!bg-black dark:!text-white h-6 w-6 !text-gray-500 pt-1" />
                             {/* </button> */}
                         </button>

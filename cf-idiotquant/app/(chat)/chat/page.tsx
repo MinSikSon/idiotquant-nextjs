@@ -107,9 +107,9 @@ export default function Chat() {
     };
 
     return <>
-        <div className="dark:bg-gray-200 font-mono flex flex-col">
-            <div className="dark:bg-gray-200 w-full max-w-2xl mx-auto mt-4">
-                <div className="dark:bg-gray-200 bg-white border border-gray-200 rounded-2xl shadow-sm p-4 flex flex-col gap-3">
+        <div className="dark:!bg-gray-200 font-mono flex flex-col">
+            <div className="dark:!bg-gray-200 w-full max-w-2xl mx-auto mt-4">
+                <div className="dark:!bg-gray-200 bg-white border border-gray-200 rounded-2xl shadow-sm p-4 flex flex-col gap-3">
                     <label htmlFor="userContent" className="text-sm text-gray-600 font-semibold">
                         📩 AI에게 물어보세요
                     </label>
@@ -128,14 +128,14 @@ export default function Chat() {
                             className={`px-4 py-2 rounded-xl text-sm font-semibold transition
     ${waitResponse || !userContent.trim()
                                     ? "bg-gray-300 text-gray-500 cursor-not-allowed"
-                                    : "bg-blue-500 hover:bg-blue-600 text-white shadow"}`}
+                                    : "bg-blue-500 hover:!bg-blue-600 text-white shadow"}`}
                         >
                             {waitResponse ? "⏳ 응답 생성 중..." : "🤖 AI에게 묻기"}
                         </button>
                     </div>
                 </div>
             </div>
-            <div className="dark:bg-gray-200 rounded-3xl border border-gray-100 shadow-md bg-gradient-to-br from-white to-gray-50 p-6 hover:shadow-lg transition-shadow duration-300">
+            <div className="dark:!bg-gray-200 rounded-3xl border border-gray-100 shadow-md bg-gradient-to-br from-white to-gray-50 p-6 hover:shadow-lg transition-shadow duration-300">
                 <div className="text-[14px] prose prose-sm max-w-none text-gray-800 leading-relaxed">
                     <ReactMarkdown
                         remarkPlugins={[remarkGfm, remarkMath]}
@@ -147,10 +147,10 @@ export default function Chat() {
                 </div>
             </div>
 
-            <div className="dark:bg-gray-200 space-y-4">
+            <div className="dark:!bg-gray-200 space-y-4">
                 {!!aiHistory ? aiHistory.map((item: any, index: number) => (
                     <div key={index}
-                        className="dark:bg-gray-200 rounded-3xl border border-gray-100 shadow-md bg-gradient-to-br from-white to-gray-50 p-6 hover:shadow-lg transition-shadow duration-300"
+                        className="dark:!bg-gray-200 rounded-3xl border border-gray-100 shadow-md bg-gradient-to-br from-white to-gray-50 p-6 hover:shadow-lg transition-shadow duration-300"
                     // className="border border-gray-200 rounded-2xl shadow-sm p-4 bg-white"
                     >
                         <div className="text-xs text-gray-400 text-right mb-2">
@@ -195,6 +195,6 @@ export default function Chat() {
                     : <></>}
             </div>
         </div >
-        <div className="dark:bg-black h-lvh"></div>
+        <div className="dark:!bg-black h-lvh"></div>
     </>;
 }

@@ -125,18 +125,18 @@ export default function Calculator() {
     };
 
     return (
-        <div className="bp5-dark bg-zinc-50 dark:bg-black min-h-screen p-4 md:p-8">
+        <div className="bp5-dark bg-zinc-50 dark:!bg-black min-h-screen p-4 md:p-8">
             <div className="max-w-7xl mx-auto">
                 <header className="flex items-center justify-center gap-3 mb-8">
-                    <CalculatorIcon className="h-8 w-8 text-blue-500" />
-                    <Text className="text-3xl font-semibold m-0 tracking-tighter uppercase justify-center text-center dark:text-white">Profit Calculator</Text>
+                    <CalculatorIcon className="h-8 w-8 !text-blue-500" />
+                    <Text className="text-3xl font-semibold m-0 tracking-tighter uppercase justify-center text-center dark:!text-white">Profit Calculator</Text>
                 </header>
 
                 <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
                     {/* Left Panel: Inputs */}
                     <div className="lg:col-span-5 space-y-4">
-                        <Section title="투자 설정" icon={IconNames.SETTINGS} compact className="dark:bg-zinc-400">
-                            <SectionCard className="space-y-6 dark:bg-black">
+                        <Section title="투자 설정" icon={IconNames.SETTINGS} compact className="dark:!bg-zinc-400">
+                            <SectionCard className="space-y-6 dark:!bg-black">
                                 {/* 액 */}
                                 <div className="space-y-2">
                                     <div className="flex justify-between items-end">
@@ -232,7 +232,7 @@ export default function Calculator() {
                                 </div>
                                 <div className="flex justify-between">
                                     <span>최종 수익률:</span>
-                                    <span className="text-green-600 dark:text-green-400 font-bold">{finalRateOfReturn}%</span>
+                                    <span className="text-green-600 dark:!text-green-400 font-bold">{finalRateOfReturn}%</span>
                                 </div>
                             </div>
                         </Callout>
@@ -251,7 +251,7 @@ export default function Calculator() {
 
                     {/* Right Panel: Chart & History */}
                     <div className="lg:col-span-7 space-y-4">
-                        <Card elevation={Elevation.TWO} className="rounded-xl overflow-hidden !p-0 !m-0 dark:bg-zinc-900">
+                        <Card elevation={Elevation.TWO} className="rounded-xl overflow-hidden !p-0 !m-0 dark:!bg-zinc-900">
                             <div className="p-4 border-b dark:border-zinc-800">
                                 <Text className="m-0 text-xl font-bold">자산 성장 그래프</Text>
                             </div>
@@ -259,7 +259,7 @@ export default function Calculator() {
                         </Card>
 
                         <Section title="히스토리" icon={IconNames.HISTORY} collapsible>
-                            <SectionCard className="p-0 overflow-x-auto dark:bg-black">
+                            <SectionCard className="p-0 overflow-x-auto dark:!bg-black">
                                 <table className="bp5-html-table bp5-html-table-striped bp5-interactive w-full text-base">
                                     <thead>
                                         <tr>

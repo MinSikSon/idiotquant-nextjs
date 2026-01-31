@@ -58,7 +58,7 @@ export default function AuthButton() {
                     transition-all duration-200
                     ${isLoading
                         ? "opacity-50 cursor-not-allowed scale-[0.98]"
-                        : "hover:bg-[#FADA0A] active:scale-95 shadow-sm hover:shadow-md"
+                        : "hover:!bg-[#FADA0A] active:scale-95 shadow-sm hover:shadow-md"
                     }
                 `}
             >

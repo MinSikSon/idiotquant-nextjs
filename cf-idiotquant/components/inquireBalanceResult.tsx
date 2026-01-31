@@ -107,7 +107,7 @@ export default function InquireBalanceResult(props: InquireBalanceResultProps) {
     };
 
     return (
-        <div className="bp5-dark bg-zinc-50 dark:bg-black p-2 md:p-6 transition-colors">
+        <div className="bp5-dark bg-zinc-50 dark:!bg-black p-2 md:p-6 transition-colors">
             <Section
                 title={isUs ? "미국 주식 실시간 잔고" : "국내 주식 실시간 잔고"}
                 icon={isUs ? IconNames.GLOBE_NETWORK : IconNames.CHART}
@@ -129,7 +129,7 @@ export default function InquireBalanceResult(props: InquireBalanceResultProps) {
                     {/* 마스터 대시보드 */}
                     {/* InquireBalanceResult.tsx 내부 Selector 부분 */}
                     {session?.user?.name === process.env.NEXT_PUBLIC_MASTER && (
-                        <div className="p-4 border-b dark:border-zinc-800 bg-zinc-100/50 dark:bg-zinc-900/50 flex items-center gap-4">
+                        <div className="p-4 border-b dark:border-zinc-800 bg-zinc-100/50 dark:!bg-zinc-900/50 flex items-center gap-4">
                             <Tag minimal intent={Intent.WARNING} icon={IconNames.KEY}>MASTER MODE</Tag>
                             <HTMLSelect
                                 // props로 내려온 balanceKey가 value가 되어야 Selector UI가 유지됨
@@ -228,7 +228,7 @@ function SortableBalanceTable({ inventoryData, isUs, currencySign }: { inventory
     return (
         <HTMLTable interactive striped className="w-full min-w-[800px]">
             <thead>
-                <tr className="bg-zinc-100 dark:bg-zinc-900">
+                <tr className="bg-zinc-100 dark:!bg-zinc-900">
                     <th className="text-center w-12 opacity-50">#</th>
                     <th className="cursor-pointer" onClick={() => handleSort("name")}>종목명</th>
                     <th className="text-right cursor-pointer" onClick={() => handleSort("price")}>현재가</th>
@@ -279,7 +279,7 @@ function SortableHeader({ label, sortKey, align = "left", currentConfig, onSort 
     const isActive = currentConfig.key === sortKey;
     return (
         <th
-            className={`p-3 cursor-pointer hover:bg-zinc-200 dark:hover:bg-zinc-800 transition-colors ${align === "right" ? "text-right" : "text-left"}`}
+            className={`p-3 cursor-pointer hover:!bg-zinc-200 dark:hover:!bg-zinc-800 transition-colors ${align === "right" ? "text-right" : "text-left"}`}
             onClick={() => onSort(sortKey)}
         >
             <div className={`flex items-center gap-1 ${align === "right" ? "justify-end" : "justify-start"}`}>

@@ -14,7 +14,7 @@ export default function AdminPage() {
 
     // 2. 세션이 없거나 관리자가 아닐 때 (미들웨어가 막아주지만 이중 보안)
     if (!session || (session.user as any).role !== "admin") {
-        return <div className="p-10 text-center text-red-500">접근 권한이 없습니다.</div>;
+        return <div className="p-10 text-center !text-red-500">접근 권한이 없습니다.</div>;
     }
 
     const user = session.user as any;
@@ -43,7 +43,7 @@ export default function AdminPage() {
                     <div>
                         <div className={`flex items-center gap-2`}>
                             <h2 className="text-xl font-bold text-gray-800">{user.name}</h2>
-                            <span className="px-1 py-0.5 bg-red-100 text-red-600 text-xs font-bold rounded-full uppercase">
+                            <span className="px-1 py-0.5 bg-red-100 !text-red-600 text-xs font-bold rounded-full uppercase">
                                 Super Admin
                             </span>
                         </div>

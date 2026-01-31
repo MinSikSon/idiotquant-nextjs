@@ -52,7 +52,7 @@ export default function AlgorithmTrade() {
                         종목 추천
                     </h2>
                 </div>
-                <p className="!text-gray-500 dark:!text-zinc-400 text-sm md:text-base">
+                <p className="!text-gray-500 dark:!text-zinc-400 text-sm md:!text-base">
                     IdiotQuant 알고리즘이 분석한 현재 가장 저평가된 종목 리스트입니다.
                 </p>
             </div>

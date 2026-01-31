@@ -232,7 +232,7 @@ export default function Search() {
       rehypePlugins={[rehypeRaw, [rehypeKatex, { strict: "ignore" }], rehypeHighlight]}
       components={{
         table: ({ node, ...p }) => (
-          <table className="w-full table-auto border-collapse shadow-sm rounded-lg overflow-hidden text-[0.65rem] sm:text-sm dark:text-zinc-300" {...p} />
+          <table className="w-full table-auto border-collapse shadow-sm rounded-lg overflow-hidden text-[0.65rem] sm:!text-sm dark:!text-zinc-300" {...p} />
         ),
         th: ({ node, ...p }) => (
           <th className="px-2 py-2 !bg-gray-100 dark:!bg-zinc-800 font-bold text-left border-b dark:border-zinc-700" {...p} />
@@ -258,8 +258,8 @@ export default function Search() {
 
   const InfoRow = ({ label, value, unit, className = "" }: any) => (
     <div className={`flex gap-2 py-1 items-center border-b border-gray-100 dark:border-zinc-800/50 ${className}`}>
-      <div className="w-4/12 text-right text-gray-500 dark:text-zinc-200 text-[11px]">{label}</div>
-      <div className="w-6/12 text-right font-mono font-bold dark:text-zinc-200">{value}</div>
+      <div className="w-4/12 text-right text-gray-500 dark:!text-zinc-200 text-[11px]">{label}</div>
+      <div className="w-6/12 text-right font-mono font-bold dark:!text-zinc-200">{value}</div>
       <div className="w-2/12 text-left text-[10px] text-gray-400">{unit}</div>
     </div>
   );
@@ -298,16 +298,16 @@ export default function Search() {
       <div className="animate-in fade-in slide-in-from-bottom-2 duration-500">
         {/* KR Header & Chart */}
         <Card elevation={Elevation.ONE} className="dark:!bg-zinc-900 p-0 overflow-hidden rounded-xl border-none mb-4">
-          <div className={`flex transition-all duration-300 ${fixed ? "fixed top-[64px] left-0 w-full z-20 !bg-white/90 dark:!bg-zinc-900/90 backdrop-blur shadow-md px-4 py-0" : "p-4"}`}>
+          <div className={`flex transition-all duration-300 ${fixed ? "fixed top-[74px] left-0 w-full z-20 !bg-white/90 dark:!bg-zinc-900/90 backdrop-blur shadow-md px-4 py-0" : "p-4"}`}>
             <div className="w-7/12">
-              {!fixed && <div className="text-[10px] text-zinc-500">{kiPrice.output.rprs_mrkt_kor_name} | {kiPrice.output.bstp_kor_isnm}</div>}
+              {!fixed && <div className="text-[10px] !text-zinc-500">{kiPrice.output.rprs_mrkt_kor_name} | {kiPrice.output.bstp_kor_isnm}</div>}
               <div className="flex items-center gap-2">
-                <h2 className="text-xl md:text-2xl font-black dark:text-white">{kiChart.output1.hts_kor_isnm}</h2>
+                <h2 className="text-xl md:!text-2xl font-black dark:!text-white">{kiChart.output1.hts_kor_isnm}</h2>
                 {cfUserInfo?.state === "fulfilled" && (
                   <Button minimal onClick={handleOnClickStarredIcon}>
                     {cfStarred?.starredStock?.some(i => i.name === kiChart.output1.hts_kor_isnm)
                       ? <StarSolid className="h-5 w-5 text-amber-400" />
-                      : <StarOutline className="h-5 w-5 text-zinc-400" />}
+                      : <StarOutline className="h-5 w-5 !text-zinc-400" />}
                   </Button>
                 )}
               </div>
@@ -365,7 +365,7 @@ export default function Search() {
           </Card>
           <Card elevation={Elevation.ZERO} className="dark:!bg-zinc-900 border-none rounded-xl">
             <InfoRow label="52주 최저" value={`${Number(kiPrice.output.w52_lwpr).toLocaleString()}`} unit={`원 (${kiPrice.output.dryy_lwpr_date})`} />
-            <InfoRow label="52주 최고" value={`${Number(kiPrice.output.w52_hgpr).toLocaleString()}`} unit={`원 (${kiPrice.output.w52_hgpr_date})`} className="bg-red-50 dark:bg-red-900/10" />
+            <InfoRow label="52주 최고" value={`${Number(kiPrice.output.w52_hgpr).toLocaleString()}`} unit={`원 (${kiPrice.output.w52_hgpr_date})`} className="bg-red-50 dark:!bg-red-900/10" />
             <InfoRow label="시가총액" value={(Number(kiChart.output1.stck_prpr) * Number(kiChart.output1.lstn_stcn)).toLocaleString()} unit="원" />
             <InfoRow label="상장주식수" value={Number(kiChart.output1.lstn_stcn).toLocaleString()} unit="개" />
           </Card>
@@ -475,10 +475,10 @@ export default function Search() {
     return (
       <div className="animate-in fade-in duration-500">
         <Card elevation={Elevation.ONE} className="dark:!bg-zinc-900 p-0 overflow-hidden rounded-xl border-none mb-4">
-          <div className={`flex transition-all duration-300 ${fixed ? "fixed top-[64px] left-0 w-full z-20 !bg-white/90 dark:!bg-zinc-900/90 backdrop-blur shadow-md px-4 py-0" : "p-4"}`}>
+          <div className={`flex transition-all duration-300 ${fixed ? "fixed top-[74px] left-0 w-full z-20 !bg-white/90 dark:!bg-zinc-900/90 backdrop-blur shadow-md px-4 py-0" : "p-4"}`}>
             <div className="w-7/12">
               {!fixed && <Tag intent="primary" minimal className="text-[10px] !text-zinc-500">{usSearchInfo?.output?.tr_mket_name} | {usDetail?.output?.e_icod}</Tag>}
-              <h2 className="text-xl md:text-2xl font-black dark:!text-white">{usSearchInfo?.output?.prdt_name}</h2>
+              <h2 className="text-xl md:!text-2xl font-black dark:!text-white">{usSearchInfo?.output?.prdt_name}</h2>
               <p className="!text-zinc-500 font-mono mt-1">{usSearchInfo?.output?.prdt_eng_name}</p>
               <div className="text-xl font-mono font-bold !text-blue-600 dark:!text-blue-400 underline decoration-dotted decoration-2">
                 {Number(usDetail?.output?.last).toFixed(2)} <span className="text-xs">{usDetail?.output?.curr}</span>
@@ -598,10 +598,10 @@ const SearchGuide = () => (
     <div className="!bg-blue-50 dark:!bg-zinc-900 p-6 rounded-full mb-6">
       <Icon icon={IconNames.SEARCH_TEMPLATE} size={48} className="text-blue-500 opacity-80" />
     </div>
-    <h2 className="text-2xl font-bold text-zinc-800 dark:text-zinc-200 mb-2">
+    <h2 className="text-2xl font-bold !text-zinc-800 dark:!text-zinc-200 mb-2">
       스마트한 주식 분석의 시작
     </h2>
-    <p className="text-zinc-500 dark:text-zinc-400 max-w-md mb-8">
+    <p className="text-zinc-500 dark:!text-zinc-400 max-w-md mb-8">
       국내 종목명 또는 미국 티커(Ticker)를 입력하세요. <br />
       AI 리서치 리포트와 NCAV/S-RIM 전략 기반의 적정 주가를 계산해 드립니다.
     </p>
@@ -613,9 +613,9 @@ const SearchGuide = () => (
         { icon: IconNames.LIGHTBULB, title: "AI 인사이트", desc: "LLM 기반 기업 분석 리포트" }
       ].map((item, i) => (
         <Card key={i} elevation={Elevation.ZERO} className="dark:!bg-zinc-900 border-none">
-          <Icon icon={item.icon} size={20} className="mb-2 text-blue-400" />
-          <div className="font-bold text-sm mb-1 dark:text-zinc-300">{item.title}</div>
-          <div className="text-[11px] text-zinc-500">{item.desc}</div>
+          <Icon icon={item.icon} size={20} className="mb-2 !text-blue-400" />
+          <div className="font-bold text-sm mb-1 dark:!text-zinc-300">{item.title}</div>
+          <div className="text-[11px] !text-zinc-500">{item.desc}</div>
         </Card>
       ))}
     </div>

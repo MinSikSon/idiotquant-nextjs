@@ -60,10 +60,10 @@ export function NavbarWithSimpleLinks() {
                 className={`fixed top-0 left-0 right-0 z-40 transition-transform duration-300 ease-in-out ${visible ? "translate-y-0" : "-translate-y-full"
                     }`}
             >
-                <Navbar className="bp5-dark bg-white dark:bg-zinc-950 border-b dark:border-zinc-800 shadow-sm">
+                <Navbar className="bp5-dark bg-white dark:!bg-zinc-950 border-b dark:border-zinc-800 shadow-sm">
                     <Navbar.Group align={Alignment.LEFT}>
                         <Link href="/" className="no-underline">
-                            <Navbar.Heading className="font-black tracking-tighter text-blue-600 dark:text-blue-400">
+                            <Navbar.Heading className="font-black tracking-tighter !text-blue-600 dark:!text-blue-400">
                                 IDIOTQUANT
                             </Navbar.Heading>
                         </Link>
@@ -108,7 +108,7 @@ export function NavbarWithSimpleLinks() {
                 icon={IconNames.MENU_OPEN}
                 position={Position.RIGHT}
                 size="75%"
-                className="!z-50 bp5-dark dark:bg-zinc-900"
+                className="!z-50 bp5-dark dark:!bg-zinc-900"
             >
                 <div className={Classes.DRAWER_BODY}>
                     <Menu className="bg-transparent border-none">
@@ -138,7 +138,7 @@ export function NavbarWithSimpleLinks() {
                             />
                         </Link>
 
-                        <div className="mt-8 p-4 bg-zinc-100 dark:bg-zinc-800 rounded-xl mx-2 flex justify-between items-center">
+                        <div className="mt-8 p-4 bg-zinc-100 dark:!bg-zinc-800 rounded-xl mx-2 flex justify-between items-center">
                             <Text className="text-xs font-bold">Theme Mode</Text>
                             <ThemeChanger />
                         </div>
@@ -154,7 +154,7 @@ export function NavbarWithSimpleLinks() {
 
 // 헬퍼 컴포넌트: 구분선
 function Divider({ className }: { className?: string }) {
-    return <div className={`w-[1px] h-6 bg-zinc-200 dark:bg-zinc-800 ${className}`} />;
+    return <div className={`w-[1px] h-6 bg-zinc-200 dark:!bg-zinc-800 ${className}`} />;
 }
 
 export default NavbarWithSimpleLinks;

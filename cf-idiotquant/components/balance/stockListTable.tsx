@@ -68,7 +68,7 @@ export default function StockListTable({
               <Tag intent={Intent.DANGER} minimal className="font-mono">MASTER ONLY</Tag>
             }
           >
-            <SectionCard className="flex flex-wrap items-center gap-3 bg-zinc-100/50 dark:bg-zinc-900/50">
+            <SectionCard className="flex flex-wrap items-center gap-3 bg-zinc-100/50 dark:!bg-zinc-900/50">
               <Text className="text-xs font-bold opacity-60 uppercase">Batch Refill:</Text>
               {[50000, 100000, 500000, 1000000].map(amt => (
                 <ButtonGroup key={`batch-${amt}`} className="shadow-sm">
@@ -99,22 +99,22 @@ export default function StockListTable({
           <NonIdealState icon={IconNames.SEARCH} title="운용 종목 없음" description="현재 알고리즘이 관리 중인 종목이 없습니다." />
         ) : (
           rows.map((row, idx) => (
-            <Card key={`card-${idx}`} elevation={Elevation.ONE} className="p-4 border-t-2 border-primary bg-white dark:bg-zinc-900">
+            <Card key={`card-${idx}`} elevation={Elevation.ONE} className="p-4 border-t-2 border-primary bg-white dark:!bg-zinc-900">
               <div className="flex justify-between items-center mb-4">
-                <H5 className="m-0 font-black text-blue-600 tracking-tighter">{row.symbol}</H5>
+                <H5 className="m-0 font-black !text-blue-600 tracking-tighter">{row.symbol}</H5>
                 <Tag minimal intent={Number(row.ncavRatio) > 1 ? Intent.SUCCESS : Intent.NONE}>
                   NCAV {row.ncavRatio}
                 </Tag>
               </div>
 
               <div className="grid grid-cols-2 gap-3 text-xs mb-4">
-                <div className="bg-zinc-50 dark:bg-zinc-800 p-2 rounded">
+                <div className="bg-zinc-50 dark:!bg-zinc-800 p-2 rounded">
                   <p className="opacity-50 mb-1 font-bold">Price</p>
                   <p className="font-mono">₩{Number(row.condition?.LastPrice || 0).toLocaleString()}</p>
                 </div>
-                <div className="bg-zinc-50 dark:bg-zinc-800 p-2 rounded">
+                <div className="bg-zinc-50 dark:!bg-zinc-800 p-2 rounded">
                   <p className="opacity-50 mb-1 font-bold">Token</p>
-                  <p className="font-mono text-blue-500 font-bold">{row.token?.toLocaleString()}</p>
+                  <p className="font-mono !text-blue-500 font-bold">{row.token?.toLocaleString()}</p>
                 </div>
               </div>
 
@@ -144,10 +144,10 @@ export default function StockListTable({
       </div> */}
 
       {/* --- Desktop View (Table) --- */}
-      {/* <div className="hidden md:block overflow-hidden border rounded-xl shadow-sm bg-white dark:bg-zinc-900 border-zinc-200 dark:border-zinc-800"> */}
-      <div className="block overflow-hidden border rounded-xl shadow-sm bg-white dark:bg-zinc-900 border-zinc-200 dark:border-zinc-800">
+      {/* <div className="hidden md:block overflow-hidden border rounded-xl shadow-sm bg-white dark:!bg-zinc-900 border-zinc-200 dark:border-zinc-800"> */}
+      <div className="block overflow-hidden border rounded-xl shadow-sm bg-white dark:!bg-zinc-900 border-zinc-200 dark:border-zinc-800">
         <HTMLTable interactive className="w-full text-[11px]" striped>
-          <thead className="bg-zinc-50 dark:bg-zinc-800">
+          <thead className="bg-zinc-50 dark:!bg-zinc-800">
             <tr>
               <th className="p-4">종목</th>
               <th>PER</th>
@@ -164,7 +164,7 @@ export default function StockListTable({
               <tr key={`row-${idx}`}>
                 <td className="p-4">
                   <div
-                    className="flex items-center gap-2 cursor-pointer hover:text-blue-500 transition-colors"
+                    className="flex items-center gap-2 cursor-pointer hover:!text-blue-500 transition-colors"
                     onClick={() => { setSelected(row); setIsOpen(true); }}
                   >
                     <Icon icon={IconNames.DOCUMENT_SHARE} size={14} className="opacity-50" />
@@ -191,7 +191,7 @@ export default function StockListTable({
                     </Tag>
                   </Tooltip>
                 </td>
-                <td className="font-mono font-black text-blue-500">{row.token?.toLocaleString()}</td>
+                <td className="font-mono font-black !text-blue-500">{row.token?.toLocaleString()}</td>
                 {isMaster && (
                   <td className="p-4 text-right">
                     <div className="flex justify-end gap-1">
@@ -255,7 +255,7 @@ export default function StockListTable({
 
           <div className="mt-6 space-y-4">
             <H6 className="uppercase opacity-40 font-black tracking-widest text-[10px]">Technical Metadata</H6>
-            <pre className="p-5 bg-zinc-100 dark:bg-zinc-800/50 rounded-xl text-[11px] overflow-auto max-h-[40vh] font-mono border border-zinc-200 dark:border-zinc-700 leading-relaxed">
+            <pre className="p-5 bg-zinc-100 dark:!bg-zinc-800/50 rounded-xl text-[11px] overflow-auto max-h-[40vh] font-mono border border-zinc-200 dark:border-zinc-700 leading-relaxed">
               {JSON.stringify(selected, null, 2)}
             </pre>
           </div>
