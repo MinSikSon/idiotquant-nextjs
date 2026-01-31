@@ -111,11 +111,9 @@ export default function Search() {
     return () => window.removeEventListener("scroll", handleScroll);
   }, [cfStarred?.state, dispatch]);
 
-  if (DEBUG) {
-    useEffect(() => {
-      console.log(`[Search] kiPrice:`, kiPrice);
-    }, [kiPrice]);
-  }
+  useEffect(() => {
+    if (DEBUG) console.log(`[Search] kiPrice:`, kiPrice);
+  }, [kiPrice]);
 
   const formatDate = (date: string) => date.replaceAll("-", "");
 
