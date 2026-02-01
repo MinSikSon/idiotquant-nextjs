@@ -21,7 +21,7 @@ import {
 } from "@/lib/features/backtest/backtestSlice";
 
 // 개편된 Table 컴포넌트 (앞서 드린 코드가 적용된 파일)
-import NCAVTable from "./table";
+import ResponsiveNCAV from "./table";
 
 const DEBUG = false;
 
@@ -72,7 +72,7 @@ export default function AlgorithmTrade() {
                     </div>
                 ) : strategyNcavLatest.list && Object.keys(strategyNcavLatest.list).length > 0 ? (
                     // 데이터가 있을 때 테이블 렌더링
-                    <NCAVTable strategies={strategyNcavLatest?.list as any} />
+                    <ResponsiveNCAV strategies={strategyNcavLatest?.list as any} />
                 ) : (
                     // 데이터가 비어있을 때 표시할 상태
                     <div className="py-20">

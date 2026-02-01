@@ -23,6 +23,7 @@ import { IconNames } from "@blueprintjs/icons";
 // --- 스타일 임포트 (전역 설정이 되어있지 않다면 필요) ---
 import "@blueprintjs/core/lib/css/blueprint.css";
 import "@blueprintjs/icons/lib/css/blueprint-icons.css";
+import StrategyDescription from "@/components/strategyParser";
 
 // --- 타입 정의 (에러 방지를 위해 옵셔널 처리 강화) ---
 type CandidateInfo = {
@@ -152,8 +153,8 @@ export default function ResponsiveNCAV({ strategies }: { strategies?: Strategy |
                     <div className="col-span-12 lg:col-span-3">
                         <Section title="퀀트 투자 전략 목록" icon={IconNames.LAYERS} compact>
                             <div className="flex lg:flex-col overflow-x-auto lg:overflow-x-visible p-2 gap-2 no-scrollbar">
-                                {list.map((s, idx) => (
-                                    <Card
+                                {list.map((s, idx) => {
+                                    return <Card
                                         key={idx}
                                         interactive
                                         onClick={() => setSelectedIndex(idx)}
@@ -163,14 +164,16 @@ export default function ResponsiveNCAV({ strategies }: { strategies?: Strategy |
                                         <div className={`text-[10px] mt-1 font-medium ${idx === selectedIndex ? 'text-blue-100' : 'text-gray-400'}`}>
                                             {`Q${s.kvFilter.quarter} • ${s.asOfDate}`}
                                         </div>
-                                    </Card>
-                                ))}
+                                    </Card>;
+                                })}
                             </div>
                         </Section>
                     </div>
 
                     {/* [본문 컨텐츠] */}
                     <div className="col-span-12 lg:col-span-9 space-y-4 md:space-y-6">
+
+                        <StrategyDescription strategyId={data.strategyId} />
 
                         {/* 메트릭 그리드: 모바일 2열, 데스크톱 4열 */}
                         <div className="grid grid-cols-4 md:grid-cols-4 gap-3 md:gap-4">
