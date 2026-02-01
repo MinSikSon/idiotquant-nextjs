@@ -154,12 +154,29 @@ export default function Search() {
         setWaitResponse(true);
         dispatch(addKrMarketHistory(stockName));
 
-        const systemPrompt = ``; // server side에서 고정됨
-        const userPrompt = `
+      }
+    } else {
+      setKrOrUs("US");
+      const ticker = stockName.toUpperCase();
+      dispatch(reqGetQuotationsSearchInfo({ PDNO: ticker }));
+      dispatch(reqGetQuotationsPriceDetail({ PDNO: ticker }));
+      dispatch(reqGetOverseasPriceQuotationsDailyPrice({ PDNO: ticker, FID_INPUT_DATE_1: formatDate(usStartDate) }));
+      dispatch(reqGetFinnhubUsFinancialsReported(ticker));
+      dispatch(addKrMarketHistory(stockName));
+    }
+  };
+
+  useEffect(() => {
+    if (kiPrice.state !== "fulfilled" || kiBS.state !== "fulfilled" || kiIS.state !== "fulfilled") return;
+
+    const isUs = us_tickers.includes(name.toUpperCase());
+    if (!isUs) {
+      const systemPrompt = ``; // server side에서 고정됨
+      const userPrompt = `
 아래 제공된 [종목 기본 정보], [재무상태표], [손익계산서] 데이터를 바탕으로 이 종목에 대한 종합적인 '퀀트 및 펀더멘털 분석 리포트'를 작성해줘.
 
 ### [종목 기본 및 시세 정보]
-- 종목명: ${stockName}
+- 종목명: ${name}
 - 시장/업종명: ${kiPrice?.output?.rprs_mrkt_kor_name} (${kiPrice?.output?.bstp_kor_isnm})
 - 현재가: ${kiPrice?.output?.stck_prpr}원 (전일대비 ${kiPrice?.output?.prdy_ctrt}%)
 - 시가총액: ${kiPrice?.output?.hts_avls}억
@@ -187,18 +204,9 @@ export default function Search() {
 3. 가치 평가: 현재 주가 수준이 PER, PBR 및 BPS 대비 저평가인지 고평가인지 의견을 줘.
 4. 종합 결론: 이 종목의 강점과 리스크 요인을 요약하고, 단기/장기 투자 관점에서의 의견을 마크다운 형식으로 작성해줘.
         `;
-        dispatch(reqPostLaboratory({ system_content: systemPrompt, user_content: userPrompt }));
-      }
-    } else {
-      setKrOrUs("US");
-      const ticker = stockName.toUpperCase();
-      dispatch(reqGetQuotationsSearchInfo({ PDNO: ticker }));
-      dispatch(reqGetQuotationsPriceDetail({ PDNO: ticker }));
-      dispatch(reqGetOverseasPriceQuotationsDailyPrice({ PDNO: ticker, FID_INPUT_DATE_1: formatDate(usStartDate) }));
-      dispatch(reqGetFinnhubUsFinancialsReported(ticker));
-      dispatch(addKrMarketHistory(stockName));
+      dispatch(reqPostLaboratory({ system_content: systemPrompt, user_content: userPrompt }));
     }
-  };
+  }, [kiPrice, kiBS, kiIS, dispatch]);
 
   // AI Stream Sync
   useEffect(() => {
