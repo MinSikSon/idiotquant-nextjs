@@ -62,6 +62,7 @@ export async function middleware(req: NextRequest) {
         || path === "/calculator"
         || path === "/not-found"
         || path === "/laboratory"
+        || path === "/ads.txt"
     ) {
         return NextResponse.next(); // login 없이 접근 허용
     }
