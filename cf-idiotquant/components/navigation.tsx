@@ -72,8 +72,8 @@ export function NavbarWithSimpleLinks() {
                     <Navbar.Group align={Alignment.RIGHT}>
                         {/* 데스크탑 메뉴 (MD 이상 노출) */}
                         <div className="hidden md:flex gap-1 mr-4">
-                            <Link href="/search"><Button minimal icon={IconNames.SEARCH} text="Stock" /></Link>
-                            <Link href="/calculator"><Button minimal icon={IconNames.CALCULATOR} text="Profit" /></Link>
+                            <Link href="/search"><Button minimal icon={IconNames.SEARCH} text="적정 주가 분석" /></Link>
+                            <Link href="/calculator"><Button minimal icon={IconNames.CALCULATOR} text="수익률 계산기" /></Link>
                             {session?.user?.name === process.env.NEXT_PUBLIC_MASTER &&
                                 <>
                                     <Link href="/balance-kr"><Button minimal icon={IconNames.DOLLAR} text="kr" /></Link>
