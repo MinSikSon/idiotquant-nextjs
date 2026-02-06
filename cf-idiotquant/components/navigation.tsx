@@ -24,7 +24,7 @@ import ThemeChanger from "@/components/theme_changer";
 import { useSession, signIn, signOut } from "next-auth/react";
 import { redirect } from "next/navigation";
 
-const DEBUG = true;
+const DEBUG = false;
 
 export function NavbarWithSimpleLinks() {
     const { data: session, status } = useSession();
