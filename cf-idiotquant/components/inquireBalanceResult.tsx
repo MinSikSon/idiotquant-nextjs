@@ -183,15 +183,16 @@ export default function InquireBalanceResult(props: InquireBalanceResultProps) {
                 </SectionCard>
             </Section>
 
-            <div className="mt-6 overflow-x-auto rounded-xl">
-                <SortableBalanceTable inventoryData={props.kiBalance.output1 || []} isUs={isUs} currencySign={currencySign} />
-            </div>
-
             {props.kiBalance.msg1 && (
                 <Callout className="mt-6" intent={Intent.NONE} icon={IconNames.INFO_SIGN}>
                     {props.kiBalance.msg1}
                 </Callout>
             )}
+
+            <div className="mt-6 overflow-x-auto rounded-xl">
+                <SortableBalanceTable inventoryData={props.kiBalance.output1 || []} isUs={isUs} currencySign={currencySign} />
+            </div>
+
         </div>
     );
 }
