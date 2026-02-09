@@ -114,24 +114,43 @@ export function NavbarWithSimpleLinks() {
                     <Menu className="bg-transparent border-none">
                         <Text className="px-3 py-2 opacity-50 font-bold text-[10px] uppercase">Main Services</Text>
                         <Link href="/search" onClick={closeDrawer}>
-                            <MenuItem icon={IconNames.SEARCH} text="적정 주가 분석" labelElement={<Icon icon={IconNames.CHEVRON_RIGHT} />} />
+                            <MenuItem
+                                tagName="div"
+                                icon={IconNames.SEARCH}
+                                text="적정 주가 분석"
+                                labelElement={<Icon icon={IconNames.CHEVRON_RIGHT} />}
+                            />
                         </Link>
                         <Link href="/calculator" onClick={closeDrawer}>
-                            <MenuItem icon={IconNames.CALCULATOR} text="수익률 계산기" labelElement={<Icon icon={IconNames.CHEVRON_RIGHT} />} />
+                            <MenuItem
+                                tagName="div"
+                                icon={IconNames.CALCULATOR}
+                                text="수익률 계산기"
+                                labelElement={<Icon icon={IconNames.CHEVRON_RIGHT} />}
+                            />
                         </Link>
 
                         {session?.user?.name === process.env.NEXT_PUBLIC_MASTER && <>
                             <MenuDivider title="Trading Account" />
                             <Link href="/balance-kr" onClick={closeDrawer}>
-                                <MenuItem icon={IconNames.CHART} text="Korea Market" />
+                                <MenuItem
+                                    tagName="div"
+                                    icon={IconNames.CHART}
+                                    text="Korea Market"
+                                />
                             </Link>
                             <Link href="/balance-us" onClick={closeDrawer}>
-                                <MenuItem icon={IconNames.GLOBE} text="US Market" />
+                                <MenuItem
+                                    tagName="div"
+                                    icon={IconNames.GLOBE}
+                                    text="US Market"
+                                />
                             </Link>
                         </>}
                         <MenuDivider />
                         <Link href="/login" onClick={closeDrawer}>
                             <MenuItem
+                                tagName="div"
                                 icon={"authenticated" === status ? IconNames.UNLOCK : IconNames.LOCK}
                                 intent={"authenticated" === status ? "none" : "primary"}
                                 text={"authenticated" === status ? `${session?.user?.name} (Logout)` : "Kakao Login"}

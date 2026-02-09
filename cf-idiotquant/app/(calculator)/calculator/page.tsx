@@ -129,7 +129,7 @@ export default function Calculator() {
             <div className="max-w-7xl mx-auto">
                 <header className="flex items-center justify-center gap-3 mb-8">
                     <CalculatorIcon className="h-8 w-8 !text-blue-500" />
-                    <Text className="text-3xl font-semibold m-0 tracking-tighter uppercase justify-center text-center dark:!text-white">Profit Calculator</Text>
+                    <Text className="text-3xl font-semibold m-0 tracking-tighter uppercase justify-center text-center dark:!text-white">수익률 계산기</Text>
                 </header>
 
                 <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
