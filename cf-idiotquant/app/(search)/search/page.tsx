@@ -563,7 +563,7 @@ function getNcavTable(kiBS: any, kiChart: any) {
   const rows = ratios.map(r => {
     const target = (cras - lblt) / lstn;
     const returnPct = ((target / (prpr * r)) - 1) * 100;
-    return `| ${r.toFixed(2)} | ${returnPct.toFixed(2)}% | ${Math.round(target).toLocaleString()} |`;
+    return `| ${r.toFixed(1)} | ${returnPct.toFixed(2)}% | ${Math.round(target).toLocaleString()} |`;
   }).join("\n");
 
   return `| ratio | Exp. Return | Target Price(₩) |\n|---|---|---|\n${rows}`;
@@ -589,8 +589,8 @@ function getSRIMTable(kiBS: any, kiIS: any, kiChart: any) {
 
 function getUsNcavTable(finnhub: any, detail: any) {
   const bs = finnhub?.data?.[0]?.report?.bs ?? [];
-  const cras = Number(bs.find((i: any) => i.concept.includes("AssetsCurrent"))?.value ?? 0);
-  const lblt = Number(bs.find((i: any) => i.concept.includes("Liabilities"))?.value ?? 0);
+  const cras = Number(bs.find((i: any) => i.concept.includes("us-gaap_AssetsCurrent"))?.value ?? bs.find((i: any) => i.concept.includes("AssetsCurrent"))?.value ?? 0);
+  const lblt = Number(bs.find((i: any) => i.concept.includes("us-gaap_Liabilities"))?.value ?? bs.find((i: any) => i.concept.includes("Liabilities"))?.value ?? 0);
   const lstn = Number(detail.output.shar || 1);
   const last = Number(detail.output.last || 1);
 
@@ -598,7 +598,7 @@ function getUsNcavTable(finnhub: any, detail: any) {
   const rows = ratios.map(r => {
     const target = (cras - lblt) / lstn;
     const returnPct = ((target / (last * r)) - 1) * 100;
-    return `| ${r.toFixed(2)} | ${returnPct.toFixed(2)}% | ${target.toFixed(2)} |`;
+    return `| ${r.toFixed(1)} | ${returnPct.toFixed(2)}% | ${target.toFixed(2)} |`;
   }).join("\n");
 
   return `| ratio | Exp. Return | Target Price($) |\n|---|---|---|\n${rows}`;
