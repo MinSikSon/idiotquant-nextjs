@@ -9,6 +9,7 @@ import "@blueprintjs/icons/lib/css/blueprint-icons.css";
 // Normalize는 선택사항이지만 Blueprint와 잘 어우러집니다.
 import "normalize.css/normalize.css";
 import { AuthProvider } from "@/components/auth-provider";
+import Script from "next/script";
 
 export const metadata = {
   title: {
@@ -49,8 +50,10 @@ export default function RootLayout({
     <html lang="ko" suppressHydrationWarning>
       <head>
         {/* 1. 구조화 데이터 주입 (검색 결과 최적화) */}
-        <script
+        <Script
+          id="structured-data"
           type="application/ld+json"
+          strategy="afterInteractive" // 페이지 상호작용이 가능해진 직후 주입
           dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
         />
         {/* 2. 애드센스 코드 스니펫 주입 */}
