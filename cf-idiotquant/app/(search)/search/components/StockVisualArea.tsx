@@ -22,7 +22,7 @@ export const StockVisualArea = ({ stockName, domain, chartData = sampleChartData
         : ""; // 도메인이 없으면 처음부터 빈 주소로 설정하여 onError 유도
 
     return (
-        <div className="h-40 w-full rounded-md flex flex-col items-center justify-center relative group">
+        <div className="h-[11rem] w-full px-[1rem] rounded-md flex flex-col items-center justify-center relative group">
             {/* 1. 배경 미니 차트 (Sparkline) */}
             {/* <div className="absolute inset-0 opacity-40 group-hover:opacity-60 transition-opacity">
                 <ResponsiveContainer width="100%" height="100%">

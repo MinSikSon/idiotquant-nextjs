@@ -6,7 +6,7 @@ export const StockCard = ({ stock }: any) => {
     // console.log(`[StockCard] stock:`, stock);
 
     return (
-        <div className={`relative w-64 h-96 rounded-xl bg-gradient-to-br ${stock?.grade?.cardGradeColor} shadow-2xl transform transition hover:scale-105 cursor-pointer`}>
+        <div className={`relative w-[18rem] h-[27rem] rounded-xl bg-gradient-to-br ${stock?.grade?.cardGradeColor} shadow-2xl transform transition hover:scale-105 cursor-pointer`}>
             <div className="dark:!border dark:!border-zinc-500 w-full h-full rounded-lg p-4 flex flex-col justify-between">
                 {/* 상단: 종목명 및 등급 */}
                 <div className="flex justify-between items-start">
@@ -28,7 +28,7 @@ export const StockCard = ({ stock }: any) => {
 
                 {/* 하단: 퀀트 능력치 (스탯) */}
                 <div className="space-y-2">
-                    <div className="flex justify-between text-xs">
+                    <div className="flex justify-between text-lg">
                         <span className="font-bold text-zinc-500 dark:text-zinc-400">적정가</span>
                         <span className="font-mono text-green-400">{stock.isUs ? "$" : "₩"}{stock.fairValue.toLocaleString()}</span>
                     </div>
@@ -37,11 +37,11 @@ export const StockCard = ({ stock }: any) => {
                     </div> */}
                     <StockScoreGauge stock={stock} />
 
-                    <div className="grid grid-cols-2 gap-2 mt-2">
-                        <div className="text-[10px] bg-gray-800 p-1 rounded border border-gray-700 text-blue-300 text-center">
+                    <div className="grid grid-cols-2 gap-2 text-lg">
+                        <div className="bg-gray-800 p-1 rounded border border-gray-700 text-blue-300 text-center">
                             PER: {stock.per}
                         </div>
-                        <div className="text-[10px] bg-gray-800 p-1 rounded border border-gray-700 text-pink-300 text-center">
+                        <div className="bg-gray-800 p-1 rounded border border-gray-700 text-pink-300 text-center">
                             PBR: {stock.pbr}
                         </div>
                     </div>
