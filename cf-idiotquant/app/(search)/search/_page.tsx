@@ -532,7 +532,7 @@ export default function Search() {
   return (
     <div className="w-full min-h-screen !bg-gray-50 dark:!bg-zinc-950 transition-colors duration-300">
       {/* Header & Search */}
-      <div className={`z-30 w-full transition-all duration-300 ${fixed ? "fixed top-0 !bg-white/80 dark:!bg-zinc-950/80 backdrop-blur shadow-sm" : "relative !bg-white dark:!bg-zinc-900"}`}>
+      <div className={`z-30 w-full transition-all duration-300 ${fixed ? "fixed top-0 !bg-white/80 dark:!bg-zinc-950/80 backdrop-blur" : "relative !bg-white dark:!bg-zinc-900"}`}>
         <SearchAutocomplete placeHolder="🇰🇷 종목명 또는 🇺🇸 티커" onSearchButton={onSearchButton} validCorpNameArray={all_tickers} />
         <div className="flex px-4 py-1 gap-1 overflow-x-auto no-scrollbar border-t dark:border-zinc-800">
           {krMarketHistory.slice(-6).reverse().map((s, i) => (

@@ -1,4 +1,5 @@
 "use client";
+
 import React from "react";
 import { Card, Elevation, Button, Tag } from "@blueprintjs/core";
 import { StarIcon as StarOutline } from "@heroicons/react/24/outline";
