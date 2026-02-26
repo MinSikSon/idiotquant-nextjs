@@ -115,8 +115,8 @@ export default function FinnhubBalanceSheetTable({ data = [], className = "", fo
                                     항목 (Concepts)
                                 </th>
                                 {columns.map((col, idx) => (
-                                    <th key={idx} className="text-right !p-3 dark:!text-white border-b dark:border-zinc-800">
-                                        <Tag minimal intent={idx === 0 ? "primary" : "none"} className="font-bold">
+                                    <th key={idx}>
+                                        <Tag minimal intent={idx === 0 ? "primary" : "none"} className="font-bold text-right !p-3 dark:!text-white border-b dark:border-zinc-800">
                                             {col.label}
                                         </Tag>
                                     </th>
@@ -135,7 +135,7 @@ export default function FinnhubBalanceSheetTable({ data = [], className = "", fo
                                     {/* 데이터 행 */}
                                     {section.items.map((row, rowIndex) => (
                                         <tr key={rowIndex} className="dark:hover:!bg-zinc-800/50">
-                                            <td className="!pl-6 !py-2 text-left sticky left-0 bg-white dark:!bg-zinc-950 z-10 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)] dark:border-zinc-800/50">
+                                            <td className="!pl-6 !py-2 text-left sticky left-0 bg-white dark:!text-white dark:!bg-zinc-950 z-10 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)] dark:border-zinc-800/50">
                                                 {row.label}
                                             </td>
                                             {columns.map((col, colIndex) => {

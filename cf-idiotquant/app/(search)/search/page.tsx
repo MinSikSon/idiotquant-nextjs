@@ -28,7 +28,8 @@ export default function SearchPage() {
     const [fixed, setFixed] = useState(false);
 
     useEffect(() => {
-        const handleScroll = () => setFixed(window.scrollY > 140);
+        // const handleScroll = () => setFixed(window.scrollY > 140);
+        const handleScroll = () => setFixed(window.scrollY > 330);
         window.addEventListener("scroll", handleScroll, { passive: true });
         return () => window.removeEventListener("scroll", handleScroll);
     }, []);

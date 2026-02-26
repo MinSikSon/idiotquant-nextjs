@@ -50,8 +50,8 @@ export const FinancialTables = ({ kiBS, kiIS }: FinancialTablesProps) => {
                                 <span className="text-[10px] uppercase tracking-wider text-zinc-400">Account Items</span>
                             </th>
                             {data?.output?.slice(0, 5).map((v: any, i: number) => (
-                                <th key={i} className="text-right p-4 min-w-[110px] border-b dark:border-zinc-800">
-                                    <Tag minimal intent={i === 0 ? "primary" : "none"} className="font-bold">
+                                <th key={i} >
+                                    <Tag minimal intent={i === 0 ? "primary" : "none"} className="font-bold text-right p-4 min-w-[110px] border-b dark:!text-white dark:!border-zinc-800">
                                         {v.stac_yymm}
                                     </Tag>
                                 </th>
