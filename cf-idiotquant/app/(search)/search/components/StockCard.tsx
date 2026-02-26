@@ -20,17 +20,14 @@ export const StockCard = ({ stock }: any) => {
                 <StockVisualArea
                     // stockName="tsla"
                     stockName={stock.name}
-
-                    // domain="samsung.com"
-                    // grade="S"
-                    grade={stock.grade}
+                // domain="samsung.com"
                 />
 
                 {/* 하단: 퀀트 능력치 (스탯) */}
                 <div className="space-y-2">
                     <div className="flex justify-between text-lg">
                         <span className="font-bold text-zinc-500 dark:text-zinc-400">적정가</span>
-                        <span className="font-mono text-green-400">{stock.isUs ? "$" : "₩"}{stock.fairValue.toLocaleString()}</span>
+                        <span className="font-mono text-green-400">{stock.fairValue.toLocaleString()}</span>
                     </div>
                     <StockScoreGauge stock={stock} />
 

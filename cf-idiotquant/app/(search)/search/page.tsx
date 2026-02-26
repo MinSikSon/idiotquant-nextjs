@@ -14,11 +14,11 @@ import validCorpNameArray from "@/public/data/validCorpNameArray.json";
 import nasdaq_tickers from "@/public/data/usStockSymbols/nasdaq_tickers.json";
 import nyse_tickers from "@/public/data/usStockSymbols/nyse_tickers.json";
 import amex_tickers from "@/public/data/usStockSymbols/amex_tickers.json";
-import { SearchGuide } from "./components/SearchGuide";
 import { MdTableTemplate } from "./components/MdTableTemplate";
 import { StockMetrics } from "./components/StockMetrics";
 import { calculateKrNcavRatio, calculateKrNcavValue, calculateUsNcavRatio, calculateUsNcavValue, getKrNcavGrade, getUsNcavGrade } from "./utils/financeCalc";
 import { StockCard } from "./components/StockCard";
+import { SearchGuide } from "./components/SearchGuide";
 
 const all_tickers = [...nasdaq_tickers, ...nyse_tickers, ...amex_tickers, ...validCorpNameArray];
 
@@ -61,9 +61,9 @@ export default function SearchPage() {
                             <StockCard stock={
                                 krOrUs === "US" ?
                                     // calculateUsNcav(data.finnhubData, data.usDetail)
-                                    { isUs: true, id: 1, name: name, grade: getUsNcavGrade(data.finnhubData, data.usDetail), fairValue: calculateUsNcavValue(data.finnhubData, data.usDetail), undervaluedScore: calculateUsNcavRatio(data.finnhubData, data.usDetail), per: data?.usDetail?.output?.perx ?? 0, pbr: data?.usDetail?.output?.pbrx ?? 0 }
+                                    { isUs: true, id: 1, name: name, grade: getUsNcavGrade(data.finnhubData, data.usDetail), fairValue: "$" + calculateUsNcavValue(data.finnhubData, data.usDetail), undervaluedScore: calculateUsNcavRatio(data.finnhubData, data.usDetail), per: data?.usDetail?.output?.perx ?? 0, pbr: data?.usDetail?.output?.pbrx ?? 0 }
                                     :
-                                    { isUs: false, id: 1, name: name, grade: getKrNcavGrade(data.kiBS, data.kiChart), fairValue: calculateKrNcavValue(data.kiBS, data.kiChart), undervaluedScore: calculateKrNcavRatio(data.kiBS, data.kiChart), per: data?.kiPrice?.output?.per ?? 0, pbr: data?.kiPrice?.output?.pbr ?? 0 }
+                                    { isUs: false, id: 1, name: name, grade: getKrNcavGrade(data.kiBS, data.kiChart), fairValue: "₩" + calculateKrNcavValue(data.kiBS, data.kiChart), undervaluedScore: calculateKrNcavRatio(data.kiBS, data.kiChart), per: data?.kiPrice?.output?.per ?? 0, pbr: data?.kiPrice?.output?.pbr ?? 0 }
                             } />
                         </div>
                         <StockHeader data={data} isUs={krOrUs === "US"} isFixed={fixed} />
