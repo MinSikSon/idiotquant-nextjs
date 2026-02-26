@@ -154,45 +154,107 @@ export function calculateKrSRIM(kiBS: any, kiIS: any, kiChart: any) {
 }
 
 /**
- * 미국 NCAV 계산 로직
+ * 미국 주식 NCAV 계산 및 상장폐지/데이터 누락 방어 로직
  */
 export function calculateUsNcav(finnhub: any, detail: any) {
+    // 1. 기본 데이터 추출
     const bs = finnhub?.data?.[0]?.report?.bs ?? [];
-    const cras = Number(bs.find((i: any) => i.concept.includes("us-gaap_AssetsCurrent"))?.value ?? bs.find((i: any) => i.concept.includes("AssetsCurrent"))?.value ?? 0);
-    const lblt = Number(bs.find((i: any) => i.concept.includes("us-gaap_Liabilities"))?.value ?? bs.find((i: any) => i.concept.includes("Liabilities"))?.value ?? 0);
-    const lstn = Number(detail.output.shar || 1);
-    const last = Number(detail.output.last || 1);
+    const cras = Number(
+        bs.find((i: any) => i.concept.includes("us-gaap_AssetsCurrent"))?.value ??
+        bs.find((i: any) => i.concept.includes("AssetsCurrent"))?.value ?? 0
+    );
+    const lblt = Number(
+        bs.find((i: any) => i.concept.includes("us-gaap_Liabilities"))?.value ??
+        bs.find((i: any) => i.concept.includes("Liabilities"))?.value ?? 0
+    );
 
+    // 2. 상장폐지 및 데이터 유효성 검사 (핵심 포인트)
+    // 발행주식수(shar)가 없거나, 0이거나, 빈 문자열인 경우 체크
+    const rawShar = detail?.output?.shar;
+    const isDelisted = !rawShar || rawShar === "" || Number(rawShar) === 0;
+
+    // 현재가(last) 정보도 없는 경우 함께 체크
+    const last = Number(detail?.output?.last || 0);
+    const isMissingPrice = last === 0;
+
+    // [처리방식] 데이터가 없으면 마크다운 테이블 대신 에러 메시지 혹은 상태 객체 반환
+    if (isDelisted || isMissingPrice) {
+        const reason = isDelisted ? "상장폐지 의심 혹은 주식수 데이터 없음" : "현재가 데이터 없음";
+        return `| 상태 | 상세 사유 |\n|---|---|\n| **N/A** | ${reason} |`;
+    }
+
+    const lstn = Number(rawShar);
+
+    // 3. 정상 계산 로직
     const rows = [1.0, 1.5].map(r => {
-        const target = (cras - lblt) / lstn;
-        const returnPct = ((target / (last * r)) - 1) * 100;
+        let target = (cras - lblt) / lstn;
+        let returnPct = ((target / (last * r)) - 1) * 100;
+
+        // 소수점 처리 및 가독성 확보
         return `| ${r.toFixed(1)} | ${returnPct.toFixed(2)}% | ${target.toFixed(2)} |`;
     }).join("\n");
 
     return `| ratio | Exp. Return | Target Price($) |\n|---|---|---|\n${rows}`;
 }
 
+/**
+ * 미국 주식 NCAV 적정 주가 계산 (Target Price)
+ */
 export function calculateUsNcavValue(finnhub: any, detail: any) {
     const bs = finnhub?.data?.[0]?.report?.bs ?? [];
-    const cras = Number(bs.find((i: any) => i.concept.includes("us-gaap_AssetsCurrent"))?.value ?? bs.find((i: any) => i.concept.includes("AssetsCurrent"))?.value ?? 0);
-    const lblt = Number(bs.find((i: any) => i.concept.includes("us-gaap_Liabilities"))?.value ?? bs.find((i: any) => i.concept.includes("Liabilities"))?.value ?? 0);
-    const lstn = Number(detail.output.shar || 1);
-    const last = Number(detail.output.last || 1);
+    const cras = Number(
+        bs.find((i: any) => i.concept.includes("us-gaap_AssetsCurrent"))?.value ??
+        bs.find((i: any) => i.concept.includes("AssetsCurrent"))?.value ?? 0
+    );
+    const lblt = Number(
+        bs.find((i: any) => i.concept.includes("us-gaap_Liabilities"))?.value ??
+        bs.find((i: any) => i.concept.includes("Liabilities"))?.value ?? 0
+    );
 
+    // [방어 로직] 주식수(shar) 데이터 유효성 검사
+    const rawShar = detail?.output?.shar;
+    const lstn = Number(rawShar);
+
+    // 주식수가 없거나, 빈 문자열이거나, 0인 경우 상장폐지/데이터오류로 판단하여 0 반환
+    if (!rawShar || rawShar === "" || lstn === 0) {
+        return "0.00";
+    }
+
+    // 적정 주가 계산: (유동자산 - 총부채) / 상장주식수
     const target = (cras - lblt) / lstn;
-    const returnPct = ((target / (last * 1)) - 1) * 100;
+
     return target.toFixed(2);
 }
 
+/**
+ * 미국 주식 NCAV 기대 수익률 계산 (Expected Return Ratio)
+ */
 export function calculateUsNcavRatio(finnhub: any, detail: any) {
     const bs = finnhub?.data?.[0]?.report?.bs ?? [];
-    const cras = Number(bs.find((i: any) => i.concept.includes("us-gaap_AssetsCurrent"))?.value ?? bs.find((i: any) => i.concept.includes("AssetsCurrent"))?.value ?? 0);
-    const lblt = Number(bs.find((i: any) => i.concept.includes("us-gaap_Liabilities"))?.value ?? bs.find((i: any) => i.concept.includes("Liabilities"))?.value ?? 0);
-    const lstn = Number(detail.output.shar || 1);
-    const last = Number(detail.output.last || 1);
+    const cras = Number(
+        bs.find((i: any) => i.concept.includes("us-gaap_AssetsCurrent"))?.value ??
+        bs.find((i: any) => i.concept.includes("AssetsCurrent"))?.value ?? 0
+    );
+    const lblt = Number(
+        bs.find((i: any) => i.concept.includes("us-gaap_Liabilities"))?.value ??
+        bs.find((i: any) => i.concept.includes("Liabilities"))?.value ?? 0
+    );
+
+    // [방어 로직] 주식수(shar) 및 현재가(last) 데이터 유효성 검사
+    const rawShar = detail?.output?.shar;
+    const lstn = Number(rawShar);
+    const last = Number(detail?.output?.last || 0);
+
+    // 주식수가 없거나 현재가가 0이면 기대 수익률을 계산할 수 없으므로 0 반환
+    if (!rawShar || rawShar === "" || lstn === 0 || last === 0) {
+        return 0;
+    }
 
     const target = (cras - lblt) / lstn;
-    const returnPct = ((target / (last * 1)) - 1) * 100;
+
+    // 기대 수익률 계산: ((적정주가 / 현재가) - 1) * 100
+    const returnPct = ((target / last) - 1) * 100;
+
     return Number(returnPct.toFixed(2));
 }
 

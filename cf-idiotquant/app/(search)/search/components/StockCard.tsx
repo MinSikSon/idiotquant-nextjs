@@ -32,9 +32,6 @@ export const StockCard = ({ stock }: any) => {
                         <span className="font-bold text-zinc-500 dark:text-zinc-400">적정가</span>
                         <span className="font-mono text-green-400">{stock.isUs ? "$" : "₩"}{stock.fairValue.toLocaleString()}</span>
                     </div>
-                    {/* <div className="w-full bg-gray-700 h-2 rounded-full overflow-hidden">
-                        <div className="bg-green-500 h-full" style={{ width: `${stock.undervaluedScore}%` }}></div>
-                    </div> */}
                     <StockScoreGauge stock={stock} />
 
                     <div className="grid grid-cols-2 gap-2 text-lg">

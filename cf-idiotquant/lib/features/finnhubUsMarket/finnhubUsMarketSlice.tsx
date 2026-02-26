@@ -63,11 +63,11 @@ export const finnhubUsMarketSlice = createAppSlice({
             },
             {
                 pending: (state) => {
-                    console.log(`[reqGetFinnhubUsFinancialsReported] pending`);
+                    // console.log(`[reqGetFinnhubUsFinancialsReported] pending`);
                     state.finnhubFinancialsAsReported.state = "pending";
                 },
                 fulfilled: (state, action) => {
-                    console.log(`[reqGetFinnhubUsFinancialsReported] fulfilled`, `action.payload`, typeof action.payload, action.payload);
+                    // console.log(`[reqGetFinnhubUsFinancialsReported] fulfilled`, `action.payload`, typeof action.payload, action.payload);
                     // if (undefined != action.payload["output1"]) 
                     {
                         state.finnhubFinancialsAsReported = { ...state.finnhubFinancialsAsReported, ...action.payload };
@@ -75,7 +75,7 @@ export const finnhubUsMarketSlice = createAppSlice({
                     }
                 },
                 rejected: (state) => {
-                    console.log(`[reqGetFinnhubUsFinancialsReported] rejected`);
+                    // console.log(`[reqGetFinnhubUsFinancialsReported] rejected`);
                     state.finnhubFinancialsAsReported.state = "rejected";
                 },
             }
