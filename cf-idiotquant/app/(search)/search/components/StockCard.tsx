@@ -6,7 +6,7 @@ export const StockCard = ({ stock }: any) => {
     // console.log(`[StockCard] stock:`, stock);
 
     return (
-        <div className={`relative w-[18rem] h-[27rem] rounded-xl bg-gradient-to-br ${stock?.grade?.cardGradeColor} shadow-2xl transform transition hover:scale-105 cursor-pointer`}>
+        <div className={`!bg-white relative w-[18rem] h-[27rem] rounded-xl bg-gradient-to-br ${stock?.grade?.cardGradeColor} shadow-2xl transform transition hover:scale-105 cursor-pointer`}>
             <div className="dark:!border dark:!border-zinc-500 w-full h-full rounded-lg p-4 flex flex-col justify-between">
                 {/* 상단: 종목명 및 등급 */}
                 <div className="flex justify-between items-start">

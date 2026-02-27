@@ -72,12 +72,13 @@ export function NavbarWithSimpleLinks() {
                     <Navbar.Group align={Alignment.RIGHT}>
                         {/* 데스크탑 메뉴 (MD 이상 노출) */}
                         <div className="hidden md:flex gap-1 mr-4">
-                            <Link href="/search"><Button minimal icon={IconNames.SEARCH} text="적정 주가 분석" /></Link>
-                            <Link href="/calculator"><Button minimal icon={IconNames.CALCULATOR} text="수익률 계산기" /></Link>
+                            <Link href="/search"><Button className="dark:!text-white" minimal icon={IconNames.SEARCH} text="적정 주가 분석" /></Link>
+                            <Link href="/calculator"><Button className="dark:!text-white" minimal icon={IconNames.CALCULATOR} text="수익률 계산기" /></Link>
+                            <Link href="/algorithm-trade"><Button className="dark:!text-white" minimal icon={IconNames.FILTER_LIST} text="종목 추천" /></Link>
                             {session?.user?.name === process.env.NEXT_PUBLIC_MASTER &&
                                 <>
-                                    <Link href="/balance-kr"><Button minimal icon={IconNames.DOLLAR} text="kr" /></Link>
-                                    <Link href="/balance-us"><Button minimal icon={IconNames.DOLLAR} text="us" /></Link>
+                                    <Link href="/balance-kr"><Button className="dark:!text-white" minimal icon={IconNames.DOLLAR} text="kr" /></Link>
+                                    <Link href="/balance-us"><Button className="dark:!text-white" minimal icon={IconNames.DOLLAR} text="us" /></Link>
                                 </>
                             }
                         </div>
@@ -108,10 +109,10 @@ export function NavbarWithSimpleLinks() {
                 icon={IconNames.MENU_OPEN}
                 position={Position.RIGHT}
                 size="75%"
-                className="!z-50 bp5-dark dark:!bg-zinc-900"
+                className="!z-50 bp5-dark dark:!bg-zinc-900 dark:!text-white"
             >
                 <div className={Classes.DRAWER_BODY}>
-                    <Menu className="bg-transparent border-none">
+                    <Menu className="!bg-transparent border-none">
                         <Text className="px-3 py-2 opacity-50 font-bold text-[10px] uppercase">Main Services</Text>
                         <Link href="/search" onClick={closeDrawer}>
                             <MenuItem
@@ -126,6 +127,14 @@ export function NavbarWithSimpleLinks() {
                                 tagName="div"
                                 icon={IconNames.CALCULATOR}
                                 text="수익률 계산기"
+                                labelElement={<Icon icon={IconNames.CHEVRON_RIGHT} />}
+                            />
+                        </Link>
+                        <Link href="/algorithm-trade" onClick={closeDrawer}>
+                            <MenuItem
+                                tagName="div"
+                                icon={IconNames.FILTER_LIST}
+                                text="종목 추천"
                                 labelElement={<Icon icon={IconNames.CHEVRON_RIGHT} />}
                             />
                         </Link>

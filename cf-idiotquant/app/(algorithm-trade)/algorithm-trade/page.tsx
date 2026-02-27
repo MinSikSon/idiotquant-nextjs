@@ -2,6 +2,7 @@
 
 import React, { useEffect } from "react";
 import { useAppDispatch, useAppSelector } from "@/lib/hooks";
+import { motion } from "framer-motion";
 
 // Blueprintjs Components
 import {
@@ -9,7 +10,8 @@ import {
     NonIdealState,
     Icon,
     Intent,
-    Divider
+    Divider,
+    Tag
 } from "@blueprintjs/core";
 import { IconNames } from "@blueprintjs/icons";
 
@@ -20,74 +22,77 @@ import {
     StrategyNcavLatestType
 } from "@/lib/features/backtest/backtestSlice";
 
-// 개편된 Table 컴포넌트 (앞서 드린 코드가 적용된 파일)
+// 개편된 하위 컴포넌트
 import ResponsiveNCAV from "./table";
-
-const DEBUG = false;
 
 export default function AlgorithmTrade() {
     const dispatch = useAppDispatch();
-
-    // Redux에서 데이터 가져오기
     const strategyNcavLatest: StrategyNcavLatestType = useAppSelector(selectStrategyNcavLatest);
 
     useEffect(() => {
         dispatch(reqGetNcavLatest());
     }, [dispatch]);
 
-    useEffect(() => {
-        if (DEBUG) console.log(`[AlgorithmTrade] strategyNcavLatest:`, strategyNcavLatest);
-    }, [strategyNcavLatest]);
-
-    // 로딩 상태 확인 (list가 없고 호출 중일 때)
+    // 로딩 상태 확인
     const isLoading = !strategyNcavLatest?.list;
+    const hasData = strategyNcavLatest?.list && Object.keys(strategyNcavLatest.list).length > 0;
 
     return (
-        <div className="flex flex-col w-full min-h-screen !bg-gray-50 dark:!bg-zinc-950">
-            {/* 상단 타이틀 영역: 모바일 고려 여백 조절 */}
-            <div className="py-3 px-4 md:py-5 text-center">
-                <div className="flex items-center justify-center gap-3 mb-2">
-                    <Icon icon={IconNames.LIGHTBULB} intent={Intent.WARNING} size={24} />
-                    <h2 className="!text-2xl md:!text-3xl !font-black !tracking-tight dark:!text-white">
-                        종목 추천
+        <div className="flex flex-col w-full min-h-screen !bg-[#f8f9fa] dark:!bg-[#08080a]">
+            {/* [Header] Justinmind Style: High Contrast & Clean Spacing */}
+            <header className="pt-10 pb-6 px-6 md:pt-16 md:pb-12 max-w-[1400px] mx-auto w-full">
+                <motion.div
+                    initial={{ opacity: 0, y: -10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    className="flex flex-col items-center md:items-start text-center md:text-left"
+                >
+                    <Tag large minimal round intent={Intent.WARNING} className="mb-4 !px-4 !py-1 font-black tracking-widest text-[10px]">
+                        PREMIUM QUANT ALGORITHM
+                    </Tag>
+                    <h2 className="text-4xl md:text-6xl font-black tracking-tighter dark:text-white mb-4">
+                        종목 <span className="text-blue-600 dark:text-yellow-500 italic">추천</span>
                     </h2>
-                </div>
-                <p className="!text-gray-500 dark:!text-zinc-400 text-sm md:!text-base">
-                    <span className="font-bold">idiot quant 알고리즘</span>이 분석한 <span className="text-blue-600 font-bold">현재 가장 저평가된 종목</span> 리스트입니다.
-                </p>
-            </div>
+                    <p className="text-gray-500 dark:text-zinc-400 text-sm md:text-lg font-medium max-w-2xl leading-relaxed">
+                        이디어트 퀀트 엔진이 분석한 <span className="text-gray-900 dark:text-zinc-200 font-bold underline decoration-blue-500/30">NCAV 저평가 종목</span> 리스트입니다.
+                        청산 가치 대비 시가총액이 낮은 안정적인 종목을 제안합니다.
+                    </p>
+                </motion.div>
+            </header>
 
-            <Divider className="mx-6 md:mx-auto max-w-[1400px]" />
-
-            {/* 메인 컨텐츠 영역 */}
-            <main className="flex-1 w-full max-w-[1400px] mx-auto">
+            <main className="flex-1 w-full max-w-[1400px] mx-auto px-4 md:px-6">
                 {isLoading ? (
-                    // 데이터 로딩 중일 때 표시할 상태
-                    <div className="py-20">
+                    <div className="py-40">
                         <NonIdealState
-                            icon={<Spinner intent={Intent.PRIMARY} size={48} />}
-                            title="데이터를 불러오는 중입니다"
-                            description="최신 NCAV 종목 추천 리스트를 가져오고 있습니다. 잠시만 기다려주세요."
+                            icon={<Spinner intent={Intent.PRIMARY} size={50} />}
+                            title={<span className="font-black tracking-tight">데이터 동기화 중</span>}
+                            description="최신 마켓 데이터를 분석하여 리스트를 생성하고 있습니다."
                         />
                     </div>
-                ) : strategyNcavLatest.list && Object.keys(strategyNcavLatest.list).length > 0 ? (
-                    // 데이터가 있을 때 테이블 렌더링
-                    <ResponsiveNCAV strategies={strategyNcavLatest?.list as any} />
+                ) : hasData ? (
+                    <motion.div
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        transition={{ duration: 0.5 }}
+                    >
+                        <ResponsiveNCAV strategies={strategyNcavLatest?.list as any} />
+                    </motion.div>
                 ) : (
-                    // 데이터가 비어있을 때 표시할 상태
                     <div className="py-20">
                         <NonIdealState
-                            icon={IconNames.SEARCH as any}
-                            title="추천 종목이 없습니다"
-                            description="현재 조건에 부합하는 종목이 없거나 데이터를 찾을 수 없습니다."
-                            action={<button onClick={() => dispatch(reqGetNcavLatest())} className="bp5-button bp5-intent-primary">다시 시도</button>}
+                            icon={IconNames.SEARCH_TEMPLATE}
+                            title="분석 결과 없음"
+                            description="현재 필터 조건에 부합하는 종목이 시장에 존재하지 않습니다."
+                            action={<button onClick={() => dispatch(reqGetNcavLatest())} className="bp5-button bp5-intent-primary bp5-large bp5-minimal">다시 분석하기</button>}
                         />
                     </div>
                 )}
             </main>
 
-            {/* 하단 여백 유지 */}
-            <div className="h-10 md:h-20" />
+            <footer className="py-12 mt-20 border-t border-gray-200 dark:border-white/5 opacity-30 text-center">
+                <p className="text-[10px] font-black tracking-[0.5em] uppercase dark:text-white">
+                    © 2026 IDIOT QUANT • FINANCIAL INTELLIGENCE UNIT
+                </p>
+            </footer>
         </div>
     );
 }
