@@ -18,7 +18,7 @@ export const StockHeader = ({ data, isUs, isFixed }: StockHeaderProps) => {
     if (isUs) {
         return (
             <Card elevation={Elevation.ONE} className="dark:!bg-zinc-900 p-0 overflow-hidden rounded-xl border-none mb-4">
-                <div className={`flex transition-all duration-300 ${isFixed ? "fixed top-[74px] left-0 w-full z-20 !bg-white/90 dark:!bg-zinc-900/90 backdrop-blur shadow-md px-4 py-0" : "p-4"}`}>
+                <div className={`flex transition-all duration-300 ${isFixed ? "fixed top-[81px] left-0 w-full z-20 !bg-white/90 dark:!bg-zinc-900/90 backdrop-blur shadow-md px-4 py-0" : "p-4"}`}>
                     <div className="w-7/12">
                         {!isFixed && <Tag intent="primary" minimal className="text-[10px] !text-zinc-500">{usSearchInfo?.output?.tr_mket_name}</Tag>}
                         <h2 className="text-xl md:!text-2xl font-black dark:!text-white">{usSearchInfo?.output?.prdt_name}</h2>
@@ -40,7 +40,7 @@ export const StockHeader = ({ data, isUs, isFixed }: StockHeaderProps) => {
 
     return (
         <Card elevation={Elevation.ONE} className="dark:!bg-zinc-900 p-0 overflow-hidden rounded-xl border-none mb-4">
-            <div className={`flex transition-all duration-300 ${isFixed ? "fixed top-[74px] left-0 w-full z-20 !bg-white/90 dark:!bg-zinc-900/90 backdrop-blur shadow-md px-4 py-0" : "p-4"}`}>
+            <div className={`flex transition-all duration-300 ${isFixed ? "fixed top-[81px] left-0 w-full z-20 !bg-white/90 dark:!bg-zinc-900/90 backdrop-blur shadow-md px-4 py-0" : "p-4"}`}>
                 <div className="w-7/12">
                     {!isFixed && <div className="text-[10px] !text-zinc-500">{kiPrice?.output?.rprs_mrkt_kor_name}</div>}
                     <div className="flex items-center gap-2">

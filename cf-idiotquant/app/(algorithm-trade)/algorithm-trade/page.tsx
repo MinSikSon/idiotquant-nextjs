@@ -1,6 +1,7 @@
 "use client";
 
-import React, { useEffect } from "react";
+import React, { useEffect, useMemo } from "react";
+import { useSearchParams, useRouter, usePathname } from "next/navigation";
 import { useAppDispatch, useAppSelector } from "@/lib/hooks";
 import { motion } from "framer-motion";
 
@@ -8,9 +9,7 @@ import { motion } from "framer-motion";
 import {
     Spinner,
     NonIdealState,
-    Icon,
     Intent,
-    Divider,
     Tag
 } from "@blueprintjs/core";
 import { IconNames } from "@blueprintjs/icons";
@@ -22,24 +21,44 @@ import {
     StrategyNcavLatestType
 } from "@/lib/features/backtest/backtestSlice";
 
-// 개편된 하위 컴포넌트
+// 하위 컴포넌트
 import ResponsiveNCAV from "./table";
 
 export default function AlgorithmTrade() {
     const dispatch = useAppDispatch();
+    const router = useRouter();
+    const pathname = usePathname();
+    const searchParams = useSearchParams();
+
     const strategyNcavLatest: StrategyNcavLatestType = useAppSelector(selectStrategyNcavLatest);
+
+    // URL에서 현재 선택된 전략 ID 가져오기
+    const currentStrategyId = searchParams.get("strategy");
 
     useEffect(() => {
         dispatch(reqGetNcavLatest());
     }, [dispatch]);
 
-    // 로딩 상태 확인
+    // 전략 변경 시 URL 파라미터 업데이트
+    const handleStrategyChange = (strategyId: string) => {
+        const params = new URLSearchParams(searchParams.toString());
+        params.set("strategy", strategyId);
+        router.replace(`${pathname}?${params.toString()}`, { scroll: false });
+    };
+
+    // 로딩 및 데이터 상태
     const isLoading = !strategyNcavLatest?.list;
     const hasData = strategyNcavLatest?.list && Object.keys(strategyNcavLatest.list).length > 0;
 
+    const strategyList = useMemo(() => {
+        if (!strategyNcavLatest?.list) return [];
+        return Array.isArray(strategyNcavLatest.list)
+            ? strategyNcavLatest.list
+            : Object.values(strategyNcavLatest.list);
+    }, [strategyNcavLatest?.list]);
+
     return (
         <div className="flex flex-col w-full min-h-screen !bg-[#f8f9fa] dark:!bg-[#08080a]">
-            {/* [Header] Justinmind Style: High Contrast & Clean Spacing */}
             <header className="pt-10 pb-6 px-6 md:pt-16 md:pb-12 max-w-[1400px] mx-auto w-full">
                 <motion.div
                     initial={{ opacity: 0, y: -10 }}
@@ -54,7 +73,6 @@ export default function AlgorithmTrade() {
                     </h2>
                     <p className="text-gray-500 dark:text-zinc-400 text-sm md:text-lg font-medium max-w-2xl leading-relaxed">
                         이디어트 퀀트 엔진이 분석한 <span className="text-gray-900 dark:text-zinc-200 font-bold underline decoration-blue-500/30">NCAV 저평가 종목</span> 리스트입니다.
-                        청산 가치 대비 시가총액이 낮은 안정적인 종목을 제안합니다.
                     </p>
                 </motion.div>
             </header>
@@ -69,12 +87,12 @@ export default function AlgorithmTrade() {
                         />
                     </div>
                 ) : hasData ? (
-                    <motion.div
-                        initial={{ opacity: 0 }}
-                        animate={{ opacity: 1 }}
-                        transition={{ duration: 0.5 }}
-                    >
-                        <ResponsiveNCAV strategies={strategyNcavLatest?.list as any} />
+                    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
+                        <ResponsiveNCAV
+                            strategies={strategyList as any}
+                            activeStrategyId={currentStrategyId}
+                            onStrategyChange={handleStrategyChange}
+                        />
                     </motion.div>
                 ) : (
                     <div className="py-20">
@@ -82,7 +100,6 @@ export default function AlgorithmTrade() {
                             icon={IconNames.SEARCH_TEMPLATE}
                             title="분석 결과 없음"
                             description="현재 필터 조건에 부합하는 종목이 시장에 존재하지 않습니다."
-                            action={<button onClick={() => dispatch(reqGetNcavLatest())} className="bp5-button bp5-intent-primary bp5-large bp5-minimal">다시 분석하기</button>}
                         />
                     </div>
                 )}

@@ -141,11 +141,11 @@ export default function FinnhubBalanceSheetTable({ data = [], className = "", fo
                                             {columns.map((col, colIndex) => {
                                                 const v = col.map.get(row.concept[0]) ?? col.map.get(row.concept[1]) ?? null;
                                                 return (
-                                                    <td key={colIndex} className="text-right !px-4 font-medium">
+                                                    <td key={colIndex} className="text-right !px-4 font-medium transition-colors hover:bg-blue-50/50 dark:hover:bg-blue-900/20">
                                                         {v === null ? (
                                                             <span className="text-gray-300 dark:!text-zinc-700">-</span>
                                                         ) : (
-                                                            <Tooltip content={v.toLocaleString()} position={Position.TOP}>
+                                                            <Tooltip content={`${row.label}: ${v.toLocaleString()}`} position={Position.TOP}>
                                                                 <span className={v < 0 ? "text-red-500 dark:!text-red-400" : "dark:!text-zinc-200"}>
                                                                     {fmt(v)}
                                                                 </span>

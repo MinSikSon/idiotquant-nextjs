@@ -1,14 +1,33 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react"; // useCallback 추가
 import { useAppDispatch, useAppSelector } from "@/lib/hooks";
 import corpCodeJson from "@/public/data/validCorpCode.json";
 import nasdaq_tickers from "@/public/data/usStockSymbols/nasdaq_tickers.json";
 import nyse_tickers from "@/public/data/usStockSymbols/nyse_tickers.json";
 import amex_tickers from "@/public/data/usStockSymbols/amex_tickers.json";
 
-// ... Redux Actions Import (생략 없이 모두 포함해야 함)
-import { reqGetInquirePrice, reqGetInquireDailyItemChartPrice, reqGetBalanceSheet, reqGetIncomeStatement, getKoreaInvestmentInquirePrice, getKoreaInvestmentBalanceSheet, getKoreaInvestmentIncomeStatement, getKoreaInvestmentInquireDailyItemChartPrice } from "@/lib/features/koreaInvestment/koreaInvestmentSlice";
-import { reqGetQuotationsSearchInfo, reqGetQuotationsPriceDetail, reqGetOverseasPriceQuotationsDailyPrice, getKoreaInvestmentUsMaretSearchInfo, getKoreaInvestmentUsMaretPriceDetail, getKoreaInvestmentUsMarketDailyPrice } from "@/lib/features/koreaInvestmentUsMarket/koreaInvestmentUsMarketSlice";
-import { reqGetFinnhubUsFinancialsReported, selectFinnhubFinancialsAsReported } from "@/lib/features/finnhubUsMarket/finnhubUsMarketSlice";
+// Redux Actions
+import {
+    reqGetInquirePrice,
+    reqGetInquireDailyItemChartPrice,
+    reqGetBalanceSheet,
+    reqGetIncomeStatement,
+    getKoreaInvestmentInquirePrice,
+    getKoreaInvestmentBalanceSheet,
+    getKoreaInvestmentIncomeStatement,
+    getKoreaInvestmentInquireDailyItemChartPrice
+} from "@/lib/features/koreaInvestment/koreaInvestmentSlice";
+import {
+    reqGetQuotationsSearchInfo,
+    reqGetQuotationsPriceDetail,
+    reqGetOverseasPriceQuotationsDailyPrice,
+    getKoreaInvestmentUsMaretSearchInfo,
+    getKoreaInvestmentUsMaretPriceDetail,
+    getKoreaInvestmentUsMarketDailyPrice
+} from "@/lib/features/koreaInvestmentUsMarket/koreaInvestmentUsMarketSlice";
+import {
+    reqGetFinnhubUsFinancialsReported,
+    selectFinnhubFinancialsAsReported
+} from "@/lib/features/finnhubUsMarket/finnhubUsMarketSlice";
 import { reqPostLaboratory } from "@/lib/features/ai/aiSlice";
 import { selectAiStreamOutput } from "@/lib/features/ai/aiStreamSlice";
 import { addKrMarketHistory } from "@/lib/features/searchHistory/searchHistorySlice";
@@ -33,7 +52,10 @@ export function useStockSearch() {
     const usDaily = useAppSelector(getKoreaInvestmentUsMarketDailyPrice);
     const finnhubData = useAppSelector(selectFinnhubFinancialsAsReported);
 
-    const onSearch = (stockName: string) => {
+    // [중요] useCallback으로 감싸서 함수 참조값을 고정합니다.
+    const onSearch = useCallback((stockName: string) => {
+        if (!stockName) return;
+
         const isUs = us_tickers.includes(stockName.toUpperCase());
         dispatch(addKrMarketHistory(stockName));
         setName(stockName);
@@ -45,7 +67,11 @@ export function useStockSearch() {
             if (jsonStock) {
                 const code = jsonStock.stock_code;
                 dispatch(reqGetInquirePrice({ PDNO: code }));
-                dispatch(reqGetInquireDailyItemChartPrice({ PDNO: code, FID_INPUT_DATE_1: "20170101", FID_INPUT_DATE_2: new Date().toISOString().split('T')[0].replaceAll("-", "") }));
+                dispatch(reqGetInquireDailyItemChartPrice({
+                    PDNO: code,
+                    FID_INPUT_DATE_1: "20170101",
+                    FID_INPUT_DATE_2: new Date().toISOString().split('T')[0].replaceAll("-", "")
+                }));
                 dispatch(reqGetBalanceSheet({ PDNO: code }));
                 dispatch(reqGetIncomeStatement({ PDNO: code }));
                 setWaitResponse(true);
@@ -55,10 +81,13 @@ export function useStockSearch() {
             const ticker = stockName.toUpperCase();
             dispatch(reqGetQuotationsSearchInfo({ PDNO: ticker }));
             dispatch(reqGetQuotationsPriceDetail({ PDNO: ticker }));
-            dispatch(reqGetOverseasPriceQuotationsDailyPrice({ PDNO: ticker, FID_INPUT_DATE_1: new Date().toISOString().split('T')[0].replaceAll("-", "") }));
+            dispatch(reqGetOverseasPriceQuotationsDailyPrice({
+                PDNO: ticker,
+                FID_INPUT_DATE_1: new Date().toISOString().split('T')[0].replaceAll("-", "")
+            }));
             dispatch(reqGetFinnhubUsFinancialsReported(ticker));
         }
-    };
+    }, [dispatch]); // dispatch는 안정적인 함수이므로 한 번만 생성됩니다.
 
     // AI Stream Parsing
     useEffect(() => {
@@ -68,7 +97,10 @@ export function useStockSearch() {
             for (const line of lines) {
                 if (line.startsWith('data: ')) {
                     const jsonStr = line.slice(6).trim();
-                    if (jsonStr === '[DONE]') { setWaitResponse(false); break; }
+                    if (jsonStr === '[DONE]') {
+                        setWaitResponse(false);
+                        break;
+                    }
                     try {
                         const parsed = JSON.parse(jsonStr);
                         if (parsed.response) content += parsed.response;
@@ -79,5 +111,21 @@ export function useStockSearch() {
         }
     }, [aiStreamOutput]);
 
-    return { onSearch, krOrUs, name, response, waitResponse, data: { kiPrice, kiBS, kiIS, kiChart, usSearchInfo, usDetail, usDaily, finnhubData } };
+    return {
+        onSearch,
+        krOrUs,
+        name,
+        response,
+        waitResponse,
+        data: {
+            kiPrice,
+            kiBS,
+            kiIS,
+            kiChart,
+            usSearchInfo,
+            usDetail,
+            usDaily,
+            finnhubData
+        }
+    };
 }

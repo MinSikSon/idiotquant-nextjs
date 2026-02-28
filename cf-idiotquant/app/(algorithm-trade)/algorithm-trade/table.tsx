@@ -1,20 +1,19 @@
 "use client";
 
-import React, { useMemo, useState } from "react";
+import React, { useMemo, useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import {
     Card,
-    Elevation,
     Button,
     HTMLTable,
     Tag,
     Icon,
     Intent,
-    Divider,
-    ButtonGroup,
     Callout,
     Section,
-    SectionCard,
+    Position,
+    Tooltip
 } from "@blueprintjs/core";
 import { IconNames } from "@blueprintjs/icons";
 import StrategyDescription from "@/components/strategyParser";
@@ -43,18 +42,52 @@ type Strategy = {
 };
 
 const formatNum = (v: any) => (typeof v === 'number' ? v.toLocaleString() : String(v ?? "-"));
+const isKoreanStock = (ticker: string) => /^\d{6}$/.test(ticker);
 
-export default function ResponsiveNCAV({ strategies }: { strategies?: Strategy | Strategy[] }) {
-    const list = useMemo(() => {
-        if (!strategies) return [];
-        return Array.isArray(strategies) ? strategies : [strategies];
-    }, [strategies]);
+export default function ResponsiveNCAV({
+    strategies,
+    activeStrategyId,
+    onStrategyChange
+}: {
+    strategies: Strategy[],
+    activeStrategyId?: string | null,
+    onStrategyChange: (id: string) => void
+}) {
+    const router = useRouter();
 
-    const [selectedIndex, setSelectedIndex] = useState(0);
-    const data = list[selectedIndex];
+    // [중요] URL의 strategyId에 맞춰 초기 인덱스 계산
+    const initialIndex = useMemo(() => {
+        if (!activeStrategyId) return 0;
+        const found = strategies.findIndex(s => s.strategyId === activeStrategyId);
+        return found !== -1 ? found : 0;
+    }, [strategies, activeStrategyId]);
+
+    const [selectedIndex, setSelectedIndex] = useState(initialIndex);
+    const data = strategies[selectedIndex];
     const [expandedTicker, setExpandedTicker] = useState<string | null>(null);
     const [sortKey, setSortKey] = useState<string>("ticker");
     const [sortDir, setSortDir] = useState<"asc" | "desc">("asc");
+
+    // 외부(URL)에서 activeStrategyId가 변경되면 내부 index 동기화 (뒤로가기 대응)
+    useEffect(() => {
+        if (activeStrategyId) {
+            const found = strategies.findIndex(s => s.strategyId === activeStrategyId);
+            if (found !== -1 && found !== selectedIndex) {
+                setSelectedIndex(found);
+            }
+        }
+    }, [activeStrategyId, strategies, selectedIndex]);
+
+    const handleStrategySelect = (idx: number) => {
+        setSelectedIndex(idx);
+        onStrategyChange(strategies[idx].strategyId);
+    };
+
+    const handleTickerClick = (ticker: string, name?: string) => {
+        // 국장이면 이름(name), 미장이면 티커(ticker) 전달
+        const searchTerm = isKoreanStock(ticker) ? (name || ticker) : ticker;
+        router.push(`/search?ticker=${encodeURIComponent(searchTerm)}`);
+    };
 
     const sortedCandidates = useMemo(() => {
         if (!data?.candidates) return [];
@@ -78,16 +111,16 @@ export default function ResponsiveNCAV({ strategies }: { strategies?: Strategy |
 
     return (
         <div className="space-y-6 pb-20">
-            {/* [1. 전략 선택 사이드바 & 메트릭] */}
             <div className="grid grid-cols-12 gap-6">
+                {/* 전략 선택 사이드바 */}
                 <div className="col-span-12 lg:col-span-3">
                     <Section title="전략 라이브러리" icon={IconNames.LAYERS} compact className="!bg-transparent">
                         <div className="flex lg:flex-col gap-2 overflow-x-auto pb-2 lg:pb-0 no-scrollbar">
-                            {list.map((s, idx) => (
+                            {strategies.map((s, idx) => (
                                 <Card
                                     key={idx}
                                     interactive
-                                    onClick={() => setSelectedIndex(idx)}
+                                    onClick={() => handleStrategySelect(idx)}
                                     className={`!p-4 min-w-[200px] lg:min-w-0 !rounded-xl transition-all border-none ${idx === selectedIndex ? '!bg-blue-600 !text-white shadow-xl scale-[1.02]' : 'dark:!bg-zinc-900'}`}
                                 >
                                     <p className={`text-[10px] font-black uppercase tracking-widest mb-1 ${idx === selectedIndex ? 'text-blue-100' : 'text-gray-500'}`}>Strategy {idx + 1}</p>
@@ -98,6 +131,7 @@ export default function ResponsiveNCAV({ strategies }: { strategies?: Strategy |
                     </Section>
                 </div>
 
+                {/* 메인 분석 영역 */}
                 <div className="col-span-12 lg:col-span-9 space-y-6">
                     <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                         <MetricCard label="추천 종목" value={data.numCandidates} icon={IconNames.STAR} intent={Intent.PRIMARY} />
@@ -108,15 +142,13 @@ export default function ResponsiveNCAV({ strategies }: { strategies?: Strategy |
 
                     <StrategyDescription strategyId={data.strategyId} />
 
-                    {/* [2. 종목 리스트 - Justinmind 카드 그리드 스타일] */}
                     <Section
                         title="추천 종목 상세 분석"
                         icon={IconNames.TH_DERIVED}
                         rightElement={<Tag minimal round intent={Intent.PRIMARY} className="font-mono">{sortedCandidates.length}</Tag>}
                     >
-                        {/* Desktop Table View */}
                         <div className="hidden md:block overflow-hidden rounded-xl border border-gray-100 dark:border-white/5 bg-white dark:bg-zinc-900">
-                            <HTMLTable interactive striped className="w-full">
+                            <HTMLTable striped className="w-full">
                                 <thead className="bg-gray-50/50 dark:bg-black/20">
                                     <tr>
                                         <SortHeader label="Ticker" id="ticker" current={sortKey} dir={sortDir} onSort={setSortKey} onDir={setSortDir} />
@@ -127,93 +159,68 @@ export default function ResponsiveNCAV({ strategies }: { strategies?: Strategy |
                                     </tr>
                                 </thead>
                                 <tbody>
-                                    {sortedCandidates.map(([ticker, info]: any) => (
-                                        <React.Fragment key={ticker}>
-                                            <tr className="hover:!bg-blue-50/30 dark:hover:!bg-blue-900/10 transition-colors">
-                                                <td className="py-4 font-bold !text-blue-600">{ticker} <span className="text-[10px] text-gray-400 ml-2 font-medium">{info.name}</span></td>
-                                                <td className="font-mono text-xs">{`$${formatNum(info.condition?.LastPrice)}`}</td>
-                                                <td className="font-mono text-xs opacity-60">{formatNum(info.condition?.MarketCapitalization)}</td>
-                                                <td>
-                                                    <Tag minimal intent={Number(info.ncavRatio) > 1.2 ? Intent.SUCCESS : Intent.WARNING} className="font-bold">
-                                                        {info.ncavRatio}x
-                                                    </Tag>
-                                                </td>
-                                                <td className="text-right pr-4">
-                                                    <Button minimal icon={expandedTicker === ticker ? IconNames.EYE_OFF : IconNames.EYE_OPEN} onClick={() => setExpandedTicker(expandedTicker === ticker ? null : ticker)} />
-                                                </td>
-                                            </tr>
-                                            <AnimatePresence>
-                                                {expandedTicker === ticker && (
-                                                    <tr>
-                                                        <td colSpan={5} className="!p-0 border-none">
-                                                            <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: 'auto', opacity: 1 }} exit={{ height: 0, opacity: 0 }} className="overflow-hidden bg-gray-50 dark:bg-black/40">
-                                                                <div className="p-8 grid grid-cols-2 gap-8">
-                                                                    <pre className="text-[10px] p-4 bg-white dark:bg-zinc-950 rounded-xl border border-black/5 shadow-inner overflow-auto max-h-60">
-                                                                        {JSON.stringify(info.condition, null, 2)}
-                                                                    </pre>
-                                                                    <div className="space-y-4">
-                                                                        <h4 className="text-xs font-black uppercase tracking-widest text-blue-600">Quick Analysis</h4>
-                                                                        <Callout intent={Intent.SUCCESS} className="!bg-white dark:!bg-zinc-900 shadow-sm border-none">
-                                                                            해당 종목은 현재 순유동자산 대비 시가총액 비율이 <b>{info.ncavRatio}배</b>로 강력한 매수 안전 마진을 확보하고 있습니다.
-                                                                        </Callout>
-                                                                    </div>
+                                    {sortedCandidates.map(([ticker, info]: [string, CandidateInfo]) => {
+                                        const isKR = isKoreanStock(ticker);
+                                        const currency = isKR ? "₩" : "$";
+                                        return (
+                                            <React.Fragment key={ticker}>
+                                                <tr className="hover:!bg-blue-50/30 dark:hover:!bg-blue-900/10 transition-colors">
+                                                    <td className="py-4 font-bold">
+                                                        <Tooltip content={`${info.name || ticker} 상세 분석`} position={Position.TOP}>
+                                                            <div onClick={() => handleTickerClick(ticker, info.name)} className="!text-blue-600 cursor-pointer hover:underline flex flex-col">
+                                                                <div className="flex items-center gap-2">
+                                                                    {ticker} <Icon icon={IconNames.SHARE} size={10} className="opacity-40" />
                                                                 </div>
-                                                            </motion.div>
-                                                        </td>
-                                                    </tr>
-                                                )}
-                                            </AnimatePresence>
-                                        </React.Fragment>
-                                    ))}
+                                                                <span className="text-[11px] text-gray-500 font-medium italic">{info.name}</span>
+                                                            </div>
+                                                        </Tooltip>
+                                                    </td>
+                                                    <td className="font-mono text-xs">{`${currency}${formatNum(info.condition?.LastPrice)}`}</td>
+                                                    <td className="font-mono text-xs opacity-60">{`${currency}${formatNum(info.condition?.MarketCapitalization)}`}</td>
+                                                    <td><Tag minimal intent={Number(info.ncavRatio) > 1.2 ? Intent.SUCCESS : Intent.WARNING} className="font-bold">{info.ncavRatio}x</Tag></td>
+                                                    <td className="text-right pr-4">
+                                                        <Button minimal icon={expandedTicker === ticker ? IconNames.EYE_OFF : IconNames.EYE_OPEN} onClick={() => setExpandedTicker(expandedTicker === ticker ? null : ticker)} />
+                                                    </td>
+                                                </tr>
+                                                <AnimatePresence>
+                                                    {expandedTicker === ticker && (
+                                                        <tr>
+                                                            <td colSpan={5} className="!p-0 border-none">
+                                                                <motion.div initial={{ height: 0 }} animate={{ height: 'auto' }} exit={{ height: 0 }} className="overflow-hidden bg-gray-50 dark:bg-black/40">
+                                                                    <div className="p-8 grid grid-cols-2 gap-8">
+                                                                        <pre className="text-[10px] p-4 bg-white dark:bg-zinc-950 rounded-xl max-h-60 overflow-auto">{JSON.stringify(info.condition, null, 2)}</pre>
+                                                                        <div className="space-y-4">
+                                                                            <Callout intent={Intent.SUCCESS}><b>{info.name || ticker}</b>는 현재 <b>{info.ncavRatio}배</b>로 매수 안전 마진을 확보했습니다.</Callout>
+                                                                            <Button fill large intent={Intent.PRIMARY} onClick={() => handleTickerClick(ticker, info.name)}>정밀 재무 분석 이동</Button>
+                                                                        </div>
+                                                                    </div>
+                                                                </motion.div>
+                                                            </td>
+                                                        </tr>
+                                                    )}
+                                                </AnimatePresence>
+                                            </React.Fragment>
+                                        );
+                                    })}
                                 </tbody>
                             </HTMLTable>
                         </div>
 
-                        {/* Mobile 3-Column Grid View */}
+                        {/* Mobile View */}
                         <div className="md:hidden grid grid-cols-3 gap-2">
-                            {sortedCandidates.map(([ticker, info]: any) => (
-                                <motion.div
-                                    key={ticker}
-                                    whileTap={{ scale: 0.95 }}
-                                    onClick={() => setExpandedTicker(expandedTicker === ticker ? null : ticker)}
-                                >
-                                    <Card className="!p-2 flex flex-col items-center text-center !rounded-xl border-none shadow-sm dark:!bg-zinc-900 h-full">
-                                        <span className="text-[10px] font-black !text-blue-600 truncate w-full">{ticker}</span>
-                                        <div className="h-4" />
-                                        <span className="text-[14px] font-black dark:text-white leading-none mb-1">{info.ncavRatio}x</span>
-                                        <span className="text-[8px] font-bold text-gray-400 uppercase">NCAV</span>
-                                        <div className="mt-2 text-[8px] font-mono opacity-50">{`$${formatNum(info.condition?.LastPrice)}`}</div>
+                            {sortedCandidates.map(([ticker, info]: [string, CandidateInfo]) => {
+                                const isKR = isKoreanStock(ticker);
+                                return (
+                                    <Card key={ticker} interactive onClick={() => handleTickerClick(ticker, info.name)} className="!p-2 flex flex-col items-center !rounded-xl dark:!bg-zinc-900">
+                                        <span className="text-[10px] font-black !text-blue-600">{ticker}</span>
+                                        <span className="text-[8px] text-gray-500 truncate w-full text-center">{info.name}</span>
+                                        <span className="text-[14px] font-black mt-1">{info.ncavRatio}x</span>
+                                        <span className="text-[8px] text-gray-400 uppercase">NCAV</span>
                                     </Card>
-                                </motion.div>
-                            ))}
+                                );
+                            })}
                         </div>
                     </Section>
-
-                    {/* [3. 상세 설정 파라미터] */}
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                        <Callout title="전략 파라미터" icon={IconNames.SETTINGS} className="!bg-white dark:!bg-zinc-900 border-none shadow-sm rounded-xl">
-                            <div className="mt-4 space-y-2">
-                                {Object.entries(data.params).map(([k, v]) => (
-                                    <div key={k} className="flex justify-between items-center text-[11px] pb-2 border-b border-gray-50 dark:border-white/5">
-                                        <span className="text-gray-400 font-bold uppercase tracking-tighter">{k}</span>
-                                        <span className="font-mono font-black text-blue-600">{v}</span>
-                                    </div>
-                                ))}
-                            </div>
-                        </Callout>
-                        <Callout title="시스템 상태" icon={IconNames.GLOBE} className="!bg-white dark:!bg-zinc-900 border-none shadow-sm rounded-xl">
-                            <div className="mt-4 text-[11px] space-y-3">
-                                <div className="flex justify-between">
-                                    <span className="text-gray-400 font-bold uppercase tracking-tighter">Status</span>
-                                    <Tag intent={Intent.SUCCESS} minimal round className="font-black text-[9px]">{data.status}</Tag>
-                                </div>
-                                <div className="flex justify-between">
-                                    <span className="text-gray-400 font-bold uppercase tracking-tighter">Price Data</span>
-                                    <span className="font-bold">{data.dataSource.prices}</span>
-                                </div>
-                            </div>
-                        </Callout>
-                    </div>
                 </div>
             </div>
         </div>
@@ -238,7 +245,7 @@ function MetricCard({ label, value, icon, intent = Intent.NONE }: any) {
 function SortHeader({ label, id, current, dir, onSort, onDir }: any) {
     const isActive = current === id;
     return (
-        <th className="cursor-pointer select-none py-4 px-4 hover:bg-black/5 transition-colors" onClick={() => isActive ? onDir(dir === "asc" ? "desc" : "asc") : onSort(id)}>
+        <th className="cursor-pointer select-none py-4 px-4 hover:bg-black/5" onClick={() => isActive ? onDir(dir === "asc" ? "desc" : "asc") : onSort(id)}>
             <div className="flex items-center gap-2">
                 <span className={`text-[10px] font-black uppercase tracking-widest ${isActive ? "text-blue-600" : "text-gray-400"}`}>{label}</span>
                 <Icon icon={isActive ? (dir === "asc" ? IconNames.CHEVRON_UP : IconNames.CHEVRON_DOWN) : IconNames.DOUBLE_CARET_VERTICAL} size={10} className={isActive ? "text-blue-600" : "text-gray-200"} />
