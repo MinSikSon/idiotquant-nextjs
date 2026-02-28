@@ -1,6 +1,6 @@
 export const getFinancialInfoWithMarketInfo: any = async (year: string, quarter: string) => {
     // console.log(`[getFinancialInfo]`, year, quarter);
-    const url = `${process.env.NEXT_PUBLIC_API_URL}/stock/financial-info-with-market-info?year=${year}&quarter=${quarter}`
+    const url = `/api/proxy/stock/financial-info-with-market-info?year=${year}&quarter=${quarter}`
     const res = await fetch(url, {
         credentials: "include",  // include credentials (like cookies) in the request
     });
@@ -11,7 +11,7 @@ export const getFinancialInfoWithMarketInfo: any = async (year: string, quarter:
 }
 
 export const getUsNcavList: any = async () => {
-    const url = `${process.env.NEXT_PUBLIC_API_URL}/strategy/us/ncav/list`
+    const url = `/api/proxy/strategy/us/ncav/list`
     const res = await fetch(url, {
         credentials: "include",  // include credentials (like cookies) in the request
     });
@@ -22,7 +22,7 @@ export const getUsNcavList: any = async () => {
 }
 
 export const getNcavLatest: any = async () => {
-    const url = `${process.env.NEXT_PUBLIC_API_URL}/strategy/all/ncav/date/latest`
+    const url = `/api/proxy/strategy/all/ncav/date/latest`
     const res = await fetch(url, {
         credentials: "include",  // include credentials (like cookies) in the request
     });
