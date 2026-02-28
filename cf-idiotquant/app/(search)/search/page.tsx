@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, Suspense } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import { useAppSelector } from "@/lib/hooks";
 import { useStockSearch } from "./hooks/useStockSearch";
@@ -23,7 +23,11 @@ import { SearchGuide } from "./components/SearchGuide";
 
 const all_tickers = [...nasdaq_tickers, ...nyse_tickers, ...amex_tickers, ...validCorpNameArray];
 
-export default function SearchPage() {
+/**
+ * [분리된 컨텐츠 컴포넌트]
+ * 기존 SearchPage의 모든 로직을 이곳으로 옮겼습니다.
+ */
+function SearchContent() {
     const router = useRouter();
     const searchParams = useSearchParams();
     const { onSearch, krOrUs, response, data, name, waitResponse } = useStockSearch();
@@ -67,15 +71,11 @@ export default function SearchPage() {
         return () => window.removeEventListener("scroll", handleScroll);
     }, []);
 
-    // [데이터 상태 체크]
     const tickerFromUrl = searchParams.get("ticker");
     const isKrReady = data.kiChart.state === "fulfilled" || data.kiBS.state === "fulfilled";
     const isUsReady = data.usSearchInfo.state === "fulfilled" || data.finnhubData.state === "fulfilled";
     const hasAnyData = isKrReady || isUsReady;
 
-    // [로딩 표시 로직 수정]
-    // 1. URL의 티커와 로드된 데이터의 이름이 일치하면 로딩을 끕니다.
-    // 2. 혹은 데이터가 하나라도 완료 상태(fulfilled)가 되면 로딩 표시를 최소화합니다.
     const isLoaded = tickerFromUrl === name && hasAnyData;
     const shouldShowLoading = waitResponse && !isLoaded;
 
@@ -116,7 +116,6 @@ export default function SearchPage() {
                     <SearchGuide />
                 ) : (
                     <>
-                        {/* 로딩 바: 데이터가 로드되지 않았거나 waitResponse가 떠있을 때만 표시 */}
                         {shouldShowLoading && (
                             <div className="flex flex-col items-center justify-center py-10">
                                 <Spinner size={40} />
@@ -124,7 +123,6 @@ export default function SearchPage() {
                             </div>
                         )}
 
-                        {/* 데이터가 매칭되었을 때만 컨텐츠 노출 */}
                         <div className={!isLoaded ? "hidden" : "block"}>
                             <div className="flex justify-center mb-6">
                                 <StockCard stock={
@@ -154,5 +152,24 @@ export default function SearchPage() {
                 )}
             </main>
         </div>
+    );
+}
+
+/**
+ * [메인 엔트리 포인트]
+ * useSearchParams를 사용하는 컴포넌트를 Suspense로 감싸서 Bailout 에러를 방지합니다.
+ */
+export default function SearchPage() {
+    return (
+        <Suspense fallback={
+            <div className="w-full min-h-screen flex flex-col items-center justify-center bg-gray-50 dark:bg-zinc-950">
+                <Spinner size={50} intent={Intent.PRIMARY} />
+                <p className="mt-4 text-[10px] font-black tracking-widest text-gray-400 uppercase">
+                    Initializing Engine...
+                </p>
+            </div>
+        }>
+            <SearchContent />
+        </Suspense>
     );
 }

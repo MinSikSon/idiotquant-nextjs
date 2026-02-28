@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useMemo } from "react";
+import React, { useEffect, useMemo, Suspense } from "react";
 import { useSearchParams, useRouter, usePathname } from "next/navigation";
 import { useAppDispatch, useAppSelector } from "@/lib/hooks";
 import { motion } from "framer-motion";
@@ -24,7 +24,11 @@ import {
 // 하위 컴포넌트
 import ResponsiveNCAV from "./table";
 
-export default function AlgorithmTrade() {
+/**
+ * [실제 로직 컴포넌트] 
+ * useSearchParams를 사용하여 URL 상태를 관리합니다.
+ */
+function AlgorithmTradeContent() {
     const dispatch = useAppDispatch();
     const router = useRouter();
     const pathname = usePathname();
@@ -43,10 +47,10 @@ export default function AlgorithmTrade() {
     const handleStrategyChange = (strategyId: string) => {
         const params = new URLSearchParams(searchParams.toString());
         params.set("strategy", strategyId);
+        // replace를 사용하여 히스토리 스택 관리
         router.replace(`${pathname}?${params.toString()}`, { scroll: false });
     };
 
-    // 로딩 및 데이터 상태
     const isLoading = !strategyNcavLatest?.list;
     const hasData = strategyNcavLatest?.list && Object.keys(strategyNcavLatest.list).length > 0;
 
@@ -57,8 +61,57 @@ export default function AlgorithmTrade() {
             : Object.values(strategyNcavLatest.list);
     }, [strategyNcavLatest?.list]);
 
+    if (isLoading) {
+        return (
+            <div className="py-40">
+                <NonIdealState
+                    icon={<Spinner intent={Intent.PRIMARY} size={50} />}
+                    title={<span className="font-black tracking-tight">데이터 동기화 중</span>}
+                    description="최신 마켓 데이터를 분석하여 리스트를 생성하고 있습니다."
+                />
+            </div>
+        );
+    }
+
+    if (!hasData) {
+        return (
+            <div className="py-20">
+                <NonIdealState
+                    icon={IconNames.SEARCH_TEMPLATE}
+                    title="분석 결과 없음"
+                    description="현재 필터 조건에 부합하는 종목이 시장에 존재하지 않습니다."
+                    action={
+                        <button
+                            onClick={() => dispatch(reqGetNcavLatest())}
+                            className="bp5-button bp5-intent-primary bp5-large bp5-minimal"
+                        >
+                            다시 분석하기
+                        </button>
+                    }
+                />
+            </div>
+        );
+    }
+
+    return (
+        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.5 }}>
+            <ResponsiveNCAV
+                strategies={strategyList as any}
+                activeStrategyId={currentStrategyId}
+                onStrategyChange={handleStrategyChange}
+            />
+        </motion.div>
+    );
+}
+
+/**
+ * [엔트리 포인트]
+ * 레이아웃을 구성하고 내부 컨텐츠를 Suspense로 래핑하여 CSR Bailout 에러를 방지합니다.
+ */
+export default function AlgorithmTrade() {
     return (
         <div className="flex flex-col w-full min-h-screen !bg-[#f8f9fa] dark:!bg-[#08080a]">
+            {/* Header: 정적 영역 */}
             <header className="pt-10 pb-6 px-6 md:pt-16 md:pb-12 max-w-[1400px] mx-auto w-full">
                 <motion.div
                     initial={{ opacity: 0, y: -10 }}
@@ -77,32 +130,16 @@ export default function AlgorithmTrade() {
                 </motion.div>
             </header>
 
+            {/* Main Content: Suspense Boundary 적용 */}
             <main className="flex-1 w-full max-w-[1400px] mx-auto px-4 md:px-6">
-                {isLoading ? (
-                    <div className="py-40">
-                        <NonIdealState
-                            icon={<Spinner intent={Intent.PRIMARY} size={50} />}
-                            title={<span className="font-black tracking-tight">데이터 동기화 중</span>}
-                            description="최신 마켓 데이터를 분석하여 리스트를 생성하고 있습니다."
-                        />
+                <Suspense fallback={
+                    <div className="py-40 flex flex-col items-center justify-center">
+                        <Spinner size={50} intent={Intent.PRIMARY} />
+                        <p className="mt-4 text-xs font-bold text-gray-400 animate-pulse">LOADING ENGINE...</p>
                     </div>
-                ) : hasData ? (
-                    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
-                        <ResponsiveNCAV
-                            strategies={strategyList as any}
-                            activeStrategyId={currentStrategyId}
-                            onStrategyChange={handleStrategyChange}
-                        />
-                    </motion.div>
-                ) : (
-                    <div className="py-20">
-                        <NonIdealState
-                            icon={IconNames.SEARCH_TEMPLATE}
-                            title="분석 결과 없음"
-                            description="현재 필터 조건에 부합하는 종목이 시장에 존재하지 않습니다."
-                        />
-                    </div>
-                )}
+                }>
+                    <AlgorithmTradeContent />
+                </Suspense>
             </main>
 
             <footer className="py-12 mt-20 border-t border-gray-200 dark:border-white/5 opacity-30 text-center">
