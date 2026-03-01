@@ -13,7 +13,26 @@ import {
     Tooltip,
     Legend,
 } from "recharts";
-import { formatKoreanCurrency } from "./page"; // 위에서 만든 함수 import
+
+// 차트 내부용 만원 단위 상세 변환 함수
+const formatValueFull = (value: number): string => {
+    if (value === 0) return "0원";
+    const trillion = Math.floor(value / 100000000);
+    const billion = Math.floor((value % 100000000) / 10000);
+    const million = Math.floor(value % 10000);
+
+    let result = "";
+    if (trillion > 0) result += `${trillion}조 `;
+    if (billion > 0) result += `${billion}억 `;
+    if (million > 0) {
+        result += `${million.toLocaleString()}만원`;
+    } else if (trillion > 0 || billion > 0) {
+        result += "원";
+    } else {
+        result = `${value.toLocaleString()}만원`;
+    }
+    return result.trim();
+};
 
 export interface ChartDataItem {
     year: number;
@@ -38,7 +57,7 @@ const ResultChart: FC<ResultChartProps> = ({ data, height }) => {
                 <ResponsiveContainer width="100%" height="100%">
                     <AreaChart
                         data={data}
-                        margin={{ top: 10, right: 0, bottom: 0, left: -25 }}
+                        margin={{ top: 10, right: 0, bottom: 0, left: -20 }}
                     >
                         <defs>
                             <linearGradient id="colorValue" x1="0" y1="0" x2="0" y2="1">
@@ -51,7 +70,7 @@ const ResultChart: FC<ResultChartProps> = ({ data, height }) => {
 
                         <XAxis
                             dataKey="year"
-                            tick={{ fontSize: 13, fill: "#888", fontWeight: 600 }}
+                            tick={{ fontSize: 12, fill: "#888", fontWeight: 600 }}
                             axisLine={false}
                             tickLine={false}
                             dy={10}
@@ -60,16 +79,16 @@ const ResultChart: FC<ResultChartProps> = ({ data, height }) => {
 
                         <YAxis
                             yAxisId="left"
-                            tick={{ fontSize: 11, fill: "#888" }}
+                            tick={{ fontSize: 10, fill: "#888" }}
                             axisLine={false}
                             tickLine={false}
-                            tickFormatter={(v) => `${(v / 10000).toFixed(0)}억`}
+                            tickFormatter={(v) => v >= 10000 ? `${(v / 10000).toFixed(1)}억` : `${v.toLocaleString()}만`}
                         />
 
                         <YAxis
                             yAxisId="right"
                             orientation="right"
-                            tick={{ fontSize: 11, fill: "#f59e0b" }}
+                            tick={{ fontSize: 10, fill: "#f59e0b" }}
                             axisLine={false}
                             tickLine={false}
                             tickFormatter={(value) => `${value}%`}
@@ -77,16 +96,17 @@ const ResultChart: FC<ResultChartProps> = ({ data, height }) => {
 
                         <Tooltip
                             contentStyle={{
-                                backgroundColor: "rgba(0, 0, 0, 0.8)",
-                                border: "1px solid #333",
+                                backgroundColor: "rgba(0, 0, 0, 0.85)",
+                                border: "1px solid #444",
                                 borderRadius: "10px",
-                                padding: "10px",
-                                fontSize: "14px"
+                                padding: "12px",
+                                fontSize: "15px",
+                                color: "#fff"
                             }}
-                            itemStyle={{ color: "#fff" }}
+                            itemStyle={{ color: "#fff", padding: "4px 0" }}
                             formatter={(value: any, name: string) => {
                                 if (name === "수익률") return [`${value}%`, name];
-                                return [formatKoreanCurrency(value), name];
+                                return [formatValueFull(value), name];
                             }}
                         />
 
@@ -94,7 +114,7 @@ const ResultChart: FC<ResultChartProps> = ({ data, height }) => {
                             verticalAlign="top"
                             align="right"
                             iconSize={10}
-                            wrapperStyle={{ paddingBottom: "15px", fontSize: "12px", fontWeight: "bold" }}
+                            wrapperStyle={{ paddingBottom: "20px", fontSize: "12px", fontWeight: "bold" }}
                         />
 
                         <Area

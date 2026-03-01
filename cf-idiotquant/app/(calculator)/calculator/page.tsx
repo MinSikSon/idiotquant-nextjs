@@ -20,34 +20,29 @@ import {
 } from "@blueprintjs/core";
 import { IconNames } from "@blueprintjs/icons";
 import { CalculatorIcon } from "@heroicons/react/24/outline";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion } from "framer-motion";
 import ResultChart, { ChartDataItem } from "./ResultChart";
 
-/**
- * x조 x억 x천만원 단위 변환 함수
- * @param value 만원 단위의 숫자
- */
-export const formatKoreanCurrency = (value: number): string => {
+// 금액 변환 함수: 만원 단위를 "x억 y,yyy만원" 형식으로 변환
+const formatKoreanCurrencyFull = (value: number): string => {
     if (value === 0) return "0원";
 
-    let result = "";
-    const trillion = Math.floor(value / 100000000); // 조 (만원 * 1억 = 조)
-    const billion = Math.floor((value % 100000000) / 10000); // 억
-    const tenMillion = Math.floor((value % 10000) / 1000); // 천만
-    const million = value % 1000; // 나머지 만원 단위
+    const trillion = Math.floor(value / 100000000);
+    const billion = Math.floor((value % 100000000) / 10000);
+    const million = Math.floor(value % 10000);
 
+    let result = "";
     if (trillion > 0) result += `${trillion}조 `;
     if (billion > 0) result += `${billion}억 `;
-    if (tenMillion > 0) result += `${tenMillion}천`;
-    if (million > 0 && tenMillion === 0 && billion === 0 && trillion === 0) {
-        result += `${million}만`;
-    } else if (tenMillion > 0 || billion > 0 || trillion > 0) {
-        result += "만원";
-    } else {
+    if (million > 0) {
+        result += `${million.toLocaleString()}만원`;
+    } else if (trillion > 0 || billion > 0) {
         result += "원";
+    } else {
+        result = `${value.toLocaleString()}원`;
     }
 
-    return result.trim() || "0원";
+    return result.trim();
 };
 
 export default function Calculator() {
@@ -109,9 +104,15 @@ export default function Calculator() {
     };
 
     return (
-        // 배경을 다시 밝은 회색조(bg-zinc-50)로 돌리고 다크모드일 때만 검은색 적용
         <div className="bg-zinc-50 dark:bg-[#070707] min-h-screen p-3 md:p-6 transition-colors duration-300">
-            <div className="max-w-7xl mx-auto space-4 md:space-6">
+            <div className="max-w-7xl mx-auto space-y-4 md:space-y-6">
+                <header className="flex items-center py-1 justify-center gap-3">
+                    <div className="bg-blue-600/10 p-3 rounded-xl">
+                        <CalculatorIcon className="h-8 w-8 text-blue-500" />
+                    </div>
+                    <H2 className="font-black tracking-tighter text-zinc-900 dark:!text-white !m-0 text-2xl md:text-3xl uppercase">Compound Calc</H2>
+                </header>
+
                 <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 md:gap-6">
                     <div className="lg:col-span-5 space-y-4">
                         <Section title="투자 설정" icon={IconNames.SETTINGS} className="!rounded-xl border border-zinc-200 dark:border-zinc-800 shadow-sm">
@@ -120,7 +121,7 @@ export default function Calculator() {
                                     <div className="flex justify-between items-center px-1">
                                         <label className="font-bold text-zinc-500 dark:text-zinc-400 text-sm uppercase">초기 자산</label>
                                         <span className="text-blue-600 dark:text-blue-400 font-bold text-lg">
-                                            {formatKoreanCurrency(investmentAmount)}
+                                            {formatKoreanCurrencyFull(investmentAmount)}
                                         </span>
                                     </div>
                                     <NumericInput
@@ -141,14 +142,14 @@ export default function Calculator() {
 
                                 <div className="space-y-8 py-2">
                                     <div className="space-y-3">
-                                        <div className="flex justify-between items-center">
+                                        <div className="flex justify-between items-center px-1">
                                             <label className="font-bold text-zinc-500 dark:text-zinc-400 text-sm uppercase">투자 기간</label>
                                             <span className="text-blue-500 text-xl font-black">{numberOfYears}년</span>
                                         </div>
                                         <Slider min={1} max={50} stepSize={1} labelStepSize={10} onChange={setNumberOfYears} value={numberOfYears} />
                                     </div>
                                     <div className="space-y-3">
-                                        <div className="flex justify-between items-center">
+                                        <div className="flex justify-between items-center px-1">
                                             <label className="font-bold text-zinc-500 dark:text-zinc-400 text-sm uppercase">연 수익률</label>
                                             <span className="text-green-600 dark:text-green-400 text-xl font-black">{interestRate}%</span>
                                         </div>
@@ -161,7 +162,7 @@ export default function Calculator() {
                                 <div className="space-y-3">
                                     <div className="flex justify-between items-center px-1">
                                         <label className="font-bold text-zinc-500 dark:text-zinc-400 text-sm uppercase">월 추가 적립</label>
-                                        <span className="text-zinc-600 dark:text-zinc-400 font-bold">{formatKoreanCurrency(contributions)}</span>
+                                        <span className="text-zinc-600 dark:text-zinc-400 font-bold">{formatKoreanCurrencyFull(contributions)}</span>
                                     </div>
                                     <NumericInput
                                         fill large
@@ -179,13 +180,13 @@ export default function Calculator() {
                                 <div className="flex flex-col gap-3">
                                     <span className="text-xs font-bold uppercase opacity-60 dark:!text-white">최종 평가액</span>
                                     <span className="text-2xl md:text-4xl font-black tracking-tighter dark:!text-white">
-                                        {formatKoreanCurrency(finalValue)}
+                                        {formatKoreanCurrencyFull(finalValue)}
                                     </span>
                                     <div className="h-px bg-black/10 dark:bg-white/10 w-full" />
                                     <div className="grid grid-cols-2 gap-4 items-center">
                                         <div className="flex flex-col">
                                             <span className="opacity-50 text-[10px] uppercase dark:!text-white">누적 원금</span>
-                                            <span className="text-lg font-bold dark:!text-white">{formatKoreanCurrency(totalInvestment)}</span>
+                                            <span className="text-lg font-bold dark:!text-white">{formatKoreanCurrencyFull(totalInvestment)}</span>
                                         </div>
                                         <div className="flex flex-col items-end">
                                             <span className="opacity-50 text-[10px] uppercase dark:!text-white">최종 수익률</span>
@@ -209,7 +210,7 @@ export default function Calculator() {
                     </div>
 
                     <div className="lg:col-span-7 space-y-4">
-                        <Card elevation={Elevation.ZERO} className="!rounded-xl overflow-hidden !p-0 border border-zinc-200 dark:border-zinc-800 bg-white dark:!bg-zinc-950">
+                        <Card elevation={Elevation.ZERO} className="!rounded-xl overflow-hidden !p-0 border border-zinc-200 dark:border-zinc-800 bg-white dark:!bg-zinc-950 shadow-sm">
                             <div className="p-4 border-b border-zinc-100 dark:border-zinc-900 flex justify-between items-center">
                                 <Text className="!m-0 font-bold text-zinc-900 dark:!text-white text-base">자산 성장 및 수익률 추이</Text>
                                 <Icon icon={IconNames.TIMELINE_AREA_CHART} className="text-blue-500" size={18} />
@@ -241,7 +242,7 @@ export default function Calculator() {
                                                     </span>
                                                 </td>
                                                 <td className="text-right pr-4 align-middle font-bold text-blue-600 dark:text-blue-400">
-                                                    {formatKoreanCurrency(res.finalValue)}
+                                                    {formatKoreanCurrencyFull(res.finalValue)}
                                                 </td>
                                             </tr>
                                         ))}
@@ -251,7 +252,7 @@ export default function Calculator() {
                         </Section>
                     </div>
                 </div>
-            </div >
-        </div >
+            </div>
+        </div>
     );
 }
