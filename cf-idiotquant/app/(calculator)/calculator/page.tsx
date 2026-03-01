@@ -1,14 +1,11 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import {
     Button,
     Card,
     Elevation,
-    H2,
-    H5,
     Icon,
-    InputGroup,
     NumericInput,
     Section,
     SectionCard,
@@ -17,83 +14,77 @@ import {
     Divider,
     Callout,
     Intent,
+    Slider,
+    Tag,
+    H2,
 } from "@blueprintjs/core";
 import { IconNames } from "@blueprintjs/icons";
 import { CalculatorIcon } from "@heroicons/react/24/outline";
+import { motion, AnimatePresence } from "framer-motion";
 import ResultChart, { ChartDataItem } from "./ResultChart";
-import { Util } from "@/components/util";
 
-export interface CalculationResult {
-    investmentAmount: number;
-    numberOfYears: number;
-    interestRate: number;
-    compounding: number;
-    contributions: number;
-    frequency: number;
-    inflationRate: number;
-    totalInvestment: number;
-    finalValue: number;
-    finalRateOfReturn: number;
-    chartData: ChartDataItem[];
-}
+/**
+ * x조 x억 x천만원 단위 변환 함수
+ * @param value 만원 단위의 숫자
+ */
+export const formatKoreanCurrency = (value: number): string => {
+    if (value === 0) return "0원";
+
+    let result = "";
+    const trillion = Math.floor(value / 100000000); // 조 (만원 * 1억 = 조)
+    const billion = Math.floor((value % 100000000) / 10000); // 억
+    const tenMillion = Math.floor((value % 10000) / 1000); // 천만
+    const million = value % 1000; // 나머지 만원 단위
+
+    if (trillion > 0) result += `${trillion}조 `;
+    if (billion > 0) result += `${billion}억 `;
+    if (tenMillion > 0) result += `${tenMillion}천`;
+    if (million > 0 && tenMillion === 0 && billion === 0 && trillion === 0) {
+        result += `${million}만`;
+    } else if (tenMillion > 0 || billion > 0 || trillion > 0) {
+        result += "만원";
+    } else {
+        result += "원";
+    }
+
+    return result.trim() || "0원";
+};
 
 export default function Calculator() {
-    const InterestRateBenchmarkTermPerHour = {
-        eDAILY365: 24,
-        eMONTHLY: 730,
-        eQUARTERLY: 2190,
-        eANNUALLY: 8760,
-    } as const;
-
-    const ContributionRateBenchmarkTermPerHour = {
-        eWEEKLY: 168,
-        eBIWEEKLY: 336,
-        eSEMIMONTHLY: 1460,
-        eMONTHLY: 730,
-        eQUARTERLY: 2190,
-        eSEMIANNUALLY: 17520,
-        eANNUALLY: 8760,
-    } as const;
-
-    // 입력값 상태
     const [investmentAmount, setInvestmentAmount] = useState<number>(5000);
-    const [numberOfYears, setNumberOfYears] = useState<number>(12);
-    const [interestRate, setInterestRate] = useState<number>(24);
-    const [compounding, setCompounding] = useState<number>(InterestRateBenchmarkTermPerHour.eANNUALLY);
-    const [contributions, setContributions] = useState<number>(300);
-    const [frequency, setFrequency] = useState<number>(ContributionRateBenchmarkTermPerHour.eMONTHLY);
-    const [inflationRate, setInflationRate] = useState<number>(0);
+    const [numberOfYears, setNumberOfYears] = useState<number>(10);
+    const [interestRate, setInterestRate] = useState<number>(15);
+    const [contributions, setContributions] = useState<number>(100);
 
-    // 계산 결과 상태
     const [totalInvestment, setTotalInvestment] = useState<number>(0);
     const [finalValue, setFinalValue] = useState<number>(0);
     const [finalRateOfReturn, setFinalRateOfReturn] = useState<number>(0);
     const [chartData, setChartData] = useState<ChartDataItem[]>([]);
-    const [resultList, setResultList] = useState<CalculationResult[]>([]);
+    const [resultList, setResultList] = useState<any[]>([]);
 
-    // 계산 로직
-    const calculateResult = () => {
+    const calculateResult = useCallback(() => {
         const years = Math.max(0, Math.floor(numberOfYears));
-        const hoursPerYear = 365 * 24;
+        const hoursPerYear = 8760;
         const totalHours = years * hoursPerYear;
+        const frequency = 730;
+        const compounding = 8760;
 
-        let principal = Number(investmentAmount) * 10000;
+        let principal = investmentAmount;
         let additional = 0;
-        let cumulativeInvestment = Number(investmentAmount) * 10000;
+        let cumulativeInvestment = investmentAmount;
 
         const yearlySnapshots: ChartDataItem[] = [{ year: 0, totalValue: principal, profitRate: 0 }];
 
         for (let hour = 1; hour <= totalHours; hour++) {
-            if (frequency > 0 && hour % frequency === 0) {
-                additional += contributions * 10000;
-                cumulativeInvestment += contributions * 10000;
+            if (hour % frequency === 0) {
+                additional += contributions;
+                cumulativeInvestment += contributions;
             }
-            if (compounding > 0 && hour % compounding === 0) {
-                const netRate = (interestRate - inflationRate) / 100;
-                principal *= 1 + netRate;
-                additional *= 1 + netRate;
-            }
-            if (hour % hoursPerYear === 0) {
+            if (hour % compounding === 0) {
+                const netRate = interestRate / 100;
+                principal *= (1 + netRate);
+                additional *= (1 + netRate);
+
                 const yearIndex = hour / hoursPerYear;
                 const totalVal = Math.round(principal + additional);
                 yearlySnapshots.push({
@@ -105,196 +96,162 @@ export default function Calculator() {
         }
 
         const finalTotal = Math.round(principal + additional);
-        setTotalInvestment(Math.round(cumulativeInvestment));
+        setTotalInvestment(cumulativeInvestment);
         setFinalValue(finalTotal);
-        setFinalRateOfReturn(cumulativeInvestment === 0 ? 0 : Number(((finalTotal / cumulativeInvestment) * 100 - 100).toFixed(2)));
+        setFinalRateOfReturn(cumulativeInvestment === 0 ? 0 : Number(((finalTotal / cumulativeInvestment - 1) * 100).toFixed(2)));
         setChartData(yearlySnapshots);
-    };
+    }, [investmentAmount, numberOfYears, interestRate, contributions]);
 
-    useEffect(() => {
-        calculateResult();
-    }, [investmentAmount, numberOfYears, interestRate, compounding, contributions, frequency, inflationRate]);
+    useEffect(() => { calculateResult(); }, [calculateResult]);
 
     const registerResult = () => {
-        const newResult: CalculationResult = {
-            investmentAmount, numberOfYears, interestRate, compounding,
-            contributions, frequency, inflationRate, totalInvestment,
-            finalValue, finalRateOfReturn, chartData,
-        };
-        setResultList([newResult, ...resultList]);
+        setResultList([{ investmentAmount, numberOfYears, interestRate, contributions, totalInvestment, finalValue, finalRateOfReturn }, ...resultList.slice(0, 9)]);
     };
 
     return (
-        <div className="bp5-dark bg-zinc-50 dark:!bg-black min-h-screen p-4 md:p-8">
-            <div className="max-w-7xl mx-auto">
-                <header className="flex items-center justify-center gap-3 mb-8">
-                    <CalculatorIcon className="h-8 w-8 !text-blue-500" />
-                    <Text className="text-3xl font-semibold m-0 tracking-tighter uppercase justify-center text-center dark:!text-white">수익률 계산기</Text>
-                </header>
-
-                <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-                    {/* Left Panel: Inputs */}
+        // 배경을 다시 밝은 회색조(bg-zinc-50)로 돌리고 다크모드일 때만 검은색 적용
+        <div className="bg-zinc-50 dark:bg-[#070707] min-h-screen p-3 md:p-6 transition-colors duration-300">
+            <div className="max-w-7xl mx-auto space-4 md:space-6">
+                <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 md:gap-6">
                     <div className="lg:col-span-5 space-y-4">
-                        <Section title="투자 설정" icon={IconNames.SETTINGS} compact className="dark:!bg-zinc-400">
-                            <SectionCard className="space-y-6 dark:!bg-black">
-                                {/* 액 */}
-                                <div className="space-y-2">
-                                    <div className="flex justify-between items-end">
-                                        <Text className="font-bold ">투자 시작 금액</Text>
-                                        <Text className="text-blue-500 text-base font-mono">
-                                            {Util.UnitConversion(investmentAmount * 10000, true)}
-                                        </Text>
+                        <Section title="투자 설정" icon={IconNames.SETTINGS} className="!rounded-xl border border-zinc-200 dark:border-zinc-800 shadow-sm">
+                            <SectionCard className="p-4 md:p-6 space-y-6 bg-white dark:!bg-zinc-900/50">
+                                <div className="space-y-3">
+                                    <div className="flex justify-between items-center px-1">
+                                        <label className="font-bold text-zinc-500 dark:text-zinc-400 text-sm uppercase">초기 자산</label>
+                                        <span className="text-blue-600 dark:text-blue-400 font-bold text-lg">
+                                            {formatKoreanCurrency(investmentAmount)}
+                                        </span>
                                     </div>
-                                    <ButtonGroup fill minimal className="mb-2">
-                                        {[10, 100, 500, 1000].map((amt) => (
-                                            <Button className="dark:!text-white" key={amt} onClick={() => setInvestmentAmount((p) => p + amt)}>+{amt}만</Button>
-                                        ))}
-                                        <Button className="!text-red-500" onClick={() => setInvestmentAmount(0)}>초기화</Button>
-                                    </ButtonGroup>
                                     <NumericInput
-                                        fill
+                                        fill large
                                         value={investmentAmount}
                                         onValueChange={(v) => setInvestmentAmount(v)}
-                                        leftIcon={IconNames.WON}
-                                        placeholder="시작 금액(만원)"
-                                        rightElement={<Text className="mr-2 text-center justify-center pt-0.5">만</Text>}
+                                        className="!text-lg font-bold !rounded-lg dark:!text-white"
+                                        rightElement={<Tag minimal className="mr-2 text-base">만원</Tag>}
                                     />
-                                </div>
-
-                                <Divider className="dark:!bg-white" />
-
-                                {/* 기간 및 이자율 */}
-                                <div className="grid grid-cols-2 gap-4">
-                                    <div className="space-y-2">
-                                        <Text className="font-bold">투자 기간 (년)</Text>
-                                        <NumericInput
-                                            fill
-                                            value={numberOfYears}
-                                            onValueChange={(v) => setNumberOfYears(v)}
-                                            min={1}
-                                        />
-                                    </div>
-                                    <div className="space-y-2">
-                                        <Text className="font-bold">연 이자율 (%)</Text>
-                                        <NumericInput
-                                            fill
-                                            value={interestRate}
-                                            onValueChange={(v) => setInterestRate(v)}
-                                        />
-                                    </div>
-                                </div>
-
-                                {/* 추가 납입금 */}
-                                <div className="space-y-2">
-                                    <div className="flex justify-between items-end">
-                                        <Text className="font-bold">매달 추가 납입금</Text>
-                                        <Text className="text-blue-500 text-base font-mono">
-                                            {Util.UnitConversion(contributions * 10000, true)}
-                                        </Text>
-                                    </div>
-                                    <ButtonGroup fill minimal className="mb-2">
-                                        {[10, 100, 500, 1000].map((amt) => (
-                                            <Button className="dark:!text-white" key={amt} onClick={() => setContributions((p) => p + amt)}>+{amt}만</Button>
+                                    <ButtonGroup fill minimal className="gap-2">
+                                        {[100, 500, 1000].map((amt) => (
+                                            <Button key={amt} className="!text-base h-10 font-semibold dark:!text-white" onClick={() => setInvestmentAmount((p) => p + amt)}>+{amt}만</Button>
                                         ))}
-                                        <Button className="!text-red-500" onClick={() => setContributions(0)}>초기화</Button>
                                     </ButtonGroup>
+                                </div>
+
+                                <Divider className="!my-2 opacity-50 dark:opacity-20" />
+
+                                <div className="space-y-8 py-2">
+                                    <div className="space-y-3">
+                                        <div className="flex justify-between items-center">
+                                            <label className="font-bold text-zinc-500 dark:text-zinc-400 text-sm uppercase">투자 기간</label>
+                                            <span className="text-blue-500 text-xl font-black">{numberOfYears}년</span>
+                                        </div>
+                                        <Slider min={1} max={50} stepSize={1} labelStepSize={10} onChange={setNumberOfYears} value={numberOfYears} />
+                                    </div>
+                                    <div className="space-y-3">
+                                        <div className="flex justify-between items-center">
+                                            <label className="font-bold text-zinc-500 dark:text-zinc-400 text-sm uppercase">연 수익률</label>
+                                            <span className="text-green-600 dark:text-green-400 text-xl font-black">{interestRate}%</span>
+                                        </div>
+                                        <Slider min={-10} max={100} stepSize={1} labelStepSize={20} intent={interestRate > 0 ? Intent.SUCCESS : Intent.DANGER} onChange={setInterestRate} value={interestRate} />
+                                    </div>
+                                </div>
+
+                                <Divider className="!my-2 opacity-50 dark:opacity-20" />
+
+                                <div className="space-y-3">
+                                    <div className="flex justify-between items-center px-1">
+                                        <label className="font-bold text-zinc-500 dark:text-zinc-400 text-sm uppercase">월 추가 적립</label>
+                                        <span className="text-zinc-600 dark:text-zinc-400 font-bold">{formatKoreanCurrency(contributions)}</span>
+                                    </div>
                                     <NumericInput
-                                        fill
+                                        fill large
                                         value={contributions}
                                         onValueChange={(v) => setContributions(v)}
-                                        placeholder="매달 추가금(만원)"
-                                        leftIcon={IconNames.WON}
-                                        rightElement={<Text className="mr-2 text-center justify-center pt-0.5">만</Text>}
-                                    />
-                                </div>
-
-                                <div className="space-y-2">
-                                    <Text className="font-bold text-base">기대 물가상승률 (%)</Text>
-                                    <NumericInput
-                                        fill
-                                        value={inflationRate}
-                                        onValueChange={(v) => setInflationRate(v)}
+                                        className="!text-lg font-bold !rounded-lg dark:!text-white"
+                                        rightElement={<Tag minimal className="mr-2 text-base">만원</Tag>}
                                     />
                                 </div>
                             </SectionCard>
                         </Section>
 
-                        {/* Results Summary Area */}
-                        <Callout intent={Intent.SUCCESS} icon={IconNames.TRENDING_UP} title="계산 결과 요약">
-                            <div className="grid grid-cols-1 gap-2 mt-2 font-mono">
-                                <div className="flex justify-between">
-                                    <span>최종 수입금:</span>
-                                    <span className="font-bold text-lg">{finalValue.toLocaleString()} 원</span>
+                        <motion.div layout>
+                            <Callout intent={finalRateOfReturn >= 0 ? Intent.SUCCESS : Intent.DANGER} className="!rounded-xl shadow-lg !p-5">
+                                <div className="flex flex-col gap-3">
+                                    <span className="text-xs font-bold uppercase opacity-60 dark:!text-white">최종 평가액</span>
+                                    <span className="text-2xl md:text-4xl font-black tracking-tighter dark:!text-white">
+                                        {formatKoreanCurrency(finalValue)}
+                                    </span>
+                                    <div className="h-px bg-black/10 dark:bg-white/10 w-full" />
+                                    <div className="grid grid-cols-2 gap-4 items-center">
+                                        <div className="flex flex-col">
+                                            <span className="opacity-50 text-[10px] uppercase dark:!text-white">누적 원금</span>
+                                            <span className="text-lg font-bold dark:!text-white">{formatKoreanCurrency(totalInvestment)}</span>
+                                        </div>
+                                        <div className="flex flex-col items-end">
+                                            <span className="opacity-50 text-[10px] uppercase dark:!text-white">최종 수익률</span>
+                                            <span className={`text-xl font-black ${finalRateOfReturn >= 0 ? 'text-green-600 dark:text-green-300' : 'text-red-600 dark:text-red-300'}`}>
+                                                {finalRateOfReturn > 0 && '+'}{finalRateOfReturn}%
+                                            </span>
+                                        </div>
+                                    </div>
                                 </div>
-                                <div className="flex justify-between opacity-80">
-                                    <span>누적 투자금:</span>
-                                    <span>{totalInvestment.toLocaleString()} 원</span>
-                                </div>
-                                <div className="flex justify-between">
-                                    <span>최종 수익률:</span>
-                                    <span className="text-green-600 dark:!text-green-400 font-bold">{finalRateOfReturn}%</span>
-                                </div>
-                            </div>
-                        </Callout>
+                            </Callout>
+                        </motion.div>
 
                         <Button
-                            fill
-                            large
+                            fill large
                             intent={Intent.PRIMARY}
-                            icon={IconNames.ADD}
                             onClick={registerResult}
-                            className="py-3"
+                            className="!rounded-xl py-4 !text-lg font-black shadow-lg"
                         >
-                            히스토리에 등록하기
+                            시뮬레이션 저장
                         </Button>
                     </div>
 
-                    {/* Right Panel: Chart & History */}
                     <div className="lg:col-span-7 space-y-4">
-                        <Card elevation={Elevation.TWO} className="rounded-xl overflow-hidden !p-0 !m-0 dark:!bg-zinc-900">
-                            <div className="p-4 border-b dark:border-zinc-800">
-                                <Text className="m-0 text-xl font-bold">자산 성장 그래프</Text>
+                        <Card elevation={Elevation.ZERO} className="!rounded-xl overflow-hidden !p-0 border border-zinc-200 dark:border-zinc-800 bg-white dark:!bg-zinc-950">
+                            <div className="p-4 border-b border-zinc-100 dark:border-zinc-900 flex justify-between items-center">
+                                <Text className="!m-0 font-bold text-zinc-900 dark:!text-white text-base">자산 성장 및 수익률 추이</Text>
+                                <Icon icon={IconNames.TIMELINE_AREA_CHART} className="text-blue-500" size={18} />
                             </div>
-                            <ResultChart data={chartData} height={"h-96"} />
+                            <div className="p-1 md:p-3">
+                                <ResultChart data={chartData} height={"h-[350px] md:h-[500px]"} />
+                            </div>
                         </Card>
 
-                        <Section title="히스토리" icon={IconNames.HISTORY} collapsible>
-                            <SectionCard className="p-0 overflow-x-auto dark:!bg-black">
-                                <table className="bp5-html-table bp5-html-table-striped bp5-interactive w-full text-base">
+                        <Section title="저장된 시나리오" icon={IconNames.HISTORY} collapsible className="!rounded-xl border border-zinc-200 dark:border-zinc-800 shadow-sm">
+                            <SectionCard className="!p-0 overflow-hidden bg-white dark:!bg-zinc-900/20">
+                                <table className="bp5-html-table bp5-html-table-striped bp5-interactive w-full">
                                     <thead>
-                                        <tr>
-                                            <th>시작 금액</th>
-                                            <th>기간</th>
-                                            <th>수익률</th>
-                                            <th className="text-right">최종 자산</th>
+                                        <tr className="text-[11px] uppercase tracking-wider bg-zinc-50 dark:bg-zinc-800/50">
+                                            <th className="py-3 px-4 dark:!text-white">설정 (원금/기간)</th>
+                                            <th className="text-right dark:!text-white">수익률</th>
+                                            <th className="text-right pr-4 dark:!text-white">최종 평가액</th>
                                         </tr>
                                     </thead>
-                                    <tbody>
+                                    <tbody className="text-sm md:text-base font-medium">
                                         {resultList.map((res, idx) => (
-                                            <tr key={idx} onClick={() => {
-                                                setInvestmentAmount(res.investmentAmount);
-                                                setNumberOfYears(res.numberOfYears);
-                                                setInterestRate(res.interestRate);
-                                                setContributions(res.contributions);
-                                            }}>
-                                                <td>{res.investmentAmount.toLocaleString()}만</td>
-                                                <td>{res.numberOfYears}년</td>
-                                                <td className="text-green-500 font-bold">{res.finalRateOfReturn}%</td>
-                                                <td className="text-right font-mono">{Util.UnitConversion(res.finalValue, true)}</td>
+                                            <tr key={idx} className="cursor-pointer">
+                                                <td className="py-4 px-4 align-middle dark:!text-white">
+                                                    {res.investmentAmount.toLocaleString()}만 / {res.numberOfYears}년
+                                                </td>
+                                                <td className="text-right align-middle">
+                                                    <span className={res.finalRateOfReturn >= 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}>
+                                                        {res.finalRateOfReturn}%
+                                                    </span>
+                                                </td>
+                                                <td className="text-right pr-4 align-middle font-bold text-blue-600 dark:text-blue-400">
+                                                    {formatKoreanCurrency(res.finalValue)}
+                                                </td>
                                             </tr>
                                         ))}
-                                        {resultList.length === 0 && (
-                                            <tr>
-                                                <td colSpan={4} className="text-center py-8 opacity-50">저장된 기록이 없습니다.</td>
-                                            </tr>
-                                        )}
                                     </tbody>
                                 </table>
                             </SectionCard>
                         </Section>
                     </div>
                 </div>
-            </div>
-        </div>
+            </div >
+        </div >
     );
 }

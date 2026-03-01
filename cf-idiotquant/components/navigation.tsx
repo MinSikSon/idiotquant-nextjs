@@ -15,34 +15,32 @@ import {
     Classes,
     Icon,
     Text,
+    Intent,
 } from "@blueprintjs/core";
 import { IconNames } from "@blueprintjs/icons";
 
-import { useAppSelector } from "@/lib/hooks";
-import { selectKakaoTotal } from "@/lib/features/kakao/kakaoSlice";
 import ThemeChanger from "@/components/theme_changer";
-import { useSession, signIn, signOut } from "next-auth/react";
-import { redirect } from "next/navigation";
+import { useSession } from "next-auth/react";
 
 const DEBUG = false;
 
 export function NavbarWithSimpleLinks() {
     const { data: session, status } = useSession();
-    if (DEBUG) console.log(`[NavbarWithSimpleLinks]`, `session:`, session);
-    if (DEBUG) console.log(`[NavbarWithSimpleLinks]`, `status:`, status);
     const pathname = usePathname();
     const [isDrawerOpen, setIsDrawerOpen] = useState(false);
     const [visible, setVisible] = useState(true);
     const lastScrollY = useRef(0);
 
-    // 스크롤 감지 로직 (Navbar 숨김/노출)
+    // 현재 경로가 메뉴의 경로와 일치하는지 확인하는 함수
+    const isActive = (path: string) => pathname === path;
+
     useEffect(() => {
         const handleScroll = () => {
             const currentScrollY = window.scrollY;
             if (currentScrollY > lastScrollY.current && currentScrollY > 50) {
-                setVisible(false); // 스크롤 내릴 때 숨김
+                setVisible(false);
             } else {
-                setVisible(true); // 스크롤 올릴 때 노출
+                setVisible(true);
             }
             lastScrollY.current = currentScrollY;
         };
@@ -51,7 +49,6 @@ export function NavbarWithSimpleLinks() {
         return () => window.removeEventListener("scroll", handleScroll);
     }, []);
 
-    // 메뉴 닫기 핸들러
     const closeDrawer = () => setIsDrawerOpen(false);
 
     return (
@@ -70,22 +67,49 @@ export function NavbarWithSimpleLinks() {
                     </Navbar.Group>
 
                     <Navbar.Group align={Alignment.RIGHT}>
-                        {/* 데스크탑 메뉴 (MD 이상 노출) */}
+                        {/* 데스크탑 메뉴: active 속성 및 스타일 적용 */}
                         <div className="hidden md:flex gap-1 mr-4">
-                            <Link href="/search"><Button className="dark:!text-white" minimal icon={IconNames.SEARCH} text="적정 주가 분석" /></Link>
-                            <Link href="/calculator"><Button className="dark:!text-white" minimal icon={IconNames.CALCULATOR} text="수익률 계산기" /></Link>
-                            <Link href="/algorithm-trade"><Button className="dark:!text-white" minimal icon={IconNames.FILTER_LIST} text="종목 추천" /></Link>
+                            <Link href="/search">
+                                <Button
+                                    className={`dark:!text-white ${isActive('/search') ? '!bg-blue-600/10 !text-blue-600' : ''}`}
+                                    minimal
+                                    active={isActive('/search')}
+                                    icon={IconNames.SEARCH}
+                                    text="적정 주가 분석"
+                                />
+                            </Link>
+                            <Link href="/calculator">
+                                <Button
+                                    className={`dark:!text-white ${isActive('/calculator') ? '!bg-blue-600/10 !text-blue-600' : ''}`}
+                                    minimal
+                                    active={isActive('/calculator')}
+                                    icon={IconNames.CALCULATOR}
+                                    text="수익률 계산기"
+                                />
+                            </Link>
+                            <Link href="/algorithm-trade">
+                                <Button
+                                    className={`dark:!text-white ${isActive('/algorithm-trade') ? '!bg-blue-600/10 !text-blue-600' : ''}`}
+                                    minimal
+                                    active={isActive('/algorithm-trade')}
+                                    icon={IconNames.FILTER_LIST}
+                                    text="종목 추천"
+                                />
+                            </Link>
                             {session?.user?.name === process.env.NEXT_PUBLIC_MASTER &&
                                 <>
-                                    <Link href="/balance-kr"><Button className="dark:!text-white" minimal icon={IconNames.DOLLAR} text="kr" /></Link>
-                                    <Link href="/balance-us"><Button className="dark:!text-white" minimal icon={IconNames.DOLLAR} text="us" /></Link>
+                                    <Link href="/balance-kr">
+                                        <Button className={`dark:!text-white ${isActive('/balance-kr') ? '!bg-blue-600/10' : ''}`} minimal active={isActive('/balance-kr')} icon={IconNames.DOLLAR} text="kr" />
+                                    </Link>
+                                    <Link href="/balance-us">
+                                        <Button className={`dark:!text-white ${isActive('/balance-us') ? '!bg-blue-600/10' : ''}`} minimal active={isActive('/balance-us')} icon={IconNames.DOLLAR} text="us" />
+                                    </Link>
                                 </>
                             }
                         </div>
 
                         <Divider className="hidden md:block mx-2" />
 
-                        {/* 모바일 햄버거 버튼 */}
                         <Button
                             minimal
                             icon={IconNames.MENU}
@@ -93,7 +117,6 @@ export function NavbarWithSimpleLinks() {
                             className="md:hidden"
                         />
 
-                        {/* 테마 체인저 (데스크탑 상시 노출 가능) */}
                         <div className="hidden md:block">
                             <ThemeChanger />
                         </div>
@@ -101,7 +124,6 @@ export function NavbarWithSimpleLinks() {
                 </Navbar>
             </div>
 
-            {/* 모바일 전용 Drawer (사이드 메뉴) */}
             <Drawer
                 isOpen={isDrawerOpen}
                 onClose={closeDrawer}
@@ -114,28 +136,33 @@ export function NavbarWithSimpleLinks() {
                 <div className={Classes.DRAWER_BODY}>
                     <Menu className="!bg-transparent border-none">
                         <Text className="px-3 py-2 opacity-50 font-bold text-[10px] uppercase">Main Services</Text>
+
+                        {/* 모바일 메뉴: selected 속성 적용 */}
                         <Link href="/search" onClick={closeDrawer}>
                             <MenuItem
+                                selected={isActive('/search')}
                                 tagName="div"
                                 icon={IconNames.SEARCH}
                                 text="적정 주가 분석"
-                                labelElement={<Icon icon={IconNames.CHEVRON_RIGHT} />}
+                                labelElement={isActive('/search') ? <Tag intent={Intent.PRIMARY} minimal>Active</Tag> : <Icon icon={IconNames.CHEVRON_RIGHT} />}
                             />
                         </Link>
                         <Link href="/calculator" onClick={closeDrawer}>
                             <MenuItem
+                                selected={isActive('/calculator')}
                                 tagName="div"
                                 icon={IconNames.CALCULATOR}
                                 text="수익률 계산기"
-                                labelElement={<Icon icon={IconNames.CHEVRON_RIGHT} />}
+                                labelElement={isActive('/calculator') ? <Tag intent={Intent.PRIMARY} minimal>Active</Tag> : <Icon icon={IconNames.CHEVRON_RIGHT} />}
                             />
                         </Link>
                         <Link href="/algorithm-trade" onClick={closeDrawer}>
                             <MenuItem
+                                selected={isActive('/algorithm-trade')}
                                 tagName="div"
                                 icon={IconNames.FILTER_LIST}
                                 text="종목 추천"
-                                labelElement={<Icon icon={IconNames.CHEVRON_RIGHT} />}
+                                labelElement={isActive('/algorithm-trade') ? <Tag intent={Intent.PRIMARY} minimal>Active</Tag> : <Icon icon={IconNames.CHEVRON_RIGHT} />}
                             />
                         </Link>
 
@@ -143,6 +170,7 @@ export function NavbarWithSimpleLinks() {
                             <MenuDivider title="Trading Account" />
                             <Link href="/balance-kr" onClick={closeDrawer}>
                                 <MenuItem
+                                    selected={isActive('/balance-kr')}
                                     tagName="div"
                                     icon={IconNames.CHART}
                                     text="Korea Market"
@@ -150,15 +178,19 @@ export function NavbarWithSimpleLinks() {
                             </Link>
                             <Link href="/balance-us" onClick={closeDrawer}>
                                 <MenuItem
+                                    selected={isActive('/balance-us')}
                                     tagName="div"
                                     icon={IconNames.GLOBE}
                                     text="US Market"
                                 />
                             </Link>
                         </>}
+
                         <MenuDivider />
+
                         <Link href="/login" onClick={closeDrawer}>
                             <MenuItem
+                                selected={isActive('/login')}
                                 tagName="div"
                                 icon={"authenticated" === status ? IconNames.UNLOCK : IconNames.LOCK}
                                 intent={"authenticated" === status ? "none" : "primary"}
@@ -174,15 +206,18 @@ export function NavbarWithSimpleLinks() {
                 </div>
             </Drawer>
 
-            {/* Navbar 높이만큼의 여백 확보 */}
             <div className="h-[50px]" />
         </>
     );
 }
 
-// 헬퍼 컴포넌트: 구분선
 function Divider({ className }: { className?: string }) {
     return <div className={`w-[1px] h-6 bg-zinc-200 dark:!bg-zinc-800 ${className}`} />;
 }
 
 export default NavbarWithSimpleLinks;
+
+// 간단한 Tag 컴포넌트 추가 (Blueprintjs Tag를 써도 됩니다)
+function Tag({ children, intent, minimal }: { children: React.ReactNode, intent?: Intent, minimal?: boolean }) {
+    return <span className={`px-2 py-0.5 rounded text-[10px] font-bold ${intent === Intent.PRIMARY ? 'bg-blue-500/20 text-blue-500' : ''}`}>{children}</span>;
+}

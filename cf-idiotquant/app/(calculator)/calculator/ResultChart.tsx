@@ -1,11 +1,11 @@
 "use client";
 
-import { Util } from "@/components/util";
-import { Card, Elevation, Text } from "@blueprintjs/core";
+import { Card, Elevation } from "@blueprintjs/core";
 import { FC } from "react";
 import {
     ResponsiveContainer,
-    LineChart,
+    AreaChart,
+    Area,
     Line,
     CartesianGrid,
     XAxis,
@@ -13,6 +13,7 @@ import {
     Tooltip,
     Legend,
 } from "recharts";
+import { formatKoreanCurrency } from "./page"; // 위에서 만든 함수 import
 
 export interface ChartDataItem {
     year: number;
@@ -22,54 +23,53 @@ export interface ChartDataItem {
 
 interface ResultChartProps {
     data: ChartDataItem[];
-    height: string; // Tailwind 클래스 (예: h-80, h-96)
+    height: string;
 }
 
 const ResultChart: FC<ResultChartProps> = ({ data, height }) => {
     if (!data || data.length === 0) return null;
 
-    // Blueprintjs 다크모드 및 라이트모드 그리드 색상 대응
-    const gridColor = "rgba(128, 128, 128, 0.2)";
-
     return (
         <Card
             elevation={Elevation.ZERO}
-            className={`w-full flex flex-col p-0 border-none bg-transparent dark:!bg-black ${height}`}
+            className={`w-full flex flex-col p-0 border-none bg-transparent ${height}`}
         >
-            <div className="pt-2 px-4 mb-4">
-                <Text className="font-bold opacity-80 uppercase tracking-wider text-xs dark:!text-white">
-                    Annual Growth Insight
-                </Text>
-            </div>
-
             <div className="flex-grow w-full">
                 <ResponsiveContainer width="100%" height="100%">
-                    <LineChart
+                    <AreaChart
                         data={data}
-                        margin={{ top: 10, right: 10, bottom: 20, left: 0 }}
+                        margin={{ top: 10, right: 0, bottom: 0, left: -25 }}
                     >
-                        <CartesianGrid strokeDasharray="3 3" stroke={gridColor} vertical={false} />
+                        <defs>
+                            <linearGradient id="colorValue" x1="0" y1="0" x2="0" y2="1">
+                                <stop offset="5%" stopColor="#3b82f6" stopOpacity={0.25} />
+                                <stop offset="95%" stopColor="#3b82f6" stopOpacity={0} />
+                            </linearGradient>
+                        </defs>
+
+                        <CartesianGrid strokeDasharray="3 3" stroke="rgba(128,128,128,0.1)" vertical={false} />
 
                         <XAxis
                             dataKey="year"
-                            tick={{ fontSize: 11, fill: "currentColor", opacity: 0.6 }}
-                            axisLine={{ stroke: gridColor }}
+                            tick={{ fontSize: 13, fill: "#888", fontWeight: 600 }}
+                            axisLine={false}
                             tickLine={false}
                             dy={10}
+                            interval={data.length > 15 ? 4 : 1}
                         />
 
                         <YAxis
                             yAxisId="left"
-                            tick={{ fontSize: 10, fill: "#4F46E5" }}
+                            tick={{ fontSize: 11, fill: "#888" }}
                             axisLine={false}
                             tickLine={false}
-                            tickFormatter={(value) => Util.UnitConversion(value, true, 0)}
+                            tickFormatter={(v) => `${(v / 10000).toFixed(0)}억`}
                         />
 
                         <YAxis
                             yAxisId="right"
                             orientation="right"
-                            tick={{ fontSize: 10, fill: "#F59E0B" }}
+                            tick={{ fontSize: 11, fill: "#f59e0b" }}
                             axisLine={false}
                             tickLine={false}
                             tickFormatter={(value) => `${value}%`}
@@ -77,48 +77,34 @@ const ResultChart: FC<ResultChartProps> = ({ data, height }) => {
 
                         <Tooltip
                             contentStyle={{
-                                backgroundColor: "var(--pt-card-background-color, #fff)",
-                                border: "1px solid var(--pt-divider-black, #ccc)",
-                                borderRadius: "8px",
-                                fontSize: "12px",
-                                boxShadow: "0 4px 12px rgba(0,0,0,0.1)"
+                                backgroundColor: "rgba(0, 0, 0, 0.8)",
+                                border: "1px solid #333",
+                                borderRadius: "10px",
+                                padding: "10px",
+                                fontSize: "14px"
                             }}
-                            itemStyle={{ padding: "2px 0" }}
+                            itemStyle={{ color: "#fff" }}
                             formatter={(value: any, name: string) => {
-                                if (typeof value === "number") {
-                                    if (name.includes("수익률")) {
-                                        const color = value >= 0 ? "#d91212" : "#1261d9";
-                                        return [`${value > 0 ? "+" : ""}${value.toFixed(2)}%`, name];
-                                    }
-                                    return [`${value.toLocaleString()}원`, name];
-                                }
-                                return [value, name];
+                                if (name === "수익률") return [`${value}%`, name];
+                                return [formatKoreanCurrency(value), name];
                             }}
-                            labelFormatter={(label) => `${label}년차 투자 리포트`}
                         />
 
                         <Legend
                             verticalAlign="top"
                             align="right"
-                            iconType="circle"
-                            wrapperStyle={{
-                                paddingBottom: "20px",
-                                fontSize: "11px",
-                                fontWeight: 600,
-                                textTransform: "uppercase"
-                            }}
+                            iconSize={10}
+                            wrapperStyle={{ paddingBottom: "15px", fontSize: "12px", fontWeight: "bold" }}
                         />
 
-                        <Line
+                        <Area
                             yAxisId="left"
                             type="monotone"
                             dataKey="totalValue"
-                            name="총 자산"
-                            stroke="#4F46E5" // Blueprint Indigo
+                            name="자산 총액"
+                            stroke="#3b82f6"
                             strokeWidth={3}
-                            dot={{ r: 0 }}
-                            activeDot={{ r: 6, strokeWidth: 0 }}
-                            animationDuration={1500}
+                            fill="url(#colorValue)"
                         />
 
                         <Line
@@ -126,14 +112,12 @@ const ResultChart: FC<ResultChartProps> = ({ data, height }) => {
                             type="monotone"
                             dataKey="profitRate"
                             name="수익률"
-                            stroke="#F59E0B" // Blueprint Gold
+                            stroke="#f59e0b"
                             strokeWidth={2}
                             strokeDasharray="5 5"
-                            dot={{ r: 0 }}
-                            activeDot={{ r: 4 }}
-                            animationDuration={1500}
+                            dot={false}
                         />
-                    </LineChart>
+                    </AreaChart>
                 </ResponsiveContainer>
             </div>
         </Card>
