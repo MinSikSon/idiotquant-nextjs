@@ -141,8 +141,8 @@ export default function ResponsiveNCAV({
         <div className="space-y-6 pb-20">
             <div className="grid grid-cols-12 gap-6">
                 {/* Sidebar */}
-                <div className="col-span-12 lg:col-span-3">
-                    <Section title="전략 라이브러리" icon={IconNames.LAYERS} compact className="!bg-transparent">
+                <div className="col-span-12 lg:col-span-3 dark:!text-white">
+                    <Section title="전략 라이브러리" icon={IconNames.LAYERS} compact className="!bg-transparent dark:!text-white">
                         <div className="flex lg:flex-col gap-2 overflow-x-auto pb-2 lg:pb-0 no-scrollbar">
                             {strategies.map((s, idx) => (
                                 <Card
@@ -185,7 +185,7 @@ export default function ResponsiveNCAV({
                                         <SortHeader label="Price" id="LastPrice" current={sortKey} dir={sortDir} onSort={setSortKey} onDir={setSortDir} />
                                         <SortHeader label="Market Cap" id="MarketCapitalization" current={sortKey} dir={sortDir} onSort={setSortKey} onDir={setSortDir} />
                                         <SortHeader label="NCAV Ratio" id="ncavRatio" current={sortKey} dir={sortDir} onSort={setSortKey} onDir={setSortDir} />
-                                        <th className="text-right pr-6 py-4 text-[10px] font-black uppercase text-gray-400">Action</th>
+                                        <th className="text-right pr-6 py-4 text-[10px] font-black uppercase !text-gray-400">Action</th>
                                     </tr>
                                 </thead>
                                 <tbody>
@@ -202,11 +202,11 @@ export default function ResponsiveNCAV({
                                                             <div className="flex items-center gap-2">
                                                                 {ticker} <Icon icon={IconNames.SHARE} size={10} className="opacity-40" />
                                                             </div>
-                                                            <span className="text-[11px] text-gray-500 font-medium italic">{info.name}</span>
+                                                            <span className="text-[11px] text-gray-500 font-medium italic dark:!text-white">{info.name}</span>
                                                         </div>
                                                     </td>
-                                                    <td className="font-mono text-xs">{`${currency}${formatValue(info.condition?.LastPrice)}`}</td>
-                                                    <td className="font-mono text-xs opacity-60">
+                                                    <td className="font-mono text-xs dark:!text-white">{`${currency}${formatValue(info.condition?.LastPrice)}`}</td>
+                                                    <td className="font-mono text-xs dark:!text-white opacity-60">
                                                         {isKR ? "" : currency}
                                                         {formatValue(mktCap, true, isKR)}
                                                     </td>
