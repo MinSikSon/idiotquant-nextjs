@@ -178,7 +178,7 @@ export default function Calculator() {
                         <motion.div layout>
                             <Callout intent={finalRateOfReturn >= 0 ? Intent.SUCCESS : Intent.DANGER} className="!rounded-xl shadow-lg !p-5">
                                 <div className="flex flex-col gap-3">
-                                    <span className="text-xs font-bold uppercase opacity-60 dark:!text-white">최종 평가액</span>
+                                    <span className="pl-4 text-xs font-bold uppercase opacity-60 dark:!text-white">최종 평가액</span>
                                     <span className="text-2xl md:text-4xl font-black tracking-tighter dark:!text-white">
                                         {formatKoreanCurrencyFull(finalValue)}
                                     </span>
