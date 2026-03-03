@@ -66,7 +66,7 @@ function SearchContent() {
     }, [searchParams, name, onSearch]);
 
     useEffect(() => {
-        const handleScroll = () => setFixed(window.scrollY > 330);
+        const handleScroll = () => setFixed(window.scrollY > 600);
         window.addEventListener("scroll", handleScroll, { passive: true });
         return () => window.removeEventListener("scroll", handleScroll);
     }, []);
@@ -124,7 +124,7 @@ function SearchContent() {
                         )}
 
                         <div className={!isLoaded ? "hidden" : "block"}>
-                            <div className="flex justify-center mb-6">
+                            <div className="flex justify-center mb-10">
                                 <StockCard stock={
                                     krOrUs === "US" ?
                                         { isUs: true, id: 1, name: name, grade: getUsNcavGrade(data.finnhubData, data.usDetail), fairValue: "$" + calculateUsNcavValue(data.finnhubData, data.usDetail), undervaluedScore: calculateUsNcavRatio(data.finnhubData, data.usDetail), per: data?.usDetail?.output?.perx ?? 0, pbr: data?.usDetail?.output?.pbrx ?? 0 }
