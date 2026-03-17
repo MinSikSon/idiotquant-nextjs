@@ -79,6 +79,16 @@ function SearchContent() {
     const isLoaded = tickerFromUrl === name && hasAnyData;
     const shouldShowLoading = waitResponse && !isLoaded;
 
+    const chartConfig = krOrUs === "US" ? {
+        data: data.usDaily?.output2?.map((i: any) => Number(i.clos)).reverse(),
+        categories: data.usDaily?.output2?.map((i: any) => i.xymd).reverse(),
+        color: "#818cf8"
+    } : {
+        data: data.kiChart?.output2?.map((i: any) => Number(i.stck_clpr)).reverse(),
+        categories: data.kiChart?.output2?.map((i: any) => i.stck_bsop_date).reverse(),
+        color: "#6366f1"
+    };
+
     return (
         <div className="w-full min-h-screen !bg-gray-50 dark:!bg-zinc-950">
             <div className={`z-40 w-full transition-all ${fixed ? "fixed top-0" : "relative"} bg-white dark:bg-zinc-900 dark:border-zinc-800`}>
@@ -125,12 +135,14 @@ function SearchContent() {
 
                         <div className={!isLoaded ? "hidden" : "block"}>
                             <div className="flex justify-center mb-10">
-                                <StockCard stock={
-                                    krOrUs === "US" ?
+                                <StockCard
+                                    stock={krOrUs === "US" ?
                                         { isUs: true, id: 1, name: name, grade: getUsNcavGrade(data.finnhubData, data.usDetail), fairValue: "$" + calculateUsNcavValue(data.finnhubData, data.usDetail), undervaluedScore: calculateUsNcavRatio(data.finnhubData, data.usDetail), per: data?.usDetail?.output?.perx ?? 0, pbr: data?.usDetail?.output?.pbrx ?? 0 }
                                         :
                                         { isUs: false, id: 1, name: name, grade: getKrNcavGrade(data.kiBS, data.kiChart), fairValue: "₩" + calculateKrNcavValue(data.kiBS, data.kiChart), undervaluedScore: calculateKrNcavRatio(data.kiBS, data.kiChart), per: data?.kiPrice?.output?.per ?? 0, pbr: data?.kiPrice?.output?.pbr ?? 0 }
-                                } />
+                                    }
+                                    chartConfig={chartConfig} // 가공된 차트 데이터를 직접 전달
+                                />
                             </div>
                             <StockHeader data={data} isUs={krOrUs === "US"} isFixed={fixed} />
                             <StockMetrics data={data} isUs={krOrUs === "US"} />
