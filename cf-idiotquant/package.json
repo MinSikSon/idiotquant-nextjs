@@ -23,7 +23,6 @@
     "@xyflow/react": "^12.6.0",
     "and": "^0.0.3",
     "date-fns": "^4.1.0",
-    "drizzle-orm": "^0.45.1",
     "gsap": "^3.13.0",
     "highlight.js": "^11.11.1",
     "iconoir-react": "^7.10.1",
