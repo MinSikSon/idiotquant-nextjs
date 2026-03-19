@@ -10,7 +10,7 @@ export const StockCard = ({ stock, chartConfig }: any) => {
     const logoUrl = useMemo(() => {
         const hasKorean = /[ㄱ-ㅎ|ㅏ-ㅣ|가-힣]/.test(stock.name);
         if (stock.name && !hasKorean && !isError) {
-            return `https://img.logo.dev/ticker/${stock.name.toUpperCase()}?token=${process.env.NEXT_PUBLIC_CLEARBIT_API_KEY}&retina=true`;
+            return `https://img.logo.dev/ticker/${stock.name.toUpperCase()}?token=${process.env.NEXT_PUBLIC_CLEARBIT_API_KEY}&retina=true&size=200`;
         }
         return "";
     }, [stock.name, isError]);

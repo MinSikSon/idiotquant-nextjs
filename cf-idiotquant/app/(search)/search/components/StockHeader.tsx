@@ -1,9 +1,7 @@
 "use client";
 
 import React from "react";
-import { Card, Elevation, Button, Tag } from "@blueprintjs/core";
-import { StarIcon as StarOutline } from "@heroicons/react/24/outline";
-import { StarIcon as StarSolid } from "@heroicons/react/24/solid";
+import { Card, Elevation, Tag } from "@blueprintjs/core";
 import LineChart from "@/components/LineChart";
 
 interface StockHeaderProps {
@@ -15,7 +13,6 @@ interface StockHeaderProps {
 export const StockHeader = ({ data, isUs, isFixed }: StockHeaderProps) => {
     const { kiChart, kiPrice, usSearchInfo, usDetail, usDaily } = data;
 
-    // 1. 시장별 데이터 매핑 설정
     const config = isUs ? {
         marketName: usSearchInfo?.output?.tr_mket_name,
         prdtName: usSearchInfo?.output?.prdt_name,
@@ -34,37 +31,38 @@ export const StockHeader = ({ data, isUs, isFixed }: StockHeaderProps) => {
         color: "#6366f1"
     };
 
-    // 2. 공통 UI 렌더링 함수
     return (
         <Card
             elevation={Elevation.ONE}
             className="dark:!bg-zinc-900 p-0 overflow-hidden rounded-xl border-none mb-4"
         >
-            <div className={`flex transition-all duration-300 ${isFixed
-                ? `fixed top-[81px] left-0 w-full z-30 !bg-white dark:!bg-zinc-900/90 backdrop-blur shadow-md px-4 py-0`
-                : "p-0"
+            <div className={`flex items-center transition-all duration-300 ${isFixed
+                ? `fixed top-[81px] left-0 w-full z-30 !bg-white/95 dark:!bg-zinc-950/95 backdrop-blur-md shadow-sm px-6 py-2`
+                : "p-5 md:p-6" // 기본 상태에서 패딩을 넉넉히 주어 가독성 확보
                 }`}>
-                {/* 왼쪽: 주식 정보 */}
-                <div className="w-7/12">
-                    {/* 고정 상태(isFixed)가 아닐 때만 시장명 표시 */}
+                
+                {/* [왼쪽 영역] 정보 섹션: 최소한의 가로 폭만 유지 */}
+                <div className="flex-none min-w-[140px] md:min-w-[180px] pr-4 border-r dark:border-zinc-800">
                     {!isFixed && (
-                        <Tag intent="primary" minimal className="text-[10px] !text-zinc-500">
+                        <Tag intent="primary" minimal className="text-[10px] !text-zinc-500 mb-1">
                             {config.marketName}
                         </Tag>
                     )}
-                    <h2 className="text-xl md:!text-2xl font-black dark:!text-white">
-                        {config.prdtName}
-                    </h2>
-                    <div className="flex items-center gap-1 mt-1">
-                        <span className="text-xl font-mono font-bold !text-blue-600 dark:!text-blue-400 underline decoration-dotted decoration-2">
-                            {config.price}
-                        </span>
-                        <span className="text-xs !text-zinc-500">{config.currency}</span>
+                    <div className={`${isFixed ? "flex items-baseline gap-2" : "block"}`}>
+                        <h2 className="text-xl md:text-2xl font-black dark:!text-white truncate max-w-[150px] md:max-w-[200px]">
+                            {config.prdtName}
+                        </h2>
+                        <div className="flex items-baseline gap-1 mt-1">
+                            <span className="text-xl font-mono font-bold !text-blue-600 dark:!text-blue-400">
+                                {config.price}
+                            </span>
+                            <span className="text-[10px] !text-zinc-500 uppercase font-medium">{config.currency}</span>
+                        </div>
                     </div>
                 </div>
 
-                {/* 오른쪽: 미니 차트 */}
-                <div className="w-5/12 h-16">
+                {/* [오른쪽 영역] 차트 섹션: flex-1로 가로 길이를 극대화 */}
+                <div className="flex-1 h-20 md:h-24 ml-4 md:ml-6">
                     <LineChart
                         data_array={[{
                             name: "Price",
@@ -72,13 +70,16 @@ export const StockHeader = ({ data, isUs, isFixed }: StockHeaderProps) => {
                             color: config.color
                         }]}
                         category_array={config.chartCategory}
-                        height={isFixed ? 70 : 80}
+                        // 가로가 길어지므로 높이도 소폭 상향하여 시인성 확보
+                        height={isFixed ? 65 : 100} 
                         show_yaxis_label={false}
                         legend_disable
                     />
                 </div>
             </div>
-            {isFixed && <div className="h-56" />}
+
+            {/* 고정 모드 전환 시 레이아웃 점프 방지 */}
+            {isFixed && <div className="h-24" />}
         </Card>
     );
 };
