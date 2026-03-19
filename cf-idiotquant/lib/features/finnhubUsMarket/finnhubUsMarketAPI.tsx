@@ -4,11 +4,9 @@ import { getCookie } from "@/components/util";
 import { getKoreaInvestmentRequest, postKoreaInvestmentRequest } from "../koreaInvestment/koreaInvestmentAPI";
 
 export const getFinnhubUsFinancialsReported: any = async (PDNO: string) => {
-    const subUrl = `/finnhub/api/v1/stock/financials-reported`;
+    const subUrl = `/finnhub/api/v1/stock/financials-reported?PDNO=${PDNO}`;
     const additionalHeaders: AdditionalHeaders = {
         // "authorization": koreaInvestmentToken["access_token"],
-        "kakaoId": getCookie("kakaoId"),
-        "PDNO": PDNO,
         // "buyOrSell": buyOrSell,
     }
     return getKoreaInvestmentRequest(subUrl, additionalHeaders);

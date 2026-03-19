@@ -21,7 +21,6 @@ export const StockCard = ({ stock, chartConfig }: any) => {
 
     return (
         <div className="group/card relative w-[20rem] h-[35rem] bg-white rounded-[3rem] shadow-[0_20px_50px_rgba(0,0,0,0.1)] border-[10px] border-zinc-100 overflow-hidden transition-all duration-500 hover:-translate-y-2">
-            
             {/* 배경 차트 (은은하게 유지) */}
             <div className="absolute bottom-0 left-0 w-full h-40 opacity-[0.05] pointer-events-none z-0">
                 {chartConfig?.data && chartConfig.data.length > 0 && (
@@ -33,7 +32,7 @@ export const StockCard = ({ stock, chartConfig }: any) => {
                             show_yaxis_label={false}
                             legend_disable
                             grid_disable
-                            chart_type="area" 
+                            chart_type="area"
                         />
                     </div>
                 )}
@@ -54,11 +53,11 @@ export const StockCard = ({ stock, chartConfig }: any) => {
                 {/* 🔴 요청하신 부분: 로고 감싸는 칸에 로고가 꽉 차도록 수정 */}
                 <div className="w-full h-48 bg-zinc-50 rounded-3xl border-4 border-zinc-100 mb-6 overflow-hidden relative shadow-inner">
                     {logoUrl && !isError ? (
-                        <img 
-                            src={logoUrl} 
+                        <img
+                            src={logoUrl}
                             alt={stock.name}
                             /* p-0으로 여백을 없애고 w-full h-full + object-cover로 칸을 꽉 채움 */
-                            className="w-full h-full object-cover transition-transform duration-500 group-hover/card:scale-110" 
+                            className="w-full h-full object-cover transition-transform duration-500 group-hover/card:scale-110"
                             onError={() => setIsError(true)}
                         />
                     ) : (
