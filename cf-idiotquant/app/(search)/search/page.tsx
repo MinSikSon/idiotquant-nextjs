@@ -18,8 +18,8 @@ import amex_tickers from "@/public/data/usStockSymbols/amex_tickers.json";
 import { MdTableTemplate } from "./components/MdTableTemplate";
 import { StockMetrics } from "./components/StockMetrics";
 import { calculateKrNcavRatio, calculateKrNcavValue, calculateUsNcavRatio, calculateUsNcavValue, getKrNcavGrade, getUsNcavGrade } from "./utils/financeCalc";
-import { StockCard } from "./components/StockCard";
 import { SearchGuide } from "./components/SearchGuide";
+import { ModernTiltCard } from "./components/StockCard";
 
 const all_tickers = [...nasdaq_tickers, ...nyse_tickers, ...amex_tickers, ...validCorpNameArray];
 
@@ -170,7 +170,7 @@ function SearchContent() {
 
                         <div className={!isLoaded ? "hidden" : "block animate-in fade-in duration-700"}>
                             <div className="flex justify-center mb-10">
-                                <StockCard
+                                <ModernTiltCard
                                     stock={krOrUs === "US" ?
                                         { 
                                             code: tickerFromUrl || "", // 한국 주식 로고 대응을 위해 code 전달

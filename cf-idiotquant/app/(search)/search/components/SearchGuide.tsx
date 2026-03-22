@@ -3,7 +3,7 @@
 import React from "react";
 import { Icon } from "@blueprintjs/core";
 import { IconNames } from "@blueprintjs/icons";
-import { StockCard } from "./StockCard"; // StockCard 컴포넌트 경로
+import { ModernTiltCard } from "./StockCard";
 
 export const SearchGuide = () => {
     // 가이드용 더미 데이터 (실제 StockCard가 받는 stock 객체 구조와 동일하게 설정)
@@ -98,7 +98,7 @@ export const SearchGuide = () => {
                 {guides.map((item, i) => (
                     <div key={i} className="flex flex-col items-center gap-6">
                         {/* 실제 StockCard 사용 */}
-                        <StockCard stock={item.stock} />
+                        <ModernTiltCard stock={item.stock} />
 
                         {/* 가이드 설명글 */}
                         <div className="max-w-[280px]">
