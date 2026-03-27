@@ -79,7 +79,7 @@ export const StockHeader = ({ data, isUs, isFixed }: StockHeaderProps) => {
             </div>
 
             {/* 고정 모드 전환 시 레이아웃 점프 방지 */}
-            {isFixed && <div className="h-24" />}
+            {isFixed && <div className="h-40" />}
         </Card>
     );
 };
