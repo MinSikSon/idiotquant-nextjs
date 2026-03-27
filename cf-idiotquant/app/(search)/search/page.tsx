@@ -116,7 +116,7 @@ function SearchContent() {
         <div className="w-full min-h-screen !bg-gray-50 dark:!bg-zinc-950">
             <div
                 suppressHydrationWarning
-                className={`z-40 w-full transition-all ${fixed ? "fixed top-0 shadow-md" : "relative"} bg-white dark:bg-zinc-900 dark:border-zinc-800`}
+                className={`z-40 w-full transition-all ${fixed ? "fixed top-0" : "relative shadow-md"} bg-white dark:bg-zinc-900 dark:border-zinc-800`}
             >
                 <SearchAutocomplete
                     placeHolder="🇰🇷 종목명 또는 🇺🇸 티커"
