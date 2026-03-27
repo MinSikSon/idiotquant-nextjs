@@ -129,47 +129,62 @@ const SearchAutocomplete = (props: any) => {
     };
 
     return (
-        <div className="flex items-center relative gap-1 w-full px-4 py-2 border border-gray-300 rounded-lg focus-within:ring-2 focus-within:ring-blue-500 dark:border-zinc-800 dark:bg-black dark:text-white">
-            <div className="relative flex-1 items-center w-full">
-                <input
-                    ref={inputRef}
-                    autoComplete="off"
-                    placeholder={props.placeHolder}
-                    onChange={handleChange}
-                    onKeyDown={handleKeyDown}
-                    onFocus={() => setIsFocused(true)}
-                    onBlur={() => setTimeout(() => setIsFocused(false), 200)}
-                    value={query}
-                    className="w-full text-lg bg-transparent focus:outline-none dark:text-white"
-                />
+        <div className="relative w-full group">
+            {/* 배경 글로우 효과 (Focus 시 은은하게 빛남) */}
+            <div className="absolute -inset-0.5 bg-gradient-to-r from-blue-600 to-indigo-600 rounded-2xl blur opacity-0 group-focus-within:opacity-20 transition duration-500"></div>
+
+            {/* 메인 입력창 컨테이너 */}
+            <div className={`relative flex items-center gap-2 w-full px-4 py-3 bg-zinc-100 dark:bg-zinc-900/80 backdrop-blur-xl border border-zinc-200 dark:border-zinc-800 rounded-2xl transition-all duration-300 shadow-sm group-focus-within:bg-white dark:group-focus-within:bg-zinc-950 group-focus-within:ring-2 group-focus-within:ring-blue-500/30 group-focus-within:shadow-xl`}>
+                
+                {/* 검색 아이콘 (왼쪽 배치) */}
+                <MagnifyingGlassIcon className="h-5 w-5 text-zinc-400 group-focus-within:text-blue-500 transition-colors" />
+
+                <div className="relative flex-1 items-center">
+                    <input
+                        ref={inputRef}
+                        autoComplete="off"
+                        placeholder={props.placeHolder}
+                        onChange={handleChange}
+                        onKeyDown={handleKeyDown}
+                        onFocus={() => setIsFocused(true)}
+                        onBlur={() => setTimeout(() => setIsFocused(false), 200)}
+                        value={query}
+                        className="w-full text-base bg-transparent focus:outline-none dark:text-white placeholder:text-zinc-400 dark:placeholder:text-zinc-600 font-medium"
+                    />
+                </div>
+
+                {/* 입력값 지우기 버튼 */}
                 {query && (
-                    <div className="absolute right-2 top-1/2 transform -translate-y-1/2">
-                        <button onClick={() => setQuery("")} type="button">
-                            <XCircleIcon className="h-6 w-6 text-gray-400 hover:text-gray-600" />
-                        </button>
-                    </div>
+                    <button 
+                        onClick={() => { setQuery(""); setIsFocused(true); inputRef.current?.focus(); }} 
+                        className="p-0 hover:bg-zinc-200 dark:hover:bg-zinc-800 rounded-full transition-colors"
+                        type="button"
+                    >
+                        <XCircleIcon className="h-5 w-5 text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-200" />
+                    </button>
                 )}
             </div>
-            <button
-                onClick={() => executeSearch(suggestions[0] || query)}
-                className="p-2 hover:bg-gray-100 dark:hover:bg-zinc-800 rounded-full transition-colors"
-                type="button"
-            >
-                <MagnifyingGlassIcon width="20" height="20" className="text-gray-500 dark:text-zinc-400" />
-            </button>
 
+            {/* 자동완성 드롭다운 (개선된 애니메이션 및 디자인) */}
             {isFocused && suggestions.length > 0 && (
-                <ul className="z-[100] absolute top-full left-0 w-full mt-2 bg-white dark:bg-zinc-900 border border-gray-200 dark:border-zinc-800 rounded-lg shadow-xl max-h-60 overflow-auto">
+                <ul className="z-[100] absolute top-[calc(100%+8px)] left-0 w-full bg-white/90 dark:bg-zinc-900/95 backdrop-blur-2xl border border-zinc-200 dark:border-zinc-800 rounded-2xl shadow-2xl max-h-72 overflow-y-auto overflow-x-hidden p-2 animate-in fade-in zoom-in-95 duration-200">
+                    <div className="px-3 py-2 text-[10px] font-bold text-zinc-400 uppercase tracking-widest border-b dark:border-zinc-800 mb-1">
+                        Suggestions
+                    </div>
                     {suggestions.map((suggestion: string, index: number) => (
                         <li
-                            key={index}
+                            key={`suggest-${index}`}
                             onMouseDown={() => executeSearch(suggestion)}
-                            className={`text-md py-3 px-4 cursor-pointer transition-colors dark:text-white ${selectedIndex === index
-                                    ? "bg-blue-50 dark:bg-blue-900/30 text-blue-600 font-bold"
-                                    : "hover:bg-gray-50 dark:hover:bg-zinc-800"
-                                }`}
+                            className={`group/item flex items-center justify-between text-sm py-3 px-4 cursor-pointer rounded-xl transition-all ${
+                                selectedIndex === index
+                                    ? "bg-blue-500 text-white font-bold shadow-lg shadow-blue-500/30 scale-[1.02]"
+                                    : "hover:bg-zinc-100 dark:hover:bg-zinc-800 dark:text-zinc-300"
+                            }`}
                         >
-                            {suggestion}
+                            <span>{suggestion}</span>
+                            <span className={`text-[10px] opacity-0 group-hover/item:opacity-50 ${selectedIndex === index ? "opacity-100" : ""}`}>
+                                ↵ Enter
+                            </span>
                         </li>
                     ))}
                 </ul>
