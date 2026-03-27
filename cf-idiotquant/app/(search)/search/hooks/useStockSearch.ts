@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react"; // useCallback 추가
+import { useState, useEffect, useCallback, useRef } from "react"; // useCallback 추가
 import { useAppDispatch, useAppSelector } from "@/lib/hooks";
 import corpCodeJson from "@/public/data/validCorpCode.json";
 import nasdaq_tickers from "@/public/data/usStockSymbols/nasdaq_tickers.json";
@@ -31,6 +31,7 @@ import {
 import { reqPostLaboratory } from "@/lib/features/ai/aiSlice";
 import { selectAiStreamOutput } from "@/lib/features/ai/aiStreamSlice";
 import { addKrMarketHistory } from "@/lib/features/searchHistory/searchHistorySlice";
+import { reqPostSearchLog } from "@/lib/features/searchLog/searchLogSlice";
 
 const us_tickers = [...nasdaq_tickers, ...nyse_tickers, ...amex_tickers];
 
@@ -51,6 +52,20 @@ export function useStockSearch() {
     const usDetail = useAppSelector(getKoreaInvestmentUsMaretPriceDetail);
     const usDaily = useAppSelector(getKoreaInvestmentUsMarketDailyPrice);
     const finnhubData = useAppSelector(selectFinnhubFinancialsAsReported);
+
+    const lastLoggedTicker = useRef<string>("");
+    // 로깅 Side Effect
+    useEffect(() => {
+        const currentTicker = name.toUpperCase();
+        if (currentTicker && currentTicker !== lastLoggedTicker.current) {
+            dispatch(reqPostSearchLog({
+                ticker: currentTicker,
+                name: name,
+                isUs: krOrUs === "US"
+            }));
+            lastLoggedTicker.current = currentTicker;
+        }
+    }, [name, krOrUs, dispatch]);
 
     // [중요] useCallback으로 감싸서 함수 참조값을 고정합니다.
     const onSearch = useCallback((stockName: string) => {
@@ -88,6 +103,8 @@ export function useStockSearch() {
             dispatch(reqGetFinnhubUsFinancialsReported(ticker));
         }
     }, [dispatch]); // dispatch는 안정적인 함수이므로 한 번만 생성됩니다.
+    
+    
 
     // AI Stream Parsing
     useEffect(() => {

@@ -37,7 +37,7 @@ export const StockHeader = ({ data, isUs, isFixed }: StockHeaderProps) => {
             className="dark:!bg-zinc-900 p-0 overflow-hidden rounded-xl border-none mb-4"
         >
             <div className={`flex items-center transition-all duration-300 ${isFixed
-                ? `fixed top-[81px] left-0 w-full z-30 !bg-white/95 dark:!bg-zinc-950/95 backdrop-blur-md shadow-sm px-6 py-2`
+                ? `fixed top-[130px] left-0 w-full z-30 !bg-white/95 dark:!bg-zinc-950/95 backdrop-blur-md shadow-sm px-6 py-0`
                 : "p-5 md:p-6" // 기본 상태에서 패딩을 넉넉히 주어 가독성 확보
                 }`}>
                 
