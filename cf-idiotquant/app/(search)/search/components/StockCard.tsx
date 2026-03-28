@@ -17,13 +17,17 @@ export const ModernTiltCard = ({ stock, chartConfig }: any) => {
                 return `https://img.logo.dev/ticker/${stock.name.toUpperCase()}?token=${process.env.NEXT_PUBLIC_CLEARBIT_API_KEY}&retina=true&size=200`;
             }
             else if (stock.ticker) {
-                console.log(`stock.ticker:`, stock.ticker);
                 return `${process.env.NEXT_PUBLIC_KR_LOGO_API}/${stock.ticker}`
             }
         }
 
         return "";
     }, [stock.name, isError]);
+
+    useEffect(() => {
+        // 종목(ticker)이 바뀌면 에러 상태를 초기화해서 다시 로고를 불러오도록 함
+        setIsError(false);
+    }, [stock.ticker]);
 
     // 3D 기울기 효과
     useEffect(() => {
@@ -50,6 +54,7 @@ export const ModernTiltCard = ({ stock, chartConfig }: any) => {
             card.removeEventListener('mouseleave', handleMouseLeave);
         };
     }, []);
+
 
     // 수치 정돈 로직
     // 1. 내재가치는 원화 단위이므로 소수점 제거 및 콤마 추가
