@@ -223,7 +223,7 @@ function SearchContent() {
                                             code: tickerFromUrl || "",
                                             isUs: false,
                                             name: name,
-                                            ticker: (corpCodeJson as any)[name].stock_code ?? "",
+                                            ticker: (corpCodeJson as any)[name]?.stock_code ?? "",
                                             grade: getKrNcavGrade(data.kiBS, data.kiChart),
                                             fairValue: "₩" + calculateKrNcavValue(data.kiBS, data.kiChart),
                                             undervaluedScore: calculateKrNcavRatio(data.kiBS, data.kiChart),
