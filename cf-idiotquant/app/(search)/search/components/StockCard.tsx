@@ -12,12 +12,16 @@ export const ModernTiltCard = ({ stock, chartConfig }: any) => {
     // 로고 URL 생성
     const logoUrl = useMemo(() => {
         const hasKorean = /[ㄱ-ㅎ|ㅏ-ㅣ|가-힣]/.test(stock.name);
-        if (stock.name && !hasKorean && !isError) {
-            return `https://img.logo.dev/ticker/${stock.name.toUpperCase()}?token=${process.env.NEXT_PUBLIC_CLEARBIT_API_KEY}&retina=true&size=200`;
+        if (!isError) {
+            if (stock.name && !hasKorean) {
+                return `https://img.logo.dev/ticker/${stock.name.toUpperCase()}?token=${process.env.NEXT_PUBLIC_CLEARBIT_API_KEY}&retina=true&size=200`;
+            }
+            else if (stock.ticker) {
+                console.log(`stock.ticker:`, stock.ticker);
+                return `${process.env.NEXT_PUBLIC_KR_LOGO_API}/${stock.ticker}`
+            }
         }
-        else{
-            return `${process.env.NEXT_PUBLIC_KR_LOGO_API}/${stock.ticker}`
-        }
+
         return "";
     }, [stock.name, isError]);
 
