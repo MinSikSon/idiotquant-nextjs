@@ -21,6 +21,7 @@ import { calculateKrNcavRatio, calculateKrNcavValue, calculateUsNcavRatio, calcu
 import { SearchGuide } from "./components/SearchGuide";
 import { ModernTiltCard } from "./components/StockCard";
 import { reqGetSearchLog, selectPopularStocks } from "@/lib/features/searchLog/searchLogSlice";
+import corpCodeJson from "@/public/data/validCorpCode.json";
 
 const all_tickers = [...nasdaq_tickers, ...nyse_tickers, ...amex_tickers, ...validCorpNameArray];
 
@@ -212,6 +213,7 @@ function SearchContent() {
                                             code: tickerFromUrl || "",
                                             isUs: true,
                                             name: name,
+                                            ticker: name,
                                             grade: getUsNcavGrade(data.finnhubData, data.usDetail),
                                             fairValue: "$" + calculateUsNcavValue(data.finnhubData, data.usDetail),
                                             undervaluedScore: calculateUsNcavRatio(data.finnhubData, data.usDetail),
@@ -221,6 +223,7 @@ function SearchContent() {
                                             code: tickerFromUrl || "",
                                             isUs: false,
                                             name: name,
+                                            ticker: (corpCodeJson as any)[name].stock_code ?? "",
                                             grade: getKrNcavGrade(data.kiBS, data.kiChart),
                                             fairValue: "₩" + calculateKrNcavValue(data.kiBS, data.kiChart),
                                             undervaluedScore: calculateKrNcavRatio(data.kiBS, data.kiChart),

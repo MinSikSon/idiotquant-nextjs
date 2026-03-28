@@ -15,6 +15,9 @@ export const ModernTiltCard = ({ stock, chartConfig }: any) => {
         if (stock.name && !hasKorean && !isError) {
             return `https://img.logo.dev/ticker/${stock.name.toUpperCase()}?token=${process.env.NEXT_PUBLIC_CLEARBIT_API_KEY}&retina=true&size=200`;
         }
+        else{
+            return `${process.env.NEXT_PUBLIC_KR_LOGO_API}/${stock.ticker}`
+        }
         return "";
     }, [stock.name, isError]);
 
@@ -85,7 +88,7 @@ export const ModernTiltCard = ({ stock, chartConfig }: any) => {
                 </div>
 
                 {/* Header: 불필요한 서브타이틀 삭제 */}
-                <div className="flex justify-between items-center mb-8 z-10">
+                <div className="flex justify-between items-center mb-4 z-10">
                     <h3 className="text-zinc-900 font-black text-4xl uppercase tracking-tighter leading-none">
                         {stock.name}
                     </h3>
@@ -97,13 +100,15 @@ export const ModernTiltCard = ({ stock, chartConfig }: any) => {
                 </div>
 
                 {/* 로고 영역: 배경 워터마크 삭제하여 깔끔하게 유지 */}
-                <div className="w-full h-44 bg-zinc-50 rounded-3xl border-2 border-zinc-100 mb-8 overflow-hidden relative shadow-inner z-10">
+                {/* <div className={`w-full h-44 bg-zinc-50 rounded-3xl border-2 border-zinc-100 mb-6 overflow-hidden relative shadow-inner z-10`}> */}
+                <div className={`w-full h-44 bg-zinc-50 mb-4 overflow-hidden relative z-10`}>
+                {/* <div className={`w-full h-44 mb-4 overflow-hidden relative z-10`}> */}
                      {logoUrl && !isError ? (
                         <img
                             src={logoUrl}
                             alt={stock.name}
                             /* p-0으로 여백을 없애고 w-full h-full + object-cover로 칸을 꽉 채움 */
-                            className="w-full h-full object-cover transition-transform duration-500 group-hover/card:scale-110"
+                            className={`w-full h-full ${stock.isUs ? "object-contain" : "object-contain"} transition-transform duration-500 group-hover/card:scale-110`}
                             onError={() => setIsError(true)}
                         />
                     ) : (
@@ -117,7 +122,7 @@ export const ModernTiltCard = ({ stock, chartConfig }: any) => {
                 <div className="space-y-6 mt-auto z-10">
                     {/* 내재가치: 소수점 제거 및 단위 명확화 */}
                     <div className="flex justify-between items-baseline px-1 border-b border-zinc-50 pb-2">
-                        <span className="text-zinc-400 text-[11px] font-bold uppercase tracking-wider">Intrinsic Value</span>
+                        <span className="text-zinc-400 text-[11px] font-bold uppercase tracking-wider">적정 주가</span>
                         <div className="flex items-baseline gap-1 text-green-600">
                             <span className="text-lg font-bold">{stock.isUs? "$":"₩"}</span>
                             <span className="font-mono text-4xl font-black tracking-tighter">
