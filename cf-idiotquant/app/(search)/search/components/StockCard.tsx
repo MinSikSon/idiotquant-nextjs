@@ -113,13 +113,28 @@ export const ModernTiltCard = ({ stock, chartConfig }: any) => {
                 <div className={`w-full h-44 bg-zinc-50 mb-4 overflow-hidden relative z-10`}>
                 {/* <div className={`w-full h-44 mb-4 overflow-hidden relative z-10`}> */}
                      {logoUrl && !isError ? (
-                        <img
-                            src={logoUrl}
-                            alt={stock.name}
-                            /* p-0으로 여백을 없애고 w-full h-full + object-cover로 칸을 꽉 채움 */
-                            className={`w-full h-full ${stock.isUs ? "object-contain" : "object-contain"} transition-transform duration-500 group-hover/card:scale-110`}
-                            onError={() => setIsError(true)}
-                        />
+                        <>
+                            <img
+                                src={logoUrl}
+                                alt={stock.name}
+                                /* p-0으로 여백을 없애고 w-full h-full + object-cover로 칸을 꽉 채움 */
+                                className={`w-full h-full ${stock.isUs ? "object-contain" : "object-contain"} transition-transform duration-500 group-hover/card:scale-110`}
+                                onError={() => setIsError(true)}
+                            />
+                            {stock.isUs && (
+                                <div className="absolute bottom-2 right-3 opacity-30 group-hover/card:opacity-100 transition-opacity duration-300">
+                                    <a
+                                        href="https://logo.dev"
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        className="text-[8px] font-bold text-zinc-400 hover:text-zinc-600 no-underline"
+                                        onClick={(e) => e.stopPropagation()} // 카드 클릭 이벤트와 분리
+                                    >
+                                        Logos by Logo.dev
+                                    </a>
+                                </div>
+                            )}
+                        </>
                     ) : (
                         <div className="w-full h-full flex items-center justify-center">
                             <span className="text-6xl font-black text-zinc-200 uppercase">{stock.name.substring(0, 1)}</span>
