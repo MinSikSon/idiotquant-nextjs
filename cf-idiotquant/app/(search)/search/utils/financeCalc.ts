@@ -220,48 +220,133 @@ ${rows}
     `.trim();
 }
 
-/**
- * 미국 주식 NCAV 계산 및 상장폐지/데이터 누락 방어 로직
- */
 export function calculateUsNcav(finnhub: any, detail: any) {
-    // 1. 기본 데이터 추출
+    // 1. 기본 데이터 추출 (Finnhub BS 데이터)
     const bs = finnhub?.data?.[0]?.report?.bs ?? [];
+    
+    // 유동자산 (Current Assets)
     const cras = Number(
         bs.find((i: any) => i.concept.includes("us-gaap_AssetsCurrent"))?.value ??
         bs.find((i: any) => i.concept.includes("AssetsCurrent"))?.value ?? 0
     );
+    
+    // 총부채 (Total Liabilities)
     const lblt = Number(
         bs.find((i: any) => i.concept.includes("us-gaap_Liabilities"))?.value ??
         bs.find((i: any) => i.concept.includes("Liabilities"))?.value ?? 0
     );
 
-    // 2. 상장폐지 및 데이터 유효성 검사 (핵심 포인트)
-    // 발행주식수(shar)가 없거나, 0이거나, 빈 문자열인 경우 체크
+    // 2. 상장주식수 및 현재가 데이터 유효성 검사
     const rawShar = detail?.output?.shar;
-    const isDelisted = !rawShar || rawShar === "" || Number(rawShar) === 0;
-
-    // 현재가(last) 정보도 없는 경우 함께 체크
     const last = Number(detail?.output?.last || 0);
+    
+    const isDelisted = !rawShar || rawShar === "" || Number(rawShar) === 0;
     const isMissingPrice = last === 0;
 
-    // [처리방식] 데이터가 없으면 마크다운 테이블 대신 에러 메시지 혹은 상태 객체 반환
+    // 데이터가 없는 경우 깔끔한 경고 메시지 반환
     if (isDelisted || isMissingPrice) {
         const reason = isDelisted ? "상장폐지 의심 혹은 주식수 데이터 없음" : "현재가 데이터 없음";
-        return `| 상태 | 상세 사유 |\n|---|---|\n| **N/A** | ${reason} |`;
+        return `> ⚠️ **분석 불가:** ${reason}`;
     }
 
     const lstn = Number(rawShar);
+    const netCurrentAsset = cras - lblt;
+    const target = netCurrentAsset / lstn;
 
-    // 3. 정상 계산 로직
-    const rows = [1.0, 1.5].map(r => {
-        let target = (cras - lblt) / lstn;
-        let returnPct = ((target / (last * r)) - 1) * 100;
-
-        // 소수점 처리 및 가독성 확보
-        return `| ${r.toFixed(1)} | ${returnPct.toFixed(2)}% | ${target.toFixed(2)} |`;
+    // 3. 배수별 행 생성 (1.0배, 1.2배, 1.5배)
+    const rows = [1.0, 1.2, 1.5].map(r => {
+        const adjustedTarget = target / r;
+        const returnPct = (adjustedTarget / last - 1) * 100;
+        
+        const isBase = r === 1.0 ? "**" : "";
+        return `| ${isBase}${r.toFixed(1)}배${isBase} | ${isBase}${returnPct.toFixed(2)}%${isBase} | ${isBase}$${adjustedTarget.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}${isBase} |`;
     }).join("\n");
 
-    return `| ratio | Exp. Return | Target Price($) |\n|---|---|---|\n${rows}`;
+    return `
+# 💡 미국 NCAV 가치 평가 모델
+> **NCAV (청산가치)** = 유동자산 - 총부채\n
+> **적정 주가** = NCAV ÷ 상장 주식수
+
+| 평가 기준 (배수) | 기대 수익률 | 적정 주가($) |
+|:---:|:---:|:---:|
+${rows}
+
+---
+
+# 🔍 핵심 투자 지표 (Key Metrics)
+* 🧊 **순유동자산 (NCAV):** \`$${(netCurrentAsset / 1000000).toLocaleString()}M (백만 달러)\`
+* 🏢 **총부채 (Liabilities):** \`$${(lblt / 1000000).toLocaleString()}M (백만 달러)\`
+* 🏷️ **현재가 (Price):** \`$${last.toLocaleString()}\`
+
+---
+*※ NCAV(청산가치)가 현재 시가총액보다 높은 기업은 매우 강력한 자산 가치를 지닌 것으로 평가됩니다.*
+    `.trim();
+}
+
+export function calculateUsSRIM(finnhub: any, detail: any, baseKe: number = 8.0) {
+    // 1. 재무 데이터 추출 (Finnhub IS/BS 데이터)
+    const bs = finnhub?.data?.[0]?.report?.bs ?? [];
+    const ic = finnhub?.data?.[0]?.report?.ic ?? [];
+
+    // 자기자본 (Total Equity)
+    const total_equity = Number(
+        bs.find((i: any) => i.concept.includes("us-gaap_StockholdersEquity"))?.value ??
+        bs.find((i: any) => i.concept.includes("StockholdersEquity"))?.value ?? 1
+    );
+
+    // 당기순이익 (Net Income)
+    const net_income = Number(
+        ic.find((i: any) => i.concept.includes("us-gaap_NetIncomeLoss"))?.value ??
+        ic.find((i: any) => i.concept.includes("NetIncome"))?.value ?? 0
+    );
+
+    // 2. ROE 및 기본 정보 계산
+    const ROE = (net_income / total_equity) * 100;
+    const last = Number(detail?.output?.last || 0); // 현재가
+    const shar = Number(detail?.output?.shar || 0); // 상장주식수
+
+    // 데이터 유효성 검사
+    if (last === 0 || shar === 0) {
+        return `> ⚠️ **분석 불가:** 현재가 또는 주식수 데이터가 부족합니다.`;
+    }
+
+    // 3. 요구수익률 범위 생성 (0.5% 단위)
+    const step = 0.5;
+    const rangeCount = 3;
+    let keList = [];
+    for (let i = -rangeCount; i <= rangeCount; i++) {
+        keList.push(baseKe + (i * step));
+    }
+
+    const rows = keList.map(ke => {
+        // S-RIM 공식: 적정가치 = 자본총계 * (ROE / Ke)
+        const value = total_equity * (ROE / ke);
+        const target = value / shar;
+        const returnPct = (target / last - 1) * 100;
+
+        const isBase = ke === baseKe ? "**" : "";
+        return `| ${isBase}${ke.toFixed(1)}%${isBase} | ${isBase}${returnPct.toFixed(2)}%${isBase} | ${isBase}$${target.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}${isBase} |`;
+    }).join("\n");
+
+    return `
+# 💡 미국 S-RIM 가치 평가 모델
+> **적정 가치** = 자기자본 × (ROE / 요구수익률)\n
+> **적정 주가** = 적정 가치 ÷ 상장 주식수
+
+| 요구수익률 기준(Ke) | 기대 수익률 | 적정 주가($) |
+|:---:|:---:|:---:|
+${rows}
+
+---
+
+# 🔍 핵심 투자 지표 (Key Metrics)
+* 📈 **ROE (자기자본이익률):** \`${ROE.toFixed(2)}%\`
+* 💰 **자기자본 (Equity):** \`$${(total_equity / 1000000).toLocaleString()}M (백만 달러)\`
+* 🏷️ **현재가 (Price):** \`$${last.toLocaleString()}\`
+
+---
+*※ 미국 주식의 Ke는 보통 미국 10년물 국채 금리에 리스크 프리미엄을 더한 7~9% 수준을 주로 사용합니다.*
+    `.trim();
 }
 
 /**
