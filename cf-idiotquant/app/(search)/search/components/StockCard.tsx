@@ -13,7 +13,7 @@ export const ModernTiltCard = ({ stock, chartConfig }: any) => {
     const logoUrl = useMemo(() => {
         const hasKorean = /[ㄱ-ㅎ|ㅏ-ㅣ|가-힣]/.test(stock.name);
         if (!isError) {
-            if (stock.name && !hasKorean) {
+            if (stock.isUs && stock.name && !hasKorean) {
                 return `https://img.logo.dev/ticker/${stock.name.toUpperCase()}?token=${process.env.NEXT_PUBLIC_CLEARBIT_API_KEY}&retina=true&size=200`;
             }
             else if (stock.ticker) {
