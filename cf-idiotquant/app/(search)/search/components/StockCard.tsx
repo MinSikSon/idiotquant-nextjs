@@ -17,7 +17,7 @@ export const ModernTiltCard = ({ stock, chartConfig }: any) => {
                 return `https://img.logo.dev/ticker/${stock.name.toUpperCase()}?token=${process.env.NEXT_PUBLIC_CLEARBIT_API_KEY}&retina=true&size=200`;
             }
             else if (stock.ticker) {
-                return `${process.env.NEXT_PUBLIC_KR_LOGO_API}/${stock.ticker}`
+                return `${process.env.NEXT_PUBLIC_KR_LOGO_API}/${stock.ticker}?size=200`
             }
         }
 
@@ -118,7 +118,7 @@ export const ModernTiltCard = ({ stock, chartConfig }: any) => {
                                 src={logoUrl}
                                 alt={stock.name}
                                 /* p-0으로 여백을 없애고 w-full h-full + object-cover로 칸을 꽉 채움 */
-                                className={`w-full h-full ${stock.isUs ? "object-contain" : "object-contain"} transition-transform duration-500 group-hover/card:scale-110`}
+                                className={`w-full h-full ${stock.isUs ? "object-cover" : "object-cover"} transition-transform duration-500 group-hover/card:scale-110`}
                                 onError={() => setIsError(true)}
                             />
                             {stock.isUs && (
