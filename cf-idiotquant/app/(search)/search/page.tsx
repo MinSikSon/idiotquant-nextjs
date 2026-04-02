@@ -10,7 +10,7 @@ import { FinancialTables } from "./components/FinancialTables";
 import FinnhubTable from "./table";
 import SearchAutocomplete from "@/components/searchAutoComplete";
 import { selectKrMarketHistory } from "@/lib/features/searchHistory/searchHistorySlice"; // reqGetSearchLog 추가
-import { Tag, Card, Elevation, Spinner, Callout, Intent } from "@blueprintjs/core";
+import { Tag, Card, Elevation, Spinner, Callout, Intent, Icon } from "@blueprintjs/core";
 import validCorpNameArray from "@/public/data/validCorpNameArray.json";
 import nasdaq_tickers from "@/public/data/usStockSymbols/nasdaq_tickers.json";
 import nyse_tickers from "@/public/data/usStockSymbols/nyse_tickers.json";
@@ -22,6 +22,7 @@ import { SearchGuide } from "./components/SearchGuide";
 import { ModernTiltCard } from "./components/StockCard";
 import { reqGetSearchLog, selectPopularStocks } from "@/lib/features/searchLog/searchLogSlice";
 import corpCodeJson from "@/public/data/validCorpCode.json";
+import { IconNames } from "@blueprintjs/icons";
 
 const all_tickers = [...nasdaq_tickers, ...nyse_tickers, ...amex_tickers, ...validCorpNameArray];
 
@@ -115,75 +116,74 @@ function SearchContent() {
 
     return (
         <div className="w-full min-h-screen !bg-gray-50 dark:!bg-zinc-950">
-            <div
+            <header
                 suppressHydrationWarning
-                className={`z-40 w-full transition-all ${fixed ? "fixed top-0" : "relative shadow-md"} bg-white dark:bg-zinc-900 dark:border-zinc-800`}
+                className={`z-50 w-full transition-all duration-300 ${fixed
+                        ? "fixed top-0 bg-white/80 dark:bg-zinc-900/80 backdrop-blur-lg border-b dark:border-zinc-800 shadow-sm"
+                        : "relative bg-white dark:bg-zinc-900 border-b dark:border-zinc-800"
+                    }`}
             >
-                <SearchAutocomplete
-                    placeHolder="🇰🇷 종목명 또는 🇺🇸 티커"
-                    onSearchButton={handleSearch}
-                    validCorpNameArray={all_tickers}
-                />
+                <div className="max-w-6xl mx-auto overflow-hidden">
+                    {/* 검색창 섹션 */}
+                    <div className="p-3 md:p-4">
+                        <SearchAutocomplete
+                            placeHolder="🇰🇷 종목명 또는 🇺🇸 티커"
+                            onSearchButton={handleSearch}
+                            validCorpNameArray={all_tickers}
+                        />
+                    </div>
 
-                {/* [수정] 인기 종목 및 검색 기록 UI */}
-                <div className="flex flex-col border-t dark:border-zinc-800 bg-white dark:bg-zinc-900">
-                    {/* 실시간 인기 종목 (D1 데이터 활용) */}
-                    {popularStocks.length > 0 && (
-                        <div className="flex items-center px-4 py-2 gap-2 overflow-x-auto no-scrollbar border-b dark:border-zinc-800/50 bg-white dark:bg-zinc-900">
-                            {/* 라벨 고정 (왼쪽 그림자 효과를 주거나 고정하고 싶다면 sticky 사용) */}
-                            <span className="text-[10px] font-black text-red-500 whitespace-nowrap italic flex-shrink-0 mr-1">
-                                HOT TOP 10 🔥
-                            </span>
+                    {/* 실시간 인기 & 최근 검색 통합 바 */}
+                    <div className="flex flex-col gap-1 pb-1 px-4">
+                        {/* 실시간 인기 종목 */}
+                        {popularStocks.length > 0 && (
+                            <div className="flex items-center gap-3 overflow-x-auto no-scrollbar py-1">
+                                <div className="flex items-center gap-1.5 flex-shrink-0">
+                                    <span className="relative flex h-2 w-2">
+                                        <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
+                                        <span className="relative inline-flex rounded-full h-2 w-2 bg-red-500"></span>
+                                    </span>
+                                    <span className="text-[10px] font-black text-red-500 italic whitespace-nowrap">HOT 10</span>
+                                </div>
+                                <div className="flex items-center gap-2">
+                                    {popularStocks.map((s: any, i: number) => (
+                                        <button
+                                            key={`pop-${s.ticker}-${i}`}
+                                            onClick={() => handleSearch(s.ticker)}
+                                            className="flex items-center gap-1.5 whitespace-nowrap px-2.5 py-1 rounded-md bg-red-50 dark:bg-red-950/30 border border-red-100 dark:border-red-900/30 text-[11px] font-bold text-red-600 dark:text-red-400 active:scale-95 transition-all"
+                                        >
+                                            <span className="text-[9px] opacity-60 font-black">{i + 1}</span>
+                                            {s.name}
+                                        </button>
+                                    ))}
+                                </div>
+                            </div>
+                        )}
 
+                        {/* 최근 검색 기록 */}
+                        <div className="flex items-center gap-3 overflow-x-auto no-scrollbar py-1">
+                            <div className="flex items-center gap-1.5 flex-shrink-0">
+                                <Icon icon={IconNames.HISTORY} size={10} className="text-zinc-400" />
+                                <span className="text-[10px] font-bold text-zinc-400 uppercase tracking-tighter">Recent</span>
+                            </div>
                             <div className="flex items-center gap-2">
-                                {popularStocks.map((s: any, i: number) => (
-                                    <Tag
-                                        key={`popular-${s.ticker}-${i}`}
-                                        interactive
-                                        round
-                                        minimal
-                                        intent={Intent.DANGER}
-                                        onClick={() => handleSearch(s.ticker)}
-                                        // whitespace-nowrap: 글자가 잘리지 않게 함
-                                        // flex-shrink-0: 부모 컨테이너가 좁아져도 태그 크기가 줄어들지 않게 함
-                                        className="cursor-pointer !text-[11px] font-bold whitespace-nowrap flex-shrink-0 px-3 py-1"
+                                {krMarketHistory.slice(-8).reverse().map((s, i) => (
+                                    <button
+                                        key={`${sectionId}-history-${i}`}
+                                        onClick={() => handleSearch(s)}
+                                        className="whitespace-nowrap px-2 py-0.5 text-[11px] font-medium text-zinc-500 dark:text-zinc-400 hover:text-blue-500 dark:hover:text-blue-400 transition-colors active:opacity-60"
                                     >
-                                        <span className="mr-1 text-[9px] opacity-70">{i + 1}.</span>
-                                        {s.name}
-                                    </Tag>
+                                        {s}
+                                    </button>
                                 ))}
+                                {krMarketHistory.length === 0 && (
+                                    <span className="text-[10px] text-zinc-300 dark:text-zinc-700 italic font-medium">검색 기록이 없습니다.</span>
+                                )}
                             </div>
                         </div>
-                    )}
-
-                    {/* 가로 슬라이드 컨테이너 */}
-                    <div className="flex items-center px-4 py-2 gap-2 overflow-x-auto no-scrollbar border-b dark:border-zinc-800/50 bg-white dark:bg-zinc-900">
-                        <span className="text-[10px] font-black text-gray-500 whitespace-nowrap italic flex-shrink-0 mr-1">
-                            RECENT
-                        </span>
-                        {/* 최근 6개 기록을 역순으로 표시 */}
-                        {krMarketHistory.slice(-10).reverse().map((s, i) => (
-                            <Tag
-                                key={`${sectionId}-history-${i}`}
-                                interactive
-                                round
-                                minimal
-                                onClick={() => handleSearch(s)}
-                                // whitespace-nowrap: 텍스트 줄바꿈 방지
-                                // flex-shrink-0: 태그가 좁아지지 않게 고정
-                                className="cursor-pointer dark:!text-white whitespace-nowrap flex-shrink-0 px-2.5 py-1 text-[11px] border-none bg-zinc-100 dark:bg-zinc-800"
-                            >
-                                {s}
-                            </Tag>
-                        ))}
-
-                        {/* 기록이 없을 때 빈 공간 유지용 (선택 사항) */}
-                        {krMarketHistory.length === 0 && (
-                            <span className="text-[10px] text-zinc-300 italic">No history</span>
-                        )}
                     </div>
                 </div>
-            </div>
+            </header>
 
             <main className="max-w-6xl mx-auto p-4 md:p-6">
                 {error && (
@@ -235,7 +235,7 @@ function SearchContent() {
                                 />
                             </div>
 
-                            <StockHeader data={data} isUs={krOrUs === "US"} isFixed={fixed} />
+                            <StockHeader data={data} isUs={krOrUs === "US"} isFixed={fixed} all_tickers={all_tickers} handleSearch={handleSearch} />
                             <StockMetrics data={data} isUs={krOrUs === "US"} />
                             <ValuationSection data={data} isUs={krOrUs === "US"} />
 
