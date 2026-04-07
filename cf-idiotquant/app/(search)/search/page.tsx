@@ -182,7 +182,7 @@ function SearchContent() {
 
                             <StockHeader data={data} isUs={krOrUs === "US"} isFixed={fixed} />
                             
-                            <div className={fixed ? "pt-24 transition-all" : ""}>
+                            <div className={fixed ? "pt-8 transition-all" : ""}>
                                 <StockMetrics data={data} isUs={krOrUs === "US"} />
                                 <ValuationSection data={data} isUs={krOrUs === "US"} />
                                 {krOrUs === "KR" ? <FinancialTables kiBS={data.kiBS} kiIS={data.kiIS} /> : <FinnhubTable data={data.finnhubData.data} />}

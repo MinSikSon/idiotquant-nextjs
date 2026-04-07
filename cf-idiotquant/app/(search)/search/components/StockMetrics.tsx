@@ -72,7 +72,7 @@ export const StockMetrics = ({ data, isUs }: { data: any; isUs: boolean }) => {
     }
 
     return (
-        <div className="mb-4 bg-white dark:bg-zinc-900 border-y dark:border-zinc-800 py-1.5 shadow-sm">
+        <div className="my-4 bg-white dark:bg-zinc-900 border-y dark:border-zinc-800 py-1.5 shadow-sm">
             <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-6 gap-x-4 gap-y-1 px-3">
                 {metrics.map((m, i) => (
                     <div key={i} className="flex justify-between items-center border-b border-gray-50 dark:border-zinc-800/40 pb-0.5">
