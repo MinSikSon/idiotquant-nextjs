@@ -92,7 +92,7 @@ function SearchContent() {
                 }`}
             >
                 <div className="max-w-6xl mx-auto">
-                    <div className="p-3 md:p-4 pb-1">
+                    <div className="px-3 py-2">
                         <SearchAutocomplete
                             placeHolder="🇰🇷 종목명 또는 🇺🇸 티커"
                             onSearchButton={handleSearch}

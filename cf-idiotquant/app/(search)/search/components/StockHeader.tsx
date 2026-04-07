@@ -36,7 +36,7 @@ export const StockHeader = ({ data, isUs, isFixed }: StockHeaderProps) => {
     if (!config.prdtName) return null;
 
     return (
-        <div className={`w-full transition-all duration-300 ${isFixed ? "fixed top-[70px] left-0 z-[40]" : "relative mt-4"}`}>
+        <div className={`w-full transition-all duration-300 ${isFixed ? "fixed top-[66px] left-0 z-[40]" : "relative mt-4"}`}>
             <Card
                 elevation={Elevation.ONE}
                 className={`
