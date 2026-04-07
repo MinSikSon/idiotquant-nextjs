@@ -1,6 +1,6 @@
 "use client";
 
-import React from "react";
+import React, { useMemo } from "react";
 import Link from "next/link";
 import { motion } from "framer-motion";
 import {
@@ -27,8 +27,9 @@ export default function HomePage() {
             icon: IconNames.SEARCH,
             color: "text-blue-500",
             bg: "bg-blue-500/10",
-            link: "/search", // 실제 경로에 맞춰 수정하세요
-            tag: "VALUATION"
+            link: "/search",
+            tag: "VALUATION",
+            requiresAuth: false
         },
         {
             title: "수익률 계산기",
@@ -37,7 +38,8 @@ export default function HomePage() {
             color: "text-emerald-500",
             bg: "bg-emerald-500/10",
             link: "/calculator",
-            tag: "PLANNER"
+            tag: "PLANNER",
+            requiresAuth: false
         },
         {
             title: "종목 추천",
@@ -46,7 +48,8 @@ export default function HomePage() {
             color: "text-amber-500",
             bg: "bg-amber-500/10",
             link: "/algorithm-trade",
-            tag: "ALGORITHM"
+            tag: "ALGORITHM",
+            requiresAuth: true // 로그인 필요 표시 활성화
         }
     ];
 
@@ -97,8 +100,20 @@ export default function HomePage() {
                                     className="!p-0 !rounded-3xl border-none overflow-hidden h-full flex flex-col group transition-all duration-300 hover:shadow-2xl dark:!bg-[#121216]"
                                 >
                                     <div className="p-8 flex-1">
-                                        <div className={`w-14 h-14 ${service.bg} ${service.color} rounded-2xl flex items-center justify-center mb-8 group-hover:scale-110 transition-transform duration-500`}>
-                                            <Icon icon={service.icon} size={28} />
+                                        <div className="flex justify-between items-start mb-8">
+                                            <div className={`w-14 h-14 ${service.bg} ${service.color} rounded-2xl flex items-center justify-center group-hover:scale-110 transition-transform duration-500`}>
+                                                <Icon icon={service.icon} size={28} />
+                                            </div>
+                                            
+                                            {/* 로그인 권한 필요 배지 추가 */}
+                                            {service.requiresAuth && (
+                                                <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-zinc-100 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700">
+                                                    <Icon icon={IconNames.LOCK} size={10} className="text-zinc-500" />
+                                                    <span className="text-[10px] font-black text-zinc-500 uppercase tracking-tight">
+                                                        로그인 후 사용 가능
+                                                    </span>
+                                                </div>
+                                            )}
                                         </div>
 
                                         <div className="space-y-4">
@@ -125,29 +140,6 @@ export default function HomePage() {
                         </motion.div>
                     ))}
                 </div>
-
-                {/* [Quick Support / Callout] */}
-                {/* <motion.div
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    transition={{ delay: 0.8 }}
-                    className="mt-20 p-8 md:p-12 rounded-[2.5rem] bg-zinc-900 text-white relative overflow-hidden flex flex-col md:flex-row items-center justify-between gap-8"
-                >
-                    <div className="relative z-10 text-center md:text-left">
-                        <H2 className="!text-white !font-black !m-0 mb-2">시작할 준비가 되셨나요?</H2>
-                        <p className="text-zinc-400 font-medium">모든 데이터는 매일 자정 최신 재무제표를 바탕으로 업데이트됩니다.</p>
-                    </div>
-                    <Button
-                        large
-                        intent={Intent.PRIMARY}
-                        className="relative z-10 !px-10 !py-4 !rounded-full font-black tracking-tight"
-                    >
-                        데이터 동기화 확인
-                    </Button>
-
-                    <div className="absolute inset-0 opacity-20 pointer-events-none"
-                        style={{ backgroundImage: 'radial-gradient(circle at 2px 2px, #333 1px, transparent 0)', backgroundSize: '24px 24px' }} />
-                </motion.div> */}
             </main>
 
             {/* [Footer] */}

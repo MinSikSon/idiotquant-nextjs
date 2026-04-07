@@ -86,7 +86,7 @@ function SearchContent() {
     return (
         <div className="w-full min-h-screen !bg-gray-50 dark:!bg-zinc-950">
             <header
-                className={`w-full transition-all duration-300 z-[100] ${fixed
+                className={`w-full transition-all duration-300 z-[50] ${fixed
                     ? "fixed top-0 bg-white/90 dark:bg-zinc-900/90 backdrop-blur-lg border-b dark:border-zinc-800 shadow-sm"
                     : "relative bg-white dark:bg-zinc-900 border-b dark:border-zinc-800"
                 }`}
