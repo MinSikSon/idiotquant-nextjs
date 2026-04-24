@@ -38,7 +38,7 @@ export const ModernTiltCard = ({ stock, chartConfig }: any) => {
             const y = e.clientY - rect.top;
             const centerX = rect.width / 2;
             const centerY = rect.height / 2;
-            const rotateX = (centerY - y) / centerY * 10; 
+            const rotateX = (centerY - y) / centerY * 10;
             const rotateY = (x - centerX) / centerX * 10;
             setRotation({ x: rotateX, y: rotateY });
         };
@@ -56,8 +56,8 @@ export const ModernTiltCard = ({ stock, chartConfig }: any) => {
     // 수치 정돈 로직
     const formattedFairValue = useMemo(() => {
         if (stock.isGuide) return stock.fairValue;
-        const value = typeof stock.fairValue === 'string' 
-            ? parseFloat(stock.fairValue.replace(/[^0-9.-]+/g, "")) 
+        const value = typeof stock.fairValue === 'string'
+            ? parseFloat(stock.fairValue.replace(/[^0-9.-]+/g, ""))
             : stock.fairValue;
         return stock.isUs ? value : Math.round(value).toLocaleString();
     }, [stock.fairValue, stock.isUs, stock.isGuide]);
@@ -66,17 +66,17 @@ export const ModernTiltCard = ({ stock, chartConfig }: any) => {
     const formattedPbr = useMemo(() => stock.isGuide ? stock.pbr : parseFloat(stock.pbr).toFixed(1), [stock.pbr, stock.isGuide]);
 
     return (
-        <div 
+        <div
             ref={cardRef}
             className="group/card relative w-[20rem] h-[35rem] transition-transform duration-100 ease-out select-none cursor-pointer"
-            style={{ 
-                perspective: '1000px', 
-                transform: `rotateX(${rotation.x}deg) rotateY(${rotation.y}deg)` 
+            style={{
+                perspective: '1000px',
+                transform: `rotateX(${rotation.x}deg) rotateY(${rotation.y}deg)`
             }}
         >
             {/* 카드 본체: 다크모드 배경 및 보더 적용 */}
             <div className="w-full h-full bg-white dark:bg-zinc-900 rounded-[3rem] shadow-[0_20px_50px_rgba(0,0,0,0.1)] dark:shadow-[0_20px_50px_rgba(0,0,0,0.5)] border-[10px] border-zinc-50 dark:border-zinc-800 overflow-hidden flex flex-col p-8 z-10 relative transition-all duration-500 group-hover/card:shadow-[0_25px_60px_rgba(59,130,246,0.2)]">
-                
+
                 {/* 배경 차트: 다크모드에서 투명도 조정 */}
                 <div className="absolute bottom-0 left-0 w-full h-32 opacity-[0.03] dark:opacity-[0.07] pointer-events-none z-0">
                     {chartConfig?.data && (
@@ -106,7 +106,7 @@ export const ModernTiltCard = ({ stock, chartConfig }: any) => {
 
                 {/* 로고 영역 */}
                 <div className="w-full h-44 bg-zinc-50 dark:bg-zinc-800/50 mb-4 overflow-hidden relative z-10 rounded-2xl">
-                     {logoUrl && !isError ? (
+                    {logoUrl && !isError ? (
                         <>
                             <img
                                 src={logoUrl}
@@ -127,6 +127,19 @@ export const ModernTiltCard = ({ stock, chartConfig }: any) => {
                                     </a>
                                 </div>
                             )}
+                            {!stock.isUs && (
+                                <div className="absolute bottom-2 right-3 opacity-30 group-hover/card:opacity-100 transition-opacity duration-300">
+                                    <a
+                                        href="https://logo.idiotquant.com/"
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        className="text-[8px] font-bold text-zinc-400 dark:text-zinc-500 hover:text-zinc-600 no-underline"
+                                        onClick={(e) => e.stopPropagation()}
+                                    >
+                                        Logos by logo.idiotquant.com
+                                    </a>
+                                </div>
+                            )}
                         </>
                     ) : (
                         <div className="w-full h-full flex items-center justify-center">
@@ -143,7 +156,7 @@ export const ModernTiltCard = ({ stock, chartConfig }: any) => {
                     <div className="flex justify-between items-baseline px-1 border-b border-zinc-50 dark:border-zinc-800 pb-2">
                         <span className="text-zinc-400 dark:text-zinc-500 text-[11px] font-bold uppercase tracking-wider">적정 주가</span>
                         <div className="flex items-baseline gap-1 text-green-600 dark:text-green-500">
-                            <span className="text-lg font-bold">{stock.isUs? "$":"₩"}</span>
+                            <span className="text-lg font-bold">{stock.isUs ? "$" : "₩"}</span>
                             <span className="font-mono text-4xl font-black tracking-tighter">
                                 {formattedFairValue}
                             </span>
