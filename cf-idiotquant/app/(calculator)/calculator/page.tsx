@@ -1,258 +1,358 @@
-"use client";
+'use client';
 
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect, useCallback } from 'react';
 import {
-    Button,
-    Card,
-    Elevation,
-    Icon,
-    NumericInput,
-    Section,
-    SectionCard,
-    Text,
-    ButtonGroup,
-    Divider,
-    Callout,
-    Intent,
-    Slider,
-    Tag,
-    H2,
-} from "@blueprintjs/core";
-import { IconNames } from "@blueprintjs/icons";
-import { CalculatorIcon } from "@heroicons/react/24/outline";
-import { motion } from "framer-motion";
-import ResultChart, { ChartDataItem } from "./ResultChart";
+  Button,
+  Card,
+  Elevation,
+  Icon,
+  NumericInput,
+  Section,
+  SectionCard,
+  Text,
+  ButtonGroup,
+  Divider,
+  Callout,
+  Intent,
+  Slider,
+  Tag,
+  H2,
+  Switch,
+} from '@blueprintjs/core';
+import { IconNames } from '@blueprintjs/icons';
+import { CalculatorIcon } from '@heroicons/react/24/outline';
+import { motion } from 'framer-motion';
+import ResultChart, { ChartDataItem } from './ResultChart';
 
-// 금액 변환 함수: 만원 단위를 "x억 y,yyy만원" 형식으로 변환
-const formatKoreanCurrencyFull = (value: number): string => {
-    if (value === 0) return "0원";
+const formatKrw = (value: number): string => {
+  if (value === 0) return '0원';
+  const absValue = Math.abs(value);
+  const billion = Math.floor(absValue / 10000);
+  const million = Math.floor(absValue % 10000);
 
-    const trillion = Math.floor(value / 100000000);
-    const billion = Math.floor((value % 100000000) / 10000);
-    const million = Math.floor(value % 10000);
+  let result = value < 0 ? '-' : '';
+  if (billion > 0) result += `${billion.toLocaleString()}억 `;
+  if (million > 0) result += `${million.toLocaleString()}만`;
 
-    let result = "";
-    if (trillion > 0) result += `${trillion}조 `;
-    if (billion > 0) result += `${billion}억 `;
-    if (million > 0) {
-        result += `${million.toLocaleString()}만원`;
-    } else if (trillion > 0 || billion > 0) {
-        result += "원";
-    } else {
-        result = `${value.toLocaleString()}원`;
-    }
-
-    return result.trim();
+  return result.trim() + '원';
 };
 
+interface CalcInputs {
+  startAge: number;
+  retirementAge: number;
+  targetAge: number;
+  investmentAmount: number;
+  interestRate: number;
+  contributions: number;
+  contributionGrowthRate: number;
+  monthlyExpense: number;
+  expenseGrowthRate: number;
+  taxRate: number;
+  applyTax: boolean;
+}
+
 export default function Calculator() {
-    const [investmentAmount, setInvestmentAmount] = useState<number>(5000);
-    const [numberOfYears, setNumberOfYears] = useState<number>(10);
-    const [interestRate, setInterestRate] = useState<number>(15);
-    const [contributions, setContributions] = useState<number>(100);
+  const [inputs, setInputs] = useState<CalcInputs>({
+    startAge: 30,
+    retirementAge: 60,
+    targetAge: 90,
+    investmentAmount: 5000,
+    interestRate: 8,
+    contributions: 150,
+    contributionGrowthRate: 3.0,
+    monthlyExpense: 300,
+    expenseGrowthRate: 2.5,
+    taxRate: 15.4,
+    applyTax: true,
+  });
 
-    const [totalInvestment, setTotalInvestment] = useState<number>(0);
-    const [finalValue, setFinalValue] = useState<number>(0);
-    const [finalRateOfReturn, setFinalRateOfReturn] = useState<number>(0);
-    const [chartData, setChartData] = useState<ChartDataItem[]>([]);
-    const [resultList, setResultList] = useState<any[]>([]);
+  const [results, setResults] = useState({
+    totalInvestment: 0,
+    finalValue: 0,
+    finalRateOfReturn: 0,
+    chartData: [] as ChartDataItem[],
+  });
 
-    const calculateResult = useCallback(() => {
-        const years = Math.max(0, Math.floor(numberOfYears));
-        const hoursPerYear = 8760;
-        const totalHours = years * hoursPerYear;
-        const frequency = 730;
-        const compounding = 8760;
+  const calculateResult = useCallback(() => {
+    const {
+      startAge, retirementAge, targetAge, investmentAmount,
+      interestRate, contributions, contributionGrowthRate,
+      monthlyExpense, expenseGrowthRate, taxRate, applyTax,
+    } = inputs;
 
-        let principal = investmentAmount;
-        let additional = 0;
-        let cumulativeInvestment = investmentAmount;
+    let currentBalance = investmentAmount;
+    let totalInvested = investmentAmount;
+    let monthlyIncome = contributions;
+    let monthlyOutgo = monthlyExpense;
 
-        const yearlySnapshots: ChartDataItem[] = [{ year: 0, totalValue: principal, profitRate: 0 }];
+    const totalMonths = (targetAge - startAge) * 12;
+    const workingMonths = (retirementAge - startAge) * 12;
 
-        for (let hour = 1; hour <= totalHours; hour++) {
-            if (hour % frequency === 0) {
-                additional += contributions;
-                cumulativeInvestment += contributions;
-            }
-            if (hour % compounding === 0) {
-                const netRate = interestRate / 100;
-                principal *= (1 + netRate);
-                additional *= (1 + netRate);
+    const snapshots: ChartDataItem[] = [
+      { year: startAge, totalValue: Math.round(currentBalance), profitRate: 0 }
+    ];
 
-                const yearIndex = hour / hoursPerYear;
-                const totalVal = Math.round(principal + additional);
-                yearlySnapshots.push({
-                    year: yearIndex,
-                    totalValue: totalVal,
-                    profitRate: Number((cumulativeInvestment > 0 ? (totalVal / cumulativeInvestment - 1) * 100 : 0).toFixed(2)),
-                });
-            }
-        }
+    for (let m = 1; m <= totalMonths; m++) {
+      let profit = currentBalance * (interestRate / 100 / 12);
+      if (applyTax && profit > 0) profit *= (1 - taxRate / 100);
+      currentBalance += profit;
 
-        const finalTotal = Math.round(principal + additional);
-        setTotalInvestment(cumulativeInvestment);
-        setFinalValue(finalTotal);
-        setFinalRateOfReturn(cumulativeInvestment === 0 ? 0 : Number(((finalTotal / cumulativeInvestment - 1) * 100).toFixed(2)));
-        setChartData(yearlySnapshots);
-    }, [investmentAmount, numberOfYears, interestRate, contributions]);
+      if (m <= workingMonths) {
+        currentBalance += monthlyIncome;
+        totalInvested += monthlyIncome;
+      }
+      currentBalance -= monthlyOutgo;
 
-    useEffect(() => { calculateResult(); }, [calculateResult]);
+      if (m % 12 === 0) {
+        if (m <= workingMonths) monthlyIncome *= (1 + contributionGrowthRate / 100);
+        monthlyOutgo *= (1 + expenseGrowthRate / 100);
 
-    const registerResult = () => {
-        setResultList([{ investmentAmount, numberOfYears, interestRate, contributions, totalInvestment, finalValue, finalRateOfReturn }, ...resultList.slice(0, 9)]);
-    };
+        snapshots.push({
+          year: startAge + (m / 12),
+          totalValue: Math.max(0, Math.round(currentBalance)),
+          profitRate: totalInvested > 0 ? Number(((currentBalance / totalInvested - 1) * 100).toFixed(1)) : 0,
+        });
+      }
+      if (currentBalance < -500000) break;
+    }
 
-    return (
-        <div className="bg-zinc-50 dark:bg-[#070707] min-h-screen p-3 md:p-6 transition-colors duration-300">
-            <div className="max-w-7xl mx-auto space-y-4 md:space-y-6">
-                <header className="flex items-center py-1 justify-center gap-3">
-                    <div className="bg-blue-600/10 p-3 rounded-xl">
-                        <CalculatorIcon className="h-8 w-8 text-blue-500" />
-                    </div>
-                    <H2 className="font-black tracking-tighter text-zinc-900 dark:!text-white !m-0 text-2xl md:text-3xl uppercase">Compound Calc</H2>
-                </header>
+    setResults({
+      totalInvestment: totalInvested,
+      finalValue: Math.round(currentBalance),
+      finalRateOfReturn: totalInvested > 0 ? Number(((currentBalance / totalInvested - 1) * 100).toFixed(1)) : 0,
+      chartData: snapshots,
+    });
+  }, [inputs]);
 
-                <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 md:gap-6">
-                    <div className="lg:col-span-5 space-y-4">
-                        <Section title="투자 설정" icon={IconNames.SETTINGS} className="!rounded-xl border border-zinc-200 dark:border-zinc-800 shadow-sm">
-                            <SectionCard className="p-4 md:p-6 space-y-6 bg-white dark:!bg-zinc-900/50">
-                                <div className="space-y-3">
-                                    <div className="flex justify-between items-center px-1">
-                                        <label className="font-bold text-zinc-500 dark:text-zinc-400 text-sm uppercase">초기 자산</label>
-                                        <span className="text-blue-600 dark:text-blue-400 font-bold text-lg">
-                                            {formatKoreanCurrencyFull(investmentAmount)}
-                                        </span>
-                                    </div>
-                                    <NumericInput
-                                        fill large
-                                        value={investmentAmount}
-                                        onValueChange={(v) => setInvestmentAmount(v)}
-                                        className="!text-lg font-bold !rounded-lg dark:!text-white"
-                                        rightElement={<Tag minimal className="mr-2 text-base">만원</Tag>}
-                                    />
-                                    <ButtonGroup fill minimal className="gap-2">
-                                        {[100, 500, 1000].map((amt) => (
-                                            <Button key={amt} className="!text-base h-10 font-semibold dark:!text-white" onClick={() => setInvestmentAmount((p) => p + amt)}>+{amt}만</Button>
-                                        ))}
-                                    </ButtonGroup>
-                                </div>
+  useEffect(() => { calculateResult(); }, [calculateResult]);
 
-                                <Divider className="!my-2 opacity-50 dark:opacity-20" />
+  const updateInput = (key: keyof CalcInputs, val: any) => setInputs(p => ({ ...p, [key]: val }));
 
-                                <div className="space-y-8 py-2">
-                                    <div className="space-y-3">
-                                        <div className="flex justify-between items-center px-1">
-                                            <label className="font-bold text-zinc-500 dark:text-zinc-400 text-sm uppercase">투자 기간</label>
-                                            <span className="text-blue-500 text-xl font-black">{numberOfYears}년</span>
-                                        </div>
-                                        <Slider min={1} max={50} stepSize={1} labelStepSize={10} onChange={setNumberOfYears} value={numberOfYears} />
-                                    </div>
-                                    <div className="space-y-3">
-                                        <div className="flex justify-between items-center px-1">
-                                            <label className="font-bold text-zinc-500 dark:text-zinc-400 text-sm uppercase">연 수익률</label>
-                                            <span className="text-green-600 dark:text-green-400 text-xl font-black">{interestRate}%</span>
-                                        </div>
-                                        <Slider min={-10} max={100} stepSize={1} labelStepSize={20} intent={interestRate > 0 ? Intent.SUCCESS : Intent.DANGER} onChange={setInterestRate} value={interestRate} />
-                                    </div>
-                                </div>
+  return (
+    <div className="bg-[#f4f4f7] dark:bg-[#050505] min-h-screen p-4 md:p-10 font-sans">
+      <div className="max-w-6xl mx-auto space-y-10">
 
-                                <Divider className="!my-2 opacity-50 dark:opacity-20" />
+        <header className="flex flex-col items-center text-center space-y-3">
+          <div className="bg-indigo-600 p-3 rounded-2xl shadow-xl shadow-indigo-500/30">
+            <CalculatorIcon className="h-8 w-8 text-white" />
+          </div>
+          <H2 className="!m-0 font-black tracking-tight text-zinc-900 dark:!text-zinc-50 text-3xl">Precision Planner</H2>
+        </header>
 
-                                <div className="space-y-3">
-                                    <div className="flex justify-between items-center px-1">
-                                        <label className="font-bold text-zinc-500 dark:text-zinc-400 text-sm uppercase">월 추가 적립</label>
-                                        <span className="text-zinc-600 dark:text-zinc-400 font-bold">{formatKoreanCurrencyFull(contributions)}</span>
-                                    </div>
-                                    <NumericInput
-                                        fill large
-                                        value={contributions}
-                                        onValueChange={(v) => setContributions(v)}
-                                        className="!text-lg font-bold !rounded-lg dark:!text-white"
-                                        rightElement={<Tag minimal className="mr-2 text-base">만원</Tag>}
-                                    />
-                                </div>
-                            </SectionCard>
-                        </Section>
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-10">
 
-                        <motion.div layout>
-                            <Callout intent={finalRateOfReturn >= 0 ? Intent.SUCCESS : Intent.DANGER} className="!rounded-xl shadow-lg !p-5">
-                                <div className="flex flex-col gap-3">
-                                    <span className="pl-4 text-xs font-bold uppercase opacity-60 dark:!text-white">최종 평가액</span>
-                                    <span className="text-2xl md:text-4xl font-black tracking-tighter dark:!text-white">
-                                        {formatKoreanCurrencyFull(finalValue)}
-                                    </span>
-                                    <div className="h-px bg-black/10 dark:bg-white/10 w-full" />
-                                    <div className="grid grid-cols-2 gap-4 items-center">
-                                        <div className="flex flex-col">
-                                            <span className="opacity-50 text-[10px] uppercase dark:!text-white">누적 원금</span>
-                                            <span className="text-lg font-bold dark:!text-white">{formatKoreanCurrencyFull(totalInvestment)}</span>
-                                        </div>
-                                        <div className="flex flex-col items-end">
-                                            <span className="opacity-50 text-[10px] uppercase dark:!text-white">최종 수익률</span>
-                                            <span className={`text-xl font-black ${finalRateOfReturn >= 0 ? 'text-green-600 dark:text-green-300' : 'text-red-600 dark:text-red-300'}`}>
-                                                {finalRateOfReturn > 0 && '+'}{finalRateOfReturn}%
-                                            </span>
-                                        </div>
-                                    </div>
-                                </div>
-                            </Callout>
-                        </motion.div>
+          {/* 왼쪽: 입력 영역 */}
+          <div className="lg:col-span-5 space-y-8">
 
-                        <Button
-                            fill large
-                            intent={Intent.PRIMARY}
-                            onClick={registerResult}
-                            className="!rounded-xl py-4 !text-lg font-black shadow-lg"
-                        >
-                            시뮬레이션 저장
-                        </Button>
-                    </div>
+            {/* 섹션 1: 자금 & 수익 */}
+            <div className="space-y-4">
+              <div className="flex items-center gap-2 px-1">
+                <Icon icon={IconNames.CHART} className="text-indigo-600 dark:text-indigo-400" />
+                <span className="font-bold text-xs uppercase tracking-widest text-zinc-600 dark:text-zinc-400">핵심 자산 지표</span>
+              </div>
 
-                    <div className="lg:col-span-7 space-y-4">
-                        <Card elevation={Elevation.ZERO} className="!rounded-xl overflow-hidden !p-0 border border-zinc-200 dark:border-zinc-800 bg-white dark:!bg-zinc-950 shadow-sm">
-                            <div className="p-4 border-b border-zinc-100 dark:border-zinc-900 flex justify-between items-center">
-                                <Text className="!m-0 font-bold text-zinc-900 dark:!text-white text-base">자산 성장 및 수익률 추이</Text>
-                                <Icon icon={IconNames.TIMELINE_AREA_CHART} className="text-blue-500" size={18} />
-                            </div>
-                            <div className="p-1 md:p-3">
-                                <ResultChart data={chartData} height={"h-[350px] md:h-[500px]"} />
-                            </div>
-                        </Card>
-
-                        <Section title="저장된 시나리오" icon={IconNames.HISTORY} collapsible className="!rounded-xl border border-zinc-200 dark:border-zinc-800 shadow-sm">
-                            <SectionCard className="!p-0 overflow-hidden bg-white dark:!bg-zinc-900/20">
-                                <table className="bp5-html-table bp5-html-table-striped bp5-interactive w-full">
-                                    <thead>
-                                        <tr className="text-[11px] uppercase tracking-wider bg-zinc-50 dark:bg-zinc-800/50">
-                                            <th className="py-3 px-4 dark:!text-white">설정 (원금/기간)</th>
-                                            <th className="text-right dark:!text-white">수익률</th>
-                                            <th className="text-right pr-4 dark:!text-white">최종 평가액</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody className="text-sm md:text-base font-medium">
-                                        {resultList.map((res, idx) => (
-                                            <tr key={idx} className="cursor-pointer">
-                                                <td className="py-4 px-4 align-middle dark:!text-white">
-                                                    {res.investmentAmount.toLocaleString()}만 / {res.numberOfYears}년
-                                                </td>
-                                                <td className="text-right align-middle">
-                                                    <span className={res.finalRateOfReturn >= 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}>
-                                                        {res.finalRateOfReturn}%
-                                                    </span>
-                                                </td>
-                                                <td className="text-right pr-4 align-middle font-bold text-blue-600 dark:text-blue-400">
-                                                    {formatKoreanCurrencyFull(res.finalValue)}
-                                                </td>
-                                            </tr>
-                                        ))}
-                                    </tbody>
-                                </table>
-                            </SectionCard>
-                        </Section>
-                    </div>
+              <Card elevation={Elevation.ZERO} className="!rounded-3xl border border-zinc-200 dark:border-zinc-800 p-6 space-y-8 bg-white dark:bg-zinc-900">
+                <div className="space-y-4">
+                  <div className="flex justify-between items-center">
+                    <Text className="text-xs font-bold text-zinc-500 dark:text-zinc-400 uppercase">초기 자산</Text>
+                    <span className="text-lg font-black text-indigo-600 dark:text-indigo-400">{formatKrw(inputs.investmentAmount)}</span>
+                  </div>
+                  <NumericInput
+                    fill large min={0}
+                    value={inputs.investmentAmount}
+                    onValueChange={(v) => updateInput('investmentAmount', v)}
+                    className="!rounded-xl border-zinc-200 dark:border-zinc-700"
+                    buttonPosition="none"
+                  />
                 </div>
+
+                <div className="space-y-4">
+                  <div className="flex justify-between items-center">
+                    <Text className="text-xs font-bold text-zinc-500 dark:text-zinc-400 uppercase">연 수익률</Text>
+                    <span className="text-xl font-black text-orange-600 dark:text-orange-500">{inputs.interestRate}%</span>
+                  </div>
+                  <Slider
+                    min={0} max={100} stepSize={0.5} labelStepSize={25}
+                    onChange={(v) => updateInput('interestRate', v)}
+                    value={inputs.interestRate}
+                  />
+                  <div className="flex items-center justify-between bg-zinc-50 dark:bg-zinc-800 p-4 rounded-2xl border border-zinc-100 dark:border-zinc-700">
+                    <span className="text-[11px] font-bold text-zinc-600 dark:text-zinc-300 uppercase tracking-tighter">이자소득세(15.4%) 적용</span>
+                    <Switch
+                      large className="!mb-0"
+                      checked={inputs.applyTax}
+                      onChange={(e) => updateInput('applyTax', e.currentTarget.checked)}
+                    />
+                  </div>
+                </div>
+              </Card>
             </div>
+
+            {/* 섹션 2: 생애 주기 */}
+            <div className="space-y-4">
+              <div className="flex items-center gap-2 px-1">
+                <Icon icon={IconNames.USER} className="text-indigo-600 dark:text-indigo-400" />
+                <span className="font-bold text-xs uppercase tracking-widest text-zinc-600 dark:text-zinc-400">나이 및 기간</span>
+              </div>
+              <Card elevation={Elevation.ZERO} className="!rounded-3xl border border-zinc-200 dark:border-zinc-800 p-6 bg-white dark:bg-zinc-900">
+                <div className="grid grid-cols-1 gap-8">
+                  {[
+                    { label: '현재 나이', key: 'startAge' },
+                    { label: '은퇴 및 적립 중단 나이', key: 'retirementAge' },
+                    { label: '시뮬레이션 종료 나이', key: 'targetAge' },
+                  ].map((age) => (
+                    <div key={age.key} className="space-y-3">
+                      <div className="flex justify-between items-center">
+                        <span className="text-[11px] font-bold text-zinc-500 dark:text-zinc-400 uppercase">{age.label}</span>
+                        <span className="text-lg font-black text-zinc-900 dark:text-zinc-50">{inputs[age.key as keyof CalcInputs]}세</span>
+                      </div>
+                      <Slider
+                        min={20} max={100} stepSize={1} labelStepSize={20}
+                        onChange={(v) => updateInput(age.key as keyof CalcInputs, v)}
+                        value={inputs[age.key as keyof CalcInputs] as number}
+                      />
+                    </div>
+                  ))}
+                </div>
+              </Card>
+            </div>
+
+            {/* 섹션 3: 현금 흐름 */}
+            <div className="space-y-4">
+              <div className="flex items-center gap-2 px-1">
+                <Icon icon={IconNames.FLOWS} className="text-indigo-600 dark:text-indigo-400" />
+                <span className="font-bold text-xs uppercase tracking-widest text-zinc-600 dark:text-zinc-400">매월 수입 및 지출</span>
+              </div>
+              <Card elevation={Elevation.ZERO} className="!rounded-3xl border border-zinc-200 dark:border-zinc-800 p-6 space-y-8 bg-white dark:bg-zinc-900">
+                <div className="space-y-4">
+                  <div className="flex justify-between items-center">
+                    <div className="flex flex-col">
+                      <span className="text-xs font-bold text-zinc-500 dark:text-zinc-400 uppercase">월 적립액</span>
+                      <span className="text-[11px] text-indigo-600 dark:text-indigo-400 font-bold">매년 {inputs.contributionGrowthRate.toFixed(1)}% 증가</span>
+                    </div>
+                    <span className="text-lg font-black text-zinc-900 dark:text-zinc-50">{formatKrw(inputs.contributions)}</span>
+                  </div>
+                  <NumericInput
+                    fill large value={inputs.contributions}
+                    onValueChange={(v) => updateInput('contributions', v)}
+                    className="!rounded-xl border-zinc-200 dark:border-zinc-700"
+                  />
+                  <Slider
+                    min={0} max={10} stepSize={0.1} labelStepSize={5}
+                    onChange={(v) => updateInput('contributionGrowthRate', v)}
+                    value={inputs.contributionGrowthRate}
+                  />
+                </div>
+
+                <Divider className="dark:border-zinc-800" />
+
+                <div className="space-y-4">
+                  <div className="flex justify-between items-center">
+                    <div className="flex flex-col">
+                      <span className="text-xs font-bold text-zinc-500 dark:text-zinc-400 uppercase">월 생활비</span>
+                      <span className="text-[11px] text-red-600 dark:text-red-400 font-bold">매년 {inputs.expenseGrowthRate.toFixed(1)}% 인상</span>
+                    </div>
+                    <span className="text-lg font-black text-red-600 dark:text-red-500">{formatKrw(inputs.monthlyExpense)}</span>
+                  </div>
+                  <NumericInput
+                    fill large value={inputs.monthlyExpense}
+                    onValueChange={(v) => updateInput('monthlyExpense', v)}
+                    className="!rounded-xl border-zinc-200 dark:border-zinc-700"
+                  />
+                  <Slider
+                    min={0} max={10} stepSize={0.1} labelStepSize={5}
+                    onChange={(v) => updateInput('expenseGrowthRate', v)}
+                    value={inputs.expenseGrowthRate}
+                  />
+                </div>
+              </Card>
+            </div>
+          </div>
+
+          {/* 오른쪽: 결과 영역 */}
+          <div className="lg:col-span-7 space-y-8">
+            <motion.div layout initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}>
+              <Card
+                elevation={Elevation.FOUR}
+                className={`!rounded-[2.5rem] !p-10 border-0 shadow-2xl relative overflow-hidden transition-all duration-500 ${results.finalValue >= 0
+                  ? 'bg-[#111111] text-white shadow-indigo-500/20'
+                  : 'bg-[#3b0808] text-white shadow-red-500/20'
+                  }`}
+              >
+                <div className="relative z-10 space-y-8">
+                  <div className="space-y-3">
+                    <span className={`text-xs font-black uppercase tracking-[0.3em] drop-shadow-sm ${results.finalValue >= 0 ? 'text-indigo-400' : 'text-red-400'
+                      }`}>
+                      {inputs.targetAge}세 예상 자산 잔액
+                    </span>
+
+                    <H2 className={`!m-0 text-5xl md:text-7xl font-black tracking-tighter leading-tight drop-shadow-lg ${results.finalValue >= 0
+                      ? 'text-yellow-400'
+                      : 'text-red-500'
+                      }`}>
+                      {formatKrw(results.finalValue)}
+                    </H2>
+
+                    {results.finalValue < 0 && (
+                      <div className="flex items-center gap-2 mt-4 bg-red-500/20 w-fit px-3 py-1 rounded-full border border-red-500/50">
+                        <Icon icon={IconNames.WARNING_SIGN} intent="danger" size={14} />
+                        <span className="text-red-400 font-bold text-[10px] uppercase tracking-wider">Warning: Asset Depletion</span>
+                      </div>
+                    )}
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-6 pt-8 border-t border-white/10">
+                    <div className="bg-white/5 p-4 rounded-2xl border border-white/5">
+                      <span className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest block mb-1">총 투입 원금</span>
+                      <div className="text-xl font-bold text-zinc-500">{formatKrw(results.totalInvestment)}</div>
+                    </div>
+                    <div className="bg-white/5 p-4 rounded-2xl text-right border border-white/5">
+                      <span className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest block mb-1">최종 수익률</span>
+                      <div className={`text-3xl font-black drop-shadow-sm ${results.finalRateOfReturn >= 0 ? 'text-green-400' : 'text-red-400'
+                        }`}>
+                        {results.finalRateOfReturn}%
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <div className={`absolute -right-10 -bottom-10 w-80 h-80 rounded-full blur-[120px] opacity-20 ${results.finalValue >= 0 ? 'bg-indigo-600' : 'bg-red-700'
+                  }`} />
+              </Card>
+            </motion.div>
+
+            {/* 차트 카드 가독성 개선 */}
+            <Card className="!rounded-3xl !p-8 border-0 shadow-xl bg-white dark:bg-zinc-900">
+              <div className="flex justify-between items-center mb-8">
+                <div>
+                  <Text className="!m-0 font-black text-xl text-zinc-900 dark:text-zinc-50">자산 성장 곡선</Text>
+                  <Text className="text-xs text-zinc-500 dark:text-zinc-400 font-medium mt-1">나이에 따른 복리 및 지출 반영 궤적</Text>
+                </div>
+              </div>
+              <div className="bg-zinc-50 dark:bg-black/40 rounded-2xl p-4 border border-zinc-100 dark:border-zinc-800">
+                <ResultChart data={results.chartData} height="h-[500px] md:h-[600px]" />
+              </div>
+            </Card>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <Callout icon={IconNames.INFO_SIGN} className="!rounded-2xl !p-6 border-0 shadow-md dark:bg-zinc-900 bg-white">
+                <h5 className="font-bold mb-2 text-zinc-800 dark:text-zinc-100">복리 상식</h5>
+                <Text className="text-xs leading-relaxed text-zinc-600 dark:text-zinc-400">
+                  수익률 <strong>{inputs.interestRate}%</strong>는 강력한 엔진입니다. 하지만 매년 <strong>{inputs.expenseGrowthRate.toFixed(1)}%</strong>씩 오르는 물가 상승은 은퇴 후 자산을 갉아먹는 가장 큰 적입니다.
+                </Text>
+              </Callout>
+              <Callout intent={results.finalValue > 0 ? Intent.SUCCESS : Intent.DANGER} icon={IconNames.LIGHTBULB} className="!rounded-2xl !p-6 border-0 shadow-md dark:bg-zinc-900 bg-white">
+                <h5 className="font-bold mb-2 text-zinc-800 dark:text-zinc-100">전문가 진단</h5>
+                <Text className="text-xs leading-relaxed text-zinc-600 dark:text-zinc-400">
+                  {results.finalValue > 0
+                    ? `현재 계획은 매우 탄탄합니다. 은퇴 시점인 ${inputs.retirementAge}세 이후에도 자산이 안정적으로 유지될 것으로 보입니다.`
+                    : `자산 고갈이 예상됩니다. 은퇴 시점을 늦추거나, 수익률 목표를 높이는 전략적 수정이 필요합니다.`}
+                </Text>
+              </Callout>
+            </div>
+          </div>
         </div>
-    );
+      </div>
+    </div>
+  );
 }

@@ -7,7 +7,7 @@
     "editor.wrappingIndent": "indent"
   },
   "[typescriptreact]": {
-    "editor.defaultFormatter": "esbenp.prettier-vscode",
+    "editor.defaultFormatter": "vscode.typescript-language-features",
     "editor.formatOnSave": true,
     "editor.wordWrap": "on",
     "editor.wordWrapColumn": 80,
