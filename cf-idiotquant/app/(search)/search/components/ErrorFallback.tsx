@@ -14,7 +14,7 @@ export function ErrorFallback({
   return (
     <div className="flex flex-col items-center justify-center py-20 px-6 text-center">
       <div className="mb-6 p-4 bg-red-50 dark:bg-red-950/30 rounded-full">
-        <Icon icon={IconNames.ALARM} size={48} className="text-red-5im" />
+        <Icon icon={IconNames.NOTIFICATIONS} size={48} className="text-red-5im" />
       </div>
 
       <h3 className="text-2xl font-bold text-zinc-900 dark:text-zinc-100 mb-2">
@@ -32,7 +32,7 @@ export function ErrorFallback({
           className="!rounded-xl !px-6 !py-2 font-bold"
           onClick={resetErrorBoundary}
         >
-          <Icon icon={IconNames.RETRY} size={16} className="mr-2" />
+          <Icon icon={IconNames.REFRESH} size={16} className="mr-2" />
           다시 시도
         </Button>
         <Button
