@@ -28,7 +28,7 @@ import {
   getUsNcavGrade,
 } from './utils/financeCalc';
 import { SearchGuide } from './components/SearchGuide';
-import { PokemonStockCard } from './components/StockCard';
+import { StockCard } from './components/StockCard';
 import {
   reqGetSearchLog,
   selectPopularStocks,
@@ -119,8 +119,8 @@ function SearchContent() {
     <div className="w-full min-h-screen !bg-gray-50 dark:!bg-zinc-950">
       <header
         className={`w-full transition-all duration-300 z-[50] ${fixed
-            ? 'fixed top-0 bg-white/90 dark:bg-zinc-900/90 backdrop-blur-lg border-b dark:border-zinc-800 shadow-sm'
-            : 'relative bg-white dark:bg-zinc-900 border-b dark:border-zinc-800'
+          ? 'fixed top-0 bg-white/90 dark:bg-zinc-900/90 backdrop-blur-lg border-b dark:border-zinc-800 shadow-sm'
+          : 'relative bg-white dark:bg-zinc-900 border-b dark:border-zinc-800'
           }`}
       >
         <div className="max-w-6xl mx-auto">
@@ -215,7 +215,7 @@ function SearchContent() {
             )}
             <div className={!isLoaded ? 'hidden' : 'block'}>
               <div className="flex justify-center mb-10">
-                <PokemonStockCard
+                <StockCard
                   stock={
                     krOrUs === 'US'
                       ? {

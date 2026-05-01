@@ -16,7 +16,7 @@ const GRADE_CONFIG: Record<string, any> = {
     F: { frame: "bg-zinc-500", inner: "bg-zinc-100", text: "text-zinc-800", sparkle: false, label: "BASIC" },
 };
 
-export const PokemonStockCard = ({ stock, chartConfig }: any) => {
+export const StockCard = ({ stock, chartConfig }: any) => {
     const cardRef = useRef<HTMLDivElement>(null);
     const [isError, setIsError] = useState(false);
     const [rotation, setRotation] = useState({ x: 0, y: 0 });
