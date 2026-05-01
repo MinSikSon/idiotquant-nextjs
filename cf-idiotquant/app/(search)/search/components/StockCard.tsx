@@ -101,7 +101,7 @@ export const StockCard = ({ stock, chartConfig }: any) => {
                             </h3>
                         </div>
                         <div className="flex items-center gap-2">
-                            <span className="text-[10px] font-black text-red-600 drop-shadow-sm">TICKER {stock.ticker?.substring(0, 4)}</span>
+                            <span className="text-[10px] font-black text-red-600 drop-shadow-sm">TICKER {stock.ticker?.substring(0, 6)}</span>
                             <div className={`w-9 h-9 rounded-full shadow-lg border-2 border-white flex items-center justify-center ${config.frame} group-hover/card:scale-110 transition-transform`}>
                                 <span className="text-white font-black text-base drop-shadow-md">{grade}</span>
                             </div>
