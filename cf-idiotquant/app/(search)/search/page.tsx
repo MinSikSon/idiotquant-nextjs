@@ -28,7 +28,7 @@ import {
   getUsNcavGrade,
 } from './utils/financeCalc';
 import { SearchGuide } from './components/SearchGuide';
-import { ModernTiltCard } from './components/StockCard';
+import { PokemonStockCard } from './components/StockCard';
 import {
   reqGetSearchLog,
   selectPopularStocks,
@@ -118,11 +118,10 @@ function SearchContent() {
   return (
     <div className="w-full min-h-screen !bg-gray-50 dark:!bg-zinc-950">
       <header
-        className={`w-full transition-all duration-300 z-[50] ${
-          fixed
+        className={`w-full transition-all duration-300 z-[50] ${fixed
             ? 'fixed top-0 bg-white/90 dark:bg-zinc-900/90 backdrop-blur-lg border-b dark:border-zinc-800 shadow-sm'
             : 'relative bg-white dark:bg-zinc-900 border-b dark:border-zinc-800'
-        }`}
+          }`}
       >
         <div className="max-w-6xl mx-auto">
           <div className="px-3 py-2">
@@ -216,47 +215,47 @@ function SearchContent() {
             )}
             <div className={!isLoaded ? 'hidden' : 'block'}>
               <div className="flex justify-center mb-10">
-                <ModernTiltCard
+                <PokemonStockCard
                   stock={
                     krOrUs === 'US'
                       ? {
-                          code: tickerFromUrl,
-                          isUs: true,
-                          name,
-                          ticker: name,
-                          grade: getUsNcavGrade(
+                        code: tickerFromUrl,
+                        isUs: true,
+                        name,
+                        ticker: name,
+                        grade: getUsNcavGrade(
+                          data.finnhubData,
+                          data.usDetail
+                        ),
+                        fairValue:
+                          '$' +
+                          calculateUsNcavValue(
                             data.finnhubData,
                             data.usDetail
                           ),
-                          fairValue:
-                            '$' +
-                            calculateUsNcavValue(
-                              data.finnhubData,
-                              data.usDetail
-                            ),
-                          undervaluedScore: calculateUsNcavRatio(
-                            data.finnhubData,
-                            data.usDetail
-                          ),
-                          per: data?.usDetail?.output?.perx ?? 0,
-                          pbr: data?.usDetail?.output?.pbrx ?? 0,
-                        }
+                        undervaluedScore: calculateUsNcavRatio(
+                          data.finnhubData,
+                          data.usDetail
+                        ),
+                        per: data?.usDetail?.output?.perx ?? 0,
+                        pbr: data?.usDetail?.output?.pbrx ?? 0,
+                      }
                       : {
-                          code: tickerFromUrl,
-                          isUs: false,
-                          name,
-                          ticker:
-                            (corpCodeJson as any)?.[name]?.stock_code ?? '',
-                          grade: getKrNcavGrade(data.kiBS, data.kiChart),
-                          fairValue:
-                            '₩' + calculateKrNcavValue(data.kiBS, data.kiChart),
-                          undervaluedScore: calculateKrNcavRatio(
-                            data.kiBS,
-                            data.kiChart
-                          ),
-                          per: data?.kiPrice?.output?.per ?? 0,
-                          pbr: data?.kiPrice?.output?.pbr ?? 0,
-                        }
+                        code: tickerFromUrl,
+                        isUs: false,
+                        name,
+                        ticker:
+                          (corpCodeJson as any)?.[name]?.stock_code ?? '',
+                        grade: getKrNcavGrade(data.kiBS, data.kiChart),
+                        fairValue:
+                          '₩' + calculateKrNcavValue(data.kiBS, data.kiChart),
+                        undervaluedScore: calculateKrNcavRatio(
+                          data.kiBS,
+                          data.kiChart
+                        ),
+                        per: data?.kiPrice?.output?.per ?? 0,
+                        pbr: data?.kiPrice?.output?.pbr ?? 0,
+                      }
                   }
                   chartConfig={chartConfig}
                 />

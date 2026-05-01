@@ -2,32 +2,41 @@
 
 import React, { useState, useEffect, useMemo, useRef } from 'react';
 import LineChart from "@/components/LineChart";
-import { StockScoreGauge } from "./StockScoreGauge";
 
-export const ModernTiltCard = ({ stock, chartConfig }: any) => {
+// 등급별 디자인 설정
+const GRADE_CONFIG: Record<string, any> = {
+    SSS: { frame: "bg-gradient-to-br from-pink-400 via-purple-400 to-cyan-400", inner: "bg-white/90", text: "text-purple-600", sparkle: true, label: "HYPER RARE" },
+    SS: { frame: "bg-gradient-to-br from-yellow-200 via-yellow-500 to-yellow-200", inner: "bg-amber-50/90", text: "text-amber-700", sparkle: true, label: "SUPER RARE" },
+    S: { frame: "bg-[#ffd700]", inner: "bg-amber-50", text: "text-amber-600", sparkle: true, label: "RARE" },
+    A: { frame: "bg-[#c0c0c0]", inner: "bg-slate-50", text: "text-slate-700", sparkle: false, label: "UNCOMMON" },
+    B: { frame: "bg-[#cd7f32]", inner: "bg-orange-50", text: "text-orange-800", sparkle: false, label: "COMMON" },
+    C: { frame: "bg-blue-400", inner: "bg-blue-50", text: "text-blue-700", sparkle: false, label: "COMMON" },
+    D: { frame: "bg-green-400", inner: "bg-green-50", text: "text-green-700", sparkle: false, label: "COMMON" },
+    E: { frame: "bg-gray-400", inner: "bg-gray-50", text: "text-gray-700", sparkle: false, label: "COMMON" },
+    F: { frame: "bg-zinc-500", inner: "bg-zinc-100", text: "text-zinc-800", sparkle: false, label: "BASIC" },
+};
+
+export const PokemonStockCard = ({ stock, chartConfig }: any) => {
     const cardRef = useRef<HTMLDivElement>(null);
     const [isError, setIsError] = useState(false);
     const [rotation, setRotation] = useState({ x: 0, y: 0 });
+    const [glare, setGlare] = useState({ x: 50, y: 50, opacity: 0 });
 
-    // 로고 URL 생성 로직
+    const grade = stock?.grade?.grade?.toUpperCase() || 'F';
+    const config = GRADE_CONFIG[grade] || GRADE_CONFIG['F'];
+
     const logoUrl = useMemo(() => {
         const hasKorean = /[ㄱ-ㅎ|ㅏ-ㅣ|가-힣]/.test(stock.name);
         if (!isError) {
             if (stock.isUs && stock.name && !hasKorean) {
                 return `https://img.logo.dev/ticker/${stock.name.toUpperCase()}?token=${process.env.NEXT_PUBLIC_CLEARBIT_API_KEY}&retina=true&size=200`;
-            }
-            else if (stock.ticker) {
+            } else if (stock.ticker) {
                 return `${process.env.NEXT_PUBLIC_KR_LOGO_API}/${stock.ticker}?size=200`
             }
         }
         return "";
     }, [stock.name, stock.ticker, stock.isUs, isError]);
 
-    useEffect(() => {
-        setIsError(false);
-    }, [stock.ticker]);
-
-    // 3D 기울기 효과
     useEffect(() => {
         const card = cardRef.current;
         if (!card) return;
@@ -38,12 +47,15 @@ export const ModernTiltCard = ({ stock, chartConfig }: any) => {
             const y = e.clientY - rect.top;
             const centerX = rect.width / 2;
             const centerY = rect.height / 2;
-            const rotateX = (centerY - y) / centerY * 10;
-            const rotateY = (x - centerX) / centerX * 10;
-            setRotation({ x: rotateX, y: rotateY });
+
+            setRotation({ x: (centerY - y) / centerY * 15, y: (x - centerX) / centerX * 15 });
+            setGlare({ x: (x / rect.width) * 100, y: (y / rect.height) * 100, opacity: grade.includes('S') ? 0.8 : 0.4 });
         };
 
-        const handleMouseLeave = () => setRotation({ x: 0, y: 0 });
+        const handleMouseLeave = () => {
+            setRotation({ x: 0, y: 0 });
+            setGlare(prev => ({ ...prev, opacity: 0 }));
+        };
 
         card.addEventListener('mousemove', handleMouseMove);
         card.addEventListener('mouseleave', handleMouseLeave);
@@ -51,138 +63,120 @@ export const ModernTiltCard = ({ stock, chartConfig }: any) => {
             card.removeEventListener('mousemove', handleMouseMove);
             card.removeEventListener('mouseleave', handleMouseLeave);
         };
-    }, []);
-
-    // 수치 정돈 로직
-    const formattedFairValue = useMemo(() => {
-        if (stock.isGuide) return stock.fairValue;
-        const value = typeof stock.fairValue === 'string'
-            ? parseFloat(stock.fairValue.replace(/[^0-9.-]+/g, ""))
-            : stock.fairValue;
-        return stock.isUs ? value : Math.round(value).toLocaleString();
-    }, [stock.fairValue, stock.isUs, stock.isGuide]);
-
-    const formattedPer = useMemo(() => stock.isGuide ? stock.per : parseFloat(stock.per).toFixed(1), [stock.per, stock.isGuide]);
-    const formattedPbr = useMemo(() => stock.isGuide ? stock.pbr : parseFloat(stock.pbr).toFixed(1), [stock.pbr, stock.isGuide]);
+    }, [grade]);
 
     return (
         <div
             ref={cardRef}
-            className="group/card relative w-[20rem] h-[35rem] transition-transform duration-100 ease-out select-none cursor-pointer"
+            className="group/card relative w-[22rem] h-[32rem] transition-transform duration-150 ease-out select-none cursor-pointer"
             style={{
-                perspective: '1000px',
+                perspective: '1200px',
                 transform: `rotateX(${rotation.x}deg) rotateY(${rotation.y}deg)`
             }}
         >
-            {/* 카드 본체: 다크모드 배경 및 보더 적용 */}
-            <div className="w-full h-full bg-white dark:bg-zinc-900 rounded-[3rem] shadow-[0_20px_50px_rgba(0,0,0,0.1)] dark:shadow-[0_20px_50px_rgba(0,0,0,0.5)] border-[10px] border-zinc-50 dark:border-zinc-800 overflow-hidden flex flex-col p-8 z-10 relative transition-all duration-500 group-hover/card:shadow-[0_25px_60px_rgba(59,130,246,0.2)]">
+            {/* 1. 등급별 외곽 프레임 */}
+            <div className={`w-full h-full p-[12px] rounded-[1.5rem] ${config.frame} shadow-2xl relative overflow-hidden flex flex-col border-2 border-black/20 transition-colors duration-500`}>
 
-                {/* 배경 차트: 다크모드에서 투명도 조정 */}
-                <div className="absolute bottom-0 left-0 w-full h-32 opacity-[0.03] dark:opacity-[0.07] pointer-events-none z-0">
-                    {chartConfig?.data && (
-                        <LineChart
-                            data_array={[{ name: "Price", data: chartConfig.data, color: "#3b82f6" }]}
-                            category_array={chartConfig.categories}
-                            height={120}
-                            show_yaxis_label={false}
-                            legend_disable
-                            grid_disable
-                        />
-                    )}
-                </div>
+                {/* 2. 등급별 특수 홀로그램 효과 */}
+                <div
+                    className="absolute inset-0 z-30 pointer-events-none transition-opacity duration-300"
+                    style={{
+                        background: grade.startsWith('S')
+                            ? `radial-gradient(circle at ${glare.x}% ${glare.y}%, rgba(255,255,255,0.8) 0%, rgba(255,255,255,0) 40%), linear-gradient(${glare.x}deg, rgba(255,255,255,0.1), rgba(255,255,255,0.4), rgba(255,255,255,0.1))`
+                            : `radial-gradient(circle at ${glare.x}% ${glare.y}%, rgba(255,255,255,0.3) 0%, rgba(255,255,255,0) 60%)`,
+                        opacity: glare.opacity,
+                        mixBlendMode: 'overlay'
+                    }}
+                />
 
-                {/* Header */}
-                <div className="flex justify-between items-center mb-4 z-10">
-                    <h3 className="text-zinc-900 dark:text-zinc-50 font-black text-4xl uppercase tracking-tighter leading-none">
-                        {stock.name}
-                    </h3>
-                    {/* 등급 배지: 다크모드 대비 조정 */}
-                    <div className="w-14 h-14 rounded-full bg-white dark:bg-zinc-800 shadow-xl border-4 border-zinc-50 dark:border-zinc-700 flex items-center justify-center">
-                        <span className={`font-black text-2xl ${stock?.grade?.color || 'text-red-500'}`}>
-                            {stock?.grade?.grade || 'F'}
-                        </span>
+                {/* 3. 내부 메인 박스 */}
+                <div className={`relative w-full h-full ${config.inner} dark:bg-zinc-900 rounded-[0.5rem] border-[4px] border-black/5 flex flex-col overflow-hidden transition-colors duration-500`}>
+
+                    {/* Header */}
+                    <div className="flex justify-between items-start px-4 pt-3 pb-1">
+                        <div className="flex flex-col">
+                            <span className="text-[9px] font-black text-zinc-500 uppercase tracking-widest">{config.label}</span>
+                            <h3 className="text-zinc-900 dark:text-zinc-100 font-bold text-2xl tracking-tight leading-none drop-shadow-sm">
+                                {stock.name}
+                            </h3>
+                        </div>
+                        <div className="flex items-center gap-2">
+                            <span className="text-[10px] font-black text-red-600 drop-shadow-sm">TICKER {stock.ticker?.substring(0, 4)}</span>
+                            <div className={`w-9 h-9 rounded-full shadow-lg border-2 border-white flex items-center justify-center ${config.frame} group-hover/card:scale-110 transition-transform`}>
+                                <span className="text-white font-black text-base drop-shadow-md">{grade}</span>
+                            </div>
+                        </div>
                     </div>
-                </div>
 
-                {/* 로고 영역 */}
-                <div className="w-full h-44 bg-zinc-50 dark:bg-zinc-800/50 mb-4 overflow-hidden relative z-10 rounded-2xl">
-                    {logoUrl && !isError ? (
-                        <>
+                    {/* 일러스트 영역 */}
+                    <div className={`mx-3 mt-1 relative h-44 border-[5px] border-black/10 shadow-inner bg-white overflow-hidden`}>
+                        {logoUrl && !isError ? (
                             <img
                                 src={logoUrl}
                                 alt={stock.name}
-                                className="w-full h-full object-cover transition-transform duration-500 group-hover/card:scale-110"
+                                className="w-full h-full object-contain p-4 group-hover/card:scale-110 transition-transform duration-500"
                                 onError={() => setIsError(true)}
                             />
-                            {stock.isUs && (
-                                <div className="absolute bottom-2 right-3 opacity-30 group-hover/card:opacity-100 transition-opacity duration-300">
-                                    <a
-                                        href="https://logo.dev"
-                                        target="_blank"
-                                        rel="noopener noreferrer"
-                                        className="text-[8px] font-bold text-zinc-400 dark:text-zinc-500 hover:text-zinc-600 no-underline"
-                                        onClick={(e) => e.stopPropagation()}
-                                    >
-                                        Logos by Logo.dev
-                                    </a>
-                                </div>
-                            )}
-                            {!stock.isUs && (
-                                <div className="absolute bottom-2 right-3 opacity-30 group-hover/card:opacity-100 transition-opacity duration-300">
-                                    <a
-                                        href="https://logo.idiotquant.com/"
-                                        target="_blank"
-                                        rel="noopener noreferrer"
-                                        className="text-[8px] font-bold text-zinc-400 dark:text-zinc-500 hover:text-zinc-600 no-underline"
-                                        onClick={(e) => e.stopPropagation()}
-                                    >
-                                        Logos by logo.idiotquant.com
-                                    </a>
-                                </div>
-                            )}
-                        </>
-                    ) : (
-                        <div className="w-full h-full flex items-center justify-center">
-                            <span className="text-6xl font-black text-zinc-200 dark:text-zinc-700 uppercase">
-                                {stock.name.substring(0, 1)}
-                            </span>
-                        </div>
-                    )}
-                </div>
+                        ) : (
+                            <div className="w-full h-full flex items-center justify-center bg-zinc-50">
+                                <span className="text-6xl font-black text-zinc-200">{stock.name[0]}</span>
+                            </div>
+                        )}
+                        {/* 등급이 높을 때 하단에 반짝이는 띠 추가 */}
+                        {config.sparkle && (
+                            <div className="absolute bottom-0 w-full h-1 bg-gradient-to-r from-transparent via-white to-transparent animate-pulse" />
+                        )}
+                    </div>
 
-                {/* 정보 섹션 */}
-                <div className="space-y-6 mt-auto z-10">
-                    {/* 적정 주가 */}
-                    <div className="flex justify-between items-baseline px-1 border-b border-zinc-50 dark:border-zinc-800 pb-2">
-                        <span className="text-zinc-400 dark:text-zinc-500 text-[11px] font-bold uppercase tracking-wider">적정 주가</span>
-                        <div className="flex items-baseline gap-1 text-green-600 dark:text-green-500">
-                            <span className="text-lg font-bold">{stock.isUs ? "$" : "₩"}</span>
-                            <span className="font-mono text-4xl font-black tracking-tighter">
-                                {formattedFairValue}
-                            </span>
+                    {/* 기술/데이터 영역 */}
+                    <div className="flex-1 px-4 py-4 flex flex-col gap-3">
+                        <div className="relative">
+                            <div className="flex justify-between items-center border-b-2 border-dotted border-zinc-300 pb-1">
+                                <div className="flex items-center gap-2">
+                                    <span className="text-lg">💰</span>
+                                    <span className="font-bold text-sm dark:text-zinc-300 uppercase">Fair Value</span>
+                                </div>
+                                <div className={`font-black text-xl ${config.text}`}>
+                                    {stock.isUs ? "$" : "₩"}{typeof stock.fairValue === 'number' ? stock.fairValue.toLocaleString() : stock.fairValue}
+                                </div>
+                            </div>
+                        </div>
+
+                        <div className="grid grid-cols-2 gap-3">
+                            <div className="bg-white/50 dark:bg-zinc-800/50 p-2 rounded border border-black/5 flex flex-col items-center">
+                                <span className="text-[9px] font-bold text-zinc-400 uppercase">PER Ratio</span>
+                                <span className="font-black text-lg text-blue-600">{stock.per}</span>
+                            </div>
+                            <div className="bg-white/50 dark:bg-zinc-800/50 p-2 rounded border border-black/5 flex flex-col items-center">
+                                <span className="text-[9px] font-bold text-zinc-400 uppercase">PBR Ratio</span>
+                                <span className="font-black text-lg text-pink-500">{stock.pbr}</span>
+                            </div>
                         </div>
                     </div>
 
-                    {/* 게이지 바 (내부 컴포넌트에도 dark 클래스가 적용되어 있어야 합니다) */}
-                    <div className="space-y-2 px-1">
-                        <StockScoreGauge stock={stock} />
+                    {/* 하단 플레이버 텍스트 (도감 설명) */}
+                    <div className="mt-auto px-4 pb-4">
+                        <div className={`p-2 rounded italic text-[9px] leading-tight transition-colors ${grade.startsWith('S') ? 'bg-amber-100/50 text-amber-900' : 'bg-zinc-100 text-zinc-600'}`}>
+                            {grade === 'SSS'
+                                ? "전설 속의 우량주. 이 카드를 손에 넣는 자는 시장의 지배자가 된다고 전해진다."
+                                : `${stock.name}(은)는 ${grade} 등급의 에너지를 지닌 종목이다. 현재 지표는 시장 평균 대비 ${parseFloat(stock.per) > 15 ? '높은' : '안정적인'} 흐름을 보인다.`}
+                        </div>
                     </div>
 
-                    {/* 지표 섹션 */}
-                    <div className="grid grid-cols-2 gap-4 pt-2">
-                        <div className="bg-zinc-50/50 dark:bg-zinc-800/30 py-4 rounded-2xl border-2 border-zinc-100 dark:border-zinc-800 text-center transition-colors">
-                            <p className="text-[11px] text-zinc-400 dark:text-zinc-500 font-bold uppercase mb-1">PER</p>
-                            <p className="text-blue-600 dark:text-blue-400 font-black text-2xl">{formattedPer}</p>
-                        </div>
-                        <div className="bg-zinc-50/50 dark:bg-zinc-800/30 py-4 rounded-2xl border-2 border-zinc-100 dark:border-zinc-800 text-center transition-colors">
-                            <p className="text-[11px] text-zinc-400 dark:text-zinc-500 font-bold uppercase mb-1">PBR</p>
-                            <p className="text-pink-500 dark:text-pink-400 font-black text-2xl">{formattedPbr}</p>
-                        </div>
+                    {/* 배경 차트 (미세하게) */}
+                    <div className="absolute bottom-0 left-0 w-full h-12 opacity-[0.05] pointer-events-none">
+                        {chartConfig?.data && (
+                            <LineChart
+                                data_array={[{ name: "Price", data: chartConfig.data, color: "#000" }]}
+                                category_array={chartConfig.categories}
+                                height={48}
+                                show_yaxis_label={false}
+                                legend_disable
+                                grid_disable
+                            />
+                        )}
                     </div>
                 </div>
-
-                {/* 후광 효과 (다크모드에서는 블루 광택을 좀 더 강조) */}
-                <div className="absolute -inset-10 bg-gradient-to-tr from-blue-100/30 dark:from-blue-900/20 via-white/0 to-blue-100/30 dark:to-blue-900/20 opacity-0 group-hover/card:opacity-100 transition-opacity duration-700 blur-3xl z-0" />
             </div>
         </div>
     );

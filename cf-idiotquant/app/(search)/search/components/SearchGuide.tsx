@@ -3,7 +3,7 @@
 import React from "react";
 import { Icon } from "@blueprintjs/core";
 import { IconNames } from "@blueprintjs/icons";
-import { ModernTiltCard } from "./StockCard";
+import { PokemonStockCard } from "./StockCard";
 
 export const SearchGuide = () => {
     // 실제 서비스의 분석 로직을 상징하는 가이드 데이터
@@ -110,7 +110,7 @@ export const SearchGuide = () => {
                     <div key={i} className="flex flex-col items-center group">
                         {/* 카드 영역 */}
                         <div className="relative transform transition-all duration-700 group-hover:-translate-y-6 group-hover:rotate-1">
-                            <ModernTiltCard stock={item.stock} />
+                            <PokemonStockCard stock={item.stock} />
                             {/* 카드 후광 효과 */}
                             <div className="absolute -z-10 inset-0 bg-blue-500/10 dark:bg-blue-400/5 blur-[120px] rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-1000" />
                         </div>
