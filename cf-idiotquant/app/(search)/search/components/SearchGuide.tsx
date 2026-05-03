@@ -3,7 +3,7 @@
 import React from "react";
 import { Icon } from "@blueprintjs/core";
 import { IconNames } from "@blueprintjs/icons";
-import { StockCard } from "./StockCard"; // 앞서 만든 PokemonStockCard 스타일이 적용된 컴포넌트
+import { StockCard } from "./StockCard";
 
 export const SearchGuide = () => {
     const guides = [
@@ -11,6 +11,7 @@ export const SearchGuide = () => {
             stock: {
                 isUs: false,
                 name: "삼성전자",
+                sector: "전기·전자",
                 ticker: "005930",
                 grade: { grade: "S", color: "text-blue-500" },
                 fairValue: "78,500",
@@ -27,6 +28,7 @@ export const SearchGuide = () => {
             stock: {
                 isUs: true,
                 name: "AAPL",
+                sector: "컴퓨터전자장비/기기",
                 ticker: "AAPL",
                 grade: { grade: "SS", color: "text-indigo-500" },
                 fairValue: "215.4",

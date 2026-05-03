@@ -94,6 +94,8 @@ function SearchContent() {
     (data.kiChart.state === 'fulfilled' ||
       data.usSearchInfo.state === 'fulfilled');
 
+  console.log(`data:`, data);
+
   const chartConfig = useMemo(() => {
     const isUs = krOrUs === 'US';
     const rawData = isUs ? data.usDaily?.output2 : data.kiChart?.output2;
@@ -239,6 +241,8 @@ function SearchContent() {
                         ),
                         per: data?.usDetail?.output?.perx ?? 0,
                         pbr: data?.usDetail?.output?.pbrx ?? 0,
+                        sector: data?.usDetail?.output?.e_icod ?? "DEFAULT",
+
                       }
                       : {
                         code: tickerFromUrl,
@@ -255,6 +259,7 @@ function SearchContent() {
                         ),
                         per: data?.kiPrice?.output?.per ?? 0,
                         pbr: data?.kiPrice?.output?.pbr ?? 0,
+                        sector: data?.kiPrice?.output?.bstp_kor_isnm ?? "DEFAULT",
                       }
                   }
                   chartConfig={chartConfig}
