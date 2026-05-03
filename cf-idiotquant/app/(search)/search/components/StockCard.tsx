@@ -160,7 +160,7 @@ export const StockCard = ({ stock }: any) => {
                 transform: isPaused ? 'rotateX(0deg) rotateY(0deg)' : `rotateX(${rotation.x}deg) rotateY(${rotation.y}deg)`
             }}
         >
-            <div className={`w-full h-full p-3 rounded-[1.2rem] bg-gradient-to-br ${gradeTheme.frame} shadow-2xl relative overflow-hidden flex flex-col border-[32px] border-black/10 transition-colors duration-500`}>
+            <div className={`w-full h-full p-3 rounded-[1.2rem] bg-gradient-to-br ${gradeTheme.frame} shadow-2xl relative overflow-hidden flex flex-col border-[16px] border-black/10 transition-colors duration-500`}>
 
                 <div className={`absolute inset-0 z-40 pointer-events-none transition-opacity duration-300 ${gradeTheme.foilOpacity}`} style={foilStyle} />
 
