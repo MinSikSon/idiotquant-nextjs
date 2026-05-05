@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect, useMemo, useRef } from 'react';
+import Image from 'next/image'; // Image 컴포넌트 추가
 
 /**
  * 현실 산업군을 반영한 커스텀 섹터 테마
@@ -81,7 +82,7 @@ export const StockCard = ({ stock, rawData }: any) => {
     const logoUrl = useMemo(() => {
         if (!stock.ticker) return null;
         const baseUrl = stock.isUs
-            ? `https://img.logo.dev/ticker/${stock.ticker.toUpperCase()}?token=${process.env.NEXT_PUBLIC_CLEARBIT_API_KEY}`
+            ? `https://img.logo.dev/ticker/${stock.ticker.toUpperCase()}?token=${process.env.NEXT_PUBLIC_CLEARBIT_API_KEY}&size=512`
             : `${process.env.NEXT_PUBLIC_KR_LOGO_API}/${stock.ticker}?size=300`;
         return `${baseUrl}${baseUrl.includes('?') ? '&' : '?'}v=${new Date().getTime()}`;
     }, [stock.ticker, stock.isUs]);
@@ -92,7 +93,6 @@ export const StockCard = ({ stock, rawData }: any) => {
         const handleMove = (e: MouseEvent) => {
             const { left, top, width, height } = card.getBoundingClientRect();
             setRotation({ x: (height / 2 - (e.clientY - top)) / 10, y: ((e.clientX - left) - width / 2) / 10 });
-            // 반사 효과의 불투명도를 0.7에서 0.35로 낮춤
             setGlare({ x: ((e.clientX - left) / width) * 100, y: ((e.clientY - top) / height) * 100, opacity: 0.15 });
         };
         const handleLeave = () => { setRotation({ x: 0, y: 0 }); setGlare(prev => ({ ...prev, opacity: 0 })); };
@@ -112,7 +112,6 @@ export const StockCard = ({ stock, rawData }: any) => {
                 <div
                     className="absolute inset-0 z-[60] pointer-events-none mix-blend-color-dodge opacity-0 group-hover/card:opacity-100 transition-opacity duration-300 rounded-[1.4rem]"
                     style={{
-                        // 그라데이션의 밝기 농도를 낮추어 반사 정도를 완화
                         background: `radial-gradient(circle at ${glare.x}% ${glare.y}%, rgba(255,255,255,0.4) 0%, rgba(100,100,255,0.1) 40%, rgba(0,0,0,0) 70%)`
                     }}
                 />
@@ -152,17 +151,26 @@ export const StockCard = ({ stock, rawData }: any) => {
                             </div>
                         </div>
 
-                        {/* [IMAGE] */}
+                        {/* [IMAGE] - img 태그를 Image 컴포넌트로 변경 */}
                         <div className="mx-2.5 mt-1.5 relative h-40 border-[5px] border-[#c9c9c9] shadow-inner bg-white overflow-hidden rounded-[2px] z-[10]">
                             {logoUrl && (
-                                <img
-                                    key={stock.ticker}
-                                    src={logoUrl}
-                                    alt={stock.name}
-                                    className={`w-full h-full object-contain p-8 group-hover/card:scale-110 transition-all duration-700 ${imageStatus.loaded && !imageStatus.error ? 'opacity-100' : 'opacity-0'}`}
-                                    onLoad={() => setImageStatus({ loaded: true, error: false })}
-                                    onError={() => setImageStatus({ loaded: true, error: true })}
-                                />
+                                <Image
+    key={stock.ticker}
+    src={logoUrl}
+    alt={stock.name}
+    fill
+    quality={100} // 화질 향상을 위해 추가
+    style={{ 
+        objectFit: 'contain', // 비율 유지하며 컨테이너 안에 맞춤
+        padding: '0',        // 패딩 제거 (상하단에 딱 붙게 함)
+    }}
+    className={`group-hover/card:scale-110 transition-all duration-700 ${
+        imageStatus.loaded && !imageStatus.error ? 'opacity-100' : 'opacity-0'
+    }`}
+    onLoad={() => setImageStatus({ loaded: true, error: false })}
+    onError={() => setImageStatus({ loaded: true, error: true })}
+    unoptimized
+/>
                             )}
                             {(!imageStatus.loaded || imageStatus.error) && (
                                 <div className="absolute inset-0 flex items-center justify-center bg-zinc-50">
@@ -251,7 +259,7 @@ export const StockCard = ({ stock, rawData }: any) => {
                                     {activeTooltip === 'resistance' && (
                                         <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-48 p-2.5 bg-zinc-900/95 text-white text-[10px] rounded-md shadow-2xl z-[110] leading-snug border border-white/10 animate-in fade-in slide-in-from-bottom-1 text-center backdrop-blur-sm">
                                             <p className="text-yellow-400 font-black mb-1 italic">CEILING</p>
-                                            전고점 대비 하락폭입니다. 수치가 클수록 위에 쌓인 '매물대' 저항이 강할 수 있음을 뜻합니다.
+                                            전고점 대비 하락폭입니다. 수치가 클수록 위에 쌓인 매물대 저항이 강할 수 있음을 뜻합니다.
                                         </div>
                                     )}
                                 </div>
