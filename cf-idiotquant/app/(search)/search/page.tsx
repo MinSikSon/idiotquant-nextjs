@@ -271,6 +271,7 @@ function SearchContent() {
                       }
                   }
                   chartConfig={chartConfig}
+                  rawData={data}
                 />
               </div>
 
