@@ -259,10 +259,7 @@ function SearchContent() {
                         curPrice: data?.kiPrice?.output?.stck_prpr ?? 0,
                         fairValue:
                           '₩' + calculateKrNcavValue(data.kiBS, data.kiChart),
-                        ncavScore: calculateKrNcavRatio(
-                          data.kiBS,
-                          data.kiChart
-                        ),
+                        ncavScore: calculateKrNcavRatio(data.kiBS, data.kiChart),
                         srimScore: getKrSRIMTargetPrice(data.kiBS, data.kiIS, data.kiChart),
                         per: data?.kiPrice?.output?.per ?? 0,
                         pbr: data?.kiPrice?.output?.pbr ?? 0,

@@ -14,8 +14,11 @@ export const SearchGuide = () => {
                 sector: "전기·전자",
                 ticker: "005930",
                 grade: { grade: "S", color: "text-blue-500" },
+                curPrice: "220,500",
                 fairValue: "78,500",
                 undervaluedScore: 85,
+                ncavScore: "🎺",
+                srimScore: "💵💵💵💵💵💵",
                 per: "12.5",
                 pbr: "1.4",
                 isGuide: true
@@ -31,8 +34,11 @@ export const SearchGuide = () => {
                 sector: "컴퓨터전자장비/기기",
                 ticker: "AAPL",
                 grade: { grade: "SS", color: "text-indigo-500" },
+                curPrice: "120.1",
                 fairValue: "215.4",
                 undervaluedScore: 92,
+                ncavScore: "😀",
+                srimScore: "💵",
                 per: "28.4",
                 pbr: "35.2",
                 isGuide: true
@@ -49,6 +55,8 @@ export const SearchGuide = () => {
                 grade: { grade: "SSS", color: "text-amber-500" },
                 fairValue: "청산 가치",
                 undervaluedScore: 99,
+                ncavScore: "😀",
+                srimScore: "💵",
                 per: "순유동",
                 pbr: "자산",
                 isGuide: true

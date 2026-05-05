@@ -48,7 +48,7 @@ export const StockCard = ({ stock, rawData }: any) => {
     const gradeTheme = GRADE_THEMES[stock.grade?.grade] || GRADE_THEMES.DEFAULT;
 
     const analysis = useMemo(() => {
-        const latestBS = rawData.kiBS?.output?.[0];
+        const latestBS = rawData?.kiBS?.output?.[0];
         const totalLblt = parseFloat(latestBS?.total_lblt || "0");
         const totalCptl = parseFloat(latestBS?.total_cptl || "1");
         const debtRatio = (totalLblt / totalCptl) * 100;
@@ -56,7 +56,7 @@ export const StockCard = ({ stock, rawData }: any) => {
         if (debtRatio > 200) debtColor = "text-red-600";
         else if (debtRatio > 100) debtColor = "text-orange-500";
 
-        const priceInfo = rawData.kiPrice?.output;
+        const priceInfo = rawData?.kiPrice?.output;
         const highPrice = parseFloat(priceInfo?.d250_hgpr || "0");
         const currentPrice = parseFloat(priceInfo?.stck_prpr || "0");
         const dropRate = highPrice > 0 ? ((highPrice - currentPrice) / highPrice) * 100 : 0;
@@ -76,7 +76,7 @@ export const StockCard = ({ stock, rawData }: any) => {
             retreatMargin: retreatMargin.toFixed(1),
             supportStrength
         };
-    }, [rawData.kiBS, rawData.kiPrice]);
+    }, [rawData?.kiBS, rawData?.kiPrice]);
 
     const logoUrl = useMemo(() => {
         if (!stock.ticker) return null;
