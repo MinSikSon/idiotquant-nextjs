@@ -25,7 +25,9 @@ import {
   calculateUsNcavRatio,
   calculateUsNcavValue,
   getKrNcavGrade,
+  getKrSRIMTargetPrice,
   getUsNcavGrade,
+  getUsSRIMTargetPrice,
 } from './utils/financeCalc';
 import { SearchGuide } from './components/SearchGuide';
 import { StockCard } from './components/StockCard';
@@ -229,18 +231,21 @@ function SearchContent() {
                           data.finnhubData,
                           data.usDetail
                         ),
+                        curPrice: Number(data?.usDetail?.output?.last ?? 0).toFixed(2),
                         fairValue:
                           '$' +
                           calculateUsNcavValue(
                             data.finnhubData,
                             data.usDetail
                           ),
-                        undervaluedScore: calculateUsNcavRatio(
+                        ncavScore: calculateUsNcavRatio(
                           data.finnhubData,
                           data.usDetail
                         ),
+                        srimScore: getUsSRIMTargetPrice(data.finnhubData, data.usDetail),
                         per: data?.usDetail?.output?.perx ?? 0,
                         pbr: data?.usDetail?.output?.pbrx ?? 0,
+                        eps: "$" + (data?.usDetail?.output?.epsx ?? 0),
                         sector: data?.usDetail?.output?.e_icod ?? "DEFAULT",
 
                       }
@@ -251,14 +256,17 @@ function SearchContent() {
                         ticker:
                           (corpCodeJson as any)?.[name]?.stock_code ?? '',
                         grade: getKrNcavGrade(data.kiBS, data.kiChart),
+                        curPrice: data?.kiPrice?.output?.stck_prpr ?? 0,
                         fairValue:
                           '₩' + calculateKrNcavValue(data.kiBS, data.kiChart),
-                        undervaluedScore: calculateKrNcavRatio(
+                        ncavScore: calculateKrNcavRatio(
                           data.kiBS,
                           data.kiChart
                         ),
+                        srimScore: getKrSRIMTargetPrice(data.kiBS, data.kiIS, data.kiChart),
                         per: data?.kiPrice?.output?.per ?? 0,
                         pbr: data?.kiPrice?.output?.pbr ?? 0,
+                        eps: "₩" + Number(data?.kiPrice?.output?.eps ?? 0).toFixed(0),
                         sector: data?.kiPrice?.output?.bstp_kor_isnm ?? "DEFAULT",
                       }
                   }

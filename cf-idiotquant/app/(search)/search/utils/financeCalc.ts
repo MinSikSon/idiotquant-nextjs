@@ -52,7 +52,7 @@ export function calculateKrNcavValue(kiBS: any, kiChart: any) {
     const prpr = Number(kiChart.output1.stck_prpr);
 
     const target = (cras - lblt) / lstn;
-    return Number(target.toFixed(2));
+    return Number(target.toFixed(0));
 
     // 1. 헤더와 구분선을 명확히 정의합니다.
     const header = `| 배수(ratio) | 기대 수익률 | 적정 주가(₩) |`;
@@ -220,6 +220,25 @@ ${rows}
     `.trim();
 }
 
+export function getKrSRIMTargetPrice(kiBS: any, kiIS: any, kiChart: any, baseKe: number = 8.0) {
+    const ONE_HUNDRED_MILLION = 100000000;
+    
+    // 재무데이터 추출
+    const total_cptl = Number(kiBS?.output[0]?.total_cptl ?? 1) * ONE_HUNDRED_MILLION;
+    const thtr_ntin = Number(kiIS?.output[0]?.thtr_ntin ?? 0) * ONE_HUNDRED_MILLION;
+    
+    // ROE 계산
+    const ROE = (thtr_ntin / total_cptl) * 100;
+    
+    // 주식수 추출
+    const lstn = Number(kiChart.output1.lstn_stcn);
+
+    // S-RIM 공식: 적정주가 = (자기자본 * (ROE / 요구수익률)) / 상장주식수
+    const targetPrice = (total_cptl * (ROE / baseKe)) / lstn;
+
+    return `요구수익률 ${baseKe}% 기준 적정주가: ₩${Math.round(targetPrice)}`;
+}
+
 export function calculateUsNcav(finnhub: any, detail: any) {
     // 1. 기본 데이터 추출 (Finnhub BS 데이터)
     const bs = finnhub?.data?.[0]?.report?.bs ?? [];
@@ -347,6 +366,41 @@ ${rows}
 ---
 *※ 미국 주식의 Ke는 보통 미국 10년물 국채 금리에 리스크 프리미엄을 더한 7~9% 수준을 주로 사용합니다.*
     `.trim();
+}
+
+export function getUsSRIMTargetPrice(finnhub: any, detail: any, baseKe: number = 8.0) {
+    // 1. 재무 데이터 추출 (Finnhub IS/BS 데이터)
+    const bs = finnhub?.data?.[0]?.report?.bs ?? [];
+    const ic = finnhub?.data?.[0]?.report?.ic ?? [];
+
+    // 자기자본 (Total Equity)
+    const total_equity = Number(
+        bs.find((i: any) => i.concept.includes("us-gaap_StockholdersEquity"))?.value ??
+        bs.find((i: any) => i.concept.includes("StockholdersEquity"))?.value ?? 1
+    );
+
+    // 당기순이익 (Net Income)
+    const net_income = Number(
+        ic.find((i: any) => i.concept.includes("us-gaap_NetIncomeLoss"))?.value ??
+        ic.find((i: any) => i.concept.includes("NetIncome"))?.value ?? 0
+    );
+
+    // 2. ROE 및 기본 정보 계산
+    const ROE = (net_income / total_equity) * 100;
+    const shar = Number(detail?.output?.shar || 0); // 상장주식수
+
+    // 데이터 유효성 검사
+    if (shar === 0) {
+        return "데이터 부족으로 적정주가 산출 불가";
+    }
+
+    // 3. S-RIM 공식: 적정주가 = (자기자본 * (ROE / 요구수익률)) / 상장주식수
+    const targetPrice = (total_equity * (ROE / baseKe)) / shar;
+
+    return `요구수익률 ${baseKe}% 기준 적정주가: $${targetPrice.toLocaleString(undefined, {
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2
+    })}`;
 }
 
 /**
