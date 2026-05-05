@@ -96,7 +96,7 @@ function SearchContent() {
     (data.kiChart.state === 'fulfilled' ||
       data.usSearchInfo.state === 'fulfilled');
 
-  console.log(`data:`, data);
+  // console.log(`data:`, data);
 
   const chartConfig = useMemo(() => {
     const isUs = krOrUs === 'US';
