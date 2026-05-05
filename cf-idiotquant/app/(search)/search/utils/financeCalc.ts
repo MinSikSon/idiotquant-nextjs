@@ -246,7 +246,7 @@ export function getKrSRIMTargetPrice(kiBS: any, kiIS: any, kiChart: any, baseKe:
     const targetPrice = (total_cptl * (ROE / baseKe)) / lstn;
     // console.log(`targetPrice:`,targetPrice);
 
-    return `요구수익률 ${baseKe}% 기준 적정주가: ₩${Math.round(targetPrice)}`;
+    return `(요구수익률 ${baseKe}% 기준) 적정주가: ₩${Math.round(targetPrice)}`;
 }
 
 export function calculateUsNcav(finnhub: any, detail: any) {
@@ -407,7 +407,7 @@ export function getUsSRIMTargetPrice(finnhub: any, detail: any, baseKe: number =
     // 3. S-RIM 공식: 적정주가 = (자기자본 * (ROE / 요구수익률)) / 상장주식수
     const targetPrice = (total_equity * (ROE / baseKe)) / shar;
 
-    return `요구수익률 ${baseKe}% 기준 적정주가: $${targetPrice.toLocaleString(undefined, {
+    return `(요구수익률 ${baseKe}% 기준) 적정주가: $${targetPrice.toLocaleString(undefined, {
         minimumFractionDigits: 2,
         maximumFractionDigits: 2
     })}`;

@@ -143,9 +143,12 @@ export const StockCard = ({ stock, rawData }: any) => {
 
     const ncavGrade = useMemo(() => getGradeByScore(Number(stock.ncavScore || 0)), [stock.ncavScore]);
     const srimGrade = useMemo(() => getGradeByScore(Number(stock.srimScore || 0)), [stock.srimScore]);
-    const borderStyle = {
-        background: `linear-gradient(to right, ${ncavGrade.color} 50%, ${srimGrade.color} 50%)`
-    };
+    const borderStyle = useMemo(() => {
+        // conic-gradient를 사용하여 모서리를 따라 색상이 회전하며 섞이는 효과
+        return {
+            background: `conic-gradient(from 0deg, ${ncavGrade.color}, ${srimGrade.color}, ${ncavGrade.color})`,
+        };
+    }, [ncavGrade.color, srimGrade.color]);
     // 1. 티커가 변경될 때마다 이미지 상태를 리셋합니다.
     useEffect(() => {
         setImageStatus({ loaded: false, error: false });
@@ -239,9 +242,9 @@ export const StockCard = ({ stock, rawData }: any) => {
                             </div>
                             <div className="flex items-center gap-1 text-right">
                                 <div className="flex flex-col">
-                                    <span className="text-[8px] font-black text-red-600 tracking-tighter uppercase">PRICE: {stock.isUs ? "$" : "₩"}{stock.curPrice}</span>
+                                    <span className="text-[8px] font-black text-red-600 tracking-tighter uppercase">PRICE</span>
                                     <span className="text-xl font-black tracking-tighter text-zinc-900">
-                                        {stock.fairValue?.toLocaleString()}
+                                        {stock.isUs ? "$" : "₩"}{stock.curPrice}
                                     </span>
                                 </div>
                                 <div
@@ -331,7 +334,8 @@ export const StockCard = ({ stock, rawData }: any) => {
                                     <div className={`w-6 h-6 rounded-full ${theme.bg} flex items-center justify-center text-[10px] text-white shadow-sm`}>{theme.icon}</div>
                                     <span className="font-black text-[14px] text-zinc-900 tracking-tight">NCAV</span>
                                 </div>
-                                <div className="font-black text-lg text-zinc-900">{stock.ncavScore || 0}%</div>
+                                        
+                                <div className="font-black text-[9px] text-zinc-900">({stock.ncavScore || 0}%) 적정주가:{stock.fairValue?.toLocaleString()}</div>
                                 {activeTooltip === 'ncav' && (
                                     <div className="absolute -top-14 left-0 z-[110] w-full p-2.5 bg-zinc-800/95 text-white text-[10px] rounded-md border border-white/10 shadow-2xl animate-in fade-in slide-in-from-bottom-2 backdrop-blur-sm">
                                         <span className="text-blue-300 font-black tracking-widest">[ASSET VALUE]</span>
