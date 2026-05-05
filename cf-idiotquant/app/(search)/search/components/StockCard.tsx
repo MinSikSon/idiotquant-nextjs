@@ -41,7 +41,7 @@ export const StockCard = ({ stock, rawData }: any) => {
         if (s.includes("제약") || s.includes("바이오") || s.includes("의료") || s.includes("생명공학")) return SECTOR_THEMES.BIO;
         if (s.includes("화학") || s.includes("에너지") || s.includes("전기차") || s.includes("배터리")) return SECTOR_THEMES.FUEL;
         if (s.includes("금융") || s.includes("은행") || s.includes("증권") || s.includes("보험")) return SECTOR_THEMES.FLOW;
-        if (s.includes("건설") || s.includes("방산") || s.includes("철강") || s.includes("중공업")) return SECTOR_THEMES.BASE;
+        if (s.includes("건설") || s.includes("방산") || s.includes("철강") || s.includes("중공업") || s.includes("종이") || s.includes("목재")) return SECTOR_THEMES.BASE;
         if (s.includes("미디어") || s.includes("엔터") || s.includes("문화") || s.includes("화장품")) return SECTOR_THEMES.STAR;
         return SECTOR_THEMES.LIFE;
     }, [stock.sector]);
@@ -49,22 +49,72 @@ export const StockCard = ({ stock, rawData }: any) => {
     const gradeTheme = GRADE_THEMES[stock.grade?.grade] || GRADE_THEMES.DEFAULT;
 
     const analysis = useMemo(() => {
-        const latestBS = rawData?.kiBS?.output?.[0];
-        const totalLblt = parseFloat(latestBS?.total_lblt || "0");
-        const totalCptl = parseFloat(latestBS?.total_cptl || "1");
-        const debtRatio = (totalLblt / totalCptl) * 100;
+        let debtRatio = 0;
+        let highPrice = 0;
+        let lowPrice = 0;
+        let currentPrice = 0;
+
+        if (stock?.isUs) {
+            const info = rawData?.usSearchInfo?.output;
+            const detail = rawData?.usDetail?.output;
+            const dailyHistory = rawData?.usDaily?.output2 || [];
+
+            // --- 유연한 부채비율 계산 (Finnhub BS 리포트) ---
+            const finnhubReport = rawData?.finnhubData?.data?.[0]?.report?.bs || [];
+
+            if (finnhubReport.length > 0) {
+                // 1. 부채(Liabilities) 찾기: 'us-gaap_Liabilities' 또는 'Liabilities' (완전 일치 혹은 접두사 포함)
+                const totalLiabilities = finnhubReport.find((item: any) =>
+                    item.concept === "us-gaap_Liabilities" ||
+                    item.concept === "Liabilities" ||
+                    item.concept.endsWith("_Liabilities")
+                )?.value || 0;
+
+                // 2. 자본(StockholdersEquity) 찾기
+                const totalEquity = finnhubReport.find((item: any) =>
+                    item.concept === "us-gaap_StockholdersEquity" ||
+                    item.concept === "StockholdersEquity" ||
+                    item.concept.endsWith("_StockholdersEquity")
+                )?.value || 1; // 분모 0 방지
+
+                debtRatio = (totalLiabilities / totalEquity) * 100;
+            } else {
+                debtRatio = parseFloat(stock?.debtRatio || "0");
+            }
+
+            currentPrice = parseFloat(detail?.last || info?.ovrs_now_pric1 || stock?.curPrice || "0");
+
+            if (dailyHistory.length > 0) {
+                const highs = dailyHistory.map((d: any) => parseFloat(d.high));
+                const lows = dailyHistory.map((d: any) => parseFloat(d.low));
+                highPrice = Math.max(...highs);
+                lowPrice = Math.min(...lows);
+            } else {
+                highPrice = parseFloat(info?.h52p || "0");
+                lowPrice = parseFloat(info?.l52p || "0");
+            }
+
+        } else {
+            // [국내장] 로직
+            const latestBS = rawData?.kiBS?.output?.[0];
+            const totalLblt = parseFloat(latestBS?.total_lblt || "0");
+            const totalCptl = parseFloat(latestBS?.total_cptl || "1");
+            debtRatio = (totalLblt / totalCptl) * 100;
+
+            const priceInfo = rawData?.kiPrice?.output;
+            highPrice = parseFloat(priceInfo?.d250_hgpr || "0");
+            lowPrice = parseFloat(priceInfo?.d250_lwpr || "0");
+            currentPrice = parseFloat(priceInfo?.stck_prpr || "0");
+        }
+
+        // [공통 계산 레이어]
         let debtColor = "text-blue-600";
         if (debtRatio > 200) debtColor = "text-red-600";
         else if (debtRatio > 100) debtColor = "text-orange-500";
 
-        const priceInfo = rawData?.kiPrice?.output;
-        const highPrice = parseFloat(priceInfo?.d250_hgpr || "0");
-        const currentPrice = parseFloat(priceInfo?.stck_prpr || "0");
         const dropRate = highPrice > 0 ? ((highPrice - currentPrice) / highPrice) * 100 : 0;
         const gapToHigh = currentPrice > 0 ? ((highPrice / currentPrice) - 1) * 100 : 0;
-
-        const lowPrice = parseFloat(priceInfo?.d250_lwpr || "0");
-        const retreatMargin = currentPrice > 0 ? ((currentPrice - lowPrice) / currentPrice) * 100 : 0;
+        const retreatMargin = (currentPrice > 0 && lowPrice > 0) ? ((currentPrice - lowPrice) / currentPrice) * 100 : 0;
         const supportStrength = Math.max(0, 100 - retreatMargin);
 
         return {
@@ -72,12 +122,12 @@ export const StockCard = ({ stock, rawData }: any) => {
             debtColor,
             dropRate: dropRate.toFixed(1),
             gapToHigh: gapToHigh.toFixed(1),
-            highPrice: highPrice.toLocaleString(),
-            lowPrice: lowPrice.toLocaleString(),
+            highPrice: highPrice.toLocaleString(undefined, { minimumFractionDigits: 2 }),
+            lowPrice: lowPrice.toLocaleString(undefined, { minimumFractionDigits: 2 }),
             retreatMargin: retreatMargin.toFixed(1),
             supportStrength
         };
-    }, [rawData?.kiBS, rawData?.kiPrice]);
+    }, [rawData, stock?.isUs, stock?.curPrice]);
 
     const logoUrl = useMemo(() => {
         if (!stock.ticker) return null;
@@ -155,22 +205,16 @@ export const StockCard = ({ stock, rawData }: any) => {
                         <div className="mx-2.5 mt-1.5 relative h-40 border-[5px] border-[#c9c9c9] shadow-inner bg-white overflow-hidden rounded-[2px] z-[10]">
                             {logoUrl && (
                                 <Image
-    key={stock.ticker}
-    src={logoUrl}
-    alt={stock.name}
-    fill
-    quality={100} // 화질 향상을 위해 추가
-    style={{ 
-        objectFit: 'contain', // 비율 유지하며 컨테이너 안에 맞춤
-        padding: '0',        // 패딩 제거 (상하단에 딱 붙게 함)
-    }}
-    className={`group-hover/card:scale-110 transition-all duration-700 ${
-        imageStatus.loaded && !imageStatus.error ? 'opacity-100' : 'opacity-0'
-    }`}
-    onLoad={() => setImageStatus({ loaded: true, error: false })}
-    onError={() => setImageStatus({ loaded: true, error: true })}
-    unoptimized
-/>
+                                    key={stock.ticker}
+                                    src={logoUrl}
+                                    alt={stock.name}
+                                    fill
+                                    style={{ objectFit: 'cover' }} // padding 제거, cover로 변경
+                                    className={`group-hover/card:scale-110 transition-all duration-700 ${imageStatus.loaded && !imageStatus.error ? 'opacity-100' : 'opacity-0'}`}
+                                    onLoad={() => setImageStatus({ loaded: true, error: false })}
+                                    onError={() => setImageStatus({ loaded: true, error: true })}
+                                    unoptimized
+                                />
                             )}
                             {(!imageStatus.loaded || imageStatus.error) && (
                                 <div className="absolute inset-0 flex items-center justify-center bg-zinc-50">
