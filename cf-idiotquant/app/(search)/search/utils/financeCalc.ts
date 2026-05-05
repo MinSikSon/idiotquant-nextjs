@@ -225,16 +225,26 @@ export function getKrSRIMTargetPrice(kiBS: any, kiIS: any, kiChart: any, baseKe:
     
     // 재무데이터 추출
     const total_cptl = Number(kiBS?.output[0]?.total_cptl ?? 1) * ONE_HUNDRED_MILLION;
+    // console.log(`total_cptl:`,total_cptl);
+
     const thtr_ntin = Number(kiIS?.output[0]?.thtr_ntin ?? 0) * ONE_HUNDRED_MILLION;
+    // console.log(`thtr_ntin:`,thtr_ntin);
     
     // ROE 계산
     const ROE = (thtr_ntin / total_cptl) * 100;
+    // console.log(`ROE:`,ROE);
     
     // 주식수 추출
-    const lstn = Number(kiChart.output1.lstn_stcn);
+    let lstn = Number(kiChart?.output1?.lstn_stcn ?? 1);
+    // console.log(`lstn:`,lstn);
+    if (0 == lstn)
+    {
+        lstn = 1;
+    }
 
     // S-RIM 공식: 적정주가 = (자기자본 * (ROE / 요구수익률)) / 상장주식수
     const targetPrice = (total_cptl * (ROE / baseKe)) / lstn;
+    // console.log(`targetPrice:`,targetPrice);
 
     return `요구수익률 ${baseKe}% 기준 적정주가: ₩${Math.round(targetPrice)}`;
 }

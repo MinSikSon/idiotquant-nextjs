@@ -18,12 +18,21 @@ const SECTOR_THEMES: Record<string, { bg: string; border: string; icon: string; 
     LIFE: { bg: "bg-lime-400", border: "border-lime-300", icon: "🍎", label: "LIFE", text: "text-lime-900", lightBg: "bg-lime-50", desc: "우리의 일상을 풍요롭게 채워주는 유통과 소비재 섹터입니다." }
 };
 
-const GRADE_THEMES: Record<string, { frame: string; label: string; rarity: string }> = {
-    SSS: { frame: "from-pink-300 via-purple-300 to-cyan-300 animate-gradient-x", label: "울트라 레어", rarity: "★★★" },
-    SS: { frame: "from-yellow-200 via-amber-400 to-yellow-200", label: "시크릿 레어", rarity: "★★" },
-    S: { frame: "from-amber-200 via-yellow-300 to-amber-500", label: "슈퍼 레어", rarity: "★" },
-    A: { frame: "from-zinc-100 via-slate-200 to-zinc-300", label: "언커먼", rarity: "◆" },
-    DEFAULT: { frame: "from-zinc-200 via-zinc-300 to-zinc-400", label: "커먼", rarity: "●" }
+const GRADE_THEMES: Record<string, { frame: string; label: string; rarity: string; color: string }> = {
+    SSS: { frame: "from-pink-300 via-purple-300 to-cyan-300 animate-gradient-x", label: "울트라", rarity: "★★★", color: "#f472b6" }, // pink-400
+    SS: { frame: "from-yellow-200 via-amber-400 to-yellow-200", label: "시크릿", rarity: "★★", color: "#fbbf24" },  // amber-400
+    S: { frame: "from-amber-200 via-yellow-300 to-amber-500", label: "슈퍼", rarity: "★", color: "#f59e0b" },    // amber-500
+    A: { frame: "from-zinc-100 via-slate-200 to-zinc-300", label: "언커먼", rarity: "◆", color: "#94a3b8" },    // slate-400
+    DEFAULT: { frame: "from-zinc-200 via-zinc-300 to-zinc-400", label: "커먼", rarity: "●", color: "#71717a" }  // zinc-500
+};
+
+// 점수에 따른 등급 판별 함수
+const getGradeByScore = (score: number) => {
+    if (score >= 150) return GRADE_THEMES.SSS;
+    if (score >= 120) return GRADE_THEMES.SS;
+    if (score >= 100) return GRADE_THEMES.S;
+    if (score >= 70) return GRADE_THEMES.A;
+    return GRADE_THEMES.DEFAULT;
 };
 
 export const StockCard = ({ stock, rawData }: any) => {
@@ -117,6 +126,8 @@ export const StockCard = ({ stock, rawData }: any) => {
         const retreatMargin = (currentPrice > 0 && lowPrice > 0) ? ((currentPrice - lowPrice) / currentPrice) * 100 : 0;
         const supportStrength = Math.max(0, 100 - retreatMargin);
 
+        // 테두리용 그라데이션 스타일
+
         return {
             debtRatio: debtRatio.toFixed(1),
             debtColor,
@@ -125,30 +136,79 @@ export const StockCard = ({ stock, rawData }: any) => {
             highPrice: highPrice.toLocaleString(undefined, { minimumFractionDigits: 2 }),
             lowPrice: lowPrice.toLocaleString(undefined, { minimumFractionDigits: 2 }),
             retreatMargin: retreatMargin.toFixed(1),
-            supportStrength
+            supportStrength,
         };
     }, [rawData, stock?.isUs, stock?.curPrice]);
 
+    const ncavGrade = useMemo(() => getGradeByScore(Number(stock.ncavScore || 0)), [stock.ncavScore]);
+    const srimGrade = useMemo(() => getGradeByScore(Number(stock.srimScore || 0)), [stock.srimScore]);
+    const borderStyle = {
+        background: `linear-gradient(to right, ${ncavGrade.color} 50%, ${srimGrade.color} 50%)`
+    };
+    // 1. 티커가 변경될 때마다 이미지 상태를 리셋합니다.
+    useEffect(() => {
+        setImageStatus({ loaded: false, error: false });
+    }, [stock.ticker]); // 티커가 바뀌면 다시 로딩 상태로 돌아감
+
     const logoUrl = useMemo(() => {
         if (!stock.ticker) return null;
-        const baseUrl = stock.isUs
-            ? `https://img.logo.dev/ticker/${stock.ticker.toUpperCase()}?token=${process.env.NEXT_PUBLIC_CLEARBIT_API_KEY}&size=512`
-            : `${process.env.NEXT_PUBLIC_KR_LOGO_API}/${stock.ticker}?size=300`;
-        return `${baseUrl}${baseUrl.includes('?') ? '&' : '?'}v=${new Date().getTime()}`;
+
+        // 미국 주식
+        if (stock.isUs) {
+            return `https://img.logo.dev/ticker/${stock.ticker.toUpperCase()}?token=${process.env.NEXT_PUBLIC_CLEARBIT_API_KEY}&size=512`;
+        }
+
+        // 한국 주식 (URL 끝에 티커가 붙는 구조라면)
+        const krBaseUrl = process.env.NEXT_PUBLIC_KR_LOGO_API;
+        return krBaseUrl ? `${krBaseUrl}/${stock.ticker}?size=300` : null;
     }, [stock.ticker, stock.isUs]);
 
     useEffect(() => {
         const card = cardRef.current;
         if (!card) return;
+
+        let frameId: number;
+
         const handleMove = (e: MouseEvent) => {
-            const { left, top, width, height } = card.getBoundingClientRect();
-            setRotation({ x: (height / 2 - (e.clientY - top)) / 10, y: ((e.clientX - left) - width / 2) / 10 });
-            setGlare({ x: ((e.clientX - left) / width) * 100, y: ((e.clientY - top) / height) * 100, opacity: 0.15 });
+            // requestAnimationFrame을 사용하여 브라우저 주사율에 맞춰 부드럽게 업데이트
+            frameId = requestAnimationFrame(() => {
+                const { left, top, width, height } = card.getBoundingClientRect();
+
+                // 중심점으로부터의 상대적 거리 계산 (-0.5 ~ 0.5 범위)
+                const xRel = (e.clientX - left) / width - 0.5;
+                const yRel = (e.clientY - top) / height - 0.5;
+
+                // 기울기 감도 조절 (기존 25보다 조금 더 세밀한 제어 가능)
+                // yRel이 x축 회전(rotateX)에 영향을 주고, xRel이 y축 회전(rotateY)에 영향을 줍니다.
+                const intensity = 15;
+                setRotation({
+                    x: -(yRel * intensity), // 위아래 기울기
+                    y: xRel * intensity     // 좌우 기울기
+                });
+
+                setGlare({
+                    x: (xRel + 0.5) * 100,
+                    y: (yRel + 0.5) * 100,
+                    opacity: 0.2
+                });
+            });
         };
-        const handleLeave = () => { setRotation({ x: 0, y: 0 }); setGlare(prev => ({ ...prev, opacity: 0 })); };
+
+        const handleLeave = () => {
+            cancelAnimationFrame(frameId);
+            // 마우스를 뗐을 때 자연스럽게 중앙으로 복귀
+            setRotation({ x: 0, y: 0 });
+            setGlare(prev => ({ ...prev, opacity: 0 }));
+        };
+
         card.addEventListener('mousemove', handleMove);
         card.addEventListener('mouseleave', handleLeave);
-        return () => { card.removeEventListener('mousemove', handleMove); card.removeEventListener('mouseleave', handleLeave); };
+
+        return () => {
+            card.removeEventListener('mousemove', handleMove);
+            card.removeEventListener('mouseleave', handleLeave);
+            cancelAnimationFrame(frameId);
+        };
     }, []);
 
     return (
@@ -157,7 +217,8 @@ export const StockCard = ({ stock, rawData }: any) => {
             className="group/card relative w-[22.5rem] h-[31.5rem] transition-transform duration-200 ease-out select-none cursor-pointer"
             style={{ perspective: '1200px', transform: `rotateX(${rotation.x}deg) rotateY(${rotation.y}deg)` }}
         >
-            <div className={`w-full h-full p-[14px] rounded-[1.4rem] bg-[#f8d050] shadow-2xl relative flex flex-col border-[2px] border-black/10`}>
+            <div className={`w-full h-full p-[14px] rounded-[1.4rem] shadow-2xl relative flex flex-col border-[2px] border-black/10`}
+                style={borderStyle}>
 
                 <div
                     className="absolute inset-0 z-[60] pointer-events-none mix-blend-color-dodge opacity-0 group-hover/card:opacity-100 transition-opacity duration-300 rounded-[1.4rem]"
@@ -201,34 +262,41 @@ export const StockCard = ({ stock, rawData }: any) => {
                             </div>
                         </div>
 
-                        {/* [IMAGE] - img 태그를 Image 컴포넌트로 변경 */}
+                        {/* [IMAGE] 로고 영역 */}
                         <div className="mx-2.5 mt-1.5 relative h-40 border-[5px] border-[#c9c9c9] shadow-inner bg-white overflow-hidden rounded-[2px] z-[10]">
-                            {logoUrl && (
+                            {/* 에러가 없고 로고 URL이 존재할 때만 Image 컴포넌트 렌더링 */}
+                            {logoUrl && !imageStatus.error ? (
                                 <Image
                                     key={stock.ticker}
                                     src={logoUrl}
                                     alt={stock.name}
                                     fill
-                                    style={{ objectFit: 'cover' }} // padding 제거, cover로 변경
-                                    className={`group-hover/card:scale-110 transition-all duration-700 ${imageStatus.loaded && !imageStatus.error ? 'opacity-100' : 'opacity-0'}`}
-                                    onLoad={() => setImageStatus({ loaded: true, error: false })}
-                                    onError={() => setImageStatus({ loaded: true, error: true })}
+                                    style={{ objectFit: 'cover' }}
+                                    className={`group-hover/card:scale-110 transition-all duration-700 ${imageStatus.loaded ? 'opacity-100' : 'opacity-0'}`}
+                                    onLoad={() => setImageStatus(prev => ({ ...prev, loaded: true }))}
+                                    onError={() => setImageStatus({ loaded: true, error: true })} // 에러 시 상태 확정
                                     unoptimized
                                 />
-                            )}
+                            ) : null}
+
+                            {/* 로딩 중이거나 에러 발생 시 보여줄 Fallback UI */}
                             {(!imageStatus.loaded || imageStatus.error) && (
-                                <div className="absolute inset-0 flex items-center justify-center bg-zinc-50">
-                                    <span className="text-6xl grayscale opacity-10">{theme.icon}</span>
-                                    <span className="absolute text-2xl font-black text-zinc-300">{stock.ticker}</span>
+                                <div className="absolute inset-0 flex items-center justify-center bg-zinc-50 transition-opacity duration-300">
+                                    <div className="flex flex-col items-center gap-2">
+                                        <span className="text-6xl grayscale opacity-10 animate-pulse">{theme.icon}</span>
+                                        <span className="text-[10px] font-black text-zinc-300 tracking-tighter uppercase">{stock.ticker}</span>
+                                    </div>
                                 </div>
                             )}
+
+                            {/* 하단 지표 정보 바 */}
                             <div className={`absolute bottom-0 w-full ${theme.bg} py-1 text-center border-t border-black/20 z-20`}>
                                 <p className="text-[8px] font-black text-white tracking-[0.2em] uppercase">
                                     PBR: {stock.pbr} | PER: {stock.per} | EPS: {stock.eps}
                                 </p>
                             </div>
                         </div>
-
+                        
                         {/* [SKILLS] */}
                         <div className="flex-1 px-4 py-3 flex flex-col justify-center space-y-3 z-[20]">
                             <div
@@ -338,9 +406,25 @@ export const StockCard = ({ stock, rawData }: any) => {
 
                             <div className="flex justify-between items-center mt-2">
                                 <span className="text-[7px] font-black text-zinc-400 italic tracking-tighter uppercase">illus. IDIOTQUANT</span>
-                                <div className="flex items-center gap-2">
-                                    <span className="text-[10px] font-black text-zinc-800 tracking-tighter">{gradeTheme.rarity}</span>
-                                    <span className="text-[9px] font-black text-white bg-zinc-900 px-1.5 py-0.5 rounded-[1px] shadow-sm">{stock.grade?.grade || "F"}</span>
+
+                                {/* 우하단 이중 등급 표시 */}
+                                <div className="flex gap-1.5">
+                                    {/* NCAV 등급 배지 */}
+                                    <div className="flex flex-col items-center">
+                                        <span className="text-[6px] font-bold text-zinc-400 uppercase">NCAV</span>
+                                        <div className="flex items-center gap-1 bg-zinc-900 px-1.5 py-0.5 rounded-[1px] shadow-sm" style={{ backgroundColor: ncavGrade.color }}>
+                                            <span className="text-[8px] font-black text-white/70">{ncavGrade.rarity}</span>
+                                            <span className="text-[9px] font-black text-white">{ncavGrade.label[0]}</span>
+                                        </div>
+                                    </div>
+                                    {/* S-RIM 등급 배지 */}
+                                    <div className="flex flex-col items-center">
+                                        <span className="text-[6px] font-bold text-zinc-400 uppercase">S-RIM</span>
+                                        <div className="flex items-center gap-1 bg-zinc-900 px-1.5 py-0.5 rounded-[1px] shadow-sm" style={{ backgroundColor: srimGrade.color }}>
+                                            <span className="text-[8px] font-black text-white/70">{srimGrade.rarity}</span>
+                                            <span className="text-[9px] font-black text-white">{srimGrade.label[0]}</span>
+                                        </div>
+                                    </div>
                                 </div>
                             </div>
                         </div>
