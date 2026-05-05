@@ -92,7 +92,8 @@ export const StockCard = ({ stock, rawData }: any) => {
         const handleMove = (e: MouseEvent) => {
             const { left, top, width, height } = card.getBoundingClientRect();
             setRotation({ x: (height / 2 - (e.clientY - top)) / 10, y: ((e.clientX - left) - width / 2) / 10 });
-            setGlare({ x: ((e.clientX - left) / width) * 100, y: ((e.clientY - top) / height) * 100, opacity: 0.7 });
+            // 반사 효과의 불투명도를 0.7에서 0.35로 낮춤
+            setGlare({ x: ((e.clientX - left) / width) * 100, y: ((e.clientY - top) / height) * 100, opacity: 0.15 });
         };
         const handleLeave = () => { setRotation({ x: 0, y: 0 }); setGlare(prev => ({ ...prev, opacity: 0 })); };
         card.addEventListener('mousemove', handleMove);
@@ -110,11 +111,13 @@ export const StockCard = ({ stock, rawData }: any) => {
 
                 <div
                     className="absolute inset-0 z-[60] pointer-events-none mix-blend-color-dodge opacity-0 group-hover/card:opacity-100 transition-opacity duration-300 rounded-[1.4rem]"
-                    style={{ background: `radial-gradient(circle at ${glare.x}% ${glare.y}%, rgba(255,255,255,0.9) 0%, rgba(100,100,255,0.2) 40%, rgba(0,0,0,0) 70%)` }}
+                    style={{
+                        // 그라데이션의 밝기 농도를 낮추어 반사 정도를 완화
+                        background: `radial-gradient(circle at ${glare.x}% ${glare.y}%, rgba(255,255,255,0.4) 0%, rgba(100,100,255,0.1) 40%, rgba(0,0,0,0) 70%)`
+                    }}
                 />
 
                 <div className={`relative w-full h-full rounded-[0.6rem] bg-gradient-to-br ${gradeTheme.frame} p-[3px] shadow-inner`}>
-                    {/* 최상위 컨테이너에서 overflow-hidden을 제거하거나 상황에 맞게 조정 (툴팁 노출을 위해) */}
                     <div className={`w-full h-full ${theme.lightBg} rounded-[0.5rem] flex flex-col relative`}>
 
                         {/* [HEADER] */}
@@ -130,7 +133,6 @@ export const StockCard = ({ stock, rawData }: any) => {
                                         {stock.fairValue?.toLocaleString()}
                                     </span>
                                 </div>
-                                {/* Sector Icon with Tooltip - Z-index를 로고보다 높게 설정 */}
                                 <div
                                     className={`relative w-8 h-8 rounded-full ${theme.bg} flex items-center justify-center shadow-md border-2 border-white/90 ml-1 cursor-help transition-transform hover:scale-110 z-[100]`}
                                     onMouseEnter={() => setActiveTooltip('sector')}
@@ -150,7 +152,7 @@ export const StockCard = ({ stock, rawData }: any) => {
                             </div>
                         </div>
 
-                        {/* [IMAGE] - z-index를 낮게 유지 */}
+                        {/* [IMAGE] */}
                         <div className="mx-2.5 mt-1.5 relative h-40 border-[5px] border-[#c9c9c9] shadow-inner bg-white overflow-hidden rounded-[2px] z-[10]">
                             {logoUrl && (
                                 <img
