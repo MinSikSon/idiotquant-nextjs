@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect, useMemo, useRef } from 'react';
 import Image from 'next/image'; // Image 컴포넌트 추가
+import Link from 'next/link';
 
 /**
  * 현실 산업군을 반영한 커스텀 섹터 테마
@@ -263,23 +264,45 @@ export const StockCard = ({ stock, rawData }: any) => {
                         </div>
 
                         {/* [IMAGE] 로고 영역 */}
-                        <div className="mx-2.5 mt-1.5 relative h-40 border-[5px] border-[#c9c9c9] shadow-inner bg-white overflow-hidden rounded-[2px] z-[10]">
-                            {/* 에러가 없고 로고 URL이 존재할 때만 Image 컴포넌트 렌더링 */}
-                            {logoUrl && !imageStatus.error ? (
-                                <Image
-                                    key={stock.ticker}
-                                    src={logoUrl}
-                                    alt={stock.name}
-                                    fill
-                                    style={{ objectFit: 'cover' }}
-                                    className={`group-hover/card:scale-110 transition-all duration-700 ${imageStatus.loaded ? 'opacity-100' : 'opacity-0'}`}
-                                    onLoad={() => setImageStatus(prev => ({ ...prev, loaded: true }))}
-                                    onError={() => setImageStatus({ loaded: true, error: true })} // 에러 시 상태 확정
-                                    unoptimized
-                                />
-                            ) : null}
+                        <div className="mx-2.5 mt-1.5 relative h-40 border-[5px] border-[#c9c9c9] shadow-inner bg-white overflow-hidden rounded-[2px] z-[10] group/logo">
+                            {/* 국가별 메인 출처 링크 설정 */}
+                            <Link
+                                href={stock.isUs ? "https://logo.dev" : "https://logo.idiotquant.com"}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="block w-full h-full relative"
+                            >
+                                {logoUrl && !imageStatus.error ? (
+                                    <Image
+                                        key={stock.ticker}
+                                        src={logoUrl}
+                                        alt={stock.name}
+                                        fill
+                                        style={{ objectFit: 'cover' }}
+                                        className={`group-hover/logo:scale-110 transition-all duration-700 ${imageStatus.loaded ? 'opacity-100' : 'opacity-0'}`}
+                                        onLoad={() => setImageStatus(prev => ({ ...prev, loaded: true }))}
+                                        onError={() => setImageStatus({ loaded: true, error: true })}
+                                        unoptimized
+                                    />
+                                ) : null}
 
-                            {/* 로딩 중이거나 에러 발생 시 보여줄 Fallback UI */}
+                                {/* [워터마크] 국장: idiotquant / 미장: logo.dev */}
+                                {imageStatus.loaded && !imageStatus.error && (
+                                    <div className="absolute top-2 left-2 opacity-30 group-hover/logo:opacity-70 transition-opacity pointer-events-none">
+                                        <div className="flex flex-col gap-0">
+                                            <span className="text-[6px] font-black text-zinc-400 uppercase leading-none">Powered by</span>
+                                            <span className="text-[8px] font-black text-black tracking-tighter mix-blend-multiply">
+                                                {stock.isUs ? 'logo.dev' : 'logo.idiotquant.com'}
+                                            </span>
+                                        </div>
+                                    </div>
+                                )}
+
+                                {/* 호버 시 나타나는 가이드 UI */}
+                                <div className="absolute inset-0 bg-black/0 group-hover/logo:bg-black/5 transition-colors pointer-events-none" />
+                            </Link>
+
+                            {/* 로딩/에러 Fallback */}
                             {(!imageStatus.loaded || imageStatus.error) && (
                                 <div className="absolute inset-0 flex items-center justify-center bg-zinc-50 transition-opacity duration-300">
                                     <div className="flex flex-col items-center gap-2">
@@ -289,14 +312,14 @@ export const StockCard = ({ stock, rawData }: any) => {
                                 </div>
                             )}
 
-                            {/* 하단 지표 정보 바 */}
-                            <div className={`absolute bottom-0 w-full ${theme.bg} py-1 text-center border-t border-black/20 z-20`}>
+                            {/* 하단 지표 정보 바 (디자인 유지) */}
+                            <div className={`absolute bottom-0 w-full ${theme.bg} py-1 text-center border-t border-black/20 z-20 pointer-events-none`}>
                                 <p className="text-[8px] font-black text-white tracking-[0.2em] uppercase">
                                     PBR: {stock.pbr} | PER: {stock.per} | EPS: {stock.eps}
                                 </p>
                             </div>
                         </div>
-                        
+
                         {/* [SKILLS] */}
                         <div className="flex-1 px-4 py-3 flex flex-col justify-center space-y-3 z-[20]">
                             <div
