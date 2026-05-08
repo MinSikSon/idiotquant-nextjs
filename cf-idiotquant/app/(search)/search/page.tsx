@@ -7,7 +7,7 @@ import { useStockSearch } from './hooks/useStockSearch';
 import { StockHeader } from './components/StockHeader';
 import { ValuationSection } from './components/ValuationSection';
 import { FinancialTables } from './components/FinancialTables';
-import FinnhubTable from './table';
+import FinnhubTable from './components/FinnhubTable';
 import SearchAutocomplete from '@/components/searchAutoComplete';
 import { selectKrMarketHistory } from '@/lib/features/searchHistory/searchHistorySlice';
 import { ErrorBoundary } from './components/ErrorBoundary';
@@ -96,7 +96,7 @@ function SearchContent() {
     (data.kiChart.state === 'fulfilled' ||
       data.usSearchInfo.state === 'fulfilled');
 
-  // console.log(`data:`, data);
+  console.log(`data:`, data);
 
   const chartConfig = useMemo(() => {
     const isUs = krOrUs === 'US';
