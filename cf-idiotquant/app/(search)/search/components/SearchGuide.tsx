@@ -68,7 +68,7 @@ export const SearchGuide = () => {
     ];
 
     return (
-        <div className="flex flex-col items-center w-full max-w-7xl mx-auto px-6 py-16 md:py-28 animate-in fade-in slide-in-from-bottom-10 duration-1000 overflow-hidden">
+        <div className="flex flex-col items-center w-full max-w-7xl mx-auto px-6 py-4 md:pt-16 md:pb-4 animate-in fade-in slide-in-from-bottom-10 duration-1000 overflow-hidden">
 
             {/* 1. Hero Section: 퀀트덱 로딩 애니메이션 느낌 */}
             <header className="flex flex-col items-center text-center mb-24 space-y-8 relative">

@@ -266,60 +266,82 @@ export const StockCard = ({ stock, rawData }: any) => {
                             </div>
                         </div>
 
-                        {/* [IMAGE] 로고 영역 */}
-                        <div className="mx-2.5 mt-1.5 relative h-40 border-[5px] border-[#c9c9c9] shadow-inner bg-white overflow-hidden rounded-[2px] z-[10] group/logo">
-                            {/* 국가별 메인 출처 링크 설정 */}
-                            <Link
-                                href={stock.isUs ? "https://logo.dev" : "https://logo.idiotquant.com"}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="block w-full h-full relative"
+                        {/* [IMAGE] 로고 영역 (클릭 시 상세 지표 반전) */}
+                        <div className="mx-2.5 mt-1.5 relative h-48 border-[5px] border-[#c9c9c9] shadow-inner bg-white overflow-hidden rounded-[2px] z-[10] group/logo"
+                            style={{ perspective: '1000px' }} // 3D 효과를 위한 원근법 추가
+                        >
+                            {/* 클릭 감지 및 플립 상태 관리 (로컬 상태 flip 추가 필요) */}
+                            {/* 여기서는 설명의 편의를 위해 버튼 스타일로 구현하며, 클릭 시 내용을 전환합니다. */}
+                            <div
+                                className={`relative w-full h-full transition-all duration-500 transform-gpu cursor-pointer ${activeTooltip === 'showMetrics' ? '[transform:rotateY(180deg)]' : ''}`}
+                                style={{ transformStyle: 'preserve-3d' }}
+                                onClick={() => setActiveTooltip(activeTooltip === 'showMetrics' ? null : 'showMetrics')}
                             >
-                                {logoUrl && !imageStatus.error ? (
-                                    <Image
-                                        key={stock.ticker}
-                                        src={logoUrl}
-                                        alt={stock.name}
-                                        fill
-                                        style={{ objectFit: 'cover' }}
-                                        className={`group-hover/logo:scale-110 transition-all duration-700 ${imageStatus.loaded ? 'opacity-100' : 'opacity-0'}`}
-                                        onLoad={() => setImageStatus(prev => ({ ...prev, loaded: true }))}
-                                        onError={() => setImageStatus({ loaded: true, error: true })}
-                                        unoptimized
-                                    />
-                                ) : null}
+                                {/* [FRONT: 로고 이미지] */}
+                                <div className="absolute inset-0 w-full h-full [backface-visibility:hidden]">
+                                    {logoUrl && !imageStatus.error ? (
+                                        <Image
+                                            key={stock.ticker}
+                                            src={logoUrl}
+                                            alt={stock.name}
+                                            fill
+                                            style={{ objectFit: 'cover' }}
+                                            className={`transition-all duration-700 ${imageStatus.loaded ? 'opacity-100' : 'opacity-0'}`}
+                                            onLoad={() => setImageStatus(prev => ({ ...prev, loaded: true }))}
+                                            onError={() => setImageStatus({ loaded: true, error: true })}
+                                            unoptimized
+                                        />
+                                    ) : (
+                                        <div className="flex flex-col items-center justify-center h-full bg-zinc-50">
+                                            <span className="text-6xl grayscale opacity-10">{theme.icon}</span>
+                                        </div>
+                                    )}
 
-                                {/* [워터마크] 국장: idiotquant / 미장: logo.dev */}
-                                {imageStatus.loaded && !imageStatus.error && (
-                                    <div className="absolute top-2 left-2 opacity-30 group-hover/logo:opacity-70 transition-opacity pointer-events-none">
-                                        <div className="flex flex-col gap-0">
-                                            <span className="text-[6px] font-black text-zinc-400 uppercase leading-none">Powered by</span>
+                                    {/* 워터마크 (프론트 전용) */}
+                                    {imageStatus.loaded && !imageStatus.error && (
+                                        <Link
+                                            href={stock.isUs ? "https://logo.dev" : "https://logo.idiotquant.com"}
+                                            target="_blank"
+                                            rel="noopener noreferrer"
+                                            className="absolute top-2 left-2 z-[30] w-fit h-fit opacity-30 group-hover/logo:opacity-100 transition-opacity flex flex-col gap-0 leading-none cursor-pointer"
+                                            onClick={(e) => e.stopPropagation()} // 플립 방지
+                                        >
+                                            <span className="text-[6px] font-black text-zinc-500 uppercase">Powered by</span>
                                             <span className="text-[8px] font-black text-black tracking-tighter mix-blend-multiply">
                                                 {stock.isUs ? 'logo.dev' : 'logo.idiotquant.com'}
                                             </span>
-                                        </div>
-                                    </div>
-                                )}
+                                        </Link>
+                                    )}
 
-                                {/* 호버 시 나타나는 가이드 UI */}
-                                <div className="absolute inset-0 bg-black/0 group-hover/logo:bg-black/5 transition-colors pointer-events-none" />
-                            </Link>
-
-                            {/* 로딩/에러 Fallback */}
-                            {(!imageStatus.loaded || imageStatus.error) && (
-                                <div className="absolute inset-0 flex items-center justify-center bg-zinc-50 transition-opacity duration-300">
-                                    <div className="flex flex-col items-center gap-2">
-                                        <span className="text-6xl grayscale opacity-10 animate-pulse">{theme.icon}</span>
-                                        <span className="text-[10px] font-black text-zinc-300 tracking-tighter uppercase">{stock.ticker}</span>
+                                    {/* 하단 힌트 바 */}
+                                    <div className={`absolute bottom-0 w-full ${theme.bg} py-0 text-center border-t border-black/20 opacity-80`}>
+                                        <p className="text-[8px] font-black text-white tracking-[0.2em] uppercase">CLICK TO VIEW METRICS</p>
                                     </div>
                                 </div>
-                            )}
 
-                            {/* 하단 지표 정보 바 (디자인 유지) */}
-                            <div className={`absolute bottom-0 w-full ${theme.bg} py-1 text-center border-t border-black/20 z-20 pointer-events-none`}>
-                                <p className="text-[8px] font-black text-white tracking-[0.2em] uppercase">
-                                    PBR: {stock.pbr} | PER: {stock.per} | EPS: {stock.eps}
-                                </p>
+                                {/* [BACK: 상세 지표 영역] */}
+                                <div className={`absolute inset-0 w-full h-full ${theme.lightBg} [backface-visibility:hidden] [transform:rotateY(180deg)] flex flex-col items-center justify-center p-4 border-2 ${theme.border}`}>
+                                    <div className="flex flex-col w-full space-y-3">
+                                        <div className="flex justify-between items-end border-b border-zinc-200 pb-1">
+                                            <span className="text-[10px] font-black text-zinc-400 uppercase">PBR</span>
+                                            <span className="text-3xl font-black tracking-tighter text-zinc-900">{stock.pbr}</span>
+                                        </div>
+                                        <div className="flex justify-between items-end border-b border-zinc-200 pb-1">
+                                            <span className="text-[10px] font-black text-zinc-400 uppercase">PER</span>
+                                            <span className="text-3xl font-black tracking-tighter text-zinc-900">{stock.per}</span>
+                                        </div>
+                                        <div className="flex justify-between items-end border-b border-zinc-200 pb-1">
+                                            <span className="text-[10px] font-black text-zinc-400 uppercase">EPS</span>
+                                            <span className="text-2xl font-black tracking-tighter text-zinc-900">
+                                                {stock.isUs ? "" : ""}{stock.eps}
+                                            </span>
+                                        </div>
+                                    </div>
+                                    <div className="mt-4 flex items-center gap-1">
+                                        <span className="text-[8px] font-black text-zinc-400 uppercase italic">Metric Source: Financial Reports</span>
+                                        <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
+                                    </div>
+                                </div>
                             </div>
                         </div>
 
