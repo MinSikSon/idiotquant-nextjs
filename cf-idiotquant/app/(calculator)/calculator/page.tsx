@@ -136,7 +136,7 @@ export default function Calculator() {
           <div className="bg-indigo-600 p-3 rounded-2xl shadow-xl shadow-indigo-500/30">
             <CalculatorIcon className="h-8 w-8 text-white" />
           </div>
-          <H2 className="!m-0 font-black tracking-tight text-zinc-900 dark:!text-zinc-50 text-3xl">Precision Planner</H2>
+          {/* <H2 className="!m-0 font-black tracking-tight text-zinc-900 dark:!text-zinc-50 text-3xl">Precision Planner</H2> */}
         </header>
 
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-10">
@@ -301,7 +301,7 @@ export default function Calculator() {
                     )}
                   </div>
 
-                  <div className="grid grid-cols-2 gap-6 pt-8 border-t border-white/10">
+                  <div className="flex flex-col gap-0 pt-0 border-t border-white/10">
                     <div className="bg-white/5 p-4 rounded-2xl border border-white/5">
                       <span className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest block mb-1">총 투입 원금</span>
                       <div className="text-xl font-bold text-zinc-500">{formatKrw(results.totalInvestment)}</div>
@@ -329,20 +329,20 @@ export default function Calculator() {
                   <Text className="text-xs text-zinc-500 dark:text-zinc-400 font-medium mt-1">나이에 따른 복리 및 지출 반영 궤적</Text>
                 </div>
               </div>
-              <div className="bg-zinc-50 dark:bg-black/40 rounded-2xl p-4 border border-zinc-100 dark:border-zinc-800">
+              <div className="bg-zinc-50 dark:bg-black/40 rounded-2xl p-0 border border-zinc-100 dark:border-zinc-800">
                 <ResultChart data={results.chartData} height="h-[500px] md:h-[600px]" />
               </div>
             </Card>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <Callout icon={IconNames.INFO_SIGN} className="!rounded-2xl !p-6 border-0 shadow-md dark:bg-zinc-900 bg-white">
-                <h5 className="font-bold mb-2 text-zinc-800 dark:text-zinc-100">복리 상식</h5>
+              <Callout icon={IconNames.INFO_SIGN} className="!rounded-2xl !p-4 border-0 shadow-md dark:bg-zinc-900 bg-white">
+                <h5 className="pl-6 font-bold mb-2 text-zinc-800 dark:text-zinc-100">복리 상식</h5>
                 <Text className="text-xs leading-relaxed text-zinc-600 dark:text-zinc-400">
                   수익률 <strong>{inputs.interestRate}%</strong>는 강력한 엔진입니다. 하지만 매년 <strong>{inputs.expenseGrowthRate.toFixed(1)}%</strong>씩 오르는 물가 상승은 은퇴 후 자산을 갉아먹는 가장 큰 적입니다.
                 </Text>
               </Callout>
-              <Callout intent={results.finalValue > 0 ? Intent.SUCCESS : Intent.DANGER} icon={IconNames.LIGHTBULB} className="!rounded-2xl !p-6 border-0 shadow-md dark:bg-zinc-900 bg-white">
-                <h5 className="font-bold mb-2 text-zinc-800 dark:text-zinc-100">전문가 진단</h5>
+              <Callout intent={results.finalValue > 0 ? Intent.SUCCESS : Intent.DANGER} icon={IconNames.LIGHTBULB} className="!rounded-2xl !p-4 border-0 shadow-md dark:bg-zinc-900 bg-white">
+                <h5 className="pl-6 font-bold mb-2 text-zinc-800 dark:text-zinc-100">전문가 진단</h5>
                 <Text className="text-xs leading-relaxed text-zinc-600 dark:text-zinc-400">
                   {results.finalValue > 0
                     ? `현재 계획은 매우 탄탄합니다. 은퇴 시점인 ${inputs.retirementAge}세 이후에도 자산이 안정적으로 유지될 것으로 보입니다.`

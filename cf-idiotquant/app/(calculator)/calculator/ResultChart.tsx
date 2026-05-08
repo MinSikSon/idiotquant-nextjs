@@ -12,9 +12,9 @@ import {
     YAxis,
     Tooltip,
     Legend,
+    ComposedChart // Area와 Line을 섞어 쓸 때는 ComposedChart가 더 안정적입니다.
 } from "recharts";
 
-// 차트 내부용 만원 단위 상세 변환 함수
 const formatValueFull = (value: number): string => {
     if (value === 0) return "0원";
     const trillion = Math.floor(value / 100000000);
@@ -53,11 +53,13 @@ const ResultChart: FC<ResultChartProps> = ({ data, height }) => {
             elevation={Elevation.ZERO}
             className={`w-full flex flex-col p-0 border-none bg-transparent ${height}`}
         >
-            <div className="flex-grow w-full">
+            <div className="flex-grow w-full h-full overflow-visible">
                 <ResponsiveContainer width="100%" height="100%">
+                    {/* ComposedChart는 Area와 Line을 동시에 렌더링할 때 최적화되어 있습니다. */}
                     <AreaChart
                         data={data}
-                        margin={{ top: 10, right: 0, bottom: 0, left: -20 }}
+                        // 마진 확보: 하단은 X축 라벨을 위해, 좌우는 Y축 라벨을 위해 넉넉히 설정
+                        margin={{ top: 10, right: 10, bottom: 25, left: 20 }}
                     >
                         <defs>
                             <linearGradient id="colorValue" x1="0" y1="0" x2="0" y2="1">
@@ -73,12 +75,13 @@ const ResultChart: FC<ResultChartProps> = ({ data, height }) => {
                             tick={{ fontSize: 12, fill: "#888", fontWeight: 600 }}
                             axisLine={false}
                             tickLine={false}
-                            dy={10}
-                            interval={data.length > 15 ? 4 : 1}
+                            dy={10} // 라벨과 축 사이 간격
+                            interval="preserveStartEnd" // 라벨이 겹치지 않게 자동으로 최적화
                         />
 
                         <YAxis
                             yAxisId="left"
+                            width={50} // Y축 공간을 명시적으로 확보하여 숫자가 짤리는 것을 방지
                             tick={{ fontSize: 10, fill: "#888" }}
                             axisLine={false}
                             tickLine={false}
@@ -88,6 +91,7 @@ const ResultChart: FC<ResultChartProps> = ({ data, height }) => {
                         <YAxis
                             yAxisId="right"
                             orientation="right"
+                            width={40} // 오른쪽 Y축 공간 확보
                             tick={{ fontSize: 10, fill: "#f59e0b" }}
                             axisLine={false}
                             tickLine={false}
@@ -100,10 +104,11 @@ const ResultChart: FC<ResultChartProps> = ({ data, height }) => {
                                 border: "1px solid #444",
                                 borderRadius: "10px",
                                 padding: "12px",
-                                fontSize: "15px",
-                                color: "#fff"
+                                fontSize: "14px", // 모바일 가독성을 위해 살짝 조절
+                                color: "#fff",
+                                zIndex: 100
                             }}
-                            itemStyle={{ color: "#fff", padding: "4px 0" }}
+                            itemStyle={{ color: "#fff", padding: "2px 0" }}
                             formatter={(value: any, name: string) => {
                                 if (name === "수익률") return [`${value}%`, name];
                                 return [formatValueFull(value), name];
@@ -114,7 +119,12 @@ const ResultChart: FC<ResultChartProps> = ({ data, height }) => {
                             verticalAlign="top"
                             align="right"
                             iconSize={10}
-                            wrapperStyle={{ paddingBottom: "20px", fontSize: "12px", fontWeight: "bold" }}
+                            wrapperStyle={{ 
+                                paddingBottom: "20px", 
+                                fontSize: "12px", 
+                                fontWeight: "bold",
+                                top: -10 // 레전드가 차트 상단과 너무 가깝지 않게 조정
+                            }}
                         />
 
                         <Area
@@ -125,6 +135,7 @@ const ResultChart: FC<ResultChartProps> = ({ data, height }) => {
                             stroke="#3b82f6"
                             strokeWidth={3}
                             fill="url(#colorValue)"
+                            isAnimationActive={true}
                         />
 
                         <Line
@@ -135,7 +146,8 @@ const ResultChart: FC<ResultChartProps> = ({ data, height }) => {
                             stroke="#f59e0b"
                             strokeWidth={2}
                             strokeDasharray="5 5"
-                            dot={false}
+                            dot={{ r: 0 }} // 완전히 숨기는 대신 0으로 설정
+                            activeDot={{ r: 4 }}
                         />
                     </AreaChart>
                 </ResponsiveContainer>
