@@ -1,7 +1,12 @@
 "use client";
-import React from "react";
-import { Section, SectionCard, HTMLTable, Tag } from "@blueprintjs/core";
+
+import React, { useState } from "react";
 import { formatKoreanUnit, ONE_HUNDRED_MILLION } from "../utils/financeCalc";
+import { 
+  ChartBarIcon, 
+  DocumentTextIcon, 
+  ChevronRightIcon 
+} from "@heroicons/react/24/outline";
 
 interface FinancialTablesProps {
     kiBS: any;
@@ -9,7 +14,9 @@ interface FinancialTablesProps {
 }
 
 export const FinancialTables = ({ kiBS, kiIS }: FinancialTablesProps) => {
-    // 퀀트 투자 핵심 지표 (배경색 및 폰트 강조 대상)
+    const [hoveredRow, setHoveredRow] = useState<string | null>(null);
+
+    // 퀀트 투자 핵심 지표
     const coreMetrics = ["total_aset", "total_lblt", "total_cptl", "sale_account", "bsop_prti", "thtr_ntin"];
 
     const bsRows = [
@@ -33,65 +40,87 @@ export const FinancialTables = ({ kiBS, kiIS }: FinancialTablesProps) => {
         { label: "당기순이익", key: "thtr_ntin", isHeader: true },
     ];
 
-    const renderTable = (title: string, rows: any[], data: any) => (
-        <Section
-            title={<div className="flex items-center gap-2 font-bold text-zinc-800 dark:text-zinc-100">{title}</div>}
-            className="dark:!bg-zinc-900 rounded-xl mb-10 overflow-hidden border border-zinc-200 dark:border-zinc-800"
-        >
-            <SectionCard className="p-0 overflow-x-auto dark:!bg-zinc-950 border-none relative no-scrollbar">
-                <HTMLTable
-                    bordered={false}
-                    className="w-full text-right font-mono text-[11px] sm:text-xs border-separate border-spacing-0"
-                >
+    const renderTable = (title: string, subTitle: string, rows: any[], data: any, icon: React.ReactNode) => (
+        <div className="mb-12 bg-white dark:bg-zinc-950 rounded-2xl border border-zinc-200 dark:border-zinc-800 shadow-sm overflow-hidden">
+            {/* Table Header Section */}
+            <div className="px-6 py-5 border-b border-zinc-100 dark:border-zinc-800 flex items-center justify-between bg-zinc-50/30 dark:bg-zinc-900/20">
+                <div className="flex items-center gap-3">
+                    <div className="p-2.5 bg-white dark:bg-zinc-900 rounded-xl shadow-sm border border-zinc-100 dark:border-zinc-800 text-zinc-600 dark:text-zinc-400">
+                        {icon}
+                    </div>
+                    <div>
+                        <h3 className="text-base font-black text-zinc-900 dark:text-white tracking-tight">{title}</h3>
+                        <p className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest">{subTitle}</p>
+                    </div>
+                </div>
+            </div>
+
+            {/* Table Content */}
+            <div className="overflow-x-auto custom-scrollbar">
+                <table className="w-full border-separate border-spacing-0">
                     <thead>
-                        <tr className="bg-zinc-50 dark:bg-zinc-900/50">
-                            {/* 대표열 헤더 고정: 배경색과 그림자로 데이터 경계 명확화 */}
-                            <th className="text-left p-4 min-w-[150px] sticky left-0 z-10 bg-zinc-50 dark:bg-zinc-900 border-r border-b dark:border-zinc-800 shadow-[4px_0_8px_-4px_rgba(0,0,0,0.1)]">
-                                <span className="text-[10px] uppercase tracking-wider text-zinc-400">Account Items</span>
+                        <tr>
+                            <th className="sticky left-0 z-30 bg-zinc-50 dark:bg-zinc-900 px-6 py-4 text-left border-b border-zinc-200 dark:border-zinc-800 min-w-[180px]">
+                                <span className="text-[10px] font-black text-zinc-400 uppercase tracking-widest">Account Item</span>
                             </th>
                             {data?.output?.slice(0, 5).map((v: any, i: number) => (
-                                <th key={i} >
-                                    <Tag minimal intent={i === 0 ? "primary" : "none"} className="font-bold text-right p-4 min-w-[110px] border-b dark:!text-white dark:!border-zinc-800">
-                                        {v.stac_yymm}
-                                    </Tag>
+                                <th key={i} className="px-6 py-4 text-right border-b border-zinc-200 dark:border-zinc-800 bg-zinc-50/50 dark:bg-zinc-900/30">
+                                    <div className="flex flex-col items-end">
+                                        <span className={`text-[10px] font-black ${i === 0 ? 'text-indigo-500' : 'text-zinc-400'}`}>
+                                            {i === 0 ? 'RECENT' : `PERIOD T-${i}`}
+                                        </span>
+                                        <span className="text-xs font-black text-zinc-900 dark:text-zinc-100 tabular-nums">
+                                            {v.stac_yymm}
+                                        </span>
+                                    </div>
                                 </th>
                             ))}
                         </tr>
                     </thead>
-                    <tbody>
+                    <tbody className="divide-y divide-zinc-50 dark:divide-zinc-900">
                         {rows.map((row, rowIndex) => {
                             const isCore = coreMetrics.includes(row.key);
                             const isHeader = row.isHeader;
+                            const rowId = `${title}-${row.key}`;
 
                             return (
-                                <tr key={row.key} className="group transition-colors hover:bg-blue-50/30 dark:hover:bg-blue-900/5">
-                                    {/* 대표열(계정항목) 배경 처리 및 고정 */}
+                                <tr 
+                                    key={row.key} 
+                                    className={`group transition-all duration-150 ${isHeader ? 'bg-zinc-50/30 dark:bg-zinc-900/20' : 'hover:bg-zinc-50/80 dark:hover:bg-zinc-900/40'}`}
+                                    onMouseEnter={() => setHoveredRow(rowId)}
+                                    onMouseLeave={() => setHoveredRow(null)}
+                                >
+                                    {/* Account Label Column */}
                                     <td className={`
-                    text-left p-4 sticky left-0 z-10 border-r border-b dark:border-zinc-800/50 transition-all
-                    shadow-[4px_0_8px_-4px_rgba(0,0,0,0.1)]
-                    ${isHeader ? "bg-zinc-100/90 dark:bg-zinc-800/90 backdrop-blur-md" : "bg-white dark:bg-zinc-950"}
-                    group-hover:bg-blue-50 dark:group-hover:bg-zinc-800
-                  `}>
-                                        <span className={`
-                      ${isHeader ? "font-black text-zinc-900 dark:text-white text-[12px]" : "font-medium text-zinc-500 dark:text-zinc-400"}
-                      ${isCore && !isHeader ? "text-indigo-600 dark:text-indigo-400" : ""}
-                    `}>
-                                            {row.label}
-                                        </span>
+                                        sticky left-0 z-20 px-6 py-3.5 text-left border-r border-zinc-100 dark:border-zinc-900 transition-colors
+                                        ${isHeader ? 'bg-zinc-100/50 dark:bg-zinc-800/40' : 'bg-white dark:bg-zinc-950 group-hover:bg-zinc-50 dark:group-hover:bg-zinc-900'}
+                                    `}>
+                                        <div className="flex items-center gap-2">
+                                            <ChevronRightIcon className={`w-3 h-3 transition-opacity ${hoveredRow === rowId ? 'opacity-100' : 'opacity-0'} text-indigo-500`} />
+                                            <span className={`
+                                                text-[12px] tracking-tight whitespace-nowrap
+                                                ${isHeader ? "font-black text-zinc-900 dark:text-white" : "font-medium text-zinc-600 dark:text-zinc-400"}
+                                                ${isCore && !isHeader ? "text-indigo-600 dark:text-indigo-400" : ""}
+                                            `}>
+                                                {row.label}
+                                            </span>
+                                        </div>
                                     </td>
 
+                                    {/* Data Columns */}
                                     {data?.output?.slice(0, 5).map((v: any, i: number) => {
                                         const rawValue = v[row.key as keyof typeof v] || 0;
                                         const val = Number(rawValue);
                                         const isNegative = val < 0;
 
                                         return (
-                                            <td key={i} className={`
-                        p-4 border-b dark:border-zinc-800/50 transition-colors
-                        ${isHeader ? "bg-zinc-50/30 dark:bg-zinc-800/10 font-black text-zinc-900 dark:text-zinc-100" : "text-zinc-600 dark:text-zinc-400"}
-                        ${isNegative ? "!text-red-500 font-bold bg-red-50/20" : ""}
-                      `}>
-                                                {formatKoreanUnit(val * ONE_HUNDRED_MILLION)}
+                                            <td key={i} className="px-6 py-3.5 text-right font-mono tabular-nums">
+                                                <span className={`
+                                                    ${isNegative ? "text-red-500 font-bold" : isHeader ? "text-zinc-900 dark:text-zinc-100 font-black" : "text-zinc-700 dark:text-zinc-300"}
+                                                    ${i === 0 ? "text-[13px]" : "text-[12px] opacity-80"}
+                                                `}>
+                                                    {formatKoreanUnit(val * ONE_HUNDRED_MILLION)}
+                                                </span>
                                             </td>
                                         );
                                     })}
@@ -99,25 +128,42 @@ export const FinancialTables = ({ kiBS, kiIS }: FinancialTablesProps) => {
                             );
                         })}
                     </tbody>
-                </HTMLTable>
-            </SectionCard>
-            <div className="p-3 bg-zinc-50 dark:bg-zinc-900/50 border-t dark:border-zinc-800 flex justify-end gap-4">
-                <div className="flex items-center gap-1.5 text-[10px] text-zinc-400 font-medium">
-                    <div className="w-2 h-2 rounded-full bg-indigo-500" /> 주요지표
-                </div>
-                <div className="flex items-center gap-1.5 text-[10px] text-zinc-400 font-medium">
-                    <div className="w-2 h-2 rounded-full bg-red-500" /> 적자항목
-                </div>
+                </table>
             </div>
-        </Section>
+
+            {/* Table Footer: Legend */}
+            <div className="px-6 py-3 bg-zinc-50/50 dark:bg-zinc-900/50 border-t border-zinc-100 dark:border-zinc-800 flex justify-between items-center">
+                <div className="flex gap-4">
+                    <div className="flex items-center gap-1.5 text-[10px] font-bold text-zinc-400 uppercase tracking-tighter">
+                        <div className="w-1.5 h-1.5 rounded-full bg-indigo-500" /> 핵심 지표
+                    </div>
+                    <div className="flex items-center gap-1.5 text-[10px] font-bold text-zinc-400 uppercase tracking-tighter">
+                        <div className="w-1.5 h-1.5 rounded-full bg-red-500" /> 손실/적자
+                    </div>
+                </div>
+                <span className="text-[9px] font-black text-zinc-300 dark:text-zinc-700 tracking-[0.2em] uppercase">Currency: KRW (100M)</span>
+            </div>
+        </div>
     );
 
     if (!kiBS?.output || !kiIS?.output) return null;
 
     return (
-        <div className="animate-in fade-in slide-in-from-bottom-6 duration-1000">
-            {renderTable("재무상태표 (Balance Sheet)", bsRows, kiBS)}
-            {renderTable("손익계산서 (Income Statement)", isRows, kiIS)}
+        <div className="space-y-4 animate-in fade-in slide-in-from-bottom-4 duration-700">
+            {renderTable(
+                "재무상태표", 
+                "Balance Sheet", 
+                bsRows, 
+                kiBS, 
+                <DocumentTextIcon className="w-5 h-5" />
+            )}
+            {renderTable(
+                "손익계산서", 
+                "Income Statement", 
+                isRows, 
+                kiIS, 
+                <ChartBarIcon className="w-5 h-5" />
+            )}
         </div>
     );
 };
