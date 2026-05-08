@@ -61,21 +61,14 @@ const SECTIONS = [
     }
 ];
 
-const defaultFmt = (v: number | null | undefined) => {
-    if (v === null || v === undefined || Number.isNaN(v)) return "-";
-    return Math.round(v).toLocaleString();
-};
-
 export default function FinnhubBalanceSheetTable({ data = [], className = "", formatNumber }: Props) {
     const fmt = formatNumber || defaultFmt;
 
-    // 데이터 가공 로직
     const columns = useMemo(() => {
         return (Array.isArray(data) ? data : []).map((r) => {
             const dateStr = (r.endDate || r.filedDate || r.acceptedDate || "").split(" ")[0];
             const map = new Map<string, number | null>();
 
-            // 모든 리포트(bs, ic, cf)를 하나의 맵으로 병합
             const merge = (arr: any[] = []) => {
                 arr.forEach(item => {
                     const concept = item?.concept || item?.label || "";
@@ -96,57 +89,70 @@ export default function FinnhubBalanceSheetTable({ data = [], className = "", fo
 
     return (
         <Section
-            title="상세 재무제표"
-            icon={IconNames.BOOKMARK}
-            className={`${className} dark:!bg-zinc-900 overflow-hidden shadow-lg rounded-xl border dark:border-zinc-800`}
+            title="상세 재무제표 (Reported)"
+            icon={IconNames.DATABASE}
+            className={`${className} overflow-hidden shadow-sm rounded-xl border dark:border-zinc-800`}
         >
             <SectionCard className="!p-0 border-none bg-white dark:!bg-zinc-950">
                 <div className="overflow-x-auto no-scrollbar">
                     <HTMLTable
-                        striped
                         interactive
-                        compact
-                        className="w-full min-w-[650px] font-mono text-[11px] md:!text-xs dark:!text-zinc-300"
+                        bordered={false}
+                        className="w-full min-w-[700px] text-[11px] md:text-xs tracking-tight"
                     >
-                        <thead className="bg-gray-50 dark:!bg-zinc-900">
-                            <tr>
-                                {/* 모바일에서 항목명 고정 */}
-                                <th className="!p-3 text-left sticky left-0 bg-gray-50 dark:!bg-zinc-900 z-20 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)] dark:!text-white border-b dark:border-zinc-800">
-                                    항목 (Concepts)
+                        <thead>
+                            <tr className="bg-zinc-50 dark:bg-zinc-900/50">
+                                <th className="!p-4 text-left sticky left-0 bg-zinc-50 dark:bg-zinc-900 z-30 border-b dark:border-zinc-800 min-w-[180px]">
+                                    <span className="text-zinc-400 font-bold uppercase text-[10px] tracking-wider">Financial Concepts</span>
                                 </th>
                                 {columns.map((col, idx) => (
-                                    <th key={idx}>
-                                        <Tag minimal intent={idx === 0 ? "primary" : "none"} className="font-bold text-right !p-3 dark:!text-white border-b dark:border-zinc-800">
+                                    <th key={idx} className="!p-4 text-right border-b dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-900">
+                                        <span className={`font-black ${idx === 0 ? 'text-blue-600 dark:text-blue-400' : 'text-zinc-500'}`}>
                                             {col.label}
-                                        </Tag>
+                                        </span>
                                     </th>
                                 ))}
                             </tr>
                         </thead>
-                        <tbody>
+                        <tbody className="divide-y divide-zinc-100 dark:divide-zinc-800/50">
                             {SECTIONS.map((section) => (
                                 <React.Fragment key={section.label}>
-                                    {/* 섹션 구분 타이틀 */}
-                                    <tr className="bg-gray-100/30 dark:!bg-zinc-900/40">
-                                        <td colSpan={columns.length + 1} className={`!py-1.5 !px-4 font-black text-[10px] uppercase tracking-widest ${section.color}`}>
-                                            {section.label}
+                                    {/* 섹션 헤더: 가독성을 위해 배경색과 텍스트 강조 */}
+                                    <tr className="bg-zinc-50/50 dark:bg-zinc-800/30">
+                                        <td 
+                                            colSpan={columns.length + 1} 
+                                            className={`!py-2.5 !px-4 font-black text-[10px] uppercase tracking-[0.2em] ${section.color} border-y dark:border-zinc-800/80`}
+                                        >
+                                            <div className="flex items-center gap-2">
+                                                <div className={`w-1 h-3 rounded-full ${section.color.replace('text-', 'bg-')}`} />
+                                                {section.label}
+                                            </div>
                                         </td>
                                     </tr>
-                                    {/* 데이터 행 */}
+                                    
                                     {section.items.map((row, rowIndex) => (
-                                        <tr key={rowIndex} className="dark:hover:!bg-zinc-800/50">
-                                            <td className="!pl-6 !py-2 text-left sticky left-0 bg-white dark:!text-white dark:!bg-zinc-950 z-10 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)] dark:border-zinc-800/50">
+                                        <tr key={rowIndex} className="group hover:bg-zinc-50 dark:hover:bg-zinc-900/40 transition-colors">
+                                            {/* 항목명: Sticky 및 좌측 여백/강조 */}
+                                            <td className="!pl-6 !py-3 text-left sticky left-0 bg-white dark:bg-zinc-950 z-20 shadow-[4px_0_8px_-4px_rgba(0,0,0,0.05)] font-semibold text-zinc-700 dark:text-zinc-300 group-hover:text-zinc-900 dark:group-hover:text-white">
                                                 {row.label}
                                             </td>
+                                            
                                             {columns.map((col, colIndex) => {
                                                 const v = col.map.get(row.concept[0]) ?? col.map.get(row.concept[1]) ?? null;
                                                 return (
-                                                    <td key={colIndex} className="text-right !px-4 font-medium transition-colors hover:bg-blue-50/50 dark:hover:bg-blue-900/20">
+                                                    <td key={colIndex} className="text-right !px-4 font-mono tabular-nums">
                                                         {v === null ? (
-                                                            <span className="text-gray-300 dark:!text-zinc-700">-</span>
+                                                            <span className="text-zinc-200 dark:text-zinc-800">-</span>
                                                         ) : (
-                                                            <Tooltip content={`${row.label}: ${v.toLocaleString()}`} position={Position.TOP}>
-                                                                <span className={v < 0 ? "text-red-500 dark:!text-red-400" : "dark:!text-zinc-200"}>
+                                                            <Tooltip 
+                                                                content={`${row.label} (${col.label})`} 
+                                                                position={Position.TOP}
+                                                                className="cursor-default"
+                                                            >
+                                                                <span className={`
+                                                                    ${v < 0 ? "text-red-500 font-bold" : "text-zinc-900 dark:text-zinc-100"}
+                                                                    ${colIndex === 0 ? "font-bold text-sm" : "font-medium"}
+                                                                `}>
                                                                     {fmt(v)}
                                                                 </span>
                                                             </Tooltip>
@@ -162,10 +168,21 @@ export default function FinnhubBalanceSheetTable({ data = [], className = "", fo
                     </HTMLTable>
                 </div>
             </SectionCard>
-            <div className="px-4 py-2 bg-gray-50 dark:!bg-zinc-900 border-t dark:border-zinc-800 flex justify-between items-center text-[10px] text-gray-400">
-                <span><Icon icon={IconNames.INFO_SIGN} size={10} className="mr-1" /> 모든 수치는 원문 통화 기준입니다.</span>
-                <span className="font-bold uppercase tracking-tighter">Finnhub Reported Data</span>
+            
+            <div className="px-5 py-3 bg-zinc-50 dark:bg-zinc-900/80 border-t dark:border-zinc-800 flex justify-between items-center">
+                <div className="flex items-center gap-2 text-[10px] text-zinc-400 font-medium">
+                    <Icon icon={IconNames.INFO_SIGN} size={12} />
+                    <span>Values are in reported currency. Hover for details.</span>
+                </div>
+                <Tag minimal round className="text-[9px] font-black tracking-widest opacity-60">RAW DATA SOURCE: FINNHUB</Tag>
             </div>
         </Section>
     );
 }
+
+// 기본 변환 함수에 소수점 처리를 더 깔끔하게 보강 (선택 사항)
+const defaultFmt = (v: number | null | undefined) => {
+    if (v === null || v === undefined || Number.isNaN(v)) return "-";
+    // 숫자가 너무 크면 단위를 붙이는 대신, 테이블에서는 원본 수치를 쉼표로만 구분하는 것이 정확합니다.
+    return v.toLocaleString(undefined, { maximumFractionDigits: 0 });
+};
