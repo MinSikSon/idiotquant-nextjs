@@ -2,7 +2,7 @@
 
 export const dynamic = 'force-dynamic';
 
-import React, { useEffect, useMemo, useState, useRef, useCallback } from "react";
+import React, { useEffect, useMemo, useState, useRef, useCallback, Suspense } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import { useAppDispatch, useAppSelector } from "@/lib/hooks";
 import { motion, AnimatePresence } from "framer-motion";
@@ -140,7 +140,16 @@ const StockDataFetcher = ({ ticker, name }: { ticker: string; name: string }) =>
     );
 };
 
-export default function AlgorithmTradeContent() {
+export default function Page() {
+    return (
+        // 핵심: useSearchParams를 사용하는 컴포넌트를 Suspense로 감쌉니다.
+        <Suspense fallback={<div>로딩 중...</div>}>
+            <AlgorithmTradeContent />
+        </Suspense>
+    );
+}
+
+function AlgorithmTradeContent() {
     const dispatch = useAppDispatch();
     const router = useRouter();
     const searchParams = useSearchParams();
