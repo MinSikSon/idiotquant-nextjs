@@ -2,7 +2,7 @@
 
 import { DesignButton } from "@/components/designButton";
 import TableTemplate, { Example8TableHeadType, Example8TableRowType, TablesExample8PropsType } from "@/components/tableExample8";
-import { CapitalTokenType, PurchaseLogType, QuantRule, reqGetKrPurchaseLogLatest, reqGetQuantRule, reqGetQuantRuleDesc, reqGetUsCapitalToken, reqGetUsPurchaseLogLatest, selectCapitalToken, selectInquirePriceMulti, selectkrPurchaseLogLatest, selectQuantRule, selectQuantRuleDesc, selectUsCapitalToken, selectusPurchaseLogLatest } from "@/lib/features/algorithmTrade/algorithmTradeSlice";
+import { CapitalTokenType, PurchaseLogType, QuantRule, reqGetKrPurchaseLogLatest, reqGetQuantRule, reqGetQuantRuleDesc, reqGetUsCapitalToken, reqGetUsPurchaseLogLatest, selectCapitalToken, selectkrPurchaseLogLatest, selectQuantRule, selectQuantRuleDesc, selectUsCapitalToken, selectusPurchaseLogLatest } from "@/lib/features/algorithmTrade/algorithmTradeSlice";
 import { reqGetCapitalToken } from "@/lib/features/algorithmTrade/algorithmTradeSlice";
 import { getKoreaInvestmentToken, KoreaInvestmentToken } from "@/lib/features/koreaInvestment/koreaInvestmentSlice";
 import { useAppDispatch, useAppSelector } from "@/lib/hooks";
@@ -49,7 +49,6 @@ export default function AlgorithmTradeLegacy() {
     const usPurchaseLogLatest: PurchaseLogType = useAppSelector(selectusPurchaseLogLatest);
 
     const us_capital_token: CapitalTokenType = useAppSelector(selectUsCapitalToken);
-    const inquirePriceMulti: any = useAppSelector(selectInquirePriceMulti);
     const kiToken: KoreaInvestmentToken = useAppSelector(getKoreaInvestmentToken);
     // const quant_rule: QuantRule = useAppSelector(selectQuantRule);
     // const quant_rule_desc: QuantRule = useAppSelector(selectQuantRuleDesc);
@@ -88,12 +87,6 @@ export default function AlgorithmTradeLegacy() {
     useEffect(() => {
         if (DEBUG) console.log(`kiToken`, kiToken);
     }, [kiToken]);
-    // useEffect(() => {
-    //     if (DEBUG) console.log(`quant_rule`, quant_rule);
-    // }, [quant_rule]);
-    useEffect(() => {
-        if (DEBUG) console.log(`inquirePriceMulti`, inquirePriceMulti);
-    }, [inquirePriceMulti]);
 
     const example8TableHead: Example8TableHeadType[] = [
         {
