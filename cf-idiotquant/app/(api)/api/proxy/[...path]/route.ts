@@ -12,6 +12,16 @@ if (process.env.NODE_ENV === "development") {
     process.env.NODE_TLS_REJECT_UNAUTHORIZED = "0";
 }
 
+// 1. 제외할 헤더 목록에 압축 관련 헤더 추가
+const EXCLUDED_HEADERS = [
+    'host', 
+    'connection', 
+    'content-length', 
+    'transfer-encoding', 
+    'content-encoding', // 백엔드에서 압축해서 보냈다는 정보를 브라우저에 전달 안 함
+    'accept-encoding'   // 백엔드에 압축 요청을 하지 않음
+];
+
 async function handleProxy(req: Request, { params }: { params: { path: string[] } }) {
     const session = await auth();
     // if (!session) {
@@ -29,6 +39,14 @@ async function handleProxy(req: Request, { params }: { params: { path: string[] 
     console.log(`[proxy/route.ts] path:`, path);
 
     const backendHeaders = new Headers();
+    req.headers.forEach((value, key) => {
+        if (!EXCLUDED_HEADERS.includes(key.toLowerCase())) {
+            backendHeaders.set(key, value);
+        }
+    });
+    // 백엔드에게 "압축하지 말고 평문(identity)으로 보내줘"라고 명시적으로 요청
+    backendHeaders.set('accept-encoding', 'identity');
+
     backendHeaders.set('Content-Type', 'application/json');
     if (!!session) {
         // 1. 서버 간 인증용 S2S JWT 생성
@@ -71,6 +89,9 @@ async function handleProxy(req: Request, { params }: { params: { path: string[] 
     const fetchOptions: RequestInit = {
         method: req.method,
         headers: backendHeaders,
+        body: req.method !== 'GET' ? req.body : null,
+        // @ts-ignore
+        duplex: 'half'
     };
 
     // 4. Body가 있는 메서드(POST, PUT 등) 처리
@@ -81,10 +102,24 @@ async function handleProxy(req: Request, { params }: { params: { path: string[] 
 
     try {
         const response = await fetch(backendUrl, fetchOptions);
-        // 백엔드의 응답 데이터 파싱
-        // const data = await response.json();
+        // // 백엔드의 응답 데이터 파싱
+        // // const data = await response.json();
 
-        return response;
+        // return response;
+
+        // 2. 응답 헤더 필터링 (중요!)
+        const newResponseHeaders = new Headers(response.headers);
+        
+        // 백엔드가 보낸 압축 정보를 강제로 삭제하여 브라우저가 디코딩을 시도하지 않게 함
+        newResponseHeaders.delete('content-encoding');
+        newResponseHeaders.delete('content-length'); // 가공 시 길이다 달라질 수 있으므로 삭제
+
+        // 새로운 응답 생성
+        return new NextResponse(response.body, {
+            status: response.status,
+            statusText: response.statusText,
+            headers: newResponseHeaders,
+        });
     } catch (error) {
         console.error("Proxy Error:", error);
         return NextResponse.json({ error: "Backend Connection Error" }, { status: 500 });
