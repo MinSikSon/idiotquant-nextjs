@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState } from "react";
-import { formatKoreanUnit, ONE_HUNDRED_MILLION } from "../utils/financeCalc";
+import { formatKoreanUnit, ONE_HUNDRED_MILLION } from "../../../../components/utils/financeCalc";
 import { 
   ChartBarIcon, 
   DocumentTextIcon, 

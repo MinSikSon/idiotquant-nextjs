@@ -166,7 +166,7 @@ export default function ResponsiveNCAV({
                     <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                         <MetricCard label="추천 종목" value={data.numCandidates} icon={IconNames.STAR} intent={Intent.PRIMARY} />
                         <MetricCard label="전체 유니버스" value={data.numFilteredKeys} icon={IconNames.GLOBE} />
-                        <MetricCard label="데이터 소스" value={data.dataSource.balanceSheet} icon={IconNames.DATABASE} />
+                        <MetricCard label="데이터 소스" value={data.dataSource?.balanceSheet} icon={IconNames.DATABASE} />
                         <MetricCard label="기준 일자" value={data.asOfDate} icon={IconNames.CALENDAR} />
                     </div>
 

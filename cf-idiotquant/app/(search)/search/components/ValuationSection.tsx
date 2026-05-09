@@ -2,7 +2,7 @@
 import React from "react";
 import { Section, SectionCard } from "@blueprintjs/core";
 import { MdTableTemplate } from "./MdTableTemplate";
-import { calculateKrNcav, calculateKrSRIM, calculateUsNcav, calculateUsSRIM } from "../utils/financeCalc";
+import { calculateKrNcav, calculateKrSRIM, calculateUsNcav, calculateUsSRIM } from "../../../../components/utils/financeCalc";
 
 export const ValuationSection = ({ data, isUs }: { data: any; isUs: boolean }) => {
     // 다크모드 시 공통으로 적용할 클래스 (제목 바 배경색 및 텍스트 색상)

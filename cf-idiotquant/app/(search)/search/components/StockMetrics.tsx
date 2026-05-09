@@ -1,6 +1,6 @@
 "use client";
 import React from "react";
-import { formatKoreanUnit } from "../utils/financeCalc";
+import { formatKoreanUnit } from "../../../../components/utils/financeCalc";
 
 export const StockMetrics = ({ data, isUs }: { data: any; isUs: boolean }) => {
     // 데이터 존재 여부 확인

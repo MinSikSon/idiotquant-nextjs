@@ -3,7 +3,7 @@ import { IconNames } from "@blueprintjs/icons";
 import { useMemo } from "react";
 
 const parseStrategyId = (id: string) => {
-    const parts = id.split('_');
+    const parts = id?.split('_');
     // 형식: [국가, IQ, 지표, 연도, 분기, 시가총액]
     // 예: US_IQ_NCAV1.5_2025_Q0_MCAP0
 

@@ -28,7 +28,7 @@ import {
   getKrSRIMTargetPrice,
   getUsNcavGrade,
   getUsSRIMTargetPrice,
-} from './utils/financeCalc';
+} from '../../../components/utils/financeCalc';
 import { SearchGuide } from './components/SearchGuide';
 import { StockCard } from './components/StockCard';
 import {
@@ -227,10 +227,7 @@ function SearchContent() {
                         isUs: true,
                         name,
                         ticker: name,
-                        grade: getUsNcavGrade(
-                          data.finnhubData,
-                          data.usDetail
-                        ),
+                        grade: getUsNcavGrade(data.finnhubData, data.usDetail),
                         curPrice: Number(data?.usDetail?.output?.last ?? 0).toFixed(2),
                         fairValue:
                           '$' +

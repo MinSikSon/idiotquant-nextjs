@@ -373,7 +373,7 @@ export const StockCard = ({ stock, rawData }: any) => {
                             >
                                 <div className="flex items-center gap-2">
                                     <div className="flex -space-x-1.5">
-                                        <div className={`w-6 h-6 rounded-full ${theme.bg} border border-white/50 flex items-center justify-center text-[10px] text-white shadow-sm`}>{theme.icon}</div>
+                                        {/* <div className={`w-6 h-6 rounded-full ${theme.bg} border border-white/50 flex items-center justify-center text-[10px] text-white shadow-sm`}>{theme.icon}</div> */}
                                         <div className={`w-6 h-6 rounded-full ${theme.bg} border border-white/50 flex items-center justify-center text-[10px] text-white shadow-sm`}>{theme.icon}</div>
                                     </div>
                                     <span className="font-black text-[14px] text-zinc-900 tracking-tight">S-RIM</span>
