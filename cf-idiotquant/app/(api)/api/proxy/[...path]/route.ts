@@ -4,125 +4,106 @@ import { auth } from "@/auth";
 import { SignJWT } from 'jose';
 import { NextResponse } from "next/server";
 
-// 로컬 테스트 시에는 아래 줄을 주석 처리하세요.
-export const runtime = "edge";
-
-// 1. 로컬 개발 환경일 때만 보안 검증 해제 (Node.js 환경용)
+// 1. 로컬 개발 환경 보안 검증 해제
 if (process.env.NODE_ENV === "development") {
     process.env.NODE_TLS_REJECT_UNAUTHORIZED = "0";
 }
 
-// 1. 제외할 헤더 목록에 압축 관련 헤더 추가
+// 제외할 헤더 목록
 const EXCLUDED_HEADERS = [
     'host', 
     'connection', 
     'content-length', 
     'transfer-encoding', 
-    'content-encoding', // 백엔드에서 압축해서 보냈다는 정보를 브라우저에 전달 안 함
-    'accept-encoding'   // 백엔드에 압축 요청을 하지 않음
+    'content-encoding',
+    'accept-encoding'
 ];
 
-async function handleProxy(req: Request, { params }: { params: { path: string[] } }) {
-    const session = await auth();
-    // if (!session) {
-    //     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    // }
+/**
+ * Next.js 15/16 대응 Proxy Handler
+ * params는 이제 Promise 형태로 전달됩니다.
+ */
+async function handleProxy(req: Request, { params }: { params: Promise<{ path: string[] }> }) {
+    try {
+        // [핵심] Next.js 15+ 에서는 params를 반드시 await 해야 합니다.
+        const resolvedParams = await params;
+        const pathArray = resolvedParams?.path || [];
+        const path = pathArray.join('/');
 
-    console.log(`[proxy/route.ts] session:`, session);
-    console.log(`[proxy/route.ts] params:`, params);
+        const session = await auth();
+        const { search } = new URL(req.url);
 
-    // const { searchParams } = new URL(req.url);
-    // console.log(`[proxy/route.ts] searchParams:`, searchParams.toString());
-    const { search } = new URL(req.url);
-    console.log(`[proxy/route.ts] search:`, search);
-    const path = params.path.join('/');
-    console.log(`[proxy/route.ts] path:`, path);
+        console.log(`[proxy/route.ts] path:`, path);
+        console.log(`[proxy/route.ts] session:`, session?.user ? "Authenticated" : "Guest");
 
-    const backendHeaders = new Headers();
-    req.headers.forEach((value, key) => {
-        if (!EXCLUDED_HEADERS.includes(key.toLowerCase())) {
-            backendHeaders.set(key, value);
-        }
-    });
-    // 백엔드에게 "압축하지 말고 평문(identity)으로 보내줘"라고 명시적으로 요청
-    backendHeaders.set('accept-encoding', 'identity');
-
-    backendHeaders.set('Content-Type', 'application/json');
-    if (!!session) {
-        // 1. 서버 간 인증용 S2S JWT 생성
-        const secret = new TextEncoder().encode(process.env.NEXT_PUBLIC_JWT_SECRET_KEY);
-        const s2sToken = await new SignJWT({
-            userId: (session.user as any).id,
-            role: (session.user as any).role
-        })
-            .setProtectedHeader({ alg: 'HS256' })
-            .setExpirationTime('1m')
-            .sign(secret);
-
-        // 2. 백엔드로 보낼 헤더 초기화
-        backendHeaders.set('Authorization', `Bearer ${s2sToken}`);
-
-        backendHeaders.set("X-User-Id", (session.user as any).id);
-        backendHeaders.set("X-User-Role", (session.user as any).role);
-        backendHeaders.set("X-User-Plan", (session.user as any).plan || "free");
-        // 4. (보안 팁) 백엔드와 약속한 시크릿 키가 있다면 추가
-        // 백엔드는 이 키가 있는 요청만 'Proxy가 보낸 것'으로 간주함
-        backendHeaders.set("X-Internal-Secret", process.env.NEXT_PUBLIC_JWT_SECRET_KEY || "");
-
-        // 3. 클라이언트 커스텀 헤더 일괄 복사 (핵심!)
-        // const CUSTOM_HEADERS = ['idiot-user-id', 'strategy-name', 'auth-context'];
-
+        // 1. 백엔드로 보낼 헤더 구성
+        const backendHeaders = new Headers();
         req.headers.forEach((value, key) => {
-            // 소문자로 변환하여 비교 (HTTP 헤더는 대소문자를 구분하지 않음)
-            // if (CUSTOM_HEADERS.includes(key.toLowerCase()))
-            {
+            if (!EXCLUDED_HEADERS.includes(key.toLowerCase())) {
                 backendHeaders.set(key, value);
             }
         });
-    }
 
-    const baseUrl = process.env.NEXT_PUBLIC_API_URL?.replace(/\/$/, "");
-    const backendUrl = `${baseUrl}/${path}${search}`;
-    // const backendUrl = `${process.env.NEXT_PUBLIC_API_URL}/${path}${search}`;
-    // const backendUrl = `${process.env.NEXT_PUBLIC_API_URL}/${path}`;
+        // 압축 평문 요청 및 JSON 명시
+        backendHeaders.set('accept-encoding', 'identity');
+        backendHeaders.set('Content-Type', 'application/json');
 
-    const fetchOptions: RequestInit = {
-        method: req.method,
-        headers: backendHeaders,
-        body: req.method !== 'GET' ? req.body : null,
-        // @ts-ignore
-        duplex: 'half'
-    };
+        // 2. 인증 세션이 있는 경우 S2S 토큰 및 유저 정보 주입
+        if (session?.user) {
+            const secret = new TextEncoder().encode(process.env.NEXT_PUBLIC_JWT_SECRET_KEY);
+            const s2sToken = await new SignJWT({
+                userId: (session.user as any).id,
+                role: (session.user as any).role
+            })
+                .setProtectedHeader({ alg: 'HS256' })
+                .setExpirationTime('1m')
+                .sign(secret);
 
-    // 4. Body가 있는 메서드(POST, PUT 등) 처리
-    if (['POST', 'PUT', 'PATCH'].includes(req.method)) {
-        const bodyText = await req.text();
-        if (bodyText) fetchOptions.body = bodyText;
-    }
+            backendHeaders.set('Authorization', `Bearer ${s2sToken}`);
+            backendHeaders.set("X-User-Id", (session.user as any).id);
+            backendHeaders.set("X-User-Role", (session.user as any).role);
+            backendHeaders.set("X-Internal-Secret", process.env.NEXT_PUBLIC_JWT_SECRET_KEY || "");
+        }
 
-    try {
+        const baseUrl = process.env.NEXT_PUBLIC_API_URL?.replace(/\/$/, "");
+        const backendUrl = `${baseUrl}/${path}${search}`;
+
+        // 3. Fetch 옵션 설정
+        const method = req.method;
+        const fetchOptions: RequestInit = {
+            method,
+            headers: backendHeaders,
+            // @ts-ignore
+            duplex: 'half'
+        };
+
+        // GET/HEAD가 아닐 때만 body 처리
+        if (!['GET', 'HEAD'].includes(method)) {
+            const bodyText = await req.text();
+            if (bodyText) {
+                fetchOptions.body = bodyText;
+            }
+        }
+
         const response = await fetch(backendUrl, fetchOptions);
-        // // 백엔드의 응답 데이터 파싱
-        // // const data = await response.json();
 
-        // return response;
-
-        // 2. 응답 헤더 필터링 (중요!)
+        // 4. 응답 헤더 정리 (브라우저 디코딩 오류 방지)
         const newResponseHeaders = new Headers(response.headers);
-        
-        // 백엔드가 보낸 압축 정보를 강제로 삭제하여 브라우저가 디코딩을 시도하지 않게 함
         newResponseHeaders.delete('content-encoding');
-        newResponseHeaders.delete('content-length'); // 가공 시 길이다 달라질 수 있으므로 삭제
+        newResponseHeaders.delete('content-length');
 
-        // 새로운 응답 생성
         return new NextResponse(response.body, {
             status: response.status,
             statusText: response.statusText,
             headers: newResponseHeaders,
         });
+
     } catch (error) {
         console.error("Proxy Error:", error);
-        return NextResponse.json({ error: "Backend Connection Error" }, { status: 500 });
+        return NextResponse.json(
+            { error: "Backend Connection Error", details: error instanceof Error ? error.message : String(error) }, 
+            { status: 500 }
+        );
     }
 }
 

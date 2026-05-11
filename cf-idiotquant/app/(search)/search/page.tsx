@@ -36,8 +36,8 @@ import {
   selectPopularStocks,
 } from '@/lib/features/searchLog/searchLogSlice';
 import corpCodeJson from '@/public/data/validCorpCode.json';
-import { IconNames } from '@blueprintjs/icons';
-import { Callout, Card, Elevation, Icon, Intent, Spinner } from '@blueprintjs/core';
+// Lucide React 아이콘 사용 권장 (혹은 Heroicons)
+import { History, AlertCircle, Loader2 } from 'lucide-react';
 
 const all_tickers = [
   ...nasdaq_tickers,
@@ -96,8 +96,6 @@ function SearchContent() {
     (data.kiChart.state === 'fulfilled' ||
       data.usSearchInfo.state === 'fulfilled');
 
-  console.log(`data:`, data);
-
   const chartConfig = useMemo(() => {
     const isUs = krOrUs === 'US';
     const rawData = isUs ? data.usDaily?.output2 : data.kiChart?.output2;
@@ -116,11 +114,11 @@ function SearchContent() {
 
   if (!hasMounted)
     return (
-      <div className="w-full min-h-screen !bg-gray-50 dark:!bg-zinc-950" />
+      <div className="w-full min-h-screen bg-gray-50 dark:bg-zinc-950" />
     );
 
   return (
-    <div className="w-full min-h-screen !bg-gray-50 dark:!bg-zinc-950">
+    <div className="w-full min-h-screen bg-gray-50 dark:bg-zinc-950">
       <header
         className={`w-full transition-all duration-300 z-[50] ${fixed
           ? 'fixed top-0 bg-white/90 dark:bg-zinc-900/90 backdrop-blur-lg border-b dark:border-zinc-800 shadow-sm'
@@ -166,11 +164,7 @@ function SearchContent() {
               {/* RECENT 검색 리스트 */}
               <div className="flex items-center gap-3 px-4 py-1.5">
                 <div className="flex items-center gap-1.5 flex-shrink-0">
-                  <Icon
-                    icon={IconNames.HISTORY}
-                    size={10}
-                    className="text-zinc-400"
-                  />
+                  <History size={10} className="text-zinc-400" />
                   <span className="text-[9px] font-black text-zinc-400 italic whitespace-nowrap uppercase">
                     Recent
                   </span>
@@ -202,21 +196,26 @@ function SearchContent() {
       </header>
 
       <main className="max-w-6xl mx-auto p-4 md:p-6">
+        {/* Error Callout 대체 */}
         {error && (
-          <Callout intent={Intent.DANGER} className="mb-4">
-            {error}
-          </Callout>
+          <div className="mb-4 p-4 rounded-lg bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 flex items-center gap-3 text-red-700 dark:text-red-400">
+            <AlertCircle size={18} />
+            <span className="text-sm font-medium">{error}</span>
+          </div>
         )}
 
         {!tickerFromUrl ? (
           <SearchGuide />
         ) : (
           <>
+            {/* Spinner 대체 */}
             {waitResponse && !isLoaded && (
-              <div className="py-10 text-center">
-                <Spinner size={40} />
+              <div className="py-20 flex flex-col items-center justify-center gap-4">
+                <Loader2 className="animate-spin text-blue-500" size={40} />
+                <p className="text-sm text-zinc-500 animate-pulse">데이터를 분석하고 있습니다...</p>
               </div>
             )}
+            
             <div className={!isLoaded ? 'hidden' : 'block'}>
               <div className="flex justify-center mb-10">
                 <StockCard
@@ -244,7 +243,6 @@ function SearchContent() {
                         pbr: data?.usDetail?.output?.pbrx ?? 0,
                         eps: "$" + (data?.usDetail?.output?.epsx ?? 0),
                         sector: data?.usDetail?.output?.e_icod ?? "DEFAULT",
-
                       }
                       : {
                         code: tickerFromUrl,
@@ -279,13 +277,14 @@ function SearchContent() {
                 ) : (
                   <FinnhubTable data={data.finnhubData.data} />
                 )}
+                
+                {/* Blueprint Card 대체 */}
                 {response && (
-                  <Card
-                    elevation={Elevation.TWO}
-                    className="mt-8 border-t-4 !border-blue-500 dark:!bg-zinc-900"
-                  >
-                    <MdTableTemplate content={response} />
-                  </Card>
+                  <div className="mt-8 rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 shadow-md overflow-hidden border-t-4 !border-t-blue-500">
+                    <div className="p-4 md:p-6">
+                      <MdTableTemplate content={response} />
+                    </div>
+                  </div>
                 )}
               </div>
             </div>
@@ -300,8 +299,9 @@ export default function SearchPage() {
   return (
     <Suspense
       fallback={
-        <div className="flex justify-center py-20">
-          <Spinner />
+        <div className="flex flex-col items-center justify-center py-20 gap-4">
+          <Loader2 className="animate-spin text-blue-500" size={32} />
+          <p className="text-sm text-zinc-500">페이지를 준비 중입니다...</p>
         </div>
       }
     >
