@@ -4,12 +4,12 @@ export function calculateKrNcav(kiBS: any, kiChart: any) {
     const ONE_HUNDRED_MILLION = 100000000;
     
     // 유동자산(Current Assets) 및 부채총계(Total Liabilities)
-    const cras = Number(kiBS.output[0]?.cras || 0) * ONE_HUNDRED_MILLION;
-    const lblt = Number(kiBS.output[0]?.total_lblt || 0) * ONE_HUNDRED_MILLION;
+    const cras = Number(kiBS?.output[0]?.cras ?? 0) * ONE_HUNDRED_MILLION;
+    const lblt = Number(kiBS?.output[0]?.total_lblt ?? 0) * ONE_HUNDRED_MILLION;
     
     // 상장주식수 및 현재가
-    const lstn = Number(kiChart.output1.lstn_stcn);
-    const prpr = Number(kiChart.output1.stck_prpr);
+    const lstn = Number(kiChart?.output1?.lstn_stcn ?? 1);
+    const prpr = Number(kiChart?.output1?.stck_prpr ?? 0);
 
     // NCAV 적정가 = (유동자산 - 총부채) / 상장주식수
     const netCurrentAsset = cras - lblt;

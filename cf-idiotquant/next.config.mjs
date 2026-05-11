@@ -18,6 +18,18 @@ const nextConfig = {
                 hostname: 'k.kakaocdn.net',
                 pathname: '/**',
             },
+            {
+                protocol: 'https',
+                hostname: 'kr-logo-api.tofu89223.workers.dev',
+                port: '',
+                pathname: '/view/**',
+            },
+            {
+                protocol: 'https',
+                hostname: 'img.logo.dev',
+                port: '',
+                pathname: '/**',
+            },
         ],
         domains: [
             'cdn.pixabay.com',
