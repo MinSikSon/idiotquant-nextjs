@@ -2,11 +2,11 @@ export const ONE_HUNDRED_MILLION = 100000000;
 
 export function calculateKrNcav(kiBS: any, kiChart: any) {
     const ONE_HUNDRED_MILLION = 100000000;
-    
+
     // 유동자산(Current Assets) 및 부채총계(Total Liabilities)
     const cras = Number(kiBS?.output?.[0]?.cras ?? 0) * ONE_HUNDRED_MILLION;
     const lblt = Number(kiBS?.output?.[0]?.total_lblt ?? 0) * ONE_HUNDRED_MILLION;
-    
+
     // 상장주식수 및 현재가
     const lstn = Number(kiChart?.output1?.lstn_stcn ?? 1);
     const prpr = Number(kiChart?.output1?.stck_prpr ?? 0);
@@ -19,7 +19,7 @@ export function calculateKrNcav(kiBS: any, kiChart: any) {
     const rows = [1.0, 1.2, 1.5].map(r => {
         const adjustedTarget = target / r; // 보수적 접근을 위한 배수 적용
         const returnPct = (adjustedTarget / prpr - 1) * 100;
-        
+
         const isBase = r === 1.0 ? "**" : "";
         return `| ${isBase}${r.toFixed(1)}배${isBase} | ${isBase}${returnPct.toFixed(2)}%${isBase} | ${isBase}${Math.round(adjustedTarget).toLocaleString()}${isBase} |`;
     }).join("\n");
@@ -46,10 +46,10 @@ ${rows}
 }
 
 export function calculateKrNcavValue(kiBS: any, kiChart: any) {
-    const cras = Number(kiBS.output?.[0]?.cras || 0) * ONE_HUNDRED_MILLION;
-    const lblt = Number(kiBS.output?.[0]?.total_lblt || 0) * ONE_HUNDRED_MILLION;
-    const lstn = Number(kiChart.output1.lstn_stcn);
-    const prpr = Number(kiChart.output1.stck_prpr);
+    const cras = Number(kiBS?.output?.[0]?.cras ?? 0) * ONE_HUNDRED_MILLION;
+    const lblt = Number(kiBS?.output?.[0]?.total_lblt ?? 0) * ONE_HUNDRED_MILLION;
+    const lstn = Number(kiChart?.output1?.lstn_stcn ?? 1);
+    const prpr = Number(kiChart?.output1?.stck_prpr ?? 0);
 
     const target = (cras - lblt) / lstn;
     return Number(target.toFixed(0));
@@ -69,10 +69,10 @@ export function calculateKrNcavValue(kiBS: any, kiChart: any) {
 }
 
 export function calculateKrNcavRatio(kiBS: any, kiChart: any) {
-    const cras = Number(kiBS.output?.[0]?.cras || 0) * ONE_HUNDRED_MILLION;
-    const lblt = Number(kiBS.output?.[0]?.total_lblt || 0) * ONE_HUNDRED_MILLION;
-    const lstn = Number(kiChart.output1.lstn_stcn);
-    const prpr = Number(kiChart.output1.stck_prpr);
+    const cras = Number(kiBS.output?.[0]?.cras ?? 0) * ONE_HUNDRED_MILLION;
+    const lblt = Number(kiBS.output?.[0]?.total_lblt ?? 0) * ONE_HUNDRED_MILLION;
+    const lstn = Number(kiChart?.output1?.lstn_stcn ?? 1);
+    const prpr = Number(kiChart?.output1?.stck_prpr ?? 0);
 
     const target = (cras - lblt) / lstn;
 
@@ -98,8 +98,8 @@ export function getKrNcavGrade(kiBS: any, kiChart: any) {
 
     const cras = Number(kiBS.output?.[0]?.cras || 0) * ONE_HUNDRED_MILLION;
     const lblt = Number(kiBS.output?.[0]?.total_lblt || 0) * ONE_HUNDRED_MILLION;
-    const lstn = Number(kiChart.output1.lstn_stcn);
-    const prpr = Number(kiChart.output1.stck_prpr);
+    const lstn = Number(kiChart?.output1?.lstn_stcn ?? 1);
+    const prpr = Number(kiChart?.output1?.stck_prpr ?? 0);
 
     if (!lstn || !prpr) return {
         grade: "N/A",
@@ -158,8 +158,8 @@ export function getKrNcavGrade(kiBS: any, kiChart: any) {
 //     const total_cptl = Number(kiBS?.output?.[0]?.total_cptl ?? 1) * ONE_HUNDRED_MILLION;
 //     const thtr_ntin = Number(kiIS?.output?.[0]?.thtr_ntin ?? 0) * ONE_HUNDRED_MILLION;
 //     const ROE = (thtr_ntin / total_cptl) * 100;
-//     const lstn = Number(kiChart.output1.lstn_stcn);
-//     const prpr = Number(kiChart.output1.stck_prpr);
+//     const lstn = Number(kiChart?.output1?.lstn_stcn ?? 1);
+//     const prpr = Number(kiChart?.output1?.stck_prpr ?? 0);
 
 //     // const keList = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
 //     const keList = [1, 2, 3, 4, 5, 6, 7, 8];
@@ -177,14 +177,14 @@ export function calculateKrSRIM(kiBS: any, kiIS: any, kiChart: any, baseKe: numb
     const ONE_HUNDRED_MILLION = 100000000;
     const total_cptl = Number(kiBS?.output?.[0]?.total_cptl ?? 1) * ONE_HUNDRED_MILLION;
     const thtr_ntin = Number(kiIS?.output?.[0]?.thtr_ntin ?? 0) * ONE_HUNDRED_MILLION;
-    
+
     const ROE = (thtr_ntin / total_cptl) * 100;
-    const lstn = Number(kiChart.output1.lstn_stcn);
-    const prpr = Number(kiChart.output1.stck_prpr);
+    const lstn = Number(kiChart?.output1?.lstn_stcn ?? 1);
+    const prpr = Number(kiChart?.output1?.stck_prpr ?? 0);
 
     const step = 0.5;
     const rangeCount = 3;
-    
+
     let keList = [];
     for (let i = -rangeCount; i <= rangeCount; i++) {
         keList.push(baseKe + (i * step));
@@ -194,7 +194,7 @@ export function calculateKrSRIM(kiBS: any, kiIS: any, kiChart: any, baseKe: numb
         const value = total_cptl * (ROE / ke);
         const target = value / lstn;
         const returnPct = (target / prpr - 1) * 100;
-        
+
         const isBase = ke === baseKe ? "**" : "";
         return `| ${isBase}${ke.toFixed(1)}%${isBase} | ${isBase}${returnPct.toFixed(2)}%${isBase} | ${isBase}${Math.round(target).toLocaleString()}${isBase} |`;
     }).join("\n");
@@ -222,23 +222,22 @@ ${rows}
 
 export function getKrSRIMTargetPrice(kiBS: any, kiIS: any, kiChart: any, baseKe: number = 8.0) {
     const ONE_HUNDRED_MILLION = 100000000;
-    
+
     // 재무데이터 추출
     const total_cptl = Number(kiBS?.output?.[0]?.total_cptl ?? 1) * ONE_HUNDRED_MILLION;
     // console.log(`total_cptl:`,total_cptl);
 
     const thtr_ntin = Number(kiIS?.output?.[0]?.thtr_ntin ?? 0) * ONE_HUNDRED_MILLION;
     // console.log(`thtr_ntin:`,thtr_ntin);
-    
+
     // ROE 계산
     const ROE = (thtr_ntin / total_cptl) * 100;
     // console.log(`ROE:`,ROE);
-    
+
     // 주식수 추출
     let lstn = Number(kiChart?.output1?.lstn_stcn ?? 1);
     // console.log(`lstn:`,lstn);
-    if (0 == lstn)
-    {
+    if (0 == lstn) {
         lstn = 1;
     }
 
@@ -252,13 +251,13 @@ export function getKrSRIMTargetPrice(kiBS: any, kiIS: any, kiChart: any, baseKe:
 export function calculateUsNcav(finnhub: any, detail: any) {
     // 1. 기본 데이터 추출 (Finnhub BS 데이터)
     const bs = finnhub?.data?.[0]?.report?.bs ?? [];
-    
+
     // 유동자산 (Current Assets)
     const cras = Number(
         bs.find((i: any) => i.concept.includes("us-gaap_AssetsCurrent"))?.value ??
         bs.find((i: any) => i.concept.includes("AssetsCurrent"))?.value ?? 0
     );
-    
+
     // 총부채 (Total Liabilities)
     const lblt = Number(
         bs.find((i: any) => i.concept.includes("us-gaap_Liabilities"))?.value ??
@@ -268,7 +267,7 @@ export function calculateUsNcav(finnhub: any, detail: any) {
     // 2. 상장주식수 및 현재가 데이터 유효성 검사
     const rawShar = detail?.output?.shar;
     const last = Number(detail?.output?.last || 0);
-    
+
     const isDelisted = !rawShar || rawShar === "" || Number(rawShar) === 0;
     const isMissingPrice = last === 0;
 
@@ -286,9 +285,9 @@ export function calculateUsNcav(finnhub: any, detail: any) {
     const rows = [1.0, 1.2, 1.5].map(r => {
         const adjustedTarget = target / r;
         const returnPct = (adjustedTarget / last - 1) * 100;
-        
+
         const isBase = r === 1.0 ? "**" : "";
-        return `| ${isBase}${r.toFixed(1)}배${isBase} | ${isBase}${returnPct.toFixed(2)}%${isBase} | ${isBase}$${adjustedTarget.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}${isBase} |`;
+        return `| ${isBase}${r.toFixed(1)}배${isBase} | ${isBase}${returnPct.toFixed(2)}%${isBase} | ${isBase}$${adjustedTarget.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}${isBase} |`;
     }).join("\n");
 
     return `
@@ -354,7 +353,7 @@ export function calculateUsSRIM(finnhub: any, detail: any, baseKe: number = 8.0)
         const returnPct = (target / last - 1) * 100;
 
         const isBase = ke === baseKe ? "**" : "";
-        return `| ${isBase}${ke.toFixed(1)}%${isBase} | ${isBase}${returnPct.toFixed(2)}%${isBase} | ${isBase}$${target.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}${isBase} |`;
+        return `| ${isBase}${ke.toFixed(1)}%${isBase} | ${isBase}${returnPct.toFixed(2)}%${isBase} | ${isBase}$${target.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}${isBase} |`;
     }).join("\n");
 
     return `
