@@ -4,8 +4,8 @@ export function calculateKrNcav(kiBS: any, kiChart: any) {
     const ONE_HUNDRED_MILLION = 100000000;
     
     // 유동자산(Current Assets) 및 부채총계(Total Liabilities)
-    const cras = Number(kiBS?.output[0]?.cras ?? 0) * ONE_HUNDRED_MILLION;
-    const lblt = Number(kiBS?.output[0]?.total_lblt ?? 0) * ONE_HUNDRED_MILLION;
+    const cras = Number(kiBS?.output?.[0]?.cras ?? 0) * ONE_HUNDRED_MILLION;
+    const lblt = Number(kiBS?.output?.[0]?.total_lblt ?? 0) * ONE_HUNDRED_MILLION;
     
     // 상장주식수 및 현재가
     const lstn = Number(kiChart?.output1?.lstn_stcn ?? 1);
@@ -46,8 +46,8 @@ ${rows}
 }
 
 export function calculateKrNcavValue(kiBS: any, kiChart: any) {
-    const cras = Number(kiBS.output[0]?.cras || 0) * ONE_HUNDRED_MILLION;
-    const lblt = Number(kiBS.output[0]?.total_lblt || 0) * ONE_HUNDRED_MILLION;
+    const cras = Number(kiBS.output?.[0]?.cras || 0) * ONE_HUNDRED_MILLION;
+    const lblt = Number(kiBS.output?.[0]?.total_lblt || 0) * ONE_HUNDRED_MILLION;
     const lstn = Number(kiChart.output1.lstn_stcn);
     const prpr = Number(kiChart.output1.stck_prpr);
 
@@ -69,8 +69,8 @@ export function calculateKrNcavValue(kiBS: any, kiChart: any) {
 }
 
 export function calculateKrNcavRatio(kiBS: any, kiChart: any) {
-    const cras = Number(kiBS.output[0]?.cras || 0) * ONE_HUNDRED_MILLION;
-    const lblt = Number(kiBS.output[0]?.total_lblt || 0) * ONE_HUNDRED_MILLION;
+    const cras = Number(kiBS.output?.[0]?.cras || 0) * ONE_HUNDRED_MILLION;
+    const lblt = Number(kiBS.output?.[0]?.total_lblt || 0) * ONE_HUNDRED_MILLION;
     const lstn = Number(kiChart.output1.lstn_stcn);
     const prpr = Number(kiChart.output1.stck_prpr);
 
@@ -96,8 +96,8 @@ export function calculateKrNcavRatio(kiBS: any, kiChart: any) {
 export function getKrNcavGrade(kiBS: any, kiChart: any) {
     const ONE_HUNDRED_MILLION = 100000000;
 
-    const cras = Number(kiBS.output[0]?.cras || 0) * ONE_HUNDRED_MILLION;
-    const lblt = Number(kiBS.output[0]?.total_lblt || 0) * ONE_HUNDRED_MILLION;
+    const cras = Number(kiBS.output?.[0]?.cras || 0) * ONE_HUNDRED_MILLION;
+    const lblt = Number(kiBS.output?.[0]?.total_lblt || 0) * ONE_HUNDRED_MILLION;
     const lstn = Number(kiChart.output1.lstn_stcn);
     const prpr = Number(kiChart.output1.stck_prpr);
 
@@ -155,8 +155,8 @@ export function getKrNcavGrade(kiBS: any, kiChart: any) {
  * 한국 S-RIM 계산 로직
  */
 // export function calculateKrSRIM(kiBS: any, kiIS: any, kiChart: any) {
-//     const total_cptl = Number(kiBS?.output[0]?.total_cptl ?? 1) * ONE_HUNDRED_MILLION;
-//     const thtr_ntin = Number(kiIS?.output[0]?.thtr_ntin ?? 0) * ONE_HUNDRED_MILLION;
+//     const total_cptl = Number(kiBS?.output?.[0]?.total_cptl ?? 1) * ONE_HUNDRED_MILLION;
+//     const thtr_ntin = Number(kiIS?.output?.[0]?.thtr_ntin ?? 0) * ONE_HUNDRED_MILLION;
 //     const ROE = (thtr_ntin / total_cptl) * 100;
 //     const lstn = Number(kiChart.output1.lstn_stcn);
 //     const prpr = Number(kiChart.output1.stck_prpr);
@@ -175,8 +175,8 @@ export function getKrNcavGrade(kiBS: any, kiChart: any) {
 
 export function calculateKrSRIM(kiBS: any, kiIS: any, kiChart: any, baseKe: number = 9.0) {
     const ONE_HUNDRED_MILLION = 100000000;
-    const total_cptl = Number(kiBS?.output[0]?.total_cptl ?? 1) * ONE_HUNDRED_MILLION;
-    const thtr_ntin = Number(kiIS?.output[0]?.thtr_ntin ?? 0) * ONE_HUNDRED_MILLION;
+    const total_cptl = Number(kiBS?.output?.[0]?.total_cptl ?? 1) * ONE_HUNDRED_MILLION;
+    const thtr_ntin = Number(kiIS?.output?.[0]?.thtr_ntin ?? 0) * ONE_HUNDRED_MILLION;
     
     const ROE = (thtr_ntin / total_cptl) * 100;
     const lstn = Number(kiChart.output1.lstn_stcn);
@@ -224,10 +224,10 @@ export function getKrSRIMTargetPrice(kiBS: any, kiIS: any, kiChart: any, baseKe:
     const ONE_HUNDRED_MILLION = 100000000;
     
     // 재무데이터 추출
-    const total_cptl = Number(kiBS?.output[0]?.total_cptl ?? 1) * ONE_HUNDRED_MILLION;
+    const total_cptl = Number(kiBS?.output?.[0]?.total_cptl ?? 1) * ONE_HUNDRED_MILLION;
     // console.log(`total_cptl:`,total_cptl);
 
-    const thtr_ntin = Number(kiIS?.output[0]?.thtr_ntin ?? 0) * ONE_HUNDRED_MILLION;
+    const thtr_ntin = Number(kiIS?.output?.[0]?.thtr_ntin ?? 0) * ONE_HUNDRED_MILLION;
     // console.log(`thtr_ntin:`,thtr_ntin);
     
     // ROE 계산
