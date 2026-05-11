@@ -51,7 +51,7 @@ export const StockMetrics = ({ data, isUs }: { data: any; isUs: boolean }) => {
         const p = data.kiPrice.output;
         const c = data.kiChart.output1;
 
-        const calculatedMarketCap = n(c.stck_prpr) * n(c.lstn_stcn);
+        const calculatedMarketCap = n(c.stck_prpr) * n(c?.lstn_stcn ?? 1);
         const turnoverRatio = calculatedMarketCap > 0
             ? (100 * n(p.acml_tr_pbmn) / calculatedMarketCap).toFixed(3)
             : "0";
