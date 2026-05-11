@@ -33,7 +33,6 @@ import {
 import { reqGetFinnhubUsFinancialsReported } from "@/lib/features/finnhubUsMarket/finnhubUsMarketSlice";
 import { StockCard } from "@/app/(search)/search/components/StockCard";
 
-
 const us_tickers = [...nasdaq_tickers, ...nyse_tickers, ...amex_tickers];
 
 interface Props {
@@ -45,11 +44,9 @@ const StockDataFetcher = ({ ticker: tickerFromUrl, name }: Props) => {
     const dispatch = useAppDispatch();
     const isUs = useMemo(() => us_tickers.includes(tickerFromUrl.toUpperCase()), [tickerFromUrl]);
     
-    // 확장된 algorithmTradeSlice에서 티커별 데이터 구독
     const data = useAppSelector((state) => selectStockByTicker(state, tickerFromUrl));
 
     useEffect(() => {
-        // 이미 로딩 중이거나 성공했다면 skip
         if (data?.state === "pending" || data?.state === "fulfilled") return;
 
         const fetchData = async () => {
@@ -60,7 +57,6 @@ const StockDataFetcher = ({ ticker: tickerFromUrl, name }: Props) => {
                 let payload: any = { ticker: tickerFromUrl, name, isUs };
 
                 if (isUs) {
-                    // [미국 주식] Finnhub 및 한국투자증권 해외주식 API 병렬 호출
                     const [finnhubRes, usDetailRes, usSearchRes, usDailyRes] = await Promise.all([
                         dispatch(reqGetFinnhubUsFinancialsReported(upperTicker)).unwrap(),
                         dispatch(reqGetQuotationsPriceDetail({ PDNO: upperTicker })).unwrap(),
@@ -71,13 +67,11 @@ const StockDataFetcher = ({ ticker: tickerFromUrl, name }: Props) => {
                         })).unwrap(),
                     ]);
 
-                    // Finnhub 데이터 구조(action.payload)를 data 객체 형식으로 매핑
-                    payload.finnhubData = finnhubRes; // FinnhubFinancialsAsReportedType
+                    payload.finnhubData = finnhubRes;
                     payload.usDetail = usDetailRes;
                     payload.usSearchInfo = usSearchRes;
                     payload.usDaily = usDailyRes;
                 } else {
-                    // [한국 주식] 한국투자증권 국내주식 API 병렬 호출
                     const corp: any = corpCodeJson;
                     const jsonStock = corp[name] || Object.values(corp).find((v: any) => v.stock_code === tickerFromUrl);
                     const code = jsonStock?.stock_code || tickerFromUrl;
@@ -99,7 +93,6 @@ const StockDataFetcher = ({ ticker: tickerFromUrl, name }: Props) => {
                     payload.kiChart = chart;
                 }
 
-                // 티커별 독립 스토어 업데이트
                 dispatch(updateStockDetail({ 
                     ticker: tickerFromUrl, 
                     data: { ...payload, state: "fulfilled" } 
@@ -112,14 +105,23 @@ const StockDataFetcher = ({ ticker: tickerFromUrl, name }: Props) => {
         };
 
         fetchData();
-    }, [tickerFromUrl, name, isUs, dispatch]); // 의존성에서 data.state 제거 (무한루프 방지)
+    }, [tickerFromUrl, name, isUs, dispatch]);
 
+    // 1. 기본 상태 분기 (로딩/에러)
     if (!data || data.state === "pending") {
         return <div className="h-[480px] w-full animate-pulse bg-zinc-100 dark:bg-zinc-900 rounded-3xl" />;
     }
 
     if (data.state === "rejected") {
         return <div className="h-[480px] flex items-center justify-center border-2 border-dashed rounded-3xl text-zinc-400 font-bold">Data Unavailable</div>;
+    }
+
+    // 2. 데이터 구조 안전성 검사 (데이터가 있어도 내부 필드가 없는 경우 대비)
+    const isKrReady = !isUs && data.kiBS && data.kiChart && data.kiPrice;
+    const isUsReady = isUs && data.finnhubData && data.usDetail;
+
+    if (!isKrReady && !isUsReady) {
+        return <div className="h-[480px] flex items-center justify-center border-2 border-dashed rounded-3xl text-zinc-400 font-bold">Processing Data...</div>;
     }
 
     return (
@@ -131,12 +133,12 @@ const StockDataFetcher = ({ ticker: tickerFromUrl, name }: Props) => {
                         isUs: true,
                         name,
                         ticker: name,
-                        // Finnhub slice 데이터(data.finnhubData)를 계산 함수에 전달
-                        grade: getUsNcavGrade(data.finnhubData, data.usDetail),
+                        // 옵셔널 체이닝(?.)을 활용하여 undefined 전파 방지
+                        grade: getUsNcavGrade(data?.finnhubData, data?.usDetail) || "N/A",
                         curPrice: Number(data?.usDetail?.output?.last ?? 0).toFixed(2),
-                        fairValue: '$' + calculateUsNcavValue(data.finnhubData, data.usDetail),
-                        ncavScore: calculateUsNcavRatio(data.finnhubData, data.usDetail),
-                        srimScore: getUsSRIMTargetPrice(data.finnhubData, data.usDetail),
+                        fairValue: '$' + (calculateUsNcavValue(data?.finnhubData, data?.usDetail) ?? '0'),
+                        ncavScore: calculateUsNcavRatio(data?.finnhubData, data?.usDetail) ?? 0,
+                        srimScore: getUsSRIMTargetPrice(data?.finnhubData, data?.usDetail) ?? 0,
                         per: data?.usDetail?.output?.perx ?? 0,
                         pbr: data?.usDetail?.output?.pbrx ?? 0,
                         eps: "$" + (data?.usDetail?.output?.epsx ?? 0),
@@ -147,18 +149,18 @@ const StockDataFetcher = ({ ticker: tickerFromUrl, name }: Props) => {
                         isUs: false,
                         name,
                         ticker: (corpCodeJson as any)?.[name]?.stock_code ?? '',
-                        grade: getKrNcavGrade(data.kiBS, data.kiChart),
+                        grade: getKrNcavGrade(data?.kiBS, data?.kiChart) || "N/A",
                         curPrice: data?.kiPrice?.output?.stck_prpr ?? 0,
-                        fairValue: '₩' + calculateKrNcavValue(data.kiBS, data.kiChart),
-                        ncavScore: calculateKrNcavRatio(data.kiBS, data.kiChart),
-                        srimScore: getKrSRIMTargetPrice(data.kiBS, data.kiIS, data.kiChart),
+                        fairValue: '₩' + (calculateKrNcavValue(data?.kiBS, data?.kiChart) ?? '0'),
+                        ncavScore: calculateKrNcavRatio(data?.kiBS, data?.kiChart) ?? 0,
+                        srimScore: getKrSRIMTargetPrice(data?.kiBS, data?.kiIS, data?.kiChart) ?? 0,
                         per: data?.kiPrice?.output?.per ?? 0,
                         pbr: data?.kiPrice?.output?.pbr ?? 0,
                         eps: "₩" + Number(data?.kiPrice?.output?.eps ?? 0).toFixed(0),
                         sector: data?.kiPrice?.output?.bstp_kor_isnm ?? "DEFAULT",
                     }
             }
-            chartConfig={{}} // 필요 시 data.kiChart 등을 기반으로 생성
+            chartConfig={{}} 
             rawData={data} 
         />
     );

@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect, useMemo, useRef } from 'react';
-import Image from 'next/image'; // Image 컴포넌트 추가
+import Image from 'next/image';
 import Link from 'next/link';
 
 /**
@@ -20,19 +20,19 @@ const SECTOR_THEMES: Record<string, { bg: string; border: string; icon: string; 
 };
 
 const GRADE_THEMES: Record<string, { frame: string; label: string; rarity: string; color: string }> = {
-    SSS: { frame: "from-pink-300 via-purple-300 to-cyan-300 animate-gradient-x", label: "울트라", rarity: "★★★", color: "#f472b6" }, // pink-400
-    SS: { frame: "from-yellow-200 via-amber-400 to-yellow-200", label: "시크릿", rarity: "★★", color: "#fbbf24" },  // amber-400
-    S: { frame: "from-amber-200 via-yellow-300 to-amber-500", label: "슈퍼", rarity: "★", color: "#f59e0b" },    // amber-500
-    A: { frame: "from-zinc-100 via-slate-200 to-zinc-300", label: "언커먼", rarity: "◆", color: "#94a3b8" },    // slate-400
-    DEFAULT: { frame: "from-zinc-200 via-zinc-300 to-zinc-400", label: "커먼", rarity: "●", color: "#71717a" }  // zinc-500
+    SSS: { frame: "from-pink-300 via-purple-300 to-cyan-300 animate-gradient-x", label: "울트라", rarity: "★★★", color: "#f472b6" },
+    SS: { frame: "from-yellow-200 via-amber-400 to-yellow-200", label: "시크릿", rarity: "★★", color: "#fbbf24" },
+    S: { frame: "from-amber-200 via-yellow-300 to-amber-500", label: "슈퍼", rarity: "★", color: "#f59e0b" },
+    A: { frame: "from-zinc-100 via-slate-200 to-zinc-300", label: "언커먼", rarity: "◆", color: "#94a3b8" },
+    DEFAULT: { frame: "from-zinc-200 via-zinc-300 to-zinc-400", label: "커먼", rarity: "●", color: "#71717a" }
 };
 
-// 점수에 따른 등급 판별 함수
 const getGradeByScore = (score: number) => {
-    if (score >= 150) return GRADE_THEMES.SSS;
-    if (score >= 120) return GRADE_THEMES.SS;
-    if (score >= 100) return GRADE_THEMES.S;
-    if (score >= 70) return GRADE_THEMES.A;
+    const s = Number(score) || 0;
+    if (s >= 150) return GRADE_THEMES.SSS;
+    if (s >= 120) return GRADE_THEMES.SS;
+    if (s >= 100) return GRADE_THEMES.S;
+    if (s >= 70) return GRADE_THEMES.A;
     return GRADE_THEMES.DEFAULT;
 };
 
@@ -43,8 +43,11 @@ export const StockCard = ({ stock, rawData }: any) => {
     const [glare, setGlare] = useState({ x: 50, y: 50, opacity: 0 });
     const [activeTooltip, setActiveTooltip] = useState<string | null>(null);
 
+    // [Safety] stock 객체가 없을 경우 대비
+    if (!stock) return null;
+
     const theme = useMemo(() => {
-        const s = (stock.sector || "").toUpperCase();
+        const s = (stock?.sector || "").toUpperCase();
         if (s.includes("자동차") || s.includes("기계") || s.includes("부품") || s.includes("운수장비")) return SECTOR_THEMES.IRON;
         if (s.includes("반도체") || s.includes("전자") || s.includes("전기") || s.includes("전자제품") || s.includes("IT장비")) return SECTOR_THEMES.CHIP;
         if (s.includes("서비스") || s.includes("소프트웨어") || s.includes("인터넷") || s.includes("게임")) return SECTOR_THEMES.NET;
@@ -54,9 +57,9 @@ export const StockCard = ({ stock, rawData }: any) => {
         if (s.includes("건설") || s.includes("방산") || s.includes("철강") || s.includes("중공업") || s.includes("종이") || s.includes("목재")) return SECTOR_THEMES.BASE;
         if (s.includes("미디어") || s.includes("엔터") || s.includes("문화") || s.includes("화장품")) return SECTOR_THEMES.STAR;
         return SECTOR_THEMES.LIFE;
-    }, [stock.sector]);
+    }, [stock?.sector]);
 
-    const gradeTheme = GRADE_THEMES[stock.grade?.grade] || GRADE_THEMES.DEFAULT;
+    const gradeTheme = GRADE_THEMES[stock?.grade?.grade] || GRADE_THEMES.DEFAULT;
 
     const analysis = useMemo(() => {
         let debtRatio = 0;
@@ -64,150 +67,123 @@ export const StockCard = ({ stock, rawData }: any) => {
         let lowPrice = 0;
         let currentPrice = 0;
 
-        if (stock?.isUs) {
-            const info = rawData?.usSearchInfo?.output;
-            const detail = rawData?.usDetail?.output;
-            const dailyHistory = rawData?.usDaily?.output2 || [];
+        try {
+            if (stock?.isUs) {
+                const info = rawData?.usSearchInfo?.output;
+                const detail = rawData?.usDetail?.output;
+                const dailyHistory = rawData?.usDaily?.output2 || [];
 
-            // --- 유연한 부채비율 계산 (Finnhub BS 리포트) ---
-            const finnhubReport = rawData?.finnhubData?.data?.[0]?.report?.bs || [];
+                // --- 유연한 부채비율 계산 (Finnhub BS 리포트) ---
+                const finnhubReport = rawData?.finnhubData?.data?.[0]?.report?.bs || [];
 
-            if (finnhubReport.length > 0) {
-                // 1. 부채(Liabilities) 찾기: 'us-gaap_Liabilities' 또는 'Liabilities' (완전 일치 혹은 접두사 포함)
-                const totalLiabilities = finnhubReport.find((item: any) =>
-                    item.concept === "us-gaap_Liabilities" ||
-                    item.concept === "Liabilities" ||
-                    item.concept.endsWith("_Liabilities")
-                )?.value || 0;
+                if (finnhubReport.length > 0) {
+                    const totalLiabilities = finnhubReport.find((item: any) =>
+                        item?.concept === "us-gaap_Liabilities" ||
+                        item?.concept === "Liabilities" ||
+                        item?.concept?.endsWith("_Liabilities")
+                    )?.value || 0;
 
-                // 2. 자본(StockholdersEquity) 찾기
-                const totalEquity = finnhubReport.find((item: any) =>
-                    item.concept === "us-gaap_StockholdersEquity" ||
-                    item.concept === "StockholdersEquity" ||
-                    item.concept.endsWith("_StockholdersEquity")
-                )?.value || 1; // 분모 0 방지
+                    const totalEquity = finnhubReport.find((item: any) =>
+                        item?.concept === "us-gaap_StockholdersEquity" ||
+                        item?.concept === "StockholdersEquity" ||
+                        item?.concept?.endsWith("_StockholdersEquity")
+                    )?.value || 1;
 
-                debtRatio = (totalLiabilities / totalEquity) * 100;
+                    debtRatio = (totalLiabilities / totalEquity) * 100;
+                } else {
+                    debtRatio = parseFloat(stock?.debtRatio || "0");
+                }
+
+                currentPrice = parseFloat(detail?.last || info?.ovrs_now_pric1 || stock?.curPrice || "0");
+
+                if (dailyHistory.length > 0) {
+                    // [Safety] 값이 숫자가 아닐 경우 대비
+                    const highs = dailyHistory.map((d: any) => parseFloat(d?.high || "0"));
+                    const lows = dailyHistory.map((d: any) => parseFloat(d?.low || "0"));
+                    highPrice = Math.max(...highs, 0);
+                    lowPrice = Math.min(...lows, currentPrice);
+                } else {
+                    highPrice = parseFloat(info?.h52p || "0");
+                    lowPrice = parseFloat(info?.l52p || "0");
+                }
             } else {
-                debtRatio = parseFloat(stock?.debtRatio || "0");
+                // [국내장] 로직 - output이 배열인지 확인 필수
+                const latestBS = rawData?.kiBS?.output?.[0] || rawData?.kiBS?.output; 
+                const totalLblt = parseFloat(latestBS?.total_lblt || "0");
+                const totalCptl = parseFloat(latestBS?.total_cptl || "1");
+                debtRatio = (totalLblt / totalCptl) * 100;
+
+                const priceInfo = rawData?.kiPrice?.output;
+                highPrice = parseFloat(priceInfo?.d250_hgpr || "0");
+                lowPrice = parseFloat(priceInfo?.d250_lwpr || "0");
+                currentPrice = parseFloat(priceInfo?.stck_prpr || "0");
             }
-
-            currentPrice = parseFloat(detail?.last || info?.ovrs_now_pric1 || stock?.curPrice || "0");
-
-            if (dailyHistory.length > 0) {
-                const highs = dailyHistory.map((d: any) => parseFloat(d.high));
-                const lows = dailyHistory.map((d: any) => parseFloat(d.low));
-                highPrice = Math.max(...highs);
-                lowPrice = Math.min(...lows);
-            } else {
-                highPrice = parseFloat(info?.h52p || "0");
-                lowPrice = parseFloat(info?.l52p || "0");
-            }
-
-        } else {
-            // [국내장] 로직
-            const latestBS = rawData?.kiBS?.output?.[0];
-            const totalLblt = parseFloat(latestBS?.total_lblt || "0");
-            const totalCptl = parseFloat(latestBS?.total_cptl || "1");
-            debtRatio = (totalLblt / totalCptl) * 100;
-
-            const priceInfo = rawData?.kiPrice?.output;
-            highPrice = parseFloat(priceInfo?.d250_hgpr || "0");
-            lowPrice = parseFloat(priceInfo?.d250_lwpr || "0");
-            currentPrice = parseFloat(priceInfo?.stck_prpr || "0");
+        } catch (e) {
+            console.error("Analysis calculation error:", e);
         }
 
-        // [공통 계산 레이어]
-        let debtColor = "text-blue-600";
-        if (debtRatio > 200) debtColor = "text-red-600";
-        else if (debtRatio > 100) debtColor = "text-orange-500";
+        // [Safety] 나눗셈 0 방지 및 유효값 체크
+        const safeHigh = highPrice || currentPrice || 1;
+        const safeCurrent = currentPrice || 1;
 
-        const dropRate = highPrice > 0 ? ((highPrice - currentPrice) / highPrice) * 100 : 0;
-        const gapToHigh = currentPrice > 0 ? ((highPrice / currentPrice) - 1) * 100 : 0;
-        const retreatMargin = (currentPrice > 0 && lowPrice > 0) ? ((currentPrice - lowPrice) / currentPrice) * 100 : 0;
+        const debtColor = debtRatio > 200 ? "text-red-600" : debtRatio > 100 ? "text-orange-500" : "text-blue-600";
+        const dropRate = ((safeHigh - currentPrice) / safeHigh) * 100;
+        const gapToHigh = ((safeHigh / safeCurrent) - 1) * 100;
+        const retreatMargin = lowPrice > 0 ? ((currentPrice - lowPrice) / safeCurrent) * 100 : 0;
         const supportStrength = Math.max(0, 100 - retreatMargin);
 
-        // 테두리용 그라데이션 스타일
-
         return {
-            debtRatio: debtRatio.toFixed(1),
+            debtRatio: (debtRatio || 0).toFixed(1),
             debtColor,
-            dropRate: dropRate.toFixed(1),
-            gapToHigh: gapToHigh.toFixed(1),
-            highPrice: highPrice.toLocaleString(undefined, { minimumFractionDigits: 2 }),
-            lowPrice: lowPrice.toLocaleString(undefined, { minimumFractionDigits: 2 }),
-            retreatMargin: retreatMargin.toFixed(1),
+            dropRate: (dropRate || 0).toFixed(1),
+            gapToHigh: (gapToHigh || 0).toFixed(1),
+            highPrice: (highPrice || 0).toLocaleString(undefined, { minimumFractionDigits: 0 }),
+            lowPrice: (lowPrice || 0).toLocaleString(undefined, { minimumFractionDigits: 0 }),
+            retreatMargin: (retreatMargin || 0).toFixed(1),
             supportStrength,
         };
-    }, [rawData, stock?.isUs, stock?.curPrice]);
+    }, [rawData, stock?.isUs, stock?.curPrice, stock?.debtRatio]);
 
-    const ncavGrade = useMemo(() => getGradeByScore(Number(stock.ncavScore || 0)), [stock.ncavScore]);
-    const srimGrade = useMemo(() => getGradeByScore(Number(stock.srimScore || 0)), [stock.srimScore]);
-    const borderStyle = useMemo(() => {
-        // conic-gradient를 사용하여 모서리를 따라 색상이 회전하며 섞이는 효과
-        return {
-            background: `conic-gradient(from 0deg, ${ncavGrade.color}, ${srimGrade.color}, ${ncavGrade.color})`,
-        };
-    }, [ncavGrade.color, srimGrade.color]);
-    // 1. 티커가 변경될 때마다 이미지 상태를 리셋합니다.
+    const ncavGrade = useMemo(() => getGradeByScore(Number(stock?.ncavScore || 0)), [stock?.ncavScore]);
+    const srimGrade = useMemo(() => getGradeByScore(Number(stock?.srimScore || 0)), [stock?.srimScore]);
+    
+    const borderStyle = useMemo(() => ({
+        background: `conic-gradient(from 0deg, ${ncavGrade.color}, ${srimGrade.color}, ${ncavGrade.color})`,
+    }), [ncavGrade.color, srimGrade.color]);
+
     useEffect(() => {
         setImageStatus({ loaded: false, error: false });
-    }, [stock.ticker]); // 티커가 바뀌면 다시 로딩 상태로 돌아감
+    }, [stock?.ticker]);
 
     const logoUrl = useMemo(() => {
-        if (!stock.ticker) return null;
-
-        // 미국 주식
+        if (!stock?.ticker) return null;
         if (stock.isUs) {
             return `https://img.logo.dev/ticker/${stock.ticker.toUpperCase()}?token=${process.env.NEXT_PUBLIC_CLEARBIT_API_KEY}&size=512`;
         }
-
-        // 한국 주식 (URL 끝에 티커가 붙는 구조라면)
         const krBaseUrl = process.env.NEXT_PUBLIC_KR_LOGO_API;
         return krBaseUrl ? `${krBaseUrl}/${stock.ticker}?size=300` : null;
-    }, [stock.ticker, stock.isUs]);
+    }, [stock?.ticker, stock?.isUs]);
 
     useEffect(() => {
         const card = cardRef.current;
         if (!card) return;
-
         let frameId: number;
-
         const handleMove = (e: MouseEvent) => {
-            // requestAnimationFrame을 사용하여 브라우저 주사율에 맞춰 부드럽게 업데이트
             frameId = requestAnimationFrame(() => {
-                const { left, top, width, height } = card.getBoundingClientRect();
-
-                // 중심점으로부터의 상대적 거리 계산 (-0.5 ~ 0.5 범위)
-                const xRel = (e.clientX - left) / width - 0.5;
-                const yRel = (e.clientY - top) / height - 0.5;
-
-                // 기울기 감도 조절 (기존 25보다 조금 더 세밀한 제어 가능)
-                // yRel이 x축 회전(rotateX)에 영향을 주고, xRel이 y축 회전(rotateY)에 영향을 줍니다.
-                const intensity = 15;
-                setRotation({
-                    x: -(yRel * intensity), // 위아래 기울기
-                    y: xRel * intensity     // 좌우 기울기
-                });
-
-                setGlare({
-                    x: (xRel + 0.5) * 100,
-                    y: (yRel + 0.5) * 100,
-                    opacity: 0.2
-                });
+                const rect = card.getBoundingClientRect();
+                const xRel = (e.clientX - rect.left) / rect.width - 0.5;
+                const yRel = (e.clientY - rect.top) / rect.height - 0.5;
+                setRotation({ x: -(yRel * 15), y: xRel * 15 });
+                setGlare({ x: (xRel + 0.5) * 100, y: (yRel + 0.5) * 100, opacity: 0.2 });
             });
         };
-
         const handleLeave = () => {
             cancelAnimationFrame(frameId);
-            // 마우스를 뗐을 때 자연스럽게 중앙으로 복귀
             setRotation({ x: 0, y: 0 });
             setGlare(prev => ({ ...prev, opacity: 0 }));
         };
-
         card.addEventListener('mousemove', handleMove);
         card.addEventListener('mouseleave', handleLeave);
-
         return () => {
             card.removeEventListener('mousemove', handleMove);
             card.removeEventListener('mouseleave', handleLeave);
@@ -238,13 +214,13 @@ export const StockCard = ({ stock, rawData }: any) => {
                         <div className="relative flex justify-between items-end px-3 py-1.5 bg-white/30 border-b border-black/5 rounded-t-[0.5rem] z-[50]">
                             <div className="flex flex-col">
                                 <span className="text-[7px] font-bold text-zinc-500 italic uppercase tracking-widest">IdiotQuant v2.5</span>
-                                <h3 className="text-zinc-900 font-black text-xl tracking-tighter drop-shadow-sm">{stock.name}</h3>
+                                <h3 className="text-zinc-900 font-black text-xl tracking-tighter drop-shadow-sm">{stock?.name || "Unknown"}</h3>
                             </div>
                             <div className="flex items-center gap-1 text-right">
                                 <div className="flex flex-col">
                                     <span className="text-[8px] font-black text-red-600 tracking-tighter uppercase">PRICE</span>
                                     <span className="text-xl font-black tracking-tighter text-zinc-900">
-                                        {stock.isUs ? "$" : "₩"}{stock.curPrice}
+                                        {stock?.isUs ? "$" : "₩"}{stock?.curPrice || 0}
                                     </span>
                                 </div>
                                 <div
@@ -266,24 +242,20 @@ export const StockCard = ({ stock, rawData }: any) => {
                             </div>
                         </div>
 
-                        {/* [IMAGE] 로고 영역 (클릭 시 상세 지표 반전) */}
+                        {/* [IMAGE] */}
                         <div className="mx-2.5 mt-1.5 relative h-48 border-[5px] border-[#c9c9c9] shadow-inner bg-white overflow-hidden rounded-[2px] z-[10] group/logo"
-                            style={{ perspective: '1000px' }} // 3D 효과를 위한 원근법 추가
+                            style={{ perspective: '1000px' }}
                         >
-                            {/* 클릭 감지 및 플립 상태 관리 (로컬 상태 flip 추가 필요) */}
-                            {/* 여기서는 설명의 편의를 위해 버튼 스타일로 구현하며, 클릭 시 내용을 전환합니다. */}
                             <div
                                 className={`relative w-full h-full transition-all duration-500 transform-gpu cursor-pointer ${activeTooltip === 'showMetrics' ? '[transform:rotateY(180deg)]' : ''}`}
                                 style={{ transformStyle: 'preserve-3d' }}
                                 onClick={() => setActiveTooltip(activeTooltip === 'showMetrics' ? null : 'showMetrics')}
                             >
-                                {/* [FRONT: 로고 이미지] */}
                                 <div className="absolute inset-0 w-full h-full [backface-visibility:hidden]">
                                     {logoUrl && !imageStatus.error ? (
                                         <Image
-                                            key={stock.ticker}
                                             src={logoUrl}
-                                            alt={stock.name}
+                                            alt={stock?.name || "logo"}
                                             fill
                                             style={{ objectFit: 'cover' }}
                                             className={`transition-all duration-700 ${imageStatus.loaded ? 'opacity-100' : 'opacity-0'}`}
@@ -296,50 +268,25 @@ export const StockCard = ({ stock, rawData }: any) => {
                                             <span className="text-6xl grayscale opacity-10">{theme.icon}</span>
                                         </div>
                                     )}
-
-                                    {/* 워터마크 (프론트 전용) */}
-                                    {imageStatus.loaded && !imageStatus.error && (
-                                        <Link
-                                            href={stock.isUs ? "https://logo.dev" : "https://logo.idiotquant.com"}
-                                            target="_blank"
-                                            rel="noopener noreferrer"
-                                            className="absolute top-2 left-2 z-[30] w-fit h-fit opacity-30 group-hover/logo:opacity-100 transition-opacity flex flex-col gap-0 leading-none cursor-pointer"
-                                            onClick={(e) => e.stopPropagation()} // 플립 방지
-                                        >
-                                            <span className="text-[6px] font-black text-zinc-500 uppercase">Powered by</span>
-                                            <span className="text-[8px] font-black text-black tracking-tighter mix-blend-multiply">
-                                                {stock.isUs ? 'logo.dev' : 'logo.idiotquant.com'}
-                                            </span>
-                                        </Link>
-                                    )}
-
-                                    {/* 하단 힌트 바 */}
                                     <div className={`absolute bottom-0 w-full ${theme.bg} py-0 text-center border-t border-black/20 opacity-80`}>
                                         <p className="text-[8px] font-black text-white tracking-[0.2em] uppercase">CLICK TO VIEW METRICS</p>
                                     </div>
                                 </div>
 
-                                {/* [BACK: 상세 지표 영역] */}
                                 <div className={`absolute inset-0 w-full h-full ${theme.lightBg} [backface-visibility:hidden] [transform:rotateY(180deg)] flex flex-col items-center justify-center p-4 border-2 ${theme.border}`}>
                                     <div className="flex flex-col w-full space-y-3">
                                         <div className="flex justify-between items-end border-b border-zinc-200 pb-1">
                                             <span className="text-[10px] font-black text-zinc-400 uppercase">PBR</span>
-                                            <span className="text-3xl font-black tracking-tighter text-zinc-900">{stock.pbr}</span>
+                                            <span className="text-3xl font-black tracking-tighter text-zinc-900">{stock?.pbr || 0}</span>
                                         </div>
                                         <div className="flex justify-between items-end border-b border-zinc-200 pb-1">
                                             <span className="text-[10px] font-black text-zinc-400 uppercase">PER</span>
-                                            <span className="text-3xl font-black tracking-tighter text-zinc-900">{stock.per}</span>
+                                            <span className="text-3xl font-black tracking-tighter text-zinc-900">{stock?.per || 0}</span>
                                         </div>
                                         <div className="flex justify-between items-end border-b border-zinc-200 pb-1">
                                             <span className="text-[10px] font-black text-zinc-400 uppercase">EPS</span>
-                                            <span className="text-2xl font-black tracking-tighter text-zinc-900">
-                                                {stock.isUs ? "" : ""}{stock.eps}
-                                            </span>
+                                            <span className="text-2xl font-black tracking-tighter text-zinc-900">{stock?.eps || 0}</span>
                                         </div>
-                                    </div>
-                                    <div className="mt-4 flex items-center gap-1">
-                                        <span className="text-[8px] font-black text-zinc-400 uppercase italic">Metric Source: Financial Reports</span>
-                                        <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
                                     </div>
                                 </div>
                             </div>
@@ -356,14 +303,7 @@ export const StockCard = ({ stock, rawData }: any) => {
                                     <div className={`w-6 h-6 rounded-full ${theme.bg} flex items-center justify-center text-[10px] text-white shadow-sm`}>{theme.icon}</div>
                                     <span className="font-black text-[14px] text-zinc-900 tracking-tight">NCAV</span>
                                 </div>
-                                        
-                                <div className="font-black text-[9px] text-zinc-900">({stock.ncavScore || 0}%) 적정주가:{stock.fairValue?.toLocaleString()}</div>
-                                {activeTooltip === 'ncav' && (
-                                    <div className="absolute -top-14 left-0 z-[110] w-full p-2.5 bg-zinc-800/95 text-white text-[10px] rounded-md border border-white/10 shadow-2xl animate-in fade-in slide-in-from-bottom-2 backdrop-blur-sm">
-                                        <span className="text-blue-300 font-black tracking-widest">[ASSET VALUE]</span>
-                                        <p className="mt-1 text-zinc-300">청산가치 대비 시가총액 비율입니다. 100% 이상일 경우 기업을 통째로 사고도 현금이 남는 마법의 안전마진을 의미합니다.</p>
-                                    </div>
-                                )}
+                                <div className="font-black text-[9px] text-zinc-900">({stock?.ncavScore || 0}%) 적정주가:{stock?.fairValue?.toLocaleString() || 0}</div>
                             </div>
 
                             <div
@@ -372,64 +312,25 @@ export const StockCard = ({ stock, rawData }: any) => {
                                 onMouseLeave={() => setActiveTooltip(null)}
                             >
                                 <div className="flex items-center gap-2">
-                                    <div className="flex -space-x-1.5">
-                                        {/* <div className={`w-6 h-6 rounded-full ${theme.bg} border border-white/50 flex items-center justify-center text-[10px] text-white shadow-sm`}>{theme.icon}</div> */}
-                                        <div className={`w-6 h-6 rounded-full ${theme.bg} border border-white/50 flex items-center justify-center text-[10px] text-white shadow-sm`}>{theme.icon}</div>
-                                    </div>
+                                    <div className={`w-6 h-6 rounded-full ${theme.bg} border border-white/50 flex items-center justify-center text-[10px] text-white shadow-sm`}>{theme.icon}</div>
                                     <span className="font-black text-[14px] text-zinc-900 tracking-tight">S-RIM</span>
                                 </div>
-                                <div className="font-black text-[9px] text-zinc-900">{stock.srimScore || "N/A"}</div>
-                                {activeTooltip === 'srim' && (
-                                    <div className="absolute -top-14 left-0 z-[110] w-full p-2.5 bg-zinc-800/95 text-white text-[10px] rounded-md border border-white/10 shadow-2xl animate-in fade-in slide-in-from-bottom-2 backdrop-blur-sm">
-                                        <span className="text-red-300 font-black tracking-widest">[PROFIT VALUE]</span>
-                                        <p className="mt-1 text-zinc-300">초과이익 모델 기반 적정주가입니다. 기업이 자본을 활용해 기대치 이상의 수익을 얼마나 내는지를 가치로 환산합니다.</p>
-                                    </div>
-                                )}
+                                <div className="font-black text-[9px] text-zinc-900">{stock?.srimScore || "N/A"}</div>
                             </div>
                         </div>
 
                         {/* [STATS] */}
                         <div className="px-4 pb-3 mt-auto z-[20]">
                             <div className="flex justify-between text-[7px] font-black text-zinc-500 border-t-2 border-zinc-300 pt-1.5 uppercase relative">
-                                <div
-                                    className="flex flex-col cursor-help group/weakness"
-                                    onMouseEnter={() => setActiveTooltip('weakness')}
-                                    onMouseLeave={() => setActiveTooltip(null)}
-                                >
+                                <div className="flex flex-col">
                                     <span>Weakness</span>
-                                    <span className={`${analysis.debtColor} font-bold mt-0.5 italic text-[9px]`}>
-                                        부채 {analysis.debtRatio}% 🔥
-                                    </span>
-                                    {activeTooltip === 'weakness' && (
-                                        <div className="absolute bottom-full left-0 mb-2 w-48 p-2.5 bg-zinc-900/95 text-white text-[10px] rounded-md shadow-2xl z-[110] leading-snug border border-white/10 animate-in fade-in slide-in-from-bottom-1 backdrop-blur-sm">
-                                            <p className="text-orange-400 font-black mb-1 italic">DEBT RISK</p>
-                                            자본 대비 부채 비중입니다. 100% 미만을 권장하며, 수치가 높을수록 재무적 타격을 입기 쉽습니다.
-                                        </div>
-                                    )}
+                                    <span className={`${analysis.debtColor} font-bold mt-0.5 italic text-[9px]`}>부채 {analysis.debtRatio}% 🔥</span>
                                 </div>
-
-                                <div
-                                    className="flex flex-col items-center cursor-help group/resistance"
-                                    onMouseEnter={() => setActiveTooltip('resistance')}
-                                    onMouseLeave={() => setActiveTooltip(null)}
-                                >
+                                <div className="flex flex-col items-center">
                                     <span>Resistance</span>
-                                    <span className="text-zinc-900 font-bold mt-0.5 italic text-[9px]">
-                                        저항 -{analysis.dropRate}% ⚙️
-                                    </span>
-                                    {activeTooltip === 'resistance' && (
-                                        <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-48 p-2.5 bg-zinc-900/95 text-white text-[10px] rounded-md shadow-2xl z-[110] leading-snug border border-white/10 animate-in fade-in slide-in-from-bottom-1 text-center backdrop-blur-sm">
-                                            <p className="text-yellow-400 font-black mb-1 italic">CEILING</p>
-                                            전고점 대비 하락폭입니다. 수치가 클수록 위에 쌓인 매물대 저항이 강할 수 있음을 뜻합니다.
-                                        </div>
-                                    )}
+                                    <span className="text-zinc-900 font-bold mt-0.5 italic text-[9px]">저항 -{analysis.dropRate}% ⚙️</span>
                                 </div>
-
-                                <div
-                                    className="flex flex-col items-end cursor-help group/retreat"
-                                    onMouseEnter={() => setActiveTooltip('retreat')}
-                                    onMouseLeave={() => setActiveTooltip(null)}
-                                >
+                                <div className="flex flex-col items-end">
                                     <span>Retreat</span>
                                     <div className="flex items-center gap-1 mt-0.5 text-right">
                                         <span className="text-zinc-900 font-bold italic text-[9px] leading-none">{analysis.retreatMargin}%</span>
@@ -440,12 +341,6 @@ export const StockCard = ({ stock, rawData }: any) => {
                                             />
                                         </div>
                                     </div>
-                                    {activeTooltip === 'retreat' && (
-                                        <div className="absolute bottom-full right-0 mb-2 w-48 p-2.5 bg-zinc-900/95 text-white text-[10px] rounded-md shadow-2xl z-[110] leading-snug border border-white/10 animate-in fade-in slide-in-from-bottom-1 text-right backdrop-blur-sm">
-                                            <p className="text-green-400 font-black mb-1 italic">FLOOR</p>
-                                            최저가 대비 현재 높이입니다. 이 수치가 낮을수록 역사적 바닥에 근접하여 추가 하락 위험이 적습니다.
-                                        </div>
-                                    )}
                                 </div>
                             </div>
 
@@ -455,21 +350,17 @@ export const StockCard = ({ stock, rawData }: any) => {
 
                             <div className="flex justify-between items-center mt-2">
                                 <span className="text-[7px] font-black text-zinc-400 italic tracking-tighter uppercase">illus. IDIOTQUANT</span>
-
-                                {/* 우하단 이중 등급 표시 */}
                                 <div className="flex gap-1.5">
-                                    {/* NCAV 등급 배지 */}
                                     <div className="flex flex-col items-center">
                                         <span className="text-[6px] font-bold text-zinc-400 uppercase">NCAV</span>
-                                        <div className="flex items-center gap-1 bg-zinc-900 px-1.5 py-0.5 rounded-[1px] shadow-sm" style={{ backgroundColor: ncavGrade.color }}>
+                                        <div className="flex items-center gap-1 px-1.5 py-0.5 rounded-[1px] shadow-sm" style={{ backgroundColor: ncavGrade.color }}>
                                             <span className="text-[8px] font-black text-white/70">{ncavGrade.rarity}</span>
                                             <span className="text-[9px] font-black text-white">{ncavGrade.label[0]}</span>
                                         </div>
                                     </div>
-                                    {/* S-RIM 등급 배지 */}
                                     <div className="flex flex-col items-center">
                                         <span className="text-[6px] font-bold text-zinc-400 uppercase">S-RIM</span>
-                                        <div className="flex items-center gap-1 bg-zinc-900 px-1.5 py-0.5 rounded-[1px] shadow-sm" style={{ backgroundColor: srimGrade.color }}>
+                                        <div className="flex items-center gap-1 px-1.5 py-0.5 rounded-[1px] shadow-sm" style={{ backgroundColor: srimGrade.color }}>
                                             <span className="text-[8px] font-black text-white/70">{srimGrade.rarity}</span>
                                             <span className="text-[9px] font-black text-white">{srimGrade.label[0]}</span>
                                         </div>
