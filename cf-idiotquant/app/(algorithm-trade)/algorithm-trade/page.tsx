@@ -37,13 +37,14 @@ import { cn } from "@/lib/utils";
 const us_tickers = [...nasdaq_tickers, ...nyse_tickers, ...amex_tickers];
 const PAGE_SIZE = 20;
 
+/** 카드 데이터 패처 컴포넌트 */
 const StockDataFetcher = ({ ticker, name, isSelected, onClick }: { ticker: string; name: string; isSelected: boolean; onClick?: () => void }) => {
     const dispatch = useAppDispatch();
     const isUs = useMemo(() => us_tickers.includes(ticker.toUpperCase()), [ticker]);
     const data = useAppSelector((state) => selectStockByTicker(state, ticker));
 
     useEffect(() => {
-        if (data?.state === "pending" || data?.state === "fulfilled") return;
+        if (data?.state === "fulfilled" || data?.state === "pending") return;
         const fetchData = async () => {
             dispatch(setStockState({ ticker, status: "pending" }));
             try {
@@ -81,51 +82,32 @@ const StockDataFetcher = ({ ticker, name, isSelected, onClick }: { ticker: strin
     }
 
     return (
-        <div 
-            onClick={onClick} 
-            className={cn(
-                "w-full transition-transform duration-500", 
-                !isSelected && "cursor-pointer hover:-translate-y-4"
-            )}
-        >
+        <div onClick={onClick} className={cn("w-full h-full", !isSelected && "cursor-pointer")}>
             <StockCard
+                isCompact={!isSelected}
                 stock={data.isUs ? {
                     code: ticker, isUs: true, name, ticker: name,
                     grade: getUsNcavGrade(data.finnhubData, data.usDetail),
                     curPrice: Number(data?.usDetail?.output?.last ?? 0).toFixed(2),
-                    fairValue: '$' + calculateUsNcavValue(data.finnhubData, data.usDetail),
                     ncavScore: calculateUsNcavRatio(data.finnhubData, data.usDetail),
-                    srimScore: getUsSRIMTargetPrice(data.finnhubData, data.usDetail),
                     per: data?.usDetail?.output?.perx ?? 0,
                     pbr: data?.usDetail?.output?.pbrx ?? 0,
-                    eps: "$" + (data?.usDetail?.output?.epsx ?? 0),
                     sector: data?.usDetail?.output?.e_icod ?? "DEFAULT",
                 } : {
                     code: ticker, isUs: false, name, ticker: (corpCodeJson as any)?.[name]?.stock_code ?? '',
                     grade: getKrNcavGrade(data.kiBS, data.kiChart),
                     curPrice: data?.kiPrice?.output?.stck_prpr ?? 0,
-                    fairValue: '₩' + calculateKrNcavValue(data.kiBS, data.kiChart),
                     ncavScore: calculateKrNcavRatio(data.kiBS, data.kiChart),
-                    srimScore: getKrSRIMTargetPrice(data.kiBS, data.kiIS, data.kiChart),
                     per: data?.kiPrice?.output?.per ?? 0,
                     pbr: data?.kiPrice?.output?.pbr ?? 0,
-                    eps: "₩" + Number(data?.kiPrice?.output?.eps ?? 0).toFixed(0),
                     sector: data?.kiPrice?.output?.bstp_kor_isnm ?? "DEFAULT",
                 }}
-                chartConfig={{}} rawData={data} 
             />
         </div>
     );
 };
 
-export default function Page() {
-    return (
-        <Suspense fallback={<LoadingUI />}>
-            <AlgorithmTradeContent />
-        </Suspense>
-    );
-}
-
+/** 메인 콘텐츠 컴포넌트 */
 function AlgorithmTradeContent() {
     const dispatch = useAppDispatch();
     const router = useRouter();
@@ -176,7 +158,7 @@ function AlgorithmTradeContent() {
 
     return (
         <div className="max-w-[1600px] mx-auto px-4 sm:px-6 py-10 min-h-screen">
-            {/* Header & Nav */}
+            {/* Nav (중복 제거를 위해 로직 유지) */}
             <nav className="flex flex-wrap gap-2 mb-12 pb-6 border-b border-zinc-100 dark:border-zinc-800">
                 {strategyNcavLatest?.list?.map((strategy) => {
                     const isActive = activeStrategy.strategyId === strategy.strategyId;
@@ -190,7 +172,6 @@ function AlgorithmTradeContent() {
                             }}
                             className={`flex items-center gap-2 px-5 py-2.5 rounded-2xl text-sm font-bold transition-all ${isActive ? "bg-zinc-900 text-white dark:bg-white dark:text-zinc-900 shadow-xl" : "bg-zinc-50 text-zinc-500 hover:bg-zinc-100 dark:bg-zinc-900"}`}
                         >
-                            {isActive && <CheckCircleIcon className="w-4 h-4 text-blue-400" />}
                             {strategy.name}
                         </button>
                     );
@@ -198,20 +179,19 @@ function AlgorithmTradeContent() {
             </nav>
 
             <div className="relative">
-                {/* 1. Backdrop - 카드 이외의 영역을 클릭하면 닫히도록 설정 */}
+                {/* 1. Backdrop: 배경 클릭 시 닫기 */}
                 <AnimatePresence>
                     {selectedTicker && (
                         <motion.div 
                             initial={{ opacity: 0 }} 
                             animate={{ opacity: 1 }} 
                             exit={{ opacity: 0 }}
-                            onClick={() => setSelectedTicker(null)} // 배경 클릭 시만 해제
-                            className="fixed inset-0 bg-zinc-950/40 dark:bg-black/80 backdrop-blur-md z-[100] cursor-zoom-out"
+                            onClick={() => setSelectedTicker(null)} // 검은 배경 클릭 시 닫힘
+                            className="fixed inset-0 bg-zinc-950/60 dark:bg-black/90 backdrop-blur-xl z-[100] cursor-zoom-out"
                         />
                     )}
                 </AnimatePresence>
 
-                {/* 2. 카드 리스트 영역 */}
                 <LayoutGroup>
                     <div className={cn(
                         "relative transition-all duration-700",
@@ -223,35 +203,38 @@ function AlgorithmTradeContent() {
 
                             return (
                                 <React.Fragment key={`${activeStrategy.strategyId}-${ticker}`}>
-                                    {/* 고정 팝업 모드 (선택된 카드) */}
+                                    {/* 2. 팝업 모드: 선택된 카드 */}
                                     <AnimatePresence>
                                         {isSelected && (
-                                            <div className="fixed inset-0 z-[110] flex items-center justify-center p-4 pointer-events-none">
+                                            /* 카드 외부의 빈 공간을 클릭해도 닫히도록 onClick 추가 */
+                                            <div 
+                                                className="fixed inset-0 z-[110] flex items-center justify-center p-4 cursor-zoom-out"
+                                                onClick={() => setSelectedTicker(null)} 
+                                            >
                                                 <motion.div
                                                     layoutId={`card-${ticker}`}
-                                                    className="w-full max-w-2xl pointer-events-auto"
-                                                    transition={{ type: "spring", stiffness: 300, damping: 30 }}
-                                                    onClick={(e) => e.stopPropagation()} // 카드 본체 클릭 시 이벤트 전파 차단 (닫히지 않음)
+                                                    className="w-fit max-w-2xl cursor-default" // 카드 위에서는 기본 커서
+                                                    transition={{ type: "spring", stiffness: 350, damping: 35 }}
+                                                    onClick={(e) => e.stopPropagation()} // 카드 본체 클릭 시 이벤트 전파 방지
                                                 >
                                                     <StockDataFetcher 
                                                         ticker={ticker} 
                                                         name={candidate.symbol || ticker} 
-                                                        isSelected={true}
-                                                        // onClick 속성을 전달하지 않거나 빈 함수 전달하여 클릭 방지
+                                                        isSelected={true} 
                                                     />
                                                 </motion.div>
                                             </div>
                                         )}
                                     </AnimatePresence>
 
-                                    {/* 기본 리스트 상태 */}
+                                    {/* 3. 리스트 모드: 미선택 카드 */}
                                     {!isSelected && (
                                         <motion.div
                                             layoutId={`card-${ticker}`}
                                             className={cn(
-                                                "w-full max-w-2xl transition-all duration-500",
-                                                index !== 0 && "mt-[-400px] lg:mt-0", // 더 깊게 가려지도록 수정
-                                                isAnySelected ? "opacity-0 scale-90" : "opacity-100 relative z-10"
+                                                "w-fit max-w-2xl transition-all duration-500",
+                                                index !== 0 && "mt-[-400px] lg:mt-0", 
+                                                isAnySelected ? "opacity-0 scale-90 pointer-events-none" : "opacity-100 relative z-10"
                                             )}
                                         >
                                             <StockDataFetcher 
@@ -269,13 +252,9 @@ function AlgorithmTradeContent() {
                 </LayoutGroup>
             </div>
 
-            {/* 인피니트 스크롤 */}
             {!selectedTicker && visibleCandidates.length < Object.keys(activeStrategy.candidates).length && (
                 <div ref={observerTarget} className="h-60 flex items-center justify-center mt-20">
-                    <div className="flex flex-col items-center gap-4">
-                        <div className="w-10 h-10 border-4 border-zinc-200 border-t-blue-600 rounded-full animate-spin" />
-                        <p className="text-xs font-bold text-zinc-400 uppercase tracking-widest">Discovering More...</p>
-                    </div>
+                    <div className="w-10 h-10 border-4 border-zinc-200 border-t-blue-600 rounded-full animate-spin" />
                 </div>
             )}
         </div>
@@ -298,3 +277,11 @@ const EmptyUI = ({ onRetry }: { onRetry: () => void }) => (
         <button onClick={onRetry} className="px-10 py-4 bg-zinc-900 dark:bg-white dark:text-zinc-900 text-white rounded-[2rem] font-black hover:scale-105 active:scale-95 transition-all shadow-xl">Retry Refresh</button>
     </div>
 );
+
+export default function Page() {
+    return (
+        <Suspense fallback={<LoadingUI />}>
+            <AlgorithmTradeContent />
+        </Suspense>
+    );
+}
