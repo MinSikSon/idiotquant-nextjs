@@ -78,6 +78,7 @@ export interface CanditateType {
     key: string;
     ncavRatio: string;
     symbol: string;
+    name?: string;
 }
 export interface DataSourceType {
     balanceSheet: string;     // ex) 'finnhub'
