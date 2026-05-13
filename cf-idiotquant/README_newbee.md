@@ -6,7 +6,6 @@
 ##  사전 준비 (Prerequisites)
 
 - **Node.js**: 프로젝트 루트의 `.nvmrc` 파일에 명시된 버전을 사용하는 것을 강력히 권장합니다. [nvm](https://github.com/nvm-sh/nvm) 또는 [nvm-windows](https://github.com/coreybutler/nvm-windows)를 사용해 버전을 관리해주세요.
-- **Yarn**: 이 프로젝트는 `yarn`을 패키지 매니저로 사용합니다. (`yarn.lock` 파일 존재)
 
 ## 🏁 시작하기 (Getting Started)
 
