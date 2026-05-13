@@ -4,7 +4,7 @@
 
 `cf-idiotquant` 프로젝트는 "지능형 투자 허브(Intelligent Investment Hub)"로 설계된 Next.js 애플리케이션입니다. 주식 가치 평가, 수익률 계산기, 자동 매매 알고리즘(NCAV 전략) 등 다양한 퀀트 금융 도구를 제공합니다.
 
-이 코드베이스는 매우 모듈화되어 있으며, Next.js App Router를 사용하여 각 서비스(예: `(algorithm-trade)`, `(calculator)`, `(search)`)를 별도의 라우트 그룹으로 관리합니다. `@blueprintjs/core`, `framer-motion`, `three.js`와 같은 고급 UI 라이브러리를 통합하여 매우 인터랙티브하고 데이터 중심적인 사용자 경험을 제공합니다.
+이 코드베이스는 매우 모듈화되어 있으며, Next.js App Router를 사용하여 각 서비스(예: `(algorithm-trade)`, `(calculator)`, `(search)`)를 별도의 라우트 그룹으로 관리합니다. `framer-motion`, `three.js`와 같은 고급 UI 라이브러리를 통합하여 매우 인터랙티브하고 데이터 중심적인 사용자 경험을 제공합니다.
 
 ## 2. 코드베이스 구조 분석
 
@@ -15,14 +15,14 @@
 - **`lib/`**: 비즈니스 로직의 핵심입니다.
   - `features/`: 도메인별로 매우 구조화되어 있습니다 (예: `algorithmTrade`, `financialInfo`, `koreaInvestment`). 확장이 용이한 강력한 패턴입니다.
   - `actions.tsx`, `store.tsx`, `hooks.tsx`: 중앙 집중식 상태 관리(Redux) 및 데이터 페칭 로직을 포함합니다.
-- **`components/`**: 재사용 가능한 UI 컴포넌트들 (Radix UI, BlueprintJS).
+- **`components/`**: 재사용 가능한 UI 컴포넌트들 (Radix UI).
 
 ### 🛠 기술 스택
 
 - **프레임워크**: Next.js 14 (App Router)
 - **언어**: TypeScript
 - **상태 관리**: Red/Redux Toolkit (`@reduxjs/toolkit`)
-- **스타일링**: Tailwind CSS, PostCSS, BlueprintJS, Radix UI
+- **스타일링**: Tailwind CSS, PostCSS, Radix UI
 - **애니메이션**: Framer Motion, GSAP, Three.js, OGL
 - **데이터베이스/ORM**: Drizzle ORM (`d1-adapter`, `drizzle-adapter`), Cloudflare D1/Workers 통합 암시.
 - **인증**: NextAuth.js (Auth.js)
@@ -56,7 +56,7 @@
 
 #### 3. 통합 디자인 시스템
 
-- **문제점**: `BlueprintJS`, `Radix UI`, `Tailwind`가 혼재되어 사용되고 있습니다. 강력한 도구들이지만 사용자 인터랙션의 일관성을 해칠 수 있습니다.
+- **문제점**: `Radix UI`, `Tailwind`가 혼재되어 사용되고 있습니다. 강력한 도구들이지만 사용자 인터랙션의 일관성을 해칠 수 있습니다.
 - **해결책**: 단일 디자인 언어(예: Radix + Tailwind 중심)를 기준으로 인터랙션 패턴(모달, 버튼, 입력창 등)을 표준화하여 제품이 일관되고 전문적으로 보이도록 합니다 합니다.
 
 #### 4. 데이터 신뢰성 및 에러 핸들링

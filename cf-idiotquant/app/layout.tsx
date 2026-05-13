@@ -1,15 +1,10 @@
-import "@/app/global.css"
-import { StoreProvider } from "./StoreProvider"
-import NavbarWithSimpleLinks from "@/components/navigation"
+import "@/app/global.css";
+import { StoreProvider } from "./StoreProvider";
+import NavbarWithSimpleLinks from "@/components/navigation";
 import { ThemeProviderClient } from "./ThemeProviderClient";
-
-// app/layout.tsx
-import "@blueprintjs/core/lib/css/blueprint.css";
-import "@blueprintjs/icons/lib/css/blueprint-icons.css";
-// Normalize는 선택사항이지만 Blueprint와 잘 어우러집니다.
-import "normalize.css/normalize.css";
 import { AuthProvider } from "@/components/auth-provider";
 import Script from "next/script";
+import { cn } from "@/lib/utils";
 
 export const metadata = {
   title: {
@@ -17,7 +12,6 @@ export const metadata = {
     template: '%s | IdiotQuant',
   },
   description: '데이터로 증명된 퀀트 전략을 통해 최적의 주식 종목을 추천합니다. 스마트한 투자의 시작, 이디엇퀀트.',
-  // 한국어 타겟팅 최적화
   alternates: {
     canonical: 'https://idiotquant.com',
   },
@@ -33,7 +27,7 @@ export const metadata = {
 
 const jsonLd = {
   '@context': 'https://schema.org',
-  '@type': 'WebApplication', // 또는 SoftwareApplication
+  '@type': 'WebApplication',
   'name': 'IdiotQuant',
   'url': 'https://idiotquant.com',
   'description': 'Quantitative stock recommendation strategy service.',
@@ -49,34 +43,41 @@ export default function RootLayout({
   return (
     <html lang="ko" suppressHydrationWarning>
       <head>
-        {/* 1. 구조화 데이터 주입 (검색 결과 최적화) */}
+        {/* 1. 구조화 데이터 주입 */}
         <Script
           id="structured-data"
           type="application/ld+json"
-          strategy="afterInteractive" // 페이지 상호작용이 가능해진 직후 주입
+          strategy="afterInteractive"
           dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
         />
-        {/* 2. 애드센스 코드 스니펫 주입 */}
+        {/* 2. 애드센스 코드 스니펫 */}
         <script
           async
           src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-6995198721227228"
           crossOrigin="anonymous"
         />
-        {/* 3. (선택사항) 메타 태그까지 넣어두면 더 확실합니다 */}
         <meta name="google-adsense-account" content="ca-pub-6995198721227228" />
       </head>
-      <body className="md:flex lg:flex bp5-body">
+      <body className={cn(
+        "min-h-screen font-sans antialiased bg-white dark:bg-black text-zinc-900 dark:text-zinc-50",
+        "flex flex-col md:flex-row" // 모바일은 세로, 데스크탑은 가로 레이아웃
+      )}>
         <StoreProvider>
           <ThemeProviderClient>
             <AuthProvider>
+              {/* 사이드바/네비게이션 */}
               <NavbarWithSimpleLinks />
-              <div className="md:flex-1 lg:flex-1 w-full h-full scroll-auto dark:!bg-black">
-                {children}
-              </div>
+              
+              {/* 메인 콘텐츠 영역 */}
+              <main className="flex-1 w-full min-h-screen overflow-y-auto overflow-x-hidden">
+                <div className="mx-auto w-full max-w-7xl">
+                  {children}
+                </div>
+              </main>
             </AuthProvider>
           </ThemeProviderClient>
-        </StoreProvider >
+        </StoreProvider>
       </body>
     </html>
-  )
+  );
 }

@@ -1,29 +1,21 @@
 'use client';
 
 import React, { useState, useEffect, useCallback } from 'react';
-import {
-  Button,
-  Card,
-  Elevation,
-  Icon,
-  NumericInput,
-  Section,
-  SectionCard,
-  Text,
-  ButtonGroup,
-  Divider,
-  Callout,
-  Intent,
-  Slider,
-  Tag,
-  H2,
-  Switch,
-} from '@blueprintjs/core';
-import { IconNames } from '@blueprintjs/icons';
-import { CalculatorIcon } from '@heroicons/react/24/outline';
-import { motion } from 'framer-motion';
+import { 
+  Calculator as CalcIcon, 
+  TrendingUp, 
+  User, 
+  ArrowLeftRight, 
+  Info, 
+  Lightbulb, 
+  AlertTriangle,
+  ChevronUp,
+  ChevronDown
+} from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
 import ResultChart, { ChartDataItem } from './ResultChart';
 
+// --- Utils ---
 const formatKrw = (value: number): string => {
   if (value === 0) return '0원';
   const absValue = Math.abs(value);
@@ -129,229 +121,238 @@ export default function Calculator() {
   const updateInput = (key: keyof CalcInputs, val: any) => setInputs(p => ({ ...p, [key]: val }));
 
   return (
-    <div className="bg-[#f4f4f7] dark:bg-[#050505] min-h-screen p-4 md:p-10 font-sans">
-      <div className="max-w-6xl mx-auto space-y-10">
+    <div className="bg-zinc-50 dark:bg-zinc-950 min-h-screen p-4 md:p-10 font-sans text-zinc-900 dark:text-zinc-100">
+      <div className="max-w-6xl mx-auto space-y-12">
 
-        <header className="flex flex-col items-center text-center space-y-3">
-          <div className="bg-indigo-600 p-3 rounded-2xl shadow-xl shadow-indigo-500/30">
-            <CalculatorIcon className="h-8 w-8 text-white" />
+        {/* <header className="flex flex-col items-center text-center space-y-4">
+          <div className="bg-blue-600 p-4 rounded-2xl shadow-xl shadow-blue-500/20 text-white">
+            <CalcIcon size={32} />
           </div>
-          {/* <H2 className="!m-0 font-black tracking-tight text-zinc-900 dark:!text-zinc-50 text-3xl">Precision Planner</H2> */}
-        </header>
+          <h1 className="text-3xl font-black tracking-tight">Precision Financial Planner</h1>
+          <p className="text-zinc-500 font-medium">데이터에 기반한 정밀한 은퇴 및 자산 성장 시뮬레이션</p>
+        </header> */}
 
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-10">
 
-          {/* 왼쪽: 입력 영역 */}
-          <div className="lg:col-span-5 space-y-8">
+          {/* 왼쪽: 입력 컨트롤 영역 */}
+          <div className="lg:col-span-5 space-y-10">
 
-            {/* 섹션 1: 자금 & 수익 */}
-            <div className="space-y-4">
-              <div className="flex items-center gap-2 px-1">
-                <Icon icon={IconNames.CHART} className="text-indigo-600 dark:text-indigo-400" />
-                <span className="font-bold text-xs uppercase tracking-widest text-zinc-600 dark:text-zinc-400">핵심 자산 지표</span>
-              </div>
-
-              <Card elevation={Elevation.ZERO} className="!rounded-3xl border border-zinc-200 dark:border-zinc-800 p-6 space-y-8 bg-white dark:bg-zinc-900">
-                <div className="space-y-4">
-                  <div className="flex justify-between items-center">
-                    <Text className="text-xs font-bold text-zinc-500 dark:text-zinc-400 uppercase">초기 자산</Text>
-                    <span className="text-lg font-black text-indigo-600 dark:text-indigo-400">{formatKrw(inputs.investmentAmount)}</span>
-                  </div>
-                  <NumericInput
-                    fill large min={0}
-                    value={inputs.investmentAmount}
-                    onValueChange={(v) => updateInput('investmentAmount', v)}
-                    className="!rounded-xl border-zinc-200 dark:border-zinc-700"
-                    buttonPosition="none"
-                  />
-                </div>
-
-                <div className="space-y-4">
-                  <div className="flex justify-between items-center">
-                    <Text className="text-xs font-bold text-zinc-500 dark:text-zinc-400 uppercase">연 수익률</Text>
-                    <span className="text-xl font-black text-orange-600 dark:text-orange-500">{inputs.interestRate}%</span>
-                  </div>
-                  <Slider
-                    min={0} max={100} stepSize={0.5} labelStepSize={25}
-                    onChange={(v) => updateInput('interestRate', v)}
-                    value={inputs.interestRate}
-                  />
-                  <div className="flex items-center justify-between bg-zinc-50 dark:bg-zinc-800 p-4 rounded-2xl border border-zinc-100 dark:border-zinc-700">
-                    <span className="text-[11px] font-bold text-zinc-600 dark:text-zinc-300 uppercase tracking-tighter">이자소득세(15.4%) 적용</span>
-                    <Switch
-                      large className="!mb-0"
-                      checked={inputs.applyTax}
-                      onChange={(e) => updateInput('applyTax', e.currentTarget.checked)}
+            {/* 자산 지표 */}
+            <SectionWrapper title="핵심 자산 지표" icon={<TrendingUp size={18} />}>
+              <div className="space-y-8 bg-white dark:bg-zinc-900 p-8 rounded-[2rem] border border-zinc-200 dark:border-zinc-800 shadow-sm">
+                <InputGroup label="초기 투자 금액" value={formatKrw(inputs.investmentAmount)} color="text-blue-600">
+                  <div className="relative group">
+                    <input 
+                      type="number"
+                      value={inputs.investmentAmount}
+                      onChange={(e) => updateInput('investmentAmount', Number(e.target.value))}
+                      className="w-full bg-zinc-50 dark:bg-zinc-800 border-none rounded-xl px-4 py-3 font-bold text-lg focus:ring-2 focus:ring-blue-500 transition-all outline-none"
                     />
+                    <div className="absolute right-4 top-1/2 -translate-y-1/2 text-zinc-400 text-xs font-bold uppercase">만원</div>
                   </div>
-                </div>
-              </Card>
-            </div>
+                </InputGroup>
 
-            {/* 섹션 2: 생애 주기 */}
-            <div className="space-y-4">
-              <div className="flex items-center gap-2 px-1">
-                <Icon icon={IconNames.USER} className="text-indigo-600 dark:text-indigo-400" />
-                <span className="font-bold text-xs uppercase tracking-widest text-zinc-600 dark:text-zinc-400">나이 및 기간</span>
-              </div>
-              <Card elevation={Elevation.ZERO} className="!rounded-3xl border border-zinc-200 dark:border-zinc-800 p-6 bg-white dark:bg-zinc-900">
-                <div className="grid grid-cols-1 gap-8">
-                  {[
-                    { label: '현재 나이', key: 'startAge' },
-                    { label: '은퇴 및 적립 중단 나이', key: 'retirementAge' },
-                    { label: '시뮬레이션 종료 나이', key: 'targetAge' },
-                  ].map((age) => (
-                    <div key={age.key} className="space-y-3">
-                      <div className="flex justify-between items-center">
-                        <span className="text-[11px] font-bold text-zinc-500 dark:text-zinc-400 uppercase">{age.label}</span>
-                        <span className="text-lg font-black text-zinc-900 dark:text-zinc-50">{inputs[age.key as keyof CalcInputs]}세</span>
-                      </div>
-                      <Slider
-                        min={20} max={100} stepSize={1} labelStepSize={20}
-                        onChange={(v) => updateInput(age.key as keyof CalcInputs, v)}
-                        value={inputs[age.key as keyof CalcInputs] as number}
+                <InputGroup label="연 목표 수익률" value={`${inputs.interestRate}%`} color="text-orange-600">
+                  <input 
+                    type="range" min="0" max="30" step="0.1"
+                    value={inputs.interestRate}
+                    onChange={(e) => updateInput('interestRate', Number(e.target.value))}
+                    className="w-full h-1.5 bg-zinc-200 dark:bg-zinc-700 rounded-lg appearance-none cursor-pointer accent-orange-500"
+                  />
+                  <div className="flex items-center justify-between mt-6 p-4 bg-zinc-50 dark:bg-zinc-800/50 rounded-2xl border border-zinc-100 dark:border-zinc-800 transition-colors">
+                    <span className="text-[11px] font-black text-zinc-500 uppercase tracking-tight">이자소득세(15.4%) 자동 차감</span>
+                    <label className="relative inline-flex items-center cursor-pointer">
+                      <input 
+                        type="checkbox" checked={inputs.applyTax} 
+                        onChange={(e) => updateInput('applyTax', e.target.checked)}
+                        className="sr-only peer" 
                       />
-                    </div>
-                  ))}
-                </div>
-              </Card>
-            </div>
-
-            {/* 섹션 3: 현금 흐름 */}
-            <div className="space-y-4">
-              <div className="flex items-center gap-2 px-1">
-                <Icon icon={IconNames.FLOWS} className="text-indigo-600 dark:text-indigo-400" />
-                <span className="font-bold text-xs uppercase tracking-widest text-zinc-600 dark:text-zinc-400">매월 수입 및 지출</span>
+                      <div className="w-11 h-6 bg-zinc-200 peer-focus:outline-none rounded-full peer dark:bg-zinc-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+                    </label>
+                  </div>
+                </InputGroup>
               </div>
-              <Card elevation={Elevation.ZERO} className="!rounded-3xl border border-zinc-200 dark:border-zinc-800 p-6 space-y-8 bg-white dark:bg-zinc-900">
-                <div className="space-y-4">
-                  <div className="flex justify-between items-center">
-                    <div className="flex flex-col">
-                      <span className="text-xs font-bold text-zinc-500 dark:text-zinc-400 uppercase">월 적립액</span>
-                      <span className="text-[11px] text-indigo-600 dark:text-indigo-400 font-bold">매년 {inputs.contributionGrowthRate.toFixed(1)}% 증가</span>
-                    </div>
-                    <span className="text-lg font-black text-zinc-900 dark:text-zinc-50">{formatKrw(inputs.contributions)}</span>
-                  </div>
-                  <NumericInput
-                    fill large value={inputs.contributions}
-                    onValueChange={(v) => updateInput('contributions', v)}
-                    className="!rounded-xl border-zinc-200 dark:border-zinc-700"
+            </SectionWrapper>
+
+            {/* 생애 주기 */}
+            <SectionWrapper title="나이 및 기간 설정" icon={<User size={18} />}>
+              <div className="space-y-8 bg-white dark:bg-zinc-900 p-8 rounded-[2rem] border border-zinc-200 dark:border-zinc-800 shadow-sm">
+                <AgeSlider label="현재 나이" value={inputs.startAge} min={20} max={100} onChange={(v:any) => updateInput('startAge', v)} />
+                <AgeSlider label="은퇴 및 적립 중단 나이" value={inputs.retirementAge} min={20} max={100} onChange={(v:any) => updateInput('retirementAge', v)} />
+                <AgeSlider label="시뮬레이션 종료 나이" value={inputs.targetAge} min={20} max={100} onChange={(v:any) => updateInput('targetAge', v)} />
+              </div>
+            </SectionWrapper>
+
+            {/* 현금 흐름 */}
+            <SectionWrapper title="매월 현금 흐름" icon={<ArrowLeftRight size={18} />}>
+              <div className="space-y-8 bg-white dark:bg-zinc-900 p-8 rounded-[2rem] border border-zinc-200 dark:border-zinc-800 shadow-sm">
+                <InputGroup label="월 정립액" value={formatKrw(inputs.contributions)} subLabel={`매년 ${inputs.contributionGrowthRate}% 증가`}>
+                  <input 
+                    type="number" value={inputs.contributions}
+                    onChange={(e) => updateInput('contributions', Number(e.target.value))}
+                    className="w-full bg-zinc-50 dark:bg-zinc-800 border-none rounded-xl px-4 py-3 font-bold mb-4 outline-none focus:ring-2 focus:ring-blue-500"
                   />
-                  <Slider
-                    min={0} max={10} stepSize={0.1} labelStepSize={5}
-                    onChange={(v) => updateInput('contributionGrowthRate', v)}
+                  <input 
+                    type="range" min="0" max="15" step="0.1"
                     value={inputs.contributionGrowthRate}
+                    onChange={(e) => updateInput('contributionGrowthRate', Number(e.target.value))}
+                    className="w-full h-1.5 bg-zinc-200 dark:bg-zinc-700 rounded-lg appearance-none cursor-pointer accent-blue-600"
                   />
-                </div>
+                </InputGroup>
 
-                <Divider className="dark:border-zinc-800" />
+                <div className="h-px bg-zinc-100 dark:bg-zinc-800" />
 
-                <div className="space-y-4">
-                  <div className="flex justify-between items-center">
-                    <div className="flex flex-col">
-                      <span className="text-xs font-bold text-zinc-500 dark:text-zinc-400 uppercase">월 생활비</span>
-                      <span className="text-[11px] text-red-600 dark:text-red-400 font-bold">매년 {inputs.expenseGrowthRate.toFixed(1)}% 인상</span>
-                    </div>
-                    <span className="text-lg font-black text-red-600 dark:text-red-500">{formatKrw(inputs.monthlyExpense)}</span>
-                  </div>
-                  <NumericInput
-                    fill large value={inputs.monthlyExpense}
-                    onValueChange={(v) => updateInput('monthlyExpense', v)}
-                    className="!rounded-xl border-zinc-200 dark:border-zinc-700"
+                <InputGroup label="월 생활비" value={formatKrw(inputs.monthlyExpense)} subLabel={`매년 ${inputs.expenseGrowthRate}% 인상`} color="text-red-500">
+                  <input 
+                    type="number" value={inputs.monthlyExpense}
+                    onChange={(e) => updateInput('monthlyExpense', Number(e.target.value))}
+                    className="w-full bg-zinc-50 dark:bg-zinc-800 border-none rounded-xl px-4 py-3 font-bold mb-4 outline-none focus:ring-2 focus:ring-red-500"
                   />
-                  <Slider
-                    min={0} max={10} stepSize={0.1} labelStepSize={5}
-                    onChange={(v) => updateInput('expenseGrowthRate', v)}
+                  <input 
+                    type="range" min="0" max="10" step="0.1"
                     value={inputs.expenseGrowthRate}
+                    onChange={(e) => updateInput('expenseGrowthRate', Number(e.target.value))}
+                    className="w-full h-1.5 bg-zinc-200 dark:bg-zinc-700 rounded-lg appearance-none cursor-pointer accent-red-500"
                   />
-                </div>
-              </Card>
-            </div>
+                </InputGroup>
+              </div>
+            </SectionWrapper>
           </div>
 
-          {/* 오른쪽: 결과 영역 */}
-          <div className="lg:col-span-7 space-y-8">
-            <motion.div layout initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}>
-              <Card
-                elevation={Elevation.FOUR}
-                className={`!rounded-[2.5rem] !p-10 border-0 shadow-2xl relative overflow-hidden transition-all duration-500 ${results.finalValue >= 0
-                  ? 'bg-[#111111] text-white shadow-indigo-500/20'
-                  : 'bg-[#3b0808] text-white shadow-red-500/20'
-                  }`}
-              >
-                <div className="relative z-10 space-y-8">
-                  <div className="space-y-3">
-                    <span className={`text-xs font-black uppercase tracking-[0.3em] drop-shadow-sm ${results.finalValue >= 0 ? 'text-indigo-400' : 'text-red-400'
-                      }`}>
-                      {inputs.targetAge}세 예상 자산 잔액
+          {/* 오른쪽: 메인 결과 및 차트 */}
+          <div className="lg:col-span-7 space-y-10">
+            <motion.div layout initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }}>
+              <div className={`p-10 rounded-[3rem] shadow-2xl relative overflow-hidden transition-all duration-700 ${
+                results.finalValue >= 0 ? 'bg-zinc-900 text-white shadow-blue-500/10' : 'bg-red-950 text-white shadow-red-500/20'
+              }`}>
+                <div className="relative z-10 space-y-10">
+                  <div className="space-y-4">
+                    <span className={`text-[10px] font-black uppercase tracking-[0.4em] px-3 py-1 rounded-full border border-white/10 ${
+                      results.finalValue >= 0 ? 'text-blue-400' : 'text-red-400'
+                    }`}>
+                      {inputs.targetAge}세 예상 최종 자산
                     </span>
-
-                    <H2 className={`!m-0 text-5xl md:text-7xl font-black tracking-tighter leading-tight drop-shadow-lg ${results.finalValue >= 0
-                      ? 'text-yellow-400'
-                      : 'text-red-500'
-                      }`}>
+                    <h2 className={`text-5xl md:text-7xl font-black tracking-tighter transition-colors ${
+                      results.finalValue >= 0 ? 'text-blue-400' : 'text-red-500'
+                    }`}>
                       {formatKrw(results.finalValue)}
-                    </H2>
-
+                    </h2>
                     {results.finalValue < 0 && (
-                      <div className="flex items-center gap-2 mt-4 bg-red-500/20 w-fit px-3 py-1 rounded-full border border-red-500/50">
-                        <Icon icon={IconNames.WARNING_SIGN} intent="danger" size={14} />
-                        <span className="text-red-400 font-bold text-[10px] uppercase tracking-wider">Warning: Asset Depletion</span>
+                      <div className="flex items-center gap-2 text-red-400 text-xs font-bold animate-pulse">
+                        <AlertTriangle size={14} /> 자산 고갈 위험군: 은퇴 자금 재설계가 시급합니다.
                       </div>
                     )}
                   </div>
 
-                  <div className="flex flex-col gap-0 pt-0 border-t border-white/10">
-                    <div className="bg-white/5 p-4 rounded-2xl border border-white/5">
-                      <span className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest block mb-1">총 투입 원금</span>
-                      <div className="text-xl font-bold text-zinc-500">{formatKrw(results.totalInvestment)}</div>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="bg-white/5 p-6 rounded-2xl border border-white/10 backdrop-blur-sm">
+                      <span className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest block mb-2">총 투입 원금</span>
+                      <div className="text-xl font-bold">{formatKrw(results.totalInvestment)}</div>
                     </div>
-                    <div className="bg-white/5 p-4 rounded-2xl text-right border border-white/5">
-                      <span className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest block mb-1">최종 수익률</span>
-                      <div className={`text-3xl font-black drop-shadow-sm ${results.finalRateOfReturn >= 0 ? 'text-green-400' : 'text-red-400'
-                        }`}>
+                    <div className="bg-white/5 p-6 rounded-2xl border border-white/10 backdrop-blur-sm text-right">
+                      <span className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest block mb-2">최종 수익률</span>
+                      <div className={`text-3xl font-black ${results.finalRateOfReturn >= 0 ? 'text-emerald-400' : 'text-red-400'}`}>
                         {results.finalRateOfReturn}%
                       </div>
                     </div>
                   </div>
                 </div>
-
-                <div className={`absolute -right-10 -bottom-10 w-80 h-80 rounded-full blur-[120px] opacity-20 ${results.finalValue >= 0 ? 'bg-indigo-600' : 'bg-red-700'
-                  }`} />
-              </Card>
+                
+                {/* 배경 오로라 효과 */}
+                <div className={`absolute -right-20 -top-20 w-96 h-96 rounded-full blur-[140px] opacity-20 ${
+                  results.finalValue >= 0 ? 'bg-blue-600' : 'bg-red-600'
+                }`} />
+              </div>
             </motion.div>
 
-            {/* 차트 카드 가독성 개선 */}
-            <Card className="!rounded-3xl !p-8 border-0 shadow-xl bg-white dark:bg-zinc-900">
-              <div className="flex justify-between items-center mb-8">
+            {/* 차트 영역 */}
+            <div className="bg-white dark:bg-zinc-900 p-8 rounded-[2.5rem] border border-zinc-200 dark:border-zinc-800 shadow-sm">
+              <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 mb-8">
                 <div>
-                  <Text className="!m-0 font-black text-xl text-zinc-900 dark:text-zinc-50">자산 성장 곡선</Text>
-                  <Text className="text-xs text-zinc-500 dark:text-zinc-400 font-medium mt-1">나이에 따른 복리 및 지출 반영 궤적</Text>
+                  <h3 className="text-xl font-black tracking-tight">자산 성장 시뮬레이션</h3>
+                  <p className="text-xs text-zinc-500 font-medium mt-1">복리와 인플레이션이 반영된 장기 성장 곡선</p>
                 </div>
               </div>
-              <div className="bg-zinc-50 dark:bg-black/40 rounded-2xl p-0 border border-zinc-100 dark:border-zinc-800">
-                <ResultChart data={results.chartData} height="h-[500px] md:h-[600px]" />
+              <div className="bg-zinc-50 dark:bg-black/40 rounded-2xl overflow-hidden border border-zinc-100 dark:border-zinc-800">
+                <ResultChart data={results.chartData} height="h-[500px] md:h-[650px]" />
               </div>
-            </Card>
+            </div>
 
+            {/* 도움말 가이드 */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <Callout icon={IconNames.INFO_SIGN} className="!rounded-2xl !p-4 border-0 shadow-md dark:bg-zinc-900 bg-white">
-                <h5 className="pl-6 font-bold mb-2 text-zinc-800 dark:text-zinc-100">복리 상식</h5>
-                <Text className="text-xs leading-relaxed text-zinc-600 dark:text-zinc-400">
-                  수익률 <strong>{inputs.interestRate}%</strong>는 강력한 엔진입니다. 하지만 매년 <strong>{inputs.expenseGrowthRate.toFixed(1)}%</strong>씩 오르는 물가 상승은 은퇴 후 자산을 갉아먹는 가장 큰 적입니다.
-                </Text>
-              </Callout>
-              <Callout intent={results.finalValue > 0 ? Intent.SUCCESS : Intent.DANGER} icon={IconNames.LIGHTBULB} className="!rounded-2xl !p-4 border-0 shadow-md dark:bg-zinc-900 bg-white">
-                <h5 className="pl-6 font-bold mb-2 text-zinc-800 dark:text-zinc-100">전문가 진단</h5>
-                <Text className="text-xs leading-relaxed text-zinc-600 dark:text-zinc-400">
-                  {results.finalValue > 0
-                    ? `현재 계획은 매우 탄탄합니다. 은퇴 시점인 ${inputs.retirementAge}세 이후에도 자산이 안정적으로 유지될 것으로 보입니다.`
-                    : `자산 고갈이 예상됩니다. 은퇴 시점을 늦추거나, 수익률 목표를 높이는 전략적 수정이 필요합니다.`}
-                </Text>
-              </Callout>
+              <CalloutWrapper icon={<Info size={20} className="text-blue-500" />} title="복리 상식">
+                수익률 <span className="font-bold text-blue-600">{inputs.interestRate}%</span>는 강력한 부의 증식 엔진입니다. 하지만 물가 상승률을 고려하지 않은 은퇴 계획은 자산을 빠르게 고갈시킬 수 있으므로 주의가 필요합니다.
+              </CalloutWrapper>
+              
+              <CalloutWrapper 
+                icon={<Lightbulb size={20} className={results.finalValue > 0 ? "text-emerald-500" : "text-red-500"} />} 
+                title="전문가 진단"
+              >
+                {results.finalValue > 0
+                  ? `현재 계획은 매우 탄탄합니다. 은퇴 후에도 자산이 지속적으로 성장하는 구조입니다.`
+                  : `자산 고갈이 예상됩니다. 적립액을 늘리거나 지출을 줄이는 등의 수정 전략이 권장됩니다.`}
+              </CalloutWrapper>
             </div>
           </div>
         </div>
+      </div>
+    </div>
+  );
+}
+
+// --- 하위 컴포넌트들 ---
+
+function SectionWrapper({ title, icon, children }: { title: string, icon: React.ReactNode, children: React.ReactNode }) {
+  return (
+    <section className="space-y-4">
+      <div className="flex items-center gap-2 px-1 text-zinc-500">
+        {icon}
+        <h2 className="text-[11px] font-black uppercase tracking-[0.2em]">{title}</h2>
+      </div>
+      {children}
+    </section>
+  );
+}
+
+function InputGroup({ label, value, subLabel, color = "text-zinc-900 dark:text-zinc-100", children }: any) {
+  return (
+    <div className="space-y-3">
+      <div className="flex justify-between items-end">
+        <div>
+          <span className="text-[10px] font-black text-zinc-400 uppercase tracking-widest block mb-0.5">{label}</span>
+          {subLabel && <span className="text-[11px] font-bold text-blue-500/80 italic">{subLabel}</span>}
+        </div>
+        <span className={`text-lg font-black ${color}`}>{value}</span>
+      </div>
+      {children}
+    </div>
+  );
+}
+
+function AgeSlider({ label, value, min, max, onChange }: any) {
+  return (
+    <div className="space-y-4">
+      <div className="flex justify-between items-center">
+        <span className="text-[10px] font-black text-zinc-400 uppercase tracking-widest">{label}</span>
+        <span className="text-lg font-black">{value}세</span>
+      </div>
+      <input 
+        type="range" min={min} max={max}
+        value={value}
+        onChange={(e) => onChange(Number(e.target.value))}
+        className="w-full h-1.5 bg-zinc-200 dark:bg-zinc-700 rounded-lg appearance-none cursor-pointer accent-blue-600"
+      />
+    </div>
+  );
+}
+
+function CalloutWrapper({ icon, title, children }: any) {
+  return (
+    <div className="p-6 bg-white dark:bg-zinc-900 rounded-3xl border border-zinc-200 dark:border-zinc-800 shadow-sm flex gap-4">
+      <div className="flex-shrink-0 mt-1">{icon}</div>
+      <div>
+        <h5 className="font-bold text-sm mb-1">{title}</h5>
+        <p className="text-xs leading-relaxed text-zinc-500 dark:text-zinc-400 font-medium">{children}</p>
       </div>
     </div>
   );

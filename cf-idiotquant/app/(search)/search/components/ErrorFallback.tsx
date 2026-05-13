@@ -1,6 +1,7 @@
+"use client";
+
 import React from 'react';
-import { Button, Callout, Icon, Intent } from '@blueprintjs/core';
-import { IconNames } from '@blueprintjs/icons';
+import { AlertCircle, RefreshCcw, RotateCw } from 'lucide-react';
 
 interface ErrorFallbackProps {
   error: Error;
@@ -12,40 +13,61 @@ export function ErrorFallback({
   resetErrorBoundary,
 }: ErrorFallbackProps) {
   return (
-    <div className="flex flex-col items-center justify-center py-20 px-6 text-center">
-      <div className="mb-6 p-4 bg-red-50 dark:bg-red-950/30 rounded-full">
-        <Icon icon={IconNames.NOTIFICATIONS} size={48} className="text-red-5im" />
+    <div className="flex flex-col items-center justify-center py-24 px-6 text-center animate-in fade-in zoom-in duration-300">
+      {/* 경고 아이콘 영역 */}
+      <div className="mb-8 relative">
+        <div className="absolute inset-0 bg-red-500/20 blur-2xl rounded-full" />
+        <div className="relative p-6 bg-red-50 dark:bg-red-500/10 border border-red-100 dark:border-red-500/20 rounded-3xl">
+          <AlertCircle size={48} className="text-red-500 dark:text-red-400" />
+        </div>
       </div>
 
-      <h3 className="text-2xl font-bold text-zinc-900 dark:text-zinc-100 mb-2">
+      {/* 텍스트 영역 */}
+      <h3 className="text-2xl font-black text-zinc-900 dark:text-zinc-100 mb-3 tracking-tight">
         데이터를 불러오는 중 문제가 발생했습니다
       </h3>
 
-      <p className="text-zinc-500 dark:text-zinc-400 mb-8 max-w-md">
+      <p className="text-zinc-500 dark:text-zinc-400 mb-10 max-w-sm font-medium leading-relaxed">
         {error.message ||
           '주식 정보를 가져오는 중에 예상치 못한 오류가 발생했습니다. 네트워크 상태를 확인하거나 잠시 후 다시 시도해주세요.'}
       </p>
 
-      <div className="flex gap-3">
-        <Button
-          intent={Intent.DANGER}
-          className="!rounded-xl !px-6 !py-2 font-bold"
+      {/* 액션 버튼 그룹 */}
+      <div className="flex flex-col sm:flex-row gap-3 w-full max-w-xs sm:max-w-none justify-center">
+        <button
           onClick={resetErrorBoundary}
+          className="inline-flex items-center justify-center gap-2 px-8 py-3 bg-red-500 hover:bg-red-600 dark:bg-red-600 dark:hover:bg-red-700 text-white rounded-2xl font-bold transition-all active:scale-95 shadow-lg shadow-red-500/20"
         >
-          <Icon icon={IconNames.REFRESH} size={16} className="mr-2" />
+          <RefreshCcw size={18} className="animate-spin-slow" />
           다시 시도
-        </Button>
-        <Button
-          className="!rounded-xl !px-6 !py-2 font-bold"
+        </button>
+        
+        <button
           onClick={() => window.location.reload()}
+          className="inline-flex items-center justify-center gap-2 px-8 py-3 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 text-zinc-700 dark:text-zinc-300 rounded-2xl font-bold hover:bg-zinc-50 dark:hover:bg-zinc-800 transition-all active:scale-95"
         >
-          새로고침
-        </Button>
+          <RotateCw size={18} />
+          페이지 새로고침
+        </button>
       </div>
 
-      <div className="mt-12 text-xs text-zinc-400 uppercase tracking-widest">
-        Error Code: ERR_STOCK_FETCH_FAILURE
+      {/* 에러 코드 푸터 */}
+      <div className="mt-16 flex flex-col items-center gap-2">
+        <div className="h-px w-12 bg-zinc-200 dark:bg-zinc-800" />
+        <span className="text-[10px] text-zinc-400 uppercase tracking-[0.3em] font-black">
+          Error Code: ERR_STOCK_FETCH_FAILURE
+        </span>
       </div>
+
+      <style jsx>{`
+        .animate-spin-slow {
+          animation: spin 3s linear infinite;
+        }
+        @keyframes spin {
+          from { transform: rotate(0deg); }
+          to { transform: rotate(-360deg); }
+        }
+      `}</style>
     </div>
   );
 }

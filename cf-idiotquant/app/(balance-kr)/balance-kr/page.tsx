@@ -1,234 +1,238 @@
-"use client"
+"use client";
 
 import { Suspense, useEffect, useState } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
-import {
-    H3,
-    Text,
-    Divider,
-    NonIdealState,
-    Icon,
-    Intent,
-    Breadcrumbs,
-    BreadcrumbProps,
-    Spinner
-} from "@blueprintjs/core";
-import { IconNames } from "@blueprintjs/icons";
+import { 
+  Loader2, 
+  Lock, 
+  LayoutDashboard, 
+  ChevronRight, 
+  MapPin, 
+  Flag, 
+  Activity,
+  Layers
+} from "lucide-react";
+import { useSession } from "next-auth/react";
 
 import { useAppDispatch, useAppSelector } from "@/lib/hooks";
 import {
-    reqGetInquireBalance,
-    getKoreaInvestmentBalance,
-    KoreaInvestmentBalance,
-    getKoreaInvestmentOrderCash,
-    KoreaInvestmentOrderCash,
-    reqPostOrderCash
+  reqGetInquireBalance,
+  getKoreaInvestmentBalance,
+  KoreaInvestmentBalance,
+  getKoreaInvestmentOrderCash,
+  KoreaInvestmentOrderCash,
 } from "@/lib/features/koreaInvestment/koreaInvestmentSlice";
+import { reqGetCapitalToken } from "@/lib/features/algorithmTrade/algorithmTradeSlice";
 import {
-    reqGetCapitalToken
-} from "@/lib/features/algorithmTrade/algorithmTradeSlice";
-import {
-    KakaoTotal,
-    reqGetKakaoMemberList,
-    selectKakaoMemberList,
-    selectKakaoTotal
+  reqGetKakaoMemberList,
+  selectKakaoMemberList,
+  selectKakaoTotal,
+  KakaoTotal
 } from "@/lib/features/kakao/kakaoSlice";
 import {
-    KrUsCapitalType,
-    reqGetKrCapital,
-    reqGetUsCapital,
-    reqPostKrCapitalTokenMinusAll,
-    reqPostKrCapitalTokenMinusOne,
-    reqPostKrCapitalTokenPlusAll,
-    reqPostKrCapitalTokenPlusOne,
-    selectKrCapital,
-    selectKrCapitalTokenMinusAll,
-    selectKrCapitalTokenMinusOne,
-    selectKrCapitalTokenPlusAll,
-    selectKrCapitalTokenPlusOne
+  KrUsCapitalType,
+  reqGetKrCapital,
+  reqGetUsCapital,
+  reqPostKrCapitalTokenMinusAll,
+  reqPostKrCapitalTokenMinusOne,
+  reqPostKrCapitalTokenPlusAll,
+  reqPostKrCapitalTokenPlusOne,
+  selectKrCapital,
+  selectKrCapitalTokenMinusAll,
+  selectKrCapitalTokenMinusOne,
+  selectKrCapitalTokenPlusAll,
+  selectKrCapitalTokenPlusOne
 } from "@/lib/features/capital/capitalSlice";
 
 import InquireBalanceResult from "@/components/inquireBalanceResult";
 import StockListTable from "@/components/balance/stockListTable";
-import { useSession } from "next-auth/react";
+import { cn } from "@/lib/utils";
 
-const DEBUG = false;
-
-export default function Page() {
-    return (
-        // 핵심: useSearchParams를 사용하는 컴포넌트를 Suspense로 감쌉니다.
-        <Suspense fallback={<LoadingState />}>
-            <BalanceKr />
-        </Suspense>
-    );
-}
-
+// --- Loading State ---
 function LoadingState() {
-    return (
-        <div className="h-screen flex items-center justify-center bp5-dark bg-black">
-            <NonIdealState
-                icon={<Spinner size={50} />}
-                title="데이터를 불러오는 중..."
-                description="잠시만 기다려 주세요."
-            />
-        </div>
-    );
+  return (
+    <div className="h-screen w-full flex flex-col items-center justify-center bg-zinc-50 dark:bg-black">
+      <Loader2 className="w-10 h-10 text-blue-500 animate-spin mb-4" />
+      <h2 className="text-xl font-bold text-zinc-800 dark:text-zinc-200">데이터를 불러오는 중...</h2>
+      <p className="text-zinc-500 dark:text-zinc-400 mt-2">잠시만 기다려 주세요.</p>
+    </div>
+  );
 }
 
+// --- Main Page Export ---
+export default function Page() {
+  return (
+    <Suspense fallback={<LoadingState />}>
+      <BalanceKr />
+    </Suspense>
+  );
+}
+
+// --- Component: BalanceKr ---
 function BalanceKr() {
-    const { data: session, status } = useSession();
+  const { data: session } = useSession();
+  const dispatch = useAppDispatch();
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const pathname = usePathname();
 
-    const dispatch = useAppDispatch();
+  // Redux Selectors
+  const kiBalance: KoreaInvestmentBalance = useAppSelector(getKoreaInvestmentBalance);
+  const krCapital: KrUsCapitalType = useAppSelector(selectKrCapital);
+  const kakaoTotal: KakaoTotal = useAppSelector(selectKakaoTotal);
+  const kakaoMemberList = useAppSelector(selectKakaoMemberList);
 
-    // Selectors
-    const kiBalance: KoreaInvestmentBalance = useAppSelector(getKoreaInvestmentBalance);
-    const kiOrderCash: KoreaInvestmentOrderCash = useAppSelector(getKoreaInvestmentOrderCash);
-    const krCapital: KrUsCapitalType = useAppSelector(selectKrCapital);
-    const kakaoTotal: KakaoTotal = useAppSelector(selectKakaoTotal);
-    const kakaoMemberList = useAppSelector(selectKakaoMemberList);
+  const krCapitalTokenPlusAll = useAppSelector(selectKrCapitalTokenPlusAll);
+  const krCapitalTokenPlusOne = useAppSelector(selectKrCapitalTokenPlusOne);
+  const krCapitalTokenMinusAll = useAppSelector(selectKrCapitalTokenMinusAll);
+  const krCapitalTokenMinusOne = useAppSelector(selectKrCapitalTokenMinusOne);
 
-    const krCapitalTokenPlusAll = useAppSelector(selectKrCapitalTokenPlusAll);
-    const krCapitalTokenPlusOne = useAppSelector(selectKrCapitalTokenPlusOne);
-    const krCapitalTokenMinusAll = useAppSelector(selectKrCapitalTokenMinusAll);
-    const krCapitalTokenMinusOne = useAppSelector(selectKrCapitalTokenMinusOne);
+  const [balanceKey, setBalanceKey] = useState(searchParams.get("key") || String(session?.user?.id || ""));
 
-    // BalanceKr.tsx 또는 BalanceUs.tsx 상단 부분
-    const router = useRouter();
-    const searchParams = useSearchParams();
-    const pathname = usePathname();
+  // 1. URL 파라미터와 balanceKey 상태 동기화
+  useEffect(() => {
+    const urlKey = searchParams.get("key");
+    if (urlKey && urlKey !== balanceKey) setBalanceKey(urlKey);
+  }, [searchParams]);
 
-    // URL에 key가 있으면 그 값을, 없으면 내 카카오 ID를 초기값으로 사용
-    const [balanceKey, setBalanceKey] = useState(searchParams.get("key") || String(session?.user?.id || ""));
-
-    // 1. URL 파라미터와 balanceKey 상태 동기화
-    useEffect(() => {
-        const urlKey = searchParams.get("key");
-        if (urlKey && urlKey !== balanceKey) {
-            setBalanceKey(urlKey);
-        }
-    }, [searchParams]);
-
-    useEffect(() => {
-        if (session?.user?.name === process.env.NEXT_PUBLIC_MASTER) {
-            dispatch(reqGetKakaoMemberList());
-        }
-    }, [session]);
-
-    // 2. balanceKey가 변경될 때마다 URL 업데이트 및 데이터 리프레시
-    useEffect(() => {
-        if (balanceKey && balanceKey !== "undefined") {
-            // URL 업데이트 (뒤로가기 기록 방지를 위해 replace 사용 가능)
-            router.replace(`${pathname}?key=${balanceKey}`);
-
-            // 해당 사용자의 데이터 요청
-            dispatch(reqGetInquireBalance(balanceKey));
-            // 한국/미국 여부에 따라 적절한 Capital 요청
-            if (pathname.includes("kr")) dispatch(reqGetKrCapital(balanceKey));
-            else dispatch(reqGetUsCapital(balanceKey));
-        }
-    }, [balanceKey]);
-
-    // 초기 데이터 로딩
-    useEffect(() => {
-        if (session?.user?.id) {
-            dispatch(reqGetInquireBalance(session.user.id));
-            setBalanceKey(String(session.user.id));
-        }
-
-        dispatch(reqGetCapitalToken());
-    }, [dispatch, session]);
-
-    useEffect(() => {
-        if (krCapital.state === "init" && session?.user?.id) {
-            dispatch(reqGetKrCapital(session.user.id));
-        }
-    }, [krCapital.state, session, dispatch]);
-
-    // 토큰 변동 시 데이터 리프레시 로직
-    const refreshStates = [krCapitalTokenPlusAll, krCapitalTokenPlusOne, krCapitalTokenMinusAll, krCapitalTokenMinusOne];
-    useEffect(() => {
-        if (refreshStates.some(s => s?.state === "fulfilled")) {
-            dispatch(reqGetKrCapital(balanceKey));
-        }
-    }, [refreshStates, balanceKey, dispatch]);
-
-    // 권한 없음 처리 (Blueprintjs NonIdealState)
-    if (kiBalance.state === "rejected") {
-        return (
-            <div className="h-[70vh] flex items-center justify-center">
-                <NonIdealState
-                    icon={IconNames.LOCK}
-                    title="접근 권한 없음"
-                    description="계좌 조회 권한이 없거나 토큰이 만료되었습니다."
-                    action={<Text className="opacity-50">관리자에게 문의하세요.</Text>}
-                />
-            </div>
-        );
+  useEffect(() => {
+    if (session?.user?.name === process.env.NEXT_PUBLIC_MASTER) {
+      dispatch(reqGetKakaoMemberList());
     }
+  }, [session]);
 
-    // 핸들러 함수들
-    const doTokenPlusAll = (num: number) => dispatch(reqPostKrCapitalTokenPlusAll({ key: balanceKey, num }));
-    const doTokenPlusOne = (num: number, ticker: string) => ticker && dispatch(reqPostKrCapitalTokenPlusOne({ key: balanceKey, num, ticker }));
-    const doTokenMinusAll = (num: number) => dispatch(reqPostKrCapitalTokenMinusAll({ key: balanceKey, num }));
-    const doTokenMinusOne = (num: number, ticker: string) => ticker && dispatch(reqPostKrCapitalTokenMinusOne({ key: balanceKey, num, ticker }));
+  // 2. balanceKey가 변경될 때마다 URL 업데이트 및 데이터 리프레시
+  useEffect(() => {
+    if (balanceKey && balanceKey !== "undefined") {
+      router.replace(`${pathname}?key=${balanceKey}`);
+      dispatch(reqGetInquireBalance(balanceKey));
+      if (pathname.includes("kr")) dispatch(reqGetKrCapital(balanceKey));
+      else dispatch(reqGetUsCapital(balanceKey));
+    }
+  }, [balanceKey, pathname, router, dispatch]);
 
-    const BREADCRUMBS: BreadcrumbProps[] = [
-        { icon: IconNames.CHART, text: "투자 현황" },
-        { icon: IconNames.MAP_MARKER, text: "한국(KR) 계좌", current: true },
-    ];
+  // 초기 데이터 로딩
+  useEffect(() => {
+    if (session?.user?.id) {
+      dispatch(reqGetInquireBalance(session.user.id));
+      setBalanceKey(String(session.user.id));
+    }
+    dispatch(reqGetCapitalToken());
+  }, [dispatch, session]);
 
+  useEffect(() => {
+    if (krCapital.state === "init" && session?.user?.id) {
+      dispatch(reqGetKrCapital(session.user.id));
+    }
+  }, [krCapital.state, session, dispatch]);
+
+  const refreshStates = [krCapitalTokenPlusAll, krCapitalTokenPlusOne, krCapitalTokenMinusAll, krCapitalTokenMinusOne];
+  useEffect(() => {
+    if (refreshStates.some(s => s?.state === "fulfilled")) {
+      dispatch(reqGetKrCapital(balanceKey));
+    }
+  }, [refreshStates, balanceKey, dispatch]);
+
+  // 권한 없음 UI
+  if (kiBalance.state === "rejected") {
     return (
-        <div className="bp5-dark bg-zinc-50 dark:!bg-black min-h-screen transition-colors duration-200">
-            {/* Header Section */}
-            <div className="max-w-7xl mx-auto px-4 py-6 md:py-10">
-                <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 mb-8">
-                    <div className="space-y-2">
-                        <Breadcrumbs items={BREADCRUMBS} className="mb-2" />
-                        <div className="flex items-center gap-3">
-                            <H3 className="m-0 font-black tracking-tight uppercase">Portfolio Balance</H3>
-                            <span className="text-2xl">🇰🇷</span>
-                        </div>
-                    </div>
-                    <Text className="opacity-50 text-xs font-mono">
-                        REAL-TIME KOREA INVESTMENT DATA
-                    </Text>
-                </div>
-
-                <Divider className="mb-8" />
-
-                {/* 메인 잔고 결과 섹션 */}
-                <div className="space-y-10">
-                    <section className="animate-in fade-in slide-in-from-bottom-4 duration-500">
-                        <InquireBalanceResult
-                            balanceKey={balanceKey}
-                            setBalanceKey={setBalanceKey}
-                            kiBalance={kiBalance}
-                            reqGetInquireBalance={reqGetInquireBalance}
-                            kiOrderCash={kiOrderCash}
-                            reqPostOrderCash={reqPostOrderCash}
-                            kakaoTotal={kakaoTotal}
-                            kakaoMemberList={kakaoMemberList}
-                        />
-                    </section>
-
-                    {/* 알고리즘 및 토큰 관리 섹션 */}
-                    <section className="animate-in fade-in slide-in-from-bottom-4 duration-700">
-                        <div className="flex items-center gap-2 mb-4 px-2">
-                            <Icon icon={IconNames.Layers} intent={Intent.PRIMARY} />
-                            <Text className="font-bold text-lg">알고리즘 운용 종목 관리</Text>
-                        </div>
-                        <StockListTable
-                            data={krCapital}
-                            kakaoTotal={kakaoTotal}
-                            doTokenPlusAll={doTokenPlusAll}
-                            doTokenMinusAll={doTokenMinusAll}
-                            doTokenPlusOne={doTokenPlusOne}
-                            doTokenMinusOne={doTokenMinusOne}
-                            session={session}
-                        />
-                    </section>
-                </div>
-            </div>
+      <div className="h-[80vh] flex flex-col items-center justify-center p-6 text-center">
+        <div className="w-20 h-20 bg-red-100 dark:bg-red-900/20 rounded-full flex items-center justify-center mb-6">
+          <Lock className="w-10 h-10 text-red-500" />
         </div>
+        <h2 className="text-2xl font-black text-zinc-900 dark:text-zinc-100 mb-2">접근 권한 없음</h2>
+        <p className="text-zinc-500 dark:text-zinc-400 max-w-sm">
+          계좌 조회 권한이 없거나 토큰이 만료되었습니다.<br /> 관리자에게 문의해 주세요.
+        </p>
+      </div>
     );
+  }
+
+  // 핸들러 함수들
+  const doTokenPlusAll = (num: number) => dispatch(reqPostKrCapitalTokenPlusAll({ key: balanceKey, num }));
+  const doTokenPlusOne = (num: number, ticker: string) => ticker && dispatch(reqPostKrCapitalTokenPlusOne({ key: balanceKey, num, ticker }));
+  const doTokenMinusAll = (num: number) => dispatch(reqPostKrCapitalTokenMinusAll({ key: balanceKey, num }));
+  const doTokenMinusOne = (num: number, ticker: string) => ticker && dispatch(reqPostKrCapitalTokenMinusOne({ key: balanceKey, num, ticker }));
+
+  return (
+    <div className="min-h-screen bg-[#fafafa] dark:bg-black transition-colors duration-300">
+      <div className="max-w-7xl mx-auto px-4 py-8 md:py-12">
+        
+        {/* --- Header & Breadcrumbs --- */}
+        <header className="mb-10 flex flex-col md:flex-row md:items-end justify-between gap-6">
+          <div className="space-y-4">
+            <nav className="flex items-center gap-2 text-xs font-bold text-zinc-400 uppercase tracking-widest">
+              <LayoutDashboard className="w-3.5 h-3.5" />
+              <span>투자 현황</span>
+              <ChevronRight className="w-3 h-3" />
+              <div className="flex items-center gap-1 text-blue-500 bg-blue-50 dark:bg-blue-900/20 px-2 py-0.5 rounded">
+                <MapPin className="w-3 h-3" />
+                <span>한국(KR) 계좌</span>
+              </div>
+            </nav>
+            
+            <div className="flex items-center gap-4">
+              <h1 className="text-3xl md:text-5xl font-black tracking-tighter text-zinc-900 dark:text-white uppercase italic">
+                Portfolio Balance
+              </h1>
+              <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-white dark:bg-zinc-900 shadow-sm border border-zinc-200 dark:border-zinc-800 text-2xl">
+                🇰🇷
+              </div>
+            </div>
+          </div>
+          
+          <div className="flex items-center gap-2 bg-zinc-100 dark:bg-zinc-900 px-4 py-2 rounded-full border border-zinc-200 dark:border-zinc-800">
+            <Activity className="w-3.5 h-3.5 text-emerald-500 animate-pulse" />
+            <span className="text-[10px] font-black text-zinc-500 dark:text-zinc-400 uppercase tracking-widest">
+              Real-time Korea Investment Data
+            </span>
+          </div>
+        </header>
+
+        <div className="h-px w-full bg-gradient-to-r from-zinc-200 dark:from-zinc-800 via-transparent to-transparent mb-12" />
+
+        {/* --- Main Content --- */}
+        <div className="grid grid-cols-1 gap-12">
+          
+          {/* Section 1: Balance Result */}
+          <section className="animate-in fade-in slide-in-from-bottom-4 duration-700">
+            <InquireBalanceResult
+              balanceKey={balanceKey}
+              setBalanceKey={setBalanceKey}
+              kiBalance={kiBalance}
+              reqGetInquireBalance={reqGetInquireBalance}
+              kakaoMemberList={kakaoMemberList}
+            />
+          </section>
+
+          {/* Section 2: Algorithm Management */}
+          <section className="animate-in fade-in slide-in-from-bottom-6 duration-1000 space-y-6">
+            <div className="flex items-center justify-between px-2">
+              <div className="flex items-center gap-3">
+                <div className="p-2 bg-blue-500/10 rounded-lg">
+                  <Layers className="w-5 h-5 text-blue-500" />
+                </div>
+                <div>
+                  <h2 className="font-black text-xl text-zinc-900 dark:text-zinc-100">알고리즘 운용 종목 관리</h2>
+                  <p className="text-xs text-zinc-500 font-medium">실시간 토큰 배정 및 수량 조절</p>
+                </div>
+              </div>
+            </div>
+
+            <div className="rounded-3xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900/50 overflow-hidden shadow-sm">
+              <StockListTable
+                data={krCapital}
+                kakaoTotal={kakaoTotal}
+                doTokenPlusAll={doTokenPlusAll}
+                doTokenMinusAll={doTokenMinusAll}
+                doTokenPlusOne={doTokenPlusOne}
+                doTokenMinusOne={doTokenMinusOne}
+                session={session}
+              />
+            </div>
+          </section>
+        </div>
+      </div>
+    </div>
+  );
 }
