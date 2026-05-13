@@ -36,8 +36,8 @@ import {
   selectPopularStocks,
 } from '@/lib/features/searchLog/searchLogSlice';
 import corpCodeJson from '@/public/data/validCorpCode.json';
-// Lucide React 아이콘 사용 권장 (혹은 Heroicons)
 import { History, AlertCircle, Loader2 } from 'lucide-react';
+import { cn } from '@/lib/utils';
 
 const all_tickers = [
   ...nasdaq_tickers,
@@ -84,6 +84,7 @@ function SearchContent() {
 
   useEffect(() => {
     const handleScroll = () => {
+      // 400px 이상 스크롤 시 검색바 상단 고정
       setFixed(window.scrollY > 400);
     };
     window.addEventListener('scroll', handleScroll, { passive: true });
@@ -119,11 +120,18 @@ function SearchContent() {
 
   return (
     <div className="w-full min-h-screen bg-gray-50 dark:bg-zinc-950">
+      {/* 
+          Z-INDEX 조정: 
+          - fixed일 때 z-[30]으로 설정하여 layout(Navbar/Sidebar)의 z-index보다 낮게 배치합니다.
+          - 일반적으로 Next.js Layout의 Navbar는 z-[40]~[50] 사이를 사용합니다.
+      */}
       <header
-        className={`w-full transition-all duration-300 z-[50] ${fixed
-          ? 'fixed top-0 bg-white/90 dark:bg-zinc-900/90 backdrop-blur-lg border-b dark:border-zinc-800 shadow-sm'
-          : 'relative bg-white dark:bg-zinc-900 border-b dark:border-zinc-800'
-          }`}
+        className={cn(
+          "w-full transition-all duration-300",
+          fixed
+            ? "fixed top-0 z-[30] bg-white/90 dark:bg-zinc-900/90 backdrop-blur-lg border-b dark:border-zinc-800 shadow-sm"
+            : "relative z-[31] bg-white dark:bg-zinc-900 border-b dark:border-zinc-800"
+        )}
       >
         <div className="max-w-6xl mx-auto">
           <div className="px-3 py-2">
@@ -196,7 +204,6 @@ function SearchContent() {
       </header>
 
       <main className="max-w-6xl mx-auto p-4 md:p-6">
-        {/* Error Callout 대체 */}
         {error && (
           <div className="mb-4 p-4 rounded-lg bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 flex items-center gap-3 text-red-700 dark:text-red-400">
             <AlertCircle size={18} />
@@ -208,7 +215,6 @@ function SearchContent() {
           <SearchGuide />
         ) : (
           <>
-            {/* Spinner 대체 */}
             {waitResponse && !isLoaded && (
               <div className="py-20 flex flex-col items-center justify-center gap-4">
                 <Loader2 className="animate-spin text-blue-500" size={40} />
@@ -278,7 +284,6 @@ function SearchContent() {
                   <FinnhubTable data={data.finnhubData.data} />
                 )}
                 
-                {/* Blueprint Card 대체 */}
                 {response && (
                   <div className="mt-8 rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 shadow-md overflow-hidden border-t-4 !border-t-blue-500">
                     <div className="p-4 md:p-6">
