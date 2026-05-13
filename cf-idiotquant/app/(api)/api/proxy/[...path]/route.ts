@@ -1,5 +1,7 @@
 // src/app/api/proxy/[...path]/route.ts
 
+export const runtime = 'edge'; // 이 줄을 반드시 추가해야 합니다!
+
 import { auth } from "@/auth";
 import { SignJWT } from 'jose';
 import { NextResponse } from "next/server";
