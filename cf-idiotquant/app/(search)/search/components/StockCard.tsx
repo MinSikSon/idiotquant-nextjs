@@ -19,11 +19,11 @@ const SECTOR_THEMES: Record<string, any> = {
 };
 
 const GRADE_THEMES: Record<string, any> = {
-    SSS: { frame: "from-pink-500 via-purple-600 to-cyan-500", label: "GOD-TIER VALUE", shadow: "0 0 35px rgba(244, 63, 94, 0.4)", animate: true },
-    SS: { frame: "from-yellow-400 via-amber-500 to-orange-400", label: "SUPERIOR", shadow: "0 0 20px rgba(234, 179, 8, 0.3)", animate: false },
-    S: { frame: "from-emerald-400 to-cyan-500", label: "EXCELLENT", shadow: "0 0 15px rgba(16, 185, 129, 0.2)", animate: false },
-    A: { frame: "from-slate-300 to-slate-500", label: "FAIR", shadow: "none", animate: false },
-    DEFAULT: { frame: "from-zinc-300 to-zinc-400", label: "OBSERVE", shadow: "none", animate: false }
+    SSS: { frame: "from-pink-500 via-purple-600 to-cyan-500", label: "GOD-TIER VALUE", animate: true },
+    SS: { frame: "from-yellow-400 via-amber-500 to-orange-400", label: "SUPERIOR", animate: false },
+    S: { frame: "from-emerald-400 to-cyan-500", label: "EXCELLENT", animate: false },
+    A: { frame: "from-slate-300 to-slate-500", label: "FAIR", animate: false },
+    // DEFAULT(OBSERVE) 제거: 데이터가 있는 경우만 표시하도록 로직 변경
 };
 
 export const StockCard = ({ stock, isCompact = false }: any) => {
@@ -46,7 +46,8 @@ export const StockCard = ({ stock, isCompact = false }: any) => {
         return SECTOR_THEMES[found || 'LIFE'];
     }, [stock?.sector]);
 
-    const gradeTheme = GRADE_THEMES[stock?.grade] || GRADE_THEMES.DEFAULT;
+    // 등급 정보가 있을 때만 테마 적용
+    const gradeTheme = useMemo(() => GRADE_THEMES[stock?.grade] || null, [stock?.grade]);
 
     const stockStats = useMemo(() => {
         if (!stock) return { upside: 0, safety: 0, per: 0, ncav: 0, pbr: 0 };
@@ -68,7 +69,8 @@ export const StockCard = ({ stock, isCompact = false }: any) => {
         ? `https://img.logo.dev/ticker/${stock.ticker}?token=${process.env.NEXT_PUBLIC_CLEARBIT_API_KEY}` 
         : `${process.env.NEXT_PUBLIC_KR_LOGO_API}/${stock.ticker}`;
 
-    const logoSource = stock?.isUs ? "logo.dev" : "data.go.kr";
+    const logoSourceUrl = stock?.isUs ? "https://logo.dev" : "https://logo.idiotquant.com";
+    const logoSourceLabel = stock?.isUs ? "logo.dev" : "logo.idiotquant.com";
 
     return (
         <div
@@ -91,8 +93,8 @@ export const StockCard = ({ stock, isCompact = false }: any) => {
                 <div 
                     className={cn(
                         "absolute inset-0 backface-hidden rounded-[2.5rem] p-[12px] bg-gradient-to-br shadow-2xl overflow-hidden border-t-2 border-white/20",
-                        gradeTheme.frame,
-                        gradeTheme.animate && "animate-gradient-xy bg-[length:200%_200%]"
+                        gradeTheme ? gradeTheme.frame : "from-zinc-800 to-zinc-900", // 등급 없을 시 기본 차분한 배경
+                        gradeTheme?.animate && "animate-gradient-xy bg-[length:200%_200%]"
                     )}
                     style={{ 
                         WebkitBackfaceVisibility: 'hidden', 
@@ -121,7 +123,7 @@ export const StockCard = ({ stock, isCompact = false }: any) => {
                             </div>
                         </div>
 
-                        {/* Logo Area with Source */}
+                        {/* Logo Area */}
                         <div className="mx-4 relative h-40 rounded-3xl bg-zinc-900 border border-white/5 flex items-center justify-center overflow-hidden group/logo">
                             <div className="absolute inset-0 opacity-10 bg-[radial-gradient(circle_at_center,_var(--tw-gradient-stops))] from-white via-transparent to-transparent" />
                             {!imgError ? (
@@ -137,18 +139,27 @@ export const StockCard = ({ stock, isCompact = false }: any) => {
                                 </div>
                             )}
                             
-                            {/* Logo Source URL Display */}
-                            <div className="absolute bottom-2 right-3 flex items-center gap-1 opacity-40 hover:opacity-100 transition-opacity">
+                            {/* Source Link (Clickable) */}
+                            <a 
+                                href={logoSourceUrl}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                onClick={(e) => e.stopPropagation()} // 카드 뒤집힘 방지
+                                className="absolute bottom-2 right-3 flex items-center gap-1 opacity-40 hover:opacity-100 transition-opacity z-20"
+                            >
                                 <LinkIcon className="w-2 h-2 text-zinc-500" />
-                                <span className="text-[7px] font-medium text-zinc-500 tracking-tighter uppercase">Source: {logoSource}</span>
-                            </div>
+                                <span className="text-[7px] font-medium text-zinc-500 tracking-tighter uppercase underline decoration-zinc-500/30">Source: {logoSourceLabel}</span>
+                            </a>
 
-                            <div className="absolute top-3 right-3 px-3 py-1 bg-white/10 backdrop-blur-md border border-white/20 rounded-full">
-                                <span className="text-[10px] font-black text-white tracking-widest leading-none">{gradeTheme.label}</span>
-                            </div>
+                            {/* Grade Badge (등급이 있을 때만 표시) */}
+                            {gradeTheme && (
+                                <div className="absolute top-3 right-3 px-3 py-1 bg-white/10 backdrop-blur-md border border-white/20 rounded-full">
+                                    <span className="text-[10px] font-black text-white tracking-widest leading-none">{gradeTheme.label}</span>
+                                </div>
+                            )}
                         </div>
 
-                        {/* Main Stats */}
+                        {/* Main Stats 영역 (기존과 동일) */}
                         <div className="px-5 py-4 grid grid-cols-2 gap-3">
                             <div className="space-y-1">
                                 <div className="flex items-center gap-1.5 text-rose-500">
@@ -172,7 +183,7 @@ export const StockCard = ({ stock, isCompact = false }: any) => {
                             </div>
                         </div>
 
-                        {/* Bottom Info Box */}
+                        {/* Bottom Stats 영역 (기존과 동일) */}
                         <div className="px-5 pb-6 mt-auto">
                             <div className="bg-white/[0.03] border border-white/10 rounded-2xl p-3 flex justify-between items-center">
                                 <div className="flex flex-col items-center">
@@ -197,9 +208,9 @@ export const StockCard = ({ stock, isCompact = false }: any) => {
                     </div>
                 </div>
 
-                {/* --- BACK --- */}
+                {/* --- BACK: 상세 설명 (기존 보강된 버전 유지) --- */}
                 <div 
-                    className="absolute inset-0 rounded-[2.5rem] bg-zinc-950 border-[6px] border-zinc-900 flex flex-col p-7 shadow-2xl overflow-hidden"
+                    className="absolute inset-0 rounded-[2.5rem] bg-zinc-950 border-[6px] border-zinc-800 flex flex-col p-7 shadow-2xl overflow-hidden"
                     style={{ 
                         WebkitBackfaceVisibility: 'hidden', 
                         backfaceVisibility: 'hidden', 
@@ -213,50 +224,43 @@ export const StockCard = ({ stock, isCompact = false }: any) => {
                     </div>
 
                     <div className="flex-1 space-y-6 overflow-y-auto no-scrollbar">
-                        {/* 1. Upside Detailed */}
                         <div className="space-y-1.5">
                             <div className="flex items-center gap-2">
                                 <TrendingUp className="w-3.5 h-3.5 text-rose-500" />
-                                <span className="text-[11px] font-black text-rose-500 uppercase">상승 잠력 (Upside)</span>
+                                <span className="text-[11px] font-black text-rose-500 uppercase">상승 잠재력 (Upside)</span>
                             </div>
                             <p className="text-[11px] text-zinc-400 leading-relaxed font-medium">
                                 <span className="text-zinc-100">순유동자산(NCAV)</span>에서 부채를 차감한 금액이 현재 시가총액보다 얼마나 높은지를 나타냅니다. 
-                                이 수치가 플러스라면, 기업이 보유한 당장 현금화 가능한 자산보다 주가가 저렴하게 거래되고 있다는 "그레이엄의 안전마진" 신호입니다.
+                                자산 가치 대비 주가가 극도로 저렴한 상태를 의미합니다.
                             </p>
                         </div>
 
-                        {/* 2. Safety Detailed */}
                         <div className="space-y-1.5">
                             <div className="flex items-center gap-2">
                                 <ShieldCheck className="w-3.5 h-3.5 text-blue-500" />
                                 <span className="text-[11px] font-black text-blue-500 uppercase">재무 안전성 (Safety)</span>
                             </div>
                             <p className="text-[11px] text-zinc-400 leading-relaxed font-medium">
-                                총자본 중 부채가 차지하는 비중을 역산하여 99점 만점으로 환산한 점수입니다. 
-                                부채가 적을수록 점수가 높으며, 이는 금리 인상기나 경기 불황 시 기업이 파산하지 않고 버틸 수 있는 <span className="text-zinc-100">펀더멘털의 단단함</span>을 의미합니다.
+                                부채비율을 기반으로 산출된 방어력 점수입니다. 99점에 가까울수록 재무구조가 탄탄하며, 시장 급락기에도 <span className="text-zinc-100">심리적/실질적 안전마진</span>을 제공합니다.
                             </p>
                         </div>
 
-                        {/* 3. NCAV Score Detailed */}
                         <div className="space-y-1.5">
                             <div className="flex items-center gap-2">
                                 <Activity className="w-3.5 h-3.5 text-emerald-500" />
                                 <span className="text-[11px] font-black text-emerald-500 uppercase">NCAV 스코어</span>
                             </div>
                             <p className="text-[11px] text-zinc-400 leading-relaxed font-medium">
-                                <span className="text-zinc-100">(유동자산 - 총부채) / 시가총액</span> 공식을 통해 산출된 핵심 퀀트 지표입니다. 
-                                1.5 이상인 경우 초저평가 상태로 간주하며, 비정상적으로 낮은 가격에 거래되는 기업을 발굴하는 IdiotQuant 알고리즘의 핵심 로직입니다.
+                                벤자민 그레이엄의 정통 가치투자 공식인 <span className="text-zinc-100">(순유동자산 / 시가총액)</span>의 결과값입니다. 
+                                1.0 이상은 시가총액보다 순현금성 자산이 많다는 파격적인 저평가 상태를 뜻합니다.
                             </p>
                         </div>
                     </div>
 
-                    {/* Branding */}
                     <div className="mt-auto pt-4 border-t border-zinc-800 flex flex-col items-center">
                         <div className="text-[10px] font-black text-zinc-600 tracking-[0.3em] italic mb-1 uppercase">IdiotQuant Algorithm Series</div>
                         <div className="text-[8px] text-zinc-700 font-bold">© 2026 VALUE INVESTING PROTOCOL</div>
                     </div>
-
-                    <div className="absolute -bottom-10 -right-10 w-32 h-32 bg-blue-500/10 blur-[50px] rounded-full pointer-events-none" />
                 </div>
             </motion.div>
         </div>
