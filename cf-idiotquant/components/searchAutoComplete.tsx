@@ -2,6 +2,14 @@
 
 import { useState, useMemo, KeyboardEvent, useRef, useEffect } from "react";
 import { MagnifyingGlassIcon, XCircleIcon } from "@heroicons/react/24/outline";
+import { cn } from "@/lib/utils";
+import { Search, CornerDownLeft, Sparkles, AlertCircle } from "lucide-react";
+
+interface SearchAutocompleteProps {
+    validCorpNameArray: string[];
+    onSearchButton: (value: string) => void;
+    placeHolder?: string;
+}
 
 const getChosung = (str: string) => {
     const CHO = ['ㄱ', 'ㄲ', 'ㄴ', 'ㄷ', 'ㄸ', 'ㄹ', 'ㅁ', 'ㅂ', 'ㅃ', 'ㅅ', 'ㅆ', 'ㅇ', 'ㅈ', 'ㅉ', 'ㅊ', 'ㅋ', 'ㅌ', 'ㅍ', 'ㅎ'];
@@ -37,10 +45,10 @@ const disassembleHangul = (str: string) => {
     return result.toLowerCase();
 };
 
-const SearchAutocomplete = (props: any) => {
+const SearchAutocomplete = ({ validCorpNameArray, onSearchButton, placeHolder }: SearchAutocompleteProps) => {
     const [query, setQuery] = useState("");
     const [isFocused, setIsFocused] = useState(false);
-    const [selectedIndex, setSelectedIndex] = useState(0); // 기본값을 0으로 설정
+    const [selectedIndex, setSelectedIndex] = useState(0);
     const inputRef = useRef<HTMLInputElement>(null);
 
     const suggestions = useMemo(() => {
@@ -49,14 +57,14 @@ const SearchAutocomplete = (props: any) => {
         const disassembledQuery = disassembleHangul(trimmedQuery);
         const queryChosung = getChosung(trimmedQuery);
 
-        const filtered = props.validCorpNameArray.filter((item: string) => {
+        const filtered = validCorpNameArray.filter((item: string) => {
             const itemLow = item.toLowerCase();
             return itemLow.includes(trimmedQuery) ||
                 getChosung(itemLow).includes(queryChosung) ||
                 disassembleHangul(itemLow).includes(disassembledQuery);
         });
 
-        const sorted = filtered.sort((a: string, b: string) => {
+        return filtered.sort((a: string, b: string) => {
             const aLow = a.toLowerCase();
             const bLow = b.toLowerCase();
             if (aLow === trimmedQuery) return -1;
@@ -65,11 +73,8 @@ const SearchAutocomplete = (props: any) => {
             if (!aLow.startsWith(trimmedQuery) && bLow.startsWith(trimmedQuery)) return 1;
             return a.length - b.length;
         }).slice(0, 10);
+    }, [query, validCorpNameArray]);
 
-        return sorted;
-    }, [query, props.validCorpNameArray]);
-
-    // 검색어가 바뀔 때마다 첫 번째 항목을 자동으로 선택 상태로 만듦
     useEffect(() => {
         if (suggestions.length > 0) {
             setSelectedIndex(0);
@@ -82,7 +87,7 @@ const SearchAutocomplete = (props: any) => {
         if (!value) return;
         setQuery(value);
         setIsFocused(false);
-        props.onSearchButton(value);
+        onSearchButton(value);
         inputRef.current?.blur();
     };
 
@@ -91,7 +96,6 @@ const SearchAutocomplete = (props: any) => {
 
         if (e.key === "Enter") {
             e.preventDefault();
-            // 선택된 인덱스가 있으면 해당 값을, 없으면 입력된 쿼리를 검색
             const target = (selectedIndex >= 0 && suggestions[selectedIndex]) ? suggestions[selectedIndex] : query;
             executeSearch(target);
         } else if (e.key === "ArrowDown") {
@@ -106,46 +110,86 @@ const SearchAutocomplete = (props: any) => {
     };
 
     return (
-        <div className="relative w-full z-[100]">
-            <div className={`relative flex items-center gap-2 w-full px-4 py-3 bg-zinc-100 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-2xl transition-all ${isFocused ? "bg-white dark:bg-zinc-950 ring-2 ring-blue-500/30 shadow-lg" : ""}`}>
-                <MagnifyingGlassIcon className="h-5 w-5 text-zinc-400" />
+        <div className="relative w-full z-[60]">
+            {/* 검색창 본체 */}
+            <div 
+                className={cn(
+                    "relative flex items-center gap-3 w-full px-4 py-3.5 rounded-2xl border transition-all duration-300 ease-in-out",
+                    "bg-zinc-100/80 dark:bg-zinc-900/80 border-zinc-200/80 dark:border-zinc-800/80 backdrop-blur-md",
+                    isFocused 
+                        ? "bg-white dark:bg-zinc-950 border-blue-500/80 dark:border-indigo-500/80 ring-4 ring-blue-500/10 dark:ring-indigo-500/10 shadow-[0_10px_25px_-5px_rgba(0,0,0,0.05)]" 
+                        : "hover:border-zinc-300 dark:hover:border-zinc-700"
+                )}
+            >
+                <Search className={cn(
+                    "h-5 w-5 transition-colors duration-200 shrink-0",
+                    isFocused ? "text-blue-500 dark:text-indigo-400" : "text-zinc-400 dark:text-zinc-500"
+                )} />
+                
                 <input
                     ref={inputRef}
                     autoComplete="off"
-                    placeholder={props.placeHolder}
+                    placeholder={placeHolder}
                     value={query}
                     onChange={(e) => setQuery(e.target.value)}
                     onFocus={() => setIsFocused(true)}
-                    onBlur={() => setTimeout(() => setIsFocused(false), 200)}
+                    onBlur={() => setTimeout(() => setIsFocused(false), 220)}
                     onKeyDown={handleKeyDown}
-                    className="w-full text-base bg-transparent focus:outline-none dark:text-white font-medium"
+                    className="w-full text-base bg-transparent focus:outline-none text-zinc-900 dark:text-zinc-100 font-semibold placeholder-zinc-400 dark:placeholder-zinc-600 font-sans tracking-tight"
                 />
+                
                 {query && (
-                    <button onClick={() => setQuery("")} className="p-1 hover:bg-zinc-200 dark:hover:bg-zinc-800 rounded-full transition-colors">
-                        <XCircleIcon className="h-5 w-5 text-zinc-400" />
+                    <button 
+                        onClick={() => setQuery("")} 
+                        className="p-1 hover:bg-zinc-200/60 dark:hover:bg-zinc-800/60 rounded-xl transition-colors shrink-0 group"
+                        type="button"
+                    >
+                        <XCircleIcon className="h-5 w-5 text-zinc-400 group-hover:text-zinc-600 dark:group-hover:text-zinc-300 transition-colors" />
                     </button>
                 )}
             </div>
 
+            {/* 자동완성 드롭다운 팝업 리스트 */}
             {isFocused && suggestions.length > 0 && (
-                <ul className="absolute top-full mt-2 left-0 w-full bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-2xl shadow-2xl max-h-72 overflow-y-auto p-2 z-[9999] animate-in fade-in zoom-in-95 duration-200">
-                    <div className="px-3 py-2 text-[10px] font-bold text-zinc-400 uppercase tracking-widest border-b dark:border-zinc-800 mb-1 flex justify-between">
-                        <span>Suggestions</span>
-                        {selectedIndex === 0 && <span className="text-blue-500">Auto-selected</span>}
+                <ul className="absolute top-full mt-2 left-0 w-full bg-white/95 dark:bg-zinc-950/95 backdrop-blur-xl border border-zinc-200 dark:border-zinc-800/80 rounded-2xl shadow-2xl max-h-80 overflow-y-auto p-2 z-[70] animate-in fade-in zoom-in-95 duration-200 origin-top">
+                    {/* 타이틀 헤더 라인 */}
+                    <div className="px-3 py-2 text-[10px] font-black text-zinc-400 dark:text-zinc-500 uppercase tracking-widest border-b border-zinc-100 dark:border-zinc-900 mb-1.5 flex justify-between items-center">
+                        <span className="flex items-center gap-1.5">
+                            <Sparkles className="w-3 h-3 text-blue-500 dark:text-indigo-400" />
+                            Autocomplete Suggestions
+                        </span>
+                        {selectedIndex === 0 && (
+                            <span className="text-[9px] font-bold text-blue-600 dark:text-indigo-400 bg-blue-50 dark:bg-indigo-950/40 px-1.5 py-0.5 rounded border border-blue-200/20 dark:border-indigo-900/30">
+                                Auto Match
+                            </span>
+                        )}
                     </div>
-                    {suggestions.map((suggestion: any, index: any) => (
-                        <li
-                            key={index}
-                            onMouseDown={() => executeSearch(suggestion)}
-                            className={`flex items-center justify-between text-sm py-3 px-4 cursor-pointer rounded-xl transition-all ${selectedIndex === index
-                                    ? "bg-blue-600 text-white font-bold shadow-md scale-[1.01]"
-                                    : "hover:bg-zinc-100 dark:hover:bg-zinc-800 dark:text-zinc-300"
-                                }`}
-                        >
-                            <span>{suggestion}</span>
-                            {selectedIndex === index && <span className="text-[10px] opacity-70">↵ Enter</span>}
-                        </li>
-                    ))}
+
+                    {/* 제안 아이템 매핑 */}
+                    {suggestions.map((suggestion: string, index: number) => {
+                        const isSelected = selectedIndex === index;
+                        return (
+                            <li
+                                key={index}
+                                onMouseDown={() => executeSearch(suggestion)}
+                                className={cn(
+                                    "flex items-center justify-between text-sm py-3 px-4 cursor-pointer rounded-xl transition-all duration-150 font-medium",
+                                    isSelected
+                                        ? "bg-blue-600 dark:bg-indigo-600 text-white font-bold shadow-md shadow-blue-500/20 dark:shadow-indigo-600/20 translate-x-0.5"
+                                        : "text-zinc-700 dark:text-zinc-300 hover:bg-zinc-100/70 dark:hover:bg-zinc-900/70 hover:translate-x-0.5"
+                                )}
+                            >
+                                <span className="truncate">{suggestion}</span>
+                                
+                                {isSelected && (
+                                    <span className="flex items-center gap-1 text-[9px] font-bold opacity-80 font-mono tracking-tight bg-black/10 dark:bg-white/10 px-1.5 py-0.5 rounded-md animate-fade-in">
+                                        <CornerDownLeft className="w-2.5 h-2.5" />
+                                        Enter
+                                    </span>
+                                )}
+                            </li>
+                        );
+                    })}
                 </ul>
             )}
         </div>
