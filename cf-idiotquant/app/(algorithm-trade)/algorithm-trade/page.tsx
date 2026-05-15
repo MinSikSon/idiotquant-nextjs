@@ -84,7 +84,8 @@ const StockDataFetcher = ({ ticker, name, isSelected, onClick }: { ticker: strin
     return (
         <div onClick={onClick} className={cn("w-full h-full", !isSelected && "cursor-pointer")}>
             <StockCard
-                isCompact={!isSelected}
+                // isCompact={!isSelected}
+                isCompact={false}
                 stock={data.isUs ? {
                     code: ticker, isUs: true, name, ticker: name,
                     grade: getUsNcavGrade(data.finnhubData, data.usDetail),
@@ -233,9 +234,9 @@ function AlgorithmTradeContent() {
                                             layoutId={`card-${ticker}`}
                                             className={cn(
                                                 "w-fit max-w-2xl transition-all duration-500",
-                                                index !== 0 && "mt-[-320px] lg:mt-0",
+                                                index !== 0 && "mt-[-400px] lg:mt-0",
                                                 // 선택된 카드가 있을 때 리스트의 다른 카드들은 투명해지며 z-index 영향력 상실
-                                                isAnySelected ? "opacity-0 scale-95 pointer-events-none" : "opacity-100 relative"
+                                                isAnySelected ? "opacity-0 scale-100 pointer-events-none" : "opacity-100 relative"
                                             )}
                                             // 먼저 나온 카드가 위로 오게 하여 상단 헤더 노출 보장
                                             style={{ zIndex: visibleCandidates.length + index }}
@@ -277,7 +278,7 @@ const EmptyUI = ({ onRetry }: { onRetry: () => void }) => (
             <ExclamationTriangleIcon className="w-12 h-12 text-zinc-300 dark:text-zinc-700" />
         </div>
         <h3 className="text-3xl font-black text-zinc-900 dark:text-white mb-4">Data Not Found</h3>
-        <button onClick={onRetry} className="px-10 py-4 bg-zinc-900 dark:bg-white dark:text-zinc-900 text-white rounded-[2rem] font-black hover:scale-105 active:scale-95 transition-all shadow-xl">Retry Refresh</button>
+        <button onClick={onRetry} className="px-10 py-4 bg-zinc-900 dark:bg-white dark:text-zinc-900 text-white rounded-[2rem] font-black hover:scale-105 active:scale-100 transition-all shadow-xl">Retry Refresh</button>
     </div>
 );
 

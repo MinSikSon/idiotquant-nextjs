@@ -4,7 +4,7 @@ import React, { useState, useMemo, useCallback, useEffect } from 'react';
 import Image from 'next/image';
 import { motion } from 'framer-motion';
 import { cn } from "@/lib/utils";
-import { ShieldCheck, TrendingUp, Activity, Info, HelpCircle } from "lucide-react";
+import { ShieldCheck, TrendingUp, Activity, Info, Link as LinkIcon } from "lucide-react";
 
 const SECTOR_THEMES: Record<string, any> = {
     IRON: { bg: "bg-zinc-700", icon: "⚙️", label: "기계/제조", desc: "경기 민감주: 인프라 투자 수혜" },
@@ -31,10 +31,9 @@ export const StockCard = ({ stock, isCompact = false }: any) => {
     const [rotation, setRotation] = useState({ x: 0, y: 0 });
     const [imgError, setImgError] = useState(false);
 
-    // 종목이 변경될 때 상태 초기화 (로고 갱신 문제 해결)
     useEffect(() => {
         setImgError(false);
-        setIsFlipped(false); // 새로운 종목 검색 시 앞면부터 보여줌
+        setIsFlipped(false);
     }, [stock?.ticker]);
 
     const theme = useMemo(() => {
@@ -69,6 +68,8 @@ export const StockCard = ({ stock, isCompact = false }: any) => {
         ? `https://img.logo.dev/ticker/${stock.ticker}?token=${process.env.NEXT_PUBLIC_CLEARBIT_API_KEY}` 
         : `${process.env.NEXT_PUBLIC_KR_LOGO_API}/${stock.ticker}`;
 
+    const logoSource = stock?.isUs ? "logo.dev" : "data.go.kr";
+
     return (
         <div
             className={cn(
@@ -93,10 +94,15 @@ export const StockCard = ({ stock, isCompact = false }: any) => {
                         gradeTheme.frame,
                         gradeTheme.animate && "animate-gradient-xy bg-[length:200%_200%]"
                     )}
-                    style={{ WebkitBackfaceVisibility: 'hidden' }}
+                    style={{ 
+                        WebkitBackfaceVisibility: 'hidden', 
+                        backfaceVisibility: 'hidden',
+                        zIndex: isFlipped ? 0 : 1,
+                        transform: 'rotateY(0deg)'
+                    }}
                 >
                     <div className="w-full h-full rounded-[2rem] bg-zinc-950 flex flex-col relative overflow-hidden border border-white/10">
-                        {/* Header 영역 */}
+                        {/* Header */}
                         <div className="p-5 flex justify-between items-start z-10">
                             <div>
                                 <div className="flex items-center gap-2 mb-1">
@@ -115,14 +121,14 @@ export const StockCard = ({ stock, isCompact = false }: any) => {
                             </div>
                         </div>
 
-                        {/* 로고 영역 */}
-                        <div className="mx-4 relative h-40 rounded-3xl bg-zinc-900 border border-white/5 flex items-center justify-center overflow-hidden">
+                        {/* Logo Area with Source */}
+                        <div className="mx-4 relative h-40 rounded-3xl bg-zinc-900 border border-white/5 flex items-center justify-center overflow-hidden group/logo">
                             <div className="absolute inset-0 opacity-10 bg-[radial-gradient(circle_at_center,_var(--tw-gradient-stops))] from-white via-transparent to-transparent" />
                             {!imgError ? (
                                 <Image
-                                    key={stock?.ticker} // Key 부여로 강제 리렌더링
+                                    key={stock?.ticker}
                                     src={logoUrl} alt="logo" fill 
-                                    className="object-contain p-10 drop-shadow-2xl transition-transform group-hover:scale-110" unoptimized
+                                    className="object-contain p-10 drop-shadow-2xl transition-transform group-hover/logo:scale-110" unoptimized
                                     onError={() => setImgError(true)}
                                 />
                             ) : (
@@ -130,12 +136,19 @@ export const StockCard = ({ stock, isCompact = false }: any) => {
                                     {stock?.ticker?.substring(0, 1)}
                                 </div>
                             )}
+                            
+                            {/* Logo Source URL Display */}
+                            <div className="absolute bottom-2 right-3 flex items-center gap-1 opacity-40 hover:opacity-100 transition-opacity">
+                                <LinkIcon className="w-2 h-2 text-zinc-500" />
+                                <span className="text-[7px] font-medium text-zinc-500 tracking-tighter uppercase">Source: {logoSource}</span>
+                            </div>
+
                             <div className="absolute top-3 right-3 px-3 py-1 bg-white/10 backdrop-blur-md border border-white/20 rounded-full">
                                 <span className="text-[10px] font-black text-white tracking-widest leading-none">{gradeTheme.label}</span>
                             </div>
                         </div>
 
-                        {/* 메인 지표 영역 */}
+                        {/* Main Stats */}
                         <div className="px-5 py-4 grid grid-cols-2 gap-3">
                             <div className="space-y-1">
                                 <div className="flex items-center gap-1.5 text-rose-500">
@@ -147,7 +160,6 @@ export const StockCard = ({ stock, isCompact = false }: any) => {
                                     <span className="text-sm font-black text-rose-500/60">%</span>
                                 </div>
                             </div>
-
                             <div className="space-y-1 text-right flex flex-col items-end">
                                 <div className="flex items-center gap-1.5 text-blue-500">
                                     <span className="text-[9px] font-black uppercase tracking-tighter">Safety Margin</span>
@@ -160,7 +172,7 @@ export const StockCard = ({ stock, isCompact = false }: any) => {
                             </div>
                         </div>
 
-                        {/* 하단 상세 박스 */}
+                        {/* Bottom Info Box */}
                         <div className="px-5 pb-6 mt-auto">
                             <div className="bg-white/[0.03] border border-white/10 rounded-2xl p-3 flex justify-between items-center">
                                 <div className="flex flex-col items-center">
@@ -185,58 +197,65 @@ export const StockCard = ({ stock, isCompact = false }: any) => {
                     </div>
                 </div>
 
-                {/* --- BACK: 가이드 및 상세 설명 --- */}
+                {/* --- BACK --- */}
                 <div 
-                    className="absolute inset-0 rounded-[2.5rem] bg-zinc-950 border-[6px] border-zinc-800 flex flex-col p-7 shadow-2xl overflow-hidden"
-                    style={{ backfaceVisibility: 'hidden', transform: 'rotateY(180deg)', WebkitBackfaceVisibility: 'hidden' }}
+                    className="absolute inset-0 rounded-[2.5rem] bg-zinc-950 border-[6px] border-zinc-900 flex flex-col p-7 shadow-2xl overflow-hidden"
+                    style={{ 
+                        WebkitBackfaceVisibility: 'hidden', 
+                        backfaceVisibility: 'hidden', 
+                        transform: 'rotateY(180deg) translateZ(1px)',
+                        zIndex: isFlipped ? 1 : 0 
+                    }}
                 >
-                    <div className="flex items-center gap-2 mb-6">
+                    <div className="flex items-center gap-2 mb-6 border-b border-zinc-800 pb-4">
                         <Info className="w-5 h-5 text-blue-500" />
-                        <h4 className="text-white font-black text-sm tracking-widest italic uppercase">Metric Guide</h4>
+                        <h4 className="text-white font-black text-sm tracking-widest italic uppercase">Algorithm Detail Guide</h4>
                     </div>
 
-                    <div className="flex-1 space-y-5">
-                        {/* 1. Upside Guide */}
-                        <div className="group/item">
-                            <div className="flex items-center gap-2 mb-1">
-                                <TrendingUp className="w-3 h-3 text-rose-500" />
-                                <span className="text-[10px] font-black text-zinc-300 uppercase">Upside Potential</span>
+                    <div className="flex-1 space-y-6 overflow-y-auto no-scrollbar">
+                        {/* 1. Upside Detailed */}
+                        <div className="space-y-1.5">
+                            <div className="flex items-center gap-2">
+                                <TrendingUp className="w-3.5 h-3.5 text-rose-500" />
+                                <span className="text-[11px] font-black text-rose-500 uppercase">상승 잠력 (Upside)</span>
                             </div>
-                            <p className="text-[11px] text-zinc-500 leading-relaxed font-medium">
-                                현재가 대비 <span className="text-zinc-200 font-bold">NCAV(순유동자산)</span>가 얼마나 큰지를 나타냅니다. 수치가 높을수록 청산가치 대비 저평가되어 있음을 의미합니다.
+                            <p className="text-[11px] text-zinc-400 leading-relaxed font-medium">
+                                <span className="text-zinc-100">순유동자산(NCAV)</span>에서 부채를 차감한 금액이 현재 시가총액보다 얼마나 높은지를 나타냅니다. 
+                                이 수치가 플러스라면, 기업이 보유한 당장 현금화 가능한 자산보다 주가가 저렴하게 거래되고 있다는 "그레이엄의 안전마진" 신호입니다.
                             </p>
                         </div>
 
-                        {/* 2. Safety Guide */}
-                        <div className="group/item">
-                            <div className="flex items-center gap-2 mb-1">
-                                <ShieldCheck className="w-3 h-3 text-blue-500" />
-                                <span className="text-[10px] font-black text-zinc-300 uppercase">Safety Margin</span>
+                        {/* 2. Safety Detailed */}
+                        <div className="space-y-1.5">
+                            <div className="flex items-center gap-2">
+                                <ShieldCheck className="w-3.5 h-3.5 text-blue-500" />
+                                <span className="text-[11px] font-black text-blue-500 uppercase">재무 안전성 (Safety)</span>
                             </div>
-                            <p className="text-[11px] text-zinc-500 leading-relaxed font-medium">
-                                기업의 <span className="text-zinc-200 font-bold">부채비율</span>을 역산한 지표입니다. 99에 가까울수록 부채가 적고 재무구조가 탄탄하여 하락장에서의 방어력이 높습니다.
+                            <p className="text-[11px] text-zinc-400 leading-relaxed font-medium">
+                                총자본 중 부채가 차지하는 비중을 역산하여 99점 만점으로 환산한 점수입니다. 
+                                부채가 적을수록 점수가 높으며, 이는 금리 인상기나 경기 불황 시 기업이 파산하지 않고 버틸 수 있는 <span className="text-zinc-100">펀더멘털의 단단함</span>을 의미합니다.
                             </p>
                         </div>
 
-                        {/* 3. NCAV Score Guide */}
-                        <div className="group/item">
-                            <div className="flex items-center gap-2 mb-1">
-                                <Activity className="w-3 h-3 text-emerald-500" />
-                                <span className="text-[10px] font-black text-zinc-300 uppercase">NCAV Score</span>
+                        {/* 3. NCAV Score Detailed */}
+                        <div className="space-y-1.5">
+                            <div className="flex items-center gap-2">
+                                <Activity className="w-3.5 h-3.5 text-emerald-500" />
+                                <span className="text-[11px] font-black text-emerald-500 uppercase">NCAV 스코어</span>
                             </div>
-                            <p className="text-[11px] text-zinc-500 leading-relaxed font-medium">
-                                <span className="text-zinc-200 font-bold">벤자민 그레이엄</span>의 전략에 따라 (순유동자산 / 시가총액)을 계산한 핵심 점수입니다. 1.0 이상인 경우 시가총액보다 당장 현금화 가능한 자산이 더 많다는 뜻입니다.
+                            <p className="text-[11px] text-zinc-400 leading-relaxed font-medium">
+                                <span className="text-zinc-100">(유동자산 - 총부채) / 시가총액</span> 공식을 통해 산출된 핵심 퀀트 지표입니다. 
+                                1.5 이상인 경우 초저평가 상태로 간주하며, 비정상적으로 낮은 가격에 거래되는 기업을 발굴하는 IdiotQuant 알고리즘의 핵심 로직입니다.
                             </p>
                         </div>
                     </div>
 
-                    {/* 하단 브랜딩 */}
+                    {/* Branding */}
                     <div className="mt-auto pt-4 border-t border-zinc-800 flex flex-col items-center">
                         <div className="text-[10px] font-black text-zinc-600 tracking-[0.3em] italic mb-1 uppercase">IdiotQuant Algorithm Series</div>
                         <div className="text-[8px] text-zinc-700 font-bold">© 2026 VALUE INVESTING PROTOCOL</div>
                     </div>
 
-                    {/* 장식용 글로우 */}
                     <div className="absolute -bottom-10 -right-10 w-32 h-32 bg-blue-500/10 blur-[50px] rounded-full pointer-events-none" />
                 </div>
             </motion.div>
