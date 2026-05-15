@@ -6,11 +6,6 @@ import { AuthProvider } from "@/components/auth-provider";
 import Script from "next/script";
 import { cn } from "@/lib/utils";
 
-/**
- * IDIOTQUANT ROOT LAYOUT
- * - BlueprintJS 제거 및 Tailwind CSS 최적화 완료
- */
-
 export const metadata = {
   title: {
     default: 'IdiotQuant - 퀀트 전략 기반 주식 추천',
@@ -46,7 +41,7 @@ export default function RootLayout({
   children: React.ReactNode
 }) {
   return (
-    <html lang="ko" suppressHydrationWarning className="antialiased">
+    <html lang="ko" suppressHydrationWarning>
       <head>
         {/* 1. 구조화 데이터 주입 */}
         <Script
@@ -64,18 +59,18 @@ export default function RootLayout({
         <meta name="google-adsense-account" content="ca-pub-6995198721227228" />
       </head>
       <body className={cn(
-        "min-h-screen bg-white dark:bg-black text-zinc-900 dark:text-zinc-50",
-        "flex flex-col md:flex-row overflow-x-hidden"
+        "min-h-screen font-sans antialiased bg-white dark:bg-black text-zinc-900 dark:text-zinc-50",
+        "flex flex-col md:flex-row" // 모바일은 세로, 데스크탑은 가로 레이아웃
       )}>
         <StoreProvider>
           <ThemeProviderClient>
             <AuthProvider>
-              {/* 네비게이션 (사이드바 또는 상단바) */}
+              {/* 사이드바/네비게이션 */}
               <NavbarWithSimpleLinks />
               
-              {/* 메인 콘텐츠 컨테이너 */}
-              <main className="flex-1 w-full min-h-screen flex flex-col">
-                <div className="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
+              {/* 메인 콘텐츠 영역 */}
+              <main className="flex-1 w-full min-h-screen overflow-y-auto overflow-x-hidden">
+                <div className="mx-auto w-full">
                   {children}
                 </div>
               </main>

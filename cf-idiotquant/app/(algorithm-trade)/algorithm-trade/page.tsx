@@ -34,7 +34,6 @@ import { StockCard } from "@/app/(search)/search/components/StockCard";
 import { cn } from "@/lib/utils";
 
 const us_tickers = [...nasdaq_tickers, ...nyse_tickers, ...amex_tickers];
-// 1. 페이지 사이즈를 10으로 변경
 const PAGE_SIZE = 10;
 
 /** 카드 데이터 패처 컴포넌트 */
@@ -78,13 +77,15 @@ const StockDataFetcher = ({ ticker, name, isSelected, onClick }: { ticker: strin
     }, [ticker, name, isUs, dispatch, data?.state]);
 
     if (!data || data.state === "pending") {
-        return <div className="h-[450px] w-full animate-pulse bg-zinc-100 dark:bg-zinc-800/40 rounded-[2.5rem] border border-zinc-200/50 dark:border-zinc-700/50" />;
+        // 스켈레톤의 다크 모드 배경색 보정
+        return (
+            <div className="h-[450px] w-full animate-pulse bg-zinc-100 dark:bg-zinc-900/50 rounded-[2.5rem] border border-zinc-200/50 dark:border-zinc-800/50" />
+        );
     }
 
     return (
         <div onClick={onClick} className={cn("w-full h-full", !isSelected && "cursor-pointer")}>
             <StockCard
-                // isCompact={!isSelected}
                 isCompact={false}
                 stock={data.isUs ? {
                     code: ticker, isUs: true, name, ticker: name,
@@ -158,127 +159,140 @@ function AlgorithmTradeContent() {
     if (!activeStrategy) return <EmptyUI onRetry={() => dispatch(reqGetNcavLatest())} />;
 
     return (
-        <div className="max-w-[1600px] mx-auto px-4 sm:px-6 py-10 min-h-screen">
-            <nav className="flex flex-wrap gap-2 mb-12 pb-6 border-b border-zinc-100 dark:border-zinc-800">
-                {strategyNcavLatest?.list?.map((strategy) => {
-                    const isActive = activeStrategy.strategyId === strategy.strategyId;
-                    return (
-                        <button
-                            key={strategy.strategyId}
-                            onClick={() => {
-                                const params = new URLSearchParams(searchParams.toString());
-                                params.set("strategy", strategy.strategyId);
-                                router.push(`?${params.toString()}`, { scroll: false });
-                            }}
-                            className={`flex items-center gap-2 px-5 py-2.5 rounded-2xl text-sm font-bold transition-all ${isActive ? "bg-zinc-900 text-white dark:bg-white dark:text-zinc-900 shadow-xl" : "bg-zinc-50 text-zinc-500 hover:bg-zinc-100 dark:bg-zinc-900"}`}
-                        >
-                            {strategy.name}
-                        </button>
-                    );
-                })}
-            </nav>
+        /* 전체 컨테이너 배경 다크 모드 적용 */
+        <div className="min-h-screen bg-white dark:bg-zinc-950 transition-colors duration-500">
+            <div className="max-w-[1600px] mx-auto px-4 sm:px-6 py-10">
+                {/* 네비게이션 다크 모드 보정 */}
+                <nav className="flex flex-wrap gap-2 mb-12 pb-6 border-b border-zinc-100 dark:border-zinc-900">
+                    {strategyNcavLatest?.list?.map((strategy) => {
+                        const isActive = activeStrategy.strategyId === strategy.strategyId;
+                        return (
+                            <button
+                                key={strategy.strategyId}
+                                onClick={() => {
+                                    const params = new URLSearchParams(searchParams.toString());
+                                    params.set("strategy", strategy.strategyId);
+                                    router.push(`?${params.toString()}`, { scroll: false });
+                                }}
+                                className={cn(
+                                    "flex items-center gap-2 px-5 py-2.5 rounded-2xl text-sm font-bold transition-all",
+                                    isActive 
+                                        ? "bg-zinc-900 text-white dark:bg-white dark:text-zinc-900 shadow-xl" 
+                                        : "bg-zinc-50 text-zinc-500 hover:bg-zinc-100 dark:bg-zinc-900 dark:text-zinc-400 dark:hover:bg-zinc-800"
+                                )}
+                            >
+                                {strategy.name}
+                            </button>
+                        );
+                    })}
+                </nav>
 
-            <div className="relative">
-                <AnimatePresence>
-                    {selectedTicker && (
-                        <motion.div
-                            initial={{ opacity: 0 }}
-                            animate={{ opacity: 1 }}
-                            exit={{ opacity: 0 }}
-                            onClick={() => setSelectedTicker(null)}
-                            className="fixed inset-0 bg-zinc-950/60 dark:bg-black/90 backdrop-blur-xl z-[100] cursor-zoom-out"
-                        />
-                    )}
-                </AnimatePresence>
+                <div className="relative">
+                    <AnimatePresence>
+                        {selectedTicker && (
+                            <motion.div
+                                initial={{ opacity: 0 }}
+                                animate={{ opacity: 1 }}
+                                exit={{ opacity: 0 }}
+                                onClick={() => setSelectedTicker(null)}
+                                // 팝업 시 배경 블러 및 딤드 처리 강화
+                                className="fixed inset-0 bg-white/60 dark:bg-black/80 backdrop-blur-xl z-[100] cursor-zoom-out"
+                            />
+                        )}
+                    </AnimatePresence>
 
-                <LayoutGroup>
-                    <div className={cn(
-                        "relative transition-all duration-700",
-                        "flex flex-col items-center lg:grid lg:grid-cols-2 xl:grid-cols-3 lg:gap-12"
-                    )}>
-                        {visibleCandidates.map(([ticker, candidate], index) => {
-                            const isSelected = selectedTicker === ticker;
-                            const isAnySelected = selectedTicker !== null;
+                    <LayoutGroup>
+                        <div className={cn(
+                            "relative transition-all duration-700",
+                            "flex flex-col items-center lg:grid lg:grid-cols-2 xl:grid-cols-3 lg:gap-12"
+                        )}>
+                            {visibleCandidates.map(([ticker, candidate], index) => {
+                                const isSelected = selectedTicker === ticker;
+                                const isAnySelected = selectedTicker !== null;
 
-                            return (
-                                <React.Fragment key={`${activeStrategy.strategyId}-${ticker}`}>
-                                    {/* 1. 팝업 모드: 선택된 카드가 절대적인 최상위 z-index를 가짐 */}
-                                    <AnimatePresence mode="wait">
-                                        {isSelected && (
-                                            <div
-                                                // z-[200]으로 높여서 리스트 모드의 어떤 카드(최대 index+alpha)보다도 위에 오게 함
-                                                className="fixed inset-0 z-[200] flex items-center justify-center p-4 cursor-zoom-out"
-                                                onClick={() => setSelectedTicker(null)}
-                                            >
-                                                <motion.div
-                                                    layoutId={`card-${ticker}`}
-                                                    // 클릭된 카드는 스타일적으로도 최상위임을 명시
-                                                    style={{ zIndex: 1000 }}
-                                                    className="w-fit max-w-2xl cursor-default relative"
-                                                    transition={{ type: "spring", stiffness: 350, damping: 35 }}
-                                                    onClick={(e) => e.stopPropagation()}
+                                return (
+                                    <React.Fragment key={`${activeStrategy.strategyId}-${ticker}`}>
+                                        <AnimatePresence mode="wait">
+                                            {isSelected && (
+                                                <div
+                                                    className="fixed inset-0 z-[200] flex items-center justify-center p-4 cursor-zoom-out"
+                                                    onClick={() => setSelectedTicker(null)}
                                                 >
-                                                    <StockDataFetcher
-                                                        ticker={ticker}
-                                                        name={candidate.symbol || ticker}
-                                                        isSelected={true}
-                                                    />
-                                                </motion.div>
-                                            </div>
-                                        )}
-                                    </AnimatePresence>
-
-                                    {/* 2. 리스트 모드: 계단식 겹침 유지 */}
-                                    {!isSelected && (
-                                        <motion.div
-                                            layoutId={`card-${ticker}`}
-                                            className={cn(
-                                                "w-fit max-w-2xl transition-all duration-500",
-                                                index !== 0 && "mt-[-400px] lg:mt-0",
-                                                // 선택된 카드가 있을 때 리스트의 다른 카드들은 투명해지며 z-index 영향력 상실
-                                                isAnySelected ? "opacity-0 scale-100 pointer-events-none" : "opacity-100 relative"
+                                                    <motion.div
+                                                        layoutId={`card-${ticker}`}
+                                                        style={{ zIndex: 1000 }}
+                                                        className="w-fit max-w-2xl cursor-default relative"
+                                                        transition={{ type: "spring", stiffness: 350, damping: 35 }}
+                                                        onClick={(e) => e.stopPropagation()}
+                                                    >
+                                                        <StockDataFetcher
+                                                            ticker={ticker}
+                                                            name={candidate.symbol || ticker}
+                                                            isSelected={true}
+                                                        />
+                                                    </motion.div>
+                                                </div>
                                             )}
-                                            // 먼저 나온 카드가 위로 오게 하여 상단 헤더 노출 보장
-                                            style={{ zIndex: visibleCandidates.length + index }}
-                                        >
-                                            <StockDataFetcher
-                                                ticker={ticker}
-                                                name={candidate.name || ticker}
-                                                isSelected={false}
-                                                onClick={() => setSelectedTicker(ticker)}
-                                            />
-                                        </motion.div>
-                                    )}
-                                </React.Fragment>
-                            );
-                        })}
-                    </div>
-                </LayoutGroup>
-            </div>
+                                        </AnimatePresence>
 
-            {!selectedTicker && visibleCandidates.length < Object.keys(activeStrategy.candidates).length && (
-                <div ref={observerTarget} className="h-60 flex items-center justify-center mt-10">
-                    <div className="w-10 h-10 border-4 border-zinc-200 border-t-blue-600 rounded-full animate-spin" />
+                                        {!isSelected && (
+                                            <motion.div
+                                                layoutId={`card-${ticker}`}
+                                                className={cn(
+                                                    "w-fit max-w-2xl transition-all duration-500",
+                                                    index !== 0 && "mt-[-400px] lg:mt-0",
+                                                    isAnySelected ? "opacity-0 scale-100 pointer-events-none" : "opacity-100 relative"
+                                                )}
+                                                style={{ zIndex: visibleCandidates.length + index }}
+                                            >
+                                                <StockDataFetcher
+                                                    ticker={ticker}
+                                                    name={candidate.name || ticker}
+                                                    isSelected={false}
+                                                    onClick={() => setSelectedTicker(ticker)}
+                                                />
+                                            </motion.div>
+                                        )}
+                                    </React.Fragment>
+                                );
+                            })}
+                        </div>
+                    </LayoutGroup>
                 </div>
-            )}
+
+                {!selectedTicker && visibleCandidates.length < Object.keys(activeStrategy.candidates).length && (
+                    <div ref={observerTarget} className="h-60 flex items-center justify-center mt-10">
+                        <div className="w-10 h-10 border-4 border-zinc-200 dark:border-zinc-800 border-t-blue-600 rounded-full animate-spin" />
+                    </div>
+                )}
+            </div>
         </div>
     );
 }
 
 const LoadingUI = () => (
-    <div className="h-screen flex flex-col items-center justify-center bg-white dark:bg-black">
+    /* 로딩 화면 배경 다크 모드 */
+    <div className="h-screen flex flex-col items-center justify-center bg-white dark:bg-zinc-950">
         <CircleStackIcon className="w-20 h-20 text-blue-600 animate-pulse mb-6" />
-        <p className="font-black text-zinc-500 tracking-[0.5em] text-xs uppercase animate-pulse">Analyzing Portfolio...</p>
+        <p className="font-black text-zinc-500 dark:text-zinc-400 tracking-[0.5em] text-xs uppercase animate-pulse">Analyzing Portfolio...</p>
     </div>
 );
 
 const EmptyUI = ({ onRetry }: { onRetry: () => void }) => (
-    <div className="py-60 text-center">
-        <div className="inline-flex p-6 rounded-[3rem] bg-zinc-50 dark:bg-zinc-900 mb-8">
-            <ExclamationTriangleIcon className="w-12 h-12 text-zinc-300 dark:text-zinc-700" />
+    /* 빈 화면 배경 다크 모드 */
+    <div className="min-h-screen flex items-center justify-center bg-white dark:bg-zinc-950">
+        <div className="text-center">
+            <div className="inline-flex p-6 rounded-[3rem] bg-zinc-50 dark:bg-zinc-900 mb-8">
+                <ExclamationTriangleIcon className="w-12 h-12 text-zinc-300 dark:text-zinc-700" />
+            </div>
+            <h3 className="text-3xl font-black text-zinc-900 dark:text-white mb-4">Data Not Found</h3>
+            <button 
+                onClick={onRetry} 
+                className="px-10 py-4 bg-zinc-900 dark:bg-white dark:text-zinc-900 text-white rounded-[2rem] font-black hover:scale-105 active:scale-100 transition-all shadow-xl"
+            >
+                Retry Refresh
+            </button>
         </div>
-        <h3 className="text-3xl font-black text-zinc-900 dark:text-white mb-4">Data Not Found</h3>
-        <button onClick={onRetry} className="px-10 py-4 bg-zinc-900 dark:bg-white dark:text-zinc-900 text-white rounded-[2rem] font-black hover:scale-105 active:scale-100 transition-all shadow-xl">Retry Refresh</button>
     </div>
 );
 
