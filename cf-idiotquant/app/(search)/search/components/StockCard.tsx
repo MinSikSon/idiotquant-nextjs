@@ -1,8 +1,8 @@
 "use client";
 
-import React, { useState, useMemo, useCallback, useEffect } from 'react';
+import React, { useState, useMemo, useCallback, useEffect, useRef } from 'react';
 import Image from 'next/image';
-import { motion } from 'framer-motion';
+import { motion, useMotionValue, useTransform } from 'framer-motion';
 import { cn } from "@/lib/utils";
 import { Activity, Info, Sparkles, Shield, Swords, DollarSign, Coins } from "lucide-react";
 import LineChart from "@/components/LineChart";
@@ -20,10 +20,38 @@ const SECTOR_THEMES: Record<string, any> = {
 };
 
 const GRADE_THEMES: Record<string, any> = {
-    SSS: { frame: "from-pink-500 via-purple-600 to-cyan-400", label: "ULTRA RARE", glow: "shadow-[0_0_30px_rgba(219,39,119,0.35)] dark:shadow-[0_0_40px_rgba(219,39,119,0.55)]", animate: true },
-    SS: { frame: "from-amber-400 via-orange-500 to-yellow-500", label: "SUPER RARE", glow: "shadow-[0_0_20px_rgba(245,158,11,0.25)] dark:shadow-[0_0_30px_rgba(245,158,11,0.45)]", animate: false },
-    S: { frame: "from-emerald-400 via-teal-500 to-cyan-500", label: "RARE", glow: "shadow-[0_0_15px_rgba(16,185,129,0.2)] dark:shadow-[0_0_25px_rgba(16,185,129,0.35)]", animate: false },
-    A: { frame: "from-slate-300 to-slate-500 dark:from-slate-600 dark:to-slate-800", label: "COMMON", glow: "shadow-[0_4px_20px_rgba(0,0,0,0.08)] dark:shadow-[0_0_20px_rgba(0,0,0,0.3)]", animate: false },
+    SSS: { 
+        frame: "from-pink-500 via-purple-600 via-cyan-400 to-pink-500", 
+        label: "ULTRA RARE", 
+        glow: "shadow-[0_0_35px_rgba(219,39,119,0.45)] dark:shadow-[0_0_50px_rgba(168,85,247,0.65)]", 
+        animate: true,
+        textClass: "bg-gradient-to-r from-pink-500 via-purple-500 to-cyan-500 bg-clip-text text-transparent dark:drop-shadow-[0_0_10px_rgba(168,85,247,0.5)]",
+        holoStyle: "linear-gradient(125deg, rgba(255,0,128,0.2) 0%, rgba(0,255,255,0.2) 30%, rgba(255,255,0,0.2) 60%, rgba(128,0,255,0.2) 100%)"
+    },
+    SS: { 
+        frame: "from-amber-400 via-orange-500 to-yellow-500", 
+        label: "SUPER RARE", 
+        glow: "shadow-[0_0_25px_rgba(245,158,11,0.35)] dark:shadow-[0_0_40px_rgba(234,88,12,0.55)]", 
+        animate: true,
+        textClass: "bg-gradient-to-r from-amber-500 via-orange-500 to-yellow-500 bg-clip-text text-transparent",
+        holoStyle: "linear-gradient(115deg, rgba(245,158,11,0.25) 10%, rgba(255,255,255,0.3) 45%, rgba(234,88,12,0.25) 80%)"
+    },
+    S: { 
+        frame: "from-emerald-400 via-teal-500 to-cyan-500", 
+        label: "RARE", 
+        glow: "shadow-[0_0_20px_rgba(16,185,129,0.25)] dark:shadow-[0_0_30px_rgba(6,182,212,0.45)]", 
+        animate: false,
+        textClass: "bg-gradient-to-r from-emerald-500 to-cyan-500 bg-clip-text text-transparent",
+        holoStyle: "linear-gradient(135deg, rgba(16,185,129,0.15) 0%, rgba(6,182,212,0.15) 100%)"
+    },
+    A: { 
+        frame: "from-slate-300 to-slate-500 dark:from-slate-600 dark:to-slate-800", 
+        label: "COMMON", 
+        glow: "shadow-[0_4px_20px_rgba(0,0,0,0.08)] dark:shadow-[0_0_20px_rgba(0,0,0,0.3)]", 
+        animate: false,
+        textClass: "text-slate-600 dark:text-slate-300",
+        holoStyle: "none"
+    },
 };
 
 interface StockCardProps {
@@ -39,8 +67,21 @@ interface StockCardProps {
 
 export const StockCard = ({ stock, chartConfig, rawData, isCompact = false }: StockCardProps) => {
     const [isFlipped, setIsFlipped] = useState(false);
-    const [rotation, setRotation] = useState({ x: 0, y: 0 });
     const [imgError, setImgError] = useState(false);
+    
+    // 마우스 물리 무브먼트를 위한 Framer-motion MotionValue 정의
+    const cardRef = useRef<HTMLDivElement>(null);
+    const mouseX = useMotionValue(0.5);
+    const mouseY = useMotionValue(0.5);
+
+    // 각도 제어 스프링
+    const rotateX = useTransform(mouseY, [0, 1], [15, -15]);
+    const rotateY = useTransform(mouseX, [0, 1], [-15, 15]);
+
+    // 실시간 홀로그램 위치 반사 매핑 (카드가 기울어지는 각도에 부합하도록 배경 그라데이션 중심 변경)
+    const holoX = useTransform(mouseX, [0, 1], ["0%", "100%"]);
+    const holoY = useTransform(mouseY, [0, 1], ["0%", "100%"]);
+    const holoOpacity = useTransform(mouseX, [0, 0.5, 1], [0.4, 0.1, 0.4]);
 
     useEffect(() => {
         setImgError(false);
@@ -67,13 +108,21 @@ export const StockCard = ({ stock, chartConfig, rawData, isCompact = false }: St
     }, [stock]);
 
     const handleMouseMove = useCallback((e: React.MouseEvent<HTMLDivElement>) => {
-        const rect = e.currentTarget.getBoundingClientRect();
-        const x = (e.clientX - rect.left) / rect.width - 0.5;
-        const y = (e.clientY - rect.top) / rect.height - 0.5;
-        setRotation({ x: -y * 18, y: x * 18 });
-    }, []);
+        if (!cardRef.current) return;
+        const rect = cardRef.current.getBoundingClientRect();
+        const width = rect.width;
+        const height = rect.height;
+        const x = (e.clientX - rect.left) / width;
+        const y = (e.clientY - rect.top) / height;
+        
+        mouseX.set(x);
+        mouseY.set(y);
+    }, [mouseX, mouseY]);
 
-    const resetRotation = useCallback(() => setRotation({ x: 0, y: 0 }), []);
+    const resetRotation = useCallback(() => {
+        mouseX.set(0.5);
+        mouseY.set(0.5);
+    }, [mouseX, mouseY]);
 
     const logoUrl = stock?.isUs 
         ? `https://img.logo.dev/ticker/${stock.ticker}?token=${process.env.NEXT_PUBLIC_CLEARBIT_API_KEY}` 
@@ -81,6 +130,7 @@ export const StockCard = ({ stock, chartConfig, rawData, isCompact = false }: St
 
     return (
         <div
+            ref={cardRef}
             className={cn(
                 "relative transition-all duration-500 select-none cursor-pointer group transform-gpu",
                 isCompact ? "w-64 h-[25rem]" : "w-[22.5rem] h-[33rem]"
@@ -91,9 +141,12 @@ export const StockCard = ({ stock, chartConfig, rawData, isCompact = false }: St
             onClick={() => setIsFlipped(!isFlipped)}
         >
             <motion.div
-                animate={{ rotateX: rotation.x, rotateY: isFlipped ? 180 : rotation.y }}
-                transition={{ type: "spring", stiffness: 180, damping: 22 }}
-                style={{ transformStyle: 'preserve-3d' }}
+                style={{ 
+                    rotateX: isFlipped ? 0 : rotateX, 
+                    rotateY: isFlipped ? 180 : rotateY,
+                    transformStyle: 'preserve-3d' 
+                }}
+                transition={{ type: "spring", stiffness: 220, damping: 25 }}
                 className="w-full h-full relative"
             >
                 {/* ================= FRONT CARD ================= */}
@@ -102,7 +155,7 @@ export const StockCard = ({ stock, chartConfig, rawData, isCompact = false }: St
                         "absolute inset-0 backface-hidden rounded-[1.75rem] p-[5px] bg-gradient-to-br transition-all duration-300",
                         gradeTheme.frame,
                         gradeTheme.glow,
-                        gradeTheme.animate && "bg-[length:200%_200%] animate-[gradient-xy_6s_ease_infinite]"
+                        gradeTheme.animate && "bg-[length:200%_200%] animate-[gradient-xy_4s_ease_infinite]"
                     )}
                     style={{ 
                         WebkitBackfaceVisibility: 'hidden', 
@@ -114,6 +167,22 @@ export const StockCard = ({ stock, chartConfig, rawData, isCompact = false }: St
                     {/* Inner Container */}
                     <div className="w-full h-full rounded-[1.5rem] bg-white dark:bg-zinc-950 flex flex-col relative overflow-hidden border border-black/5 dark:border-white/10 text-zinc-900 dark:text-white transition-colors duration-300">
                         
+                        {/* TCG 3D 홀로그램 무빙 플래시 레이어 (SSS, SS, S 등급만 작동) */}
+                        {stock?.grade !== 'A' && (
+                            <motion.div 
+                                className="absolute inset-0 mix-blend-color-dodge pointer-events-none z-20 opacity-0 group-hover:opacity-100 transition-opacity duration-300"
+                                style={{
+                                    background: gradeTheme.holoStyle,
+                                    backgroundPosition: useTransform(
+                                        [holoX, holoY],
+                                        (values) => `${values[0]} ${values[1]}`
+                                    ),
+                                    backgroundSize: '175% 175%',
+                                    opacity: holoOpacity
+                                }}
+                            />
+                        )}
+
                         {/* 디테일 백그라운드 데코레이션 */}
                         <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-zinc-100/50 via-white to-zinc-50 dark:from-zinc-900/40 dark:via-zinc-950 dark:to-black pointer-events-none z-0" />
                         
@@ -134,12 +203,11 @@ export const StockCard = ({ stock, chartConfig, rawData, isCompact = false }: St
                                     )}
                                 </span>
                                 <div className="flex items-center justify-between w-full gap-2">
-                                    {/* 종목명 너비를 유연하게 가져가되 차트 영역을 확보하도록 세팅 */}
                                     <h3 className="font-black text-xl text-zinc-900 dark:text-white tracking-tight drop-shadow-sm dark:drop-shadow-[0_2px_4px_rgba(0,0,0,0.8)] truncate flex-1 min-w-0">
                                         {stock?.name}
                                     </h3>
                                     
-                                    {/* 🔥 차트를 오른쪽 끝으로 밀착 정렬 (ml-auto 및 크기 고정) */}
+                                    {/* 차트 영역 */}
                                     {chartConfig && chartConfig.data && chartConfig.data.length > 0 && (
                                         <div className="w-20 h-7 flex items-center justify-center opacity-80 dark:opacity-90 shrink-0 ml-auto transform translate-y-0.5">
                                             <LineChart
@@ -164,7 +232,7 @@ export const StockCard = ({ stock, chartConfig, rawData, isCompact = false }: St
                             <div className="absolute inset-0 opacity-15 dark:opacity-25 bg-[linear-gradient(110deg,rgba(255,255,255,0)_30%,rgba(255,255,255,0.4)_45%,rgba(255,255,255,0)_60%)] animate-[shine_4s_infinite] pointer-events-none z-10" />
                             <div className="absolute inset-0 bg-gradient-to-tr from-blue-500/5 via-transparent to-rose-500/5 dark:from-blue-500/10 dark:to-rose-500/10 z-0" />
                             
-                            {/* Grid overlay for TCG vibe */}
+                            {/* TCG 격자 패턴 오버레이 */}
                             <div className="absolute inset-0 bg-[linear-gradient(to_right,rgba(0,0,0,0.02)_1px,transparent_1px),linear-gradient(to_bottom,rgba(0,0,0,0.02)_1px,transparent_1px)] dark:bg-[linear-gradient(to_right,#ffffff03_1px,transparent_1px),linear-gradient(to_bottom,#ffffff03_1px,transparent_1px)] bg-[size:12px_12px] z-0" />
 
                             {!imgError ? (
@@ -184,8 +252,8 @@ export const StockCard = ({ stock, chartConfig, rawData, isCompact = false }: St
 
                             {/* Rarity Tag */}
                             <div className="absolute top-2.5 left-2.5 flex items-center gap-1.5 bg-white/90 dark:bg-zinc-950/90 backdrop-blur-md border border-black/5 dark:border-white/10 px-2.5 py-1 rounded-md shadow-sm dark:shadow-lg z-20">
-                                <Sparkles className="w-3 h-3 text-amber-500 dark:text-amber-400 animate-pulse" />
-                                <span className="text-[9px] font-black tracking-widest text-zinc-700 dark:text-zinc-200">{gradeTheme.label}</span>
+                                <Sparkles className={cn("w-3 h-3 animate-pulse", stock?.grade === 'SSS' ? "text-pink-500" : "text-amber-500")} />
+                                <span className={cn("text-[9px] font-black tracking-widest", gradeTheme.textClass)}>{gradeTheme.label}</span>
                             </div>
 
                             {/* Ticker Floating Tag */}
@@ -277,7 +345,6 @@ export const StockCard = ({ stock, chartConfig, rawData, isCompact = false }: St
                         zIndex: isFlipped ? 1 : 0 
                     }}
                 >
-                    {/* Geometric background for card back */}
                     <div className="absolute inset-0 opacity-5 dark:opacity-10 bg-[radial-gradient(#000000_1px,transparent_1px)] dark:bg-[radial-gradient(#ffffff_1px,transparent_1px)] [background-size:16px_16px] pointer-events-none" />
                     <div className="absolute inset-0 bg-gradient-to-tr from-zinc-50 via-white to-zinc-100 dark:from-zinc-950 dark:via-zinc-900 dark:to-black z-0" />
 
@@ -316,7 +383,7 @@ export const StockCard = ({ stock, chartConfig, rawData, isCompact = false }: St
                 </div>
             </motion.div>
 
-            {/* Optimized Animation Utilities via Tailwind/Global Style */}
+            {/* CSS 최적화 애니메이션 */}
             <style jsx global>{`
                 @keyframes shine {
                     0% { transform: translateX(-200%) skewX(-35deg); }
