@@ -76,8 +76,22 @@ const StockDataFetcher = ({ ticker, name, isSelected, onClick }: { ticker: strin
         fetchData();
     }, [ticker, name, isUs, dispatch, data?.state]);
 
+    // 차트 데이터 구성을 위한 안전한 가공 연산 (useMemo)
+    const chartConfig = useMemo(() => {
+        if (!data || data.state !== "fulfilled") {
+            return { data: [], categories: [], color: '#3b82f6' };
+        }
+        const isUsMarket = data.isUs === true;
+        const rawData = isUsMarket ? data.usDaily?.output2 : data.kiChart?.output2;
+        
+        return {
+            data: rawData?.map((i: any) => Number(isUsMarket ? i.clos : i.stck_clpr)).reverse() || [],
+            categories: rawData?.map((i: any) => (isUsMarket ? i.xymd : i.stck_bsop_date)).reverse() || [],
+            color: isUsMarket ? '#3b82f6' : '#6366f1',
+        };
+    }, [data]);
+
     if (!data || data.state === "pending") {
-        // 스켈레톤의 다크 모드 배경색 보정
         return (
             <div className="h-[450px] w-full animate-pulse bg-zinc-100 dark:bg-zinc-900/50 rounded-[2.5rem] border border-zinc-200/50 dark:border-zinc-800/50" />
         );
@@ -104,6 +118,7 @@ const StockDataFetcher = ({ ticker, name, isSelected, onClick }: { ticker: strin
                     pbr: data?.kiPrice?.output?.pbr ?? 0,
                     sector: data?.kiPrice?.output?.bstp_kor_isnm ?? "DEFAULT",
                 }}
+                chartConfig={chartConfig} // ◀ 누락되었던 필수 프로퍼티를 완전히 전달하여 빌드 에러 차단
             />
         </div>
     );
@@ -159,10 +174,8 @@ function AlgorithmTradeContent() {
     if (!activeStrategy) return <EmptyUI onRetry={() => dispatch(reqGetNcavLatest())} />;
 
     return (
-        /* 전체 컨테이너 배경 다크 모드 적용 */
         <div className="min-h-screen bg-white dark:bg-zinc-950 transition-colors duration-500">
             <div className="max-w-[1600px] mx-auto px-4 sm:px-6 py-10">
-                {/* 네비게이션 다크 모드 보정 */}
                 <nav className="flex flex-wrap gap-2 mb-12 pb-6 border-b border-zinc-100 dark:border-zinc-900">
                     {strategyNcavLatest?.list?.map((strategy) => {
                         const isActive = activeStrategy.strategyId === strategy.strategyId;
@@ -179,7 +192,7 @@ function AlgorithmTradeContent() {
                                     isActive 
                                         ? "bg-zinc-900 text-white dark:bg-white dark:text-zinc-900 shadow-xl" 
                                         : "bg-zinc-50 text-zinc-500 hover:bg-zinc-100 dark:bg-zinc-900 dark:text-zinc-400 dark:hover:bg-zinc-800"
-                                )}
+                                    )}
                             >
                                 {strategy.name}
                             </button>
@@ -195,7 +208,6 @@ function AlgorithmTradeContent() {
                                 animate={{ opacity: 1 }}
                                 exit={{ opacity: 0 }}
                                 onClick={() => setSelectedTicker(null)}
-                                // 팝업 시 배경 블러 및 딤드 처리 강화
                                 className="fixed inset-0 bg-white/60 dark:bg-black/80 backdrop-blur-xl z-[100] cursor-zoom-out"
                             />
                         )}
@@ -271,7 +283,6 @@ function AlgorithmTradeContent() {
 }
 
 const LoadingUI = () => (
-    /* 로딩 화면 배경 다크 모드 */
     <div className="h-screen flex flex-col items-center justify-center bg-white dark:bg-zinc-950">
         <CircleStackIcon className="w-20 h-20 text-blue-600 animate-pulse mb-6" />
         <p className="font-black text-zinc-500 dark:text-zinc-400 tracking-[0.5em] text-xs uppercase animate-pulse">Analyzing Portfolio...</p>
@@ -279,7 +290,6 @@ const LoadingUI = () => (
 );
 
 const EmptyUI = ({ onRetry }: { onRetry: () => void }) => (
-    /* 빈 화면 배경 다크 모드 */
     <div className="min-h-screen flex items-center justify-center bg-white dark:bg-zinc-950">
         <div className="text-center">
             <div className="inline-flex p-6 rounded-[3rem] bg-zinc-50 dark:bg-zinc-900 mb-8">

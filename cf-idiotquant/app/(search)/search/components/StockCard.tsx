@@ -74,7 +74,7 @@ export const StockCard = ({ stock, chartConfig, rawData, isCompact = false }: St
     const mouseX = useMotionValue(0.5);
     const mouseY = useMotionValue(0.5);
 
-    // 각도 제어 스프링
+    // 정면 상태일 때 마우스 트래킹 틸트 계산 (뒤집혔을 때는 트래킹을 잠그거나 0으로 수렴하게 유도)
     const rotateX = useTransform(mouseY, [0, 1], [15, -15]);
     const rotateY = useTransform(mouseX, [0, 1], [-15, 15]);
 
@@ -108,7 +108,7 @@ export const StockCard = ({ stock, chartConfig, rawData, isCompact = false }: St
     }, [stock]);
 
     const handleMouseMove = useCallback((e: React.MouseEvent<HTMLDivElement>) => {
-        if (!cardRef.current) return;
+        if (!cardRef.current || isFlipped) return; // 뒤집힌 상태에서는 틸트 효과 무시
         const rect = cardRef.current.getBoundingClientRect();
         const width = rect.width;
         const height = rect.height;
@@ -117,7 +117,7 @@ export const StockCard = ({ stock, chartConfig, rawData, isCompact = false }: St
         
         mouseX.set(x);
         mouseY.set(y);
-    }, [mouseX, mouseY]);
+    }, [mouseX, mouseY, isFlipped]);
 
     const resetRotation = useCallback(() => {
         mouseX.set(0.5);
@@ -132,27 +132,29 @@ export const StockCard = ({ stock, chartConfig, rawData, isCompact = false }: St
         <div
             ref={cardRef}
             className={cn(
-                "relative transition-all duration-500 select-none cursor-pointer group transform-gpu",
+                "relative select-none cursor-pointer group transform-gpu",
                 isCompact ? "w-64 h-[25rem]" : "w-[22.5rem] h-[33rem]"
             )}
-            style={{ perspective: '2500px' }}
+            style={{ perspective: '2000px' }}
             onMouseMove={handleMouseMove}
             onMouseLeave={resetRotation}
-            onClick={() => setIsFlipped(!isFlipped)}
+            onClick={() => setIsFlipped(prev => !prev)}
         >
             <motion.div
                 style={{ 
+                    // 정면일 때는 마우스 인터렉션 틸트 적용, 뒤집히는 순간 180도 Y축 회전 고정
                     rotateX: isFlipped ? 0 : rotateX, 
                     rotateY: isFlipped ? 180 : rotateY,
                     transformStyle: 'preserve-3d' 
                 }}
-                transition={{ type: "spring", stiffness: 220, damping: 25 }}
-                className="w-full h-full relative"
+                animate={{ rotateY: isFlipped ? 180 : 0 }}
+                transition={{ type: "spring", stiffness: 160, damping: 22, mass: 1.2 }}
+                className="w-full h-full relative transform-gpu"
             >
                 {/* ================= FRONT CARD ================= */}
                 <div 
                     className={cn(
-                        "absolute inset-0 backface-hidden rounded-[1.75rem] p-[5px] bg-gradient-to-br transition-all duration-300",
+                        "absolute inset-0 rounded-[1.75rem] p-[5px] bg-gradient-to-br transition-all duration-300",
                         gradeTheme.frame,
                         gradeTheme.glow,
                         gradeTheme.animate && "bg-[length:200%_200%] animate-[gradient-xy_4s_ease_infinite]"
@@ -160,8 +162,8 @@ export const StockCard = ({ stock, chartConfig, rawData, isCompact = false }: St
                     style={{ 
                         WebkitBackfaceVisibility: 'hidden', 
                         backfaceVisibility: 'hidden',
-                        zIndex: isFlipped ? 0 : 1,
-                        transform: 'rotateY(0deg)'
+                        transform: 'rotateY(0deg)',
+                        pointerEvents: isFlipped ? 'none' : 'auto'
                     }}
                 >
                     {/* Inner Container */}
@@ -341,8 +343,8 @@ export const StockCard = ({ stock, chartConfig, rawData, isCompact = false }: St
                     style={{ 
                         WebkitBackfaceVisibility: 'hidden', 
                         backfaceVisibility: 'hidden', 
-                        transform: 'rotateY(180deg) translateZ(1px)',
-                        zIndex: isFlipped ? 1 : 0 
+                        transform: 'rotateY(180deg)',
+                        pointerEvents: isFlipped ? 'auto' : 'none'
                     }}
                 >
                     <div className="absolute inset-0 opacity-5 dark:opacity-10 bg-[radial-gradient(#000000_1px,transparent_1px)] dark:bg-[radial-gradient(#ffffff_1px,transparent_1px)] [background-size:16px_16px] pointer-events-none" />
