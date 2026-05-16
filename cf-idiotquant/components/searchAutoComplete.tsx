@@ -9,6 +9,7 @@ interface SearchAutocompleteProps {
     validCorpNameArray: string[];
     onSearchButton: (value: string) => void;
     placeHolder?: string;
+    onSearchStateChange?: (focused: boolean, isEmpty: boolean) => void; // 🔥 단일 콜백으로 가독성 및 정합성 고도화
 }
 
 const getChosung = (str: string) => {
@@ -45,7 +46,7 @@ const disassembleHangul = (str: string) => {
     return result.toLowerCase();
 };
 
-const SearchAutocomplete = ({ validCorpNameArray, onSearchButton, placeHolder }: SearchAutocompleteProps) => {
+const SearchAutocomplete = ({ validCorpNameArray, onSearchButton, placeHolder, onSearchStateChange }: SearchAutocompleteProps) => {
     const [query, setQuery] = useState("");
     const [isFocused, setIsFocused] = useState(false);
     const [selectedIndex, setSelectedIndex] = useState(0);
@@ -87,6 +88,7 @@ const SearchAutocomplete = ({ validCorpNameArray, onSearchButton, placeHolder }:
         if (!value) return;
         setQuery(value);
         setIsFocused(false);
+        if (onSearchStateChange) onSearchStateChange(false, !value.trim());
         onSearchButton(value);
         inputRef.current?.blur();
     };
@@ -106,6 +108,8 @@ const SearchAutocomplete = ({ validCorpNameArray, onSearchButton, placeHolder }:
             setSelectedIndex(prev => (prev > 0 ? prev - 1 : prev));
         } else if (e.key === "Escape") {
             setIsFocused(false);
+            if (onSearchStateChange) onSearchStateChange(false, !query.trim());
+            inputRef.current?.blur();
         }
     };
 
@@ -131,16 +135,31 @@ const SearchAutocomplete = ({ validCorpNameArray, onSearchButton, placeHolder }:
                     autoComplete="off"
                     placeholder={placeHolder}
                     value={query}
-                    onChange={(e) => setQuery(e.target.value)}
-                    onFocus={() => setIsFocused(true)}
-                    onBlur={() => setTimeout(() => setIsFocused(false), 220)}
+                    onChange={(e) => {
+                        const val = e.target.value;
+                        setQuery(val);
+                        if (onSearchStateChange) onSearchStateChange(isFocused, !val.trim());
+                    }}
+                    onFocus={() => {
+                        setIsFocused(true);
+                        if (onSearchStateChange) onSearchStateChange(true, !query.trim());
+                    }}
+                    onBlur={() => {
+                        setTimeout(() => {
+                            setIsFocused(false);
+                            if (onSearchStateChange) onSearchStateChange(false, !query.trim());
+                        }, 220);
+                    }}
                     onKeyDown={handleKeyDown}
                     className="w-full text-base bg-transparent focus:outline-none text-zinc-900 dark:text-zinc-100 font-semibold placeholder-zinc-400 dark:placeholder-zinc-600 font-sans tracking-tight"
                 />
                 
                 {query && (
                     <button 
-                        onClick={() => setQuery("")} 
+                        onClick={() => {
+                            setQuery("");
+                            if (onSearchStateChange) onSearchStateChange(isFocused, true);
+                        }} 
                         className="p-1 hover:bg-zinc-200/60 dark:hover:bg-zinc-800/60 rounded-xl transition-colors shrink-0 group"
                         type="button"
                     >

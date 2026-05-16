@@ -36,7 +36,7 @@ import {
   selectPopularStocks,
 } from '@/lib/features/searchLog/searchLogSlice';
 import corpCodeJson from '@/public/data/validCorpCode.json';
-import { History, AlertCircle, Loader2 } from 'lucide-react';
+import { History, AlertCircle, Loader2, Sparkles, Flame } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 const all_tickers = [
@@ -61,6 +61,10 @@ function SearchContent() {
   const [fixed, setFixed] = useState(false);
   const [hasMounted, setHasMounted] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  
+  // 🔥 검색창 상태 정밀 추적 (포커스 여부 및 텍스트 공백 여부)
+  const [isSearchFocused, setIsSearchFocused] = useState(false);
+  const [isQueryEmpty, setIsQueryEmpty] = useState(true);
 
   useEffect(() => {
     setHasMounted(true);
@@ -84,8 +88,7 @@ function SearchContent() {
 
   useEffect(() => {
     const handleScroll = () => {
-      // 400px 이상 스크롤 시 검색바 상단 고정
-      setFixed(window.scrollY > 400);
+      setFixed(window.scrollY > 200);
     };
     window.addEventListener('scroll', handleScroll, { passive: true });
     return () => window.removeEventListener('scroll', handleScroll);
@@ -113,45 +116,46 @@ function SearchContent() {
     };
   }, [krOrUs, data]);
 
+  // 🔥 핵심 숨김 규칙: 인풋에 포커스가 잡혀있고 '검색어가 입력 중일 때만' 헤더를 가립니다. (빈 검색어일 때는 노출 보장)
+  const shouldHideHeader = isSearchFocused && !isQueryEmpty;
+
   if (!hasMounted)
     return (
-      <div className="w-full min-h-screen bg-gray-50 dark:bg-zinc-950" />
+      <div className="w-full min-h-screen bg-zinc-50 dark:bg-zinc-950" />
     );
 
   return (
-    <div className="w-full min-h-screen bg-gray-50 dark:bg-zinc-950">
-      {/* 
-          Z-INDEX 조정: 
-          - fixed일 때 z-[30]으로 설정하여 layout(Navbar/Sidebar)의 z-index보다 낮게 배치합니다.
-          - 일반적으로 Next.js Layout의 Navbar는 z-[40]~[50] 사이를 사용합니다.
-      */}
+    <div className="w-full min-h-screen bg-zinc-50 dark:bg-zinc-950 text-zinc-900 dark:text-zinc-100 antialiased selection:bg-blue-500/30">
+      
       <header
         className={cn(
-          "w-full transition-all duration-300",
+          "w-full transition-all duration-300 ease-in-out",
           fixed
-            ? "fixed top-0 z-[30] bg-white/90 dark:bg-zinc-900/90 backdrop-blur-lg border-b dark:border-zinc-800 shadow-sm"
-            : "relative z-[31] bg-white dark:bg-zinc-900 border-b dark:border-zinc-800"
+            ? "fixed top-0 z-[60] bg-white/80 dark:bg-zinc-900/80 backdrop-blur-xl border-b border-zinc-200 dark:border-zinc-800 shadow-sm"
+            : "relative z-[61] bg-white dark:bg-zinc-900 border-b border-zinc-200/60 dark:border-zinc-800/60"
         )}
       >
         <div className="max-w-6xl mx-auto">
-          <div className="px-3 py-2">
+          <div className="px-4 py-3">
             <SearchAutocomplete
-              placeHolder="🇰🇷 종목명 또는 🇺🇸 티커"
+              placeHolder="🇰🇷 검색할 종목명 또는 🇺🇸 티커명 입력"
               onSearchButton={handleSearch}
               validCorpNameArray={all_tickers}
+              // 🔥 하위 컴포넌트로부터 포커스 상태와 쿼리가 비어있는지 상태를 동시에 받아옴
+              onSearchStateChange={(focused, isEmpty) => {
+                setIsSearchFocused(focused);
+                setIsQueryEmpty(isEmpty);
+              }}
             />
           </div>
 
-          {!fixed && (
-            <div className="flex flex-col border-t dark:border-zinc-800/50">
-              {/* HOT 10 리스트 */}
-              <div className="flex items-center gap-3 px-4 py-2 border-b dark:border-zinc-800/30">
-                <div className="flex items-center gap-1.5 flex-shrink-0">
-                  <span className="relative flex h-1.5 w-1.5">
-                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
-                    <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-red-500"></span>
-                  </span>
-                  <span className="text-[9px] font-black text-red-500 italic whitespace-nowrap uppercase">
+          {!fixed && !isSearchFocused && (
+            <div className="flex flex-col border-t border-zinc-100 dark:border-zinc-800/40 animate-in fade-in duration-200">
+              {/* HOT 10 */}
+              <div className="flex items-center gap-3 px-5 py-2.5 border-b border-zinc-100 dark:border-zinc-800/20">
+                <div className="flex items-center gap-1.5 flex-shrink-0 text-rose-500">
+                  <Flame size={12} className="animate-pulse fill-rose-500/20" />
+                  <span className="text-[10px] font-black tracking-wider whitespace-nowrap uppercase font-sans">
                     Hot 10
                   </span>
                 </div>
@@ -160,20 +164,20 @@ function SearchContent() {
                     <button
                       key={`hot-${i}`}
                       onClick={() => handleSearch(s.ticker)}
-                      className="flex-shrink-0 px-2.5 py-1 rounded-md bg-red-50 dark:bg-red-950/30 text-[11px] font-bold text-red-600 dark:text-red-400 active:scale-95 transition-all whitespace-nowrap"
+                      className="flex-shrink-0 px-2.5 py-1 rounded-lg bg-rose-50 dark:bg-rose-950/20 text-[11px] font-bold text-rose-600 dark:text-rose-400 border border-rose-100/30 dark:border-rose-900/20 active:scale-95 transition-all whitespace-nowrap"
                     >
-                      <span className="mr-1 opacity-50">{i + 1}</span>
+                      <span className="mr-1 opacity-40 font-mono">{i + 1}</span>
                       {s.name}
                     </button>
                   ))}
                 </div>
               </div>
 
-              {/* RECENT 검색 리스트 */}
-              <div className="flex items-center gap-3 px-4 py-1.5">
-                <div className="flex items-center gap-1.5 flex-shrink-0">
-                  <History size={10} className="text-zinc-400" />
-                  <span className="text-[9px] font-black text-zinc-400 italic whitespace-nowrap uppercase">
+              {/* RECENT */}
+              <div className="flex items-center gap-3 px-5 py-2">
+                <div className="flex items-center gap-1.5 flex-shrink-0 text-zinc-400 dark:text-zinc-500">
+                  <History size={11} />
+                  <span className="text-[10px] font-black tracking-wider whitespace-nowrap uppercase font-sans">
                     Recent
                   </span>
                 </div>
@@ -186,14 +190,14 @@ function SearchContent() {
                         <button
                           key={`recent-${i}`}
                           onClick={() => handleSearch(s)}
-                          className="flex-shrink-0 px-2 py-0.5 text-[11px] font-medium text-zinc-500 hover:text-blue-500 dark:text-zinc-400 dark:hover:text-blue-400 transition-colors whitespace-nowrap"
+                          className="flex-shrink-0 px-2 py-0.5 text-[11px] font-bold text-zinc-500 hover:text-blue-500 dark:text-zinc-400 dark:hover:text-indigo-400 transition-colors whitespace-nowrap"
                         >
                           {s}
                         </button>
                       ))
                   ) : (
-                    <span className="text-[10px] text-zinc-300 italic">
-                      No history
+                    <span className="text-[10px] text-zinc-300 dark:text-zinc-700 italic font-medium">
+                      No history items
                     </span>
                   )}
                 </div>
@@ -205,9 +209,9 @@ function SearchContent() {
 
       <main className="max-w-6xl mx-auto p-4 md:p-6">
         {error && (
-          <div className="mb-4 p-4 rounded-lg bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 flex items-center gap-3 text-red-700 dark:text-red-400">
+          <div className="mb-4 p-4 rounded-xl bg-red-50 dark:bg-red-900/20 border border-red-200/60 dark:border-red-800/60 flex items-center gap-3 text-red-700 dark:text-red-400 animate-in slide-in-from-top-2">
             <AlertCircle size={18} />
-            <span className="text-sm font-medium">{error}</span>
+            <span className="text-sm font-semibold tracking-tight">{error}</span>
           </div>
         )}
 
@@ -216,14 +220,16 @@ function SearchContent() {
         ) : (
           <>
             {waitResponse && !isLoaded && (
-              <div className="py-20 flex flex-col items-center justify-center gap-4">
-                <Loader2 className="animate-spin text-blue-500" size={40} />
-                <p className="text-sm text-zinc-500 animate-pulse">데이터를 분석하고 있습니다...</p>
+              <div className="py-24 flex flex-col items-center justify-center gap-4">
+                <Loader2 className="animate-spin text-blue-500 dark:text-indigo-400" size={36} />
+                <p className="text-sm font-bold text-zinc-400 dark:text-zinc-500 animate-pulse tracking-tight">
+                  Premium Quant 엔진이 데이터를 정밀 분석하고 있습니다...
+                </p>
               </div>
             )}
             
             <div className={!isLoaded ? 'hidden' : 'block'}>
-              <div className="flex justify-center mb-10">
+              <div className="flex justify-center mb-8">
                 <StockCard
                   stock={
                     krOrUs === 'US'
@@ -273,9 +279,22 @@ function SearchContent() {
                 />
               </div>
 
-              <StockHeader data={data} isUs={krOrUs === 'US'} isFixed={fixed} />
+              {/* 🔥 최적화 적용 파트: 글자가 채워진 검색 상태일 때만 opacity와 단절 처리를 적용합니다. */}
+              <div 
+                className={cn(
+                  "transition-all duration-300 ease-in-out transform-gpu",
+                  shouldHideHeader 
+                    ? "opacity-0 scale-95 pointer-events-none select-none z-[10]" 
+                    : "opacity-100 scale-100 z-[35]"
+                )}
+              >
+                <StockHeader data={data} isUs={krOrUs === 'US'} isFixed={fixed} />
+              </div>
 
-              <div className={fixed ? 'pt-8 transition-all' : ''}>
+              <div className={cn(
+                "transition-all duration-300",
+                fixed && !shouldHideHeader ? 'pt-12' : 'pt-2'
+              )}>
                 <StockMetrics data={data} isUs={krOrUs === 'US'} />
                 <ValuationSection data={data} isUs={krOrUs === 'US'} />
                 {krOrUs === 'KR' ? (
@@ -285,7 +304,7 @@ function SearchContent() {
                 )}
                 
                 {response && (
-                  <div className="mt-8 rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 shadow-md overflow-hidden border-t-4 !border-t-blue-500">
+                  <div className="mt-8 rounded-2xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 shadow-md overflow-hidden border-t-4 !border-t-blue-500 dark:!border-t-indigo-500">
                     <div className="p-4 md:p-6">
                       <MdTableTemplate content={response} />
                     </div>
@@ -304,9 +323,9 @@ export default function SearchPage() {
   return (
     <Suspense
       fallback={
-        <div className="flex flex-col items-center justify-center py-20 gap-4">
-          <Loader2 className="animate-spin text-blue-500" size={32} />
-          <p className="text-sm text-zinc-500">페이지를 준비 중입니다...</p>
+        <div className="flex flex-col items-center justify-center py-24 gap-4 bg-zinc-50 dark:bg-zinc-950 min-h-screen">
+          <Loader2 className="animate-spin text-blue-500 dark:text-indigo-400" size={32} />
+          <p className="text-sm font-semibold text-zinc-400 dark:text-zinc-500">엔진 시스템 부팅 중...</p>
         </div>
       }
     >
