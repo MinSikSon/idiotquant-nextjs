@@ -17,7 +17,6 @@ import nyse_tickers from '@/public/data/usStockSymbols/nyse_tickers.json';
 import amex_tickers from '@/public/data/usStockSymbols/amex_tickers.json';
 import validCorpCodeArray from '@/public/data/validCorpCodeArray.json';
 import validCorpNameArray from '@/public/data/validCorpNameArray.json';
-import { MdTableTemplate } from './components/MdTableTemplate';
 import { StockMetrics } from './components/StockMetrics';
 import {
   calculateKrNcavRatio,
@@ -284,7 +283,7 @@ function SearchContent() {
               {/* 하위 정밀 서브 재무 도표 트랙 */}
               <div className={cn(
                 "transition-all duration-300 space-y-8",
-                fixed && !shouldHideHeader ? 'pt-10' : 'pt-2'
+                fixed && !shouldHideHeader ? 'pt-2' : 'pt-2'
               )}>
                 <StockMetrics data={data} isUs={krOrUs === 'US'} />
                 
@@ -313,19 +312,6 @@ function SearchContent() {
                     </p>
                   </div>
                 </div>
-                
-                {/* 인공지능 정밀 진단 퀀트 레포트 아웃풋 */}
-                {response && (
-                  <div className="rounded-2xl border border-zinc-200/80 dark:border-zinc-800/80 bg-white dark:bg-zinc-900 shadow-xl overflow-hidden border-t-4 !border-t-blue-500 dark:!border-t-indigo-500 transition-colors duration-300">
-                    <div className="px-6 py-4 bg-zinc-50/50 dark:bg-zinc-900/30 border-b border-zinc-100 dark:border-zinc-800/60 flex items-center gap-2">
-                      <Sparkles className="w-4 h-4 text-blue-500 dark:text-indigo-400 animate-pulse" />
-                      <h4 className="text-xs font-black uppercase tracking-wider text-zinc-700 dark:text-zinc-300 font-mono">AI Deep-Quant Analytics Report</h4>
-                    </div>
-                    <div className="p-5 md:p-7">
-                      <MdTableTemplate content={response} />
-                    </div>
-                  </div>
-                )}
               </div>
             </div>
           </>
