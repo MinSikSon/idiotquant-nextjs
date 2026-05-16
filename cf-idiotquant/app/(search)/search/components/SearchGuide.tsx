@@ -17,15 +17,21 @@ export const SearchGuide = () => {
       stock: {
         isUs: false,
         name: "삼성전자",
-        sector: "CHIP", // 변경된 테마 키에 맞춤
+        sector: "CHIP",
         ticker: "005930",
-        grade: "S", // 문자열 상수로 변경
+        grade: "S",
         curPrice: 78500,
         per: 12.5,
         pbr: 1.4,
-        ncavScore: 0.85, // 수치형 데이터로 변경 (ATK 계산용)
-        debtRatio: 15.2, // 방어력 계산용
+        ncavScore: 0.85,
+        debtRatio: 15.2,
         isGuide: true
+      },
+      // 🔥 StockCard 고도화에 대응하는 가이드 전용 시뮬레이션 차트 데이터
+      chartConfig: {
+        data: [72000, 73500, 75000, 74200, 76500, 78500],
+        categories: ["M1", "M2", "M3", "M4", "M5", "M6"],
+        color: "#6366f1"
       },
       badge: "KOSPI TYPE",
       title: "정밀한 내재가치 산출",
@@ -46,6 +52,12 @@ export const SearchGuide = () => {
         debtRatio: 8.5,
         isGuide: true
       },
+      // 🔥 StockCard 고도화에 대응하는 가이드 전용 시뮬레이션 차트 데이터
+      chartConfig: {
+        data: [175.5, 182.1, 180.4, 189.9, 192.3, 195.2],
+        categories: ["M1", "M2", "M3", "M4", "M5", "M6"],
+        color: "#818cf8"
+      },
       badge: "NASDAQ TYPE",
       title: "글로벌 마켓 통합",
       desc: "미국 주요 티커를 실시간으로 분석하여 한국 주식과 동일한 잣대로 투자 기회를 발굴합니다.",
@@ -64,6 +76,12 @@ export const SearchGuide = () => {
         ncavScore: 0.99,
         debtRatio: 0.1,
         isGuide: true
+      },
+      // 🔥 StockCard 고도화에 대응하는 가이드 전용 시뮬레이션 차트 데이터
+      chartConfig: {
+        data: [100000, 250000, 430000, 610000, 850000, 999999],
+        categories: ["M1", "M2", "M3", "M4", "M5", "M6"],
+        color: "#6366f1"
       },
       badge: "ULTRA RARE",
       title: "청산가치 절대 저평가",
@@ -110,7 +128,8 @@ export const SearchGuide = () => {
         {guides.map((item, i) => (
           <div key={i} className="flex flex-col items-center group">
             <div className="relative transform transition-all duration-700 group-hover:-translate-y-10 group-hover:scale-105">
-              <StockCard stock={item.stock} />
+              {/* 🔥 최신 StockCard 규격에 맞춰 chartConfig 주입 */}
+              <StockCard stock={item.stock} chartConfig={item.chartConfig} />
 
               {/* Grade Aura Effect: 등급별 색상 대응 */}
               <div className={cn(

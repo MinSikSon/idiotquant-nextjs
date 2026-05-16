@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useMemo } from 'react';
 import { 
   Calculator as CalcIcon, 
   TrendingUp, 
@@ -12,7 +12,7 @@ import {
   ChevronUp,
   ChevronDown
 } from 'lucide-react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion } from 'framer-motion';
 import ResultChart, { ChartDataItem } from './ResultChart';
 
 // --- Utils ---
@@ -58,14 +58,9 @@ export default function Calculator() {
     applyTax: true,
   });
 
-  const [results, setResults] = useState({
-    totalInvestment: 0,
-    finalValue: 0,
-    finalRateOfReturn: 0,
-    chartData: [] as ChartDataItem[],
-  });
-
-  const calculateResult = useCallback(() => {
+  // useEffect와 별도 useState를 제거하고, useMemo를 통해 유도된 상태(Derived State)로 전환합니다.
+  // 이 구조는 무한 루프(Maximum update depth exceeded)를 원천적으로 방지합니다.
+  const results = useMemo(() => {
     const {
       startAge, retirementAge, targetAge, investmentAmount,
       interestRate, contributions, contributionGrowthRate,
@@ -105,32 +100,23 @@ export default function Calculator() {
           profitRate: totalInvested > 0 ? Number(((currentBalance / totalInvested - 1) * 100).toFixed(1)) : 0,
         });
       }
+      // 자산이 심각하게 고갈되면 루프를 조기 종료하되, 차트 흐름을 깨지 않기 위해 루프를 탈출합니다.
       if (currentBalance < -500000) break;
     }
 
-    setResults({
+    return {
       totalInvestment: totalInvested,
       finalValue: Math.round(currentBalance),
       finalRateOfReturn: totalInvested > 0 ? Number(((currentBalance / totalInvested - 1) * 100).toFixed(1)) : 0,
       chartData: snapshots,
-    });
+    };
   }, [inputs]);
-
-  useEffect(() => { calculateResult(); }, [calculateResult]);
 
   const updateInput = (key: keyof CalcInputs, val: any) => setInputs(p => ({ ...p, [key]: val }));
 
   return (
     <div className="bg-zinc-50 dark:bg-zinc-950 min-h-screen p-4 md:p-10 font-sans text-zinc-900 dark:text-zinc-100">
       <div className="max-w-6xl mx-auto space-y-12">
-
-        {/* <header className="flex flex-col items-center text-center space-y-4">
-          <div className="bg-blue-600 p-4 rounded-2xl shadow-xl shadow-blue-500/20 text-white">
-            <CalcIcon size={32} />
-          </div>
-          <h1 className="text-3xl font-black tracking-tight">Precision Financial Planner</h1>
-          <p className="text-zinc-500 font-medium">데이터에 기반한 정밀한 은퇴 및 자산 성장 시뮬레이션</p>
-        </header> */}
 
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-10">
 

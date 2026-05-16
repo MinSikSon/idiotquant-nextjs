@@ -5,6 +5,7 @@ import Image from 'next/image';
 import { motion } from 'framer-motion';
 import { cn } from "@/lib/utils";
 import { Activity, Info, Sparkles, Shield, Swords, DollarSign, Coins } from "lucide-react";
+import LineChart from "@/components/LineChart";
 
 const SECTOR_THEMES: Record<string, any> = {
     IRON: { bg: "bg-zinc-100 dark:bg-zinc-900", border: "border-zinc-300 dark:border-zinc-600/50", icon: "⚙️", label: "MECH", color: "text-zinc-600 dark:text-zinc-400" },
@@ -25,7 +26,18 @@ const GRADE_THEMES: Record<string, any> = {
     A: { frame: "from-slate-300 to-slate-500 dark:from-slate-600 dark:to-slate-800", label: "COMMON", glow: "shadow-[0_4px_20px_rgba(0,0,0,0.08)] dark:shadow-[0_0_20px_rgba(0,0,0,0.3)]", animate: false },
 };
 
-export const StockCard = ({ stock, isCompact = false }: any) => {
+interface StockCardProps {
+    stock: any;
+    chartConfig: {
+        data: number[];
+        categories: string[];
+        color: string;
+    };
+    rawData?: any;
+    isCompact?: boolean;
+}
+
+export const StockCard = ({ stock, chartConfig, rawData, isCompact = false }: StockCardProps) => {
     const [isFlipped, setIsFlipped] = useState(false);
     const [rotation, setRotation] = useState({ x: 0, y: 0 });
     const [imgError, setImgError] = useState(false);
@@ -106,8 +118,8 @@ export const StockCard = ({ stock, isCompact = false }: any) => {
                         <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-zinc-100/50 via-white to-zinc-50 dark:from-zinc-900/40 dark:via-zinc-950 dark:to-black pointer-events-none z-0" />
                         
                         {/* Top Bar */}
-                        <div className="p-4 flex justify-between items-center bg-zinc-50/80 dark:bg-zinc-900/60 backdrop-blur-md border-b border-black/[0.06] dark:border-white/5 z-10">
-                            <div className="flex flex-col">
+                        <div className="p-4 flex justify-between items-center bg-zinc-50/80 dark:bg-zinc-900/60 backdrop-blur-md border-b border-black/[0.06] dark:border-white/5 z-10 gap-3">
+                            <div className="flex flex-col flex-1 min-w-0">
                                 <span className="text-zinc-400 dark:text-zinc-500 font-black text-[9px] tracking-[0.2em] leading-none mb-1.5 uppercase italic flex items-center gap-1">
                                     {stock?.isUs ? (
                                         <>
@@ -121,11 +133,27 @@ export const StockCard = ({ stock, isCompact = false }: any) => {
                                         </>
                                     )}
                                 </span>
-                                <h3 className="font-black text-xl text-zinc-900 dark:text-white tracking-tight drop-shadow-sm dark:drop-shadow-[0_2px_4px_rgba(0,0,0,0.8)] truncate max-w-[190px]">
-                                    {stock?.name}
-                                </h3>
+                                <div className="flex items-center justify-between w-full gap-2">
+                                    {/* 종목명 너비를 유연하게 가져가되 차트 영역을 확보하도록 세팅 */}
+                                    <h3 className="font-black text-xl text-zinc-900 dark:text-white tracking-tight drop-shadow-sm dark:drop-shadow-[0_2px_4px_rgba(0,0,0,0.8)] truncate flex-1 min-w-0">
+                                        {stock?.name}
+                                    </h3>
+                                    
+                                    {/* 🔥 차트를 오른쪽 끝으로 밀착 정렬 (ml-auto 및 크기 고정) */}
+                                    {chartConfig && chartConfig.data && chartConfig.data.length > 0 && (
+                                        <div className="w-20 h-7 flex items-center justify-center opacity-80 dark:opacity-90 shrink-0 ml-auto transform translate-y-0.5">
+                                            <LineChart
+                                                data_array={[{ name: "Trend", data: chartConfig.data, color: chartConfig.color }]}
+                                                category_array={chartConfig.categories}
+                                                height={28}
+                                                show_yaxis_label={false}
+                                                legend_disable
+                                            />
+                                        </div>
+                                    )}
+                                </div>
                             </div>
-                            <div className={cn("w-10 h-10 rounded-xl flex items-center justify-center border bg-white dark:bg-zinc-900 shadow-sm dark:shadow-xl transform group-hover:rotate-12 transition-transform duration-300", theme.border)}>
+                            <div className={cn("w-10 h-10 rounded-xl flex items-center justify-center border bg-white dark:bg-zinc-900 shadow-sm dark:shadow-xl transform group-hover:rotate-12 transition-transform duration-300 shrink-0", theme.border)}>
                                 <span className="text-xl filter drop-shadow-[0_1px_2px_rgba(0,0,0,0.1)] dark:drop-shadow-[0_2px_4px_rgba(0,0,0,0.5)]">{theme.icon}</span>
                             </div>
                         </div>
@@ -133,14 +161,14 @@ export const StockCard = ({ stock, isCompact = false }: any) => {
                         {/* Card Image Area */}
                         <div className="mx-3.5 mt-2 relative h-48 rounded-xl bg-gradient-to-b from-zinc-50 to-zinc-100/60 dark:from-zinc-900 dark:to-zinc-950 border border-zinc-200 dark:border-zinc-800/80 flex items-center justify-center overflow-hidden group/logo z-10">
                             {/* Holographic Flash Effect */}
-                            <div className="absolute inset-0 opacity-15 dark:opacity-25 bg-[linear-gradient(110deg,rgba(255,255,255,0)_30%,rgba(255,255,255,0.4)_45%,rgba(255,255,255,0)_60%)] animate-[shine_4s_infinite] pointer-events-none" />
-                            <div className="absolute inset-0 bg-gradient-to-tr from-blue-500/5 via-transparent to-rose-500/5 dark:from-blue-500/10 dark:to-rose-500/10" />
+                            <div className="absolute inset-0 opacity-15 dark:opacity-25 bg-[linear-gradient(110deg,rgba(255,255,255,0)_30%,rgba(255,255,255,0.4)_45%,rgba(255,255,255,0)_60%)] animate-[shine_4s_infinite] pointer-events-none z-10" />
+                            <div className="absolute inset-0 bg-gradient-to-tr from-blue-500/5 via-transparent to-rose-500/5 dark:from-blue-500/10 dark:to-rose-500/10 z-0" />
                             
                             {/* Grid overlay for TCG vibe */}
-                            <div className="absolute inset-0 bg-[linear-gradient(to_right,rgba(0,0,0,0.02)_1px,transparent_1px),linear-gradient(to_bottom,rgba(0,0,0,0.02)_1px,transparent_1px)] dark:bg-[linear-gradient(to_right,#ffffff03_1px,transparent_1px),linear-gradient(to_bottom,#ffffff03_1px,transparent_1px)] bg-[size:12px_12px]" />
+                            <div className="absolute inset-0 bg-[linear-gradient(to_right,rgba(0,0,0,0.02)_1px,transparent_1px),linear-gradient(to_bottom,rgba(0,0,0,0.02)_1px,transparent_1px)] dark:bg-[linear-gradient(to_right,#ffffff03_1px,transparent_1px),linear-gradient(to_bottom,#ffffff03_1px,transparent_1px)] bg-[size:12px_12px] z-0" />
 
                             {!imgError ? (
-                                <div className="relative w-full h-full p-10 flex items-center justify-center">
+                                <div className="relative w-full h-full p-10 flex items-center justify-center z-10">
                                     <Image
                                         key={stock?.ticker}
                                         src={logoUrl} alt="logo" fill 
@@ -149,19 +177,19 @@ export const StockCard = ({ stock, isCompact = false }: any) => {
                                     />
                                 </div>
                             ) : (
-                                <div className={cn("w-16 h-16 rounded-2xl flex items-center justify-center text-white text-3xl font-black italic border-2 shadow-xl transform tracking-tighter", theme.bg, theme.border)}>
+                                <div className={cn("w-16 h-16 rounded-2xl flex items-center justify-center text-white text-3xl font-black italic border-2 shadow-xl transform tracking-tighter z-10", theme.bg, theme.border)}>
                                     {stock?.ticker?.substring(0, 2)}
                                 </div>
                             )}
 
                             {/* Rarity Tag */}
-                            <div className="absolute top-2.5 left-2.5 flex items-center gap-1.5 bg-white/90 dark:bg-zinc-950/90 backdrop-blur-md border border-black/5 dark:border-white/10 px-2.5 py-1 rounded-md shadow-sm dark:shadow-lg">
+                            <div className="absolute top-2.5 left-2.5 flex items-center gap-1.5 bg-white/90 dark:bg-zinc-950/90 backdrop-blur-md border border-black/5 dark:border-white/10 px-2.5 py-1 rounded-md shadow-sm dark:shadow-lg z-20">
                                 <Sparkles className="w-3 h-3 text-amber-500 dark:text-amber-400 animate-pulse" />
                                 <span className="text-[9px] font-black tracking-widest text-zinc-700 dark:text-zinc-200">{gradeTheme.label}</span>
                             </div>
 
                             {/* Ticker Floating Tag */}
-                            <div className="absolute bottom-2.5 right-2.5 bg-white/75 dark:bg-black/60 backdrop-blur-sm px-2 py-0.5 rounded border border-black/5 dark:border-white/5">
+                            <div className="absolute bottom-2.5 right-2.5 bg-white/75 dark:bg-black/60 backdrop-blur-sm px-2 py-0.5 rounded border border-black/5 dark:border-white/5 z-20">
                                 <span className="text-[10px] font-mono font-bold text-zinc-500 dark:text-zinc-400 tracking-wider">{stock?.ticker}</span>
                             </div>
                         </div>

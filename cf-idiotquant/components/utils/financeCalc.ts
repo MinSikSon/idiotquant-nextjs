@@ -1,179 +1,69 @@
 export const ONE_HUNDRED_MILLION = 100000000;
 
-export function calculateKrNcav(kiBS: any, kiChart: any) {
-    const ONE_HUNDRED_MILLION = 100000000;
-
-    // 유동자산(Current Assets) 및 부채총계(Total Liabilities)
-    const cras = Number(kiBS?.output?.[0]?.cras ?? 0) * ONE_HUNDRED_MILLION;
-    const lblt = Number(kiBS?.output?.[0]?.total_lblt ?? 0) * ONE_HUNDRED_MILLION;
-
-    // 상장주식수 및 현재가
-    const lstn = Number(kiChart?.output1?.lstn_stcn ?? 1);
-    const prpr = Number(kiChart?.output1?.stck_prpr ?? 0);
-
-    // NCAV 적정가 = (유동자산 - 총부채) / 상장주식수
-    const netCurrentAsset = cras - lblt;
-    const target = netCurrentAsset / lstn;
-
-    // 배수별 행 생성 (NCAV는 보통 1.0배를 기준으로 안전마진을 확인합니다)
-    const rows = [1.0, 1.2, 1.5].map(r => {
-        const adjustedTarget = target / r; // 보수적 접근을 위한 배수 적용
-        const returnPct = (adjustedTarget / prpr - 1) * 100;
-
-        const isBase = r === 1.0 ? "**" : "";
-        return `| ${isBase}${r.toFixed(1)}배${isBase} | ${isBase}${returnPct.toFixed(2)}%${isBase} | ${isBase}${Math.round(adjustedTarget).toLocaleString()}${isBase} |`;
-    }).join("\n");
-
-    return `
-# 💡 NCAV 가치 평가 모델
-> **NCAV (청산가치)** = 유동자산 - (총부채 * 가중치)\n
-> **적정 주가** = NCAV ÷ 상장 주식수
-
-| 가중치 (배수) | 기대 수익률 | 적정 주가(₩) |
-|:---:|:---:|:---:|
-${rows}
-
----
-
-# 🔍 핵심 투자 지표 (Key Metrics)
-* 🧊 **순유동자산 (NCAV):** \`${(netCurrentAsset / ONE_HUNDRED_MILLION).toLocaleString()}억 원\`
-* 🏢 **총부채 (Liabilities):** \`${(lblt / ONE_HUNDRED_MILLION).toLocaleString()}억 원\`
-* 🏷️ **현재가 (Price):** \`${prpr.toLocaleString()}원\`
-
----
-*※ NCAV 전략은 시가총액이 순유동자산의 2/3(약 0.67배) 이하일 때 강력한 매수 신호로 봅니다.*
-    `.trim();
+export interface ValuationRow {
+  multiplier: string;
+  returnPct: number;
+  targetPrice: number;
 }
 
-export function calculateKrNcavValue(kiBS: any, kiChart: any) {
-    const cras = Number(kiBS?.output?.[0]?.cras ?? 0) * ONE_HUNDRED_MILLION;
-    const lblt = Number(kiBS?.output?.[0]?.total_lblt ?? 0) * ONE_HUNDRED_MILLION;
-    const lstn = Number(kiChart?.output1?.lstn_stcn ?? 1);
-    const prpr = Number(kiChart?.output1?.stck_prpr ?? 0);
-
-    const target = (cras - lblt) / lstn;
-    return Number(target.toFixed(0));
-
-    // 1. 헤더와 구분선을 명확히 정의합니다.
-    const header = `| 배수(ratio) | 기대 수익률 | 적정 주가(₩) |`;
-    const divider = `|:---:|:---:|:---:|`;
-
-    // 2. 각 행을 생성합니다.
-    const rows = [1.0, 1.5, 2.0].map(r => {
-        const returnPct = ((target / (prpr * r)) - 1) * 100;
-        return `| ${r.toFixed(1)} | ${returnPct.toFixed(2)}% | ${Math.round(target).toLocaleString()} |`;
-    });
-
-    // 3. 모든 요소를 줄바꿈(\n)으로 합쳐서 반환합니다.
-    return [header, divider, ...rows].join("\n");
-}
-
-export function calculateKrNcavRatio(kiBS: any, kiChart: any) {
-    const cras = Number(kiBS.output?.[0]?.cras ?? 0) * ONE_HUNDRED_MILLION;
-    const lblt = Number(kiBS.output?.[0]?.total_lblt ?? 0) * ONE_HUNDRED_MILLION;
-    const lstn = Number(kiChart?.output1?.lstn_stcn ?? 1);
-    const prpr = Number(kiChart?.output1?.stck_prpr ?? 0);
-
-    const target = (cras - lblt) / lstn;
-
-    // 1. 헤더와 구분선을 명확히 정의합니다.
-    const header = `| 배수(ratio) | 기대 수익률 | 적정 주가(₩) |`;
-    const divider = `|:---:|:---:|:---:|`;
-
-    // 2. 각 행을 생성합니다.
-    const returnPct = ((target / (prpr * 1)) - 1) * 100;
-    return Number(returnPct.toFixed(2));
-
-    // const rows = [1.0, 1.5, 2.0].map(r => {
-    //     const returnPct = ((target / (prpr * r)) - 1) * 100;
-    //     return `| ${r.toFixed(1)} | ${returnPct.toFixed(2)}% | ${Math.round(target).toLocaleString()} |`;
-    // });
-
-    // // 3. 모든 요소를 줄바꿈(\n)으로 합쳐서 반환합니다.
-    // return [header, divider, ...rows].join("\n");
-}
-
-export function getKrNcavGrade(kiBS: any, kiChart: any) {
-    const ONE_HUNDRED_MILLION = 100000000;
-
-    const cras = Number(kiBS.output?.[0]?.cras || 0) * ONE_HUNDRED_MILLION;
-    const lblt = Number(kiBS.output?.[0]?.total_lblt || 0) * ONE_HUNDRED_MILLION;
-    const lstn = Number(kiChart?.output1?.lstn_stcn ?? 1);
-    const prpr = Number(kiChart?.output1?.stck_prpr ?? 0);
-
-    if (!lstn || !prpr) return {
-        grade: "N/A",
-        color: "text-zinc-400",
-        cardGradeColor: "from-zinc-500/20 to-zinc-500/5"
-    };
-
-    const targetPrice = (cras - lblt) / lstn;
-    const returnPct = ((targetPrice / prpr) - 1) * 100;
-
-    // 등급별 가이드라인 설정
-    if (returnPct >= 200) {
-        return {
-            grade: "SSS",
-            color: "text-yellow-500",
-            cardGradeColor: "from-yellow-500/30 via-amber-500/10 to-transparent"
-        };
-    } else if (returnPct >= 150) {
-        return {
-            grade: "SS",
-            color: "text-yellow-400",
-            cardGradeColor: "from-yellow-400/20 via-orange-400/5 to-transparent"
-        };
-    } else if (returnPct >= 100) {
-        return {
-            grade: "S",
-            color: "text-orange-500",
-            cardGradeColor: "from-orange-500/20 to-transparent"
-        };
-    } else if (returnPct >= 50) {
-        return {
-            grade: "A",
-            color: "text-green-500",
-            cardGradeColor: "from-green-500/15 to-transparent"
-        };
-    } else if (returnPct >= 0) {
-        return {
-            grade: "B",
-            color: "text-blue-500",
-            cardGradeColor: "from-blue-500/10 to-transparent"
-        };
-    } else {
-        // 마이너스 수익률 (F 등급)
-        return {
-            grade: "F",
-            color: "text-red-500",
-            cardGradeColor: "from-red-500/20 via-red-900/10 to-transparent"
-        };
-    }
+export interface ValuationResult {
+  title: string;
+  description: string;
+  formula: string;
+  headers: string[];
+  rows: ValuationRow[];
+  metrics: {
+    label: string;
+    value: string;
+  }[];
+  footerNotice: string;
 }
 
 /**
- * 한국 S-RIM 계산 로직
+ * 한국 주식 NCAV 계산 로직 (구조화된 객체 반환)
  */
-// export function calculateKrSRIM(kiBS: any, kiIS: any, kiChart: any) {
-//     const total_cptl = Number(kiBS?.output?.[0]?.total_cptl ?? 1) * ONE_HUNDRED_MILLION;
-//     const thtr_ntin = Number(kiIS?.output?.[0]?.thtr_ntin ?? 0) * ONE_HUNDRED_MILLION;
-//     const ROE = (thtr_ntin / total_cptl) * 100;
-//     const lstn = Number(kiChart?.output1?.lstn_stcn ?? 1);
-//     const prpr = Number(kiChart?.output1?.stck_prpr ?? 0);
+export function calculateKrNcav(kiBS: any, kiChart: any): ValuationResult {
+    const ONE_HUNDRED_MILLION = 100000000;
 
-//     // const keList = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
-//     const keList = [1, 2, 3, 4, 5, 6, 7, 8];
-//     const rows = keList.map(ke => {
-//         const value = total_cptl * (1 + (ROE / 100 - ke / 100) / (ke / 100));
-//         const target = value / lstn;
-//         const returnPct = (target / prpr - 1) * 100;
-//         return `| ${ke.toFixed(1)}% | ${returnPct.toFixed(2)}% | ${Math.round(target).toLocaleString()} |`;
-//     }).join("\n");
+    const cras = Number(kiBS?.output?.[0]?.cras ?? 0) * ONE_HUNDRED_MILLION;
+    const lblt = Number(kiBS?.output?.[0]?.total_lblt ?? 0) * ONE_HUNDRED_MILLION;
 
-//     return `| Ke (%) | Exp. Return | Target Price(₩) |\n|---|---|---|\n${rows}`;
-// }
+    const lstn = Number(kiChart?.output1?.lstn_stcn ?? 1);
+    const prpr = Number(kiChart?.output1?.stck_prpr ?? 0);
 
-export function calculateKrSRIM(kiBS: any, kiIS: any, kiChart: any, baseKe: number = 9.0) {
+    const netCurrentAsset = cras - lblt;
+    const target = netCurrentAsset / lstn;
+
+    const rows = [1.0, 1.2, 1.5].map(r => {
+        const adjustedTarget = target / r;
+        const returnPct = (adjustedTarget / prpr - 1) * 100;
+
+        return {
+            multiplier: `${r.toFixed(1)}배`,
+            returnPct: Number(returnPct.toFixed(2)),
+            targetPrice: Math.round(adjustedTarget)
+        };
+    });
+
+    return {
+        title: "NCAV 가치 평가 모델",
+        description: "벤자민 그레이엄의 청산가치 기반 계량 모델입니다.",
+        formula: "NCAV (청산가치) = 유동자산 - 총부채",
+        headers: ["가중치 (배수)", "기대 수익률", "적정 주가"],
+        rows,
+        metrics: [
+            { label: "순유동자산 (NCAV)", value: `${(netCurrentAsset / ONE_HUNDRED_MILLION).toLocaleString()}억 원` },
+            { label: "총부채 (Liabilities)", value: `${(lblt / ONE_HUNDRED_MILLION).toLocaleString()}억 원` },
+            { label: "현재가 (Price)", value: `${prpr.toLocaleString()}원` }
+        ],
+        footerNotice: "NCAV 전략은 시가총액이 순유동자산의 2/3(약 0.67배) 이하일 때 강력한 매수 신호로 봅니다."
+    };
+}
+
+/**
+ * 한국 주식 S-RIM 계산 로직 (구조화된 객체 반환)
+ */
+export function calculateKrSRIM(kiBS: any, kiIS: any, kiChart: any, baseKe: number = 9.0): ValuationResult {
     const ONE_HUNDRED_MILLION = 100000000;
     const total_cptl = Number(kiBS?.output?.[0]?.total_cptl ?? 1) * ONE_HUNDRED_MILLION;
     const thtr_ntin = Number(kiIS?.output?.[0]?.thtr_ntin ?? 0) * ONE_HUNDRED_MILLION;
@@ -195,150 +85,109 @@ export function calculateKrSRIM(kiBS: any, kiIS: any, kiChart: any, baseKe: numb
         const target = value / lstn;
         const returnPct = (target / prpr - 1) * 100;
 
-        const isBase = ke === baseKe ? "**" : "";
-        return `| ${isBase}${ke.toFixed(1)}%${isBase} | ${isBase}${returnPct.toFixed(2)}%${isBase} | ${isBase}${Math.round(target).toLocaleString()}${isBase} |`;
-    }).join("\n");
+        return {
+            multiplier: `${ke.toFixed(1)}%`,
+            returnPct: Number(returnPct.toFixed(2)),
+            targetPrice: Math.round(target)
+        };
+    });
 
-    return `
-# 💡 S-RIM 가치 평가 모델
-* **적정 가치** = 자기자본 × (ROE / 요구수익률)\n
-* **적정 주가** = 적정 가치 ÷ 상장 주식수
-
-| 요구수익률 기준(Ke) | 기대 수익률 | 적정 주가(₩) |
-|:---:|:---:|:---:|
-${rows}
-
----
-
-# 🔍 핵심 투자 지표 (Key Metrics)
-* 📈 **ROE (자기자본이익률):** \`${ROE.toFixed(2)}%\`
-* 💰 **자기자본 (Equity):** \`${(total_cptl / ONE_HUNDRED_MILLION).toLocaleString()}억 원\`
-* 🏷️ **현재가 (Price):** \`${prpr.toLocaleString()}원\`
-
----
-*※ 요구수익률(Ke)은 투자자가 기대하는 최소 수익률이며, 보통 BBB- 회사채 수익률을 참고합니다.*
-    `.trim();
+    return {
+        title: "S-RIM 가치 평가 모델",
+        description: "사경인 회계사의 한국형 초과이익가치 평가 모델입니다.",
+        formula: "적정 가치 = 자기자본 × (ROE / 요구수익률)",
+        headers: ["요구수익률 기준(Ke)", "기대 수익률", "적정 주가"],
+        rows,
+        metrics: [
+            { label: "ROE (자기자본이익률)", value: `${ROE.toFixed(2)}%` },
+            { label: "자기자본 (Equity)", value: `${(total_cptl / ONE_HUNDRED_MILLION).toLocaleString()}억 원` },
+            { label: "현재가 (Price)", value: `${prpr.toLocaleString()}원` }
+        ],
+        footerNotice: "요구수익률(Ke)은 투자자가 기대하는 최소 수익률이며, 보통 BBB- 회사채 수익률을 참고합니다."
+    };
 }
 
-export function getKrSRIMTargetPrice(kiBS: any, kiIS: any, kiChart: any, baseKe: number = 8.0) {
-    const ONE_HUNDRED_MILLION = 100000000;
-
-    // 재무데이터 추출
-    const total_cptl = Number(kiBS?.output?.[0]?.total_cptl ?? 1) * ONE_HUNDRED_MILLION;
-    // console.log(`total_cptl:`,total_cptl);
-
-    const thtr_ntin = Number(kiIS?.output?.[0]?.thtr_ntin ?? 0) * ONE_HUNDRED_MILLION;
-    // console.log(`thtr_ntin:`,thtr_ntin);
-
-    // ROE 계산
-    const ROE = (thtr_ntin / total_cptl) * 100;
-    // console.log(`ROE:`,ROE);
-
-    // 주식수 추출
-    let lstn = Number(kiChart?.output1?.lstn_stcn ?? 1);
-    // console.log(`lstn:`,lstn);
-    if (0 == lstn) {
-        lstn = 1;
-    }
-
-    // S-RIM 공식: 적정주가 = (자기자본 * (ROE / 요구수익률)) / 상장주식수
-    const targetPrice = (total_cptl * (ROE / baseKe)) / lstn;
-    // console.log(`targetPrice:`,targetPrice);
-
-    return `(요구수익률 ${baseKe}% 기준) 적정주가: ₩${Math.round(targetPrice)}`;
-}
-
-export function calculateUsNcav(finnhub: any, detail: any) {
-    // 1. 기본 데이터 추출 (Finnhub BS 데이터)
+/**
+ * 미국 주식 NCAV 계산 로직 (구조화된 객체 반환)
+ */
+export function calculateUsNcav(finnhub: any, detail: any): ValuationResult | string {
     const bs = finnhub?.data?.[0]?.report?.bs ?? [];
 
-    // 유동자산 (Current Assets)
     const cras = Number(
         bs.find((i: any) => i.concept.includes("us-gaap_AssetsCurrent"))?.value ??
         bs.find((i: any) => i.concept.includes("AssetsCurrent"))?.value ?? 0
     );
 
-    // 총부채 (Total Liabilities)
     const lblt = Number(
         bs.find((i: any) => i.concept.includes("us-gaap_Liabilities"))?.value ??
         bs.find((i: any) => i.concept.includes("Liabilities"))?.value ?? 0
     );
 
-    // 2. 상장주식수 및 현재가 데이터 유효성 검사
     const rawShar = detail?.output?.shar;
     const last = Number(detail?.output?.last || 0);
 
     const isDelisted = !rawShar || rawShar === "" || Number(rawShar) === 0;
     const isMissingPrice = last === 0;
 
-    // 데이터가 없는 경우 깔끔한 경고 메시지 반환
     if (isDelisted || isMissingPrice) {
-        const reason = isDelisted ? "상장폐지 의심 혹은 주식수 데이터 없음" : "현재가 데이터 없음";
-        return `> ⚠️ **분석 불가:** ${reason}`;
+        return "ERROR_INSUFFICIENT_DATA";
     }
 
     const lstn = Number(rawShar);
     const netCurrentAsset = cras - lblt;
     const target = netCurrentAsset / lstn;
 
-    // 3. 배수별 행 생성 (1.0배, 1.2배, 1.5배)
     const rows = [1.0, 1.2, 1.5].map(r => {
         const adjustedTarget = target / r;
         const returnPct = (adjustedTarget / last - 1) * 100;
 
-        const isBase = r === 1.0 ? "**" : "";
-        return `| ${isBase}${r.toFixed(1)}배${isBase} | ${isBase}${returnPct.toFixed(2)}%${isBase} | ${isBase}$${adjustedTarget.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}${isBase} |`;
-    }).join("\n");
+        return {
+            multiplier: `${r.toFixed(1)}배`,
+            returnPct: Number(returnPct.toFixed(2)),
+            targetPrice: Number(adjustedTarget.toFixed(2))
+        };
+    });
 
-    return `
-# 💡 미국 NCAV 가치 평가 모델
-> **NCAV (청산가치)** = 유동자산 - 총부채\n
-> **적정 주가** = NCAV ÷ 상장 주식수
-
-| 평가 기준 (배수) | 기대 수익률 | 적정 주가($) |
-|:---:|:---:|:---:|
-${rows}
-
----
-
-# 🔍 핵심 투자 지표 (Key Metrics)
-* 🧊 **순유동자산 (NCAV):** \`$${(netCurrentAsset / 1000000).toLocaleString()}M (백만 달러)\`
-* 🏢 **총부채 (Liabilities):** \`$${(lblt / 1000000).toLocaleString()}M (백만 달러)\`
-* 🏷️ **현재가 (Price):** \`$${last.toLocaleString()}\`
-
----
-*※ NCAV(청산가치)가 현재 시가총액보다 높은 기업은 매우 강력한 자산 가치를 지닌 것으로 평가됩니다.*
-    `.trim();
+    return {
+        title: "미국 NCAV 가치 평가 모델",
+        description: "Benjamin Graham's Net Current Asset Value Asset-driven Strategy.",
+        formula: "NCAV (Net Current Asset Value) = Current Assets - Total Liabilities",
+        headers: ["평가 기준 (배수)", "기대 수익률", "적정 주가"],
+        rows,
+        metrics: [
+            { label: "순유동자산 (NCAV)", value: `$${(netCurrentAsset / 1000000).toLocaleString()}M` },
+            { label: "총부채 (Liabilities)", value: `$${(lblt / 1000000).toLocaleString()}M` },
+            { label: "현재가 (Price)", value: `$${last.toLocaleString()}` }
+        ],
+        footerNotice: "NCAV(청산가치)가 현재 시가총액보다 높은 기업은 매우 강력한 내재 자산 가치를 지닌 것으로 평가됩니다."
+    };
 }
 
-export function calculateUsSRIM(finnhub: any, detail: any, baseKe: number = 8.0) {
-    // 1. 재무 데이터 추출 (Finnhub IS/BS 데이터)
+/**
+ * 미국 주식 S-RIM 계산 로직 (구조화된 객체 반환)
+ */
+export function calculateUsSRIM(finnhub: any, detail: any, baseKe: number = 8.0): ValuationResult | string {
     const bs = finnhub?.data?.[0]?.report?.bs ?? [];
     const ic = finnhub?.data?.[0]?.report?.ic ?? [];
 
-    // 자기자본 (Total Equity)
     const total_equity = Number(
         bs.find((i: any) => i.concept.includes("us-gaap_StockholdersEquity"))?.value ??
         bs.find((i: any) => i.concept.includes("StockholdersEquity"))?.value ?? 1
     );
 
-    // 당기순이익 (Net Income)
     const net_income = Number(
         ic.find((i: any) => i.concept.includes("us-gaap_NetIncomeLoss"))?.value ??
         ic.find((i: any) => i.concept.includes("NetIncome"))?.value ?? 0
     );
 
-    // 2. ROE 및 기본 정보 계산
     const ROE = (net_income / total_equity) * 100;
-    const last = Number(detail?.output?.last || 0); // 현재가
-    const shar = Number(detail?.output?.shar || 0); // 상장주식수
+    const last = Number(detail?.output?.last || 0);
+    const shar = Number(detail?.output?.shar || 0);
 
-    // 데이터 유효성 검사
     if (last === 0 || shar === 0) {
-        return `> ⚠️ **분석 불가:** 현재가 또는 주식수 데이터가 부족합니다.`;
+        return "ERROR_INSUFFICIENT_DATA";
     }
 
-    // 3. 요구수익률 범위 생성 (0.5% 단위)
     const step = 0.5;
     const rangeCount = 3;
     let keList = [];
@@ -347,212 +196,122 @@ export function calculateUsSRIM(finnhub: any, detail: any, baseKe: number = 8.0)
     }
 
     const rows = keList.map(ke => {
-        // S-RIM 공식: 적정가치 = 자본총계 * (ROE / Ke)
         const value = total_equity * (ROE / ke);
         const target = value / shar;
         const returnPct = (target / last - 1) * 100;
 
-        const isBase = ke === baseKe ? "**" : "";
-        return `| ${isBase}${ke.toFixed(1)}%${isBase} | ${isBase}${returnPct.toFixed(2)}%${isBase} | ${isBase}$${target.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}${isBase} |`;
-    }).join("\n");
+        return {
+            multiplier: `${ke.toFixed(1)}%`,
+            returnPct: Number(returnPct.toFixed(2)),
+            targetPrice: Number(target.toFixed(2))
+        };
+    });
 
-    return `
-# 💡 미국 S-RIM 가치 평가 모델
-> **적정 가치** = 자기자본 × (ROE / 요구수익률)\n
-> **적정 주가** = 적정 가치 ÷ 상장 주식수
-
-| 요구수익률 기준(Ke) | 기대 수익률 | 적정 주가($) |
-|:---:|:---:|:---:|
-${rows}
-
----
-
-# 🔍 핵심 투자 지표 (Key Metrics)
-* 📈 **ROE (자기자본이익률):** \`${ROE.toFixed(2)}%\`
-* 💰 **자기자본 (Equity):** \`$${(total_equity / 1000000).toLocaleString()}M (백만 달러)\`
-* 🏷️ **현재가 (Price):** \`$${last.toLocaleString()}\`
-
----
-*※ 미국 주식의 Ke는 보통 미국 10년물 국채 금리에 리스크 프리미엄을 더한 7~9% 수준을 주로 사용합니다.*
-    `.trim();
+    return {
+        title: "미국 S-RIM 가치 평가 모델",
+        description: "Residual Income Valuation Model adjusted for US Securities.",
+        formula: "Fair Value = Shareholders Equity × (ROE / Required Return)",
+        headers: ["요구수익률 기준(Ke)", "기대 수익률", "적정 주가"],
+        rows,
+        metrics: [
+            { label: "ROE (자기자본이익률)", value: `${ROE.toFixed(2)}%` },
+            { label: "자기자본 (Equity)", value: `$${(total_equity / 1000000).toLocaleString()}M` },
+            { label: "현재가 (Price)", value: `$${last.toLocaleString()}` }
+        ],
+        footerNotice: "미국 주식의 Ke는 보통 미국 10년물 국채 금리에 리스크 프리미엄을 더한 7~9% 수준을 주로 사용합니다."
+    };
 }
 
-export function getUsSRIMTargetPrice(finnhub: any, detail: any, baseKe: number = 8.0) {
-    // 1. 재무 데이터 추출 (Finnhub IS/BS 데이터)
-    const bs = finnhub?.data?.[0]?.report?.bs ?? [];
-    const ic = finnhub?.data?.[0]?.report?.ic ?? [];
-
-    // 자기자본 (Total Equity)
-    const total_equity = Number(
-        bs.find((i: any) => i.concept.includes("us-gaap_StockholdersEquity"))?.value ??
-        bs.find((i: any) => i.concept.includes("StockholdersEquity"))?.value ?? 1
-    );
-
-    // 당기순이익 (Net Income)
-    const net_income = Number(
-        ic.find((i: any) => i.concept.includes("us-gaap_NetIncomeLoss"))?.value ??
-        ic.find((i: any) => i.concept.includes("NetIncome"))?.value ?? 0
-    );
-
-    // 2. ROE 및 기본 정보 계산
-    const ROE = (net_income / total_equity) * 100;
-    const shar = Number(detail?.output?.shar || 0); // 상장주식수
-
-    // 데이터 유효성 검사
-    if (shar === 0) {
-        return "데이터 부족으로 적정주가 산출 불가";
-    }
-
-    // 3. S-RIM 공식: 적정주가 = (자기자본 * (ROE / 요구수익률)) / 상장주식수
-    const targetPrice = (total_equity * (ROE / baseKe)) / shar;
-
-    return `(요구수익률 ${baseKe}% 기준) 적정주가: $${targetPrice.toLocaleString(undefined, {
-        minimumFractionDigits: 2,
-        maximumFractionDigits: 2
-    })}`;
-}
-
-/**
- * 미국 주식 NCAV 적정 주가 계산 (Target Price)
- */
-export function calculateUsNcavValue(finnhub: any, detail: any) {
-    const bs = finnhub?.data?.[0]?.report?.bs ?? [];
-    const cras = Number(
-        bs.find((i: any) => i.concept.includes("us-gaap_AssetsCurrent"))?.value ??
-        bs.find((i: any) => i.concept.includes("AssetsCurrent"))?.value ?? 0
-    );
-    const lblt = Number(
-        bs.find((i: any) => i.concept.includes("us-gaap_Liabilities"))?.value ??
-        bs.find((i: any) => i.concept.includes("Liabilities"))?.value ?? 0
-    );
-
-    // [방어 로직] 주식수(shar) 데이터 유효성 검사
-    const rawShar = detail?.output?.shar;
-    const lstn = Number(rawShar);
-
-    // 주식수가 없거나, 빈 문자열이거나, 0인 경우 상장폐지/데이터오류로 판단하여 0 반환
-    if (!rawShar || rawShar === "" || lstn === 0) {
-        return "0.00";
-    }
-
-    // 적정 주가 계산: (유동자산 - 총부채) / 상장주식수
+// --- 하단 레거시 계산 함수 데이터 가공 표준화 유지보수 영역 ---
+export function calculateKrNcavValue(kiBS: any, kiChart: any) {
+    const cras = Number(kiBS?.output?.[0]?.cras ?? 0) * ONE_HUNDRED_MILLION;
+    const lblt = Number(kiBS?.output?.[0]?.total_lblt ?? 0) * ONE_HUNDRED_MILLION;
+    const lstn = Number(kiChart?.output1?.lstn_stcn ?? 1);
     const target = (cras - lblt) / lstn;
-
-    return target.toFixed(2);
+    return Number(target.toFixed(0));
 }
 
-/**
- * 미국 주식 NCAV 기대 수익률 계산 (Expected Return Ratio)
- */
-export function calculateUsNcavRatio(finnhub: any, detail: any) {
-    const bs = finnhub?.data?.[0]?.report?.bs ?? [];
-    const cras = Number(
-        bs.find((i: any) => i.concept.includes("us-gaap_AssetsCurrent"))?.value ??
-        bs.find((i: any) => i.concept.includes("AssetsCurrent"))?.value ?? 0
-    );
-    const lblt = Number(
-        bs.find((i: any) => i.concept.includes("us-gaap_Liabilities"))?.value ??
-        bs.find((i: any) => i.concept.includes("Liabilities"))?.value ?? 0
-    );
-
-    // [방어 로직] 주식수(shar) 및 현재가(last) 데이터 유효성 검사
-    const rawShar = detail?.output?.shar;
-    const lstn = Number(rawShar);
-    const last = Number(detail?.output?.last || 0);
-
-    // 주식수가 없거나 현재가가 0이면 기대 수익률을 계산할 수 없으므로 0 반환
-    if (!rawShar || rawShar === "" || lstn === 0 || last === 0) {
-        return 0;
-    }
+export function calculateKrNcavRatio(kiBS: any, kiChart: any) {
+    const cras = Number(kiBS.output?.[0]?.cras ?? 0) * ONE_HUNDRED_MILLION;
+    const lblt = Number(kiBS.output?.[0]?.total_lblt ?? 0) * ONE_HUNDRED_MILLION;
+    const lstn = Number(kiChart?.output1?.lstn_stcn ?? 1);
+    const prpr = Number(kiChart?.output1?.stck_prpr ?? 0);
 
     const target = (cras - lblt) / lstn;
-
-    // 기대 수익률 계산: ((적정주가 / 현재가) - 1) * 100
-    const returnPct = ((target / last) - 1) * 100;
-
+    const returnPct = ((target / prpr) - 1) * 100;
     return Number(returnPct.toFixed(2));
 }
 
-/**
- * 미국 주식 NCAV 기대 수익률에 따른 등급 및 컬러 패키지
- */
-export function getUsNcavGrade(finnhub: any, detail: any) {
-    // 1. 데이터 추출 (Finnhub 데이터 구조 반영)
-    const bs = finnhub?.data?.[0]?.report?.bs ?? [];
-    const cras = Number(
-        bs.find((i: any) => i.concept.includes("us-gaap_AssetsCurrent"))?.value ??
-        bs.find((i: any) => i.concept.includes("AssetsCurrent"))?.value ?? 0
-    );
-    const lblt = Number(
-        bs.find((i: any) => i.concept.includes("us-gaap_Liabilities"))?.value ??
-        bs.find((i: any) => i.concept.includes("Liabilities"))?.value ?? 0
-    );
+export function getKrNcavGrade(kiBS: any, kiChart: any) {
+    const cras = Number(kiBS.output?.[0]?.cras || 0) * ONE_HUNDRED_MILLION;
+    const lblt = Number(kiBS.output?.[0]?.total_lblt || 0) * ONE_HUNDRED_MILLION;
+    const lstn = Number(kiChart?.output1?.lstn_stcn ?? 1);
+    const prpr = Number(kiChart?.output1?.stck_prpr ?? 0);
 
-    // 발행주식수(shar)와 현재가(last)
+    if (!lstn || !prpr) return { grade: "N/A", color: "text-zinc-400", cardGradeColor: "from-zinc-500/20 to-zinc-500/5" };
+
+    const targetPrice = (cras - lblt) / lstn;
+    const returnPct = ((targetPrice / prpr) - 1) * 100;
+
+    if (returnPct >= 200) return { grade: "SSS", color: "text-yellow-500", cardGradeColor: "from-yellow-500/30 via-amber-500/10 to-transparent" };
+    if (returnPct >= 150) return { grade: "SS", color: "text-yellow-400", cardGradeColor: "from-yellow-400/20 via-orange-400/5 to-transparent" };
+    if (returnPct >= 100) return { grade: "S", color: "text-orange-500", cardGradeColor: "from-orange-500/20 to-transparent" };
+    if (returnPct >= 50) return { grade: "A", color: "text-green-500", cardGradeColor: "from-green-500/15 to-transparent" };
+    if (returnPct >= 0) return { grade: "B", color: "text-blue-500", cardGradeColor: "from-blue-500/10 to-transparent" };
+    return { grade: "F", color: "text-red-500", cardGradeColor: "from-red-500/20 via-red-900/10 to-transparent" };
+}
+
+export function getKrSRIMTargetPrice(kiBS: any, kiIS: any, kiChart: any, baseKe: number = 8.0) {
+    const total_cptl = Number(kiBS?.output?.[0]?.total_cptl ?? 1) * ONE_HUNDRED_MILLION;
+    const thtr_ntin = Number(kiIS?.output?.[0]?.thtr_ntin ?? 0) * ONE_HUNDRED_MILLION;
+    const ROE = (thtr_ntin / total_cptl) * 100;
+    const lstn = Number(kiChart?.output1?.lstn_stcn ?? 1) === 0 ? 1 : Number(kiChart?.output1?.lstn_stcn ?? 1);
+    const targetPrice = (total_cptl * (ROE / baseKe)) / lstn;
+    return `(요구수익률 ${baseKe}% 기준) 적정주가: ₩${Math.round(targetPrice)}`;
+}
+
+export function calculateUsNcavValue(finnhub: any, detail: any) {
+    const bs = finnhub?.data?.[0]?.report?.bs ?? [];
+    const cras = Number(bs.find((i: any) => i.concept.includes("us-gaap_AssetsCurrent"))?.value ?? 0);
+    const lblt = Number(bs.find((i: any) => i.concept.includes("us-gaap_Liabilities"))?.value ?? 0);
+    const rawShar = detail?.output?.shar;
+    if (!rawShar || rawShar === "" || Number(rawShar) === 0) return "0.00";
+    return ((cras - lblt) / Number(rawShar)).toFixed(2);
+}
+
+export function calculateUsNcavRatio(finnhub: any, detail: any) {
+    const bs = finnhub?.data?.[0]?.report?.bs ?? [];
+    const cras = Number(bs.find((i: any) => i.concept.includes("us-gaap_AssetsCurrent"))?.value ?? 0);
+    const lblt = Number(bs.find((i: any) => i.concept.includes("us-gaap_Liabilities"))?.value ?? 0);
+    const rawShar = detail?.output?.shar;
+    const last = Number(detail?.output?.last || 0);
+    if (!rawShar || rawShar === "" || Number(rawShar) === 0 || last === 0) return 0;
+    const target = (cras - lblt) / Number(rawShar);
+    return Number((((target / last) - 1) * 100).toFixed(2));
+}
+
+export function getUsNcavGrade(finnhub: any, detail: any) {
+    const bs = finnhub?.data?.[0]?.report?.bs ?? [];
+    const cras = Number(bs.find((i: any) => i.concept.includes("us-gaap_AssetsCurrent"))?.value ?? 0);
+    const lblt = Number(bs.find((i: any) => i.concept.includes("us-gaap_Liabilities"))?.value ?? 0);
     const lstn = Number(detail.output?.shar || 1);
     const last = Number(detail.output?.last || 1);
-
-    // 2. NCAV 적정 주가 및 기대 수익률 계산
     const targetPrice = (cras - lblt) / lstn;
     const returnPct = ((targetPrice / last) - 1) * 100;
 
-    // 3. 등급 및 컬러 로직 (한국 버전과 동일한 기준)
-    if (returnPct >= 200) {
-        return {
-            grade: "SSS",
-            color: "text-yellow-500",
-            cardGradeColor: "from-yellow-500/30 via-amber-500/10 to-transparent"
-        };
-    } else if (returnPct >= 150) {
-        return {
-            grade: "SS",
-            color: "text-yellow-400",
-            cardGradeColor: "from-yellow-400/20 via-orange-400/5 to-transparent"
-        };
-    } else if (returnPct >= 100) {
-        return {
-            grade: "S",
-            color: "text-orange-500",
-            cardGradeColor: "from-orange-500/20 to-transparent"
-        };
-    } else if (returnPct >= 50) {
-        return {
-            grade: "A",
-            color: "text-green-500",
-            cardGradeColor: "from-green-500/15 to-transparent"
-        };
-    } else if (returnPct >= 0) {
-        return {
-            grade: "B",
-            color: "text-blue-500",
-            cardGradeColor: "from-blue-500/10 to-transparent"
-        };
-    } else {
-        return {
-            grade: "F",
-            color: "text-red-500",
-            cardGradeColor: "from-red-500/20 via-red-900/10 to-transparent"
-        };
-    }
+    if (returnPct >= 200) return { grade: "SSS", color: "text-yellow-500", cardGradeColor: "from-yellow-500/30 via-amber-500/10 to-transparent" };
+    if (returnPct >= 150) return { grade: "SS", color: "text-yellow-400", cardGradeColor: "from-yellow-400/20 via-orange-400/5 to-transparent" };
+    if (returnPct >= 100) return { grade: "S", color: "text-orange-500", cardGradeColor: "from-orange-500/20 to-transparent" };
+    if (returnPct >= 50) return { grade: "A", color: "text-green-500", cardGradeColor: "from-green-500/15 to-transparent" };
+    if (returnPct >= 0) return { grade: "B", color: "text-blue-500", cardGradeColor: "from-blue-500/10 to-transparent" };
+    return { grade: "F", color: "text-red-500", cardGradeColor: "from-red-500/20 via-red-900/10 to-transparent" };
 }
 
-/**
- * 숫자를 한국식 단위(조, 억)로 변환합니다.
- */
 export function formatKoreanUnit(value: number | string): string {
     const num = Number(value);
     if (isNaN(num) || num === 0) return "0";
-
     const absoluteValue = Math.abs(num);
-    const units = [
-        { label: "조", value: 1000000000000 },
-        { label: "억", value: 100000000 },
-    ];
-
-    if (absoluteValue >= 1000000000000) {
-        return (num / 1000000000000).toFixed(2) + "조";
-    } else if (absoluteValue >= 100000000) {
-        return (num / 100000000).toLocaleString(undefined, { maximumFractionDigits: 0 }) + "억";
-    }
+    if (absoluteValue >= 1000000000000) return (num / 1000000000000).toFixed(2) + "조";
+    if (absoluteValue >= 100000000) return (num / 100000000).toLocaleString(undefined, { maximumFractionDigits: 0 }) + "억";
     return num.toLocaleString();
 }
