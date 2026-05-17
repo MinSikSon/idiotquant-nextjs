@@ -201,19 +201,20 @@ function CalculatorContent() {
     return (
         <div className="bg-zinc-50 dark:bg-zinc-950 min-h-screen p-4 md:p-10 font-sans text-zinc-900 dark:text-zinc-100 selection:bg-blue-500/20">
             <div className="max-w-6xl mx-auto space-y-10">
+                {/* 개선된 메인 타이틀 생태계 */}
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-zinc-200 dark:border-zinc-800 pb-6">
                     <div className="flex items-center gap-3">
                         <div className="p-2.5 bg-blue-600 rounded-2xl text-white shadow-lg shadow-blue-600/20">
                             <CalculatorIcon className="w-6 h-6" />
                         </div>
                         <div>
-                            <h1 className="text-2xl font-black tracking-tight text-zinc-900 dark:text-zinc-100">하이엔드 자산 수명 시뮬레이터</h1>
-                            <p className="text-xs text-zinc-500 dark:text-zinc-400 font-medium">조/억/만 단위 정밀 가시화 및 실전 은퇴 연동형 계측 시스템</p>
+                            <h1 className="text-2xl font-black tracking-tight text-zinc-900 dark:text-zinc-100">내 자산 수명 진단기</h1>
+                            <p className="text-xs text-zinc-500 dark:text-zinc-400 font-medium mt-0.5">세금, 건보료, 연금까지 반영한 100세 시대 맞춤형 복리 시뮬레이터</p>
                         </div>
                     </div>
                     <button onClick={handleShareLink} className={cn("flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl font-bold text-xs transition-all shadow-sm border shrink-0", copied ? "bg-emerald-500 border-emerald-500 text-white" : "bg-white dark:bg-zinc-900 border-zinc-200 dark:border-zinc-800 text-zinc-700 dark:text-zinc-300")}>
                         {copied ? <CheckIcon className="w-4 h-4" /> : <ShareIcon className="w-4 h-4" />}
-                        {copied ? "링크 복사 완료!" : "결과 링크 공유"}
+                        {copied ? "시뮬레이션 링크 복사 완료!" : "결과 리포트 공유"}
                     </button>
                 </div>
 
@@ -221,7 +222,7 @@ function CalculatorContent() {
                     <div className="lg:col-span-5 space-y-8">
                         <SectionWrapper title="핵심 자산 및 기대 수익률" icon={<ArrowTrendingUpIcon className="w-4 h-4" />}>
                             <div className="space-y-6 bg-white dark:bg-zinc-900 p-6 rounded-[2rem] border border-zinc-200 dark:border-zinc-800 shadow-sm">
-                                <InputGroup label="초기 투자 시드" value={formatKrw(inputs.investmentAmount)} color="text-blue-600 dark:text-blue-400">
+                                <InputGroup label="초기 투자 시드" subLabel="현재 투입 가능한 순수 자산 및 투자 예치금 총액입니다." value={formatKrw(inputs.investmentAmount)} color="text-blue-600 dark:text-blue-400">
                                     <div className="flex gap-2">
                                         <div className="relative flex-1">
                                             <input type="number" value={inputs.investmentAmount} onChange={(e) => updateInput("investmentAmount", Number(e.target.value))} className="w-full bg-zinc-50 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700/60 rounded-xl pl-4 pr-12 py-2.5 font-bold text-sm text-zinc-900 dark:text-zinc-100 focus:ring-2 focus:ring-blue-500 outline-none" />
@@ -230,51 +231,56 @@ function CalculatorContent() {
                                         <StepButtons value={inputs.investmentAmount} step={500} min={0} onChange={(v) => updateInput("investmentAmount", v)} />
                                     </div>
                                 </InputGroup>
-                                <PercentRateSlider label="투자 자산 기대 수익률 (연)" value={inputs.interestRate} min={0} max={25} onChange={(v) => updateInput("interestRate", v)} accentColor="accent-amber-500" />
+                                
+                                <PercentRateSlider label="투자 자산 기대 수익률 (연)" subLabel="목표로 하는 연평균 포트폴리오 수익률입니다. 장기 평균치 입력을 권장합니다." value={inputs.interestRate} min={0} max={25} onChange={(v) => updateInput("interestRate", v)} accentColor="accent-amber-500" />
+                                
                                 <div className="p-3 bg-zinc-50 dark:bg-zinc-800/40 rounded-2xl border border-zinc-100 dark:border-zinc-800/50 space-y-2">
                                     <span className="text-[10px] font-bold text-zinc-400 dark:text-zinc-500 block px-1">기본 거시 변수</span>
                                     <div className="grid grid-cols-2 gap-2">
-                                        <ToggleButton checked={inputs.applyTax} onChange={(v) => updateInput("applyTax", v)} label="이자소득세 과세 (15.4%)" />
-                                        <ToggleButton checked={inputs.realValueMode} onChange={(v) => updateInput("realValueMode", v)} label="물가상승 반영 (실질가치)" />
+                                        <ToggleButton checked={inputs.applyTax} onChange={(v) => updateInput("applyTax", v)} label="이자소득세 과세 (15.4%)" description="매년 투자 수익에 배당소득세를 차감한 세후 복리를 계산합니다." />
+                                        <ToggleButton checked={inputs.realValueMode} onChange={(v) => updateInput("realValueMode", v)} label="물가상승 반영 (실질가치)" description="연 2.5% 인플레이션을 반영하여 미래 금액을 현재 가치로 조정합니다." />
                                     </div>
                                 </div>
+                                
                                 <div className="p-3 bg-blue-50/40 dark:bg-blue-950/20 rounded-2xl border border-blue-100/60 dark:border-blue-900/30 space-y-2">
-                                    <span className="text-[10px] font-black text-blue-600 dark:text-blue-400 block px-1 flex items-center gap-1"><ShieldCheckIcon className="w-3 h-3" /> 실전 정밀 검증 지표 추가</span>
+                                    <span className="text-[10px] font-black text-blue-600 dark:text-blue-400 block px-1 flex items-center gap-1"><ShieldCheckIcon className="w-3 h-3" /> 실전 정밀 검증 패널티 & 혜택</span>
                                     <div className="grid grid-cols-1 gap-2">
-                                        <ToggleButton checked={inputs.applyIsaIsaGold} onChange={(v) => updateInput("applyIsaIsaGold", v)} label="금융투자소득세 고율 가산 (22% 세율 대체)" />
-                                        <ToggleButton checked={inputs.applyInsurancePremium} onChange={(v) => updateInput("applyInsurancePremium", v)} label="은퇴 후 건보료 지역가입 페널티 (지출 +8%)" />
-                                        <ToggleButton checked={inputs.applyNationalPension} onChange={(v) => updateInput("applyNationalPension", v)} label="만 65세 이후 국민연금 수령 연동 (월 +120만)" />
+                                        <ToggleButton checked={inputs.applyIsaIsaGold} onChange={(v) => updateInput("applyIsaIsaGold", v)} label="금융투자소득세 고율 가산 (22% 세율 대체)" description="거액 자산가 구간 진입 시 고율 과세 세율을 선제 적용합니다." />
+                                        <ToggleButton checked={inputs.applyInsurancePremium} onChange={(v) => updateInput("applyInsurancePremium", v)} label="은퇴 후 건보료 지역가입 페널티 (지출 +8%)" description="직장 은퇴 후 지역가입 전환에 따른 피부양자 탈락 및 지출 가산을 시뮬레이션합니다." />
+                                        <ToggleButton checked={inputs.applyNationalPension} onChange={(v) => updateInput("applyNationalPension", v)} label="만 65세 이후 국민연금 수령 연동 (월 +120만)" description="연금 수령 나이 도달 시 매달 실질 가치 기준의 안정 자금이 계좌에 주입됩니다." />
                                     </div>
                                 </div>
                             </div>
                         </SectionWrapper>
+                        
                         <SectionWrapper title="생애 주기 임계값" icon={<UserIcon className="w-4 h-4" />}>
                             <div className="space-y-4 bg-white dark:bg-zinc-900 p-6 rounded-[2rem] border border-zinc-200 dark:border-zinc-800 shadow-sm">
-                                <AgeInputSlider label="시작 연령" value={inputs.startAge} min={20} max={80} onChange={(v) => updateInput("startAge", v)} />
-                                <AgeInputSlider label="은퇴 및 저축 중단 연령" value={inputs.retirementAge} min={inputs.startAge} max={90} onChange={(v) => updateInput("retirementAge", v)} />
-                                <AgeInputSlider label="자산 수명 검증 종료 연령" value={inputs.targetAge} min={inputs.retirementAge} max={100} onChange={(v) => updateInput("targetAge", v)} />
+                                <AgeInputSlider label="시작 연령" subLabel="이 시뮬레이션을 가동하는 현재 내 나이입니다." value={inputs.startAge} min={20} max={80} onChange={(v) => updateInput("startAge", v)} />
+                                <AgeInputSlider label="은퇴 및 저축 중단 연령" subLabel="본업을 중단하고 원금 투입 없이 복리 증식과 생활비 인출만 일어나는 시점입니다." value={inputs.retirementAge} min={inputs.startAge} max={90} onChange={(v) => updateInput("retirementAge", v)} />
+                                <AgeInputSlider label="자산 수명 검증 종료 연령" subLabel="내 자산이 고갈되지 않고 버텨주기를 바라는 최종 목표 나이입니다." value={inputs.targetAge} min={inputs.retirementAge} max={100} onChange={(v) => updateInput("targetAge", v)} />
                             </div>
                         </SectionWrapper>
+                        
                         <SectionWrapper title="점증형 현금 가감 데이터" icon={<ArrowsRightLeftIcon className="w-4 h-4" />}>
                             <div className="space-y-6 bg-white dark:bg-zinc-900 p-6 rounded-[2rem] border border-zinc-200 dark:border-zinc-800 shadow-sm">
                                 <div className="space-y-4">
-                                    <InputGroup label="초기 매월 저축액" value={formatKrw(inputs.contributions)}>
+                                    <InputGroup label="초기 매월 저축액" subLabel="은퇴 전 근로 기간 동안 매달 투자 계좌에 적립할 원금입니다." value={formatKrw(inputs.contributions)}>
                                         <div className="flex gap-2">
                                             <input type="number" value={inputs.contributions} onChange={(e) => updateInput("contributions", Number(e.target.value))} className="flex-1 bg-zinc-50 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700/60 rounded-xl px-4 py-2.5 font-bold text-sm text-zinc-900 dark:text-zinc-100 outline-none focus:ring-2 focus:ring-blue-500" />
                                             <StepButtons value={inputs.contributions} step={50} min={0} onChange={(v) => updateInput("contributions", v)} />
                                         </div>
                                     </InputGroup>
-                                    <PercentRateSlider label="매년 소득 상승에 따른 복리 저축 증액률" value={inputs.contributionGrowthRate} min={0} max={15} onChange={(v) => updateInput("contributionGrowthRate", v)} accentColor="accent-blue-600" />
+                                    <PercentRateSlider label="매년 소득 상승에 따른 복리 저축 증액률" subLabel="연봉 상승을 반영해 매년 월 적립액을 복리로 늘려나가는 엔진입니다." value={inputs.contributionGrowthRate} min={0} max={15} onChange={(v) => updateInput("contributionGrowthRate", v)} accentColor="accent-blue-600" />
                                 </div>
                                 <div className="h-px bg-zinc-100 dark:bg-zinc-800" />
                                 <div className="space-y-4">
-                                    <InputGroup label="기본 목표 초기 월 생활비" value={formatKrw(inputs.monthlyExpense)} color="text-rose-500 dark:text-rose-400">
+                                    <InputGroup label="기본 목표 초기 월 생활비" subLabel="은퇴 후 매달 삶을 유지하기 위해 인출하여 사용할 고정 비용입니다." value={formatKrw(inputs.monthlyExpense)} color="text-rose-500 dark:text-rose-400">
                                         <div className="flex gap-2">
                                             <input type="number" value={inputs.monthlyExpense} onChange={(e) => updateInput("monthlyExpense", Number(e.target.value))} className="flex-1 bg-zinc-50 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700/60 rounded-xl px-4 py-2.5 font-bold text-sm text-zinc-900 dark:text-zinc-100 outline-none focus:ring-2 focus:ring-rose-500" />
                                             <StepButtons value={inputs.monthlyExpense} step={50} min={0} onChange={(v) => updateInput("monthlyExpense", v)} />
                                         </div>
                                     </InputGroup>
-                                    <PercentRateSlider label="매년 물가 연동 생활비 상승률" value={inputs.expenseGrowthRate} min={0} max={15} onChange={(v) => updateInput("expenseGrowthRate", v)} accentColor="accent-rose-500" />
+                                    <PercentRateSlider label="매년 물가 연동 생활비 상승률" subLabel="인플레이션에 의해 은퇴 후 생활비 지출이 매년 늘어나는 현상을 반영합니다." value={inputs.expenseGrowthRate} min={0} max={15} onChange={(v) => updateInput("expenseGrowthRate", v)} accentColor="accent-rose-500" />
                                 </div>
                             </div>
                         </SectionWrapper>
@@ -330,7 +336,15 @@ function CalculatorContent() {
                                 기대 복리 연 수익률 <span className="font-bold text-blue-600 dark:text-blue-400">{inputs.interestRate}%</span> 구조에서는 초기 저축 단계의 1년 차이가 복리 롤링 스노우볼 효과로 인해 말년 수명 잔고를 <span className="font-bold text-zinc-900 dark:text-zinc-100">조 단위</span> 스케일로 변동시킬 수 있습니다.
                             </CalloutWrapper>
                             <CalloutWrapper icon={<LightBulbIcon className={cn("w-5 h-5", results.finalValue > 0 ? "text-emerald-500" : "text-rose-500")} />} title="퀀트 자산 수명 진단">
-                                {results.finalValue > 0 ? `매우 안정적인 현금흐름 밸런스입니다. 은퇴 이후 발생 자산 수익이 연간 자금 이탈량을 초과하여 방어막을 형성하고 있습니다.` : `위험 상태입니다. 현 리스크 프로파일을 유지할 경우 목표 연령 이전에 자산이 한계점에 봉착합니다. 매월 정립액을 늘리거나 은퇴 목표 시점을 소폭 연장하십시오.`}
+                                {results.finalValue > 0 ? (
+                                    <>
+                                        <span className="font-bold text-emerald-600 dark:text-emerald-400">🎉 안정적인 노후 생태계 구축 완료:</span> 은퇴 후 자산에서 나오는 배당 및 투자 수익이 매년 물가가 반영된 생활비 지출액을 압도하고 있습니다. 자산이 마르지 않는 마법의 스노우볼 구조가 유지되는 중입니다.
+                                    </>
+                                ) : (
+                                    <>
+                                        <span className="font-bold text-rose-500">⚠️ 자산 조기 고갈 리스크 감지:</span> 은퇴 후 부과되는 세금/건보료 페널티와 물가 연동 지출 상승 속도가 투자 수익보다 가파릅니다. 초기 시드머니 증액, 은퇴 시점 연장 또는 목표 수익률 재조정이 필요합니다.
+                                    </>
+                                )}
                             </CalloutWrapper>
                         </div>
                     </div>
@@ -342,7 +356,6 @@ function CalculatorContent() {
 
 // --- 공용 서브 UI 빌더 컴포넌트 생태계 ---
 
-// 📌 [수정 완료] 하단에서 icon 에러를 유발하던 <icon /> 형태의 선언을 변수 바인딩 형태인 {icon} 구조로 정상 교체했습니다.
 function SectionWrapper({ title, icon, children }: { title: string, icon: React.ReactNode, children: React.ReactNode }) {
     return (
         <section className="space-y-3">
@@ -356,27 +369,93 @@ function SectionWrapper({ title, icon, children }: { title: string, icon: React.
 }
 
 function InputGroup({ label, value, subLabel, color = "text-zinc-900 dark:text-zinc-100", children }: any) {
-    return <div className="space-y-2"><div className="flex justify-between items-end"><div><span className="text-[10px] font-black text-zinc-400 dark:text-zinc-500 uppercase tracking-widest block">{label}</span>{subLabel && <span className="text-[10px] font-bold text-blue-500 dark:text-blue-400 tracking-tight block mt-0.5">{subLabel}</span>}</div><span className={`text-sm font-black ${color}`}>{value}</span></div>{children}</div>;
+    return (
+        <div className="space-y-2">
+            <div className="flex justify-between items-end gap-4">
+                <div className="min-w-0 flex-1">
+                    <span className="text-[10px] font-black text-zinc-400 dark:text-zinc-500 uppercase tracking-widest block">{label}</span>
+                    {subLabel && <span className="text-[10px] leading-relaxed text-zinc-400 dark:text-zinc-500 font-medium block mt-0.5">{subLabel}</span>}
+                </div>
+                <span className={`text-sm font-black shrink-0 ${color}`}>{value}</span>
+            </div>
+            {children}
+        </div>
+    );
 }
-function AgeInputSlider({ label, value, min, max, onChange }: { label: string, value: number, min: number, max: number, onChange: (v: number) => void }) {
-    return <div className="space-y-3 bg-zinc-50/50 dark:bg-zinc-800/40 p-3.5 rounded-2xl border border-zinc-100 dark:border-zinc-800/60"><div className="flex justify-between items-center"><span className="text-[11px] font-black text-zinc-500 dark:text-zinc-400 tracking-wider">{label}</span><div className="flex items-center gap-2"><span className="text-sm font-black text-blue-600 dark:text-blue-400 bg-blue-500/10 dark:bg-blue-500/20 px-2.5 py-0.5 rounded-lg">{value}세</span><div className="flex border border-zinc-200 dark:border-zinc-700 rounded-lg overflow-hidden bg-white dark:bg-zinc-800 shadow-sm"><button type="button" disabled={value <= min} onClick={() => onChange(value - 1)} className="p-1.5 text-zinc-500 hover:bg-zinc-100 dark:hover:bg-zinc-700 disabled:opacity-30 border-r border-zinc-200 dark:border-zinc-700"><MinusIcon className="w-3 h-3" /></button><button type="button" disabled={value >= max} onClick={() => onChange(value + 1)} className="p-1.5 text-zinc-500 hover:bg-zinc-100 dark:hover:bg-zinc-700 disabled:opacity-30"><PlusIcon className="w-3 h-3" /></button></div></div></div><input type="range" min={min} max={max} value={value} onChange={(e) => onChange(Number(e.target.value))} className="w-full h-1.5 bg-zinc-200 dark:bg-zinc-700 rounded-lg appearance-none cursor-pointer accent-blue-600" /></div>;
+
+function AgeInputSlider({ label, subLabel, value, min, max, onChange }: { label: string, subLabel?: string, value: number, min: number, max: number, onChange: (v: number) => void }) {
+    return (
+        <div className="space-y-3 bg-zinc-50/50 dark:bg-zinc-800/40 p-3.5 rounded-2xl border border-zinc-100 dark:border-zinc-800/60">
+            <div className="flex justify-between items-start gap-4">
+                <div className="min-w-0 flex-1">
+                    <span className="text-[11px] font-black text-zinc-500 dark:text-zinc-400 tracking-wider block">{label}</span>
+                    {subLabel && <span className="text-[10px] leading-tight text-zinc-400 dark:text-zinc-500 font-medium block mt-0.5">{subLabel}</span>}
+                </div>
+                <div className="flex items-center gap-2 shrink-0">
+                    <span className="text-sm font-black text-blue-600 dark:text-blue-400 bg-blue-500/10 dark:bg-blue-500/20 px-2.5 py-0.5 rounded-lg">{value}세</span>
+                    <div className="flex border border-zinc-200 dark:border-zinc-700 rounded-lg overflow-hidden bg-white dark:bg-zinc-800 shadow-sm">
+                        <button type="button" disabled={value <= min} onClick={() => onChange(value - 1)} className="p-1.5 text-zinc-500 hover:bg-zinc-100 dark:hover:bg-zinc-700 disabled:opacity-30 border-r border-zinc-200 dark:border-zinc-700"><MinusIcon className="w-3 h-3" /></button>
+                        <button type="button" disabled={value >= max} onClick={() => onChange(value + 1)} className="p-1.5 text-zinc-500 hover:bg-zinc-100 dark:hover:bg-zinc-700 disabled:opacity-30"><PlusIcon className="w-3 h-3" /></button>
+                    </div>
+                </div>
+            </div>
+            <input type="range" min={min} max={max} value={value} onChange={(e) => onChange(Number(e.target.value))} className="w-full h-1.5 bg-zinc-200 dark:bg-zinc-700 rounded-lg appearance-none cursor-pointer accent-blue-600" />
+        </div>
+    );
 }
-function PercentRateSlider({ label, value, min, max, onChange, accentColor = "accent-blue-600" }: { label: string, value: number, min: number, max: number, onChange: (v: number) => void, accentColor?: string }) {
+
+function PercentRateSlider({ label, subLabel, value, min, max, onChange, accentColor = "accent-blue-600" }: { label: string, subLabel?: string, value: number, min: number, max: number, onChange: (v: number) => void, accentColor?: string }) {
     const [isEditing, setIsEditing] = useState(false);
     const [localValue, setLocalValue] = useState(String(value));
     useEffect(() => { if (!isEditing) setLocalValue(String(value)); }, [value, isEditing]);
     const handleBlur = () => { setIsEditing(false); let num = Number(localValue); if (isNaN(num)) num = value; num = Math.min(max, Math.max(min, num)); onChange(Number(num.toFixed(1))); };
     const adjustStep = (amount: number) => { const next = Math.min(max, Math.max(min, value + amount)); onChange(Number(next.toFixed(1))); };
-    return <div className="space-y-3 bg-zinc-50/50 dark:bg-zinc-800/40 p-3.5 rounded-2xl border border-zinc-100 dark:border-zinc-800/60"><div className="flex justify-between items-center"><span className="text-[11px] font-black text-zinc-400 dark:text-zinc-500 tracking-wider">{label}</span><div className="flex items-center gap-2">{isEditing ? <input type="number" step="0.1" min={min} max={max} value={localValue} onChange={(e) => setLocalValue(e.target.value)} onBlur={handleBlur} onKeyDown={(e) => e.key === "Enter" && handleBlur()} autoFocus className="w-16 bg-white dark:bg-zinc-800 border border-blue-500 rounded-lg px-2 py-0.5 font-bold text-xs text-center text-zinc-900 dark:text-zinc-100 outline-none" /> : <span onClick={() => setIsEditing(true)} className="text-xs font-black text-zinc-700 dark:text-zinc-300 bg-zinc-200/60 dark:bg-zinc-800 px-2 py-0.5 rounded-lg cursor-pointer hover:bg-blue-500/10 hover:text-blue-500 transition-all">{value}%</span>}<div className="flex border border-zinc-200 dark:border-zinc-700 rounded-lg overflow-hidden bg-white dark:bg-zinc-800 shadow-sm"><button type="button" disabled={value <= min} onClick={() => adjustStep(-0.1)} className="p-1.5 text-zinc-500 hover:bg-zinc-100 dark:hover:bg-zinc-700 disabled:opacity-30 border-r border-zinc-200 dark:border-zinc-700"><MinusIcon className="w-3 h-3" /></button><button type="button" disabled={value >= max} onClick={() => adjustStep(0.1)} className="p-1.5 text-zinc-500 hover:bg-zinc-100 dark:hover:bg-zinc-700 disabled:opacity-30"><PlusIcon className="w-3 h-3" /></button></div></div></div><input type="range" min={min} max={max} step="0.1" value={value} onChange={(e) => onChange(Number(Number(e.target.value).toFixed(1)))} className={`w-full h-1.5 bg-zinc-200 dark:bg-zinc-700 rounded-lg appearance-none cursor-pointer ${accentColor}`} /></div>;
+    return (
+        <div className="space-y-3 bg-zinc-50/50 dark:bg-zinc-800/40 p-3.5 rounded-2xl border border-zinc-100 dark:border-zinc-800/60">
+            <div className="flex justify-between items-start gap-4">
+                <div className="min-w-0 flex-1">
+                    <span className="text-[11px] font-black text-zinc-400 dark:text-zinc-500 tracking-wider block">{label}</span>
+                    {subLabel && <span className="text-[10px] leading-tight text-zinc-400 dark:text-zinc-500 font-medium block mt-0.5">{subLabel}</span>}
+                </div>
+                <div className="flex items-center gap-2 shrink-0">
+                    {isEditing ? (
+                        <input type="number" step="0.1" min={min} max={max} value={localValue} onChange={(e) => setLocalValue(e.target.value)} onBlur={handleBlur} onKeyDown={(e) => e.key === "Enter" && handleBlur()} autoFocus className="w-16 bg-white dark:bg-zinc-800 border border-blue-500 rounded-lg px-2 py-0.5 font-bold text-xs text-center text-zinc-900 dark:text-zinc-100 outline-none" />
+                    ) : (
+                        <span onClick={() => setIsEditing(true)} className="text-xs font-black text-zinc-700 dark:text-zinc-300 bg-zinc-200/60 dark:bg-zinc-800 px-2 py-0.5 rounded-lg cursor-pointer hover:bg-blue-500/10 hover:text-blue-500 transition-all">{value}%</span>
+                    )}
+                    <div className="flex border border-zinc-200 dark:border-zinc-700 rounded-lg overflow-hidden bg-white dark:bg-zinc-800 shadow-sm">
+                        <button type="button" disabled={value <= min} onClick={() => adjustStep(-0.1)} className="p-1.5 text-zinc-500 hover:bg-zinc-100 dark:hover:bg-zinc-700 disabled:opacity-30 border-r border-zinc-200 dark:border-zinc-700"><MinusIcon className="w-3 h-3" /></button>
+                        <button type="button" disabled={value >= max} onClick={() => adjustStep(0.1)} className="p-1.5 text-zinc-500 hover:bg-zinc-100 dark:hover:bg-zinc-700 disabled:opacity-30"><PlusIcon className="w-3 h-3" /></button>
+                    </div>
+                </div>
+            </div>
+            <input type="range" min={min} max={max} step="0.1" value={value} onChange={(e) => onChange(Number(Number(e.target.value).toFixed(1)))} className={`w-full h-1.5 bg-zinc-200 dark:bg-zinc-700 rounded-lg appearance-none cursor-pointer ${accentColor}`} />
+        </div>
+    );
 }
+
 function StepButtons({ value, step, min, max, onChange, isFloat = false }: { value: number, step: number, min?: number, max?: number, onChange: (v: number) => void, isFloat?: boolean }) {
     const handleAdd = () => { const next = value + step; if (max !== undefined && next > max) return; onChange(isFloat ? Number(next.toFixed(1)) : next); };
     const handleSub = () => { const next = value - step; if (min !== undefined && next < min) return; onChange(isFloat ? Number(next.toFixed(1)) : next); };
     return <div className="flex border border-zinc-200 dark:border-zinc-700/80 rounded-xl overflow-hidden shrink-0 bg-zinc-50 dark:bg-zinc-800"><button onClick={handleSub} className="p-2.5 hover:bg-zinc-200 dark:hover:bg-zinc-700 transition-colors text-zinc-500 border-r border-zinc-200 dark:border-zinc-700"><MinusIcon className="w-3.5 h-3.5" /></button><button onClick={handleAdd} className="p-2.5 hover:bg-zinc-200 dark:hover:bg-zinc-700 transition-colors text-zinc-500"><PlusIcon className="w-3.5 h-3.5" /></button></div>;
 }
-function ToggleButton({ checked, onChange, label }: { checked: boolean, onChange: (v: boolean) => void, label: string }) {
-    return <button onClick={() => onChange(!checked)} className={cn("flex items-center justify-between p-3 rounded-xl border text-left text-[11px] font-bold transition-all w-full", checked ? "bg-zinc-900 border-zinc-900 text-white dark:bg-zinc-100 dark:border-zinc-100 dark:text-zinc-900" : "bg-zinc-50 dark:bg-zinc-800/40 border-zinc-200 dark:border-zinc-800 text-zinc-500 dark:text-zinc-400 hover:border-zinc-300 dark:hover:border-zinc-700")}><span>{label}</span><div className={cn("w-1.5 h-1.5 rounded-full ml-2 shrink-0", checked ? "bg-blue-500 dark:bg-blue-600 animate-pulse" : "bg-zinc-300 dark:bg-zinc-600")} /></button>;
+
+function ToggleButton({ checked, onChange, label, description }: { checked: boolean, onChange: (v: boolean) => void, label: string, description?: string }) {
+    return (
+        <button onClick={() => onChange(!checked)} className={cn("flex flex-col items-start p-3.5 rounded-xl border text-left font-sans transition-all w-full space-y-1", checked ? "bg-zinc-900 border-zinc-900 text-white dark:bg-zinc-100 dark:border-zinc-100 dark:text-zinc-900" : "bg-zinc-50 dark:bg-zinc-800/40 border-zinc-200 dark:border-zinc-800 text-zinc-700 dark:text-zinc-300 hover:border-zinc-300 dark:hover:border-zinc-700")}>
+            <div className="flex items-center justify-between w-full">
+                <span className="text-[11px] font-black tracking-tight">{label}</span>
+                <div className={cn("w-1.5 h-1.5 rounded-full ml-2 shrink-0", checked ? "bg-blue-500 dark:bg-blue-600 animate-pulse" : "bg-zinc-300 dark:bg-zinc-600")} />
+            </div>
+            {description && (
+                <span className={cn("text-[10px] leading-relaxed font-medium block", checked ? "text-zinc-400 dark:text-zinc-500" : "text-zinc-400 dark:text-zinc-500")}>
+                    {description}
+                </span>
+            )}
+        </button>
+    );
 }
+
 function CalloutWrapper({ icon, title, children }: any) {
     return <div className="p-5 bg-white dark:bg-zinc-900 rounded-3xl border border-zinc-200 dark:border-zinc-800 shadow-sm flex gap-3"><div className="flex-shrink-0 mt-0.5">{icon}</div><div className="min-w-0"><h5 className="font-bold text-xs mb-0.5 tracking-tight text-zinc-900 dark:text-zinc-100">{title}</h5><p className="text-[11px] leading-relaxed text-zinc-500 dark:text-zinc-400 font-medium">{children}</p></div></div>;
 }
