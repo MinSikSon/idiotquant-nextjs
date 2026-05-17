@@ -1,50 +1,62 @@
-'use client';
+"use client";
 
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect, Suspense } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import { 
-  Calculator as CalcIcon, 
-  TrendingUp, 
-  User, 
-  ArrowLeftRight, 
-  Info, 
-  Lightbulb, 
-  AlertTriangle,
-  ChevronUp,
-  ChevronDown
-} from 'lucide-react';
-import { motion } from 'framer-motion';
-import ResultChart, { ChartDataItem } from './ResultChart';
+    CalculatorIcon, 
+    ArrowTrendingUpIcon, 
+    UserIcon, 
+    ArrowsRightLeftIcon, 
+    InformationCircleIcon, 
+    LightBulbIcon, 
+    ExclamationTriangleIcon,
+    PlusIcon,
+    MinusIcon,
+    ShareIcon,
+    CheckIcon,
+    ShieldCheckIcon
+} from "@heroicons/react/24/outline";
+import { motion } from "framer-motion";
+import ResultChart, { ChartDataItem } from "./ResultChart";
 
-// --- Utils ---
-const formatKrw = (value: number): string => {
-  if (value === 0) return '0원';
-  const absValue = Math.abs(value);
-  const billion = Math.floor(absValue / 10000);
-  const million = Math.floor(absValue % 10000);
+// --- 📌 만원 단위까지 절삭 없이 정확하게 조/억/만 단위로 포맷팅하는 함수 ---
+const formatKrw = (valueInMan: number): string => {
+    if (valueInMan === 0) return "0원";
+    
+    const isNegative = valueInMan < 0;
+    const absValue = Math.abs(valueInMan);
+    
+    const trill = Math.floor(absValue / 100000000);       
+    const eok = Math.floor((absValue % 100000000) / 10000); 
+    const man = Math.floor(absValue % 10000);             
 
-  let result = value < 0 ? '-' : '';
-  if (billion > 0) result += `${billion.toLocaleString()}억 `;
-  if (million > 0) result += `${million.toLocaleString()}만`;
+    let result = isNegative ? "-" : "";
+    if (trill > 0) result += `${trill.toLocaleString()}조 `;
+    if (eok > 0) result += `${eok.toLocaleString()}억 `;
+    if (man > 0) result += `${man.toLocaleString()}만`;
 
-  return result.trim() + '원';
+    return result.trim() + "원";
 };
 
 interface CalcInputs {
-  startAge: number;
-  retirementAge: number;
-  targetAge: number;
-  investmentAmount: number;
-  interestRate: number;
-  contributions: number;
-  contributionGrowthRate: number;
-  monthlyExpense: number;
-  expenseGrowthRate: number;
-  taxRate: number;
-  applyTax: boolean;
+    startAge: number;
+    retirementAge: number;
+    targetAge: number;
+    investmentAmount: number;
+    interestRate: number;
+    contributions: number;
+    contributionGrowthRate: number;
+    monthlyExpense: number;
+    expenseGrowthRate: number;
+    taxRate: number;
+    applyTax: boolean;
+    realValueMode: boolean;
+    applyIsaIsaGold: boolean;
+    applyInsurancePremium: boolean;
+    applyNationalPension: boolean;
 }
 
-export default function Calculator() {
-  const [inputs, setInputs] = useState<CalcInputs>({
+const DEFAULT_INPUTS: CalcInputs = {
     startAge: 30,
     retirementAge: 60,
     targetAge: 90,
@@ -56,290 +68,320 @@ export default function Calculator() {
     expenseGrowthRate: 2.5,
     taxRate: 15.4,
     applyTax: true,
-  });
+    realValueMode: false,
+    applyIsaIsaGold: false,
+    applyInsurancePremium: false,
+    applyNationalPension: false,
+};
 
-  // useEffect와 별도 useState를 제거하고, useMemo를 통해 유도된 상태(Derived State)로 전환합니다.
-  // 이 구조는 무한 루프(Maximum update depth exceeded)를 원천적으로 방지합니다.
-  const results = useMemo(() => {
-    const {
-      startAge, retirementAge, targetAge, investmentAmount,
-      interestRate, contributions, contributionGrowthRate,
-      monthlyExpense, expenseGrowthRate, taxRate, applyTax,
-    } = inputs;
+function CalculatorContent() {
+    const router = useRouter();
+    const searchParams = useSearchParams();
+    const [copied, setCopied] = useState(false);
+    const [inputs, setInputs] = useState<CalcInputs>(DEFAULT_INPUTS);
 
-    let currentBalance = investmentAmount;
-    let totalInvested = investmentAmount;
-    let monthlyIncome = contributions;
-    let monthlyOutgo = monthlyExpense;
+    useEffect(() => {
+        const parseNum = (key: string, def: number) => {
+            const val = searchParams.get(key);
+            return val ? Number(val) : def;
+        };
+        const parseBool = (key: string, def: boolean) => {
+            const val = searchParams.get(key);
+            return val ? val === "true" : def;
+        };
 
-    const totalMonths = (targetAge - startAge) * 12;
-    const workingMonths = (retirementAge - startAge) * 12;
-
-    const snapshots: ChartDataItem[] = [
-      { year: startAge, totalValue: Math.round(currentBalance), profitRate: 0 }
-    ];
-
-    for (let m = 1; m <= totalMonths; m++) {
-      let profit = currentBalance * (interestRate / 100 / 12);
-      if (applyTax && profit > 0) profit *= (1 - taxRate / 100);
-      currentBalance += profit;
-
-      if (m <= workingMonths) {
-        currentBalance += monthlyIncome;
-        totalInvested += monthlyIncome;
-      }
-      currentBalance -= monthlyOutgo;
-
-      if (m % 12 === 0) {
-        if (m <= workingMonths) monthlyIncome *= (1 + contributionGrowthRate / 100);
-        monthlyOutgo *= (1 + expenseGrowthRate / 100);
-
-        snapshots.push({
-          year: startAge + (m / 12),
-          totalValue: Math.max(0, Math.round(currentBalance)),
-          profitRate: totalInvested > 0 ? Number(((currentBalance / totalInvested - 1) * 100).toFixed(1)) : 0,
+        setInputs({
+            startAge: parseNum("startAge", DEFAULT_INPUTS.startAge),
+            retirementAge: parseNum("retirementAge", DEFAULT_INPUTS.retirementAge),
+            targetAge: parseNum("targetAge", DEFAULT_INPUTS.targetAge),
+            investmentAmount: parseNum("investmentAmount", DEFAULT_INPUTS.investmentAmount),
+            interestRate: parseNum("interestRate", DEFAULT_INPUTS.interestRate),
+            contributions: parseNum("contributions", DEFAULT_INPUTS.contributions),
+            contributionGrowthRate: parseNum("contributionGrowthRate", DEFAULT_INPUTS.contributionGrowthRate),
+            monthlyExpense: parseNum("monthlyExpense", DEFAULT_INPUTS.monthlyExpense),
+            expenseGrowthRate: parseNum("expenseGrowthRate", DEFAULT_INPUTS.expenseGrowthRate),
+            taxRate: parseNum("taxRate", DEFAULT_INPUTS.taxRate),
+            applyTax: parseBool("applyTax", DEFAULT_INPUTS.applyTax),
+            realValueMode: parseBool("realValueMode", DEFAULT_INPUTS.realValueMode),
+            applyIsaIsaGold: parseBool("applyIsaIsaGold", DEFAULT_INPUTS.applyIsaIsaGold),
+            applyInsurancePremium: parseBool("applyInsurancePremium", DEFAULT_INPUTS.applyInsurancePremium),
+            applyNationalPension: parseBool("applyNationalPension", DEFAULT_INPUTS.applyNationalPension),
         });
-      }
-      // 자산이 심각하게 고갈되면 루프를 조기 종료하되, 차트 흐름을 깨지 않기 위해 루프를 탈출합니다.
-      if (currentBalance < -500000) break;
-    }
+    }, [searchParams]);
 
-    return {
-      totalInvestment: totalInvested,
-      finalValue: Math.round(currentBalance),
-      finalRateOfReturn: totalInvested > 0 ? Number(((currentBalance / totalInvested - 1) * 100).toFixed(1)) : 0,
-      chartData: snapshots,
+    const updateInput = (key: keyof CalcInputs, val: any) => {
+        setInputs(p => {
+            let next = { ...p, [key]: val };
+            if (key === "startAge") {
+                if (next.startAge > next.retirementAge) next.retirementAge = next.startAge;
+                if (next.retirementAge > next.targetAge) next.targetAge = next.retirementAge;
+            } else if (key === "retirementAge") {
+                if (next.retirementAge < next.startAge) next.retirementAge = next.startAge;
+                if (next.retirementAge > next.targetAge) next.targetAge = next.retirementAge;
+            } else if (key === "targetAge") {
+                if (next.targetAge < next.retirementAge) next.targetAge = next.retirementAge;
+            }
+            const params = new URLSearchParams();
+            Object.entries(next).forEach(([k, v]) => params.set(k, String(v)));
+            router.replace(`?${params.toString()}`, { scroll: false });
+            return next;
+        });
     };
-  }, [inputs]);
 
-  const updateInput = (key: keyof CalcInputs, val: any) => setInputs(p => ({ ...p, [key]: val }));
+    const results = useMemo(() => {
+        const {
+            startAge, retirementAge, targetAge, investmentAmount,
+            interestRate, contributions, contributionGrowthRate,
+            monthlyExpense, expenseGrowthRate, taxRate, applyTax, realValueMode,
+            applyIsaIsaGold, applyInsurancePremium, applyNationalPension
+        } = inputs;
 
-  return (
-    <div className="bg-zinc-50 dark:bg-zinc-950 min-h-screen p-4 md:p-10 font-sans text-zinc-900 dark:text-zinc-100">
-      <div className="max-w-6xl mx-auto space-y-12">
+        let currentBalance = investmentAmount;
+        let totalInvested = investmentAmount;
+        let monthlyIncome = contributions;
+        let monthlyOutgo = monthlyExpense;
 
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-10">
+        const totalMonths = Math.max(0, (targetAge - startAge) * 12);
+        const workingMonths = Math.max(0, (retirementAge - startAge) * 12);
+        const snapshots: ChartDataItem[] = [{ year: startAge, totalValue: Math.round(currentBalance), profitRate: 0 }];
+        const inflationRateAnnual = 2.5; 
 
-          {/* 왼쪽: 입력 컨트롤 영역 */}
-          <div className="lg:col-span-5 space-y-10">
+        for (let m = 1; m <= totalMonths; m++) {
+            const currentAge = startAge + Math.floor(m / 12);
+            let activeTaxRate = taxRate;
+            if (applyIsaIsaGold) activeTaxRate = 22.0;
 
-            {/* 자산 지표 */}
-            <SectionWrapper title="핵심 자산 지표" icon={<TrendingUp size={18} />}>
-              <div className="space-y-8 bg-white dark:bg-zinc-900 p-8 rounded-[2rem] border border-zinc-200 dark:border-zinc-800 shadow-sm">
-                <InputGroup label="초기 투자 금액" value={formatKrw(inputs.investmentAmount)} color="text-blue-600">
-                  <div className="relative group">
-                    <input 
-                      type="number"
-                      value={inputs.investmentAmount}
-                      onChange={(e) => updateInput('investmentAmount', Number(e.target.value))}
-                      className="w-full bg-zinc-50 dark:bg-zinc-800 border-none rounded-xl px-4 py-3 font-bold text-lg focus:ring-2 focus:ring-blue-500 transition-all outline-none"
-                    />
-                    <div className="absolute right-4 top-1/2 -translate-y-1/2 text-zinc-400 text-xs font-bold uppercase">만원</div>
-                  </div>
-                </InputGroup>
+            let profit = currentBalance * (interestRate / 100 / 12);
+            if (applyTax && profit > 0) profit *= (1 - activeTaxRate / 100);
+            currentBalance += profit;
 
-                <InputGroup label="연 목표 수익률" value={`${inputs.interestRate}%`} color="text-orange-600">
-                  <input 
-                    type="range" min="0" max="30" step="0.1"
-                    value={inputs.interestRate}
-                    onChange={(e) => updateInput('interestRate', Number(e.target.value))}
-                    className="w-full h-1.5 bg-zinc-200 dark:bg-zinc-700 rounded-lg appearance-none cursor-pointer accent-orange-500"
-                  />
-                  <div className="flex items-center justify-between mt-6 p-4 bg-zinc-50 dark:bg-zinc-800/50 rounded-2xl border border-zinc-100 dark:border-zinc-800 transition-colors">
-                    <span className="text-[11px] font-black text-zinc-500 uppercase tracking-tight">이자소득세(15.4%) 자동 차감</span>
-                    <label className="relative inline-flex items-center cursor-pointer">
-                      <input 
-                        type="checkbox" checked={inputs.applyTax} 
-                        onChange={(e) => updateInput('applyTax', e.target.checked)}
-                        className="sr-only peer" 
-                      />
-                      <div className="w-11 h-6 bg-zinc-200 peer-focus:outline-none rounded-full peer dark:bg-zinc-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
-                    </label>
-                  </div>
-                </InputGroup>
-              </div>
-            </SectionWrapper>
+            if (m <= workingMonths) {
+                currentBalance += monthlyIncome;
+                totalInvested += monthlyIncome;
+            }
+            let actualMonthlyOutgo = monthlyOutgo;
+            if (m > workingMonths && applyInsurancePremium) actualMonthlyOutgo += (monthlyOutgo * 0.08);
+            if (currentAge >= 65 && applyNationalPension) currentBalance += 120;
+            currentBalance -= actualMonthlyOutgo;
 
-            {/* 생애 주기 */}
-            <SectionWrapper title="나이 및 기간 설정" icon={<User size={18} />}>
-              <div className="space-y-8 bg-white dark:bg-zinc-900 p-8 rounded-[2rem] border border-zinc-200 dark:border-zinc-800 shadow-sm">
-                <AgeSlider label="현재 나이" value={inputs.startAge} min={20} max={100} onChange={(v:any) => updateInput('startAge', v)} />
-                <AgeSlider label="은퇴 및 적립 중단 나이" value={inputs.retirementAge} min={20} max={100} onChange={(v:any) => updateInput('retirementAge', v)} />
-                <AgeSlider label="시뮬레이션 종료 나이" value={inputs.targetAge} min={20} max={100} onChange={(v:any) => updateInput('targetAge', v)} />
-              </div>
-            </SectionWrapper>
+            if (m % 12 === 0) {
+                if (m <= workingMonths) monthlyIncome *= (1 + contributionGrowthRate / 100);
+                monthlyOutgo *= (1 + expenseGrowthRate / 100);
+                const elapsedYears = m / 12;
+                let displayBalance = currentBalance;
+                if (realValueMode) displayBalance = currentBalance / Math.pow(1 + inflationRateAnnual / 100, elapsedYears);
+                snapshots.push({
+                    year: startAge + elapsedYears,
+                    totalValue: Math.max(0, Math.round(displayBalance)),
+                    profitRate: totalInvested > 0 ? Number(((currentBalance / totalInvested - 1) * 100).toFixed(1)) : 0,
+                });
+            }
+            if (currentBalance < -100000000) break; 
+        }
 
-            {/* 현금 흐름 */}
-            <SectionWrapper title="매월 현금 흐름" icon={<ArrowLeftRight size={18} />}>
-              <div className="space-y-8 bg-white dark:bg-zinc-900 p-8 rounded-[2rem] border border-zinc-200 dark:border-zinc-800 shadow-sm">
-                <InputGroup label="월 정립액" value={formatKrw(inputs.contributions)} subLabel={`매년 ${inputs.contributionGrowthRate}% 증가`}>
-                  <input 
-                    type="number" value={inputs.contributions}
-                    onChange={(e) => updateInput('contributions', Number(e.target.value))}
-                    className="w-full bg-zinc-50 dark:bg-zinc-800 border-none rounded-xl px-4 py-3 font-bold mb-4 outline-none focus:ring-2 focus:ring-blue-500"
-                  />
-                  <input 
-                    type="range" min="0" max="15" step="0.1"
-                    value={inputs.contributionGrowthRate}
-                    onChange={(e) => updateInput('contributionGrowthRate', Number(e.target.value))}
-                    className="w-full h-1.5 bg-zinc-200 dark:bg-zinc-700 rounded-lg appearance-none cursor-pointer accent-blue-600"
-                  />
-                </InputGroup>
+        const finalElapsedTime = targetAge - startAge;
+        const finalBalance = realValueMode ? currentBalance / Math.pow(1 + inflationRateAnnual / 100, finalElapsedTime) : currentBalance;
 
-                <div className="h-px bg-zinc-100 dark:bg-zinc-800" />
+        return {
+            totalInvestment: totalInvested,
+            finalValue: Math.round(finalBalance),
+            finalRateOfReturn: totalInvested > 0 ? Number(((currentBalance / totalInvested - 1) * 100).toFixed(1)) : 0,
+            chartData: snapshots,
+        };
+    }, [inputs]);
 
-                <InputGroup label="월 생활비" value={formatKrw(inputs.monthlyExpense)} subLabel={`매년 ${inputs.expenseGrowthRate}% 인상`} color="text-red-500">
-                  <input 
-                    type="number" value={inputs.monthlyExpense}
-                    onChange={(e) => updateInput('monthlyExpense', Number(e.target.value))}
-                    className="w-full bg-zinc-50 dark:bg-zinc-800 border-none rounded-xl px-4 py-3 font-bold mb-4 outline-none focus:ring-2 focus:ring-red-500"
-                  />
-                  <input 
-                    type="range" min="0" max="10" step="0.1"
-                    value={inputs.expenseGrowthRate}
-                    onChange={(e) => updateInput('expenseGrowthRate', Number(e.target.value))}
-                    className="w-full h-1.5 bg-zinc-200 dark:bg-zinc-700 rounded-lg appearance-none cursor-pointer accent-red-500"
-                  />
-                </InputGroup>
-              </div>
-            </SectionWrapper>
-          </div>
+    const handleShareLink = async () => {
+        try {
+            await navigator.clipboard.writeText(window.location.href);
+            setCopied(true);
+            setTimeout(() => setCopied(false), 2500);
+        } catch (err) { console.error(err); }
+    };
 
-          {/* 오른쪽: 메인 결과 및 차트 */}
-          <div className="lg:col-span-7 space-y-10">
-            <motion.div layout initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }}>
-              <div className={`p-10 rounded-[3rem] shadow-2xl relative overflow-hidden transition-all duration-700 ${
-                results.finalValue >= 0 ? 'bg-zinc-900 text-white shadow-blue-500/10' : 'bg-red-950 text-white shadow-red-500/20'
-              }`}>
-                <div className="relative z-10 space-y-10">
-                  <div className="space-y-4">
-                    <span className={`text-[10px] font-black uppercase tracking-[0.4em] px-3 py-1 rounded-full border border-white/10 ${
-                      results.finalValue >= 0 ? 'text-blue-400' : 'text-red-400'
-                    }`}>
-                      {inputs.targetAge}세 예상 최종 자산
-                    </span>
-                    <h2 className={`text-5xl md:text-7xl font-black tracking-tighter transition-colors ${
-                      results.finalValue >= 0 ? 'text-blue-400' : 'text-red-500'
-                    }`}>
-                      {formatKrw(results.finalValue)}
-                    </h2>
-                    {results.finalValue < 0 && (
-                      <div className="flex items-center gap-2 text-red-400 text-xs font-bold animate-pulse">
-                        <AlertTriangle size={14} /> 자산 고갈 위험군: 은퇴 자금 재설계가 시급합니다.
-                      </div>
-                    )}
-                  </div>
-
-                  <div className="grid grid-cols-2 gap-4">
-                    <div className="bg-white/5 p-6 rounded-2xl border border-white/10 backdrop-blur-sm">
-                      <span className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest block mb-2">총 투입 원금</span>
-                      <div className="text-xl font-bold">{formatKrw(results.totalInvestment)}</div>
+    return (
+        <div className="bg-zinc-50 dark:bg-zinc-950 min-h-screen p-4 md:p-10 font-sans text-zinc-900 dark:text-zinc-100 selection:bg-blue-500/20">
+            <div className="max-w-6xl mx-auto space-y-10">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-zinc-200 dark:border-zinc-800 pb-6">
+                    <div className="flex items-center gap-3">
+                        <div className="p-2.5 bg-blue-600 rounded-2xl text-white shadow-lg shadow-blue-600/20">
+                            <CalculatorIcon className="w-6 h-6" />
+                        </div>
+                        <div>
+                            <h1 className="text-2xl font-black tracking-tight text-zinc-900 dark:text-zinc-100">하이엔드 자산 수명 시뮬레이터</h1>
+                            <p className="text-xs text-zinc-500 dark:text-zinc-400 font-medium">조/억/만 단위 정밀 가시화 및 실전 은퇴 연동형 계측 시스템</p>
+                        </div>
                     </div>
-                    <div className="bg-white/5 p-6 rounded-2xl border border-white/10 backdrop-blur-sm text-right">
-                      <span className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest block mb-2">최종 수익률</span>
-                      <div className={`text-3xl font-black ${results.finalRateOfReturn >= 0 ? 'text-emerald-400' : 'text-red-400'}`}>
-                        {results.finalRateOfReturn}%
-                      </div>
+                    <button onClick={handleShareLink} className={cn("flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl font-bold text-xs transition-all shadow-sm border shrink-0", copied ? "bg-emerald-500 border-emerald-500 text-white" : "bg-white dark:bg-zinc-900 border-zinc-200 dark:border-zinc-800 text-zinc-700 dark:text-zinc-300")}>
+                        {copied ? <CheckIcon className="w-4 h-4" /> : <ShareIcon className="w-4 h-4" />}
+                        {copied ? "링크 복사 완료!" : "결과 링크 공유"}
+                    </button>
+                </div>
+
+                <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
+                    <div className="lg:col-span-5 space-y-8">
+                        <SectionWrapper title="핵심 자산 및 기대 수익률" icon={<ArrowTrendingUpIcon className="w-4 h-4" />}>
+                            <div className="space-y-6 bg-white dark:bg-zinc-900 p-6 rounded-[2rem] border border-zinc-200 dark:border-zinc-800 shadow-sm">
+                                <InputGroup label="초기 투자 시드" value={formatKrw(inputs.investmentAmount)} color="text-blue-600 dark:text-blue-400">
+                                    <div className="flex gap-2">
+                                        <div className="relative flex-1">
+                                            <input type="number" value={inputs.investmentAmount} onChange={(e) => updateInput("investmentAmount", Number(e.target.value))} className="w-full bg-zinc-50 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700/60 rounded-xl pl-4 pr-12 py-2.5 font-bold text-sm text-zinc-900 dark:text-zinc-100 focus:ring-2 focus:ring-blue-500 outline-none" />
+                                            <div className="absolute right-4 top-1/2 -translate-y-1/2 text-zinc-400 dark:text-zinc-500 text-xs font-bold">만원</div>
+                                        </div>
+                                        <StepButtons value={inputs.investmentAmount} step={500} min={0} onChange={(v) => updateInput("investmentAmount", v)} />
+                                    </div>
+                                </InputGroup>
+                                <PercentRateSlider label="투자 자산 기대 수익률 (연)" value={inputs.interestRate} min={0} max={25} onChange={(v) => updateInput("interestRate", v)} accentColor="accent-amber-500" />
+                                <div className="p-3 bg-zinc-50 dark:bg-zinc-800/40 rounded-2xl border border-zinc-100 dark:border-zinc-800/50 space-y-2">
+                                    <span className="text-[10px] font-bold text-zinc-400 dark:text-zinc-500 block px-1">기본 거시 변수</span>
+                                    <div className="grid grid-cols-2 gap-2">
+                                        <ToggleButton checked={inputs.applyTax} onChange={(v) => updateInput("applyTax", v)} label="이자소득세 과세 (15.4%)" />
+                                        <ToggleButton checked={inputs.realValueMode} onChange={(v) => updateInput("realValueMode", v)} label="물가상승 반영 (실질가치)" />
+                                    </div>
+                                </div>
+                                <div className="p-3 bg-blue-50/40 dark:bg-blue-950/20 rounded-2xl border border-blue-100/60 dark:border-blue-900/30 space-y-2">
+                                    <span className="text-[10px] font-black text-blue-600 dark:text-blue-400 block px-1 flex items-center gap-1"><ShieldCheckIcon className="w-3 h-3" /> 실전 정밀 검증 지표 추가</span>
+                                    <div className="grid grid-cols-1 gap-2">
+                                        <ToggleButton checked={inputs.applyIsaIsaGold} onChange={(v) => updateInput("applyIsaIsaGold", v)} label="금융투자소득세 고율 가산 (22% 세율 대체)" />
+                                        <ToggleButton checked={inputs.applyInsurancePremium} onChange={(v) => updateInput("applyInsurancePremium", v)} label="은퇴 후 건보료 지역가입 페널티 (지출 +8%)" />
+                                        <ToggleButton checked={inputs.applyNationalPension} onChange={(v) => updateInput("applyNationalPension", v)} label="만 65세 이후 국민연금 수령 연동 (월 +120만)" />
+                                    </div>
+                                </div>
+                            </div>
+                        </SectionWrapper>
+                        <SectionWrapper title="생애 주기 임계값" icon={<UserIcon className="w-4 h-4" />}>
+                            <div className="space-y-4 bg-white dark:bg-zinc-900 p-6 rounded-[2rem] border border-zinc-200 dark:border-zinc-800 shadow-sm">
+                                <AgeInputSlider label="시작 연령" value={inputs.startAge} min={20} max={80} onChange={(v) => updateInput("startAge", v)} />
+                                <AgeInputSlider label="은퇴 및 저축 중단 연령" value={inputs.retirementAge} min={inputs.startAge} max={90} onChange={(v) => updateInput("retirementAge", v)} />
+                                <AgeInputSlider label="자산 수명 검증 종료 연령" value={inputs.targetAge} min={inputs.retirementAge} max={100} onChange={(v) => updateInput("targetAge", v)} />
+                            </div>
+                        </SectionWrapper>
+                        <SectionWrapper title="점증형 현금 가감 데이터" icon={<ArrowsRightLeftIcon className="w-4 h-4" />}>
+                            <div className="space-y-6 bg-white dark:bg-zinc-900 p-6 rounded-[2rem] border border-zinc-200 dark:border-zinc-800 shadow-sm">
+                                <div className="space-y-4">
+                                    <InputGroup label="초기 매월 저축액" value={formatKrw(inputs.contributions)}>
+                                        <div className="flex gap-2">
+                                            <input type="number" value={inputs.contributions} onChange={(e) => updateInput("contributions", Number(e.target.value))} className="flex-1 bg-zinc-50 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700/60 rounded-xl px-4 py-2.5 font-bold text-sm text-zinc-900 dark:text-zinc-100 outline-none focus:ring-2 focus:ring-blue-500" />
+                                            <StepButtons value={inputs.contributions} step={50} min={0} onChange={(v) => updateInput("contributions", v)} />
+                                        </div>
+                                    </InputGroup>
+                                    <PercentRateSlider label="매년 소득 상승에 따른 복리 저축 증액률" value={inputs.contributionGrowthRate} min={0} max={15} onChange={(v) => updateInput("contributionGrowthRate", v)} accentColor="accent-blue-600" />
+                                </div>
+                                <div className="h-px bg-zinc-100 dark:bg-zinc-800" />
+                                <div className="space-y-4">
+                                    <InputGroup label="기본 목표 초기 월 생활비" value={formatKrw(inputs.monthlyExpense)} color="text-rose-500 dark:text-rose-400">
+                                        <div className="flex gap-2">
+                                            <input type="number" value={inputs.monthlyExpense} onChange={(e) => updateInput("monthlyExpense", Number(e.target.value))} className="flex-1 bg-zinc-50 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700/60 rounded-xl px-4 py-2.5 font-bold text-sm text-zinc-900 dark:text-zinc-100 outline-none focus:ring-2 focus:ring-rose-500" />
+                                            <StepButtons value={inputs.monthlyExpense} step={50} min={0} onChange={(v) => updateInput("monthlyExpense", v)} />
+                                        </div>
+                                    </InputGroup>
+                                    <PercentRateSlider label="매년 물가 연동 생활비 상승률" value={inputs.expenseGrowthRate} min={0} max={15} onChange={(v) => updateInput("expenseGrowthRate", v)} accentColor="accent-rose-500" />
+                                </div>
+                            </div>
+                        </SectionWrapper>
                     </div>
-                  </div>
-                </div>
-                
-                {/* 배경 오로라 효과 */}
-                <div className={`absolute -right-20 -top-20 w-96 h-96 rounded-full blur-[140px] opacity-20 ${
-                  results.finalValue >= 0 ? 'bg-blue-600' : 'bg-red-600'
-                }`} />
-              </div>
-            </motion.div>
 
-            {/* 차트 영역 */}
-            <div className="bg-white dark:bg-zinc-900 p-8 rounded-[2.5rem] border border-zinc-200 dark:border-zinc-800 shadow-sm">
-              <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 mb-8">
-                <div>
-                  <h3 className="text-xl font-black tracking-tight">자산 성장 시뮬레이션</h3>
-                  <p className="text-xs text-zinc-500 font-medium mt-1">복리와 인플레이션이 반영된 장기 성장 곡선</p>
-                </div>
-              </div>
-              <div className="bg-zinc-50 dark:bg-black/40 rounded-2xl overflow-hidden border border-zinc-100 dark:border-zinc-800">
-                <ResultChart data={results.chartData} height="h-[500px] md:h-[650px]" />
-              </div>
-            </div>
+                    <div className="lg:col-span-7 space-y-8">
+                        <motion.div layout initial={{ opacity: 0, scale: 0.98 }} animate={{ opacity: 1, scale: 1 }}>
+                            <div className={cn("p-8 md:p-10 rounded-[2.5rem] shadow-xl relative overflow-hidden transition-all duration-500 border border-zinc-200 dark:border-zinc-800 bg-zinc-900 text-white", results.finalValue < 0 && "border-rose-900/50")}>
+                                <div className="relative z-10 space-y-8">
+                                    <div className="space-y-3">
+                                        <span className={cn("text-[10px] font-black uppercase tracking-[0.3em] px-3 py-1 rounded-full border bg-zinc-950/40", results.finalValue >= 0 ? "text-blue-400 border-blue-500/20" : "text-rose-400 border-rose-500/20")}>
+                                            {inputs.targetAge}세 예상 시점 잔고 {inputs.realValueMode && "(실질 가치 수렴)"}
+                                        </span>
+                                        <h2 className="text-3xl md:text-5xl font-black tracking-tighter text-blue-400 dark:text-blue-400">
+                                            {formatKrw(results.finalValue)}
+                                        </h2>
+                                        {results.finalValue < 0 && (
+                                            <div className="flex items-center gap-2 text-rose-400 text-xs font-bold bg-rose-500/10 p-3 rounded-xl border border-rose-500/20">
+                                                <ExclamationTriangleIcon className="w-4 h-4 shrink-0" /> 
+                                                <span>경고: 지표 가산 패널티 및 가치 하락으로 인해 자산 수명이 목표 연령 전 고갈됩니다.</span>
+                                            </div>
+                                        )}
+                                    </div>
+                                    <div className="grid grid-cols-2 gap-4">
+                                        <div className="bg-zinc-950/40 p-4 rounded-xl border border-zinc-800">
+                                            <span className="text-[10px] font-bold text-zinc-500 uppercase tracking-wider block mb-1">총 누적 투입 원금</span>
+                                            <div className="text-sm font-bold text-zinc-300">{formatKrw(results.totalInvestment)}</div>
+                                        </div>
+                                        <div className="bg-zinc-950/40 p-4 rounded-xl border border-zinc-800 text-right">
+                                            <span className="text-[10px] font-bold text-zinc-500 uppercase tracking-wider block mb-1">최종 레버리지 배율</span>
+                                            <div className={cn("text-lg font-black", results.finalRateOfReturn >= 0 ? "text-emerald-400" : "text-rose-400")}>
+                                                {results.totalInvestment > 0 ? (results.finalValue / results.totalInvestment).toFixed(1) : 0} 배
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div className={cn("absolute -right-24 -top-24 w-80 h-80 rounded-full blur-[120px] opacity-20 transition-colors", results.finalValue >= 0 ? "bg-blue-600" : "bg-rose-600")} />
+                            </div>
+                        </motion.div>
 
-            {/* 도움말 가이드 */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <CalloutWrapper icon={<Info size={20} className="text-blue-500" />} title="복리 상식">
-                수익률 <span className="font-bold text-blue-600">{inputs.interestRate}%</span>는 강력한 부의 증식 엔진입니다. 하지만 물가 상승률을 고려하지 않은 은퇴 계획은 자산을 빠르게 고갈시킬 수 있으므로 주의가 필요합니다.
-              </CalloutWrapper>
-              
-              <CalloutWrapper 
-                icon={<Lightbulb size={20} className={results.finalValue > 0 ? "text-emerald-500" : "text-red-500"} />} 
-                title="전문가 진단"
-              >
-                {results.finalValue > 0
-                  ? `현재 계획은 매우 탄탄합니다. 은퇴 후에도 자산이 지속적으로 성장하는 구조입니다.`
-                  : `자산 고갈이 예상됩니다. 적립액을 늘리거나 지출을 줄이는 등의 수정 전략이 권장됩니다.`}
-              </CalloutWrapper>
+                        <div className="bg-white dark:bg-zinc-900 p-6 md:p-8 rounded-[2.5rem] border border-zinc-200 dark:border-zinc-800 shadow-sm">
+                            <div className="mb-6">
+                                <h3 className="text-lg font-black tracking-tight text-zinc-900 dark:text-zinc-100">지표 연동형 자산 변동 그래프</h3>
+                                <p className="text-xs text-zinc-400 dark:text-zinc-500 font-medium mt-0.5">매년 가중되는 인플레이션 누적 및 세후 배당 유출입 복리 커브 (조/억/만 단위 정밀 반영)</p>
+                            </div>
+                            <div className="bg-zinc-50 dark:bg-black/40 rounded-2xl overflow-hidden border border-zinc-100 dark:border-zinc-800">
+                                <ResultChart data={results.chartData} height="h-[400px]" />
+                            </div>
+                        </div>
+
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <CalloutWrapper icon={<InformationCircleIcon className="w-5 h-5 text-blue-500" />} title="복리 마법 활성화 조건">
+                                기대 복리 연 수익률 <span className="font-bold text-blue-600 dark:text-blue-400">{inputs.interestRate}%</span> 구조에서는 초기 저축 단계의 1년 차이가 복리 롤링 스노우볼 효과로 인해 말년 수명 잔고를 <span className="font-bold text-zinc-900 dark:text-zinc-100">조 단위</span> 스케일로 변동시킬 수 있습니다.
+                            </CalloutWrapper>
+                            <CalloutWrapper icon={<LightBulbIcon className={cn("w-5 h-5", results.finalValue > 0 ? "text-emerald-500" : "text-rose-500")} />} title="퀀트 자산 수명 진단">
+                                {results.finalValue > 0 ? `매우 안정적인 현금흐름 밸런스입니다. 은퇴 이후 발생 자산 수익이 연간 자금 이탈량을 초과하여 방어막을 형성하고 있습니다.` : `위험 상태입니다. 현 리스크 프로파일을 유지할 경우 목표 연령 이전에 자산이 한계점에 봉착합니다. 매월 정립액을 늘리거나 은퇴 목표 시점을 소폭 연장하십시오.`}
+                            </CalloutWrapper>
+                        </div>
+                    </div>
+                </div>
             </div>
-          </div>
         </div>
-      </div>
-    </div>
-  );
+    );
 }
 
-// --- 하위 컴포넌트들 ---
+// --- 공용 서브 UI 빌더 컴포넌트 생태계 ---
 
+// 📌 [수정 완료] 하단에서 icon 에러를 유발하던 <icon /> 형태의 선언을 변수 바인딩 형태인 {icon} 구조로 정상 교체했습니다.
 function SectionWrapper({ title, icon, children }: { title: string, icon: React.ReactNode, children: React.ReactNode }) {
-  return (
-    <section className="space-y-4">
-      <div className="flex items-center gap-2 px-1 text-zinc-500">
-        {icon}
-        <h2 className="text-[11px] font-black uppercase tracking-[0.2em]">{title}</h2>
-      </div>
-      {children}
-    </section>
-  );
+    return (
+        <section className="space-y-3">
+            <div className="flex items-center gap-2 px-1 text-zinc-400 dark:text-zinc-500">
+                {icon}
+                <h2 className="text-[10px] font-black uppercase tracking-[0.2em]">{title}</h2>
+            </div>
+            {children}
+        </section>
+    );
 }
 
 function InputGroup({ label, value, subLabel, color = "text-zinc-900 dark:text-zinc-100", children }: any) {
-  return (
-    <div className="space-y-3">
-      <div className="flex justify-between items-end">
-        <div>
-          <span className="text-[10px] font-black text-zinc-400 uppercase tracking-widest block mb-0.5">{label}</span>
-          {subLabel && <span className="text-[11px] font-bold text-blue-500/80 italic">{subLabel}</span>}
-        </div>
-        <span className={`text-lg font-black ${color}`}>{value}</span>
-      </div>
-      {children}
-    </div>
-  );
+    return <div className="space-y-2"><div className="flex justify-between items-end"><div><span className="text-[10px] font-black text-zinc-400 dark:text-zinc-500 uppercase tracking-widest block">{label}</span>{subLabel && <span className="text-[10px] font-bold text-blue-500 dark:text-blue-400 tracking-tight block mt-0.5">{subLabel}</span>}</div><span className={`text-sm font-black ${color}`}>{value}</span></div>{children}</div>;
 }
-
-function AgeSlider({ label, value, min, max, onChange }: any) {
-  return (
-    <div className="space-y-4">
-      <div className="flex justify-between items-center">
-        <span className="text-[10px] font-black text-zinc-400 uppercase tracking-widest">{label}</span>
-        <span className="text-lg font-black">{value}세</span>
-      </div>
-      <input 
-        type="range" min={min} max={max}
-        value={value}
-        onChange={(e) => onChange(Number(e.target.value))}
-        className="w-full h-1.5 bg-zinc-200 dark:bg-zinc-700 rounded-lg appearance-none cursor-pointer accent-blue-600"
-      />
-    </div>
-  );
+function AgeInputSlider({ label, value, min, max, onChange }: { label: string, value: number, min: number, max: number, onChange: (v: number) => void }) {
+    return <div className="space-y-3 bg-zinc-50/50 dark:bg-zinc-800/40 p-3.5 rounded-2xl border border-zinc-100 dark:border-zinc-800/60"><div className="flex justify-between items-center"><span className="text-[11px] font-black text-zinc-500 dark:text-zinc-400 tracking-wider">{label}</span><div className="flex items-center gap-2"><span className="text-sm font-black text-blue-600 dark:text-blue-400 bg-blue-500/10 dark:bg-blue-500/20 px-2.5 py-0.5 rounded-lg">{value}세</span><div className="flex border border-zinc-200 dark:border-zinc-700 rounded-lg overflow-hidden bg-white dark:bg-zinc-800 shadow-sm"><button type="button" disabled={value <= min} onClick={() => onChange(value - 1)} className="p-1.5 text-zinc-500 hover:bg-zinc-100 dark:hover:bg-zinc-700 disabled:opacity-30 border-r border-zinc-200 dark:border-zinc-700"><MinusIcon className="w-3 h-3" /></button><button type="button" disabled={value >= max} onClick={() => onChange(value + 1)} className="p-1.5 text-zinc-500 hover:bg-zinc-100 dark:hover:bg-zinc-700 disabled:opacity-30"><PlusIcon className="w-3 h-3" /></button></div></div></div><input type="range" min={min} max={max} value={value} onChange={(e) => onChange(Number(e.target.value))} className="w-full h-1.5 bg-zinc-200 dark:bg-zinc-700 rounded-lg appearance-none cursor-pointer accent-blue-600" /></div>;
 }
-
+function PercentRateSlider({ label, value, min, max, onChange, accentColor = "accent-blue-600" }: { label: string, value: number, min: number, max: number, onChange: (v: number) => void, accentColor?: string }) {
+    const [isEditing, setIsEditing] = useState(false);
+    const [localValue, setLocalValue] = useState(String(value));
+    useEffect(() => { if (!isEditing) setLocalValue(String(value)); }, [value, isEditing]);
+    const handleBlur = () => { setIsEditing(false); let num = Number(localValue); if (isNaN(num)) num = value; num = Math.min(max, Math.max(min, num)); onChange(Number(num.toFixed(1))); };
+    const adjustStep = (amount: number) => { const next = Math.min(max, Math.max(min, value + amount)); onChange(Number(next.toFixed(1))); };
+    return <div className="space-y-3 bg-zinc-50/50 dark:bg-zinc-800/40 p-3.5 rounded-2xl border border-zinc-100 dark:border-zinc-800/60"><div className="flex justify-between items-center"><span className="text-[11px] font-black text-zinc-400 dark:text-zinc-500 tracking-wider">{label}</span><div className="flex items-center gap-2">{isEditing ? <input type="number" step="0.1" min={min} max={max} value={localValue} onChange={(e) => setLocalValue(e.target.value)} onBlur={handleBlur} onKeyDown={(e) => e.key === "Enter" && handleBlur()} autoFocus className="w-16 bg-white dark:bg-zinc-800 border border-blue-500 rounded-lg px-2 py-0.5 font-bold text-xs text-center text-zinc-900 dark:text-zinc-100 outline-none" /> : <span onClick={() => setIsEditing(true)} className="text-xs font-black text-zinc-700 dark:text-zinc-300 bg-zinc-200/60 dark:bg-zinc-800 px-2 py-0.5 rounded-lg cursor-pointer hover:bg-blue-500/10 hover:text-blue-500 transition-all">{value}%</span>}<div className="flex border border-zinc-200 dark:border-zinc-700 rounded-lg overflow-hidden bg-white dark:bg-zinc-800 shadow-sm"><button type="button" disabled={value <= min} onClick={() => adjustStep(-0.1)} className="p-1.5 text-zinc-500 hover:bg-zinc-100 dark:hover:bg-zinc-700 disabled:opacity-30 border-r border-zinc-200 dark:border-zinc-700"><MinusIcon className="w-3 h-3" /></button><button type="button" disabled={value >= max} onClick={() => adjustStep(0.1)} className="p-1.5 text-zinc-500 hover:bg-zinc-100 dark:hover:bg-zinc-700 disabled:opacity-30"><PlusIcon className="w-3 h-3" /></button></div></div></div><input type="range" min={min} max={max} step="0.1" value={value} onChange={(e) => onChange(Number(Number(e.target.value).toFixed(1)))} className={`w-full h-1.5 bg-zinc-200 dark:bg-zinc-700 rounded-lg appearance-none cursor-pointer ${accentColor}`} /></div>;
+}
+function StepButtons({ value, step, min, max, onChange, isFloat = false }: { value: number, step: number, min?: number, max?: number, onChange: (v: number) => void, isFloat?: boolean }) {
+    const handleAdd = () => { const next = value + step; if (max !== undefined && next > max) return; onChange(isFloat ? Number(next.toFixed(1)) : next); };
+    const handleSub = () => { const next = value - step; if (min !== undefined && next < min) return; onChange(isFloat ? Number(next.toFixed(1)) : next); };
+    return <div className="flex border border-zinc-200 dark:border-zinc-700/80 rounded-xl overflow-hidden shrink-0 bg-zinc-50 dark:bg-zinc-800"><button onClick={handleSub} className="p-2.5 hover:bg-zinc-200 dark:hover:bg-zinc-700 transition-colors text-zinc-500 border-r border-zinc-200 dark:border-zinc-700"><MinusIcon className="w-3.5 h-3.5" /></button><button onClick={handleAdd} className="p-2.5 hover:bg-zinc-200 dark:hover:bg-zinc-700 transition-colors text-zinc-500"><PlusIcon className="w-3.5 h-3.5" /></button></div>;
+}
+function ToggleButton({ checked, onChange, label }: { checked: boolean, onChange: (v: boolean) => void, label: string }) {
+    return <button onClick={() => onChange(!checked)} className={cn("flex items-center justify-between p-3 rounded-xl border text-left text-[11px] font-bold transition-all w-full", checked ? "bg-zinc-900 border-zinc-900 text-white dark:bg-zinc-100 dark:border-zinc-100 dark:text-zinc-900" : "bg-zinc-50 dark:bg-zinc-800/40 border-zinc-200 dark:border-zinc-800 text-zinc-500 dark:text-zinc-400 hover:border-zinc-300 dark:hover:border-zinc-700")}><span>{label}</span><div className={cn("w-1.5 h-1.5 rounded-full ml-2 shrink-0", checked ? "bg-blue-500 dark:bg-blue-600 animate-pulse" : "bg-zinc-300 dark:bg-zinc-600")} /></button>;
+}
 function CalloutWrapper({ icon, title, children }: any) {
-  return (
-    <div className="p-6 bg-white dark:bg-zinc-900 rounded-3xl border border-zinc-200 dark:border-zinc-800 shadow-sm flex gap-4">
-      <div className="flex-shrink-0 mt-1">{icon}</div>
-      <div>
-        <h5 className="font-bold text-sm mb-1">{title}</h5>
-        <p className="text-xs leading-relaxed text-zinc-500 dark:text-zinc-400 font-medium">{children}</p>
-      </div>
-    </div>
-  );
+    return <div className="p-5 bg-white dark:bg-zinc-900 rounded-3xl border border-zinc-200 dark:border-zinc-800 shadow-sm flex gap-3"><div className="flex-shrink-0 mt-0.5">{icon}</div><div className="min-w-0"><h5 className="font-bold text-xs mb-0.5 tracking-tight text-zinc-900 dark:text-zinc-100">{title}</h5><p className="text-[11px] leading-relaxed text-zinc-500 dark:text-zinc-400 font-medium">{children}</p></div></div>;
+}
+function cn(...classes: any[]) { return classes.filter(Boolean).join(" "); }
+
+export default function Calculator() {
+    return <Suspense fallback={<div className="min-h-screen bg-zinc-50 dark:bg-zinc-950 flex items-center justify-center text-sm font-bold text-zinc-400 dark:text-zinc-500">정밀 단위 엔진을 구성 중입니다...</div>}><CalculatorContent /></Suspense>;
 }
