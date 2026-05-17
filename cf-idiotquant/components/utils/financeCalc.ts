@@ -19,6 +19,66 @@ export interface ValuationResult {
   footerNotice: string;
 }
 
+// Finnhub 인터페이스 바인딩
+interface FinnhubFinancialsAsReportedDataReportCommonType {
+    label: string;
+    value: string;
+    unit: string;
+    concept: string;
+    form: string;
+}
+
+interface FinnhubFinancialsAsReportedDataReportType {
+    bs: FinnhubFinancialsAsReportedDataReportCommonType[];
+    ic: FinnhubFinancialsAsReportedDataReportCommonType[];
+    cf: FinnhubFinancialsAsReportedDataReportCommonType[];
+}
+
+interface FinnhubFinancialsAsReportedDataType {
+    symbol: number;
+    year: number;
+    quarter: number;
+    startDate: string;
+    endDate: string;
+    form: string;
+    accessNumber: string;
+    acceptedDate: string;
+    filedDate: string;
+    cik: string;
+    report: FinnhubFinancialsAsReportedDataReportType;
+}
+
+export interface FinnhubFinancialsAsReportedType {
+    state: "init" | "pending" | "fulfilled" | "rejected";
+    cik: string;
+    data: FinnhubFinancialsAsReportedDataType[];
+    symbol: string;
+}
+
+// ============================================================================
+// [재무 데이터 안전 추출 헬퍼 함수 - us-gaap_ 접두사 완벽 대응]
+// ============================================================================
+function findFinnhubValue(list: FinnhubFinancialsAsReportedDataReportCommonType[], targetConcepts: string[]): number {
+    if (!list || !Array.isArray(list)) return 0;
+
+    // 비교 편의를 위해 찾고자 하는 concept 목록에서 'us-gaap_'을 제거한 순수 이름들을 준비합니다.
+    const cleanTargets = targetConcepts.map(c => c.replace(/^us-gaap_/, ""));
+
+    for (const target of cleanTargets) {
+        const item = list.find(i => {
+            if (!i.concept) return false;
+            // 리포트 데이터에 들어있는 concept에서도 'us-gaap_' 접두사를 제거하고 비교합니다.
+            const cleanItemConcept = i.concept.replace(/^us-gaap_/, "");
+            return cleanItemConcept === target;
+        });
+
+        if (item && item.value !== undefined) {
+            return Number(item.value);
+        }
+    }
+    return 0;
+}
+
 // ============================================================================
 // [1] 한국 주식 가치 평가 모델 연산 세트 (KRX)
 // ============================================================================
@@ -34,11 +94,11 @@ export function calculateKrNcav(kiBS: any, kiChart: any): ValuationResult {
 
     const rows = [1.0, 1.2, 1.5].map(r => {
         const adjustedTarget = target / r;
-        const returnPct = (adjustedTarget / prpr - 1) * 100;
+        const returnPct = prpr > 0 ? (adjustedTarget / prpr - 1) * 100 : 0;
         return {
             multiplier: `${r.toFixed(1)}배`,
             returnPct: Number(returnPct.toFixed(2)),
-            targetPrice: Math.round(adjustedTarget)
+            targetPrice: Math.max(0, Math.round(adjustedTarget))
         };
     });
 
@@ -57,13 +117,13 @@ export function calculateKrNcav(kiBS: any, kiChart: any): ValuationResult {
     };
 }
 
-export function calculateKrSRIM(kiBS: any, kiIS: any, kiChart: any, baseKe: number = 9.0): ValuationResult {
+export function calculateKrSRIM(kiBS: any, kiIS: any, kiChart: any, baseKe: number = 8.0): ValuationResult {
     const total_cptl = Number(kiBS?.output?.[0]?.total_cptl ?? 1) * ONE_HUNDRED_MILLION;
     const thtr_ntin = Number(kiIS?.output?.[0]?.thtr_ntin ?? 0) * ONE_HUNDRED_MILLION;
     const lstn = Number(kiChart?.output1?.lstn_stcn ?? 1);
     const prpr = Number(kiChart?.output1?.stck_prpr ?? 0);
 
-    const ROE = (thtr_ntin / total_cptl) * 100;
+    const ROE = total_cptl > 0 ? (thtr_ntin / total_cptl) * 100 : 0;
     const step = 0.5;
     const rangeCount = 1;
     let keList = [];
@@ -72,12 +132,12 @@ export function calculateKrSRIM(kiBS: any, kiIS: any, kiChart: any, baseKe: numb
     }
 
     const rows = keList.map(ke => {
-        const target = (total_cptl * (ROE / ke)) / lstn;
-        const returnPct = (target / prpr - 1) * 100;
+        const target = ke > 0 ? (total_cptl * (ROE / ke)) / lstn : 0;
+        const returnPct = prpr > 0 ? (target / prpr - 1) * 100 : 0;
         return {
             multiplier: `${ke.toFixed(1)}%`,
             returnPct: Number(returnPct.toFixed(2)),
-            targetPrice: Math.round(target)
+            targetPrice: Math.max(0, Math.round(target))
         };
     });
 
@@ -102,27 +162,28 @@ export function calculateKrDCF(kiCF: any, kiChart: any, wacc: number = 10.0, ter
     const prpr = Number(kiChart?.output1?.stck_prpr ?? 0);
 
     const discountRate = wacc / 100;
-    const g = terminalGrowth / 100;
     
-    let totalPresentValue = 0;
-    let tempFcf = ocf;
-    for (let i = 1; i <= 5; i++) {
-        tempFcf = tempFcf * (1 + g);
-        totalPresentValue += tempFcf / Math.pow(1 + discountRate, i);
-    }
-    
-    const terminalValue = (tempFcf * (1 + g)) / (discountRate - g);
-    const pvTerminalValue = terminalValue / Math.pow(1 + discountRate, 5);
-    const enterpriseValue = totalPresentValue + pvTerminalValue;
+    const computeDcfValue = (tgRate: number) => {
+        let totalPresentValue = 0;
+        let tempFcf = ocf;
+        for (let i = 1; i <= 5; i++) {
+            tempFcf = tempFcf * (1 + tgRate);
+            totalPresentValue += tempFcf / Math.pow(1 + discountRate, i);
+        }
+        const terminalValue = (tempFcf * (1 + tgRate)) / (discountRate - tgRate);
+        const pvTerminalValue = terminalValue / Math.pow(1 + discountRate, 5);
+        return totalPresentValue + pvTerminalValue;
+    };
 
-    const rows = [g - 0.005, g, g + 0.005].map(tg => {
-        const ev = totalPresentValue + ((ocf * Math.pow(1 + tg, 5) * (1 + tg)) / (discountRate - tg)) / Math.pow(1 + discountRate, 5);
+    const baseG = terminalGrowth / 100;
+    const rows = [baseG - 0.005, baseG, baseG + 0.005].map(tg => {
+        const ev = computeDcfValue(tg);
         const target = ev / lstn;
-        const returnPct = (target / prpr - 1) * 100;
+        const returnPct = prpr > 0 ? (target / prpr - 1) * 100 : 0;
         return {
             multiplier: `영구성장 ${(tg * 100).toFixed(1)}%`,
             returnPct: Number(returnPct.toFixed(2)),
-            targetPrice: Math.round(target)
+            targetPrice: Math.max(0, Math.round(target))
         };
     });
 
@@ -152,7 +213,7 @@ export function calculateKrMultipliers(kiBS: any, kiIS: any, kiChart: any): Valu
 
     const rows = [8.0, 10.0, 12.0].map(targetPer => {
         const target = eps * targetPer;
-        const returnPct = (target / prpr - 1) * 100;
+        const returnPct = prpr > 0 ? (target / prpr - 1) * 100 : 0;
         return {
             multiplier: `Target PER ${targetPer.toFixed(1)}배`,
             returnPct: Number(returnPct.toFixed(2)),
@@ -184,7 +245,7 @@ export function calculateKrPbrBand(kiBS: any, kiChart: any): ValuationResult {
 
     const rows = [0.6, 1.0, 1.4].map(targetPbr => {
         const target = bps * targetPbr;
-        const returnPct = (target / prpr - 1) * 100;
+        const returnPct = prpr > 0 ? (target / prpr - 1) * 100 : 0;
         return {
             multiplier: `Target PBR ${targetPbr.toFixed(1)}배`,
             returnPct: Number(returnPct.toFixed(2)),
@@ -211,10 +272,13 @@ export function calculateKrPbrBand(kiBS: any, kiChart: any): ValuationResult {
 // [2] 미국 주식 가치 평가 모델 연산 세트 (NYSE/NASDAQ)
 // ============================================================================
 
-export function calculateUsNcav(finnhub: any, detail: any): ValuationResult | string {
+export function calculateUsNcav(finnhub: FinnhubFinancialsAsReportedType, detail: any): ValuationResult | string {
     const bs = finnhub?.data?.[0]?.report?.bs ?? [];
-    const cras = Number(bs.find((i: any) => i.concept.includes("AssetsCurrent"))?.value ?? 0);
-    const lblt = Number(bs.find((i: any) => i.concept.includes("Liabilities"))?.value ?? 0);
+    
+    // us-gaap_ 유무와 상관없이 매칭 처리
+    const cras = findFinnhubValue(bs, ["AssetsCurrent"]);
+    const lblt = findFinnhubValue(bs, ["Liabilities", "LiabilitiesTotal"]);
+    
     const rawShar = detail?.output?.shar;
     const last = Number(detail?.output?.last || 0);
 
@@ -230,7 +294,7 @@ export function calculateUsNcav(finnhub: any, detail: any): ValuationResult | st
         return {
             multiplier: `${r.toFixed(1)}배`,
             returnPct: Number(returnPct.toFixed(2)),
-            targetPrice: Number(adjustedTarget.toFixed(2))
+            targetPrice: Number(Math.max(0, adjustedTarget).toFixed(2))
         };
     });
 
@@ -249,25 +313,26 @@ export function calculateUsNcav(finnhub: any, detail: any): ValuationResult | st
     };
 }
 
-export function calculateUsSRIM(finnhub: any, detail: any, baseKe: number = 8.0): ValuationResult | string {
+export function calculateUsSRIM(finnhub: FinnhubFinancialsAsReportedType, detail: any, baseKe: number = 8.0): ValuationResult | string {
     const bs = finnhub?.data?.[0]?.report?.bs ?? [];
     const ic = finnhub?.data?.[0]?.report?.ic ?? [];
 
-    const total_equity = Number(bs.find((i: any) => i.concept.includes("StockholdersEquity"))?.value ?? 1);
-    const net_income = Number(bs.find((i: any) => i.concept.includes("NetIncome"))?.value ?? 0);
+    const total_equity = findFinnhubValue(bs, ["StockholdersEquity", "StockholdersEquityIncludingPortionAttributableToNoncontrollingInterest"]);
+    const net_income = findFinnhubValue(ic, ["NetIncomeLoss", "NetIncomeLossAvailableToCommonStockholdersBasic"]);
+    
     const last = Number(detail?.output?.last || 0);
     const shar = Number(detail?.output?.shar || 0);
 
     if (last === 0 || shar === 0) return "ERROR_INSUFFICIENT_DATA";
 
-    const ROE = (net_income / total_equity) * 100;
+    const ROE = total_equity > 0 ? (net_income / total_equity) * 100 : 0;
     const rows = [baseKe - 0.5, baseKe, baseKe + 0.5].map(ke => {
-        const target = (total_equity * (ROE / ke)) / shar;
+        const target = ke > 0 ? (total_equity * (ROE / ke)) / shar : 0;
         const returnPct = (target / last - 1) * 100;
         return {
             multiplier: `${ke.toFixed(1)}%`,
             returnPct: Number(returnPct.toFixed(2)),
-            targetPrice: Number(target.toFixed(2))
+            targetPrice: Number(Math.max(0, target).toFixed(2))
         };
     });
 
@@ -286,16 +351,16 @@ export function calculateUsSRIM(finnhub: any, detail: any, baseKe: number = 8.0)
     };
 }
 
-export function calculateUsPEG(finnhub: any, detail: any, defaultGrowthRate: number = 15.0): ValuationResult | string {
+export function calculateUsPEG(finnhub: FinnhubFinancialsAsReportedType, detail: any, defaultGrowthRate: number = 15.0): ValuationResult | string {
     const ic = finnhub?.data?.[0]?.report?.ic ?? [];
     const last = Number(detail?.output?.last || 0);
     const shar = Number(detail?.output?.shar || 0);
 
     if (last === 0 || shar === 0) return "ERROR_INSUFFICIENT_DATA";
 
-    const net_income = Number(ic.find((i: any) => i.concept.includes("NetIncome"))?.value ?? 0);
+    const net_income = findFinnhubValue(ic, ["NetIncomeLoss", "NetIncomeLossAvailableToCommonStockholdersBasic"]);
     const eps = net_income / shar;
-    const currentPer = last / eps;
+    const currentPer = eps > 0 ? last / eps : 0;
 
     const rows = [0.5, 1.0, 1.5].map(peg => {
         const targetPrice = eps * defaultGrowthRate * peg;
@@ -303,7 +368,7 @@ export function calculateUsPEG(finnhub: any, detail: any, defaultGrowthRate: num
         return {
             multiplier: `PEG ${peg.toFixed(1)}배 기준`,
             returnPct: Number(returnPct.toFixed(2)),
-            targetPrice: Number(targetPrice.toFixed(2))
+            targetPrice: Number(Math.max(0, targetPrice).toFixed(2))
         };
     });
 
@@ -322,35 +387,37 @@ export function calculateUsPEG(finnhub: any, detail: any, defaultGrowthRate: num
     };
 }
 
-export function calculateUsDCF(finnhub: any, detail: any, wacc: number = 9.0, terminalGrowth: number = 2.5): ValuationResult | string {
+export function calculateUsDCF(finnhub: FinnhubFinancialsAsReportedType, detail: any, wacc: number = 9.0, terminalGrowth: number = 2.5): ValuationResult | string {
     const cf = finnhub?.data?.[0]?.report?.cf ?? [];
     const last = Number(detail?.output?.last || 0);
     const shar = Number(detail?.output?.shar || 0);
 
     if (last === 0 || shar === 0) return "ERROR_INSUFFICIENT_DATA";
 
-    const ocf = Number(cf.find((i: any) => i.concept.includes("NetCashProvidedByUsedInOperatingActivities"))?.value ?? 0);
+    const ocf = findFinnhubValue(cf, ["NetCashProvidedByUsedInOperatingActivities"]);
     const discountRate = wacc / 100;
-    const g = terminalGrowth / 100;
 
-    let totalPresentValue = 0;
-    let tempFcf = ocf;
-    for (let i = 1; i <= 5; i++) {
-        tempFcf = tempFcf * (1 + g);
-        totalPresentValue += tempFcf / Math.pow(1 + discountRate, i);
-    }
-    const terminalValue = (tempFcf * (1 + g)) / (discountRate - g);
-    const pvTerminalValue = terminalValue / Math.pow(1 + discountRate, 5);
-    const enterpriseValue = totalPresentValue + pvTerminalValue;
+    const computeUsDcfValue = (tgRate: number) => {
+        let totalPresentValue = 0;
+        let tempFcf = ocf;
+        for (let i = 1; i <= 5; i++) {
+            tempFcf = tempFcf * (1 + tgRate);
+            totalPresentValue += tempFcf / Math.pow(1 + discountRate, i);
+        }
+        const terminalValue = (tempFcf * (1 + tgRate)) / (discountRate - tgRate);
+        const pvTerminalValue = terminalValue / Math.pow(1 + discountRate, 5);
+        return totalPresentValue + pvTerminalValue;
+    };
 
-    const rows = [g - 0.005, g, g + 0.005].map(tg => {
-        const ev = totalPresentValue + ((ocf * Math.pow(1 + tg, 5) * (1 + tg)) / (discountRate - tg)) / Math.pow(1 + discountRate, 5);
+    const baseG = terminalGrowth / 100;
+    const rows = [baseG - 0.005, baseG, baseG + 0.005].map(tg => {
+        const ev = computeUsDcfValue(tg);
         const target = ev / shar;
         const returnPct = (target / last - 1) * 100;
         return {
             multiplier: `영구성장 ${(tg * 100).toFixed(1)}%`,
             returnPct: Number(returnPct.toFixed(2)),
-            targetPrice: Number(target.toFixed(2))
+            targetPrice: Number(Math.max(0, target).toFixed(2))
         };
     });
 
@@ -369,14 +436,14 @@ export function calculateUsDCF(finnhub: any, detail: any, wacc: number = 9.0, te
     };
 }
 
-export function calculateUsMultipliers(finnhub: any, detail: any): ValuationResult | string {
+export function calculateUsMultipliers(finnhub: FinnhubFinancialsAsReportedType, detail: any): ValuationResult | string {
     const ic = finnhub?.data?.[0]?.report?.ic ?? [];
     const last = Number(detail?.output?.last || 0);
     const shar = Number(detail?.output?.shar || 0);
 
     if (last === 0 || shar === 0) return "ERROR_INSUFFICIENT_DATA";
 
-    const net_income = Number(ic.find((i: any) => i.concept.includes("NetIncome"))?.value ?? 0);
+    const net_income = findFinnhubValue(ic, ["NetIncomeLoss", "NetIncomeLossAvailableToCommonStockholdersBasic"]);
     const eps = net_income / shar;
 
     const rows = [15.0, 20.0, 25.0].map(targetPer => {
@@ -385,7 +452,7 @@ export function calculateUsMultipliers(finnhub: any, detail: any): ValuationResu
         return {
             multiplier: `Target PER ${targetPer.toFixed(1)}배`,
             returnPct: Number(returnPct.toFixed(2)),
-            targetPrice: Number(target.toFixed(2))
+            targetPrice: Number(Math.max(0, target).toFixed(2))
         };
     });
 
@@ -404,21 +471,26 @@ export function calculateUsMultipliers(finnhub: any, detail: any): ValuationResu
     };
 }
 
-// 기존 하단 레거시 가공 영역 유지보수 스크립트 생략 없이 완벽 보존
+// ============================================================================
+// [3] 레거시 호환 및 하단 바인딩 영역 완벽 보존
+// ============================================================================
+
 export function calculateKrNcavValue(kiBS: any, kiChart: any) {
     const cras = Number(kiBS?.output?.[0]?.cras ?? 0) * ONE_HUNDRED_MILLION;
     const lblt = Number(kiBS?.output?.[0]?.total_lblt ?? 0) * ONE_HUNDRED_MILLION;
     const lstn = Number(kiChart?.output1?.lstn_stcn ?? 1);
     return Number(((cras - lblt) / lstn).toFixed(0));
 }
+
 export function calculateKrNcavRatio(kiBS: any, kiChart: any) {
     const cras = Number(kiBS.output?.[0]?.cras ?? 0) * ONE_HUNDRED_MILLION;
     const lblt = Number(kiBS.output?.[0]?.total_lblt ?? 0) * ONE_HUNDRED_MILLION;
     const lstn = Number(kiChart?.output1?.lstn_stcn ?? 1);
     const prpr = Number(kiChart?.output1?.stck_prpr ?? 0);
     const target = (cras - lblt) / lstn;
-    return Number((((target / prpr) - 1) * 100).toFixed(2));
+    return prpr > 0 ? Number((((target / prpr) - 1) * 100).toFixed(2)) : 0;
 }
+
 export function getKrNcavGrade(kiBS: any, kiChart: any) {
     const cras = Number(kiBS.output?.[0]?.cras || 0) * ONE_HUNDRED_MILLION;
     const lblt = Number(kiBS.output?.[0]?.total_lblt || 0) * ONE_HUNDRED_MILLION;
@@ -434,35 +506,39 @@ export function getKrNcavGrade(kiBS: any, kiChart: any) {
     if (returnPct >= 0) return { grade: "B", color: "text-blue-500", cardGradeColor: "from-blue-500/10 to-transparent" };
     return { grade: "F", color: "text-red-500", cardGradeColor: "from-red-500/20 via-red-900/10 to-transparent" };
 }
+
 export function getKrSRIMTargetPrice(kiBS: any, kiIS: any, kiChart: any, baseKe: number = 8.0) {
     const total_cptl = Number(kiBS?.output?.[0]?.total_cptl ?? 1) * ONE_HUNDRED_MILLION;
     const thtr_ntin = Number(kiIS?.output?.[0]?.thtr_ntin ?? 0) * ONE_HUNDRED_MILLION;
-    const ROE = (thtr_ntin / total_cptl) * 100;
+    const ROE = total_cptl > 0 ? (thtr_ntin / total_cptl) * 100 : 0;
     const lstn = Number(kiChart?.output1?.lstn_stcn ?? 1) === 0 ? 1 : Number(kiChart?.output1?.lstn_stcn ?? 1);
-    const targetPrice = (total_cptl * (ROE / baseKe)) / lstn;
-    return `(요구수익률 ${baseKe}% 기준) 적정주가: ₩${Math.round(targetPrice)}`;
+    const targetPrice = baseKe > 0 ? (total_cptl * (ROE / baseKe)) / lstn : 0;
+    return `(요구수익률 ${baseKe}% 기준) 적정주가: ₩${Math.round(targetPrice).toLocaleString()}`;
 }
-export function calculateUsNcavValue(finnhub: any, detail: any) {
+
+export function calculateUsNcavValue(finnhub: FinnhubFinancialsAsReportedType, detail: any) {
     const bs = finnhub?.data?.[0]?.report?.bs ?? [];
-    const cras = Number(bs.find((i: any) => i.concept.includes("AssetsCurrent"))?.value ?? 0);
-    const lblt = Number(bs.find((i: any) => i.concept.includes("Liabilities"))?.value ?? 0);
+    const cras = findFinnhubValue(bs, ["AssetsCurrent"]);
+    const lblt = findFinnhubValue(bs, ["Liabilities", "LiabilitiesTotal"]);
     const rawShar = detail?.output?.shar;
     if (!rawShar || rawShar === "" || Number(rawShar) === 0) return "0.00";
     return ((cras - lblt) / Number(rawShar)).toFixed(2);
 }
-export function calculateUsNcavRatio(finnhub: any, detail: any) {
+
+export function calculateUsNcavRatio(finnhub: FinnhubFinancialsAsReportedType, detail: any) {
     const bs = finnhub?.data?.[0]?.report?.bs ?? [];
-    const cras = Number(bs.find((i: any) => i.concept.includes("AssetsCurrent"))?.value ?? 0);
-    const lblt = Number(bs.find((i: any) => i.concept.includes("Liabilities"))?.value ?? 0);
+    const cras = findFinnhubValue(bs, ["AssetsCurrent"]);
+    const lblt = findFinnhubValue(bs, ["Liabilities", "LiabilitiesTotal"]);
     const rawShar = detail?.output?.shar;
     const last = Number(detail?.output?.last || 0);
     if (!rawShar || rawShar === "" || Number(rawShar) === 0 || last === 0) return 0;
     return Number(((((cras - lblt) / Number(rawShar) / last) - 1) * 100).toFixed(2));
 }
-export function getUsNcavGrade(finnhub: any, detail: any) {
+
+export function getUsNcavGrade(finnhub: FinnhubFinancialsAsReportedType, detail: any) {
     const bs = finnhub?.data?.[0]?.report?.bs ?? [];
-    const cras = Number(bs.find((i: any) => i.concept.includes("AssetsCurrent"))?.value ?? 0);
-    const lblt = Number(bs.find((i: any) => i.concept.includes("Liabilities"))?.value ?? 0);
+    const cras = findFinnhubValue(bs, ["AssetsCurrent"]);
+    const lblt = findFinnhubValue(bs, ["Liabilities", "LiabilitiesTotal"]);
     const lstn = Number(detail.output?.shar || 1);
     const last = Number(detail.output?.last || 1);
     const returnPct = (((cras - lblt) / lstn / last) - 1) * 100;
@@ -473,6 +549,7 @@ export function getUsNcavGrade(finnhub: any, detail: any) {
     if (returnPct >= 0) return { grade: "B", color: "text-blue-500", cardGradeColor: "from-blue-500/10 to-transparent" };
     return { grade: "F", color: "text-red-500", cardGradeColor: "from-red-500/20 via-red-900/10 to-transparent" };
 }
+
 export function formatKoreanUnit(value: number | string): string {
     const num = Number(value);
     if (isNaN(num) || num === 0) return "0";

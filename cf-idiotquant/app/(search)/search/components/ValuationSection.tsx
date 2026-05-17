@@ -107,9 +107,19 @@ const VALUATION_CONFIG: Record<ValuationModelType, ModelThemeConfig> = {
     metricDashboardClass: "bg-emerald-50/10 dark:bg-emerald-950/5 border-emerald-100/60 dark:border-emerald-950/40",
     metricHoverClass: "border-emerald-400 dark:border-emerald-500 bg-emerald-50/30 dark:bg-emerald-950/40",
     footerClass: "bg-emerald-50/10 dark:bg-emerald-950/5 border-emerald-100/60 dark:border-emerald-950/30",
-    extendMetrics: (base) => {
-      const bbbCell = base.find(m => /금리|할인율|요구|rate|ROE/i.test(m.label.replace(/\s+/g, "")));
-      return [...base, { label: "평가 포커스", value: bbbCell ? "초과이익 현가" : "ROE 연동" }];
+    extendMetrics: (base, rows) => {
+      // 한국/미국 필드가 모두 유연하게 감지되도록 정규식 스케일 가공 및 타겟 바인딩 보완
+      const hasRoe = base.some(m => /ROE/i.test(m.label));
+      let focusValue = "ROE 연동";
+      if (rows && rows.length > 0) {
+        const firstRow = rows[0]?.multiplier || "";
+        if (firstRow.includes("%")) {
+          focusValue = "초과이익 현가";
+        }
+      }
+      // 중복 방지 처리를 하면서 평가 포커스 주입
+      const filteredBase = base.filter(m => m.label !== "평가 포커스");
+      return [...filteredBase, { label: "평가 포커스", value: focusValue }];
     }
   },
   DCF: {
@@ -172,7 +182,8 @@ const METRIC_DICTIONARY: Record<string, { desc: string }> = {
   "주당순이익": { desc: "회사 발행 주식 1주당 귀속되는 당기순이익 지표입니다." },
   "주당순자산": { desc: "회사 발행 주식 1주당 귀속되는 자본총계(순자산) 지표입니다." },
   "Trailing PER": { desc: "현재 주가를 최근 4분기 합산 EPS로 나눈 상대 가치 배수입니다." },
-  "가정 성장률": { desc: "향후 보수적으로 실현 가능하다고 가정한 이익 성장 속도 비율입니다." }
+  "가정 성장률": { desc: "향후 보수적으로 실현 가능하다고 가정한 이익 성장 속도 비율입니다." },
+  "평가포커스": { desc: "해당 벨류에이션 모델이 현재 자산 구조와 수익성 중 어느 파트에 연동 가중치를 주는지 식별합니다." }
 };
 
 interface ValuationSectionProps {
@@ -338,7 +349,7 @@ function StrategyCard({ modelType, result, currency }: StrategyCardProps) {
           theme.radialClass
         )} />
 
-        {/* Card Header Section - 아코디언 토글 바인딩 */}
+        {/* Card Header Section */}
         <div 
           onClick={() => setIsExpanded(!isExpanded)}
           className={cn(
