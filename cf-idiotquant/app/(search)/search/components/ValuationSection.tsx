@@ -12,7 +12,8 @@ import {
   ArrowTrendingUpIcon,
   ChevronDownIcon,
   ChevronUpIcon,
-  AdjustmentsHorizontalIcon
+  AdjustmentsHorizontalIcon,
+  TableCellsIcon
 } from "@heroicons/react/24/outline";
 import { cn } from "@/lib/utils";
 import { 
@@ -32,9 +33,16 @@ import {
 type ValuationModelType = "NCAV" | "SRIM" | "DCF" | "PER" | "PEG" | "PBR" | string;
 type FilterTabType = "ALL" | "ASSET" | "EARNING";
 
+interface ModelDescription {
+  summary: string;
+  idea: string;
+  target: string;
+}
+
 interface ModelThemeConfig {
   name: string;
   category: "ASSET" | "EARNING";
+  description: ModelDescription;
   icon: React.ReactNode;
   wrapperClass: string;
   containerClass: string;
@@ -53,6 +61,11 @@ const VALUATION_CONFIG: Record<ValuationModelType, ModelThemeConfig> = {
   NCAV: {
     name: "NCAV 청산가치",
     category: "ASSET",
+    description: {
+      summary: "벤자민 그레이엄이 정립한 모델로, 기업이 당장 영업을 중단하고 자산을 처분했을 때의 가치인 '순유동자산(유동자산-총부채)'을 구합니다.",
+      idea: "시가총액이 청산가치보다도 낮은 상태를 탐색하여 완벽한 '안전마진'을 확보합니다.",
+      target: "시장 소외주, 하방 경직성이 보장된 극단적 저평가 자산주"
+    },
     icon: <CalculatorIcon className="w-4 h-4 text-blue-500 dark:text-blue-400" />,
     wrapperClass: "from-blue-300/80 via-zinc-200 to-blue-400/60 dark:from-blue-950 dark:via-zinc-800/60 dark:to-zinc-900 shadow-blue-500/5 dark:shadow-[0_20px_50px_rgba(0,0,0,0.6)]",
     containerClass: "border-blue-100 dark:border-blue-950/50",
@@ -81,6 +94,11 @@ const VALUATION_CONFIG: Record<ValuationModelType, ModelThemeConfig> = {
   PBR: {
     name: "PBR 자본밴드",
     category: "ASSET",
+    description: {
+      summary: "주주지분(순자산) 가치와 주가를 비교하여 역사적인 주가순자산배수(PBR)의 상·하단 고점 밴드를 역산합니다.",
+      idea: "현재 장부상 자산가치 대비 주가가 역사적 최하단 바닥권에 진입했는지 추적합니다.",
+      target: "실적 변동성은 크지만 망하지 않을 대형 자산주, 경기 민감 사이클 주 종목"
+    },
     icon: <Squares2X2Icon className="w-4 h-4 text-cyan-500 dark:text-cyan-400" />,
     wrapperClass: "from-cyan-300/80 via-zinc-200 to-cyan-400/60 dark:from-cyan-950 dark:via-zinc-800/60 dark:to-zinc-900 shadow-cyan-500/5 dark:shadow-[0_20px_50px_rgba(0,0,0,0.6)]",
     containerClass: "border-cyan-100 dark:border-cyan-950/50",
@@ -91,11 +109,16 @@ const VALUATION_CONFIG: Record<ValuationModelType, ModelThemeConfig> = {
     badgeTextClass: "text-cyan-700 dark:text-cyan-400",
     metricDashboardClass: "bg-cyan-50/10 dark:bg-cyan-950/5 border-cyan-100/60 dark:border-cyan-950/40",
     metricHoverClass: "border-cyan-400 dark:border-cyan-500 bg-cyan-50/30 dark:bg-cyan-950/40",
-    footerClass: "bg-cyan-50/10 dark:bg-cyan-950/5 border-cyan-100/60 dark:border-cyan-950/30",
+    footerClass: "bg-cyan-50/10 dark:bg-zinc-950/5 border-cyan-100/60 dark:border-cyan-950/30",
   },
   SRIM: {
     name: "S-RIM 초과수익",
     category: "EARNING",
+    description: {
+      summary: "기업의 순자산 가치에 '미래 초과수익의 현재가치'를 결합합니다. 주주 요구수익률 대비 자기자본이익률(ROE)의 우위를 측정합니다.",
+      idea: "자본을 활용해 요구 기준치 이상의 부가가치를 지속적으로 만들어내는지 평가합니다.",
+      target: "우량 제조 강소기업, 자본 효율성이 우수하고 지속 성장이 기대되는 종목"
+    },
     icon: <ChartBarIcon className="w-4 h-4 text-emerald-500 dark:text-emerald-400" />,
     wrapperClass: "from-emerald-300/80 via-zinc-200 to-emerald-400/60 dark:from-emerald-950 dark:via-zinc-800/60 dark:to-zinc-900 shadow-emerald-500/5 dark:shadow-[0_20px_50px_rgba(0,0,0,0.6)]",
     containerClass: "border-emerald-100 dark:border-emerald-950/50",
@@ -108,7 +131,6 @@ const VALUATION_CONFIG: Record<ValuationModelType, ModelThemeConfig> = {
     metricHoverClass: "border-emerald-400 dark:border-emerald-500 bg-emerald-50/30 dark:bg-emerald-950/40",
     footerClass: "bg-emerald-50/10 dark:bg-emerald-950/5 border-emerald-100/60 dark:border-emerald-950/30",
     extendMetrics: (base, rows) => {
-      // 한국/미국 필드가 모두 유연하게 감지되도록 정규식 스케일 가공 및 타겟 바인딩 보완
       const hasRoe = base.some(m => /ROE/i.test(m.label));
       let focusValue = "ROE 연동";
       if (rows && rows.length > 0) {
@@ -117,7 +139,6 @@ const VALUATION_CONFIG: Record<ValuationModelType, ModelThemeConfig> = {
           focusValue = "초과이익 현가";
         }
       }
-      // 중복 방지 처리를 하면서 평가 포커스 주입
       const filteredBase = base.filter(m => m.label !== "평가 포커스");
       return [...filteredBase, { label: "평가 포커스", value: focusValue }];
     }
@@ -125,6 +146,11 @@ const VALUATION_CONFIG: Record<ValuationModelType, ModelThemeConfig> = {
   DCF: {
     name: "DCF 현금흐름할인",
     category: "EARNING",
+    description: {
+      summary: "회계상의 장부 이익 대신 기업이 미래에 영업활동으로 창출할 실제 '잉여현금흐름(FCF)'을 구한 뒤 가중평균자본비용(할인율)으로 할인합니다.",
+      idea: "비즈니스의 본질적인 현금 창출력에 기반한 절대적 내재가치를 측정합니다.",
+      target: "현금흐름 예측이 용이한 성숙기 대형주, 시장 지배력이 확고한 경제적 해자 기업"
+    },
     icon: <PresentationChartLineIcon className="w-4 h-4 text-purple-500 dark:text-purple-400" />,
     wrapperClass: "from-purple-300/80 via-zinc-200 to-purple-400/60 dark:from-purple-950 dark:via-zinc-800/60 dark:to-zinc-900 shadow-purple-500/5 dark:shadow-[0_20px_50px_rgba(0,0,0,0.6)]",
     containerClass: "border-purple-100 dark:border-purple-950/50",
@@ -134,12 +160,17 @@ const VALUATION_CONFIG: Record<ValuationModelType, ModelThemeConfig> = {
     badgeClass: "bg-purple-50/80 dark:bg-purple-950/60 border-purple-200/50 dark:border-purple-900/40",
     badgeTextClass: "text-purple-700 dark:text-purple-400",
     metricDashboardClass: "bg-purple-50/10 dark:bg-purple-950/5 border-purple-100/60 dark:border-purple-950/40",
-    metricHoverClass: "border-purple-400 dark:border-purple-500 bg-purple-50/30 dark:bg-purple-950/40",
+    metricHoverClass: "border-purple-400 dark:border-emerald-500 bg-purple-50/30 dark:bg-purple-950/40",
     footerClass: "bg-purple-50/10 dark:bg-purple-950/5 border-purple-100/60 dark:border-purple-950/30",
   },
   PER: {
     name: "PER 멀티플",
     category: "EARNING",
+    description: {
+      summary: "주당순이익(EPS)에 업종 평균, 과거 평균, 혹은 타겟 배수(Multiple)를 결합하는 대중적인 상대가치 모델입니다.",
+      idea: "현재 시장의 심리와 인기도를 반영하여 직관적인 밸류에이션 상한/하한을 빠르게 설정합니다.",
+      target: "보편적인 주류 업종 내 종목 비교, 시장 트렌드가 빠르게 반영되는 주도주"
+    },
     icon: <DocumentChartBarIcon className="w-4 h-4 text-indigo-500 dark:text-indigo-400" />,
     wrapperClass: "from-indigo-300/80 via-zinc-200 to-indigo-400/60 dark:from-indigo-950 dark:via-zinc-800/60 dark:to-zinc-900 shadow-indigo-500/5 dark:shadow-[0_20px_50px_rgba(0,0,0,0.6)]",
     containerClass: "border-indigo-100 dark:border-indigo-950/50",
@@ -155,6 +186,11 @@ const VALUATION_CONFIG: Record<ValuationModelType, ModelThemeConfig> = {
   PEG: {
     name: "PEG 가치성장",
     category: "EARNING",
+    description: {
+      summary: "피터 린치가 대중화한 지표로, 단순 고PER 부담을 덜어내기 위해 PER을 실질 '이익성장률(G)'로 나눈 수치입니다.",
+      idea: "PER이 높더라도 그를 압도하는 이익 성장력이 있다면 정당한 프리미엄인지 여부를 가려냅니다.",
+      target: "성장 초기/중기의 주도 기술주, 혁신 성장 기업 및 고성장 트렌드 종목"
+    },
     icon: <ArrowTrendingUpIcon className="w-4 h-4 text-amber-500 dark:text-amber-400" />,
     wrapperClass: "from-amber-300/80 via-zinc-200 to-amber-400/60 dark:from-amber-950 dark:via-zinc-800/60 dark:to-zinc-900 shadow-amber-500/5 dark:shadow-[0_20px_50px_rgba(0,0,0,0.6)]",
     containerClass: "border-amber-100 dark:border-amber-950/50",
@@ -186,6 +222,41 @@ const METRIC_DICTIONARY: Record<string, { desc: string }> = {
   "평가포커스": { desc: "해당 벨류에이션 모델이 현재 자산 구조와 수익성 중 어느 파트에 연동 가중치를 주는지 식별합니다." }
 };
 
+/**
+ * 뷰포트 바운더리 탈출 방지를 위한 위치 최적화 대시보드 전용 툴팁 컴포넌트
+ */
+const TopDashboardTooltip = ({ config, index }: { config: ModelThemeConfig; index: number }) => {
+  // 인덱스 기반으로 좌/우 밀림 방지 정렬 자동 선택
+  const alignmentClass = index % 5 >= 3 ? "right-0" : index % 5 === 0 ? "left-0" : "left-1/2 -translate-x-1/2";
+  
+  return (
+    <div className={cn(
+      "absolute z-[9999] p-4 rounded-2xl bg-zinc-950/95 text-white shadow-2xl border border-zinc-800/80 text-[11px] leading-relaxed font-sans font-medium pointer-events-none w-64 bottom-full mb-3 animate-in fade-in zoom-in-95 duration-150 backdrop-blur-md shadow-black/80",
+      alignmentClass
+    )}>
+      <div className="font-extrabold text-amber-400 mb-3 flex items-center gap-2 border-b border-zinc-800 pb-2">
+        <span className="p-1 rounded bg-zinc-900/60 shrink-0">{config.icon}</span>
+        <span className="text-xs font-black">{config.name}</span>
+      </div>
+      
+      <div className="flex flex-col gap-2.5 text-zinc-300">
+        <div>
+          <span className="text-amber-400 font-black block text-[10px] uppercase tracking-wider mb-0.5">💡 핵심 요약</span>
+          <p className="font-medium text-zinc-200 tracking-tight leading-normal">{config.description.summary}</p>
+        </div>
+        <div>
+          <span className="text-cyan-400 font-black block text-[10px] uppercase tracking-wider mb-0.5">🎯 투자 아이디어</span>
+          <p className="font-medium text-zinc-200 tracking-tight leading-normal">{config.description.idea}</p>
+        </div>
+        <div>
+          <span className="text-emerald-400 font-black block text-[10px] uppercase tracking-wider mb-0.5">👤 적합한 타겟</span>
+          <p className="font-medium text-zinc-200 tracking-tight leading-normal">{config.description.target}</p>
+        </div>
+      </div>
+    </div>
+  );
+};
+
 interface ValuationSectionProps {
   data: any;
   isUs: boolean;
@@ -193,6 +264,7 @@ interface ValuationSectionProps {
 
 export const ValuationSection = ({ data, isUs }: ValuationSectionProps) => {
   const [activeTab, setActiveTab] = useState<FilterTabType>("ALL");
+  const [hoveredSummaryModel, setHoveredSummaryModel] = useState<string | null>(null);
 
   const models = useMemo(() => {
     const list: { type: ValuationModelType; result: ValuationResult }[] = [];
@@ -249,9 +321,63 @@ export const ValuationSection = ({ data, isUs }: ValuationSectionProps) => {
   const currency = isUs ? "$" : "₩";
 
   return (
-    <div className="w-full flex flex-col gap-6 mb-6">
+    <div className="w-full flex flex-col gap-6 mb-6 overflow-visible">
+      
+      {/* 1. 상단 모델별 가치 요약 대시보드 */}
+      {models.length > 0 && (
+        <div className="w-full bg-gradient-to-br from-zinc-50 to-zinc-100/50 dark:from-zinc-900/60 dark:to-zinc-950 p-5 rounded-[2rem] border border-zinc-200/70 dark:border-zinc-800/70 shadow-sm overflow-visible">
+          <div className="flex items-center gap-2 mb-4 pb-2 border-b border-zinc-200/60 dark:border-zinc-800/60">
+            <TableCellsIcon className="w-4 h-4 text-zinc-500" />
+            <h4 className="text-xs font-black text-zinc-700 dark:text-zinc-300 tracking-tight uppercase">모델별 평가 결과 요약</h4>
+            <span className="text-[10px] text-zinc-400 font-medium ml-auto">마우스를 올리면 상세 모델 소개가 보입니다.</span>
+          </div>
+          
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-3 overflow-visible">
+            {models.map((m, idx) => {
+              const config = VALUATION_CONFIG[m.type];
+              const baseRow = m.result.rows.find((r: any) => /1\.0|100|기준|적정/i.test((r.multiplier || r.label || r.weight || "").toString().replace(/\s+/g, ""))) || m.result.rows[0];
+              const targetPrice = baseRow ? baseRow.targetPrice : 0;
+              const returnPct = baseRow ? baseRow.returnPct : 0;
+              const isPositive = returnPct >= 0;
+
+              return (
+                <div 
+                  key={m.type}
+                  className="p-3 rounded-xl bg-white dark:bg-zinc-900 border border-zinc-200/60 dark:border-zinc-800/80 shadow-sm flex flex-col gap-1 relative cursor-help transition-all duration-200 hover:border-zinc-400 dark:hover:border-zinc-600 overflow-visible"
+                  onMouseEnter={() => setHoveredSummaryModel(m.type)}
+                  onMouseLeave={() => setHoveredSummaryModel(null)}
+                >
+                  <div className="flex items-center gap-1.5 text-zinc-500 dark:text-zinc-400">
+                    <span className="p-0.5 rounded-md bg-zinc-100 dark:bg-zinc-800 block">
+                      {config?.icon || <Squares2X2Icon className="w-3 h-3" />}
+                    </span>
+                    <span className="text-[10px] font-black tracking-tight truncate">{config?.name || m.type}</span>
+                  </div>
+                  
+                  <div className="flex flex-col mt-0.5">
+                    <span className="text-xs font-black text-zinc-950 dark:text-white font-mono tracking-tight">
+                      {currency}{targetPrice.toLocaleString()}
+                    </span>
+                    <span className={cn(
+                      "text-[9px] font-black font-mono mt-0.5",
+                      isPositive ? "text-emerald-600 dark:text-emerald-400" : "text-rose-500"
+                    )}>
+                      {isPositive ? "▲" : "▼"} {Math.abs(returnPct).toFixed(1)}%
+                    </span>
+                  </div>
+
+                  {hoveredSummaryModel === m.type && config && (
+                    <TopDashboardTooltip config={config} index={idx} />
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
+
       {/* 전략 모델 제어 필터 바 */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-zinc-100/70 dark:bg-zinc-900/40 p-2 rounded-2xl border border-zinc-200/60 dark:border-zinc-800/60 backdrop-blur-md">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-zinc-100/70 dark:bg-zinc-900/40 p-2 rounded-2xl border border-zinc-200/60 dark:border-zinc-800/60 backdrop-blur-md overflow-visible">
         <div className="flex items-center gap-2 px-2 text-zinc-700 dark:text-zinc-300">
           <AdjustmentsHorizontalIcon className="w-4 h-4 text-zinc-500" />
           <span className="text-xs font-bold tracking-tight">전략 모델 필터</span>
@@ -278,7 +404,7 @@ export const ValuationSection = ({ data, isUs }: ValuationSectionProps) => {
       </div>
 
       {filteredModels.length > 0 ? (
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 overflow-visible">
           {filteredModels.map((m) => (
             <StrategyCard 
               key={m.type}
@@ -306,12 +432,14 @@ interface StrategyCardProps {
 
 function StrategyCard({ modelType, result, currency }: StrategyCardProps) {
   const [hoveredMetric, setHoveredMetric] = useState<string | null>(null);
+  const [hoveredTitle, setHoveredTitle] = useState<boolean>(false);
   const [isExpanded, setIsExpanded] = useState<boolean>(true);
 
   const theme = useMemo(() => {
     return VALUATION_CONFIG[modelType] || {
       name: modelType,
       category: "ASSET",
+      description: { summary: "등록되지 않은 가치평가 모델 방식입니다.", idea: "", target: "" },
       icon: <Squares2X2Icon className="w-4 h-4 text-zinc-500" />,
       wrapperClass: "from-zinc-300 via-zinc-200 to-zinc-400 dark:from-zinc-700 dark:via-zinc-800 dark:to-zinc-900",
       containerClass: "border-zinc-200 dark:border-zinc-900",
@@ -332,20 +460,24 @@ function StrategyCard({ modelType, result, currency }: StrategyCardProps) {
     }
     return result.metrics;
   }, [result, theme]);
-
-  return (
+return (
     <div className={cn(
       "rounded-[2rem] p-[5px] shadow-xl transform-gpu relative overflow-visible transition-all duration-300 flex flex-col h-fit",
-      theme.wrapperClass
+      theme.wrapperClass,
+      // [개선] 타이틀 호버나 메트릭 호버 시 카드 자체의 스택 레이어를 격상하여 이웃 카드 및 부모 간섭 파괴
+      (hoveredTitle || hoveredMetric !== null) ? "z-50 shadow-2xl scale-[1.001]" : "z-10"
     )}>
       <div className="absolute inset-0 bg-[linear-gradient(to_right,rgba(0,0,0,0.01)_1px,transparent_1px),linear-gradient(to_bottom,rgba(0,0,0,0.01)_1px,transparent_1px)] dark:bg-[linear-gradient(to_right,#ffffff02_1px,transparent_1px),linear-gradient(to_bottom,#ffffff02_1px,transparent_1px)] bg-[size:20px_20px] pointer-events-none z-0 rounded-[1.9rem]" />
       
+      {/* overflow-hidden을 완전히 제거하고 계층 컴포넌트의 가시성(overflow-visible) 보장 */}
       <div className={cn(
-        "w-full h-full rounded-[1.8rem] bg-white dark:bg-zinc-950 relative z-10 overflow-hidden flex flex-col flex-1 border transition-colors duration-300",
-        theme.containerClass
+        "w-full h-full rounded-[1.8rem] bg-white dark:bg-zinc-950 relative flex flex-col flex-1 border transition-colors duration-300 overflow-visible",
+        theme.containerClass,
+        // [개선] 타이틀 호버 시 컨테이너 내부의 기둥 레이어 서열 격상
+        hoveredTitle ? "z-30" : "z-10"
       )}>
         <div className={cn(
-          "absolute inset-0 bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] pointer-events-none z-0 opacity-50 dark:opacity-25 transition-all",
+          "absolute inset-0 bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] pointer-events-none z-0 opacity-50 dark:opacity-25 transition-all rounded-[1.8rem]",
           theme.radialClass
         )} />
 
@@ -353,18 +485,30 @@ function StrategyCard({ modelType, result, currency }: StrategyCardProps) {
         <div 
           onClick={() => setIsExpanded(!isExpanded)}
           className={cn(
-            "px-5 py-4 md:px-6 md:py-5 border-b flex items-center justify-between relative z-20 backdrop-blur-sm transition-colors cursor-pointer select-none hover:bg-zinc-50/50 dark:hover:bg-zinc-900/20",
-            theme.headerClass
+            "px-5 py-4 md:px-6 md:py-5 border-b flex items-center justify-between relative backdrop-blur-sm transition-colors cursor-pointer select-none hover:bg-zinc-50/50 dark:hover:bg-zinc-900/20 rounded-t-[1.8rem] overflow-visible",
+            theme.headerClass,
+            // [개선] 헤더 자체의 등급을 올려 하단 메트릭/테이블이 위로 덮어쓰지 못하도록 보장
+            hoveredTitle ? "z-40" : "z-20"
           )}
         >
-          <div className="flex items-center gap-3">
-            <div className={cn(
-              "w-8 h-8 rounded-xl flex items-center justify-center border shadow-sm shrink-0 transition-colors",
-              theme.iconWrapperClass
-            )}>
+          {/* [개선] z-50 격상을 통해 하단 콘텐츠 요소들과의 위아래 간섭 레이어 파괴 */}
+          <div className={cn("flex items-center gap-3 relative overflow-visible transition-all", hoveredTitle ? "z-50" : "z-30")}>
+            <div 
+              className={cn(
+                "w-8 h-8 rounded-xl flex items-center justify-center border shadow-sm shrink-0 transition-colors cursor-help",
+                theme.iconWrapperClass
+              )}
+              onMouseEnter={(e) => { e.stopPropagation(); setHoveredTitle(true); }}
+              onMouseLeave={(e) => { e.stopPropagation(); setHoveredTitle(false); }}
+            >
               {theme.icon}
             </div>
-            <div>
+            
+            <div 
+              className="cursor-help"
+              onMouseEnter={(e) => { e.stopPropagation(); setHoveredTitle(true); }}
+              onMouseLeave={(e) => { e.stopPropagation(); setHoveredTitle(false); }}
+            >
               <h3 className="text-xs md:text-sm font-extrabold text-zinc-900 dark:text-white tracking-tight flex items-center gap-2">
                 {result.title}
               </h3>
@@ -372,6 +516,28 @@ function StrategyCard({ modelType, result, currency }: StrategyCardProps) {
                 {result.formula}
               </p>
             </div>
+
+            {/* [개선] 카드 모델 가이드 가독성 툴팁 모바일 짤림 방지: 
+                모바일 환경(`max-sm`)에서는 fixed로 화면 중앙 하단에 안전하게 띄우고, 데스크톱 이상에서는 absolute 정렬로 복귀 */}
+            {hoveredTitle && theme.description.summary && (
+              <div className="fixed bottom-4 left-4 right-4 sm:absolute sm:bottom-auto sm:left-0 sm:top-full sm:mt-2 sm:w-64 w-[calc(100vw-2rem)] z-[9999] p-4 rounded-2xl bg-zinc-950/95 text-white shadow-2xl border border-zinc-800 text-[11px] leading-relaxed font-sans font-medium pointer-events-none animate-in fade-in zoom-in-95 duration-150 shadow-black/60 backdrop-blur-md whitespace-normal">
+                <div className="font-extrabold text-amber-400 mb-2.5 border-b border-zinc-800 pb-1.5 text-xs font-black">모델 구조 가이드</div>
+                <div className="flex flex-col gap-2.5 text-zinc-300">
+                  <div>
+                    <span className="text-amber-400 font-black block text-[10px] uppercase tracking-wider mb-0.5">💡 핵심 요약</span>
+                    <p className="font-medium text-zinc-200 tracking-tight leading-normal">{theme.description.summary}</p>
+                  </div>
+                  <div>
+                    <span className="text-cyan-400 font-black block text-[10px] uppercase tracking-wider mb-0.5">🎯 투자 아이디어</span>
+                    <p className="font-medium text-zinc-200 tracking-tight leading-normal">{theme.description.idea}</p>
+                  </div>
+                  <div>
+                    <span className="text-emerald-400 font-black block text-[10px] uppercase tracking-wider mb-0.5">👤 적합한 타겟</span>
+                    <p className="font-medium text-zinc-200 tracking-tight leading-normal">{theme.description.target}</p>
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
 
           <div className="flex items-center gap-2">
@@ -392,28 +558,39 @@ function StrategyCard({ modelType, result, currency }: StrategyCardProps) {
           </div>
         </div>
 
-        {/* 본문 슬라이드 접기 제어부 */}
+        {/* 본문 제어부: overflow-hidden 대신 내부 콘텐츠 렌더링 스위칭 방식으로 짤림 전면 방지 */}
         <div className={cn(
-          "transition-all duration-300 ease-in-out origin-top overflow-hidden flex flex-col flex-1",
-          isExpanded ? "max-h-[1200px] opacity-100" : "max-h-0 opacity-0 pointer-events-none"
+          "transition-all duration-300 ease-in-out origin-top flex flex-col flex-1 rounded-b-[1.8rem] overflow-visible",
+          isExpanded ? "max-h-[1200px] opacity-100 visible" : "max-h-0 opacity-0 invisible pointer-events-none"
         )}>
           {/* 핵심 메트릭 그리드 */}
           <div className={cn(
-            "p-4 grid grid-cols-2 sm:grid-cols-4 gap-2 border-b relative z-20 transition-colors",
-            theme.metricDashboardClass
+            "p-4 grid grid-cols-2 sm:grid-cols-4 gap-2 border-b transition-colors overflow-visible",
+            theme.metricDashboardClass,
+            // [개선] 타이틀 툴팁 활성화 시 메트릭 대시보드의 z-index 레이어를 상대적으로 낮춰 가려짐 방지
+            hoveredTitle ? "relative z-0" : "relative z-20"
           )}>
             {extendedMetrics.map((m: any, i: number) => {
               const cleanLabel = m.label.replace(/[\s\(\)]/g, "");
               const dictItem = METRIC_DICTIONARY[cleanLabel] || Object.values(METRIC_DICTIONARY).find((v, idx) => Object.keys(METRIC_DICTIONARY)[idx].includes(cleanLabel) || cleanLabel.includes(Object.keys(METRIC_DICTIONARY)[idx]));
               const isHovered = hoveredMetric === `${result.title}-${m.label}-${i}`;
+              
+              // [개선] 모바일 대응 가로 정렬 고도화:
+              // 모바일(2열)일 때는 홀수(0,2)는 left-0, 짝수(1,3)는 right-0 처리하여 화면 이탈 완벽 방지
+              // 데스크톱(4열)일 때는 기존의 i % 4 >= 2 구조를 그대로 살려 우측 정렬 다형화 유지
+              const elementAlignmentClass = cn(
+                i % 2 === 0 ? "left-0" : "right-0",
+                i % 4 >= 2 ? "sm:right-0 sm:left-auto" : "sm:left-0 sm:right-auto"
+              );
 
               return (
                 <div 
                   key={i} 
                   className={cn(
                     "p-2.5 rounded-xl border bg-white dark:bg-zinc-900/40 flex flex-col gap-0.5 shadow-sm transition-all duration-150 relative cursor-help overflow-visible",
-                    isHovered ? cn("z-30", theme.metricHoverClass) : "border-zinc-200 dark:border-zinc-800 hover:border-zinc-300 dark:hover:border-zinc-700"
+                    isHovered ? "z-40 border-zinc-400 dark:border-zinc-500" : "z-10 border-zinc-200 dark:border-zinc-800 hover:border-zinc-300 dark:hover:border-zinc-700"
                   )}
+                  style={{ isolation: isHovered ? "isolate" : "auto" }} // 개별 스택 레이어 고립화 적용
                   onMouseEnter={() => setHoveredMetric(`${result.title}-${m.label}-${i}`)}
                   onMouseLeave={() => setHoveredMetric(null)}
                 >
@@ -427,8 +604,12 @@ function StrategyCard({ modelType, result, currency }: StrategyCardProps) {
                     {m.value}
                   </span>
 
+                  {/* 고려 변수 설명 호버 툴팁: 모바일 화면폭을 감안해 w-44로 축소하고 데스크톱에서 w-52 적용 */}
                   {isHovered && dictItem && (
-                    <div className="absolute z-[9999] p-3 rounded-lg bg-zinc-900 text-white shadow-xl border border-zinc-700 text-[10.5px] leading-relaxed font-sans font-medium pointer-events-none w-52 left-1/2 -translate-x-1/2 top-full mt-2 animate-in fade-in duration-100 shadow-black/40 whitespace-normal">
+                    <div className={cn(
+                      "absolute z-[9999] p-3 rounded-lg bg-zinc-900 text-white shadow-xl border border-zinc-700 text-[10.5px] leading-relaxed font-sans font-medium pointer-events-none w-44 sm:w-52 top-full mt-2 animate-in fade-in zoom-in-95 duration-100 shadow-black/40 whitespace-normal",
+                      elementAlignmentClass
+                    )}>
                       <div className="font-bold text-amber-400 mb-1 flex items-center gap-1 border-b border-zinc-800 pb-1">
                         <span>{m.label}</span>
                       </div>
@@ -442,8 +623,12 @@ function StrategyCard({ modelType, result, currency }: StrategyCardProps) {
             })}
           </div>
 
-          {/* 밸류에이션 테스크 테이블 */}
-          <div className="p-5 flex-1 bg-white dark:bg-zinc-950/20 relative z-10 overflow-x-auto custom-valuation-scrollbar">
+          {/* 밸류에이션 리스트 테이블 */}
+          <div className={cn(
+            "p-5 flex-1 bg-white dark:bg-zinc-950/20 relative overflow-x-auto custom-valuation-scrollbar",
+            // [개선] 헤더 툴팁이 활성화되면 테이블 레이어를 뒤로 밀어 가려짐 해결
+            hoveredTitle ? "z-0" : "z-10"
+          )}>
             <table className="w-full text-left border-separate border-spacing-0">
               <thead>
                 <tr className="border-b border-zinc-200 dark:border-zinc-800">
@@ -494,7 +679,7 @@ function StrategyCard({ modelType, result, currency }: StrategyCardProps) {
           </div>
 
           <div className={cn(
-            "px-5 py-4 border-t text-[11px] font-semibold text-zinc-500 dark:text-zinc-400 leading-relaxed flex items-start gap-2 relative z-10 whitespace-normal transition-colors",
+            "px-5 py-4 border-t text-[11px] font-semibold text-zinc-500 dark:text-zinc-400 luxurious-footer flex items-start gap-2 relative z-10 whitespace-normal transition-colors",
             theme.footerClass
           )}>
             <SparklesIcon className="w-3.5 h-3.5 text-amber-500 shrink-0 mt-0.5" />

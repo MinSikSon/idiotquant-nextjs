@@ -294,24 +294,6 @@ function SearchContent() {
                 ) : (
                   <FinnhubTable data={data.finnhubData.data} />
                 )}
-
-                {/* 💡 정밀 가독성 강화: 가치투자 코어 지표 및 리포팅 가이드 서브 섹션 */}
-                <div className="bg-gradient-to-br from-zinc-900 to-zinc-950 text-zinc-100 p-6 rounded-2xl border border-zinc-800 shadow-xl space-y-4">
-                  <div className="flex items-center gap-2.5 border-b border-zinc-800 pb-3">
-                    <BookOpen className="w-4 h-4 text-blue-400" />
-                    <h4 className="text-xs font-black uppercase tracking-wider font-mono text-zinc-200">IdiotQuant 핵심 가치지표 해설서</h4>
-                  </div>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs leading-relaxed text-zinc-400">
-                    <p>
-                      <strong className="text-zinc-200 block mb-1">1. 벤자민 그레이엄 NCAV (청산가치 공식)</strong>
-                      순유동자산(유동자산 - 총부채)을 시가총액과 비교하여 기업이 영업을 중단하고 당장 청산했을 때의 가치를 산출합니다. NCAV Index 지표가 <span className="text-emerald-400 font-bold font-mono">1.0</span>을 상회한다는 것은 현재 주가보다 회사 통장에 들어있는 순자산 규모가 더 크다는 절대적 안전마진을 뜻합니다.
-                    </p>
-                    <p>
-                      <strong className="text-zinc-200 block mb-1">2. S-RIM 사경인 회계사 적정주가 모델</strong>
-                      자기자본(자본총계)에 기업의 기대 초과수익률(ROE)과 주주 요구수익률(회사채 BBB- 5년물 금리 등)을 대입하여 미래 가치를 현재 가치로 할인하는 고도화된 적정주가 밸류에이션 기법입니다.
-                    </p>
-                  </div>
-                </div>
               </div>
             </div>
           </>
