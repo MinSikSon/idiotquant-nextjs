@@ -111,6 +111,8 @@ function SearchContent() {
   // 핵심 숨김 규칙: 인풋에 포커스가 잡혀있고 '검색어가 입력 중일 때만' 헤더를 가립니다.
   const shouldHideHeader = isSearchFocused && !isQueryEmpty;
 
+  const currency = krOrUs === 'US' ? '$' : '₩';
+
   if (!hasMounted) return <div className="w-full min-h-screen bg-zinc-50 dark:bg-zinc-950" />;
 
   return (
@@ -227,45 +229,57 @@ function SearchContent() {
             {/* 가치분석 대시보드 본문 스트럭처 */}
             <div className={!isLoaded ? 'hidden' : 'block animate-in fade-in duration-500'}>
               
-              {/* TCG 카드 프리뷰 앵커 프레임 */}
-              <div className="flex justify-center mb-10 transform-gpu">
-                <StockCard
-                  stock={
-                    krOrUs === 'US'
-                      ? {
-                        code: tickerFromUrl,
-                        isUs: true,
-                        name,
-                        ticker: name,
-                        grade: getUsNcavGrade(data.finnhubData, data.usDetail),
-                        curPrice: Number(data?.usDetail?.output?.last ?? 0).toFixed(2),
-                        fairValue: '$' + calculateUsNcavValue(data.finnhubData, data.usDetail),
-                        ncavScore: calculateUsNcavRatio(data.finnhubData, data.usDetail),
-                        srimScore: calculateUsSRIM(data.finnhubData, data.usDetail),
-                        per: data?.usDetail?.output?.perx ?? 0,
-                        pbr: data?.usDetail?.output?.pbrx ?? 0,
-                        eps: "$" + (data?.usDetail?.output?.epsx ?? 0),
-                        sector: data?.usDetail?.output?.e_icod ?? "DEFAULT",
-                      }
-                      : {
-                        code: tickerFromUrl,
-                        isUs: false,
-                        name,
-                        ticker: (corpCodeJson as any)?.[name]?.stock_code ?? '',
-                        grade: getKrNcavGrade(data.kiBS, data.kiChart),
-                        curPrice: data?.kiPrice?.output?.stck_prpr ?? 0,
-                        fairValue: '₩' + calculateKrNcavValue(data.kiBS, data.kiChart),
-                        ncavScore: calculateKrNcavRatio(data.kiBS, data.kiChart),
-                        srimScore: getKrSRIMTargetPrice(data.kiBS, data.kiIS, data.kiChart),
-                        per: data?.kiPrice?.output?.per ?? 0,
-                        pbr: data?.kiPrice?.output?.pbr ?? 0,
-                        eps: "₩" + Number(data?.kiPrice?.output?.eps ?? 0).toFixed(0),
-                        sector: data?.kiPrice?.output?.bstp_kor_isnm ?? "DEFAULT",
-                      }
-                  }
-                  chartConfig={chartConfig}
-                  rawData={data}
-                />
+              {/* [개선] 반응형 데스크톱 정렬 메인 래퍼
+                  - grid-cols-1 md:grid-cols-12: 모바일은 1열 적재, 태블릿(md) 이상부터 12분할 그리드 가동
+                  - items-stretch: 두 컴포넌트의 카드 컨테이너 높이를 동일하게 마감하여 수평 대칭선 보정 */}
+              <div className="grid grid-cols-1 md:grid-cols-12 gap-6 items-stretch mb-10 transform-gpu">
+                
+                {/* 왼쪽 영역: 스톡 카드 (md 뷰 이상부터 좌측 5칸 점유) */}
+                <div className="md:col-span-5 flex justify-center w-full">
+                  <StockCard
+                    stock={
+                      krOrUs === 'US'
+                        ? {
+                          code: tickerFromUrl,
+                          isUs: true,
+                          name,
+                          ticker: name,
+                          grade: getUsNcavGrade(data.finnhubData, data.usDetail),
+                          curPrice: Number(data?.usDetail?.output?.last ?? 0).toFixed(2),
+                          fairValue: currency + calculateUsNcavValue(data.finnhubData, data.usDetail),
+                          ncavScore: calculateUsNcavRatio(data.finnhubData, data.usDetail),
+                          srimScore: calculateUsSRIM(data.finnhubData, data.usDetail),
+                          per: data?.usDetail?.output?.perx ?? 0,
+                          pbr: data?.usDetail?.output?.pbrx ?? 0,
+                          eps: currency + (data?.usDetail?.output?.epsx ?? 0),
+                          sector: data?.usDetail?.output?.e_icod ?? "DEFAULT",
+                        }
+                        : {
+                          code: tickerFromUrl,
+                          isUs: false,
+                          name,
+                          ticker: (corpCodeJson as any)?.[name]?.stock_code ?? '',
+                          grade: getKrNcavGrade(data.kiBS, data.kiChart),
+                          curPrice: data?.kiPrice?.output?.stck_prpr ?? 0,
+                          fairValue: currency + calculateKrNcavValue(data.kiBS, data.kiChart),
+                          ncavScore: calculateKrNcavRatio(data.kiBS, data.kiChart),
+                          srimScore: getKrSRIMTargetPrice(data.kiBS, data.kiIS, data.kiChart),
+                          per: data?.kiPrice?.output?.per ?? 0,
+                          pbr: data?.kiPrice?.output?.pbr ?? 0,
+                          eps: currency + Number(data?.kiPrice?.output?.eps ?? 0).toFixed(0),
+                          sector: data?.kiPrice?.output?.bstp_kor_isnm ?? "DEFAULT",
+                        }
+                    }
+                    chartConfig={chartConfig}
+                    rawData={data}
+                  />
+                </div>
+
+                {/* 오른쪽 영역: 파이낸셜 메트릭 (md 뷰 이상부터 우측 7칸 점유해 StockCard 우측에 상시 대기) 
+                    - grid-cols-2 변경점이 내부 글자 줄바꿈 및 격자 확장 가독성 완벽 지원 */}
+                <div className="md:col-span-7 w-full h-full flex flex-col justify-between">
+                  <StockMetrics data={data} isUs={krOrUs === 'US'} />
+                </div>
               </div>
 
               {/* 검색어 타이핑 시 스무스 헤더 히든 트리거 플레이스 */}
@@ -285,8 +299,6 @@ function SearchContent() {
                 "transition-all duration-300 space-y-8",
                 fixed && !shouldHideHeader ? 'pt-2' : 'pt-2'
               )}>
-                <StockMetrics data={data} isUs={krOrUs === 'US'} />
-                
                 <ValuationSection data={data} isUs={krOrUs === 'US'} />
                 
                 {krOrUs === 'KR' ? (

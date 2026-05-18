@@ -13,7 +13,6 @@ interface MetricItem {
     type?: "valuation" | "price" | "volume";
 }
 
-// StockCard의 등급/섹터 테마 시스템을 메트릭 타입에 맞춤형 이식
 const METRIC_THEMES: Record<string, any> = {
     valuation: {
         frame: "from-purple-500/50 via-indigo-500/30 to-purple-500/50",
@@ -48,16 +47,13 @@ const METRIC_THEMES: Record<string, any> = {
 };
 
 export const StockMetrics = ({ data, isUs }: { data: any; isUs: boolean }) => {
-    // 데이터 존재 여부 확인
     if (!data) return null;
 
-    // 헬퍼: 숫자 안전 변환 (NaN 방지)
     const n = (val: any) => {
         const num = Number(val);
         return isNaN(num) ? 0 : num;
     };
 
-    // 데이터 가공 영역 (useMemo로 감싸 렌더링 성능 최적화)
     const metrics: MetricItem[] = useMemo(() => {
         if (isUs) {
             const detail = data.usDetail?.output;
@@ -113,44 +109,49 @@ export const StockMetrics = ({ data, isUs }: { data: any; isUs: boolean }) => {
     if (metrics.length === 0) return null;
 
     return (
-        <div className="my-6 w-full rounded-[2rem] p-[5px] bg-gradient-to-br from-zinc-300 via-zinc-200 to-zinc-400 dark:from-zinc-700 via-zinc-800/80 to-zinc-900 shadow-xl dark:shadow-[0_20px_50px_rgba(0,0,0,0.5)] transform-gpu relative overflow-hidden transition-colors duration-300">
-            {/* 정밀 배경 격자 데코 (StockCard 스타일) */}
+        <div className="w-full h-full rounded-[2rem] p-[5px] bg-gradient-to-br from-zinc-300 via-zinc-200 to-zinc-400 dark:from-zinc-700 via-zinc-800/80 to-zinc-900 shadow-xl dark:shadow-[0_20px_50px_rgba(0,0,0,0.5)] transform-gpu relative overflow-hidden transition-colors duration-300">
+            {/* 정밀 배경 격자 데코 */}
             <div className="absolute inset-0 bg-[linear-gradient(to_right,rgba(0,0,0,0.01)_1px,transparent_1px),linear-gradient(to_bottom,rgba(0,0,0,0.01)_1px,transparent_1px)] dark:bg-[linear-gradient(to_right,#ffffff02_1px,transparent_1px),linear-gradient(to_bottom,#ffffff02_1px,transparent_1px)] bg-[size:16px_16px] pointer-events-none z-0" />
             
-            {/* 메인 이너 패널 컨테이너 */}
-            <div className="w-full h-full rounded-[1.8rem] bg-white/95 dark:bg-zinc-950/95 backdrop-blur-2xl p-6 relative z-10 overflow-hidden flex flex-col">
+            <div className="w-full h-full rounded-[1.8rem] bg-white/95 dark:bg-zinc-950/95 backdrop-blur-2xl p-5 sm:p-6 relative z-10 overflow-hidden flex flex-col justify-between">
                 
                 {/* 상단 래디얼 조명 백그라운드 */}
                 <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-zinc-100/40 via-transparent to-transparent dark:from-zinc-900/30 pointer-events-none z-0" />
 
-                {/* 데이터 그룹 가이드 헤더 */}
-                <div className="mb-5 flex items-center justify-between border-b border-black/[0.06] dark:border-white/5 pb-3.5 z-10">
-                    <div className="flex items-center gap-2.5">
-                        <div className="w-7 h-7 bg-zinc-100 dark:bg-zinc-900 rounded-lg flex items-center justify-center border border-zinc-200 dark:border-zinc-800 shadow-sm">
-                            <BarChart3 className="w-3.5 h-3.5 text-zinc-600 dark:text-zinc-400" />
+                <div>
+                    {/* 데이터 그룹 가이드 헤더 */}
+                    <div className="mb-5 flex items-center justify-between border-b border-black/[0.06] dark:border-white/5 pb-3.5 z-10">
+                        <div className="flex items-center gap-2.5">
+                            <div className="w-7 h-7 bg-zinc-100 dark:bg-zinc-900 rounded-lg flex items-center justify-center border border-zinc-200 dark:border-zinc-800 shadow-sm">
+                                <BarChart3 className="w-3.5 h-3.5 text-zinc-600 dark:text-zinc-400" />
+                            </div>
+                            <div className="flex flex-col">
+                                <h4 className="text-xs font-black uppercase tracking-[0.15em] italic text-zinc-800 dark:text-zinc-200">
+                                    Financial Status Metrics
+                                </h4>
+                                <span className="text-[8px] text-zinc-400 dark:text-zinc-500 font-bold uppercase tracking-wider font-mono">Quant Strategy Indicators</span>
+                            </div>
                         </div>
-                        <div className="flex flex-col">
-                            <h4 className="text-xs font-black uppercase tracking-[0.15em] italic text-zinc-800 dark:text-zinc-200">
-                                Financial Status Metrics
-                            </h4>
-                            <span className="text-[8px] text-zinc-400 dark:text-zinc-500 font-bold uppercase tracking-wider font-mono">Quant Strategy Indicators</span>
+                        
+                        <div className="flex items-center gap-1.5 bg-zinc-100 dark:bg-zinc-900/80 px-2.5 py-1 rounded-full border border-black/[0.03] dark:border-white/5 shadow-sm shrink-0">
+                            <div className={cn("w-1.5 h-1.5 rounded-full animate-pulse", isUs ? "bg-amber-500" : "bg-emerald-500")} />
+                            <span className="text-[9px] font-mono font-black text-zinc-500 dark:text-zinc-400 uppercase tracking-widest italic whitespace-nowrap">
+                                {isUs ? (
+                                    <span className="flex items-center gap-0.5"><DollarSign className="w-2.5 h-2.5" />USD Base</span>
+                                ) : (
+                                    <span className="flex items-center gap-0.5"><Coins className="w-2.5 h-2.5" />KRW Base</span>
+                                )}
+                            </span>
                         </div>
-                    </div>
-                    
-                    <div className="flex items-center gap-1.5 bg-zinc-100 dark:bg-zinc-900/80 px-2.5 py-1 rounded-full border border-black/[0.03] dark:border-white/5 shadow-sm">
-                        <div className={cn("w-1.5 h-1.5 rounded-full animate-pulse", isUs ? "bg-amber-500" : "bg-emerald-500")} />
-                        <span className="text-[9px] font-mono font-black text-zinc-500 dark:text-zinc-400 uppercase tracking-widest italic">
-                            {isUs ? (
-                                <span className="flex items-center gap-0.5"><DollarSign className="w-2.5 h-2.5" />USD Base</span>
-                            ) : (
-                                <span className="flex items-center gap-0.5"><Coins className="w-2.5 h-2.5" />KRW Base</span>
-                            )}
-                        </span>
                     </div>
                 </div>
 
-                {/* 메인 데이터 그리드 레이아웃 (미니 TCG 카드 그리드) */}
-                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3.5 z-10">
+                {/* 
+                  [개선 핵심] 넓은 화면(md 분할 레이아웃 이상 및 대형 모니터) 환경에서 균등하게 한 줄에 3개씩 적재되도록 조율
+                  - 기본 모바일: grid-cols-2 (2열)
+                  - 태블릿 및 데스크톱 진입(sm, md, lg, xl 등): 전체 구간 grid-cols-3 (3열 고정)으로 와이드 정렬 유지
+                */}
+                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-3 lg:grid-cols-3 xl:grid-cols-3 gap-3 z-10 flex-1 content-start">
                     {metrics.map((m, i) => {
                         const themeKey = m.highlight ? "highlight" : (m.type || "volume");
                         const currentTheme = METRIC_THEMES[themeKey];
@@ -163,41 +164,41 @@ export const StockMetrics = ({ data, isUs }: { data: any; isUs: boolean }) => {
                                     currentTheme.frame,
                                     currentTheme.glow,
                                     currentTheme.animate && "bg-[length:200%_200%] animate-[gradient-xy_4s_ease_infinite]",
-                                    m.highlight ? "col-span-2 sm:col-span-1" : ""
+                                    // [개선] 3열 구조에서 하이라이트(대금/시총) 카드가 그리드를 깨뜨리지 않고 균일한 1칸 크기를 갖도록 조정
+                                    m.highlight ? "col-span-1" : ""
                                 )}
                             >
                                 {/* 이너 미니 카드 컴포넌트 */}
                                 <div className={cn("w-full h-full rounded-[10px] p-3 flex flex-col justify-between relative overflow-hidden border border-black/5 dark:border-white/5 transition-colors", currentTheme.bg)}>
                                     
-                                    {/* TCG 격자 미세 데코레이션 패널 */}
                                     <div className="absolute inset-0 bg-[radial-gradient(circle_at_bottom_right,rgba(0,0,0,0.01),transparent)] dark:bg-[radial-gradient(circle_at_bottom_right,rgba(255,255,255,0.01),transparent)] pointer-events-none" />
 
-                                    {/* 상단: 라벨 및 미니 매핑 아이콘 */}
-                                    <div className="flex items-center justify-between w-full mb-2">
-                                        <span className="text-[9px] font-black text-zinc-400 dark:text-zinc-500 tracking-wider uppercase font-sans">
+                                    {/* 상단: 라벨 */}
+                                    <div className="flex items-center justify-between w-full mb-1.5 gap-2">
+                                        <span className="text-[9px] font-black text-zinc-400 dark:text-zinc-500 tracking-wider uppercase whitespace-nowrap">
                                             {m.label}
                                         </span>
-                                        <div className="opacity-40 group-hover/item:opacity-90 transition-opacity duration-300">
+                                        <div className="opacity-40 group-hover/item:opacity-90 transition-opacity duration-300 shrink-0">
                                             {currentTheme.icon}
                                         </div>
                                     </div>
 
-                                    {/* 하단: 수치 및 서브 텍스트 */}
-                                    <div className="flex flex-col items-baseline gap-0.5 w-full overflow-hidden">
+                                    {/* 하단 수치 영역 */}
+                                    <div className="flex flex-col items-start gap-0.5 w-full overflow-hidden whitespace-normal break-all">
                                         <span 
                                             className={cn(
-                                                "text-sm font-black font-mono tracking-tight truncate w-full italic",
+                                                "text-xs sm:text-sm font-black font-mono tracking-tight italic block leading-snug w-full",
                                                 currentTheme.text,
-                                                m.highlight ? "text-base" : ""
+                                                m.highlight ? "text-sm sm:text-base" : ""
                                             )}
                                         >
                                             {m.val}
                                         </span>
                                         
                                         {m.sub && (
-                                            <div className="flex items-center gap-1 mt-1 text-[8px] text-zinc-400 dark:text-zinc-500 font-mono font-semibold">
+                                            <div className="flex items-center gap-1 mt-0.5 text-[8px] text-zinc-400 dark:text-zinc-500 font-mono font-semibold whitespace-normal break-all">
                                                 <Calendar className="w-2 h-2 shrink-0 opacity-50" />
-                                                <span className="truncate">
+                                                <span>
                                                     {m.sub.replace(/(\d{4})(\d{2})(\d{2})/, "$1-$2-$3")}
                                                 </span>
                                             </div>
@@ -218,7 +219,6 @@ export const StockMetrics = ({ data, isUs }: { data: any; isUs: boolean }) => {
                 </div>
             </div>
 
-            {/* 하이라이트 아이템 레이어 광원 애니메이션 주입 */}
             <style jsx global>{`
                 @keyframes gradient-xy {
                     0%, 100% { background-position: 0% 50%; }
