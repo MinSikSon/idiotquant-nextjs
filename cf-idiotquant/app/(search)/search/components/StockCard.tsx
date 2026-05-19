@@ -57,47 +57,156 @@ const GRADE_THEMES: Record<string, any> = {
 const LEVEL_THEMES = [
     {
         minLevel: 1,
-        title: "MARKET ROOKIE",
-        frame: "shadow-[inset_0_0_10px_rgba(161,161,170,0.1)]",
-        badge: "bg-zinc-100 text-zinc-700 dark:bg-zinc-900 dark:text-zinc-300",
-        bar: "from-zinc-500 to-zinc-400",
-        aura: "from-transparent via-transparent to-transparent",
+        title: "WATCHLIST",
+
+        // 기본 카드
+        frame:
+            "border rounded-[1.75rem] border-zinc-200/70 dark:border-zinc-800 " +
+            "bg-white dark:bg-zinc-950 " +
+            "shadow-sm",
+
+        badge:
+            "bg-zinc-100 text-zinc-600 dark:bg-zinc-900 dark:text-zinc-400",
+
+        bar:
+            "from-zinc-400 to-zinc-300",
+
+        aura:
+            "from-transparent via-transparent to-transparent",
+
+        overlay:
+            "",
     },
+
     {
         minLevel: 3,
-        title: "DATA SCOUT",
-        // 은은한 하늘빛 아우라
-        frame: "shadow-[0_0_15px_rgba(125,211,252,0.3),inset_0_0_10px_rgba(125,211,252,0.2)]",
-        badge: "bg-sky-100 text-sky-700 dark:bg-sky-950 dark:text-sky-300",
-        bar: "from-sky-500 to-cyan-400",
-        aura: "from-sky-500/20 via-transparent to-cyan-500/20",
+        title: "FREQUENT VIEW",
+
+        // 은은한 푸른 기운
+        frame:
+            "border rounded-[1.75rem] border-sky-200/70 dark:border-sky-900/70 " +
+            "bg-gradient-to-br from-white to-sky-50/40 " +
+            "dark:from-zinc-950 dark:to-sky-950/10 " +
+            "shadow-[0_2px_12px_rgba(56,189,248,0.08)]",
+
+        badge:
+            "bg-sky-100 text-sky-700 dark:bg-sky-950 dark:text-sky-300",
+
+        bar:
+            "from-sky-400 to-cyan-400",
+
+        aura:
+            "from-sky-400/10 via-transparent to-transparent",
+
+        overlay:
+            "before:absolute before:inset-0 before:rounded-[inherit] " +
+            "before:bg-[linear-gradient(120deg,transparent_0%,rgba(255,255,255,0.04)_30%,transparent_60%)]",
     },
+
     {
         minLevel: 6,
-        title: "VALUE HUNTER",
-        // 에메랄드빛 발광 효과 (이중 그림자로 깊이감)
-        frame: "shadow-[0_0_20px_rgba(16,185,129,0.4),0_0_40px_rgba(16,185,129,0.1),inset_0_0_15px_rgba(16,185,129,0.3)]",
-        badge: "bg-emerald-100 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-300",
-        bar: "from-emerald-500 to-teal-400",
-        aura: "from-emerald-500/30 via-transparent to-teal-500/20",
+        title: "HIGH CONVICTION",
+
+        // 살짝 premium glass
+        frame:
+            "border rounded-[1.75rem] border-emerald-200/80 dark:border-emerald-900/60 " +
+            "bg-gradient-to-br from-white via-emerald-50/30 to-teal-50/20 " +
+            "dark:from-zinc-950 dark:via-emerald-950/10 dark:to-teal-950/10 " +
+            "backdrop-blur-sm " +
+            "shadow-[0_4px_18px_rgba(16,185,129,0.10)]",
+
+        badge:
+            "bg-emerald-100 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-300",
+
+        bar:
+            "from-emerald-400 via-teal-400 to-cyan-400",
+
+        aura:
+            "from-emerald-400/15 via-transparent to-cyan-400/10",
+
+        overlay:
+            "before:absolute before:inset-0 before:rounded-[inherit] " +
+            "before:bg-[linear-gradient(130deg,transparent_0%,rgba(255,255,255,0.05)_28%,transparent_55%)]",
     },
+
     {
         minLevel: 10,
-        title: "QUANT STRATEGIST",
-        // 보라빛 네온 글로우 (강렬한 확산)
-        frame: "shadow-[0_0_25px_rgba(139,92,246,0.5),0_0_50px_rgba(139,92,246,0.2),inset_0_0_20px_rgba(139,92,246,0.4)]",
-        badge: "bg-violet-100 text-violet-700 dark:bg-violet-950 dark:text-violet-300",
-        bar: "from-violet-500 via-purple-500 to-fuchsia-400",
-        aura: "from-violet-500/40 via-transparent to-fuchsia-500/30",
+        title: "CORE POSITION",
+
+        // 여기부터 subtle hologram
+        frame:
+            "border rounded-[1.75rem] border-violet-200/80 dark:border-violet-900/60 " +
+            "bg-gradient-to-br from-white via-violet-50/25 to-fuchsia-50/15 " +
+            "dark:from-zinc-950 dark:via-violet-950/12 dark:to-fuchsia-950/10 " +
+            "backdrop-blur-md " +
+            "shadow-[0_6px_24px_rgba(139,92,246,0.12)]",
+
+        badge:
+            "bg-violet-100 text-violet-700 dark:bg-violet-950 dark:text-violet-300",
+
+        bar:
+            "from-violet-400 via-purple-400 to-fuchsia-400",
+
+        aura:
+            "from-violet-400/15 via-transparent to-fuchsia-400/12",
+
+        overlay:
+            "before:absolute before:inset-0 before:rounded-[inherit] " +
+            "before:bg-[linear-gradient(120deg,transparent_0%,rgba(255,255,255,0.07)_22%,rgba(192,132,252,0.04)_36%,transparent_58%)]",
     },
+
     {
         minLevel: 15,
-        title: "NCAV MASTER",
-        // 황금빛 극강의 발광 (다중 레이어 + 금속성 광택 느낌)
-        frame: "shadow-[0_0_30px_rgba(245,158,11,0.6),0_0_60px_rgba(245,158,11,0.3),0_0_90px_rgba(245,158,11,0.1),inset_0_0_25px_rgba(245,158,11,0.5)]",
-        badge: "bg-amber-100 text-amber-900 dark:bg-amber-900 dark:text-amber-100 font-bold",
-        bar: "from-amber-300 via-orange-500 to-rose-600",
-        aura: "from-amber-500/50 via-rose-500/20 to-transparent",
+        title: "PRIORITY ASSET",
+
+        // premium metallic
+        frame:
+            "border rounded-[1.75rem] border-amber-200/80 dark:border-amber-800/60 " +
+            "bg-gradient-to-br from-white via-amber-50/30 to-orange-50/20 " +
+            "dark:from-zinc-950 dark:via-amber-950/12 dark:to-orange-950/10 " +
+            "backdrop-blur-md " +
+            "shadow-[0_8px_30px_rgba(245,158,11,0.14)]",
+
+        badge:
+            "bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-200 font-medium",
+
+        bar:
+            "from-amber-300 via-orange-400 to-rose-400",
+
+        aura:
+            "from-amber-400/18 via-orange-400/10 to-transparent",
+
+        overlay:
+            "before:absolute before:inset-0 before:rounded-[inherit] " +
+            "before:bg-[linear-gradient(120deg,transparent_0%,rgba(255,255,255,0.10)_18%,rgba(251,191,36,0.05)_28%,transparent_48%)]",
+    },
+
+    {
+        minLevel: 25,
+        title: "SIGNATURE HOLDING",
+
+        // 최고 레벨도 절제된 luxury
+        frame:
+            "border rounded-[1.75rem] border-cyan-200/80 dark:border-cyan-800/60 " +
+            "bg-[linear-gradient(135deg,rgba(255,255,255,1),rgba(240,249,255,0.9),rgba(236,254,255,0.85))] " +
+            "dark:bg-[linear-gradient(135deg,rgba(9,9,11,1),rgba(8,47,73,0.28),rgba(30,41,59,0.95))] " +
+            "backdrop-blur-lg " +
+            "shadow-[0_10px_36px_rgba(34,211,238,0.16)]",
+
+        badge:
+            "bg-gradient-to-r from-cyan-100 to-sky-100 " +
+            "text-cyan-900 dark:from-cyan-950 dark:to-sky-950 dark:text-cyan-200 " +
+            "font-semibold",
+
+        bar:
+            "from-cyan-300 via-sky-400 to-indigo-400",
+
+        aura:
+            "from-cyan-400/18 via-sky-400/10 to-indigo-400/14",
+
+        overlay:
+            "before:absolute before:inset-0 before:rounded-[inherit] " +
+            "before:bg-[linear-gradient(120deg,transparent_0%,rgba(255,255,255,0.12)_14%,rgba(125,211,252,0.05)_24%,transparent_42%)]",
     },
 ] as const;
 
@@ -251,6 +360,8 @@ export const StockCard = ({ stock, chartConfig, rawData, isCompact = false, stoc
             ref={cardRef}
             className={cn(
                 "relative select-none cursor-pointer group transform-gpu",
+                "rounded-3xl",
+
                 levelTheme.frame,
                 isCompact ? "w-64 h-[25rem]" : "w-[22.5rem] h-[33rem]"
             )}
