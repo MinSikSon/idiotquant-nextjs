@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect, Suspense, useId, useMemo } from 'react';
+import React, { useState, useEffect, Suspense, useId, useMemo, useRef } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { useAppSelector, useAppDispatch } from '@/lib/hooks';
 import { useStockSearch } from './hooks/useStockSearch';
@@ -38,6 +38,84 @@ import corpCodeJson from '@/public/data/validCorpCode.json';
 import { History, AlertCircle, Loader2, Sparkles, Flame, HelpCircle, BookOpen } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
+interface StockXpProfile {
+  level: number;
+  xp: number;
+  maxXp: number;
+  totalXp: number;
+  lastGain: number;
+  awardCount: number;
+}
+
+type StockXpProfiles = Record<string, StockXpProfile>;
+
+const STOCK_XP_STORAGE_KEY = 'idiotquant_stock_xp_profiles_v1';
+const SEARCH_XP_STORAGE_KEY = STOCK_XP_STORAGE_KEY;
+const SEARCH_RESULT_XP_GAIN = 25;
+const DWELL_XP_GAIN = 5;
+const DWELL_SECONDS_PER_REWARD = 20;
+const DWELL_REWARD_COOLDOWN_MS = 15000;
+
+const getRequiredXpForLevel = (level: number) => 100 + Math.max(0, level - 1) * 60;
+
+const createDefaultXpProfile = (): StockXpProfile => ({
+  level: 1,
+  xp: 0,
+  maxXp: getRequiredXpForLevel(1),
+  totalXp: 0,
+  lastGain: 0,
+  awardCount: 0,
+});
+
+const normalizeXpProfile = (profile: Partial<StockXpProfile> | null | undefined): StockXpProfile => {
+  const level = Math.max(1, Math.floor(Number(profile?.level ?? 1)));
+  const maxXp = getRequiredXpForLevel(level);
+  const xp = Math.max(0, Math.min(maxXp - 1, Math.floor(Number(profile?.xp ?? 0))));
+
+  return {
+    level,
+    xp,
+    maxXp,
+    totalXp: Math.max(0, Math.floor(Number(profile?.totalXp ?? xp))),
+    lastGain: Math.max(0, Math.floor(Number(profile?.lastGain ?? 0))),
+    awardCount: Math.max(0, Math.floor(Number(profile?.awardCount ?? 0))),
+  };
+};
+
+const normalizeTickerKey = (ticker: string | null | undefined) => ticker?.trim().toUpperCase() ?? '';
+
+const normalizeXpProfiles = (profiles: unknown): StockXpProfiles => {
+  if (!profiles || typeof profiles !== 'object') return {};
+
+  return Object.entries(profiles as Record<string, Partial<StockXpProfile>>).reduce<StockXpProfiles>((acc, [ticker, profile]) => {
+    const tickerKey = normalizeTickerKey(ticker);
+    if (!tickerKey) return acc;
+    acc[tickerKey] = normalizeXpProfile(profile);
+    return acc;
+  }, {});
+};
+
+const addStockXp = (profile: StockXpProfile, gainedXp: number): StockXpProfile => {
+  let nextLevel = profile.level;
+  let nextXp = profile.xp + gainedXp;
+  let nextMaxXp = getRequiredXpForLevel(nextLevel);
+
+  while (nextXp >= nextMaxXp) {
+    nextXp -= nextMaxXp;
+    nextLevel += 1;
+    nextMaxXp = getRequiredXpForLevel(nextLevel);
+  }
+
+  return {
+    level: nextLevel,
+    xp: nextXp,
+    maxXp: nextMaxXp,
+    totalXp: profile.totalXp + gainedXp,
+    lastGain: gainedXp,
+    awardCount: profile.awardCount + 1,
+  };
+};
+
 const all_tickers = [
   ...nasdaq_tickers,
   ...nyse_tickers,
@@ -59,6 +137,15 @@ function SearchContent() {
   const [fixed, setFixed] = useState(false);
   const [hasMounted, setHasMounted] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [stockXpProfiles, setStockXpProfiles] = useState<StockXpProfiles>({});
+  const lastEntryAwardedTickerRef = useRef<string | null>(null);
+  const stockCardDwellRef = useRef<HTMLDivElement | null>(null);
+  const metricsDwellRef = useRef<HTMLDivElement | null>(null);
+  const valuationDwellRef = useRef<HTMLDivElement | null>(null);
+  const financialsDwellRef = useRef<HTMLDivElement | null>(null);
+  const visibleDwellSectionsRef = useRef<Set<string>>(new Set());
+  const dwellSecondsRef = useRef<Record<string, number>>({});
+  const dwellRewardedAtRef = useRef<Record<string, number>>({});
   
   // 검색창 상태 정밀 추적 (포커스 여부 및 텍스트 공백 여부)
   const [isSearchFocused, setIsSearchFocused] = useState(false);
@@ -67,7 +154,47 @@ function SearchContent() {
   useEffect(() => {
     setHasMounted(true);
     dispatch(reqGetSearchLog('10'));
+
+    try {
+      const savedProfiles =
+        window.localStorage.getItem(STOCK_XP_STORAGE_KEY) ??
+        window.localStorage.getItem(SEARCH_XP_STORAGE_KEY);
+      if (savedProfiles) {
+        setStockXpProfiles(normalizeXpProfiles(JSON.parse(savedProfiles)));
+      }
+    } catch (savedProfileError) {
+      console.error('종목별 XP 프로필을 불러오지 못했습니다.', savedProfileError);
+    }
   }, [dispatch]);
+
+  const awardStockXp = (ticker: string, gainedXp: number) => {
+    const tickerKey = normalizeTickerKey(ticker);
+    if (!tickerKey) return;
+
+    setStockXpProfiles((previousProfiles) => {
+      const nextProfiles = {
+        ...previousProfiles,
+        [tickerKey]: addStockXp(previousProfiles[tickerKey] ?? createDefaultXpProfile(), gainedXp),
+      };
+
+      try {
+        window.localStorage.setItem(STOCK_XP_STORAGE_KEY, JSON.stringify(nextProfiles));
+      } catch (saveProfileError) {
+        console.error('종목별 XP 프로필을 저장하지 못했습니다.', saveProfileError);
+      }
+
+      return nextProfiles;
+    });
+  };
+
+  const awardEntrySearchXp = (ticker: string) => {
+    const tickerKey = normalizeTickerKey(ticker);
+    if (!tickerKey) return;
+    if (lastEntryAwardedTickerRef.current === tickerKey) return;
+
+    lastEntryAwardedTickerRef.current = tickerKey;
+    awardStockXp(tickerKey, SEARCH_RESULT_XP_GAIN);
+  };
 
   const handleSearch = (stockName: string) => {
     if (!stockName) return;
@@ -93,10 +220,84 @@ function SearchContent() {
   }, []);
 
   const tickerFromUrl = searchParams.get('ticker');
+  const activeTickerKey = normalizeTickerKey(tickerFromUrl);
+  const activeStockXpProfile = activeTickerKey ? stockXpProfiles[activeTickerKey] ?? createDefaultXpProfile() : createDefaultXpProfile();
   const isLoaded =
     tickerFromUrl === name &&
     (data.kiChart.state === 'fulfilled' ||
       data.usSearchInfo.state === 'fulfilled');
+
+  useEffect(() => {
+    if (!isLoaded || !tickerFromUrl) return;
+
+    awardEntrySearchXp(tickerFromUrl);
+  }, [isLoaded, tickerFromUrl]);
+
+  useEffect(() => {
+    visibleDwellSectionsRef.current.clear();
+    dwellSecondsRef.current = {};
+  }, [activeTickerKey]);
+
+  useEffect(() => {
+    if (!isLoaded || !activeTickerKey) return;
+
+    const dwellTargets = [
+      { key: 'stock-card', node: stockCardDwellRef.current },
+      { key: 'core-metrics', node: metricsDwellRef.current },
+      { key: 'valuation', node: valuationDwellRef.current },
+      { key: 'financials', node: financialsDwellRef.current },
+    ].filter((target): target is { key: string; node: HTMLDivElement } => Boolean(target.node));
+
+    if (dwellTargets.length === 0) return;
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          const sectionKey = (entry.target as HTMLElement).dataset.xpSection;
+          if (!sectionKey) return;
+
+          if (entry.isIntersecting && entry.intersectionRatio >= 0.55) {
+            visibleDwellSectionsRef.current.add(sectionKey);
+          } else {
+            visibleDwellSectionsRef.current.delete(sectionKey);
+          }
+        });
+      },
+      { threshold: [0, 0.55, 0.8] }
+    );
+
+    dwellTargets.forEach(({ key, node }) => {
+      node.dataset.xpSection = key;
+      observer.observe(node);
+    });
+
+    const dwellTimer = window.setInterval(() => {
+      if (document.hidden || visibleDwellSectionsRef.current.size === 0) return;
+
+      visibleDwellSectionsRef.current.forEach((sectionKey) => {
+        const nextSeconds = (dwellSecondsRef.current[sectionKey] ?? 0) + 1;
+        dwellSecondsRef.current[sectionKey] = nextSeconds;
+
+        if (nextSeconds >= DWELL_SECONDS_PER_REWARD) {
+          const rewardKey = `${activeTickerKey}:${sectionKey}`;
+          const now = Date.now();
+          const lastRewardedAt = dwellRewardedAtRef.current[rewardKey] ?? 0;
+
+          if (now - lastRewardedAt < DWELL_REWARD_COOLDOWN_MS) return;
+
+          dwellSecondsRef.current[sectionKey] = 0;
+          dwellRewardedAtRef.current[rewardKey] = now;
+          awardStockXp(activeTickerKey, DWELL_XP_GAIN);
+        }
+      });
+    }, 1000);
+
+    return () => {
+      observer.disconnect();
+      window.clearInterval(dwellTimer);
+      visibleDwellSectionsRef.current.clear();
+    };
+  }, [isLoaded, activeTickerKey]);
 
   const chartConfig = useMemo(() => {
     const isUs = krOrUs === 'US';
@@ -235,7 +436,7 @@ function SearchContent() {
               <div className="grid grid-cols-1 md:grid-cols-12 gap-6 items-stretch mb-10 transform-gpu">
                 
                 {/* 왼쪽 영역: 스톡 카드 (md 뷰 이상부터 좌측 5칸 점유) */}
-                <div className="md:col-span-5 flex justify-center w-full">
+                <div ref={stockCardDwellRef} className="md:col-span-5 flex justify-center w-full">
                   <StockCard
                     stock={
                       krOrUs === 'US'
@@ -272,12 +473,13 @@ function SearchContent() {
                     }
                     chartConfig={chartConfig}
                     rawData={data}
+                    stockXpProfile={activeStockXpProfile}
                   />
                 </div>
 
                 {/* 오른쪽 영역: 파이낸셜 메트릭 (md 뷰 이상부터 우측 7칸 점유해 StockCard 우측에 상시 대기) 
                     - grid-cols-2 변경점이 내부 글자 줄바꿈 및 격자 확장 가독성 완벽 지원 */}
-                <div className="md:col-span-7 w-full h-full flex flex-col justify-between">
+                <div ref={metricsDwellRef} className="md:col-span-7 w-full h-full flex flex-col justify-between">
                   <StockMetrics data={data} isUs={krOrUs === 'US'} />
                 </div>
               </div>
@@ -299,13 +501,17 @@ function SearchContent() {
                 "transition-all duration-300 space-y-8",
                 fixed && !shouldHideHeader ? 'pt-2' : 'pt-2'
               )}>
-                <ValuationSection data={data} isUs={krOrUs === 'US'} />
+                <div ref={valuationDwellRef}>
+                  <ValuationSection data={data} isUs={krOrUs === 'US'} />
+                </div>
                 
-                {krOrUs === 'KR' ? (
-                  <FinancialTables kiBS={data.kiBS} kiIS={data.kiIS} />
-                ) : (
-                  <FinnhubTable data={data.finnhubData.data} />
-                )}
+                <div ref={financialsDwellRef}>
+                  {krOrUs === 'KR' ? (
+                    <FinancialTables kiBS={data.kiBS} kiIS={data.kiIS} />
+                  ) : (
+                    <FinnhubTable data={data.finnhubData.data} />
+                  )}
+                </div>
               </div>
             </div>
           </>

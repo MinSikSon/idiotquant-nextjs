@@ -2,9 +2,9 @@
 
 import React, { useState, useMemo, useCallback, useEffect, useRef } from 'react';
 import Image from 'next/image';
-import { motion, useMotionValue, useTransform } from 'framer-motion';
+import { motion, useMotionValue, useTransform, AnimatePresence } from 'framer-motion';
 import { cn } from "@/lib/utils";
-import { Activity, Info, Sparkles, ShieldCheck, TrendingUp, DollarSign, Coins } from "lucide-react";
+import { Activity, Info, Sparkles, ShieldCheck, TrendingUp, DollarSign, Coins, Award } from "lucide-react";
 import LineChart from "@/components/LineChart";
 
 const SECTOR_THEMES: Record<string, any> = {
@@ -19,7 +19,6 @@ const SECTOR_THEMES: Record<string, any> = {
     LIFE: { bg: "bg-lime-50 dark:bg-lime-950/50", border: "border-lime-200 dark:border-lime-500/50", icon: "🍎", label: "LIFE", color: "text-lime-600 dark:text-lime-400" }
 };
 
-// TCG 등급 체계를 퀀트 투자 자산 분류 레이블로 현실성 있게 믹싱
 const GRADE_THEMES: Record<string, any> = {
     SSS: { 
         frame: "from-pink-500 via-purple-600 via-cyan-400 to-pink-500", 
@@ -55,6 +54,62 @@ const GRADE_THEMES: Record<string, any> = {
     },
 };
 
+const LEVEL_THEMES = [
+    {
+        minLevel: 1,
+        title: "MARKET ROOKIE",
+        frame: "shadow-[inset_0_0_10px_rgba(161,161,170,0.1)]",
+        badge: "bg-zinc-100 text-zinc-700 dark:bg-zinc-900 dark:text-zinc-300",
+        bar: "from-zinc-500 to-zinc-400",
+        aura: "from-transparent via-transparent to-transparent",
+    },
+    {
+        minLevel: 3,
+        title: "DATA SCOUT",
+        // 은은한 하늘빛 아우라
+        frame: "shadow-[0_0_15px_rgba(125,211,252,0.3),inset_0_0_10px_rgba(125,211,252,0.2)]",
+        badge: "bg-sky-100 text-sky-700 dark:bg-sky-950 dark:text-sky-300",
+        bar: "from-sky-500 to-cyan-400",
+        aura: "from-sky-500/20 via-transparent to-cyan-500/20",
+    },
+    {
+        minLevel: 6,
+        title: "VALUE HUNTER",
+        // 에메랄드빛 발광 효과 (이중 그림자로 깊이감)
+        frame: "shadow-[0_0_20px_rgba(16,185,129,0.4),0_0_40px_rgba(16,185,129,0.1),inset_0_0_15px_rgba(16,185,129,0.3)]",
+        badge: "bg-emerald-100 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-300",
+        bar: "from-emerald-500 to-teal-400",
+        aura: "from-emerald-500/30 via-transparent to-teal-500/20",
+    },
+    {
+        minLevel: 10,
+        title: "QUANT STRATEGIST",
+        // 보라빛 네온 글로우 (강렬한 확산)
+        frame: "shadow-[0_0_25px_rgba(139,92,246,0.5),0_0_50px_rgba(139,92,246,0.2),inset_0_0_20px_rgba(139,92,246,0.4)]",
+        badge: "bg-violet-100 text-violet-700 dark:bg-violet-950 dark:text-violet-300",
+        bar: "from-violet-500 via-purple-500 to-fuchsia-400",
+        aura: "from-violet-500/40 via-transparent to-fuchsia-500/30",
+    },
+    {
+        minLevel: 15,
+        title: "NCAV MASTER",
+        // 황금빛 극강의 발광 (다중 레이어 + 금속성 광택 느낌)
+        frame: "shadow-[0_0_30px_rgba(245,158,11,0.6),0_0_60px_rgba(245,158,11,0.3),0_0_90px_rgba(245,158,11,0.1),inset_0_0_25px_rgba(245,158,11,0.5)]",
+        badge: "bg-amber-100 text-amber-900 dark:bg-amber-900 dark:text-amber-100 font-bold",
+        bar: "from-amber-300 via-orange-500 to-rose-600",
+        aura: "from-amber-500/50 via-rose-500/20 to-transparent",
+    },
+] as const;
+
+interface StockXpProfile {
+    level: number;
+    xp: number;
+    maxXp: number;
+    totalXp: number;
+    lastGain: number;
+    awardCount: number;
+}
+
 interface StockCardProps {
     stock: any;
     chartConfig: {
@@ -64,11 +119,25 @@ interface StockCardProps {
     };
     rawData?: any;
     isCompact?: boolean;
+    stockXpProfile?: StockXpProfile;
 }
 
-export const StockCard = ({ stock, chartConfig, rawData, isCompact = false }: StockCardProps) => {
+interface FloatingText {
+    id: number;
+    text: string;
+}
+
+const getLevelTheme = (level: number) => {
+    return [...LEVEL_THEMES].reverse().find((theme) => level >= theme.minLevel) ?? LEVEL_THEMES[0];
+};
+
+export const StockCard = ({ stock, chartConfig, rawData, isCompact = false, stockXpProfile }: StockCardProps) => {
     const [isFlipped, setIsFlipped] = useState(false);
     const [imgError, setImgError] = useState(false);
+    
+    const [floatingTexts, setFloatingTexts] = useState<FloatingText[]>([]);
+    const nextTextId = useRef<number>(0);
+    const previousAwardCountRef = useRef<number>(stockXpProfile?.awardCount ?? 0);
     
     const cardRef = useRef<HTMLDivElement>(null);
     const mouseX = useMotionValue(0.5);
@@ -81,10 +150,49 @@ export const StockCard = ({ stock, chartConfig, rawData, isCompact = false }: St
     const holoY = useTransform(mouseY, [0, 1], ["0%", "100%"]);
     const holoOpacity = useTransform(mouseX, [0, 0.5, 1], [0.35, 0.08, 0.35]);
 
+    const level = stockXpProfile?.level ?? 1;
+    const exp = stockXpProfile?.xp ?? 0;
+    const maxExp = Math.max(1, stockXpProfile?.maxXp ?? 100);
+    const levelTheme = useMemo(() => getLevelTheme(level), [level]);
+
+    // 초기 데이터 로드 (Hydration 매칭을 위해 useEffect 안에서 실행)
     useEffect(() => {
         setImgError(false);
         setIsFlipped(false);
+        previousAwardCountRef.current = stockXpProfile?.awardCount ?? 0;
     }, [stock?.ticker]);
+
+    const clearTimerRef = useRef<number | null>(null);
+
+    useEffect(() => {
+        if (!stockXpProfile || stockXpProfile.awardCount <= previousAwardCountRef.current) return;
+
+        previousAwardCountRef.current = stockXpProfile.awardCount;
+        const expId = nextTextId.current++;
+
+        // 1. 새로운 텍스트 추가
+        // setFloatingTexts(prev => [...prev, { id: expId, text: `+${stockXpProfile.lastGain} STOCK XP` }]);
+
+        // 2. 기존의 전체 초기화 타이머가 있다면 삭제 (새로운 활동이 있을 때마다 시간 연장)
+        if (clearTimerRef.current) {
+            window.clearTimeout(clearTimerRef.current);
+        }
+
+        // 3. 마지막 활동으로부터 3초(3000ms) 뒤에 모든 목록을 비움
+        clearTimerRef.current = window.setTimeout(() => {
+            setFloatingTexts([]);
+        }, 3000);
+
+        // 4. 개별 텍스트 삭제 타이머 (기존 유지)
+        const expTimer = window.setTimeout(() => {
+            setFloatingTexts(prev => prev.filter(t => t.id !== expId));
+        }, 900);
+
+        return () => {
+            window.clearTimeout(expTimer);
+            // 클린업 함수에서 전체 초기화 타이머는 남겨두거나 상황에 맞게 제어
+        };
+    }, [stockXpProfile]);
 
     const theme = useMemo(() => {
         const s = (stock?.sector || "").toUpperCase();
@@ -98,12 +206,24 @@ export const StockCard = ({ stock, chartConfig, rawData, isCompact = false }: St
 
     const gradeTheme = useMemo(() => GRADE_THEMES[stock?.grade] || GRADE_THEMES.A, [stock?.grade]);
 
+    // 성장 시스템 보너스가 연산된 주식 능력치 산출
     const stockStats = useMemo(() => {
         if (!stock) return { upside: 0, safety: 0, per: 0, ncav: 0, pbr: 0 };
-        const upside = Math.min(150, Math.floor(Number(stock?.ncavScore || 0) * 120));
-        const safety = Math.max(0, Math.min(99, 100 - (Number(stock?.debtRatio || 0) / 2)));
-        return { upside, safety, per: stock?.per || 0, ncav: stock?.ncavScore || 0, pbr: stock?.pbr || 0 };
-    }, [stock]);
+        const baseUpside = Math.min(150, Math.floor(Number(stock?.ncavScore || 0) * 120));
+        const baseSafety = Math.max(0, Math.min(99, 100 - (Number(stock?.debtRatio || 0) / 2)));
+        
+        // 검색 숙련도 레벨이 높을수록 카드의 리서치 보정치를 시각적으로 가산합니다.
+        const levelBonusAtk = (level - 1) * 1.2;
+        const levelBonusDef = (level - 1) * 0.6;
+
+        return { 
+            upside: baseUpside + levelBonusAtk, 
+            safety: baseSafety + levelBonusDef, 
+            per: stock?.per || 0, 
+            ncav: stock?.ncavScore || 0, 
+            pbr: stock?.pbr || 0 
+        };
+    }, [stock, level]);
 
     const handleMouseMove = useCallback((e: React.MouseEvent<HTMLDivElement>) => {
         if (!cardRef.current || isFlipped) return;
@@ -123,7 +243,7 @@ export const StockCard = ({ stock, chartConfig, rawData, isCompact = false }: St
     }, [mouseX, mouseY]);
 
     const logoUrl = stock?.isUs 
-        ? `https://img.logo.dev/ticker/${stock.ticker}?token=${process.env.NEXT_PUBLIC_CLEARBIT_API_KEY}` 
+        ? `https://img.logo.dev/ticker/${stock.ticker}?token=${process.env.NEXT_PUBLIC_CLEARBIT_API_KEY}&size=200` 
         : `${process.env.NEXT_PUBLIC_KR_LOGO_API}/${stock.ticker}`;
 
     return (
@@ -131,6 +251,7 @@ export const StockCard = ({ stock, chartConfig, rawData, isCompact = false }: St
             ref={cardRef}
             className={cn(
                 "relative select-none cursor-pointer group transform-gpu",
+                levelTheme.frame,
                 isCompact ? "w-64 h-[25rem]" : "w-[22.5rem] h-[33rem]"
             )}
             style={{ perspective: '2000px' }}
@@ -138,6 +259,29 @@ export const StockCard = ({ stock, chartConfig, rawData, isCompact = false }: St
             onMouseLeave={resetRotation}
             onClick={() => setIsFlipped(prev => !prev)}
         >
+            {/* 경험치 획득 플로팅 텍스트 애니메이션 레이어 */}
+            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 pointer-events-none z-50 overflow-visible">
+                <AnimatePresence>
+                    {floatingTexts.map(t => (
+                        <motion.div
+                            key={t.id}
+                            initial={{ opacity: 0, y: 20, scale: 0.8 }}
+                            animate={{ opacity: 1, y: -60, scale: 1.1 }}
+                            exit={{ opacity: 0, scale: 1.3 }}
+                            transition={{ duration: 0.6, ease: "easeOut" }}
+                            className={cn(
+                                "font-mono font-black text-lg px-4 py-1.5 rounded-full shadow-lg text-white backdrop-blur-md",
+                                t.text.includes("LEVEL") 
+                                    ? "bg-gradient-to-r from-amber-500 to-rose-500 text-yellow-100 animate-bounce text-xl" 
+                                    : "bg-zinc-900/80 border border-white/20 text-emerald-400"
+                            )}
+                        >
+                            {t.text}
+                        </motion.div>
+                    ))}
+                </AnimatePresence>
+            </div>
+
             <motion.div
                 style={{ 
                     rotateX: isFlipped ? 0 : rotateX, 
@@ -164,8 +308,8 @@ export const StockCard = ({ stock, chartConfig, rawData, isCompact = false }: St
                     }}
                 >
                     <div className="w-full h-full rounded-[1.5rem] bg-white dark:bg-zinc-950 flex flex-col relative overflow-hidden border border-black/5 dark:border-white/10 text-zinc-900 dark:text-white transition-colors duration-300">
+                        <div className={cn("absolute inset-0 bg-gradient-to-br pointer-events-none z-[1]", levelTheme.aura)} />
                         
-                        {/* 핀테크 코팅 느낌의 색 조합 필터 다이내믹 레이어 */}
                         {stock?.grade !== 'A' && (
                             <motion.div 
                                 className="absolute inset-0 mix-blend-color-dodge pointer-events-none z-20 opacity-0 group-hover:opacity-100 transition-opacity duration-300"
@@ -200,9 +344,15 @@ export const StockCard = ({ stock, chartConfig, rawData, isCompact = false }: St
                                     )}
                                 </span>
                                 <div className="flex items-center justify-between w-full gap-2">
-                                    <h3 className="font-black text-xl text-zinc-900 dark:text-white tracking-tight truncate flex-1 min-w-0">
-                                        {stock?.name}
-                                    </h3>
+                                    <div className="flex items-center gap-2 truncate flex-1 min-w-0">
+                                        {/* 카드 겉면에 표시되는 성장 레벨 */}
+                                        <div className={cn("font-mono font-black text-[10px] px-1.5 py-0.5 rounded italic shrink-0 shadow-sm border border-black/5 dark:border-white/10", levelTheme.badge)}>
+                                            LV.{level}
+                                        </div>
+                                        <h3 className="font-black text-xl text-zinc-900 dark:text-white tracking-tight truncate">
+                                            {stock?.name}
+                                        </h3>
+                                    </div>
                                     
                                     {chartConfig?.data?.length > 0 && (
                                         <div className="w-20 h-7 flex items-center justify-center opacity-75 dark:opacity-90 shrink-0 ml-auto transform translate-y-0.5">
@@ -223,10 +373,9 @@ export const StockCard = ({ stock, chartConfig, rawData, isCompact = false }: St
                         </div>
 
                         {/* Card Corporate Emblem Area */}
-                        <div className="mx-3.5 mt-2 relative h-48 rounded-xl bg-gradient-to-b from-zinc-50 to-zinc-100/40 dark:from-zinc-900 dark:to-zinc-950/60 border border-zinc-200 dark:border-zinc-800/80 flex items-center justify-center overflow-hidden group/logo z-10">
+                        <div className="mx-3.5 mt-2 relative h-40 rounded-xl bg-gradient-to-b from-zinc-50 to-zinc-100/40 dark:from-zinc-900 dark:to-zinc-950/60 border border-zinc-200 dark:border-zinc-800/80 flex items-center justify-center overflow-hidden group/logo z-10">
                             <div className="absolute inset-0 opacity-10 dark:opacity-25 bg-[linear-gradient(110deg,rgba(255,255,255,0)_30%,rgba(255,255,255,0.3)_45%,rgba(255,255,255,0)_60%)] animate-[shine_4s_infinite] pointer-events-none z-10" />
                             
-                            {/* 리서치 페이퍼 느낌의 정밀 인덱스 격자망 오버레이 */}
                             <div className="absolute inset-0 bg-[linear-gradient(to_right,rgba(0,0,0,0.015)_1px,transparent_1px),linear-gradient(to_bottom,rgba(0,0,0,0.015)_1px,transparent_1px)] dark:bg-[linear-gradient(to_right,#ffffff02_1px,transparent_1px),linear-gradient(to_bottom,#ffffff02_1px,transparent_1px)] bg-[size:10px_10px] z-0" />
 
                             {!imgError ? (
@@ -234,7 +383,7 @@ export const StockCard = ({ stock, chartConfig, rawData, isCompact = false }: St
                                     <Image
                                         key={stock?.ticker}
                                         src={logoUrl} alt="logo" fill 
-                                        className="object-contain p-12 drop-shadow-sm transition-all duration-500 group-hover/logo:scale-105" unoptimized
+                                        className="object-contain p-4 drop-shadow-sm transition-all duration-500 group-hover/logo:scale-105" unoptimized
                                         onError={() => setImgError(true)}
                                     />
                                 </div>
@@ -244,7 +393,6 @@ export const StockCard = ({ stock, chartConfig, rawData, isCompact = false }: St
                                 </div>
                             )}
 
-                            {/* 자산 티어 정보 태그 */}
                             <div className="absolute top-2.5 left-2.5 flex items-center gap-1.5 bg-white/90 dark:bg-zinc-950/90 backdrop-blur-md border border-black/5 dark:border-white/10 px-2.5 py-1 rounded-md shadow-sm z-20">
                                 <Sparkles className={cn("w-3 h-3", stock?.grade === 'SSS' ? "text-pink-500" : "text-amber-500")} />
                                 <span className={cn("text-[8px] font-black tracking-widest font-mono", gradeTheme.textClass)}>{gradeTheme.label}</span>
@@ -255,8 +403,22 @@ export const StockCard = ({ stock, chartConfig, rawData, isCompact = false }: St
                             </div>
                         </div>
 
+                        {/* 카드 전면부 전용 경험치 미니 바 게이지 */}
+                        <div className="px-4 mt-2 z-10 flex items-center gap-2">
+                            <div className="w-full h-1.5 bg-zinc-100 dark:bg-zinc-900 rounded-full overflow-hidden border border-black/[0.03] dark:border-white/5">
+                                <motion.div 
+                                    className={cn("h-full bg-gradient-to-r rounded-full", levelTheme.bar)}
+                                    animate={{ width: `${(exp / maxExp) * 100}%` }}
+                                    transition={{ duration: 0.3 }}
+                                />
+                            </div>
+                            <span className="font-mono text-[8px] font-bold text-zinc-400 shrink-0 tabular-nums">
+                                {`${Math.floor((exp / maxExp) * 100)}%`}
+                            </span>
+                        </div>
+
                         {/* Mid Section: Sector & Price */}
-                        <div className="px-4 pt-4 flex justify-between items-end z-10">
+                        <div className="px-4 pt-3 flex justify-between items-end z-10">
                             <div className="flex items-center gap-1.5 bg-zinc-100 dark:bg-zinc-900 px-2.5 py-1 rounded-md border border-black/[0.03] dark:border-white/5">
                                 <div className={cn("w-1.5 h-1.5 rounded-full", stock?.isUs ? "bg-amber-500" : "bg-emerald-500")} />
                                 <span className={cn("font-black text-[9px] tracking-wider uppercase font-mono", theme.color)}>{theme.label} INDEX</span>
@@ -270,8 +432,8 @@ export const StockCard = ({ stock, chartConfig, rawData, isCompact = false }: St
                             </div>
                         </div>
 
-                        {/* Core Stats: TCG 배틀 느낌을 황소(상승)와 곰(하방방어) 구조의 주식 스탯으로 변경 */}
-                        <div className="px-4 py-3.5 grid grid-cols-2 gap-2.5 z-10">
+                        {/* Core Stats */}
+                        <div className="px-4 py-3 grid grid-cols-2 gap-2.5 z-10">
                             {/* 매수 추진력 (Bullpower ATK) */}
                             <div className="bg-rose-50/40 dark:bg-gradient-to-br dark:from-rose-950/20 dark:to-rose-950/5 border border-rose-100 dark:border-rose-500/20 p-2.5 rounded-xl flex items-center justify-between group/atk transition-colors">
                                 <div className="flex flex-col">
@@ -280,7 +442,7 @@ export const StockCard = ({ stock, chartConfig, rawData, isCompact = false }: St
                                         BULLPOWER ATK
                                     </div>
                                     <div className="flex items-baseline gap-0.5">
-                                        <span className="text-2xl font-black text-rose-600 dark:text-rose-400 italic tracking-tighter font-mono">
+                                        <span className="text-2xl font-black text-rose-600 dark:text-rose-400 italic tracking-tighter font-mono transition-all">
                                             {(stockStats?.upside ?? 0) > 0 ? "+" : ""}{stockStats.upside}
                                         </span>
                                         <span className="text-[9px] font-black text-rose-500/80 font-mono">%</span>
@@ -296,8 +458,8 @@ export const StockCard = ({ stock, chartConfig, rawData, isCompact = false }: St
                                         <ShieldCheck className="w-2.5 h-2.5 text-blue-500" />
                                     </div>
                                     <div className="flex items-baseline gap-0.5 justify-end">
-                                        <span className="text-2xl font-black text-blue-600 dark:text-blue-400 italic tracking-tighter font-mono">
-                                            {stockStats.safety.toFixed(0)}
+                                        <span className="text-2xl font-black text-blue-600 dark:text-blue-400 italic tracking-tighter font-mono transition-all">
+                                            {stockStats.safety.toFixed(1)}
                                         </span>
                                         <span className="text-[9px] font-black text-blue-500/80 font-mono">PTS</span>
                                     </div>
@@ -328,9 +490,9 @@ export const StockCard = ({ stock, chartConfig, rawData, isCompact = false }: St
                     </div>
                 </div>
 
-                {/* ================= BACK CARD (Analyst Intelligence Rule Book) ================= */}
+                {/* ================= BACK CARD (Analyst Intelligence Rule Book & Grow System) ================= */}
                 <div 
-                    className="absolute inset-0 rounded-[1.75rem] bg-white dark:bg-zinc-950 border-[4px] border-zinc-200 dark:border-zinc-800 flex flex-col p-6 shadow-xl overflow-hidden text-left"
+                    className="absolute inset-0 rounded-[1.75rem] bg-white dark:bg-zinc-950 border-[4px] border-zinc-200 dark:border-zinc-800 flex flex-col p-5 shadow-xl overflow-hidden text-left"
                     style={{ 
                         WebkitBackfaceVisibility: 'hidden', 
                         backfaceVisibility: 'hidden', 
@@ -341,36 +503,64 @@ export const StockCard = ({ stock, chartConfig, rawData, isCompact = false }: St
                     <div className="absolute inset-0 opacity-5 bg-[radial-gradient(#000000_1px,transparent_1px)] dark:bg-[radial-gradient(#ffffff_1px,transparent_1px)] [background-size:16px_16px] pointer-events-none" />
                     <div className="absolute inset-0 bg-gradient-to-tr from-zinc-50 via-white to-zinc-100 dark:from-zinc-950 dark:via-zinc-900 dark:to-black z-0" />
 
-                    <div className="flex items-center gap-3 mb-6 border-b border-zinc-200 dark:border-zinc-800 pb-4 z-10">
-                        <div className="w-9 h-9 bg-gradient-to-br from-zinc-100 to-zinc-200 dark:from-zinc-800 dark:to-black rounded-xl flex items-center justify-center border border-black/5 dark:border-white/10">
-                            <Info className="w-4 h-4 text-zinc-600 dark:text-zinc-300" />
+                    {/* 카드 키우기 시스템 대시보드 인터페이스 */}
+                    <div className="relative bg-gradient-to-br from-zinc-900 to-black text-white p-3.5 rounded-2xl border border-zinc-800 shadow-inner z-10 mb-4">
+                        <div className="flex items-center justify-between mb-2">
+                            <div className="flex items-center gap-2">
+                                <div className="p-1.5 bg-amber-500/20 text-amber-400 rounded-lg border border-amber-500/30">
+                                    <Award className="w-3.5 h-3.5" />
+                                </div>
+                                <span className="text-[11px] font-black font-mono tracking-widest text-zinc-100">검색 숙련도 XP</span>
+                            </div>
+                            <span className="text-[10px] font-black font-mono bg-amber-500 text-zinc-950 px-2 py-0.5 rounded italic">
+                                Lv.{level}
+                            </span>
                         </div>
-                        <div className="flex flex-col">
-                            <h4 className="text-zinc-900 dark:text-white font-black text-xs tracking-[0.15em] italic uppercase">Quant Valuation Rules</h4>
-                            <span className="text-[8px] text-zinc-400 dark:text-zinc-500 font-bold uppercase tracking-wider font-mono">Benjamin Graham Formula</span>
+
+                        {/* 경험치 프로그레스 바 바인딩 */}
+                        <div className="space-y-1.5 mt-2.5">
+                            <div className="flex justify-between items-center text-[9px] font-mono font-bold text-zinc-400">
+                                <span>{levelTheme.title}</span>
+                                <span className="tabular-nums">{exp} / {maxExp}</span>
+                            </div>
+                            <div className="w-full h-2 bg-zinc-800 rounded-full overflow-hidden p-[1px] border border-zinc-700/50">
+                                <motion.div 
+                                    className={cn("h-full bg-gradient-to-r rounded-full", levelTheme.bar)}
+                                    animate={{ width: `${(exp / maxExp) * 100}%` }}
+                                    transition={{ duration: 0.2 }}
+                                />
+                            </div>
+                        </div>
+
+                        <div className="mt-3 rounded-xl border border-zinc-700/70 bg-zinc-900/80 px-3 py-2 text-[10px] font-bold leading-relaxed text-zinc-300">
+                            검색 결과 페이지에 진입할 때마다 XP가 누적되고, 레벨에 따라 카드 프레임과 리서치 보정치가 강화됩니다.
                         </div>
                     </div>
 
-                    <div className="flex-1 space-y-4 overflow-y-auto no-scrollbar z-10">
+                    <div className="flex-1 space-y-3.5 overflow-y-auto no-scrollbar z-10">
+                        <div className="flex items-center gap-2 border-b border-zinc-200 dark:border-zinc-800 pb-2">
+                            <Info className="w-3.5 h-3.5 text-zinc-400" />
+                            <span className="text-[10px] text-zinc-400 font-bold uppercase tracking-wider font-mono">Quant Valuation Rules</span>
+                        </div>
+
                         {[
-                            { title: "매수 상승 잠재력 (Bullpower ATK)", color: "text-rose-600 dark:text-rose-400", bg: "bg-rose-50/30 dark:bg-zinc-900/40", border: "border-rose-100/60 dark:border-zinc-800/60", desc: "순유동자산(유동자산 - 총부채)이 현재 시가총액을 얼마나 초과하는지 계량화한 핵심 마진 수치입니다. 가격 괴리율이 클수록 강력한 매수 펌핑 추진력을 발휘합니다." },
-                            { title: "하방 위험 방어력 (Bearshield DEF)", color: "text-blue-600 dark:text-blue-400", bg: "bg-blue-50/30 dark:bg-zinc-900/40", border: "border-blue-100/60 dark:border-zinc-800/60", desc: "시장 하방 압력 및 재무 리스크에 대한 안전망 점수입니다. 부채비율을 보수적으로 역산하여 고위험 한계 기업 카드를 철저하게 필터링합니다." },
-                            { title: "NCAV 청산가치 지표", color: "text-emerald-600 dark:text-emerald-400", bg: "bg-emerald-50/30 dark:bg-zinc-900/40", border: "border-emerald-100/60 dark:border-zinc-800/60", desc: "기업이 당장 영업을 중단하고 청산했을 때의 가치 대비 주가 비율입니다. 1.0을 상회하는 카드는 시장에 흔치 않은 절대적 안전마진 획득을 의미합니다." }
+                            { title: "매수 상승 잠재력 (Bullpower ATK)", color: "text-rose-600 dark:text-rose-400", bg: "bg-rose-50/30 dark:bg-zinc-900/40", border: "border-rose-100/60 dark:border-zinc-800/60", desc: "순유동자산(유동자산 - 총부채)이 현재 시가총액을 얼마나 초과하는지 계량화한 핵심 마진 수치입니다. (성장 레벨에 따라 ATK 상향 보너스가 제공됩니다)" },
+                            { title: "하방 위험 방어력 (Bearshield DEF)", color: "text-blue-600 dark:text-blue-400", bg: "bg-blue-50/30 dark:bg-zinc-900/40", border: "border-blue-100/60 dark:border-zinc-800/60", desc: "시장 하방 압력 및 재무 리스크에 대한 안전망 점수입니다. 부채비율을 보수적으로 역산하여 고위험 기업 카드를 필터링합니다." }
                         ].map((item, i) => (
-                            <div key={i} className={cn("space-y-1.5 p-3 rounded-xl border", item.bg, item.border)}>
+                            <div key={i} className={cn("space-y-1 p-2.5 rounded-xl border", item.bg, item.border)}>
                                 <div className="flex items-center gap-2">
                                     <div className={cn("w-1.5 h-1.5 rounded-full", item.color.replace('text', 'bg'))} />
-                                    <span className={cn("text-[10px] font-black uppercase tracking-tight italic", item.color)}>{item.title}</span>
+                                    <span className={cn("text-[9px] font-black uppercase tracking-tight italic", item.color)}>{item.title}</span>
                                 </div>
-                                <p className="text-[11px] text-zinc-600 dark:text-zinc-400 leading-relaxed font-medium pl-2.5 border-l border-zinc-200 dark:border-zinc-800">
+                                <p className="text-[10px] text-zinc-600 dark:text-zinc-400 leading-relaxed font-medium pl-2.5 border-l border-zinc-200 dark:border-zinc-800">
                                     {item.desc}
                                 </p>
                             </div>
                         ))}
                     </div>
 
-                    <div className="mt-auto pt-4 border-t border-zinc-200 dark:border-zinc-800 flex flex-col items-center z-10">
-                        <div className="text-[8px] font-black text-zinc-400 dark:text-zinc-500 tracking-[0.3em] italic mb-1 uppercase text-center font-mono">IdiotQuant Engine v2.5</div>
+                    <div className="mt-auto pt-3 border-t border-zinc-200 dark:border-zinc-800 flex flex-col items-center z-10">
+                        <div className="text-[8px] font-black text-zinc-400 dark:text-zinc-500 tracking-[0.3em] italic mb-0.5 uppercase text-center font-mono">IdiotQuant Engine v2.5</div>
                         <div className="text-[7px] text-zinc-400 dark:text-zinc-600 font-bold uppercase tracking-widest italic font-mono">SYSTEM DATA FROM KOREA INVESTMENT HEDGE RUNTIME</div>
                     </div>
                 </div>
