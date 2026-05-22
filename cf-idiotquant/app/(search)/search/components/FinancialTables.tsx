@@ -3,12 +3,12 @@
 import React, { useState } from "react";
 import { formatKoreanUnit, ONE_HUNDRED_MILLION } from "../../../../components/utils/financeCalc";
 import { cn } from "@/lib/utils";
-import { 
-  ChartBarIcon, 
-  DocumentTextIcon, 
-  InformationCircleIcon,
-  SparklesIcon,
-  Squares2X2Icon
+import {
+    ChartBarIcon,
+    DocumentTextIcon,
+    InformationCircleIcon,
+    SparklesIcon,
+    Squares2X2Icon
 } from "@heroicons/react/24/outline";
 
 interface FinancialTablesProps {
@@ -16,7 +16,7 @@ interface FinancialTablesProps {
     kiIS: any;
 }
 
-export const FinancialTables = ({ kiBS, kiIS }: FinancialTablesProps) => {
+export default function FinancialTables({ kiBS, kiIS }: FinancialTablesProps) {
     const [hoveredRow, setHoveredRow] = useState<string | null>(null);
     const [activeTooltip, setActiveTooltip] = useState<string | null>(null);
 
@@ -48,10 +48,10 @@ export const FinancialTables = ({ kiBS, kiIS }: FinancialTablesProps) => {
 
     const renderTable = (title: string, subTitle: string, rows: any[], data: any, icon: React.ReactNode, isBs: boolean) => (
         <div className="mb-8 md:mb-10 rounded-2xl bg-zinc-200/80 dark:bg-zinc-800/60 p-1 transform-gpu relative overflow-visible border border-zinc-300/60 dark:border-zinc-700/50 shadow-md transition-all">
-            
+
             {/* 정갈한 미니멀 메인 카드 바디 */}
             <div className="w-full h-full rounded-[11px] bg-white dark:bg-zinc-950 relative z-10 overflow-visible flex flex-col border border-zinc-300 dark:border-zinc-800">
-                
+
                 {/* 은은하게 스며드는 탑 라이팅 아우라 */}
                 <div className={cn(
                     "absolute inset-x-0 top-0 h-32 pointer-events-none z-0 opacity-20 dark:opacity-25 blur-2xl",
@@ -63,8 +63,8 @@ export const FinancialTables = ({ kiBS, kiIS }: FinancialTablesProps) => {
                     <div className="flex items-center gap-2.5">
                         <div className={cn(
                             "w-8 h-8 rounded-lg flex items-center justify-center border shadow-sm",
-                            isBs 
-                                ? "bg-blue-50 dark:bg-blue-950/60 border-blue-200 dark:border-blue-800" 
+                            isBs
+                                ? "bg-blue-50 dark:bg-blue-950/60 border-blue-200 dark:border-blue-800"
                                 : "bg-emerald-50 dark:bg-emerald-950/60 border-emerald-200 dark:border-emerald-800"
                         )}>
                             {icon}
@@ -81,8 +81,8 @@ export const FinancialTables = ({ kiBS, kiIS }: FinancialTablesProps) => {
                     <div className="flex items-center gap-2">
                         <span className={cn(
                             "text-[9px] font-mono font-black px-2 py-0.5 rounded border tracking-wider uppercase flex items-center gap-1 shadow-sm whitespace-nowrap",
-                            isBs 
-                                ? "bg-blue-50 text-blue-700 dark:bg-blue-950/80 dark:text-blue-300 border-blue-300 dark:border-blue-700" 
+                            isBs
+                                ? "bg-blue-50 text-blue-700 dark:bg-blue-950/80 dark:text-blue-300 border-blue-300 dark:border-blue-700"
                                 : "bg-emerald-50 text-emerald-700 dark:bg-emerald-950/80 dark:text-emerald-300 border-emerald-300 dark:border-emerald-700"
                         )}>
                             <Squares2X2Icon className="w-3 h-3" /> {isBs ? "Card.01 BS" : "Card.02 IS"}
@@ -131,12 +131,12 @@ export const FinancialTables = ({ kiBS, kiIS }: FinancialTablesProps) => {
                                 const isTooltipActive = activeTooltip === rowId;
 
                                 return (
-                                    <tr 
-                                        key={row.key} 
+                                    <tr
+                                        key={row.key}
                                         className={cn(
                                             "group transition-all duration-100 relative",
-                                            isHeader 
-                                                ? 'bg-zinc-50/60 dark:bg-zinc-900/20' 
+                                            isHeader
+                                                ? 'bg-zinc-50/60 dark:bg-zinc-900/20'
                                                 : 'hover:bg-zinc-50/80 dark:hover:bg-zinc-900/40',
                                             isCurrentHovered || isTooltipActive ? "z-50" : "z-0"
                                         )}
@@ -149,8 +149,8 @@ export const FinancialTables = ({ kiBS, kiIS }: FinancialTablesProps) => {
                                         {/* Account Item Sticky Cell */}
                                         <td className={cn(
                                             "sticky left-0 handle-sticky-shadow px-5 py-3 md:px-6 md:py-3.5 text-left transition-colors duration-100 border-r border-zinc-200/60 dark:border-zinc-800/40 whitespace-nowrap",
-                                            isHeader 
-                                                ? 'bg-zinc-50 dark:bg-zinc-900 font-extrabold text-zinc-950 dark:text-zinc-50' 
+                                            isHeader
+                                                ? 'bg-zinc-50 dark:bg-zinc-900 font-extrabold text-zinc-950 dark:text-zinc-50'
                                                 : 'bg-white dark:bg-zinc-950 group-hover:bg-zinc-50 dark:group-hover:bg-zinc-900/60',
                                             isCore && !isHeader && "bg-gradient-to-r from-blue-500/[0.04] to-transparent",
                                             isCurrentHovered || isTooltipActive ? "z-50" : "z-20"
@@ -164,8 +164,8 @@ export const FinancialTables = ({ kiBS, kiIS }: FinancialTablesProps) => {
                                                     )} />
                                                     <span className={cn(
                                                         "text-xs tracking-tight truncate block",
-                                                        isHeader 
-                                                            ? "font-extrabold text-zinc-950 dark:text-white" 
+                                                        isHeader
+                                                            ? "font-extrabold text-zinc-950 dark:text-white"
                                                             : "font-semibold text-zinc-700 dark:text-zinc-300 group-hover:text-zinc-950 dark:group-hover:text-zinc-100",
                                                         isCore && !isHeader && "text-blue-700 dark:text-blue-400 font-extrabold"
                                                     )}>
@@ -216,28 +216,28 @@ export const FinancialTables = ({ kiBS, kiIS }: FinancialTablesProps) => {
                                             const val = Number(rawValue);
                                             const isNegative = val < 0;
 
-                                        return (
-                                            <td 
-                                                key={i} 
-                                                className={cn(
-                                                    "px-5 py-3 md:px-6 md:py-3.5 text-right font-mono tabular-nums transition-colors duration-100 whitespace-nowrap",
-                                                    i === 0 && "bg-zinc-50/[0.3] dark:bg-zinc-900/[0.1]",
-                                                    isHeader && "font-bold"
-                                                )}
-                                            >
-                                                <span className={cn(
-                                                    isNegative 
-                                                        ? "text-rose-600 dark:text-rose-400 font-bold bg-rose-50 dark:bg-rose-950/40 px-2 py-0.5 rounded border border-rose-200 dark:border-rose-900/60 inline-block whitespace-nowrap" 
-                                                        : isHeader 
-                                                            ? "text-zinc-950 dark:text-zinc-50 font-extrabold inline-block" 
-                                                            : "text-zinc-800 dark:text-zinc-200 font-bold inline-block",
-                                                    i === 0 ? "text-[12.5px]" : "text-[11.5px] opacity-90"
-                                                )}>
-                                                    {formatKoreanUnit(val * ONE_HUNDRED_MILLION)}
-                                                </span>
-                                            </td>
-                                        );
-                                    })}
+                                            return (
+                                                <td
+                                                    key={i}
+                                                    className={cn(
+                                                        "px-5 py-3 md:px-6 md:py-3.5 text-right font-mono tabular-nums transition-colors duration-100 whitespace-nowrap",
+                                                        i === 0 && "bg-zinc-50/[0.3] dark:bg-zinc-900/[0.1]",
+                                                        isHeader && "font-bold"
+                                                    )}
+                                                >
+                                                    <span className={cn(
+                                                        isNegative
+                                                            ? "text-rose-600 dark:text-rose-400 font-bold bg-rose-50 dark:bg-rose-950/40 px-2 py-0.5 rounded border border-rose-200 dark:border-rose-900/60 inline-block whitespace-nowrap"
+                                                            : isHeader
+                                                                ? "text-zinc-950 dark:text-zinc-50 font-extrabold inline-block"
+                                                                : "text-zinc-800 dark:text-zinc-200 font-bold inline-block",
+                                                        i === 0 ? "text-[12.5px]" : "text-[11.5px] opacity-90"
+                                                    )}>
+                                                        {formatKoreanUnit(val * ONE_HUNDRED_MILLION)}
+                                                    </span>
+                                                </td>
+                                            );
+                                        })}
                                     </tr>
                                 );
                             })}
@@ -291,18 +291,18 @@ export const FinancialTables = ({ kiBS, kiIS }: FinancialTablesProps) => {
     return (
         <div className="space-y-5 md:space-y-4 animate-in fade-in slide-in-from-bottom-2 duration-300 transform-gpu">
             {renderTable(
-                "재무상태표", 
-                "Balance Sheet Statement", 
-                bsRows, 
-                kiBS, 
+                "재무상태표",
+                "Balance Sheet Statement",
+                bsRows,
+                kiBS,
                 <DocumentTextIcon className="w-4 h-4 text-blue-600 dark:text-blue-400" />,
                 true
             )}
             {renderTable(
-                "손익계산서", 
-                "Income Statement Structure", 
-                isRows, 
-                kiIS, 
+                "손익계산서",
+                "Income Statement Structure",
+                isRows,
+                kiIS,
                 <ChartBarIcon className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />,
                 false
             )}
