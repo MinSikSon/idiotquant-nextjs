@@ -10,8 +10,10 @@ import {
     Clock, 
     AlertCircle, 
     Building2,
-    RefreshCw,
-    Loader2
+    Loader2,
+    Wallet,
+    TrendingUp,
+    BarChart3
 } from "lucide-react";
 
 import { useAppDispatch, useAppSelector } from "@/lib/hooks";
@@ -170,7 +172,28 @@ function BalanceUs() {
     const doTokenMinusAll = (num: number) => dispatch(reqPostUsCapitalTokenMinusAll({ key: balanceKey, num }));
     const doTokenMinusOne = (num: number, ticker: string) => ticker && dispatch(reqPostUsCapitalTokenMinusOne({ key: balanceKey, num, ticker }));
 
-    const exRate = kiBalance?.output2?.[0]?.frst_bltn_exrt;
+    // --- 📊 제공된 계좌 잔고 인터페이스 기반 정밀 가공 엔진 ---
+    const out2 = kiBalance?.output2?.[0];
+    const out3 = kiBalance?.output3;
+
+    // 1. 고시 환율 파싱 (output2.frst_bltn_exrt)
+    const exRate = Number(out2?.frst_bltn_exrt || 0);
+
+    // 2. 총 자산 금액 설정 (output3.tot_asst_amt)
+    const totalAssetKrw = Number(out3?.tot_asst_amt || 0);
+    const totalAssetUsd = exRate > 0 ? totalAssetKrw / exRate : 0;
+
+    // 3. 외화 예수금 설정 (output2.frcr_dncl_amt_2: 외화D+2예수금금액)
+    const depositUsd = Number(out2?.frcr_dncl_amt_2 || out2?.frcr_drwg_psbl_amt_1 || 0);
+    const depositKrw = depositUsd * exRate;
+
+    // 4. 주식 평가금액 총액 설정 (output3.evlu_amt_smtl_amt 또는 원화기반 차액 산출)
+    const stockEvaluationKrw = Number(out3?.evlu_amt_smtl_amt || (totalAssetKrw - depositKrw));
+    const stockEvaluationUsd = exRate > 0 ? stockEvaluationKrw / exRate : 0;
+
+    // 5. 총 평가 손익 및 손익률 설정 (output3.tot_evlu_pfls_amt, output3.evlu_erng_rt1)
+    const totalProfitLossKrw = Number(out3?.tot_evlu_pfls_amt || 0);
+    const totalProfitRate = Number(out3?.evlu_erng_rt1 || 0);
 
     return (
         <div className="bg-zinc-50 dark:bg-black min-h-screen transition-colors duration-200">
@@ -200,7 +223,7 @@ function BalanceUs() {
                         </div>
                     </div>
 
-                    {exRate && (
+                    {exRate > 0 && (
                         <div className="flex items-center gap-4 bg-white dark:bg-zinc-900 px-5 py-3 rounded-2xl border border-zinc-200 dark:border-zinc-800 shadow-sm">
                             <span className="text-[10px] font-black text-zinc-400 uppercase tracking-widest leading-none">
                                 현재 고시 환율 (원/달러)
@@ -213,6 +236,77 @@ function BalanceUs() {
                 </header>
 
                 <div className="h-px bg-zinc-200 dark:bg-zinc-800 mb-12" />
+
+                {/* 📊 상단 핵심 잔고 요약 대시보드 카드 그리드 */}
+                <section className="mb-12 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5 animate-in fade-in duration-500">
+                    
+                    {/* 카드 1: 총 자산 */}
+                    <div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-3xl p-6 shadow-sm flex flex-col justify-between transition-all hover:border-zinc-300 dark:hover:border-zinc-700">
+                        <div>
+                            <div className="flex items-center justify-between mb-1">
+                                <span className="text-[10px] font-black text-zinc-400 dark:text-zinc-500 uppercase tracking-widest block">총 자산 (USD)</span>
+                                <BarChart3 size={14} className="text-blue-500" />
+                            </div>
+                            <div className="text-2xl font-black tracking-tight text-blue-600 dark:text-blue-400 font-mono">
+                                {formatCurrency(totalAssetUsd, "USD")}
+                            </div>
+                        </div>
+                        <div className="mt-5 pt-3 border-t border-zinc-100 dark:border-zinc-800 text-xs font-bold text-zinc-400 dark:text-zinc-500 flex justify-between">
+                            <span>원화 평가액</span>
+                            <span className="font-mono text-zinc-800 dark:text-zinc-200">{formatCurrency(totalAssetKrw, "KRW")}</span>
+                        </div>
+                    </div>
+
+                    {/* 카드 2: 외화 예수금 */}
+                    <div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-3xl p-6 shadow-sm flex flex-col justify-between transition-all hover:border-zinc-300 dark:hover:border-zinc-700">
+                        <div>
+                            <div className="flex items-center justify-between mb-1">
+                                <span className="text-[10px] font-black text-zinc-400 dark:text-zinc-500 uppercase tracking-widest block">외화 예수금 (USD)</span>
+                                <Wallet size={14} className="text-zinc-400 dark:text-zinc-500" />
+                            </div>
+                            <div className="text-2xl font-black tracking-tight text-zinc-800 dark:text-white font-mono">
+                                {formatCurrency(depositUsd, "USD")}
+                            </div>
+                        </div>
+                        <div className="mt-5 pt-3 border-t border-zinc-100 dark:border-zinc-800 text-xs font-bold text-zinc-400 dark:text-zinc-500 flex justify-between">
+                            <span>원화 환산액</span>
+                            <span className="font-mono text-zinc-800 dark:text-zinc-200">{formatCurrency(depositKrw, "KRW")}</span>
+                        </div>
+                    </div>
+
+                    {/* 카드 3: 주식 평가총액 */}
+                    <div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-3xl p-6 shadow-sm flex flex-col justify-between transition-all hover:border-zinc-300 dark:hover:border-zinc-700">
+                        <div>
+                            <div className="flex items-center justify-between mb-1">
+                                <span className="text-[10px] font-black text-zinc-400 dark:text-zinc-500 uppercase tracking-widest block">주식 평가총액</span>
+                                <TrendingUp size={14} className="text-zinc-400 dark:text-zinc-500" />
+                            </div>
+                            <div className="text-2xl font-black tracking-tight text-zinc-800 dark:text-white font-mono">
+                                {formatCurrency(stockEvaluationUsd, "USD")}
+                            </div>
+                        </div>
+                        <div className="mt-5 pt-3 border-t border-zinc-100 dark:border-zinc-800 text-xs font-bold text-zinc-400 dark:text-zinc-500 flex justify-between">
+                            <span>원화 환산액</span>
+                            <span className="font-mono text-zinc-800 dark:text-zinc-200">{formatCurrency(stockEvaluationKrw, "KRW")}</span>
+                        </div>
+                    </div>
+
+                    {/* 카드 4: 총 평가 손익 */}
+                    <div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-3xl p-6 shadow-sm flex flex-col justify-between transition-all hover:border-zinc-300 dark:hover:border-zinc-700">
+                        <div>
+                            <span className="text-[10px] font-black text-zinc-400 dark:text-zinc-500 uppercase tracking-widest block mb-1">총 수익률</span>
+                            <div className={`text-2xl font-black tracking-tight font-mono ${totalProfitLossKrw >= 0 ? "text-rose-500" : "text-blue-500"}`}>
+                                {totalProfitLossKrw >= 0 ? "+" : ""}{totalProfitRate.toFixed(2)}%
+                            </div>
+                        </div>
+                        <div className="mt-5 pt-3 border-t border-zinc-100 dark:border-zinc-800 text-xs font-bold text-zinc-400 dark:text-zinc-500 flex justify-between">
+                            <span>손익 합계</span>
+                            <span className={`font-mono font-bold ${totalProfitLossKrw >= 0 ? "text-rose-500" : "text-blue-500"}`}>
+                                {formatCurrency(totalProfitLossKrw, "KRW")}
+                            </span>
+                        </div>
+                    </div>
+                </section>
 
                 {/* Main Grid */}
                 <div className="space-y-16">
