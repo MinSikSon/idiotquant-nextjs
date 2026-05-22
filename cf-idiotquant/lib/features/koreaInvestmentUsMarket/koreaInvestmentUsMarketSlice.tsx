@@ -339,6 +339,7 @@ export interface KoreaInvestmentUsOrder {
     "msg_cd": string;
     "msg1": string;
     "output": KoreaInvestmentUsOrderOutput;
+    "error": any;
 }
 
 interface KoreaInvestmentOverseasPriceQuotationsInquireDailyChartPriceOutput1 {
@@ -645,6 +646,7 @@ const initialState: KoreaInvestmentUsMaretType = {
             "ODNO": "",
             "ORD_TMD": "",
         },
+        error: ""
     },
     dailyChartPrice: {
         state: "init",
@@ -735,25 +737,62 @@ export const koreaInvestmentUsMarketSlice = createAppSlice({
         //     }
         // ),
         reqPostOrderUs: create.asyncThunk(
-            async ({ PDNO, buyOrSell, excg_cd, price }: { PDNO: string, buyOrSell: string, excg_cd: string, price: string }) => {
-                return await postOrderUs(PDNO, buyOrSell, excg_cd, price);
+            async ({ PDNO, buyOrSell, excg_cd, price }: { PDNO: string, buyOrSell: string, excg_cd: string, price: string }, { rejectWithValue }) => {
+                try {
+                    const response = await postOrderUs(PDNO, buyOrSell, excg_cd, price);
+
+                    // 한투 서버가 비즈니스 에러(시간오류, 잔액부족 등)를 반환한 경우
+                    if (response && response.rt_cd !== "0") {
+                        return rejectWithValue(response);
+                    }
+
+                    return response;
+                } catch (error: any) {
+                    return rejectWithValue({ rt_msg: error.message || "네트워크 통신 오류" });
+                }
             },
             {
                 pending: (state) => {
                     // console.log(`[reqPostOrderUs] pending`);
                     state.usOrder.state = "pending";
                 },
-                fulfilled: (state, action) => {
+                fulfilled: (state, action: any) => {
                     // console.log(`[reqPostOrderUs] fulfilled`, `action.payload`, typeof action.payload, action.payload);
-                    // if (undefined != action.payload["output1"]) 
-                    {
-                        state.state = "order-cash";
-                        state.usOrder = { ...state.usOrder, ...action.payload, state: "fulfilled" };
+
+                    // 1. Thunk 외부/내부 구조 처리를 대비해 한 번 더 rt_cd 검사
+                    if (action.payload?.rt_cd !== "0") {
+                        state.state = "rejected";
+                        // 기존 구조(rt_cd, msg1 등)를 파괴하지 않고 유지하면서 state와 error를 세팅합니다.
+                        state.usOrder = {
+                            ...state.usOrder,
+                            ...action.payload,
+                            state: "rejected",
+                            error: action.payload?.rt_msg || action.payload?.msg1 || "한투 서버 주문 거부"
+                        };
+                        return;
                     }
+
+                    // 2. 정상 성공 시 매핑
+                    state.state = "order-cash";
+                    state.usOrder = {
+                        ...state.usOrder,
+                        ...action.payload,
+                        state: "fulfilled",
+                        error: undefined // 이전 에러 초기화
+                    };
                 },
-                rejected: (state) => {
+                rejected: (state, action: any) => {
                     console.log(`[reqPostOrderUs] rejected`);
                     state.state = "rejected";
+
+                    // 🔥 [핵심 교정] 필수 프로퍼티 유실을 막기 위해 기존 state.usOrder 구조를 스프레드(... ) 합니다.
+                    state.usOrder = {
+                        ...state.usOrder,
+                        // 만약 action.payload에 한투 응답 객체(rt_cd, msg1 등)가 들어있다면 함께 머지
+                        ...(action.payload || {}),
+                        state: "rejected",
+                        error: action.payload?.rt_msg || action.payload?.msg1 || action.error?.message || "주문 요청 실패"
+                    };
                 },
             }
         ),

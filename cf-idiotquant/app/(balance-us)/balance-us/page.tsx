@@ -55,7 +55,21 @@ import OverseasNccsTable from "@/components/balance/nccsTable";
 import StockListTable from "@/components/balance/stockListTable";
 import { useSession } from "next-auth/react";
 
-function formatNumber(num: number) {
+// 국장 스타일의 엄격한 통화 단위 포맷터
+function formatCurrency(value: number | string, type: "KRW" | "USD" | "RAW" = "RAW") {
+    const num = Number(value);
+    if (isNaN(num)) return "0";
+
+    if (type === "KRW") {
+        // 원화는 소수점 없이 정수형태로 포맷팅
+        return `₩${Math.floor(num).toLocaleString()}`;
+    }
+    if (type === "USD") {
+        // 달러는 소수점 2자리 유지
+        return `$${num.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+    }
+    
+    // 일반 수량 및 소수점 가변 처리
     return num % 1 === 0 ? num.toLocaleString() : num.toFixed(2);
 }
 
@@ -189,10 +203,10 @@ function BalanceUs() {
                     {exRate && (
                         <div className="flex items-center gap-4 bg-white dark:bg-zinc-900 px-5 py-3 rounded-2xl border border-zinc-200 dark:border-zinc-800 shadow-sm">
                             <span className="text-[10px] font-black text-zinc-400 uppercase tracking-widest leading-none">
-                                환율 정보
+                                현재 고시 환율 (원/달러)
                             </span>
                             <span className="text-xl font-mono font-black text-blue-600 dark:text-blue-400">
-                                ₩{formatNumber(Number(exRate))}
+                                {formatCurrency(exRate, "RAW")}원
                             </span>
                         </div>
                     )}
@@ -203,19 +217,19 @@ function BalanceUs() {
                 {/* Main Grid */}
                 <div className="space-y-16">
                     
-                    {/* 1. Real-time Balance Result */}
+                    {/* 1. Real-time Balance Result & Order Panel */}
                     <section className="animate-in fade-in slide-in-from-bottom-4 duration-700">
                         <InquireBalanceResult
                             balanceKey={balanceKey}
                             setBalanceKey={setBalanceKey}
                             kiBalance={kiBalance}
                             reqGetInquireBalance={reqGetOverseasStockTradingInquirePresentBalance}
-                            // reqGetInquireCcnl={reqGetOverseasStockTradingInquireCcnl}
-                            // reqGetInquireNccs={reqGetOverseasStockTradingInquireNccs}
+                            reqGetInquireCcnl={reqGetOverseasStockTradingInquireCcnl}
+                            reqGetInquireNccs={reqGetOverseasStockTradingInquireNccs}
                             reqGetUsCapital={reqGetUsCapital}
-                            // kiOrderCash={kiUsOrder}
-                            // reqPostOrderCash={reqPostOrderUs}
-                            // kakaoTotal={kakaoTotal}
+                            kiOrderCash={kiUsOrder}
+                            reqPostOrderCash={reqPostOrderUs}
+                            kakaoTotal={kakaoTotal}
                             kakaoMemberList={kakaoMemberList}
                         />
                     </section>
