@@ -8,12 +8,11 @@ import type { NextRequest } from 'next/server'
 const { auth: middlewareAuth } = NextAuth(authConfig);
 export async function middleware(req: NextRequest) {
     // middlewareAuth()는 내부적으로 JWT만 확인하며 DB에 접근하지 않습니다.
-    const session = await middlewareAuth();
+    const session: any = await middlewareAuth();
     const isLoggedIn = !!session;
     console.log(`[middleware] session:`, session, `, isLoggedIn:`, isLoggedIn);
     const isAdmin = (session?.user as any)?.role === "admin";
     console.log(`[middleware] isAdmin:`, isAdmin);
-
 
     const url = new URL(req.url);
     const path = req.nextUrl.pathname;
