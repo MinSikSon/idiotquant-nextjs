@@ -335,7 +335,7 @@ export function NavbarWithSimpleLinks() {
       <nav
         className={cn(
           "fixed top-0 left-0 right-0 z-40 h-14 transition-all duration-300 ease-in-out transform-gpu",
-          visible ? "translate-y-0" : "-translate-y-full",
+          // visible ? "translate-y-0" : "-translate-y-full",
           scrolled
             ? "bg-white/90 dark:bg-zinc-950/90 backdrop-blur-xl border-b border-zinc-200/80 dark:border-zinc-800/80 shadow-sm"
             : "bg-white/70 dark:bg-zinc-950/70 backdrop-blur-md border-b border-zinc-200/40 dark:border-zinc-800/40"

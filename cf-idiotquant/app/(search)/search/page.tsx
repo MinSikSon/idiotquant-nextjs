@@ -11,32 +11,32 @@
  * - SEO: 메타데이터, 구조화된 데이터
  */
 
-import React, { 
-  useState, 
-  useEffect, 
-  Suspense, 
-  useId, 
-  useMemo, 
-  useRef, 
-  useCallback, 
+import React, {
+  useState,
+  useEffect,
+  Suspense,
+  useId,
+  useMemo,
+  useRef,
+  useCallback,
   memo,
-  startTransition 
+  startTransition
 } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import dynamic from 'next/dynamic';
 import { useAppSelector, useAppDispatch } from '@/lib/hooks';
 import { useStockSearch } from './hooks/useStockSearch';
 import { selectKrMarketHistory } from '@/lib/features/searchHistory/searchHistorySlice';
-import { 
-  History, 
-  AlertCircle, 
-  Loader2, 
-  Flame, 
-  Share2, 
+import {
+  History,
+  AlertCircle,
+  Loader2,
+  Flame,
+  Share2,
   Check,
-  TrendingUp, 
-  Globe2, 
-  DollarSign, 
+  TrendingUp,
+  Globe2,
+  DollarSign,
   Coins,
   WifiOff,
   RefreshCw,
@@ -51,7 +51,7 @@ import { cn } from '@/lib/utils';
 // 🎯 Dynamic Imports (Code Splitting)
 // ===========================
 const StockCard = dynamic(
-  () => import('./components/StockCard').then(mod => ({ default: mod.StockCard })), 
+  () => import('./components/StockCard').then(mod => ({ default: mod.StockCard })),
   {
     loading: () => <StockCardSkeleton />,
     ssr: false
@@ -59,7 +59,7 @@ const StockCard = dynamic(
 );
 
 const StockMetrics = dynamic(
-  () => import('./components/StockMetrics').then(mod => ({ default: mod.StockMetrics })), 
+  () => import('./components/StockMetrics').then(mod => ({ default: mod.StockMetrics })),
   {
     loading: () => <MetricsSkeleton />,
     ssr: false
@@ -67,7 +67,7 @@ const StockMetrics = dynamic(
 );
 
 const ValuationSection = dynamic(
-  () => import('./components/ValuationSection').then(mod => ({ default: mod.ValuationSection })), 
+  () => import('./components/ValuationSection').then(mod => ({ default: mod.ValuationSection })),
   {
     loading: () => <ValuationSkeleton />
   }
@@ -262,7 +262,7 @@ const normalizeXpProfiles = (profiles: unknown): StockXpProfiles => {
       if (!tickerKey) return acc;
       acc[tickerKey] = normalizeXpProfile(profile);
       return acc;
-    }, 
+    },
     {}
   );
 };
@@ -291,11 +291,11 @@ const addStockXp = (profile: StockXpProfile, gainedXp: number): StockXpProfile =
 // ===========================
 // 🍞 Toast Notification Component
 // ===========================
-const Toast = memo(({ 
-  notification, 
-  onDismiss 
-}: { 
-  notification: ToastNotification; 
+const Toast = memo(({
+  notification,
+  onDismiss
+}: {
+  notification: ToastNotification;
   onDismiss: (id: string) => void;
 }) => {
   useEffect(() => {
@@ -393,6 +393,28 @@ const useToast = () => {
   return { toasts, addToast, dismissToast };
 };
 
+function ScrollProgress() {
+  const [progress, setProgress] = useState(0);
+  useEffect(() => {
+    const update = () => {
+      const el = document.documentElement;
+      const scrolled = el.scrollTop;
+      const total = el.scrollHeight - el.clientHeight;
+      setProgress(total > 0 ? (scrolled / total) * 100 : 0);
+    };
+    window.addEventListener("scroll", update, { passive: true });
+    return () => window.removeEventListener("scroll", update);
+  }, []);
+  return (
+    <div className="absolute bottom-0 left-0 right-0 h-[1.5px] bg-zinc-200/60 dark:bg-zinc-800/60">
+      <div
+        className="h-full bg-gradient-to-r from-blue-500 to-indigo-500 transition-[width] duration-100"
+        style={{ width: `${progress}%` }}
+      />
+    </div>
+  );
+}
+
 // ===========================
 // 🎬 Main Component
 // ===========================
@@ -486,10 +508,10 @@ function SearchContent() {
 
     lastEntryAwardedTickerRef.current = tickerKey;
     awardStockXp(tickerKey, SEARCH_RESULT_XP_GAIN);
-    
-    addToast({ 
-      type: 'success', 
-      message: `+${SEARCH_RESULT_XP_GAIN} XP 획득! 종목 분석 진행 중...` 
+
+    addToast({
+      type: 'success',
+      message: `+${SEARCH_RESULT_XP_GAIN} XP 획득! 종목 분석 진행 중...`
     });
   }, [awardStockXp, addToast]);
 
@@ -498,11 +520,11 @@ function SearchContent() {
   // ===========================
   const handleSearch = useCallback((stockName: string) => {
     if (!stockName) return;
-    
+
     if (!all_tickers.some((t) => t.toLowerCase() === stockName.toLowerCase())) {
-      addToast({ 
-        type: 'error', 
-        message: `'${stockName}'은(는) 목록에 없는 종목입니다.` 
+      addToast({
+        type: 'error',
+        message: `'${stockName}'은(는) 목록에 없는 종목입니다.`
       });
       return;
     }
@@ -519,8 +541,8 @@ function SearchContent() {
     if (typeof window === 'undefined') return;
 
     const currentUrl = window.location.href;
-    const stockTitle = name 
-      ? `[IdiotQuant] ${name} (${krOrUs}) 딥 데이터 밸류에이션 분석 결과` 
+    const stockTitle = name
+      ? `[IdiotQuant] ${name} (${krOrUs}) 딥 데이터 밸류에이션 분석 결과`
       : '[IdiotQuant] 인텔리전스 퀀트 분석 솔루션';
 
     // Web Share API 우선 시도
@@ -558,15 +580,15 @@ function SearchContent() {
   const toggleWatchlist = useCallback((ticker: string) => {
     setWatchlist(prev => {
       const isAdded = prev.includes(ticker);
-      const newWatchlist = isAdded 
+      const newWatchlist = isAdded
         ? prev.filter(t => t !== ticker)
         : [...prev, ticker];
-      
+
       try {
         window.localStorage.setItem('idiotquant_watchlist_v1', JSON.stringify(newWatchlist));
-        addToast({ 
-          type: isAdded ? 'info' : 'success', 
-          message: isAdded ? '관심 종목에서 제거되었습니다' : '관심 종목에 추가되었습니다!' 
+        addToast({
+          type: isAdded ? 'info' : 'success',
+          message: isAdded ? '관심 종목에서 제거되었습니다' : '관심 종목에 추가되었습니다!'
         });
       } catch (error) {
         console.error('Failed to update watchlist:', error);
@@ -614,10 +636,10 @@ function SearchContent() {
 
   const tickerFromUrl = searchParams.get('ticker');
   const activeTickerKey = normalizeTickerKey(tickerFromUrl);
-  const activeStockXpProfile = activeTickerKey 
-    ? stockXpProfiles[activeTickerKey] ?? createDefaultXpProfile() 
+  const activeStockXpProfile = activeTickerKey
+    ? stockXpProfiles[activeTickerKey] ?? createDefaultXpProfile()
     : createDefaultXpProfile();
-  
+
   const isLoaded =
     tickerFromUrl === name &&
     (data.kiChart.state === 'fulfilled' || data.usSearchInfo.state === 'fulfilled');
@@ -720,7 +742,7 @@ function SearchContent() {
 
   return (
     <div className="w-full min-h-screen bg-slate-50/60 dark:bg-[#09090b] text-zinc-900 dark:text-zinc-100 antialiased selection:bg-blue-500/20 transition-colors duration-300">
-      
+
       {/* ===========================
           🍞 Toast Container
           =========================== */}
@@ -757,8 +779,8 @@ function SearchContent() {
         <div className="max-w-6xl mx-auto">
           {/* Top Action Bar */}
           {fixed && <div className="px-4 pt-3 flex items-center justify-between">
-            <div 
-              className="flex items-center gap-2 cursor-pointer group" 
+            <div
+              className="flex items-center gap-2 cursor-pointer group"
               onClick={() => router.push('/search')}
               role="button"
               tabIndex={0}
@@ -793,8 +815,8 @@ function SearchContent() {
                   onClick={() => tickerFromUrl && toggleWatchlist(tickerFromUrl)}
                   className={cn(
                     "p-1.5 rounded-lg transition-colors",
-                    isInWatchlist 
-                      ? "text-amber-500 hover:bg-amber-50 dark:hover:bg-amber-950/20" 
+                    isInWatchlist
+                      ? "text-amber-500 hover:bg-amber-50 dark:hover:bg-amber-950/20"
                       : "text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-800"
                   )}
                   aria-label={isInWatchlist ? "관심 종목에서 제거" : "관심 종목에 추가"}
@@ -805,8 +827,8 @@ function SearchContent() {
                 {/* Market Badge */}
                 <span className={cn(
                   "inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-bold uppercase tracking-wider font-mono shadow-2xs",
-                  krOrUs === 'US' 
-                    ? "bg-blue-50 text-blue-600 dark:bg-blue-950/40 dark:text-blue-400 border border-blue-200/40 dark:border-blue-900/40" 
+                  krOrUs === 'US'
+                    ? "bg-blue-50 text-blue-600 dark:bg-blue-950/40 dark:text-blue-400 border border-blue-200/40 dark:border-blue-900/40"
                     : "bg-indigo-50 text-indigo-600 dark:bg-indigo-950/40 dark:text-indigo-400 border border-indigo-200/40 dark:border-indigo-900/40"
                 )}>
                   {krOrUs === 'US' ? <DollarSign size={10} /> : <Coins size={10} />}
@@ -814,6 +836,8 @@ function SearchContent() {
                 </span>
               </div>
             )}
+            <ScrollProgress />
+
           </div>}
 
           {/* Search Bar */}
@@ -892,7 +916,7 @@ function SearchContent() {
           📱 Main Content Area
           =========================== */}
       <main className="max-w-6xl mx-auto p-4 md:p-6 transition-all duration-300">
-        
+
         {!tickerFromUrl ? (
           <SearchGuide />
         ) : (
@@ -913,10 +937,10 @@ function SearchContent() {
                 </div>
               </div>
             )}
-            
+
             {/* Main Dashboard */}
             <div className={!isLoaded ? 'hidden' : 'block animate-in fade-in zoom-in-98 duration-500'}>
-              
+
               {/* Action Panel */}
               <div className="w-full flex items-center justify-between mb-4 bg-white dark:bg-zinc-900 p-3 rounded-xl border border-zinc-200/60 dark:border-zinc-800/80 shadow-2xs">
                 <div className="flex items-center gap-2">
@@ -925,7 +949,7 @@ function SearchContent() {
                     NCAV 밸류에이션 리포트 생성이 완료되었습니다.
                   </span>
                 </div>
-                
+
                 <button
                   onClick={handleShareResult}
                   disabled={shareStatus !== 'idle'}
@@ -934,8 +958,8 @@ function SearchContent() {
                     shareStatus === 'copied'
                       ? "bg-emerald-50 text-emerald-600 border border-emerald-200 dark:bg-emerald-950/30 dark:text-emerald-400 dark:border-emerald-900/50"
                       : shareStatus === 'error'
-                      ? "bg-rose-50 text-rose-600 border border-rose-200 dark:bg-rose-950/30 dark:text-rose-400 dark:border-rose-900/50"
-                      : "bg-blue-600 text-white hover:bg-blue-700 dark:bg-indigo-600 dark:hover:bg-indigo-700 disabled:opacity-50"
+                        ? "bg-rose-50 text-rose-600 border border-rose-200 dark:bg-rose-950/30 dark:text-rose-400 dark:border-rose-900/50"
+                        : "bg-blue-600 text-white hover:bg-blue-700 dark:bg-indigo-600 dark:hover:bg-indigo-700 disabled:opacity-50"
                   )}
                 >
                   {shareStatus === 'copied' ? (
@@ -956,10 +980,10 @@ function SearchContent() {
                   )}
                 </button>
               </div>
-              
+
               {/* Main Dashboard Grid */}
               <div className="grid grid-cols-1 md:grid-cols-12 gap-6 items-stretch mb-8 transform-gpu">
-                
+
                 {/* Stock Card */}
                 <div ref={stockCardDwellRef} className="md:col-span-5 flex justify-center w-full">
                   <StockCard
@@ -1014,7 +1038,7 @@ function SearchContent() {
                 <div ref={valuationDwellRef} className="bg-white dark:bg-zinc-900 rounded-2xl border border-zinc-200/60 dark:border-zinc-800/80 p-1 shadow-2xs">
                   <ValuationSection data={data} isUs={krOrUs === 'US'} />
                 </div>
-                
+
                 {/* Financials */}
                 <div ref={financialsDwellRef} className="bg-white dark:bg-zinc-900 rounded-2xl border border-zinc-200/60 dark:border-zinc-800/80 p-4 shadow-2xs overflow-hidden">
                   <h3 className="text-sm font-bold tracking-tight mb-4 flex items-center gap-2 px-1">
