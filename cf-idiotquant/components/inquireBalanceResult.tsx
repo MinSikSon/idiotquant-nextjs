@@ -98,7 +98,6 @@ export default function InquireBalanceResult(props: InquireBalanceResultProps) {
     const [searchQuery, setSearchQuery] = useState("");
     const [isDropdownOpen, setIsDropdownOpen] = useState(false);
 
-
     // --- 대표적인 ETF 및 주식 마스터 데이터 정밀 구축 (검색용) ---
     const KR_TICKER_MASTER = useMemo(() => {
         // validCorpCodeArray와 validCorpNameArray의 길이가 같다고 가정
@@ -501,7 +500,7 @@ function OrderModal({ isUs, stock, balanceKey, kiOrderCash, reqPostOrderCash, on
         }
 
         dispatch(reqPostOrderCash({
-            key: balanceKey,
+            kakaoId: balanceKey,
             PDNO: pdno,
             buyOrSell: buyOrSell,
             excg_cd: excgCd, 

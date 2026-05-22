@@ -737,9 +737,9 @@ export const koreaInvestmentUsMarketSlice = createAppSlice({
         //     }
         // ),
         reqPostOrderUs: create.asyncThunk(
-            async ({ PDNO, buyOrSell, excg_cd, price }: { PDNO: string, buyOrSell: string, excg_cd: string, price: string }, { rejectWithValue }) => {
+            async ({ PDNO, buyOrSell, excg_cd, price, kakaoId }: { PDNO: string, buyOrSell: string, excg_cd: string, price: string, kakaoId: string }, { rejectWithValue }) => {
                 try {
-                    const response = await postOrderUs(PDNO, buyOrSell, excg_cd, price);
+                    const response = await postOrderUs(PDNO, buyOrSell, excg_cd, price, kakaoId);
 
                     // 한투 서버가 비즈니스 에러(시간오류, 잔액부족 등)를 반환한 경우
                     if (response && response.rt_cd !== "0") {
