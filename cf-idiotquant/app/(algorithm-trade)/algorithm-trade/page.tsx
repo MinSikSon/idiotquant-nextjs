@@ -30,10 +30,11 @@ import corpCodeJson from "@/public/data/validCorpCode.json";
 import nasdaq_tickers from "@/public/data/usStockSymbols/nasdaq_tickers.json";
 import nyse_tickers from "@/public/data/usStockSymbols/nyse_tickers.json";
 import amex_tickers from "@/public/data/usStockSymbols/amex_tickers.json";
+import us_etf_tickers from "@/public/data/usStockSymbols/us_etf_tickers.json";
 import { StockCard } from "@/app/(search)/search/components/StockCard";
 import { cn } from "@/lib/utils";
 
-const us_tickers = [...nasdaq_tickers, ...nyse_tickers, ...amex_tickers];
+const us_tickers = [...nasdaq_tickers, ...nyse_tickers, ...amex_tickers, ...us_etf_tickers];
 const PAGE_SIZE = 10;
 
 /** 카드 데이터 패처 컴포넌트 */
