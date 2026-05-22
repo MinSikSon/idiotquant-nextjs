@@ -475,6 +475,7 @@ const currentKakaoUser = Array.isArray(kakaoMemberList)
               kiBalance={kiBalance as any}
               reqGetInquireBalance={reqGetInquireBalance}
               kakaoMemberList={kakaoMemberList}
+              reqPostOrderCash={reqPostOrderCash}
             />
           </section>
 

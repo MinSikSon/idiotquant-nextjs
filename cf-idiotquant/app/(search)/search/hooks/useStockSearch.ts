@@ -4,7 +4,6 @@ import corpCodeJson from "@/public/data/validCorpCode.json";
 import nasdaq_tickers from "@/public/data/usStockSymbols/nasdaq_tickers.json";
 import nyse_tickers from "@/public/data/usStockSymbols/nyse_tickers.json";
 import amex_tickers from "@/public/data/usStockSymbols/amex_tickers.json";
-import us_etf_tickers from "@/public/data/usStockSymbols/us_etf_tickers.json";
 
 // Redux Actions
 import {
@@ -34,7 +33,7 @@ import { selectAiStreamOutput } from "@/lib/features/ai/aiStreamSlice";
 import { addKrMarketHistory } from "@/lib/features/searchHistory/searchHistorySlice";
 import { reqPostSearchLog } from "@/lib/features/searchLog/searchLogSlice";
 
-const us_tickers = [...nasdaq_tickers, ...nyse_tickers, ...amex_tickers, ...us_etf_tickers];
+const us_tickers = [...nasdaq_tickers, ...nyse_tickers, ...amex_tickers];
 
 export function useStockSearch() {
     const dispatch = useAppDispatch();

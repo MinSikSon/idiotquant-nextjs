@@ -14,10 +14,23 @@ import {
     ChevronsUpDown,
     X,
     Loader2,
+    Search,
+    PlusCircle
 } from "lucide-react";
 import { useAppDispatch } from "@/lib/hooks";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useSession } from "next-auth/react";
+
+import nasdaq_tickers from '@/public/data/usStockSymbols/nasdaq_tickers.json';
+import nyse_tickers from '@/public/data/usStockSymbols/nyse_tickers.json';
+import amex_tickers from '@/public/data/usStockSymbols/amex_tickers.json';
+import validCorpCodeArray from '@/public/data/validCorpCodeArray.json';
+import validCorpNameArray from '@/public/data/validCorpNameArray.json';
+
+// const MARKET_STOCK_MASTER = [
+//     ...KR_TICKER_MASTER,
+//     ...US_TICKER_MASTER
+// ];
 
 // --- Helpers ---
 const getFieldValue = (item: any, key: string) => {
@@ -25,7 +38,7 @@ const getFieldValue = (item: any, key: string) => {
         name: item.prdt_name || item.ovrs_item_name || item.itms_nm,
         price: item.prpr || item.ovrs_now_pric1 || 0,
         avg_price: item.pchs_avg_pric || item.pchs_avg_pric1 || 0,
-        qty: item.hldg_qty || item.ccld_qty_smtl1 || 0,
+        qty: item.hldg_qty || item.cblc_qty13 || item.ccld_qty_smtl1 || 0,
         evlu_amt: item.evlu_amt || item.frcr_evlu_amt2 || 0,
         profit_rt: item.evlu_pfls_rt || item.evlu_pfls_rt1 || 0,
         pchs_amt: item.pchs_amt || item.frcr_pchs_amt || 0,
@@ -81,6 +94,33 @@ export default function InquireBalanceResult(props: InquireBalanceResultProps) {
     const [isOrderModalOpen, setIsOrderModalOpen] = useState(false);
     const [selectedStock, setSelectedStock] = useState<any>(null);
 
+    // 검색 제어 상태 관리
+    const [searchQuery, setSearchQuery] = useState("");
+    const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+
+
+    // --- 대표적인 ETF 및 주식 마스터 데이터 정밀 구축 (검색용) ---
+    const KR_TICKER_MASTER = useMemo(() => {
+        // validCorpCodeArray와 validCorpNameArray의 길이가 같다고 가정
+        return validCorpCodeArray.map((code, index) => ({
+            pdno: code,
+            prdt_name: validCorpNameArray[index] || "Unknown", // 인덱스가 일치하는 이름 매칭
+            ovrs_excg_cd: "", // 국내 주식이므로 빈 값
+            isUs: false
+        }));
+    }, []);
+
+    const MARKET_STOCK_MASTER = useMemo(() => {
+        const list: { pdno: string, prdt_name: string, ovrs_excg_cd: string, isUs: boolean }[] = [];
+
+        // 단순 티커 리스트를 객체 형태로 변환
+        nasdaq_tickers.forEach(t => list.push({ pdno: t, prdt_name: t, ovrs_excg_cd: "NASD", isUs: true }));
+        nyse_tickers.forEach(t => list.push({ pdno: t, prdt_name: t, ovrs_excg_cd: "NYSE", isUs: true }));
+        amex_tickers.forEach(t => list.push({ pdno: t, prdt_name: t, ovrs_excg_cd: "AMEX", isUs: true }));
+
+        return [...list, ...KR_TICKER_MASTER];
+    }, [KR_TICKER_MASTER]);
+
     useEffect(() => {
         if (urlKey) {
             props.setBalanceKey(urlKey);
@@ -95,6 +135,7 @@ export default function InquireBalanceResult(props: InquireBalanceResultProps) {
             alert(`[주문 처리 결과]\n${serverMsg}`);
             
             setIsOrderModalOpen(false);
+            setSearchQuery("");
             dispatch(props.reqGetInquireBalance(props.balanceKey));
             if (props.reqGetInquireCcnl) dispatch(props.reqGetInquireCcnl(props.balanceKey));
             if (props.reqGetInquireNccs) dispatch(props.reqGetInquireNccs(props.balanceKey));
@@ -108,7 +149,21 @@ export default function InquireBalanceResult(props: InquireBalanceResultProps) {
     const handleOpenOrderModal = (stock: any) => {
         setSelectedStock(stock);
         setIsOrderModalOpen(true);
+        setIsDropdownOpen(false);
     };
+
+    // 실시간 다이내믹 검색 필터 로직 (티커 또는 종목명 매칭)
+    const filteredSearchResults = useMemo(() => {
+        if (!searchQuery.trim()) return [];
+        const query = searchQuery.toLowerCase().trim();
+        
+        return MARKET_STOCK_MASTER.filter(
+            (stock) =>
+                stock.isUs === isUs &&
+                (stock.pdno.toLowerCase().includes(query) ||
+                    stock.prdt_name.toLowerCase().includes(query))
+        );
+    }, [searchQuery, isUs]);
 
     return (
         <div className="space-y-6">
@@ -126,22 +181,82 @@ export default function InquireBalanceResult(props: InquireBalanceResultProps) {
                     </div>
                 </div>
 
-                <div className="flex items-center gap-2">
-                    <span className="px-2 py-1 bg-zinc-200 dark:bg-zinc-800 rounded text-[10px] font-black text-zinc-600 dark:text-zinc-400">
-                        {isUs ? "KRW (고시환율 정산)" : "KRW"}
-                    </span>
-                    <button
-                        disabled={props.kiBalance.state === "pending"}
-                        onClick={() => {
-                            dispatch(props.reqGetInquireBalance(props.balanceKey));
-                            if (props.reqGetInquireCcnl) dispatch(props.reqGetInquireCcnl(props.balanceKey));
-                            if (props.reqGetInquireNccs) dispatch(props.reqGetInquireNccs(props.balanceKey));
-                        }}
-                        className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 disabled:bg-blue-400 text-white rounded-xl text-sm font-bold transition-all shadow-sm"
-                    >
-                        <RefreshCw size={14} className={props.kiBalance.state === "pending" ? "animate-spin" : ""} />
-                        새로고침
-                    </button>
+                <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
+                    {/* 🔍 실시간 신규 종목 검색 및 주문 컴포넌트 */}
+                    <div className="relative min-w-[260px]">
+                        <div className="relative">
+                            <Search size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-zinc-400" />
+                            <input
+                                type="text"
+                                value={searchQuery}
+                                onFocus={() => setIsDropdownOpen(true)}
+                                onChange={(e) => {
+                                    setSearchQuery(e.target.value);
+                                    setIsDropdownOpen(true);
+                                }}
+                                placeholder={isUs ? "티커 또는 미국 ETF 검색..." : "종목코드 또는 국내 주식 검색..."}
+                                className="w-full pl-10 pr-10 py-2 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-xl text-xs font-bold focus:outline-none focus:ring-2 focus:ring-blue-600 focus:border-transparent dark:text-white"
+                            />
+                            {searchQuery && (
+                                <button 
+                                    onClick={() => setSearchQuery("")}
+                                    className="absolute right-3 top-1/2 -translate-y-1/2 p-0.5 hover:bg-zinc-100 dark:hover:bg-zinc-800 rounded-full text-zinc-400"
+                                >
+                                    <X size={12} />
+                                </button>
+                            )}
+                        </div>
+
+                        {/* 검색 결과 드롭다운 파넬 */}
+                        {isDropdownOpen && searchQuery.trim() && (
+                            <>
+                                <div className="fixed inset-0 z-10" onClick={() => setIsDropdownOpen(false)} />
+                                <div className="absolute left-0 right-0 mt-2 max-h-60 overflow-y-auto bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-2xl shadow-xl z-20 divide-y divide-zinc-100 dark:divide-zinc-800">
+                                    {filteredSearchResults.length > 0 ? (
+                                        filteredSearchResults.map((stock) => (
+                                            <div
+                                                key={stock.pdno}
+                                                onClick={() => handleOpenOrderModal(stock)}
+                                                className="flex items-center justify-between p-3.5 hover:bg-zinc-50 dark:hover:bg-zinc-800/50 cursor-pointer transition-colors group"
+                                            >
+                                                <div className="flex flex-col">
+                                                    <span className="text-xs font-black dark:text-zinc-200 group-hover:text-blue-600 transition-colors">
+                                                        {stock.prdt_name}
+                                                    </span>
+                                                    <span className="text-[10px] font-mono text-zinc-400 mt-0.5">
+                                                        {stock.pdno} {stock.ovrs_excg_cd ? `• ${stock.ovrs_excg_cd}` : ""}
+                                                    </span>
+                                                </div>
+                                                <PlusCircle size={16} className="text-zinc-400 group-hover:text-blue-600 transition-colors" />
+                                            </div>
+                                        ))
+                                    ) : (
+                                        <div className="p-4 text-center text-xs font-medium text-zinc-400">
+                                            검색 결과가 없습니다.
+                                        </div>
+                                    )}
+                                </div>
+                            </>
+                        )}
+                    </div>
+
+                    <div className="flex items-center gap-2">
+                        <span className="px-2 py-1 bg-zinc-200 dark:bg-zinc-800 rounded text-[10px] font-black text-zinc-600 dark:text-zinc-400 shrink-0">
+                            {isUs ? "KRW (고시환율 정산)" : "KRW"}
+                        </span>
+                        <button
+                            disabled={props.kiBalance.state === "pending"}
+                            onClick={() => {
+                                dispatch(props.reqGetInquireBalance(props.balanceKey));
+                                if (props.reqGetInquireCcnl) dispatch(props.reqGetInquireCcnl(props.balanceKey));
+                                if (props.reqGetInquireNccs) dispatch(props.reqGetInquireNccs(props.balanceKey));
+                            }}
+                            className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 disabled:bg-blue-400 text-white rounded-xl text-sm font-bold transition-all shadow-sm shrink-0"
+                        >
+                            <RefreshCw size={14} className={props.kiBalance.state === "pending" ? "animate-spin" : ""} />
+                            새로고침
+                        </button>
+                    </div>
                 </div>
             </div>
 
@@ -364,16 +479,16 @@ interface OrderModalProps {
 
 function OrderModal({ isUs, stock, balanceKey, kiOrderCash, reqPostOrderCash, onClose }: OrderModalProps) {
     const dispatch = useAppDispatch();
-    const [buyOrSell, setBuyOrSell] = useState<"buy" | "sell">("buy");
-    const [price, setPrice] = useState(String(getFieldValue(stock, "price")));
-    const [qty, setQty] = useState("1");
-
+    
     const pdno = stock.pdno || stock.ovrs_pdno;
     const name = getFieldValue(stock, "name");
-    
-    // 🔥 [핵심 교정] 한투 API 해외주식 잔고에서 내려주는 거래소 코드('ovrs_excg_cd') 추출
-    // 만약 국내 주식이거나 값이 비어있다면 디폴트로 'NASD' 설정
     const excgCd = stock.ovrs_excg_cd || (isUs ? "NASD" : "");
+
+    const initialPrice = Number(getFieldValue(stock, "price")) || 0;
+    
+    const [buyOrSell, setBuyOrSell] = useState<"buy" | "sell">("buy");
+    const [price, setPrice] = useState(initialPrice > 0 ? String(initialPrice) : "");
+    const [qty, setQty] = useState("1");
 
     const handleSubmitOrder = () => {
         if (!reqPostOrderCash) {
@@ -385,13 +500,12 @@ function OrderModal({ isUs, stock, balanceKey, kiOrderCash, reqPostOrderCash, on
             return;
         }
 
-        // 🔥 Slice 스키마에 맞게 excg_cd 파라미터 추가 전달
         dispatch(reqPostOrderCash({
             key: balanceKey,
             PDNO: pdno,
             buyOrSell: buyOrSell,
             excg_cd: excgCd, 
-            price: String(price), // Thunk 스펙에 맞춰 string으로 변환해 전달
+            price: String(price),
             qty: Number(qty)
         }));
     };
@@ -434,7 +548,7 @@ function OrderModal({ isUs, stock, balanceKey, kiOrderCash, reqPostOrderCash, on
                     <div className="space-y-1.5">
                         <label className="text-xs font-black text-zinc-400 uppercase tracking-wider">주문 가격 (KRW 환산값 기준)</label>
                         <div className="relative">
-                            <span className="absolute left-4 top-1/2 -translate-y-1/2 text-sm font-bold text-zinc-400">₩</span>
+                            <span className="absolute left-4 top-1/2 -translate-y-1/2 text-sm font-bold text-zinc-400">{stock.isUs ? "$" : "₩"}</span>
                             <input
                                 type="number"
                                 step="1"

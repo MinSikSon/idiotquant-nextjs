@@ -15,7 +15,6 @@ import { ErrorFallback } from './components/ErrorFallback';
 import nasdaq_tickers from '@/public/data/usStockSymbols/nasdaq_tickers.json';
 import nyse_tickers from '@/public/data/usStockSymbols/nyse_tickers.json';
 import amex_tickers from '@/public/data/usStockSymbols/amex_tickers.json';
-import us_etf_tickers from '@/public/data/usStockSymbols/us_etf_tickers.json';
 import validCorpCodeArray from '@/public/data/validCorpCodeArray.json';
 import validCorpNameArray from '@/public/data/validCorpNameArray.json';
 import { StockMetrics } from './components/StockMetrics';
@@ -121,7 +120,6 @@ const all_tickers = [
   ...nasdaq_tickers,
   ...nyse_tickers,
   ...amex_tickers,
-  ...us_etf_tickers,
   ...validCorpCodeArray,
   ...validCorpNameArray,
 ];
