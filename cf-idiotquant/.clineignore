@@ -1,0 +1,24 @@
+# .clineignore
+node_modules/
+.next/
+out/
+build/
+dist/
+.git/
+.images/
+*.png
+*.jpg
+*.jpeg
+*.gif
+*.svg
+*.ico
+*.mp4
+.DS_Store
+package-lock.json
+yarn.lock
+pnpm-lock.yaml
+
+## 📂 Next.js Directory & Architecture Rules
+- Every Page or API handler must reside in the `src/app/` directory (App Router structure).
+- Shared presentational components must be placed in `src/components/`.
+- Maintain a strict division: Use Server Components for data fetching and keep Client Components (`'use client'`) lightweight and localized to specific interactive elements.
