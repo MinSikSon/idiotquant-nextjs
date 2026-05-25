@@ -641,7 +641,7 @@ export default function ModernHomePage() {
               <br />
               데이터는 거짓말을 하지 않습니다.
             </p>
-            <div className="flex gap-2 mt-2">
+            {/* <div className="flex gap-2 mt-2">
               {["서비스", "가격", "블로그", "고객센터"].map((l) => (
                 <span
                   key={l}
@@ -650,7 +650,7 @@ export default function ModernHomePage() {
                   {l}
                 </span>
               ))}
-            </div>
+            </div> */}
           </div>
           <div className="flex flex-col items-end gap-2">
             <p className="text-[10px] font-bold text-zinc-400 uppercase tracking-[0.35em]">
