@@ -353,9 +353,8 @@ export function NavbarWithSimpleLinks() {
               </span>
               <div className="absolute inset-0 rounded-lg bg-gradient-to-br from-white/20 to-transparent" />
             </div>
-            <span className="font-black tracking-tighter text-[15px] text-zinc-900 dark:text-white group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">
-              IDIOT
-              <span className="text-blue-600 dark:text-blue-400">QUANT</span>
+            <span className="font-black tracking-tighter text-sm text-zinc-900 dark:text-white">
+              IDIOT<span className="text-blue-600">QUANT</span>
             </span>
           </Link>
 

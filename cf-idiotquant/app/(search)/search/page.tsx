@@ -778,37 +778,32 @@ function SearchContent() {
       >
         <div className="max-w-6xl mx-auto">
           {/* Top Action Bar */}
-          {fixed && <div className="px-4 pt-3 flex items-center justify-between">
-            <div
-              className="flex items-center gap-2 cursor-pointer group"
-              onClick={() => router.push('/search')}
-              role="button"
-              tabIndex={0}
-              aria-label="홈으로 이동"
-            >
-              <div className="w-6 h-6 bg-blue-600 rounded-md flex items-center justify-center">
-                <span className="text-white text-[9px] font-black italic">IQ</span>
-              </div>
-              {/* <span className="text-sm font-black tracking-tight bg-clip-text text-transparent bg-gradient-to-r from-zinc-900 via-zinc-800 to-zinc-700 dark:from-white dark:via-zinc-200 dark:to-zinc-400 font-sans">
-                IdiotQuant<span className="text-blue-500 font-medium text-xs ml-0.5 font-mono">PRO</span>
-              </span> */}
-              <span className="font-black tracking-tighter text-sm text-zinc-900 dark:text-white">
-                IDIOT<span className="text-blue-600">QUANT</span>
-              </span>
+          {true && <div className="px-2 py-2 flex items-center justify-between gap-1">
+            {/* Search Bar */}
+            <div className="pl-2 w-full">
+              <SearchAutocomplete
+                placeHolder="🇰🇷 국내 종목명 또는 🇺🇸 미국 티커(Ticker)를 입력하세요"
+                onSearchButton={handleSearch}
+                validCorpNameArray={all_tickers}
+                onSearchStateChange={(focused, isEmpty) => {
+                  setIsSearchFocused(focused);
+                  setIsQueryEmpty(isEmpty);
+                }}
+              />
             </div>
 
             {/* Market Indicator & Actions */}
             {isLoaded && (
               <div className="flex items-center gap-2 animate-in fade-in duration-200">
                 {/* Refresh Button */}
-                <button
+                {/* <button
                   onClick={handleRefresh}
                   disabled={isRefreshing}
                   className="p-1.5 rounded-lg hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors disabled:opacity-50"
                   aria-label="데이터 새로고침"
                 >
                   <RefreshCw size={14} className={cn("text-zinc-500", isRefreshing && "animate-spin")} />
-                </button>
+                </button> */}
 
                 {/* Watchlist Toggle */}
                 <button
@@ -836,22 +831,12 @@ function SearchContent() {
                 </span>
               </div>
             )}
+
             <ScrollProgress />
 
           </div>}
 
-          {/* Search Bar */}
-          <div className="px-4 pb-3.5 pt-2">
-            <SearchAutocomplete
-              placeHolder="🇰🇷 국내 종목명 또는 🇺🇸 미국 티커(Ticker)를 입력하세요"
-              onSearchButton={handleSearch}
-              validCorpNameArray={all_tickers}
-              onSearchStateChange={(focused, isEmpty) => {
-                setIsSearchFocused(focused);
-                setIsQueryEmpty(isEmpty);
-              }}
-            />
-          </div>
+
 
           {/* Quick Access Sections */}
           {!fixed && !isSearchFocused && (

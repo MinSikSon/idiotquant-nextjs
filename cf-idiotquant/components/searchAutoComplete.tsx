@@ -167,7 +167,7 @@ const SearchAutocomplete = ({ validCorpNameArray, onSearchButton, placeHolder, o
             {/* 검색 아키텍처 입력 폼 바디 */}
             <div 
                 className={cn(
-                    "relative flex items-center gap-2.5 w-full px-3.5 py-3 rounded-2xl border transition-all duration-300 ease-in-out",
+                    "relative flex items-center gap-2.5 w-full px-3.5 py-2 pb-1.5 rounded-2xl border transition-all duration-300 ease-in-out",
                     "bg-zinc-100/90 dark:bg-zinc-900/90 border-zinc-200/60 dark:border-zinc-800/60 backdrop-blur-md",
                     isFocused 
                         ? "bg-white dark:bg-zinc-950 border-blue-500/80 dark:border-indigo-500/80 ring-4 ring-blue-500/10 dark:ring-indigo-500/10 shadow-lg" 
