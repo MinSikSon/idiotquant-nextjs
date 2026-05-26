@@ -465,6 +465,8 @@ function CalculatorContent() {
         } catch (err) { console.error(err); }
     };
 
+    const [isReorderEnabled, setIsReorderEnabled] = useState(false);
+
     return (
         <div className="bg-zinc-50 dark:bg-zinc-950 min-h-screen p-3 sm:p-6 md:p-10 pb-24 md:pb-10 font-sans text-zinc-900 dark:text-zinc-50 selection:bg-blue-500/20">
             <div className="max-w-6xl mx-auto space-y-5 sm:space-y-10">
@@ -502,6 +504,22 @@ function CalculatorContent() {
                     </div>
                     
                     <div className="flex items-center gap-1.5 w-full sm:w-auto justify-end">
+                        {/* 상단 버튼 영역에 토글 버튼 추가 */}
+                        <div className="flex items-center gap-1.5 w-full sm:w-auto justify-end">
+                            <button
+                                onClick={() => setIsReorderEnabled(!isReorderEnabled)}
+                                className={cn(
+                                    "flex-1 sm:flex-none flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg font-bold text-[11px] transition-all border shadow-xs",
+                                    isReorderEnabled
+                                        ? "bg-blue-600 border-blue-600 text-white"
+                                        : "bg-white dark:bg-zinc-900 border-zinc-300 dark:border-zinc-700 text-zinc-900 dark:text-zinc-50"
+                                )}
+                            >
+                                <Bars3Icon className="w-3.5 h-3.5" />
+                                {isReorderEnabled ? "순서 변경 모드 ON" : "순서 변경 모드 OFF"}
+                            </button>
+                            {/* 기존 초기화/공유 버튼 ... */}
+                        </div>
                         <button onClick={resetLayout} className="flex-1 sm:flex-none flex items-center justify-center gap-1 px-3 py-2 rounded-lg font-bold text-[11px] bg-zinc-100 dark:bg-zinc-800 hover:bg-zinc-200 dark:hover:bg-zinc-700 text-zinc-700 dark:text-zinc-300 transition-colors border border-zinc-200 dark:border-zinc-700/60 shadow-xs">
                             <ArrowPathIcon className="w-3.5 h-3.5" />
                             위치 초기화
@@ -522,6 +540,7 @@ function CalculatorContent() {
                                     <Reorder.Item 
                                         key="core-investment" 
                                         value="core-investment" 
+                                        dragListener={isReorderEnabled}
                                         whileDrag={{ scale: 1.015 }}
                                         className="bg-transparent select-none cursor-grab active:cursor-grabbing outline-none relative group/item rounded-2xl"
                                     >
@@ -580,6 +599,7 @@ function CalculatorContent() {
                                     <Reorder.Item 
                                         key="life-cycle" 
                                         value="life-cycle" 
+                                        dragListener={isReorderEnabled}
                                         whileDrag={{ scale: 1.015 }}
                                         className="bg-transparent select-none cursor-grab active:cursor-grabbing outline-none relative group/item rounded-2xl"
                                     >
@@ -603,6 +623,7 @@ function CalculatorContent() {
                                     <Reorder.Item 
                                         key="incremental-flows" 
                                         value="incremental-flows" 
+                                        dragListener={isReorderEnabled}
                                         whileDrag={{ scale: 1.015 }}
                                         className="bg-transparent select-none cursor-grab active:cursor-grabbing outline-none relative group/item rounded-2xl"
                                     >
@@ -649,6 +670,7 @@ function CalculatorContent() {
                                     <Reorder.Item 
                                         key="summary-card" 
                                         value="summary-card" 
+                                        dragListener={isReorderEnabled}
                                         whileDrag={{ scale: 1.015 }}
                                         className="bg-transparent select-none cursor-grab active:cursor-grabbing outline-none relative group/item rounded-2xl"
                                     >
@@ -699,6 +721,7 @@ function CalculatorContent() {
                                     <Reorder.Item 
                                         key="callout-tips" 
                                         value="callout-tips" 
+                                        dragListener={isReorderEnabled}
                                         whileDrag={{ scale: 1.015 }}
                                         className="bg-transparent select-none cursor-grab active:cursor-grabbing outline-none relative group/item rounded-2xl"
                                     >
@@ -719,6 +742,7 @@ function CalculatorContent() {
                                     <Reorder.Item 
                                         key="chart-view" 
                                         value="chart-view" 
+                                        dragListener={isReorderEnabled}
                                         whileDrag={{ scale: 1.015 }}
                                         className="bg-transparent select-none cursor-grab active:cursor-grabbing outline-none relative group/item rounded-2xl"
                                     >
@@ -745,9 +769,10 @@ function CalculatorContent() {
                                         key="table-report" 
                                         value="table-report" 
                                         whileDrag={{ scale: 1.015 }}
-                                        className="bg-transparent select-none cursor-grab active:cursor-grabbing outline-none relative group/item rounded-2xl"
+                                        dragListener={isReorderEnabled}
+                                        className={cn("bg-transparent select-none outline-none relative group/item rounded-2xl", isReorderEnabled ? "cursor-grab active:cursor-grabbing" : "")}
                                     >
-                                        <DragIndicatorOverlay desktopType="리포트 섹션 내 상하 이동" />
+                                        {isReorderEnabled && <DragIndicatorOverlay desktopType="리포트 섹션 내 상하 이동" />}
                                         <div className="bg-white dark:bg-zinc-900 p-3.5 sm:p-6 rounded-2xl sm:rounded-[2.5rem] border border-zinc-200 dark:border-zinc-800 shadow-xs relative group/card border-t-4 group-active/item:border-blue-500 group-active/item:ring-4 group-active/item:ring-blue-500/20 dark:group-active/item:ring-blue-500/10 transition-all duration-200">
                                             <div className="absolute right-5 top-5 opacity-40 lg:opacity-30 group-hover/card:opacity-80 transition-opacity pointer-events-none text-zinc-400 dark:text-zinc-500 flex items-center gap-1 bg-zinc-100 dark:bg-zinc-800 px-1.5 py-0.5 rounded text-[10px] font-bold">
                                                 <Bars3Icon className="w-3.5 h-3.5" />
