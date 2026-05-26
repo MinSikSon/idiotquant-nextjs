@@ -13,6 +13,11 @@ import {
     Legend,
 } from "recharts";
 
+// ResultChart 내부용 안전한 클래스 병합 유틸리티
+function cnLocal(...inputs: (string | boolean | undefined | null)[]) {
+    return inputs.filter(Boolean).join(" ");
+}
+
 const formatValueFull = (value: number): string => {
     if (value === 0) return "0원";
     const trillion = Math.floor(value / 100000000);
@@ -43,125 +48,118 @@ interface ResultChartProps {
     height: string;
 }
 
+const CustomTooltip = ({ active, payload }: any) => {
+    if (active && payload && payload.length) {
+        return (
+            <div className="bg-zinc-950/95 dark:bg-zinc-900/95 backdrop-blur-md border border-zinc-800 p-4 rounded-xl shadow-xl space-y-2 z-50">
+                <p className="text-[10px] font-black text-zinc-400 dark:text-zinc-500 font-mono tracking-wider">
+                    {payload[0].payload.year}세 예상 진단
+                </p>
+                <div className="flex flex-col gap-1">
+                    <span className="text-sm font-black text-blue-400 flex items-center gap-1.5 font-mono">
+                        <span className="w-2 h-2 rounded-full bg-blue-500" />
+                        {formatValueFull(payload[0].value)}
+                    </span>
+                    {payload[1] && (
+                        <span className="text-xs font-bold text-amber-400 flex items-center gap-1.5 font-mono">
+                            <span className="w-2 h-2 rounded-full bg-amber-500" />
+                            누적 수익률: {payload[1].value.toFixed(1)}%
+                        </span>
+                    )}
+                </div>
+            </div>
+        );
+    }
+    return null;
+};
+
 const ResultChart: FC<ResultChartProps> = ({ data, height }) => {
-    // 1. 모바일 화면 여부를 감지하기 위한 반응형 상태 추가
-    const [isMobile, setIsMobile] = useState<boolean>(false);
+    const [mounted, setMounted] = useState<boolean>(false);
 
     useEffect(() => {
-        const handleResize = () => {
-            // 768px 미만을 모바일 기준으로 정의
-            setIsMobile(window.innerWidth < 768);
-        };
-
-        // 초기 로드 시 실행 및 이벤트 리스너 등록
-        handleResize();
-        window.addEventListener("resize", handleResize);
-        return () => window.removeEventListener("resize", handleResize);
+        setMounted(true);
     }, []);
 
-    if (!data || data.length === 0) return null;
+    if (!mounted) {
+        return (
+            <div className={cnLocal("w-full bg-zinc-50/50 dark:bg-black/10 animate-pulse rounded-2xl flex items-center justify-center text-xs text-zinc-400 font-medium font-sans", height)}>
+                차트를 로드하는 중입니다...
+            </div>
+        );
+    }
 
     return (
-        <div className={`w-full flex flex-col p-0 bg-transparent relative overflow-visible ${height}`}>
-            <div className="flex-grow w-full h-full">
+        <div className="w-full bg-white dark:bg-zinc-900/10 border border-zinc-200/50 dark:border-zinc-800/50 rounded-2xl p-3 sm:p-5 backdrop-blur-md relative overflow-hidden group shadow-xs">
+            <div className="absolute top-0 left-0 w-full h-[2px] bg-gradient-to-r from-blue-500 via-indigo-500 to-purple-500 opacity-70" />
+            
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-8">
+                <div className="space-y-0.5">
+                    <h3 className="text-[10px] font-black text-zinc-400 dark:text-zinc-500 uppercase tracking-widest flex items-center gap-1.5">
+                        <span className="w-1.5 h-1.5 rounded-full bg-blue-500 animate-pulse" />
+                        Asset Growth Trajectory
+                    </h3>
+                    <p className="text-xs sm:text-sm font-black text-zinc-800 dark:text-white tracking-tight">
+                        자산 총액 및 누적 수익률 추이 시뮬레이션 커브
+                    </p>
+                </div>
+            </div>
+
+            <div className={cnLocal("w-full relative min-h-[300px]", height)} style={{ height: height.includes('h-[') ? undefined : '400px' }}>
                 <ResponsiveContainer width="100%" height="100%">
-                    <AreaChart
-                        data={data}
-                        /* 
-                          [개선 포인트 1] 차트 자체의 마진을 모바일과 데스크톱별로 최적화
-                          모바일에서는 공간 확보를 위해 좌우 여백을 대폭 줄입니다.
-                        */
-                        margin={{ 
-                            top: 10, 
-                            right: isMobile ? 5 : 15, 
-                            bottom: isMobile ? 15 : 25, 
-                            left: isMobile ? -5 : 15 
-                        }}
-                    >
+                    <AreaChart data={data} margin={{ top: 10, right: 5, left: -22, bottom: 0 }}>
                         <defs>
                             <linearGradient id="colorValue" x1="0" y1="0" x2="0" y2="1">
-                                <stop offset="5%" stopColor="#3b82f6" stopOpacity={0.25} />
-                                <stop offset="95%" stopColor="#3b82f6" stopOpacity={0} />
+                                <stop offset="5%" stopColor="#3b82f6" stopOpacity={0.2} />
+                                <stop offset="95%" stopColor="#3b82f6" stopOpacity={0.0} />
                             </linearGradient>
                         </defs>
-
                         <CartesianGrid 
-                            strokeDasharray="3 3" 
+                            strokeDasharray="4 4" 
                             stroke="currentColor" 
-                            className="text-zinc-200 dark:text-zinc-800 opacity-50"
+                            className="text-zinc-200/50 dark:text-zinc-800/30" 
                             vertical={false} 
                         />
-
                         <XAxis
                             dataKey="year"
-                            /* [개선 포인트 2] X축 텍스트 크기 조절 및 간격 확보 */
-                            tick={{ fontSize: isMobile ? 10 : 12, fontWeight: 600 }}
-                            className="fill-zinc-400 dark:fill-zinc-500"
-                            axisLine={false}
+                            stroke="currentColor"
+                            className="text-zinc-400 dark:text-zinc-600 font-mono text-[10px] font-bold"
                             tickLine={false}
-                            dy={isMobile ? 6 : 10}
-                            interval="preserveStartEnd"
+                            axisLine={false}
+                            dy={10}
+                            tickFormatter={(v) => `${v}세`}
                         />
-
                         <YAxis
                             yAxisId="left"
-                            /* 
-                              [개선 포인트 3] Y축 글자가 크거나 짤리지 않도록 너비를 유동적으로 설정
-                              모바일에서는 수치 표현이 간결하므로 너비를 줄여 차트 영역을 더 크게 확보합니다.
-                            */
-                            width={isMobile ? 40 : 60}
-                            tick={{ fontSize: isMobile ? 9 : 10 }}
-                            className="fill-zinc-400 dark:fill-zinc-500"
-                            axisLine={false}
+                            stroke="currentColor"
+                            className="text-zinc-400 dark:text-zinc-600 font-mono text-[9px] font-bold"
                             tickLine={false}
-                            tickFormatter={(v) => {
-                                if (v >= 10000) {
-                                    const rawValue = v / 10000;
-                                    return Number.isInteger(rawValue) ? `${rawValue}억` : `${rawValue.toFixed(1)}억`;
-                                }
-                                return `${v.toLocaleString()}만`;
-                            }}
+                            axisLine={false}
+                            dx={-5}
+                            tickFormatter={(v) => v >= 100000000 ? `${(v / 100000000).toFixed(0)}조` : v >= 10000 ? `${(v / 10000).toFixed(0)}억` : v > 0 ? `${v}만` : "0"}
                         />
-
                         <YAxis
                             yAxisId="right"
                             orientation="right"
-                            width={isMobile ? 30 : 45}
-                            tick={{ fontSize: isMobile ? 9 : 10, fill: "#f59e0b" }}
-                            axisLine={false}
+                            stroke="currentColor"
+                            className="text-zinc-400 dark:text-zinc-600 font-mono text-[9px] font-bold"
                             tickLine={false}
-                            tickFormatter={(value) => `${value}%`}
+                            axisLine={false}
+                            dx={5}
+                            tickFormatter={(v) => `${v}%`}
                         />
-
-                        <Tooltip
-                            /* [개선 포인트 4] 툴팁이 차트 뷰박스 밖으로 탈출할 수 있도록 허용하고 가독성 패딩 조절 */
-                            allowEscapeViewBox={{ x: true, y: true }}
-                            contentStyle={{
-                                backgroundColor: "rgba(18, 18, 18, 0.95)",
-                                border: "1px solid rgba(255, 255, 255, 0.1)",
-                                borderRadius: "12px",
-                                padding: isMobile ? "8px 10px" : "12px",
-                                fontSize: isMobile ? "12px" : "14px",
-                                color: "#fff",
-                                boxShadow: "0 10px 15px -3px rgba(0, 0, 0, 0.3)",
-                                zIndex: 100
-                            }}
-                            itemStyle={{ color: "#fff", padding: "1px 0" }}
-                            formatter={(value: any, name: string) => {
-                                if (name === "수익률") return [`${value}%`, name];
-                                return [formatValueFull(value), name];
-                            }}
-                        />
-
+                        
+                        <Tooltip content={<CustomTooltip />} cursor={{ stroke: "currentColor", strokeWidth: 1, strokeDasharray: "4 4", className: "text-zinc-200 dark:text-zinc-800" }} />
+                        
                         <Legend
                             verticalAlign="top"
                             align="right"
-                            iconSize={isMobile ? 8 : 10}
-                            wrapperStyle={{ 
-                                paddingBottom: isMobile ? "10px" : "20px", 
-                                fontSize: isMobile ? "11px" : "12px", 
+                            iconType="circle"
+                            iconSize={6}
+                            wrapperStyle={{
+                                fontSize: "11px",
                                 fontWeight: "bold",
-                                top: isMobile ? -15 : -10
+                                top: -35,
+                                right: 0
                             }}
                         />
 
@@ -171,9 +169,9 @@ const ResultChart: FC<ResultChartProps> = ({ data, height }) => {
                             dataKey="totalValue"
                             name="자산 총액"
                             stroke="#3b82f6"
-                            strokeWidth={isMobile ? 2 : 3}
+                            strokeWidth={2.5}
                             fill="url(#colorValue)"
-                            isAnimationActive={true}
+                            isAnimationActive={false}
                         />
 
                         <Line
@@ -182,10 +180,10 @@ const ResultChart: FC<ResultChartProps> = ({ data, height }) => {
                             dataKey="profitRate"
                             name="수익률"
                             stroke="#f59e0b"
-                            strokeWidth={isMobile ? 1.5 : 2}
-                            strokeDasharray="5 5"
+                            strokeWidth={2}
+                            strokeDasharray="4 4"
                             dot={false}
-                            activeDot={{ r: isMobile ? 3 : 4, fill: "#f59e0b", strokeWidth: 0 }}
+                            activeDot={{ r: 4, fill: "#f59e0b", strokeWidth: 0 }}
                         />
                     </AreaChart>
                 </ResponsiveContainer>
