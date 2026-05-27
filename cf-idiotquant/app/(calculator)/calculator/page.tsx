@@ -385,17 +385,25 @@ function CalculatorContent() {
 
         const totalMonths = Math.max(0, (targetAge - startAge) * 12);
         const workingMonths = Math.max(0, (retirementAge - startAge) * 12);
-        
+
         const initialAnnualContrib = workingMonths > 0 ? monthlyIncome * 12 : 0;
         const initialAnnualExpense = workingMonths === 0 ? monthlyOutgo * 12 : 0;
 
-        const snapshots = [{
+        // [수정] snapshots 배열에 들어갈 객체 타입을 명시하거나 에러를 방지하기 위해 any[] 타입 지정을 해줍니다.
+        const snapshots: any[] = [{
             year: startAge,
             totalValue: Math.round(currentBalance),
             profitRate: 0,
             annualContribution: initialAnnualContrib,
-            annualExpense: initialAnnualExpense
+            annualExpense: initialAnnualExpense,
+            // 초기 0년차 상태 기본값 추가
+            isWorking: workingMonths > 0,
+            hasTaxApplied: applyTax,
+            hasIsaGoldApplied: applyIsaIsaGold,
+            hasInsurancePremium: false,
+            hasNationalPension: startAge >= 65 && applyNationalPension,
         }];
+
         const inflationRateAnnual = 2.5;
 
         let accumulatedContribThisYear = 0;
@@ -403,7 +411,7 @@ function CalculatorContent() {
 
         for (let m = 1; m <= totalMonths; m++) {
             const currentAge = startAge + Math.floor(m / 12);
-            
+
             if (currentBalance > 0) {
                 let activeTaxRate = taxRate;
                 if (applyIsaIsaGold) activeTaxRate = 22.0;
@@ -413,14 +421,17 @@ function CalculatorContent() {
                 currentBalance += profit;
             }
 
-            if (m <= workingMonths) {
+            // workingMonths 이하일 때가 은퇴 전(저축 가동기)입니다.
+            const checkWorking = m <= workingMonths;
+
+            if (checkWorking) {
                 currentBalance += monthlyIncome;
                 totalInvested += monthlyIncome;
                 accumulatedContribThisYear += monthlyIncome;
             }
 
             let actualMonthlyOutgo = monthlyOutgo;
-            if (m > workingMonths && applyInsurancePremium) actualMonthlyOutgo += (monthlyOutgo * 0.08);
+            if (!checkWorking && applyInsurancePremium) actualMonthlyOutgo += (monthlyOutgo * 0.08);
 
             if (currentAge >= 65 && applyNationalPension) currentBalance += 120;
 
@@ -440,15 +451,22 @@ function CalculatorContent() {
                     displayExpense = accumulatedExpenseThisYear / discountFactor;
                 }
 
+                // 여기에 정확히 상태값들을 매칭하여 push합니다.
                 snapshots.push({
                     year: startAge + elapsedYears,
                     totalValue: Math.round(displayBalance),
                     profitRate: totalInvested > 0 ? Number(((currentBalance / totalInvested - 1) * 100).toFixed(1)) : 0,
                     annualContribution: Math.round(displayContrib),
-                    annualExpense: Math.round(displayExpense)
+                    annualExpense: Math.round(displayExpense),
+                    // [해결] 현재 루프의 개월수(m) 기준으로 저축기/은퇴기 여부를 정확히 주입
+                    isWorking: checkWorking,
+                    hasTaxApplied: applyTax,
+                    hasIsaGoldApplied: applyIsaIsaGold,
+                    hasInsurancePremium: !checkWorking && applyInsurancePremium,
+                    hasNationalPension: (startAge + elapsedYears) >= 65 && applyNationalPension,
                 });
 
-                if (m <= workingMonths) monthlyIncome *= (1 + contributionGrowthRate / 100);
+                if (checkWorking) monthlyIncome *= (1 + contributionGrowthRate / 100);
                 monthlyOutgo *= (1 + expenseGrowthRate / 100);
 
                 accumulatedContribThisYear = 0;
@@ -513,7 +531,7 @@ function CalculatorContent() {
                             <p className="text-[11px] sm:text-sm text-zinc-600 dark:text-zinc-400 font-semibold mt-0.5 sm:mt-1">세금, 건보료, 연금까지 반영한 100세 시대 맞춤형 복리 시뮬레이터</p>
                         </div>
                     </div>
-                    
+
                     <div className="grid grid-cols-3 gap-1.5 w-full sm:flex sm:w-auto sm:items-center sm:justify-end">
                         <button
                             onClick={() => setIsReorderEnabled(!isReorderEnabled)}
@@ -527,21 +545,21 @@ function CalculatorContent() {
                             <Bars3Icon className="w-3.5 h-3.5 shrink-0" />
                             <span>{isReorderEnabled ? "순서 ON" : "순서 OFF"}</span>
                         </button>
-                        
-                        <button 
-                            onClick={resetLayout} 
+
+                        <button
+                            onClick={resetLayout}
                             className="flex flex-col sm:flex-row items-center justify-center gap-1 sm:gap-1 px-2 py-2 sm:px-3 rounded-lg font-bold text-[10px] sm:text-[11px] bg-zinc-100 dark:bg-zinc-800 hover:bg-zinc-200 dark:hover:bg-zinc-700 text-zinc-700 dark:text-zinc-300 transition-colors border border-zinc-200 dark:border-zinc-700/60 shadow-xs text-center leading-tight sm:leading-none"
                         >
                             <ArrowPathIcon className="w-3.5 h-3.5 shrink-0" />
                             <span>위치 초기화</span>
                         </button>
-                        
-                        <button 
-                            onClick={handleShareLink} 
+
+                        <button
+                            onClick={handleShareLink}
                             className={cn(
-                                "flex flex-col sm:flex-row items-center justify-center gap-1 sm:gap-1.5 px-2 py-2 sm:px-3 rounded-lg font-bold text-[10px] sm:text-[11px] transition-all shadow-xs border shrink-0 text-center leading-tight sm:leading-none", 
-                                copied 
-                                    ? "bg-emerald-600 border-emerald-600 text-white" 
+                                "flex flex-col sm:flex-row items-center justify-center gap-1 sm:gap-1.5 px-2 py-2 sm:px-3 rounded-lg font-bold text-[10px] sm:text-[11px] transition-all shadow-xs border shrink-0 text-center leading-tight sm:leading-none",
+                                copied
+                                    ? "bg-emerald-600 border-emerald-600 text-white"
                                     : "bg-white dark:bg-zinc-900 border-zinc-300 dark:border-zinc-700 text-zinc-900 dark:text-zinc-50 hover:bg-zinc-50 dark:hover:bg-zinc-800"
                             )}
                         >
@@ -557,11 +575,11 @@ function CalculatorContent() {
                         {leftOrder.map((panelId) => {
                             if (panelId === "core-investment") {
                                 return (
-                                    <Reorder.Item 
-                                        key="core-investment" 
-                                        value="core-investment" 
-                                        dragListener={false} 
-                                        dragControls={dragControlsCoreInvestment} 
+                                    <Reorder.Item
+                                        key="core-investment"
+                                        value="core-investment"
+                                        dragListener={false}
+                                        dragControls={dragControlsCoreInvestment}
                                         whileDrag={{ scale: 1.015 }}
                                         onDragStart={() => setActiveDraggingId("core-investment")}
                                         onDragEnd={() => setActiveDraggingId(null)}
@@ -570,10 +588,10 @@ function CalculatorContent() {
                                         <DragIndicatorOverlay desktopType="입력 섹션 내 상하 이동" isEnabled={isReorderEnabled && activeDraggingId === "core-investment"} />
                                         <SectionWrapper title="핵심 자산 및 기대 수익률" icon={<ArrowTrendingUpIcon className="w-4 h-4 text-zinc-500 dark:text-zinc-400" />}>
                                             <div className="space-y-4 sm:space-y-6 bg-white dark:bg-zinc-900 p-3.5 xs:p-4 sm:p-6 rounded-2xl sm:rounded-[2rem] border border-zinc-200 dark:border-zinc-800 shadow-xs relative group/card border-t-4 group-active/item:border-blue-500 group-active/item:ring-4 group-active/item:ring-blue-500/20 dark:group-active/item:ring-blue-500/10 transition-all duration-200">
-                                                
+
                                                 {/* 모바일 터치 피드백을 위한 touch-action: none 및 넉넉한 터치 패딩 공간 확보 */}
                                                 <div className="absolute right-3 top-3 w-24 h-8 flex items-center justify-end z-30">
-                                                    <div 
+                                                    <div
                                                         onPointerDown={(e) => {
                                                             if (isReorderEnabled) {
                                                                 e.preventDefault();
@@ -583,8 +601,8 @@ function CalculatorContent() {
                                                         style={{ touchAction: "none" }}
                                                         className={cn(
                                                             "px-2 py-1.5 rounded text-[10px] font-black select-none flex items-center gap-1 border transition-all",
-                                                            isReorderEnabled 
-                                                                ? "cursor-grab active:cursor-grabbing bg-blue-50 dark:bg-blue-950/40 text-blue-600 dark:text-blue-400 border-blue-200 dark:border-blue-800/80 shadow-xs" 
+                                                            isReorderEnabled
+                                                                ? "cursor-grab active:cursor-grabbing bg-blue-50 dark:bg-blue-950/40 text-blue-600 dark:text-blue-400 border-blue-200 dark:border-blue-800/80 shadow-xs"
                                                                 : "opacity-25 bg-zinc-100 dark:bg-zinc-800 text-zinc-400 border-transparent cursor-not-allowed"
                                                         )}
                                                     >
@@ -640,9 +658,9 @@ function CalculatorContent() {
                             }
                             if (panelId === "life-cycle") {
                                 return (
-                                    <Reorder.Item 
-                                        key="life-cycle" 
-                                        value="life-cycle" 
+                                    <Reorder.Item
+                                        key="life-cycle"
+                                        value="life-cycle"
                                         dragListener={false}
                                         dragControls={dragControlsLifeCycle}
                                         whileDrag={{ scale: 1.015 }}
@@ -653,9 +671,9 @@ function CalculatorContent() {
                                         <DragIndicatorOverlay desktopType="입력 섹션 내 상하 이동" isEnabled={isReorderEnabled && activeDraggingId === "life-cycle"} />
                                         <SectionWrapper title="생애 주기 임계값" icon={<UserIcon className="w-4 h-4 text-zinc-500 dark:text-zinc-400" />}>
                                             <div className="space-y-4 sm:space-y-5 bg-white dark:bg-zinc-900 p-3.5 xs:p-4 sm:p-6 rounded-2xl sm:rounded-[2rem] border border-zinc-200 dark:border-zinc-800 shadow-xs relative group/card border-t-4 group-active/item:border-blue-500 group-active/item:ring-4 group-active/item:ring-blue-500/20 dark:group-active/item:ring-blue-500/10 transition-all duration-200">
-                                                
+
                                                 <div className="absolute right-3 top-3 w-24 h-8 flex items-center justify-end z-30">
-                                                    <div 
+                                                    <div
                                                         onPointerDown={(e) => {
                                                             if (isReorderEnabled) {
                                                                 e.preventDefault();
@@ -665,8 +683,8 @@ function CalculatorContent() {
                                                         style={{ touchAction: "none" }}
                                                         className={cn(
                                                             "px-2 py-1.5 rounded text-[10px] font-black select-none flex items-center gap-1 border transition-all",
-                                                            isReorderEnabled 
-                                                                ? "cursor-grab active:cursor-grabbing bg-blue-50 dark:bg-blue-950/40 text-blue-600 dark:text-blue-400 border-blue-200 dark:border-blue-800/80 shadow-xs" 
+                                                            isReorderEnabled
+                                                                ? "cursor-grab active:cursor-grabbing bg-blue-50 dark:bg-blue-950/40 text-blue-600 dark:text-blue-400 border-blue-200 dark:border-blue-800/80 shadow-xs"
                                                                 : "opacity-25 bg-zinc-100 dark:bg-zinc-800 text-zinc-400 border-transparent cursor-not-allowed"
                                                         )}
                                                     >
@@ -687,9 +705,9 @@ function CalculatorContent() {
                             }
                             if (panelId === "incremental-flows") {
                                 return (
-                                    <Reorder.Item 
-                                        key="incremental-flows" 
-                                        value="incremental-flows" 
+                                    <Reorder.Item
+                                        key="incremental-flows"
+                                        value="incremental-flows"
                                         dragListener={false}
                                         dragControls={dragControlsIncrementalFlows}
                                         whileDrag={{ scale: 1.015 }}
@@ -700,9 +718,9 @@ function CalculatorContent() {
                                         <DragIndicatorOverlay desktopType="입력 섹션 내 상하 이동" isEnabled={isReorderEnabled && activeDraggingId === "incremental-flows"} />
                                         <SectionWrapper title="점증형 현금 가감 데이터" icon={<ArrowsRightLeftIcon className="w-4 h-4 text-zinc-500 dark:text-zinc-400" />}>
                                             <div className="space-y-4 sm:space-y-6 bg-white dark:bg-zinc-900 p-3.5 xs:p-4 sm:p-6 rounded-2xl sm:rounded-[2rem] border border-zinc-200 dark:border-zinc-800 shadow-xs relative group/card border-t-4 group-active/item:border-blue-500 group-active/item:ring-4 group-active/item:ring-blue-500/20 dark:group-active/item:ring-blue-500/10 transition-all duration-200">
-                                                
+
                                                 <div className="absolute right-3 top-3 w-24 h-8 flex items-center justify-end z-30">
-                                                    <div 
+                                                    <div
                                                         onPointerDown={(e) => {
                                                             if (isReorderEnabled) {
                                                                 e.preventDefault();
@@ -712,8 +730,8 @@ function CalculatorContent() {
                                                         style={{ touchAction: "none" }}
                                                         className={cn(
                                                             "px-2 py-1.5 rounded text-[10px] font-black select-none flex items-center gap-1 border transition-all",
-                                                            isReorderEnabled 
-                                                                ? "cursor-grab active:cursor-grabbing bg-blue-50 dark:bg-blue-950/40 text-blue-600 dark:text-blue-400 border-blue-200 dark:border-blue-800/80 shadow-xs" 
+                                                            isReorderEnabled
+                                                                ? "cursor-grab active:cursor-grabbing bg-blue-50 dark:bg-blue-950/40 text-blue-600 dark:text-blue-400 border-blue-200 dark:border-blue-800/80 shadow-xs"
                                                                 : "opacity-25 bg-zinc-100 dark:bg-zinc-800 text-zinc-400 border-transparent cursor-not-allowed"
                                                         )}
                                                     >
@@ -755,9 +773,9 @@ function CalculatorContent() {
                         {rightOrder.map((panelId) => {
                             if (panelId === "summary-card") {
                                 return (
-                                    <Reorder.Item 
-                                        key="summary-card" 
-                                        value="summary-card" 
+                                    <Reorder.Item
+                                        key="summary-card"
+                                        value="summary-card"
                                         dragListener={false}
                                         dragControls={dragControlsSummaryCard}
                                         whileDrag={{ scale: 1.015 }}
@@ -767,9 +785,9 @@ function CalculatorContent() {
                                     >
                                         <DragIndicatorOverlay desktopType="리포트 섹션 내 상하 이동" isEnabled={isReorderEnabled && activeDraggingId === "summary-card"} />
                                         <div className={cn("p-4 sm:p-8 md:p-10 rounded-2xl sm:rounded-[2.5rem] shadow-xl relative overflow-hidden transition-all duration-300 border bg-zinc-950 border-zinc-800 dark:bg-zinc-900 dark:border-zinc-800/80 text-white group/card border-t-4 group-active/item:border-blue-500 group-active/item:ring-4 group-active/item:ring-blue-500/20 dark:group-active/item:ring-blue-500/10", results.finalValue < 0 && "border-rose-900/50 bg-gradient-to-br from-zinc-950 to-rose-950/30")}>
-                                            
+
                                             <div className="absolute right-4 top-4 w-24 h-8 flex items-center justify-end z-30">
-                                                <div 
+                                                <div
                                                     onPointerDown={(e) => {
                                                         if (isReorderEnabled) {
                                                             e.preventDefault();
@@ -779,8 +797,8 @@ function CalculatorContent() {
                                                     style={{ touchAction: "none" }}
                                                     className={cn(
                                                         "px-2 py-1.5 rounded text-[10px] font-black select-none flex items-center gap-1 border transition-all text-zinc-300",
-                                                        isReorderEnabled 
-                                                            ? "cursor-grab active:cursor-grabbing bg-zinc-900 border-zinc-700 text-blue-400 ring-1 ring-blue-500/30 shadow-xs" 
+                                                        isReorderEnabled
+                                                            ? "cursor-grab active:cursor-grabbing bg-zinc-900 border-zinc-700 text-blue-400 ring-1 ring-blue-500/30 shadow-xs"
                                                             : "opacity-25 bg-zinc-900/40 border-transparent cursor-not-allowed"
                                                     )}
                                                 >
@@ -797,7 +815,7 @@ function CalculatorContent() {
                                                     <h2 className="text-xl sm:text-4xl md:text-5xl font-black tracking-tighter text-blue-400 dark:text-blue-400 font-mono">
                                                         {formatKrw(results.finalValue)}
                                                     </h2>
-                                                    
+
                                                     <AnimatePresence mode="wait">
                                                         {results.finalValue < 0 && (
                                                             <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: "auto" }} exit={{ opacity: 0, height: 0 }} className="flex items-start gap-2 text-rose-400 text-[11px] sm:text-xs font-semibold bg-rose-500/10 p-2.5 sm:p-3.5 rounded-xl border border-rose-500/20 leading-relaxed">
@@ -827,9 +845,9 @@ function CalculatorContent() {
                             }
                             if (panelId === "callout-tips") {
                                 return (
-                                    <Reorder.Item 
-                                        key="callout-tips" 
-                                        value="callout-tips" 
+                                    <Reorder.Item
+                                        key="callout-tips"
+                                        value="callout-tips"
                                         dragListener={false}
                                         dragControls={dragControlsCalloutTips}
                                         whileDrag={{ scale: 1.015 }}
@@ -839,9 +857,9 @@ function CalculatorContent() {
                                     >
                                         <DragIndicatorOverlay desktopType="리포트 섹션 내 상하 이동" isEnabled={isReorderEnabled && activeDraggingId === "callout-tips"} />
                                         <div className="relative group/card border-t-4 border-transparent group-active/item:border-blue-500 group-active/item:ring-4 group-active/item:ring-blue-500/20 dark:group-active/item:ring-blue-500/10 transition-all duration-200 rounded-xl sm:rounded-[2rem] pt-2">
-                                            
+
                                             <div className="absolute right-3 -top-2 w-24 h-8 flex items-center justify-end z-30">
-                                                <div 
+                                                <div
                                                     onPointerDown={(e) => {
                                                         if (isReorderEnabled) {
                                                             e.preventDefault();
@@ -851,8 +869,8 @@ function CalculatorContent() {
                                                     style={{ touchAction: "none" }}
                                                     className={cn(
                                                         "px-2 py-1.5 rounded text-[10px] font-black select-none flex items-center gap-1 border transition-all",
-                                                        isReorderEnabled 
-                                                            ? "cursor-grab active:cursor-grabbing bg-white dark:bg-zinc-900 text-blue-600 dark:text-blue-400 border-zinc-200 dark:border-zinc-800 shadow-xs ring-1 ring-blue-500/30" 
+                                                        isReorderEnabled
+                                                            ? "cursor-grab active:cursor-grabbing bg-white dark:bg-zinc-900 text-blue-600 dark:text-blue-400 border-zinc-200 dark:border-zinc-800 shadow-xs ring-1 ring-blue-500/30"
                                                             : "opacity-0 pointer-events-none"
                                                     )}
                                                 >
@@ -875,9 +893,9 @@ function CalculatorContent() {
                             }
                             if (panelId === "chart-view") {
                                 return (
-                                    <Reorder.Item 
-                                        key="chart-view" 
-                                        value="chart-view" 
+                                    <Reorder.Item
+                                        key="chart-view"
+                                        value="chart-view"
                                         dragListener={false}
                                         dragControls={dragControlsChartView}
                                         whileDrag={{ scale: 1.015 }}
@@ -887,9 +905,9 @@ function CalculatorContent() {
                                     >
                                         <DragIndicatorOverlay desktopType="리포트 섹션 내 상하 이동" isEnabled={isReorderEnabled && activeDraggingId === "chart-view"} />
                                         <div className="bg-white dark:bg-zinc-900 p-3.5 sm:p-6 md:p-8 rounded-2xl sm:rounded-[2.5rem] border border-zinc-200 dark:border-zinc-800 shadow-xs relative group/card border-t-4 group-active/item:border-blue-500 group-active/item:ring-4 group-active/item:ring-blue-500/20 dark:group-active/item:ring-blue-500/10 transition-all duration-200">
-                                            
+
                                             <div className="absolute right-3 top-3 w-24 h-8 flex items-center justify-end z-30">
-                                                <div 
+                                                <div
                                                     onPointerDown={(e) => {
                                                         if (isReorderEnabled) {
                                                             e.preventDefault();
@@ -899,10 +917,10 @@ function CalculatorContent() {
                                                     style={{ touchAction: "none" }}
                                                     className={cn(
                                                         "px-2 py-1.5 rounded text-[10px] font-black select-none flex items-center gap-1 border transition-all",
-                                                        isReorderEnabled 
-                                                            ? "cursor-grab active:cursor-grabbing bg-blue-50 dark:bg-blue-950/40 text-blue-600 dark:text-blue-400 border-blue-200 dark:border-blue-800/80 shadow-xs" 
+                                                        isReorderEnabled
+                                                            ? "cursor-grab active:cursor-grabbing bg-blue-50 dark:bg-blue-950/40 text-blue-600 dark:text-blue-400 border-blue-200 dark:border-blue-800/80 shadow-xs"
                                                             : "opacity-25 bg-zinc-100 dark:bg-zinc-800 text-zinc-400 border-transparent cursor-not-allowed"
-                                                        )}
+                                                    )}
                                                 >
                                                     <Bars3Icon className="w-3.5 h-3.5" />
                                                     <span>순서 교체</span>
@@ -922,9 +940,9 @@ function CalculatorContent() {
                             }
                             if (panelId === "table-report") {
                                 return (
-                                    <Reorder.Item 
-                                        key="table-report" 
-                                        value="table-report" 
+                                    <Reorder.Item
+                                        key="table-report"
+                                        value="table-report"
                                         dragListener={false}
                                         dragControls={dragControlsTableReport}
                                         whileDrag={{ scale: 1.015 }}
@@ -934,9 +952,9 @@ function CalculatorContent() {
                                     >
                                         <DragIndicatorOverlay desktopType="리포트 섹션 내 상하 이동" isEnabled={isReorderEnabled && activeDraggingId === "table-report"} />
                                         <div className="bg-white dark:bg-zinc-900 p-3.5 sm:p-6 rounded-2xl sm:rounded-[2.5rem] border border-zinc-200 dark:border-zinc-800 shadow-xs relative group/card border-t-4 group-active/item:border-blue-500 group-active/item:ring-4 group-active/item:ring-blue-500/20 dark:group-active/item:ring-blue-500/10 transition-all duration-200">
-                                            
+
                                             <div className="absolute right-3 top-3 w-24 h-8 flex items-center justify-end z-30">
-                                                <div 
+                                                <div
                                                     onPointerDown={(e) => {
                                                         if (isReorderEnabled) {
                                                             e.preventDefault();
@@ -946,8 +964,8 @@ function CalculatorContent() {
                                                     style={{ touchAction: "none" }}
                                                     className={cn(
                                                         "px-2 py-1.5 rounded text-[10px] font-black select-none flex items-center gap-1 border transition-all",
-                                                        isReorderEnabled 
-                                                            ? "cursor-grab active:cursor-grabbing bg-blue-50 dark:bg-blue-950/40 text-blue-600 dark:text-blue-400 border-blue-200 dark:border-blue-800/80 shadow-xs" 
+                                                        isReorderEnabled
+                                                            ? "cursor-grab active:cursor-grabbing bg-blue-50 dark:bg-blue-950/40 text-blue-600 dark:text-blue-400 border-blue-200 dark:border-blue-800/80 shadow-xs"
                                                             : "opacity-25 bg-zinc-100 dark:bg-zinc-800 text-zinc-400 border-transparent cursor-not-allowed"
                                                     )}
                                                 >
@@ -969,11 +987,13 @@ function CalculatorContent() {
                                                             <th className="p-2 sm:p-3">나이</th>
                                                             <th className="p-2 sm:p-3 text-right">연간 저축</th>
                                                             <th className="p-2 sm:p-3 text-right">연간 생활비</th>
+                                                            {/* [추가] 적용 옵션 확인 헤더 */}
+                                                            <th className="p-2 sm:p-3 text-center">적용 옵션 상태</th>
                                                             <th className="p-2 sm:p-3 text-right">예상 잔고</th>
                                                         </tr>
                                                     </thead>
                                                     <tbody className="divide-y divide-zinc-100 dark:divide-zinc-800/60 font-semibold text-zinc-800 dark:text-zinc-200 font-mono">
-                                                        {results.chartData.map((row) => (
+                                                        {results.chartData.map((row: any) => (
                                                             <tr key={row.year} className="hover:bg-zinc-50/50 dark:hover:bg-zinc-800/30 transition-colors">
                                                                 <td className="p-2 sm:p-3 font-bold text-zinc-500">{row.year}세</td>
                                                                 <td className="p-2 sm:p-3 text-right text-blue-600 dark:text-blue-400">
@@ -982,6 +1002,30 @@ function CalculatorContent() {
                                                                 <td className="p-2 sm:p-3 text-right text-rose-600 dark:text-rose-400">
                                                                     {row.annualExpense > 0 ? formatKrw(row.annualExpense) : "-"}
                                                                 </td>
+
+                                                                {/* [추가] 각 연도별 어떤 마찰비용/프로그램이 작동 중인지 뱃지 표시 */}
+                                                                <td className="p-2 sm:p-3 text-center">
+                                                                    <div className="flex flex-wrap justify-center gap-1 max-w-[160px] mx-auto">
+                                                                        {row.isWorking && (
+                                                                            <span className="px-1.5 py-0.5 text-[9px] bg-blue-50 text-blue-700 dark:bg-blue-950/40 dark:text-blue-300 rounded font-bold">저축기</span>
+                                                                        )}
+                                                                        {!row.isWorking && (
+                                                                            <span className="px-1.5 py-0.5 text-[9px] bg-amber-50 text-amber-700 dark:bg-amber-950/40 dark:text-amber-300 rounded font-bold">은퇴기</span>
+                                                                        )}
+                                                                        {row.hasTaxApplied && (
+                                                                            <span className="px-1.5 py-0.5 text-[9px] bg-zinc-100 text-zinc-700 dark:bg-zinc-800 dark:text-zinc-300 rounded">
+                                                                                {row.hasIsaGoldApplied ? "금투세(22%)" : "일반과세"}
+                                                                            </span>
+                                                                        )}
+                                                                        {row.hasInsurancePremium && (
+                                                                            <span className="px-1.5 py-0.5 text-[9px] bg-purple-50 text-purple-700 dark:bg-purple-950/40 dark:text-purple-300 rounded font-bold">건보료+</span>
+                                                                        )}
+                                                                        {row.hasNationalPension && (
+                                                                            <span className="px-1.5 py-0.5 text-[9px] bg-emerald-50 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-300 rounded font-bold">국민연금+</span>
+                                                                        )}
+                                                                    </div>
+                                                                </td>
+
                                                                 <td className={cn("p-2 sm:p-3 text-right font-bold", row.totalValue >= 0 ? "text-zinc-900 dark:text-zinc-50" : "text-rose-500")}>
                                                                     {formatKrw(row.totalValue)}
                                                                 </td>
