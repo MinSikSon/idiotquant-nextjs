@@ -20,7 +20,7 @@ import {
     ChevronUpIcon,
     ChevronDownIcon
 } from "@heroicons/react/24/outline";
-import { motion, AnimatePresence, Reorder } from "framer-motion";
+import { motion, AnimatePresence, Reorder, useDragControls } from "framer-motion";
 import ResultChart from "./ResultChart";
 
 function cn(...inputs: (string | boolean | undefined | null)[]) {
@@ -220,6 +220,19 @@ function CalculatorContent() {
 
     const [leftOrder, setLeftOrder] = useState<string[]>(DEFAULT_LEFT_LAYOUT);
     const [rightOrder, setRightOrder] = useState<string[]>(DEFAULT_RIGHT_LAYOUT);
+    const [isReorderEnabled, setIsReorderEnabled] = useState(false);
+
+    // 현재 실제 사용자가 드래그 액션을 수행하고 있는 활성 패널 ID 상태관리
+    const [activeDraggingId, setActiveDraggingId] = useState<string | null>(null);
+
+    // 각 패널 아이템의 고유 드래그 컨트롤러 인스턴스
+    const dragControlsCoreInvestment = useDragControls();
+    const dragControlsLifeCycle = useDragControls();
+    const dragControlsIncrementalFlows = useDragControls();
+    const dragControlsSummaryCard = useDragControls();
+    const dragControlsCalloutTips = useDragControls();
+    const dragControlsChartView = useDragControls();
+    const dragControlsTableReport = useDragControls();
 
     useEffect(() => {
         if (didParseInitialUrlRef.current) return;
@@ -465,12 +478,10 @@ function CalculatorContent() {
         } catch (err) { console.error(err); }
     };
 
-    const [isReorderEnabled, setIsReorderEnabled] = useState(false);
-
     return (
         <div className="bg-zinc-50 dark:bg-zinc-950 min-h-screen p-3 sm:p-6 md:p-10 pb-24 md:pb-10 font-sans text-zinc-900 dark:text-zinc-50 selection:bg-blue-500/20">
             <div className="max-w-6xl mx-auto space-y-5 sm:space-y-10">
-                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-zinc-200 dark:border-zinc-800 pb-4 sm:pb-6">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-zinc-200 dark:border-zinc-800 pb-4 sm:pb-6">
                     <div className="flex items-center gap-2 sm:gap-3">
                         <div className="p-2 sm:p-2.5 bg-blue-600 rounded-xl sm:rounded-2xl text-white shadow-lg shadow-blue-600/20 shrink-0">
                             <CalculatorIcon className="w-5 h-5 sm:w-6" />
@@ -503,30 +514,39 @@ function CalculatorContent() {
                         </div>
                     </div>
                     
-                    <div className="flex items-center gap-1.5 w-full sm:w-auto justify-end">
-                        {/* 상단 버튼 영역에 토글 버튼 추가 */}
-                        <div className="flex items-center gap-1.5 w-full sm:w-auto justify-end">
-                            <button
-                                onClick={() => setIsReorderEnabled(!isReorderEnabled)}
-                                className={cn(
-                                    "flex-1 sm:flex-none flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg font-bold text-[11px] transition-all border shadow-xs",
-                                    isReorderEnabled
-                                        ? "bg-blue-600 border-blue-600 text-white"
-                                        : "bg-white dark:bg-zinc-900 border-zinc-300 dark:border-zinc-700 text-zinc-900 dark:text-zinc-50"
-                                )}
-                            >
-                                <Bars3Icon className="w-3.5 h-3.5" />
-                                {isReorderEnabled ? "순서 변경 모드 ON" : "순서 변경 모드 OFF"}
-                            </button>
-                            {/* 기존 초기화/공유 버튼 ... */}
-                        </div>
-                        <button onClick={resetLayout} className="flex-1 sm:flex-none flex items-center justify-center gap-1 px-3 py-2 rounded-lg font-bold text-[11px] bg-zinc-100 dark:bg-zinc-800 hover:bg-zinc-200 dark:hover:bg-zinc-700 text-zinc-700 dark:text-zinc-300 transition-colors border border-zinc-200 dark:border-zinc-700/60 shadow-xs">
-                            <ArrowPathIcon className="w-3.5 h-3.5" />
-                            위치 초기화
+                    <div className="grid grid-cols-3 gap-1.5 w-full sm:flex sm:w-auto sm:items-center sm:justify-end">
+                        <button
+                            onClick={() => setIsReorderEnabled(!isReorderEnabled)}
+                            className={cn(
+                                "flex flex-col sm:flex-row items-center justify-center gap-1 sm:gap-1.5 px-2 py-2 sm:px-3 rounded-lg font-bold text-[10px] sm:text-[11px] transition-all border shadow-xs text-center leading-tight sm:leading-none",
+                                isReorderEnabled
+                                    ? "bg-blue-600 border-blue-600 text-white"
+                                    : "bg-white dark:bg-zinc-900 border-zinc-300 dark:border-zinc-700 text-zinc-900 dark:text-zinc-50"
+                            )}
+                        >
+                            <Bars3Icon className="w-3.5 h-3.5 shrink-0" />
+                            <span>{isReorderEnabled ? "순서 ON" : "순서 OFF"}</span>
                         </button>
-                        <button onClick={handleShareLink} className={cn("flex-1 sm:flex-none flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg font-bold text-[11px] transition-all shadow-xs border shrink-0", copied ? "bg-emerald-600 border-emerald-600 text-white" : "bg-white dark:bg-zinc-900 border-zinc-300 dark:border-zinc-700 text-zinc-900 dark:text-zinc-50 hover:bg-zinc-50 dark:hover:bg-zinc-800")}>
-                            {copied ? <CheckIcon className="w-3.5 h-3.5" /> : <ShareIcon className="w-3.5 h-3.5" />}
-                            {copied ? "복리 링크 복사 완료!" : "리포트 공유"}
+                        
+                        <button 
+                            onClick={resetLayout} 
+                            className="flex flex-col sm:flex-row items-center justify-center gap-1 sm:gap-1 px-2 py-2 sm:px-3 rounded-lg font-bold text-[10px] sm:text-[11px] bg-zinc-100 dark:bg-zinc-800 hover:bg-zinc-200 dark:hover:bg-zinc-700 text-zinc-700 dark:text-zinc-300 transition-colors border border-zinc-200 dark:border-zinc-700/60 shadow-xs text-center leading-tight sm:leading-none"
+                        >
+                            <ArrowPathIcon className="w-3.5 h-3.5 shrink-0" />
+                            <span>위치 초기화</span>
+                        </button>
+                        
+                        <button 
+                            onClick={handleShareLink} 
+                            className={cn(
+                                "flex flex-col sm:flex-row items-center justify-center gap-1 sm:gap-1.5 px-2 py-2 sm:px-3 rounded-lg font-bold text-[10px] sm:text-[11px] transition-all shadow-xs border shrink-0 text-center leading-tight sm:leading-none", 
+                                copied 
+                                    ? "bg-emerald-600 border-emerald-600 text-white" 
+                                    : "bg-white dark:bg-zinc-900 border-zinc-300 dark:border-zinc-700 text-zinc-900 dark:text-zinc-50 hover:bg-zinc-50 dark:hover:bg-zinc-800"
+                            )}
+                        >
+                            {copied ? <CheckIcon className="w-3.5 h-3.5 shrink-0" /> : <ShareIcon className="w-3.5 h-3.5 shrink-0" />}
+                            <span>{copied ? "복사 완료!" : "리포트 공유"}</span>
                         </button>
                     </div>
                 </div>
@@ -540,26 +560,50 @@ function CalculatorContent() {
                                     <Reorder.Item 
                                         key="core-investment" 
                                         value="core-investment" 
-                                        dragListener={isReorderEnabled}
+                                        dragListener={false} 
+                                        dragControls={dragControlsCoreInvestment} 
                                         whileDrag={{ scale: 1.015 }}
-                                        className="bg-transparent select-none cursor-grab active:cursor-grabbing outline-none relative group/item rounded-2xl"
+                                        onDragStart={() => setActiveDraggingId("core-investment")}
+                                        onDragEnd={() => setActiveDraggingId(null)}
+                                        className="bg-transparent select-none outline-none relative group/item rounded-2xl"
                                     >
-                                        <DragIndicatorOverlay desktopType="입력 섹션 내 상하 이동" />
+                                        <DragIndicatorOverlay desktopType="입력 섹션 내 상하 이동" isEnabled={isReorderEnabled && activeDraggingId === "core-investment"} />
                                         <SectionWrapper title="핵심 자산 및 기대 수익률" icon={<ArrowTrendingUpIcon className="w-4 h-4 text-zinc-500 dark:text-zinc-400" />}>
                                             <div className="space-y-4 sm:space-y-6 bg-white dark:bg-zinc-900 p-3.5 xs:p-4 sm:p-6 rounded-2xl sm:rounded-[2rem] border border-zinc-200 dark:border-zinc-800 shadow-xs relative group/card border-t-4 group-active/item:border-blue-500 group-active/item:ring-4 group-active/item:ring-blue-500/20 dark:group-active/item:ring-blue-500/10 transition-all duration-200">
-                                                <div className="absolute right-4 top-4 opacity-40 lg:opacity-30 group-hover/card:opacity-80 transition-opacity pointer-events-none text-zinc-500 dark:text-zinc-400 flex items-center gap-1 bg-zinc-100 dark:bg-zinc-800 px-1.5 py-0.5 rounded text-[10px] font-bold">
-                                                    <Bars3Icon className="w-3.5 h-3.5" />
-                                                    <span>순서 교체</span>
-                                                </div>
-                                                <InputGroup label="초기 투자 시드" tooltip="현재 투입 가능한 순수 자산 및 투자 예치금 총액입니다." value={formatKrw(inputs.investmentAmount)} color="text-blue-600 dark:text-blue-400">
-                                                    <div className="flex gap-2">
-                                                        <div className="relative flex-1">
-                                                            <input type="number" inputMode="numeric" pattern="[0-9]*" value={inputs.investmentAmount} onChange={(e) => updateInput("investmentAmount", Number(e.target.value))} className="w-full bg-zinc-50 dark:bg-zinc-800 border border-zinc-300 dark:border-zinc-700 rounded-xl pl-3 pr-10 py-2 sm:py-2.5 font-black text-xs sm:text-sm text-zinc-900 dark:text-zinc-50 focus:ring-2 focus:ring-blue-500 outline-none transition-shadow" />
-                                                            <div className="absolute right-3 top-1/2 -translate-y-1/2 text-zinc-400 dark:text-zinc-500 text-[11px] sm:text-xs font-bold">만원</div>
-                                                        </div>
-                                                        <StepButtons value={inputs.investmentAmount} step={500} min={0} max={100000000} onChange={(v) => updateInput("investmentAmount", v)} />
+                                                
+                                                {/* 모바일 터치 피드백을 위한 touch-action: none 및 넉넉한 터치 패딩 공간 확보 */}
+                                                <div className="absolute right-3 top-3 w-24 h-8 flex items-center justify-end z-30">
+                                                    <div 
+                                                        onPointerDown={(e) => {
+                                                            if (isReorderEnabled) {
+                                                                e.preventDefault();
+                                                                dragControlsCoreInvestment.start(e);
+                                                            }
+                                                        }}
+                                                        style={{ touchAction: "none" }}
+                                                        className={cn(
+                                                            "px-2 py-1.5 rounded text-[10px] font-black select-none flex items-center gap-1 border transition-all",
+                                                            isReorderEnabled 
+                                                                ? "cursor-grab active:cursor-grabbing bg-blue-50 dark:bg-blue-950/40 text-blue-600 dark:text-blue-400 border-blue-200 dark:border-blue-800/80 shadow-xs" 
+                                                                : "opacity-25 bg-zinc-100 dark:bg-zinc-800 text-zinc-400 border-transparent cursor-not-allowed"
+                                                        )}
+                                                    >
+                                                        <Bars3Icon className="w-3.5 h-3.5" />
+                                                        <span>순서 교체</span>
                                                     </div>
-                                                </InputGroup>
+                                                </div>
+
+                                                <div className="pt-6">
+                                                    <InputGroup label="초기 투자 시드" tooltip="현재 투입 가능한 순수 자산 및 투자 예치금 총액입니다." value={formatKrw(inputs.investmentAmount)} color="text-blue-600 dark:text-blue-400">
+                                                        <div className="flex gap-2">
+                                                            <div className="relative flex-1">
+                                                                <input type="number" inputMode="numeric" pattern="[0-9]*" value={inputs.investmentAmount} onChange={(e) => updateInput("investmentAmount", Number(e.target.value))} className="w-full bg-zinc-50 dark:bg-zinc-800 border border-zinc-300 dark:border-zinc-700 rounded-xl pl-3 pr-10 py-2 sm:py-2.5 font-black text-xs sm:text-sm text-zinc-900 dark:text-zinc-50 focus:ring-2 focus:ring-blue-500 outline-none transition-shadow" />
+                                                                <div className="absolute right-3 top-1/2 -translate-y-1/2 text-zinc-400 dark:text-zinc-500 text-[11px] sm:text-xs font-bold">만원</div>
+                                                            </div>
+                                                            <StepButtons value={inputs.investmentAmount} step={500} min={0} max={100000000} onChange={(v) => updateInput("investmentAmount", v)} />
+                                                        </div>
+                                                    </InputGroup>
+                                                </div>
 
                                                 <PercentRateSlider
                                                     label="투자 자산 기대 수익률 (연)"
@@ -599,18 +643,41 @@ function CalculatorContent() {
                                     <Reorder.Item 
                                         key="life-cycle" 
                                         value="life-cycle" 
-                                        dragListener={isReorderEnabled}
+                                        dragListener={false}
+                                        dragControls={dragControlsLifeCycle}
                                         whileDrag={{ scale: 1.015 }}
-                                        className="bg-transparent select-none cursor-grab active:cursor-grabbing outline-none relative group/item rounded-2xl"
+                                        onDragStart={() => setActiveDraggingId("life-cycle")}
+                                        onDragEnd={() => setActiveDraggingId(null)}
+                                        className="bg-transparent select-none outline-none relative group/item rounded-2xl"
                                     >
-                                        <DragIndicatorOverlay desktopType="입력 섹션 내 상하 이동" />
+                                        <DragIndicatorOverlay desktopType="입력 섹션 내 상하 이동" isEnabled={isReorderEnabled && activeDraggingId === "life-cycle"} />
                                         <SectionWrapper title="생애 주기 임계값" icon={<UserIcon className="w-4 h-4 text-zinc-500 dark:text-zinc-400" />}>
                                             <div className="space-y-4 sm:space-y-5 bg-white dark:bg-zinc-900 p-3.5 xs:p-4 sm:p-6 rounded-2xl sm:rounded-[2rem] border border-zinc-200 dark:border-zinc-800 shadow-xs relative group/card border-t-4 group-active/item:border-blue-500 group-active/item:ring-4 group-active/item:ring-blue-500/20 dark:group-active/item:ring-blue-500/10 transition-all duration-200">
-                                                <div className="absolute right-4 top-4 opacity-40 lg:opacity-30 group-hover/card:opacity-80 transition-opacity pointer-events-none text-zinc-500 dark:text-zinc-400 flex items-center gap-1 bg-zinc-100 dark:bg-zinc-800 px-1.5 py-0.5 rounded text-[10px] font-bold">
-                                                    <Bars3Icon className="w-3.5 h-3.5" />
-                                                    <span>순서 교체</span>
+                                                
+                                                <div className="absolute right-3 top-3 w-24 h-8 flex items-center justify-end z-30">
+                                                    <div 
+                                                        onPointerDown={(e) => {
+                                                            if (isReorderEnabled) {
+                                                                e.preventDefault();
+                                                                dragControlsLifeCycle.start(e);
+                                                            }
+                                                        }}
+                                                        style={{ touchAction: "none" }}
+                                                        className={cn(
+                                                            "px-2 py-1.5 rounded text-[10px] font-black select-none flex items-center gap-1 border transition-all",
+                                                            isReorderEnabled 
+                                                                ? "cursor-grab active:cursor-grabbing bg-blue-50 dark:bg-blue-950/40 text-blue-600 dark:text-blue-400 border-blue-200 dark:border-blue-800/80 shadow-xs" 
+                                                                : "opacity-25 bg-zinc-100 dark:bg-zinc-800 text-zinc-400 border-transparent cursor-not-allowed"
+                                                        )}
+                                                    >
+                                                        <Bars3Icon className="w-3.5 h-3.5" />
+                                                        <span>순서 교체</span>
+                                                    </div>
                                                 </div>
-                                                <AgeInputSlider label="시작 연령" tooltip="이 시뮬레이션을 가동하는 현재 내 나이입니다." value={inputs.startAge} min={20} max={80} onChange={(v) => updateInput("startAge", v)} />
+
+                                                <div className="pt-6">
+                                                    <AgeInputSlider label="시작 연령" tooltip="이 시뮬레이션을 가동하는 현재 내 나이입니다." value={inputs.startAge} min={20} max={80} onChange={(v) => updateInput("startAge", v)} />
+                                                </div>
                                                 <AgeInputSlider label="은퇴 및 저축 중단 연령" tooltip="본업을 중단하고 원금 투입 없이 복리 증식과 생활비 인출만 일어나는 시점입니다." value={inputs.retirementAge} min={inputs.startAge} max={90} onChange={(v) => updateInput("retirementAge", v)} />
                                                 <AgeInputSlider label="자산 수명 검증 종료 연령" tooltip="내 자산이 고갈되지 않고 버텨주기를 바라는 최종 목표 나이입니다." value={inputs.targetAge} min={inputs.retirementAge} max={100} onChange={(v) => updateInput("targetAge", v)} />
                                             </div>
@@ -623,18 +690,39 @@ function CalculatorContent() {
                                     <Reorder.Item 
                                         key="incremental-flows" 
                                         value="incremental-flows" 
-                                        dragListener={isReorderEnabled}
+                                        dragListener={false}
+                                        dragControls={dragControlsIncrementalFlows}
                                         whileDrag={{ scale: 1.015 }}
-                                        className="bg-transparent select-none cursor-grab active:cursor-grabbing outline-none relative group/item rounded-2xl"
+                                        onDragStart={() => setActiveDraggingId("incremental-flows")}
+                                        onDragEnd={() => setActiveDraggingId(null)}
+                                        className="bg-transparent select-none outline-none relative group/item rounded-2xl"
                                     >
-                                        <DragIndicatorOverlay desktopType="입력 섹션 내 상하 이동" />
+                                        <DragIndicatorOverlay desktopType="입력 섹션 내 상하 이동" isEnabled={isReorderEnabled && activeDraggingId === "incremental-flows"} />
                                         <SectionWrapper title="점증형 현금 가감 데이터" icon={<ArrowsRightLeftIcon className="w-4 h-4 text-zinc-500 dark:text-zinc-400" />}>
                                             <div className="space-y-4 sm:space-y-6 bg-white dark:bg-zinc-900 p-3.5 xs:p-4 sm:p-6 rounded-2xl sm:rounded-[2rem] border border-zinc-200 dark:border-zinc-800 shadow-xs relative group/card border-t-4 group-active/item:border-blue-500 group-active/item:ring-4 group-active/item:ring-blue-500/20 dark:group-active/item:ring-blue-500/10 transition-all duration-200">
-                                                <div className="absolute right-4 top-4 opacity-40 lg:opacity-30 group-hover/card:opacity-80 transition-opacity pointer-events-none text-zinc-500 dark:text-zinc-400 flex items-center gap-1 bg-zinc-100 dark:bg-zinc-800 px-1.5 py-0.5 rounded text-[10px] font-bold">
-                                                    <Bars3Icon className="w-3.5 h-3.5" />
-                                                    <span>순서 교체</span>
+                                                
+                                                <div className="absolute right-3 top-3 w-24 h-8 flex items-center justify-end z-30">
+                                                    <div 
+                                                        onPointerDown={(e) => {
+                                                            if (isReorderEnabled) {
+                                                                e.preventDefault();
+                                                                dragControlsIncrementalFlows.start(e);
+                                                            }
+                                                        }}
+                                                        style={{ touchAction: "none" }}
+                                                        className={cn(
+                                                            "px-2 py-1.5 rounded text-[10px] font-black select-none flex items-center gap-1 border transition-all",
+                                                            isReorderEnabled 
+                                                                ? "cursor-grab active:cursor-grabbing bg-blue-50 dark:bg-blue-950/40 text-blue-600 dark:text-blue-400 border-blue-200 dark:border-blue-800/80 shadow-xs" 
+                                                                : "opacity-25 bg-zinc-100 dark:bg-zinc-800 text-zinc-400 border-transparent cursor-not-allowed"
+                                                        )}
+                                                    >
+                                                        <Bars3Icon className="w-3.5 h-3.5" />
+                                                        <span>순서 교체</span>
+                                                    </div>
                                                 </div>
-                                                <div className="space-y-3 sm:space-y-4">
+
+                                                <div className="space-y-3 sm:space-y-4 pt-6">
                                                     <InputGroup label="초기 매월 저축액" tooltip="은퇴 전 근로 기간 동안 매달 투자 계좌에 적립할 원금입니다." value={formatKrw(inputs.contributions)}>
                                                         <div className="flex gap-2">
                                                             <input type="number" inputMode="numeric" pattern="[0-9]*" value={inputs.contributions} onChange={(e) => updateInput("contributions", Number(e.target.value))} className="flex-1 bg-zinc-50 dark:bg-zinc-800 border border-zinc-300 dark:border-zinc-700 rounded-xl px-3 py-2 sm:py-2.5 font-black text-xs sm:text-sm text-zinc-900 dark:text-zinc-50 outline-none focus:ring-2 focus:ring-blue-500 transition-shadow" />
@@ -670,17 +758,38 @@ function CalculatorContent() {
                                     <Reorder.Item 
                                         key="summary-card" 
                                         value="summary-card" 
-                                        dragListener={isReorderEnabled}
+                                        dragListener={false}
+                                        dragControls={dragControlsSummaryCard}
                                         whileDrag={{ scale: 1.015 }}
-                                        className="bg-transparent select-none cursor-grab active:cursor-grabbing outline-none relative group/item rounded-2xl"
+                                        onDragStart={() => setActiveDraggingId("summary-card")}
+                                        onDragEnd={() => setActiveDraggingId(null)}
+                                        className="bg-transparent select-none outline-none relative group/item rounded-2xl"
                                     >
-                                        <DragIndicatorOverlay desktopType="리포트 섹션 내 상하 이동" />
+                                        <DragIndicatorOverlay desktopType="리포트 섹션 내 상하 이동" isEnabled={isReorderEnabled && activeDraggingId === "summary-card"} />
                                         <div className={cn("p-4 sm:p-8 md:p-10 rounded-2xl sm:rounded-[2.5rem] shadow-xl relative overflow-hidden transition-all duration-300 border bg-zinc-950 border-zinc-800 dark:bg-zinc-900 dark:border-zinc-800/80 text-white group/card border-t-4 group-active/item:border-blue-500 group-active/item:ring-4 group-active/item:ring-blue-500/20 dark:group-active/item:ring-blue-500/10", results.finalValue < 0 && "border-rose-900/50 bg-gradient-to-br from-zinc-950 to-rose-950/30")}>
-                                            <div className="absolute right-5 top-5 opacity-40 lg:opacity-30 group-hover/card:opacity-80 transition-opacity pointer-events-none text-zinc-400 flex items-center gap-1 bg-zinc-900 dark:bg-zinc-800 px-1.5 py-0.5 rounded text-[10px] font-bold">
-                                                <Bars3Icon className="w-3.5 h-3.5" />
-                                                <span>순서 교체</span>
+                                            
+                                            <div className="absolute right-4 top-4 w-24 h-8 flex items-center justify-end z-30">
+                                                <div 
+                                                    onPointerDown={(e) => {
+                                                        if (isReorderEnabled) {
+                                                            e.preventDefault();
+                                                            dragControlsSummaryCard.start(e);
+                                                        }
+                                                    }}
+                                                    style={{ touchAction: "none" }}
+                                                    className={cn(
+                                                        "px-2 py-1.5 rounded text-[10px] font-black select-none flex items-center gap-1 border transition-all text-zinc-300",
+                                                        isReorderEnabled 
+                                                            ? "cursor-grab active:cursor-grabbing bg-zinc-900 border-zinc-700 text-blue-400 ring-1 ring-blue-500/30 shadow-xs" 
+                                                            : "opacity-25 bg-zinc-900/40 border-transparent cursor-not-allowed"
+                                                    )}
+                                                >
+                                                    <Bars3Icon className="w-3.5 h-3.5" />
+                                                    <span>순서 교체</span>
+                                                </div>
                                             </div>
-                                            <div className="relative z-10 space-y-4 sm:space-y-8">
+
+                                            <div className="relative z-10 space-y-4 sm:space-y-8 pt-6">
                                                 <div className="space-y-2 sm:space-y-3">
                                                     <span className="inline-block text-[9px] sm:text-[10px] font-black uppercase tracking-[0.15em] px-2.5 py-0.5 sm:py-1 rounded-full border bg-zinc-900/80 text-zinc-300 border-zinc-800">
                                                         {inputs.targetAge}세 예상 시점 잔고 {inputs.realValueMode && "(실질 가치 수렴)"}
@@ -721,18 +830,45 @@ function CalculatorContent() {
                                     <Reorder.Item 
                                         key="callout-tips" 
                                         value="callout-tips" 
-                                        dragListener={isReorderEnabled}
+                                        dragListener={false}
+                                        dragControls={dragControlsCalloutTips}
                                         whileDrag={{ scale: 1.015 }}
-                                        className="bg-transparent select-none cursor-grab active:cursor-grabbing outline-none relative group/item rounded-2xl"
+                                        onDragStart={() => setActiveDraggingId("callout-tips")}
+                                        onDragEnd={() => setActiveDraggingId(null)}
+                                        className="bg-transparent select-none outline-none relative group/item rounded-2xl"
                                     >
-                                        <DragIndicatorOverlay desktopType="리포트 섹션 내 상하 이동" />
-                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-3 sm:gap-4 border-t-4 border-transparent group-active/item:border-blue-500 group-active/item:ring-4 group-active/item:ring-blue-500/20 dark:group-active/item:ring-blue-500/10 transition-all duration-200 rounded-xl sm:rounded-[2rem]">
-                                            <CalloutWrapper icon={<ChartBarIcon className={cn("w-4 h-4 sm:w-5 sm:h-5", proficiency.iconColor)} />} title={`Lv.${proficiency.level} ${proficiency.label} (${proficiency.score}점)`}>
-                                                {proficiency.desc}
-                                            </CalloutWrapper>
-                                            <CalloutWrapper icon={<LightBulbIcon className={cn("w-4 h-4 sm:w-5 sm:h-5", results.finalValue > 0 ? "text-emerald-500" : "text-rose-500")} />} title="퀀트 자산 수명 진단">
-                                                {results.finalValue > 0 ? "안정적인 노후 자산 스노우볼이 유지되는 중입니다." : "자산 조기 고갈 리스크가 감지되었습니다."}
-                                            </CalloutWrapper>
+                                        <DragIndicatorOverlay desktopType="리포트 섹션 내 상하 이동" isEnabled={isReorderEnabled && activeDraggingId === "callout-tips"} />
+                                        <div className="relative group/card border-t-4 border-transparent group-active/item:border-blue-500 group-active/item:ring-4 group-active/item:ring-blue-500/20 dark:group-active/item:ring-blue-500/10 transition-all duration-200 rounded-xl sm:rounded-[2rem] pt-2">
+                                            
+                                            <div className="absolute right-3 -top-2 w-24 h-8 flex items-center justify-end z-30">
+                                                <div 
+                                                    onPointerDown={(e) => {
+                                                        if (isReorderEnabled) {
+                                                            e.preventDefault();
+                                                            dragControlsCalloutTips.start(e);
+                                                        }
+                                                    }}
+                                                    style={{ touchAction: "none" }}
+                                                    className={cn(
+                                                        "px-2 py-1.5 rounded text-[10px] font-black select-none flex items-center gap-1 border transition-all",
+                                                        isReorderEnabled 
+                                                            ? "cursor-grab active:cursor-grabbing bg-white dark:bg-zinc-900 text-blue-600 dark:text-blue-400 border-zinc-200 dark:border-zinc-800 shadow-xs ring-1 ring-blue-500/30" 
+                                                            : "opacity-0 pointer-events-none"
+                                                    )}
+                                                >
+                                                    <Bars3Icon className="w-3.5 h-3.5" />
+                                                    <span>순서 교체</span>
+                                                </div>
+                                            </div>
+
+                                            <div className="grid grid-cols-1 md:grid-cols-2 gap-3 sm:gap-4 mt-4">
+                                                <CalloutWrapper icon={<ChartBarIcon className={cn("w-4 h-4 sm:w-5 sm:h-5", proficiency.iconColor)} />} title={`Lv.${proficiency.level} ${proficiency.label} (${proficiency.score}점)`}>
+                                                    {proficiency.desc}
+                                                </CalloutWrapper>
+                                                <CalloutWrapper icon={<LightBulbIcon className={cn("w-4 h-4 sm:w-5 sm:h-5", results.finalValue > 0 ? "text-emerald-500" : "text-rose-500")} />} title="퀀트 자산 수명 진단">
+                                                    {results.finalValue > 0 ? "안정적인 노후 자산 스노우볼이 유지되는 중입니다." : "자산 조기 고갈 리스크가 감지되었습니다."}
+                                                </CalloutWrapper>
+                                            </div>
                                         </div>
                                     </Reorder.Item>
                                 );
@@ -742,17 +878,38 @@ function CalculatorContent() {
                                     <Reorder.Item 
                                         key="chart-view" 
                                         value="chart-view" 
-                                        dragListener={isReorderEnabled}
+                                        dragListener={false}
+                                        dragControls={dragControlsChartView}
                                         whileDrag={{ scale: 1.015 }}
-                                        className="bg-transparent select-none cursor-grab active:cursor-grabbing outline-none relative group/item rounded-2xl"
+                                        onDragStart={() => setActiveDraggingId("chart-view")}
+                                        onDragEnd={() => setActiveDraggingId(null)}
+                                        className="bg-transparent select-none outline-none relative group/item rounded-2xl"
                                     >
-                                        <DragIndicatorOverlay desktopType="리포트 섹션 내 상하 이동" />
+                                        <DragIndicatorOverlay desktopType="리포트 섹션 내 상하 이동" isEnabled={isReorderEnabled && activeDraggingId === "chart-view"} />
                                         <div className="bg-white dark:bg-zinc-900 p-3.5 sm:p-6 md:p-8 rounded-2xl sm:rounded-[2.5rem] border border-zinc-200 dark:border-zinc-800 shadow-xs relative group/card border-t-4 group-active/item:border-blue-500 group-active/item:ring-4 group-active/item:ring-blue-500/20 dark:group-active/item:ring-blue-500/10 transition-all duration-200">
-                                            <div className="absolute right-5 top-5 opacity-40 lg:opacity-30 group-hover/card:opacity-80 transition-opacity pointer-events-none text-zinc-400 dark:text-zinc-500 flex items-center gap-1 bg-zinc-100 dark:bg-zinc-800 px-1.5 py-0.5 rounded text-[10px] font-bold">
-                                                <Bars3Icon className="w-3.5 h-3.5" />
-                                                <span>순서 교체</span>
+                                            
+                                            <div className="absolute right-3 top-3 w-24 h-8 flex items-center justify-end z-30">
+                                                <div 
+                                                    onPointerDown={(e) => {
+                                                        if (isReorderEnabled) {
+                                                            e.preventDefault();
+                                                            dragControlsChartView.start(e);
+                                                        }
+                                                    }}
+                                                    style={{ touchAction: "none" }}
+                                                    className={cn(
+                                                        "px-2 py-1.5 rounded text-[10px] font-black select-none flex items-center gap-1 border transition-all",
+                                                        isReorderEnabled 
+                                                            ? "cursor-grab active:cursor-grabbing bg-blue-50 dark:bg-blue-950/40 text-blue-600 dark:text-blue-400 border-blue-200 dark:border-blue-800/80 shadow-xs" 
+                                                            : "opacity-25 bg-zinc-100 dark:bg-zinc-800 text-zinc-400 border-transparent cursor-not-allowed"
+                                                        )}
+                                                >
+                                                    <Bars3Icon className="w-3.5 h-3.5" />
+                                                    <span>순서 교체</span>
+                                                </div>
                                             </div>
-                                            <div className="mb-3 sm:mb-6">
+
+                                            <div className="mb-3 sm:mb-6 pt-6">
                                                 <h3 className="text-sm sm:text-lg font-black tracking-tight text-zinc-900 dark:text-zinc-50">지표 연동형 자산 변동 그래프</h3>
                                                 <p className="text-[11px] sm:text-sm text-zinc-500 dark:text-zinc-400 font-semibold mt-0.5">매년 가중되는 인플레이션 누적 및 세후 배당 유출입 복리 커브</p>
                                             </div>
@@ -768,17 +925,38 @@ function CalculatorContent() {
                                     <Reorder.Item 
                                         key="table-report" 
                                         value="table-report" 
+                                        dragListener={false}
+                                        dragControls={dragControlsTableReport}
                                         whileDrag={{ scale: 1.015 }}
-                                        dragListener={isReorderEnabled}
-                                        className={cn("bg-transparent select-none outline-none relative group/item rounded-2xl", isReorderEnabled ? "cursor-grab active:cursor-grabbing" : "")}
+                                        onDragStart={() => setActiveDraggingId("table-report")}
+                                        onDragEnd={() => setActiveDraggingId(null)}
+                                        className="bg-transparent select-none outline-none relative group/item rounded-2xl"
                                     >
-                                        {isReorderEnabled && <DragIndicatorOverlay desktopType="리포트 섹션 내 상하 이동" />}
+                                        <DragIndicatorOverlay desktopType="리포트 섹션 내 상하 이동" isEnabled={isReorderEnabled && activeDraggingId === "table-report"} />
                                         <div className="bg-white dark:bg-zinc-900 p-3.5 sm:p-6 rounded-2xl sm:rounded-[2.5rem] border border-zinc-200 dark:border-zinc-800 shadow-xs relative group/card border-t-4 group-active/item:border-blue-500 group-active/item:ring-4 group-active/item:ring-blue-500/20 dark:group-active/item:ring-blue-500/10 transition-all duration-200">
-                                            <div className="absolute right-5 top-5 opacity-40 lg:opacity-30 group-hover/card:opacity-80 transition-opacity pointer-events-none text-zinc-400 dark:text-zinc-500 flex items-center gap-1 bg-zinc-100 dark:bg-zinc-800 px-1.5 py-0.5 rounded text-[10px] font-bold">
-                                                <Bars3Icon className="w-3.5 h-3.5" />
-                                                <span>순서 교체</span>
+                                            
+                                            <div className="absolute right-3 top-3 w-24 h-8 flex items-center justify-end z-30">
+                                                <div 
+                                                    onPointerDown={(e) => {
+                                                        if (isReorderEnabled) {
+                                                            e.preventDefault();
+                                                            dragControlsTableReport.start(e);
+                                                        }
+                                                    }}
+                                                    style={{ touchAction: "none" }}
+                                                    className={cn(
+                                                        "px-2 py-1.5 rounded text-[10px] font-black select-none flex items-center gap-1 border transition-all",
+                                                        isReorderEnabled 
+                                                            ? "cursor-grab active:cursor-grabbing bg-blue-50 dark:bg-blue-950/40 text-blue-600 dark:text-blue-400 border-blue-200 dark:border-blue-800/80 shadow-xs" 
+                                                            : "opacity-25 bg-zinc-100 dark:bg-zinc-800 text-zinc-400 border-transparent cursor-not-allowed"
+                                                    )}
+                                                >
+                                                    <Bars3Icon className="w-3.5 h-3.5" />
+                                                    <span>순서 교체</span>
+                                                </div>
                                             </div>
-                                            <div className="mb-3">
+
+                                            <div className="mb-3 pt-6">
                                                 <h3 className="text-sm sm:text-lg font-black tracking-tight text-zinc-900 dark:text-zinc-50">연도별 세부 현금 흐름 리포트</h3>
                                                 <p className="text-[11px] sm:text-sm text-zinc-500 dark:text-zinc-400 font-semibold mt-0.5">
                                                     {inputs.realValueMode ? "인플레이션 차감 가치가 반영된 실질 가치 기준 흐름입니다." : "매년 가중 증액된 명목 화폐 기준 흐름입니다."}
@@ -825,13 +1003,11 @@ function CalculatorContent() {
     );
 }
 
-function DragIndicatorOverlay({ desktopType }: { desktopType: string }) {
+function DragIndicatorOverlay({ desktopType, isEnabled }: { desktopType: string; isEnabled: boolean }) {
+    if (!isEnabled) return null;
     return (
-        <div className="absolute inset-x-0 -top-3.5 bottom-full h-3.5 pointer-events-none flex flex-col items-center justify-center opacity-0 group-active/item:opacity-100 transition-opacity duration-150 z-50">
-            {/* 가이드 점선 라인 */}
+        <div className="absolute inset-x-0 -top-5 bottom-full h-5 pointer-events-none flex flex-col items-center justify-center opacity-0 group-active/item:opacity-100 transition-opacity duration-150 z-50">
             <div className="w-full border-t-2 border-dashed border-blue-500/80 dark:border-blue-400/80" />
-            
-            {/* 가이드 뱃지 패널 (데스크톱/모바일 유동 텍스트 매칭) */}
             <div className="absolute bg-blue-600 text-white dark:bg-blue-500 text-[10px] font-black tracking-wider px-2.5 py-1 rounded-full flex items-center gap-1.5 shadow-lg shadow-blue-500/20 whitespace-nowrap border border-blue-400/20">
                 <ChevronUpIcon className="w-3 h-3 animate-bounce" />
                 <span className="hidden lg:inline">{desktopType}</span>
@@ -858,8 +1034,8 @@ function InputGroup({ label, value, tooltip, color = "text-zinc-900 dark:text-zi
     return (
         <div className="space-y-1.5">
             <div className="flex justify-between items-end gap-2">
-                <div className="flex items-center gap-1 group relative">
-                    <span className="text-[10px] sm:text-xs font-black text-zinc-500 dark:text-zinc-400 uppercase tracking-widest block">{label}</span>
+                <div className="flex items-center gap-1 group relative max-w-[50%] min-w-0">
+                    <span className="text-[10px] sm:text-xs font-black text-zinc-500 dark:text-zinc-400 uppercase tracking-widest block truncate">{label}</span>
                     {tooltip && (
                         <>
                             <InformationCircleIcon className="w-3.5 h-3.5 text-zinc-400 hover:text-zinc-500 dark:text-zinc-600 dark:hover:text-zinc-500 cursor-help shrink-0 transition-colors" />
@@ -869,7 +1045,7 @@ function InputGroup({ label, value, tooltip, color = "text-zinc-900 dark:text-zi
                         </>
                     )}
                 </div>
-                <span className={`text-xs sm:text-base font-black shrink-0 font-mono ${color}`}>{value}</span>
+                <span className={`text-xs sm:text-base font-black shrink-0 font-mono ${color} max-w-[50%] truncate text-right`}>{value}</span>
             </div>
             {children}
         </div>
@@ -960,7 +1136,7 @@ function PercentRateSlider({
     const quickRates = [
         { label: "예금", rate: 4 },
         { label: "올웨더", rate: 6 },
-        { label: "S&P", rate: 8 },
+        { rate: 8, label: "S&P" },
         { label: "나스닥", rate: 12 }
     ];
 
