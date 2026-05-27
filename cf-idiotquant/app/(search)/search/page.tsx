@@ -2,13 +2,12 @@
 
 /**
  * 🚀 IdiotQuant Pro - Enterprise Stock Analysis Platform
- * 
- * 주요 개선사항:
+ * * 주요 개선사항:
+ * - HMR 충돌 수정: 대용량 정적 데이터(JSON) 비동기 런타임 싱글톤 로더 구현으로 핫 리로드 에러 해결
  * - 성능 최적화: Dynamic imports, 메모이제이션, debouncing
  * - UX 향상: 스켈레톤 UI, 에러 복구, 오프라인 대응
  * - 타입 안전성: 엄격한 TypeScript 타입 정의
  * - 접근성: ARIA 레이블, 키보드 네비게이션
- * - SEO: 메타데이터, 구조화된 데이터
  */
 
 import React, {
@@ -95,14 +94,21 @@ const SearchGuide = dynamic(
 );
 
 // ===========================
-// 📦 Lazy Load JSON Data
+// 📦 HMR Safe Static Data Singleton Loader
 // ===========================
-let all_tickers: string[] = [];
-let corpCodeJson: Record<string, any> = {};
+interface StaticStockData {
+  allTickers: string[];
+  corpCodeJson: Record<string, any>;
+}
 
-// 브라우저 환경에서만 JSON 로드
-if (typeof window !== 'undefined') {
-  Promise.all([
+let cachedStaticData: StaticStockData | null = null;
+let staticDataPromise: Promise<StaticStockData> | null = null;
+
+const loadStaticStockData = (): Promise<StaticStockData> => {
+  if (cachedStaticData) return Promise.resolve(cachedStaticData);
+  if (staticDataPromise) return staticDataPromise;
+
+  staticDataPromise = Promise.all([
     import('@/public/data/usStockSymbols/nasdaq_tickers.json'),
     import('@/public/data/usStockSymbols/nyse_tickers.json'),
     import('@/public/data/usStockSymbols/amex_tickers.json'),
@@ -110,16 +116,21 @@ if (typeof window !== 'undefined') {
     import('@/public/data/validCorpNameArray.json'),
     import('@/public/data/validCorpCode.json'),
   ]).then(([nasdaq, nyse, amex, corpCode, corpName, corpCodeData]) => {
-    all_tickers = [
-      ...nasdaq.default,
-      ...nyse.default,
-      ...amex.default,
-      ...corpCode.default,
-      ...corpName.default,
-    ];
-    corpCodeJson = corpCodeData.default;
+    cachedStaticData = {
+      allTickers: [
+        ...nasdaq.default,
+        ...nyse.default,
+        ...amex.default,
+        ...corpCode.default,
+        ...corpName.default,
+      ],
+      corpCodeJson: corpCodeData.default,
+    };
+    return cachedStaticData;
   });
-}
+
+  return staticDataPromise;
+};
 
 import {
   reqGetSearchLog,
@@ -141,7 +152,7 @@ import {
 // 🎨 Skeleton Components
 // ===========================
 const StockCardSkeleton = memo(() => (
-  <div className="w-full h-[420px] bg-white dark:bg-zinc-900 rounded-2xl border border-zinc-200/60 dark:border-zinc-800 animate-pulse p-6 shadow-sm">
+  <div className="w-full h-[420px] bg-white dark:bg-zinc-900 rounded-2xl border border-zinc-200/60 dark:border-zinc-800 animate-pulse p-6 shadow-xs">
     <div className="flex items-center gap-3 mb-6">
       <div className="w-12 h-12 bg-zinc-200 dark:bg-zinc-800 rounded-xl"></div>
       <div className="flex-1 space-y-2">
@@ -163,7 +174,7 @@ const StockCardSkeleton = memo(() => (
 StockCardSkeleton.displayName = 'StockCardSkeleton';
 
 const MetricsSkeleton = memo(() => (
-  <div className="w-full h-[420px] bg-white dark:bg-zinc-900 rounded-2xl border border-zinc-200/60 dark:border-zinc-800 animate-pulse p-6 shadow-sm">
+  <div className="w-full h-[420px] bg-white dark:bg-zinc-900 rounded-2xl border border-zinc-200/60 dark:border-zinc-800 animate-pulse p-6 shadow-xs">
     <div className="h-6 bg-zinc-200 dark:bg-zinc-800 rounded w-1/3 mb-6"></div>
     <div className="grid grid-cols-2 gap-4">
       {[...Array(6)].map((_, i) => (
@@ -178,7 +189,7 @@ const MetricsSkeleton = memo(() => (
 MetricsSkeleton.displayName = 'MetricsSkeleton';
 
 const ValuationSkeleton = memo(() => (
-  <div className="w-full h-[320px] bg-white dark:bg-zinc-900 rounded-2xl animate-pulse p-6 shadow-sm">
+  <div className="w-full h-[320px] bg-white dark:bg-zinc-900 rounded-2xl animate-pulse p-6 shadow-xs">
     <div className="h-5 bg-zinc-200 dark:bg-zinc-800 rounded w-1/3 mb-6"></div>
     <div className="space-y-4">
       {[...Array(4)].map((_, i) => (
@@ -307,21 +318,21 @@ const Toast = memo(({
   }, [notification, onDismiss]);
 
   const bgColorMap = {
-    success: 'bg-emerald-50 dark:bg-emerald-950/30 border-emerald-200 dark:border-emerald-900/50 text-emerald-700 dark:text-emerald-400',
-    error: 'bg-rose-50 dark:bg-rose-950/30 border-rose-200 dark:border-rose-900/50 text-rose-700 dark:text-rose-400',
-    info: 'bg-blue-50 dark:bg-blue-950/30 border-blue-200 dark:border-blue-900/50 text-blue-700 dark:text-blue-400',
-    warning: 'bg-amber-50 dark:bg-amber-950/30 border-amber-200 dark:border-amber-900/50 text-amber-700 dark:text-amber-400'
+    success: 'bg-emerald-50/90 dark:bg-emerald-950/40 border-emerald-200 dark:border-emerald-900/50 text-emerald-800 dark:text-emerald-400 shadow-emerald-100/20 dark:shadow-none',
+    error: 'bg-rose-50/90 dark:bg-rose-950/40 border-rose-200 dark:border-rose-900/50 text-rose-700 dark:text-rose-400 shadow-rose-100/20 dark:shadow-none',
+    info: 'bg-blue-50/90 dark:bg-blue-950/40 border-blue-200 dark:border-blue-900/50 text-blue-700 dark:text-blue-400 shadow-blue-100/20 dark:shadow-none',
+    warning: 'bg-amber-50/90 dark:bg-amber-950/40 border-amber-200 dark:border-amber-900/50 text-amber-700 dark:text-amber-400 shadow-amber-100/20 dark:shadow-none'
   };
 
   return (
     <div className={cn(
-      "flex items-center gap-3 px-4 py-3 rounded-xl border shadow-lg backdrop-blur-sm animate-in slide-in-from-top-2 fade-in duration-300",
+      "flex items-center gap-3 px-4 py-3 rounded-xl border shadow-lg backdrop-blur-md animate-in slide-in-from-top-3 fade-in duration-300 pointer-events-auto",
       bgColorMap[notification.type]
     )}>
-      <span className="text-xs font-semibold flex-1">{notification.message}</span>
+      <span className="text-xs font-bold leading-normal flex-1">{notification.message}</span>
       <button
         onClick={() => onDismiss(notification.id)}
-        className="p-1 hover:bg-black/5 dark:hover:bg-white/5 rounded-lg transition-colors"
+        className="p-1 hover:bg-black/5 dark:hover:bg-white/5 rounded-lg transition-colors shrink-0"
         aria-label="알림 닫기"
       >
         <X size={14} />
@@ -334,10 +345,6 @@ Toast.displayName = 'Toast';
 // ===========================
 // 🔌 Custom Hooks
 // ===========================
-
-/**
- * 온라인/오프라인 상태 감지
- */
 const useOnlineStatus = () => {
   const [isOnline, setIsOnline] = useState(true);
 
@@ -345,7 +352,9 @@ const useOnlineStatus = () => {
     const handleOnline = () => setIsOnline(true);
     const handleOffline = () => setIsOnline(false);
 
-    setIsOnline(navigator.onLine);
+    if (typeof navigator !== 'undefined') {
+      setIsOnline(navigator.onLine);
+    }
     window.addEventListener('online', handleOnline);
     window.addEventListener('offline', handleOffline);
 
@@ -358,26 +367,6 @@ const useOnlineStatus = () => {
   return isOnline;
 };
 
-/**
- * Debounced value hook
- */
-const useDebounce = <T,>(value: T, delay: number): T => {
-  const [debouncedValue, setDebouncedValue] = useState<T>(value);
-
-  useEffect(() => {
-    const handler = setTimeout(() => {
-      setDebouncedValue(value);
-    }, delay);
-
-    return () => clearTimeout(handler);
-  }, [value, delay]);
-
-  return debouncedValue;
-};
-
-/**
- * Toast notifications manager
- */
 const useToast = () => {
   const [toasts, setToasts] = useState<ToastNotification[]>([]);
 
@@ -393,7 +382,7 @@ const useToast = () => {
   return { toasts, addToast, dismissToast };
 };
 
-function ScrollProgress() {
+function ScrollProgress({ isFixed }: { isFixed: boolean }) {
   const [progress, setProgress] = useState(0);
   useEffect(() => {
     const update = () => {
@@ -406,9 +395,12 @@ function ScrollProgress() {
     return () => window.removeEventListener("scroll", update);
   }, []);
   return (
-    <div className="absolute bottom-0 left-0 right-0 h-[1.5px] bg-zinc-200/60 dark:bg-zinc-800/60">
+    <div className={cn(
+      "absolute left-0 right-0 h-[2px] bg-zinc-200/50 dark:bg-zinc-800/40",
+      isFixed ? "top-0" : "bottom-0"
+    )}>
       <div
-        className="h-full bg-gradient-to-r from-blue-500 to-indigo-500 transition-[width] duration-100"
+        className="h-full bg-gradient-to-r from-blue-500 via-indigo-500 to-purple-500 transition-[width] duration-150"
         style={{ width: `${progress}%` }}
       />
     </div>
@@ -416,7 +408,7 @@ function ScrollProgress() {
 }
 
 // ===========================
-// 🎬 Main Component
+// 🎬 Main Content Area Component
 // ===========================
 function SearchContent() {
   const sectionId = useId();
@@ -433,6 +425,7 @@ function SearchContent() {
 
   const [fixed, setFixed] = useState(false);
   const [hasMounted, setHasMounted] = useState(false);
+  const [staticStockData, setStaticStockData] = useState<StaticStockData>({ allTickers: [], corpCodeJson: {} });
   const [stockXpProfiles, setStockXpProfiles] = useState<StockXpProfiles>({});
   const [shareStatus, setShareStatus] = useState<'idle' | 'copied' | 'error'>('idle');
   const [isSearchFocused, setIsSearchFocused] = useState(false);
@@ -450,14 +443,18 @@ function SearchContent() {
   const dwellSecondsRef = useRef<Record<string, number>>({});
   const dwellRewardedAtRef = useRef<Record<string, number>>({});
 
-  // ===========================
-  // 🚀 Initialization
-  // ===========================
   useEffect(() => {
     setHasMounted(true);
     dispatch(reqGetSearchLog('10'));
 
-    // Load XP profiles
+    // HMR 안전 레이어로 정적 데이터 비동기 적재
+    loadStaticStockData().then((loaded) => {
+      setStaticStockData(loaded);
+    }).catch(err => {
+      console.error('Failed to load local asset stocks database:', err);
+      addToast({ type: 'error', message: '마켓 데이터베이스를 동기화할 수 없습니다.' });
+    });
+
     try {
       const savedProfiles = window.localStorage.getItem(STOCK_XP_STORAGE_KEY);
       if (savedProfiles) {
@@ -468,7 +465,6 @@ function SearchContent() {
       addToast({ type: 'error', message: '프로필 로드 실패' });
     }
 
-    // Load watchlist
     try {
       const savedWatchlist = window.localStorage.getItem('idiotquant_watchlist_v1');
       if (savedWatchlist) {
@@ -477,11 +473,8 @@ function SearchContent() {
     } catch (error) {
       console.error('Failed to load watchlist:', error);
     }
-  }, [dispatch]);
+  }, [dispatch, addToast]);
 
-  // ===========================
-  // 🎁 XP System
-  // ===========================
   const awardStockXp = useCallback((ticker: string, gainedXp: number) => {
     const tickerKey = normalizeTickerKey(ticker);
     if (!tickerKey) return;
@@ -511,20 +504,17 @@ function SearchContent() {
 
     addToast({
       type: 'success',
-      message: `+${SEARCH_RESULT_XP_GAIN} XP 획득! 종목 분석 진행 중...`
+      message: `+${SEARCH_RESULT_XP_GAIN} XP 획득! 종목 가치 정밀 진단을 진행합니다.`
     });
   }, [awardStockXp, addToast]);
 
-  // ===========================
-  // 🔍 Search Handler
-  // ===========================
   const handleSearch = useCallback((stockName: string) => {
     if (!stockName) return;
 
-    if (!all_tickers.some((t) => t.toLowerCase() === stockName.toLowerCase())) {
+    if (staticStockData.allTickers.length > 0 && !staticStockData.allTickers.some((t) => t.toLowerCase() === stockName.toLowerCase())) {
       addToast({
         type: 'error',
-        message: `'${stockName}'은(는) 목록에 없는 종목입니다.`
+        message: `'${stockName}'은(는) 리스트에 존재하지 않는 개체입니다.`
       });
       return;
     }
@@ -532,51 +522,42 @@ function SearchContent() {
     startTransition(() => {
       router.push(`/search?ticker=${encodeURIComponent(stockName)}`);
     });
-  }, [router, addToast]);
+  }, [router, addToast, staticStockData.allTickers]);
 
-  // ===========================
-  // 📤 Share Handler (개선)
-  // ===========================
   const handleShareResult = useCallback(async () => {
     if (typeof window === 'undefined') return;
 
     const currentUrl = window.location.href;
     const stockTitle = name
-      ? `[IdiotQuant] ${name} (${krOrUs}) 딥 데이터 밸류에이션 분석 결과`
-      : '[IdiotQuant] 인텔리전스 퀀트 분석 솔루션';
+      ? `[IdiotQuant] ${name} (${krOrUs}) 퀀트 밸류에이션 엔진 리포트`
+      : '[IdiotQuant] 고성능 가치투자 분석 솔루션';
 
-    // Web Share API 우선 시도
     if (navigator.share) {
       try {
         await navigator.share({
           title: stockTitle,
-          // text: `벤자민 그레이엄 NCAV 가치 분석 및 S-RIM 기대 주가 진단`,
           url: currentUrl,
         });
-        addToast({ type: 'success', message: '공유가 완료되었습니다!' });
+        addToast({ type: 'success', message: '성공적으로 공유되었습니다!' });
         return;
       } catch (error) {
         if ((error as Error).name === 'AbortError') return;
       }
     }
 
-    // Clipboard fallback
     try {
       await navigator.clipboard.writeText(currentUrl);
       setShareStatus('copied');
-      addToast({ type: 'success', message: '링크가 클립보드에 복사되었습니다!' });
+      addToast({ type: 'success', message: '공유 링크가 클립보드에 바인딩되었습니다!' });
       setTimeout(() => setShareStatus('idle'), 2500);
     } catch (error) {
       console.error('Share failed:', error);
       setShareStatus('error');
-      addToast({ type: 'error', message: '공유에 실패했습니다.' });
+      addToast({ type: 'error', message: '공유 작업 수행 실패' });
       setTimeout(() => setShareStatus('idle'), 2500);
     }
   }, [name, krOrUs, addToast]);
 
-  // ===========================
-  // ⭐ Watchlist Handler
-  // ===========================
   const toggleWatchlist = useCallback((ticker: string) => {
     setWatchlist(prev => {
       const isAdded = prev.includes(ticker);
@@ -588,7 +569,7 @@ function SearchContent() {
         window.localStorage.setItem('idiotquant_watchlist_v1', JSON.stringify(newWatchlist));
         addToast({
           type: isAdded ? 'info' : 'success',
-          message: isAdded ? '관심 종목에서 제거되었습니다' : '관심 종목에 추가되었습니다!'
+          message: isAdded ? '관심 포트폴리오에서 해제되었습니다.' : '관심 모니터링 그룹에 추가되었습니다!'
         });
       } catch (error) {
         console.error('Failed to update watchlist:', error);
@@ -598,9 +579,6 @@ function SearchContent() {
     });
   }, [addToast]);
 
-  // ===========================
-  // 🔄 Refresh Handler
-  // ===========================
   const handleRefresh = useCallback(async () => {
     const tickerFromUrl = searchParams.get('ticker');
     if (!tickerFromUrl) return;
@@ -608,17 +586,14 @@ function SearchContent() {
     setIsRefreshing(true);
     try {
       await onSearch(tickerFromUrl);
-      addToast({ type: 'success', message: '데이터가 새로고침되었습니다!' });
+      addToast({ type: 'success', message: '실시간 가치 분석표 최신화 완료' });
     } catch (error) {
-      addToast({ type: 'error', message: '새로고침 실패' });
+      addToast({ type: 'error', message: '새로고침 프로세스 에러' });
     } finally {
       setIsRefreshing(false);
     }
   }, [searchParams, onSearch, addToast]);
 
-  // ===========================
-  // 📍 URL & Loading States
-  // ===========================
   useEffect(() => {
     const tickerFromUrl = searchParams.get('ticker');
     if (tickerFromUrl && tickerFromUrl !== name) {
@@ -628,7 +603,7 @@ function SearchContent() {
 
   useEffect(() => {
     const handleScroll = () => {
-      setFixed(window.scrollY > 200);
+      setFixed(window.scrollY > 140);
     };
     window.addEventListener('scroll', handleScroll, { passive: true });
     return () => window.removeEventListener('scroll', handleScroll);
@@ -650,9 +625,6 @@ function SearchContent() {
     }
   }, [isLoaded, tickerFromUrl, awardEntrySearchXp]);
 
-  // ===========================
-  // 👁️ Dwell Time XP System
-  // ===========================
   useEffect(() => {
     visibleDwellSectionsRef.current.clear();
     dwellSecondsRef.current = {};
@@ -719,20 +691,16 @@ function SearchContent() {
     };
   }, [isLoaded, activeTickerKey, awardStockXp]);
 
-  // ===========================
-  // 📊 Chart Configuration
-  // ===========================
   const chartConfig = useMemo(() => {
     const isUs = krOrUs === 'US';
     const rawData = isUs ? data.usDaily?.output2 : data.kiChart?.output2;
     return {
       data: rawData?.map((i: any) => Number(isUs ? i.clos : i.stck_clpr)).reverse() || [],
       categories: rawData?.map((i: any) => (isUs ? i.xymd : i.stck_bsop_date)).reverse() || [],
-      color: isUs ? '#2563eb' : '#4f46e5',
+      color: isUs ? '#3b82f6' : '#6366f1',
     };
   }, [krOrUs, data]);
 
-  const shouldHideHeader = isSearchFocused && !isQueryEmpty;
   const currency = krOrUs === 'US' ? '$' : '₩';
   const isInWatchlist = tickerFromUrl ? watchlist.includes(tickerFromUrl) : false;
 
@@ -741,12 +709,12 @@ function SearchContent() {
   }
 
   return (
-    <div className="w-full min-h-screen bg-slate-50/60 dark:bg-[#09090b] text-zinc-900 dark:text-zinc-100 antialiased selection:bg-blue-500/20 transition-colors duration-300">
+    <div className="w-full min-h-screen bg-zinc-50/40 dark:bg-[#09090b] text-zinc-900 dark:text-zinc-100 antialiased selection:bg-blue-500/10 transition-colors duration-300">
 
       {/* ===========================
           🍞 Toast Container
           =========================== */}
-      <div className="fixed top-4 right-4 z-[100] space-y-2 max-w-sm w-full pointer-events-none">
+      <div className="fixed top-4 right-4 z-[100] space-y-2 max-w-sm w-full pointer-events-none px-4 sm:px-0">
         <div className="space-y-2 pointer-events-auto">
           {toasts.map(toast => (
             <Toast key={toast.id} notification={toast} onDismiss={dismissToast} />
@@ -758,9 +726,9 @@ function SearchContent() {
           🌐 Offline Banner
           =========================== */}
       {!isOnline && (
-        <div className="fixed top-0 left-0 right-0 z-[90] bg-amber-500 text-white py-2 px-4 flex items-center justify-center gap-2 text-xs font-bold shadow-lg">
+        <div className="fixed top-0 left-0 right-0 z-[90] bg-amber-500 text-white py-2 px-4 flex items-center justify-center gap-2 text-xs font-bold shadow-md animate-in fade-in duration-200">
           <WifiOff size={14} />
-          오프라인 모드 - 일부 기능이 제한될 수 있습니다
+          오프라인 감지 — 동적 원천 레코드 패칭이 보류되었습니다.
         </div>
       )}
 
@@ -769,22 +737,22 @@ function SearchContent() {
           =========================== */}
       <header
         className={cn(
-          "w-full transition-all duration-300 ease-in-out border-b backdrop-blur-md",
+          "w-full transition-all duration-300 ease-in-out border-b",
           fixed
-            ? "fixed top-0 z-[60] bg-white/85 dark:bg-zinc-900/85 border-zinc-200/80 dark:border-zinc-800 shadow-sm"
-            : "relative z-[31] bg-white dark:bg-zinc-900 border-zinc-200/50 dark:border-zinc-800/50",
+            ? "fixed top-0 z-[60] bg-white/90 dark:bg-zinc-900/90 border-zinc-200/80 dark:border-zinc-800 shadow-sm backdrop-blur-md"
+            : "relative z-[31] bg-white dark:bg-zinc-900 border-zinc-200/60 dark:border-zinc-800/60",
           !isOnline && "mt-8"
         )}
       >
-        <div className="max-w-6xl mx-auto">
-          {/* Top Action Bar */}
-          {true && <div className="px-2 py-2 flex items-center justify-between gap-1">
-            {/* Search Bar */}
-            <div className="pl-2 w-full">
+        <div className="max-w-6xl mx-auto px-4 py-3 sm:py-3.5 flex flex-col sm:flex-row sm:items-center justify-between gap-3 relative">
+          
+          {/* 탐색 패널 입력 스트림 그리드 */}
+          <div className="w-full flex-1 flex items-center gap-2">
+            <div className="w-full">
               <SearchAutocomplete
-                placeHolder="🇰🇷 국내 종목명 또는 🇺🇸 미국 티커(Ticker)를 입력하세요"
+                placeHolder="🇰🇷 국내 종목명 또는 🇺🇸 미국 티커(Ticker) 입력"
                 onSearchButton={handleSearch}
-                validCorpNameArray={all_tickers}
+                validCorpNameArray={staticStockData.allTickers}
                 onSearchStateChange={(focused, isEmpty) => {
                   setIsSearchFocused(focused);
                   setIsQueryEmpty(isEmpty);
@@ -792,146 +760,131 @@ function SearchContent() {
               />
             </div>
 
-            {/* Market Indicator & Actions */}
+            {/* 실시간 로딩 가젯 콤팩트 링크 */}
             {isLoaded && (
-              <div className="flex items-center gap-2 animate-in fade-in duration-200">
-                {/* Refresh Button */}
-                {/* <button
-                  onClick={handleRefresh}
-                  disabled={isRefreshing}
-                  className="p-1.5 rounded-lg hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors disabled:opacity-50"
-                  aria-label="데이터 새로고침"
-                >
-                  <RefreshCw size={14} className={cn("text-zinc-500", isRefreshing && "animate-spin")} />
-                </button> */}
-
-                {/* Watchlist Toggle */}
+              <div className="flex items-center gap-1.5 shrink-0 animate-in fade-in zoom-in-95 duration-200">
                 <button
                   onClick={() => tickerFromUrl && toggleWatchlist(tickerFromUrl)}
                   className={cn(
-                    "p-1.5 rounded-lg transition-colors",
+                    "p-2.5 rounded-xl border transition-all duration-200",
                     isInWatchlist
-                      ? "text-amber-500 hover:bg-amber-50 dark:hover:bg-amber-950/20"
-                      : "text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-800"
+                      ? "text-amber-500 bg-amber-50/50 border-amber-200 dark:bg-amber-950/20 dark:border-amber-900/50 shadow-2xs"
+                      : "text-zinc-400 bg-zinc-50 border-zinc-200/80 hover:text-zinc-700 dark:bg-zinc-800/40 dark:border-zinc-800 dark:hover:text-zinc-200"
                   )}
-                  aria-label={isInWatchlist ? "관심 종목에서 제거" : "관심 종목에 추가"}
+                  aria-label={isInWatchlist ? "관심 종목 제거" : "관심 종목 추가"}
                 >
-                  <Star size={14} className={isInWatchlist ? "fill-amber-500" : ""} />
+                  <Star size={15} className={isInWatchlist ? "fill-amber-500" : ""} />
                 </button>
 
-                {/* Market Badge */}
                 <span className={cn(
-                  "inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-bold uppercase tracking-wider font-mono shadow-2xs",
+                  "inline-flex items-center gap-1 px-2.5 py-2 rounded-xl text-[11px] font-black uppercase tracking-wider font-mono border shadow-2xs h-[38px]",
                   krOrUs === 'US'
-                    ? "bg-blue-50 text-blue-600 dark:bg-blue-950/40 dark:text-blue-400 border border-blue-200/40 dark:border-blue-900/40"
-                    : "bg-indigo-50 text-indigo-600 dark:bg-indigo-950/40 dark:text-indigo-400 border border-indigo-200/40 dark:border-indigo-900/40"
+                    ? "bg-blue-50/60 text-blue-600 border-blue-200/60 dark:bg-blue-950/30 dark:text-blue-400 dark:border-blue-900/40"
+                    : "bg-indigo-50/60 text-indigo-600 border-indigo-200/60 dark:bg-indigo-950/30 dark:text-indigo-400 dark:border-indigo-900/40"
                 )}>
-                  {krOrUs === 'US' ? <DollarSign size={10} /> : <Coins size={10} />}
-                  {krOrUs}
+                  {krOrUs === 'US' ? <DollarSign size={12} /> : <Coins size={12} />}
+                  <span>{krOrUs}</span>
                 </span>
               </div>
             )}
+          </div>
 
-            <ScrollProgress />
+          <ScrollProgress isFixed={fixed} />
+        </div>
 
-          </div>}
-
-
-
-          {/* Quick Access Sections */}
-          {!fixed && !isSearchFocused && (
-            <div className="flex flex-col border-t border-zinc-100 dark:border-zinc-800/40 animate-in fade-in duration-300">
-              {/* Hot Stocks */}
-              <div className="flex items-center gap-3 px-4 py-2 bg-slate-50/50 dark:bg-zinc-900/20 border-b border-zinc-100 dark:border-zinc-800/30">
-                <div className="flex items-center gap-1 flex-shrink-0 text-amber-500">
-                  <Flame size={12} className="animate-pulse fill-amber-500/20" />
-                  <span className="text-[10px] font-black tracking-wider whitespace-nowrap uppercase font-mono text-zinc-500 dark:text-zinc-400">
-                    인기 검색
-                  </span>
-                </div>
-                <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar flex-nowrap py-0.5">
-                  {popularStocks.map((s: any, i: number) => (
-                    <button
-                      key={`hot-${i}`}
-                      onClick={() => handleSearch(s.ticker)}
-                      className="flex-shrink-0 px-2.5 py-0.5 rounded-md bg-white dark:bg-zinc-900 text-[11px] font-medium text-zinc-600 dark:text-zinc-300 border border-zinc-200/60 dark:border-zinc-800/80 shadow-2xs hover:border-blue-500 dark:hover:border-indigo-500 hover:text-zinc-900 transition-all whitespace-nowrap"
-                    >
-                      <span className="mr-1 font-mono text-blue-500 font-bold text-[10px]">{i + 1}</span>
-                      {s.name}
-                    </button>
-                  ))}
-                </div>
+        {/* 퀵 억세스 통합 대시 트랙 */}
+        {!fixed && !isSearchFocused && (
+          <div className="w-full flex flex-col border-t border-zinc-100 dark:border-zinc-800/40 bg-zinc-50/30 dark:bg-zinc-950/10 animate-in fade-in duration-300">
+            {/* 실시간 인기 스크리닝 */}
+            <div className="max-w-6xl w-full mx-auto px-4 py-2 flex items-center gap-3 overflow-hidden border-b border-zinc-100 dark:border-zinc-800/30">
+              <div className="flex items-center gap-1 shrink-0 text-amber-500 select-none">
+                <Flame size={13} className="animate-pulse fill-amber-500/10" />
+                <span className="text-[10px] font-black tracking-wider uppercase font-mono text-zinc-400 dark:text-zinc-500">
+                  HOT POOL
+                </span>
               </div>
-
-              {/* Recent History */}
-              <div className="flex items-center gap-3 px-4 py-2.5 bg-white dark:bg-[#121214]">
-                <div className="flex items-center gap-1.5 flex-shrink-0 text-zinc-400 dark:text-zinc-500">
-                  <History size={12} />
-                  <span className="text-[10px] font-black tracking-wider whitespace-nowrap uppercase font-mono text-zinc-400">
-                    최근 조회
-                  </span>
-                </div>
-                <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar flex-nowrap py-0.5">
-                  {krMarketHistory.length > 0 ? (
-                    krMarketHistory
-                      .slice()
-                      .reverse()
-                      .map((s, i) => (
-                        <button
-                          key={`recent-${i}`}
-                          onClick={() => handleSearch(s)}
-                          className="flex-shrink-0 px-2 py-0.5 rounded text-[11px] font-medium text-zinc-500 hover:text-blue-600 dark:text-zinc-400 dark:hover:text-indigo-400 transition-colors whitespace-nowrap"
-                        >
-                          {s}
-                        </button>
-                      ))
-                  ) : (
-                    <span className="text-[10px] text-zinc-400/70 dark:text-zinc-600 italic font-medium">
-                      최근 조회한 내역이 존재하지 않습니다.
-                    </span>
-                  )}
-                </div>
+              <div className="flex items-center gap-2 overflow-x-auto no-scrollbar flex-nowrap py-0.5 scroll-smooth">
+                {popularStocks.map((s: any, i: number) => (
+                  <button
+                    key={`hot-${i}`}
+                    onClick={() => handleSearch(s.ticker)}
+                    className="shrink-0 px-2.5 py-1 rounded-lg bg-white dark:bg-zinc-900 text-xs font-semibold text-zinc-600 dark:text-zinc-300 border border-zinc-200/60 dark:border-zinc-800/80 shadow-2xs hover:border-blue-500 dark:hover:border-indigo-500 hover:text-zinc-950 dark:hover:text-white transition-all whitespace-nowrap"
+                  >
+                    <span className="mr-1 font-mono text-blue-500 font-black text-[10px]">{i + 1}</span>
+                    {s.name}
+                  </button>
+                ))}
               </div>
             </div>
-          )}
-        </div>
+
+            {/* 유저 인텔리전스 최근 조회 로그 */}
+            <div className="max-w-6xl w-full mx-auto px-4 py-2 flex items-center gap-3 overflow-hidden">
+              <div className="flex items-center gap-1 shrink-0 text-zinc-400 dark:text-zinc-500 select-none">
+                <History size={13} />
+                <span className="text-[10px] font-black tracking-wider uppercase font-mono">
+                  RECENT
+                </span>
+              </div>
+              <div className="flex items-center gap-2 overflow-x-auto no-scrollbar flex-nowrap py-0.5 scroll-smooth">
+                {krMarketHistory.length > 0 ? (
+                  krMarketHistory
+                    .slice()
+                    .reverse()
+                    .map((s, i) => (
+                      <button
+                        key={`recent-${i}`}
+                        onClick={() => handleSearch(s)}
+                        className="shrink-0 px-2.5 py-1 text-xs font-medium text-zinc-500 hover:text-blue-600 dark:text-zinc-400 dark:hover:text-indigo-400 hover:bg-zinc-100/50 dark:hover:bg-zinc-800/40 rounded-lg transition-all whitespace-nowrap"
+                      >
+                        {s}
+                      </button>
+                    ))
+                ) : (
+                  <span className="text-[11px] text-zinc-400 dark:text-zinc-600 italic font-medium py-0.5">
+                    최근 바인딩 히스토리가 비어있습니다.
+                  </span>
+                )}
+              </div>
+            </div>
+          </div>
+        )}
       </header>
 
       {/* ===========================
           📱 Main Content Area
           =========================== */}
-      <main className="max-w-6xl mx-auto p-4 md:p-6 transition-all duration-300">
+      <main className="max-w-6xl mx-auto p-4 sm:p-6 transition-all duration-300">
 
         {!tickerFromUrl ? (
           <SearchGuide />
         ) : (
           <>
-            {/* Loading State */}
+            {/* 정밀 패칭 가동 로더 */}
             {waitResponse && !isLoaded && (
-              <div className="py-40 flex flex-col items-center justify-center gap-4">
-                <div className="relative p-5 bg-white dark:bg-zinc-900 rounded-2xl shadow-xl shadow-zinc-200/50 dark:shadow-none border border-zinc-100 dark:border-zinc-800 animate-pulse">
+              <div className="py-40 flex flex-col items-center justify-center gap-4 animate-in fade-in duration-300">
+                <div className="relative p-5 bg-white dark:bg-zinc-900 rounded-2xl shadow-xl border border-zinc-100 dark:border-zinc-800 animate-pulse">
                   <Loader2 className="animate-spin text-blue-600 dark:text-indigo-400" size={28} />
                 </div>
-                <div className="text-center space-y-1">
-                  <p className="text-xs font-bold text-zinc-800 dark:text-zinc-200 tracking-tight">
-                    이디엇퀀트 고성능 금융 엔진 가동 중
+                <div className="text-center space-y-1.5 px-4">
+                  <p className="text-sm font-bold text-zinc-800 dark:text-zinc-200 tracking-tight">
+                    고성능 퀀트 분석 모듈 연산 중
                   </p>
-                  <p className="text-[11px] font-medium text-zinc-400 dark:text-zinc-500 font-mono">
-                    Streaming historical financial state and processing metrics...
+                  <p className="text-xs font-medium text-zinc-400 dark:text-zinc-500 font-mono leading-relaxed max-w-md mx-auto">
+                    Streaming historical financial state and processing multi-layer evaluation indicators...
                   </p>
                 </div>
               </div>
             )}
 
-            {/* Main Dashboard */}
-            <div className={!isLoaded ? 'hidden' : 'block animate-in fade-in zoom-in-98 duration-500'}>
+            {/* 완정성 검증 대시보드 코어 엔코더 */}
+            <div className={!isLoaded ? 'hidden' : 'block animate-in fade-in zoom-in-99 duration-500'}>
 
-              {/* Action Panel */}
-              <div className="w-full flex items-center justify-between mb-4 bg-white dark:bg-zinc-900 p-3 rounded-xl border border-zinc-200/60 dark:border-zinc-800/80 shadow-2xs">
+              {/* 최상단 얼럿 링크 가젯 랙 */}
+              <div className="w-full flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-5 bg-white dark:bg-zinc-900 p-3 sm:p-4 rounded-2xl border border-zinc-200/60 dark:border-zinc-800/80 shadow-2xs">
                 <div className="flex items-center gap-2">
-                  <div className="w-2 h-2 rounded-full bg-emerald-500 animate-ping" />
-                  <span className="text-xs font-bold text-zinc-700 dark:text-zinc-300">
-                    NCAV 밸류에이션 리포트 생성이 완료되었습니다.
+                  <div className="w-2 h-2 rounded-full bg-emerald-500 shrink-0 animate-ping" />
+                  <span className="text-xs sm:text-sm font-bold text-zinc-700 dark:text-zinc-300">
+                    그레이엄 청산가치(NCAV) 밸류에이션 리포트 연산이 완료되었습니다.
                   </span>
                 </div>
 
@@ -939,38 +892,38 @@ function SearchContent() {
                   onClick={handleShareResult}
                   disabled={shareStatus !== 'idle'}
                   className={cn(
-                    "inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all transform active:scale-95 shadow-2xs",
+                    "inline-flex items-center justify-center gap-1.5 px-4 py-2 rounded-xl text-xs font-bold transition-all transform active:scale-98 shadow-2xs w-full sm:w-auto shrink-0",
                     shareStatus === 'copied'
                       ? "bg-emerald-50 text-emerald-600 border border-emerald-200 dark:bg-emerald-950/30 dark:text-emerald-400 dark:border-emerald-900/50"
                       : shareStatus === 'error'
                         ? "bg-rose-50 text-rose-600 border border-rose-200 dark:bg-rose-950/30 dark:text-rose-400 dark:border-rose-900/50"
-                        : "bg-blue-600 text-white hover:bg-blue-700 dark:bg-indigo-600 dark:hover:bg-indigo-700 disabled:opacity-50"
+                        : "bg-zinc-950 text-white hover:bg-zinc-900 dark:bg-white dark:text-zinc-950 dark:hover:bg-zinc-100"
                   )}
                 >
                   {shareStatus === 'copied' ? (
                     <>
-                      <Check size={13} />
-                      링크 복사 완료
+                      <Check size={14} />
+                      <span>분석표 링크 복사 완료</span>
                     </>
                   ) : shareStatus === 'error' ? (
                     <>
-                      <AlertCircle size={13} />
-                      복사 실패
+                      <AlertCircle size={14} />
+                      <span>클립보드 바인딩 에러</span>
                     </>
                   ) : (
                     <>
-                      <Share2 size={13} />
-                      분석 결과 공유하기
+                      <Share2 size={14} />
+                      <span>리포트 결과 공유하기</span>
                     </>
                   )}
                 </button>
               </div>
 
-              {/* Main Dashboard Grid */}
-              <div className="grid grid-cols-1 md:grid-cols-12 gap-6 items-stretch mb-8 transform-gpu">
+              {/* 메인 리포트 대시보드 2열 래퍼 격자 */}
+              <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start mb-6 transform-gpu">
 
-                {/* Stock Card */}
-                <div ref={stockCardDwellRef} className="md:col-span-5 flex justify-center w-full">
+                {/* 1열: 주가 차트 종합 지표 스탠드 */}
+                <div ref={stockCardDwellRef} className="lg:col-span-5 flex justify-center w-full">
                   <StockCard
                     stock={
                       krOrUs === 'US'
@@ -993,7 +946,7 @@ function SearchContent() {
                           code: tickerFromUrl,
                           isUs: false,
                           name,
-                          ticker: (corpCodeJson as any)?.[name]?.stock_code ?? '',
+                          ticker: (staticStockData.corpCodeJson as any)?.[name]?.stock_code ?? '',
                           grade: getKrNcavGrade(data.kiBS, data.kiChart),
                           curPrice: data?.kiPrice?.output?.stck_prpr ?? 0,
                           fairValue: currency + calculateKrNcavValue(data.kiBS, data.kiChart),
@@ -1011,30 +964,32 @@ function SearchContent() {
                   />
                 </div>
 
-                {/* Metrics Card */}
-                <div ref={metricsDwellRef} className="md:col-span-7 w-full h-full flex flex-col justify-between">
+                {/* 2열: 재무 성장성 세부 메트릭스 컨테이너 */}
+                <div ref={metricsDwellRef} className="lg:col-span-7 w-full h-full flex flex-col justify-between">
                   <StockMetrics data={data} isUs={krOrUs === 'US'} />
                 </div>
               </div>
 
-              {/* Detailed Sections */}
-              <div className="transition-all duration-300 space-y-8">
-                {/* Valuation */}
+              {/* 하단 배치 세부 데이터 테이블 섹션군 */}
+              <div className="transition-all duration-300 space-y-6">
+                {/* 밸류에이션 청산 등급 분석 레이어 */}
                 <div ref={valuationDwellRef} className="bg-white dark:bg-zinc-900 rounded-2xl border border-zinc-200/60 dark:border-zinc-800/80 p-1 shadow-2xs">
                   <ValuationSection data={data} isUs={krOrUs === 'US'} />
                 </div>
 
-                {/* Financials */}
-                <div ref={financialsDwellRef} className="bg-white dark:bg-zinc-900 rounded-2xl border border-zinc-200/60 dark:border-zinc-800/80 p-4 shadow-2xs overflow-hidden">
-                  <h3 className="text-sm font-bold tracking-tight mb-4 flex items-center gap-2 px-1">
-                    <Globe2 size={14} className="text-zinc-400" />
-                    원천 재무제표(Financial Statements) 세부 정보
+                {/* 원천 데이터 회계 재무제표 뷰어 테두리 */}
+                <div ref={financialsDwellRef} className="bg-white dark:bg-zinc-900 rounded-2xl border border-zinc-200/60 dark:border-zinc-800/80 p-4 sm:p-5 shadow-2xs overflow-hidden">
+                  <h3 className="text-sm font-bold tracking-tight mb-4 flex items-center gap-2 px-1 text-zinc-800 dark:text-zinc-200">
+                    <Globe2 size={15} className="text-zinc-400 shrink-0" />
+                    <span>원천 재무제표(Financial Statements) 세부 정보 레코드</span>
                   </h3>
-                  {krOrUs === 'KR' ? (
-                    <FinancialTables kiBS={data.kiBS} kiIS={data.kiIS} />
-                  ) : (
-                    <FinnhubTable data={data.finnhubData.data} />
-                  )}
+                  <div className="overflow-x-auto w-full rounded-xl border border-zinc-100 dark:border-zinc-800">
+                    {krOrUs === 'KR' ? (
+                      <FinancialTables kiBS={data.kiBS} kiIS={data.kiIS} />
+                    ) : (
+                      <FinnhubTable data={data.finnhubData.data} />
+                    )}
+                  </div>
                 </div>
               </div>
             </div>
@@ -1045,17 +1000,17 @@ function SearchContent() {
       {/* ===========================
           📄 Footer
           =========================== */}
-      <footer className="max-w-6xl mx-auto px-4 py-8 mt-16 border-t border-zinc-200/60 dark:border-zinc-800/60">
-        <div className="flex flex-col md:flex-row items-center justify-between gap-4 text-xs text-zinc-500 dark:text-zinc-400">
-          <div className="flex items-center gap-2">
-            <BarChart3 size={14} />
-            <span className="font-semibold">IdiotQuant Pro</span>
-            <span className="text-zinc-400 dark:text-zinc-600">|</span>
+      <footer className="max-w-6xl mx-auto px-4 py-8 mt-20 border-t border-zinc-200/60 dark:border-zinc-800/60">
+        <div className="flex flex-col md:flex-row items-center justify-between gap-4 text-xs text-zinc-400 dark:text-zinc-500">
+          <div className="flex items-center gap-2 select-none">
+            <BarChart3 size={14} className="text-zinc-400" />
+            <span className="font-bold text-zinc-700 dark:text-zinc-300">IdiotQuant Pro</span>
+            <span className="text-zinc-300 dark:text-zinc-700">|</span>
             <span>Deep Value Investment Analysis Platform</span>
           </div>
-          <div className="flex items-center gap-4">
-            <span>© 2024 IdiotQuant. All rights reserved.</span>
-            <a href="#" className="hover:text-blue-600 dark:hover:text-indigo-400 transition-colors">
+          <div className="flex items-center gap-5">
+            <span>© 2026 IdiotQuant. All rights reserved.</span>
+            <a href="#" className="hover:text-blue-600 dark:hover:text-indigo-400 transition-colors font-medium">
               문의하기
             </a>
           </div>
@@ -1072,7 +1027,7 @@ export default function SearchPage() {
   return (
     <Suspense
       fallback={
-        <div className="flex flex-col items-center justify-center py-40 gap-4 bg-slate-50/60 dark:bg-[#09090b] min-h-screen">
+        <div className="flex flex-col items-center justify-center py-40 gap-4 bg-slate-50/40 dark:bg-[#09090b] min-h-screen">
           <div className="relative p-4 bg-white dark:bg-zinc-900 rounded-2xl border border-zinc-200/60 dark:border-zinc-800 shadow-xs">
             <Loader2 className="animate-spin text-blue-600 dark:text-indigo-400" size={24} />
           </div>
