@@ -1,397 +1,488 @@
 "use client";
 
-import { useState, useEffect, Suspense } from "react";
+import { useState, useEffect, useCallback, Suspense } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
-import { 
-    Globe, 
-    ChevronRight, 
-    DollarSign, 
-    History, 
-    Clock, 
-    AlertCircle, 
-    Building2,
-    Loader2,
-    Wallet,
-    TrendingUp,
-    BarChart3
+import {
+  Globe, ChevronRight, DollarSign, Building2,
+  Wallet, TrendingUp, BarChart3, RefreshCw,
+  Clock, AlertCircle, Database,
+  ArrowUpRight, ArrowDownRight
 } from "lucide-react";
+import { useSession } from "next-auth/react";
 
 import { useAppDispatch, useAppSelector } from "@/lib/hooks";
 import {
-    reqGetOverseasStockTradingInquirePresentBalance,
-    getKoreaInvestmentUsMaretPresentBalance,
-    reqPostOrderUs,
-    getKoreaInvestmentUsOrder,
-    getKoreaInvestmentUsMaretNccs,
-    reqGetOverseasStockTradingInquireNccs,
-    getKoreaInvestmentUsMaretCcnl,
-    reqGetOverseasStockTradingInquireCcnl,
-    KoreaInvestmentOverseasPresentBalance,
-    KoreaInvestmentOverseasCcnl,
-    KoreaInvestmentOverseasNccs,
-    KoreaInvestmentUsOrder
+  reqGetOverseasStockTradingInquirePresentBalance,
+  getKoreaInvestmentUsMaretPresentBalance,
+  reqPostOrderUs,
+  getKoreaInvestmentUsOrder,
+  getKoreaInvestmentUsMaretNccs,
+  reqGetOverseasStockTradingInquireNccs,
+  getKoreaInvestmentUsMaretCcnl,
+  reqGetOverseasStockTradingInquireCcnl,
+  KoreaInvestmentOverseasPresentBalance,
+  KoreaInvestmentOverseasCcnl,
+  KoreaInvestmentOverseasNccs,
+  KoreaInvestmentUsOrder
 } from "@/lib/features/koreaInvestmentUsMarket/koreaInvestmentUsMarketSlice";
 import {
-    KakaoTotal,
-    reqGetKakaoMemberList,
-    selectKakaoMemberList,
-    selectKakaoTotal
+  KakaoTotal, reqGetKakaoMemberList,
+  selectKakaoMemberList, selectKakaoTotal
 } from "@/lib/features/kakao/kakaoSlice";
 import {
-    KrUsCapitalType,
-    reqGetUsCapital,
-    reqPostUsCapitalTokenPlusAll,
-    reqPostUsCapitalTokenPlusOne,
-    reqPostUsCapitalTokenMinusAll,
-    reqPostUsCapitalTokenMinusOne,
-    selectUsCapital,
-    selectUsCapitalTokenMinusAll,
-    selectUsCapitalTokenPlusAll,
-    selectUsCapitalTokenPlusOne,
-    selectUsCapitalTokenMinusOne
+  KrUsCapitalType, reqGetUsCapital,
+  reqPostUsCapitalTokenPlusAll, reqPostUsCapitalTokenPlusOne,
+  reqPostUsCapitalTokenMinusAll, reqPostUsCapitalTokenMinusOne,
+  selectUsCapital, selectUsCapitalTokenMinusAll,
+  selectUsCapitalTokenPlusAll, selectUsCapitalTokenPlusOne,
+  selectUsCapitalTokenMinusOne
 } from "@/lib/features/capital/capitalSlice";
 
 import InquireBalanceResult from "@/components/inquireBalanceResult";
-import OverseasCcnlTable from "@/components/balance/ccnlTable";
-import OverseasNccsTable from "@/components/balance/nccsTable";
 import StockListTable from "@/components/balance/stockListTable";
-import { useSession } from "next-auth/react";
+import {
+  useToast, ToastContainer,
+  LoadingState, SectionHeader, SectionPanel, EmptyRow,
+  UsdKpiCard, TableHeader, OrderTabAction, OrderSectionIcon,
+  BalanceHeaderActions, pnlIconBg, pnlValueColor, pnlAccentColor,
+  fmtUsd, fmtKrw, formatTime,
+} from "@/components/balance/shared";
+import { cn } from "@/lib/utils";
 
-// 국장 스타일의 엄격한 통화 단위 포맷터
-function formatCurrency(value: number | string, type: "KRW" | "USD" | "RAW" = "RAW") {
-    const num = Number(value);
-    if (isNaN(num)) return "0";
+// =========================================================================
+// 해외 주문 행
+// =========================================================================
+function OverseasOrderRow({ item, isNccs }: { item: any; isNccs: boolean }) {
+  const isBuy = item.sll_buy_dvsn_cd_name?.includes("매수") || item.sll_buy_dvsn_cd === "02";
+  const hasPartialFill = Number(item.ft_ccld_qty || 0) > 0;
 
-    if (type === "KRW") {
-        // 원화는 소수점 없이 정수형태로 포맷팅
-        return `₩${Math.floor(num).toLocaleString()}`;
-    }
-    if (type === "USD") {
-        // 달러는 소수점 2자리 유지
-        return `$${num.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
-    }
-    
-    // 일반 수량 및 소수점 가변 처리
-    return num % 1 === 0 ? num.toLocaleString() : num.toFixed(2);
+  return (
+    <tr className="hover:bg-zinc-50 dark:hover:bg-zinc-800/40 transition-colors group">
+      <td className="py-3.5 px-4">
+        <span className="block text-xs font-semibold text-zinc-700 dark:text-zinc-300">
+          {formatTime(item.ord_tmd)}
+        </span>
+        <span className="text-[10px] font-mono text-zinc-400 block mt-0.5">No. {item.odno}</span>
+      </td>
+      <td className="py-3.5 px-4">
+        <span className={cn(
+          "px-2.5 py-1 rounded-full text-[10px] font-black uppercase tracking-wide",
+          isBuy ? "bg-red-50 text-red-500 dark:bg-red-950/40" : "bg-blue-50 text-blue-500 dark:bg-blue-950/40"
+        )}>
+          {item.sll_buy_dvsn_cd_name || (isBuy ? "매수" : "매도")}
+        </span>
+      </td>
+      <td className="py-3.5 px-4">
+        <span className="font-bold text-zinc-900 dark:text-white text-xs block">{item.prdt_name}</span>
+        <span className="text-[10px] font-mono text-zinc-400 uppercase">{item.tr_mket_name || item.tr_crcy_cd}</span>
+      </td>
+      <td className="py-3.5 px-4 text-right font-mono">
+        <span className="block text-xs font-bold text-zinc-700 dark:text-zinc-300">{item.ft_ord_qty || "-"}</span>
+        <span className="text-[10px] text-zinc-400">주문</span>
+      </td>
+      <td className="py-3.5 px-4 text-right font-mono">
+        {hasPartialFill ? (
+          <>
+            <span className="block text-xs font-black text-zinc-900 dark:text-white">{item.ft_ccld_qty}</span>
+            <span className="text-[10px] font-bold text-emerald-500">체결</span>
+          </>
+        ) : (
+          <span className="text-xs text-zinc-400">-</span>
+        )}
+      </td>
+      <td className="py-3.5 px-4 text-right font-mono">
+        <span className="text-xs font-medium text-zinc-700 dark:text-zinc-300 block">
+          {Number(item.ft_ord_unpr3 || 0) > 0 ? fmtUsd(item.ft_ord_unpr3) : "-"}
+        </span>
+        {hasPartialFill && (
+          <span className="text-[10px] text-zinc-400">{fmtUsd(item.ft_ccld_unpr3)} 체결가</span>
+        )}
+      </td>
+      <td className="py-3.5 px-4 text-right font-mono">
+        {hasPartialFill && Number(item.ft_ccld_amt3 || 0) > 0
+          ? <span className="text-xs font-black text-zinc-900 dark:text-white">{fmtUsd(item.ft_ccld_amt3)}</span>
+          : <span className="text-xs text-zinc-400">-</span>
+        }
+      </td>
+      <td className="py-3.5 px-4 text-center">
+        <span className={cn(
+          "inline-block px-2.5 py-0.5 rounded-full text-[10px] font-black tracking-wide",
+          item.prcs_stat_name?.includes("체결") || item.prcs_stat_name?.includes("완료")
+            ? "bg-emerald-50 text-emerald-600 dark:bg-emerald-950/30 dark:text-emerald-400"
+            : isNccs
+            ? "bg-amber-50 text-amber-600 dark:bg-amber-950/30 dark:text-amber-400"
+            : "bg-zinc-100 text-zinc-500 dark:bg-zinc-800"
+        )}>
+          {item.prcs_stat_name || (isNccs ? "대기" : "-")}
+        </span>
+      </td>
+      <td className="py-3.5 px-4 text-right font-mono">
+        <span className={cn(
+          "text-xs font-black px-2 py-0.5 rounded-full",
+          Number(item.nccs_qty || 0) > 0
+            ? "bg-amber-50 text-amber-600 dark:bg-amber-950/30"
+            : "text-zinc-400"
+        )}>
+          {item.nccs_qty || 0}주
+        </span>
+      </td>
+    </tr>
+  );
 }
 
+// =========================================================================
+// 페이지 내보내기
+// =========================================================================
 export default function Page() {
-    return (
-        <Suspense fallback={<LoadingState />}>
-            <BalanceUs />
-        </Suspense>
-    );
+  return (
+    <Suspense fallback={<LoadingState message="미국 계좌 데이터를 불러오는 중..." />}>
+      <BalanceUs />
+    </Suspense>
+  );
 }
 
-function LoadingState() {
-    return (
-        <div className="h-screen flex flex-col items-center justify-center bg-zinc-50 dark:bg-black text-zinc-500">
-            <Loader2 className="w-12 h-12 animate-spin mb-4 text-blue-600" />
-            <h2 className="text-lg font-bold">데이터를 불러오는 중...</h2>
-            <p className="text-sm opacity-70">잠시만 기다려 주세요.</p>
-        </div>
-    );
-}
-
+// =========================================================================
+// 메인 컴포넌트
+// =========================================================================
 function BalanceUs() {
-    const { data: session } = useSession();
-    const dispatch = useAppDispatch();
-    const router = useRouter();
-    const pathname = usePathname();
-    const searchParams = useSearchParams();
+  const { data: session } = useSession();
+  const dispatch = useAppDispatch();
+  const router = useRouter();
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
 
-    // Redux Selectors
-    const kiBalance: KoreaInvestmentOverseasPresentBalance = useAppSelector(getKoreaInvestmentUsMaretPresentBalance);
-    const kiCcnl: KoreaInvestmentOverseasCcnl = useAppSelector(getKoreaInvestmentUsMaretCcnl);
-    const kiNccs: KoreaInvestmentOverseasNccs = useAppSelector(getKoreaInvestmentUsMaretNccs);
-    const kiUsOrder: KoreaInvestmentUsOrder = useAppSelector(getKoreaInvestmentUsOrder);
-    const kakaoTotal: KakaoTotal = useAppSelector(selectKakaoTotal);
-    const kakaoMemberList = useAppSelector(selectKakaoMemberList);
-    const usCapital: KrUsCapitalType = useAppSelector(selectUsCapital);
+  const kiBalance = useAppSelector(getKoreaInvestmentUsMaretPresentBalance) as KoreaInvestmentOverseasPresentBalance;
+  const kiCcnl = useAppSelector(getKoreaInvestmentUsMaretCcnl) as KoreaInvestmentOverseasCcnl;
+  const kiNccs = useAppSelector(getKoreaInvestmentUsMaretNccs) as KoreaInvestmentOverseasNccs;
+  const kiUsOrder = useAppSelector(getKoreaInvestmentUsOrder) as KoreaInvestmentUsOrder;
+  const kakaoTotal = useAppSelector(selectKakaoTotal) as KakaoTotal;
+  const kakaoMemberList = useAppSelector(selectKakaoMemberList);
+  const usCapital = useAppSelector(selectUsCapital) as KrUsCapitalType;
+  const usCapitalPlusAll = useAppSelector(selectUsCapitalTokenPlusAll);
+  const usCapitalPlusOne = useAppSelector(selectUsCapitalTokenPlusOne);
+  const usCapitalMinusAll = useAppSelector(selectUsCapitalTokenMinusAll);
+  const usCapitalMinusOne = useAppSelector(selectUsCapitalTokenMinusOne);
 
-    const [balanceKey, setBalanceKey] = useState(searchParams.get("key") || "");
+  const [balanceKey, setBalanceKey] = useState(searchParams.get("key") || "");
+  const [viewerTab, setViewerTab] = useState<"ccnl" | "nccs">("ccnl");
+  const [autoRefresh, setAutoRefresh] = useState(false);
+  const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
+  const { toasts, addToast, removeToast } = useToast();
 
-    useEffect(() => {
-        const urlKey = searchParams.get("key");
-        if (urlKey) {
-            setBalanceKey(urlKey);
-        } else if (session?.user?.id) {
-            setBalanceKey(String(session.user.id));
-        }
-    }, [session?.user?.id, searchParams]);
+  const fetchAll = useCallback((key: string) => {
+    if (!key || key === "undefined") return;
+    dispatch(reqGetOverseasStockTradingInquirePresentBalance(key));
+    dispatch(reqGetOverseasStockTradingInquireCcnl(key));
+    dispatch(reqGetOverseasStockTradingInquireNccs(key));
+    dispatch(reqGetUsCapital(key));
+  }, [dispatch]);
 
-    useEffect(() => {
-        if (session?.user?.name === process.env.NEXT_PUBLIC_MASTER) {
-            dispatch(reqGetKakaoMemberList());
-        }
-    }, [session, dispatch]);
+  const handleRefresh = useCallback(() => {
+    fetchAll(balanceKey);
+  }, [balanceKey, fetchAll]);
 
-    useEffect(() => {
-        if (!balanceKey || balanceKey === "undefined") return;
-
-        if (searchParams.get("key") !== balanceKey) {
-            router.replace(`${pathname}?key=${balanceKey}`);
-        }
-
-        dispatch(reqGetOverseasStockTradingInquirePresentBalance(balanceKey));
-        dispatch(reqGetOverseasStockTradingInquireCcnl(balanceKey));
-        dispatch(reqGetOverseasStockTradingInquireNccs(balanceKey));
-        dispatch(reqGetUsCapital(balanceKey));
-    }, [balanceKey, dispatch, pathname, router, searchParams]);
-
-    const refreshStates = [
-        useAppSelector(selectUsCapitalTokenPlusAll),
-        useAppSelector(selectUsCapitalTokenPlusOne),
-        useAppSelector(selectUsCapitalTokenMinusAll),
-        useAppSelector(selectUsCapitalTokenMinusOne)
-    ];
-
-    useEffect(() => {
-        if (refreshStates.some(s => s?.state === "fulfilled")) {
-            dispatch(reqGetUsCapital(balanceKey));
-        }
-    }, [refreshStates, balanceKey, dispatch]);
-
-    if (kiBalance.state === "rejected") {
-        return (
-            <div className="h-[70vh] flex flex-col items-center justify-center text-center p-6">
-                <div className="bg-red-100 dark:bg-red-900/20 p-4 rounded-full mb-4">
-                    <AlertCircle className="w-12 h-12 text-red-600" />
-                </div>
-                <h2 className="text-2xl font-black mb-2 dark:text-white">미국 계좌 조회 권한 없음</h2>
-                <p className="text-zinc-500 mb-6 max-w-xs">해외 주식 API 권한 또는 접근 토큰을 확인해 주세요.</p>
-                <span className="px-4 py-2 bg-red-600 text-white text-xs font-black rounded-lg tracking-widest uppercase">
-                    Access Denied
-                </span>
-            </div>
-        );
+  const handleOrderResult = useCallback((status: "success" | "error", message: string) => {
+    addToast(status, message);
+    if (status === "success") {
+      dispatch(reqGetOverseasStockTradingInquirePresentBalance(balanceKey));
+      dispatch(reqGetOverseasStockTradingInquireCcnl(balanceKey));
+      dispatch(reqGetOverseasStockTradingInquireNccs(balanceKey));
+      setLastUpdated(new Date());
     }
+  }, [balanceKey, dispatch, addToast]);
 
-    const doTokenPlusAll = (num: number) => dispatch(reqPostUsCapitalTokenPlusAll({ key: balanceKey, num }));
-    const doTokenPlusOne = (num: number, ticker: string) => ticker && dispatch(reqPostUsCapitalTokenPlusOne({ key: balanceKey, num, ticker }));
-    const doTokenMinusAll = (num: number) => dispatch(reqPostUsCapitalTokenMinusAll({ key: balanceKey, num }));
-    const doTokenMinusOne = (num: number, ticker: string) => ticker && dispatch(reqPostUsCapitalTokenMinusOne({ key: balanceKey, num, ticker }));
+  useEffect(() => {
+    const urlKey = searchParams.get("key");
+    if (urlKey) {
+      setBalanceKey(urlKey);
+    } else if (session?.user?.id) {
+      setBalanceKey(String(session.user.id));
+    }
+  }, [session?.user?.id, searchParams]);
 
-    // --- 📊 제공된 계좌 잔고 인터페이스 기반 정밀 가공 엔진 ---
-    const out2 = kiBalance?.output2?.[0];
-    const out3 = kiBalance?.output3;
+  useEffect(() => {
+    if (session?.user?.name === process.env.NEXT_PUBLIC_MASTER) {
+      dispatch(reqGetKakaoMemberList());
+    }
+  }, [session, dispatch]);
 
-    // 1. 고시 환율 파싱 (output2.frst_bltn_exrt)
-    const exRate = Number(out2?.frst_bltn_exrt || 0);
+  useEffect(() => {
+    if (!balanceKey || balanceKey === "undefined") return;
+    if (searchParams.get("key") !== balanceKey) {
+      router.replace(`${pathname}?key=${balanceKey}`);
+    }
+    fetchAll(balanceKey);
+  }, [balanceKey]);
 
-    // 2. 총 자산 금액 설정 (output3.tot_asst_amt)
-    const totalAssetKrw = Number(out3?.tot_asst_amt || 0);
-    const totalAssetUsd = exRate > 0 ? totalAssetKrw / exRate : 0;
+  useEffect(() => {
+    const states = [usCapitalPlusAll?.state, usCapitalPlusOne?.state, usCapitalMinusAll?.state, usCapitalMinusOne?.state];
+    if (states.some(s => s === "fulfilled")) {
+      dispatch(reqGetUsCapital(balanceKey));
+      addToast("success", "토큰 잔액이 업데이트되었습니다.");
+    }
+  }, [usCapitalPlusAll?.state, usCapitalPlusOne?.state, usCapitalMinusAll?.state, usCapitalMinusOne?.state]);
 
-    // 3. 외화 예수금 설정 (output2.frcr_dncl_amt_2: 외화D+2예수금금액)
-    const depositUsd = Number(out2?.frcr_dncl_amt_2 || out2?.frcr_drwg_psbl_amt_1 || 0);
-    const depositKrw = depositUsd * exRate;
+  useEffect(() => {
+    if (kiBalance.state === "fulfilled") setLastUpdated(new Date());
+  }, [kiBalance.state]);
 
-    // 4. 주식 평가금액 총액 설정 (output3.evlu_amt_smtl_amt 또는 원화기반 차액 산출)
-    const stockEvaluationKrw = Number(out3?.evlu_amt_smtl_amt || (totalAssetKrw - depositKrw));
-    const stockEvaluationUsd = exRate > 0 ? stockEvaluationKrw / exRate : 0;
+  useEffect(() => {
+    if (!autoRefresh) return;
+    const interval = setInterval(() => {
+      if (balanceKey) dispatch(reqGetOverseasStockTradingInquirePresentBalance(balanceKey));
+    }, 30000);
+    return () => clearInterval(interval);
+  }, [autoRefresh, balanceKey, dispatch]);
 
-    // 5. 총 평가 손익 및 손익률 설정 (output3.tot_evlu_pfls_amt, output3.evlu_erng_rt1)
-    const totalProfitLossKrw = Number(out3?.tot_evlu_pfls_amt || 0);
-    const totalProfitRate = Number(out3?.evlu_erng_rt1 || 0);
+  const doTokenPlusAll = (num: number) => dispatch(reqPostUsCapitalTokenPlusAll({ key: balanceKey, num }));
+  const doTokenPlusOne = (num: number, ticker: string) => ticker && dispatch(reqPostUsCapitalTokenPlusOne({ key: balanceKey, num, ticker }));
+  const doTokenMinusAll = (num: number) => dispatch(reqPostUsCapitalTokenMinusAll({ key: balanceKey, num }));
+  const doTokenMinusOne = (num: number, ticker: string) => ticker && dispatch(reqPostUsCapitalTokenMinusOne({ key: balanceKey, num, ticker }));
 
+  const out2 = kiBalance?.output2?.[0];
+  const out3 = kiBalance?.output3;
+  const exRate = Number(out2?.frst_bltn_exrt || 0);
+  const totalAssetKrw = Number(out3?.tot_asst_amt || 0);
+  const totalAssetUsd = exRate > 0 ? totalAssetKrw / exRate : 0;
+  const depositUsd = Number(out2?.frcr_dncl_amt_2 || out2?.frcr_drwg_psbl_amt_1 || 0);
+  const depositKrw = depositUsd * exRate;
+  const stockEvalKrw = Number(out3?.evlu_amt_smtl_amt || Math.max(0, totalAssetKrw - depositKrw));
+  const stockEvalUsd = exRate > 0 ? stockEvalKrw / exRate : 0;
+  const totalPnlKrw = Number(out3?.tot_evlu_pfls_amt || 0);
+  const totalPnlRate = Number(out3?.evlu_erng_rt1 || 0);
+  const isPnlPositive = totalPnlKrw >= 0;
+  const isLoading = kiBalance.state === "pending";
+  const hasCapital = usCapital.state === "fulfilled" || usCapital.state === "pending";
+
+  if (kiBalance.state === "rejected") {
     return (
-        <div className="bg-zinc-50 dark:bg-black min-h-screen transition-colors duration-200">
-            <div className="max-w-7xl mx-auto px-4 py-8 md:py-12">
-                
-                {/* Header Section */}
-                <header className="flex flex-col md:flex-row md:items-end justify-between gap-6 mb-10">
-                    <div className="space-y-4">
-                        {/* Breadcrumbs */}
-                        <nav className="flex items-center gap-2 text-xs font-bold text-zinc-400 uppercase tracking-widest">
-                            <span className="flex items-center gap-1.5 hover:text-zinc-600 transition-colors">
-                                <Globe size={14} /> 해외 투자
-                            </span>
-                            <ChevronRight size={12} />
-                            <span className="flex items-center gap-1.5 text-blue-600 dark:text-blue-400">
-                                <Building2 size={14} /> 미국(US) 시장
-                            </span>
-                        </nav>
-
-                        <div className="flex flex-wrap items-center gap-4">
-                            <h1 className="text-3xl md:text-4xl font-black tracking-tighter dark:text-white">
-                                US PORTFOLIO
-                            </h1>
-                            <div className="flex items-center gap-1.5 px-3 py-1.5 bg-blue-600 text-white rounded-xl text-[10px] font-black tracking-widest uppercase shadow-lg shadow-blue-600/20">
-                                <DollarSign size={12} /> USD Account
-                            </div>
-                        </div>
-                    </div>
-
-                    {exRate > 0 && (
-                        <div className="flex items-center gap-4 bg-white dark:bg-zinc-900 px-5 py-3 rounded-2xl border border-zinc-200 dark:border-zinc-800 shadow-sm">
-                            <span className="text-[10px] font-black text-zinc-400 uppercase tracking-widest leading-none">
-                                현재 고시 환율 (원/달러)
-                            </span>
-                            <span className="text-xl font-mono font-black text-blue-600 dark:text-blue-400">
-                                {formatCurrency(exRate, "RAW")}원
-                            </span>
-                        </div>
-                    )}
-                </header>
-
-                <div className="h-px bg-zinc-200 dark:bg-zinc-800 mb-12" />
-
-                {/* 📊 상단 핵심 잔고 요약 대시보드 카드 그리드 */}
-                <section className="mb-12 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5 animate-in fade-in duration-500">
-                    
-                    {/* 카드 1: 총 자산 */}
-                    <div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-3xl p-6 shadow-sm flex flex-col justify-between transition-all hover:border-zinc-300 dark:hover:border-zinc-700">
-                        <div>
-                            <div className="flex items-center justify-between mb-1">
-                                <span className="text-[10px] font-black text-zinc-400 dark:text-zinc-500 uppercase tracking-widest block">총 자산 (USD)</span>
-                                <BarChart3 size={14} className="text-blue-500" />
-                            </div>
-                            <div className="text-2xl font-black tracking-tight text-blue-600 dark:text-blue-400 font-mono">
-                                {formatCurrency(totalAssetUsd, "USD")}
-                            </div>
-                        </div>
-                        <div className="mt-5 pt-3 border-t border-zinc-100 dark:border-zinc-800 text-xs font-bold text-zinc-400 dark:text-zinc-500 flex justify-between">
-                            <span>원화 평가액</span>
-                            <span className="font-mono text-zinc-800 dark:text-zinc-200">{formatCurrency(totalAssetKrw, "KRW")}</span>
-                        </div>
-                    </div>
-
-                    {/* 카드 2: 외화 예수금 */}
-                    <div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-3xl p-6 shadow-sm flex flex-col justify-between transition-all hover:border-zinc-300 dark:hover:border-zinc-700">
-                        <div>
-                            <div className="flex items-center justify-between mb-1">
-                                <span className="text-[10px] font-black text-zinc-400 dark:text-zinc-500 uppercase tracking-widest block">외화 예수금 (USD)</span>
-                                <Wallet size={14} className="text-zinc-400 dark:text-zinc-500" />
-                            </div>
-                            <div className="text-2xl font-black tracking-tight text-zinc-800 dark:text-white font-mono">
-                                {formatCurrency(depositUsd, "USD")}
-                            </div>
-                        </div>
-                        <div className="mt-5 pt-3 border-t border-zinc-100 dark:border-zinc-800 text-xs font-bold text-zinc-400 dark:text-zinc-500 flex justify-between">
-                            <span>원화 환산액</span>
-                            <span className="font-mono text-zinc-800 dark:text-zinc-200">{formatCurrency(depositKrw, "KRW")}</span>
-                        </div>
-                    </div>
-
-                    {/* 카드 3: 주식 평가총액 */}
-                    <div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-3xl p-6 shadow-sm flex flex-col justify-between transition-all hover:border-zinc-300 dark:hover:border-zinc-700">
-                        <div>
-                            <div className="flex items-center justify-between mb-1">
-                                <span className="text-[10px] font-black text-zinc-400 dark:text-zinc-500 uppercase tracking-widest block">주식 평가총액</span>
-                                <TrendingUp size={14} className="text-zinc-400 dark:text-zinc-500" />
-                            </div>
-                            <div className="text-2xl font-black tracking-tight text-zinc-800 dark:text-white font-mono">
-                                {formatCurrency(stockEvaluationUsd, "USD")}
-                            </div>
-                        </div>
-                        <div className="mt-5 pt-3 border-t border-zinc-100 dark:border-zinc-800 text-xs font-bold text-zinc-400 dark:text-zinc-500 flex justify-between">
-                            <span>원화 환산액</span>
-                            <span className="font-mono text-zinc-800 dark:text-zinc-200">{formatCurrency(stockEvaluationKrw, "KRW")}</span>
-                        </div>
-                    </div>
-
-                    {/* 카드 4: 총 평가 손익 */}
-                    <div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-3xl p-6 shadow-sm flex flex-col justify-between transition-all hover:border-zinc-300 dark:hover:border-zinc-700">
-                        <div>
-                            <span className="text-[10px] font-black text-zinc-400 dark:text-zinc-500 uppercase tracking-widest block mb-1">총 수익률</span>
-                            <div className={`text-2xl font-black tracking-tight font-mono ${totalProfitLossKrw >= 0 ? "text-rose-500" : "text-blue-500"}`}>
-                                {totalProfitLossKrw >= 0 ? "+" : ""}{totalProfitRate.toFixed(2)}%
-                            </div>
-                        </div>
-                        <div className="mt-5 pt-3 border-t border-zinc-100 dark:border-zinc-800 text-xs font-bold text-zinc-400 dark:text-zinc-500 flex justify-between">
-                            <span>손익 합계</span>
-                            <span className={`font-mono font-bold ${totalProfitLossKrw >= 0 ? "text-rose-500" : "text-blue-500"}`}>
-                                {formatCurrency(totalProfitLossKrw, "KRW")}
-                            </span>
-                        </div>
-                    </div>
-                </section>
-
-                {/* Main Grid */}
-                <div className="space-y-16">
-                    
-                    {/* 1. Real-time Balance Result & Order Panel */}
-                    <section className="animate-in fade-in slide-in-from-bottom-4 duration-700">
-                        <InquireBalanceResult
-                            balanceKey={balanceKey}
-                            setBalanceKey={setBalanceKey}
-                            kiBalance={kiBalance}
-                            reqGetInquireBalance={reqGetOverseasStockTradingInquirePresentBalance}
-                            reqGetInquireCcnl={reqGetOverseasStockTradingInquireCcnl}
-                            reqGetInquireNccs={reqGetOverseasStockTradingInquireNccs}
-                            reqGetUsCapital={reqGetUsCapital}
-                            kiOrderCash={kiUsOrder}
-                            reqPostOrderCash={reqPostOrderUs}
-                            kakaoTotal={kakaoTotal}
-                            kakaoMemberList={kakaoMemberList}
-                        />
-                    </section>
-
-                    {/* 2. Algorithm Strategy Section */}
-                    <CustomSection 
-                        title="Algorithm Management" 
-                        subtitle="알고리즘 운용 전략"
-                        icon={<Globe className="text-blue-500" size={20} />}
-                    >
-                        <StockListTable
-                            data={usCapital}
-                            kakaoTotal={kakaoTotal}
-                            doTokenPlusAll={doTokenPlusAll}
-                            doTokenMinusAll={doTokenMinusAll}
-                            doTokenPlusOne={doTokenPlusOne}
-                            doTokenMinusOne={doTokenMinusOne}
-                            session={session}
-                        />
-                    </CustomSection>
-
-                    {/* 3. History & Open Orders Grid */}
-                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-                        <CustomSection 
-                            title="Executed History" 
-                            subtitle="최근 체결 내역"
-                            icon={<History className="text-emerald-500" size={20} />}
-                        >
-                            <div className="min-h-[300px]">
-                                <OverseasCcnlTable data={kiCcnl} />
-                            </div>
-                        </CustomSection>
-
-                        <CustomSection 
-                            title="Open Orders" 
-                            subtitle="미체결 주문"
-                            icon={<Clock className="text-amber-500" size={20} />}
-                        >
-                            <div className="min-h-[300px]">
-                                <OverseasNccsTable data={kiNccs} />
-                            </div>
-                        </CustomSection>
-                    </div>
-                </div>
-            </div>
+      <div className="h-[70vh] flex flex-col items-center justify-center text-center p-6">
+        <div className="p-5 bg-red-50 dark:bg-red-900/20 rounded-2xl mb-4">
+          <AlertCircle className="w-10 h-10 text-red-500" />
         </div>
+        <h2 className="text-xl font-black mb-2 dark:text-white">미국 계좌 조회 권한 없음</h2>
+        <p className="text-sm text-zinc-500 mb-5 max-w-xs">해외 주식 API 권한 또는 접근 토큰을 확인해 주세요.</p>
+        <button
+          onClick={handleRefresh}
+          className="flex items-center gap-2 px-4 py-2 bg-zinc-900 dark:bg-white text-white dark:text-zinc-900 text-xs font-black rounded-xl"
+        >
+          <RefreshCw size={13} /> 다시 시도
+        </button>
+      </div>
     );
-}
+  }
 
-// --- Reusable Layout Components ---
+  return (
+    <div className="min-h-screen bg-zinc-50 dark:bg-zinc-950 transition-colors duration-300">
 
-function CustomSection({ title, subtitle, icon, children }: { title: string, subtitle: string, icon: React.ReactNode, children: React.ReactNode }) {
-    return (
-        <section className="space-y-4">
-            <div className="flex items-center justify-between px-2">
-                <div className="flex items-center gap-3">
-                    <div className="p-2 bg-white dark:bg-zinc-900 rounded-lg border border-zinc-200 dark:border-zinc-800 shadow-sm">
-                        {icon}
-                    </div>
-                    <div>
-                        <h2 className="text-sm font-black dark:text-white uppercase tracking-tighter leading-none mb-1">{title}</h2>
-                        <p className="text-[10px] text-zinc-400 font-bold uppercase tracking-widest">{subtitle}</p>
-                    </div>
-                </div>
+      <ToastContainer toasts={toasts} onRemove={removeToast} />
+
+      <div className="max-w-7xl mx-auto px-4 py-8 md:py-10 space-y-6">
+
+        {/* 헤더 */}
+        <header className="flex flex-col md:flex-row md:items-end justify-between gap-5">
+          <div className="space-y-2.5">
+            {/* 브레드크럼 */}
+            <nav className="flex items-center gap-1.5 text-[11px] font-semibold text-zinc-400 flex-wrap">
+              <span className="flex items-center gap-1">
+                <Globe size={12} />
+                해외 투자
+              </span>
+              <ChevronRight size={11} className="text-zinc-300 dark:text-zinc-600" />
+              <span className="flex items-center gap-1 text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/20 px-2 py-0.5 rounded-md">
+                <Building2 size={11} />미국(US)
+              </span>
+            </nav>
+
+            {/* 타이틀 */}
+            <div className="flex items-center gap-3 flex-wrap">
+              <h1 className="text-3xl md:text-4xl font-black tracking-tighter text-zinc-900 dark:text-white">
+                US Portfolio
+              </h1>
+              <span className="flex items-center gap-1 px-3 py-1.5 bg-blue-600 text-white rounded-xl text-[10px] font-black tracking-widest uppercase shadow-sm shadow-blue-600/30">
+                <DollarSign size={11} /> USD Account
+              </span>
             </div>
-            <div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-[2rem] overflow-hidden shadow-sm">
-                {children}
-            </div>
+
+            {/* 마지막 업데이트 */}
+            {lastUpdated ? (
+              <p className="flex items-center gap-1.5 text-[11px] text-zinc-400 font-mono">
+                <Clock size={11} />
+                {lastUpdated.toLocaleTimeString("ko-KR")} 기준
+              </p>
+            ) : (
+              <div className="h-4 w-40 rounded bg-zinc-200 dark:bg-zinc-800 animate-pulse" />
+            )}
+          </div>
+
+          <div className="flex flex-col items-end gap-2">
+            <BalanceHeaderActions
+              autoRefresh={autoRefresh}
+              onToggleAutoRefresh={() => setAutoRefresh(v => !v)}
+              isLoading={isLoading}
+              onRefresh={handleRefresh}
+              extra={
+                exRate > 0 ? (
+                  <div className="flex items-center gap-2 bg-white dark:bg-zinc-900 px-3 py-2 rounded-xl border border-zinc-200 dark:border-zinc-800 shadow-sm">
+                    <span className="text-[10px] font-black text-zinc-400 uppercase tracking-wider">고시환율</span>
+                    <span className="text-sm font-mono font-black text-blue-600 dark:text-blue-400">
+                      {exRate.toLocaleString()}원
+                    </span>
+                  </div>
+                ) : undefined
+              }
+            />
+          </div>
+        </header>
+
+        <div className="h-px bg-gradient-to-r from-transparent via-zinc-200 dark:via-zinc-800 to-transparent" />
+
+        {/* KPI 카드 */}
+        <section className="grid grid-cols-2 lg:grid-cols-4 gap-3 animate-in fade-in slide-in-from-bottom-2 duration-400">
+          <UsdKpiCard
+            label="총 자산 (USD)"
+            mainValue={isLoading ? null : fmtUsd(totalAssetUsd)}
+            mainColor="text-blue-600 dark:text-blue-400"
+            subLabel="원화 평가액"
+            subValue={isLoading ? null : fmtKrw(totalAssetKrw)}
+            icon={<BarChart3 size={15} />}
+            iconBg="bg-blue-50 dark:bg-blue-950/40 text-blue-500"
+            accentColor="bg-blue-400 dark:bg-blue-600"
+            loading={isLoading}
+          />
+          <UsdKpiCard
+            label="외화 예수금 (USD)"
+            mainValue={isLoading ? null : fmtUsd(depositUsd)}
+            subLabel="원화 환산액"
+            subValue={isLoading ? null : fmtKrw(depositKrw)}
+            icon={<Wallet size={15} />}
+            iconBg="bg-amber-50 dark:bg-amber-950/40 text-amber-500"
+            accentColor="bg-amber-400 dark:bg-amber-600"
+            loading={isLoading}
+          />
+          <UsdKpiCard
+            label="주식 평가총액"
+            mainValue={isLoading ? null : fmtUsd(stockEvalUsd)}
+            subLabel="원화 환산액"
+            subValue={isLoading ? null : fmtKrw(stockEvalKrw)}
+            icon={<TrendingUp size={15} />}
+            iconBg="bg-indigo-50 dark:bg-indigo-950/40 text-indigo-500"
+            accentColor="bg-indigo-400 dark:bg-indigo-600"
+            loading={isLoading}
+          />
+          <UsdKpiCard
+            label="총 수익률"
+            mainValue={isLoading ? null : `${isPnlPositive ? "+" : ""}${totalPnlRate.toFixed(2)}%`}
+            mainColor={pnlValueColor(isPnlPositive)}
+            subLabel="손익 합계"
+            subValue={isLoading ? null : fmtKrw(totalPnlKrw)}
+            subColor={pnlValueColor(isPnlPositive)}
+            icon={isPnlPositive ? <ArrowUpRight size={15} /> : <ArrowDownRight size={15} />}
+            iconBg={pnlIconBg(isPnlPositive)}
+            accentColor={pnlAccentColor(isPnlPositive)}
+            loading={isLoading}
+          />
         </section>
-    );
+
+        {/* 잔고 조회 패널 */}
+        <SectionPanel>
+          <InquireBalanceResult
+            balanceKey={balanceKey}
+            setBalanceKey={setBalanceKey}
+            kiBalance={kiBalance}
+            reqGetInquireBalance={reqGetOverseasStockTradingInquirePresentBalance}
+            reqGetInquireCcnl={reqGetOverseasStockTradingInquireCcnl}
+            reqGetInquireNccs={reqGetOverseasStockTradingInquireNccs}
+            reqGetUsCapital={reqGetUsCapital}
+            kiOrderCash={kiUsOrder}
+            reqPostOrderCash={reqPostOrderUs}
+            kakaoTotal={kakaoTotal}
+            kakaoMemberList={kakaoMemberList}
+            onOrderResult={handleOrderResult}
+          />
+        </SectionPanel>
+
+        {/* NCAV 운용 종목 관리 패널 */}
+        {hasCapital && (
+          <SectionPanel>
+            <SectionHeader
+              icon={<Database size={16} />}
+              title="NCAV 운용 종목 관리"
+              subtitle="미국 전략 자동매매 종목 풀 및 토큰(예산) 관리"
+              badge={
+                usCapital.state === "pending"
+                  ? <span className="text-[10px] font-mono text-amber-500 bg-amber-50 dark:bg-amber-950/20 px-2 py-0.5 rounded-full border border-amber-200 dark:border-amber-800 animate-pulse">로딩 중</span>
+                  : usCapital.stock_list?.length > 0
+                  ? <span className="text-[10px] font-mono text-zinc-500 dark:text-zinc-400 bg-zinc-100 dark:bg-zinc-800 px-2 py-0.5 rounded-full">{usCapital.stock_list.length}종목</span>
+                  : null
+              }
+            />
+            <StockListTable
+              data={usCapital}
+              kakaoTotal={kakaoTotal}
+              doTokenPlusAll={doTokenPlusAll}
+              doTokenPlusOne={doTokenPlusOne}
+              doTokenMinusAll={doTokenMinusAll}
+              doTokenMinusOne={doTokenMinusOne}
+              session={session}
+            />
+          </SectionPanel>
+        )}
+
+        {/* 체결 / 미체결 내역 */}
+        <SectionPanel>
+          <SectionHeader
+            icon={<OrderSectionIcon viewerTab={viewerTab} />}
+            title="해외 주문 내역"
+            subtitle="한국투자증권 미국 주식 체결 및 미체결 조회"
+            action={
+              <OrderTabAction
+                viewerTab={viewerTab}
+                setViewerTab={setViewerTab}
+                ccnlCount={kiCcnl.output?.length || 0}
+                nccsCount={kiNccs.output?.length || 0}
+                isPending={kiCcnl.state === "pending" || kiNccs.state === "pending"}
+                onRefresh={() => {
+                  dispatch(reqGetOverseasStockTradingInquireCcnl(balanceKey));
+                  dispatch(reqGetOverseasStockTradingInquireNccs(balanceKey));
+                }}
+              />
+            }
+          />
+
+          <div className="overflow-x-auto rounded-xl border border-zinc-100 dark:border-zinc-800">
+            <table className="w-full text-sm text-left min-w-[860px]">
+              <TableHeader headers={[
+                { label: "주문시각 / 번호" },
+                { label: "구분" },
+                { label: "종목 / 시장" },
+                { label: "주문수량", align: "text-right" },
+                { label: "체결수량", align: "text-right" },
+                { label: "주문가 / 체결가", align: "text-right" },
+                { label: "체결금액", align: "text-right" },
+                { label: "처리상태", align: "text-center" },
+                { label: "미체결", align: "text-right" },
+              ]} />
+              <tbody className="divide-y divide-zinc-50 dark:divide-zinc-800/40">
+                {viewerTab === "ccnl" ? (
+                  kiCcnl.output?.length > 0
+                    ? kiCcnl.output.map((item, i) => (
+                        <OverseasOrderRow key={i} item={item} isNccs={false} />
+                      ))
+                    : <EmptyRow colSpan={9} message="금일 해외 체결 내역이 없습니다." />
+                ) : (
+                  kiNccs.output?.length > 0
+                    ? kiNccs.output.map((item, i) => (
+                        <OverseasOrderRow key={i} item={item} isNccs={true} />
+                      ))
+                    : <EmptyRow colSpan={9} message="현재 미체결 해외 주문이 없습니다." />
+                )}
+              </tbody>
+            </table>
+          </div>
+        </SectionPanel>
+
+      </div>
+    </div>
+  );
 }

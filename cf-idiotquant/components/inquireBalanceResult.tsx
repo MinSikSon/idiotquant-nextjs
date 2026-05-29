@@ -71,6 +71,7 @@ interface InquireBalanceResultProps {
     reqPostOrderCash?: any;
     kakaoTotal?: any;
     kakaoMemberList?: any;
+    onOrderResult?: (status: "success" | "error", message: string) => void;
 }
 
 export default function InquireBalanceResult(props: InquireBalanceResultProps) {
@@ -131,17 +132,24 @@ export default function InquireBalanceResult(props: InquireBalanceResultProps) {
     useEffect(() => {
         if (props.kiOrderCash?.state === "fulfilled") {
             const serverMsg = props.kiOrderCash?.data?.msg1 || props.kiOrderCash?.data?.rt_msg || "주문 요청이 완료되었습니다.";
-            alert(`[주문 처리 결과]\n${serverMsg}`);
-            
             setIsOrderModalOpen(false);
             setSearchQuery("");
-            dispatch(props.reqGetInquireBalance(props.balanceKey));
-            if (props.reqGetInquireCcnl) dispatch(props.reqGetInquireCcnl(props.balanceKey));
-            if (props.reqGetInquireNccs) dispatch(props.reqGetInquireNccs(props.balanceKey));
-            if (props.reqGetUsCapital) dispatch(props.reqGetUsCapital(props.balanceKey));
+            if (props.onOrderResult) {
+                props.onOrderResult("success", `[주문 완료] ${serverMsg}`);
+            } else {
+                alert(`[주문 처리 결과]\n${serverMsg}`);
+                dispatch(props.reqGetInquireBalance(props.balanceKey));
+                if (props.reqGetInquireCcnl) dispatch(props.reqGetInquireCcnl(props.balanceKey));
+                if (props.reqGetInquireNccs) dispatch(props.reqGetInquireNccs(props.balanceKey));
+                if (props.reqGetUsCapital) dispatch(props.reqGetUsCapital(props.balanceKey));
+            }
         } else if (props.kiOrderCash?.state === "rejected") {
             const errorMsg = props.kiOrderCash?.error || props.kiOrderCash?.data?.msg1 || "알 수 없는 오류가 발생했습니다.";
-            alert(`주문 실패:\n${errorMsg}`);
+            if (props.onOrderResult) {
+                props.onOrderResult("error", `[주문 실패] ${errorMsg}`);
+            } else {
+                alert(`주문 실패:\n${errorMsg}`);
+            }
         }
     }, [props.kiOrderCash?.state]);
 
