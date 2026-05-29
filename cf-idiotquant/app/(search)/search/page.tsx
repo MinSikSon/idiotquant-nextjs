@@ -16,8 +16,8 @@ import { useAppSelector, useAppDispatch } from '@/lib/hooks';
 import { useStockSearch } from './hooks/useStockSearch';
 import { selectKrMarketHistory } from '@/lib/features/searchHistory/searchHistorySlice';
 import {
-  History, AlertCircle, Loader2, Flame, Share2, Check,
-  Globe2, DollarSign, Coins, WifiOff, Star, X, TrendingUp,
+  History, AlertCircle, Loader2, Flame, Share2, Check, CheckCircle,
+  Globe2, DollarSign, Coins, WifiOff, Star, X, TrendingUp, BarChart3,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
@@ -98,6 +98,15 @@ import {
   reqGetSearchLog,
   selectPopularStocks,
 } from '@/lib/features/searchLog/searchLogSlice';
+
+const GRADE_PILL: Record<string, string> = {
+  SSS: "bg-gradient-to-r from-pink-500 via-purple-500 to-cyan-500 text-white",
+  SS:  "bg-amber-500 text-white",
+  S:   "bg-emerald-500 text-white",
+  A:   "bg-slate-500 text-white",
+  B:   "bg-zinc-200 text-zinc-700 dark:bg-zinc-700 dark:text-zinc-200",
+  F:   "bg-red-500 text-white",
+};
 
 import {
   calculateKrNcavRatio,
@@ -557,6 +566,19 @@ function SearchContent() {
   const currency = krOrUs === 'US' ? '$' : '₩';
   const isInWatchlist = tickerFromUrl ? watchlist.includes(tickerFromUrl) : false;
 
+  // 헤더 등급 배지 전용 — 상세 데이터는 ValuationSection · StockCard 에서 표시
+  const gradeDisplay = useMemo(() => {
+    if (!isLoaded || !tickerFromUrl) return null;
+    const rawGrade = krOrUs === 'US'
+      ? getUsNcavGrade(data.finnhubData, data.usDetail)
+      : getKrNcavGrade(data.kiBS, data.kiChart);
+    if (!rawGrade) return null;
+    const g = rawGrade && typeof rawGrade === 'object'
+      ? String((rawGrade as any).grade || '')
+      : String(rawGrade || '');
+    return g && g !== 'N/A' ? g : null;
+  }, [isLoaded, tickerFromUrl, krOrUs, data]);
+
   if (!hasMounted) return <div className="w-full min-h-screen bg-zinc-50 dark:bg-zinc-950" />;
 
   return (
@@ -641,9 +663,9 @@ function SearchContent() {
                 <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar flex-nowrap py-0.5">
                   {popularStocks.map((s: any, i: number) => (
                     <button key={`hot-${i}`} onClick={() => handleSearch(s.ticker)}
-                      className="shrink-0 flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-white dark:bg-zinc-900 text-xs font-medium text-zinc-600 dark:text-zinc-300 border border-zinc-200/60 dark:border-zinc-800 hover:border-blue-400 dark:hover:border-blue-700 hover:text-blue-600 dark:hover:text-blue-400 transition-all whitespace-nowrap"
+                      className="shrink-0 flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-white dark:bg-zinc-900 text-xs font-bold text-zinc-600 dark:text-zinc-300 border border-zinc-200/60 dark:border-zinc-800 hover:border-blue-400/70 dark:hover:border-blue-700 hover:text-blue-600 dark:hover:text-blue-400 hover:bg-blue-50/50 dark:hover:bg-blue-950/20 transition-all whitespace-nowrap"
                     >
-                      <span className="font-mono text-blue-500 font-black text-[10px] tabular-nums">{i + 1}</span>
+                      <span className="w-4 h-4 flex items-center justify-center rounded-full bg-blue-500 text-white font-black text-[9px] shrink-0 tabular-nums">{i + 1}</span>
                       {s.name}
                     </button>
                   ))}
@@ -661,7 +683,7 @@ function SearchContent() {
                 {krMarketHistory.length > 0 ? (
                   krMarketHistory.slice().reverse().map((s, i) => (
                     <button key={`recent-${i}`} onClick={() => handleSearch(s)}
-                      className="shrink-0 px-2.5 py-1 text-xs font-medium text-zinc-500 hover:text-blue-600 dark:text-zinc-400 dark:hover:text-indigo-400 hover:bg-white dark:hover:bg-zinc-800/40 rounded-lg border border-transparent hover:border-zinc-200 dark:hover:border-zinc-700 transition-all whitespace-nowrap"
+                      className="shrink-0 px-2.5 py-1.5 text-xs font-bold text-zinc-500 hover:text-blue-600 dark:text-zinc-400 dark:hover:text-indigo-400 hover:bg-white dark:hover:bg-zinc-800/40 rounded-lg border border-zinc-200/60 dark:border-zinc-800 hover:border-zinc-300 dark:hover:border-zinc-700 transition-all whitespace-nowrap"
                     >
                       {s}
                     </button>
@@ -689,7 +711,8 @@ function SearchContent() {
             <div className={cn(!isLoaded ? 'hidden' : 'block animate-in fade-in duration-400')}>
 
               {/* 종목 정체성 헤더 */}
-              <div className="w-full flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-5 bg-white dark:bg-zinc-900 px-4 py-3.5 rounded-2xl border border-zinc-200 dark:border-zinc-800 shadow-sm">
+              <div className="w-full flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-5 bg-white dark:bg-zinc-900 px-4 py-3.5 rounded-2xl border border-zinc-200 dark:border-zinc-800 shadow-sm relative overflow-hidden">
+                <div className={cn("absolute top-0 left-0 right-0 h-0.5", krOrUs === 'US' ? "bg-gradient-to-r from-blue-500 to-sky-400" : "bg-gradient-to-r from-indigo-500 to-purple-400")} />
                 <div className="flex items-center gap-3 min-w-0">
                   {/* 티커 이니셜 아바타 */}
                   <div className={cn(
@@ -750,11 +773,20 @@ function SearchContent() {
                     {shareStatus === 'copied' ? <Check size={13} /> : shareStatus === 'error' ? <AlertCircle size={13} /> : <Share2 size={13} />}
                     <span>{shareStatus === 'copied' ? '복사 완료' : shareStatus === 'error' ? '실패' : '공유'}</span>
                   </button>
+
+                  {gradeDisplay && (
+                    <span className={cn(
+                      "flex items-center justify-center min-w-[2.5rem] px-3.5 py-2 rounded-xl text-sm font-black font-mono shadow-sm",
+                      GRADE_PILL[gradeDisplay] ?? "bg-zinc-200 text-zinc-700 dark:bg-zinc-700 dark:text-zinc-200"
+                    )}>
+                      {gradeDisplay}
+                    </span>
+                  )}
                 </div>
               </div>
 
-              {/* 메인 2열 레이아웃: 밸류에이션 카드 + 재무 지표 */}
-              <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start mb-6">
+              {/* ── 인터랙티브 카드 + 상세 재무 지표 ── */}
+              <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 mb-5">
                 <div ref={stockCardDwellRef} className="lg:col-span-5 flex justify-center w-full">
                   <StockCard
                     stock={krOrUs === 'US' ? {
@@ -793,6 +825,10 @@ function SearchContent() {
               </div>
 
               {/* 하단 섹션: 밸류에이션 + 재무제표 */}
+              <div className="flex items-center gap-3 mb-3">
+                <p className="text-[11px] font-bold text-zinc-400 uppercase tracking-widest font-mono shrink-0">Valuation & Financials</p>
+                <div className="flex-1 h-px bg-zinc-100 dark:bg-zinc-800/70" />
+              </div>
               <div className="space-y-5">
 
                 {/* 밸류에이션 모델 결과 */}
@@ -830,20 +866,37 @@ function SearchContent() {
       </main>
 
       {/* ── 푸터 ── */}
-      <footer className="max-w-6xl mx-auto px-4 py-8 mt-16 border-t border-zinc-200 dark:border-zinc-800">
-        <div className="flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-zinc-400 dark:text-zinc-500">
-          <div className="flex items-center gap-2 select-none">
-            <TrendingUp size={13} className="text-blue-500 shrink-0" strokeWidth={2.5} />
-            <span className="font-bold text-zinc-700 dark:text-zinc-300">IdiotQuant</span>
-            <span className="text-zinc-200 dark:text-zinc-700">·</span>
-            <span className="font-medium">Deep Value Investment Platform</span>
+      <footer className="max-w-6xl mx-auto px-4 pt-8 pb-12 mt-16 border-t border-zinc-200 dark:border-zinc-800">
+        <div className="flex flex-col items-center gap-5">
+
+          {/* 데이터 출처 */}
+          <div className="flex flex-wrap items-center justify-center gap-x-5 gap-y-2 text-[11px] text-zinc-400 dark:text-zinc-600 font-mono">
+            {[
+              "Korea Investment API",
+              "Finnhub US Market",
+              "DART 공시 연동",
+            ].map(s => (
+              <span key={s} className="flex items-center gap-1.5 font-bold">
+                <CheckCircle size={12} className="text-emerald-500 shrink-0" />{s}
+              </span>
+            ))}
           </div>
-          <div className="flex items-center gap-4 font-medium">
-            <span>© 2026 IdiotQuant</span>
-            <span className="text-zinc-200 dark:text-zinc-700">·</span>
-            <span className="text-[10px] font-mono text-zinc-300 dark:text-zinc-700">
-              Korea Investment API · Finnhub
-            </span>
+
+          {/* 면책 */}
+          <p className="text-[11px] text-zinc-400 dark:text-zinc-600 text-center max-w-lg leading-relaxed">
+            본 서비스의 분석 결과는 <strong className="font-semibold text-zinc-500 dark:text-zinc-500">투자 참고 목적</strong>의 정량적 자료이며,
+            투자 권유를 목적으로 하지 않습니다. 실제 투자 결정은 본인의 판단과 책임 하에 이루어져야 합니다.
+          </p>
+
+          {/* 하단 브랜딩 */}
+          <div className="flex flex-col sm:flex-row items-center justify-between gap-3 w-full text-xs text-zinc-400 dark:text-zinc-600">
+            <div className="flex items-center gap-2 select-none">
+              <TrendingUp size={13} className="text-blue-500 shrink-0" strokeWidth={2.5} />
+              <span className="font-bold text-zinc-700 dark:text-zinc-300">IdiotQuant</span>
+              <span className="text-zinc-200 dark:text-zinc-700">·</span>
+              <span className="font-medium">Deep Value Investment Platform</span>
+            </div>
+            <span className="text-[10px] font-mono text-zinc-300 dark:text-zinc-700">© 2026 IdiotQuant</span>
           </div>
         </div>
       </footer>
@@ -857,13 +910,22 @@ function SearchContent() {
 export default function SearchPage() {
   return (
     <Suspense fallback={
-      <div className="flex flex-col items-center justify-center py-40 gap-4 bg-zinc-50 dark:bg-zinc-950 min-h-screen">
+      <div className="relative flex flex-col items-center justify-center py-40 gap-5 bg-zinc-50 dark:bg-zinc-950 min-h-screen overflow-hidden">
+        <div className="absolute inset-0 -z-10 opacity-[0.03] dark:opacity-[0.06]"
+          style={{
+            backgroundImage: "linear-gradient(#3b82f6 1px, transparent 1px), linear-gradient(90deg, #3b82f6 1px, transparent 1px)",
+            backgroundSize: "40px 40px",
+          }}
+        />
         <div className="p-4 bg-white dark:bg-zinc-900 rounded-2xl border border-zinc-200 dark:border-zinc-800 shadow-sm">
           <Loader2 className="animate-spin text-blue-600 dark:text-blue-400" size={24} />
         </div>
-        <p className="text-xs font-bold text-zinc-400 dark:text-zinc-500 tracking-widest font-mono uppercase">
-          분석 엔진 초기화 중...
-        </p>
+        <div className="text-center">
+          <p className="text-sm font-black text-zinc-700 dark:text-zinc-300 tracking-tight mb-1">IdiotQuant</p>
+          <p className="text-[11px] font-bold text-zinc-400 dark:text-zinc-500 tracking-widest font-mono uppercase">
+            분석 엔진 초기화 중...
+          </p>
+        </div>
       </div>
     }>
       <SearchContent />
