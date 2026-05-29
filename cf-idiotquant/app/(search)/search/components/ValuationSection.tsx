@@ -464,16 +464,13 @@ return (
     <div className={cn(
       "rounded-[2rem] p-[5px] shadow-xl transform-gpu relative overflow-visible transition-all duration-300 flex flex-col h-fit",
       theme.wrapperClass,
-      // [개선] 타이틀 호버나 메트릭 호버 시 카드 자체의 스택 레이어를 격상하여 이웃 카드 및 부모 간섭 파괴
       (hoveredTitle || hoveredMetric !== null) ? "z-50 shadow-2xl scale-[1.001]" : "z-10"
     )}>
       <div className="absolute inset-0 bg-[linear-gradient(to_right,rgba(0,0,0,0.01)_1px,transparent_1px),linear-gradient(to_bottom,rgba(0,0,0,0.01)_1px,transparent_1px)] dark:bg-[linear-gradient(to_right,#ffffff02_1px,transparent_1px),linear-gradient(to_bottom,#ffffff02_1px,transparent_1px)] bg-[size:20px_20px] pointer-events-none z-0 rounded-[1.9rem]" />
       
-      {/* overflow-hidden을 완전히 제거하고 계층 컴포넌트의 가시성(overflow-visible) 보장 */}
       <div className={cn(
         "w-full h-full rounded-[1.8rem] bg-white dark:bg-zinc-950 relative flex flex-col flex-1 border transition-colors duration-300 overflow-visible",
         theme.containerClass,
-        // [개선] 타이틀 호버 시 컨테이너 내부의 기둥 레이어 서열 격상
         hoveredTitle ? "z-30" : "z-10"
       )}>
         <div className={cn(
@@ -487,11 +484,9 @@ return (
           className={cn(
             "px-5 py-4 md:px-6 md:py-5 border-b flex items-center justify-between relative backdrop-blur-sm transition-colors cursor-pointer select-none hover:bg-zinc-50/50 dark:hover:bg-zinc-900/20 rounded-t-[1.8rem] overflow-visible",
             theme.headerClass,
-            // [개선] 헤더 자체의 등급을 올려 하단 메트릭/테이블이 위로 덮어쓰지 못하도록 보장
             hoveredTitle ? "z-40" : "z-20"
           )}
         >
-          {/* [개선] z-50 격상을 통해 하단 콘텐츠 요소들과의 위아래 간섭 레이어 파괴 */}
           <div className={cn("flex items-center gap-3 relative overflow-visible transition-all", hoveredTitle ? "z-50" : "z-30")}>
             <div 
               className={cn(
@@ -517,8 +512,6 @@ return (
               </p>
             </div>
 
-            {/* [개선] 카드 모델 가이드 가독성 툴팁 모바일 짤림 방지: 
-                모바일 환경(`max-sm`)에서는 fixed로 화면 중앙 하단에 안전하게 띄우고, 데스크톱 이상에서는 absolute 정렬로 복귀 */}
             {hoveredTitle && theme.description.summary && (
               <div className="fixed bottom-4 left-4 right-4 sm:absolute sm:bottom-auto sm:left-0 sm:top-full sm:mt-2 sm:w-64 w-[calc(100vw-2rem)] z-[9999] p-4 rounded-2xl bg-zinc-950/95 text-white shadow-2xl border border-zinc-800 text-[11px] leading-relaxed font-sans font-medium pointer-events-none animate-in fade-in zoom-in-95 duration-150 shadow-black/60 backdrop-blur-md whitespace-normal">
                 <div className="font-extrabold text-amber-400 mb-2.5 border-b border-zinc-800 pb-1.5 text-xs font-black">모델 구조 가이드</div>
@@ -558,7 +551,6 @@ return (
           </div>
         </div>
 
-        {/* 본문 제어부: overflow-hidden 대신 내부 콘텐츠 렌더링 스위칭 방식으로 짤림 전면 방지 */}
         <div className={cn(
           "transition-all duration-300 ease-in-out origin-top flex flex-col flex-1 rounded-b-[1.8rem] overflow-visible",
           isExpanded ? "max-h-[1200px] opacity-100 visible" : "max-h-0 opacity-0 invisible pointer-events-none"
@@ -567,7 +559,6 @@ return (
           <div className={cn(
             "p-4 grid grid-cols-2 sm:grid-cols-4 gap-2 border-b transition-colors overflow-visible",
             theme.metricDashboardClass,
-            // [개선] 타이틀 툴팁 활성화 시 메트릭 대시보드의 z-index 레이어를 상대적으로 낮춰 가려짐 방지
             hoveredTitle ? "relative z-0" : "relative z-20"
           )}>
             {extendedMetrics.map((m: any, i: number) => {
@@ -575,9 +566,6 @@ return (
               const dictItem = METRIC_DICTIONARY[cleanLabel] || Object.values(METRIC_DICTIONARY).find((v, idx) => Object.keys(METRIC_DICTIONARY)[idx].includes(cleanLabel) || cleanLabel.includes(Object.keys(METRIC_DICTIONARY)[idx]));
               const isHovered = hoveredMetric === `${result.title}-${m.label}-${i}`;
               
-              // [개선] 모바일 대응 가로 정렬 고도화:
-              // 모바일(2열)일 때는 홀수(0,2)는 left-0, 짝수(1,3)는 right-0 처리하여 화면 이탈 완벽 방지
-              // 데스크톱(4열)일 때는 기존의 i % 4 >= 2 구조를 그대로 살려 우측 정렬 다형화 유지
               const elementAlignmentClass = cn(
                 i % 2 === 0 ? "left-0" : "right-0",
                 i % 4 >= 2 ? "sm:right-0 sm:left-auto" : "sm:left-0 sm:right-auto"
@@ -590,7 +578,7 @@ return (
                     "p-2.5 rounded-xl border bg-white dark:bg-zinc-900/40 flex flex-col gap-0.5 shadow-sm transition-all duration-150 relative cursor-help overflow-visible",
                     isHovered ? "z-40 border-zinc-400 dark:border-zinc-500" : "z-10 border-zinc-200 dark:border-zinc-800 hover:border-zinc-300 dark:hover:border-zinc-700"
                   )}
-                  style={{ isolation: isHovered ? "isolate" : "auto" }} // 개별 스택 레이어 고립화 적용
+                  style={{ isolation: isHovered ? "isolate" : "auto" }}
                   onMouseEnter={() => setHoveredMetric(`${result.title}-${m.label}-${i}`)}
                   onMouseLeave={() => setHoveredMetric(null)}
                 >
@@ -626,7 +614,6 @@ return (
           {/* 밸류에이션 리스트 테이블 */}
           <div className={cn(
             "p-5 flex-1 bg-white dark:bg-zinc-950/20 relative overflow-x-auto custom-valuation-scrollbar",
-            // [개선] 헤더 툴팁이 활성화되면 테이블 레이어를 뒤로 밀어 가려짐 해결
             hoveredTitle ? "z-0" : "z-10"
           )}>
             <table className="w-full text-left border-separate border-spacing-0">

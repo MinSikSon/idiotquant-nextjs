@@ -545,12 +545,12 @@ export const StockCard = ({ stock, chartConfig, rawData, isCompact = false, stoc
 
                         {/* Core Stats */}
                         <div className="px-4 py-3 grid grid-cols-2 gap-2.5 z-10">
-                            {/* 매수 추진력 (Bullpower ATK) */}
+                            {/* 상승 여력 (Upside) */}
                             <div className="bg-rose-50/40 dark:bg-gradient-to-br dark:from-rose-950/20 dark:to-rose-950/5 border border-rose-100 dark:border-rose-500/20 p-2.5 rounded-xl flex items-center justify-between group/atk transition-colors">
                                 <div className="flex flex-col">
                                     <div className="text-[8px] font-black text-rose-600 dark:text-rose-400 uppercase tracking-widest mb-1 flex items-center gap-1 font-mono">
                                         <TrendingUp className="w-2.5 h-2.5 text-rose-500" />
-                                        BULLPOWER ATK
+                                        UPSIDE ATK
                                     </div>
                                     <div className="flex items-baseline gap-0.5">
                                         <span className="text-2xl font-black text-rose-600 dark:text-rose-400 italic tracking-tighter font-mono transition-all">
@@ -561,11 +561,11 @@ export const StockCard = ({ stock, chartConfig, rawData, isCompact = false, stoc
                                 </div>
                             </div>
 
-                            {/* 하방 방어력 (Bearshield DEF) */}
+                            {/* 안전마진 (Safety) */}
                             <div className="bg-blue-50/40 dark:bg-gradient-to-br dark:from-blue-950/20 dark:to-blue-950/5 border border-blue-100 dark:border-blue-500/20 p-2.5 rounded-xl flex items-center justify-between text-right group/def transition-colors">
                                 <div className="w-full flex flex-col items-end">
                                     <div className="text-[8px] font-black text-blue-600 dark:text-blue-400 uppercase tracking-widest mb-1 flex items-center gap-1 justify-end font-mono">
-                                        BEARSHIELD DEF
+                                        MARGIN DEF
                                         <ShieldCheck className="w-2.5 h-2.5 text-blue-500" />
                                     </div>
                                     <div className="flex items-baseline gap-0.5 justify-end">
@@ -621,14 +621,13 @@ export const StockCard = ({ stock, chartConfig, rawData, isCompact = false, stoc
                                 <div className="p-1.5 bg-amber-500/20 text-amber-400 rounded-lg border border-amber-500/30">
                                     <Award className="w-3.5 h-3.5" />
                                 </div>
-                                <span className="text-[11px] font-black font-mono tracking-widest text-zinc-100">검색 숙련도 XP</span>
+                                <span className="text-[11px] font-black font-mono tracking-widest text-zinc-100">종목 관심도 XP</span>
                             </div>
                             <span className="text-[10px] font-black font-mono bg-amber-500 text-zinc-950 px-2 py-0.5 rounded italic">
                                 Lv.{level}
                             </span>
                         </div>
 
-                        {/* 경험치 프로그레스 바 바인딩 */}
                         <div className="space-y-1.5 mt-2.5">
                             <div className="flex justify-between items-center text-[9px] font-mono font-bold text-zinc-400">
                                 <span>{levelTheme.title}</span>
@@ -644,7 +643,7 @@ export const StockCard = ({ stock, chartConfig, rawData, isCompact = false, stoc
                         </div>
 
                         <div className="mt-3 rounded-xl border border-zinc-700/70 bg-zinc-900/80 px-3 py-2 text-[10px] font-bold leading-relaxed text-zinc-300">
-                            검색 결과 페이지에 진입할 때마다 XP가 누적되고, 레벨에 따라 카드 프레임과 리서치 보정치가 강화됩니다.
+                            종목을 조회할 때마다 XP가 누적되며, 레벨에 따라 카드 프레임과 분석 보정치가 강화됩니다.
                         </div>
                     </div>
 
@@ -655,8 +654,8 @@ export const StockCard = ({ stock, chartConfig, rawData, isCompact = false, stoc
                         </div>
 
                         {[
-                            { title: "매수 상승 잠재력 (Bullpower ATK)", color: "text-rose-600 dark:text-rose-400", bg: "bg-rose-50/30 dark:bg-zinc-900/40", border: "border-rose-100/60 dark:border-zinc-800/60", desc: "순유동자산(유동자산 - 총부채)이 현재 시가총액을 얼마나 초과하는지 계량화한 핵심 마진 수치입니다. (성장 레벨에 따라 ATK 상향 보너스가 제공됩니다)" },
-                            { title: "하방 위험 방어력 (Bearshield DEF)", color: "text-blue-600 dark:text-blue-400", bg: "bg-blue-50/30 dark:bg-zinc-900/40", border: "border-blue-100/60 dark:border-zinc-800/60", desc: "시장 하방 압력 및 재무 리스크에 대한 안전망 점수입니다. 부채비율을 보수적으로 역산하여 고위험 기업 카드를 필터링합니다." }
+                            { title: "상승 여력 (Upside ATK)", color: "text-rose-600 dark:text-rose-400", bg: "bg-rose-50/30 dark:bg-zinc-900/40", border: "border-rose-100/60 dark:border-zinc-800/60", desc: "순유동자산(유동자산 - 총부채)이 현재 시가총액을 얼마나 초과하는지 계량화한 NCAV 업사이드 지표입니다. 조회 레벨에 따라 보정치가 가산됩니다." },
+                            { title: "안전마진 (Margin DEF)", color: "text-blue-600 dark:text-blue-400", bg: "bg-blue-50/30 dark:bg-zinc-900/40", border: "border-blue-100/60 dark:border-zinc-800/60", desc: "재무 리스크에 대한 하방 방어 점수입니다. 부채비율을 보수적으로 역산하여 위험 노출도가 높은 종목을 식별합니다." }
                         ].map((item, i) => (
                             <div key={i} className={cn("space-y-1 p-2.5 rounded-xl border", item.bg, item.border)}>
                                 <div className="flex items-center gap-2">
@@ -672,7 +671,7 @@ export const StockCard = ({ stock, chartConfig, rawData, isCompact = false, stoc
 
                     <div className="mt-auto pt-3 border-t border-zinc-200 dark:border-zinc-800 flex flex-col items-center z-10">
                         <div className="text-[8px] font-black text-zinc-400 dark:text-zinc-500 tracking-[0.3em] italic mb-0.5 uppercase text-center font-mono">IdiotQuant Engine v2.5</div>
-                        <div className="text-[7px] text-zinc-400 dark:text-zinc-600 font-bold uppercase tracking-widest italic font-mono">SYSTEM DATA FROM KOREA INVESTMENT HEDGE RUNTIME</div>
+                        <div className="text-[7px] text-zinc-400 dark:text-zinc-600 font-bold uppercase tracking-widest italic font-mono">POWERED BY KOREA INVESTMENT API</div>
                     </div>
                 </div>
             </motion.div>

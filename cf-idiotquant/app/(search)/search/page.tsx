@@ -1,20 +1,9 @@
 'use client';
 
-/**
- * 🚀 IdiotQuant Pro - Enterprise Stock Analysis Platform
- * * 주요 개선사항:
- * - HMR 충돌 수정: 대용량 정적 데이터(JSON) 비동기 런타임 싱글톤 로더 구현으로 핫 리로드 에러 해결
- * - 성능 최적화: Dynamic imports, 메모이제이션, debouncing
- * - UX 향상: 스켈레톤 UI, 에러 복구, 오프라인 대응
- * - 타입 안전성: 엄격한 TypeScript 타입 정의
- * - 접근성: ARIA 레이블, 키보드 네비게이션
- */
-
-import React, {
+import {
   useState,
   useEffect,
   Suspense,
-  useId,
   useMemo,
   useRef,
   useCallback,
@@ -33,13 +22,10 @@ import {
   Flame,
   Share2,
   Check,
-  TrendingUp,
   Globe2,
   DollarSign,
   Coins,
   WifiOff,
-  RefreshCw,
-  Bell,
   Star,
   X,
   BarChart3
@@ -94,7 +80,7 @@ const SearchGuide = dynamic(
 );
 
 // ===========================
-// 📦 HMR Safe Static Data Singleton Loader
+// 정적 데이터 싱글톤 로더 (HMR 재로딩 방지)
 // ===========================
 interface StaticStockData {
   allTickers: string[];
@@ -149,7 +135,7 @@ import {
 } from '../../../components/utils/financeCalc';
 
 // ===========================
-// 🎨 Skeleton Components
+// 스켈레톤 컴포넌트
 // ===========================
 const StockCardSkeleton = memo(() => (
   <div className="w-full h-[420px] bg-white dark:bg-zinc-900 rounded-2xl border border-zinc-200/60 dark:border-zinc-800 animate-pulse p-6 shadow-xs">
@@ -206,7 +192,7 @@ const SearchSkeleton = memo(() => (
 SearchSkeleton.displayName = 'SearchSkeleton';
 
 // ===========================
-// 🎯 TypeScript Interfaces
+// 타입 정의
 // ===========================
 interface StockXpProfile {
   level: number;
@@ -227,7 +213,7 @@ interface ToastNotification {
 }
 
 // ===========================
-// 🔧 Constants & Utilities
+// 상수 & 유틸
 // ===========================
 const STOCK_XP_STORAGE_KEY = 'idiotquant_stock_xp_profiles_v2';
 const SEARCH_RESULT_XP_GAIN = 25;
@@ -300,7 +286,7 @@ const addStockXp = (profile: StockXpProfile, gainedXp: number): StockXpProfile =
 };
 
 // ===========================
-// 🍞 Toast Notification Component
+// Toast 컴포넌트
 // ===========================
 const Toast = memo(({
   notification,
@@ -343,7 +329,7 @@ const Toast = memo(({
 Toast.displayName = 'Toast';
 
 // ===========================
-// 🔌 Custom Hooks
+// 커스텀 훅
 // ===========================
 const useOnlineStatus = () => {
   const [isOnline, setIsOnline] = useState(true);
@@ -408,14 +394,13 @@ function ScrollProgress({ isFixed }: { isFixed: boolean }) {
 }
 
 // ===========================
-// 🎬 Main Content Area Component
+// 메인 콘텐츠
 // ===========================
 function SearchContent() {
-  const sectionId = useId();
   const router = useRouter();
   const dispatch = useAppDispatch();
   const searchParams = useSearchParams();
-  const { onSearch, krOrUs, response, data, name, waitResponse } = useStockSearch();
+  const { onSearch, krOrUs, data, name, waitResponse } = useStockSearch();
 
   const krMarketHistory = useAppSelector(selectKrMarketHistory);
   const popularStocks = useAppSelector(selectPopularStocks) || [];
@@ -429,9 +414,7 @@ function SearchContent() {
   const [stockXpProfiles, setStockXpProfiles] = useState<StockXpProfiles>({});
   const [shareStatus, setShareStatus] = useState<'idle' | 'copied' | 'error'>('idle');
   const [isSearchFocused, setIsSearchFocused] = useState(false);
-  const [isQueryEmpty, setIsQueryEmpty] = useState(true);
   const [watchlist, setWatchlist] = useState<string[]>([]);
-  const [isRefreshing, setIsRefreshing] = useState(false);
 
   // Refs
   const lastEntryAwardedTickerRef = useRef<string | null>(null);
@@ -451,8 +434,8 @@ function SearchContent() {
     loadStaticStockData().then((loaded) => {
       setStaticStockData(loaded);
     }).catch(err => {
-      console.error('Failed to load local asset stocks database:', err);
-      addToast({ type: 'error', message: '마켓 데이터베이스를 동기화할 수 없습니다.' });
+      console.error('Failed to load static stock data:', err);
+      addToast({ type: 'error', message: '주식 데이터를 불러올 수 없습니다.' });
     });
 
     try {
@@ -504,7 +487,7 @@ function SearchContent() {
 
     addToast({
       type: 'success',
-      message: `+${SEARCH_RESULT_XP_GAIN} XP 획득! 종목 가치 정밀 진단을 진행합니다.`
+      message: `+${SEARCH_RESULT_XP_GAIN} XP 획득 | 분석 데이터를 불러옵니다.`
     });
   }, [awardStockXp, addToast]);
 
@@ -514,7 +497,7 @@ function SearchContent() {
     if (staticStockData.allTickers.length > 0 && !staticStockData.allTickers.some((t) => t.toLowerCase() === stockName.toLowerCase())) {
       addToast({
         type: 'error',
-        message: `'${stockName}'은(는) 리스트에 존재하지 않는 개체입니다.`
+        message: `'${stockName}'은(는) 지원하지 않는 종목입니다.`
       });
       return;
     }
@@ -548,12 +531,12 @@ function SearchContent() {
     try {
       await navigator.clipboard.writeText(currentUrl);
       setShareStatus('copied');
-      addToast({ type: 'success', message: '공유 링크가 클립보드에 바인딩되었습니다!' });
+      addToast({ type: 'success', message: '링크가 클립보드에 복사되었습니다.' });
       setTimeout(() => setShareStatus('idle'), 2500);
     } catch (error) {
       console.error('Share failed:', error);
       setShareStatus('error');
-      addToast({ type: 'error', message: '공유 작업 수행 실패' });
+      addToast({ type: 'error', message: '링크 복사에 실패했습니다.' });
       setTimeout(() => setShareStatus('idle'), 2500);
     }
   }, [name, krOrUs, addToast]);
@@ -569,7 +552,7 @@ function SearchContent() {
         window.localStorage.setItem('idiotquant_watchlist_v1', JSON.stringify(newWatchlist));
         addToast({
           type: isAdded ? 'info' : 'success',
-          message: isAdded ? '관심 포트폴리오에서 해제되었습니다.' : '관심 모니터링 그룹에 추가되었습니다!'
+          message: isAdded ? '관심 종목에서 제거되었습니다.' : '관심 종목에 추가되었습니다.'
         });
       } catch (error) {
         console.error('Failed to update watchlist:', error);
@@ -578,21 +561,6 @@ function SearchContent() {
       return newWatchlist;
     });
   }, [addToast]);
-
-  const handleRefresh = useCallback(async () => {
-    const tickerFromUrl = searchParams.get('ticker');
-    if (!tickerFromUrl) return;
-
-    setIsRefreshing(true);
-    try {
-      await onSearch(tickerFromUrl);
-      addToast({ type: 'success', message: '실시간 가치 분석표 최신화 완료' });
-    } catch (error) {
-      addToast({ type: 'error', message: '새로고침 프로세스 에러' });
-    } finally {
-      setIsRefreshing(false);
-    }
-  }, [searchParams, onSearch, addToast]);
 
   useEffect(() => {
     const tickerFromUrl = searchParams.get('ticker');
@@ -728,7 +696,7 @@ function SearchContent() {
       {!isOnline && (
         <div className="fixed top-0 left-0 right-0 z-[90] bg-amber-500 text-white py-2 px-4 flex items-center justify-center gap-2 text-xs font-bold shadow-md animate-in fade-in duration-200">
           <WifiOff size={14} />
-          오프라인 감지 — 동적 원천 레코드 패칭이 보류되었습니다.
+          오프라인 상태입니다 — 실시간 데이터를 불러올 수 없습니다.
         </div>
       )}
 
@@ -746,21 +714,18 @@ function SearchContent() {
       >
         <div className="max-w-6xl mx-auto px-4 py-3 sm:py-3.5 flex flex-col sm:flex-row sm:items-center justify-between gap-3 relative">
           
-          {/* 탐색 패널 입력 스트림 그리드 */}
           <div className="w-full flex-1 flex items-center gap-2">
             <div className="w-full">
               <SearchAutocomplete
                 placeHolder="🇰🇷 국내 종목명 또는 🇺🇸 미국 티커(Ticker) 입력"
                 onSearchButton={handleSearch}
                 validCorpNameArray={staticStockData.allTickers}
-                onSearchStateChange={(focused, isEmpty) => {
+                onSearchStateChange={(focused) => {
                   setIsSearchFocused(focused);
-                  setIsQueryEmpty(isEmpty);
                 }}
               />
             </div>
 
-            {/* 실시간 로딩 가젯 콤팩트 링크 */}
             {isLoaded && (
               <div className="flex items-center gap-1.5 shrink-0 animate-in fade-in zoom-in-95 duration-200">
                 <button
@@ -792,10 +757,9 @@ function SearchContent() {
           <ScrollProgress isFixed={fixed} />
         </div>
 
-        {/* 퀵 억세스 통합 대시 트랙 */}
         {!fixed && !isSearchFocused && (
           <div className="w-full flex flex-col border-t border-zinc-100 dark:border-zinc-800/40 bg-zinc-50/30 dark:bg-zinc-950/10 animate-in fade-in duration-300">
-            {/* 실시간 인기 스크리닝 */}
+            {/* 인기 종목 */}
             <div className="max-w-6xl w-full mx-auto px-4 py-2 flex items-center gap-3 overflow-hidden border-b border-zinc-100 dark:border-zinc-800/30">
               <div className="flex items-center gap-1 shrink-0 text-amber-500 select-none">
                 <Flame size={13} className="animate-pulse fill-amber-500/10" />
@@ -817,7 +781,7 @@ function SearchContent() {
               </div>
             </div>
 
-            {/* 유저 인텔리전스 최근 조회 로그 */}
+            {/* 최근 검색 */}
             <div className="max-w-6xl w-full mx-auto px-4 py-2 flex items-center gap-3 overflow-hidden">
               <div className="flex items-center gap-1 shrink-0 text-zinc-400 dark:text-zinc-500 select-none">
                 <History size={13} />
@@ -841,7 +805,7 @@ function SearchContent() {
                     ))
                 ) : (
                   <span className="text-[11px] text-zinc-400 dark:text-zinc-600 italic font-medium py-0.5">
-                    최근 바인딩 히스토리가 비어있습니다.
+                    최근 검색 기록이 없습니다.
                   </span>
                 )}
               </div>
@@ -859,7 +823,7 @@ function SearchContent() {
           <SearchGuide />
         ) : (
           <>
-            {/* 정밀 패칭 가동 로더 */}
+            {/* 로딩 */}
             {waitResponse && !isLoaded && (
               <div className="py-40 flex flex-col items-center justify-center gap-4 animate-in fade-in duration-300">
                 <div className="relative p-5 bg-white dark:bg-zinc-900 rounded-2xl shadow-xl border border-zinc-100 dark:border-zinc-800 animate-pulse">
@@ -867,24 +831,24 @@ function SearchContent() {
                 </div>
                 <div className="text-center space-y-1.5 px-4">
                   <p className="text-sm font-bold text-zinc-800 dark:text-zinc-200 tracking-tight">
-                    고성능 퀀트 분석 모듈 연산 중
+                    종목 데이터를 분석하는 중입니다
                   </p>
                   <p className="text-xs font-medium text-zinc-400 dark:text-zinc-500 font-mono leading-relaxed max-w-md mx-auto">
-                    Streaming historical financial state and processing multi-layer evaluation indicators...
+                    재무 데이터를 가져오고 밸류에이션 지표를 계산하는 중입니다...
                   </p>
                 </div>
               </div>
             )}
 
-            {/* 완정성 검증 대시보드 코어 엔코더 */}
+            {/* 분석 결과 */}
             <div className={!isLoaded ? 'hidden' : 'block animate-in fade-in zoom-in-99 duration-500'}>
 
-              {/* 최상단 얼럿 링크 가젯 랙 */}
+              {/* 결과 상태 배너 */}
               <div className="w-full flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-5 bg-white dark:bg-zinc-900 p-3 sm:p-4 rounded-2xl border border-zinc-200/60 dark:border-zinc-800/80 shadow-2xs">
                 <div className="flex items-center gap-2">
                   <div className="w-2 h-2 rounded-full bg-emerald-500 shrink-0 animate-ping" />
                   <span className="text-xs sm:text-sm font-bold text-zinc-700 dark:text-zinc-300">
-                    그레이엄 청산가치(NCAV) 밸류에이션 리포트 연산이 완료되었습니다.
+                    NCAV 밸류에이션 분석이 완료되었습니다.
                   </span>
                 </div>
 
@@ -903,26 +867,26 @@ function SearchContent() {
                   {shareStatus === 'copied' ? (
                     <>
                       <Check size={14} />
-                      <span>분석표 링크 복사 완료</span>
+                      <span>링크 복사 완료</span>
                     </>
                   ) : shareStatus === 'error' ? (
                     <>
                       <AlertCircle size={14} />
-                      <span>클립보드 바인딩 에러</span>
+                      <span>링크 복사 실패</span>
                     </>
                   ) : (
                     <>
                       <Share2 size={14} />
-                      <span>리포트 결과 공유하기</span>
+                      <span>분석 결과 공유</span>
                     </>
                   )}
                 </button>
               </div>
 
-              {/* 메인 리포트 대시보드 2열 래퍼 격자 */}
+              {/* 메인 2열 레이아웃 */}
               <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start mb-6 transform-gpu">
 
-                {/* 1열: 주가 차트 종합 지표 스탠드 */}
+                {/* 밸류에이션 카드 */}
                 <div ref={stockCardDwellRef} className="lg:col-span-5 flex justify-center w-full">
                   <StockCard
                     stock={
@@ -964,24 +928,22 @@ function SearchContent() {
                   />
                 </div>
 
-                {/* 2열: 재무 성장성 세부 메트릭스 컨테이너 */}
+                {/* 재무 지표 */}
                 <div ref={metricsDwellRef} className="lg:col-span-7 w-full h-full flex flex-col justify-between">
                   <StockMetrics data={data} isUs={krOrUs === 'US'} />
                 </div>
               </div>
 
-              {/* 하단 배치 세부 데이터 테이블 섹션군 */}
               <div className="transition-all duration-300 space-y-6">
-                {/* 밸류에이션 청산 등급 분석 레이어 */}
                 <div ref={valuationDwellRef} className="bg-white dark:bg-zinc-900 rounded-2xl border border-zinc-200/60 dark:border-zinc-800/80 p-1 shadow-2xs">
                   <ValuationSection data={data} isUs={krOrUs === 'US'} />
                 </div>
 
-                {/* 원천 데이터 회계 재무제표 뷰어 테두리 */}
+                {/* 재무제표 */}
                 <div ref={financialsDwellRef} className="bg-white dark:bg-zinc-900 rounded-2xl border border-zinc-200/60 dark:border-zinc-800/80 p-4 sm:p-5 shadow-2xs overflow-hidden">
                   <h3 className="text-sm font-bold tracking-tight mb-4 flex items-center gap-2 px-1 text-zinc-800 dark:text-zinc-200">
                     <Globe2 size={15} className="text-zinc-400 shrink-0" />
-                    <span>원천 재무제표(Financial Statements) 세부 정보 레코드</span>
+                    <span>재무제표 (Financial Statements)</span>
                   </h3>
                   <div className="overflow-x-auto w-full rounded-xl border border-zinc-100 dark:border-zinc-800">
                     {krOrUs === 'KR' ? (
@@ -1021,7 +983,7 @@ function SearchContent() {
 }
 
 // ===========================
-// 🎬 Main Export with Suspense
+// 페이지 내보내기
 // ===========================
 export default function SearchPage() {
   return (
