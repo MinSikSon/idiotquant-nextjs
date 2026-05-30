@@ -380,6 +380,7 @@ function SearchContent() {
   const { toasts, addToast, dismissToast } = useToast();
 
   const [fixed, setFixed] = useState(false);
+  const [spacerHeight, setSpacerHeight] = useState(0);
   const [hasMounted, setHasMounted] = useState(false);
   const [staticStockData, setStaticStockData] = useState<StaticStockData>({ allTickers: [], corpCodeJson: {} });
   const [stockXpProfiles, setStockXpProfiles] = useState<StockXpProfiles>({});
@@ -387,6 +388,7 @@ function SearchContent() {
   const [isSearchFocused, setIsSearchFocused] = useState(false);
   const [watchlist, setWatchlist] = useState<string[]>([]);
 
+  const headerRef = useRef<HTMLElement>(null);
   const lastEntryAwardedTickerRef = useRef<string | null>(null);
   const stockCardDwellRef   = useRef<HTMLDivElement | null>(null);
   const metricsDwellRef     = useRef<HTMLDivElement | null>(null);
@@ -489,7 +491,16 @@ function SearchContent() {
   }, [searchParams, name, onSearch]);
 
   useEffect(() => {
-    const onScroll = () => setFixed(window.scrollY > 140);
+    let wasFixed = false;
+    const onScroll = () => {
+      const shouldFix = window.scrollY > 140;
+      // 고정 전환 직전에 헤더 높이를 캡처 — 이 값을 spacer 에 그대로 사용해 jump 방지
+      if (shouldFix && !wasFixed && headerRef.current) {
+        setSpacerHeight(headerRef.current.offsetHeight);
+      }
+      wasFixed = shouldFix;
+      setFixed(shouldFix);
+    };
     window.addEventListener('scroll', onScroll, { passive: true });
     return () => window.removeEventListener('scroll', onScroll);
   }, []);
@@ -600,7 +611,7 @@ function SearchContent() {
       )}
 
       {/* ── 헤더 (검색 + 인기/최근) ── */}
-      <header className={cn(
+      <header ref={headerRef} className={cn(
         "w-full transition-all duration-300 border-b",
         fixed
           ? "fixed top-0 z-[60] bg-white/92 dark:bg-zinc-900/92 border-zinc-200 dark:border-zinc-800 shadow-sm backdrop-blur-md"
@@ -696,6 +707,9 @@ function SearchContent() {
           </div>
         )}
       </header>
+
+      {/* 헤더 fixed 전환 시 콘텐츠 jump 방지 spacer */}
+      {fixed && <div style={{ height: spacerHeight }} aria-hidden="true" />}
 
       {/* ── 메인 콘텐츠 ── */}
       <main className="max-w-6xl mx-auto p-4 sm:p-6">
