@@ -2,7 +2,7 @@
 
 import React, { useState, useMemo, useCallback, useEffect, useRef } from 'react';
 import Image from 'next/image';
-import { motion, useMotionValue, useTransform, AnimatePresence } from 'framer-motion';
+import { motion, useMotionValue, useTransform, useSpring, AnimatePresence } from 'framer-motion';
 import { cn } from "@/lib/utils";
 import { TrendingUp, ShieldCheck, Award, DollarSign, Coins } from "lucide-react";
 import LineChart from "@/components/LineChart";
@@ -432,10 +432,17 @@ export const StockCard = ({ stock, chartConfig, isCompact = false, stockXpProfil
   const clearTimer = useRef<number | null>(null);
   const cardRef    = useRef<HTMLDivElement>(null);
 
+  // gyro 상태 — ref 로 관리해 handler 재생성 없이 참조
+  const isFlippedRef  = useRef(false);
+  const gyroActiveRef = useRef(false);
+
   const mouseX = useMotionValue(0.5);
   const mouseY = useMotionValue(0.5);
-  const rotateX = useTransform(mouseY, [0, 1], [10, -10]);
-  const rotateY = useTransform(mouseX, [0, 1], [-10, 10]);
+  // 자이로 jitter 완화를 위해 spring 적용
+  const rawRotX = useTransform(mouseY, [0, 1], [12, -12]);
+  const rawRotY = useTransform(mouseX, [0, 1], [-12, 12]);
+  const rotateX = useSpring(rawRotX, { stiffness: 150, damping: 28 });
+  const rotateY = useSpring(rawRotY, { stiffness: 150, damping: 28 });
 
   const level = stockXpProfile?.level  ?? 1;
   const xp    = stockXpProfile?.xp     ?? 0;
@@ -450,6 +457,9 @@ export const StockCard = ({ stock, chartConfig, isCompact = false, stockXpProfil
 
   const ncavUpside = Number(stock?.ncavScore ?? 0);
   const isUp       = ncavUpside >= 0;
+
+  // isFlippedRef 동기화 — 자이로 핸들러에서 클로저 없이 참조
+  useEffect(() => { isFlippedRef.current = isFlipped; }, [isFlipped]);
 
   useEffect(() => {
     setImgError(false);
@@ -468,8 +478,52 @@ export const StockCard = ({ stock, chartConfig, isCompact = false, stockXpProfil
     return () => window.clearTimeout(t);
   }, [stockXpProfile]);
 
+  // ── 자이로스코프 핸들러 공유 ref ──
+  const gyroHandlerRef = useRef<(e: DeviceOrientationEvent) => void>(() => {});
+  useEffect(() => {
+    gyroHandlerRef.current = (e: DeviceOrientationEvent) => {
+      if (isFlippedRef.current) return;
+      const gamma = e.gamma ?? 0; // 좌우 기울기 -90~90
+      const beta  = e.beta  ?? 0; // 앞뒤 기울기 -180~180
+      // gamma: ±25° 범위, beta: 40~90° 범위를 0~1 로 정규화
+      mouseX.set(Math.max(0, Math.min(1, (gamma + 25) / 50)));
+      mouseY.set(Math.max(0, Math.min(1, (beta  - 40) / 50)));
+      gyroActiveRef.current = true;
+    };
+  }, [mouseX, mouseY]);
+
+  // Android / 비iOS: 마운트 시 바로 등록
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const needsPermission =
+      typeof (DeviceOrientationEvent as any).requestPermission === 'function';
+    if (needsPermission) return; // iOS는 handleCardClick 에서 처리
+    const handler = (e: DeviceOrientationEvent) => gyroHandlerRef.current(e);
+    window.addEventListener('deviceorientation', handler, true);
+    return () => window.removeEventListener('deviceorientation', handler, true);
+  }, []);
+
+  // 카드 클릭 — iOS 권한 요청 + 뒤집기
+  const handleCardClick = useCallback(async () => {
+    if (
+      typeof window !== 'undefined' &&
+      typeof (DeviceOrientationEvent as any).requestPermission === 'function' &&
+      !gyroActiveRef.current
+    ) {
+      try {
+        const permission = await (DeviceOrientationEvent as any).requestPermission();
+        if (permission === 'granted') {
+          const handler = (e: DeviceOrientationEvent) => gyroHandlerRef.current(e);
+          window.addEventListener('deviceorientation', handler, true);
+        }
+      } catch (_) { /* 사용자가 거부하거나 비지원 */ }
+    }
+    setIsFlipped(p => !p);
+  }, []);
+
   const handleMouseMove = useCallback((e: React.MouseEvent<HTMLDivElement>) => {
-    if (!cardRef.current || isFlipped) return;
+    // 자이로가 활성화된 기기에서는 마우스 이벤트 무시
+    if (!cardRef.current || isFlipped || gyroActiveRef.current) return;
     const r = cardRef.current.getBoundingClientRect();
     mouseX.set((e.clientX - r.left) / r.width);
     mouseY.set((e.clientY - r.top)  / r.height);
@@ -477,8 +531,11 @@ export const StockCard = ({ stock, chartConfig, isCompact = false, stockXpProfil
 
   const handleMouseEnter = useCallback(() => setIsHovering(true), []);
   const handleMouseLeave = useCallback(() => {
-    mouseX.set(0.5);
-    mouseY.set(0.5);
+    // 자이로 활성 시 센터 리셋 생략 (기울기가 계속 구동)
+    if (!gyroActiveRef.current) {
+      mouseX.set(0.5);
+      mouseY.set(0.5);
+    }
     setIsHovering(false);
   }, [mouseX, mouseY]);
 
@@ -498,7 +555,7 @@ export const StockCard = ({ stock, chartConfig, isCompact = false, stockXpProfil
       onMouseMove={handleMouseMove}
       onMouseEnter={handleMouseEnter}
       onMouseLeave={handleMouseLeave}
-      onClick={() => setIsFlipped(p => !p)}
+      onClick={handleCardClick}
     >
       {/* XP 플로팅 텍스트 */}
       <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 pointer-events-none z-50 overflow-visible">
