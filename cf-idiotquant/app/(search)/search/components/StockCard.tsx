@@ -513,8 +513,11 @@ export const StockCard = ({ stock, chartConfig, isCompact = false, stockXpProfil
         }
       } catch (_) { /* 사용자가 거부하거나 비지원 */ }
     }
+    // 플립 전 틸트를 센터로 리셋 — 뒷면이 기울어진 채로 나타나지 않도록
+    mouseX.set(0.5);
+    mouseY.set(0.5);
     setIsFlipped(p => !p);
-  }, []);
+  }, [mouseX, mouseY]);
 
   const handleMouseMove = useCallback((e: React.MouseEvent<HTMLDivElement>) => {
     // 자이로가 활성화된 기기에서는 마우스 이벤트 무시
@@ -566,8 +569,18 @@ export const StockCard = ({ stock, chartConfig, isCompact = false, stockXpProfil
         </AnimatePresence>
       </div>
 
+      {/* 틸트 래퍼 — 마우스(데스크톱) / 자이로(모바일) 기반 3D 기울기 */}
       <motion.div
-        style={{ rotateX: isFlipped ? 0 : rotateX, rotateY: isFlipped ? 180 : rotateY, transformStyle: "preserve-3d" }}
+        className="w-full h-full"
+        style={{
+          rotateX: isFlipped ? 0 : rotateX,
+          rotateY: isFlipped ? 0 : rotateY,
+          transformStyle: "preserve-3d",
+        }}
+      >
+      {/* 플립 래퍼 — animate 로만 Y 회전 제어 (틸트와 충돌 없음) */}
+      <motion.div
+        style={{ transformStyle: "preserve-3d" }}
         animate={{ rotateY: isFlipped ? 180 : 0 }}
         transition={{ type: "spring", stiffness: 180, damping: 24, mass: 1.0 }}
         className="w-full h-full relative transform-gpu"
@@ -895,6 +908,7 @@ export const StockCard = ({ stock, chartConfig, isCompact = false, stockXpProfil
 
           </div>
         </div>
+      </motion.div>
       </motion.div>
     </div>
   );

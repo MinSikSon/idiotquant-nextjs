@@ -147,6 +147,26 @@ export default function Chat() {
                 </div>
             </div>
 
+            {/* 대화 기록이 없을 때 예시 질문 가이드 */}
+            {(!aiHistory || aiHistory.length === 0) && !waitResponse && (
+                <div className="dark:!bg-gray-200 grid grid-cols-1 sm:grid-cols-2 gap-3 py-4">
+                    {[
+                        "NCAV 투자 전략이란 무엇인가요?",
+                        "PER, PBR, PEG 지표를 어떻게 활용하나요?",
+                        "국내 주식과 미국 주식 중 어느 쪽이 초보에게 적합할까요?",
+                        "그레이엄의 순유동자산(NCAV) 계산 방법을 알려주세요.",
+                    ].map((prompt) => (
+                        <button
+                            key={prompt}
+                            onClick={() => { setUserContent(prompt); onClick(prompt); }}
+                            className="text-left px-4 py-3 bg-white border border-gray-200 rounded-xl text-sm text-gray-600 hover:border-blue-400 hover:text-blue-600 hover:bg-blue-50 transition-all shadow-sm"
+                        >
+                            {prompt}
+                        </button>
+                    ))}
+                </div>
+            )}
+
             <div className="dark:!bg-gray-200 space-y-4">
                 {!!aiHistory ? aiHistory.map((item: any, index: number) => (
                     <div key={index}

@@ -184,6 +184,12 @@ const SearchAutocomplete = ({ validCorpNameArray, onSearchButton, placeHolder, o
                     autoComplete="off"
                     placeholder={placeHolder}
                     value={query}
+                    role="combobox"
+                    aria-label="종목 검색"
+                    aria-autocomplete="list"
+                    aria-expanded={isFocused && suggestions.length > 0}
+                    aria-controls="search-listbox"
+                    aria-activedescendant={selectedIndex >= 0 ? `suggestion-${selectedIndex}` : undefined}
                     onChange={(e) => {
                         const val = e.target.value;
                         setQuery(val);
@@ -205,14 +211,15 @@ const SearchAutocomplete = ({ validCorpNameArray, onSearchButton, placeHolder, o
                 />
                 
                 {query && (
-                    <button 
+                    <button
                         onClick={() => {
                             setQuery("");
                             if (onSearchStateChange) onSearchStateChange(isFocused, true);
                             inputRef.current?.focus();
-                        }} 
+                        }}
                         className="p-1 hover:bg-zinc-200/60 dark:hover:bg-zinc-800/60 rounded-lg transition-colors shrink-0 group"
                         type="button"
+                        aria-label="검색어 초기화"
                     >
                         <X className="h-4 w-4 text-zinc-400 group-hover:text-zinc-600 dark:group-hover:text-zinc-300 transition-colors" />
                     </button>
@@ -221,8 +228,11 @@ const SearchAutocomplete = ({ validCorpNameArray, onSearchButton, placeHolder, o
 
             {/* 자동완성 드롭다운 오버레이 슬롯 */}
             {isFocused && query.trim() && (
-                <ul 
+                <ul
                     ref={dropdownRef}
+                    id="search-listbox"
+                    role="listbox"
+                    aria-label="종목 검색 결과"
                     className="absolute top-full mt-2 left-0 w-full bg-white/95 dark:bg-zinc-950/95 backdrop-blur-xl border border-zinc-200 dark:border-zinc-800/80 rounded-2xl shadow-2xl max-h-76 overflow-y-auto p-1.5 z-[70] animate-in fade-in zoom-in-95 duration-200 origin-top no-scrollbar"
                 >
                     {/* 상단 라벨링 정보 바 */}
@@ -244,6 +254,9 @@ const SearchAutocomplete = ({ validCorpNameArray, onSearchButton, placeHolder, o
                             return (
                                 <li
                                     key={index}
+                                    id={`suggestion-${index}`}
+                                    role="option"
+                                    aria-selected={isSelected}
                                     onMouseDown={() => executeSearch(suggestion)}
                                     className={cn(
                                         "flex items-center justify-between text-xs py-2.5 px-3 cursor-pointer rounded-xl transition-all duration-150 font-medium my-0.5",

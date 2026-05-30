@@ -40,7 +40,7 @@ import {
   LoadingState, SectionHeader, SectionPanel, EmptyRow,
   KpiCard, TableHeader, OrderTabAction, OrderSectionIcon,
   BalanceHeaderActions, PnlIcon, pnlIconBg, pnlValueColor, pnlAccentColor,
-  formatTime, KpiCardSkeleton,
+  formatTime,
 } from "@/components/balance/shared";
 import { cn } from "@/lib/utils";
 
@@ -80,6 +80,20 @@ export interface KoreaInvestmentBalance {
   output1: KoreaInvestmentBalanceStockInfo[];
   output2: KoreaInvestmentBalanceOutput2[];
   rt_cd: string;
+}
+
+// =========================================================================
+// 상세 지표 칩 (스크롤 스트립용)
+// =========================================================================
+function MetricChip({ label, value, valueClass = "text-zinc-900 dark:text-zinc-100" }: {
+  label: string; value: string; valueClass?: string;
+}) {
+  return (
+    <div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-xl px-4 py-2.5 flex flex-col gap-0.5 shrink-0">
+      <span className="text-[9px] font-black text-zinc-400 dark:text-zinc-500 uppercase tracking-widest whitespace-nowrap">{label}</span>
+      <span className={cn("text-xs font-mono font-black whitespace-nowrap", valueClass)}>{value}</span>
+    </div>
+  );
 }
 
 // =========================================================================
@@ -270,6 +284,17 @@ function BalanceKr() {
   const isLoading = kiBalance.state === "pending";
   const hasCapital = krCapital.state === "fulfilled" || krCapital.state === "pending";
 
+  // 추가 지표
+  const sctsEvluAmt = Number(summary.scts_evlu_amt || 0);
+  const cmaEvluAmt = Number(summary.cma_evlu_amt || 0);
+  const nassAmt = Number(summary.nass_amt || 0);
+  const asstIcdcAmt = Number(summary.asst_icdc_amt || 0);
+  const asstIcdcErngRt = Number(summary.asst_icdc_erng_rt || 0);
+  const thdtBuyAmt = Number(summary.thdt_buy_amt || 0);
+  const thdtSllAmt = Number(summary.thdt_sll_amt || 0);
+  const totLoanAmt = Number(summary.tot_loan_amt || 0);
+  const isDailyPositive = asstIcdcAmt >= 0;
+
   const currentKakaoUser = (() => {
     const list = Array.isArray(kakaoMemberList)
       ? kakaoMemberList
@@ -320,11 +345,16 @@ function BalanceKr() {
             </nav>
 
             {/* 타이틀 */}
-            <div className="flex items-center gap-3">
-              <h1 className="text-3xl md:text-4xl font-black tracking-tighter text-zinc-900 dark:text-white">
+            <div className="flex items-center gap-3 flex-wrap">
+              <h1 className="text-3xl md:text-4xl font-black tracking-tighter bg-gradient-to-r from-zinc-900 to-zinc-500 dark:from-white dark:to-zinc-400 bg-clip-text text-transparent">
                 Portfolio Balance
               </h1>
               <span className="text-2xl select-none" aria-hidden>🇰🇷</span>
+              {!isLoading && totalEvalAmt > 0 && (
+                <span className="text-sm font-mono font-black text-zinc-400 dark:text-zinc-500 bg-zinc-100 dark:bg-zinc-800 px-2.5 py-1 rounded-lg border border-zinc-200 dark:border-zinc-700">
+                  {totalEvalAmt.toLocaleString()}원
+                </span>
+              )}
             </div>
 
             {/* 마지막 업데이트 */}
@@ -351,7 +381,7 @@ function BalanceKr() {
           </div>
         </header>
 
-        <div className="h-px bg-gradient-to-r from-transparent via-zinc-200 dark:via-zinc-800 to-transparent" />
+        <div className="h-px bg-gradient-to-r from-transparent via-blue-300 dark:via-blue-800 to-transparent opacity-60" />
 
         {/* 섹션 네비게이션 */}
         <SectionNav sections={navSections} />
@@ -361,7 +391,7 @@ function BalanceKr() {
           <KpiCard
             label="총 평가 금액"
             value={isLoading ? null : `${totalEvalAmt.toLocaleString()}원`}
-            sub="유가증권 + CMA 합산"
+            sub={isLoading ? "" : `주식 ${sctsEvluAmt.toLocaleString()}원 · CMA ${cmaEvluAmt.toLocaleString()}원`}
             icon={<Wallet size={15} />}
             iconBg="bg-blue-50 dark:bg-blue-950/40 text-blue-500"
             accentColor="bg-blue-400 dark:bg-blue-600"
@@ -369,15 +399,15 @@ function BalanceKr() {
           <KpiCard
             label="예수금 (D+2)"
             value={isLoading ? null : `${d2Deposit.toLocaleString()}원`}
-            sub="국내 주문 가능 잔액"
+            sub={isLoading ? "" : `순자산 ${nassAmt.toLocaleString()}원`}
             icon={<Coins size={15} />}
             iconBg="bg-amber-50 dark:bg-amber-950/40 text-amber-500"
             accentColor="bg-amber-400 dark:bg-amber-600"
           />
           <KpiCard
             label="평가손익 합계"
-            value={isLoading ? null : `${isPnlPositive ? "+" : ""}${totalPnl.toLocaleString()}원`}
-            sub="전체 보유종목 누적 손익"
+            value={isLoading ? null : `${isPnlPositive ? "▲ +" : "▼ "}${totalPnl.toLocaleString()}원`}
+            sub={isLoading ? "" : `매입원금 ${pchs.toLocaleString()}원`}
             icon={<PnlIcon positive={isPnlPositive} />}
             iconBg={pnlIconBg(isPnlPositive)}
             valueColor={pnlValueColor(isPnlPositive)}
@@ -385,14 +415,58 @@ function BalanceKr() {
           />
           <KpiCard
             label="자산 수익률"
-            value={isLoading ? null : `${isPnlPositive ? "+" : ""}${pnlRate.toFixed(2)}%`}
-            sub="매입금액 대비 등락률"
+            value={isLoading ? null : `${isPnlPositive ? "▲ +" : "▼ "}${pnlRate.toFixed(2)}%`}
+            sub={isLoading ? "" : `당일 증감 ${isDailyPositive ? "+" : ""}${asstIcdcErngRt.toFixed(2)}%`}
             icon={<Percent size={15} />}
             iconBg="bg-zinc-100 dark:bg-zinc-800 text-zinc-500"
             valueColor={pnlValueColor(isPnlPositive)}
             accentColor={pnlAccentColor(isPnlPositive)}
           />
         </section>
+
+        {/* 상세 지표 스트립 */}
+        {!isLoading && (
+          <div className="overflow-x-auto no-scrollbar -mt-1">
+            <div className="flex gap-2 min-w-max pb-0.5">
+              <MetricChip
+                label="당일 등락"
+                value={`${isDailyPositive ? "▲ +" : "▼ "}${asstIcdcAmt.toLocaleString()}원`}
+                valueClass={isDailyPositive ? "text-rose-500" : "text-blue-500"}
+              />
+              <MetricChip
+                label="금일 매수"
+                value={`${thdtBuyAmt.toLocaleString()}원`}
+                valueClass="text-rose-400 dark:text-rose-400"
+              />
+              <MetricChip
+                label="금일 매도"
+                value={`${thdtSllAmt.toLocaleString()}원`}
+                valueClass="text-blue-400 dark:text-blue-400"
+              />
+              <MetricChip
+                label="금일 매수 - 매도"
+                value={`${(thdtBuyAmt - thdtSllAmt) >= 0 ? "+" : ""}${(thdtBuyAmt - thdtSllAmt).toLocaleString()}원`}
+                valueClass={(thdtBuyAmt - thdtSllAmt) >= 0 ? "text-rose-500" : "text-blue-500"}
+              />
+              <MetricChip
+                label="CMA 평가"
+                value={`${cmaEvluAmt.toLocaleString()}원`}
+              />
+              <MetricChip
+                label="유가증권 평가"
+                value={`${sctsEvluAmt.toLocaleString()}원`}
+                valueClass="text-indigo-600 dark:text-indigo-400"
+              />
+              {totLoanAmt > 0 && (
+                <MetricChip
+                  label="대출 잔고"
+                  value={`${totLoanAmt.toLocaleString()}원`}
+                  valueClass="text-orange-500"
+                />
+              )}
+            </div>
+          </div>
+        )}
 
         {/* 포트폴리오 자산 구성 */}
         <SectionPanel id="section-portfolio">

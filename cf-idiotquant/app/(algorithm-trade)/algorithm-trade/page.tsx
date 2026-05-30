@@ -591,6 +591,17 @@ function AlgorithmTradeContent() {
                 {/* ── 콘텐츠 ── */}
                 <div ref={listRef}>
 
+                    {/* 후보 종목 없을 때 */}
+                    {totalCandidateKeys.length === 0 && (
+                        <div className="flex flex-col items-center justify-center py-24 text-center gap-3">
+                            <div className="p-4 bg-zinc-100 dark:bg-zinc-800 rounded-2xl">
+                                <TrendingUp className="w-8 h-8 text-zinc-400" />
+                            </div>
+                            <p className="text-sm font-bold text-zinc-500 dark:text-zinc-400">현재 조건에 맞는 후보 종목이 없습니다.</p>
+                            <p className="text-xs text-zinc-400 dark:text-zinc-500">전략을 변경하거나 나중에 다시 확인해 보세요.</p>
+                        </div>
+                    )}
+
                     {/* 카드 그리드 */}
                     {viewMode === "card" && (
                         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">

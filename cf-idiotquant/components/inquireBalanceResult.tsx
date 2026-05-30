@@ -17,9 +17,18 @@ import {
     Search,
     PlusCircle
 } from "lucide-react";
-import { useAppDispatch } from "@/lib/hooks";
+import { useAppDispatch, useAppSelector } from "@/lib/hooks";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useSession } from "next-auth/react";
+import { useToast, ToastContainer } from "@/components/balance/shared";
+import {
+    reqGetInquirePrice,
+    getKoreaInvestmentInquirePrice,
+} from "@/lib/features/koreaInvestment/koreaInvestmentSlice";
+import {
+    reqGetQuotationsPriceDetail,
+    getKoreaInvestmentUsMaretPriceDetail,
+} from "@/lib/features/koreaInvestmentUsMarket/koreaInvestmentUsMarketSlice";
 
 import nasdaq_tickers from '@/public/data/usStockSymbols/nasdaq_tickers.json';
 import nyse_tickers from '@/public/data/usStockSymbols/nyse_tickers.json';
@@ -77,6 +86,7 @@ interface InquireBalanceResultProps {
 export default function InquireBalanceResult(props: InquireBalanceResultProps) {
     const { data: session } = useSession();
     const dispatch = useAppDispatch();
+    const { toasts, addToast, removeToast } = useToast();
 
     const isUs = !!props.kiBalance?.output3 || !!props.kiBalance?.output1?.[0]?.ovrs_item_name;
     const exRate = Number(props.kiBalance?.output2?.[0]?.frst_bltn_exrt || 0);
@@ -99,27 +109,22 @@ export default function InquireBalanceResult(props: InquireBalanceResultProps) {
     const [searchQuery, setSearchQuery] = useState("");
     const [isDropdownOpen, setIsDropdownOpen] = useState(false);
 
-    // --- 대표적인 ETF 및 주식 마스터 데이터 정밀 구축 (검색용) ---
-    const KR_TICKER_MASTER = useMemo(() => {
-        // validCorpCodeArray와 validCorpNameArray의 길이가 같다고 가정
-        return validCorpCodeArray.map((code, index) => ({
-            pdno: code,
-            prdt_name: validCorpNameArray[index] || "Unknown", // 인덱스가 일치하는 이름 매칭
-            ovrs_excg_cd: "", // 국내 주식이므로 빈 값
-            isUs: false
-        }));
-    }, []);
-
+    // 시장에 맞는 종목 마스터만 구성 (국내/미국 분리)
     const MARKET_STOCK_MASTER = useMemo(() => {
-        const list: { pdno: string, prdt_name: string, ovrs_excg_cd: string, isUs: boolean }[] = [];
-
-        // 단순 티커 리스트를 객체 형태로 변환
-        nasdaq_tickers.forEach(t => list.push({ pdno: t, prdt_name: t, ovrs_excg_cd: "NASD", isUs: true }));
-        nyse_tickers.forEach(t => list.push({ pdno: t, prdt_name: t, ovrs_excg_cd: "NYSE", isUs: true }));
-        amex_tickers.forEach(t => list.push({ pdno: t, prdt_name: t, ovrs_excg_cd: "AMEX", isUs: true }));
-
-        return [...list, ...KR_TICKER_MASTER];
-    }, [KR_TICKER_MASTER]);
+        if (isUs) {
+            const list: { pdno: string; prdt_name: string; ovrs_excg_cd: string }[] = [];
+            nasdaq_tickers.forEach(t => list.push({ pdno: t, prdt_name: t, ovrs_excg_cd: "NASD" }));
+            nyse_tickers.forEach(t => list.push({ pdno: t, prdt_name: t, ovrs_excg_cd: "NYSE" }));
+            amex_tickers.forEach(t => list.push({ pdno: t, prdt_name: t, ovrs_excg_cd: "AMEX" }));
+            return list;
+        } else {
+            return validCorpCodeArray.map((code, index) => ({
+                pdno: code,
+                prdt_name: validCorpNameArray[index] || "Unknown",
+                ovrs_excg_cd: "",
+            }));
+        }
+    }, [isUs]);
 
     useEffect(() => {
         if (urlKey) {
@@ -137,7 +142,7 @@ export default function InquireBalanceResult(props: InquireBalanceResultProps) {
             if (props.onOrderResult) {
                 props.onOrderResult("success", `[주문 완료] ${serverMsg}`);
             } else {
-                alert(`[주문 처리 결과]\n${serverMsg}`);
+                addToast("success", `[주문 완료] ${serverMsg}`);
                 dispatch(props.reqGetInquireBalance(props.balanceKey));
                 if (props.reqGetInquireCcnl) dispatch(props.reqGetInquireCcnl(props.balanceKey));
                 if (props.reqGetInquireNccs) dispatch(props.reqGetInquireNccs(props.balanceKey));
@@ -148,7 +153,7 @@ export default function InquireBalanceResult(props: InquireBalanceResultProps) {
             if (props.onOrderResult) {
                 props.onOrderResult("error", `[주문 실패] ${errorMsg}`);
             } else {
-                alert(`주문 실패:\n${errorMsg}`);
+                addToast("error", `[주문 실패] ${errorMsg}`);
             }
         }
     }, [props.kiOrderCash?.state]);
@@ -163,17 +168,16 @@ export default function InquireBalanceResult(props: InquireBalanceResultProps) {
     const filteredSearchResults = useMemo(() => {
         if (!searchQuery.trim()) return [];
         const query = searchQuery.toLowerCase().trim();
-        
         return MARKET_STOCK_MASTER.filter(
             (stock) =>
-                stock.isUs === isUs &&
-                (stock.pdno.toLowerCase().includes(query) ||
-                    stock.prdt_name.toLowerCase().includes(query))
+                stock.pdno.toLowerCase().includes(query) ||
+                stock.prdt_name.toLowerCase().includes(query)
         );
-    }, [searchQuery, isUs]);
+    }, [searchQuery, MARKET_STOCK_MASTER]);
 
     return (
         <div className="space-y-6">
+            <ToastContainer toasts={toasts} onRemove={removeToast} />
             {/* 헤더 섹션 */}
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                 <div className="flex items-center gap-3">
@@ -298,7 +302,7 @@ export default function InquireBalanceResult(props: InquireBalanceResultProps) {
                 <div className="grid grid-cols-1 md:grid-cols-3 divide-y md:divide-y-0 md:divide-x border-zinc-100 dark:divide-zinc-800">
                     <SummaryItem
                         label="평가 손익률"
-                        value={`${totalProfitRate >= 0 ? "+" : ""}${totalProfitRate.toFixed(2)}%`}
+                        value={`${totalProfitRate >= 0 ? "▲ +" : "▼ "}${totalProfitRate.toFixed(2)}%`}
                         subValue={`손익 합계: ${formatValue(evlu_smtl - pchs_smtl, "MONEY")}`}
                         colorClass={totalProfitRate >= 0 ? "text-rose-500" : "text-blue-500"}
                     />
@@ -342,6 +346,7 @@ export default function InquireBalanceResult(props: InquireBalanceResultProps) {
                     balanceKey={props.balanceKey}
                     kiOrderCash={props.kiOrderCash}
                     reqPostOrderCash={props.reqPostOrderCash}
+                    exRate={exRate}
                     onClose={() => setIsOrderModalOpen(false)}
                 />
             )}
@@ -376,78 +381,152 @@ function SortableBalanceTable({ inventoryData, isUs, onOpenOrder }: { inventoryD
         setSortConfig({ key, direction: sortConfig.key === key && sortConfig.direction === "desc" ? "asc" : "desc" });
     };
 
-    return (
-        <div className="overflow-x-auto">
-            <table className="w-full text-left border-collapse min-w-[900px]">
-                <thead>
-                    <tr className="bg-zinc-50 dark:bg-zinc-800/50 border-b border-zinc-100 dark:border-zinc-800">
-                        <th className="p-4 text-center w-16 text-[10px] font-black text-zinc-400 uppercase">#</th>
-                        <TableHeader label="종목명" sortKey="name" currentConfig={sortConfig} onSort={handleSort} />
-                        <TableHeader label="보유수량" sortKey="qty" align="right" currentConfig={sortConfig} onSort={handleSort} />
-                        <TableHeader label="현재가 / 매입단가 (KRW)" sortKey="price" align="right" currentConfig={sortConfig} onSort={handleSort} />
-                        <TableHeader label="수익률" sortKey="profit_rt" align="right" currentConfig={sortConfig} onSort={handleSort} />
-                        <TableHeader label="매입금액" sortKey="pchs_amt" align="right" currentConfig={sortConfig} onSort={handleSort} />
-                        <TableHeader label="평가금액" sortKey="evlu_amt" align="right" currentConfig={sortConfig} onSort={handleSort} />
-                        <th className="p-4 text-center text-[10px] font-black text-zinc-400 uppercase">Action</th>
-                    </tr>
-                </thead>
-                <tbody className="divide-y divide-zinc-100 dark:divide-zinc-800">
-                    {sortedItems.map((item, idx) => {
-                        const profitRt = Number(getFieldValue(item, "profit_rt"));
-                        const price = Number(getFieldValue(item, "price"));
-                        const avgPrice = Number(getFieldValue(item, "avg_price"));
-                        const qty = getFieldValue(item, "qty");
+    // 모바일 카드 뷰
+    const MobileCardList = () => (
+        <div className="divide-y divide-zinc-100 dark:divide-zinc-800">
+            {sortedItems.length === 0 && (
+                <p className="py-10 text-center text-sm text-zinc-400">보유 종목이 없습니다.</p>
+            )}
+            {sortedItems.map((item, idx) => {
+                const profitRt = Number(getFieldValue(item, "profit_rt"));
+                const price = Number(getFieldValue(item, "price"));
+                const qty = getFieldValue(item, "qty");
+                const isPositive = profitRt >= 0;
 
-                        return (
-                            <tr key={idx} className="group hover:bg-zinc-50 dark:hover:bg-zinc-800/30 transition-colors">
-                                <td className="p-4 text-center font-mono text-xs text-zinc-400">{idx + 1}</td>
-                                <td className="p-4">
-                                    <div className="flex flex-col">
-                                        <span className="font-black text-sm dark:text-zinc-100 leading-none mb-1 group-hover:text-blue-600 transition-colors">
-                                            {getFieldValue(item, "name")}
-                                        </span>
-                                        <span className="text-[10px] font-mono text-zinc-500">{item.pdno || item.ovrs_pdno}</span>
-                                    </div>
-                                </td>
-                                <td className="p-4 text-right font-mono text-sm font-bold dark:text-zinc-300">
-                                    {formatValue(qty, "QTY")}
-                                </td>
-                                <td className="p-4 text-right font-mono text-sm space-y-0.5">
-                                    <div className="font-black dark:text-zinc-200">
-                                        {formatValue(price, "MONEY")}
-                                    </div>
-                                    <div className="text-[11px] text-zinc-400 font-medium">
-                                        {formatValue(avgPrice, "MONEY")}
-                                    </div>
-                                </td>
-                                <td className={`p-4 text-right font-mono text-sm font-black ${profitRt >= 0 ? "text-rose-500" : "text-blue-500"}`}>
-                                    {profitRt >= 0 ? "+" : ""}{profitRt.toFixed(2)}%
-                                </td>
-                                <td className="p-4 text-right font-mono text-sm font-bold text-zinc-600 dark:text-zinc-400">
-                                    {formatValue(getFieldValue(item, "pchs_amt"), "MONEY")}
-                                </td>
-                                <td className="p-4 text-right font-mono text-sm font-black dark:text-white">
-                                    {formatValue(getFieldValue(item, "evlu_amt"), "MONEY")}
-                                </td>
-                                <td className="p-4 text-center">
-                                    <div className="flex items-center justify-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                                        <button className="p-1.5 hover:bg-zinc-200 dark:hover:bg-zinc-700 rounded-lg text-zinc-500 transition-colors">
-                                            <BarChart3 size={16} />
-                                        </button>
-                                        <button 
-                                            onClick={() => onOpenOrder(item)}
-                                            className="p-1.5 hover:bg-blue-100 dark:hover:bg-blue-900/30 rounded-lg text-blue-600 transition-colors"
-                                        >
-                                            <Send size={16} />
-                                        </button>
-                                    </div>
-                                </td>
-                            </tr>
-                        );
-                    })}
-                </tbody>
-            </table>
+                return (
+                    <div key={idx} className="p-4 space-y-3">
+                        {/* 종목명 + 수익률 */}
+                        <div className="flex items-start justify-between gap-2">
+                            <div>
+                                <span className="font-black text-sm dark:text-zinc-100 leading-none block mb-0.5">
+                                    {getFieldValue(item, "name")}
+                                </span>
+                                <span className="text-[10px] font-mono text-zinc-500">{item.pdno || item.ovrs_pdno}</span>
+                            </div>
+                            <span className={`text-sm font-black font-mono shrink-0 ${isPositive ? "text-rose-500" : "text-blue-500"}`}>
+                                {isPositive ? "▲" : "▼"} {isPositive ? "+" : ""}{profitRt.toFixed(2)}%
+                            </span>
+                        </div>
+                        {/* 수치 2열 그리드 */}
+                        <div className="grid grid-cols-2 gap-x-4 gap-y-1.5 text-xs">
+                            <div>
+                                <span className="text-zinc-400 block text-[10px] uppercase font-black">보유수량</span>
+                                <span className="font-mono font-bold dark:text-zinc-300">{formatValue(qty, "QTY")}</span>
+                            </div>
+                            <div>
+                                <span className="text-zinc-400 block text-[10px] uppercase font-black">현재가</span>
+                                <span className="font-mono font-bold dark:text-zinc-300">{formatValue(price, "MONEY")}</span>
+                            </div>
+                            <div>
+                                <span className="text-zinc-400 block text-[10px] uppercase font-black">매입금액</span>
+                                <span className="font-mono font-bold dark:text-zinc-400">{formatValue(getFieldValue(item, "pchs_amt"), "MONEY")}</span>
+                            </div>
+                            <div>
+                                <span className="text-zinc-400 block text-[10px] uppercase font-black">평가금액</span>
+                                <span className="font-mono font-black dark:text-white">{formatValue(getFieldValue(item, "evlu_amt"), "MONEY")}</span>
+                            </div>
+                        </div>
+                        {/* 액션 */}
+                        <div className="flex gap-2 pt-1">
+                            <button
+                                onClick={() => onOpenOrder(item)}
+                                className="flex items-center gap-1.5 px-3 py-1.5 bg-blue-50 dark:bg-blue-900/20 text-blue-600 rounded-lg text-xs font-black transition-colors hover:bg-blue-100 dark:hover:bg-blue-900/40"
+                            >
+                                <Send size={12} /> 주문
+                            </button>
+                        </div>
+                    </div>
+                );
+            })}
         </div>
+    );
+
+    return (
+        <>
+            {/* 모바일: 카드 뷰 */}
+            <div className="md:hidden">
+                <MobileCardList />
+            </div>
+
+            {/* 데스크탑: 테이블 뷰 */}
+            <div className="hidden md:block overflow-x-auto">
+                <table className="w-full text-left border-collapse min-w-[900px]">
+                    <thead>
+                        <tr className="bg-zinc-50 dark:bg-zinc-800/50 border-b border-zinc-100 dark:border-zinc-800">
+                            <th className="p-4 text-center w-16 text-[10px] font-black text-zinc-400 uppercase">#</th>
+                            <TableHeader label="종목명" sortKey="name" currentConfig={sortConfig} onSort={handleSort} />
+                            <TableHeader label="보유수량" sortKey="qty" align="right" currentConfig={sortConfig} onSort={handleSort} />
+                            <TableHeader label={isUs ? "현재가 / 매입단가 (KRW 환산)" : "현재가 / 매입단가 (KRW)"} sortKey="price" align="right" currentConfig={sortConfig} onSort={handleSort} />
+                            <TableHeader label="수익률" sortKey="profit_rt" align="right" currentConfig={sortConfig} onSort={handleSort} />
+                            <TableHeader label="매입금액" sortKey="pchs_amt" align="right" currentConfig={sortConfig} onSort={handleSort} />
+                            <TableHeader label="평가금액" sortKey="evlu_amt" align="right" currentConfig={sortConfig} onSort={handleSort} />
+                            <th className="p-4 text-center text-[10px] font-black text-zinc-400 uppercase">Action</th>
+                        </tr>
+                    </thead>
+                    <tbody className="divide-y divide-zinc-100 dark:divide-zinc-800">
+                        {sortedItems.length === 0 && (
+                            <tr>
+                                <td colSpan={8} className="py-10 text-center text-sm text-zinc-400">보유 종목이 없습니다.</td>
+                            </tr>
+                        )}
+                        {sortedItems.map((item, idx) => {
+                            const profitRt = Number(getFieldValue(item, "profit_rt"));
+                            const price = Number(getFieldValue(item, "price"));
+                            const avgPrice = Number(getFieldValue(item, "avg_price"));
+                            const qty = getFieldValue(item, "qty");
+                            const isPositive = profitRt >= 0;
+
+                            return (
+                                <tr key={idx} className="group hover:bg-zinc-50 dark:hover:bg-zinc-800/30 transition-colors">
+                                    <td className="p-4 text-center font-mono text-xs text-zinc-400">{idx + 1}</td>
+                                    <td className="p-4">
+                                        <div className="flex flex-col">
+                                            <span className="font-black text-sm dark:text-zinc-100 leading-none mb-1 group-hover:text-blue-600 transition-colors">
+                                                {getFieldValue(item, "name")}
+                                            </span>
+                                            <span className="text-[10px] font-mono text-zinc-500">{item.pdno || item.ovrs_pdno}</span>
+                                        </div>
+                                    </td>
+                                    <td className="p-4 text-right font-mono text-sm font-bold dark:text-zinc-300">
+                                        {formatValue(qty, "QTY")}
+                                    </td>
+                                    <td className="p-4 text-right font-mono text-sm space-y-0.5">
+                                        <div className="font-black dark:text-zinc-200">
+                                            {formatValue(price, "MONEY")}
+                                        </div>
+                                        <div className="text-[11px] text-zinc-400 font-medium">
+                                            {formatValue(avgPrice, "MONEY")}
+                                        </div>
+                                    </td>
+                                    <td className={`p-4 text-right font-mono text-sm font-black ${isPositive ? "text-rose-500" : "text-blue-500"}`}>
+                                        {isPositive ? "▲ +" : "▼ "}{profitRt.toFixed(2)}%
+                                    </td>
+                                    <td className="p-4 text-right font-mono text-sm font-bold text-zinc-600 dark:text-zinc-400">
+                                        {formatValue(getFieldValue(item, "pchs_amt"), "MONEY")}
+                                    </td>
+                                    <td className="p-4 text-right font-mono text-sm font-black dark:text-white">
+                                        {formatValue(getFieldValue(item, "evlu_amt"), "MONEY")}
+                                    </td>
+                                    <td className="p-4 text-center">
+                                        <div className="flex items-center justify-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                                            <button className="p-1.5 hover:bg-zinc-200 dark:hover:bg-zinc-700 rounded-lg text-zinc-500 transition-colors">
+                                                <BarChart3 size={16} />
+                                            </button>
+                                            <button
+                                                onClick={() => onOpenOrder(item)}
+                                                className="p-1.5 hover:bg-blue-100 dark:hover:bg-blue-900/30 rounded-lg text-blue-600 transition-colors"
+                                            >
+                                                <Send size={16} />
+                                            </button>
+                                        </div>
+                                    </td>
+                                </tr>
+                            );
+                        })}
+                    </tbody>
+                </table>
+            </div>
+        </>
     );
 }
 
@@ -481,31 +560,87 @@ interface OrderModalProps {
     balanceKey: string;
     kiOrderCash: any;
     reqPostOrderCash: any;
+    exRate: number;
     onClose: () => void;
 }
 
-function OrderModal({ isUs, stock, balanceKey, kiOrderCash, reqPostOrderCash, onClose }: OrderModalProps) {
+function OrderModal({ isUs, stock, balanceKey, kiOrderCash, reqPostOrderCash, exRate, onClose }: OrderModalProps) {
     const dispatch = useAppDispatch();
-    
+
+    const krPriceState = useAppSelector(getKoreaInvestmentInquirePrice);
+    const usPriceState = useAppSelector(getKoreaInvestmentUsMaretPriceDetail);
+
     const pdno = stock.pdno || stock.ovrs_pdno;
     const name = getFieldValue(stock, "name");
     const excgCd = stock.ovrs_excg_cd || (isUs ? "NASD" : "");
 
-    const initialPrice = Number(getFieldValue(stock, "price")) || 0;
-    
+    const rawPrice = Number(getFieldValue(stock, "price")) || 0;
+    // isUs인 경우 원화 기준 가격을 환율로 나눠 달러로 변환
+    const initialPrice = isUs && exRate > 0 && rawPrice > 0
+        ? parseFloat((rawPrice / exRate).toFixed(2))
+        : rawPrice;
+
     const [buyOrSell, setBuyOrSell] = useState<"buy" | "sell">("buy");
     const [price, setPrice] = useState(initialPrice > 0 ? String(initialPrice) : "");
     const [qty, setQty] = useState("1");
+    const [priceError, setPriceError] = useState("");
+    const [qtyError, setQtyError] = useState("");
+    const [isFetchingPrice, setIsFetchingPrice] = useState(false);
+
+    // 초기 가격이 없으면 현재가 자동 조회
+    useEffect(() => {
+        if (initialPrice === 0 && pdno) {
+            setIsFetchingPrice(true);
+            if (isUs) {
+                dispatch(reqGetQuotationsPriceDetail({ PDNO: pdno }));
+            } else {
+                dispatch(reqGetInquirePrice({ PDNO: pdno }));
+            }
+        }
+    }, [pdno]);
+
+    // KR 조회 완료 시 가격 자동 입력
+    useEffect(() => {
+        if (!isFetchingPrice || isUs) return;
+        if (krPriceState.state === "fulfilled") {
+            const fetched = Number(krPriceState.output?.stck_prpr || 0);
+            if (fetched > 0) setPrice(String(fetched));
+            setIsFetchingPrice(false);
+        } else if (krPriceState.state === "rejected") {
+            setIsFetchingPrice(false);
+        }
+    }, [krPriceState.state, isFetchingPrice, isUs]);
+
+    // US 조회 완료 시 가격 자동 입력 (KoreaInvestmentOverseasPriceDetail에 state 없음 → rt_cd로 판별)
+    useEffect(() => {
+        if (!isFetchingPrice || !isUs) return;
+        const fetched = Number(usPriceState?.output?.last || 0);
+        if (fetched > 0 && usPriceState?.rt_cd === "0") {
+            setPrice(fetched.toFixed(2));
+            setIsFetchingPrice(false);
+        }
+    }, [usPriceState?.output?.last, usPriceState?.rt_cd, isFetchingPrice, isUs]);
 
     const handleSubmitOrder = () => {
         if (!reqPostOrderCash) {
-            alert("주문 액션 프로퍼티(reqPostOrderCash)가 구성되지 않았습니다.");
+            console.error("reqPostOrderCash prop이 설정되지 않았습니다.");
             return;
         }
-        if (!price || Number(price) <= 0 || !qty || Number(qty) <= 0) {
-            alert("정확한 가격과 수량을 입력해 주세요.");
-            return;
+
+        let hasError = false;
+        if (!price || Number(price) <= 0) {
+            setPriceError("0보다 큰 가격을 입력해 주세요.");
+            hasError = true;
+        } else {
+            setPriceError("");
         }
+        if (!qty || Number(qty) <= 0) {
+            setQtyError("0보다 큰 수량을 입력해 주세요.");
+            hasError = true;
+        } else {
+            setQtyError("");
+        }
+        if (hasError) return;
 
         dispatch(reqPostOrderCash({
             kakaoId: balanceKey,
@@ -553,37 +688,65 @@ function OrderModal({ isUs, stock, balanceKey, kiOrderCash, reqPostOrderCash, on
 
                 <div className="space-y-4">
                     <div className="space-y-1.5">
-                        <label className="text-xs font-black text-zinc-400 uppercase tracking-wider">주문 가격 (KRW 환산값 기준)</label>
+                        <label className="text-xs font-black text-zinc-400 uppercase tracking-wider">
+                          주문 가격 ({isUs ? "USD 기준" : "KRW 기준"})
+                        </label>
                         <div className="relative">
-                            <span className="absolute left-4 top-1/2 -translate-y-1/2 text-sm font-bold text-zinc-400">{stock.isUs ? "$" : "₩"}</span>
+                            <span className="absolute left-4 top-1/2 -translate-y-1/2 text-sm font-bold text-zinc-400">{isUs ? "$" : "₩"}</span>
                             <input
                                 type="number"
-                                step="1"
+                                step={isUs ? "0.01" : "1"}
+                                min={isUs ? "0.01" : "1"}
                                 value={price}
-                                onChange={(e) => setPrice(e.target.value)}
-                                className="w-full bg-zinc-50 dark:bg-zinc-800/50 border border-zinc-200 dark:border-zinc-800 pl-8 pr-4 py-3 rounded-xl font-mono font-bold text-sm focus:outline-none focus:border-blue-600 dark:text-white"
-                                placeholder="0"
+                                onChange={(e) => { setPrice(e.target.value); if (priceError) setPriceError(""); }}
+                                className={`w-full bg-zinc-50 dark:bg-zinc-800/50 border pl-8 pr-4 py-3 rounded-xl font-mono font-bold text-sm focus:outline-none focus:border-blue-600 dark:text-white ${priceError ? "border-rose-500 dark:border-rose-500" : "border-zinc-200 dark:border-zinc-800"}`}
+                                placeholder={isUs ? "0.00" : "0"}
                             />
                         </div>
+                        {priceError && <p className="text-xs text-rose-500 font-medium">{priceError}</p>}
                     </div>
 
                     <div className="space-y-1.5">
                         <label className="text-xs font-black text-zinc-400 uppercase tracking-wider">주문 수량 (QTY)</label>
-                        <input
-                            type="number"
-                            value={qty}
-                            onChange={(e) => setQty(e.target.value)}
-                            className="w-full bg-zinc-50 dark:bg-zinc-800/50 border border-zinc-200 dark:border-zinc-800 px-4 py-3 rounded-xl font-mono font-bold text-sm focus:outline-none focus:border-blue-600 dark:text-white"
-                            placeholder="1"
-                            min="1"
-                        />
+                        <div className={`flex items-center border rounded-xl overflow-hidden ${qtyError ? "border-rose-500 dark:border-rose-500" : "border-zinc-200 dark:border-zinc-800"}`}>
+                            <button
+                                type="button"
+                                onClick={() => {
+                                    const v = Math.max(1, (Number(qty) || 1) - 1);
+                                    setQty(String(v));
+                                    if (qtyError) setQtyError("");
+                                }}
+                                className="px-4 py-3 text-lg font-black text-zinc-500 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors select-none"
+                            >−</button>
+                            <input
+                                type="number"
+                                value={qty}
+                                onChange={(e) => { setQty(e.target.value); if (qtyError) setQtyError(""); }}
+                                className="flex-1 bg-zinc-50 dark:bg-zinc-800/50 text-center font-mono font-bold text-sm focus:outline-none dark:text-white py-3 min-w-0"
+                                placeholder="1"
+                                min="1"
+                            />
+                            <button
+                                type="button"
+                                onClick={() => {
+                                    const v = (Number(qty) || 0) + 1;
+                                    setQty(String(v));
+                                    if (qtyError) setQtyError("");
+                                }}
+                                className="px-4 py-3 text-lg font-black text-zinc-500 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors select-none"
+                            >+</button>
+                        </div>
+                        {qtyError && <p className="text-xs text-rose-500 font-medium">{qtyError}</p>}
                     </div>
                 </div>
 
                 <div className="p-4 bg-zinc-50 dark:bg-zinc-800/40 border border-zinc-100 dark:border-zinc-800 rounded-2xl flex justify-between items-center text-sm">
                     <span className="font-bold text-zinc-400">예상 총 금액</span>
                     <span className="font-mono font-black dark:text-white">
-                        ₩{((Number(price) || 0) * (Number(qty) || 0)).toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 0 })}
+                        {isUs
+                            ? `$${((Number(price) || 0) * (Number(qty) || 0)).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
+                            : `₩${((Number(price) || 0) * (Number(qty) || 0)).toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 0 })}`
+                        }
                     </span>
                 </div>
 

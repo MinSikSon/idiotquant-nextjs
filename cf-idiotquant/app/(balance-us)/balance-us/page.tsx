@@ -6,7 +6,7 @@ import {
   Globe, ChevronRight, DollarSign, Building2,
   Wallet, TrendingUp, BarChart3, RefreshCw,
   Clock, AlertCircle, Database,
-  ArrowUpRight, ArrowDownRight, PieChart, ClipboardList,
+  ArrowDownRight, PieChart, ClipboardList,
 } from "lucide-react";
 import { useSession } from "next-auth/react";
 
@@ -46,10 +46,24 @@ import {
   useToast, ToastContainer,
   LoadingState, SectionHeader, SectionPanel, EmptyRow,
   UsdKpiCard, TableHeader, OrderTabAction, OrderSectionIcon,
-  BalanceHeaderActions, pnlIconBg, pnlValueColor, pnlAccentColor,
-  fmtUsd, fmtKrw, formatTime, UsdKpiCardSkeleton,
+  BalanceHeaderActions, PnlIcon, pnlIconBg, pnlValueColor, pnlAccentColor,
+  fmtUsd, fmtKrw, formatTime,
 } from "@/components/balance/shared";
 import { cn } from "@/lib/utils";
+
+// =========================================================================
+// 상세 지표 칩 (스크롤 스트립용)
+// =========================================================================
+function MetricChip({ label, value, valueClass = "text-zinc-900 dark:text-zinc-100" }: {
+  label: string; value: string; valueClass?: string;
+}) {
+  return (
+    <div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-xl px-4 py-2.5 flex flex-col gap-0.5 shrink-0">
+      <span className="text-[9px] font-black text-zinc-400 dark:text-zinc-500 uppercase tracking-widest whitespace-nowrap">{label}</span>
+      <span className={cn("text-xs font-mono font-black whitespace-nowrap", valueClass)}>{value}</span>
+    </div>
+  );
+}
 
 // =========================================================================
 // 해외 주문 행
@@ -256,6 +270,17 @@ function BalanceUs() {
   const isLoading = kiBalance.state === "pending";
   const hasCapital = usCapital.state === "fulfilled" || usCapital.state === "pending";
 
+  // 추가 지표
+  const pchsAmtKrw = Number(out3?.pchs_amt_smtl_amt || 0);
+  const pchsAmtUsd = exRate > 0 ? pchsAmtKrw / exRate : 0;
+  const wdrwPsblKrw = Number(out3?.wdrw_psbl_tot_amt || 0);
+  const wdrwPsblUsd = exRate > 0 ? wdrwPsblKrw / exRate : 0;
+  const frcr_buy_smtl = Number(out2?.frcr_buy_amt_smtl || 0);
+  const frcr_sll_smtl = Number(out2?.frcr_sll_amt_smtl || 0);
+  const nxdyFrcrDrwg = Number(out2?.nxdy_frcr_drwg_psbl_amt || 0);
+  const totLoanAmtUs = Number(out3?.tot_loan_amt || 0);
+  const cmaEvluAmtUs = Number(out3?.cma_evlu_amt || 0);
+
   if (kiBalance.state === "rejected") {
     return (
       <div className="h-[70vh] flex flex-col items-center justify-center text-center p-6">
@@ -307,12 +332,17 @@ function BalanceUs() {
 
             {/* 타이틀 */}
             <div className="flex items-center gap-3 flex-wrap">
-              <h1 className="text-3xl md:text-4xl font-black tracking-tighter text-zinc-900 dark:text-white">
+              <h1 className="text-3xl md:text-4xl font-black tracking-tighter bg-gradient-to-r from-blue-600 to-indigo-500 dark:from-blue-400 dark:to-indigo-400 bg-clip-text text-transparent">
                 US Portfolio
               </h1>
               <span className="flex items-center gap-1 px-3 py-1.5 bg-blue-600 text-white rounded-xl text-[10px] font-black tracking-widest uppercase shadow-sm shadow-blue-600/30">
                 <DollarSign size={11} /> USD Account
               </span>
+              {!isLoading && totalAssetUsd > 0 && (
+                <span className="text-sm font-mono font-black text-zinc-400 dark:text-zinc-500 bg-zinc-100 dark:bg-zinc-800 px-2.5 py-1 rounded-lg border border-zinc-200 dark:border-zinc-700">
+                  {fmtUsd(totalAssetUsd)}
+                </span>
+              )}
             </div>
 
             {/* 마지막 업데이트 */}
@@ -346,13 +376,13 @@ function BalanceUs() {
           </div>
         </header>
 
-        <div className="h-px bg-gradient-to-r from-transparent via-zinc-200 dark:via-zinc-800 to-transparent" />
+        <div className="h-px bg-gradient-to-r from-transparent via-blue-400 dark:via-blue-700 to-transparent opacity-60" />
 
         {/* 섹션 네비게이션 */}
         <SectionNav sections={navSections} />
 
         {/* KPI 카드 */}
-        <section id="section-kpi" className="grid grid-cols-2 lg:grid-cols-4 gap-3 animate-in fade-in slide-in-from-bottom-2 duration-400">
+        <section id="section-kpi" className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-3 animate-in fade-in slide-in-from-bottom-2 duration-400">
           <UsdKpiCard
             label="총 자산 (USD)"
             mainValue={isLoading ? null : fmtUsd(totalAssetUsd)}
@@ -367,8 +397,8 @@ function BalanceUs() {
           <UsdKpiCard
             label="외화 예수금 (USD)"
             mainValue={isLoading ? null : fmtUsd(depositUsd)}
-            subLabel="원화 환산액"
-            subValue={isLoading ? null : fmtKrw(depositKrw)}
+            subLabel="익일 출금 가능"
+            subValue={isLoading ? null : fmtUsd(nxdyFrcrDrwg)}
             icon={<Wallet size={15} />}
             iconBg="bg-amber-50 dark:bg-amber-950/40 text-amber-500"
             accentColor="bg-amber-400 dark:bg-amber-600"
@@ -386,17 +416,79 @@ function BalanceUs() {
           />
           <UsdKpiCard
             label="총 수익률"
-            mainValue={isLoading ? null : `${isPnlPositive ? "+" : ""}${totalPnlRate.toFixed(2)}%`}
+            mainValue={isLoading ? null : `${isPnlPositive ? "▲ +" : "▼ "}${totalPnlRate.toFixed(2)}%`}
             mainColor={pnlValueColor(isPnlPositive)}
             subLabel="손익 합계"
             subValue={isLoading ? null : fmtKrw(totalPnlKrw)}
             subColor={pnlValueColor(isPnlPositive)}
-            icon={isPnlPositive ? <ArrowUpRight size={15} /> : <ArrowDownRight size={15} />}
+            icon={<PnlIcon positive={isPnlPositive} />}
             iconBg={pnlIconBg(isPnlPositive)}
             accentColor={pnlAccentColor(isPnlPositive)}
             loading={isLoading}
           />
+          <UsdKpiCard
+            label="매입원금 (USD)"
+            mainValue={isLoading ? null : fmtUsd(pchsAmtUsd)}
+            subLabel="원화 환산액"
+            subValue={isLoading ? null : fmtKrw(pchsAmtKrw)}
+            icon={<DollarSign size={15} />}
+            iconBg="bg-zinc-100 dark:bg-zinc-800 text-zinc-500"
+            accentColor="bg-zinc-400 dark:bg-zinc-600"
+            loading={isLoading}
+          />
+          <UsdKpiCard
+            label="출금 가능"
+            mainValue={isLoading ? null : fmtUsd(wdrwPsblUsd)}
+            subLabel="원화 환산액"
+            subValue={isLoading ? null : fmtKrw(wdrwPsblKrw)}
+            icon={<ArrowDownRight size={15} />}
+            iconBg="bg-emerald-50 dark:bg-emerald-950/40 text-emerald-500"
+            accentColor="bg-emerald-400 dark:bg-emerald-600"
+            loading={isLoading}
+          />
         </section>
+
+        {/* 상세 지표 스트립 */}
+        {!isLoading && (
+          <div className="overflow-x-auto no-scrollbar -mt-1">
+            <div className="flex gap-2 min-w-max pb-0.5">
+              <MetricChip
+                label="금일 매수 (USD)"
+                value={fmtUsd(frcr_buy_smtl)}
+                valueClass="text-rose-400"
+              />
+              <MetricChip
+                label="금일 매도 (USD)"
+                value={fmtUsd(frcr_sll_smtl)}
+                valueClass="text-blue-400"
+              />
+              <MetricChip
+                label="금일 순매수"
+                value={fmtUsd(frcr_buy_smtl - frcr_sll_smtl)}
+                valueClass={(frcr_buy_smtl - frcr_sll_smtl) >= 0 ? "text-rose-500" : "text-blue-500"}
+              />
+              {cmaEvluAmtUs > 0 && (
+                <MetricChip
+                  label="CMA 평가 (KRW)"
+                  value={fmtKrw(cmaEvluAmtUs)}
+                  valueClass="text-indigo-500 dark:text-indigo-400"
+                />
+              )}
+              <MetricChip
+                label="고시환율"
+                value={`${exRate.toLocaleString()}원`}
+                valueClass="text-zinc-600 dark:text-zinc-300"
+              />
+              {totLoanAmtUs > 0 && (
+                <MetricChip
+                  label="대출 잔고 (KRW)"
+                  value={fmtKrw(totLoanAmtUs)}
+                  valueClass="text-orange-500"
+                />
+              )}
+            </div>
+          </div>
+        )}
 
         {/* 포트폴리오 자산 구성 */}
         <SectionPanel id="section-portfolio">
