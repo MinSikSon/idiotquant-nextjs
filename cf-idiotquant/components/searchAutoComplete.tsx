@@ -201,7 +201,7 @@ const SearchAutocomplete = ({ validCorpNameArray, onSearchButton, placeHolder, o
                         }, 200);
                     }}
                     onKeyDown={handleKeyDown}
-                    className="w-full text-sm bg-transparent focus:outline-none text-zinc-900 dark:text-zinc-100 font-semibold placeholder-zinc-400 dark:placeholder-zinc-600 font-sans tracking-tight"
+                    className="w-full text-[16px] sm:text-sm bg-transparent focus:outline-none text-zinc-900 dark:text-zinc-100 font-semibold placeholder-zinc-400 dark:placeholder-zinc-600 font-sans tracking-tight"
                 />
                 
                 {query && (
