@@ -124,8 +124,9 @@ export const StockCard = ({ stock, chartConfig, isCompact = false, stockXpProfil
   const mouseY = useMotionValue(0.5);
   const rotateX = useTransform(mouseY, [0, 1], [8, -8]);
   const rotateY = useTransform(mouseX, [0, 1], [-8, 8]);
-  const holoX   = useTransform(mouseX, [0, 1], ["0%", "100%"]);
-  const holoY   = useTransform(mouseY, [0, 1], ["0%", "100%"]);
+  const holoX        = useTransform(mouseX, [0, 1], ["0%", "100%"]);
+  const holoY        = useTransform(mouseY, [0, 1], ["0%", "100%"]);
+  const holoPosition = useTransform([holoX, holoY], ([x, y]) => `${x} ${y}`);
 
   const level  = stockXpProfile?.level  ?? 1;
   const xp     = stockXpProfile?.xp     ?? 0;
@@ -231,7 +232,7 @@ export const StockCard = ({ stock, chartConfig, isCompact = false, stockXpProfil
                 className="absolute inset-0 mix-blend-color-dodge pointer-events-none z-20 opacity-0 group-hover:opacity-100 transition-opacity duration-300 rounded-[1.4rem]"
                 style={{
                   background: cfg.holo,
-                  backgroundPosition: useTransform([holoX, holoY], ([x, y]) => `${x} ${y}`),
+                  backgroundPosition: holoPosition,
                   backgroundSize: "160% 160%",
                 }}
               />
