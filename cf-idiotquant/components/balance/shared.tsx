@@ -175,6 +175,8 @@ export function KpiCard({ label, value, sub, icon, iconBg, valueColor = "text-zi
   label: string; value: string | null; sub: string;
   icon: React.ReactNode; iconBg: string; valueColor?: string; accentColor?: string;
 }) {
+  if (value === null) return <KpiCardSkeleton />;
+
   return (
     <div className="relative bg-white dark:bg-zinc-900 rounded-2xl border border-zinc-200 dark:border-zinc-800 shadow-sm overflow-hidden flex flex-col justify-between gap-3 p-4 sm:p-5">
       <div className={cn("absolute top-0 left-0 right-0 h-0.5", accentColor)} />
@@ -183,11 +185,7 @@ export function KpiCard({ label, value, sub, icon, iconBg, valueColor = "text-zi
         <div className={cn("p-2 rounded-xl shrink-0", iconBg)}>{icon}</div>
       </div>
       <div>
-        {value === null ? (
-          <div className="h-7 w-28 bg-zinc-200 dark:bg-zinc-700 rounded-lg animate-pulse mb-1" />
-        ) : (
-          <div className={cn("text-xl sm:text-2xl font-black tracking-tight font-mono", valueColor)}>{value}</div>
-        )}
+        <div className={cn("text-xl sm:text-2xl font-black tracking-tight font-mono", valueColor)}>{value}</div>
         <p className="text-[10px] text-zinc-400 mt-1 leading-tight">{sub}</p>
       </div>
     </div>
@@ -206,6 +204,8 @@ export function UsdKpiCard({
   subLabel: string; subValue: string | null; subColor?: string;
   icon: React.ReactNode; iconBg: string; loading: boolean; accentColor?: string;
 }) {
+  if (loading || mainValue === null) return <UsdKpiCardSkeleton />;
+
   return (
     <div className="relative bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-2xl p-4 sm:p-5 shadow-sm overflow-hidden flex flex-col justify-between gap-3">
       <div className={cn("absolute top-0 left-0 right-0 h-0.5", accentColor)} />
@@ -214,16 +214,10 @@ export function UsdKpiCard({
         <div className={cn("p-2 rounded-xl shrink-0", iconBg)}>{icon}</div>
       </div>
       <div>
-        {loading || mainValue === null ? (
-          <div className="h-7 w-28 bg-zinc-200 dark:bg-zinc-700 rounded-lg animate-pulse mb-2" />
-        ) : (
-          <div className={cn("text-xl sm:text-2xl font-black tracking-tight font-mono", mainColor)}>{mainValue}</div>
-        )}
+        <div className={cn("text-xl sm:text-2xl font-black tracking-tight font-mono", mainColor)}>{mainValue}</div>
         <div className="mt-2 pt-2 border-t border-zinc-100 dark:border-zinc-800 flex items-center justify-between text-[10px] font-bold text-zinc-400">
           <span>{subLabel}</span>
-          {loading || subValue === null
-            ? <div className="h-3 w-20 bg-zinc-200 dark:bg-zinc-700 rounded animate-pulse" />
-            : <span className={cn("font-mono", subColor)}>{subValue}</span>}
+          <span className={cn("font-mono", subColor)}>{subValue}</span>
         </div>
       </div>
     </div>
@@ -337,15 +331,72 @@ export function pnlAccentColor(positive: boolean) {
 }
 
 // =========================================================================
+// 스켈레톤 로딩 컴포넌트
+// =========================================================================
+export function KpiCardSkeleton() {
+  return (
+    <div className="relative bg-white dark:bg-zinc-900 rounded-2xl border border-zinc-200 dark:border-zinc-800 shadow-sm overflow-hidden flex flex-col justify-between gap-3 p-4 sm:p-5">
+      <div className="absolute top-0 left-0 right-0 h-0.5 bg-zinc-200 dark:bg-zinc-700 animate-pulse" />
+      <div className="flex items-center justify-between">
+        <div className="h-3 w-20 bg-zinc-200 dark:bg-zinc-700 rounded animate-pulse" />
+        <div className="h-8 w-8 bg-zinc-100 dark:bg-zinc-800 rounded-xl animate-pulse" />
+      </div>
+      <div>
+        <div className="h-7 w-32 bg-zinc-200 dark:bg-zinc-700 rounded-lg animate-pulse mb-2" />
+        <div className="h-3 w-24 bg-zinc-100 dark:bg-zinc-800 rounded animate-pulse" />
+      </div>
+    </div>
+  );
+}
+
+export function UsdKpiCardSkeleton() {
+  return (
+    <div className="relative bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-2xl p-4 sm:p-5 shadow-sm overflow-hidden flex flex-col justify-between gap-3">
+      <div className="absolute top-0 left-0 right-0 h-0.5 bg-zinc-200 dark:bg-zinc-700 animate-pulse" />
+      <div className="flex items-center justify-between">
+        <div className="h-3 w-20 bg-zinc-200 dark:bg-zinc-700 rounded animate-pulse" />
+        <div className="h-8 w-8 bg-zinc-100 dark:bg-zinc-800 rounded-xl animate-pulse" />
+      </div>
+      <div>
+        <div className="h-7 w-32 bg-zinc-200 dark:bg-zinc-700 rounded-lg animate-pulse mb-2" />
+        <div className="mt-2 pt-2 border-t border-zinc-100 dark:border-zinc-800">
+          <div className="h-3 w-24 bg-zinc-100 dark:bg-zinc-800 rounded animate-pulse" />
+        </div>
+      </div>
+    </div>
+  );
+}
+
+export function ChartSectionSkeleton() {
+  return (
+    <div className="flex flex-col sm:flex-row gap-6 items-center py-8">
+      <div className="w-48 h-48 rounded-full bg-zinc-100 dark:bg-zinc-800 animate-pulse shrink-0" />
+      <div className="flex-1 space-y-3 w-full">
+        {[1, 2, 3, 4, 5].map(i => (
+          <div key={i} className="flex items-center gap-3">
+            <div className="h-3 w-3 rounded-full bg-zinc-200 dark:bg-zinc-700 animate-pulse shrink-0" />
+            <div className="h-3 flex-1 bg-zinc-100 dark:bg-zinc-800 rounded animate-pulse" />
+            <div className="h-3 w-16 bg-zinc-200 dark:bg-zinc-700 rounded animate-pulse shrink-0" />
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+// =========================================================================
 // 섹션 패널 래퍼
 // =========================================================================
-export function SectionPanel({ children, className }: { children: React.ReactNode; className?: string }) {
+export function SectionPanel({ id, children, className }: { id?: string; children: React.ReactNode; className?: string }) {
   return (
-    <section className={cn(
-      "bg-white dark:bg-zinc-900 rounded-2xl border border-zinc-200 dark:border-zinc-800 shadow-sm p-5 md:p-6",
-      "animate-in fade-in duration-500",
-      className
-    )}>
+    <section
+      id={id}
+      className={cn(
+        "bg-white dark:bg-zinc-900 rounded-2xl border border-zinc-200 dark:border-zinc-800 shadow-sm p-5 md:p-6",
+        "animate-in fade-in duration-500",
+        className
+      )}
+    >
       {children}
     </section>
   );

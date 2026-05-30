@@ -6,7 +6,7 @@ import {
   Globe, ChevronRight, DollarSign, Building2,
   Wallet, TrendingUp, BarChart3, RefreshCw,
   Clock, AlertCircle, Database,
-  ArrowUpRight, ArrowDownRight
+  ArrowUpRight, ArrowDownRight, PieChart, ClipboardList,
 } from "lucide-react";
 import { useSession } from "next-auth/react";
 
@@ -40,12 +40,14 @@ import {
 
 import InquireBalanceResult from "@/components/inquireBalanceResult";
 import StockListTable from "@/components/balance/stockListTable";
+import { PortfolioChartSection } from "@/components/balance/portfolioChart";
+import { SectionNav, type NavSection } from "@/components/balance/sectionNav";
 import {
   useToast, ToastContainer,
   LoadingState, SectionHeader, SectionPanel, EmptyRow,
   UsdKpiCard, TableHeader, OrderTabAction, OrderSectionIcon,
   BalanceHeaderActions, pnlIconBg, pnlValueColor, pnlAccentColor,
-  fmtUsd, fmtKrw, formatTime,
+  fmtUsd, fmtKrw, formatTime, UsdKpiCardSkeleton,
 } from "@/components/balance/shared";
 import { cn } from "@/lib/utils";
 
@@ -272,6 +274,15 @@ function BalanceUs() {
     );
   }
 
+  // 섹션 네비게이션 구성
+  const navSections: NavSection[] = [
+    { id: "section-kpi", label: "KPI", icon: <Wallet size={13} /> },
+    { id: "section-portfolio", label: "포트폴리오", icon: <PieChart size={13} /> },
+    { id: "section-balance", label: "잔고", icon: <BarChart3 size={13} /> },
+    ...(hasCapital ? [{ id: "section-stocks", label: "종목관리", icon: <Database size={13} /> }] : []),
+    { id: "section-orders", label: "해외주문", icon: <ClipboardList size={13} /> },
+  ];
+
   return (
     <div className="min-h-screen bg-zinc-50 dark:bg-zinc-950 transition-colors duration-300">
 
@@ -337,8 +348,11 @@ function BalanceUs() {
 
         <div className="h-px bg-gradient-to-r from-transparent via-zinc-200 dark:via-zinc-800 to-transparent" />
 
+        {/* 섹션 네비게이션 */}
+        <SectionNav sections={navSections} />
+
         {/* KPI 카드 */}
-        <section className="grid grid-cols-2 lg:grid-cols-4 gap-3 animate-in fade-in slide-in-from-bottom-2 duration-400">
+        <section id="section-kpi" className="grid grid-cols-2 lg:grid-cols-4 gap-3 animate-in fade-in slide-in-from-bottom-2 duration-400">
           <UsdKpiCard
             label="총 자산 (USD)"
             mainValue={isLoading ? null : fmtUsd(totalAssetUsd)}
@@ -384,8 +398,22 @@ function BalanceUs() {
           />
         </section>
 
+        {/* 포트폴리오 자산 구성 */}
+        <SectionPanel id="section-portfolio">
+          <SectionHeader
+            icon={<PieChart size={16} />}
+            title="포트폴리오 자산 구성"
+            subtitle="보유 종목별 평가금액 및 수익률 시각화"
+          />
+          <PortfolioChartSection
+            output1={kiBalance.output1 || []}
+            isUs={true}
+            isLoading={isLoading}
+          />
+        </SectionPanel>
+
         {/* 잔고 조회 패널 */}
-        <SectionPanel>
+        <SectionPanel id="section-balance">
           <InquireBalanceResult
             balanceKey={balanceKey}
             setBalanceKey={setBalanceKey}
@@ -404,7 +432,7 @@ function BalanceUs() {
 
         {/* NCAV 운용 종목 관리 패널 */}
         {hasCapital && (
-          <SectionPanel>
+          <SectionPanel id="section-stocks">
             <SectionHeader
               icon={<Database size={16} />}
               title="NCAV 운용 종목 관리"
@@ -430,7 +458,7 @@ function BalanceUs() {
         )}
 
         {/* 체결 / 미체결 내역 */}
-        <SectionPanel>
+        <SectionPanel id="section-orders">
           <SectionHeader
             icon={<OrderSectionIcon viewerTab={viewerTab} />}
             title="해외 주문 내역"
