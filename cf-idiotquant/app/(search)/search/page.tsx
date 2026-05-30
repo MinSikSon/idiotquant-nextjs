@@ -17,7 +17,7 @@ import { useStockSearch } from './hooks/useStockSearch';
 import { selectKrMarketHistory } from '@/lib/features/searchHistory/searchHistorySlice';
 import {
   History, AlertCircle, Loader2, Flame, Share2, Check, CheckCircle,
-  Globe2, DollarSign, Coins, WifiOff, Star, X, TrendingUp, BarChart3,
+  Globe2, DollarSign, Coins, WifiOff, Star, X, TrendingUp,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
@@ -511,9 +511,14 @@ function SearchContent() {
     ? stockXpProfiles[activeTickerKey] ?? createDefaultXpProfile()
     : createDefaultXpProfile();
 
+  // 등급 계산에 필요한 데이터가 모두 fulfilled 된 경우에만 카드 렌더링
+  // kiChart만 fulfilled 되고 kiBS가 이전 종목 데이터인 상태에서 isLoaded=true가 되면 등급이 잘못 표시됨
   const isLoaded =
     tickerFromUrl === name &&
-    (data.kiChart.state === 'fulfilled' || data.usSearchInfo.state === 'fulfilled');
+    (
+      (krOrUs === 'KR' && data.kiChart.state === 'fulfilled' && data.kiBS.state === 'fulfilled') ||
+      (krOrUs === 'US' && data.usSearchInfo.state === 'fulfilled' && data.finnhubData.state === 'fulfilled')
+    );
 
   useEffect(() => {
     if (isLoaded && tickerFromUrl) awardEntrySearchXp(tickerFromUrl);

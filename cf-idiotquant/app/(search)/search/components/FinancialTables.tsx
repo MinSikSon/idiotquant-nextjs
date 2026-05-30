@@ -1,311 +1,341 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useMemo } from "react";
 import { formatKoreanUnit, ONE_HUNDRED_MILLION } from "../../../../components/utils/financeCalc";
 import { cn } from "@/lib/utils";
-import {
-    ChartBarIcon,
-    DocumentTextIcon,
-    InformationCircleIcon,
-    SparklesIcon,
-    Squares2X2Icon
-} from "@heroicons/react/24/outline";
+import * as Tabs from "@radix-ui/react-tabs";
+import * as Popover from "@radix-ui/react-popover";
+import { TrendingUp, TrendingDown, Info, BookOpen, BarChart2, Minus } from "lucide-react";
 
 interface FinancialTablesProps {
     kiBS: any;
     kiIS: any;
 }
 
-export default function FinancialTables({ kiBS, kiIS }: FinancialTablesProps) {
-    const [hoveredRow, setHoveredRow] = useState<string | null>(null);
-    const [activeTooltip, setActiveTooltip] = useState<string | null>(null);
+type RowDef = { label: string; key: string; isTotal?: boolean; description: string };
+type SectionDef = { label: string; labelEn: string; accent: string; dotColor: string; rows: RowDef[] };
 
-    // 퀀트 투자 핵심 필터 지표 (IdiotQuant 코어 스트레이트)
-    const coreMetrics = ["total_aset", "total_lblt", "total_cptl", "sale_account", "bsop_prti", "thtr_ntin"];
+const BS_SECTIONS: SectionDef[] = [
+    {
+        label: "자산",
+        labelEn: "ASSETS",
+        accent: "border-blue-400/50 bg-blue-50 text-blue-700 dark:bg-blue-950/40 dark:text-blue-300",
+        dotColor: "bg-blue-400",
+        rows: [
+            { label: "유동자산", key: "cras", description: "1년 내 현금화 가능한 자산 — NCAV 청산가치의 핵심 안전마진 원천" },
+            { label: "고정자산", key: "fxas", description: "설비·토지·무형자산 등 현금화에 1년 이상 소요되는 장기 자산" },
+            { label: "자산총계", key: "total_aset", isTotal: true, description: "유동자산 + 고정자산의 합계 — 기업이 보유한 총 자산 규모" },
+        ],
+    },
+    {
+        label: "부채",
+        labelEn: "LIABILITIES",
+        accent: "border-rose-400/50 bg-rose-50 text-rose-700 dark:bg-rose-950/40 dark:text-rose-300",
+        dotColor: "bg-rose-400",
+        rows: [
+            { label: "유동부채", key: "flow_lblt", description: "1년 이내 상환해야 하는 단기 채무 — 단기 유동성 리스크 지표" },
+            { label: "고정부채", key: "fix_lblt", description: "만기 1년 초과 장기 차입금·회사채 등" },
+            { label: "부채총계", key: "total_lblt", isTotal: true, description: "총 채무 합계 — 청산가치(NCAV) 계산 시 유동자산에서 전액 차감" },
+        ],
+    },
+    {
+        label: "자본",
+        labelEn: "EQUITY",
+        accent: "border-emerald-400/50 bg-emerald-50 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-300",
+        dotColor: "bg-emerald-400",
+        rows: [
+            { label: "자본금", key: "cpfn", description: "주주가 납입한 주식의 액면가 총액" },
+            { label: "이익잉여금", key: "prfi_surp", description: "순이익 중 배당하지 않고 사내에 유보한 잉여금 — 클수록 재무 안정" },
+            { label: "자본총계", key: "total_cptl", isTotal: true, description: "순자산(자산 − 부채) — 주주 몫의 실체이자 S-RIM 모델 기초 체력" },
+        ],
+    },
+];
 
-    // 재무상태표 계정과목 정밀 정의 및 가이드 사전
-    const bsRows = [
-        { label: "유동자산", key: "cras", description: "1년 내에 현금화할 수 있는 자산입니다. NCAV(청산가치) 전략에서 가장 핵심이 되는 안전마진의 원천입니다." },
-        { label: "고정자산", key: "fxas", description: "설비, 토지, 무형자산 등 현금화에 1년 이상 걸리는 자산입니다. 가치투자에서는 보수적으로 평가합니다." },
-        { label: "자산총계", key: "total_aset", isHeader: true, description: "유동자산과 고정자산의 합계로, 기업이 보유한 총 자산의 규모를 나타냅니다." },
-        { label: "유동부채", key: "flow_lblt", description: "1년 이내에 갚아야 하는 채무입니다. 단기적 재무 리스크를 측정하는 지표입니다." },
-        { label: "고정부채", key: "fix_lblt", description: "상환 기간이 1년 이상 남은 장기 채무입니다. 사채나 장기차입금 등이 포함됩니다." },
-        { label: "부채총계", key: "total_lblt", isHeader: true, description: "기업이 짊어지고 있는 총 빚입니다. 청산가치 계산 시 자산에서 전액 차감되는 항목입니다." },
-        { label: "자본금", key: "cpfn", description: "주주들이 기업을 설립하고 증자할 때 발행한 주식의 액면가 총액입니다." },
-        { label: "이익잉여금", key: "prfi_surp", description: "기업이 벌어들인 순이익 중 배당하지 않고 사내에 축적한 알짜 현금 체력입니다. 많을수록 안전합니다." },
-        { label: "자본총계", key: "total_cptl", isHeader: true, description: "자산총계에서 부채총계를 뺀 순자산입니다. 주주들의 실제 몫이자 S-RIM 모델의 기준점이 됩니다." },
-    ];
+const IS_SECTIONS: SectionDef[] = [
+    {
+        label: "수익",
+        labelEn: "REVENUE",
+        accent: "border-indigo-400/50 bg-indigo-50 text-indigo-700 dark:bg-indigo-950/40 dark:text-indigo-300",
+        dotColor: "bg-indigo-400",
+        rows: [
+            { label: "매출액", key: "sale_account", isTotal: true, description: "제품·서비스 판매 총 수입 (Top-line) — 성장성의 핵심 척도" },
+            { label: "매출원가", key: "sale_cost", description: "제품 생산에 직접 투입된 원재료·가공비" },
+            { label: "매출총이익", key: "sale_totl_prfi", description: "매출액 − 매출원가 (Gross Profit) — 순수 제조·판매 마진" },
+        ],
+    },
+    {
+        label: "영업",
+        labelEn: "OPERATING",
+        accent: "border-violet-400/50 bg-violet-50 text-violet-700 dark:bg-violet-950/40 dark:text-violet-300",
+        dotColor: "bg-violet-400",
+        rows: [
+            { label: "판관비", key: "sell_mang", description: "임직원 급여·마케팅·임차료 등 판매비와 관리비 전체" },
+            { label: "영업이익", key: "bsop_prti", isTotal: true, description: "본업 수익력(EBIT) — 매출총이익에서 판관비를 뺀 진짜 이익" },
+        ],
+    },
+    {
+        label: "순이익",
+        labelEn: "NET INCOME",
+        accent: "border-teal-400/50 bg-teal-50 text-teal-700 dark:bg-teal-950/40 dark:text-teal-300",
+        dotColor: "bg-teal-400",
+        rows: [
+            { label: "당기순이익", key: "thtr_ntin", isTotal: true, description: "세금·금융비용 모두 반영한 최종 순이익 (Bottom-line)" },
+        ],
+    },
+];
 
-    // 손익계산서 계정과목 정밀 정의 및 가이드 사전
-    const isRows = [
-        { label: "매출액", key: "sale_account", isHeader: true, description: "기업이 제품이나 서비스를 판매하여 얻은 총 영업 수입의 최상단 지표입니다." },
-        { label: "매출원가", key: "sale_cost", description: "제품을 생산하거나 서비스를 구입하는 데 직접 소요된 가공비 및 원재료 비용입니다." },
-        { label: "매출총이익", key: "sale_totl_prfi", description: "매출액에서 매출원가를 차감한 금액으로, 순수 제조 및 판매 마진을 뜻합니다." },
-        { label: "판관비", key: "sell_mang", description: "판매비와 관리비의 약어로, 임직원 급여, 마케팅비, 사무실 임차료 등 관리 운영비용 일체입니다." },
-        { label: "영업이익", key: "bsop_prti", isHeader: true, description: "매출총이익에서 판관비를 뺀 지표로, 기업 본연의 비즈니스로 벌어들인 진짜 수익력을 나타냅니다." },
-        { label: "당기순이익", key: "thtr_ntin", isHeader: true, description: "영업이익에 영업외손익과 세금까지 모두 반영하여 최종적으로 회사가 거둔 최종 결산 순이익입니다." },
-    ];
+function pctChange(curr: number, prev: number): number | null {
+    if (!prev || prev === 0) return null;
+    return ((curr - prev) / Math.abs(prev)) * 100;
+}
 
-    const renderTable = (title: string, subTitle: string, rows: any[], data: any, icon: React.ReactNode, isBs: boolean) => (
-        <div className="mb-8 md:mb-10 rounded-2xl bg-zinc-200/80 dark:bg-zinc-800/60 p-1 transform-gpu relative overflow-visible border border-zinc-300/60 dark:border-zinc-700/50 shadow-md transition-all">
+function InfoPopover({ label, description }: { label: string; description: string }) {
+    return (
+        <Popover.Root>
+            <Popover.Trigger asChild>
+                <button
+                    type="button"
+                    aria-label={`${label} 설명`}
+                    className="shrink-0 rounded-full p-0.5 text-zinc-300 hover:text-zinc-500 dark:text-zinc-600 dark:hover:text-zinc-400 transition-colors focus:outline-none focus-visible:ring-1 focus-visible:ring-zinc-400"
+                >
+                    <Info size={11} />
+                </button>
+            </Popover.Trigger>
+            <Popover.Portal>
+                <Popover.Content
+                    side="right"
+                    sideOffset={6}
+                    avoidCollisions
+                    collisionPadding={12}
+                    className="z-[200] w-64 rounded-xl bg-zinc-900 border border-zinc-700/60 p-4 shadow-2xl shadow-black/40 animate-in fade-in zoom-in-95 duration-150 focus:outline-none"
+                >
+                    <p className="text-[10px] font-black text-amber-400 mb-1.5 uppercase tracking-wider">{label}</p>
+                    <p className="text-[11.5px] text-zinc-300 leading-relaxed">{description}</p>
+                    <Popover.Arrow className="fill-zinc-700/60" />
+                </Popover.Content>
+            </Popover.Portal>
+        </Popover.Root>
+    );
+}
 
-            {/* 정갈한 미니멀 메인 카드 바디 */}
-            <div className="w-full h-full rounded-[11px] bg-white dark:bg-zinc-950 relative z-10 overflow-visible flex flex-col border border-zinc-300 dark:border-zinc-800">
+function YoYBadge({ pct }: { pct: number | null }) {
+    if (pct === null || Math.abs(pct) < 0.05) {
+        return <span className="text-[9px] font-mono text-zinc-300 dark:text-zinc-700"><Minus size={8} /></span>;
+    }
+    const isUp = pct >= 0;
+    return (
+        <span className={cn(
+            "inline-flex items-center gap-0.5 text-[9px] font-bold font-mono",
+            isUp ? "text-emerald-600 dark:text-emerald-400" : "text-rose-500 dark:text-rose-400"
+        )}>
+            {isUp ? <TrendingUp size={8} /> : <TrendingDown size={8} />}
+            {isUp ? "+" : ""}{pct.toFixed(1)}%
+        </span>
+    );
+}
 
-                {/* 은은하게 스며드는 탑 라이팅 아우라 */}
-                <div className={cn(
-                    "absolute inset-x-0 top-0 h-32 pointer-events-none z-0 opacity-20 dark:opacity-25 blur-2xl",
-                    isBs ? "bg-gradient-to-b from-blue-500 to-transparent" : "bg-gradient-to-b from-emerald-500 to-transparent"
-                )} />
+const TAB_TRIGGER_BASE = [
+    "flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-bold transition-all duration-150",
+    "text-zinc-500 dark:text-zinc-400 hover:text-zinc-700 dark:hover:text-zinc-200",
+    "data-[state=active]:bg-white dark:data-[state=active]:bg-zinc-700/80",
+    "data-[state=active]:shadow-sm",
+].join(" ");
 
-                {/* Card Header (TCG 메인 프레임 인터페이스) */}
-                <div className="px-5 py-3.5 md:px-6 md:py-4 border-b border-zinc-200 dark:border-zinc-800 flex items-center justify-between relative z-20 bg-zinc-50/80 dark:bg-zinc-900/40 rounded-t-[11px] backdrop-blur-sm">
-                    <div className="flex items-center gap-2.5">
-                        <div className={cn(
-                            "w-8 h-8 rounded-lg flex items-center justify-center border shadow-sm",
-                            isBs
-                                ? "bg-blue-50 dark:bg-blue-950/60 border-blue-200 dark:border-blue-800"
-                                : "bg-emerald-50 dark:bg-emerald-950/60 border-emerald-200 dark:border-emerald-800"
-                        )}>
-                            {icon}
-                        </div>
-                        <div>
-                            <h3 className="text-sm font-bold text-zinc-900 dark:text-zinc-100 tracking-tight font-sans">
-                                {title}
-                            </h3>
-                            <p className="text-[9px] font-bold text-zinc-500 dark:text-zinc-400 uppercase tracking-wider font-mono">{subTitle}</p>
-                        </div>
-                    </div>
+function FinancialTable({ sections, data }: { sections: SectionDef[]; data: any }) {
+    const periods: any[] = useMemo(() => (data?.output ?? []).slice(0, 5), [data]);
 
-                    {/* TCG 카드 등급 엠블럼 */}
-                    <div className="flex items-center gap-2">
-                        <span className={cn(
-                            "text-[9px] font-mono font-black px-2 py-0.5 rounded border tracking-wider uppercase flex items-center gap-1 shadow-sm whitespace-nowrap",
-                            isBs
-                                ? "bg-blue-50 text-blue-700 dark:bg-blue-950/80 dark:text-blue-300 border-blue-300 dark:border-blue-700"
-                                : "bg-emerald-50 text-emerald-700 dark:bg-emerald-950/80 dark:text-emerald-300 border-emerald-300 dark:border-emerald-700"
-                        )}>
-                            <Squares2X2Icon className="w-3 h-3" /> {isBs ? "Card.01 BS" : "Card.02 IS"}
-                        </span>
-                    </div>
-                </div>
+    if (!periods.length) return (
+        <div className="py-16 text-center text-sm text-zinc-400 dark:text-zinc-600">
+            데이터를 불러올 수 없습니다
+        </div>
+    );
 
-                {/* Card Content (테이블 그리드 에어리어) */}
-                <div className="overflow-x-auto custom-table-scrollbar overflow-y-visible z-10">
-                    <table className="w-full border-separate border-spacing-0">
-                        <thead>
-                            <tr className="bg-zinc-100/60 dark:bg-zinc-900/30">
-                                {/* 스티키 레이블 열 헤더 */}
-                                <th className="sticky left-0 z-30 bg-white dark:bg-zinc-950 px-5 py-3 md:px-6 md:py-3.5 text-left border-b border-zinc-200 dark:border-zinc-800 min-w-[150px] md:min-w-[200px] handle-sticky-shadow whitespace-nowrap">
-                                    <span className="text-[10px] md:text-[11px] font-extrabold text-zinc-600 dark:text-zinc-300 uppercase tracking-wider font-mono">FINANCE SPEC</span>
+    return (
+        <div className="overflow-x-auto">
+            <table className="w-full border-collapse text-sm">
+                <thead>
+                    <tr className="border-b border-zinc-200 dark:border-zinc-800">
+                        <th className="sticky left-0 z-10 bg-white dark:bg-zinc-900 px-5 py-3 text-left min-w-[11rem] w-44">
+                            <span className="text-[10px] font-bold uppercase tracking-widest text-zinc-400 dark:text-zinc-500 font-mono select-none">
+                                계정과목
+                            </span>
+                        </th>
+                        {periods.map((p, i) => {
+                            const raw = p.stac_yymm ?? "";
+                            const date = raw.replace(/^(\d{4})(\d{2})$/, "$1.$2");
+                            return (
+                                <th
+                                    key={i}
+                                    className={cn(
+                                        "px-5 py-3 text-right min-w-[8rem]",
+                                        i === 0 && "bg-blue-50/50 dark:bg-blue-950/10"
+                                    )}
+                                >
+                                    <div className="flex flex-col items-end gap-0.5">
+                                        <span className={cn(
+                                            "text-[9px] font-black uppercase tracking-wider font-mono",
+                                            i === 0 ? "text-blue-600 dark:text-blue-400" : "text-zinc-400 dark:text-zinc-500"
+                                        )}>
+                                            {i === 0 ? "최근 결산" : `T − ${i}`}
+                                        </span>
+                                        <span className={cn(
+                                            "text-xs font-bold tabular-nums",
+                                            i === 0 ? "text-zinc-900 dark:text-white" : "text-zinc-500 dark:text-zinc-400"
+                                        )}>
+                                            {date || "—"}
+                                        </span>
+                                    </div>
                                 </th>
-                                {data?.output?.slice(0, 5).map((v: any, i: number) => (
-                                    <th key={i} className={cn(
-                                        "px-5 py-3 md:px-6 md:py-3.5 text-right border-b border-zinc-200 dark:border-zinc-800 font-mono z-10 min-w-[110px] md:min-w-[140px] whitespace-nowrap",
-                                        i === 0 && "bg-zinc-50/50 dark:bg-zinc-900/20"
+                            );
+                        })}
+                    </tr>
+                </thead>
+                <tbody>
+                    {sections.map((section) => (
+                        <React.Fragment key={section.label}>
+                            {/* Section group header */}
+                            <tr>
+                                <td
+                                    colSpan={periods.length + 1}
+                                    className="sticky left-0 px-5 pt-4 pb-1.5 bg-white dark:bg-zinc-900"
+                                >
+                                    <div className={cn(
+                                        "inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md border text-[9px] font-black uppercase tracking-widest font-mono select-none",
+                                        section.accent
                                     )}>
-                                        <div className="flex flex-col items-end">
-                                            <span className={cn(
-                                                "text-[8px] font-mono tracking-widest uppercase font-black mb-0.5",
-                                                i === 0 ? 'text-amber-600 dark:text-amber-400' : 'text-zinc-500 dark:text-zinc-400'
-                                            )}>
-                                                {i === 0 ? '✦ RECENT' : `T - ${i}`}
-                                            </span>
-                                            <span className={cn(
-                                                "text-xs font-extrabold tabular-nums tracking-tight",
-                                                i === 0 ? "text-zinc-950 dark:text-white underline decoration-amber-500/50 underline-offset-2" : "text-zinc-600 dark:text-zinc-400"
-                                            )}>
-                                                {v.stac_yymm?.replace(/^(\d{4})(\d{2})$/, '$1.$2') || v.stac_yymm}
-                                            </span>
-                                        </div>
-                                    </th>
-                                ))}
+                                        <span className={cn("w-1.5 h-1.5 rounded-full shrink-0", section.dotColor)} />
+                                        {section.labelEn}
+                                    </div>
+                                </td>
                             </tr>
-                        </thead>
-                        <tbody className="divide-y divide-zinc-200 dark:divide-zinc-800/60">
-                            {rows.map((row) => {
-                                const isCore = coreMetrics.includes(row.key);
-                                const isHeader = row.isHeader;
-                                const rowId = `${title}-${row.key}`;
-                                const isCurrentHovered = hoveredRow === rowId;
-                                const isTooltipActive = activeTooltip === rowId;
+
+                            {section.rows.map((row) => {
+                                const vals = periods.map((p) => Number(p[row.key as keyof typeof p] ?? 0));
+                                const yoy = vals.length >= 2 ? pctChange(vals[0], vals[1]) : null;
+                                const isNeg0 = vals[0] < 0;
 
                                 return (
                                     <tr
                                         key={row.key}
                                         className={cn(
-                                            "group transition-all duration-100 relative",
-                                            isHeader
-                                                ? 'bg-zinc-50/60 dark:bg-zinc-900/20'
-                                                : 'hover:bg-zinc-50/80 dark:hover:bg-zinc-900/40',
-                                            isCurrentHovered || isTooltipActive ? "z-50" : "z-0"
+                                            "group border-b border-zinc-100 dark:border-zinc-800/50 transition-colors duration-100",
+                                            row.isTotal
+                                                ? "bg-zinc-50/80 dark:bg-zinc-800/20 hover:bg-zinc-100/70 dark:hover:bg-zinc-800/40"
+                                                : "hover:bg-zinc-50/60 dark:hover:bg-zinc-800/10"
                                         )}
-                                        onMouseEnter={() => setHoveredRow(rowId)}
-                                        onMouseLeave={() => {
-                                            setHoveredRow(null);
-                                            setActiveTooltip(null);
-                                        }}
                                     >
-                                        {/* Account Item Sticky Cell */}
+                                        {/* Label */}
                                         <td className={cn(
-                                            "sticky left-0 handle-sticky-shadow px-5 py-3 md:px-6 md:py-3.5 text-left transition-colors duration-100 border-r border-zinc-200/60 dark:border-zinc-800/40 whitespace-nowrap",
-                                            isHeader
-                                                ? 'bg-zinc-50 dark:bg-zinc-900 font-extrabold text-zinc-950 dark:text-zinc-50'
-                                                : 'bg-white dark:bg-zinc-950 group-hover:bg-zinc-50 dark:group-hover:bg-zinc-900/60',
-                                            isCore && !isHeader && "bg-gradient-to-r from-blue-500/[0.04] to-transparent",
-                                            isCurrentHovered || isTooltipActive ? "z-50" : "z-20"
+                                            "sticky left-0 z-10 px-5 py-3 transition-colors duration-100",
+                                            row.isTotal
+                                                ? "bg-zinc-50 dark:bg-zinc-800/20 group-hover:bg-zinc-100/70 dark:group-hover:bg-zinc-800/40"
+                                                : "bg-white dark:bg-zinc-900 group-hover:bg-zinc-50/60 dark:group-hover:bg-zinc-800/10"
                                         )}>
-                                            <div className="flex items-center justify-between gap-1 relative w-full overflow-visible">
-                                                <div className="flex items-center gap-2 min-w-0 flex-1">
-                                                    <span className={cn(
-                                                        "w-0.5 h-2.5 rounded-full transition-all duration-200 shrink-0",
-                                                        isCurrentHovered ? "bg-zinc-500 dark:bg-zinc-400" : "bg-transparent",
-                                                        isHeader && "bg-zinc-500 dark:bg-zinc-400"
-                                                    )} />
-                                                    <span className={cn(
-                                                        "text-xs tracking-tight truncate block",
-                                                        isHeader
-                                                            ? "font-extrabold text-zinc-950 dark:text-white"
-                                                            : "font-semibold text-zinc-700 dark:text-zinc-300 group-hover:text-zinc-950 dark:group-hover:text-zinc-100",
-                                                        isCore && !isHeader && "text-blue-700 dark:text-blue-400 font-extrabold"
-                                                    )}>
-                                                        {row.label}
-                                                    </span>
-                                                    {isCore && !isHeader && (
-                                                        <span className="text-[7px] font-mono px-1 py-0.5 font-black rounded bg-blue-100 text-blue-800 dark:bg-blue-950 dark:text-blue-300 uppercase tracking-wider scale-95 border border-blue-200 dark:border-blue-900/60 shrink-0">
-                                                            CORE
-                                                        </span>
-                                                    )}
-                                                </div>
-
-                                                {/* 설명 가이드 트리거 아이콘 */}
-                                                <button
-                                                    type="button"
-                                                    onMouseEnter={() => setActiveTooltip(rowId)}
-                                                    onClick={() => setActiveTooltip(activeTooltip === rowId ? null : rowId)}
-                                                    className={cn(
-                                                        "text-zinc-500 dark:text-zinc-400 hover:text-zinc-800 dark:hover:text-zinc-100 transition-all ml-2 shrink-0 p-0.5 rounded-md hover:bg-zinc-200 dark:hover:bg-zinc-800",
-                                                        isCurrentHovered || isTooltipActive ? "opacity-100 scale-105" : "opacity-0"
-                                                    )}
-                                                >
-                                                    <InformationCircleIcon className="w-4 h-4" />
-                                                </button>
-
-                                                {/* 최상위 레이어 레이아웃 툴팁 가이드 레이어 */}
-                                                {isTooltipActive && row.description && (
-                                                    <div className={cn(
-                                                        "absolute p-4 rounded-xl bg-zinc-900 dark:bg-zinc-900 text-white shadow-xl border border-zinc-700 text-[11px] leading-relaxed font-sans pointer-events-none w-64 backdrop-blur-md z-[9999] animate-in fade-in duration-100 shadow-black/40 whitespace-normal",
-                                                        "left-1 top-full mt-2 md:left-full md:top-1/2 md:-translate-y-1/2 md:ml-3 md:mt-0 md:w-68"
-                                                    )}>
-                                                        <div className="font-extrabold text-amber-400 mb-2 flex items-center gap-1.5 border-b border-zinc-700 pb-1.5">
-                                                            <SparklesIcon className="w-3.5 h-3.5 text-amber-400" />
-                                                            <span className="text-[12px]">{row.label}</span>
-                                                            <span className="text-[8px] text-zinc-400 font-mono tracking-wider ml-auto">[{row.key.toUpperCase()}]</span>
-                                                        </div>
-                                                        <p className="text-zinc-200 dark:text-zinc-200 font-medium leading-normal text-[11px] font-sans tracking-tight">
-                                                            {row.description}
-                                                        </p>
-                                                    </div>
-                                                )}
+                                            <div className="flex items-center gap-2">
+                                                {row.isTotal
+                                                    ? <div className="w-0.5 h-4 rounded-full bg-zinc-300 dark:bg-zinc-600 shrink-0" />
+                                                    : <div className="w-0.5 h-4 shrink-0" />
+                                                }
+                                                <span className={cn(
+                                                    "truncate",
+                                                    row.isTotal
+                                                        ? "font-bold text-zinc-900 dark:text-zinc-100"
+                                                        : "font-medium text-zinc-600 dark:text-zinc-400 pl-1"
+                                                )}>
+                                                    {row.label}
+                                                </span>
+                                                <InfoPopover label={row.label} description={row.description} />
                                             </div>
                                         </td>
 
-                                        {/* Financial Value Cells - whitespace-nowrap 추가로 2줄 분리 절대 방지 */}
-                                        {data?.output?.slice(0, 5).map((v: any, i: number) => {
-                                            const rawValue = v[row.key as keyof typeof v] || 0;
-                                            const val = Number(rawValue);
-                                            const isNegative = val < 0;
-
-                                            return (
-                                                <td
-                                                    key={i}
-                                                    className={cn(
-                                                        "px-5 py-3 md:px-6 md:py-3.5 text-right font-mono tabular-nums transition-colors duration-100 whitespace-nowrap",
-                                                        i === 0 && "bg-zinc-50/[0.3] dark:bg-zinc-900/[0.1]",
-                                                        isHeader && "font-bold"
-                                                    )}
-                                                >
+                                        {/* Values */}
+                                        {vals.map((val, i) => (
+                                            <td
+                                                key={i}
+                                                className={cn(
+                                                    "px-5 py-3 text-right font-mono tabular-nums",
+                                                    i === 0 && "bg-blue-50/30 dark:bg-blue-950/5"
+                                                )}
+                                            >
+                                                <div className="flex flex-col items-end gap-0.5">
                                                     <span className={cn(
-                                                        isNegative
-                                                            ? "text-rose-600 dark:text-rose-400 font-bold bg-rose-50 dark:bg-rose-950/40 px-2 py-0.5 rounded border border-rose-200 dark:border-rose-900/60 inline-block whitespace-nowrap"
-                                                            : isHeader
-                                                                ? "text-zinc-950 dark:text-zinc-50 font-extrabold inline-block"
-                                                                : "text-zinc-800 dark:text-zinc-200 font-bold inline-block",
-                                                        i === 0 ? "text-[12.5px]" : "text-[11.5px] opacity-90"
+                                                        isNeg0 && i === 0
+                                                            ? "text-rose-600 dark:text-rose-400 font-bold"
+                                                            : val < 0
+                                                                ? "text-rose-500 dark:text-rose-500 font-medium"
+                                                                : row.isTotal
+                                                                    ? "font-bold text-zinc-900 dark:text-zinc-100"
+                                                                    : "font-medium text-zinc-700 dark:text-zinc-300",
+                                                        i === 0 ? "text-[13px]" : "text-xs opacity-80"
                                                     )}>
-                                                        {formatKoreanUnit(val * ONE_HUNDRED_MILLION)}
+                                                        {val === 0 ? "—" : formatKoreanUnit(val * ONE_HUNDRED_MILLION)}
                                                     </span>
-                                                </td>
-                                            );
-                                        })}
+                                                    {i === 0 && <YoYBadge pct={yoy} />}
+                                                </div>
+                                            </td>
+                                        ))}
                                     </tr>
                                 );
                             })}
-                        </tbody>
-                    </table>
-                </div>
-
-                {/* Card Footer (정갈한 메타 정보 영역) */}
-                <div className="px-5 py-3.5 md:px-6 bg-zinc-50 dark:bg-zinc-900/40 border-t border-zinc-200 dark:border-zinc-800 flex flex-col sm:flex-row gap-3 justify-between items-start sm:items-center relative z-20 rounded-b-[11px] whitespace-nowrap">
-                    <div className="flex flex-wrap gap-x-4 gap-y-1.5 items-center">
-                        <div className="flex items-center gap-1.5 text-[10px] font-extrabold text-zinc-500 dark:text-zinc-400 tracking-wider">
-                            <span className="w-1.5 h-1.5 rounded-full bg-blue-500 shadow-sm" /> CORE INDICATOR
-                        </div>
-                        <div className="flex items-center gap-1.5 text-[10px] font-extrabold text-zinc-500 dark:text-zinc-400 tracking-wider">
-                            <span className="w-1.5 h-1.5 rounded-full bg-rose-500 shadow-sm" /> LOSS DEFICIT
-                        </div>
-                        <div className="flex items-center gap-1.5 text-[10px] font-bold text-zinc-400 dark:text-zinc-500 tracking-tight font-sans">
-                            <InformationCircleIcon className="w-4 h-4 text-zinc-400 shrink-0" /> 마우스 오버 시 가이드 활성화
-                        </div>
-                    </div>
-                    <span className="text-[9px] font-black text-zinc-600 dark:text-zinc-400 tracking-wider font-mono bg-zinc-200/60 dark:bg-zinc-800 px-2 py-0.5 rounded border border-zinc-300 dark:border-zinc-700 select-none">UNIT: KRW (100M)</span>
-                </div>
-            </div>
-
-            <style jsx global>{`
-                .custom-table-scrollbar::-webkit-scrollbar {
-                    height: 5px;
-                }
-                .custom-table-scrollbar::-webkit-scrollbar-track {
-                    background: transparent;
-                }
-                .custom-table-scrollbar::-webkit-scrollbar-thumb {
-                    background: rgba(156, 163, 175, 0.3);
-                    border-radius: 10px;
-                }
-                .custom-table-scrollbar::-webkit-scrollbar-thumb:hover {
-                    background: rgba(156, 163, 175, 0.5);
-                }
-                .handle-sticky-shadow {
-                    box-shadow: 4px 0 8px -4px rgba(0, 0, 0, 0.06);
-                }
-                .dark .handle-sticky-shadow {
-                    box-shadow: 8px 0 16px -10px rgba(0, 0, 0, 0.7);
-                }
-            `}</style>
+                        </React.Fragment>
+                    ))}
+                </tbody>
+            </table>
         </div>
     );
+}
 
-    if (!kiBS?.output || !kiIS?.output) return null;
+export default function FinancialTables({ kiBS, kiIS }: FinancialTablesProps) {
+    if (!kiBS?.output?.length || !kiIS?.output?.length) return null;
+
+    const footer = (
+        <div className="flex items-center gap-3 px-5 py-3 border-t border-zinc-100 dark:border-zinc-800">
+            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse shrink-0" />
+            <span className="text-[10px] text-zinc-400 dark:text-zinc-500 font-mono">
+                DART 공시 기준 · 단위 억 원 (KRW 100M) · 최근 5개 결산기
+            </span>
+            <div className="ml-auto flex items-center gap-2">
+                <span className="text-[9px] font-mono text-zinc-400 dark:text-zinc-600 flex items-center gap-1">
+                    <TrendingUp size={8} className="text-emerald-500" /> YoY 전기 대비
+                </span>
+            </div>
+        </div>
+    );
 
     return (
-        <div className="space-y-5 md:space-y-4 animate-in fade-in slide-in-from-bottom-2 duration-300 transform-gpu">
-            {renderTable(
-                "재무상태표",
-                "Balance Sheet Statement",
-                bsRows,
-                kiBS,
-                <DocumentTextIcon className="w-4 h-4 text-blue-600 dark:text-blue-400" />,
-                true
-            )}
-            {renderTable(
-                "손익계산서",
-                "Income Statement Structure",
-                isRows,
-                kiIS,
-                <ChartBarIcon className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />,
-                false
-            )}
-        </div>
+        <Tabs.Root defaultValue="bs" className="w-full">
+            {/* Tab Bar */}
+            <div className="flex items-center justify-between px-5 py-3 border-b border-zinc-100 dark:border-zinc-800 bg-zinc-50/50 dark:bg-zinc-800/20">
+                <Tabs.List className="flex gap-1 bg-zinc-100 dark:bg-zinc-800 rounded-lg p-1">
+                    <Tabs.Trigger
+                        value="bs"
+                        className={cn(TAB_TRIGGER_BASE, "data-[state=active]:text-blue-700 dark:data-[state=active]:text-blue-300")}
+                    >
+                        <BookOpen size={12} />
+                        재무상태표
+                    </Tabs.Trigger>
+                    <Tabs.Trigger
+                        value="is"
+                        className={cn(TAB_TRIGGER_BASE, "data-[state=active]:text-emerald-700 dark:data-[state=active]:text-emerald-300")}
+                    >
+                        <BarChart2 size={12} />
+                        손익계산서
+                    </Tabs.Trigger>
+                </Tabs.List>
+                <span className="text-[9px] font-mono font-bold text-zinc-400 dark:text-zinc-600 uppercase tracking-widest">
+                    Balance Sheet · P&amp;L
+                </span>
+            </div>
+
+            <Tabs.Content value="bs" className="focus:outline-none">
+                <FinancialTable sections={BS_SECTIONS} data={kiBS} />
+                {footer}
+            </Tabs.Content>
+
+            <Tabs.Content value="is" className="focus:outline-none">
+                <FinancialTable sections={IS_SECTIONS} data={kiIS} />
+                {footer}
+            </Tabs.Content>
+        </Tabs.Root>
     );
-};
+}
