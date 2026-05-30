@@ -307,84 +307,80 @@ interface FloatingText { id: number; text: string }
 // 홀로그래픽 오버레이
 // =========================================================================
 const HoloOverlay = ({
-  type, mouseX, mouseY, isHovering,
+  type, mouseX, mouseY,
 }: {
   type: "rainbow" | "gold" | "silver" | "none";
   mouseX: ReturnType<typeof useMotionValue<number>>;
   mouseY: ReturnType<typeof useMotionValue<number>>;
-  isHovering: boolean;
 }) => {
-  // 세 가지 타입의 그라디언트 — 훅 순서 고정
-  const rainbowBg = useTransform(
-    [mouseX, mouseY] as ReturnType<typeof useMotionValue<number>>[],
-    (latest: number[]) => {
-      const [mx] = latest;
-      const angle = 105 + mx * 90;
-      const h = mx * 300;
-      return [
-        `linear-gradient(${angle}deg,`,
-        `hsl(${h}deg 90% 65%/0.55) 0%,`,
-        `hsl(${h + 55}deg 90% 65%/0.55) 16%,`,
-        `hsl(${h + 110}deg 90% 65%/0.55) 33%,`,
-        `hsl(${h + 165}deg 90% 65%/0.55) 50%,`,
-        `hsl(${h + 220}deg 90% 65%/0.55) 67%,`,
-        `hsl(${h + 275}deg 90% 65%/0.55) 83%,`,
-        `hsl(${h + 330}deg 90% 65%/0.55) 100%)`,
-      ].join(" ");
-    }
-  );
+  type MV = ReturnType<typeof useMotionValue<number>>;
+  const inputs = [mouseX, mouseY] as MV[];
 
-  const goldBg = useTransform(
-    [mouseX, mouseY] as ReturnType<typeof useMotionValue<number>>[],
-    (latest: number[]) => {
-      const [mx, my] = latest;
-      const angle = 70 + mx * 70 + my * 40;
-      return `linear-gradient(${angle}deg,rgba(253,224,71,0)/20%,rgba(253,224,71,0.65) 44%,rgba(255,255,255,0.9) 50%,rgba(253,224,71,0.65) 56%,rgba(253,224,71,0)/80%)`;
-    }
-  );
+  // 훅 순서 고정 — 세 가지 그라디언트 항상 계산
+  const rainbowBg = useTransform(inputs, (latest: number[]) => {
+    const [mx, my] = latest;
+    // mx: 좌우 색상 회전, my: 각도 변화 추가
+    const angle = 95 + mx * 100 + my * 30;
+    const h = mx * 320;
+    return [
+      `linear-gradient(${angle}deg,`,
+      `hsl(${h}deg 95% 68%/0.6) 0%,`,
+      `hsl(${h + 55}deg 95% 68%/0.6) 16%,`,
+      `hsl(${h + 110}deg 95% 68%/0.6) 33%,`,
+      `hsl(${h + 165}deg 95% 68%/0.6) 50%,`,
+      `hsl(${h + 220}deg 95% 68%/0.6) 67%,`,
+      `hsl(${h + 275}deg 95% 68%/0.6) 83%,`,
+      `hsl(${h + 330}deg 95% 68%/0.6) 100%)`,
+    ].join(" ");
+  });
 
-  const silverBg = useTransform(
-    [mouseX, mouseY] as ReturnType<typeof useMotionValue<number>>[],
-    (latest: number[]) => {
-      const [mx, my] = latest;
-      const angle = 70 + mx * 70 + my * 40;
-      return `linear-gradient(${angle}deg,rgba(52,211,153,0)/20%,rgba(52,211,153,0.55) 42%,rgba(255,255,255,0.8) 50%,rgba(6,182,212,0.55) 58%,rgba(52,211,153,0)/80%)`;
-    }
-  );
+  const goldBg = useTransform(inputs, (latest: number[]) => {
+    const [mx, my] = latest;
+    const angle = 60 + mx * 80 + my * 50;
+    return `linear-gradient(${angle}deg,rgba(253,224,71,0)/15%,rgba(253,224,71,0.7) 42%,rgba(255,255,255,0.95) 50%,rgba(253,224,71,0.7) 58%,rgba(253,224,71,0)/85%)`;
+  });
+
+  const silverBg = useTransform(inputs, (latest: number[]) => {
+    const [mx, my] = latest;
+    const angle = 60 + mx * 80 + my * 50;
+    return `linear-gradient(${angle}deg,rgba(52,211,153,0)/15%,rgba(52,211,153,0.6) 40%,rgba(255,255,255,0.85) 50%,rgba(6,182,212,0.6) 60%,rgba(52,211,153,0)/85%)`;
+  });
+
+  // 중심(0.5, 0.5) 에서 벗어날수록 opacity 증가 — 마우스·자이로 공통
+  const baseOpacity = type === "rainbow" ? 0.25 : 0.08;
+  const holoOpacity = useTransform(inputs, (latest: number[]) => {
+    const [mx, my] = latest;
+    const dx = mx - 0.5;
+    const dy = my - 0.5;
+    const tilt = Math.min(1, Math.sqrt(dx * dx + dy * dy) * 2.6);
+    return baseOpacity + tilt * (1 - baseOpacity);
+  });
 
   if (type === "none") return null;
 
   const bg = type === "rainbow" ? rainbowBg : type === "gold" ? goldBg : silverBg;
-  const baseOpacity = type === "rainbow" ? 0.35 : 0.12;
-  const hoverOpacity = 1;
 
   return (
     <motion.div
       className="absolute inset-0 pointer-events-none z-20 rounded-[1.45rem]"
-      style={{ background: bg, mixBlendMode: "hard-light" }}
-      animate={{ opacity: isHovering ? hoverOpacity : baseOpacity }}
-      transition={{ duration: 0.25 }}
+      style={{ background: bg, mixBlendMode: "hard-light", opacity: holoOpacity }}
     />
   );
 };
 
 // =========================================================================
-// 스파클 레이어 (SSS 전용)
+// 스파클 레이어 (SSS 전용) — 항상 애니메이션, 자이로·마우스 무관
 // =========================================================================
-const SparkleLayer = ({ isHovering }: { isHovering: boolean }) => (
+const SparkleLayer = () => (
   <div className="absolute inset-0 pointer-events-none z-[25] overflow-hidden rounded-[1.45rem]">
     {SPARKLES.map((s, i) => (
       <motion.div
         key={i}
         className="absolute"
         style={{ left: `${s.x}%`, top: `${s.y}%`, width: s.size * 2, height: s.size * 2 }}
-        animate={{
-          opacity: isHovering ? [0, 1, 0] : [0, 0.35, 0],
-          scale:   isHovering ? [0, 1.3, 0] : [0, 0.5, 0],
-        }}
-        transition={{ repeat: Infinity, duration: 1.3, delay: s.delay, ease: "easeInOut" }}
+        animate={{ opacity: [0, 1, 0], scale: [0, 1.3, 0] }}
+        transition={{ repeat: Infinity, duration: 1.2 + s.delay * 0.4, delay: s.delay, ease: "easeInOut" }}
       >
-        {/* 4-point star shape */}
         <div className="absolute inset-0 rounded-full bg-white blur-[1px]" />
         <div className="absolute top-1/2 left-0 right-0 h-px bg-white -translate-y-1/2" />
         <div className="absolute left-1/2 top-0 bottom-0 w-px bg-white -translate-x-1/2" />
@@ -424,7 +420,6 @@ const CornerOrnament = ({ pos, color }: { pos: "tl"|"tr"|"bl"|"br"; color: strin
 export const StockCard = ({ stock, chartConfig, isCompact = false, stockXpProfile }: StockCardProps) => {
   const [isFlipped, setIsFlipped]         = useState(false);
   const [imgError, setImgError]           = useState(false);
-  const [isHovering, setIsHovering]       = useState(false);
   const [floatingTexts, setFloatingTexts] = useState<FloatingText[]>([]);
 
   const nextId     = useRef<number>(0);
@@ -529,14 +524,12 @@ export const StockCard = ({ stock, chartConfig, isCompact = false, stockXpProfil
     mouseY.set((e.clientY - r.top)  / r.height);
   }, [mouseX, mouseY, isFlipped]);
 
-  const handleMouseEnter = useCallback(() => setIsHovering(true), []);
   const handleMouseLeave = useCallback(() => {
     // 자이로 활성 시 센터 리셋 생략 (기울기가 계속 구동)
     if (!gyroActiveRef.current) {
       mouseX.set(0.5);
       mouseY.set(0.5);
     }
-    setIsHovering(false);
   }, [mouseX, mouseY]);
 
   const logoUrl = stock?.isUs
@@ -553,7 +546,6 @@ export const StockCard = ({ stock, chartConfig, isCompact = false, stockXpProfil
       className={cn("relative select-none cursor-pointer transform-gpu group", W, H)}
       style={{ perspective: "1800px" }}
       onMouseMove={handleMouseMove}
-      onMouseEnter={handleMouseEnter}
       onMouseLeave={handleMouseLeave}
       onClick={handleCardClick}
     >
@@ -597,11 +589,11 @@ export const StockCard = ({ stock, chartConfig, isCompact = false, stockXpProfil
 
             {/* 홀로그래픽 오버레이 */}
             {cfg.holo && (
-              <HoloOverlay type={cfg.holoType} mouseX={mouseX} mouseY={mouseY} isHovering={isHovering} />
+              <HoloOverlay type={cfg.holoType} mouseX={mouseX} mouseY={mouseY} />
             )}
 
             {/* 스파클 (SSS) */}
-            {grade === "SSS" && <SparkleLayer isHovering={isHovering} />}
+            {grade === "SSS" && <SparkleLayer />}
 
             {/* 코너 장식 */}
             {(["tl", "tr", "bl", "br"] as const).map(pos => (
