@@ -340,7 +340,7 @@ interface KoreaInvestmentInqureDailyItemChartPriceOutput2 {
 }
 
 export interface KoreaInvestmentInquireDailyItemChartPrice {
-  state: Extract<ApiState, "init" | "req" | "pending" | "fulfilled">;
+  state: Extract<ApiState, "init" | "req" | "pending" | "fulfilled" | "rejected">;
   rt_cd: string;
   msg_cd: string;
   msg1: string;
@@ -363,7 +363,7 @@ interface KoreaInvestmentBalanceSheetOutput {
 }
 
 export interface KoreaInvestmentBalanceSheet {
-  state: Extract<ApiState, "init" | "req" | "pending" | "fulfilled">;
+  state: Extract<ApiState, "init" | "req" | "pending" | "fulfilled" | "rejected">;
   rt_cd: string;
   msg_cd: string;
   msg1: string;
@@ -387,7 +387,7 @@ interface KoreaInvestmentIncomeStatementOutput {
 }
 
 export interface KoreaInvestmentIncomeStatement {
-  state: Extract<ApiState, "init" | "req" | "pending" | "fulfilled">;
+  state: Extract<ApiState, "init" | "req" | "pending" | "fulfilled" | "rejected">;
   rt_cd: string;         // 성공 실패 여부
   msg_cd: string;        // 응답코드
   msg1: string;          // 응답메세지
@@ -906,7 +906,7 @@ export const koreaInvestmentSlice = createAppSlice({
           }
         },
         rejected: (state) => {
-          console.error(`[reqGetInquireDailyItemChartPrice] Rejected`);
+          state.koreaInvestmentInquireDailyItemChartPrice.state = "rejected";
         }
       }
     ),
@@ -931,7 +931,7 @@ export const koreaInvestmentSlice = createAppSlice({
           }
         },
         rejected: (state) => {
-          console.error(`[reqGetBalanceSheet] Rejected`);
+          state.koreaInvestmentBalanceSheet.state = "rejected";
         }
       }
     ),
@@ -956,7 +956,7 @@ export const koreaInvestmentSlice = createAppSlice({
           }
         },
         rejected: (state) => {
-          console.error(`[reqGetIncomeStatement] Rejected`);
+          state.koreaInvestmentIncomeStatement.state = "rejected";
         }
       }
     ),
