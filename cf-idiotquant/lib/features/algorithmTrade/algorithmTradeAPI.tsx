@@ -45,12 +45,12 @@ export const getQuantRuleDesc: any = async () => {
 
 export const getNcavDailyList: any = async (date?: string) => {
     const dateParam = date ?? "latest";
-    const subUrl = `/algorithm/trade/ncav/daily?date=${encodeURIComponent(dateParam)}`;
+    const subUrl = `/ncav/daily?date=${encodeURIComponent(dateParam)}&min_ratio=0&limit=200`;
     return getAlgorithmTradeRequest(subUrl);
 }
 
 export const getNcavDailyDates: any = async () => {
-    const subUrl = `/algorithm/trade/ncav/daily/dates`;
+    const subUrl = `/ncav/daily/dates`;
     return getAlgorithmTradeRequest(subUrl);
 }
 
