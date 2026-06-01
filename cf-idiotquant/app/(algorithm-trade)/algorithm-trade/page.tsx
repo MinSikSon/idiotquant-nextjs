@@ -805,10 +805,18 @@ function AlgorithmTradeContent() {
                     </div>
 
                     <div className="bg-white dark:bg-zinc-900 rounded-2xl border border-zinc-200 dark:border-zinc-800 shadow-sm overflow-hidden">
-                        {ncavDailyList.state === "pending" ? (
+                        {(ncavDailyList.state === "pending" || ncavDailyList.state === "init") ? (
                             <div className="flex items-center justify-center py-16 gap-3">
                                 <Loader2 className="w-5 h-5 text-blue-500 animate-spin" />
                                 <span className="text-sm text-zinc-400 font-medium">불러오는 중...</span>
+                            </div>
+                        ) : ncavDailyList.state === "rejected" ? (
+                            <div className="flex flex-col items-center justify-center py-16 gap-3 text-center px-4">
+                                <div className="p-3 bg-red-50 dark:bg-red-950/20 rounded-xl">
+                                    <AlertTriangle className="w-7 h-7 text-red-400 dark:text-red-500" />
+                                </div>
+                                <p className="text-sm font-bold text-red-500 dark:text-red-400">데이터를 불러오지 못했습니다.</p>
+                                <p className="text-xs text-zinc-400 dark:text-zinc-500 max-w-sm">{ncavDailyList.error ?? "API 오류가 발생했습니다. Worker 배포 상태와 D1 바인딩을 확인해주세요."}</p>
                             </div>
                         ) : ncavDailyList.list.length === 0 ? (
                             <div className="flex flex-col items-center justify-center py-16 gap-3 text-center px-4">
