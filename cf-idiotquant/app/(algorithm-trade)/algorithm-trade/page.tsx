@@ -12,7 +12,12 @@ import {
     Database, Globe2, BarChart3, TrendingUp,
 } from "lucide-react";
 
-import { selectStockByTicker, updateStockDetail, setStockState } from "@/lib/features/algorithmTrade/algorithmTradeSlice";
+import {
+    selectStockByTicker, updateStockDetail, setStockState,
+    selectNcavDailyDates, selectNcavDailyList,
+    reqGetNcavDailyDates, reqGetNcavDailyList,
+    setNcavDailySelectedDate,
+} from "@/lib/features/algorithmTrade/algorithmTradeSlice";
 import { selectStrategyNcavLatest, reqGetNcavLatest } from "@/lib/features/backtest/backtestSlice";
 import { reqGetInquirePrice, reqGetBalanceSheet, reqGetIncomeStatement, reqGetInquireDailyItemChartPrice } from "@/lib/features/koreaInvestment/koreaInvestmentSlice";
 import { reqGetQuotationsPriceDetail, reqGetQuotationsSearchInfo, reqGetOverseasPriceQuotationsDailyPrice } from "@/lib/features/koreaInvestmentUsMarket/koreaInvestmentUsMarketSlice";
@@ -91,14 +96,10 @@ const StockDataWrapper = ({
     const isUs = useMemo(() => us_tickers.includes(ticker.toUpperCase()), [ticker]);
     const data = useAppSelector((state) => selectStockByTicker(state, ticker));
 
-    // effect 내에서 항상 최신 store 값을 참조하기 위한 ref.
-    // deps에 data?.state를 넣으면 "pending" → "fulfilled" 전환마다 effect가 재실행되고,
-    // React Strict Mode 이중 실행 시 두 번째 실행이 stale한 undefined를 보고 중복 fetch를 일으킨다.
     const dataRef = useRef(data);
     dataRef.current = data;
 
     useEffect(() => {
-        // 실행 시점의 최신 store 상태로 캐시 여부 확인
         if (dataRef.current?.state === "fulfilled" || dataRef.current?.state === "pending") return;
 
         dispatch(setStockState({ ticker, status: "pending" }));
@@ -133,8 +134,6 @@ const StockDataWrapper = ({
         };
 
         fetchData();
-    // data?.state를 deps에서 제거: store 상태 변화마다 재실행되지 않도록 한다.
-    // ticker가 바뀔 때만 재실행하며, 실행 시점의 최신 state는 dataRef.current로 읽는다.
     }, [ticker, name, isUs, dispatch]);
 
     const chartConfig = useMemo(() => {
@@ -227,7 +226,6 @@ const CompactCard = ({
                     : "border-zinc-200 dark:border-zinc-800 hover:border-zinc-300 dark:hover:border-zinc-700"
             )}
         >
-            {/* 헤더: 로고 + 티커 + 마켓 + 등급 */}
             <div className="flex items-start justify-between gap-2">
                 <div className="flex items-center gap-3 min-w-0">
                     <StockLogo ticker={ticker} isUs={parsedData.isUs} className="w-9 h-9 shrink-0" />
@@ -258,7 +256,6 @@ const CompactCard = ({
                 </span>
             </div>
 
-            {/* 현재가 */}
             <div>
                 <p className="text-[22px] font-black font-mono text-zinc-900 dark:text-white tracking-tight leading-none">
                     {parsedData.isUs ? `$${parsedData.curPrice}` : `₩${parsedData.curPrice}`}
@@ -266,7 +263,6 @@ const CompactCard = ({
                 <p className="text-[10px] text-zinc-400 mt-1 uppercase tracking-wider font-semibold">현재가</p>
             </div>
 
-            {/* NCAV 업사이드 바 */}
             <div>
                 <div className="flex items-center justify-between mb-1.5">
                     <span className="text-[10px] text-zinc-400 font-bold uppercase tracking-wider">NCAV 업사이드</span>
@@ -283,7 +279,6 @@ const CompactCard = ({
                 </div>
             </div>
 
-            {/* PER / PBR / 스파크라인 */}
             <div className="flex items-end justify-between pt-1 border-t border-zinc-100 dark:border-zinc-800">
                 <div className="flex gap-5">
                     {[{ label: "PER", val: parsedData.per }, { label: "PBR", val: parsedData.pbr }].map(m => (
@@ -355,6 +350,9 @@ function AlgorithmTradeContent() {
     const searchParams = useSearchParams();
 
     const strategyNcavLatest = useAppSelector(selectStrategyNcavLatest);
+    const ncavDailyDates = useAppSelector(selectNcavDailyDates);
+    const ncavDailyList = useAppSelector(selectNcavDailyList);
+    const ncavDailySelectedDate = ncavDailyDates.selectedDate;
     const currentStrategyId = searchParams.get("strategy");
 
     const [displayCount, setDisplayCount] = useState(PAGE_SIZE);
@@ -369,6 +367,11 @@ function AlgorithmTradeContent() {
     const listRef = useRef<HTMLDivElement>(null);
 
     useEffect(() => { dispatch(reqGetNcavLatest()); }, [dispatch]);
+
+    useEffect(() => {
+        dispatch(reqGetNcavDailyDates());
+        dispatch(reqGetNcavDailyList("latest"));
+    }, [dispatch]);
 
     useEffect(() => {
         setDisplayCount(PAGE_SIZE);
@@ -420,10 +423,9 @@ function AlgorithmTradeContent() {
         });
     }, [activeStrategy, displayCount, viewMode, sortKey, sortOrder, loadedDataMap]);
 
-    // 키보드 네비게이션
     useEffect(() => {
         const onKey = (e: KeyboardEvent) => {
-            if (document.activeElement?.tagName === "INPUT") return;
+            if (document.activeElement?.tagName === "INPUT" || document.activeElement?.tagName === "SELECT") return;
             const max = visibleCandidates.length - 1;
             if (e.key === "ArrowDown") { e.preventDefault(); setFocusedIndex(p => Math.min(p + 1, max)); }
             else if (e.key === "ArrowUp") { e.preventDefault(); setFocusedIndex(p => Math.max(p - 1, 0)); }
@@ -432,8 +434,7 @@ function AlgorithmTradeContent() {
                 if (!selectedTicker && visibleCandidates[focusedIndex]) setSelectedTicker(visibleCandidates[focusedIndex][0]);
             }
             else if (e.key === "Escape") { e.preventDefault(); setSelectedTicker(null); }
-            // V 키 뷰 전환 (한/영, 물리 키 모두 처리)
-            else if (["v", "V", "ㅍ"].includes(e.key) || e.code === "KeyV") {
+            else if (["v", "V", "ㅔ"].includes(e.key) || e.code === "KeyV") {
                 e.preventDefault();
                 setViewMode(p => p === "card" ? "table" : "card");
             }
@@ -442,7 +443,6 @@ function AlgorithmTradeContent() {
         return () => window.removeEventListener("keydown", onKey);
     }, [visibleCandidates, focusedIndex, selectedTicker]);
 
-    // 포커스 이동 시 자동 스크롤
     useEffect(() => {
         if (!listRef.current) return;
         const sel = viewMode === "table" ? "tbody tr" : "[data-card]";
@@ -450,7 +450,6 @@ function AlgorithmTradeContent() {
         (items[focusedIndex] as HTMLElement)?.scrollIntoView({ block: "nearest", behavior: "smooth" });
     }, [focusedIndex, viewMode]);
 
-    // 무한 스크롤
     const handleObserver = useCallback((entries: IntersectionObserverEntry[]) => {
         if (entries[0]?.isIntersecting && activeStrategy?.candidates && !selectedTicker) {
             if (displayCount < Object.keys(activeStrategy.candidates).length)
@@ -499,7 +498,6 @@ function AlgorithmTradeContent() {
                         </div>
 
                         <div className="flex items-center gap-2 self-start sm:self-center shrink-0 flex-wrap">
-                            {/* 단축키 힌트 */}
                             <div className="hidden lg:flex items-center gap-1.5 text-[11px] text-zinc-400 dark:text-zinc-500 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-xl px-3 py-2 font-mono">
                                 <span className="text-zinc-300 dark:text-zinc-600 text-[10px] font-bold uppercase tracking-wider mr-0.5">단축키</span>
                                 {[["V", "뷰 전환"], ["↑↓", "이동"], ["Enter", "열기"], ["Esc", "닫기"]].map(([k, v]) => (
@@ -510,7 +508,6 @@ function AlgorithmTradeContent() {
                                 ))}
                             </div>
 
-                            {/* 뷰 전환 */}
                             <div className="flex items-center p-1 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-xl">
                                 {([["card", <LayoutGrid key="g" className="w-3.5 h-3.5" />, "카드"] as const,
                                    ["table", <List key="l" className="w-3.5 h-3.5" />, "테이블"] as const]).map(([mode, icon, label]) => (
@@ -526,7 +523,6 @@ function AlgorithmTradeContent() {
                                 ))}
                             </div>
 
-                            {/* 새로고침 */}
                             <button
                                 onClick={() => dispatch(reqGetNcavLatest())}
                                 className="p-2.5 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-xl text-zinc-500 hover:text-zinc-800 dark:hover:text-zinc-200 hover:border-zinc-300 dark:hover:border-zinc-700 transition-all"
@@ -591,7 +587,6 @@ function AlgorithmTradeContent() {
                 {/* ── 콘텐츠 ── */}
                 <div ref={listRef}>
 
-                    {/* 후보 종목 없을 때 */}
                     {totalCandidateKeys.length === 0 && (
                         <div className="flex flex-col items-center justify-center py-24 text-center gap-3">
                             <div className="p-4 bg-zinc-100 dark:bg-zinc-800 rounded-2xl">
@@ -602,7 +597,6 @@ function AlgorithmTradeContent() {
                         </div>
                     )}
 
-                    {/* 카드 그리드 */}
                     {viewMode === "card" && (
                         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
                             {visibleCandidates.map(([ticker, candidate], idx) => (
@@ -630,7 +624,6 @@ function AlgorithmTradeContent() {
                         </div>
                     )}
 
-                    {/* 테이블 뷰 */}
                     {viewMode === "table" && (
                         <div className="bg-white dark:bg-zinc-900 rounded-2xl border border-zinc-200 dark:border-zinc-800 shadow-sm overflow-hidden">
                             <div className="overflow-x-auto">
@@ -761,7 +754,6 @@ function AlgorithmTradeContent() {
                         </div>
                     )}
 
-                    {/* 무한 스크롤 트리거 */}
                     {visibleCandidates.length < totalCandidateKeys.length && (
                         <div ref={observerTarget} className="flex items-center justify-center gap-2.5 py-12 mt-2">
                             <Loader2 className="w-4 h-4 text-zinc-400 animate-spin" />
@@ -771,6 +763,135 @@ function AlgorithmTradeContent() {
                         </div>
                     )}
                 </div>
+
+                {/* ── D1 NCAV 일별 스캔 결과 ── */}
+                <section className="space-y-4 pt-4 border-t border-zinc-200 dark:border-zinc-800">
+                    <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4">
+                        <div className="space-y-1.5">
+                            <p className="text-[11px] font-bold text-zinc-400 uppercase tracking-widest font-mono">
+                                D1 DATABASE / NCAV 스캔
+                            </p>
+                            <h2 className="text-xl sm:text-2xl font-black tracking-tight text-zinc-900 dark:text-white">
+                                NCAV 일별 스캔 결과
+                            </h2>
+                            <p className="text-sm text-zinc-500 dark:text-zinc-400 font-medium">
+                                매일 누적되는 국내 NCAV 종목 스캔 결과를 일자별로 조회합니다.
+                            </p>
+                        </div>
+                        <div className="flex items-center gap-2 self-start sm:self-center shrink-0">
+                            <select
+                                value={ncavDailySelectedDate}
+                                onChange={(e) => {
+                                    dispatch(setNcavDailySelectedDate(e.target.value));
+                                    dispatch(reqGetNcavDailyList(e.target.value));
+                                }}
+                                className="h-10 px-3 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-xl text-sm font-medium text-zinc-700 dark:text-zinc-300 focus:outline-none focus:ring-2 focus:ring-blue-500/30 cursor-pointer"
+                            >
+                                <option value="latest">최신 일자</option>
+                                {ncavDailyDates.dates.map(d => (
+                                    <option key={d.scan_date} value={d.scan_date}>
+                                        {d.scan_date} ({d.cnt}개)
+                                    </option>
+                                ))}
+                            </select>
+                            <button
+                                onClick={() => dispatch(reqGetNcavDailyList(ncavDailySelectedDate))}
+                                className="p-2.5 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-xl text-zinc-500 hover:text-zinc-800 dark:hover:text-zinc-200 hover:border-zinc-300 dark:hover:border-zinc-700 transition-all"
+                                title="새로고침"
+                            >
+                                <RefreshCw className="w-4 h-4" />
+                            </button>
+                        </div>
+                    </div>
+
+                    <div className="bg-white dark:bg-zinc-900 rounded-2xl border border-zinc-200 dark:border-zinc-800 shadow-sm overflow-hidden">
+                        {ncavDailyList.state === "pending" ? (
+                            <div className="flex items-center justify-center py-16 gap-3">
+                                <Loader2 className="w-5 h-5 text-blue-500 animate-spin" />
+                                <span className="text-sm text-zinc-400 font-medium">불러오는 중...</span>
+                            </div>
+                        ) : ncavDailyList.list.length === 0 ? (
+                            <div className="flex flex-col items-center justify-center py-16 gap-3 text-center px-4">
+                                <Database className="w-8 h-8 text-zinc-300 dark:text-zinc-600" />
+                                <p className="text-sm font-bold text-zinc-500 dark:text-zinc-400">스캔 결과가 없습니다.</p>
+                                <p className="text-xs text-zinc-400 dark:text-zinc-500">아직 D1에 데이터가 저장되지 않았거나 해당 날짜의 결과가 없습니다.</p>
+                            </div>
+                        ) : (
+                            <>
+                                <div className="px-5 py-3.5 border-b border-zinc-100 dark:border-zinc-800 flex items-center justify-between">
+                                    <div className="flex items-center gap-2">
+                                        <span className="text-[11px] font-bold text-zinc-400 uppercase tracking-wider">스캔일</span>
+                                        <span className="px-2 py-0.5 bg-zinc-100 dark:bg-zinc-800 rounded text-xs font-mono font-bold text-zinc-700 dark:text-zinc-300">
+                                            {ncavDailyList.scanDate ?? "-"}
+                                        </span>
+                                    </div>
+                                    <span className="text-xs text-zinc-400 font-medium">{ncavDailyList.total}개 종목</span>
+                                </div>
+                                <div className="overflow-x-auto">
+                                    <table className="w-full text-left">
+                                        <thead>
+                                            <tr className="border-b border-zinc-200 dark:border-zinc-800 bg-zinc-50/50 dark:bg-zinc-900/50">
+                                                {[
+                                                    { label: "티커", align: "" },
+                                                    { label: "종목명", align: "" },
+                                                    { label: "NCAV 비율", align: "text-right" },
+                                                    { label: "유동자산(억)", align: "text-right" },
+                                                    { label: "총부채(억)", align: "text-right" },
+                                                    { label: "시가총액(억)", align: "text-right" },
+                                                    { label: "현재가", align: "text-right" },
+                                                    { label: "PER", align: "text-right" },
+                                                    { label: "PBR", align: "text-right" },
+                                                    { label: "EPS", align: "text-right" },
+                                                    { label: "BPS", align: "text-right" },
+                                                ].map(({ label, align }) => (
+                                                    <th key={label} className={`py-3 px-4 text-[10px] font-black text-zinc-400 uppercase tracking-wider select-none whitespace-nowrap ${align}`}>
+                                                        {label}
+                                                    </th>
+                                                ))}
+                                            </tr>
+                                        </thead>
+                                        <tbody className="divide-y divide-zinc-100 dark:divide-zinc-800/50">
+                                            {ncavDailyList.list.map((item) => (
+                                                <tr key={item.ticker} className="hover:bg-zinc-50 dark:hover:bg-zinc-800/30 transition-colors text-sm">
+                                                    <td className="py-3 px-4 font-mono font-black text-zinc-900 dark:text-zinc-100 whitespace-nowrap">{item.ticker}</td>
+                                                    <td className="py-3 px-4 text-zinc-700 dark:text-zinc-300 max-w-[160px] truncate">{item.name}</td>
+                                                    <td className="py-3 px-4 text-right font-mono font-black text-emerald-600 dark:text-emerald-400 whitespace-nowrap">
+                                                        {Number(item.ncav_ratio).toFixed(3)}
+                                                    </td>
+                                                    <td className="py-3 px-4 text-right font-mono text-zinc-500 dark:text-zinc-400 text-xs whitespace-nowrap">
+                                                        {Number(item.current_assets).toLocaleString()}
+                                                    </td>
+                                                    <td className="py-3 px-4 text-right font-mono text-zinc-500 dark:text-zinc-400 text-xs whitespace-nowrap">
+                                                        {Number(item.total_liabilities).toLocaleString()}
+                                                    </td>
+                                                    <td className="py-3 px-4 text-right font-mono text-zinc-500 dark:text-zinc-400 text-xs whitespace-nowrap">
+                                                        {Number(item.market_cap).toLocaleString()}
+                                                    </td>
+                                                    <td className="py-3 px-4 text-right font-mono text-zinc-700 dark:text-zinc-300 whitespace-nowrap">
+                                                        ₩{Number(item.last_price).toLocaleString()}
+                                                    </td>
+                                                    <td className="py-3 px-4 text-right font-mono text-zinc-500 dark:text-zinc-400 whitespace-nowrap">
+                                                        {item.per === 0 ? "—" : `${Number(item.per).toFixed(1)}x`}
+                                                    </td>
+                                                    <td className="py-3 px-4 text-right font-mono text-zinc-500 dark:text-zinc-400 whitespace-nowrap">
+                                                        {item.pbr === 0 ? "—" : `${Number(item.pbr).toFixed(2)}x`}
+                                                    </td>
+                                                    <td className="py-3 px-4 text-right font-mono text-zinc-500 dark:text-zinc-400 text-xs whitespace-nowrap">
+                                                        {Number(item.eps).toLocaleString()}
+                                                    </td>
+                                                    <td className="py-3 px-4 text-right font-mono text-zinc-500 dark:text-zinc-400 text-xs whitespace-nowrap">
+                                                        {Number(item.bps).toLocaleString()}
+                                                    </td>
+                                                </tr>
+                                            ))}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </>
+                        )}
+                    </div>
+                </section>
+
             </div>
 
             {/* ── 상세 모달 ── */}
