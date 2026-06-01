@@ -140,12 +140,14 @@ export interface NcavDailyState {
     list: NcavDailyItem[];
     scanDate: string | null;
     total: number;
+    error: string | null;
 }
 
 export interface NcavDailyDatesState {
     state: "init" | "pending" | "fulfilled" | "rejected";
     dates: NcavDailyDateItem[];
     selectedDate: string;
+    error: string | null;
 }
 
 interface AlgorithmTradeType {
@@ -222,8 +224,8 @@ const initialState: AlgorithmTradeType = {
     },
     stockDetails: {},
     strategyLists: {},
-    ncavDailyDates: { state: "init", dates: [], selectedDate: "latest" },
-    ncavDailyList: { state: "init", list: [], scanDate: null, total: 0 },
+    ncavDailyDates: { state: "init", dates: [], selectedDate: "latest", error: null },
+    ncavDailyList: { state: "init", list: [], scanDate: null, total: 0, error: null },
 }
 
 export const algorithmTradeSlice = createAppSlice({
@@ -345,27 +347,41 @@ export const algorithmTradeSlice = createAppSlice({
             }
         ),
         reqGetNcavDailyDates: create.asyncThunk(
-            async () => await getNcavDailyDates(),
+            async () => {
+                const result = await getNcavDailyDates();
+                if (result?.success === false) throw new Error(result?.error ?? "API error");
+                return result;
+            },
             {
-                pending: (state) => { state.ncavDailyDates.state = "pending"; },
+                pending: (state) => { state.ncavDailyDates.state = "pending"; state.ncavDailyDates.error = null; },
                 fulfilled: (state, action) => {
                     state.ncavDailyDates.dates = action.payload?.data ?? [];
                     state.ncavDailyDates.state = "fulfilled";
                 },
-                rejected: (state) => { state.ncavDailyDates.state = "rejected"; },
+                rejected: (state, action) => {
+                    state.ncavDailyDates.state = "rejected";
+                    state.ncavDailyDates.error = action.error?.message ?? null;
+                },
             }
         ),
         reqGetNcavDailyList: create.asyncThunk(
-            async (date?: string) => await getNcavDailyList(date),
+            async (date?: string) => {
+                const result = await getNcavDailyList(date);
+                if (result?.success === false) throw new Error(result?.error ?? "API error");
+                return result;
+            },
             {
-                pending: (state) => { state.ncavDailyList.state = "pending"; },
+                pending: (state) => { state.ncavDailyList.state = "pending"; state.ncavDailyList.error = null; },
                 fulfilled: (state, action) => {
                     state.ncavDailyList.list = action.payload?.data ?? [];
                     state.ncavDailyList.scanDate = action.payload?.meta?.scanDate ?? null;
                     state.ncavDailyList.total = action.payload?.meta?.total ?? 0;
                     state.ncavDailyList.state = "fulfilled";
                 },
-                rejected: (state) => { state.ncavDailyList.state = "rejected"; },
+                rejected: (state, action) => {
+                    state.ncavDailyList.state = "rejected";
+                    state.ncavDailyList.error = action.error?.message ?? null;
+                },
             }
         ),
     }),
