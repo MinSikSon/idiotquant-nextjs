@@ -57,3 +57,14 @@ CREATE TABLE IF NOT EXISTS usage_limits (
     lastResetDate INTEGER DEFAULT (strftime('%s', 'now')), -- 초기화 날짜
     FOREIGN KEY (userId) REFERENCES users (id) ON DELETE CASCADE
 );
+
+-- 5. 관심 종목 (로그인 유저 서버 저장)
+CREATE TABLE IF NOT EXISTS stock_likes (
+    user_id    TEXT    NOT NULL,
+    ticker     TEXT    NOT NULL,        -- 검색 키 (KR: 종목명, US: 티커)
+    is_us      INTEGER NOT NULL DEFAULT 0, -- 0: KR, 1: US
+    stock_name TEXT,                    -- 종목 표시명 (optional)
+    added_at   INTEGER NOT NULL DEFAULT (strftime('%s', 'now')),
+    PRIMARY KEY (user_id, ticker),
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+);
