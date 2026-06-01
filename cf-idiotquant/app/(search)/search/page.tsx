@@ -11,6 +11,8 @@ import {
   startTransition
 } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
+import { useSession } from 'next-auth/react';
+import { toggleStockLike, getMyStockLikes } from '@/app/(actions)/actions/stockLike';
 import dynamic from 'next/dynamic';
 import { useAppSelector, useAppDispatch } from '@/lib/hooks';
 import { useStockSearch } from './hooks/useStockSearch';
@@ -376,6 +378,7 @@ function SearchContent() {
   const krMarketHistory = useAppSelector(selectKrMarketHistory);
   const popularStocks = useAppSelector(selectPopularStocks) || [];
 
+  const { data: session } = useSession();
   const isOnline = useOnlineStatus();
   const { toasts, addToast, dismissToast } = useToast();
 
@@ -417,6 +420,19 @@ function SearchContent() {
       if (wl) setWatchlist(JSON.parse(wl));
     } catch (e) { console.error('Failed to load watchlist:', e); }
   }, [dispatch, addToast]);
+
+  // 로그인 시 서버 저장 관심 종목 불러와 로컬과 병합
+  useEffect(() => {
+    if (!session?.user) return;
+    getMyStockLikes().then(serverLikes => {
+      if (serverLikes.length === 0) return;
+      setWatchlist(prev => {
+        const merged = [...new Set([...prev, ...serverLikes])];
+        try { window.localStorage.setItem('idiotquant_watchlist_v1', JSON.stringify(merged)); } catch {}
+        return merged;
+      });
+    }).catch(() => {});
+  }, [session?.user]);
 
   const awardStockXp = useCallback((ticker: string, gainedXp: number) => {
     const key = normalizeTickerKey(ticker);
@@ -474,6 +490,9 @@ function SearchContent() {
   }, [name, krOrUs, addToast]);
 
   const toggleWatchlist = useCallback((ticker: string) => {
+    if (!session?.user) {
+      addToast({ type: 'info', message: '로그인 후 관심 종목이 서버에 저장됩니다.' });
+    }
     setWatchlist(prev => {
       const isAdded = prev.includes(ticker);
       const next = isAdded ? prev.filter(t => t !== ticker) : [...prev, ticker];
@@ -481,9 +500,13 @@ function SearchContent() {
         window.localStorage.setItem('idiotquant_watchlist_v1', JSON.stringify(next));
         addToast({ type: isAdded ? 'info' : 'success', message: isAdded ? '관심 종목에서 제거되었습니다.' : '관심 종목에 추가되었습니다.' });
       } catch { }
+      // 로그인 상태면 서버에도 저장
+      if (session?.user) {
+        toggleStockLike(ticker, krOrUs === 'US', name ?? undefined).catch(() => {});
+      }
       return next;
     });
-  }, [addToast]);
+  }, [addToast, session, krOrUs, name]);
 
   useEffect(() => {
     const ticker = searchParams.get('ticker');
