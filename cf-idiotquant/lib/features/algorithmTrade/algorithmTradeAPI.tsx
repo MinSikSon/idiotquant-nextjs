@@ -11,7 +11,6 @@ export const getCapitalToken: any = async () => {
 export const getKrPurchaseLogLatest: any = async (key?: any) => {
     const subUrl = `/algorithm/trade/kr/purchase/log/latest?kakao-id=${key}`;
     const additionalHeaders: AdditionalHeaders = {
-        // "kakaoId": key,
     }
     return getAlgorithmTradeRequest(subUrl, additionalHeaders);
 }
@@ -19,7 +18,6 @@ export const getKrPurchaseLogLatest: any = async (key?: any) => {
 export const getUsPurchaseLogLatest: any = async (key?: any) => {
     const subUrl = `/algorithm/trade/us/purchase/log/latest?kakao-id=${key}`;
     const additionalHeaders: AdditionalHeaders = {
-        // "kakaoId": key,
     }
     return getAlgorithmTradeRequest(subUrl, additionalHeaders);
 }
@@ -44,6 +42,18 @@ export const getQuantRuleDesc: any = async () => {
     }
     return getAlgorithmTradeRequest(subUrl, additionalHeaders);
 }
+
+export const getNcavDailyList: any = async (date?: string) => {
+    const dateParam = date ?? "latest";
+    const subUrl = `/algorithm/trade/ncav/daily?date=${encodeURIComponent(dateParam)}`;
+    return getAlgorithmTradeRequest(subUrl);
+}
+
+export const getNcavDailyDates: any = async () => {
+    const subUrl = `/algorithm/trade/ncav/daily/dates`;
+    return getAlgorithmTradeRequest(subUrl);
+}
+
 async function getAlgorithmTradeRequest(subUrl: string, additionalHeaders?: AdditionalHeaders) {
     const url = `/api/proxy${subUrl}`;
     const options: RequestInit = {

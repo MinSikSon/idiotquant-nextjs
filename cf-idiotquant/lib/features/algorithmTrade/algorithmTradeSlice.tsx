@@ -6,7 +6,9 @@ import {
     getQuantRule, 
     getQuantRuleDesc, 
     getUsCapitalToken, 
-    getUsPurchaseLogLatest 
+    getUsPurchaseLogLatest,
+    getNcavDailyList,
+    getNcavDailyDates,
 } from "./algorithmTradeAPI";
 
 const DEBUG = false;
@@ -111,6 +113,41 @@ interface StrategyList {
     updatedAt: string;
 }
 
+// --- D1 NCAV Daily 인터페이스 ---
+export interface NcavDailyItem {
+    ticker: string;
+    name: string;
+    scan_date: string;
+    ncav_ratio: number;
+    current_assets: number;
+    total_liabilities: number;
+    market_cap: number;
+    last_price: number;
+    net_income: number;
+    per: number;
+    pbr: number;
+    eps: number;
+    bps: number;
+}
+
+export interface NcavDailyDateItem {
+    scan_date: string;
+    cnt: number;
+}
+
+export interface NcavDailyState {
+    state: "init" | "pending" | "fulfilled" | "rejected";
+    list: NcavDailyItem[];
+    scanDate: string | null;
+    total: number;
+}
+
+export interface NcavDailyDatesState {
+    state: "init" | "pending" | "fulfilled" | "rejected";
+    dates: NcavDailyDateItem[];
+    selectedDate: string;
+}
+
 interface AlgorithmTradeType {
     state: "init" | "pending" | "fulfilled" | "rejected";
     capital_token: CapitalTokenType;
@@ -125,6 +162,9 @@ interface AlgorithmTradeType {
     
     inquire_price_multi: any;
     purchase_log: any;
+
+    ncavDailyDates: NcavDailyDatesState;
+    ncavDailyList: NcavDailyState;
 }
 
 const initialState: AlgorithmTradeType = {
@@ -181,7 +221,9 @@ const initialState: AlgorithmTradeType = {
         }
     },
     stockDetails: {},
-    strategyLists: {}
+    strategyLists: {},
+    ncavDailyDates: { state: "init", dates: [], selectedDate: "latest" },
+    ncavDailyList: { state: "init", list: [], scanDate: null, total: 0 },
 }
 
 export const algorithmTradeSlice = createAppSlice({
@@ -220,7 +262,10 @@ export const algorithmTradeSlice = createAppSlice({
             state.strategyLists[action.payload.id] = action.payload;
         }),
 
-        // --- 💡 [교정 완료] 비동기 Thunk 액션 응답 파싱 일괄 제거 처리 ---
+        setNcavDailySelectedDate: create.reducer((state, action: PayloadAction<string>) => {
+            state.ncavDailyDates.selectedDate = action.payload;
+        }),
+
         reqGetCapitalToken: create.asyncThunk(
             async () => await getCapitalToken(),
             {
@@ -229,7 +274,6 @@ export const algorithmTradeSlice = createAppSlice({
                     state.capital_token.state = "pending";
                 },
                 fulfilled: (state, action) => {
-                    // JSON.parse()를 걷어내고 API가 이미 파싱 완료해서 보낸 객체를 그대로 수용합니다.
                     state.capital_token = { state: "fulfilled", value: action.payload };
                     state.state = "fulfilled";
                 },
@@ -300,6 +344,30 @@ export const algorithmTradeSlice = createAppSlice({
                 rejected: (state) => { state.state = "rejected"; },
             }
         ),
+        reqGetNcavDailyDates: create.asyncThunk(
+            async () => await getNcavDailyDates(),
+            {
+                pending: (state) => { state.ncavDailyDates.state = "pending"; },
+                fulfilled: (state, action) => {
+                    state.ncavDailyDates.dates = action.payload?.data ?? [];
+                    state.ncavDailyDates.state = "fulfilled";
+                },
+                rejected: (state) => { state.ncavDailyDates.state = "rejected"; },
+            }
+        ),
+        reqGetNcavDailyList: create.asyncThunk(
+            async (date?: string) => await getNcavDailyList(date),
+            {
+                pending: (state) => { state.ncavDailyList.state = "pending"; },
+                fulfilled: (state, action) => {
+                    state.ncavDailyList.list = action.payload?.data ?? [];
+                    state.ncavDailyList.scanDate = action.payload?.meta?.scanDate ?? null;
+                    state.ncavDailyList.total = action.payload?.meta?.total ?? 0;
+                    state.ncavDailyList.state = "fulfilled";
+                },
+                rejected: (state) => { state.ncavDailyList.state = "rejected"; },
+            }
+        ),
     }),
     selectors: {
         selectAlgorithmTraceState: (state) => state.state,
@@ -314,6 +382,9 @@ export const algorithmTradeSlice = createAppSlice({
         selectStockByTicker: (state, ticker: string) => state.stockDetails[ticker],
         selectStrategyLists: (state) => state.strategyLists,
         selectTickersByStrategyId: (state, strategyId: string) => state.strategyLists[strategyId]?.tickers || [],
+
+        selectNcavDailyDates: (state) => state.ncavDailyDates,
+        selectNcavDailyList: (state) => state.ncavDailyList,
     }
 });
 
@@ -326,7 +397,10 @@ export const {
     reqGetUsPurchaseLogLatest,
     updateStockDetail,    
     setStockState,        
-    registerStrategyList  
+    registerStrategyList,
+    setNcavDailySelectedDate,
+    reqGetNcavDailyDates,
+    reqGetNcavDailyList,
 } = algorithmTradeSlice.actions;
 
 export const { 
@@ -340,5 +414,7 @@ export const {
     selectStockDetails,   
     selectStockByTicker,  
     selectStrategyLists,   
-    selectTickersByStrategyId 
+    selectTickersByStrategyId,
+    selectNcavDailyDates,
+    selectNcavDailyList,
 } = algorithmTradeSlice.selectors;
