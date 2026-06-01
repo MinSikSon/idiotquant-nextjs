@@ -16,7 +16,7 @@ import {
     selectStockByTicker, updateStockDetail, setStockState,
     selectNcavDailyDates, selectNcavDailyList,
     reqGetNcavDailyDates, reqGetNcavDailyList,
-    setNcavDailySelectedDate,
+    setNcavDailySelectedDate, reqDiscoverNcavDates,
 } from "@/lib/features/algorithmTrade/algorithmTradeSlice";
 import { selectStrategyNcavLatest, reqGetNcavLatest } from "@/lib/features/backtest/backtestSlice";
 import { reqGetInquirePrice, reqGetBalanceSheet, reqGetIncomeStatement, reqGetInquireDailyItemChartPrice } from "@/lib/features/koreaInvestment/koreaInvestmentSlice";
@@ -365,6 +365,7 @@ function AlgorithmTradeContent() {
 
     const observerTarget = useRef<HTMLDivElement>(null);
     const listRef = useRef<HTMLDivElement>(null);
+    const hasDiscovered = useRef(false);
 
     useEffect(() => { dispatch(reqGetNcavLatest()); }, [dispatch]);
 
@@ -372,6 +373,18 @@ function AlgorithmTradeContent() {
         dispatch(reqGetNcavDailyDates());
         dispatch(reqGetNcavDailyList("latest"));
     }, [dispatch]);
+
+    useEffect(() => {
+        if (
+            ncavDailyList.state === "fulfilled" &&
+            ncavDailyList.scanDate &&
+            !hasDiscovered.current &&
+            ncavDailyDates.dates.length < 2
+        ) {
+            hasDiscovered.current = true;
+            dispatch(reqDiscoverNcavDates(ncavDailyList.scanDate));
+        }
+    }, [ncavDailyList.state, ncavDailyList.scanDate, ncavDailyDates.dates.length, dispatch]);
 
     useEffect(() => {
         setDisplayCount(PAGE_SIZE);

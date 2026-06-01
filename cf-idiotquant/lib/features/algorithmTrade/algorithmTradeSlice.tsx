@@ -9,9 +9,22 @@ import {
     getUsPurchaseLogLatest,
     getNcavDailyList,
     getNcavDailyDates,
+    checkNcavDailyDate,
 } from "./algorithmTradeAPI";
 
 const DEBUG = false;
+
+function addDays(dateStr: string, days: number): string {
+    const y = parseInt(dateStr.slice(0, 4));
+    const m = parseInt(dateStr.slice(4, 6)) - 1;
+    const d = parseInt(dateStr.slice(6, 8));
+    const dt = new Date(y, m, d + days);
+    return [
+        dt.getFullYear(),
+        String(dt.getMonth() + 1).padStart(2, '0'),
+        String(dt.getDate()).padStart(2, '0'),
+    ].join('');
+}
 
 // --- 기존 인터페이스 유지 ---
 interface CapitalTokenTypeValueTimestamp {
@@ -377,11 +390,44 @@ export const algorithmTradeSlice = createAppSlice({
                     state.ncavDailyList.scanDate = action.payload?.meta?.scanDate ?? null;
                     state.ncavDailyList.total = action.payload?.meta?.total ?? 0;
                     state.ncavDailyList.state = "fulfilled";
+                    const scanDate = action.payload?.meta?.scanDate;
+                    if (scanDate && !state.ncavDailyDates.dates.find(d => d.scan_date === scanDate)) {
+                        const merged = [...state.ncavDailyDates.dates, { scan_date: scanDate, cnt: action.payload?.meta?.total ?? 0 }];
+                        state.ncavDailyDates.dates = merged.sort((a, b) => b.scan_date.localeCompare(a.scan_date));
+                    }
                 },
                 rejected: (state, action) => {
                     state.ncavDailyList.state = "rejected";
                     state.ncavDailyList.error = action.error?.message ?? null;
                 },
+            }
+        ),
+        reqDiscoverNcavDates: create.asyncThunk(
+            async (baseDate: string) => {
+                const datesToProbe = Array.from({ length: 7 }, (_, i) => addDays(baseDate, -(i + 1)));
+                const results = await Promise.allSettled(datesToProbe.map(d => checkNcavDailyDate(d)));
+                const found: NcavDailyDateItem[] = [];
+                for (let i = 0; i < results.length; i++) {
+                    const r = results[i];
+                    if (r.status === 'fulfilled' && r.value?.success && r.value?.data?.length > 0) {
+                        found.push({
+                            scan_date: r.value.meta?.scanDate ?? datesToProbe[i],
+                            cnt: r.value.meta?.total ?? r.value.data.length,
+                        });
+                    }
+                }
+                return found;
+            },
+            {
+                pending: () => {},
+                fulfilled: (state, action) => {
+                    const existing = state.ncavDailyDates.dates;
+                    const added = action.payload.filter(d => !existing.find(e => e.scan_date === d.scan_date));
+                    if (added.length > 0) {
+                        state.ncavDailyDates.dates = [...existing, ...added].sort((a, b) => b.scan_date.localeCompare(a.scan_date));
+                    }
+                },
+                rejected: () => {},
             }
         ),
     }),
@@ -417,6 +463,7 @@ export const {
     setNcavDailySelectedDate,
     reqGetNcavDailyDates,
     reqGetNcavDailyList,
+    reqDiscoverNcavDates,
 } = algorithmTradeSlice.actions;
 
 export const { 
