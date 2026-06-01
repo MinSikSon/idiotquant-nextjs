@@ -54,6 +54,11 @@ export const getNcavDailyDates: any = async () => {
     return getAlgorithmTradeRequest(subUrl);
 }
 
+export const checkNcavDailyDate: any = async (date: string) => {
+    const subUrl = `/ncav/daily?date=${encodeURIComponent(date)}&min_ratio=0&limit=1`;
+    return getAlgorithmTradeRequest(subUrl);
+}
+
 async function getAlgorithmTradeRequest(subUrl: string, additionalHeaders?: AdditionalHeaders) {
     const url = `/api/proxy${subUrl}`;
     const options: RequestInit = {
