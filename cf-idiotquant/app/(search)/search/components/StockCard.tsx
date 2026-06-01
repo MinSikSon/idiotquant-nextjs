@@ -118,7 +118,7 @@ const GRADE_CONFIG = {
     xpFrom: "from-emerald-400", xpTo: "to-teal-400",
     tierColor: "text-emerald-400/50",
     xpPctColor: "text-emerald-400/50",
-    holo: true, holoType: "silver" as const,
+    holo: true, holoType: "aurora" as const,
     rarity: "◆", rarityColor: "text-emerald-400",
     cornerColor: "rgba(16,185,129,0.7)",
     priceColor: "text-white",
@@ -309,57 +309,81 @@ interface FloatingText { id: number; text: string }
 const HoloOverlay = ({
   type, mouseX, mouseY,
 }: {
-  type: "rainbow" | "gold" | "silver" | "none";
+  type: "rainbow" | "gold" | "aurora" | "none";
   mouseX: ReturnType<typeof useMotionValue<number>>;
   mouseY: ReturnType<typeof useMotionValue<number>>;
 }) => {
   type MV = ReturnType<typeof useMotionValue<number>>;
   const inputs = [mouseX, mouseY] as MV[];
 
-  // 훅 순서 고정 — 세 가지 그라디언트 항상 계산
+  // 훅 순서 고정 — 세 그라디언트 항상 계산
+  // SSS: 프리즘 포일 — 30° 간격 촘촘한 밴드, 넓은 각도 스윕
   const rainbowBg = useTransform(inputs, (latest: number[]) => {
     const [mx, my] = latest;
-    const angle = 115 + mx * 160 + my * 50;
+    const angle = 110 + mx * 180 + my * 60;
     const h = mx * 360;
     return [
       `linear-gradient(${angle}deg,`,
-      `hsl(${h % 360}deg 100% 65%) 0%,`,
-      `hsl(${(h + 45) % 360}deg 100% 65%) 12.5%,`,
-      `hsl(${(h + 90) % 360}deg 100% 65%) 25%,`,
-      `hsl(${(h + 135) % 360}deg 100% 65%) 37.5%,`,
-      `hsl(${(h + 180) % 360}deg 100% 65%) 50%,`,
-      `hsl(${(h + 225) % 360}deg 100% 65%) 62.5%,`,
-      `hsl(${(h + 270) % 360}deg 100% 65%) 75%,`,
-      `hsl(${(h + 315) % 360}deg 100% 65%) 87.5%,`,
-      `hsl(${h % 360}deg 100% 65%) 100%)`,
+      `hsl(${h % 360}deg 100% 60%) 0%,`,
+      `hsl(${(h + 30)  % 360}deg 100% 60%) 10%,`,
+      `hsl(${(h + 60)  % 360}deg 100% 62%) 20%,`,
+      `hsl(${(h + 90)  % 360}deg 100% 58%) 32%,`,
+      `hsl(${(h + 140) % 360}deg 100% 60%) 44%,`,
+      `hsl(${(h + 190) % 360}deg 100% 62%) 56%,`,
+      `hsl(${(h + 240) % 360}deg 100% 60%) 68%,`,
+      `hsl(${(h + 290) % 360}deg 100% 58%) 80%,`,
+      `hsl(${(h + 330) % 360}deg 100% 60%) 90%,`,
+      `hsl(${h % 360}deg 100% 60%) 100%)`,
     ].join(" ");
   });
 
+  // SS: 듀오크롬 골드 — 골드 피크 + 로즈골드 오프셋으로 이색 시머
   const goldBg = useTransform(inputs, (latest: number[]) => {
     const [mx, my] = latest;
-    const angle = 60 + mx * 140 + my * 70;
-    return `linear-gradient(${angle}deg,rgba(120,80,0,0) 0%,rgba(253,200,50,0.9) 35%,rgba(255,245,150,1) 50%,rgba(253,200,50,0.9) 65%,rgba(120,80,0,0) 100%)`;
+    const angle = 55 + mx * 150 + my * 75;
+    return [
+      `linear-gradient(${angle}deg,`,
+      `rgba(101,63,0,0) 0%,`,
+      `rgba(212,148,20,0.7) 20%,`,
+      `rgba(255,220,100,0.95) 38%,`,
+      `rgba(255,248,200,1.0) 50%,`,
+      `rgba(255,200,160,0.9) 62%,`,
+      `rgba(220,150,60,0.7) 78%,`,
+      `rgba(101,63,0,0) 100%)`,
+    ].join(" ");
   });
 
-  const silverBg = useTransform(inputs, (latest: number[]) => {
+  // S: 오로라 보레알리스 — Y축 중심 스윕, 파랑-청록-초록-보라 5색
+  const auroraBg = useTransform(inputs, (latest: number[]) => {
     const [mx, my] = latest;
-    const angle = 60 + mx * 140 + my * 70;
-    return `linear-gradient(${angle}deg,rgba(0,80,60,0) 0%,rgba(52,211,153,0.85) 32%,rgba(200,255,240,1) 50%,rgba(6,182,212,0.85) 68%,rgba(0,60,80,0) 100%)`;
+    const angle = 160 + my * 120 + mx * 40;
+    return [
+      `linear-gradient(${angle}deg,`,
+      `rgba(0,20,80,0) 0%,`,
+      `rgba(30,100,200,0.7) 15%,`,
+      `rgba(20,200,180,0.85) 30%,`,
+      `rgba(80,220,130,0.9) 45%,`,
+      `rgba(180,255,200,1.0) 52%,`,
+      `rgba(120,200,240,0.85) 62%,`,
+      `rgba(140,80,220,0.7) 78%,`,
+      `rgba(20,0,60,0) 100%)`,
+    ].join(" ");
   });
 
-  // 중심(0.5,0.5) = opacity 0 — 기울일수록 max opacity 까지 선형 증가
+  // smoothstep: 살짝 기울이면 은은하게, 많이 기울이면 뚜렷하게
   const holoOpacity = useTransform(inputs, (latest: number[]) => {
     const [mx, my] = latest;
     const dx = mx - 0.5;
     const dy = my - 0.5;
     const tilt = Math.min(1, Math.sqrt(dx * dx + dy * dy) * 2.0);
-    const maxOpacity = type === "rainbow" ? 0.55 : 0.5;
-    return tilt * maxOpacity;
+    const smoothTilt = tilt * tilt * (3 - 2 * tilt);
+    const maxOpacity = type === "rainbow" ? 0.52 : type === "gold" ? 0.48 : 0.45;
+    return smoothTilt * maxOpacity;
   });
 
   if (type === "none") return null;
 
-  const bg = type === "rainbow" ? rainbowBg : type === "gold" ? goldBg : silverBg;
+  const bg = type === "rainbow" ? rainbowBg : type === "gold" ? goldBg : auroraBg;
 
   return (
     <motion.div
@@ -392,7 +416,9 @@ const HoloShine = ({
     const [mx, my] = latest;
     const dx = mx - 0.5;
     const dy = my - 0.5;
-    return Math.min(1, Math.sqrt(dx * dx + dy * dy) * 2.0);
+    const tilt = Math.min(1, Math.sqrt(dx * dx + dy * dy) * 2.0);
+    const smoothTilt = tilt * tilt * (3 - 2 * tilt);
+    return Math.min(0.6, smoothTilt * 0.8);
   });
 
   return (
@@ -404,23 +430,95 @@ const HoloShine = ({
 };
 
 // =========================================================================
-// 포일 텍스처 — 항상 은은하게 깔리는 사선 패턴
+// 포일 텍스처 — 등급별 상이한 패턴, 항상 은은하게 깔림
 // =========================================================================
-const FoilTexture = () => (
-  <div
-    className="absolute inset-0 pointer-events-none z-[18] rounded-[1.45rem]"
-    style={{
-      backgroundImage: `repeating-linear-gradient(
-        -45deg,
-        transparent 0px,
-        transparent 2px,
-        rgba(255,255,255,0.022) 2px,
-        rgba(255,255,255,0.022) 3px
-      )`,
-      mixBlendMode: "screen",
-    }}
-  />
-);
+const FoilTexture = ({ type }: { type: "prismatic" | "brushed" | "crystal" }) => {
+  const patternStyle: React.CSSProperties = (() => {
+    if (type === "prismatic") {
+      // SSS: 양방향 교차 대각선 → 다이아몬드 격자
+      return {
+        backgroundImage: [
+          "repeating-linear-gradient(-45deg, transparent 0px, transparent 2px, rgba(255,255,255,0.028) 2px, rgba(255,255,255,0.028) 3px)",
+          "repeating-linear-gradient(45deg,  transparent 0px, transparent 2px, rgba(255,255,255,0.018) 2px, rgba(255,255,255,0.018) 3px)",
+        ].join(", "),
+      };
+    }
+    if (type === "brushed") {
+      // SS: 넓은 대각선 → 브러쉬드 금속 질감
+      return {
+        backgroundImage: "repeating-linear-gradient(-45deg, transparent 0px, transparent 5px, rgba(255,255,255,0.032) 5px, rgba(255,255,255,0.032) 8px)",
+      };
+    }
+    // S: 수평선 → 오로라/크리스탈 수평 밴딩
+    return {
+      backgroundImage: "repeating-linear-gradient(0deg, transparent 0px, transparent 3px, rgba(255,255,255,0.025) 3px, rgba(255,255,255,0.025) 4px)",
+    };
+  })();
+
+  return (
+    <div
+      className="absolute inset-0 pointer-events-none z-[18] rounded-[1.45rem]"
+      style={{ ...patternStyle, mixBlendMode: "screen" }}
+    />
+  );
+};
+
+// =========================================================================
+// 등급별 홀로 문양 — 기울임 연동, 등급 전용 기하 패턴
+// =========================================================================
+const HoloPattern = ({
+  type, mouseX, mouseY,
+}: {
+  type: "stars" | "diamonds" | "waves";
+  mouseX: ReturnType<typeof useMotionValue<number>>;
+  mouseY: ReturnType<typeof useMotionValue<number>>;
+}) => {
+  type MV = ReturnType<typeof useMotionValue<number>>;
+  const inputs = [mouseX, mouseY] as MV[];
+
+  const patternOpacity = useTransform(inputs, (latest: number[]) => {
+    const [mx, my] = latest;
+    const dx = mx - 0.5;
+    const dy = my - 0.5;
+    const tilt = Math.min(1, Math.sqrt(dx * dx + dy * dy) * 2.0);
+    const smoothTilt = tilt * tilt * (3 - 2 * tilt);
+    return smoothTilt * 0.35;
+  });
+
+  const patternStyle: React.CSSProperties = (() => {
+    if (type === "stars") {
+      // SSS: 점 격자 — 성운/별자리 느낌
+      return {
+        backgroundImage: "radial-gradient(circle, rgba(255,255,255,0.55) 1px, transparent 1px)",
+        backgroundSize: "18px 18px",
+      };
+    }
+    if (type === "diamonds") {
+      // SS: 다이아몬드 격자 — 보석/골드 느낌
+      return {
+        backgroundImage: [
+          "linear-gradient(45deg,  rgba(255,220,80,0.4) 25%, transparent 25%)",
+          "linear-gradient(-45deg, rgba(255,220,80,0.4) 25%, transparent 25%)",
+          "linear-gradient(45deg,  transparent 75%, rgba(255,220,80,0.4) 75%)",
+          "linear-gradient(-45deg, transparent 75%, rgba(255,220,80,0.4) 75%)",
+        ].join(", "),
+        backgroundSize: "16px 16px",
+        backgroundPosition: "0 0, 0 8px, 8px -8px, -8px 0",
+      };
+    }
+    // S: 이중 수평 물결선 — 오로라 파동 느낌
+    return {
+      backgroundImage: "repeating-linear-gradient(0deg, transparent 0px, transparent 6px, rgba(80,220,180,0.3) 6px, rgba(80,220,180,0.3) 7px, transparent 7px, transparent 14px, rgba(120,180,255,0.2) 14px, rgba(120,180,255,0.2) 15px)",
+    };
+  })();
+
+  return (
+    <motion.div
+      className="absolute inset-0 pointer-events-none z-[19] rounded-[1.45rem]"
+      style={{ ...patternStyle, opacity: patternOpacity, mixBlendMode: "screen" }}
+    />
+  );
+};
 
 // =========================================================================
 // 스파클 레이어 (SSS 전용) — 항상 애니메이션, 자이로·마우스 무관
@@ -657,10 +755,17 @@ export const StockCard = ({ stock, chartConfig, isCompact = false, stockXpProfil
           {/* 카드 몸체 */}
           <div className={cn("w-full h-full rounded-[1.5rem] flex flex-col relative overflow-hidden", cfg.cardBodyCls)}>
 
-            {/* 홀로그래픽 레이어 (포일 텍스처 + 그라디언트 + 광택 스팟) */}
+            {/* 홀로그래픽 레이어 (포일 텍스처 + 등급 문양 + 그라디언트 + 광택 스팟) */}
             {cfg.holo && (
               <>
-                <FoilTexture />
+                <FoilTexture
+                  type={cfg.holoType === "rainbow" ? "prismatic" : cfg.holoType === "gold" ? "brushed" : "crystal"}
+                />
+                <HoloPattern
+                  type={cfg.holoType === "rainbow" ? "stars" : cfg.holoType === "gold" ? "diamonds" : "waves"}
+                  mouseX={mouseX}
+                  mouseY={mouseY}
+                />
                 <HoloOverlay type={cfg.holoType} mouseX={mouseX} mouseY={mouseY} />
                 <HoloShine mouseX={mouseX} mouseY={mouseY} />
               </>
