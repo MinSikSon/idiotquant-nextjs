@@ -304,7 +304,7 @@ interface StockCardProps {
 interface FloatingText { id: number; text: string }
 
 // =========================================================================
-// 홀로그래픽 오버레이
+// 홀로그래픽 오버레이 — 기울임 시에만 은은하게 출현
 // =========================================================================
 const HoloOverlay = ({
   type, mouseX, mouseY,
@@ -319,41 +319,42 @@ const HoloOverlay = ({
   // 훅 순서 고정 — 세 가지 그라디언트 항상 계산
   const rainbowBg = useTransform(inputs, (latest: number[]) => {
     const [mx, my] = latest;
-    // mx: 좌우 색상 회전, my: 각도 변화 추가
-    const angle = 95 + mx * 100 + my * 30;
-    const h = mx * 320;
+    const angle = 115 + mx * 160 + my * 50;
+    const h = mx * 360;
     return [
       `linear-gradient(${angle}deg,`,
-      `hsl(${h}deg 95% 68%/0.6) 0%,`,
-      `hsl(${h + 55}deg 95% 68%/0.6) 16%,`,
-      `hsl(${h + 110}deg 95% 68%/0.6) 33%,`,
-      `hsl(${h + 165}deg 95% 68%/0.6) 50%,`,
-      `hsl(${h + 220}deg 95% 68%/0.6) 67%,`,
-      `hsl(${h + 275}deg 95% 68%/0.6) 83%,`,
-      `hsl(${h + 330}deg 95% 68%/0.6) 100%)`,
+      `hsl(${h % 360}deg 100% 65%) 0%,`,
+      `hsl(${(h + 45) % 360}deg 100% 65%) 12.5%,`,
+      `hsl(${(h + 90) % 360}deg 100% 65%) 25%,`,
+      `hsl(${(h + 135) % 360}deg 100% 65%) 37.5%,`,
+      `hsl(${(h + 180) % 360}deg 100% 65%) 50%,`,
+      `hsl(${(h + 225) % 360}deg 100% 65%) 62.5%,`,
+      `hsl(${(h + 270) % 360}deg 100% 65%) 75%,`,
+      `hsl(${(h + 315) % 360}deg 100% 65%) 87.5%,`,
+      `hsl(${h % 360}deg 100% 65%) 100%)`,
     ].join(" ");
   });
 
   const goldBg = useTransform(inputs, (latest: number[]) => {
     const [mx, my] = latest;
-    const angle = 60 + mx * 80 + my * 50;
-    return `linear-gradient(${angle}deg,rgba(253,224,71,0)/15%,rgba(253,224,71,0.7) 42%,rgba(255,255,255,0.95) 50%,rgba(253,224,71,0.7) 58%,rgba(253,224,71,0)/85%)`;
+    const angle = 60 + mx * 140 + my * 70;
+    return `linear-gradient(${angle}deg,rgba(120,80,0,0) 0%,rgba(253,200,50,0.9) 35%,rgba(255,245,150,1) 50%,rgba(253,200,50,0.9) 65%,rgba(120,80,0,0) 100%)`;
   });
 
   const silverBg = useTransform(inputs, (latest: number[]) => {
     const [mx, my] = latest;
-    const angle = 60 + mx * 80 + my * 50;
-    return `linear-gradient(${angle}deg,rgba(52,211,153,0)/15%,rgba(52,211,153,0.6) 40%,rgba(255,255,255,0.85) 50%,rgba(6,182,212,0.6) 60%,rgba(52,211,153,0)/85%)`;
+    const angle = 60 + mx * 140 + my * 70;
+    return `linear-gradient(${angle}deg,rgba(0,80,60,0) 0%,rgba(52,211,153,0.85) 32%,rgba(200,255,240,1) 50%,rgba(6,182,212,0.85) 68%,rgba(0,60,80,0) 100%)`;
   });
 
-  // 중심(0.5, 0.5) 에서 벗어날수록 opacity 증가 — 마우스·자이로 공통
-  const baseOpacity = type === "rainbow" ? 0.25 : 0.08;
+  // 중심(0.5,0.5) = opacity 0 — 기울일수록 max opacity 까지 선형 증가
   const holoOpacity = useTransform(inputs, (latest: number[]) => {
     const [mx, my] = latest;
     const dx = mx - 0.5;
     const dy = my - 0.5;
-    const tilt = Math.min(1, Math.sqrt(dx * dx + dy * dy) * 2.6);
-    return baseOpacity + tilt * (1 - baseOpacity);
+    const tilt = Math.min(1, Math.sqrt(dx * dx + dy * dy) * 2.0);
+    const maxOpacity = type === "rainbow" ? 0.55 : 0.5;
+    return tilt * maxOpacity;
   });
 
   if (type === "none") return null;
@@ -362,11 +363,64 @@ const HoloOverlay = ({
 
   return (
     <motion.div
-      className="absolute inset-0 pointer-events-none z-20 rounded-[1.45rem]"
-      style={{ background: bg, mixBlendMode: "hard-light", opacity: holoOpacity }}
+      className="absolute inset-0 pointer-events-none z-[20] rounded-[1.45rem]"
+      style={{ background: bg, mixBlendMode: "screen", opacity: holoOpacity }}
     />
   );
 };
+
+// =========================================================================
+// 홀로 광택 스팟 — 마우스 위치에 따른 빛 반사 (기울임 연동)
+// =========================================================================
+const HoloShine = ({
+  mouseX, mouseY,
+}: {
+  mouseX: ReturnType<typeof useMotionValue<number>>;
+  mouseY: ReturnType<typeof useMotionValue<number>>;
+}) => {
+  type MV = ReturnType<typeof useMotionValue<number>>;
+  const inputs = [mouseX, mouseY] as MV[];
+
+  const shineBg = useTransform(inputs, (latest: number[]) => {
+    const [mx, my] = latest;
+    const px = mx * 100;
+    const py = my * 100;
+    return `radial-gradient(ellipse 55% 38% at ${px}% ${py}%, rgba(255,255,255,0.28) 0%, rgba(255,255,255,0.1) 35%, transparent 65%)`;
+  });
+
+  const shineOpacity = useTransform(inputs, (latest: number[]) => {
+    const [mx, my] = latest;
+    const dx = mx - 0.5;
+    const dy = my - 0.5;
+    return Math.min(1, Math.sqrt(dx * dx + dy * dy) * 2.0);
+  });
+
+  return (
+    <motion.div
+      className="absolute inset-0 pointer-events-none z-[22] rounded-[1.45rem]"
+      style={{ background: shineBg, opacity: shineOpacity, mixBlendMode: "screen" }}
+    />
+  );
+};
+
+// =========================================================================
+// 포일 텍스처 — 항상 은은하게 깔리는 사선 패턴
+// =========================================================================
+const FoilTexture = () => (
+  <div
+    className="absolute inset-0 pointer-events-none z-[18] rounded-[1.45rem]"
+    style={{
+      backgroundImage: `repeating-linear-gradient(
+        -45deg,
+        transparent 0px,
+        transparent 2px,
+        rgba(255,255,255,0.022) 2px,
+        rgba(255,255,255,0.022) 3px
+      )`,
+      mixBlendMode: "screen",
+    }}
+  />
+);
 
 // =========================================================================
 // 스파클 레이어 (SSS 전용) — 항상 애니메이션, 자이로·마우스 무관
@@ -395,20 +449,23 @@ const SparkleLayer = () => (
 const CornerOrnament = ({ pos, color }: { pos: "tl"|"tr"|"bl"|"br"; color: string }) => {
   const style: React.CSSProperties = {
     position: "absolute",
-    width: 16, height: 16,
-    top:    pos.startsWith("t") ? 10 : undefined,
-    bottom: pos.startsWith("b") ? 10 : undefined,
-    left:   pos.endsWith("l")   ? 10 : undefined,
-    right:  pos.endsWith("r")   ? 10 : undefined,
+    width: 22, height: 22,
+    top:    pos.startsWith("t") ? 9 : undefined,
+    bottom: pos.startsWith("b") ? 9 : undefined,
+    left:   pos.endsWith("l")   ? 9 : undefined,
+    right:  pos.endsWith("r")   ? 9 : undefined,
     transform: { tl: "rotate(0deg)", tr: "rotate(90deg)", br: "rotate(180deg)", bl: "rotate(270deg)" }[pos],
     pointerEvents: "none",
     zIndex: 10,
   };
   return (
     <div style={style}>
-      <svg viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
-        <path d="M1 15 L1 1 L15 1" stroke={color} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
-        <circle cx="1" cy="1" r="1.8" fill={color} />
+      <svg viewBox="0 0 22 22" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <path d="M2 20 L2 2 L20 2" stroke={color} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+        <circle cx="2" cy="2" r="2.2" fill={color} />
+        <circle cx="20" cy="2" r="1.1" fill={color} opacity="0.45" />
+        <circle cx="2" cy="20" r="1.1" fill={color} opacity="0.45" />
+        <path d="M7 2 L2 2 L2 7" stroke={color} strokeWidth="0.6" opacity="0.35" strokeLinecap="round" />
       </svg>
     </div>
   );
@@ -588,7 +645,7 @@ export const StockCard = ({ stock, chartConfig, isCompact = false, stockXpProfil
 
         {/* ════════════════ FRONT ════════════════ */}
         <div
-          className={cn("absolute inset-0 rounded-[1.75rem] p-[3px]", cfg.glow)}
+          className={cn("absolute inset-0 rounded-[1.75rem] p-[4px]", cfg.glow)}
           style={{
             background: cfg.frameGradient,
             WebkitBackfaceVisibility: "hidden",
@@ -600,9 +657,13 @@ export const StockCard = ({ stock, chartConfig, isCompact = false, stockXpProfil
           {/* 카드 몸체 */}
           <div className={cn("w-full h-full rounded-[1.5rem] flex flex-col relative overflow-hidden", cfg.cardBodyCls)}>
 
-            {/* 홀로그래픽 오버레이 */}
+            {/* 홀로그래픽 레이어 (포일 텍스처 + 그라디언트 + 광택 스팟) */}
             {cfg.holo && (
-              <HoloOverlay type={cfg.holoType} mouseX={mouseX} mouseY={mouseY} />
+              <>
+                <FoilTexture />
+                <HoloOverlay type={cfg.holoType} mouseX={mouseX} mouseY={mouseY} />
+                <HoloShine mouseX={mouseX} mouseY={mouseY} />
+              </>
             )}
 
             {/* 스파클 (SSS) */}
@@ -687,6 +748,14 @@ export const StockCard = ({ stock, chartConfig, isCompact = false, stockXpProfil
                 cfg.darkCard ? "border-white/10" : "border-black/5"
               )}>
                 Lv.{level}
+              </div>
+
+              {/* 카드 번호 */}
+              <div className={cn(
+                "absolute bottom-2 left-2 z-20 text-[7px] font-mono font-bold tracking-wider",
+                cfg.darkCard ? "text-white/20" : "text-black/20"
+              )}>
+                IDQ·{stock?.ticker}
               </div>
 
               {/* 희귀도 */}
