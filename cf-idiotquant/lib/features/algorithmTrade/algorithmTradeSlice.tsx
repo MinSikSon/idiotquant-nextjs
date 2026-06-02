@@ -14,6 +14,10 @@ import {
 
 const DEBUG = false;
 
+function normalizeDate(d: string): string {
+    return d.replace(/-/g, "");
+}
+
 function addDays(dateStr: string, days: number): string {
     const y = parseInt(dateStr.slice(0, 4));
     const m = parseInt(dateStr.slice(4, 6)) - 1;
@@ -368,7 +372,10 @@ export const algorithmTradeSlice = createAppSlice({
             {
                 pending: (state) => { state.ncavDailyDates.state = "pending"; state.ncavDailyDates.error = null; },
                 fulfilled: (state, action) => {
-                    state.ncavDailyDates.dates = action.payload?.data ?? [];
+                    const raw: NcavDailyDateItem[] = action.payload?.data ?? [];
+                    state.ncavDailyDates.dates = raw
+                        .map(d => ({ ...d, scan_date: normalizeDate(d.scan_date) }))
+                        .sort((a, b) => b.scan_date.localeCompare(a.scan_date));
                     state.ncavDailyDates.state = "fulfilled";
                 },
                 rejected: (state, action) => {
@@ -390,10 +397,14 @@ export const algorithmTradeSlice = createAppSlice({
                     state.ncavDailyList.scanDate = action.payload?.meta?.scanDate ?? null;
                     state.ncavDailyList.total = action.payload?.meta?.total ?? 0;
                     state.ncavDailyList.state = "fulfilled";
-                    const scanDate = action.payload?.meta?.scanDate;
-                    if (scanDate && !state.ncavDailyDates.dates.find(d => d.scan_date === scanDate)) {
-                        const merged = [...state.ncavDailyDates.dates, { scan_date: scanDate, cnt: action.payload?.meta?.total ?? 0 }];
-                        state.ncavDailyDates.dates = merged.sort((a, b) => b.scan_date.localeCompare(a.scan_date));
+                    const rawScanDate = action.payload?.meta?.scanDate;
+                    const scanDate = rawScanDate ? normalizeDate(rawScanDate) : null;
+                    if (scanDate) {
+                        state.ncavDailyList.scanDate = scanDate;
+                        if (!state.ncavDailyDates.dates.find(d => d.scan_date === scanDate)) {
+                            const merged = [...state.ncavDailyDates.dates, { scan_date: scanDate, cnt: action.payload?.meta?.total ?? 0 }];
+                            state.ncavDailyDates.dates = merged.sort((a, b) => b.scan_date.localeCompare(a.scan_date));
+                        }
                     }
                 },
                 rejected: (state, action) => {
@@ -410,8 +421,9 @@ export const algorithmTradeSlice = createAppSlice({
                 for (let i = 0; i < results.length; i++) {
                     const r = results[i];
                     if (r.status === 'fulfilled' && r.value?.success && r.value?.data?.length > 0) {
+                        const sd = r.value.meta?.scanDate ?? datesToProbe[i];
                         found.push({
-                            scan_date: r.value.meta?.scanDate ?? datesToProbe[i],
+                            scan_date: normalizeDate(sd),
                             cnt: r.value.meta?.total ?? r.value.data.length,
                         });
                     }

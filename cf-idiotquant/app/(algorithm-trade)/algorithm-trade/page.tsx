@@ -365,6 +365,7 @@ function AlgorithmTradeContent() {
     const [sortOrder, setSortOrder] = useState<SortOrder>("asc");
     const [loadedDataMap, setLoadedDataMap] = useState<Record<string, any>>({});
     const [marketTab, setMarketTab] = useState<"kr" | "us">("kr");
+    const [viewTab, setViewTab] = useState<"strategy" | "daily">("strategy");
 
     const listRef = useRef<HTMLDivElement>(null);
     const hasDiscovered = useRef(false);
@@ -399,6 +400,7 @@ function AlgorithmTradeContent() {
     useEffect(() => {
         setDisplayCount(PAGE_SIZE);
         setFocusedIndex(0);
+        setViewTab("strategy");
     }, [marketTab]);
 
     useEffect(() => {
@@ -619,8 +621,40 @@ function AlgorithmTradeContent() {
                     ))}
                 </section>
 
+                {/* ── KR 서브탭: 전략 후보 | 일별 스캔 ── */}
+                {marketTab === "kr" && (
+                    <div className="flex items-center gap-2">
+                        {([
+                            { id: "strategy" as const, label: "전략 후보", count: krCandidateEntries.length },
+                            { id: "daily" as const, label: "일별 스캔", count: ncavDailyList.total },
+                        ]).map(tab => (
+                            <button
+                                key={tab.id}
+                                onClick={() => setViewTab(tab.id)}
+                                className={cn(
+                                    "flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-bold border transition-all",
+                                    viewTab === tab.id
+                                        ? "bg-zinc-950 dark:bg-white border-zinc-950 dark:border-white text-white dark:text-zinc-950 shadow-sm"
+                                        : "bg-white dark:bg-zinc-900 border-zinc-200 dark:border-zinc-800 text-zinc-500 hover:text-zinc-900 dark:hover:text-zinc-100 hover:border-zinc-300 dark:hover:border-zinc-700"
+                                )}
+                            >
+                                {tab.label}
+                                <span className={cn(
+                                    "px-1.5 py-0.5 rounded text-[10px] font-mono font-black",
+                                    viewTab === tab.id ? "bg-white/20 dark:bg-zinc-900/20" : "bg-zinc-100 dark:bg-zinc-800 text-zinc-400"
+                                )}>
+                                    {tab.count}
+                                </span>
+                            </button>
+                        ))}
+                    </div>
+                )}
+
                 {/* ── 콘텐츠 ── */}
                 <div ref={listRef}>
+
+                    {/* 전략 후보 뷰 (KR 전략 후보 탭 또는 US 탭) */}
+                    {(marketTab === "us" || viewTab === "strategy") && (<>
 
                     {activeMarketEntries.length === 0 && (
                         <div className="flex flex-col items-center justify-center py-24 text-center gap-3">
@@ -805,47 +839,75 @@ function AlgorithmTradeContent() {
                             </button>
                         </div>
                     )}
-                </div>
 
-                {/* ── D1 NCAV 일별 스캔 결과 (국내 탭에서만 표시) ── */}
-                {marketTab === "kr" && <section className="space-y-4 pt-4 border-t border-zinc-200 dark:border-zinc-800">
-                    <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4">
-                        <div className="space-y-1.5">
-                            <p className="text-[11px] font-bold text-zinc-400 uppercase tracking-widest font-mono">
-                                D1 DATABASE / NCAV 스캔
-                            </p>
-                            <h2 className="text-xl sm:text-2xl font-black tracking-tight text-zinc-900 dark:text-white">
-                                NCAV 일별 스캔 결과
-                            </h2>
-                            <p className="text-sm text-zinc-500 dark:text-zinc-400 font-medium">
-                                매일 누적되는 국내 NCAV 종목 스캔 결과를 일자별로 조회합니다.
-                            </p>
+                    </>)}
+
+                    {/* 일별 스캔 뷰 */}
+                    {marketTab === "kr" && viewTab === "daily" && (
+                    <div className="space-y-4">
+                        {/* 날짜 선택 */}
+                        <div className="flex items-center gap-2 flex-wrap">
+                            {(() => {
+                                const latestScanDate = ncavDailyList.scanDate;
+                                const fmtDate = (d: string) =>
+                                    d.length === 8
+                                        ? `${d.slice(0, 4)}-${d.slice(4, 6)}-${d.slice(6, 8)}`
+                                        : d;
+                                const isLatestSelected = ncavDailySelectedDate === "latest" || ncavDailySelectedDate === latestScanDate;
+                                const otherDates = ncavDailyDates.dates.filter(d => d.scan_date !== latestScanDate);
+                                return (<>
+                                    <button
+                                        onClick={() => {
+                                            dispatch(setNcavDailySelectedDate("latest"));
+                                            dispatch(reqGetNcavDailyList("latest"));
+                                        }}
+                                        className={cn(
+                                            "flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-bold border transition-all",
+                                            isLatestSelected
+                                                ? "bg-indigo-600 border-indigo-600 text-white shadow-sm"
+                                                : "bg-white dark:bg-zinc-900 border-zinc-200 dark:border-zinc-800 text-zinc-600 dark:text-zinc-400 hover:border-zinc-400"
+                                        )}
+                                    >
+                                        최신
+                                        {latestScanDate && (
+                                            <span className={cn("text-[10px] font-mono", isLatestSelected ? "text-indigo-200" : "text-zinc-400")}>
+                                                {fmtDate(latestScanDate)}
+                                            </span>
+                                        )}
+                                    </button>
+                                    {otherDates.map(d => {
+                                        const isSelected = ncavDailySelectedDate === d.scan_date;
+                                        return (
+                                            <button
+                                                key={d.scan_date}
+                                                onClick={() => {
+                                                    dispatch(setNcavDailySelectedDate(d.scan_date));
+                                                    dispatch(reqGetNcavDailyList(d.scan_date));
+                                                }}
+                                                className={cn(
+                                                    "flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-bold border transition-all",
+                                                    isSelected
+                                                        ? "bg-indigo-600 border-indigo-600 text-white shadow-sm"
+                                                        : "bg-white dark:bg-zinc-900 border-zinc-200 dark:border-zinc-800 text-zinc-600 dark:text-zinc-400 hover:border-zinc-400"
+                                                )}
+                                            >
+                                                {fmtDate(d.scan_date)}
+                                                <span className={cn("text-[10px] font-mono", isSelected ? "text-indigo-200" : "text-zinc-400")}>
+                                                    {d.cnt}개
+                                                </span>
+                                            </button>
+                                        );
+                                    })}
+                                    <button
+                                        onClick={() => dispatch(reqGetNcavDailyList(ncavDailySelectedDate))}
+                                        className="p-2 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-xl text-zinc-400 hover:text-zinc-700 dark:hover:text-zinc-200 hover:border-zinc-300 dark:hover:border-zinc-700 transition-all"
+                                        title="새로고침"
+                                    >
+                                        <RefreshCw className="w-3.5 h-3.5" />
+                                    </button>
+                                </>);
+                            })()}
                         </div>
-                        <div className="flex items-center gap-2 self-start sm:self-center shrink-0">
-                            <select
-                                value={ncavDailySelectedDate}
-                                onChange={(e) => {
-                                    dispatch(setNcavDailySelectedDate(e.target.value));
-                                    dispatch(reqGetNcavDailyList(e.target.value));
-                                }}
-                                className="h-10 px-3 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-xl text-sm font-medium text-zinc-700 dark:text-zinc-300 focus:outline-none focus:ring-2 focus:ring-blue-500/30 cursor-pointer"
-                            >
-                                <option value="latest">최신 일자</option>
-                                {ncavDailyDates.dates.map(d => (
-                                    <option key={d.scan_date} value={d.scan_date}>
-                                        {d.scan_date} ({d.cnt}개)
-                                    </option>
-                                ))}
-                            </select>
-                            <button
-                                onClick={() => dispatch(reqGetNcavDailyList(ncavDailySelectedDate))}
-                                className="p-2.5 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-xl text-zinc-500 hover:text-zinc-800 dark:hover:text-zinc-200 hover:border-zinc-300 dark:hover:border-zinc-700 transition-all"
-                                title="새로고침"
-                            >
-                                <RefreshCw className="w-4 h-4" />
-                            </button>
-                        </div>
-                    </div>
 
                     <div className="bg-white dark:bg-zinc-900 rounded-2xl border border-zinc-200 dark:border-zinc-800 shadow-sm overflow-hidden">
                         {(ncavDailyList.state === "pending" || ncavDailyList.state === "init") ? (
@@ -962,7 +1024,10 @@ function AlgorithmTradeContent() {
                             </>
                         )}
                     </div>
-                </section>}
+                    </div>
+                    )}
+
+                </div>
 
             </div>
 
