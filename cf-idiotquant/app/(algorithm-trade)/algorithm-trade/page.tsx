@@ -371,6 +371,7 @@ function AlgorithmTradeContent() {
     const [excludeSpac, setExcludeSpac] = useState(false);
     const [excludeDeficit, setExcludeDeficit] = useState(false);
     const [ncavPositiveOnly, setNcavPositiveOnly] = useState(false);
+    const [minMarketCap, setMinMarketCap] = useState(0);
     const [manualDateInput, setManualDateInput] = useState("");
 
     const listRef = useRef<HTMLDivElement>(null);
@@ -430,8 +431,9 @@ function AlgorithmTradeContent() {
         if (excludeSpac)      list = list.filter(item => !item.name.includes("스팩"));
         if (excludeDeficit)   list = list.filter(item => Number(item.eps) > 0);
         if (ncavPositiveOnly) list = list.filter(item => Number(item.ncav_ratio) >= 1);
+        if (minMarketCap > 0) list = list.filter(item => Number(item.market_cap) >= minMarketCap);
         return list;
-    }, [ncavDailyList.list, excludeHoldings, excludePreferred, excludeSpac, excludeDeficit, ncavPositiveOnly]);
+    }, [ncavDailyList.list, excludeHoldings, excludePreferred, excludeSpac, excludeDeficit, ncavPositiveOnly, minMarketCap]);
 
     const krCandidateEntries = useMemo(() => {
         if (!activeStrategy?.candidates) return [] as [string, any][];
@@ -953,31 +955,56 @@ function AlgorithmTradeContent() {
                             })()}
                         </div>
                         {/* 필터 */}
-                        <div className="flex items-center gap-2 flex-wrap">
-                            <span className="flex items-center gap-1 text-[10px] font-black text-zinc-400 uppercase tracking-wider">
-                                <Filter className="w-3 h-3" />
-                                필터
-                            </span>
-                            {([
-                                { label: "홀딩스 제외", active: excludeHoldings, toggle: () => setExcludeHoldings(p => !p) },
-                                { label: "우선주 제외", active: excludePreferred, toggle: () => setExcludePreferred(p => !p) },
-                                { label: "스팩 제외",   active: excludeSpac,      toggle: () => setExcludeSpac(p => !p) },
-                                { label: "적자 제외",   active: excludeDeficit,   toggle: () => setExcludeDeficit(p => !p) },
-                                { label: "NCAV 양수만", active: ncavPositiveOnly, toggle: () => setNcavPositiveOnly(p => !p) },
-                            ] as const).map(({ label, active, toggle }) => (
-                                <button
-                                    key={label}
-                                    onClick={() => { toggle(); setDailyDisplayCount(DAILY_PAGE_SIZE); }}
-                                    className={cn(
-                                        "px-3 py-1.5 rounded-lg text-xs font-bold border transition-all",
-                                        active
-                                            ? "bg-amber-500 border-amber-500 text-white shadow-sm"
-                                            : "bg-white dark:bg-zinc-900 border-zinc-200 dark:border-zinc-800 text-zinc-500 dark:text-zinc-400 hover:border-zinc-400"
-                                    )}
-                                >
-                                    {label}
-                                </button>
-                            ))}
+                        <div className="flex flex-col gap-2">
+                            <div className="flex items-center gap-2 flex-wrap">
+                                <span className="flex items-center gap-1 text-[10px] font-black text-zinc-400 uppercase tracking-wider w-12 shrink-0">
+                                    <Filter className="w-3 h-3" />
+                                    필터
+                                </span>
+                                {([
+                                    { label: "홀딩스 제외", active: excludeHoldings, toggle: () => setExcludeHoldings(p => !p) },
+                                    { label: "우선주 제외", active: excludePreferred, toggle: () => setExcludePreferred(p => !p) },
+                                    { label: "스팩 제외",   active: excludeSpac,      toggle: () => setExcludeSpac(p => !p) },
+                                    { label: "적자 제외",   active: excludeDeficit,   toggle: () => setExcludeDeficit(p => !p) },
+                                    { label: "NCAV 양수만", active: ncavPositiveOnly, toggle: () => setNcavPositiveOnly(p => !p) },
+                                ] as const).map(({ label, active, toggle }) => (
+                                    <button
+                                        key={label}
+                                        onClick={() => { toggle(); setDailyDisplayCount(DAILY_PAGE_SIZE); }}
+                                        className={cn(
+                                            "px-3 py-1.5 rounded-lg text-xs font-bold border transition-all",
+                                            active
+                                                ? "bg-amber-500 border-amber-500 text-white shadow-sm"
+                                                : "bg-white dark:bg-zinc-900 border-zinc-200 dark:border-zinc-800 text-zinc-500 dark:text-zinc-400 hover:border-zinc-400"
+                                        )}
+                                    >
+                                        {label}
+                                    </button>
+                                ))}
+                            </div>
+                            <div className="flex items-center gap-2 flex-wrap">
+                                <span className="text-[10px] font-black text-zinc-400 uppercase tracking-wider w-12 shrink-0">시총</span>
+                                {([
+                                    { label: "전체", value: 0 },
+                                    { label: "50억+", value: 50 },
+                                    { label: "100억+", value: 100 },
+                                    { label: "300억+", value: 300 },
+                                    { label: "500억+", value: 500 },
+                                ] as const).map(({ label, value }) => (
+                                    <button
+                                        key={label}
+                                        onClick={() => { setMinMarketCap(value); setDailyDisplayCount(DAILY_PAGE_SIZE); }}
+                                        className={cn(
+                                            "px-3 py-1.5 rounded-lg text-xs font-bold border transition-all",
+                                            minMarketCap === value
+                                                ? "bg-indigo-600 border-indigo-600 text-white shadow-sm"
+                                                : "bg-white dark:bg-zinc-900 border-zinc-200 dark:border-zinc-800 text-zinc-500 dark:text-zinc-400 hover:border-zinc-400"
+                                        )}
+                                    >
+                                        {label}
+                                    </button>
+                                ))}
+                            </div>
                         </div>
 
                     <div className="bg-white dark:bg-zinc-900 rounded-2xl border border-zinc-200 dark:border-zinc-800 shadow-sm overflow-hidden">
@@ -1016,9 +1043,9 @@ function AlgorithmTradeContent() {
                                         </span>
                                     </div>
                                     <span className="text-xs text-zinc-400 font-medium">
-                                        {excludeHoldings && filteredDailyList.length !== ncavDailyList.list.length
-                                            ? <>{filteredDailyList.length}<span className="text-zinc-300 dark:text-zinc-600"> / {ncavDailyList.total}</span>개 종목</>
-                                            : <>{ncavDailyList.total}개 종목</>
+                                        {filteredDailyList.length !== ncavDailyList.list.length
+                                            ? <>{filteredDailyList.length}<span className="text-zinc-300 dark:text-zinc-600"> / {ncavDailyList.list.length}</span>개 종목</>
+                                            : <>{ncavDailyList.list.length}개 종목</>
                                         }
                                     </span>
                                 </div>
