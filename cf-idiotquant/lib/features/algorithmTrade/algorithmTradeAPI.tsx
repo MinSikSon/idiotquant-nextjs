@@ -43,19 +43,20 @@ export const getQuantRuleDesc: any = async () => {
     return getAlgorithmTradeRequest(subUrl, additionalHeaders);
 }
 
-export const getNcavDailyList: any = async (date?: string) => {
+export const getScanDailyList: any = async (date?: string, strategy?: string) => {
     const dateParam = date ?? "latest";
-    const subUrl = `/ncav/daily?date=${encodeURIComponent(dateParam)}&min_ratio=0&limit=200`;
+    const strategyParam = strategy ?? "all";
+    const subUrl = `/scan/daily?date=${encodeURIComponent(dateParam)}&strategy=${strategyParam}&limit=300&sort=ncav_ratio&order=desc`;
     return getAlgorithmTradeRequest(subUrl);
 }
 
-export const getNcavDailyDates: any = async () => {
-    const subUrl = `/ncav/daily/dates`;
+export const getScanDailyDates: any = async () => {
+    const subUrl = `/scan/daily/dates`;
     return getAlgorithmTradeRequest(subUrl);
 }
 
-export const checkNcavDailyDate: any = async (date: string) => {
-    const subUrl = `/ncav/daily?date=${encodeURIComponent(date)}&min_ratio=0&limit=1`;
+export const checkScanDailyDate: any = async (date: string) => {
+    const subUrl = `/scan/daily?date=${encodeURIComponent(date)}&strategy=all&limit=1`;
     return getAlgorithmTradeRequest(subUrl);
 }
 

@@ -1,15 +1,15 @@
 import { PayloadAction } from "@reduxjs/toolkit";
 import { createAppSlice } from "@/lib/createAppSlice";
-import { 
-    getCapitalToken, 
-    getKrPurchaseLogLatest, 
-    getQuantRule, 
-    getQuantRuleDesc, 
-    getUsCapitalToken, 
+import {
+    getCapitalToken,
+    getKrPurchaseLogLatest,
+    getQuantRule,
+    getQuantRuleDesc,
+    getUsCapitalToken,
     getUsPurchaseLogLatest,
-    getNcavDailyList,
-    getNcavDailyDates,
-    checkNcavDailyDate,
+    getScanDailyList,
+    getScanDailyDates,
+    checkScanDailyDate,
 } from "./algorithmTradeAPI";
 
 const DEBUG = false;
@@ -130,7 +130,7 @@ interface StrategyList {
     updatedAt: string;
 }
 
-// --- D1 NCAV Daily 인터페이스 ---
+// --- D1 stock_data_daily 인터페이스 ---
 export interface NcavDailyItem {
     ticker: string;
     name: string;
@@ -145,11 +145,18 @@ export interface NcavDailyItem {
     pbr: number;
     eps: number;
     bps: number;
+    roe: number | null;
+    strategies: string[];
 }
 
 export interface NcavDailyDateItem {
     scan_date: string;
     cnt: number;
+    total_cnt: number;
+    ncav_cnt: number;
+    low_pbr_cnt: number;
+    low_per_cnt: number;
+    s_rim_cnt: number;
 }
 
 export interface NcavDailyState {
@@ -365,17 +372,25 @@ export const algorithmTradeSlice = createAppSlice({
         ),
         reqGetNcavDailyDates: create.asyncThunk(
             async () => {
-                const result = await getNcavDailyDates();
+                const result = await getScanDailyDates();
                 if (result?.success === false) throw new Error(result?.error ?? "API error");
                 return result;
             },
             {
                 pending: (state) => { state.ncavDailyDates.state = "pending"; state.ncavDailyDates.error = null; },
                 fulfilled: (state, action) => {
-                    const raw: NcavDailyDateItem[] = action.payload?.data ?? [];
+                    const raw: any[] = action.payload?.data ?? [];
                     const seen = new Set<string>();
                     state.ncavDailyDates.dates = raw
-                        .map(d => ({ ...d, scan_date: normalizeDate(d.scan_date) }))
+                        .map(d => ({
+                            scan_date: normalizeDate(d.scan_date),
+                            cnt: d.total_cnt ?? d.cnt ?? 0,
+                            total_cnt: d.total_cnt ?? d.cnt ?? 0,
+                            ncav_cnt: d.ncav_cnt ?? 0,
+                            low_pbr_cnt: d.low_pbr_cnt ?? 0,
+                            low_per_cnt: d.low_per_cnt ?? 0,
+                            s_rim_cnt: d.s_rim_cnt ?? 0,
+                        }))
                         .filter(d => { if (seen.has(d.scan_date)) return false; seen.add(d.scan_date); return true; })
                         .sort((a, b) => b.scan_date.localeCompare(a.scan_date));
                     state.ncavDailyDates.state = "fulfilled";
@@ -388,15 +403,20 @@ export const algorithmTradeSlice = createAppSlice({
         ),
         reqGetNcavDailyList: create.asyncThunk(
             async (date?: string) => {
-                const result = await getNcavDailyList(date);
+                const result = await getScanDailyList(date);
                 if (result?.success === false) throw new Error(result?.error ?? "API error");
                 return result;
             },
             {
                 pending: (state) => { state.ncavDailyList.state = "pending"; state.ncavDailyList.error = null; },
                 fulfilled: (state, action) => {
-                    state.ncavDailyList.list = action.payload?.data ?? [];
-                    state.ncavDailyList.scanDate = action.payload?.meta?.scanDate ?? null;
+                    const raw: any[] = action.payload?.data ?? [];
+                    state.ncavDailyList.list = raw.map(item => ({
+                        ...item,
+                        strategies: Array.isArray(item.strategies)
+                            ? item.strategies
+                            : (() => { try { return JSON.parse(item.strategies ?? "[]"); } catch { return []; } })(),
+                    }));
                     state.ncavDailyList.total = action.payload?.meta?.total ?? 0;
                     state.ncavDailyList.state = "fulfilled";
                     const rawScanDate = action.payload?.meta?.scanDate;
@@ -404,7 +424,16 @@ export const algorithmTradeSlice = createAppSlice({
                     if (scanDate) {
                         state.ncavDailyList.scanDate = scanDate;
                         if (!state.ncavDailyDates.dates.find(d => d.scan_date === scanDate)) {
-                            const merged = [...state.ncavDailyDates.dates, { scan_date: scanDate, cnt: action.payload?.meta?.total ?? 0 }];
+                            const total = action.payload?.meta?.total ?? 0;
+                            const merged = [...state.ncavDailyDates.dates, {
+                                scan_date: scanDate,
+                                cnt: total,
+                                total_cnt: total,
+                                ncav_cnt: 0,
+                                low_pbr_cnt: 0,
+                                low_per_cnt: 0,
+                                s_rim_cnt: 0,
+                            }];
                             state.ncavDailyDates.dates = merged.sort((a, b) => b.scan_date.localeCompare(a.scan_date));
                         }
                     }
@@ -418,15 +447,21 @@ export const algorithmTradeSlice = createAppSlice({
         reqDiscoverNcavDates: create.asyncThunk(
             async (baseDate: string) => {
                 const datesToProbe = Array.from({ length: 7 }, (_, i) => addDays(baseDate, -(i + 1)));
-                const results = await Promise.allSettled(datesToProbe.map(d => checkNcavDailyDate(d)));
+                const results = await Promise.allSettled(datesToProbe.map(d => checkScanDailyDate(d)));
                 const found: NcavDailyDateItem[] = [];
                 for (let i = 0; i < results.length; i++) {
                     const r = results[i];
                     if (r.status === 'fulfilled' && r.value?.success && r.value?.data?.length > 0) {
                         const sd = r.value.meta?.scanDate ?? datesToProbe[i];
+                        const total = r.value.meta?.total ?? r.value.data.length;
                         found.push({
                             scan_date: normalizeDate(sd),
-                            cnt: r.value.meta?.total ?? r.value.data.length,
+                            cnt: total,
+                            total_cnt: total,
+                            ncav_cnt: 0,
+                            low_pbr_cnt: 0,
+                            low_per_cnt: 0,
+                            s_rim_cnt: 0,
                         });
                     }
                 }
