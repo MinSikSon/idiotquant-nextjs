@@ -35,6 +35,7 @@ import { cn } from "@/lib/utils";
 // =========================================================================
 const us_tickers = [...nasdaq_tickers, ...nyse_tickers, ...amex_tickers];
 const PAGE_SIZE = 12;
+const DAILY_PAGE_SIZE = 20;
 type SortKey = "ticker" | "ncavScore" | "curPrice" | "per" | "pbr";
 type SortOrder = "asc" | "desc";
 
@@ -356,6 +357,7 @@ function AlgorithmTradeContent() {
     const currentStrategyId = searchParams.get("strategy");
 
     const [displayCount, setDisplayCount] = useState(PAGE_SIZE);
+    const [dailyDisplayCount, setDailyDisplayCount] = useState(DAILY_PAGE_SIZE);
     const [selectedTicker, setSelectedTicker] = useState<string | null>(null);
     const [viewMode, setViewMode] = useState<"card" | "table">("card");
     const [focusedIndex, setFocusedIndex] = useState(0);
@@ -363,7 +365,6 @@ function AlgorithmTradeContent() {
     const [sortOrder, setSortOrder] = useState<SortOrder>("asc");
     const [loadedDataMap, setLoadedDataMap] = useState<Record<string, any>>({});
 
-    const observerTarget = useRef<HTMLDivElement>(null);
     const listRef = useRef<HTMLDivElement>(null);
     const hasDiscovered = useRef(false);
 
@@ -392,6 +393,10 @@ function AlgorithmTradeContent() {
         setFocusedIndex(0);
         setLoadedDataMap({});
     }, [currentStrategyId]);
+
+    useEffect(() => {
+        setDailyDisplayCount(DAILY_PAGE_SIZE);
+    }, [ncavDailySelectedDate]);
 
     const activeStrategy = useMemo(() => {
         const list = strategyNcavLatest?.list;
@@ -462,19 +467,6 @@ function AlgorithmTradeContent() {
         const items = listRef.current.querySelectorAll(sel);
         (items[focusedIndex] as HTMLElement)?.scrollIntoView({ block: "nearest", behavior: "smooth" });
     }, [focusedIndex, viewMode]);
-
-    const handleObserver = useCallback((entries: IntersectionObserverEntry[]) => {
-        if (entries[0]?.isIntersecting && activeStrategy?.candidates && !selectedTicker) {
-            if (displayCount < Object.keys(activeStrategy.candidates).length)
-                setDisplayCount(p => p + PAGE_SIZE);
-        }
-    }, [activeStrategy, displayCount, selectedTicker]);
-
-    useEffect(() => {
-        const obs = new IntersectionObserver(handleObserver, { threshold: 0.1, rootMargin: "400px" });
-        if (observerTarget.current) obs.observe(observerTarget.current);
-        return () => obs.disconnect();
-    }, [handleObserver]);
 
     const toggleSort = (key: SortKey) => {
         if (sortKey === key) setSortOrder(p => p === "asc" ? "desc" : "asc");
@@ -768,11 +760,17 @@ function AlgorithmTradeContent() {
                     )}
 
                     {visibleCandidates.length < totalCandidateKeys.length && (
-                        <div ref={observerTarget} className="flex items-center justify-center gap-2.5 py-12 mt-2">
-                            <Loader2 className="w-4 h-4 text-zinc-400 animate-spin" />
-                            <span className="text-xs text-zinc-400 font-medium">
+                        <div className="flex flex-col items-center gap-3 py-8 mt-2">
+                            <p className="text-xs text-zinc-400 font-medium">
                                 {visibleCandidates.length} / {totalCandidateKeys.length}개 표시 중
-                            </span>
+                            </p>
+                            <button
+                                onClick={() => setDisplayCount(p => p + PAGE_SIZE)}
+                                className="flex items-center gap-2 px-6 py-2.5 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-xl text-sm font-bold text-zinc-700 dark:text-zinc-300 hover:border-zinc-400 dark:hover:border-zinc-600 hover:text-zinc-900 dark:hover:text-zinc-100 transition-all shadow-sm"
+                            >
+                                더 보기
+                                <span className="text-xs font-mono text-zinc-400">+{Math.min(PAGE_SIZE, totalCandidateKeys.length - visibleCandidates.length)}</span>
+                            </button>
                         </div>
                     )}
                 </div>
@@ -855,7 +853,7 @@ function AlgorithmTradeContent() {
                                                 {[
                                                     { label: "티커", align: "" },
                                                     { label: "종목명", align: "" },
-                                                    { label: "NCAV 비율", align: "text-right" },
+                                                    { label: "NCAV 업사이드", align: "text-right" },
                                                     { label: "유동자산(억)", align: "text-right" },
                                                     { label: "총부채(억)", align: "text-right" },
                                                     { label: "시가총액(억)", align: "text-right" },
@@ -872,42 +870,63 @@ function AlgorithmTradeContent() {
                                             </tr>
                                         </thead>
                                         <tbody className="divide-y divide-zinc-100 dark:divide-zinc-800/50">
-                                            {ncavDailyList.list.map((item) => (
-                                                <tr key={item.ticker} className="hover:bg-zinc-50 dark:hover:bg-zinc-800/30 transition-colors text-sm">
-                                                    <td className="py-3 px-4 font-mono font-black text-zinc-900 dark:text-zinc-100 whitespace-nowrap">{item.ticker}</td>
-                                                    <td className="py-3 px-4 text-zinc-700 dark:text-zinc-300 max-w-[160px] truncate">{item.name}</td>
-                                                    <td className="py-3 px-4 text-right font-mono font-black text-emerald-600 dark:text-emerald-400 whitespace-nowrap">
-                                                        {Number(item.ncav_ratio).toFixed(3)}
-                                                    </td>
-                                                    <td className="py-3 px-4 text-right font-mono text-zinc-500 dark:text-zinc-400 text-xs whitespace-nowrap">
-                                                        {Number(item.current_assets).toLocaleString()}
-                                                    </td>
-                                                    <td className="py-3 px-4 text-right font-mono text-zinc-500 dark:text-zinc-400 text-xs whitespace-nowrap">
-                                                        {Number(item.total_liabilities).toLocaleString()}
-                                                    </td>
-                                                    <td className="py-3 px-4 text-right font-mono text-zinc-500 dark:text-zinc-400 text-xs whitespace-nowrap">
-                                                        {Number(item.market_cap).toLocaleString()}
-                                                    </td>
-                                                    <td className="py-3 px-4 text-right font-mono text-zinc-700 dark:text-zinc-300 whitespace-nowrap">
-                                                        ₩{Number(item.last_price).toLocaleString()}
-                                                    </td>
-                                                    <td className="py-3 px-4 text-right font-mono text-zinc-500 dark:text-zinc-400 whitespace-nowrap">
-                                                        {item.per === 0 ? "—" : `${Number(item.per).toFixed(1)}x`}
-                                                    </td>
-                                                    <td className="py-3 px-4 text-right font-mono text-zinc-500 dark:text-zinc-400 whitespace-nowrap">
-                                                        {item.pbr === 0 ? "—" : `${Number(item.pbr).toFixed(2)}x`}
-                                                    </td>
-                                                    <td className="py-3 px-4 text-right font-mono text-zinc-500 dark:text-zinc-400 text-xs whitespace-nowrap">
-                                                        {Number(item.eps).toLocaleString()}
-                                                    </td>
-                                                    <td className="py-3 px-4 text-right font-mono text-zinc-500 dark:text-zinc-400 text-xs whitespace-nowrap">
-                                                        {Number(item.bps).toLocaleString()}
-                                                    </td>
-                                                </tr>
-                                            ))}
+                                            {ncavDailyList.list.slice(0, dailyDisplayCount).map((item) => {
+                                                const upsidePct = (Number(item.ncav_ratio) - 1) * 100;
+                                                const isPositive = upsidePct >= 0;
+                                                return (
+                                                    <tr key={item.ticker} className="hover:bg-zinc-50 dark:hover:bg-zinc-800/30 transition-colors text-sm">
+                                                        <td className="py-3 px-4 font-mono font-black text-zinc-900 dark:text-zinc-100 whitespace-nowrap">{item.ticker}</td>
+                                                        <td className="py-3 px-4 text-zinc-700 dark:text-zinc-300 max-w-[160px] truncate">{item.name}</td>
+                                                        <td className={cn(
+                                                            "py-3 px-4 text-right font-mono font-black whitespace-nowrap",
+                                                            isPositive ? "text-emerald-600 dark:text-emerald-400" : "text-red-500 dark:text-red-400"
+                                                        )}>
+                                                            {isPositive ? "+" : ""}{upsidePct.toFixed(1)}%
+                                                        </td>
+                                                        <td className="py-3 px-4 text-right font-mono text-zinc-500 dark:text-zinc-400 text-xs whitespace-nowrap">
+                                                            {Number(item.current_assets).toLocaleString()}
+                                                        </td>
+                                                        <td className="py-3 px-4 text-right font-mono text-zinc-500 dark:text-zinc-400 text-xs whitespace-nowrap">
+                                                            {Number(item.total_liabilities).toLocaleString()}
+                                                        </td>
+                                                        <td className="py-3 px-4 text-right font-mono text-zinc-500 dark:text-zinc-400 text-xs whitespace-nowrap">
+                                                            {Number(item.market_cap).toLocaleString()}
+                                                        </td>
+                                                        <td className="py-3 px-4 text-right font-mono text-zinc-700 dark:text-zinc-300 whitespace-nowrap">
+                                                            ₩{Number(item.last_price).toLocaleString()}
+                                                        </td>
+                                                        <td className="py-3 px-4 text-right font-mono text-zinc-500 dark:text-zinc-400 whitespace-nowrap">
+                                                            {item.per === 0 ? "—" : `${Number(item.per).toFixed(1)}x`}
+                                                        </td>
+                                                        <td className="py-3 px-4 text-right font-mono text-zinc-500 dark:text-zinc-400 whitespace-nowrap">
+                                                            {item.pbr === 0 ? "—" : `${Number(item.pbr).toFixed(2)}x`}
+                                                        </td>
+                                                        <td className="py-3 px-4 text-right font-mono text-zinc-500 dark:text-zinc-400 text-xs whitespace-nowrap">
+                                                            {Number(item.eps).toLocaleString()}
+                                                        </td>
+                                                        <td className="py-3 px-4 text-right font-mono text-zinc-500 dark:text-zinc-400 text-xs whitespace-nowrap">
+                                                            {Number(item.bps).toLocaleString()}
+                                                        </td>
+                                                    </tr>
+                                                );
+                                            })}
                                         </tbody>
                                     </table>
                                 </div>
+                                {dailyDisplayCount < ncavDailyList.list.length && (
+                                    <div className="flex flex-col items-center gap-3 py-6 border-t border-zinc-100 dark:border-zinc-800">
+                                        <p className="text-xs text-zinc-400 font-medium">
+                                            {dailyDisplayCount} / {ncavDailyList.list.length}개 표시 중
+                                        </p>
+                                        <button
+                                            onClick={() => setDailyDisplayCount(p => p + DAILY_PAGE_SIZE)}
+                                            className="flex items-center gap-2 px-6 py-2.5 bg-zinc-50 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-xl text-sm font-bold text-zinc-700 dark:text-zinc-300 hover:border-zinc-400 dark:hover:border-zinc-600 hover:bg-white dark:hover:bg-zinc-750 transition-all"
+                                        >
+                                            더 보기
+                                            <span className="text-xs font-mono text-zinc-400">+{Math.min(DAILY_PAGE_SIZE, ncavDailyList.list.length - dailyDisplayCount)}</span>
+                                        </button>
+                                    </div>
+                                )}
                             </>
                         )}
                     </div>
