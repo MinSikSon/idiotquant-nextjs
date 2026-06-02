@@ -1029,23 +1029,17 @@ function AlgorithmTradeContent() {
                                 <span className="text-[10px] font-black text-zinc-400 uppercase tracking-wider w-12 shrink-0">전략</span>
                                 <button
                                     onClick={() => setStrategyFilterOn(p => !p)}
-                                    disabled={quantRule.state !== "fulfilled"}
-                                    title={quantRule.state !== "fulfilled" ? "전략 설정 로딩 중..." : undefined}
                                     className={cn(
                                         "flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold border transition-all",
                                         strategyFilterOn
                                             ? "bg-violet-600 border-violet-600 text-white shadow-sm"
-                                            : quantRule.state !== "fulfilled"
-                                                ? "bg-zinc-100 dark:bg-zinc-800 border-zinc-200 dark:border-zinc-700 text-zinc-400 cursor-not-allowed"
-                                                : "bg-white dark:bg-zinc-900 border-zinc-200 dark:border-zinc-800 text-zinc-500 dark:text-zinc-400 hover:border-zinc-400"
+                                            : "bg-white dark:bg-zinc-900 border-zinc-200 dark:border-zinc-800 text-zinc-500 dark:text-zinc-400 hover:border-zinc-400"
                                     )}
                                 >
                                     전략 기준 보기
-                                    {quantRule.state === "fulfilled" && (
-                                        <span className={cn("text-[9px] font-mono", strategyFilterOn ? "text-violet-200" : "text-zinc-400")}>
-                                            NCAV≥{quantRule.value.ncav_ratio} · PBR≤{quantRule.value.max_pbr} · EPS≥{quantRule.value.min_eps}
-                                        </span>
-                                    )}
+                                    <span className={cn("text-[9px] font-mono", strategyFilterOn ? "text-violet-200" : "text-zinc-400")}>
+                                        NCAV≥{quantRule.value.ncav_ratio} · PBR≤{quantRule.value.max_pbr} · EPS≥{quantRule.value.min_eps}
+                                    </span>
                                 </button>
                             </div>
                         </div>
@@ -1119,7 +1113,7 @@ function AlgorithmTradeContent() {
                                             {filteredDailyList.slice(0, dailyDisplayCount).map((item) => {
                                                 const upsidePct = (Number(item.ncav_ratio) - 1) * 100;
                                                 const isPositive = upsidePct >= 0;
-                                                const qr = strategyFilterOn && quantRule.state === "fulfilled" ? quantRule.value : null;
+                                                const qr = strategyFilterOn ? quantRule.value : null;
                                                 const ncavFail = qr && Number(item.ncav_ratio) < Number(qr.ncav_ratio);
                                                 const pbrFail  = qr && item.pbr !== 0 && Number(item.pbr) > Number(qr.max_pbr);
                                                 const epsFail  = qr && Number(item.eps) < Number(qr.min_eps);
