@@ -15,7 +15,9 @@ import {
 import {
     selectStockByTicker, updateStockDetail, setStockState,
     selectNcavDailyDates, selectNcavDailyList,
+    selectQuantRule,
     reqGetNcavDailyDates, reqGetNcavDailyList,
+    reqGetQuantRule,
     setNcavDailySelectedDate, reqDiscoverNcavDates,
 } from "@/lib/features/algorithmTrade/algorithmTradeSlice";
 import { selectStrategyNcavLatest, reqGetNcavLatest } from "@/lib/features/backtest/backtestSlice";
@@ -353,6 +355,7 @@ function AlgorithmTradeContent() {
     const strategyNcavLatest = useAppSelector(selectStrategyNcavLatest);
     const ncavDailyDates = useAppSelector(selectNcavDailyDates);
     const ncavDailyList = useAppSelector(selectNcavDailyList);
+    const quantRule = useAppSelector(selectQuantRule);
     const ncavDailySelectedDate = ncavDailyDates.selectedDate;
     const currentStrategyId = searchParams.get("strategy");
 
@@ -364,8 +367,9 @@ function AlgorithmTradeContent() {
     const [sortKey, setSortKey] = useState<SortKey>("ticker");
     const [sortOrder, setSortOrder] = useState<SortOrder>("asc");
     const [loadedDataMap, setLoadedDataMap] = useState<Record<string, any>>({});
+    const [mainTab, setMainTab] = useState<"discovery" | "strategy">("discovery");
     const [marketTab, setMarketTab] = useState<"kr" | "us">("kr");
-    const [viewTab, setViewTab] = useState<"strategy" | "daily">("strategy");
+    const [strategyFilterOn, setStrategyFilterOn] = useState(false);
     const [excludeHoldings, setExcludeHoldings] = useState(false);
     const [excludePreferred, setExcludePreferred] = useState(false);
     const [excludeSpac, setExcludeSpac] = useState(false);
@@ -377,7 +381,7 @@ function AlgorithmTradeContent() {
     const listRef = useRef<HTMLDivElement>(null);
     const hasDiscovered = useRef(false);
 
-    useEffect(() => { dispatch(reqGetNcavLatest()); }, [dispatch]);
+    useEffect(() => { dispatch(reqGetNcavLatest()); dispatch(reqGetQuantRule()); }, [dispatch]);
 
     useEffect(() => {
         dispatch(reqGetNcavDailyDates());
@@ -407,8 +411,13 @@ function AlgorithmTradeContent() {
     useEffect(() => {
         setDisplayCount(PAGE_SIZE);
         setFocusedIndex(0);
-        setViewTab("strategy");
     }, [marketTab]);
+
+    useEffect(() => {
+        setDailyDisplayCount(DAILY_PAGE_SIZE);
+        setDisplayCount(PAGE_SIZE);
+        setSelectedTicker(null);
+    }, [mainTab]);
 
     useEffect(() => {
         setDailyDisplayCount(DAILY_PAGE_SIZE);
@@ -522,54 +531,85 @@ function AlgorithmTradeContent() {
                     <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4">
                         <div className="space-y-1.5">
                             <p className="text-[11px] font-bold text-zinc-400 uppercase tracking-widest font-mono">
-                                자동매매 / NCAV 스크리너
+                                자동매매 / Graham NCAV
                             </p>
                             <h1 className="text-2xl sm:text-3xl font-black tracking-tight text-zinc-900 dark:text-white">
-                                Graham NCAV 스크리너
+                                알고리즘 트레이드
                             </h1>
                             <p className="text-sm text-zinc-500 dark:text-zinc-400 font-medium">
-                                그레이엄의 청산가치 기준으로 국내·미국 저평가 종목을 실시간 탐색합니다.
+                                그레이엄의 청산가치 기준으로 국내 저평가 종목을 발굴하고 전략별 후보를 관리합니다.
                             </p>
                         </div>
 
-                        <div className="flex items-center gap-2 self-start sm:self-center shrink-0 flex-wrap">
-                            <div className="hidden lg:flex items-center gap-1.5 text-[11px] text-zinc-400 dark:text-zinc-500 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-xl px-3 py-2 font-mono">
-                                <span className="text-zinc-300 dark:text-zinc-600 text-[10px] font-bold uppercase tracking-wider mr-0.5">단축키</span>
-                                {[["V", "뷰 전환"], ["↑↓", "이동"], ["Enter", "열기"], ["Esc", "닫기"]].map(([k, v]) => (
-                                    <span key={k} className="flex items-center gap-1">
-                                        <kbd className="px-1.5 py-0.5 bg-zinc-100 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded text-[10px] font-black text-zinc-600 dark:text-zinc-300">{k}</kbd>
-                                        <span className="text-zinc-400 text-[10px]">{v}</span>
-                                    </span>
-                                ))}
-                            </div>
+                        {mainTab === "strategy" && (
+                            <div className="flex items-center gap-2 self-start sm:self-center shrink-0 flex-wrap">
+                                <div className="hidden lg:flex items-center gap-1.5 text-[11px] text-zinc-400 dark:text-zinc-500 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-xl px-3 py-2 font-mono">
+                                    <span className="text-zinc-300 dark:text-zinc-600 text-[10px] font-bold uppercase tracking-wider mr-0.5">단축키</span>
+                                    {[["V", "뷰 전환"], ["↑↓", "이동"], ["Enter", "열기"], ["Esc", "닫기"]].map(([k, v]) => (
+                                        <span key={k} className="flex items-center gap-1">
+                                            <kbd className="px-1.5 py-0.5 bg-zinc-100 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded text-[10px] font-black text-zinc-600 dark:text-zinc-300">{k}</kbd>
+                                            <span className="text-zinc-400 text-[10px]">{v}</span>
+                                        </span>
+                                    ))}
+                                </div>
 
-                            <div className="flex items-center p-1 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-xl">
-                                {([["card", <LayoutGrid key="g" className="w-3.5 h-3.5" />, "카드"] as const,
-                                   ["table", <List key="l" className="w-3.5 h-3.5" />, "테이블"] as const]).map(([mode, icon, label]) => (
-                                    <button key={mode} onClick={() => setViewMode(mode)}
-                                        className={cn(
-                                            "flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-bold transition-all",
-                                            viewMode === mode
-                                                ? "bg-zinc-950 dark:bg-white text-white dark:text-zinc-950 shadow-sm"
-                                                : "text-zinc-500 hover:text-zinc-800 dark:hover:text-zinc-200"
-                                        )}>
-                                        {icon}{label}
-                                    </button>
-                                ))}
-                            </div>
+                                <div className="flex items-center p-1 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-xl">
+                                    {([["card", <LayoutGrid key="g" className="w-3.5 h-3.5" />, "카드"] as const,
+                                       ["table", <List key="l" className="w-3.5 h-3.5" />, "테이블"] as const]).map(([mode, icon, label]) => (
+                                        <button key={mode} onClick={() => setViewMode(mode)}
+                                            className={cn(
+                                                "flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-bold transition-all",
+                                                viewMode === mode
+                                                    ? "bg-zinc-950 dark:bg-white text-white dark:text-zinc-950 shadow-sm"
+                                                    : "text-zinc-500 hover:text-zinc-800 dark:hover:text-zinc-200"
+                                            )}>
+                                            {icon}{label}
+                                        </button>
+                                    ))}
+                                </div>
 
-                            <button
-                                onClick={() => dispatch(reqGetNcavLatest())}
-                                className="p-2.5 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-xl text-zinc-500 hover:text-zinc-800 dark:hover:text-zinc-200 hover:border-zinc-300 dark:hover:border-zinc-700 transition-all"
-                                title="새로고침"
-                            >
-                                <RefreshCw className="w-4 h-4" />
-                            </button>
-                        </div>
+                                <button
+                                    onClick={() => dispatch(reqGetNcavLatest())}
+                                    className="p-2.5 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-xl text-zinc-500 hover:text-zinc-800 dark:hover:text-zinc-200 hover:border-zinc-300 dark:hover:border-zinc-700 transition-all"
+                                    title="새로고침"
+                                >
+                                    <RefreshCw className="w-4 h-4" />
+                                </button>
+                            </div>
+                        )}
                     </div>
                 </header>
 
-                {/* ── 전략 탭 ── */}
+                {/* ── 최상위 탭: 종목 발굴 | 전략 후보 ── */}
+                <div className="flex items-center gap-2">
+                    {([
+                        { id: "discovery" as const, label: "종목 발굴", count: ncavDailyList.list.length },
+                        { id: "strategy"  as const, label: "전략 후보", count: totalCandidateKeys.length },
+                    ]).map(tab => (
+                        <button
+                            key={tab.id}
+                            onClick={() => setMainTab(tab.id)}
+                            className={cn(
+                                "flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-bold border transition-all",
+                                mainTab === tab.id
+                                    ? "bg-zinc-950 dark:bg-white border-zinc-950 dark:border-white text-white dark:text-zinc-950 shadow-sm"
+                                    : "bg-white dark:bg-zinc-900 border-zinc-200 dark:border-zinc-800 text-zinc-500 hover:text-zinc-900 dark:hover:text-zinc-100 hover:border-zinc-300 dark:hover:border-zinc-700"
+                            )}
+                        >
+                            {tab.label}
+                            <span className={cn(
+                                "px-1.5 py-0.5 rounded text-[10px] font-mono font-black",
+                                mainTab === tab.id ? "bg-white/20 dark:bg-zinc-900/20" : "bg-zinc-100 dark:bg-zinc-800 text-zinc-400"
+                            )}>
+                                {tab.count}
+                            </span>
+                        </button>
+                    ))}
+                </div>
+
+                {/* ── 전략 후보 탭 전용: 전략 서브탭 + KPI + 마켓 토글 ── */}
+                {mainTab === "strategy" && (<>
+
                 <nav className="flex flex-wrap gap-2">
                     {strategyNcavLatest?.list?.map((s) => {
                         const isActive = activeStrategy.strategyId === s.strategyId;
@@ -599,7 +639,6 @@ function AlgorithmTradeContent() {
                     })}
                 </nav>
 
-                {/* ── KPI 스트립 ── */}
                 <section className="grid grid-cols-3 gap-3">
                     <div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-2xl p-4 sm:p-5 flex items-center gap-3 shadow-sm">
                         <div className="p-2.5 rounded-xl shrink-0 bg-zinc-100 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-400">
@@ -614,8 +653,8 @@ function AlgorithmTradeContent() {
                         </div>
                     </div>
                     {([
-                        { id: "kr" as const, label: "국내 (KR)", value: marketDist.kr, icon: <BarChart3 className="w-4 h-4" />, activeColor: "text-indigo-600 dark:text-indigo-400", activeBg: "bg-indigo-50 dark:bg-indigo-950/30", activeRing: "ring-2 ring-indigo-300 dark:ring-indigo-800 border-indigo-300 dark:border-indigo-700" },
-                        { id: "us" as const, label: "미국 (US)", value: marketDist.us, icon: <Globe2 className="w-4 h-4" />, activeColor: "text-blue-600 dark:text-blue-400", activeBg: "bg-blue-50 dark:bg-blue-950/30", activeRing: "ring-2 ring-blue-300 dark:ring-blue-800 border-blue-300 dark:border-blue-700" },
+                        { id: "kr" as const, label: "국내 (KR)", value: marketDist.kr, icon: <BarChart3 className="w-4 h-4" />, activeColor: "text-indigo-600 dark:text-indigo-400", activeBg: "bg-indigo-50 dark:bg-indigo-950/30", activeRing: "ring-2 ring-indigo-300 dark:ring-indigo-800 border-indigo-300 dark:border-indigo-700", legacy: false },
+                        { id: "us" as const, label: "미국 (US)", value: marketDist.us, icon: <Globe2 className="w-4 h-4" />, activeColor: "text-blue-600 dark:text-blue-400", activeBg: "bg-blue-50 dark:bg-blue-950/30", activeRing: "ring-2 ring-blue-300 dark:ring-blue-800 border-blue-300 dark:border-blue-700", legacy: true },
                     ] as const).map(tab => (
                         <button
                             key={tab.id}
@@ -628,8 +667,15 @@ function AlgorithmTradeContent() {
                             )}
                         >
                             <div className={cn("p-2.5 rounded-xl shrink-0", tab.activeBg, tab.activeColor)}>{tab.icon}</div>
-                            <div>
-                                <p className="text-[10px] font-bold text-zinc-400 dark:text-zinc-500 uppercase tracking-wider">{tab.label}</p>
+                            <div className="flex-1 min-w-0">
+                                <div className="flex items-center gap-1.5">
+                                    <p className="text-[10px] font-bold text-zinc-400 dark:text-zinc-500 uppercase tracking-wider">{tab.label}</p>
+                                    {tab.legacy && (
+                                        <span className="px-1.5 py-0.5 bg-amber-100 dark:bg-amber-950/40 text-amber-600 dark:text-amber-400 text-[9px] font-black rounded uppercase tracking-wide">
+                                            레거시
+                                        </span>
+                                    )}
+                                </div>
                                 <p className={cn("text-xl font-black font-mono mt-0.5 tracking-tight", tab.activeColor)}>
                                     {tab.value}
                                     <span className="text-xs font-normal text-zinc-400 ml-1">개사</span>
@@ -639,40 +685,13 @@ function AlgorithmTradeContent() {
                     ))}
                 </section>
 
-                {/* ── KR 서브탭: 전략 후보 | 일별 스캔 ── */}
-                {marketTab === "kr" && (
-                    <div className="flex items-center gap-2">
-                        {([
-                            { id: "strategy" as const, label: "전략 후보", count: krCandidateEntries.length },
-                            { id: "daily" as const, label: "일별 스캔", count: ncavDailyList.total },
-                        ]).map(tab => (
-                            <button
-                                key={tab.id}
-                                onClick={() => setViewTab(tab.id)}
-                                className={cn(
-                                    "flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-bold border transition-all",
-                                    viewTab === tab.id
-                                        ? "bg-zinc-950 dark:bg-white border-zinc-950 dark:border-white text-white dark:text-zinc-950 shadow-sm"
-                                        : "bg-white dark:bg-zinc-900 border-zinc-200 dark:border-zinc-800 text-zinc-500 hover:text-zinc-900 dark:hover:text-zinc-100 hover:border-zinc-300 dark:hover:border-zinc-700"
-                                )}
-                            >
-                                {tab.label}
-                                <span className={cn(
-                                    "px-1.5 py-0.5 rounded text-[10px] font-mono font-black",
-                                    viewTab === tab.id ? "bg-white/20 dark:bg-zinc-900/20" : "bg-zinc-100 dark:bg-zinc-800 text-zinc-400"
-                                )}>
-                                    {tab.count}
-                                </span>
-                            </button>
-                        ))}
-                    </div>
-                )}
+                </>)}
 
                 {/* ── 콘텐츠 ── */}
                 <div ref={listRef}>
 
-                    {/* 전략 후보 뷰 (KR 전략 후보 탭 또는 US 탭) */}
-                    {(marketTab === "us" || viewTab === "strategy") && (<>
+                    {/* 전략 후보 뷰 */}
+                    {mainTab === "strategy" && (<>
 
                     {activeMarketEntries.length === 0 && (
                         <div className="flex flex-col items-center justify-center py-24 text-center gap-3">
@@ -860,8 +879,8 @@ function AlgorithmTradeContent() {
 
                     </>)}
 
-                    {/* 일별 스캔 뷰 */}
-                    {marketTab === "kr" && viewTab === "daily" && (
+                    {/* 종목 발굴 뷰 */}
+                    {mainTab === "discovery" && (
                     <div className="space-y-3">
                         {/* 날짜 선택 */}
                         <div className="flex items-center gap-2 flex-wrap">
@@ -1005,6 +1024,30 @@ function AlgorithmTradeContent() {
                                     </button>
                                 ))}
                             </div>
+                            {/* 전략 기준 보기 */}
+                            <div className="flex items-center gap-2 pt-1 border-t border-zinc-100 dark:border-zinc-800">
+                                <span className="text-[10px] font-black text-zinc-400 uppercase tracking-wider w-12 shrink-0">전략</span>
+                                <button
+                                    onClick={() => setStrategyFilterOn(p => !p)}
+                                    disabled={quantRule.state !== "fulfilled"}
+                                    title={quantRule.state !== "fulfilled" ? "전략 설정 로딩 중..." : undefined}
+                                    className={cn(
+                                        "flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold border transition-all",
+                                        strategyFilterOn
+                                            ? "bg-violet-600 border-violet-600 text-white shadow-sm"
+                                            : quantRule.state !== "fulfilled"
+                                                ? "bg-zinc-100 dark:bg-zinc-800 border-zinc-200 dark:border-zinc-700 text-zinc-400 cursor-not-allowed"
+                                                : "bg-white dark:bg-zinc-900 border-zinc-200 dark:border-zinc-800 text-zinc-500 dark:text-zinc-400 hover:border-zinc-400"
+                                    )}
+                                >
+                                    전략 기준 보기
+                                    {quantRule.state === "fulfilled" && (
+                                        <span className={cn("text-[9px] font-mono", strategyFilterOn ? "text-violet-200" : "text-zinc-400")}>
+                                            NCAV≥{quantRule.value.ncav_ratio} · PBR≤{quantRule.value.max_pbr} · EPS≥{quantRule.value.min_eps}
+                                        </span>
+                                    )}
+                                </button>
+                            </div>
                         </div>
 
                     <div className="bg-white dark:bg-zinc-900 rounded-2xl border border-zinc-200 dark:border-zinc-800 shadow-sm overflow-hidden">
@@ -1076,12 +1119,17 @@ function AlgorithmTradeContent() {
                                             {filteredDailyList.slice(0, dailyDisplayCount).map((item) => {
                                                 const upsidePct = (Number(item.ncav_ratio) - 1) * 100;
                                                 const isPositive = upsidePct >= 0;
+                                                const qr = strategyFilterOn && quantRule.state === "fulfilled" ? quantRule.value : null;
+                                                const ncavFail = qr && Number(item.ncav_ratio) < Number(qr.ncav_ratio);
+                                                const pbrFail  = qr && item.pbr !== 0 && Number(item.pbr) > Number(qr.max_pbr);
+                                                const epsFail  = qr && Number(item.eps) < Number(qr.min_eps);
                                                 return (
                                                     <tr key={item.ticker} className="hover:bg-zinc-50 dark:hover:bg-zinc-800/30 transition-colors text-sm">
                                                         <td className="py-3 px-4 font-mono font-black text-zinc-900 dark:text-zinc-100 whitespace-nowrap">{item.ticker}</td>
                                                         <td className="py-3 px-4 text-zinc-700 dark:text-zinc-300 max-w-[160px] truncate">{item.name}</td>
                                                         <td className={cn(
                                                             "py-3 px-4 text-right font-mono font-black whitespace-nowrap",
+                                                            ncavFail ? "bg-amber-50 dark:bg-amber-950/30" : "",
                                                             isPositive ? "text-emerald-600 dark:text-emerald-400" : "text-red-500 dark:text-red-400"
                                                         )}>
                                                             {isPositive ? "+" : ""}{upsidePct.toFixed(1)}%
@@ -1101,10 +1149,16 @@ function AlgorithmTradeContent() {
                                                         <td className="py-3 px-4 text-right font-mono text-zinc-500 dark:text-zinc-400 whitespace-nowrap">
                                                             {item.per === 0 ? "—" : `${Number(item.per).toFixed(1)}x`}
                                                         </td>
-                                                        <td className="py-3 px-4 text-right font-mono text-zinc-500 dark:text-zinc-400 whitespace-nowrap">
+                                                        <td className={cn(
+                                                            "py-3 px-4 text-right font-mono whitespace-nowrap",
+                                                            pbrFail ? "bg-red-50 dark:bg-red-950/30 text-red-500 dark:text-red-400" : "text-zinc-500 dark:text-zinc-400"
+                                                        )}>
                                                             {item.pbr === 0 ? "—" : `${Number(item.pbr).toFixed(2)}x`}
                                                         </td>
-                                                        <td className="py-3 px-4 text-right font-mono text-zinc-500 dark:text-zinc-400 text-xs whitespace-nowrap">
+                                                        <td className={cn(
+                                                            "py-3 px-4 text-right font-mono text-xs whitespace-nowrap",
+                                                            epsFail ? "bg-red-50 dark:bg-red-950/30 text-red-500 dark:text-red-400" : "text-zinc-500 dark:text-zinc-400"
+                                                        )}>
                                                             {Number(item.eps).toLocaleString()}
                                                         </td>
                                                         <td className="py-3 px-4 text-right font-mono text-zinc-500 dark:text-zinc-400 text-xs whitespace-nowrap">
