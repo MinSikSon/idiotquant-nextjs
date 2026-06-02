@@ -866,7 +866,7 @@ function AlgorithmTradeContent() {
                         {/* 날짜 선택 */}
                         <div className="flex items-center gap-2 flex-wrap">
                             {(() => {
-                                const latestScanDate = ncavDailyList.scanDate;
+                                const latestScanDate = ncavDailyDates.dates[0]?.scan_date ?? ncavDailyList.scanDate;
                                 const fmtDate = (d: string) =>
                                     d.length === 8
                                         ? `${d.slice(0, 4)}-${d.slice(4, 6)}-${d.slice(6, 8)}`

@@ -373,8 +373,10 @@ export const algorithmTradeSlice = createAppSlice({
                 pending: (state) => { state.ncavDailyDates.state = "pending"; state.ncavDailyDates.error = null; },
                 fulfilled: (state, action) => {
                     const raw: NcavDailyDateItem[] = action.payload?.data ?? [];
+                    const seen = new Set<string>();
                     state.ncavDailyDates.dates = raw
                         .map(d => ({ ...d, scan_date: normalizeDate(d.scan_date) }))
+                        .filter(d => { if (seen.has(d.scan_date)) return false; seen.add(d.scan_date); return true; })
                         .sort((a, b) => b.scan_date.localeCompare(a.scan_date));
                     state.ncavDailyDates.state = "fulfilled";
                 },
