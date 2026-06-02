@@ -364,6 +364,7 @@ function AlgorithmTradeContent() {
     const [sortKey, setSortKey] = useState<SortKey>("ticker");
     const [sortOrder, setSortOrder] = useState<SortOrder>("asc");
     const [loadedDataMap, setLoadedDataMap] = useState<Record<string, any>>({});
+    const [marketTab, setMarketTab] = useState<"kr" | "us">("kr");
 
     const listRef = useRef<HTMLDivElement>(null);
     const hasDiscovered = useRef(false);
@@ -392,7 +393,13 @@ function AlgorithmTradeContent() {
         setSelectedTicker(null);
         setFocusedIndex(0);
         setLoadedDataMap({});
+        setMarketTab("kr");
     }, [currentStrategyId]);
+
+    useEffect(() => {
+        setDisplayCount(PAGE_SIZE);
+        setFocusedIndex(0);
+    }, [marketTab]);
 
     useEffect(() => {
         setDailyDisplayCount(DAILY_PAGE_SIZE);
@@ -408,14 +415,18 @@ function AlgorithmTradeContent() {
         activeStrategy?.candidates ? Object.keys(activeStrategy.candidates) : [],
     [activeStrategy]);
 
-    const marketDist = useMemo(() => {
-        if (!activeStrategy?.candidates) return { us: 0, kr: 0 };
-        let us = 0; let kr = 0;
-        Object.keys(activeStrategy.candidates).forEach(t =>
-            us_tickers.includes(t.toUpperCase()) ? us++ : kr++
-        );
-        return { us, kr };
+    const krCandidateEntries = useMemo(() => {
+        if (!activeStrategy?.candidates) return [] as [string, any][];
+        return Object.entries(activeStrategy.candidates).filter(([t]) => !us_tickers.includes(t.toUpperCase()));
     }, [activeStrategy]);
+
+    const usCandidateEntries = useMemo(() => {
+        if (!activeStrategy?.candidates) return [] as [string, any][];
+        return Object.entries(activeStrategy.candidates).filter(([t]) => us_tickers.includes(t.toUpperCase()));
+    }, [activeStrategy]);
+
+    const marketDist = { kr: krCandidateEntries.length, us: usCandidateEntries.length };
+    const activeMarketEntries = marketTab === "kr" ? krCandidateEntries : usCandidateEntries;
 
     const handleDataLoaded = useCallback((ticker: string, d: any) => {
         setLoadedDataMap(prev => {
@@ -425,8 +436,7 @@ function AlgorithmTradeContent() {
     }, []);
 
     const visibleCandidates = useMemo(() => {
-        if (!activeStrategy?.candidates) return [];
-        const raw = Object.entries(activeStrategy.candidates).slice(0, displayCount);
+        const raw = activeMarketEntries.slice(0, displayCount);
         if (viewMode !== "table") return raw;
         return [...raw].sort((a, b) => {
             const [ta, tb] = [a[0], b[0]];
@@ -439,7 +449,7 @@ function AlgorithmTradeContent() {
             }[sortKey] ?? 0);
             return sortOrder === "asc" ? get(da) - get(db) : get(db) - get(da);
         });
-    }, [activeStrategy, displayCount, viewMode, sortKey, sortOrder, loadedDataMap]);
+    }, [activeMarketEntries, displayCount, viewMode, sortKey, sortOrder, loadedDataMap]);
 
     useEffect(() => {
         const onKey = (e: KeyboardEvent) => {
@@ -571,33 +581,55 @@ function AlgorithmTradeContent() {
 
                 {/* ── KPI 스트립 ── */}
                 <section className="grid grid-cols-3 gap-3">
-                    {[
-                        { label: "전체 후보", value: totalCandidateKeys.length, unit: "개사", icon: <Database className="w-4 h-4" />, color: "text-zinc-600 dark:text-zinc-400", bg: "bg-zinc-100 dark:bg-zinc-800" },
-                        { label: "국내 (KR)", value: marketDist.kr, unit: "개사", icon: <BarChart3 className="w-4 h-4" />, color: "text-indigo-600 dark:text-indigo-400", bg: "bg-indigo-50 dark:bg-indigo-950/30" },
-                        { label: "미국 (US)", value: marketDist.us, unit: "개사", icon: <Globe2 className="w-4 h-4" />, color: "text-blue-600 dark:text-blue-400", bg: "bg-blue-50 dark:bg-blue-950/30" },
-                    ].map(s => (
-                        <div key={s.label} className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-2xl p-4 sm:p-5 flex items-center gap-3 shadow-sm">
-                            <div className={cn("p-2.5 rounded-xl shrink-0", s.bg, s.color)}>{s.icon}</div>
+                    <div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-2xl p-4 sm:p-5 flex items-center gap-3 shadow-sm">
+                        <div className="p-2.5 rounded-xl shrink-0 bg-zinc-100 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-400">
+                            <Database className="w-4 h-4" />
+                        </div>
+                        <div>
+                            <p className="text-[10px] font-bold text-zinc-400 dark:text-zinc-500 uppercase tracking-wider">전체 후보</p>
+                            <p className="text-xl font-black font-mono mt-0.5 tracking-tight text-zinc-600 dark:text-zinc-400">
+                                {totalCandidateKeys.length}
+                                <span className="text-xs font-normal text-zinc-400 ml-1">개사</span>
+                            </p>
+                        </div>
+                    </div>
+                    {([
+                        { id: "kr" as const, label: "국내 (KR)", value: marketDist.kr, icon: <BarChart3 className="w-4 h-4" />, activeColor: "text-indigo-600 dark:text-indigo-400", activeBg: "bg-indigo-50 dark:bg-indigo-950/30", activeRing: "ring-2 ring-indigo-300 dark:ring-indigo-800 border-indigo-300 dark:border-indigo-700" },
+                        { id: "us" as const, label: "미국 (US)", value: marketDist.us, icon: <Globe2 className="w-4 h-4" />, activeColor: "text-blue-600 dark:text-blue-400", activeBg: "bg-blue-50 dark:bg-blue-950/30", activeRing: "ring-2 ring-blue-300 dark:ring-blue-800 border-blue-300 dark:border-blue-700" },
+                    ] as const).map(tab => (
+                        <button
+                            key={tab.id}
+                            onClick={() => setMarketTab(tab.id)}
+                            className={cn(
+                                "bg-white dark:bg-zinc-900 border rounded-2xl p-4 sm:p-5 flex items-center gap-3 shadow-sm cursor-pointer transition-all text-left",
+                                marketTab === tab.id
+                                    ? tab.activeRing
+                                    : "border-zinc-200 dark:border-zinc-800 hover:border-zinc-300 dark:hover:border-zinc-700"
+                            )}
+                        >
+                            <div className={cn("p-2.5 rounded-xl shrink-0", tab.activeBg, tab.activeColor)}>{tab.icon}</div>
                             <div>
-                                <p className="text-[10px] font-bold text-zinc-400 dark:text-zinc-500 uppercase tracking-wider">{s.label}</p>
-                                <p className={cn("text-xl font-black font-mono mt-0.5 tracking-tight", s.color)}>
-                                    {s.value}
-                                    <span className="text-xs font-normal text-zinc-400 ml-1">{s.unit}</span>
+                                <p className="text-[10px] font-bold text-zinc-400 dark:text-zinc-500 uppercase tracking-wider">{tab.label}</p>
+                                <p className={cn("text-xl font-black font-mono mt-0.5 tracking-tight", tab.activeColor)}>
+                                    {tab.value}
+                                    <span className="text-xs font-normal text-zinc-400 ml-1">개사</span>
                                 </p>
                             </div>
-                        </div>
+                        </button>
                     ))}
                 </section>
 
                 {/* ── 콘텐츠 ── */}
                 <div ref={listRef}>
 
-                    {totalCandidateKeys.length === 0 && (
+                    {activeMarketEntries.length === 0 && (
                         <div className="flex flex-col items-center justify-center py-24 text-center gap-3">
                             <div className="p-4 bg-zinc-100 dark:bg-zinc-800 rounded-2xl">
                                 <TrendingUp className="w-8 h-8 text-zinc-400" />
                             </div>
-                            <p className="text-sm font-bold text-zinc-500 dark:text-zinc-400">현재 조건에 맞는 후보 종목이 없습니다.</p>
+                            <p className="text-sm font-bold text-zinc-500 dark:text-zinc-400">
+                                {marketTab === "kr" ? "국내" : "미국"} 후보 종목이 없습니다.
+                            </p>
                             <p className="text-xs text-zinc-400 dark:text-zinc-500">전략을 변경하거나 나중에 다시 확인해 보세요.</p>
                         </div>
                     )}
@@ -759,24 +791,24 @@ function AlgorithmTradeContent() {
                         </div>
                     )}
 
-                    {visibleCandidates.length < totalCandidateKeys.length && (
+                    {visibleCandidates.length < activeMarketEntries.length && (
                         <div className="flex flex-col items-center gap-3 py-8 mt-2">
                             <p className="text-xs text-zinc-400 font-medium">
-                                {visibleCandidates.length} / {totalCandidateKeys.length}개 표시 중
+                                {visibleCandidates.length} / {activeMarketEntries.length}개 표시 중
                             </p>
                             <button
                                 onClick={() => setDisplayCount(p => p + PAGE_SIZE)}
                                 className="flex items-center gap-2 px-6 py-2.5 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-xl text-sm font-bold text-zinc-700 dark:text-zinc-300 hover:border-zinc-400 dark:hover:border-zinc-600 hover:text-zinc-900 dark:hover:text-zinc-100 transition-all shadow-sm"
                             >
                                 더 보기
-                                <span className="text-xs font-mono text-zinc-400">+{Math.min(PAGE_SIZE, totalCandidateKeys.length - visibleCandidates.length)}</span>
+                                <span className="text-xs font-mono text-zinc-400">+{Math.min(PAGE_SIZE, activeMarketEntries.length - visibleCandidates.length)}</span>
                             </button>
                         </div>
                     )}
                 </div>
 
-                {/* ── D1 NCAV 일별 스캔 결과 ── */}
-                <section className="space-y-4 pt-4 border-t border-zinc-200 dark:border-zinc-800">
+                {/* ── D1 NCAV 일별 스캔 결과 (국내 탭에서만 표시) ── */}
+                {marketTab === "kr" && <section className="space-y-4 pt-4 border-t border-zinc-200 dark:border-zinc-800">
                     <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4">
                         <div className="space-y-1.5">
                             <p className="text-[11px] font-bold text-zinc-400 uppercase tracking-widest font-mono">
@@ -930,7 +962,7 @@ function AlgorithmTradeContent() {
                             </>
                         )}
                     </div>
-                </section>
+                </section>}
 
             </div>
 
