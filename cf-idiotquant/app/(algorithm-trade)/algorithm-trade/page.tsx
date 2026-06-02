@@ -15,7 +15,6 @@ import {
 import {
     selectStockByTicker, updateStockDetail, setStockState,
     selectNcavDailyDates, selectNcavDailyList,
-    selectQuantRule,
     reqGetNcavDailyDates, reqGetNcavDailyList,
     reqGetQuantRule,
     setNcavDailySelectedDate, reqDiscoverNcavDates,
@@ -51,6 +50,47 @@ const GRADE_PILL: Record<string, string> = {
 };
 const gradePill = (g: string) =>
     GRADE_PILL[g] ?? "bg-zinc-100 text-zinc-500 dark:bg-zinc-800 dark:text-zinc-400";
+
+// =========================================================================
+// 전략 프리셋 + 유틸
+// =========================================================================
+const safeNum = (v: any): number => { const n = Number(v); return isNaN(n) ? 0 : n; };
+
+interface StrategyPreset {
+    id: string;
+    label: string;
+    desc: string;
+    criteria: { min_ncav_ratio?: number; max_pbr?: number; min_eps?: number; max_per?: number };
+    criteriaChips: { label: string; value: string }[];
+    columns: string[];
+}
+
+const STRATEGY_PRESETS: StrategyPreset[] = [
+    {
+        id: "ncav", label: "NCAV 전략", desc: "그레이엄 청산가치 기준",
+        criteria: { min_ncav_ratio: 1.5, max_pbr: 1.0, min_eps: 1 },
+        criteriaChips: [{ label: "NCAV 업사이드", value: "≥ 1.5배" }, { label: "PBR", value: "≤ 1.0x" }, { label: "EPS", value: "≥ ₩1" }],
+        columns: ["NCAV 업사이드", "PBR", "EPS"],
+    },
+    {
+        id: "low_pbr", label: "저PBR 가치", desc: "장부가 대비 저평가 종목",
+        criteria: { max_pbr: 0.7, min_eps: 1 },
+        criteriaChips: [{ label: "PBR", value: "≤ 0.7x" }, { label: "EPS", value: "≥ ₩1" }],
+        columns: ["PBR", "EPS"],
+    },
+    {
+        id: "stable", label: "안정 수익", desc: "수익성·저평가 동시 충족",
+        criteria: { max_per: 15, max_pbr: 1.5, min_eps: 1 },
+        criteriaChips: [{ label: "PER", value: "≤ 15x" }, { label: "PBR", value: "≤ 1.5x" }, { label: "EPS", value: "≥ ₩1" }],
+        columns: ["PER", "PBR", "EPS"],
+    },
+    {
+        id: "deep_value", label: "딥밸류", desc: "PBR 0.5 이하 극단적 저평가",
+        criteria: { max_pbr: 0.5, min_eps: 1 },
+        criteriaChips: [{ label: "PBR", value: "≤ 0.5x" }, { label: "EPS", value: "≥ ₩1" }],
+        columns: ["PBR", "EPS"],
+    },
+];
 
 // =========================================================================
 // StockLogo
@@ -355,7 +395,6 @@ function AlgorithmTradeContent() {
     const strategyNcavLatest = useAppSelector(selectStrategyNcavLatest);
     const ncavDailyDates = useAppSelector(selectNcavDailyDates);
     const ncavDailyList = useAppSelector(selectNcavDailyList);
-    const quantRule = useAppSelector(selectQuantRule);
     const ncavDailySelectedDate = ncavDailyDates.selectedDate;
     const currentStrategyId = searchParams.get("strategy");
 
@@ -369,7 +408,8 @@ function AlgorithmTradeContent() {
     const [loadedDataMap, setLoadedDataMap] = useState<Record<string, any>>({});
     const [mainTab, setMainTab] = useState<"discovery" | "strategy">("discovery");
     const [marketTab, setMarketTab] = useState<"kr" | "us">("kr");
-    const [strategyFilterOn, setStrategyFilterOn] = useState(false);
+    const [activeStrategyId, setActiveStrategyId] = useState<string | null>(null);
+    const [excludeByStrategy, setExcludeByStrategy] = useState(false);
     const [excludeHoldings, setExcludeHoldings] = useState(false);
     const [excludeJiju, setExcludeJiju] = useState(false);
     const [excludePreferred, setExcludePreferred] = useState(false);
@@ -434,17 +474,32 @@ function AlgorithmTradeContent() {
         activeStrategy?.candidates ? Object.keys(activeStrategy.candidates) : [],
     [activeStrategy]);
 
+    const activePreset = useMemo(
+        () => STRATEGY_PRESETS.find(p => p.id === activeStrategyId) ?? null,
+        [activeStrategyId]
+    );
+
     const filteredDailyList = useMemo(() => {
         let list = ncavDailyList.list;
-        if (excludeHoldings)  list = list.filter(item => !item.name.includes("홀딩스"));
-        if (excludeJiju)      list = list.filter(item => !item.name.includes("지주"));
-        if (excludePreferred) list = list.filter(item => !/우[BC]?$/.test(item.name));
-        if (excludeSpac)      list = list.filter(item => !item.name.includes("스팩"));
-        if (excludeDeficit)   list = list.filter(item => Number(item.eps) > 0);
-        if (ncavPositiveOnly) list = list.filter(item => Number(item.ncav_ratio) >= 1);
-        if (minMarketCap > 0) list = list.filter(item => Number(item.market_cap) >= minMarketCap);
+        if (excludeHoldings)  list = list.filter(item => !item.name?.includes("홀딩스"));
+        if (excludeJiju)      list = list.filter(item => !item.name?.includes("지주"));
+        if (excludePreferred) list = list.filter(item => !/\d*우[A-D]?$/.test(item.name ?? ""));
+        if (excludeSpac)      list = list.filter(item => !item.name?.includes("스팩"));
+        if (excludeDeficit)   list = list.filter(item => safeNum(item.eps) > 0);
+        if (ncavPositiveOnly) list = list.filter(item => safeNum(item.ncav_ratio) >= 1);
+        if (minMarketCap > 0) list = list.filter(item => safeNum(item.market_cap) >= minMarketCap);
+        if (excludeByStrategy && activePreset) {
+            const c = activePreset.criteria;
+            list = list.filter(item => {
+                if (c.min_ncav_ratio !== undefined && safeNum(item.ncav_ratio) < c.min_ncav_ratio) return false;
+                if (c.max_pbr !== undefined && safeNum(item.pbr) > 0 && safeNum(item.pbr) > c.max_pbr) return false;
+                if (c.min_eps !== undefined && safeNum(item.eps) < c.min_eps) return false;
+                if (c.max_per !== undefined && safeNum(item.per) > 0 && safeNum(item.per) > c.max_per) return false;
+                return true;
+            });
+        }
         return list;
-    }, [ncavDailyList.list, excludeHoldings, excludeJiju, excludePreferred, excludeSpac, excludeDeficit, ncavPositiveOnly, minMarketCap]);
+    }, [ncavDailyList.list, excludeHoldings, excludeJiju, excludePreferred, excludeSpac, excludeDeficit, ncavPositiveOnly, minMarketCap, excludeByStrategy, activePreset]);
 
     const krCandidateEntries = useMemo(() => {
         if (!activeStrategy?.candidates) return [] as [string, any][];
@@ -1027,38 +1082,46 @@ function AlgorithmTradeContent() {
                                     </button>
                                 ))}
                             </div>
-                            {/* 전략 기준 보기 */}
-                            <div className="flex items-center gap-2 pt-1 border-t border-zinc-100 dark:border-zinc-800">
-                                <span className="text-[10px] font-black text-zinc-400 uppercase tracking-wider w-12 shrink-0">전략</span>
-                                <button
-                                    onClick={() => setStrategyFilterOn(p => !p)}
-                                    className={cn(
-                                        "flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold border transition-all",
-                                        strategyFilterOn
-                                            ? "bg-violet-600 border-violet-600 text-white shadow-sm"
-                                            : "bg-white dark:bg-zinc-900 border-zinc-200 dark:border-zinc-800 text-zinc-500 dark:text-zinc-400 hover:border-zinc-400"
-                                    )}
-                                >
-                                    전략 기준 보기
-                                    <span className={cn("text-[9px] font-mono", strategyFilterOn ? "text-violet-200" : "text-zinc-400")}>
-                                        NCAV≥{quantRule.value.ncav_ratio} · PBR≤{quantRule.value.max_pbr} · EPS≥{quantRule.value.min_eps}
-                                    </span>
-                                </button>
+                            {/* 전략 프리셋 */}
+                            <div className="flex items-start gap-2 pt-1 border-t border-zinc-100 dark:border-zinc-800">
+                                <span className="text-[10px] font-black text-zinc-400 uppercase tracking-wider w-12 shrink-0 mt-1.5">전략</span>
+                                <div className="flex flex-wrap gap-1.5">
+                                    {STRATEGY_PRESETS.map(preset => (
+                                        <button
+                                            key={preset.id}
+                                            onClick={() => {
+                                                if (activeStrategyId === preset.id) {
+                                                    setActiveStrategyId(null);
+                                                    setExcludeByStrategy(false);
+                                                } else {
+                                                    setActiveStrategyId(preset.id);
+                                                }
+                                                setDailyDisplayCount(DAILY_PAGE_SIZE);
+                                            }}
+                                            className={cn(
+                                                "px-3 py-1.5 rounded-lg text-xs font-bold border transition-all",
+                                                activeStrategyId === preset.id
+                                                    ? "bg-violet-600 border-violet-600 text-white shadow-sm"
+                                                    : "bg-white dark:bg-zinc-900 border-zinc-200 dark:border-zinc-800 text-zinc-500 dark:text-zinc-400 hover:border-zinc-400"
+                                            )}
+                                        >
+                                            {preset.label}
+                                        </button>
+                                    ))}
+                                </div>
                             </div>
                         </div>
 
                         {/* 전략 기준 배너 */}
-                        {strategyFilterOn && (
+                        {activePreset && (
                             <div className="bg-violet-50 dark:bg-violet-950/20 border border-violet-200 dark:border-violet-800/40 rounded-xl p-4 space-y-3">
                                 <div>
-                                    <p className="text-[10px] font-black text-violet-600 dark:text-violet-400 uppercase tracking-wider mb-2">현재 전략 기준 (그레이엄 NCAV)</p>
+                                    <div className="flex items-center gap-2 mb-2">
+                                        <p className="text-[10px] font-black text-violet-600 dark:text-violet-400 uppercase tracking-wider">{activePreset.label}</p>
+                                        <span className="text-[10px] text-zinc-400">— {activePreset.desc}</span>
+                                    </div>
                                     <div className="flex flex-wrap gap-2">
-                                        {[
-                                            { label: "NCAV 업사이드", value: `≥ ${quantRule.value.ncav_ratio}배` },
-                                            { label: "PBR", value: `≤ ${quantRule.value.max_pbr}x` },
-                                            { label: "EPS", value: `≥ ₩${Number(quantRule.value.min_eps).toLocaleString()}` },
-                                            { label: "시가총액", value: `≥ ${(Number(quantRule.value.min_tomv) / 100000000).toLocaleString()}억원` },
-                                        ].map(({ label, value }) => (
+                                        {activePreset.criteriaChips.map(({ label, value }) => (
                                             <div key={label} className="flex items-center gap-1.5 bg-white dark:bg-zinc-900 border border-violet-200 dark:border-violet-800/50 rounded-lg px-3 py-1.5">
                                                 <span className="text-[11px] font-bold text-zinc-500 dark:text-zinc-400">{label}</span>
                                                 <span className="text-[11px] font-black font-mono text-violet-700 dark:text-violet-300">{value}</span>
@@ -1066,18 +1129,26 @@ function AlgorithmTradeContent() {
                                         ))}
                                     </div>
                                 </div>
-                                <div className="flex flex-wrap gap-4 pt-1 border-t border-violet-100 dark:border-violet-900/40">
+                                <div className="flex flex-wrap items-center gap-4 pt-1 border-t border-violet-100 dark:border-violet-900/40">
                                     <div className="flex items-center gap-1.5">
                                         <div className="w-3 h-3 rounded bg-amber-50 dark:bg-amber-950/30 border border-amber-300 dark:border-amber-700 shrink-0" />
-                                        <span className="text-[10px] font-medium text-zinc-500 dark:text-zinc-400">NCAV 업사이드 기준 미달</span>
+                                        <span className="text-[10px] font-medium text-zinc-500 dark:text-zinc-400">NCAV 기준 미달</span>
                                     </div>
                                     <div className="flex items-center gap-1.5">
                                         <div className="w-3 h-3 rounded bg-red-50 dark:bg-red-950/30 border border-red-300 dark:border-red-700 shrink-0" />
-                                        <span className="text-[10px] font-medium text-zinc-500 dark:text-zinc-400">PBR / EPS 기준 미달</span>
+                                        <span className="text-[10px] font-medium text-zinc-500 dark:text-zinc-400">PBR / EPS / PER 기준 미달</span>
                                     </div>
-                                    <p className="text-[10px] text-violet-500 dark:text-violet-400 font-medium">
-                                        전략 컬럼은 <span className="font-black">보라색</span>으로 강조됩니다.
-                                    </p>
+                                    <button
+                                        onClick={() => { setExcludeByStrategy(p => !p); setDailyDisplayCount(DAILY_PAGE_SIZE); }}
+                                        className={cn(
+                                            "flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[11px] font-bold border transition-all ml-auto",
+                                            excludeByStrategy
+                                                ? "bg-violet-600 border-violet-600 text-white shadow-sm"
+                                                : "bg-white dark:bg-zinc-900 border-violet-200 dark:border-violet-700 text-violet-600 dark:text-violet-400 hover:border-violet-400"
+                                        )}
+                                    >
+                                        {excludeByStrategy ? "기준 미달 제외 중" : "기준 미달 제외"}
+                                    </button>
                                 </div>
                             </div>
                         )}
@@ -1129,43 +1200,45 @@ function AlgorithmTradeContent() {
                                         <thead>
                                             <tr className="border-b border-zinc-200 dark:border-zinc-800 bg-zinc-50/50 dark:bg-zinc-900/50">
                                                 {([
-                                                    { label: "티커",          align: "",           strategy: false },
-                                                    { label: "종목명",        align: "",           strategy: false },
-                                                    { label: "NCAV 업사이드", align: "text-right", strategy: true  },
-                                                    { label: "유동자산(억)",  align: "text-right", strategy: false },
-                                                    { label: "총부채(억)",    align: "text-right", strategy: false },
-                                                    { label: "시가총액(억)",  align: "text-right", strategy: false },
-                                                    { label: "현재가",        align: "text-right", strategy: false },
-                                                    { label: "PER",           align: "text-right", strategy: false },
-                                                    { label: "PBR",           align: "text-right", strategy: true  },
-                                                    { label: "EPS",           align: "text-right", strategy: true  },
-                                                    { label: "BPS",           align: "text-right", strategy: false },
-                                                ] as { label: string; align: string; strategy: boolean }[]).map(({ label, align, strategy }) => (
-                                                    <th key={label} className={cn(
-                                                        "py-3 px-4 text-[10px] font-black uppercase tracking-wider select-none whitespace-nowrap",
-                                                        align,
-                                                        strategyFilterOn && strategy
-                                                            ? "text-violet-600 dark:text-violet-400"
-                                                            : "text-zinc-400"
-                                                    )}>
-                                                        <span className="inline-flex items-center gap-1">
-                                                            {label}
-                                                            {strategyFilterOn && strategy && (
-                                                                <span className="inline-block w-1.5 h-1.5 rounded-full bg-violet-500 shrink-0" />
-                                                            )}
-                                                        </span>
-                                                    </th>
-                                                ))}
+                                                    { label: "티커",          align: "" },
+                                                    { label: "종목명",        align: "" },
+                                                    { label: "NCAV 업사이드", align: "text-right" },
+                                                    { label: "유동자산(억)",  align: "text-right" },
+                                                    { label: "총부채(억)",    align: "text-right" },
+                                                    { label: "시가총액(억)",  align: "text-right" },
+                                                    { label: "현재가",        align: "text-right" },
+                                                    { label: "PER",           align: "text-right" },
+                                                    { label: "PBR",           align: "text-right" },
+                                                    { label: "EPS",           align: "text-right" },
+                                                    { label: "BPS",           align: "text-right" },
+                                                ] as { label: string; align: string }[]).map(({ label, align }) => {
+                                                    const isStrategy = !!activePreset?.columns.includes(label);
+                                                    return (
+                                                        <th key={label} className={cn(
+                                                            "py-3 px-4 text-[10px] font-black uppercase tracking-wider select-none whitespace-nowrap",
+                                                            align,
+                                                            isStrategy ? "text-violet-600 dark:text-violet-400" : "text-zinc-400"
+                                                        )}>
+                                                            <span className="inline-flex items-center gap-1">
+                                                                {label}
+                                                                {isStrategy && (
+                                                                    <span className="inline-block w-1.5 h-1.5 rounded-full bg-violet-500 shrink-0" />
+                                                                )}
+                                                            </span>
+                                                        </th>
+                                                    );
+                                                })}
                                             </tr>
                                         </thead>
                                         <tbody className="divide-y divide-zinc-100 dark:divide-zinc-800/50">
                                             {filteredDailyList.slice(0, dailyDisplayCount).map((item) => {
-                                                const upsidePct = (Number(item.ncav_ratio) - 1) * 100;
+                                                const upsidePct = (safeNum(item.ncav_ratio) - 1) * 100;
                                                 const isPositive = upsidePct >= 0;
-                                                const qr = strategyFilterOn ? quantRule.value : null;
-                                                const ncavFail = qr && Number(item.ncav_ratio) < Number(qr.ncav_ratio);
-                                                const pbrFail  = qr && item.pbr !== 0 && Number(item.pbr) > Number(qr.max_pbr);
-                                                const epsFail  = qr && Number(item.eps) < Number(qr.min_eps);
+                                                const crit = activePreset?.criteria ?? null;
+                                                const ncavFail = crit && crit.min_ncav_ratio !== undefined && safeNum(item.ncav_ratio) < crit.min_ncav_ratio;
+                                                const pbrFail  = crit && crit.max_pbr !== undefined && safeNum(item.pbr) > 0 && safeNum(item.pbr) > crit.max_pbr;
+                                                const epsFail  = crit && crit.min_eps !== undefined && safeNum(item.eps) < crit.min_eps;
+                                                const perFail  = crit && crit.max_per !== undefined && safeNum(item.per) > 0 && safeNum(item.per) > crit.max_per;
                                                 return (
                                                     <tr key={item.ticker} className="hover:bg-zinc-50 dark:hover:bg-zinc-800/30 transition-colors text-sm">
                                                         <td className="py-3 px-4 font-mono font-black text-zinc-900 dark:text-zinc-100 whitespace-nowrap">{item.ticker}</td>
@@ -1178,34 +1251,37 @@ function AlgorithmTradeContent() {
                                                             {isPositive ? "+" : ""}{upsidePct.toFixed(1)}%
                                                         </td>
                                                         <td className="py-3 px-4 text-right font-mono text-zinc-500 dark:text-zinc-400 text-xs whitespace-nowrap">
-                                                            {Number(item.current_assets).toLocaleString()}
+                                                            {safeNum(item.current_assets).toLocaleString()}
                                                         </td>
                                                         <td className="py-3 px-4 text-right font-mono text-zinc-500 dark:text-zinc-400 text-xs whitespace-nowrap">
-                                                            {Number(item.total_liabilities).toLocaleString()}
+                                                            {safeNum(item.total_liabilities).toLocaleString()}
                                                         </td>
                                                         <td className="py-3 px-4 text-right font-mono text-zinc-500 dark:text-zinc-400 text-xs whitespace-nowrap">
-                                                            {Number(item.market_cap).toLocaleString()}
+                                                            {safeNum(item.market_cap).toLocaleString()}
                                                         </td>
                                                         <td className="py-3 px-4 text-right font-mono text-zinc-700 dark:text-zinc-300 whitespace-nowrap">
-                                                            ₩{Number(item.last_price).toLocaleString()}
+                                                            {safeNum(item.last_price) > 0 ? `₩${safeNum(item.last_price).toLocaleString()}` : "—"}
                                                         </td>
-                                                        <td className="py-3 px-4 text-right font-mono text-zinc-500 dark:text-zinc-400 whitespace-nowrap">
-                                                            {item.per === 0 ? "—" : `${Number(item.per).toFixed(1)}x`}
+                                                        <td className={cn(
+                                                            "py-3 px-4 text-right font-mono whitespace-nowrap",
+                                                            perFail ? "bg-red-50 dark:bg-red-950/30 text-red-500 dark:text-red-400" : "text-zinc-500 dark:text-zinc-400"
+                                                        )}>
+                                                            {safeNum(item.per) === 0 ? "—" : `${safeNum(item.per).toFixed(1)}x`}
                                                         </td>
                                                         <td className={cn(
                                                             "py-3 px-4 text-right font-mono whitespace-nowrap",
                                                             pbrFail ? "bg-red-50 dark:bg-red-950/30 text-red-500 dark:text-red-400" : "text-zinc-500 dark:text-zinc-400"
                                                         )}>
-                                                            {item.pbr === 0 ? "—" : `${Number(item.pbr).toFixed(2)}x`}
+                                                            {safeNum(item.pbr) === 0 ? "—" : `${safeNum(item.pbr).toFixed(2)}x`}
                                                         </td>
                                                         <td className={cn(
                                                             "py-3 px-4 text-right font-mono text-xs whitespace-nowrap",
                                                             epsFail ? "bg-red-50 dark:bg-red-950/30 text-red-500 dark:text-red-400" : "text-zinc-500 dark:text-zinc-400"
                                                         )}>
-                                                            {Number(item.eps).toLocaleString()}
+                                                            {safeNum(item.eps).toLocaleString()}
                                                         </td>
                                                         <td className="py-3 px-4 text-right font-mono text-zinc-500 dark:text-zinc-400 text-xs whitespace-nowrap">
-                                                            {Number(item.bps).toLocaleString()}
+                                                            {safeNum(item.bps).toLocaleString()}
                                                         </td>
                                                     </tr>
                                                 );
