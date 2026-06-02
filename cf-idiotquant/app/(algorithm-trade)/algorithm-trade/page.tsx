@@ -9,7 +9,7 @@ import { AnimatePresence, motion } from "framer-motion";
 import {
     LayoutGrid, List, RefreshCw, AlertTriangle, X,
     ChevronUp, ChevronDown, ChevronsUpDown, Loader2,
-    Database, Globe2, BarChart3, TrendingUp,
+    Database, Globe2, BarChart3, TrendingUp, Search, Filter,
 } from "lucide-react";
 
 import {
@@ -366,6 +366,8 @@ function AlgorithmTradeContent() {
     const [loadedDataMap, setLoadedDataMap] = useState<Record<string, any>>({});
     const [marketTab, setMarketTab] = useState<"kr" | "us">("kr");
     const [viewTab, setViewTab] = useState<"strategy" | "daily">("strategy");
+    const [excludeHoldings, setExcludeHoldings] = useState(false);
+    const [manualDateInput, setManualDateInput] = useState("");
 
     const listRef = useRef<HTMLDivElement>(null);
     const hasDiscovered = useRef(false);
@@ -416,6 +418,11 @@ function AlgorithmTradeContent() {
     const totalCandidateKeys = useMemo(() =>
         activeStrategy?.candidates ? Object.keys(activeStrategy.candidates) : [],
     [activeStrategy]);
+
+    const filteredDailyList = useMemo(() => {
+        if (!excludeHoldings) return ncavDailyList.list;
+        return ncavDailyList.list.filter(item => !item.name.includes("홀딩스"));
+    }, [ncavDailyList.list, excludeHoldings]);
 
     const krCandidateEntries = useMemo(() => {
         if (!activeStrategy?.candidates) return [] as [string, any][];
@@ -844,7 +851,7 @@ function AlgorithmTradeContent() {
 
                     {/* 일별 스캔 뷰 */}
                     {marketTab === "kr" && viewTab === "daily" && (
-                    <div className="space-y-4">
+                    <div className="space-y-3">
                         {/* 날짜 선택 */}
                         <div className="flex items-center gap-2 flex-wrap">
                             {(() => {
@@ -855,6 +862,15 @@ function AlgorithmTradeContent() {
                                         : d;
                                 const isLatestSelected = ncavDailySelectedDate === "latest" || ncavDailySelectedDate === latestScanDate;
                                 const otherDates = ncavDailyDates.dates.filter(d => d.scan_date !== latestScanDate);
+                                const handleManualDate = () => {
+                                    const normalized = manualDateInput.replace(/-/g, "").trim();
+                                    if (normalized.length === 8) {
+                                        dispatch(setNcavDailySelectedDate(normalized));
+                                        dispatch(reqGetNcavDailyList(normalized));
+                                        setDailyDisplayCount(DAILY_PAGE_SIZE);
+                                        setManualDateInput("");
+                                    }
+                                };
                                 return (<>
                                     <button
                                         onClick={() => {
@@ -883,6 +899,7 @@ function AlgorithmTradeContent() {
                                                 onClick={() => {
                                                     dispatch(setNcavDailySelectedDate(d.scan_date));
                                                     dispatch(reqGetNcavDailyList(d.scan_date));
+                                                    setDailyDisplayCount(DAILY_PAGE_SIZE);
                                                 }}
                                                 className={cn(
                                                     "flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-bold border transition-all",
@@ -905,8 +922,44 @@ function AlgorithmTradeContent() {
                                     >
                                         <RefreshCw className="w-3.5 h-3.5" />
                                     </button>
+                                    {/* 날짜 직접 입력 */}
+                                    <div className="flex items-center gap-1">
+                                        <input
+                                            type="text"
+                                            placeholder="YYYYMMDD"
+                                            value={manualDateInput}
+                                            onChange={e => setManualDateInput(e.target.value)}
+                                            onKeyDown={e => { if (e.key === "Enter") handleManualDate(); }}
+                                            className="w-28 px-2.5 py-2 text-xs font-mono bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-xl text-zinc-700 dark:text-zinc-300 placeholder:text-zinc-300 dark:placeholder:text-zinc-600 focus:outline-none focus:border-indigo-400 dark:focus:border-indigo-500"
+                                        />
+                                        <button
+                                            onClick={handleManualDate}
+                                            className="p-2 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-xl text-zinc-400 hover:text-indigo-600 dark:hover:text-indigo-400 hover:border-indigo-300 dark:hover:border-indigo-600 transition-all"
+                                            title="해당 날짜 조회"
+                                        >
+                                            <Search className="w-3.5 h-3.5" />
+                                        </button>
+                                    </div>
                                 </>);
                             })()}
+                        </div>
+                        {/* 필터 */}
+                        <div className="flex items-center gap-2">
+                            <button
+                                onClick={() => {
+                                    setExcludeHoldings(p => !p);
+                                    setDailyDisplayCount(DAILY_PAGE_SIZE);
+                                }}
+                                className={cn(
+                                    "flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold border transition-all",
+                                    excludeHoldings
+                                        ? "bg-amber-500 border-amber-500 text-white shadow-sm"
+                                        : "bg-white dark:bg-zinc-900 border-zinc-200 dark:border-zinc-800 text-zinc-500 dark:text-zinc-400 hover:border-zinc-400"
+                                )}
+                            >
+                                <Filter className="w-3 h-3" />
+                                홀딩스 제외
+                            </button>
                         </div>
 
                     <div className="bg-white dark:bg-zinc-900 rounded-2xl border border-zinc-200 dark:border-zinc-800 shadow-sm overflow-hidden">
@@ -929,6 +982,12 @@ function AlgorithmTradeContent() {
                                 <p className="text-sm font-bold text-zinc-500 dark:text-zinc-400">스캔 결과가 없습니다.</p>
                                 <p className="text-xs text-zinc-400 dark:text-zinc-500">아직 D1에 데이터가 저장되지 않았거나 해당 날짜의 결과가 없습니다.</p>
                             </div>
+                        ) : filteredDailyList.length === 0 ? (
+                            <div className="flex flex-col items-center justify-center py-16 gap-3 text-center px-4">
+                                <Filter className="w-8 h-8 text-zinc-300 dark:text-zinc-600" />
+                                <p className="text-sm font-bold text-zinc-500 dark:text-zinc-400">필터 조건에 해당하는 종목이 없습니다.</p>
+                                <p className="text-xs text-zinc-400 dark:text-zinc-500">필터를 해제하거나 조건을 변경해 주세요.</p>
+                            </div>
                         ) : (
                             <>
                                 <div className="px-5 py-3.5 border-b border-zinc-100 dark:border-zinc-800 flex items-center justify-between">
@@ -938,7 +997,12 @@ function AlgorithmTradeContent() {
                                             {ncavDailyList.scanDate ?? "-"}
                                         </span>
                                     </div>
-                                    <span className="text-xs text-zinc-400 font-medium">{ncavDailyList.total}개 종목</span>
+                                    <span className="text-xs text-zinc-400 font-medium">
+                                        {excludeHoldings && filteredDailyList.length !== ncavDailyList.list.length
+                                            ? <>{filteredDailyList.length}<span className="text-zinc-300 dark:text-zinc-600"> / {ncavDailyList.total}</span>개 종목</>
+                                            : <>{ncavDailyList.total}개 종목</>
+                                        }
+                                    </span>
                                 </div>
                                 <div className="overflow-x-auto">
                                     <table className="w-full text-left">
@@ -964,7 +1028,7 @@ function AlgorithmTradeContent() {
                                             </tr>
                                         </thead>
                                         <tbody className="divide-y divide-zinc-100 dark:divide-zinc-800/50">
-                                            {ncavDailyList.list.slice(0, dailyDisplayCount).map((item) => {
+                                            {filteredDailyList.slice(0, dailyDisplayCount).map((item) => {
                                                 const upsidePct = (Number(item.ncav_ratio) - 1) * 100;
                                                 const isPositive = upsidePct >= 0;
                                                 return (
@@ -1007,17 +1071,17 @@ function AlgorithmTradeContent() {
                                         </tbody>
                                     </table>
                                 </div>
-                                {dailyDisplayCount < ncavDailyList.list.length && (
+                                {dailyDisplayCount < filteredDailyList.length && (
                                     <div className="flex flex-col items-center gap-3 py-6 border-t border-zinc-100 dark:border-zinc-800">
                                         <p className="text-xs text-zinc-400 font-medium">
-                                            {dailyDisplayCount} / {ncavDailyList.list.length}개 표시 중
+                                            {dailyDisplayCount} / {filteredDailyList.length}개 표시 중
                                         </p>
                                         <button
                                             onClick={() => setDailyDisplayCount(p => p + DAILY_PAGE_SIZE)}
                                             className="flex items-center gap-2 px-6 py-2.5 bg-zinc-50 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-xl text-sm font-bold text-zinc-700 dark:text-zinc-300 hover:border-zinc-400 dark:hover:border-zinc-600 hover:bg-white dark:hover:bg-zinc-750 transition-all"
                                         >
                                             더 보기
-                                            <span className="text-xs font-mono text-zinc-400">+{Math.min(DAILY_PAGE_SIZE, ncavDailyList.list.length - dailyDisplayCount)}</span>
+                                            <span className="text-xs font-mono text-zinc-400">+{Math.min(DAILY_PAGE_SIZE, filteredDailyList.length - dailyDisplayCount)}</span>
                                         </button>
                                     </div>
                                 )}
