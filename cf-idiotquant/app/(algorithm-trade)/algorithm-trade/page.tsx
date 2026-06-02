@@ -367,6 +367,10 @@ function AlgorithmTradeContent() {
     const [marketTab, setMarketTab] = useState<"kr" | "us">("kr");
     const [viewTab, setViewTab] = useState<"strategy" | "daily">("strategy");
     const [excludeHoldings, setExcludeHoldings] = useState(false);
+    const [excludePreferred, setExcludePreferred] = useState(false);
+    const [excludeSpac, setExcludeSpac] = useState(false);
+    const [excludeDeficit, setExcludeDeficit] = useState(false);
+    const [ncavPositiveOnly, setNcavPositiveOnly] = useState(false);
     const [manualDateInput, setManualDateInput] = useState("");
 
     const listRef = useRef<HTMLDivElement>(null);
@@ -420,9 +424,14 @@ function AlgorithmTradeContent() {
     [activeStrategy]);
 
     const filteredDailyList = useMemo(() => {
-        if (!excludeHoldings) return ncavDailyList.list;
-        return ncavDailyList.list.filter(item => !item.name.includes("홀딩스"));
-    }, [ncavDailyList.list, excludeHoldings]);
+        let list = ncavDailyList.list;
+        if (excludeHoldings)  list = list.filter(item => !item.name.includes("홀딩스"));
+        if (excludePreferred) list = list.filter(item => !/우[BC]?$/.test(item.name));
+        if (excludeSpac)      list = list.filter(item => !item.name.includes("스팩"));
+        if (excludeDeficit)   list = list.filter(item => Number(item.eps) > 0);
+        if (ncavPositiveOnly) list = list.filter(item => Number(item.ncav_ratio) >= 1);
+        return list;
+    }, [ncavDailyList.list, excludeHoldings, excludePreferred, excludeSpac, excludeDeficit, ncavPositiveOnly]);
 
     const krCandidateEntries = useMemo(() => {
         if (!activeStrategy?.candidates) return [] as [string, any][];
@@ -944,22 +953,31 @@ function AlgorithmTradeContent() {
                             })()}
                         </div>
                         {/* 필터 */}
-                        <div className="flex items-center gap-2">
-                            <button
-                                onClick={() => {
-                                    setExcludeHoldings(p => !p);
-                                    setDailyDisplayCount(DAILY_PAGE_SIZE);
-                                }}
-                                className={cn(
-                                    "flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold border transition-all",
-                                    excludeHoldings
-                                        ? "bg-amber-500 border-amber-500 text-white shadow-sm"
-                                        : "bg-white dark:bg-zinc-900 border-zinc-200 dark:border-zinc-800 text-zinc-500 dark:text-zinc-400 hover:border-zinc-400"
-                                )}
-                            >
+                        <div className="flex items-center gap-2 flex-wrap">
+                            <span className="flex items-center gap-1 text-[10px] font-black text-zinc-400 uppercase tracking-wider">
                                 <Filter className="w-3 h-3" />
-                                홀딩스 제외
-                            </button>
+                                필터
+                            </span>
+                            {([
+                                { label: "홀딩스 제외", active: excludeHoldings, toggle: () => setExcludeHoldings(p => !p) },
+                                { label: "우선주 제외", active: excludePreferred, toggle: () => setExcludePreferred(p => !p) },
+                                { label: "스팩 제외",   active: excludeSpac,      toggle: () => setExcludeSpac(p => !p) },
+                                { label: "적자 제외",   active: excludeDeficit,   toggle: () => setExcludeDeficit(p => !p) },
+                                { label: "NCAV 양수만", active: ncavPositiveOnly, toggle: () => setNcavPositiveOnly(p => !p) },
+                            ] as const).map(({ label, active, toggle }) => (
+                                <button
+                                    key={label}
+                                    onClick={() => { toggle(); setDailyDisplayCount(DAILY_PAGE_SIZE); }}
+                                    className={cn(
+                                        "px-3 py-1.5 rounded-lg text-xs font-bold border transition-all",
+                                        active
+                                            ? "bg-amber-500 border-amber-500 text-white shadow-sm"
+                                            : "bg-white dark:bg-zinc-900 border-zinc-200 dark:border-zinc-800 text-zinc-500 dark:text-zinc-400 hover:border-zinc-400"
+                                    )}
+                                >
+                                    {label}
+                                </button>
+                            ))}
                         </div>
 
                     <div className="bg-white dark:bg-zinc-900 rounded-2xl border border-zinc-200 dark:border-zinc-800 shadow-sm overflow-hidden">
