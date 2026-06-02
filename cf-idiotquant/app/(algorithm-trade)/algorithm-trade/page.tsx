@@ -371,6 +371,7 @@ function AlgorithmTradeContent() {
     const [marketTab, setMarketTab] = useState<"kr" | "us">("kr");
     const [strategyFilterOn, setStrategyFilterOn] = useState(false);
     const [excludeHoldings, setExcludeHoldings] = useState(false);
+    const [excludeJiju, setExcludeJiju] = useState(false);
     const [excludePreferred, setExcludePreferred] = useState(false);
     const [excludeSpac, setExcludeSpac] = useState(false);
     const [excludeDeficit, setExcludeDeficit] = useState(false);
@@ -436,13 +437,14 @@ function AlgorithmTradeContent() {
     const filteredDailyList = useMemo(() => {
         let list = ncavDailyList.list;
         if (excludeHoldings)  list = list.filter(item => !item.name.includes("홀딩스"));
+        if (excludeJiju)      list = list.filter(item => !item.name.includes("지주"));
         if (excludePreferred) list = list.filter(item => !/우[BC]?$/.test(item.name));
         if (excludeSpac)      list = list.filter(item => !item.name.includes("스팩"));
         if (excludeDeficit)   list = list.filter(item => Number(item.eps) > 0);
         if (ncavPositiveOnly) list = list.filter(item => Number(item.ncav_ratio) >= 1);
         if (minMarketCap > 0) list = list.filter(item => Number(item.market_cap) >= minMarketCap);
         return list;
-    }, [ncavDailyList.list, excludeHoldings, excludePreferred, excludeSpac, excludeDeficit, ncavPositiveOnly, minMarketCap]);
+    }, [ncavDailyList.list, excludeHoldings, excludeJiju, excludePreferred, excludeSpac, excludeDeficit, ncavPositiveOnly, minMarketCap]);
 
     const krCandidateEntries = useMemo(() => {
         if (!activeStrategy?.candidates) return [] as [string, any][];
@@ -981,8 +983,9 @@ function AlgorithmTradeContent() {
                                     필터
                                 </span>
                                 {([
-                                    { label: "홀딩스 제외", active: excludeHoldings, toggle: () => setExcludeHoldings(p => !p) },
-                                    { label: "우선주 제외", active: excludePreferred, toggle: () => setExcludePreferred(p => !p) },
+                                    { label: "홀딩스 제외",  active: excludeHoldings,  toggle: () => setExcludeHoldings(p => !p) },
+                                    { label: "지주회사 제외", active: excludeJiju,       toggle: () => setExcludeJiju(p => !p) },
+                                    { label: "우선주 제외",  active: excludePreferred,  toggle: () => setExcludePreferred(p => !p) },
                                     { label: "스팩 제외",   active: excludeSpac,      toggle: () => setExcludeSpac(p => !p) },
                                     { label: "적자 제외",   active: excludeDeficit,   toggle: () => setExcludeDeficit(p => !p) },
                                     { label: "NCAV 양수만", active: ncavPositiveOnly, toggle: () => setNcavPositiveOnly(p => !p) },
@@ -1044,6 +1047,41 @@ function AlgorithmTradeContent() {
                             </div>
                         </div>
 
+                        {/* 전략 기준 배너 */}
+                        {strategyFilterOn && (
+                            <div className="bg-violet-50 dark:bg-violet-950/20 border border-violet-200 dark:border-violet-800/40 rounded-xl p-4 space-y-3">
+                                <div>
+                                    <p className="text-[10px] font-black text-violet-600 dark:text-violet-400 uppercase tracking-wider mb-2">현재 전략 기준 (그레이엄 NCAV)</p>
+                                    <div className="flex flex-wrap gap-2">
+                                        {[
+                                            { label: "NCAV 업사이드", value: `≥ ${quantRule.value.ncav_ratio}배` },
+                                            { label: "PBR", value: `≤ ${quantRule.value.max_pbr}x` },
+                                            { label: "EPS", value: `≥ ₩${Number(quantRule.value.min_eps).toLocaleString()}` },
+                                            { label: "시가총액", value: `≥ ${(Number(quantRule.value.min_tomv) / 100000000).toLocaleString()}억원` },
+                                        ].map(({ label, value }) => (
+                                            <div key={label} className="flex items-center gap-1.5 bg-white dark:bg-zinc-900 border border-violet-200 dark:border-violet-800/50 rounded-lg px-3 py-1.5">
+                                                <span className="text-[11px] font-bold text-zinc-500 dark:text-zinc-400">{label}</span>
+                                                <span className="text-[11px] font-black font-mono text-violet-700 dark:text-violet-300">{value}</span>
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
+                                <div className="flex flex-wrap gap-4 pt-1 border-t border-violet-100 dark:border-violet-900/40">
+                                    <div className="flex items-center gap-1.5">
+                                        <div className="w-3 h-3 rounded bg-amber-50 dark:bg-amber-950/30 border border-amber-300 dark:border-amber-700 shrink-0" />
+                                        <span className="text-[10px] font-medium text-zinc-500 dark:text-zinc-400">NCAV 업사이드 기준 미달</span>
+                                    </div>
+                                    <div className="flex items-center gap-1.5">
+                                        <div className="w-3 h-3 rounded bg-red-50 dark:bg-red-950/30 border border-red-300 dark:border-red-700 shrink-0" />
+                                        <span className="text-[10px] font-medium text-zinc-500 dark:text-zinc-400">PBR / EPS 기준 미달</span>
+                                    </div>
+                                    <p className="text-[10px] text-violet-500 dark:text-violet-400 font-medium">
+                                        전략 컬럼은 <span className="font-black">보라색</span>으로 강조됩니다.
+                                    </p>
+                                </div>
+                            </div>
+                        )}
+
                     <div className="bg-white dark:bg-zinc-900 rounded-2xl border border-zinc-200 dark:border-zinc-800 shadow-sm overflow-hidden">
                         {(ncavDailyList.state === "pending" || ncavDailyList.state === "init") ? (
                             <div className="flex items-center justify-center py-16 gap-3">
@@ -1090,21 +1128,32 @@ function AlgorithmTradeContent() {
                                     <table className="w-full text-left">
                                         <thead>
                                             <tr className="border-b border-zinc-200 dark:border-zinc-800 bg-zinc-50/50 dark:bg-zinc-900/50">
-                                                {[
-                                                    { label: "티커", align: "" },
-                                                    { label: "종목명", align: "" },
-                                                    { label: "NCAV 업사이드", align: "text-right" },
-                                                    { label: "유동자산(억)", align: "text-right" },
-                                                    { label: "총부채(억)", align: "text-right" },
-                                                    { label: "시가총액(억)", align: "text-right" },
-                                                    { label: "현재가", align: "text-right" },
-                                                    { label: "PER", align: "text-right" },
-                                                    { label: "PBR", align: "text-right" },
-                                                    { label: "EPS", align: "text-right" },
-                                                    { label: "BPS", align: "text-right" },
-                                                ].map(({ label, align }) => (
-                                                    <th key={label} className={`py-3 px-4 text-[10px] font-black text-zinc-400 uppercase tracking-wider select-none whitespace-nowrap ${align}`}>
-                                                        {label}
+                                                {([
+                                                    { label: "티커",          align: "",           strategy: false },
+                                                    { label: "종목명",        align: "",           strategy: false },
+                                                    { label: "NCAV 업사이드", align: "text-right", strategy: true  },
+                                                    { label: "유동자산(억)",  align: "text-right", strategy: false },
+                                                    { label: "총부채(억)",    align: "text-right", strategy: false },
+                                                    { label: "시가총액(억)",  align: "text-right", strategy: false },
+                                                    { label: "현재가",        align: "text-right", strategy: false },
+                                                    { label: "PER",           align: "text-right", strategy: false },
+                                                    { label: "PBR",           align: "text-right", strategy: true  },
+                                                    { label: "EPS",           align: "text-right", strategy: true  },
+                                                    { label: "BPS",           align: "text-right", strategy: false },
+                                                ] as { label: string; align: string; strategy: boolean }[]).map(({ label, align, strategy }) => (
+                                                    <th key={label} className={cn(
+                                                        "py-3 px-4 text-[10px] font-black uppercase tracking-wider select-none whitespace-nowrap",
+                                                        align,
+                                                        strategyFilterOn && strategy
+                                                            ? "text-violet-600 dark:text-violet-400"
+                                                            : "text-zinc-400"
+                                                    )}>
+                                                        <span className="inline-flex items-center gap-1">
+                                                            {label}
+                                                            {strategyFilterOn && strategy && (
+                                                                <span className="inline-block w-1.5 h-1.5 rounded-full bg-violet-500 shrink-0" />
+                                                            )}
+                                                        </span>
                                                     </th>
                                                 ))}
                                             </tr>
