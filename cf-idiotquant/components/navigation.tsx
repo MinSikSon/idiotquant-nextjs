@@ -29,8 +29,15 @@ import { EyeIcon, TrendingUp, TrendingDown, Activity } from "lucide-react";
 ────────────────────────────────────────── */
 const NAV_ITEMS = [
   {
+    label: "종목 발굴",
+    href: "/screener",
+    icon: FunnelIcon,
+    desc: "NCAV·저PBR·저PER 기준 저평가 종목 매일 자동 스캔",
+    badge: "Pro",
+  },
+  {
     label: "적정 주가",
-    href: "/search",
+    href: "/analyze",
     icon: MagnifyingGlassIcon,
     desc: "7가지 밸류에이션 모델 기반 적정 주가 산출",
     badge: null,
@@ -41,13 +48,6 @@ const NAV_ITEMS = [
     icon: CalculatorIcon,
     desc: "세후 순수익·복리·연환산 시뮬레이션",
     badge: null,
-  },
-  {
-    label: "퀀트 추천",
-    href: "/algorithm-trade",
-    icon: FunnelIcon,
-    desc: "NCAV·F-Score 멀티팩터 종목 자동 선별",
-    badge: "Pro",
   },
 ];
 
@@ -215,11 +215,11 @@ function NavDropdown({
           {/* Footer CTA */}
           <div className="px-3 pb-3">
             <Link
-              href="/algorithm-trade"
+              href="/screener"
               onClick={() => setOpen(false)}
               className="flex items-center justify-between w-full px-4 py-3 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 text-white text-xs font-bold hover:from-blue-700 hover:to-indigo-700 transition-all"
             >
-              <span>Pro 플랜으로 업그레이드</span>
+              <span>종목 발굴 시작하기</span>
               <ChevronRightIcon className="w-3.5 h-3.5" />
             </Link>
           </div>
@@ -369,7 +369,11 @@ export function NavbarWithSimpleLinks() {
             <NavDropdown session={session} status={status} pathname={pathname} />
 
             {/* Direct links */}
-            <NavLink href="/search" active={pathname === "/search"}>
+            <NavLink href="/screener" active={pathname === "/screener"}>
+              <FunnelIcon className="w-3.5 h-3.5" />
+              종목 발굴
+            </NavLink>
+            <NavLink href="/analyze" active={pathname === "/analyze"}>
               <MagnifyingGlassIcon className="w-3.5 h-3.5" />
               적정 주가
             </NavLink>

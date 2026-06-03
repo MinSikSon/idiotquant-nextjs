@@ -28,8 +28,6 @@ import {
     reqGetFinnhubUsFinancialsReported,
     selectFinnhubFinancialsAsReported
 } from "@/lib/features/finnhubUsMarket/finnhubUsMarketSlice";
-import { reqPostLaboratory } from "@/lib/features/ai/aiSlice";
-import { selectAiStreamOutput } from "@/lib/features/ai/aiStreamSlice";
 import { addKrMarketHistory } from "@/lib/features/searchHistory/searchHistorySlice";
 import { reqPostSearchLog } from "@/lib/features/searchLog/searchLogSlice";
 
@@ -39,7 +37,6 @@ export function useStockSearch() {
     const dispatch = useAppDispatch();
     const [krOrUs, setKrOrUs] = useState<"KR" | "US">("KR");
     const [name, setName] = useState("");
-    const [response, setResponse] = useState("");
     const [waitResponse, setWaitResponse] = useState(false);
 
     // Selectors
@@ -47,7 +44,6 @@ export function useStockSearch() {
     const kiBS = useAppSelector(getKoreaInvestmentBalanceSheet);
     const kiIS = useAppSelector(getKoreaInvestmentIncomeStatement);
     const kiChart = useAppSelector(getKoreaInvestmentInquireDailyItemChartPrice);
-    const aiStreamOutput = useAppSelector(selectAiStreamOutput);
     const usSearchInfo = useAppSelector(getKoreaInvestmentUsMaretSearchInfo);
     const usDetail = useAppSelector(getKoreaInvestmentUsMaretPriceDetail);
     const usDaily = useAppSelector(getKoreaInvestmentUsMarketDailyPrice);
@@ -102,37 +98,12 @@ export function useStockSearch() {
             }));
             dispatch(reqGetFinnhubUsFinancialsReported(ticker));
         }
-    }, [dispatch]); // dispatch는 안정적인 함수이므로 한 번만 생성됩니다.
-    
-    
-
-    // AI Stream Parsing
-    useEffect(() => {
-        if (aiStreamOutput) {
-            const lines = aiStreamOutput.split('\n');
-            let content = "";
-            for (const line of lines) {
-                if (line.startsWith('data: ')) {
-                    const jsonStr = line.slice(6).trim();
-                    if (jsonStr === '[DONE]') {
-                        setWaitResponse(false);
-                        break;
-                    }
-                    try {
-                        const parsed = JSON.parse(jsonStr);
-                        if (parsed.response) content += parsed.response;
-                    } catch (e) { }
-                }
-            }
-            setResponse(content);
-        }
-    }, [aiStreamOutput]);
+    }, [dispatch]);
 
     return {
         onSearch,
         krOrUs,
         name,
-        response,
         waitResponse,
         data: {
             kiPrice,
