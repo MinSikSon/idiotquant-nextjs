@@ -30,6 +30,7 @@ import nyse_tickers from "@/public/data/usStockSymbols/nyse_tickers.json";
 import amex_tickers from "@/public/data/usStockSymbols/amex_tickers.json";
 import { StockCard } from "@/app/(search)/search/components/StockCard";
 import { cn } from "@/lib/utils";
+import * as Tooltip from "@radix-ui/react-tooltip";
 
 // =========================================================================
 // 상수
@@ -39,7 +40,7 @@ const PAGE_SIZE = 12;
 const DAILY_PAGE_SIZE = 20;
 type SortKey = "ticker" | "ncavScore" | "curPrice" | "per" | "pbr";
 type SortOrder = "asc" | "desc";
-type DiscoverySortKey = "ticker" | "ncav_ratio" | "per" | "pbr" | "roe" | "market_cap" | "last_price";
+type DiscoverySortKey = "ticker" | "ncav_ratio" | "per" | "pbr" | "roe" | "market_cap" | "last_price" | "graham_upside";
 
 const GRADE_PILL: Record<string, string> = {
     SSS: "bg-gradient-to-r from-pink-500 via-purple-500 to-cyan-500 text-white",
@@ -53,30 +54,36 @@ const gradePill = (g: string) =>
     GRADE_PILL[g] ?? "bg-zinc-100 text-zinc-500 dark:bg-zinc-800 dark:text-zinc-400";
 
 const STRATEGY_BADGE: Record<string, string> = {
-    ncav:          "bg-emerald-100 text-emerald-700 dark:bg-emerald-950/50 dark:text-emerald-400",
-    low_pbr:       "bg-blue-100 text-blue-700 dark:bg-blue-950/50 dark:text-blue-400",
-    low_per:       "bg-orange-100 text-orange-700 dark:bg-orange-950/50 dark:text-orange-400",
-    s_rim:         "bg-violet-100 text-violet-700 dark:bg-violet-950/50 dark:text-violet-400",
-    graham_number: "bg-teal-100 text-teal-700 dark:bg-teal-950/50 dark:text-teal-400",
-    magic_formula: "bg-rose-100 text-rose-700 dark:bg-rose-950/50 dark:text-rose-400",
-    quality_value: "bg-amber-100 text-amber-700 dark:bg-amber-950/50 dark:text-amber-400",
+    ncav:           "bg-emerald-100 text-emerald-700 dark:bg-emerald-950/50 dark:text-emerald-400",
+    low_pbr:        "bg-blue-100 text-blue-700 dark:bg-blue-950/50 dark:text-blue-400",
+    low_per:        "bg-orange-100 text-orange-700 dark:bg-orange-950/50 dark:text-orange-400",
+    s_rim:          "bg-violet-100 text-violet-700 dark:bg-violet-950/50 dark:text-violet-400",
+    graham_number:  "bg-teal-100 text-teal-700 dark:bg-teal-950/50 dark:text-teal-400",
+    magic_formula:  "bg-rose-100 text-rose-700 dark:bg-rose-950/50 dark:text-rose-400",
+    quality_value:  "bg-amber-100 text-amber-700 dark:bg-amber-950/50 dark:text-amber-400",
+    near_ncav:      "bg-indigo-100 text-indigo-700 dark:bg-indigo-950/50 dark:text-indigo-400",
+    balanced_value: "bg-cyan-100 text-cyan-700 dark:bg-cyan-950/50 dark:text-cyan-400",
 };
 const STRATEGY_LABEL: Record<string, string> = {
     ncav: "NCAV", low_pbr: "저PBR", low_per: "저PER", s_rim: "S-RIM",
     graham_number: "그레이엄", magic_formula: "마법공식", quality_value: "퀄리티",
+    near_ncav: "NCAV근접", balanced_value: "균형가치",
 };
 const STRATEGY_ACTIVE_CLS: Record<string, string> = {
-    ncav:          "bg-emerald-600 border-emerald-600 text-white shadow-sm",
-    low_pbr:       "bg-blue-600 border-blue-600 text-white shadow-sm",
-    low_per:       "bg-orange-500 border-orange-500 text-white shadow-sm",
-    s_rim:         "bg-violet-600 border-violet-600 text-white shadow-sm",
-    graham_number: "bg-teal-600 border-teal-600 text-white shadow-sm",
-    magic_formula: "bg-rose-600 border-rose-600 text-white shadow-sm",
-    quality_value: "bg-amber-500 border-amber-500 text-white shadow-sm",
+    ncav:           "bg-emerald-600 border-emerald-600 text-white shadow-sm",
+    low_pbr:        "bg-blue-600 border-blue-600 text-white shadow-sm",
+    low_per:        "bg-orange-500 border-orange-500 text-white shadow-sm",
+    s_rim:          "bg-violet-600 border-violet-600 text-white shadow-sm",
+    graham_number:  "bg-teal-600 border-teal-600 text-white shadow-sm",
+    magic_formula:  "bg-rose-600 border-rose-600 text-white shadow-sm",
+    quality_value:  "bg-amber-500 border-amber-500 text-white shadow-sm",
+    near_ncav:      "bg-indigo-600 border-indigo-600 text-white shadow-sm",
+    balanced_value: "bg-cyan-600 border-cyan-600 text-white shadow-sm",
 };
 const STRATEGY_DOT_CLS: Record<string, string> = {
     ncav: "bg-emerald-500", low_pbr: "bg-blue-500", low_per: "bg-orange-400", s_rim: "bg-violet-500",
     graham_number: "bg-teal-500", magic_formula: "bg-rose-500", quality_value: "bg-amber-400",
+    near_ncav: "bg-indigo-500", balanced_value: "bg-cyan-500",
 };
 
 // =========================================================================
@@ -88,6 +95,7 @@ interface StrategyPreset {
     id: string;
     label: string;
     desc: string;
+    hint: string;
     criteria: { min_ncav_ratio?: number; max_pbr?: number; min_eps?: number; max_per?: number };
     criteriaChips: { label: string; value: string }[];
     columns: string[];
@@ -97,32 +105,37 @@ interface StrategyPreset {
 const STRATEGY_PRESETS: StrategyPreset[] = [
     {
         id: "ncav", label: "NCAV", desc: "그레이엄 청산가치 기준",
+        hint: "유동자산 − 총부채 > 시가총액이면 청산 시 주주가 이익. NCAV 비율 ≥ 1.0은 시장가가 청산가치 이하임을 의미. 벤 그레이엄의 가장 보수적인 매수 기준.",
         criteria: { min_ncav_ratio: 1.0 },
         criteriaChips: [{ label: "NCAV 비율", value: "≥ 1.0x" }],
         columns: ["NCAV 업사이드"],
     },
     {
         id: "low_pbr", label: "저PBR", desc: "PBR 0.5 미만 저평가",
+        hint: "주가가 장부가치(BPS) 대비 얼마나 싼지 나타냄. PBR 0.5 미만은 순자산의 절반도 안 되는 가격에 거래 중임을 뜻함. BPS = 자기자본 ÷ 발행주식수.",
         criteria: { max_pbr: 0.5 },
         criteriaChips: [{ label: "PBR", value: "< 0.5x" }],
         columns: ["PBR"],
     },
     {
         id: "low_per", label: "저PER", desc: "PER 10 미만 수익성 종목",
+        hint: "현재 이익 수준 대비 주가가 낮을수록 저평가. PER 10 미만이면 이익의 10배 이하에 매수 가능. EPS > 0(흑자) 조건을 병행해 적자 기업을 제외.",
         criteria: { max_per: 10 },
-        criteriaChips: [{ label: "PER", value: "< 10x" }],
+        criteriaChips: [{ label: "PER", value: "< 10x" }, { label: "EPS", value: "> 0" }],
         columns: ["PER"],
     },
     {
-        id: "s_rim", label: "S-RIM", desc: "ROE > 8% & PBR < 1.0 복합 가치",
+        id: "s_rim", label: "S-RIM", desc: "초과이익모델 — ROE > 8% & PBR < 1.0",
+        hint: "ROE(자본수익률)가 요구수익률(Ke=8%)을 초과할 때 내재가치가 장부가치보다 높아짐. PBR < 1.0이면 내재가치 대비 할인된 상태. 공식: 적정가치 = BPS × (ROE / Ke).",
         criteria: {},
         criteriaChips: [{ label: "ROE", value: "> 8%" }, { label: "PBR", value: "< 1.0x" }],
         columns: ["ROE", "PBR"],
     },
     {
         id: "graham_number", label: "그레이엄 넘버", desc: "PER × PBR < 22.5",
+        hint: "벤 그레이엄의 복합 안전마진 공식: √(22.5 × EPS × BPS). 현재가가 이 값 미만이면 매수 적정. PER × PBR < 22.5와 동치이며, 두 지표를 곱으로 평가해 단독 기준보다 유연함. EPS·BPS 모두 양수 조건 필요.",
         criteria: {},
-        criteriaChips: [{ label: "PER × PBR", value: "< 22.5" }],
+        criteriaChips: [{ label: "PER × PBR", value: "< 22.5" }, { label: "EPS·BPS", value: "> 0" }],
         columns: ["PER", "PBR"],
         clientFilter: (item) =>
             safeNum(item.eps) > 0 && safeNum(item.bps) > 0 &&
@@ -130,9 +143,10 @@ const STRATEGY_PRESETS: StrategyPreset[] = [
             safeNum(item.per) * safeNum(item.pbr) < 22.5,
     },
     {
-        id: "magic_formula", label: "마법공식", desc: "PER < 15 & ROE > 10%",
+        id: "magic_formula", label: "마법공식", desc: "Greenblatt — PER < 15 & ROE > 10%",
+        hint: "Greenblatt 마법공식의 변형. 수익수익률(1/PER)이 높고 자본효율(ROE)도 좋은 종목 — 싸고 잘 버는 기업. PER < 15(수익률 > 6.7%), ROE = EPS/BPS × 100 > 10% 기준.",
         criteria: {},
-        criteriaChips: [{ label: "PER", value: "< 15x" }, { label: "ROE", value: "> 10%" }],
+        criteriaChips: [{ label: "PER", value: "< 15x" }, { label: "ROE", value: "> 10%" }, { label: "EPS", value: "> 0" }],
         columns: ["PER", "ROE"],
         clientFilter: (item) =>
             safeNum(item.eps) > 0 && safeNum(item.per) > 0 && safeNum(item.per) < 15 &&
@@ -140,15 +154,112 @@ const STRATEGY_PRESETS: StrategyPreset[] = [
     },
     {
         id: "quality_value", label: "퀄리티 밸류", desc: "ROE > 15% & PBR < 2.0",
+        hint: "높은 ROE(>15%)로 경쟁력이 증명된 기업 중 PBR 2.0 미만으로 아직 고평가되지 않은 종목. 워런 버핏 스타일의 퀄리티 + 밸류 복합 기준.",
         criteria: {},
-        criteriaChips: [{ label: "ROE", value: "> 15%" }, { label: "PBR", value: "< 2.0x" }],
+        criteriaChips: [{ label: "ROE", value: "> 15%" }, { label: "PBR", value: "< 2.0x" }, { label: "EPS", value: "> 0" }],
         columns: ["ROE", "PBR"],
         clientFilter: (item) =>
             safeNum(item.eps) > 0 && safeNum(item.bps) > 0 &&
             (safeNum(item.eps) / safeNum(item.bps)) * 100 > 15 &&
             safeNum(item.pbr) > 0 && safeNum(item.pbr) < 2.0,
     },
+    {
+        id: "near_ncav", label: "NCAV 근접", desc: "청산가치 70~100% 구간",
+        hint: "NCAV 비율 0.7~1.0 — 청산가치엔 미달하지만 근접한 종목. NCAV 기준 진입 전 관찰 목록으로 활용하거나 안전마진이 점차 확보되는 과정을 추적할 때 유용.",
+        criteria: {},
+        criteriaChips: [{ label: "NCAV 비율", value: "0.7x ~ 1.0x" }],
+        columns: ["NCAV 업사이드"],
+        clientFilter: (item) => safeNum(item.ncav_ratio) >= 0.7 && safeNum(item.ncav_ratio) < 1.0,
+    },
+    {
+        id: "balanced_value", label: "균형 가치", desc: "PER 5~15 & PBR < 1.5",
+        hint: "너무 싸서 문제가 있거나(PER < 5) 너무 비싼 종목을 제외한 균형 가치 구간. PER 5~15, PBR < 1.5, 흑자(EPS > 0) 조건으로 적정가치 + 저평가 기업을 동시에 스크리닝.",
+        criteria: {},
+        criteriaChips: [{ label: "PER", value: "5x ~ 15x" }, { label: "PBR", value: "< 1.5x" }, { label: "EPS", value: "> 0" }],
+        columns: ["PER", "PBR"],
+        clientFilter: (item) =>
+            safeNum(item.eps) > 0 && safeNum(item.per) > 5 && safeNum(item.per) < 15 &&
+            safeNum(item.pbr) > 0 && safeNum(item.pbr) < 1.5,
+    },
 ];
+
+// =========================================================================
+// StrategyTooltip — 전략 설명 툴팁
+// =========================================================================
+const StrategyTooltipContent = ({ preset }: { preset: StrategyPreset }) => (
+    <div className="max-w-64 space-y-2.5">
+        <div>
+            <p className="font-black text-sm text-white tracking-tight">{preset.label}</p>
+            <p className="text-[11px] text-zinc-400 mt-0.5">{preset.desc}</p>
+        </div>
+        <div className="border-t border-zinc-700/60 pt-2 space-y-1">
+            <p className="text-[9px] font-black uppercase tracking-widest text-zinc-500">조건</p>
+            <div className="flex flex-wrap gap-1">
+                {preset.criteriaChips.map(chip => (
+                    <span key={chip.label} className="flex items-center gap-1 px-2 py-0.5 bg-zinc-700/60 rounded text-[10px] font-mono">
+                        <span className="text-zinc-400">{chip.label}</span>
+                        <span className="text-white font-bold">{chip.value}</span>
+                    </span>
+                ))}
+            </div>
+        </div>
+        <div className="border-t border-zinc-700/60 pt-2">
+            <p className="text-[11px] text-zinc-300 leading-relaxed">{preset.hint}</p>
+        </div>
+    </div>
+);
+
+// =========================================================================
+// MetricTooltip — 지표 설명 툴팁 래퍼
+// =========================================================================
+const MetricTooltipContent = ({ title, desc }: { title: string; desc: string }) => (
+    <div className="max-w-56">
+        <p className="font-black text-sm text-white">{title}</p>
+        <p className="text-[11px] text-zinc-300 mt-1 leading-relaxed">{desc}</p>
+    </div>
+);
+
+const TOOLTIP_CONTENT_CLS =
+    "z-50 rounded-xl px-3.5 py-3 text-xs bg-zinc-900 dark:bg-zinc-800 border border-zinc-700/60 shadow-xl shadow-black/30 will-change-[transform,opacity] data-[state=delayed-open]:animate-in data-[state=delayed-open]:fade-in-0 data-[state=delayed-open]:zoom-in-95 data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=closed]:zoom-out-95";
+
+const METRIC_HINTS: Record<string, { title: string; desc: string }> = {
+    "NCAV 업사이드": {
+        title: "NCAV 업사이드 (%)",
+        desc: "(유동자산 − 총부채) / 시가총액 − 1. 양수일수록 청산가치 대비 저평가. 100% 이상이면 NCAV 기준 통과.",
+    },
+    "PER": {
+        title: "PER (주가수익비율)",
+        desc: "주가 ÷ EPS(주당순이익). 현재 이익의 몇 배에 거래되는지. 낮을수록 이익 대비 저평가.",
+    },
+    "PBR": {
+        title: "PBR (주가순자산비율)",
+        desc: "주가 ÷ BPS(주당순자산). 순자산의 몇 배에 거래되는지. 1.0 미만이면 장부가치 이하 거래.",
+    },
+    "ROE": {
+        title: "ROE (자기자본수익률)",
+        desc: "EPS ÷ BPS × 100. 자본 대비 얼마나 이익을 내는지. 높을수록 자본 효율성 우수.",
+    },
+    "EPS": {
+        title: "EPS (주당순이익)",
+        desc: "당기순이익 ÷ 발행주식수. 양수이면 흑자, 음수이면 적자. PER 계산의 기준값.",
+    },
+    "BPS": {
+        title: "BPS (주당순자산)",
+        desc: "자기자본 ÷ 발행주식수. 주당 장부가치. PBR·ROE·그레이엄 넘버 계산의 기준값.",
+    },
+    "그레이엄 업사이드": {
+        title: "그레이엄 넘버 업사이드 (%)",
+        desc: "그레이엄 넘버 = √(22.5 × EPS × BPS). 현재가 대비 그레이엄 넘버의 초과율. 양수이면 현재가가 그레이엄 넘버 이하.",
+    },
+    "시가총액": {
+        title: "시가총액 (억 원)",
+        desc: "현재가 × 발행주식수. 단위: 억 원.",
+    },
+    "현재가": {
+        title: "현재가 (원)",
+        desc: "최근 스캔 기준 주가.",
+    },
+};
 
 // =========================================================================
 // StockLogo
@@ -484,8 +595,11 @@ function AlgorithmTradeContent() {
     const [searchQuery, setSearchQuery] = useState("");
     const [discoverySortKey, setDiscoverySortKey] = useState<DiscoverySortKey>("ncav_ratio");
     const [discoverySortOrder, setDiscoverySortOrder] = useState<SortOrder>("desc");
+    const [hiddenColumns, setHiddenColumns] = useState<Set<string>>(new Set(["유동자산(억)", "총부채(억)", "EPS", "BPS"]));
+    const [columnToggleOpen, setColumnToggleOpen] = useState(false);
 
     const listRef = useRef<HTMLDivElement>(null);
+    const columnToggleRef = useRef<HTMLDivElement>(null);
     const hasDiscovered = useRef(false);
 
     useEffect(() => { dispatch(reqGetNcavLatest()); dispatch(reqGetQuantRule()); }, [dispatch]);
@@ -561,6 +675,17 @@ function AlgorithmTradeContent() {
         setDailyDisplayCount(DAILY_PAGE_SIZE);
     }, []);
 
+    // 컬럼 토글 드롭다운 외부 클릭 닫기
+    useEffect(() => {
+        const handler = (e: MouseEvent) => {
+            if (columnToggleRef.current && !columnToggleRef.current.contains(e.target as Node)) {
+                setColumnToggleOpen(false);
+            }
+        };
+        if (columnToggleOpen) document.addEventListener("mousedown", handler);
+        return () => document.removeEventListener("mousedown", handler);
+    }, [columnToggleOpen]);
+
     const activePresentsList = useMemo(
         () => STRATEGY_PRESETS.filter(p => activeStrategyIds.includes(p.id)),
         [activeStrategyIds]
@@ -619,9 +744,16 @@ function AlgorithmTradeContent() {
             if (discoverySortKey === "ticker") {
                 return discoverySortOrder === "asc" ? a.ticker.localeCompare(b.ticker) : b.ticker.localeCompare(a.ticker);
             }
+            const grahamUpside = (item: any): number => {
+                const e = safeNum(item.eps); const bp = safeNum(item.bps); const lp = safeNum(item.last_price);
+                if (e <= 0 || bp <= 0 || lp <= 0) return -Infinity;
+                return (Math.sqrt(22.5 * e * bp) / lp - 1) * 100;
+            };
             if (discoverySortKey === "roe") {
                 va = safeNum(a.bps) > 0 ? safeNum(a.eps) / safeNum(a.bps) : -Infinity;
                 vb = safeNum(b.bps) > 0 ? safeNum(b.eps) / safeNum(b.bps) : -Infinity;
+            } else if (discoverySortKey === "graham_upside") {
+                va = grahamUpside(a); vb = grahamUpside(b);
             } else {
                 va = safeNum((a as any)[discoverySortKey]);
                 vb = safeNum((b as any)[discoverySortKey]);
@@ -710,6 +842,7 @@ function AlgorithmTradeContent() {
     if (!activeStrategy) return <EmptyUI onRetry={() => dispatch(reqGetNcavLatest())} />;
 
     return (
+      <Tooltip.Provider delayDuration={400}>
         <div className="min-h-screen bg-zinc-50 dark:bg-zinc-950 transition-colors">
             <div className="max-w-screen-2xl mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-10 space-y-6">
 
@@ -1276,35 +1409,46 @@ function AlgorithmTradeContent() {
                                                 <p className="text-[9px] text-zinc-300 dark:text-zinc-600 mt-0.5">다중 선택</p>
                                             )}
                                         </div>
+                                        <Tooltip.Provider delayDuration={300}>
                                         <div className="flex flex-wrap gap-2">
                                             {STRATEGY_PRESETS.map(preset => {
                                                 const isActive = activeStrategyIds.includes(preset.id);
                                                 return (
-                                                    <button
-                                                        key={preset.id}
-                                                        onClick={() => { toggleStrategy(preset.id); setDailyDisplayCount(DAILY_PAGE_SIZE); }}
-                                                        className={cn(
-                                                            "flex items-center gap-2 px-3 py-2 rounded-xl text-xs font-bold border transition-all",
-                                                            isActive
-                                                                ? (STRATEGY_ACTIVE_CLS[preset.id] ?? "bg-zinc-700 border-zinc-700 text-white shadow-sm")
-                                                                : "bg-zinc-50 dark:bg-zinc-800/50 border-zinc-200 dark:border-zinc-700 text-zinc-500 dark:text-zinc-400 hover:border-zinc-300 dark:hover:border-zinc-600"
-                                                        )}
-                                                    >
-                                                        <span className={cn(
-                                                            "w-2 h-2 rounded-full shrink-0 transition-colors",
-                                                            isActive ? "bg-white/80" : (STRATEGY_DOT_CLS[preset.id] ?? "bg-zinc-400")
-                                                        )} />
-                                                        <span>{preset.label}</span>
-                                                        <span className={cn(
-                                                            "text-[9px] max-w-[72px] truncate transition-opacity",
-                                                            isActive ? "opacity-70" : "text-zinc-400 dark:text-zinc-500"
-                                                        )}>
-                                                            {preset.desc}
-                                                        </span>
-                                                    </button>
+                                                    <Tooltip.Root key={preset.id}>
+                                                        <Tooltip.Trigger asChild>
+                                                            <button
+                                                                onClick={() => { toggleStrategy(preset.id); setDailyDisplayCount(DAILY_PAGE_SIZE); }}
+                                                                className={cn(
+                                                                    "flex items-center gap-2 px-3 py-2 rounded-xl text-xs font-bold border transition-all",
+                                                                    isActive
+                                                                        ? (STRATEGY_ACTIVE_CLS[preset.id] ?? "bg-zinc-700 border-zinc-700 text-white shadow-sm")
+                                                                        : "bg-zinc-50 dark:bg-zinc-800/50 border-zinc-200 dark:border-zinc-700 text-zinc-500 dark:text-zinc-400 hover:border-zinc-400 dark:hover:border-zinc-500 hover:text-zinc-700 dark:hover:text-zinc-200"
+                                                                )}
+                                                            >
+                                                                <span className={cn(
+                                                                    "w-2 h-2 rounded-full shrink-0 transition-colors",
+                                                                    isActive ? "bg-white/80" : (STRATEGY_DOT_CLS[preset.id] ?? "bg-zinc-400")
+                                                                )} />
+                                                                <span>{preset.label}</span>
+                                                                <span className={cn(
+                                                                    "text-[9px] max-w-[100px] truncate transition-opacity",
+                                                                    isActive ? "opacity-70" : "text-zinc-400 dark:text-zinc-500"
+                                                                )}>
+                                                                    {preset.desc}
+                                                                </span>
+                                                            </button>
+                                                        </Tooltip.Trigger>
+                                                        <Tooltip.Portal>
+                                                            <Tooltip.Content side="top" sideOffset={8} className={TOOLTIP_CONTENT_CLS}>
+                                                                <StrategyTooltipContent preset={preset} />
+                                                                <Tooltip.Arrow className="fill-zinc-900 dark:fill-zinc-800" />
+                                                            </Tooltip.Content>
+                                                        </Tooltip.Portal>
+                                                    </Tooltip.Root>
                                                 );
                                             })}
                                         </div>
+                                        </Tooltip.Provider>
                                     </div>
 
                                     {/* 수치 필터 */}
@@ -1312,7 +1456,7 @@ function AlgorithmTradeContent() {
                                         <div className="w-14 shrink-0 pt-1">
                                             <p className="text-[10px] font-black text-zinc-400 uppercase tracking-wider">수치</p>
                                         </div>
-                                        <div className="flex flex-wrap gap-3">
+                                        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
                                             {([
                                                 { label: "NCAV ≥", value: minNcavRatio, onChange: setMinNcavRatio, placeholder: "1.0", unit: "x" },
                                                 { label: "PBR ≤",  value: maxPbr,       onChange: setMaxPbr,       placeholder: "0.5", unit: "x" },
@@ -1327,7 +1471,7 @@ function AlgorithmTradeContent() {
                                                             placeholder={f.placeholder}
                                                             value={f.value}
                                                             onChange={e => { (f.onChange as any)(e.target.value); setDailyDisplayCount(DAILY_PAGE_SIZE); }}
-                                                            className="w-24 pl-2.5 pr-7 py-2 text-xs font-mono bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-700 rounded-lg text-zinc-700 dark:text-zinc-300 placeholder:text-zinc-300 dark:placeholder:text-zinc-600 focus:outline-none focus:border-indigo-400 dark:focus:border-indigo-500 focus:ring-1 focus:ring-indigo-200/60 dark:focus:ring-indigo-900/60 transition-colors"
+                                                            className="w-full pl-2.5 pr-7 py-2 text-xs font-mono bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-700 rounded-lg text-zinc-700 dark:text-zinc-300 placeholder:text-zinc-300 dark:placeholder:text-zinc-600 focus:outline-none focus:border-indigo-400 dark:focus:border-indigo-500 focus:ring-1 focus:ring-indigo-200/60 dark:focus:ring-indigo-900/60 transition-colors"
                                                         />
                                                         {f.value ? (
                                                             <button
@@ -1435,60 +1579,129 @@ function AlgorithmTradeContent() {
                             </div>
                         ) : (
                             <>
-                                <div className="px-5 py-3.5 border-b border-zinc-100 dark:border-zinc-800 flex items-center justify-between">
+                                <div className="px-5 py-3.5 border-b border-zinc-100 dark:border-zinc-800 flex items-center justify-between gap-3 flex-wrap">
                                     <div className="flex items-center gap-2">
                                         <span className="text-[11px] font-bold text-zinc-400 uppercase tracking-wider">스캔일</span>
                                         <span className="px-2 py-0.5 bg-zinc-100 dark:bg-zinc-800 rounded text-xs font-mono font-bold text-zinc-700 dark:text-zinc-300">
                                             {ncavDailyList.scanDate ?? "-"}
                                         </span>
                                     </div>
-                                    <span className="text-xs text-zinc-400 font-medium">
-                                        {filteredDailyList.length !== ncavDailyList.list.length
-                                            ? <>{filteredDailyList.length}<span className="text-zinc-300 dark:text-zinc-600"> / {ncavDailyList.list.length}</span>개 종목</>
-                                            : <>{ncavDailyList.list.length}개 종목</>
-                                        }
-                                    </span>
+                                    <div className="flex items-center gap-3">
+                                        <span className="text-xs text-zinc-400 font-medium">
+                                            {filteredDailyList.length !== ncavDailyList.list.length
+                                                ? <>{filteredDailyList.length}<span className="text-zinc-300 dark:text-zinc-600"> / {ncavDailyList.list.length}</span>개 종목</>
+                                                : <>{ncavDailyList.list.length}개 종목</>
+                                            }
+                                        </span>
+                                        {/* 컬럼 토글 드롭다운 */}
+                                        <div ref={columnToggleRef} className="relative">
+                                            <button
+                                                onClick={() => setColumnToggleOpen(p => !p)}
+                                                className={cn(
+                                                    "flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-[11px] font-bold border transition-all",
+                                                    columnToggleOpen
+                                                        ? "bg-indigo-50 dark:bg-indigo-950/30 border-indigo-300 dark:border-indigo-700 text-indigo-600 dark:text-indigo-400"
+                                                        : "bg-white dark:bg-zinc-900 border-zinc-200 dark:border-zinc-700 text-zinc-500 dark:text-zinc-400 hover:border-zinc-300 dark:hover:border-zinc-600"
+                                                )}
+                                            >
+                                                컬럼
+                                                <ChevronDown className={cn("w-3 h-3 transition-transform", columnToggleOpen && "rotate-180")} />
+                                            </button>
+                                            {columnToggleOpen && (
+                                                <div className="absolute right-0 top-full mt-1.5 w-40 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-700 rounded-xl shadow-lg z-20 py-1.5 overflow-hidden">
+                                                    {["유동자산(억)", "총부채(억)", "EPS", "BPS"].map(col => (
+                                                        <button
+                                                            key={col}
+                                                            onClick={() => setHiddenColumns(prev => {
+                                                                const next = new Set(prev);
+                                                                next.has(col) ? next.delete(col) : next.add(col);
+                                                                return next;
+                                                            })}
+                                                            className="w-full flex items-center gap-2.5 px-3.5 py-2 text-xs font-medium text-left hover:bg-zinc-50 dark:hover:bg-zinc-800/60 transition-colors"
+                                                        >
+                                                            <span className={cn(
+                                                                "w-3.5 h-3.5 rounded border flex items-center justify-center shrink-0 transition-colors",
+                                                                !hiddenColumns.has(col)
+                                                                    ? "bg-indigo-600 border-indigo-600 text-white"
+                                                                    : "border-zinc-300 dark:border-zinc-600"
+                                                            )}>
+                                                                {!hiddenColumns.has(col) && <span className="text-[8px] font-black">✓</span>}
+                                                            </span>
+                                                            <span className={hiddenColumns.has(col) ? "text-zinc-400 dark:text-zinc-500" : "text-zinc-700 dark:text-zinc-300"}>
+                                                                {col}
+                                                            </span>
+                                                        </button>
+                                                    ))}
+                                                </div>
+                                            )}
+                                        </div>
+                                    </div>
                                 </div>
                                 <div className="overflow-x-auto">
                                     <table className="w-full text-left">
                                         <thead>
                                             <tr className="border-b border-zinc-200 dark:border-zinc-800 bg-zinc-50/50 dark:bg-zinc-900/50">
                                                 {([
-                                                    { label: "티커",          align: "",             sortKey: "ticker"      },
-                                                    { label: "종목명",        align: "",             sortKey: null          },
-                                                    { label: "전략",          align: "",             sortKey: null          },
-                                                    { label: "NCAV 업사이드", align: "text-right",   sortKey: "ncav_ratio"  },
-                                                    { label: "유동자산(억)",  align: "text-right",   sortKey: null          },
-                                                    { label: "총부채(억)",    align: "text-right",   sortKey: null          },
-                                                    { label: "시가총액(억)",  align: "text-right",   sortKey: "market_cap"  },
-                                                    { label: "현재가",        align: "text-right",   sortKey: "last_price"  },
-                                                    { label: "PER",           align: "text-right",   sortKey: "per"         },
-                                                    { label: "PBR",           align: "text-right",   sortKey: "pbr"         },
-                                                    { label: "ROE",           align: "text-right",   sortKey: "roe"         },
-                                                    { label: "EPS",           align: "text-right",   sortKey: null          },
-                                                    { label: "BPS",           align: "text-right",   sortKey: null          },
-                                                ] as { label: string; align: string; sortKey: DiscoverySortKey | null }[]).map(({ label, align, sortKey }) => {
+                                                    { label: "티커",           align: "",           sortKey: "ticker"        },
+                                                    { label: "종목명",         align: "",           sortKey: null            },
+                                                    { label: "전략",           align: "",           sortKey: null            },
+                                                    { label: "NCAV 업사이드",  align: "text-right", sortKey: "ncav_ratio"    },
+                                                    { label: "유동자산(억)",   align: "text-right", sortKey: null            },
+                                                    { label: "총부채(억)",     align: "text-right", sortKey: null            },
+                                                    { label: "시가총액(억)",   align: "text-right", sortKey: "market_cap"    },
+                                                    { label: "현재가",         align: "text-right", sortKey: "last_price"    },
+                                                    { label: "PER",            align: "text-right", sortKey: "per"           },
+                                                    { label: "PBR",            align: "text-right", sortKey: "pbr"           },
+                                                    { label: "ROE",            align: "text-right", sortKey: "roe"           },
+                                                    { label: "그레이엄 업사이드", align: "text-right", sortKey: "graham_upside" },
+                                                    { label: "EPS",            align: "text-right", sortKey: null            },
+                                                    { label: "BPS",            align: "text-right", sortKey: null            },
+                                                ] as { label: string; align: string; sortKey: DiscoverySortKey | null }[])
+                                                .filter(col => !hiddenColumns.has(col.label))
+                                                .map(({ label, align, sortKey }) => {
                                                     const isStrategy = activePresetColumns.has(label);
+                                                    const isGraham = label === "그레이엄 업사이드";
                                                     const isActive = sortKey && discoverySortKey === sortKey;
-                                                    return (
+                                                    const metricHint = METRIC_HINTS[label];
+                                                    const thContent = (
                                                         <th key={label}
                                                             onClick={sortKey ? () => toggleDiscoverySort(sortKey) : undefined}
                                                             className={cn(
-                                                                "py-3 px-4 text-[10px] font-black uppercase tracking-wider select-none whitespace-nowrap",
+                                                                "py-3 px-4 text-[10px] font-black uppercase tracking-wider select-none whitespace-nowrap transition-colors rounded-sm",
                                                                 align,
-                                                                isStrategy ? "text-violet-600 dark:text-violet-400" : isActive ? "text-indigo-600 dark:text-indigo-400" : "text-zinc-400",
-                                                                sortKey && "cursor-pointer hover:text-zinc-600 dark:hover:text-zinc-300 transition-colors"
+                                                                isGraham ? "text-teal-600 dark:text-teal-400" :
+                                                                isStrategy ? "text-violet-600 dark:text-violet-400" :
+                                                                isActive ? "text-indigo-600 dark:text-indigo-400 bg-indigo-50/60 dark:bg-indigo-950/30" :
+                                                                "text-zinc-400",
+                                                                sortKey && "cursor-pointer hover:bg-zinc-100/70 dark:hover:bg-zinc-800/50 hover:text-zinc-600 dark:hover:text-zinc-300"
                                                             )}>
                                                             <span className="inline-flex items-center gap-1 justify-end">
                                                                 {label}
                                                                 {isStrategy && <span className="inline-block w-1.5 h-1.5 rounded-full bg-violet-500 shrink-0" />}
+                                                                {isGraham && <span className="inline-block w-1.5 h-1.5 rounded-full bg-teal-500 shrink-0" />}
                                                                 {sortKey && (isActive
                                                                     ? (discoverySortOrder === "asc" ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />)
-                                                                    : <ChevronsUpDown className="w-3 h-3 opacity-30 group-hover:opacity-60" />
+                                                                    : <ChevronsUpDown className="w-3 h-3 opacity-40 group-hover:opacity-80 transition-opacity" />
                                                                 )}
                                                             </span>
                                                         </th>
                                                     );
+                                                    if (metricHint) {
+                                                        return (
+                                                            <Tooltip.Provider key={label} delayDuration={400}>
+                                                                <Tooltip.Root>
+                                                                    <Tooltip.Trigger asChild>{thContent}</Tooltip.Trigger>
+                                                                    <Tooltip.Portal>
+                                                                        <Tooltip.Content side="top" sideOffset={6} className={TOOLTIP_CONTENT_CLS}>
+                                                                            <MetricTooltipContent title={metricHint.title} desc={metricHint.desc} />
+                                                                            <Tooltip.Arrow className="fill-zinc-900 dark:fill-zinc-800" />
+                                                                        </Tooltip.Content>
+                                                                    </Tooltip.Portal>
+                                                                </Tooltip.Root>
+                                                            </Tooltip.Provider>
+                                                        );
+                                                    }
+                                                    return thContent;
                                                 })}
                                             </tr>
                                         </thead>
@@ -1496,79 +1709,138 @@ function AlgorithmTradeContent() {
                                             {filteredDailyList.slice(0, dailyDisplayCount).map((item) => {
                                                 const upsidePct = (safeNum(item.ncav_ratio) - 1) * 100;
                                                 const isPositive = upsidePct >= 0;
-                                                const strategies: string[] = item.strategies ?? [];
+                                                const backendStrategies: string[] = item.strategies ?? [];
+                                                const clientMatchedStrategies = STRATEGY_PRESETS
+                                                    .filter(p => p.clientFilter && p.clientFilter(item))
+                                                    .map(p => p.id);
+                                                const allMatchedStrategies = Array.from(new Set([...backendStrategies, ...clientMatchedStrategies]));
+                                                const matchCount = allMatchedStrategies.length;
                                                 // ROE = EPS / BPS (자본총계 기반, 백엔드 저장값 대신 클라이언트 계산)
                                                 const roePct = item.bps > 0 ? (item.eps / item.bps) * 100 : null;
+                                                const grahamNum = safeNum(item.eps) > 0 && safeNum(item.bps) > 0
+                                                    ? Math.sqrt(22.5 * safeNum(item.eps) * safeNum(item.bps)) : null;
+                                                const grahamUpside = grahamNum && safeNum(item.last_price) > 0
+                                                    ? (grahamNum / safeNum(item.last_price) - 1) * 100 : null;
                                                 return (
-                                                    <tr key={item.ticker} className="hover:bg-zinc-50 dark:hover:bg-zinc-800/30 transition-colors text-sm">
-                                                        <td className="py-3 px-4 font-mono font-black text-zinc-900 dark:text-zinc-100 whitespace-nowrap">{item.ticker}</td>
-                                                        <td className="py-3 px-4 text-zinc-700 dark:text-zinc-300 max-w-[160px] truncate">{item.name}</td>
-                                                        <td className="py-3 px-4">
-                                                            <div className="flex flex-wrap gap-1">
-                                                                {strategies.map(s => (
-                                                                    <span key={s} className={cn(
-                                                                        "px-1.5 py-0.5 rounded text-[9px] font-black uppercase",
-                                                                        STRATEGY_BADGE[s] ?? "bg-zinc-100 text-zinc-500 dark:bg-zinc-800 dark:text-zinc-400"
-                                                                    )}>
-                                                                        {STRATEGY_LABEL[s] ?? s}
-                                                                    </span>
-                                                                ))}
-                                                                {strategies.length === 0 && (
-                                                                    <span className="text-[10px] text-zinc-300 dark:text-zinc-600">—</span>
-                                                                )}
-                                                            </div>
-                                                        </td>
-                                                        <td className={cn(
-                                                            "py-3 px-4 text-right font-mono font-black whitespace-nowrap",
-                                                            isPositive ? "text-emerald-600 dark:text-emerald-400" : "text-red-500 dark:text-red-400"
-                                                        )}>
-                                                            {isPositive ? "+" : ""}{upsidePct.toFixed(1)}%
-                                                        </td>
-                                                        <td className="py-3 px-4 text-right font-mono text-zinc-500 dark:text-zinc-400 text-xs whitespace-nowrap">
-                                                            {safeNum(item.current_assets).toLocaleString()}
-                                                        </td>
-                                                        <td className="py-3 px-4 text-right font-mono text-zinc-500 dark:text-zinc-400 text-xs whitespace-nowrap">
-                                                            {safeNum(item.total_liabilities).toLocaleString()}
-                                                        </td>
-                                                        <td className="py-3 px-4 text-right font-mono text-zinc-500 dark:text-zinc-400 text-xs whitespace-nowrap">
-                                                            {safeNum(item.market_cap).toLocaleString()}
-                                                        </td>
-                                                        <td className="py-3 px-4 text-right font-mono text-zinc-700 dark:text-zinc-300 whitespace-nowrap">
-                                                            {safeNum(item.last_price) > 0 ? `₩${safeNum(item.last_price).toLocaleString()}` : "—"}
-                                                        </td>
-                                                        <td className={cn(
-                                                            "py-3 px-4 text-right font-mono whitespace-nowrap",
-                                                            safeNum(item.per) > 0 && safeNum(item.per) < 10
-                                                                ? "text-emerald-600 dark:text-emerald-400 font-bold"
-                                                                : "text-zinc-500 dark:text-zinc-400"
-                                                        )}>
-                                                            {safeNum(item.per) === 0 ? "—" : `${safeNum(item.per).toFixed(1)}x`}
-                                                        </td>
-                                                        <td className={cn(
-                                                            "py-3 px-4 text-right font-mono whitespace-nowrap",
-                                                            safeNum(item.pbr) > 0 && safeNum(item.pbr) < 0.5
-                                                                ? "text-blue-600 dark:text-blue-400 font-bold"
-                                                                : safeNum(item.pbr) > 0 && safeNum(item.pbr) < 1.0
-                                                                    ? "text-sky-500 dark:text-sky-400"
+                                                    <tr key={item.ticker} className="hover:bg-zinc-50/80 dark:hover:bg-zinc-800/40 transition-colors text-sm group/row">
+                                                        {!hiddenColumns.has("티커") && (
+                                                            <td className="py-3 px-4 font-mono font-black text-zinc-900 dark:text-zinc-100 whitespace-nowrap">{item.ticker}</td>
+                                                        )}
+                                                        {!hiddenColumns.has("종목명") && (
+                                                            <td className="py-3 px-4 text-zinc-700 dark:text-zinc-300 max-w-[160px]">
+                                                                <span className="truncate block" title={item.name}>{item.name}</span>
+                                                            </td>
+                                                        )}
+                                                        {!hiddenColumns.has("전략") && (
+                                                            <td className="py-3 px-4">
+                                                                <div className="flex flex-wrap items-center gap-1">
+                                                                    {backendStrategies.map(s => (
+                                                                        <span key={s} className={cn(
+                                                                            "px-1.5 py-0.5 rounded text-[9px] font-black uppercase",
+                                                                            STRATEGY_BADGE[s] ?? "bg-zinc-100 text-zinc-500 dark:bg-zinc-800 dark:text-zinc-400"
+                                                                        )}>
+                                                                            {STRATEGY_LABEL[s] ?? s}
+                                                                        </span>
+                                                                    ))}
+                                                                    {backendStrategies.length === 0 && matchCount === 0 && (
+                                                                        <span className="text-[10px] text-zinc-300 dark:text-zinc-600">—</span>
+                                                                    )}
+                                                                    {matchCount > 0 && (
+                                                                        <span className={cn(
+                                                                            "px-1.5 py-0.5 rounded text-[9px] font-black font-mono",
+                                                                            matchCount >= 4
+                                                                                ? "bg-gradient-to-r from-indigo-500 to-violet-500 text-white"
+                                                                                : matchCount >= 3
+                                                                                    ? "bg-indigo-100 text-indigo-700 dark:bg-indigo-950/50 dark:text-indigo-300"
+                                                                                    : "bg-zinc-100 text-zinc-500 dark:bg-zinc-800 dark:text-zinc-400"
+                                                                        )}>
+                                                                            {matchCount}개
+                                                                        </span>
+                                                                    )}
+                                                                </div>
+                                                            </td>
+                                                        )}
+                                                        {!hiddenColumns.has("NCAV 업사이드") && (
+                                                            <td className={cn(
+                                                                "py-3 px-4 text-right font-mono font-black whitespace-nowrap",
+                                                                isPositive ? "text-emerald-600 dark:text-emerald-400" : "text-red-500 dark:text-red-400"
+                                                            )}>
+                                                                {isPositive ? "+" : ""}{upsidePct.toFixed(1)}%
+                                                            </td>
+                                                        )}
+                                                        {!hiddenColumns.has("유동자산(억)") && (
+                                                            <td className="py-3 px-4 text-right font-mono text-zinc-500 dark:text-zinc-400 text-xs whitespace-nowrap">
+                                                                {safeNum(item.current_assets).toLocaleString()}
+                                                            </td>
+                                                        )}
+                                                        {!hiddenColumns.has("총부채(억)") && (
+                                                            <td className="py-3 px-4 text-right font-mono text-zinc-500 dark:text-zinc-400 text-xs whitespace-nowrap">
+                                                                {safeNum(item.total_liabilities).toLocaleString()}
+                                                            </td>
+                                                        )}
+                                                        {!hiddenColumns.has("시가총액(억)") && (
+                                                            <td className="py-3 px-4 text-right font-mono text-zinc-500 dark:text-zinc-400 text-xs whitespace-nowrap">
+                                                                {safeNum(item.market_cap).toLocaleString()}
+                                                            </td>
+                                                        )}
+                                                        {!hiddenColumns.has("현재가") && (
+                                                            <td className="py-3 px-4 text-right font-mono text-zinc-700 dark:text-zinc-300 whitespace-nowrap">
+                                                                {safeNum(item.last_price) > 0 ? `₩${safeNum(item.last_price).toLocaleString()}` : "—"}
+                                                            </td>
+                                                        )}
+                                                        {!hiddenColumns.has("PER") && (
+                                                            <td className={cn(
+                                                                "py-3 px-4 text-right font-mono whitespace-nowrap",
+                                                                safeNum(item.per) > 0 && safeNum(item.per) < 10
+                                                                    ? "text-emerald-600 dark:text-emerald-400 font-bold"
                                                                     : "text-zinc-500 dark:text-zinc-400"
-                                                        )}>
-                                                            {safeNum(item.pbr) === 0 ? "—" : `${safeNum(item.pbr).toFixed(2)}x`}
-                                                        </td>
-                                                        <td className={cn(
-                                                            "py-3 px-4 text-right font-mono whitespace-nowrap",
-                                                            roePct === null ? "text-zinc-400 dark:text-zinc-500"
-                                                                : roePct >= 8 ? "text-violet-600 dark:text-violet-400 font-bold"
-                                                                : roePct > 0 ? "text-zinc-600 dark:text-zinc-300"
-                                                                : "text-red-500 dark:text-red-400"
-                                                        )}>
-                                                            {roePct === null ? "—" : `${roePct.toFixed(1)}%`}
-                                                        </td>
-                                                        <td className="py-3 px-4 text-right font-mono text-zinc-500 dark:text-zinc-400 text-xs whitespace-nowrap">
-                                                            {safeNum(item.eps).toLocaleString()}
-                                                        </td>
-                                                        <td className="py-3 px-4 text-right font-mono text-zinc-500 dark:text-zinc-400 text-xs whitespace-nowrap">
-                                                            {safeNum(item.bps).toLocaleString()}
-                                                        </td>
+                                                            )}>
+                                                                {safeNum(item.per) === 0 ? "—" : `${safeNum(item.per).toFixed(1)}x`}
+                                                            </td>
+                                                        )}
+                                                        {!hiddenColumns.has("PBR") && (
+                                                            <td className={cn(
+                                                                "py-3 px-4 text-right font-mono whitespace-nowrap",
+                                                                safeNum(item.pbr) > 0 && safeNum(item.pbr) < 0.5
+                                                                    ? "text-blue-600 dark:text-blue-400 font-bold"
+                                                                    : safeNum(item.pbr) > 0 && safeNum(item.pbr) < 1.0
+                                                                        ? "text-sky-500 dark:text-sky-400"
+                                                                        : "text-zinc-500 dark:text-zinc-400"
+                                                            )}>
+                                                                {safeNum(item.pbr) === 0 ? "—" : `${safeNum(item.pbr).toFixed(2)}x`}
+                                                            </td>
+                                                        )}
+                                                        {!hiddenColumns.has("ROE") && (
+                                                            <td className={cn(
+                                                                "py-3 px-4 text-right font-mono whitespace-nowrap",
+                                                                roePct === null ? "text-zinc-400 dark:text-zinc-500"
+                                                                    : roePct >= 8 ? "text-violet-600 dark:text-violet-400 font-bold"
+                                                                    : roePct > 0 ? "text-zinc-600 dark:text-zinc-300"
+                                                                    : "text-red-500 dark:text-red-400"
+                                                            )}>
+                                                                {roePct === null ? "—" : `${roePct.toFixed(1)}%`}
+                                                            </td>
+                                                        )}
+                                                        {!hiddenColumns.has("그레이엄 업사이드") && (
+                                                            <td className={cn(
+                                                                "py-3 px-4 text-right font-mono whitespace-nowrap",
+                                                                grahamUpside === null ? "text-zinc-400 dark:text-zinc-500"
+                                                                    : grahamUpside > 0 ? "text-teal-600 dark:text-teal-400 font-bold"
+                                                                    : "text-zinc-500 dark:text-zinc-400"
+                                                            )}>
+                                                                {grahamUpside === null ? "—" : `${grahamUpside > 0 ? "+" : ""}${grahamUpside.toFixed(1)}%`}
+                                                            </td>
+                                                        )}
+                                                        {!hiddenColumns.has("EPS") && (
+                                                            <td className="py-3 px-4 text-right font-mono text-zinc-500 dark:text-zinc-400 text-xs whitespace-nowrap">
+                                                                {safeNum(item.eps).toLocaleString()}
+                                                            </td>
+                                                        )}
+                                                        {!hiddenColumns.has("BPS") && (
+                                                            <td className="py-3 px-4 text-right font-mono text-zinc-500 dark:text-zinc-400 text-xs whitespace-nowrap">
+                                                                {safeNum(item.bps).toLocaleString()}
+                                                            </td>
+                                                        )}
                                                     </tr>
                                                 );
                                             })}
@@ -1652,6 +1924,7 @@ function AlgorithmTradeContent() {
                 )}
             </AnimatePresence>
         </div>
+      </Tooltip.Provider>
     );
 }
 
