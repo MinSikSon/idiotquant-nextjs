@@ -1,122 +1,56 @@
-// // src/middleware.ts
 import NextAuth from 'next-auth';
 import { authConfig } from '@/auth.config';
+import { NextResponse } from 'next/server';
 
-import { NextResponse } from 'next/server'
-import type { NextRequest } from 'next/server'
+const { auth } = NextAuth(authConfig);
 
-const { auth: middlewareAuth } = NextAuth(authConfig);
-export async function middleware(req: NextRequest) {
-    // middlewareAuth()는 내부적으로 JWT만 확인하며 DB에 접근하지 않습니다.
-    const session: any = await middlewareAuth();
+// auth((req) => ...) 패턴: req.auth에 JWT 세션이 올바르게 주입됨.
+// 기존 export async function + export default 이중 구조에서
+// export default가 실제 미들웨어로 사용되면서 authorized 콜백 없이 모든 경로를 허용하던 버그 수정.
+export default auth((req: any) => {
+    const session = req.auth;
     const isLoggedIn = !!session;
-    console.log(`[middleware] session:`, session, `, isLoggedIn:`, isLoggedIn);
-    const isAdmin = (session?.user as any)?.role === "admin";
-    console.log(`[middleware] isAdmin:`, isAdmin);
+    const isAdmin = session?.user?.role === "admin";
+    const path: string = req.nextUrl.pathname;
 
-    const url = new URL(req.url);
-    const path = req.nextUrl.pathname;
-
-    console.log(`[middleware] req.url:`, req.url, `, path:`, path, `, req.nextUrl:`, req.nextUrl);
-    console.log(`[middleware] path.startsWith("/_next"):`, path.startsWith("/_next")
-        , `, path.startsWith("/.well-known"):`, path.startsWith("/.well-known"),
-        `, path.startsWith("/images"):`, path.startsWith("/images")
-    );
-
-    // /admin 경로 접근 제어
     if (path.startsWith("/admin")) {
-        if (!isLoggedIn) {
-            return Response.redirect(new URL("/login", req.nextUrl));
-        }
-        if (!isAdmin) {
-            // 관리자가 아니면 홈으로 튕겨내기
-            return Response.redirect(new URL("/", req.nextUrl));
-        }
+        if (!isLoggedIn) return Response.redirect(new URL("/login", req.nextUrl));
+        if (!isAdmin) return Response.redirect(new URL("/", req.nextUrl));
     }
 
     if (path.startsWith("/balance-kr") || path.startsWith("/balance-us")) {
-        const can_search_account = (session?.user as any)?.can_search_account;
-        console.log(`[middleware] can_search_account:`, can_search_account, !can_search_account);
-
-        if (!can_search_account) {
-            // 홈으로 보냄
+        if (!session?.user?.can_search_account) {
             return Response.redirect(new URL("/login", req.nextUrl));
         }
     }
 
-    if (path.startsWith("/api/auth")) {
-        return NextResponse.next();
-    }
-
-    if (path.startsWith("/api/proxy")) {
+    if (path.startsWith("/api/auth") || path.startsWith("/api/proxy")) {
         return NextResponse.next();
     }
 
     if (
-        path.startsWith("/_next")
-        || path.startsWith("/.well-known")
-        || path.startsWith("/images")
-        || path === "/favicon.ico"
-        || path === "/login"
-        || path === "/calculator"
-        || path === "/not-found"
-        || path === "/laboratory"
-        || path === "/ads.txt"
+        path.startsWith("/_next") ||
+        path.startsWith("/.well-known") ||
+        path.startsWith("/images") ||
+        path === "/favicon.ico" ||
+        path === "/login" ||
+        path === "/calculator" ||
+        path === "/not-found" ||
+        path === "/laboratory" ||
+        path === "/ads.txt" ||
+        path === "/" ||
+        path === "/search"
     ) {
-        return NextResponse.next(); // login 없이 접근 허용
-    }
-
-    if (
-        path === "/"
-        || path === "/search"
-    ) {
-        // TODO: 한국 투자 조회 가능
-        console.log(`[middleware] url:`, url, `, req.url:`, req.url);
-        console.log(`[middleware] path:`, path);
-
-        return NextResponse.next(); // login 없이 접근 허용
+        return NextResponse.next();
     }
 
     if (!isLoggedIn) {
-        console.log(`[middleware] Redirecting to /login - No Session found`);
         return NextResponse.redirect(new URL('/login', req.url));
     }
 
-    // console.log(`[middleware] url:`, url, `, req.url:`, req.url);
-    // console.log(`[middleware] path:`, path);
-
-    // console.log(`[middleware] req.cookies:`, req.cookies); // req.cookies == req.headers.get('cookie')
-    // console.log(`[middleware] req.headers.get('authToken'):`, req.headers.get('authToken'));
-    // console.log(`[middleware] req.headers.get('cookie'):`, req.headers.get('cookie'));
-    // const authToken = req.cookies.get("authToken")?.value;
-    // console.log(`[middleware] authToken:`, authToken, `, typeof authToken:`, typeof authToken, `, !authToken:`, !authToken);
-    // if ("" == authToken || !authToken) {
-    //     return NextResponse.redirect(new URL('/login', req.url))
-    // }
-
-    // const decodeJwt = await verifyJWT(authToken, process.env.NEXT_PUBLIC_JWT_SECRET_KEY);
-    // console.log(`[middleware] decodeJwt:`, decodeJwt, `, typeof decodeJwt:`, typeof decodeJwt, `, !decodeJwt:`, !decodeJwt);
-    // if (!decodeJwt) {
-    //     return NextResponse.redirect(new URL('/login', req.url))
-    // }
-
     return NextResponse.next();
-}
-
-export default NextAuth(authConfig).auth;
-
-// See "Matching Paths" below to learn more
-// export const config = {
-//     //   matcher: '/about/:path*',
-//     // matcher: ['/login/:path*'], // 보호할 라우트만
-//     matcher: ['/test'], // 보호할 라우트만
-//     // matcher: ['/login'], // 보호할 라우트만
-// }
+});
 
 export const config = {
     matcher: ["/((?!api/public|login|_next/static|_next/image|favicon.ico).*)"]
 };
-
-// export const config = {
-//   matcher: ['/dashboard/:path*', '/profile/:path*'], // 보호할 라우트만
-// }

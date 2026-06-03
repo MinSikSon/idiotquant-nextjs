@@ -146,7 +146,7 @@ function SortableHeader({ label, sortKey: key, currentKey, order, onToggle }: {
 // =========================================================================
 // TableRow — 데스크탑
 // =========================================================================
-function TableRow({ item, onClick }: { item: any; onClick: (ticker: string) => void }) {
+function TableRow({ item, onClick }: { item: any; onClick: (ticker: string, name: string) => void }) {
     const roe = safeNum(item.bps) > 0 ? (safeNum(item.eps) / safeNum(item.bps)) * 100 : null;
     const strategies: string[] = item.strategies ?? [];
     const ncav = safeNum(item.ncav_ratio);
@@ -154,7 +154,7 @@ function TableRow({ item, onClick }: { item: any; onClick: (ticker: string) => v
     return (
         <div
             className="group grid grid-cols-[minmax(140px,2fr)_minmax(100px,1fr)_80px_64px_64px_64px_80px] gap-4 items-center px-5 py-3.5 hover:bg-zinc-50 dark:hover:bg-zinc-800/40 cursor-pointer transition-colors"
-            onClick={() => onClick(item.ticker)}
+            onClick={() => onClick(item.ticker, item.name)}
         >
             <div className="min-w-0">
                 <p className="font-mono font-black text-sm text-zinc-900 dark:text-white tracking-tight">{item.ticker}</p>
@@ -208,7 +208,7 @@ function TableRow({ item, onClick }: { item: any; onClick: (ticker: string) => v
             <div className="flex justify-end">
                 <button
                     className="flex items-center gap-1 px-3 py-1.5 rounded-lg bg-zinc-100 dark:bg-zinc-800 group-hover:bg-blue-600 group-hover:text-white text-zinc-600 dark:text-zinc-400 text-xs font-bold transition-all whitespace-nowrap"
-                    onClick={(e) => { e.stopPropagation(); onClick(item.ticker); }}
+                    onClick={(e) => { e.stopPropagation(); onClick(item.ticker, item.name); }}
                 >
                     분석
                     <ChevronRight size={12} />
@@ -221,7 +221,7 @@ function TableRow({ item, onClick }: { item: any; onClick: (ticker: string) => v
 // =========================================================================
 // StockRowCard — 모바일
 // =========================================================================
-function StockRowCard({ item, onClick }: { item: any; onClick: (ticker: string) => void }) {
+function StockRowCard({ item, onClick }: { item: any; onClick: (ticker: string, name: string) => void }) {
     const roe = safeNum(item.bps) > 0 ? (safeNum(item.eps) / safeNum(item.bps)) * 100 : null;
     const strategies: string[] = item.strategies ?? [];
     const ncav = safeNum(item.ncav_ratio);
@@ -229,7 +229,7 @@ function StockRowCard({ item, onClick }: { item: any; onClick: (ticker: string) 
     return (
         <div
             className="bg-white dark:bg-zinc-900 rounded-2xl border border-zinc-200 dark:border-zinc-800 p-4 cursor-pointer hover:border-zinc-300 dark:hover:border-zinc-700 hover:shadow-md transition-all active:scale-[0.99]"
-            onClick={() => onClick(item.ticker)}
+            onClick={() => onClick(item.ticker, item.name)}
         >
             <div className="flex items-start justify-between gap-2 mb-3">
                 <div className="min-w-0">
@@ -390,8 +390,9 @@ function ScreenerContent() {
     const hasMore = filteredList.length > displayCount;
     const isLoading = ncavDailyList.state === "pending" || ncavDailyList.state === "init";
 
-    const handleStockClick = useCallback((ticker: string) => {
-        router.push(`/analyze?ticker=${encodeURIComponent(ticker)}&from=screener`);
+    const handleStockClick = useCallback((ticker: string, name: string) => {
+        // 국장 종목은 종목명으로 검색해야 하므로 name을 ticker 파라미터로 전달
+        router.push(`/analyze?ticker=${encodeURIComponent(name)}&from=screener`);
     }, [router]);
 
     const scanDate = ncavDailyList.scanDate;
