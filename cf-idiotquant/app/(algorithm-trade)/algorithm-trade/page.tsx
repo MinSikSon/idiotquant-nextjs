@@ -53,22 +53,30 @@ const gradePill = (g: string) =>
     GRADE_PILL[g] ?? "bg-zinc-100 text-zinc-500 dark:bg-zinc-800 dark:text-zinc-400";
 
 const STRATEGY_BADGE: Record<string, string> = {
-    ncav:    "bg-emerald-100 text-emerald-700 dark:bg-emerald-950/50 dark:text-emerald-400",
-    low_pbr: "bg-blue-100 text-blue-700 dark:bg-blue-950/50 dark:text-blue-400",
-    low_per: "bg-orange-100 text-orange-700 dark:bg-orange-950/50 dark:text-orange-400",
-    s_rim:   "bg-violet-100 text-violet-700 dark:bg-violet-950/50 dark:text-violet-400",
+    ncav:          "bg-emerald-100 text-emerald-700 dark:bg-emerald-950/50 dark:text-emerald-400",
+    low_pbr:       "bg-blue-100 text-blue-700 dark:bg-blue-950/50 dark:text-blue-400",
+    low_per:       "bg-orange-100 text-orange-700 dark:bg-orange-950/50 dark:text-orange-400",
+    s_rim:         "bg-violet-100 text-violet-700 dark:bg-violet-950/50 dark:text-violet-400",
+    graham_number: "bg-teal-100 text-teal-700 dark:bg-teal-950/50 dark:text-teal-400",
+    magic_formula: "bg-rose-100 text-rose-700 dark:bg-rose-950/50 dark:text-rose-400",
+    quality_value: "bg-amber-100 text-amber-700 dark:bg-amber-950/50 dark:text-amber-400",
 };
 const STRATEGY_LABEL: Record<string, string> = {
     ncav: "NCAV", low_pbr: "저PBR", low_per: "저PER", s_rim: "S-RIM",
+    graham_number: "그레이엄", magic_formula: "마법공식", quality_value: "퀄리티",
 };
 const STRATEGY_ACTIVE_CLS: Record<string, string> = {
-    ncav:    "bg-emerald-600 border-emerald-600 text-white shadow-sm",
-    low_pbr: "bg-blue-600 border-blue-600 text-white shadow-sm",
-    low_per: "bg-orange-500 border-orange-500 text-white shadow-sm",
-    s_rim:   "bg-violet-600 border-violet-600 text-white shadow-sm",
+    ncav:          "bg-emerald-600 border-emerald-600 text-white shadow-sm",
+    low_pbr:       "bg-blue-600 border-blue-600 text-white shadow-sm",
+    low_per:       "bg-orange-500 border-orange-500 text-white shadow-sm",
+    s_rim:         "bg-violet-600 border-violet-600 text-white shadow-sm",
+    graham_number: "bg-teal-600 border-teal-600 text-white shadow-sm",
+    magic_formula: "bg-rose-600 border-rose-600 text-white shadow-sm",
+    quality_value: "bg-amber-500 border-amber-500 text-white shadow-sm",
 };
 const STRATEGY_DOT_CLS: Record<string, string> = {
     ncav: "bg-emerald-500", low_pbr: "bg-blue-500", low_per: "bg-orange-400", s_rim: "bg-violet-500",
+    graham_number: "bg-teal-500", magic_formula: "bg-rose-500", quality_value: "bg-amber-400",
 };
 
 // =========================================================================
@@ -83,6 +91,7 @@ interface StrategyPreset {
     criteria: { min_ncav_ratio?: number; max_pbr?: number; min_eps?: number; max_per?: number };
     criteriaChips: { label: string; value: string }[];
     columns: string[];
+    clientFilter?: (item: Record<string, any>) => boolean;
 }
 
 const STRATEGY_PRESETS: StrategyPreset[] = [
@@ -109,6 +118,35 @@ const STRATEGY_PRESETS: StrategyPreset[] = [
         criteria: {},
         criteriaChips: [{ label: "ROE", value: "> 8%" }, { label: "PBR", value: "< 1.0x" }],
         columns: ["ROE", "PBR"],
+    },
+    {
+        id: "graham_number", label: "그레이엄 넘버", desc: "PER × PBR < 22.5",
+        criteria: {},
+        criteriaChips: [{ label: "PER × PBR", value: "< 22.5" }],
+        columns: ["PER", "PBR"],
+        clientFilter: (item) =>
+            safeNum(item.eps) > 0 && safeNum(item.bps) > 0 &&
+            safeNum(item.per) > 0 && safeNum(item.pbr) > 0 &&
+            safeNum(item.per) * safeNum(item.pbr) < 22.5,
+    },
+    {
+        id: "magic_formula", label: "마법공식", desc: "PER < 15 & ROE > 10%",
+        criteria: {},
+        criteriaChips: [{ label: "PER", value: "< 15x" }, { label: "ROE", value: "> 10%" }],
+        columns: ["PER", "ROE"],
+        clientFilter: (item) =>
+            safeNum(item.eps) > 0 && safeNum(item.per) > 0 && safeNum(item.per) < 15 &&
+            safeNum(item.bps) > 0 && (safeNum(item.eps) / safeNum(item.bps)) * 100 > 10,
+    },
+    {
+        id: "quality_value", label: "퀄리티 밸류", desc: "ROE > 15% & PBR < 2.0",
+        criteria: {},
+        criteriaChips: [{ label: "ROE", value: "> 15%" }, { label: "PBR", value: "< 2.0x" }],
+        columns: ["ROE", "PBR"],
+        clientFilter: (item) =>
+            safeNum(item.eps) > 0 && safeNum(item.bps) > 0 &&
+            (safeNum(item.eps) / safeNum(item.bps)) * 100 > 15 &&
+            safeNum(item.pbr) > 0 && safeNum(item.pbr) < 2.0,
     },
 ];
 
@@ -557,9 +595,14 @@ function AlgorithmTradeContent() {
         if (ncavPositiveOnly) list = list.filter(item => safeNum(item.ncav_ratio) >= 1);
         if (minMarketCap > 0) list = list.filter(item => safeNum(item.market_cap) >= minMarketCap);
         if (activeStrategyIds.length > 0) {
+            const matchesStrategy = (item: Record<string, any>, strategyId: string): boolean => {
+                const preset = STRATEGY_PRESETS.find(p => p.id === strategyId);
+                if (preset?.clientFilter) return preset.clientFilter(item);
+                return (item.strategies ?? []).includes(strategyId);
+            };
             list = strategyCondition === "and"
-                ? list.filter(item => activeStrategyIds.every(s => (item.strategies ?? []).includes(s)))
-                : list.filter(item => activeStrategyIds.some(s => (item.strategies ?? []).includes(s)));
+                ? list.filter(item => activeStrategyIds.every(s => matchesStrategy(item, s)))
+                : list.filter(item => activeStrategyIds.some(s => matchesStrategy(item, s)));
         }
         const nv = minNcavRatio ? parseFloat(minNcavRatio) : null;
         const pb = maxPbr ? parseFloat(maxPbr) : null;
