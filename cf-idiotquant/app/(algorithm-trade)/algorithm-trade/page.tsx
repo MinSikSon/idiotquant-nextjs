@@ -428,6 +428,7 @@ function AlgorithmTradeContent() {
     const [mainTab, setMainTab] = useState<"discovery" | "strategy">("discovery");
     const [marketTab, setMarketTab] = useState<"kr" | "us">("kr");
     const [activeStrategyIds, setActiveStrategyIds] = useState<string[]>([]);
+    const [strategyCondition, setStrategyCondition] = useState<"or" | "and">("or");
     const [excludeHoldings, setExcludeHoldings] = useState(false);
     const [excludeJiju, setExcludeJiju] = useState(false);
     const [excludePreferred, setExcludePreferred] = useState(false);
@@ -502,7 +503,7 @@ function AlgorithmTradeContent() {
     }, []);
 
     const clearAllFilters = useCallback(() => {
-        setActiveStrategyIds([]);
+        setActiveStrategyIds([]); setStrategyCondition("or");
         setMinNcavRatio(""); setMaxPbr(""); setMaxPer(""); setMinRoe("");
         setExcludeHoldings(false); setExcludeJiju(false); setExcludePreferred(false);
         setExcludeSpac(false); setExcludeDeficit(false); setNcavPositiveOnly(false);
@@ -537,8 +538,11 @@ function AlgorithmTradeContent() {
         if (excludeDeficit)   list = list.filter(item => safeNum(item.eps) > 0);
         if (ncavPositiveOnly) list = list.filter(item => safeNum(item.ncav_ratio) >= 1);
         if (minMarketCap > 0) list = list.filter(item => safeNum(item.market_cap) >= minMarketCap);
-        if (activeStrategyIds.length > 0)
-            list = list.filter(item => (item.strategies ?? []).some(s => activeStrategyIds.includes(s)));
+        if (activeStrategyIds.length > 0) {
+            list = strategyCondition === "and"
+                ? list.filter(item => activeStrategyIds.every(s => (item.strategies ?? []).includes(s)))
+                : list.filter(item => activeStrategyIds.some(s => (item.strategies ?? []).includes(s)));
+        }
         const nv = minNcavRatio ? parseFloat(minNcavRatio) : null;
         const pb = maxPbr ? parseFloat(maxPbr) : null;
         const pe = maxPer ? parseFloat(maxPer) : null;
@@ -548,7 +552,7 @@ function AlgorithmTradeContent() {
         if (pe !== null && !isNaN(pe)) list = list.filter(item => safeNum(item.per) > 0 && safeNum(item.per) <= pe);
         if (ro !== null && !isNaN(ro)) list = list.filter(item => item.roe !== null && safeNum(item.roe) * 100 >= ro);
         return list;
-    }, [ncavDailyList.list, excludeHoldings, excludeJiju, excludePreferred, excludeSpac, excludeDeficit, ncavPositiveOnly, minMarketCap, activeStrategyIds, minNcavRatio, maxPbr, maxPer, minRoe]);
+    }, [ncavDailyList.list, excludeHoldings, excludeJiju, excludePreferred, excludeSpac, excludeDeficit, ncavPositiveOnly, minMarketCap, activeStrategyIds, strategyCondition, minNcavRatio, maxPbr, maxPer, minRoe]);
 
     const krCandidateEntries = useMemo(() => {
         if (!activeStrategy?.candidates) return [] as [string, any][];
@@ -1099,9 +1103,16 @@ function AlgorithmTradeContent() {
                                     )}
                                     {!filterPanelOpen && activeFilterCount > 0 && (
                                         <div className="flex flex-wrap gap-1 min-w-0">
-                                            {activeStrategyIds.map(id => (
-                                                <span key={id} className={cn("px-1.5 py-0.5 rounded text-[9px] font-black shrink-0", STRATEGY_BADGE[id])}>
-                                                    {STRATEGY_LABEL[id]}
+                                            {activeStrategyIds.map((id, i) => (
+                                                <span key={id} className="flex items-center gap-1 shrink-0">
+                                                    <span className={cn("px-1.5 py-0.5 rounded text-[9px] font-black", STRATEGY_BADGE[id])}>
+                                                        {STRATEGY_LABEL[id]}
+                                                    </span>
+                                                    {i < activeStrategyIds.length - 1 && (
+                                                        <span className="text-[9px] font-black text-zinc-400 dark:text-zinc-500">
+                                                            {strategyCondition.toUpperCase()}
+                                                        </span>
+                                                    )}
                                                 </span>
                                             ))}
                                             {minNcavRatio && <span className="px-1.5 py-0.5 rounded text-[9px] font-mono font-bold bg-zinc-100 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-300 shrink-0">NCAV≥{minNcavRatio}</span>}
@@ -1111,16 +1122,7 @@ function AlgorithmTradeContent() {
                                         </div>
                                     )}
                                 </div>
-                                <div className="flex items-center gap-3 shrink-0 ml-2">
-                                    {activeFilterCount > 0 && (
-                                        <span
-                                            role="button"
-                                            onClick={e => { e.stopPropagation(); clearAllFilters(); }}
-                                            className="text-[11px] text-zinc-400 hover:text-red-500 font-medium transition-colors"
-                                        >
-                                            초기화
-                                        </span>
-                                    )}
+                                <div className="shrink-0 ml-2">
                                     {filterPanelOpen
                                         ? <ChevronUp className="w-4 h-4 text-zinc-400" />
                                         : <ChevronDown className="w-4 h-4 text-zinc-400" />
@@ -1132,11 +1134,47 @@ function AlgorithmTradeContent() {
                             {filterPanelOpen && (
                                 <div className="border-t border-zinc-100 dark:border-zinc-800 divide-y divide-zinc-100 dark:divide-zinc-800">
 
-                                    {/* 전략 (다중 선택 OR) */}
+                                    {/* 활성 필터 수 + 초기화 */}
+                                    {activeFilterCount > 0 && (
+                                        <div className="px-4 py-2.5 flex items-center justify-between bg-indigo-50/60 dark:bg-indigo-950/20">
+                                            <span className="text-[11px] font-bold text-indigo-600 dark:text-indigo-400">
+                                                활성 필터 {activeFilterCount}개 적용 중
+                                            </span>
+                                            <button
+                                                onClick={clearAllFilters}
+                                                className="text-[11px] font-bold text-indigo-400 hover:text-red-500 dark:text-indigo-500 dark:hover:text-red-400 transition-colors"
+                                            >
+                                                모두 초기화
+                                            </button>
+                                        </div>
+                                    )}
+
+                                    {/* 전략 (다중 선택, OR / AND 전환) */}
                                     <div className="px-4 py-3.5 flex items-start gap-4">
                                         <div className="w-14 shrink-0 pt-1">
                                             <p className="text-[10px] font-black text-zinc-400 uppercase tracking-wider">전략</p>
-                                            <p className="text-[9px] text-zinc-300 dark:text-zinc-600 mt-0.5">OR 조건</p>
+                                            {/* OR / AND 토글 */}
+                                            {activeStrategyIds.length >= 2 && (
+                                                <div className="flex items-center mt-1.5 rounded-md border border-zinc-200 dark:border-zinc-700 overflow-hidden w-fit">
+                                                    {(["or", "and"] as const).map(cond => (
+                                                        <button
+                                                            key={cond}
+                                                            onClick={() => setStrategyCondition(cond)}
+                                                            className={cn(
+                                                                "px-1.5 py-0.5 text-[9px] font-black uppercase transition-colors",
+                                                                strategyCondition === cond
+                                                                    ? "bg-indigo-600 text-white"
+                                                                    : "text-zinc-400 dark:text-zinc-500 hover:text-zinc-600 dark:hover:text-zinc-300"
+                                                            )}
+                                                        >
+                                                            {cond}
+                                                        </button>
+                                                    ))}
+                                                </div>
+                                            )}
+                                            {activeStrategyIds.length < 2 && (
+                                                <p className="text-[9px] text-zinc-300 dark:text-zinc-600 mt-0.5">다중 선택</p>
+                                            )}
                                         </div>
                                         <div className="flex flex-wrap gap-2">
                                             {STRATEGY_PRESETS.map(preset => {
