@@ -1,7 +1,0 @@
-
-
-export default function Ads() {
-    return (
-        "google.com, pub-6995198721227228, DIRECT, f08c47fec0942fa0"
-    );
-}

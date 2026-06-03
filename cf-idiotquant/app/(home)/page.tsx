@@ -16,14 +16,30 @@ import { cn } from "@/lib/utils";
 // =========================================================================
 const SERVICES = [
   {
+    title: "종목 발굴 스크리너",
+    subtitle: "Quant Screener",
+    description:
+      "NCAV·저PBR·저PER·S-RIM 등 9가지 전략으로 국내 저평가 종목을 매일 자동 스캔합니다. 그레이엄 원칙 기반 퀀트 스크리너입니다.",
+    icon: BarChart3,
+    link: "/screener",
+    highlight: true,
+    badge: "Most Used",
+    market: null,
+    preview: [
+      { label: "오늘 발굴 종목", value: "24개" },
+      { label: "NCAV 충족 비율", value: "94%" },
+      { label: "그레이엄 안전마진", value: "≤67%" },
+    ],
+  },
+  {
     title: "적정 주가 분석",
     subtitle: "Intrinsic Value Engine",
     description:
       "NCAV, S-RIM, DCF, PER, PEG, PBR 6가지 밸류에이션 모델을 병렬 실행하여 기업의 본질 가치를 정밀 산출합니다.",
     icon: Search,
-    link: "/search",
-    highlight: true,
-    badge: "Most Used",
+    link: "/analyze",
+    highlight: false,
+    badge: null,
     market: null,
     preview: [
       { label: "삼성전자", value: "82,400원", change: "+7.9%", up: true },
@@ -46,22 +62,6 @@ const SERVICES = [
       { label: "연환산 수익률", value: "+9.7%"  },
     ],
   },
-  {
-    title: "퀀트 종목 추천",
-    subtitle: "Quant Portfolio",
-    description:
-      "NCAV 청산가치 기준으로 국내·미국 저평가 종목을 자동 탐색합니다. 그레이엄 원칙에 기반한 퀀트 스크리너입니다.",
-    icon: BarChart3,
-    link: "/algorithm-trade",
-    requiresAuth: true,
-    badge: "Pro",
-    market: null,
-    preview: [
-      { label: "이번 주 추천 종목", value: "12개" },
-      { label: "NCAV 충족 비율",   value: "94%" },
-      { label: "그레이엄 안전마진",  value: "≤67%" },
-    ],
-  },
 ];
 
 const VALUATION_MODELS = [
@@ -74,9 +74,9 @@ const VALUATION_MODELS = [
 ];
 
 const HOW_IT_WORKS = [
-  { step: "01", icon: Search,     title: "종목 검색",      desc: "국내 KRX 전 종목과 NASDAQ·NYSE·AMEX 상장 종목을 티커 또는 종목명으로 검색합니다." },
-  { step: "02", icon: BarChart3,  title: "6가지 모델 분석", desc: "최신 재무제표 기반으로 6가지 밸류에이션 모델이 즉시 실행되고 목표주가를 산출합니다." },
-  { step: "03", icon: Calculator, title: "수익 시뮬레이션", desc: "매수 시나리오별 세후 순수익과 연환산 수익률을 입력 직후 바로 확인합니다." },
+  { step: "01", icon: BarChart3,  title: "종목 발굴",      desc: "NCAV·저PBR·저PER 등 9가지 전략으로 매일 자동 스캔된 저평가 종목 리스트를 확인합니다.", link: "/screener" },
+  { step: "02", icon: Search,     title: "상세 분석",      desc: "관심 종목을 클릭하면 6가지 밸류에이션 모델로 적정 주가와 안전마진을 즉시 산출합니다.", link: "/analyze" },
+  { step: "03", icon: Calculator, title: "수익 시뮬레이션", desc: "매수 시나리오별 세후 순수익과 연환산 수익률을 입력 직후 바로 확인합니다.", link: "/calculator" },
 ];
 
 const PRODUCT_FACTS = [
@@ -160,16 +160,16 @@ export default function HomePage() {
             transition={{ duration: 0.6, delay: 0.28 }}
             className="flex flex-wrap justify-center gap-3 mb-10"
           >
-            <Link href="/search"
+            <Link href="/screener"
               className="group inline-flex items-center gap-2 px-6 py-3.5 rounded-full bg-blue-600 hover:bg-blue-700 active:bg-blue-800 text-white text-sm font-bold tracking-wide transition-all duration-200 shadow-lg shadow-blue-600/25"
             >
-              무료로 분석 시작하기
+              종목 발굴하기
               <ArrowRight size={16} className="group-hover:translate-x-0.5 transition-transform" />
             </Link>
-            <Link href="/algorithm-trade"
+            <Link href="/analyze"
               className="inline-flex items-center gap-2 px-6 py-3.5 rounded-full bg-zinc-100 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-700 text-zinc-700 dark:text-zinc-300 text-sm font-bold tracking-wide hover:border-zinc-400 dark:hover:border-zinc-500 transition-all duration-200"
             >
-              퀀트 전략 보기
+              적정 주가 분석
             </Link>
           </motion.div>
 
@@ -393,12 +393,12 @@ export default function HomePage() {
                   transition={{ delay: i * 0.15 }}
                   className="flex flex-col items-center text-center relative"
                 >
-                  <div className="w-16 h-16 rounded-2xl bg-blue-50 dark:bg-blue-950/30 border border-blue-200/50 dark:border-blue-800/50 flex items-center justify-center mb-5 relative z-10">
+                  <Link href={item.link} className="group w-16 h-16 rounded-2xl bg-blue-50 dark:bg-blue-950/30 border border-blue-200/50 dark:border-blue-800/50 hover:bg-blue-100 dark:hover:bg-blue-950/60 flex items-center justify-center mb-5 relative z-10 transition-colors">
                     <Icon size={24} className="text-blue-600 dark:text-blue-400" strokeWidth={1.8} />
                     <span className="absolute -top-2.5 -right-2.5 w-6 h-6 rounded-full bg-blue-600 text-white text-[10px] font-black flex items-center justify-center shadow-sm shadow-blue-600/30">
                       {item.step}
                     </span>
-                  </div>
+                  </Link>
                   <h3 className="text-lg font-black mb-2">{item.title}</h3>
                   <p className="text-sm text-zinc-500 dark:text-zinc-400 leading-relaxed break-keep">{item.desc}</p>
                 </motion.div>
@@ -498,16 +498,16 @@ export default function HomePage() {
               데이터는 거짓말을 하지 않습니다.
             </p>
             <div className="flex flex-wrap justify-center gap-3">
-              <Link href="/search"
+              <Link href="/screener"
                 className="group inline-flex items-center gap-2 px-7 py-3.5 rounded-full bg-white text-blue-700 text-sm font-extrabold tracking-wide hover:bg-blue-50 active:bg-blue-100 transition-all shadow-lg shadow-blue-900/20"
               >
-                무료 분석 시작하기
+                종목 발굴 시작하기
                 <ArrowRight size={16} className="group-hover:translate-x-0.5 transition-transform" />
               </Link>
-              <Link href="/algorithm-trade"
+              <Link href="/analyze"
                 className="inline-flex items-center gap-2 px-7 py-3.5 rounded-full border border-white/25 text-white text-sm font-bold tracking-wide hover:bg-white/10 transition-all"
               >
-                퀀트 전략 보기
+                적정 주가 분석
               </Link>
             </div>
           </div>
@@ -528,8 +528,8 @@ export default function HomePage() {
                 벤자민 그레이엄의 NCAV 원칙을 현대적으로 구현합니다.
               </p>
               <div className="flex items-center gap-3 pt-1">
-                {["종목 분석", "계산기", "퀀트 전략"].map(l => (
-                  <Link key={l} href={l === "종목 분석" ? "/search" : l === "계산기" ? "/calculator" : "/algorithm-trade"}
+                {["종목 발굴", "종목 분석", "계산기"].map(l => (
+                  <Link key={l} href={l === "종목 발굴" ? "/screener" : l === "종목 분석" ? "/analyze" : "/calculator"}
                     className="text-xs text-zinc-400 hover:text-zinc-700 dark:hover:text-zinc-200 transition-colors font-medium"
                   >
                     {l}
