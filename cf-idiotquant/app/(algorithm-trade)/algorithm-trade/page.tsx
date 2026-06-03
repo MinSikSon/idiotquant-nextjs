@@ -539,10 +539,9 @@ function AlgorithmTradeContent() {
         if (ncavPositiveOnly) list = list.filter(item => safeNum(item.ncav_ratio) >= 1);
         if (minMarketCap > 0) list = list.filter(item => safeNum(item.market_cap) >= minMarketCap);
         if (activeStrategyIds.length > 0) {
-            const strats = item => item.strategies ?? [];
             list = strategyCondition === "and"
-                ? list.filter(item => activeStrategyIds.every(s => strats(item).includes(s)))
-                : list.filter(item => activeStrategyIds.some(s => strats(item).includes(s)));
+                ? list.filter(item => activeStrategyIds.every(s => (item.strategies ?? []).includes(s)))
+                : list.filter(item => activeStrategyIds.some(s => (item.strategies ?? []).includes(s)));
         }
         const nv = minNcavRatio ? parseFloat(minNcavRatio) : null;
         const pb = maxPbr ? parseFloat(maxPbr) : null;
