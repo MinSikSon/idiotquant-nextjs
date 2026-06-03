@@ -1,14 +1,23 @@
 "use client";
 
-import { useRef } from "react";
+import { useRef, useState, useEffect } from "react";
 import Link from "next/link";
 import { motion, useScroll, useTransform } from "framer-motion";
 import {
   Search, Calculator, BarChart3, Lock, ArrowRight,
   TrendingUp, ChevronRight, Activity, Shield,
   Database, Star, CheckCircle2, Layers,
-  DollarSign, Coins, AreaChart,
+  DollarSign, Coins, AreaChart, Loader2,
 } from "lucide-react";
+
+interface PreviewStock {
+  ticker: string;
+  name: string;
+  ncav_ratio: number;
+  pbr: number;
+  per: number;
+  strategies: string[];
+}
 import { cn } from "@/lib/utils";
 
 // =========================================================================
@@ -89,11 +98,36 @@ const PRODUCT_FACTS = [
 // =========================================================================
 // 홈 페이지
 // =========================================================================
+const STRATEGY_LABEL: Record<string, string> = {
+  ncav: "NCAV", low_pbr: "저PBR", low_per: "저PER", s_rim: "S-RIM",
+  graham_number: "그레이엄", magic_formula: "마법공식",
+};
+
 export default function HomePage() {
   const heroRef = useRef<HTMLDivElement>(null);
   const { scrollYProgress } = useScroll({ target: heroRef, offset: ["start start", "end start"] });
   const heroOpacity = useTransform(scrollYProgress, [0, 0.8], [1, 0]);
   const heroY      = useTransform(scrollYProgress, [0, 1], [0, 50]);
+
+  const [preview, setPreview] = useState<{
+    items: PreviewStock[];
+    total: number;
+    scanDate: string | null;
+    loading: boolean;
+  }>({ items: [], total: 0, scanDate: null, loading: true });
+
+  useEffect(() => {
+    fetch("/api/proxy/scan/daily?strategy=all&limit=5&sort=ncav_ratio&order=desc")
+      .then(r => r.json())
+      .then((data: any) => {
+        if (data.success) {
+          setPreview({ items: data.data, total: data.meta.total, scanDate: data.meta.scanDate, loading: false });
+        } else {
+          setPreview(p => ({ ...p, loading: false }));
+        }
+      })
+      .catch(() => setPreview(p => ({ ...p, loading: false })));
+  }, []);
 
   return (
     <div className="min-h-screen bg-white dark:bg-zinc-950 text-zinc-900 dark:text-zinc-50 antialiased selection:bg-blue-500/20">
@@ -214,6 +248,131 @@ export default function HomePage() {
             );
           })}
         </div>
+      </section>
+
+      {/* ── 오늘의 발굴 종목 미리보기 ── */}
+      <section className="max-w-4xl mx-auto px-6 py-16">
+        <motion.div
+          initial={{ opacity: 0, y: 16 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true }}
+          className="mb-6 flex items-end justify-between gap-4"
+        >
+          <div>
+            <p className="text-[11px] font-extrabold text-blue-500 uppercase tracking-[0.2em] mb-2">Today's Picks</p>
+            <h2 className="text-2xl md:text-3xl font-black tracking-tight">오늘의 발굴 종목</h2>
+            {preview.scanDate && !preview.loading && (
+              <p className="text-sm text-zinc-400 mt-1">
+                {preview.scanDate.slice(0, 4)}.{preview.scanDate.slice(4, 6)}.{preview.scanDate.slice(6, 8)} 기준
+                {preview.total > 0 && <> · 총 <span className="font-bold text-zinc-600 dark:text-zinc-300">{preview.total}개</span> 발굴</>}
+              </p>
+            )}
+          </div>
+          <Link
+            href="/login"
+            className="shrink-0 flex items-center gap-1 text-sm font-bold text-blue-600 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300 transition-colors"
+          >
+            전체 보기 <ChevronRight size={14} />
+          </Link>
+        </motion.div>
+
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true }}
+          transition={{ delay: 0.08 }}
+          className="rounded-2xl border border-zinc-200 dark:border-zinc-800 overflow-hidden bg-white dark:bg-zinc-900 shadow-sm"
+        >
+          {/* 테이블 헤더 */}
+          <div className="px-5 py-3 bg-zinc-50 dark:bg-zinc-800/60 border-b border-zinc-200 dark:border-zinc-800 hidden sm:grid grid-cols-[1fr_80px_64px_64px] gap-4">
+            <span className="text-[11px] font-bold text-zinc-400 uppercase tracking-wider">종목</span>
+            <span className="text-[11px] font-bold text-zinc-400 uppercase tracking-wider text-right">NCAV 비율</span>
+            <span className="text-[11px] font-bold text-zinc-400 uppercase tracking-wider text-right">PBR</span>
+            <span className="text-[11px] font-bold text-zinc-400 uppercase tracking-wider text-right">PER</span>
+          </div>
+
+          {preview.loading ? (
+            <div className="flex items-center justify-center py-14 gap-2 text-zinc-400">
+              <Loader2 size={18} className="animate-spin" />
+              <span className="text-sm">불러오는 중...</span>
+            </div>
+          ) : preview.items.length === 0 ? (
+            <div className="py-14 text-center text-zinc-400 text-sm">
+              스캔 데이터가 없습니다. 잠시 후 다시 확인해주세요.
+            </div>
+          ) : (
+            <>
+              {/* 공개 행 (상위 3개) */}
+              {preview.items.slice(0, 3).map((item) => (
+                <div
+                  key={item.ticker}
+                  className="px-5 py-3.5 border-b border-zinc-100 dark:border-zinc-800 flex sm:grid sm:grid-cols-[1fr_80px_64px_64px] gap-3 sm:gap-4 items-center"
+                >
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <p className="font-bold text-sm text-zinc-900 dark:text-white truncate">{item.name}</p>
+                      <div className="flex gap-1 flex-wrap">
+                        {item.strategies.slice(0, 2).map(s => (
+                          <span key={s} className="text-[9px] font-extrabold px-1.5 py-0.5 rounded bg-blue-50 dark:bg-blue-950/40 text-blue-600 dark:text-blue-400 border border-blue-200/50 dark:border-blue-800/50">
+                            {STRATEGY_LABEL[s] ?? s}
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+                    <p className="text-[11px] text-zinc-400 font-mono mt-0.5">{item.ticker}</p>
+                  </div>
+                  <span className="text-sm font-black tabular-nums text-blue-600 dark:text-blue-400 text-right">
+                    {item.ncav_ratio != null ? `${item.ncav_ratio.toFixed(2)}x` : "-"}
+                  </span>
+                  <span className="text-sm tabular-nums text-zinc-500 dark:text-zinc-400 text-right hidden sm:block">
+                    {item.pbr != null ? item.pbr.toFixed(2) : "-"}
+                  </span>
+                  <span className="text-sm tabular-nums text-zinc-500 dark:text-zinc-400 text-right hidden sm:block">
+                    {item.per != null && item.per > 0 ? item.per.toFixed(1) : "-"}
+                  </span>
+                </div>
+              ))}
+
+              {/* 블러 행 (4-5번째) + 로그인 오버레이 */}
+              {preview.items.length > 3 && (
+                <div className="relative">
+                  {preview.items.slice(3).map((item) => (
+                    <div
+                      key={item.ticker}
+                      className="px-5 py-3.5 border-b border-zinc-100 dark:border-zinc-800 flex sm:grid sm:grid-cols-[1fr_80px_64px_64px] gap-3 sm:gap-4 items-center blur-sm select-none pointer-events-none"
+                    >
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2">
+                          <p className="font-bold text-sm text-zinc-900 dark:text-white">{item.name}</p>
+                        </div>
+                        <p className="text-[11px] text-zinc-400 font-mono mt-0.5">{item.ticker}</p>
+                      </div>
+                      <span className="text-sm font-black tabular-nums text-blue-600 dark:text-blue-400 text-right">
+                        {item.ncav_ratio != null ? `${item.ncav_ratio.toFixed(2)}x` : "-"}
+                      </span>
+                      <span className="text-sm tabular-nums text-zinc-500 text-right hidden sm:block">
+                        {item.pbr != null ? item.pbr.toFixed(2) : "-"}
+                      </span>
+                      <span className="text-sm tabular-nums text-zinc-500 text-right hidden sm:block">
+                        {item.per != null && item.per > 0 ? item.per.toFixed(1) : "-"}
+                      </span>
+                    </div>
+                  ))}
+                  <div className="absolute inset-0 flex items-center justify-center bg-white/70 dark:bg-zinc-900/70 backdrop-blur-[1px]">
+                    <Link
+                      href="/login"
+                      className="group flex items-center gap-2 px-5 py-2.5 rounded-full bg-blue-600 hover:bg-blue-700 active:bg-blue-800 text-white text-sm font-extrabold shadow-lg shadow-blue-600/20 transition-all"
+                    >
+                      <Lock size={13} />
+                      로그인하여 전체 {preview.total}개 보기
+                      <ArrowRight size={13} className="group-hover:translate-x-0.5 transition-transform" />
+                    </Link>
+                  </div>
+                </div>
+              )}
+            </>
+          )}
+        </motion.div>
       </section>
 
       {/* ── 서비스 카드 ── */}
