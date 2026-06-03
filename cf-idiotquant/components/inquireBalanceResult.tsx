@@ -646,9 +646,9 @@ function OrderModal({ isUs, stock, balanceKey, kiOrderCash, reqPostOrderCash, ex
             kakaoId: balanceKey,
             PDNO: pdno,
             buyOrSell: buyOrSell,
-            excg_cd: excgCd, 
+            excg_cd: excgCd,
             price: String(price),
-            qty: Number(qty)
+            qty: String(qty)
         }));
     };
 

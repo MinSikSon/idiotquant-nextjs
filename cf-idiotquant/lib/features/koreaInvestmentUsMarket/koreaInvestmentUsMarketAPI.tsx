@@ -25,15 +25,9 @@ export const getOverseasPriceQuotationsDailyPrice: any = async (PDNO: string, FI
 // }
 
 // 주문
-export const postOrderUs: any = async (PDNO: string, buyOrSell: string, excg_cd: string, price: string, kakaoId: string) => {
-    const subUrl = `/uapi/overseas-stock/v1/trading/order?PDNO=${PDNO}&buyOrSell=${buyOrSell}&excg_cd=${excg_cd}&price=${price}&kakao-id=${kakaoId}`;
-    const additionalHeaders: AdditionalHeaders = {
-        // "kakaoId": getCookie("kakaoId"),
-        // "PDNO": PDNO,
-        // "buyOrSell": buyOrSell,
-        // "excg_cd": excg_cd,
-        // "price": price,
-    }
+export const postOrderUs: any = async (PDNO: string, buyOrSell: string, excg_cd: string, price: string, kakaoId: string, qty: string) => {
+    const subUrl = `/uapi/overseas-stock/v1/trading/order?PDNO=${PDNO}&buyOrSell=${buyOrSell}&excg_cd=${excg_cd}&price=${price}&kakao-id=${kakaoId}&ORD_QTY=${qty}`;
+    const additionalHeaders: AdditionalHeaders = {}
     return postKoreaInvestmentRequest(subUrl, additionalHeaders);
 }
 
