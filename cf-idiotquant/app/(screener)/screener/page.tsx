@@ -388,7 +388,7 @@ function ScreenerContent() {
 
     const visibleList = filteredList.slice(0, displayCount);
     const hasMore = filteredList.length > displayCount;
-    const isLoading = ncavDailyList.state === "pending" || ncavDailyList.state === "idle";
+    const isLoading = ncavDailyList.state === "pending" || ncavDailyList.state === "init";
 
     const handleStockClick = useCallback((ticker: string) => {
         router.push(`/analyze?ticker=${encodeURIComponent(ticker)}&from=screener`);
