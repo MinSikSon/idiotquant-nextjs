@@ -129,6 +129,14 @@ function resolveStrategies(item: Record<string, any>): string[] {
     return Array.from(base);
 }
 
+// 시가총액 프리셋 (단위: 억원)
+const MKTCAP_PRESETS: { label: string; value: number }[] = [
+    { label: "전체", value: 0 },
+    { label: "500억+", value: 500 },
+    { label: "1000억+", value: 1000 },
+    { label: "5000억+", value: 5000 },
+];
+
 const TOOLTIP_CLS =
     "z-50 max-w-64 rounded-xl px-3.5 py-3 text-xs bg-zinc-900 dark:bg-zinc-800 border border-zinc-700/60 shadow-xl text-zinc-200 leading-relaxed " +
     "data-[state=delayed-open]:animate-in data-[state=delayed-open]:fade-in-0 data-[state=delayed-open]:zoom-in-95 " +
@@ -333,6 +341,11 @@ function ScreenerContent() {
         searchParams.get('exclude')?.split(',').includes('deficit') ?? false
     );
     const [filterOpen, setFilterOpen] = useState(false);
+    // 시가총액 필터 (단위: 억원, URL param: mincap)
+    const [minMarketCap, setMinMarketCap] = useState<number>(() => {
+        const mc = Number(searchParams.get('mincap') ?? 0);
+        return MKTCAP_PRESETS.some(p => p.value === mc) ? mc : 0;
+    });
 
     const hasDiscovered = useRef(false);
 
@@ -369,10 +382,11 @@ function ScreenerContent() {
             excludeDeficit ? 'deficit' : null,
         ].filter(Boolean).join(',');
         if (excludeList) params.set('exclude', excludeList);
+        if (minMarketCap > 0) params.set('mincap', String(minMarketCap));
 
         const qs = params.toString();
         router.replace(qs ? `/screener?${qs}` : '/screener', { scroll: false });
-    }, [activeStrategyIds, filterMode, sortKey, sortOrder, excludeHoldings, excludeDeficit, router]);
+    }, [activeStrategyIds, filterMode, sortKey, sortOrder, excludeHoldings, excludeDeficit, minMarketCap, router]);
 
     const handleRefresh = useCallback(() => {
         dispatch(reqGetNcavDailyList("latest"));
@@ -412,6 +426,7 @@ function ScreenerContent() {
         setSearchQuery('');
         setExcludeHoldings(false);
         setExcludeDeficit(false);
+        setMinMarketCap(0);
         setDisplayCount(DAILY_PAGE_SIZE);
     }, []);
 
@@ -450,6 +465,7 @@ function ScreenerContent() {
 
         if (excludeHoldings) list = list.filter(item => !item.name?.includes("홀딩스"));
         if (excludeDeficit)  list = list.filter(item => safeNum(item.eps) > 0);
+        if (minMarketCap > 0) list = list.filter(item => safeNum(item.market_cap) >= minMarketCap);
 
         list.sort((a, b) => {
             if (sortKey === "ticker") {
@@ -468,7 +484,7 @@ function ScreenerContent() {
         });
 
         return list;
-    }, [ncavDailyList.list, activeStrategyIds, filterMode, searchQuery, excludeHoldings, excludeDeficit, sortKey, sortOrder]);
+    }, [ncavDailyList.list, activeStrategyIds, filterMode, searchQuery, excludeHoldings, excludeDeficit, minMarketCap, sortKey, sortOrder]);
 
     const visibleList = filteredList.slice(0, displayCount);
     const hasMore = filteredList.length > displayCount;
@@ -483,9 +499,9 @@ function ScreenerContent() {
         ? `${scanDate.slice(0, 4)}.${scanDate.slice(4, 6)}.${scanDate.slice(6, 8)}`
         : null;
 
-    const activeFilterCount = [excludeHoldings, excludeDeficit].filter(Boolean).length;
+    const activeFilterCount = [excludeHoldings, excludeDeficit, minMarketCap > 0].filter(Boolean).length;
     const isAllActive = activeStrategyIds.size === 0;
-    const hasActiveFilters = activeStrategyIds.size > 0 || excludeHoldings || excludeDeficit || sortKey !== 'ncav_ratio' || sortOrder !== 'desc';
+    const hasActiveFilters = activeStrategyIds.size > 0 || excludeHoldings || excludeDeficit || minMarketCap > 0 || sortKey !== 'ncav_ratio' || sortOrder !== 'desc';
 
     return (
         <Tooltip.Provider delayDuration={300}>
@@ -597,7 +613,7 @@ function ScreenerContent() {
                             <span className="hidden sm:inline">전략 안내</span>
                         </button>
 
-                        {/* 필터 초기화 버튼 */}
+                        {/* 전체 필터 초기화 */}
                         {hasActiveFilters && (
                             <button
                                 onClick={resetAllFilters}
@@ -746,25 +762,51 @@ function ScreenerContent() {
                 </button>
 
                 {filterOpen && (
-                    <div className="w-full flex flex-wrap items-center gap-4 px-1 py-2">
-                        <label className="flex items-center gap-2 cursor-pointer select-none">
-                            <input
-                                type="checkbox"
-                                checked={excludeHoldings}
-                                onChange={e => setExcludeHoldings(e.target.checked)}
-                                className="rounded accent-blue-600"
-                            />
-                            <span className="text-xs font-bold text-zinc-600 dark:text-zinc-400">홀딩스 제외</span>
-                        </label>
-                        <label className="flex items-center gap-2 cursor-pointer select-none">
-                            <input
-                                type="checkbox"
-                                checked={excludeDeficit}
-                                onChange={e => setExcludeDeficit(e.target.checked)}
-                                className="rounded accent-blue-600"
-                            />
-                            <span className="text-xs font-bold text-zinc-600 dark:text-zinc-400">적자 기업 제외</span>
-                        </label>
+                    <div className="w-full flex flex-wrap items-center gap-x-5 gap-y-3 px-1 py-2">
+                        {/* 시가총액 필터 */}
+                        <div className="flex items-center gap-2 flex-wrap">
+                            <span className="text-[10px] font-extrabold text-zinc-400 uppercase tracking-wider">시가총액</span>
+                            {MKTCAP_PRESETS.map(p => (
+                                <button
+                                    key={p.value}
+                                    onClick={() => { setMinMarketCap(p.value); setDisplayCount(DAILY_PAGE_SIZE); }}
+                                    className={cn(
+                                        "px-2.5 py-1 rounded-lg border text-xs font-bold transition-all",
+                                        minMarketCap === p.value
+                                            ? "bg-blue-600 border-blue-600 text-white shadow-sm"
+                                            : "bg-white dark:bg-zinc-900 border-zinc-200 dark:border-zinc-700 text-zinc-600 dark:text-zinc-400 hover:border-zinc-300 dark:hover:border-zinc-600"
+                                    )}
+                                >
+                                    {p.label}
+                                </button>
+                            ))}
+                        </div>
+
+                        {/* 구분선 */}
+                        <div className="w-px h-4 bg-zinc-200 dark:bg-zinc-700 hidden sm:block" />
+
+                        {/* 제외 조건 */}
+                        <div className="flex items-center gap-4 flex-wrap">
+                            <span className="text-[10px] font-extrabold text-zinc-400 uppercase tracking-wider">제외</span>
+                            <label className="flex items-center gap-2 cursor-pointer select-none">
+                                <input
+                                    type="checkbox"
+                                    checked={excludeHoldings}
+                                    onChange={e => setExcludeHoldings(e.target.checked)}
+                                    className="rounded accent-blue-600"
+                                />
+                                <span className="text-xs font-bold text-zinc-600 dark:text-zinc-400">홀딩스</span>
+                            </label>
+                            <label className="flex items-center gap-2 cursor-pointer select-none">
+                                <input
+                                    type="checkbox"
+                                    checked={excludeDeficit}
+                                    onChange={e => setExcludeDeficit(e.target.checked)}
+                                    className="rounded accent-blue-600"
+                                />
+                                <span className="text-xs font-bold text-zinc-600 dark:text-zinc-400">적자 기업</span>
+                            </label>
+                        </div>
                     </div>
                 )}
             </div>
