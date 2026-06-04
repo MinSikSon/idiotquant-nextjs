@@ -54,7 +54,7 @@ export function SectionNav({ sections }: { sections: NavSection[] }) {
   }, [sections]);
 
   return (
-    <nav className="sticky top-0 z-30 bg-white/80 dark:bg-[#0d0d0d]/80 backdrop-blur-md border-b border-zinc-200 dark:border-[#2a2a2a] transition-colors duration-300">
+    <nav className="sticky top-0 z-30 bg-white/90 dark:bg-[#111111]/90 backdrop-blur-xl border-b border-neutral-200/70 dark:border-[#2a2a2a] transition-colors duration-300">
       <div className="max-w-7xl mx-auto px-4 py-3 md:py-4">
         <div className="flex items-center gap-2 overflow-x-auto scrollbar-hide">
           {sections.map(({ id, label, icon }) => (
@@ -62,10 +62,10 @@ export function SectionNav({ sections }: { sections: NavSection[] }) {
               key={id}
               onClick={() => handleNavClick(id)}
               className={cn(
-                "flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-bold whitespace-nowrap transition-all shrink-0",
+                "flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs whitespace-nowrap transition-all shrink-0",
                 activeId === id
-                  ? "bg-zinc-900 dark:bg-white text-white dark:text-zinc-900"
-                  : "text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-white hover:bg-zinc-100 dark:hover:bg-[#2a2a2a]"
+                  ? "bg-stone-200/80 dark:bg-[#2a2a2a] text-neutral-900 dark:text-neutral-50 font-semibold"
+                  : "font-medium text-neutral-500 dark:text-neutral-400 hover:bg-stone-100 dark:hover:bg-[#1f1f1f] hover:text-neutral-900 dark:hover:text-neutral-100"
               )}
             >
               <span className="shrink-0">{icon}</span>
