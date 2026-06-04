@@ -17,7 +17,10 @@ interface PreviewStock {
   pbr: number;
   per: number;
   strategies: string[];
+  market_cap?: number;
 }
+
+const HOME_MKTCAP_MIN = 500; // 억원
 
 const STRATEGY_LABEL: Record<string, string> = {
   ncav: "NCAV", low_pbr: "저PBR", low_per: "저PER", s_rim: "S-RIM",
@@ -111,16 +114,26 @@ export default function HomePage() {
   const [preview, setPreview] = useState<{
     items: PreviewStock[];
     total: number;
+    filteredTotal: number;
     scanDate: string | null;
     loading: boolean;
-  }>({ items: [], total: 0, scanDate: null, loading: true });
+  }>({ items: [], total: 0, filteredTotal: 0, scanDate: null, loading: true });
 
   useEffect(() => {
-    fetch("/api/proxy/scan/daily?strategy=all&limit=5&sort=ncav_ratio&order=desc")
+    fetch("/api/proxy/scan/daily?strategy=all&limit=200&sort=ncav_ratio&order=desc")
       .then(r => r.json())
       .then((data: any) => {
         if (data.success) {
-          setPreview({ items: data.data, total: data.meta.total, scanDate: data.meta.scanDate, loading: false });
+          const all: PreviewStock[] = data.data;
+          // 시가총액 500억+ 필터 (단위: 억원)
+          const filtered = all.filter(item => (item.market_cap ?? 0) >= HOME_MKTCAP_MIN);
+          setPreview({
+            items: filtered.slice(0, 5),
+            total: data.meta.total,
+            filteredTotal: filtered.length,
+            scanDate: data.meta.scanDate,
+            loading: false,
+          });
         } else {
           setPreview(p => ({ ...p, loading: false }));
         }
@@ -240,16 +253,21 @@ export default function HomePage() {
           className="mb-4 flex items-end justify-between gap-4"
         >
           <div>
-            <h2 className="text-lg font-black tracking-tight">오늘의 발굴 종목</h2>
+            <div className="flex items-center gap-2 flex-wrap">
+              <h2 className="text-lg font-black tracking-tight">오늘의 발굴 종목</h2>
+              <span className="text-[10px] font-extrabold px-2 py-0.5 rounded-full bg-blue-50 dark:bg-blue-950/30 text-blue-600 dark:text-blue-400 border border-blue-200/60 dark:border-blue-800/40">
+                시가총액 500억+
+              </span>
+            </div>
             <p className="text-xs text-zinc-400 mt-0.5">
               {isLoggedIn ? "로그인 중 · 전체 목록은 스크리너에서 확인하세요" : "상위 3개 무료 공개 · 전체 목록은 로그인 후 확인 가능"}
             </p>
           </div>
           <Link
-            href={isLoggedIn ? "/screener" : "/login"}
+            href={isLoggedIn ? "/screener?mincap=500" : "/login"}
             className="shrink-0 flex items-center gap-1 text-xs font-bold text-blue-600 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300 transition-colors whitespace-nowrap"
           >
-            전체 {preview.total > 0 ? `${preview.total}개` : ""} 보기
+            전체 {preview.filteredTotal > 0 ? `${preview.filteredTotal}개` : ""} 보기
             <ChevronRight size={12} />
           </Link>
         </motion.div>
@@ -319,10 +337,10 @@ export default function HomePage() {
               {isLoggedIn && (
                 <div className="px-5 py-3 bg-blue-50 dark:bg-blue-950/20 border-t border-blue-100 dark:border-blue-900/40 flex items-center justify-between gap-4">
                   <p className="text-xs text-blue-700 dark:text-blue-400 font-medium">
-                    전체 <span className="font-black">{preview.total}개</span> 종목을 전략 필터와 함께 확인하세요.
+                    시가총액 500억+ 기준 <span className="font-black">{preview.filteredTotal}개</span> 종목을 전략 필터와 함께 확인하세요.
                   </p>
                   <Link
-                    href="/screener"
+                    href="/screener?mincap=500"
                     className="shrink-0 flex items-center gap-1 text-xs font-bold text-blue-700 dark:text-blue-400 hover:underline"
                   >
                     스크리너 열기 <ChevronRight size={11} />
