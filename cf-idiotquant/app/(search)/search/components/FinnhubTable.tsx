@@ -195,7 +195,7 @@ function InfoPopover({ label, description }: { label: string; description: strin
                 <button
                     type="button"
                     aria-label={`${label} 설명`}
-                    className="shrink-0 rounded-full p-0.5 text-zinc-300 hover:text-zinc-500 dark:text-zinc-600 dark:hover:text-zinc-400 transition-colors focus:outline-none focus-visible:ring-1 focus-visible:ring-zinc-400"
+                    className="shrink-0 rounded-full p-0.5 text-neutral-300 hover:text-neutral-500 dark:text-neutral-600 dark:hover:text-neutral-400 transition-colors focus:outline-none focus-visible:ring-1 focus-visible:ring-neutral-400"
                 >
                     <Info size={11} />
                 </button>
@@ -206,11 +206,11 @@ function InfoPopover({ label, description }: { label: string; description: strin
                     sideOffset={6}
                     avoidCollisions
                     collisionPadding={12}
-                    className="z-[200] w-64 rounded-xl bg-zinc-900 border border-zinc-700/60 p-4 shadow-2xl shadow-black/40 animate-in fade-in zoom-in-95 duration-150 focus:outline-none"
+                    className="z-[200] w-64 rounded-xl bg-neutral-900 border border-neutral-700/60 p-4 shadow-2xl shadow-black/40 animate-in fade-in zoom-in-95 duration-150 focus:outline-none"
                 >
                     <p className="text-[10px] font-black text-amber-400 mb-1.5 uppercase tracking-wider">{label}</p>
-                    <p className="text-[11.5px] text-zinc-300 leading-relaxed">{description}</p>
-                    <Popover.Arrow className="fill-zinc-700/60" />
+                    <p className="text-[11.5px] text-neutral-300 leading-relaxed">{description}</p>
+                    <Popover.Arrow className="fill-neutral-700/60" />
                 </Popover.Content>
             </Popover.Portal>
         </Popover.Root>
@@ -219,7 +219,7 @@ function InfoPopover({ label, description }: { label: string; description: strin
 
 function YoYBadge({ pct }: { pct: number | null }) {
     if (pct === null || Math.abs(pct) < 0.05) {
-        return <span className="text-zinc-300 dark:text-zinc-700"><Minus size={8} /></span>;
+        return <span className="text-neutral-300 dark:text-neutral-700"><Minus size={8} /></span>;
     }
     const isUp = pct >= 0;
     return (
@@ -235,8 +235,8 @@ function YoYBadge({ pct }: { pct: number | null }) {
 
 const TAB_TRIGGER_BASE = [
     "flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-bold transition-all duration-150",
-    "text-zinc-500 dark:text-zinc-400 hover:text-zinc-700 dark:hover:text-zinc-200",
-    "data-[state=active]:bg-white dark:data-[state=active]:bg-zinc-700/80",
+    "text-neutral-500 dark:text-neutral-400 hover:text-neutral-700 dark:hover:text-neutral-200",
+    "data-[state=active]:bg-white dark:data-[state=active]:bg-[#3a3a3a]",
     "data-[state=active]:shadow-sm",
 ].join(" ");
 
@@ -253,9 +253,9 @@ function SectionTable({
         <div className="overflow-x-auto">
             <table className="w-full border-collapse text-sm">
                 <thead>
-                    <tr className="border-b border-zinc-200 dark:border-[#2a2a2a]">
+                    <tr className="border-b border-neutral-200 dark:border-[#2a2a2a]">
                         <th className="sticky left-0 z-10 bg-white dark:bg-[#1a1a1a] px-5 py-3 text-left min-w-[12rem] w-48">
-                            <span className="text-[10px] font-bold uppercase tracking-widest text-zinc-400 dark:text-zinc-500 font-mono select-none">
+                            <span className="text-[10px] font-bold uppercase tracking-widest text-neutral-400 dark:text-neutral-500 font-mono select-none">
                                 Financial Metric
                             </span>
                         </th>
@@ -270,13 +270,13 @@ function SectionTable({
                                 <div className="flex flex-col items-end gap-0.5">
                                     <span className={cn(
                                         "text-[9px] font-black uppercase tracking-wider font-mono",
-                                        idx === 0 ? "text-blue-600 dark:text-blue-400" : "text-zinc-400 dark:text-zinc-500"
+                                        idx === 0 ? "text-blue-600 dark:text-blue-400" : "text-neutral-400 dark:text-neutral-500"
                                     )}>
                                         {idx === 0 ? "Latest" : `FY T-${idx}`}
                                     </span>
                                     <span className={cn(
                                         "text-xs font-bold tabular-nums",
-                                        idx === 0 ? "text-zinc-900 dark:text-white" : "text-zinc-500 dark:text-zinc-400"
+                                        idx === 0 ? "text-neutral-900 dark:text-white" : "text-neutral-500 dark:text-neutral-400"
                                     )}>
                                         {col.label || "—"}
                                     </span>
@@ -312,7 +312,7 @@ function SectionTable({
                                     <tr
                                         key={rowIdx}
                                         className={cn(
-                                            "group border-b border-zinc-100 dark:border-[#2a2a2a]/50 transition-colors duration-100",
+                                            "group border-b border-neutral-100 dark:border-[#2a2a2a]/50 transition-colors duration-100",
                                             item.isTotal
                                                 ? "bg-stone-100/80 dark:bg-[#1a1a1a]/20 hover:bg-stone-100/70 dark:hover:bg-[#1a1a1a]/40"
                                                 : "hover:bg-stone-100/60 dark:hover:bg-[#1a1a1a]/10"
@@ -322,19 +322,19 @@ function SectionTable({
                                         <td className={cn(
                                             "sticky left-0 z-10 px-5 py-3 transition-colors duration-100",
                                             item.isTotal
-                                                ? "bg-stone-100 dark:bg-[#1a1a1a]/20 group-hover:bg-stone-100/70 dark:group-hover:bg-zinc-800/40"
-                                                : "bg-white dark:bg-[#1a1a1a] group-hover:bg-stone-100/60 dark:group-hover:bg-zinc-800/10"
+                                                ? "bg-stone-100 dark:bg-[#1a1a1a]/20 group-hover:bg-stone-100/70 dark:group-hover:bg-[#2a2a2a]/40"
+                                                : "bg-white dark:bg-[#1a1a1a] group-hover:bg-stone-100/60 dark:group-hover:bg-[#2a2a2a]/10"
                                         )}>
                                             <div className="flex items-center gap-2">
                                                 {item.isTotal
-                                                    ? <div className="w-0.5 h-4 rounded-full bg-zinc-300 dark:bg-zinc-600 shrink-0" />
+                                                    ? <div className="w-0.5 h-4 rounded-full bg-neutral-300 dark:bg-neutral-600 shrink-0" />
                                                     : <div className="w-0.5 h-4 shrink-0" />
                                                 }
                                                 <span className={cn(
                                                     "truncate",
                                                     item.isTotal
-                                                        ? "font-bold text-zinc-900 dark:text-zinc-100"
-                                                        : "font-medium text-zinc-600 dark:text-zinc-400 pl-1"
+                                                        ? "font-bold text-neutral-900 dark:text-neutral-100"
+                                                        : "font-medium text-neutral-600 dark:text-neutral-400 pl-1"
                                                 )}>
                                                     {item.label}
                                                 </span>
@@ -356,8 +356,8 @@ function SectionTable({
                                                         v !== null && v < 0
                                                             ? "text-rose-600 dark:text-rose-400 font-bold"
                                                             : item.isTotal
-                                                                ? "font-bold text-zinc-900 dark:text-zinc-100"
-                                                                : "font-medium text-zinc-700 dark:text-zinc-300",
+                                                                ? "font-bold text-neutral-900 dark:text-neutral-100"
+                                                                : "font-medium text-neutral-700 dark:text-neutral-300",
                                                         colIdx === 0 ? "text-[13px]" : "text-xs opacity-80"
                                                     )}>
                                                         {fmtUSD(v)}
@@ -400,13 +400,13 @@ export default function FinnhubTable({ data = [], className = "" }: Props) {
     if (!columns.length) return null;
 
     const footer = (
-        <div className="flex items-center gap-3 px-5 py-3 border-t border-zinc-100 dark:border-[#2a2a2a]">
+        <div className="flex items-center gap-3 px-5 py-3 border-t border-neutral-100 dark:border-[#2a2a2a]">
             <span className="w-1.5 h-1.5 rounded-full bg-blue-500 animate-pulse shrink-0" />
-            <span className="text-[10px] text-zinc-400 dark:text-zinc-500 font-mono">
+            <span className="text-[10px] text-neutral-400 dark:text-neutral-500 font-mono">
                 Finnhub · SEC Fundamentals · US-GAAP · USD
             </span>
             <div className="ml-auto flex items-center gap-2">
-                <span className="text-[9px] font-mono text-zinc-400 dark:text-zinc-600 flex items-center gap-1">
+                <span className="text-[9px] font-mono text-neutral-400 dark:text-neutral-600 flex items-center gap-1">
                     <TrendingUp size={8} className="text-emerald-500" /> YoY vs prior year
                 </span>
             </div>
@@ -417,7 +417,7 @@ export default function FinnhubTable({ data = [], className = "" }: Props) {
         <div className={cn("w-full", className)}>
             <Tabs.Root defaultValue="bs">
                 {/* Tab Bar */}
-                <div className="flex items-center justify-between px-5 py-3 border-b border-zinc-100 dark:border-[#2a2a2a] bg-stone-100/50 dark:bg-[#1a1a1a]/20">
+                <div className="flex items-center justify-between px-5 py-3 border-b border-neutral-100 dark:border-[#2a2a2a] bg-stone-100/50 dark:bg-[#1a1a1a]/20">
                     <Tabs.List className="flex gap-1 bg-stone-100 dark:bg-[#1a1a1a] rounded-lg p-1">
                         <Tabs.Trigger
                             value="bs"
@@ -441,7 +441,7 @@ export default function FinnhubTable({ data = [], className = "" }: Props) {
                             Cash Flow
                         </Tabs.Trigger>
                     </Tabs.List>
-                    <span className="text-[9px] font-mono font-bold text-zinc-400 dark:text-zinc-600 uppercase tracking-widest hidden sm:block">
+                    <span className="text-[9px] font-mono font-bold text-neutral-400 dark:text-neutral-600 uppercase tracking-widest hidden sm:block">
                         SEC · US-GAAP
                     </span>
                 </div>

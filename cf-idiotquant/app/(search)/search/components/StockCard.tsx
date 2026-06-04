@@ -136,28 +136,28 @@ const GRADE_CONFIG = {
     labelColor: "text-slate-500 dark:text-slate-400",
     badgeGradient: "linear-gradient(90deg,#475569,#94a3b8)",
     badgeText: "text-white",
-    nameColor: "text-zinc-900 dark:text-zinc-100",
-    tickerColor: "text-zinc-400",
-    artBg: "from-slate-100 to-slate-200 dark:from-slate-900 dark:to-zinc-950",
+    nameColor: "text-neutral-900 dark:text-neutral-100",
+    tickerColor: "text-neutral-400",
+    artBg: "from-slate-100 to-slate-200 dark:from-slate-900 dark:to-neutral-950",
     artBorder: "border-slate-300/60 dark:border-slate-700/40",
     artShadow: "",
     typeGradient: "linear-gradient(90deg,rgba(100,116,139,0.07),rgba(148,163,184,0.07))",
     typeBorder: "border-slate-300/50 dark:border-slate-700/40",
     typeText: "text-slate-500 dark:text-slate-400",
     statBg: "bg-slate-50 dark:bg-slate-900/50 border-slate-200/60 dark:border-slate-700/40",
-    statDivide: "divide-zinc-100 dark:divide-[#2a2a2a]/60",
-    statLabel: "text-zinc-400 dark:text-zinc-500",
-    statValue: "text-zinc-700 dark:text-zinc-300",
+    statDivide: "divide-neutral-100 dark:divide-[#2a2a2a]/60",
+    statLabel: "text-neutral-400 dark:text-neutral-500",
+    statValue: "text-neutral-700 dark:text-neutral-300",
     xpTrack: "bg-stone-100 dark:bg-[#1a1a1a]",
     xpFrom: "from-slate-400", xpTo: "to-slate-500",
-    tierColor: "text-zinc-400",
-    xpPctColor: "text-zinc-400",
+    tierColor: "text-neutral-400",
+    xpPctColor: "text-neutral-400",
     holo: false, holoType: "none" as const,
     rarity: "○", rarityColor: "text-slate-400",
     cornerColor: "rgba(100,116,139,0.3)",
-    priceColor: "text-zinc-900 dark:text-white",
-    priceCurrencyColor: "text-zinc-400",
-    priceLabelColor: "text-zinc-400",
+    priceColor: "text-neutral-900 dark:text-white",
+    priceCurrencyColor: "text-neutral-400",
+    priceLabelColor: "text-neutral-400",
     upBg: "bg-emerald-50 dark:bg-emerald-950/20 border-emerald-200/60 dark:border-emerald-900/40 text-emerald-700 dark:text-emerald-400",
     downBg: "bg-red-50 dark:bg-red-950/20 border-red-200/60 dark:border-red-900/40 text-red-600 dark:text-red-400",
   },
@@ -167,31 +167,31 @@ const GRADE_CONFIG = {
     darkCard: false,
     cardBodyCls: "bg-white dark:bg-[#0d0d0d]",
     label: "FAIR VALUE",
-    labelColor: "text-zinc-500 dark:text-zinc-400",
+    labelColor: "text-neutral-500 dark:text-neutral-400",
     badgeGradient: "linear-gradient(90deg,#3f3f46,#71717a)",
-    badgeText: "text-zinc-100",
-    nameColor: "text-zinc-900 dark:text-zinc-100",
-    tickerColor: "text-zinc-400",
-    artBg: "from-zinc-100 to-zinc-200 dark:from-zinc-900 dark:to-zinc-950",
-    artBorder: "border-zinc-300/50 dark:border-[#222222]/40",
+    badgeText: "text-neutral-100",
+    nameColor: "text-neutral-900 dark:text-neutral-100",
+    tickerColor: "text-neutral-400",
+    artBg: "from-neutral-100 to-neutral-200 dark:from-neutral-900 dark:to-neutral-950",
+    artBorder: "border-neutral-300/50 dark:border-[#222222]/40",
     artShadow: "",
     typeGradient: "linear-gradient(90deg,rgba(113,113,122,0.07),rgba(161,161,170,0.07))",
-    typeBorder: "border-zinc-300/50 dark:border-[#222222]/40",
-    typeText: "text-zinc-500 dark:text-zinc-400",
-    statBg: "bg-stone-100 dark:bg-[#1a1a1a]/50 border-zinc-200/60 dark:border-[#222222]/40",
-    statDivide: "divide-zinc-100 dark:divide-[#2a2a2a]/60",
-    statLabel: "text-zinc-400 dark:text-zinc-500",
-    statValue: "text-zinc-700 dark:text-zinc-300",
+    typeBorder: "border-neutral-300/50 dark:border-[#222222]/40",
+    typeText: "text-neutral-500 dark:text-neutral-400",
+    statBg: "bg-stone-100 dark:bg-[#1a1a1a]/50 border-neutral-200/60 dark:border-[#222222]/40",
+    statDivide: "divide-neutral-100 dark:divide-[#2a2a2a]/60",
+    statLabel: "text-neutral-400 dark:text-neutral-500",
+    statValue: "text-neutral-700 dark:text-neutral-300",
     xpTrack: "bg-stone-100 dark:bg-[#1a1a1a]",
-    xpFrom: "from-zinc-400", xpTo: "to-zinc-500",
-    tierColor: "text-zinc-400",
-    xpPctColor: "text-zinc-400",
+    xpFrom: "from-neutral-400", xpTo: "to-neutral-500",
+    tierColor: "text-neutral-400",
+    xpPctColor: "text-neutral-400",
     holo: false, holoType: "none" as const,
-    rarity: "○", rarityColor: "text-zinc-500",
+    rarity: "○", rarityColor: "text-neutral-500",
     cornerColor: "rgba(113,113,122,0.3)",
-    priceColor: "text-zinc-900 dark:text-white",
-    priceCurrencyColor: "text-zinc-400",
-    priceLabelColor: "text-zinc-400",
+    priceColor: "text-neutral-900 dark:text-white",
+    priceCurrencyColor: "text-neutral-400",
+    priceLabelColor: "text-neutral-400",
     upBg: "bg-emerald-50 dark:bg-emerald-950/20 border-emerald-200/60 dark:border-emerald-900/40 text-emerald-700 dark:text-emerald-400",
     downBg: "bg-red-50 dark:bg-red-950/20 border-red-200/60 dark:border-red-900/40 text-red-600 dark:text-red-400",
   },
@@ -204,8 +204,8 @@ const GRADE_CONFIG = {
     labelColor: "text-red-500 dark:text-red-400",
     badgeGradient: "linear-gradient(90deg,#b91c1c,#ef4444)",
     badgeText: "text-white",
-    nameColor: "text-zinc-900 dark:text-zinc-100",
-    tickerColor: "text-zinc-400",
+    nameColor: "text-neutral-900 dark:text-neutral-100",
+    tickerColor: "text-neutral-400",
     artBg: "from-red-50 to-rose-100 dark:from-red-950 dark:to-rose-950",
     artBorder: "border-red-300/50 dark:border-red-700/40",
     artShadow: "",
@@ -215,17 +215,17 @@ const GRADE_CONFIG = {
     statBg: "bg-red-50/50 dark:bg-red-950/20 border-red-100/60 dark:border-red-900/30",
     statDivide: "divide-red-100/50 dark:divide-red-900/30",
     statLabel: "text-red-300 dark:text-red-500",
-    statValue: "text-zinc-700 dark:text-zinc-300",
+    statValue: "text-neutral-700 dark:text-neutral-300",
     xpTrack: "bg-stone-100 dark:bg-[#1a1a1a]",
     xpFrom: "from-red-400", xpTo: "to-rose-500",
-    tierColor: "text-zinc-400",
-    xpPctColor: "text-zinc-400",
+    tierColor: "text-neutral-400",
+    xpPctColor: "text-neutral-400",
     holo: false, holoType: "none" as const,
     rarity: "○", rarityColor: "text-red-500",
     cornerColor: "rgba(239,68,68,0.35)",
-    priceColor: "text-zinc-900 dark:text-white",
-    priceCurrencyColor: "text-zinc-400",
-    priceLabelColor: "text-zinc-400",
+    priceColor: "text-neutral-900 dark:text-white",
+    priceCurrencyColor: "text-neutral-400",
+    priceLabelColor: "text-neutral-400",
     upBg: "bg-emerald-50 dark:bg-emerald-950/20 border-emerald-200/60 dark:border-emerald-900/40 text-emerald-700 dark:text-emerald-400",
     downBg: "bg-red-50 dark:bg-red-950/20 border-red-200/60 dark:border-red-900/40 text-red-600 dark:text-red-400",
   },
@@ -241,7 +241,7 @@ const GRADE_META: Record<string, { criteria: string; desc: string; dotColor: str
   SS:  { criteria: "업사이드 ≥ +150%", desc: "강력한 안전마진 확보. 심층 가치 투자의 핵심 후보.", dotColor: "bg-amber-500" },
   S:   { criteria: "업사이드 ≥ +100%", desc: "그레이엄 기준 충족. 청산가치 대비 유의한 저평가.", dotColor: "bg-emerald-500" },
   A:   { criteria: "업사이드 ≥  +50%", desc: "안전마진 존재. 추가 분석 후 진입 검토 가능.", dotColor: "bg-slate-400" },
-  B:   { criteria: "업사이드 ≥    0%", desc: "공정 가치 구간. 모멘텀 등 다른 지표 병행 필요.", dotColor: "bg-zinc-400" },
+  B:   { criteria: "업사이드 ≥    0%", desc: "공정 가치 구간. 모멘텀 등 다른 지표 병행 필요.", dotColor: "bg-neutral-400" },
   F:   { criteria: "업사이드 <    0%", desc: "고평가 가능성. 청산가치 미달. 투자 시 주의.", dotColor: "bg-red-500" },
 };
 
@@ -251,7 +251,7 @@ const GRADE_TABLE = [
   { g: "SS",  crit: "≥ +150%", color: "text-amber-400",  bg: "bg-amber-500/10 border-amber-500/20" },
   { g: "S",   crit: "≥ +100%", color: "text-emerald-400",bg: "bg-emerald-500/10 border-emerald-500/20" },
   { g: "A",   crit: "≥  +50%", color: "text-slate-400",  bg: "bg-slate-500/10 border-slate-500/20" },
-  { g: "B",   crit: "≥   +0%", color: "text-zinc-400",   bg: "bg-zinc-500/10 border-zinc-500/20" },
+  { g: "B",   crit: "≥   +0%", color: "text-neutral-400",   bg: "bg-neutral-500/10 border-neutral-500/20" },
   { g: "F",   crit: "<   +0%", color: "text-red-400",    bg: "bg-red-500/10 border-red-500/20" },
 ];
 
@@ -278,8 +278,8 @@ const getLevelTier = (level: number) => {
     next: "HIGH CONVICTION" as string | null, nextLevel: 8 as number | null,
   };
   return {
-    title: "BEGINNER", from: "from-zinc-300", to: "to-zinc-400",
-    badge: "bg-stone-100 text-zinc-600 dark:bg-[#1a1a1a] dark:text-zinc-400",
+    title: "BEGINNER", from: "from-neutral-300", to: "to-neutral-400",
+    badge: "bg-stone-100 text-neutral-600 dark:bg-[#1a1a1a] dark:text-neutral-400",
     desc: "관심을 막 시작한 단계. 조회할수록 XP가 누적됩니다.",
     next: "WATCHLIST" as string | null, nextLevel: 4 as number | null,
   };
@@ -716,7 +716,7 @@ export const StockCard = ({ stock, chartConfig, isCompact = false, stockXpProfil
               animate={{ opacity: 1, y: -50, scale: 1.0 }}
               exit={{ opacity: 0, scale: 1.2 }}
               transition={{ duration: 0.55, ease: "easeOut" }}
-              className="font-mono font-black text-xs px-3 py-1 rounded-full shadow-lg bg-zinc-900/90 text-emerald-400 border border-white/10 backdrop-blur-sm whitespace-nowrap"
+              className="font-mono font-black text-xs px-3 py-1 rounded-full shadow-lg bg-neutral-900/90 text-emerald-400 border border-white/10 backdrop-blur-sm whitespace-nowrap"
             >
               {t.text}
             </motion.div>
@@ -840,7 +840,7 @@ export const StockCard = ({ stock, chartConfig, isCompact = false, stockXpProfil
               ) : (
                 <span className={cn(
                   "text-4xl font-black font-mono tracking-tighter",
-                  cfg.darkCard ? "text-white/30" : "text-zinc-400 dark:text-zinc-500"
+                  cfg.darkCard ? "text-white/30" : "text-neutral-400 dark:text-neutral-500"
                 )}>
                   {(stock?.ticker ?? "??").substring(0, 2)}
                 </span>
@@ -878,12 +878,12 @@ export const StockCard = ({ stock, chartConfig, isCompact = false, stockXpProfil
               style={{ background: cfg.typeGradient }}
             >
               <div className="flex items-center gap-1.5">
-                <div className={cn("w-1.5 h-1.5 rounded-full shrink-0", cfg.darkCard ? "bg-white/30" : "bg-zinc-400/60")} />
+                <div className={cn("w-1.5 h-1.5 rounded-full shrink-0", cfg.darkCard ? "bg-white/30" : "bg-neutral-400/60")} />
                 <span className={cn("text-[8px] font-black uppercase tracking-[0.15em] font-mono", cfg.typeText)}>
                   {cfg.label}
                 </span>
               </div>
-              <span className={cn("text-[7px] font-bold font-mono uppercase tracking-wider", cfg.darkCard ? "text-white/25" : "text-zinc-400")}>
+              <span className={cn("text-[7px] font-bold font-mono uppercase tracking-wider", cfg.darkCard ? "text-white/25" : "text-neutral-400")}>
                 {stock?.isUs ? "SEC" : "FSS"}
               </span>
             </div>
@@ -965,22 +965,22 @@ export const StockCard = ({ stock, chartConfig, isCompact = false, stockXpProfil
           {/* 등급 컬러 헤더 글로우 */}
           <div className="absolute inset-x-0 top-0 h-32 opacity-[0.08] pointer-events-none" style={{ background: cfg.frameGradient }} />
           {/* 테두리 */}
-          <div className="absolute inset-0 rounded-[1.75rem] border-2 border-zinc-200 dark:border-[#2a2a2a] pointer-events-none" />
+          <div className="absolute inset-0 rounded-[1.75rem] border-2 border-neutral-200 dark:border-[#2a2a2a] pointer-events-none" />
 
           <div className="relative flex flex-col gap-2.5 p-3.5 h-full overflow-y-auto">
 
             {/* ── 등급 섹션 ── */}
             <div>
               <div className="flex items-center gap-1.5 mb-2">
-                <ShieldCheck size={10} className="text-zinc-400" />
-                <span className="text-[8px] font-black uppercase tracking-widest font-mono text-zinc-400">등급 분석</span>
+                <ShieldCheck size={10} className="text-neutral-400" />
+                <span className="text-[8px] font-black uppercase tracking-widest font-mono text-neutral-400">등급 분석</span>
               </div>
 
               {/* 현재 등급 설명 박스 */}
               {(() => {
                 const meta = GRADE_META[grade] ?? GRADE_META.B;
                 return (
-                  <div className="flex gap-2.5 p-2.5 rounded-xl bg-stone-100 dark:bg-[#1a1a1a]/60 border border-zinc-200/70 dark:border-[#2a2a2a]/70 mb-2">
+                  <div className="flex gap-2.5 p-2.5 rounded-xl bg-stone-100 dark:bg-[#1a1a1a]/60 border border-neutral-200/70 dark:border-[#2a2a2a]/70 mb-2">
                     <div className="shrink-0 flex flex-col items-center gap-1 pt-0.5">
                       <span
                         className={cn("text-xl font-black font-mono leading-none", cfg.labelColor)}
@@ -992,7 +992,7 @@ export const StockCard = ({ stock, chartConfig, isCompact = false, stockXpProfil
                     </div>
                     <div className="min-w-0">
                       <p className={cn("text-[8px] font-black font-mono mb-0.5", cfg.labelColor)}>{meta.criteria}</p>
-                      <p className="text-[8.5px] text-zinc-600 dark:text-zinc-400 leading-relaxed">{meta.desc}</p>
+                      <p className="text-[8.5px] text-neutral-600 dark:text-neutral-400 leading-relaxed">{meta.desc}</p>
                     </div>
                   </div>
                 );
@@ -1010,23 +1010,23 @@ export const StockCard = ({ stock, chartConfig, isCompact = false, stockXpProfil
                     )}
                   >
                     <span className={cn("text-[9px] font-black font-mono leading-none", color)}>{g}</span>
-                    <span className="text-[6.5px] font-mono font-bold text-zinc-500 mt-0.5 tabular-nums">{crit}</span>
+                    <span className="text-[6.5px] font-mono font-bold text-neutral-500 mt-0.5 tabular-nums">{crit}</span>
                   </div>
                 ))}
               </div>
             </div>
 
             {/* 구분선 */}
-            <div className="border-t border-zinc-200 dark:border-[#2a2a2a]" />
+            <div className="border-t border-neutral-200 dark:border-[#2a2a2a]" />
 
             {/* ── 레벨 섹션 ── */}
             <div>
               <div className="flex items-center gap-1.5 mb-2">
-                <Award size={10} className="text-zinc-400" />
-                <span className="text-[8px] font-black uppercase tracking-widest font-mono text-zinc-400">카드 레벨</span>
+                <Award size={10} className="text-neutral-400" />
+                <span className="text-[8px] font-black uppercase tracking-widest font-mono text-neutral-400">카드 레벨</span>
               </div>
 
-              <div className="p-2.5 rounded-xl bg-zinc-900 dark:bg-[#0d0d0d] border border-zinc-800">
+              <div className="p-2.5 rounded-xl bg-neutral-900 dark:bg-[#0d0d0d] border border-neutral-800">
                 {/* 레벨 헤더 */}
                 <div className="flex items-center justify-between mb-2">
                   <div className="flex items-center gap-1.5">
@@ -1040,14 +1040,14 @@ export const StockCard = ({ stock, chartConfig, isCompact = false, stockXpProfil
                 </div>
 
                 {/* 티어 설명 */}
-                <p className="text-[8.5px] text-zinc-400 leading-relaxed mb-2">{tier.desc}</p>
+                <p className="text-[8.5px] text-neutral-400 leading-relaxed mb-2">{tier.desc}</p>
 
                 {/* XP 바 */}
-                <div className="flex justify-between text-[7px] font-mono font-bold text-zinc-600 mb-1">
+                <div className="flex justify-between text-[7px] font-mono font-bold text-neutral-600 mb-1">
                   <span>XP 진행도</span>
                   <span className="tabular-nums">{xp} / {maxXp}</span>
                 </div>
-                <div className="w-full h-1.5 bg-zinc-800 rounded-full overflow-hidden border border-zinc-700/50 mb-2">
+                <div className="w-full h-1.5 bg-neutral-800 rounded-full overflow-hidden border border-neutral-700/50 mb-2">
                   <motion.div
                     className={cn("h-full bg-gradient-to-r rounded-full", cfg.xpFrom, cfg.xpTo)}
                     animate={{ width: `${(xp / maxXp) * 100}%` }}
@@ -1057,25 +1057,25 @@ export const StockCard = ({ stock, chartConfig, isCompact = false, stockXpProfil
 
                 {/* 다음 티어 */}
                 {tier.next ? (
-                  <div className="flex items-center gap-1 pt-1.5 border-t border-zinc-800">
-                    <TrendingUp size={8} className="text-zinc-600 shrink-0" />
-                    <p className="text-[7px] text-zinc-600 font-mono">
-                      <span className="text-zinc-500 font-bold">Lv.{tier.nextLevel}</span> 도달 시{" "}
-                      <span className="text-zinc-400 font-bold">{tier.next}</span> 승격
+                  <div className="flex items-center gap-1 pt-1.5 border-t border-neutral-800">
+                    <TrendingUp size={8} className="text-neutral-600 shrink-0" />
+                    <p className="text-[7px] text-neutral-600 font-mono">
+                      <span className="text-neutral-500 font-bold">Lv.{tier.nextLevel}</span> 도달 시{" "}
+                      <span className="text-neutral-400 font-bold">{tier.next}</span> 승격
                     </p>
                   </div>
                 ) : (
-                  <div className="flex items-center gap-1 pt-1.5 border-t border-zinc-800">
-                    <span className="text-[7px] text-zinc-600 font-mono">✦ 최고 티어 달성</span>
+                  <div className="flex items-center gap-1 pt-1.5 border-t border-neutral-800">
+                    <span className="text-[7px] text-neutral-600 font-mono">✦ 최고 티어 달성</span>
                   </div>
                 )}
               </div>
             </div>
 
             {/* ── 푸터 ── */}
-            <div className="mt-auto pt-2 border-t border-zinc-200 dark:border-[#2a2a2a] flex items-center justify-center gap-1.5 shrink-0">
+            <div className="mt-auto pt-2 border-t border-neutral-200 dark:border-[#2a2a2a] flex items-center justify-center gap-1.5 shrink-0">
               {stock?.isUs ? <DollarSign size={9} className="text-blue-400" /> : <Coins size={9} className="text-indigo-400" />}
-              <span className="text-[7px] font-black text-zinc-300 dark:text-zinc-700 tracking-[0.2em] uppercase font-mono">
+              <span className="text-[7px] font-black text-neutral-300 dark:text-neutral-700 tracking-[0.2em] uppercase font-mono">
                 {stock?.isUs ? "Finnhub · IdiotQuant" : "Korea Investment · IdiotQuant"}
               </span>
             </div>

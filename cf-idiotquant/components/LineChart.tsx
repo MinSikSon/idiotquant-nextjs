@@ -38,8 +38,8 @@ const tailwindPalette = {
 const CustomTooltip = ({ active, payload, label, mode }: any) => {
     if (active && payload && payload.length) {
         return (
-            <div className="bg-white/80 dark:bg-[#0d0d0d]/80 backdrop-blur-md px-3 py-2 rounded-xl border border-zinc-200/60 dark:border-[#2a2a2a]/80 shadow-xl text-[11px] font-medium transition-all duration-200">
-                <p className="text-zinc-400 dark:text-zinc-500 font-bold mb-1 font-mono tracking-wider">{label}</p>
+            <div className="bg-white/80 dark:bg-[#0d0d0d]/80 backdrop-blur-md px-3 py-2 rounded-xl border border-neutral-200/60 dark:border-[#2a2a2a]/80 shadow-xl text-[11px] font-medium transition-all duration-200">
+                <p className="text-neutral-400 dark:text-neutral-500 font-bold mb-1 font-mono tracking-wider">{label}</p>
                 <div className="space-y-1">
                     {payload.map((entry: any, index: number) => (
                         <div key={index} className="flex items-center gap-2">
@@ -47,8 +47,8 @@ const CustomTooltip = ({ active, payload, label, mode }: any) => {
                                 className="w-1.5 h-1.5 rounded-full shadow-sm" 
                                 style={{ backgroundColor: entry.color || entry.stroke }} 
                             />
-                            <span className="text-zinc-500 dark:text-zinc-400 font-semibold">{entry.name}:</span>
-                            <span className="font-bold text-zinc-900 dark:text-white font-mono italic">
+                            <span className="text-neutral-500 dark:text-neutral-400 font-semibold">{entry.name}:</span>
+                            <span className="font-bold text-neutral-900 dark:text-white font-mono italic">
                                 {typeof entry.value === "number" ? entry.value.toLocaleString() : entry.value}
                             </span>
                         </div>

@@ -36,9 +36,9 @@ function PieTooltip({ active, payload, isUs }: { active?: boolean; payload?: any
     : "";
 
   return (
-    <div className="bg-white dark:bg-[#2a2a2a] px-3 py-2 rounded-lg border border-zinc-200 dark:border-[#3a3a3a] shadow-lg">
-      <p className="text-xs font-bold text-zinc-900 dark:text-white">{name}</p>
-      <p className="text-xs text-zinc-600 dark:text-zinc-300">
+    <div className="bg-white dark:bg-[#2a2a2a] px-3 py-2 rounded-lg border border-neutral-200 dark:border-[#3a3a3a] shadow-lg">
+      <p className="text-xs font-bold text-neutral-900 dark:text-white">{name}</p>
+      <p className="text-xs text-neutral-600 dark:text-neutral-300">
         {formatter(value)}{pctStr ? ` (${pctStr})` : ""}
       </p>
     </div>
@@ -51,9 +51,9 @@ function BarTooltip({ active, payload }: { active?: boolean; payload?: any[] }) 
   const { name, value } = payload[0];
 
   return (
-    <div className="bg-white dark:bg-[#2a2a2a] px-3 py-2 rounded-lg border border-zinc-200 dark:border-[#3a3a3a] shadow-lg">
-      <p className="text-xs font-bold text-zinc-900 dark:text-white">{name}</p>
-      <p className="text-xs font-mono text-zinc-600 dark:text-zinc-300">
+    <div className="bg-white dark:bg-[#2a2a2a] px-3 py-2 rounded-lg border border-neutral-200 dark:border-[#3a3a3a] shadow-lg">
+      <p className="text-xs font-bold text-neutral-900 dark:text-white">{name}</p>
+      <p className="text-xs font-mono text-neutral-600 dark:text-neutral-300">
         {value.toFixed(2)}%
       </p>
     </div>
@@ -88,10 +88,10 @@ function PortfolioPieChart({ output1, isUs }: PortfolioPieChartProps) {
   if (pieData.length === 0) {
     return (
       <div className="flex flex-col items-center justify-center py-12 gap-3">
-        <div className="p-4 rounded-2xl bg-zinc-100 dark:bg-[#2a2a2a]">
-          <InboxIcon size={24} className="text-zinc-400" />
+        <div className="p-4 rounded-2xl bg-stone-100 dark:bg-[#2a2a2a]">
+          <InboxIcon size={24} className="text-neutral-400" />
         </div>
-        <p className="text-sm font-medium text-zinc-400">보유 종목이 없습니다</p>
+        <p className="text-sm font-medium text-neutral-400">보유 종목이 없습니다</p>
       </div>
     );
   }
@@ -130,21 +130,21 @@ function PortfolioPieChart({ output1, isUs }: PortfolioPieChartProps) {
           const formatter = isUs ? fmtUsd : fmtKrw;
 
           return (
-            <div key={index} className="flex items-center gap-3 pb-2.5 border-b border-zinc-100 dark:border-[#2a2a2a] last:border-0">
+            <div key={index} className="flex items-center gap-3 pb-2.5 border-b border-neutral-100 dark:border-[#2a2a2a] last:border-0">
               <div
                 className="w-2.5 h-2.5 rounded-full shrink-0"
                 style={{ backgroundColor: colors[index % colors.length] }}
               />
               <div className="flex-1 min-w-0">
-                <p className="text-xs font-bold text-zinc-900 dark:text-white truncate">
+                <p className="text-xs font-bold text-neutral-900 dark:text-white truncate">
                   {item.name}
                 </p>
-                <p className="text-[10px] text-zinc-500 dark:text-zinc-400 font-mono">
+                <p className="text-[10px] text-neutral-500 dark:text-neutral-400 font-mono">
                   {formatter(item.value)}
                 </p>
               </div>
               <div className="text-right shrink-0">
-                <p className="text-xs font-black text-zinc-900 dark:text-white">
+                <p className="text-xs font-black text-neutral-900 dark:text-white">
                   {percent.toFixed(1)}%
                 </p>
               </div>
@@ -176,10 +176,10 @@ function ProfitBarChart({ output1, isUs }: PortfolioPieChartProps) {
   if (barData.length === 0) {
     return (
       <div className="flex flex-col items-center justify-center py-12 gap-3">
-        <div className="p-4 rounded-2xl bg-zinc-100 dark:bg-[#2a2a2a]">
-          <InboxIcon size={24} className="text-zinc-400" />
+        <div className="p-4 rounded-2xl bg-stone-100 dark:bg-[#2a2a2a]">
+          <InboxIcon size={24} className="text-neutral-400" />
         </div>
-        <p className="text-sm font-medium text-zinc-400">수익률 데이터가 없습니다</p>
+        <p className="text-sm font-medium text-neutral-400">수익률 데이터가 없습니다</p>
       </div>
     );
   }
@@ -243,7 +243,7 @@ export function PortfolioChartSection({
 
   return (
     <>
-      <div className="flex items-center gap-2 mb-6 bg-zinc-100 dark:bg-[#2a2a2a] p-1 rounded-xl w-fit">
+      <div className="flex items-center gap-2 mb-6 bg-stone-100 dark:bg-[#2a2a2a] p-1 rounded-xl w-fit">
         <TabButton
           active={activeTab === "pie"}
           onClick={() => setActiveTab("pie")}

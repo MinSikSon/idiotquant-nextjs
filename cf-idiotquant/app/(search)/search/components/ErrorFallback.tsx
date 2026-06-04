@@ -23,11 +23,11 @@ export function ErrorFallback({
       </div>
 
       {/* 텍스트 영역 */}
-      <h3 className="text-2xl font-black text-zinc-900 dark:text-zinc-100 mb-3 tracking-tight">
+      <h3 className="text-2xl font-black text-neutral-900 dark:text-neutral-100 mb-3 tracking-tight">
         데이터를 불러오는 중 문제가 발생했습니다
       </h3>
 
-      <p className="text-zinc-500 dark:text-zinc-400 mb-10 max-w-sm font-medium leading-relaxed">
+      <p className="text-neutral-500 dark:text-neutral-400 mb-10 max-w-sm font-medium leading-relaxed">
         {error.message ||
           '주식 정보를 가져오는 중에 예상치 못한 오류가 발생했습니다. 네트워크 상태를 확인하거나 잠시 후 다시 시도해주세요.'}
       </p>
@@ -44,7 +44,7 @@ export function ErrorFallback({
         
         <button
           onClick={() => window.location.reload()}
-          className="inline-flex items-center justify-center gap-2 px-8 py-3 bg-white dark:bg-[#1a1a1a] border border-zinc-200 dark:border-[#2a2a2a] text-zinc-700 dark:text-zinc-300 rounded-2xl font-bold hover:bg-stone-50 dark:hover:bg-[#2a2a2a] transition-all active:scale-95"
+          className="inline-flex items-center justify-center gap-2 px-8 py-3 bg-white dark:bg-[#1a1a1a] border border-neutral-200 dark:border-[#2a2a2a] text-neutral-700 dark:text-neutral-300 rounded-2xl font-bold hover:bg-stone-50 dark:hover:bg-[#2a2a2a] transition-all active:scale-95"
         >
           <RotateCw size={18} />
           페이지 새로고침
@@ -53,8 +53,8 @@ export function ErrorFallback({
 
       {/* 에러 코드 푸터 */}
       <div className="mt-16 flex flex-col items-center gap-2">
-        <div className="h-px w-12 bg-zinc-200 dark:bg-[#2a2a2a]" />
-        <span className="text-[10px] text-zinc-400 uppercase tracking-[0.3em] font-black">
+        <div className="h-px w-12 bg-neutral-200 dark:bg-[#2a2a2a]" />
+        <span className="text-[10px] text-neutral-400 uppercase tracking-[0.3em] font-black">
           Error Code: ERR_STOCK_FETCH_FAILURE
         </span>
       </div>

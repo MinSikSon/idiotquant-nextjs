@@ -54,12 +54,12 @@ import { cn } from "@/lib/utils";
 // =========================================================================
 // 상세 지표 칩 (스크롤 스트립용)
 // =========================================================================
-function MetricChip({ label, value, valueClass = "text-zinc-900 dark:text-zinc-100" }: {
+function MetricChip({ label, value, valueClass = "text-neutral-900 dark:text-neutral-100" }: {
   label: string; value: string; valueClass?: string;
 }) {
   return (
-    <div className="bg-white dark:bg-[#1a1a1a] border border-zinc-200 dark:border-[#2a2a2a] rounded-xl px-4 py-2.5 flex flex-col gap-0.5 shrink-0">
-      <span className="text-[9px] font-black text-zinc-400 dark:text-zinc-500 uppercase tracking-widest whitespace-nowrap">{label}</span>
+    <div className="bg-white dark:bg-[#1a1a1a] border border-neutral-200 dark:border-[#2a2a2a] rounded-xl px-4 py-2.5 flex flex-col gap-0.5 shrink-0">
+      <span className="text-[9px] font-black text-neutral-400 dark:text-neutral-500 uppercase tracking-widest whitespace-nowrap">{label}</span>
       <span className={cn("text-xs font-mono font-black whitespace-nowrap", valueClass)}>{value}</span>
     </div>
   );
@@ -75,10 +75,10 @@ function OverseasOrderRow({ item, isNccs }: { item: any; isNccs: boolean }) {
   return (
     <tr className="hover:bg-stone-100 dark:hover:bg-[#1a1a1a]/40 transition-colors group">
       <td className="py-3.5 px-4">
-        <span className="block text-xs font-semibold text-zinc-700 dark:text-zinc-300">
+        <span className="block text-xs font-semibold text-neutral-700 dark:text-neutral-300">
           {formatTime(item.ord_tmd)}
         </span>
-        <span className="text-[10px] font-mono text-zinc-400 block mt-0.5">No. {item.odno}</span>
+        <span className="text-[10px] font-mono text-neutral-400 block mt-0.5">No. {item.odno}</span>
       </td>
       <td className="py-3.5 px-4">
         <span className={cn(
@@ -89,35 +89,35 @@ function OverseasOrderRow({ item, isNccs }: { item: any; isNccs: boolean }) {
         </span>
       </td>
       <td className="py-3.5 px-4">
-        <span className="font-bold text-zinc-900 dark:text-white text-xs block">{item.prdt_name}</span>
-        <span className="text-[10px] font-mono text-zinc-400 uppercase">{item.tr_mket_name || item.tr_crcy_cd}</span>
+        <span className="font-bold text-neutral-900 dark:text-white text-xs block">{item.prdt_name}</span>
+        <span className="text-[10px] font-mono text-neutral-400 uppercase">{item.tr_mket_name || item.tr_crcy_cd}</span>
       </td>
       <td className="py-3.5 px-4 text-right font-mono">
-        <span className="block text-xs font-bold text-zinc-700 dark:text-zinc-300">{item.ft_ord_qty || "-"}</span>
-        <span className="text-[10px] text-zinc-400">주문</span>
+        <span className="block text-xs font-bold text-neutral-700 dark:text-neutral-300">{item.ft_ord_qty || "-"}</span>
+        <span className="text-[10px] text-neutral-400">주문</span>
       </td>
       <td className="py-3.5 px-4 text-right font-mono">
         {hasPartialFill ? (
           <>
-            <span className="block text-xs font-black text-zinc-900 dark:text-white">{item.ft_ccld_qty}</span>
+            <span className="block text-xs font-black text-neutral-900 dark:text-white">{item.ft_ccld_qty}</span>
             <span className="text-[10px] font-bold text-emerald-500">체결</span>
           </>
         ) : (
-          <span className="text-xs text-zinc-400">-</span>
+          <span className="text-xs text-neutral-400">-</span>
         )}
       </td>
       <td className="py-3.5 px-4 text-right font-mono">
-        <span className="text-xs font-medium text-zinc-700 dark:text-zinc-300 block">
+        <span className="text-xs font-medium text-neutral-700 dark:text-neutral-300 block">
           {Number(item.ft_ord_unpr3 || 0) > 0 ? fmtUsd(item.ft_ord_unpr3) : "-"}
         </span>
         {hasPartialFill && (
-          <span className="text-[10px] text-zinc-400">{fmtUsd(item.ft_ccld_unpr3)} 체결가</span>
+          <span className="text-[10px] text-neutral-400">{fmtUsd(item.ft_ccld_unpr3)} 체결가</span>
         )}
       </td>
       <td className="py-3.5 px-4 text-right font-mono">
         {hasPartialFill && Number(item.ft_ccld_amt3 || 0) > 0
-          ? <span className="text-xs font-black text-zinc-900 dark:text-white">{fmtUsd(item.ft_ccld_amt3)}</span>
-          : <span className="text-xs text-zinc-400">-</span>
+          ? <span className="text-xs font-black text-neutral-900 dark:text-white">{fmtUsd(item.ft_ccld_amt3)}</span>
+          : <span className="text-xs text-neutral-400">-</span>
         }
       </td>
       <td className="py-3.5 px-4 text-center">
@@ -127,7 +127,7 @@ function OverseasOrderRow({ item, isNccs }: { item: any; isNccs: boolean }) {
             ? "bg-emerald-50 text-emerald-600 dark:bg-emerald-950/30 dark:text-emerald-400"
             : isNccs
             ? "bg-amber-50 text-amber-600 dark:bg-amber-950/30 dark:text-amber-400"
-            : "bg-stone-100 text-zinc-500 dark:bg-[#1a1a1a]"
+            : "bg-stone-100 text-neutral-500 dark:bg-[#1a1a1a]"
         )}>
           {item.prcs_stat_name || (isNccs ? "대기" : "-")}
         </span>
@@ -137,7 +137,7 @@ function OverseasOrderRow({ item, isNccs }: { item: any; isNccs: boolean }) {
           "text-xs font-black px-2 py-0.5 rounded-full",
           Number(item.nccs_qty || 0) > 0
             ? "bg-amber-50 text-amber-600 dark:bg-amber-950/30"
-            : "text-zinc-400"
+            : "text-neutral-400"
         )}>
           {item.nccs_qty || 0}주
         </span>
@@ -288,10 +288,10 @@ function BalanceUs() {
           <AlertCircle className="w-10 h-10 text-red-500" />
         </div>
         <h2 className="text-xl font-black mb-2 dark:text-white">미국 계좌 조회 권한 없음</h2>
-        <p className="text-sm text-zinc-500 mb-5 max-w-xs">해외 주식 API 권한 또는 접근 토큰을 확인해 주세요.</p>
+        <p className="text-sm text-neutral-500 mb-5 max-w-xs">해외 주식 API 권한 또는 접근 토큰을 확인해 주세요.</p>
         <button
           onClick={handleRefresh}
-          className="flex items-center gap-2 px-4 py-2 bg-zinc-900 dark:bg-white text-white dark:text-zinc-900 text-xs font-black rounded-xl"
+          className="flex items-center gap-2 px-4 py-2 bg-neutral-900 dark:bg-white text-white dark:text-neutral-900 text-xs font-black rounded-xl"
         >
           <RefreshCw size={13} /> 다시 시도
         </button>
@@ -319,12 +319,12 @@ function BalanceUs() {
         <header className="flex flex-col md:flex-row md:items-end justify-between gap-5">
           <div className="space-y-2.5">
             {/* 브레드크럼 */}
-            <nav className="flex items-center gap-1.5 text-[11px] font-semibold text-zinc-400 flex-wrap">
+            <nav className="flex items-center gap-1.5 text-[11px] font-semibold text-neutral-400 flex-wrap">
               <span className="flex items-center gap-1">
                 <Globe size={12} />
                 해외 투자
               </span>
-              <ChevronRight size={11} className="text-zinc-300 dark:text-zinc-600" />
+              <ChevronRight size={11} className="text-neutral-300 dark:text-neutral-600" />
               <span className="flex items-center gap-1 text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/20 px-2 py-0.5 rounded-md">
                 <Building2 size={11} />미국(US)
               </span>
@@ -339,7 +339,7 @@ function BalanceUs() {
                 <DollarSign size={11} /> USD Account
               </span>
               {!isLoading && totalAssetUsd > 0 && (
-                <span className="text-sm font-mono font-black text-zinc-400 dark:text-zinc-500 bg-stone-100 dark:bg-[#1a1a1a] px-2.5 py-1 rounded-lg border border-zinc-200 dark:border-[#222222]">
+                <span className="text-sm font-mono font-black text-neutral-400 dark:text-neutral-500 bg-stone-100 dark:bg-[#1a1a1a] px-2.5 py-1 rounded-lg border border-neutral-200 dark:border-[#222222]">
                   {fmtUsd(totalAssetUsd)}
                 </span>
               )}
@@ -347,12 +347,12 @@ function BalanceUs() {
 
             {/* 마지막 업데이트 */}
             {lastUpdated ? (
-              <p className="flex items-center gap-1.5 text-[11px] text-zinc-400 font-mono">
+              <p className="flex items-center gap-1.5 text-[11px] text-neutral-400 font-mono">
                 <Clock size={11} />
                 {lastUpdated.toLocaleTimeString("ko-KR")} 기준
               </p>
             ) : (
-              <div className="h-4 w-40 rounded bg-zinc-200 dark:bg-[#1a1a1a] animate-pulse" />
+              <div className="h-4 w-40 rounded bg-neutral-200 dark:bg-[#1a1a1a] animate-pulse" />
             )}
           </div>
 
@@ -364,8 +364,8 @@ function BalanceUs() {
               onRefresh={handleRefresh}
               extra={
                 exRate > 0 ? (
-                  <div className="flex items-center gap-2 bg-white dark:bg-[#1a1a1a] px-3 py-2 rounded-xl border border-zinc-200 dark:border-[#2a2a2a] shadow-sm">
-                    <span className="text-[10px] font-black text-zinc-400 uppercase tracking-wider">고시환율</span>
+                  <div className="flex items-center gap-2 bg-white dark:bg-[#1a1a1a] px-3 py-2 rounded-xl border border-neutral-200 dark:border-[#2a2a2a] shadow-sm">
+                    <span className="text-[10px] font-black text-neutral-400 uppercase tracking-wider">고시환율</span>
                     <span className="text-sm font-mono font-black text-blue-600 dark:text-blue-400">
                       {exRate.toLocaleString()}원
                     </span>
@@ -432,8 +432,8 @@ function BalanceUs() {
             subLabel="원화 환산액"
             subValue={isLoading ? null : fmtKrw(pchsAmtKrw)}
             icon={<DollarSign size={15} />}
-            iconBg="bg-stone-100 dark:bg-[#1a1a1a] text-zinc-500"
-            accentColor="bg-zinc-400 dark:bg-zinc-600"
+            iconBg="bg-stone-100 dark:bg-[#1a1a1a] text-neutral-500"
+            accentColor="bg-neutral-400 dark:bg-neutral-600"
             loading={isLoading}
           />
           <UsdKpiCard
@@ -477,7 +477,7 @@ function BalanceUs() {
               <MetricChip
                 label="고시환율"
                 value={`${exRate.toLocaleString()}원`}
-                valueClass="text-zinc-600 dark:text-zinc-300"
+                valueClass="text-neutral-600 dark:text-neutral-300"
               />
               {totLoanAmtUs > 0 && (
                 <MetricChip
@@ -533,7 +533,7 @@ function BalanceUs() {
                 usCapital.state === "pending"
                   ? <span className="text-[10px] font-mono text-amber-500 bg-amber-50 dark:bg-amber-950/20 px-2 py-0.5 rounded-full border border-amber-200 dark:border-amber-800 animate-pulse">로딩 중</span>
                   : usCapital.stock_list?.length > 0
-                  ? <span className="text-[10px] font-mono text-zinc-500 dark:text-zinc-400 bg-stone-100 dark:bg-[#1a1a1a] px-2 py-0.5 rounded-full">{usCapital.stock_list.length}종목</span>
+                  ? <span className="text-[10px] font-mono text-neutral-500 dark:text-neutral-400 bg-stone-100 dark:bg-[#1a1a1a] px-2 py-0.5 rounded-full">{usCapital.stock_list.length}종목</span>
                   : null
               }
             />
@@ -570,7 +570,7 @@ function BalanceUs() {
             }
           />
 
-          <div className="overflow-x-auto rounded-xl border border-zinc-100 dark:border-[#2a2a2a]">
+          <div className="overflow-x-auto rounded-xl border border-neutral-100 dark:border-[#2a2a2a]">
             <table className="w-full text-sm text-left min-w-[860px]">
               <TableHeader headers={[
                 { label: "주문시각 / 번호" },
@@ -583,7 +583,7 @@ function BalanceUs() {
                 { label: "처리상태", align: "text-center" },
                 { label: "미체결", align: "text-right" },
               ]} />
-              <tbody className="divide-y divide-zinc-50 dark:divide-[#2a2a2a]/40">
+              <tbody className="divide-y divide-neutral-50 dark:divide-[#2a2a2a]/40">
                 {viewerTab === "ccnl" ? (
                   kiCcnl.output?.length > 0
                     ? kiCcnl.output.map((item, i) => (

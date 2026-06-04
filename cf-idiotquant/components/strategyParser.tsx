@@ -69,7 +69,7 @@ export default function StrategyDescription({ strategyId }: StrategyDescriptionP
             {content.title}
           </h4>
           <div className="mt-2 flex items-center gap-2">
-            <span className="inline-block px-2 py-0.5 text-[10px] font-mono font-bold bg-zinc-100 text-zinc-500 dark:bg-[#2a2a2a] dark:text-zinc-400 rounded uppercase tracking-wider">
+            <span className="inline-block px-2 py-0.5 text-[10px] font-mono font-bold bg-stone-100 text-neutral-500 dark:bg-[#2a2a2a] dark:text-neutral-400 rounded uppercase tracking-wider">
               {strategyId}
             </span>
           </div>
@@ -77,7 +77,7 @@ export default function StrategyDescription({ strategyId }: StrategyDescriptionP
       </div>
 
       {/* Horizontal Divider */}
-      <div className="h-px w-full bg-zinc-100 dark:bg-[#2a2a2a] mb-6" />
+      <div className="h-px w-full bg-stone-100 dark:bg-[#2a2a2a] mb-6" />
 
       {/* 2. Content Grid */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
@@ -85,19 +85,19 @@ export default function StrategyDescription({ strategyId }: StrategyDescriptionP
         {/* Left: Strategy Details (Main Content) */}
         <div className="lg:col-span-8 space-y-6">
           <section>
-            <div className="flex items-center gap-2 mb-3 text-[11px] font-black text-zinc-400 dark:text-neutral-500 uppercase tracking-widest">
+            <div className="flex items-center gap-2 mb-3 text-[11px] font-black text-neutral-400 dark:text-neutral-500 uppercase tracking-widest">
               <Search className="h-3.5 w-3.5" />
               <span>전략 메커니즘</span>
             </div>
-            <p className="text-[15px] leading-relaxed text-zinc-700 dark:text-zinc-300">
+            <p className="text-[15px] leading-relaxed text-neutral-700 dark:text-neutral-300">
               {content.description}
             </p>
           </section>
 
-          <section className="relative overflow-hidden rounded-xl bg-stone-50 p-4 border border-zinc-100 dark:bg-[#2a2a2a]/40 dark:border-[#2a2a2a]">
+          <section className="relative overflow-hidden rounded-xl bg-stone-50 p-4 border border-neutral-100 dark:bg-[#2a2a2a]/40 dark:border-[#2a2a2a]">
             <div className="flex gap-3">
               <Info className="h-4 w-4 text-blue-500 shrink-0 mt-0.5" />
-              <p className="text-sm text-zinc-600 dark:text-zinc-400 leading-snug">
+              <p className="text-sm text-neutral-600 dark:text-neutral-400 leading-snug">
                 {content.details}
               </p>
             </div>
@@ -130,11 +130,11 @@ export default function StrategyDescription({ strategyId }: StrategyDescriptionP
       </div>
 
       {/* 3. Footer: Disclaimer */}
-      <div className="mt-8 pt-5 border-t border-zinc-100 dark:border-[#2a2a2a]">
+      <div className="mt-8 pt-5 border-t border-neutral-100 dark:border-[#2a2a2a]">
         <div className="flex gap-2">
-          <ShieldCheck className="h-3.5 w-3.5 text-zinc-400 shrink-0 mt-0.5" />
-          <p className="text-[11px] text-zinc-400 dark:text-neutral-500 leading-relaxed italic">
-            <span className="font-bold text-zinc-500 dark:text-zinc-400 not-italic mr-1">Disclaimer:</span>
+          <ShieldCheck className="h-3.5 w-3.5 text-neutral-400 shrink-0 mt-0.5" />
+          <p className="text-[11px] text-neutral-400 dark:text-neutral-500 leading-relaxed italic">
+            <span className="font-bold text-neutral-500 dark:text-neutral-400 not-italic mr-1">Disclaimer:</span>
             {content.philosophy} 본 리스트는 알고리즘에 의한 필터링 결과이며 종목 추천이 아닙니다. 모든 투자의 결과와 책임은 투자자 본인에게 귀속됩니다.
           </p>
         </div>
@@ -147,11 +147,11 @@ export default function StrategyDescription({ strategyId }: StrategyDescriptionP
 function TermItem({ term, desc }: { term: string; desc: string }) {
   return (
     <div className="group">
-      <dt className="flex items-center gap-1.5 text-xs font-bold text-zinc-900 dark:text-zinc-200">
+      <dt className="flex items-center gap-1.5 text-xs font-bold text-neutral-900 dark:text-neutral-200">
         <ChevronRight className="h-2.5 w-2.5 text-blue-400 group-hover:translate-x-0.5 transition-transform" />
         {term}
       </dt>
-      <dd className="mt-1 ml-4 text-[11px] leading-normal text-zinc-500 dark:text-zinc-400">
+      <dd className="mt-1 ml-4 text-[11px] leading-normal text-neutral-500 dark:text-neutral-400">
         {desc}
       </dd>
     </div>

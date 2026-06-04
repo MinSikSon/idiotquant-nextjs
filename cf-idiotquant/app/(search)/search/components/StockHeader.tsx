@@ -46,7 +46,7 @@ export const StockHeader = ({ data, isUs, isFixed }: StockHeaderProps) => {
     >
       <div
         className={cn(
-          "bg-white dark:bg-[#1a1a1a] border-zinc-200 dark:border-[#2a2a2a] transition-all",
+          "bg-white dark:bg-[#1a1a1a] border-neutral-200 dark:border-[#2a2a2a] transition-all",
           isFixed 
             ? "rounded-none border-b shadow-lg backdrop-blur-md bg-white/90 dark:bg-[#111111]/90" 
             : "rounded-2xl border shadow-sm mx-auto"
@@ -74,7 +74,7 @@ export const StockHeader = ({ data, isUs, isFixed }: StockHeaderProps) => {
                 )}>
                   {config.price}
                 </span>
-                <span className="text-[10px] text-zinc-500 font-bold uppercase tracking-widest">
+                <span className="text-[10px] text-neutral-500 font-bold uppercase tracking-widest">
                   {config.currency}
                 </span>
               </div>
