@@ -153,12 +153,12 @@ function TableRow({ item, onClick }: { item: any; onClick: (ticker: string, name
 
     return (
         <div
-            className="group grid grid-cols-[minmax(140px,2fr)_minmax(100px,1fr)_80px_64px_64px_64px_80px] gap-4 items-center px-5 py-3.5 hover:bg-zinc-50 dark:hover:bg-zinc-800/40 cursor-pointer transition-colors"
+            className="group grid grid-cols-[minmax(160px,2.5fr)_minmax(110px,1fr)_88px_68px_68px_68px_88px] gap-4 items-center px-5 py-4 hover:bg-blue-50/40 dark:hover:bg-zinc-800/50 cursor-pointer transition-colors border-b border-zinc-100 dark:border-zinc-800 last:border-0"
             onClick={() => onClick(item.ticker, item.name)}
         >
             <div className="min-w-0">
-                <p className="font-mono font-black text-sm text-zinc-900 dark:text-white tracking-tight">{item.ticker}</p>
-                <p className="text-xs text-zinc-400 truncate font-medium mt-0.5">{item.name}</p>
+                <p className="font-bold text-sm text-zinc-900 dark:text-white truncate leading-tight">{item.name}</p>
+                <p className="text-[11px] text-zinc-400 font-mono mt-0.5 tracking-wider">{item.ticker}</p>
             </div>
 
             <div className="flex flex-wrap gap-1">
@@ -176,7 +176,7 @@ function TableRow({ item, onClick }: { item: any; onClick: (ticker: string, name
 
             <div className="text-right">
                 <span className={cn(
-                    "text-xs font-mono font-bold tabular-nums",
+                    "text-sm font-mono font-black tabular-nums",
                     ncav >= 1 ? "text-emerald-600 dark:text-emerald-400" :
                     ncav >= 0.7 ? "text-amber-500" : "text-zinc-400"
                 )}>
@@ -185,23 +185,24 @@ function TableRow({ item, onClick }: { item: any; onClick: (ticker: string, name
             </div>
 
             <div className="text-right">
-                <span className="text-xs font-mono text-zinc-600 dark:text-zinc-400 tabular-nums">
-                    {safeNum(item.pbr) > 0 ? `${safeNum(item.pbr).toFixed(2)}x` : "—"}
+                <span className="text-sm font-mono text-zinc-600 dark:text-zinc-300 tabular-nums">
+                    {safeNum(item.pbr) > 0 ? `${safeNum(item.pbr).toFixed(2)}` : "—"}
                 </span>
             </div>
 
             <div className="text-right">
-                <span className="text-xs font-mono text-zinc-600 dark:text-zinc-400 tabular-nums">
-                    {safeNum(item.per) > 0 ? `${safeNum(item.per).toFixed(1)}x` : "—"}
+                <span className="text-sm font-mono text-zinc-600 dark:text-zinc-300 tabular-nums">
+                    {safeNum(item.per) > 0 ? `${safeNum(item.per).toFixed(1)}` : "—"}
                 </span>
             </div>
 
             <div className="text-right">
                 <span className={cn(
-                    "text-xs font-mono tabular-nums",
-                    roe && roe > 15 ? "text-emerald-600 dark:text-emerald-400 font-bold" : "text-zinc-500"
+                    "text-sm font-mono tabular-nums",
+                    roe && roe > 15 ? "text-emerald-600 dark:text-emerald-400 font-bold" :
+                    roe && roe > 0 ? "text-zinc-600 dark:text-zinc-300" : "text-zinc-400"
                 )}>
-                    {roe !== null ? `${roe.toFixed(1)}%` : "—"}
+                    {roe !== null && roe > 0 ? `${roe.toFixed(1)}%` : "—"}
                 </span>
             </div>
 
@@ -228,16 +229,16 @@ function StockRowCard({ item, onClick }: { item: any; onClick: (ticker: string, 
 
     return (
         <div
-            className="bg-white dark:bg-zinc-900 rounded-2xl border border-zinc-200 dark:border-zinc-800 p-4 cursor-pointer hover:border-zinc-300 dark:hover:border-zinc-700 hover:shadow-md transition-all active:scale-[0.99]"
+            className="bg-white dark:bg-zinc-900 rounded-2xl border border-zinc-200 dark:border-zinc-800 p-4 cursor-pointer hover:border-blue-300 dark:hover:border-blue-700/50 hover:shadow-md transition-all active:scale-[0.99]"
             onClick={() => onClick(item.ticker, item.name)}
         >
             <div className="flex items-start justify-between gap-2 mb-3">
                 <div className="min-w-0">
-                    <p className="font-mono font-black text-sm text-zinc-900 dark:text-white">{item.ticker}</p>
-                    <p className="text-xs text-zinc-400 font-medium mt-0.5 truncate">{item.name}</p>
+                    <p className="font-bold text-base text-zinc-900 dark:text-white truncate leading-tight">{item.name}</p>
+                    <p className="text-[11px] text-zinc-400 font-mono tracking-wider mt-0.5">{item.ticker}</p>
                 </div>
                 <div className={cn(
-                    "shrink-0 px-2 py-1 rounded-lg text-xs font-black font-mono",
+                    "shrink-0 px-2.5 py-1.5 rounded-xl text-sm font-black font-mono",
                     ncav >= 1
                         ? "bg-emerald-100 dark:bg-emerald-950/50 text-emerald-700 dark:text-emerald-400"
                         : ncav >= 0.7
@@ -260,18 +261,18 @@ function StockRowCard({ item, onClick }: { item: any; onClick: (ticker: string, 
 
             <div className="grid grid-cols-3 gap-2 mb-3">
                 {[
-                    { label: "PBR", value: safeNum(item.pbr) > 0 ? `${safeNum(item.pbr).toFixed(2)}x` : "—" },
-                    { label: "PER", value: safeNum(item.per) > 0 ? `${safeNum(item.per).toFixed(1)}x` : "—" },
-                    { label: "ROE", value: roe !== null ? `${roe.toFixed(1)}%` : "—" },
+                    { label: "PBR", value: safeNum(item.pbr) > 0 ? `${safeNum(item.pbr).toFixed(2)}` : "—" },
+                    { label: "PER", value: safeNum(item.per) > 0 ? `${safeNum(item.per).toFixed(1)}` : "—" },
+                    { label: "ROE", value: roe !== null && roe > 0 ? `${roe.toFixed(1)}%` : "—" },
                 ].map(m => (
-                    <div key={m.label} className="text-center p-2 bg-zinc-50 dark:bg-zinc-800/50 rounded-lg">
+                    <div key={m.label} className="text-center p-2.5 bg-zinc-50 dark:bg-zinc-800/60 rounded-xl">
                         <p className="text-[9px] font-bold text-zinc-400 uppercase tracking-wider">{m.label}</p>
-                        <p className="text-xs font-mono font-bold text-zinc-700 dark:text-zinc-300 mt-0.5">{m.value}</p>
+                        <p className="text-sm font-mono font-bold text-zinc-700 dark:text-zinc-200 mt-0.5">{m.value}</p>
                     </div>
                 ))}
             </div>
 
-            <button className="w-full flex items-center justify-center gap-1.5 py-2 rounded-xl bg-zinc-100 dark:bg-zinc-800 hover:bg-blue-600 hover:text-white text-zinc-600 dark:text-zinc-400 text-xs font-bold transition-all">
+            <button className="w-full flex items-center justify-center gap-1.5 py-2.5 rounded-xl bg-zinc-100 dark:bg-zinc-800 hover:bg-blue-600 hover:text-white text-zinc-600 dark:text-zinc-400 text-xs font-bold transition-all">
                 상세 분석
                 <ChevronRight size={12} />
             </button>
@@ -602,9 +603,9 @@ function ScreenerContent() {
                     <>
                         {/* 데스크탑 테이블 */}
                         <div className="hidden md:block">
-                            <div className="bg-white dark:bg-zinc-900 rounded-2xl border border-zinc-200 dark:border-zinc-800 overflow-hidden">
-                                <div className="grid grid-cols-[minmax(140px,2fr)_minmax(100px,1fr)_80px_64px_64px_64px_80px] gap-4 items-center px-5 py-3 border-b border-zinc-100 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-800/50">
-                                    <SortableHeader label="종목" sortKey="ticker" currentKey={sortKey} order={sortOrder} onToggle={toggleSort} />
+                            <div className="bg-white dark:bg-zinc-900 rounded-2xl border border-zinc-200 dark:border-zinc-800 overflow-hidden shadow-sm">
+                                <div className="grid grid-cols-[minmax(160px,2.5fr)_minmax(110px,1fr)_88px_68px_68px_68px_88px] gap-4 items-center px-5 py-3.5 bg-zinc-50 dark:bg-zinc-800/60 border-b border-zinc-200 dark:border-zinc-700/60">
+                                    <SortableHeader label="종목명" sortKey="ticker" currentKey={sortKey} order={sortOrder} onToggle={toggleSort} />
                                     <div className="text-[10px] font-bold text-zinc-400 uppercase tracking-wider">전략</div>
                                     <SortableHeader label="NCAV 비율" sortKey="ncav_ratio" currentKey={sortKey} order={sortOrder} onToggle={toggleSort} />
                                     <SortableHeader label="PBR" sortKey="pbr" currentKey={sortKey} order={sortOrder} onToggle={toggleSort} />
@@ -612,7 +613,7 @@ function ScreenerContent() {
                                     <SortableHeader label="ROE" sortKey="roe" currentKey={sortKey} order={sortOrder} onToggle={toggleSort} />
                                     <div />
                                 </div>
-                                <div className="divide-y divide-zinc-100 dark:divide-zinc-800">
+                                <div>
                                     {visibleList.map((item: any) => (
                                         <TableRow key={item.ticker} item={item} onClick={handleStockClick} />
                                     ))}
