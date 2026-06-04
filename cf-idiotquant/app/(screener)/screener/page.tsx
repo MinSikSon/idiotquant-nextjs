@@ -290,6 +290,7 @@ function ScreenerContent() {
     const ncavDailyList = useAppSelector(selectNcavDailyList);
 
     const [activeStrategyIds, setActiveStrategyIds] = useState<Set<string>>(new Set());
+    const [filterMode, setFilterMode] = useState<'OR' | 'AND'>('OR');
     const [showGuide, setShowGuide] = useState(false);
     const [sortKey, setSortKey] = useState<DiscoverySortKey>("ncav_ratio");
     const [sortOrder, setSortOrder] = useState<SortOrder>("desc");
@@ -344,6 +345,7 @@ function ScreenerContent() {
 
     const clearStrategies = useCallback(() => {
         setActiveStrategyIds(new Set());
+        setFilterMode('OR');
         setDisplayCount(DAILY_PAGE_SIZE);
     }, []);
 
@@ -364,10 +366,10 @@ function ScreenerContent() {
     const filteredList = useMemo(() => {
         let list = [...ncavDailyList.list] as Record<string, any>[];
 
-        // 복수 전략 선택 시 OR 조합 (하나 이상 충족)
         if (activeStrategyIds.size > 0) {
-            list = list.filter(item =>
-                Array.from(activeStrategyIds).some(stratId => {
+            const check = filterMode === 'AND' ? 'every' : 'some';
+            list = list.filter((item) =>
+                Array.from(activeStrategyIds)[check]((stratId) => {
                     const preset = STRATEGY_PRESETS.find(p => p.id === stratId);
                     if (preset?.clientFilter) return preset.clientFilter(item);
                     return (item.strategies ?? []).includes(stratId);
@@ -403,7 +405,7 @@ function ScreenerContent() {
         });
 
         return list;
-    }, [ncavDailyList.list, activeStrategyIds, searchQuery, excludeHoldings, excludeDeficit, sortKey, sortOrder]);
+    }, [ncavDailyList.list, activeStrategyIds, filterMode, searchQuery, excludeHoldings, excludeDeficit, sortKey, sortOrder]);
 
     const visibleList = filteredList.slice(0, displayCount);
     const hasMore = filteredList.length > displayCount;
@@ -551,7 +553,34 @@ function ScreenerContent() {
                                     </span>
                                 );
                             })}
-                            <span className="text-[10px] text-zinc-400">중 하나 이상 충족 · {filteredList.length}개</span>
+                            {/* OR / AND 토글 */}
+                            <div className="flex items-center rounded-full border border-zinc-200 dark:border-zinc-700 overflow-hidden text-[10px] font-black">
+                                <button
+                                    onClick={() => setFilterMode('OR')}
+                                    className={cn(
+                                        "px-2 py-0.5 transition-colors",
+                                        filterMode === 'OR'
+                                            ? "bg-blue-600 text-white"
+                                            : "text-zinc-500 dark:text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-800"
+                                    )}
+                                >
+                                    OR
+                                </button>
+                                <button
+                                    onClick={() => setFilterMode('AND')}
+                                    className={cn(
+                                        "px-2 py-0.5 transition-colors border-l border-zinc-200 dark:border-zinc-700",
+                                        filterMode === 'AND'
+                                            ? "bg-blue-600 text-white"
+                                            : "text-zinc-500 dark:text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-800"
+                                    )}
+                                >
+                                    AND
+                                </button>
+                            </div>
+                            <span className="text-[10px] text-zinc-400">
+                                {filterMode === 'AND' ? '모두 충족' : '중 하나 이상 충족'} · {filteredList.length}개
+                            </span>
                         </div>
                     )}
                 </div>
@@ -603,7 +632,7 @@ function ScreenerContent() {
                             ))}
                         </div>
                         <p className="mt-3 text-[10px] text-zinc-400 dark:text-zinc-500">
-                            · 전략 카드를 클릭하면 필터에 추가됩니다. 복수 선택 시 해당 전략 중 하나 이상 충족 종목을 표시합니다.
+                            · 전략 카드를 클릭하면 필터에 추가됩니다. 복수 선택 후 OR(하나 이상 충족) 또는 AND(모두 충족) 조합 방식을 선택할 수 있습니다.
                         </p>
                     </div>
                 </div>
