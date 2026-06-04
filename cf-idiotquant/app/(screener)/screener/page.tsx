@@ -3,7 +3,7 @@
 export const dynamic = 'force-dynamic';
 
 import { useEffect, useMemo, useState, useCallback, useRef, Suspense } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useAppDispatch, useAppSelector } from "@/lib/hooks";
 import {
     selectNcavDailyDates, selectNcavDailyList,
@@ -299,21 +299,39 @@ function StockRowCard({ item, onClick }: { item: any; onClick: (ticker: string, 
 // =========================================================================
 // 메인 스크리너
 // =========================================================================
+const VALID_SORT_KEYS: DiscoverySortKey[] = ["ticker", "ncav_ratio", "per", "pbr", "roe", "market_cap", "last_price"];
+
 function ScreenerContent() {
     const dispatch = useAppDispatch();
     const router = useRouter();
+    const searchParams = useSearchParams();
     const ncavDailyDates = useAppSelector(selectNcavDailyDates);
     const ncavDailyList = useAppSelector(selectNcavDailyList);
 
-    const [activeStrategyIds, setActiveStrategyIds] = useState<Set<string>>(new Set());
-    const [filterMode, setFilterMode] = useState<'OR' | 'AND'>('OR');
+    // URL query params → 상태 초기화 (페이지 재진입 시에도 필터 유지)
+    const [activeStrategyIds, setActiveStrategyIds] = useState<Set<string>>(() => {
+        const s = searchParams.get('strategies');
+        return s ? new Set(s.split(',').filter(id => STRATEGY_PRESETS.some(p => p.id === id))) : new Set();
+    });
+    const [filterMode, setFilterMode] = useState<'OR' | 'AND'>(() =>
+        searchParams.get('mode') === 'AND' ? 'AND' : 'OR'
+    );
     const [showGuide, setShowGuide] = useState(false);
-    const [sortKey, setSortKey] = useState<DiscoverySortKey>("ncav_ratio");
-    const [sortOrder, setSortOrder] = useState<SortOrder>("desc");
+    const [sortKey, setSortKey] = useState<DiscoverySortKey>(() => {
+        const s = searchParams.get('sort') as DiscoverySortKey;
+        return VALID_SORT_KEYS.includes(s) ? s : 'ncav_ratio';
+    });
+    const [sortOrder, setSortOrder] = useState<SortOrder>(() =>
+        searchParams.get('order') === 'asc' ? 'asc' : 'desc'
+    );
     const [searchQuery, setSearchQuery] = useState("");
     const [displayCount, setDisplayCount] = useState(DAILY_PAGE_SIZE);
-    const [excludeHoldings, setExcludeHoldings] = useState(false);
-    const [excludeDeficit, setExcludeDeficit] = useState(false);
+    const [excludeHoldings, setExcludeHoldings] = useState(() =>
+        searchParams.get('exclude')?.split(',').includes('holdings') ?? false
+    );
+    const [excludeDeficit, setExcludeDeficit] = useState(() =>
+        searchParams.get('exclude')?.split(',').includes('deficit') ?? false
+    );
     const [filterOpen, setFilterOpen] = useState(false);
 
     const hasDiscovered = useRef(false);
@@ -334,6 +352,27 @@ function ScreenerContent() {
             dispatch(reqDiscoverNcavDates(ncavDailyList.scanDate));
         }
     }, [ncavDailyList.state, ncavDailyList.scanDate, ncavDailyDates.dates.length, dispatch]);
+
+    // 필터 상태 → URL 동기화 (다른 페이지 다녀와도 필터 유지)
+    useEffect(() => {
+        const params = new URLSearchParams();
+        if (activeStrategyIds.size > 0)
+            params.set('strategies', Array.from(activeStrategyIds).join(','));
+        if (filterMode !== 'OR')
+            params.set('mode', filterMode);
+        if (sortKey !== 'ncav_ratio')
+            params.set('sort', sortKey);
+        if (sortOrder !== 'desc')
+            params.set('order', sortOrder);
+        const excludeList = [
+            excludeHoldings ? 'holdings' : null,
+            excludeDeficit ? 'deficit' : null,
+        ].filter(Boolean).join(',');
+        if (excludeList) params.set('exclude', excludeList);
+
+        const qs = params.toString();
+        router.replace(qs ? `/screener?${qs}` : '/screener', { scroll: false });
+    }, [activeStrategyIds, filterMode, sortKey, sortOrder, excludeHoldings, excludeDeficit, router]);
 
     const handleRefresh = useCallback(() => {
         dispatch(reqGetNcavDailyList("latest"));
@@ -362,6 +401,17 @@ function ScreenerContent() {
     const clearStrategies = useCallback(() => {
         setActiveStrategyIds(new Set());
         setFilterMode('OR');
+        setDisplayCount(DAILY_PAGE_SIZE);
+    }, []);
+
+    const resetAllFilters = useCallback(() => {
+        setActiveStrategyIds(new Set());
+        setFilterMode('OR');
+        setSortKey('ncav_ratio');
+        setSortOrder('desc');
+        setSearchQuery('');
+        setExcludeHoldings(false);
+        setExcludeDeficit(false);
         setDisplayCount(DAILY_PAGE_SIZE);
     }, []);
 
@@ -435,6 +485,7 @@ function ScreenerContent() {
 
     const activeFilterCount = [excludeHoldings, excludeDeficit].filter(Boolean).length;
     const isAllActive = activeStrategyIds.size === 0;
+    const hasActiveFilters = activeStrategyIds.size > 0 || excludeHoldings || excludeDeficit || sortKey !== 'ncav_ratio' || sortOrder !== 'desc';
 
     return (
         <Tooltip.Provider delayDuration={300}>
@@ -545,6 +596,18 @@ function ScreenerContent() {
                             <Info size={12} />
                             <span className="hidden sm:inline">전략 안내</span>
                         </button>
+
+                        {/* 필터 초기화 버튼 */}
+                        {hasActiveFilters && (
+                            <button
+                                onClick={resetAllFilters}
+                                className="shrink-0 flex items-center gap-1 px-2.5 py-1.5 rounded-lg border border-red-200 dark:border-red-800/50 text-xs font-bold text-red-500 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/20 transition-all bg-white dark:bg-zinc-900"
+                                title="모든 필터 초기화"
+                            >
+                                <X size={12} />
+                                <span className="hidden sm:inline">초기화</span>
+                            </button>
+                        )}
                     </div>
 
                     {/* 선택된 전략 조합 안내 */}
