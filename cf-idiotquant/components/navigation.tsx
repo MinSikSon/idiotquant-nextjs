@@ -19,7 +19,7 @@ import {
   ChevronDownIcon,
   ArrowRightOnRectangleIcon,
 } from "@heroicons/react/24/outline";
-import { useSession } from "next-auth/react";
+import { useSession, signOut } from "next-auth/react";
 import ThemeChanger from "@/components/theme_changer";
 import { cn } from "@/lib/utils";
 import { EyeIcon, TrendingUp, TrendingDown, Activity } from "lucide-react";
@@ -239,6 +239,17 @@ function SessionButton({
   session: any;
   status: string;
 }) {
+  const [open, setOpen] = useState(false);
+  const ref = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const handler = (e: MouseEvent) => {
+      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
+    };
+    document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
+  }, []);
+
   if (status === "loading") {
     return (
       <div className="w-20 h-7 rounded-lg bg-zinc-100 dark:bg-zinc-800 animate-pulse" />
@@ -247,14 +258,42 @@ function SessionButton({
 
   if (status === "authenticated") {
     return (
-      <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-zinc-100 dark:bg-zinc-800">
-        <div className="w-5 h-5 rounded-full bg-gradient-to-br from-blue-400 to-indigo-500 flex items-center justify-center text-white text-[9px] font-black">
-          {session?.user?.name?.[0] ?? "U"}
-        </div>
-        <span className="text-xs font-bold text-zinc-700 dark:text-zinc-300 max-w-[80px] truncate">
-          {session?.user?.name}
-        </span>
-        <div className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
+      <div ref={ref} className="relative">
+        <button
+          onClick={() => setOpen((v) => !v)}
+          className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-zinc-100 dark:bg-zinc-800 hover:bg-zinc-200 dark:hover:bg-zinc-700 transition-colors"
+        >
+          <div className="w-5 h-5 rounded-full bg-gradient-to-br from-blue-400 to-indigo-500 flex items-center justify-center text-white text-[9px] font-black">
+            {session?.user?.name?.[0] ?? "U"}
+          </div>
+          <span className="text-xs font-bold text-zinc-700 dark:text-zinc-300 max-w-[80px] truncate">
+            {session?.user?.name}
+          </span>
+          <div className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
+        </button>
+
+        {open && (
+          <div className="absolute right-0 top-[calc(100%+8px)] w-48 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-700/80 rounded-xl shadow-xl overflow-hidden z-50">
+            <div className="px-4 py-3 border-b border-zinc-100 dark:border-zinc-800">
+              <p className="text-xs font-black text-zinc-900 dark:text-white truncate">
+                {session?.user?.name}
+              </p>
+              <p className="text-[10px] text-emerald-600 dark:text-emerald-400 mt-0.5 flex items-center gap-1">
+                <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 inline-block" />
+                로그인 중
+              </p>
+            </div>
+            <div className="p-1">
+              <button
+                onClick={() => { setOpen(false); signOut({ callbackUrl: "/" }); }}
+                className="w-full flex items-center gap-2.5 px-3 py-2.5 rounded-lg text-xs font-bold text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/30 transition-colors"
+              >
+                <ArrowRightOnRectangleIcon className="w-4 h-4" />
+                로그아웃
+              </button>
+            </div>
+          </div>
+        )}
       </div>
     );
   }
@@ -512,6 +551,18 @@ export function NavbarWithSimpleLinks() {
                   </Link>
                 )}
               </div>
+
+              {status === "authenticated" && (
+                <div className="mt-3 pt-3 border-t border-emerald-200/60 dark:border-emerald-900/40">
+                  <button
+                    onClick={() => { closeDrawer(); signOut({ callbackUrl: "/" }); }}
+                    className="w-full flex items-center justify-center gap-2 py-2 rounded-xl text-xs font-bold text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/30 border border-red-200/50 dark:border-red-900/30 transition-colors"
+                  >
+                    <ArrowRightOnRectangleIcon className="w-3.5 h-3.5" />
+                    로그아웃
+                  </button>
+                </div>
+              )}
             </div>
 
             {/* Strategy links */}
