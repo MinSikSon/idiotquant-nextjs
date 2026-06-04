@@ -105,13 +105,18 @@ function SidebarUser({ session, status }: { session: any; status: string }) {
   if (status === "authenticated") {
     return (
       <div className="px-3 pb-4">
-        <div className="flex items-center gap-2.5 px-3 py-2.5 rounded-xl bg-stone-100 dark:bg-[#1f1f1f]">
-          <div className="w-7 h-7 rounded-full bg-neutral-200 dark:bg-[#3a3a3a] flex items-center justify-center text-neutral-700 dark:text-neutral-200 text-[10px] font-black shrink-0">
-            {session?.user?.name?.[0] ?? "U"}
-          </div>
-          <span className="flex-1 text-xs font-semibold text-neutral-700 dark:text-neutral-300 truncate min-w-0">
-            {session?.user?.name}
-          </span>
+        <div className="flex items-center gap-1 px-1 py-0.5 rounded-xl bg-stone-100 dark:bg-[#1f1f1f]">
+          <Link
+            href="/profile"
+            className="flex items-center gap-2 flex-1 px-2 py-2 rounded-lg hover:bg-stone-200/60 dark:hover:bg-[#2a2a2a] transition-colors min-w-0"
+          >
+            <div className="w-7 h-7 rounded-full bg-neutral-200 dark:bg-[#3a3a3a] flex items-center justify-center text-neutral-700 dark:text-neutral-200 text-[10px] font-black shrink-0">
+              {session?.user?.name?.[0] ?? "U"}
+            </div>
+            <span className="text-xs font-semibold text-neutral-700 dark:text-neutral-300 truncate min-w-0">
+              {session?.user?.name}
+            </span>
+          </Link>
           <button
             onClick={() => signOut({ callbackUrl: "/" })}
             className="p-1.5 rounded-lg text-neutral-400 hover:text-red-500 dark:hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/20 transition-colors shrink-0"
@@ -145,9 +150,12 @@ function MiniSession({ session, status }: { session: any; status: string }) {
 
   if (status === "authenticated") {
     return (
-      <div className="w-7 h-7 rounded-full bg-neutral-200 dark:bg-[#3a3a3a] flex items-center justify-center text-neutral-700 dark:text-neutral-200 text-[10px] font-black shrink-0">
+      <Link
+        href="/profile"
+        className="w-7 h-7 rounded-full bg-neutral-200 dark:bg-[#3a3a3a] flex items-center justify-center text-neutral-700 dark:text-neutral-200 text-[10px] font-black shrink-0 hover:ring-2 hover:ring-blue-400/50 transition-all"
+      >
         {session?.user?.name?.[0] ?? "U"}
-      </div>
+      </Link>
     );
   }
 
