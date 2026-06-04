@@ -496,7 +496,7 @@ export function getKrNcavGrade(kiBS: any, kiChart: any) {
     const lblt = Number(kiBS.output?.[0]?.total_lblt || 0) * ONE_HUNDRED_MILLION;
     const lstn = Number(kiChart?.output1?.lstn_stcn ?? 1);
     const prpr = Number(kiChart?.output1?.stck_prpr ?? 0);
-    if (!lstn || !prpr) return { grade: "N/A", color: "text-zinc-400", cardGradeColor: "from-zinc-500/20 to-zinc-500/5" };
+    if (!lstn || !prpr) return { grade: "N/A", color: "text-neutral-400", cardGradeColor: "from-zinc-500/20 to-zinc-500/5" };
     const targetPrice = (cras - lblt) / lstn;
     const returnPct = ((targetPrice / prpr) - 1) * 100;
     if (returnPct >= 200) return { grade: "SSS", color: "text-yellow-500", cardGradeColor: "from-yellow-500/30 via-amber-500/10 to-transparent" };

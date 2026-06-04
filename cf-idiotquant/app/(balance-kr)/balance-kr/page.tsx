@@ -85,12 +85,12 @@ export interface KoreaInvestmentBalance {
 // =========================================================================
 // 상세 지표 칩 (스크롤 스트립용)
 // =========================================================================
-function MetricChip({ label, value, valueClass = "text-zinc-900 dark:text-zinc-100" }: {
+function MetricChip({ label, value, valueClass = "text-neutral-900 dark:text-neutral-100" }: {
   label: string; value: string; valueClass?: string;
 }) {
   return (
-    <div className="bg-white dark:bg-[#1a1a1a] border border-zinc-200 dark:border-[#2a2a2a] rounded-xl px-4 py-2.5 flex flex-col gap-0.5 shrink-0">
-      <span className="text-[9px] font-black text-zinc-400 dark:text-zinc-500 uppercase tracking-widest whitespace-nowrap">{label}</span>
+    <div className="bg-white dark:bg-[#1a1a1a] border border-neutral-200 dark:border-[#2a2a2a] rounded-xl px-4 py-2.5 flex flex-col gap-0.5 shrink-0">
+      <span className="text-[9px] font-black text-neutral-400 dark:text-neutral-500 uppercase tracking-widest whitespace-nowrap">{label}</span>
       <span className={cn("text-xs font-mono font-black whitespace-nowrap", valueClass)}>{value}</span>
     </div>
   );
@@ -104,10 +104,10 @@ function OrderRow({ item, isNccs }: { item: any; isNccs: boolean }) {
   return (
     <tr className="hover:bg-stone-100 dark:hover:bg-[#1a1a1a]/40 transition-colors group">
       <td className="py-3.5 px-4">
-        <span className="block text-xs font-semibold text-zinc-700 dark:text-zinc-300">
+        <span className="block text-xs font-semibold text-neutral-700 dark:text-neutral-300">
           {isNccs ? "대기 중" : formatTime(item.ccld_time)}
         </span>
-        <span className="text-[10px] font-mono text-zinc-400 block mt-0.5">No. {item.odno}</span>
+        <span className="text-[10px] font-mono text-neutral-400 block mt-0.5">No. {item.odno}</span>
       </td>
       <td className="py-3.5 px-4">
         <span className={cn(
@@ -120,24 +120,24 @@ function OrderRow({ item, isNccs }: { item: any; isNccs: boolean }) {
         </span>
       </td>
       <td className="py-3.5 px-4">
-        <span className="font-bold text-zinc-900 dark:text-white text-xs block">{item.prdt_name}</span>
-        <span className="text-[10px] font-mono text-zinc-400">{item.pdno}</span>
+        <span className="font-bold text-neutral-900 dark:text-white text-xs block">{item.prdt_name}</span>
+        <span className="text-[10px] font-mono text-neutral-400">{item.pdno}</span>
       </td>
       <td className="py-3.5 px-4 text-right">
-        <span className="block text-xs font-medium text-zinc-700 dark:text-zinc-300">
+        <span className="block text-xs font-medium text-neutral-700 dark:text-neutral-300">
           {Number(item.ord_unpr).toLocaleString()}원
         </span>
-        <span className="text-[10px] text-zinc-400">{item.ord_qty}주</span>
+        <span className="text-[10px] text-neutral-400">{item.ord_qty}주</span>
       </td>
       <td className="py-3.5 px-4 text-right">
         {isNccs ? (
           <>
-            <span className="block text-xs text-zinc-400">-</span>
-            <span className="text-[10px] text-zinc-400">{item.tot_ccld_qty}주 완료</span>
+            <span className="block text-xs text-neutral-400">-</span>
+            <span className="text-[10px] text-neutral-400">{item.tot_ccld_qty}주 완료</span>
           </>
         ) : (
           <>
-            <span className="block text-xs font-black text-zinc-900 dark:text-white">
+            <span className="block text-xs font-black text-neutral-900 dark:text-white">
               {Number(item.ccld_unpr) > 0 ? `${Number(item.ccld_unpr).toLocaleString()}원` : "-"}
             </span>
             <span className="text-[10px] font-bold text-emerald-500">{item.tot_ccld_qty}주</span>
@@ -149,7 +149,7 @@ function OrderRow({ item, isNccs }: { item: any; isNccs: boolean }) {
           "text-xs font-mono font-black px-2 py-0.5 rounded-full",
           isNccs
             ? "bg-amber-50 text-amber-600 dark:bg-amber-950/30"
-            : "text-zinc-400"
+            : "text-neutral-400"
         )}>
           {(item.ccld_nyqty || item.not_ccld_qty || 0)}주
         </span>
@@ -324,19 +324,19 @@ function BalanceKr() {
         <header className="flex flex-col md:flex-row md:items-end justify-between gap-5">
           <div className="space-y-2.5">
             {/* 브레드크럼 */}
-            <nav className="flex items-center gap-1.5 text-[11px] font-semibold text-zinc-400 flex-wrap">
+            <nav className="flex items-center gap-1.5 text-[11px] font-semibold text-neutral-400 flex-wrap">
               <span className="flex items-center gap-1">
                 <LayoutDashboard size={12} />
                 투자 현황
               </span>
-              <ChevronRight size={11} className="text-zinc-300 dark:text-zinc-600" />
+              <ChevronRight size={11} className="text-neutral-300 dark:text-neutral-600" />
               <span className="flex items-center gap-1 text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/20 px-2 py-0.5 rounded-md">
                 <MapPin size={11} />한국(KR)
               </span>
               {currentKakaoUser && (
                 <>
-                  <ChevronRight size={11} className="text-zinc-300 dark:text-zinc-600" />
-                  <span className="flex items-center gap-1 text-zinc-600 dark:text-zinc-300 bg-zinc-200/60 dark:bg-[#1a1a1a] px-2 py-0.5 rounded-md">
+                  <ChevronRight size={11} className="text-neutral-300 dark:text-neutral-600" />
+                  <span className="flex items-center gap-1 text-neutral-600 dark:text-neutral-300 bg-neutral-200/60 dark:bg-[#1a1a1a] px-2 py-0.5 rounded-md">
                     <User size={10} />
                     {currentKakaoUser.name || balanceKey}
                   </span>
@@ -346,12 +346,12 @@ function BalanceKr() {
 
             {/* 타이틀 */}
             <div className="flex items-center gap-3 flex-wrap">
-              <h1 className="text-3xl md:text-4xl font-black tracking-tighter bg-gradient-to-r from-zinc-900 to-zinc-500 dark:from-white dark:to-zinc-400 bg-clip-text text-transparent">
+              <h1 className="text-3xl md:text-4xl font-black tracking-tighter bg-gradient-to-r from-neutral-900 to-neutral-500 dark:from-white dark:to-neutral-400 bg-clip-text text-transparent">
                 Portfolio Balance
               </h1>
               <span className="text-2xl select-none" aria-hidden>🇰🇷</span>
               {!isLoading && totalEvalAmt > 0 && (
-                <span className="text-sm font-mono font-black text-zinc-400 dark:text-zinc-500 bg-stone-100 dark:bg-[#1a1a1a] px-2.5 py-1 rounded-lg border border-zinc-200 dark:border-[#222222]">
+                <span className="text-sm font-mono font-black text-neutral-400 dark:text-neutral-500 bg-stone-100 dark:bg-[#1a1a1a] px-2.5 py-1 rounded-lg border border-neutral-200 dark:border-[#222222]">
                   {totalEvalAmt.toLocaleString()}원
                 </span>
               )}
@@ -359,12 +359,12 @@ function BalanceKr() {
 
             {/* 마지막 업데이트 */}
             {lastUpdated ? (
-              <p className="flex items-center gap-1.5 text-[11px] text-zinc-400 font-mono">
+              <p className="flex items-center gap-1.5 text-[11px] text-neutral-400 font-mono">
                 <Clock size={11} />
                 {lastUpdated.toLocaleTimeString("ko-KR")} 기준
               </p>
             ) : (
-              <div className="h-4 w-40 rounded bg-zinc-200 dark:bg-[#1a1a1a] animate-pulse" />
+              <div className="h-4 w-40 rounded bg-neutral-200 dark:bg-[#1a1a1a] animate-pulse" />
             )}
           </div>
 
@@ -375,7 +375,7 @@ function BalanceKr() {
               isLoading={isLoading}
               onRefresh={handleRefresh}
             />
-            <span className="text-[10px] font-mono text-zinc-400 bg-stone-100 dark:bg-[#1a1a1a] border border-zinc-200 dark:border-[#2a2a2a] px-2.5 py-1 rounded-lg">
+            <span className="text-[10px] font-mono text-neutral-400 bg-stone-100 dark:bg-[#1a1a1a] border border-neutral-200 dark:border-[#2a2a2a] px-2.5 py-1 rounded-lg">
               ID: {String(balanceKey).slice(0, 8) || "N/A"}
             </span>
           </div>
@@ -418,7 +418,7 @@ function BalanceKr() {
             value={isLoading ? null : `${isPnlPositive ? "▲ +" : "▼ "}${pnlRate.toFixed(2)}%`}
             sub={isLoading ? "" : `당일 증감 ${isDailyPositive ? "+" : ""}${asstIcdcErngRt.toFixed(2)}%`}
             icon={<Percent size={15} />}
-            iconBg="bg-stone-100 dark:bg-[#1a1a1a] text-zinc-500"
+            iconBg="bg-stone-100 dark:bg-[#1a1a1a] text-neutral-500"
             valueColor={pnlValueColor(isPnlPositive)}
             accentColor={pnlAccentColor(isPnlPositive)}
           />
@@ -507,7 +507,7 @@ function BalanceKr() {
                 krCapital.state === "pending"
                   ? <span className="text-[10px] font-mono text-amber-500 bg-amber-50 dark:bg-amber-950/20 px-2 py-0.5 rounded-full border border-amber-200 dark:border-amber-800 animate-pulse">로딩 중</span>
                   : krCapital.stock_list?.length > 0
-                  ? <span className="text-[10px] font-mono text-zinc-500 dark:text-zinc-400 bg-stone-100 dark:bg-[#1a1a1a] px-2 py-0.5 rounded-full">{krCapital.stock_list.length}종목</span>
+                  ? <span className="text-[10px] font-mono text-neutral-500 dark:text-neutral-400 bg-stone-100 dark:bg-[#1a1a1a] px-2 py-0.5 rounded-full">{krCapital.stock_list.length}종목</span>
                   : null
               }
             />
@@ -541,7 +541,7 @@ function BalanceKr() {
             }
           />
 
-          <div className="overflow-x-auto rounded-xl border border-zinc-100 dark:border-[#2a2a2a]">
+          <div className="overflow-x-auto rounded-xl border border-neutral-100 dark:border-[#2a2a2a]">
             <table className="w-full text-sm text-left min-w-[600px]">
               <TableHeader headers={[
                 { label: "주문시간 / 번호" },
@@ -551,7 +551,7 @@ function BalanceKr() {
                 { label: "체결가 / 수량", align: "text-right" },
                 { label: "미체결", align: "text-right" },
               ]} />
-              <tbody className="divide-y divide-zinc-50 dark:divide-[#2a2a2a]/40">
+              <tbody className="divide-y divide-neutral-50 dark:divide-[#2a2a2a]/40">
                 {viewerTab === "ccnl" ? (
                   krCcnl.output?.length > 0
                     ? krCcnl.output.map((item, i) => (

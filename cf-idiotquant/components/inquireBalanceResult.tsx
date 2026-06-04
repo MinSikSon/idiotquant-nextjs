@@ -188,7 +188,7 @@ export default function InquireBalanceResult(props: InquireBalanceResultProps) {
                         <h1 className="text-lg font-black tracking-tight dark:text-white">
                             {isUs ? "미국 주식 실시간 잔고 (원화 환산)" : "국내 주식 실시간 잔고"}
                         </h1>
-                        <p className="text-[10px] text-zinc-500 font-medium uppercase tracking-wider">Real-time Portfolio</p>
+                        <p className="text-[10px] text-neutral-500 font-medium uppercase tracking-wider">Real-time Portfolio</p>
                     </div>
                 </div>
 
@@ -196,7 +196,7 @@ export default function InquireBalanceResult(props: InquireBalanceResultProps) {
                     {/* 🔍 실시간 신규 종목 검색 및 주문 컴포넌트 */}
                     <div className="relative min-w-[260px]">
                         <div className="relative">
-                            <Search size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-zinc-400" />
+                            <Search size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-neutral-400" />
                             <input
                                 type="text"
                                 value={searchQuery}
@@ -206,12 +206,12 @@ export default function InquireBalanceResult(props: InquireBalanceResultProps) {
                                     setIsDropdownOpen(true);
                                 }}
                                 placeholder={isUs ? "티커 또는 미국 ETF 검색..." : "종목코드 또는 국내 주식 검색..."}
-                                className="w-full pl-10 pr-10 py-2 bg-white dark:bg-[#1a1a1a] border border-zinc-200 dark:border-[#2a2a2a] rounded-xl text-xs font-bold focus:outline-none focus:ring-2 focus:ring-blue-600 focus:border-transparent dark:text-white"
+                                className="w-full pl-10 pr-10 py-2 bg-white dark:bg-[#1a1a1a] border border-neutral-200 dark:border-[#2a2a2a] rounded-xl text-xs font-bold focus:outline-none focus:ring-2 focus:ring-blue-600 focus:border-transparent dark:text-white"
                             />
                             {searchQuery && (
                                 <button 
                                     onClick={() => setSearchQuery("")}
-                                    className="absolute right-3 top-1/2 -translate-y-1/2 p-0.5 hover:bg-zinc-100 dark:hover:bg-zinc-800 rounded-full text-zinc-400"
+                                    className="absolute right-3 top-1/2 -translate-y-1/2 p-0.5 hover:bg-stone-100 dark:hover:bg-[#2a2a2a] rounded-full text-neutral-400"
                                 >
                                     <X size={12} />
                                 </button>
@@ -222,27 +222,27 @@ export default function InquireBalanceResult(props: InquireBalanceResultProps) {
                         {isDropdownOpen && searchQuery.trim() && (
                             <>
                                 <div className="fixed inset-0 z-10" onClick={() => setIsDropdownOpen(false)} />
-                                <div className="absolute left-0 right-0 mt-2 max-h-60 overflow-y-auto bg-white dark:bg-[#1a1a1a] border border-zinc-200 dark:border-[#2a2a2a] rounded-2xl shadow-xl z-20 divide-y divide-zinc-100 dark:divide-[#2a2a2a]">
+                                <div className="absolute left-0 right-0 mt-2 max-h-60 overflow-y-auto bg-white dark:bg-[#1a1a1a] border border-neutral-200 dark:border-[#2a2a2a] rounded-2xl shadow-xl z-20 divide-y divide-neutral-100 dark:divide-[#2a2a2a]">
                                     {filteredSearchResults.length > 0 ? (
                                         filteredSearchResults.map((stock) => (
                                             <div
                                                 key={stock.pdno}
                                                 onClick={() => handleOpenOrderModal(stock)}
-                                                className="flex items-center justify-between p-3.5 hover:bg-stone-50 dark:hover:bg-zinc-800/50 cursor-pointer transition-colors group"
+                                                className="flex items-center justify-between p-3.5 hover:bg-stone-50 dark:hover:bg-[#2a2a2a]/50 cursor-pointer transition-colors group"
                                             >
                                                 <div className="flex flex-col">
-                                                    <span className="text-xs font-black dark:text-zinc-200 group-hover:text-blue-600 transition-colors">
+                                                    <span className="text-xs font-black dark:text-neutral-200 group-hover:text-blue-600 transition-colors">
                                                         {stock.prdt_name}
                                                     </span>
-                                                    <span className="text-[10px] font-mono text-zinc-400 mt-0.5">
+                                                    <span className="text-[10px] font-mono text-neutral-400 mt-0.5">
                                                         {stock.pdno} {stock.ovrs_excg_cd ? `• ${stock.ovrs_excg_cd}` : ""}
                                                     </span>
                                                 </div>
-                                                <PlusCircle size={16} className="text-zinc-400 group-hover:text-blue-600 transition-colors" />
+                                                <PlusCircle size={16} className="text-neutral-400 group-hover:text-blue-600 transition-colors" />
                                             </div>
                                         ))
                                     ) : (
-                                        <div className="p-4 text-center text-xs font-medium text-zinc-400">
+                                        <div className="p-4 text-center text-xs font-medium text-neutral-400">
                                             검색 결과가 없습니다.
                                         </div>
                                     )}
@@ -252,7 +252,7 @@ export default function InquireBalanceResult(props: InquireBalanceResultProps) {
                     </div>
 
                     <div className="flex items-center gap-2">
-                        <span className="px-2 py-1 bg-zinc-200 dark:bg-[#2a2a2a] rounded text-[10px] font-black text-zinc-600 dark:text-zinc-400 shrink-0">
+                        <span className="px-2 py-1 bg-neutral-200 dark:bg-[#2a2a2a] rounded text-[10px] font-black text-neutral-600 dark:text-neutral-400 shrink-0">
                             {isUs ? "KRW (고시환율 정산)" : "KRW"}
                         </span>
                         <button
@@ -272,9 +272,9 @@ export default function InquireBalanceResult(props: InquireBalanceResultProps) {
             </div>
 
             {/* 메인 요약 카드 */}
-            <div className="bg-white dark:bg-[#1a1a1a] rounded-[2rem] border border-zinc-200 dark:border-[#2a2a2a] shadow-sm overflow-hidden">
+            <div className="bg-white dark:bg-[#1a1a1a] rounded-[2rem] border border-neutral-200 dark:border-[#2a2a2a] shadow-sm overflow-hidden">
                 {session?.user?.name === process.env.NEXT_PUBLIC_MASTER && (
-                    <div className="p-4 border-b border-zinc-100 dark:border-[#2a2a2a] bg-zinc-50/50 dark:bg-[#1a1a1a]/50 flex flex-wrap items-center gap-4">
+                    <div className="p-4 border-b border-neutral-100 dark:border-[#2a2a2a] bg-neutral-50/50 dark:bg-[#1a1a1a]/50 flex flex-wrap items-center gap-4">
                         <div className="flex items-center gap-1.5 px-2.5 py-1 bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400 rounded-lg text-[10px] font-black uppercase">
                             <Key size={12} /> MASTER MODE
                         </div>
@@ -299,7 +299,7 @@ export default function InquireBalanceResult(props: InquireBalanceResultProps) {
                     </div>
                 )}
 
-                <div className="grid grid-cols-1 md:grid-cols-3 divide-y md:divide-y-0 md:divide-x border-zinc-100 dark:divide-[#2a2a2a]">
+                <div className="grid grid-cols-1 md:grid-cols-3 divide-y md:divide-y-0 md:divide-x border-neutral-100 dark:divide-[#2a2a2a]">
                     <SummaryItem
                         label="평가 손익률"
                         value={`${totalProfitRate >= 0 ? "▲ +" : "▼ "}${totalProfitRate.toFixed(2)}%`}
@@ -321,16 +321,16 @@ export default function InquireBalanceResult(props: InquireBalanceResultProps) {
             </div>
 
             {props.kiBalance.msg1 && (
-                <div className="flex items-start gap-3 p-4 bg-zinc-100 dark:bg-[#1a1a1a] border border-zinc-200 dark:border-[#2a2a2a] rounded-2xl">
-                    <Info size={18} className="text-zinc-400 mt-0.5 shrink-0" />
-                    <p className="text-sm text-zinc-600 dark:text-zinc-400 font-medium leading-relaxed">
+                <div className="flex items-start gap-3 p-4 bg-stone-100 dark:bg-[#1a1a1a] border border-neutral-200 dark:border-[#2a2a2a] rounded-2xl">
+                    <Info size={18} className="text-neutral-400 mt-0.5 shrink-0" />
+                    <p className="text-sm text-neutral-600 dark:text-neutral-400 font-medium leading-relaxed">
                         {props.kiBalance.msg1}
                     </p>
                 </div>
             )}
 
             {/* 테이블 섹션 */}
-            <div className="overflow-hidden bg-white dark:bg-[#1a1a1a] rounded-[2rem] border border-zinc-200 dark:border-[#2a2a2a] shadow-sm">
+            <div className="overflow-hidden bg-white dark:bg-[#1a1a1a] rounded-[2rem] border border-neutral-200 dark:border-[#2a2a2a] shadow-sm">
                 <SortableBalanceTable 
                     inventoryData={props.kiBalance.output1 || []} 
                     isUs={isUs} 
@@ -357,9 +357,9 @@ export default function InquireBalanceResult(props: InquireBalanceResultProps) {
 function SummaryItem({ label, value, subValue, colorClass = "dark:text-white" }: any) {
     return (
         <div className="p-6 text-center md:text-left">
-            <span className="block text-[10px] font-black text-zinc-400 uppercase tracking-[0.2em] mb-2">{label}</span>
+            <span className="block text-[10px] font-black text-neutral-400 uppercase tracking-[0.2em] mb-2">{label}</span>
             <div className={`text-2xl font-black tracking-tighter mb-1 ${colorClass}`}>{value}</div>
-            <span className="text-xs font-bold text-zinc-500">{subValue}</span>
+            <span className="text-xs font-bold text-neutral-500">{subValue}</span>
         </div>
     );
 }
@@ -383,9 +383,9 @@ function SortableBalanceTable({ inventoryData, isUs, onOpenOrder }: { inventoryD
 
     // 모바일 카드 뷰
     const MobileCardList = () => (
-        <div className="divide-y divide-zinc-100 dark:divide-[#2a2a2a]">
+        <div className="divide-y divide-neutral-100 dark:divide-[#2a2a2a]">
             {sortedItems.length === 0 && (
-                <p className="py-10 text-center text-sm text-zinc-400">보유 종목이 없습니다.</p>
+                <p className="py-10 text-center text-sm text-neutral-400">보유 종목이 없습니다.</p>
             )}
             {sortedItems.map((item, idx) => {
                 const profitRt = Number(getFieldValue(item, "profit_rt"));
@@ -398,10 +398,10 @@ function SortableBalanceTable({ inventoryData, isUs, onOpenOrder }: { inventoryD
                         {/* 종목명 + 수익률 */}
                         <div className="flex items-start justify-between gap-2">
                             <div>
-                                <span className="font-black text-sm dark:text-zinc-100 leading-none block mb-0.5">
+                                <span className="font-black text-sm dark:text-neutral-100 leading-none block mb-0.5">
                                     {getFieldValue(item, "name")}
                                 </span>
-                                <span className="text-[10px] font-mono text-zinc-500">{item.pdno || item.ovrs_pdno}</span>
+                                <span className="text-[10px] font-mono text-neutral-500">{item.pdno || item.ovrs_pdno}</span>
                             </div>
                             <span className={`text-sm font-black font-mono shrink-0 ${isPositive ? "text-rose-500" : "text-blue-500"}`}>
                                 {isPositive ? "▲" : "▼"} {isPositive ? "+" : ""}{profitRt.toFixed(2)}%
@@ -410,19 +410,19 @@ function SortableBalanceTable({ inventoryData, isUs, onOpenOrder }: { inventoryD
                         {/* 수치 2열 그리드 */}
                         <div className="grid grid-cols-2 gap-x-4 gap-y-1.5 text-xs">
                             <div>
-                                <span className="text-zinc-400 block text-[10px] uppercase font-black">보유수량</span>
-                                <span className="font-mono font-bold dark:text-zinc-300">{formatValue(qty, "QTY")}</span>
+                                <span className="text-neutral-400 block text-[10px] uppercase font-black">보유수량</span>
+                                <span className="font-mono font-bold dark:text-neutral-300">{formatValue(qty, "QTY")}</span>
                             </div>
                             <div>
-                                <span className="text-zinc-400 block text-[10px] uppercase font-black">현재가</span>
-                                <span className="font-mono font-bold dark:text-zinc-300">{formatValue(price, "MONEY")}</span>
+                                <span className="text-neutral-400 block text-[10px] uppercase font-black">현재가</span>
+                                <span className="font-mono font-bold dark:text-neutral-300">{formatValue(price, "MONEY")}</span>
                             </div>
                             <div>
-                                <span className="text-zinc-400 block text-[10px] uppercase font-black">매입금액</span>
-                                <span className="font-mono font-bold dark:text-zinc-400">{formatValue(getFieldValue(item, "pchs_amt"), "MONEY")}</span>
+                                <span className="text-neutral-400 block text-[10px] uppercase font-black">매입금액</span>
+                                <span className="font-mono font-bold dark:text-neutral-400">{formatValue(getFieldValue(item, "pchs_amt"), "MONEY")}</span>
                             </div>
                             <div>
-                                <span className="text-zinc-400 block text-[10px] uppercase font-black">평가금액</span>
+                                <span className="text-neutral-400 block text-[10px] uppercase font-black">평가금액</span>
                                 <span className="font-mono font-black dark:text-white">{formatValue(getFieldValue(item, "evlu_amt"), "MONEY")}</span>
                             </div>
                         </div>
@@ -452,21 +452,21 @@ function SortableBalanceTable({ inventoryData, isUs, onOpenOrder }: { inventoryD
             <div className="hidden md:block overflow-x-auto">
                 <table className="w-full text-left border-collapse min-w-[900px]">
                     <thead>
-                        <tr className="bg-stone-50 dark:bg-[#2a2a2a]/50 border-b border-zinc-100 dark:border-[#2a2a2a]">
-                            <th className="p-4 text-center w-16 text-[10px] font-black text-zinc-400 uppercase">#</th>
+                        <tr className="bg-stone-50 dark:bg-[#2a2a2a]/50 border-b border-neutral-100 dark:border-[#2a2a2a]">
+                            <th className="p-4 text-center w-16 text-[10px] font-black text-neutral-400 uppercase">#</th>
                             <TableHeader label="종목명" sortKey="name" currentConfig={sortConfig} onSort={handleSort} />
                             <TableHeader label="보유수량" sortKey="qty" align="right" currentConfig={sortConfig} onSort={handleSort} />
                             <TableHeader label={isUs ? "현재가 / 매입단가 (KRW 환산)" : "현재가 / 매입단가 (KRW)"} sortKey="price" align="right" currentConfig={sortConfig} onSort={handleSort} />
                             <TableHeader label="수익률" sortKey="profit_rt" align="right" currentConfig={sortConfig} onSort={handleSort} />
                             <TableHeader label="매입금액" sortKey="pchs_amt" align="right" currentConfig={sortConfig} onSort={handleSort} />
                             <TableHeader label="평가금액" sortKey="evlu_amt" align="right" currentConfig={sortConfig} onSort={handleSort} />
-                            <th className="p-4 text-center text-[10px] font-black text-zinc-400 uppercase">Action</th>
+                            <th className="p-4 text-center text-[10px] font-black text-neutral-400 uppercase">Action</th>
                         </tr>
                     </thead>
-                    <tbody className="divide-y divide-zinc-100 dark:divide-[#2a2a2a]">
+                    <tbody className="divide-y divide-neutral-100 dark:divide-[#2a2a2a]">
                         {sortedItems.length === 0 && (
                             <tr>
-                                <td colSpan={8} className="py-10 text-center text-sm text-zinc-400">보유 종목이 없습니다.</td>
+                                <td colSpan={8} className="py-10 text-center text-sm text-neutral-400">보유 종목이 없습니다.</td>
                             </tr>
                         )}
                         {sortedItems.map((item, idx) => {
@@ -477,31 +477,31 @@ function SortableBalanceTable({ inventoryData, isUs, onOpenOrder }: { inventoryD
                             const isPositive = profitRt >= 0;
 
                             return (
-                                <tr key={idx} className="group hover:bg-stone-50 dark:hover:bg-zinc-800/30 transition-colors">
-                                    <td className="p-4 text-center font-mono text-xs text-zinc-400">{idx + 1}</td>
+                                <tr key={idx} className="group hover:bg-stone-50 dark:hover:bg-[#2a2a2a]/30 transition-colors">
+                                    <td className="p-4 text-center font-mono text-xs text-neutral-400">{idx + 1}</td>
                                     <td className="p-4">
                                         <div className="flex flex-col">
-                                            <span className="font-black text-sm dark:text-zinc-100 leading-none mb-1 group-hover:text-blue-600 transition-colors">
+                                            <span className="font-black text-sm dark:text-neutral-100 leading-none mb-1 group-hover:text-blue-600 transition-colors">
                                                 {getFieldValue(item, "name")}
                                             </span>
-                                            <span className="text-[10px] font-mono text-zinc-500">{item.pdno || item.ovrs_pdno}</span>
+                                            <span className="text-[10px] font-mono text-neutral-500">{item.pdno || item.ovrs_pdno}</span>
                                         </div>
                                     </td>
-                                    <td className="p-4 text-right font-mono text-sm font-bold dark:text-zinc-300">
+                                    <td className="p-4 text-right font-mono text-sm font-bold dark:text-neutral-300">
                                         {formatValue(qty, "QTY")}
                                     </td>
                                     <td className="p-4 text-right font-mono text-sm space-y-0.5">
-                                        <div className="font-black dark:text-zinc-200">
+                                        <div className="font-black dark:text-neutral-200">
                                             {formatValue(price, "MONEY")}
                                         </div>
-                                        <div className="text-[11px] text-zinc-400 font-medium">
+                                        <div className="text-[11px] text-neutral-400 font-medium">
                                             {formatValue(avgPrice, "MONEY")}
                                         </div>
                                     </td>
                                     <td className={`p-4 text-right font-mono text-sm font-black ${isPositive ? "text-rose-500" : "text-blue-500"}`}>
                                         {isPositive ? "▲ +" : "▼ "}{profitRt.toFixed(2)}%
                                     </td>
-                                    <td className="p-4 text-right font-mono text-sm font-bold text-zinc-600 dark:text-zinc-400">
+                                    <td className="p-4 text-right font-mono text-sm font-bold text-neutral-600 dark:text-neutral-400">
                                         {formatValue(getFieldValue(item, "pchs_amt"), "MONEY")}
                                     </td>
                                     <td className="p-4 text-right font-mono text-sm font-black dark:text-white">
@@ -509,7 +509,7 @@ function SortableBalanceTable({ inventoryData, isUs, onOpenOrder }: { inventoryD
                                     </td>
                                     <td className="p-4 text-center">
                                         <div className="flex items-center justify-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                                            <button className="p-1.5 hover:bg-zinc-200 dark:hover:bg-zinc-700 rounded-lg text-zinc-500 transition-colors">
+                                            <button className="p-1.5 hover:bg-neutral-200 dark:hover:bg-[#3a3a3a] rounded-lg text-neutral-500 transition-colors">
                                                 <BarChart3 size={16} />
                                             </button>
                                             <button
@@ -534,14 +534,14 @@ function TableHeader({ label, sortKey, align = "left", currentConfig, onSort }: 
     const isActive = currentConfig.key === sortKey;
     return (
         <th
-            className={`p-4 cursor-pointer select-none transition-colors hover:bg-zinc-100 dark:hover:bg-zinc-800 ${align === "right" ? "text-right" : "text-left"}`}
+            className={`p-4 cursor-pointer select-none transition-colors hover:bg-stone-100 dark:hover:bg-[#2a2a2a] ${align === "right" ? "text-right" : "text-left"}`}
             onClick={() => onSort(sortKey)}
         >
             <div className={`flex items-center gap-1.5 ${align === "right" ? "justify-end" : "justify-start"}`}>
-                <span className={`text-[10px] font-black uppercase tracking-widest ${isActive ? "text-blue-600" : "text-zinc-400"}`}>
+                <span className={`text-[10px] font-black uppercase tracking-widest ${isActive ? "text-blue-600" : "text-neutral-400"}`}>
                     {label}
                 </span>
-                <div className="text-zinc-300 dark:text-neutral-500">
+                <div className="text-neutral-300 dark:text-neutral-500">
                     {isActive ? (
                         currentConfig.direction === "asc" ? <ChevronUp size={14} className="text-blue-600" /> : <ChevronDown size={14} className="text-blue-600" />
                     ) : (
@@ -656,31 +656,31 @@ function OrderModal({ isUs, stock, balanceKey, kiOrderCash, reqPostOrderCash, ex
 
     return (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm animate-in fade-in duration-200">
-            <div className="w-full max-w-md bg-white dark:bg-[#1a1a1a] border border-zinc-200 dark:border-[#2a2a2a] rounded-[2rem] p-6 shadow-2xl space-y-6 relative mx-4">
+            <div className="w-full max-w-md bg-white dark:bg-[#1a1a1a] border border-neutral-200 dark:border-[#2a2a2a] rounded-[2rem] p-6 shadow-2xl space-y-6 relative mx-4">
                 
                 <div className="flex items-center justify-between">
                     <div>
                         <span className="text-[10px] font-black text-blue-600 uppercase tracking-widest">Manual Trading</span>
                         <h3 className="text-xl font-black dark:text-white mt-0.5">{name}</h3>
-                        <p className="text-xs text-zinc-400 font-mono">
+                        <p className="text-xs text-neutral-400 font-mono">
                             {pdno} • {isUs ? `미국(US) [${excgCd}]` : "국내(KR)"}
                         </p>
                     </div>
-                    <button onClick={onClose} className="p-2 hover:bg-zinc-100 dark:hover:bg-zinc-800 rounded-xl text-zinc-400 transition-colors">
+                    <button onClick={onClose} className="p-2 hover:bg-stone-100 dark:hover:bg-[#2a2a2a] rounded-xl text-neutral-400 transition-colors">
                         <X size={20} />
                     </button>
                 </div>
 
-                <div className="grid grid-cols-2 p-1 bg-zinc-100 dark:bg-[#2a2a2a] rounded-xl">
+                <div className="grid grid-cols-2 p-1 bg-stone-100 dark:bg-[#2a2a2a] rounded-xl">
                     <button
                         onClick={() => setBuyOrSell("buy")}
-                        className={`py-2.5 text-sm font-black rounded-lg transition-all ${buyOrSell === "buy" ? "bg-rose-500 text-white shadow-md" : "text-zinc-500 hover:text-zinc-800 dark:hover:text-zinc-200"}`}
+                        className={`py-2.5 text-sm font-black rounded-lg transition-all ${buyOrSell === "buy" ? "bg-rose-500 text-white shadow-md" : "text-neutral-500 hover:text-neutral-800 dark:hover:text-neutral-200"}`}
                     >
                         매수 (BUY)
                     </button>
                     <button
                         onClick={() => setBuyOrSell("sell")}
-                        className={`py-2.5 text-sm font-black rounded-lg transition-all ${buyOrSell === "sell" ? "bg-blue-600 text-white shadow-md" : "text-zinc-500 hover:text-zinc-800 dark:hover:text-zinc-200"}`}
+                        className={`py-2.5 text-sm font-black rounded-lg transition-all ${buyOrSell === "sell" ? "bg-blue-600 text-white shadow-md" : "text-neutral-500 hover:text-neutral-800 dark:hover:text-neutral-200"}`}
                     >
                         매도 (SELL)
                     </button>
@@ -688,18 +688,18 @@ function OrderModal({ isUs, stock, balanceKey, kiOrderCash, reqPostOrderCash, ex
 
                 <div className="space-y-4">
                     <div className="space-y-1.5">
-                        <label className="text-xs font-black text-zinc-400 uppercase tracking-wider">
+                        <label className="text-xs font-black text-neutral-400 uppercase tracking-wider">
                           주문 가격 ({isUs ? "USD 기준" : "KRW 기준"})
                         </label>
                         <div className="relative">
-                            <span className="absolute left-4 top-1/2 -translate-y-1/2 text-sm font-bold text-zinc-400">{isUs ? "$" : "₩"}</span>
+                            <span className="absolute left-4 top-1/2 -translate-y-1/2 text-sm font-bold text-neutral-400">{isUs ? "$" : "₩"}</span>
                             <input
                                 type="number"
                                 step={isUs ? "0.01" : "1"}
                                 min={isUs ? "0.01" : "1"}
                                 value={price}
                                 onChange={(e) => { setPrice(e.target.value); if (priceError) setPriceError(""); }}
-                                className={`w-full bg-stone-50 dark:bg-[#2a2a2a]/50 border pl-8 pr-4 py-3 rounded-xl font-mono font-bold text-sm focus:outline-none focus:border-blue-600 dark:text-white ${priceError ? "border-rose-500 dark:border-rose-500" : "border-zinc-200 dark:border-[#2a2a2a]"}`}
+                                className={`w-full bg-stone-50 dark:bg-[#2a2a2a]/50 border pl-8 pr-4 py-3 rounded-xl font-mono font-bold text-sm focus:outline-none focus:border-blue-600 dark:text-white ${priceError ? "border-rose-500 dark:border-rose-500" : "border-neutral-200 dark:border-[#2a2a2a]"}`}
                                 placeholder={isUs ? "0.00" : "0"}
                             />
                         </div>
@@ -707,8 +707,8 @@ function OrderModal({ isUs, stock, balanceKey, kiOrderCash, reqPostOrderCash, ex
                     </div>
 
                     <div className="space-y-1.5">
-                        <label className="text-xs font-black text-zinc-400 uppercase tracking-wider">주문 수량 (QTY)</label>
-                        <div className={`flex items-center border rounded-xl overflow-hidden ${qtyError ? "border-rose-500 dark:border-rose-500" : "border-zinc-200 dark:border-[#2a2a2a]"}`}>
+                        <label className="text-xs font-black text-neutral-400 uppercase tracking-wider">주문 수량 (QTY)</label>
+                        <div className={`flex items-center border rounded-xl overflow-hidden ${qtyError ? "border-rose-500 dark:border-rose-500" : "border-neutral-200 dark:border-[#2a2a2a]"}`}>
                             <button
                                 type="button"
                                 onClick={() => {
@@ -716,7 +716,7 @@ function OrderModal({ isUs, stock, balanceKey, kiOrderCash, reqPostOrderCash, ex
                                     setQty(String(v));
                                     if (qtyError) setQtyError("");
                                 }}
-                                className="px-4 py-3 text-lg font-black text-zinc-500 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors select-none"
+                                className="px-4 py-3 text-lg font-black text-neutral-500 hover:bg-stone-100 dark:hover:bg-[#2a2a2a] transition-colors select-none"
                             >−</button>
                             <input
                                 type="number"
@@ -733,15 +733,15 @@ function OrderModal({ isUs, stock, balanceKey, kiOrderCash, reqPostOrderCash, ex
                                     setQty(String(v));
                                     if (qtyError) setQtyError("");
                                 }}
-                                className="px-4 py-3 text-lg font-black text-zinc-500 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors select-none"
+                                className="px-4 py-3 text-lg font-black text-neutral-500 hover:bg-stone-100 dark:hover:bg-[#2a2a2a] transition-colors select-none"
                             >+</button>
                         </div>
                         {qtyError && <p className="text-xs text-rose-500 font-medium">{qtyError}</p>}
                     </div>
                 </div>
 
-                <div className="p-4 bg-stone-50 dark:bg-[#2a2a2a]/40 border border-zinc-100 dark:border-[#2a2a2a] rounded-2xl flex justify-between items-center text-sm">
-                    <span className="font-bold text-zinc-400">예상 총 금액</span>
+                <div className="p-4 bg-stone-50 dark:bg-[#2a2a2a]/40 border border-neutral-100 dark:border-[#2a2a2a] rounded-2xl flex justify-between items-center text-sm">
+                    <span className="font-bold text-neutral-400">예상 총 금액</span>
                     <span className="font-mono font-black dark:text-white">
                         {isUs
                             ? `$${((Number(price) || 0) * (Number(qty) || 0)).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
@@ -753,7 +753,7 @@ function OrderModal({ isUs, stock, balanceKey, kiOrderCash, reqPostOrderCash, ex
                 <button
                     disabled={isPending}
                     onClick={handleSubmitOrder}
-                    className={`w-full py-3.5 rounded-xl text-white text-sm font-black transition-all flex items-center justify-center gap-2 shadow-lg ${buyOrSell === "buy" ? "bg-rose-500 hover:bg-rose-600 shadow-rose-500/20" : "bg-blue-600 hover:bg-blue-700 shadow-blue-600/20"} disabled:bg-zinc-300 dark:disabled:bg-zinc-700`}
+                    className={`w-full py-3.5 rounded-xl text-white text-sm font-black transition-all flex items-center justify-center gap-2 shadow-lg ${buyOrSell === "buy" ? "bg-rose-500 hover:bg-rose-600 shadow-rose-500/20" : "bg-blue-600 hover:bg-blue-700 shadow-blue-600/20"} disabled:bg-neutral-300 dark:disabled:bg-[#3a3a3a]`}
                 >
                     {isPending ? (
                         <>

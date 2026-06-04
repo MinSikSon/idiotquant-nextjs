@@ -106,7 +106,7 @@ const GRADE_PILL: Record<string, string> = {
   SS:  "bg-amber-500 text-white",
   S:   "bg-emerald-500 text-white",
   A:   "bg-slate-500 text-white",
-  B:   "bg-zinc-200 text-zinc-700 dark:bg-[#3a3a3a] dark:text-zinc-200",
+  B:   "bg-neutral-200 text-neutral-700 dark:bg-[#3a3a3a] dark:text-neutral-200",
   F:   "bg-red-500 text-white",
 };
 
@@ -125,29 +125,29 @@ import {
 // 스켈레톤 컴포넌트
 // =========================================================================
 const StockCardSkeleton = memo(() => (
-  <div className="w-full h-[380px] bg-white dark:bg-[#1a1a1a] rounded-2xl border border-zinc-200 dark:border-[#2a2a2a] animate-pulse p-6">
+  <div className="w-full h-[380px] bg-white dark:bg-[#1a1a1a] rounded-2xl border border-neutral-200 dark:border-[#2a2a2a] animate-pulse p-6">
     <div className="flex items-center gap-3 mb-6">
-      <div className="w-12 h-12 bg-zinc-200 dark:bg-[#1a1a1a] rounded-xl" />
+      <div className="w-12 h-12 bg-neutral-200 dark:bg-[#1a1a1a] rounded-xl" />
       <div className="flex-1 space-y-2">
-        <div className="h-5 bg-zinc-200 dark:bg-[#1a1a1a] rounded w-3/4" />
-        <div className="h-4 bg-zinc-200 dark:bg-[#1a1a1a] rounded w-1/2" />
+        <div className="h-5 bg-neutral-200 dark:bg-[#1a1a1a] rounded w-3/4" />
+        <div className="h-4 bg-neutral-200 dark:bg-[#1a1a1a] rounded w-1/2" />
       </div>
     </div>
     <div className="space-y-3">
-      {[...Array(4)].map((_, i) => <div key={i} className="h-14 bg-zinc-200 dark:bg-[#1a1a1a] rounded-xl" />)}
+      {[...Array(4)].map((_, i) => <div key={i} className="h-14 bg-neutral-200 dark:bg-[#1a1a1a] rounded-xl" />)}
     </div>
   </div>
 ));
 StockCardSkeleton.displayName = 'StockCardSkeleton';
 
 const MetricsSkeleton = memo(() => (
-  <div className="w-full h-[380px] bg-white dark:bg-[#1a1a1a] rounded-2xl border border-zinc-200 dark:border-[#2a2a2a] animate-pulse p-6">
-    <div className="h-5 bg-zinc-200 dark:bg-[#1a1a1a] rounded w-1/3 mb-5" />
+  <div className="w-full h-[380px] bg-white dark:bg-[#1a1a1a] rounded-2xl border border-neutral-200 dark:border-[#2a2a2a] animate-pulse p-6">
+    <div className="h-5 bg-neutral-200 dark:bg-[#1a1a1a] rounded w-1/3 mb-5" />
     <div className="grid grid-cols-2 gap-3">
       {[...Array(6)].map((_, i) => (
         <div key={i} className="p-4 bg-stone-100 dark:bg-[#1a1a1a]/50 rounded-xl space-y-2">
-          <div className="h-3 bg-zinc-200 dark:bg-[#3a3a3a] rounded w-1/2" />
-          <div className="h-5 bg-zinc-200 dark:bg-[#3a3a3a] rounded w-3/4" />
+          <div className="h-3 bg-neutral-200 dark:bg-[#3a3a3a] rounded w-1/2" />
+          <div className="h-5 bg-neutral-200 dark:bg-[#3a3a3a] rounded w-3/4" />
         </div>
       ))}
     </div>
@@ -157,9 +157,9 @@ MetricsSkeleton.displayName = 'MetricsSkeleton';
 
 const ValuationSkeleton = memo(() => (
   <div className="w-full h-[280px] bg-white dark:bg-[#1a1a1a] rounded-2xl animate-pulse p-6">
-    <div className="h-5 bg-zinc-200 dark:bg-[#1a1a1a] rounded w-1/3 mb-5" />
+    <div className="h-5 bg-neutral-200 dark:bg-[#1a1a1a] rounded w-1/3 mb-5" />
     <div className="space-y-3">
-      {[...Array(3)].map((_, i) => <div key={i} className="h-14 bg-zinc-200 dark:bg-[#1a1a1a] rounded-xl" />)}
+      {[...Array(3)].map((_, i) => <div key={i} className="h-14 bg-neutral-200 dark:bg-[#1a1a1a] rounded-xl" />)}
     </div>
   </div>
 ));
@@ -172,11 +172,11 @@ SearchSkeleton.displayName = 'SearchSkeleton';
 
 const ResultSkeleton = memo(() => (
   <div className="space-y-4 animate-in fade-in duration-300">
-    <div className="h-[88px] bg-white dark:bg-[#1a1a1a] rounded-2xl border border-zinc-200 dark:border-[#2a2a2a] animate-pulse" />
+    <div className="h-[88px] bg-white dark:bg-[#1a1a1a] rounded-2xl border border-neutral-200 dark:border-[#2a2a2a] animate-pulse" />
     <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-      {[...Array(4)].map((_, i) => <div key={i} className="h-20 bg-white dark:bg-[#1a1a1a] rounded-xl border border-zinc-200 dark:border-[#2a2a2a] animate-pulse" />)}
+      {[...Array(4)].map((_, i) => <div key={i} className="h-20 bg-white dark:bg-[#1a1a1a] rounded-xl border border-neutral-200 dark:border-[#2a2a2a] animate-pulse" />)}
     </div>
-    <div className="h-[420px] bg-white dark:bg-[#1a1a1a] rounded-2xl border border-zinc-200 dark:border-[#2a2a2a] animate-pulse" />
+    <div className="h-[420px] bg-white dark:bg-[#1a1a1a] rounded-2xl border border-neutral-200 dark:border-[#2a2a2a] animate-pulse" />
   </div>
 ));
 ResultSkeleton.displayName = 'ResultSkeleton';
@@ -403,7 +403,7 @@ function AnalyzeContent() {
       {/* ── 헤더 ── */}
       <header className="sticky top-0 z-30 bg-white dark:bg-[#111111] border-b border-neutral-200 dark:border-[#222222]">
         {fromScreener && (
-          <div className="border-b border-zinc-100 dark:border-[#2a2a2a]/60">
+          <div className="border-b border-neutral-100 dark:border-[#2a2a2a]/60">
             <div className="max-w-4xl mx-auto px-4 py-2">
               <Link href="/screener"
                 className="inline-flex items-center gap-1.5 text-xs font-bold text-blue-600 dark:text-blue-400 hover:opacity-80 transition-opacity">
@@ -432,7 +432,7 @@ function AnalyzeContent() {
                   "flex items-center gap-1.5 px-2.5 py-2 rounded-xl border text-xs font-bold transition-all",
                   isInWatchlist
                     ? "text-amber-600 bg-amber-50 border-amber-200 dark:bg-amber-950/20 dark:border-amber-800/50 dark:text-amber-400"
-                    : "text-zinc-500 bg-stone-100 border-zinc-200 hover:text-zinc-800 dark:bg-[#1a1a1a]/40 dark:border-[#222222]"
+                    : "text-neutral-500 bg-stone-100 border-neutral-200 hover:text-neutral-800 dark:bg-[#1a1a1a]/40 dark:border-[#222222]"
                 )}
               >
                 <Star size={13} className={isInWatchlist ? "fill-amber-500" : ""} />
@@ -453,17 +453,17 @@ function AnalyzeContent() {
 
         {/* 인기 종목 + 최근 검색 */}
         {!isLoaded && (
-          <div className="border-t border-zinc-100 dark:border-[#2a2a2a]/50 bg-stone-100/50 dark:bg-[#1a1a1a]/30">
+          <div className="border-t border-neutral-100 dark:border-[#2a2a2a]/50 bg-stone-100/50 dark:bg-[#1a1a1a]/30">
             {popularStocks.length > 0 && (
               <div className="max-w-4xl mx-auto px-4 py-2 flex items-center gap-3">
                 <div className="flex items-center gap-1.5 shrink-0">
                   <Flame size={11} className="text-amber-500" />
-                  <span className="text-[9px] font-bold text-zinc-400 uppercase tracking-wider">인기</span>
+                  <span className="text-[9px] font-bold text-neutral-400 uppercase tracking-wider">인기</span>
                 </div>
                 <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar">
                   {popularStocks.slice(0, 8).map((s: any, i: number) => (
                     <button key={i} onClick={() => handleSearch(s.ticker)}
-                      className="shrink-0 flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-white dark:bg-[#1a1a1a] text-xs font-bold text-zinc-600 dark:text-zinc-300 border border-zinc-200/60 dark:border-[#2a2a2a] hover:border-blue-400/70 hover:text-blue-600 dark:hover:text-blue-400 transition-all whitespace-nowrap"
+                      className="shrink-0 flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-white dark:bg-[#1a1a1a] text-xs font-bold text-neutral-600 dark:text-neutral-300 border border-neutral-200/60 dark:border-[#2a2a2a] hover:border-blue-400/70 hover:text-blue-600 dark:hover:text-blue-400 transition-all whitespace-nowrap"
                     >
                       <span className="w-3.5 h-3.5 flex items-center justify-center rounded-full bg-blue-500 text-white font-black text-[8px] shrink-0">{i + 1}</span>
                       {s.name}
@@ -473,12 +473,12 @@ function AnalyzeContent() {
               </div>
             )}
             {krMarketHistory.length > 0 && (
-              <div className="max-w-4xl mx-auto px-4 py-2 flex items-center gap-3 border-t border-zinc-100 dark:border-[#2a2a2a]/40">
-                <span className="text-[9px] font-bold text-zinc-400 uppercase tracking-wider shrink-0">최근 검색</span>
+              <div className="max-w-4xl mx-auto px-4 py-2 flex items-center gap-3 border-t border-neutral-100 dark:border-[#2a2a2a]/40">
+                <span className="text-[9px] font-bold text-neutral-400 uppercase tracking-wider shrink-0">최근 검색</span>
                 <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar">
                   {krMarketHistory.slice().reverse().slice(0, 8).map((s, i) => (
                     <button key={i} onClick={() => handleSearch(s)}
-                      className="shrink-0 px-2.5 py-1.5 text-xs font-bold text-zinc-500 hover:text-blue-600 dark:text-zinc-400 dark:hover:text-blue-400 hover:bg-white dark:hover:bg-[#1a1a1a]/40 rounded-lg border border-zinc-200/60 dark:border-[#2a2a2a] transition-all whitespace-nowrap"
+                      className="shrink-0 px-2.5 py-1.5 text-xs font-bold text-neutral-500 hover:text-blue-600 dark:text-neutral-400 dark:hover:text-blue-400 hover:bg-white dark:hover:bg-[#1a1a1a]/40 rounded-lg border border-neutral-200/60 dark:border-[#2a2a2a] transition-all whitespace-nowrap"
                     >
                       {s}
                     </button>
@@ -502,7 +502,7 @@ function AnalyzeContent() {
             <div className={cn(!isLoaded ? 'hidden' : 'animate-in fade-in duration-400')}>
 
               {/* 종목 헤더 카드 */}
-              <div className="bg-white dark:bg-[#1a1a1a] rounded-2xl border border-zinc-200 dark:border-[#2a2a2a] p-4 mb-4 shadow-sm relative overflow-hidden">
+              <div className="bg-white dark:bg-[#1a1a1a] rounded-2xl border border-neutral-200 dark:border-[#2a2a2a] p-4 mb-4 shadow-sm relative overflow-hidden">
                 <div className={cn("absolute top-0 left-0 right-0 h-0.5",
                   krOrUs === 'US' ? "bg-gradient-to-r from-blue-500 to-sky-400" : "bg-gradient-to-r from-indigo-500 to-purple-400"
                 )} />
@@ -518,21 +518,21 @@ function AnalyzeContent() {
                     </div>
                     <div className="min-w-0">
                       <div className="flex items-center gap-2 flex-wrap">
-                        <span className="font-black text-zinc-900 dark:text-white text-base truncate">{name}</span>
-                        <span className="text-[10px] font-mono text-zinc-400 dark:text-zinc-500">{tickerFromUrl}</span>
+                        <span className="font-black text-neutral-900 dark:text-white text-base truncate">{name}</span>
+                        <span className="text-[10px] font-mono text-neutral-400 dark:text-neutral-500">{tickerFromUrl}</span>
                         {gradeDisplay && (
                           <span className={cn(
                             "px-2 py-0.5 rounded text-xs font-black font-mono shrink-0",
-                            GRADE_PILL[gradeDisplay] ?? "bg-zinc-200 text-zinc-700 dark:bg-[#3a3a3a] dark:text-zinc-200"
+                            GRADE_PILL[gradeDisplay] ?? "bg-neutral-200 text-neutral-700 dark:bg-[#3a3a3a] dark:text-neutral-200"
                           )}>
                             {gradeDisplay}
                           </span>
                         )}
                       </div>
                       {basicMetrics && (
-                        <p className="text-sm font-bold text-zinc-600 dark:text-zinc-400 mt-0.5">
+                        <p className="text-sm font-bold text-neutral-600 dark:text-neutral-400 mt-0.5">
                           현재가&nbsp;
-                          <span className="text-zinc-900 dark:text-white">
+                          <span className="text-neutral-900 dark:text-white">
                             {currency}{basicMetrics.curPrice.toLocaleString()}
                           </span>
                         </p>
@@ -547,7 +547,7 @@ function AnalyzeContent() {
                         "flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold border transition-all",
                         isInWatchlist
                           ? "text-amber-600 bg-amber-50 border-amber-200 dark:bg-amber-950/20 dark:border-amber-800/50 dark:text-amber-400"
-                          : "text-zinc-600 bg-stone-100 border-zinc-200 hover:border-zinc-300 dark:bg-[#1a1a1a]/30 dark:border-[#222222]"
+                          : "text-neutral-600 bg-stone-100 border-neutral-200 hover:border-neutral-300 dark:bg-[#1a1a1a]/30 dark:border-[#222222]"
                       )}
                     >
                       <Star size={13} className={isInWatchlist ? "fill-amber-500" : ""} />
@@ -561,7 +561,7 @@ function AnalyzeContent() {
                           ? "bg-emerald-50 text-emerald-600 border-emerald-200 dark:bg-emerald-950/30 dark:text-emerald-400"
                           : shareStatus === 'error'
                           ? "bg-rose-50 text-rose-600 border-rose-200"
-                          : "bg-zinc-900 dark:bg-white text-white dark:text-zinc-900 border-zinc-900 dark:border-white hover:bg-zinc-800"
+                          : "bg-neutral-900 dark:bg-white text-white dark:text-neutral-900 border-neutral-900 dark:border-white hover:bg-neutral-800"
                       )}
                     >
                       {shareStatus === 'copied' ? <Check size={13} /> : shareStatus === 'error' ? <AlertCircle size={13} /> : <Share2 size={13} />}
@@ -583,7 +583,7 @@ function AnalyzeContent() {
                         ? "text-emerald-600 dark:text-emerald-400"
                         : basicMetrics.ncavRatio >= 0.7
                         ? "text-amber-600 dark:text-amber-400"
-                        : "text-zinc-500 dark:text-zinc-400",
+                        : "text-neutral-500 dark:text-neutral-400",
                     },
                     {
                       label: "PBR",
@@ -591,7 +591,7 @@ function AnalyzeContent() {
                       desc: "주가 / 순자산",
                       color: basicMetrics.pbr > 0 && basicMetrics.pbr < 1
                         ? "text-emerald-600 dark:text-emerald-400"
-                        : "text-zinc-700 dark:text-zinc-200",
+                        : "text-neutral-700 dark:text-neutral-200",
                     },
                     {
                       label: "PER",
@@ -599,7 +599,7 @@ function AnalyzeContent() {
                       desc: "주가 / 순이익",
                       color: basicMetrics.per > 0 && basicMetrics.per < 10
                         ? "text-emerald-600 dark:text-emerald-400"
-                        : "text-zinc-700 dark:text-zinc-200",
+                        : "text-neutral-700 dark:text-neutral-200",
                     },
                     {
                       label: "EPS",
@@ -610,16 +610,16 @@ function AnalyzeContent() {
                         : "—",
                       desc: "주당 순이익",
                       color: basicMetrics.eps > 0
-                        ? "text-zinc-700 dark:text-zinc-200"
+                        ? "text-neutral-700 dark:text-neutral-200"
                         : basicMetrics.eps < 0
                         ? "text-rose-600 dark:text-rose-400"
-                        : "text-zinc-400",
+                        : "text-neutral-400",
                     },
                   ].map(m => (
-                    <div key={m.label} className="bg-white dark:bg-[#1a1a1a] rounded-xl border border-zinc-200 dark:border-[#2a2a2a] p-4 shadow-sm">
-                      <p className="text-[10px] font-bold text-zinc-400 uppercase tracking-wider mb-1.5">{m.label}</p>
+                    <div key={m.label} className="bg-white dark:bg-[#1a1a1a] rounded-xl border border-neutral-200 dark:border-[#2a2a2a] p-4 shadow-sm">
+                      <p className="text-[10px] font-bold text-neutral-400 uppercase tracking-wider mb-1.5">{m.label}</p>
                       <p className={cn("text-2xl font-black font-mono tabular-nums leading-none", m.color)}>{m.value}</p>
-                      <p className="text-[10px] text-zinc-400 mt-1.5">{m.desc}</p>
+                      <p className="text-[10px] text-neutral-400 mt-1.5">{m.desc}</p>
                     </div>
                   ))}
                 </div>
@@ -629,7 +629,7 @@ function AnalyzeContent() {
               {isLoggedIn ? (
                 <div className="space-y-5">
                   <div className="flex items-center gap-3">
-                    <p className="text-[11px] font-bold text-zinc-400 uppercase tracking-widest font-mono shrink-0">Detail Analysis</p>
+                    <p className="text-[11px] font-bold text-neutral-400 uppercase tracking-widest font-mono shrink-0">Detail Analysis</p>
                     <div className="flex-1 h-px bg-stone-100 dark:bg-[#1a1a1a]/70" />
                   </div>
 
@@ -672,15 +672,15 @@ function AnalyzeContent() {
                   </div>
 
                   {/* 밸류에이션 */}
-                  <div className="bg-white dark:bg-[#1a1a1a] rounded-2xl border border-zinc-200 dark:border-[#2a2a2a] p-1 shadow-sm">
+                  <div className="bg-white dark:bg-[#1a1a1a] rounded-2xl border border-neutral-200 dark:border-[#2a2a2a] p-1 shadow-sm">
                     <ValuationSection data={data} isUs={krOrUs === 'US'} />
                   </div>
 
                   {/* 재무제표 */}
-                  <div className="bg-white dark:bg-[#1a1a1a] rounded-2xl border border-zinc-200 dark:border-[#2a2a2a] shadow-sm overflow-hidden">
-                    <div className="px-5 py-4 border-b border-zinc-100 dark:border-[#2a2a2a]">
-                      <h3 className="text-sm font-extrabold text-zinc-800 dark:text-zinc-200">재무제표</h3>
-                      <p className="text-[10px] text-zinc-400 mt-0.5">
+                  <div className="bg-white dark:bg-[#1a1a1a] rounded-2xl border border-neutral-200 dark:border-[#2a2a2a] shadow-sm overflow-hidden">
+                    <div className="px-5 py-4 border-b border-neutral-100 dark:border-[#2a2a2a]">
+                      <h3 className="text-sm font-extrabold text-neutral-800 dark:text-neutral-200">재무제표</h3>
+                      <p className="text-[10px] text-neutral-400 mt-0.5">
                         {krOrUs === 'KR' ? 'DART 공시 기준 (억 원)' : 'US-GAAP 기준 (USD)'}
                       </p>
                     </div>
@@ -697,9 +697,9 @@ function AnalyzeContent() {
                 <div className="space-y-3">
                   {/* 잠긴 섹션 레이블 */}
                   <div className="flex items-center gap-3">
-                    <p className="text-[11px] font-bold text-zinc-400 uppercase tracking-widest font-mono shrink-0">Detail Analysis</p>
+                    <p className="text-[11px] font-bold text-neutral-400 uppercase tracking-widest font-mono shrink-0">Detail Analysis</p>
                     <div className="flex-1 h-px bg-stone-100 dark:bg-[#1a1a1a]/70" />
-                    <span className="flex items-center gap-1 text-[10px] font-bold text-zinc-400 bg-stone-100 dark:bg-[#1a1a1a] px-2 py-0.5 rounded-full">
+                    <span className="flex items-center gap-1 text-[10px] font-bold text-neutral-400 bg-stone-100 dark:bg-[#1a1a1a] px-2 py-0.5 rounded-full">
                       <Lock size={9} />
                       로그인 필요
                     </span>
@@ -730,21 +730,21 @@ function AnalyzeContent() {
                       },
                     ].map(item => (
                       <div key={item.title}
-                        className="relative flex items-start gap-3 p-4 bg-white dark:bg-[#1a1a1a] rounded-xl border border-zinc-200 dark:border-[#2a2a2a] overflow-hidden"
+                        className="relative flex items-start gap-3 p-4 bg-white dark:bg-[#1a1a1a] rounded-xl border border-neutral-200 dark:border-[#2a2a2a] overflow-hidden"
                       >
                         {/* 흐릿한 내용 배경 */}
                         <div className="absolute inset-0 opacity-30 pointer-events-none">
-                          <div className="absolute top-8 left-4 right-4 h-2 bg-zinc-200 dark:bg-[#3a3a3a] rounded" />
-                          <div className="absolute top-13 left-4 right-8 h-2 bg-zinc-200 dark:bg-[#3a3a3a] rounded" />
-                          <div className="absolute top-18 left-4 right-12 h-2 bg-zinc-200 dark:bg-[#3a3a3a] rounded" />
+                          <div className="absolute top-8 left-4 right-4 h-2 bg-neutral-200 dark:bg-[#3a3a3a] rounded" />
+                          <div className="absolute top-13 left-4 right-8 h-2 bg-neutral-200 dark:bg-[#3a3a3a] rounded" />
+                          <div className="absolute top-18 left-4 right-12 h-2 bg-neutral-200 dark:bg-[#3a3a3a] rounded" />
                         </div>
                         <span className="text-xl shrink-0">{item.icon}</span>
                         <div className="min-w-0">
                           <div className="flex items-center gap-2 mb-0.5">
-                            <p className="text-sm font-extrabold text-zinc-700 dark:text-zinc-200">{item.title}</p>
-                            <Lock size={10} className="text-zinc-400 shrink-0" />
+                            <p className="text-sm font-extrabold text-neutral-700 dark:text-neutral-200">{item.title}</p>
+                            <Lock size={10} className="text-neutral-400 shrink-0" />
                           </div>
-                          <p className="text-[11px] text-zinc-500 dark:text-zinc-400 leading-relaxed">{item.desc}</p>
+                          <p className="text-[11px] text-neutral-500 dark:text-neutral-400 leading-relaxed">{item.desc}</p>
                         </div>
                       </div>
                     ))}
@@ -752,10 +752,10 @@ function AnalyzeContent() {
 
                   {/* 로그인 CTA */}
                   <div className="mt-2 p-5 bg-gradient-to-br from-blue-50 to-indigo-50 dark:from-blue-950/20 dark:to-indigo-950/20 rounded-2xl border border-blue-200/60 dark:border-blue-900/40 text-center">
-                    <p className="text-sm font-black text-zinc-900 dark:text-white mb-1">
+                    <p className="text-sm font-black text-neutral-900 dark:text-white mb-1">
                       {name ? `${name} 상세 분석` : '상세 분석'} 보기
                     </p>
-                    <p className="text-xs text-zinc-500 dark:text-zinc-400 mb-4">
+                    <p className="text-xs text-neutral-500 dark:text-neutral-400 mb-4">
                       카카오 로그인 30초 · 무료 · 가격 차트·S-RIM·재무제표 모두 포함
                     </p>
                     <Link
@@ -774,17 +774,17 @@ function AnalyzeContent() {
       </main>
 
       {/* ── 푸터 ── */}
-      <footer className="max-w-4xl mx-auto px-4 pt-8 pb-12 mt-12 border-t border-zinc-200 dark:border-[#2a2a2a]">
+      <footer className="max-w-4xl mx-auto px-4 pt-8 pb-12 mt-12 border-t border-neutral-200 dark:border-[#2a2a2a]">
         <div className="flex flex-col items-center gap-3">
           <div className="flex items-center gap-2">
             <TrendingUp size={13} className="text-blue-500" strokeWidth={2.5} />
-            <span className="text-xs font-bold text-zinc-700 dark:text-zinc-300">IdiotQuant</span>
+            <span className="text-xs font-bold text-neutral-700 dark:text-neutral-300">IdiotQuant</span>
           </div>
-          <p className="text-[11px] text-zinc-400 dark:text-zinc-600 text-center max-w-md leading-relaxed">
+          <p className="text-[11px] text-neutral-400 dark:text-neutral-600 text-center max-w-md leading-relaxed">
             본 서비스의 분석 결과는 투자 참고 목적의 정량적 자료이며, 투자 권유를 목적으로 하지 않습니다.
             실제 투자 결정은 본인의 판단과 책임 하에 이루어져야 합니다.
           </p>
-          <span className="text-[10px] font-mono text-zinc-300 dark:text-zinc-700">© 2026 IdiotQuant</span>
+          <span className="text-[10px] font-mono text-neutral-300 dark:text-neutral-700">© 2026 IdiotQuant</span>
         </div>
       </footer>
     </div>
@@ -798,10 +798,10 @@ export default function AnalyzePage() {
   return (
     <Suspense fallback={
       <div className="flex flex-col items-center justify-center py-40 gap-5 bg-stone-100 dark:bg-[#0d0d0d] min-h-screen">
-        <div className="p-4 bg-white dark:bg-[#1a1a1a] rounded-2xl border border-zinc-200 dark:border-[#2a2a2a] shadow-sm">
+        <div className="p-4 bg-white dark:bg-[#1a1a1a] rounded-2xl border border-neutral-200 dark:border-[#2a2a2a] shadow-sm">
           <Loader2 className="animate-spin text-blue-600 dark:text-blue-400" size={24} />
         </div>
-        <p className="text-[11px] font-bold text-zinc-400 dark:text-zinc-500 tracking-widest font-mono uppercase">
+        <p className="text-[11px] font-bold text-neutral-400 dark:text-neutral-500 tracking-widest font-mono uppercase">
           분석 엔진 초기화 중...
         </p>
       </div>

@@ -26,13 +26,13 @@ export default function AuthButton() {
     }, [status, router])
 
     if (status === "loading") {
-        return <div className="w-full h-12 rounded-xl bg-zinc-100 dark:bg-[#2a2a2a] animate-pulse" />
+        return <div className="w-full h-12 rounded-xl bg-stone-100 dark:bg-[#2a2a2a] animate-pulse" />
     }
 
     if (session) {
         return (
-            <div className="flex items-center justify-center gap-2 py-3 text-sm text-zinc-500 dark:text-zinc-400">
-                <span className="inline-block w-4 h-4 rounded-full border-2 border-zinc-300 border-t-zinc-600 animate-spin" />
+            <div className="flex items-center justify-center gap-2 py-3 text-sm text-neutral-500 dark:text-neutral-400">
+                <span className="inline-block w-4 h-4 rounded-full border-2 border-neutral-300 border-t-neutral-600 animate-spin" />
                 스크리너로 이동 중...
             </div>
         )

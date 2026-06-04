@@ -145,7 +145,7 @@ function MiniSession({ session, status }: { session: any; status: string }) {
 
   if (status === "authenticated") {
     return (
-      <div className="w-7 h-7 rounded-full bg-gradient-to-br from-blue-400 to-indigo-500 flex items-center justify-center text-white text-[10px] font-black shrink-0">
+      <div className="w-7 h-7 rounded-full bg-neutral-200 dark:bg-[#3a3a3a] flex items-center justify-center text-neutral-700 dark:text-neutral-200 text-[10px] font-black shrink-0">
         {session?.user?.name?.[0] ?? "U"}
       </div>
     );
