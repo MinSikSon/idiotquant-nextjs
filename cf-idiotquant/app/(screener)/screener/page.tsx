@@ -11,7 +11,7 @@ import {
     reqDiscoverNcavDates,
 } from "@/lib/features/algorithmTrade/algorithmTradeSlice";
 import { cn } from "@/lib/utils";
-import { RefreshCw, ChevronRight, Loader2, Search, SlidersHorizontal, TrendingUp } from "lucide-react";
+import { RefreshCw, ChevronRight, Loader2, Search, SlidersHorizontal, TrendingUp, Info, X } from "lucide-react";
 import * as Tooltip from "@radix-ui/react-tooltip";
 
 // =========================================================================
@@ -289,7 +289,8 @@ function ScreenerContent() {
     const ncavDailyDates = useAppSelector(selectNcavDailyDates);
     const ncavDailyList = useAppSelector(selectNcavDailyList);
 
-    const [activeStrategyId, setActiveStrategyId] = useState<string | null>(null);
+    const [activeStrategyIds, setActiveStrategyIds] = useState<Set<string>>(new Set());
+    const [showGuide, setShowGuide] = useState(false);
     const [sortKey, setSortKey] = useState<DiscoverySortKey>("ncav_ratio");
     const [sortOrder, setSortOrder] = useState<SortOrder>("desc");
     const [searchQuery, setSearchQuery] = useState("");
@@ -331,6 +332,21 @@ function ScreenerContent() {
         setDisplayCount(DAILY_PAGE_SIZE);
     }, []);
 
+    const toggleStrategy = useCallback((id: string) => {
+        setActiveStrategyIds(prev => {
+            const next = new Set(prev);
+            if (next.has(id)) next.delete(id);
+            else next.add(id);
+            return next;
+        });
+        setDisplayCount(DAILY_PAGE_SIZE);
+    }, []);
+
+    const clearStrategies = useCallback(() => {
+        setActiveStrategyIds(new Set());
+        setDisplayCount(DAILY_PAGE_SIZE);
+    }, []);
+
     const strategyCounts = useMemo(() => {
         const counts: Record<string, number> = { all: ncavDailyList.list.length };
         STRATEGY_PRESETS.forEach(preset => {
@@ -348,13 +364,15 @@ function ScreenerContent() {
     const filteredList = useMemo(() => {
         let list = [...ncavDailyList.list] as Record<string, any>[];
 
-        if (activeStrategyId) {
-            const preset = STRATEGY_PRESETS.find(p => p.id === activeStrategyId);
-            if (preset?.clientFilter) {
-                list = list.filter(preset.clientFilter);
-            } else {
-                list = list.filter(item => (item.strategies ?? []).includes(activeStrategyId));
-            }
+        // 복수 전략 선택 시 OR 조합 (하나 이상 충족)
+        if (activeStrategyIds.size > 0) {
+            list = list.filter(item =>
+                Array.from(activeStrategyIds).some(stratId => {
+                    const preset = STRATEGY_PRESETS.find(p => p.id === stratId);
+                    if (preset?.clientFilter) return preset.clientFilter(item);
+                    return (item.strategies ?? []).includes(stratId);
+                })
+            );
         }
 
         if (searchQuery) {
@@ -385,14 +403,13 @@ function ScreenerContent() {
         });
 
         return list;
-    }, [ncavDailyList.list, activeStrategyId, searchQuery, excludeHoldings, excludeDeficit, sortKey, sortOrder]);
+    }, [ncavDailyList.list, activeStrategyIds, searchQuery, excludeHoldings, excludeDeficit, sortKey, sortOrder]);
 
     const visibleList = filteredList.slice(0, displayCount);
     const hasMore = filteredList.length > displayCount;
     const isLoading = ncavDailyList.state === "pending" || ncavDailyList.state === "init";
 
     const handleStockClick = useCallback((ticker: string, name: string) => {
-        // 국장 종목은 종목명으로 검색해야 하므로 name을 ticker 파라미터로 전달
         router.push(`/analyze?ticker=${encodeURIComponent(name)}&from=screener`);
     }, [router]);
 
@@ -402,6 +419,7 @@ function ScreenerContent() {
         : null;
 
     const activeFilterCount = [excludeHoldings, excludeDeficit].filter(Boolean).length;
+    const isAllActive = activeStrategyIds.size === 0;
 
     return (
         <Tooltip.Provider delayDuration={300}>
@@ -448,52 +466,40 @@ function ScreenerContent() {
                 </div>
             </div>
 
-            {/* ── 전략 탭 (sticky) ── */}
+            {/* ── 전략 탭 (sticky, 멀티셀렉트) ── */}
             <div className="sticky top-14 z-30 bg-white/95 dark:bg-zinc-900/95 backdrop-blur-md border-b border-zinc-200 dark:border-zinc-800">
                 <div className="max-w-7xl mx-auto px-4 sm:px-6">
-                    <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar py-3">
+                    <div className="flex items-center gap-1.5 py-3">
                         {/* 전체 탭 */}
-                        <Tooltip.Root>
-                            <Tooltip.Trigger asChild>
-                                <button
-                                    onClick={() => { setActiveStrategyId(null); setDisplayCount(DAILY_PAGE_SIZE); }}
-                                    className={cn(
-                                        "shrink-0 flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold border transition-all whitespace-nowrap",
-                                        activeStrategyId === null
-                                            ? STRATEGY_ACTIVE_CLS.all
-                                            : "border-zinc-200 dark:border-zinc-700 text-zinc-600 dark:text-zinc-400 hover:border-zinc-300 dark:hover:border-zinc-600 bg-white dark:bg-zinc-900"
-                                    )}
-                                >
-                                    전체
-                                    <span className={cn(
-                                        "text-[10px] font-black px-1.5 py-0.5 rounded-full",
-                                        activeStrategyId === null
-                                            ? "bg-white/20 dark:bg-black/20"
-                                            : "bg-zinc-100 dark:bg-zinc-700 text-zinc-500"
-                                    )}>
-                                        {strategyCounts.all}
-                                    </span>
-                                </button>
-                            </Tooltip.Trigger>
-                            <Tooltip.Portal>
-                                <Tooltip.Content sideOffset={6} className={TOOLTIP_CLS}>
-                                    전략 조건에 관계없이 오늘 스캔된 전체 종목을 표시합니다.
-                                    <Tooltip.Arrow className="fill-zinc-900 dark:fill-zinc-800" />
-                                </Tooltip.Content>
-                            </Tooltip.Portal>
-                        </Tooltip.Root>
+                        <button
+                            onClick={clearStrategies}
+                            className={cn(
+                                "shrink-0 flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold border transition-all whitespace-nowrap",
+                                isAllActive
+                                    ? STRATEGY_ACTIVE_CLS.all
+                                    : "border-zinc-200 dark:border-zinc-700 text-zinc-600 dark:text-zinc-400 hover:border-zinc-300 dark:hover:border-zinc-600 bg-white dark:bg-zinc-900"
+                            )}
+                        >
+                            전체
+                            <span className={cn(
+                                "text-[10px] font-black px-1.5 py-0.5 rounded-full",
+                                isAllActive ? "bg-white/20 dark:bg-black/20" : "bg-zinc-100 dark:bg-zinc-700 text-zinc-500"
+                            )}>
+                                {strategyCounts.all}
+                            </span>
+                        </button>
 
-                        {STRATEGY_PRESETS.map(preset => (
-                            <Tooltip.Root key={preset.id}>
-                                <Tooltip.Trigger asChild>
+                        {/* 전략 탭 스크롤 영역 */}
+                        <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar flex-1">
+                            {STRATEGY_PRESETS.map(preset => {
+                                const isActive = activeStrategyIds.has(preset.id);
+                                return (
                                     <button
-                                        onClick={() => {
-                                            setActiveStrategyId(prev => prev === preset.id ? null : preset.id);
-                                            setDisplayCount(DAILY_PAGE_SIZE);
-                                        }}
+                                        key={preset.id}
+                                        onClick={() => toggleStrategy(preset.id)}
                                         className={cn(
                                             "shrink-0 flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold border transition-all whitespace-nowrap",
-                                            activeStrategyId === preset.id
+                                            isActive
                                                 ? STRATEGY_ACTIVE_CLS[preset.id]
                                                 : "border-zinc-200 dark:border-zinc-700 text-zinc-600 dark:text-zinc-400 hover:border-zinc-300 dark:hover:border-zinc-600 bg-white dark:bg-zinc-900"
                                         )}
@@ -501,26 +507,107 @@ function ScreenerContent() {
                                         {preset.label}
                                         <span className={cn(
                                             "text-[10px] font-black px-1.5 py-0.5 rounded-full",
-                                            activeStrategyId === preset.id
-                                                ? "bg-white/20 dark:bg-black/20"
-                                                : "bg-zinc-100 dark:bg-zinc-700 text-zinc-500"
+                                            isActive ? "bg-white/20 dark:bg-black/20" : "bg-zinc-100 dark:bg-zinc-700 text-zinc-500"
                                         )}>
                                             {strategyCounts[preset.id] ?? 0}
                                         </span>
                                     </button>
-                                </Tooltip.Trigger>
-                                <Tooltip.Portal>
-                                    <Tooltip.Content sideOffset={6} className={TOOLTIP_CLS}>
-                                        <p className="font-bold mb-1">{preset.label}</p>
-                                        {preset.hint}
-                                        <Tooltip.Arrow className="fill-zinc-900 dark:fill-zinc-800" />
-                                    </Tooltip.Content>
-                                </Tooltip.Portal>
-                            </Tooltip.Root>
-                        ))}
+                                );
+                            })}
+                        </div>
+
+                        {/* 전략 가이드 토글 */}
+                        <button
+                            onClick={() => setShowGuide(o => !o)}
+                            className={cn(
+                                "shrink-0 flex items-center gap-1 px-2.5 py-1.5 rounded-lg border text-xs font-bold transition-all ml-1",
+                                showGuide
+                                    ? "bg-blue-50 dark:bg-blue-950/30 border-blue-300 dark:border-blue-700 text-blue-700 dark:text-blue-400"
+                                    : "border-zinc-200 dark:border-zinc-700 text-zinc-500 dark:text-zinc-400 hover:border-zinc-300 bg-white dark:bg-zinc-900"
+                            )}
+                            title="전략 설명 보기"
+                        >
+                            <Info size={12} />
+                            <span className="hidden sm:inline">전략 안내</span>
+                        </button>
                     </div>
+
+                    {/* 선택된 전략 조합 안내 */}
+                    {activeStrategyIds.size > 1 && (
+                        <div className="pb-2 flex items-center gap-2 flex-wrap">
+                            <span className="text-[10px] text-zinc-400 font-medium">조합:</span>
+                            {Array.from(activeStrategyIds).map(id => {
+                                const preset = STRATEGY_PRESETS.find(p => p.id === id);
+                                if (!preset) return null;
+                                return (
+                                    <span key={id} className={cn(
+                                        "inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded",
+                                        STRATEGY_BADGE[id] ?? "bg-zinc-100 text-zinc-500"
+                                    )}>
+                                        {preset.label}
+                                        <button onClick={() => toggleStrategy(id)} className="hover:opacity-70">
+                                            <X size={9} />
+                                        </button>
+                                    </span>
+                                );
+                            })}
+                            <span className="text-[10px] text-zinc-400">중 하나 이상 충족 · {filteredList.length}개</span>
+                        </div>
+                    )}
                 </div>
             </div>
+
+            {/* ── 전략 가이드 패널 ── */}
+            {showGuide && (
+                <div className="bg-white dark:bg-zinc-900 border-b border-zinc-200 dark:border-zinc-800">
+                    <div className="max-w-7xl mx-auto px-4 sm:px-6 py-5">
+                        <div className="flex items-center justify-between mb-4">
+                            <h2 className="text-sm font-black text-zinc-900 dark:text-white">전략 설명</h2>
+                            <button
+                                onClick={() => setShowGuide(false)}
+                                className="text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-300 transition-colors"
+                            >
+                                <X size={14} />
+                            </button>
+                        </div>
+                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+                            {STRATEGY_PRESETS.map(preset => (
+                                <button
+                                    key={preset.id}
+                                    onClick={() => toggleStrategy(preset.id)}
+                                    className={cn(
+                                        "text-left p-3.5 rounded-xl border-2 transition-all",
+                                        activeStrategyIds.has(preset.id)
+                                            ? "border-blue-400 dark:border-blue-600 bg-blue-50 dark:bg-blue-950/20"
+                                            : "border-zinc-200 dark:border-zinc-700 hover:border-zinc-300 dark:hover:border-zinc-600 bg-zinc-50 dark:bg-zinc-800/50"
+                                    )}
+                                >
+                                    <div className="flex items-center gap-2 mb-2">
+                                        <span className={cn(
+                                            "text-[10px] font-extrabold px-2 py-0.5 rounded",
+                                            STRATEGY_BADGE[preset.id] ?? "bg-zinc-100 text-zinc-500"
+                                        )}>
+                                            {preset.label}
+                                        </span>
+                                        <span className="text-[10px] text-zinc-400 font-mono">
+                                            {strategyCounts[preset.id] ?? 0}개
+                                        </span>
+                                        {activeStrategyIds.has(preset.id) && (
+                                            <span className="ml-auto text-[9px] font-black text-blue-600 dark:text-blue-400 bg-blue-100 dark:bg-blue-900/40 px-1.5 py-0.5 rounded">선택됨</span>
+                                        )}
+                                    </div>
+                                    <p className="text-[11px] text-zinc-500 dark:text-zinc-400 leading-relaxed">
+                                        {preset.hint}
+                                    </p>
+                                </button>
+                            ))}
+                        </div>
+                        <p className="mt-3 text-[10px] text-zinc-400 dark:text-zinc-500">
+                            · 전략 카드를 클릭하면 필터에 추가됩니다. 복수 선택 시 해당 전략 중 하나 이상 충족 종목을 표시합니다.
+                        </p>
+                    </div>
+                </div>
+            )}
 
             {/* ── 검색 & 필터 바 ── */}
             <div className="max-w-7xl mx-auto px-4 sm:px-6 pt-4 pb-2 flex items-center gap-3 flex-wrap">
@@ -594,8 +681,16 @@ function ScreenerContent() {
                         </div>
                         <div>
                             <p className="text-sm font-bold text-zinc-700 dark:text-zinc-300">조건에 맞는 종목이 없습니다</p>
-                            <p className="text-xs text-zinc-400 mt-1">필터를 조정하거나 다른 전략을 선택해보세요.</p>
+                            <p className="text-xs text-zinc-400 mt-1">전략 필터를 조정하거나 검색어를 변경해보세요.</p>
                         </div>
+                        {activeStrategyIds.size > 0 && (
+                            <button
+                                onClick={clearStrategies}
+                                className="text-xs font-bold text-blue-600 hover:underline"
+                            >
+                                전략 필터 초기화
+                            </button>
+                        )}
                     </div>
                 )}
 
