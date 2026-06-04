@@ -388,10 +388,10 @@ function AnalyzeContent() {
     }
   }, [isLoaded, krOrUs, data]);
 
-  if (!hasMounted) return <div className="min-h-screen bg-zinc-50 dark:bg-zinc-950" />;
+  if (!hasMounted) return <div className="min-h-screen bg-stone-100 dark:bg-[#0d0d0d]" />;
 
   return (
-    <div className="min-h-screen bg-zinc-50 dark:bg-zinc-950 text-zinc-900 dark:text-zinc-100 antialiased">
+    <div className="min-h-screen bg-stone-100 dark:bg-[#0d0d0d] text-neutral-900 dark:text-neutral-100 antialiased">
 
       {/* ── Toast ── */}
       <div className="fixed top-4 right-4 z-[100] space-y-2 max-w-sm w-full pointer-events-none px-4 sm:px-0">
@@ -401,7 +401,7 @@ function AnalyzeContent() {
       </div>
 
       {/* ── 헤더 ── */}
-      <header className="sticky top-0 z-30 bg-white dark:bg-zinc-900 border-b border-zinc-200 dark:border-zinc-800 shadow-sm">
+      <header className="sticky top-0 z-30 bg-white dark:bg-[#111111] border-b border-neutral-200 dark:border-[#222222]">
         {fromScreener && (
           <div className="border-b border-zinc-100 dark:border-zinc-800/60">
             <div className="max-w-4xl mx-auto px-4 py-2">
@@ -797,7 +797,7 @@ function AnalyzeContent() {
 export default function AnalyzePage() {
   return (
     <Suspense fallback={
-      <div className="flex flex-col items-center justify-center py-40 gap-5 bg-zinc-50 dark:bg-zinc-950 min-h-screen">
+      <div className="flex flex-col items-center justify-center py-40 gap-5 bg-stone-100 dark:bg-[#0d0d0d] min-h-screen">
         <div className="p-4 bg-white dark:bg-zinc-900 rounded-2xl border border-zinc-200 dark:border-zinc-800 shadow-sm">
           <Loader2 className="animate-spin text-blue-600 dark:text-blue-400" size={24} />
         </div>

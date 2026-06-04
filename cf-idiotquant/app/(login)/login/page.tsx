@@ -9,13 +9,7 @@ const BENEFITS = [
 
 export default function LoginPage() {
     return (
-        <div className="min-h-[calc(100vh-3.5rem)] flex flex-col items-center justify-center px-4 py-12 bg-gradient-to-b from-zinc-50 to-white dark:from-zinc-950 dark:to-zinc-900 relative overflow-hidden">
-
-            {/* Background blobs */}
-            <div className="pointer-events-none absolute inset-0 overflow-hidden">
-                <div className="absolute -top-40 -right-40 w-96 h-96 rounded-full bg-blue-500/6 blur-3xl" />
-                <div className="absolute -bottom-40 -left-40 w-96 h-96 rounded-full bg-indigo-500/6 blur-3xl" />
-            </div>
+        <div className="min-h-screen flex flex-col items-center justify-center px-4 py-12 bg-stone-100 dark:bg-[#0d0d0d]">
 
             <div className="relative w-full max-w-sm flex flex-col gap-8">
 
@@ -32,10 +26,10 @@ export default function LoginPage() {
                 </div>
 
                 {/* Card */}
-                <div className="bg-white dark:bg-zinc-900 rounded-3xl border border-zinc-200/80 dark:border-zinc-800 shadow-xl shadow-zinc-900/6 dark:shadow-black/40 overflow-hidden">
+                <div className="bg-white dark:bg-[#1a1a1a] rounded-3xl border border-neutral-200 dark:border-[#2a2a2a] shadow-xl shadow-neutral-900/6 dark:shadow-black/40 overflow-hidden">
 
                     {/* Card header */}
-                    <div className="px-8 pt-8 pb-6 text-center border-b border-zinc-100 dark:border-zinc-800">
+                    <div className="px-8 pt-8 pb-6 text-center border-b border-neutral-100 dark:border-[#2a2a2a]">
                         <h1 className="text-[1.6rem] font-black leading-tight text-zinc-900 dark:text-white">
                             저평가 종목을<br />매일 발굴해드립니다
                         </h1>
@@ -45,7 +39,7 @@ export default function LoginPage() {
                     </div>
 
                     {/* Benefits */}
-                    <div className="px-8 py-6 space-y-4 border-b border-zinc-100 dark:border-zinc-800">
+                    <div className="px-8 py-6 space-y-4 border-b border-neutral-100 dark:border-[#2a2a2a]">
                         {BENEFITS.map((b) => (
                             <div key={b.label} className="flex items-start gap-3">
                                 <div className="mt-0.5 w-5 h-5 rounded-full bg-blue-100 dark:bg-blue-950/60 flex items-center justify-center shrink-0">
