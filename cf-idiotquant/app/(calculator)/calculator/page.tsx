@@ -201,7 +201,7 @@ const createNextInputs = <K extends keyof CalcInputs>(previousInputs: CalcInputs
 export default function AssetLifetimeCalculator() {
     return (
         <Suspense fallback={
-            <div className="min-h-screen bg-zinc-50 dark:bg-zinc-950 flex flex-col gap-3 items-center justify-center text-zinc-500 dark:text-zinc-400 font-sans text-sm font-medium">
+            <div className="min-h-screen bg-stone-100 dark:bg-[#0d0d0d] flex flex-col gap-3 items-center justify-center text-zinc-500 dark:text-zinc-400 font-sans text-sm font-medium">
                 <div className="w-6 h-6 border-2 border-blue-600 border-t-transparent rounded-full animate-spin" />
                 <span>시뮬레이터 데이터를 로드하고 있습니다...</span>
             </div>
@@ -343,7 +343,7 @@ function CalculatorContent() {
 
         let level = 1;
         let label = "초심자";
-        let color = "text-zinc-700 bg-zinc-100 border-zinc-200 dark:text-zinc-300 dark:bg-zinc-800/80 dark:border-zinc-700";
+        let color = "text-zinc-700 bg-stone-100 border-zinc-200 dark:text-zinc-300 dark:bg-[#1a1a1a]/80 dark:border-[#222222]";
         let iconColor = "text-zinc-500 dark:text-zinc-400";
         let desc = "기본적인 수익률만 계산하는 단계입니다. 실전처럼 물가상승이나 건보료, 절세 옵션을 켜서 정밀도를 높여보세요.";
 
@@ -497,9 +497,9 @@ function CalculatorContent() {
     };
 
     return (
-        <div className="bg-zinc-50 dark:bg-zinc-950 min-h-screen p-3 sm:p-6 md:p-10 pb-24 md:pb-10 font-sans text-zinc-900 dark:text-zinc-50 selection:bg-blue-500/20">
+        <div className="bg-stone-100 dark:bg-[#0d0d0d] min-h-screen p-3 sm:p-6 md:p-10 pb-24 md:pb-10 font-sans text-zinc-900 dark:text-zinc-50 selection:bg-blue-500/20">
             <div className="max-w-6xl mx-auto space-y-5 sm:space-y-10">
-                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-zinc-200 dark:border-zinc-800 pb-4 sm:pb-6">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-zinc-200 dark:border-[#2a2a2a] pb-4 sm:pb-6">
                     <div className="flex items-center gap-2 sm:gap-3">
                         <div className="p-2 sm:p-2.5 bg-blue-600 rounded-xl sm:rounded-2xl text-white shadow-lg shadow-blue-600/20 shrink-0">
                             <CalculatorIcon className="w-5 h-5 sm:w-6" />
@@ -539,7 +539,7 @@ function CalculatorContent() {
                                 "flex flex-col sm:flex-row items-center justify-center gap-1 sm:gap-1.5 px-2 py-2 sm:px-3 rounded-lg font-bold text-[10px] sm:text-[11px] transition-all border shadow-xs text-center leading-tight sm:leading-none",
                                 isReorderEnabled
                                     ? "bg-blue-600 border-blue-600 text-white"
-                                    : "bg-white dark:bg-zinc-900 border-zinc-300 dark:border-zinc-700 text-zinc-900 dark:text-zinc-50"
+                                    : "bg-white dark:bg-[#1a1a1a] border-zinc-300 dark:border-[#222222] text-zinc-900 dark:text-zinc-50"
                             )}
                         >
                             <Bars3Icon className="w-3.5 h-3.5 shrink-0" />
@@ -548,7 +548,7 @@ function CalculatorContent() {
 
                         <button
                             onClick={resetLayout}
-                            className="flex flex-col sm:flex-row items-center justify-center gap-1 sm:gap-1 px-2 py-2 sm:px-3 rounded-lg font-bold text-[10px] sm:text-[11px] bg-zinc-100 dark:bg-zinc-800 hover:bg-zinc-200 dark:hover:bg-zinc-700 text-zinc-700 dark:text-zinc-300 transition-colors border border-zinc-200 dark:border-zinc-700/60 shadow-xs text-center leading-tight sm:leading-none"
+                            className="flex flex-col sm:flex-row items-center justify-center gap-1 sm:gap-1 px-2 py-2 sm:px-3 rounded-lg font-bold text-[10px] sm:text-[11px] bg-stone-100 dark:bg-[#1a1a1a] hover:bg-zinc-200 dark:hover:bg-[#1a1a1a] text-zinc-700 dark:text-zinc-300 transition-colors border border-zinc-200 dark:border-[#222222]/60 shadow-xs text-center leading-tight sm:leading-none"
                         >
                             <ArrowPathIcon className="w-3.5 h-3.5 shrink-0" />
                             <span>위치 초기화</span>
@@ -560,7 +560,7 @@ function CalculatorContent() {
                                 "flex flex-col sm:flex-row items-center justify-center gap-1 sm:gap-1.5 px-2 py-2 sm:px-3 rounded-lg font-bold text-[10px] sm:text-[11px] transition-all shadow-xs border shrink-0 text-center leading-tight sm:leading-none",
                                 copied
                                     ? "bg-emerald-600 border-emerald-600 text-white"
-                                    : "bg-white dark:bg-zinc-900 border-zinc-300 dark:border-zinc-700 text-zinc-900 dark:text-zinc-50 hover:bg-zinc-50 dark:hover:bg-zinc-800"
+                                    : "bg-white dark:bg-[#1a1a1a] border-zinc-300 dark:border-[#222222] text-zinc-900 dark:text-zinc-50 hover:bg-stone-100 dark:hover:bg-[#1a1a1a]"
                             )}
                         >
                             {copied ? <CheckIcon className="w-3.5 h-3.5 shrink-0" /> : <ShareIcon className="w-3.5 h-3.5 shrink-0" />}
@@ -587,7 +587,7 @@ function CalculatorContent() {
                                     >
                                         <DragIndicatorOverlay desktopType="입력 섹션 내 상하 이동" isEnabled={isReorderEnabled && activeDraggingId === "core-investment"} />
                                         <SectionWrapper title="핵심 자산 및 기대 수익률" icon={<ArrowTrendingUpIcon className="w-4 h-4 text-zinc-500 dark:text-zinc-400" />}>
-                                            <div className="space-y-4 sm:space-y-6 bg-white dark:bg-zinc-900 p-3.5 xs:p-4 sm:p-6 rounded-2xl sm:rounded-[2rem] border border-zinc-200 dark:border-zinc-800 shadow-xs relative group/card border-t-4 group-active/item:border-blue-500 group-active/item:ring-4 group-active/item:ring-blue-500/20 dark:group-active/item:ring-blue-500/10 transition-all duration-200">
+                                            <div className="space-y-4 sm:space-y-6 bg-white dark:bg-[#1a1a1a] p-3.5 xs:p-4 sm:p-6 rounded-2xl sm:rounded-[2rem] border border-zinc-200 dark:border-[#2a2a2a] shadow-xs relative group/card border-t-4 group-active/item:border-blue-500 group-active/item:ring-4 group-active/item:ring-blue-500/20 dark:group-active/item:ring-blue-500/10 transition-all duration-200">
 
                                                 {/* 모바일 터치 피드백을 위한 touch-action: none 및 넉넉한 터치 패딩 공간 확보 */}
                                                 <div className="absolute right-3 top-3 w-24 h-8 flex items-center justify-end z-30">
@@ -603,7 +603,7 @@ function CalculatorContent() {
                                                             "px-2 py-1.5 rounded text-[10px] font-black select-none flex items-center gap-1 border transition-all",
                                                             isReorderEnabled
                                                                 ? "cursor-grab active:cursor-grabbing bg-blue-50 dark:bg-blue-950/40 text-blue-600 dark:text-blue-400 border-blue-200 dark:border-blue-800/80 shadow-xs"
-                                                                : "opacity-25 bg-zinc-100 dark:bg-zinc-800 text-zinc-400 border-transparent cursor-not-allowed"
+                                                                : "opacity-25 bg-stone-100 dark:bg-[#1a1a1a] text-zinc-400 border-transparent cursor-not-allowed"
                                                         )}
                                                     >
                                                         <Bars3Icon className="w-3.5 h-3.5" />
@@ -615,7 +615,7 @@ function CalculatorContent() {
                                                     <InputGroup label="초기 투자 시드" tooltip="현재 투입 가능한 순수 자산 및 투자 예치금 총액입니다." value={formatKrw(inputs.investmentAmount)} color="text-blue-600 dark:text-blue-400">
                                                         <div className="flex gap-2">
                                                             <div className="relative flex-1">
-                                                                <input type="number" inputMode="numeric" pattern="[0-9]*" value={inputs.investmentAmount} onChange={(e) => updateInput("investmentAmount", Number(e.target.value))} className="w-full bg-zinc-50 dark:bg-zinc-800 border border-zinc-300 dark:border-zinc-700 rounded-xl pl-3 pr-10 py-2 sm:py-2.5 font-black text-xs sm:text-sm text-zinc-900 dark:text-zinc-50 focus:ring-2 focus:ring-blue-500 outline-none transition-shadow" />
+                                                                <input type="number" inputMode="numeric" pattern="[0-9]*" value={inputs.investmentAmount} onChange={(e) => updateInput("investmentAmount", Number(e.target.value))} className="w-full bg-stone-100 dark:bg-[#1a1a1a] border border-zinc-300 dark:border-[#222222] rounded-xl pl-3 pr-10 py-2 sm:py-2.5 font-black text-xs sm:text-sm text-zinc-900 dark:text-zinc-50 focus:ring-2 focus:ring-blue-500 outline-none transition-shadow" />
                                                                 <div className="absolute right-3 top-1/2 -translate-y-1/2 text-zinc-400 dark:text-zinc-500 text-[11px] sm:text-xs font-bold">만원</div>
                                                             </div>
                                                             <StepButtons value={inputs.investmentAmount} step={500} min={0} max={100000000} onChange={(v) => updateInput("investmentAmount", v)} />
@@ -635,7 +635,7 @@ function CalculatorContent() {
                                                     showQuickButtons={true}
                                                 />
 
-                                                <div className="p-3 sm:p-4 bg-zinc-50 dark:bg-zinc-800/30 rounded-xl sm:rounded-2xl border border-zinc-200 dark:border-zinc-800 space-y-2 sm:space-y-3">
+                                                <div className="p-3 sm:p-4 bg-stone-100 dark:bg-[#1a1a1a]/30 rounded-xl sm:rounded-2xl border border-zinc-200 dark:border-[#2a2a2a] space-y-2 sm:space-y-3">
                                                     <span className="text-[11px] sm:text-xs font-black text-zinc-800 dark:text-zinc-200 block px-1">과세 및 헷지 변수</span>
                                                     <div className="flex flex-col gap-0.5">
                                                         <ToggleButton checked={inputs.applyTax} onChange={(v) => updateInput("applyTax", v)} label="이자소득세 과세 (15.4%)" tooltip="매년 투자 수익에 배당소득세를 차감한 세후 복리를 계산합니다." />
@@ -670,7 +670,7 @@ function CalculatorContent() {
                                     >
                                         <DragIndicatorOverlay desktopType="입력 섹션 내 상하 이동" isEnabled={isReorderEnabled && activeDraggingId === "life-cycle"} />
                                         <SectionWrapper title="생애 주기 임계값" icon={<UserIcon className="w-4 h-4 text-zinc-500 dark:text-zinc-400" />}>
-                                            <div className="space-y-4 sm:space-y-5 bg-white dark:bg-zinc-900 p-3.5 xs:p-4 sm:p-6 rounded-2xl sm:rounded-[2rem] border border-zinc-200 dark:border-zinc-800 shadow-xs relative group/card border-t-4 group-active/item:border-blue-500 group-active/item:ring-4 group-active/item:ring-blue-500/20 dark:group-active/item:ring-blue-500/10 transition-all duration-200">
+                                            <div className="space-y-4 sm:space-y-5 bg-white dark:bg-[#1a1a1a] p-3.5 xs:p-4 sm:p-6 rounded-2xl sm:rounded-[2rem] border border-zinc-200 dark:border-[#2a2a2a] shadow-xs relative group/card border-t-4 group-active/item:border-blue-500 group-active/item:ring-4 group-active/item:ring-blue-500/20 dark:group-active/item:ring-blue-500/10 transition-all duration-200">
 
                                                 <div className="absolute right-3 top-3 w-24 h-8 flex items-center justify-end z-30">
                                                     <div
@@ -685,7 +685,7 @@ function CalculatorContent() {
                                                             "px-2 py-1.5 rounded text-[10px] font-black select-none flex items-center gap-1 border transition-all",
                                                             isReorderEnabled
                                                                 ? "cursor-grab active:cursor-grabbing bg-blue-50 dark:bg-blue-950/40 text-blue-600 dark:text-blue-400 border-blue-200 dark:border-blue-800/80 shadow-xs"
-                                                                : "opacity-25 bg-zinc-100 dark:bg-zinc-800 text-zinc-400 border-transparent cursor-not-allowed"
+                                                                : "opacity-25 bg-stone-100 dark:bg-[#1a1a1a] text-zinc-400 border-transparent cursor-not-allowed"
                                                         )}
                                                     >
                                                         <Bars3Icon className="w-3.5 h-3.5" />
@@ -717,7 +717,7 @@ function CalculatorContent() {
                                     >
                                         <DragIndicatorOverlay desktopType="입력 섹션 내 상하 이동" isEnabled={isReorderEnabled && activeDraggingId === "incremental-flows"} />
                                         <SectionWrapper title="점증형 현금 가감 데이터" icon={<ArrowsRightLeftIcon className="w-4 h-4 text-zinc-500 dark:text-zinc-400" />}>
-                                            <div className="space-y-4 sm:space-y-6 bg-white dark:bg-zinc-900 p-3.5 xs:p-4 sm:p-6 rounded-2xl sm:rounded-[2rem] border border-zinc-200 dark:border-zinc-800 shadow-xs relative group/card border-t-4 group-active/item:border-blue-500 group-active/item:ring-4 group-active/item:ring-blue-500/20 dark:group-active/item:ring-blue-500/10 transition-all duration-200">
+                                            <div className="space-y-4 sm:space-y-6 bg-white dark:bg-[#1a1a1a] p-3.5 xs:p-4 sm:p-6 rounded-2xl sm:rounded-[2rem] border border-zinc-200 dark:border-[#2a2a2a] shadow-xs relative group/card border-t-4 group-active/item:border-blue-500 group-active/item:ring-4 group-active/item:ring-blue-500/20 dark:group-active/item:ring-blue-500/10 transition-all duration-200">
 
                                                 <div className="absolute right-3 top-3 w-24 h-8 flex items-center justify-end z-30">
                                                     <div
@@ -732,7 +732,7 @@ function CalculatorContent() {
                                                             "px-2 py-1.5 rounded text-[10px] font-black select-none flex items-center gap-1 border transition-all",
                                                             isReorderEnabled
                                                                 ? "cursor-grab active:cursor-grabbing bg-blue-50 dark:bg-blue-950/40 text-blue-600 dark:text-blue-400 border-blue-200 dark:border-blue-800/80 shadow-xs"
-                                                                : "opacity-25 bg-zinc-100 dark:bg-zinc-800 text-zinc-400 border-transparent cursor-not-allowed"
+                                                                : "opacity-25 bg-stone-100 dark:bg-[#1a1a1a] text-zinc-400 border-transparent cursor-not-allowed"
                                                         )}
                                                     >
                                                         <Bars3Icon className="w-3.5 h-3.5" />
@@ -743,17 +743,17 @@ function CalculatorContent() {
                                                 <div className="space-y-3 sm:space-y-4 pt-6">
                                                     <InputGroup label="초기 매월 저축액" tooltip="은퇴 전 근로 기간 동안 매달 투자 계좌에 적립할 원금입니다." value={formatKrw(inputs.contributions)}>
                                                         <div className="flex gap-2">
-                                                            <input type="number" inputMode="numeric" pattern="[0-9]*" value={inputs.contributions} onChange={(e) => updateInput("contributions", Number(e.target.value))} className="flex-1 bg-zinc-50 dark:bg-zinc-800 border border-zinc-300 dark:border-zinc-700 rounded-xl px-3 py-2 sm:py-2.5 font-black text-xs sm:text-sm text-zinc-900 dark:text-zinc-50 outline-none focus:ring-2 focus:ring-blue-500 transition-shadow" />
+                                                            <input type="number" inputMode="numeric" pattern="[0-9]*" value={inputs.contributions} onChange={(e) => updateInput("contributions", Number(e.target.value))} className="flex-1 bg-stone-100 dark:bg-[#1a1a1a] border border-zinc-300 dark:border-[#222222] rounded-xl px-3 py-2 sm:py-2.5 font-black text-xs sm:text-sm text-zinc-900 dark:text-zinc-50 outline-none focus:ring-2 focus:ring-blue-500 transition-shadow" />
                                                             <StepButtons value={inputs.contributions} step={50} min={0} max={5000} onChange={(v) => updateInput("contributions", v)} />
                                                         </div>
                                                     </InputGroup>
                                                     <PercentRateSlider label="복리 저축 매년 증액률" tooltip="연봉 상승을 반영해 매년 월 적립액을 복리로 늘려나가는 엔진입니다." value={inputs.contributionGrowthRate} min={0} max={15} step={0.1} onChange={(v) => updateInput("contributionGrowthRate", v)} accentColor="blue" />
                                                 </div>
-                                                <div className="h-px bg-zinc-100 dark:bg-zinc-800" />
+                                                <div className="h-px bg-stone-100 dark:bg-[#1a1a1a]" />
                                                 <div className="space-y-3 sm:space-y-4">
                                                     <InputGroup label="기본 목표 초기 월 생활비" tooltip="은퇴 후 매달 삶을 유지하기 위해 인출하여 사용할 고정 비용입니다." value={formatKrw(inputs.monthlyExpense)} color="text-rose-600 dark:text-rose-400">
                                                         <div className="flex gap-2">
-                                                            <input type="number" inputMode="numeric" pattern="[0-9]*" value={inputs.monthlyExpense} onChange={(e) => updateInput("monthlyExpense", Number(e.target.value))} className="flex-1 bg-zinc-50 dark:bg-zinc-800 border border-zinc-300 dark:border-zinc-700 rounded-xl px-3 py-2 sm:py-2.5 font-black text-xs sm:text-sm text-zinc-900 dark:text-zinc-50 outline-none focus:ring-2 focus:ring-rose-500 transition-shadow" />
+                                                            <input type="number" inputMode="numeric" pattern="[0-9]*" value={inputs.monthlyExpense} onChange={(e) => updateInput("monthlyExpense", Number(e.target.value))} className="flex-1 bg-stone-100 dark:bg-[#1a1a1a] border border-zinc-300 dark:border-[#222222] rounded-xl px-3 py-2 sm:py-2.5 font-black text-xs sm:text-sm text-zinc-900 dark:text-zinc-50 outline-none focus:ring-2 focus:ring-rose-500 transition-shadow" />
                                                             <StepButtons value={inputs.monthlyExpense} step={50} min={0} max={5000} onChange={(v) => updateInput("monthlyExpense", v)} />
                                                         </div>
                                                     </InputGroup>
@@ -784,7 +784,7 @@ function CalculatorContent() {
                                         className="bg-transparent select-none outline-none relative group/item rounded-2xl"
                                     >
                                         <DragIndicatorOverlay desktopType="리포트 섹션 내 상하 이동" isEnabled={isReorderEnabled && activeDraggingId === "summary-card"} />
-                                        <div className={cn("p-4 sm:p-8 md:p-10 rounded-2xl sm:rounded-[2.5rem] shadow-xl relative overflow-hidden transition-all duration-300 border bg-zinc-950 border-zinc-800 dark:bg-zinc-900 dark:border-zinc-800/80 text-white group/card border-t-4 group-active/item:border-blue-500 group-active/item:ring-4 group-active/item:ring-blue-500/20 dark:group-active/item:ring-blue-500/10", results.finalValue < 0 && "border-rose-900/50 bg-gradient-to-br from-zinc-950 to-rose-950/30")}>
+                                        <div className={cn("p-4 sm:p-8 md:p-10 rounded-2xl sm:rounded-[2.5rem] shadow-xl relative overflow-hidden transition-all duration-300 border bg-zinc-950 border-zinc-800 dark:bg-[#1a1a1a] dark:border-[#2a2a2a]/80 text-white group/card border-t-4 group-active/item:border-blue-500 group-active/item:ring-4 group-active/item:ring-blue-500/20 dark:group-active/item:ring-blue-500/10", results.finalValue < 0 && "border-rose-900/50 bg-gradient-to-br from-zinc-950 to-rose-950/30")}>
 
                                             <div className="absolute right-4 top-4 w-24 h-8 flex items-center justify-end z-30">
                                                 <div
@@ -870,7 +870,7 @@ function CalculatorContent() {
                                                     className={cn(
                                                         "px-2 py-1.5 rounded text-[10px] font-black select-none flex items-center gap-1 border transition-all",
                                                         isReorderEnabled
-                                                            ? "cursor-grab active:cursor-grabbing bg-white dark:bg-zinc-900 text-blue-600 dark:text-blue-400 border-zinc-200 dark:border-zinc-800 shadow-xs ring-1 ring-blue-500/30"
+                                                            ? "cursor-grab active:cursor-grabbing bg-white dark:bg-[#1a1a1a] text-blue-600 dark:text-blue-400 border-zinc-200 dark:border-[#2a2a2a] shadow-xs ring-1 ring-blue-500/30"
                                                             : "opacity-0 pointer-events-none"
                                                     )}
                                                 >
@@ -904,7 +904,7 @@ function CalculatorContent() {
                                         className="bg-transparent select-none outline-none relative group/item rounded-2xl"
                                     >
                                         <DragIndicatorOverlay desktopType="리포트 섹션 내 상하 이동" isEnabled={isReorderEnabled && activeDraggingId === "chart-view"} />
-                                        <div className="bg-white dark:bg-zinc-900 p-3.5 sm:p-6 md:p-8 rounded-2xl sm:rounded-[2.5rem] border border-zinc-200 dark:border-zinc-800 shadow-xs relative group/card border-t-4 group-active/item:border-blue-500 group-active/item:ring-4 group-active/item:ring-blue-500/20 dark:group-active/item:ring-blue-500/10 transition-all duration-200">
+                                        <div className="bg-white dark:bg-[#1a1a1a] p-3.5 sm:p-6 md:p-8 rounded-2xl sm:rounded-[2.5rem] border border-zinc-200 dark:border-[#2a2a2a] shadow-xs relative group/card border-t-4 group-active/item:border-blue-500 group-active/item:ring-4 group-active/item:ring-blue-500/20 dark:group-active/item:ring-blue-500/10 transition-all duration-200">
 
                                             <div className="absolute right-3 top-3 w-24 h-8 flex items-center justify-end z-30">
                                                 <div
@@ -919,7 +919,7 @@ function CalculatorContent() {
                                                         "px-2 py-1.5 rounded text-[10px] font-black select-none flex items-center gap-1 border transition-all",
                                                         isReorderEnabled
                                                             ? "cursor-grab active:cursor-grabbing bg-blue-50 dark:bg-blue-950/40 text-blue-600 dark:text-blue-400 border-blue-200 dark:border-blue-800/80 shadow-xs"
-                                                            : "opacity-25 bg-zinc-100 dark:bg-zinc-800 text-zinc-400 border-transparent cursor-not-allowed"
+                                                            : "opacity-25 bg-stone-100 dark:bg-[#1a1a1a] text-zinc-400 border-transparent cursor-not-allowed"
                                                     )}
                                                 >
                                                     <Bars3Icon className="w-3.5 h-3.5" />
@@ -931,7 +931,7 @@ function CalculatorContent() {
                                                 <h3 className="text-sm sm:text-lg font-black tracking-tight text-zinc-900 dark:text-zinc-50">지표 연동형 자산 변동 그래프</h3>
                                                 <p className="text-[11px] sm:text-sm text-zinc-500 dark:text-zinc-400 font-semibold mt-0.5">매년 가중되는 인플레이션 누적 및 세후 배당 유출입 복리 커브</p>
                                             </div>
-                                            <div className="bg-zinc-50 dark:bg-black/20 rounded-xl overflow-hidden border border-zinc-200 dark:border-zinc-800/80 p-1 sm:p-4">
+                                            <div className="bg-stone-100 dark:bg-black/20 rounded-xl overflow-hidden border border-zinc-200 dark:border-[#2a2a2a]/80 p-1 sm:p-4">
                                                 <ResultChart data={results.chartData} height="h-[260px] sm:h-[350px]" />
                                             </div>
                                         </div>
@@ -951,7 +951,7 @@ function CalculatorContent() {
                                         className="bg-transparent select-none outline-none relative group/item rounded-2xl"
                                     >
                                         <DragIndicatorOverlay desktopType="리포트 섹션 내 상하 이동" isEnabled={isReorderEnabled && activeDraggingId === "table-report"} />
-                                        <div className="bg-white dark:bg-zinc-900 p-3.5 sm:p-6 rounded-2xl sm:rounded-[2.5rem] border border-zinc-200 dark:border-zinc-800 shadow-xs relative group/card border-t-4 group-active/item:border-blue-500 group-active/item:ring-4 group-active/item:ring-blue-500/20 dark:group-active/item:ring-blue-500/10 transition-all duration-200">
+                                        <div className="bg-white dark:bg-[#1a1a1a] p-3.5 sm:p-6 rounded-2xl sm:rounded-[2.5rem] border border-zinc-200 dark:border-[#2a2a2a] shadow-xs relative group/card border-t-4 group-active/item:border-blue-500 group-active/item:ring-4 group-active/item:ring-blue-500/20 dark:group-active/item:ring-blue-500/10 transition-all duration-200">
 
                                             <div className="absolute right-3 top-3 w-24 h-8 flex items-center justify-end z-30">
                                                 <div
@@ -966,7 +966,7 @@ function CalculatorContent() {
                                                         "px-2 py-1.5 rounded text-[10px] font-black select-none flex items-center gap-1 border transition-all",
                                                         isReorderEnabled
                                                             ? "cursor-grab active:cursor-grabbing bg-blue-50 dark:bg-blue-950/40 text-blue-600 dark:text-blue-400 border-blue-200 dark:border-blue-800/80 shadow-xs"
-                                                            : "opacity-25 bg-zinc-100 dark:bg-zinc-800 text-zinc-400 border-transparent cursor-not-allowed"
+                                                            : "opacity-25 bg-stone-100 dark:bg-[#1a1a1a] text-zinc-400 border-transparent cursor-not-allowed"
                                                     )}
                                                 >
                                                     <Bars3Icon className="w-3.5 h-3.5" />
@@ -980,9 +980,9 @@ function CalculatorContent() {
                                                     {inputs.realValueMode ? "인플레이션 차감 가치가 반영된 실질 가치 기준 흐름입니다." : "매년 가중 증액된 명목 화폐 기준 흐름입니다."}
                                                 </p>
                                             </div>
-                                            <div className="overflow-x-auto rounded-xl border border-zinc-200 dark:border-zinc-800 max-h-64 sm:max-h-80 overflow-y-auto">
+                                            <div className="overflow-x-auto rounded-xl border border-zinc-200 dark:border-[#2a2a2a] max-h-64 sm:max-h-80 overflow-y-auto">
                                                 <table className="w-full text-left border-collapse text-[11px] sm:text-xs">
-                                                    <thead className="bg-zinc-50 dark:bg-zinc-800 sticky top-0 font-black text-zinc-700 dark:text-zinc-300 border-b border-zinc-200 dark:border-zinc-700">
+                                                    <thead className="bg-stone-100 dark:bg-[#1a1a1a] sticky top-0 font-black text-zinc-700 dark:text-zinc-300 border-b border-zinc-200 dark:border-[#222222]">
                                                         <tr>
                                                             <th className="p-2 sm:p-3">나이</th>
                                                             <th className="p-2 sm:p-3 text-right">연간 저축</th>
@@ -992,9 +992,9 @@ function CalculatorContent() {
                                                             <th className="p-2 sm:p-3 text-right">예상 잔고</th>
                                                         </tr>
                                                     </thead>
-                                                    <tbody className="divide-y divide-zinc-100 dark:divide-zinc-800/60 font-semibold text-zinc-800 dark:text-zinc-200 font-mono">
+                                                    <tbody className="divide-y divide-zinc-100 dark:divide-[#2a2a2a]/60 font-semibold text-zinc-800 dark:text-zinc-200 font-mono">
                                                         {results.chartData.map((row: any) => (
-                                                            <tr key={row.year} className="hover:bg-zinc-50/50 dark:hover:bg-zinc-800/30 transition-colors">
+                                                            <tr key={row.year} className="hover:bg-stone-100/50 dark:hover:bg-[#1a1a1a]/30 transition-colors">
                                                                 <td className="p-2 sm:p-3 font-bold text-zinc-500">{row.year}세</td>
                                                                 <td className="p-2 sm:p-3 text-right text-blue-600 dark:text-blue-400">
                                                                     {row.annualContribution > 0 ? formatKrw(row.annualContribution) : "-"}
@@ -1013,7 +1013,7 @@ function CalculatorContent() {
                                                                             <span className="px-1.5 py-0.5 text-[9px] bg-amber-50 text-amber-700 dark:bg-amber-950/40 dark:text-amber-300 rounded font-bold">은퇴기</span>
                                                                         )}
                                                                         {row.hasTaxApplied && (
-                                                                            <span className="px-1.5 py-0.5 text-[9px] bg-zinc-100 text-zinc-700 dark:bg-zinc-800 dark:text-zinc-300 rounded">
+                                                                            <span className="px-1.5 py-0.5 text-[9px] bg-stone-100 text-zinc-700 dark:bg-[#1a1a1a] dark:text-zinc-300 rounded">
                                                                                 {row.hasIsaGoldApplied ? "금투세(22%)" : "일반과세"}
                                                                             </span>
                                                                         )}
@@ -1098,11 +1098,11 @@ function InputGroup({ label, value, tooltip, color = "text-zinc-900 dark:text-zi
 
 function StepButtons({ value, step, min, max, onChange }: { value: number; step: number; min: number; max: number; onChange: (v: number) => void }) {
     return (
-        <div className="flex border border-zinc-300 dark:border-zinc-700 rounded-xl overflow-hidden bg-white dark:bg-zinc-800 shadow-xs shrink-0 h-8 sm:h-10 items-center">
-            <button type="button" disabled={value <= min} onClick={() => onChange(Math.max(min, Number((value - step).toFixed(2))))} className="px-2.5 sm:px-3 h-full text-zinc-700 dark:text-zinc-300 hover:bg-zinc-50 dark:hover:bg-zinc-700 disabled:opacity-20 border-r border-zinc-300 dark:border-zinc-700 transition-colors flex items-center justify-center">
+        <div className="flex border border-zinc-300 dark:border-[#222222] rounded-xl overflow-hidden bg-white dark:bg-[#1a1a1a] shadow-xs shrink-0 h-8 sm:h-10 items-center">
+            <button type="button" disabled={value <= min} onClick={() => onChange(Math.max(min, Number((value - step).toFixed(2))))} className="px-2.5 sm:px-3 h-full text-zinc-700 dark:text-zinc-300 hover:bg-stone-100 dark:hover:bg-[#1a1a1a] disabled:opacity-20 border-r border-zinc-300 dark:border-[#222222] transition-colors flex items-center justify-center">
                 <MinusIcon className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
             </button>
-            <button type="button" disabled={value >= max} onClick={() => onChange(Math.min(max, Number((value + step).toFixed(2))))} className="px-2.5 sm:px-3 h-full text-zinc-700 dark:text-zinc-300 hover:bg-zinc-50 dark:hover:bg-zinc-700 disabled:opacity-20 transition-colors flex items-center justify-center">
+            <button type="button" disabled={value >= max} onClick={() => onChange(Math.min(max, Number((value + step).toFixed(2))))} className="px-2.5 sm:px-3 h-full text-zinc-700 dark:text-zinc-300 hover:bg-stone-100 dark:hover:bg-[#1a1a1a] disabled:opacity-20 transition-colors flex items-center justify-center">
                 <PlusIcon className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
             </button>
         </div>
@@ -1111,7 +1111,7 @@ function StepButtons({ value, step, min, max, onChange }: { value: number; step:
 
 function ToggleButton({ checked, onChange, label, tooltip }: { checked: boolean; onChange: (v: boolean) => void; label: string; tooltip?: string }) {
     return (
-        <div className="flex items-center justify-between p-1.5 sm:p-2 rounded-lg hover:bg-zinc-100 dark:hover:bg-zinc-800/40 transition-colors min-w-0 gap-2">
+        <div className="flex items-center justify-between p-1.5 sm:p-2 rounded-lg hover:bg-stone-100 dark:hover:bg-[#1a1a1a]/40 transition-colors min-w-0 gap-2">
             <div className="flex items-center gap-1 group relative max-w-[calc(100%-2.5rem)] min-w-0">
                 <span className="text-[11px] sm:text-xs font-semibold text-zinc-700 dark:text-zinc-300 whitespace-normal break-keep">
                     {label}
@@ -1125,7 +1125,7 @@ function ToggleButton({ checked, onChange, label, tooltip }: { checked: boolean;
                     </>
                 )}
             </div>
-            <button type="button" onClick={() => onChange(!checked)} className={cn("w-8 h-4.5 sm:w-9 sm:h-5 rounded-full p-0.5 transition-colors duration-200 focus:outline-none shrink-0", checked ? "bg-blue-600" : "bg-zinc-300 dark:bg-zinc-700")}>
+            <button type="button" onClick={() => onChange(!checked)} className={cn("w-8 h-4.5 sm:w-9 sm:h-5 rounded-full p-0.5 transition-colors duration-200 focus:outline-none shrink-0", checked ? "bg-blue-600" : "bg-zinc-300 dark:bg-[#3a3a3a]")}>
                 <div className={cn("bg-white w-3.5 h-3.5 sm:w-4 sm:h-4 rounded-full shadow-xs transform transition-transform duration-200", checked ? "translate-x-3.5 sm:translate-x-4" : "translate-x-0")} />
             </button>
         </div>
@@ -1134,7 +1134,7 @@ function ToggleButton({ checked, onChange, label, tooltip }: { checked: boolean;
 
 function CalloutWrapper({ icon, title, children }: { icon: React.ReactNode; title: string; children: React.ReactNode }) {
     return (
-        <div className="bg-white dark:bg-zinc-900 p-3.5 sm:p-5 rounded-xl sm:rounded-[2rem] border border-zinc-200 dark:border-zinc-800 shadow-xs flex gap-2.5 sm:gap-3 w-full">
+        <div className="bg-white dark:bg-[#1a1a1a] p-3.5 sm:p-5 rounded-xl sm:rounded-[2rem] border border-zinc-200 dark:border-[#2a2a2a] shadow-xs flex gap-2.5 sm:gap-3 w-full">
             <div className="shrink-0 pt-0.5">{icon}</div>
             <div className="space-y-0.5 min-w-0 flex-1">
                 <h4 className="text-[10px] sm:text-xs font-black text-zinc-900 dark:text-zinc-50 uppercase tracking-wider truncate">{title}</h4>
@@ -1195,7 +1195,7 @@ function PercentRateSlider({
                         step={step}
                         value={value}
                         onChange={(e) => onChange(Number(e.target.value))}
-                        className={cn("flex-1 h-1.5 sm:h-2 bg-zinc-200 dark:bg-zinc-800 rounded-lg appearance-none cursor-pointer transition-all", accentColors[accentColor])}
+                        className={cn("flex-1 h-1.5 sm:h-2 bg-zinc-200 dark:bg-[#1a1a1a] rounded-lg appearance-none cursor-pointer transition-all", accentColors[accentColor])}
                     />
                     <StepButtons value={value} step={step} min={min} max={max} onChange={onChange} />
                 </div>
@@ -1206,7 +1206,7 @@ function PercentRateSlider({
                                 type="button"
                                 key={qr.label}
                                 onClick={() => onChange(qr.rate)}
-                                className="text-[9px] sm:text-[10px] font-bold px-2 py-0.5 sm:py-1 bg-zinc-100 dark:bg-zinc-800 text-zinc-700 dark:text-zinc-300 hover:bg-zinc-200 dark:hover:bg-zinc-700 rounded transition-colors"
+                                className="text-[9px] sm:text-[10px] font-bold px-2 py-0.5 sm:py-1 bg-stone-100 dark:bg-[#1a1a1a] text-zinc-700 dark:text-zinc-300 hover:bg-zinc-200 dark:hover:bg-[#1a1a1a] rounded transition-colors"
                             >
                                 {qr.label}({qr.rate}%)
                             </button>
@@ -1242,7 +1242,7 @@ function AgeInputSlider({
                     max={max}
                     value={value}
                     onChange={(e) => onChange(Number(e.target.value))}
-                    className="flex-1 accent-zinc-800 dark:accent-zinc-200 h-1.5 sm:h-2 bg-zinc-200 dark:bg-zinc-800 rounded-lg appearance-none cursor-pointer"
+                    className="flex-1 accent-zinc-800 dark:accent-zinc-200 h-1.5 sm:h-2 bg-zinc-200 dark:bg-[#1a1a1a] rounded-lg appearance-none cursor-pointer"
                 />
                 <StepButtons value={value} step={1} min={min} max={max} onChange={onChange} />
             </div>

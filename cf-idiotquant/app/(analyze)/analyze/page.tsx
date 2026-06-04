@@ -106,7 +106,7 @@ const GRADE_PILL: Record<string, string> = {
   SS:  "bg-amber-500 text-white",
   S:   "bg-emerald-500 text-white",
   A:   "bg-slate-500 text-white",
-  B:   "bg-zinc-200 text-zinc-700 dark:bg-zinc-700 dark:text-zinc-200",
+  B:   "bg-zinc-200 text-zinc-700 dark:bg-[#3a3a3a] dark:text-zinc-200",
   F:   "bg-red-500 text-white",
 };
 
@@ -125,29 +125,29 @@ import {
 // 스켈레톤 컴포넌트
 // =========================================================================
 const StockCardSkeleton = memo(() => (
-  <div className="w-full h-[380px] bg-white dark:bg-zinc-900 rounded-2xl border border-zinc-200 dark:border-zinc-800 animate-pulse p-6">
+  <div className="w-full h-[380px] bg-white dark:bg-[#1a1a1a] rounded-2xl border border-zinc-200 dark:border-[#2a2a2a] animate-pulse p-6">
     <div className="flex items-center gap-3 mb-6">
-      <div className="w-12 h-12 bg-zinc-200 dark:bg-zinc-800 rounded-xl" />
+      <div className="w-12 h-12 bg-zinc-200 dark:bg-[#1a1a1a] rounded-xl" />
       <div className="flex-1 space-y-2">
-        <div className="h-5 bg-zinc-200 dark:bg-zinc-800 rounded w-3/4" />
-        <div className="h-4 bg-zinc-200 dark:bg-zinc-800 rounded w-1/2" />
+        <div className="h-5 bg-zinc-200 dark:bg-[#1a1a1a] rounded w-3/4" />
+        <div className="h-4 bg-zinc-200 dark:bg-[#1a1a1a] rounded w-1/2" />
       </div>
     </div>
     <div className="space-y-3">
-      {[...Array(4)].map((_, i) => <div key={i} className="h-14 bg-zinc-200 dark:bg-zinc-800 rounded-xl" />)}
+      {[...Array(4)].map((_, i) => <div key={i} className="h-14 bg-zinc-200 dark:bg-[#1a1a1a] rounded-xl" />)}
     </div>
   </div>
 ));
 StockCardSkeleton.displayName = 'StockCardSkeleton';
 
 const MetricsSkeleton = memo(() => (
-  <div className="w-full h-[380px] bg-white dark:bg-zinc-900 rounded-2xl border border-zinc-200 dark:border-zinc-800 animate-pulse p-6">
-    <div className="h-5 bg-zinc-200 dark:bg-zinc-800 rounded w-1/3 mb-5" />
+  <div className="w-full h-[380px] bg-white dark:bg-[#1a1a1a] rounded-2xl border border-zinc-200 dark:border-[#2a2a2a] animate-pulse p-6">
+    <div className="h-5 bg-zinc-200 dark:bg-[#1a1a1a] rounded w-1/3 mb-5" />
     <div className="grid grid-cols-2 gap-3">
       {[...Array(6)].map((_, i) => (
-        <div key={i} className="p-4 bg-zinc-50 dark:bg-zinc-800/50 rounded-xl space-y-2">
-          <div className="h-3 bg-zinc-200 dark:bg-zinc-700 rounded w-1/2" />
-          <div className="h-5 bg-zinc-200 dark:bg-zinc-700 rounded w-3/4" />
+        <div key={i} className="p-4 bg-stone-100 dark:bg-[#1a1a1a]/50 rounded-xl space-y-2">
+          <div className="h-3 bg-zinc-200 dark:bg-[#3a3a3a] rounded w-1/2" />
+          <div className="h-5 bg-zinc-200 dark:bg-[#3a3a3a] rounded w-3/4" />
         </div>
       ))}
     </div>
@@ -156,27 +156,27 @@ const MetricsSkeleton = memo(() => (
 MetricsSkeleton.displayName = 'MetricsSkeleton';
 
 const ValuationSkeleton = memo(() => (
-  <div className="w-full h-[280px] bg-white dark:bg-zinc-900 rounded-2xl animate-pulse p-6">
-    <div className="h-5 bg-zinc-200 dark:bg-zinc-800 rounded w-1/3 mb-5" />
+  <div className="w-full h-[280px] bg-white dark:bg-[#1a1a1a] rounded-2xl animate-pulse p-6">
+    <div className="h-5 bg-zinc-200 dark:bg-[#1a1a1a] rounded w-1/3 mb-5" />
     <div className="space-y-3">
-      {[...Array(3)].map((_, i) => <div key={i} className="h-14 bg-zinc-200 dark:bg-zinc-800 rounded-xl" />)}
+      {[...Array(3)].map((_, i) => <div key={i} className="h-14 bg-zinc-200 dark:bg-[#1a1a1a] rounded-xl" />)}
     </div>
   </div>
 ));
 ValuationSkeleton.displayName = 'ValuationSkeleton';
 
 const SearchSkeleton = memo(() => (
-  <div className="w-full h-11 bg-zinc-100 dark:bg-zinc-800 rounded-xl animate-pulse" />
+  <div className="w-full h-11 bg-stone-100 dark:bg-[#1a1a1a] rounded-xl animate-pulse" />
 ));
 SearchSkeleton.displayName = 'SearchSkeleton';
 
 const ResultSkeleton = memo(() => (
   <div className="space-y-4 animate-in fade-in duration-300">
-    <div className="h-[88px] bg-white dark:bg-zinc-900 rounded-2xl border border-zinc-200 dark:border-zinc-800 animate-pulse" />
+    <div className="h-[88px] bg-white dark:bg-[#1a1a1a] rounded-2xl border border-zinc-200 dark:border-[#2a2a2a] animate-pulse" />
     <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-      {[...Array(4)].map((_, i) => <div key={i} className="h-20 bg-white dark:bg-zinc-900 rounded-xl border border-zinc-200 dark:border-zinc-800 animate-pulse" />)}
+      {[...Array(4)].map((_, i) => <div key={i} className="h-20 bg-white dark:bg-[#1a1a1a] rounded-xl border border-zinc-200 dark:border-[#2a2a2a] animate-pulse" />)}
     </div>
-    <div className="h-[420px] bg-white dark:bg-zinc-900 rounded-2xl border border-zinc-200 dark:border-zinc-800 animate-pulse" />
+    <div className="h-[420px] bg-white dark:bg-[#1a1a1a] rounded-2xl border border-zinc-200 dark:border-[#2a2a2a] animate-pulse" />
   </div>
 ));
 ResultSkeleton.displayName = 'ResultSkeleton';
@@ -403,7 +403,7 @@ function AnalyzeContent() {
       {/* ── 헤더 ── */}
       <header className="sticky top-0 z-30 bg-white dark:bg-[#111111] border-b border-neutral-200 dark:border-[#222222]">
         {fromScreener && (
-          <div className="border-b border-zinc-100 dark:border-zinc-800/60">
+          <div className="border-b border-zinc-100 dark:border-[#2a2a2a]/60">
             <div className="max-w-4xl mx-auto px-4 py-2">
               <Link href="/screener"
                 className="inline-flex items-center gap-1.5 text-xs font-bold text-blue-600 dark:text-blue-400 hover:opacity-80 transition-opacity">
@@ -432,7 +432,7 @@ function AnalyzeContent() {
                   "flex items-center gap-1.5 px-2.5 py-2 rounded-xl border text-xs font-bold transition-all",
                   isInWatchlist
                     ? "text-amber-600 bg-amber-50 border-amber-200 dark:bg-amber-950/20 dark:border-amber-800/50 dark:text-amber-400"
-                    : "text-zinc-500 bg-zinc-50 border-zinc-200 hover:text-zinc-800 dark:bg-zinc-800/40 dark:border-zinc-700"
+                    : "text-zinc-500 bg-stone-100 border-zinc-200 hover:text-zinc-800 dark:bg-[#1a1a1a]/40 dark:border-[#222222]"
                 )}
               >
                 <Star size={13} className={isInWatchlist ? "fill-amber-500" : ""} />
@@ -453,7 +453,7 @@ function AnalyzeContent() {
 
         {/* 인기 종목 + 최근 검색 */}
         {!isLoaded && (
-          <div className="border-t border-zinc-100 dark:border-zinc-800/50 bg-zinc-50/50 dark:bg-zinc-900/30">
+          <div className="border-t border-zinc-100 dark:border-[#2a2a2a]/50 bg-stone-100/50 dark:bg-[#1a1a1a]/30">
             {popularStocks.length > 0 && (
               <div className="max-w-4xl mx-auto px-4 py-2 flex items-center gap-3">
                 <div className="flex items-center gap-1.5 shrink-0">
@@ -463,7 +463,7 @@ function AnalyzeContent() {
                 <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar">
                   {popularStocks.slice(0, 8).map((s: any, i: number) => (
                     <button key={i} onClick={() => handleSearch(s.ticker)}
-                      className="shrink-0 flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-white dark:bg-zinc-900 text-xs font-bold text-zinc-600 dark:text-zinc-300 border border-zinc-200/60 dark:border-zinc-800 hover:border-blue-400/70 hover:text-blue-600 dark:hover:text-blue-400 transition-all whitespace-nowrap"
+                      className="shrink-0 flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-white dark:bg-[#1a1a1a] text-xs font-bold text-zinc-600 dark:text-zinc-300 border border-zinc-200/60 dark:border-[#2a2a2a] hover:border-blue-400/70 hover:text-blue-600 dark:hover:text-blue-400 transition-all whitespace-nowrap"
                     >
                       <span className="w-3.5 h-3.5 flex items-center justify-center rounded-full bg-blue-500 text-white font-black text-[8px] shrink-0">{i + 1}</span>
                       {s.name}
@@ -473,12 +473,12 @@ function AnalyzeContent() {
               </div>
             )}
             {krMarketHistory.length > 0 && (
-              <div className="max-w-4xl mx-auto px-4 py-2 flex items-center gap-3 border-t border-zinc-100 dark:border-zinc-800/40">
+              <div className="max-w-4xl mx-auto px-4 py-2 flex items-center gap-3 border-t border-zinc-100 dark:border-[#2a2a2a]/40">
                 <span className="text-[9px] font-bold text-zinc-400 uppercase tracking-wider shrink-0">최근 검색</span>
                 <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar">
                   {krMarketHistory.slice().reverse().slice(0, 8).map((s, i) => (
                     <button key={i} onClick={() => handleSearch(s)}
-                      className="shrink-0 px-2.5 py-1.5 text-xs font-bold text-zinc-500 hover:text-blue-600 dark:text-zinc-400 dark:hover:text-blue-400 hover:bg-white dark:hover:bg-zinc-800/40 rounded-lg border border-zinc-200/60 dark:border-zinc-800 transition-all whitespace-nowrap"
+                      className="shrink-0 px-2.5 py-1.5 text-xs font-bold text-zinc-500 hover:text-blue-600 dark:text-zinc-400 dark:hover:text-blue-400 hover:bg-white dark:hover:bg-[#1a1a1a]/40 rounded-lg border border-zinc-200/60 dark:border-[#2a2a2a] transition-all whitespace-nowrap"
                     >
                       {s}
                     </button>
@@ -502,7 +502,7 @@ function AnalyzeContent() {
             <div className={cn(!isLoaded ? 'hidden' : 'animate-in fade-in duration-400')}>
 
               {/* 종목 헤더 카드 */}
-              <div className="bg-white dark:bg-zinc-900 rounded-2xl border border-zinc-200 dark:border-zinc-800 p-4 mb-4 shadow-sm relative overflow-hidden">
+              <div className="bg-white dark:bg-[#1a1a1a] rounded-2xl border border-zinc-200 dark:border-[#2a2a2a] p-4 mb-4 shadow-sm relative overflow-hidden">
                 <div className={cn("absolute top-0 left-0 right-0 h-0.5",
                   krOrUs === 'US' ? "bg-gradient-to-r from-blue-500 to-sky-400" : "bg-gradient-to-r from-indigo-500 to-purple-400"
                 )} />
@@ -523,7 +523,7 @@ function AnalyzeContent() {
                         {gradeDisplay && (
                           <span className={cn(
                             "px-2 py-0.5 rounded text-xs font-black font-mono shrink-0",
-                            GRADE_PILL[gradeDisplay] ?? "bg-zinc-200 text-zinc-700 dark:bg-zinc-700 dark:text-zinc-200"
+                            GRADE_PILL[gradeDisplay] ?? "bg-zinc-200 text-zinc-700 dark:bg-[#3a3a3a] dark:text-zinc-200"
                           )}>
                             {gradeDisplay}
                           </span>
@@ -547,7 +547,7 @@ function AnalyzeContent() {
                         "flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold border transition-all",
                         isInWatchlist
                           ? "text-amber-600 bg-amber-50 border-amber-200 dark:bg-amber-950/20 dark:border-amber-800/50 dark:text-amber-400"
-                          : "text-zinc-600 bg-zinc-50 border-zinc-200 hover:border-zinc-300 dark:bg-zinc-800/30 dark:border-zinc-700"
+                          : "text-zinc-600 bg-stone-100 border-zinc-200 hover:border-zinc-300 dark:bg-[#1a1a1a]/30 dark:border-[#222222]"
                       )}
                     >
                       <Star size={13} className={isInWatchlist ? "fill-amber-500" : ""} />
@@ -616,7 +616,7 @@ function AnalyzeContent() {
                         : "text-zinc-400",
                     },
                   ].map(m => (
-                    <div key={m.label} className="bg-white dark:bg-zinc-900 rounded-xl border border-zinc-200 dark:border-zinc-800 p-4 shadow-sm">
+                    <div key={m.label} className="bg-white dark:bg-[#1a1a1a] rounded-xl border border-zinc-200 dark:border-[#2a2a2a] p-4 shadow-sm">
                       <p className="text-[10px] font-bold text-zinc-400 uppercase tracking-wider mb-1.5">{m.label}</p>
                       <p className={cn("text-2xl font-black font-mono tabular-nums leading-none", m.color)}>{m.value}</p>
                       <p className="text-[10px] text-zinc-400 mt-1.5">{m.desc}</p>
@@ -630,7 +630,7 @@ function AnalyzeContent() {
                 <div className="space-y-5">
                   <div className="flex items-center gap-3">
                     <p className="text-[11px] font-bold text-zinc-400 uppercase tracking-widest font-mono shrink-0">Detail Analysis</p>
-                    <div className="flex-1 h-px bg-zinc-100 dark:bg-zinc-800/70" />
+                    <div className="flex-1 h-px bg-stone-100 dark:bg-[#1a1a1a]/70" />
                   </div>
 
                   {/* 차트 + 지표 */}
@@ -672,13 +672,13 @@ function AnalyzeContent() {
                   </div>
 
                   {/* 밸류에이션 */}
-                  <div className="bg-white dark:bg-zinc-900 rounded-2xl border border-zinc-200 dark:border-zinc-800 p-1 shadow-sm">
+                  <div className="bg-white dark:bg-[#1a1a1a] rounded-2xl border border-zinc-200 dark:border-[#2a2a2a] p-1 shadow-sm">
                     <ValuationSection data={data} isUs={krOrUs === 'US'} />
                   </div>
 
                   {/* 재무제표 */}
-                  <div className="bg-white dark:bg-zinc-900 rounded-2xl border border-zinc-200 dark:border-zinc-800 shadow-sm overflow-hidden">
-                    <div className="px-5 py-4 border-b border-zinc-100 dark:border-zinc-800">
+                  <div className="bg-white dark:bg-[#1a1a1a] rounded-2xl border border-zinc-200 dark:border-[#2a2a2a] shadow-sm overflow-hidden">
+                    <div className="px-5 py-4 border-b border-zinc-100 dark:border-[#2a2a2a]">
                       <h3 className="text-sm font-extrabold text-zinc-800 dark:text-zinc-200">재무제표</h3>
                       <p className="text-[10px] text-zinc-400 mt-0.5">
                         {krOrUs === 'KR' ? 'DART 공시 기준 (억 원)' : 'US-GAAP 기준 (USD)'}
@@ -698,8 +698,8 @@ function AnalyzeContent() {
                   {/* 잠긴 섹션 레이블 */}
                   <div className="flex items-center gap-3">
                     <p className="text-[11px] font-bold text-zinc-400 uppercase tracking-widest font-mono shrink-0">Detail Analysis</p>
-                    <div className="flex-1 h-px bg-zinc-100 dark:bg-zinc-800/70" />
-                    <span className="flex items-center gap-1 text-[10px] font-bold text-zinc-400 bg-zinc-100 dark:bg-zinc-800 px-2 py-0.5 rounded-full">
+                    <div className="flex-1 h-px bg-stone-100 dark:bg-[#1a1a1a]/70" />
+                    <span className="flex items-center gap-1 text-[10px] font-bold text-zinc-400 bg-stone-100 dark:bg-[#1a1a1a] px-2 py-0.5 rounded-full">
                       <Lock size={9} />
                       로그인 필요
                     </span>
@@ -730,13 +730,13 @@ function AnalyzeContent() {
                       },
                     ].map(item => (
                       <div key={item.title}
-                        className="relative flex items-start gap-3 p-4 bg-white dark:bg-zinc-900 rounded-xl border border-zinc-200 dark:border-zinc-800 overflow-hidden"
+                        className="relative flex items-start gap-3 p-4 bg-white dark:bg-[#1a1a1a] rounded-xl border border-zinc-200 dark:border-[#2a2a2a] overflow-hidden"
                       >
                         {/* 흐릿한 내용 배경 */}
                         <div className="absolute inset-0 opacity-30 pointer-events-none">
-                          <div className="absolute top-8 left-4 right-4 h-2 bg-zinc-200 dark:bg-zinc-700 rounded" />
-                          <div className="absolute top-13 left-4 right-8 h-2 bg-zinc-200 dark:bg-zinc-700 rounded" />
-                          <div className="absolute top-18 left-4 right-12 h-2 bg-zinc-200 dark:bg-zinc-700 rounded" />
+                          <div className="absolute top-8 left-4 right-4 h-2 bg-zinc-200 dark:bg-[#3a3a3a] rounded" />
+                          <div className="absolute top-13 left-4 right-8 h-2 bg-zinc-200 dark:bg-[#3a3a3a] rounded" />
+                          <div className="absolute top-18 left-4 right-12 h-2 bg-zinc-200 dark:bg-[#3a3a3a] rounded" />
                         </div>
                         <span className="text-xl shrink-0">{item.icon}</span>
                         <div className="min-w-0">
@@ -774,7 +774,7 @@ function AnalyzeContent() {
       </main>
 
       {/* ── 푸터 ── */}
-      <footer className="max-w-4xl mx-auto px-4 pt-8 pb-12 mt-12 border-t border-zinc-200 dark:border-zinc-800">
+      <footer className="max-w-4xl mx-auto px-4 pt-8 pb-12 mt-12 border-t border-zinc-200 dark:border-[#2a2a2a]">
         <div className="flex flex-col items-center gap-3">
           <div className="flex items-center gap-2">
             <TrendingUp size={13} className="text-blue-500" strokeWidth={2.5} />
@@ -798,7 +798,7 @@ export default function AnalyzePage() {
   return (
     <Suspense fallback={
       <div className="flex flex-col items-center justify-center py-40 gap-5 bg-stone-100 dark:bg-[#0d0d0d] min-h-screen">
-        <div className="p-4 bg-white dark:bg-zinc-900 rounded-2xl border border-zinc-200 dark:border-zinc-800 shadow-sm">
+        <div className="p-4 bg-white dark:bg-[#1a1a1a] rounded-2xl border border-zinc-200 dark:border-[#2a2a2a] shadow-sm">
           <Loader2 className="animate-spin text-blue-600 dark:text-blue-400" size={24} />
         </div>
         <p className="text-[11px] font-bold text-zinc-400 dark:text-zinc-500 tracking-widest font-mono uppercase">

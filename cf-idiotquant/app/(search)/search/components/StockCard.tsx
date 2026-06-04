@@ -131,7 +131,7 @@ const GRADE_CONFIG = {
     frameGradient: "linear-gradient(135deg,#94a3b8,#cbd5e1,#94a3b8)",
     glow: "shadow-[0_0_16px_rgba(148,163,184,0.15)]",
     darkCard: false,
-    cardBodyCls: "bg-white dark:bg-zinc-950",
+    cardBodyCls: "bg-white dark:bg-[#0d0d0d]",
     label: "STABLE ASSET",
     labelColor: "text-slate-500 dark:text-slate-400",
     badgeGradient: "linear-gradient(90deg,#475569,#94a3b8)",
@@ -145,10 +145,10 @@ const GRADE_CONFIG = {
     typeBorder: "border-slate-300/50 dark:border-slate-700/40",
     typeText: "text-slate-500 dark:text-slate-400",
     statBg: "bg-slate-50 dark:bg-slate-900/50 border-slate-200/60 dark:border-slate-700/40",
-    statDivide: "divide-zinc-100 dark:divide-zinc-800/60",
+    statDivide: "divide-zinc-100 dark:divide-[#2a2a2a]/60",
     statLabel: "text-zinc-400 dark:text-zinc-500",
     statValue: "text-zinc-700 dark:text-zinc-300",
-    xpTrack: "bg-zinc-100 dark:bg-zinc-800",
+    xpTrack: "bg-stone-100 dark:bg-[#1a1a1a]",
     xpFrom: "from-slate-400", xpTo: "to-slate-500",
     tierColor: "text-zinc-400",
     xpPctColor: "text-zinc-400",
@@ -165,7 +165,7 @@ const GRADE_CONFIG = {
     frameGradient: "linear-gradient(135deg,#71717a,#a1a1aa,#71717a)",
     glow: "shadow-md",
     darkCard: false,
-    cardBodyCls: "bg-white dark:bg-zinc-950",
+    cardBodyCls: "bg-white dark:bg-[#0d0d0d]",
     label: "FAIR VALUE",
     labelColor: "text-zinc-500 dark:text-zinc-400",
     badgeGradient: "linear-gradient(90deg,#3f3f46,#71717a)",
@@ -173,16 +173,16 @@ const GRADE_CONFIG = {
     nameColor: "text-zinc-900 dark:text-zinc-100",
     tickerColor: "text-zinc-400",
     artBg: "from-zinc-100 to-zinc-200 dark:from-zinc-900 dark:to-zinc-950",
-    artBorder: "border-zinc-300/50 dark:border-zinc-700/40",
+    artBorder: "border-zinc-300/50 dark:border-[#222222]/40",
     artShadow: "",
     typeGradient: "linear-gradient(90deg,rgba(113,113,122,0.07),rgba(161,161,170,0.07))",
-    typeBorder: "border-zinc-300/50 dark:border-zinc-700/40",
+    typeBorder: "border-zinc-300/50 dark:border-[#222222]/40",
     typeText: "text-zinc-500 dark:text-zinc-400",
-    statBg: "bg-zinc-50 dark:bg-zinc-900/50 border-zinc-200/60 dark:border-zinc-700/40",
-    statDivide: "divide-zinc-100 dark:divide-zinc-800/60",
+    statBg: "bg-stone-100 dark:bg-[#1a1a1a]/50 border-zinc-200/60 dark:border-[#222222]/40",
+    statDivide: "divide-zinc-100 dark:divide-[#2a2a2a]/60",
     statLabel: "text-zinc-400 dark:text-zinc-500",
     statValue: "text-zinc-700 dark:text-zinc-300",
-    xpTrack: "bg-zinc-100 dark:bg-zinc-800",
+    xpTrack: "bg-stone-100 dark:bg-[#1a1a1a]",
     xpFrom: "from-zinc-400", xpTo: "to-zinc-500",
     tierColor: "text-zinc-400",
     xpPctColor: "text-zinc-400",
@@ -199,7 +199,7 @@ const GRADE_CONFIG = {
     frameGradient: "linear-gradient(135deg,#ef4444,#f87171,#ef4444)",
     glow: "shadow-[0_0_22px_rgba(239,68,68,0.25)]",
     darkCard: false,
-    cardBodyCls: "bg-white dark:bg-zinc-950",
+    cardBodyCls: "bg-white dark:bg-[#0d0d0d]",
     label: "OVERVALUED",
     labelColor: "text-red-500 dark:text-red-400",
     badgeGradient: "linear-gradient(90deg,#b91c1c,#ef4444)",
@@ -216,7 +216,7 @@ const GRADE_CONFIG = {
     statDivide: "divide-red-100/50 dark:divide-red-900/30",
     statLabel: "text-red-300 dark:text-red-500",
     statValue: "text-zinc-700 dark:text-zinc-300",
-    xpTrack: "bg-zinc-100 dark:bg-zinc-800",
+    xpTrack: "bg-stone-100 dark:bg-[#1a1a1a]",
     xpFrom: "from-red-400", xpTo: "to-rose-500",
     tierColor: "text-zinc-400",
     xpPctColor: "text-zinc-400",
@@ -279,7 +279,7 @@ const getLevelTier = (level: number) => {
   };
   return {
     title: "BEGINNER", from: "from-zinc-300", to: "to-zinc-400",
-    badge: "bg-zinc-100 text-zinc-600 dark:bg-zinc-900 dark:text-zinc-400",
+    badge: "bg-stone-100 text-zinc-600 dark:bg-[#1a1a1a] dark:text-zinc-400",
     desc: "관심을 막 시작한 단계. 조회할수록 XP가 누적됩니다.",
     next: "WATCHLIST" as string | null, nextLevel: 4 as number | null,
   };
@@ -952,7 +952,7 @@ export const StockCard = ({ stock, chartConfig, isCompact = false, stockXpProfil
 
         {/* ════════════════ BACK ════════════════ */}
         <div
-          className="absolute inset-0 rounded-[1.75rem] bg-white dark:bg-zinc-950 flex flex-col shadow-xl overflow-hidden"
+          className="absolute inset-0 rounded-[1.75rem] bg-white dark:bg-[#0d0d0d] flex flex-col shadow-xl overflow-hidden"
           style={{
             WebkitBackfaceVisibility: "hidden",
             backfaceVisibility: "hidden",
@@ -965,7 +965,7 @@ export const StockCard = ({ stock, chartConfig, isCompact = false, stockXpProfil
           {/* 등급 컬러 헤더 글로우 */}
           <div className="absolute inset-x-0 top-0 h-32 opacity-[0.08] pointer-events-none" style={{ background: cfg.frameGradient }} />
           {/* 테두리 */}
-          <div className="absolute inset-0 rounded-[1.75rem] border-2 border-zinc-200 dark:border-zinc-800 pointer-events-none" />
+          <div className="absolute inset-0 rounded-[1.75rem] border-2 border-zinc-200 dark:border-[#2a2a2a] pointer-events-none" />
 
           <div className="relative flex flex-col gap-2.5 p-3.5 h-full overflow-y-auto">
 
@@ -980,7 +980,7 @@ export const StockCard = ({ stock, chartConfig, isCompact = false, stockXpProfil
               {(() => {
                 const meta = GRADE_META[grade] ?? GRADE_META.B;
                 return (
-                  <div className="flex gap-2.5 p-2.5 rounded-xl bg-zinc-50 dark:bg-zinc-900/60 border border-zinc-200/70 dark:border-zinc-800/70 mb-2">
+                  <div className="flex gap-2.5 p-2.5 rounded-xl bg-stone-100 dark:bg-[#1a1a1a]/60 border border-zinc-200/70 dark:border-[#2a2a2a]/70 mb-2">
                     <div className="shrink-0 flex flex-col items-center gap-1 pt-0.5">
                       <span
                         className={cn("text-xl font-black font-mono leading-none", cfg.labelColor)}
@@ -1017,7 +1017,7 @@ export const StockCard = ({ stock, chartConfig, isCompact = false, stockXpProfil
             </div>
 
             {/* 구분선 */}
-            <div className="border-t border-zinc-200 dark:border-zinc-800" />
+            <div className="border-t border-zinc-200 dark:border-[#2a2a2a]" />
 
             {/* ── 레벨 섹션 ── */}
             <div>
@@ -1026,7 +1026,7 @@ export const StockCard = ({ stock, chartConfig, isCompact = false, stockXpProfil
                 <span className="text-[8px] font-black uppercase tracking-widest font-mono text-zinc-400">카드 레벨</span>
               </div>
 
-              <div className="p-2.5 rounded-xl bg-zinc-900 dark:bg-zinc-950 border border-zinc-800">
+              <div className="p-2.5 rounded-xl bg-zinc-900 dark:bg-[#0d0d0d] border border-zinc-800">
                 {/* 레벨 헤더 */}
                 <div className="flex items-center justify-between mb-2">
                   <div className="flex items-center gap-1.5">
@@ -1073,7 +1073,7 @@ export const StockCard = ({ stock, chartConfig, isCompact = false, stockXpProfil
             </div>
 
             {/* ── 푸터 ── */}
-            <div className="mt-auto pt-2 border-t border-zinc-200 dark:border-zinc-800 flex items-center justify-center gap-1.5 shrink-0">
+            <div className="mt-auto pt-2 border-t border-zinc-200 dark:border-[#2a2a2a] flex items-center justify-center gap-1.5 shrink-0">
               {stock?.isUs ? <DollarSign size={9} className="text-blue-400" /> : <Coins size={9} className="text-indigo-400" />}
               <span className="text-[7px] font-black text-zinc-300 dark:text-zinc-700 tracking-[0.2em] uppercase font-mono">
                 {stock?.isUs ? "Finnhub · IdiotQuant" : "Korea Investment · IdiotQuant"}

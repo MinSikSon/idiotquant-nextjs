@@ -26,7 +26,7 @@ function MetricCard({ m }: { m: MetricItem }) {
       "p-3.5 rounded-xl border relative group cursor-help transition-colors select-none",
       m.highlight
         ? "bg-indigo-50 dark:bg-indigo-950/20 border-indigo-200/60 dark:border-indigo-900/40"
-        : "bg-zinc-50 dark:bg-zinc-800/50 border-zinc-100 dark:border-zinc-800 hover:border-zinc-200 dark:hover:border-zinc-700"
+        : "bg-stone-100 dark:bg-[#1a1a1a]/50 border-zinc-100 dark:border-[#2a2a2a] hover:border-zinc-200 dark:hover:border-zinc-700"
     )}>
       <p className={cn(
         "text-[9px] font-bold uppercase tracking-wider mb-1.5 truncate",
@@ -52,7 +52,7 @@ function MetricCard({ m }: { m: MetricItem }) {
       )}
 
       {/* 호버 툴팁 */}
-      <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 hidden group-hover:block w-48 bg-zinc-900 dark:bg-zinc-800 text-white text-[10px] p-2.5 rounded-xl shadow-xl border border-zinc-700/60 z-50 pointer-events-none whitespace-normal break-keep text-center leading-relaxed">
+      <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 hidden group-hover:block w-48 bg-zinc-900 dark:bg-[#1a1a1a] text-white text-[10px] p-2.5 rounded-xl shadow-xl border border-zinc-700/60 z-50 pointer-events-none whitespace-normal break-keep text-center leading-relaxed">
         <p className="font-bold text-zinc-400 text-[9px] pb-1 mb-1 tracking-widest font-mono uppercase border-b border-zinc-700">{m.label}</p>
         <p className="text-zinc-200 font-medium">{m.desc}</p>
         <div className="absolute top-full left-1/2 -translate-x-1/2 border-[5px] border-transparent border-t-zinc-900 dark:border-t-zinc-800" />
@@ -67,7 +67,7 @@ function SectionLabel({ icon, label }: { icon: React.ReactNode; label: string })
     <div className="flex items-center gap-2 mb-2.5">
       <span className="text-zinc-400">{icon}</span>
       <span className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest font-mono">{label}</span>
-      <div className="flex-1 h-px bg-zinc-100 dark:bg-zinc-800" />
+      <div className="flex-1 h-px bg-stone-100 dark:bg-[#1a1a1a]" />
     </div>
   );
 }
@@ -140,12 +140,12 @@ export const StockMetrics = ({ data, isUs }: { data: any; isUs: boolean }) => {
   const volumeMetrics    = metrics.filter(m => m.type === "volume");
 
   return (
-    <div className="w-full h-full bg-white dark:bg-zinc-900 rounded-2xl border border-zinc-200 dark:border-zinc-800 shadow-sm flex flex-col">
+    <div className="w-full h-full bg-white dark:bg-[#1a1a1a] rounded-2xl border border-zinc-200 dark:border-[#2a2a2a] shadow-sm flex flex-col">
 
       {/* ── 헤더 ── */}
-      <div className="px-5 py-4 border-b border-zinc-100 dark:border-zinc-800 flex items-center justify-between shrink-0">
+      <div className="px-5 py-4 border-b border-zinc-100 dark:border-[#2a2a2a] flex items-center justify-between shrink-0">
         <div className="flex items-center gap-2.5">
-          <div className="w-7 h-7 bg-zinc-100 dark:bg-zinc-800 rounded-lg flex items-center justify-center border border-zinc-200 dark:border-zinc-700 shrink-0">
+          <div className="w-7 h-7 bg-stone-100 dark:bg-[#1a1a1a] rounded-lg flex items-center justify-center border border-zinc-200 dark:border-[#222222] shrink-0">
             <BarChart3 size={14} className="text-zinc-500 dark:text-zinc-400" />
           </div>
           <div>

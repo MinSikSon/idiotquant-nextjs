@@ -138,7 +138,7 @@ const MKTCAP_PRESETS: { label: string; value: number }[] = [
 ];
 
 const TOOLTIP_CLS =
-    "z-50 max-w-64 rounded-xl px-3.5 py-3 text-xs bg-zinc-900 dark:bg-zinc-800 border border-zinc-700/60 shadow-xl text-zinc-200 leading-relaxed " +
+    "z-50 max-w-64 rounded-xl px-3.5 py-3 text-xs bg-zinc-900 dark:bg-[#1a1a1a] border border-zinc-700/60 shadow-xl text-zinc-200 leading-relaxed " +
     "data-[state=delayed-open]:animate-in data-[state=delayed-open]:fade-in-0 data-[state=delayed-open]:zoom-in-95 " +
     "data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=closed]:zoom-out-95";
 
@@ -177,7 +177,7 @@ function TableRow({ item, onClick }: { item: any; onClick: (ticker: string, name
 
     return (
         <div
-            className="group grid grid-cols-[minmax(160px,2.5fr)_minmax(110px,1fr)_88px_68px_68px_68px_88px] gap-4 items-center px-5 py-4 hover:bg-blue-50/40 dark:hover:bg-zinc-800/50 cursor-pointer transition-colors border-b border-zinc-100 dark:border-zinc-800 last:border-0"
+            className="group grid grid-cols-[minmax(160px,2.5fr)_minmax(110px,1fr)_88px_68px_68px_68px_88px] gap-4 items-center px-5 py-4 hover:bg-blue-50/40 dark:hover:bg-[#1a1a1a]/50 cursor-pointer transition-colors border-b border-zinc-100 dark:border-[#2a2a2a] last:border-0"
             onClick={() => onClick(item.ticker, item.name)}
         >
             <div className="min-w-0">
@@ -187,12 +187,12 @@ function TableRow({ item, onClick }: { item: any; onClick: (ticker: string, name
 
             <div className="flex flex-wrap gap-1">
                 {strategies.slice(0, 2).map(s => (
-                    <span key={s} className={cn("px-1.5 py-0.5 rounded text-[10px] font-bold", STRATEGY_BADGE[s] ?? "bg-zinc-100 text-zinc-500")}>
+                    <span key={s} className={cn("px-1.5 py-0.5 rounded text-[10px] font-bold", STRATEGY_BADGE[s] ?? "bg-stone-100 text-zinc-500")}>
                         {STRATEGY_LABEL[s] ?? s}
                     </span>
                 ))}
                 {strategies.length > 2 && (
-                    <span className="px-1.5 py-0.5 rounded text-[10px] font-bold bg-zinc-100 dark:bg-zinc-700 text-zinc-500">
+                    <span className="px-1.5 py-0.5 rounded text-[10px] font-bold bg-stone-100 dark:bg-[#3a3a3a] text-zinc-500">
                         +{strategies.length - 2}
                     </span>
                 )}
@@ -232,7 +232,7 @@ function TableRow({ item, onClick }: { item: any; onClick: (ticker: string, name
 
             <div className="flex justify-end">
                 <button
-                    className="flex items-center gap-1 px-3 py-1.5 rounded-lg bg-zinc-100 dark:bg-zinc-800 group-hover:bg-blue-600 group-hover:text-white text-zinc-600 dark:text-zinc-400 text-xs font-bold transition-all whitespace-nowrap"
+                    className="flex items-center gap-1 px-3 py-1.5 rounded-lg bg-stone-100 dark:bg-[#1a1a1a] group-hover:bg-blue-600 group-hover:text-white text-zinc-600 dark:text-zinc-400 text-xs font-bold transition-all whitespace-nowrap"
                     onClick={(e) => { e.stopPropagation(); onClick(item.ticker, item.name); }}
                 >
                     분석
@@ -253,7 +253,7 @@ function StockRowCard({ item, onClick }: { item: any; onClick: (ticker: string, 
 
     return (
         <div
-            className="bg-white dark:bg-zinc-900 rounded-2xl border border-zinc-200 dark:border-zinc-800 p-4 cursor-pointer hover:border-blue-300 dark:hover:border-blue-700/50 hover:shadow-md transition-all active:scale-[0.99]"
+            className="bg-white dark:bg-[#1a1a1a] rounded-2xl border border-zinc-200 dark:border-[#2a2a2a] p-4 cursor-pointer hover:border-blue-300 dark:hover:border-blue-700/50 hover:shadow-md transition-all active:scale-[0.99]"
             onClick={() => onClick(item.ticker, item.name)}
         >
             <div className="flex items-start justify-between gap-2 mb-3">
@@ -267,7 +267,7 @@ function StockRowCard({ item, onClick }: { item: any; onClick: (ticker: string, 
                         ? "bg-emerald-100 dark:bg-emerald-950/50 text-emerald-700 dark:text-emerald-400"
                         : ncav >= 0.7
                         ? "bg-amber-100 dark:bg-amber-950/50 text-amber-700 dark:text-amber-400"
-                        : "bg-zinc-100 dark:bg-zinc-800 text-zinc-500"
+                        : "bg-stone-100 dark:bg-[#1a1a1a] text-zinc-500"
                 )}>
                     {ncav > 0 ? `${ncav.toFixed(2)}x` : "—"}
                 </div>
@@ -276,7 +276,7 @@ function StockRowCard({ item, onClick }: { item: any; onClick: (ticker: string, 
             {strategies.length > 0 && (
                 <div className="flex flex-wrap gap-1 mb-3">
                     {strategies.map(s => (
-                        <span key={s} className={cn("px-1.5 py-0.5 rounded text-[10px] font-bold", STRATEGY_BADGE[s] ?? "bg-zinc-100 text-zinc-500")}>
+                        <span key={s} className={cn("px-1.5 py-0.5 rounded text-[10px] font-bold", STRATEGY_BADGE[s] ?? "bg-stone-100 text-zinc-500")}>
                             {STRATEGY_LABEL[s] ?? s}
                         </span>
                     ))}
@@ -289,14 +289,14 @@ function StockRowCard({ item, onClick }: { item: any; onClick: (ticker: string, 
                     { label: "PER", value: safeNum(item.per) > 0 ? `${safeNum(item.per).toFixed(1)}` : "—" },
                     { label: "ROE", value: roe !== null && roe > 0 ? `${roe.toFixed(1)}%` : "—" },
                 ].map(m => (
-                    <div key={m.label} className="text-center p-2.5 bg-zinc-50 dark:bg-zinc-800/60 rounded-xl">
+                    <div key={m.label} className="text-center p-2.5 bg-stone-100 dark:bg-[#1a1a1a]/60 rounded-xl">
                         <p className="text-[9px] font-bold text-zinc-400 uppercase tracking-wider">{m.label}</p>
                         <p className="text-sm font-mono font-bold text-zinc-700 dark:text-zinc-200 mt-0.5">{m.value}</p>
                     </div>
                 ))}
             </div>
 
-            <button className="w-full flex items-center justify-center gap-1.5 py-2.5 rounded-xl bg-zinc-100 dark:bg-zinc-800 hover:bg-blue-600 hover:text-white text-zinc-600 dark:text-zinc-400 text-xs font-bold transition-all">
+            <button className="w-full flex items-center justify-center gap-1.5 py-2.5 rounded-xl bg-stone-100 dark:bg-[#1a1a1a] hover:bg-blue-600 hover:text-white text-zinc-600 dark:text-zinc-400 text-xs font-bold transition-all">
                 상세 분석
                 <ChevronRight size={12} />
             </button>
@@ -539,7 +539,7 @@ function ScreenerContent() {
                         <button
                             onClick={handleRefresh}
                             disabled={isLoading}
-                            className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-zinc-100 dark:bg-zinc-800 hover:bg-zinc-200 dark:hover:bg-zinc-700 text-zinc-600 dark:text-zinc-400 text-xs font-bold transition-colors disabled:opacity-50 disabled:cursor-not-allowed shrink-0 self-start"
+                            className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-stone-100 dark:bg-[#1a1a1a] hover:bg-zinc-200 dark:hover:bg-[#1a1a1a] text-zinc-600 dark:text-zinc-400 text-xs font-bold transition-colors disabled:opacity-50 disabled:cursor-not-allowed shrink-0 self-start"
                         >
                             <RefreshCw size={13} className={isLoading ? "animate-spin" : ""} />
                             새로고침
@@ -559,13 +559,13 @@ function ScreenerContent() {
                                 "shrink-0 flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold border transition-all whitespace-nowrap",
                                 isAllActive
                                     ? STRATEGY_ACTIVE_CLS.all
-                                    : "border-zinc-200 dark:border-zinc-700 text-zinc-600 dark:text-zinc-400 hover:border-zinc-300 dark:hover:border-zinc-600 bg-white dark:bg-zinc-900"
+                                    : "border-zinc-200 dark:border-[#222222] text-zinc-600 dark:text-zinc-400 hover:border-zinc-300 dark:hover:border-zinc-600 bg-white dark:bg-[#1a1a1a]"
                             )}
                         >
                             전체
                             <span className={cn(
                                 "text-[10px] font-black px-1.5 py-0.5 rounded-full",
-                                isAllActive ? "bg-white/20 dark:bg-black/20" : "bg-zinc-100 dark:bg-zinc-700 text-zinc-500"
+                                isAllActive ? "bg-white/20 dark:bg-black/20" : "bg-stone-100 dark:bg-[#3a3a3a] text-zinc-500"
                             )}>
                                 {strategyCounts.all}
                             </span>
@@ -583,13 +583,13 @@ function ScreenerContent() {
                                             "shrink-0 flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold border transition-all whitespace-nowrap",
                                             isActive
                                                 ? STRATEGY_ACTIVE_CLS[preset.id]
-                                                : "border-zinc-200 dark:border-zinc-700 text-zinc-600 dark:text-zinc-400 hover:border-zinc-300 dark:hover:border-zinc-600 bg-white dark:bg-zinc-900"
+                                                : "border-zinc-200 dark:border-[#222222] text-zinc-600 dark:text-zinc-400 hover:border-zinc-300 dark:hover:border-zinc-600 bg-white dark:bg-[#1a1a1a]"
                                         )}
                                     >
                                         {preset.label}
                                         <span className={cn(
                                             "text-[10px] font-black px-1.5 py-0.5 rounded-full",
-                                            isActive ? "bg-white/20 dark:bg-black/20" : "bg-zinc-100 dark:bg-zinc-700 text-zinc-500"
+                                            isActive ? "bg-white/20 dark:bg-black/20" : "bg-stone-100 dark:bg-[#3a3a3a] text-zinc-500"
                                         )}>
                                             {strategyCounts[preset.id] ?? 0}
                                         </span>
@@ -605,7 +605,7 @@ function ScreenerContent() {
                                 "shrink-0 flex items-center gap-1 px-2.5 py-1.5 rounded-lg border text-xs font-bold transition-all ml-1",
                                 showGuide
                                     ? "bg-blue-50 dark:bg-blue-950/30 border-blue-300 dark:border-blue-700 text-blue-700 dark:text-blue-400"
-                                    : "border-zinc-200 dark:border-zinc-700 text-zinc-500 dark:text-zinc-400 hover:border-zinc-300 bg-white dark:bg-zinc-900"
+                                    : "border-zinc-200 dark:border-[#222222] text-zinc-500 dark:text-zinc-400 hover:border-zinc-300 bg-white dark:bg-[#1a1a1a]"
                             )}
                             title="전략 설명 보기"
                         >
@@ -617,7 +617,7 @@ function ScreenerContent() {
                         {hasActiveFilters && (
                             <button
                                 onClick={resetAllFilters}
-                                className="shrink-0 flex items-center gap-1 px-2.5 py-1.5 rounded-lg border border-red-200 dark:border-red-800/50 text-xs font-bold text-red-500 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/20 transition-all bg-white dark:bg-zinc-900"
+                                className="shrink-0 flex items-center gap-1 px-2.5 py-1.5 rounded-lg border border-red-200 dark:border-red-800/50 text-xs font-bold text-red-500 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/20 transition-all bg-white dark:bg-[#1a1a1a]"
                                 title="모든 필터 초기화"
                             >
                                 <X size={12} />
@@ -636,7 +636,7 @@ function ScreenerContent() {
                                 return (
                                     <span key={id} className={cn(
                                         "inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded",
-                                        STRATEGY_BADGE[id] ?? "bg-zinc-100 text-zinc-500"
+                                        STRATEGY_BADGE[id] ?? "bg-stone-100 text-zinc-500"
                                     )}>
                                         {preset.label}
                                         <button onClick={() => toggleStrategy(id)} className="hover:opacity-70">
@@ -646,14 +646,14 @@ function ScreenerContent() {
                                 );
                             })}
                             {/* OR / AND 토글 */}
-                            <div className="flex items-center rounded-full border border-zinc-200 dark:border-zinc-700 overflow-hidden text-[10px] font-black">
+                            <div className="flex items-center rounded-full border border-zinc-200 dark:border-[#222222] overflow-hidden text-[10px] font-black">
                                 <button
                                     onClick={() => setFilterMode('OR')}
                                     className={cn(
                                         "px-2 py-0.5 transition-colors",
                                         filterMode === 'OR'
                                             ? "bg-blue-600 text-white"
-                                            : "text-zinc-500 dark:text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-800"
+                                            : "text-zinc-500 dark:text-zinc-400 hover:bg-stone-100 dark:hover:bg-[#1a1a1a]"
                                     )}
                                 >
                                     OR
@@ -661,10 +661,10 @@ function ScreenerContent() {
                                 <button
                                     onClick={() => setFilterMode('AND')}
                                     className={cn(
-                                        "px-2 py-0.5 transition-colors border-l border-zinc-200 dark:border-zinc-700",
+                                        "px-2 py-0.5 transition-colors border-l border-zinc-200 dark:border-[#222222]",
                                         filterMode === 'AND'
                                             ? "bg-blue-600 text-white"
-                                            : "text-zinc-500 dark:text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-800"
+                                            : "text-zinc-500 dark:text-zinc-400 hover:bg-stone-100 dark:hover:bg-[#1a1a1a]"
                                     )}
                                 >
                                     AND
@@ -680,7 +680,7 @@ function ScreenerContent() {
 
             {/* ── 전략 가이드 패널 ── */}
             {showGuide && (
-                <div className="bg-white dark:bg-zinc-900 border-b border-zinc-200 dark:border-zinc-800">
+                <div className="bg-white dark:bg-[#1a1a1a] border-b border-zinc-200 dark:border-[#2a2a2a]">
                     <div className="max-w-7xl mx-auto px-4 sm:px-6 py-5">
                         <div className="flex items-center justify-between mb-4">
                             <h2 className="text-sm font-black text-zinc-900 dark:text-white">전략 설명</h2>
@@ -700,13 +700,13 @@ function ScreenerContent() {
                                         "text-left p-3.5 rounded-xl border-2 transition-all",
                                         activeStrategyIds.has(preset.id)
                                             ? "border-blue-400 dark:border-blue-600 bg-blue-50 dark:bg-blue-950/20"
-                                            : "border-zinc-200 dark:border-zinc-700 hover:border-zinc-300 dark:hover:border-zinc-600 bg-zinc-50 dark:bg-zinc-800/50"
+                                            : "border-zinc-200 dark:border-[#222222] hover:border-zinc-300 dark:hover:border-zinc-600 bg-stone-100 dark:bg-[#1a1a1a]/50"
                                     )}
                                 >
                                     <div className="flex items-center gap-2 mb-2">
                                         <span className={cn(
                                             "text-[10px] font-extrabold px-2 py-0.5 rounded",
-                                            STRATEGY_BADGE[preset.id] ?? "bg-zinc-100 text-zinc-500"
+                                            STRATEGY_BADGE[preset.id] ?? "bg-stone-100 text-zinc-500"
                                         )}>
                                             {preset.label}
                                         </span>
@@ -739,7 +739,7 @@ function ScreenerContent() {
                         value={searchQuery}
                         onChange={e => { setSearchQuery(e.target.value); setDisplayCount(DAILY_PAGE_SIZE); }}
                         placeholder="종목명 또는 티커 검색"
-                        className="w-full pl-8 pr-3 py-2 text-xs bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-700 rounded-xl outline-none focus:ring-2 focus:ring-blue-500/30 focus:border-blue-400 placeholder:text-zinc-400 font-medium"
+                        className="w-full pl-8 pr-3 py-2 text-xs bg-white dark:bg-[#1a1a1a] border border-zinc-200 dark:border-[#222222] rounded-xl outline-none focus:ring-2 focus:ring-blue-500/30 focus:border-blue-400 placeholder:text-zinc-400 font-medium"
                     />
                 </div>
 
@@ -749,7 +749,7 @@ function ScreenerContent() {
                         "flex items-center gap-1.5 px-3.5 py-2 rounded-xl border text-xs font-bold transition-all",
                         filterOpen || activeFilterCount > 0
                             ? "bg-blue-50 dark:bg-blue-950/30 border-blue-300 dark:border-blue-800 text-blue-700 dark:text-blue-400"
-                            : "bg-white dark:bg-zinc-900 border-zinc-200 dark:border-zinc-700 text-zinc-600 dark:text-zinc-400 hover:border-zinc-300"
+                            : "bg-white dark:bg-[#1a1a1a] border-zinc-200 dark:border-[#222222] text-zinc-600 dark:text-zinc-400 hover:border-zinc-300"
                     )}
                 >
                     <SlidersHorizontal size={12} />
@@ -774,7 +774,7 @@ function ScreenerContent() {
                                         "px-2.5 py-1 rounded-lg border text-xs font-bold transition-all",
                                         minMarketCap === p.value
                                             ? "bg-blue-600 border-blue-600 text-white shadow-sm"
-                                            : "bg-white dark:bg-zinc-900 border-zinc-200 dark:border-zinc-700 text-zinc-600 dark:text-zinc-400 hover:border-zinc-300 dark:hover:border-zinc-600"
+                                            : "bg-white dark:bg-[#1a1a1a] border-zinc-200 dark:border-[#222222] text-zinc-600 dark:text-zinc-400 hover:border-zinc-300 dark:hover:border-zinc-600"
                                     )}
                                 >
                                     {p.label}
@@ -783,7 +783,7 @@ function ScreenerContent() {
                         </div>
 
                         {/* 구분선 */}
-                        <div className="w-px h-4 bg-zinc-200 dark:bg-zinc-700 hidden sm:block" />
+                        <div className="w-px h-4 bg-zinc-200 dark:bg-[#3a3a3a] hidden sm:block" />
 
                         {/* 제외 조건 */}
                         <div className="flex items-center gap-4 flex-wrap">
@@ -823,7 +823,7 @@ function ScreenerContent() {
 
                 {!isLoading && filteredList.length === 0 && (
                     <div className="flex flex-col items-center justify-center py-20 text-center gap-4">
-                        <div className="p-4 bg-zinc-100 dark:bg-zinc-800 rounded-2xl">
+                        <div className="p-4 bg-stone-100 dark:bg-[#1a1a1a] rounded-2xl">
                             <Search size={24} className="text-zinc-400" />
                         </div>
                         <div>
