@@ -5,7 +5,6 @@ import {
   useEffect,
   Suspense,
   useMemo,
-  useRef,
   useCallback,
   memo,
   startTransition
@@ -19,8 +18,8 @@ import { useAppSelector, useAppDispatch } from '@/lib/hooks';
 import { useStockSearch } from '@/app/(search)/search/hooks/useStockSearch';
 import { selectKrMarketHistory } from '@/lib/features/searchHistory/searchHistorySlice';
 import {
-  History, AlertCircle, Loader2, Flame, Share2, Check, CheckCircle,
-  Globe2, DollarSign, Coins, WifiOff, Star, X, TrendingUp, ChevronLeft,
+  AlertCircle, Loader2, Flame, Share2, Check, CheckCircle,
+  DollarSign, Coins, Star, X, TrendingUp, ChevronLeft, Lock, ArrowRight,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
@@ -126,33 +125,29 @@ import {
 // 스켈레톤 컴포넌트
 // =========================================================================
 const StockCardSkeleton = memo(() => (
-  <div className="w-full h-[420px] bg-white dark:bg-zinc-900 rounded-2xl border border-zinc-200 dark:border-zinc-800 animate-pulse p-6">
+  <div className="w-full h-[380px] bg-white dark:bg-zinc-900 rounded-2xl border border-zinc-200 dark:border-zinc-800 animate-pulse p-6">
     <div className="flex items-center gap-3 mb-6">
       <div className="w-12 h-12 bg-zinc-200 dark:bg-zinc-800 rounded-xl" />
       <div className="flex-1 space-y-2">
-        <div className="h-6 bg-zinc-200 dark:bg-zinc-800 rounded w-3/4" />
+        <div className="h-5 bg-zinc-200 dark:bg-zinc-800 rounded w-3/4" />
         <div className="h-4 bg-zinc-200 dark:bg-zinc-800 rounded w-1/2" />
       </div>
     </div>
-    <div className="space-y-4">
-      <div className="h-20 bg-zinc-200 dark:bg-zinc-800 rounded-xl" />
-      <div className="grid grid-cols-2 gap-3">
-        {[...Array(4)].map((_, i) => <div key={i} className="h-16 bg-zinc-200 dark:bg-zinc-800 rounded-lg" />)}
-      </div>
-      <div className="h-32 bg-zinc-200 dark:bg-zinc-800 rounded-xl" />
+    <div className="space-y-3">
+      {[...Array(4)].map((_, i) => <div key={i} className="h-14 bg-zinc-200 dark:bg-zinc-800 rounded-xl" />)}
     </div>
   </div>
 ));
 StockCardSkeleton.displayName = 'StockCardSkeleton';
 
 const MetricsSkeleton = memo(() => (
-  <div className="w-full h-[420px] bg-white dark:bg-zinc-900 rounded-2xl border border-zinc-200 dark:border-zinc-800 animate-pulse p-6">
-    <div className="h-6 bg-zinc-200 dark:bg-zinc-800 rounded w-1/3 mb-6" />
-    <div className="grid grid-cols-2 gap-4">
+  <div className="w-full h-[380px] bg-white dark:bg-zinc-900 rounded-2xl border border-zinc-200 dark:border-zinc-800 animate-pulse p-6">
+    <div className="h-5 bg-zinc-200 dark:bg-zinc-800 rounded w-1/3 mb-5" />
+    <div className="grid grid-cols-2 gap-3">
       {[...Array(6)].map((_, i) => (
-        <div key={i} className="space-y-3 p-4 bg-zinc-50 dark:bg-zinc-800/50 rounded-xl">
+        <div key={i} className="p-4 bg-zinc-50 dark:bg-zinc-800/50 rounded-xl space-y-2">
           <div className="h-3 bg-zinc-200 dark:bg-zinc-700 rounded w-1/2" />
-          <div className="h-6 bg-zinc-200 dark:bg-zinc-700 rounded w-3/4" />
+          <div className="h-5 bg-zinc-200 dark:bg-zinc-700 rounded w-3/4" />
         </div>
       ))}
     </div>
@@ -161,10 +156,10 @@ const MetricsSkeleton = memo(() => (
 MetricsSkeleton.displayName = 'MetricsSkeleton';
 
 const ValuationSkeleton = memo(() => (
-  <div className="w-full h-[320px] bg-white dark:bg-zinc-900 rounded-2xl animate-pulse p-6">
-    <div className="h-5 bg-zinc-200 dark:bg-zinc-800 rounded w-1/3 mb-6" />
-    <div className="space-y-4">
-      {[...Array(4)].map((_, i) => <div key={i} className="h-14 bg-zinc-200 dark:bg-zinc-800 rounded-xl" />)}
+  <div className="w-full h-[280px] bg-white dark:bg-zinc-900 rounded-2xl animate-pulse p-6">
+    <div className="h-5 bg-zinc-200 dark:bg-zinc-800 rounded w-1/3 mb-5" />
+    <div className="space-y-3">
+      {[...Array(3)].map((_, i) => <div key={i} className="h-14 bg-zinc-200 dark:bg-zinc-800 rounded-xl" />)}
     </div>
   </div>
 ));
@@ -176,43 +171,19 @@ const SearchSkeleton = memo(() => (
 SearchSkeleton.displayName = 'SearchSkeleton';
 
 const ResultSkeleton = memo(() => (
-  <div className="animate-in fade-in duration-300 space-y-6">
-    <div className="w-full flex items-center justify-between gap-3 bg-white dark:bg-zinc-900 px-4 py-3.5 rounded-2xl border border-zinc-200 dark:border-zinc-800 animate-pulse">
-      <div className="flex items-center gap-3">
-        <div className="w-10 h-10 bg-zinc-200 dark:bg-zinc-800 rounded-xl shrink-0" />
-        <div className="space-y-2">
-          <div className="h-4 bg-zinc-200 dark:bg-zinc-800 rounded w-28" />
-          <div className="h-3 bg-zinc-100 dark:bg-zinc-700 rounded w-20" />
-        </div>
-      </div>
-      <div className="flex gap-2">
-        <div className="h-8 w-20 bg-zinc-200 dark:bg-zinc-800 rounded-xl" />
-        <div className="h-8 w-16 bg-zinc-200 dark:bg-zinc-800 rounded-xl" />
-      </div>
+  <div className="space-y-4 animate-in fade-in duration-300">
+    <div className="h-[88px] bg-white dark:bg-zinc-900 rounded-2xl border border-zinc-200 dark:border-zinc-800 animate-pulse" />
+    <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+      {[...Array(4)].map((_, i) => <div key={i} className="h-20 bg-white dark:bg-zinc-900 rounded-xl border border-zinc-200 dark:border-zinc-800 animate-pulse" />)}
     </div>
-    <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-      <div className="lg:col-span-5"><StockCardSkeleton /></div>
-      <div className="lg:col-span-7"><MetricsSkeleton /></div>
-    </div>
-    <ValuationSkeleton />
+    <div className="h-[420px] bg-white dark:bg-zinc-900 rounded-2xl border border-zinc-200 dark:border-zinc-800 animate-pulse" />
   </div>
 ));
 ResultSkeleton.displayName = 'ResultSkeleton';
 
 // =========================================================================
-// 타입 정의
+// Toast
 // =========================================================================
-interface StockXpProfile {
-  level: number;
-  xp: number;
-  maxXp: number;
-  totalXp: number;
-  lastGain: number;
-  awardCount: number;
-}
-
-type StockXpProfiles = Record<string, StockXpProfile>;
-
 interface ToastNotification {
   id: string;
   type: 'success' | 'error' | 'info' | 'warning';
@@ -220,67 +191,8 @@ interface ToastNotification {
   duration?: number;
 }
 
-// =========================================================================
-// 상수 & 유틸
-// =========================================================================
-const STOCK_XP_STORAGE_KEY = 'idiotquant_stock_xp_profiles_v2';
-const SEARCH_RESULT_XP_GAIN = 25;
-const DWELL_XP_GAIN = 5;
-const DWELL_SECONDS_PER_REWARD = 20;
-const DWELL_REWARD_COOLDOWN_MS = 15000;
 const TOAST_DEFAULT_DURATION = 4000;
 
-const getRequiredXpForLevel = (level: number) => 100 + Math.max(0, level - 1) * 60;
-
-const createDefaultXpProfile = (): StockXpProfile => ({
-  level: 1, xp: 0, maxXp: getRequiredXpForLevel(1), totalXp: 0, lastGain: 0, awardCount: 0,
-});
-
-const normalizeXpProfile = (profile: Partial<StockXpProfile> | null | undefined): StockXpProfile => {
-  const level = Math.max(1, Math.floor(Number(profile?.level ?? 1)));
-  const maxXp = getRequiredXpForLevel(level);
-  const xp = Math.max(0, Math.min(maxXp - 1, Math.floor(Number(profile?.xp ?? 0))));
-  return {
-    level, xp, maxXp,
-    totalXp: Math.max(0, Math.floor(Number(profile?.totalXp ?? xp))),
-    lastGain: Math.max(0, Math.floor(Number(profile?.lastGain ?? 0))),
-    awardCount: Math.max(0, Math.floor(Number(profile?.awardCount ?? 0))),
-  };
-};
-
-const normalizeTickerKey = (ticker: string | null | undefined) => ticker?.trim().toUpperCase() ?? '';
-
-const normalizeXpProfiles = (profiles: unknown): StockXpProfiles => {
-  if (!profiles || typeof profiles !== 'object') return {};
-  return Object.entries(profiles as Record<string, Partial<StockXpProfile>>).reduce<StockXpProfiles>(
-    (acc, [ticker, profile]) => {
-      const key = normalizeTickerKey(ticker);
-      if (!key) return acc;
-      acc[key] = normalizeXpProfile(profile);
-      return acc;
-    }, {}
-  );
-};
-
-const addStockXp = (profile: StockXpProfile, gainedXp: number): StockXpProfile => {
-  let nextLevel = profile.level;
-  let nextXp = profile.xp + gainedXp;
-  let nextMaxXp = getRequiredXpForLevel(nextLevel);
-  while (nextXp >= nextMaxXp) {
-    nextXp -= nextMaxXp;
-    nextLevel += 1;
-    nextMaxXp = getRequiredXpForLevel(nextLevel);
-  }
-  return {
-    level: nextLevel, xp: nextXp, maxXp: nextMaxXp,
-    totalXp: profile.totalXp + gainedXp,
-    lastGain: gainedXp, awardCount: profile.awardCount + 1,
-  };
-};
-
-// =========================================================================
-// Toast 컴포넌트
-// =========================================================================
 const Toast = memo(({ notification, onDismiss }: {
   notification: ToastNotification;
   onDismiss: (id: string) => void;
@@ -305,9 +217,7 @@ const Toast = memo(({ notification, onDismiss }: {
     )}>
       <span className="text-xs font-bold leading-normal flex-1">{notification.message}</span>
       <button onClick={() => onDismiss(notification.id)}
-        className="p-1 hover:bg-black/5 dark:hover:bg-white/5 rounded-lg transition-colors shrink-0"
-        aria-label="알림 닫기"
-      >
+        className="p-1 hover:bg-black/5 dark:hover:bg-white/5 rounded-lg transition-colors shrink-0">
         <X size={14} />
       </button>
     </div>
@@ -315,27 +225,10 @@ const Toast = memo(({ notification, onDismiss }: {
 });
 Toast.displayName = 'Toast';
 
-// =========================================================================
-// 커스텀 훅
-// =========================================================================
-const useOnlineStatus = () => {
-  const [isOnline, setIsOnline] = useState(true);
-  useEffect(() => {
-    if (typeof navigator !== 'undefined') setIsOnline(navigator.onLine);
-    const on = () => setIsOnline(true);
-    const off = () => setIsOnline(false);
-    window.addEventListener('online', on);
-    window.addEventListener('offline', off);
-    return () => { window.removeEventListener('online', on); window.removeEventListener('offline', off); };
-  }, []);
-  return isOnline;
-};
-
 const useToast = () => {
   const [toasts, setToasts] = useState<ToastNotification[]>([]);
   const addToast = useCallback((toast: Omit<ToastNotification, 'id'>) => {
-    const id = `toast-${Date.now()}-${Math.random()}`;
-    setToasts(prev => [...prev, { ...toast, id }]);
+    setToasts(prev => [...prev, { ...toast, id: `toast-${Date.now()}-${Math.random()}` }]);
   }, []);
   const dismissToast = useCallback((id: string) => {
     setToasts(prev => prev.filter(t => t.id !== id));
@@ -343,24 +236,8 @@ const useToast = () => {
   return { toasts, addToast, dismissToast };
 };
 
-function ScrollProgress({ isFixed }: { isFixed: boolean }) {
-  const [progress, setProgress] = useState(0);
-  useEffect(() => {
-    const update = () => {
-      const el = document.documentElement;
-      const total = el.scrollHeight - el.clientHeight;
-      setProgress(total > 0 ? (el.scrollTop / total) * 100 : 0);
-    };
-    window.addEventListener('scroll', update, { passive: true });
-    return () => window.removeEventListener('scroll', update);
-  }, []);
-  return (
-    <div className={cn("absolute left-0 right-0 h-[2px]", isFixed ? "top-0" : "bottom-0")}>
-      <div className="h-full bg-gradient-to-r from-blue-500 via-indigo-500 to-violet-500 transition-[width] duration-150"
-        style={{ width: `${progress}%` }} />
-    </div>
-  );
-}
+// StockCard에 전달할 기본 XP 프로필
+const DEFAULT_XP_PROFILE = { level: 1, xp: 0, maxXp: 100, totalXp: 0, lastGain: 0, awardCount: 0 };
 
 // =========================================================================
 // 메인 콘텐츠
@@ -375,43 +252,22 @@ function AnalyzeContent() {
   const popularStocks = useAppSelector(selectPopularStocks) || [];
 
   const { data: session } = useSession();
-  const isOnline = useOnlineStatus();
+  const isLoggedIn = !!session;
   const { toasts, addToast, dismissToast } = useToast();
 
   const fromScreener = searchParams.get('from') === 'screener';
 
-  const [fixed, setFixed] = useState(false);
-  const [spacerHeight, setSpacerHeight] = useState(0);
   const [hasMounted, setHasMounted] = useState(false);
   const [staticStockData, setStaticStockData] = useState<StaticStockData>({ allTickers: [], corpCodeJson: {} });
-  const [stockXpProfiles, setStockXpProfiles] = useState<StockXpProfiles>({});
   const [shareStatus, setShareStatus] = useState<'idle' | 'copied' | 'error'>('idle');
-  const [isSearchFocused, setIsSearchFocused] = useState(false);
   const [watchlist, setWatchlist] = useState<string[]>([]);
-
-  const headerRef = useRef<HTMLElement>(null);
-  const lastEntryAwardedTickerRef = useRef<string | null>(null);
-  const stockCardDwellRef   = useRef<HTMLDivElement | null>(null);
-  const metricsDwellRef     = useRef<HTMLDivElement | null>(null);
-  const valuationDwellRef   = useRef<HTMLDivElement | null>(null);
-  const financialsDwellRef  = useRef<HTMLDivElement | null>(null);
-  const visibleDwellSectionsRef = useRef<Set<string>>(new Set());
-  const dwellSecondsRef     = useRef<Record<string, number>>({});
-  const dwellRewardedAtRef  = useRef<Record<string, number>>({});
 
   useEffect(() => {
     setHasMounted(true);
     dispatch(reqGetSearchLog('10'));
-
     loadStaticStockData().then(setStaticStockData).catch(() => {
       addToast({ type: 'error', message: '주식 데이터를 불러올 수 없습니다.' });
     });
-
-    try {
-      const saved = window.localStorage.getItem(STOCK_XP_STORAGE_KEY);
-      if (saved) setStockXpProfiles(normalizeXpProfiles(JSON.parse(saved)));
-    } catch { }
-
     try {
       const wl = window.localStorage.getItem('idiotquant_watchlist_v1');
       if (wl) setWatchlist(JSON.parse(wl));
@@ -430,24 +286,6 @@ function AnalyzeContent() {
     }).catch(() => {});
   }, [session?.user]);
 
-  const awardStockXp = useCallback((ticker: string, gainedXp: number) => {
-    const key = normalizeTickerKey(ticker);
-    if (!key) return;
-    setStockXpProfiles(prev => {
-      const next = { ...prev, [key]: addStockXp(prev[key] ?? createDefaultXpProfile(), gainedXp) };
-      try { window.localStorage.setItem(STOCK_XP_STORAGE_KEY, JSON.stringify(next)); } catch { }
-      return next;
-    });
-  }, []);
-
-  const awardEntrySearchXp = useCallback((ticker: string) => {
-    const key = normalizeTickerKey(ticker);
-    if (!key || lastEntryAwardedTickerRef.current === key) return;
-    lastEntryAwardedTickerRef.current = key;
-    awardStockXp(key, SEARCH_RESULT_XP_GAIN);
-    addToast({ type: 'success', message: `+${SEARCH_RESULT_XP_GAIN} XP 획득 | 분석 데이터를 불러옵니다.` });
-  }, [awardStockXp, addToast]);
-
   const handleSearch = useCallback((stockName: string) => {
     if (!stockName) return;
     if (staticStockData.allTickers.length > 0 &&
@@ -461,29 +299,20 @@ function AnalyzeContent() {
   const handleShareResult = useCallback(async () => {
     if (typeof window === 'undefined') return;
     const currentUrl = window.location.href;
-    const stockTitle = name
-      ? `[IdiotQuant] ${name} (${krOrUs}) 밸류에이션 분석 리포트`
-      : '[IdiotQuant] 퀀트 가치투자 분석';
-
     if (navigator.share) {
-      try {
-        await navigator.share({ title: stockTitle, url: currentUrl });
-        addToast({ type: 'success', message: '성공적으로 공유되었습니다!' });
-        return;
-      } catch (e) { if ((e as Error).name === 'AbortError') return; }
+      try { await navigator.share({ title: name ? `[IdiotQuant] ${name} 분석` : '[IdiotQuant]', url: currentUrl }); return; }
+      catch (e) { if ((e as Error).name === 'AbortError') return; }
     }
-
     try {
       await navigator.clipboard.writeText(currentUrl);
       setShareStatus('copied');
-      addToast({ type: 'success', message: '링크가 클립보드에 복사되었습니다.' });
       setTimeout(() => setShareStatus('idle'), 2500);
     } catch {
       setShareStatus('error');
       addToast({ type: 'error', message: '링크 복사에 실패했습니다.' });
       setTimeout(() => setShareStatus('idle'), 2500);
     }
-  }, [name, krOrUs, addToast]);
+  }, [name, addToast]);
 
   const toggleWatchlist = useCallback((ticker: string) => {
     if (!session?.user) {
@@ -492,10 +321,7 @@ function AnalyzeContent() {
     setWatchlist(prev => {
       const isAdded = prev.includes(ticker);
       const next = isAdded ? prev.filter(t => t !== ticker) : [...prev, ticker];
-      try {
-        window.localStorage.setItem('idiotquant_watchlist_v1', JSON.stringify(next));
-        addToast({ type: isAdded ? 'info' : 'success', message: isAdded ? '관심 종목에서 제거되었습니다.' : '관심 종목에 추가되었습니다.' });
-      } catch { }
+      try { window.localStorage.setItem('idiotquant_watchlist_v1', JSON.stringify(next)); } catch { }
       if (session?.user) {
         toggleStockLike(ticker, krOrUs === 'US', name ?? undefined).catch(() => {});
       }
@@ -508,25 +334,7 @@ function AnalyzeContent() {
     if (ticker && ticker !== name) onSearch(ticker);
   }, [searchParams, name, onSearch]);
 
-  useEffect(() => {
-    let wasFixed = false;
-    const onScroll = () => {
-      const shouldFix = window.scrollY > 140;
-      if (shouldFix && !wasFixed && headerRef.current) {
-        setSpacerHeight(headerRef.current.offsetHeight);
-      }
-      wasFixed = shouldFix;
-      setFixed(shouldFix);
-    };
-    window.addEventListener('scroll', onScroll, { passive: true });
-    return () => window.removeEventListener('scroll', onScroll);
-  }, []);
-
   const tickerFromUrl = searchParams.get('ticker');
-  const activeTickerKey = normalizeTickerKey(tickerFromUrl);
-  const activeStockXpProfile = activeTickerKey
-    ? stockXpProfiles[activeTickerKey] ?? createDefaultXpProfile()
-    : createDefaultXpProfile();
 
   const isLoaded =
     tickerFromUrl === name &&
@@ -535,54 +343,20 @@ function AnalyzeContent() {
       (krOrUs === 'US' && data.usSearchInfo.state === 'fulfilled' && data.finnhubData.state === 'fulfilled')
     );
 
-  useEffect(() => {
-    if (isLoaded && tickerFromUrl) awardEntrySearchXp(tickerFromUrl);
-  }, [isLoaded, tickerFromUrl, awardEntrySearchXp]);
+  const currency = krOrUs === 'US' ? '$' : '₩';
+  const isInWatchlist = tickerFromUrl ? watchlist.includes(tickerFromUrl) : false;
 
-  useEffect(() => {
-    visibleDwellSectionsRef.current.clear();
-    dwellSecondsRef.current = {};
-  }, [activeTickerKey]);
-
-  useEffect(() => {
-    if (!isLoaded || !activeTickerKey) return;
-    const targets = [
-      { key: 'stock-card', node: stockCardDwellRef.current },
-      { key: 'core-metrics', node: metricsDwellRef.current },
-      { key: 'valuation', node: valuationDwellRef.current },
-      { key: 'financials', node: financialsDwellRef.current },
-    ].filter((t): t is { key: string; node: HTMLDivElement } => Boolean(t.node));
-    if (!targets.length) return;
-
-    const observer = new IntersectionObserver(entries => {
-      entries.forEach(entry => {
-        const key = (entry.target as HTMLElement).dataset.xpSection;
-        if (!key) return;
-        if (entry.isIntersecting && entry.intersectionRatio >= 0.55) visibleDwellSectionsRef.current.add(key);
-        else visibleDwellSectionsRef.current.delete(key);
-      });
-    }, { threshold: [0, 0.55, 0.8] });
-
-    targets.forEach(({ key, node }) => { node.dataset.xpSection = key; observer.observe(node); });
-
-    const timer = window.setInterval(() => {
-      if (document.hidden || !visibleDwellSectionsRef.current.size) return;
-      visibleDwellSectionsRef.current.forEach(key => {
-        const next = (dwellSecondsRef.current[key] ?? 0) + 1;
-        dwellSecondsRef.current[key] = next;
-        if (next >= DWELL_SECONDS_PER_REWARD) {
-          const rk = `${activeTickerKey}:${key}`;
-          const now = Date.now();
-          if (now - (dwellRewardedAtRef.current[rk] ?? 0) < DWELL_REWARD_COOLDOWN_MS) return;
-          dwellSecondsRef.current[key] = 0;
-          dwellRewardedAtRef.current[rk] = now;
-          awardStockXp(activeTickerKey, DWELL_XP_GAIN);
-        }
-      });
-    }, 1000);
-
-    return () => { observer.disconnect(); window.clearInterval(timer); visibleDwellSectionsRef.current.clear(); };
-  }, [isLoaded, activeTickerKey, awardStockXp]);
+  const gradeDisplay = useMemo(() => {
+    if (!isLoaded || !tickerFromUrl) return null;
+    const rawGrade = krOrUs === 'US'
+      ? getUsNcavGrade(data.finnhubData, data.usDetail)
+      : getKrNcavGrade(data.kiBS, data.kiChart);
+    if (!rawGrade) return null;
+    const g = typeof rawGrade === 'object'
+      ? String((rawGrade as any).grade || '')
+      : String(rawGrade || '');
+    return g && g !== 'N/A' ? g : null;
+  }, [isLoaded, tickerFromUrl, krOrUs, data]);
 
   const chartConfig = useMemo(() => {
     const isUs = krOrUs === 'US';
@@ -594,57 +368,45 @@ function AnalyzeContent() {
     };
   }, [krOrUs, data]);
 
-  const currency = krOrUs === 'US' ? '$' : '₩';
-  const isInWatchlist = tickerFromUrl ? watchlist.includes(tickerFromUrl) : false;
+  // 항상 공개되는 핵심 지표
+  const basicMetrics = useMemo(() => {
+    if (!isLoaded) return null;
+    if (krOrUs === 'KR') {
+      const ncavRatio = calculateKrNcavRatio(data.kiBS, data.kiChart);
+      const pbr = Number(data?.kiPrice?.output?.pbr ?? 0);
+      const per = Number(data?.kiPrice?.output?.per ?? 0);
+      const eps = Number(data?.kiPrice?.output?.eps ?? 0);
+      const curPrice = Number(data?.kiPrice?.output?.stck_prpr ?? 0);
+      return { ncavRatio, pbr, per, eps, curPrice };
+    } else {
+      const ncavRatio = calculateUsNcavRatio(data.finnhubData, data.usDetail);
+      const pbr = Number(data?.usDetail?.output?.pbrx ?? 0);
+      const per = Number(data?.usDetail?.output?.perx ?? 0);
+      const eps = Number(data?.usDetail?.output?.epsx ?? 0);
+      const curPrice = Number(data?.usDetail?.output?.last ?? 0);
+      return { ncavRatio, pbr, per, eps, curPrice };
+    }
+  }, [isLoaded, krOrUs, data]);
 
-  const gradeDisplay = useMemo(() => {
-    if (!isLoaded || !tickerFromUrl) return null;
-    const rawGrade = krOrUs === 'US'
-      ? getUsNcavGrade(data.finnhubData, data.usDetail)
-      : getKrNcavGrade(data.kiBS, data.kiChart);
-    if (!rawGrade) return null;
-    const g = rawGrade && typeof rawGrade === 'object'
-      ? String((rawGrade as any).grade || '')
-      : String(rawGrade || '');
-    return g && g !== 'N/A' ? g : null;
-  }, [isLoaded, tickerFromUrl, krOrUs, data]);
-
-  if (!hasMounted) return <div className="w-full min-h-screen bg-zinc-50 dark:bg-zinc-950" />;
+  if (!hasMounted) return <div className="min-h-screen bg-zinc-50 dark:bg-zinc-950" />;
 
   return (
-    <div className="w-full min-h-screen bg-zinc-50 dark:bg-zinc-950 text-zinc-900 dark:text-zinc-100 antialiased selection:bg-blue-500/10 transition-colors duration-300">
+    <div className="min-h-screen bg-zinc-50 dark:bg-zinc-950 text-zinc-900 dark:text-zinc-100 antialiased">
 
-      {/* Toast */}
+      {/* ── Toast ── */}
       <div className="fixed top-4 right-4 z-[100] space-y-2 max-w-sm w-full pointer-events-none px-4 sm:px-0">
         <div className="space-y-2 pointer-events-auto">
           {toasts.map(t => <Toast key={t.id} notification={t} onDismiss={dismissToast} />)}
         </div>
       </div>
 
-      {/* 오프라인 배너 */}
-      {!isOnline && (
-        <div className="fixed top-0 left-0 right-0 z-[90] bg-amber-500 text-white py-2 px-4 flex items-center justify-center gap-2 text-xs font-bold shadow-md animate-in fade-in duration-200">
-          <WifiOff size={14} />
-          오프라인 상태입니다 — 실시간 데이터를 불러올 수 없습니다.
-        </div>
-      )}
-
-      {/* ── 헤더 (검색 + 브레드크럼 + 인기/최근) ── */}
-      <header ref={headerRef} className={cn(
-        "w-full transition-all duration-300 border-b",
-        fixed
-          ? "fixed top-0 z-[60] bg-white/92 dark:bg-zinc-900/92 border-zinc-200 dark:border-zinc-800 shadow-sm backdrop-blur-md"
-          : "relative z-[31] bg-white dark:bg-zinc-900 border-zinc-200/60 dark:border-zinc-800/60",
-        !isOnline && "mt-8"
-      )}>
-        {/* 브레드크럼 — 스크리너에서 진입한 경우 */}
-        {fromScreener && !fixed && (
+      {/* ── 헤더 ── */}
+      <header className="sticky top-14 z-30 bg-white dark:bg-zinc-900 border-b border-zinc-200 dark:border-zinc-800 shadow-sm">
+        {fromScreener && (
           <div className="border-b border-zinc-100 dark:border-zinc-800/60">
-            <div className="max-w-6xl mx-auto px-4 py-2">
-              <Link
-                href="/screener"
-                className="inline-flex items-center gap-1.5 text-xs font-bold text-blue-600 dark:text-blue-400 hover:opacity-80 transition-opacity"
-              >
+            <div className="max-w-4xl mx-auto px-4 py-2">
+              <Link href="/screener"
+                className="inline-flex items-center gap-1.5 text-xs font-bold text-blue-600 dark:text-blue-400 hover:opacity-80 transition-opacity">
                 <ChevronLeft size={13} />
                 스크리너로 돌아가기
               </Link>
@@ -652,97 +414,84 @@ function AnalyzeContent() {
           </div>
         )}
 
-        <div className="max-w-6xl mx-auto px-4 py-3 flex items-center gap-2 relative">
-          <div className="flex-1 flex items-center gap-2">
-            <div className="flex-1">
-              <SearchAutocomplete
-                placeHolder="🇰🇷 국내 종목명 또는 🇺🇸 미국 티커(Ticker) 입력"
-                onSearchButton={handleSearch}
-                validCorpNameArray={staticStockData.allTickers}
-                onSearchStateChange={(focused) => setIsSearchFocused(focused)}
-              />
-            </div>
-
-            {isLoaded && (
-              <div className="flex items-center gap-1.5 shrink-0 animate-in fade-in zoom-in-95 duration-200">
-                <button
-                  onClick={() => tickerFromUrl && toggleWatchlist(tickerFromUrl)}
-                  className={cn(
-                    "flex items-center gap-1.5 px-3 py-2 rounded-xl border text-xs font-bold transition-all duration-200",
-                    isInWatchlist
-                      ? "text-amber-600 bg-amber-50 border-amber-200 dark:bg-amber-950/20 dark:border-amber-800/50 dark:text-amber-400"
-                      : "text-zinc-500 bg-zinc-50 border-zinc-200 hover:text-zinc-800 dark:bg-zinc-800/40 dark:border-zinc-700 dark:hover:text-zinc-200"
-                  )}
-                  aria-label={isInWatchlist ? "관심 종목 제거" : "관심 종목 추가"}
-                >
-                  <Star size={14} className={isInWatchlist ? "fill-amber-500" : ""} />
-                  <span className="hidden sm:inline">{isInWatchlist ? "저장됨" : "관심"}</span>
-                </button>
-
-                <span className={cn(
-                  "inline-flex items-center gap-1 px-2.5 py-2 rounded-xl text-[11px] font-black uppercase tracking-wider font-mono border h-[38px]",
-                  krOrUs === 'US'
-                    ? "bg-blue-50 text-blue-600 border-blue-200/60 dark:bg-blue-950/30 dark:text-blue-400 dark:border-blue-900/40"
-                    : "bg-indigo-50 text-indigo-600 border-indigo-200/60 dark:bg-indigo-950/30 dark:text-indigo-400 dark:border-indigo-900/40"
-                )}>
-                  {krOrUs === 'US' ? <DollarSign size={11} /> : <Coins size={11} />}
-                  <span>{krOrUs}</span>
-                </span>
-              </div>
-            )}
+        <div className="max-w-4xl mx-auto px-4 py-3 flex items-center gap-2">
+          <div className="flex-1">
+            <SearchAutocomplete
+              placeHolder="🇰🇷 국내 종목명 또는 🇺🇸 미국 티커(Ticker) 입력"
+              onSearchButton={handleSearch}
+              validCorpNameArray={staticStockData.allTickers}
+              onSearchStateChange={() => {}}
+            />
           </div>
-          <ScrollProgress isFixed={fixed} />
+
+          {isLoaded && (
+            <div className="flex items-center gap-1.5 shrink-0 animate-in fade-in duration-200">
+              <button
+                onClick={() => tickerFromUrl && toggleWatchlist(tickerFromUrl)}
+                className={cn(
+                  "flex items-center gap-1.5 px-2.5 py-2 rounded-xl border text-xs font-bold transition-all",
+                  isInWatchlist
+                    ? "text-amber-600 bg-amber-50 border-amber-200 dark:bg-amber-950/20 dark:border-amber-800/50 dark:text-amber-400"
+                    : "text-zinc-500 bg-zinc-50 border-zinc-200 hover:text-zinc-800 dark:bg-zinc-800/40 dark:border-zinc-700"
+                )}
+              >
+                <Star size={13} className={isInWatchlist ? "fill-amber-500" : ""} />
+                <span className="hidden sm:inline">{isInWatchlist ? "저장됨" : "관심"}</span>
+              </button>
+              <span className={cn(
+                "inline-flex items-center gap-1 px-2.5 py-2 rounded-xl text-[11px] font-black uppercase tracking-wider font-mono border",
+                krOrUs === 'US'
+                  ? "bg-blue-50 text-blue-600 border-blue-200/60 dark:bg-blue-950/30 dark:text-blue-400 dark:border-blue-900/40"
+                  : "bg-indigo-50 text-indigo-600 border-indigo-200/60 dark:bg-indigo-950/30 dark:text-indigo-400 dark:border-indigo-900/40"
+              )}>
+                {krOrUs === 'US' ? <DollarSign size={11} /> : <Coins size={11} />}
+                <span>{krOrUs}</span>
+              </span>
+            </div>
+          )}
         </div>
 
-        {/* 인기 / 최근 검색 */}
-        {!fixed && !isSearchFocused && (
-          <div className="border-t border-zinc-100 dark:border-zinc-800/50 bg-zinc-50/50 dark:bg-zinc-900/30 animate-in fade-in duration-200">
+        {/* 인기 종목 + 최근 검색 */}
+        {!isLoaded && (
+          <div className="border-t border-zinc-100 dark:border-zinc-800/50 bg-zinc-50/50 dark:bg-zinc-900/30">
             {popularStocks.length > 0 && (
-              <div className="max-w-6xl mx-auto px-4 py-2 flex items-center gap-3 overflow-hidden border-b border-zinc-100 dark:border-zinc-800/40">
-                <div className="flex items-center gap-1.5 shrink-0 text-zinc-500 dark:text-zinc-400 select-none">
-                  <Flame size={12} className="text-amber-500" />
-                  <span className="text-[10px] font-bold tracking-wider uppercase font-mono text-zinc-400 dark:text-zinc-500">인기 종목</span>
+              <div className="max-w-4xl mx-auto px-4 py-2 flex items-center gap-3">
+                <div className="flex items-center gap-1.5 shrink-0">
+                  <Flame size={11} className="text-amber-500" />
+                  <span className="text-[9px] font-bold text-zinc-400 uppercase tracking-wider">인기</span>
                 </div>
-                <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar flex-nowrap py-0.5">
-                  {popularStocks.map((s: any, i: number) => (
-                    <button key={`hot-${i}`} onClick={() => handleSearch(s.ticker)}
-                      className="shrink-0 flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-white dark:bg-zinc-900 text-xs font-bold text-zinc-600 dark:text-zinc-300 border border-zinc-200/60 dark:border-zinc-800 hover:border-blue-400/70 dark:hover:border-blue-700 hover:text-blue-600 dark:hover:text-blue-400 hover:bg-blue-50/50 dark:hover:bg-blue-950/20 transition-all whitespace-nowrap"
+                <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar">
+                  {popularStocks.slice(0, 8).map((s: any, i: number) => (
+                    <button key={i} onClick={() => handleSearch(s.ticker)}
+                      className="shrink-0 flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-white dark:bg-zinc-900 text-xs font-bold text-zinc-600 dark:text-zinc-300 border border-zinc-200/60 dark:border-zinc-800 hover:border-blue-400/70 hover:text-blue-600 dark:hover:text-blue-400 transition-all whitespace-nowrap"
                     >
-                      <span className="w-4 h-4 flex items-center justify-center rounded-full bg-blue-500 text-white font-black text-[9px] shrink-0 tabular-nums">{i + 1}</span>
+                      <span className="w-3.5 h-3.5 flex items-center justify-center rounded-full bg-blue-500 text-white font-black text-[8px] shrink-0">{i + 1}</span>
                       {s.name}
                     </button>
                   ))}
                 </div>
               </div>
             )}
-
-            <div className="max-w-6xl mx-auto px-4 py-2 flex items-center gap-3 overflow-hidden">
-              <div className="flex items-center gap-1.5 shrink-0 text-zinc-400 dark:text-zinc-500 select-none">
-                <History size={12} />
-                <span className="text-[10px] font-bold tracking-wider uppercase font-mono">최근 검색</span>
-              </div>
-              <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar flex-nowrap py-0.5">
-                {krMarketHistory.length > 0 ? (
-                  krMarketHistory.slice().reverse().map((s, i) => (
-                    <button key={`recent-${i}`} onClick={() => handleSearch(s)}
-                      className="shrink-0 px-2.5 py-1.5 text-xs font-bold text-zinc-500 hover:text-blue-600 dark:text-zinc-400 dark:hover:text-indigo-400 hover:bg-white dark:hover:bg-zinc-800/40 rounded-lg border border-zinc-200/60 dark:border-zinc-800 hover:border-zinc-300 dark:hover:border-zinc-700 transition-all whitespace-nowrap"
+            {krMarketHistory.length > 0 && (
+              <div className="max-w-4xl mx-auto px-4 py-2 flex items-center gap-3 border-t border-zinc-100 dark:border-zinc-800/40">
+                <span className="text-[9px] font-bold text-zinc-400 uppercase tracking-wider shrink-0">최근 검색</span>
+                <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar">
+                  {krMarketHistory.slice().reverse().slice(0, 8).map((s, i) => (
+                    <button key={i} onClick={() => handleSearch(s)}
+                      className="shrink-0 px-2.5 py-1.5 text-xs font-bold text-zinc-500 hover:text-blue-600 dark:text-zinc-400 dark:hover:text-blue-400 hover:bg-white dark:hover:bg-zinc-800/40 rounded-lg border border-zinc-200/60 dark:border-zinc-800 transition-all whitespace-nowrap"
                     >
                       {s}
                     </button>
-                  ))
-                ) : (
-                  <span className="text-[11px] text-zinc-400 dark:text-zinc-600 italic font-medium">최근 검색 기록이 없습니다.</span>
-                )}
+                  ))}
+                </div>
               </div>
-            </div>
+            )}
           </div>
         )}
       </header>
 
-      {fixed && <div style={{ height: spacerHeight }} aria-hidden="true" />}
-
-      {/* ── 메인 콘텐츠 ── */}
-      <main className="max-w-6xl mx-auto p-4 sm:p-6">
+      {/* ── 메인 ── */}
+      <main className="max-w-4xl mx-auto p-4 sm:p-6">
 
         {!tickerFromUrl ? (
           <SearchGuide />
@@ -750,184 +499,257 @@ function AnalyzeContent() {
           <>
             {waitResponse && !isLoaded && <ResultSkeleton />}
 
-            <div className={cn(!isLoaded ? 'hidden' : 'block animate-in fade-in duration-400')}>
+            <div className={cn(!isLoaded ? 'hidden' : 'animate-in fade-in duration-400')}>
 
-              {/* 종목 정체성 헤더 */}
-              <div className="w-full flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-5 bg-white dark:bg-zinc-900 px-4 py-3.5 rounded-2xl border border-zinc-200 dark:border-zinc-800 shadow-sm relative overflow-hidden">
-                <div className={cn("absolute top-0 left-0 right-0 h-0.5", krOrUs === 'US' ? "bg-gradient-to-r from-blue-500 to-sky-400" : "bg-gradient-to-r from-indigo-500 to-purple-400")} />
-                <div className="flex items-center gap-3 min-w-0">
-                  <div className={cn(
-                    "w-10 h-10 rounded-xl flex items-center justify-center text-sm font-black text-white shrink-0",
-                    krOrUs === 'US'
-                      ? "bg-gradient-to-tr from-blue-500 to-sky-400"
-                      : "bg-gradient-to-tr from-indigo-500 to-purple-400"
-                  )}>
-                    {(name || tickerFromUrl || '?').substring(0, 1).toUpperCase()}
-                  </div>
-
-                  <div className="min-w-0">
-                    <div className="flex items-center gap-2 flex-wrap">
-                      <span className="font-black text-zinc-900 dark:text-white text-sm tracking-tight">{name}</span>
-                      <span className="text-[10px] font-mono font-bold text-zinc-400 dark:text-zinc-500">{tickerFromUrl}</span>
-                      <span className={cn(
-                        "text-[9px] font-black px-1.5 py-0.5 rounded uppercase tracking-wider shrink-0",
-                        krOrUs === 'US'
-                          ? "bg-blue-50 text-blue-600 dark:bg-blue-950/40 dark:text-blue-400"
-                          : "bg-indigo-50 text-indigo-600 dark:bg-indigo-950/40 dark:text-indigo-400"
-                      )}>
-                        {krOrUs}
-                      </span>
-                    </div>
-                    <p className="text-[11px] text-zinc-400 dark:text-zinc-500 mt-0.5 flex items-center gap-1.5">
-                      <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 shrink-0 animate-pulse" />
-                      NCAV 밸류에이션 분석 완료
-                    </p>
-                  </div>
-                </div>
-
-                <div className="flex items-center gap-2 shrink-0 self-start sm:self-center">
-                  <button
-                    onClick={() => tickerFromUrl && toggleWatchlist(tickerFromUrl)}
-                    className={cn(
-                      "flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold border transition-all",
-                      isInWatchlist
-                        ? "text-amber-600 bg-amber-50 border-amber-200 dark:bg-amber-950/20 dark:border-amber-800/50 dark:text-amber-400"
-                        : "text-zinc-600 bg-zinc-50 border-zinc-200 hover:border-zinc-300 dark:bg-zinc-800/30 dark:border-zinc-700 dark:text-zinc-400 dark:hover:border-zinc-600"
-                    )}
-                  >
-                    <Star size={13} className={isInWatchlist ? "fill-amber-500" : ""} />
-                    {isInWatchlist ? "저장됨" : "관심 종목"}
-                  </button>
-
-                  <button
-                    onClick={handleShareResult}
-                    disabled={shareStatus !== 'idle'}
-                    className={cn(
-                      "flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold border transition-all",
-                      shareStatus === 'copied'
-                        ? "bg-emerald-50 text-emerald-600 border-emerald-200 dark:bg-emerald-950/30 dark:text-emerald-400 dark:border-emerald-900/50"
-                        : shareStatus === 'error'
-                        ? "bg-rose-50 text-rose-600 border-rose-200 dark:bg-rose-950/30 dark:text-rose-400"
-                        : "bg-zinc-900 dark:bg-white text-white dark:text-zinc-900 border-zinc-900 dark:border-white hover:bg-zinc-800 dark:hover:bg-zinc-100"
-                    )}
-                  >
-                    {shareStatus === 'copied' ? <Check size={13} /> : shareStatus === 'error' ? <AlertCircle size={13} /> : <Share2 size={13} />}
-                    <span>{shareStatus === 'copied' ? '복사 완료' : shareStatus === 'error' ? '실패' : '공유'}</span>
-                  </button>
-
-                  {gradeDisplay && (
-                    <span className={cn(
-                      "flex items-center justify-center min-w-[2.5rem] px-3.5 py-2 rounded-xl text-sm font-black font-mono shadow-sm",
-                      GRADE_PILL[gradeDisplay] ?? "bg-zinc-200 text-zinc-700 dark:bg-zinc-700 dark:text-zinc-200"
+              {/* 종목 헤더 카드 */}
+              <div className="bg-white dark:bg-zinc-900 rounded-2xl border border-zinc-200 dark:border-zinc-800 p-4 mb-4 shadow-sm relative overflow-hidden">
+                <div className={cn("absolute top-0 left-0 right-0 h-0.5",
+                  krOrUs === 'US' ? "bg-gradient-to-r from-blue-500 to-sky-400" : "bg-gradient-to-r from-indigo-500 to-purple-400"
+                )} />
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                  <div className="flex items-center gap-3 min-w-0">
+                    <div className={cn(
+                      "w-10 h-10 rounded-xl flex items-center justify-center text-sm font-black text-white shrink-0",
+                      krOrUs === 'US'
+                        ? "bg-gradient-to-tr from-blue-500 to-sky-400"
+                        : "bg-gradient-to-tr from-indigo-500 to-purple-400"
                     )}>
-                      {gradeDisplay}
-                    </span>
-                  )}
-                </div>
-              </div>
-
-              {/* 카드 + 지표 */}
-              <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 mb-5">
-                <div ref={stockCardDwellRef} className="lg:col-span-5 flex justify-center w-full">
-                  <StockCard
-                    stock={krOrUs === 'US' ? {
-                      code: tickerFromUrl, isUs: true, name, ticker: name,
-                      grade: getUsNcavGrade(data.finnhubData, data.usDetail),
-                      curPrice: Number(data?.usDetail?.output?.last ?? 0).toFixed(2),
-                      fairValue: currency + calculateUsNcavValue(data.finnhubData, data.usDetail),
-                      ncavScore: calculateUsNcavRatio(data.finnhubData, data.usDetail),
-                      srimScore: calculateUsSRIM(data.finnhubData, data.usDetail),
-                      per: data?.usDetail?.output?.perx ?? 0,
-                      pbr: data?.usDetail?.output?.pbrx ?? 0,
-                      eps: currency + (data?.usDetail?.output?.epsx ?? 0),
-                      sector: data?.usDetail?.output?.e_icod ?? "DEFAULT",
-                    } : {
-                      code: tickerFromUrl, isUs: false, name,
-                      ticker: (staticStockData.corpCodeJson as any)?.[name]?.stock_code ?? '',
-                      grade: getKrNcavGrade(data.kiBS, data.kiChart),
-                      curPrice: data?.kiPrice?.output?.stck_prpr ?? 0,
-                      fairValue: currency + calculateKrNcavValue(data.kiBS, data.kiChart),
-                      ncavScore: calculateKrNcavRatio(data.kiBS, data.kiChart),
-                      srimScore: getKrSRIMTargetPrice(data.kiBS, data.kiIS, data.kiChart),
-                      per: data?.kiPrice?.output?.per ?? 0,
-                      pbr: data?.kiPrice?.output?.pbr ?? 0,
-                      eps: currency + Number(data?.kiPrice?.output?.eps ?? 0).toFixed(0),
-                      sector: data?.kiPrice?.output?.bstp_kor_isnm ?? "DEFAULT",
-                    }}
-                    chartConfig={chartConfig}
-                    rawData={data}
-                    stockXpProfile={activeStockXpProfile}
-                  />
-                </div>
-
-                <div ref={metricsDwellRef} className="lg:col-span-7 w-full h-full flex flex-col">
-                  <StockMetrics data={data} isUs={krOrUs === 'US'} />
-                </div>
-              </div>
-
-              {/* 밸류에이션 + 재무제표 */}
-              <div className="flex items-center gap-3 mb-3">
-                <p className="text-[11px] font-bold text-zinc-400 uppercase tracking-widest font-mono shrink-0">Valuation & Financials</p>
-                <div className="flex-1 h-px bg-zinc-100 dark:bg-zinc-800/70" />
-              </div>
-              <div className="space-y-5">
-                <div ref={valuationDwellRef} className="bg-white dark:bg-zinc-900 rounded-2xl border border-zinc-200 dark:border-zinc-800 p-1 shadow-sm">
-                  <ValuationSection data={data} isUs={krOrUs === 'US'} />
-                </div>
-
-                <div ref={financialsDwellRef} className="bg-white dark:bg-zinc-900 rounded-2xl border border-zinc-200 dark:border-zinc-800 shadow-sm overflow-hidden">
-                  <div className="px-5 py-4 border-b border-zinc-100 dark:border-zinc-800 flex items-center gap-3">
-                    <div className="p-1.5 bg-zinc-100 dark:bg-zinc-800 rounded-lg shrink-0">
-                      <Globe2 size={14} className="text-zinc-500 dark:text-zinc-400" />
+                      {(name || tickerFromUrl || '?').substring(0, 1).toUpperCase()}
                     </div>
-                    <div>
-                      <h3 className="text-sm font-extrabold text-zinc-800 dark:text-zinc-200 tracking-tight leading-tight">재무제표</h3>
-                      <p className="text-[10px] text-zinc-400 dark:text-zinc-500 font-medium mt-0.5">
-                        Financial Statements · {krOrUs === 'KR' ? 'DART 공시 기준 (억 원)' : 'US-GAAP 기준 (USD)'}
+                    <div className="min-w-0">
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <span className="font-black text-zinc-900 dark:text-white text-base truncate">{name}</span>
+                        <span className="text-[10px] font-mono text-zinc-400 dark:text-zinc-500">{tickerFromUrl}</span>
+                        {gradeDisplay && (
+                          <span className={cn(
+                            "px-2 py-0.5 rounded text-xs font-black font-mono shrink-0",
+                            GRADE_PILL[gradeDisplay] ?? "bg-zinc-200 text-zinc-700 dark:bg-zinc-700 dark:text-zinc-200"
+                          )}>
+                            {gradeDisplay}
+                          </span>
+                        )}
+                      </div>
+                      {basicMetrics && (
+                        <p className="text-sm font-bold text-zinc-600 dark:text-zinc-400 mt-0.5">
+                          현재가&nbsp;
+                          <span className="text-zinc-900 dark:text-white">
+                            {currency}{basicMetrics.curPrice.toLocaleString()}
+                          </span>
+                        </p>
+                      )}
+                    </div>
+                  </div>
+
+                  <div className="flex items-center gap-2 shrink-0 self-start sm:self-center">
+                    <button
+                      onClick={() => tickerFromUrl && toggleWatchlist(tickerFromUrl)}
+                      className={cn(
+                        "flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold border transition-all",
+                        isInWatchlist
+                          ? "text-amber-600 bg-amber-50 border-amber-200 dark:bg-amber-950/20 dark:border-amber-800/50 dark:text-amber-400"
+                          : "text-zinc-600 bg-zinc-50 border-zinc-200 hover:border-zinc-300 dark:bg-zinc-800/30 dark:border-zinc-700"
+                      )}
+                    >
+                      <Star size={13} className={isInWatchlist ? "fill-amber-500" : ""} />
+                      {isInWatchlist ? "저장됨" : "관심 종목"}
+                    </button>
+                    <button
+                      onClick={handleShareResult}
+                      className={cn(
+                        "flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold border transition-all",
+                        shareStatus === 'copied'
+                          ? "bg-emerald-50 text-emerald-600 border-emerald-200 dark:bg-emerald-950/30 dark:text-emerald-400"
+                          : shareStatus === 'error'
+                          ? "bg-rose-50 text-rose-600 border-rose-200"
+                          : "bg-zinc-900 dark:bg-white text-white dark:text-zinc-900 border-zinc-900 dark:border-white hover:bg-zinc-800"
+                      )}
+                    >
+                      {shareStatus === 'copied' ? <Check size={13} /> : shareStatus === 'error' ? <AlertCircle size={13} /> : <Share2 size={13} />}
+                      {shareStatus === 'copied' ? '복사됨' : shareStatus === 'error' ? '실패' : '공유'}
+                    </button>
+                  </div>
+                </div>
+              </div>
+
+              {/* 핵심 지표 4개 (항상 공개) */}
+              {basicMetrics && (
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-5">
+                  {[
+                    {
+                      label: "NCAV 비율",
+                      value: basicMetrics.ncavRatio > 0 ? `${basicMetrics.ncavRatio.toFixed(2)}x` : "—",
+                      desc: "청산가치 / 시가총액",
+                      color: basicMetrics.ncavRatio >= 1
+                        ? "text-emerald-600 dark:text-emerald-400"
+                        : basicMetrics.ncavRatio >= 0.7
+                        ? "text-amber-600 dark:text-amber-400"
+                        : "text-zinc-500 dark:text-zinc-400",
+                    },
+                    {
+                      label: "PBR",
+                      value: basicMetrics.pbr > 0 ? `${basicMetrics.pbr.toFixed(2)}x` : "—",
+                      desc: "주가 / 순자산",
+                      color: basicMetrics.pbr > 0 && basicMetrics.pbr < 1
+                        ? "text-emerald-600 dark:text-emerald-400"
+                        : "text-zinc-700 dark:text-zinc-200",
+                    },
+                    {
+                      label: "PER",
+                      value: basicMetrics.per > 0 ? `${basicMetrics.per.toFixed(1)}x` : "—",
+                      desc: "주가 / 순이익",
+                      color: basicMetrics.per > 0 && basicMetrics.per < 10
+                        ? "text-emerald-600 dark:text-emerald-400"
+                        : "text-zinc-700 dark:text-zinc-200",
+                    },
+                    {
+                      label: "EPS",
+                      value: basicMetrics.eps !== 0
+                        ? `${currency}${Math.abs(basicMetrics.eps) >= 1000
+                            ? (basicMetrics.eps / 1000).toFixed(1) + 'K'
+                            : basicMetrics.eps.toFixed(basicMetrics.eps < 1 ? 2 : 0)}`
+                        : "—",
+                      desc: "주당 순이익",
+                      color: basicMetrics.eps > 0
+                        ? "text-zinc-700 dark:text-zinc-200"
+                        : basicMetrics.eps < 0
+                        ? "text-rose-600 dark:text-rose-400"
+                        : "text-zinc-400",
+                    },
+                  ].map(m => (
+                    <div key={m.label} className="bg-white dark:bg-zinc-900 rounded-xl border border-zinc-200 dark:border-zinc-800 p-4 shadow-sm">
+                      <p className="text-[10px] font-bold text-zinc-400 uppercase tracking-wider mb-1.5">{m.label}</p>
+                      <p className={cn("text-2xl font-black font-mono tabular-nums leading-none", m.color)}>{m.value}</p>
+                      <p className="text-[10px] text-zinc-400 mt-1.5">{m.desc}</p>
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              {/* 상세 분석 섹션 — 로그인 분기 */}
+              {isLoggedIn ? (
+                <div className="space-y-5">
+                  <div className="flex items-center gap-3">
+                    <p className="text-[11px] font-bold text-zinc-400 uppercase tracking-widest font-mono shrink-0">Detail Analysis</p>
+                    <div className="flex-1 h-px bg-zinc-100 dark:bg-zinc-800/70" />
+                  </div>
+
+                  {/* 차트 + 지표 */}
+                  <div className="grid grid-cols-1 lg:grid-cols-12 gap-5">
+                    <div className="lg:col-span-5">
+                      <StockCard
+                        stock={krOrUs === 'US' ? {
+                          code: tickerFromUrl, isUs: true, name, ticker: name,
+                          grade: getUsNcavGrade(data.finnhubData, data.usDetail),
+                          curPrice: Number(data?.usDetail?.output?.last ?? 0).toFixed(2),
+                          fairValue: currency + calculateUsNcavValue(data.finnhubData, data.usDetail),
+                          ncavScore: calculateUsNcavRatio(data.finnhubData, data.usDetail),
+                          srimScore: calculateUsSRIM(data.finnhubData, data.usDetail),
+                          per: data?.usDetail?.output?.perx ?? 0,
+                          pbr: data?.usDetail?.output?.pbrx ?? 0,
+                          eps: currency + (data?.usDetail?.output?.epsx ?? 0),
+                          sector: data?.usDetail?.output?.e_icod ?? "DEFAULT",
+                        } : {
+                          code: tickerFromUrl, isUs: false, name,
+                          ticker: (staticStockData.corpCodeJson as any)?.[name]?.stock_code ?? '',
+                          grade: getKrNcavGrade(data.kiBS, data.kiChart),
+                          curPrice: data?.kiPrice?.output?.stck_prpr ?? 0,
+                          fairValue: currency + calculateKrNcavValue(data.kiBS, data.kiChart),
+                          ncavScore: calculateKrNcavRatio(data.kiBS, data.kiChart),
+                          srimScore: getKrSRIMTargetPrice(data.kiBS, data.kiIS, data.kiChart),
+                          per: data?.kiPrice?.output?.per ?? 0,
+                          pbr: data?.kiPrice?.output?.pbr ?? 0,
+                          eps: currency + Number(data?.kiPrice?.output?.eps ?? 0).toFixed(0),
+                          sector: data?.kiPrice?.output?.bstp_kor_isnm ?? "DEFAULT",
+                        }}
+                        chartConfig={chartConfig}
+                        rawData={data}
+                        stockXpProfile={DEFAULT_XP_PROFILE}
+                      />
+                    </div>
+                    <div className="lg:col-span-7">
+                      <StockMetrics data={data} isUs={krOrUs === 'US'} />
+                    </div>
+                  </div>
+
+                  {/* 밸류에이션 */}
+                  <div className="bg-white dark:bg-zinc-900 rounded-2xl border border-zinc-200 dark:border-zinc-800 p-1 shadow-sm">
+                    <ValuationSection data={data} isUs={krOrUs === 'US'} />
+                  </div>
+
+                  {/* 재무제표 */}
+                  <div className="bg-white dark:bg-zinc-900 rounded-2xl border border-zinc-200 dark:border-zinc-800 shadow-sm overflow-hidden">
+                    <div className="px-5 py-4 border-b border-zinc-100 dark:border-zinc-800">
+                      <h3 className="text-sm font-extrabold text-zinc-800 dark:text-zinc-200">재무제표</h3>
+                      <p className="text-[10px] text-zinc-400 mt-0.5">
+                        {krOrUs === 'KR' ? 'DART 공시 기준 (억 원)' : 'US-GAAP 기준 (USD)'}
                       </p>
                     </div>
-                    <span className="ml-auto text-[9px] font-mono font-black text-zinc-400 bg-zinc-100 dark:bg-zinc-800 px-2 py-1 rounded-lg uppercase tracking-wider">
-                      {krOrUs === 'KR' ? 'KRX' : 'US'}
-                    </span>
-                  </div>
-                  <div className="overflow-x-auto w-full">
-                    {krOrUs === 'KR'
-                      ? <FinancialTables kiBS={data.kiBS} kiIS={data.kiIS} />
-                      : <FinnhubTable data={data.finnhubData.data} />
-                    }
+                    <div className="overflow-x-auto">
+                      {krOrUs === 'KR'
+                        ? <FinancialTables kiBS={data.kiBS} kiIS={data.kiIS} />
+                        : <FinnhubTable data={data.finnhubData.data} />
+                      }
+                    </div>
                   </div>
                 </div>
-              </div>
+              ) : (
+                /* 비로그인 — 잠긴 섹션 */
+                <div className="relative overflow-hidden rounded-2xl">
+                  {/* 블러 미리보기 */}
+                  <div className="blur-md pointer-events-none select-none p-6 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-2xl space-y-3">
+                    {[140, 100, 80, 120, 90].map((h, i) => (
+                      <div key={i} style={{ height: h }} className="bg-zinc-100 dark:bg-zinc-800 rounded-xl" />
+                    ))}
+                  </div>
+
+                  {/* 로그인 오버레이 */}
+                  <div className="absolute inset-0 flex items-center justify-center bg-white/80 dark:bg-zinc-950/80 backdrop-blur-[2px]">
+                    <div className="bg-white dark:bg-zinc-900 rounded-2xl border border-zinc-200 dark:border-zinc-800 shadow-xl p-8 max-w-sm w-full mx-4 text-center">
+                      <div className="w-12 h-12 rounded-2xl bg-blue-100 dark:bg-blue-950/50 flex items-center justify-center mx-auto mb-4">
+                        <Lock size={20} className="text-blue-600 dark:text-blue-400" />
+                      </div>
+                      <h3 className="text-base font-black text-zinc-900 dark:text-white mb-2">
+                        상세 분석은 로그인 후 이용 가능합니다
+                      </h3>
+                      <p className="text-xs text-zinc-500 dark:text-zinc-400 mb-5 leading-relaxed">
+                        {name ? `${name}의` : ''} 가격 차트, S-RIM 적정주가,<br />밸류에이션 계산식, 재무제표를 무료로 확인하세요.
+                      </p>
+                      <div className="flex flex-wrap justify-center gap-1.5 mb-6">
+                        {["가격 차트", "S-RIM 적정주가", "NCAV 계산식", "재무상태표", "손익계산서"].map(item => (
+                          <span key={item} className="flex items-center gap-1 text-[10px] text-zinc-600 dark:text-zinc-300 bg-zinc-100 dark:bg-zinc-800 px-2.5 py-1 rounded-full font-bold">
+                            <CheckCircle size={9} className="text-emerald-500" />
+                            {item}
+                          </span>
+                        ))}
+                      </div>
+                      <Link
+                        href="/login"
+                        className="inline-flex items-center gap-2 px-6 py-3 rounded-full bg-blue-600 hover:bg-blue-700 text-white text-sm font-bold shadow-lg shadow-blue-600/20 transition-all"
+                      >
+                        카카오로 무료 로그인
+                        <ArrowRight size={14} />
+                      </Link>
+                    </div>
+                  </div>
+                </div>
+              )}
             </div>
           </>
         )}
       </main>
 
       {/* ── 푸터 ── */}
-      <footer className="max-w-6xl mx-auto px-4 pt-8 pb-12 mt-16 border-t border-zinc-200 dark:border-zinc-800">
-        <div className="flex flex-col items-center gap-5">
-          <div className="flex flex-wrap items-center justify-center gap-x-5 gap-y-2 text-[11px] text-zinc-400 dark:text-zinc-600 font-mono">
-            {["Korea Investment API", "Finnhub US Market", "DART 공시 연동"].map(s => (
-              <span key={s} className="flex items-center gap-1.5 font-bold">
-                <CheckCircle size={12} className="text-emerald-500 shrink-0" />{s}
-              </span>
-            ))}
+      <footer className="max-w-4xl mx-auto px-4 pt-8 pb-12 mt-12 border-t border-zinc-200 dark:border-zinc-800">
+        <div className="flex flex-col items-center gap-3">
+          <div className="flex items-center gap-2">
+            <TrendingUp size={13} className="text-blue-500" strokeWidth={2.5} />
+            <span className="text-xs font-bold text-zinc-700 dark:text-zinc-300">IdiotQuant</span>
           </div>
-
-          <p className="text-[11px] text-zinc-400 dark:text-zinc-600 text-center max-w-lg leading-relaxed">
-            본 서비스의 분석 결과는 <strong className="font-semibold text-zinc-500 dark:text-zinc-500">투자 참고 목적</strong>의 정량적 자료이며,
-            투자 권유를 목적으로 하지 않습니다. 실제 투자 결정은 본인의 판단과 책임 하에 이루어져야 합니다.
+          <p className="text-[11px] text-zinc-400 dark:text-zinc-600 text-center max-w-md leading-relaxed">
+            본 서비스의 분석 결과는 투자 참고 목적의 정량적 자료이며, 투자 권유를 목적으로 하지 않습니다.
+            실제 투자 결정은 본인의 판단과 책임 하에 이루어져야 합니다.
           </p>
-
-          <div className="flex flex-col sm:flex-row items-center justify-between gap-3 w-full text-xs text-zinc-400 dark:text-zinc-600">
-            <div className="flex items-center gap-2 select-none">
-              <TrendingUp size={13} className="text-blue-500 shrink-0" strokeWidth={2.5} />
-              <span className="font-bold text-zinc-700 dark:text-zinc-300">IdiotQuant</span>
-              <span className="text-zinc-200 dark:text-zinc-700">·</span>
-              <span className="font-medium">Deep Value Investment Platform</span>
-            </div>
-            <span className="text-[10px] font-mono text-zinc-300 dark:text-zinc-700">© 2026 IdiotQuant</span>
-          </div>
+          <span className="text-[10px] font-mono text-zinc-300 dark:text-zinc-700">© 2026 IdiotQuant</span>
         </div>
       </footer>
     </div>
@@ -940,22 +762,13 @@ function AnalyzeContent() {
 export default function AnalyzePage() {
   return (
     <Suspense fallback={
-      <div className="relative flex flex-col items-center justify-center py-40 gap-5 bg-zinc-50 dark:bg-zinc-950 min-h-screen overflow-hidden">
-        <div className="absolute inset-0 -z-10 opacity-[0.03] dark:opacity-[0.06]"
-          style={{
-            backgroundImage: "linear-gradient(#3b82f6 1px, transparent 1px), linear-gradient(90deg, #3b82f6 1px, transparent 1px)",
-            backgroundSize: "40px 40px",
-          }}
-        />
+      <div className="flex flex-col items-center justify-center py-40 gap-5 bg-zinc-50 dark:bg-zinc-950 min-h-screen">
         <div className="p-4 bg-white dark:bg-zinc-900 rounded-2xl border border-zinc-200 dark:border-zinc-800 shadow-sm">
           <Loader2 className="animate-spin text-blue-600 dark:text-blue-400" size={24} />
         </div>
-        <div className="text-center">
-          <p className="text-sm font-black text-zinc-700 dark:text-zinc-300 tracking-tight mb-1">IdiotQuant</p>
-          <p className="text-[11px] font-bold text-zinc-400 dark:text-zinc-500 tracking-widest font-mono uppercase">
-            분석 엔진 초기화 중...
-          </p>
-        </div>
+        <p className="text-[11px] font-bold text-zinc-400 dark:text-zinc-500 tracking-widest font-mono uppercase">
+          분석 엔진 초기화 중...
+        </p>
       </div>
     }>
       <AnalyzeContent />
