@@ -24,7 +24,7 @@ const GRADES = [
   { grade: "SS",  range: "+150% 이상", desc: "강한 저평가",   bg: "bg-amber-500",  text: "text-white", glow: "shadow-amber-500/20" },
   { grade: "S",   range: "+100% 이상", desc: "저평가",        bg: "bg-emerald-500", text: "text-white", glow: "shadow-emerald-500/20" },
   { grade: "A",   range: "+50% 이상",  desc: "적정 이하",     bg: "bg-slate-500",  text: "text-white", glow: "" },
-  { grade: "B",   range: "0% 이상",    desc: "적정가 수준",   bg: "bg-zinc-200 dark:bg-zinc-700", text: "text-zinc-700 dark:text-zinc-200", glow: "" },
+  { grade: "B",   range: "0% 이상",    desc: "적정가 수준",   bg: "bg-zinc-200 dark:bg-[#3a3a3a]", text: "text-zinc-700 dark:text-zinc-200", glow: "" },
   { grade: "F",   range: "0% 미만",    desc: "고평가",        bg: "bg-red-500",    text: "text-white", glow: "shadow-red-500/20" },
 ];
 
@@ -50,7 +50,7 @@ const MOCK_VALUATION = [
 // =========================================================================
 export const SearchGuide = () => {
   return (
-    <div className="w-full min-h-screen bg-zinc-50 dark:bg-zinc-950 selection:bg-blue-500/20">
+    <div className="w-full min-h-screen bg-stone-100 dark:bg-[#0d0d0d] selection:bg-blue-500/20">
 
       {/* ────────── 히어로 ────────── */}
       <section className="relative overflow-hidden pt-20 pb-16 px-4">
@@ -65,7 +65,7 @@ export const SearchGuide = () => {
 
         <div className="max-w-3xl mx-auto text-center">
           {/* 상태 배지 */}
-          <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 shadow-sm mb-8">
+          <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-white dark:bg-[#1a1a1a] border border-zinc-200 dark:border-[#2a2a2a] shadow-sm mb-8">
             <span className="relative flex h-2 w-2">
               <span className="animate-ping absolute h-full w-full rounded-full bg-emerald-400 opacity-75" />
               <span className="relative rounded-full h-2 w-2 bg-emerald-500" />
@@ -89,7 +89,7 @@ export const SearchGuide = () => {
           </p>
 
           {/* 검색창 유도 */}
-          <div className="flex items-center gap-3 max-w-md mx-auto px-4 py-3.5 bg-white dark:bg-zinc-900 border-2 border-dashed border-zinc-300 dark:border-zinc-700 rounded-2xl mb-8 text-zinc-400 dark:text-zinc-500 cursor-default">
+          <div className="flex items-center gap-3 max-w-md mx-auto px-4 py-3.5 bg-white dark:bg-[#1a1a1a] border-2 border-dashed border-zinc-300 dark:border-[#222222] rounded-2xl mb-8 text-zinc-400 dark:text-zinc-500 cursor-default">
             <Search className="w-4 h-4 shrink-0" />
             <span className="text-sm font-medium flex-1 text-left">위 검색창에 종목명 또는 티커 입력</span>
             <ArrowRight className="w-4 h-4 shrink-0 opacity-40" />
@@ -120,7 +120,7 @@ export const SearchGuide = () => {
       </section>
 
       {/* ────────── 아웃풋 프리뷰 ────────── */}
-      <section className="px-4 pb-20 border-t border-zinc-200 dark:border-zinc-800 pt-16">
+      <section className="px-4 pb-20 border-t border-zinc-200 dark:border-[#2a2a2a] pt-16">
         <div className="max-w-5xl mx-auto">
           <div className="text-center mb-10">
             <p className="text-[11px] font-bold text-zinc-400 uppercase tracking-widest mb-2 font-mono">Output Preview</p>
@@ -133,7 +133,7 @@ export const SearchGuide = () => {
           <div className="grid grid-cols-1 lg:grid-cols-5 gap-4">
 
             {/* 종목 요약 카드 */}
-            <div className="lg:col-span-2 bg-white dark:bg-zinc-900 rounded-2xl border border-zinc-200 dark:border-zinc-800 p-6 shadow-sm flex flex-col gap-5">
+            <div className="lg:col-span-2 bg-white dark:bg-[#1a1a1a] rounded-2xl border border-zinc-200 dark:border-[#2a2a2a] p-6 shadow-sm flex flex-col gap-5">
               {/* 헤더 */}
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-3">
@@ -151,7 +151,7 @@ export const SearchGuide = () => {
 
               {/* 가격 & NCAV */}
               <div className="grid grid-cols-2 gap-3">
-                <div className="p-3.5 bg-zinc-50 dark:bg-zinc-800/50 rounded-xl border border-zinc-100 dark:border-zinc-800">
+                <div className="p-3.5 bg-stone-100 dark:bg-[#1a1a1a]/50 rounded-xl border border-zinc-100 dark:border-[#2a2a2a]">
                   <p className="text-[9px] text-zinc-400 font-bold uppercase tracking-wider mb-1">현재가</p>
                   <p className="text-lg font-black text-zinc-900 dark:text-white font-mono">₩78,500</p>
                 </div>
@@ -167,15 +167,15 @@ export const SearchGuide = () => {
                   <span className="text-zinc-400 uppercase tracking-wider">안전마진 (≤ NCAV × 0.67)</span>
                   <span className="text-emerald-600 dark:text-emerald-400">충족 ✓</span>
                 </div>
-                <div className="h-1.5 bg-zinc-100 dark:bg-zinc-800 rounded-full overflow-hidden">
+                <div className="h-1.5 bg-stone-100 dark:bg-[#1a1a1a] rounded-full overflow-hidden">
                   <div className="h-full w-[67%] bg-gradient-to-r from-emerald-400 to-emerald-500 rounded-full" />
                 </div>
               </div>
 
               {/* 하단 지표 */}
-              <div className="flex gap-0 pt-3 border-t border-zinc-100 dark:border-zinc-800">
+              <div className="flex gap-0 pt-3 border-t border-zinc-100 dark:border-[#2a2a2a]">
                 {[["PER", "12.5x"], ["PBR", "1.4x"], ["EPS", "₩6,280"]].map(([k, v], i) => (
-                  <div key={k} className={cn("flex-1 text-center py-1", i < 2 && "border-r border-zinc-100 dark:border-zinc-800")}>
+                  <div key={k} className={cn("flex-1 text-center py-1", i < 2 && "border-r border-zinc-100 dark:border-[#2a2a2a]")}>
                     <p className="text-[9px] text-zinc-400 font-bold uppercase tracking-wider">{k}</p>
                     <p className="text-xs font-black font-mono text-zinc-700 dark:text-zinc-300 mt-0.5">{v}</p>
                   </div>
@@ -184,18 +184,18 @@ export const SearchGuide = () => {
             </div>
 
             {/* 밸류에이션 테이블 */}
-            <div className="lg:col-span-3 bg-white dark:bg-zinc-900 rounded-2xl border border-zinc-200 dark:border-zinc-800 overflow-hidden shadow-sm flex flex-col">
-              <div className="px-5 py-4 border-b border-zinc-100 dark:border-zinc-800 flex items-center gap-2">
+            <div className="lg:col-span-3 bg-white dark:bg-[#1a1a1a] rounded-2xl border border-zinc-200 dark:border-[#2a2a2a] overflow-hidden shadow-sm flex flex-col">
+              <div className="px-5 py-4 border-b border-zinc-100 dark:border-[#2a2a2a] flex items-center gap-2">
                 <BarChart3 className="w-4 h-4 text-zinc-400" />
                 <span className="text-sm font-extrabold text-zinc-700 dark:text-zinc-300">밸류에이션 모델별 목표주가</span>
-                <span className="ml-auto text-[9px] font-mono font-black text-zinc-400 bg-zinc-100 dark:bg-zinc-800 px-2 py-0.5 rounded-md uppercase tracking-wider">Sample</span>
+                <span className="ml-auto text-[9px] font-mono font-black text-zinc-400 bg-stone-100 dark:bg-[#1a1a1a] px-2 py-0.5 rounded-md uppercase tracking-wider">Sample</span>
               </div>
 
               <div className="flex-1 p-4 space-y-2">
                 {MOCK_VALUATION.map(r => (
-                  <div key={r.model} className="flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-zinc-50 dark:hover:bg-zinc-800/50 transition-colors group">
+                  <div key={r.model} className="flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-stone-100 dark:hover:bg-[#1a1a1a]/50 transition-colors group">
                     <span className="w-12 text-xs font-black font-mono text-zinc-600 dark:text-zinc-400 shrink-0">{r.model}</span>
-                    <div className="flex-1 h-1.5 bg-zinc-100 dark:bg-zinc-800 rounded-full overflow-hidden">
+                    <div className="flex-1 h-1.5 bg-stone-100 dark:bg-[#1a1a1a] rounded-full overflow-hidden">
                       <div
                         className={cn("h-full rounded-full transition-all", r.up ? "bg-emerald-500" : "bg-red-400")}
                         style={{ width: `${r.pct}%` }}
@@ -218,7 +218,7 @@ export const SearchGuide = () => {
                 ))}
               </div>
 
-              <div className="px-5 py-3 bg-zinc-50 dark:bg-zinc-800/30 border-t border-zinc-100 dark:border-zinc-800 flex items-start gap-2">
+              <div className="px-5 py-3 bg-stone-100 dark:bg-[#1a1a1a]/30 border-t border-zinc-100 dark:border-[#2a2a2a] flex items-start gap-2">
                 <Sparkles className="w-3.5 h-3.5 text-amber-500 mt-0.5 shrink-0" />
                 <p className="text-[11px] text-zinc-400 dark:text-zinc-500 leading-relaxed">
                   실제 분석에는 현재 주가 기준 실시간 재무 데이터가 사용됩니다. 위 수치는 설명용 샘플입니다.
@@ -230,7 +230,7 @@ export const SearchGuide = () => {
       </section>
 
       {/* ────────── NCAV 등급 스케일 ────────── */}
-      <section className="px-4 py-20 border-t border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900/30">
+      <section className="px-4 py-20 border-t border-zinc-200 dark:border-[#2a2a2a] bg-white dark:bg-[#1a1a1a]/30">
         <div className="max-w-4xl mx-auto">
           <div className="text-center mb-10">
             <p className="text-[11px] font-bold text-zinc-400 uppercase tracking-widest mb-2 font-mono">NCAV Grade Scale</p>
@@ -245,7 +245,7 @@ export const SearchGuide = () => {
 
           <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2.5 mb-8">
             {GRADES.map(g => (
-              <div key={g.grade} className="flex flex-col items-center gap-3 p-4 bg-zinc-50 dark:bg-zinc-900 rounded-2xl border border-zinc-200 dark:border-zinc-800 text-center">
+              <div key={g.grade} className="flex flex-col items-center gap-3 p-4 bg-stone-100 dark:bg-[#1a1a1a] rounded-2xl border border-zinc-200 dark:border-[#2a2a2a] text-center">
                 <span className={cn(
                   "w-11 h-11 rounded-xl flex items-center justify-center text-base font-black font-mono shadow-md",
                   g.bg, g.text, g.glow
@@ -261,7 +261,7 @@ export const SearchGuide = () => {
           </div>
 
           {/* 투자 기준 공식 */}
-          <div className="flex flex-wrap items-center justify-center gap-3 p-4 bg-zinc-50 dark:bg-zinc-900 rounded-2xl border border-zinc-200 dark:border-zinc-800 text-sm">
+          <div className="flex flex-wrap items-center justify-center gap-3 p-4 bg-stone-100 dark:bg-[#1a1a1a] rounded-2xl border border-zinc-200 dark:border-[#2a2a2a] text-sm">
             <span className="text-zinc-500 dark:text-zinc-400 font-medium">투자 기준</span>
             <code className="font-mono font-black text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-950/30 px-3 py-1.5 rounded-xl border border-blue-200/50 dark:border-blue-800/40">
               시가총액 {'<'} NCAV × 0.67
@@ -272,7 +272,7 @@ export const SearchGuide = () => {
       </section>
 
       {/* ────────── 6가지 밸류에이션 모델 ────────── */}
-      <section className="px-4 py-20 border-t border-zinc-200 dark:border-zinc-800">
+      <section className="px-4 py-20 border-t border-zinc-200 dark:border-[#2a2a2a]">
         <div className="max-w-4xl mx-auto">
           <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 mb-8">
             <div>
@@ -287,7 +287,7 @@ export const SearchGuide = () => {
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
             {MODELS.map(m => (
               <div key={m.name}
-                className="flex items-center gap-4 p-4 bg-white dark:bg-zinc-900 rounded-2xl border border-zinc-200 dark:border-zinc-800 hover:border-zinc-300 dark:hover:border-zinc-700 transition-colors shadow-sm"
+                className="flex items-center gap-4 p-4 bg-white dark:bg-[#1a1a1a] rounded-2xl border border-zinc-200 dark:border-[#2a2a2a] hover:border-zinc-300 dark:hover:border-zinc-700 transition-colors shadow-sm"
               >
                 <div className={cn("px-3 py-2 rounded-xl font-black font-mono text-lg tracking-tight shrink-0 min-w-[4rem] text-center", m.bg, m.color)}>
                   {m.name}
@@ -303,7 +303,7 @@ export const SearchGuide = () => {
       </section>
 
       {/* ────────── 3단계 사용법 ────────── */}
-      <section className="px-4 py-20 border-t border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900/30">
+      <section className="px-4 py-20 border-t border-zinc-200 dark:border-[#2a2a2a] bg-white dark:bg-[#1a1a1a]/30">
         <div className="max-w-4xl mx-auto">
           <div className="text-center mb-10">
             <p className="text-[11px] font-bold text-zinc-400 uppercase tracking-widest mb-2 font-mono">How It Works</p>
@@ -338,7 +338,7 @@ export const SearchGuide = () => {
                 border: "border-emerald-200/60 dark:border-emerald-900/40",
               },
             ].map((s, i) => (
-              <div key={i} className="flex flex-col gap-4 p-6 bg-zinc-50 dark:bg-zinc-900 rounded-2xl border border-zinc-200 dark:border-zinc-800 relative z-10">
+              <div key={i} className="flex flex-col gap-4 p-6 bg-stone-100 dark:bg-[#1a1a1a] rounded-2xl border border-zinc-200 dark:border-[#2a2a2a] relative z-10">
                 <div className="flex items-center gap-3">
                   <div className={cn("p-2.5 rounded-xl border", s.bg, s.border, s.color)}>{s.icon}</div>
                   <span className="text-3xl font-black font-mono text-zinc-100 dark:text-zinc-800 select-none">{s.step}</span>
@@ -354,7 +354,7 @@ export const SearchGuide = () => {
       </section>
 
       {/* ────────── 푸터 ────────── */}
-      <footer className="border-t border-zinc-200 dark:border-zinc-800 py-10 px-4">
+      <footer className="border-t border-zinc-200 dark:border-[#2a2a2a] py-10 px-4">
         <div className="max-w-4xl mx-auto flex flex-col items-center gap-5">
 
           {/* 빠른 검색 반복 */}

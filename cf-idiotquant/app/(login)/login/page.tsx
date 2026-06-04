@@ -60,9 +60,9 @@ export default function LoginPage() {
                         <AuthButton />
 
                         <div className="flex items-center gap-3 my-5">
-                            <div className="flex-1 h-px bg-zinc-100 dark:bg-zinc-800" />
+                            <div className="flex-1 h-px bg-stone-100 dark:bg-[#1a1a1a]" />
                             <span className="text-[10px] font-bold text-zinc-300 dark:text-zinc-600 uppercase tracking-widest">무료 · 1초 가입</span>
-                            <div className="flex-1 h-px bg-zinc-100 dark:bg-zinc-800" />
+                            <div className="flex-1 h-px bg-stone-100 dark:bg-[#1a1a1a]" />
                         </div>
 
                         <div className="flex justify-center gap-4 text-[11px] text-zinc-400 dark:text-zinc-500">

@@ -206,7 +206,7 @@ export default function InquireBalanceResult(props: InquireBalanceResultProps) {
                                     setIsDropdownOpen(true);
                                 }}
                                 placeholder={isUs ? "티커 또는 미국 ETF 검색..." : "종목코드 또는 국내 주식 검색..."}
-                                className="w-full pl-10 pr-10 py-2 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-xl text-xs font-bold focus:outline-none focus:ring-2 focus:ring-blue-600 focus:border-transparent dark:text-white"
+                                className="w-full pl-10 pr-10 py-2 bg-white dark:bg-[#1a1a1a] border border-zinc-200 dark:border-[#2a2a2a] rounded-xl text-xs font-bold focus:outline-none focus:ring-2 focus:ring-blue-600 focus:border-transparent dark:text-white"
                             />
                             {searchQuery && (
                                 <button 
@@ -222,13 +222,13 @@ export default function InquireBalanceResult(props: InquireBalanceResultProps) {
                         {isDropdownOpen && searchQuery.trim() && (
                             <>
                                 <div className="fixed inset-0 z-10" onClick={() => setIsDropdownOpen(false)} />
-                                <div className="absolute left-0 right-0 mt-2 max-h-60 overflow-y-auto bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-2xl shadow-xl z-20 divide-y divide-zinc-100 dark:divide-zinc-800">
+                                <div className="absolute left-0 right-0 mt-2 max-h-60 overflow-y-auto bg-white dark:bg-[#1a1a1a] border border-zinc-200 dark:border-[#2a2a2a] rounded-2xl shadow-xl z-20 divide-y divide-zinc-100 dark:divide-[#2a2a2a]">
                                     {filteredSearchResults.length > 0 ? (
                                         filteredSearchResults.map((stock) => (
                                             <div
                                                 key={stock.pdno}
                                                 onClick={() => handleOpenOrderModal(stock)}
-                                                className="flex items-center justify-between p-3.5 hover:bg-zinc-50 dark:hover:bg-zinc-800/50 cursor-pointer transition-colors group"
+                                                className="flex items-center justify-between p-3.5 hover:bg-stone-50 dark:hover:bg-zinc-800/50 cursor-pointer transition-colors group"
                                             >
                                                 <div className="flex flex-col">
                                                     <span className="text-xs font-black dark:text-zinc-200 group-hover:text-blue-600 transition-colors">
@@ -252,7 +252,7 @@ export default function InquireBalanceResult(props: InquireBalanceResultProps) {
                     </div>
 
                     <div className="flex items-center gap-2">
-                        <span className="px-2 py-1 bg-zinc-200 dark:bg-zinc-800 rounded text-[10px] font-black text-zinc-600 dark:text-zinc-400 shrink-0">
+                        <span className="px-2 py-1 bg-zinc-200 dark:bg-[#2a2a2a] rounded text-[10px] font-black text-zinc-600 dark:text-zinc-400 shrink-0">
                             {isUs ? "KRW (고시환율 정산)" : "KRW"}
                         </span>
                         <button
@@ -272,9 +272,9 @@ export default function InquireBalanceResult(props: InquireBalanceResultProps) {
             </div>
 
             {/* 메인 요약 카드 */}
-            <div className="bg-white dark:bg-zinc-900 rounded-[2rem] border border-zinc-200 dark:border-zinc-800 shadow-sm overflow-hidden">
+            <div className="bg-white dark:bg-[#1a1a1a] rounded-[2rem] border border-zinc-200 dark:border-[#2a2a2a] shadow-sm overflow-hidden">
                 {session?.user?.name === process.env.NEXT_PUBLIC_MASTER && (
-                    <div className="p-4 border-b border-zinc-100 dark:border-zinc-800 bg-zinc-50/50 dark:bg-zinc-900/50 flex flex-wrap items-center gap-4">
+                    <div className="p-4 border-b border-zinc-100 dark:border-[#2a2a2a] bg-zinc-50/50 dark:bg-[#1a1a1a]/50 flex flex-wrap items-center gap-4">
                         <div className="flex items-center gap-1.5 px-2.5 py-1 bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400 rounded-lg text-[10px] font-black uppercase">
                             <Key size={12} /> MASTER MODE
                         </div>
@@ -286,7 +286,7 @@ export default function InquireBalanceResult(props: InquireBalanceResultProps) {
                             >
                                 {Array.isArray(props.kakaoMemberList?.list) ? (
                                     props.kakaoMemberList.list.map((item: any) => (
-                                        <option key={item.key} value={String(item.key)} className="dark:bg-zinc-900">
+                                        <option key={item.key} value={String(item.key)} className="dark:bg-[#1a1a1a]">
                                             {item.value?.nickname} ({item.key})
                                         </option>
                                     ))
@@ -299,7 +299,7 @@ export default function InquireBalanceResult(props: InquireBalanceResultProps) {
                     </div>
                 )}
 
-                <div className="grid grid-cols-1 md:grid-cols-3 divide-y md:divide-y-0 md:divide-x border-zinc-100 dark:divide-zinc-800">
+                <div className="grid grid-cols-1 md:grid-cols-3 divide-y md:divide-y-0 md:divide-x border-zinc-100 dark:divide-[#2a2a2a]">
                     <SummaryItem
                         label="평가 손익률"
                         value={`${totalProfitRate >= 0 ? "▲ +" : "▼ "}${totalProfitRate.toFixed(2)}%`}
@@ -321,7 +321,7 @@ export default function InquireBalanceResult(props: InquireBalanceResultProps) {
             </div>
 
             {props.kiBalance.msg1 && (
-                <div className="flex items-start gap-3 p-4 bg-zinc-100 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-2xl">
+                <div className="flex items-start gap-3 p-4 bg-zinc-100 dark:bg-[#1a1a1a] border border-zinc-200 dark:border-[#2a2a2a] rounded-2xl">
                     <Info size={18} className="text-zinc-400 mt-0.5 shrink-0" />
                     <p className="text-sm text-zinc-600 dark:text-zinc-400 font-medium leading-relaxed">
                         {props.kiBalance.msg1}
@@ -330,7 +330,7 @@ export default function InquireBalanceResult(props: InquireBalanceResultProps) {
             )}
 
             {/* 테이블 섹션 */}
-            <div className="overflow-hidden bg-white dark:bg-zinc-900 rounded-[2rem] border border-zinc-200 dark:border-zinc-800 shadow-sm">
+            <div className="overflow-hidden bg-white dark:bg-[#1a1a1a] rounded-[2rem] border border-zinc-200 dark:border-[#2a2a2a] shadow-sm">
                 <SortableBalanceTable 
                     inventoryData={props.kiBalance.output1 || []} 
                     isUs={isUs} 
@@ -383,7 +383,7 @@ function SortableBalanceTable({ inventoryData, isUs, onOpenOrder }: { inventoryD
 
     // 모바일 카드 뷰
     const MobileCardList = () => (
-        <div className="divide-y divide-zinc-100 dark:divide-zinc-800">
+        <div className="divide-y divide-zinc-100 dark:divide-[#2a2a2a]">
             {sortedItems.length === 0 && (
                 <p className="py-10 text-center text-sm text-zinc-400">보유 종목이 없습니다.</p>
             )}
@@ -452,7 +452,7 @@ function SortableBalanceTable({ inventoryData, isUs, onOpenOrder }: { inventoryD
             <div className="hidden md:block overflow-x-auto">
                 <table className="w-full text-left border-collapse min-w-[900px]">
                     <thead>
-                        <tr className="bg-zinc-50 dark:bg-zinc-800/50 border-b border-zinc-100 dark:border-zinc-800">
+                        <tr className="bg-stone-50 dark:bg-[#2a2a2a]/50 border-b border-zinc-100 dark:border-[#2a2a2a]">
                             <th className="p-4 text-center w-16 text-[10px] font-black text-zinc-400 uppercase">#</th>
                             <TableHeader label="종목명" sortKey="name" currentConfig={sortConfig} onSort={handleSort} />
                             <TableHeader label="보유수량" sortKey="qty" align="right" currentConfig={sortConfig} onSort={handleSort} />
@@ -463,7 +463,7 @@ function SortableBalanceTable({ inventoryData, isUs, onOpenOrder }: { inventoryD
                             <th className="p-4 text-center text-[10px] font-black text-zinc-400 uppercase">Action</th>
                         </tr>
                     </thead>
-                    <tbody className="divide-y divide-zinc-100 dark:divide-zinc-800">
+                    <tbody className="divide-y divide-zinc-100 dark:divide-[#2a2a2a]">
                         {sortedItems.length === 0 && (
                             <tr>
                                 <td colSpan={8} className="py-10 text-center text-sm text-zinc-400">보유 종목이 없습니다.</td>
@@ -477,7 +477,7 @@ function SortableBalanceTable({ inventoryData, isUs, onOpenOrder }: { inventoryD
                             const isPositive = profitRt >= 0;
 
                             return (
-                                <tr key={idx} className="group hover:bg-zinc-50 dark:hover:bg-zinc-800/30 transition-colors">
+                                <tr key={idx} className="group hover:bg-stone-50 dark:hover:bg-zinc-800/30 transition-colors">
                                     <td className="p-4 text-center font-mono text-xs text-zinc-400">{idx + 1}</td>
                                     <td className="p-4">
                                         <div className="flex flex-col">
@@ -541,7 +541,7 @@ function TableHeader({ label, sortKey, align = "left", currentConfig, onSort }: 
                 <span className={`text-[10px] font-black uppercase tracking-widest ${isActive ? "text-blue-600" : "text-zinc-400"}`}>
                     {label}
                 </span>
-                <div className="text-zinc-300 dark:text-zinc-600">
+                <div className="text-zinc-300 dark:text-neutral-500">
                     {isActive ? (
                         currentConfig.direction === "asc" ? <ChevronUp size={14} className="text-blue-600" /> : <ChevronDown size={14} className="text-blue-600" />
                     ) : (
@@ -656,7 +656,7 @@ function OrderModal({ isUs, stock, balanceKey, kiOrderCash, reqPostOrderCash, ex
 
     return (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm animate-in fade-in duration-200">
-            <div className="w-full max-w-md bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-[2rem] p-6 shadow-2xl space-y-6 relative mx-4">
+            <div className="w-full max-w-md bg-white dark:bg-[#1a1a1a] border border-zinc-200 dark:border-[#2a2a2a] rounded-[2rem] p-6 shadow-2xl space-y-6 relative mx-4">
                 
                 <div className="flex items-center justify-between">
                     <div>
@@ -671,7 +671,7 @@ function OrderModal({ isUs, stock, balanceKey, kiOrderCash, reqPostOrderCash, ex
                     </button>
                 </div>
 
-                <div className="grid grid-cols-2 p-1 bg-zinc-100 dark:bg-zinc-800 rounded-xl">
+                <div className="grid grid-cols-2 p-1 bg-zinc-100 dark:bg-[#2a2a2a] rounded-xl">
                     <button
                         onClick={() => setBuyOrSell("buy")}
                         className={`py-2.5 text-sm font-black rounded-lg transition-all ${buyOrSell === "buy" ? "bg-rose-500 text-white shadow-md" : "text-zinc-500 hover:text-zinc-800 dark:hover:text-zinc-200"}`}
@@ -699,7 +699,7 @@ function OrderModal({ isUs, stock, balanceKey, kiOrderCash, reqPostOrderCash, ex
                                 min={isUs ? "0.01" : "1"}
                                 value={price}
                                 onChange={(e) => { setPrice(e.target.value); if (priceError) setPriceError(""); }}
-                                className={`w-full bg-zinc-50 dark:bg-zinc-800/50 border pl-8 pr-4 py-3 rounded-xl font-mono font-bold text-sm focus:outline-none focus:border-blue-600 dark:text-white ${priceError ? "border-rose-500 dark:border-rose-500" : "border-zinc-200 dark:border-zinc-800"}`}
+                                className={`w-full bg-stone-50 dark:bg-[#2a2a2a]/50 border pl-8 pr-4 py-3 rounded-xl font-mono font-bold text-sm focus:outline-none focus:border-blue-600 dark:text-white ${priceError ? "border-rose-500 dark:border-rose-500" : "border-zinc-200 dark:border-[#2a2a2a]"}`}
                                 placeholder={isUs ? "0.00" : "0"}
                             />
                         </div>
@@ -708,7 +708,7 @@ function OrderModal({ isUs, stock, balanceKey, kiOrderCash, reqPostOrderCash, ex
 
                     <div className="space-y-1.5">
                         <label className="text-xs font-black text-zinc-400 uppercase tracking-wider">주문 수량 (QTY)</label>
-                        <div className={`flex items-center border rounded-xl overflow-hidden ${qtyError ? "border-rose-500 dark:border-rose-500" : "border-zinc-200 dark:border-zinc-800"}`}>
+                        <div className={`flex items-center border rounded-xl overflow-hidden ${qtyError ? "border-rose-500 dark:border-rose-500" : "border-zinc-200 dark:border-[#2a2a2a]"}`}>
                             <button
                                 type="button"
                                 onClick={() => {
@@ -722,7 +722,7 @@ function OrderModal({ isUs, stock, balanceKey, kiOrderCash, reqPostOrderCash, ex
                                 type="number"
                                 value={qty}
                                 onChange={(e) => { setQty(e.target.value); if (qtyError) setQtyError(""); }}
-                                className="flex-1 bg-zinc-50 dark:bg-zinc-800/50 text-center font-mono font-bold text-sm focus:outline-none dark:text-white py-3 min-w-0"
+                                className="flex-1 bg-stone-50 dark:bg-[#2a2a2a]/50 text-center font-mono font-bold text-sm focus:outline-none dark:text-white py-3 min-w-0"
                                 placeholder="1"
                                 min="1"
                             />
@@ -740,7 +740,7 @@ function OrderModal({ isUs, stock, balanceKey, kiOrderCash, reqPostOrderCash, ex
                     </div>
                 </div>
 
-                <div className="p-4 bg-zinc-50 dark:bg-zinc-800/40 border border-zinc-100 dark:border-zinc-800 rounded-2xl flex justify-between items-center text-sm">
+                <div className="p-4 bg-stone-50 dark:bg-[#2a2a2a]/40 border border-zinc-100 dark:border-[#2a2a2a] rounded-2xl flex justify-between items-center text-sm">
                     <span className="font-bold text-zinc-400">예상 총 금액</span>
                     <span className="font-mono font-black dark:text-white">
                         {isUs

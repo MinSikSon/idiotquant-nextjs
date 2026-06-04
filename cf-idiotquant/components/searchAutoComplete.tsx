@@ -168,9 +168,9 @@ const SearchAutocomplete = ({ validCorpNameArray, onSearchButton, placeHolder, o
             <div 
                 className={cn(
                     "relative flex items-center gap-2.5 w-full px-3.5 py-2 pb-1.5 rounded-2xl border transition-all duration-300 ease-in-out",
-                    "bg-zinc-100/90 dark:bg-zinc-900/90 border-zinc-200/60 dark:border-zinc-800/60 backdrop-blur-md",
+                    "bg-zinc-100/90 dark:bg-[#111111]/90 border-zinc-200/60 dark:border-[#2a2a2a]/60 backdrop-blur-md",
                     isFocused 
-                        ? "bg-white dark:bg-zinc-950 border-blue-500/80 dark:border-indigo-500/80 ring-4 ring-blue-500/10 dark:ring-indigo-500/10 shadow-lg" 
+                        ? "bg-white dark:bg-[#0d0d0d] border-blue-500/80 dark:border-indigo-500/80 ring-4 ring-blue-500/10 dark:ring-indigo-500/10 shadow-lg" 
                         : "hover:border-zinc-300 dark:hover:border-zinc-700"
                 )}
             >
@@ -217,7 +217,7 @@ const SearchAutocomplete = ({ validCorpNameArray, onSearchButton, placeHolder, o
                             if (onSearchStateChange) onSearchStateChange(isFocused, true);
                             inputRef.current?.focus();
                         }}
-                        className="p-1 hover:bg-zinc-200/60 dark:hover:bg-zinc-800/60 rounded-lg transition-colors shrink-0 group"
+                        className="p-1 hover:bg-zinc-200/60 dark:hover:bg-[#2a2a2a]/60 rounded-lg transition-colors shrink-0 group"
                         type="button"
                         aria-label="검색어 초기화"
                     >
@@ -233,10 +233,10 @@ const SearchAutocomplete = ({ validCorpNameArray, onSearchButton, placeHolder, o
                     id="search-listbox"
                     role="listbox"
                     aria-label="종목 검색 결과"
-                    className="absolute top-full mt-2 left-0 w-full bg-white/95 dark:bg-zinc-950/95 backdrop-blur-xl border border-zinc-200 dark:border-zinc-800/80 rounded-2xl shadow-2xl max-h-76 overflow-y-auto p-1.5 z-[70] animate-in fade-in zoom-in-95 duration-200 origin-top no-scrollbar"
+                    className="absolute top-full mt-2 left-0 w-full bg-white/95 dark:bg-[#0d0d0d]/95 backdrop-blur-xl border border-zinc-200 dark:border-[#2a2a2a]/80 rounded-2xl shadow-2xl max-h-76 overflow-y-auto p-1.5 z-[70] animate-in fade-in zoom-in-95 duration-200 origin-top no-scrollbar"
                 >
                     {/* 상단 라벨링 정보 바 */}
-                    <div className="px-2.5 py-1.5 text-[10px] font-black text-zinc-400 dark:text-zinc-500 uppercase tracking-widest border-b border-zinc-100 dark:border-zinc-900/50 mb-1 flex justify-between items-center sticky top-0 bg-white/90 dark:bg-zinc-950/90 backdrop-blur-md z-10">
+                    <div className="px-2.5 py-1.5 text-[10px] font-black text-zinc-400 dark:text-zinc-500 uppercase tracking-widest border-b border-zinc-100 dark:border-[#2a2a2a]/50 mb-1 flex justify-between items-center sticky top-0 bg-white/90 dark:bg-[#0d0d0d]/90 backdrop-blur-md z-10">
                         <span className="flex items-center gap-1">
                             <Sparkles className="w-3 h-3 text-blue-500 dark:text-indigo-400" />
                             퀀트 인텔리전스 추천
@@ -262,7 +262,7 @@ const SearchAutocomplete = ({ validCorpNameArray, onSearchButton, placeHolder, o
                                         "flex items-center justify-between text-xs py-2.5 px-3 cursor-pointer rounded-xl transition-all duration-150 font-medium my-0.5",
                                         isSelected
                                             ? "bg-blue-600 dark:bg-indigo-600 text-white font-bold shadow-sm translate-x-0.5"
-                                            : "text-zinc-700 dark:text-zinc-300 hover:bg-zinc-100/70 dark:hover:bg-zinc-900/70 hover:translate-x-0.5"
+                                            : "text-zinc-700 dark:text-zinc-300 hover:bg-zinc-100/70 dark:hover:bg-[#1f1f1f]/70 hover:translate-x-0.5"
                                     )}
                                 >
                                     <span className="truncate">

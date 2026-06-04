@@ -89,7 +89,7 @@ function MetricChip({ label, value, valueClass = "text-zinc-900 dark:text-zinc-1
   label: string; value: string; valueClass?: string;
 }) {
   return (
-    <div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-xl px-4 py-2.5 flex flex-col gap-0.5 shrink-0">
+    <div className="bg-white dark:bg-[#1a1a1a] border border-zinc-200 dark:border-[#2a2a2a] rounded-xl px-4 py-2.5 flex flex-col gap-0.5 shrink-0">
       <span className="text-[9px] font-black text-zinc-400 dark:text-zinc-500 uppercase tracking-widest whitespace-nowrap">{label}</span>
       <span className={cn("text-xs font-mono font-black whitespace-nowrap", valueClass)}>{value}</span>
     </div>
@@ -102,7 +102,7 @@ function MetricChip({ label, value, valueClass = "text-zinc-900 dark:text-zinc-1
 function OrderRow({ item, isNccs }: { item: any; isNccs: boolean }) {
   const isBuy = item.ord_dvsn_name?.includes("매수") || item.sll_buy_dvsn_cd === "02";
   return (
-    <tr className="hover:bg-zinc-50 dark:hover:bg-zinc-800/40 transition-colors group">
+    <tr className="hover:bg-stone-100 dark:hover:bg-[#1a1a1a]/40 transition-colors group">
       <td className="py-3.5 px-4">
         <span className="block text-xs font-semibold text-zinc-700 dark:text-zinc-300">
           {isNccs ? "대기 중" : formatTime(item.ccld_time)}
@@ -314,7 +314,7 @@ function BalanceKr() {
   ];
 
   return (
-    <div className="min-h-screen bg-zinc-50 dark:bg-zinc-950 transition-colors duration-300">
+    <div className="min-h-screen bg-stone-100 dark:bg-[#0d0d0d] transition-colors duration-300">
 
       <ToastContainer toasts={toasts} onRemove={removeToast} />
 
@@ -336,7 +336,7 @@ function BalanceKr() {
               {currentKakaoUser && (
                 <>
                   <ChevronRight size={11} className="text-zinc-300 dark:text-zinc-600" />
-                  <span className="flex items-center gap-1 text-zinc-600 dark:text-zinc-300 bg-zinc-200/60 dark:bg-zinc-800 px-2 py-0.5 rounded-md">
+                  <span className="flex items-center gap-1 text-zinc-600 dark:text-zinc-300 bg-zinc-200/60 dark:bg-[#1a1a1a] px-2 py-0.5 rounded-md">
                     <User size={10} />
                     {currentKakaoUser.name || balanceKey}
                   </span>
@@ -351,7 +351,7 @@ function BalanceKr() {
               </h1>
               <span className="text-2xl select-none" aria-hidden>🇰🇷</span>
               {!isLoading && totalEvalAmt > 0 && (
-                <span className="text-sm font-mono font-black text-zinc-400 dark:text-zinc-500 bg-zinc-100 dark:bg-zinc-800 px-2.5 py-1 rounded-lg border border-zinc-200 dark:border-zinc-700">
+                <span className="text-sm font-mono font-black text-zinc-400 dark:text-zinc-500 bg-stone-100 dark:bg-[#1a1a1a] px-2.5 py-1 rounded-lg border border-zinc-200 dark:border-[#222222]">
                   {totalEvalAmt.toLocaleString()}원
                 </span>
               )}
@@ -364,7 +364,7 @@ function BalanceKr() {
                 {lastUpdated.toLocaleTimeString("ko-KR")} 기준
               </p>
             ) : (
-              <div className="h-4 w-40 rounded bg-zinc-200 dark:bg-zinc-800 animate-pulse" />
+              <div className="h-4 w-40 rounded bg-zinc-200 dark:bg-[#1a1a1a] animate-pulse" />
             )}
           </div>
 
@@ -375,7 +375,7 @@ function BalanceKr() {
               isLoading={isLoading}
               onRefresh={handleRefresh}
             />
-            <span className="text-[10px] font-mono text-zinc-400 bg-zinc-100 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 px-2.5 py-1 rounded-lg">
+            <span className="text-[10px] font-mono text-zinc-400 bg-stone-100 dark:bg-[#1a1a1a] border border-zinc-200 dark:border-[#2a2a2a] px-2.5 py-1 rounded-lg">
               ID: {String(balanceKey).slice(0, 8) || "N/A"}
             </span>
           </div>
@@ -418,7 +418,7 @@ function BalanceKr() {
             value={isLoading ? null : `${isPnlPositive ? "▲ +" : "▼ "}${pnlRate.toFixed(2)}%`}
             sub={isLoading ? "" : `당일 증감 ${isDailyPositive ? "+" : ""}${asstIcdcErngRt.toFixed(2)}%`}
             icon={<Percent size={15} />}
-            iconBg="bg-zinc-100 dark:bg-zinc-800 text-zinc-500"
+            iconBg="bg-stone-100 dark:bg-[#1a1a1a] text-zinc-500"
             valueColor={pnlValueColor(isPnlPositive)}
             accentColor={pnlAccentColor(isPnlPositive)}
           />
@@ -507,7 +507,7 @@ function BalanceKr() {
                 krCapital.state === "pending"
                   ? <span className="text-[10px] font-mono text-amber-500 bg-amber-50 dark:bg-amber-950/20 px-2 py-0.5 rounded-full border border-amber-200 dark:border-amber-800 animate-pulse">로딩 중</span>
                   : krCapital.stock_list?.length > 0
-                  ? <span className="text-[10px] font-mono text-zinc-500 dark:text-zinc-400 bg-zinc-100 dark:bg-zinc-800 px-2 py-0.5 rounded-full">{krCapital.stock_list.length}종목</span>
+                  ? <span className="text-[10px] font-mono text-zinc-500 dark:text-zinc-400 bg-stone-100 dark:bg-[#1a1a1a] px-2 py-0.5 rounded-full">{krCapital.stock_list.length}종목</span>
                   : null
               }
             />
@@ -541,7 +541,7 @@ function BalanceKr() {
             }
           />
 
-          <div className="overflow-x-auto rounded-xl border border-zinc-100 dark:border-zinc-800">
+          <div className="overflow-x-auto rounded-xl border border-zinc-100 dark:border-[#2a2a2a]">
             <table className="w-full text-sm text-left min-w-[600px]">
               <TableHeader headers={[
                 { label: "주문시간 / 번호" },
@@ -551,7 +551,7 @@ function BalanceKr() {
                 { label: "체결가 / 수량", align: "text-right" },
                 { label: "미체결", align: "text-right" },
               ]} />
-              <tbody className="divide-y divide-zinc-50 dark:divide-zinc-800/40">
+              <tbody className="divide-y divide-zinc-50 dark:divide-[#2a2a2a]/40">
                 {viewerTab === "ccnl" ? (
                   krCcnl.output?.length > 0
                     ? krCcnl.output.map((item, i) => (

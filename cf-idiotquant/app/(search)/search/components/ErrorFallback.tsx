@@ -44,7 +44,7 @@ export function ErrorFallback({
         
         <button
           onClick={() => window.location.reload()}
-          className="inline-flex items-center justify-center gap-2 px-8 py-3 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 text-zinc-700 dark:text-zinc-300 rounded-2xl font-bold hover:bg-zinc-50 dark:hover:bg-zinc-800 transition-all active:scale-95"
+          className="inline-flex items-center justify-center gap-2 px-8 py-3 bg-white dark:bg-[#1a1a1a] border border-zinc-200 dark:border-[#2a2a2a] text-zinc-700 dark:text-zinc-300 rounded-2xl font-bold hover:bg-stone-50 dark:hover:bg-[#2a2a2a] transition-all active:scale-95"
         >
           <RotateCw size={18} />
           페이지 새로고침
@@ -53,7 +53,7 @@ export function ErrorFallback({
 
       {/* 에러 코드 푸터 */}
       <div className="mt-16 flex flex-col items-center gap-2">
-        <div className="h-px w-12 bg-zinc-200 dark:bg-zinc-800" />
+        <div className="h-px w-12 bg-zinc-200 dark:bg-[#2a2a2a]" />
         <span className="text-[10px] text-zinc-400 uppercase tracking-[0.3em] font-black">
           Error Code: ERR_STOCK_FETCH_FAILURE
         </span>

@@ -58,7 +58,7 @@ export default function StrategyDescription({ strategyId }: StrategyDescriptionP
   if (!content) return null;
 
   return (
-    <div className="w-full rounded-2xl border border-blue-100 bg-white p-6 shadow-sm dark:border-blue-900/30 dark:bg-zinc-900 mb-6 transition-all hover:shadow-md">
+    <div className="w-full rounded-2xl border border-blue-100 bg-white p-6 shadow-sm dark:border-blue-900/30 dark:bg-[#1a1a1a] mb-6 transition-all hover:shadow-md">
       {/* 1. Header Section */}
       <div className="flex items-center gap-4 mb-6">
         <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-blue-50 text-blue-600 dark:bg-blue-900/20 dark:text-blue-400">
@@ -69,7 +69,7 @@ export default function StrategyDescription({ strategyId }: StrategyDescriptionP
             {content.title}
           </h4>
           <div className="mt-2 flex items-center gap-2">
-            <span className="inline-block px-2 py-0.5 text-[10px] font-mono font-bold bg-zinc-100 text-zinc-500 dark:bg-zinc-800 dark:text-zinc-400 rounded uppercase tracking-wider">
+            <span className="inline-block px-2 py-0.5 text-[10px] font-mono font-bold bg-zinc-100 text-zinc-500 dark:bg-[#2a2a2a] dark:text-zinc-400 rounded uppercase tracking-wider">
               {strategyId}
             </span>
           </div>
@@ -77,7 +77,7 @@ export default function StrategyDescription({ strategyId }: StrategyDescriptionP
       </div>
 
       {/* Horizontal Divider */}
-      <div className="h-px w-full bg-zinc-100 dark:bg-zinc-800 mb-6" />
+      <div className="h-px w-full bg-zinc-100 dark:bg-[#2a2a2a] mb-6" />
 
       {/* 2. Content Grid */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
@@ -85,7 +85,7 @@ export default function StrategyDescription({ strategyId }: StrategyDescriptionP
         {/* Left: Strategy Details (Main Content) */}
         <div className="lg:col-span-8 space-y-6">
           <section>
-            <div className="flex items-center gap-2 mb-3 text-[11px] font-black text-zinc-400 dark:text-zinc-500 uppercase tracking-widest">
+            <div className="flex items-center gap-2 mb-3 text-[11px] font-black text-zinc-400 dark:text-neutral-500 uppercase tracking-widest">
               <Search className="h-3.5 w-3.5" />
               <span>전략 메커니즘</span>
             </div>
@@ -94,7 +94,7 @@ export default function StrategyDescription({ strategyId }: StrategyDescriptionP
             </p>
           </section>
 
-          <section className="relative overflow-hidden rounded-xl bg-zinc-50 p-4 border border-zinc-100 dark:bg-zinc-800/40 dark:border-zinc-800">
+          <section className="relative overflow-hidden rounded-xl bg-stone-50 p-4 border border-zinc-100 dark:bg-[#2a2a2a]/40 dark:border-[#2a2a2a]">
             <div className="flex gap-3">
               <Info className="h-4 w-4 text-blue-500 shrink-0 mt-0.5" />
               <p className="text-sm text-zinc-600 dark:text-zinc-400 leading-snug">
@@ -130,10 +130,10 @@ export default function StrategyDescription({ strategyId }: StrategyDescriptionP
       </div>
 
       {/* 3. Footer: Disclaimer */}
-      <div className="mt-8 pt-5 border-t border-zinc-100 dark:border-zinc-800">
+      <div className="mt-8 pt-5 border-t border-zinc-100 dark:border-[#2a2a2a]">
         <div className="flex gap-2">
           <ShieldCheck className="h-3.5 w-3.5 text-zinc-400 shrink-0 mt-0.5" />
-          <p className="text-[11px] text-zinc-400 dark:text-zinc-500 leading-relaxed italic">
+          <p className="text-[11px] text-zinc-400 dark:text-neutral-500 leading-relaxed italic">
             <span className="font-bold text-zinc-500 dark:text-zinc-400 not-italic mr-1">Disclaimer:</span>
             {content.philosophy} 본 리스트는 알고리즘에 의한 필터링 결과이며 종목 추천이 아닙니다. 모든 투자의 결과와 책임은 투자자 본인에게 귀속됩니다.
           </p>

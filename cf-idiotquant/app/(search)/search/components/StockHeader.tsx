@@ -46,9 +46,9 @@ export const StockHeader = ({ data, isUs, isFixed }: StockHeaderProps) => {
     >
       <div
         className={cn(
-          "bg-white dark:bg-zinc-900 border-zinc-200 dark:border-zinc-800 transition-all",
+          "bg-white dark:bg-[#1a1a1a] border-zinc-200 dark:border-[#2a2a2a] transition-all",
           isFixed 
-            ? "rounded-none border-b shadow-lg backdrop-blur-md bg-white/90 dark:bg-zinc-900/90" 
+            ? "rounded-none border-b shadow-lg backdrop-blur-md bg-white/90 dark:bg-[#111111]/90" 
             : "rounded-2xl border shadow-sm mx-auto"
         )}
       >

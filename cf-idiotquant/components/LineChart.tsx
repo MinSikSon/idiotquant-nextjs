@@ -38,7 +38,7 @@ const tailwindPalette = {
 const CustomTooltip = ({ active, payload, label, mode }: any) => {
     if (active && payload && payload.length) {
         return (
-            <div className="bg-white/80 dark:bg-zinc-950/80 backdrop-blur-md px-3 py-2 rounded-xl border border-zinc-200/60 dark:border-zinc-800/80 shadow-xl text-[11px] font-medium transition-all duration-200">
+            <div className="bg-white/80 dark:bg-[#0d0d0d]/80 backdrop-blur-md px-3 py-2 rounded-xl border border-zinc-200/60 dark:border-[#2a2a2a]/80 shadow-xl text-[11px] font-medium transition-all duration-200">
                 <p className="text-zinc-400 dark:text-zinc-500 font-bold mb-1 font-mono tracking-wider">{label}</p>
                 <div className="space-y-1">
                     {payload.map((entry: any, index: number) => (

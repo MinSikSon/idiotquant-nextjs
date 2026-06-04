@@ -51,7 +51,7 @@ interface ResultChartProps {
 const CustomTooltip = ({ active, payload }: any) => {
     if (active && payload && payload.length) {
         return (
-            <div className="bg-zinc-950/95 dark:bg-zinc-900/95 backdrop-blur-md border border-zinc-800 p-4 rounded-xl shadow-xl space-y-2 z-50">
+            <div className="bg-zinc-950/95 dark:bg-[#111111]/95 backdrop-blur-md border border-zinc-800 p-4 rounded-xl shadow-xl space-y-2 z-50">
                 <p className="text-[10px] font-black text-zinc-400 dark:text-zinc-500 font-mono tracking-wider">
                     {payload[0].payload.year}세 예상 진단
                 </p>
@@ -89,7 +89,7 @@ const ResultChart: FC<ResultChartProps> = ({ data, height }) => {
     }
 
     return (
-        <div className="w-full bg-white dark:bg-zinc-900/10 border border-zinc-200/50 dark:border-zinc-800/50 rounded-2xl p-3 sm:p-5 backdrop-blur-md relative overflow-hidden group shadow-xs">
+        <div className="w-full bg-white dark:bg-[#1a1a1a]/10 border border-zinc-200/50 dark:border-[#2a2a2a]/50 rounded-2xl p-3 sm:p-5 backdrop-blur-md relative overflow-hidden group shadow-xs">
             <div className="absolute top-0 left-0 w-full h-[2px] bg-gradient-to-r from-blue-500 via-indigo-500 to-purple-500 opacity-70" />
             
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-8">

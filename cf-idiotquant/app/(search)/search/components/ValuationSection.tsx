@@ -159,9 +159,9 @@ const DEFAULT_CONFIG: ModelConfig = {
   icon: <BarChart3 size={14} />,
   dotBg: "bg-zinc-500",
   accentLine: "bg-zinc-400",
-  iconBg: "bg-zinc-100 dark:bg-zinc-800",
+  iconBg: "bg-stone-100 dark:bg-[#1a1a1a]",
   iconColor: "text-zinc-500 dark:text-zinc-400",
-  badgeClass: "bg-zinc-100 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-400 border border-zinc-200 dark:border-zinc-700",
+  badgeClass: "bg-stone-100 dark:bg-[#1a1a1a] text-zinc-600 dark:text-zinc-400 border border-zinc-200 dark:border-[#222222]",
   textColor: "text-zinc-600 dark:text-zinc-400",
 };
 
@@ -234,13 +234,13 @@ export const ValuationSection = ({ data, isUs }: ValuationSectionProps) => {
     <div className="w-full flex flex-col">
 
       {/* ────── 모델 요약 바 ────── */}
-      <div className="px-5 pt-5 pb-4 border-b border-zinc-100 dark:border-zinc-800">
+      <div className="px-5 pt-5 pb-4 border-b border-zinc-100 dark:border-[#2a2a2a]">
         <div className="flex items-center gap-2 mb-4">
           <Target size={13} className="text-zinc-400 shrink-0" />
           <span className="text-xs font-extrabold text-zinc-600 dark:text-zinc-300 tracking-tight">
             모델별 목표주가 요약
           </span>
-          <span className="ml-auto text-[10px] font-mono font-bold text-zinc-400 dark:text-zinc-500 bg-zinc-100 dark:bg-zinc-800 px-2 py-0.5 rounded-md uppercase tracking-wider">
+          <span className="ml-auto text-[10px] font-mono font-bold text-zinc-400 dark:text-zinc-500 bg-stone-100 dark:bg-[#1a1a1a] px-2 py-0.5 rounded-md uppercase tracking-wider">
             {models.length} Models
           </span>
         </div>
@@ -265,7 +265,7 @@ export const ValuationSection = ({ data, isUs }: ValuationSectionProps) => {
                 <span className={cn("text-[11px] font-black font-mono w-10 shrink-0", config.textColor)}>
                   {type}
                 </span>
-                <div className="flex-1 h-1.5 bg-zinc-100 dark:bg-zinc-800 rounded-full overflow-hidden">
+                <div className="flex-1 h-1.5 bg-stone-100 dark:bg-[#1a1a1a] rounded-full overflow-hidden">
                   <div
                     className={cn(
                       "h-full rounded-full transition-all duration-500",
@@ -292,7 +292,7 @@ export const ValuationSection = ({ data, isUs }: ValuationSectionProps) => {
       </div>
 
       {/* ────── 필터 탭 ────── */}
-      <div className="px-5 py-3 border-b border-zinc-100 dark:border-zinc-800 flex items-center gap-1">
+      <div className="px-5 py-3 border-b border-zinc-100 dark:border-[#2a2a2a] flex items-center gap-1">
         {([
           { id: "ALL",     label: "전체",     count: models.length },
           { id: "ASSET",   label: "자산가치", count: assetCount },
@@ -305,7 +305,7 @@ export const ValuationSection = ({ data, isUs }: ValuationSectionProps) => {
               "flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all duration-150",
               activeTab === tab.id
                 ? "bg-zinc-900 dark:bg-white text-white dark:text-zinc-900"
-                : "text-zinc-500 dark:text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-800 hover:text-zinc-800 dark:hover:text-zinc-200"
+                : "text-zinc-500 dark:text-zinc-400 hover:bg-stone-100 dark:hover:bg-[#1a1a1a] hover:text-zinc-800 dark:hover:text-zinc-200"
             )}
           >
             {tab.label}
@@ -313,7 +313,7 @@ export const ValuationSection = ({ data, isUs }: ValuationSectionProps) => {
               "text-[9px] font-black px-1.5 py-0.5 rounded-full",
               activeTab === tab.id
                 ? "bg-white/20 dark:bg-black/20"
-                : "bg-zinc-100 dark:bg-zinc-800 text-zinc-500 dark:text-zinc-500"
+                : "bg-stone-100 dark:bg-[#1a1a1a] text-zinc-500 dark:text-zinc-500"
             )}>
               {tab.count}
             </span>
@@ -375,7 +375,7 @@ function StrategyCard({ modelType, result, currency }: StrategyCardProps) {
   );
 
   return (
-    <div className="bg-white dark:bg-zinc-900 rounded-2xl border border-zinc-200 dark:border-zinc-800 shadow-sm overflow-hidden flex flex-col">
+    <div className="bg-white dark:bg-[#1a1a1a] rounded-2xl border border-zinc-200 dark:border-[#2a2a2a] shadow-sm overflow-hidden flex flex-col">
 
       {/* 상단 컬러 액센트 라인 */}
       <div className={cn("h-0.5 w-full shrink-0", config.accentLine)} />
@@ -383,7 +383,7 @@ function StrategyCard({ modelType, result, currency }: StrategyCardProps) {
       {/* 카드 헤더 */}
       <div
         onClick={() => setIsExpanded(!isExpanded)}
-        className="px-5 py-4 border-b border-zinc-100 dark:border-zinc-800 flex items-center justify-between cursor-pointer hover:bg-zinc-50/50 dark:hover:bg-zinc-900/50 transition-colors select-none"
+        className="px-5 py-4 border-b border-zinc-100 dark:border-[#2a2a2a] flex items-center justify-between cursor-pointer hover:bg-stone-100/50 dark:hover:bg-[#1f1f1f]/50 transition-colors select-none"
       >
         <div className="flex items-center gap-3 min-w-0">
           <div className={cn(
@@ -407,7 +407,7 @@ function StrategyCard({ modelType, result, currency }: StrategyCardProps) {
             <p className="text-[10px] font-mono text-zinc-400 mt-0.5 truncate">{result.formula}</p>
           </div>
         </div>
-        <div className="shrink-0 p-1 text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-300 rounded-lg hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors ml-2">
+        <div className="shrink-0 p-1 text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-300 rounded-lg hover:bg-stone-100 dark:hover:bg-[#1a1a1a] transition-colors ml-2">
           {isExpanded ? <ChevronUp size={15} /> : <ChevronDown size={15} />}
         </div>
       </div>
@@ -416,7 +416,7 @@ function StrategyCard({ modelType, result, currency }: StrategyCardProps) {
       {isExpanded && (
         <>
           {/* 모델 설명 */}
-          <div className="px-5 py-3.5 border-b border-zinc-50 dark:border-zinc-800/60 bg-zinc-50/30 dark:bg-zinc-800/10">
+          <div className="px-5 py-3.5 border-b border-zinc-50 dark:border-[#2a2a2a]/60 bg-stone-100/30 dark:bg-[#1a1a1a]/10">
             <p className="text-[11px] text-zinc-500 dark:text-zinc-400 leading-relaxed break-keep">
               {config.description.summary}
             </p>
@@ -424,11 +424,11 @@ function StrategyCard({ modelType, result, currency }: StrategyCardProps) {
 
           {/* 핵심 지표 그리드 */}
           {extendedMetrics.length > 0 && (
-            <div className="px-5 py-4 grid grid-cols-2 sm:grid-cols-4 gap-2.5 border-b border-zinc-100 dark:border-zinc-800">
+            <div className="px-5 py-4 grid grid-cols-2 sm:grid-cols-4 gap-2.5 border-b border-zinc-100 dark:border-[#2a2a2a]">
               {extendedMetrics.map((m: any, i: number) => (
                 <div
                   key={i}
-                  className="p-3 bg-zinc-50 dark:bg-zinc-800/50 rounded-xl border border-zinc-100 dark:border-zinc-800"
+                  className="p-3 bg-stone-100 dark:bg-[#1a1a1a]/50 rounded-xl border border-zinc-100 dark:border-[#2a2a2a]"
                 >
                   <p className="text-[9px] text-zinc-400 font-bold uppercase tracking-wider mb-1 truncate">
                     {m.label}
@@ -445,7 +445,7 @@ function StrategyCard({ modelType, result, currency }: StrategyCardProps) {
           <div className="overflow-x-auto">
             <table className="w-full text-left">
               <thead>
-                <tr className="bg-zinc-50 dark:bg-zinc-800/30">
+                <tr className="bg-stone-100 dark:bg-[#1a1a1a]/30">
                   {result.headers.map((h: any, i: number) => (
                     <th
                       key={i}
@@ -469,10 +469,10 @@ function StrategyCard({ modelType, result, currency }: StrategyCardProps) {
                     <tr
                       key={idx}
                       className={cn(
-                        "border-t border-zinc-100 dark:border-zinc-800 transition-colors",
+                        "border-t border-zinc-100 dark:border-[#2a2a2a] transition-colors",
                         isBase
-                          ? "bg-zinc-50/80 dark:bg-zinc-800/30"
-                          : "hover:bg-zinc-50/40 dark:hover:bg-zinc-800/10"
+                          ? "bg-stone-100/80 dark:bg-[#1a1a1a]/30"
+                          : "hover:bg-stone-100/40 dark:hover:bg-[#1a1a1a]/10"
                       )}
                     >
                       <td className="px-5 py-3 whitespace-nowrap">
@@ -518,7 +518,7 @@ function StrategyCard({ modelType, result, currency }: StrategyCardProps) {
           </div>
 
           {/* 푸터 노트 */}
-          <div className="px-5 py-3 border-t border-zinc-100 dark:border-zinc-800 bg-zinc-50/30 dark:bg-zinc-800/10 flex items-start gap-2">
+          <div className="px-5 py-3 border-t border-zinc-100 dark:border-[#2a2a2a] bg-stone-100/30 dark:bg-[#1a1a1a]/10 flex items-start gap-2">
             <Sparkles size={12} className="text-amber-500 shrink-0 mt-0.5" />
             <p className="text-[11px] text-zinc-400 dark:text-zinc-500 leading-relaxed">
               {result.footerNotice}

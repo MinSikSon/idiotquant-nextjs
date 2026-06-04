@@ -253,8 +253,8 @@ function SectionTable({
         <div className="overflow-x-auto">
             <table className="w-full border-collapse text-sm">
                 <thead>
-                    <tr className="border-b border-zinc-200 dark:border-zinc-800">
-                        <th className="sticky left-0 z-10 bg-white dark:bg-zinc-900 px-5 py-3 text-left min-w-[12rem] w-48">
+                    <tr className="border-b border-zinc-200 dark:border-[#2a2a2a]">
+                        <th className="sticky left-0 z-10 bg-white dark:bg-[#1a1a1a] px-5 py-3 text-left min-w-[12rem] w-48">
                             <span className="text-[10px] font-bold uppercase tracking-widest text-zinc-400 dark:text-zinc-500 font-mono select-none">
                                 Financial Metric
                             </span>
@@ -292,7 +292,7 @@ function SectionTable({
                             <tr>
                                 <td
                                     colSpan={columns.length + 1}
-                                    className="sticky left-0 px-5 pt-4 pb-1.5 bg-white dark:bg-zinc-900"
+                                    className="sticky left-0 px-5 pt-4 pb-1.5 bg-white dark:bg-[#1a1a1a]"
                                 >
                                     <div className={cn(
                                         "inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md border text-[9px] font-black uppercase tracking-widest font-mono select-none",
@@ -312,18 +312,18 @@ function SectionTable({
                                     <tr
                                         key={rowIdx}
                                         className={cn(
-                                            "group border-b border-zinc-100 dark:border-zinc-800/50 transition-colors duration-100",
+                                            "group border-b border-zinc-100 dark:border-[#2a2a2a]/50 transition-colors duration-100",
                                             item.isTotal
-                                                ? "bg-zinc-50/80 dark:bg-zinc-800/20 hover:bg-zinc-100/70 dark:hover:bg-zinc-800/40"
-                                                : "hover:bg-zinc-50/60 dark:hover:bg-zinc-800/10"
+                                                ? "bg-stone-100/80 dark:bg-[#1a1a1a]/20 hover:bg-stone-100/70 dark:hover:bg-[#1a1a1a]/40"
+                                                : "hover:bg-stone-100/60 dark:hover:bg-[#1a1a1a]/10"
                                         )}
                                     >
                                         {/* Label */}
                                         <td className={cn(
                                             "sticky left-0 z-10 px-5 py-3 transition-colors duration-100",
                                             item.isTotal
-                                                ? "bg-zinc-50 dark:bg-zinc-800/20 group-hover:bg-zinc-100/70 dark:group-hover:bg-zinc-800/40"
-                                                : "bg-white dark:bg-zinc-900 group-hover:bg-zinc-50/60 dark:group-hover:bg-zinc-800/10"
+                                                ? "bg-stone-100 dark:bg-[#1a1a1a]/20 group-hover:bg-stone-100/70 dark:group-hover:bg-zinc-800/40"
+                                                : "bg-white dark:bg-[#1a1a1a] group-hover:bg-stone-100/60 dark:group-hover:bg-zinc-800/10"
                                         )}>
                                             <div className="flex items-center gap-2">
                                                 {item.isTotal
@@ -400,7 +400,7 @@ export default function FinnhubTable({ data = [], className = "" }: Props) {
     if (!columns.length) return null;
 
     const footer = (
-        <div className="flex items-center gap-3 px-5 py-3 border-t border-zinc-100 dark:border-zinc-800">
+        <div className="flex items-center gap-3 px-5 py-3 border-t border-zinc-100 dark:border-[#2a2a2a]">
             <span className="w-1.5 h-1.5 rounded-full bg-blue-500 animate-pulse shrink-0" />
             <span className="text-[10px] text-zinc-400 dark:text-zinc-500 font-mono">
                 Finnhub · SEC Fundamentals · US-GAAP · USD
@@ -417,8 +417,8 @@ export default function FinnhubTable({ data = [], className = "" }: Props) {
         <div className={cn("w-full", className)}>
             <Tabs.Root defaultValue="bs">
                 {/* Tab Bar */}
-                <div className="flex items-center justify-between px-5 py-3 border-b border-zinc-100 dark:border-zinc-800 bg-zinc-50/50 dark:bg-zinc-800/20">
-                    <Tabs.List className="flex gap-1 bg-zinc-100 dark:bg-zinc-800 rounded-lg p-1">
+                <div className="flex items-center justify-between px-5 py-3 border-b border-zinc-100 dark:border-[#2a2a2a] bg-stone-100/50 dark:bg-[#1a1a1a]/20">
+                    <Tabs.List className="flex gap-1 bg-stone-100 dark:bg-[#1a1a1a] rounded-lg p-1">
                         <Tabs.Trigger
                             value="bs"
                             className={cn(TAB_TRIGGER_BASE, "data-[state=active]:text-blue-700 dark:data-[state=active]:text-blue-300")}
