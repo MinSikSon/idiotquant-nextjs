@@ -1,13 +1,12 @@
 "use client";
 
-import { useRef, useState, useEffect } from "react";
+import { useState, useEffect } from "react";
 import { useSession } from "next-auth/react";
 import Link from "next/link";
 import { motion } from "framer-motion";
 import {
   Search, Calculator, BarChart3, Lock, ArrowRight,
-  TrendingUp, ChevronRight, CheckCircle2, Loader2, Activity,
-  Zap, ShieldCheck, LayoutGrid,
+  TrendingUp, ChevronRight, Loader2, LayoutGrid,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -46,17 +45,17 @@ const FEATURES = [
     icon: LayoutGrid,
     color: "text-blue-600 dark:text-blue-400",
     bg: "bg-blue-50 dark:bg-blue-950/30",
-    title: "9가지 퀀트 전략",
-    desc: "NCAV·저PBR·저PER·S-RIM·그레이엄·마법공식 등 검증된 전략으로 KOSPI·KOSDAQ 전 종목을 매일 자동 스캔합니다.",
+    title: "종목 발굴",
+    desc: "9가지 퀀트 전략으로 KOSPI·KOSDAQ 전 종목을 매일 자동 스캔.",
     link: "/screener",
-    linkLabel: "종목 발굴하기",
+    linkLabel: "스크리너 열기",
   },
   {
     icon: Search,
     color: "text-violet-600 dark:text-violet-400",
     bg: "bg-violet-50 dark:bg-violet-950/30",
-    title: "멀티 모델 밸류에이션",
-    desc: "종목 검색 한 번으로 NCAV·S-RIM·PBR·PER 4개 모델의 적정 주가와 현재 주가 괴리율을 즉시 확인합니다.",
+    title: "적정주가 분석",
+    desc: "NCAV·S-RIM·PBR·PER 4개 모델로 적정 주가와 괴리율 즉시 계산.",
     link: "/analyze",
     linkLabel: "종목 분석하기",
   },
@@ -64,27 +63,12 @@ const FEATURES = [
     icon: Calculator,
     color: "text-emerald-600 dark:text-emerald-400",
     bg: "bg-emerald-50 dark:bg-emerald-950/30",
-    title: "세후 수익 계산기",
-    desc: "거래세·수수료를 반영한 세후 순수익과 연환산 수익률을 시나리오별로 즉시 계산합니다.",
+    title: "수익 계산기",
+    desc: "거래세·수수료 포함 세후 순수익과 연환산 수익률을 즉시 산출.",
     link: "/calculator",
     linkLabel: "계산해보기",
   },
 ];
-
-function NcavBar({ ratio }: { ratio: number }) {
-  const pct = Math.min(ratio * 100, 200);
-  return (
-    <div className="w-full bg-zinc-100 dark:bg-zinc-800 rounded-full h-1.5 overflow-hidden">
-      <div
-        className={cn(
-          "h-full rounded-full transition-all duration-700",
-          ratio >= 1 ? "bg-emerald-500" : ratio >= 0.7 ? "bg-amber-400" : "bg-zinc-300 dark:bg-zinc-600"
-        )}
-        style={{ width: `${Math.min(pct, 100)}%` }}
-      />
-    </div>
-  );
-}
 
 function StockPreviewRow({ item, index }: { item: PreviewStock; index: number }) {
   const ncav = item.ncav_ratio;
@@ -92,24 +76,20 @@ function StockPreviewRow({ item, index }: { item: PreviewStock; index: number })
 
   return (
     <motion.div
-      initial={{ opacity: 0, x: -8 }}
-      whileInView={{ opacity: 1, x: 0 }}
+      initial={{ opacity: 0, y: 6 }}
+      whileInView={{ opacity: 1, y: 0 }}
       viewport={{ once: true }}
       transition={{ delay: 0.04 * index }}
-      className="group flex items-center gap-4 px-5 py-4 border-b border-zinc-100 dark:border-zinc-800/60 last:border-0 hover:bg-blue-50/40 dark:hover:bg-zinc-800/30 transition-colors"
+      className="flex items-center gap-3 px-4 py-3.5 border-b border-zinc-100 dark:border-zinc-800/60 last:border-0 active:bg-zinc-50 dark:active:bg-zinc-800/30 transition-colors"
     >
-      {/* 순위 */}
-      <span className="w-5 text-[11px] font-black text-zinc-300 dark:text-zinc-600 tabular-nums shrink-0">
-        {index + 1}
-      </span>
+      <span className="w-4 text-[10px] font-black text-zinc-300 dark:text-zinc-600 tabular-nums shrink-0">{index + 1}</span>
 
-      {/* 종목 정보 */}
       <div className="flex-1 min-w-0">
-        <div className="flex items-center gap-2 mb-0.5 flex-wrap">
-          <p className="font-bold text-[13px] text-zinc-900 dark:text-white truncate leading-tight">{item.name}</p>
+        <div className="flex items-center gap-1.5 mb-0.5 flex-wrap">
+          <p className="font-bold text-sm text-zinc-900 dark:text-white truncate leading-tight">{item.name}</p>
           {strategies.map(s => (
             <span key={s} className={cn(
-              "text-[9px] font-extrabold px-1.5 py-0.5 rounded-md border leading-none",
+              "text-[9px] font-extrabold px-1.5 py-0.5 rounded border leading-none",
               STRATEGY_BADGE_CLS[s] ?? "bg-zinc-100 text-zinc-500 border-zinc-200"
             )}>
               {STRATEGY_LABEL[s] ?? s}
@@ -119,24 +99,9 @@ function StockPreviewRow({ item, index }: { item: PreviewStock; index: number })
         <p className="text-[10px] text-zinc-400 font-mono">{item.ticker}</p>
       </div>
 
-      {/* 지표 */}
-      <div className="hidden sm:flex items-center gap-5 shrink-0">
-        <div className="text-right">
-          <p className="text-[9px] font-bold text-zinc-400 uppercase tracking-wider mb-0.5">PBR</p>
-          <p className="text-xs font-mono font-semibold text-zinc-600 dark:text-zinc-300">
-            {item.pbr > 0 ? `${item.pbr.toFixed(2)}` : "—"}
-          </p>
-        </div>
-        <div className="text-right">
-          <p className="text-[9px] font-bold text-zinc-400 uppercase tracking-wider mb-0.5">PER</p>
-          <p className="text-xs font-mono font-semibold text-zinc-600 dark:text-zinc-300">
-            {item.per > 0 ? `${item.per.toFixed(1)}` : "—"}
-          </p>
-        </div>
-      </div>
-
-      {/* NCAV 비율 + 바 */}
-      <div className="shrink-0 w-20 text-right">
+      <div className={cn(
+        "shrink-0 text-right min-w-[52px]",
+      )}>
         <p className={cn(
           "text-sm font-black font-mono tabular-nums",
           ncav >= 1 ? "text-emerald-600 dark:text-emerald-400" :
@@ -144,14 +109,13 @@ function StockPreviewRow({ item, index }: { item: PreviewStock; index: number })
         )}>
           {ncav > 0 ? `${ncav.toFixed(2)}x` : "—"}
         </p>
-        <NcavBar ratio={ncav} />
+        <p className="text-[9px] text-zinc-400 font-bold uppercase tracking-wider">NCAV</p>
       </div>
     </motion.div>
   );
 }
 
 export default function HomePage() {
-  const heroRef = useRef<HTMLDivElement>(null);
   const { data: session, status } = useSession();
   const isLoggedIn = !!session;
   const sessionLoading = status === "loading";
@@ -195,211 +159,161 @@ export default function HomePage() {
     <div className="min-h-screen bg-white dark:bg-zinc-950 text-zinc-900 dark:text-zinc-50">
 
       {/* ── 히어로 ── */}
-      <header ref={heroRef} className="relative overflow-hidden">
-        {/* 배경 그라데이션 */}
+      <header className="relative overflow-hidden">
         <div className="absolute inset-0 -z-10">
-          <div className="absolute inset-0 bg-gradient-to-b from-blue-50/60 via-white to-white dark:from-blue-950/20 dark:via-zinc-950 dark:to-zinc-950" />
-          <div className="absolute top-0 left-1/4 w-[600px] h-[500px] bg-blue-400/8 dark:bg-blue-600/8 blur-[100px] rounded-full" />
-          <div className="absolute top-20 right-1/4 w-[400px] h-[400px] bg-violet-400/6 dark:bg-violet-600/6 blur-[120px] rounded-full" />
+          <div className="absolute inset-0 bg-gradient-to-b from-blue-50/70 via-white to-white dark:from-blue-950/20 dark:via-zinc-950 dark:to-zinc-950" />
+          <div className="absolute top-0 left-1/4 w-[500px] h-[400px] bg-blue-400/8 dark:bg-blue-600/8 blur-[90px] rounded-full" />
         </div>
 
-        <div className="max-w-4xl mx-auto px-6 pt-20 pb-16 text-center">
-          {/* 뱃지 */}
+        <div className="max-w-lg mx-auto px-5 pt-10 pb-8 sm:pt-16 sm:pb-12 text-center">
+          {/* Live 뱃지 */}
           <motion.div
-            initial={{ opacity: 0, y: 10 }}
+            initial={{ opacity: 0, y: 8 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5 }}
-            className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-700 shadow-sm mb-7"
+            transition={{ duration: 0.4 }}
+            className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-700 shadow-sm mb-5"
           >
-            <span className="relative flex h-2 w-2">
+            <span className="relative flex h-1.5 w-1.5 shrink-0">
               <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
-              <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500" />
+              <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-emerald-500" />
             </span>
-            <span className="text-[11px] font-bold text-zinc-600 dark:text-zinc-400">
-              매일 자동 스캔 &nbsp;·&nbsp; KOSPI · KOSDAQ 전 종목
+            <span className="text-[11px] font-semibold text-zinc-500 dark:text-zinc-400">
+              매일 자동 스캔 · KOSPI · KOSDAQ
             </span>
           </motion.div>
 
           {/* 헤드라인 */}
           <motion.h1
-            initial={{ opacity: 0, y: 16 }}
+            initial={{ opacity: 0, y: 14 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6, delay: 0.08 }}
-            className="text-[clamp(2.4rem,7vw,5rem)] font-black leading-[1.04] tracking-tight mb-5"
+            transition={{ duration: 0.55, delay: 0.07 }}
+            className="text-[2.2rem] sm:text-[3.2rem] font-black leading-[1.06] tracking-tight mb-4"
           >
             <span className="block text-zinc-900 dark:text-white">저평가 국내 주식,</span>
             <span className="block text-transparent bg-clip-text bg-gradient-to-r from-blue-500 via-blue-600 to-violet-600">
-              데이터가 먼저 찾아드립니다.
+              데이터가 찾아드립니다.
             </span>
           </motion.h1>
 
           <motion.p
-            initial={{ opacity: 0, y: 12 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6, delay: 0.15 }}
-            className="text-zinc-500 dark:text-zinc-400 text-base md:text-lg font-medium leading-relaxed mb-8 max-w-xl mx-auto"
-          >
-            벤자민 그레이엄의 NCAV 원칙을 포함한 9가지 퀀트 전략으로
-            감이 아닌 데이터 기반의 종목 발굴을 시작하세요.
-          </motion.p>
-
-          {/* CTA */}
-          <motion.div
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5, delay: 0.22 }}
-            className="flex flex-wrap justify-center gap-3 mb-8"
+            transition={{ duration: 0.5, delay: 0.13 }}
+            className="text-sm sm:text-base text-zinc-500 dark:text-zinc-400 font-medium leading-relaxed mb-7"
+          >
+            9가지 퀀트 전략으로 매일 저평가 종목을 발굴하고<br className="hidden sm:block" />
+            적정 주가까지 즉시 확인하세요.
+          </motion.p>
+
+          {/* CTA 버튼 */}
+          <motion.div
+            initial={{ opacity: 0, y: 8 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.45, delay: 0.2 }}
+            className="flex flex-col sm:flex-row justify-center gap-2.5"
           >
             {!sessionLoading && (isLoggedIn ? (
               <Link href="/screener"
-                className="group inline-flex items-center gap-2.5 px-7 py-3.5 rounded-full bg-blue-600 hover:bg-blue-700 active:bg-blue-800 text-white text-sm font-bold shadow-lg shadow-blue-600/30 transition-all duration-200"
+                className="group inline-flex items-center justify-center gap-2 w-full sm:w-auto px-6 py-3.5 rounded-2xl bg-blue-600 hover:bg-blue-700 active:bg-blue-800 text-white text-sm font-bold shadow-lg shadow-blue-600/25 transition-all"
               >
-                <TrendingUp size={16} strokeWidth={2.5} />
+                <TrendingUp size={15} strokeWidth={2.5} />
                 종목 발굴하기
-                <ArrowRight size={15} className="group-hover:translate-x-0.5 transition-transform" />
+                <ArrowRight size={14} className="group-hover:translate-x-0.5 transition-transform" />
               </Link>
             ) : (
               <Link href="/login"
-                className="group inline-flex items-center gap-2.5 px-7 py-3.5 rounded-full bg-blue-600 hover:bg-blue-700 active:bg-blue-800 text-white text-sm font-bold shadow-lg shadow-blue-600/30 transition-all duration-200"
+                className="group inline-flex items-center justify-center gap-2 w-full sm:w-auto px-6 py-3.5 rounded-2xl bg-blue-600 hover:bg-blue-700 active:bg-blue-800 text-white text-sm font-bold shadow-lg shadow-blue-600/25 transition-all"
               >
                 카카오로 무료 시작
-                <ArrowRight size={15} className="group-hover:translate-x-0.5 transition-transform" />
+                <ArrowRight size={14} className="group-hover:translate-x-0.5 transition-transform" />
               </Link>
             ))}
             <Link href="/analyze"
-              className="inline-flex items-center gap-2 px-6 py-3.5 rounded-full bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-700 hover:border-zinc-400 dark:hover:border-zinc-500 text-zinc-700 dark:text-zinc-300 text-sm font-bold transition-all shadow-sm"
+              className="inline-flex items-center justify-center gap-2 w-full sm:w-auto px-6 py-3.5 rounded-2xl bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-700 hover:border-zinc-400 dark:hover:border-zinc-500 text-zinc-700 dark:text-zinc-300 text-sm font-bold transition-all"
             >
               종목 직접 분석하기
             </Link>
           </motion.div>
-
-          {/* 신뢰 지표 */}
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ delay: 0.35 }}
-            className="flex flex-wrap justify-center items-center gap-x-5 gap-y-2 text-xs text-zinc-400 dark:text-zinc-500"
-          >
-            {[
-              "카카오 로그인 30초",
-              "무료 플랜 영구 제공",
-              "한국투자증권 API 연동",
-              "9가지 퀀트 전략",
-            ].map(t => (
-              <span key={t} className="flex items-center gap-1.5 font-medium">
-                <CheckCircle2 size={11} className="text-emerald-500 shrink-0" />
-                {t}
-              </span>
-            ))}
-          </motion.div>
         </div>
 
-        {/* 라이브 스탯 스트립 */}
-        <div className="border-t border-zinc-200/60 dark:border-zinc-800/60 bg-white/80 dark:bg-zinc-900/50 backdrop-blur-sm">
-          <div className="max-w-4xl mx-auto px-6 py-4 flex flex-wrap items-center justify-center gap-6 sm:gap-10">
+        {/* 스탯 스트립 */}
+        <div className="border-t border-zinc-100 dark:border-zinc-800/60 bg-white/80 dark:bg-zinc-900/50 backdrop-blur-sm">
+          <div className="max-w-lg mx-auto px-5 py-3">
             {preview.loading ? (
-              <div className="flex items-center gap-2 text-zinc-400 py-1">
-                <Loader2 size={13} className="animate-spin" />
-                <span className="text-xs">데이터 집계 중...</span>
+              <div className="flex items-center justify-center gap-2 text-zinc-400 py-2">
+                <Loader2 size={12} className="animate-spin" />
+                <span className="text-xs">집계 중...</span>
               </div>
             ) : preview.total > 0 ? (
-              <>
-                <Stat
-                  value={preview.total}
-                  label="오늘 발굴된 저평가 종목"
-                  color="text-blue-600 dark:text-blue-400"
-                />
-                <div className="h-6 w-px bg-zinc-200 dark:bg-zinc-700 hidden sm:block" />
-                <Stat
-                  value={preview.filteredTotal}
-                  label="시가총액 500억+ 종목"
-                  color="text-emerald-600 dark:text-emerald-400"
-                />
-                <div className="h-6 w-px bg-zinc-200 dark:bg-zinc-700 hidden sm:block" />
-                <div className="text-center">
-                  <p className="text-[11px] font-extrabold text-zinc-400 uppercase tracking-wider mb-0.5">업데이트</p>
-                  <p className="text-sm font-black text-zinc-700 dark:text-zinc-200">
+              <div className="grid grid-cols-3 gap-0">
+                <div className="text-center py-1">
+                  <p className="text-xl font-black text-blue-600 dark:text-blue-400 tabular-nums leading-none">
+                    {preview.total.toLocaleString()}
+                  </p>
+                  <p className="text-[10px] text-zinc-400 font-medium mt-1">오늘 발굴 종목</p>
+                </div>
+                <div className="text-center py-1 border-x border-zinc-100 dark:border-zinc-800">
+                  <p className="text-xl font-black text-emerald-600 dark:text-emerald-400 tabular-nums leading-none">
+                    {preview.filteredTotal.toLocaleString()}
+                  </p>
+                  <p className="text-[10px] text-zinc-400 font-medium mt-1">시총 500억+</p>
+                </div>
+                <div className="text-center py-1">
+                  <p className="text-xl font-black text-zinc-700 dark:text-zinc-200 tabular-nums leading-none">
                     {formattedDate ?? "—"}
                   </p>
+                  <p className="text-[10px] text-zinc-400 font-medium mt-1">업데이트</p>
                 </div>
-                <div className="h-6 w-px bg-zinc-200 dark:bg-zinc-700 hidden sm:block" />
-                <div className="text-center">
-                  <p className="text-[11px] font-extrabold text-zinc-400 uppercase tracking-wider mb-0.5">스캔 전략</p>
-                  <p className="text-sm font-black text-zinc-700 dark:text-zinc-200">9가지</p>
-                </div>
-              </>
-            ) : (
-              <div className="flex items-center gap-2 text-zinc-400 text-xs py-1">
-                <Activity size={13} className="text-zinc-300" />
-                스캔 데이터를 불러오는 중입니다.
               </div>
-            )}
+            ) : null}
           </div>
         </div>
       </header>
 
-      {/* ── 오늘의 발굴 종목 미리보기 ── */}
-      <section className="py-16 px-6 bg-white dark:bg-zinc-950">
-        <div className="max-w-3xl mx-auto">
-          <motion.div
-            initial={{ opacity: 0, y: 12 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            className="flex items-end justify-between gap-4 mb-5"
-          >
+      {/* ── 오늘의 발굴 종목 ── */}
+      <section className="py-8 px-5 bg-white dark:bg-zinc-950">
+        <div className="max-w-lg mx-auto">
+          {/* 섹션 헤더 */}
+          <div className="flex items-center justify-between mb-4">
             <div>
-              <p className="text-[11px] font-extrabold text-blue-500 uppercase tracking-[0.18em] mb-2">Today&apos;s Picks</p>
-              <div className="flex items-center gap-2.5 flex-wrap">
-                <h2 className="text-2xl font-black tracking-tight text-zinc-900 dark:text-white">오늘의 발굴 종목</h2>
-                <span className="text-[10px] font-extrabold px-2.5 py-1 rounded-full bg-blue-600 text-white">
-                  시가총액 500억+
+              <div className="flex items-center gap-2">
+                <h2 className="text-base font-black tracking-tight text-zinc-900 dark:text-white">오늘의 발굴 종목</h2>
+                <span className="text-[9px] font-extrabold px-2 py-0.5 rounded-full bg-blue-600 text-white">
+                  500억+
                 </span>
               </div>
-              <p className="text-xs text-zinc-400 mt-1.5">
-                {isLoggedIn
-                  ? `NCAV 비율 높은 순 · 전체 ${preview.filteredTotal}개는 스크리너에서`
-                  : "상위 3개 무료 공개 · 전체 목록은 로그인 후 확인 가능"}
+              <p className="text-[11px] text-zinc-400 mt-0.5">
+                {isLoggedIn ? `NCAV 비율 순 · 전체 ${preview.filteredTotal}개` : "상위 3개 공개 · 전체는 로그인 후"}
               </p>
             </div>
             <Link
               href={isLoggedIn ? "/screener?mincap=500" : "/login"}
-              className="shrink-0 flex items-center gap-1 text-xs font-bold text-blue-600 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300 transition-colors whitespace-nowrap"
+              className="flex items-center gap-0.5 text-xs font-bold text-blue-600 dark:text-blue-400 whitespace-nowrap"
             >
-              전체 {preview.filteredTotal > 0 ? `${preview.filteredTotal}개` : ""} 보기
-              <ChevronRight size={13} />
+              전체 보기 <ChevronRight size={13} />
             </Link>
-          </motion.div>
+          </div>
 
-          <motion.div
-            initial={{ opacity: 0, y: 16 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            transition={{ delay: 0.06 }}
-            className="rounded-2xl border border-zinc-200 dark:border-zinc-800 overflow-hidden bg-white dark:bg-zinc-900 shadow-md"
-          >
-            {/* 컬럼 헤더 */}
-            <div className="px-5 py-2.5 bg-zinc-50 dark:bg-zinc-800/70 border-b border-zinc-200 dark:border-zinc-800 flex items-center justify-between">
-              <span className="text-[10px] font-extrabold text-zinc-400 uppercase tracking-wider">종목</span>
-              <div className="flex items-center gap-5">
-                <span className="text-[10px] font-extrabold text-zinc-400 uppercase tracking-wider hidden sm:block">PBR</span>
-                <span className="text-[10px] font-extrabold text-zinc-400 uppercase tracking-wider hidden sm:block">PER</span>
-                <span className="text-[10px] font-extrabold text-zinc-400 uppercase tracking-wider">NCAV 비율</span>
-              </div>
+          {/* 종목 리스트 카드 */}
+          <div className="rounded-2xl border border-zinc-200 dark:border-zinc-800 overflow-hidden bg-white dark:bg-zinc-900 shadow-sm">
+            {/* 헤더 */}
+            <div className="px-4 py-2 bg-zinc-50 dark:bg-zinc-800/70 border-b border-zinc-100 dark:border-zinc-800 flex items-center justify-between">
+              <span className="text-[10px] font-bold text-zinc-400 uppercase tracking-wider">종목</span>
+              <span className="text-[10px] font-bold text-zinc-400 uppercase tracking-wider">NCAV 비율</span>
             </div>
 
             {preview.loading ? (
-              <div className="flex items-center justify-center py-16 gap-2.5 text-zinc-400">
-                <Loader2 size={18} className="animate-spin" />
-                <span className="text-sm font-medium">종목 불러오는 중...</span>
+              <div className="flex items-center justify-center py-12 gap-2 text-zinc-400">
+                <Loader2 size={16} className="animate-spin" />
+                <span className="text-sm">불러오는 중...</span>
               </div>
             ) : preview.items.length === 0 ? (
-              <div className="py-14 text-center">
-                <BarChart3 size={28} className="text-zinc-300 dark:text-zinc-600 mx-auto mb-3" />
-                <p className="text-sm text-zinc-400">스캔 데이터가 없습니다.</p>
+              <div className="py-10 text-center">
+                <BarChart3 size={24} className="text-zinc-300 dark:text-zinc-600 mx-auto mb-2" />
+                <p className="text-xs text-zinc-400">스캔 데이터가 없습니다.</p>
               </div>
             ) : (
               <>
-                {/* 공개 항목 */}
                 {publicItems.map((item, i) => (
                   <StockPreviewRow key={item.ticker} item={item} index={i} />
                 ))}
@@ -410,85 +324,78 @@ export default function HomePage() {
                     {lockedItems.map((item, i) => (
                       <div
                         key={item.ticker}
-                        className={cn(
-                          "transition-all duration-300",
-                          !isLoggedIn && "blur-sm select-none pointer-events-none"
-                        )}
+                        className={cn(!isLoggedIn && "blur-sm select-none pointer-events-none")}
                       >
                         <StockPreviewRow item={item} index={publicItems.length + i} />
                       </div>
                     ))}
 
                     {!isLoggedIn && (
-                      <div className="absolute inset-0 flex items-center justify-center bg-gradient-to-b from-white/60 to-white/90 dark:from-zinc-900/60 dark:to-zinc-900/90">
+                      <div className="absolute inset-0 flex items-center justify-center bg-gradient-to-b from-white/50 to-white/95 dark:from-zinc-900/50 dark:to-zinc-900/95">
                         <Link
                           href="/login"
-                          className="group flex items-center gap-2.5 px-6 py-3 rounded-full bg-blue-600 hover:bg-blue-700 text-white text-sm font-extrabold shadow-xl shadow-blue-600/25 transition-all"
+                          className="flex items-center gap-2 px-5 py-2.5 rounded-2xl bg-blue-600 hover:bg-blue-700 text-white text-sm font-bold shadow-lg shadow-blue-600/20 transition-all"
                         >
-                          <Lock size={14} />
-                          로그인하여 전체 종목 확인
-                          <ArrowRight size={14} className="group-hover:translate-x-0.5 transition-transform" />
+                          <Lock size={13} />
+                          로그인하여 전체 확인
+                          <ArrowRight size={13} />
                         </Link>
                       </div>
                     )}
                   </div>
                 )}
 
-                {/* 로그인 후 CTA */}
                 {isLoggedIn && (
-                  <div className="px-5 py-3.5 bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-950/20 dark:to-indigo-950/20 border-t border-blue-100 dark:border-blue-900/40 flex items-center justify-between gap-4">
+                  <div className="px-4 py-3 bg-blue-50 dark:bg-blue-950/20 border-t border-blue-100 dark:border-blue-900/40 flex items-center justify-between gap-3">
                     <p className="text-xs text-blue-700 dark:text-blue-400 font-medium">
-                      시가총액 500억+ 기준 <span className="font-black">{preview.filteredTotal}개</span> 종목 · 전략 필터·정렬로 더 정밀하게 탐색하세요.
+                      전체 <span className="font-black">{preview.filteredTotal}개</span> 종목을 필터·정렬로 탐색하세요.
                     </p>
                     <Link
                       href="/screener?mincap=500"
-                      className="shrink-0 flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg bg-blue-600 text-white text-xs font-bold hover:bg-blue-700 transition-colors whitespace-nowrap"
+                      className="shrink-0 flex items-center gap-1 px-3 py-1.5 rounded-lg bg-blue-600 text-white text-xs font-bold hover:bg-blue-700 transition-colors whitespace-nowrap"
                     >
-                      스크리너 열기 <ChevronRight size={11} />
+                      스크리너 <ChevronRight size={10} />
                     </Link>
                   </div>
                 )}
               </>
             )}
-          </motion.div>
+          </div>
         </div>
       </section>
 
-      {/* ── 기능 카드 ── */}
-      <section className="py-16 px-6 bg-zinc-50 dark:bg-zinc-900/40 border-t border-zinc-100 dark:border-zinc-800/60">
-        <div className="max-w-4xl mx-auto">
-          <motion.div
-            initial={{ opacity: 0, y: 10 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            className="text-center mb-10"
-          >
-            <p className="text-[11px] font-extrabold text-blue-500 uppercase tracking-[0.2em] mb-3">Features</p>
-            <h2 className="text-2xl font-black text-zinc-900 dark:text-white mb-2">투자 결정을 위한 3단계</h2>
-            <p className="text-sm text-zinc-500 dark:text-zinc-400">발굴 → 분석 → 계산, 투자 판단에 필요한 모든 도구.</p>
-          </motion.div>
+      {/* ── 기능 카드 (수평 스크롤) ── */}
+      <section className="py-8 bg-zinc-50 dark:bg-zinc-900/40 border-t border-zinc-100 dark:border-zinc-800/60">
+        <div className="max-w-lg mx-auto">
+          <div className="px-5 mb-4">
+            <h2 className="text-base font-black text-zinc-900 dark:text-white">주요 기능</h2>
+            <p className="text-[11px] text-zinc-400 mt-0.5">발굴 → 분석 → 계산</p>
+          </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          {/* 모바일: 수평 스크롤, 데스크탑: 3열 */}
+          <div className="flex gap-3 overflow-x-auto no-scrollbar px-5 pb-1 sm:grid sm:grid-cols-3 sm:overflow-visible">
             {FEATURES.map((f, i) => {
               const Icon = f.icon;
               return (
                 <motion.div
                   key={i}
-                  initial={{ opacity: 0, y: 16 }}
+                  initial={{ opacity: 0, y: 12 }}
                   whileInView={{ opacity: 1, y: 0 }}
                   viewport={{ once: true }}
-                  transition={{ delay: i * 0.1 }}
-                  className="group bg-white dark:bg-zinc-900 rounded-2xl border border-zinc-200 dark:border-zinc-800 p-6 hover:border-blue-300 dark:hover:border-blue-700 hover:shadow-md transition-all"
+                  transition={{ delay: i * 0.08 }}
+                  className="shrink-0 w-52 sm:w-auto bg-white dark:bg-zinc-900 rounded-2xl border border-zinc-200 dark:border-zinc-800 p-4 flex flex-col gap-3"
                 >
-                  <div className={cn("w-10 h-10 rounded-xl flex items-center justify-center mb-4", f.bg)}>
-                    <Icon size={20} className={f.color} strokeWidth={1.8} />
+                  <div className={cn("w-8 h-8 rounded-xl flex items-center justify-center", f.bg)}>
+                    <Icon size={16} className={f.color} strokeWidth={2} />
                   </div>
-                  <h3 className="text-base font-black mb-2 text-zinc-900 dark:text-white">{f.title}</h3>
-                  <p className="text-xs text-zinc-500 dark:text-zinc-400 leading-relaxed mb-4 break-keep">{f.desc}</p>
+                  <div className="flex-1">
+                    <p className="text-sm font-black text-zinc-900 dark:text-white mb-1">{f.title}</p>
+                    <p className="text-[11px] text-zinc-500 dark:text-zinc-400 leading-relaxed break-keep">{f.desc}</p>
+                  </div>
                   <Link href={f.link}
-                    className="inline-flex items-center gap-1 text-xs font-bold text-blue-600 dark:text-blue-400 hover:gap-1.5 transition-all group-hover:text-blue-700 dark:group-hover:text-blue-300"
+                    className="inline-flex items-center gap-1 text-xs font-bold text-blue-600 dark:text-blue-400"
                   >
-                    {f.linkLabel} <ChevronRight size={12} />
+                    {f.linkLabel} <ChevronRight size={11} />
                   </Link>
                 </motion.div>
               );
@@ -497,74 +404,17 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* ── 보증 스트립 ── */}
-      <section className="py-12 px-6 bg-white dark:bg-zinc-950 border-t border-zinc-100 dark:border-zinc-800/60">
-        <div className="max-w-4xl mx-auto">
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-            {[
-              { icon: Zap, color: "text-amber-500", bg: "bg-amber-50 dark:bg-amber-950/30", title: "5분마다 자동 업데이트", desc: "KIS(한국투자증권) API로 실시간 재무 데이터와 시세를 반영해 전 종목을 롤링 스캔합니다." },
-              { icon: ShieldCheck, color: "text-emerald-600", bg: "bg-emerald-50 dark:bg-emerald-950/30", title: "검증된 퀀트 전략", desc: "벤자민 그레이엄·그린블라트·워렌 버핏의 투자 철학을 알고리즘으로 구현한 9가지 전략을 제공합니다." },
-              { icon: Activity, color: "text-blue-600", bg: "bg-blue-50 dark:bg-blue-950/30", title: "국내 전 종목 커버", desc: "KOSPI·KOSDAQ 상장 2,000여 종목을 매일 스캔하여 오늘 기준 저평가 후보 종목 목록을 제공합니다." },
-            ].map((item, i) => {
-              const Icon = item.icon;
-              return (
-                <motion.div
-                  key={i}
-                  initial={{ opacity: 0, y: 10 }}
-                  whileInView={{ opacity: 1, y: 0 }}
-                  viewport={{ once: true }}
-                  transition={{ delay: i * 0.08 }}
-                  className="flex gap-4 p-5 rounded-2xl bg-zinc-50 dark:bg-zinc-900 border border-zinc-100 dark:border-zinc-800"
-                >
-                  <div className={cn("w-9 h-9 rounded-xl flex items-center justify-center shrink-0", item.bg)}>
-                    <Icon size={17} className={item.color} strokeWidth={2} />
-                  </div>
-                  <div>
-                    <h3 className="text-sm font-extrabold mb-1 text-zinc-900 dark:text-white">{item.title}</h3>
-                    <p className="text-[11px] text-zinc-500 dark:text-zinc-400 leading-relaxed break-keep">{item.desc}</p>
-                  </div>
-                </motion.div>
-              );
-            })}
-          </div>
-        </div>
-      </section>
-
-      {/* ── 최종 CTA ── */}
-      {!isLoggedIn && !sessionLoading && (
-        <section className="py-16 px-6 bg-gradient-to-br from-blue-600 via-blue-700 to-indigo-700 dark:from-blue-700 dark:via-blue-800 dark:to-indigo-800">
-          <motion.div
-            initial={{ opacity: 0, y: 12 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            className="max-w-xl mx-auto text-center"
-          >
-            <h2 className="text-2xl font-black text-white mb-3">지금 바로 시작하세요</h2>
-            <p className="text-sm text-blue-200 mb-7 leading-relaxed">
-              카카오 로그인 30초 · 무료 · 신용카드 불필요
-            </p>
-            <Link href="/login"
-              className="inline-flex items-center gap-2.5 px-8 py-3.5 rounded-full bg-white text-blue-700 text-sm font-extrabold shadow-lg hover:bg-blue-50 transition-all"
-            >
-              카카오로 무료 시작
-              <ArrowRight size={15} />
-            </Link>
-          </motion.div>
-        </section>
-      )}
-
       {/* ── 푸터 ── */}
-      <footer className="border-t border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-950">
-        <div className="max-w-4xl mx-auto px-6 py-8 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-          <div className="flex items-center gap-2.5">
-            <TrendingUp size={16} className="text-blue-600" strokeWidth={2.5} />
-            <span className="text-sm font-black tracking-tight">IDIOT QUANT</span>
-            <span className="text-xs text-zinc-400 font-medium">KOSPI · KOSDAQ 퀀트 스크리너</span>
+      <footer className="border-t border-zinc-100 dark:border-zinc-800/60 bg-white dark:bg-zinc-950">
+        <div className="max-w-lg mx-auto px-5 py-6 flex items-center justify-between gap-4">
+          <div className="flex items-center gap-2">
+            <TrendingUp size={14} className="text-blue-600 shrink-0" strokeWidth={2.5} />
+            <span className="text-xs font-black tracking-tight text-zinc-700 dark:text-zinc-200">IDIOT QUANT</span>
           </div>
-          <div className="flex items-center gap-5">
+          <div className="flex items-center gap-4">
             {[
-              { label: "종목 발굴", href: isLoggedIn ? "/screener" : "/login" },
-              { label: "종목 분석", href: "/analyze" },
+              { label: "발굴", href: isLoggedIn ? "/screener" : "/login" },
+              { label: "분석", href: "/analyze" },
               { label: "계산기", href: "/calculator" },
             ].map(l => (
               <Link key={l.label} href={l.href}
@@ -575,25 +425,13 @@ export default function HomePage() {
             ))}
           </div>
         </div>
-        <div className="border-t border-zinc-100 dark:border-zinc-800/60">
-          <div className="max-w-4xl mx-auto px-6 py-3 flex flex-col sm:flex-row justify-between items-center gap-1">
-            <p className="text-[10px] text-zinc-400 dark:text-zinc-500">© 2026 IDIOT QUANT · Powered by 한국투자증권 API</p>
-            <p className="text-[10px] text-zinc-400 dark:text-zinc-500 text-center sm:text-right">
-              본 서비스는 투자 참고 목적으로 제공되며, 투자 결과에 대한 책임을 지지 않습니다.
-            </p>
-          </div>
+        <div className="border-t border-zinc-100 dark:border-zinc-800/40">
+          <p className="px-5 py-2.5 text-[10px] text-zinc-400 dark:text-zinc-600 text-center">
+            본 서비스는 투자 참고 목적이며 투자 결과에 대한 책임을 지지 않습니다. © 2026 IDIOT QUANT
+          </p>
         </div>
       </footer>
 
-    </div>
-  );
-}
-
-function Stat({ value, label, color }: { value: number; label: string; color: string }) {
-  return (
-    <div className="text-center">
-      <p className={cn("text-2xl font-black tabular-nums", color)}>{value.toLocaleString()}</p>
-      <p className="text-[11px] font-medium text-zinc-400 mt-0.5">{label}</p>
     </div>
   );
 }
