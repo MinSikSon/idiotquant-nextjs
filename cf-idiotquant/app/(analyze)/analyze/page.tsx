@@ -401,7 +401,7 @@ function AnalyzeContent() {
       </div>
 
       {/* ── 헤더 ── */}
-      <header className="sticky top-14 z-30 bg-white dark:bg-zinc-900 border-b border-zinc-200 dark:border-zinc-800 shadow-sm">
+      <header className="sticky top-0 z-30 bg-white dark:bg-zinc-900 border-b border-zinc-200 dark:border-zinc-800 shadow-sm">
         {fromScreener && (
           <div className="border-b border-zinc-100 dark:border-zinc-800/60">
             <div className="max-w-4xl mx-auto px-4 py-2">
