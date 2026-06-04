@@ -693,43 +693,78 @@ function AnalyzeContent() {
                   </div>
                 </div>
               ) : (
-                /* 비로그인 — 잠긴 섹션 */
-                <div className="relative overflow-hidden rounded-2xl">
-                  {/* 블러 미리보기 */}
-                  <div className="blur-md pointer-events-none select-none p-6 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-2xl space-y-3">
-                    {[140, 100, 80, 120, 90].map((h, i) => (
-                      <div key={i} style={{ height: h }} className="bg-zinc-100 dark:bg-zinc-800 rounded-xl" />
+                /* 비로그인 — 상세 분석 잠금 */
+                <div className="space-y-3">
+                  {/* 잠긴 섹션 레이블 */}
+                  <div className="flex items-center gap-3">
+                    <p className="text-[11px] font-bold text-zinc-400 uppercase tracking-widest font-mono shrink-0">Detail Analysis</p>
+                    <div className="flex-1 h-px bg-zinc-100 dark:bg-zinc-800/70" />
+                    <span className="flex items-center gap-1 text-[10px] font-bold text-zinc-400 bg-zinc-100 dark:bg-zinc-800 px-2 py-0.5 rounded-full">
+                      <Lock size={9} />
+                      로그인 필요
+                    </span>
+                  </div>
+
+                  {/* 잠긴 항목 카드 그리드 */}
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    {[
+                      {
+                        icon: "📈",
+                        title: "가격 차트",
+                        desc: "60일 주가 추이 및 거래량 차트",
+                      },
+                      {
+                        icon: "🎯",
+                        title: "S-RIM 적정주가",
+                        desc: "초과이익 모델 기반 적정 주가 및 괴리율 계산",
+                      },
+                      {
+                        icon: "🧮",
+                        title: "NCAV 계산식",
+                        desc: "순유동자산 상세 계산 내역 및 안전마진 분석",
+                      },
+                      {
+                        icon: "📋",
+                        title: "재무제표",
+                        desc: "대차대조표 · 손익계산서 (최근 3년)",
+                      },
+                    ].map(item => (
+                      <div key={item.title}
+                        className="relative flex items-start gap-3 p-4 bg-white dark:bg-zinc-900 rounded-xl border border-zinc-200 dark:border-zinc-800 overflow-hidden"
+                      >
+                        {/* 흐릿한 내용 배경 */}
+                        <div className="absolute inset-0 opacity-30 pointer-events-none">
+                          <div className="absolute top-8 left-4 right-4 h-2 bg-zinc-200 dark:bg-zinc-700 rounded" />
+                          <div className="absolute top-13 left-4 right-8 h-2 bg-zinc-200 dark:bg-zinc-700 rounded" />
+                          <div className="absolute top-18 left-4 right-12 h-2 bg-zinc-200 dark:bg-zinc-700 rounded" />
+                        </div>
+                        <span className="text-xl shrink-0">{item.icon}</span>
+                        <div className="min-w-0">
+                          <div className="flex items-center gap-2 mb-0.5">
+                            <p className="text-sm font-extrabold text-zinc-700 dark:text-zinc-200">{item.title}</p>
+                            <Lock size={10} className="text-zinc-400 shrink-0" />
+                          </div>
+                          <p className="text-[11px] text-zinc-500 dark:text-zinc-400 leading-relaxed">{item.desc}</p>
+                        </div>
+                      </div>
                     ))}
                   </div>
 
-                  {/* 로그인 오버레이 */}
-                  <div className="absolute inset-0 flex items-center justify-center bg-white/80 dark:bg-zinc-950/80 backdrop-blur-[2px]">
-                    <div className="bg-white dark:bg-zinc-900 rounded-2xl border border-zinc-200 dark:border-zinc-800 shadow-xl p-8 max-w-sm w-full mx-4 text-center">
-                      <div className="w-12 h-12 rounded-2xl bg-blue-100 dark:bg-blue-950/50 flex items-center justify-center mx-auto mb-4">
-                        <Lock size={20} className="text-blue-600 dark:text-blue-400" />
-                      </div>
-                      <h3 className="text-base font-black text-zinc-900 dark:text-white mb-2">
-                        상세 분석은 로그인 후 이용 가능합니다
-                      </h3>
-                      <p className="text-xs text-zinc-500 dark:text-zinc-400 mb-5 leading-relaxed">
-                        {name ? `${name}의` : ''} 가격 차트, S-RIM 적정주가,<br />밸류에이션 계산식, 재무제표를 무료로 확인하세요.
-                      </p>
-                      <div className="flex flex-wrap justify-center gap-1.5 mb-6">
-                        {["가격 차트", "S-RIM 적정주가", "NCAV 계산식", "재무상태표", "손익계산서"].map(item => (
-                          <span key={item} className="flex items-center gap-1 text-[10px] text-zinc-600 dark:text-zinc-300 bg-zinc-100 dark:bg-zinc-800 px-2.5 py-1 rounded-full font-bold">
-                            <CheckCircle size={9} className="text-emerald-500" />
-                            {item}
-                          </span>
-                        ))}
-                      </div>
-                      <Link
-                        href="/login"
-                        className="inline-flex items-center gap-2 px-6 py-3 rounded-full bg-blue-600 hover:bg-blue-700 text-white text-sm font-bold shadow-lg shadow-blue-600/20 transition-all"
-                      >
-                        카카오로 무료 로그인
-                        <ArrowRight size={14} />
-                      </Link>
-                    </div>
+                  {/* 로그인 CTA */}
+                  <div className="mt-2 p-5 bg-gradient-to-br from-blue-50 to-indigo-50 dark:from-blue-950/20 dark:to-indigo-950/20 rounded-2xl border border-blue-200/60 dark:border-blue-900/40 text-center">
+                    <p className="text-sm font-black text-zinc-900 dark:text-white mb-1">
+                      {name ? `${name} 상세 분석` : '상세 분석'} 보기
+                    </p>
+                    <p className="text-xs text-zinc-500 dark:text-zinc-400 mb-4">
+                      카카오 로그인 30초 · 무료 · 가격 차트·S-RIM·재무제표 모두 포함
+                    </p>
+                    <Link
+                      href="/login"
+                      className="inline-flex items-center gap-2 px-6 py-2.5 rounded-full bg-blue-600 hover:bg-blue-700 text-white text-sm font-bold shadow-lg shadow-blue-600/20 transition-all"
+                    >
+                      카카오로 무료 로그인
+                      <ArrowRight size={14} />
+                    </Link>
                   </div>
                 </div>
               )}
