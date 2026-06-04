@@ -39,7 +39,8 @@ export default auth((req: any) => {
         path === "/laboratory" ||
         path === "/ads.txt" ||
         path === "/" ||
-        path === "/search"
+        path === "/search" ||
+        path === "/analyze"
     ) {
         return NextResponse.next();
     }
