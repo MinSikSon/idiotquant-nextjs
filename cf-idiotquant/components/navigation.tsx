@@ -60,10 +60,10 @@ function SideItem({
       <span className="flex-1 truncate">{label}</span>
       {badge && (
         <span className={cn(
-          "text-[9px] font-extrabold px-1.5 py-0.5 rounded-full uppercase tracking-tight",
+          "text-[9px] font-extrabold px-1.5 py-0.5 rounded uppercase tracking-tight",
           isActive
-            ? "bg-blue-600 text-white"
-            : "bg-amber-100 dark:bg-amber-900/40 text-amber-700 dark:text-amber-400"
+            ? "bg-blue-100 dark:bg-blue-950/50 text-blue-600 dark:text-blue-400"
+            : "bg-neutral-200/60 dark:bg-[#2a2a2a] text-neutral-500 dark:text-neutral-400"
         )}>
           {badge}
         </span>
@@ -84,7 +84,7 @@ function TabItem({
       className={cn(
         "flex flex-1 flex-col items-center justify-center gap-[3px] py-2 rounded-xl transition-colors",
         isActive
-          ? "text-blue-600 dark:text-blue-400"
+          ? "text-blue-600 dark:text-blue-400 bg-stone-100 dark:bg-[#2a2a2a]"
           : "text-neutral-400 dark:text-neutral-500 hover:text-neutral-700 dark:hover:text-neutral-300"
       )}
     >
@@ -106,7 +106,7 @@ function SidebarUser({ session, status }: { session: any; status: string }) {
     return (
       <div className="px-3 pb-4">
         <div className="flex items-center gap-2.5 px-3 py-2.5 rounded-xl bg-stone-100 dark:bg-[#1f1f1f]">
-          <div className="w-7 h-7 rounded-full bg-gradient-to-br from-blue-400 to-indigo-500 flex items-center justify-center text-white text-[10px] font-black shrink-0">
+          <div className="w-7 h-7 rounded-full bg-neutral-200 dark:bg-[#3a3a3a] flex items-center justify-center text-neutral-700 dark:text-neutral-200 text-[10px] font-black shrink-0">
             {session?.user?.name?.[0] ?? "U"}
           </div>
           <span className="flex-1 text-xs font-semibold text-neutral-700 dark:text-neutral-300 truncate min-w-0">
