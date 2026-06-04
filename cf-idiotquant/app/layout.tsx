@@ -51,14 +51,12 @@ export default function RootLayout({
   return (
     <html lang="ko" suppressHydrationWarning>
       <head>
-        {/* 1. 구조화 데이터 주입 */}
         <Script
           id="structured-data"
           type="application/ld+json"
           strategy="afterInteractive"
           dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
         />
-        {/* 2. 애드센스 코드 스니펫 */}
         <script
           async
           src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-6995198721227228"
@@ -67,20 +65,21 @@ export default function RootLayout({
         <meta name="google-adsense-account" content="ca-pub-6995198721227228" />
       </head>
       <body className={cn(
-        "min-h-screen font-sans antialiased bg-white dark:bg-black text-zinc-900 dark:text-zinc-50",
-        "flex flex-col md:flex-row" // 모바일은 세로, 데스크탑은 가로 레이아웃
+        "min-h-screen font-sans antialiased",
+        "bg-stone-100 dark:bg-[#0d0d0d] text-neutral-900 dark:text-neutral-50"
       )}>
         <StoreProvider>
           <ThemeProviderClient>
             <AuthProvider>
-              {/* 사이드바/네비게이션 */}
               <NavbarWithSimpleLinks />
-              
-              {/* 메인 콘텐츠 영역 */}
-              <main className="flex-1 w-full min-h-screen overflow-y-auto overflow-x-hidden">
-                <div className="mx-auto w-full">
-                  {children}
-                </div>
+              {/* offset: mobile top header + bottom tab bar; desktop: sidebar left margin */}
+              <main className={cn(
+                "md:ml-[220px]",
+                "pt-[48px] md:pt-0",
+                "pb-[64px] md:pb-0",
+                "min-h-screen overflow-x-hidden"
+              )}>
+                {children}
               </main>
             </AuthProvider>
           </ThemeProviderClient>

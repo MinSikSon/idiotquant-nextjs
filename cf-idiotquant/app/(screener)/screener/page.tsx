@@ -505,10 +505,10 @@ function ScreenerContent() {
 
     return (
         <Tooltip.Provider delayDuration={300}>
-        <div className="min-h-screen bg-zinc-50 dark:bg-zinc-950 text-zinc-900 dark:text-zinc-100">
+        <div className="min-h-screen bg-stone-100 dark:bg-[#0d0d0d] text-neutral-900 dark:text-neutral-100">
 
             {/* ── 헤더 ── */}
-            <div className="bg-white dark:bg-zinc-900 border-b border-zinc-200 dark:border-zinc-800">
+            <div className="bg-white dark:bg-[#111111] border-b border-neutral-200 dark:border-[#222222]">
                 <div className="max-w-7xl mx-auto px-4 sm:px-6 py-5">
                     <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                         <div>
@@ -549,7 +549,7 @@ function ScreenerContent() {
             </div>
 
             {/* ── 전략 탭 (sticky, 멀티셀렉트) ── */}
-            <div className="sticky top-14 z-30 bg-white/95 dark:bg-zinc-900/95 backdrop-blur-md border-b border-zinc-200 dark:border-zinc-800">
+            <div className="sticky top-0 z-30 bg-white/95 dark:bg-[#111111]/95 backdrop-blur-md border-b border-neutral-200 dark:border-[#222222]">
                 <div className="max-w-7xl mx-auto px-4 sm:px-6">
                     <div className="flex items-center gap-1.5 py-3">
                         {/* 전체 탭 */}
@@ -845,8 +845,8 @@ function ScreenerContent() {
                     <>
                         {/* 데스크탑 테이블 */}
                         <div className="hidden md:block">
-                            <div className="bg-white dark:bg-zinc-900 rounded-2xl border border-zinc-200 dark:border-zinc-800 overflow-hidden shadow-sm">
-                                <div className="grid grid-cols-[minmax(160px,2.5fr)_minmax(110px,1fr)_88px_68px_68px_68px_88px] gap-4 items-center px-5 py-3.5 bg-zinc-50 dark:bg-zinc-800/60 border-b border-zinc-200 dark:border-zinc-700/60">
+                            <div className="bg-white dark:bg-[#1a1a1a] rounded-2xl border border-neutral-200 dark:border-[#2a2a2a] overflow-hidden shadow-sm">
+                                <div className="grid grid-cols-[minmax(160px,2.5fr)_minmax(110px,1fr)_88px_68px_68px_68px_88px] gap-4 items-center px-5 py-3.5 bg-stone-50 dark:bg-[#111111] border-b border-neutral-200 dark:border-[#2a2a2a]">
                                     <SortableHeader label="종목명" sortKey="ticker" currentKey={sortKey} order={sortOrder} onToggle={toggleSort} />
                                     <div className="text-[10px] font-bold text-zinc-400 uppercase tracking-wider">전략</div>
                                     <SortableHeader label="NCAV 비율" sortKey="ncav_ratio" currentKey={sortKey} order={sortOrder} onToggle={toggleSort} />
@@ -874,7 +874,7 @@ function ScreenerContent() {
                             <div className="flex justify-center mt-8">
                                 <button
                                     onClick={() => setDisplayCount(c => c + DAILY_PAGE_SIZE)}
-                                    className="px-6 py-2.5 rounded-xl border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-900 text-sm font-bold text-zinc-600 dark:text-zinc-400 hover:border-zinc-300 dark:hover:border-zinc-600 hover:text-zinc-900 dark:hover:text-white transition-all"
+                                    className="px-6 py-2.5 rounded-xl border border-neutral-200 dark:border-[#2a2a2a] bg-white dark:bg-[#1a1a1a] text-sm font-bold text-neutral-600 dark:text-neutral-400 hover:border-neutral-300 dark:hover:border-[#3a3a3a] hover:text-neutral-900 dark:hover:text-white transition-all"
                                 >
                                     더 보기 ({filteredList.length - displayCount}개 남음)
                                 </button>
@@ -894,7 +894,7 @@ function ScreenerContent() {
 export default function ScreenerPage() {
     return (
         <Suspense fallback={
-            <div className="flex items-center justify-center min-h-screen bg-zinc-50 dark:bg-zinc-950">
+            <div className="flex items-center justify-center min-h-screen bg-stone-100 dark:bg-[#0d0d0d]">
                 <Loader2 className="animate-spin text-blue-600" size={24} />
             </div>
         }>

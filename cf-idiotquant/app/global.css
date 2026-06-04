@@ -1,3 +1,28 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+/* ── Layout tokens ── */
+:root {
+  --sidebar-w: 220px;
+  --topbar-h: 48px;
+  --bottombar-h: 64px;
+}
+
+/* ── Slim custom scrollbar (Claude.ai style) ── */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: #d4d4d4 transparent;
+}
+*::-webkit-scrollbar { width: 4px; height: 4px; }
+*::-webkit-scrollbar-track { background: transparent; }
+*::-webkit-scrollbar-thumb { background: #d4d4d4; border-radius: 99px; }
+*::-webkit-scrollbar-thumb:hover { background: #a3a3a3; }
+
+.dark * { scrollbar-color: #3a3a3a transparent; }
+.dark *::-webkit-scrollbar-thumb { background: #3a3a3a; }
+.dark *::-webkit-scrollbar-thumb:hover { background: #525252; }
+
+/* ── No scrollbar utility ── */
+.no-scrollbar { scrollbar-width: none; -ms-overflow-style: none; }
+.no-scrollbar::-webkit-scrollbar { display: none; }
