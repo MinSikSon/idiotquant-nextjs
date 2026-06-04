@@ -46,7 +46,7 @@ export const getQuantRuleDesc: any = async () => {
 export const getScanDailyList: any = async (date?: string, strategy?: string) => {
     const dateParam = date ?? "latest";
     const strategyParam = strategy ?? "all";
-    const subUrl = `/scan/daily?date=${encodeURIComponent(dateParam)}&strategy=${strategyParam}&limit=300&sort=ncav_ratio&order=desc`;
+    const subUrl = `/scan/daily?date=${encodeURIComponent(dateParam)}&strategy=${strategyParam}&limit=2000&sort=ncav_ratio&order=desc`;
     return getAlgorithmTradeRequest(subUrl);
 }
 

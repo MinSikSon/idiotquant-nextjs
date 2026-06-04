@@ -63,18 +63,25 @@ const STRATEGY_PRESETS: StrategyPreset[] = [
     {
         id: "ncav", label: "NCAV",
         hint: "순유동자산(유동자산−총부채) > 시가총액. 그레이엄 기준 청산가치 이하에 거래 중인 종목.",
+        clientFilter: (item) => safeNum(item.ncav_ratio) >= 1.0,
     },
     {
         id: "low_pbr", label: "저PBR",
         hint: "PBR 0.5 미만 — 순자산의 절반 이하 가격에 거래 중인 심층 저평가 종목.",
+        clientFilter: (item) => safeNum(item.pbr) > 0 && safeNum(item.pbr) < 0.5,
     },
     {
         id: "low_per", label: "저PER",
         hint: "PER 10 미만 + 흑자(EPS > 0) — 현재 이익의 10배 이하에 살 수 있는 종목.",
+        clientFilter: (item) => safeNum(item.eps) > 0 && safeNum(item.per) > 0 && safeNum(item.per) < 10,
     },
     {
         id: "s_rim", label: "S-RIM",
         hint: "ROE > 8% & PBR < 1.0 — 초과이익(ROE > Ke) 창출 기업이 장부가 이하에 거래 중.",
+        clientFilter: (item) => {
+            const roe = safeNum(item.bps) > 0 ? (safeNum(item.eps) / safeNum(item.bps)) * 100 : 0;
+            return roe > 8 && safeNum(item.pbr) > 0 && safeNum(item.pbr) < 1.0;
+        },
     },
     {
         id: "graham_number", label: "그레이엄",
@@ -113,6 +120,15 @@ const STRATEGY_PRESETS: StrategyPreset[] = [
     },
 ];
 
+// 백엔드 strategies + 프론트엔드 clientFilter 병합 (백엔드 미분류 종목도 표시)
+function resolveStrategies(item: Record<string, any>): string[] {
+    const base = new Set<string>(item.strategies ?? []);
+    for (const preset of STRATEGY_PRESETS) {
+        if (preset.clientFilter && preset.clientFilter(item)) base.add(preset.id);
+    }
+    return Array.from(base);
+}
+
 const TOOLTIP_CLS =
     "z-50 max-w-64 rounded-xl px-3.5 py-3 text-xs bg-zinc-900 dark:bg-zinc-800 border border-zinc-700/60 shadow-xl text-zinc-200 leading-relaxed " +
     "data-[state=delayed-open]:animate-in data-[state=delayed-open]:fade-in-0 data-[state=delayed-open]:zoom-in-95 " +
@@ -148,7 +164,7 @@ function SortableHeader({ label, sortKey: key, currentKey, order, onToggle }: {
 // =========================================================================
 function TableRow({ item, onClick }: { item: any; onClick: (ticker: string, name: string) => void }) {
     const roe = safeNum(item.bps) > 0 ? (safeNum(item.eps) / safeNum(item.bps)) * 100 : null;
-    const strategies: string[] = item.strategies ?? [];
+    const strategies: string[] = resolveStrategies(item);
     const ncav = safeNum(item.ncav_ratio);
 
     return (
@@ -224,7 +240,7 @@ function TableRow({ item, onClick }: { item: any; onClick: (ticker: string, name
 // =========================================================================
 function StockRowCard({ item, onClick }: { item: any; onClick: (ticker: string, name: string) => void }) {
     const roe = safeNum(item.bps) > 0 ? (safeNum(item.eps) / safeNum(item.bps)) * 100 : null;
-    const strategies: string[] = item.strategies ?? [];
+    const strategies: string[] = resolveStrategies(item);
     const ncav = safeNum(item.ncav_ratio);
 
     return (
@@ -352,13 +368,11 @@ function ScreenerContent() {
     const strategyCounts = useMemo(() => {
         const counts: Record<string, number> = { all: ncavDailyList.list.length };
         STRATEGY_PRESETS.forEach(preset => {
-            if (preset.clientFilter) {
-                counts[preset.id] = ncavDailyList.list.filter(preset.clientFilter as any).length;
-            } else {
-                counts[preset.id] = ncavDailyList.list.filter(item =>
-                    ((item as any).strategies ?? []).includes(preset.id)
-                ).length;
-            }
+            counts[preset.id] = ncavDailyList.list.filter(
+                item => preset.clientFilter
+                    ? preset.clientFilter(item as any)
+                    : resolveStrategies(item as any).includes(preset.id)
+            ).length;
         });
         return counts;
     }, [ncavDailyList.list]);
@@ -371,8 +385,7 @@ function ScreenerContent() {
             list = list.filter((item) =>
                 Array.from(activeStrategyIds)[check]((stratId) => {
                     const preset = STRATEGY_PRESETS.find(p => p.id === stratId);
-                    if (preset?.clientFilter) return preset.clientFilter(item);
-                    return (item.strategies ?? []).includes(stratId);
+                    return preset?.clientFilter ? preset.clientFilter(item) : resolveStrategies(item).includes(stratId);
                 })
             );
         }
