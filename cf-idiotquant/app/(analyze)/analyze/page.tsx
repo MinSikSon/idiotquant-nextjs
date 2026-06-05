@@ -46,6 +46,11 @@ const DelistingRisk = dynamic(
   { ssr: false }
 );
 
+const UsDelistingRisk = dynamic(
+  () => import('@/app/(analyze)/analyze/components/UsDelistingRisk').then(mod => ({ default: mod.UsDelistingRisk })),
+  { ssr: false }
+);
+
 const FinancialTables = dynamic(
   () => import('@/app/(search)/search/components/FinancialTables'),
   { ssr: false }
@@ -344,7 +349,7 @@ function AnalyzeContent() {
   // API 응답에서 실제 종목명·종목코드 추출 (검색 입력값과 무관하게 항상 정확한 정보 표시)
   const displayName = krOrUs === 'KR'
     ? (data.kiChart?.output1?.hts_kor_isnm || name)
-    : (data.usSearchInfo?.output?.prdt_eng_name || name);
+    : (data.usSearchInfo?.output?.prdt_eng_name || data.usSearchInfo?.output?.ovrs_item_name || name);
 
   const displayCode = krOrUs === 'KR'
     ? (data.kiChart?.output1?.stck_shrn_iscd || tickerFromUrl || '')
@@ -692,9 +697,12 @@ function AnalyzeContent() {
                     <ValuationSection data={data} isUs={krOrUs === 'US'} />
                   </div>
 
-                  {/* 상장폐지 위험도 — KR 전용 */}
+                  {/* 상장폐지 위험도 */}
                   {krOrUs === 'KR' && (
                     <DelistingRisk kiBS={data.kiBS} kiIS={data.kiIS} />
+                  )}
+                  {krOrUs === 'US' && (
+                    <UsDelistingRisk finnhubData={data.finnhubData} usDetail={data.usDetail} />
                   )}
 
                   {/* 재무제표 */}
