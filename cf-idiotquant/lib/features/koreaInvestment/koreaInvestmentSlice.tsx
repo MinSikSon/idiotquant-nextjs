@@ -692,6 +692,14 @@ export const koreaInvestmentSlice = createAppSlice({
       }
     ),
 
+    // 종목 조회 결과 초기화 (stale data 방지)
+    resetKrStockData: create.reducer((state) => {
+      state.koreaInvestmentInquirePrice.state = "init";
+      state.koreaInvestmentInquireDailyItemChartPrice.state = "init";
+      state.koreaInvestmentBalanceSheet.state = "init";
+      state.koreaInvestmentIncomeStatement.state = "init";
+    }),
+
     // 로컬 스토리지/쿠키 동기화용 동기 리듀서
     setKoreaInvestmentToken: create.reducer((state, action: PayloadAction<KoreaInvestmentToken>) => {
       const json = action.payload;
@@ -1065,6 +1073,7 @@ export const {
   reqPostOrderCash,
   reqGetInquireCcnl,
   reqGetInquireNccs,
+  resetKrStockData,
 } = koreaInvestmentSlice.actions;
 
 export const {

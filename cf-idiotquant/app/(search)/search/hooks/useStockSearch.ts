@@ -11,6 +11,7 @@ import {
     reqGetInquireDailyItemChartPrice,
     reqGetBalanceSheet,
     reqGetIncomeStatement,
+    resetKrStockData,
     getKoreaInvestmentInquirePrice,
     getKoreaInvestmentBalanceSheet,
     getKoreaInvestmentIncomeStatement,
@@ -73,6 +74,7 @@ export function useStockSearch() {
 
         if (!isUs) {
             setKrOrUs("KR");
+            dispatch(resetKrStockData());
             const corp: any = corpCodeJson;
             const jsonStock = corp[stockName];
             // 이름 조회 실패 시 6자리 종목코드 직접 입력으로 폴백
