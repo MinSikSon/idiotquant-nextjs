@@ -1,9 +1,10 @@
 "use client";
 
 import React, { useMemo, useState } from "react";
+import Link from "next/link";
 import {
   Calculator, BarChart3, TrendingUp, ChevronDown, ChevronUp,
-  Layers, Zap, Sparkles, Activity, Target,
+  Layers, Zap, Sparkles, Activity, Target, Lock, ArrowRight,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import {
@@ -171,9 +172,11 @@ const DEFAULT_CONFIG: ModelConfig = {
 interface ValuationSectionProps {
   data: any;
   isUs: boolean;
+  isLoggedIn?: boolean;
+  loginHref?: string;
 }
 
-export const ValuationSection = ({ data, isUs }: ValuationSectionProps) => {
+export const ValuationSection = ({ data, isUs, isLoggedIn = true, loginHref = "/login" }: ValuationSectionProps) => {
   const [activeTab, setActiveTab] = useState<FilterTabType>("ALL");
   const currency = isUs ? "$" : "₩";
 
@@ -291,54 +294,74 @@ export const ValuationSection = ({ data, isUs }: ValuationSectionProps) => {
         </div>
       </div>
 
-      {/* ────── 필터 탭 ────── */}
-      <div className="px-5 py-3 border-b border-neutral-100 dark:border-[#35332e] flex items-center gap-1">
-        {([
-          { id: "ALL",     label: "전체",     count: models.length },
-          { id: "ASSET",   label: "자산가치", count: assetCount },
-          { id: "EARNING", label: "수익가치", count: earningCount },
-        ] as { id: FilterTabType; label: string; count: number }[]).map(tab => (
-          <button
-            key={tab.id}
-            onClick={() => setActiveTab(tab.id)}
-            className={cn(
-              "flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all duration-150",
-              activeTab === tab.id
-                ? "bg-neutral-900 dark:bg-white text-white dark:text-neutral-900"
-                : "text-neutral-500 dark:text-neutral-400 hover:bg-[#f5f0e8] dark:hover:bg-[#242320] hover:text-neutral-800 dark:hover:text-neutral-200"
-            )}
-          >
-            {tab.label}
-            <span className={cn(
-              "text-[9px] font-black px-1.5 py-0.5 rounded-full",
-              activeTab === tab.id
-                ? "bg-white/20 dark:bg-black/20"
-                : "bg-[#faf9f7] dark:bg-[#242320] text-neutral-500 dark:text-neutral-500"
-            )}>
-              {tab.count}
-            </span>
-          </button>
-        ))}
-      </div>
+      {/* ────── 세부 모델 (필터탭 + 카드 그리드) ────── */}
+      <div className="relative">
+        <div className={cn(!isLoggedIn && "blur-sm select-none pointer-events-none")}>
 
-      {/* ────── 카드 그리드 ────── */}
-      {filteredModels.length > 0 ? (
-        <div className="p-5 grid grid-cols-1 md:grid-cols-2 gap-4">
-          {filteredModels.map(m => (
-            <StrategyCard
-              key={m.type}
-              modelType={m.type}
-              result={m.result}
-              currency={currency}
-            />
-          ))}
+          {/* 필터 탭 */}
+          <div className="px-5 py-3 border-b border-neutral-100 dark:border-[#35332e] flex items-center gap-1">
+            {([
+              { id: "ALL",     label: "전체",     count: models.length },
+              { id: "ASSET",   label: "자산가치", count: assetCount },
+              { id: "EARNING", label: "수익가치", count: earningCount },
+            ] as { id: FilterTabType; label: string; count: number }[]).map(tab => (
+              <button
+                key={tab.id}
+                onClick={() => setActiveTab(tab.id)}
+                className={cn(
+                  "flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all duration-150",
+                  activeTab === tab.id
+                    ? "bg-neutral-900 dark:bg-white text-white dark:text-neutral-900"
+                    : "text-neutral-500 dark:text-neutral-400 hover:bg-[#f5f0e8] dark:hover:bg-[#242320] hover:text-neutral-800 dark:hover:text-neutral-200"
+                )}
+              >
+                {tab.label}
+                <span className={cn(
+                  "text-[9px] font-black px-1.5 py-0.5 rounded-full",
+                  activeTab === tab.id
+                    ? "bg-white/20 dark:bg-black/20"
+                    : "bg-[#faf9f7] dark:bg-[#242320] text-neutral-500 dark:text-neutral-500"
+                )}>
+                  {tab.count}
+                </span>
+              </button>
+            ))}
+          </div>
+
+          {/* 카드 그리드 */}
+          {filteredModels.length > 0 ? (
+            <div className="p-5 grid grid-cols-1 md:grid-cols-2 gap-4">
+              {filteredModels.map(m => (
+                <StrategyCard
+                  key={m.type}
+                  modelType={m.type}
+                  result={m.result}
+                  currency={currency}
+                />
+              ))}
+            </div>
+          ) : (
+            <div className="py-12 flex flex-col items-center justify-center gap-2 text-neutral-400 dark:text-neutral-500">
+              <Layers size={28} className="opacity-30" />
+              <span className="text-xs font-medium">해당 카테고리의 모델이 없습니다.</span>
+            </div>
+          )}
         </div>
-      ) : (
-        <div className="py-12 flex flex-col items-center justify-center gap-2 text-neutral-400 dark:text-neutral-500">
-          <Layers size={28} className="opacity-30" />
-          <span className="text-xs font-medium">해당 카테고리의 모델이 없습니다.</span>
-        </div>
-      )}
+
+        {/* 블러 오버레이 */}
+        {!isLoggedIn && (
+          <div className="absolute inset-0 flex items-center justify-center bg-gradient-to-b from-white/40 to-white/95 dark:from-[#242320]/40 dark:to-[#242320]/95">
+            <Link
+              href={loginHref}
+              className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-[#d97757] hover:bg-[#bf6644] text-white text-sm font-bold shadow-md shadow-[#d97757]/20 transition-all"
+            >
+              <Lock size={13} />
+              로그인하여 세부 모델 보기
+              <ArrowRight size={13} />
+            </Link>
+          </div>
+        )}
+      </div>
     </div>
   );
 };

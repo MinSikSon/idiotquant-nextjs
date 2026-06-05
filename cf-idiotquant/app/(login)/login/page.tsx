@@ -1,4 +1,5 @@
-import AuthButton from "@/components/authButton";
+import { Suspense } from "react";
+import { LoginAuthWrapper } from "./components/LoginAuthWrapper";
 import Link from "next/link";
 
 const BENEFITS = [
@@ -57,7 +58,9 @@ export default function LoginPage() {
 
                     {/* Login area */}
                     <div className="px-8 py-6">
-                        <AuthButton />
+                        <Suspense fallback={<div className="w-full h-12 rounded-xl bg-[#faf9f7] dark:bg-[#35332e] animate-pulse" />}>
+                            <LoginAuthWrapper />
+                        </Suspense>
 
                         <div className="flex items-center gap-3 my-5">
                             <div className="flex-1 h-px bg-[#faf9f7] dark:bg-[#242320]" />
