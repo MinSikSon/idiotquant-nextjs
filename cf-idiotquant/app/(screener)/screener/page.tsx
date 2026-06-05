@@ -490,8 +490,8 @@ function ScreenerContent() {
     const hasMore = filteredList.length > displayCount;
     const isLoading = ncavDailyList.state === "pending" || ncavDailyList.state === "init";
 
-    const handleStockClick = useCallback((ticker: string, name: string) => {
-        router.push(`/analyze?ticker=${encodeURIComponent(name)}&from=screener`);
+    const handleStockClick = useCallback((ticker: string, _name: string) => {
+        router.push(`/analyze?ticker=${encodeURIComponent(ticker)}&from=screener`);
     }, [router]);
 
     const scanDate = ncavDailyList.scanDate;
