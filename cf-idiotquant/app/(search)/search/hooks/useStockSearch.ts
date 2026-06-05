@@ -75,8 +75,10 @@ export function useStockSearch() {
             setKrOrUs("KR");
             const corp: any = corpCodeJson;
             const jsonStock = corp[stockName];
-            if (jsonStock) {
-                const code = jsonStock.stock_code;
+            // 이름 조회 실패 시 6자리 종목코드 직접 입력으로 폴백
+            const code: string | undefined = jsonStock?.stock_code
+                ?? (/^\d{6}$/.test(stockName) ? stockName : undefined);
+            if (code) {
                 dispatch(reqGetInquirePrice({ PDNO: code }));
                 dispatch(reqGetInquireDailyItemChartPrice({
                     PDNO: code,
