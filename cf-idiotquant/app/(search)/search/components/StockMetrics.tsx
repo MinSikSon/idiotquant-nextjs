@@ -117,13 +117,35 @@ export const StockMetrics = ({ data, isUs }: { data: any; isUs: boolean }) => {
         ? (100 * n(p.acml_tr_pbmn) / calculatedMarketCap).toFixed(3)
         : "0";
 
+      // 액면분할·합병 보정: 일별 상장주식수 기준으로 과거 가격을 현재 주식수 기준으로 환산
+      const currentShares = n(c.lstn_stcn);
+      const dailyItems = data.kiChart.output2 ?? [];
+      let adj52High = 0;
+      let adj52HighDate = "";
+      let adj52Low = Infinity;
+      let adj52LowDate = "";
+
+      if (currentShares > 0 && dailyItems.length > 0) {
+        for (const day of dailyItems) {
+          const dayShares = n(day.lstn_stcn);
+          const ratio = dayShares > 0 ? dayShares / currentShares : 1;
+          const adjHigh = n(day.stck_hgpr) * ratio;
+          const adjLow  = n(day.stck_lwpr) * ratio;
+          if (adjHigh > adj52High) { adj52High = adjHigh; adj52HighDate = day.stck_bsop_date ?? ""; }
+          if (adjLow > 0 && adjLow < adj52Low) { adj52Low = adjLow; adj52LowDate = day.stck_bsop_date ?? ""; }
+        }
+      }
+      const has52High = adj52High > 0;
+      const has52Low  = adj52Low < Infinity;
+      const fmt52Date = (d: string) => d ? `${d.slice(0,4)}-${d.slice(4,6)}-${d.slice(6,8)}` : "";
+
       return [
         { label: "PER",     val: p.per ? `${p.per}배` : "—", type: "valuation", desc: "주가수익비율. 주가가 1주당 순이익의 몇 배인지 나타냅니다." },
         { label: "PBR",     val: p.pbr ? `${p.pbr}배` : "—", type: "valuation", desc: "주가순자산비율. 주가가 1주당 순자산의 몇 배인지 나타냅니다." },
         { label: "EPS",     val: n(p.eps) ? `${n(p.eps).toLocaleString()}원` : "—", type: "valuation", desc: "주당순이익. 기업이 1주당 얼마의 순이익을 냈는지 보여줍니다." },
         { label: "BPS",     val: n(p.bps) ? `${n(p.bps).toLocaleString()}원` : "—", type: "valuation", desc: "주당순자산. 청산 시 1주당 주주에게 돌아가는 자산 가치입니다." },
-        { label: "52주 최고", val: n(p.w52_hgpr) ? `${n(p.w52_hgpr).toLocaleString()}원` : "—", sub: p.w52_hgpr_date,  type: "price", desc: "최근 1년간 가장 높았던 주가와 기록한 날짜입니다." },
-        { label: "52주 최저", val: n(p.w52_lwpr) ? `${n(p.w52_lwpr).toLocaleString()}원` : "—", sub: p.dryy_lwpr_date, type: "price", desc: "최근 1년간 가장 낮았던 주가와 기록한 날짜입니다." },
+        { label: "52주 최고", val: has52High ? `${Math.round(adj52High).toLocaleString()}원` : "—", sub: fmt52Date(adj52HighDate), type: "price", desc: "최근 1년간 가장 높았던 주가 (액면분할·합병 보정)." },
+        { label: "52주 최저", val: has52Low  ? `${Math.round(adj52Low).toLocaleString()}원`  : "—", sub: fmt52Date(adj52LowDate),  type: "price", desc: "최근 1년간 가장 낮았던 주가 (액면분할·합병 보정)." },
         { label: "시가총액",  val: formatKoreanUnit(calculatedMarketCap), type: "volume", desc: "상장주식 전체를 현재 주가로 평가한 총 금액입니다." },
         { label: "상장주식수", val: n(c.lstn_stcn) ? `${n(c.lstn_stcn).toLocaleString()}주` : "—", type: "volume", desc: "시장에 발행되어 상장된 총 주식 수입니다." },
         { label: "거래량",    val: n(p.acml_vol) ? `${n(p.acml_vol).toLocaleString()}` : "—", type: "volume", desc: "당일 시장에서 매매가 완료된 주식의 총 수량입니다." },
