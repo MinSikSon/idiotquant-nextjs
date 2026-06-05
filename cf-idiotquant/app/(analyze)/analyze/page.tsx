@@ -192,6 +192,34 @@ const ResultSkeleton = memo(() => (
 ResultSkeleton.displayName = 'ResultSkeleton';
 
 // =========================================================================
+// BlurGate — 비로그인 시 섹션 블러 처리 + 그라디언트 로그인 오버레이
+// =========================================================================
+const BlurGate = memo(({ children, isLoggedIn }: {
+  children: React.ReactNode;
+  isLoggedIn: boolean;
+}) => {
+  if (isLoggedIn) return <>{children}</>;
+  return (
+    <div className="relative rounded-2xl overflow-hidden">
+      <div className="blur-sm select-none pointer-events-none">
+        {children}
+      </div>
+      <div className="absolute inset-0 flex items-center justify-center bg-gradient-to-b from-white/40 to-white/95 dark:from-[#242320]/40 dark:to-[#242320]/95">
+        <Link
+          href="/login"
+          className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-[#d97757] hover:bg-[#bf6644] text-white text-sm font-bold shadow-md shadow-[#d97757]/20 transition-all"
+        >
+          <Lock size={13} />
+          로그인하여 전체 보기
+          <ArrowRight size={13} />
+        </Link>
+      </div>
+    </div>
+  );
+});
+BlurGate.displayName = 'BlurGate';
+
+// =========================================================================
 // Toast
 // =========================================================================
 interface ToastNotification {
@@ -646,66 +674,78 @@ function AnalyzeContent() {
                 </div>
               )}
 
-              {/* 상세 분석 섹션 — 로그인 분기 */}
-              {isLoggedIn ? (
-                <div className="space-y-5">
-                  <div className="flex items-center gap-3">
-                    <p className="text-[11px] font-bold text-neutral-400 uppercase tracking-widest font-mono shrink-0">Detail Analysis</p>
-                    <div className="flex-1 h-px bg-[#faf9f7] dark:bg-[#242320]/70" />
-                  </div>
+              {/* 상세 분석 섹션 */}
+              <div className="space-y-5">
+                <div className="flex items-center gap-3">
+                  <p className="text-[11px] font-bold text-neutral-400 uppercase tracking-widest font-mono shrink-0">Detail Analysis</p>
+                  <div className="flex-1 h-px bg-[#faf9f7] dark:bg-[#242320]/70" />
+                  {!isLoggedIn && (
+                    <span className="flex items-center gap-1 text-[10px] font-bold text-neutral-400 bg-[#faf9f7] dark:bg-[#242320] px-2 py-0.5 rounded-full">
+                      <Lock size={9} />
+                      일부 로그인 필요
+                    </span>
+                  )}
+                </div>
 
-                  {/* 차트 + 지표 */}
-                  <div className="grid grid-cols-1 lg:grid-cols-12 gap-5">
-                    <div className="lg:col-span-5">
-                      <StockCard
-                        stock={krOrUs === 'US' ? {
-                          code: tickerFromUrl, isUs: true, name, ticker: name,
-                          grade: getUsNcavGrade(data.finnhubData, data.usDetail),
-                          curPrice: Number(data?.usDetail?.output?.last ?? 0).toFixed(2),
-                          fairValue: currency + calculateUsNcavValue(data.finnhubData, data.usDetail),
-                          ncavScore: calculateUsNcavRatio(data.finnhubData, data.usDetail),
-                          srimScore: calculateUsSRIM(data.finnhubData, data.usDetail),
-                          per: data?.usDetail?.output?.perx ?? 0,
-                          pbr: data?.usDetail?.output?.pbrx ?? 0,
-                          eps: currency + (data?.usDetail?.output?.epsx ?? 0),
-                          sector: data?.usDetail?.output?.e_icod ?? "DEFAULT",
-                        } : {
-                          code: tickerFromUrl, isUs: false, name,
-                          ticker: (staticStockData.corpCodeJson as any)?.[name]?.stock_code ?? '',
-                          grade: getKrNcavGrade(data.kiBS, data.kiChart),
-                          curPrice: data?.kiPrice?.output?.stck_prpr ?? 0,
-                          fairValue: currency + calculateKrNcavValue(data.kiBS, data.kiChart),
-                          ncavScore: calculateKrNcavRatio(data.kiBS, data.kiChart),
-                          srimScore: getKrSRIMTargetPrice(data.kiBS, data.kiIS, data.kiChart),
-                          per: data?.kiPrice?.output?.per ?? 0,
-                          pbr: data?.kiPrice?.output?.pbr ?? 0,
-                          eps: currency + Number(data?.kiPrice?.output?.eps ?? 0).toFixed(0),
-                          sector: data?.kiPrice?.output?.bstp_kor_isnm ?? "DEFAULT",
-                        }}
-                        chartConfig={chartConfig}
-                        rawData={data}
-                        stockXpProfile={DEFAULT_XP_PROFILE}
-                      />
-                    </div>
-                    <div className="lg:col-span-7">
+                {/* 주가추이 (항상 공개) + 상세 지표 (블러) */}
+                <div className="grid grid-cols-1 lg:grid-cols-12 gap-5">
+                  <div className="lg:col-span-5">
+                    <StockCard
+                      stock={krOrUs === 'US' ? {
+                        code: tickerFromUrl, isUs: true, name, ticker: name,
+                        grade: getUsNcavGrade(data.finnhubData, data.usDetail),
+                        curPrice: Number(data?.usDetail?.output?.last ?? 0).toFixed(2),
+                        fairValue: currency + calculateUsNcavValue(data.finnhubData, data.usDetail),
+                        ncavScore: calculateUsNcavRatio(data.finnhubData, data.usDetail),
+                        srimScore: calculateUsSRIM(data.finnhubData, data.usDetail),
+                        per: data?.usDetail?.output?.perx ?? 0,
+                        pbr: data?.usDetail?.output?.pbrx ?? 0,
+                        eps: currency + (data?.usDetail?.output?.epsx ?? 0),
+                        sector: data?.usDetail?.output?.e_icod ?? "DEFAULT",
+                      } : {
+                        code: tickerFromUrl, isUs: false, name,
+                        ticker: (staticStockData.corpCodeJson as any)?.[name]?.stock_code ?? '',
+                        grade: getKrNcavGrade(data.kiBS, data.kiChart),
+                        curPrice: data?.kiPrice?.output?.stck_prpr ?? 0,
+                        fairValue: currency + calculateKrNcavValue(data.kiBS, data.kiChart),
+                        ncavScore: calculateKrNcavRatio(data.kiBS, data.kiChart),
+                        srimScore: getKrSRIMTargetPrice(data.kiBS, data.kiIS, data.kiChart),
+                        per: data?.kiPrice?.output?.per ?? 0,
+                        pbr: data?.kiPrice?.output?.pbr ?? 0,
+                        eps: currency + Number(data?.kiPrice?.output?.eps ?? 0).toFixed(0),
+                        sector: data?.kiPrice?.output?.bstp_kor_isnm ?? "DEFAULT",
+                      }}
+                      chartConfig={chartConfig}
+                      rawData={data}
+                      stockXpProfile={DEFAULT_XP_PROFILE}
+                    />
+                  </div>
+                  <div className="lg:col-span-7">
+                    <BlurGate isLoggedIn={isLoggedIn}>
                       <StockMetrics data={data} isUs={krOrUs === 'US'} />
-                    </div>
+                    </BlurGate>
                   </div>
+                </div>
 
-                  {/* 밸류에이션 */}
-                  <div className="bg-white dark:bg-[#242320] rounded-2xl border border-neutral-200 dark:border-[#35332e] p-1 shadow-sm">
-                    <ValuationSection data={data} isUs={krOrUs === 'US'} />
-                  </div>
+                {/* 모델별 요약 (항상 공개) */}
+                <div className="bg-white dark:bg-[#242320] rounded-2xl border border-neutral-200 dark:border-[#35332e] p-1 shadow-sm">
+                  <ValuationSection data={data} isUs={krOrUs === 'US'} />
+                </div>
 
-                  {/* 상장폐지 위험도 */}
-                  {krOrUs === 'KR' && (
+                {/* 상장폐지 위험도 (블러) */}
+                {krOrUs === 'KR' && (
+                  <BlurGate isLoggedIn={isLoggedIn}>
                     <DelistingRisk kiBS={data.kiBS} kiIS={data.kiIS} />
-                  )}
-                  {krOrUs === 'US' && (
+                  </BlurGate>
+                )}
+                {krOrUs === 'US' && (
+                  <BlurGate isLoggedIn={isLoggedIn}>
                     <UsDelistingRisk finnhubData={data.finnhubData} usDetail={data.usDetail} />
-                  )}
+                  </BlurGate>
+                )}
 
-                  {/* 재무제표 */}
+                {/* 재무제표 (블러) */}
+                <BlurGate isLoggedIn={isLoggedIn}>
                   <div className="bg-white dark:bg-[#242320] rounded-2xl border border-neutral-200 dark:border-[#35332e] shadow-sm overflow-hidden">
                     <div className="px-5 py-4 border-b border-neutral-100 dark:border-[#35332e]">
                       <h3 className="text-sm font-extrabold text-neutral-800 dark:text-neutral-200">재무제표</h3>
@@ -720,72 +760,16 @@ function AnalyzeContent() {
                       }
                     </div>
                   </div>
-                </div>
-              ) : (
-                /* 비로그인 — 상세 분석 잠금 */
-                <div className="space-y-3">
-                  {/* 잠긴 섹션 레이블 */}
-                  <div className="flex items-center gap-3">
-                    <p className="text-[11px] font-bold text-neutral-400 uppercase tracking-widest font-mono shrink-0">Detail Analysis</p>
-                    <div className="flex-1 h-px bg-[#faf9f7] dark:bg-[#242320]/70" />
-                    <span className="flex items-center gap-1 text-[10px] font-bold text-neutral-400 bg-[#faf9f7] dark:bg-[#242320] px-2 py-0.5 rounded-full">
-                      <Lock size={9} />
-                      로그인 필요
-                    </span>
-                  </div>
+                </BlurGate>
 
-                  {/* 잠긴 항목 카드 그리드 */}
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                    {[
-                      {
-                        icon: "📈",
-                        title: "가격 차트",
-                        desc: "60일 주가 추이 및 거래량 차트",
-                      },
-                      {
-                        icon: "🎯",
-                        title: "S-RIM 적정주가",
-                        desc: "초과이익 모델 기반 적정 주가 및 괴리율 계산",
-                      },
-                      {
-                        icon: "🧮",
-                        title: "NCAV 계산식",
-                        desc: "순유동자산 상세 계산 내역 및 안전마진 분석",
-                      },
-                      {
-                        icon: "📋",
-                        title: "재무제표",
-                        desc: "대차대조표 · 손익계산서 (최근 3년)",
-                      },
-                    ].map(item => (
-                      <div key={item.title}
-                        className="relative flex items-start gap-3 p-4 bg-white dark:bg-[#242320] rounded-xl border border-neutral-200 dark:border-[#35332e] overflow-hidden"
-                      >
-                        {/* 흐릿한 내용 배경 */}
-                        <div className="absolute inset-0 opacity-30 pointer-events-none">
-                          <div className="absolute top-8 left-4 right-4 h-2 bg-neutral-200 dark:bg-[#4a4641] rounded" />
-                          <div className="absolute top-13 left-4 right-8 h-2 bg-neutral-200 dark:bg-[#4a4641] rounded" />
-                          <div className="absolute top-18 left-4 right-12 h-2 bg-neutral-200 dark:bg-[#4a4641] rounded" />
-                        </div>
-                        <span className="text-xl shrink-0">{item.icon}</span>
-                        <div className="min-w-0">
-                          <div className="flex items-center gap-2 mb-0.5">
-                            <p className="text-sm font-extrabold text-neutral-700 dark:text-neutral-200">{item.title}</p>
-                            <Lock size={10} className="text-neutral-400 shrink-0" />
-                          </div>
-                          <p className="text-[11px] text-neutral-500 dark:text-neutral-400 leading-relaxed">{item.desc}</p>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-
-                  {/* 로그인 CTA */}
-                  <div className="mt-2 p-5 bg-gradient-to-br from-[#fff8f5] to-indigo-50 dark:from-[#3d1f10]/20 dark:to-indigo-950/20 rounded-2xl border border-[#f9c9b0]/60 dark:border-[#7d3f27]/40 text-center">
+                {/* 비로그인 로그인 CTA */}
+                {!isLoggedIn && (
+                  <div className="p-5 bg-gradient-to-br from-[#fff8f5] to-indigo-50 dark:from-[#3d1f10]/20 dark:to-indigo-950/20 rounded-2xl border border-[#f9c9b0]/60 dark:border-[#7d3f27]/40 text-center">
                     <p className="text-sm font-black text-neutral-900 dark:text-white mb-1">
-                      {name ? `${name} 상세 분석` : '상세 분석'} 보기
+                      {name ? `${name} 상세 분석` : '상세 분석'} 전체 보기
                     </p>
                     <p className="text-xs text-neutral-500 dark:text-neutral-400 mb-4">
-                      카카오 로그인 30초 · 무료 · 가격 차트·S-RIM·재무제표 모두 포함
+                      카카오 로그인 30초 · 무료 · 재무제표·상장폐지 위험도·상세 지표 모두 포함
                     </p>
                     <Link
                       href="/login"
@@ -795,8 +779,8 @@ function AnalyzeContent() {
                       <ArrowRight size={14} />
                     </Link>
                   </div>
-                </div>
-              )}
+                )}
+              </div>
             </div>
           </>
         )}
