@@ -192,35 +192,27 @@ const ResultSkeleton = memo(() => (
 ResultSkeleton.displayName = 'ResultSkeleton';
 
 // =========================================================================
-// BlurGate — 비로그인 시 섹션 블러 처리 + 로그인 오버레이
+// BlurGate — 비로그인 시 섹션 블러 처리 + 그라디언트 로그인 오버레이
 // =========================================================================
-const BlurGate = memo(({ children, title, isLoggedIn }: {
+const BlurGate = memo(({ children, isLoggedIn }: {
   children: React.ReactNode;
-  title?: string;
   isLoggedIn: boolean;
 }) => {
   if (isLoggedIn) return <>{children}</>;
   return (
     <div className="relative rounded-2xl overflow-hidden">
-      <div className="blur-sm pointer-events-none select-none opacity-60">
+      <div className="blur-sm select-none pointer-events-none">
         {children}
       </div>
-      <div className="absolute inset-0 flex items-center justify-center">
-        <div className="flex flex-col items-center gap-2 px-5 py-4 bg-white/90 dark:bg-[#242320]/90 rounded-2xl border border-neutral-200 dark:border-[#35332e] shadow-lg">
-          <div className="w-9 h-9 rounded-full bg-neutral-100 dark:bg-[#3a3834] flex items-center justify-center">
-            <Lock size={15} className="text-neutral-500 dark:text-neutral-400" />
-          </div>
-          {title && (
-            <p className="text-xs font-bold text-neutral-700 dark:text-neutral-200 text-center">{title}</p>
-          )}
-          <Link
-            href="/login"
-            className="inline-flex items-center gap-1.5 px-4 py-1.5 bg-[#d97757] text-white text-xs font-bold rounded-full hover:bg-[#bf6644] transition-colors"
-          >
-            로그인
-            <ArrowRight size={11} />
-          </Link>
-        </div>
+      <div className="absolute inset-0 flex items-center justify-center bg-gradient-to-b from-white/40 to-white/95 dark:from-[#242320]/40 dark:to-[#242320]/95">
+        <Link
+          href="/login"
+          className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-[#d97757] hover:bg-[#bf6644] text-white text-sm font-bold shadow-md shadow-[#d97757]/20 transition-all"
+        >
+          <Lock size={13} />
+          로그인하여 전체 보기
+          <ArrowRight size={13} />
+        </Link>
       </div>
     </div>
   );
@@ -729,7 +721,7 @@ function AnalyzeContent() {
                     />
                   </div>
                   <div className="lg:col-span-7">
-                    <BlurGate title="상세 지표" isLoggedIn={isLoggedIn}>
+                    <BlurGate isLoggedIn={isLoggedIn}>
                       <StockMetrics data={data} isUs={krOrUs === 'US'} />
                     </BlurGate>
                   </div>
@@ -742,18 +734,18 @@ function AnalyzeContent() {
 
                 {/* 상장폐지 위험도 (블러) */}
                 {krOrUs === 'KR' && (
-                  <BlurGate title="상장폐지 위험도" isLoggedIn={isLoggedIn}>
+                  <BlurGate isLoggedIn={isLoggedIn}>
                     <DelistingRisk kiBS={data.kiBS} kiIS={data.kiIS} />
                   </BlurGate>
                 )}
                 {krOrUs === 'US' && (
-                  <BlurGate title="상장폐지 위험도" isLoggedIn={isLoggedIn}>
+                  <BlurGate isLoggedIn={isLoggedIn}>
                     <UsDelistingRisk finnhubData={data.finnhubData} usDetail={data.usDetail} />
                   </BlurGate>
                 )}
 
                 {/* 재무제표 (블러) */}
-                <BlurGate title="재무제표" isLoggedIn={isLoggedIn}>
+                <BlurGate isLoggedIn={isLoggedIn}>
                   <div className="bg-white dark:bg-[#242320] rounded-2xl border border-neutral-200 dark:border-[#35332e] shadow-sm overflow-hidden">
                     <div className="px-5 py-4 border-b border-neutral-100 dark:border-[#35332e]">
                       <h3 className="text-sm font-extrabold text-neutral-800 dark:text-neutral-200">재무제표</h3>
