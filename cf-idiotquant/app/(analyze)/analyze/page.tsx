@@ -344,7 +344,7 @@ function AnalyzeContent() {
   // API 응답에서 실제 종목명·종목코드 추출 (검색 입력값과 무관하게 항상 정확한 정보 표시)
   const displayName = krOrUs === 'KR'
     ? (data.kiChart?.output1?.hts_kor_isnm || name)
-    : (data.usSearchInfo?.output?.prdt_eng_name || data.usDetail?.output?.ovrs_item_name || name);
+    : (data.usSearchInfo?.output?.prdt_eng_name || name);
 
   const displayCode = krOrUs === 'KR'
     ? (data.kiChart?.output1?.stck_shrn_iscd || tickerFromUrl || '')
