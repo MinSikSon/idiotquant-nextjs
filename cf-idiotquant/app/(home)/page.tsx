@@ -1,11 +1,11 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useSession } from "next-auth/react";
 import Link from "next/link";
 import {
   Search, Calculator, Filter, Lock, ArrowRight,
-  TrendingUp, ChevronRight, Loader2, BarChart3,
+  TrendingUp, ChevronRight, Loader2, BarChart3, Zap,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -68,6 +68,52 @@ const FEATURES = [
     linkLabel: "계산해보기",
   },
 ];
+
+const HOW_IT_WORKS = [
+  {
+    step: "01",
+    title: "매일 자동 스캔",
+    desc: "KIS API로 KOSPI·KOSDAQ 전 종목의 재무 데이터를 매일 수집합니다.",
+    accent: "text-[#d97757]",
+  },
+  {
+    step: "02",
+    title: "저평가 종목 발굴",
+    desc: "NCAV·PBR·그레이엄 등 9가지 전략으로 저평가 후보를 자동 선별합니다.",
+    accent: "text-emerald-600 dark:text-emerald-400",
+  },
+  {
+    step: "03",
+    title: "적정주가 즉시 확인",
+    desc: "종목 코드 하나로 4가지 모델 기반 적정주가와 괴리율을 즉시 산출합니다.",
+    accent: "text-violet-600 dark:text-violet-400",
+  },
+];
+
+function useCountUp(target: number, duration = 1000) {
+  const [count, setCount] = useState(0);
+  const rafRef = useRef<number | null>(null);
+
+  useEffect(() => {
+    if (target === 0) return;
+    const start = Date.now();
+    const tick = () => {
+      const elapsed = Date.now() - start;
+      const progress = Math.min(elapsed / duration, 1);
+      const ease = 1 - Math.pow(1 - progress, 3);
+      setCount(Math.round(target * ease));
+      if (progress < 1) {
+        rafRef.current = requestAnimationFrame(tick);
+      }
+    };
+    rafRef.current = requestAnimationFrame(tick);
+    return () => {
+      if (rafRef.current !== null) cancelAnimationFrame(rafRef.current);
+    };
+  }, [target, duration]);
+
+  return count;
+}
 
 function StockRow({ item, index }: { item: PreviewStock; index: number }) {
   const ncav = item.ncav_ratio;
@@ -150,12 +196,19 @@ export default function HomePage() {
     ? `${preview.scanDate.slice(0, 4)}.${preview.scanDate.slice(4, 6)}.${preview.scanDate.slice(6, 8)}`
     : null;
 
+  const animatedTotal = useCountUp(preview.loading ? 0 : preview.total);
+  const animatedFiltered = useCountUp(preview.loading ? 0 : preview.filteredTotal);
+
   return (
     <div className="min-h-screen">
 
       {/* ── HERO ─────────────────────────────────────────────────── */}
-      <section className="bg-white dark:bg-[#1f1e1b] border-b border-neutral-200/70 dark:border-[#3a3834]">
-        <div className="max-w-lg mx-auto px-5 pt-10 pb-8 sm:pt-14 sm:pb-10">
+      <section className="bg-white dark:bg-[#1f1e1b] border-b border-neutral-200/70 dark:border-[#3a3834] relative overflow-hidden">
+        {/* Decorative radial accents */}
+        <div className="absolute -top-32 -right-32 w-80 h-80 rounded-full bg-[#d97757]/6 dark:bg-[#d97757]/4 blur-3xl pointer-events-none" />
+        <div className="absolute -bottom-16 -left-16 w-64 h-64 rounded-full bg-emerald-500/4 dark:bg-emerald-500/3 blur-3xl pointer-events-none" />
+
+        <div className="max-w-lg mx-auto px-5 pt-10 pb-8 sm:pt-14 sm:pb-10 relative">
 
           {/* Live badge */}
           <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-[#faf9f7] dark:bg-[#242320] border border-neutral-200 dark:border-[#35332e] mb-5 text-[11px] font-medium text-neutral-500 dark:text-neutral-400">
@@ -205,17 +258,17 @@ export default function HomePage() {
 
         {/* Stats strip */}
         {!preview.loading && preview.total > 0 && (
-          <div className="border-t border-neutral-100 dark:border-[#2c2b27]">
+          <div className="border-t border-neutral-100 dark:border-[#2c2b27] relative">
             <div className="max-w-lg mx-auto px-5 py-3 grid grid-cols-3 gap-0">
               <div className="text-center py-1">
                 <p className="text-xl font-black text-[#d97757] dark:text-[#d97757] tabular-nums leading-none">
-                  {preview.total.toLocaleString()}
+                  {animatedTotal.toLocaleString()}
                 </p>
                 <p className="text-[10px] text-neutral-400 font-medium mt-1">오늘 발굴 종목</p>
               </div>
               <div className="text-center py-1 border-x border-neutral-100 dark:border-[#2c2b27]">
                 <p className="text-xl font-black text-emerald-600 dark:text-emerald-400 tabular-nums leading-none">
-                  {preview.filteredTotal.toLocaleString()}
+                  {animatedFiltered.toLocaleString()}
                 </p>
                 <p className="text-[10px] text-neutral-400 font-medium mt-1">시총 500억+</p>
               </div>
@@ -253,7 +306,7 @@ export default function HomePage() {
               <p className="text-[11px] text-neutral-400 mt-0.5">
                 {isLoggedIn
                   ? `NCAV 비율 순 · 전체 ${preview.filteredTotal}개`
-                  : "상위 3개 공개 · 전체는 로그인 후"}
+                  : "상위 3개 미리 보기 · 전체 목록은 로그인 후"}
               </p>
             </div>
             <Link
@@ -334,6 +387,33 @@ export default function HomePage() {
         </div>
       </section>
 
+      {/* ── HOW IT WORKS ─────────────────────────────────────────── */}
+      <section className="py-6 px-5 border-t border-neutral-100 dark:border-[#3a3834] bg-[#faf9f7] dark:bg-[#1a1917]">
+        <div className="max-w-lg mx-auto">
+          <div className="mb-5">
+            <div className="flex items-center gap-2 mb-1">
+              <Zap size={13} className="text-[#d97757]" strokeWidth={2.5} />
+              <h2 className="text-base font-black text-neutral-900 dark:text-neutral-50">어떻게 작동하나요?</h2>
+            </div>
+            <p className="text-[11px] text-neutral-400">3단계로 저평가 종목을 발굴합니다.</p>
+          </div>
+
+          <div className="flex flex-col gap-3">
+            {HOW_IT_WORKS.map((step, i) => (
+              <div key={i} className="flex items-start gap-4 p-4 rounded-2xl bg-white dark:bg-[#242320] border border-neutral-200 dark:border-[#35332e]">
+                <span className={cn("text-xs font-black tabular-nums shrink-0 mt-0.5", step.accent)}>
+                  {step.step}
+                </span>
+                <div>
+                  <p className="text-sm font-black text-neutral-900 dark:text-neutral-50 mb-0.5">{step.title}</p>
+                  <p className="text-[11px] text-neutral-500 dark:text-neutral-400 leading-relaxed break-keep">{step.desc}</p>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
       {/* ── FEATURES ─────────────────────────────────────────────── */}
       <section className="py-6 px-5 border-t border-neutral-100 dark:border-[#3a3834]">
         <div className="max-w-lg mx-auto">
@@ -371,6 +451,36 @@ export default function HomePage() {
           </div>
         </div>
       </section>
+
+      {/* ── CONVERSION CTA (비로그인) ─────────────────────────────── */}
+      {!isLoggedIn && !sessionLoading && (
+        <section className="py-10 px-5 border-t border-neutral-100 dark:border-[#3a3834] bg-gradient-to-b from-[#faf9f7] to-white dark:from-[#1a1917] dark:to-[#1f1e1b] relative overflow-hidden">
+          <div className="absolute inset-0 pointer-events-none">
+            <div className="absolute top-0 left-1/2 -translate-x-1/2 w-96 h-40 rounded-full bg-[#d97757]/5 dark:bg-[#d97757]/4 blur-3xl" />
+          </div>
+          <div className="max-w-lg mx-auto text-center relative">
+            <div className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-[#fff8f5] dark:bg-[#3d1f10]/40 border border-[#fde8de] dark:border-[#7d3f27]/60 mb-4 text-[11px] font-semibold text-[#bf6644] dark:text-[#d97757]">
+              <span className="relative flex h-1.5 w-1.5 shrink-0">
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#d97757] opacity-60" />
+                <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-[#d97757]" />
+              </span>
+              무료로 시작하세요
+            </div>
+            <h2 className="text-2xl font-black text-neutral-900 dark:text-neutral-50 mb-2 tracking-tight leading-tight">
+              지금 바로 저평가 종목을<br />찾아보세요
+            </h2>
+            <p className="text-sm text-neutral-500 dark:text-neutral-400 mb-6 leading-relaxed">
+              카카오 계정으로 즉시 시작. 별도 가입 없이 전체 기능을 이용할 수 있습니다.
+            </p>
+            <Link href="/login"
+              className="inline-flex items-center gap-2 px-7 py-3.5 rounded-xl bg-[#d97757] hover:bg-[#bf6644] active:bg-[#a05438] text-white font-bold text-sm shadow-md shadow-[#d97757]/20 transition-all"
+            >
+              카카오로 무료 시작
+              <ArrowRight size={15} />
+            </Link>
+          </div>
+        </section>
+      )}
 
       {/* ── FOOTER ───────────────────────────────────────────────── */}
       <footer className="border-t border-neutral-100 dark:border-[#3a3834] bg-white dark:bg-[#1f1e1b]">
