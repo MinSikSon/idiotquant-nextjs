@@ -327,6 +327,7 @@ interface KoreaInvestmentInqureDailyItemChartPriceOutput2 {
   acml_tr_pbmn: string;
   acml_vol: string;
   flng_cls_code: string;
+  lstn_stcn: string;
   mod_yn: string;
   prdy_vrss: string;
   prdy_vrss_sign: string;
