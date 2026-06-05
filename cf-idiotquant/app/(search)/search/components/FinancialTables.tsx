@@ -19,8 +19,8 @@ const BS_SECTIONS: SectionDef[] = [
     {
         label: "자산",
         labelEn: "ASSETS",
-        accent: "border-blue-400/50 bg-blue-50 text-blue-700 dark:bg-blue-950/40 dark:text-blue-300",
-        dotColor: "bg-blue-400",
+        accent: "border-[#d97757]/50 bg-[#fff8f5] text-[#bf6644] dark:bg-[#3d1f10]/40 dark:text-[#e8a48a]",
+        dotColor: "bg-[#d97757]",
         rows: [
             { label: "유동자산", key: "cras", description: "1년 내 현금화 가능한 자산 — NCAV 청산가치의 핵심 안전마진 원천" },
             { label: "고정자산", key: "fxas", description: "설비·토지·무형자산 등 현금화에 1년 이상 소요되는 장기 자산" },
@@ -137,7 +137,7 @@ function YoYBadge({ pct }: { pct: number | null }) {
 const TAB_TRIGGER_BASE = [
     "flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-bold transition-all duration-150",
     "text-neutral-500 dark:text-neutral-400 hover:text-neutral-700 dark:hover:text-neutral-200",
-    "data-[state=active]:bg-white dark:data-[state=active]:bg-[#3a3a3a]",
+    "data-[state=active]:bg-white dark:data-[state=active]:bg-[#4a4641]",
     "data-[state=active]:shadow-sm",
 ].join(" ");
 
@@ -154,8 +154,8 @@ function FinancialTable({ sections, data }: { sections: SectionDef[]; data: any 
         <div className="overflow-x-auto">
             <table className="w-full border-collapse text-sm">
                 <thead>
-                    <tr className="border-b border-neutral-200 dark:border-[#2a2a2a]">
-                        <th className="sticky left-0 z-10 bg-white dark:bg-[#1a1a1a] px-5 py-3 text-left min-w-[11rem] w-44">
+                    <tr className="border-b border-neutral-200 dark:border-[#35332e]">
+                        <th className="sticky left-0 z-10 bg-white dark:bg-[#242320] px-5 py-3 text-left min-w-[11rem] w-44">
                             <span className="text-[10px] font-bold uppercase tracking-widest text-neutral-400 dark:text-neutral-500 font-mono select-none">
                                 계정과목
                             </span>
@@ -168,13 +168,13 @@ function FinancialTable({ sections, data }: { sections: SectionDef[]; data: any 
                                     key={i}
                                     className={cn(
                                         "px-5 py-3 text-right min-w-[8rem]",
-                                        i === 0 && "bg-blue-50/50 dark:bg-blue-950/10"
+                                        i === 0 && "bg-[#fff8f5]/50 dark:bg-[#3d1f10]/10"
                                     )}
                                 >
                                     <div className="flex flex-col items-end gap-0.5">
                                         <span className={cn(
                                             "text-[9px] font-black uppercase tracking-wider font-mono",
-                                            i === 0 ? "text-blue-600 dark:text-blue-400" : "text-neutral-400 dark:text-neutral-500"
+                                            i === 0 ? "text-[#d97757] dark:text-[#d97757]" : "text-neutral-400 dark:text-neutral-500"
                                         )}>
                                             {i === 0 ? "최근 결산" : `T − ${i}`}
                                         </span>
@@ -197,7 +197,7 @@ function FinancialTable({ sections, data }: { sections: SectionDef[]; data: any 
                             <tr>
                                 <td
                                     colSpan={periods.length + 1}
-                                    className="sticky left-0 px-5 pt-4 pb-1.5 bg-white dark:bg-[#1a1a1a]"
+                                    className="sticky left-0 px-5 pt-4 pb-1.5 bg-white dark:bg-[#242320]"
                                 >
                                     <div className={cn(
                                         "inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md border text-[9px] font-black uppercase tracking-widest font-mono select-none",
@@ -218,18 +218,18 @@ function FinancialTable({ sections, data }: { sections: SectionDef[]; data: any 
                                     <tr
                                         key={row.key}
                                         className={cn(
-                                            "group border-b border-neutral-100 dark:border-[#2a2a2a]/50 transition-colors duration-100",
+                                            "group border-b border-neutral-100 dark:border-[#35332e]/50 transition-colors duration-100",
                                             row.isTotal
-                                                ? "bg-stone-100/80 dark:bg-[#1a1a1a]/20 hover:bg-stone-100/70 dark:hover:bg-[#1a1a1a]/40"
-                                                : "hover:bg-stone-100/60 dark:hover:bg-[#1a1a1a]/10"
+                                                ? "bg-[#faf9f7]/80 dark:bg-[#242320]/20 hover:bg-[#f5f0e8]/70 dark:hover:bg-[#242320]/40"
+                                                : "hover:bg-[#f5f0e8]/60 dark:hover:bg-[#242320]/10"
                                         )}
                                     >
                                         {/* Label */}
                                         <td className={cn(
                                             "sticky left-0 z-10 px-5 py-3 transition-colors duration-100",
                                             row.isTotal
-                                                ? "bg-stone-100 dark:bg-[#1a1a1a]/20 group-hover:bg-stone-100/70 dark:group-hover:bg-[#2a2a2a]/40"
-                                                : "bg-white dark:bg-[#1a1a1a] group-hover:bg-stone-100/60 dark:group-hover:bg-[#2a2a2a]/10"
+                                                ? "bg-[#faf9f7] dark:bg-[#242320]/20 group-hover:bg-[#f5f0e8]/70 dark:group-hover:bg-[#35332e]/40"
+                                                : "bg-white dark:bg-[#242320] group-hover:bg-[#f5f0e8]/60 dark:group-hover:bg-[#35332e]/10"
                                         )}>
                                             <div className="flex items-center gap-2">
                                                 {row.isTotal
@@ -254,7 +254,7 @@ function FinancialTable({ sections, data }: { sections: SectionDef[]; data: any 
                                                 key={i}
                                                 className={cn(
                                                     "px-5 py-3 text-right font-mono tabular-nums",
-                                                    i === 0 && "bg-blue-50/30 dark:bg-blue-950/5"
+                                                    i === 0 && "bg-[#fff8f5]/30 dark:bg-[#3d1f10]/5"
                                                 )}
                                             >
                                                 <div className="flex flex-col items-end gap-0.5">
@@ -289,7 +289,7 @@ export default function FinancialTables({ kiBS, kiIS }: FinancialTablesProps) {
     if (!kiBS?.output?.length || !kiIS?.output?.length) return null;
 
     const footer = (
-        <div className="flex items-center gap-3 px-5 py-3 border-t border-neutral-100 dark:border-[#2a2a2a]">
+        <div className="flex items-center gap-3 px-5 py-3 border-t border-neutral-100 dark:border-[#35332e]">
             <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse shrink-0" />
             <span className="text-[10px] text-neutral-400 dark:text-neutral-500 font-mono">
                 DART 공시 기준 · 단위 억 원 (KRW 100M) · 최근 5개 결산기
@@ -305,11 +305,11 @@ export default function FinancialTables({ kiBS, kiIS }: FinancialTablesProps) {
     return (
         <Tabs.Root defaultValue="bs" className="w-full">
             {/* Tab Bar */}
-            <div className="flex items-center justify-between px-5 py-3 border-b border-neutral-100 dark:border-[#2a2a2a] bg-stone-100/50 dark:bg-[#1a1a1a]/20">
-                <Tabs.List className="flex gap-1 bg-stone-100 dark:bg-[#1a1a1a] rounded-lg p-1">
+            <div className="flex items-center justify-between px-5 py-3 border-b border-neutral-100 dark:border-[#35332e] bg-[#faf9f7]/50 dark:bg-[#242320]/20">
+                <Tabs.List className="flex gap-1 bg-[#faf9f7] dark:bg-[#242320] rounded-lg p-1">
                     <Tabs.Trigger
                         value="bs"
-                        className={cn(TAB_TRIGGER_BASE, "data-[state=active]:text-blue-700 dark:data-[state=active]:text-blue-300")}
+                        className={cn(TAB_TRIGGER_BASE, "data-[state=active]:text-[#bf6644] dark:data-[state=active]:text-[#e8a48a]")}
                     >
                         <BookOpen size={12} />
                         재무상태표

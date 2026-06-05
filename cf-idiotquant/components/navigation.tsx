@@ -48,22 +48,22 @@ function SideItem({
       className={cn(
         "group flex items-center gap-3 w-full px-3 py-2.5 rounded-xl text-sm transition-all duration-150",
         isActive
-          ? "bg-stone-200/80 dark:bg-[#2a2a2a] text-neutral-900 dark:text-neutral-50 font-semibold"
-          : "font-medium text-neutral-500 dark:text-neutral-400 hover:bg-stone-100 dark:hover:bg-[#1f1f1f] hover:text-neutral-900 dark:hover:text-neutral-100"
+          ? "bg-[#ede8df]/80 dark:bg-[#35332e] text-neutral-900 dark:text-neutral-50 font-semibold"
+          : "font-medium text-neutral-500 dark:text-neutral-400 hover:bg-[#f5f0e8] dark:hover:bg-[#2c2b27] hover:text-neutral-900 dark:hover:text-neutral-100"
       )}
     >
       <Icon
         size={16}
         strokeWidth={isActive ? 2.2 : 1.8}
-        className={cn("shrink-0 transition-colors", isActive ? "text-blue-600 dark:text-blue-400" : "")}
+        className={cn("shrink-0 transition-colors", isActive ? "text-[#d97757] dark:text-[#d97757]" : "")}
       />
       <span className="flex-1 truncate">{label}</span>
       {badge && (
         <span className={cn(
           "text-[9px] font-extrabold px-1.5 py-0.5 rounded uppercase tracking-tight",
           isActive
-            ? "bg-blue-100 dark:bg-blue-950/50 text-blue-600 dark:text-blue-400"
-            : "bg-neutral-200/60 dark:bg-[#2a2a2a] text-neutral-500 dark:text-neutral-400"
+            ? "bg-[#fde8de] dark:bg-[#3d1f10]/50 text-[#d97757] dark:text-[#d97757]"
+            : "bg-neutral-200/60 dark:bg-[#35332e] text-neutral-500 dark:text-neutral-400"
         )}>
           {badge}
         </span>
@@ -84,7 +84,7 @@ function TabItem({
       className={cn(
         "flex flex-1 flex-col items-center justify-center gap-[3px] py-2 rounded-xl transition-colors",
         isActive
-          ? "text-blue-600 dark:text-blue-400 bg-stone-100 dark:bg-[#2a2a2a]"
+          ? "text-[#d97757] dark:text-[#d97757] bg-[#faf9f7] dark:bg-[#35332e]"
           : "text-neutral-400 dark:text-neutral-500 hover:text-neutral-700 dark:hover:text-neutral-300"
       )}
     >
@@ -98,19 +98,19 @@ function TabItem({
 function SidebarUser({ session, status }: { session: any; status: string }) {
   if (status === "loading") {
     return (
-      <div className="mx-3 mb-4 h-10 bg-stone-100 dark:bg-[#1a1a1a] rounded-xl animate-pulse" />
+      <div className="mx-3 mb-4 h-10 bg-[#faf9f7] dark:bg-[#242320] rounded-xl animate-pulse" />
     );
   }
 
   if (status === "authenticated") {
     return (
       <div className="px-3 pb-4">
-        <div className="flex items-center gap-1 px-1 py-0.5 rounded-xl bg-stone-100 dark:bg-[#1f1f1f]">
+        <div className="flex items-center gap-1 px-1 py-0.5 rounded-xl bg-[#faf9f7] dark:bg-[#2c2b27]">
           <Link
             href="/profile"
-            className="flex items-center gap-2 flex-1 px-2 py-2 rounded-lg hover:bg-stone-200/60 dark:hover:bg-[#2a2a2a] transition-colors min-w-0"
+            className="flex items-center gap-2 flex-1 px-2 py-2 rounded-lg hover:bg-[#ede8df]/60 dark:hover:bg-[#35332e] transition-colors min-w-0"
           >
-            <div className="w-7 h-7 rounded-full bg-neutral-200 dark:bg-[#3a3a3a] flex items-center justify-center text-neutral-700 dark:text-neutral-200 text-[10px] font-black shrink-0">
+            <div className="w-7 h-7 rounded-full bg-neutral-200 dark:bg-[#4a4641] flex items-center justify-center text-neutral-700 dark:text-neutral-200 text-[10px] font-black shrink-0">
               {session?.user?.name?.[0] ?? "U"}
             </div>
             <span className="text-xs font-semibold text-neutral-700 dark:text-neutral-300 truncate min-w-0">
@@ -133,7 +133,7 @@ function SidebarUser({ session, status }: { session: any; status: string }) {
     <div className="px-3 pb-4">
       <Link
         href="/login"
-        className="flex items-center justify-center gap-2 w-full py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold transition-colors shadow-sm"
+        className="flex items-center justify-center gap-2 w-full py-2.5 rounded-xl bg-[#d97757] hover:bg-[#bf6644] text-white text-xs font-bold transition-colors shadow-sm"
       >
         <LogIn size={14} />
         카카오 로그인
@@ -152,7 +152,7 @@ function MiniSession({ session, status }: { session: any; status: string }) {
     return (
       <Link
         href="/profile"
-        className="w-7 h-7 rounded-full bg-neutral-200 dark:bg-[#3a3a3a] flex items-center justify-center text-neutral-700 dark:text-neutral-200 text-[10px] font-black shrink-0 hover:ring-2 hover:ring-blue-400/50 transition-all"
+        className="w-7 h-7 rounded-full bg-neutral-200 dark:bg-[#4a4641] flex items-center justify-center text-neutral-700 dark:text-neutral-200 text-[10px] font-black shrink-0 hover:ring-2 hover:ring-[#d97757]/50 transition-all"
       >
         {session?.user?.name?.[0] ?? "U"}
       </Link>
@@ -162,7 +162,7 @@ function MiniSession({ session, status }: { session: any; status: string }) {
   return (
     <Link
       href="/login"
-      className="px-3 py-1.5 rounded-lg bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold transition-colors"
+      className="px-3 py-1.5 rounded-lg bg-[#d97757] hover:bg-[#bf6644] text-white text-xs font-bold transition-colors"
     >
       로그인
     </Link>
@@ -196,16 +196,16 @@ export function NavbarWithSimpleLinks() {
   return (
     <>
       {/* ══ DESKTOP SIDEBAR ══════════════════════════════════════════ */}
-      <aside className="hidden md:flex flex-col fixed left-0 top-0 h-full w-[220px] z-40 bg-white dark:bg-[#111111] border-r border-neutral-200/70 dark:border-[#222222]">
+      <aside className="hidden md:flex flex-col fixed left-0 top-0 h-full w-[220px] z-40 bg-white dark:bg-[#1f1e1b] border-r border-neutral-200/70 dark:border-[#3a3834]">
 
         {/* Logo */}
-        <div className="h-14 flex items-center px-4 border-b border-neutral-100 dark:border-[#1f1f1f] shrink-0">
+        <div className="h-14 flex items-center px-4 border-b border-neutral-100 dark:border-[#2c2b27] shrink-0">
           <Link href="/" className="flex items-center gap-2.5">
-            <div className="w-7 h-7 bg-blue-600 rounded-lg flex items-center justify-center shadow-md shadow-blue-600/25 shrink-0">
+            <div className="w-7 h-7 bg-[#d97757] rounded-lg flex items-center justify-center shadow-md shadow-[#d97757]/25 shrink-0">
               <span className="text-white text-[10px] font-black italic leading-none">IQ</span>
             </div>
             <span className="font-black tracking-tighter text-sm text-neutral-900 dark:text-white">
-              IDIOT<span className="text-blue-600">QUANT</span>
+              IDIOT<span className="text-[#d97757]">QUANT</span>
             </span>
           </Link>
         </div>
@@ -226,7 +226,7 @@ export function NavbarWithSimpleLinks() {
           {isMasterUser && (
             <>
               <div className="pt-4 pb-1.5 px-1">
-                <div className="h-px bg-neutral-100 dark:bg-[#222222] mb-3" />
+                <div className="h-px bg-neutral-100 dark:bg-[#3a3834] mb-3" />
                 <span className="text-[10px] font-bold text-neutral-400 dark:text-neutral-500 uppercase tracking-widest">
                   Portfolio
                 </span>
@@ -245,7 +245,7 @@ export function NavbarWithSimpleLinks() {
         </nav>
 
         {/* Theme toggle + User */}
-        <div className="border-t border-neutral-100 dark:border-[#1f1f1f] shrink-0">
+        <div className="border-t border-neutral-100 dark:border-[#2c2b27] shrink-0">
           <div className="flex items-center justify-end px-4 py-2.5">
             <ThemeChanger />
           </div>
@@ -254,13 +254,13 @@ export function NavbarWithSimpleLinks() {
       </aside>
 
       {/* ══ MOBILE TOP HEADER ════════════════════════════════════════ */}
-      <header className="md:hidden fixed top-0 left-0 right-0 h-[48px] z-40 bg-white/95 dark:bg-[#111111]/95 backdrop-blur-xl border-b border-neutral-200/70 dark:border-[#222222] flex items-center justify-between px-4">
+      <header className="md:hidden fixed top-0 left-0 right-0 h-[48px] z-40 bg-white/95 dark:bg-[#1f1e1b]/95 backdrop-blur-xl border-b border-neutral-200/70 dark:border-[#3a3834] flex items-center justify-between px-4">
         <Link href="/" className="flex items-center gap-2">
-          <div className="w-6 h-6 bg-blue-600 rounded-md flex items-center justify-center shadow-sm shadow-blue-600/25 shrink-0">
+          <div className="w-6 h-6 bg-[#d97757] rounded-md flex items-center justify-center shadow-sm shadow-[#d97757]/25 shrink-0">
             <span className="text-white text-[9px] font-black italic leading-none">IQ</span>
           </div>
           <span className="font-black tracking-tighter text-sm text-neutral-900 dark:text-white">
-            IDIOT<span className="text-blue-600">QUANT</span>
+            IDIOT<span className="text-[#d97757]">QUANT</span>
           </span>
         </Link>
         <div className="flex items-center gap-2">
@@ -270,7 +270,7 @@ export function NavbarWithSimpleLinks() {
       </header>
 
       {/* ══ MOBILE BOTTOM TAB BAR ════════════════════════════════════ */}
-      <nav className="md:hidden fixed bottom-0 left-0 right-0 h-[64px] z-40 bg-white/95 dark:bg-[#111111]/95 backdrop-blur-xl border-t border-neutral-200/70 dark:border-[#222222] flex items-center px-3">
+      <nav className="md:hidden fixed bottom-0 left-0 right-0 h-[64px] z-40 bg-white/95 dark:bg-[#1f1e1b]/95 backdrop-blur-xl border-t border-neutral-200/70 dark:border-[#3a3834] flex items-center px-3">
         <TabItem href="/"           label="홈"     icon={Home}       isActive={pathname === "/"} />
         <TabItem href="/screener"   label="발굴"   icon={Filter}     isActive={pathname.startsWith("/screener")} />
         <TabItem href="/analyze"    label="분석"   icon={Search}     isActive={pathname.startsWith("/analyze")} />

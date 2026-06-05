@@ -131,7 +131,7 @@ const GRADE_CONFIG = {
     frameGradient: "linear-gradient(135deg,#94a3b8,#cbd5e1,#94a3b8)",
     glow: "shadow-[0_0_16px_rgba(148,163,184,0.15)]",
     darkCard: false,
-    cardBodyCls: "bg-white dark:bg-[#0d0d0d]",
+    cardBodyCls: "bg-white dark:bg-[#1a1915]",
     label: "STABLE ASSET",
     labelColor: "text-slate-500 dark:text-slate-400",
     badgeGradient: "linear-gradient(90deg,#475569,#94a3b8)",
@@ -145,10 +145,10 @@ const GRADE_CONFIG = {
     typeBorder: "border-slate-300/50 dark:border-slate-700/40",
     typeText: "text-slate-500 dark:text-slate-400",
     statBg: "bg-slate-50 dark:bg-slate-900/50 border-slate-200/60 dark:border-slate-700/40",
-    statDivide: "divide-neutral-100 dark:divide-[#2a2a2a]/60",
+    statDivide: "divide-neutral-100 dark:divide-[#35332e]/60",
     statLabel: "text-neutral-400 dark:text-neutral-500",
     statValue: "text-neutral-700 dark:text-neutral-300",
-    xpTrack: "bg-stone-100 dark:bg-[#1a1a1a]",
+    xpTrack: "bg-[#faf9f7] dark:bg-[#242320]",
     xpFrom: "from-slate-400", xpTo: "to-slate-500",
     tierColor: "text-neutral-400",
     xpPctColor: "text-neutral-400",
@@ -165,7 +165,7 @@ const GRADE_CONFIG = {
     frameGradient: "linear-gradient(135deg,#71717a,#a1a1aa,#71717a)",
     glow: "shadow-md",
     darkCard: false,
-    cardBodyCls: "bg-white dark:bg-[#0d0d0d]",
+    cardBodyCls: "bg-white dark:bg-[#1a1915]",
     label: "FAIR VALUE",
     labelColor: "text-neutral-500 dark:text-neutral-400",
     badgeGradient: "linear-gradient(90deg,#3f3f46,#71717a)",
@@ -173,16 +173,16 @@ const GRADE_CONFIG = {
     nameColor: "text-neutral-900 dark:text-neutral-100",
     tickerColor: "text-neutral-400",
     artBg: "from-neutral-100 to-neutral-200 dark:from-neutral-900 dark:to-neutral-950",
-    artBorder: "border-neutral-300/50 dark:border-[#222222]/40",
+    artBorder: "border-neutral-300/50 dark:border-[#3a3834]/40",
     artShadow: "",
     typeGradient: "linear-gradient(90deg,rgba(113,113,122,0.07),rgba(161,161,170,0.07))",
-    typeBorder: "border-neutral-300/50 dark:border-[#222222]/40",
+    typeBorder: "border-neutral-300/50 dark:border-[#3a3834]/40",
     typeText: "text-neutral-500 dark:text-neutral-400",
-    statBg: "bg-stone-100 dark:bg-[#1a1a1a]/50 border-neutral-200/60 dark:border-[#222222]/40",
-    statDivide: "divide-neutral-100 dark:divide-[#2a2a2a]/60",
+    statBg: "bg-[#faf9f7] dark:bg-[#242320]/50 border-neutral-200/60 dark:border-[#3a3834]/40",
+    statDivide: "divide-neutral-100 dark:divide-[#35332e]/60",
     statLabel: "text-neutral-400 dark:text-neutral-500",
     statValue: "text-neutral-700 dark:text-neutral-300",
-    xpTrack: "bg-stone-100 dark:bg-[#1a1a1a]",
+    xpTrack: "bg-[#faf9f7] dark:bg-[#242320]",
     xpFrom: "from-neutral-400", xpTo: "to-neutral-500",
     tierColor: "text-neutral-400",
     xpPctColor: "text-neutral-400",
@@ -199,7 +199,7 @@ const GRADE_CONFIG = {
     frameGradient: "linear-gradient(135deg,#ef4444,#f87171,#ef4444)",
     glow: "shadow-[0_0_22px_rgba(239,68,68,0.25)]",
     darkCard: false,
-    cardBodyCls: "bg-white dark:bg-[#0d0d0d]",
+    cardBodyCls: "bg-white dark:bg-[#1a1915]",
     label: "OVERVALUED",
     labelColor: "text-red-500 dark:text-red-400",
     badgeGradient: "linear-gradient(90deg,#b91c1c,#ef4444)",
@@ -216,7 +216,7 @@ const GRADE_CONFIG = {
     statDivide: "divide-red-100/50 dark:divide-red-900/30",
     statLabel: "text-red-300 dark:text-red-500",
     statValue: "text-neutral-700 dark:text-neutral-300",
-    xpTrack: "bg-stone-100 dark:bg-[#1a1a1a]",
+    xpTrack: "bg-[#faf9f7] dark:bg-[#242320]",
     xpFrom: "from-red-400", xpTo: "to-rose-500",
     tierColor: "text-neutral-400",
     xpPctColor: "text-neutral-400",
@@ -272,14 +272,14 @@ const getLevelTier = (level: number) => {
     next: "SIGNATURE" as string | null, nextLevel: 15 as number | null,
   };
   if (level >= 4) return {
-    title: "WATCHLIST", from: "from-sky-400", to: "to-blue-400",
+    title: "WATCHLIST", from: "from-sky-400", to: "to-sky-600",
     badge: "bg-sky-100 text-sky-700 dark:bg-sky-950 dark:text-sky-300",
     desc: "꾸준한 모니터링 중. 관심도를 쌓고 있습니다.",
     next: "HIGH CONVICTION" as string | null, nextLevel: 8 as number | null,
   };
   return {
     title: "BEGINNER", from: "from-neutral-300", to: "to-neutral-400",
-    badge: "bg-stone-100 text-neutral-600 dark:bg-[#1a1a1a] dark:text-neutral-400",
+    badge: "bg-[#faf9f7] text-neutral-600 dark:bg-[#242320] dark:text-neutral-400",
     desc: "관심을 막 시작한 단계. 조회할수록 XP가 누적됩니다.",
     next: "WATCHLIST" as string | null, nextLevel: 4 as number | null,
   };
@@ -952,7 +952,7 @@ export const StockCard = ({ stock, chartConfig, isCompact = false, stockXpProfil
 
         {/* ════════════════ BACK ════════════════ */}
         <div
-          className="absolute inset-0 rounded-[1.75rem] bg-white dark:bg-[#0d0d0d] flex flex-col shadow-xl overflow-hidden"
+          className="absolute inset-0 rounded-[1.75rem] bg-white dark:bg-[#1a1915] flex flex-col shadow-xl overflow-hidden"
           style={{
             WebkitBackfaceVisibility: "hidden",
             backfaceVisibility: "hidden",
@@ -965,7 +965,7 @@ export const StockCard = ({ stock, chartConfig, isCompact = false, stockXpProfil
           {/* 등급 컬러 헤더 글로우 */}
           <div className="absolute inset-x-0 top-0 h-32 opacity-[0.08] pointer-events-none" style={{ background: cfg.frameGradient }} />
           {/* 테두리 */}
-          <div className="absolute inset-0 rounded-[1.75rem] border-2 border-neutral-200 dark:border-[#2a2a2a] pointer-events-none" />
+          <div className="absolute inset-0 rounded-[1.75rem] border-2 border-neutral-200 dark:border-[#35332e] pointer-events-none" />
 
           <div className="relative flex flex-col gap-2.5 p-3.5 h-full overflow-y-auto">
 
@@ -980,7 +980,7 @@ export const StockCard = ({ stock, chartConfig, isCompact = false, stockXpProfil
               {(() => {
                 const meta = GRADE_META[grade] ?? GRADE_META.B;
                 return (
-                  <div className="flex gap-2.5 p-2.5 rounded-xl bg-stone-100 dark:bg-[#1a1a1a]/60 border border-neutral-200/70 dark:border-[#2a2a2a]/70 mb-2">
+                  <div className="flex gap-2.5 p-2.5 rounded-xl bg-[#faf9f7] dark:bg-[#242320]/60 border border-neutral-200/70 dark:border-[#35332e]/70 mb-2">
                     <div className="shrink-0 flex flex-col items-center gap-1 pt-0.5">
                       <span
                         className={cn("text-xl font-black font-mono leading-none", cfg.labelColor)}
@@ -1017,7 +1017,7 @@ export const StockCard = ({ stock, chartConfig, isCompact = false, stockXpProfil
             </div>
 
             {/* 구분선 */}
-            <div className="border-t border-neutral-200 dark:border-[#2a2a2a]" />
+            <div className="border-t border-neutral-200 dark:border-[#35332e]" />
 
             {/* ── 레벨 섹션 ── */}
             <div>
@@ -1026,7 +1026,7 @@ export const StockCard = ({ stock, chartConfig, isCompact = false, stockXpProfil
                 <span className="text-[8px] font-black uppercase tracking-widest font-mono text-neutral-400">카드 레벨</span>
               </div>
 
-              <div className="p-2.5 rounded-xl bg-neutral-900 dark:bg-[#0d0d0d] border border-neutral-800">
+              <div className="p-2.5 rounded-xl bg-neutral-900 dark:bg-[#1a1915] border border-neutral-800">
                 {/* 레벨 헤더 */}
                 <div className="flex items-center justify-between mb-2">
                   <div className="flex items-center gap-1.5">
@@ -1073,8 +1073,8 @@ export const StockCard = ({ stock, chartConfig, isCompact = false, stockXpProfil
             </div>
 
             {/* ── 푸터 ── */}
-            <div className="mt-auto pt-2 border-t border-neutral-200 dark:border-[#2a2a2a] flex items-center justify-center gap-1.5 shrink-0">
-              {stock?.isUs ? <DollarSign size={9} className="text-blue-400" /> : <Coins size={9} className="text-indigo-400" />}
+            <div className="mt-auto pt-2 border-t border-neutral-200 dark:border-[#35332e] flex items-center justify-center gap-1.5 shrink-0">
+              {stock?.isUs ? <DollarSign size={9} className="text-sky-400" /> : <Coins size={9} className="text-indigo-400" />}
               <span className="text-[7px] font-black text-neutral-300 dark:text-neutral-700 tracking-[0.2em] uppercase font-mono">
                 {stock?.isUs ? "Finnhub · IdiotQuant" : "Korea Investment · IdiotQuant"}
               </span>

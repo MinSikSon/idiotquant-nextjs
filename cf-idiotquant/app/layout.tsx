@@ -66,7 +66,7 @@ export default function RootLayout({
       </head>
       <body className={cn(
         "min-h-screen font-sans antialiased",
-        "bg-stone-100 dark:bg-[#0d0d0d] text-neutral-900 dark:text-neutral-50"
+        "bg-[#faf9f7] dark:bg-[#1a1915] text-neutral-900 dark:text-neutral-50"
       )}>
         <StoreProvider>
           <ThemeProviderClient>

@@ -106,7 +106,7 @@ const GRADE_PILL: Record<string, string> = {
   SS:  "bg-amber-500 text-white",
   S:   "bg-emerald-500 text-white",
   A:   "bg-slate-500 text-white",
-  B:   "bg-neutral-200 text-neutral-700 dark:bg-[#3a3a3a] dark:text-neutral-200",
+  B:   "bg-neutral-200 text-neutral-700 dark:bg-[#4a4641] dark:text-neutral-200",
   F:   "bg-red-500 text-white",
 };
 
@@ -125,29 +125,29 @@ import {
 // 스켈레톤 컴포넌트
 // =========================================================================
 const StockCardSkeleton = memo(() => (
-  <div className="w-full h-[380px] bg-white dark:bg-[#1a1a1a] rounded-2xl border border-neutral-200 dark:border-[#2a2a2a] animate-pulse p-6">
+  <div className="w-full h-[380px] bg-white dark:bg-[#242320] rounded-2xl border border-neutral-200 dark:border-[#35332e] animate-pulse p-6">
     <div className="flex items-center gap-3 mb-6">
-      <div className="w-12 h-12 bg-neutral-200 dark:bg-[#1a1a1a] rounded-xl" />
+      <div className="w-12 h-12 bg-neutral-200 dark:bg-[#242320] rounded-xl" />
       <div className="flex-1 space-y-2">
-        <div className="h-5 bg-neutral-200 dark:bg-[#1a1a1a] rounded w-3/4" />
-        <div className="h-4 bg-neutral-200 dark:bg-[#1a1a1a] rounded w-1/2" />
+        <div className="h-5 bg-neutral-200 dark:bg-[#242320] rounded w-3/4" />
+        <div className="h-4 bg-neutral-200 dark:bg-[#242320] rounded w-1/2" />
       </div>
     </div>
     <div className="space-y-3">
-      {[...Array(4)].map((_, i) => <div key={i} className="h-14 bg-neutral-200 dark:bg-[#1a1a1a] rounded-xl" />)}
+      {[...Array(4)].map((_, i) => <div key={i} className="h-14 bg-neutral-200 dark:bg-[#242320] rounded-xl" />)}
     </div>
   </div>
 ));
 StockCardSkeleton.displayName = 'StockCardSkeleton';
 
 const MetricsSkeleton = memo(() => (
-  <div className="w-full h-[380px] bg-white dark:bg-[#1a1a1a] rounded-2xl border border-neutral-200 dark:border-[#2a2a2a] animate-pulse p-6">
-    <div className="h-5 bg-neutral-200 dark:bg-[#1a1a1a] rounded w-1/3 mb-5" />
+  <div className="w-full h-[380px] bg-white dark:bg-[#242320] rounded-2xl border border-neutral-200 dark:border-[#35332e] animate-pulse p-6">
+    <div className="h-5 bg-neutral-200 dark:bg-[#242320] rounded w-1/3 mb-5" />
     <div className="grid grid-cols-2 gap-3">
       {[...Array(6)].map((_, i) => (
-        <div key={i} className="p-4 bg-stone-100 dark:bg-[#1a1a1a]/50 rounded-xl space-y-2">
-          <div className="h-3 bg-neutral-200 dark:bg-[#3a3a3a] rounded w-1/2" />
-          <div className="h-5 bg-neutral-200 dark:bg-[#3a3a3a] rounded w-3/4" />
+        <div key={i} className="p-4 bg-[#faf9f7] dark:bg-[#242320]/50 rounded-xl space-y-2">
+          <div className="h-3 bg-neutral-200 dark:bg-[#4a4641] rounded w-1/2" />
+          <div className="h-5 bg-neutral-200 dark:bg-[#4a4641] rounded w-3/4" />
         </div>
       ))}
     </div>
@@ -156,27 +156,27 @@ const MetricsSkeleton = memo(() => (
 MetricsSkeleton.displayName = 'MetricsSkeleton';
 
 const ValuationSkeleton = memo(() => (
-  <div className="w-full h-[280px] bg-white dark:bg-[#1a1a1a] rounded-2xl animate-pulse p-6">
-    <div className="h-5 bg-neutral-200 dark:bg-[#1a1a1a] rounded w-1/3 mb-5" />
+  <div className="w-full h-[280px] bg-white dark:bg-[#242320] rounded-2xl animate-pulse p-6">
+    <div className="h-5 bg-neutral-200 dark:bg-[#242320] rounded w-1/3 mb-5" />
     <div className="space-y-3">
-      {[...Array(3)].map((_, i) => <div key={i} className="h-14 bg-neutral-200 dark:bg-[#1a1a1a] rounded-xl" />)}
+      {[...Array(3)].map((_, i) => <div key={i} className="h-14 bg-neutral-200 dark:bg-[#242320] rounded-xl" />)}
     </div>
   </div>
 ));
 ValuationSkeleton.displayName = 'ValuationSkeleton';
 
 const SearchSkeleton = memo(() => (
-  <div className="w-full h-11 bg-stone-100 dark:bg-[#1a1a1a] rounded-xl animate-pulse" />
+  <div className="w-full h-11 bg-[#faf9f7] dark:bg-[#242320] rounded-xl animate-pulse" />
 ));
 SearchSkeleton.displayName = 'SearchSkeleton';
 
 const ResultSkeleton = memo(() => (
   <div className="space-y-4 animate-in fade-in duration-300">
-    <div className="h-[88px] bg-white dark:bg-[#1a1a1a] rounded-2xl border border-neutral-200 dark:border-[#2a2a2a] animate-pulse" />
+    <div className="h-[88px] bg-white dark:bg-[#242320] rounded-2xl border border-neutral-200 dark:border-[#35332e] animate-pulse" />
     <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-      {[...Array(4)].map((_, i) => <div key={i} className="h-20 bg-white dark:bg-[#1a1a1a] rounded-xl border border-neutral-200 dark:border-[#2a2a2a] animate-pulse" />)}
+      {[...Array(4)].map((_, i) => <div key={i} className="h-20 bg-white dark:bg-[#242320] rounded-xl border border-neutral-200 dark:border-[#35332e] animate-pulse" />)}
     </div>
-    <div className="h-[420px] bg-white dark:bg-[#1a1a1a] rounded-2xl border border-neutral-200 dark:border-[#2a2a2a] animate-pulse" />
+    <div className="h-[420px] bg-white dark:bg-[#242320] rounded-2xl border border-neutral-200 dark:border-[#35332e] animate-pulse" />
   </div>
 ));
 ResultSkeleton.displayName = 'ResultSkeleton';
@@ -205,7 +205,7 @@ const Toast = memo(({ notification, onDismiss }: {
   const colorMap = {
     success: 'bg-emerald-50/95 dark:bg-emerald-950/50 border-emerald-200 dark:border-emerald-900/50 text-emerald-800 dark:text-emerald-400',
     error:   'bg-rose-50/95 dark:bg-rose-950/50 border-rose-200 dark:border-rose-900/50 text-rose-700 dark:text-rose-400',
-    info:    'bg-blue-50/95 dark:bg-blue-950/50 border-blue-200 dark:border-blue-900/50 text-blue-700 dark:text-blue-400',
+    info:    'bg-[#fff8f5]/95 dark:bg-[#3d1f10]/50 border-[#f9c9b0] dark:border-[#7d3f27]/50 text-[#bf6644] dark:text-[#d97757]',
     warning: 'bg-amber-50/95 dark:bg-amber-950/50 border-amber-200 dark:border-amber-900/50 text-amber-700 dark:text-amber-400',
   };
 
@@ -388,10 +388,10 @@ function AnalyzeContent() {
     }
   }, [isLoaded, krOrUs, data]);
 
-  if (!hasMounted) return <div className="min-h-screen bg-stone-100 dark:bg-[#0d0d0d]" />;
+  if (!hasMounted) return <div className="min-h-screen bg-[#faf9f7] dark:bg-[#1a1915]" />;
 
   return (
-    <div className="min-h-screen bg-stone-100 dark:bg-[#0d0d0d] text-neutral-900 dark:text-neutral-100 antialiased">
+    <div className="min-h-screen bg-[#faf9f7] dark:bg-[#1a1915] text-neutral-900 dark:text-neutral-100 antialiased">
 
       {/* ── Toast ── */}
       <div className="fixed top-4 right-4 z-[100] space-y-2 max-w-sm w-full pointer-events-none px-4 sm:px-0">
@@ -401,12 +401,12 @@ function AnalyzeContent() {
       </div>
 
       {/* ── 헤더 ── */}
-      <header className="sticky top-0 z-30 bg-white dark:bg-[#111111] border-b border-neutral-200 dark:border-[#222222]">
+      <header className="sticky top-0 z-30 bg-white dark:bg-[#1f1e1b] border-b border-neutral-200 dark:border-[#3a3834]">
         {fromScreener && (
-          <div className="border-b border-neutral-100 dark:border-[#2a2a2a]/60">
+          <div className="border-b border-neutral-100 dark:border-[#35332e]/60">
             <div className="max-w-4xl mx-auto px-4 py-2">
               <Link href="/screener"
-                className="inline-flex items-center gap-1.5 text-xs font-bold text-blue-600 dark:text-blue-400 hover:opacity-80 transition-opacity">
+                className="inline-flex items-center gap-1.5 text-xs font-bold text-[#d97757] dark:text-[#d97757] hover:opacity-80 transition-opacity">
                 <ChevronLeft size={13} />
                 스크리너로 돌아가기
               </Link>
@@ -432,7 +432,7 @@ function AnalyzeContent() {
                   "flex items-center gap-1.5 px-2.5 py-2 rounded-xl border text-xs font-bold transition-all",
                   isInWatchlist
                     ? "text-amber-600 bg-amber-50 border-amber-200 dark:bg-amber-950/20 dark:border-amber-800/50 dark:text-amber-400"
-                    : "text-neutral-500 bg-stone-100 border-neutral-200 hover:text-neutral-800 dark:bg-[#1a1a1a]/40 dark:border-[#222222]"
+                    : "text-neutral-500 bg-[#faf9f7] border-neutral-200 hover:text-neutral-800 dark:bg-[#242320]/40 dark:border-[#3a3834]"
                 )}
               >
                 <Star size={13} className={isInWatchlist ? "fill-amber-500" : ""} />
@@ -441,7 +441,7 @@ function AnalyzeContent() {
               <span className={cn(
                 "inline-flex items-center gap-1 px-2.5 py-2 rounded-xl text-[11px] font-black uppercase tracking-wider font-mono border",
                 krOrUs === 'US'
-                  ? "bg-blue-50 text-blue-600 border-blue-200/60 dark:bg-blue-950/30 dark:text-blue-400 dark:border-blue-900/40"
+                  ? "bg-[#fff8f5] text-[#d97757] border-[#f9c9b0]/60 dark:bg-[#3d1f10]/30 dark:text-[#d97757] dark:border-[#7d3f27]/40"
                   : "bg-indigo-50 text-indigo-600 border-indigo-200/60 dark:bg-indigo-950/30 dark:text-indigo-400 dark:border-indigo-900/40"
               )}>
                 {krOrUs === 'US' ? <DollarSign size={11} /> : <Coins size={11} />}
@@ -453,7 +453,7 @@ function AnalyzeContent() {
 
         {/* 인기 종목 + 최근 검색 */}
         {!isLoaded && (
-          <div className="border-t border-neutral-100 dark:border-[#2a2a2a]/50 bg-stone-100/50 dark:bg-[#1a1a1a]/30">
+          <div className="border-t border-neutral-100 dark:border-[#35332e]/50 bg-[#faf9f7]/50 dark:bg-[#242320]/30">
             {popularStocks.length > 0 && (
               <div className="max-w-4xl mx-auto px-4 py-2 flex items-center gap-3">
                 <div className="flex items-center gap-1.5 shrink-0">
@@ -463,9 +463,9 @@ function AnalyzeContent() {
                 <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar">
                   {popularStocks.slice(0, 8).map((s: any, i: number) => (
                     <button key={i} onClick={() => handleSearch(s.ticker)}
-                      className="shrink-0 flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-white dark:bg-[#1a1a1a] text-xs font-bold text-neutral-600 dark:text-neutral-300 border border-neutral-200/60 dark:border-[#2a2a2a] hover:border-blue-400/70 hover:text-blue-600 dark:hover:text-blue-400 transition-all whitespace-nowrap"
+                      className="shrink-0 flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-white dark:bg-[#242320] text-xs font-bold text-neutral-600 dark:text-neutral-300 border border-neutral-200/60 dark:border-[#35332e] hover:border-[#d97757]/70 hover:text-[#d97757] dark:hover:text-[#d97757] transition-all whitespace-nowrap"
                     >
-                      <span className="w-3.5 h-3.5 flex items-center justify-center rounded-full bg-blue-500 text-white font-black text-[8px] shrink-0">{i + 1}</span>
+                      <span className="w-3.5 h-3.5 flex items-center justify-center rounded-full bg-[#fff8f5]0 text-white font-black text-[8px] shrink-0">{i + 1}</span>
                       {s.name}
                     </button>
                   ))}
@@ -473,12 +473,12 @@ function AnalyzeContent() {
               </div>
             )}
             {krMarketHistory.length > 0 && (
-              <div className="max-w-4xl mx-auto px-4 py-2 flex items-center gap-3 border-t border-neutral-100 dark:border-[#2a2a2a]/40">
+              <div className="max-w-4xl mx-auto px-4 py-2 flex items-center gap-3 border-t border-neutral-100 dark:border-[#35332e]/40">
                 <span className="text-[9px] font-bold text-neutral-400 uppercase tracking-wider shrink-0">최근 검색</span>
                 <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar">
                   {krMarketHistory.slice().reverse().slice(0, 8).map((s, i) => (
                     <button key={i} onClick={() => handleSearch(s)}
-                      className="shrink-0 px-2.5 py-1.5 text-xs font-bold text-neutral-500 hover:text-blue-600 dark:text-neutral-400 dark:hover:text-blue-400 hover:bg-white dark:hover:bg-[#1a1a1a]/40 rounded-lg border border-neutral-200/60 dark:border-[#2a2a2a] transition-all whitespace-nowrap"
+                      className="shrink-0 px-2.5 py-1.5 text-xs font-bold text-neutral-500 hover:text-[#d97757] dark:text-neutral-400 dark:hover:text-[#d97757] hover:bg-white dark:hover:bg-[#242320]/40 rounded-lg border border-neutral-200/60 dark:border-[#35332e] transition-all whitespace-nowrap"
                     >
                       {s}
                     </button>
@@ -502,16 +502,16 @@ function AnalyzeContent() {
             <div className={cn(!isLoaded ? 'hidden' : 'animate-in fade-in duration-400')}>
 
               {/* 종목 헤더 카드 */}
-              <div className="bg-white dark:bg-[#1a1a1a] rounded-2xl border border-neutral-200 dark:border-[#2a2a2a] p-4 mb-4 shadow-sm relative overflow-hidden">
+              <div className="bg-white dark:bg-[#242320] rounded-2xl border border-neutral-200 dark:border-[#35332e] p-4 mb-4 shadow-sm relative overflow-hidden">
                 <div className={cn("absolute top-0 left-0 right-0 h-0.5",
-                  krOrUs === 'US' ? "bg-gradient-to-r from-blue-500 to-sky-400" : "bg-gradient-to-r from-indigo-500 to-purple-400"
+                  krOrUs === 'US' ? "bg-gradient-to-r from-[#fff8f5]0 to-sky-400" : "bg-gradient-to-r from-indigo-500 to-purple-400"
                 )} />
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                   <div className="flex items-center gap-3 min-w-0">
                     <div className={cn(
                       "w-10 h-10 rounded-xl flex items-center justify-center text-sm font-black text-white shrink-0",
                       krOrUs === 'US'
-                        ? "bg-gradient-to-tr from-blue-500 to-sky-400"
+                        ? "bg-gradient-to-tr from-[#fff8f5]0 to-sky-400"
                         : "bg-gradient-to-tr from-indigo-500 to-purple-400"
                     )}>
                       {(name || tickerFromUrl || '?').substring(0, 1).toUpperCase()}
@@ -523,7 +523,7 @@ function AnalyzeContent() {
                         {gradeDisplay && (
                           <span className={cn(
                             "px-2 py-0.5 rounded text-xs font-black font-mono shrink-0",
-                            GRADE_PILL[gradeDisplay] ?? "bg-neutral-200 text-neutral-700 dark:bg-[#3a3a3a] dark:text-neutral-200"
+                            GRADE_PILL[gradeDisplay] ?? "bg-neutral-200 text-neutral-700 dark:bg-[#4a4641] dark:text-neutral-200"
                           )}>
                             {gradeDisplay}
                           </span>
@@ -547,7 +547,7 @@ function AnalyzeContent() {
                         "flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold border transition-all",
                         isInWatchlist
                           ? "text-amber-600 bg-amber-50 border-amber-200 dark:bg-amber-950/20 dark:border-amber-800/50 dark:text-amber-400"
-                          : "text-neutral-600 bg-stone-100 border-neutral-200 hover:border-neutral-300 dark:bg-[#1a1a1a]/30 dark:border-[#222222]"
+                          : "text-neutral-600 bg-[#faf9f7] border-neutral-200 hover:border-neutral-300 dark:bg-[#242320]/30 dark:border-[#3a3834]"
                       )}
                     >
                       <Star size={13} className={isInWatchlist ? "fill-amber-500" : ""} />
@@ -616,7 +616,7 @@ function AnalyzeContent() {
                         : "text-neutral-400",
                     },
                   ].map(m => (
-                    <div key={m.label} className="bg-white dark:bg-[#1a1a1a] rounded-xl border border-neutral-200 dark:border-[#2a2a2a] p-4 shadow-sm">
+                    <div key={m.label} className="bg-white dark:bg-[#242320] rounded-xl border border-neutral-200 dark:border-[#35332e] p-4 shadow-sm">
                       <p className="text-[10px] font-bold text-neutral-400 uppercase tracking-wider mb-1.5">{m.label}</p>
                       <p className={cn("text-2xl font-black font-mono tabular-nums leading-none", m.color)}>{m.value}</p>
                       <p className="text-[10px] text-neutral-400 mt-1.5">{m.desc}</p>
@@ -630,7 +630,7 @@ function AnalyzeContent() {
                 <div className="space-y-5">
                   <div className="flex items-center gap-3">
                     <p className="text-[11px] font-bold text-neutral-400 uppercase tracking-widest font-mono shrink-0">Detail Analysis</p>
-                    <div className="flex-1 h-px bg-stone-100 dark:bg-[#1a1a1a]/70" />
+                    <div className="flex-1 h-px bg-[#faf9f7] dark:bg-[#242320]/70" />
                   </div>
 
                   {/* 차트 + 지표 */}
@@ -672,13 +672,13 @@ function AnalyzeContent() {
                   </div>
 
                   {/* 밸류에이션 */}
-                  <div className="bg-white dark:bg-[#1a1a1a] rounded-2xl border border-neutral-200 dark:border-[#2a2a2a] p-1 shadow-sm">
+                  <div className="bg-white dark:bg-[#242320] rounded-2xl border border-neutral-200 dark:border-[#35332e] p-1 shadow-sm">
                     <ValuationSection data={data} isUs={krOrUs === 'US'} />
                   </div>
 
                   {/* 재무제표 */}
-                  <div className="bg-white dark:bg-[#1a1a1a] rounded-2xl border border-neutral-200 dark:border-[#2a2a2a] shadow-sm overflow-hidden">
-                    <div className="px-5 py-4 border-b border-neutral-100 dark:border-[#2a2a2a]">
+                  <div className="bg-white dark:bg-[#242320] rounded-2xl border border-neutral-200 dark:border-[#35332e] shadow-sm overflow-hidden">
+                    <div className="px-5 py-4 border-b border-neutral-100 dark:border-[#35332e]">
                       <h3 className="text-sm font-extrabold text-neutral-800 dark:text-neutral-200">재무제표</h3>
                       <p className="text-[10px] text-neutral-400 mt-0.5">
                         {krOrUs === 'KR' ? 'DART 공시 기준 (억 원)' : 'US-GAAP 기준 (USD)'}
@@ -698,8 +698,8 @@ function AnalyzeContent() {
                   {/* 잠긴 섹션 레이블 */}
                   <div className="flex items-center gap-3">
                     <p className="text-[11px] font-bold text-neutral-400 uppercase tracking-widest font-mono shrink-0">Detail Analysis</p>
-                    <div className="flex-1 h-px bg-stone-100 dark:bg-[#1a1a1a]/70" />
-                    <span className="flex items-center gap-1 text-[10px] font-bold text-neutral-400 bg-stone-100 dark:bg-[#1a1a1a] px-2 py-0.5 rounded-full">
+                    <div className="flex-1 h-px bg-[#faf9f7] dark:bg-[#242320]/70" />
+                    <span className="flex items-center gap-1 text-[10px] font-bold text-neutral-400 bg-[#faf9f7] dark:bg-[#242320] px-2 py-0.5 rounded-full">
                       <Lock size={9} />
                       로그인 필요
                     </span>
@@ -730,13 +730,13 @@ function AnalyzeContent() {
                       },
                     ].map(item => (
                       <div key={item.title}
-                        className="relative flex items-start gap-3 p-4 bg-white dark:bg-[#1a1a1a] rounded-xl border border-neutral-200 dark:border-[#2a2a2a] overflow-hidden"
+                        className="relative flex items-start gap-3 p-4 bg-white dark:bg-[#242320] rounded-xl border border-neutral-200 dark:border-[#35332e] overflow-hidden"
                       >
                         {/* 흐릿한 내용 배경 */}
                         <div className="absolute inset-0 opacity-30 pointer-events-none">
-                          <div className="absolute top-8 left-4 right-4 h-2 bg-neutral-200 dark:bg-[#3a3a3a] rounded" />
-                          <div className="absolute top-13 left-4 right-8 h-2 bg-neutral-200 dark:bg-[#3a3a3a] rounded" />
-                          <div className="absolute top-18 left-4 right-12 h-2 bg-neutral-200 dark:bg-[#3a3a3a] rounded" />
+                          <div className="absolute top-8 left-4 right-4 h-2 bg-neutral-200 dark:bg-[#4a4641] rounded" />
+                          <div className="absolute top-13 left-4 right-8 h-2 bg-neutral-200 dark:bg-[#4a4641] rounded" />
+                          <div className="absolute top-18 left-4 right-12 h-2 bg-neutral-200 dark:bg-[#4a4641] rounded" />
                         </div>
                         <span className="text-xl shrink-0">{item.icon}</span>
                         <div className="min-w-0">
@@ -751,7 +751,7 @@ function AnalyzeContent() {
                   </div>
 
                   {/* 로그인 CTA */}
-                  <div className="mt-2 p-5 bg-gradient-to-br from-blue-50 to-indigo-50 dark:from-blue-950/20 dark:to-indigo-950/20 rounded-2xl border border-blue-200/60 dark:border-blue-900/40 text-center">
+                  <div className="mt-2 p-5 bg-gradient-to-br from-[#fff8f5] to-indigo-50 dark:from-[#3d1f10]/20 dark:to-indigo-950/20 rounded-2xl border border-[#f9c9b0]/60 dark:border-[#7d3f27]/40 text-center">
                     <p className="text-sm font-black text-neutral-900 dark:text-white mb-1">
                       {name ? `${name} 상세 분석` : '상세 분석'} 보기
                     </p>
@@ -760,7 +760,7 @@ function AnalyzeContent() {
                     </p>
                     <Link
                       href="/login"
-                      className="inline-flex items-center gap-2 px-6 py-2.5 rounded-full bg-blue-600 hover:bg-blue-700 text-white text-sm font-bold shadow-lg shadow-blue-600/20 transition-all"
+                      className="inline-flex items-center gap-2 px-6 py-2.5 rounded-full bg-[#d97757] hover:bg-[#bf6644] text-white text-sm font-bold shadow-lg shadow-[#d97757]/20 transition-all"
                     >
                       카카오로 무료 로그인
                       <ArrowRight size={14} />
@@ -774,10 +774,10 @@ function AnalyzeContent() {
       </main>
 
       {/* ── 푸터 ── */}
-      <footer className="max-w-4xl mx-auto px-4 pt-8 pb-12 mt-12 border-t border-neutral-200 dark:border-[#2a2a2a]">
+      <footer className="max-w-4xl mx-auto px-4 pt-8 pb-12 mt-12 border-t border-neutral-200 dark:border-[#35332e]">
         <div className="flex flex-col items-center gap-3">
           <div className="flex items-center gap-2">
-            <TrendingUp size={13} className="text-blue-500" strokeWidth={2.5} />
+            <TrendingUp size={13} className="text-[#fff8f5]0" strokeWidth={2.5} />
             <span className="text-xs font-bold text-neutral-700 dark:text-neutral-300">IdiotQuant</span>
           </div>
           <p className="text-[11px] text-neutral-400 dark:text-neutral-600 text-center max-w-md leading-relaxed">
@@ -797,9 +797,9 @@ function AnalyzeContent() {
 export default function AnalyzePage() {
   return (
     <Suspense fallback={
-      <div className="flex flex-col items-center justify-center py-40 gap-5 bg-stone-100 dark:bg-[#0d0d0d] min-h-screen">
-        <div className="p-4 bg-white dark:bg-[#1a1a1a] rounded-2xl border border-neutral-200 dark:border-[#2a2a2a] shadow-sm">
-          <Loader2 className="animate-spin text-blue-600 dark:text-blue-400" size={24} />
+      <div className="flex flex-col items-center justify-center py-40 gap-5 bg-[#faf9f7] dark:bg-[#1a1915] min-h-screen">
+        <div className="p-4 bg-white dark:bg-[#242320] rounded-2xl border border-neutral-200 dark:border-[#35332e] shadow-sm">
+          <Loader2 className="animate-spin text-[#d97757] dark:text-[#d97757]" size={24} />
         </div>
         <p className="text-[11px] font-bold text-neutral-400 dark:text-neutral-500 tracking-widest font-mono uppercase">
           분석 엔진 초기화 중...

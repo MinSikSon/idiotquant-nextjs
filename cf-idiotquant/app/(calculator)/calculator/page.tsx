@@ -201,8 +201,8 @@ const createNextInputs = <K extends keyof CalcInputs>(previousInputs: CalcInputs
 export default function AssetLifetimeCalculator() {
     return (
         <Suspense fallback={
-            <div className="min-h-screen bg-stone-100 dark:bg-[#0d0d0d] flex flex-col gap-3 items-center justify-center text-neutral-500 dark:text-neutral-400 font-sans text-sm font-medium">
-                <div className="w-6 h-6 border-2 border-blue-600 border-t-transparent rounded-full animate-spin" />
+            <div className="min-h-screen bg-[#faf9f7] dark:bg-[#1a1915] flex flex-col gap-3 items-center justify-center text-neutral-500 dark:text-neutral-400 font-sans text-sm font-medium">
+                <div className="w-6 h-6 border-2 border-[#d97757] border-t-transparent rounded-full animate-spin" />
                 <span>시뮬레이터 데이터를 로드하고 있습니다...</span>
             </div>
         }>
@@ -343,7 +343,7 @@ function CalculatorContent() {
 
         let level = 1;
         let label = "초심자";
-        let color = "text-neutral-700 bg-stone-100 border-neutral-200 dark:text-neutral-300 dark:bg-[#1a1a1a]/80 dark:border-[#222222]";
+        let color = "text-neutral-700 bg-[#faf9f7] border-neutral-200 dark:text-neutral-300 dark:bg-[#242320]/80 dark:border-[#3a3834]";
         let iconColor = "text-neutral-500 dark:text-neutral-400";
         let desc = "기본적인 수익률만 계산하는 단계입니다. 실전처럼 물가상승이나 건보료, 절세 옵션을 켜서 정밀도를 높여보세요.";
 
@@ -356,8 +356,8 @@ function CalculatorContent() {
         } else if (clamped >= 60) {
             level = 3;
             label = "전략가";
-            color = "text-blue-700 bg-blue-50 border-blue-200 dark:text-blue-300 dark:bg-blue-950/40 dark:border-blue-900/60";
-            iconColor = "text-blue-500 dark:text-blue-400";
+            color = "text-[#bf6644] bg-[#fff8f5] border-[#f9c9b0] dark:text-[#e8a48a] dark:bg-[#3d1f10]/40 dark:border-[#7d3f27]/60";
+            iconColor = "text-[#fff8f5]0 dark:text-[#d97757]";
             desc = "명목 화폐의 함정을 벗어나 실질 가치(구매력)와 은퇴 후 숨은 마찰 비용을 심도 있게 계산하는 기획자입니다.";
         } else if (clamped >= 30) {
             level = 2;
@@ -497,11 +497,11 @@ function CalculatorContent() {
     };
 
     return (
-        <div className="bg-stone-100 dark:bg-[#0d0d0d] min-h-screen p-3 sm:p-6 md:p-10 pb-24 md:pb-10 font-sans text-neutral-900 dark:text-neutral-50 selection:bg-blue-500/20">
+        <div className="bg-[#faf9f7] dark:bg-[#1a1915] min-h-screen p-3 sm:p-6 md:p-10 pb-24 md:pb-10 font-sans text-neutral-900 dark:text-neutral-50 selection:bg-[#d97757]/20">
             <div className="max-w-6xl mx-auto space-y-5 sm:space-y-10">
-                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-neutral-200 dark:border-[#2a2a2a] pb-4 sm:pb-6">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-neutral-200 dark:border-[#35332e] pb-4 sm:pb-6">
                     <div className="flex items-center gap-2 sm:gap-3">
-                        <div className="p-2 sm:p-2.5 bg-blue-600 rounded-xl sm:rounded-2xl text-white shadow-lg shadow-blue-600/20 shrink-0">
+                        <div className="p-2 sm:p-2.5 bg-[#d97757] rounded-xl sm:rounded-2xl text-white shadow-lg shadow-[#d97757]/20 shrink-0">
                             <CalculatorIcon className="w-5 h-5 sm:w-6" />
                         </div>
                         <div>
@@ -538,8 +538,8 @@ function CalculatorContent() {
                             className={cn(
                                 "flex flex-col sm:flex-row items-center justify-center gap-1 sm:gap-1.5 px-2 py-2 sm:px-3 rounded-lg font-bold text-[10px] sm:text-[11px] transition-all border shadow-xs text-center leading-tight sm:leading-none",
                                 isReorderEnabled
-                                    ? "bg-blue-600 border-blue-600 text-white"
-                                    : "bg-white dark:bg-[#1a1a1a] border-neutral-300 dark:border-[#222222] text-neutral-900 dark:text-neutral-50"
+                                    ? "bg-[#d97757] border-[#d97757] text-white"
+                                    : "bg-white dark:bg-[#242320] border-neutral-300 dark:border-[#3a3834] text-neutral-900 dark:text-neutral-50"
                             )}
                         >
                             <Bars3Icon className="w-3.5 h-3.5 shrink-0" />
@@ -548,7 +548,7 @@ function CalculatorContent() {
 
                         <button
                             onClick={resetLayout}
-                            className="flex flex-col sm:flex-row items-center justify-center gap-1 sm:gap-1 px-2 py-2 sm:px-3 rounded-lg font-bold text-[10px] sm:text-[11px] bg-stone-100 dark:bg-[#1a1a1a] hover:bg-neutral-200 dark:hover:bg-[#1a1a1a] text-neutral-700 dark:text-neutral-300 transition-colors border border-neutral-200 dark:border-[#222222]/60 shadow-xs text-center leading-tight sm:leading-none"
+                            className="flex flex-col sm:flex-row items-center justify-center gap-1 sm:gap-1 px-2 py-2 sm:px-3 rounded-lg font-bold text-[10px] sm:text-[11px] bg-[#faf9f7] dark:bg-[#242320] hover:bg-neutral-200 dark:hover:bg-[#242320] text-neutral-700 dark:text-neutral-300 transition-colors border border-neutral-200 dark:border-[#3a3834]/60 shadow-xs text-center leading-tight sm:leading-none"
                         >
                             <ArrowPathIcon className="w-3.5 h-3.5 shrink-0" />
                             <span>위치 초기화</span>
@@ -560,7 +560,7 @@ function CalculatorContent() {
                                 "flex flex-col sm:flex-row items-center justify-center gap-1 sm:gap-1.5 px-2 py-2 sm:px-3 rounded-lg font-bold text-[10px] sm:text-[11px] transition-all shadow-xs border shrink-0 text-center leading-tight sm:leading-none",
                                 copied
                                     ? "bg-emerald-600 border-emerald-600 text-white"
-                                    : "bg-white dark:bg-[#1a1a1a] border-neutral-300 dark:border-[#222222] text-neutral-900 dark:text-neutral-50 hover:bg-stone-100 dark:hover:bg-[#1a1a1a]"
+                                    : "bg-white dark:bg-[#242320] border-neutral-300 dark:border-[#3a3834] text-neutral-900 dark:text-neutral-50 hover:bg-[#f5f0e8] dark:hover:bg-[#242320]"
                             )}
                         >
                             {copied ? <CheckIcon className="w-3.5 h-3.5 shrink-0" /> : <ShareIcon className="w-3.5 h-3.5 shrink-0" />}
@@ -587,7 +587,7 @@ function CalculatorContent() {
                                     >
                                         <DragIndicatorOverlay desktopType="입력 섹션 내 상하 이동" isEnabled={isReorderEnabled && activeDraggingId === "core-investment"} />
                                         <SectionWrapper title="핵심 자산 및 기대 수익률" icon={<ArrowTrendingUpIcon className="w-4 h-4 text-neutral-500 dark:text-neutral-400" />}>
-                                            <div className="space-y-4 sm:space-y-6 bg-white dark:bg-[#1a1a1a] p-3.5 xs:p-4 sm:p-6 rounded-2xl sm:rounded-[2rem] border border-neutral-200 dark:border-[#2a2a2a] shadow-xs relative group/card border-t-4 group-active/item:border-blue-500 group-active/item:ring-4 group-active/item:ring-blue-500/20 dark:group-active/item:ring-blue-500/10 transition-all duration-200">
+                                            <div className="space-y-4 sm:space-y-6 bg-white dark:bg-[#242320] p-3.5 xs:p-4 sm:p-6 rounded-2xl sm:rounded-[2rem] border border-neutral-200 dark:border-[#35332e] shadow-xs relative group/card border-t-4 group-active/item:border-[#fff8f5]0 group-active/item:ring-4 group-active/item:ring-[#d97757]/20 dark:group-active/item:ring-[#fff8f5]0/10 transition-all duration-200">
 
                                                 {/* 모바일 터치 피드백을 위한 touch-action: none 및 넉넉한 터치 패딩 공간 확보 */}
                                                 <div className="absolute right-3 top-3 w-24 h-8 flex items-center justify-end z-30">
@@ -602,8 +602,8 @@ function CalculatorContent() {
                                                         className={cn(
                                                             "px-2 py-1.5 rounded text-[10px] font-black select-none flex items-center gap-1 border transition-all",
                                                             isReorderEnabled
-                                                                ? "cursor-grab active:cursor-grabbing bg-blue-50 dark:bg-blue-950/40 text-blue-600 dark:text-blue-400 border-blue-200 dark:border-blue-800/80 shadow-xs"
-                                                                : "opacity-25 bg-stone-100 dark:bg-[#1a1a1a] text-neutral-400 border-transparent cursor-not-allowed"
+                                                                ? "cursor-grab active:cursor-grabbing bg-[#fff8f5] dark:bg-[#3d1f10]/40 text-[#d97757] dark:text-[#d97757] border-[#f9c9b0] dark:border-[#a05438]/80 shadow-xs"
+                                                                : "opacity-25 bg-[#faf9f7] dark:bg-[#242320] text-neutral-400 border-transparent cursor-not-allowed"
                                                         )}
                                                     >
                                                         <Bars3Icon className="w-3.5 h-3.5" />
@@ -612,10 +612,10 @@ function CalculatorContent() {
                                                 </div>
 
                                                 <div className="pt-6">
-                                                    <InputGroup label="초기 투자 시드" tooltip="현재 투입 가능한 순수 자산 및 투자 예치금 총액입니다." value={formatKrw(inputs.investmentAmount)} color="text-blue-600 dark:text-blue-400">
+                                                    <InputGroup label="초기 투자 시드" tooltip="현재 투입 가능한 순수 자산 및 투자 예치금 총액입니다." value={formatKrw(inputs.investmentAmount)} color="text-[#d97757] dark:text-[#d97757]">
                                                         <div className="flex gap-2">
                                                             <div className="relative flex-1">
-                                                                <input type="number" inputMode="numeric" pattern="[0-9]*" value={inputs.investmentAmount} onChange={(e) => updateInput("investmentAmount", Number(e.target.value))} className="w-full bg-stone-100 dark:bg-[#1a1a1a] border border-neutral-300 dark:border-[#222222] rounded-xl pl-3 pr-10 py-2 sm:py-2.5 font-black text-xs sm:text-sm text-neutral-900 dark:text-neutral-50 focus:ring-2 focus:ring-blue-500 outline-none transition-shadow" />
+                                                                <input type="number" inputMode="numeric" pattern="[0-9]*" value={inputs.investmentAmount} onChange={(e) => updateInput("investmentAmount", Number(e.target.value))} className="w-full bg-[#faf9f7] dark:bg-[#242320] border border-neutral-300 dark:border-[#3a3834] rounded-xl pl-3 pr-10 py-2 sm:py-2.5 font-black text-xs sm:text-sm text-neutral-900 dark:text-neutral-50 focus:ring-2 focus:ring-[#fff8f5]0 outline-none transition-shadow" />
                                                                 <div className="absolute right-3 top-1/2 -translate-y-1/2 text-neutral-400 dark:text-neutral-500 text-[11px] sm:text-xs font-bold">만원</div>
                                                             </div>
                                                             <StepButtons value={inputs.investmentAmount} step={500} min={0} max={100000000} onChange={(v) => updateInput("investmentAmount", v)} />
@@ -635,7 +635,7 @@ function CalculatorContent() {
                                                     showQuickButtons={true}
                                                 />
 
-                                                <div className="p-3 sm:p-4 bg-stone-100 dark:bg-[#1a1a1a]/30 rounded-xl sm:rounded-2xl border border-neutral-200 dark:border-[#2a2a2a] space-y-2 sm:space-y-3">
+                                                <div className="p-3 sm:p-4 bg-[#faf9f7] dark:bg-[#242320]/30 rounded-xl sm:rounded-2xl border border-neutral-200 dark:border-[#35332e] space-y-2 sm:space-y-3">
                                                     <span className="text-[11px] sm:text-xs font-black text-neutral-800 dark:text-neutral-200 block px-1">과세 및 헷지 변수</span>
                                                     <div className="flex flex-col gap-0.5">
                                                         <ToggleButton checked={inputs.applyTax} onChange={(v) => updateInput("applyTax", v)} label="이자소득세 과세 (15.4%)" tooltip="매년 투자 수익에 배당소득세를 차감한 세후 복리를 계산합니다." />
@@ -643,8 +643,8 @@ function CalculatorContent() {
                                                     </div>
                                                 </div>
 
-                                                <div className="p-3 sm:p-4 bg-blue-50/30 dark:bg-blue-950/10 rounded-xl sm:rounded-2xl border border-blue-100 dark:border-blue-900/30 space-y-2 sm:space-y-3">
-                                                    <span className="text-[11px] sm:text-xs font-black text-blue-700 dark:text-blue-400 block px-1 flex items-center gap-1.5"><ShieldCheckIcon className="w-3.5 h-3.5 shrink-0" /> 실전 정밀 검증 패널티 & 혜택</span>
+                                                <div className="p-3 sm:p-4 bg-[#fff8f5]/30 dark:bg-[#3d1f10]/10 rounded-xl sm:rounded-2xl border border-[#fde8de] dark:border-[#7d3f27]/30 space-y-2 sm:space-y-3">
+                                                    <span className="text-[11px] sm:text-xs font-black text-[#bf6644] dark:text-[#d97757] block px-1 flex items-center gap-1.5"><ShieldCheckIcon className="w-3.5 h-3.5 shrink-0" /> 실전 정밀 검증 패널티 & 혜택</span>
                                                     <div className="flex flex-col gap-0.5">
                                                         <ToggleButton checked={inputs.applyIsaIsaGold} onChange={(v) => updateInput("applyIsaIsaGold", v)} label="금융투자소득세 고율 가산 (22%)" tooltip="거액 자산가 구간 진입 시 고율 과세 세율을 선제 적용합니다." />
                                                         <ToggleButton checked={inputs.applyInsurancePremium} onChange={(v) => updateInput("applyInsurancePremium", v)} label="은퇴 후 건보료 지역가입 (지출 +8%)" tooltip="직장 은퇴 후 지역가입 전환에 따른 피부양자 탈락 및 지출 가산을 시뮬레이션합니다." />
@@ -670,7 +670,7 @@ function CalculatorContent() {
                                     >
                                         <DragIndicatorOverlay desktopType="입력 섹션 내 상하 이동" isEnabled={isReorderEnabled && activeDraggingId === "life-cycle"} />
                                         <SectionWrapper title="생애 주기 임계값" icon={<UserIcon className="w-4 h-4 text-neutral-500 dark:text-neutral-400" />}>
-                                            <div className="space-y-4 sm:space-y-5 bg-white dark:bg-[#1a1a1a] p-3.5 xs:p-4 sm:p-6 rounded-2xl sm:rounded-[2rem] border border-neutral-200 dark:border-[#2a2a2a] shadow-xs relative group/card border-t-4 group-active/item:border-blue-500 group-active/item:ring-4 group-active/item:ring-blue-500/20 dark:group-active/item:ring-blue-500/10 transition-all duration-200">
+                                            <div className="space-y-4 sm:space-y-5 bg-white dark:bg-[#242320] p-3.5 xs:p-4 sm:p-6 rounded-2xl sm:rounded-[2rem] border border-neutral-200 dark:border-[#35332e] shadow-xs relative group/card border-t-4 group-active/item:border-[#fff8f5]0 group-active/item:ring-4 group-active/item:ring-[#d97757]/20 dark:group-active/item:ring-[#fff8f5]0/10 transition-all duration-200">
 
                                                 <div className="absolute right-3 top-3 w-24 h-8 flex items-center justify-end z-30">
                                                     <div
@@ -684,8 +684,8 @@ function CalculatorContent() {
                                                         className={cn(
                                                             "px-2 py-1.5 rounded text-[10px] font-black select-none flex items-center gap-1 border transition-all",
                                                             isReorderEnabled
-                                                                ? "cursor-grab active:cursor-grabbing bg-blue-50 dark:bg-blue-950/40 text-blue-600 dark:text-blue-400 border-blue-200 dark:border-blue-800/80 shadow-xs"
-                                                                : "opacity-25 bg-stone-100 dark:bg-[#1a1a1a] text-neutral-400 border-transparent cursor-not-allowed"
+                                                                ? "cursor-grab active:cursor-grabbing bg-[#fff8f5] dark:bg-[#3d1f10]/40 text-[#d97757] dark:text-[#d97757] border-[#f9c9b0] dark:border-[#a05438]/80 shadow-xs"
+                                                                : "opacity-25 bg-[#faf9f7] dark:bg-[#242320] text-neutral-400 border-transparent cursor-not-allowed"
                                                         )}
                                                     >
                                                         <Bars3Icon className="w-3.5 h-3.5" />
@@ -717,7 +717,7 @@ function CalculatorContent() {
                                     >
                                         <DragIndicatorOverlay desktopType="입력 섹션 내 상하 이동" isEnabled={isReorderEnabled && activeDraggingId === "incremental-flows"} />
                                         <SectionWrapper title="점증형 현금 가감 데이터" icon={<ArrowsRightLeftIcon className="w-4 h-4 text-neutral-500 dark:text-neutral-400" />}>
-                                            <div className="space-y-4 sm:space-y-6 bg-white dark:bg-[#1a1a1a] p-3.5 xs:p-4 sm:p-6 rounded-2xl sm:rounded-[2rem] border border-neutral-200 dark:border-[#2a2a2a] shadow-xs relative group/card border-t-4 group-active/item:border-blue-500 group-active/item:ring-4 group-active/item:ring-blue-500/20 dark:group-active/item:ring-blue-500/10 transition-all duration-200">
+                                            <div className="space-y-4 sm:space-y-6 bg-white dark:bg-[#242320] p-3.5 xs:p-4 sm:p-6 rounded-2xl sm:rounded-[2rem] border border-neutral-200 dark:border-[#35332e] shadow-xs relative group/card border-t-4 group-active/item:border-[#fff8f5]0 group-active/item:ring-4 group-active/item:ring-[#d97757]/20 dark:group-active/item:ring-[#fff8f5]0/10 transition-all duration-200">
 
                                                 <div className="absolute right-3 top-3 w-24 h-8 flex items-center justify-end z-30">
                                                     <div
@@ -731,8 +731,8 @@ function CalculatorContent() {
                                                         className={cn(
                                                             "px-2 py-1.5 rounded text-[10px] font-black select-none flex items-center gap-1 border transition-all",
                                                             isReorderEnabled
-                                                                ? "cursor-grab active:cursor-grabbing bg-blue-50 dark:bg-blue-950/40 text-blue-600 dark:text-blue-400 border-blue-200 dark:border-blue-800/80 shadow-xs"
-                                                                : "opacity-25 bg-stone-100 dark:bg-[#1a1a1a] text-neutral-400 border-transparent cursor-not-allowed"
+                                                                ? "cursor-grab active:cursor-grabbing bg-[#fff8f5] dark:bg-[#3d1f10]/40 text-[#d97757] dark:text-[#d97757] border-[#f9c9b0] dark:border-[#a05438]/80 shadow-xs"
+                                                                : "opacity-25 bg-[#faf9f7] dark:bg-[#242320] text-neutral-400 border-transparent cursor-not-allowed"
                                                         )}
                                                     >
                                                         <Bars3Icon className="w-3.5 h-3.5" />
@@ -743,17 +743,17 @@ function CalculatorContent() {
                                                 <div className="space-y-3 sm:space-y-4 pt-6">
                                                     <InputGroup label="초기 매월 저축액" tooltip="은퇴 전 근로 기간 동안 매달 투자 계좌에 적립할 원금입니다." value={formatKrw(inputs.contributions)}>
                                                         <div className="flex gap-2">
-                                                            <input type="number" inputMode="numeric" pattern="[0-9]*" value={inputs.contributions} onChange={(e) => updateInput("contributions", Number(e.target.value))} className="flex-1 bg-stone-100 dark:bg-[#1a1a1a] border border-neutral-300 dark:border-[#222222] rounded-xl px-3 py-2 sm:py-2.5 font-black text-xs sm:text-sm text-neutral-900 dark:text-neutral-50 outline-none focus:ring-2 focus:ring-blue-500 transition-shadow" />
+                                                            <input type="number" inputMode="numeric" pattern="[0-9]*" value={inputs.contributions} onChange={(e) => updateInput("contributions", Number(e.target.value))} className="flex-1 bg-[#faf9f7] dark:bg-[#242320] border border-neutral-300 dark:border-[#3a3834] rounded-xl px-3 py-2 sm:py-2.5 font-black text-xs sm:text-sm text-neutral-900 dark:text-neutral-50 outline-none focus:ring-2 focus:ring-[#fff8f5]0 transition-shadow" />
                                                             <StepButtons value={inputs.contributions} step={50} min={0} max={5000} onChange={(v) => updateInput("contributions", v)} />
                                                         </div>
                                                     </InputGroup>
                                                     <PercentRateSlider label="복리 저축 매년 증액률" tooltip="연봉 상승을 반영해 매년 월 적립액을 복리로 늘려나가는 엔진입니다." value={inputs.contributionGrowthRate} min={0} max={15} step={0.1} onChange={(v) => updateInput("contributionGrowthRate", v)} accentColor="blue" />
                                                 </div>
-                                                <div className="h-px bg-stone-100 dark:bg-[#1a1a1a]" />
+                                                <div className="h-px bg-[#faf9f7] dark:bg-[#242320]" />
                                                 <div className="space-y-3 sm:space-y-4">
                                                     <InputGroup label="기본 목표 초기 월 생활비" tooltip="은퇴 후 매달 삶을 유지하기 위해 인출하여 사용할 고정 비용입니다." value={formatKrw(inputs.monthlyExpense)} color="text-rose-600 dark:text-rose-400">
                                                         <div className="flex gap-2">
-                                                            <input type="number" inputMode="numeric" pattern="[0-9]*" value={inputs.monthlyExpense} onChange={(e) => updateInput("monthlyExpense", Number(e.target.value))} className="flex-1 bg-stone-100 dark:bg-[#1a1a1a] border border-neutral-300 dark:border-[#222222] rounded-xl px-3 py-2 sm:py-2.5 font-black text-xs sm:text-sm text-neutral-900 dark:text-neutral-50 outline-none focus:ring-2 focus:ring-rose-500 transition-shadow" />
+                                                            <input type="number" inputMode="numeric" pattern="[0-9]*" value={inputs.monthlyExpense} onChange={(e) => updateInput("monthlyExpense", Number(e.target.value))} className="flex-1 bg-[#faf9f7] dark:bg-[#242320] border border-neutral-300 dark:border-[#3a3834] rounded-xl px-3 py-2 sm:py-2.5 font-black text-xs sm:text-sm text-neutral-900 dark:text-neutral-50 outline-none focus:ring-2 focus:ring-rose-500 transition-shadow" />
                                                             <StepButtons value={inputs.monthlyExpense} step={50} min={0} max={5000} onChange={(v) => updateInput("monthlyExpense", v)} />
                                                         </div>
                                                     </InputGroup>
@@ -784,7 +784,7 @@ function CalculatorContent() {
                                         className="bg-transparent select-none outline-none relative group/item rounded-2xl"
                                     >
                                         <DragIndicatorOverlay desktopType="리포트 섹션 내 상하 이동" isEnabled={isReorderEnabled && activeDraggingId === "summary-card"} />
-                                        <div className={cn("p-4 sm:p-8 md:p-10 rounded-2xl sm:rounded-[2.5rem] shadow-xl relative overflow-hidden transition-all duration-300 border bg-neutral-950 border-neutral-800 dark:bg-[#1a1a1a] dark:border-[#2a2a2a]/80 text-white group/card border-t-4 group-active/item:border-blue-500 group-active/item:ring-4 group-active/item:ring-blue-500/20 dark:group-active/item:ring-blue-500/10", results.finalValue < 0 && "border-rose-900/50 bg-gradient-to-br from-neutral-950 to-rose-950/30")}>
+                                        <div className={cn("p-4 sm:p-8 md:p-10 rounded-2xl sm:rounded-[2.5rem] shadow-xl relative overflow-hidden transition-all duration-300 border bg-neutral-950 border-neutral-800 dark:bg-[#242320] dark:border-[#35332e]/80 text-white group/card border-t-4 group-active/item:border-[#fff8f5]0 group-active/item:ring-4 group-active/item:ring-[#d97757]/20 dark:group-active/item:ring-[#fff8f5]0/10", results.finalValue < 0 && "border-rose-900/50 bg-gradient-to-br from-neutral-950 to-rose-950/30")}>
 
                                             <div className="absolute right-4 top-4 w-24 h-8 flex items-center justify-end z-30">
                                                 <div
@@ -798,7 +798,7 @@ function CalculatorContent() {
                                                     className={cn(
                                                         "px-2 py-1.5 rounded text-[10px] font-black select-none flex items-center gap-1 border transition-all text-neutral-300",
                                                         isReorderEnabled
-                                                            ? "cursor-grab active:cursor-grabbing bg-neutral-900 border-neutral-700 text-blue-400 ring-1 ring-blue-500/30 shadow-xs"
+                                                            ? "cursor-grab active:cursor-grabbing bg-neutral-900 border-neutral-700 text-[#d97757] ring-1 ring-[#fff8f5]0/30 shadow-xs"
                                                             : "opacity-25 bg-neutral-900/40 border-transparent cursor-not-allowed"
                                                     )}
                                                 >
@@ -812,7 +812,7 @@ function CalculatorContent() {
                                                     <span className="inline-block text-[9px] sm:text-[10px] font-black uppercase tracking-[0.15em] px-2.5 py-0.5 sm:py-1 rounded-full border bg-neutral-900/80 text-neutral-300 border-neutral-800">
                                                         {inputs.targetAge}세 예상 시점 잔고 {inputs.realValueMode && "(실질 가치 수렴)"}
                                                     </span>
-                                                    <h2 className="text-xl sm:text-4xl md:text-5xl font-black tracking-tighter text-blue-400 dark:text-blue-400 font-mono">
+                                                    <h2 className="text-xl sm:text-4xl md:text-5xl font-black tracking-tighter text-[#d97757] dark:text-[#d97757] font-mono">
                                                         {formatKrw(results.finalValue)}
                                                     </h2>
 
@@ -838,7 +838,7 @@ function CalculatorContent() {
                                                     </div>
                                                 </div>
                                             </div>
-                                            <div className={cn("absolute -right-24 -top-24 w-80 h-80 rounded-full blur-[120px] opacity-15 transition-colors duration-500", results.finalValue >= 0 ? "bg-blue-600" : "bg-rose-600")} />
+                                            <div className={cn("absolute -right-24 -top-24 w-80 h-80 rounded-full blur-[120px] opacity-15 transition-colors duration-500", results.finalValue >= 0 ? "bg-[#d97757]" : "bg-rose-600")} />
                                         </div>
                                     </Reorder.Item>
                                 );
@@ -856,7 +856,7 @@ function CalculatorContent() {
                                         className="bg-transparent select-none outline-none relative group/item rounded-2xl"
                                     >
                                         <DragIndicatorOverlay desktopType="리포트 섹션 내 상하 이동" isEnabled={isReorderEnabled && activeDraggingId === "callout-tips"} />
-                                        <div className="relative group/card border-t-4 border-transparent group-active/item:border-blue-500 group-active/item:ring-4 group-active/item:ring-blue-500/20 dark:group-active/item:ring-blue-500/10 transition-all duration-200 rounded-xl sm:rounded-[2rem] pt-2">
+                                        <div className="relative group/card border-t-4 border-transparent group-active/item:border-[#fff8f5]0 group-active/item:ring-4 group-active/item:ring-[#d97757]/20 dark:group-active/item:ring-[#fff8f5]0/10 transition-all duration-200 rounded-xl sm:rounded-[2rem] pt-2">
 
                                             <div className="absolute right-3 -top-2 w-24 h-8 flex items-center justify-end z-30">
                                                 <div
@@ -870,7 +870,7 @@ function CalculatorContent() {
                                                     className={cn(
                                                         "px-2 py-1.5 rounded text-[10px] font-black select-none flex items-center gap-1 border transition-all",
                                                         isReorderEnabled
-                                                            ? "cursor-grab active:cursor-grabbing bg-white dark:bg-[#1a1a1a] text-blue-600 dark:text-blue-400 border-neutral-200 dark:border-[#2a2a2a] shadow-xs ring-1 ring-blue-500/30"
+                                                            ? "cursor-grab active:cursor-grabbing bg-white dark:bg-[#242320] text-[#d97757] dark:text-[#d97757] border-neutral-200 dark:border-[#35332e] shadow-xs ring-1 ring-[#fff8f5]0/30"
                                                             : "opacity-0 pointer-events-none"
                                                     )}
                                                 >
@@ -904,7 +904,7 @@ function CalculatorContent() {
                                         className="bg-transparent select-none outline-none relative group/item rounded-2xl"
                                     >
                                         <DragIndicatorOverlay desktopType="리포트 섹션 내 상하 이동" isEnabled={isReorderEnabled && activeDraggingId === "chart-view"} />
-                                        <div className="bg-white dark:bg-[#1a1a1a] p-3.5 sm:p-6 md:p-8 rounded-2xl sm:rounded-[2.5rem] border border-neutral-200 dark:border-[#2a2a2a] shadow-xs relative group/card border-t-4 group-active/item:border-blue-500 group-active/item:ring-4 group-active/item:ring-blue-500/20 dark:group-active/item:ring-blue-500/10 transition-all duration-200">
+                                        <div className="bg-white dark:bg-[#242320] p-3.5 sm:p-6 md:p-8 rounded-2xl sm:rounded-[2.5rem] border border-neutral-200 dark:border-[#35332e] shadow-xs relative group/card border-t-4 group-active/item:border-[#fff8f5]0 group-active/item:ring-4 group-active/item:ring-[#d97757]/20 dark:group-active/item:ring-[#fff8f5]0/10 transition-all duration-200">
 
                                             <div className="absolute right-3 top-3 w-24 h-8 flex items-center justify-end z-30">
                                                 <div
@@ -918,8 +918,8 @@ function CalculatorContent() {
                                                     className={cn(
                                                         "px-2 py-1.5 rounded text-[10px] font-black select-none flex items-center gap-1 border transition-all",
                                                         isReorderEnabled
-                                                            ? "cursor-grab active:cursor-grabbing bg-blue-50 dark:bg-blue-950/40 text-blue-600 dark:text-blue-400 border-blue-200 dark:border-blue-800/80 shadow-xs"
-                                                            : "opacity-25 bg-stone-100 dark:bg-[#1a1a1a] text-neutral-400 border-transparent cursor-not-allowed"
+                                                            ? "cursor-grab active:cursor-grabbing bg-[#fff8f5] dark:bg-[#3d1f10]/40 text-[#d97757] dark:text-[#d97757] border-[#f9c9b0] dark:border-[#a05438]/80 shadow-xs"
+                                                            : "opacity-25 bg-[#faf9f7] dark:bg-[#242320] text-neutral-400 border-transparent cursor-not-allowed"
                                                     )}
                                                 >
                                                     <Bars3Icon className="w-3.5 h-3.5" />
@@ -931,7 +931,7 @@ function CalculatorContent() {
                                                 <h3 className="text-sm sm:text-lg font-black tracking-tight text-neutral-900 dark:text-neutral-50">지표 연동형 자산 변동 그래프</h3>
                                                 <p className="text-[11px] sm:text-sm text-neutral-500 dark:text-neutral-400 font-semibold mt-0.5">매년 가중되는 인플레이션 누적 및 세후 배당 유출입 복리 커브</p>
                                             </div>
-                                            <div className="bg-stone-100 dark:bg-black/20 rounded-xl overflow-hidden border border-neutral-200 dark:border-[#2a2a2a]/80 p-1 sm:p-4">
+                                            <div className="bg-[#faf9f7] dark:bg-black/20 rounded-xl overflow-hidden border border-neutral-200 dark:border-[#35332e]/80 p-1 sm:p-4">
                                                 <ResultChart data={results.chartData} height="h-[260px] sm:h-[350px]" />
                                             </div>
                                         </div>
@@ -951,7 +951,7 @@ function CalculatorContent() {
                                         className="bg-transparent select-none outline-none relative group/item rounded-2xl"
                                     >
                                         <DragIndicatorOverlay desktopType="리포트 섹션 내 상하 이동" isEnabled={isReorderEnabled && activeDraggingId === "table-report"} />
-                                        <div className="bg-white dark:bg-[#1a1a1a] p-3.5 sm:p-6 rounded-2xl sm:rounded-[2.5rem] border border-neutral-200 dark:border-[#2a2a2a] shadow-xs relative group/card border-t-4 group-active/item:border-blue-500 group-active/item:ring-4 group-active/item:ring-blue-500/20 dark:group-active/item:ring-blue-500/10 transition-all duration-200">
+                                        <div className="bg-white dark:bg-[#242320] p-3.5 sm:p-6 rounded-2xl sm:rounded-[2.5rem] border border-neutral-200 dark:border-[#35332e] shadow-xs relative group/card border-t-4 group-active/item:border-[#fff8f5]0 group-active/item:ring-4 group-active/item:ring-[#d97757]/20 dark:group-active/item:ring-[#fff8f5]0/10 transition-all duration-200">
 
                                             <div className="absolute right-3 top-3 w-24 h-8 flex items-center justify-end z-30">
                                                 <div
@@ -965,8 +965,8 @@ function CalculatorContent() {
                                                     className={cn(
                                                         "px-2 py-1.5 rounded text-[10px] font-black select-none flex items-center gap-1 border transition-all",
                                                         isReorderEnabled
-                                                            ? "cursor-grab active:cursor-grabbing bg-blue-50 dark:bg-blue-950/40 text-blue-600 dark:text-blue-400 border-blue-200 dark:border-blue-800/80 shadow-xs"
-                                                            : "opacity-25 bg-stone-100 dark:bg-[#1a1a1a] text-neutral-400 border-transparent cursor-not-allowed"
+                                                            ? "cursor-grab active:cursor-grabbing bg-[#fff8f5] dark:bg-[#3d1f10]/40 text-[#d97757] dark:text-[#d97757] border-[#f9c9b0] dark:border-[#a05438]/80 shadow-xs"
+                                                            : "opacity-25 bg-[#faf9f7] dark:bg-[#242320] text-neutral-400 border-transparent cursor-not-allowed"
                                                     )}
                                                 >
                                                     <Bars3Icon className="w-3.5 h-3.5" />
@@ -980,9 +980,9 @@ function CalculatorContent() {
                                                     {inputs.realValueMode ? "인플레이션 차감 가치가 반영된 실질 가치 기준 흐름입니다." : "매년 가중 증액된 명목 화폐 기준 흐름입니다."}
                                                 </p>
                                             </div>
-                                            <div className="overflow-x-auto rounded-xl border border-neutral-200 dark:border-[#2a2a2a] max-h-64 sm:max-h-80 overflow-y-auto">
+                                            <div className="overflow-x-auto rounded-xl border border-neutral-200 dark:border-[#35332e] max-h-64 sm:max-h-80 overflow-y-auto">
                                                 <table className="w-full text-left border-collapse text-[11px] sm:text-xs">
-                                                    <thead className="bg-stone-100 dark:bg-[#1a1a1a] sticky top-0 font-black text-neutral-700 dark:text-neutral-300 border-b border-neutral-200 dark:border-[#222222]">
+                                                    <thead className="bg-[#faf9f7] dark:bg-[#242320] sticky top-0 font-black text-neutral-700 dark:text-neutral-300 border-b border-neutral-200 dark:border-[#3a3834]">
                                                         <tr>
                                                             <th className="p-2 sm:p-3">나이</th>
                                                             <th className="p-2 sm:p-3 text-right">연간 저축</th>
@@ -992,11 +992,11 @@ function CalculatorContent() {
                                                             <th className="p-2 sm:p-3 text-right">예상 잔고</th>
                                                         </tr>
                                                     </thead>
-                                                    <tbody className="divide-y divide-neutral-100 dark:divide-[#2a2a2a]/60 font-semibold text-neutral-800 dark:text-neutral-200 font-mono">
+                                                    <tbody className="divide-y divide-neutral-100 dark:divide-[#35332e]/60 font-semibold text-neutral-800 dark:text-neutral-200 font-mono">
                                                         {results.chartData.map((row: any) => (
-                                                            <tr key={row.year} className="hover:bg-stone-100/50 dark:hover:bg-[#1a1a1a]/30 transition-colors">
+                                                            <tr key={row.year} className="hover:bg-[#f5f0e8]/50 dark:hover:bg-[#242320]/30 transition-colors">
                                                                 <td className="p-2 sm:p-3 font-bold text-neutral-500">{row.year}세</td>
-                                                                <td className="p-2 sm:p-3 text-right text-blue-600 dark:text-blue-400">
+                                                                <td className="p-2 sm:p-3 text-right text-[#d97757] dark:text-[#d97757]">
                                                                     {row.annualContribution > 0 ? formatKrw(row.annualContribution) : "-"}
                                                                 </td>
                                                                 <td className="p-2 sm:p-3 text-right text-rose-600 dark:text-rose-400">
@@ -1007,13 +1007,13 @@ function CalculatorContent() {
                                                                 <td className="p-2 sm:p-3 text-center">
                                                                     <div className="flex flex-wrap justify-center gap-1 max-w-[160px] mx-auto">
                                                                         {row.isWorking && (
-                                                                            <span className="px-1.5 py-0.5 text-[9px] bg-blue-50 text-blue-700 dark:bg-blue-950/40 dark:text-blue-300 rounded font-bold">저축기</span>
+                                                                            <span className="px-1.5 py-0.5 text-[9px] bg-[#fff8f5] text-[#bf6644] dark:bg-[#3d1f10]/40 dark:text-[#e8a48a] rounded font-bold">저축기</span>
                                                                         )}
                                                                         {!row.isWorking && (
                                                                             <span className="px-1.5 py-0.5 text-[9px] bg-amber-50 text-amber-700 dark:bg-amber-950/40 dark:text-amber-300 rounded font-bold">은퇴기</span>
                                                                         )}
                                                                         {row.hasTaxApplied && (
-                                                                            <span className="px-1.5 py-0.5 text-[9px] bg-stone-100 text-neutral-700 dark:bg-[#1a1a1a] dark:text-neutral-300 rounded">
+                                                                            <span className="px-1.5 py-0.5 text-[9px] bg-[#faf9f7] text-neutral-700 dark:bg-[#242320] dark:text-neutral-300 rounded">
                                                                                 {row.hasIsaGoldApplied ? "금투세(22%)" : "일반과세"}
                                                                             </span>
                                                                         )}
@@ -1051,8 +1051,8 @@ function DragIndicatorOverlay({ desktopType, isEnabled }: { desktopType: string;
     if (!isEnabled) return null;
     return (
         <div className="absolute inset-x-0 -top-5 bottom-full h-5 pointer-events-none flex flex-col items-center justify-center opacity-0 group-active/item:opacity-100 transition-opacity duration-150 z-50">
-            <div className="w-full border-t-2 border-dashed border-blue-500/80 dark:border-blue-400/80" />
-            <div className="absolute bg-blue-600 text-white dark:bg-blue-500 text-[10px] font-black tracking-wider px-2.5 py-1 rounded-full flex items-center gap-1.5 shadow-lg shadow-blue-500/20 whitespace-nowrap border border-blue-400/20">
+            <div className="w-full border-t-2 border-dashed border-[#fff8f5]0/80 dark:border-[#d97757]/80" />
+            <div className="absolute bg-[#d97757] text-white dark:bg-[#fff8f5]0 text-[10px] font-black tracking-wider px-2.5 py-1 rounded-full flex items-center gap-1.5 shadow-lg shadow-[#d97757]/20 whitespace-nowrap border border-[#d97757]/20">
                 <ChevronUpIcon className="w-3 h-3 animate-bounce" />
                 <span className="hidden lg:inline">{desktopType}</span>
                 <span className="inline lg:hidden">전체 리스트 상하 순서 교체</span>
@@ -1098,11 +1098,11 @@ function InputGroup({ label, value, tooltip, color = "text-neutral-900 dark:text
 
 function StepButtons({ value, step, min, max, onChange }: { value: number; step: number; min: number; max: number; onChange: (v: number) => void }) {
     return (
-        <div className="flex border border-neutral-300 dark:border-[#222222] rounded-xl overflow-hidden bg-white dark:bg-[#1a1a1a] shadow-xs shrink-0 h-8 sm:h-10 items-center">
-            <button type="button" disabled={value <= min} onClick={() => onChange(Math.max(min, Number((value - step).toFixed(2))))} className="px-2.5 sm:px-3 h-full text-neutral-700 dark:text-neutral-300 hover:bg-stone-100 dark:hover:bg-[#1a1a1a] disabled:opacity-20 border-r border-neutral-300 dark:border-[#222222] transition-colors flex items-center justify-center">
+        <div className="flex border border-neutral-300 dark:border-[#3a3834] rounded-xl overflow-hidden bg-white dark:bg-[#242320] shadow-xs shrink-0 h-8 sm:h-10 items-center">
+            <button type="button" disabled={value <= min} onClick={() => onChange(Math.max(min, Number((value - step).toFixed(2))))} className="px-2.5 sm:px-3 h-full text-neutral-700 dark:text-neutral-300 hover:bg-[#f5f0e8] dark:hover:bg-[#242320] disabled:opacity-20 border-r border-neutral-300 dark:border-[#3a3834] transition-colors flex items-center justify-center">
                 <MinusIcon className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
             </button>
-            <button type="button" disabled={value >= max} onClick={() => onChange(Math.min(max, Number((value + step).toFixed(2))))} className="px-2.5 sm:px-3 h-full text-neutral-700 dark:text-neutral-300 hover:bg-stone-100 dark:hover:bg-[#1a1a1a] disabled:opacity-20 transition-colors flex items-center justify-center">
+            <button type="button" disabled={value >= max} onClick={() => onChange(Math.min(max, Number((value + step).toFixed(2))))} className="px-2.5 sm:px-3 h-full text-neutral-700 dark:text-neutral-300 hover:bg-[#f5f0e8] dark:hover:bg-[#242320] disabled:opacity-20 transition-colors flex items-center justify-center">
                 <PlusIcon className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
             </button>
         </div>
@@ -1111,7 +1111,7 @@ function StepButtons({ value, step, min, max, onChange }: { value: number; step:
 
 function ToggleButton({ checked, onChange, label, tooltip }: { checked: boolean; onChange: (v: boolean) => void; label: string; tooltip?: string }) {
     return (
-        <div className="flex items-center justify-between p-1.5 sm:p-2 rounded-lg hover:bg-stone-100 dark:hover:bg-[#1a1a1a]/40 transition-colors min-w-0 gap-2">
+        <div className="flex items-center justify-between p-1.5 sm:p-2 rounded-lg hover:bg-[#f5f0e8] dark:hover:bg-[#242320]/40 transition-colors min-w-0 gap-2">
             <div className="flex items-center gap-1 group relative max-w-[calc(100%-2.5rem)] min-w-0">
                 <span className="text-[11px] sm:text-xs font-semibold text-neutral-700 dark:text-neutral-300 whitespace-normal break-keep">
                     {label}
@@ -1125,7 +1125,7 @@ function ToggleButton({ checked, onChange, label, tooltip }: { checked: boolean;
                     </>
                 )}
             </div>
-            <button type="button" onClick={() => onChange(!checked)} className={cn("w-8 h-4.5 sm:w-9 sm:h-5 rounded-full p-0.5 transition-colors duration-200 focus:outline-none shrink-0", checked ? "bg-blue-600" : "bg-neutral-300 dark:bg-[#3a3a3a]")}>
+            <button type="button" onClick={() => onChange(!checked)} className={cn("w-8 h-4.5 sm:w-9 sm:h-5 rounded-full p-0.5 transition-colors duration-200 focus:outline-none shrink-0", checked ? "bg-[#d97757]" : "bg-neutral-300 dark:bg-[#4a4641]")}>
                 <div className={cn("bg-white w-3.5 h-3.5 sm:w-4 sm:h-4 rounded-full shadow-xs transform transition-transform duration-200", checked ? "translate-x-3.5 sm:translate-x-4" : "translate-x-0")} />
             </button>
         </div>
@@ -1134,7 +1134,7 @@ function ToggleButton({ checked, onChange, label, tooltip }: { checked: boolean;
 
 function CalloutWrapper({ icon, title, children }: { icon: React.ReactNode; title: string; children: React.ReactNode }) {
     return (
-        <div className="bg-white dark:bg-[#1a1a1a] p-3.5 sm:p-5 rounded-xl sm:rounded-[2rem] border border-neutral-200 dark:border-[#2a2a2a] shadow-xs flex gap-2.5 sm:gap-3 w-full">
+        <div className="bg-white dark:bg-[#242320] p-3.5 sm:p-5 rounded-xl sm:rounded-[2rem] border border-neutral-200 dark:border-[#35332e] shadow-xs flex gap-2.5 sm:gap-3 w-full">
             <div className="shrink-0 pt-0.5">{icon}</div>
             <div className="space-y-0.5 min-w-0 flex-1">
                 <h4 className="text-[10px] sm:text-xs font-black text-neutral-900 dark:text-neutral-50 uppercase tracking-wider truncate">{title}</h4>
@@ -1168,12 +1168,12 @@ function PercentRateSlider({
     showQuickButtons = false
 }: PercentRateSliderProps) {
     const textColors = {
-        blue: "text-blue-600 dark:text-blue-400",
+        blue: "text-[#d97757] dark:text-[#d97757]",
         rose: "text-rose-600 dark:text-rose-400"
     };
 
     const accentColors = {
-        blue: "accent-blue-600 dark:accent-blue-500",
+        blue: "accent-[#d97757] dark:accent-[#fff8f5]0",
         rose: "accent-rose-600 dark:accent-rose-500"
     };
 
@@ -1195,7 +1195,7 @@ function PercentRateSlider({
                         step={step}
                         value={value}
                         onChange={(e) => onChange(Number(e.target.value))}
-                        className={cn("flex-1 h-1.5 sm:h-2 bg-neutral-200 dark:bg-[#1a1a1a] rounded-lg appearance-none cursor-pointer transition-all", accentColors[accentColor])}
+                        className={cn("flex-1 h-1.5 sm:h-2 bg-neutral-200 dark:bg-[#242320] rounded-lg appearance-none cursor-pointer transition-all", accentColors[accentColor])}
                     />
                     <StepButtons value={value} step={step} min={min} max={max} onChange={onChange} />
                 </div>
@@ -1206,7 +1206,7 @@ function PercentRateSlider({
                                 type="button"
                                 key={qr.label}
                                 onClick={() => onChange(qr.rate)}
-                                className="text-[9px] sm:text-[10px] font-bold px-2 py-0.5 sm:py-1 bg-stone-100 dark:bg-[#1a1a1a] text-neutral-700 dark:text-neutral-300 hover:bg-neutral-200 dark:hover:bg-[#1a1a1a] rounded transition-colors"
+                                className="text-[9px] sm:text-[10px] font-bold px-2 py-0.5 sm:py-1 bg-[#faf9f7] dark:bg-[#242320] text-neutral-700 dark:text-neutral-300 hover:bg-neutral-200 dark:hover:bg-[#242320] rounded transition-colors"
                             >
                                 {qr.label}({qr.rate}%)
                             </button>
@@ -1242,7 +1242,7 @@ function AgeInputSlider({
                     max={max}
                     value={value}
                     onChange={(e) => onChange(Number(e.target.value))}
-                    className="flex-1 accent-neutral-800 dark:accent-neutral-200 h-1.5 sm:h-2 bg-neutral-200 dark:bg-[#1a1a1a] rounded-lg appearance-none cursor-pointer"
+                    className="flex-1 accent-neutral-800 dark:accent-neutral-200 h-1.5 sm:h-2 bg-neutral-200 dark:bg-[#242320] rounded-lg appearance-none cursor-pointer"
                 />
                 <StepButtons value={value} step={1} min={min} max={max} onChange={onChange} />
             </div>

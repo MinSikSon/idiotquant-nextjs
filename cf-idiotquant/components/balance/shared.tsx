@@ -60,7 +60,7 @@ export const ToastNotification = memo(({ toast, onRemove }: { toast: ToastItem; 
   const colorMap: Record<ToastType, string> = {
     success: "bg-emerald-50/95 dark:bg-emerald-950/60 border-emerald-200 dark:border-emerald-800 text-emerald-800 dark:text-emerald-300",
     error: "bg-red-50/95 dark:bg-red-950/60 border-red-200 dark:border-red-800 text-red-800 dark:text-red-300",
-    info: "bg-blue-50/95 dark:bg-blue-950/60 border-blue-200 dark:border-blue-800 text-blue-800 dark:text-blue-300",
+    info: "bg-[#fff8f5]/95 dark:bg-[#3d1f10]/60 border-[#f9c9b0] dark:border-[#a05438] text-[#a05438] dark:text-[#e8a48a]",
     warning: "bg-amber-50/95 dark:bg-amber-950/60 border-amber-200 dark:border-amber-800 text-amber-800 dark:text-amber-300",
   };
   const IconMap: Record<ToastType, React.ReactNode> = {
@@ -103,9 +103,9 @@ export function ToastContainer({ toasts, onRemove }: { toasts: ToastItem[]; onRe
 // =========================================================================
 export function LoadingState({ message = "계좌 데이터를 불러오는 중..." }: { message?: string }) {
   return (
-    <div className="h-screen w-full flex flex-col items-center justify-center bg-stone-50 dark:bg-[#0d0d0d] gap-3">
-      <div className="p-4 rounded-2xl bg-white dark:bg-[#1a1a1a] border border-neutral-200 dark:border-[#2a2a2a] shadow-sm">
-        <Loader2 className="w-7 h-7 text-blue-500 animate-spin" />
+    <div className="h-screen w-full flex flex-col items-center justify-center bg-[#fcfaf7] dark:bg-[#1a1915] gap-3">
+      <div className="p-4 rounded-2xl bg-white dark:bg-[#242320] border border-neutral-200 dark:border-[#35332e] shadow-sm">
+        <Loader2 className="w-7 h-7 text-[#fff8f5]0 animate-spin" />
       </div>
       <p className="text-sm font-bold text-neutral-400">{message}</p>
     </div>
@@ -119,9 +119,9 @@ export function SectionHeader({
   badge?: React.ReactNode; action?: React.ReactNode;
 }) {
   return (
-    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-5 pb-4 border-b border-neutral-100 dark:border-[#2a2a2a]/80">
+    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-5 pb-4 border-b border-neutral-100 dark:border-[#35332e]/80">
       <div className="flex items-center gap-3">
-        <div className="p-2 bg-stone-100 dark:bg-[#2a2a2a] rounded-xl text-neutral-600 dark:text-neutral-400 shrink-0">
+        <div className="p-2 bg-[#faf9f7] dark:bg-[#35332e] rounded-xl text-neutral-600 dark:text-neutral-400 shrink-0">
           {icon}
         </div>
         <div>
@@ -144,7 +144,7 @@ export function TabButton({ active, onClick, children }: { active: boolean; onCl
       className={cn(
         "px-3 py-1.5 rounded-lg text-xs font-black transition-all whitespace-nowrap",
         active
-          ? "bg-white dark:bg-[#0d0d0d] text-neutral-950 dark:text-white shadow-sm"
+          ? "bg-white dark:bg-[#1a1915] text-neutral-950 dark:text-white shadow-sm"
           : "text-neutral-500 hover:text-neutral-800 dark:hover:text-neutral-300"
       )}
     >
@@ -158,7 +158,7 @@ export function EmptyRow({ colSpan, message }: { colSpan: number; message: strin
     <tr>
       <td colSpan={colSpan}>
         <div className="flex flex-col items-center justify-center py-14 gap-3">
-          <div className="p-3 rounded-2xl bg-stone-100 dark:bg-[#2a2a2a]">
+          <div className="p-3 rounded-2xl bg-[#faf9f7] dark:bg-[#35332e]">
             <InboxIcon size={20} className="text-neutral-400" />
           </div>
           <p className="text-sm text-neutral-400 font-medium">{message}</p>
@@ -171,14 +171,14 @@ export function EmptyRow({ colSpan, message }: { colSpan: number; message: strin
 // =========================================================================
 // KPI 카드 (단일값 — KR)
 // =========================================================================
-export function KpiCard({ label, value, sub, icon, iconBg, valueColor = "text-neutral-900 dark:text-white", accentColor = "bg-neutral-200 dark:bg-[#3a3a3a]" }: {
+export function KpiCard({ label, value, sub, icon, iconBg, valueColor = "text-neutral-900 dark:text-white", accentColor = "bg-neutral-200 dark:bg-[#4a4641]" }: {
   label: string; value: string | null; sub: string;
   icon: React.ReactNode; iconBg: string; valueColor?: string; accentColor?: string;
 }) {
   if (value === null) return <KpiCardSkeleton />;
 
   return (
-    <div className="relative bg-white dark:bg-[#1a1a1a] rounded-2xl border border-neutral-200 dark:border-[#2a2a2a] shadow-sm overflow-hidden flex flex-col justify-between gap-3 p-4 sm:p-5">
+    <div className="relative bg-white dark:bg-[#242320] rounded-2xl border border-neutral-200 dark:border-[#35332e] shadow-sm overflow-hidden flex flex-col justify-between gap-3 p-4 sm:p-5">
       <div className={cn("absolute top-0 left-0 right-0 h-0.5", accentColor)} />
       <div className="flex items-center justify-between">
         <span className="text-[10px] font-black text-neutral-400 dark:text-neutral-500 uppercase tracking-wider leading-tight">{label}</span>
@@ -198,7 +198,7 @@ export function KpiCard({ label, value, sub, icon, iconBg, valueColor = "text-ne
 export function UsdKpiCard({
   label, mainValue, mainColor = "text-neutral-900 dark:text-white",
   subLabel, subValue, subColor = "text-neutral-800 dark:text-neutral-200",
-  icon, iconBg, loading, accentColor = "bg-neutral-200 dark:bg-[#3a3a3a]",
+  icon, iconBg, loading, accentColor = "bg-neutral-200 dark:bg-[#4a4641]",
 }: {
   label: string; mainValue: string | null; mainColor?: string;
   subLabel: string; subValue: string | null; subColor?: string;
@@ -207,7 +207,7 @@ export function UsdKpiCard({
   if (loading || mainValue === null) return <UsdKpiCardSkeleton />;
 
   return (
-    <div className="relative bg-white dark:bg-[#1a1a1a] border border-neutral-200 dark:border-[#2a2a2a] rounded-2xl p-4 sm:p-5 shadow-sm overflow-hidden flex flex-col justify-between gap-3">
+    <div className="relative bg-white dark:bg-[#242320] border border-neutral-200 dark:border-[#35332e] rounded-2xl p-4 sm:p-5 shadow-sm overflow-hidden flex flex-col justify-between gap-3">
       <div className={cn("absolute top-0 left-0 right-0 h-0.5", accentColor)} />
       <div className="flex items-center justify-between">
         <span className="text-[10px] font-black text-neutral-400 dark:text-neutral-500 uppercase tracking-wider leading-tight">{label}</span>
@@ -215,7 +215,7 @@ export function UsdKpiCard({
       </div>
       <div>
         <div className={cn("text-xl sm:text-2xl font-black tracking-tight font-mono", mainColor)}>{mainValue}</div>
-        <div className="mt-2 pt-2 border-t border-neutral-100 dark:border-[#2a2a2a] flex items-center justify-between text-[10px] font-bold text-neutral-400">
+        <div className="mt-2 pt-2 border-t border-neutral-100 dark:border-[#35332e] flex items-center justify-between text-[10px] font-bold text-neutral-400">
           <span>{subLabel}</span>
           <span className={cn("font-mono", subColor)}>{subValue}</span>
         </div>
@@ -240,7 +240,7 @@ export function OrderTabAction({
   onRefresh: () => void;
 }) {
   return (
-    <div className="flex items-center gap-1 bg-stone-100 dark:bg-[#2a2a2a] p-1 rounded-xl">
+    <div className="flex items-center gap-1 bg-[#faf9f7] dark:bg-[#35332e] p-1 rounded-xl">
       <TabButton active={viewerTab === "ccnl"} onClick={() => setViewerTab("ccnl")}>
         체결 ({ccnlCount})
       </TabButton>
@@ -250,7 +250,7 @@ export function OrderTabAction({
       <button
         onClick={onRefresh}
         disabled={isPending}
-        className="p-2 text-neutral-400 hover:text-neutral-600 dark:hover:text-neutral-200 transition-colors disabled:opacity-40 rounded-lg hover:bg-white dark:hover:bg-[#3a3a3a]"
+        className="p-2 text-neutral-400 hover:text-neutral-600 dark:hover:text-neutral-200 transition-colors disabled:opacity-40 rounded-lg hover:bg-white dark:hover:bg-[#4a4641]"
         title="새로고침"
       >
         <RefreshCw size={13} className={cn(isPending && "animate-spin")} />
@@ -291,7 +291,7 @@ export function BalanceHeaderActions({
           "flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold border transition-all",
           autoRefresh
             ? "bg-emerald-50 dark:bg-emerald-950/30 text-emerald-600 dark:text-emerald-400 border-emerald-200 dark:border-emerald-800"
-            : "bg-white dark:bg-[#1a1a1a] text-neutral-500 border-neutral-200 dark:border-[#2a2a2a] hover:border-neutral-400"
+            : "bg-white dark:bg-[#242320] text-neutral-500 border-neutral-200 dark:border-[#35332e] hover:border-neutral-400"
         )}
       >
         <Activity size={13} className={autoRefresh ? "animate-pulse text-emerald-500" : ""} />
@@ -300,7 +300,7 @@ export function BalanceHeaderActions({
       <button
         onClick={onRefresh}
         disabled={isLoading}
-        className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-white dark:bg-[#1a1a1a] border border-neutral-200 dark:border-[#2a2a2a] text-xs font-bold text-neutral-600 dark:text-neutral-400 hover:border-neutral-400 transition-all disabled:opacity-50"
+        className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-white dark:bg-[#242320] border border-neutral-200 dark:border-[#35332e] text-xs font-bold text-neutral-600 dark:text-neutral-400 hover:border-neutral-400 transition-all disabled:opacity-50"
       >
         <RefreshCw size={13} className={isLoading ? "animate-spin" : ""} />
         새로고침
@@ -319,15 +319,15 @@ export function PnlIcon({ positive, size = 15 }: { positive: boolean; size?: num
 export function pnlIconBg(positive: boolean) {
   return positive
     ? "bg-red-50 dark:bg-red-950/40 text-red-500"
-    : "bg-blue-50 dark:bg-blue-950/40 text-blue-500";
+    : "bg-[#fff8f5] dark:bg-[#3d1f10]/40 text-[#fff8f5]0";
 }
 
 export function pnlValueColor(positive: boolean) {
-  return positive ? "text-red-500" : "text-blue-500";
+  return positive ? "text-red-500" : "text-[#fff8f5]0";
 }
 
 export function pnlAccentColor(positive: boolean) {
-  return positive ? "bg-red-400 dark:bg-red-600" : "bg-blue-400 dark:bg-blue-600";
+  return positive ? "bg-red-400 dark:bg-red-600" : "bg-[#d97757] dark:bg-[#d97757]";
 }
 
 // =========================================================================
@@ -335,15 +335,15 @@ export function pnlAccentColor(positive: boolean) {
 // =========================================================================
 export function KpiCardSkeleton() {
   return (
-    <div className="relative bg-white dark:bg-[#1a1a1a] rounded-2xl border border-neutral-200 dark:border-[#2a2a2a] shadow-sm overflow-hidden flex flex-col justify-between gap-3 p-4 sm:p-5">
-      <div className="absolute top-0 left-0 right-0 h-0.5 bg-neutral-200 dark:bg-[#3a3a3a] animate-pulse" />
+    <div className="relative bg-white dark:bg-[#242320] rounded-2xl border border-neutral-200 dark:border-[#35332e] shadow-sm overflow-hidden flex flex-col justify-between gap-3 p-4 sm:p-5">
+      <div className="absolute top-0 left-0 right-0 h-0.5 bg-neutral-200 dark:bg-[#4a4641] animate-pulse" />
       <div className="flex items-center justify-between">
-        <div className="h-3 w-20 bg-neutral-200 dark:bg-[#3a3a3a] rounded animate-pulse" />
-        <div className="h-8 w-8 bg-stone-100 dark:bg-[#2a2a2a] rounded-xl animate-pulse" />
+        <div className="h-3 w-20 bg-neutral-200 dark:bg-[#4a4641] rounded animate-pulse" />
+        <div className="h-8 w-8 bg-[#faf9f7] dark:bg-[#35332e] rounded-xl animate-pulse" />
       </div>
       <div>
-        <div className="h-7 w-32 bg-neutral-200 dark:bg-[#3a3a3a] rounded-lg animate-pulse mb-2" />
-        <div className="h-3 w-24 bg-stone-100 dark:bg-[#2a2a2a] rounded animate-pulse" />
+        <div className="h-7 w-32 bg-neutral-200 dark:bg-[#4a4641] rounded-lg animate-pulse mb-2" />
+        <div className="h-3 w-24 bg-[#faf9f7] dark:bg-[#35332e] rounded animate-pulse" />
       </div>
     </div>
   );
@@ -351,16 +351,16 @@ export function KpiCardSkeleton() {
 
 export function UsdKpiCardSkeleton() {
   return (
-    <div className="relative bg-white dark:bg-[#1a1a1a] border border-neutral-200 dark:border-[#2a2a2a] rounded-2xl p-4 sm:p-5 shadow-sm overflow-hidden flex flex-col justify-between gap-3">
-      <div className="absolute top-0 left-0 right-0 h-0.5 bg-neutral-200 dark:bg-[#3a3a3a] animate-pulse" />
+    <div className="relative bg-white dark:bg-[#242320] border border-neutral-200 dark:border-[#35332e] rounded-2xl p-4 sm:p-5 shadow-sm overflow-hidden flex flex-col justify-between gap-3">
+      <div className="absolute top-0 left-0 right-0 h-0.5 bg-neutral-200 dark:bg-[#4a4641] animate-pulse" />
       <div className="flex items-center justify-between">
-        <div className="h-3 w-20 bg-neutral-200 dark:bg-[#3a3a3a] rounded animate-pulse" />
-        <div className="h-8 w-8 bg-stone-100 dark:bg-[#2a2a2a] rounded-xl animate-pulse" />
+        <div className="h-3 w-20 bg-neutral-200 dark:bg-[#4a4641] rounded animate-pulse" />
+        <div className="h-8 w-8 bg-[#faf9f7] dark:bg-[#35332e] rounded-xl animate-pulse" />
       </div>
       <div>
-        <div className="h-7 w-32 bg-neutral-200 dark:bg-[#3a3a3a] rounded-lg animate-pulse mb-2" />
-        <div className="mt-2 pt-2 border-t border-neutral-100 dark:border-[#2a2a2a]">
-          <div className="h-3 w-24 bg-stone-100 dark:bg-[#2a2a2a] rounded animate-pulse" />
+        <div className="h-7 w-32 bg-neutral-200 dark:bg-[#4a4641] rounded-lg animate-pulse mb-2" />
+        <div className="mt-2 pt-2 border-t border-neutral-100 dark:border-[#35332e]">
+          <div className="h-3 w-24 bg-[#faf9f7] dark:bg-[#35332e] rounded animate-pulse" />
         </div>
       </div>
     </div>
@@ -370,13 +370,13 @@ export function UsdKpiCardSkeleton() {
 export function ChartSectionSkeleton() {
   return (
     <div className="flex flex-col sm:flex-row gap-6 items-center py-8">
-      <div className="w-48 h-48 rounded-full bg-stone-100 dark:bg-[#2a2a2a] animate-pulse shrink-0" />
+      <div className="w-48 h-48 rounded-full bg-[#faf9f7] dark:bg-[#35332e] animate-pulse shrink-0" />
       <div className="flex-1 space-y-3 w-full">
         {[1, 2, 3, 4, 5].map(i => (
           <div key={i} className="flex items-center gap-3">
-            <div className="h-3 w-3 rounded-full bg-neutral-200 dark:bg-[#3a3a3a] animate-pulse shrink-0" />
-            <div className="h-3 flex-1 bg-stone-100 dark:bg-[#2a2a2a] rounded animate-pulse" />
-            <div className="h-3 w-16 bg-neutral-200 dark:bg-[#3a3a3a] rounded animate-pulse shrink-0" />
+            <div className="h-3 w-3 rounded-full bg-neutral-200 dark:bg-[#4a4641] animate-pulse shrink-0" />
+            <div className="h-3 flex-1 bg-[#faf9f7] dark:bg-[#35332e] rounded animate-pulse" />
+            <div className="h-3 w-16 bg-neutral-200 dark:bg-[#4a4641] rounded animate-pulse shrink-0" />
           </div>
         ))}
       </div>
@@ -392,7 +392,7 @@ export function SectionPanel({ id, children, className }: { id?: string; childre
     <section
       id={id}
       className={cn(
-        "bg-white dark:bg-[#1a1a1a] rounded-2xl border border-neutral-200 dark:border-[#2a2a2a] shadow-sm p-5 md:p-6",
+        "bg-white dark:bg-[#242320] rounded-2xl border border-neutral-200 dark:border-[#35332e] shadow-sm p-5 md:p-6",
         "animate-in fade-in duration-500",
         className
       )}
@@ -408,7 +408,7 @@ export function SectionPanel({ id, children, className }: { id?: string; childre
 export function TableHeader({ headers }: { headers: { label: string; align?: string }[] }) {
   return (
     <thead>
-      <tr className="bg-stone-50 dark:bg-[#2a2a2a]/60 border-b border-neutral-100 dark:border-[#2a2a2a]">
+      <tr className="bg-[#fcfaf7] dark:bg-[#35332e]/60 border-b border-neutral-100 dark:border-[#35332e]">
         {headers.map(h => (
           <th
             key={h.label}

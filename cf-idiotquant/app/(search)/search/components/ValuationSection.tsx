@@ -159,9 +159,9 @@ const DEFAULT_CONFIG: ModelConfig = {
   icon: <BarChart3 size={14} />,
   dotBg: "bg-neutral-500",
   accentLine: "bg-neutral-400",
-  iconBg: "bg-stone-100 dark:bg-[#1a1a1a]",
+  iconBg: "bg-[#faf9f7] dark:bg-[#242320]",
   iconColor: "text-neutral-500 dark:text-neutral-400",
-  badgeClass: "bg-stone-100 dark:bg-[#1a1a1a] text-neutral-600 dark:text-neutral-400 border border-neutral-200 dark:border-[#222222]",
+  badgeClass: "bg-[#faf9f7] dark:bg-[#242320] text-neutral-600 dark:text-neutral-400 border border-neutral-200 dark:border-[#3a3834]",
   textColor: "text-neutral-600 dark:text-neutral-400",
 };
 
@@ -234,13 +234,13 @@ export const ValuationSection = ({ data, isUs }: ValuationSectionProps) => {
     <div className="w-full flex flex-col">
 
       {/* ────── 모델 요약 바 ────── */}
-      <div className="px-5 pt-5 pb-4 border-b border-neutral-100 dark:border-[#2a2a2a]">
+      <div className="px-5 pt-5 pb-4 border-b border-neutral-100 dark:border-[#35332e]">
         <div className="flex items-center gap-2 mb-4">
           <Target size={13} className="text-neutral-400 shrink-0" />
           <span className="text-xs font-extrabold text-neutral-600 dark:text-neutral-300 tracking-tight">
             모델별 목표주가 요약
           </span>
-          <span className="ml-auto text-[10px] font-mono font-bold text-neutral-400 dark:text-neutral-500 bg-stone-100 dark:bg-[#1a1a1a] px-2 py-0.5 rounded-md uppercase tracking-wider">
+          <span className="ml-auto text-[10px] font-mono font-bold text-neutral-400 dark:text-neutral-500 bg-[#faf9f7] dark:bg-[#242320] px-2 py-0.5 rounded-md uppercase tracking-wider">
             {models.length} Models
           </span>
         </div>
@@ -265,7 +265,7 @@ export const ValuationSection = ({ data, isUs }: ValuationSectionProps) => {
                 <span className={cn("text-[11px] font-black font-mono w-10 shrink-0", config.textColor)}>
                   {type}
                 </span>
-                <div className="flex-1 h-1.5 bg-stone-100 dark:bg-[#1a1a1a] rounded-full overflow-hidden">
+                <div className="flex-1 h-1.5 bg-[#faf9f7] dark:bg-[#242320] rounded-full overflow-hidden">
                   <div
                     className={cn(
                       "h-full rounded-full transition-all duration-500",
@@ -292,7 +292,7 @@ export const ValuationSection = ({ data, isUs }: ValuationSectionProps) => {
       </div>
 
       {/* ────── 필터 탭 ────── */}
-      <div className="px-5 py-3 border-b border-neutral-100 dark:border-[#2a2a2a] flex items-center gap-1">
+      <div className="px-5 py-3 border-b border-neutral-100 dark:border-[#35332e] flex items-center gap-1">
         {([
           { id: "ALL",     label: "전체",     count: models.length },
           { id: "ASSET",   label: "자산가치", count: assetCount },
@@ -305,7 +305,7 @@ export const ValuationSection = ({ data, isUs }: ValuationSectionProps) => {
               "flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all duration-150",
               activeTab === tab.id
                 ? "bg-neutral-900 dark:bg-white text-white dark:text-neutral-900"
-                : "text-neutral-500 dark:text-neutral-400 hover:bg-stone-100 dark:hover:bg-[#1a1a1a] hover:text-neutral-800 dark:hover:text-neutral-200"
+                : "text-neutral-500 dark:text-neutral-400 hover:bg-[#f5f0e8] dark:hover:bg-[#242320] hover:text-neutral-800 dark:hover:text-neutral-200"
             )}
           >
             {tab.label}
@@ -313,7 +313,7 @@ export const ValuationSection = ({ data, isUs }: ValuationSectionProps) => {
               "text-[9px] font-black px-1.5 py-0.5 rounded-full",
               activeTab === tab.id
                 ? "bg-white/20 dark:bg-black/20"
-                : "bg-stone-100 dark:bg-[#1a1a1a] text-neutral-500 dark:text-neutral-500"
+                : "bg-[#faf9f7] dark:bg-[#242320] text-neutral-500 dark:text-neutral-500"
             )}>
               {tab.count}
             </span>
@@ -375,7 +375,7 @@ function StrategyCard({ modelType, result, currency }: StrategyCardProps) {
   );
 
   return (
-    <div className="bg-white dark:bg-[#1a1a1a] rounded-2xl border border-neutral-200 dark:border-[#2a2a2a] shadow-sm overflow-hidden flex flex-col">
+    <div className="bg-white dark:bg-[#242320] rounded-2xl border border-neutral-200 dark:border-[#35332e] shadow-sm overflow-hidden flex flex-col">
 
       {/* 상단 컬러 액센트 라인 */}
       <div className={cn("h-0.5 w-full shrink-0", config.accentLine)} />
@@ -383,7 +383,7 @@ function StrategyCard({ modelType, result, currency }: StrategyCardProps) {
       {/* 카드 헤더 */}
       <div
         onClick={() => setIsExpanded(!isExpanded)}
-        className="px-5 py-4 border-b border-neutral-100 dark:border-[#2a2a2a] flex items-center justify-between cursor-pointer hover:bg-stone-100/50 dark:hover:bg-[#1f1f1f]/50 transition-colors select-none"
+        className="px-5 py-4 border-b border-neutral-100 dark:border-[#35332e] flex items-center justify-between cursor-pointer hover:bg-[#f5f0e8]/50 dark:hover:bg-[#2c2b27]/50 transition-colors select-none"
       >
         <div className="flex items-center gap-3 min-w-0">
           <div className={cn(
@@ -407,7 +407,7 @@ function StrategyCard({ modelType, result, currency }: StrategyCardProps) {
             <p className="text-[10px] font-mono text-neutral-400 mt-0.5 truncate">{result.formula}</p>
           </div>
         </div>
-        <div className="shrink-0 p-1 text-neutral-400 hover:text-neutral-600 dark:hover:text-neutral-300 rounded-lg hover:bg-stone-100 dark:hover:bg-[#1a1a1a] transition-colors ml-2">
+        <div className="shrink-0 p-1 text-neutral-400 hover:text-neutral-600 dark:hover:text-neutral-300 rounded-lg hover:bg-[#f5f0e8] dark:hover:bg-[#242320] transition-colors ml-2">
           {isExpanded ? <ChevronUp size={15} /> : <ChevronDown size={15} />}
         </div>
       </div>
@@ -416,7 +416,7 @@ function StrategyCard({ modelType, result, currency }: StrategyCardProps) {
       {isExpanded && (
         <>
           {/* 모델 설명 */}
-          <div className="px-5 py-3.5 border-b border-neutral-50 dark:border-[#2a2a2a]/60 bg-stone-100/30 dark:bg-[#1a1a1a]/10">
+          <div className="px-5 py-3.5 border-b border-neutral-50 dark:border-[#35332e]/60 bg-[#faf9f7]/30 dark:bg-[#242320]/10">
             <p className="text-[11px] text-neutral-500 dark:text-neutral-400 leading-relaxed break-keep">
               {config.description.summary}
             </p>
@@ -424,11 +424,11 @@ function StrategyCard({ modelType, result, currency }: StrategyCardProps) {
 
           {/* 핵심 지표 그리드 */}
           {extendedMetrics.length > 0 && (
-            <div className="px-5 py-4 grid grid-cols-2 sm:grid-cols-4 gap-2.5 border-b border-neutral-100 dark:border-[#2a2a2a]">
+            <div className="px-5 py-4 grid grid-cols-2 sm:grid-cols-4 gap-2.5 border-b border-neutral-100 dark:border-[#35332e]">
               {extendedMetrics.map((m: any, i: number) => (
                 <div
                   key={i}
-                  className="p-3 bg-stone-100 dark:bg-[#1a1a1a]/50 rounded-xl border border-neutral-100 dark:border-[#2a2a2a]"
+                  className="p-3 bg-[#faf9f7] dark:bg-[#242320]/50 rounded-xl border border-neutral-100 dark:border-[#35332e]"
                 >
                   <p className="text-[9px] text-neutral-400 font-bold uppercase tracking-wider mb-1 truncate">
                     {m.label}
@@ -445,7 +445,7 @@ function StrategyCard({ modelType, result, currency }: StrategyCardProps) {
           <div className="overflow-x-auto">
             <table className="w-full text-left">
               <thead>
-                <tr className="bg-stone-100 dark:bg-[#1a1a1a]/30">
+                <tr className="bg-[#faf9f7] dark:bg-[#242320]/30">
                   {result.headers.map((h: any, i: number) => (
                     <th
                       key={i}
@@ -469,10 +469,10 @@ function StrategyCard({ modelType, result, currency }: StrategyCardProps) {
                     <tr
                       key={idx}
                       className={cn(
-                        "border-t border-neutral-100 dark:border-[#2a2a2a] transition-colors",
+                        "border-t border-neutral-100 dark:border-[#35332e] transition-colors",
                         isBase
-                          ? "bg-stone-100/80 dark:bg-[#1a1a1a]/30"
-                          : "hover:bg-stone-100/40 dark:hover:bg-[#1a1a1a]/10"
+                          ? "bg-[#faf9f7]/80 dark:bg-[#242320]/30"
+                          : "hover:bg-[#f5f0e8]/40 dark:hover:bg-[#242320]/10"
                       )}
                     >
                       <td className="px-5 py-3 whitespace-nowrap">
@@ -518,7 +518,7 @@ function StrategyCard({ modelType, result, currency }: StrategyCardProps) {
           </div>
 
           {/* 푸터 노트 */}
-          <div className="px-5 py-3 border-t border-neutral-100 dark:border-[#2a2a2a] bg-stone-100/30 dark:bg-[#1a1a1a]/10 flex items-start gap-2">
+          <div className="px-5 py-3 border-t border-neutral-100 dark:border-[#35332e] bg-[#faf9f7]/30 dark:bg-[#242320]/10 flex items-start gap-2">
             <Sparkles size={12} className="text-amber-500 shrink-0 mt-0.5" />
             <p className="text-[11px] text-neutral-400 dark:text-neutral-500 leading-relaxed">
               {result.footerNotice}

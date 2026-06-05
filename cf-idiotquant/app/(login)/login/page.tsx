@@ -9,27 +9,27 @@ const BENEFITS = [
 
 export default function LoginPage() {
     return (
-        <div className="min-h-screen flex flex-col items-center justify-center px-4 py-12 bg-stone-100 dark:bg-[#0d0d0d]">
+        <div className="min-h-screen flex flex-col items-center justify-center px-4 py-12 bg-[#faf9f7] dark:bg-[#1a1915]">
 
             <div className="relative w-full max-w-sm flex flex-col gap-8">
 
                 {/* Brand mark */}
                 <div className="flex justify-center">
                     <Link href="/" className="group flex items-center gap-3">
-                        <div className="w-11 h-11 bg-blue-600 rounded-2xl flex items-center justify-center shadow-sm shadow-blue-600/20 group-hover:shadow-blue-600/30 transition-shadow">
+                        <div className="w-11 h-11 bg-[#d97757] rounded-2xl flex items-center justify-center shadow-sm shadow-[#d97757]/20 group-hover:shadow-[#d97757]/30 transition-shadow">
                             <span className="text-white text-[13px] font-black italic leading-none">IQ</span>
                         </div>
                         <span className="font-black tracking-tighter text-xl text-neutral-900 dark:text-white">
-                            IDIOT<span className="text-blue-600">QUANT</span>
+                            IDIOT<span className="text-[#d97757]">QUANT</span>
                         </span>
                     </Link>
                 </div>
 
                 {/* Card */}
-                <div className="bg-white dark:bg-[#1a1a1a] rounded-2xl border border-neutral-200 dark:border-[#2a2a2a] shadow-sm overflow-hidden">
+                <div className="bg-white dark:bg-[#242320] rounded-2xl border border-neutral-200 dark:border-[#35332e] shadow-sm overflow-hidden">
 
                     {/* Card header */}
-                    <div className="px-8 pt-8 pb-6 text-center border-b border-neutral-100 dark:border-[#2a2a2a]">
+                    <div className="px-8 pt-8 pb-6 text-center border-b border-neutral-100 dark:border-[#35332e]">
                         <h1 className="text-[1.6rem] font-black leading-tight text-neutral-900 dark:text-white">
                             저평가 종목을<br />매일 발굴해드립니다
                         </h1>
@@ -39,11 +39,11 @@ export default function LoginPage() {
                     </div>
 
                     {/* Benefits */}
-                    <div className="px-8 py-6 space-y-4 border-b border-neutral-100 dark:border-[#2a2a2a]">
+                    <div className="px-8 py-6 space-y-4 border-b border-neutral-100 dark:border-[#35332e]">
                         {BENEFITS.map((b) => (
                             <div key={b.label} className="flex items-start gap-3">
-                                <div className="mt-0.5 w-5 h-5 rounded-full bg-blue-100 dark:bg-blue-950/60 flex items-center justify-center shrink-0">
-                                    <svg className="w-2.5 h-2.5 text-blue-600 dark:text-blue-400" viewBox="0 0 10 8" fill="none">
+                                <div className="mt-0.5 w-5 h-5 rounded-full bg-[#fde8de] dark:bg-[#3d1f10]/60 flex items-center justify-center shrink-0">
+                                    <svg className="w-2.5 h-2.5 text-[#d97757] dark:text-[#d97757]" viewBox="0 0 10 8" fill="none">
                                         <path d="M1 4l2.5 2.5L9 1" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/>
                                     </svg>
                                 </div>
@@ -60,9 +60,9 @@ export default function LoginPage() {
                         <AuthButton />
 
                         <div className="flex items-center gap-3 my-5">
-                            <div className="flex-1 h-px bg-stone-100 dark:bg-[#1a1a1a]" />
+                            <div className="flex-1 h-px bg-[#faf9f7] dark:bg-[#242320]" />
                             <span className="text-[10px] font-bold text-neutral-300 dark:text-neutral-600 uppercase tracking-widest">무료 · 1초 가입</span>
-                            <div className="flex-1 h-px bg-stone-100 dark:bg-[#1a1a1a]" />
+                            <div className="flex-1 h-px bg-[#faf9f7] dark:bg-[#242320]" />
                         </div>
 
                         <div className="flex justify-center gap-4 text-[11px] text-neutral-400 dark:text-neutral-500">
