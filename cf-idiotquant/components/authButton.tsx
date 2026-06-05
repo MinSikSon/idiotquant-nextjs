@@ -14,16 +14,16 @@ function KakaoIcon({ size = 20 }: { size?: number }) {
     )
 }
 
-export default function AuthButton() {
+export default function AuthButton({ callbackUrl = "/screener" }: { callbackUrl?: string }) {
     const { data: session, status } = useSession()
     const [isPending, setIsPending] = useState(false)
     const router = useRouter()
 
     useEffect(() => {
         if (status === "authenticated") {
-            router.replace("/screener")
+            router.replace(callbackUrl)
         }
-    }, [status, router])
+    }, [status, router, callbackUrl])
 
     if (status === "loading") {
         return <div className="w-full h-12 rounded-xl bg-[#faf9f7] dark:bg-[#35332e] animate-pulse" />
@@ -33,7 +33,7 @@ export default function AuthButton() {
         return (
             <div className="flex items-center justify-center gap-2 py-3 text-sm text-neutral-500 dark:text-neutral-400">
                 <span className="inline-block w-4 h-4 rounded-full border-2 border-neutral-300 border-t-neutral-600 animate-spin" />
-                스크리너로 이동 중...
+                이동 중...
             </div>
         )
     }
@@ -41,7 +41,7 @@ export default function AuthButton() {
     const handleLogin = async () => {
         setIsPending(true)
         try {
-            await signIn("kakao", { redirectTo: "/screener" })
+            await signIn("kakao", { redirectTo: callbackUrl })
         } catch {
             setIsPending(false)
         }

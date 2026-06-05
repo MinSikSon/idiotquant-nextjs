@@ -194,9 +194,10 @@ ResultSkeleton.displayName = 'ResultSkeleton';
 // =========================================================================
 // BlurGate — 비로그인 시 섹션 블러 처리 + 그라디언트 로그인 오버레이
 // =========================================================================
-const BlurGate = memo(({ children, isLoggedIn }: {
+const BlurGate = memo(({ children, isLoggedIn, loginHref = "/login" }: {
   children: React.ReactNode;
   isLoggedIn: boolean;
+  loginHref?: string;
 }) => {
   if (isLoggedIn) return <>{children}</>;
   return (
@@ -206,7 +207,7 @@ const BlurGate = memo(({ children, isLoggedIn }: {
       </div>
       <div className="absolute inset-0 flex items-center justify-center bg-gradient-to-b from-white/40 to-white/95 dark:from-[#242320]/40 dark:to-[#242320]/95">
         <Link
-          href="/login"
+          href={loginHref}
           className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-[#d97757] hover:bg-[#bf6644] text-white text-sm font-bold shadow-md shadow-[#d97757]/20 transition-all"
         >
           <Lock size={13} />
@@ -373,6 +374,10 @@ function AnalyzeContent() {
   }, [searchParams, name, onSearch]);
 
   const tickerFromUrl = searchParams.get('ticker');
+
+  const loginHref = tickerFromUrl
+    ? `/login?callbackUrl=${encodeURIComponent(`/analyze?ticker=${tickerFromUrl}`)}`
+    : '/login';
 
   // API 응답에서 실제 종목명·종목코드 추출 (검색 입력값과 무관하게 항상 정확한 정보 표시)
   const displayName = krOrUs === 'KR'
@@ -727,25 +732,30 @@ function AnalyzeContent() {
                   </div>
                 </div>
 
-                {/* 모델별 요약 (항상 공개) */}
+                {/* 모델별 요약 (항상 공개) + 세부 카드 (블러) */}
                 <div className="bg-white dark:bg-[#242320] rounded-2xl border border-neutral-200 dark:border-[#35332e] p-1 shadow-sm">
-                  <ValuationSection data={data} isUs={krOrUs === 'US'} />
+                  <ValuationSection
+                    data={data}
+                    isUs={krOrUs === 'US'}
+                    isLoggedIn={isLoggedIn}
+                    loginHref={loginHref}
+                  />
                 </div>
 
                 {/* 상장폐지 위험도 (블러) */}
                 {krOrUs === 'KR' && (
-                  <BlurGate isLoggedIn={isLoggedIn}>
+                  <BlurGate isLoggedIn={isLoggedIn} loginHref={loginHref}>
                     <DelistingRisk kiBS={data.kiBS} kiIS={data.kiIS} />
                   </BlurGate>
                 )}
                 {krOrUs === 'US' && (
-                  <BlurGate isLoggedIn={isLoggedIn}>
+                  <BlurGate isLoggedIn={isLoggedIn} loginHref={loginHref}>
                     <UsDelistingRisk finnhubData={data.finnhubData} usDetail={data.usDetail} />
                   </BlurGate>
                 )}
 
                 {/* 재무제표 (블러) */}
-                <BlurGate isLoggedIn={isLoggedIn}>
+                <BlurGate isLoggedIn={isLoggedIn} loginHref={loginHref}>
                   <div className="bg-white dark:bg-[#242320] rounded-2xl border border-neutral-200 dark:border-[#35332e] shadow-sm overflow-hidden">
                     <div className="px-5 py-4 border-b border-neutral-100 dark:border-[#35332e]">
                       <h3 className="text-sm font-extrabold text-neutral-800 dark:text-neutral-200">재무제표</h3>
@@ -772,7 +782,7 @@ function AnalyzeContent() {
                       카카오 로그인 30초 · 무료 · 재무제표·상장폐지 위험도·상세 지표 모두 포함
                     </p>
                     <Link
-                      href="/login"
+                      href={loginHref}
                       className="inline-flex items-center gap-2 px-6 py-2.5 rounded-full bg-[#d97757] hover:bg-[#bf6644] text-white text-sm font-bold shadow-lg shadow-[#d97757]/20 transition-all"
                     >
                       카카오로 무료 로그인
