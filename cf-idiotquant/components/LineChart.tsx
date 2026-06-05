@@ -15,7 +15,7 @@ import { useTheme } from "next-themes";
 // IdiotQuant 테마와 싱크를 맞춘 프리미엄 컬러 팔레트
 const tailwindPalette = {
     light: {
-        primary: "#3b82f6",     // blue-500
+        primary: "#3b82f6",     // [#fff8f5]0
         secondary: "#10b981",   // emerald-500
         accent: "#f59e0b",      // amber-500
         pink: "#ec4899",       // pink-500
@@ -24,7 +24,7 @@ const tailwindPalette = {
         grid: "#f3f4f6",       // gray-100
     },
     dark: {
-        primary: "#60a5fa",     // blue-400
+        primary: "#60a5fa",     // [#d97757]
         secondary: "#34d399",   // emerald-400
         accent: "#fbbf24",      // amber-400
         pink: "#f472b6",       // pink-400
@@ -38,7 +38,7 @@ const tailwindPalette = {
 const CustomTooltip = ({ active, payload, label, mode }: any) => {
     if (active && payload && payload.length) {
         return (
-            <div className="bg-white/80 dark:bg-[#0d0d0d]/80 backdrop-blur-md px-3 py-2 rounded-xl border border-neutral-200/60 dark:border-[#2a2a2a]/80 shadow-xl text-[11px] font-medium transition-all duration-200">
+            <div className="bg-white/80 dark:bg-[#1a1915]/80 backdrop-blur-md px-3 py-2 rounded-xl border border-neutral-200/60 dark:border-[#35332e]/80 shadow-xl text-[11px] font-medium transition-all duration-200">
                 <p className="text-neutral-400 dark:text-neutral-500 font-bold mb-1 font-mono tracking-wider">{label}</p>
                 <div className="space-y-1">
                     {payload.map((entry: any, index: number) => (

@@ -46,9 +46,9 @@ export const StockHeader = ({ data, isUs, isFixed }: StockHeaderProps) => {
     >
       <div
         className={cn(
-          "bg-white dark:bg-[#1a1a1a] border-neutral-200 dark:border-[#2a2a2a] transition-all",
+          "bg-white dark:bg-[#242320] border-neutral-200 dark:border-[#35332e] transition-all",
           isFixed 
-            ? "rounded-none border-b shadow-lg backdrop-blur-md bg-white/90 dark:bg-[#111111]/90" 
+            ? "rounded-none border-b shadow-lg backdrop-blur-md bg-white/90 dark:bg-[#1f1e1b]/90" 
             : "rounded-2xl border shadow-sm mx-auto"
         )}
       >
@@ -63,13 +63,13 @@ export const StockHeader = ({ data, isUs, isFixed }: StockHeaderProps) => {
                 )}>
                   {config.prdtName}
                 </span>
-                <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[9px] font-bold bg-blue-50 text-blue-600 dark:bg-blue-900/30 dark:text-blue-400 uppercase tracking-tighter">
+                <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[9px] font-bold bg-[#fff8f5] text-[#d97757] dark:bg-[#7d3f27]/30 dark:text-[#d97757] uppercase tracking-tighter">
                   {config.marketName}
                 </span>
               </div>
               <div className="flex items-baseline gap-1">
                 <span className={cn(
-                  "font-mono font-black text-blue-600 dark:text-blue-400 transition-all",
+                  "font-mono font-black text-[#d97757] dark:text-[#d97757] transition-all",
                   isFixed ? "text-base md:text-lg" : "text-xl md:text-2xl"
                 )}>
                   {config.price}

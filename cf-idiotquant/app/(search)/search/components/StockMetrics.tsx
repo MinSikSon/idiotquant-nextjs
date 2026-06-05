@@ -26,7 +26,7 @@ function MetricCard({ m }: { m: MetricItem }) {
       "p-3.5 rounded-xl border relative group cursor-help transition-colors select-none",
       m.highlight
         ? "bg-indigo-50 dark:bg-indigo-950/20 border-indigo-200/60 dark:border-indigo-900/40"
-        : "bg-stone-100 dark:bg-[#1a1a1a]/50 border-neutral-100 dark:border-[#2a2a2a] hover:border-neutral-200 dark:hover:border-neutral-700"
+        : "bg-[#faf9f7] dark:bg-[#242320]/50 border-neutral-100 dark:border-[#35332e] hover:border-neutral-200 dark:hover:border-neutral-700"
     )}>
       <p className={cn(
         "text-[9px] font-bold uppercase tracking-wider mb-1.5 truncate",
@@ -52,7 +52,7 @@ function MetricCard({ m }: { m: MetricItem }) {
       )}
 
       {/* 호버 툴팁 */}
-      <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 hidden group-hover:block w-48 bg-neutral-900 dark:bg-[#1a1a1a] text-white text-[10px] p-2.5 rounded-xl shadow-lg border border-neutral-700/60 z-50 pointer-events-none whitespace-normal break-keep text-center leading-relaxed">
+      <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 hidden group-hover:block w-48 bg-neutral-900 dark:bg-[#242320] text-white text-[10px] p-2.5 rounded-xl shadow-lg border border-neutral-700/60 z-50 pointer-events-none whitespace-normal break-keep text-center leading-relaxed">
         <p className="font-bold text-neutral-400 text-[9px] pb-1 mb-1 tracking-widest font-mono uppercase border-b border-neutral-700">{m.label}</p>
         <p className="text-neutral-200 font-medium">{m.desc}</p>
         <div className="absolute top-full left-1/2 -translate-x-1/2 border-[5px] border-transparent border-t-neutral-900 dark:border-t-neutral-800" />
@@ -67,7 +67,7 @@ function SectionLabel({ icon, label }: { icon: React.ReactNode; label: string })
     <div className="flex items-center gap-2 mb-2.5">
       <span className="text-neutral-400">{icon}</span>
       <span className="text-[10px] font-bold text-neutral-400 uppercase tracking-widest font-mono">{label}</span>
-      <div className="flex-1 h-px bg-stone-100 dark:bg-[#1a1a1a]" />
+      <div className="flex-1 h-px bg-[#faf9f7] dark:bg-[#242320]" />
     </div>
   );
 }
@@ -140,12 +140,12 @@ export const StockMetrics = ({ data, isUs }: { data: any; isUs: boolean }) => {
   const volumeMetrics    = metrics.filter(m => m.type === "volume");
 
   return (
-    <div className="w-full h-full bg-white dark:bg-[#1a1a1a] rounded-2xl border border-neutral-200 dark:border-[#2a2a2a] shadow-sm flex flex-col">
+    <div className="w-full h-full bg-white dark:bg-[#242320] rounded-2xl border border-neutral-200 dark:border-[#35332e] shadow-sm flex flex-col">
 
       {/* ── 헤더 ── */}
-      <div className="px-5 py-4 border-b border-neutral-100 dark:border-[#2a2a2a] flex items-center justify-between shrink-0">
+      <div className="px-5 py-4 border-b border-neutral-100 dark:border-[#35332e] flex items-center justify-between shrink-0">
         <div className="flex items-center gap-2.5">
-          <div className="w-7 h-7 bg-stone-100 dark:bg-[#1a1a1a] rounded-lg flex items-center justify-center border border-neutral-200 dark:border-[#222222] shrink-0">
+          <div className="w-7 h-7 bg-[#faf9f7] dark:bg-[#242320] rounded-lg flex items-center justify-center border border-neutral-200 dark:border-[#3a3834] shrink-0">
             <BarChart3 size={14} className="text-neutral-500 dark:text-neutral-400" />
           </div>
           <div>
@@ -161,10 +161,10 @@ export const StockMetrics = ({ data, isUs }: { data: any; isUs: boolean }) => {
         <div className={cn(
           "flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl border text-[10px] font-black font-mono uppercase tracking-wider shrink-0",
           isUs
-            ? "bg-blue-50 dark:bg-blue-950/30 text-blue-700 dark:text-blue-400 border-blue-200/60 dark:border-blue-900/40"
+            ? "bg-[#fff8f5] dark:bg-[#3d1f10]/30 text-[#bf6644] dark:text-[#d97757] border-[#f9c9b0]/60 dark:border-[#7d3f27]/40"
             : "bg-indigo-50 dark:bg-indigo-950/30 text-indigo-700 dark:text-indigo-400 border-indigo-200/60 dark:border-indigo-900/40"
         )}>
-          <div className={cn("w-1.5 h-1.5 rounded-full animate-pulse shrink-0", isUs ? "bg-blue-500" : "bg-indigo-500")} />
+          <div className={cn("w-1.5 h-1.5 rounded-full animate-pulse shrink-0", isUs ? "bg-[#fff8f5]0" : "bg-indigo-500")} />
           {isUs
             ? <><DollarSign size={10} />USD</>
             : <><Coins size={10} />KRW</>

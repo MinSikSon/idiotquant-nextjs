@@ -60,7 +60,7 @@ const HighlightText = ({ text, query }: { text: string; query: string }) => {
         <span>
             {parts.map((part, index) => 
                 regex.test(part) ? (
-                    <mark key={index} className="bg-blue-100 text-blue-800 dark:bg-indigo-950/80 dark:text-indigo-300 font-bold px-0.5 rounded-xs">
+                    <mark key={index} className="bg-[#fde8de] text-[#a05438] dark:bg-indigo-950/80 dark:text-indigo-300 font-bold px-0.5 rounded-xs">
                         {part}
                     </mark>
                 ) : (
@@ -168,15 +168,15 @@ const SearchAutocomplete = ({ validCorpNameArray, onSearchButton, placeHolder, o
             <div 
                 className={cn(
                     "relative flex items-center gap-2.5 w-full px-3.5 py-2 pb-1.5 rounded-2xl border transition-all duration-300 ease-in-out",
-                    "bg-stone-100/90 dark:bg-[#111111]/90 border-neutral-200/60 dark:border-[#2a2a2a]/60 backdrop-blur-md",
+                    "bg-[#faf9f7]/90 dark:bg-[#1f1e1b]/90 border-neutral-200/60 dark:border-[#35332e]/60 backdrop-blur-md",
                     isFocused 
-                        ? "bg-white dark:bg-[#0d0d0d] border-blue-500/80 dark:border-indigo-500/80 ring-4 ring-blue-500/10 dark:ring-indigo-500/10 shadow-lg" 
+                        ? "bg-white dark:bg-[#1a1915] border-[#fff8f5]0/80 dark:border-indigo-500/80 ring-4 ring-[#fff8f5]0/10 dark:ring-indigo-500/10 shadow-lg" 
                         : "hover:border-neutral-300 dark:hover:border-neutral-700"
                 )}
             >
                 <Search className={cn(
                     "h-4.5 w-4.5 transition-colors duration-200 shrink-0",
-                    isFocused ? "text-blue-500 dark:text-indigo-400" : "text-neutral-400 dark:text-neutral-500"
+                    isFocused ? "text-[#fff8f5]0 dark:text-indigo-400" : "text-neutral-400 dark:text-neutral-500"
                 )} />
                 
                 <input
@@ -217,7 +217,7 @@ const SearchAutocomplete = ({ validCorpNameArray, onSearchButton, placeHolder, o
                             if (onSearchStateChange) onSearchStateChange(isFocused, true);
                             inputRef.current?.focus();
                         }}
-                        className="p-1 hover:bg-neutral-200/60 dark:hover:bg-[#2a2a2a]/60 rounded-lg transition-colors shrink-0 group"
+                        className="p-1 hover:bg-neutral-200/60 dark:hover:bg-[#35332e]/60 rounded-lg transition-colors shrink-0 group"
                         type="button"
                         aria-label="검색어 초기화"
                     >
@@ -233,12 +233,12 @@ const SearchAutocomplete = ({ validCorpNameArray, onSearchButton, placeHolder, o
                     id="search-listbox"
                     role="listbox"
                     aria-label="종목 검색 결과"
-                    className="absolute top-full mt-2 left-0 w-full bg-white/95 dark:bg-[#0d0d0d]/95 backdrop-blur-xl border border-neutral-200 dark:border-[#2a2a2a]/80 rounded-2xl shadow-2xl max-h-76 overflow-y-auto p-1.5 z-[70] animate-in fade-in zoom-in-95 duration-200 origin-top no-scrollbar"
+                    className="absolute top-full mt-2 left-0 w-full bg-white/95 dark:bg-[#1a1915]/95 backdrop-blur-xl border border-neutral-200 dark:border-[#35332e]/80 rounded-2xl shadow-2xl max-h-76 overflow-y-auto p-1.5 z-[70] animate-in fade-in zoom-in-95 duration-200 origin-top no-scrollbar"
                 >
                     {/* 상단 라벨링 정보 바 */}
-                    <div className="px-2.5 py-1.5 text-[10px] font-black text-neutral-400 dark:text-neutral-500 uppercase tracking-widest border-b border-neutral-100 dark:border-[#2a2a2a]/50 mb-1 flex justify-between items-center sticky top-0 bg-white/90 dark:bg-[#0d0d0d]/90 backdrop-blur-md z-10">
+                    <div className="px-2.5 py-1.5 text-[10px] font-black text-neutral-400 dark:text-neutral-500 uppercase tracking-widest border-b border-neutral-100 dark:border-[#35332e]/50 mb-1 flex justify-between items-center sticky top-0 bg-white/90 dark:bg-[#1a1915]/90 backdrop-blur-md z-10">
                         <span className="flex items-center gap-1">
-                            <Sparkles className="w-3 h-3 text-blue-500 dark:text-indigo-400" />
+                            <Sparkles className="w-3 h-3 text-[#fff8f5]0 dark:text-indigo-400" />
                             퀀트 인텔리전스 추천
                         </span>
                         {suggestions.length > 0 && selectedIndex >= 0 && (
@@ -261,8 +261,8 @@ const SearchAutocomplete = ({ validCorpNameArray, onSearchButton, placeHolder, o
                                     className={cn(
                                         "flex items-center justify-between text-xs py-2.5 px-3 cursor-pointer rounded-xl transition-all duration-150 font-medium my-0.5",
                                         isSelected
-                                            ? "bg-blue-600 dark:bg-indigo-600 text-white font-bold shadow-sm translate-x-0.5"
-                                            : "text-neutral-700 dark:text-neutral-300 hover:bg-stone-100/70 dark:hover:bg-[#1f1f1f]/70 hover:translate-x-0.5"
+                                            ? "bg-[#d97757] dark:bg-indigo-600 text-white font-bold shadow-sm translate-x-0.5"
+                                            : "text-neutral-700 dark:text-neutral-300 hover:bg-[#f5f0e8]/70 dark:hover:bg-[#2c2b27]/70 hover:translate-x-0.5"
                                     )}
                                 >
                                     <span className="truncate">

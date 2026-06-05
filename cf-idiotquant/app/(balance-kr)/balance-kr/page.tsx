@@ -89,7 +89,7 @@ function MetricChip({ label, value, valueClass = "text-neutral-900 dark:text-neu
   label: string; value: string; valueClass?: string;
 }) {
   return (
-    <div className="bg-white dark:bg-[#1a1a1a] border border-neutral-200 dark:border-[#2a2a2a] rounded-xl px-4 py-2.5 flex flex-col gap-0.5 shrink-0">
+    <div className="bg-white dark:bg-[#242320] border border-neutral-200 dark:border-[#35332e] rounded-xl px-4 py-2.5 flex flex-col gap-0.5 shrink-0">
       <span className="text-[9px] font-black text-neutral-400 dark:text-neutral-500 uppercase tracking-widest whitespace-nowrap">{label}</span>
       <span className={cn("text-xs font-mono font-black whitespace-nowrap", valueClass)}>{value}</span>
     </div>
@@ -102,7 +102,7 @@ function MetricChip({ label, value, valueClass = "text-neutral-900 dark:text-neu
 function OrderRow({ item, isNccs }: { item: any; isNccs: boolean }) {
   const isBuy = item.ord_dvsn_name?.includes("매수") || item.sll_buy_dvsn_cd === "02";
   return (
-    <tr className="hover:bg-stone-100 dark:hover:bg-[#1a1a1a]/40 transition-colors group">
+    <tr className="hover:bg-[#f5f0e8] dark:hover:bg-[#242320]/40 transition-colors group">
       <td className="py-3.5 px-4">
         <span className="block text-xs font-semibold text-neutral-700 dark:text-neutral-300">
           {isNccs ? "대기 중" : formatTime(item.ccld_time)}
@@ -114,7 +114,7 @@ function OrderRow({ item, isNccs }: { item: any; isNccs: boolean }) {
           "px-2.5 py-1 rounded-full text-[10px] font-black uppercase tracking-wide",
           isBuy
             ? "bg-red-50 text-red-500 dark:bg-red-950/40"
-            : "bg-blue-50 text-blue-500 dark:bg-blue-950/40"
+            : "bg-[#fff8f5] text-[#fff8f5]0 dark:bg-[#3d1f10]/40"
         )}>
           {item.ord_dvsn_name || (isNccs ? "대기" : "현금")}
         </span>
@@ -314,7 +314,7 @@ function BalanceKr() {
   ];
 
   return (
-    <div className="min-h-screen bg-stone-100 dark:bg-[#0d0d0d] transition-colors duration-300">
+    <div className="min-h-screen bg-[#faf9f7] dark:bg-[#1a1915] transition-colors duration-300">
 
       <ToastContainer toasts={toasts} onRemove={removeToast} />
 
@@ -330,13 +330,13 @@ function BalanceKr() {
                 투자 현황
               </span>
               <ChevronRight size={11} className="text-neutral-300 dark:text-neutral-600" />
-              <span className="flex items-center gap-1 text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/20 px-2 py-0.5 rounded-md">
+              <span className="flex items-center gap-1 text-[#d97757] dark:text-[#d97757] bg-[#fff8f5] dark:bg-[#7d3f27]/20 px-2 py-0.5 rounded-md">
                 <MapPin size={11} />한국(KR)
               </span>
               {currentKakaoUser && (
                 <>
                   <ChevronRight size={11} className="text-neutral-300 dark:text-neutral-600" />
-                  <span className="flex items-center gap-1 text-neutral-600 dark:text-neutral-300 bg-neutral-200/60 dark:bg-[#1a1a1a] px-2 py-0.5 rounded-md">
+                  <span className="flex items-center gap-1 text-neutral-600 dark:text-neutral-300 bg-neutral-200/60 dark:bg-[#242320] px-2 py-0.5 rounded-md">
                     <User size={10} />
                     {currentKakaoUser.name || balanceKey}
                   </span>
@@ -351,7 +351,7 @@ function BalanceKr() {
               </h1>
               <span className="text-2xl select-none" aria-hidden>🇰🇷</span>
               {!isLoading && totalEvalAmt > 0 && (
-                <span className="text-sm font-mono font-black text-neutral-400 dark:text-neutral-500 bg-stone-100 dark:bg-[#1a1a1a] px-2.5 py-1 rounded-lg border border-neutral-200 dark:border-[#222222]">
+                <span className="text-sm font-mono font-black text-neutral-400 dark:text-neutral-500 bg-[#faf9f7] dark:bg-[#242320] px-2.5 py-1 rounded-lg border border-neutral-200 dark:border-[#3a3834]">
                   {totalEvalAmt.toLocaleString()}원
                 </span>
               )}
@@ -364,7 +364,7 @@ function BalanceKr() {
                 {lastUpdated.toLocaleTimeString("ko-KR")} 기준
               </p>
             ) : (
-              <div className="h-4 w-40 rounded bg-neutral-200 dark:bg-[#1a1a1a] animate-pulse" />
+              <div className="h-4 w-40 rounded bg-neutral-200 dark:bg-[#242320] animate-pulse" />
             )}
           </div>
 
@@ -375,13 +375,13 @@ function BalanceKr() {
               isLoading={isLoading}
               onRefresh={handleRefresh}
             />
-            <span className="text-[10px] font-mono text-neutral-400 bg-stone-100 dark:bg-[#1a1a1a] border border-neutral-200 dark:border-[#2a2a2a] px-2.5 py-1 rounded-lg">
+            <span className="text-[10px] font-mono text-neutral-400 bg-[#faf9f7] dark:bg-[#242320] border border-neutral-200 dark:border-[#35332e] px-2.5 py-1 rounded-lg">
               ID: {String(balanceKey).slice(0, 8) || "N/A"}
             </span>
           </div>
         </header>
 
-        <div className="h-px bg-gradient-to-r from-transparent via-blue-300 dark:via-blue-800 to-transparent opacity-60" />
+        <div className="h-px bg-gradient-to-r from-transparent via-[#e8a48a] dark:via-[#a05438] to-transparent opacity-60" />
 
         {/* 섹션 네비게이션 */}
         <SectionNav sections={navSections} />
@@ -393,8 +393,8 @@ function BalanceKr() {
             value={isLoading ? null : `${totalEvalAmt.toLocaleString()}원`}
             sub={isLoading ? "" : `주식 ${sctsEvluAmt.toLocaleString()}원 · CMA ${cmaEvluAmt.toLocaleString()}원`}
             icon={<Wallet size={15} />}
-            iconBg="bg-blue-50 dark:bg-blue-950/40 text-blue-500"
-            accentColor="bg-blue-400 dark:bg-blue-600"
+            iconBg="bg-[#fff8f5] dark:bg-[#3d1f10]/40 text-[#fff8f5]0"
+            accentColor="bg-[#d97757] dark:bg-[#d97757]"
           />
           <KpiCard
             label="예수금 (D+2)"
@@ -418,7 +418,7 @@ function BalanceKr() {
             value={isLoading ? null : `${isPnlPositive ? "▲ +" : "▼ "}${pnlRate.toFixed(2)}%`}
             sub={isLoading ? "" : `당일 증감 ${isDailyPositive ? "+" : ""}${asstIcdcErngRt.toFixed(2)}%`}
             icon={<Percent size={15} />}
-            iconBg="bg-stone-100 dark:bg-[#1a1a1a] text-neutral-500"
+            iconBg="bg-[#faf9f7] dark:bg-[#242320] text-neutral-500"
             valueColor={pnlValueColor(isPnlPositive)}
             accentColor={pnlAccentColor(isPnlPositive)}
           />
@@ -431,7 +431,7 @@ function BalanceKr() {
               <MetricChip
                 label="당일 등락"
                 value={`${isDailyPositive ? "▲ +" : "▼ "}${asstIcdcAmt.toLocaleString()}원`}
-                valueClass={isDailyPositive ? "text-rose-500" : "text-blue-500"}
+                valueClass={isDailyPositive ? "text-rose-500" : "text-[#fff8f5]0"}
               />
               <MetricChip
                 label="금일 매수"
@@ -441,12 +441,12 @@ function BalanceKr() {
               <MetricChip
                 label="금일 매도"
                 value={`${thdtSllAmt.toLocaleString()}원`}
-                valueClass="text-blue-400 dark:text-blue-400"
+                valueClass="text-[#d97757] dark:text-[#d97757]"
               />
               <MetricChip
                 label="금일 매수 - 매도"
                 value={`${(thdtBuyAmt - thdtSllAmt) >= 0 ? "+" : ""}${(thdtBuyAmt - thdtSllAmt).toLocaleString()}원`}
-                valueClass={(thdtBuyAmt - thdtSllAmt) >= 0 ? "text-rose-500" : "text-blue-500"}
+                valueClass={(thdtBuyAmt - thdtSllAmt) >= 0 ? "text-rose-500" : "text-[#fff8f5]0"}
               />
               <MetricChip
                 label="CMA 평가"
@@ -507,7 +507,7 @@ function BalanceKr() {
                 krCapital.state === "pending"
                   ? <span className="text-[10px] font-mono text-amber-500 bg-amber-50 dark:bg-amber-950/20 px-2 py-0.5 rounded-full border border-amber-200 dark:border-amber-800 animate-pulse">로딩 중</span>
                   : krCapital.stock_list?.length > 0
-                  ? <span className="text-[10px] font-mono text-neutral-500 dark:text-neutral-400 bg-stone-100 dark:bg-[#1a1a1a] px-2 py-0.5 rounded-full">{krCapital.stock_list.length}종목</span>
+                  ? <span className="text-[10px] font-mono text-neutral-500 dark:text-neutral-400 bg-[#faf9f7] dark:bg-[#242320] px-2 py-0.5 rounded-full">{krCapital.stock_list.length}종목</span>
                   : null
               }
             />
@@ -541,7 +541,7 @@ function BalanceKr() {
             }
           />
 
-          <div className="overflow-x-auto rounded-xl border border-neutral-100 dark:border-[#2a2a2a]">
+          <div className="overflow-x-auto rounded-xl border border-neutral-100 dark:border-[#35332e]">
             <table className="w-full text-sm text-left min-w-[600px]">
               <TableHeader headers={[
                 { label: "주문시간 / 번호" },
@@ -551,7 +551,7 @@ function BalanceKr() {
                 { label: "체결가 / 수량", align: "text-right" },
                 { label: "미체결", align: "text-right" },
               ]} />
-              <tbody className="divide-y divide-neutral-50 dark:divide-[#2a2a2a]/40">
+              <tbody className="divide-y divide-neutral-50 dark:divide-[#35332e]/40">
                 {viewerTab === "ccnl" ? (
                   krCcnl.output?.length > 0
                     ? krCcnl.output.map((item, i) => (

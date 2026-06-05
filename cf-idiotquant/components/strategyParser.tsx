@@ -58,18 +58,18 @@ export default function StrategyDescription({ strategyId }: StrategyDescriptionP
   if (!content) return null;
 
   return (
-    <div className="w-full rounded-2xl border border-blue-100 bg-white p-6 shadow-sm dark:border-blue-900/30 dark:bg-[#1a1a1a] mb-6 transition-all hover:shadow-md">
+    <div className="w-full rounded-2xl border border-[#fde8de] bg-white p-6 shadow-sm dark:border-[#7d3f27]/30 dark:bg-[#242320] mb-6 transition-all hover:shadow-md">
       {/* 1. Header Section */}
       <div className="flex items-center gap-4 mb-6">
-        <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-blue-50 text-blue-600 dark:bg-blue-900/20 dark:text-blue-400">
+        <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-[#fff8f5] text-[#d97757] dark:bg-[#7d3f27]/20 dark:text-[#d97757]">
           <Lightbulb className="h-6 w-6" />
         </div>
         <div className="min-w-0 flex-1">
-          <h4 className="text-xl font-bold tracking-tight text-blue-600 dark:text-blue-400 leading-none">
+          <h4 className="text-xl font-bold tracking-tight text-[#d97757] dark:text-[#d97757] leading-none">
             {content.title}
           </h4>
           <div className="mt-2 flex items-center gap-2">
-            <span className="inline-block px-2 py-0.5 text-[10px] font-mono font-bold bg-stone-100 text-neutral-500 dark:bg-[#2a2a2a] dark:text-neutral-400 rounded uppercase tracking-wider">
+            <span className="inline-block px-2 py-0.5 text-[10px] font-mono font-bold bg-[#faf9f7] text-neutral-500 dark:bg-[#35332e] dark:text-neutral-400 rounded uppercase tracking-wider">
               {strategyId}
             </span>
           </div>
@@ -77,7 +77,7 @@ export default function StrategyDescription({ strategyId }: StrategyDescriptionP
       </div>
 
       {/* Horizontal Divider */}
-      <div className="h-px w-full bg-stone-100 dark:bg-[#2a2a2a] mb-6" />
+      <div className="h-px w-full bg-[#faf9f7] dark:bg-[#35332e] mb-6" />
 
       {/* 2. Content Grid */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
@@ -94,9 +94,9 @@ export default function StrategyDescription({ strategyId }: StrategyDescriptionP
             </p>
           </section>
 
-          <section className="relative overflow-hidden rounded-xl bg-stone-50 p-4 border border-neutral-100 dark:bg-[#2a2a2a]/40 dark:border-[#2a2a2a]">
+          <section className="relative overflow-hidden rounded-xl bg-[#fcfaf7] p-4 border border-neutral-100 dark:bg-[#35332e]/40 dark:border-[#35332e]">
             <div className="flex gap-3">
-              <Info className="h-4 w-4 text-blue-500 shrink-0 mt-0.5" />
+              <Info className="h-4 w-4 text-[#fff8f5]0 shrink-0 mt-0.5" />
               <p className="text-sm text-neutral-600 dark:text-neutral-400 leading-snug">
                 {content.details}
               </p>
@@ -106,8 +106,8 @@ export default function StrategyDescription({ strategyId }: StrategyDescriptionP
 
         {/* Right: Key Terms (Glossary) */}
         <div className="lg:col-span-4">
-          <div className="rounded-2xl border border-blue-50 bg-blue-50/30 p-5 dark:border-blue-900/20 dark:bg-blue-900/10">
-            <h5 className="flex items-center gap-2 text-[11px] font-black text-blue-600 dark:text-blue-400 uppercase tracking-widest mb-4">
+          <div className="rounded-2xl border border-[#fff8f5] bg-[#fff8f5]/30 p-5 dark:border-[#7d3f27]/20 dark:bg-[#7d3f27]/10">
+            <h5 className="flex items-center gap-2 text-[11px] font-black text-[#d97757] dark:text-[#d97757] uppercase tracking-widest mb-4">
               <Activity className="h-3.5 w-3.5" />
               <span>Key Terms</span>
             </h5>
@@ -130,7 +130,7 @@ export default function StrategyDescription({ strategyId }: StrategyDescriptionP
       </div>
 
       {/* 3. Footer: Disclaimer */}
-      <div className="mt-8 pt-5 border-t border-neutral-100 dark:border-[#2a2a2a]">
+      <div className="mt-8 pt-5 border-t border-neutral-100 dark:border-[#35332e]">
         <div className="flex gap-2">
           <ShieldCheck className="h-3.5 w-3.5 text-neutral-400 shrink-0 mt-0.5" />
           <p className="text-[11px] text-neutral-400 dark:text-neutral-500 leading-relaxed italic">
@@ -148,7 +148,7 @@ function TermItem({ term, desc }: { term: string; desc: string }) {
   return (
     <div className="group">
       <dt className="flex items-center gap-1.5 text-xs font-bold text-neutral-900 dark:text-neutral-200">
-        <ChevronRight className="h-2.5 w-2.5 text-blue-400 group-hover:translate-x-0.5 transition-transform" />
+        <ChevronRight className="h-2.5 w-2.5 text-[#d97757] group-hover:translate-x-0.5 transition-transform" />
         {term}
       </dt>
       <dd className="mt-1 ml-4 text-[11px] leading-normal text-neutral-500 dark:text-neutral-400">

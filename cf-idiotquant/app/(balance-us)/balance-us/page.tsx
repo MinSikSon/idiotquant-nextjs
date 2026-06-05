@@ -58,7 +58,7 @@ function MetricChip({ label, value, valueClass = "text-neutral-900 dark:text-neu
   label: string; value: string; valueClass?: string;
 }) {
   return (
-    <div className="bg-white dark:bg-[#1a1a1a] border border-neutral-200 dark:border-[#2a2a2a] rounded-xl px-4 py-2.5 flex flex-col gap-0.5 shrink-0">
+    <div className="bg-white dark:bg-[#242320] border border-neutral-200 dark:border-[#35332e] rounded-xl px-4 py-2.5 flex flex-col gap-0.5 shrink-0">
       <span className="text-[9px] font-black text-neutral-400 dark:text-neutral-500 uppercase tracking-widest whitespace-nowrap">{label}</span>
       <span className={cn("text-xs font-mono font-black whitespace-nowrap", valueClass)}>{value}</span>
     </div>
@@ -73,7 +73,7 @@ function OverseasOrderRow({ item, isNccs }: { item: any; isNccs: boolean }) {
   const hasPartialFill = Number(item.ft_ccld_qty || 0) > 0;
 
   return (
-    <tr className="hover:bg-stone-100 dark:hover:bg-[#1a1a1a]/40 transition-colors group">
+    <tr className="hover:bg-[#f5f0e8] dark:hover:bg-[#242320]/40 transition-colors group">
       <td className="py-3.5 px-4">
         <span className="block text-xs font-semibold text-neutral-700 dark:text-neutral-300">
           {formatTime(item.ord_tmd)}
@@ -83,7 +83,7 @@ function OverseasOrderRow({ item, isNccs }: { item: any; isNccs: boolean }) {
       <td className="py-3.5 px-4">
         <span className={cn(
           "px-2.5 py-1 rounded-full text-[10px] font-black uppercase tracking-wide",
-          isBuy ? "bg-red-50 text-red-500 dark:bg-red-950/40" : "bg-blue-50 text-blue-500 dark:bg-blue-950/40"
+          isBuy ? "bg-red-50 text-red-500 dark:bg-red-950/40" : "bg-[#fff8f5] text-[#fff8f5]0 dark:bg-[#3d1f10]/40"
         )}>
           {item.sll_buy_dvsn_cd_name || (isBuy ? "매수" : "매도")}
         </span>
@@ -127,7 +127,7 @@ function OverseasOrderRow({ item, isNccs }: { item: any; isNccs: boolean }) {
             ? "bg-emerald-50 text-emerald-600 dark:bg-emerald-950/30 dark:text-emerald-400"
             : isNccs
             ? "bg-amber-50 text-amber-600 dark:bg-amber-950/30 dark:text-amber-400"
-            : "bg-stone-100 text-neutral-500 dark:bg-[#1a1a1a]"
+            : "bg-[#faf9f7] text-neutral-500 dark:bg-[#242320]"
         )}>
           {item.prcs_stat_name || (isNccs ? "대기" : "-")}
         </span>
@@ -309,7 +309,7 @@ function BalanceUs() {
   ];
 
   return (
-    <div className="min-h-screen bg-stone-100 dark:bg-[#0d0d0d] transition-colors duration-300">
+    <div className="min-h-screen bg-[#faf9f7] dark:bg-[#1a1915] transition-colors duration-300">
 
       <ToastContainer toasts={toasts} onRemove={removeToast} />
 
@@ -325,21 +325,21 @@ function BalanceUs() {
                 해외 투자
               </span>
               <ChevronRight size={11} className="text-neutral-300 dark:text-neutral-600" />
-              <span className="flex items-center gap-1 text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/20 px-2 py-0.5 rounded-md">
+              <span className="flex items-center gap-1 text-[#d97757] dark:text-[#d97757] bg-[#fff8f5] dark:bg-[#7d3f27]/20 px-2 py-0.5 rounded-md">
                 <Building2 size={11} />미국(US)
               </span>
             </nav>
 
             {/* 타이틀 */}
             <div className="flex items-center gap-3 flex-wrap">
-              <h1 className="text-3xl md:text-4xl font-black tracking-tighter bg-gradient-to-r from-blue-600 to-indigo-500 dark:from-blue-400 dark:to-indigo-400 bg-clip-text text-transparent">
+              <h1 className="text-3xl md:text-4xl font-black tracking-tighter bg-gradient-to-r from-[#d97757] to-indigo-500 dark:from-[#d97757] dark:to-indigo-400 bg-clip-text text-transparent">
                 US Portfolio
               </h1>
-              <span className="flex items-center gap-1 px-3 py-1.5 bg-blue-600 text-white rounded-xl text-[10px] font-black tracking-widest uppercase shadow-sm shadow-blue-600/30">
+              <span className="flex items-center gap-1 px-3 py-1.5 bg-[#d97757] text-white rounded-xl text-[10px] font-black tracking-widest uppercase shadow-sm shadow-[#d97757]/30">
                 <DollarSign size={11} /> USD Account
               </span>
               {!isLoading && totalAssetUsd > 0 && (
-                <span className="text-sm font-mono font-black text-neutral-400 dark:text-neutral-500 bg-stone-100 dark:bg-[#1a1a1a] px-2.5 py-1 rounded-lg border border-neutral-200 dark:border-[#222222]">
+                <span className="text-sm font-mono font-black text-neutral-400 dark:text-neutral-500 bg-[#faf9f7] dark:bg-[#242320] px-2.5 py-1 rounded-lg border border-neutral-200 dark:border-[#3a3834]">
                   {fmtUsd(totalAssetUsd)}
                 </span>
               )}
@@ -352,7 +352,7 @@ function BalanceUs() {
                 {lastUpdated.toLocaleTimeString("ko-KR")} 기준
               </p>
             ) : (
-              <div className="h-4 w-40 rounded bg-neutral-200 dark:bg-[#1a1a1a] animate-pulse" />
+              <div className="h-4 w-40 rounded bg-neutral-200 dark:bg-[#242320] animate-pulse" />
             )}
           </div>
 
@@ -364,9 +364,9 @@ function BalanceUs() {
               onRefresh={handleRefresh}
               extra={
                 exRate > 0 ? (
-                  <div className="flex items-center gap-2 bg-white dark:bg-[#1a1a1a] px-3 py-2 rounded-xl border border-neutral-200 dark:border-[#2a2a2a] shadow-sm">
+                  <div className="flex items-center gap-2 bg-white dark:bg-[#242320] px-3 py-2 rounded-xl border border-neutral-200 dark:border-[#35332e] shadow-sm">
                     <span className="text-[10px] font-black text-neutral-400 uppercase tracking-wider">고시환율</span>
-                    <span className="text-sm font-mono font-black text-blue-600 dark:text-blue-400">
+                    <span className="text-sm font-mono font-black text-[#d97757] dark:text-[#d97757]">
                       {exRate.toLocaleString()}원
                     </span>
                   </div>
@@ -376,7 +376,7 @@ function BalanceUs() {
           </div>
         </header>
 
-        <div className="h-px bg-gradient-to-r from-transparent via-blue-400 dark:via-blue-700 to-transparent opacity-60" />
+        <div className="h-px bg-gradient-to-r from-transparent via-[#d97757] dark:via-[#bf6644] to-transparent opacity-60" />
 
         {/* 섹션 네비게이션 */}
         <SectionNav sections={navSections} />
@@ -386,12 +386,12 @@ function BalanceUs() {
           <UsdKpiCard
             label="총 자산 (USD)"
             mainValue={isLoading ? null : fmtUsd(totalAssetUsd)}
-            mainColor="text-blue-600 dark:text-blue-400"
+            mainColor="text-[#d97757] dark:text-[#d97757]"
             subLabel="원화 평가액"
             subValue={isLoading ? null : fmtKrw(totalAssetKrw)}
             icon={<BarChart3 size={15} />}
-            iconBg="bg-blue-50 dark:bg-blue-950/40 text-blue-500"
-            accentColor="bg-blue-400 dark:bg-blue-600"
+            iconBg="bg-[#fff8f5] dark:bg-[#3d1f10]/40 text-[#fff8f5]0"
+            accentColor="bg-[#d97757] dark:bg-[#d97757]"
             loading={isLoading}
           />
           <UsdKpiCard
@@ -432,7 +432,7 @@ function BalanceUs() {
             subLabel="원화 환산액"
             subValue={isLoading ? null : fmtKrw(pchsAmtKrw)}
             icon={<DollarSign size={15} />}
-            iconBg="bg-stone-100 dark:bg-[#1a1a1a] text-neutral-500"
+            iconBg="bg-[#faf9f7] dark:bg-[#242320] text-neutral-500"
             accentColor="bg-neutral-400 dark:bg-neutral-600"
             loading={isLoading}
           />
@@ -460,12 +460,12 @@ function BalanceUs() {
               <MetricChip
                 label="금일 매도 (USD)"
                 value={fmtUsd(frcr_sll_smtl)}
-                valueClass="text-blue-400"
+                valueClass="text-[#d97757]"
               />
               <MetricChip
                 label="금일 순매수"
                 value={fmtUsd(frcr_buy_smtl - frcr_sll_smtl)}
-                valueClass={(frcr_buy_smtl - frcr_sll_smtl) >= 0 ? "text-rose-500" : "text-blue-500"}
+                valueClass={(frcr_buy_smtl - frcr_sll_smtl) >= 0 ? "text-rose-500" : "text-[#fff8f5]0"}
               />
               {cmaEvluAmtUs > 0 && (
                 <MetricChip
@@ -533,7 +533,7 @@ function BalanceUs() {
                 usCapital.state === "pending"
                   ? <span className="text-[10px] font-mono text-amber-500 bg-amber-50 dark:bg-amber-950/20 px-2 py-0.5 rounded-full border border-amber-200 dark:border-amber-800 animate-pulse">로딩 중</span>
                   : usCapital.stock_list?.length > 0
-                  ? <span className="text-[10px] font-mono text-neutral-500 dark:text-neutral-400 bg-stone-100 dark:bg-[#1a1a1a] px-2 py-0.5 rounded-full">{usCapital.stock_list.length}종목</span>
+                  ? <span className="text-[10px] font-mono text-neutral-500 dark:text-neutral-400 bg-[#faf9f7] dark:bg-[#242320] px-2 py-0.5 rounded-full">{usCapital.stock_list.length}종목</span>
                   : null
               }
             />
@@ -570,7 +570,7 @@ function BalanceUs() {
             }
           />
 
-          <div className="overflow-x-auto rounded-xl border border-neutral-100 dark:border-[#2a2a2a]">
+          <div className="overflow-x-auto rounded-xl border border-neutral-100 dark:border-[#35332e]">
             <table className="w-full text-sm text-left min-w-[860px]">
               <TableHeader headers={[
                 { label: "주문시각 / 번호" },
@@ -583,7 +583,7 @@ function BalanceUs() {
                 { label: "처리상태", align: "text-center" },
                 { label: "미체결", align: "text-right" },
               ]} />
-              <tbody className="divide-y divide-neutral-50 dark:divide-[#2a2a2a]/40">
+              <tbody className="divide-y divide-neutral-50 dark:divide-[#35332e]/40">
                 {viewerTab === "ccnl" ? (
                   kiCcnl.output?.length > 0
                     ? kiCcnl.output.map((item, i) => (

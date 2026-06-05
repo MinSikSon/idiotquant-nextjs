@@ -26,7 +26,7 @@ export default function AuthButton() {
     }, [status, router])
 
     if (status === "loading") {
-        return <div className="w-full h-12 rounded-xl bg-stone-100 dark:bg-[#2a2a2a] animate-pulse" />
+        return <div className="w-full h-12 rounded-xl bg-[#faf9f7] dark:bg-[#35332e] animate-pulse" />
     }
 
     if (session) {

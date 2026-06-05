@@ -29,7 +29,7 @@ const STRATEGY_LABEL: Record<string, string> = {
 
 const STRATEGY_BADGE_CLS: Record<string, string> = {
   ncav:           "bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-400 border-emerald-200 dark:border-emerald-800/60",
-  low_pbr:        "bg-blue-50 dark:bg-blue-950/40 text-blue-700 dark:text-blue-400 border-blue-200 dark:border-blue-800/60",
+  low_pbr:        "bg-[#fff8f5] dark:bg-[#3d1f10]/40 text-[#bf6644] dark:text-[#d97757] border-[#f9c9b0] dark:border-[#a05438]/60",
   low_per:        "bg-orange-50 dark:bg-orange-950/40 text-orange-700 dark:text-orange-400 border-orange-200 dark:border-orange-800/60",
   s_rim:          "bg-violet-50 dark:bg-violet-950/40 text-violet-700 dark:text-violet-400 border-violet-200 dark:border-violet-800/60",
   graham_number:  "bg-teal-50 dark:bg-teal-950/40 text-teal-700 dark:text-teal-400 border-teal-200 dark:border-teal-800/60",
@@ -42,8 +42,8 @@ const STRATEGY_BADGE_CLS: Record<string, string> = {
 const FEATURES = [
   {
     icon: Filter,
-    iconCls: "text-blue-600 dark:text-blue-400",
-    bgCls: "bg-blue-50 dark:bg-blue-950/30",
+    iconCls: "text-[#d97757] dark:text-[#d97757]",
+    bgCls: "bg-[#fff8f5] dark:bg-[#3d1f10]/30",
     title: "종목 발굴",
     desc: "9가지 퀀트 전략으로 KOSPI·KOSDAQ 전 종목을 매일 자동 스캔합니다.",
     link: "/screener",
@@ -74,7 +74,7 @@ function StockRow({ item, index }: { item: PreviewStock; index: number }) {
   const strategies = item.strategies?.slice(0, 2) ?? [];
 
   return (
-    <div className="flex items-center gap-3 px-4 py-3.5 border-b border-neutral-100 dark:border-[#2a2a2a] last:border-0 transition-colors">
+    <div className="flex items-center gap-3 px-4 py-3.5 border-b border-neutral-100 dark:border-[#35332e] last:border-0 transition-colors">
       <span className="w-4 text-[10px] font-black text-neutral-300 dark:text-neutral-600 tabular-nums shrink-0">
         {index + 1}
       </span>
@@ -154,11 +154,11 @@ export default function HomePage() {
     <div className="min-h-screen">
 
       {/* ── HERO ─────────────────────────────────────────────────── */}
-      <section className="bg-white dark:bg-[#111111] border-b border-neutral-200/70 dark:border-[#222222]">
+      <section className="bg-white dark:bg-[#1f1e1b] border-b border-neutral-200/70 dark:border-[#3a3834]">
         <div className="max-w-lg mx-auto px-5 pt-10 pb-8 sm:pt-14 sm:pb-10">
 
           {/* Live badge */}
-          <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-stone-100 dark:bg-[#1a1a1a] border border-neutral-200 dark:border-[#2a2a2a] mb-5 text-[11px] font-medium text-neutral-500 dark:text-neutral-400">
+          <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-[#faf9f7] dark:bg-[#242320] border border-neutral-200 dark:border-[#35332e] mb-5 text-[11px] font-medium text-neutral-500 dark:text-neutral-400">
             <span className="relative flex h-1.5 w-1.5 shrink-0">
               <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
               <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-emerald-500" />
@@ -169,7 +169,7 @@ export default function HomePage() {
           {/* Headline */}
           <h1 className="text-[2.1rem] sm:text-[3rem] font-black leading-[1.08] tracking-tight mb-4 text-neutral-900 dark:text-neutral-50">
             저평가 국내 주식,<br />
-            <span className="text-blue-600 dark:text-blue-400">데이터가 찾아드립니다.</span>
+            <span className="text-[#d97757] dark:text-[#d97757]">데이터가 찾아드립니다.</span>
           </h1>
 
           <p className="text-sm sm:text-[15px] text-neutral-500 dark:text-neutral-400 font-medium leading-relaxed mb-7">
@@ -181,7 +181,7 @@ export default function HomePage() {
           <div className="flex flex-col sm:flex-row gap-2.5">
             {!sessionLoading && (isLoggedIn ? (
               <Link href="/screener"
-                className="inline-flex items-center justify-center gap-2 w-full sm:w-auto px-6 py-3 rounded-xl bg-blue-600 hover:bg-blue-700 active:bg-blue-800 text-white text-sm font-bold shadow-md shadow-blue-600/20 transition-all"
+                className="inline-flex items-center justify-center gap-2 w-full sm:w-auto px-6 py-3 rounded-xl bg-[#d97757] hover:bg-[#bf6644] active:bg-[#a05438] text-white text-sm font-bold shadow-md shadow-[#d97757]/20 transition-all"
               >
                 <TrendingUp size={15} strokeWidth={2.5} />
                 종목 발굴하기
@@ -189,14 +189,14 @@ export default function HomePage() {
               </Link>
             ) : (
               <Link href="/login"
-                className="inline-flex items-center justify-center gap-2 w-full sm:w-auto px-6 py-3 rounded-xl bg-blue-600 hover:bg-blue-700 active:bg-blue-800 text-white text-sm font-bold shadow-md shadow-blue-600/20 transition-all"
+                className="inline-flex items-center justify-center gap-2 w-full sm:w-auto px-6 py-3 rounded-xl bg-[#d97757] hover:bg-[#bf6644] active:bg-[#a05438] text-white text-sm font-bold shadow-md shadow-[#d97757]/20 transition-all"
               >
                 카카오로 무료 시작
                 <ArrowRight size={14} />
               </Link>
             ))}
             <Link href="/analyze"
-              className="inline-flex items-center justify-center gap-2 w-full sm:w-auto px-6 py-3 rounded-xl bg-stone-100 dark:bg-[#1a1a1a] border border-neutral-200 dark:border-[#2a2a2a] hover:border-neutral-400 dark:hover:border-[#3a3a3a] text-neutral-700 dark:text-neutral-300 text-sm font-bold transition-all"
+              className="inline-flex items-center justify-center gap-2 w-full sm:w-auto px-6 py-3 rounded-xl bg-[#faf9f7] dark:bg-[#242320] border border-neutral-200 dark:border-[#35332e] hover:border-neutral-400 dark:hover:border-[#4a4641] text-neutral-700 dark:text-neutral-300 text-sm font-bold transition-all"
             >
               종목 직접 분석하기
             </Link>
@@ -205,15 +205,15 @@ export default function HomePage() {
 
         {/* Stats strip */}
         {!preview.loading && preview.total > 0 && (
-          <div className="border-t border-neutral-100 dark:border-[#1f1f1f]">
+          <div className="border-t border-neutral-100 dark:border-[#2c2b27]">
             <div className="max-w-lg mx-auto px-5 py-3 grid grid-cols-3 gap-0">
               <div className="text-center py-1">
-                <p className="text-xl font-black text-blue-600 dark:text-blue-400 tabular-nums leading-none">
+                <p className="text-xl font-black text-[#d97757] dark:text-[#d97757] tabular-nums leading-none">
                   {preview.total.toLocaleString()}
                 </p>
                 <p className="text-[10px] text-neutral-400 font-medium mt-1">오늘 발굴 종목</p>
               </div>
-              <div className="text-center py-1 border-x border-neutral-100 dark:border-[#1f1f1f]">
+              <div className="text-center py-1 border-x border-neutral-100 dark:border-[#2c2b27]">
                 <p className="text-xl font-black text-emerald-600 dark:text-emerald-400 tabular-nums leading-none">
                   {preview.filteredTotal.toLocaleString()}
                 </p>
@@ -229,7 +229,7 @@ export default function HomePage() {
           </div>
         )}
         {preview.loading && (
-          <div className="border-t border-neutral-100 dark:border-[#1f1f1f] flex items-center justify-center gap-2 py-3 text-neutral-400">
+          <div className="border-t border-neutral-100 dark:border-[#2c2b27] flex items-center justify-center gap-2 py-3 text-neutral-400">
             <Loader2 size={11} className="animate-spin" />
             <span className="text-xs">집계 중...</span>
           </div>
@@ -246,7 +246,7 @@ export default function HomePage() {
                 <h2 className="text-base font-black tracking-tight text-neutral-900 dark:text-neutral-50">
                   오늘의 발굴 종목
                 </h2>
-                <span className="text-[9px] font-extrabold px-2 py-0.5 rounded-full bg-blue-600 text-white">
+                <span className="text-[9px] font-extrabold px-2 py-0.5 rounded-full bg-[#d97757] text-white">
                   500억+
                 </span>
               </div>
@@ -258,16 +258,16 @@ export default function HomePage() {
             </div>
             <Link
               href={isLoggedIn ? "/screener?mincap=500" : "/login"}
-              className="flex items-center gap-0.5 text-xs font-bold text-blue-600 dark:text-blue-400 whitespace-nowrap"
+              className="flex items-center gap-0.5 text-xs font-bold text-[#d97757] dark:text-[#d97757] whitespace-nowrap"
             >
               전체 보기 <ChevronRight size={13} />
             </Link>
           </div>
 
           {/* Stock list card */}
-          <div className="rounded-2xl border border-neutral-200 dark:border-[#2a2a2a] overflow-hidden bg-white dark:bg-[#1a1a1a] shadow-sm">
+          <div className="rounded-2xl border border-neutral-200 dark:border-[#35332e] overflow-hidden bg-white dark:bg-[#242320] shadow-sm">
             {/* Column headers */}
-            <div className="px-4 py-2 bg-stone-50 dark:bg-[#111111] border-b border-neutral-100 dark:border-[#2a2a2a] flex items-center justify-between">
+            <div className="px-4 py-2 bg-[#fcfaf7] dark:bg-[#1f1e1b] border-b border-neutral-100 dark:border-[#35332e] flex items-center justify-between">
               <span className="text-[10px] font-bold text-neutral-400 uppercase tracking-wider">종목</span>
               <span className="text-[10px] font-bold text-neutral-400 uppercase tracking-wider">NCAV 비율</span>
             </div>
@@ -301,10 +301,10 @@ export default function HomePage() {
                     ))}
 
                     {!isLoggedIn && (
-                      <div className="absolute inset-0 flex items-center justify-center bg-gradient-to-b from-white/40 to-white/90 dark:from-[#1a1a1a]/40 dark:to-[#1a1a1a]/95">
+                      <div className="absolute inset-0 flex items-center justify-center bg-gradient-to-b from-white/40 to-white/90 dark:from-[#242320]/40 dark:to-[#242320]/95">
                         <Link
                           href="/login"
-                          className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-sm font-bold shadow-md shadow-blue-600/20 transition-all"
+                          className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-[#d97757] hover:bg-[#bf6644] text-white text-sm font-bold shadow-md shadow-[#d97757]/20 transition-all"
                         >
                           <Lock size={13} />
                           로그인하여 전체 확인
@@ -316,13 +316,13 @@ export default function HomePage() {
                 )}
 
                 {isLoggedIn && (
-                  <div className="px-4 py-3 bg-blue-50 dark:bg-blue-950/20 border-t border-blue-100 dark:border-blue-900/40 flex items-center justify-between gap-3">
-                    <p className="text-xs text-blue-700 dark:text-blue-400 font-medium">
+                  <div className="px-4 py-3 bg-[#fff8f5] dark:bg-[#3d1f10]/20 border-t border-[#fde8de] dark:border-[#7d3f27]/40 flex items-center justify-between gap-3">
+                    <p className="text-xs text-[#bf6644] dark:text-[#d97757] font-medium">
                       전체 <span className="font-black">{preview.filteredTotal}개</span> 종목을 필터·정렬로 탐색하세요.
                     </p>
                     <Link
                       href="/screener?mincap=500"
-                      className="shrink-0 flex items-center gap-1 px-3 py-1.5 rounded-lg bg-blue-600 text-white text-xs font-bold hover:bg-blue-700 transition-colors whitespace-nowrap"
+                      className="shrink-0 flex items-center gap-1 px-3 py-1.5 rounded-lg bg-[#d97757] text-white text-xs font-bold hover:bg-[#bf6644] transition-colors whitespace-nowrap"
                     >
                       스크리너 <ChevronRight size={10} />
                     </Link>
@@ -335,7 +335,7 @@ export default function HomePage() {
       </section>
 
       {/* ── FEATURES ─────────────────────────────────────────────── */}
-      <section className="py-6 px-5 border-t border-neutral-100 dark:border-[#222222]">
+      <section className="py-6 px-5 border-t border-neutral-100 dark:border-[#3a3834]">
         <div className="max-w-lg mx-auto">
           <div className="mb-4">
             <h2 className="text-base font-black text-neutral-900 dark:text-neutral-50">주요 기능</h2>
@@ -349,7 +349,7 @@ export default function HomePage() {
               return (
                 <div
                   key={i}
-                  className="shrink-0 w-52 sm:w-auto bg-white dark:bg-[#1a1a1a] rounded-2xl border border-neutral-200 dark:border-[#2a2a2a] p-4 flex flex-col gap-3"
+                  className="shrink-0 w-52 sm:w-auto bg-white dark:bg-[#242320] rounded-2xl border border-neutral-200 dark:border-[#35332e] p-4 flex flex-col gap-3"
                 >
                   <div className={cn("w-8 h-8 rounded-xl flex items-center justify-center", f.bgCls)}>
                     <Icon size={16} className={f.iconCls} strokeWidth={2} />
@@ -361,7 +361,7 @@ export default function HomePage() {
                     </p>
                   </div>
                   <Link href={f.link}
-                    className="inline-flex items-center gap-1 text-xs font-bold text-blue-600 dark:text-blue-400"
+                    className="inline-flex items-center gap-1 text-xs font-bold text-[#d97757] dark:text-[#d97757]"
                   >
                     {f.linkLabel} <ChevronRight size={11} />
                   </Link>
@@ -373,10 +373,10 @@ export default function HomePage() {
       </section>
 
       {/* ── FOOTER ───────────────────────────────────────────────── */}
-      <footer className="border-t border-neutral-100 dark:border-[#222222] bg-white dark:bg-[#111111]">
+      <footer className="border-t border-neutral-100 dark:border-[#3a3834] bg-white dark:bg-[#1f1e1b]">
         <div className="max-w-lg mx-auto px-5 py-5 flex items-center justify-between gap-4">
           <div className="flex items-center gap-2">
-            <TrendingUp size={14} className="text-blue-600 shrink-0" strokeWidth={2.5} />
+            <TrendingUp size={14} className="text-[#d97757] shrink-0" strokeWidth={2.5} />
             <span className="text-xs font-black tracking-tight text-neutral-700 dark:text-neutral-200">
               IDIOT QUANT
             </span>
@@ -395,7 +395,7 @@ export default function HomePage() {
             ))}
           </div>
         </div>
-        <div className="border-t border-neutral-100 dark:border-[#1f1f1f]">
+        <div className="border-t border-neutral-100 dark:border-[#2c2b27]">
           <p className="px-5 py-2.5 text-[10px] text-neutral-400 dark:text-neutral-600 text-center">
             본 서비스는 투자 참고 목적이며 투자 결과에 대한 책임을 지지 않습니다. © 2026 IDIOT QUANT
           </p>
