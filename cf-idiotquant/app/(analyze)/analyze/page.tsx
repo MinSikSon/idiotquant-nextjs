@@ -341,6 +341,15 @@ function AnalyzeContent() {
 
   const tickerFromUrl = searchParams.get('ticker');
 
+  // API 응답에서 실제 종목명·종목코드 추출 (검색 입력값과 무관하게 항상 정확한 정보 표시)
+  const displayName = krOrUs === 'KR'
+    ? (data.kiPrice?.output?.hts_kor_isnm || name)
+    : (data.usSearchInfo?.output?.prdt_eng_name || data.usDetail?.output?.ovrs_item_name || name);
+
+  const displayCode = krOrUs === 'KR'
+    ? (data.kiPrice?.output?.stck_shrn_iscd || tickerFromUrl || '')
+    : (tickerFromUrl || '');
+
   const isLoaded =
     tickerFromUrl === name &&
     (
@@ -519,12 +528,14 @@ function AnalyzeContent() {
                         ? "bg-gradient-to-tr from-[#fff8f5]0 to-sky-400"
                         : "bg-gradient-to-tr from-indigo-500 to-purple-400"
                     )}>
-                      {(name || tickerFromUrl || '?').substring(0, 1).toUpperCase()}
+                      {(displayName || tickerFromUrl || '?').substring(0, 1).toUpperCase()}
                     </div>
                     <div className="min-w-0">
                       <div className="flex items-center gap-2 flex-wrap">
-                        <span className="font-black text-neutral-900 dark:text-white text-base truncate">{name}</span>
-                        <span className="text-[10px] font-mono text-neutral-400 dark:text-neutral-500">{tickerFromUrl}</span>
+                        <span className="font-black text-neutral-900 dark:text-white text-base truncate">{displayName}</span>
+                        {displayCode && (
+                          <span className="text-[10px] font-mono text-neutral-400 dark:text-neutral-500">{displayCode}</span>
+                        )}
                         {gradeDisplay && (
                           <span className={cn(
                             "px-2 py-0.5 rounded text-xs font-black font-mono shrink-0",
