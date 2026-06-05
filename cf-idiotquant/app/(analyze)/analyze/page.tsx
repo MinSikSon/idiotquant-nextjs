@@ -41,6 +41,11 @@ const ValuationSection = dynamic(
   { loading: () => <ValuationSkeleton /> }
 );
 
+const DelistingRisk = dynamic(
+  () => import('@/app/(analyze)/analyze/components/DelistingRisk').then(mod => ({ default: mod.DelistingRisk })),
+  { ssr: false }
+);
+
 const FinancialTables = dynamic(
   () => import('@/app/(search)/search/components/FinancialTables'),
   { ssr: false }
@@ -675,6 +680,11 @@ function AnalyzeContent() {
                   <div className="bg-white dark:bg-[#242320] rounded-2xl border border-neutral-200 dark:border-[#35332e] p-1 shadow-sm">
                     <ValuationSection data={data} isUs={krOrUs === 'US'} />
                   </div>
+
+                  {/* 상장폐지 위험도 — KR 전용 */}
+                  {krOrUs === 'KR' && (
+                    <DelistingRisk kiBS={data.kiBS} kiIS={data.kiIS} />
+                  )}
 
                   {/* 재무제표 */}
                   <div className="bg-white dark:bg-[#242320] rounded-2xl border border-neutral-200 dark:border-[#35332e] shadow-sm overflow-hidden">
