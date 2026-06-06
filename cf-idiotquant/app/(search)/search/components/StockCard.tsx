@@ -131,24 +131,24 @@ const GRADE_CONFIG = {
     frameGradient: "linear-gradient(135deg,#94a3b8,#cbd5e1,#94a3b8)",
     glow: "shadow-[0_0_16px_rgba(148,163,184,0.15)]",
     darkCard: false,
-    cardBodyCls: "bg-white dark:bg-[#1a1915]",
+    cardBodyCls: "bg-[#faf9f7] dark:bg-[#1a1915]",
     label: "STABLE ASSET",
     labelColor: "text-slate-500 dark:text-slate-400",
     badgeGradient: "linear-gradient(90deg,#475569,#94a3b8)",
     badgeText: "text-white",
     nameColor: "text-neutral-900 dark:text-neutral-100",
     tickerColor: "text-neutral-400",
-    artBg: "from-slate-100 to-slate-200 dark:from-slate-900 dark:to-neutral-950",
-    artBorder: "border-slate-300/60 dark:border-slate-700/40",
+    artBg: "from-[#f0eeea] to-[#e8e5df] dark:from-[#1f1e1b] dark:to-[#1a1915]",
+    artBorder: "border-neutral-200/70 dark:border-[#3a3834]/50",
     artShadow: "",
-    typeGradient: "linear-gradient(90deg,rgba(100,116,139,0.07),rgba(148,163,184,0.07))",
-    typeBorder: "border-slate-300/50 dark:border-slate-700/40",
+    typeGradient: "linear-gradient(90deg,rgba(100,116,139,0.06),rgba(148,163,184,0.06))",
+    typeBorder: "border-neutral-200/60 dark:border-[#3a3834]/50",
     typeText: "text-slate-500 dark:text-slate-400",
-    statBg: "bg-slate-50 dark:bg-slate-900/50 border-slate-200/60 dark:border-slate-700/40",
+    statBg: "bg-white/70 dark:bg-[#242320]/50 border-neutral-200/60 dark:border-[#3a3834]/40",
     statDivide: "divide-neutral-100 dark:divide-[#35332e]/60",
     statLabel: "text-neutral-400 dark:text-neutral-500",
     statValue: "text-neutral-700 dark:text-neutral-300",
-    xpTrack: "bg-[#faf9f7] dark:bg-[#242320]",
+    xpTrack: "bg-neutral-200/60 dark:bg-[#242320]",
     xpFrom: "from-slate-400", xpTo: "to-slate-500",
     tierColor: "text-neutral-400",
     xpPctColor: "text-neutral-400",
@@ -158,31 +158,31 @@ const GRADE_CONFIG = {
     priceColor: "text-neutral-900 dark:text-white",
     priceCurrencyColor: "text-neutral-400",
     priceLabelColor: "text-neutral-400",
-    upBg: "bg-emerald-50 dark:bg-emerald-950/20 border-emerald-200/60 dark:border-emerald-900/40 text-emerald-700 dark:text-emerald-400",
+    upBg: "bg-green-50 dark:bg-[#052e16]/30 border-green-200 dark:border-[#16a34a]/20 text-[#15803d] dark:text-[#16a34a]",
     downBg: "bg-red-50 dark:bg-red-950/20 border-red-200/60 dark:border-red-900/40 text-red-600 dark:text-red-400",
   },
   B: {
     frameGradient: "linear-gradient(135deg,#71717a,#a1a1aa,#71717a)",
     glow: "shadow-md",
     darkCard: false,
-    cardBodyCls: "bg-white dark:bg-[#1a1915]",
+    cardBodyCls: "bg-[#faf9f7] dark:bg-[#1a1915]",
     label: "FAIR VALUE",
     labelColor: "text-neutral-500 dark:text-neutral-400",
     badgeGradient: "linear-gradient(90deg,#3f3f46,#71717a)",
     badgeText: "text-neutral-100",
     nameColor: "text-neutral-900 dark:text-neutral-100",
     tickerColor: "text-neutral-400",
-    artBg: "from-neutral-100 to-neutral-200 dark:from-neutral-900 dark:to-neutral-950",
-    artBorder: "border-neutral-300/50 dark:border-[#3a3834]/40",
+    artBg: "from-[#f0eeea] to-[#e8e5df] dark:from-[#1f1e1b] dark:to-[#1a1915]",
+    artBorder: "border-neutral-200/60 dark:border-[#3a3834]/40",
     artShadow: "",
-    typeGradient: "linear-gradient(90deg,rgba(113,113,122,0.07),rgba(161,161,170,0.07))",
-    typeBorder: "border-neutral-300/50 dark:border-[#3a3834]/40",
+    typeGradient: "linear-gradient(90deg,rgba(113,113,122,0.06),rgba(161,161,170,0.06))",
+    typeBorder: "border-neutral-200/60 dark:border-[#3a3834]/40",
     typeText: "text-neutral-500 dark:text-neutral-400",
-    statBg: "bg-[#faf9f7] dark:bg-[#242320]/50 border-neutral-200/60 dark:border-[#3a3834]/40",
+    statBg: "bg-white/70 dark:bg-[#242320]/50 border-neutral-200/60 dark:border-[#3a3834]/40",
     statDivide: "divide-neutral-100 dark:divide-[#35332e]/60",
     statLabel: "text-neutral-400 dark:text-neutral-500",
     statValue: "text-neutral-700 dark:text-neutral-300",
-    xpTrack: "bg-[#faf9f7] dark:bg-[#242320]",
+    xpTrack: "bg-neutral-200/60 dark:bg-[#242320]",
     xpFrom: "from-neutral-400", xpTo: "to-neutral-500",
     tierColor: "text-neutral-400",
     xpPctColor: "text-neutral-400",
@@ -192,31 +192,31 @@ const GRADE_CONFIG = {
     priceColor: "text-neutral-900 dark:text-white",
     priceCurrencyColor: "text-neutral-400",
     priceLabelColor: "text-neutral-400",
-    upBg: "bg-emerald-50 dark:bg-emerald-950/20 border-emerald-200/60 dark:border-emerald-900/40 text-emerald-700 dark:text-emerald-400",
+    upBg: "bg-green-50 dark:bg-[#052e16]/30 border-green-200 dark:border-[#16a34a]/20 text-[#15803d] dark:text-[#16a34a]",
     downBg: "bg-red-50 dark:bg-red-950/20 border-red-200/60 dark:border-red-900/40 text-red-600 dark:text-red-400",
   },
   F: {
     frameGradient: "linear-gradient(135deg,#ef4444,#f87171,#ef4444)",
     glow: "shadow-[0_0_22px_rgba(239,68,68,0.25)]",
     darkCard: false,
-    cardBodyCls: "bg-white dark:bg-[#1a1915]",
+    cardBodyCls: "bg-[#faf9f7] dark:bg-[#1a1915]",
     label: "OVERVALUED",
     labelColor: "text-red-500 dark:text-red-400",
     badgeGradient: "linear-gradient(90deg,#b91c1c,#ef4444)",
     badgeText: "text-white",
     nameColor: "text-neutral-900 dark:text-neutral-100",
     tickerColor: "text-neutral-400",
-    artBg: "from-red-50 to-rose-100 dark:from-red-950 dark:to-rose-950",
-    artBorder: "border-red-300/50 dark:border-red-700/40",
+    artBg: "from-red-50/80 to-rose-100/80 dark:from-red-950/60 dark:to-rose-950/60",
+    artBorder: "border-red-200/50 dark:border-red-800/40",
     artShadow: "",
-    typeGradient: "linear-gradient(90deg,rgba(239,68,68,0.07),rgba(244,63,94,0.07))",
+    typeGradient: "linear-gradient(90deg,rgba(239,68,68,0.06),rgba(244,63,94,0.06))",
     typeBorder: "border-red-200/50 dark:border-red-800/30",
     typeText: "text-red-500 dark:text-red-400",
-    statBg: "bg-red-50/50 dark:bg-red-950/20 border-red-100/60 dark:border-red-900/30",
-    statDivide: "divide-red-100/50 dark:divide-red-900/30",
-    statLabel: "text-red-300 dark:text-red-500",
+    statBg: "bg-red-50/40 dark:bg-red-950/20 border-red-100/60 dark:border-red-900/30",
+    statDivide: "divide-red-100/40 dark:divide-red-900/30",
+    statLabel: "text-red-400/80 dark:text-red-500",
     statValue: "text-neutral-700 dark:text-neutral-300",
-    xpTrack: "bg-[#faf9f7] dark:bg-[#242320]",
+    xpTrack: "bg-neutral-200/60 dark:bg-[#242320]",
     xpFrom: "from-red-400", xpTo: "to-rose-500",
     tierColor: "text-neutral-400",
     xpPctColor: "text-neutral-400",
@@ -226,7 +226,7 @@ const GRADE_CONFIG = {
     priceColor: "text-neutral-900 dark:text-white",
     priceCurrencyColor: "text-neutral-400",
     priceLabelColor: "text-neutral-400",
-    upBg: "bg-emerald-50 dark:bg-emerald-950/20 border-emerald-200/60 dark:border-emerald-900/40 text-emerald-700 dark:text-emerald-400",
+    upBg: "bg-green-50 dark:bg-[#052e16]/30 border-green-200 dark:border-[#16a34a]/20 text-[#15803d] dark:text-[#16a34a]",
     downBg: "bg-red-50 dark:bg-red-950/20 border-red-200/60 dark:border-red-900/40 text-red-600 dark:text-red-400",
   },
 } as const;
@@ -918,7 +918,7 @@ export const StockCard = ({ stock, chartConfig, isCompact = false, stockXpProfil
                   { label: "PER",  value: `${stock?.per ?? "—"}x`, color: "" },
                   { label: "PBR",  value: `${stock?.pbr ?? "—"}x`, color: "" },
                   { label: "NCAV", value: `${isUp ? "+" : ""}${ncavUpside.toFixed(1)}%`,
-                    color: isUp ? "text-emerald-400" : "text-red-400" },
+                    color: isUp ? (cfg.darkCard ? "text-emerald-400" : "text-[#16a34a]") : (cfg.darkCard ? "text-red-400" : "text-red-600") },
                 ].map(({ label, value, color }) => (
                   <div key={label} className="flex flex-col items-center py-2">
                     <span className={cn("text-[7px] font-black uppercase tracking-wider font-mono mb-0.5", cfg.statLabel)}>{label}</span>
@@ -952,7 +952,7 @@ export const StockCard = ({ stock, chartConfig, isCompact = false, stockXpProfil
 
         {/* ════════════════ BACK ════════════════ */}
         <div
-          className="absolute inset-0 rounded-[1.75rem] bg-white dark:bg-[#1a1915] flex flex-col shadow-xl overflow-hidden"
+          className="absolute inset-0 rounded-[1.75rem] bg-[#faf9f7] dark:bg-[#1f1e1b] flex flex-col shadow-xl overflow-hidden"
           style={{
             WebkitBackfaceVisibility: "hidden",
             backfaceVisibility: "hidden",
@@ -961,7 +961,7 @@ export const StockCard = ({ stock, chartConfig, isCompact = false, stockXpProfil
           }}
         >
           {/* 배경 도트 패턴 */}
-          <div className="absolute inset-0 opacity-[0.025] bg-[radial-gradient(#000_1px,transparent_1px)] dark:bg-[radial-gradient(#fff_1px,transparent_1px)] [background-size:14px_14px] pointer-events-none" />
+          <div className="absolute inset-0 opacity-[0.04] dark:opacity-[0.025] bg-[radial-gradient(rgba(0,0,0,0.4)_1px,transparent_1px)] dark:bg-[radial-gradient(rgba(255,255,255,0.6)_1px,transparent_1px)] [background-size:14px_14px] pointer-events-none" />
           {/* 등급 컬러 헤더 글로우 */}
           <div className="absolute inset-x-0 top-0 h-32 opacity-[0.08] pointer-events-none" style={{ background: cfg.frameGradient }} />
           {/* 테두리 */}
@@ -980,7 +980,7 @@ export const StockCard = ({ stock, chartConfig, isCompact = false, stockXpProfil
               {(() => {
                 const meta = GRADE_META[grade] ?? GRADE_META.B;
                 return (
-                  <div className="flex gap-2.5 p-2.5 rounded-xl bg-[#faf9f7] dark:bg-[#242320]/60 border border-neutral-200/70 dark:border-[#35332e]/70 mb-2">
+                  <div className="flex gap-2.5 p-2.5 rounded-xl bg-white/80 dark:bg-[#242320]/60 border border-neutral-200/70 dark:border-[#35332e]/70 mb-2">
                     <div className="shrink-0 flex flex-col items-center gap-1 pt-0.5">
                       <span
                         className={cn("text-xl font-black font-mono leading-none", cfg.labelColor)}
@@ -1026,7 +1026,7 @@ export const StockCard = ({ stock, chartConfig, isCompact = false, stockXpProfil
                 <span className="text-[8px] font-black uppercase tracking-widest font-mono text-neutral-400">카드 레벨</span>
               </div>
 
-              <div className="p-2.5 rounded-xl bg-neutral-900 dark:bg-[#1a1915] border border-neutral-800">
+              <div className="p-2.5 rounded-xl bg-[#1a1915] border border-[#35332e]">
                 {/* 레벨 헤더 */}
                 <div className="flex items-center justify-between mb-2">
                   <div className="flex items-center gap-1.5">
@@ -1034,7 +1034,7 @@ export const StockCard = ({ stock, chartConfig, isCompact = false, stockXpProfil
                       {tier.title}
                     </span>
                   </div>
-                  <span className="text-[11px] font-black font-mono text-amber-400 bg-amber-500/15 px-1.5 py-0.5 rounded-md border border-amber-500/20">
+                  <span className="text-[11px] font-black font-mono text-[#16a34a] bg-[#16a34a]/10 px-1.5 py-0.5 rounded-md border border-[#16a34a]/20">
                     Lv.{level}
                   </span>
                 </div>
@@ -1047,7 +1047,7 @@ export const StockCard = ({ stock, chartConfig, isCompact = false, stockXpProfil
                   <span>XP 진행도</span>
                   <span className="tabular-nums">{xp} / {maxXp}</span>
                 </div>
-                <div className="w-full h-1.5 bg-neutral-800 rounded-full overflow-hidden border border-neutral-700/50 mb-2">
+                <div className="w-full h-1.5 bg-[#2a2824] rounded-full overflow-hidden border border-[#35332e]/50 mb-2">
                   <motion.div
                     className={cn("h-full bg-gradient-to-r rounded-full", cfg.xpFrom, cfg.xpTo)}
                     animate={{ width: `${(xp / maxXp) * 100}%` }}
@@ -1057,7 +1057,7 @@ export const StockCard = ({ stock, chartConfig, isCompact = false, stockXpProfil
 
                 {/* 다음 티어 */}
                 {tier.next ? (
-                  <div className="flex items-center gap-1 pt-1.5 border-t border-neutral-800">
+                  <div className="flex items-center gap-1 pt-1.5 border-t border-[#35332e]">
                     <TrendingUp size={8} className="text-neutral-600 shrink-0" />
                     <p className="text-[7px] text-neutral-600 font-mono">
                       <span className="text-neutral-500 font-bold">Lv.{tier.nextLevel}</span> 도달 시{" "}
@@ -1065,7 +1065,7 @@ export const StockCard = ({ stock, chartConfig, isCompact = false, stockXpProfil
                     </p>
                   </div>
                 ) : (
-                  <div className="flex items-center gap-1 pt-1.5 border-t border-neutral-800">
+                  <div className="flex items-center gap-1 pt-1.5 border-t border-[#35332e]">
                     <span className="text-[7px] text-neutral-600 font-mono">✦ 최고 티어 달성</span>
                   </div>
                 )}
@@ -1074,8 +1074,8 @@ export const StockCard = ({ stock, chartConfig, isCompact = false, stockXpProfil
 
             {/* ── 푸터 ── */}
             <div className="mt-auto pt-2 border-t border-neutral-200 dark:border-[#35332e] flex items-center justify-center gap-1.5 shrink-0">
-              {stock?.isUs ? <DollarSign size={9} className="text-sky-400" /> : <Coins size={9} className="text-indigo-400" />}
-              <span className="text-[7px] font-black text-neutral-300 dark:text-neutral-700 tracking-[0.2em] uppercase font-mono">
+              {stock?.isUs ? <DollarSign size={9} className="text-[#16a34a]" /> : <Coins size={9} className="text-[#16a34a]" />}
+              <span className="text-[7px] font-black text-neutral-400 dark:text-neutral-600 tracking-[0.2em] uppercase font-mono">
                 {stock?.isUs ? "Finnhub · IdiotQuant" : "Korea Investment · IdiotQuant"}
               </span>
             </div>
