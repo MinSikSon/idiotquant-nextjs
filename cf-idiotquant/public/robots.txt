@@ -1,9 +1,12 @@
-//robots.txt
-
-# Block all crawlers for /accounts
-User-agent: *
-Disallow: /accounts
-
-# Allow all crawlers
 User-agent: *
 Allow: /
+Disallow: /accounts
+Disallow: /admin
+Disallow: /profile
+Disallow: /balance
+Disallow: /balance-kr
+Disallow: /balance-us
+Disallow: /api/
+Disallow: /algorithm-trade
+
+Sitemap: https://idiotquant.com/sitemap.xml

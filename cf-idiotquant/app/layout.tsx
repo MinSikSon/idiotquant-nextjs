@@ -6,6 +6,10 @@ export const viewport: Viewport = {
   initialScale: 1,
   maximumScale: 1,
   userScalable: false,
+  themeColor: [
+    { media: '(prefers-color-scheme: light)', color: '#ffffff' },
+    { media: '(prefers-color-scheme: dark)', color: '#1a1915' },
+  ],
 };
 import { StoreProvider } from "./StoreProvider";
 import NavbarWithSimpleLinks from "@/components/navigation";
@@ -29,6 +33,12 @@ export const metadata: Metadata = {
   authors: [{ name: 'IdiotQuant', url: 'https://idiotquant.com' }],
   creator: 'IdiotQuant',
   publisher: 'IdiotQuant',
+  appleWebApp: {
+    capable: true,
+    title: 'IdiotQuant',
+    statusBarStyle: 'default',
+  },
+  formatDetection: { telephone: false },
   robots: {
     index: true,
     follow: true,
@@ -74,6 +84,20 @@ const jsonLdWebSite = {
   },
 };
 
+const jsonLdOrg = {
+  '@context': 'https://schema.org',
+  '@type': 'Organization',
+  'name': 'IdiotQuant',
+  'url': 'https://idiotquant.com',
+  'logo': 'https://idiotquant.com/images/logo.png',
+  'description': '퀀트 알고리즘 기반 무료 주식 스크리너 및 재무분석 서비스',
+  'contactPoint': {
+    '@type': 'ContactPoint',
+    'contactType': 'customer support',
+    'availableLanguage': '한국어',
+  },
+};
+
 const jsonLdApp = {
   '@context': 'https://schema.org',
   '@type': 'WebApplication',
@@ -99,9 +123,16 @@ export default function RootLayout({
   return (
     <html lang="ko" suppressHydrationWarning>
       <head>
+        <link rel="preconnect" href="https://pagead2.googlesyndication.com" />
+        <link rel="dns-prefetch" href="//pagead2.googlesyndication.com" />
+        <link rel="dns-prefetch" href="//www.googletagservices.com" />
         <script
           type="application/ld+json"
           dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLdWebSite) }}
+        />
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLdOrg) }}
         />
         <script
           type="application/ld+json"
