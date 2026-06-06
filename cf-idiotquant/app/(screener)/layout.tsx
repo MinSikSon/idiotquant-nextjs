@@ -16,6 +16,20 @@ export const metadata: Metadata = {
   },
 };
 
+const jsonLdBreadcrumb = {
+  '@context': 'https://schema.org',
+  '@type': 'BreadcrumbList',
+  itemListElement: [
+    { '@type': 'ListItem', position: 1, name: '홈', item: 'https://idiotquant.com' },
+    { '@type': 'ListItem', position: 2, name: '오늘의 발굴 종목', item: 'https://idiotquant.com/screener' },
+  ],
+};
+
 export default function ScreenerLayout({ children }: { children: React.ReactNode }) {
-  return <>{children}</>;
+  return (
+    <>
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLdBreadcrumb) }} />
+      {children}
+    </>
+  );
 }

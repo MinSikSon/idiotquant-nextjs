@@ -15,6 +15,20 @@ export const metadata: Metadata = {
   },
 };
 
+const jsonLdBreadcrumb = {
+  '@context': 'https://schema.org',
+  '@type': 'BreadcrumbList',
+  itemListElement: [
+    { '@type': 'ListItem', position: 1, name: '홈', item: 'https://idiotquant.com' },
+    { '@type': 'ListItem', position: 2, name: '투자 계산기', item: 'https://idiotquant.com/calculator' },
+  ],
+};
+
 export default function CalculatorLayout({ children }: { children: React.ReactNode }) {
-  return <>{children}</>;
+  return (
+    <>
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLdBreadcrumb) }} />
+      {children}
+    </>
+  );
 }
