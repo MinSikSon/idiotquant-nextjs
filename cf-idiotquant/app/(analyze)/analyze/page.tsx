@@ -135,16 +135,32 @@ import {
 // 스켈레톤 컴포넌트
 // =========================================================================
 const StockCardSkeleton = memo(() => (
-  <div className="w-full h-[380px] bg-white dark:bg-[#242320] rounded-2xl border border-neutral-200 dark:border-[#35332e] animate-pulse p-6">
-    <div className="flex items-center gap-3 mb-6">
-      <div className="w-12 h-12 bg-neutral-200 dark:bg-[#242320] rounded-xl" />
-      <div className="flex-1 space-y-2">
-        <div className="h-5 bg-neutral-200 dark:bg-[#242320] rounded w-3/4" />
-        <div className="h-4 bg-neutral-200 dark:bg-[#242320] rounded w-1/2" />
+  <div className="w-full bg-white dark:bg-[#242320] rounded-2xl border border-neutral-200 dark:border-[#35332e] overflow-hidden animate-pulse">
+    <div className="h-[3px] w-full bg-neutral-200 dark:bg-[#35332e]" />
+    <div className="p-5 space-y-4">
+      <div className="flex items-center gap-4">
+        <div className="w-[52px] h-[52px] bg-[#faf9f7] dark:bg-[#1a1915] rounded-2xl border border-neutral-100 dark:border-[#35332e] shrink-0" />
+        <div className="flex-1 space-y-2">
+          <div className="flex justify-between">
+            <div className="h-4 bg-neutral-200 dark:bg-[#35332e] rounded w-2/3" />
+            <div className="h-6 w-10 bg-neutral-200 dark:bg-[#35332e] rounded-lg" />
+          </div>
+          <div className="h-3 bg-neutral-200 dark:bg-[#35332e] rounded w-1/3" />
+          <div className="h-6 bg-neutral-200 dark:bg-[#35332e] rounded w-1/2 mt-1" />
+        </div>
       </div>
+      <div className="h-10 bg-[#faf9f7] dark:bg-[#1a1915] rounded-xl border border-neutral-100 dark:border-[#35332e]" />
     </div>
-    <div className="space-y-3">
-      {[...Array(4)].map((_, i) => <div key={i} className="h-14 bg-neutral-200 dark:bg-[#242320] rounded-xl" />)}
+    <div className="px-5 pb-4">
+      <div className="h-[68px] bg-[#faf9f7] dark:bg-[#1a1915] rounded-xl border border-neutral-100 dark:border-[#35332e]" />
+    </div>
+    <div className="border-t border-neutral-100 dark:border-[#35332e] grid grid-cols-3 divide-x divide-neutral-100 dark:divide-[#35332e]">
+      {[...Array(3)].map((_, i) => (
+        <div key={i} className="py-3 flex flex-col items-center gap-1.5">
+          <div className="h-2 w-8 bg-neutral-200 dark:bg-[#35332e] rounded" />
+          <div className="h-4 w-12 bg-neutral-200 dark:bg-[#35332e] rounded" />
+        </div>
+      ))}
     </div>
   </div>
 ));
