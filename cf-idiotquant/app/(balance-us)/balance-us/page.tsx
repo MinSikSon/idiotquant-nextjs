@@ -161,7 +161,7 @@ export default function Page() {
 // 메인 컴포넌트
 // =========================================================================
 function BalanceUs() {
-  const { data: session } = useSession();
+  const { data: session, status } = useSession();
   const dispatch = useAppDispatch();
   const router = useRouter();
   const pathname = usePathname();
@@ -217,10 +217,13 @@ function BalanceUs() {
   }, [session?.user?.id, searchParams]);
 
   useEffect(() => {
-    if (session?.user?.name === process.env.NEXT_PUBLIC_MASTER) {
-      dispatch(reqGetKakaoMemberList());
+    if (status === "loading") return;
+    if (!session || session.user?.name !== process.env.NEXT_PUBLIC_MASTER) {
+      router.replace("/");
+      return;
     }
-  }, [session, dispatch]);
+    dispatch(reqGetKakaoMemberList());
+  }, [session, status, dispatch, router]);
 
   useEffect(() => {
     if (!balanceKey || balanceKey === "undefined") return;

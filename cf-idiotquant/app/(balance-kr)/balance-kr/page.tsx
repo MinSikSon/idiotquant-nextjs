@@ -173,7 +173,7 @@ export default function Page() {
 // 메인 컴포넌트
 // =========================================================================
 function BalanceKr() {
-  const { data: session } = useSession();
+  const { data: session, status } = useSession();
   const dispatch = useAppDispatch();
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -233,15 +233,18 @@ function BalanceKr() {
   }, [balanceKey]);
 
   useEffect(() => {
-    if (session?.user?.id && !searchParams.get("key")) {
+    if (status === "loading") return;
+    if (!session || session.user?.name !== process.env.NEXT_PUBLIC_MASTER) {
+      router.replace("/");
+      return;
+    }
+    if (session.user?.id && !searchParams.get("key")) {
       dispatch(reqGetInquireBalance(String(session.user.id)));
       setBalanceKey(String(session.user.id));
     }
     dispatch(reqGetCapitalToken());
-    if (session?.user?.name === process.env.NEXT_PUBLIC_MASTER) {
-      dispatch(reqGetKakaoMemberList());
-    }
-  }, [session, dispatch]);
+    dispatch(reqGetKakaoMemberList());
+  }, [session, status, dispatch, router]);
 
   useEffect(() => {
     if (krCapital.state === "init" && balanceKey) {
