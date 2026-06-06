@@ -126,16 +126,16 @@ export default function StockListTable({
               </tr>
             ) : (
               rows.map((row, idx) => (
-                <tr key={`row-${idx}`} className="group hover:bg-[#fff8f5]/30 dark:hover:bg-[#7d3f27]/10 transition-colors">
+                <tr key={`row-${idx}`} className="group hover:bg-[#f0fdf4]/30 dark:hover:bg-[#14532d]/10 transition-colors">
                   <td className="px-4 py-3">
                     <button
                       onClick={() => { setSelected(row); setIsOpen(true); }}
                       className="flex items-center gap-2 group/btn"
                     >
-                      <div className="p-1.5 rounded-md bg-[#faf9f7] dark:bg-[#35332e] group-hover/btn:bg-[#fff8f5]0 group-hover/btn:text-white transition-all">
+                      <div className="p-1.5 rounded-md bg-[#faf9f7] dark:bg-[#35332e] group-hover/btn:bg-[#f0fdf4]0 group-hover/btn:text-white transition-all">
                         <TrendingUp className="w-3.5 h-3.5" />
                       </div>
-                      <span className="font-bold text-sm text-neutral-900 dark:text-neutral-100 group-hover/btn:text-[#d97757] transition-colors tracking-tight">
+                      <span className="font-bold text-sm text-neutral-900 dark:text-neutral-100 group-hover/btn:text-[#16a34a] transition-colors tracking-tight">
                         {row.symbol}
                       </span>
                     </button>
@@ -165,7 +165,7 @@ export default function StockListTable({
                       {row.ncavRatio}
                     </span>
                   </td>
-                  <td className="px-4 py-3 text-right font-mono font-black text-[#d97757] dark:text-[#d97757]">
+                  <td className="px-4 py-3 text-right font-mono font-black text-[#16a34a] dark:text-[#16a34a]">
                     {row.token?.toLocaleString()}
                   </td>
                   {isMaster && (
@@ -211,11 +211,11 @@ export default function StockListTable({
             {/* Header */}
             <div className="flex items-center justify-between border-b border-neutral-100 p-4 dark:border-[#35332e]">
               <div className="flex items-center gap-2">
-                <div className="rounded-lg bg-[#d97757] p-1.5 text-white">
+                <div className="rounded-lg bg-[#16a34a] p-1.5 text-white">
                   <BarChart3 className="h-4 w-4" />
                 </div>
                 <h2 className="text-lg font-bold tracking-tight text-neutral-900 dark:text-neutral-100">
-                  Strategy Analysis: <span className="text-[#d97757]">{selected?.symbol}</span>
+                  Strategy Analysis: <span className="text-[#16a34a]">{selected?.symbol}</span>
                 </h2>
               </div>
               <button 
@@ -262,7 +262,7 @@ export default function StockListTable({
                   </pre>
                   <button 
                     onClick={() => navigator.clipboard.writeText(JSON.stringify(selected))}
-                    className="absolute right-3 top-3 rounded-md bg-white p-2 shadow-sm border border-neutral-200 opacity-0 group-hover:opacity-100 hover:bg-[#fff8f5] transition-all dark:bg-[#35332e] dark:border-[#4a4641]"
+                    className="absolute right-3 top-3 rounded-md bg-white p-2 shadow-sm border border-neutral-200 opacity-0 group-hover:opacity-100 hover:bg-[#f0fdf4] transition-all dark:bg-[#35332e] dark:border-[#4a4641]"
                   >
                     <Copy className="h-3.5 w-3.5 text-neutral-600 dark:text-neutral-300" />
                   </button>
@@ -274,7 +274,7 @@ export default function StockListTable({
             <div className="flex justify-end gap-3 border-t border-neutral-100 bg-neutral-50/50 p-4 dark:border-[#35332e] dark:bg-[#242320]/50">
               <button
                 onClick={closeModal}
-                className="rounded-lg bg-[#d97757] px-8 py-2.5 text-sm font-bold text-white shadow-lg shadow-[#d97757]/20 hover:bg-[#bf6644] active:scale-95 transition-all"
+                className="rounded-lg bg-[#16a34a] px-8 py-2.5 text-sm font-bold text-white shadow-lg shadow-[#16a34a]/20 hover:bg-[#15803d] active:scale-95 transition-all"
               >
                 확인
               </button>

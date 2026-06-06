@@ -25,7 +25,7 @@ const GRADES = [
 ];
 
 const MODELS = [
-  { name: "NCAV",  category: "자산가치", desc: "유동자산 − 총부채로 청산가치 계산",    color: "text-[#d97757]",                         bg: "bg-[#fff8f5] dark:bg-[#3d1f10]/30" },
+  { name: "NCAV",  category: "자산가치", desc: "유동자산 − 총부채로 청산가치 계산",    color: "text-[#16a34a]",                         bg: "bg-[#f0fdf4] dark:bg-[#052e16]/30" },
   { name: "PBR",   category: "자산가치", desc: "역사적 PBR 밴드 상·하단 역산",         color: "text-cyan-600 dark:text-cyan-400",        bg: "bg-cyan-50 dark:bg-cyan-950/30" },
   { name: "S-RIM", category: "수익가치", desc: "ROE 기반 초과수익의 현재가치 합산",     color: "text-emerald-600 dark:text-emerald-400", bg: "bg-emerald-50 dark:bg-emerald-950/30" },
   { name: "DCF",   category: "수익가치", desc: "잉여현금흐름을 WACC로 할인",           color: "text-purple-600 dark:text-purple-400",   bg: "bg-purple-50 dark:bg-purple-950/30" },
@@ -47,7 +47,7 @@ export const SearchGuide = () => {
 
       {/* ── Hero ── */}
       <section className="relative overflow-hidden pt-16 pb-12 px-4">
-        <div className="absolute -top-24 left-1/2 -translate-x-1/2 w-[500px] h-[280px] bg-[#d97757]/5 dark:bg-[#d97757]/7 blur-[120px] rounded-full -z-10" />
+        <div className="absolute -top-24 left-1/2 -translate-x-1/2 w-[500px] h-[280px] bg-[#16a34a]/5 dark:bg-[#16a34a]/7 blur-[120px] rounded-full -z-10" />
 
         <div className="max-w-2xl mx-auto text-center">
           <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-white dark:bg-[#242320] border border-neutral-200 dark:border-[#35332e] shadow-sm mb-7">
@@ -60,7 +60,7 @@ export const SearchGuide = () => {
 
           <h1 className="text-3xl sm:text-4xl md:text-5xl font-black tracking-tighter text-neutral-900 dark:text-white leading-[1.06] mb-4 break-keep">
             종목명 하나로<br />
-            <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#d97757] to-violet-500 dark:from-[#d97757] dark:to-violet-400">
+            <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#16a34a] to-violet-500 dark:from-[#16a34a] dark:to-violet-400">
               6가지 모델 동시 분석
             </span>
           </h1>
@@ -85,7 +85,7 @@ export const SearchGuide = () => {
                   "inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold border transition-all hover:scale-105 active:scale-95",
                   q.market === "KR"
                     ? "bg-indigo-50 dark:bg-indigo-950/30 text-indigo-700 dark:text-indigo-400 border-indigo-200/60 dark:border-indigo-800/40 hover:bg-indigo-100 dark:hover:bg-indigo-950/60"
-                    : "bg-[#fff8f5] dark:bg-[#3d1f10]/30 text-[#bf6644] dark:text-[#d97757] border-[#f9c9b0]/60 dark:border-[#a05438]/40 hover:bg-[#fde8de] dark:hover:bg-[#3d1f10]/60"
+                    : "bg-[#f0fdf4] dark:bg-[#052e16]/30 text-[#15803d] dark:text-[#16a34a] border-[#bbf7d0]/60 dark:border-[#166534]/40 hover:bg-[#dcfce7] dark:hover:bg-[#052e16]/60"
                 )}
               >
                 <span className="text-[9px] font-black opacity-50 uppercase tracking-wider">{q.market}</span>
@@ -178,7 +178,7 @@ export const SearchGuide = () => {
 
             <div className="flex flex-wrap items-center gap-2 px-4 py-3 bg-[#faf9f7] dark:bg-[#242320] rounded-xl border border-neutral-200 dark:border-[#35332e] text-xs">
               <span className="text-neutral-500 dark:text-neutral-400 font-medium">그레이엄 기준</span>
-              <code className="font-mono font-black text-[#d97757] bg-[#fff8f5] dark:bg-[#3d1f10]/30 px-2.5 py-1 rounded-lg border border-[#f9c9b0]/50 dark:border-[#a05438]/40">
+              <code className="font-mono font-black text-[#16a34a] bg-[#f0fdf4] dark:bg-[#052e16]/30 px-2.5 py-1 rounded-lg border border-[#bbf7d0]/50 dark:border-[#166534]/40">
                 시가총액 {'<'} NCAV × 0.67
               </code>
               <span className="text-neutral-400 dark:text-neutral-500">→ S 등급 이상 (Net-Net)</span>

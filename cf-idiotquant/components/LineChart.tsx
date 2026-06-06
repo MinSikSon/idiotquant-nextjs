@@ -15,7 +15,7 @@ import { useTheme } from "next-themes";
 // IdiotQuant 테마와 싱크를 맞춘 프리미엄 컬러 팔레트
 const tailwindPalette = {
     light: {
-        primary: "#3b82f6",     // [#fff8f5]0
+        primary: "#3b82f6",     // [#f0fdf4]0
         secondary: "#10b981",   // emerald-500
         accent: "#f59e0b",      // amber-500
         pink: "#ec4899",       // pink-500
@@ -24,7 +24,7 @@ const tailwindPalette = {
         grid: "#f3f4f6",       // gray-100
     },
     dark: {
-        primary: "#60a5fa",     // [#d97757]
+        primary: "#60a5fa",     // [#16a34a]
         secondary: "#34d399",   // emerald-400
         accent: "#fbbf24",      // amber-400
         pink: "#f472b6",       // pink-400

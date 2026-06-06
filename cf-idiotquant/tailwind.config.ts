@@ -37,7 +37,7 @@ const config = {
         },
       },
       fontFamily: {
-        sans: ["var(--font-inter)", "var(--font-noto-kr)", "ui-sans-serif", "system-ui", "-apple-system", "sans-serif"],
+        sans: ["Pretendard Variable", "var(--font-inter)", "var(--font-noto-kr)", "ui-sans-serif", "system-ui", "-apple-system", "sans-serif"],
         mono: ["var(--font-mono)", "ui-monospace", "Menlo", "monospace"],
         serif: ["Times New Roman", "Georgia", "serif"],
       },

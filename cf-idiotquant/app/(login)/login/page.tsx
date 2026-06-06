@@ -17,11 +17,11 @@ export default function LoginPage() {
                 {/* Brand mark */}
                 <div className="flex justify-center">
                     <Link href="/" className="group flex items-center gap-3">
-                        <div className="w-11 h-11 bg-[#d97757] rounded-2xl flex items-center justify-center shadow-sm shadow-[#d97757]/20 group-hover:shadow-[#d97757]/30 transition-shadow">
+                        <div className="w-11 h-11 bg-[#16a34a] rounded-2xl flex items-center justify-center shadow-sm shadow-[#16a34a]/20 group-hover:shadow-[#16a34a]/30 transition-shadow">
                             <span className="text-white text-[13px] font-black italic leading-none">IQ</span>
                         </div>
                         <span className="font-black tracking-tighter text-xl text-neutral-900 dark:text-white">
-                            IDIOT<span className="text-[#d97757]">QUANT</span>
+                            IDIOT<span className="text-[#16a34a]">QUANT</span>
                         </span>
                     </Link>
                 </div>
@@ -43,8 +43,8 @@ export default function LoginPage() {
                     <div className="px-8 py-6 space-y-4 border-b border-neutral-100 dark:border-[#35332e]">
                         {BENEFITS.map((b) => (
                             <div key={b.label} className="flex items-start gap-3">
-                                <div className="mt-0.5 w-5 h-5 rounded-full bg-[#fde8de] dark:bg-[#3d1f10]/60 flex items-center justify-center shrink-0">
-                                    <svg className="w-2.5 h-2.5 text-[#d97757] dark:text-[#d97757]" viewBox="0 0 10 8" fill="none">
+                                <div className="mt-0.5 w-5 h-5 rounded-full bg-[#dcfce7] dark:bg-[#052e16]/60 flex items-center justify-center shrink-0">
+                                    <svg className="w-2.5 h-2.5 text-[#16a34a] dark:text-[#16a34a]" viewBox="0 0 10 8" fill="none">
                                         <path d="M1 4l2.5 2.5L9 1" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/>
                                     </svg>
                                 </div>

@@ -29,7 +29,7 @@ const STRATEGY_LABEL: Record<string, string> = {
 
 const STRATEGY_BADGE_CLS: Record<string, string> = {
   ncav:           "bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-400 border-emerald-200 dark:border-emerald-800/60",
-  low_pbr:        "bg-[#fff8f5] dark:bg-[#3d1f10]/40 text-[#bf6644] dark:text-[#d97757] border-[#f9c9b0] dark:border-[#a05438]/60",
+  low_pbr:        "bg-[#f0fdf4] dark:bg-[#052e16]/40 text-[#15803d] dark:text-[#16a34a] border-[#bbf7d0] dark:border-[#166534]/60",
   low_per:        "bg-orange-50 dark:bg-orange-950/40 text-orange-700 dark:text-orange-400 border-orange-200 dark:border-orange-800/60",
   s_rim:          "bg-violet-50 dark:bg-violet-950/40 text-violet-700 dark:text-violet-400 border-violet-200 dark:border-violet-800/60",
   graham_number:  "bg-teal-50 dark:bg-teal-950/40 text-teal-700 dark:text-teal-400 border-teal-200 dark:border-teal-800/60",
@@ -42,8 +42,8 @@ const STRATEGY_BADGE_CLS: Record<string, string> = {
 const FEATURES = [
   {
     icon: Filter,
-    iconCls: "text-[#d97757] dark:text-[#d97757]",
-    bgCls: "bg-[#fff8f5] dark:bg-[#3d1f10]/30",
+    iconCls: "text-[#16a34a] dark:text-[#16a34a]",
+    bgCls: "bg-[#f0fdf4] dark:bg-[#052e16]/30",
     title: "종목 발굴",
     desc: "9가지 퀀트 전략으로 KOSPI·KOSDAQ 전 종목을 매일 자동 스캔합니다.",
     link: "/screener",
@@ -74,7 +74,7 @@ const HOW_IT_WORKS = [
     step: "01",
     title: "매일 자동 스캔",
     desc: "KIS API로 KOSPI·KOSDAQ 전 종목의 재무 데이터를 매일 수집합니다.",
-    accent: "text-[#d97757]",
+    accent: "text-[#16a34a]",
   },
   {
     step: "02",
@@ -205,7 +205,7 @@ export default function HomePage() {
       {/* ── HERO ─────────────────────────────────────────────────── */}
       <section className="bg-white dark:bg-[#1f1e1b] border-b border-neutral-200/70 dark:border-[#3a3834] relative overflow-hidden">
         {/* Decorative radial accents */}
-        <div className="absolute -top-32 -right-32 w-80 h-80 rounded-full bg-[#d97757]/6 dark:bg-[#d97757]/4 blur-3xl pointer-events-none" />
+        <div className="absolute -top-32 -right-32 w-80 h-80 rounded-full bg-[#16a34a]/6 dark:bg-[#16a34a]/4 blur-3xl pointer-events-none" />
         <div className="absolute -bottom-16 -left-16 w-64 h-64 rounded-full bg-emerald-500/4 dark:bg-emerald-500/3 blur-3xl pointer-events-none" />
 
         <div className="max-w-3xl mx-auto px-5 pt-14 pb-12 sm:pt-20 sm:pb-14 md:pt-28 md:pb-20 relative">
@@ -221,20 +221,20 @@ export default function HomePage() {
 
           {/* Headline */}
           <h1 className="text-[2.1rem] sm:text-[3rem] md:text-[3.5rem] font-black leading-[1.08] tracking-tight mb-4 text-neutral-900 dark:text-neutral-50">
-            저평가 국내 주식,<br />
-            <span className="text-[#d97757] dark:text-[#d97757]">데이터가 찾아드립니다.</span>
+            퀀트 투자,<br />
+            <span className="text-[#16a34a] dark:text-[#16a34a]">어렵지 않습니다.</span>
           </h1>
 
           <p className="text-sm sm:text-[15px] text-neutral-500 dark:text-neutral-400 font-medium leading-relaxed mb-7">
-            9가지 퀀트 전략으로 매일 저평가 종목을 발굴하고<br className="hidden sm:block" />
-            적정 주가까지 즉시 확인하세요.
+            NCAV·저PBR·저PER — 매일 2,000종목을<br className="hidden sm:block" />
+            알고리즘이 대신 분석합니다.
           </p>
 
           {/* CTA buttons */}
           <div className="flex flex-col sm:flex-row gap-2.5">
             {!sessionLoading && (isLoggedIn ? (
               <Link href="/screener"
-                className="inline-flex items-center justify-center gap-2 w-full sm:w-auto px-6 py-3 rounded-xl bg-[#d97757] hover:bg-[#bf6644] active:bg-[#a05438] text-white text-sm font-bold shadow-md shadow-[#d97757]/20 transition-all"
+                className="inline-flex items-center justify-center gap-2 w-full sm:w-auto px-6 py-3 rounded-xl bg-[#16a34a] hover:bg-[#15803d] active:bg-[#166534] text-white text-sm font-bold shadow-md shadow-[#16a34a]/20 transition-all"
               >
                 <TrendingUp size={15} strokeWidth={2.5} />
                 종목 발굴하기
@@ -242,7 +242,7 @@ export default function HomePage() {
               </Link>
             ) : (
               <Link href="/login"
-                className="inline-flex items-center justify-center gap-2 w-full sm:w-auto px-6 py-3 rounded-xl bg-[#d97757] hover:bg-[#bf6644] active:bg-[#a05438] text-white text-sm font-bold shadow-md shadow-[#d97757]/20 transition-all"
+                className="inline-flex items-center justify-center gap-2 w-full sm:w-auto px-6 py-3 rounded-xl bg-[#16a34a] hover:bg-[#15803d] active:bg-[#166534] text-white text-sm font-bold shadow-md shadow-[#16a34a]/20 transition-all"
               >
                 카카오로 무료 시작
                 <ArrowRight size={14} />
@@ -261,7 +261,7 @@ export default function HomePage() {
           <div className="border-t border-neutral-100 dark:border-[#2c2b27] relative">
             <div className="max-w-3xl mx-auto px-5 py-5 grid grid-cols-3 gap-0">
               <div className="text-center py-1">
-                <p className="text-xl font-black text-[#d97757] dark:text-[#d97757] tabular-nums leading-none">
+                <p className="text-xl font-black text-[#16a34a] dark:text-[#16a34a] tabular-nums leading-none">
                   {animatedTotal.toLocaleString()}
                 </p>
                 <p className="text-[10px] text-neutral-400 font-medium mt-1">오늘 발굴 종목</p>
@@ -299,7 +299,7 @@ export default function HomePage() {
                 <h2 className="text-base font-black tracking-tight text-neutral-900 dark:text-neutral-50">
                   오늘의 발굴 종목
                 </h2>
-                <span className="text-[9px] font-extrabold px-2 py-0.5 rounded-full bg-[#d97757] text-white">
+                <span className="text-[9px] font-extrabold px-2 py-0.5 rounded-full bg-[#16a34a] text-white">
                   500억+
                 </span>
               </div>
@@ -311,7 +311,7 @@ export default function HomePage() {
             </div>
             <Link
               href={isLoggedIn ? "/screener?mincap=500" : "/login"}
-              className="flex items-center gap-0.5 text-xs font-bold text-[#d97757] dark:text-[#d97757] whitespace-nowrap"
+              className="flex items-center gap-0.5 text-xs font-bold text-[#16a34a] dark:text-[#16a34a] whitespace-nowrap"
             >
               전체 보기 <ChevronRight size={13} />
             </Link>
@@ -357,7 +357,7 @@ export default function HomePage() {
                       <div className="absolute inset-0 flex items-center justify-center bg-gradient-to-b from-white/40 to-white/90 dark:from-[#242320]/40 dark:to-[#242320]/95">
                         <Link
                           href="/login"
-                          className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-[#d97757] hover:bg-[#bf6644] text-white text-sm font-bold shadow-md shadow-[#d97757]/20 transition-all"
+                          className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-[#16a34a] hover:bg-[#15803d] text-white text-sm font-bold shadow-md shadow-[#16a34a]/20 transition-all"
                         >
                           <Lock size={13} />
                           로그인하여 전체 확인
@@ -369,13 +369,13 @@ export default function HomePage() {
                 )}
 
                 {isLoggedIn && (
-                  <div className="px-4 py-3 bg-[#fff8f5] dark:bg-[#3d1f10]/20 border-t border-[#fde8de] dark:border-[#7d3f27]/40 flex items-center justify-between gap-3">
-                    <p className="text-xs text-[#bf6644] dark:text-[#d97757] font-medium">
+                  <div className="px-4 py-3 bg-[#f0fdf4] dark:bg-[#052e16]/20 border-t border-[#dcfce7] dark:border-[#14532d]/40 flex items-center justify-between gap-3">
+                    <p className="text-xs text-[#15803d] dark:text-[#16a34a] font-medium">
                       전체 <span className="font-black">{preview.filteredTotal}개</span> 종목을 필터·정렬로 탐색하세요.
                     </p>
                     <Link
                       href="/screener?mincap=500"
-                      className="shrink-0 flex items-center gap-1 px-3 py-1.5 rounded-lg bg-[#d97757] text-white text-xs font-bold hover:bg-[#bf6644] transition-colors whitespace-nowrap"
+                      className="shrink-0 flex items-center gap-1 px-3 py-1.5 rounded-lg bg-[#16a34a] text-white text-xs font-bold hover:bg-[#15803d] transition-colors whitespace-nowrap"
                     >
                       스크리너 <ChevronRight size={10} />
                     </Link>
@@ -392,8 +392,8 @@ export default function HomePage() {
         <div className="max-w-3xl mx-auto">
           <div className="mb-7">
             <div className="flex items-center gap-2 mb-1">
-              <Zap size={13} className="text-[#d97757]" strokeWidth={2.5} />
-              <h2 className="text-base font-black text-neutral-900 dark:text-neutral-50">어떻게 작동하나요?</h2>
+              <Zap size={13} className="text-[#16a34a]" strokeWidth={2.5} />
+              <h2 className="text-base font-black text-neutral-900 dark:text-neutral-50">이렇게 씁니다</h2>
             </div>
             <p className="text-[11px] text-neutral-400">3단계로 저평가 종목을 발굴합니다.</p>
           </div>
@@ -441,7 +441,7 @@ export default function HomePage() {
                     </p>
                   </div>
                   <Link href={f.link}
-                    className="inline-flex items-center gap-1 text-xs font-bold text-[#d97757] dark:text-[#d97757]"
+                    className="inline-flex items-center gap-1 text-xs font-bold text-[#16a34a] dark:text-[#16a34a]"
                   >
                     {f.linkLabel} <ChevronRight size={11} />
                   </Link>
@@ -456,13 +456,13 @@ export default function HomePage() {
       {!isLoggedIn && !sessionLoading && (
         <section className="py-16 px-5 border-t border-neutral-100 dark:border-[#3a3834] bg-gradient-to-b from-[#faf9f7] to-white dark:from-[#1a1917] dark:to-[#1f1e1b] relative overflow-hidden">
           <div className="absolute inset-0 pointer-events-none">
-            <div className="absolute top-0 left-1/2 -translate-x-1/2 w-96 h-40 rounded-full bg-[#d97757]/5 dark:bg-[#d97757]/4 blur-3xl" />
+            <div className="absolute top-0 left-1/2 -translate-x-1/2 w-96 h-40 rounded-full bg-[#16a34a]/5 dark:bg-[#16a34a]/4 blur-3xl" />
           </div>
           <div className="max-w-3xl mx-auto text-center relative">
-            <div className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-[#fff8f5] dark:bg-[#3d1f10]/40 border border-[#fde8de] dark:border-[#7d3f27]/60 mb-4 text-[11px] font-semibold text-[#bf6644] dark:text-[#d97757]">
+            <div className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-[#f0fdf4] dark:bg-[#052e16]/40 border border-[#dcfce7] dark:border-[#14532d]/60 mb-4 text-[11px] font-semibold text-[#15803d] dark:text-[#16a34a]">
               <span className="relative flex h-1.5 w-1.5 shrink-0">
-                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#d97757] opacity-60" />
-                <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-[#d97757]" />
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#16a34a] opacity-60" />
+                <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-[#16a34a]" />
               </span>
               무료로 시작하세요
             </div>
@@ -473,7 +473,7 @@ export default function HomePage() {
               카카오 계정으로 즉시 시작. 별도 가입 없이 전체 기능을 이용할 수 있습니다.
             </p>
             <Link href="/login"
-              className="inline-flex items-center gap-2 px-7 py-3.5 rounded-xl bg-[#d97757] hover:bg-[#bf6644] active:bg-[#a05438] text-white font-bold text-sm shadow-md shadow-[#d97757]/20 transition-all"
+              className="inline-flex items-center gap-2 px-7 py-3.5 rounded-xl bg-[#16a34a] hover:bg-[#15803d] active:bg-[#166534] text-white font-bold text-sm shadow-md shadow-[#16a34a]/20 transition-all"
             >
               카카오로 무료 시작
               <ArrowRight size={15} />
@@ -486,7 +486,7 @@ export default function HomePage() {
       <footer className="border-t border-neutral-100 dark:border-[#3a3834] bg-white dark:bg-[#1f1e1b]">
         <div className="max-w-3xl mx-auto px-5 py-6 flex items-center justify-between gap-4">
           <div className="flex items-center gap-2">
-            <TrendingUp size={14} className="text-[#d97757] shrink-0" strokeWidth={2.5} />
+            <TrendingUp size={14} className="text-[#16a34a] shrink-0" strokeWidth={2.5} />
             <span className="text-xs font-black tracking-tight text-neutral-700 dark:text-neutral-200">
               IDIOT QUANT
             </span>

@@ -63,13 +63,13 @@ export const StockHeader = ({ data, isUs, isFixed }: StockHeaderProps) => {
                 )}>
                   {config.prdtName}
                 </span>
-                <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[9px] font-bold bg-[#fff8f5] text-[#d97757] dark:bg-[#7d3f27]/30 dark:text-[#d97757] uppercase tracking-tighter">
+                <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[9px] font-bold bg-[#f0fdf4] text-[#16a34a] dark:bg-[#14532d]/30 dark:text-[#16a34a] uppercase tracking-tighter">
                   {config.marketName}
                 </span>
               </div>
               <div className="flex items-baseline gap-1">
                 <span className={cn(
-                  "font-mono font-black text-[#d97757] dark:text-[#d97757] transition-all",
+                  "font-mono font-black text-[#16a34a] dark:text-[#16a34a] transition-all",
                   isFixed ? "text-base md:text-lg" : "text-xl md:text-2xl"
                 )}>
                   {config.price}

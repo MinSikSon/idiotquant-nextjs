@@ -208,7 +208,7 @@ const BlurGate = memo(({ children, isLoggedIn, loginHref = "/login" }: {
       <div className="absolute inset-0 flex items-center justify-center bg-gradient-to-b from-white/40 to-white/95 dark:from-[#242320]/40 dark:to-[#242320]/95">
         <Link
           href={loginHref}
-          className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-[#d97757] hover:bg-[#bf6644] text-white text-sm font-bold shadow-md shadow-[#d97757]/20 transition-all"
+          className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-[#16a34a] hover:bg-[#15803d] text-white text-sm font-bold shadow-md shadow-[#16a34a]/20 transition-all"
         >
           <Lock size={13} />
           로그인하여 전체 보기
@@ -244,7 +244,7 @@ const Toast = memo(({ notification, onDismiss }: {
   const colorMap = {
     success: 'bg-emerald-50/95 dark:bg-emerald-950/50 border-emerald-200 dark:border-emerald-900/50 text-emerald-800 dark:text-emerald-400',
     error:   'bg-rose-50/95 dark:bg-rose-950/50 border-rose-200 dark:border-rose-900/50 text-rose-700 dark:text-rose-400',
-    info:    'bg-[#fff8f5]/95 dark:bg-[#3d1f10]/50 border-[#f9c9b0] dark:border-[#7d3f27]/50 text-[#bf6644] dark:text-[#d97757]',
+    info:    'bg-[#f0fdf4]/95 dark:bg-[#052e16]/50 border-[#bbf7d0] dark:border-[#14532d]/50 text-[#15803d] dark:text-[#16a34a]',
     warning: 'bg-amber-50/95 dark:bg-amber-950/50 border-amber-200 dark:border-amber-900/50 text-amber-700 dark:text-amber-400',
   };
 
@@ -458,7 +458,7 @@ function AnalyzeContent() {
           <div className="border-b border-neutral-100 dark:border-[#35332e]/60">
             <div className="max-w-4xl mx-auto px-4 py-2">
               <Link href="/screener"
-                className="inline-flex items-center gap-1.5 text-xs font-bold text-[#d97757] dark:text-[#d97757] hover:opacity-80 transition-opacity">
+                className="inline-flex items-center gap-1.5 text-xs font-bold text-[#16a34a] dark:text-[#16a34a] hover:opacity-80 transition-opacity">
                 <ChevronLeft size={13} />
                 스크리너로 돌아가기
               </Link>
@@ -493,7 +493,7 @@ function AnalyzeContent() {
               <span className={cn(
                 "inline-flex items-center gap-1 px-2.5 py-2 rounded-xl text-[11px] font-black uppercase tracking-wider font-mono border",
                 krOrUs === 'US'
-                  ? "bg-[#fff8f5] text-[#d97757] border-[#f9c9b0]/60 dark:bg-[#3d1f10]/30 dark:text-[#d97757] dark:border-[#7d3f27]/40"
+                  ? "bg-[#f0fdf4] text-[#16a34a] border-[#bbf7d0]/60 dark:bg-[#052e16]/30 dark:text-[#16a34a] dark:border-[#14532d]/40"
                   : "bg-indigo-50 text-indigo-600 border-indigo-200/60 dark:bg-indigo-950/30 dark:text-indigo-400 dark:border-indigo-900/40"
               )}>
                 {krOrUs === 'US' ? <DollarSign size={11} /> : <Coins size={11} />}
@@ -515,9 +515,9 @@ function AnalyzeContent() {
                 <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar">
                   {popularStocks.slice(0, 8).map((s: any, i: number) => (
                     <button key={i} onClick={() => handleSearch(s.ticker)}
-                      className="shrink-0 flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-white dark:bg-[#242320] text-xs font-bold text-neutral-600 dark:text-neutral-300 border border-neutral-200/60 dark:border-[#35332e] hover:border-[#d97757]/70 hover:text-[#d97757] dark:hover:text-[#d97757] transition-all whitespace-nowrap"
+                      className="shrink-0 flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-white dark:bg-[#242320] text-xs font-bold text-neutral-600 dark:text-neutral-300 border border-neutral-200/60 dark:border-[#35332e] hover:border-[#16a34a]/70 hover:text-[#16a34a] dark:hover:text-[#16a34a] transition-all whitespace-nowrap"
                     >
-                      <span className="w-3.5 h-3.5 flex items-center justify-center rounded-full bg-[#fff8f5]0 text-white font-black text-[8px] shrink-0">{i + 1}</span>
+                      <span className="w-3.5 h-3.5 flex items-center justify-center rounded-full bg-[#f0fdf4]0 text-white font-black text-[8px] shrink-0">{i + 1}</span>
                       {s.name}
                     </button>
                   ))}
@@ -530,7 +530,7 @@ function AnalyzeContent() {
                 <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar">
                   {krMarketHistory.slice().reverse().slice(0, 8).map((s, i) => (
                     <button key={i} onClick={() => handleSearch(s)}
-                      className="shrink-0 px-2.5 py-1.5 text-xs font-bold text-neutral-500 hover:text-[#d97757] dark:text-neutral-400 dark:hover:text-[#d97757] hover:bg-white dark:hover:bg-[#242320]/40 rounded-lg border border-neutral-200/60 dark:border-[#35332e] transition-all whitespace-nowrap"
+                      className="shrink-0 px-2.5 py-1.5 text-xs font-bold text-neutral-500 hover:text-[#16a34a] dark:text-neutral-400 dark:hover:text-[#16a34a] hover:bg-white dark:hover:bg-[#242320]/40 rounded-lg border border-neutral-200/60 dark:border-[#35332e] transition-all whitespace-nowrap"
                     >
                       {s}
                     </button>
@@ -556,14 +556,14 @@ function AnalyzeContent() {
               {/* 종목 헤더 카드 */}
               <div className="bg-white dark:bg-[#242320] rounded-2xl border border-neutral-200 dark:border-[#35332e] p-5 mb-5 shadow-sm relative overflow-hidden">
                 <div className={cn("absolute top-0 left-0 right-0 h-0.5",
-                  krOrUs === 'US' ? "bg-gradient-to-r from-[#fff8f5]0 to-sky-400" : "bg-gradient-to-r from-indigo-500 to-purple-400"
+                  krOrUs === 'US' ? "bg-gradient-to-r from-[#f0fdf4]0 to-sky-400" : "bg-gradient-to-r from-indigo-500 to-purple-400"
                 )} />
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                   <div className="flex items-center gap-3 min-w-0">
                     <div className={cn(
                       "w-10 h-10 rounded-xl flex items-center justify-center text-sm font-black text-white shrink-0",
                       krOrUs === 'US'
-                        ? "bg-gradient-to-tr from-[#fff8f5]0 to-sky-400"
+                        ? "bg-gradient-to-tr from-[#f0fdf4]0 to-sky-400"
                         : "bg-gradient-to-tr from-indigo-500 to-purple-400"
                     )}>
                       {(displayName || tickerFromUrl || '?').substring(0, 1).toUpperCase()}
@@ -774,7 +774,7 @@ function AnalyzeContent() {
 
                 {/* 비로그인 로그인 CTA */}
                 {!isLoggedIn && (
-                  <div className="p-7 bg-gradient-to-br from-[#fff8f5] to-indigo-50 dark:from-[#3d1f10]/20 dark:to-indigo-950/20 rounded-2xl border border-[#f9c9b0]/60 dark:border-[#7d3f27]/40 text-center">
+                  <div className="p-7 bg-gradient-to-br from-[#f0fdf4] to-indigo-50 dark:from-[#052e16]/20 dark:to-indigo-950/20 rounded-2xl border border-[#bbf7d0]/60 dark:border-[#14532d]/40 text-center">
                     <p className="text-sm font-black text-neutral-900 dark:text-white mb-1">
                       {name ? `${name} 상세 분석` : '상세 분석'} 전체 보기
                     </p>
@@ -783,7 +783,7 @@ function AnalyzeContent() {
                     </p>
                     <Link
                       href={loginHref}
-                      className="inline-flex items-center gap-2 px-6 py-2.5 rounded-full bg-[#d97757] hover:bg-[#bf6644] text-white text-sm font-bold shadow-lg shadow-[#d97757]/20 transition-all"
+                      className="inline-flex items-center gap-2 px-6 py-2.5 rounded-full bg-[#16a34a] hover:bg-[#15803d] text-white text-sm font-bold shadow-lg shadow-[#16a34a]/20 transition-all"
                     >
                       카카오로 무료 로그인
                       <ArrowRight size={14} />
@@ -800,7 +800,7 @@ function AnalyzeContent() {
       <footer className="max-w-4xl mx-auto px-4 pt-8 pb-12 mt-12 border-t border-neutral-200 dark:border-[#35332e]">
         <div className="flex flex-col items-center gap-3">
           <div className="flex items-center gap-2">
-            <TrendingUp size={13} className="text-[#fff8f5]0" strokeWidth={2.5} />
+            <TrendingUp size={13} className="text-[#f0fdf4]0" strokeWidth={2.5} />
             <span className="text-xs font-bold text-neutral-700 dark:text-neutral-300">IdiotQuant</span>
           </div>
           <p className="text-[11px] text-neutral-400 dark:text-neutral-600 text-center max-w-md leading-relaxed">
@@ -822,7 +822,7 @@ export default function AnalyzePage() {
     <Suspense fallback={
       <div className="flex flex-col items-center justify-center py-40 gap-5 bg-[#faf9f7] dark:bg-[#1a1915] min-h-screen">
         <div className="p-4 bg-white dark:bg-[#242320] rounded-2xl border border-neutral-200 dark:border-[#35332e] shadow-sm">
-          <Loader2 className="animate-spin text-[#d97757] dark:text-[#d97757]" size={24} />
+          <Loader2 className="animate-spin text-[#16a34a] dark:text-[#16a34a]" size={24} />
         </div>
         <p className="text-[11px] font-bold text-neutral-400 dark:text-neutral-500 tracking-widest font-mono uppercase">
           분석 엔진 초기화 중...
