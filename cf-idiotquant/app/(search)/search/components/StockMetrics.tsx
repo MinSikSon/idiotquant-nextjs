@@ -121,11 +121,10 @@ export const StockMetrics = ({ data, isUs }: { data: any; isUs: boolean }) => {
 
       const fmt52Date = (d: string) => d ? `${d.slice(0,4)}-${d.slice(4,6)}-${d.slice(6,8)}` : "";
 
-      // KIS output1 에 52주 최고/최저 필드가 직접 제공됨
-      const w52High = n(c.w52_hgpr);
-      const w52Low  = n(c.w52_lwpr);
-      // fallback: output1 값이 없으면 output2 데이터에서 산출
-      // currentShares가 0이어도 output2 raw 가격을 그대로 사용
+      // 52주 최고/최저는 InquirePrice(p) output에 직접 제공됨
+      const w52High = n(p.w52_hgpr);
+      const w52Low  = n(p.w52_lwpr);
+      // fallback: InquirePrice 값이 없으면 차트 output2 데이터에서 산출
       const fallbackHigh = (() => {
         const dailyItems = data.kiChart.output2 ?? [];
         if (!dailyItems.length) return { val: 0, date: "" };
@@ -154,8 +153,8 @@ export const StockMetrics = ({ data, isUs }: { data: any; isUs: boolean }) => {
         }
         return { val: best < Infinity ? best : 0, date: bestDate };
       })();
-      const finalHigh = w52High > 0 ? { val: w52High, date: c.w52_hgpr_date ?? "" } : fallbackHigh;
-      const finalLow  = w52Low  > 0 ? { val: w52Low,  date: c.w52_lwpr_date ?? "" } : fallbackLow;
+      const finalHigh = w52High > 0 ? { val: w52High, date: p.w52_hgpr_date ?? "" } : fallbackHigh;
+      const finalLow  = w52Low  > 0 ? { val: w52Low,  date: p.w52_lwpr_date ?? "" } : fallbackLow;
 
       return [
         { label: "PER",     val: p.per ? `${p.per}배` : "—", type: "valuation", desc: "주가수익비율. 주가가 1주당 순이익의 몇 배인지 나타냅니다." },
