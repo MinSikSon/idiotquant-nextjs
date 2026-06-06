@@ -15,6 +15,7 @@ import {
   LogIn,
   Eye,
   DollarSign,
+  ShieldCheck,
 } from "lucide-react";
 
 /* ─── NAV CONFIG ──────────────────────────────────────────────────── */
@@ -240,6 +241,18 @@ export function NavbarWithSimpleLinks() {
                   isActive={active(pathname, item.href)}
                 />
               ))}
+              <div className="pt-4 pb-1.5 px-1">
+                <div className="h-px bg-neutral-100 dark:bg-[#3a3834] mb-3" />
+                <span className="text-[10px] font-bold text-neutral-400 dark:text-neutral-500 uppercase tracking-widest">
+                  Admin
+                </span>
+              </div>
+              <SideItem
+                href="/admin"
+                label="회원 관리"
+                icon={ShieldCheck}
+                isActive={active(pathname, "/admin")}
+              />
             </>
           )}
         </nav>
