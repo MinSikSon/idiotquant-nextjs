@@ -340,6 +340,10 @@ function ScreenerContent() {
     const [excludeDeficit, setExcludeDeficit] = useState(() =>
         searchParams.get('exclude')?.split(',').includes('deficit') ?? false
     );
+    const [excludeDelisted, setExcludeDelisted] = useState(() => {
+        const p = searchParams.get('exclude');
+        return p === null ? true : p.split(',').includes('delisted');
+    });
     const [filterOpen, setFilterOpen] = useState(false);
     // 시가총액 필터 (단위: 억원, URL param: mincap)
     const [minMarketCap, setMinMarketCap] = useState<number>(() => {
@@ -380,13 +384,14 @@ function ScreenerContent() {
         const excludeList = [
             excludeHoldings ? 'holdings' : null,
             excludeDeficit ? 'deficit' : null,
+            excludeDelisted ? 'delisted' : null,
         ].filter(Boolean).join(',');
         if (excludeList) params.set('exclude', excludeList);
         if (minMarketCap > 0) params.set('mincap', String(minMarketCap));
 
         const qs = params.toString();
         router.replace(qs ? `/screener?${qs}` : '/screener', { scroll: false });
-    }, [activeStrategyIds, filterMode, sortKey, sortOrder, excludeHoldings, excludeDeficit, minMarketCap, router]);
+    }, [activeStrategyIds, filterMode, sortKey, sortOrder, excludeHoldings, excludeDeficit, excludeDelisted, minMarketCap, router]);
 
     const handleRefresh = useCallback(() => {
         dispatch(reqGetNcavDailyList("latest"));
@@ -426,6 +431,7 @@ function ScreenerContent() {
         setSearchQuery('');
         setExcludeHoldings(false);
         setExcludeDeficit(false);
+        setExcludeDelisted(true);
         setMinMarketCap(0);
         setDisplayCount(DAILY_PAGE_SIZE);
     }, []);
@@ -463,6 +469,7 @@ function ScreenerContent() {
             );
         }
 
+        if (excludeDelisted) list = list.filter(item => item.lstn_stcn == null || safeNum(item.lstn_stcn) !== 0);
         if (excludeHoldings) list = list.filter(item => !item.name?.includes("홀딩스"));
         if (excludeDeficit)  list = list.filter(item => safeNum(item.eps) > 0);
         if (minMarketCap > 0) list = list.filter(item => safeNum(item.market_cap) >= minMarketCap);
@@ -484,7 +491,7 @@ function ScreenerContent() {
         });
 
         return list;
-    }, [ncavDailyList.list, activeStrategyIds, filterMode, searchQuery, excludeHoldings, excludeDeficit, minMarketCap, sortKey, sortOrder]);
+    }, [ncavDailyList.list, activeStrategyIds, filterMode, searchQuery, excludeDelisted, excludeHoldings, excludeDeficit, minMarketCap, sortKey, sortOrder]);
 
     const visibleList = filteredList.slice(0, displayCount);
     const hasMore = filteredList.length > displayCount;
@@ -501,7 +508,7 @@ function ScreenerContent() {
 
     const activeFilterCount = [excludeHoldings, excludeDeficit, minMarketCap > 0].filter(Boolean).length;
     const isAllActive = activeStrategyIds.size === 0;
-    const hasActiveFilters = activeStrategyIds.size > 0 || excludeHoldings || excludeDeficit || minMarketCap > 0 || sortKey !== 'ncav_ratio' || sortOrder !== 'desc';
+    const hasActiveFilters = activeStrategyIds.size > 0 || excludeHoldings || excludeDeficit || !excludeDelisted || minMarketCap > 0 || sortKey !== 'ncav_ratio' || sortOrder !== 'desc';
 
     return (
         <Tooltip.Provider delayDuration={300}>
@@ -805,6 +812,15 @@ function ScreenerContent() {
                                     className="rounded accent-[#d97757]"
                                 />
                                 <span className="text-xs font-bold text-neutral-600 dark:text-neutral-400">적자 기업</span>
+                            </label>
+                            <label className="flex items-center gap-2 cursor-pointer select-none">
+                                <input
+                                    type="checkbox"
+                                    checked={excludeDelisted}
+                                    onChange={e => setExcludeDelisted(e.target.checked)}
+                                    className="rounded accent-[#d97757]"
+                                />
+                                <span className="text-xs font-bold text-neutral-600 dark:text-neutral-400">상장폐지 의심</span>
                             </label>
                         </div>
                     </div>
