@@ -120,7 +120,7 @@ function StockRow({ item, index }: { item: PreviewStock; index: number }) {
   const strategies = item.strategies?.slice(0, 2) ?? [];
 
   return (
-    <div className="flex items-center gap-3 px-4 py-3.5 border-b border-neutral-100 dark:border-[#35332e] last:border-0 transition-colors">
+    <div className="flex items-center gap-3 px-5 py-4 border-b border-neutral-100 dark:border-[#35332e] last:border-0 transition-colors">
       <span className="w-4 text-[10px] font-black text-neutral-300 dark:text-neutral-600 tabular-nums shrink-0">
         {index + 1}
       </span>
@@ -208,7 +208,7 @@ export default function HomePage() {
         <div className="absolute -top-32 -right-32 w-80 h-80 rounded-full bg-[#d97757]/6 dark:bg-[#d97757]/4 blur-3xl pointer-events-none" />
         <div className="absolute -bottom-16 -left-16 w-64 h-64 rounded-full bg-emerald-500/4 dark:bg-emerald-500/3 blur-3xl pointer-events-none" />
 
-        <div className="max-w-lg mx-auto px-5 pt-10 pb-8 sm:pt-14 sm:pb-10 relative">
+        <div className="max-w-lg mx-auto px-5 pt-14 pb-12 sm:pt-20 sm:pb-14 relative">
 
           {/* Live badge */}
           <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-[#faf9f7] dark:bg-[#242320] border border-neutral-200 dark:border-[#35332e] mb-5 text-[11px] font-medium text-neutral-500 dark:text-neutral-400">
@@ -259,7 +259,7 @@ export default function HomePage() {
         {/* Stats strip */}
         {!preview.loading && preview.total > 0 && (
           <div className="border-t border-neutral-100 dark:border-[#2c2b27] relative">
-            <div className="max-w-lg mx-auto px-5 py-3 grid grid-cols-3 gap-0">
+            <div className="max-w-lg mx-auto px-5 py-5 grid grid-cols-3 gap-0">
               <div className="text-center py-1">
                 <p className="text-xl font-black text-[#d97757] dark:text-[#d97757] tabular-nums leading-none">
                   {animatedTotal.toLocaleString()}
@@ -290,10 +290,10 @@ export default function HomePage() {
       </section>
 
       {/* ── TODAY'S PICKS ─────────────────────────────────────────── */}
-      <section className="py-6 px-5">
+      <section className="py-10 px-5">
         <div className="max-w-lg mx-auto">
 
-          <div className="flex items-center justify-between mb-3">
+          <div className="flex items-center justify-between mb-5">
             <div>
               <div className="flex items-center gap-2">
                 <h2 className="text-base font-black tracking-tight text-neutral-900 dark:text-neutral-50">
@@ -388,9 +388,9 @@ export default function HomePage() {
       </section>
 
       {/* ── HOW IT WORKS ─────────────────────────────────────────── */}
-      <section className="py-6 px-5 border-t border-neutral-100 dark:border-[#3a3834] bg-[#faf9f7] dark:bg-[#1a1917]">
+      <section className="py-10 px-5 border-t border-neutral-100 dark:border-[#3a3834] bg-[#faf9f7] dark:bg-[#1a1917]">
         <div className="max-w-lg mx-auto">
-          <div className="mb-5">
+          <div className="mb-7">
             <div className="flex items-center gap-2 mb-1">
               <Zap size={13} className="text-[#d97757]" strokeWidth={2.5} />
               <h2 className="text-base font-black text-neutral-900 dark:text-neutral-50">어떻게 작동하나요?</h2>
@@ -398,9 +398,9 @@ export default function HomePage() {
             <p className="text-[11px] text-neutral-400">3단계로 저평가 종목을 발굴합니다.</p>
           </div>
 
-          <div className="flex flex-col gap-3">
+          <div className="flex flex-col gap-4">
             {HOW_IT_WORKS.map((step, i) => (
-              <div key={i} className="flex items-start gap-4 p-4 rounded-2xl bg-white dark:bg-[#242320] border border-neutral-200 dark:border-[#35332e]">
+              <div key={i} className="flex items-start gap-4 p-5 rounded-2xl bg-white dark:bg-[#242320] border border-neutral-200 dark:border-[#35332e]">
                 <span className={cn("text-xs font-black tabular-nums shrink-0 mt-0.5", step.accent)}>
                   {step.step}
                 </span>
@@ -415,9 +415,9 @@ export default function HomePage() {
       </section>
 
       {/* ── FEATURES ─────────────────────────────────────────────── */}
-      <section className="py-6 px-5 border-t border-neutral-100 dark:border-[#3a3834]">
+      <section className="py-10 px-5 border-t border-neutral-100 dark:border-[#3a3834]">
         <div className="max-w-lg mx-auto">
-          <div className="mb-4">
+          <div className="mb-6">
             <h2 className="text-base font-black text-neutral-900 dark:text-neutral-50">주요 기능</h2>
             <p className="text-[11px] text-neutral-400 mt-0.5">발굴 → 분석 → 계산</p>
           </div>
@@ -429,7 +429,7 @@ export default function HomePage() {
               return (
                 <div
                   key={i}
-                  className="shrink-0 w-52 sm:w-auto bg-white dark:bg-[#242320] rounded-2xl border border-neutral-200 dark:border-[#35332e] p-4 flex flex-col gap-3"
+                  className="shrink-0 w-56 sm:w-auto bg-white dark:bg-[#242320] rounded-2xl border border-neutral-200 dark:border-[#35332e] p-5 flex flex-col gap-4"
                 >
                   <div className={cn("w-8 h-8 rounded-xl flex items-center justify-center", f.bgCls)}>
                     <Icon size={16} className={f.iconCls} strokeWidth={2} />
@@ -454,7 +454,7 @@ export default function HomePage() {
 
       {/* ── CONVERSION CTA (비로그인) ─────────────────────────────── */}
       {!isLoggedIn && !sessionLoading && (
-        <section className="py-10 px-5 border-t border-neutral-100 dark:border-[#3a3834] bg-gradient-to-b from-[#faf9f7] to-white dark:from-[#1a1917] dark:to-[#1f1e1b] relative overflow-hidden">
+        <section className="py-16 px-5 border-t border-neutral-100 dark:border-[#3a3834] bg-gradient-to-b from-[#faf9f7] to-white dark:from-[#1a1917] dark:to-[#1f1e1b] relative overflow-hidden">
           <div className="absolute inset-0 pointer-events-none">
             <div className="absolute top-0 left-1/2 -translate-x-1/2 w-96 h-40 rounded-full bg-[#d97757]/5 dark:bg-[#d97757]/4 blur-3xl" />
           </div>
@@ -484,7 +484,7 @@ export default function HomePage() {
 
       {/* ── FOOTER ───────────────────────────────────────────────── */}
       <footer className="border-t border-neutral-100 dark:border-[#3a3834] bg-white dark:bg-[#1f1e1b]">
-        <div className="max-w-lg mx-auto px-5 py-5 flex items-center justify-between gap-4">
+        <div className="max-w-lg mx-auto px-5 py-6 flex items-center justify-between gap-4">
           <div className="flex items-center gap-2">
             <TrendingUp size={14} className="text-[#d97757] shrink-0" strokeWidth={2.5} />
             <span className="text-xs font-black tracking-tight text-neutral-700 dark:text-neutral-200">

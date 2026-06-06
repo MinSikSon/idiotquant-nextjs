@@ -466,7 +466,7 @@ function AnalyzeContent() {
           </div>
         )}
 
-        <div className="max-w-4xl mx-auto px-4 py-3 flex items-center gap-2">
+        <div className="max-w-4xl mx-auto px-4 py-4 flex items-center gap-2">
           <div className="flex-1">
             <SearchAutocomplete
               placeHolder="🇰🇷 국내 종목명 또는 🇺🇸 미국 티커(Ticker) 입력"
@@ -543,7 +543,7 @@ function AnalyzeContent() {
       </header>
 
       {/* ── 메인 ── */}
-      <main className="max-w-4xl mx-auto p-4 sm:p-6">
+      <main className="max-w-4xl mx-auto p-5 sm:p-8">
 
         {!tickerFromUrl ? (
           <SearchGuide />
@@ -554,7 +554,7 @@ function AnalyzeContent() {
             <div className={cn(!isLoaded ? 'hidden' : 'animate-in fade-in duration-400')}>
 
               {/* 종목 헤더 카드 */}
-              <div className="bg-white dark:bg-[#242320] rounded-2xl border border-neutral-200 dark:border-[#35332e] p-4 mb-4 shadow-sm relative overflow-hidden">
+              <div className="bg-white dark:bg-[#242320] rounded-2xl border border-neutral-200 dark:border-[#35332e] p-5 mb-5 shadow-sm relative overflow-hidden">
                 <div className={cn("absolute top-0 left-0 right-0 h-0.5",
                   krOrUs === 'US' ? "bg-gradient-to-r from-[#fff8f5]0 to-sky-400" : "bg-gradient-to-r from-indigo-500 to-purple-400"
                 )} />
@@ -627,7 +627,7 @@ function AnalyzeContent() {
 
               {/* 핵심 지표 4개 (항상 공개) */}
               {basicMetrics && (
-                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-5">
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-6">
                   {[
                     {
                       label: "NCAV 비율",
@@ -670,7 +670,7 @@ function AnalyzeContent() {
                         : "text-neutral-400",
                     },
                   ].map(m => (
-                    <div key={m.label} className="bg-white dark:bg-[#242320] rounded-xl border border-neutral-200 dark:border-[#35332e] p-4 shadow-sm">
+                    <div key={m.label} className="bg-white dark:bg-[#242320] rounded-xl border border-neutral-200 dark:border-[#35332e] p-5 shadow-sm">
                       <p className="text-[10px] font-bold text-neutral-400 uppercase tracking-wider mb-1.5">{m.label}</p>
                       <p className={cn("text-2xl font-black font-mono tabular-nums leading-none", m.color)}>{m.value}</p>
                       <p className="text-[10px] text-neutral-400 mt-1.5">{m.desc}</p>
@@ -680,7 +680,7 @@ function AnalyzeContent() {
               )}
 
               {/* 상세 분석 섹션 */}
-              <div className="space-y-5">
+              <div className="space-y-6">
                 <div className="flex items-center gap-3">
                   <p className="text-[11px] font-bold text-neutral-400 uppercase tracking-widest font-mono shrink-0">Detail Analysis</p>
                   <div className="flex-1 h-px bg-[#faf9f7] dark:bg-[#242320]/70" />
@@ -693,7 +693,7 @@ function AnalyzeContent() {
                 </div>
 
                 {/* 주가추이 (항상 공개) + 상세 지표 (블러) */}
-                <div className="grid grid-cols-1 lg:grid-cols-12 gap-5">
+                <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
                   <div className="lg:col-span-5">
                     <StockCard
                       stock={krOrUs === 'US' ? {
@@ -774,7 +774,7 @@ function AnalyzeContent() {
 
                 {/* 비로그인 로그인 CTA */}
                 {!isLoggedIn && (
-                  <div className="p-5 bg-gradient-to-br from-[#fff8f5] to-indigo-50 dark:from-[#3d1f10]/20 dark:to-indigo-950/20 rounded-2xl border border-[#f9c9b0]/60 dark:border-[#7d3f27]/40 text-center">
+                  <div className="p-7 bg-gradient-to-br from-[#fff8f5] to-indigo-50 dark:from-[#3d1f10]/20 dark:to-indigo-950/20 rounded-2xl border border-[#f9c9b0]/60 dark:border-[#7d3f27]/40 text-center">
                     <p className="text-sm font-black text-neutral-900 dark:text-white mb-1">
                       {name ? `${name} 상세 분석` : '상세 분석'} 전체 보기
                     </p>
