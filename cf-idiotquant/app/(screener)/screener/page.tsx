@@ -177,7 +177,7 @@ function TableRow({ item, onClick }: { item: any; onClick: (ticker: string, name
 
     return (
         <div
-            className="group grid grid-cols-[minmax(160px,2.5fr)_minmax(110px,1fr)_88px_68px_68px_68px_88px] gap-4 items-center px-5 py-4 hover:bg-[#fff8f5]/40 dark:hover:bg-[#242320]/50 cursor-pointer transition-colors border-b border-neutral-100 dark:border-[#35332e] last:border-0"
+            className="group grid grid-cols-[minmax(160px,2.5fr)_minmax(110px,1fr)_88px_68px_68px_68px_88px] gap-4 items-center px-6 py-5 hover:bg-[#fff8f5]/40 dark:hover:bg-[#242320]/50 cursor-pointer transition-colors border-b border-neutral-100 dark:border-[#35332e] last:border-0"
             onClick={() => onClick(item.ticker, item.name)}
         >
             <div className="min-w-0">
@@ -253,10 +253,10 @@ function StockRowCard({ item, onClick }: { item: any; onClick: (ticker: string, 
 
     return (
         <div
-            className="bg-white dark:bg-[#242320] rounded-2xl border border-neutral-200 dark:border-[#35332e] p-4 cursor-pointer hover:border-[#e8a48a] dark:hover:border-[#bf6644]/50 hover:shadow-md transition-all active:scale-[0.99]"
+            className="bg-white dark:bg-[#242320] rounded-2xl border border-neutral-200 dark:border-[#35332e] p-5 cursor-pointer hover:border-[#e8a48a] dark:hover:border-[#bf6644]/50 hover:shadow-md transition-all active:scale-[0.99]"
             onClick={() => onClick(item.ticker, item.name)}
         >
-            <div className="flex items-start justify-between gap-2 mb-3">
+            <div className="flex items-start justify-between gap-2 mb-4">
                 <div className="min-w-0">
                     <p className="font-bold text-base text-neutral-900 dark:text-white truncate leading-tight">{item.name}</p>
                     <p className="text-[11px] text-neutral-400 font-mono tracking-wider mt-0.5">{item.ticker}</p>
@@ -274,7 +274,7 @@ function StockRowCard({ item, onClick }: { item: any; onClick: (ticker: string, 
             </div>
 
             {strategies.length > 0 && (
-                <div className="flex flex-wrap gap-1 mb-3">
+                <div className="flex flex-wrap gap-1 mb-4">
                     {strategies.map(s => (
                         <span key={s} className={cn("px-1.5 py-0.5 rounded text-[10px] font-bold", STRATEGY_BADGE[s] ?? "bg-[#faf9f7] text-neutral-500")}>
                             {STRATEGY_LABEL[s] ?? s}
@@ -283,20 +283,20 @@ function StockRowCard({ item, onClick }: { item: any; onClick: (ticker: string, 
                 </div>
             )}
 
-            <div className="grid grid-cols-3 gap-2 mb-3">
+            <div className="grid grid-cols-3 gap-2 mb-4">
                 {[
                     { label: "PBR", value: safeNum(item.pbr) > 0 ? `${safeNum(item.pbr).toFixed(2)}` : "—" },
                     { label: "PER", value: safeNum(item.per) > 0 ? `${safeNum(item.per).toFixed(1)}` : "—" },
                     { label: "ROE", value: roe !== null && roe > 0 ? `${roe.toFixed(1)}%` : "—" },
                 ].map(m => (
-                    <div key={m.label} className="text-center p-2.5 bg-[#faf9f7] dark:bg-[#242320]/60 rounded-xl">
+                    <div key={m.label} className="text-center p-3.5 bg-[#faf9f7] dark:bg-[#242320]/60 rounded-xl">
                         <p className="text-[9px] font-bold text-neutral-400 uppercase tracking-wider">{m.label}</p>
                         <p className="text-sm font-mono font-bold text-neutral-700 dark:text-neutral-200 mt-0.5">{m.value}</p>
                     </div>
                 ))}
             </div>
 
-            <button className="w-full flex items-center justify-center gap-1.5 py-2.5 rounded-xl bg-[#faf9f7] dark:bg-[#242320] hover:bg-[#d97757] hover:text-white text-neutral-600 dark:text-neutral-400 text-xs font-bold transition-all">
+            <button className="w-full flex items-center justify-center gap-1.5 py-3 rounded-xl bg-[#faf9f7] dark:bg-[#242320] hover:bg-[#d97757] hover:text-white text-neutral-600 dark:text-neutral-400 text-xs font-bold transition-all">
                 상세 분석
                 <ChevronRight size={12} />
             </button>
@@ -509,7 +509,7 @@ function ScreenerContent() {
 
             {/* ── 헤더 ── */}
             <div className="bg-white dark:bg-[#1f1e1b] border-b border-neutral-200 dark:border-[#3a3834]">
-                <div className="max-w-7xl mx-auto px-4 sm:px-6 py-5">
+                <div className="max-w-7xl mx-auto px-4 sm:px-6 py-6">
                     <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                         <div>
                             <div className="flex items-center gap-2 mb-1.5">
@@ -551,7 +551,7 @@ function ScreenerContent() {
             {/* ── 전략 탭 (sticky, 멀티셀렉트) ── */}
             <div className="sticky top-0 z-30 bg-white/95 dark:bg-[#1f1e1b]/95 backdrop-blur-md border-b border-neutral-200 dark:border-[#3a3834]">
                 <div className="max-w-7xl mx-auto px-4 sm:px-6">
-                    <div className="flex items-center gap-1.5 py-3">
+                    <div className="flex items-center gap-1.5 py-4">
                         {/* 전체 탭 */}
                         <button
                             onClick={clearStrategies}
@@ -731,7 +731,7 @@ function ScreenerContent() {
             )}
 
             {/* ── 검색 & 필터 바 ── */}
-            <div className="max-w-7xl mx-auto px-4 sm:px-6 pt-4 pb-2 flex items-center gap-3 flex-wrap">
+            <div className="max-w-7xl mx-auto px-4 sm:px-6 pt-5 pb-3 flex items-center gap-3 flex-wrap">
                 <div className="relative flex-1 min-w-[180px] max-w-xs">
                     <Search size={13} className="absolute left-3 top-1/2 -translate-y-1/2 text-neutral-400 pointer-events-none" />
                     <input
@@ -812,7 +812,7 @@ function ScreenerContent() {
             </div>
 
             {/* ── 종목 리스트 ── */}
-            <div className="max-w-7xl mx-auto px-4 sm:px-6 pb-16">
+            <div className="max-w-7xl mx-auto px-4 sm:px-6 pb-20">
 
                 {isLoading && (
                     <div className="flex flex-col items-center justify-center py-24 gap-4">
@@ -846,7 +846,7 @@ function ScreenerContent() {
                         {/* 데스크탑 테이블 */}
                         <div className="hidden md:block">
                             <div className="bg-white dark:bg-[#242320] rounded-2xl border border-neutral-200 dark:border-[#35332e] overflow-hidden shadow-sm">
-                                <div className="grid grid-cols-[minmax(160px,2.5fr)_minmax(110px,1fr)_88px_68px_68px_68px_88px] gap-4 items-center px-5 py-3.5 bg-[#fcfaf7] dark:bg-[#1f1e1b] border-b border-neutral-200 dark:border-[#35332e]">
+                                <div className="grid grid-cols-[minmax(160px,2.5fr)_minmax(110px,1fr)_88px_68px_68px_68px_88px] gap-4 items-center px-6 py-4 bg-[#fcfaf7] dark:bg-[#1f1e1b] border-b border-neutral-200 dark:border-[#35332e]">
                                     <SortableHeader label="종목명" sortKey="ticker" currentKey={sortKey} order={sortOrder} onToggle={toggleSort} />
                                     <div className="text-[10px] font-bold text-neutral-400 uppercase tracking-wider">전략</div>
                                     <SortableHeader label="NCAV 비율" sortKey="ncav_ratio" currentKey={sortKey} order={sortOrder} onToggle={toggleSort} />
@@ -871,7 +871,7 @@ function ScreenerContent() {
                         </div>
 
                         {hasMore && (
-                            <div className="flex justify-center mt-8">
+                            <div className="flex justify-center mt-10">
                                 <button
                                     onClick={() => setDisplayCount(c => c + DAILY_PAGE_SIZE)}
                                     className="px-6 py-2.5 rounded-xl border border-neutral-200 dark:border-[#35332e] bg-white dark:bg-[#242320] text-sm font-bold text-neutral-600 dark:text-neutral-400 hover:border-neutral-300 dark:hover:border-[#4a4641] hover:text-neutral-900 dark:hover:text-white transition-all"
