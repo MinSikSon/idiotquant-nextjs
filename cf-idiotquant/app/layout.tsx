@@ -1,5 +1,25 @@
 import "@/app/global.css";
 import type { Metadata, Viewport } from "next";
+import { Inter, Noto_Sans_KR, JetBrains_Mono } from "next/font/google";
+
+const inter = Inter({
+  subsets: ["latin"],
+  variable: "--font-inter",
+  display: "swap",
+});
+
+const notoSansKr = Noto_Sans_KR({
+  weight: ["400", "500", "700", "900"],
+  subsets: ["latin"],
+  variable: "--font-noto-kr",
+  display: "swap",
+});
+
+const jetbrainsMono = JetBrains_Mono({
+  subsets: ["latin"],
+  variable: "--font-mono",
+  display: "swap",
+});
 
 export const viewport: Viewport = {
   width: "device-width",
@@ -146,6 +166,9 @@ export default function RootLayout({
         <meta name="google-adsense-account" content="ca-pub-6995198721227228" />
       </head>
       <body className={cn(
+        inter.variable,
+        notoSansKr.variable,
+        jetbrainsMono.variable,
         "min-h-screen font-sans antialiased",
         "bg-[#faf9f7] dark:bg-[#1a1915] text-neutral-900 dark:text-neutral-50"
       )}>

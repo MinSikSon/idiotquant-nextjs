@@ -37,12 +37,8 @@ const config = {
         },
       },
       fontFamily: {
-        mono: ["Noto Sans, Inter, Pretendard"],
-        // mono: ["Cascadia Code", "Fira Code", "Courier New", "monospace"],
-        // mono: ['D2Coding', 'Noto Sans Mono', 'IBM Plex Mono', 'monospace'],
-        // mono: ['Noto Sans Mono', 'D2Coding', 'IBM Plex Mono', 'monospace'],
-        // mono: ['Courier New', 'Courier', 'monospace'],
-        // mono: ['Courier New', 'Courier', 'monospace', 'Nanum Gothic Coding', 'Source Code Pro'],  // 한글을 고려한 고정폭 폰트 추가
+        sans: ["var(--font-inter)", "var(--font-noto-kr)", "ui-sans-serif", "system-ui", "-apple-system", "sans-serif"],
+        mono: ["var(--font-mono)", "ui-monospace", "Menlo", "monospace"],
         serif: ["Times New Roman", "Georgia", "serif"],
       },
       colors: {
