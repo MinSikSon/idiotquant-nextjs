@@ -75,7 +75,7 @@ export default function OverseasCcnlTable({ data, className = "" }: Props) {
                                                         <td key={`cell-${rIndex}-${cIndex}`} className="px-3 py-2 whitespace-nowrap border-b">
                                                             <div className="flex gap-2">
                                                                 <button className="text-xs px-2 py-1 rounded-md !bg-slate-100 dark:!bg-slate-900 hover:!bg-slate-200">상세</button>
-                                                                <button className="text-xs px-2 py-1 rounded-md bg-[#fff8f5] dark:!bg-slate-900 hover:!bg-[#fde8de]">취소</button>
+                                                                <button className="text-xs px-2 py-1 rounded-md bg-[#f0fdf4] dark:!bg-slate-900 hover:!bg-[#dcfce7]">취소</button>
                                                             </div>
                                                         </td>
                                                     );

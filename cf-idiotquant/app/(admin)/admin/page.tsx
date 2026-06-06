@@ -22,7 +22,7 @@ const PLAN_LABEL: Record<string, string> = {
 
 const PLAN_CLASS: Record<string, string> = {
   free: "bg-neutral-100 dark:bg-[#35332e] text-neutral-500 dark:text-neutral-400",
-  pro: "bg-[#fde8de] dark:bg-[#3d1f10]/50 text-[#d97757] dark:text-[#d97757]",
+  pro: "bg-[#dcfce7] dark:bg-[#052e16]/50 text-[#16a34a] dark:text-[#16a34a]",
   business: "bg-blue-50 dark:bg-blue-950/30 text-blue-600 dark:text-blue-400",
 };
 
@@ -66,8 +66,8 @@ export default function AdminPage() {
     <div className="max-w-4xl mx-auto px-5 py-10 md:py-14">
       {/* Header */}
       <div className="flex items-center gap-3 mb-8">
-        <div className="w-9 h-9 rounded-xl bg-[#d97757]/10 flex items-center justify-center shrink-0">
-          <Shield size={18} className="text-[#d97757]" />
+        <div className="w-9 h-9 rounded-xl bg-[#16a34a]/10 flex items-center justify-center shrink-0">
+          <Shield size={18} className="text-[#16a34a]" />
         </div>
         <div>
           <h1 className="text-xl font-black text-neutral-900 dark:text-white tracking-tight">어드민 대시보드</h1>

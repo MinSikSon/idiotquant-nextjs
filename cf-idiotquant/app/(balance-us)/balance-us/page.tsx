@@ -83,7 +83,7 @@ function OverseasOrderRow({ item, isNccs }: { item: any; isNccs: boolean }) {
       <td className="py-3.5 px-4">
         <span className={cn(
           "px-2.5 py-1 rounded-full text-[10px] font-black uppercase tracking-wide",
-          isBuy ? "bg-red-50 text-red-500 dark:bg-red-950/40" : "bg-[#fff8f5] text-[#fff8f5]0 dark:bg-[#3d1f10]/40"
+          isBuy ? "bg-red-50 text-red-500 dark:bg-red-950/40" : "bg-[#f0fdf4] text-[#f0fdf4]0 dark:bg-[#052e16]/40"
         )}>
           {item.sll_buy_dvsn_cd_name || (isBuy ? "매수" : "매도")}
         </span>
@@ -328,17 +328,17 @@ function BalanceUs() {
                 해외 투자
               </span>
               <ChevronRight size={11} className="text-neutral-300 dark:text-neutral-600" />
-              <span className="flex items-center gap-1 text-[#d97757] dark:text-[#d97757] bg-[#fff8f5] dark:bg-[#7d3f27]/20 px-2 py-0.5 rounded-md">
+              <span className="flex items-center gap-1 text-[#16a34a] dark:text-[#16a34a] bg-[#f0fdf4] dark:bg-[#14532d]/20 px-2 py-0.5 rounded-md">
                 <Building2 size={11} />미국(US)
               </span>
             </nav>
 
             {/* 타이틀 */}
             <div className="flex items-center gap-3 flex-wrap">
-              <h1 className="text-3xl md:text-4xl font-black tracking-tighter bg-gradient-to-r from-[#d97757] to-indigo-500 dark:from-[#d97757] dark:to-indigo-400 bg-clip-text text-transparent">
+              <h1 className="text-3xl md:text-4xl font-black tracking-tighter bg-gradient-to-r from-[#16a34a] to-indigo-500 dark:from-[#16a34a] dark:to-indigo-400 bg-clip-text text-transparent">
                 US Portfolio
               </h1>
-              <span className="flex items-center gap-1 px-3 py-1.5 bg-[#d97757] text-white rounded-xl text-[10px] font-black tracking-widest uppercase shadow-sm shadow-[#d97757]/30">
+              <span className="flex items-center gap-1 px-3 py-1.5 bg-[#16a34a] text-white rounded-xl text-[10px] font-black tracking-widest uppercase shadow-sm shadow-[#16a34a]/30">
                 <DollarSign size={11} /> USD Account
               </span>
               {!isLoading && totalAssetUsd > 0 && (
@@ -369,7 +369,7 @@ function BalanceUs() {
                 exRate > 0 ? (
                   <div className="flex items-center gap-2 bg-white dark:bg-[#242320] px-3 py-2 rounded-xl border border-neutral-200 dark:border-[#35332e] shadow-sm">
                     <span className="text-[10px] font-black text-neutral-400 uppercase tracking-wider">고시환율</span>
-                    <span className="text-sm font-mono font-black text-[#d97757] dark:text-[#d97757]">
+                    <span className="text-sm font-mono font-black text-[#16a34a] dark:text-[#16a34a]">
                       {exRate.toLocaleString()}원
                     </span>
                   </div>
@@ -379,7 +379,7 @@ function BalanceUs() {
           </div>
         </header>
 
-        <div className="h-px bg-gradient-to-r from-transparent via-[#d97757] dark:via-[#bf6644] to-transparent opacity-60" />
+        <div className="h-px bg-gradient-to-r from-transparent via-[#16a34a] dark:via-[#15803d] to-transparent opacity-60" />
 
         {/* 섹션 네비게이션 */}
         <SectionNav sections={navSections} />
@@ -389,12 +389,12 @@ function BalanceUs() {
           <UsdKpiCard
             label="총 자산 (USD)"
             mainValue={isLoading ? null : fmtUsd(totalAssetUsd)}
-            mainColor="text-[#d97757] dark:text-[#d97757]"
+            mainColor="text-[#16a34a] dark:text-[#16a34a]"
             subLabel="원화 평가액"
             subValue={isLoading ? null : fmtKrw(totalAssetKrw)}
             icon={<BarChart3 size={15} />}
-            iconBg="bg-[#fff8f5] dark:bg-[#3d1f10]/40 text-[#fff8f5]0"
-            accentColor="bg-[#d97757] dark:bg-[#d97757]"
+            iconBg="bg-[#f0fdf4] dark:bg-[#052e16]/40 text-[#f0fdf4]0"
+            accentColor="bg-[#16a34a] dark:bg-[#16a34a]"
             loading={isLoading}
           />
           <UsdKpiCard
@@ -463,12 +463,12 @@ function BalanceUs() {
               <MetricChip
                 label="금일 매도 (USD)"
                 value={fmtUsd(frcr_sll_smtl)}
-                valueClass="text-[#d97757]"
+                valueClass="text-[#16a34a]"
               />
               <MetricChip
                 label="금일 순매수"
                 value={fmtUsd(frcr_buy_smtl - frcr_sll_smtl)}
-                valueClass={(frcr_buy_smtl - frcr_sll_smtl) >= 0 ? "text-rose-500" : "text-[#fff8f5]0"}
+                valueClass={(frcr_buy_smtl - frcr_sll_smtl) >= 0 ? "text-rose-500" : "text-[#f0fdf4]0"}
               />
               {cmaEvluAmtUs > 0 && (
                 <MetricChip

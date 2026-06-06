@@ -114,7 +114,7 @@ function OrderRow({ item, isNccs }: { item: any; isNccs: boolean }) {
           "px-2.5 py-1 rounded-full text-[10px] font-black uppercase tracking-wide",
           isBuy
             ? "bg-red-50 text-red-500 dark:bg-red-950/40"
-            : "bg-[#fff8f5] text-[#fff8f5]0 dark:bg-[#3d1f10]/40"
+            : "bg-[#f0fdf4] text-[#f0fdf4]0 dark:bg-[#052e16]/40"
         )}>
           {item.ord_dvsn_name || (isNccs ? "대기" : "현금")}
         </span>
@@ -333,7 +333,7 @@ function BalanceKr() {
                 투자 현황
               </span>
               <ChevronRight size={11} className="text-neutral-300 dark:text-neutral-600" />
-              <span className="flex items-center gap-1 text-[#d97757] dark:text-[#d97757] bg-[#fff8f5] dark:bg-[#7d3f27]/20 px-2 py-0.5 rounded-md">
+              <span className="flex items-center gap-1 text-[#16a34a] dark:text-[#16a34a] bg-[#f0fdf4] dark:bg-[#14532d]/20 px-2 py-0.5 rounded-md">
                 <MapPin size={11} />한국(KR)
               </span>
               {currentKakaoUser && (
@@ -384,7 +384,7 @@ function BalanceKr() {
           </div>
         </header>
 
-        <div className="h-px bg-gradient-to-r from-transparent via-[#e8a48a] dark:via-[#a05438] to-transparent opacity-60" />
+        <div className="h-px bg-gradient-to-r from-transparent via-[#86efac] dark:via-[#166534] to-transparent opacity-60" />
 
         {/* 섹션 네비게이션 */}
         <SectionNav sections={navSections} />
@@ -396,8 +396,8 @@ function BalanceKr() {
             value={isLoading ? null : `${totalEvalAmt.toLocaleString()}원`}
             sub={isLoading ? "" : `주식 ${sctsEvluAmt.toLocaleString()}원 · CMA ${cmaEvluAmt.toLocaleString()}원`}
             icon={<Wallet size={15} />}
-            iconBg="bg-[#fff8f5] dark:bg-[#3d1f10]/40 text-[#fff8f5]0"
-            accentColor="bg-[#d97757] dark:bg-[#d97757]"
+            iconBg="bg-[#f0fdf4] dark:bg-[#052e16]/40 text-[#f0fdf4]0"
+            accentColor="bg-[#16a34a] dark:bg-[#16a34a]"
           />
           <KpiCard
             label="예수금 (D+2)"
@@ -434,7 +434,7 @@ function BalanceKr() {
               <MetricChip
                 label="당일 등락"
                 value={`${isDailyPositive ? "▲ +" : "▼ "}${asstIcdcAmt.toLocaleString()}원`}
-                valueClass={isDailyPositive ? "text-rose-500" : "text-[#fff8f5]0"}
+                valueClass={isDailyPositive ? "text-rose-500" : "text-[#f0fdf4]0"}
               />
               <MetricChip
                 label="금일 매수"
@@ -444,12 +444,12 @@ function BalanceKr() {
               <MetricChip
                 label="금일 매도"
                 value={`${thdtSllAmt.toLocaleString()}원`}
-                valueClass="text-[#d97757] dark:text-[#d97757]"
+                valueClass="text-[#16a34a] dark:text-[#16a34a]"
               />
               <MetricChip
                 label="금일 매수 - 매도"
                 value={`${(thdtBuyAmt - thdtSllAmt) >= 0 ? "+" : ""}${(thdtBuyAmt - thdtSllAmt).toLocaleString()}원`}
-                valueClass={(thdtBuyAmt - thdtSllAmt) >= 0 ? "text-rose-500" : "text-[#fff8f5]0"}
+                valueClass={(thdtBuyAmt - thdtSllAmt) >= 0 ? "text-rose-500" : "text-[#f0fdf4]0"}
               />
               <MetricChip
                 label="CMA 평가"

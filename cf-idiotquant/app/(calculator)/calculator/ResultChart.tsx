@@ -56,8 +56,8 @@ const CustomTooltip = ({ active, payload }: any) => {
                     {payload[0].payload.year}세 예상 진단
                 </p>
                 <div className="flex flex-col gap-1">
-                    <span className="text-sm font-black text-[#d97757] flex items-center gap-1.5 font-mono">
-                        <span className="w-2 h-2 rounded-full bg-[#fff8f5]0" />
+                    <span className="text-sm font-black text-[#16a34a] flex items-center gap-1.5 font-mono">
+                        <span className="w-2 h-2 rounded-full bg-[#f0fdf4]0" />
                         {formatValueFull(payload[0].value)}
                     </span>
                     {payload[1] && (
@@ -90,12 +90,12 @@ const ResultChart: FC<ResultChartProps> = ({ data, height }) => {
 
     return (
         <div className="w-full bg-white dark:bg-[#242320]/10 border border-neutral-200/50 dark:border-[#35332e]/50 rounded-2xl p-3 sm:p-5 backdrop-blur-md relative overflow-hidden group shadow-xs">
-            <div className="absolute top-0 left-0 w-full h-[2px] bg-gradient-to-r from-[#fff8f5]0 via-indigo-500 to-purple-500 opacity-70" />
+            <div className="absolute top-0 left-0 w-full h-[2px] bg-gradient-to-r from-[#f0fdf4]0 via-indigo-500 to-purple-500 opacity-70" />
             
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-8">
                 <div className="space-y-0.5">
                     <h3 className="text-[10px] font-black text-neutral-400 dark:text-neutral-500 uppercase tracking-widest flex items-center gap-1.5">
-                        <span className="w-1.5 h-1.5 rounded-full bg-[#fff8f5]0 animate-pulse" />
+                        <span className="w-1.5 h-1.5 rounded-full bg-[#f0fdf4]0 animate-pulse" />
                         Asset Growth Trajectory
                     </h3>
                     <p className="text-xs sm:text-sm font-black text-neutral-800 dark:text-white tracking-tight">

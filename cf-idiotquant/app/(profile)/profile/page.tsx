@@ -21,7 +21,7 @@ export default function ProfilePage() {
     if (status === "loading") {
         return (
             <div className="min-h-screen bg-[#faf9f7] dark:bg-[#1a1915] flex items-center justify-center">
-                <div className="w-8 h-8 rounded-full border-2 border-neutral-300 border-t-[#d97757] animate-spin" />
+                <div className="w-8 h-8 rounded-full border-2 border-neutral-300 border-t-[#16a34a] animate-spin" />
             </div>
         );
     }
@@ -55,7 +55,7 @@ export default function ProfilePage() {
                                 </p>
                             )}
                             {isMasterUser && (
-                                <span className="inline-block mt-1 text-[9px] font-extrabold px-1.5 py-0.5 rounded bg-[#fde8de] dark:bg-[#3d1f10]/50 text-[#d97757] dark:text-[#d97757] uppercase tracking-tight">
+                                <span className="inline-block mt-1 text-[9px] font-extrabold px-1.5 py-0.5 rounded bg-[#dcfce7] dark:bg-[#052e16]/50 text-[#16a34a] dark:text-[#16a34a] uppercase tracking-tight">
                                     Admin
                                 </span>
                             )}
@@ -113,8 +113,8 @@ export default function ProfilePage() {
                                 href="/admin"
                                 className="flex items-center gap-3 px-5 py-3.5 hover:bg-[#f5f1eb] dark:hover:bg-[#2c2b27] transition-colors group"
                             >
-                                <div className="w-8 h-8 rounded-xl bg-[#fde8de] dark:bg-[#3d1f10]/50 flex items-center justify-center shrink-0">
-                                    <ShieldCheck size={15} className="text-[#d97757]" />
+                                <div className="w-8 h-8 rounded-xl bg-[#dcfce7] dark:bg-[#052e16]/50 flex items-center justify-center shrink-0">
+                                    <ShieldCheck size={15} className="text-[#16a34a]" />
                                 </div>
                                 <span className="flex-1 text-sm font-semibold text-neutral-700 dark:text-neutral-300">
                                     회원 관리

@@ -31,8 +31,8 @@ const BS_SECTIONS: SectionDef[] = [
     {
         label: "자산",
         labelEn: "ASSETS",
-        accent: "border-[#d97757]/50 bg-[#fff8f5] text-[#bf6644] dark:bg-[#3d1f10]/40 dark:text-[#e8a48a]",
-        dotColor: "bg-[#d97757]",
+        accent: "border-[#16a34a]/50 bg-[#f0fdf4] text-[#15803d] dark:bg-[#052e16]/40 dark:text-[#86efac]",
+        dotColor: "bg-[#16a34a]",
         items: [
             {
                 label: "현금 및 현금성 자산",
@@ -264,13 +264,13 @@ function SectionTable({
                                 key={idx}
                                 className={cn(
                                     "px-5 py-3 text-right min-w-[9rem]",
-                                    idx === 0 && "bg-[#fff8f5]/50 dark:bg-[#3d1f10]/10"
+                                    idx === 0 && "bg-[#f0fdf4]/50 dark:bg-[#052e16]/10"
                                 )}
                             >
                                 <div className="flex flex-col items-end gap-0.5">
                                     <span className={cn(
                                         "text-[9px] font-black uppercase tracking-wider font-mono",
-                                        idx === 0 ? "text-[#d97757] dark:text-[#d97757]" : "text-neutral-400 dark:text-neutral-500"
+                                        idx === 0 ? "text-[#16a34a] dark:text-[#16a34a]" : "text-neutral-400 dark:text-neutral-500"
                                     )}>
                                         {idx === 0 ? "Latest" : `FY T-${idx}`}
                                     </span>
@@ -348,7 +348,7 @@ function SectionTable({
                                                 key={colIdx}
                                                 className={cn(
                                                     "px-5 py-3 text-right font-mono tabular-nums",
-                                                    colIdx === 0 && "bg-[#fff8f5]/30 dark:bg-[#3d1f10]/5"
+                                                    colIdx === 0 && "bg-[#f0fdf4]/30 dark:bg-[#052e16]/5"
                                                 )}
                                             >
                                                 <div className="flex flex-col items-end gap-0.5">
@@ -401,7 +401,7 @@ export default function FinnhubTable({ data = [], className = "" }: Props) {
 
     const footer = (
         <div className="flex items-center gap-3 px-5 py-3 border-t border-neutral-100 dark:border-[#35332e]">
-            <span className="w-1.5 h-1.5 rounded-full bg-[#fff8f5]0 animate-pulse shrink-0" />
+            <span className="w-1.5 h-1.5 rounded-full bg-[#f0fdf4]0 animate-pulse shrink-0" />
             <span className="text-[10px] text-neutral-400 dark:text-neutral-500 font-mono">
                 Finnhub · SEC Fundamentals · US-GAAP · USD
             </span>
@@ -421,7 +421,7 @@ export default function FinnhubTable({ data = [], className = "" }: Props) {
                     <Tabs.List className="flex gap-1 bg-[#faf9f7] dark:bg-[#242320] rounded-lg p-1">
                         <Tabs.Trigger
                             value="bs"
-                            className={cn(TAB_TRIGGER_BASE, "data-[state=active]:text-[#bf6644] dark:data-[state=active]:text-[#e8a48a]")}
+                            className={cn(TAB_TRIGGER_BASE, "data-[state=active]:text-[#15803d] dark:data-[state=active]:text-[#86efac]")}
                         >
                             <BookOpen size={12} />
                             Balance Sheet

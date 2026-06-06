@@ -60,7 +60,7 @@ export const ToastNotification = memo(({ toast, onRemove }: { toast: ToastItem; 
   const colorMap: Record<ToastType, string> = {
     success: "bg-emerald-50/95 dark:bg-emerald-950/60 border-emerald-200 dark:border-emerald-800 text-emerald-800 dark:text-emerald-300",
     error: "bg-red-50/95 dark:bg-red-950/60 border-red-200 dark:border-red-800 text-red-800 dark:text-red-300",
-    info: "bg-[#fff8f5]/95 dark:bg-[#3d1f10]/60 border-[#f9c9b0] dark:border-[#a05438] text-[#a05438] dark:text-[#e8a48a]",
+    info: "bg-[#f0fdf4]/95 dark:bg-[#052e16]/60 border-[#bbf7d0] dark:border-[#166534] text-[#166534] dark:text-[#86efac]",
     warning: "bg-amber-50/95 dark:bg-amber-950/60 border-amber-200 dark:border-amber-800 text-amber-800 dark:text-amber-300",
   };
   const IconMap: Record<ToastType, React.ReactNode> = {
@@ -105,7 +105,7 @@ export function LoadingState({ message = "계좌 데이터를 불러오는 중..
   return (
     <div className="h-screen w-full flex flex-col items-center justify-center bg-[#fcfaf7] dark:bg-[#1a1915] gap-3">
       <div className="p-4 rounded-2xl bg-white dark:bg-[#242320] border border-neutral-200 dark:border-[#35332e] shadow-sm">
-        <Loader2 className="w-7 h-7 text-[#fff8f5]0 animate-spin" />
+        <Loader2 className="w-7 h-7 text-[#f0fdf4]0 animate-spin" />
       </div>
       <p className="text-sm font-bold text-neutral-400">{message}</p>
     </div>
@@ -319,15 +319,15 @@ export function PnlIcon({ positive, size = 15 }: { positive: boolean; size?: num
 export function pnlIconBg(positive: boolean) {
   return positive
     ? "bg-red-50 dark:bg-red-950/40 text-red-500"
-    : "bg-[#fff8f5] dark:bg-[#3d1f10]/40 text-[#fff8f5]0";
+    : "bg-[#f0fdf4] dark:bg-[#052e16]/40 text-[#f0fdf4]0";
 }
 
 export function pnlValueColor(positive: boolean) {
-  return positive ? "text-red-500" : "text-[#fff8f5]0";
+  return positive ? "text-red-500" : "text-[#f0fdf4]0";
 }
 
 export function pnlAccentColor(positive: boolean) {
-  return positive ? "bg-red-400 dark:bg-red-600" : "bg-[#d97757] dark:bg-[#d97757]";
+  return positive ? "bg-red-400 dark:bg-red-600" : "bg-[#16a34a] dark:bg-[#16a34a]";
 }
 
 // =========================================================================
