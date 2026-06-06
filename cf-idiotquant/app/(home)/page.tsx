@@ -208,7 +208,7 @@ export default function HomePage() {
         <div className="absolute -top-32 -right-32 w-80 h-80 rounded-full bg-[#d97757]/6 dark:bg-[#d97757]/4 blur-3xl pointer-events-none" />
         <div className="absolute -bottom-16 -left-16 w-64 h-64 rounded-full bg-emerald-500/4 dark:bg-emerald-500/3 blur-3xl pointer-events-none" />
 
-        <div className="max-w-lg mx-auto px-5 pt-14 pb-12 sm:pt-20 sm:pb-14 relative">
+        <div className="max-w-3xl mx-auto px-5 pt-14 pb-12 sm:pt-20 sm:pb-14 md:pt-28 md:pb-20 relative">
 
           {/* Live badge */}
           <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-[#faf9f7] dark:bg-[#242320] border border-neutral-200 dark:border-[#35332e] mb-5 text-[11px] font-medium text-neutral-500 dark:text-neutral-400">
@@ -220,7 +220,7 @@ export default function HomePage() {
           </div>
 
           {/* Headline */}
-          <h1 className="text-[2.1rem] sm:text-[3rem] font-black leading-[1.08] tracking-tight mb-4 text-neutral-900 dark:text-neutral-50">
+          <h1 className="text-[2.1rem] sm:text-[3rem] md:text-[3.5rem] font-black leading-[1.08] tracking-tight mb-4 text-neutral-900 dark:text-neutral-50">
             저평가 국내 주식,<br />
             <span className="text-[#d97757] dark:text-[#d97757]">데이터가 찾아드립니다.</span>
           </h1>
@@ -259,7 +259,7 @@ export default function HomePage() {
         {/* Stats strip */}
         {!preview.loading && preview.total > 0 && (
           <div className="border-t border-neutral-100 dark:border-[#2c2b27] relative">
-            <div className="max-w-lg mx-auto px-5 py-5 grid grid-cols-3 gap-0">
+            <div className="max-w-3xl mx-auto px-5 py-5 grid grid-cols-3 gap-0">
               <div className="text-center py-1">
                 <p className="text-xl font-black text-[#d97757] dark:text-[#d97757] tabular-nums leading-none">
                   {animatedTotal.toLocaleString()}
@@ -290,8 +290,8 @@ export default function HomePage() {
       </section>
 
       {/* ── TODAY'S PICKS ─────────────────────────────────────────── */}
-      <section className="py-10 px-5">
-        <div className="max-w-lg mx-auto">
+      <section className="py-10 px-5 md:py-14">
+        <div className="max-w-3xl mx-auto">
 
           <div className="flex items-center justify-between mb-5">
             <div>
@@ -388,8 +388,8 @@ export default function HomePage() {
       </section>
 
       {/* ── HOW IT WORKS ─────────────────────────────────────────── */}
-      <section className="py-10 px-5 border-t border-neutral-100 dark:border-[#3a3834] bg-[#faf9f7] dark:bg-[#1a1917]">
-        <div className="max-w-lg mx-auto">
+      <section className="py-10 px-5 md:py-14 border-t border-neutral-100 dark:border-[#3a3834] bg-[#faf9f7] dark:bg-[#1a1917]">
+        <div className="max-w-3xl mx-auto">
           <div className="mb-7">
             <div className="flex items-center gap-2 mb-1">
               <Zap size={13} className="text-[#d97757]" strokeWidth={2.5} />
@@ -398,7 +398,7 @@ export default function HomePage() {
             <p className="text-[11px] text-neutral-400">3단계로 저평가 종목을 발굴합니다.</p>
           </div>
 
-          <div className="flex flex-col gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             {HOW_IT_WORKS.map((step, i) => (
               <div key={i} className="flex items-start gap-4 p-5 rounded-2xl bg-white dark:bg-[#242320] border border-neutral-200 dark:border-[#35332e]">
                 <span className={cn("text-xs font-black tabular-nums shrink-0 mt-0.5", step.accent)}>
@@ -415,15 +415,15 @@ export default function HomePage() {
       </section>
 
       {/* ── FEATURES ─────────────────────────────────────────────── */}
-      <section className="py-10 px-5 border-t border-neutral-100 dark:border-[#3a3834]">
-        <div className="max-w-lg mx-auto">
+      <section className="py-10 px-5 md:py-14 border-t border-neutral-100 dark:border-[#3a3834]">
+        <div className="max-w-3xl mx-auto">
           <div className="mb-6">
             <h2 className="text-base font-black text-neutral-900 dark:text-neutral-50">주요 기능</h2>
             <p className="text-[11px] text-neutral-400 mt-0.5">발굴 → 분석 → 계산</p>
           </div>
 
           {/* Mobile: horizontal scroll, Desktop: 3-col grid */}
-          <div className="flex gap-3 overflow-x-auto no-scrollbar pb-1 sm:grid sm:grid-cols-3 sm:overflow-visible">
+          <div className="flex gap-3 overflow-x-auto no-scrollbar pb-1 sm:grid sm:grid-cols-3 sm:overflow-visible sm:gap-4">
             {FEATURES.map((f, i) => {
               const Icon = f.icon;
               return (
@@ -458,7 +458,7 @@ export default function HomePage() {
           <div className="absolute inset-0 pointer-events-none">
             <div className="absolute top-0 left-1/2 -translate-x-1/2 w-96 h-40 rounded-full bg-[#d97757]/5 dark:bg-[#d97757]/4 blur-3xl" />
           </div>
-          <div className="max-w-lg mx-auto text-center relative">
+          <div className="max-w-3xl mx-auto text-center relative">
             <div className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-[#fff8f5] dark:bg-[#3d1f10]/40 border border-[#fde8de] dark:border-[#7d3f27]/60 mb-4 text-[11px] font-semibold text-[#bf6644] dark:text-[#d97757]">
               <span className="relative flex h-1.5 w-1.5 shrink-0">
                 <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#d97757] opacity-60" />
@@ -484,7 +484,7 @@ export default function HomePage() {
 
       {/* ── FOOTER ───────────────────────────────────────────────── */}
       <footer className="border-t border-neutral-100 dark:border-[#3a3834] bg-white dark:bg-[#1f1e1b]">
-        <div className="max-w-lg mx-auto px-5 py-6 flex items-center justify-between gap-4">
+        <div className="max-w-3xl mx-auto px-5 py-6 flex items-center justify-between gap-4">
           <div className="flex items-center gap-2">
             <TrendingUp size={14} className="text-[#d97757] shrink-0" strokeWidth={2.5} />
             <span className="text-xs font-black tracking-tight text-neutral-700 dark:text-neutral-200">
