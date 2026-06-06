@@ -5,7 +5,7 @@ import { formatKoreanUnit } from "../../../../components/utils/financeCalc";
 import { cn } from "@/lib/utils";
 import {
   BarChart3, Calendar, DollarSign, Coins,
-  TrendingUp, Layers, Activity,
+  TrendingUp, Layers, Activity, AlertTriangle,
 } from "lucide-react";
 
 interface MetricItem {
@@ -82,6 +82,8 @@ export const StockMetrics = ({ data, isUs }: { data: any; isUs: boolean }) => {
     const num = Number(val);
     return isNaN(num) ? 0 : num;
   };
+
+  const isDelistedSuspect = !isUs && data.kiChart?.output1 ? n(data.kiChart.output1.lstn_stcn) === 0 : false;
 
   const metrics: MetricItem[] = useMemo(() => {
     if (isUs) {
@@ -209,6 +211,16 @@ export const StockMetrics = ({ data, isUs }: { data: any; isUs: boolean }) => {
           }
         </div>
       </div>
+
+      {/* ── 상장폐지 의심 배너 ── */}
+      {isDelistedSuspect && (
+        <div className="px-5 py-3 bg-red-50 dark:bg-red-950/20 border-b border-red-200 dark:border-red-900/30 flex items-center gap-2.5">
+          <AlertTriangle size={14} className="text-red-500 dark:text-red-400 shrink-0" />
+          <p className="text-xs font-bold text-red-600 dark:text-red-400 leading-snug">
+            상장폐지 의심 종목 — 상장주식수 정보가 제공되지 않습니다. 투자 전 반드시 확인하세요.
+          </p>
+        </div>
+      )}
 
       {/* ── 콘텐츠 ── */}
       <div className="flex-1 p-5 space-y-5">
