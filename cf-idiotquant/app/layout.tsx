@@ -1,5 +1,5 @@
 import "@/app/global.css";
-import type { Viewport } from "next";
+import type { Metadata, Viewport } from "next";
 
 export const viewport: Viewport = {
   width: "device-width",
@@ -11,36 +11,84 @@ import { StoreProvider } from "./StoreProvider";
 import NavbarWithSimpleLinks from "@/components/navigation";
 import { ThemeProviderClient } from "./ThemeProviderClient";
 import { AuthProvider } from "@/components/auth-provider";
-import Script from "next/script";
 import { cn } from "@/lib/utils";
 
-export const metadata = {
+export const metadata: Metadata = {
+  metadataBase: new URL('https://idiotquant.com'),
   title: {
-    default: 'IdiotQuant - 퀀트 전략 기반 주식 추천',
+    default: 'IdiotQuant - 무료 NCAV·저PBR·저PER 주식 스크리너',
     template: '%s | IdiotQuant',
   },
-  description: '데이터로 증명된 퀀트 전략을 통해 최적의 주식 종목을 추천합니다. 스마트한 투자의 시작, 이디엇퀀트.',
+  description: '퀀트 알고리즘이 매일 코스피·코스닥 2,000개 종목을 스캔해 NCAV, 저PBR, 저PER, S-RIM 기준 저평가 주식을 자동 발굴합니다. 재무분석·목표주가·자동매매 기능 제공.',
+  keywords: [
+    '퀀트 투자', 'NCAV 주식', '저평가 주식', '주식 스크리너',
+    '저PBR 주식', '저PER 주식', 'S-RIM', '주식 재무분석',
+    '목표주가', '자동매매', '코스피 저평가', '코스닥 저평가',
+    '퀀트 전략', '주식 발굴', '가치투자',
+  ],
+  authors: [{ name: 'IdiotQuant', url: 'https://idiotquant.com' }],
+  creator: 'IdiotQuant',
+  publisher: 'IdiotQuant',
+  robots: {
+    index: true,
+    follow: true,
+    googleBot: {
+      index: true,
+      follow: true,
+      'max-image-preview': 'large',
+      'max-snippet': -1,
+    },
+  },
   alternates: {
     canonical: 'https://idiotquant.com',
   },
   openGraph: {
-    title: 'IdiotQuant - 데이터 기반 퀀트 투자',
-    description: '퀀트 알고리즘이 찾아낸 저평가 우량주 확인하기',
+    title: 'IdiotQuant - 무료 NCAV·저PBR 주식 스크리너',
+    description: '퀀트 알고리즘이 매일 코스피·코스닥 저평가 주식을 발굴합니다. NCAV, 저PBR, 저PER, S-RIM 전략 제공.',
     url: 'https://idiotquant.com',
     siteName: 'IdiotQuant',
     locale: 'ko_KR',
     type: 'website',
   },
+  twitter: {
+    card: 'summary_large_image',
+    title: 'IdiotQuant - 무료 NCAV·저PBR 주식 스크리너',
+    description: '퀀트 알고리즘이 매일 코스피·코스닥 저평가 주식을 발굴합니다.',
+    creator: '@idiotquant',
+  },
 };
 
-const jsonLd = {
+const jsonLdWebSite = {
+  '@context': 'https://schema.org',
+  '@type': 'WebSite',
+  'name': 'IdiotQuant',
+  'url': 'https://idiotquant.com',
+  'description': '퀀트 전략 기반 무료 주식 스크리너 및 재무분석 서비스',
+  'potentialAction': {
+    '@type': 'SearchAction',
+    'target': {
+      '@type': 'EntryPoint',
+      'urlTemplate': 'https://idiotquant.com/analyze?ticker={search_term_string}',
+    },
+    'query-input': 'required name=search_term_string',
+  },
+};
+
+const jsonLdApp = {
   '@context': 'https://schema.org',
   '@type': 'WebApplication',
   'name': 'IdiotQuant',
   'url': 'https://idiotquant.com',
-  'description': 'Quantitative stock recommendation strategy service.',
+  'description': '퀀트 전략(NCAV, 저PBR, 저PER, S-RIM)으로 코스피·코스닥 저평가 주식을 매일 자동 발굴하는 무료 주식 스크리너.',
   'applicationCategory': 'FinanceApplication',
-  'operatingSystem': 'Web, Android, iOS',
+  'operatingSystem': 'Web',
+  'offers': {
+    '@type': 'Offer',
+    'price': '0',
+    'priceCurrency': 'KRW',
+  },
+  'featureList': 'NCAV 스크리너, 저PBR 스크리너, 주식 재무분석, 목표주가 계산, 자동매매',
+  'inLanguage': 'ko',
 };
 
 export default function RootLayout({
@@ -51,11 +99,13 @@ export default function RootLayout({
   return (
     <html lang="ko" suppressHydrationWarning>
       <head>
-        <Script
-          id="structured-data"
+        <script
           type="application/ld+json"
-          strategy="afterInteractive"
-          dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLdWebSite) }}
+        />
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLdApp) }}
         />
         <script
           async
