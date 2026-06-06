@@ -122,28 +122,33 @@ export const StockMetrics = ({ data, isUs }: { data: any; isUs: boolean }) => {
       // KIS output1 에 52주 최고/최저 필드가 직접 제공됨
       const w52High = n(c.w52_hgpr);
       const w52Low  = n(c.w52_lwpr);
-      // fallback: output1 값이 없으면 output2 60일 데이터에서 산출
+      // fallback: output1 값이 없으면 output2 데이터에서 산출
+      // currentShares가 0이어도 output2 raw 가격을 그대로 사용
       const fallbackHigh = (() => {
-        const currentShares = n(c.lstn_stcn);
         const dailyItems = data.kiChart.output2 ?? [];
-        if (!currentShares || !dailyItems.length) return { val: 0, date: "" };
+        if (!dailyItems.length) return { val: 0, date: "" };
+        const currentShares = n(c.lstn_stcn);
         let best = 0, bestDate = "";
         for (const day of dailyItems) {
+          const raw = n(day.stck_hgpr);
+          if (!raw) continue;
           const dayShares = n(day.lstn_stcn);
-          const adj = n(day.stck_hgpr) * (dayShares > 0 ? dayShares / currentShares : 1);
+          const adj = currentShares > 0 && dayShares > 0 ? raw * (dayShares / currentShares) : raw;
           if (adj > best) { best = adj; bestDate = day.stck_bsop_date ?? ""; }
         }
         return { val: best, date: bestDate };
       })();
       const fallbackLow = (() => {
-        const currentShares = n(c.lstn_stcn);
         const dailyItems = data.kiChart.output2 ?? [];
-        if (!currentShares || !dailyItems.length) return { val: 0, date: "" };
+        if (!dailyItems.length) return { val: 0, date: "" };
+        const currentShares = n(c.lstn_stcn);
         let best = Infinity, bestDate = "";
         for (const day of dailyItems) {
+          const raw = n(day.stck_lwpr);
+          if (!raw) continue;
           const dayShares = n(day.lstn_stcn);
-          const adj = n(day.stck_lwpr) * (dayShares > 0 ? dayShares / currentShares : 1);
-          if (adj > 0 && adj < best) { best = adj; bestDate = day.stck_bsop_date ?? ""; }
+          const adj = currentShares > 0 && dayShares > 0 ? raw * (dayShares / currentShares) : raw;
+          if (adj < best) { best = adj; bestDate = day.stck_bsop_date ?? ""; }
         }
         return { val: best < Infinity ? best : 0, date: bestDate };
       })();
