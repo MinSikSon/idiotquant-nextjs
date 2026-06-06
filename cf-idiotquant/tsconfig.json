@@ -29,9 +29,6 @@
     },
     "typeRoots": [
       "node_modules/@types"
-    ],
-    "types": [
-      "three"
     ]
   },
   "include": [
