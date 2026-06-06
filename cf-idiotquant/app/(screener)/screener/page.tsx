@@ -515,7 +515,7 @@ function ScreenerContent() {
         <div className="min-h-screen bg-[#faf9f7] dark:bg-[#1a1915] text-neutral-900 dark:text-neutral-100">
 
             {/* ── 헤더 ── */}
-            <div className="bg-white dark:bg-[#1f1e1b] border-b border-neutral-200 dark:border-[#3a3834]">
+            <div className="bg-white dark:bg-[#1f1e1b] border-b border-neutral-200 dark:border-[#3a3834] border-t-[3px] border-t-[#16a34a]">
                 <div className="max-w-7xl mx-auto px-4 sm:px-6 py-6">
                     <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                         <div>

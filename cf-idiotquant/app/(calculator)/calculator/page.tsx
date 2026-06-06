@@ -497,11 +497,11 @@ function CalculatorContent() {
     };
 
     return (
-        <div className="bg-[#faf9f7] dark:bg-[#1a1915] min-h-screen p-3 sm:p-6 md:p-10 pb-24 md:pb-10 font-sans text-neutral-900 dark:text-neutral-50 selection:bg-[#16a34a]/20">
+        <div className="bg-[#faf9f7] dark:bg-[#1a1915] min-h-screen p-3 sm:p-6 md:p-10 pb-24 md:pb-10 font-sans text-neutral-900 dark:text-neutral-50 selection:bg-amber-500/20">
             <div className="max-w-6xl mx-auto space-y-5 sm:space-y-10">
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-neutral-200 dark:border-[#35332e] pb-4 sm:pb-6">
                     <div className="flex items-center gap-2 sm:gap-3">
-                        <div className="p-2 sm:p-2.5 bg-[#16a34a] rounded-xl sm:rounded-2xl text-white shadow-lg shadow-[#16a34a]/20 shrink-0">
+                        <div className="p-2 sm:p-2.5 bg-amber-500 rounded-xl sm:rounded-2xl text-white shadow-lg shadow-amber-500/20 shrink-0">
                             <CalculatorIcon className="w-5 h-5 sm:w-6" />
                         </div>
                         <div>
