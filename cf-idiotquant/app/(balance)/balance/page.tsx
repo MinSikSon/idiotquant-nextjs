@@ -1,5 +1,8 @@
 "use client"
 
+import { useEffect } from "react";
+import { useRouter } from "next/navigation";
+import { useSession } from "next-auth/react";
 import { selectKakaoTotal } from "@/lib/features/kakao/kakaoSlice";
 import { useAppSelector } from "@/lib/hooks";
 import SpotlightCard from "@/src/Components/SpotlightCard/SpotlightCard";
@@ -9,7 +12,20 @@ import Link from "next/link";
 const DEBUG = false;
 
 export default function Balance() {
+    const router = useRouter();
+    const { data: session, status } = useSession();
     const kakaoTotal = useAppSelector(selectKakaoTotal);
+
+    useEffect(() => {
+        if (status === "loading") return;
+        if (!session || session.user?.name !== process.env.NEXT_PUBLIC_MASTER) {
+            router.replace("/");
+        }
+    }, [session, status, router]);
+
+    if (status === "loading" || !session || session.user?.name !== process.env.NEXT_PUBLIC_MASTER) {
+        return null;
+    }
 
     return (
         <>
