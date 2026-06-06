@@ -19,7 +19,7 @@ import { useStockSearch } from '@/app/(search)/search/hooks/useStockSearch';
 import { selectKrMarketHistory } from '@/lib/features/searchHistory/searchHistorySlice';
 import {
   AlertCircle, Loader2, Flame, Share2, Check, CheckCircle,
-  DollarSign, Coins, Star, X, TrendingUp, ChevronLeft, Lock, ArrowRight,
+  DollarSign, Coins, Star, X, TrendingUp, ChevronLeft, Lock, ArrowRight, BarChart2,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
@@ -453,23 +453,30 @@ function AnalyzeContent() {
       </div>
 
       {/* ── 헤더 ── */}
-      <header className="sticky top-0 z-30 bg-white dark:bg-[#1f1e1b] border-b border-neutral-200 dark:border-[#3a3834]">
-        {fromScreener && (
-          <div className="border-b border-neutral-100 dark:border-[#35332e]/60">
-            <div className="max-w-4xl mx-auto px-4 py-2">
+      <header className="sticky top-0 z-30 bg-white dark:bg-[#1f1e1b] border-b border-neutral-200 dark:border-[#3a3834] border-t-[3px] border-t-blue-500">
+        {/* 페이지 레이블 + 뒤로가기 */}
+        <div className="border-b border-neutral-100 dark:border-[#35332e]/60">
+          <div className="max-w-4xl mx-auto px-4 py-2 flex items-center justify-between">
+            <div className="flex items-center gap-1.5">
+              <BarChart2 size={13} className="text-blue-500 dark:text-blue-400" strokeWidth={2.5} />
+              <span className="text-[10px] font-black text-neutral-400 dark:text-neutral-500 uppercase tracking-widest">
+                종목 분석
+              </span>
+            </div>
+            {fromScreener && (
               <Link href="/screener"
                 className="inline-flex items-center gap-1.5 text-xs font-bold text-[#16a34a] dark:text-[#16a34a] hover:opacity-80 transition-opacity">
                 <ChevronLeft size={13} />
-                스크리너로 돌아가기
+                발굴로 돌아가기
               </Link>
-            </div>
+            )}
           </div>
-        )}
+        </div>
 
         <div className="max-w-4xl mx-auto px-4 py-4 flex items-center gap-2">
           <div className="flex-1">
             <SearchAutocomplete
-              placeHolder="🇰🇷 국내 종목명 또는 🇺🇸 미국 티커(Ticker) 입력"
+              placeHolder="국내 종목명 또는 미국 티커 입력"
               onSearchButton={handleSearch}
               validCorpNameArray={staticStockData.allTickers}
               onSearchStateChange={() => {}}
