@@ -4,12 +4,13 @@ import { useSession, signOut } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import { useEffect } from "react";
 import Link from "next/link";
-import { LogOut, Eye, DollarSign, ChevronRight, User } from "lucide-react";
+import { LogOut, Eye, DollarSign, ChevronRight, User, ShieldCheck } from "lucide-react";
 
 export default function ProfilePage() {
     const { data: session, status } = useSession();
     const router = useRouter();
     const isMasterUser = session?.user?.name === process.env.NEXT_PUBLIC_MASTER;
+    const isAdmin = (session?.user as any)?.role === "admin";
 
     useEffect(() => {
         if (status === "unauthenticated") {
@@ -92,6 +93,31 @@ export default function ProfilePage() {
                                 </div>
                                 <span className="flex-1 text-sm font-semibold text-neutral-700 dark:text-neutral-300">
                                     US 포트폴리오
+                                </span>
+                                <ChevronRight size={14} className="text-neutral-300 dark:text-neutral-600 group-hover:text-neutral-500 dark:group-hover:text-neutral-400 transition-colors" />
+                            </Link>
+                        </div>
+                    </div>
+                )}
+
+                {/* Admin section */}
+                {isAdmin && (
+                    <div className="bg-white dark:bg-[#242320] rounded-2xl border border-neutral-200/70 dark:border-[#35332e] shadow-sm overflow-hidden">
+                        <div className="px-5 pt-4 pb-1">
+                            <span className="text-[10px] font-bold text-neutral-400 dark:text-neutral-500 uppercase tracking-widest">
+                                Admin
+                            </span>
+                        </div>
+                        <div className="divide-y divide-neutral-100 dark:divide-[#35332e]">
+                            <Link
+                                href="/admin"
+                                className="flex items-center gap-3 px-5 py-3.5 hover:bg-[#f5f1eb] dark:hover:bg-[#2c2b27] transition-colors group"
+                            >
+                                <div className="w-8 h-8 rounded-xl bg-[#fde8de] dark:bg-[#3d1f10]/50 flex items-center justify-center shrink-0">
+                                    <ShieldCheck size={15} className="text-[#d97757]" />
+                                </div>
+                                <span className="flex-1 text-sm font-semibold text-neutral-700 dark:text-neutral-300">
+                                    회원 관리
                                 </span>
                                 <ChevronRight size={14} className="text-neutral-300 dark:text-neutral-600 group-hover:text-neutral-500 dark:group-hover:text-neutral-400 transition-colors" />
                             </Link>
