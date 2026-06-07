@@ -10,8 +10,12 @@ import {
     reqGetNcavDailyDates, reqGetNcavDailyList,
     reqDiscoverNcavDates,
 } from "@/lib/features/algorithmTrade/algorithmTradeSlice";
+import {
+    selectLikedTickers, selectLikedList, selectTogglePending,
+    reqGetMyLikes, reqToggleLike,
+} from "@/lib/features/stockLikes/stockLikesSlice";
 import { cn } from "@/lib/utils";
-import { RefreshCw, ChevronRight, Loader2, Search, SlidersHorizontal, TrendingUp, Info, X } from "lucide-react";
+import { RefreshCw, ChevronRight, Loader2, Search, SlidersHorizontal, TrendingUp, Info, X, Heart } from "lucide-react";
 import * as Tooltip from "@radix-ui/react-tooltip";
 
 // =========================================================================
@@ -170,14 +174,20 @@ function SortableHeader({ label, sortKey: key, currentKey, order, onToggle }: {
 // =========================================================================
 // TableRow — 데스크탑
 // =========================================================================
-function TableRow({ item, onClick }: { item: any; onClick: (ticker: string, name: string) => void }) {
+function TableRow({ item, onClick, likedTickers, onToggleLike }: {
+    item: any;
+    onClick: (ticker: string, name: string) => void;
+    likedTickers: Set<string>;
+    onToggleLike: (ticker: string, name: string) => void;
+}) {
     const roe = safeNum(item.bps) > 0 ? (safeNum(item.eps) / safeNum(item.bps)) * 100 : null;
     const strategies: string[] = resolveStrategies(item);
     const ncav = safeNum(item.ncav_ratio);
+    const isLiked = likedTickers.has(item.ticker);
 
     return (
         <div
-            className="group grid grid-cols-[minmax(160px,2.5fr)_minmax(110px,1fr)_88px_68px_68px_68px_88px] gap-4 items-center px-6 py-5 hover:bg-[#f0fdf4]/40 dark:hover:bg-[#242320]/50 cursor-pointer transition-colors border-b border-neutral-100 dark:border-[#35332e] last:border-0"
+            className="group grid grid-cols-[minmax(160px,2.5fr)_minmax(110px,1fr)_88px_68px_68px_68px_112px] gap-4 items-center px-6 py-5 hover:bg-[#f0fdf4]/40 dark:hover:bg-[#242320]/50 cursor-pointer transition-colors border-b border-neutral-100 dark:border-[#35332e] last:border-0"
             onClick={() => onClick(item.ticker, item.name)}
         >
             <div className="min-w-0">
@@ -230,7 +240,19 @@ function TableRow({ item, onClick }: { item: any; onClick: (ticker: string, name
                 </span>
             </div>
 
-            <div className="flex justify-end">
+            <div className="flex justify-end items-center gap-1.5">
+                <button
+                    className={cn(
+                        "p-1.5 rounded-lg transition-all",
+                        isLiked
+                            ? "text-rose-500 dark:text-rose-400"
+                            : "text-neutral-300 dark:text-neutral-600 hover:text-rose-400 dark:hover:text-rose-500"
+                    )}
+                    onClick={(e) => { e.stopPropagation(); onToggleLike(item.ticker, item.name); }}
+                    title={isLiked ? "관심 해제" : "관심 추가"}
+                >
+                    <Heart size={14} fill={isLiked ? "currentColor" : "none"} />
+                </button>
                 <button
                     className="flex items-center gap-1 px-3 py-1.5 rounded-lg bg-[#faf9f7] dark:bg-[#242320] group-hover:bg-[#16a34a] group-hover:text-white text-neutral-600 dark:text-neutral-400 text-xs font-bold transition-all whitespace-nowrap"
                     onClick={(e) => { e.stopPropagation(); onClick(item.ticker, item.name); }}
@@ -246,10 +268,16 @@ function TableRow({ item, onClick }: { item: any; onClick: (ticker: string, name
 // =========================================================================
 // StockRowCard — 모바일
 // =========================================================================
-function StockRowCard({ item, onClick }: { item: any; onClick: (ticker: string, name: string) => void }) {
+function StockRowCard({ item, onClick, likedTickers, onToggleLike }: {
+    item: any;
+    onClick: (ticker: string, name: string) => void;
+    likedTickers: Set<string>;
+    onToggleLike: (ticker: string, name: string) => void;
+}) {
     const roe = safeNum(item.bps) > 0 ? (safeNum(item.eps) / safeNum(item.bps)) * 100 : null;
     const strategies: string[] = resolveStrategies(item);
     const ncav = safeNum(item.ncav_ratio);
+    const isLiked = likedTickers.has(item.ticker);
 
     return (
         <div
@@ -257,19 +285,32 @@ function StockRowCard({ item, onClick }: { item: any; onClick: (ticker: string, 
             onClick={() => onClick(item.ticker, item.name)}
         >
             <div className="flex items-start justify-between gap-2 mb-4">
-                <div className="min-w-0">
+                <div className="min-w-0 flex-1">
                     <p className="font-bold text-base text-neutral-900 dark:text-white truncate leading-tight">{item.name}</p>
                     <p className="text-[11px] text-neutral-400 font-mono tracking-wider mt-0.5">{item.ticker}</p>
                 </div>
-                <div className={cn(
-                    "shrink-0 px-2.5 py-1.5 rounded-xl text-sm font-black font-mono",
-                    ncav >= 1
-                        ? "bg-emerald-100 dark:bg-emerald-950/50 text-emerald-700 dark:text-emerald-400"
-                        : ncav >= 0.7
-                        ? "bg-amber-100 dark:bg-amber-950/50 text-amber-700 dark:text-amber-400"
-                        : "bg-[#faf9f7] dark:bg-[#242320] text-neutral-500"
-                )}>
-                    {ncav > 0 ? `${ncav.toFixed(2)}x` : "—"}
+                <div className="flex items-center gap-1.5 shrink-0">
+                    <button
+                        className={cn(
+                            "p-1.5 rounded-lg transition-all",
+                            isLiked
+                                ? "text-rose-500 dark:text-rose-400"
+                                : "text-neutral-300 dark:text-neutral-600 hover:text-rose-400 dark:hover:text-rose-500"
+                        )}
+                        onClick={(e) => { e.stopPropagation(); onToggleLike(item.ticker, item.name); }}
+                    >
+                        <Heart size={16} fill={isLiked ? "currentColor" : "none"} />
+                    </button>
+                    <div className={cn(
+                        "px-2.5 py-1.5 rounded-xl text-sm font-black font-mono",
+                        ncav >= 1
+                            ? "bg-emerald-100 dark:bg-emerald-950/50 text-emerald-700 dark:text-emerald-400"
+                            : ncav >= 0.7
+                            ? "bg-amber-100 dark:bg-amber-950/50 text-amber-700 dark:text-amber-400"
+                            : "bg-[#faf9f7] dark:bg-[#242320] text-neutral-500"
+                    )}>
+                        {ncav > 0 ? `${ncav.toFixed(2)}x` : "—"}
+                    </div>
                 </div>
             </div>
 
@@ -315,6 +356,9 @@ function ScreenerContent() {
     const searchParams = useSearchParams();
     const ncavDailyDates = useAppSelector(selectNcavDailyDates);
     const ncavDailyList = useAppSelector(selectNcavDailyList);
+    const likedTickersArr = useAppSelector(selectLikedTickers);
+    const likedList = useAppSelector(selectLikedList);
+    const likedTickers = useMemo(() => new Set(likedTickersArr), [likedTickersArr]);
 
     // URL query params → 상태 초기화 (페이지 재진입 시에도 필터 유지)
     const [activeStrategyIds, setActiveStrategyIds] = useState<Set<string>>(() => {
@@ -345,6 +389,9 @@ function ScreenerContent() {
         return p === null ? true : p.split(',').includes('delisted');
     });
     const [filterOpen, setFilterOpen] = useState(false);
+    const [showLikedOnly, setShowLikedOnly] = useState(() =>
+        searchParams.get('filter') === 'liked'
+    );
     // 시가총액 필터 (단위: 억원, URL param: mincap)
     const [minMarketCap, setMinMarketCap] = useState<number>(() => {
         const mc = Number(searchParams.get('mincap') ?? 0);
@@ -356,6 +403,7 @@ function ScreenerContent() {
     useEffect(() => {
         dispatch(reqGetNcavDailyDates());
         dispatch(reqGetNcavDailyList("latest"));
+        dispatch(reqGetMyLikes());
     }, [dispatch]);
 
     useEffect(() => {
@@ -389,9 +437,10 @@ function ScreenerContent() {
         if (excludeList) params.set('exclude', excludeList);
         if (minMarketCap > 0) params.set('mincap', String(minMarketCap));
 
+        if (showLikedOnly) params.set('filter', 'liked');
         const qs = params.toString();
         router.replace(qs ? `/screener?${qs}` : '/screener', { scroll: false });
-    }, [activeStrategyIds, filterMode, sortKey, sortOrder, excludeHoldings, excludeDeficit, excludeDelisted, minMarketCap, router]);
+    }, [activeStrategyIds, filterMode, sortKey, sortOrder, excludeHoldings, excludeDeficit, excludeDelisted, minMarketCap, showLikedOnly, router]);
 
     const handleRefresh = useCallback(() => {
         dispatch(reqGetNcavDailyList("latest"));
@@ -433,6 +482,7 @@ function ScreenerContent() {
         setExcludeDeficit(false);
         setExcludeDelisted(true);
         setMinMarketCap(0);
+        setShowLikedOnly(false);
         setDisplayCount(DAILY_PAGE_SIZE);
     }, []);
 
@@ -448,8 +498,19 @@ function ScreenerContent() {
         return counts;
     }, [ncavDailyList.list]);
 
+    // 관심 종목 뷰: likedList를 NcavDailyItem 형태로 정규화
+    const normalizedLikedList = useMemo(() =>
+        likedList.map(item => ({
+            ...item,
+            name: item.stock_name ?? item.ticker,
+        })) as Record<string, any>[],
+        [likedList]
+    );
+
     const filteredList = useMemo(() => {
-        let list = [...ncavDailyList.list] as Record<string, any>[];
+        let list: Record<string, any>[] = showLikedOnly
+            ? normalizedLikedList
+            : [...ncavDailyList.list];
 
         if (activeStrategyIds.size > 0) {
             const check = filterMode === 'AND' ? 'every' : 'some';
@@ -491,15 +552,19 @@ function ScreenerContent() {
         });
 
         return list;
-    }, [ncavDailyList.list, activeStrategyIds, filterMode, searchQuery, excludeDelisted, excludeHoldings, excludeDeficit, minMarketCap, sortKey, sortOrder]);
+    }, [ncavDailyList.list, normalizedLikedList, showLikedOnly, activeStrategyIds, filterMode, searchQuery, excludeDelisted, excludeHoldings, excludeDeficit, minMarketCap, sortKey, sortOrder]);
 
     const visibleList = filteredList.slice(0, displayCount);
     const hasMore = filteredList.length > displayCount;
-    const isLoading = ncavDailyList.state === "pending" || ncavDailyList.state === "init";
+    const isLoading = !showLikedOnly && (ncavDailyList.state === "pending" || ncavDailyList.state === "init");
 
     const handleStockClick = useCallback((ticker: string, _name: string) => {
         router.push(`/analyze?ticker=${encodeURIComponent(ticker)}&from=screener`);
     }, [router]);
+
+    const handleToggleLike = useCallback((ticker: string, name: string) => {
+        dispatch(reqToggleLike({ ticker, name, isUs: false }));
+    }, [dispatch]);
 
     const scanDate = ncavDailyList.scanDate;
     const formattedDate = scanDate
@@ -508,7 +573,7 @@ function ScreenerContent() {
 
     const activeFilterCount = [excludeHoldings, excludeDeficit, minMarketCap > 0].filter(Boolean).length;
     const isAllActive = activeStrategyIds.size === 0;
-    const hasActiveFilters = activeStrategyIds.size > 0 || excludeHoldings || excludeDeficit || !excludeDelisted || minMarketCap > 0 || sortKey !== 'ncav_ratio' || sortOrder !== 'desc';
+    const hasActiveFilters = activeStrategyIds.size > 0 || excludeHoldings || excludeDeficit || !excludeDelisted || minMarketCap > 0 || sortKey !== 'ncav_ratio' || sortOrder !== 'desc' || showLikedOnly;
 
     return (
         <Tooltip.Provider delayDuration={300}>
@@ -520,23 +585,26 @@ function ScreenerContent() {
                     <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                         <div>
                             <div className="flex items-center gap-2 mb-1.5">
-                                <TrendingUp size={18} className="text-[#16a34a] dark:text-[#16a34a]" strokeWidth={2.5} />
+                                {showLikedOnly
+                                    ? <Heart size={18} className="text-rose-500" fill="currentColor" />
+                                    : <TrendingUp size={18} className="text-[#16a34a] dark:text-[#16a34a]" strokeWidth={2.5} />
+                                }
                                 <h1 className="text-xl font-black tracking-tight text-neutral-900 dark:text-white">
-                                    오늘의 발굴 종목
+                                    {showLikedOnly ? "내 관심 종목" : "오늘의 발굴 종목"}
                                 </h1>
                             </div>
                             <p className="text-xs text-neutral-400 dark:text-neutral-500 font-medium flex items-center gap-2">
-                                {isLoading ? (
+                                {isLoading && !showLikedOnly ? (
                                     <span className="flex items-center gap-1.5">
                                         <Loader2 size={11} className="animate-spin" />
                                         데이터 로딩 중...
                                     </span>
                                 ) : (
                                     <>
-                                        {formattedDate && <span className="font-mono">{formattedDate}</span>}
-                                        {formattedDate && <span>·</span>}
+                                        {!showLikedOnly && formattedDate && <span className="font-mono">{formattedDate}</span>}
+                                        {!showLikedOnly && formattedDate && <span>·</span>}
                                         총 <span className="font-bold text-neutral-700 dark:text-neutral-300 mx-0.5">{filteredList.length}개</span> 종목
-                                        {ncavDailyList.list.length !== filteredList.length && (
+                                        {!showLikedOnly && ncavDailyList.list.length !== filteredList.length && (
                                             <span className="text-neutral-400"> (전체 {ncavDailyList.list.length}개 중)</span>
                                         )}
                                     </>
@@ -604,6 +672,26 @@ function ScreenerContent() {
                                 );
                             })}
                         </div>
+
+                        {/* 관심 종목 필터 */}
+                        <button
+                            onClick={() => { setShowLikedOnly(o => !o); setActiveStrategyIds(new Set()); setDisplayCount(DAILY_PAGE_SIZE); }}
+                            className={cn(
+                                "shrink-0 flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold border transition-all whitespace-nowrap",
+                                showLikedOnly
+                                    ? "bg-rose-500 border-rose-500 text-white shadow-sm"
+                                    : "border-neutral-200 dark:border-[#3a3834] text-neutral-600 dark:text-neutral-400 hover:border-rose-300 dark:hover:border-rose-700 hover:text-rose-500 dark:hover:text-rose-400 bg-white dark:bg-[#242320]"
+                            )}
+                        >
+                            <Heart size={11} fill={showLikedOnly ? "currentColor" : "none"} />
+                            관심
+                            <span className={cn(
+                                "text-[10px] font-black px-1.5 py-0.5 rounded-full",
+                                showLikedOnly ? "bg-white/20" : "bg-[#faf9f7] dark:bg-[#4a4641] text-neutral-500"
+                            )}>
+                                {likedTickers.size}
+                            </span>
+                        </button>
 
                         {/* 전략 가이드 토글 */}
                         <button
@@ -840,11 +928,23 @@ function ScreenerContent() {
                 {!isLoading && filteredList.length === 0 && (
                     <div className="flex flex-col items-center justify-center py-20 text-center gap-4">
                         <div className="p-4 bg-[#faf9f7] dark:bg-[#242320] rounded-2xl">
-                            <Search size={24} className="text-neutral-400" />
+                            {showLikedOnly
+                                ? <Heart size={24} className="text-neutral-400" />
+                                : <Search size={24} className="text-neutral-400" />
+                            }
                         </div>
                         <div>
-                            <p className="text-sm font-bold text-neutral-700 dark:text-neutral-300">조건에 맞는 종목이 없습니다</p>
-                            <p className="text-xs text-neutral-400 mt-1">전략 필터를 조정하거나 검색어를 변경해보세요.</p>
+                            {showLikedOnly ? (
+                                <>
+                                    <p className="text-sm font-bold text-neutral-700 dark:text-neutral-300">관심 종목이 없습니다</p>
+                                    <p className="text-xs text-neutral-400 mt-1">종목 목록에서 하트를 눌러 관심 종목을 추가해보세요.</p>
+                                </>
+                            ) : (
+                                <>
+                                    <p className="text-sm font-bold text-neutral-700 dark:text-neutral-300">조건에 맞는 종목이 없습니다</p>
+                                    <p className="text-xs text-neutral-400 mt-1">전략 필터를 조정하거나 검색어를 변경해보세요.</p>
+                                </>
+                            )}
                         </div>
                         {activeStrategyIds.size > 0 && (
                             <button
@@ -873,7 +973,7 @@ function ScreenerContent() {
                                 </div>
                                 <div>
                                     {visibleList.map((item: any) => (
-                                        <TableRow key={item.ticker} item={item} onClick={handleStockClick} />
+                                        <TableRow key={item.ticker} item={item} onClick={handleStockClick} likedTickers={likedTickers} onToggleLike={handleToggleLike} />
                                     ))}
                                 </div>
                             </div>
@@ -882,7 +982,7 @@ function ScreenerContent() {
                         {/* 모바일 카드 */}
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 md:hidden">
                             {visibleList.map((item: any) => (
-                                <StockRowCard key={item.ticker} item={item} onClick={handleStockClick} />
+                                <StockRowCard key={item.ticker} item={item} onClick={handleStockClick} likedTickers={likedTickers} onToggleLike={handleToggleLike} />
                             ))}
                         </div>
 
