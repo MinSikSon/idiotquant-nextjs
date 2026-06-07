@@ -644,7 +644,9 @@ function ScreenerContent() {
             {/* ── 전략 탭 (sticky, 멀티셀렉트) ── */}
             <div className="sticky top-0 z-30 bg-white/95 dark:bg-[#1f1e1b]/95 backdrop-blur-md border-b border-neutral-200 dark:border-[#3a3834]">
                 <div className="max-w-7xl mx-auto px-4 sm:px-6">
-                    <div className="flex items-center gap-1.5 py-4">
+
+                    {/* 첫째 줄: 전략 탭 (전체 너비 스크롤) */}
+                    <div className="flex items-center gap-1.5 pt-3 pb-2">
                         {/* 전체 탭 */}
                         <button
                             onClick={clearStrategies}
@@ -690,7 +692,10 @@ function ScreenerContent() {
                                 );
                             })}
                         </div>
+                    </div>
 
+                    {/* 둘째 줄: 관심 + 전략 안내 + 초기화 */}
+                    <div className="flex items-center gap-2 pb-3">
                         {/* 관심 종목 필터 */}
                         <button
                             onClick={() => { setShowLikedOnly(o => !o); setActiveStrategyIds(new Set()); setDisplayCount(DAILY_PAGE_SIZE); }}
@@ -711,11 +716,13 @@ function ScreenerContent() {
                             </span>
                         </button>
 
+                        <div className="flex-1" />
+
                         {/* 전략 가이드 토글 */}
                         <button
                             onClick={() => setShowGuide(o => !o)}
                             className={cn(
-                                "shrink-0 flex items-center gap-1 px-2.5 py-1.5 rounded-lg border text-xs font-bold transition-all ml-1",
+                                "shrink-0 flex items-center gap-1 px-2.5 py-1.5 rounded-lg border text-xs font-bold transition-all",
                                 showGuide
                                     ? "bg-[#f0fdf4] dark:bg-[#052e16]/30 border-[#86efac] dark:border-[#15803d] text-[#15803d] dark:text-[#16a34a]"
                                     : "border-neutral-200 dark:border-[#3a3834] text-neutral-500 dark:text-neutral-400 hover:border-neutral-300 bg-white dark:bg-[#242320]"
