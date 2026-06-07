@@ -498,14 +498,19 @@ function ScreenerContent() {
         return counts;
     }, [ncavDailyList.list]);
 
-    // 관심 종목 뷰: likedList를 NcavDailyItem 형태로 정규화
-    const normalizedLikedList = useMemo(() =>
-        likedList.map(item => ({
-            ...item,
-            name: item.stock_name ?? item.ticker,
-        })) as Record<string, any>[],
-        [likedList]
-    );
+    // 관심 종목 뷰: likedTickers(optimistic) 기준으로 scan 데이터 → server 데이터 → 최소 항목 순으로 병합
+    const normalizedLikedList = useMemo(() => {
+        if (likedTickers.size === 0) return [] as Record<string, any>[];
+        const scanMap = new Map(ncavDailyList.list.map((item: any) => [item.ticker, item]));
+        const likedMap = new Map(likedList.map(item => [item.ticker, item]));
+        return Array.from(likedTickers).map(ticker => {
+            const fromScan = scanMap.get(ticker);
+            if (fromScan) return fromScan;
+            const fromLiked = likedMap.get(ticker);
+            if (fromLiked) return { ...fromLiked, name: fromLiked.stock_name ?? ticker };
+            return { ticker, name: ticker, strategies: [] as string[] };
+        }) as Record<string, any>[];
+    }, [likedTickers, likedList, ncavDailyList.list]);
 
     const filteredList = useMemo(() => {
         let list: Record<string, any>[] = showLikedOnly

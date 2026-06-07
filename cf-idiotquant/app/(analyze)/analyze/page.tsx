@@ -723,7 +723,7 @@ function AnalyzeContent() {
                   <div className="lg:col-span-5">
                     <StockCard
                       stock={krOrUs === 'US' ? {
-                        code: tickerFromUrl, isUs: true, name, ticker: name,
+                        code: tickerFromUrl, isUs: true, name: displayName, ticker: name,
                         grade: getUsNcavGrade(data.finnhubData, data.usDetail),
                         curPrice: Number(data?.usDetail?.output?.last ?? 0).toFixed(2),
                         fairValue: currency + calculateUsNcavValue(data.finnhubData, data.usDetail),
@@ -734,7 +734,7 @@ function AnalyzeContent() {
                         eps: currency + (data?.usDetail?.output?.epsx ?? 0),
                         sector: data?.usDetail?.output?.e_icod ?? "DEFAULT",
                       } : {
-                        code: tickerFromUrl, isUs: false, name,
+                        code: tickerFromUrl, isUs: false, name: displayName,
                         ticker: (staticStockData.corpCodeJson as any)?.[name]?.stock_code ?? '',
                         grade: getKrNcavGrade(data.kiBS, data.kiChart),
                         curPrice: data?.kiPrice?.output?.stck_prpr ?? 0,
