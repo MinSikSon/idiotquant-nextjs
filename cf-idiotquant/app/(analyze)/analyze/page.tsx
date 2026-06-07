@@ -362,19 +362,6 @@ function AnalyzeContent() {
 
   const tickerFromUrl = searchParams.get('ticker');
 
-  const handleToggleLike = useCallback(() => {
-    if (!tickerFromUrl) return;
-    if (!session?.user) {
-      addToast({ type: 'info', message: '로그인 후 관심 종목에 저장됩니다.' });
-      return;
-    }
-    dispatch(reqToggleLike({ ticker: tickerFromUrl, name: name ?? undefined, isUs: krOrUs === 'US' }));
-  }, [dispatch, tickerFromUrl, session, name, krOrUs, addToast]);
-
-  const loginHref = tickerFromUrl
-    ? `/login?callbackUrl=${encodeURIComponent(`/analyze?ticker=${tickerFromUrl}`)}`
-    : '/login';
-
   // API 응답에서 실제 종목명·종목코드 추출 (검색 입력값과 무관하게 항상 정확한 정보 표시)
   const displayName = krOrUs === 'KR'
     ? (data.kiChart?.output1?.hts_kor_isnm || name)
@@ -384,6 +371,22 @@ function AnalyzeContent() {
     ? (data.kiChart?.output1?.stck_shrn_iscd || tickerFromUrl || '')
     : (tickerFromUrl || '');
 
+  // KR 종목은 종목코드(stck_shrn_iscd)로 통일 — 스크리너와 동일한 키를 사용해 likes가 분리되지 않도록 함
+  const likeKey = krOrUs === 'KR' && displayCode ? displayCode : (tickerFromUrl ?? '');
+
+  const handleToggleLike = useCallback(() => {
+    if (!likeKey) return;
+    if (!session?.user) {
+      addToast({ type: 'info', message: '로그인 후 관심 종목에 저장됩니다.' });
+      return;
+    }
+    dispatch(reqToggleLike({ ticker: likeKey, name: displayName ?? undefined, isUs: krOrUs === 'US' }));
+  }, [dispatch, likeKey, session, displayName, krOrUs, addToast]);
+
+  const loginHref = tickerFromUrl
+    ? `/login?callbackUrl=${encodeURIComponent(`/analyze?ticker=${tickerFromUrl}`)}`
+    : '/login';
+
   const isLoaded =
     tickerFromUrl === name &&
     (
@@ -392,7 +395,7 @@ function AnalyzeContent() {
     );
 
   const currency = krOrUs === 'US' ? '$' : '₩';
-  const isInWatchlist = useAppSelector(state => selectIsLiked(state, tickerFromUrl ?? ''));
+  const isInWatchlist = useAppSelector(state => selectIsLiked(state, likeKey));
 
   const gradeDisplay = useMemo(() => {
     if (!isLoaded || !tickerFromUrl) return null;
