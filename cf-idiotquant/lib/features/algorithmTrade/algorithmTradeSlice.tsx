@@ -164,6 +164,7 @@ export interface NcavDailyState {
     list: NcavDailyItem[];
     scanDate: string | null;
     total: number;
+    scanningInProgress: boolean;
     error: string | null;
 }
 
@@ -249,7 +250,7 @@ const initialState: AlgorithmTradeType = {
     stockDetails: {},
     strategyLists: {},
     ncavDailyDates: { state: "init", dates: [], selectedDate: "latest", error: null },
-    ncavDailyList: { state: "init", list: [], scanDate: null, total: 0, error: null },
+    ncavDailyList: { state: "init", list: [], scanDate: null, total: 0, scanningInProgress: false, error: null },
 }
 
 export const algorithmTradeSlice = createAppSlice({
@@ -418,6 +419,7 @@ export const algorithmTradeSlice = createAppSlice({
                             : (() => { try { return JSON.parse(item.strategies ?? "[]"); } catch { return []; } })(),
                     }));
                     state.ncavDailyList.total = action.payload?.meta?.total ?? 0;
+                    state.ncavDailyList.scanningInProgress = action.payload?.meta?.scanningInProgress ?? false;
                     state.ncavDailyList.state = "fulfilled";
                     const rawScanDate = action.payload?.meta?.scanDate;
                     const scanDate = rawScanDate ? normalizeDate(rawScanDate) : null;
