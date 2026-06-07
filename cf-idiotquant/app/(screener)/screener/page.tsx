@@ -360,14 +360,21 @@ function ScreenerContent() {
     const likedList = useAppSelector(selectLikedList);
     const likedTickers = useMemo(() => new Set(likedTickersArr), [likedTickersArr]);
 
-    // URL query params → 상태 초기화 (페이지 재진입 시에도 필터 유지)
+    // URL query params → localStorage 순 fallback으로 상태 초기화
     const [activeStrategyIds, setActiveStrategyIds] = useState<Set<string>>(() => {
-        const s = searchParams.get('strategies');
-        return s ? new Set(s.split(',').filter(id => STRATEGY_PRESETS.some(p => p.id === id))) : new Set();
+        const urlS = searchParams.get('strategies');
+        if (urlS) return new Set(urlS.split(',').filter(id => STRATEGY_PRESETS.some(p => p.id === id)));
+        if (typeof window !== 'undefined') {
+            const saved = localStorage.getItem('screener:strategies');
+            if (saved) return new Set(saved.split(',').filter(id => STRATEGY_PRESETS.some(p => p.id === id)));
+        }
+        return new Set();
     });
-    const [filterMode, setFilterMode] = useState<'OR' | 'AND'>(() =>
-        searchParams.get('mode') === 'AND' ? 'AND' : 'OR'
-    );
+    const [filterMode, setFilterMode] = useState<'OR' | 'AND'>(() => {
+        if (searchParams.get('mode') === 'AND') return 'AND';
+        if (typeof window !== 'undefined' && localStorage.getItem('screener:filterMode') === 'AND') return 'AND';
+        return 'OR';
+    });
     const [showGuide, setShowGuide] = useState(false);
     const [sortKey, setSortKey] = useState<DiscoverySortKey>(() => {
         const s = searchParams.get('sort') as DiscoverySortKey;
@@ -418,7 +425,7 @@ function ScreenerContent() {
         }
     }, [ncavDailyList.state, ncavDailyList.scanDate, ncavDailyDates.dates.length, dispatch]);
 
-    // 필터 상태 → URL 동기화 (다른 페이지 다녀와도 필터 유지)
+    // 필터 상태 → URL 동기화 + localStorage 저장 (페이지 이동 후 재진입 시에도 필터 유지)
     useEffect(() => {
         const params = new URLSearchParams();
         if (activeStrategyIds.size > 0)
@@ -436,10 +443,21 @@ function ScreenerContent() {
         ].filter(Boolean).join(',');
         if (excludeList) params.set('exclude', excludeList);
         if (minMarketCap > 0) params.set('mincap', String(minMarketCap));
-
         if (showLikedOnly) params.set('filter', 'liked');
         const qs = params.toString();
         router.replace(qs ? `/screener?${qs}` : '/screener', { scroll: false });
+
+        // localStorage에도 전략 상태 저장 — 다른 페이지 이동 후 복귀 시 복원
+        if (activeStrategyIds.size > 0) {
+            localStorage.setItem('screener:strategies', Array.from(activeStrategyIds).join(','));
+        } else {
+            localStorage.removeItem('screener:strategies');
+        }
+        if (filterMode !== 'OR') {
+            localStorage.setItem('screener:filterMode', filterMode);
+        } else {
+            localStorage.removeItem('screener:filterMode');
+        }
     }, [activeStrategyIds, filterMode, sortKey, sortOrder, excludeHoldings, excludeDeficit, excludeDelisted, minMarketCap, showLikedOnly, router]);
 
     const handleRefresh = useCallback(() => {
@@ -484,6 +502,8 @@ function ScreenerContent() {
         setMinMarketCap(0);
         setShowLikedOnly(false);
         setDisplayCount(DAILY_PAGE_SIZE);
+        localStorage.removeItem('screener:strategies');
+        localStorage.removeItem('screener:filterMode');
     }, []);
 
     const strategyCounts = useMemo(() => {

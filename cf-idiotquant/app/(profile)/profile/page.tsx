@@ -195,16 +195,30 @@ export default function ProfilePage() {
                                 <div key={item.ticker} className="flex items-center gap-2 px-5 py-3">
                                     <div className="flex-1 min-w-0">
                                         <div className="flex items-center gap-1.5 flex-wrap">
-                                            <span className="text-sm font-bold text-neutral-800 dark:text-neutral-200 truncate max-w-[130px]">
+                                            <span className="text-sm font-bold text-neutral-800 dark:text-neutral-200 truncate max-w-[160px]">
                                                 {item.stock_name ?? item.ticker}
-                                            </span>
-                                            <span className="text-[10px] font-mono text-neutral-400 shrink-0">
-                                                {item.ticker}
                                             </span>
                                             {!!item.is_us && (
                                                 <span className="text-[9px] font-black px-1 py-0.5 rounded bg-[#f0fdf4] text-[#16a34a] shrink-0">
                                                     US
                                                 </span>
+                                            )}
+                                        </div>
+                                        {/* 지표 요약 */}
+                                        <div className="flex items-center gap-2.5 mt-0.5">
+                                            {item.ncav_ratio != null && item.ncav_ratio > 0 && (
+                                                <span className={cn(
+                                                    "text-[10px] font-mono font-bold",
+                                                    item.ncav_ratio >= 1 ? "text-emerald-600 dark:text-emerald-400" : "text-amber-500"
+                                                )}>
+                                                    NCAV {item.ncav_ratio.toFixed(2)}x
+                                                </span>
+                                            )}
+                                            {item.pbr != null && item.pbr > 0 && (
+                                                <span className="text-[10px] text-neutral-400 font-mono">PBR {item.pbr.toFixed(2)}</span>
+                                            )}
+                                            {item.per != null && item.per > 0 && (
+                                                <span className="text-[10px] text-neutral-400 font-mono">PER {item.per.toFixed(1)}</span>
                                             )}
                                         </div>
                                         {item.strategies.length > 0 && (
