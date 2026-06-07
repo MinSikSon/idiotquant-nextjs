@@ -44,7 +44,18 @@ export const { handlers, auth, signIn, signOut } = NextAuth((req: any) => {
                 } else {
                     console.error("DB Binding lost in createUser event");
                 }
-            }
+            },
+            async signIn({ user }) {
+                if (db && user.id) {
+                    try {
+                        await db.prepare("UPDATE users SET lastLoginAt = ? WHERE id = ?")
+                            .bind(Math.floor(Date.now() / 1000), user.id)
+                            .run();
+                    } catch (e) {
+                        console.error("D1 lastLoginAt update error:", e);
+                    }
+                }
+            },
         },
     };
 });

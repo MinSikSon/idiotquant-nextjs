@@ -12,6 +12,7 @@ interface UserRow {
   plan: string;
   role: string;
   createdAt: number | null;
+  lastLoginAt: number | null;
 }
 
 const PLAN_LABEL: Record<string, string> = {
@@ -118,6 +119,7 @@ export default function AdminPage() {
                   <th className="text-left px-5 py-3 text-[11px] font-semibold text-neutral-400 uppercase tracking-wider">플랜</th>
                   <th className="text-left px-5 py-3 text-[11px] font-semibold text-neutral-400 uppercase tracking-wider">역할</th>
                   <th className="text-left px-5 py-3 text-[11px] font-semibold text-neutral-400 uppercase tracking-wider">가입일</th>
+                  <th className="text-left px-5 py-3 text-[11px] font-semibold text-neutral-400 uppercase tracking-wider">마지막 로그인</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-neutral-100 dark:divide-[#2c2b27]">
@@ -150,13 +152,16 @@ export default function AdminPage() {
                       )}
                     </td>
                     <td className="px-5 py-3 text-neutral-400 text-xs">
-                      {u.createdAt ? new Date(u.createdAt).toLocaleDateString("ko-KR") : "—"}
+                      {u.createdAt ? new Date(u.createdAt * 1000).toLocaleDateString("ko-KR") : "—"}
+                    </td>
+                    <td className="px-5 py-3 text-neutral-400 text-xs">
+                      {u.lastLoginAt ? new Date(u.lastLoginAt * 1000).toLocaleDateString("ko-KR") : "—"}
                     </td>
                   </tr>
                 ))}
                 {users.length === 0 && (
                   <tr>
-                    <td colSpan={5} className="px-5 py-10 text-center text-neutral-400 text-sm">가입자 없음</td>
+                    <td colSpan={6} className="px-5 py-10 text-center text-neutral-400 text-sm">가입자 없음</td>
                   </tr>
                 )}
               </tbody>

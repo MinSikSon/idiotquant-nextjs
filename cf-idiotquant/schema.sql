@@ -14,6 +14,7 @@ CREATE TABLE IF NOT EXISTS users (
     
     createdAt INTEGER DEFAULT (strftime('%s', 'now')), -- 가입일
     updatedAt INTEGER DEFAULT (strftime('%s', 'now')),  -- 수정일
+    lastLoginAt INTEGER,                               -- 마지막 로그인 시각 (Unix 초)
     role TEXT DEFAULT 'user',              -- 역할: user, admin 등
     can_search_account INTEGER DEFAULT 0   -- 0: 불허, 1: 허용
 );
