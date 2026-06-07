@@ -156,20 +156,20 @@ export const StockCard = ({ stock, chartConfig }: StockCardProps) => {
         {/* 로고 + 종목명 + 등급 */}
         <div className="flex items-center gap-4">
           {/* 로고 */}
-          <div className="relative w-[52px] h-[52px] rounded-2xl border border-neutral-100 dark:border-[#35332e] bg-[#faf9f7] dark:bg-[#1a1915] shrink-0 flex items-center justify-center overflow-hidden">
+          <div className="relative w-[56px] h-[56px] rounded-2xl border border-neutral-100 dark:border-[#35332e] bg-[#faf9f7] dark:bg-[#1a1915] shrink-0 flex items-center justify-center overflow-hidden">
             {!imgError ? (
               <Image
                 key={stock?.ticker}
                 src={logoUrl}
                 alt={stock?.name ?? "logo"}
                 fill
-                className="object-contain p-2.5"
+                className="object-contain p-2"
                 unoptimized
                 onError={() => setImgError(true)}
               />
             ) : (
-              <span className="text-lg font-black font-mono text-neutral-400 dark:text-neutral-500 leading-none">
-                {(stock?.ticker ?? "??").substring(0, 2).toUpperCase()}
+              <span className="text-[18px] font-black text-neutral-600 dark:text-neutral-300 leading-none">
+                {(stock?.name ?? stock?.ticker ?? "?").charAt(0).toUpperCase()}
               </span>
             )}
           </div>
@@ -178,7 +178,7 @@ export const StockCard = ({ stock, chartConfig }: StockCardProps) => {
           <div className="flex-1 min-w-0">
             <div className="flex items-start justify-between gap-2">
               <div className="min-w-0">
-                <h2 className="font-black text-neutral-900 dark:text-white text-[15px] leading-tight truncate">
+                <h2 className="font-black text-neutral-900 dark:text-white text-[15px] leading-snug line-clamp-2">
                   {stock?.name}
                 </h2>
                 <p className="text-[10px] font-mono text-neutral-400 dark:text-neutral-500 mt-0.5 truncate">
