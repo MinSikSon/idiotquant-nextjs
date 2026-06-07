@@ -563,8 +563,9 @@ function ScreenerContent() {
     const hasMore = filteredList.length > displayCount;
     const isLoading = !showLikedOnly && (ncavDailyList.state === "pending" || ncavDailyList.state === "init");
 
-    const handleStockClick = useCallback((ticker: string, _name: string) => {
-        router.push(`/analyze?ticker=${encodeURIComponent(ticker)}&from=screener`);
+    const handleStockClick = useCallback((ticker: string, name: string) => {
+        // KR 종목은 종목명으로 검색 (corpCodeJson[종목명] → stock_code 매핑)
+        router.push(`/analyze?ticker=${encodeURIComponent(name)}&from=screener`);
     }, [router]);
 
     const handleToggleLike = useCallback((ticker: string, name: string) => {

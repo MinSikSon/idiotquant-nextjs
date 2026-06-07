@@ -170,7 +170,7 @@ export default function HomePage() {
   }>({ items: [], total: 0, filteredTotal: 0, scanDate: null, loading: true });
 
   useEffect(() => {
-    fetch("/api/proxy/scan/daily?strategy=all&limit=200&sort=ncav_ratio&order=desc")
+    fetch("/api/proxy/scan/daily?strategy=all&limit=2000&sort=ncav_ratio&order=desc")
       .then(r => r.json())
       .then((data: any) => {
         if (data.success) {
