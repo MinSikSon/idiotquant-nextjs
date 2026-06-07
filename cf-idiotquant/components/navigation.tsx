@@ -208,6 +208,9 @@ export function NavbarWithSimpleLinks() {
             <span className="font-black tracking-tighter text-sm text-neutral-900 dark:text-white">
               IDIOT<span className="text-[#16a34a]">QUANT</span>
             </span>
+            <span className="text-[9px] font-extrabold px-1.5 py-0.5 rounded-md uppercase tracking-wide border border-[#16a34a]/40 text-[#16a34a] dark:text-[#16a34a] bg-[#dcfce7]/60 dark:bg-[#052e16]/40">
+              BETA
+            </span>
           </Link>
         </div>
 
@@ -274,6 +277,9 @@ export function NavbarWithSimpleLinks() {
           </div>
           <span className="font-black tracking-tighter text-sm text-neutral-900 dark:text-white">
             IDIOT<span className="text-[#16a34a]">QUANT</span>
+          </span>
+          <span className="text-[9px] font-extrabold px-1.5 py-0.5 rounded-md uppercase tracking-wide border border-[#16a34a]/40 text-[#16a34a] dark:text-[#16a34a] bg-[#dcfce7]/60 dark:bg-[#052e16]/40">
+            BETA
           </span>
         </Link>
         <div className="flex items-center gap-2">
