@@ -618,7 +618,7 @@ function ScreenerContent() {
                                     : <TrendingUp size={18} className="text-[#16a34a] dark:text-[#16a34a]" strokeWidth={2.5} />
                                 }
                                 <h1 className="text-xl font-black tracking-tight text-neutral-900 dark:text-white">
-                                    {showLikedOnly ? "내 관심 종목" : "오늘의 발굴 종목"}
+                                    {showLikedOnly ? "내 관심 종목" : scanningInProgress ? "어제의 발굴 종목" : "오늘의 발굴 종목"}
                                 </h1>
                             </div>
                             <p className="text-xs text-neutral-400 dark:text-neutral-500 font-medium flex items-center gap-2">
