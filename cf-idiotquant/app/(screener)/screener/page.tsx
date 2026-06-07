@@ -183,7 +183,7 @@ function TableRow({ item, onClick, likedTickers, onToggleLike }: {
     const roe = safeNum(item.bps) > 0 ? (safeNum(item.eps) / safeNum(item.bps)) * 100 : null;
     const strategies: string[] = resolveStrategies(item);
     const ncav = safeNum(item.ncav_ratio);
-    const isLiked = likedTickers.has(item.ticker);
+    const isLiked = likedTickers.has(item.name);
 
     return (
         <div
@@ -277,7 +277,7 @@ function StockRowCard({ item, onClick, likedTickers, onToggleLike }: {
     const roe = safeNum(item.bps) > 0 ? (safeNum(item.eps) / safeNum(item.bps)) * 100 : null;
     const strategies: string[] = resolveStrategies(item);
     const ncav = safeNum(item.ncav_ratio);
-    const isLiked = likedTickers.has(item.ticker);
+    const isLiked = likedTickers.has(item.name);
 
     return (
         <div
@@ -501,7 +501,7 @@ function ScreenerContent() {
     // 관심 종목 뷰: likedTickers(optimistic) 기준으로 scan 데이터 → server 데이터 → 최소 항목 순으로 병합
     const normalizedLikedList = useMemo(() => {
         if (likedTickers.size === 0) return [] as Record<string, any>[];
-        const scanMap = new Map(ncavDailyList.list.map((item: any) => [item.ticker, item]));
+        const scanMap = new Map(ncavDailyList.list.map((item: any) => [item.name, item]));
         const likedMap = new Map(likedList.map(item => [item.ticker, item]));
         return Array.from(likedTickers).map(ticker => {
             const fromScan = scanMap.get(ticker);
@@ -569,7 +569,8 @@ function ScreenerContent() {
     }, [router]);
 
     const handleToggleLike = useCallback((ticker: string, name: string) => {
-        dispatch(reqToggleLike({ ticker, name, isUs: false }));
+        // KR 종목 좋아요 키는 종목명 기준 — analyze와 동일하게 통일
+        dispatch(reqToggleLike({ ticker: name, name, isUs: false }));
     }, [dispatch]);
 
     const scanDate = ncavDailyList.scanDate;
