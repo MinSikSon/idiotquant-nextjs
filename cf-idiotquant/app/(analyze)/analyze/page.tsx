@@ -12,14 +12,14 @@ import {
 import { useSearchParams, useRouter } from 'next/navigation';
 import { useSession } from 'next-auth/react';
 import Link from 'next/link';
-import { toggleStockLike, getMyStockLikes } from '@/app/(actions)/actions/stockLike';
+import { selectIsLiked, reqGetMyLikes, reqToggleLike } from '@/lib/features/stockLikes/stockLikesSlice';
 import dynamic from 'next/dynamic';
 import { useAppSelector, useAppDispatch } from '@/lib/hooks';
 import { useStockSearch } from '@/app/(search)/search/hooks/useStockSearch';
 import { selectKrMarketHistory } from '@/lib/features/searchHistory/searchHistorySlice';
 import {
   AlertCircle, Loader2, Flame, Share2, Check, CheckCircle,
-  DollarSign, Coins, Star, X, TrendingUp, ChevronLeft, Lock, ArrowRight, BarChart2,
+  DollarSign, Coins, Heart, X, TrendingUp, ChevronLeft, Lock, ArrowRight, BarChart2,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
@@ -315,32 +315,17 @@ function AnalyzeContent() {
   const [hasMounted, setHasMounted] = useState(false);
   const [staticStockData, setStaticStockData] = useState<StaticStockData>({ allTickers: [], corpCodeJson: {} });
   const [shareStatus, setShareStatus] = useState<'idle' | 'copied' | 'error'>('idle');
-  const [watchlist, setWatchlist] = useState<string[]>([]);
   const [activeTab, setActiveTab] = useState<'analysis' | 'strategy' | 'risk' | 'financials'>('analysis');
 
   useEffect(() => {
     setHasMounted(true);
     dispatch(reqGetSearchLog('10'));
+    dispatch(reqGetMyLikes());
     loadStaticStockData().then(setStaticStockData).catch(() => {
       addToast({ type: 'error', message: '주식 데이터를 불러올 수 없습니다.' });
     });
-    try {
-      const wl = window.localStorage.getItem('idiotquant_watchlist_v1');
-      if (wl) setWatchlist(JSON.parse(wl));
-    } catch { }
   }, [dispatch, addToast]);
 
-  useEffect(() => {
-    if (!session?.user) return;
-    getMyStockLikes().then(serverLikes => {
-      if (serverLikes.length === 0) return;
-      setWatchlist(prev => {
-        const merged = [...new Set([...prev, ...serverLikes])];
-        try { window.localStorage.setItem('idiotquant_watchlist_v1', JSON.stringify(merged)); } catch {}
-        return merged;
-      });
-    }).catch(() => {});
-  }, [session?.user]);
 
   const handleSearch = useCallback((stockName: string) => {
     if (!stockName) return;
@@ -370,27 +355,21 @@ function AnalyzeContent() {
     }
   }, [name, addToast]);
 
-  const toggleWatchlist = useCallback((ticker: string) => {
-    if (!session?.user) {
-      addToast({ type: 'info', message: '로그인 후 관심 종목이 서버에 저장됩니다.' });
-    }
-    setWatchlist(prev => {
-      const isAdded = prev.includes(ticker);
-      const next = isAdded ? prev.filter(t => t !== ticker) : [...prev, ticker];
-      try { window.localStorage.setItem('idiotquant_watchlist_v1', JSON.stringify(next)); } catch { }
-      if (session?.user) {
-        toggleStockLike(ticker, krOrUs === 'US', name ?? undefined).catch(() => {});
-      }
-      return next;
-    });
-  }, [addToast, session, krOrUs, name]);
-
   useEffect(() => {
     const ticker = searchParams.get('ticker');
     if (ticker && ticker !== name) onSearch(ticker);
   }, [searchParams, name, onSearch]);
 
   const tickerFromUrl = searchParams.get('ticker');
+
+  const handleToggleLike = useCallback(() => {
+    if (!tickerFromUrl) return;
+    if (!session?.user) {
+      addToast({ type: 'info', message: '로그인 후 관심 종목에 저장됩니다.' });
+      return;
+    }
+    dispatch(reqToggleLike({ ticker: tickerFromUrl, name: name ?? undefined, isUs: krOrUs === 'US' }));
+  }, [dispatch, tickerFromUrl, session, name, krOrUs, addToast]);
 
   const loginHref = tickerFromUrl
     ? `/login?callbackUrl=${encodeURIComponent(`/analyze?ticker=${tickerFromUrl}`)}`
@@ -413,7 +392,7 @@ function AnalyzeContent() {
     );
 
   const currency = krOrUs === 'US' ? '$' : '₩';
-  const isInWatchlist = tickerFromUrl ? watchlist.includes(tickerFromUrl) : false;
+  const isInWatchlist = useAppSelector(state => selectIsLiked(state, tickerFromUrl ?? ''));
 
   const gradeDisplay = useMemo(() => {
     if (!isLoaded || !tickerFromUrl) return null;
@@ -503,15 +482,15 @@ function AnalyzeContent() {
           {isLoaded && (
             <div className="flex items-center gap-1.5 shrink-0 animate-in fade-in duration-200">
               <button
-                onClick={() => tickerFromUrl && toggleWatchlist(tickerFromUrl)}
+                onClick={handleToggleLike}
                 className={cn(
                   "flex items-center gap-1.5 px-2.5 py-2 rounded-xl border text-xs font-bold transition-all",
                   isInWatchlist
-                    ? "text-amber-600 bg-amber-50 border-amber-200 dark:bg-amber-950/20 dark:border-amber-800/50 dark:text-amber-400"
-                    : "text-neutral-500 bg-[#faf9f7] border-neutral-200 hover:text-neutral-800 dark:bg-[#242320]/40 dark:border-[#3a3834]"
+                    ? "text-rose-600 bg-rose-50 border-rose-200 dark:bg-rose-950/20 dark:border-rose-800/50 dark:text-rose-400"
+                    : "text-neutral-500 bg-[#faf9f7] border-neutral-200 hover:text-rose-500 dark:bg-[#242320]/40 dark:border-[#3a3834]"
                 )}
               >
-                <Star size={13} className={isInWatchlist ? "fill-amber-500" : ""} />
+                <Heart size={13} fill={isInWatchlist ? "currentColor" : "none"} />
                 <span className="hidden sm:inline">{isInWatchlist ? "저장됨" : "관심"}</span>
               </button>
               <span className={cn(
@@ -620,15 +599,15 @@ function AnalyzeContent() {
 
                   <div className="flex items-center gap-2 shrink-0 self-start sm:self-center">
                     <button
-                      onClick={() => tickerFromUrl && toggleWatchlist(tickerFromUrl)}
+                      onClick={handleToggleLike}
                       className={cn(
                         "flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold border transition-all",
                         isInWatchlist
-                          ? "text-amber-600 bg-amber-50 border-amber-200 dark:bg-amber-950/20 dark:border-amber-800/50 dark:text-amber-400"
-                          : "text-neutral-600 bg-[#faf9f7] border-neutral-200 hover:border-neutral-300 dark:bg-[#242320]/30 dark:border-[#3a3834]"
+                          ? "text-rose-600 bg-rose-50 border-rose-200 dark:bg-rose-950/20 dark:border-rose-800/50 dark:text-rose-400"
+                          : "text-neutral-600 bg-[#faf9f7] border-neutral-200 hover:border-rose-300 hover:text-rose-500 dark:bg-[#242320]/30 dark:border-[#3a3834]"
                       )}
                     >
-                      <Star size={13} className={isInWatchlist ? "fill-amber-500" : ""} />
+                      <Heart size={13} fill={isInWatchlist ? "currentColor" : "none"} />
                       {isInWatchlist ? "저장됨" : "관심 종목"}
                     </button>
                     <button
