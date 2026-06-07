@@ -316,6 +316,7 @@ function AnalyzeContent() {
   const [staticStockData, setStaticStockData] = useState<StaticStockData>({ allTickers: [], corpCodeJson: {} });
   const [shareStatus, setShareStatus] = useState<'idle' | 'copied' | 'error'>('idle');
   const [watchlist, setWatchlist] = useState<string[]>([]);
+  const [activeTab, setActiveTab] = useState<'analysis' | 'strategy' | 'risk' | 'financials'>('analysis');
 
   useEffect(() => {
     setHasMounted(true);
@@ -715,8 +716,31 @@ function AnalyzeContent() {
                   )}
                 </div>
 
+                {/* Mobile Tab Bar */}
+                <div className="flex md:hidden gap-1 p-1 bg-neutral-100 dark:bg-[#2a2825] rounded-xl">
+                  {([
+                    { key: 'analysis', label: '분석' },
+                    { key: 'strategy', label: '전략' },
+                    { key: 'risk', label: '위험도' },
+                    { key: 'financials', label: '재무' },
+                  ] as { key: 'analysis' | 'strategy' | 'risk' | 'financials'; label: string }[]).map(({ key, label }) => (
+                    <button
+                      key={key}
+                      onClick={() => setActiveTab(key)}
+                      className={cn(
+                        "flex-1 py-2 text-xs font-bold rounded-lg transition-all",
+                        activeTab === key
+                          ? "bg-white dark:bg-[#1f1e1b] text-[#16a34a] shadow-sm"
+                          : "text-neutral-500 dark:text-neutral-400"
+                      )}
+                    >
+                      {label}
+                    </button>
+                  ))}
+                </div>
+
                 {/* 주가추이 (항상 공개) + 상세 지표 (블러) */}
-                <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+                <div className={cn("grid grid-cols-1 lg:grid-cols-12 gap-6", activeTab !== 'analysis' && 'hidden md:grid')}>
                   <div className="lg:col-span-5">
                     <StockCard
                       stock={krOrUs === 'US' ? {
@@ -756,7 +780,7 @@ function AnalyzeContent() {
                 </div>
 
                 {/* 모델별 요약 (항상 공개) + 세부 카드 (블러) */}
-                <div className="bg-white dark:bg-[#242320] rounded-2xl border border-neutral-200 dark:border-[#35332e] p-1 shadow-sm">
+                <div className={cn("bg-white dark:bg-[#242320] rounded-2xl border border-neutral-200 dark:border-[#35332e] p-1 shadow-sm", activeTab !== 'strategy' && 'hidden md:block')}>
                   <ValuationSection
                     data={data}
                     isUs={krOrUs === 'US'}
@@ -766,34 +790,38 @@ function AnalyzeContent() {
                 </div>
 
                 {/* 상장폐지 위험도 (블러) */}
-                {krOrUs === 'KR' && (
-                  <BlurGate isLoggedIn={isLoggedIn} loginHref={loginHref}>
-                    <DelistingRisk kiBS={data.kiBS} kiIS={data.kiIS} />
-                  </BlurGate>
-                )}
-                {krOrUs === 'US' && (
-                  <BlurGate isLoggedIn={isLoggedIn} loginHref={loginHref}>
-                    <UsDelistingRisk finnhubData={data.finnhubData} usDetail={data.usDetail} />
-                  </BlurGate>
-                )}
+                <div className={cn(activeTab !== 'risk' && 'hidden md:block')}>
+                  {krOrUs === 'KR' && (
+                    <BlurGate isLoggedIn={isLoggedIn} loginHref={loginHref}>
+                      <DelistingRisk kiBS={data.kiBS} kiIS={data.kiIS} />
+                    </BlurGate>
+                  )}
+                  {krOrUs === 'US' && (
+                    <BlurGate isLoggedIn={isLoggedIn} loginHref={loginHref}>
+                      <UsDelistingRisk finnhubData={data.finnhubData} usDetail={data.usDetail} />
+                    </BlurGate>
+                  )}
+                </div>
 
                 {/* 재무제표 (블러) */}
-                <BlurGate isLoggedIn={isLoggedIn} loginHref={loginHref}>
-                  <div className="bg-white dark:bg-[#242320] rounded-2xl border border-neutral-200 dark:border-[#35332e] shadow-sm overflow-hidden">
-                    <div className="px-5 py-4 border-b border-neutral-100 dark:border-[#35332e]">
-                      <h3 className="text-sm font-extrabold text-neutral-800 dark:text-neutral-200">재무제표</h3>
-                      <p className="text-[10px] text-neutral-400 mt-0.5">
-                        {krOrUs === 'KR' ? 'DART 공시 기준 (억 원)' : 'US-GAAP 기준 (USD)'}
-                      </p>
+                <div className={cn(activeTab !== 'financials' && 'hidden md:block')}>
+                  <BlurGate isLoggedIn={isLoggedIn} loginHref={loginHref}>
+                    <div className="bg-white dark:bg-[#242320] rounded-2xl border border-neutral-200 dark:border-[#35332e] shadow-sm overflow-hidden">
+                      <div className="px-5 py-4 border-b border-neutral-100 dark:border-[#35332e]">
+                        <h3 className="text-sm font-extrabold text-neutral-800 dark:text-neutral-200">재무제표</h3>
+                        <p className="text-[10px] text-neutral-400 mt-0.5">
+                          {krOrUs === 'KR' ? 'DART 공시 기준 (억 원)' : 'US-GAAP 기준 (USD)'}
+                        </p>
+                      </div>
+                      <div className="overflow-x-auto">
+                        {krOrUs === 'KR'
+                          ? <FinancialTables kiBS={data.kiBS} kiIS={data.kiIS} />
+                          : <FinnhubTable data={data.finnhubData.data} />
+                        }
+                      </div>
                     </div>
-                    <div className="overflow-x-auto">
-                      {krOrUs === 'KR'
-                        ? <FinancialTables kiBS={data.kiBS} kiIS={data.kiIS} />
-                        : <FinnhubTable data={data.finnhubData.data} />
-                      }
-                    </div>
-                  </div>
-                </BlurGate>
+                  </BlurGate>
+                </div>
 
                 {/* 비로그인 로그인 CTA */}
                 {!isLoggedIn && (
