@@ -156,7 +156,7 @@ export const StockCard = ({ stock, chartConfig }: StockCardProps) => {
         {/* 로고 + 종목명 + 등급 */}
         <div className="flex items-center gap-4">
           {/* 로고 */}
-          <div className="relative w-[56px] h-[56px] rounded-2xl border border-neutral-100 dark:border-[#35332e] bg-[#faf9f7] dark:bg-[#1a1915] shrink-0 flex items-center justify-center overflow-hidden">
+          <div className="relative w-[56px] h-[56px] rounded-2xl border border-neutral-100 dark:border-[#35332e] bg-white dark:bg-white shrink-0 flex items-center justify-center overflow-hidden">
             {!imgError ? (
               <Image
                 key={stock?.ticker}
