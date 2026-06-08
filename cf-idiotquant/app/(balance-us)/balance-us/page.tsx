@@ -284,17 +284,14 @@ function BalanceUs() {
   const totLoanAmtUs = Number(out3?.tot_loan_amt || 0);
   const cmaEvluAmtUs = Number(out3?.cma_evlu_amt || 0);
 
-  // 환차익/손 계산
-  // 주식 손익(USD) = output1 각 종목의 frcr_evlu_pfls_amt 합산 (순수 주가 변동분)
-  const stockPnlUsd = (kiBalance.output1 || []).reduce((sum: number, item: any) => {
-    return sum + Number(item.frcr_evlu_pfls_amt || 0);
-  }, 0);
-  // 환차익/손 = 원화 총 손익 - (USD 손익 × 현재환율)
-  // → 현재환율 vs 매입환율 차이로 발생한 원화 손익
-  const stockPnlKrwAtCurrentRate = stockPnlUsd * exRate;
-  const fxGainKrw = totalPnlKrw - stockPnlKrwAtCurrentRate;
-  const fxGainPct = pchsAmtKrw > 0 ? (fxGainKrw / pchsAmtKrw) * 100 : 0;
-  const isFxPositive = fxGainKrw >= 0;
+  // 포지션 분석
+  const positions = kiBalance.output1 || [];
+  const gainers = positions.filter((p: any) => Number(p.frcr_evlu_pfls_amt || 0) > 0).length;
+  const losers = positions.filter((p: any) => Number(p.frcr_evlu_pfls_amt || 0) < 0).length;
+  const stockWeight = totalAssetKrw > 0 ? (stockEvalKrw / totalAssetKrw) * 100 : 0;
+  const sortedByReturn = [...positions].sort((a: any, b: any) => Number(b.evlu_pfls_rt || 0) - Number(a.evlu_pfls_rt || 0));
+  const topGainers = sortedByReturn.slice(0, 3);
+  const topLosers = [...sortedByReturn].reverse().slice(0, 3).filter((p: any) => Number(p.evlu_pfls_rt || 0) < 0);
 
   if (kiBalance.state === "rejected") {
     return (
@@ -482,20 +479,6 @@ function BalanceUs() {
                 value={fmtUsd(frcr_buy_smtl - frcr_sll_smtl)}
                 valueClass={(frcr_buy_smtl - frcr_sll_smtl) >= 0 ? "text-rose-500" : "text-[#16a34a]"}
               />
-              {exRate > 0 && (kiBalance.output1 || []).length > 0 && (
-                <>
-                  <MetricChip
-                    label="주식 손익 (USD)"
-                    value={`${stockPnlUsd >= 0 ? "+" : ""}${fmtUsd(stockPnlUsd)}`}
-                    valueClass={stockPnlUsd >= 0 ? "text-emerald-500" : "text-rose-500"}
-                  />
-                  <MetricChip
-                    label="환차익/손 (KRW)"
-                    value={`${isFxPositive ? "+" : ""}${fmtKrw(fxGainKrw)}`}
-                    valueClass={isFxPositive ? "text-[#16a34a]" : "text-rose-500"}
-                  />
-                </>
-              )}
               {cmaEvluAmtUs > 0 && (
                 <MetricChip
                   label="CMA 평가 (KRW)"
@@ -508,6 +491,27 @@ function BalanceUs() {
                 value={`${exRate.toLocaleString()}원`}
                 valueClass="text-neutral-600 dark:text-neutral-300"
               />
+              {positions.length > 0 && totalAssetKrw > 0 && (
+                <MetricChip
+                  label="주식 비중"
+                  value={`${stockWeight.toFixed(1)}%`}
+                  valueClass="text-indigo-500 dark:text-indigo-400"
+                />
+              )}
+              {positions.length > 0 && (
+                <MetricChip
+                  label="수익 종목"
+                  value={`${gainers} / ${positions.length}`}
+                  valueClass={losers === 0 ? "text-emerald-500" : "text-neutral-700 dark:text-neutral-300"}
+                />
+              )}
+              {losers > 0 && (
+                <MetricChip
+                  label="손실 종목"
+                  value={String(losers)}
+                  valueClass="text-rose-500"
+                />
+              )}
               {totLoanAmtUs > 0 && (
                 <MetricChip
                   label="대출 잔고 (KRW)"
@@ -519,60 +523,86 @@ function BalanceUs() {
           </div>
         )}
 
-        {/* 환차익/손 분석 패널 */}
-        {!isLoading && exRate > 0 && (kiBalance.output1 || []).length > 0 && (
+        {/* 포지션 현황 패널 */}
+        {!isLoading && positions.length > 0 && (
           <div className="bg-white dark:bg-[#242320] border border-neutral-200 dark:border-[#35332e] rounded-2xl p-4 animate-in fade-in slide-in-from-bottom-2 duration-400">
             <div className="flex items-center gap-2 mb-4">
-              <div className="p-1.5 rounded-lg bg-[#f0fdf4] dark:bg-[#052e16]/40">
-                <TrendingDown size={14} className="text-[#16a34a]" />
+              <div className="p-1.5 rounded-lg bg-indigo-50 dark:bg-indigo-950/40">
+                <BarChart3 size={14} className="text-indigo-500" />
               </div>
+              <span className="text-xs font-black text-neutral-700 dark:text-neutral-300 uppercase tracking-wider">포지션 현황</span>
+              <span className="text-[10px] text-neutral-400 dark:text-neutral-500 ml-1">{positions.length}종목 보유</span>
+              <div className="ml-auto flex items-center gap-3">
+                <span className="text-[10px] font-mono font-black text-emerald-500">{gainers}↑ 수익</span>
+                {losers > 0 && <span className="text-[10px] font-mono font-black text-rose-500">{losers}↓ 손실</span>}
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
               <div>
-                <span className="text-xs font-black text-neutral-700 dark:text-neutral-300 uppercase tracking-wider">환차익/손 분석</span>
-                <span className="text-[10px] text-neutral-400 dark:text-neutral-500 ml-2">USD 주가 손익과 환율 변동 효과 분리</span>
+                <div className="flex items-center gap-1.5 mb-2">
+                  <TrendingUp size={11} className="text-emerald-500" />
+                  <span className="text-[9px] font-black text-neutral-400 uppercase tracking-widest">상위 수익</span>
+                </div>
+                <div className="space-y-1.5">
+                  {topGainers.map((p: any, i: number) => (
+                    <div key={i} className="flex items-center justify-between bg-[#faf9f7] dark:bg-[#1a1915] rounded-lg px-3 py-2">
+                      <div className="flex items-center gap-2 min-w-0">
+                        <span className="text-[10px] font-black font-mono text-neutral-400 w-3.5 shrink-0">{i + 1}</span>
+                        <div className="min-w-0">
+                          <span className="text-xs font-black text-neutral-900 dark:text-white uppercase block">{p.pdno}</span>
+                          <span className="text-[9px] text-neutral-400 truncate block max-w-[140px]">{p.prdt_name}</span>
+                        </div>
+                      </div>
+                      <div className="text-right shrink-0">
+                        <span className={cn("block text-xs font-mono font-black", Number(p.evlu_pfls_rt || 0) >= 0 ? "text-emerald-500" : "text-rose-500")}>
+                          {Number(p.evlu_pfls_rt || 0) > 0 ? "+" : ""}{Number(p.evlu_pfls_rt || 0).toFixed(2)}%
+                        </span>
+                        <span className="text-[9px] font-mono text-neutral-400">
+                          {Number(p.frcr_evlu_pfls_amt || 0) >= 0 ? "+" : ""}{fmtUsd(p.frcr_evlu_pfls_amt)}
+                        </span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
               </div>
-            </div>
 
-            <div className="grid grid-cols-3 gap-3">
-              <div className="bg-[#faf9f7] dark:bg-[#1a1915] rounded-xl p-3">
-                <span className="text-[9px] font-black text-neutral-400 uppercase tracking-widest block mb-1.5">주식 손익 (USD)</span>
-                <span className={cn("text-sm font-mono font-black", stockPnlUsd >= 0 ? "text-emerald-500" : "text-rose-500")}>
-                  {stockPnlUsd >= 0 ? "+" : ""}{fmtUsd(stockPnlUsd)}
-                </span>
-                <span className="text-[10px] text-neutral-400 font-mono block mt-0.5">
-                  {stockPnlKrwAtCurrentRate >= 0 ? "+" : ""}{fmtKrw(stockPnlKrwAtCurrentRate)}
-                  <span className="text-neutral-300 dark:text-neutral-600 ml-1">현재환율 적용</span>
-                </span>
-              </div>
-
-              <div className={cn("rounded-xl p-3", isFxPositive ? "bg-[#f0fdf4] dark:bg-[#052e16]/30" : "bg-rose-50 dark:bg-rose-950/20")}>
-                <span className="text-[9px] font-black text-neutral-400 uppercase tracking-widest block mb-1.5">환차익/손</span>
-                <span className={cn("text-sm font-mono font-black", isFxPositive ? "text-[#16a34a]" : "text-rose-500")}>
-                  {isFxPositive ? "+" : ""}{fmtKrw(fxGainKrw)}
-                </span>
-                <span className="text-[10px] text-neutral-400 font-mono block mt-0.5">
-                  {fxGainPct >= 0 ? "+" : ""}{fxGainPct.toFixed(2)}%
-                  <span className="text-neutral-300 dark:text-neutral-600 ml-1">매입원금 대비</span>
-                </span>
-              </div>
-
-              <div className={cn("rounded-xl p-3", isPnlPositive ? "bg-indigo-50 dark:bg-indigo-950/20" : "bg-rose-50 dark:bg-rose-950/20")}>
-                <span className="text-[9px] font-black text-neutral-400 uppercase tracking-widest block mb-1.5">총 손익 (KRW)</span>
-                <span className={cn("text-sm font-mono font-black", isPnlPositive ? "text-indigo-500 dark:text-indigo-400" : "text-rose-500")}>
-                  {totalPnlKrw >= 0 ? "+" : ""}{fmtKrw(totalPnlKrw)}
-                </span>
-                <span className="text-[10px] text-neutral-400 font-mono block mt-0.5">
-                  {totalPnlRate >= 0 ? "+" : ""}{totalPnlRate.toFixed(2)}%
-                  <span className="text-neutral-300 dark:text-neutral-600 ml-1">수익률</span>
-                </span>
-              </div>
-            </div>
-
-            <div className="mt-3 pt-3 border-t border-neutral-100 dark:border-[#35332e] flex items-center justify-center gap-2 text-[10px] font-mono text-neutral-400">
-              <span className={stockPnlUsd >= 0 ? "text-emerald-500" : "text-rose-500"}>USD 주가 손익</span>
-              <span className="text-neutral-300 dark:text-neutral-600">+</span>
-              <span className={isFxPositive ? "text-[#16a34a]" : "text-rose-500"}>환차익/손</span>
-              <span className="text-neutral-300 dark:text-neutral-600">=</span>
-              <span className={isPnlPositive ? "text-indigo-500 dark:text-indigo-400" : "text-rose-500"}>총 KRW 손익</span>
+              {topLosers.length > 0 ? (
+                <div>
+                  <div className="flex items-center gap-1.5 mb-2">
+                    <TrendingDown size={11} className="text-rose-500" />
+                    <span className="text-[9px] font-black text-neutral-400 uppercase tracking-widest">주의 종목</span>
+                  </div>
+                  <div className="space-y-1.5">
+                    {topLosers.map((p: any, i: number) => (
+                      <div key={i} className="flex items-center justify-between bg-rose-50 dark:bg-rose-950/15 rounded-lg px-3 py-2">
+                        <div className="flex items-center gap-2 min-w-0">
+                          <span className="text-[10px] font-black font-mono text-neutral-400 w-3.5 shrink-0">{i + 1}</span>
+                          <div className="min-w-0">
+                            <span className="text-xs font-black text-neutral-900 dark:text-white uppercase block">{p.pdno}</span>
+                            <span className="text-[9px] text-neutral-400 truncate block max-w-[140px]">{p.prdt_name}</span>
+                          </div>
+                        </div>
+                        <div className="text-right shrink-0">
+                          <span className="block text-xs font-mono font-black text-rose-500">
+                            {Number(p.evlu_pfls_rt || 0).toFixed(2)}%
+                          </span>
+                          <span className="text-[9px] font-mono text-neutral-400">
+                            {fmtUsd(p.frcr_evlu_pfls_amt)}
+                          </span>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              ) : (
+                <div className="flex items-center justify-center bg-[#f0fdf4] dark:bg-[#052e16]/20 rounded-xl p-4">
+                  <div className="text-center">
+                    <TrendingUp size={20} className="text-[#16a34a] mx-auto mb-1" />
+                    <span className="text-xs font-black text-[#16a34a]">전 종목 수익 중</span>
+                  </div>
+                </div>
+              )}
             </div>
           </div>
         )}
