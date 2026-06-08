@@ -6,7 +6,7 @@ import {
   Globe, ChevronRight, DollarSign, Building2,
   Wallet, TrendingUp, BarChart3, RefreshCw,
   Clock, AlertCircle, Database,
-  ArrowDownRight, PieChart, ClipboardList, TrendingDown,
+  ArrowDownRight, PieChart, ClipboardList,
 } from "lucide-react";
 import { useSession } from "next-auth/react";
 
@@ -284,18 +284,6 @@ function BalanceUs() {
   const totLoanAmtUs = Number(out3?.tot_loan_amt || 0);
   const cmaEvluAmtUs = Number(out3?.cma_evlu_amt || 0);
 
-  // 환차익/손 계산
-  // 주식 손익(USD) = output1 각 종목의 frcr_evlu_pfls_amt 합산 (순수 주가 변동분)
-  const stockPnlUsd = (kiBalance.output1 || []).reduce((sum: number, item: any) => {
-    return sum + Number(item.frcr_evlu_pfls_amt || 0);
-  }, 0);
-  // 환차익/손 = 원화 총 손익 - (USD 손익 × 현재환율)
-  // → 현재환율 vs 매입환율 차이로 발생한 원화 손익
-  const stockPnlKrwAtCurrentRate = stockPnlUsd * exRate;
-  const fxGainKrw = totalPnlKrw - stockPnlKrwAtCurrentRate;
-  const fxGainPct = pchsAmtKrw > 0 ? (fxGainKrw / pchsAmtKrw) * 100 : 0;
-  const isFxPositive = fxGainKrw >= 0;
-
   if (kiBalance.state === "rejected") {
     return (
       <div className="h-[70vh] flex flex-col items-center justify-center text-center p-6">
@@ -482,20 +470,6 @@ function BalanceUs() {
                 value={fmtUsd(frcr_buy_smtl - frcr_sll_smtl)}
                 valueClass={(frcr_buy_smtl - frcr_sll_smtl) >= 0 ? "text-rose-500" : "text-[#16a34a]"}
               />
-              {exRate > 0 && (kiBalance.output1 || []).length > 0 && (
-                <>
-                  <MetricChip
-                    label="주식 손익 (USD)"
-                    value={`${stockPnlUsd >= 0 ? "+" : ""}${fmtUsd(stockPnlUsd)}`}
-                    valueClass={stockPnlUsd >= 0 ? "text-emerald-500" : "text-rose-500"}
-                  />
-                  <MetricChip
-                    label="환차익/손 (KRW)"
-                    value={`${isFxPositive ? "+" : ""}${fmtKrw(fxGainKrw)}`}
-                    valueClass={isFxPositive ? "text-[#16a34a]" : "text-rose-500"}
-                  />
-                </>
-              )}
               {cmaEvluAmtUs > 0 && (
                 <MetricChip
                   label="CMA 평가 (KRW)"
@@ -515,64 +489,6 @@ function BalanceUs() {
                   valueClass="text-orange-500"
                 />
               )}
-            </div>
-          </div>
-        )}
-
-        {/* 환차익/손 분석 패널 */}
-        {!isLoading && exRate > 0 && (kiBalance.output1 || []).length > 0 && (
-          <div className="bg-white dark:bg-[#242320] border border-neutral-200 dark:border-[#35332e] rounded-2xl p-4 animate-in fade-in slide-in-from-bottom-2 duration-400">
-            <div className="flex items-center gap-2 mb-4">
-              <div className="p-1.5 rounded-lg bg-[#f0fdf4] dark:bg-[#052e16]/40">
-                <TrendingDown size={14} className="text-[#16a34a]" />
-              </div>
-              <div>
-                <span className="text-xs font-black text-neutral-700 dark:text-neutral-300 uppercase tracking-wider">환차익/손 분석</span>
-                <span className="text-[10px] text-neutral-400 dark:text-neutral-500 ml-2">USD 주가 손익과 환율 변동 효과 분리</span>
-              </div>
-            </div>
-
-            <div className="grid grid-cols-3 gap-3">
-              <div className="bg-[#faf9f7] dark:bg-[#1a1915] rounded-xl p-3">
-                <span className="text-[9px] font-black text-neutral-400 uppercase tracking-widest block mb-1.5">주식 손익 (USD)</span>
-                <span className={cn("text-sm font-mono font-black", stockPnlUsd >= 0 ? "text-emerald-500" : "text-rose-500")}>
-                  {stockPnlUsd >= 0 ? "+" : ""}{fmtUsd(stockPnlUsd)}
-                </span>
-                <span className="text-[10px] text-neutral-400 font-mono block mt-0.5">
-                  {stockPnlKrwAtCurrentRate >= 0 ? "+" : ""}{fmtKrw(stockPnlKrwAtCurrentRate)}
-                  <span className="text-neutral-300 dark:text-neutral-600 ml-1">현재환율 적용</span>
-                </span>
-              </div>
-
-              <div className={cn("rounded-xl p-3", isFxPositive ? "bg-[#f0fdf4] dark:bg-[#052e16]/30" : "bg-rose-50 dark:bg-rose-950/20")}>
-                <span className="text-[9px] font-black text-neutral-400 uppercase tracking-widest block mb-1.5">환차익/손</span>
-                <span className={cn("text-sm font-mono font-black", isFxPositive ? "text-[#16a34a]" : "text-rose-500")}>
-                  {isFxPositive ? "+" : ""}{fmtKrw(fxGainKrw)}
-                </span>
-                <span className="text-[10px] text-neutral-400 font-mono block mt-0.5">
-                  {fxGainPct >= 0 ? "+" : ""}{fxGainPct.toFixed(2)}%
-                  <span className="text-neutral-300 dark:text-neutral-600 ml-1">매입원금 대비</span>
-                </span>
-              </div>
-
-              <div className={cn("rounded-xl p-3", isPnlPositive ? "bg-indigo-50 dark:bg-indigo-950/20" : "bg-rose-50 dark:bg-rose-950/20")}>
-                <span className="text-[9px] font-black text-neutral-400 uppercase tracking-widest block mb-1.5">총 손익 (KRW)</span>
-                <span className={cn("text-sm font-mono font-black", isPnlPositive ? "text-indigo-500 dark:text-indigo-400" : "text-rose-500")}>
-                  {totalPnlKrw >= 0 ? "+" : ""}{fmtKrw(totalPnlKrw)}
-                </span>
-                <span className="text-[10px] text-neutral-400 font-mono block mt-0.5">
-                  {totalPnlRate >= 0 ? "+" : ""}{totalPnlRate.toFixed(2)}%
-                  <span className="text-neutral-300 dark:text-neutral-600 ml-1">수익률</span>
-                </span>
-              </div>
-            </div>
-
-            <div className="mt-3 pt-3 border-t border-neutral-100 dark:border-[#35332e] flex items-center justify-center gap-2 text-[10px] font-mono text-neutral-400">
-              <span className={stockPnlUsd >= 0 ? "text-emerald-500" : "text-rose-500"}>USD 주가 손익</span>
-              <span className="text-neutral-300 dark:text-neutral-600">+</span>
-              <span className={isFxPositive ? "text-[#16a34a]" : "text-rose-500"}>환차익/손</span>
-              <span className="text-neutral-300 dark:text-neutral-600">=</span>
-              <span className={isPnlPositive ? "text-indigo-500 dark:text-indigo-400" : "text-rose-500"}>총 KRW 손익</span>
             </div>
           </div>
         )}
