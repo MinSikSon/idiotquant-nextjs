@@ -92,11 +92,19 @@ const loadStaticStockData = (): Promise<StaticStockData> => {
     import('@/public/data/validCorpCodeArray.json'),
     import('@/public/data/validCorpNameArray.json'),
     import('@/public/data/validCorpCode.json'),
-  ]).then(([nasdaq, nyse, amex, corpCode, corpName, corpCodeData]) => {
+    fetch('/api/proxy/ticker-map?source=overrides&limit=500')
+      .then(r => r.json())
+      .catch(() => ({ success: false, data: [] })),
+  ]).then(([nasdaq, nyse, amex, corpCode, corpName, corpCodeData, overrides]) => {
+    // override 항목: KR은 코드+이름 모두, US는 코드만 추가 (검색 유효성 검사 + 자동완성 확장)
+    const overrideEntries: string[] = (overrides.data ?? []).flatMap((o: any) =>
+      o.country === 'KR' ? [o.ticker, o.name].filter(Boolean) : [o.ticker].filter(Boolean)
+    );
     cachedStaticData = {
       allTickers: [
         ...nasdaq.default, ...nyse.default, ...amex.default,
         ...corpCode.default, ...corpName.default,
+        ...overrideEntries,
       ],
       corpCodeJson: corpCodeData.default,
     };
