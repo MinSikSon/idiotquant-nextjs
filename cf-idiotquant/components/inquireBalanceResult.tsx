@@ -366,6 +366,11 @@ function SummaryItem({ label, value, subValue, colorClass = "dark:text-white" }:
 
 function SortableBalanceTable({ inventoryData, isUs, onOpenOrder }: { inventoryData: any[], isUs: boolean, onOpenOrder: (stock: any) => void }) {
     const [sortConfig, setSortConfig] = useState<any>({ key: "evlu_amt", direction: "desc" });
+    const router = useRouter();
+    const goAnalyze = (item: any) => {
+        const ticker = item.pdno || item.ovrs_pdno;
+        if (ticker) router.push(`/analyze?ticker=${encodeURIComponent(ticker)}`);
+    };
 
     const sortedItems = useMemo(() => {
         let items = [...inventoryData];
@@ -428,6 +433,12 @@ function SortableBalanceTable({ inventoryData, isUs, onOpenOrder }: { inventoryD
                         </div>
                         {/* 액션 */}
                         <div className="flex gap-2 pt-1">
+                            <button
+                                onClick={() => goAnalyze(item)}
+                                className="flex items-center gap-1.5 px-3 py-1.5 bg-neutral-100 dark:bg-[#35332e] text-neutral-600 dark:text-neutral-300 rounded-lg text-xs font-black transition-colors hover:bg-neutral-200 dark:hover:bg-[#4a4641]"
+                            >
+                                <BarChart3 size={12} /> 분석
+                            </button>
                             <button
                                 onClick={() => onOpenOrder(item)}
                                 className="flex items-center gap-1.5 px-3 py-1.5 bg-[#f0fdf4] dark:bg-[#14532d]/20 text-[#16a34a] rounded-lg text-xs font-black transition-colors hover:bg-[#dcfce7] dark:hover:bg-[#14532d]/40"
@@ -509,7 +520,11 @@ function SortableBalanceTable({ inventoryData, isUs, onOpenOrder }: { inventoryD
                                     </td>
                                     <td className="p-4 text-center">
                                         <div className="flex items-center justify-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                                            <button className="p-1.5 hover:bg-neutral-200 dark:hover:bg-[#4a4641] rounded-lg text-neutral-500 transition-colors">
+                                            <button
+                                                onClick={() => goAnalyze(item)}
+                                                className="p-1.5 hover:bg-neutral-200 dark:hover:bg-[#4a4641] rounded-lg text-neutral-500 transition-colors"
+                                                title="종목 분석"
+                                            >
                                                 <BarChart3 size={16} />
                                             </button>
                                             <button
