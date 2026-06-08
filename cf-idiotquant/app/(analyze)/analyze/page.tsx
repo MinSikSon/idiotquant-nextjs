@@ -112,14 +112,10 @@ import {
 } from '@/lib/features/searchLog/searchLogSlice';
 
 import {
-  calculateKrNcavRatio,
-  calculateKrNcavValue,
-  calculateUsNcavRatio,
-  calculateUsNcavValue,
-  getKrNcavGrade,
-  getKrSRIMTargetPrice,
-  getUsNcavGrade,
-  calculateUsSRIM,
+  calculateKrNcavRatio, calculateKrNcavValue,
+  calculateUsNcavRatio, calculateUsNcavValue,
+  getKrNcavGrade, getKrSRIMTargetPrice,
+  getUsNcavGrade, calculateUsSRIM,
 } from '../../../components/utils/financeCalc';
 
 // =========================================================================
@@ -391,8 +387,8 @@ function AnalyzeContent() {
     };
   }, [krOrUs, data]);
 
-  // 항상 공개되는 핵심 지표
-  const basicMetrics = useMemo(() => {
+  // 핵심 지표 + StockCard props 통합 (중복 계산 방지)
+  const stockData = useMemo(() => {
     if (!isLoaded) return null;
     if (krOrUs === 'KR') {
       const ncavRatio = calculateKrNcavRatio(data.kiBS, data.kiChart);
@@ -400,16 +396,23 @@ function AnalyzeContent() {
       const per = Number(data?.kiPrice?.output?.per ?? 0);
       const eps = Number(data?.kiPrice?.output?.eps ?? 0);
       const curPrice = Number(data?.kiPrice?.output?.stck_prpr ?? 0);
-      return { ncavRatio, pbr, per, eps, curPrice };
+      const grade = getKrNcavGrade(data.kiBS, data.kiChart);
+      const fairValue = calculateKrNcavValue(data.kiBS, data.kiChart);
+      const srimScore = getKrSRIMTargetPrice(data.kiBS, data.kiIS, data.kiChart);
+      const stockTicker = (staticStockData.corpCodeJson as any)?.[name]?.stock_code ?? '';
+      return { ncavRatio, pbr, per, eps, curPrice, grade, fairValue, srimScore, stockTicker };
     } else {
       const ncavRatio = calculateUsNcavRatio(data.finnhubData, data.usDetail);
       const pbr = Number(data?.usDetail?.output?.pbrx ?? 0);
       const per = Number(data?.usDetail?.output?.perx ?? 0);
       const eps = Number(data?.usDetail?.output?.epsx ?? 0);
       const curPrice = Number(data?.usDetail?.output?.last ?? 0);
-      return { ncavRatio, pbr, per, eps, curPrice };
+      const grade = getUsNcavGrade(data.finnhubData, data.usDetail);
+      const fairValue = calculateUsNcavValue(data.finnhubData, data.usDetail);
+      const srimScore = calculateUsSRIM(data.finnhubData, data.usDetail);
+      return { ncavRatio, pbr, per, eps, curPrice, grade, fairValue, srimScore, stockTicker: '' };
     }
-  }, [isLoaded, krOrUs, data]);
+  }, [isLoaded, krOrUs, data, name, staticStockData.corpCodeJson]);
 
   if (!hasMounted) return <div className="min-h-screen bg-[#faf9f7] dark:bg-[#1a1915]" />;
 
@@ -552,26 +555,26 @@ function AnalyzeContent() {
                   <StockCard
                     stock={krOrUs === 'US' ? {
                       code: tickerFromUrl, isUs: true, name: displayName, ticker: name,
-                      grade: getUsNcavGrade(data.finnhubData, data.usDetail),
-                      curPrice: Number(data?.usDetail?.output?.last ?? 0).toFixed(2),
-                      fairValue: currency + calculateUsNcavValue(data.finnhubData, data.usDetail),
-                      ncavScore: calculateUsNcavRatio(data.finnhubData, data.usDetail),
-                      srimScore: calculateUsSRIM(data.finnhubData, data.usDetail),
-                      per: data?.usDetail?.output?.perx ?? 0,
-                      pbr: data?.usDetail?.output?.pbrx ?? 0,
-                      eps: currency + (data?.usDetail?.output?.epsx ?? 0),
+                      grade: stockData?.grade,
+                      curPrice: stockData?.curPrice?.toFixed(2) ?? 0,
+                      fairValue: currency + (stockData?.fairValue ?? 0),
+                      ncavScore: stockData?.ncavRatio ?? 0,
+                      srimScore: stockData?.srimScore,
+                      per: stockData?.per ?? 0,
+                      pbr: stockData?.pbr ?? 0,
+                      eps: currency + (stockData?.eps ?? 0),
                       sector: data?.usDetail?.output?.e_icod ?? "DEFAULT",
                     } : {
                       code: tickerFromUrl, isUs: false, name: displayName,
-                      ticker: (staticStockData.corpCodeJson as any)?.[name]?.stock_code ?? '',
-                      grade: getKrNcavGrade(data.kiBS, data.kiChart),
-                      curPrice: data?.kiPrice?.output?.stck_prpr ?? 0,
-                      fairValue: currency + calculateKrNcavValue(data.kiBS, data.kiChart),
-                      ncavScore: calculateKrNcavRatio(data.kiBS, data.kiChart),
-                      srimScore: getKrSRIMTargetPrice(data.kiBS, data.kiIS, data.kiChart),
-                      per: data?.kiPrice?.output?.per ?? 0,
-                      pbr: data?.kiPrice?.output?.pbr ?? 0,
-                      eps: currency + Number(data?.kiPrice?.output?.eps ?? 0).toFixed(0),
+                      ticker: stockData?.stockTicker ?? '',
+                      grade: stockData?.grade,
+                      curPrice: stockData?.curPrice ?? 0,
+                      fairValue: currency + (stockData?.fairValue ?? 0),
+                      ncavScore: stockData?.ncavRatio ?? 0,
+                      srimScore: stockData?.srimScore,
+                      per: stockData?.per ?? 0,
+                      pbr: stockData?.pbr ?? 0,
+                      eps: currency + (stockData?.eps ?? 0).toFixed(0),
                       sector: data?.kiPrice?.output?.bstp_kor_isnm ?? "DEFAULT",
                     }}
                     chartConfig={chartConfig}
@@ -581,46 +584,46 @@ function AnalyzeContent() {
                 </div>
 
                 {/* 핵심 지표 4개 (항상 공개) */}
-                {basicMetrics && (
+                {stockData && (
                   <div className="lg:col-span-7 grid grid-cols-2 gap-4 content-start">
                     {[
                       {
                         label: "NCAV 업사이드",
-                        value: basicMetrics.ncavRatio !== 0 ? `${basicMetrics.ncavRatio >= 0 ? '+' : ''}${basicMetrics.ncavRatio.toFixed(1)}%` : "—",
+                        value: stockData.ncavRatio !== 0 ? `${stockData.ncavRatio >= 0 ? '+' : ''}${stockData.ncavRatio.toFixed(1)}%` : "—",
                         desc: "NCAV 기준 업사이드",
-                        color: basicMetrics.ncavRatio >= 100
+                        color: stockData.ncavRatio >= 100
                           ? "text-emerald-600 dark:text-emerald-400"
-                          : basicMetrics.ncavRatio >= 0
+                          : stockData.ncavRatio >= 0
                           ? "text-amber-600 dark:text-amber-400"
                           : "text-neutral-500 dark:text-neutral-400",
                       },
                       {
                         label: "PBR",
-                        value: basicMetrics.pbr > 0 ? `${basicMetrics.pbr.toFixed(2)}x` : "—",
+                        value: stockData.pbr > 0 ? `${stockData.pbr.toFixed(2)}x` : "—",
                         desc: "주가 / 순자산",
-                        color: basicMetrics.pbr > 0 && basicMetrics.pbr < 1
+                        color: stockData.pbr > 0 && stockData.pbr < 1
                           ? "text-emerald-600 dark:text-emerald-400"
                           : "text-neutral-700 dark:text-neutral-200",
                       },
                       {
                         label: "PER",
-                        value: basicMetrics.per > 0 ? `${basicMetrics.per.toFixed(1)}x` : "—",
+                        value: stockData.per > 0 ? `${stockData.per.toFixed(1)}x` : "—",
                         desc: "주가 / 순이익",
-                        color: basicMetrics.per > 0 && basicMetrics.per < 10
+                        color: stockData.per > 0 && stockData.per < 10
                           ? "text-emerald-600 dark:text-emerald-400"
                           : "text-neutral-700 dark:text-neutral-200",
                       },
                       {
                         label: "EPS",
-                        value: basicMetrics.eps !== 0
-                          ? `${currency}${Math.abs(basicMetrics.eps) >= 1000
-                              ? (basicMetrics.eps / 1000).toFixed(1) + 'K'
-                              : basicMetrics.eps.toFixed(basicMetrics.eps < 1 ? 2 : 0)}`
+                        value: stockData.eps !== 0
+                          ? `${currency}${Math.abs(stockData.eps) >= 1000
+                              ? (stockData.eps / 1000).toFixed(1) + 'K'
+                              : stockData.eps.toFixed(stockData.eps < 1 ? 2 : 0)}`
                           : "—",
                         desc: "주당 순이익",
-                        color: basicMetrics.eps > 0
+                        color: stockData.eps > 0
                           ? "text-neutral-700 dark:text-neutral-200"
-                          : basicMetrics.eps < 0
+                          : stockData.eps < 0
                           ? "text-rose-600 dark:text-rose-400"
                           : "text-neutral-400",
                       },
@@ -639,7 +642,7 @@ function AnalyzeContent() {
               <div className="space-y-6">
                 <div className="flex items-center gap-3">
                   <p className="text-[11px] font-bold text-neutral-400 uppercase tracking-widest font-mono shrink-0">Detail Analysis</p>
-                  <div className="flex-1 h-px bg-[#faf9f7] dark:bg-[#242320]/70" />
+                  <div className="flex-1 h-px bg-neutral-100 dark:bg-[#35332e]" />
                   {!isLoggedIn && (
                     <span className="flex items-center gap-1 text-[10px] font-bold text-neutral-400 bg-[#faf9f7] dark:bg-[#242320] px-2 py-0.5 rounded-full">
                       <Lock size={9} />

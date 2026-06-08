@@ -317,7 +317,7 @@ export function UsDelistingRisk({ finnhubData, usDetail }: Props) {
                   </div>
                   <p className="text-[10px] text-neutral-500 dark:text-neutral-400 mt-0.5 leading-relaxed">{c.note}</p>
                   {c.law !== "참고지표" && (
-                    <p className="text-[9px] text-neutral-400 dark:text-neutral-600 mt-0.5 font-mono">{c.law}</p>
+                    <p className="text-[9px] text-neutral-400 dark:text-neutral-500 mt-0.5 font-mono">{c.law}</p>
                   )}
                 </div>
               </div>
