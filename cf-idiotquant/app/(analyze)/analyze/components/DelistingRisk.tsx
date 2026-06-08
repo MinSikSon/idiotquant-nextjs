@@ -6,6 +6,7 @@ import {
   AlertTriangle, CheckCircle2, XCircle, ShieldAlert,
   Minus, TrendingUp, TrendingDown, Eye,
 } from "lucide-react";
+import { fmtJoEok } from "@/components/utils/financeCalc";
 
 interface DelistingRiskProps {
   kiBS: any;
@@ -89,7 +90,7 @@ function OpBar({ val, max }: { val: number; max: number }) {
         "text-[10px] font-black font-mono tabular-nums w-20 text-right shrink-0",
         isPos ? "text-emerald-600 dark:text-emerald-400" : "text-red-600 dark:text-red-400",
       )}>
-        {val >= 0 ? "+" : ""}{val.toLocaleString()}억
+        {val >= 0 ? "+" : "-"}{fmtJoEok(Math.abs(val))}
       </span>
     </div>
   );
@@ -116,7 +117,7 @@ export function DelistingRisk({ kiBS, kiIS }: DelistingRiskProps) {
     const bsopPrti    = Number(is_.bsop_prti    ?? 0);
     const thtrNtin    = Number(is_.thtr_ntin    ?? 0);
 
-    const fmt = (v: number) => `${v >= 0 ? "+" : ""}${v.toLocaleString()}억`;
+    const fmt = (v: number) => `${v >= 0 ? "+" : "-"}${fmtJoEok(Math.abs(v))}`;
 
     const criteria: Criterion[] = [];
 
@@ -168,13 +169,13 @@ export function DelistingRisk({ kiBS, kiIS }: DelistingRiskProps) {
       if (saleAccount <= 0) {
         status = "—"; note = "데이터 없음";
       } else if (saleAccount < 50) {
-        status = "위험"; note = `${saleAccount.toLocaleString()}억 — KOSPI 50억 미만 관리종목 기준`;
+        status = "위험"; note = `${fmtJoEok(saleAccount)} — KOSPI 50억 미만 관리종목 기준`;
       } else if (saleAccount < 100) {
-        status = "주의"; note = `${saleAccount.toLocaleString()}억 — 100억 미만, 추이 모니터링 권장`;
+        status = "주의"; note = `${fmtJoEok(saleAccount)} — 100억 미만, 추이 모니터링 권장`;
       } else {
-        status = "양호"; note = `${saleAccount.toLocaleString()}억`;
+        status = "양호"; note = `${fmtJoEok(saleAccount)}`;
       }
-      criteria.push({ label: "매출액", value: saleAccount > 0 ? `${saleAccount.toLocaleString()}억` : "—", status, note, law: "유가증권 제47조 / 코스닥 제38조" });
+      criteria.push({ label: "매출액", value: saleAccount > 0 ? fmtJoEok(saleAccount) : "—", status, note, law: "유가증권 제47조 / 코스닥 제38조" });
     }
 
     // ── 5. 유동비율 ─────────────────────────────────────────────────
@@ -231,7 +232,7 @@ export function DelistingRisk({ kiBS, kiIS }: DelistingRiskProps) {
         if (sgnaDrop >= 0.30) {
           flags.push({
             label: "판관비 급감",
-            desc: `판관비 전년 대비 ${(sgnaDrop * 100).toFixed(0)}% 감소 (${prevOp.sgna.toLocaleString()}억 → ${curOp.sgna.toLocaleString()}억) — 비용 절감으로 흑자 조작 가능성`,
+            desc: `판관비 전년 대비 ${(sgnaDrop * 100).toFixed(0)}% 감소 (${fmtJoEok(prevOp.sgna)} → ${fmtJoEok(curOp.sgna)}) — 비용 절감으로 흑자 조작 가능성`,
           });
         }
       }
@@ -240,7 +241,7 @@ export function DelistingRisk({ kiBS, kiIS }: DelistingRiskProps) {
       if (prevOp && prevOp.rev > 0 && curOp.rev < prevOp.rev) {
         flags.push({
           label: "매출 감소 + 흑자전환",
-          desc: `매출 ${prevOp.rev.toLocaleString()}억 → ${curOp.rev.toLocaleString()}억 감소세임에도 영업이익 흑자 전환 — 매출 성장이 아닌 비용 조정으로 인한 흑자일 가능성`,
+          desc: `매출 ${fmtJoEok(prevOp.rev)} → ${fmtJoEok(curOp.rev)} 감소세임에도 영업이익 흑자 전환 — 매출 성장이 아닌 비용 조정으로 인한 흑자일 가능성`,
         });
       }
 
@@ -248,7 +249,7 @@ export function DelistingRisk({ kiBS, kiIS }: DelistingRiskProps) {
       if (curOp.nonOpInc > curOp.op && curOp.nonOpInc > 0) {
         flags.push({
           label: "영업외수익 > 영업이익",
-          desc: `영업외수익 ${curOp.nonOpInc.toLocaleString()}억이 영업이익 ${curOp.op.toLocaleString()}억을 초과 — 본업 외 수익으로 영업이익 달성, 지속 가능성 낮음`,
+          desc: `영업외수익 ${fmtJoEok(curOp.nonOpInc)}이 영업이익 ${fmtJoEok(curOp.op)}을 초과 — 본업 외 수익으로 영업이익 달성, 지속 가능성 낮음`,
         });
       }
     }

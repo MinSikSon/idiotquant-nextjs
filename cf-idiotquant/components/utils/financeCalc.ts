@@ -1,5 +1,34 @@
 export const ONE_HUNDRED_MILLION = 100000000;
 
+// 이미 억 단위인 값을 조/억으로 포맷 (접미사 없음)
+export function fmtJoEok(eok: number): string {
+  const abs = Math.abs(eok);
+  const sign = eok < 0 ? "-" : "";
+  if (abs >= 10000) {
+    const jo = Math.floor(abs / 10000);
+    const rem = Math.round(abs % 10000);
+    return rem > 0
+      ? `${sign}${jo.toLocaleString()}조 ${rem.toLocaleString()}억`
+      : `${sign}${jo.toLocaleString()}조`;
+  }
+  return `${sign}${Math.round(abs).toLocaleString()}억`;
+}
+
+// 원 단위 값을 조/억 원으로 포맷
+export function fmtEok(won: number): string {
+  const abs = Math.abs(won);
+  const sign = won < 0 ? "-" : "";
+  const eok = Math.round(abs / ONE_HUNDRED_MILLION);
+  if (eok >= 10000) {
+    const jo = Math.floor(eok / 10000);
+    const rem = eok % 10000;
+    return rem > 0
+      ? `${sign}${jo.toLocaleString()}조 ${rem.toLocaleString()}억 원`
+      : `${sign}${jo.toLocaleString()}조 원`;
+  }
+  return `${sign}${eok.toLocaleString()}억 원`;
+}
+
 export interface ValuationRow {
   multiplier: string;
   returnPct: number;
@@ -109,8 +138,8 @@ export function calculateKrNcav(kiBS: any, kiChart: any): ValuationResult {
         headers: ["가중치 (배수)", "기대 수익률", "적정 주가"],
         rows,
         metrics: [
-            { label: "순유동자산", value: `${(netCurrentAsset / ONE_HUNDRED_MILLION).toLocaleString()}억 원` },
-            { label: "총부채", value: `${(lblt / ONE_HUNDRED_MILLION).toLocaleString()}억 원` },
+            { label: "순유동자산", value: `${fmtEok(netCurrentAsset)}` },
+            { label: "총부채", value: `${fmtEok(lblt)}` },
             { label: "현재가", value: `${prpr.toLocaleString()}원` }
         ],
         footerNotice: "시가총액이 순유동자산의 2/3(약 0.67배) 이하일 때 강력한 자산 안전마진 확보로 간주합니다."
@@ -149,7 +178,7 @@ export function calculateKrSRIM(kiBS: any, kiIS: any, kiChart: any, baseKe: numb
         rows,
         metrics: [
             { label: "ROE", value: `${ROE.toFixed(2)}%` },
-            { label: "자본총계", value: `${(total_cptl / ONE_HUNDRED_MILLION).toLocaleString()}억 원` },
+            { label: "자본총계", value: `${fmtEok(total_cptl)}` },
             { label: "현재가", value: `${prpr.toLocaleString()}원` }
         ],
         footerNotice: "요구수익률(Ke)은 투자자가 기대하는 최소 한계치이며, 보통 BBB- 회사채 수익률을 준용합니다."
@@ -194,7 +223,7 @@ export function calculateKrDCF(kiCF: any, kiChart: any, wacc: number = 10.0, ter
         headers: ["성장률 영구 시나리오", "기대 수익률", "적정 주가"],
         rows,
         metrics: [
-            { label: "영업현금흐름", value: `${(ocf / ONE_HUNDRED_MILLION).toLocaleString()}억 원` },
+            { label: "영업현금흐름", value: `${fmtEok(ocf)}` },
             { label: "할인율", value: `${wacc.toFixed(1)}%` },
             { label: "현재가", value: `${prpr.toLocaleString()}원` }
         ],
@@ -261,7 +290,7 @@ export function calculateKrPbrBand(kiBS: any, kiChart: any): ValuationResult {
         rows,
         metrics: [
             { label: "주당순자산", value: `${Math.round(bps).toLocaleString()}원` },
-            { label: "자본총계", value: `${(total_cptl / ONE_HUNDRED_MILLION).toLocaleString()}억 원` },
+            { label: "자본총계", value: `${fmtEok(total_cptl)}` },
             { label: "현재가", value: `${prpr.toLocaleString()}원` }
         ],
         footerNotice: "전통적 제조업이나 저PBR 밸류업 프로그램 대상 기업의 자산 하방 경직성을 확인하는 데 유용합니다."
