@@ -24,12 +24,14 @@ const SOURCE_OPTIONS = [
   { value: "overrides", label: "오버라이드만" },
 ];
 
+const PAGE_LIMIT = 50;
+
 export default function TickerMapPage() {
   const { data: session, status } = useSession();
   const isAdmin = (session?.user as any)?.role === "admin";
 
   const [rows, setRows] = useState<TickerRow[]>([]);
-  const [meta, setMeta] = useState<TickerMapMeta>({ total: 0, page: 1, limit: 50, pages: 1 });
+  const [meta, setMeta] = useState<TickerMapMeta>({ total: 0, page: 1, limit: PAGE_LIMIT, pages: 1 });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -52,25 +54,105 @@ export default function TickerMapPage() {
 
   const [deletingTicker, setDeletingTicker] = useState<string | null>(null);
 
-  const load = useCallback(async (p = page) => {
+  // US base list cached in ref (ticker → name map, loaded once)
+  const usBaseRef = useRef<Map<string, string> | null>(null);
+  const [usBaseLoading, setUsBaseLoading] = useState(false);
+
+  const getUsBase = useCallback(async (): Promise<Map<string, string>> => {
+    if (usBaseRef.current !== null) return usBaseRef.current;
+    setUsBaseLoading(true);
+    try {
+      const [nasdaq, nyse, amex] = await Promise.all([
+        fetch("/data/usStockSymbols/nasdaq_full_tickers.json").then(r => r.json()),
+        fetch("/data/usStockSymbols/nyse_full_tickers.json").then(r => r.json()),
+        fetch("/data/usStockSymbols/amex_full_tickers.json").then(r => r.json()),
+      ]);
+      const map = new Map<string, string>();
+      for (const arr of [nasdaq, nyse, amex]) {
+        for (const item of arr) {
+          if (item.symbol && item.name) map.set(item.symbol, item.name);
+        }
+      }
+      usBaseRef.current = map;
+      return map;
+    } catch {
+      usBaseRef.current = new Map();
+      return usBaseRef.current;
+    } finally {
+      setUsBaseLoading(false);
+    }
+  }, []);
+
+  const load = useCallback(async (p = 1) => {
     setLoading(true);
     setError(null);
     try {
-      const result = await fetchTickerMap({ country, q: q || undefined, page: p, limit: 50, source });
-      setRows(result.data);
-      setMeta(result.meta);
-      setPage(p);
+      if (country === "US") {
+        // Client-side: merge JSON base list + D1 overrides
+        const [baseMap, overridesRes] = await Promise.all([
+          getUsBase(),
+          fetchTickerMap({ country: "US", source: "overrides", limit: 500, page: 1 }),
+        ]);
+        const overrideMap = new Map(overridesRes.data.map((o: TickerRow) => [o.ticker, o]));
+
+        let items: TickerRow[] = [];
+
+        if (source === "all" || source === "hardcoded") {
+          for (const [ticker, name] of baseMap) {
+            const override = overrideMap.get(ticker);
+            items.push({
+              ticker,
+              name: override ? override.name : name,
+              country: "US",
+              source: "hardcoded",
+              has_override: !!override,
+            });
+          }
+        }
+
+        if (source === "all" || source === "overrides") {
+          for (const override of overridesRes.data) {
+            if (!baseMap.has(override.ticker)) {
+              items.push(override);
+            }
+          }
+        }
+
+        const lq = q.trim().toLowerCase();
+        if (lq) {
+          items = items.filter(
+            item => item.ticker.toLowerCase().includes(lq) || item.name.toLowerCase().includes(lq)
+          );
+        }
+
+        const total = items.length;
+        const offset = (p - 1) * PAGE_LIMIT;
+        setRows(items.slice(offset, offset + PAGE_LIMIT));
+        setMeta({ total, page: p, limit: PAGE_LIMIT, pages: Math.ceil(total / PAGE_LIMIT) || 1 });
+        setPage(p);
+      } else {
+        // Server-side pagination for KR and all
+        const result = await fetchTickerMap({ country, q: q || undefined, page: p, limit: PAGE_LIMIT, source });
+        setRows(result.data);
+        setMeta(result.meta);
+        setPage(p);
+      }
     } catch (e: any) {
       setError(e.message);
     } finally {
       setLoading(false);
     }
-  }, [country, q, source, page]);
+  }, [country, q, source, getUsBase]);
 
   useEffect(() => {
     if (status === "loading") return;
     load(1);
   }, [country, source, status]);
+
+  // Reset addCountry when filter country changes
+  useEffect(() => {
+    if (country === "KR" || country === "US") setAddCountry(country);
+  }, [country]);
 
   const handleSearch = (val: string) => {
     setQ(val);
@@ -127,6 +209,8 @@ export default function TickerMapPage() {
     return <div className="flex items-center justify-center min-h-[60vh] text-sm text-neutral-400">권한 확인 중…</div>;
   }
 
+  const isClientPaginated = country === "US";
+
   return (
     <div className="min-h-screen bg-[#faf9f7] dark:bg-[#1a1915] px-4 py-8">
       <div className="max-w-5xl mx-auto space-y-5">
@@ -159,7 +243,7 @@ export default function TickerMapPage() {
               <input
                 value={addName}
                 onChange={e => setAddName(e.target.value)}
-                placeholder="종목명 (예: 삼성전자)"
+                placeholder="종목명 (예: 삼성전자, Apple Inc.)"
                 className="flex-1 min-w-[160px] px-3 py-2 bg-[#faf9f7] dark:bg-[#1a1915] border border-neutral-200 dark:border-[#35332e] rounded-xl text-xs focus:outline-none focus:ring-1 focus:ring-[#16a34a] dark:text-white"
               />
               <select
@@ -236,11 +320,14 @@ export default function TickerMapPage() {
             disabled={loading}
             className="p-1.5 rounded-lg bg-neutral-100 dark:bg-[#35332e] text-neutral-500 hover:bg-neutral-200 dark:hover:bg-[#4a4641] transition-colors"
           >
-            <RefreshCw size={13} className={loading ? "animate-spin" : ""} />
+            <RefreshCw size={13} className={(loading || usBaseLoading) ? "animate-spin" : ""} />
           </button>
 
           <span className="text-[10px] font-mono text-neutral-400 ml-auto">
-            총 {meta.total.toLocaleString()}개
+            {usBaseLoading ? "미국 종목 로딩 중…" : `총 ${meta.total.toLocaleString()}개`}
+            {isClientPaginated && !usBaseLoading && (
+              <span className="ml-1 text-neutral-300 dark:text-neutral-600">(클라이언트 필터)</span>
+            )}
           </span>
         </div>
 
@@ -263,10 +350,12 @@ export default function TickerMapPage() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-neutral-50 dark:divide-[#35332e]/40">
-                {loading && rows.length === 0 && (
-                  <tr><td colSpan={isAdmin ? 5 : 4} className="py-12 text-center text-xs text-neutral-400">불러오는 중...</td></tr>
+                {(loading || usBaseLoading) && rows.length === 0 && (
+                  <tr><td colSpan={isAdmin ? 5 : 4} className="py-12 text-center text-xs text-neutral-400">
+                    {usBaseLoading ? "미국 종목 데이터 로딩 중… (최초 1회)" : "불러오는 중..."}
+                  </td></tr>
                 )}
-                {!loading && rows.length === 0 && (
+                {!loading && !usBaseLoading && rows.length === 0 && (
                   <tr><td colSpan={isAdmin ? 5 : 4} className="py-12 text-center text-xs text-neutral-400">결과 없음</td></tr>
                 )}
                 {rows.map(row => (
