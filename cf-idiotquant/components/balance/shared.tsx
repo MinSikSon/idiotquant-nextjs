@@ -20,13 +20,20 @@ export function formatTime(timeStr?: string) {
 export function fmtUsd(v: number | string) {
   const n = Number(v);
   if (isNaN(n)) return "$0.00";
-  return `$${n.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+  const abs = Math.abs(n);
+  const sign = n < 0 ? "-" : "";
+  return `${sign}$${abs.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 }
 
 export function fmtKrw(v: number | string) {
   const n = Number(v);
   if (isNaN(n)) return "₩0";
-  return `₩${Math.floor(n).toLocaleString()}`;
+  const abs = Math.abs(n);
+  const sign = n < 0 ? "-" : "";
+  if (abs >= 1_000_000_000_000) {
+    return `${sign}₩${(abs / 1_000_000_000_000).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}조`;
+  }
+  return `${sign}₩${Math.round(abs).toLocaleString()}`;
 }
 
 // =========================================================================
