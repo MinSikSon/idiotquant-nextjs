@@ -204,6 +204,10 @@ function BalanceUs() {
       dispatch(reqGetOverseasStockTradingInquireCcnl(balanceKey));
       dispatch(reqGetOverseasStockTradingInquireNccs(balanceKey));
       setLastUpdated(new Date());
+      // KIS API 체결 반영 지연 대비 2초 후 재조회
+      setTimeout(() => {
+        dispatch(reqGetOverseasStockTradingInquirePresentBalance(balanceKey));
+      }, 2000);
     }
   }, [balanceKey, dispatch, addToast]);
 
