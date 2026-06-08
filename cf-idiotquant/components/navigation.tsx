@@ -271,18 +271,20 @@ export function NavbarWithSimpleLinks() {
 
       {/* ══ MOBILE TOP HEADER ════════════════════════════════════════ */}
       <header className="md:hidden fixed top-0 left-0 right-0 h-[48px] z-40 bg-white/95 dark:bg-[#1f1e1b]/95 backdrop-blur-xl border-b border-neutral-200/70 dark:border-[#3a3834] flex items-center justify-between px-4">
-        <Link href="/" className="flex items-center gap-2">
-          <div className="w-6 h-6 bg-[#16a34a] rounded-md flex items-center justify-center shadow-sm shadow-[#16a34a]/25 shrink-0">
-            <span className="text-white text-[9px] font-black italic leading-none">IQ</span>
-          </div>
-          <span className="font-black tracking-tighter text-sm text-neutral-900 dark:text-white">
-            IDIOT<span className="text-[#16a34a]">QUANT</span>
-          </span>
-          <span className="text-[9px] font-extrabold px-1.5 py-0.5 rounded-md uppercase tracking-wide border border-[#16a34a]/40 text-[#16a34a] dark:text-[#16a34a] bg-[#dcfce7]/60 dark:bg-[#052e16]/40">
+        <div className="flex items-center gap-1.5 min-w-0">
+          <Link href="/" className="flex items-center gap-1.5 shrink-0">
+            <div className="w-6 h-6 bg-[#16a34a] rounded-md flex items-center justify-center shadow-sm shadow-[#16a34a]/25 shrink-0">
+              <span className="text-white text-[9px] font-black italic leading-none">IQ</span>
+            </div>
+            <span className="font-black tracking-tighter text-sm text-neutral-900 dark:text-white">
+              IDIOT<span className="text-[#16a34a]">QUANT</span>
+            </span>
+          </Link>
+          <span className="text-[9px] font-extrabold px-1.5 py-0.5 rounded-md uppercase tracking-wide border border-[#16a34a]/40 text-[#16a34a] dark:text-[#16a34a] bg-[#dcfce7]/60 dark:bg-[#052e16]/40 shrink-0">
             BETA
           </span>
-        </Link>
-        <div className="flex items-center gap-2">
+        </div>
+        <div className="flex items-center gap-2 shrink-0">
           <ThemeChanger />
           <MiniSession session={session} status={status} />
         </div>

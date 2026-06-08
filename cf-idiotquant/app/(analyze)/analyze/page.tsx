@@ -545,59 +545,95 @@ function AnalyzeContent() {
 
             <div className={cn(!isLoaded ? 'hidden' : 'animate-in fade-in duration-400')}>
 
-              {/* 핵심 지표 4개 (항상 공개) */}
-              {basicMetrics && (
-                <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-6">
-                  {[
-                    {
-                      label: "NCAV 업사이드",
-                      value: basicMetrics.ncavRatio !== 0 ? `${basicMetrics.ncavRatio >= 0 ? '+' : ''}${basicMetrics.ncavRatio.toFixed(1)}%` : "—",
-                      desc: "NCAV 기준 업사이드",
-                      color: basicMetrics.ncavRatio >= 100
-                        ? "text-emerald-600 dark:text-emerald-400"
-                        : basicMetrics.ncavRatio >= 0
-                        ? "text-amber-600 dark:text-amber-400"
-                        : "text-neutral-500 dark:text-neutral-400",
-                    },
-                    {
-                      label: "PBR",
-                      value: basicMetrics.pbr > 0 ? `${basicMetrics.pbr.toFixed(2)}x` : "—",
-                      desc: "주가 / 순자산",
-                      color: basicMetrics.pbr > 0 && basicMetrics.pbr < 1
-                        ? "text-emerald-600 dark:text-emerald-400"
-                        : "text-neutral-700 dark:text-neutral-200",
-                    },
-                    {
-                      label: "PER",
-                      value: basicMetrics.per > 0 ? `${basicMetrics.per.toFixed(1)}x` : "—",
-                      desc: "주가 / 순이익",
-                      color: basicMetrics.per > 0 && basicMetrics.per < 10
-                        ? "text-emerald-600 dark:text-emerald-400"
-                        : "text-neutral-700 dark:text-neutral-200",
-                    },
-                    {
-                      label: "EPS",
-                      value: basicMetrics.eps !== 0
-                        ? `${currency}${Math.abs(basicMetrics.eps) >= 1000
-                            ? (basicMetrics.eps / 1000).toFixed(1) + 'K'
-                            : basicMetrics.eps.toFixed(basicMetrics.eps < 1 ? 2 : 0)}`
-                        : "—",
-                      desc: "주당 순이익",
-                      color: basicMetrics.eps > 0
-                        ? "text-neutral-700 dark:text-neutral-200"
-                        : basicMetrics.eps < 0
-                        ? "text-rose-600 dark:text-rose-400"
-                        : "text-neutral-400",
-                    },
-                  ].map(m => (
-                    <div key={m.label} className="bg-white dark:bg-[#242320] rounded-xl border border-neutral-200 dark:border-[#35332e] p-5 shadow-sm">
-                      <p className="text-[10px] font-bold text-neutral-400 uppercase tracking-wider mb-1.5">{m.label}</p>
-                      <p className={cn("text-2xl font-black font-mono tabular-nums leading-none", m.color)}>{m.value}</p>
-                      <p className="text-[10px] text-neutral-400 mt-1.5">{m.desc}</p>
-                    </div>
-                  ))}
+              {/* 종목 카드 + 핵심 지표 — 최상단 */}
+              <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 mb-6">
+                {/* StockCard */}
+                <div className="lg:col-span-5">
+                  <StockCard
+                    stock={krOrUs === 'US' ? {
+                      code: tickerFromUrl, isUs: true, name: displayName, ticker: name,
+                      grade: getUsNcavGrade(data.finnhubData, data.usDetail),
+                      curPrice: Number(data?.usDetail?.output?.last ?? 0).toFixed(2),
+                      fairValue: currency + calculateUsNcavValue(data.finnhubData, data.usDetail),
+                      ncavScore: calculateUsNcavRatio(data.finnhubData, data.usDetail),
+                      srimScore: calculateUsSRIM(data.finnhubData, data.usDetail),
+                      per: data?.usDetail?.output?.perx ?? 0,
+                      pbr: data?.usDetail?.output?.pbrx ?? 0,
+                      eps: currency + (data?.usDetail?.output?.epsx ?? 0),
+                      sector: data?.usDetail?.output?.e_icod ?? "DEFAULT",
+                    } : {
+                      code: tickerFromUrl, isUs: false, name: displayName,
+                      ticker: (staticStockData.corpCodeJson as any)?.[name]?.stock_code ?? '',
+                      grade: getKrNcavGrade(data.kiBS, data.kiChart),
+                      curPrice: data?.kiPrice?.output?.stck_prpr ?? 0,
+                      fairValue: currency + calculateKrNcavValue(data.kiBS, data.kiChart),
+                      ncavScore: calculateKrNcavRatio(data.kiBS, data.kiChart),
+                      srimScore: getKrSRIMTargetPrice(data.kiBS, data.kiIS, data.kiChart),
+                      per: data?.kiPrice?.output?.per ?? 0,
+                      pbr: data?.kiPrice?.output?.pbr ?? 0,
+                      eps: currency + Number(data?.kiPrice?.output?.eps ?? 0).toFixed(0),
+                      sector: data?.kiPrice?.output?.bstp_kor_isnm ?? "DEFAULT",
+                    }}
+                    chartConfig={chartConfig}
+                    rawData={data}
+                    stockXpProfile={DEFAULT_XP_PROFILE}
+                  />
                 </div>
-              )}
+
+                {/* 핵심 지표 4개 (항상 공개) */}
+                {basicMetrics && (
+                  <div className="lg:col-span-7 grid grid-cols-2 gap-4 content-start">
+                    {[
+                      {
+                        label: "NCAV 업사이드",
+                        value: basicMetrics.ncavRatio !== 0 ? `${basicMetrics.ncavRatio >= 0 ? '+' : ''}${basicMetrics.ncavRatio.toFixed(1)}%` : "—",
+                        desc: "NCAV 기준 업사이드",
+                        color: basicMetrics.ncavRatio >= 100
+                          ? "text-emerald-600 dark:text-emerald-400"
+                          : basicMetrics.ncavRatio >= 0
+                          ? "text-amber-600 dark:text-amber-400"
+                          : "text-neutral-500 dark:text-neutral-400",
+                      },
+                      {
+                        label: "PBR",
+                        value: basicMetrics.pbr > 0 ? `${basicMetrics.pbr.toFixed(2)}x` : "—",
+                        desc: "주가 / 순자산",
+                        color: basicMetrics.pbr > 0 && basicMetrics.pbr < 1
+                          ? "text-emerald-600 dark:text-emerald-400"
+                          : "text-neutral-700 dark:text-neutral-200",
+                      },
+                      {
+                        label: "PER",
+                        value: basicMetrics.per > 0 ? `${basicMetrics.per.toFixed(1)}x` : "—",
+                        desc: "주가 / 순이익",
+                        color: basicMetrics.per > 0 && basicMetrics.per < 10
+                          ? "text-emerald-600 dark:text-emerald-400"
+                          : "text-neutral-700 dark:text-neutral-200",
+                      },
+                      {
+                        label: "EPS",
+                        value: basicMetrics.eps !== 0
+                          ? `${currency}${Math.abs(basicMetrics.eps) >= 1000
+                              ? (basicMetrics.eps / 1000).toFixed(1) + 'K'
+                              : basicMetrics.eps.toFixed(basicMetrics.eps < 1 ? 2 : 0)}`
+                          : "—",
+                        desc: "주당 순이익",
+                        color: basicMetrics.eps > 0
+                          ? "text-neutral-700 dark:text-neutral-200"
+                          : basicMetrics.eps < 0
+                          ? "text-rose-600 dark:text-rose-400"
+                          : "text-neutral-400",
+                      },
+                    ].map(m => (
+                      <div key={m.label} className="bg-white dark:bg-[#242320] rounded-xl border border-neutral-200 dark:border-[#35332e] p-5 shadow-sm">
+                        <p className="text-[10px] font-bold text-neutral-400 uppercase tracking-wider mb-1.5">{m.label}</p>
+                        <p className={cn("text-2xl font-black font-mono tabular-nums leading-none", m.color)}>{m.value}</p>
+                        <p className="text-[10px] text-neutral-400 mt-1.5">{m.desc}</p>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
 
               {/* 상세 분석 섹션 */}
               <div className="space-y-6">
@@ -635,44 +671,11 @@ function AnalyzeContent() {
                   ))}
                 </div>
 
-                {/* 주가추이 (항상 공개) + 상세 지표 (블러) */}
-                <div className={cn("grid grid-cols-1 lg:grid-cols-12 gap-6", activeTab !== 'analysis' && 'hidden md:grid')}>
-                  <div className="lg:col-span-5">
-                    <StockCard
-                      stock={krOrUs === 'US' ? {
-                        code: tickerFromUrl, isUs: true, name: displayName, ticker: name,
-                        grade: getUsNcavGrade(data.finnhubData, data.usDetail),
-                        curPrice: Number(data?.usDetail?.output?.last ?? 0).toFixed(2),
-                        fairValue: currency + calculateUsNcavValue(data.finnhubData, data.usDetail),
-                        ncavScore: calculateUsNcavRatio(data.finnhubData, data.usDetail),
-                        srimScore: calculateUsSRIM(data.finnhubData, data.usDetail),
-                        per: data?.usDetail?.output?.perx ?? 0,
-                        pbr: data?.usDetail?.output?.pbrx ?? 0,
-                        eps: currency + (data?.usDetail?.output?.epsx ?? 0),
-                        sector: data?.usDetail?.output?.e_icod ?? "DEFAULT",
-                      } : {
-                        code: tickerFromUrl, isUs: false, name: displayName,
-                        ticker: (staticStockData.corpCodeJson as any)?.[name]?.stock_code ?? '',
-                        grade: getKrNcavGrade(data.kiBS, data.kiChart),
-                        curPrice: data?.kiPrice?.output?.stck_prpr ?? 0,
-                        fairValue: currency + calculateKrNcavValue(data.kiBS, data.kiChart),
-                        ncavScore: calculateKrNcavRatio(data.kiBS, data.kiChart),
-                        srimScore: getKrSRIMTargetPrice(data.kiBS, data.kiIS, data.kiChart),
-                        per: data?.kiPrice?.output?.per ?? 0,
-                        pbr: data?.kiPrice?.output?.pbr ?? 0,
-                        eps: currency + Number(data?.kiPrice?.output?.eps ?? 0).toFixed(0),
-                        sector: data?.kiPrice?.output?.bstp_kor_isnm ?? "DEFAULT",
-                      }}
-                      chartConfig={chartConfig}
-                      rawData={data}
-                      stockXpProfile={DEFAULT_XP_PROFILE}
-                    />
-                  </div>
-                  <div className="lg:col-span-7">
-                    <BlurGate isLoggedIn={isLoggedIn}>
-                      <StockMetrics data={data} isUs={krOrUs === 'US'} />
-                    </BlurGate>
-                  </div>
+                {/* 상세 지표 (블러) */}
+                <div className={cn(activeTab !== 'analysis' && 'hidden md:block')}>
+                  <BlurGate isLoggedIn={isLoggedIn}>
+                    <StockMetrics data={data} isUs={krOrUs === 'US'} />
+                  </BlurGate>
                 </div>
 
                 {/* 모델별 요약 (항상 공개) + 세부 카드 (블러) */}
