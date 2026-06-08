@@ -67,7 +67,7 @@ function SectionLabel({ icon, label }: { icon: React.ReactNode; label: string })
     <div className="flex items-center gap-2 mb-2.5">
       <span className="text-neutral-400">{icon}</span>
       <span className="text-[10px] font-bold text-neutral-400 uppercase tracking-widest font-mono">{label}</span>
-      <div className="flex-1 h-px bg-[#faf9f7] dark:bg-[#242320]" />
+      <div className="flex-1 h-px bg-neutral-100 dark:bg-[#35332e]" />
     </div>
   );
 }
@@ -203,7 +203,7 @@ export const StockMetrics = ({ data, isUs }: { data: any; isUs: boolean }) => {
             ? "bg-[#f0fdf4] dark:bg-[#052e16]/30 text-[#15803d] dark:text-[#16a34a] border-[#bbf7d0]/60 dark:border-[#14532d]/40"
             : "bg-indigo-50 dark:bg-indigo-950/30 text-indigo-700 dark:text-indigo-400 border-indigo-200/60 dark:border-indigo-900/40"
         )}>
-          <div className={cn("w-1.5 h-1.5 rounded-full animate-pulse shrink-0", isUs ? "bg-[#f0fdf4]0" : "bg-indigo-500")} />
+      <div className={cn("w-1.5 h-1.5 rounded-full animate-pulse shrink-0", isUs ? "bg-[#16a34a]" : "bg-indigo-500")} />
           {isUs
             ? <><DollarSign size={10} />USD</>
             : <><Coins size={10} />KRW</>
