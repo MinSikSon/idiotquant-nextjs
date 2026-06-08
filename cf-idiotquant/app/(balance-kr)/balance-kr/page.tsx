@@ -209,6 +209,11 @@ function BalanceKr() {
       dispatch(reqGetInquireBalance(balanceKey));
       fetchOrderHistory(balanceKey);
       setLastUpdated(new Date());
+      // KIS API 체결 반영 지연 대비 2초 후 재조회
+      setTimeout(() => {
+        dispatch(reqGetInquireBalance(balanceKey));
+        fetchOrderHistory(balanceKey);
+      }, 2000);
     }
   }, [balanceKey, dispatch, fetchOrderHistory, addToast]);
 

@@ -368,7 +368,10 @@ function SortableBalanceTable({ inventoryData, isUs, onOpenOrder }: { inventoryD
     const [sortConfig, setSortConfig] = useState<any>({ key: "evlu_amt", direction: "desc" });
     const router = useRouter();
     const goAnalyze = (item: any) => {
-        const ticker = item.pdno || item.ovrs_pdno;
+        // US: ticker code (AAPL), KR: stock name (삼성전자) — analyze page searches by name for KR
+        const ticker = isUs
+            ? (item.pdno || item.ovrs_pdno)
+            : (item.prdt_name || item.ovrs_item_name || item.pdno);
         if (ticker) router.push(`/analyze?ticker=${encodeURIComponent(ticker)}`);
     };
 

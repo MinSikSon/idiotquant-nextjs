@@ -2,7 +2,8 @@
 
 import { useSession } from "next-auth/react";
 import { useEffect, useState } from "react";
-import { Users, Shield } from "lucide-react";
+import Link from "next/link";
+import { Users, Shield, ArrowRight, BookOpen } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 interface UserRow {
@@ -74,6 +75,18 @@ export default function AdminPage() {
           <h1 className="text-xl font-black text-neutral-900 dark:text-white tracking-tight">어드민 대시보드</h1>
           <p className="text-xs text-neutral-400 mt-0.5">카카오 가입 회원 현황</p>
         </div>
+      </div>
+
+      {/* 관리 메뉴 링크 */}
+      <div className="flex flex-wrap gap-2 mb-6">
+        <Link
+          href="/admin/ticker-map"
+          className="flex items-center gap-2 px-4 py-2.5 bg-white dark:bg-[#242320] border border-neutral-200 dark:border-[#35332e] rounded-xl text-xs font-bold text-neutral-700 dark:text-neutral-300 hover:border-[#16a34a] hover:text-[#16a34a] transition-colors group"
+        >
+          <BookOpen size={13} className="text-neutral-400 group-hover:text-[#16a34a] transition-colors" />
+          종목명 매핑 관리
+          <ArrowRight size={11} className="text-neutral-300 group-hover:text-[#16a34a] transition-colors" />
+        </Link>
       </div>
 
       {/* Stats */}
