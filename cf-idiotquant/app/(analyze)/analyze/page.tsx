@@ -111,15 +111,6 @@ import {
   selectPopularStocks,
 } from '@/lib/features/searchLog/searchLogSlice';
 
-const GRADE_PILL: Record<string, string> = {
-  SSS: "bg-gradient-to-r from-pink-500 via-purple-500 to-cyan-500 text-white",
-  SS:  "bg-amber-500 text-white",
-  S:   "bg-emerald-500 text-white",
-  A:   "bg-slate-500 text-white",
-  B:   "bg-neutral-200 text-neutral-700 dark:bg-[#4a4641] dark:text-neutral-200",
-  F:   "bg-red-500 text-white",
-};
-
 import {
   calculateKrNcavRatio,
   calculateKrNcavValue,
@@ -380,10 +371,6 @@ function AnalyzeContent() {
     ? (data.kiChart?.output1?.hts_kor_isnm || name)
     : (data.usSearchInfo?.output?.prdt_eng_name || data.usSearchInfo?.output?.ovrs_item_name || name);
 
-  const displayCode = krOrUs === 'KR'
-    ? (data.kiChart?.output1?.stck_shrn_iscd || tickerFromUrl || '')
-    : (tickerFromUrl || '');
-
   const isLoaded =
     tickerFromUrl === name &&
     (
@@ -393,18 +380,6 @@ function AnalyzeContent() {
 
   const currency = krOrUs === 'US' ? '$' : '₩';
   const isInWatchlist = useAppSelector(state => selectIsLiked(state, tickerFromUrl ?? ''));
-
-  const gradeDisplay = useMemo(() => {
-    if (!isLoaded || !tickerFromUrl) return null;
-    const rawGrade = krOrUs === 'US'
-      ? getUsNcavGrade(data.finnhubData, data.usDetail)
-      : getKrNcavGrade(data.kiBS, data.kiChart);
-    if (!rawGrade) return null;
-    const g = typeof rawGrade === 'object'
-      ? String((rawGrade as any).grade || '')
-      : String(rawGrade || '');
-    return g && g !== 'N/A' ? g : null;
-  }, [isLoaded, tickerFromUrl, krOrUs, data]);
 
   const chartConfig = useMemo(() => {
     const isUs = krOrUs === 'US';
@@ -493,6 +468,20 @@ function AnalyzeContent() {
                 <Heart size={13} fill={isInWatchlist ? "currentColor" : "none"} />
                 <span className="hidden sm:inline">{isInWatchlist ? "저장됨" : "관심"}</span>
               </button>
+              <button
+                onClick={handleShareResult}
+                className={cn(
+                  "flex items-center gap-1.5 px-2.5 py-2 rounded-xl border text-xs font-bold transition-all",
+                  shareStatus === 'copied'
+                    ? "bg-emerald-50 text-emerald-600 border-emerald-200 dark:bg-emerald-950/30 dark:text-emerald-400"
+                    : shareStatus === 'error'
+                    ? "bg-rose-50 text-rose-600 border-rose-200"
+                    : "text-neutral-500 bg-[#faf9f7] border-neutral-200 hover:text-neutral-700 dark:bg-[#242320]/40 dark:border-[#3a3834]"
+                )}
+              >
+                {shareStatus === 'copied' ? <Check size={13} /> : shareStatus === 'error' ? <AlertCircle size={13} /> : <Share2 size={13} />}
+                <span className="hidden sm:inline">{shareStatus === 'copied' ? '복사됨' : shareStatus === 'error' ? '실패' : '공유'}</span>
+              </button>
               <span className={cn(
                 "inline-flex items-center gap-1 px-2.5 py-2 rounded-xl text-[11px] font-black uppercase tracking-wider font-mono border",
                 krOrUs === 'US'
@@ -556,89 +545,17 @@ function AnalyzeContent() {
 
             <div className={cn(!isLoaded ? 'hidden' : 'animate-in fade-in duration-400')}>
 
-              {/* 종목 헤더 카드 */}
-              <div className="bg-white dark:bg-[#242320] rounded-2xl border border-neutral-200 dark:border-[#35332e] p-5 mb-5 shadow-sm relative overflow-hidden">
-                <div className={cn("absolute top-0 left-0 right-0 h-0.5",
-                  krOrUs === 'US' ? "bg-gradient-to-r from-[#f0fdf4]0 to-sky-400" : "bg-gradient-to-r from-indigo-500 to-purple-400"
-                )} />
-                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-                  <div className="flex items-center gap-3 min-w-0">
-                    <div className={cn(
-                      "w-10 h-10 rounded-xl flex items-center justify-center text-sm font-black text-white shrink-0",
-                      krOrUs === 'US'
-                        ? "bg-gradient-to-tr from-[#f0fdf4]0 to-sky-400"
-                        : "bg-gradient-to-tr from-indigo-500 to-purple-400"
-                    )}>
-                      {(displayName || tickerFromUrl || '?').substring(0, 1).toUpperCase()}
-                    </div>
-                    <div className="min-w-0">
-                      <div className="flex items-center gap-2 flex-wrap">
-                        <span className="font-black text-neutral-900 dark:text-white text-base truncate">{displayName}</span>
-                        {displayCode && (
-                          <span className="text-[10px] font-mono text-neutral-400 dark:text-neutral-500">{displayCode}</span>
-                        )}
-                        {gradeDisplay && (
-                          <span className={cn(
-                            "px-2 py-0.5 rounded text-xs font-black font-mono shrink-0",
-                            GRADE_PILL[gradeDisplay] ?? "bg-neutral-200 text-neutral-700 dark:bg-[#4a4641] dark:text-neutral-200"
-                          )}>
-                            {gradeDisplay}
-                          </span>
-                        )}
-                      </div>
-                      {basicMetrics && (
-                        <p className="text-sm font-bold text-neutral-600 dark:text-neutral-400 mt-0.5">
-                          현재가&nbsp;
-                          <span className="text-neutral-900 dark:text-white">
-                            {currency}{basicMetrics.curPrice.toLocaleString()}
-                          </span>
-                        </p>
-                      )}
-                    </div>
-                  </div>
-
-                  <div className="flex items-center gap-2 shrink-0 self-start sm:self-center">
-                    <button
-                      onClick={handleToggleLike}
-                      className={cn(
-                        "flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold border transition-all",
-                        isInWatchlist
-                          ? "text-rose-600 bg-rose-50 border-rose-200 dark:bg-rose-950/20 dark:border-rose-800/50 dark:text-rose-400"
-                          : "text-neutral-600 bg-[#faf9f7] border-neutral-200 hover:border-rose-300 hover:text-rose-500 dark:bg-[#242320]/30 dark:border-[#3a3834]"
-                      )}
-                    >
-                      <Heart size={13} fill={isInWatchlist ? "currentColor" : "none"} />
-                      {isInWatchlist ? "저장됨" : "관심 종목"}
-                    </button>
-                    <button
-                      onClick={handleShareResult}
-                      className={cn(
-                        "flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold border transition-all",
-                        shareStatus === 'copied'
-                          ? "bg-emerald-50 text-emerald-600 border-emerald-200 dark:bg-emerald-950/30 dark:text-emerald-400"
-                          : shareStatus === 'error'
-                          ? "bg-rose-50 text-rose-600 border-rose-200"
-                          : "bg-neutral-900 dark:bg-white text-white dark:text-neutral-900 border-neutral-900 dark:border-white hover:bg-neutral-800"
-                      )}
-                    >
-                      {shareStatus === 'copied' ? <Check size={13} /> : shareStatus === 'error' ? <AlertCircle size={13} /> : <Share2 size={13} />}
-                      {shareStatus === 'copied' ? '복사됨' : shareStatus === 'error' ? '실패' : '공유'}
-                    </button>
-                  </div>
-                </div>
-              </div>
-
               {/* 핵심 지표 4개 (항상 공개) */}
               {basicMetrics && (
                 <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-6">
                   {[
                     {
-                      label: "NCAV 비율",
-                      value: basicMetrics.ncavRatio > 0 ? `${basicMetrics.ncavRatio.toFixed(2)}x` : "—",
-                      desc: "청산가치 / 시가총액",
-                      color: basicMetrics.ncavRatio >= 1
+                      label: "NCAV 업사이드",
+                      value: basicMetrics.ncavRatio !== 0 ? `${basicMetrics.ncavRatio >= 0 ? '+' : ''}${basicMetrics.ncavRatio.toFixed(1)}%` : "—",
+                      desc: "NCAV 기준 업사이드",
+                      color: basicMetrics.ncavRatio >= 100
                         ? "text-emerald-600 dark:text-emerald-400"
-                        : basicMetrics.ncavRatio >= 0.7
+                        : basicMetrics.ncavRatio >= 0
                         ? "text-amber-600 dark:text-amber-400"
                         : "text-neutral-500 dark:text-neutral-400",
                     },
