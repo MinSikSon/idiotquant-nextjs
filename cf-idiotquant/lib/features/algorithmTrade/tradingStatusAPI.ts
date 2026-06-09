@@ -1,6 +1,7 @@
 export async function fetchTradingStatus(country: "KR" | "US"): Promise<boolean | null> {
   try {
     const res = await fetch(`/api/proxy/trading/account-status?country=${country}`);
+    if (res.status === 404) return false; // 계정 미등록 → OFF 상태로 버튼 표시
     const json = await res.json();
     if (!json.success) return null;
     return json.data.is_active as boolean;
