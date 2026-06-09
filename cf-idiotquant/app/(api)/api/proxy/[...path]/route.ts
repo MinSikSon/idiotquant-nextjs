@@ -150,4 +150,5 @@ async function handleProxy(req: Request, { params }: { params: Promise<{ path: s
 export const GET = handleProxy;
 export const POST = handleProxy;
 export const PUT = handleProxy;
+export const PATCH = handleProxy;
 export const DELETE = handleProxy;
