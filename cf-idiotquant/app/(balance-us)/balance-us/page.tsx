@@ -1,16 +1,17 @@
 "use client";
 
-import { useState, useEffect, useCallback, Suspense } from "react";
+import { useState, useEffect, useCallback, Suspense, useRef } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import {
   Globe, ChevronRight, DollarSign, Building2,
   Wallet, TrendingUp, BarChart3, RefreshCw,
   Clock, AlertCircle, Database,
-  ArrowDownRight, PieChart, ClipboardList,
+  ArrowDownRight, PieChart, ClipboardList, TrendingDown, Power,
 } from "lucide-react";
 import { useSession } from "next-auth/react";
 
 import { useAppDispatch, useAppSelector } from "@/lib/hooks";
+import { fetchTradingStatus, setTradingActive } from "@/lib/features/algorithmTrade/tradingStatusAPI";
 import {
   reqGetOverseasStockTradingInquirePresentBalance,
   getKoreaInvestmentUsMaretPresentBalance,
@@ -183,6 +184,8 @@ function BalanceUs() {
   const [viewerTab, setViewerTab] = useState<"ccnl" | "nccs">("ccnl");
   const [autoRefresh, setAutoRefresh] = useState(false);
   const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
+  const [tradingActive, setTradingActiveState] = useState<boolean | null>(null);
+  const [tradingLoading, setTradingLoading] = useState(false);
   const { toasts, addToast, removeToast } = useToast();
 
   const fetchAll = useCallback((key: string) => {
@@ -196,6 +199,20 @@ function BalanceUs() {
   const handleRefresh = useCallback(() => {
     fetchAll(balanceKey);
   }, [balanceKey, fetchAll]);
+
+  const handleToggleTrading = useCallback(async () => {
+    if (tradingLoading || tradingActive === null) return;
+    setTradingLoading(true);
+    const next = !tradingActive;
+    const ok = await setTradingActive("US", next);
+    if (ok) {
+      setTradingActiveState(next);
+      addToast("success", `미국 자동매매가 ${next ? "활성화" : "비활성화"}되었습니다.`);
+    } else {
+      addToast("error", "자동매매 상태 변경에 실패했습니다.");
+    }
+    setTradingLoading(false);
+  }, [tradingActive, tradingLoading, addToast]);
 
   const handleOrderResult = useCallback((status: "success" | "error", message: string) => {
     addToast(status, message);
@@ -222,11 +239,12 @@ function BalanceUs() {
 
   useEffect(() => {
     if (status === "loading") return;
-    if (!session || session.user?.name !== process.env.NEXT_PUBLIC_MASTER) {
+    if (!session || (session.user as any)?.role !== "admin") {
       router.replace("/");
       return;
     }
     dispatch(reqGetKakaoMemberList());
+    fetchTradingStatus("US").then(v => { if (v !== null) setTradingActiveState(v); });
   }, [session, status, dispatch, router]);
 
   useEffect(() => {
@@ -374,14 +392,33 @@ function BalanceUs() {
               isLoading={isLoading}
               onRefresh={handleRefresh}
               extra={
-                exRate > 0 ? (
-                  <div className="flex items-center gap-2 bg-white dark:bg-[#242320] px-3 py-2 rounded-xl border border-neutral-200 dark:border-[#35332e] shadow-sm">
-                    <span className="text-[10px] font-black text-neutral-400 uppercase tracking-wider">고시환율</span>
-                    <span className="text-sm font-mono font-black text-[#16a34a] dark:text-[#16a34a]">
-                      {exRate.toLocaleString()}원
-                    </span>
-                  </div>
-                ) : undefined
+                <>
+                  {tradingActive !== null && (
+                    <button
+                      onClick={handleToggleTrading}
+                      disabled={tradingLoading}
+                      title={tradingActive ? "자동매매 비활성화" : "자동매매 활성화"}
+                      className={cn(
+                        "flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold border transition-all",
+                        tradingActive
+                          ? "bg-[#f0fdf4] dark:bg-[#14532d]/30 text-[#16a34a] border-[#86efac] dark:border-[#166534]"
+                          : "bg-white dark:bg-[#242320] text-neutral-400 border-neutral-200 dark:border-[#35332e] hover:border-neutral-400",
+                        tradingLoading && "opacity-60 cursor-not-allowed"
+                      )}
+                    >
+                      <Power size={13} className={tradingActive ? "text-[#16a34a]" : ""} />
+                      {tradingActive ? "자동매매 ON" : "자동매매 OFF"}
+                    </button>
+                  )}
+                  {exRate > 0 && (
+                    <div className="flex items-center gap-2 bg-white dark:bg-[#242320] px-3 py-2 rounded-xl border border-neutral-200 dark:border-[#35332e] shadow-sm">
+                      <span className="text-[10px] font-black text-neutral-400 uppercase tracking-wider">고시환율</span>
+                      <span className="text-sm font-mono font-black text-[#16a34a] dark:text-[#16a34a]">
+                        {exRate.toLocaleString()}원
+                      </span>
+                    </div>
+                  )}
+                </>
               }
             />
           </div>
