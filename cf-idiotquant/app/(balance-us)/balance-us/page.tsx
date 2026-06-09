@@ -188,6 +188,7 @@ function BalanceUs() {
 
   const [balanceKey, setBalanceKey] = useState(searchParams.get("key") || "");
   const [viewerTab, setViewerTab] = useState<"ccnl" | "nccs">("ccnl");
+  const [mobileTab, setMobileTab] = useState("section-kpi");
   const [autoRefresh, setAutoRefresh] = useState(false);
   const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
   const { toasts, addToast, removeToast } = useToast();
@@ -428,7 +429,10 @@ function BalanceUs() {
         <div className="h-px bg-gradient-to-r from-transparent via-[#16a34a] dark:via-[#15803d] to-transparent opacity-60" />
 
         {/* 섹션 네비게이션 */}
-        <SectionNav sections={navSections} />
+        <SectionNav sections={navSections} mobileTab={mobileTab} onMobileTabChange={setMobileTab} />
+
+        {/* KPI + 지표 스트립 (모바일 탭: section-kpi) */}
+        <div className={cn(mobileTab !== "section-kpi" && "hidden md:block")}>
 
         {/* KPI 카드 */}
         <section id="section-kpi" className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-3 animate-in fade-in slide-in-from-bottom-2 duration-400">
@@ -553,7 +557,10 @@ function BalanceUs() {
           </div>
         )}
 
-        {/* 포트폴리오 자산 구성 */}
+        </div>{/* /section-kpi mobile tab */}
+
+        {/* 포트폴리오 자산 구성 (모바일 탭: section-portfolio) */}
+        <div className={cn(mobileTab !== "section-portfolio" && "hidden md:block")}>
         <SectionPanel id="section-portfolio">
           <SectionHeader
             icon={<PieChart size={16} />}
@@ -567,7 +574,10 @@ function BalanceUs() {
           />
         </SectionPanel>
 
-        {/* 잔고 조회 패널 */}
+        </div>{/* /section-portfolio mobile tab */}
+
+        {/* 잔고 조회 패널 (모바일 탭: section-balance) */}
+        <div className={cn(mobileTab !== "section-balance" && "hidden md:block")}>
         <SectionPanel id="section-balance">
           <InquireBalanceResult
             balanceKey={balanceKey}
@@ -585,7 +595,10 @@ function BalanceUs() {
           />
         </SectionPanel>
 
-        {/* NCAV 운용 종목 관리 패널 */}
+        </div>{/* /section-balance mobile tab */}
+
+        {/* NCAV 종목 관리 패널 (모바일 탭: section-stocks) */}
+        <div className={cn(mobileTab !== "section-stocks" && "hidden md:block")}>
         {hasCapital && (
           <SectionPanel id="section-stocks">
             <SectionHeader
@@ -612,7 +625,10 @@ function BalanceUs() {
           </SectionPanel>
         )}
 
-        {/* 체결 / 미체결 내역 */}
+        </div>{/* /section-stocks mobile tab */}
+
+        {/* 주문 내역 (모바일 탭: section-orders) */}
+        <div className={cn(mobileTab !== "section-orders" && "hidden md:block")}>
         <SectionPanel id="section-orders">
           <SectionHeader
             icon={<OrderSectionIcon viewerTab={viewerTab} />}
@@ -664,6 +680,7 @@ function BalanceUs() {
             </table>
           </div>
         </SectionPanel>
+        </div>{/* /section-orders mobile tab */}
 
       </div>
     </div>
