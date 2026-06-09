@@ -46,8 +46,11 @@ const getFieldValue = (item: any, key: string) => {
     const map: any = {
         name: item.prdt_name || item.ovrs_item_name || item.itms_nm,
         price: item.prpr || item.ovrs_now_pric1 || 0,
-        avg_price: item.pchs_avg_pric || item.pchs_avg_pric1 || 0,
-        qty: item.hldg_qty || item.cblc_qty13 || item.ccld_qty_smtl1 || 0,
+        // US presentBalance: avg_unpr3 / KR balance: pchs_avg_pric
+        avg_price: item.pchs_avg_pric || item.pchs_avg_pric1 || item.avg_unpr3 || 0,
+        // KR balance: hldg_qty / US presentBalance: cblc_qty13 (잔고수량)
+        // ccld_qty_smtl1은 체결수량합계(실행된 거래량)로 보유수량이 아님 — 폴백에서 제거
+        qty: item.hldg_qty || item.cblc_qty13 || 0,
         evlu_amt: item.evlu_amt || item.frcr_evlu_amt2 || 0,
         profit_rt: item.evlu_pfls_rt || item.evlu_pfls_rt1 || 0,
         pchs_amt: item.pchs_amt || item.frcr_pchs_amt || 0,
