@@ -5,6 +5,26 @@ import nasdaq_tickers from "@/public/data/usStockSymbols/nasdaq_tickers.json";
 import nyse_tickers from "@/public/data/usStockSymbols/nyse_tickers.json";
 import amex_tickers from "@/public/data/usStockSymbols/amex_tickers.json";
 
+// KR ticker-map override 캐시 (name → 6자리 코드)
+let _krOverrideMap: Map<string, string> | null = null;
+let _krOverridePromise: Promise<Map<string, string>> | null = null;
+function loadKrOverrides(): Promise<Map<string, string>> {
+    if (_krOverrideMap) return Promise.resolve(_krOverrideMap);
+    if (_krOverridePromise) return _krOverridePromise;
+    _krOverridePromise = fetch('/api/proxy/ticker-map?source=overrides&country=KR&limit=500')
+        .then(r => r.json())
+        .then(json => {
+            const map = new Map<string, string>();
+            for (const e of (json.data ?? [])) {
+                if (e.name && e.ticker) map.set(e.name, e.ticker);
+            }
+            _krOverrideMap = map;
+            return map;
+        })
+        .catch(() => new Map());
+    return _krOverridePromise;
+}
+
 // Redux Actions
 import {
     reqGetInquirePrice,
@@ -65,7 +85,7 @@ export function useStockSearch() {
     }, [name, krOrUs, dispatch]);
 
     // [중요] useCallback으로 감싸서 함수 참조값을 고정합니다.
-    const onSearch = useCallback((stockName: string) => {
+    const onSearch = useCallback(async (stockName: string) => {
         if (!stockName) return;
 
         const isUs = us_tickers.includes(stockName.toUpperCase());
@@ -77,9 +97,13 @@ export function useStockSearch() {
             dispatch(resetKrStockData());
             const corp: any = corpCodeJson;
             const jsonStock = corp[stockName];
-            // 이름 조회 실패 시 6자리 종목코드 직접 입력으로 폴백
-            const code: string | undefined = jsonStock?.stock_code
+            // 이름 조회 실패 시 6자리 종목코드 직접 입력으로 폴백, 그 다음 ticker-map override 폴백
+            let code: string | undefined = jsonStock?.stock_code
                 ?? (/^\d{6}$/.test(stockName) ? stockName : undefined);
+            if (!code) {
+                const overrides = await loadKrOverrides();
+                code = overrides.get(stockName);
+            }
             if (code) {
                 dispatch(reqGetInquirePrice({ PDNO: code }));
                 dispatch(reqGetInquireDailyItemChartPrice({
