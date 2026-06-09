@@ -382,6 +382,14 @@ function AnalyzeContent() {
       (krOrUs === 'US' && data.usSearchInfo.state === 'fulfilled' && data.finnhubData.state === 'fulfilled')
     );
 
+  // 가격 정보만 필요한 섹션(StockCard·기본 지표)을 위한 조건 — 재무제표 없이도 주가·PBR·PER·EPS 표시
+  const isPriceLoaded =
+    tickerFromUrl === name &&
+    (
+      (krOrUs === 'KR' && data.kiChart.state === 'fulfilled') ||
+      (krOrUs === 'US' && data.usSearchInfo.state === 'fulfilled' && data.usDetail?.output?.last !== "")
+    );
+
   const currency = krOrUs === 'US' ? '$' : '₩';
   const isInWatchlist = useAppSelector(state => selectIsLiked(state, tickerFromUrl ?? ''));
 
@@ -396,31 +404,32 @@ function AnalyzeContent() {
   }, [krOrUs, data]);
 
   // 핵심 지표 + StockCard props 통합 (중복 계산 방지)
+  // isPriceLoaded 시점부터 가격·PBR·PER·EPS 표시. NCAV·fairValue·srimScore는 isLoaded 이후에 채워짐.
   const stockData = useMemo(() => {
-    if (!isLoaded) return null;
+    if (!isPriceLoaded) return null;
     if (krOrUs === 'KR') {
-      const ncavRatio = calculateKrNcavRatio(data.kiBS, data.kiChart);
+      const ncavRatio = isLoaded ? calculateKrNcavRatio(data.kiBS, data.kiChart) : 0;
       const pbr = Number(data?.kiPrice?.output?.pbr ?? 0);
       const per = Number(data?.kiPrice?.output?.per ?? 0);
       const eps = Number(data?.kiPrice?.output?.eps ?? 0);
       const curPrice = Number(data?.kiPrice?.output?.stck_prpr ?? 0);
-      const grade = getKrNcavGrade(data.kiBS, data.kiChart);
-      const fairValue = calculateKrNcavValue(data.kiBS, data.kiChart);
-      const srimScore = getKrSRIMTargetPrice(data.kiBS, data.kiIS, data.kiChart);
+      const grade = isLoaded ? getKrNcavGrade(data.kiBS, data.kiChart) : undefined;
+      const fairValue = isLoaded ? calculateKrNcavValue(data.kiBS, data.kiChart) : 0;
+      const srimScore = isLoaded ? getKrSRIMTargetPrice(data.kiBS, data.kiIS, data.kiChart) : undefined;
       const stockTicker = (staticStockData.corpCodeJson as any)?.[name]?.stock_code ?? '';
       return { ncavRatio, pbr, per, eps, curPrice, grade, fairValue, srimScore, stockTicker };
     } else {
-      const ncavRatio = calculateUsNcavRatio(data.finnhubData, data.usDetail);
+      const ncavRatio = isLoaded ? calculateUsNcavRatio(data.finnhubData, data.usDetail) : 0;
       const pbr = Number(data?.usDetail?.output?.pbrx ?? 0);
       const per = Number(data?.usDetail?.output?.perx ?? 0);
       const eps = Number(data?.usDetail?.output?.epsx ?? 0);
       const curPrice = Number(data?.usDetail?.output?.last ?? 0);
-      const grade = getUsNcavGrade(data.finnhubData, data.usDetail);
-      const fairValue = calculateUsNcavValue(data.finnhubData, data.usDetail);
-      const srimScore = calculateUsSRIM(data.finnhubData, data.usDetail);
+      const grade = isLoaded ? getUsNcavGrade(data.finnhubData, data.usDetail) : undefined;
+      const fairValue = isLoaded ? calculateUsNcavValue(data.finnhubData, data.usDetail) : 0;
+      const srimScore = isLoaded ? calculateUsSRIM(data.finnhubData, data.usDetail) : undefined;
       return { ncavRatio, pbr, per, eps, curPrice, grade, fairValue, srimScore, stockTicker: '' };
     }
-  }, [isLoaded, krOrUs, data, name, staticStockData.corpCodeJson]);
+  }, [isPriceLoaded, isLoaded, krOrUs, data, name, staticStockData.corpCodeJson]);
 
   if (!hasMounted) return <div className="min-h-screen bg-[#faf9f7] dark:bg-[#1a1915]" />;
 
@@ -465,7 +474,7 @@ function AnalyzeContent() {
             />
           </div>
 
-          {isLoaded && (
+          {isPriceLoaded && (
             <div className="flex items-center gap-1.5 shrink-0 animate-in fade-in duration-200">
               <button
                 onClick={handleToggleLike}
@@ -507,7 +516,7 @@ function AnalyzeContent() {
         </div>
 
         {/* 인기 종목 + 최근 검색 */}
-        {!isLoaded && (
+        {!isPriceLoaded && (
           <div className="border-t border-neutral-100 dark:border-[#35332e]/50 bg-[#faf9f7]/50 dark:bg-[#242320]/30">
             {popularStocks.length > 0 && (
               <div className="max-w-4xl mx-auto px-4 py-2 flex items-center gap-3">
@@ -552,9 +561,9 @@ function AnalyzeContent() {
           <SearchGuide />
         ) : (
           <>
-            {waitResponse && !isLoaded && <ResultSkeleton />}
+            {waitResponse && !isPriceLoaded && <ResultSkeleton />}
 
-            <div className={cn(!isLoaded ? 'hidden' : 'animate-in fade-in duration-400')}>
+            <div className={cn(!isPriceLoaded ? 'hidden' : 'animate-in fade-in duration-400')}>
 
               {/* 종목 카드 + 핵심 지표 — 최상단 */}
               <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 mb-6">
@@ -646,7 +655,8 @@ function AnalyzeContent() {
                 )}
               </div>
 
-              {/* 상세 분석 섹션 */}
+              {/* 상세 분석 섹션 — 재무제표 포함 (isLoaded 이후 표시) */}
+              {isLoaded ? (
               <div className="space-y-6">
                 <div className="flex items-center gap-3">
                   <p className="text-[11px] font-bold text-neutral-400 uppercase tracking-widest font-mono shrink-0">Detail Analysis</p>
@@ -752,6 +762,14 @@ function AnalyzeContent() {
                   </div>
                 )}
               </div>
+              ) : (
+              <div className="mt-6 space-y-4 animate-pulse">
+                <div className="h-4 bg-neutral-200 dark:bg-[#35332e] rounded w-1/3" />
+                <div className="h-64 bg-white dark:bg-[#242320] rounded-2xl border border-neutral-200 dark:border-[#35332e]" />
+                <div className="h-48 bg-white dark:bg-[#242320] rounded-2xl border border-neutral-200 dark:border-[#35332e]" />
+                <div className="h-32 bg-white dark:bg-[#242320] rounded-2xl border border-neutral-200 dark:border-[#35332e]" />
+              </div>
+              )}
             </div>
           </>
         )}
