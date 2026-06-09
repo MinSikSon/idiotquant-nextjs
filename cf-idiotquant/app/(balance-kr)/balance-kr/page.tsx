@@ -256,7 +256,7 @@ function BalanceKr() {
 
   useEffect(() => {
     if (status === "loading") return;
-    if (!session || session.user?.name !== process.env.NEXT_PUBLIC_MASTER) {
+    if (!session || (session.user as any)?.role !== "admin") {
       router.replace("/");
       return;
     }
