@@ -11,6 +11,7 @@ import {
     getScanDailyDates,
     checkScanDailyDate,
 } from "./algorithmTradeAPI";
+import { fetchTradingStatus, setTradingActive } from "./tradingStatusAPI";
 
 const DEBUG = false;
 
@@ -175,6 +176,12 @@ export interface NcavDailyDatesState {
     error: string | null;
 }
 
+export interface TradingStatusState {
+    KR: boolean | null;
+    US: boolean | null;
+    state: "init" | "pending" | "fulfilled" | "rejected";
+}
+
 interface AlgorithmTradeType {
     state: "init" | "pending" | "fulfilled" | "rejected";
     capital_token: CapitalTokenType;
@@ -192,6 +199,7 @@ interface AlgorithmTradeType {
 
     ncavDailyDates: NcavDailyDatesState;
     ncavDailyList: NcavDailyState;
+    tradingStatus: TradingStatusState;
 }
 
 const initialState: AlgorithmTradeType = {
@@ -251,6 +259,7 @@ const initialState: AlgorithmTradeType = {
     strategyLists: {},
     ncavDailyDates: { state: "init", dates: [], selectedDate: "latest", error: null },
     ncavDailyList: { state: "init", list: [], scanDate: null, total: 0, scanningInProgress: false, error: null },
+    tradingStatus: { KR: null, US: null, state: "init" },
 }
 
 export const algorithmTradeSlice = createAppSlice({
@@ -446,6 +455,36 @@ export const algorithmTradeSlice = createAppSlice({
                 },
             }
         ),
+        reqFetchTradingStatus: create.asyncThunk(
+            async (country: "KR" | "US") => {
+                const value = await fetchTradingStatus(country);
+                if (value === null) throw new Error("fetch_failed");
+                return { country, value };
+            },
+            {
+                pending: (state) => { state.tradingStatus.state = "pending"; },
+                fulfilled: (state, action) => {
+                    state.tradingStatus[action.payload.country] = action.payload.value;
+                    state.tradingStatus.state = "fulfilled";
+                },
+                rejected: (state) => { state.tradingStatus.state = "rejected"; },
+            }
+        ),
+        reqSetTradingActive: create.asyncThunk(
+            async ({ country, isActive }: { country: "KR" | "US"; isActive: boolean }) => {
+                const ok = await setTradingActive(country, isActive);
+                if (!ok) throw new Error("set_failed");
+                return { country, isActive };
+            },
+            {
+                pending: (state) => { state.tradingStatus.state = "pending"; },
+                fulfilled: (state, action) => {
+                    state.tradingStatus[action.payload.country] = action.payload.isActive;
+                    state.tradingStatus.state = "fulfilled";
+                },
+                rejected: (state) => { state.tradingStatus.state = "rejected"; },
+            }
+        ),
         reqDiscoverNcavDates: create.asyncThunk(
             async (baseDate: string) => {
                 const datesToProbe = Array.from({ length: 7 }, (_, i) => addDays(baseDate, -(i + 1)));
@@ -498,37 +537,41 @@ export const algorithmTradeSlice = createAppSlice({
 
         selectNcavDailyDates: (state) => state.ncavDailyDates,
         selectNcavDailyList: (state) => state.ncavDailyList,
+        selectTradingStatus: (state) => state.tradingStatus,
     }
 });
 
-export const { 
-    reqGetCapitalToken, 
-    reqGetUsCapitalToken, 
-    reqGetQuantRule, 
-    reqGetQuantRuleDesc, 
-    reqGetKrPurchaseLogLatest, 
+export const {
+    reqGetCapitalToken,
+    reqGetUsCapitalToken,
+    reqGetQuantRule,
+    reqGetQuantRuleDesc,
+    reqGetKrPurchaseLogLatest,
     reqGetUsPurchaseLogLatest,
-    updateStockDetail,    
-    setStockState,        
+    updateStockDetail,
+    setStockState,
     registerStrategyList,
     setNcavDailySelectedDate,
     reqGetNcavDailyDates,
     reqGetNcavDailyList,
     reqDiscoverNcavDates,
+    reqFetchTradingStatus,
+    reqSetTradingActive,
 } = algorithmTradeSlice.actions;
 
-export const { 
-    selectAlgorithmTraceState, 
-    selectCapitalToken, 
-    selectUsCapitalToken, 
-    selectQuantRule, 
-    selectQuantRuleDesc, 
-    selectkrPurchaseLogLatest, 
+export const {
+    selectAlgorithmTraceState,
+    selectCapitalToken,
+    selectUsCapitalToken,
+    selectQuantRule,
+    selectQuantRuleDesc,
+    selectkrPurchaseLogLatest,
     selectusPurchaseLogLatest,
-    selectStockDetails,   
-    selectStockByTicker,  
-    selectStrategyLists,   
+    selectStockDetails,
+    selectStockByTicker,
+    selectStrategyLists,
     selectTickersByStrategyId,
     selectNcavDailyDates,
     selectNcavDailyList,
+    selectTradingStatus,
 } = algorithmTradeSlice.selectors;
