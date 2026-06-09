@@ -1,11 +1,11 @@
 "use client";
 
-import { Suspense, useEffect, useState, useCallback } from "react";
+import { Suspense, useEffect, useState, useCallback, useRef } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import {
   LayoutDashboard, ChevronRight, MapPin,
   Clock, Wallet, Coins, Percent,
-  Database, User, PieChart, BarChart3, ClipboardList,
+  Database, User, PieChart, BarChart3, ClipboardList, Power,
 } from "lucide-react";
 import { useSession } from "next-auth/react";
 
@@ -18,6 +18,7 @@ import {
   KoreaInvestmentInquireNccs, reqGetInquireCcnl, reqGetInquireNccs
 } from "@/lib/features/koreaInvestment/koreaInvestmentSlice";
 import { reqGetCapitalToken } from "@/lib/features/algorithmTrade/algorithmTradeSlice";
+import { fetchTradingStatus, setTradingActive } from "@/lib/features/algorithmTrade/tradingStatusAPI";
 import {
   reqGetKakaoMemberList, selectKakaoMemberList,
   selectKakaoTotal, KakaoTotal
@@ -195,6 +196,8 @@ function BalanceKr() {
   const [viewerTab, setViewerTab] = useState<"ccnl" | "nccs">("ccnl");
   const [autoRefresh, setAutoRefresh] = useState(false);
   const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
+  const [tradingActive, setTradingActiveState] = useState<boolean | null>(null);
+  const [tradingLoading, setTradingLoading] = useState(false);
   const { toasts, addToast, removeToast } = useToast();
 
   const fetchOrderHistory = useCallback((key: string) => {
@@ -224,6 +227,20 @@ function BalanceKr() {
     dispatch(reqGetKrCapital(balanceKey));
   }, [balanceKey, dispatch, fetchOrderHistory]);
 
+  const handleToggleTrading = useCallback(async () => {
+    if (tradingLoading || tradingActive === null) return;
+    setTradingLoading(true);
+    const next = !tradingActive;
+    const ok = await setTradingActive("KR", next);
+    if (ok) {
+      setTradingActiveState(next);
+      addToast("success", `국내 자동매매가 ${next ? "활성화" : "비활성화"}되었습니다.`);
+    } else {
+      addToast("error", "자동매매 상태 변경에 실패했습니다.");
+    }
+    setTradingLoading(false);
+  }, [tradingActive, tradingLoading, addToast]);
+
   useEffect(() => {
     const urlKey = searchParams.get("key");
     if (urlKey && urlKey !== balanceKey) setBalanceKey(urlKey);
@@ -249,6 +266,7 @@ function BalanceKr() {
     }
     dispatch(reqGetCapitalToken());
     dispatch(reqGetKakaoMemberList());
+    fetchTradingStatus("KR").then(v => { if (v !== null) setTradingActiveState(v); });
   }, [session, status, dispatch, router]);
 
   useEffect(() => {
@@ -382,6 +400,23 @@ function BalanceKr() {
               onToggleAutoRefresh={() => setAutoRefresh(v => !v)}
               isLoading={isLoading}
               onRefresh={handleRefresh}
+              extra={tradingActive !== null ? (
+                <button
+                  onClick={handleToggleTrading}
+                  disabled={tradingLoading}
+                  title={tradingActive ? "자동매매 비활성화" : "자동매매 활성화"}
+                  className={cn(
+                    "flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold border transition-all",
+                    tradingActive
+                      ? "bg-[#f0fdf4] dark:bg-[#14532d]/30 text-[#16a34a] border-[#86efac] dark:border-[#166534]"
+                      : "bg-white dark:bg-[#242320] text-neutral-400 border-neutral-200 dark:border-[#35332e] hover:border-neutral-400",
+                    tradingLoading && "opacity-60 cursor-not-allowed"
+                  )}
+                >
+                  <Power size={13} className={tradingActive ? "text-[#16a34a]" : ""} />
+                  {tradingActive ? "자동매매 ON" : "자동매매 OFF"}
+                </button>
+              ) : undefined}
             />
             <span className="text-[10px] font-mono text-neutral-400 bg-[#faf9f7] dark:bg-[#242320] border border-neutral-200 dark:border-[#35332e] px-2.5 py-1 rounded-lg">
               ID: {String(balanceKey).slice(0, 8) || "N/A"}
