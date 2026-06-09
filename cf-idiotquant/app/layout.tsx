@@ -50,6 +50,10 @@ export const metadata: Metadata = {
     '목표주가', '자동매매', '코스피 저평가', '코스닥 저평가',
     '퀀트 전략', '주식 발굴', '가치투자',
   ],
+  icons: {
+    icon: '/icon.svg',
+    shortcut: '/icon.svg',
+  },
   authors: [{ name: 'IdiotQuant', url: 'https://idiotquant.com' }],
   creator: 'IdiotQuant',
   publisher: 'IdiotQuant',
