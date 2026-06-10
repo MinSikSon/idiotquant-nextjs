@@ -362,7 +362,7 @@ function PortfolioOverviewChart({ data, loading, strategy, selectedDate, onDateC
                                     '포트폴리오 수익률',
                                 ];
                             }}
-                            labelFormatter={(label: string, payload: any[]) => {
+                            labelFormatter={(label: string, payload: readonly any[]) => {
                                 const d = payload?.[0]?.payload?.date;
                                 const isSelected = d === selectedDate;
                                 return `${label}${isSelected ? ' ★ 선택됨' : ''}`;
