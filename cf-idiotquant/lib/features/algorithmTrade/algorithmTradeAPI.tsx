@@ -69,6 +69,9 @@ export const getScanDailyAll = async (date: string) =>
 export const getPortfolioSimulation = async (startDate: string, strategy: string) =>
     getAlgorithmTradeRequest(`/scan/portfolio?start_date=${encodeURIComponent(startDate)}&strategy=${encodeURIComponent(strategy)}`);
 
+export const getPortfolioOverview = async (strategy: string) =>
+    getAlgorithmTradeRequest(`/scan/portfolio/overview?strategy=${encodeURIComponent(strategy)}`);
+
 async function getAlgorithmTradeRequest(subUrl: string, additionalHeaders?: AdditionalHeaders) {
     const url = `/api/proxy${subUrl}`;
     const options: RequestInit = {
