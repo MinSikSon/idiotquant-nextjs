@@ -3,6 +3,7 @@
 export const dynamic = 'force-dynamic';
 
 import { useEffect, useState, useMemo, useCallback, useRef, Suspense } from "react";
+import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import { useAppDispatch, useAppSelector } from "@/lib/hooks";
 import {
@@ -21,7 +22,7 @@ import { Loader2, History, ChevronRight, TrendingUp } from "lucide-react";
 import {
     BarChart, Bar, XAxis, YAxis,
     Tooltip as RTooltip, ResponsiveContainer, Cell,
-    AreaChart, Area, LineChart, Line, CartesianGrid,
+    AreaChart, Area, LineChart, Line, ComposedChart, CartesianGrid,
     ReferenceLine,
 } from "recharts";
 
@@ -41,12 +42,20 @@ interface PortfolioSummary {
     top_loser:  { ticker: string; name: string; pct: number } | null;
 }
 
+interface TickerSeries {
+    ticker: string;
+    name: string;
+    data: { date: string; pct: number }[];
+    final_pct?: number;
+}
+
 interface PortfolioResult {
     start_date: string;
     strategy: string;
     candidate_count: number;
     candidates: { ticker: string; name: string; start_price: number }[];
     time_series: PortfolioPoint[];
+    ticker_series?: TickerSeries[];
     summary: PortfolioSummary;
     note?: string;
 }
@@ -128,27 +137,52 @@ function SortTh({ label, sortKey: key, current, order, onToggle }: {
 
 // ─── DrillDown Panel ──────────────────────────────────────────────────────────
 
-function DrillDown({ name, ticker, stockHistory, loading, onNavigate }: {
+function DrillDown({ name, ticker, stockHistory, loading, onNavigate, entryDate, entryPrice }: {
     name: string; ticker: string;
     stockHistory: DailyItem[];
     loading: boolean;
     onNavigate: () => void;
+    entryDate: string | null;
+    entryPrice: number;
 }) {
-    const chartData = useMemo(() =>
+    const priceChartData = useMemo(() =>
         stockHistory.map(d => ({
             date: fmtDate(d.scan_date),
             price: d.last_price,
-            ncav: safeNum(d.ncav_ratio),
         })),
     [stockHistory]);
+
+    const returnChartData = useMemo(() => {
+        if (!entryDate || entryPrice <= 0) return [];
+        return stockHistory
+            .filter(d => d.scan_date >= entryDate)
+            .map(d => ({
+                date: fmtDate(d.scan_date),
+                return_pct: Math.round((d.last_price / entryPrice - 1) * 10000) / 100,
+            }));
+    }, [stockHistory, entryDate, entryPrice]);
+
+    const currentReturn = returnChartData.at(-1)?.return_pct ?? 0;
+    const returnColor = currentReturn >= 0 ? "#16a34a" : "#ef4444";
+    const returnGradId = `retGrad_${ticker}`;
 
     return (
         <div className="bg-[#f0fdf4]/40 dark:bg-[#052e16]/10 border-b border-neutral-100 dark:border-[#35332e] px-4 sm:px-6 py-5">
             <div className="flex items-center justify-between mb-4">
-                <p className="text-sm font-black text-neutral-800 dark:text-neutral-200">
-                    {name}
-                    <span className="text-xs font-mono text-neutral-400 ml-1.5">({ticker})</span>
-                </p>
+                <div className="flex items-center gap-3">
+                    <p className="text-sm font-black text-neutral-800 dark:text-neutral-200">
+                        {name}
+                        <span className="text-xs font-mono text-neutral-400 ml-1.5">({ticker})</span>
+                    </p>
+                    {returnChartData.length > 0 && (
+                        <span className={cn(
+                            "text-sm font-black font-mono tabular-nums",
+                            currentReturn >= 0 ? "text-emerald-600 dark:text-emerald-400" : "text-red-500 dark:text-red-400"
+                        )}>
+                            {currentReturn >= 0 ? "+" : ""}{currentReturn.toFixed(2)}%
+                        </span>
+                    )}
+                </div>
                 <button
                     onClick={onNavigate}
                     className="flex items-center gap-1 px-3 py-1.5 rounded-lg bg-[#16a34a] hover:bg-[#15803d] text-white text-xs font-bold transition-colors"
@@ -162,14 +196,15 @@ function DrillDown({ name, ticker, stockHistory, loading, onNavigate }: {
                 <div className="flex justify-center py-8">
                     <Loader2 size={20} className="animate-spin text-[#16a34a]/40" />
                 </div>
-            ) : chartData.length === 0 ? (
+            ) : priceChartData.length === 0 ? (
                 <p className="text-center text-xs text-neutral-400 py-6">이력 데이터가 없습니다.</p>
             ) : (
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    {/* 주가 추이 */}
                     <div>
                         <p className="text-[10px] font-bold text-neutral-400 uppercase tracking-wider mb-2">주가 추이 (30일)</p>
                         <ResponsiveContainer width="100%" height={140}>
-                            <AreaChart data={chartData} margin={{ top: 4, right: 8, left: -20, bottom: 0 }}>
+                            <AreaChart data={priceChartData} margin={{ top: 4, right: 8, left: -20, bottom: 0 }}>
                                 <defs>
                                     <linearGradient id="priceGrad" x1="0" y1="0" x2="0" y2="1">
                                         <stop offset="5%"  stopColor="#16a34a" stopOpacity={0.25} />
@@ -188,20 +223,52 @@ function DrillDown({ name, ticker, stockHistory, loading, onNavigate }: {
                         </ResponsiveContainer>
                     </div>
 
+                    {/* 수익률 추이 (기준일 대비) */}
                     <div>
-                        <p className="text-[10px] font-bold text-neutral-400 uppercase tracking-wider mb-2">NCAV 비율 추이 (30일)</p>
-                        <ResponsiveContainer width="100%" height={140}>
-                            <LineChart data={chartData} margin={{ top: 4, right: 8, left: -20, bottom: 0 }}>
-                                <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" vertical={false} />
-                                <XAxis dataKey="date" tick={{ fontSize: 9, fill: '#9ca3af' }} axisLine={false} tickLine={false} interval="preserveStartEnd" />
-                                <YAxis tick={{ fontSize: 9, fill: '#9ca3af' }} axisLine={false} tickLine={false} width={44} />
-                                <RTooltip
-                                    contentStyle={{ fontSize: 11, borderRadius: 8, border: '1px solid #e5e7eb' }}
-                                    formatter={(v: unknown) => [`${Number(v).toFixed(2)}x`, 'NCAV 비율']}
-                                />
-                                <Line type="monotone" dataKey="ncav" stroke="#7c3aed" strokeWidth={2} dot={false} />
-                            </LineChart>
-                        </ResponsiveContainer>
+                        <p className="text-[10px] font-bold text-neutral-400 uppercase tracking-wider mb-2">
+                            수익률 추이
+                            {entryDate && <span className="ml-1 font-normal normal-case text-neutral-300">(기준일 {fmtDate(entryDate)} 대비)</span>}
+                        </p>
+                        {returnChartData.length === 0 ? (
+                            <p className="text-center text-xs text-neutral-400 py-10">기준일 이후 데이터가 없습니다.</p>
+                        ) : (
+                            <ResponsiveContainer width="100%" height={140}>
+                                <AreaChart data={returnChartData} margin={{ top: 4, right: 8, left: -20, bottom: 0 }}>
+                                    <defs>
+                                        <linearGradient id={returnGradId} x1="0" y1="0" x2="0" y2="1">
+                                            <stop offset="5%"  stopColor={returnColor} stopOpacity={0.25} />
+                                            <stop offset="95%" stopColor={returnColor} stopOpacity={0} />
+                                        </linearGradient>
+                                    </defs>
+                                    <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" vertical={false} />
+                                    <XAxis dataKey="date" tick={{ fontSize: 9, fill: '#9ca3af' }} axisLine={false} tickLine={false} interval="preserveStartEnd" />
+                                    <YAxis
+                                        tick={{ fontSize: 9, fill: '#9ca3af' }}
+                                        axisLine={false}
+                                        tickLine={false}
+                                        width={44}
+                                        tickFormatter={(v: number) => `${v >= 0 ? '+' : ''}${v.toFixed(1)}%`}
+                                    />
+                                    <ReferenceLine y={0} stroke="#d1d5db" strokeDasharray="4 2" />
+                                    <RTooltip
+                                        contentStyle={{ fontSize: 11, borderRadius: 8, border: '1px solid #e5e7eb' }}
+                                        formatter={(v: unknown) => {
+                                            const n = Number(v);
+                                            return [`${n >= 0 ? '+' : ''}${n.toFixed(2)}%`, '수익률'];
+                                        }}
+                                    />
+                                    <Area
+                                        type="monotone"
+                                        dataKey="return_pct"
+                                        stroke={returnColor}
+                                        strokeWidth={2}
+                                        fill={`url(#${returnGradId})`}
+                                        dot={false}
+                                        activeDot={{ r: 3, fill: returnColor }}
+                                    />
+                                </AreaChart>
+                            </ResponsiveContainer>
+                        )}
                     </div>
                 </div>
             )}
@@ -216,15 +283,36 @@ function PortfolioChart({ result, loading, strategy }: {
     loading: boolean;
     strategy: string;
 }) {
-    const chartData = useMemo(() =>
-        (result?.time_series ?? []).map(p => ({
+    const [showLines, setShowLines] = useState(false);
+
+    const chartData = useMemo(() => {
+        const base = (result?.time_series ?? []).map(p => ({
             label: fmtDate(p.date),
             date: p.date,
             pct: p.portfolio_pct,
             covered: p.covered,
             win: p.win_count,
-        })),
-    [result]);
+        }));
+        if (!showLines || !result?.ticker_series?.length) return base;
+        const tickerDateMap: Record<string, Record<string, number>> = {};
+        for (const ts of result.ticker_series) {
+            tickerDateMap[ts.ticker] = {};
+            for (const d of ts.data) tickerDateMap[ts.ticker][d.date] = d.pct;
+        }
+        return base.map(row => {
+            const extra: Record<string, unknown> = {};
+            for (const ts of result.ticker_series!) {
+                const v = tickerDateMap[ts.ticker]?.[row.date];
+                if (v !== undefined) extra[`t_${ts.ticker}`] = v;
+            }
+            return { ...row, ...extra };
+        });
+    }, [result, showLines]);
+
+    const tickerLines = useMemo(() => {
+        if (!showLines || !result?.ticker_series?.length) return [];
+        return result.ticker_series.slice(0, 40);
+    }, [result, showLines]);
 
     const current = result?.summary?.current_pct ?? 0;
     const isPositive = current >= 0;
@@ -252,6 +340,8 @@ function PortfolioChart({ result, loading, strategy }: {
         ncav: 'NCAV', low_pbr: '저PBR', low_per: '저PER', s_rim: 'S-RIM', all: '전체',
     };
 
+    const hasTickerSeries = (result.ticker_series?.length ?? 0) > 0;
+
     return (
         <div className="bg-white dark:bg-[#242320] rounded-2xl border border-neutral-200 dark:border-[#35332e] shadow-sm overflow-hidden">
             {/* Header */}
@@ -264,6 +354,19 @@ function PortfolioChart({ result, loading, strategy }: {
                     </span>
                 </div>
                 <div className="flex items-center gap-3">
+                    {hasTickerSeries && (
+                        <button
+                            onClick={() => setShowLines(v => !v)}
+                            className={cn(
+                                "text-[10px] font-bold px-2.5 py-1 rounded-lg border transition-colors",
+                                showLines
+                                    ? "bg-emerald-600 border-emerald-600 text-white"
+                                    : "border-neutral-200 dark:border-[#35332e] text-neutral-500 dark:text-neutral-400 hover:border-emerald-400 dark:hover:border-emerald-600"
+                            )}
+                        >
+                            종목별
+                        </button>
+                    )}
                     <div className="text-right">
                         <p className="text-[10px] font-bold text-neutral-400 uppercase tracking-wider">현재 수익률</p>
                         <p className={cn(
@@ -282,8 +385,8 @@ function PortfolioChart({ result, loading, strategy }: {
 
             {/* Chart */}
             <div className="px-5 pt-4 pb-2">
-                <ResponsiveContainer width="100%" height={180}>
-                    <AreaChart data={chartData} margin={{ top: 8, right: 8, left: -16, bottom: 0 }}>
+                <ResponsiveContainer width="100%" height={200}>
+                    <ComposedChart data={chartData} margin={{ top: 8, right: 8, left: -16, bottom: 0 }}>
                         <defs>
                             <linearGradient id={gradientId} x1="0" y1="0" x2="0" y2="1">
                                 <stop offset="5%"  stopColor={lineColor} stopOpacity={0.2} />
@@ -313,9 +416,30 @@ function PortfolioChart({ result, loading, strategy }: {
                                     const num = Number(v);
                                     return [`${num >= 0 ? '+' : ''}${num.toFixed(2)}%`, '포트폴리오'];
                                 }
+                                if (name.startsWith('t_')) {
+                                    const ticker = name.slice(2);
+                                    const ts = result.ticker_series?.find(s => s.ticker === ticker);
+                                    const num = Number(v);
+                                    return [`${num >= 0 ? '+' : ''}${num.toFixed(2)}%`, ts?.name ?? ticker];
+                                }
                                 return [String(v), name];
                             }}
                         />
+                        {tickerLines.map(ts => (
+                            <Line
+                                key={`t_${ts.ticker}`}
+                                type="monotone"
+                                dataKey={`t_${ts.ticker}`}
+                                stroke={(ts.final_pct ?? 0) >= 0 ? "#4ade80" : "#f87171"}
+                                strokeWidth={1}
+                                strokeOpacity={0.45}
+                                dot={false}
+                                connectNulls
+                                name={`t_${ts.ticker}`}
+                                legendType="none"
+                                isAnimationActive={false}
+                            />
+                        ))}
                         <Area
                             type="monotone"
                             dataKey="pct"
@@ -324,8 +448,9 @@ function PortfolioChart({ result, loading, strategy }: {
                             fill={`url(#${gradientId})`}
                             dot={false}
                             activeDot={{ r: 4, fill: lineColor }}
+                            isAnimationActive={false}
                         />
-                    </AreaChart>
+                    </ComposedChart>
                 </ResponsiveContainer>
             </div>
 
@@ -866,6 +991,8 @@ function BacktestContent() {
                                                             stockHistory={stockHistory}
                                                             loading={loadingStock}
                                                             onNavigate={() => router.push(`/analyze?ticker=${encodeURIComponent(item.name)}&from=backtest`)}
+                                                            entryDate={selectedDate}
+                                                            entryPrice={item.last_price}
                                                         />
                                                     )}
                                                 </div>
@@ -958,6 +1085,8 @@ function BacktestContent() {
                                                             stockHistory={stockHistory}
                                                             loading={loadingStock}
                                                             onNavigate={() => router.push(`/analyze?ticker=${encodeURIComponent(item.name)}&from=backtest`)}
+                                                            entryDate={selectedDate}
+                                                            entryPrice={item.last_price}
                                                         />
                                                     )}
                                                 </div>
@@ -977,6 +1106,25 @@ function BacktestContent() {
 // ─── Page export ──────────────────────────────────────────────────────────────
 
 export default function BacktestPage() {
+    const { data: session, status } = useSession();
+    const isAdmin = (session?.user as any)?.role === "admin";
+
+    if (status === "loading") {
+        return (
+            <div className="flex items-center justify-center min-h-screen bg-[#faf9f7] dark:bg-[#1a1915]">
+                <Loader2 className="animate-spin text-[#16a34a]" size={24} />
+            </div>
+        );
+    }
+
+    if (!isAdmin) {
+        return (
+            <div className="flex flex-col items-center justify-center min-h-screen bg-[#faf9f7] dark:bg-[#1a1915] gap-3">
+                <p className="text-sm font-bold text-neutral-500 dark:text-neutral-400">준비 중인 기능입니다.</p>
+            </div>
+        );
+    }
+
     return (
         <Suspense fallback={
             <div className="flex items-center justify-center min-h-screen bg-[#faf9f7] dark:bg-[#1a1915]">
