@@ -21,7 +21,7 @@ import { Loader2, History, ChevronRight, TrendingUp } from "lucide-react";
 import {
     BarChart, Bar, XAxis, YAxis,
     Tooltip as RTooltip, ResponsiveContainer, Cell,
-    AreaChart, Area, LineChart, Line, CartesianGrid,
+    AreaChart, Area, LineChart, Line, ComposedChart, CartesianGrid,
     ReferenceLine,
 } from "recharts";
 
@@ -41,12 +41,20 @@ interface PortfolioSummary {
     top_loser:  { ticker: string; name: string; pct: number } | null;
 }
 
+interface TickerSeries {
+    ticker: string;
+    name: string;
+    data: { date: string; pct: number }[];
+    final_pct?: number;
+}
+
 interface PortfolioResult {
     start_date: string;
     strategy: string;
     candidate_count: number;
     candidates: { ticker: string; name: string; start_price: number }[];
     time_series: PortfolioPoint[];
+    ticker_series?: TickerSeries[];
     summary: PortfolioSummary;
     note?: string;
 }
@@ -216,15 +224,36 @@ function PortfolioChart({ result, loading, strategy }: {
     loading: boolean;
     strategy: string;
 }) {
-    const chartData = useMemo(() =>
-        (result?.time_series ?? []).map(p => ({
+    const [showLines, setShowLines] = useState(false);
+
+    const chartData = useMemo(() => {
+        const base = (result?.time_series ?? []).map(p => ({
             label: fmtDate(p.date),
             date: p.date,
             pct: p.portfolio_pct,
             covered: p.covered,
             win: p.win_count,
-        })),
-    [result]);
+        }));
+        if (!showLines || !result?.ticker_series?.length) return base;
+        const tickerDateMap: Record<string, Record<string, number>> = {};
+        for (const ts of result.ticker_series) {
+            tickerDateMap[ts.ticker] = {};
+            for (const d of ts.data) tickerDateMap[ts.ticker][d.date] = d.pct;
+        }
+        return base.map(row => {
+            const extra: Record<string, unknown> = {};
+            for (const ts of result.ticker_series!) {
+                const v = tickerDateMap[ts.ticker]?.[row.date];
+                if (v !== undefined) extra[`t_${ts.ticker}`] = v;
+            }
+            return { ...row, ...extra };
+        });
+    }, [result, showLines]);
+
+    const tickerLines = useMemo(() => {
+        if (!showLines || !result?.ticker_series?.length) return [];
+        return result.ticker_series.slice(0, 40);
+    }, [result, showLines]);
 
     const current = result?.summary?.current_pct ?? 0;
     const isPositive = current >= 0;
@@ -252,6 +281,8 @@ function PortfolioChart({ result, loading, strategy }: {
         ncav: 'NCAV', low_pbr: '저PBR', low_per: '저PER', s_rim: 'S-RIM', all: '전체',
     };
 
+    const hasTickerSeries = (result.ticker_series?.length ?? 0) > 0;
+
     return (
         <div className="bg-white dark:bg-[#242320] rounded-2xl border border-neutral-200 dark:border-[#35332e] shadow-sm overflow-hidden">
             {/* Header */}
@@ -264,6 +295,19 @@ function PortfolioChart({ result, loading, strategy }: {
                     </span>
                 </div>
                 <div className="flex items-center gap-3">
+                    {hasTickerSeries && (
+                        <button
+                            onClick={() => setShowLines(v => !v)}
+                            className={cn(
+                                "text-[10px] font-bold px-2.5 py-1 rounded-lg border transition-colors",
+                                showLines
+                                    ? "bg-emerald-600 border-emerald-600 text-white"
+                                    : "border-neutral-200 dark:border-[#35332e] text-neutral-500 dark:text-neutral-400 hover:border-emerald-400 dark:hover:border-emerald-600"
+                            )}
+                        >
+                            종목별
+                        </button>
+                    )}
                     <div className="text-right">
                         <p className="text-[10px] font-bold text-neutral-400 uppercase tracking-wider">현재 수익률</p>
                         <p className={cn(
@@ -282,8 +326,8 @@ function PortfolioChart({ result, loading, strategy }: {
 
             {/* Chart */}
             <div className="px-5 pt-4 pb-2">
-                <ResponsiveContainer width="100%" height={180}>
-                    <AreaChart data={chartData} margin={{ top: 8, right: 8, left: -16, bottom: 0 }}>
+                <ResponsiveContainer width="100%" height={200}>
+                    <ComposedChart data={chartData} margin={{ top: 8, right: 8, left: -16, bottom: 0 }}>
                         <defs>
                             <linearGradient id={gradientId} x1="0" y1="0" x2="0" y2="1">
                                 <stop offset="5%"  stopColor={lineColor} stopOpacity={0.2} />
@@ -313,9 +357,30 @@ function PortfolioChart({ result, loading, strategy }: {
                                     const num = Number(v);
                                     return [`${num >= 0 ? '+' : ''}${num.toFixed(2)}%`, '포트폴리오'];
                                 }
+                                if (name.startsWith('t_')) {
+                                    const ticker = name.slice(2);
+                                    const ts = result.ticker_series?.find(s => s.ticker === ticker);
+                                    const num = Number(v);
+                                    return [`${num >= 0 ? '+' : ''}${num.toFixed(2)}%`, ts?.name ?? ticker];
+                                }
                                 return [String(v), name];
                             }}
                         />
+                        {tickerLines.map(ts => (
+                            <Line
+                                key={`t_${ts.ticker}`}
+                                type="monotone"
+                                dataKey={`t_${ts.ticker}`}
+                                stroke={(ts.final_pct ?? 0) >= 0 ? "#4ade80" : "#f87171"}
+                                strokeWidth={1}
+                                strokeOpacity={0.45}
+                                dot={false}
+                                connectNulls
+                                name={`t_${ts.ticker}`}
+                                legendType="none"
+                                isAnimationActive={false}
+                            />
+                        ))}
                         <Area
                             type="monotone"
                             dataKey="pct"
@@ -324,8 +389,9 @@ function PortfolioChart({ result, loading, strategy }: {
                             fill={`url(#${gradientId})`}
                             dot={false}
                             activeDot={{ r: 4, fill: lineColor }}
+                            isAnimationActive={false}
                         />
-                    </AreaChart>
+                    </ComposedChart>
                 </ResponsiveContainer>
             </div>
 
