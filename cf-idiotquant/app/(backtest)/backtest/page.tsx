@@ -14,16 +14,42 @@ import {
     getScanDailyList,
     getScanDailyByTicker,
     getScanDailyAll,
+    getPortfolioSimulation,
 } from "@/lib/features/algorithmTrade/algorithmTradeAPI";
 import { cn } from "@/lib/utils";
-import { Loader2, History, ChevronRight } from "lucide-react";
+import { Loader2, History, ChevronRight, TrendingUp } from "lucide-react";
 import {
     BarChart, Bar, XAxis, YAxis,
     Tooltip as RTooltip, ResponsiveContainer, Cell,
     AreaChart, Area, LineChart, Line, CartesianGrid,
+    ReferenceLine,
 } from "recharts";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
+
+interface PortfolioPoint {
+    date: string;
+    portfolio_pct: number;
+    covered: number;
+    win_count: number;
+}
+
+interface PortfolioSummary {
+    current_pct: number;
+    days: number;
+    top_gainer: { ticker: string; name: string; pct: number } | null;
+    top_loser:  { ticker: string; name: string; pct: number } | null;
+}
+
+interface PortfolioResult {
+    start_date: string;
+    strategy: string;
+    candidate_count: number;
+    candidates: { ticker: string; name: string; start_price: number }[];
+    time_series: PortfolioPoint[];
+    summary: PortfolioSummary;
+    note?: string;
+}
 
 interface DailyItem {
     ticker: string;
@@ -183,6 +209,167 @@ function DrillDown({ name, ticker, stockHistory, loading, onNavigate }: {
     );
 }
 
+// ─── Portfolio Simulation Chart ───────────────────────────────────────────────
+
+function PortfolioChart({ result, loading, strategy }: {
+    result: PortfolioResult | null;
+    loading: boolean;
+    strategy: string;
+}) {
+    const chartData = useMemo(() =>
+        (result?.time_series ?? []).map(p => ({
+            label: fmtDate(p.date),
+            date: p.date,
+            pct: p.portfolio_pct,
+            covered: p.covered,
+            win: p.win_count,
+        })),
+    [result]);
+
+    const current = result?.summary?.current_pct ?? 0;
+    const isPositive = current >= 0;
+
+    const lineColor = isPositive ? "#16a34a" : "#ef4444";
+    const gradientId = "portfolioGrad";
+
+    if (loading) {
+        return (
+            <div className="bg-white dark:bg-[#242320] rounded-2xl border border-neutral-200 dark:border-[#35332e] p-5 flex items-center justify-center h-48">
+                <Loader2 size={22} className="animate-spin text-[#16a34a]/50" />
+            </div>
+        );
+    }
+
+    if (!result || result.candidate_count === 0) {
+        return (
+            <div className="bg-white dark:bg-[#242320] rounded-2xl border border-neutral-200 dark:border-[#35332e] p-5 flex items-center justify-center h-36">
+                <p className="text-xs text-neutral-400">{result?.note ?? "포트폴리오 시뮬레이션 데이터가 없습니다."}</p>
+            </div>
+        );
+    }
+
+    const strategyLabel: Record<string, string> = {
+        ncav: 'NCAV', low_pbr: '저PBR', low_per: '저PER', s_rim: 'S-RIM', all: '전체',
+    };
+
+    return (
+        <div className="bg-white dark:bg-[#242320] rounded-2xl border border-neutral-200 dark:border-[#35332e] shadow-sm overflow-hidden">
+            {/* Header */}
+            <div className="px-5 py-4 border-b border-neutral-100 dark:border-[#35332e] flex items-center justify-between gap-3 flex-wrap">
+                <div className="flex items-center gap-2">
+                    <TrendingUp size={15} className={isPositive ? "text-emerald-500" : "text-red-500"} />
+                    <p className="text-sm font-black text-neutral-900 dark:text-white">포트폴리오 수익률 추이</p>
+                    <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-[#f0fdf4] dark:bg-[#052e16]/40 text-[#16a34a]">
+                        {strategyLabel[strategy] ?? strategy}
+                    </span>
+                </div>
+                <div className="flex items-center gap-3">
+                    <div className="text-right">
+                        <p className="text-[10px] font-bold text-neutral-400 uppercase tracking-wider">현재 수익률</p>
+                        <p className={cn(
+                            "text-lg font-black font-mono tabular-nums",
+                            isPositive ? "text-emerald-600 dark:text-emerald-400" : "text-red-500 dark:text-red-400"
+                        )}>
+                            {isPositive ? "+" : ""}{current.toFixed(2)}%
+                        </p>
+                    </div>
+                    <div className="text-right">
+                        <p className="text-[10px] font-bold text-neutral-400 uppercase tracking-wider">종목 수</p>
+                        <p className="text-lg font-black font-mono tabular-nums">{result.candidate_count}</p>
+                    </div>
+                </div>
+            </div>
+
+            {/* Chart */}
+            <div className="px-5 pt-4 pb-2">
+                <ResponsiveContainer width="100%" height={180}>
+                    <AreaChart data={chartData} margin={{ top: 8, right: 8, left: -16, bottom: 0 }}>
+                        <defs>
+                            <linearGradient id={gradientId} x1="0" y1="0" x2="0" y2="1">
+                                <stop offset="5%"  stopColor={lineColor} stopOpacity={0.2} />
+                                <stop offset="95%" stopColor={lineColor} stopOpacity={0} />
+                            </linearGradient>
+                        </defs>
+                        <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" vertical={false} />
+                        <XAxis
+                            dataKey="label"
+                            tick={{ fontSize: 9, fill: '#9ca3af' }}
+                            axisLine={false}
+                            tickLine={false}
+                            interval="preserveStartEnd"
+                        />
+                        <YAxis
+                            tick={{ fontSize: 9, fill: '#9ca3af' }}
+                            axisLine={false}
+                            tickLine={false}
+                            width={40}
+                            tickFormatter={(v: number) => `${v >= 0 ? '+' : ''}${v.toFixed(1)}%`}
+                        />
+                        <ReferenceLine y={0} stroke="#d1d5db" strokeDasharray="4 2" />
+                        <RTooltip
+                            contentStyle={{ fontSize: 11, borderRadius: 8, border: '1px solid #e5e7eb', background: 'white' }}
+                            formatter={(v: unknown, name: string) => {
+                                if (name === 'pct') {
+                                    const num = Number(v);
+                                    return [`${num >= 0 ? '+' : ''}${num.toFixed(2)}%`, '포트폴리오'];
+                                }
+                                return [String(v), name];
+                            }}
+                        />
+                        <Area
+                            type="monotone"
+                            dataKey="pct"
+                            stroke={lineColor}
+                            strokeWidth={2.5}
+                            fill={`url(#${gradientId})`}
+                            dot={false}
+                            activeDot={{ r: 4, fill: lineColor }}
+                        />
+                    </AreaChart>
+                </ResponsiveContainer>
+            </div>
+
+            {/* Summary row */}
+            <div className="px-5 pb-4 grid grid-cols-2 sm:grid-cols-4 gap-2 mt-1">
+                <div className="bg-[#faf9f7] dark:bg-[#1a1915] rounded-xl p-3 text-center">
+                    <p className="text-[9px] font-bold text-neutral-400 uppercase tracking-wider">기간</p>
+                    <p className="text-xs font-black mt-0.5">{result.summary.days}일</p>
+                </div>
+                <div className="bg-[#faf9f7] dark:bg-[#1a1915] rounded-xl p-3 text-center">
+                    <p className="text-[9px] font-bold text-neutral-400 uppercase tracking-wider">승률</p>
+                    <p className="text-xs font-black mt-0.5">
+                        {result.time_series.length > 0
+                            ? `${Math.round((result.time_series.at(-1)!.win_count / result.time_series.at(-1)!.covered) * 100)}%`
+                            : '—'}
+                    </p>
+                </div>
+                {result.summary.top_gainer && (
+                    <div className="bg-[#f0fdf4] dark:bg-[#052e16]/20 rounded-xl p-3 text-center">
+                        <p className="text-[9px] font-bold text-emerald-600 uppercase tracking-wider">최고 수익</p>
+                        <p className="text-[10px] font-black text-emerald-600 dark:text-emerald-400 mt-0.5 truncate">
+                            {result.summary.top_gainer.name}
+                        </p>
+                        <p className="text-[10px] font-mono font-black text-emerald-600 dark:text-emerald-400">
+                            +{result.summary.top_gainer.pct.toFixed(1)}%
+                        </p>
+                    </div>
+                )}
+                {result.summary.top_loser && (
+                    <div className="bg-[#fef2f2] dark:bg-red-950/10 rounded-xl p-3 text-center">
+                        <p className="text-[9px] font-bold text-red-500 uppercase tracking-wider">최저 수익</p>
+                        <p className="text-[10px] font-black text-red-500 dark:text-red-400 mt-0.5 truncate">
+                            {result.summary.top_loser.name}
+                        </p>
+                        <p className="text-[10px] font-mono font-black text-red-500 dark:text-red-400">
+                            {result.summary.top_loser.pct.toFixed(1)}%
+                        </p>
+                    </div>
+                )}
+            </div>
+        </div>
+    );
+}
+
 // ─── Main content ─────────────────────────────────────────────────────────────
 
 function BacktestContent() {
@@ -198,9 +385,11 @@ function BacktestContent() {
     const [stockHistory,        setStockHistory]        = useState<DailyItem[]>([]);
     const [sortKey,             setSortKey]             = useState<SortKey>('ncav_ratio');
     const [sortOrder,           setSortOrder]           = useState<SortOrder>('desc');
-    const [loadingList,         setLoadingList]         = useState(false);
-    const [loadingCurrentPrices,setLoadingCurrentPrices]= useState(false);
-    const [loadingStock,        setLoadingStock]        = useState(false);
+    const [loadingList,          setLoadingList]         = useState(false);
+    const [loadingCurrentPrices, setLoadingCurrentPrices]= useState(false);
+    const [loadingStock,         setLoadingStock]        = useState(false);
+    const [portfolioResult,      setPortfolioResult]     = useState<PortfolioResult | null>(null);
+    const [loadingPortfolio,     setLoadingPortfolio]    = useState(false);
 
     const dateInitialized      = useRef(false);
     const pricesLoaded         = useRef(false);
@@ -270,6 +459,19 @@ function BacktestContent() {
             .catch(() => {})
             .finally(() => setLoadingStock(false));
     }, [selectedStock]);
+
+    // 6. Fetch portfolio simulation when date or strategy changes
+    useEffect(() => {
+        if (!selectedDate) return;
+        setPortfolioResult(null);
+        setLoadingPortfolio(true);
+        getPortfolioSimulation(selectedDate, activeStrategy)
+            .then((res: { success?: boolean; data?: PortfolioResult }) => {
+                if (res?.success && res.data) setPortfolioResult(res.data);
+            })
+            .catch(() => {})
+            .finally(() => setLoadingPortfolio(false));
+    }, [selectedDate, activeStrategy]);
 
     // Bar chart data (chronological order)
     const chartData = useMemo(() =>
@@ -499,6 +701,13 @@ function BacktestContent() {
                                 ))}
                             </div>
                         )}
+
+                        {/* ── Portfolio Simulation ── */}
+                        <PortfolioChart
+                            result={portfolioResult}
+                            loading={loadingPortfolio}
+                            strategy={activeStrategy}
+                        />
 
                         {/* ── Table ── */}
                         <div className="bg-white dark:bg-[#242320] rounded-2xl border border-neutral-200 dark:border-[#35332e] overflow-hidden shadow-sm">
