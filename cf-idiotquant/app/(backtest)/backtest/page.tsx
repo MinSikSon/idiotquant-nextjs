@@ -3,6 +3,7 @@
 export const dynamic = 'force-dynamic';
 
 import { useEffect, useState, useMemo, useCallback, useRef, Suspense } from "react";
+import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import { useAppDispatch, useAppSelector } from "@/lib/hooks";
 import {
@@ -1105,6 +1106,25 @@ function BacktestContent() {
 // ─── Page export ──────────────────────────────────────────────────────────────
 
 export default function BacktestPage() {
+    const { data: session, status } = useSession();
+    const isAdmin = (session?.user as any)?.role === "admin";
+
+    if (status === "loading") {
+        return (
+            <div className="flex items-center justify-center min-h-screen bg-[#faf9f7] dark:bg-[#1a1915]">
+                <Loader2 className="animate-spin text-[#16a34a]" size={24} />
+            </div>
+        );
+    }
+
+    if (!isAdmin) {
+        return (
+            <div className="flex flex-col items-center justify-center min-h-screen bg-[#faf9f7] dark:bg-[#1a1915] gap-3">
+                <p className="text-sm font-bold text-neutral-500 dark:text-neutral-400">준비 중인 기능입니다.</p>
+            </div>
+        );
+    }
+
     return (
         <Suspense fallback={
             <div className="flex items-center justify-center min-h-screen bg-[#faf9f7] dark:bg-[#1a1915]">
