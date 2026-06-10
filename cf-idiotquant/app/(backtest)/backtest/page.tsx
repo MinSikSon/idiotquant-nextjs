@@ -16,7 +16,6 @@ import {
     getScanDailyByTicker,
     getScanDailyAll,
     getPortfolioSimulation,
-    getPortfolioOverview,
 } from "@/lib/features/algorithmTrade/algorithmTradeAPI";
 import { cn } from "@/lib/utils";
 import { Loader2, History, ChevronRight, TrendingUp } from "lucide-react";
@@ -59,13 +58,6 @@ interface PortfolioResult {
     ticker_series?: TickerSeries[];
     summary: PortfolioSummary;
     note?: string;
-}
-
-interface OverviewItem {
-    date: string;
-    avg_pct: number;
-    candidate_count: number;
-    win_count: number;
 }
 
 interface DailyItem {
@@ -286,20 +278,20 @@ function DrillDown({ name, ticker, stockHistory, loading, onNavigate, entryDate,
 
 // ─── Portfolio Overview Chart ─────────────────────────────────────────────────
 
-function PortfolioOverviewChart({ data, loading, strategy, selectedDate, onDateClick }: {
-    data: OverviewItem[];
+function PortfolioOverviewChart({ result, loading, strategy }: {
+    result: PortfolioResult | null;
     loading: boolean;
     strategy: string;
-    selectedDate: string | null;
-    onDateClick: (date: string) => void;
 }) {
     const chartData = useMemo(() =>
-        data.map(d => ({
-            ...d,
+        (result?.time_series ?? []).map(d => ({
             label: fmtDate(d.date),
-            win_rate: d.candidate_count > 0 ? Math.round((d.win_count / d.candidate_count) * 100) : 0,
+            date: d.date,
+            pct: d.portfolio_pct,
+            covered: d.covered,
+            win_rate: d.covered > 0 ? Math.round((d.win_count / d.covered) * 100) : 0,
         })),
-    [data]);
+    [result]);
 
     if (loading) {
         return (
@@ -315,7 +307,7 @@ function PortfolioOverviewChart({ data, loading, strategy, selectedDate, onDateC
         ncav: 'NCAV', low_pbr: '저PBR', low_per: '저PER', s_rim: 'S-RIM', all: '전체',
     };
 
-    const maxAbs = Math.max(...chartData.map(d => Math.abs(d.avg_pct)), 0.1);
+    const maxAbs = Math.max(...chartData.map(d => Math.abs(d.pct)), 0.1);
 
     return (
         <div className="bg-white dark:bg-[#242320] rounded-2xl border border-neutral-200 dark:border-[#35332e] shadow-sm overflow-hidden">
@@ -324,17 +316,11 @@ function PortfolioOverviewChart({ data, loading, strategy, selectedDate, onDateC
                 <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-[#f0fdf4] dark:bg-[#052e16]/40 text-[#16a34a]">
                     {strategyLabel[strategy] ?? strategy}
                 </span>
-                <span className="text-[10px] text-neutral-400 ml-1">기준일 매수 → 현재가 수익률</span>
+                <span className="text-[10px] text-neutral-400 ml-1">선택 기준일 → 해당 시점 누적 수익률</span>
             </div>
             <div className="px-5 pt-4 pb-3">
                 <ResponsiveContainer width="100%" height={160}>
-                    <BarChart data={chartData} margin={{ top: 16, right: 8, left: -16, bottom: 0 }}
-                        onClick={(e: any) => {
-                            const date = e?.activePayload?.[0]?.payload?.date;
-                            if (date) onDateClick(date);
-                        }}
-                        style={{ cursor: 'pointer' }}
-                    >
+                    <BarChart data={chartData} margin={{ top: 16, right: 8, left: -16, bottom: 0 }}>
                         <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" vertical={false} />
                         <XAxis
                             dataKey="label"
@@ -358,31 +344,22 @@ function PortfolioOverviewChart({ data, loading, strategy, selectedDate, onDateC
                                 const n = Number(v);
                                 const p = props?.payload;
                                 return [
-                                    `${n >= 0 ? '+' : ''}${n.toFixed(2)}%  (${p?.candidate_count}종목, 승률 ${p?.win_rate}%)`,
-                                    '포트폴리오 수익률',
+                                    `${n >= 0 ? '+' : ''}${n.toFixed(2)}%  (${p?.covered}종목, 승률 ${p?.win_rate}%)`,
+                                    '포트폴리오 누적 수익률',
                                 ];
                             }}
-                            labelFormatter={(label: string, payload: readonly any[]) => {
-                                const d = payload?.[0]?.payload?.date;
-                                const isSelected = d === selectedDate;
-                                return `${label}${isSelected ? ' ★ 선택됨' : ''}`;
-                            }}
+                            labelFormatter={(label: string) => label}
                         />
-                        <Bar dataKey="avg_pct" radius={[3, 3, 0, 0]} maxBarSize={36}>
+                        <Bar dataKey="pct" radius={[3, 3, 0, 0]} maxBarSize={36}>
                             {chartData.map((entry) => (
                                 <Cell
                                     key={entry.date}
-                                    fill={entry.date === selectedDate
-                                        ? (entry.avg_pct >= 0 ? '#059669' : '#dc2626')
-                                        : (entry.avg_pct >= 0 ? '#4ade80' : '#fca5a5')}
-                                    stroke={entry.date === selectedDate ? (entry.avg_pct >= 0 ? '#047857' : '#b91c1c') : 'none'}
-                                    strokeWidth={entry.date === selectedDate ? 2 : 0}
+                                    fill={entry.pct >= 0 ? '#4ade80' : '#fca5a5'}
                                 />
                             ))}
                         </Bar>
                     </BarChart>
                 </ResponsiveContainer>
-                <p className="text-[10px] text-neutral-400 text-center mt-1">바를 클릭하면 해당 날짜를 기준일로 선택합니다</p>
             </div>
         </div>
     );
@@ -627,8 +604,6 @@ function BacktestContent() {
     const [loadingStock,         setLoadingStock]        = useState(false);
     const [portfolioResult,      setPortfolioResult]     = useState<PortfolioResult | null>(null);
     const [loadingPortfolio,     setLoadingPortfolio]    = useState(false);
-    const [overviewData,         setOverviewData]        = useState<OverviewItem[]>([]);
-    const [loadingOverview,      setLoadingOverview]     = useState(false);
 
     const dateInitialized      = useRef(false);
     const pricesLoaded         = useRef(false);
@@ -711,18 +686,6 @@ function BacktestContent() {
             .catch(() => {})
             .finally(() => setLoadingPortfolio(false));
     }, [selectedDate, activeStrategy]);
-
-    // 7. Fetch portfolio overview when strategy changes
-    useEffect(() => {
-        setLoadingOverview(true);
-        setOverviewData([]);
-        getPortfolioOverview(activeStrategy)
-            .then((res: { success?: boolean; data?: { daily?: OverviewItem[] } }) => {
-                if (res?.success && res.data?.daily) setOverviewData(res.data.daily);
-            })
-            .catch(() => {})
-            .finally(() => setLoadingOverview(false));
-    }, [activeStrategy]);
 
     // Bar chart data (chronological order)
     const chartData = useMemo(() =>
@@ -955,14 +918,9 @@ function BacktestContent() {
 
                         {/* ── Portfolio Overview ── */}
                         <PortfolioOverviewChart
-                            data={overviewData}
-                            loading={loadingOverview}
+                            result={portfolioResult}
+                            loading={loadingPortfolio}
                             strategy={activeStrategy}
-                            selectedDate={selectedDate}
-                            onDateClick={(date) => {
-                                setSelectedDate(date);
-                                setSelectedStock(null);
-                            }}
                         />
 
                         {/* ── Portfolio Simulation ── */}
