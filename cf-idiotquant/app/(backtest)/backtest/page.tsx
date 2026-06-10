@@ -329,7 +329,7 @@ function PortfolioOverviewChart({ data, loading, strategy, selectedDate, onDateC
             <div className="px-5 pt-4 pb-3">
                 <ResponsiveContainer width="100%" height={160}>
                     <BarChart data={chartData} margin={{ top: 16, right: 8, left: -16, bottom: 0 }}
-                        onClick={(e) => {
+                        onClick={(e: any) => {
                             const date = e?.activePayload?.[0]?.payload?.date;
                             if (date) onDateClick(date);
                         }}
