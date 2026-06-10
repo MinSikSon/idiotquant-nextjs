@@ -60,6 +60,12 @@ export const checkScanDailyDate: any = async (date: string) => {
     return getAlgorithmTradeRequest(subUrl);
 }
 
+export const getScanDailyByTicker = async (ticker: string, limit = 30) =>
+    getAlgorithmTradeRequest(`/scan/daily/ticker/${encodeURIComponent(ticker)}?limit=${limit}`);
+
+export const getScanDailyAll = async (date: string) =>
+    getAlgorithmTradeRequest(`/scan/daily?date=${encodeURIComponent(date)}&strategy=all&limit=2000`);
+
 async function getAlgorithmTradeRequest(subUrl: string, additionalHeaders?: AdditionalHeaders) {
     const url = `/api/proxy${subUrl}`;
     const options: RequestInit = {
