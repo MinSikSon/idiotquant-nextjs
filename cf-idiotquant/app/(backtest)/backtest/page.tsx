@@ -593,16 +593,22 @@ interface SnapshotEntry {
     pct: number;
 }
 
-function PortfolioSnapshotChart({ result, loading, strategy, currentPriceMap, selectedDate }: {
+function PortfolioSnapshotChart({ result, loading, strategy, currentPriceMap, selectedDate, fallbackCandidates }: {
     result: PortfolioResult | null;
     loading: boolean;
     strategy: string;
     currentPriceMap: Map<string, number>;
     selectedDate: string | null;
+    fallbackCandidates: { ticker: string; name: string; start_price: number }[];
 }) {
+    const effectiveCandidates = (result?.candidates?.length ?? 0) > 0
+        ? result!.candidates
+        : fallbackCandidates;
+    const effectiveCount = result?.candidate_count ?? effectiveCandidates.length;
+
     const snapshotData: SnapshotEntry[] = useMemo(() => {
-        if (!result?.candidates?.length) return [];
-        return result.candidates
+        if (!effectiveCandidates.length) return [];
+        return effectiveCandidates
             .map(c => {
                 const cur = currentPriceMap.get(c.ticker);
                 if (!cur || c.start_price <= 0) return null;
@@ -616,7 +622,7 @@ function PortfolioSnapshotChart({ result, loading, strategy, currentPriceMap, se
             })
             .filter((x): x is SnapshotEntry => x !== null)
             .sort((a, b) => b.pct - a.pct);
-    }, [result, currentPriceMap]);
+    }, [effectiveCandidates, currentPriceMap]);
 
     const strategyLabel: Record<string, string> = {
         ncav: 'NCAV', low_pbr: '저PBR', low_per: '저PER', s_rim: 'S-RIM', all: '전체',
@@ -630,7 +636,7 @@ function PortfolioSnapshotChart({ result, loading, strategy, currentPriceMap, se
         );
     }
 
-    if (!result || result.candidate_count === 0) {
+    if (effectiveCandidates.length === 0) {
         return (
             <div className="bg-white dark:bg-[#242320] rounded-2xl border border-neutral-200 dark:border-[#35332e] p-5 flex items-center justify-center h-36">
                 <p className="text-xs text-neutral-400">{result?.note ?? "포트폴리오 시뮬레이션 데이터가 없습니다."}</p>
@@ -644,7 +650,7 @@ function PortfolioSnapshotChart({ result, loading, strategy, currentPriceMap, se
                 <Loader2 size={16} className="animate-spin text-[#16a34a]/50 shrink-0" />
                 <div>
                     <p className="text-xs font-bold text-neutral-600 dark:text-neutral-400">
-                        {result.candidate_count}개 후보 — 최근 스캔 가격 로딩 중
+                        {effectiveCount}개 후보 — 최근 스캔 가격 로딩 중
                     </p>
                     <p className="text-[10px] text-neutral-400 mt-0.5">이후 스캔 사이클 완료 시 수익률이 표시됩니다</p>
                 </div>
@@ -683,7 +689,7 @@ function PortfolioSnapshotChart({ result, loading, strategy, currentPriceMap, se
                         <p className="text-[10px] font-bold text-neutral-400 uppercase tracking-wider">커버</p>
                         <p className="text-lg font-black font-mono tabular-nums">
                             {snapshotData.length}
-                            <span className="text-xs text-neutral-400">/{result.candidate_count}</span>
+                            <span className="text-xs text-neutral-400">/{effectiveCount}</span>
                         </p>
                     </div>
                 </div>
@@ -744,11 +750,11 @@ function PortfolioSnapshotChart({ result, loading, strategy, currentPriceMap, se
             <div className="px-5 pb-4 grid grid-cols-3 gap-2">
                 <div className="bg-[#faf9f7] dark:bg-[#1a1915] rounded-xl p-3 text-center">
                     <p className="text-[9px] font-bold text-neutral-400 uppercase tracking-wider">후보 수</p>
-                    <p className="text-xs font-black mt-0.5">{result.candidate_count}개</p>
+                    <p className="text-xs font-black mt-0.5">{effectiveCount}개</p>
                 </div>
                 <div className="bg-[#faf9f7] dark:bg-[#1a1915] rounded-xl p-3 text-center">
                     <p className="text-[9px] font-bold text-neutral-400 uppercase tracking-wider">커버</p>
-                    <p className="text-xs font-black mt-0.5">{snapshotData.length}개 ({Math.round(snapshotData.length / result.candidate_count * 100)}%)</p>
+                    <p className="text-xs font-black mt-0.5">{snapshotData.length}개 ({Math.round(snapshotData.length / effectiveCount * 100)}%)</p>
                 </div>
                 <div className="bg-[#faf9f7] dark:bg-[#1a1915] rounded-xl p-3 text-center">
                     <p className="text-[9px] font-bold text-neutral-400 uppercase tracking-wider">승률</p>
@@ -866,6 +872,44 @@ function BacktestContent() {
             .catch(() => {})
             .finally(() => setLoadingPortfolio(false));
     }, [selectedDate, activeStrategy]);
+
+    // Fallback candidates from historicalList when portfolioResult has none
+    const fallbackCandidates = useMemo(() =>
+        historicalList
+            .filter(item => item.last_price > 0)
+            .map(item => ({ ticker: item.ticker, name: item.name, start_price: item.last_price })),
+    [historicalList]);
+
+    // Fetch prices for candidates missing from currentPriceMap
+    useEffect(() => {
+        const candidates = (portfolioResult?.candidates?.length ?? 0) > 0
+            ? portfolioResult!.candidates
+            : fallbackCandidates;
+        if (!candidates.length) return;
+        const missing = candidates.filter(c => !currentPriceMap.has(c.ticker)).slice(0, 50);
+        if (!missing.length) return;
+
+        Promise.all(
+            missing.map(c =>
+                getScanDailyByTicker(c.ticker, 1)
+                    .then((res: { data?: Record<string, unknown>[] }) => {
+                        const price = safeNum((res?.data?.[0] as any)?.last_price);
+                        return price > 0 ? [c.ticker, price] as [string, number] : null;
+                    })
+                    .catch(() => null)
+            )
+        ).then(results => {
+            const newPrices = results.filter((r): r is [string, number] => r !== null);
+            if (!newPrices.length) return;
+            setCurrentPriceMap(prev => {
+                const next = new Map(prev);
+                for (const [t, p] of newPrices) next.set(t, p);
+                return next;
+            });
+        });
+    // currentPriceMap 제외: 가격 업데이트 후 무한 루프 방지
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [portfolioResult, fallbackCandidates]);
 
     // Bar chart data (chronological order)
     const chartData = useMemo(() =>
@@ -1117,6 +1161,7 @@ function BacktestContent() {
                                 strategy={activeStrategy}
                                 currentPriceMap={currentPriceMap}
                                 selectedDate={selectedDate}
+                                fallbackCandidates={fallbackCandidates}
                             />
                         )}
 
