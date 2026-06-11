@@ -1417,16 +1417,31 @@ function BacktestContent() {
                         {/* ── 포트폴리오 탭 ── */}
                         {viewTab === 'portfolio' && (
                         <>
-                            <PortfolioOverviewChart
+                        {(portfolioResult?.time_series?.length ?? 0) >= 2 ? (
+                            <>
+                                <PortfolioOverviewChart
+                                    result={portfolioResult}
+                                    loading={loadingPortfolio}
+                                    strategy={activeStrategy}
+                                />
+                                <PortfolioChart
+                                    result={portfolioResult}
+                                    loading={loadingPortfolio}
+                                    strategy={activeStrategy}
+                                />
+                            </>
+                        ) : (
+                            <PortfolioSnapshotChart
                                 result={portfolioResult}
                                 loading={loadingPortfolio}
                                 strategy={activeStrategy}
+                                currentPriceMap={currentPriceMap}
+                                selectedDate={selectedDate}
+                                fallbackCandidates={fallbackCandidates}
+                                currentLstnMap={currentLstnMap}
+                                splitAdjusted={splitAdjusted}
                             />
-                            <PortfolioChart
-                                result={portfolioResult}
-                                loading={loadingPortfolio}
-                                strategy={activeStrategy}
-                            />
+                        )}
                         </> /* end 포트폴리오 탭 */
                         )}
 
