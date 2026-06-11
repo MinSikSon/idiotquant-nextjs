@@ -124,10 +124,11 @@ function calcReturn(
     splitAdjusted: boolean,
     lstnMap: Map<string, number>
 ): number {
+    // market_cap은 억원 단위(KIS hts_avls), last_price는 원 단위이므로 ×100_000_000 변환 필요
     if (splitAdjusted && entryMarketCap && entryMarketCap > 0) {
         const curLstn = lstnMap.get(ticker);
         if (curLstn && curLstn > 0) {
-            const adjEntry = entryMarketCap / curLstn;
+            const adjEntry = entryMarketCap * 100_000_000 / curLstn;
             return (curPrice / adjEntry - 1) * 100;
         }
     }
@@ -184,7 +185,8 @@ function DrillDown({ name, ticker, stockHistory, loading, onNavigate, entryDate,
             .map(d => {
                 let return_pct: number;
                 if (splitAdjusted && entryMarketCap && entryMarketCap > 0 && d.lstn_stcn && d.lstn_stcn > 0) {
-                    return_pct = Math.round((d.last_price * d.lstn_stcn / entryMarketCap - 1) * 10000) / 100;
+                    // entryMarketCap은 억원, last_price는 원 → ×100_000_000 변환
+                    return_pct = Math.round((d.last_price * d.lstn_stcn / (entryMarketCap * 100_000_000) - 1) * 10000) / 100;
                 } else {
                     return_pct = Math.round((d.last_price / entryPrice - 1) * 10000) / 100;
                 }
@@ -820,6 +822,9 @@ function BacktestContent() {
     const [stockHistory,        setStockHistory]        = useState<DailyItem[]>([]);
     const [sortKey,             setSortKey]             = useState<SortKey>('ncav_ratio');
     const [sortOrder,           setSortOrder]           = useState<SortOrder>('desc');
+    const [searchQuery,         setSearchQuery]         = useState('');
+    const [filterNcav,          setFilterNcav]          = useState<'all' | '0.5' | '0.7' | '1.0'>('all');
+    const [filterReturn,        setFilterReturn]        = useState<'all' | 'win' | 'loss'>('all');
     const [loadingList,          setLoadingList]         = useState(false);
     const [loadingCurrentPrices, setLoadingCurrentPrices]= useState(false);
     const [loadingStock,         setLoadingStock]        = useState(false);
@@ -960,9 +965,31 @@ function BacktestContent() {
         && datesState.dates.length > 0
         && selectedDate === datesState.dates[0].scan_date;
 
+    // Filtered list (search + NCAV filter + return filter)
+    const filteredList = useMemo(() => {
+        let list = historicalList;
+        if (searchQuery.trim()) {
+            const q = searchQuery.trim().toLowerCase();
+            list = list.filter(i => i.name.toLowerCase().includes(q) || i.ticker.includes(q));
+        }
+        if (filterNcav !== 'all') {
+            const threshold = parseFloat(filterNcav);
+            list = list.filter(i => safeNum(i.ncav_ratio) >= threshold);
+        }
+        if (filterReturn !== 'all' && !isLatestDate) {
+            list = list.filter(i => {
+                const cur = currentPriceMap.get(i.ticker);
+                if (!cur || i.last_price <= 0) return false;
+                const ret = calcReturn(i.last_price, i.market_cap, i.ticker, cur, splitAdjusted, currentLstnMap);
+                return filterReturn === 'win' ? ret >= 0 : ret < 0;
+            });
+        }
+        return list;
+    }, [historicalList, searchQuery, filterNcav, filterReturn, isLatestDate, currentPriceMap, splitAdjusted, currentLstnMap]);
+
     // Sorted table rows
     const sortedList = useMemo(() => {
-        const list = [...historicalList];
+        const list = [...filteredList];
         list.sort((a, b) => {
             if (sortKey === 'name') {
                 return sortOrder === 'asc'
@@ -985,7 +1012,7 @@ function BacktestContent() {
             return sortOrder === 'asc' ? va - vb : vb - va;
         });
         return list;
-    }, [historicalList, sortKey, sortOrder, currentPriceMap, splitAdjusted, currentLstnMap]);
+    }, [filteredList, sortKey, sortOrder, currentPriceMap, splitAdjusted, currentLstnMap]);
 
     const toggleSort = useCallback((key: SortKey) => {
         setSortKey(prev => {
@@ -1103,7 +1130,7 @@ function BacktestContent() {
                 {!datesLoading && datesState.dates.length > 0 && (
                     <>
                         {/* ── View Tabs ── */}
-                        <div className="flex gap-0 border-b border-neutral-200 dark:border-[#35332e] -mb-2">
+                        <div className="flex items-end gap-0 border-b border-neutral-200 dark:border-[#35332e] -mb-2">
                             {(['history', 'portfolio', 'stocks'] as const).map(tab => {
                                 const labels = { history: '히스토리', portfolio: '포트폴리오', stocks: '종목 목록' };
                                 return (
@@ -1121,6 +1148,22 @@ function BacktestContent() {
                                     </button>
                                 );
                             })}
+                            {/* 병합조정 토글 — 비최신일 + 현재가 로드됐을 때만 표시 */}
+                            {!isLatestDate && !loadingCurrentPrices && currentPriceMap.size > 0 && (
+                                <div className="ml-auto pb-2 flex items-center gap-1.5">
+                                    <button
+                                        onClick={() => setSplitAdjusted(p => !p)}
+                                        className={cn(
+                                            "text-[10px] font-bold px-2.5 py-1 rounded-lg border transition-colors",
+                                            splitAdjusted
+                                                ? "border-amber-400 text-amber-600 bg-amber-50 dark:bg-amber-950/30 dark:text-amber-400 dark:border-amber-500"
+                                                : "border-neutral-200 dark:border-[#35332e] text-neutral-400 hover:border-neutral-300"
+                                        )}
+                                    >
+                                        병합조정 {splitAdjusted ? 'ON' : 'OFF'}
+                                    </button>
+                                </div>
+                            )}
                         </div>
 
                         {/* ── 히스토리 탭 ── */}
@@ -1250,25 +1293,99 @@ function BacktestContent() {
                                 </p>
                                 {loadingList && <Loader2 size={13} className="animate-spin text-neutral-400" />}
                                 {!loadingList && historicalList.length > 0 && (
-                                    <span className="text-xs text-neutral-400 font-medium">{historicalList.length}개</span>
+                                    <span className="text-xs text-neutral-400 font-medium">
+                                        {filteredList.length !== historicalList.length
+                                            ? `${filteredList.length}/${historicalList.length}개`
+                                            : `${historicalList.length}개`}
+                                    </span>
                                 )}
-                                {!isLatestDate && !loadingCurrentPrices && currentPriceMap.size > 0 && (
-                                    <div className="ml-auto flex items-center gap-2">
-                                        <button
-                                            onClick={() => setSplitAdjusted(p => !p)}
-                                            className={cn(
-                                                "text-[10px] font-bold px-2.5 py-1 rounded-lg border transition-colors",
-                                                splitAdjusted
-                                                    ? "border-amber-400 text-amber-600 bg-amber-50 dark:bg-amber-950/30 dark:text-amber-400 dark:border-amber-500"
-                                                    : "border-neutral-200 dark:border-[#35332e] text-neutral-400 hover:border-neutral-300"
-                                            )}
-                                        >
-                                            병합조정 {splitAdjusted ? 'ON' : 'OFF'}
-                                        </button>
-                                        <span className="text-[10px] text-neutral-400 font-medium">현재가 기준 수익률</span>
-                                    </div>
+                                {!isLatestDate && currentPriceMap.size > 0 && (
+                                    <span className="ml-auto text-[10px] text-neutral-400 font-medium">현재가 기준 수익률</span>
                                 )}
                             </div>
+
+                            {/* ── Filter bar ── */}
+                            {!loadingList && historicalList.length > 0 && (
+                                <div className="px-5 sm:px-6 py-3 border-b border-neutral-100 dark:border-[#35332e] flex flex-wrap items-center gap-2">
+                                    {/* 종목명·티커 검색 */}
+                                    <div className="relative">
+                                        <input
+                                            type="text"
+                                            value={searchQuery}
+                                            onChange={e => setSearchQuery(e.target.value)}
+                                            placeholder="종목명·티커"
+                                            className="text-xs px-3 py-1.5 pr-6 rounded-lg border border-neutral-200 dark:border-[#35332e] bg-white dark:bg-[#1a1915] text-neutral-900 dark:text-neutral-100 placeholder-neutral-400 w-28 focus:outline-none focus:ring-1 focus:ring-[#16a34a]/40"
+                                        />
+                                        {searchQuery && (
+                                            <button
+                                                onClick={() => setSearchQuery('')}
+                                                className="absolute right-1.5 top-1/2 -translate-y-1/2 text-neutral-400 hover:text-neutral-600 text-sm leading-none"
+                                            >×</button>
+                                        )}
+                                    </div>
+
+                                    {/* NCAV 비율 필터 */}
+                                    <div className="flex">
+                                        {(['all', '0.5', '0.7', '1.0'] as const).map((v, idx) => (
+                                            <button
+                                                key={v}
+                                                onClick={() => setFilterNcav(v)}
+                                                className={cn(
+                                                    "text-[10px] font-bold px-2 py-1 border-y border-r transition-colors whitespace-nowrap",
+                                                    idx === 0 && "rounded-l-lg border-l",
+                                                    idx === 3 && "rounded-r-lg",
+                                                    filterNcav === v
+                                                        ? "border-[#16a34a] bg-[#f0fdf4] dark:bg-[#052e16]/40 text-[#16a34a] z-10 relative"
+                                                        : "border-neutral-200 dark:border-[#35332e] text-neutral-400 hover:border-neutral-300 dark:hover:border-neutral-500"
+                                                )}
+                                            >
+                                                {v === 'all' ? 'NCAV' : `≥${v}x`}
+                                            </button>
+                                        ))}
+                                    </div>
+
+                                    {/* 수익률 필터 (비교 날짜 있을 때만) */}
+                                    {!isLatestDate && currentPriceMap.size > 0 && (
+                                        <div className="flex">
+                                            {(['all', 'win', 'loss'] as const).map((v, idx) => (
+                                                <button
+                                                    key={v}
+                                                    onClick={() => setFilterReturn(v)}
+                                                    className={cn(
+                                                        "text-[10px] font-bold px-2 py-1 border-y border-r transition-colors whitespace-nowrap",
+                                                        idx === 0 && "rounded-l-lg border-l",
+                                                        idx === 2 && "rounded-r-lg",
+                                                        filterReturn === v
+                                                            ? v === 'win'
+                                                                ? "border-emerald-500 bg-emerald-50 dark:bg-emerald-950/30 text-emerald-600 dark:text-emerald-400 z-10 relative"
+                                                                : v === 'loss'
+                                                                ? "border-red-400 bg-red-50 dark:bg-red-950/30 text-red-500 dark:text-red-400 z-10 relative"
+                                                                : "border-[#16a34a] bg-[#f0fdf4] dark:bg-[#052e16]/40 text-[#16a34a] z-10 relative"
+                                                            : "border-neutral-200 dark:border-[#35332e] text-neutral-400 hover:border-neutral-300 dark:hover:border-neutral-500"
+                                                    )}
+                                                >
+                                                    {v === 'all' ? '수익률' : v === 'win' ? '수익' : '손실'}
+                                                </button>
+                                            ))}
+                                        </div>
+                                    )}
+
+                                    {/* 필터 초기화 */}
+                                    {(searchQuery || filterNcav !== 'all' || filterReturn !== 'all') && (
+                                        <button
+                                            onClick={() => { setSearchQuery(''); setFilterNcav('all'); setFilterReturn('all'); }}
+                                            className="text-[10px] text-neutral-400 hover:text-neutral-600 dark:hover:text-neutral-300 underline ml-1"
+                                        >초기화</button>
+                                    )}
+
+                                    {/* 필터 적용 결과 수 */}
+                                    {filteredList.length !== historicalList.length && (
+                                        <span className="text-[10px] text-neutral-400 ml-auto">
+                                            {filteredList.length}개 표시 중
+                                        </span>
+                                    )}
+                                </div>
+                            )}
 
                             {loadingList ? (
                                 <div className="flex justify-center py-14">
@@ -1277,6 +1394,10 @@ function BacktestContent() {
                             ) : historicalList.length === 0 ? (
                                 <p className="text-center py-14 text-sm text-neutral-400">
                                     해당 날짜의 {activeTab.label} 후보 데이터가 없습니다.
+                                </p>
+                            ) : filteredList.length === 0 ? (
+                                <p className="text-center py-14 text-sm text-neutral-400">
+                                    필터 조건에 맞는 종목이 없습니다.
                                 </p>
                             ) : (
                                 <>
