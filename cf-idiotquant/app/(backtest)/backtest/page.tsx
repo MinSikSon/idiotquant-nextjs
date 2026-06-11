@@ -18,7 +18,7 @@ import {
     getPortfolioSimulation,
 } from "@/lib/features/algorithmTrade/algorithmTradeAPI";
 import { cn } from "@/lib/utils";
-import { Loader2, History, ChevronRight, TrendingUp } from "lucide-react";
+import { Loader2, History, ChevronRight, TrendingUp, SlidersHorizontal } from "lucide-react";
 import {
     BarChart, Bar, XAxis, YAxis,
     Tooltip as RTooltip, ResponsiveContainer, Cell,
@@ -100,6 +100,44 @@ const STRATEGY_LABEL: Record<string, string> = {
     near_ncav: 'NCAV근접', balanced_value: '균형가치',
 };
 
+const STRATEGY_BADGE: Record<string, string> = {
+    ncav:           'bg-emerald-100 dark:bg-emerald-950/50 text-emerald-700 dark:text-emerald-400',
+    low_pbr:        'bg-sky-100 dark:bg-sky-950/50 text-sky-700 dark:text-sky-400',
+    low_per:        'bg-orange-100 dark:bg-orange-950/50 text-orange-700 dark:text-orange-400',
+    s_rim:          'bg-violet-100 dark:bg-violet-950/50 text-violet-700 dark:text-violet-400',
+    graham_number:  'bg-amber-100 dark:bg-amber-950/50 text-amber-700 dark:text-amber-400',
+    magic_formula:  'bg-pink-100 dark:bg-pink-950/50 text-pink-700 dark:text-pink-400',
+    quality_value:  'bg-indigo-100 dark:bg-indigo-950/50 text-indigo-700 dark:text-indigo-400',
+    near_ncav:      'bg-teal-100 dark:bg-teal-950/50 text-teal-700 dark:text-teal-400',
+    balanced_value: 'bg-rose-100 dark:bg-rose-950/50 text-rose-700 dark:text-rose-400',
+};
+
+interface StrategyPreset {
+    id: string;
+    label: string;
+    hint: string;
+    clientFilter: (item: DailyItem) => boolean;
+}
+
+const STRATEGY_PRESETS_CLIENT: StrategyPreset[] = [
+    { id: 'ncav',           label: 'NCAV',     hint: '순유동자산 > 시가총액 — 그레이엄 청산가치 이하', clientFilter: i => safeNum(i.ncav_ratio) >= 1.0 },
+    { id: 'low_pbr',        label: '저PBR',    hint: 'PBR < 0.5 — 순자산 절반 이하 가격', clientFilter: i => safeNum(i.pbr) > 0 && safeNum(i.pbr) < 0.5 },
+    { id: 'low_per',        label: '저PER',    hint: 'PER < 10 + 흑자(EPS > 0)', clientFilter: i => safeNum(i.eps) > 0 && safeNum(i.per) > 0 && safeNum(i.per) < 10 },
+    { id: 's_rim',          label: 'S-RIM',    hint: 'ROE > 8% & PBR < 1.0 — 초과이익 기업 장부가 이하', clientFilter: i => { const roe = safeNum(i.bps) > 0 ? safeNum(i.eps) / safeNum(i.bps) * 100 : 0; return roe > 8 && safeNum(i.pbr) > 0 && safeNum(i.pbr) < 1.0; } },
+    { id: 'graham_number',  label: '그레이엄', hint: 'PER × PBR < 22.5 — 그레이엄 복합 안전마진', clientFilter: i => safeNum(i.eps) > 0 && safeNum(i.bps) > 0 && safeNum(i.per) > 0 && safeNum(i.pbr) > 0 && safeNum(i.per) * safeNum(i.pbr) < 22.5 },
+    { id: 'magic_formula',  label: '마법공식', hint: 'PER < 15 & ROE > 10% — Greenblatt 변형', clientFilter: i => safeNum(i.eps) > 0 && safeNum(i.per) > 0 && safeNum(i.per) < 15 && safeNum(i.bps) > 0 && safeNum(i.eps) / safeNum(i.bps) * 100 > 10 },
+    { id: 'quality_value',  label: '퀄리티',   hint: 'ROE > 15% & PBR < 2.0 — 버핏 스타일', clientFilter: i => safeNum(i.eps) > 0 && safeNum(i.bps) > 0 && safeNum(i.eps) / safeNum(i.bps) * 100 > 15 && safeNum(i.pbr) > 0 && safeNum(i.pbr) < 2.0 },
+    { id: 'near_ncav',      label: 'NCAV근접', hint: 'NCAV 0.7~1.0 — 청산가치 근접 관찰', clientFilter: i => safeNum(i.ncav_ratio) >= 0.7 && safeNum(i.ncav_ratio) < 1.0 },
+    { id: 'balanced_value', label: '균형가치', hint: 'PER 5~15 & PBR < 1.5 & EPS > 0', clientFilter: i => safeNum(i.eps) > 0 && safeNum(i.per) > 5 && safeNum(i.per) < 15 && safeNum(i.pbr) > 0 && safeNum(i.pbr) < 1.5 },
+];
+
+const MKTCAP_PRESETS = [
+    { label: '전체', value: 0 },
+    { label: '500억+', value: 500 },
+    { label: '1000억+', value: 1_000 },
+    { label: '5000억+', value: 5_000 },
+];
+
 const safeNum = (v: unknown): number => {
     const n = Number(v);
     return isNaN(n) ? 0 : n;
@@ -108,6 +146,14 @@ const safeNum = (v: unknown): number => {
 function parseStrategies(strategies: unknown): string[] {
     if (Array.isArray(strategies)) return strategies as string[];
     try { return JSON.parse((strategies as string) ?? '[]'); } catch { return []; }
+}
+
+function resolveAllStrategies(item: DailyItem): string[] {
+    const base = new Set<string>(item.strategies ?? []);
+    for (const preset of STRATEGY_PRESETS_CLIENT) {
+        if (preset.clientFilter(item)) base.add(preset.id);
+    }
+    return Array.from(base);
 }
 
 function fmtDate(yyyymmdd: string): string {
@@ -858,6 +904,13 @@ function BacktestContent() {
     const [filterReturn,        setFilterReturn]        = useState<'all' | 'win' | 'loss'>('all');
     const [filterPbr,           setFilterPbr]           = useState<'all' | '0.3' | '0.5' | '0.7'>('all');
     const [filterPer,           setFilterPer]           = useState<'all' | '5' | '10' | '15'>('all');
+    const [filterStrategies,    setFilterStrategies]    = useState<Set<string>>(new Set());
+    const [filterStrategyMode,  setFilterStrategyMode]  = useState<'OR' | 'AND'>('OR');
+    const [minMarketCap,        setMinMarketCap]        = useState(0);
+    const [excludeHoldings,     setExcludeHoldings]     = useState(false);
+    const [excludeDeficit,      setExcludeDeficit]      = useState(false);
+    const [excludeDelisted,     setExcludeDelisted]     = useState(false);
+    const [filterOpen,          setFilterOpen]          = useState(false);
     const [loadingList,          setLoadingList]         = useState(false);
     const [loadingCurrentPrices, setLoadingCurrentPrices]= useState(false);
     const [loadingStock,         setLoadingStock]        = useState(false);
@@ -998,12 +1051,33 @@ function BacktestContent() {
         && datesState.dates.length > 0
         && selectedDate === datesState.dates[0].scan_date;
 
-    // Filtered list (search + NCAV filter + return filter)
+    // Filtered list
     const filteredList = useMemo(() => {
         let list = historicalList;
         if (searchQuery.trim()) {
             const q = searchQuery.trim().toLowerCase();
             list = list.filter(i => i.name.toLowerCase().includes(q) || i.ticker.includes(q));
+        }
+        if (filterStrategies.size > 0) {
+            const check = filterStrategyMode === 'AND' ? 'every' : 'some';
+            list = list.filter(i =>
+                Array.from(filterStrategies)[check](id => {
+                    const preset = STRATEGY_PRESETS_CLIENT.find(p => p.id === id);
+                    return preset ? preset.clientFilter(i) : false;
+                })
+            );
+        }
+        if (minMarketCap > 0) {
+            list = list.filter(i => safeNum(i.market_cap) >= minMarketCap);
+        }
+        if (excludeHoldings) {
+            list = list.filter(i => !i.name.includes('홀딩스'));
+        }
+        if (excludeDeficit) {
+            list = list.filter(i => safeNum(i.eps) > 0);
+        }
+        if (excludeDelisted) {
+            list = list.filter(i => safeNum(i.lstn_stcn) > 0);
         }
         if (filterNcav !== 'all') {
             const threshold = parseFloat(filterNcav);
@@ -1026,7 +1100,7 @@ function BacktestContent() {
             list = list.filter(i => safeNum(i.per) > 0 && safeNum(i.per) <= threshold);
         }
         return list;
-    }, [historicalList, searchQuery, filterNcav, filterReturn, filterPbr, filterPer, isLatestDate, currentPriceMap, splitAdjusted, currentLstnMap]);
+    }, [historicalList, searchQuery, filterStrategies, filterStrategyMode, minMarketCap, excludeHoldings, excludeDeficit, excludeDelisted, filterNcav, filterReturn, filterPbr, filterPer, isLatestDate, currentPriceMap, splitAdjusted, currentLstnMap]);
 
     // Sorted table rows
     const sortedList = useMemo(() => {
@@ -1062,6 +1136,22 @@ function BacktestContent() {
             return key;
         });
     }, []);
+
+    const toggleStrategy = useCallback((id: string) => {
+        setFilterStrategies(prev => {
+            const next = new Set(prev);
+            if (next.has(id)) next.delete(id); else next.add(id);
+            return next;
+        });
+    }, []);
+
+    const strategyCounts = useMemo(() => {
+        const counts: Record<string, number> = {};
+        for (const preset of STRATEGY_PRESETS_CLIENT) {
+            counts[preset.id] = historicalList.filter(item => preset.clientFilter(item)).length;
+        }
+        return counts;
+    }, [historicalList]);
 
     // Summary stats
     const stats = useMemo(() => {
@@ -1208,127 +1298,202 @@ function BacktestContent() {
                         </div>
 
                         {/* ── 공통 필터 바 ── */}
-                        {!loadingList && historicalList.length > 0 && (
-                            <div className="bg-white dark:bg-[#242320] rounded-2xl border border-neutral-200 dark:border-[#35332e] px-5 sm:px-6 py-3 flex flex-wrap items-center gap-2 shadow-sm">
-                                {/* 종목명·티커 검색 */}
-                                <div className="relative">
-                                    <input
-                                        type="text"
-                                        value={searchQuery}
-                                        onChange={e => setSearchQuery(e.target.value)}
-                                        placeholder="종목명·티커"
-                                        className="text-xs px-3 py-1.5 pr-6 rounded-lg border border-neutral-200 dark:border-[#35332e] bg-white dark:bg-[#1a1915] text-neutral-900 dark:text-neutral-100 placeholder-neutral-400 w-28 focus:outline-none focus:ring-1 focus:ring-[#16a34a]/40"
-                                    />
-                                    {searchQuery && (
-                                        <button
-                                            onClick={() => setSearchQuery('')}
-                                            className="absolute right-1.5 top-1/2 -translate-y-1/2 text-neutral-400 hover:text-neutral-600 text-sm leading-none"
-                                        >×</button>
+                        {!loadingList && historicalList.length > 0 && (() => {
+                            const hasAnyFilter = filterStrategies.size > 0 || minMarketCap > 0 || excludeHoldings || excludeDeficit || excludeDelisted || searchQuery !== '' || filterNcav !== 'all' || filterReturn !== 'all' || filterPbr !== 'all' || filterPer !== 'all';
+                            const resetAll = () => { setFilterStrategies(new Set()); setMinMarketCap(0); setExcludeHoldings(false); setExcludeDeficit(false); setExcludeDelisted(false); setSearchQuery(''); setFilterNcav('all'); setFilterReturn('all'); setFilterPbr('all'); setFilterPer('all'); };
+                            return (
+                            <div className="bg-white dark:bg-[#242320] rounded-2xl border border-neutral-200 dark:border-[#35332e] shadow-sm overflow-hidden">
+                                {/* ── 전략 멀티선택 ── */}
+                                <div className="px-5 sm:px-6 pt-4 pb-3 border-b border-neutral-100 dark:border-[#35332e]">
+                                    <div className="flex items-center gap-2 flex-wrap">
+                                        <span className="text-[10px] font-extrabold text-neutral-400 uppercase tracking-wider shrink-0">전략</span>
+                                        {STRATEGY_PRESETS_CLIENT.map(preset => {
+                                            const isActive = filterStrategies.has(preset.id);
+                                            const count = strategyCounts[preset.id] ?? 0;
+                                            return (
+                                                <button
+                                                    key={preset.id}
+                                                    onClick={() => toggleStrategy(preset.id)}
+                                                    title={preset.hint}
+                                                    className={cn(
+                                                        "flex items-center gap-1 px-2 py-1 rounded-lg text-[10px] font-bold border transition-all",
+                                                        isActive
+                                                            ? cn(STRATEGY_BADGE[preset.id], 'border-current')
+                                                            : "border-neutral-200 dark:border-[#35332e] text-neutral-500 dark:text-neutral-400 hover:border-neutral-300 dark:hover:border-neutral-500 bg-white dark:bg-transparent"
+                                                    )}
+                                                >
+                                                    {preset.label}
+                                                    <span className="text-[9px] font-mono opacity-70">{count}</span>
+                                                </button>
+                                            );
+                                        })}
+                                        {filterStrategies.size >= 2 && (
+                                            <div className="flex rounded-lg border border-neutral-200 dark:border-[#35332e] overflow-hidden">
+                                                {(['OR', 'AND'] as const).map(mode => (
+                                                    <button
+                                                        key={mode}
+                                                        onClick={() => setFilterStrategyMode(mode)}
+                                                        className={cn(
+                                                            "px-2 py-1 text-[10px] font-bold transition-colors",
+                                                            filterStrategyMode === mode
+                                                                ? "bg-[#16a34a] text-white"
+                                                                : "text-neutral-400 dark:text-neutral-500 hover:text-neutral-600"
+                                                        )}
+                                                    >{mode}</button>
+                                                ))}
+                                            </div>
+                                        )}
+                                        {filterStrategies.size > 0 && (
+                                            <button
+                                                onClick={() => setFilterStrategies(new Set())}
+                                                className="text-[10px] text-neutral-400 hover:text-[#16a34a] dark:hover:text-[#16a34a] ml-0.5"
+                                            >초기화</button>
+                                        )}
+                                    </div>
+                                </div>
+
+                                {/* ── 수치 필터 바 ── */}
+                                <div className="px-5 sm:px-6 py-3 flex flex-wrap items-center gap-2">
+                                    {/* 검색 */}
+                                    <div className="relative">
+                                        <input
+                                            type="text"
+                                            value={searchQuery}
+                                            onChange={e => setSearchQuery(e.target.value)}
+                                            placeholder="종목명·티커"
+                                            className="text-xs px-3 py-1.5 pr-6 rounded-lg border border-neutral-200 dark:border-[#35332e] bg-white dark:bg-[#1a1915] text-neutral-900 dark:text-neutral-100 placeholder-neutral-400 w-28 focus:outline-none focus:ring-1 focus:ring-[#16a34a]/40"
+                                        />
+                                        {searchQuery && (
+                                            <button onClick={() => setSearchQuery('')} className="absolute right-1.5 top-1/2 -translate-y-1/2 text-neutral-400 hover:text-neutral-600 text-sm leading-none">×</button>
+                                        )}
+                                    </div>
+
+                                    {/* NCAV */}
+                                    <div className="flex">
+                                        {(['all', '0.5', '0.7', '1.0'] as const).map((v, idx) => (
+                                            <button key={v} onClick={() => setFilterNcav(v)}
+                                                className={cn(
+                                                    "text-[10px] font-bold px-2 py-1 border-y border-r transition-colors whitespace-nowrap",
+                                                    idx === 0 && "rounded-l-lg border-l", idx === 3 && "rounded-r-lg",
+                                                    filterNcav === v ? "border-[#16a34a] bg-[#f0fdf4] dark:bg-[#052e16]/40 text-[#16a34a] z-10 relative" : "border-neutral-200 dark:border-[#35332e] text-neutral-400 hover:border-neutral-300 dark:hover:border-neutral-500"
+                                                )}
+                                            >{v === 'all' ? 'NCAV' : `≥${v}x`}</button>
+                                        ))}
+                                    </div>
+
+                                    {/* 수익률 */}
+                                    {!isLatestDate && currentPriceMap.size > 0 && (
+                                        <div className="flex">
+                                            {(['all', 'win', 'loss'] as const).map((v, idx) => (
+                                                <button key={v} onClick={() => setFilterReturn(v)}
+                                                    className={cn(
+                                                        "text-[10px] font-bold px-2 py-1 border-y border-r transition-colors whitespace-nowrap",
+                                                        idx === 0 && "rounded-l-lg border-l", idx === 2 && "rounded-r-lg",
+                                                        filterReturn === v
+                                                            ? v === 'win' ? "border-emerald-500 bg-emerald-50 dark:bg-emerald-950/30 text-emerald-600 dark:text-emerald-400 z-10 relative"
+                                                              : v === 'loss' ? "border-red-400 bg-red-50 dark:bg-red-950/30 text-red-500 dark:text-red-400 z-10 relative"
+                                                              : "border-[#16a34a] bg-[#f0fdf4] dark:bg-[#052e16]/40 text-[#16a34a] z-10 relative"
+                                                            : "border-neutral-200 dark:border-[#35332e] text-neutral-400 hover:border-neutral-300 dark:hover:border-neutral-500"
+                                                    )}
+                                                >{v === 'all' ? '수익률' : v === 'win' ? '수익' : '손실'}</button>
+                                            ))}
+                                        </div>
+                                    )}
+
+                                    {/* PBR */}
+                                    <div className="flex">
+                                        {(['all', '0.3', '0.5', '0.7'] as const).map((v, idx) => (
+                                            <button key={v} onClick={() => setFilterPbr(v)}
+                                                className={cn(
+                                                    "text-[10px] font-bold px-2 py-1 border-y border-r transition-colors whitespace-nowrap",
+                                                    idx === 0 && "rounded-l-lg border-l", idx === 3 && "rounded-r-lg",
+                                                    filterPbr === v ? "border-sky-500 bg-sky-50 dark:bg-sky-950/30 text-sky-600 dark:text-sky-400 z-10 relative" : "border-neutral-200 dark:border-[#35332e] text-neutral-400 hover:border-neutral-300 dark:hover:border-neutral-500"
+                                                )}
+                                            >{v === 'all' ? 'PBR' : `≤${v}`}</button>
+                                        ))}
+                                    </div>
+
+                                    {/* PER */}
+                                    <div className="flex">
+                                        {(['all', '5', '10', '15'] as const).map((v, idx) => (
+                                            <button key={v} onClick={() => setFilterPer(v)}
+                                                className={cn(
+                                                    "text-[10px] font-bold px-2 py-1 border-y border-r transition-colors whitespace-nowrap",
+                                                    idx === 0 && "rounded-l-lg border-l", idx === 3 && "rounded-r-lg",
+                                                    filterPer === v ? "border-orange-500 bg-orange-50 dark:bg-orange-950/30 text-orange-600 dark:text-orange-400 z-10 relative" : "border-neutral-200 dark:border-[#35332e] text-neutral-400 hover:border-neutral-300 dark:hover:border-neutral-500"
+                                                )}
+                                            >{v === 'all' ? 'PER' : `≤${v}`}</button>
+                                        ))}
+                                    </div>
+
+                                    {/* 고급 필터 토글 */}
+                                    <button
+                                        onClick={() => setFilterOpen(o => !o)}
+                                        className={cn(
+                                            "flex items-center gap-1 px-2.5 py-1 rounded-lg border text-[10px] font-bold transition-all",
+                                            filterOpen || minMarketCap > 0 || excludeHoldings || excludeDeficit || excludeDelisted
+                                                ? "bg-[#f0fdf4] dark:bg-[#052e16]/30 border-[#86efac] dark:border-[#166534] text-[#15803d] dark:text-[#16a34a]"
+                                                : "bg-white dark:bg-transparent border-neutral-200 dark:border-[#35332e] text-neutral-400 hover:border-neutral-300 dark:hover:border-neutral-500"
+                                        )}
+                                    >
+                                        <SlidersHorizontal size={10} />
+                                        고급
+                                        {(minMarketCap > 0 || excludeHoldings || excludeDeficit || excludeDelisted) && (
+                                            <span className="w-3.5 h-3.5 flex items-center justify-center rounded-full bg-[#16a34a] text-white text-[8px] font-black">
+                                                {[minMarketCap > 0, excludeHoldings, excludeDeficit, excludeDelisted].filter(Boolean).length}
+                                            </span>
+                                        )}
+                                    </button>
+
+                                    {/* 전체 초기화 */}
+                                    {hasAnyFilter && (
+                                        <button onClick={resetAll} className="text-[10px] text-neutral-400 hover:text-neutral-600 dark:hover:text-neutral-300 underline ml-0.5">전체 초기화</button>
+                                    )}
+
+                                    {filteredList.length !== historicalList.length && (
+                                        <span className="text-[10px] text-neutral-400 ml-auto">{filteredList.length}/{historicalList.length}개</span>
                                     )}
                                 </div>
 
-                                {/* NCAV 비율 필터 */}
-                                <div className="flex">
-                                    {(['all', '0.5', '0.7', '1.0'] as const).map((v, idx) => (
-                                        <button
-                                            key={v}
-                                            onClick={() => setFilterNcav(v)}
-                                            className={cn(
-                                                "text-[10px] font-bold px-2 py-1 border-y border-r transition-colors whitespace-nowrap",
-                                                idx === 0 && "rounded-l-lg border-l",
-                                                idx === 3 && "rounded-r-lg",
-                                                filterNcav === v
-                                                    ? "border-[#16a34a] bg-[#f0fdf4] dark:bg-[#052e16]/40 text-[#16a34a] z-10 relative"
-                                                    : "border-neutral-200 dark:border-[#35332e] text-neutral-400 hover:border-neutral-300 dark:hover:border-neutral-500"
-                                            )}
-                                        >
-                                            {v === 'all' ? 'NCAV' : `≥${v}x`}
-                                        </button>
-                                    ))}
-                                </div>
-
-                                {/* 수익률 필터 (비교 날짜 있을 때만) */}
-                                {!isLatestDate && currentPriceMap.size > 0 && (
-                                    <div className="flex">
-                                        {(['all', 'win', 'loss'] as const).map((v, idx) => (
-                                            <button
-                                                key={v}
-                                                onClick={() => setFilterReturn(v)}
-                                                className={cn(
-                                                    "text-[10px] font-bold px-2 py-1 border-y border-r transition-colors whitespace-nowrap",
-                                                    idx === 0 && "rounded-l-lg border-l",
-                                                    idx === 2 && "rounded-r-lg",
-                                                    filterReturn === v
-                                                        ? v === 'win'
-                                                            ? "border-emerald-500 bg-emerald-50 dark:bg-emerald-950/30 text-emerald-600 dark:text-emerald-400 z-10 relative"
-                                                            : v === 'loss'
-                                                            ? "border-red-400 bg-red-50 dark:bg-red-950/30 text-red-500 dark:text-red-400 z-10 relative"
-                                                            : "border-[#16a34a] bg-[#f0fdf4] dark:bg-[#052e16]/40 text-[#16a34a] z-10 relative"
-                                                        : "border-neutral-200 dark:border-[#35332e] text-neutral-400 hover:border-neutral-300 dark:hover:border-neutral-500"
-                                                )}
-                                            >
-                                                {v === 'all' ? '수익률' : v === 'win' ? '수익' : '손실'}
-                                            </button>
-                                        ))}
+                                {/* ── 고급 필터 확장 패널 ── */}
+                                {filterOpen && (
+                                    <div className="px-5 sm:px-6 pb-4 pt-3 border-t border-neutral-100 dark:border-[#35332e] flex flex-wrap items-center gap-x-5 gap-y-3">
+                                        {/* 시가총액 */}
+                                        <div className="flex items-center gap-2 flex-wrap">
+                                            <span className="text-[10px] font-extrabold text-neutral-400 uppercase tracking-wider">시가총액</span>
+                                            {MKTCAP_PRESETS.map(p => (
+                                                <button
+                                                    key={p.value}
+                                                    onClick={() => setMinMarketCap(p.value)}
+                                                    className={cn(
+                                                        "px-2.5 py-1 rounded-lg border text-[10px] font-bold transition-all",
+                                                        minMarketCap === p.value
+                                                            ? "bg-[#16a34a] border-[#16a34a] text-white"
+                                                            : "bg-white dark:bg-transparent border-neutral-200 dark:border-[#35332e] text-neutral-500 hover:border-neutral-300 dark:hover:border-neutral-500"
+                                                    )}
+                                                >{p.label}</button>
+                                            ))}
+                                        </div>
+                                        <div className="w-px h-4 bg-neutral-200 dark:bg-[#4a4641] hidden sm:block" />
+                                        {/* 제외 조건 */}
+                                        <div className="flex items-center gap-4 flex-wrap">
+                                            <span className="text-[10px] font-extrabold text-neutral-400 uppercase tracking-wider">제외</span>
+                                            {[
+                                                { label: '홀딩스', value: excludeHoldings, set: setExcludeHoldings },
+                                                { label: '적자 기업', value: excludeDeficit, set: setExcludeDeficit },
+                                                { label: '상장폐지 의심', value: excludeDelisted, set: setExcludeDelisted },
+                                            ].map(opt => (
+                                                <label key={opt.label} className="flex items-center gap-1.5 cursor-pointer select-none">
+                                                    <input type="checkbox" checked={opt.value} onChange={e => opt.set(e.target.checked)} className="rounded accent-[#16a34a]" />
+                                                    <span className="text-[10px] font-bold text-neutral-600 dark:text-neutral-400">{opt.label}</span>
+                                                </label>
+                                            ))}
+                                        </div>
                                     </div>
                                 )}
-
-                                {/* PBR 필터 */}
-                                <div className="flex">
-                                    {(['all', '0.3', '0.5', '0.7'] as const).map((v, idx) => (
-                                        <button
-                                            key={v}
-                                            onClick={() => setFilterPbr(v)}
-                                            className={cn(
-                                                "text-[10px] font-bold px-2 py-1 border-y border-r transition-colors whitespace-nowrap",
-                                                idx === 0 && "rounded-l-lg border-l",
-                                                idx === 3 && "rounded-r-lg",
-                                                filterPbr === v
-                                                    ? "border-sky-500 bg-sky-50 dark:bg-sky-950/30 text-sky-600 dark:text-sky-400 z-10 relative"
-                                                    : "border-neutral-200 dark:border-[#35332e] text-neutral-400 hover:border-neutral-300 dark:hover:border-neutral-500"
-                                            )}
-                                        >
-                                            {v === 'all' ? 'PBR' : `≤${v}`}
-                                        </button>
-                                    ))}
-                                </div>
-
-                                {/* PER 필터 */}
-                                <div className="flex">
-                                    {(['all', '5', '10', '15'] as const).map((v, idx) => (
-                                        <button
-                                            key={v}
-                                            onClick={() => setFilterPer(v)}
-                                            className={cn(
-                                                "text-[10px] font-bold px-2 py-1 border-y border-r transition-colors whitespace-nowrap",
-                                                idx === 0 && "rounded-l-lg border-l",
-                                                idx === 3 && "rounded-r-lg",
-                                                filterPer === v
-                                                    ? "border-orange-500 bg-orange-50 dark:bg-orange-950/30 text-orange-600 dark:text-orange-400 z-10 relative"
-                                                    : "border-neutral-200 dark:border-[#35332e] text-neutral-400 hover:border-neutral-300 dark:hover:border-neutral-500"
-                                            )}
-                                        >
-                                            {v === 'all' ? 'PER' : `≤${v}`}
-                                        </button>
-                                    ))}
-                                </div>
-
-                                {/* 필터 초기화 */}
-                                {(searchQuery || filterNcav !== 'all' || filterReturn !== 'all' || filterPbr !== 'all' || filterPer !== 'all') && (
-                                    <button
-                                        onClick={() => { setSearchQuery(''); setFilterNcav('all'); setFilterReturn('all'); setFilterPbr('all'); setFilterPer('all'); }}
-                                        className="text-[10px] text-neutral-400 hover:text-neutral-600 dark:hover:text-neutral-300 underline ml-1"
-                                    >초기화</button>
-                                )}
-
-                                {/* 필터 적용 결과 수 */}
-                                {filteredList.length !== historicalList.length && (
-                                    <span className="text-[10px] text-neutral-400 ml-auto">
-                                        {filteredList.length}/{historicalList.length}개
-                                    </span>
-                                )}
                             </div>
-                        )}
+                            );
+                        })()}
 
                         {/* ── 히스토리 탭 ── */}
                         {viewTab === 'history' && (
@@ -1417,31 +1582,31 @@ function BacktestContent() {
                         {/* ── 포트폴리오 탭 ── */}
                         {viewTab === 'portfolio' && (
                         <>
-                        {(portfolioResult?.time_series?.length ?? 0) >= 2 ? (
-                            <>
-                                <PortfolioOverviewChart
-                                    result={portfolioResult}
-                                    loading={loadingPortfolio}
-                                    strategy={activeStrategy}
-                                />
-                                <PortfolioChart
-                                    result={portfolioResult}
-                                    loading={loadingPortfolio}
-                                    strategy={activeStrategy}
-                                />
-                            </>
-                        ) : (
-                            <PortfolioSnapshotChart
+                            <PortfolioOverviewChart
                                 result={portfolioResult}
                                 loading={loadingPortfolio}
                                 strategy={activeStrategy}
-                                currentPriceMap={currentPriceMap}
-                                selectedDate={selectedDate}
-                                fallbackCandidates={fallbackCandidates}
-                                currentLstnMap={currentLstnMap}
-                                splitAdjusted={splitAdjusted}
                             />
-                        )}
+                            <PortfolioChart
+                                result={portfolioResult}
+                                loading={loadingPortfolio}
+                                strategy={activeStrategy}
+                            />
+                            {/* 시계열 데이터 부족 시 안내 (스냅샷과 구분) */}
+                            {!loadingPortfolio && (portfolioResult?.time_series?.length ?? 0) < 2 && (portfolioResult?.candidate_count ?? 0) > 0 && (
+                                <div className="bg-white dark:bg-[#242320] rounded-2xl border border-neutral-200 dark:border-[#35332e] p-5 flex items-start gap-3">
+                                    <div className="shrink-0 w-8 h-8 rounded-xl bg-[#f0fdf4] dark:bg-[#052e16]/40 flex items-center justify-center">
+                                        <TrendingUp size={14} className="text-[#16a34a]" />
+                                    </div>
+                                    <div>
+                                        <p className="text-sm font-bold text-neutral-700 dark:text-neutral-300">시계열 시뮬레이션 준비 중</p>
+                                        <p className="text-xs text-neutral-400 mt-1">
+                                            선택한 기간({formattedSelectedDate})의 포트폴리오 시계열 데이터가 아직 충분하지 않습니다.
+                                            <br />수익률 스냅샷은 <button onClick={() => setViewTab('snapshot')} className="text-[#16a34a] font-bold hover:underline">스냅샷 탭</button>에서 확인할 수 있습니다.
+                                        </p>
+                                    </div>
+                                </div>
+                            )}
                         </> /* end 포트폴리오 탭 */
                         )}
 
@@ -1547,18 +1712,23 @@ function BacktestContent() {
                                                         </div>
 
                                                         {/* 전략 배지 */}
-                                                        <div className="flex flex-wrap gap-1">
-                                                            {item.strategies.slice(0, 1).map(s => (
-                                                                <span key={s} className="px-1.5 py-0.5 rounded text-[9px] font-bold bg-emerald-100 text-emerald-700 dark:bg-emerald-950/50 dark:text-emerald-400">
-                                                                    {STRATEGY_LABEL[s] ?? s}
-                                                                </span>
-                                                            ))}
-                                                            {item.strategies.length > 1 && (
-                                                                <span className="px-1.5 py-0.5 rounded text-[9px] font-bold bg-[#faf9f7] dark:bg-[#4a4641] text-neutral-400">
-                                                                    +{item.strategies.length - 1}
-                                                                </span>
-                                                            )}
-                                                        </div>
+                                                        {(() => {
+                                                            const strats = resolveAllStrategies(item);
+                                                            return (
+                                                                <div className="flex flex-wrap gap-1">
+                                                                    {strats.slice(0, 2).map(s => (
+                                                                        <span key={s} className={cn("px-1.5 py-0.5 rounded text-[9px] font-bold", STRATEGY_BADGE[s] ?? "bg-[#faf9f7] dark:bg-[#4a4641] text-neutral-500")}>
+                                                                            {STRATEGY_LABEL[s] ?? s}
+                                                                        </span>
+                                                                    ))}
+                                                                    {strats.length > 2 && (
+                                                                        <span className="px-1.5 py-0.5 rounded text-[9px] font-bold bg-[#faf9f7] dark:bg-[#4a4641] text-neutral-400">
+                                                                            +{strats.length - 2}
+                                                                        </span>
+                                                                    )}
+                                                                </div>
+                                                            );
+                                                        })()}
 
                                                         {/* NCAV 비율 */}
                                                         <div className="text-right">
