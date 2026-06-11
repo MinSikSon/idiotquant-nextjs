@@ -303,6 +303,20 @@ function PortfolioOverviewChart({ result, loading, strategy }: {
 
     if (chartData.length === 0) return null;
 
+    if (chartData.length === 1) {
+        return (
+            <div className="bg-white dark:bg-[#242320] rounded-2xl border border-neutral-200 dark:border-[#35332e] shadow-sm p-5 flex items-center gap-3">
+                <Loader2 size={16} className="animate-spin text-[#16a34a]/50 shrink-0" />
+                <div>
+                    <p className="text-xs font-bold text-neutral-600 dark:text-neutral-400">
+                        {result!.candidate_count}개 후보 확인됨 — 이후 스캔 데이터 수집 중
+                    </p>
+                    <p className="text-[10px] text-neutral-400 mt-0.5">기준일 이후 가격 이력이 쌓이면 구간별 수익률이 표시됩니다</p>
+                </div>
+            </div>
+        );
+    }
+
     const strategyLabel: Record<string, string> = {
         ncav: 'NCAV', low_pbr: '저PBR', low_per: '저PER', s_rim: 'S-RIM', all: '전체',
     };
@@ -421,6 +435,33 @@ function PortfolioChart({ result, loading, strategy }: {
         return (
             <div className="bg-white dark:bg-[#242320] rounded-2xl border border-neutral-200 dark:border-[#35332e] p-5 flex items-center justify-center h-36">
                 <p className="text-xs text-neutral-400">{result?.note ?? "포트폴리오 시뮬레이션 데이터가 없습니다."}</p>
+            </div>
+        );
+    }
+
+    if (result.time_series.length <= 1) {
+        const strategyLabel: Record<string, string> = {
+            ncav: 'NCAV', low_pbr: '저PBR', low_per: '저PER', s_rim: 'S-RIM', all: '전체',
+        };
+        return (
+            <div className="bg-white dark:bg-[#242320] rounded-2xl border border-neutral-200 dark:border-[#35332e] shadow-sm overflow-hidden">
+                <div className="px-5 py-4 border-b border-neutral-100 dark:border-[#35332e] flex items-center gap-2">
+                    <TrendingUp size={15} className="text-neutral-400" />
+                    <p className="text-sm font-black text-neutral-900 dark:text-white">포트폴리오 수익률 추이</p>
+                    <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-[#f0fdf4] dark:bg-[#052e16]/40 text-[#16a34a]">
+                        {strategyLabel[strategy] ?? strategy}
+                    </span>
+                    <span className="ml-auto text-[10px] font-bold px-2 py-0.5 rounded bg-[#faf9f7] dark:bg-[#1a1915] text-neutral-500 font-mono">
+                        {result.candidate_count}개
+                    </span>
+                </div>
+                <div className="flex items-center justify-center gap-3 py-10 px-5">
+                    <Loader2 size={16} className="animate-spin text-[#16a34a]/50 shrink-0" />
+                    <div>
+                        <p className="text-xs font-bold text-neutral-600 dark:text-neutral-400">이후 스캔 데이터 수집 중</p>
+                        <p className="text-[10px] text-neutral-400 mt-0.5">기준일 이후 가격 이력이 쌓이면 수익률 추이가 표시됩니다</p>
+                    </div>
+                </div>
             </div>
         );
     }
