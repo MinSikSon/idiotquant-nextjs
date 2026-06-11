@@ -303,20 +303,6 @@ function PortfolioOverviewChart({ result, loading, strategy }: {
 
     if (chartData.length === 0) return null;
 
-    if (chartData.length === 1) {
-        return (
-            <div className="bg-white dark:bg-[#242320] rounded-2xl border border-neutral-200 dark:border-[#35332e] shadow-sm p-5 flex items-center gap-3">
-                <Loader2 size={16} className="animate-spin text-[#16a34a]/50 shrink-0" />
-                <div>
-                    <p className="text-xs font-bold text-neutral-600 dark:text-neutral-400">
-                        {result!.candidate_count}개 후보 확인됨 — 이후 스캔 데이터 수집 중
-                    </p>
-                    <p className="text-[10px] text-neutral-400 mt-0.5">기준일 이후 가격 이력이 쌓이면 구간별 수익률이 표시됩니다</p>
-                </div>
-            </div>
-        );
-    }
-
     const strategyLabel: Record<string, string> = {
         ncav: 'NCAV', low_pbr: '저PBR', low_per: '저PER', s_rim: 'S-RIM', all: '전체',
     };
@@ -435,33 +421,6 @@ function PortfolioChart({ result, loading, strategy }: {
         return (
             <div className="bg-white dark:bg-[#242320] rounded-2xl border border-neutral-200 dark:border-[#35332e] p-5 flex items-center justify-center h-36">
                 <p className="text-xs text-neutral-400">{result?.note ?? "포트폴리오 시뮬레이션 데이터가 없습니다."}</p>
-            </div>
-        );
-    }
-
-    if (result.time_series.length <= 1) {
-        const strategyLabel: Record<string, string> = {
-            ncav: 'NCAV', low_pbr: '저PBR', low_per: '저PER', s_rim: 'S-RIM', all: '전체',
-        };
-        return (
-            <div className="bg-white dark:bg-[#242320] rounded-2xl border border-neutral-200 dark:border-[#35332e] shadow-sm overflow-hidden">
-                <div className="px-5 py-4 border-b border-neutral-100 dark:border-[#35332e] flex items-center gap-2">
-                    <TrendingUp size={15} className="text-neutral-400" />
-                    <p className="text-sm font-black text-neutral-900 dark:text-white">포트폴리오 수익률 추이</p>
-                    <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-[#f0fdf4] dark:bg-[#052e16]/40 text-[#16a34a]">
-                        {strategyLabel[strategy] ?? strategy}
-                    </span>
-                    <span className="ml-auto text-[10px] font-bold px-2 py-0.5 rounded bg-[#faf9f7] dark:bg-[#1a1915] text-neutral-500 font-mono">
-                        {result.candidate_count}개
-                    </span>
-                </div>
-                <div className="flex items-center justify-center gap-3 py-10 px-5">
-                    <Loader2 size={16} className="animate-spin text-[#16a34a]/50 shrink-0" />
-                    <div>
-                        <p className="text-xs font-bold text-neutral-600 dark:text-neutral-400">이후 스캔 데이터 수집 중</p>
-                        <p className="text-[10px] text-neutral-400 mt-0.5">기준일 이후 가격 이력이 쌓이면 수익률 추이가 표시됩니다</p>
-                    </div>
-                </div>
             </div>
         );
     }
@@ -620,6 +579,186 @@ function PortfolioChart({ result, loading, strategy }: {
                         </p>
                     </div>
                 )}
+            </div>
+        </div>
+    );
+}
+
+// ─── Portfolio Snapshot Chart (이후 날짜 데이터 없을 때 대체 표시) ────────────
+
+interface SnapshotEntry {
+    ticker: string;
+    label: string;
+    fullName: string;
+    pct: number;
+}
+
+function PortfolioSnapshotChart({ result, loading, strategy, currentPriceMap, selectedDate }: {
+    result: PortfolioResult | null;
+    loading: boolean;
+    strategy: string;
+    currentPriceMap: Map<string, number>;
+    selectedDate: string | null;
+}) {
+    const snapshotData: SnapshotEntry[] = useMemo(() => {
+        if (!result?.candidates?.length) return [];
+        return result.candidates
+            .map(c => {
+                const cur = currentPriceMap.get(c.ticker);
+                if (!cur || c.start_price <= 0) return null;
+                const pct = Math.round((cur / c.start_price - 1) * 10000) / 100;
+                return {
+                    ticker: c.ticker,
+                    label: c.name.length > 7 ? c.name.slice(0, 6) + '…' : c.name,
+                    fullName: c.name,
+                    pct,
+                };
+            })
+            .filter((x): x is SnapshotEntry => x !== null)
+            .sort((a, b) => b.pct - a.pct);
+    }, [result, currentPriceMap]);
+
+    const strategyLabel: Record<string, string> = {
+        ncav: 'NCAV', low_pbr: '저PBR', low_per: '저PER', s_rim: 'S-RIM', all: '전체',
+    };
+
+    if (loading) {
+        return (
+            <div className="bg-white dark:bg-[#242320] rounded-2xl border border-neutral-200 dark:border-[#35332e] p-5 flex items-center justify-center h-48">
+                <Loader2 size={22} className="animate-spin text-[#16a34a]/50" />
+            </div>
+        );
+    }
+
+    if (!result || result.candidate_count === 0) {
+        return (
+            <div className="bg-white dark:bg-[#242320] rounded-2xl border border-neutral-200 dark:border-[#35332e] p-5 flex items-center justify-center h-36">
+                <p className="text-xs text-neutral-400">{result?.note ?? "포트폴리오 시뮬레이션 데이터가 없습니다."}</p>
+            </div>
+        );
+    }
+
+    if (snapshotData.length === 0) {
+        return (
+            <div className="bg-white dark:bg-[#242320] rounded-2xl border border-neutral-200 dark:border-[#35332e] p-5 flex items-center gap-3">
+                <Loader2 size={16} className="animate-spin text-[#16a34a]/50 shrink-0" />
+                <div>
+                    <p className="text-xs font-bold text-neutral-600 dark:text-neutral-400">
+                        {result.candidate_count}개 후보 — 최근 스캔 가격 로딩 중
+                    </p>
+                    <p className="text-[10px] text-neutral-400 mt-0.5">이후 스캔 사이클 완료 시 수익률이 표시됩니다</p>
+                </div>
+            </div>
+        );
+    }
+
+    const avgPct = snapshotData.reduce((s, d) => s + d.pct, 0) / snapshotData.length;
+    const winCount = snapshotData.filter(d => d.pct >= 0).length;
+    const isPositive = avgPct >= 0;
+    const maxAbs = Math.max(...snapshotData.map(d => Math.abs(d.pct)), 0.1);
+    const chartHeight = Math.max(180, snapshotData.length * 24);
+
+    return (
+        <div className="bg-white dark:bg-[#242320] rounded-2xl border border-neutral-200 dark:border-[#35332e] shadow-sm overflow-hidden">
+            {/* Header */}
+            <div className="px-5 py-4 border-b border-neutral-100 dark:border-[#35332e] flex items-center justify-between gap-3 flex-wrap">
+                <div className="flex items-center gap-2">
+                    <TrendingUp size={15} className={isPositive ? "text-emerald-500" : "text-red-500"} />
+                    <p className="text-sm font-black text-neutral-900 dark:text-white">종목별 수익률 스냅샷</p>
+                    <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-[#f0fdf4] dark:bg-[#052e16]/40 text-[#16a34a]">
+                        {strategyLabel[strategy] ?? strategy}
+                    </span>
+                </div>
+                <div className="flex items-center gap-3">
+                    <div className="text-right">
+                        <p className="text-[10px] font-bold text-neutral-400 uppercase tracking-wider">포트폴리오 평균</p>
+                        <p className={cn(
+                            "text-lg font-black font-mono tabular-nums",
+                            isPositive ? "text-emerald-600 dark:text-emerald-400" : "text-red-500 dark:text-red-400"
+                        )}>
+                            {isPositive ? "+" : ""}{avgPct.toFixed(2)}%
+                        </p>
+                    </div>
+                    <div className="text-right">
+                        <p className="text-[10px] font-bold text-neutral-400 uppercase tracking-wider">커버</p>
+                        <p className="text-lg font-black font-mono tabular-nums">
+                            {snapshotData.length}
+                            <span className="text-xs text-neutral-400">/{result.candidate_count}</span>
+                        </p>
+                    </div>
+                </div>
+            </div>
+
+            {/* Sub-note */}
+            <div className="px-5 pt-3">
+                <p className="text-[10px] text-neutral-400">
+                    기준일 {selectedDate ? fmtDate(selectedDate) : '—'} 진입가 대비 최근 스캔가 기준 · {winCount}/{snapshotData.length} 수익
+                </p>
+            </div>
+
+            {/* Horizontal bar chart */}
+            <div className="px-5 pt-2 pb-4">
+                <ResponsiveContainer width="100%" height={chartHeight}>
+                    <BarChart data={snapshotData} layout="vertical" margin={{ top: 4, right: 48, left: 0, bottom: 0 }}>
+                        <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" horizontal={false} />
+                        <XAxis
+                            type="number"
+                            tick={{ fontSize: 9, fill: '#9ca3af' }}
+                            axisLine={false}
+                            tickLine={false}
+                            domain={[-maxAbs * 1.2, maxAbs * 1.2]}
+                            tickFormatter={(v: number) => `${v >= 0 ? '+' : ''}${v.toFixed(1)}%`}
+                        />
+                        <YAxis
+                            type="category"
+                            dataKey="label"
+                            tick={{ fontSize: 10, fill: '#6b7280' }}
+                            axisLine={false}
+                            tickLine={false}
+                            width={60}
+                        />
+                        <ReferenceLine x={0} stroke="#d1d5db" strokeDasharray="4 2" />
+                        <RTooltip
+                            contentStyle={{ fontSize: 11, borderRadius: 8, border: '1px solid #e5e7eb', background: 'white' }}
+                            formatter={(v: unknown, _name: string, props: any) => {
+                                const n = Number(v);
+                                return [`${n >= 0 ? '+' : ''}${n.toFixed(2)}%`, props?.payload?.fullName ?? ''];
+                            }}
+                            labelFormatter={() => ''}
+                        />
+                        <Bar
+                            dataKey="pct"
+                            radius={[0, 3, 3, 0]}
+                            maxBarSize={18}
+                            label={{ position: 'right', formatter: (v: number) => `${v >= 0 ? '+' : ''}${v.toFixed(1)}%`, fontSize: 9, fill: '#9ca3af' }}
+                        >
+                            {snapshotData.map(entry => (
+                                <Cell key={entry.ticker} fill={entry.pct >= 0 ? '#4ade80' : '#fca5a5'} />
+                            ))}
+                        </Bar>
+                    </BarChart>
+                </ResponsiveContainer>
+            </div>
+
+            {/* Summary row */}
+            <div className="px-5 pb-4 grid grid-cols-3 gap-2">
+                <div className="bg-[#faf9f7] dark:bg-[#1a1915] rounded-xl p-3 text-center">
+                    <p className="text-[9px] font-bold text-neutral-400 uppercase tracking-wider">후보 수</p>
+                    <p className="text-xs font-black mt-0.5">{result.candidate_count}개</p>
+                </div>
+                <div className="bg-[#faf9f7] dark:bg-[#1a1915] rounded-xl p-3 text-center">
+                    <p className="text-[9px] font-bold text-neutral-400 uppercase tracking-wider">커버</p>
+                    <p className="text-xs font-black mt-0.5">{snapshotData.length}개 ({Math.round(snapshotData.length / result.candidate_count * 100)}%)</p>
+                </div>
+                <div className="bg-[#faf9f7] dark:bg-[#1a1915] rounded-xl p-3 text-center">
+                    <p className="text-[9px] font-bold text-neutral-400 uppercase tracking-wider">승률</p>
+                    <p className={cn(
+                        "text-xs font-black mt-0.5",
+                        isPositive ? "text-emerald-600 dark:text-emerald-400" : "text-red-500 dark:text-red-400"
+                    )}>
+                        {Math.round(winCount / snapshotData.length * 100)}%
+                    </p>
+                </div>
             </div>
         </div>
     );
@@ -957,19 +1096,29 @@ function BacktestContent() {
                             </div>
                         )}
 
-                        {/* ── Portfolio Overview ── */}
-                        <PortfolioOverviewChart
-                            result={portfolioResult}
-                            loading={loadingPortfolio}
-                            strategy={activeStrategy}
-                        />
-
-                        {/* ── Portfolio Simulation ── */}
-                        <PortfolioChart
-                            result={portfolioResult}
-                            loading={loadingPortfolio}
-                            strategy={activeStrategy}
-                        />
+                        {/* ── Portfolio Charts ── */}
+                        {(portfolioResult?.time_series?.length ?? 0) >= 2 ? (
+                            <>
+                                <PortfolioOverviewChart
+                                    result={portfolioResult}
+                                    loading={loadingPortfolio}
+                                    strategy={activeStrategy}
+                                />
+                                <PortfolioChart
+                                    result={portfolioResult}
+                                    loading={loadingPortfolio}
+                                    strategy={activeStrategy}
+                                />
+                            </>
+                        ) : (
+                            <PortfolioSnapshotChart
+                                result={portfolioResult}
+                                loading={loadingPortfolio}
+                                strategy={activeStrategy}
+                                currentPriceMap={currentPriceMap}
+                                selectedDate={selectedDate}
+                            />
+                        )}
 
                         {/* ── Table ── */}
                         <div className="bg-white dark:bg-[#242320] rounded-2xl border border-neutral-200 dark:border-[#35332e] overflow-hidden shadow-sm">
