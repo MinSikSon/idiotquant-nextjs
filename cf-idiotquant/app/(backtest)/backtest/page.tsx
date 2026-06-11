@@ -1065,19 +1065,19 @@ function BacktestContent() {
 
     // Summary stats
     const stats = useMemo(() => {
-        if (historicalList.length === 0) return null;
-        const cnt = historicalList.length;
-        const avgNcav = historicalList.reduce((s, i) => s + safeNum(i.ncav_ratio), 0) / cnt;
-        const hasPbr = historicalList.filter(i => safeNum(i.pbr) > 0);
-        const hasPer = historicalList.filter(i => safeNum(i.per) > 0);
+        if (filteredList.length === 0) return null;
+        const cnt = filteredList.length;
+        const avgNcav = filteredList.reduce((s, i) => s + safeNum(i.ncav_ratio), 0) / cnt;
+        const hasPbr = filteredList.filter(i => safeNum(i.pbr) > 0);
+        const hasPer = filteredList.filter(i => safeNum(i.per) > 0);
         const avgPbr = hasPbr.length ? hasPbr.reduce((s, i) => s + safeNum(i.pbr), 0) / hasPbr.length : 0;
         const avgPer = hasPer.length ? hasPer.reduce((s, i) => s + safeNum(i.per), 0) / hasPer.length : 0;
-        const withReturn = historicalList.filter(i => currentPriceMap.has(i.ticker) && i.last_price > 0);
+        const withReturn = filteredList.filter(i => currentPriceMap.has(i.ticker) && i.last_price > 0);
         const avgReturn = withReturn.length
             ? withReturn.reduce((s, i) => s + calcReturn(i.last_price, i.market_cap, i.ticker, currentPriceMap.get(i.ticker)!, splitAdjusted, currentLstnMap), 0) / withReturn.length
             : null;
         return { cnt, avgNcav, avgPbr, avgPer, avgReturn };
-    }, [historicalList, currentPriceMap, splitAdjusted, currentLstnMap]);
+    }, [filteredList, currentPriceMap, splitAdjusted, currentLstnMap]);
 
     const formattedSelectedDate = selectedDate
         ? `${selectedDate.slice(0, 4)}.${selectedDate.slice(4, 6)}.${selectedDate.slice(6, 8)}`
@@ -1207,6 +1207,129 @@ function BacktestContent() {
                             )}
                         </div>
 
+                        {/* ── 공통 필터 바 ── */}
+                        {!loadingList && historicalList.length > 0 && (
+                            <div className="bg-white dark:bg-[#242320] rounded-2xl border border-neutral-200 dark:border-[#35332e] px-5 sm:px-6 py-3 flex flex-wrap items-center gap-2 shadow-sm">
+                                {/* 종목명·티커 검색 */}
+                                <div className="relative">
+                                    <input
+                                        type="text"
+                                        value={searchQuery}
+                                        onChange={e => setSearchQuery(e.target.value)}
+                                        placeholder="종목명·티커"
+                                        className="text-xs px-3 py-1.5 pr-6 rounded-lg border border-neutral-200 dark:border-[#35332e] bg-white dark:bg-[#1a1915] text-neutral-900 dark:text-neutral-100 placeholder-neutral-400 w-28 focus:outline-none focus:ring-1 focus:ring-[#16a34a]/40"
+                                    />
+                                    {searchQuery && (
+                                        <button
+                                            onClick={() => setSearchQuery('')}
+                                            className="absolute right-1.5 top-1/2 -translate-y-1/2 text-neutral-400 hover:text-neutral-600 text-sm leading-none"
+                                        >×</button>
+                                    )}
+                                </div>
+
+                                {/* NCAV 비율 필터 */}
+                                <div className="flex">
+                                    {(['all', '0.5', '0.7', '1.0'] as const).map((v, idx) => (
+                                        <button
+                                            key={v}
+                                            onClick={() => setFilterNcav(v)}
+                                            className={cn(
+                                                "text-[10px] font-bold px-2 py-1 border-y border-r transition-colors whitespace-nowrap",
+                                                idx === 0 && "rounded-l-lg border-l",
+                                                idx === 3 && "rounded-r-lg",
+                                                filterNcav === v
+                                                    ? "border-[#16a34a] bg-[#f0fdf4] dark:bg-[#052e16]/40 text-[#16a34a] z-10 relative"
+                                                    : "border-neutral-200 dark:border-[#35332e] text-neutral-400 hover:border-neutral-300 dark:hover:border-neutral-500"
+                                            )}
+                                        >
+                                            {v === 'all' ? 'NCAV' : `≥${v}x`}
+                                        </button>
+                                    ))}
+                                </div>
+
+                                {/* 수익률 필터 (비교 날짜 있을 때만) */}
+                                {!isLatestDate && currentPriceMap.size > 0 && (
+                                    <div className="flex">
+                                        {(['all', 'win', 'loss'] as const).map((v, idx) => (
+                                            <button
+                                                key={v}
+                                                onClick={() => setFilterReturn(v)}
+                                                className={cn(
+                                                    "text-[10px] font-bold px-2 py-1 border-y border-r transition-colors whitespace-nowrap",
+                                                    idx === 0 && "rounded-l-lg border-l",
+                                                    idx === 2 && "rounded-r-lg",
+                                                    filterReturn === v
+                                                        ? v === 'win'
+                                                            ? "border-emerald-500 bg-emerald-50 dark:bg-emerald-950/30 text-emerald-600 dark:text-emerald-400 z-10 relative"
+                                                            : v === 'loss'
+                                                            ? "border-red-400 bg-red-50 dark:bg-red-950/30 text-red-500 dark:text-red-400 z-10 relative"
+                                                            : "border-[#16a34a] bg-[#f0fdf4] dark:bg-[#052e16]/40 text-[#16a34a] z-10 relative"
+                                                        : "border-neutral-200 dark:border-[#35332e] text-neutral-400 hover:border-neutral-300 dark:hover:border-neutral-500"
+                                                )}
+                                            >
+                                                {v === 'all' ? '수익률' : v === 'win' ? '수익' : '손실'}
+                                            </button>
+                                        ))}
+                                    </div>
+                                )}
+
+                                {/* PBR 필터 */}
+                                <div className="flex">
+                                    {(['all', '0.3', '0.5', '0.7'] as const).map((v, idx) => (
+                                        <button
+                                            key={v}
+                                            onClick={() => setFilterPbr(v)}
+                                            className={cn(
+                                                "text-[10px] font-bold px-2 py-1 border-y border-r transition-colors whitespace-nowrap",
+                                                idx === 0 && "rounded-l-lg border-l",
+                                                idx === 3 && "rounded-r-lg",
+                                                filterPbr === v
+                                                    ? "border-sky-500 bg-sky-50 dark:bg-sky-950/30 text-sky-600 dark:text-sky-400 z-10 relative"
+                                                    : "border-neutral-200 dark:border-[#35332e] text-neutral-400 hover:border-neutral-300 dark:hover:border-neutral-500"
+                                            )}
+                                        >
+                                            {v === 'all' ? 'PBR' : `≤${v}`}
+                                        </button>
+                                    ))}
+                                </div>
+
+                                {/* PER 필터 */}
+                                <div className="flex">
+                                    {(['all', '5', '10', '15'] as const).map((v, idx) => (
+                                        <button
+                                            key={v}
+                                            onClick={() => setFilterPer(v)}
+                                            className={cn(
+                                                "text-[10px] font-bold px-2 py-1 border-y border-r transition-colors whitespace-nowrap",
+                                                idx === 0 && "rounded-l-lg border-l",
+                                                idx === 3 && "rounded-r-lg",
+                                                filterPer === v
+                                                    ? "border-orange-500 bg-orange-50 dark:bg-orange-950/30 text-orange-600 dark:text-orange-400 z-10 relative"
+                                                    : "border-neutral-200 dark:border-[#35332e] text-neutral-400 hover:border-neutral-300 dark:hover:border-neutral-500"
+                                            )}
+                                        >
+                                            {v === 'all' ? 'PER' : `≤${v}`}
+                                        </button>
+                                    ))}
+                                </div>
+
+                                {/* 필터 초기화 */}
+                                {(searchQuery || filterNcav !== 'all' || filterReturn !== 'all' || filterPbr !== 'all' || filterPer !== 'all') && (
+                                    <button
+                                        onClick={() => { setSearchQuery(''); setFilterNcav('all'); setFilterReturn('all'); setFilterPbr('all'); setFilterPer('all'); }}
+                                        className="text-[10px] text-neutral-400 hover:text-neutral-600 dark:hover:text-neutral-300 underline ml-1"
+                                    >초기화</button>
+                                )}
+
+                                {/* 필터 적용 결과 수 */}
+                                {filteredList.length !== historicalList.length && (
+                                    <span className="text-[10px] text-neutral-400 ml-auto">
+                                        {filteredList.length}/{historicalList.length}개
+                                    </span>
+                                )}
+                            </div>
+                        )}
+
                         {/* ── 히스토리 탭 ── */}
                         {viewTab === 'history' && (
                         <>
@@ -1294,16 +1417,31 @@ function BacktestContent() {
                         {/* ── 포트폴리오 탭 ── */}
                         {viewTab === 'portfolio' && (
                         <>
-                            <PortfolioOverviewChart
+                        {(portfolioResult?.time_series?.length ?? 0) >= 2 ? (
+                            <>
+                                <PortfolioOverviewChart
+                                    result={portfolioResult}
+                                    loading={loadingPortfolio}
+                                    strategy={activeStrategy}
+                                />
+                                <PortfolioChart
+                                    result={portfolioResult}
+                                    loading={loadingPortfolio}
+                                    strategy={activeStrategy}
+                                />
+                            </>
+                        ) : (
+                            <PortfolioSnapshotChart
                                 result={portfolioResult}
                                 loading={loadingPortfolio}
                                 strategy={activeStrategy}
+                                currentPriceMap={currentPriceMap}
+                                selectedDate={selectedDate}
+                                fallbackCandidates={fallbackCandidates}
+                                currentLstnMap={currentLstnMap}
+                                splitAdjusted={splitAdjusted}
                             />
-                            <PortfolioChart
-                                result={portfolioResult}
-                                loading={loadingPortfolio}
-                                strategy={activeStrategy}
-                            />
+                        )}
                         </> /* end 포트폴리오 탭 */
                         )}
 
@@ -1345,129 +1483,6 @@ function BacktestContent() {
                                     <span className="ml-auto text-[10px] text-neutral-400 font-medium">현재가 기준 수익률</span>
                                 )}
                             </div>
-
-                            {/* ── Filter bar ── */}
-                            {!loadingList && historicalList.length > 0 && (
-                                <div className="px-5 sm:px-6 py-3 border-b border-neutral-100 dark:border-[#35332e] flex flex-wrap items-center gap-2">
-                                    {/* 종목명·티커 검색 */}
-                                    <div className="relative">
-                                        <input
-                                            type="text"
-                                            value={searchQuery}
-                                            onChange={e => setSearchQuery(e.target.value)}
-                                            placeholder="종목명·티커"
-                                            className="text-xs px-3 py-1.5 pr-6 rounded-lg border border-neutral-200 dark:border-[#35332e] bg-white dark:bg-[#1a1915] text-neutral-900 dark:text-neutral-100 placeholder-neutral-400 w-28 focus:outline-none focus:ring-1 focus:ring-[#16a34a]/40"
-                                        />
-                                        {searchQuery && (
-                                            <button
-                                                onClick={() => setSearchQuery('')}
-                                                className="absolute right-1.5 top-1/2 -translate-y-1/2 text-neutral-400 hover:text-neutral-600 text-sm leading-none"
-                                            >×</button>
-                                        )}
-                                    </div>
-
-                                    {/* NCAV 비율 필터 */}
-                                    <div className="flex">
-                                        {(['all', '0.5', '0.7', '1.0'] as const).map((v, idx) => (
-                                            <button
-                                                key={v}
-                                                onClick={() => setFilterNcav(v)}
-                                                className={cn(
-                                                    "text-[10px] font-bold px-2 py-1 border-y border-r transition-colors whitespace-nowrap",
-                                                    idx === 0 && "rounded-l-lg border-l",
-                                                    idx === 3 && "rounded-r-lg",
-                                                    filterNcav === v
-                                                        ? "border-[#16a34a] bg-[#f0fdf4] dark:bg-[#052e16]/40 text-[#16a34a] z-10 relative"
-                                                        : "border-neutral-200 dark:border-[#35332e] text-neutral-400 hover:border-neutral-300 dark:hover:border-neutral-500"
-                                                )}
-                                            >
-                                                {v === 'all' ? 'NCAV' : `≥${v}x`}
-                                            </button>
-                                        ))}
-                                    </div>
-
-                                    {/* 수익률 필터 (비교 날짜 있을 때만) */}
-                                    {!isLatestDate && currentPriceMap.size > 0 && (
-                                        <div className="flex">
-                                            {(['all', 'win', 'loss'] as const).map((v, idx) => (
-                                                <button
-                                                    key={v}
-                                                    onClick={() => setFilterReturn(v)}
-                                                    className={cn(
-                                                        "text-[10px] font-bold px-2 py-1 border-y border-r transition-colors whitespace-nowrap",
-                                                        idx === 0 && "rounded-l-lg border-l",
-                                                        idx === 2 && "rounded-r-lg",
-                                                        filterReturn === v
-                                                            ? v === 'win'
-                                                                ? "border-emerald-500 bg-emerald-50 dark:bg-emerald-950/30 text-emerald-600 dark:text-emerald-400 z-10 relative"
-                                                                : v === 'loss'
-                                                                ? "border-red-400 bg-red-50 dark:bg-red-950/30 text-red-500 dark:text-red-400 z-10 relative"
-                                                                : "border-[#16a34a] bg-[#f0fdf4] dark:bg-[#052e16]/40 text-[#16a34a] z-10 relative"
-                                                            : "border-neutral-200 dark:border-[#35332e] text-neutral-400 hover:border-neutral-300 dark:hover:border-neutral-500"
-                                                    )}
-                                                >
-                                                    {v === 'all' ? '수익률' : v === 'win' ? '수익' : '손실'}
-                                                </button>
-                                            ))}
-                                        </div>
-                                    )}
-
-                                    {/* PBR 필터 */}
-                                    <div className="flex">
-                                        {(['all', '0.3', '0.5', '0.7'] as const).map((v, idx) => (
-                                            <button
-                                                key={v}
-                                                onClick={() => setFilterPbr(v)}
-                                                className={cn(
-                                                    "text-[10px] font-bold px-2 py-1 border-y border-r transition-colors whitespace-nowrap",
-                                                    idx === 0 && "rounded-l-lg border-l",
-                                                    idx === 3 && "rounded-r-lg",
-                                                    filterPbr === v
-                                                        ? "border-sky-500 bg-sky-50 dark:bg-sky-950/30 text-sky-600 dark:text-sky-400 z-10 relative"
-                                                        : "border-neutral-200 dark:border-[#35332e] text-neutral-400 hover:border-neutral-300 dark:hover:border-neutral-500"
-                                                )}
-                                            >
-                                                {v === 'all' ? 'PBR' : `≤${v}`}
-                                            </button>
-                                        ))}
-                                    </div>
-
-                                    {/* PER 필터 */}
-                                    <div className="flex">
-                                        {(['all', '5', '10', '15'] as const).map((v, idx) => (
-                                            <button
-                                                key={v}
-                                                onClick={() => setFilterPer(v)}
-                                                className={cn(
-                                                    "text-[10px] font-bold px-2 py-1 border-y border-r transition-colors whitespace-nowrap",
-                                                    idx === 0 && "rounded-l-lg border-l",
-                                                    idx === 3 && "rounded-r-lg",
-                                                    filterPer === v
-                                                        ? "border-orange-500 bg-orange-50 dark:bg-orange-950/30 text-orange-600 dark:text-orange-400 z-10 relative"
-                                                        : "border-neutral-200 dark:border-[#35332e] text-neutral-400 hover:border-neutral-300 dark:hover:border-neutral-500"
-                                                )}
-                                            >
-                                                {v === 'all' ? 'PER' : `≤${v}`}
-                                            </button>
-                                        ))}
-                                    </div>
-
-                                    {/* 필터 초기화 */}
-                                    {(searchQuery || filterNcav !== 'all' || filterReturn !== 'all' || filterPbr !== 'all' || filterPer !== 'all') && (
-                                        <button
-                                            onClick={() => { setSearchQuery(''); setFilterNcav('all'); setFilterReturn('all'); setFilterPbr('all'); setFilterPer('all'); }}
-                                            className="text-[10px] text-neutral-400 hover:text-neutral-600 dark:hover:text-neutral-300 underline ml-1"
-                                        >초기화</button>
-                                    )}
-
-                                    {/* 필터 적용 결과 수 */}
-                                    {filteredList.length !== historicalList.length && (
-                                        <span className="text-[10px] text-neutral-400 ml-auto">
-                                            {filteredList.length}개 표시 중
-                                        </span>
-                                    )}
-                                </div>
-                            )}
 
                             {loadingList ? (
                                 <div className="flex justify-center py-14">
