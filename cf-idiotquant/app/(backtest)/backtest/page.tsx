@@ -124,10 +124,11 @@ function calcReturn(
     splitAdjusted: boolean,
     lstnMap: Map<string, number>
 ): number {
+    // market_cap은 억원 단위(KIS hts_avls), last_price는 원 단위이므로 ×100_000_000 변환 필요
     if (splitAdjusted && entryMarketCap && entryMarketCap > 0) {
         const curLstn = lstnMap.get(ticker);
         if (curLstn && curLstn > 0) {
-            const adjEntry = entryMarketCap / curLstn;
+            const adjEntry = entryMarketCap * 100_000_000 / curLstn;
             return (curPrice / adjEntry - 1) * 100;
         }
     }
@@ -184,7 +185,8 @@ function DrillDown({ name, ticker, stockHistory, loading, onNavigate, entryDate,
             .map(d => {
                 let return_pct: number;
                 if (splitAdjusted && entryMarketCap && entryMarketCap > 0 && d.lstn_stcn && d.lstn_stcn > 0) {
-                    return_pct = Math.round((d.last_price * d.lstn_stcn / entryMarketCap - 1) * 10000) / 100;
+                    // entryMarketCap은 억원, last_price는 원 → ×100_000_000 변환
+                    return_pct = Math.round((d.last_price * d.lstn_stcn / (entryMarketCap * 100_000_000) - 1) * 10000) / 100;
                 } else {
                     return_pct = Math.round((d.last_price / entryPrice - 1) * 10000) / 100;
                 }
@@ -1128,7 +1130,7 @@ function BacktestContent() {
                 {!datesLoading && datesState.dates.length > 0 && (
                     <>
                         {/* ── View Tabs ── */}
-                        <div className="flex gap-0 border-b border-neutral-200 dark:border-[#35332e] -mb-2">
+                        <div className="flex items-end gap-0 border-b border-neutral-200 dark:border-[#35332e] -mb-2">
                             {(['history', 'portfolio', 'stocks'] as const).map(tab => {
                                 const labels = { history: '히스토리', portfolio: '포트폴리오', stocks: '종목 목록' };
                                 return (
@@ -1146,6 +1148,22 @@ function BacktestContent() {
                                     </button>
                                 );
                             })}
+                            {/* 병합조정 토글 — 비최신일 + 현재가 로드됐을 때만 표시 */}
+                            {!isLatestDate && !loadingCurrentPrices && currentPriceMap.size > 0 && (
+                                <div className="ml-auto pb-2 flex items-center gap-1.5">
+                                    <button
+                                        onClick={() => setSplitAdjusted(p => !p)}
+                                        className={cn(
+                                            "text-[10px] font-bold px-2.5 py-1 rounded-lg border transition-colors",
+                                            splitAdjusted
+                                                ? "border-amber-400 text-amber-600 bg-amber-50 dark:bg-amber-950/30 dark:text-amber-400 dark:border-amber-500"
+                                                : "border-neutral-200 dark:border-[#35332e] text-neutral-400 hover:border-neutral-300"
+                                        )}
+                                    >
+                                        병합조정 {splitAdjusted ? 'ON' : 'OFF'}
+                                    </button>
+                                </div>
+                            )}
                         </div>
 
                         {/* ── 히스토리 탭 ── */}
@@ -1281,21 +1299,8 @@ function BacktestContent() {
                                             : `${historicalList.length}개`}
                                     </span>
                                 )}
-                                {!isLatestDate && !loadingCurrentPrices && currentPriceMap.size > 0 && (
-                                    <div className="ml-auto flex items-center gap-2">
-                                        <button
-                                            onClick={() => setSplitAdjusted(p => !p)}
-                                            className={cn(
-                                                "text-[10px] font-bold px-2.5 py-1 rounded-lg border transition-colors",
-                                                splitAdjusted
-                                                    ? "border-amber-400 text-amber-600 bg-amber-50 dark:bg-amber-950/30 dark:text-amber-400 dark:border-amber-500"
-                                                    : "border-neutral-200 dark:border-[#35332e] text-neutral-400 hover:border-neutral-300"
-                                            )}
-                                        >
-                                            병합조정 {splitAdjusted ? 'ON' : 'OFF'}
-                                        </button>
-                                        <span className="text-[10px] text-neutral-400 font-medium">현재가 기준 수익률</span>
-                                    </div>
+                                {!isLatestDate && currentPriceMap.size > 0 && (
+                                    <span className="ml-auto text-[10px] text-neutral-400 font-medium">현재가 기준 수익률</span>
                                 )}
                             </div>
 
