@@ -730,7 +730,7 @@ function PortfolioSnapshotChart({ result, loading, strategy, currentPriceMap, se
                             dataKey="pct"
                             radius={[0, 3, 3, 0]}
                             maxBarSize={18}
-                            label={{ position: 'right', formatter: (v: number) => `${v >= 0 ? '+' : ''}${v.toFixed(1)}%`, fontSize: 9, fill: '#9ca3af' }}
+                            label={{ position: 'right', formatter: (v: unknown) => { const n = Number(v); return `${n >= 0 ? '+' : ''}${n.toFixed(1)}%`; }, fontSize: 9, fill: '#9ca3af' }}
                         >
                             {snapshotData.map(entry => (
                                 <Cell key={entry.ticker} fill={entry.pct >= 0 ? '#4ade80' : '#fca5a5'} />
