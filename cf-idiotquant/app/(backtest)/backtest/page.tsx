@@ -114,6 +114,35 @@ function fmtDate(yyyymmdd: string): string {
     return `${yyyymmdd.slice(4, 6)}/${yyyymmdd.slice(6, 8)}`;
 }
 
+// 날짜 간격이 있는 데이터를 선형 보간으로 채움 (차트 연속성 확보)
+function fillDateGaps<T extends { date: string }>(data: T[], numericKeys: string[]): (T & { estimated?: boolean })[] {
+    if (data.length <= 1) return data;
+    const parseD = (s: string) => new Date(+s.slice(0, 4), +s.slice(4, 6) - 1, +s.slice(6, 8));
+    const fmtD = (d: Date) =>
+        `${d.getFullYear()}${String(d.getMonth() + 1).padStart(2, '0')}${String(d.getDate()).padStart(2, '0')}`;
+    const out: (T & { estimated?: boolean })[] = [];
+    for (let i = 0; i < data.length - 1; i++) {
+        out.push(data[i]);
+        const d0 = parseD(data[i].date), d1 = parseD(data[i + 1].date);
+        const days = Math.round((d1.getTime() - d0.getTime()) / 86400000);
+        if (days > 1) {
+            for (let j = 1; j < days; j++) {
+                const t = j / days;
+                const nd = new Date(d0); nd.setDate(nd.getDate() + j);
+                // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                const pt: any = { ...data[i], date: fmtD(nd), estimated: true };
+                for (const k of numericKeys) {
+                    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                    pt[k] = safeNum((data[i] as any)[k]) + (safeNum((data[i + 1] as any)[k]) - safeNum((data[i] as any)[k])) * t;
+                }
+                out.push(pt);
+            }
+        }
+    }
+    out.push(data[data.length - 1]);
+    return out;
+}
+
 // 병합(역분할) 보정 수익률: entry_market_cap / current_lstn_stcn 으로 기준가 재계산
 // splitAdjusted=false 이면 기존 last_price 기반 단순 수익률 반환
 function calcReturn(
@@ -171,16 +200,14 @@ function DrillDown({ name, ticker, stockHistory, loading, onNavigate, entryDate,
     splitAdjusted: boolean;
     currentLstnMap: Map<string, number>;
 }) {
-    const priceChartData = useMemo(() =>
-        stockHistory.map(d => ({
-            date: fmtDate(d.scan_date),
-            price: d.last_price,
-        })),
-    [stockHistory]);
+    const priceChartData = useMemo(() => {
+        const raw = stockHistory.map(d => ({ date: d.scan_date, price: d.last_price }));
+        return fillDateGaps(raw, ['price']).map(d => ({ ...d, date: fmtDate(d.date) }));
+    }, [stockHistory]);
 
     const returnChartData = useMemo(() => {
         if (!entryDate || entryPrice <= 0) return [];
-        return stockHistory
+        const raw = stockHistory
             .filter(d => d.scan_date >= entryDate)
             .map(d => {
                 let return_pct: number;
@@ -190,8 +217,9 @@ function DrillDown({ name, ticker, stockHistory, loading, onNavigate, entryDate,
                 } else {
                     return_pct = Math.round((d.last_price / entryPrice - 1) * 10000) / 100;
                 }
-                return { date: fmtDate(d.scan_date), return_pct };
+                return { date: d.scan_date, return_pct };
             });
+        return fillDateGaps(raw, ['return_pct']).map(d => ({ ...d, date: fmtDate(d.date) }));
     }, [stockHistory, entryDate, entryPrice, entryMarketCap, splitAdjusted]);
 
     const currentReturn = returnChartData.at(-1)?.return_pct ?? 0;
@@ -407,26 +435,29 @@ function PortfolioChart({ result, loading, strategy }: {
     const [showLines, setShowLines] = useState(false);
 
     const chartData = useMemo(() => {
-        const base = (result?.time_series ?? []).map(p => ({
-            label: fmtDate(p.date),
+        const rawBase = (result?.time_series ?? []).map(p => ({
             date: p.date,
             pct: p.portfolio_pct,
             covered: p.covered,
             win: p.win_count,
         }));
-        if (!showLines || !result?.ticker_series?.length) return base;
+        const interp = fillDateGaps(rawBase, ['pct', 'covered', 'win']);
         const tickerDateMap: Record<string, Record<string, number>> = {};
-        for (const ts of result.ticker_series) {
-            tickerDateMap[ts.ticker] = {};
-            for (const d of ts.data) tickerDateMap[ts.ticker][d.date] = d.pct;
-        }
-        return base.map(row => {
-            const extra: Record<string, unknown> = {};
-            for (const ts of result.ticker_series!) {
-                const v = tickerDateMap[ts.ticker]?.[row.date];
-                if (v !== undefined) extra[`t_${ts.ticker}`] = v;
+        if (showLines && result?.ticker_series?.length) {
+            for (const ts of result.ticker_series) {
+                tickerDateMap[ts.ticker] = {};
+                for (const d of ts.data) tickerDateMap[ts.ticker][d.date] = d.pct;
             }
-            return { ...row, ...extra };
+        }
+        return interp.map(row => {
+            const extra: Record<string, unknown> = {};
+            if (showLines && result?.ticker_series?.length) {
+                for (const ts of result.ticker_series!) {
+                    const v = tickerDateMap[ts.ticker]?.[row.date];
+                    if (v !== undefined) extra[`t_${ts.ticker}`] = v;
+                }
+            }
+            return { label: fmtDate(row.date), date: row.date, pct: row.pct, covered: row.covered, win: row.win, estimated: row.estimated, ...extra };
         });
     }, [result, showLines]);
 
@@ -817,7 +848,7 @@ function BacktestContent() {
     const [currentPriceMap,     setCurrentPriceMap]     = useState<Map<string, number>>(new Map());
     const [currentLstnMap,      setCurrentLstnMap]      = useState<Map<string, number>>(new Map());
     const [splitAdjusted,       setSplitAdjusted]       = useState(false);
-    const [viewTab,             setViewTab]             = useState<'history' | 'portfolio' | 'stocks'>('history');
+    const [viewTab,             setViewTab]             = useState<'history' | 'portfolio' | 'snapshot' | 'stocks'>('history');
     const [selectedStock,       setSelectedStock]       = useState<string | null>(null);
     const [stockHistory,        setStockHistory]        = useState<DailyItem[]>([]);
     const [sortKey,             setSortKey]             = useState<SortKey>('ncav_ratio');
@@ -825,6 +856,8 @@ function BacktestContent() {
     const [searchQuery,         setSearchQuery]         = useState('');
     const [filterNcav,          setFilterNcav]          = useState<'all' | '0.5' | '0.7' | '1.0'>('all');
     const [filterReturn,        setFilterReturn]        = useState<'all' | 'win' | 'loss'>('all');
+    const [filterPbr,           setFilterPbr]           = useState<'all' | '0.3' | '0.5' | '0.7'>('all');
+    const [filterPer,           setFilterPer]           = useState<'all' | '5' | '10' | '15'>('all');
     const [loadingList,          setLoadingList]         = useState(false);
     const [loadingCurrentPrices, setLoadingCurrentPrices]= useState(false);
     const [loadingStock,         setLoadingStock]        = useState(false);
@@ -984,8 +1017,16 @@ function BacktestContent() {
                 return filterReturn === 'win' ? ret >= 0 : ret < 0;
             });
         }
+        if (filterPbr !== 'all') {
+            const threshold = parseFloat(filterPbr);
+            list = list.filter(i => safeNum(i.pbr) > 0 && safeNum(i.pbr) <= threshold);
+        }
+        if (filterPer !== 'all') {
+            const threshold = parseFloat(filterPer);
+            list = list.filter(i => safeNum(i.per) > 0 && safeNum(i.per) <= threshold);
+        }
         return list;
-    }, [historicalList, searchQuery, filterNcav, filterReturn, isLatestDate, currentPriceMap, splitAdjusted, currentLstnMap]);
+    }, [historicalList, searchQuery, filterNcav, filterReturn, filterPbr, filterPer, isLatestDate, currentPriceMap, splitAdjusted, currentLstnMap]);
 
     // Sorted table rows
     const sortedList = useMemo(() => {
@@ -1131,8 +1172,8 @@ function BacktestContent() {
                     <>
                         {/* ── View Tabs ── */}
                         <div className="flex items-end gap-0 border-b border-neutral-200 dark:border-[#35332e] -mb-2">
-                            {(['history', 'portfolio', 'stocks'] as const).map(tab => {
-                                const labels = { history: '히스토리', portfolio: '포트폴리오', stocks: '종목 목록' };
+                            {(['history', 'portfolio', 'snapshot', 'stocks'] as const).map(tab => {
+                                const labels = { history: '히스토리', portfolio: '포트폴리오', snapshot: '스냅샷', stocks: '종목 목록' };
                                 return (
                                     <button
                                         key={tab}
@@ -1253,20 +1294,22 @@ function BacktestContent() {
                         {/* ── 포트폴리오 탭 ── */}
                         {viewTab === 'portfolio' && (
                         <>
-                        {(portfolioResult?.time_series?.length ?? 0) >= 2 ? (
-                            <>
-                                <PortfolioOverviewChart
-                                    result={portfolioResult}
-                                    loading={loadingPortfolio}
-                                    strategy={activeStrategy}
-                                />
-                                <PortfolioChart
-                                    result={portfolioResult}
-                                    loading={loadingPortfolio}
-                                    strategy={activeStrategy}
-                                />
-                            </>
-                        ) : (
+                            <PortfolioOverviewChart
+                                result={portfolioResult}
+                                loading={loadingPortfolio}
+                                strategy={activeStrategy}
+                            />
+                            <PortfolioChart
+                                result={portfolioResult}
+                                loading={loadingPortfolio}
+                                strategy={activeStrategy}
+                            />
+                        </> /* end 포트폴리오 탭 */
+                        )}
+
+                        {/* ── 스냅샷 탭 ── */}
+                        {viewTab === 'snapshot' && (
+                        <>
                             <PortfolioSnapshotChart
                                 result={portfolioResult}
                                 loading={loadingPortfolio}
@@ -1277,8 +1320,7 @@ function BacktestContent() {
                                 currentLstnMap={currentLstnMap}
                                 splitAdjusted={splitAdjusted}
                             />
-                        )}
-                        </> /* end 포트폴리오 탭 */
+                        </> /* end 스냅샷 탭 */
                         )}
 
                         {/* ── 종목 목록 탭 ── */}
@@ -1370,10 +1412,50 @@ function BacktestContent() {
                                         </div>
                                     )}
 
+                                    {/* PBR 필터 */}
+                                    <div className="flex">
+                                        {(['all', '0.3', '0.5', '0.7'] as const).map((v, idx) => (
+                                            <button
+                                                key={v}
+                                                onClick={() => setFilterPbr(v)}
+                                                className={cn(
+                                                    "text-[10px] font-bold px-2 py-1 border-y border-r transition-colors whitespace-nowrap",
+                                                    idx === 0 && "rounded-l-lg border-l",
+                                                    idx === 3 && "rounded-r-lg",
+                                                    filterPbr === v
+                                                        ? "border-sky-500 bg-sky-50 dark:bg-sky-950/30 text-sky-600 dark:text-sky-400 z-10 relative"
+                                                        : "border-neutral-200 dark:border-[#35332e] text-neutral-400 hover:border-neutral-300 dark:hover:border-neutral-500"
+                                                )}
+                                            >
+                                                {v === 'all' ? 'PBR' : `≤${v}`}
+                                            </button>
+                                        ))}
+                                    </div>
+
+                                    {/* PER 필터 */}
+                                    <div className="flex">
+                                        {(['all', '5', '10', '15'] as const).map((v, idx) => (
+                                            <button
+                                                key={v}
+                                                onClick={() => setFilterPer(v)}
+                                                className={cn(
+                                                    "text-[10px] font-bold px-2 py-1 border-y border-r transition-colors whitespace-nowrap",
+                                                    idx === 0 && "rounded-l-lg border-l",
+                                                    idx === 3 && "rounded-r-lg",
+                                                    filterPer === v
+                                                        ? "border-orange-500 bg-orange-50 dark:bg-orange-950/30 text-orange-600 dark:text-orange-400 z-10 relative"
+                                                        : "border-neutral-200 dark:border-[#35332e] text-neutral-400 hover:border-neutral-300 dark:hover:border-neutral-500"
+                                                )}
+                                            >
+                                                {v === 'all' ? 'PER' : `≤${v}`}
+                                            </button>
+                                        ))}
+                                    </div>
+
                                     {/* 필터 초기화 */}
-                                    {(searchQuery || filterNcav !== 'all' || filterReturn !== 'all') && (
+                                    {(searchQuery || filterNcav !== 'all' || filterReturn !== 'all' || filterPbr !== 'all' || filterPer !== 'all') && (
                                         <button
-                                            onClick={() => { setSearchQuery(''); setFilterNcav('all'); setFilterReturn('all'); }}
+                                            onClick={() => { setSearchQuery(''); setFilterNcav('all'); setFilterReturn('all'); setFilterPbr('all'); setFilterPer('all'); }}
                                             className="text-[10px] text-neutral-400 hover:text-neutral-600 dark:hover:text-neutral-300 underline ml-1"
                                         >초기화</button>
                                     )}
