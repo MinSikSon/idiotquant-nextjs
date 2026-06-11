@@ -820,6 +820,9 @@ function BacktestContent() {
     const [stockHistory,        setStockHistory]        = useState<DailyItem[]>([]);
     const [sortKey,             setSortKey]             = useState<SortKey>('ncav_ratio');
     const [sortOrder,           setSortOrder]           = useState<SortOrder>('desc');
+    const [searchQuery,         setSearchQuery]         = useState('');
+    const [filterNcav,          setFilterNcav]          = useState<'all' | '0.5' | '0.7' | '1.0'>('all');
+    const [filterReturn,        setFilterReturn]        = useState<'all' | 'win' | 'loss'>('all');
     const [loadingList,          setLoadingList]         = useState(false);
     const [loadingCurrentPrices, setLoadingCurrentPrices]= useState(false);
     const [loadingStock,         setLoadingStock]        = useState(false);
@@ -960,9 +963,31 @@ function BacktestContent() {
         && datesState.dates.length > 0
         && selectedDate === datesState.dates[0].scan_date;
 
+    // Filtered list (search + NCAV filter + return filter)
+    const filteredList = useMemo(() => {
+        let list = historicalList;
+        if (searchQuery.trim()) {
+            const q = searchQuery.trim().toLowerCase();
+            list = list.filter(i => i.name.toLowerCase().includes(q) || i.ticker.includes(q));
+        }
+        if (filterNcav !== 'all') {
+            const threshold = parseFloat(filterNcav);
+            list = list.filter(i => safeNum(i.ncav_ratio) >= threshold);
+        }
+        if (filterReturn !== 'all' && !isLatestDate) {
+            list = list.filter(i => {
+                const cur = currentPriceMap.get(i.ticker);
+                if (!cur || i.last_price <= 0) return false;
+                const ret = calcReturn(i.last_price, i.market_cap, i.ticker, cur, splitAdjusted, currentLstnMap);
+                return filterReturn === 'win' ? ret >= 0 : ret < 0;
+            });
+        }
+        return list;
+    }, [historicalList, searchQuery, filterNcav, filterReturn, isLatestDate, currentPriceMap, splitAdjusted, currentLstnMap]);
+
     // Sorted table rows
     const sortedList = useMemo(() => {
-        const list = [...historicalList];
+        const list = [...filteredList];
         list.sort((a, b) => {
             if (sortKey === 'name') {
                 return sortOrder === 'asc'
@@ -985,7 +1010,7 @@ function BacktestContent() {
             return sortOrder === 'asc' ? va - vb : vb - va;
         });
         return list;
-    }, [historicalList, sortKey, sortOrder, currentPriceMap, splitAdjusted, currentLstnMap]);
+    }, [filteredList, sortKey, sortOrder, currentPriceMap, splitAdjusted, currentLstnMap]);
 
     const toggleSort = useCallback((key: SortKey) => {
         setSortKey(prev => {
@@ -1250,7 +1275,11 @@ function BacktestContent() {
                                 </p>
                                 {loadingList && <Loader2 size={13} className="animate-spin text-neutral-400" />}
                                 {!loadingList && historicalList.length > 0 && (
-                                    <span className="text-xs text-neutral-400 font-medium">{historicalList.length}개</span>
+                                    <span className="text-xs text-neutral-400 font-medium">
+                                        {filteredList.length !== historicalList.length
+                                            ? `${filteredList.length}/${historicalList.length}개`
+                                            : `${historicalList.length}개`}
+                                    </span>
                                 )}
                                 {!isLatestDate && !loadingCurrentPrices && currentPriceMap.size > 0 && (
                                     <div className="ml-auto flex items-center gap-2">
@@ -1270,6 +1299,89 @@ function BacktestContent() {
                                 )}
                             </div>
 
+                            {/* ── Filter bar ── */}
+                            {!loadingList && historicalList.length > 0 && (
+                                <div className="px-5 sm:px-6 py-3 border-b border-neutral-100 dark:border-[#35332e] flex flex-wrap items-center gap-2">
+                                    {/* 종목명·티커 검색 */}
+                                    <div className="relative">
+                                        <input
+                                            type="text"
+                                            value={searchQuery}
+                                            onChange={e => setSearchQuery(e.target.value)}
+                                            placeholder="종목명·티커"
+                                            className="text-xs px-3 py-1.5 pr-6 rounded-lg border border-neutral-200 dark:border-[#35332e] bg-white dark:bg-[#1a1915] text-neutral-900 dark:text-neutral-100 placeholder-neutral-400 w-28 focus:outline-none focus:ring-1 focus:ring-[#16a34a]/40"
+                                        />
+                                        {searchQuery && (
+                                            <button
+                                                onClick={() => setSearchQuery('')}
+                                                className="absolute right-1.5 top-1/2 -translate-y-1/2 text-neutral-400 hover:text-neutral-600 text-sm leading-none"
+                                            >×</button>
+                                        )}
+                                    </div>
+
+                                    {/* NCAV 비율 필터 */}
+                                    <div className="flex">
+                                        {(['all', '0.5', '0.7', '1.0'] as const).map((v, idx) => (
+                                            <button
+                                                key={v}
+                                                onClick={() => setFilterNcav(v)}
+                                                className={cn(
+                                                    "text-[10px] font-bold px-2 py-1 border-y border-r transition-colors whitespace-nowrap",
+                                                    idx === 0 && "rounded-l-lg border-l",
+                                                    idx === 3 && "rounded-r-lg",
+                                                    filterNcav === v
+                                                        ? "border-[#16a34a] bg-[#f0fdf4] dark:bg-[#052e16]/40 text-[#16a34a] z-10 relative"
+                                                        : "border-neutral-200 dark:border-[#35332e] text-neutral-400 hover:border-neutral-300 dark:hover:border-neutral-500"
+                                                )}
+                                            >
+                                                {v === 'all' ? 'NCAV' : `≥${v}x`}
+                                            </button>
+                                        ))}
+                                    </div>
+
+                                    {/* 수익률 필터 (비교 날짜 있을 때만) */}
+                                    {!isLatestDate && currentPriceMap.size > 0 && (
+                                        <div className="flex">
+                                            {(['all', 'win', 'loss'] as const).map((v, idx) => (
+                                                <button
+                                                    key={v}
+                                                    onClick={() => setFilterReturn(v)}
+                                                    className={cn(
+                                                        "text-[10px] font-bold px-2 py-1 border-y border-r transition-colors whitespace-nowrap",
+                                                        idx === 0 && "rounded-l-lg border-l",
+                                                        idx === 2 && "rounded-r-lg",
+                                                        filterReturn === v
+                                                            ? v === 'win'
+                                                                ? "border-emerald-500 bg-emerald-50 dark:bg-emerald-950/30 text-emerald-600 dark:text-emerald-400 z-10 relative"
+                                                                : v === 'loss'
+                                                                ? "border-red-400 bg-red-50 dark:bg-red-950/30 text-red-500 dark:text-red-400 z-10 relative"
+                                                                : "border-[#16a34a] bg-[#f0fdf4] dark:bg-[#052e16]/40 text-[#16a34a] z-10 relative"
+                                                            : "border-neutral-200 dark:border-[#35332e] text-neutral-400 hover:border-neutral-300 dark:hover:border-neutral-500"
+                                                    )}
+                                                >
+                                                    {v === 'all' ? '수익률' : v === 'win' ? '수익' : '손실'}
+                                                </button>
+                                            ))}
+                                        </div>
+                                    )}
+
+                                    {/* 필터 초기화 */}
+                                    {(searchQuery || filterNcav !== 'all' || filterReturn !== 'all') && (
+                                        <button
+                                            onClick={() => { setSearchQuery(''); setFilterNcav('all'); setFilterReturn('all'); }}
+                                            className="text-[10px] text-neutral-400 hover:text-neutral-600 dark:hover:text-neutral-300 underline ml-1"
+                                        >초기화</button>
+                                    )}
+
+                                    {/* 필터 적용 결과 수 */}
+                                    {filteredList.length !== historicalList.length && (
+                                        <span className="text-[10px] text-neutral-400 ml-auto">
+                                            {filteredList.length}개 표시 중
+                                        </span>
+                                    )}
+                                </div>
+                            )}
+
                             {loadingList ? (
                                 <div className="flex justify-center py-14">
                                     <Loader2 size={24} className="animate-spin text-[#16a34a]/40" />
@@ -1277,6 +1389,10 @@ function BacktestContent() {
                             ) : historicalList.length === 0 ? (
                                 <p className="text-center py-14 text-sm text-neutral-400">
                                     해당 날짜의 {activeTab.label} 후보 데이터가 없습니다.
+                                </p>
+                            ) : filteredList.length === 0 ? (
+                                <p className="text-center py-14 text-sm text-neutral-400">
+                                    필터 조건에 맞는 종목이 없습니다.
                                 </p>
                             ) : (
                                 <>
