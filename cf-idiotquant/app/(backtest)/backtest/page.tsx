@@ -53,7 +53,7 @@ interface PortfolioResult {
     start_date: string;
     strategy: string;
     candidate_count: number;
-    candidates: { ticker: string; name: string; start_price: number }[];
+    candidates: { ticker: string; name: string; start_price: number; start_market_cap?: number }[];
     time_series: PortfolioPoint[];
     ticker_series?: TickerSeries[];
     summary: PortfolioSummary;
@@ -66,6 +66,8 @@ interface DailyItem {
     scan_date: string;
     ncav_ratio: number;
     last_price: number;
+    market_cap?: number;
+    lstn_stcn?: number;
     per: number;
     pbr: number;
     eps: number;
@@ -112,6 +114,26 @@ function fmtDate(yyyymmdd: string): string {
     return `${yyyymmdd.slice(4, 6)}/${yyyymmdd.slice(6, 8)}`;
 }
 
+// 병합(역분할) 보정 수익률: entry_market_cap / current_lstn_stcn 으로 기준가 재계산
+// splitAdjusted=false 이면 기존 last_price 기반 단순 수익률 반환
+function calcReturn(
+    entryPrice: number,
+    entryMarketCap: number | undefined,
+    ticker: string,
+    curPrice: number,
+    splitAdjusted: boolean,
+    lstnMap: Map<string, number>
+): number {
+    if (splitAdjusted && entryMarketCap && entryMarketCap > 0) {
+        const curLstn = lstnMap.get(ticker);
+        if (curLstn && curLstn > 0) {
+            const adjEntry = entryMarketCap / curLstn;
+            return (curPrice / adjEntry - 1) * 100;
+        }
+    }
+    return (curPrice / entryPrice - 1) * 100;
+}
+
 // ─── SortableHeader ───────────────────────────────────────────────────────────
 
 function SortTh({ label, sortKey: key, current, order, onToggle }: {
@@ -137,13 +159,16 @@ function SortTh({ label, sortKey: key, current, order, onToggle }: {
 
 // ─── DrillDown Panel ──────────────────────────────────────────────────────────
 
-function DrillDown({ name, ticker, stockHistory, loading, onNavigate, entryDate, entryPrice }: {
+function DrillDown({ name, ticker, stockHistory, loading, onNavigate, entryDate, entryPrice, entryMarketCap, splitAdjusted, currentLstnMap }: {
     name: string; ticker: string;
     stockHistory: DailyItem[];
     loading: boolean;
     onNavigate: () => void;
     entryDate: string | null;
     entryPrice: number;
+    entryMarketCap?: number;
+    splitAdjusted: boolean;
+    currentLstnMap: Map<string, number>;
 }) {
     const priceChartData = useMemo(() =>
         stockHistory.map(d => ({
@@ -156,11 +181,16 @@ function DrillDown({ name, ticker, stockHistory, loading, onNavigate, entryDate,
         if (!entryDate || entryPrice <= 0) return [];
         return stockHistory
             .filter(d => d.scan_date >= entryDate)
-            .map(d => ({
-                date: fmtDate(d.scan_date),
-                return_pct: Math.round((d.last_price / entryPrice - 1) * 10000) / 100,
-            }));
-    }, [stockHistory, entryDate, entryPrice]);
+            .map(d => {
+                let return_pct: number;
+                if (splitAdjusted && entryMarketCap && entryMarketCap > 0 && d.lstn_stcn && d.lstn_stcn > 0) {
+                    return_pct = Math.round((d.last_price * d.lstn_stcn / entryMarketCap - 1) * 10000) / 100;
+                } else {
+                    return_pct = Math.round((d.last_price / entryPrice - 1) * 10000) / 100;
+                }
+                return { date: fmtDate(d.scan_date), return_pct };
+            });
+    }, [stockHistory, entryDate, entryPrice, entryMarketCap, splitAdjusted]);
 
     const currentReturn = returnChartData.at(-1)?.return_pct ?? 0;
     const returnColor = currentReturn >= 0 ? "#16a34a" : "#ef4444";
@@ -593,13 +623,15 @@ interface SnapshotEntry {
     pct: number;
 }
 
-function PortfolioSnapshotChart({ result, loading, strategy, currentPriceMap, selectedDate, fallbackCandidates }: {
+function PortfolioSnapshotChart({ result, loading, strategy, currentPriceMap, selectedDate, fallbackCandidates, currentLstnMap, splitAdjusted }: {
     result: PortfolioResult | null;
     loading: boolean;
     strategy: string;
     currentPriceMap: Map<string, number>;
     selectedDate: string | null;
-    fallbackCandidates: { ticker: string; name: string; start_price: number }[];
+    fallbackCandidates: { ticker: string; name: string; start_price: number; start_market_cap?: number }[];
+    currentLstnMap: Map<string, number>;
+    splitAdjusted: boolean;
 }) {
     const effectiveCandidates = (result?.candidates?.length ?? 0) > 0
         ? result!.candidates
@@ -612,7 +644,7 @@ function PortfolioSnapshotChart({ result, loading, strategy, currentPriceMap, se
             .map(c => {
                 const cur = currentPriceMap.get(c.ticker);
                 if (!cur || c.start_price <= 0) return null;
-                const pct = Math.round((cur / c.start_price - 1) * 10000) / 100;
+                const pct = Math.round(calcReturn(c.start_price, c.start_market_cap, c.ticker, cur, splitAdjusted, currentLstnMap) * 100) / 100;
                 return {
                     ticker: c.ticker,
                     label: c.name.length > 7 ? c.name.slice(0, 6) + '…' : c.name,
@@ -622,7 +654,7 @@ function PortfolioSnapshotChart({ result, loading, strategy, currentPriceMap, se
             })
             .filter((x): x is SnapshotEntry => x !== null)
             .sort((a, b) => b.pct - a.pct);
-    }, [effectiveCandidates, currentPriceMap]);
+    }, [effectiveCandidates, currentPriceMap, splitAdjusted, currentLstnMap]);
 
     const strategyLabel: Record<string, string> = {
         ncav: 'NCAV', low_pbr: '저PBR', low_per: '저PER', s_rim: 'S-RIM', all: '전체',
@@ -781,6 +813,9 @@ function BacktestContent() {
     const [activeStrategy,      setActiveStrategy]      = useState<StrategyId>('ncav');
     const [historicalList,      setHistoricalList]      = useState<DailyItem[]>([]);
     const [currentPriceMap,     setCurrentPriceMap]     = useState<Map<string, number>>(new Map());
+    const [currentLstnMap,      setCurrentLstnMap]      = useState<Map<string, number>>(new Map());
+    const [splitAdjusted,       setSplitAdjusted]       = useState(false);
+    const [viewTab,             setViewTab]             = useState<'history' | 'portfolio' | 'stocks'>('history');
     const [selectedStock,       setSelectedStock]       = useState<string | null>(null);
     const [stockHistory,        setStockHistory]        = useState<DailyItem[]>([]);
     const [sortKey,             setSortKey]             = useState<SortKey>('ncav_ratio');
@@ -805,12 +840,15 @@ function BacktestContent() {
         pricesLoaded.current = true;
         setLoadingCurrentPrices(true);
         getScanDailyAll('latest')
-            .then((res: { data?: { ticker: string; last_price: number }[] }) => {
-                const map = new Map<string, number>();
+            .then((res: { data?: { ticker: string; last_price: number; lstn_stcn?: number }[] }) => {
+                const priceMap = new Map<string, number>();
+                const lstnMap  = new Map<string, number>();
                 (res?.data ?? []).forEach(item => {
-                    if (item.ticker && item.last_price) map.set(item.ticker, safeNum(item.last_price));
+                    if (item.ticker && item.last_price) priceMap.set(item.ticker, safeNum(item.last_price));
+                    if (item.ticker && item.lstn_stcn)  lstnMap.set(item.ticker, safeNum(item.lstn_stcn));
                 });
-                setCurrentPriceMap(map);
+                setCurrentPriceMap(priceMap);
+                setCurrentLstnMap(lstnMap);
             })
             .catch(() => {})
             .finally(() => setLoadingCurrentPrices(false));
@@ -877,7 +915,7 @@ function BacktestContent() {
     const fallbackCandidates = useMemo(() =>
         historicalList
             .filter(item => item.last_price > 0)
-            .map(item => ({ ticker: item.ticker, name: item.name, start_price: item.last_price })),
+            .map(item => ({ ticker: item.ticker, name: item.name, start_price: item.last_price, start_market_cap: item.market_cap })),
     [historicalList]);
 
     // Fetch prices for candidates missing from currentPriceMap
@@ -934,7 +972,8 @@ function BacktestContent() {
             if (sortKey === 'return_pct') {
                 const getPct = (item: DailyItem) => {
                     const cur = currentPriceMap.get(item.ticker);
-                    return cur && item.last_price > 0 ? (cur / item.last_price - 1) : -Infinity;
+                    if (!cur || item.last_price <= 0) return -Infinity;
+                    return calcReturn(item.last_price, item.market_cap, item.ticker, cur, splitAdjusted, currentLstnMap);
                 };
                 const ra = getPct(a), rb = getPct(b);
                 return sortOrder === 'asc' ? ra - rb : rb - ra;
@@ -946,7 +985,7 @@ function BacktestContent() {
             return sortOrder === 'asc' ? va - vb : vb - va;
         });
         return list;
-    }, [historicalList, sortKey, sortOrder, currentPriceMap]);
+    }, [historicalList, sortKey, sortOrder, currentPriceMap, splitAdjusted, currentLstnMap]);
 
     const toggleSort = useCallback((key: SortKey) => {
         setSortKey(prev => {
@@ -967,10 +1006,10 @@ function BacktestContent() {
         const avgPer = hasPer.length ? hasPer.reduce((s, i) => s + safeNum(i.per), 0) / hasPer.length : 0;
         const withReturn = historicalList.filter(i => currentPriceMap.has(i.ticker) && i.last_price > 0);
         const avgReturn = withReturn.length
-            ? withReturn.reduce((s, i) => s + (currentPriceMap.get(i.ticker)! / i.last_price - 1) * 100, 0) / withReturn.length
+            ? withReturn.reduce((s, i) => s + calcReturn(i.last_price, i.market_cap, i.ticker, currentPriceMap.get(i.ticker)!, splitAdjusted, currentLstnMap), 0) / withReturn.length
             : null;
         return { cnt, avgNcav, avgPbr, avgPer, avgReturn };
-    }, [historicalList, currentPriceMap]);
+    }, [historicalList, currentPriceMap, splitAdjusted, currentLstnMap]);
 
     const formattedSelectedDate = selectedDate
         ? `${selectedDate.slice(0, 4)}.${selectedDate.slice(4, 6)}.${selectedDate.slice(6, 8)}`
@@ -1063,6 +1102,31 @@ function BacktestContent() {
 
                 {!datesLoading && datesState.dates.length > 0 && (
                     <>
+                        {/* ── View Tabs ── */}
+                        <div className="flex gap-0 border-b border-neutral-200 dark:border-[#35332e] -mb-2">
+                            {(['history', 'portfolio', 'stocks'] as const).map(tab => {
+                                const labels = { history: '히스토리', portfolio: '포트폴리오', stocks: '종목 목록' };
+                                return (
+                                    <button
+                                        key={tab}
+                                        onClick={() => setViewTab(tab)}
+                                        className={cn(
+                                            "px-4 pb-3 pt-1 text-sm font-bold border-b-2 transition-colors whitespace-nowrap",
+                                            viewTab === tab
+                                                ? "border-[#16a34a] text-[#16a34a]"
+                                                : "border-transparent text-neutral-400 hover:text-neutral-600 dark:hover:text-neutral-300"
+                                        )}
+                                    >
+                                        {labels[tab]}
+                                    </button>
+                                );
+                            })}
+                        </div>
+
+                        {/* ── 히스토리 탭 ── */}
+                        {viewTab === 'history' && (
+                        <>
+
                         {/* ── Bar Chart ── */}
                         <div className="bg-white dark:bg-[#242320] rounded-2xl border border-neutral-200 dark:border-[#35332e] p-5 shadow-sm">
                             <p className="text-xs font-bold text-neutral-500 dark:text-neutral-400 uppercase tracking-wider mb-4">
@@ -1122,7 +1186,7 @@ function BacktestContent() {
                                     { label: '평균 PBR',   value: stats.avgPbr > 0  ? stats.avgPbr.toFixed(2) : '—', color: '' },
                                     !isLatestDate && stats.avgReturn !== null
                                         ? {
-                                            label: '평균 수익률',
+                                            label: splitAdjusted ? '평균수익률(조정)' : '평균 수익률',
                                             value: `${stats.avgReturn >= 0 ? '+' : ''}${stats.avgReturn.toFixed(1)}%`,
                                             color: stats.avgReturn >= 0
                                                 ? 'text-emerald-600 dark:text-emerald-400'
@@ -1140,7 +1204,12 @@ function BacktestContent() {
                             </div>
                         )}
 
-                        {/* ── Portfolio Charts ── */}
+                        </> /* end 히스토리 탭 */
+                        )}
+
+                        {/* ── 포트폴리오 탭 ── */}
+                        {viewTab === 'portfolio' && (
+                        <>
                         {(portfolioResult?.time_series?.length ?? 0) >= 2 ? (
                             <>
                                 <PortfolioOverviewChart
@@ -1162,8 +1231,16 @@ function BacktestContent() {
                                 currentPriceMap={currentPriceMap}
                                 selectedDate={selectedDate}
                                 fallbackCandidates={fallbackCandidates}
+                                currentLstnMap={currentLstnMap}
+                                splitAdjusted={splitAdjusted}
                             />
                         )}
+                        </> /* end 포트폴리오 탭 */
+                        )}
+
+                        {/* ── 종목 목록 탭 ── */}
+                        {viewTab === 'stocks' && (
+                        <>
 
                         {/* ── Table ── */}
                         <div className="bg-white dark:bg-[#242320] rounded-2xl border border-neutral-200 dark:border-[#35332e] overflow-hidden shadow-sm">
@@ -1176,7 +1253,20 @@ function BacktestContent() {
                                     <span className="text-xs text-neutral-400 font-medium">{historicalList.length}개</span>
                                 )}
                                 {!isLatestDate && !loadingCurrentPrices && currentPriceMap.size > 0 && (
-                                    <span className="ml-auto text-[10px] text-neutral-400 font-medium">현재가 기준 수익률 표시</span>
+                                    <div className="ml-auto flex items-center gap-2">
+                                        <button
+                                            onClick={() => setSplitAdjusted(p => !p)}
+                                            className={cn(
+                                                "text-[10px] font-bold px-2.5 py-1 rounded-lg border transition-colors",
+                                                splitAdjusted
+                                                    ? "border-amber-400 text-amber-600 bg-amber-50 dark:bg-amber-950/30 dark:text-amber-400 dark:border-amber-500"
+                                                    : "border-neutral-200 dark:border-[#35332e] text-neutral-400 hover:border-neutral-300"
+                                            )}
+                                        >
+                                            병합조정 {splitAdjusted ? 'ON' : 'OFF'}
+                                        </button>
+                                        <span className="text-[10px] text-neutral-400 font-medium">현재가 기준 수익률</span>
+                                    </div>
                                 )}
                             </div>
 
@@ -1213,7 +1303,7 @@ function BacktestContent() {
                                         {sortedList.map(item => {
                                             const curPrice  = currentPriceMap.get(item.ticker);
                                             const returnPct = !isLatestDate && curPrice && item.last_price > 0
-                                                ? (curPrice / item.last_price - 1) * 100
+                                                ? calcReturn(item.last_price, item.market_cap, item.ticker, curPrice, splitAdjusted, currentLstnMap)
                                                 : null;
                                             const ncav      = safeNum(item.ncav_ratio);
                                             const isExpanded = selectedStock === item.ticker;
@@ -1324,6 +1414,9 @@ function BacktestContent() {
                                                             onNavigate={() => router.push(`/analyze?ticker=${encodeURIComponent(item.name)}&from=backtest`)}
                                                             entryDate={selectedDate}
                                                             entryPrice={item.last_price}
+                                                            entryMarketCap={item.market_cap}
+                                                            splitAdjusted={splitAdjusted}
+                                                            currentLstnMap={currentLstnMap}
                                                         />
                                                     )}
                                                 </div>
@@ -1336,7 +1429,7 @@ function BacktestContent() {
                                         {sortedList.map(item => {
                                             const curPrice  = currentPriceMap.get(item.ticker);
                                             const returnPct = !isLatestDate && curPrice && item.last_price > 0
-                                                ? (curPrice / item.last_price - 1) * 100
+                                                ? calcReturn(item.last_price, item.market_cap, item.ticker, curPrice, splitAdjusted, currentLstnMap)
                                                 : null;
                                             const ncav      = safeNum(item.ncav_ratio);
                                             const isExpanded = selectedStock === item.ticker;
@@ -1418,6 +1511,9 @@ function BacktestContent() {
                                                             onNavigate={() => router.push(`/analyze?ticker=${encodeURIComponent(item.name)}&from=backtest`)}
                                                             entryDate={selectedDate}
                                                             entryPrice={item.last_price}
+                                                            entryMarketCap={item.market_cap}
+                                                            splitAdjusted={splitAdjusted}
+                                                            currentLstnMap={currentLstnMap}
                                                         />
                                                     )}
                                                 </div>
@@ -1427,6 +1523,8 @@ function BacktestContent() {
                                 </>
                             )}
                         </div>
+                    </>
+                )}
                     </>
                 )}
             </div>
