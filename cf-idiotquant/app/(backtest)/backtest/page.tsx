@@ -702,7 +702,7 @@ interface SnapshotEntry {
     pct: number;
 }
 
-function PortfolioSnapshotChart({ result, loading, strategy, currentPriceMap, selectedDate, fallbackCandidates, currentLstnMap, splitAdjusted }: {
+function PortfolioSnapshotChart({ result, loading, strategy, currentPriceMap, selectedDate, fallbackCandidates, currentLstnMap, splitAdjusted, filteredTickers }: {
     result: PortfolioResult | null;
     loading: boolean;
     strategy: string;
@@ -711,10 +711,18 @@ function PortfolioSnapshotChart({ result, loading, strategy, currentPriceMap, se
     fallbackCandidates: { ticker: string; name: string; start_price: number; start_market_cap?: number }[];
     currentLstnMap: Map<string, number>;
     splitAdjusted: boolean;
+    filteredTickers: Set<string>;
 }) {
-    const effectiveCandidates = (result?.candidates?.length ?? 0) > 0
-        ? result!.candidates
-        : fallbackCandidates;
+    // portfolioResult.candidates 가 있으면 filteredTickers 로 교차 필터, 없으면 fallbackCandidates(이미 filteredList 기반)
+    const effectiveCandidates = useMemo(() => {
+        if ((result?.candidates?.length ?? 0) > 0) {
+            // 필터가 전체를 포함하는 경우(no-op) vs 일부를 제외하는 경우 모두 처리
+            return result!.candidates.filter(c => filteredTickers.has(c.ticker));
+        }
+        return fallbackCandidates;
+    }, [result, fallbackCandidates, filteredTickers]);
+
+    // 전체 후보 수는 원본 API 값 우선, fallback 시 filteredList 기준
     const effectiveCount = result?.candidate_count ?? effectiveCandidates.length;
 
     const snapshotData: SnapshotEntry[] = useMemo(() => {
@@ -1002,44 +1010,6 @@ function BacktestContent() {
             .finally(() => setLoadingPortfolio(false));
     }, [selectedDate, activeStrategy]);
 
-    // Fallback candidates from historicalList when portfolioResult has none
-    const fallbackCandidates = useMemo(() =>
-        historicalList
-            .filter(item => item.last_price > 0)
-            .map(item => ({ ticker: item.ticker, name: item.name, start_price: item.last_price, start_market_cap: item.market_cap })),
-    [historicalList]);
-
-    // Fetch prices for candidates missing from currentPriceMap
-    useEffect(() => {
-        const candidates = (portfolioResult?.candidates?.length ?? 0) > 0
-            ? portfolioResult!.candidates
-            : fallbackCandidates;
-        if (!candidates.length) return;
-        const missing = candidates.filter(c => !currentPriceMap.has(c.ticker)).slice(0, 50);
-        if (!missing.length) return;
-
-        Promise.all(
-            missing.map(c =>
-                getScanDailyByTicker(c.ticker, 1)
-                    .then((res: { data?: Record<string, unknown>[] }) => {
-                        const price = safeNum((res?.data?.[0] as any)?.last_price);
-                        return price > 0 ? [c.ticker, price] as [string, number] : null;
-                    })
-                    .catch(() => null)
-            )
-        ).then(results => {
-            const newPrices = results.filter((r): r is [string, number] => r !== null);
-            if (!newPrices.length) return;
-            setCurrentPriceMap(prev => {
-                const next = new Map(prev);
-                for (const [t, p] of newPrices) next.set(t, p);
-                return next;
-            });
-        });
-    // currentPriceMap 제외: 가격 업데이트 후 무한 루프 방지
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [portfolioResult, fallbackCandidates]);
-
     // Bar chart data (chronological order)
     const chartData = useMemo(() =>
         [...datesState.dates].reverse().map(d => ({ ...d, label: fmtDate(d.scan_date) })),
@@ -1051,7 +1021,7 @@ function BacktestContent() {
         && datesState.dates.length > 0
         && selectedDate === datesState.dates[0].scan_date;
 
-    // Filtered list
+    // Filtered list — 모든 필터 조건 적용
     const filteredList = useMemo(() => {
         let list = historicalList;
         if (searchQuery.trim()) {
@@ -1101,6 +1071,47 @@ function BacktestContent() {
         }
         return list;
     }, [historicalList, searchQuery, filterStrategies, filterStrategyMode, minMarketCap, excludeHoldings, excludeDeficit, excludeDelisted, filterNcav, filterReturn, filterPbr, filterPer, isLatestDate, currentPriceMap, splitAdjusted, currentLstnMap]);
+
+    // Fallback candidates — filteredList 기반으로 필터 조건 반영
+    const fallbackCandidates = useMemo(() =>
+        filteredList
+            .filter(item => item.last_price > 0)
+            .map(item => ({ ticker: item.ticker, name: item.name, start_price: item.last_price, start_market_cap: item.market_cap })),
+    [filteredList]);
+
+    // 필터 적용 ticker set (portfolioResult.candidates 교차 필터링에 사용)
+    const filteredTickers = useMemo(() => new Set(filteredList.map(i => i.ticker)), [filteredList]);
+
+    // Fetch prices for candidates missing from currentPriceMap
+    useEffect(() => {
+        const candidates = (portfolioResult?.candidates?.length ?? 0) > 0
+            ? portfolioResult!.candidates
+            : fallbackCandidates;
+        if (!candidates.length) return;
+        const missing = candidates.filter(c => !currentPriceMap.has(c.ticker)).slice(0, 50);
+        if (!missing.length) return;
+
+        Promise.all(
+            missing.map(c =>
+                getScanDailyByTicker(c.ticker, 1)
+                    .then((res: { data?: Record<string, unknown>[] }) => {
+                        const price = safeNum((res?.data?.[0] as any)?.last_price);
+                        return price > 0 ? [c.ticker, price] as [string, number] : null;
+                    })
+                    .catch(() => null)
+            )
+        ).then(results => {
+            const newPrices = results.filter((r): r is [string, number] => r !== null);
+            if (!newPrices.length) return;
+            setCurrentPriceMap(prev => {
+                const next = new Map(prev);
+                for (const [t, p] of newPrices) next.set(t, p);
+                return next;
+            });
+        });
+    // currentPriceMap 제외: 가격 업데이트 후 무한 루프 방지
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [portfolioResult, fallbackCandidates]);
 
     // Sorted table rows
     const sortedList = useMemo(() => {
@@ -1622,6 +1633,7 @@ function BacktestContent() {
                                 fallbackCandidates={fallbackCandidates}
                                 currentLstnMap={currentLstnMap}
                                 splitAdjusted={splitAdjusted}
+                                filteredTickers={filteredTickers}
                             />
                         </> /* end 스냅샷 탭 */
                         )}
