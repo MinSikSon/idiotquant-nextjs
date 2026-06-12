@@ -18,7 +18,7 @@ import {
     getPortfolioSimulation,
 } from "@/lib/features/algorithmTrade/algorithmTradeAPI";
 import { cn } from "@/lib/utils";
-import { Loader2, History, ChevronRight, TrendingUp, SlidersHorizontal } from "lucide-react";
+import { Loader2, History, ChevronRight, TrendingUp, SlidersHorizontal, Info } from "lucide-react";
 import {
     BarChart, Bar, XAxis, YAxis,
     Tooltip as RTooltip, ResponsiveContainer, Cell,
@@ -137,6 +137,27 @@ const MKTCAP_PRESETS = [
     { label: '1000억+', value: 1_000 },
     { label: '5000억+', value: 5_000 },
 ];
+
+// 각 뷰 탭에 대한 사용 설명
+type ViewTabId = 'history' | 'portfolio' | 'snapshot' | 'stocks';
+const TAB_HELP: Record<ViewTabId, { title: string; desc: string }> = {
+    history: {
+        title: '히스토리 — 일별 후보 수 추이',
+        desc: '날짜별로 전략 조건을 충족한 종목 수를 막대로 보여줍니다. 막대를 클릭하면 그 날을 기준일로 잡고, 아래 요약 카드(후보 수·평균 NCAV·평균 PBR·평균 수익률)가 함께 갱신됩니다.',
+    },
+    portfolio: {
+        title: '포트폴리오 — 균등 매수 시뮬레이션',
+        desc: '선택한 기준일에 후보 종목을 동일 금액으로 매수했다고 가정한 누적 수익률 추이입니다. 이후 스캔 데이터가 쌓이면 시계열 차트로, 데이터가 부족하면 현재가 기준 스냅샷으로 자동 대체됩니다. 위의 시뮬레이션 전략 버튼으로 백엔드 전략을 바꿀 수 있습니다.',
+    },
+    snapshot: {
+        title: '스냅샷 — 현재가 기준 종목별 수익률',
+        desc: '기준일 진입가 대비 가장 최근 스캔 가격으로 계산한 종목별 수익률을 막대로 나열합니다. 필터 바에서 선택한 조건이 그대로 반영되며, 병합조정 토글로 액면병합(역분할) 보정 수익률도 볼 수 있습니다.',
+    },
+    stocks: {
+        title: '종목 목록 — 후보 상세 테이블',
+        desc: '기준일 후보 종목을 표로 보여줍니다. 헤더를 클릭해 정렬하고, 행을 클릭하면 30일 주가·수익률 차트가 펼쳐집니다. 필터 바 조건이 테이블에 즉시 반영됩니다.',
+    },
+};
 
 
 const safeNum = (v: unknown): number => {
@@ -758,8 +779,12 @@ function PortfolioSnapshotChart({ result, loading, strategy, currentPriceMap, se
 
     if (effectiveCandidates.length === 0) {
         return (
-            <div className="bg-white dark:bg-[#242320] rounded-2xl border border-neutral-200 dark:border-[#35332e] p-5 flex items-center justify-center h-36">
-                <p className="text-xs text-neutral-400">{result?.note ?? "포트폴리오 시뮬레이션 데이터가 없습니다."}</p>
+            <div className="bg-white dark:bg-[#242320] rounded-2xl border border-neutral-200 dark:border-[#35332e] p-6 flex flex-col items-center justify-center gap-2 text-center">
+                <Info size={20} className="text-neutral-300" />
+                <p className="text-xs font-bold text-neutral-500 dark:text-neutral-400">표시할 후보 종목이 없습니다</p>
+                <p className="text-[11px] text-neutral-400 max-w-xs leading-relaxed">
+                    {result?.note ?? "선택한 기준일에 조건을 충족한 종목이 없거나, 필터가 모든 종목을 제외했습니다. 필터를 완화하거나 다른 기준일을 선택해 보세요."}
+                </p>
             </div>
         );
     }
@@ -903,7 +928,7 @@ function BacktestContent() {
     const [currentPriceMap,     setCurrentPriceMap]     = useState<Map<string, number>>(new Map());
     const [currentLstnMap,      setCurrentLstnMap]      = useState<Map<string, number>>(new Map());
     const [splitAdjusted,       setSplitAdjusted]       = useState(false);
-    const [viewTab,             setViewTab]             = useState<'history' | 'portfolio' | 'snapshot' | 'stocks'>('history');
+    const [viewTab,             setViewTab]             = useState<ViewTabId>('history');
     const [selectedStock,       setSelectedStock]       = useState<string | null>(null);
     const [stockHistory,        setStockHistory]        = useState<DailyItem[]>([]);
     const [sortKey,             setSortKey]             = useState<SortKey>('ncav_ratio');
@@ -1478,6 +1503,20 @@ function BacktestContent() {
                             )}
                         </div>
 
+                        {/* ── 탭 사용 설명 ── */}
+                        {(() => {
+                            const help = TAB_HELP[viewTab as ViewTabId];
+                            return (
+                                <div className="flex items-start gap-2.5 rounded-xl bg-[#f0fdf4] dark:bg-[#052e16]/20 border border-[#bbf7d0] dark:border-[#166534]/40 px-4 py-3">
+                                    <Info size={14} className="text-[#16a34a] shrink-0 mt-0.5" />
+                                    <div>
+                                        <p className="text-xs font-bold text-[#15803d] dark:text-[#4ade80]">{help.title}</p>
+                                        <p className="text-[11px] leading-relaxed text-neutral-500 dark:text-neutral-400 mt-0.5">{help.desc}</p>
+                                    </div>
+                                </div>
+                            );
+                        })()}
+
                         {/* ── 히스토리 탭 ── */}
                         {viewTab === 'history' && (
                         <>
@@ -1583,30 +1622,47 @@ function BacktestContent() {
                                     </button>
                                 ))}
                             </div>
-                            <PortfolioOverviewChart
-                                result={portfolioResult}
-                                loading={loadingPortfolio}
-                                strategy={portfolioStrategy}
-                            />
-                            <PortfolioChart
-                                result={portfolioResult}
-                                loading={loadingPortfolio}
-                                strategy={portfolioStrategy}
-                            />
-                            {/* 시계열 데이터 부족 시 안내 (스냅샷과 구분) */}
-                            {!loadingPortfolio && (portfolioResult?.time_series?.length ?? 0) < 2 && (portfolioResult?.candidate_count ?? 0) > 0 && (
-                                <div className="bg-white dark:bg-[#242320] rounded-2xl border border-neutral-200 dark:border-[#35332e] p-5 flex items-start gap-3">
-                                    <div className="shrink-0 w-8 h-8 rounded-xl bg-[#f0fdf4] dark:bg-[#052e16]/40 flex items-center justify-center">
-                                        <TrendingUp size={14} className="text-[#16a34a]" />
-                                    </div>
-                                    <div>
-                                        <p className="text-sm font-bold text-neutral-700 dark:text-neutral-300">시계열 시뮬레이션 준비 중</p>
-                                        <p className="text-xs text-neutral-400 mt-1">
-                                            선택한 기간({formattedSelectedDate})의 포트폴리오 시계열 데이터가 아직 충분하지 않습니다.
-                                            <br />수익률 스냅샷은 <button onClick={() => setViewTab('snapshot')} className="text-[#16a34a] font-bold hover:underline">스냅샷 탭</button>에서 확인할 수 있습니다.
+                            {loadingPortfolio ? (
+                                <div className="bg-white dark:bg-[#242320] rounded-2xl border border-neutral-200 dark:border-[#35332e] p-5 flex items-center justify-center h-48">
+                                    <Loader2 size={22} className="animate-spin text-[#16a34a]/50" />
+                                </div>
+                            ) : (portfolioResult?.time_series?.length ?? 0) >= 2 ? (
+                                /* 시계열 데이터 충분 → 정식 시뮬레이션 차트 */
+                                <>
+                                    <PortfolioOverviewChart
+                                        result={portfolioResult}
+                                        loading={false}
+                                        strategy={portfolioStrategy}
+                                    />
+                                    <PortfolioChart
+                                        result={portfolioResult}
+                                        loading={false}
+                                        strategy={portfolioStrategy}
+                                    />
+                                </>
+                            ) : (
+                                /* 시계열 부족 → 현재가 기준 스냅샷으로 대체 (항상 유의미한 데이터 표시) */
+                                <>
+                                    <div className="flex items-start gap-2.5 rounded-xl bg-amber-50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-900/40 px-4 py-3">
+                                        <Info size={14} className="text-amber-500 shrink-0 mt-0.5" />
+                                        <p className="text-[11px] leading-relaxed text-amber-700 dark:text-amber-400">
+                                            선택한 기준일({formattedSelectedDate ?? '—'})의 시계열 시뮬레이션 데이터가 아직 충분하지 않아,
+                                            <span className="font-bold"> 현재가 기준 종목별 수익률 스냅샷</span>으로 대체 표시합니다.
+                                            스캔 데이터가 더 쌓이면 누적 수익률 추이 차트로 자동 전환됩니다.
                                         </p>
                                     </div>
-                                </div>
+                                    <PortfolioSnapshotChart
+                                        result={portfolioResult}
+                                        loading={false}
+                                        strategy={portfolioStrategy}
+                                        currentPriceMap={currentPriceMap}
+                                        selectedDate={selectedDate}
+                                        fallbackCandidates={fallbackCandidates}
+                                        currentLstnMap={currentLstnMap}
+                                        splitAdjusted={splitAdjusted}
+                                        filteredTickers={filteredTickers}
+                                    />
+                                </>
                             )}
                         </> /* end 포트폴리오 탭 */
                         )}
