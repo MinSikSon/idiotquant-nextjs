@@ -138,6 +138,11 @@ const MKTCAP_PRESETS = [
     { label: '5000억+', value: 5_000 },
 ];
 
+// 상단 바에 노출하는 클라이언트 전용 추가 전략 (백엔드 4종 제외)
+const EXTRA_STRATEGY_PRESETS = STRATEGY_PRESETS_CLIENT.filter(
+    p => !['ncav', 'low_pbr', 'low_per', 's_rim'].includes(p.id)
+);
+
 const safeNum = (v: unknown): number => {
     const n = Number(v);
     return isNaN(n) ? 0 : n;
@@ -1243,6 +1248,57 @@ function BacktestContent() {
                             </button>
                         );
                     })}
+
+                    {/* 구분선 */}
+                    <div className="w-px h-5 bg-neutral-200 dark:bg-[#4a4641] mx-1 shrink-0" />
+
+                    {/* 클라이언트 전용 추가 전략 필터 */}
+                    {EXTRA_STRATEGY_PRESETS.map(preset => {
+                        const isActive = filterStrategies.has(preset.id);
+                        const count = strategyCounts[preset.id] ?? 0;
+                        return (
+                            <button
+                                key={preset.id}
+                                onClick={() => toggleStrategy(preset.id)}
+                                title={preset.hint}
+                                className={cn(
+                                    "shrink-0 flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs font-bold border transition-all whitespace-nowrap",
+                                    isActive
+                                        ? cn(STRATEGY_BADGE[preset.id], 'border-current shadow-sm')
+                                        : "border-neutral-200 dark:border-[#3a3834] text-neutral-600 dark:text-neutral-400 hover:border-neutral-300 dark:hover:border-neutral-600 bg-white dark:bg-[#242320]"
+                                )}
+                            >
+                                {preset.label}
+                                <span className="text-[10px] font-mono opacity-60">{count}</span>
+                            </button>
+                        );
+                    })}
+
+                    {/* AND / OR 토글 — 2개 이상 선택 시 */}
+                    {filterStrategies.size >= 2 && (
+                        <div className="flex rounded-lg border border-neutral-200 dark:border-[#3a3834] overflow-hidden shrink-0">
+                            {(['OR', 'AND'] as const).map(mode => (
+                                <button
+                                    key={mode}
+                                    onClick={() => setFilterStrategyMode(mode)}
+                                    className={cn(
+                                        "px-2 py-1 text-[10px] font-bold transition-colors",
+                                        filterStrategyMode === mode
+                                            ? "bg-[#16a34a] text-white"
+                                            : "text-neutral-400 dark:text-neutral-500 hover:text-neutral-600"
+                                    )}
+                                >{mode}</button>
+                            ))}
+                        </div>
+                    )}
+
+                    {/* 전략 초기화 */}
+                    {filterStrategies.size > 0 && (
+                        <button
+                            onClick={() => setFilterStrategies(new Set())}
+                            className="shrink-0 text-[10px] text-neutral-400 hover:text-[#16a34a] dark:hover:text-[#16a34a] px-1"
+                        >초기화</button>
+                    )}
                 </div>
             </div>
 
@@ -1314,55 +1370,6 @@ function BacktestContent() {
                             const resetAll = () => { setFilterStrategies(new Set()); setMinMarketCap(0); setExcludeHoldings(false); setExcludeDeficit(false); setExcludeDelisted(false); setSearchQuery(''); setFilterNcav('all'); setFilterReturn('all'); setFilterPbr('all'); setFilterPer('all'); };
                             return (
                             <div className="bg-white dark:bg-[#242320] rounded-2xl border border-neutral-200 dark:border-[#35332e] shadow-sm overflow-hidden">
-                                {/* ── 전략 멀티선택 ── */}
-                                <div className="px-5 sm:px-6 pt-4 pb-3 border-b border-neutral-100 dark:border-[#35332e]">
-                                    <div className="flex items-center gap-2 flex-wrap">
-                                        <span className="text-[10px] font-extrabold text-neutral-400 uppercase tracking-wider shrink-0">전략</span>
-                                        {STRATEGY_PRESETS_CLIENT.map(preset => {
-                                            const isActive = filterStrategies.has(preset.id);
-                                            const count = strategyCounts[preset.id] ?? 0;
-                                            return (
-                                                <button
-                                                    key={preset.id}
-                                                    onClick={() => toggleStrategy(preset.id)}
-                                                    title={preset.hint}
-                                                    className={cn(
-                                                        "flex items-center gap-1 px-2 py-1 rounded-lg text-[10px] font-bold border transition-all",
-                                                        isActive
-                                                            ? cn(STRATEGY_BADGE[preset.id], 'border-current')
-                                                            : "border-neutral-200 dark:border-[#35332e] text-neutral-500 dark:text-neutral-400 hover:border-neutral-300 dark:hover:border-neutral-500 bg-white dark:bg-transparent"
-                                                    )}
-                                                >
-                                                    {preset.label}
-                                                    <span className="text-[9px] font-mono opacity-70">{count}</span>
-                                                </button>
-                                            );
-                                        })}
-                                        {filterStrategies.size >= 2 && (
-                                            <div className="flex rounded-lg border border-neutral-200 dark:border-[#35332e] overflow-hidden">
-                                                {(['OR', 'AND'] as const).map(mode => (
-                                                    <button
-                                                        key={mode}
-                                                        onClick={() => setFilterStrategyMode(mode)}
-                                                        className={cn(
-                                                            "px-2 py-1 text-[10px] font-bold transition-colors",
-                                                            filterStrategyMode === mode
-                                                                ? "bg-[#16a34a] text-white"
-                                                                : "text-neutral-400 dark:text-neutral-500 hover:text-neutral-600"
-                                                        )}
-                                                    >{mode}</button>
-                                                ))}
-                                            </div>
-                                        )}
-                                        {filterStrategies.size > 0 && (
-                                            <button
-                                                onClick={() => setFilterStrategies(new Set())}
-                                                className="text-[10px] text-neutral-400 hover:text-[#16a34a] dark:hover:text-[#16a34a] ml-0.5"
-                                            >초기화</button>
-                                        )}
-                                    </div>
-                                </div>
-
                                 {/* ── 수치 필터 바 ── */}
                                 <div className="px-5 sm:px-6 py-3 flex flex-wrap items-center gap-2">
                                     {/* 검색 */}
