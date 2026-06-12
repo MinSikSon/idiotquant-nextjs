@@ -178,8 +178,15 @@ function resolveAllStrategies(item: DailyItem): string[] {
     return Array.from(base);
 }
 
+const DAY_KOR = ['일', '월', '화', '수', '목', '금', '토'] as const;
+
+function getDayKor(yyyymmdd: string): string {
+    const d = new Date(+yyyymmdd.slice(0, 4), +yyyymmdd.slice(4, 6) - 1, +yyyymmdd.slice(6, 8));
+    return DAY_KOR[d.getDay()];
+}
+
 function fmtDate(yyyymmdd: string): string {
-    return `${yyyymmdd.slice(4, 6)}/${yyyymmdd.slice(6, 8)}`;
+    return `${yyyymmdd.slice(4, 6)}/${yyyymmdd.slice(6, 8)}(${getDayKor(yyyymmdd)})`;
 }
 
 // 날짜 간격이 있는 데이터를 선형 보간으로 채움 (차트 연속성 확보)
@@ -1302,12 +1309,12 @@ function BacktestContent() {
     }, [filteredList, currentPriceMap, splitAdjusted, currentLstnMap]);
 
     const formattedSelectedDate = selectedDate
-        ? `${selectedDate.slice(0, 4)}.${selectedDate.slice(4, 6)}.${selectedDate.slice(6, 8)}`
+        ? `${selectedDate.slice(0, 4)}.${selectedDate.slice(4, 6)}.${selectedDate.slice(6, 8)}(${getDayKor(selectedDate)})`
         : null;
 
     const latestScanDate = datesState.dates[0]?.scan_date;
     const formattedLatestDate = latestScanDate
-        ? `${latestScanDate.slice(0, 4)}.${latestScanDate.slice(4, 6)}.${latestScanDate.slice(6, 8)}`
+        ? `${latestScanDate.slice(0, 4)}.${latestScanDate.slice(4, 6)}.${latestScanDate.slice(6, 8)}(${getDayKor(latestScanDate)})`
         : null;
 
     // 시계열 부족 시 현재가 기준 보간 결과 (항상 차트 표시용)
