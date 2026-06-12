@@ -232,6 +232,99 @@ function calcReturn(
     return (curPrice / entryPrice - 1) * 100;
 }
 
+// 시계열 데이터 부족 시 currentPriceMap 으로 보간하여 항상 PortfolioResult 를 반환
+function augmentPortfolioResult(
+    result: PortfolioResult | null,
+    fallbackCandidates: { ticker: string; name: string; start_price: number; start_market_cap?: number }[],
+    currentPriceMap: Map<string, number>,
+    currentLstnMap: Map<string, number>,
+    splitAdjusted: boolean,
+    filteredTickers: Set<string>,
+    selectedDate: string,
+    latestScanDate: string | null,
+): PortfolioResult | null {
+    // 이미 충분한 시계열 → 그대로 반환
+    if ((result?.time_series?.length ?? 0) >= 2) return result;
+
+    // 유효 후보 목록 결정 (portfolioResult.candidates 우선, 없으면 filteredList 기반 fallback)
+    const candidates: { ticker: string; name: string; start_price: number; start_market_cap?: number }[] =
+        (result?.candidates?.length ?? 0) > 0
+            ? result!.candidates.filter(c => filteredTickers.has(c.ticker))
+            : fallbackCandidates;
+    if (!candidates.length) return result;
+
+    // currentPriceMap 으로 종목별 현재 수익률 계산
+    const tickerReturns: { ticker: string; name: string; pct: number }[] = [];
+    for (const c of candidates) {
+        const cur = currentPriceMap.get(c.ticker);
+        if (!cur || c.start_price <= 0) continue;
+        const raw = calcReturn(c.start_price, c.start_market_cap, c.ticker, cur, splitAdjusted, currentLstnMap);
+        tickerReturns.push({ ticker: c.ticker, name: c.name, pct: Math.round(raw * 100) / 100 });
+    }
+    if (!tickerReturns.length) return result;
+
+    const avgPct   = Math.round(tickerReturns.reduce((s, t) => s + t.pct, 0) / tickerReturns.length * 100) / 100;
+    const winCount = tickerReturns.filter(t => t.pct >= 0).length;
+    const startDate = result?.start_date ?? selectedDate;
+    const endDate   = latestScanDate && latestScanDate > startDate ? latestScanDate : selectedDate;
+
+    const parseD = (s: string) => new Date(+s.slice(0, 4), +s.slice(4, 6) - 1, +s.slice(6, 8));
+    const days = Math.max(0, Math.round((parseD(endDate).getTime() - parseD(startDate).getTime()) / 86400000));
+
+    const existing = result?.time_series ?? [];
+
+    // 시계열 조립: 기존 포인트 유지 + 현재가 end-point 추가
+    const synthesized: PortfolioPoint[] = existing.length === 0
+        ? [{ date: startDate, portfolio_pct: 0, covered: tickerReturns.length, win_count: 0 }]
+        : [...existing];
+
+    if (synthesized.at(-1)!.date < endDate) {
+        synthesized.push({ date: endDate, portfolio_pct: avgPct, covered: tickerReturns.length, win_count: winCount });
+    } else {
+        // 같은 날짜 → 마지막 포인트 현재값으로 갱신
+        synthesized[synthesized.length - 1] = {
+            ...synthesized.at(-1)!,
+            portfolio_pct: avgPct,
+            covered: tickerReturns.length,
+            win_count: winCount,
+        };
+    }
+    // 최소 2포인트 보장 (startDate === endDate 엣지케이스)
+    if (synthesized.length < 2) {
+        synthesized.push({ date: endDate, portfolio_pct: avgPct, covered: tickerReturns.length, win_count: winCount });
+    }
+
+    const sorted = [...tickerReturns].sort((a, b) => b.pct - a.pct);
+
+    return {
+        start_date:      startDate,
+        strategy:        result?.strategy ?? 'ncav',
+        candidate_count: candidates.length,
+        candidates,
+        time_series: synthesized,
+        ticker_series: tickerReturns.map(t => ({
+            ticker:    t.ticker,
+            name:      t.name,
+            data: [
+                ...(existing.length === 0 ? [{ date: startDate, pct: 0 }] : []),
+                { date: endDate, pct: t.pct },
+            ],
+            final_pct: t.pct,
+        })),
+        summary: {
+            current_pct: avgPct,
+            days,
+            top_gainer: sorted[0]
+                ? { ticker: sorted[0].ticker,     name: sorted[0].name,     pct: sorted[0].pct }
+                : null,
+            top_loser: sorted.at(-1)
+                ? { ticker: sorted.at(-1)!.ticker, name: sorted.at(-1)!.name, pct: sorted.at(-1)!.pct }
+                : null,
+        },
+        note: '현재가 기준 보간 데이터 포함',
+    };
+}
+
 // ─── SortableHeader ───────────────────────────────────────────────────────────
 
 function SortTh({ label, sortKey: key, current, order, onToggle }: {
@@ -1217,6 +1310,23 @@ function BacktestContent() {
         ? `${latestScanDate.slice(0, 4)}.${latestScanDate.slice(4, 6)}.${latestScanDate.slice(6, 8)}`
         : null;
 
+    // 시계열 부족 시 현재가 기준 보간 결과 (항상 차트 표시용)
+    const augmentedPortfolioResult = useMemo(() => {
+        if (!selectedDate) return null;
+        return augmentPortfolioResult(
+            portfolioResult,
+            fallbackCandidates,
+            currentPriceMap,
+            currentLstnMap,
+            splitAdjusted,
+            filteredTickers,
+            selectedDate,
+            latestScanDate ?? null,
+        );
+    // splitAdjusted 변경 시 수익률 재계산 필요
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [portfolioResult, fallbackCandidates, currentPriceMap, currentLstnMap, splitAdjusted, filteredTickers, selectedDate, latestScanDate]);
+
     const datesLoading = datesState.state === 'pending' || datesState.state === 'init';
 
     return (
@@ -1626,43 +1736,40 @@ function BacktestContent() {
                                 <div className="bg-white dark:bg-[#242320] rounded-2xl border border-neutral-200 dark:border-[#35332e] p-5 flex items-center justify-center h-48">
                                     <Loader2 size={22} className="animate-spin text-[#16a34a]/50" />
                                 </div>
-                            ) : (portfolioResult?.time_series?.length ?? 0) >= 2 ? (
-                                /* 시계열 데이터 충분 → 정식 시뮬레이션 차트 */
+                            ) : augmentedPortfolioResult ? (
+                                /* 항상 시계열 시뮬레이션 차트 표시 (데이터 부족 시 현재가 보간) */
                                 <>
+                                    {(portfolioResult?.time_series?.length ?? 0) < 2 && (
+                                        <div className="flex items-start gap-2.5 rounded-xl bg-amber-50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-900/40 px-4 py-3">
+                                            <Info size={14} className="text-amber-500 shrink-0 mt-0.5" />
+                                            <p className="text-[11px] leading-relaxed text-amber-700 dark:text-amber-400">
+                                                후속 스캔 데이터가 부족해
+                                                <span className="font-bold"> 현재가 기준 보간</span> 시뮬레이션을 표시합니다.
+                                                기준일({formattedSelectedDate ?? '—'}) 진입가(0%) → 최근 스캔가를 선형 보간한 추정치이며,
+                                                실제 스캔 데이터가 쌓이면 자동으로 실측 시계열로 전환됩니다.
+                                            </p>
+                                        </div>
+                                    )}
                                     <PortfolioOverviewChart
-                                        result={portfolioResult}
+                                        result={augmentedPortfolioResult}
                                         loading={false}
                                         strategy={portfolioStrategy}
                                     />
                                     <PortfolioChart
-                                        result={portfolioResult}
+                                        result={augmentedPortfolioResult}
                                         loading={false}
                                         strategy={portfolioStrategy}
                                     />
                                 </>
                             ) : (
-                                /* 시계열 부족 → 현재가 기준 스냅샷으로 대체 (항상 유의미한 데이터 표시) */
-                                <>
-                                    <div className="flex items-start gap-2.5 rounded-xl bg-amber-50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-900/40 px-4 py-3">
-                                        <Info size={14} className="text-amber-500 shrink-0 mt-0.5" />
-                                        <p className="text-[11px] leading-relaxed text-amber-700 dark:text-amber-400">
-                                            선택한 기준일({formattedSelectedDate ?? '—'})의 시계열 시뮬레이션 데이터가 아직 충분하지 않아,
-                                            <span className="font-bold"> 현재가 기준 종목별 수익률 스냅샷</span>으로 대체 표시합니다.
-                                            스캔 데이터가 더 쌓이면 누적 수익률 추이 차트로 자동 전환됩니다.
-                                        </p>
-                                    </div>
-                                    <PortfolioSnapshotChart
-                                        result={portfolioResult}
-                                        loading={false}
-                                        strategy={portfolioStrategy}
-                                        currentPriceMap={currentPriceMap}
-                                        selectedDate={selectedDate}
-                                        fallbackCandidates={fallbackCandidates}
-                                        currentLstnMap={currentLstnMap}
-                                        splitAdjusted={splitAdjusted}
-                                        filteredTickers={filteredTickers}
-                                    />
-                                </>
+                                /* 후보 없음 또는 가격 데이터 없음 */
+                                <div className="bg-white dark:bg-[#242320] rounded-2xl border border-neutral-200 dark:border-[#35332e] p-6 flex flex-col items-center justify-center gap-2 text-center">
+                                    <Info size={20} className="text-neutral-300" />
+                                    <p className="text-xs font-bold text-neutral-500 dark:text-neutral-400">표시할 데이터가 없습니다</p>
+                                    <p className="text-[11px] text-neutral-400 max-w-xs leading-relaxed">
+                                        선택한 날짜의 후보 종목이 없거나 가격 데이터를 로드하지 못했습니다. 다른 날짜를 선택하거나 필터를 초기화해 보세요.
+                                    </p>
+                                </div>
                             )}
                         </> /* end 포트폴리오 탭 */
                         )}
