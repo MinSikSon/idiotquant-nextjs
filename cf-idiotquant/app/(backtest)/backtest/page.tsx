@@ -138,10 +138,6 @@ const MKTCAP_PRESETS = [
     { label: '5000억+', value: 5_000 },
 ];
 
-// 상단 바에 노출하는 클라이언트 전용 추가 전략 (백엔드 4종 제외)
-const EXTRA_STRATEGY_PRESETS = STRATEGY_PRESETS_CLIENT.filter(
-    p => !['ncav', 'low_pbr', 'low_per', 's_rim'].includes(p.id)
-);
 
 const safeNum = (v: unknown): number => {
     const n = Number(v);
@@ -902,7 +898,7 @@ function BacktestContent() {
     const datesState  = useAppSelector(selectNcavDailyDates);
 
     const [selectedDate,        setSelectedDate]        = useState<string | null>(null);
-    const [activeStrategy,      setActiveStrategy]      = useState<StrategyId>('ncav');
+    const [portfolioStrategy,   setPortfolioStrategy]   = useState<StrategyId>('ncav');
     const [historicalList,      setHistoricalList]      = useState<DailyItem[]>([]);
     const [currentPriceMap,     setCurrentPriceMap]     = useState<Map<string, number>>(new Map());
     const [currentLstnMap,      setCurrentLstnMap]      = useState<Map<string, number>>(new Map());
@@ -967,12 +963,12 @@ function BacktestContent() {
         }
     }, [datesState.state, datesState.dates]);
 
-    // 4. Fetch historical list when date or strategy changes
+    // 4. Fetch historical list when date changes (always fetch all strategies)
     useEffect(() => {
         if (!selectedDate) return;
         setLoadingList(true);
         setSelectedStock(null);
-        getScanDailyList(selectedDate, activeStrategy)
+        getScanDailyList(selectedDate, 'all')
             .then((res: { data?: Record<string, unknown>[] }) => {
                 const raw = res?.data ?? [];
                 setHistoricalList(raw.map(item => ({
@@ -982,7 +978,7 @@ function BacktestContent() {
             })
             .catch(() => setHistoricalList([]))
             .finally(() => setLoadingList(false));
-    }, [selectedDate, activeStrategy]);
+    }, [selectedDate]);
 
     // 5. Fetch individual stock history on drill-down
     useEffect(() => {
@@ -1002,25 +998,27 @@ function BacktestContent() {
             .finally(() => setLoadingStock(false));
     }, [selectedStock]);
 
-    // 6. Fetch portfolio simulation when date or strategy changes
+    // 6. Fetch portfolio simulation when date or portfolioStrategy changes
     useEffect(() => {
         if (!selectedDate) return;
         setPortfolioResult(null);
         setLoadingPortfolio(true);
-        getPortfolioSimulation(selectedDate, activeStrategy)
+        getPortfolioSimulation(selectedDate, portfolioStrategy)
             .then((res: { success?: boolean; data?: PortfolioResult }) => {
                 if (res?.success && res.data) setPortfolioResult(res.data);
             })
             .catch(() => {})
             .finally(() => setLoadingPortfolio(false));
-    }, [selectedDate, activeStrategy]);
+    }, [selectedDate, portfolioStrategy]);
 
-    // Bar chart data (chronological order)
+    // Bar chart data (chronological order, total_cnt = rough sum across strategies)
     const chartData = useMemo(() =>
-        [...datesState.dates].reverse().map(d => ({ ...d, label: fmtDate(d.scan_date) })),
+        [...datesState.dates].reverse().map(d => ({
+            ...d,
+            label: fmtDate(d.scan_date),
+            total_cnt: (d.ncav_cnt ?? 0) + (d.low_pbr_cnt ?? 0) + (d.low_per_cnt ?? 0) + (d.s_rim_cnt ?? 0),
+        })),
     [datesState.dates]);
-
-    const activeTab = STRATEGY_TABS.find(t => t.id === activeStrategy) ?? STRATEGY_TABS[0];
 
     const isLatestDate = selectedDate !== null
         && datesState.dates.length > 0
@@ -1221,36 +1219,6 @@ function BacktestContent() {
                 </div>
             </div>
 
-            {/* ── Strategy Tabs (sticky) ── */}
-            <div className="sticky top-0 z-30 bg-white/95 dark:bg-[#1f1e1b]/95 backdrop-blur-md border-b border-neutral-200 dark:border-[#3a3834]">
-                <div className="max-w-7xl mx-auto px-4 sm:px-6 py-3 flex items-center gap-1.5 overflow-x-auto no-scrollbar">
-                    {STRATEGY_TABS.map(tab => {
-                        const isActive = tab.id === activeStrategy;
-                        const latestCnt = datesState.dates[0]?.[tab.cntKey] ?? 0;
-                        return (
-                            <button
-                                key={tab.id}
-                                onClick={() => setActiveStrategy(tab.id)}
-                                className={cn(
-                                    "shrink-0 flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold border transition-all whitespace-nowrap shadow-sm",
-                                    isActive
-                                        ? tab.activeCls
-                                        : "border-neutral-200 dark:border-[#3a3834] text-neutral-600 dark:text-neutral-400 hover:border-neutral-300 dark:hover:border-neutral-600 bg-white dark:bg-[#242320]"
-                                )}
-                            >
-                                {tab.label}
-                                <span className={cn(
-                                    "text-[10px] font-black px-1.5 py-0.5 rounded-full",
-                                    isActive ? "bg-white/20 dark:bg-black/20" : "bg-[#faf9f7] dark:bg-[#4a4641] text-neutral-500"
-                                )}>
-                                    {latestCnt}
-                                </span>
-                            </button>
-                        );
-                    })}
-                </div>
-            </div>
-
             <div className="max-w-7xl mx-auto px-4 sm:px-6 py-6 space-y-6 pb-24">
 
                 {/* Loading state */}
@@ -1282,11 +1250,11 @@ function BacktestContent() {
                             const resetAll = () => { setFilterStrategies(new Set()); setMinMarketCap(0); setExcludeHoldings(false); setExcludeDeficit(false); setExcludeDelisted(false); setSearchQuery(''); setFilterNcav('all'); setFilterReturn('all'); setFilterPbr('all'); setFilterPer('all'); };
                             return (
                             <div className="bg-white dark:bg-[#242320] rounded-2xl border border-neutral-200 dark:border-[#35332e] shadow-sm overflow-hidden">
-                                {/* ── 추가 전략 필터 ── */}
+                                {/* ── 전략 필터 (전체 9종) ── */}
                                 <div className="px-5 sm:px-6 pt-4 pb-3 border-b border-neutral-100 dark:border-[#35332e]">
                                     <div className="flex items-center gap-2 flex-wrap">
                                         <span className="text-[10px] font-extrabold text-neutral-400 uppercase tracking-wider shrink-0">전략</span>
-                                        {EXTRA_STRATEGY_PRESETS.map(preset => {
+                                        {STRATEGY_PRESETS_CLIENT.map(preset => {
                                             const isActive = filterStrategies.has(preset.id);
                                             const count = strategyCounts[preset.id] ?? 0;
                                             return (
@@ -1517,7 +1485,7 @@ function BacktestContent() {
                         {/* ── Bar Chart ── */}
                         <div className="bg-white dark:bg-[#242320] rounded-2xl border border-neutral-200 dark:border-[#35332e] p-5 shadow-sm">
                             <p className="text-xs font-bold text-neutral-500 dark:text-neutral-400 uppercase tracking-wider mb-4">
-                                일별 후보 수 추이 — {activeTab.label}
+                                일별 후보 수 추이 (전략 합산)
                             </p>
                             <ResponsiveContainer width="100%" height={200}>
                                 <BarChart data={chartData} margin={{ top: 4, right: 8, left: -20, bottom: 0 }}>
@@ -1536,7 +1504,7 @@ function BacktestContent() {
                                         labelFormatter={(label: string) => label}
                                     />
                                     <Bar
-                                        dataKey={activeTab.cntKey as string}
+                                        dataKey="total_cnt"
                                         radius={[3, 3, 0, 0]}
                                         cursor="pointer"
                                         // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -1545,7 +1513,7 @@ function BacktestContent() {
                                         {chartData.map(entry => (
                                             <Cell
                                                 key={entry.scan_date}
-                                                fill={entry.scan_date === selectedDate ? activeTab.barColor : '#d4c9b4'}
+                                                fill={entry.scan_date === selectedDate ? '#16a34a' : '#d4c9b4'}
                                             />
                                         ))}
                                     </Bar>
@@ -1597,15 +1565,33 @@ function BacktestContent() {
                         {/* ── 포트폴리오 탭 ── */}
                         {viewTab === 'portfolio' && (
                         <>
+                            {/* 포트폴리오 시뮬레이션 전략 선택 */}
+                            <div className="flex items-center gap-2 flex-wrap">
+                                <span className="text-[10px] font-extrabold text-neutral-400 uppercase tracking-wider shrink-0">시뮬레이션 전략</span>
+                                {STRATEGY_TABS.map(tab => (
+                                    <button
+                                        key={tab.id}
+                                        onClick={() => setPortfolioStrategy(tab.id)}
+                                        className={cn(
+                                            "flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold border transition-all whitespace-nowrap",
+                                            portfolioStrategy === tab.id
+                                                ? tab.activeCls
+                                                : "border-neutral-200 dark:border-[#35332e] text-neutral-600 dark:text-neutral-400 hover:border-neutral-300 dark:hover:border-neutral-600 bg-white dark:bg-[#242320]"
+                                        )}
+                                    >
+                                        {tab.label}
+                                    </button>
+                                ))}
+                            </div>
                             <PortfolioOverviewChart
                                 result={portfolioResult}
                                 loading={loadingPortfolio}
-                                strategy={activeStrategy}
+                                strategy={portfolioStrategy}
                             />
                             <PortfolioChart
                                 result={portfolioResult}
                                 loading={loadingPortfolio}
-                                strategy={activeStrategy}
+                                strategy={portfolioStrategy}
                             />
                             {/* 시계열 데이터 부족 시 안내 (스냅샷과 구분) */}
                             {!loadingPortfolio && (portfolioResult?.time_series?.length ?? 0) < 2 && (portfolioResult?.candidate_count ?? 0) > 0 && (
@@ -1631,7 +1617,7 @@ function BacktestContent() {
                             <PortfolioSnapshotChart
                                 result={portfolioResult}
                                 loading={loadingPortfolio}
-                                strategy={activeStrategy}
+                                strategy={portfolioStrategy}
                                 currentPriceMap={currentPriceMap}
                                 selectedDate={selectedDate}
                                 fallbackCandidates={fallbackCandidates}
@@ -1671,7 +1657,7 @@ function BacktestContent() {
                                 </div>
                             ) : historicalList.length === 0 ? (
                                 <p className="text-center py-14 text-sm text-neutral-400">
-                                    해당 날짜의 {activeTab.label} 후보 데이터가 없습니다.
+                                    해당 날짜의 후보 데이터가 없습니다.
                                 </p>
                             ) : filteredList.length === 0 ? (
                                 <p className="text-center py-14 text-sm text-neutral-400">
