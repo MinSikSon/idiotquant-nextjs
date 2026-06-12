@@ -506,20 +506,22 @@ function DrillDown({ name, ticker, stockHistory, loading, onNavigate, entryDate,
 
 // ─── Portfolio Overview Chart ─────────────────────────────────────────────────
 
-function PortfolioOverviewChart({ result, loading, strategy }: {
+function PortfolioOverviewChart({ result, loading, strategy, synthetic }: {
     result: PortfolioResult | null;
     loading: boolean;
     strategy: string;
+    synthetic?: boolean;
 }) {
-    const chartData = useMemo(() =>
-        (result?.time_series ?? []).map(d => ({
-            label: fmtDate(d.date),
+    const chartData = useMemo(() => {
+        const raw = (result?.time_series ?? []).map(d => ({
             date: d.date,
             pct: d.portfolio_pct,
             covered: d.covered,
             win_rate: d.covered > 0 ? Math.round((d.win_count / d.covered) * 100) : 0,
-        })),
-    [result]);
+        }));
+        const data = synthetic ? fillDateGaps(raw, ['pct', 'win_rate']) : raw;
+        return data.map(d => ({ ...d, label: fmtDate(d.date) }));
+    }, [result, synthetic]);
 
     if (loading) {
         return (
@@ -571,6 +573,13 @@ function PortfolioOverviewChart({ result, loading, strategy }: {
                             formatter={(v: unknown, _name: string, props: any) => {
                                 const n = Number(v);
                                 const p = props?.payload;
+                                const estimatedTag = p?.estimated ? ' (추정)' : '';
+                                if (p?.estimated) {
+                                    return [
+                                        `${n >= 0 ? '+' : ''}${n.toFixed(2)}%${estimatedTag}`,
+                                        '포트폴리오 누적 수익률',
+                                    ];
+                                }
                                 return [
                                     `${n >= 0 ? '+' : ''}${n.toFixed(2)}%  (${p?.covered}종목, 승률 ${p?.win_rate}%)`,
                                     '포트폴리오 누적 수익률',
@@ -583,6 +592,7 @@ function PortfolioOverviewChart({ result, loading, strategy }: {
                                 <Cell
                                     key={entry.date}
                                     fill={entry.pct >= 0 ? '#4ade80' : '#fca5a5'}
+                                    fillOpacity={(entry as any).estimated ? 0.35 : 1}
                                 />
                             ))}
                         </Bar>
@@ -1761,6 +1771,7 @@ function BacktestContent() {
                                         result={augmentedPortfolioResult}
                                         loading={false}
                                         strategy={portfolioStrategy}
+                                        synthetic={(portfolioResult?.time_series?.length ?? 0) < 2}
                                     />
                                     <PortfolioChart
                                         result={augmentedPortfolioResult}
