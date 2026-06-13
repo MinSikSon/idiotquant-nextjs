@@ -18,6 +18,9 @@ import {
     getPortfolioSimulation,
 } from "@/lib/features/algorithmTrade/algorithmTradeAPI";
 import { cn } from "@/lib/utils";
+import { safeNum } from "@/lib/utils/numbers";
+import { STRATEGY_LABEL, STRATEGY_BADGE, STRATEGY_PRESETS_CLIENT, MKTCAP_PRESETS } from "@/lib/constants/strategies";
+import type { StrategyPreset } from "@/lib/constants/strategies";
 import { Loader2, History, ChevronRight, TrendingUp, SlidersHorizontal, Info } from "lucide-react";
 import {
     BarChart, Bar, XAxis, YAxis,
@@ -94,64 +97,17 @@ const STRATEGY_TABS: {
     { id: 's_rim',   label: 'S-RIM', cntKey: 's_rim_cnt',   activeCls: 'bg-violet-600 border-violet-600 text-white',     barColor: '#7c3aed' },
 ];
 
-const STRATEGY_LABEL: Record<string, string> = {
-    ncav: 'NCAV', low_pbr: '저PBR', low_per: '저PER', s_rim: 'S-RIM',
-    graham_number: '그레이엄', magic_formula: '마법공식', quality_value: '퀄리티',
-    near_ncav: 'NCAV근접', balanced_value: '균형가치',
-};
-
-const STRATEGY_BADGE: Record<string, string> = {
-    ncav:           'bg-emerald-100 dark:bg-emerald-950/50 text-emerald-700 dark:text-emerald-400',
-    low_pbr:        'bg-sky-100 dark:bg-sky-950/50 text-sky-700 dark:text-sky-400',
-    low_per:        'bg-orange-100 dark:bg-orange-950/50 text-orange-700 dark:text-orange-400',
-    s_rim:          'bg-violet-100 dark:bg-violet-950/50 text-violet-700 dark:text-violet-400',
-    graham_number:  'bg-amber-100 dark:bg-amber-950/50 text-amber-700 dark:text-amber-400',
-    magic_formula:  'bg-pink-100 dark:bg-pink-950/50 text-pink-700 dark:text-pink-400',
-    quality_value:  'bg-indigo-100 dark:bg-indigo-950/50 text-indigo-700 dark:text-indigo-400',
-    near_ncav:      'bg-teal-100 dark:bg-teal-950/50 text-teal-700 dark:text-teal-400',
-    balanced_value: 'bg-rose-100 dark:bg-rose-950/50 text-rose-700 dark:text-rose-400',
-};
-
-interface StrategyPreset {
-    id: string;
-    label: string;
-    hint: string;
-    clientFilter: (item: DailyItem) => boolean;
-}
-
-const STRATEGY_PRESETS_CLIENT: StrategyPreset[] = [
-    { id: 'ncav',           label: 'NCAV',     hint: '순유동자산 > 시가총액 — 그레이엄 청산가치 이하', clientFilter: i => safeNum(i.ncav_ratio) >= 1.0 },
-    { id: 'low_pbr',        label: '저PBR',    hint: 'PBR < 0.5 — 순자산 절반 이하 가격', clientFilter: i => safeNum(i.pbr) > 0 && safeNum(i.pbr) < 0.5 },
-    { id: 'low_per',        label: '저PER',    hint: 'PER < 10 + 흑자(EPS > 0)', clientFilter: i => safeNum(i.eps) > 0 && safeNum(i.per) > 0 && safeNum(i.per) < 10 },
-    { id: 's_rim',          label: 'S-RIM',    hint: 'ROE > 8% & PBR < 1.0 — 초과이익 기업 장부가 이하', clientFilter: i => { const roe = safeNum(i.bps) > 0 ? safeNum(i.eps) / safeNum(i.bps) * 100 : 0; return roe > 8 && safeNum(i.pbr) > 0 && safeNum(i.pbr) < 1.0; } },
-    { id: 'graham_number',  label: '그레이엄', hint: 'PER × PBR < 22.5 — 그레이엄 복합 안전마진', clientFilter: i => safeNum(i.eps) > 0 && safeNum(i.bps) > 0 && safeNum(i.per) > 0 && safeNum(i.pbr) > 0 && safeNum(i.per) * safeNum(i.pbr) < 22.5 },
-    { id: 'magic_formula',  label: '마법공식', hint: 'PER < 15 & ROE > 10% — Greenblatt 변형', clientFilter: i => safeNum(i.eps) > 0 && safeNum(i.per) > 0 && safeNum(i.per) < 15 && safeNum(i.bps) > 0 && safeNum(i.eps) / safeNum(i.bps) * 100 > 10 },
-    { id: 'quality_value',  label: '퀄리티',   hint: 'ROE > 15% & PBR < 2.0 — 버핏 스타일', clientFilter: i => safeNum(i.eps) > 0 && safeNum(i.bps) > 0 && safeNum(i.eps) / safeNum(i.bps) * 100 > 15 && safeNum(i.pbr) > 0 && safeNum(i.pbr) < 2.0 },
-    { id: 'near_ncav',      label: 'NCAV근접', hint: 'NCAV 0.7~1.0 — 청산가치 근접 관찰', clientFilter: i => safeNum(i.ncav_ratio) >= 0.7 && safeNum(i.ncav_ratio) < 1.0 },
-    { id: 'balanced_value', label: '균형가치', hint: 'PER 5~15 & PBR < 1.5 & EPS > 0', clientFilter: i => safeNum(i.eps) > 0 && safeNum(i.per) > 5 && safeNum(i.per) < 15 && safeNum(i.pbr) > 0 && safeNum(i.pbr) < 1.5 },
-];
-
-const MKTCAP_PRESETS = [
-    { label: '전체', value: 0 },
-    { label: '500억+', value: 500 },
-    { label: '1000억+', value: 1_000 },
-    { label: '5000억+', value: 5_000 },
-];
 
 // 각 뷰 탭에 대한 사용 설명
-type ViewTabId = 'history' | 'portfolio' | 'snapshot' | 'stocks';
+type ViewTabId = 'history' | 'portfolio' | 'stocks';
 const TAB_HELP: Record<ViewTabId, { title: string; desc: string }> = {
     history: {
         title: '히스토리 — 일별 후보 수 추이',
         desc: '날짜별로 전략 조건을 충족한 종목 수를 막대로 보여줍니다. 막대를 클릭하면 그 날을 기준일로 잡고, 아래 요약 카드(후보 수·평균 NCAV·평균 PBR·평균 수익률)가 함께 갱신됩니다.',
     },
     portfolio: {
-        title: '포트폴리오 — 균등 매수 시뮬레이션',
-        desc: '선택한 기준일에 후보 종목을 동일 금액으로 매수했다고 가정한 누적 수익률 추이입니다. 이후 스캔 데이터가 쌓이면 시계열 차트로, 데이터가 부족하면 현재가 기준 스냅샷으로 자동 대체됩니다. 위의 시뮬레이션 전략 버튼으로 백엔드 전략을 바꿀 수 있습니다.',
-    },
-    snapshot: {
-        title: '스냅샷 — 현재가 기준 종목별 수익률',
-        desc: '기준일 진입가 대비 가장 최근 스캔 가격으로 계산한 종목별 수익률을 막대로 나열합니다. 필터 바에서 선택한 조건이 그대로 반영되며, 병합조정 토글로 액면병합(역분할) 보정 수익률도 볼 수 있습니다.',
+        title: '포트폴리오 — 균등 매수 시뮬레이션 + 종목별 스냅샷',
+        desc: '선택한 기준일에 후보 종목을 동일 금액으로 매수했다고 가정한 누적 수익률 추이입니다. 이후 스캔 데이터가 쌓이면 시계열 차트로, 데이터가 부족하면 현재가 기준 스냅샷으로 자동 대체됩니다. 차트 아래에 진입가 대비 종목별 수익률 스냅샷도 함께 표시됩니다.',
     },
     stocks: {
         title: '종목 목록 — 후보 상세 테이블',
@@ -159,11 +115,6 @@ const TAB_HELP: Record<ViewTabId, { title: string; desc: string }> = {
     },
 };
 
-
-const safeNum = (v: unknown): number => {
-    const n = Number(v);
-    return isNaN(n) ? 0 : n;
-};
 
 function parseStrategies(strategies: unknown): string[] {
     if (Array.isArray(strategies)) return strategies as string[];
@@ -173,7 +124,7 @@ function parseStrategies(strategies: unknown): string[] {
 function resolveAllStrategies(item: DailyItem): string[] {
     const base = new Set<string>(item.strategies ?? []);
     for (const preset of STRATEGY_PRESETS_CLIENT) {
-        if (preset.clientFilter(item)) base.add(preset.id);
+        if (preset.clientFilter && preset.clientFilter(item)) base.add(preset.id);
     }
     return Array.from(base);
 }
@@ -1171,7 +1122,7 @@ function BacktestContent() {
             list = list.filter(i =>
                 Array.from(filterStrategies)[check](id => {
                     const preset = STRATEGY_PRESETS_CLIENT.find(p => p.id === id);
-                    return preset ? preset.clientFilter(i) : false;
+                    return preset?.clientFilter ? preset.clientFilter(i) : false;
                 })
             );
         }
@@ -1297,7 +1248,9 @@ function BacktestContent() {
     const strategyCounts = useMemo(() => {
         const counts: Record<string, number> = {};
         for (const preset of STRATEGY_PRESETS_CLIENT) {
-            counts[preset.id] = historicalList.filter(item => preset.clientFilter(item)).length;
+            counts[preset.id] = preset.clientFilter
+                ? historicalList.filter(item => preset.clientFilter!(item)).length
+                : 0;
         }
         return counts;
     }, [historicalList]);
@@ -1595,8 +1548,8 @@ function BacktestContent() {
 
                         {/* ── View Tabs ── */}
                         <div className="flex items-end gap-0 border-b border-neutral-200 dark:border-[#35332e] -mb-2">
-                            {(['history', 'portfolio', 'snapshot', 'stocks'] as const).map(tab => {
-                                const labels = { history: '히스토리', portfolio: '포트폴리오', snapshot: '스냅샷', stocks: '종목 목록' };
+                            {(['history', 'portfolio', 'stocks'] as const).map(tab => {
+                                const labels = { history: '히스토리', portfolio: '포트폴리오', stocks: '종목 목록' };
                                 return (
                                     <button
                                         key={tab}
@@ -1789,24 +1742,29 @@ function BacktestContent() {
                                     </p>
                                 </div>
                             )}
-                        </> /* end 포트폴리오 탭 */
-                        )}
 
-                        {/* ── 스냅샷 탭 ── */}
-                        {viewTab === 'snapshot' && (
-                        <>
-                            <PortfolioSnapshotChart
-                                result={portfolioResult}
-                                loading={loadingPortfolio}
-                                strategy={portfolioStrategy}
-                                currentPriceMap={currentPriceMap}
-                                selectedDate={selectedDate}
-                                fallbackCandidates={fallbackCandidates}
-                                currentLstnMap={currentLstnMap}
-                                splitAdjusted={splitAdjusted}
-                                filteredTickers={filteredTickers}
-                            />
-                        </> /* end 스냅샷 탭 */
+                            {/* ── 종목별 수익률 스냅샷 (포트폴리오 탭 하단) ── */}
+                            {!loadingPortfolio && currentPriceMap.size > 0 && (
+                                <>
+                                    <div className="border-t border-neutral-200 dark:border-[#35332e] pt-4">
+                                        <p className="text-xs font-bold text-neutral-500 dark:text-neutral-400 uppercase tracking-wider mb-3">
+                                            종목별 수익률 스냅샷
+                                        </p>
+                                    </div>
+                                    <PortfolioSnapshotChart
+                                        result={portfolioResult}
+                                        loading={loadingPortfolio}
+                                        strategy={portfolioStrategy}
+                                        currentPriceMap={currentPriceMap}
+                                        selectedDate={selectedDate}
+                                        fallbackCandidates={fallbackCandidates}
+                                        currentLstnMap={currentLstnMap}
+                                        splitAdjusted={splitAdjusted}
+                                        filteredTickers={filteredTickers}
+                                    />
+                                </>
+                            )}
+                        </> /* end 포트폴리오 탭 */
                         )}
 
                         {/* ── 종목 목록 탭 ── */}
