@@ -126,7 +126,7 @@ export function useStockSearch() {
                 const overrides = await loadKrOverrides();
                 code = overrides.get(stockName);
             }
-            if (code) {
+            if (code && /^\d{6}$/.test(code)) {
                 dispatch(reqGetInquirePrice({ PDNO: code }));
                 dispatch(reqGetInquireDailyItemChartPrice({
                     PDNO: code,
@@ -136,6 +136,17 @@ export function useStockSearch() {
                 dispatch(reqGetBalanceSheet({ PDNO: code }));
                 dispatch(reqGetIncomeStatement({ PDNO: code }));
                 setWaitResponse(true);
+            } else {
+                // 유효한 6자리 KR 코드가 없으면 US 티커로 폴백 (오버라이드 country 미설정 등)
+                setKrOrUs("US");
+                const ticker = upper;
+                dispatch(reqGetQuotationsSearchInfo({ PDNO: ticker }));
+                dispatch(reqGetQuotationsPriceDetail({ PDNO: ticker }));
+                dispatch(reqGetOverseasPriceQuotationsDailyPrice({
+                    PDNO: ticker,
+                    FID_INPUT_DATE_1: new Date().toISOString().split('T')[0].replaceAll("-", "")
+                }));
+                dispatch(reqGetFinnhubUsFinancialsReported(ticker));
             }
         } else {
             setKrOrUs("US");
