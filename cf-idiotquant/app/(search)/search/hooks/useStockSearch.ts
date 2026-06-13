@@ -25,6 +25,26 @@ function loadKrOverrides(): Promise<Map<string, string>> {
     return _krOverridePromise;
 }
 
+// US ticker-map override 캐시 (ticker 집합 — 정적 JSON에 없는 종목 보완)
+let _usOverrideSet: Set<string> | null = null;
+let _usOverridePromise: Promise<Set<string>> | null = null;
+function loadUsOverrides(): Promise<Set<string>> {
+    if (_usOverrideSet) return Promise.resolve(_usOverrideSet);
+    if (_usOverridePromise) return _usOverridePromise;
+    _usOverridePromise = fetch('/api/proxy/ticker-map?source=overrides&country=US&limit=500')
+        .then(r => r.json())
+        .then(json => {
+            const set = new Set<string>();
+            for (const e of (json.data ?? [])) {
+                if (e.ticker) set.add(e.ticker.toUpperCase());
+            }
+            _usOverrideSet = set;
+            return set;
+        })
+        .catch(() => new Set<string>());
+    return _usOverridePromise;
+}
+
 // Redux Actions
 import {
     reqGetInquirePrice,
@@ -88,7 +108,9 @@ export function useStockSearch() {
     const onSearch = useCallback(async (stockName: string) => {
         if (!stockName) return;
 
-        const isUs = us_tickers.includes(stockName.toUpperCase());
+        const upper = stockName.toUpperCase();
+        const usOverrides = await loadUsOverrides();
+        const isUs = us_tickers.includes(upper) || usOverrides.has(upper);
         dispatch(addKrMarketHistory(stockName));
         setName(stockName);
 
@@ -117,7 +139,7 @@ export function useStockSearch() {
             }
         } else {
             setKrOrUs("US");
-            const ticker = stockName.toUpperCase();
+            const ticker = upper;
             dispatch(reqGetQuotationsSearchInfo({ PDNO: ticker }));
             dispatch(reqGetQuotationsPriceDetail({ PDNO: ticker }));
             dispatch(reqGetOverseasPriceQuotationsDailyPrice({
