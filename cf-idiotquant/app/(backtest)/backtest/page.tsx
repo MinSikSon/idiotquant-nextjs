@@ -10,7 +10,6 @@ import {
     selectNcavDailyDates,
     reqGetNcavDailyDates,
 } from "@/lib/features/algorithmTrade/algorithmTradeSlice";
-import type { NcavDailyDateItem } from "@/lib/features/algorithmTrade/algorithmTradeSlice";
 import {
     getScanDailyList,
     getScanDailyByTicker,
@@ -78,24 +77,10 @@ interface DailyItem {
     strategies: string[];
 }
 
-type StrategyId = 'ncav' | 'low_pbr' | 'low_per' | 's_rim';
 type SortKey = 'name' | 'ncav_ratio' | 'last_price' | 'return_pct' | 'pbr' | 'per';
 type SortOrder = 'asc' | 'desc';
 
 // ─── Constants ────────────────────────────────────────────────────────────────
-
-const STRATEGY_TABS: {
-    id: StrategyId;
-    label: string;
-    cntKey: keyof NcavDailyDateItem;
-    activeCls: string;
-    barColor: string;
-}[] = [
-    { id: 'ncav',    label: 'NCAV',  cntKey: 'ncav_cnt',    activeCls: 'bg-emerald-600 border-emerald-600 text-white',  barColor: '#16a34a' },
-    { id: 'low_pbr', label: '저PBR', cntKey: 'low_pbr_cnt', activeCls: 'bg-sky-600 border-sky-600 text-white',           barColor: '#0284c7' },
-    { id: 'low_per', label: '저PER', cntKey: 'low_per_cnt', activeCls: 'bg-orange-500 border-orange-500 text-white',     barColor: '#f97316' },
-    { id: 's_rim',   label: 'S-RIM', cntKey: 's_rim_cnt',   activeCls: 'bg-violet-600 border-violet-600 text-white',     barColor: '#7c3aed' },
-];
 
 
 // 각 뷰 탭에 대한 사용 설명
@@ -103,7 +88,7 @@ type ViewTabId = 'history' | 'portfolio' | 'stocks';
 const TAB_HELP: Record<ViewTabId, { title: string; desc: string }> = {
     history: {
         title: '히스토리 — 일별 후보 수 추이',
-        desc: '날짜별로 전략 조건을 충족한 종목 수를 막대로 보여줍니다. 막대를 클릭하면 그 날을 기준일로 잡고, 아래 요약 카드(후보 수·평균 NCAV·평균 PBR·평균 수익률)가 함께 갱신됩니다.',
+        desc: '날짜별로 위 필터 바 조건을 통과한 종목 수를 막대로 보여줍니다. 막대를 클릭하면 그 날을 기준일로 잡고, 아래 요약 카드(후보 수·평균 NCAV·평균 PBR·평균 수익률)가 함께 갱신됩니다. 각 날짜 데이터는 탭 진입 시 분리 로드되며, 로딩 중인 날짜는 잠정 집계로 표시됩니다.',
     },
     portfolio: {
         title: '포트폴리오 — 균등 매수 시뮬레이션 + 종목별 스냅샷',
@@ -190,6 +175,61 @@ function calcReturn(
     return (curPrice / entryPrice - 1) * 100;
 }
 
+// 실측 시계열(>=2)이 있는 결과에 공통 필터(filteredTickers)를 적용해 포트폴리오 지표를 재계산.
+// 백엔드가 전략·전체 후보로 계산한 결과를 클라이언트 필터 기준으로 다시 평균낸다.
+function recomputePortfolioWithFilter(
+    result: PortfolioResult,
+    filteredTickers: Set<string>,
+): PortfolioResult | null {
+    // 필터 미적용(모든 후보 포함) → 백엔드 계산과 동일하므로 원본 그대로 반환
+    if (result.candidates.every(c => filteredTickers.has(c.ticker))) return result;
+
+    const candidates = result.candidates.filter(c => filteredTickers.has(c.ticker));
+    const series = (result.ticker_series ?? []).filter(ts => filteredTickers.has(ts.ticker));
+
+    // 필터가 전체를 제외 → null 반환해 페이지 빈 상태 메시지 노출
+    if (series.length === 0) return null;
+
+    // 날짜별로 필터 종목들의 pct 평균 → time_series 재구성 (백엔드 fill-forward 시계열과 동일 의미)
+    const dateAgg = new Map<string, { sum: number; n: number; win: number }>();
+    for (const ts of series) {
+        for (const pt of ts.data) {
+            const a = dateAgg.get(pt.date) ?? { sum: 0, n: 0, win: 0 };
+            a.sum += pt.pct;
+            a.n += 1;
+            if (pt.pct >= 0) a.win += 1;
+            dateAgg.set(pt.date, a);
+        }
+    }
+    const timeSeries: PortfolioPoint[] = [...dateAgg.entries()]
+        .sort((a, b) => a[0].localeCompare(b[0]))
+        .map(([date, a]) => ({
+            date,
+            portfolio_pct: Math.round((a.sum / a.n) * 100) / 100,
+            covered: a.n,
+            win_count: a.win,
+        }));
+
+    const sorted = [...series].sort((a, b) => (b.final_pct ?? 0) - (a.final_pct ?? 0));
+    const top = sorted[0];
+    const bot = sorted.at(-1);
+    const summary: PortfolioSummary = {
+        current_pct: timeSeries.at(-1)?.portfolio_pct ?? 0,
+        days: result.summary?.days ?? 0,
+        top_gainer: top ? { ticker: top.ticker, name: top.name, pct: Math.round((top.final_pct ?? 0) * 100) / 100 } : null,
+        top_loser:  bot ? { ticker: bot.ticker, name: bot.name, pct: Math.round((bot.final_pct ?? 0) * 100) / 100 } : null,
+    };
+
+    return {
+        ...result,
+        candidate_count: candidates.length,
+        candidates,
+        ticker_series: series,
+        time_series: timeSeries,
+        summary,
+    };
+}
+
 // 시계열 데이터 부족 시 currentPriceMap 으로 보간하여 항상 PortfolioResult 를 반환
 function augmentPortfolioResult(
     result: PortfolioResult | null,
@@ -201,8 +241,8 @@ function augmentPortfolioResult(
     selectedDate: string,
     latestScanDate: string | null,
 ): PortfolioResult | null {
-    // 이미 충분한 시계열 → 그대로 반환
-    if ((result?.time_series?.length ?? 0) >= 2) return result;
+    // 이미 충분한 시계열 → 공통 필터(filteredTickers)를 적용해 재계산 후 반환
+    if ((result?.time_series?.length ?? 0) >= 2) return recomputePortfolioWithFilter(result!, filteredTickers);
 
     // 유효 후보 목록 결정 (portfolioResult.candidates 우선, 없으면 filteredList 기반 fallback)
     const candidates: { ticker: string; name: string; start_price: number; start_market_cap?: number }[] =
@@ -984,7 +1024,6 @@ function BacktestContent() {
     const datesState  = useAppSelector(selectNcavDailyDates);
 
     const [selectedDate,        setSelectedDate]        = useState<string | null>(null);
-    const [portfolioStrategy,   setPortfolioStrategy]   = useState<StrategyId>('ncav');
     const [historicalList,      setHistoricalList]      = useState<DailyItem[]>([]);
     const [currentPriceMap,     setCurrentPriceMap]     = useState<Map<string, number>>(new Map());
     const [currentLstnMap,      setCurrentLstnMap]      = useState<Map<string, number>>(new Map());
@@ -1014,6 +1053,12 @@ function BacktestContent() {
 
     const dateInitialized      = useRef(false);
     const pricesLoaded         = useRef(false);
+    // 포트폴리오 시뮬레이션을 마지막으로 로드한 기준일 (탭 전환 시 중복 fetch 방지)
+    const portfolioLoadedDate  = useRef<string | null>(null);
+    // 날짜별 전체 종목 리스트 캐시 (히스토리 탭 필터 집계용, 분리 지연 로드)
+    const dailyListCache       = useRef<Map<string, DailyItem[]>>(new Map());
+    // 히스토리 탭 날짜별 리스트 로딩 진행 상태 (캐시된 날짜 수)
+    const [historyLoadedCount, setHistoryLoadedCount] = useState(0);
 
     // 1. Load date list on mount
     useEffect(() => {
@@ -1054,13 +1099,22 @@ function BacktestContent() {
         if (!selectedDate) return;
         setLoadingList(true);
         setSelectedStock(null);
+        // 기준일 변경 → 포트폴리오 결과 무효화 (탭 활성 시 새 기준일로 재로드)
+        setPortfolioResult(null);
+        portfolioLoadedDate.current = null;
         getScanDailyList(selectedDate, 'all')
             .then((res: { data?: Record<string, unknown>[] }) => {
                 const raw = res?.data ?? [];
-                setHistoricalList(raw.map(item => ({
+                const list: DailyItem[] = raw.map(item => ({
                     ...(item as Omit<DailyItem, 'strategies'>),
                     strategies: parseStrategies(item.strategies),
-                })));
+                }));
+                setHistoricalList(list);
+                // 히스토리 탭 필터 집계용 캐시에 기준일 리스트 시드
+                if (!dailyListCache.current.has(selectedDate)) {
+                    dailyListCache.current.set(selectedDate, list);
+                    setHistoryLoadedCount(dailyListCache.current.size);
+                }
             })
             .catch(() => setHistoricalList([]))
             .finally(() => setLoadingList(false));
@@ -1084,82 +1138,118 @@ function BacktestContent() {
             .finally(() => setLoadingStock(false));
     }, [selectedStock]);
 
-    // 6. Fetch portfolio simulation when date or portfolioStrategy changes
+    // 6. Fetch portfolio simulation — 포트폴리오 탭 활성 시에만 (분리 지연 로드)
+    //    전략 구분 없이 전체(all) 후보를 불러오고, 공통 필터는 클라이언트에서 적용한다.
     useEffect(() => {
-        if (!selectedDate) return;
-        setPortfolioResult(null);
+        if (!selectedDate || viewTab !== 'portfolio') return;
+        // 같은 기준일을 이미 로드했으면 재fetch 생략
+        if (portfolioLoadedDate.current === selectedDate && portfolioResult) return;
         setLoadingPortfolio(true);
-        getPortfolioSimulation(selectedDate, portfolioStrategy)
+        getPortfolioSimulation(selectedDate, 'all')
             .then((res: { success?: boolean; data?: PortfolioResult }) => {
-                if (res?.success && res.data) setPortfolioResult(res.data);
+                if (res?.success && res.data) {
+                    setPortfolioResult(res.data);
+                    portfolioLoadedDate.current = selectedDate;
+                }
             })
             .catch(() => {})
             .finally(() => setLoadingPortfolio(false));
-    }, [selectedDate, portfolioStrategy]);
-
-    // Bar chart data (chronological order, total_cnt = rough sum across strategies)
-    const chartData = useMemo(() =>
-        [...datesState.dates].reverse().map(d => ({
-            ...d,
-            label: fmtDate(d.scan_date),
-            total_cnt: (d.ncav_cnt ?? 0) + (d.low_pbr_cnt ?? 0) + (d.low_per_cnt ?? 0) + (d.s_rim_cnt ?? 0),
-        })),
-    [datesState.dates]);
+    }, [selectedDate, viewTab]); // eslint-disable-line react-hooks/exhaustive-deps
 
     const isLatestDate = selectedDate !== null
         && datesState.dates.length > 0
         && selectedDate === datesState.dates[0].scan_date;
 
-    // Filtered list — 모든 필터 조건 적용
-    const filteredList = useMemo(() => {
-        let list = historicalList;
+    // 단일 종목이 현재 공통 필터를 통과하는지 판정 (filteredList + 히스토리 날짜별 집계 공용).
+    // applyReturn: 수익률 필터 적용 여부 (최신일은 수익률 ~0 이라 제외).
+    const matchesFilters = useCallback((item: DailyItem, applyReturn: boolean): boolean => {
         if (searchQuery.trim()) {
             const q = searchQuery.trim().toLowerCase();
-            list = list.filter(i => i.name.toLowerCase().includes(q) || i.ticker.includes(q));
+            if (!(item.name.toLowerCase().includes(q) || item.ticker.includes(q))) return false;
         }
         if (filterStrategies.size > 0) {
-            const check = filterStrategyMode === 'AND' ? 'every' : 'some';
-            list = list.filter(i =>
-                Array.from(filterStrategies)[check](id => {
-                    const preset = STRATEGY_PRESETS_CLIENT.find(p => p.id === id);
-                    return preset?.clientFilter ? preset.clientFilter(i) : false;
-                })
-            );
+            const ids = Array.from(filterStrategies);
+            const test = (id: string) => {
+                const preset = STRATEGY_PRESETS_CLIENT.find(p => p.id === id);
+                return preset?.clientFilter ? preset.clientFilter(item) : false;
+            };
+            const ok = filterStrategyMode === 'AND' ? ids.every(test) : ids.some(test);
+            if (!ok) return false;
         }
-        if (minMarketCap > 0) {
-            list = list.filter(i => safeNum(i.market_cap) >= minMarketCap);
+        if (minMarketCap > 0 && safeNum(item.market_cap) < minMarketCap) return false;
+        if (excludeHoldings && item.name.includes('홀딩스')) return false;
+        if (excludeDeficit && !(safeNum(item.eps) > 0)) return false;
+        if (excludeDelisted && !(safeNum(item.lstn_stcn) > 0)) return false;
+        if (filterNcav !== 'all' && !(safeNum(item.ncav_ratio) >= parseFloat(filterNcav))) return false;
+        if (applyReturn && filterReturn !== 'all') {
+            const cur = currentPriceMap.get(item.ticker);
+            if (!cur || item.last_price <= 0) return false;
+            const ret = calcReturn(item.last_price, item.market_cap, item.ticker, cur, splitAdjusted, currentLstnMap);
+            if (filterReturn === 'win' ? ret < 0 : ret >= 0) return false;
         }
-        if (excludeHoldings) {
-            list = list.filter(i => !i.name.includes('홀딩스'));
-        }
-        if (excludeDeficit) {
-            list = list.filter(i => safeNum(i.eps) > 0);
-        }
-        if (excludeDelisted) {
-            list = list.filter(i => safeNum(i.lstn_stcn) > 0);
-        }
-        if (filterNcav !== 'all') {
-            const threshold = parseFloat(filterNcav);
-            list = list.filter(i => safeNum(i.ncav_ratio) >= threshold);
-        }
-        if (filterReturn !== 'all' && !isLatestDate) {
-            list = list.filter(i => {
-                const cur = currentPriceMap.get(i.ticker);
-                if (!cur || i.last_price <= 0) return false;
-                const ret = calcReturn(i.last_price, i.market_cap, i.ticker, cur, splitAdjusted, currentLstnMap);
-                return filterReturn === 'win' ? ret >= 0 : ret < 0;
-            });
-        }
-        if (filterPbr !== 'all') {
-            const threshold = parseFloat(filterPbr);
-            list = list.filter(i => safeNum(i.pbr) > 0 && safeNum(i.pbr) <= threshold);
-        }
-        if (filterPer !== 'all') {
-            const threshold = parseFloat(filterPer);
-            list = list.filter(i => safeNum(i.per) > 0 && safeNum(i.per) <= threshold);
-        }
-        return list;
-    }, [historicalList, searchQuery, filterStrategies, filterStrategyMode, minMarketCap, excludeHoldings, excludeDeficit, excludeDelisted, filterNcav, filterReturn, filterPbr, filterPer, isLatestDate, currentPriceMap, splitAdjusted, currentLstnMap]);
+        if (filterPbr !== 'all' && !(safeNum(item.pbr) > 0 && safeNum(item.pbr) <= parseFloat(filterPbr))) return false;
+        if (filterPer !== 'all' && !(safeNum(item.per) > 0 && safeNum(item.per) <= parseFloat(filterPer))) return false;
+        return true;
+    }, [searchQuery, filterStrategies, filterStrategyMode, minMarketCap, excludeHoldings, excludeDeficit, excludeDelisted, filterNcav, filterReturn, filterPbr, filterPer, currentPriceMap, splitAdjusted, currentLstnMap]);
+
+    // Bar chart data (chronological).
+    // 날짜별 리스트가 캐시되면 공통 필터 통과 종목 수를, 아직 미도착이면 서버 집계 합계(임시)를 표시.
+    const latestDateForChart = datesState.dates[0]?.scan_date;
+    const chartData = useMemo(() =>
+        [...datesState.dates].reverse().map(d => {
+            const cached = dailyListCache.current.get(d.scan_date);
+            const filteredCnt = cached
+                ? cached.reduce((n, item) => n + (matchesFilters(item, d.scan_date !== latestDateForChart) ? 1 : 0), 0)
+                : null;
+            return {
+                ...d,
+                label: fmtDate(d.scan_date),
+                total_cnt: filteredCnt ?? ((d.ncav_cnt ?? 0) + (d.low_pbr_cnt ?? 0) + (d.low_per_cnt ?? 0) + (d.s_rim_cnt ?? 0)),
+                filtered: filteredCnt !== null,
+            };
+        }),
+    // historyLoadedCount: 캐시 갱신 시 재계산 (ref 변경은 리렌더를 트리거하지 않으므로)
+    [datesState.dates, matchesFilters, historyLoadedCount, latestDateForChart]);
+
+    // 7. 히스토리 탭: 날짜별 전체 리스트를 지연 로드 (분리 로드 · 동시성 제한 · 캐시 재사용)
+    useEffect(() => {
+        if (viewTab !== 'history') return;
+        const dates = datesState.dates;
+        if (!dates.length) return;
+        const missing = dates.map(d => d.scan_date).filter(dt => !dailyListCache.current.has(dt));
+        if (!missing.length) return;
+
+        let cancelled = false;
+        let idx = 0;
+        const CONCURRENCY = 4;
+
+        const worker = async () => {
+            while (!cancelled && idx < missing.length) {
+                const dt = missing[idx++];
+                try {
+                    const res: { data?: Record<string, unknown>[] } = await getScanDailyList(dt, 'all');
+                    if (cancelled) return;
+                    const list: DailyItem[] = (res?.data ?? []).map(item => ({
+                        ...(item as Omit<DailyItem, 'strategies'>),
+                        strategies: parseStrategies(item.strategies),
+                    }));
+                    dailyListCache.current.set(dt, list);
+                    setHistoryLoadedCount(dailyListCache.current.size);
+                } catch {
+                    // 실패한 날짜는 캐시하지 않음 → 서버 집계 합계로 임시 표시, 탭 재진입 시 재시도
+                }
+            }
+        };
+        Promise.all(Array.from({ length: Math.min(CONCURRENCY, missing.length) }, worker));
+
+        return () => { cancelled = true; };
+    }, [viewTab, datesState.dates]);
+
+    // Filtered list — 모든 필터 조건 적용 (선택 기준일)
+    const filteredList = useMemo(
+        () => historicalList.filter(i => matchesFilters(i, !isLatestDate)),
+        [historicalList, matchesFilters, isLatestDate]
+    );
 
     // Fallback candidates — filteredList 기반으로 필터 조건 반영
     const fallbackCandidates = useMemo(() =>
@@ -1171,8 +1261,9 @@ function BacktestContent() {
     // 필터 적용 ticker set (portfolioResult.candidates 교차 필터링에 사용)
     const filteredTickers = useMemo(() => new Set(filteredList.map(i => i.ticker)), [filteredList]);
 
-    // Fetch prices for candidates missing from currentPriceMap
+    // Fetch prices for candidates missing from currentPriceMap (포트폴리오 탭 전용, 분리 지연 로드)
     useEffect(() => {
+        if (viewTab !== 'portfolio') return;
         const candidates = (portfolioResult?.candidates?.length ?? 0) > 0
             ? portfolioResult!.candidates
             : fallbackCandidates;
@@ -1200,7 +1291,7 @@ function BacktestContent() {
         });
     // currentPriceMap 제외: 가격 업데이트 후 무한 루프 방지
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [portfolioResult, fallbackCandidates]);
+    }, [portfolioResult, fallbackCandidates, viewTab]);
 
     // Sorted table rows
     const sortedList = useMemo(() => {
@@ -1603,9 +1694,17 @@ function BacktestContent() {
 
                         {/* ── Bar Chart ── */}
                         <div className="bg-white dark:bg-[#242320] rounded-2xl border border-neutral-200 dark:border-[#35332e] p-5 shadow-sm">
-                            <p className="text-xs font-bold text-neutral-500 dark:text-neutral-400 uppercase tracking-wider mb-4">
-                                일별 후보 수 추이 (전략 합산)
-                            </p>
+                            <div className="flex items-center gap-2 mb-4">
+                                <p className="text-xs font-bold text-neutral-500 dark:text-neutral-400 uppercase tracking-wider">
+                                    일별 후보 수 추이 (필터 반영)
+                                </p>
+                                {historyLoadedCount < datesState.dates.length && (
+                                    <span className="flex items-center gap-1 text-[10px] text-neutral-400">
+                                        <Loader2 size={11} className="animate-spin text-[#16a34a]/60" />
+                                        필터 반영 집계 중 {historyLoadedCount}/{datesState.dates.length}
+                                    </span>
+                                )}
+                            </div>
                             <ResponsiveContainer width="100%" height={200}>
                                 <BarChart data={chartData} margin={{ top: 4, right: 8, left: -20, bottom: 0 }}>
                                     <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" vertical={false} />
@@ -1684,24 +1783,6 @@ function BacktestContent() {
                         {/* ── 포트폴리오 탭 ── */}
                         {viewTab === 'portfolio' && (
                         <>
-                            {/* 포트폴리오 시뮬레이션 전략 선택 */}
-                            <div className="flex items-center gap-2 flex-wrap">
-                                <span className="text-[10px] font-extrabold text-neutral-400 uppercase tracking-wider shrink-0">시뮬레이션 전략</span>
-                                {STRATEGY_TABS.map(tab => (
-                                    <button
-                                        key={tab.id}
-                                        onClick={() => setPortfolioStrategy(tab.id)}
-                                        className={cn(
-                                            "flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold border transition-all whitespace-nowrap",
-                                            portfolioStrategy === tab.id
-                                                ? tab.activeCls
-                                                : "border-neutral-200 dark:border-[#35332e] text-neutral-600 dark:text-neutral-400 hover:border-neutral-300 dark:hover:border-neutral-600 bg-white dark:bg-[#242320]"
-                                        )}
-                                    >
-                                        {tab.label}
-                                    </button>
-                                ))}
-                            </div>
                             {loadingPortfolio ? (
                                 <div className="bg-white dark:bg-[#242320] rounded-2xl border border-neutral-200 dark:border-[#35332e] p-5 flex items-center justify-center h-48">
                                     <Loader2 size={22} className="animate-spin text-[#16a34a]/50" />
@@ -1723,13 +1804,13 @@ function BacktestContent() {
                                     <PortfolioOverviewChart
                                         result={augmentedPortfolioResult}
                                         loading={false}
-                                        strategy={portfolioStrategy}
+                                        strategy="all"
                                         synthetic={(portfolioResult?.time_series?.length ?? 0) < 2}
                                     />
                                     <PortfolioChart
                                         result={augmentedPortfolioResult}
                                         loading={false}
-                                        strategy={portfolioStrategy}
+                                        strategy="all"
                                     />
                                 </>
                             ) : (
@@ -1754,7 +1835,7 @@ function BacktestContent() {
                                     <PortfolioSnapshotChart
                                         result={portfolioResult}
                                         loading={loadingPortfolio}
-                                        strategy={portfolioStrategy}
+                                        strategy="all"
                                         currentPriceMap={currentPriceMap}
                                         selectedDate={selectedDate}
                                         fallbackCandidates={fallbackCandidates}
