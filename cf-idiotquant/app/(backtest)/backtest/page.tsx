@@ -1179,7 +1179,9 @@ function BacktestContent() {
         if (minMarketCap > 0 && safeNum(item.market_cap) < minMarketCap) return false;
         if (excludeHoldings && item.name.includes('홀딩스')) return false;
         if (excludeDeficit && !(safeNum(item.eps) > 0)) return false;
-        if (excludeDelisted && !(safeNum(item.lstn_stcn) > 0)) return false;
+        // lstn_stcn 미수집(NULL)은 "모름"으로 통과시키고, 명시적 0(상장폐지 의심)만 제외.
+        // 과거 일자는 lstn_stcn 컬럼이 NULL이라 0과 혼동돼 전 종목이 가려지던 문제 방지.
+        if (excludeDelisted && item.lstn_stcn != null && safeNum(item.lstn_stcn) <= 0) return false;
         if (filterNcav !== 'all' && !(safeNum(item.ncav_ratio) >= parseFloat(filterNcav))) return false;
         if (applyReturn && filterReturn !== 'all') {
             const cur = currentPriceMap.get(item.ticker);
