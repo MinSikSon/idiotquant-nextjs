@@ -15,6 +15,10 @@ import {
     reqGetMyLikes, reqToggleLike,
 } from "@/lib/features/stockLikes/stockLikesSlice";
 import { cn } from "@/lib/utils";
+import { STRATEGY_LABEL, STRATEGY_BADGE, STRATEGY_PRESETS_CLIENT as STRATEGY_PRESETS, MKTCAP_PRESETS } from "@/lib/constants/strategies";
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+const safeNum = (v: any): number => { const n = Number(v); return isNaN(n) ? 0 : n; };
 import { RefreshCw, ChevronRight, Loader2, Search, SlidersHorizontal, TrendingUp, Info, X, Heart, Clock } from "lucide-react";
 import * as Tooltip from "@radix-ui/react-tooltip";
 
@@ -25,24 +29,6 @@ const DAILY_PAGE_SIZE = 30;
 type DiscoverySortKey = "ticker" | "ncav_ratio" | "per" | "pbr" | "roe" | "market_cap" | "last_price";
 type SortOrder = "asc" | "desc";
 
-const safeNum = (v: any): number => { const n = Number(v); return isNaN(n) ? 0 : n; };
-
-const STRATEGY_BADGE: Record<string, string> = {
-    ncav:           "bg-emerald-100 text-emerald-700 dark:bg-emerald-950/50 dark:text-emerald-400",
-    low_pbr:        "bg-sky-100 text-sky-700 dark:bg-sky-950/50 dark:text-sky-400",
-    low_per:        "bg-orange-100 text-orange-700 dark:bg-orange-950/50 dark:text-orange-400",
-    s_rim:          "bg-violet-100 text-violet-700 dark:bg-violet-950/50 dark:text-violet-400",
-    graham_number:  "bg-teal-100 text-teal-700 dark:bg-teal-950/50 dark:text-teal-400",
-    magic_formula:  "bg-rose-100 text-rose-700 dark:bg-rose-950/50 dark:text-rose-400",
-    quality_value:  "bg-amber-100 text-amber-700 dark:bg-amber-950/50 dark:text-amber-400",
-    near_ncav:      "bg-indigo-100 text-indigo-700 dark:bg-indigo-950/50 dark:text-indigo-400",
-    balanced_value: "bg-cyan-100 text-cyan-700 dark:bg-cyan-950/50 dark:text-cyan-400",
-};
-const STRATEGY_LABEL: Record<string, string> = {
-    ncav: "NCAV", low_pbr: "저PBR", low_per: "저PER", s_rim: "S-RIM",
-    graham_number: "그레이엄", magic_formula: "마법공식", quality_value: "퀄리티",
-    near_ncav: "NCAV근접", balanced_value: "균형가치",
-};
 const STRATEGY_ACTIVE_CLS: Record<string, string> = {
     all:            "bg-neutral-900 dark:bg-white text-white dark:text-neutral-900 border-neutral-900 dark:border-white shadow-sm",
     ncav:           "bg-emerald-600 border-emerald-600 text-white shadow-sm",
@@ -56,75 +42,8 @@ const STRATEGY_ACTIVE_CLS: Record<string, string> = {
     balanced_value: "bg-cyan-600 border-cyan-600 text-white shadow-sm",
 };
 
-interface StrategyPreset {
-    id: string;
-    label: string;
-    hint: string;
-    clientFilter?: (item: Record<string, any>) => boolean;
-}
-
-const STRATEGY_PRESETS: StrategyPreset[] = [
-    {
-        id: "ncav", label: "NCAV",
-        hint: "순유동자산(유동자산−총부채) > 시가총액. 그레이엄 기준 청산가치 이하에 거래 중인 종목.",
-        clientFilter: (item) => safeNum(item.ncav_ratio) >= 1.0,
-    },
-    {
-        id: "low_pbr", label: "저PBR",
-        hint: "PBR 0.5 미만 — 순자산의 절반 이하 가격에 거래 중인 심층 저평가 종목.",
-        clientFilter: (item) => safeNum(item.pbr) > 0 && safeNum(item.pbr) < 0.5,
-    },
-    {
-        id: "low_per", label: "저PER",
-        hint: "PER 10 미만 + 흑자(EPS > 0) — 현재 이익의 10배 이하에 살 수 있는 종목.",
-        clientFilter: (item) => safeNum(item.eps) > 0 && safeNum(item.per) > 0 && safeNum(item.per) < 10,
-    },
-    {
-        id: "s_rim", label: "S-RIM",
-        hint: "ROE > 8% & PBR < 1.0 — 초과이익(ROE > Ke) 창출 기업이 장부가 이하에 거래 중.",
-        clientFilter: (item) => {
-            const roe = safeNum(item.bps) > 0 ? (safeNum(item.eps) / safeNum(item.bps)) * 100 : 0;
-            return roe > 8 && safeNum(item.pbr) > 0 && safeNum(item.pbr) < 1.0;
-        },
-    },
-    {
-        id: "graham_number", label: "그레이엄",
-        hint: "PER × PBR < 22.5 — 그레이엄 복합 안전마진 공식. 두 지표를 곱으로 평가.",
-        clientFilter: (item) =>
-            safeNum(item.eps) > 0 && safeNum(item.bps) > 0 &&
-            safeNum(item.per) > 0 && safeNum(item.pbr) > 0 &&
-            safeNum(item.per) * safeNum(item.pbr) < 22.5,
-    },
-    {
-        id: "magic_formula", label: "마법공식",
-        hint: "PER < 15 & ROE > 10% — Greenblatt 마법공식 변형. 싸면서 잘 버는 기업.",
-        clientFilter: (item) =>
-            safeNum(item.eps) > 0 && safeNum(item.per) > 0 && safeNum(item.per) < 15 &&
-            safeNum(item.bps) > 0 && (safeNum(item.eps) / safeNum(item.bps)) * 100 > 10,
-    },
-    {
-        id: "quality_value", label: "퀄리티",
-        hint: "ROE > 15% & PBR < 2.0 — 버핏 스타일. 경쟁력 높은 기업이 아직 고평가되지 않은 구간.",
-        clientFilter: (item) =>
-            safeNum(item.eps) > 0 && safeNum(item.bps) > 0 &&
-            (safeNum(item.eps) / safeNum(item.bps)) * 100 > 15 &&
-            safeNum(item.pbr) > 0 && safeNum(item.pbr) < 2.0,
-    },
-    {
-        id: "near_ncav", label: "NCAV근접",
-        hint: "NCAV 비율 0.7~1.0 — 청산가치 미달이지만 근접. 진입 전 관찰 목록으로 활용.",
-        clientFilter: (item) => safeNum(item.ncav_ratio) >= 0.7 && safeNum(item.ncav_ratio) < 1.0,
-    },
-    {
-        id: "balanced_value", label: "균형가치",
-        hint: "PER 5~15 & PBR < 1.5 & EPS > 0 — 적정가치 + 저평가 복합 기준.",
-        clientFilter: (item) =>
-            safeNum(item.eps) > 0 && safeNum(item.per) > 5 && safeNum(item.per) < 15 &&
-            safeNum(item.pbr) > 0 && safeNum(item.pbr) < 1.5,
-    },
-];
-
 // 백엔드 strategies + 프론트엔드 clientFilter 병합 (백엔드 미분류 종목도 표시)
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 function resolveStrategies(item: Record<string, any>): string[] {
     const base = new Set<string>(item.strategies ?? []);
     for (const preset of STRATEGY_PRESETS) {
@@ -132,14 +51,6 @@ function resolveStrategies(item: Record<string, any>): string[] {
     }
     return Array.from(base);
 }
-
-// 시가총액 프리셋 (단위: 억원)
-const MKTCAP_PRESETS: { label: string; value: number }[] = [
-    { label: "전체", value: 0 },
-    { label: "500억+", value: 500 },
-    { label: "1000억+", value: 1000 },
-    { label: "5000억+", value: 5000 },
-];
 
 const TOOLTIP_CLS =
     "z-50 max-w-64 rounded-xl px-3.5 py-3 text-xs bg-neutral-900 dark:bg-[#242320] border border-neutral-700/60 shadow-lg text-neutral-200 leading-relaxed " +
@@ -522,8 +433,8 @@ function ScreenerContent() {
     const normalizedLikedList = useMemo(() => {
         if (likedTickers.size === 0) return [] as Record<string, any>[];
         const scanMap = new Map(ncavDailyList.list.map((item: any) => [item.name, item]));
-        const likedMap = new Map(likedList.map(item => [item.ticker, item]));
-        return Array.from(likedTickers).map(ticker => {
+        const likedMap = new Map<string, (typeof likedList)[number]>(likedList.map(item => [item.ticker, item]));
+        return Array.from(likedTickers).map((ticker: string) => {
             const fromScan = scanMap.get(ticker);
             if (fromScan) return fromScan;
             const fromLiked = likedMap.get(ticker);
@@ -542,7 +453,7 @@ function ScreenerContent() {
             list = list.filter((item) =>
                 Array.from(activeStrategyIds)[check]((stratId) => {
                     const preset = STRATEGY_PRESETS.find(p => p.id === stratId);
-                    return preset?.clientFilter ? preset.clientFilter(item) : resolveStrategies(item).includes(stratId);
+                    return preset?.clientFilter ? preset.clientFilter(item) : resolveStrategies(item).includes(stratId as string);
                 })
             );
         }
