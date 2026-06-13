@@ -1018,7 +1018,7 @@ function PortfolioSnapshotChart({ result, loading, strategy, currentPriceMap, se
 
 // ─── Main content ─────────────────────────────────────────────────────────────
 
-function BacktestContent() {
+function BacktestContent({ isAdmin }: { isAdmin: boolean }) {
     const dispatch    = useAppDispatch();
     const router      = useRouter();
     const datesState  = useAppSelector(selectNcavDailyDates);
@@ -1028,7 +1028,8 @@ function BacktestContent() {
     const [currentPriceMap,     setCurrentPriceMap]     = useState<Map<string, number>>(new Map());
     const [currentLstnMap,      setCurrentLstnMap]      = useState<Map<string, number>>(new Map());
     const [splitAdjusted,       setSplitAdjusted]       = useState(false);
-    const [viewTab,             setViewTab]             = useState<ViewTabId>('history');
+    // 히스토리 탭은 개발 중이라 admin 에게만 노출. 비-admin 기본 탭은 포트폴리오.
+    const [viewTab,             setViewTab]             = useState<ViewTabId>(isAdmin ? 'history' : 'portfolio');
     const [selectedStock,       setSelectedStock]       = useState<string | null>(null);
     const [stockHistory,        setStockHistory]        = useState<DailyItem[]>([]);
     const [sortKey,             setSortKey]             = useState<SortKey>('ncav_ratio');
@@ -1674,7 +1675,7 @@ function BacktestContent() {
 
                         {/* ── View Tabs ── */}
                         <div className="flex items-end gap-0 border-b border-neutral-200 dark:border-[#35332e] -mb-2">
-                            {(['history', 'portfolio', 'stocks'] as const).map(tab => {
+                            {((isAdmin ? ['history', 'portfolio', 'stocks'] : ['portfolio', 'stocks']) as ViewTabId[]).map(tab => {
                                 const labels = { history: '히스토리', portfolio: '포트폴리오', stocks: '종목 목록' };
                                 return (
                                     <button
@@ -2198,21 +2199,13 @@ export default function BacktestPage() {
         );
     }
 
-    if (!isAdmin) {
-        return (
-            <div className="flex flex-col items-center justify-center min-h-screen bg-[#faf9f7] dark:bg-[#1a1915] gap-3">
-                <p className="text-sm font-bold text-neutral-500 dark:text-neutral-400">준비 중인 기능입니다.</p>
-            </div>
-        );
-    }
-
     return (
         <Suspense fallback={
             <div className="flex items-center justify-center min-h-screen bg-[#faf9f7] dark:bg-[#1a1915]">
                 <Loader2 className="animate-spin text-[#16a34a]" size={24} />
             </div>
         }>
-            <BacktestContent />
+            <BacktestContent isAdmin={isAdmin} />
         </Suspense>
     );
 }
