@@ -20,7 +20,7 @@ import { cn } from "@/lib/utils";
 import { safeNum } from "@/lib/utils/numbers";
 import { STRATEGY_LABEL, STRATEGY_BADGE, STRATEGY_PRESETS_CLIENT, MKTCAP_PRESETS } from "@/lib/constants/strategies";
 import type { StrategyPreset } from "@/lib/constants/strategies";
-import { Loader2, History, ChevronRight, TrendingUp, SlidersHorizontal, Info } from "lucide-react";
+import { Loader2, History, ChevronRight, TrendingUp, SlidersHorizontal, Info, X } from "lucide-react";
 import {
     BarChart, Bar, XAxis, YAxis,
     Tooltip as RTooltip, ResponsiveContainer, Cell,
@@ -1043,7 +1043,6 @@ function BacktestContent() {
     const [minMarketCap,        setMinMarketCap]        = useState(0);
     const [excludeHoldings,     setExcludeHoldings]     = useState(false);
     const [excludeDeficit,      setExcludeDeficit]      = useState(false);
-    const [excludeDelisted,     setExcludeDelisted]     = useState(false);
     const [filterOpen,          setFilterOpen]          = useState(false);
     const [loadingList,          setLoadingList]         = useState(false);
     const [loadingCurrentPrices, setLoadingCurrentPrices]= useState(false);
@@ -1179,9 +1178,6 @@ function BacktestContent() {
         if (minMarketCap > 0 && safeNum(item.market_cap) < minMarketCap) return false;
         if (excludeHoldings && item.name.includes('홀딩스')) return false;
         if (excludeDeficit && !(safeNum(item.eps) > 0)) return false;
-        // lstn_stcn 미수집(NULL)은 "모름"으로 통과시키고, 명시적 0(상장폐지 의심)만 제외.
-        // 과거 일자는 lstn_stcn 컬럼이 NULL이라 0과 혼동돼 전 종목이 가려지던 문제 방지.
-        if (excludeDelisted && item.lstn_stcn != null && safeNum(item.lstn_stcn) <= 0) return false;
         if (filterNcav !== 'all' && !(safeNum(item.ncav_ratio) >= parseFloat(filterNcav))) return false;
         if (applyReturn && filterReturn !== 'all') {
             const cur = currentPriceMap.get(item.ticker);
@@ -1192,7 +1188,7 @@ function BacktestContent() {
         if (filterPbr !== 'all' && !(safeNum(item.pbr) > 0 && safeNum(item.pbr) <= parseFloat(filterPbr))) return false;
         if (filterPer !== 'all' && !(safeNum(item.per) > 0 && safeNum(item.per) <= parseFloat(filterPer))) return false;
         return true;
-    }, [searchQuery, filterStrategies, filterStrategyMode, minMarketCap, excludeHoldings, excludeDeficit, excludeDelisted, filterNcav, filterReturn, filterPbr, filterPer, currentPriceMap, splitAdjusted, currentLstnMap]);
+    }, [searchQuery, filterStrategies, filterStrategyMode, minMarketCap, excludeHoldings, excludeDeficit, filterNcav, filterReturn, filterPbr, filterPer, currentPriceMap, splitAdjusted, currentLstnMap]);
 
     // Bar chart data (chronological).
     // 날짜별 리스트가 캐시되면 공통 필터 통과 종목 수를, 아직 미도착이면 서버 집계 합계(임시)를 표시.
@@ -1444,8 +1440,8 @@ function BacktestContent() {
                     <>
                         {/* ── 공통 필터 바 (뷰 탭 위) ── */}
                         {!loadingList && historicalList.length > 0 && (() => {
-                            const hasAnyFilter = filterStrategies.size > 0 || minMarketCap > 0 || excludeHoldings || excludeDeficit || excludeDelisted || searchQuery !== '' || filterNcav !== 'all' || filterReturn !== 'all' || filterPbr !== 'all' || filterPer !== 'all';
-                            const resetAll = () => { setFilterStrategies(new Set()); setMinMarketCap(0); setExcludeHoldings(false); setExcludeDeficit(false); setExcludeDelisted(false); setSearchQuery(''); setFilterNcav('all'); setFilterReturn('all'); setFilterPbr('all'); setFilterPer('all'); };
+                            const hasAnyFilter = filterStrategies.size > 0 || minMarketCap > 0 || excludeHoldings || excludeDeficit || searchQuery !== '' || filterNcav !== 'all' || filterReturn !== 'all' || filterPbr !== 'all' || filterPer !== 'all';
+                            const resetAll = () => { setFilterStrategies(new Set()); setMinMarketCap(0); setExcludeHoldings(false); setExcludeDeficit(false); setSearchQuery(''); setFilterNcav('all'); setFilterReturn('all'); setFilterPbr('all'); setFilterPer('all'); };
                             return (
                             <div className="bg-white dark:bg-[#242320] rounded-2xl border border-neutral-200 dark:border-[#35332e] shadow-sm overflow-hidden">
                                 {/* ── 전략 필터 (전체 9종) ── */}
@@ -1575,16 +1571,16 @@ function BacktestContent() {
                                         onClick={() => setFilterOpen(o => !o)}
                                         className={cn(
                                             "flex items-center gap-1 px-2.5 py-1 rounded-lg border text-[10px] font-bold transition-all",
-                                            filterOpen || minMarketCap > 0 || excludeHoldings || excludeDeficit || excludeDelisted
+                                            filterOpen || minMarketCap > 0 || excludeHoldings || excludeDeficit
                                                 ? "bg-[#f0fdf4] dark:bg-[#052e16]/30 border-[#86efac] dark:border-[#166534] text-[#15803d] dark:text-[#16a34a]"
                                                 : "bg-white dark:bg-transparent border-neutral-200 dark:border-[#35332e] text-neutral-400 hover:border-neutral-300 dark:hover:border-neutral-500"
                                         )}
                                     >
                                         <SlidersHorizontal size={10} />
                                         고급
-                                        {(minMarketCap > 0 || excludeHoldings || excludeDeficit || excludeDelisted) && (
+                                        {(minMarketCap > 0 || excludeHoldings || excludeDeficit) && (
                                             <span className="w-3.5 h-3.5 flex items-center justify-center rounded-full bg-[#16a34a] text-white text-[8px] font-black">
-                                                {[minMarketCap > 0, excludeHoldings, excludeDeficit, excludeDelisted].filter(Boolean).length}
+                                                {[minMarketCap > 0, excludeHoldings, excludeDeficit].filter(Boolean).length}
                                             </span>
                                         )}
                                     </button>
@@ -1594,10 +1590,48 @@ function BacktestContent() {
                                         <button onClick={resetAll} className="text-[10px] text-neutral-400 hover:text-neutral-600 dark:hover:text-neutral-300 underline ml-0.5">전체 초기화</button>
                                     )}
 
-                                    {filteredList.length !== historicalList.length && (
-                                        <span className="text-[10px] text-neutral-400 ml-auto">{filteredList.length}/{historicalList.length}개</span>
-                                    )}
+                                    {/* 결과 종목 수 — 필터 적용 시 강조 */}
+                                    <div className={cn(
+                                        "ml-auto flex items-baseline gap-1 px-2.5 py-1 rounded-lg border",
+                                        hasAnyFilter
+                                            ? "bg-[#f0fdf4] dark:bg-[#052e16]/30 border-[#bbf7d0] dark:border-[#166534]/50"
+                                            : "bg-[#faf9f7] dark:bg-[#1a1915] border-neutral-200 dark:border-[#35332e]"
+                                    )}>
+                                        <span className={cn(
+                                            "text-sm font-black tabular-nums leading-none",
+                                            hasAnyFilter ? "text-[#15803d] dark:text-[#16a34a]" : "text-neutral-700 dark:text-neutral-200"
+                                        )}>{filteredList.length}</span>
+                                        <span className="text-[10px] font-bold text-neutral-400">개</span>
+                                        {filteredList.length !== historicalList.length && (
+                                            <span className="text-[10px] font-medium text-neutral-400 ml-0.5">/ {historicalList.length}</span>
+                                        )}
+                                    </div>
                                 </div>
+
+                                {/* ── 적용된 조건 칩 — 무엇이 걸려있는지 한눈에 ── */}
+                                {(() => {
+                                    const chips: { key: string; label: string; clear: () => void }[] = [];
+                                    if (searchQuery)        chips.push({ key: 'q',    label: `검색 "${searchQuery}"`, clear: () => setSearchQuery('') });
+                                    if (filterNcav !== 'all') chips.push({ key: 'ncav', label: `NCAV ≥${filterNcav}x`, clear: () => setFilterNcav('all') });
+                                    if (filterReturn !== 'all') chips.push({ key: 'ret', label: filterReturn === 'win' ? '수익' : '손실', clear: () => setFilterReturn('all') });
+                                    if (filterPbr !== 'all') chips.push({ key: 'pbr',  label: `PBR ≤${filterPbr}`, clear: () => setFilterPbr('all') });
+                                    if (filterPer !== 'all') chips.push({ key: 'per',  label: `PER ≤${filterPer}`, clear: () => setFilterPer('all') });
+                                    if (minMarketCap > 0)   chips.push({ key: 'cap',  label: `시총 ${MKTCAP_PRESETS.find(p => p.value === minMarketCap)?.label ?? `${minMarketCap}억+`}`, clear: () => setMinMarketCap(0) });
+                                    if (excludeHoldings)    chips.push({ key: 'hold', label: '홀딩스 제외', clear: () => setExcludeHoldings(false) });
+                                    if (excludeDeficit)     chips.push({ key: 'def',  label: '적자 제외',  clear: () => setExcludeDeficit(false) });
+                                    if (chips.length === 0) return null;
+                                    return (
+                                        <div className="px-5 sm:px-6 pb-3 -mt-0.5 flex items-center gap-1.5 flex-wrap">
+                                            <span className="text-[10px] text-neutral-400 font-medium">적용:</span>
+                                            {chips.map(c => (
+                                                <span key={c.key} className="inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-full bg-[#f0fdf4] dark:bg-[#052e16]/30 border border-[#bbf7d0] dark:border-[#166534]/50 text-[#15803d] dark:text-[#16a34a]">
+                                                    {c.label}
+                                                    <button onClick={c.clear} className="hover:opacity-60" title="제거"><X size={9} /></button>
+                                                </span>
+                                            ))}
+                                        </div>
+                                    );
+                                })()}
 
                                 {/* ── 고급 필터 확장 패널 ── */}
                                 {filterOpen && (
@@ -1625,7 +1659,6 @@ function BacktestContent() {
                                             {[
                                                 { label: '홀딩스', value: excludeHoldings, set: setExcludeHoldings },
                                                 { label: '적자 기업', value: excludeDeficit, set: setExcludeDeficit },
-                                                { label: '상장폐지 의심', value: excludeDelisted, set: setExcludeDelisted },
                                             ].map(opt => (
                                                 <label key={opt.label} className="flex items-center gap-1.5 cursor-pointer select-none">
                                                     <input type="checkbox" checked={opt.value} onChange={e => opt.set(e.target.checked)} className="rounded accent-[#16a34a]" />
@@ -1862,10 +1895,17 @@ function BacktestContent() {
                                 </p>
                                 {loadingList && <Loader2 size={13} className="animate-spin text-neutral-400" />}
                                 {!loadingList && historicalList.length > 0 && (
-                                    <span className="text-xs text-neutral-400 font-medium">
-                                        {filteredList.length !== historicalList.length
-                                            ? `${filteredList.length}/${historicalList.length}개`
-                                            : `${historicalList.length}개`}
+                                    <span className={cn(
+                                        "inline-flex items-baseline gap-1 px-2 py-0.5 rounded-md",
+                                        filteredList.length !== historicalList.length
+                                            ? "bg-[#f0fdf4] dark:bg-[#052e16]/30 text-[#15803d] dark:text-[#16a34a]"
+                                            : "text-neutral-400"
+                                    )}>
+                                        <span className="text-xs font-black tabular-nums">{filteredList.length}</span>
+                                        <span className="text-[10px] font-bold">개</span>
+                                        {filteredList.length !== historicalList.length && (
+                                            <span className="text-[10px] font-medium text-neutral-400">/ {historicalList.length}</span>
+                                        )}
                                     </span>
                                 )}
                                 {!isLatestDate && currentPriceMap.size > 0 && (

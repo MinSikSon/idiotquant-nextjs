@@ -302,10 +302,6 @@ function ScreenerContent() {
     const [excludeDeficit, setExcludeDeficit] = useState(() =>
         searchParams.get('exclude')?.split(',').includes('deficit') ?? false
     );
-    const [excludeDelisted, setExcludeDelisted] = useState(() => {
-        const p = searchParams.get('exclude');
-        return p === null ? true : p.split(',').includes('delisted');
-    });
     const [filterOpen, setFilterOpen] = useState(false);
     const [showLikedOnly, setShowLikedOnly] = useState(() =>
         searchParams.get('filter') === 'liked'
@@ -350,7 +346,6 @@ function ScreenerContent() {
         const excludeList = [
             excludeHoldings ? 'holdings' : null,
             excludeDeficit ? 'deficit' : null,
-            excludeDelisted ? 'delisted' : null,
         ].filter(Boolean).join(',');
         if (excludeList) params.set('exclude', excludeList);
         if (minMarketCap > 0) params.set('mincap', String(minMarketCap));
@@ -369,7 +364,7 @@ function ScreenerContent() {
         } else {
             localStorage.removeItem('screener:filterMode');
         }
-    }, [activeStrategyIds, filterMode, sortKey, sortOrder, excludeHoldings, excludeDeficit, excludeDelisted, minMarketCap, showLikedOnly, router]);
+    }, [activeStrategyIds, filterMode, sortKey, sortOrder, excludeHoldings, excludeDeficit, minMarketCap, showLikedOnly, router]);
 
     const handleRefresh = useCallback(() => {
         dispatch(reqGetNcavDailyList("latest"));
@@ -409,7 +404,6 @@ function ScreenerContent() {
         setSearchQuery('');
         setExcludeHoldings(false);
         setExcludeDeficit(false);
-        setExcludeDelisted(true);
         setMinMarketCap(0);
         setShowLikedOnly(false);
         setDisplayCount(DAILY_PAGE_SIZE);
@@ -466,7 +460,6 @@ function ScreenerContent() {
             );
         }
 
-        if (excludeDelisted) list = list.filter(item => item.lstn_stcn == null || safeNum(item.lstn_stcn) !== 0);
         if (excludeHoldings) list = list.filter(item => !item.name?.includes("홀딩스"));
         if (excludeDeficit)  list = list.filter(item => safeNum(item.eps) > 0);
         if (minMarketCap > 0) list = list.filter(item => safeNum(item.market_cap) >= minMarketCap);
@@ -488,7 +481,7 @@ function ScreenerContent() {
         });
 
         return list;
-    }, [ncavDailyList.list, normalizedLikedList, showLikedOnly, activeStrategyIds, filterMode, searchQuery, excludeDelisted, excludeHoldings, excludeDeficit, minMarketCap, sortKey, sortOrder]);
+    }, [ncavDailyList.list, normalizedLikedList, showLikedOnly, activeStrategyIds, filterMode, searchQuery, excludeHoldings, excludeDeficit, minMarketCap, sortKey, sortOrder]);
 
     const visibleList = filteredList.slice(0, displayCount);
     const hasMore = filteredList.length > displayCount;
@@ -512,7 +505,8 @@ function ScreenerContent() {
 
     const activeFilterCount = [excludeHoldings, excludeDeficit, minMarketCap > 0].filter(Boolean).length;
     const isAllActive = activeStrategyIds.size === 0;
-    const hasActiveFilters = activeStrategyIds.size > 0 || excludeHoldings || excludeDeficit || !excludeDelisted || minMarketCap > 0 || sortKey !== 'ncav_ratio' || sortOrder !== 'desc' || showLikedOnly;
+    const hasActiveFilters = activeStrategyIds.size > 0 || excludeHoldings || excludeDeficit || minMarketCap > 0 || sortKey !== 'ncav_ratio' || sortOrder !== 'desc' || showLikedOnly;
+    const isFiltered = !showLikedOnly && filteredList.length !== ncavDailyList.list.length;
 
     return (
         <Tooltip.Provider delayDuration={300}>
@@ -627,7 +621,7 @@ function ScreenerContent() {
                         </div>
                     </div>
 
-                    {/* 둘째 줄: 관심 + 전략 안내 + 초기화 */}
+                    {/* 둘째 줄: 관심 + 결과 수 + 전략 안내 + 초기화 */}
                     <div className="flex items-center gap-2 pb-3">
                         {/* 관심 종목 필터 */}
                         <button
@@ -648,6 +642,25 @@ function ScreenerContent() {
                                 {likedTickers.size}
                             </span>
                         </button>
+
+                        {/* 결과 종목 수 (sticky — 스크롤해도 항상 보임) */}
+                        {!isLoading && (
+                            <div className={cn(
+                                "shrink-0 flex items-baseline gap-1 px-3 py-1.5 rounded-lg border transition-colors",
+                                isFiltered
+                                    ? "bg-[#f0fdf4] dark:bg-[#052e16]/30 border-[#bbf7d0] dark:border-[#166534]/50"
+                                    : "bg-[#faf9f7] dark:bg-[#242320] border-neutral-200 dark:border-[#3a3834]"
+                            )}>
+                                <span className={cn(
+                                    "text-sm font-black tabular-nums leading-none",
+                                    isFiltered ? "text-[#15803d] dark:text-[#16a34a]" : "text-neutral-700 dark:text-neutral-200"
+                                )}>{filteredList.length}</span>
+                                <span className="text-[10px] font-bold text-neutral-400">개</span>
+                                {isFiltered && (
+                                    <span className="text-[10px] font-medium text-neutral-400 ml-0.5">/ {ncavDailyList.list.length}</span>
+                                )}
+                            </div>
+                        )}
 
                         <div className="flex-1" />
 
@@ -728,6 +741,27 @@ function ScreenerContent() {
                             </span>
                         </div>
                     )}
+
+                    {/* 적용된 조건 칩 (검색·시가총액·제외) — 무엇이 걸려있는지 한눈에 */}
+                    {(() => {
+                        const chips: { key: string; label: string; clear: () => void }[] = [];
+                        if (searchQuery)     chips.push({ key: 'q',   label: `검색 "${searchQuery}"`, clear: () => { setSearchQuery(''); setDisplayCount(DAILY_PAGE_SIZE); } });
+                        if (minMarketCap > 0) chips.push({ key: 'cap', label: `시총 ${MKTCAP_PRESETS.find(p => p.value === minMarketCap)?.label ?? `${minMarketCap}억+`}`, clear: () => { setMinMarketCap(0); setDisplayCount(DAILY_PAGE_SIZE); } });
+                        if (excludeHoldings) chips.push({ key: 'hold', label: '홀딩스 제외', clear: () => setExcludeHoldings(false) });
+                        if (excludeDeficit)  chips.push({ key: 'def',  label: '적자 제외',  clear: () => setExcludeDeficit(false) });
+                        if (chips.length === 0) return null;
+                        return (
+                            <div className="pb-2.5 flex items-center gap-1.5 flex-wrap">
+                                <span className="text-[10px] text-neutral-400 font-medium">적용:</span>
+                                {chips.map(c => (
+                                    <span key={c.key} className="inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-full bg-[#f0fdf4] dark:bg-[#052e16]/30 border border-[#bbf7d0] dark:border-[#166534]/50 text-[#15803d] dark:text-[#16a34a]">
+                                        {c.label}
+                                        <button onClick={c.clear} className="hover:opacity-60" title="제거"><X size={9} /></button>
+                                    </span>
+                                ))}
+                            </div>
+                        );
+                    })()}
                 </div>
             </div>
 
@@ -858,15 +892,6 @@ function ScreenerContent() {
                                     className="rounded accent-[#16a34a]"
                                 />
                                 <span className="text-xs font-bold text-neutral-600 dark:text-neutral-400">적자 기업</span>
-                            </label>
-                            <label className="flex items-center gap-2 cursor-pointer select-none">
-                                <input
-                                    type="checkbox"
-                                    checked={excludeDelisted}
-                                    onChange={e => setExcludeDelisted(e.target.checked)}
-                                    className="rounded accent-[#16a34a]"
-                                />
-                                <span className="text-xs font-bold text-neutral-600 dark:text-neutral-400">상장폐지 의심</span>
                             </label>
                         </div>
                     </div>
