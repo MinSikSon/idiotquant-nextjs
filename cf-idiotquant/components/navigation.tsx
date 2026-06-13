@@ -20,10 +20,19 @@ import {
 } from "lucide-react";
 
 /* ─── NAV CONFIG ──────────────────────────────────────────────────── */
-const MAIN_NAV = [
+type NavItem = {
+  label: string;
+  href: string;
+  icon: any;
+  exact?: boolean;
+  badge?: string;
+  adminOnly?: boolean;
+};
+
+const MAIN_NAV: NavItem[] = [
   { label: "홈",        href: "/",           icon: Home,       exact: true  },
   { label: "종목 발굴", href: "/screener",    icon: Filter,     badge: "Pro" },
-  { label: "전략 히스토리", href: "/backtest", icon: History                },
+  { label: "전략 히스토리", href: "/backtest", icon: History, adminOnly: true },
   { label: "적정 주가", href: "/analyze",     icon: Search                  },
   { label: "수익 계산", href: "/calculator",  icon: Calculator              },
 ];
@@ -177,6 +186,7 @@ export function NavbarWithSimpleLinks() {
   const { data: session, status } = useSession();
   const pathname = usePathname();
   const isMasterUser = session?.user?.name === process.env.NEXT_PUBLIC_MASTER;
+  const isAdmin = (session?.user as any)?.role === "admin";
 
   /* Theme sync: persist choice in localStorage, hydrate on mount */
   useEffect(() => {
@@ -218,7 +228,7 @@ export function NavbarWithSimpleLinks() {
 
         {/* Navigation */}
         <nav className="flex-1 px-3 py-4 space-y-0.5 overflow-y-auto">
-          {MAIN_NAV.map(item => (
+          {MAIN_NAV.filter(item => !item.adminOnly || isAdmin).map(item => (
             <SideItem
               key={item.href}
               href={item.href}
@@ -296,7 +306,9 @@ export function NavbarWithSimpleLinks() {
       <nav className="md:hidden fixed bottom-0 left-0 right-0 h-[64px] z-40 bg-white/95 dark:bg-[#1f1e1b]/95 backdrop-blur-xl border-t border-neutral-200/70 dark:border-[#3a3834] flex items-center px-3">
         <TabItem href="/"           label="홈"     icon={Home}       isActive={pathname === "/"} />
         <TabItem href="/screener"   label="발굴"   icon={Filter}     isActive={pathname.startsWith("/screener")} />
-        <TabItem href="/backtest"   label="히스토리" icon={History}  isActive={pathname.startsWith("/backtest")} />
+        {isAdmin && (
+          <TabItem href="/backtest"   label="히스토리" icon={History}  isActive={pathname.startsWith("/backtest")} />
+        )}
         <TabItem href="/analyze"    label="분석"   icon={Search}     isActive={pathname.startsWith("/analyze")} />
         <TabItem href="/calculator" label="계산기" icon={Calculator} isActive={pathname.startsWith("/calculator")} />
       </nav>
