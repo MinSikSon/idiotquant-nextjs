@@ -92,7 +92,7 @@ const loadStaticStockData = (): Promise<StaticStockData> => {
     import('@/public/data/validCorpCodeArray.json'),
     import('@/public/data/validCorpNameArray.json'),
     import('@/public/data/validCorpCode.json'),
-    fetch('/api/proxy/ticker-map?source=overrides&limit=500')
+    fetch('/api/proxy/ticker-map?source=overrides&country=all&limit=500')
       .then(r => r.json())
       .catch(() => ({ success: false, data: [] })),
   ]).then(([nasdaq, nyse, amex, corpCode, corpName, corpCodeData, overrides]) => {
