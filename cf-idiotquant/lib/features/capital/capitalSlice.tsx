@@ -1,9 +1,51 @@
 import { PayloadAction } from "@reduxjs/toolkit";
 import { createAppSlice } from "@/lib/createAppSlice";
-import { getKrCapital, getUsCapital, postKrCapitalTokenMinusAll, postKrCapitalTokenMinusOne, postKrCapitalTokenPlusAll, postKrCapitalTokenPlusOne, postUsCapitalTokenMinusAll, postUsCapitalTokenMinusOne, postUsCapitalTokenPlusAll, postUsCapitalTokenPlusOne, postKrCapitalGroupCreate, postKrCapitalGroupUpdate, postKrCapitalGroupDelete, postKrCapitalStockGroup, postUsCapitalGroupCreate, postUsCapitalGroupUpdate, postUsCapitalGroupDelete, postUsCapitalStockGroup } from "./capitalAPI";
+import { getKrCapital, getUsCapital, postKrCapitalTokenMinusAll, postKrCapitalTokenMinusOne, postKrCapitalTokenPlusAll, postKrCapitalTokenPlusOne, postUsCapitalTokenMinusAll, postUsCapitalTokenMinusOne, postUsCapitalTokenPlusAll, postUsCapitalTokenPlusOne, postKrCapitalGroupCreate, postKrCapitalGroupUpdate, postKrCapitalGroupDelete, postKrCapitalStockGroup, postUsCapitalGroupCreate, postUsCapitalGroupUpdate, postUsCapitalGroupDelete, postUsCapitalStockGroup, getKrQuantRule, postKrQuantRule, getUsQuantRule, postUsQuantRule } from "./capitalAPI";
 
 /** 예약(가상) 그룹 id — 좋아요(찜) 종목 그룹 */
 export const LIKES_GROUP_ID = "__likes__";
+
+/** 트레이딩 조건 (quant_rule) */
+export interface QuantRule {
+    ncav_ratio?: number;
+    max_pbr?: number;
+    min_pbr?: number;
+    min_per?: number;
+    min_eps?: number;
+    min_bps?: number;
+    portfolio_weight?: number;
+    active_count?: number;
+    exclude_call_warrants?: boolean;
+    exclude_key_word?: string[];
+    [key: string]: any;
+}
+
+export interface QuantRuleFieldMeta {
+    label: string;
+    desc: string;
+    type: "number" | "int" | "boolean" | "string[]";
+    step?: number;
+}
+
+export interface QuantRuleState {
+    state: "init" | "pending" | "fulfilled" | "rejected";
+    saveState: "init" | "pending" | "fulfilled" | "rejected";
+    has_account: boolean;
+    is_override: boolean;
+    rule: QuantRule;
+    default: QuantRule;
+    desc: Record<string, QuantRuleFieldMeta>;
+}
+
+const initialQuantRuleState: QuantRuleState = {
+    state: "init",
+    saveState: "init",
+    has_account: false,
+    is_override: false,
+    rule: {},
+    default: {},
+    desc: {},
+};
 
 export interface StockCondition {
     AssetsCurrent: number;
@@ -65,6 +107,8 @@ export interface CapitalType {
     usCapitalTokenMinusOne: CapitalTokenRefillType;
     krGroupOp: CapitalTokenRefillType;
     usGroupOp: CapitalTokenRefillType;
+    krQuantRule: QuantRuleState;
+    usQuantRule: QuantRuleState;
 }
 
 const initialState: CapitalType = {
@@ -140,7 +184,9 @@ const initialState: CapitalType = {
     },
     usGroupOp: {
         state: "init"
-    }
+    },
+    krQuantRule: { ...initialQuantRuleState },
+    usQuantRule: { ...initialQuantRuleState }
 }
 
 export const capitalSlice = createAppSlice({
@@ -418,6 +464,72 @@ export const capitalSlice = createAppSlice({
                 rejected: (state) => { state.usGroupOp.state = "rejected"; },
             }
         ),
+
+        // ── 계좌별 트레이딩 조건 (quant_rule) ──
+        reqGetKrQuantRule: create.asyncThunk(
+            async (key?: string) => getKrQuantRule(key),
+            {
+                pending: (state) => { state.krQuantRule.state = "pending"; },
+                fulfilled: (state, action) => {
+                    const p = action.payload ?? {};
+                    state.krQuantRule = {
+                        ...state.krQuantRule,
+                        state: "fulfilled",
+                        has_account: !!p.has_account,
+                        is_override: !!p.is_override,
+                        rule: p.rule ?? {},
+                        default: p.default ?? {},
+                        desc: p.desc ?? {},
+                    };
+                },
+                rejected: (state) => { state.krQuantRule.state = "rejected"; },
+            }
+        ),
+        reqPostKrQuantRule: create.asyncThunk(
+            async ({ key, rule }: { key?: string, rule: QuantRule }) => postKrQuantRule(key, rule),
+            {
+                pending: (state) => { state.krQuantRule.saveState = "pending"; },
+                fulfilled: (state, action) => {
+                    const p = action.payload ?? {};
+                    state.krQuantRule.saveState = p.success === false ? "rejected" : "fulfilled";
+                    if (p.rule) state.krQuantRule.rule = p.rule;
+                    if (p.is_override != null) state.krQuantRule.is_override = !!p.is_override;
+                },
+                rejected: (state) => { state.krQuantRule.saveState = "rejected"; },
+            }
+        ),
+        reqGetUsQuantRule: create.asyncThunk(
+            async (key?: string) => getUsQuantRule(key),
+            {
+                pending: (state) => { state.usQuantRule.state = "pending"; },
+                fulfilled: (state, action) => {
+                    const p = action.payload ?? {};
+                    state.usQuantRule = {
+                        ...state.usQuantRule,
+                        state: "fulfilled",
+                        has_account: !!p.has_account,
+                        is_override: !!p.is_override,
+                        rule: p.rule ?? {},
+                        default: p.default ?? {},
+                        desc: p.desc ?? {},
+                    };
+                },
+                rejected: (state) => { state.usQuantRule.state = "rejected"; },
+            }
+        ),
+        reqPostUsQuantRule: create.asyncThunk(
+            async ({ key, rule }: { key?: string, rule: QuantRule }) => postUsQuantRule(key, rule),
+            {
+                pending: (state) => { state.usQuantRule.saveState = "pending"; },
+                fulfilled: (state, action) => {
+                    const p = action.payload ?? {};
+                    state.usQuantRule.saveState = p.success === false ? "rejected" : "fulfilled";
+                    if (p.rule) state.usQuantRule.rule = p.rule;
+                    if (p.is_override != null) state.usQuantRule.is_override = !!p.is_override;
+                },
+                rejected: (state) => { state.usQuantRule.saveState = "rejected"; },
+            }
+        ),
     }),
     selectors: {
         selectKrCapital: (state) => state.krCapital,
@@ -432,6 +544,8 @@ export const capitalSlice = createAppSlice({
         selectUsCapitalTokenMinusOne: (state) => state.usCapitalTokenMinusOne,
         selectKrGroupOp: (state) => state.krGroupOp,
         selectUsGroupOp: (state) => state.usGroupOp,
+        selectKrQuantRule: (state) => state.krQuantRule,
+        selectUsQuantRule: (state) => state.usQuantRule,
     }
 });
 
@@ -440,5 +554,7 @@ export const { selectKrCapital, selectKrCapitalTokenPlusAll, selectKrCapitalToke
 export const { reqPostKrCapitalGroupCreate, reqPostKrCapitalGroupUpdate, reqPostKrCapitalGroupDelete, reqPostKrCapitalStockGroup } = capitalSlice.actions;
 export const { reqPostUsCapitalGroupCreate, reqPostUsCapitalGroupUpdate, reqPostUsCapitalGroupDelete, reqPostUsCapitalStockGroup } = capitalSlice.actions;
 export const { selectKrGroupOp, selectUsGroupOp } = capitalSlice.selectors;
+export const { reqGetKrQuantRule, reqPostKrQuantRule, reqGetUsQuantRule, reqPostUsQuantRule } = capitalSlice.actions;
+export const { selectKrQuantRule, selectUsQuantRule } = capitalSlice.selectors;
 export const { reqGetUsCapital, reqPostUsCapitalTokenPlusAll, reqPostUsCapitalTokenPlusOne, reqPostUsCapitalTokenMinusAll, reqPostUsCapitalTokenMinusOne } = capitalSlice.actions;
 export const { selectUsCapital, selectUsCapitalTokenPlusAll, selectUsCapitalTokenPlusOne, selectUsCapitalTokenMinusAll, selectUsCapitalTokenMinusOne } = capitalSlice.selectors;

@@ -5,7 +5,7 @@ import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import {
   LayoutDashboard, ChevronRight, MapPin,
   Clock, Wallet, Coins, Percent,
-  Database, User, PieChart, BarChart3, ClipboardList, Power,
+  Database, User, PieChart, BarChart3, ClipboardList, Power, SlidersHorizontal,
 } from "lucide-react";
 import { useSession } from "next-auth/react";
 
@@ -37,11 +37,13 @@ import {
   reqPostKrCapitalGroupCreate, reqPostKrCapitalGroupUpdate,
   reqPostKrCapitalGroupDelete, reqPostKrCapitalStockGroup,
   selectKrGroupOp,
+  reqGetKrQuantRule, reqPostKrQuantRule, selectKrQuantRule,
 } from "@/lib/features/capital/capitalSlice";
 import { reqGetMyLikes, selectLikedList } from "@/lib/features/stockLikes/stockLikesSlice";
 
 import InquireBalanceResult from "@/components/inquireBalanceResult";
 import StockListTable from "@/components/balance/stockListTable";
+import QuantRuleEditor from "@/components/balance/quantRuleEditor";
 import { PortfolioChartSection } from "@/components/balance/portfolioChart";
 import { SectionNav, type NavSection } from "@/components/balance/sectionNav";
 import {
@@ -200,8 +202,10 @@ function BalanceKr() {
   const krCapitalMinusAll = useAppSelector(selectKrCapitalTokenMinusAll);
   const krCapitalMinusOne = useAppSelector(selectKrCapitalTokenMinusOne);
   const krGroupOp = useAppSelector(selectKrGroupOp);
+  const krQuantRule = useAppSelector(selectKrQuantRule);
   const likedListAll = useAppSelector(selectLikedList);
   const krLikedList = useMemo(() => (likedListAll ?? []).filter((l: any) => !l.is_us), [likedListAll]);
+  const isMaster = useMemo(() => session?.user?.name === process.env.NEXT_PUBLIC_MASTER, [session]);
 
   const tradingStatus = useAppSelector(selectTradingStatus);
 
@@ -279,6 +283,17 @@ function BalanceKr() {
     dispatch(reqGetMyLikes());
   }, [session, status, dispatch, router]);
 
+  // 트레이딩 조건(quant_rule) 로드
+  useEffect(() => {
+    if (balanceKey && balanceKey !== "undefined") dispatch(reqGetKrQuantRule(balanceKey));
+  }, [balanceKey, dispatch]);
+
+  // 조건 저장 결과 토스트
+  useEffect(() => {
+    if (krQuantRule?.saveState === "fulfilled") addToast("success", "트레이딩 조건이 저장되었습니다.");
+    else if (krQuantRule?.saveState === "rejected") addToast("error", "조건 저장에 실패했습니다.");
+  }, [krQuantRule?.saveState]);
+
   useEffect(() => {
     if (krCapital.state === "init" && balanceKey) {
       dispatch(reqGetKrCapital(balanceKey));
@@ -324,6 +339,7 @@ function BalanceKr() {
   const doDeleteGroup = (groupId: string) => dispatch(reqPostKrCapitalGroupDelete({ key: balanceKey, groupId }));
   const doMoveStock = (ticker: string, groupId: string | null) => dispatch(reqPostKrCapitalStockGroup({ key: balanceKey, ticker, groupId }));
   const doToggleLikesTrading = (isActive: boolean) => dispatch(reqPostKrCapitalGroupUpdate({ key: balanceKey, groupId: "__likes__", updates: { is_trading_active: isActive } }));
+  const doSaveQuantRule = (rule: any) => dispatch(reqPostKrQuantRule({ key: balanceKey, rule }));
 
   const summary = kiBalance.output2?.[0] || {};
   const totalEvalAmt = Number(summary.tot_evlu_amt || 0);
@@ -361,6 +377,7 @@ function BalanceKr() {
     { id: "section-portfolio", label: "포트폴리오", icon: <PieChart size={13} /> },
     { id: "section-balance", label: "잔고", icon: <BarChart3 size={13} /> },
     ...(hasCapital ? [{ id: "section-stocks", label: "종목관리", icon: <Database size={13} /> }] : []),
+    ...(hasCapital ? [{ id: "section-conditions", label: "트레이딩 조건", icon: <SlidersHorizontal size={13} /> }] : []),
     { id: "section-orders", label: "주문내역", icon: <ClipboardList size={13} /> },
   ];
 
@@ -611,6 +628,32 @@ function BalanceKr() {
         )}
 
         </div>{/* /section-stocks mobile tab */}
+
+        {/* 트레이딩 조건 설정 (모바일 탭: section-conditions) */}
+        <div className={cn(mobileTab !== "section-conditions" && "hidden md:block")}>
+        {hasCapital && (
+          <SectionPanel id="section-conditions">
+            <SectionHeader
+              icon={<SlidersHorizontal size={16} />}
+              title="자동매매 트레이딩 조건"
+              subtitle="백엔드 quant rule(NCAV 비율·필터·활성 종목 수 등) 조회 및 수정"
+              badge={
+                krQuantRule.state === "pending"
+                  ? <span className="text-[10px] font-mono text-amber-500 bg-amber-50 dark:bg-amber-950/20 px-2 py-0.5 rounded-full border border-amber-200 dark:border-amber-800 animate-pulse">로딩 중</span>
+                  : krQuantRule.is_override
+                  ? <span className="text-[10px] font-mono text-[#16a34a] bg-[#f0fdf4] dark:bg-[#14532d]/30 px-2 py-0.5 rounded-full">계좌 전용</span>
+                  : <span className="text-[10px] font-mono text-neutral-500 dark:text-neutral-400 bg-[#faf9f7] dark:bg-[#242320] px-2 py-0.5 rounded-full">기본값</span>
+              }
+            />
+            <QuantRuleEditor
+              data={krQuantRule}
+              isMaster={isMaster}
+              onSave={doSaveQuantRule}
+            />
+          </SectionPanel>
+        )}
+
+        </div>{/* /section-conditions mobile tab */}
 
         {/* 주문 내역 (모바일 탭: section-orders) */}
         <div className={cn(mobileTab !== "section-orders" && "hidden md:block")}>
