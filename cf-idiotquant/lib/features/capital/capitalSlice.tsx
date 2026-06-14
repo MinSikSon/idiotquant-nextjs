@@ -1,6 +1,9 @@
 import { PayloadAction } from "@reduxjs/toolkit";
 import { createAppSlice } from "@/lib/createAppSlice";
-import { getKrCapital, getUsCapital, postKrCapitalTokenMinusAll, postKrCapitalTokenMinusOne, postKrCapitalTokenPlusAll, postKrCapitalTokenPlusOne, postUsCapitalTokenMinusAll, postUsCapitalTokenMinusOne, postUsCapitalTokenPlusAll, postUsCapitalTokenPlusOne } from "./capitalAPI";
+import { getKrCapital, getUsCapital, postKrCapitalTokenMinusAll, postKrCapitalTokenMinusOne, postKrCapitalTokenPlusAll, postKrCapitalTokenPlusOne, postUsCapitalTokenMinusAll, postUsCapitalTokenMinusOne, postUsCapitalTokenPlusAll, postUsCapitalTokenPlusOne, postKrCapitalGroupCreate, postKrCapitalGroupUpdate, postKrCapitalGroupDelete, postKrCapitalStockGroup, postUsCapitalGroupCreate, postUsCapitalGroupUpdate, postUsCapitalGroupDelete, postUsCapitalStockGroup } from "./capitalAPI";
+
+/** 예약(가상) 그룹 id — 좋아요(찜) 종목 그룹 */
+export const LIKES_GROUP_ID = "__likes__";
 
 export interface StockCondition {
     AssetsCurrent: number;
@@ -15,6 +18,12 @@ export interface StockCondition {
     per: number;
 }
 
+export interface StockGroup {
+    id: string;
+    name: string;
+    is_trading_active: boolean;
+}
+
 export interface UsCapitalStockItem {
     symbol: string;
     key: string;
@@ -22,6 +31,8 @@ export interface UsCapitalStockItem {
     ncavRatio?: string;
     token?: number;
     action?: string;
+    group_id?: string | null;
+    name?: string;
 }
 
 export interface KrUsCapitalType {
@@ -30,6 +41,7 @@ export interface KrUsCapitalType {
     token_info: { token_per_stock: number; refill_stock_index: number };
     charge_info: { capital_charge_per_year: string; capital_charge_per_month: number; capital_charge_rate: number };
     stock_list: UsCapitalStockItem[];
+    groups?: StockGroup[];
     corp_scan_index: number;
     action: string;
     frst_bltn_exrt: number;
@@ -51,6 +63,8 @@ export interface CapitalType {
     usCapitalTokenPlusOne: CapitalTokenRefillType;
     usCapitalTokenMinusAll: CapitalTokenRefillType;
     usCapitalTokenMinusOne: CapitalTokenRefillType;
+    krGroupOp: CapitalTokenRefillType;
+    usGroupOp: CapitalTokenRefillType;
 }
 
 const initialState: CapitalType = {
@@ -119,6 +133,12 @@ const initialState: CapitalType = {
         state: "init"
     },
     usCapitalTokenMinusOne: {
+        state: "init"
+    },
+    krGroupOp: {
+        state: "init"
+    },
+    usGroupOp: {
         state: "init"
     }
 }
@@ -330,6 +350,74 @@ export const capitalSlice = createAppSlice({
                 }
             }
         ),
+
+        // ── 종목 그룹 관리 (KR) ──
+        reqPostKrCapitalGroupCreate: create.asyncThunk(
+            async ({ key, name }: { key?: string, name: string }) => postKrCapitalGroupCreate(key, name),
+            {
+                pending: (state) => { state.krGroupOp.state = "pending"; },
+                fulfilled: (state) => { state.krGroupOp.state = "fulfilled"; },
+                rejected: (state) => { state.krGroupOp.state = "rejected"; },
+            }
+        ),
+        reqPostKrCapitalGroupUpdate: create.asyncThunk(
+            async ({ key, groupId, updates }: { key?: string, groupId: string, updates: { name?: string, is_trading_active?: boolean } }) => postKrCapitalGroupUpdate(key, groupId, updates),
+            {
+                pending: (state) => { state.krGroupOp.state = "pending"; },
+                fulfilled: (state) => { state.krGroupOp.state = "fulfilled"; },
+                rejected: (state) => { state.krGroupOp.state = "rejected"; },
+            }
+        ),
+        reqPostKrCapitalGroupDelete: create.asyncThunk(
+            async ({ key, groupId }: { key?: string, groupId: string }) => postKrCapitalGroupDelete(key, groupId),
+            {
+                pending: (state) => { state.krGroupOp.state = "pending"; },
+                fulfilled: (state) => { state.krGroupOp.state = "fulfilled"; },
+                rejected: (state) => { state.krGroupOp.state = "rejected"; },
+            }
+        ),
+        reqPostKrCapitalStockGroup: create.asyncThunk(
+            async ({ key, ticker, groupId }: { key?: string, ticker: string, groupId: string | null }) => postKrCapitalStockGroup(key, ticker, groupId),
+            {
+                pending: (state) => { state.krGroupOp.state = "pending"; },
+                fulfilled: (state) => { state.krGroupOp.state = "fulfilled"; },
+                rejected: (state) => { state.krGroupOp.state = "rejected"; },
+            }
+        ),
+
+        // ── 종목 그룹 관리 (US) ──
+        reqPostUsCapitalGroupCreate: create.asyncThunk(
+            async ({ key, name }: { key?: string, name: string }) => postUsCapitalGroupCreate(key, name),
+            {
+                pending: (state) => { state.usGroupOp.state = "pending"; },
+                fulfilled: (state) => { state.usGroupOp.state = "fulfilled"; },
+                rejected: (state) => { state.usGroupOp.state = "rejected"; },
+            }
+        ),
+        reqPostUsCapitalGroupUpdate: create.asyncThunk(
+            async ({ key, groupId, updates }: { key?: string, groupId: string, updates: { name?: string, is_trading_active?: boolean } }) => postUsCapitalGroupUpdate(key, groupId, updates),
+            {
+                pending: (state) => { state.usGroupOp.state = "pending"; },
+                fulfilled: (state) => { state.usGroupOp.state = "fulfilled"; },
+                rejected: (state) => { state.usGroupOp.state = "rejected"; },
+            }
+        ),
+        reqPostUsCapitalGroupDelete: create.asyncThunk(
+            async ({ key, groupId }: { key?: string, groupId: string }) => postUsCapitalGroupDelete(key, groupId),
+            {
+                pending: (state) => { state.usGroupOp.state = "pending"; },
+                fulfilled: (state) => { state.usGroupOp.state = "fulfilled"; },
+                rejected: (state) => { state.usGroupOp.state = "rejected"; },
+            }
+        ),
+        reqPostUsCapitalStockGroup: create.asyncThunk(
+            async ({ key, ticker, groupId }: { key?: string, ticker: string, groupId: string | null }) => postUsCapitalStockGroup(key, ticker, groupId),
+            {
+                pending: (state) => { state.usGroupOp.state = "pending"; },
+                fulfilled: (state) => { state.usGroupOp.state = "fulfilled"; },
+                rejected: (state) => { state.usGroupOp.state = "rejected"; },
+            }
+        ),
     }),
     selectors: {
         selectKrCapital: (state) => state.krCapital,
@@ -342,10 +430,15 @@ export const capitalSlice = createAppSlice({
         selectUsCapitalTokenPlusOne: (state) => state.usCapitalTokenPlusOne,
         selectUsCapitalTokenMinusAll: (state) => state.usCapitalTokenMinusAll,
         selectUsCapitalTokenMinusOne: (state) => state.usCapitalTokenMinusOne,
+        selectKrGroupOp: (state) => state.krGroupOp,
+        selectUsGroupOp: (state) => state.usGroupOp,
     }
 });
 
 export const { reqGetKrCapital, reqPostKrCapitalTokenPlusAll, reqPostKrCapitalTokenPlusOne, reqPostKrCapitalTokenMinusAll, reqPostKrCapitalTokenMinusOne } = capitalSlice.actions;
 export const { selectKrCapital, selectKrCapitalTokenPlusAll, selectKrCapitalTokenPlusOne, selectKrCapitalTokenMinusAll, selectKrCapitalTokenMinusOne } = capitalSlice.selectors;
+export const { reqPostKrCapitalGroupCreate, reqPostKrCapitalGroupUpdate, reqPostKrCapitalGroupDelete, reqPostKrCapitalStockGroup } = capitalSlice.actions;
+export const { reqPostUsCapitalGroupCreate, reqPostUsCapitalGroupUpdate, reqPostUsCapitalGroupDelete, reqPostUsCapitalStockGroup } = capitalSlice.actions;
+export const { selectKrGroupOp, selectUsGroupOp } = capitalSlice.selectors;
 export const { reqGetUsCapital, reqPostUsCapitalTokenPlusAll, reqPostUsCapitalTokenPlusOne, reqPostUsCapitalTokenMinusAll, reqPostUsCapitalTokenMinusOne } = capitalSlice.actions;
 export const { selectUsCapital, selectUsCapitalTokenPlusAll, selectUsCapitalTokenPlusOne, selectUsCapitalTokenMinusAll, selectUsCapitalTokenMinusOne } = capitalSlice.selectors;

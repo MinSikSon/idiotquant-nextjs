@@ -1,6 +1,6 @@
 "use client";
 
-import { Suspense, useEffect, useState, useCallback, useRef } from "react";
+import { Suspense, useEffect, useState, useCallback, useRef, useMemo } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import {
   LayoutDashboard, ChevronRight, MapPin,
@@ -33,8 +33,12 @@ import {
   reqPostKrCapitalTokenPlusAll, reqPostKrCapitalTokenPlusOne,
   selectKrCapital, selectKrCapitalTokenMinusAll,
   selectKrCapitalTokenMinusOne, selectKrCapitalTokenPlusAll,
-  selectKrCapitalTokenPlusOne
+  selectKrCapitalTokenPlusOne,
+  reqPostKrCapitalGroupCreate, reqPostKrCapitalGroupUpdate,
+  reqPostKrCapitalGroupDelete, reqPostKrCapitalStockGroup,
+  selectKrGroupOp,
 } from "@/lib/features/capital/capitalSlice";
+import { reqGetMyLikes, selectLikedList } from "@/lib/features/stockLikes/stockLikesSlice";
 
 import InquireBalanceResult from "@/components/inquireBalanceResult";
 import StockListTable from "@/components/balance/stockListTable";
@@ -195,6 +199,9 @@ function BalanceKr() {
   const krCapitalPlusOne = useAppSelector(selectKrCapitalTokenPlusOne);
   const krCapitalMinusAll = useAppSelector(selectKrCapitalTokenMinusAll);
   const krCapitalMinusOne = useAppSelector(selectKrCapitalTokenMinusOne);
+  const krGroupOp = useAppSelector(selectKrGroupOp);
+  const likedListAll = useAppSelector(selectLikedList);
+  const krLikedList = useMemo(() => (likedListAll ?? []).filter((l: any) => !l.is_us), [likedListAll]);
 
   const tradingStatus = useAppSelector(selectTradingStatus);
 
@@ -269,6 +276,7 @@ function BalanceKr() {
     dispatch(reqGetCapitalToken());
     dispatch(reqGetKakaoMemberList());
     dispatch(reqFetchTradingStatus("KR"));
+    dispatch(reqGetMyLikes());
   }, [session, status, dispatch, router]);
 
   useEffect(() => {
@@ -297,10 +305,25 @@ function BalanceKr() {
     return () => clearInterval(interval);
   }, [autoRefresh, balanceKey, dispatch]);
 
+  // 그룹 작업 완료 시 capital 재조회
+  useEffect(() => {
+    if (krGroupOp?.state === "fulfilled") {
+      dispatch(reqGetKrCapital(balanceKey));
+    }
+  }, [krGroupOp?.state]);
+
   const doTokenPlusAll = (num: number) => dispatch(reqPostKrCapitalTokenPlusAll({ key: balanceKey, num }));
   const doTokenPlusOne = (num: number, ticker: string) => ticker && dispatch(reqPostKrCapitalTokenPlusOne({ key: balanceKey, num, ticker }));
   const doTokenMinusAll = (num: number) => dispatch(reqPostKrCapitalTokenMinusAll({ key: balanceKey, num }));
   const doTokenMinusOne = (num: number, ticker: string) => ticker && dispatch(reqPostKrCapitalTokenMinusOne({ key: balanceKey, num, ticker }));
+
+  // 그룹 관리 핸들러
+  const doCreateGroup = (name: string) => dispatch(reqPostKrCapitalGroupCreate({ key: balanceKey, name }));
+  const doRenameGroup = (groupId: string, name: string) => dispatch(reqPostKrCapitalGroupUpdate({ key: balanceKey, groupId, updates: { name } }));
+  const doToggleGroupTrading = (groupId: string, isActive: boolean) => dispatch(reqPostKrCapitalGroupUpdate({ key: balanceKey, groupId, updates: { is_trading_active: isActive } }));
+  const doDeleteGroup = (groupId: string) => dispatch(reqPostKrCapitalGroupDelete({ key: balanceKey, groupId }));
+  const doMoveStock = (ticker: string, groupId: string | null) => dispatch(reqPostKrCapitalStockGroup({ key: balanceKey, ticker, groupId }));
+  const doToggleLikesTrading = (isActive: boolean) => dispatch(reqPostKrCapitalGroupUpdate({ key: balanceKey, groupId: "__likes__", updates: { is_trading_active: isActive } }));
 
   const summary = kiBalance.output2?.[0] || {};
   const totalEvalAmt = Number(summary.tot_evlu_amt || 0);
@@ -576,6 +599,13 @@ function BalanceKr() {
               doTokenMinusAll={doTokenMinusAll}
               doTokenMinusOne={doTokenMinusOne}
               session={session}
+              onCreateGroup={doCreateGroup}
+              onRenameGroup={doRenameGroup}
+              onToggleGroupTrading={doToggleGroupTrading}
+              onDeleteGroup={doDeleteGroup}
+              onMoveStock={doMoveStock}
+              likedList={krLikedList}
+              onToggleLikesTrading={doToggleLikesTrading}
             />
           </SectionPanel>
         )}

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback, Suspense, useRef } from "react";
+import { useState, useEffect, useCallback, Suspense, useRef, useMemo } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import {
   Globe, ChevronRight, DollarSign, Building2,
@@ -40,8 +40,12 @@ import {
   reqPostUsCapitalTokenMinusAll, reqPostUsCapitalTokenMinusOne,
   selectUsCapital, selectUsCapitalTokenMinusAll,
   selectUsCapitalTokenPlusAll, selectUsCapitalTokenPlusOne,
-  selectUsCapitalTokenMinusOne
+  selectUsCapitalTokenMinusOne,
+  reqPostUsCapitalGroupCreate, reqPostUsCapitalGroupUpdate,
+  reqPostUsCapitalGroupDelete, reqPostUsCapitalStockGroup,
+  selectUsGroupOp,
 } from "@/lib/features/capital/capitalSlice";
+import { reqGetMyLikes, selectLikedList } from "@/lib/features/stockLikes/stockLikesSlice";
 
 import InquireBalanceResult from "@/components/inquireBalanceResult";
 import StockListTable from "@/components/balance/stockListTable";
@@ -183,6 +187,9 @@ function BalanceUs() {
   const usCapitalPlusOne = useAppSelector(selectUsCapitalTokenPlusOne);
   const usCapitalMinusAll = useAppSelector(selectUsCapitalTokenMinusAll);
   const usCapitalMinusOne = useAppSelector(selectUsCapitalTokenMinusOne);
+  const usGroupOp = useAppSelector(selectUsGroupOp);
+  const likedListAll = useAppSelector(selectLikedList);
+  const usLikedList = useMemo(() => (likedListAll ?? []).filter((l: any) => !!l.is_us), [likedListAll]);
 
   const tradingStatus = useAppSelector(selectTradingStatus);
 
@@ -247,6 +254,7 @@ function BalanceUs() {
     }
     dispatch(reqGetKakaoMemberList());
     dispatch(reqFetchTradingStatus("US"));
+    dispatch(reqGetMyLikes());
   }, [session, status, dispatch, router]);
 
   useEffect(() => {
@@ -277,10 +285,25 @@ function BalanceUs() {
     return () => clearInterval(interval);
   }, [autoRefresh, balanceKey, dispatch]);
 
+  // 그룹 작업 완료 시 capital 재조회
+  useEffect(() => {
+    if (usGroupOp?.state === "fulfilled") {
+      dispatch(reqGetUsCapital(balanceKey));
+    }
+  }, [usGroupOp?.state]);
+
   const doTokenPlusAll = (num: number) => dispatch(reqPostUsCapitalTokenPlusAll({ key: balanceKey, num }));
   const doTokenPlusOne = (num: number, ticker: string) => ticker && dispatch(reqPostUsCapitalTokenPlusOne({ key: balanceKey, num, ticker }));
   const doTokenMinusAll = (num: number) => dispatch(reqPostUsCapitalTokenMinusAll({ key: balanceKey, num }));
   const doTokenMinusOne = (num: number, ticker: string) => ticker && dispatch(reqPostUsCapitalTokenMinusOne({ key: balanceKey, num, ticker }));
+
+  // 그룹 관리 핸들러
+  const doCreateGroup = (name: string) => dispatch(reqPostUsCapitalGroupCreate({ key: balanceKey, name }));
+  const doRenameGroup = (groupId: string, name: string) => dispatch(reqPostUsCapitalGroupUpdate({ key: balanceKey, groupId, updates: { name } }));
+  const doToggleGroupTrading = (groupId: string, isActive: boolean) => dispatch(reqPostUsCapitalGroupUpdate({ key: balanceKey, groupId, updates: { is_trading_active: isActive } }));
+  const doDeleteGroup = (groupId: string) => dispatch(reqPostUsCapitalGroupDelete({ key: balanceKey, groupId }));
+  const doMoveStock = (ticker: string, groupId: string | null) => dispatch(reqPostUsCapitalStockGroup({ key: balanceKey, ticker, groupId }));
+  const doToggleLikesTrading = (isActive: boolean) => dispatch(reqPostUsCapitalGroupUpdate({ key: balanceKey, groupId: "__likes__", updates: { is_trading_active: isActive } }));
 
   const out2 = kiBalance?.output2?.[0];
   const out3 = kiBalance?.output3;
@@ -621,6 +644,13 @@ function BalanceUs() {
               doTokenMinusAll={doTokenMinusAll}
               doTokenMinusOne={doTokenMinusOne}
               session={session}
+              onCreateGroup={doCreateGroup}
+              onRenameGroup={doRenameGroup}
+              onToggleGroupTrading={doToggleGroupTrading}
+              onDeleteGroup={doDeleteGroup}
+              onMoveStock={doMoveStock}
+              likedList={usLikedList}
+              onToggleLikesTrading={doToggleLikesTrading}
             />
           </SectionPanel>
         )}
