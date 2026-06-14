@@ -35,7 +35,7 @@ import {
   selectKrCapitalTokenMinusOne, selectKrCapitalTokenPlusAll,
   selectKrCapitalTokenPlusOne,
   reqPostKrCapitalGroupCreate, reqPostKrCapitalGroupUpdate,
-  reqPostKrCapitalGroupDelete, reqPostKrCapitalStockGroup,
+  reqPostKrCapitalGroupDelete, reqPostKrCapitalStockGroup, reqPostKrCapitalStocksGroup,
   selectKrGroupOp,
   reqGetKrQuantRule, reqPostKrQuantRule, selectKrQuantRule,
 } from "@/lib/features/capital/capitalSlice";
@@ -333,11 +333,12 @@ function BalanceKr() {
   const doTokenMinusOne = (num: number, ticker: string) => ticker && dispatch(reqPostKrCapitalTokenMinusOne({ key: balanceKey, num, ticker }));
 
   // 그룹 관리 핸들러
-  const doCreateGroup = (name: string) => dispatch(reqPostKrCapitalGroupCreate({ key: balanceKey, name }));
+  const doCreateGroup = (name: string, tickers?: string[]) => dispatch(reqPostKrCapitalGroupCreate({ key: balanceKey, name, tickers }));
   const doRenameGroup = (groupId: string, name: string) => dispatch(reqPostKrCapitalGroupUpdate({ key: balanceKey, groupId, updates: { name } }));
   const doToggleGroupTrading = (groupId: string, isActive: boolean) => dispatch(reqPostKrCapitalGroupUpdate({ key: balanceKey, groupId, updates: { is_trading_active: isActive } }));
   const doDeleteGroup = (groupId: string) => dispatch(reqPostKrCapitalGroupDelete({ key: balanceKey, groupId }));
   const doMoveStock = (ticker: string, groupId: string | null) => dispatch(reqPostKrCapitalStockGroup({ key: balanceKey, ticker, groupId }));
+  const doBulkMove = (tickers: string[], groupId: string | null) => dispatch(reqPostKrCapitalStocksGroup({ key: balanceKey, tickers, groupId }));
   const doToggleLikesTrading = (isActive: boolean) => dispatch(reqPostKrCapitalGroupUpdate({ key: balanceKey, groupId: "__likes__", updates: { is_trading_active: isActive } }));
   const doSaveQuantRule = (rule: any) => dispatch(reqPostKrQuantRule({ key: balanceKey, rule }));
 
@@ -621,8 +622,11 @@ function BalanceKr() {
               onToggleGroupTrading={doToggleGroupTrading}
               onDeleteGroup={doDeleteGroup}
               onMoveStock={doMoveStock}
+              onBulkMove={doBulkMove}
               likedList={krLikedList}
               onToggleLikesTrading={doToggleLikesTrading}
+              countryTradingActive={tradingStatus.KR === true}
+              quantRule={krQuantRule.rule}
             />
           </SectionPanel>
         )}

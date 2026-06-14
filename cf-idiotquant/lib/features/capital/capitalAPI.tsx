@@ -80,24 +80,28 @@ export const postUsCapitalTokenMinusOne: any = async (key: string, num: number, 
 type GroupUpdates = { name?: string; is_trading_active?: boolean };
 
 // KR
-export const postKrCapitalGroupCreate: any = async (key: string, name: string) =>
-    postKoreaInvestmentRequest(`/kr/capital/groups/create?kakao-id=${key}`, {}, { name });
+export const postKrCapitalGroupCreate: any = async (key: string, name: string, tickers?: string[]) =>
+    postKoreaInvestmentRequest(`/kr/capital/groups/create?kakao-id=${key}`, {}, { name, tickers });
 export const postKrCapitalGroupUpdate: any = async (key: string, groupId: string, updates: GroupUpdates) =>
     postKoreaInvestmentRequest(`/kr/capital/groups/${groupId}/update?kakao-id=${key}`, {}, updates);
 export const postKrCapitalGroupDelete: any = async (key: string, groupId: string) =>
     postKoreaInvestmentRequest(`/kr/capital/groups/${groupId}/delete?kakao-id=${key}`, {});
 export const postKrCapitalStockGroup: any = async (key: string, ticker: string, groupId: string | null) =>
     postKoreaInvestmentRequest(`/kr/capital/stock/${ticker}/group?kakao-id=${key}`, {}, { group_id: groupId });
+export const postKrCapitalStocksGroup: any = async (key: string, tickers: string[], groupId: string | null) =>
+    postKoreaInvestmentRequest(`/kr/capital/stocks/group?kakao-id=${key}`, {}, { tickers, group_id: groupId });
 
 // US
-export const postUsCapitalGroupCreate: any = async (key: string, name: string) =>
-    postKoreaInvestmentRequest(`/us/capital/groups/create?kakao-id=${key}`, {}, { name });
+export const postUsCapitalGroupCreate: any = async (key: string, name: string, tickers?: string[]) =>
+    postKoreaInvestmentRequest(`/us/capital/groups/create?kakao-id=${key}`, {}, { name, tickers });
 export const postUsCapitalGroupUpdate: any = async (key: string, groupId: string, updates: GroupUpdates) =>
     postKoreaInvestmentRequest(`/us/capital/groups/${groupId}/update?kakao-id=${key}`, {}, updates);
 export const postUsCapitalGroupDelete: any = async (key: string, groupId: string) =>
     postKoreaInvestmentRequest(`/us/capital/groups/${groupId}/delete?kakao-id=${key}`, {});
 export const postUsCapitalStockGroup: any = async (key: string, ticker: string, groupId: string | null) =>
     postKoreaInvestmentRequest(`/us/capital/stock/${ticker}/group?kakao-id=${key}`, {}, { group_id: groupId });
+export const postUsCapitalStocksGroup: any = async (key: string, tickers: string[], groupId: string | null) =>
+    postKoreaInvestmentRequest(`/us/capital/stocks/group?kakao-id=${key}`, {}, { tickers, group_id: groupId });
 
 // ============================================================================
 // 계좌별 트레이딩 조건 (quant_rule) API (KR / US)
