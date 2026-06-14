@@ -98,3 +98,17 @@ export const postUsCapitalGroupDelete: any = async (key: string, groupId: string
     postKoreaInvestmentRequest(`/us/capital/groups/${groupId}/delete?kakao-id=${key}`, {});
 export const postUsCapitalStockGroup: any = async (key: string, ticker: string, groupId: string | null) =>
     postKoreaInvestmentRequest(`/us/capital/stock/${ticker}/group?kakao-id=${key}`, {}, { group_id: groupId });
+
+// ============================================================================
+// 계좌별 트레이딩 조건 (quant_rule) API (KR / US)
+// 백엔드는 인증된 user.id 기준으로 trading_accounts.quant_rule_json 을 조회/수정한다.
+// (kakao-id 쿼리는 무시되지만 일관성을 위해 전달)
+// ============================================================================
+export const getKrQuantRule: any = async (key: string) =>
+    getKoreaInvestmentRequest(`/kr/capital/quant-rule?kakao-id=${key}`, {});
+export const postKrQuantRule: any = async (key: string, rule: object) =>
+    postKoreaInvestmentRequest(`/kr/capital/quant-rule?kakao-id=${key}`, {}, { rule });
+export const getUsQuantRule: any = async (key: string) =>
+    getKoreaInvestmentRequest(`/us/capital/quant-rule?kakao-id=${key}`, {});
+export const postUsQuantRule: any = async (key: string, rule: object) =>
+    postKoreaInvestmentRequest(`/us/capital/quant-rule?kakao-id=${key}`, {}, { rule });
