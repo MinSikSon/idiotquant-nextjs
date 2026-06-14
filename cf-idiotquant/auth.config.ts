@@ -15,6 +15,8 @@ export const authConfig = {
     },
     session: {
         strategy: "jwt", // 🚀 DB 없이 토큰 방식으로 세션 관리
+        maxAge: 60 * 60 * 24, // 1일 — 이후 재로그인 필요 (기본값 30일에서 변경)
+        updateAge: 60 * 60 * 24, // 1일 주기 갱신 (세션이 하루 안에서 무한 연장되지 않도록 maxAge와 동일하게)
     },
     callbacks: {
         async jwt({ token, user }) {

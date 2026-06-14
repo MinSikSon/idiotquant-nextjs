@@ -5,9 +5,10 @@ import { useSession } from "next-auth/react";
 import Link from "next/link";
 import {
   Search, Calculator, Filter, Lock, ArrowRight,
-  TrendingUp, ChevronRight, Loader2, BarChart3, Zap,
+  TrendingUp, ChevronRight, Loader2, BarChart3, Zap, Layers,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { STRATEGY_PRESETS_CLIENT, STRATEGY_BADGE } from "@/lib/constants/strategies";
 
 interface PreviewStock {
   ticker: string;
@@ -142,6 +143,22 @@ function StockRow({ item, index }: { item: PreviewStock; index: number }) {
         <p className="text-[10px] text-neutral-400 font-mono">{item.ticker}</p>
       </div>
 
+      {/* PBR · PER — sm 이상에서만 노출 (모바일은 NCAV에 집중) */}
+      <div className="hidden sm:flex items-center gap-4 shrink-0">
+        <div className="text-right min-w-[40px]">
+          <p className="text-xs font-bold font-mono tabular-nums text-neutral-600 dark:text-neutral-300">
+            {item.pbr > 0 ? item.pbr.toFixed(2) : "—"}
+          </p>
+          <p className="text-[9px] text-neutral-400 font-bold uppercase tracking-wider">PBR</p>
+        </div>
+        <div className="text-right min-w-[40px]">
+          <p className="text-xs font-bold font-mono tabular-nums text-neutral-600 dark:text-neutral-300">
+            {item.per > 0 ? item.per.toFixed(1) : "—"}
+          </p>
+          <p className="text-[9px] text-neutral-400 font-bold uppercase tracking-wider">PER</p>
+        </div>
+      </div>
+
       <div className="shrink-0 text-right min-w-[52px]">
         <p className={cn(
           "text-sm font-black font-mono tabular-nums",
@@ -226,7 +243,7 @@ export default function HomePage() {
           </h1>
 
           <p className="text-sm sm:text-[15px] text-neutral-500 dark:text-neutral-400 font-medium leading-relaxed mb-7">
-            NCAV·저PBR·저PER — 매일 2,000종목을<br className="hidden sm:block" />
+            9가지 가치투자 전략으로 매일 2,000여 종목을<br className="hidden sm:block" />
             알고리즘이 대신 분석합니다.
           </p>
 
@@ -322,7 +339,9 @@ export default function HomePage() {
             {/* Column headers */}
             <div className="px-4 py-2 bg-[#fcfaf7] dark:bg-[#1f1e1b] border-b border-neutral-100 dark:border-[#35332e] flex items-center justify-between">
               <span className="text-[10px] font-bold text-neutral-400 uppercase tracking-wider">종목</span>
-              <span className="text-[10px] font-bold text-neutral-400 uppercase tracking-wider">NCAV 비율</span>
+              <span className="text-[10px] font-bold text-neutral-400 uppercase tracking-wider">
+                <span className="hidden sm:inline">PBR · PER · </span>NCAV
+              </span>
             </div>
 
             {preview.loading ? (
@@ -383,6 +402,46 @@ export default function HomePage() {
                 )}
               </>
             )}
+          </div>
+        </div>
+      </section>
+
+      {/* ── STRATEGIES ───────────────────────────────────────────── */}
+      <section className="py-10 px-5 md:py-14 border-t border-neutral-100 dark:border-[#3a3834]">
+        <div className="max-w-3xl mx-auto">
+          <div className="flex items-center justify-between mb-5 gap-3">
+            <div>
+              <div className="flex items-center gap-2 mb-1">
+                <Layers size={13} className="text-[#16a34a]" strokeWidth={2.5} />
+                <h2 className="text-base font-black text-neutral-900 dark:text-neutral-50">9가지 퀀트 전략</h2>
+              </div>
+              <p className="text-[11px] text-neutral-400 break-keep">
+                검증된 가치투자 전략으로 매일 종목을 선별합니다. 카드를 눌러 바로 탐색하세요.
+              </p>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+            {STRATEGY_PRESETS_CLIENT.map(s => (
+              <Link
+                key={s.id}
+                href={isLoggedIn ? `/screener?strategies=${s.id}&mincap=500` : "/login"}
+                className="group p-4 rounded-2xl border border-neutral-200 dark:border-[#35332e] bg-white dark:bg-[#242320] hover:border-[#16a34a]/50 dark:hover:border-[#16a34a]/40 hover:shadow-sm transition-all"
+              >
+                <div className="flex items-center justify-between mb-2">
+                  <span className={cn(
+                    "text-[11px] font-extrabold px-2 py-0.5 rounded",
+                    STRATEGY_BADGE[s.id] ?? "bg-neutral-100 text-neutral-500"
+                  )}>
+                    {s.label}
+                  </span>
+                  <ChevronRight size={13} className="text-neutral-300 dark:text-neutral-600 group-hover:text-[#16a34a] group-hover:translate-x-0.5 transition-all" />
+                </div>
+                <p className="text-[11px] text-neutral-500 dark:text-neutral-400 leading-relaxed break-keep">
+                  {s.hint}
+                </p>
+              </Link>
+            ))}
           </div>
         </div>
       </section>
