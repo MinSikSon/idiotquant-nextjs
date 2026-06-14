@@ -14,14 +14,21 @@ import {
   Wallet,
   TrendingUp,
   FolderOpen,
+  FolderPlus,
   Heart,
   Trash2,
   Pencil,
   Power,
   Plus,
   Check,
+  ChevronDown,
+  ChevronRight,
+  ArrowRightLeft,
+  CircleCheck,
+  CircleSlash,
+  CircleDashed,
 } from "lucide-react";
-import { UsCapitalStockItem, KrUsCapitalType, StockGroup, LIKES_GROUP_ID } from "@/lib/features/capital/capitalSlice";
+import { UsCapitalStockItem, KrUsCapitalType, StockGroup, LIKES_GROUP_ID, QuantRule } from "@/lib/features/capital/capitalSlice";
 import { LikedStockItem } from "@/lib/features/stockLikes/stockLikesSlice";
 import { clsx, type ClassValue } from "clsx";
 import { twMerge } from "tailwind-merge";
@@ -29,6 +36,53 @@ import { twMerge } from "tailwind-merge";
 /** Tailwind 클래스 병합 유틸리티 */
 function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
+}
+
+type Tone = "active" | "idle" | "excluded" | "off";
+interface EffStatus { label: string; tone: Tone; }
+
+/** 종목의 실제 자동매매 상태(최근 스케줄 실행 + 현재 토글 기준) */
+function capitalStatus(action: string | undefined | null, groupActive: boolean, countryActive: boolean): EffStatus {
+  if (!countryActive) return { label: "자동매매 OFF", tone: "off" };
+  if (!groupActive) return { label: "제외", tone: "excluded" };
+  if (action === "active") return { label: "매매중", tone: "active" };
+  return { label: "대기", tone: "idle" };
+}
+function likesStatus(likesActive: boolean, countryActive: boolean): EffStatus {
+  if (!countryActive) return { label: "자동매매 OFF", tone: "off" };
+  if (!likesActive) return { label: "제외", tone: "excluded" };
+  return { label: "후보(찜)", tone: "idle" };
+}
+
+function StatusBadge({ status }: { status?: EffStatus }) {
+  if (!status) return <span className="text-neutral-300">-</span>;
+  const map: Record<Tone, string> = {
+    active: "bg-[#16a34a] text-white",
+    idle: "bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400",
+    excluded: "bg-red-100 text-red-600 dark:bg-red-900/30 dark:text-red-400",
+    off: "bg-neutral-200 text-neutral-500 dark:bg-[#35332e] dark:text-neutral-400",
+  };
+  const Icon = status.tone === "active" ? CircleCheck : status.tone === "excluded" ? CircleSlash : CircleDashed;
+  return (
+    <span className={cn("inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-bold", map[status.tone])}>
+      <Icon className="w-3 h-3" /> {status.label}
+    </span>
+  );
+}
+
+/** quant_rule 을 사람이 읽는 조건 칩 목록으로 변환 */
+function formatConditions(r?: QuantRule): string[] {
+  if (!r) return [];
+  const out: string[] = [];
+  if (r.ncav_ratio != null) out.push(`NCAV ≥ ${r.ncav_ratio}`);
+  if (r.active_count != null) out.push(`상위 ${r.active_count}종목만`);
+  if (r.max_pbr != null && Number(r.max_pbr) < 100) out.push(`PBR ≤ ${r.max_pbr}`);
+  if (Number(r.min_pbr) > 0) out.push(`PBR ≥ ${r.min_pbr}`);
+  if (Number(r.min_per) > 0) out.push(`PER ≥ ${r.min_per}`);
+  if (Number(r.min_eps) > 0) out.push(`EPS ≥ ${r.min_eps}`);
+  if (Number(r.min_bps) > 0) out.push(`BPS ≥ ${r.min_bps}`);
+  if (Array.isArray(r.exclude_key_word) && r.exclude_key_word.length) out.push(`제외: ${r.exclude_key_word.join(", ")}`);
+  return out;
 }
 
 /** 그룹 섹션·찜 섹션이 공통으로 쓰는 정규화된 행 */
@@ -42,6 +96,7 @@ interface DisplayRow {
   ncavRatio?: number | string | null;
   token?: number | null;
   movable: boolean;        // 운용 종목(true) vs 찜 종목(읽기 전용, false)
+  status?: EffStatus;
   raw: any;                // 상세 모달용
 }
 
@@ -55,19 +110,23 @@ interface Props {
   className?: string;
   session: any;
   // 그룹 관리
-  onCreateGroup?: (name: string) => void;
+  onCreateGroup?: (name: string, tickers?: string[]) => void;
   onRenameGroup?: (groupId: string, name: string) => void;
   onToggleGroupTrading?: (groupId: string, isActive: boolean) => void;
   onDeleteGroup?: (groupId: string) => void;
   onMoveStock?: (ticker: string, groupId: string | null) => void;
+  onBulkMove?: (tickers: string[], groupId: string | null) => void;
   // 좋아요(찜) 그룹
   likedList?: LikedStockItem[];
   onToggleLikesTrading?: (isActive: boolean) => void;
+  // 자동매매 컨텍스트
+  countryTradingActive?: boolean;
+  quantRule?: QuantRule;
 }
 
 const tokenAmounts = [10000, 100000, 1000000];
 
-function normalizeCapital(row: UsCapitalStockItem): DisplayRow {
+function normalizeCapital(row: UsCapitalStockItem, status?: EffStatus): DisplayRow {
   return {
     symbol: row.symbol,
     per: row.condition?.per,
@@ -78,11 +137,12 @@ function normalizeCapital(row: UsCapitalStockItem): DisplayRow {
     ncavRatio: row.ncavRatio,
     token: row.token,
     movable: true,
+    status,
     raw: row,
   };
 }
 
-function normalizeLiked(lk: LikedStockItem): DisplayRow {
+function normalizeLiked(lk: LikedStockItem, status?: EffStatus): DisplayRow {
   return {
     symbol: lk.ticker,
     per: lk.per,
@@ -93,6 +153,7 @@ function normalizeLiked(lk: LikedStockItem): DisplayRow {
     ncavRatio: lk.ncav_ratio,
     token: null,
     movable: false,
+    status,
     raw: {
       symbol: lk.ticker,
       ncavRatio: lk.ncav_ratio != null ? String(lk.ncav_ratio) : undefined,
@@ -121,18 +182,23 @@ export default function StockListTable({
   onToggleGroupTrading,
   onDeleteGroup,
   onMoveStock,
+  onBulkMove,
   likedList = [],
   onToggleLikesTrading,
+  countryTradingActive = false,
+  quantRule,
 }: Props) {
   const stockList = data?.stock_list ?? [];
   const groups: StockGroup[] = data?.groups ?? [];
 
-  const [selected, setSelected] = useState<any | null>(null);
+  const [selectedDetail, setSelectedDetail] = useState<any | null>(null);
   const [isOpen, setIsOpen] = useState(false);
   const [editingGroupId, setEditingGroupId] = useState<string | null>(null);
   const [editingName, setEditingName] = useState("");
   const [creating, setCreating] = useState(false);
   const [newGroupName, setNewGroupName] = useState("");
+  const [collapsed, setCollapsed] = useState<Set<string>>(new Set());
+  const [picked, setPicked] = useState<Set<string>>(new Set());
 
   // 관리자 여부 확인 (기존 로직 유지)
   const isMaster = useMemo(() =>
@@ -144,24 +210,47 @@ export default function StockListTable({
   const likesGroup = useMemo(() => groups.find(g => g.id === LIKES_GROUP_ID), [groups]);
   const likesActive = likesGroup?.is_trading_active ?? false;
 
-  // 종목을 그룹별 버킷으로 분류
+  // 종목을 그룹별 버킷으로 분류 + 상태 계산
   const { byGroup, unassigned } = useMemo(() => {
-    const groupIds = new Set(realGroups.map(g => g.id));
+    const gmap = new Map(realGroups.map(g => [g.id, g]));
     const byGroup = new Map<string, DisplayRow[]>();
     realGroups.forEach(g => byGroup.set(g.id, []));
     const unassigned: DisplayRow[] = [];
     for (const s of stockList) {
-      const row = normalizeCapital(s);
-      if (s.group_id && groupIds.has(s.group_id)) byGroup.get(s.group_id)!.push(row);
+      const g = s.group_id ? gmap.get(s.group_id) : null;
+      const groupActive = g ? g.is_trading_active !== false : true;
+      const status = capitalStatus(s.action, groupActive, countryTradingActive);
+      const row = normalizeCapital(s, status);
+      if (s.group_id && gmap.has(s.group_id)) byGroup.get(s.group_id)!.push(row);
       else unassigned.push(row);
     }
     return { byGroup, unassigned };
-  }, [stockList, realGroups]);
+  }, [stockList, realGroups, countryTradingActive]);
 
-  const likedRows = useMemo(() => (likedList ?? []).map(normalizeLiked), [likedList]);
+  const likedRows = useMemo(
+    () => (likedList ?? []).map(lk => normalizeLiked(lk, likesStatus(likesActive, countryTradingActive))),
+    [likedList, likesActive, countryTradingActive]
+  );
 
-  const closeModal = () => { setIsOpen(false); setSelected(null); };
-  const openDetail = (raw: any) => { setSelected(raw); setIsOpen(true); };
+  // 요약 카운트
+  const summary = useMemo(() => {
+    let active = 0, idle = 0, excluded = 0;
+    const gmap = new Map(realGroups.map(g => [g.id, g]));
+    for (const s of stockList) {
+      const g = s.group_id ? gmap.get(s.group_id) : null;
+      const groupActive = g ? g.is_trading_active !== false : true;
+      const st = capitalStatus(s.action, groupActive, countryTradingActive);
+      if (st.tone === "active") active++;
+      else if (st.tone === "excluded") excluded++;
+      else if (st.tone === "idle") idle++;
+    }
+    return { active, idle, excluded, total: stockList.length };
+  }, [stockList, realGroups, countryTradingActive]);
+
+  const conditionChips = useMemo(() => formatConditions(quantRule), [quantRule]);
+
+  const closeModal = () => { setIsOpen(false); setSelectedDetail(null); };
+  const openDetail = (raw: any) => { setSelectedDetail(raw); setIsOpen(true); };
 
   const startRename = (g: StockGroup) => { setEditingGroupId(g.id); setEditingName(g.name); };
   const commitRename = () => {
@@ -175,11 +264,83 @@ export default function StockListTable({
     setCreating(false);
   };
 
-  const colCount = 6 + (isMaster ? 1 : 0) + (isMaster ? 1 : 0); // 종목/PER·PBR/BPS·EPS/시총/NCAV/Token + (Refill) + (그룹)
+  const toggleCollapse = (key: string) =>
+    setCollapsed(prev => {
+      const next = new Set(prev);
+      next.has(key) ? next.delete(key) : next.add(key);
+      return next;
+    });
+  const togglePick = (ticker: string) =>
+    setPicked(prev => {
+      const next = new Set(prev);
+      next.has(ticker) ? next.delete(ticker) : next.add(ticker);
+      return next;
+    });
+  const clearPick = () => setPicked(new Set());
+
+  const doBulkMove = (groupId: string | null) => {
+    const tickers = Array.from(picked);
+    if (tickers.length === 0) return;
+    if (onBulkMove) onBulkMove(tickers, groupId);
+    else tickers.forEach(t => onMoveStock?.(t, groupId)); // 폴백
+    clearPick();
+  };
+  const doCreateGroupFromPicked = () => {
+    const tickers = Array.from(picked);
+    if (tickers.length === 0) return;
+    const name = window.prompt(`선택한 ${tickers.length}개 종목으로 만들 그룹 이름을 입력하세요`);
+    if (name && name.trim()) {
+      onCreateGroup?.(name.trim(), tickers);
+      clearPick();
+    }
+  };
 
   return (
-    <div className={cn("w-full space-y-6", className)}>
-      {/* 1. Global Token Control + 새 그룹 추가 (Master) */}
+    <div className={cn("w-full space-y-5", className)}>
+      {/* ===== 0. 자동매매 요약 대시보드 ===== */}
+      <section className="rounded-xl border border-neutral-200 bg-white p-4 shadow-sm dark:border-[#35332e] dark:bg-[#1a1915]">
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <div className="flex items-center gap-2">
+            <span className={cn(
+              "inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-bold",
+              countryTradingActive ? "bg-[#16a34a] text-white" : "bg-neutral-200 text-neutral-500 dark:bg-[#35332e] dark:text-neutral-400"
+            )}>
+              <Power className="w-3.5 h-3.5" /> 자동매매 {countryTradingActive ? "ON" : "OFF"}
+            </span>
+            {countryTradingActive ? (
+              <span className="text-sm font-bold text-neutral-900 dark:text-neutral-100">
+                현재 <span className="text-[#16a34a]">{summary.active}종목</span> 매매중
+                <span className="ml-1 text-xs font-normal text-neutral-400">/ 운용 {summary.total}종목</span>
+              </span>
+            ) : (
+              <span className="text-sm font-medium text-neutral-500">자동매매가 꺼져 있어 어떤 종목도 매매되지 않습니다.</span>
+            )}
+          </div>
+          <div className="flex items-center gap-1.5 text-[11px] font-mono">
+            <span className="rounded-md bg-[#16a34a]/10 px-2 py-1 font-bold text-[#16a34a]">매매중 {summary.active}</span>
+            <span className="rounded-md bg-amber-100 px-2 py-1 font-bold text-amber-700 dark:bg-amber-900/30 dark:text-amber-400">대기 {summary.idle}</span>
+            <span className="rounded-md bg-red-100 px-2 py-1 font-bold text-red-600 dark:bg-red-900/30 dark:text-red-400">제외 {summary.excluded}</span>
+          </div>
+        </div>
+
+        {/* 적용 조건 */}
+        <div className="mt-3 flex flex-wrap items-center gap-1.5 border-t border-neutral-100 pt-3 dark:border-[#35332e]">
+          <span className="text-[10px] font-black uppercase tracking-wider text-neutral-400">적용 조건</span>
+          {conditionChips.length > 0 ? conditionChips.map((c, i) => (
+            <span key={i} className="rounded-full bg-[#faf9f7] px-2 py-0.5 text-[11px] font-mono text-neutral-600 dark:bg-[#242320] dark:text-neutral-300">{c}</span>
+          )) : (
+            <span className="text-[11px] text-neutral-400">조건 정보를 불러오는 중…</span>
+          )}
+        </div>
+
+        {/* 동작 안내 */}
+        <p className="mt-2 flex items-start gap-1 text-[10px] leading-relaxed text-neutral-400">
+          <Info className="mt-0.5 h-2.5 w-2.5 shrink-0" />
+          매매 흐름: <b className="font-bold text-neutral-500">자동매매 ON</b> → <b className="font-bold text-neutral-500">그룹 ON</b>(미지정·찜은 위 토글) → 위 조건 충족 + NCAV 상위 종목이 <b className="font-bold text-[#16a34a]">매매중</b>이 됩니다.
+        </p>
+      </section>
+
+      {/* ===== 1. Global Token Control + 새 그룹 추가 (Master) ===== */}
       {isMaster && (
         <section className="overflow-hidden rounded-xl border border-red-200 bg-red-50/30 p-1 dark:border-red-900/30 dark:bg-red-900/10">
           <div className="flex items-center justify-between px-4 py-3 border-b border-red-100 dark:border-red-900/20">
@@ -243,8 +404,35 @@ export default function StockListTable({
         </section>
       )}
 
-      {/* 2. 좋아요(찜) 그룹 섹션 — 예약 그룹 */}
+      {/* ===== 선택 작업 바 (다중선택 그룹 이동) ===== */}
+      {isMaster && picked.size > 0 && (
+        <div className="sticky top-2 z-20 flex flex-wrap items-center gap-2 rounded-xl border border-[#16a34a]/40 bg-[#f0fdf4] px-4 py-2.5 shadow-md dark:border-[#16a34a]/40 dark:bg-[#14532d]/30">
+          <span className="text-xs font-bold text-[#16a34a]">{picked.size}개 종목 선택됨</span>
+          <ArrowRightLeft className="w-3.5 h-3.5 text-[#16a34a]" />
+          <select
+            defaultValue=""
+            onChange={(e) => { if (e.target.value !== "__none__") doBulkMove(e.target.value || null); e.currentTarget.value = ""; }}
+            className="rounded-md border border-[#16a34a]/40 bg-white dark:bg-[#1a1915] px-2 py-1 text-xs font-medium"
+          >
+            <option value="__none__" disabled>그룹으로 이동…</option>
+            <option value="">미지정</option>
+            {realGroups.map(g => <option key={g.id} value={g.id}>{g.name}</option>)}
+          </select>
+          <button
+            onClick={doCreateGroupFromPicked}
+            className="inline-flex items-center gap-1 rounded-md bg-[#16a34a] px-2.5 py-1 text-xs font-bold text-white hover:bg-[#15803d]"
+          >
+            <FolderPlus className="w-3.5 h-3.5" /> 새 그룹으로
+          </button>
+          <button onClick={clearPick} className="ml-auto rounded-md p-1 text-neutral-400 hover:bg-white/60 dark:hover:bg-[#1a1915]">
+            <X className="w-4 h-4" />
+          </button>
+        </div>
+      )}
+
+      {/* ===== 2. 좋아요(찜) 그룹 섹션 — 예약 그룹 ===== */}
       <GroupSection
+        sectionKey={LIKES_GROUP_ID}
         title="좋아요 종목"
         icon={<Heart className="w-4 h-4 text-rose-500" />}
         accent="rose"
@@ -254,17 +442,20 @@ export default function StockListTable({
         tradingActive={likesActive}
         onToggleTrading={isMaster && onToggleLikesTrading ? () => onToggleLikesTrading(!likesActive) : undefined}
         emptyText="좋아요한 종목이 없습니다. 검색·분석 페이지에서 ♥ 를 눌러 추가하세요."
-        realGroups={realGroups}
-        onMoveStock={onMoveStock}
+        collapsed={collapsed.has(LIKES_GROUP_ID)}
+        onToggleCollapse={() => toggleCollapse(LIKES_GROUP_ID)}
+        picked={picked}
+        onTogglePick={togglePick}
         doTokenPlusOne={doTokenPlusOne}
         doTokenMinusOne={doTokenMinusOne}
         openDetail={openDetail}
       />
 
-      {/* 3. 사용자 그룹 섹션들 */}
+      {/* ===== 3. 사용자 그룹 섹션들 ===== */}
       {realGroups.map((g) => (
         <GroupSection
           key={g.id}
+          sectionKey={g.id}
           title={g.name}
           icon={<FolderOpen className="w-4 h-4 text-[#16a34a]" />}
           accent="green"
@@ -273,6 +464,7 @@ export default function StockListTable({
           isMaster={isMaster}
           tradingActive={g.is_trading_active !== false}
           onToggleTrading={isMaster && onToggleGroupTrading ? () => onToggleGroupTrading(g.id, !(g.is_trading_active !== false)) : undefined}
+          conditionChips={g.is_trading_active !== false ? conditionChips.slice(0, 2) : []}
           editing={editingGroupId === g.id}
           editingName={editingName}
           onEditNameChange={setEditingName}
@@ -282,18 +474,21 @@ export default function StockListTable({
             if (window.confirm(`'${g.name}' 그룹을 삭제할까요? 소속 종목은 '미지정'으로 이동합니다.`)) onDeleteGroup(g.id);
           } : undefined}
           emptyText="이 그룹에 종목이 없습니다."
-          realGroups={realGroups}
-          currentGroupId={g.id}
-          onMoveStock={onMoveStock}
+          collapsed={collapsed.has(g.id)}
+          onToggleCollapse={() => toggleCollapse(g.id)}
+          picked={picked}
+          onTogglePick={togglePick}
           doTokenPlusOne={doTokenPlusOne}
           doTokenMinusOne={doTokenMinusOne}
           openDetail={openDetail}
         />
       ))}
 
-      {/* 4. 미지정 섹션 */}
+      {/* ===== 4. 미지정 섹션 ===== */}
       <GroupSection
+        sectionKey="__unassigned__"
         title="미지정"
+        subtitle="그룹에 속하지 않은 종목 (자동매매 기본 포함)"
         icon={<FolderOpen className="w-4 h-4 text-neutral-400" />}
         accent="neutral"
         count={unassigned.length}
@@ -301,9 +496,10 @@ export default function StockListTable({
         isMaster={isMaster}
         tradingActive={true}
         emptyText="미지정 종목이 없습니다."
-        realGroups={realGroups}
-        currentGroupId={null}
-        onMoveStock={onMoveStock}
+        collapsed={collapsed.has("__unassigned__")}
+        onToggleCollapse={() => toggleCollapse("__unassigned__")}
+        picked={picked}
+        onTogglePick={togglePick}
         doTokenPlusOne={doTokenPlusOne}
         doTokenMinusOne={doTokenMinusOne}
         openDetail={openDetail}
@@ -320,7 +516,7 @@ export default function StockListTable({
                   <BarChart3 className="h-4 w-4" />
                 </div>
                 <h2 className="text-lg font-bold tracking-tight text-neutral-900 dark:text-neutral-100">
-                  Strategy Analysis: <span className="text-[#16a34a]">{selected?.symbol}</span>
+                  Strategy Analysis: <span className="text-[#16a34a]">{selectedDetail?.symbol}</span>
                 </h2>
               </div>
               <button onClick={closeModal} className="rounded-full p-2 text-neutral-400 hover:bg-[#f5f0e8] dark:hover:bg-[#35332e] transition-colors">
@@ -329,10 +525,10 @@ export default function StockListTable({
             </div>
             <div className="p-6">
               <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
-                <StatItem label="유동자산" value={`${(selected?.condition?.AssetsCurrent || 0).toLocaleString()}억`} icon={<Box className="w-3.5 h-3.5" />} />
-                <StatItem label="유동부채" value={`${(selected?.condition?.LiabilitiesCurrent || 0).toLocaleString()}억`} icon={<ClipboardCheck className="w-3.5 h-3.5" />} />
-                <StatItem label="당기순이익" value={`${(selected?.condition?.NetIncome || 0).toLocaleString()}억`} icon={<Wallet className="w-3.5 h-3.5" />} />
-                <StatItem label="현재가" value={`₩${Number(selected?.condition?.LastPrice || 0).toLocaleString()}`} icon={<TrendingUp className="w-3.5 h-3.5" />} />
+                <StatItem label="유동자산" value={`${(selectedDetail?.condition?.AssetsCurrent || 0).toLocaleString()}억`} icon={<Box className="w-3.5 h-3.5" />} />
+                <StatItem label="유동부채" value={`${(selectedDetail?.condition?.LiabilitiesCurrent || 0).toLocaleString()}억`} icon={<ClipboardCheck className="w-3.5 h-3.5" />} />
+                <StatItem label="당기순이익" value={`${(selectedDetail?.condition?.NetIncome || 0).toLocaleString()}억`} icon={<Wallet className="w-3.5 h-3.5" />} />
+                <StatItem label="현재가" value={`₩${Number(selectedDetail?.condition?.LastPrice || 0).toLocaleString()}`} icon={<TrendingUp className="w-3.5 h-3.5" />} />
               </div>
               <div className="space-y-3">
                 <div className="flex items-center gap-2 text-[10px] font-black uppercase tracking-[0.2em] text-neutral-400">
@@ -341,9 +537,9 @@ export default function StockListTable({
                 </div>
                 <div className="relative group">
                   <pre className="max-h-[300px] overflow-auto rounded-xl border border-neutral-200 bg-[#fcfaf7] p-4 font-mono text-[11px] leading-relaxed dark:border-[#35332e] dark:bg-[#1a1915] dark:text-neutral-400">
-                    {JSON.stringify(selected, null, 2)}
+                    {JSON.stringify(selectedDetail, null, 2)}
                   </pre>
-                  <button onClick={() => navigator.clipboard.writeText(JSON.stringify(selected))} className="absolute right-3 top-3 rounded-md bg-white p-2 shadow-sm border border-neutral-200 opacity-0 group-hover:opacity-100 hover:bg-[#f0fdf4] transition-all dark:bg-[#35332e] dark:border-[#4a4641]">
+                  <button onClick={() => navigator.clipboard.writeText(JSON.stringify(selectedDetail))} className="absolute right-3 top-3 rounded-md bg-white p-2 shadow-sm border border-neutral-200 opacity-0 group-hover:opacity-100 hover:bg-[#f0fdf4] transition-all dark:bg-[#35332e] dark:border-[#4a4641]">
                     <Copy className="h-3.5 w-3.5 text-neutral-600 dark:text-neutral-300" />
                   </button>
                 </div>
@@ -365,7 +561,9 @@ export default function StockListTable({
 // 그룹 섹션
 // =========================================================================
 interface GroupSectionProps {
+  sectionKey: string;
   title: string;
+  subtitle?: string;
   icon: React.ReactNode;
   accent: "rose" | "green" | "neutral";
   count: number;
@@ -373,6 +571,7 @@ interface GroupSectionProps {
   isMaster: boolean;
   tradingActive: boolean;
   onToggleTrading?: () => void;
+  conditionChips?: string[];
   editing?: boolean;
   editingName?: string;
   onEditNameChange?: (v: string) => void;
@@ -380,24 +579,25 @@ interface GroupSectionProps {
   onCommitRename?: () => void;
   onDelete?: () => void;
   emptyText: string;
-  realGroups: StockGroup[];
-  currentGroupId?: string | null;
-  onMoveStock?: (ticker: string, groupId: string | null) => void;
+  collapsed: boolean;
+  onToggleCollapse: () => void;
+  picked: Set<string>;
+  onTogglePick: (ticker: string) => void;
   doTokenPlusOne: (val: number, sym: string) => void;
   doTokenMinusOne: (val: number, sym: string) => void;
   openDetail: (raw: any) => void;
 }
 
 function GroupSection({
-  title, icon, accent, count, rows, isMaster, tradingActive, onToggleTrading,
-  editing, editingName, onEditNameChange, onStartRename, onCommitRename, onDelete,
-  emptyText, realGroups, currentGroupId, onMoveStock,
+  sectionKey, title, subtitle, icon, accent, count, rows, isMaster, tradingActive, onToggleTrading,
+  conditionChips, editing, editingName, onEditNameChange, onStartRename, onCommitRename, onDelete,
+  emptyText, collapsed, onToggleCollapse, picked, onTogglePick,
   doTokenPlusOne, doTokenMinusOne, openDetail,
 }: GroupSectionProps) {
   const showRefill = isMaster && rows.some(r => r.movable);
-  const showGroupSelect = isMaster && !!onMoveStock && rows.some(r => r.movable);
-  const baseCols = 6;
-  const colSpan = baseCols + (showRefill ? 1 : 0) + (showGroupSelect ? 1 : 0);
+  const showCheck = isMaster && rows.some(r => r.movable);
+  const baseCols = 6; // 종목/상태/PER·PBR/BPS·EPS/시총/NCAV
+  const colSpan = baseCols + 1 /*token*/ + (showCheck ? 1 : 0) + (showRefill ? 1 : 0);
 
   const accentBorder = accent === "rose" ? "border-rose-200 dark:border-rose-900/30"
     : accent === "green" ? "border-[#16a34a]/20 dark:border-[#16a34a]/20"
@@ -407,6 +607,9 @@ function GroupSection({
     <section className={cn("overflow-hidden rounded-xl border bg-white shadow-sm dark:bg-[#1a1915]", accentBorder)}>
       {/* 헤더 */}
       <div className="flex flex-wrap items-center gap-3 px-4 py-3 border-b border-neutral-100 dark:border-[#35332e] bg-neutral-50/60 dark:bg-[#242320]/40">
+        <button onClick={onToggleCollapse} className="text-neutral-400 hover:text-neutral-700 dark:hover:text-neutral-200" title={collapsed ? "펼치기" : "접기"}>
+          {collapsed ? <ChevronRight className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+        </button>
         <div className="flex items-center gap-2 min-w-0">
           {icon}
           {editing ? (
@@ -429,9 +632,18 @@ function GroupSection({
           <span className="px-2 py-0.5 text-[10px] font-mono font-bold bg-neutral-100 text-neutral-500 dark:bg-[#35332e] dark:text-neutral-400 rounded-full">
             {count}종목
           </span>
+          {subtitle && <span className="hidden sm:inline text-[11px] text-neutral-400">{subtitle}</span>}
         </div>
 
         <div className="ml-auto flex items-center gap-2">
+          {/* 적용 조건 칩 (그룹 ON 일 때) */}
+          {conditionChips && conditionChips.length > 0 && (
+            <div className="hidden md:flex items-center gap-1">
+              {conditionChips.map((c, i) => (
+                <span key={i} className="rounded-full bg-[#16a34a]/10 px-2 py-0.5 text-[10px] font-mono text-[#16a34a]">{c}</span>
+              ))}
+            </div>
+          )}
           {/* 자동매매 토글 */}
           {onToggleTrading ? (
             <button
@@ -465,115 +677,118 @@ function GroupSection({
       </div>
 
       {/* 테이블 */}
-      <div className="relative overflow-x-auto">
-        <table className="w-full text-left text-[12px] border-collapse">
-          <thead className="bg-neutral-50/80 text-neutral-500 dark:bg-[#242320]/50 dark:text-neutral-400">
-            <tr>
-              <th className="px-4 py-2.5 font-semibold uppercase tracking-wider">종목</th>
-              <th className="px-4 py-2.5 font-semibold uppercase tracking-wider text-center">PER / PBR</th>
-              <th className="px-4 py-2.5 font-semibold uppercase tracking-wider">BPS / EPS</th>
-              <th className="px-4 py-2.5 font-semibold uppercase tracking-wider">시가총액</th>
-              <th className="px-4 py-2.5 font-semibold uppercase tracking-wider text-center">NCAV 비율</th>
-              <th className="px-4 py-2.5 font-semibold uppercase tracking-wider text-right">Token</th>
-              {showGroupSelect && <th className="px-4 py-2.5 font-semibold uppercase tracking-wider text-center">그룹</th>}
-              {showRefill && <th className="px-4 py-2.5 font-semibold uppercase tracking-wider text-right">Refill</th>}
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-neutral-100 dark:divide-[#35332e]">
-            {rows.length === 0 ? (
+      {!collapsed && (
+        <div className="relative overflow-x-auto">
+          <table className="w-full text-left text-[12px] border-collapse">
+            <thead className="bg-neutral-50/80 text-neutral-500 dark:bg-[#242320]/50 dark:text-neutral-400">
               <tr>
-                <td colSpan={colSpan} className="py-12 text-center">
-                  <div className="flex flex-col items-center gap-2 opacity-40">
-                    <Search className="w-8 h-8" />
-                    <p className="text-xs">{emptyText}</p>
-                  </div>
-                </td>
+                {showCheck && <th className="px-3 py-2.5 w-8"></th>}
+                <th className="px-4 py-2.5 font-semibold uppercase tracking-wider">종목</th>
+                <th className="px-4 py-2.5 font-semibold uppercase tracking-wider text-center">상태</th>
+                <th className="px-4 py-2.5 font-semibold uppercase tracking-wider text-center">PER / PBR</th>
+                <th className="px-4 py-2.5 font-semibold uppercase tracking-wider">BPS / EPS</th>
+                <th className="px-4 py-2.5 font-semibold uppercase tracking-wider">시가총액</th>
+                <th className="px-4 py-2.5 font-semibold uppercase tracking-wider text-center">NCAV 비율</th>
+                <th className="px-4 py-2.5 font-semibold uppercase tracking-wider text-right">Token</th>
+                {showRefill && <th className="px-4 py-2.5 font-semibold uppercase tracking-wider text-right">Refill</th>}
               </tr>
-            ) : (
-              rows.map((row, idx) => (
-                <tr key={`${title}-${row.symbol}-${idx}`} className="group hover:bg-[#f0fdf4]/30 dark:hover:bg-[#14532d]/10 transition-colors">
-                  <td className="px-4 py-3">
-                    <button onClick={() => openDetail(row.raw)} className="flex items-center gap-2 group/btn">
-                      <div className="p-1.5 rounded-md bg-[#faf9f7] dark:bg-[#35332e] transition-all">
-                        <TrendingUp className="w-3.5 h-3.5" />
-                      </div>
-                      <span className="font-bold text-sm text-neutral-900 dark:text-neutral-100 group-hover/btn:text-[#16a34a] transition-colors tracking-tight">
-                        {row.symbol}
-                      </span>
-                    </button>
-                  </td>
-                  <td className="px-4 py-3 text-center">
-                    <div className="flex flex-col items-center font-mono">
-                      <span className="text-neutral-700 dark:text-neutral-300">{row.per ?? "-"}</span>
-                      <span className="text-[10px] text-neutral-400">{row.pbr ?? "-"}</span>
+            </thead>
+            <tbody className="divide-y divide-neutral-100 dark:divide-[#35332e]">
+              {rows.length === 0 ? (
+                <tr>
+                  <td colSpan={colSpan} className="py-12 text-center">
+                    <div className="flex flex-col items-center gap-2 opacity-40">
+                      <Search className="w-8 h-8" />
+                      <p className="text-xs">{emptyText}</p>
                     </div>
                   </td>
-                  <td className="px-4 py-3 font-mono leading-tight">
-                    <div className="flex flex-col">
-                      <span className="font-bold text-neutral-700 dark:text-neutral-300">B: {row.bps?.toLocaleString() ?? "-"}</span>
-                      <span className="text-[10px] text-neutral-400">E: {row.eps?.toLocaleString() ?? "-"}</span>
-                    </div>
-                  </td>
-                  <td className="px-4 py-3 font-mono text-neutral-600 dark:text-neutral-400">
-                    ₩{(row.marketCap || 0).toLocaleString()}억
-                  </td>
-                  <td className="px-4 py-3 text-center">
-                    <span className={cn(
-                      "inline-block px-2 py-0.5 rounded text-[11px] font-bold font-mono transition-colors",
-                      Number(row.ncavRatio) > 1
-                        ? "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400"
-                        : "bg-[#faf9f7] text-neutral-500 dark:bg-[#35332e] dark:text-neutral-500"
-                    )}>
-                      {row.ncavRatio ?? "-"}
-                    </span>
-                  </td>
-                  <td className="px-4 py-3 text-right font-mono font-black text-[#16a34a] dark:text-[#16a34a]">
-                    {row.movable ? (row.token?.toLocaleString() ?? 0) : "-"}
-                  </td>
-                  {showGroupSelect && (
-                    <td className="px-4 py-3 text-center">
-                      {row.movable ? (
-                        <select
-                          value={currentGroupId ?? ""}
-                          onChange={(e) => onMoveStock?.(row.symbol, e.target.value || null)}
-                          className="rounded-md border border-neutral-200 dark:border-[#35332e] bg-white dark:bg-[#242320] px-2 py-1 text-[11px]"
-                        >
-                          <option value="">미지정</option>
-                          {realGroups.map(g => (
-                            <option key={g.id} value={g.id}>{g.name}</option>
-                          ))}
-                        </select>
-                      ) : (
-                        <span className="text-neutral-300">-</span>
-                      )}
-                    </td>
-                  )}
-                  {showRefill && (
-                    <td className="px-4 py-3">
-                      {row.movable ? (
-                        <div className="flex justify-end gap-1.5">
-                          {tokenAmounts.map(amt => (
-                            <div key={`indiv-${amt}`} className="flex items-center rounded-md border border-neutral-200 dark:border-[#35332e] bg-white dark:bg-[#242320] overflow-hidden shadow-xs">
-                              <button onClick={() => doTokenPlusOne(amt, row.symbol)} className="px-2 py-1 hover:bg-[#f5f1eb] dark:hover:bg-[#35332e] text-[10px] font-bold border-r border-neutral-100 dark:border-[#35332e]">
-                                {amt / 10000}만
-                              </button>
-                              <button onClick={() => doTokenMinusOne(amt, row.symbol)} className="px-1.5 py-1 text-red-500 hover:bg-red-50 dark:hover:bg-red-950 transition-colors">
-                                <Minus className="w-3 h-3" />
-                              </button>
-                            </div>
-                          ))}
-                        </div>
-                      ) : (
-                        <span className="block text-right text-neutral-300">-</span>
-                      )}
-                    </td>
-                  )}
                 </tr>
-              ))
-            )}
-          </tbody>
-        </table>
-      </div>
+              ) : (
+                rows.map((row, idx) => (
+                  <tr key={`${sectionKey}-${row.symbol}-${idx}`} className={cn(
+                    "group transition-colors",
+                    picked.has(row.symbol) ? "bg-[#f0fdf4] dark:bg-[#14532d]/20" : "hover:bg-[#f0fdf4]/30 dark:hover:bg-[#14532d]/10"
+                  )}>
+                    {showCheck && (
+                      <td className="px-3 py-3">
+                        {row.movable ? (
+                          <input
+                            type="checkbox"
+                            checked={picked.has(row.symbol)}
+                            onChange={() => onTogglePick(row.symbol)}
+                            className="h-4 w-4 rounded border-neutral-300 text-[#16a34a] focus:ring-[#16a34a]"
+                          />
+                        ) : null}
+                      </td>
+                    )}
+                    <td className="px-4 py-3">
+                      <button onClick={() => openDetail(row.raw)} className="flex items-center gap-2 group/btn">
+                        <div className="p-1.5 rounded-md bg-[#faf9f7] dark:bg-[#35332e] transition-all">
+                          <TrendingUp className="w-3.5 h-3.5" />
+                        </div>
+                        <span className="font-bold text-sm text-neutral-900 dark:text-neutral-100 group-hover/btn:text-[#16a34a] transition-colors tracking-tight">
+                          {row.symbol}
+                        </span>
+                      </button>
+                    </td>
+                    <td className="px-4 py-3 text-center">
+                      <StatusBadge status={row.status} />
+                    </td>
+                    <td className="px-4 py-3 text-center">
+                      <div className="flex flex-col items-center font-mono">
+                        <span className="text-neutral-700 dark:text-neutral-300">{row.per ?? "-"}</span>
+                        <span className="text-[10px] text-neutral-400">{row.pbr ?? "-"}</span>
+                      </div>
+                    </td>
+                    <td className="px-4 py-3 font-mono leading-tight">
+                      <div className="flex flex-col">
+                        <span className="font-bold text-neutral-700 dark:text-neutral-300">B: {row.bps?.toLocaleString() ?? "-"}</span>
+                        <span className="text-[10px] text-neutral-400">E: {row.eps?.toLocaleString() ?? "-"}</span>
+                      </div>
+                    </td>
+                    <td className="px-4 py-3 font-mono text-neutral-600 dark:text-neutral-400">
+                      ₩{(row.marketCap || 0).toLocaleString()}억
+                    </td>
+                    <td className="px-4 py-3 text-center">
+                      <span className={cn(
+                        "inline-block px-2 py-0.5 rounded text-[11px] font-bold font-mono transition-colors",
+                        Number(row.ncavRatio) > 1
+                          ? "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400"
+                          : "bg-[#faf9f7] text-neutral-500 dark:bg-[#35332e] dark:text-neutral-500"
+                      )}>
+                        {row.ncavRatio ?? "-"}
+                      </span>
+                    </td>
+                    <td className="px-4 py-3 text-right font-mono font-black text-[#16a34a] dark:text-[#16a34a]">
+                      {row.movable ? (row.token?.toLocaleString() ?? 0) : "-"}
+                    </td>
+                    {showRefill && (
+                      <td className="px-4 py-3">
+                        {row.movable ? (
+                          <div className="flex justify-end gap-1.5">
+                            {tokenAmounts.map(amt => (
+                              <div key={`indiv-${amt}`} className="flex items-center rounded-md border border-neutral-200 dark:border-[#35332e] bg-white dark:bg-[#242320] overflow-hidden shadow-xs">
+                                <button onClick={() => doTokenPlusOne(amt, row.symbol)} className="px-2 py-1 hover:bg-[#f5f1eb] dark:hover:bg-[#35332e] text-[10px] font-bold border-r border-neutral-100 dark:border-[#35332e]">
+                                  {amt / 10000}만
+                                </button>
+                                <button onClick={() => doTokenMinusOne(amt, row.symbol)} className="px-1.5 py-1 text-red-500 hover:bg-red-50 dark:hover:bg-red-950 transition-colors">
+                                  <Minus className="w-3 h-3" />
+                                </button>
+                              </div>
+                            ))}
+                          </div>
+                        ) : (
+                          <span className="block text-right text-neutral-300">-</span>
+                        )}
+                      </td>
+                    )}
+                  </tr>
+                ))
+              )}
+            </tbody>
+          </table>
+        </div>
+      )}
     </section>
   );
 }

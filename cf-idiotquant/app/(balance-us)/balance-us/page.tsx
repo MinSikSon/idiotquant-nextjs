@@ -42,7 +42,7 @@ import {
   selectUsCapitalTokenPlusAll, selectUsCapitalTokenPlusOne,
   selectUsCapitalTokenMinusOne,
   reqPostUsCapitalGroupCreate, reqPostUsCapitalGroupUpdate,
-  reqPostUsCapitalGroupDelete, reqPostUsCapitalStockGroup,
+  reqPostUsCapitalGroupDelete, reqPostUsCapitalStockGroup, reqPostUsCapitalStocksGroup,
   selectUsGroupOp,
   reqGetUsQuantRule, reqPostUsQuantRule, selectUsQuantRule,
 } from "@/lib/features/capital/capitalSlice";
@@ -313,11 +313,12 @@ function BalanceUs() {
   const doTokenMinusOne = (num: number, ticker: string) => ticker && dispatch(reqPostUsCapitalTokenMinusOne({ key: balanceKey, num, ticker }));
 
   // 그룹 관리 핸들러
-  const doCreateGroup = (name: string) => dispatch(reqPostUsCapitalGroupCreate({ key: balanceKey, name }));
+  const doCreateGroup = (name: string, tickers?: string[]) => dispatch(reqPostUsCapitalGroupCreate({ key: balanceKey, name, tickers }));
   const doRenameGroup = (groupId: string, name: string) => dispatch(reqPostUsCapitalGroupUpdate({ key: balanceKey, groupId, updates: { name } }));
   const doToggleGroupTrading = (groupId: string, isActive: boolean) => dispatch(reqPostUsCapitalGroupUpdate({ key: balanceKey, groupId, updates: { is_trading_active: isActive } }));
   const doDeleteGroup = (groupId: string) => dispatch(reqPostUsCapitalGroupDelete({ key: balanceKey, groupId }));
   const doMoveStock = (ticker: string, groupId: string | null) => dispatch(reqPostUsCapitalStockGroup({ key: balanceKey, ticker, groupId }));
+  const doBulkMove = (tickers: string[], groupId: string | null) => dispatch(reqPostUsCapitalStocksGroup({ key: balanceKey, tickers, groupId }));
   const doToggleLikesTrading = (isActive: boolean) => dispatch(reqPostUsCapitalGroupUpdate({ key: balanceKey, groupId: "__likes__", updates: { is_trading_active: isActive } }));
   const doSaveQuantRule = (rule: any) => dispatch(reqPostUsQuantRule({ key: balanceKey, rule }));
 
@@ -666,8 +667,11 @@ function BalanceUs() {
               onToggleGroupTrading={doToggleGroupTrading}
               onDeleteGroup={doDeleteGroup}
               onMoveStock={doMoveStock}
+              onBulkMove={doBulkMove}
               likedList={usLikedList}
               onToggleLikesTrading={doToggleLikesTrading}
+              countryTradingActive={tradingStatus.US === true}
+              quantRule={usQuantRule.rule}
             />
           </SectionPanel>
         )}
