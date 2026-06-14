@@ -15,7 +15,8 @@ import {
     X,
     Loader2,
     Search,
-    PlusCircle
+    PlusCircle,
+    FolderOpen
 } from "lucide-react";
 import { useAppDispatch, useAppSelector } from "@/lib/hooks";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
@@ -83,6 +84,7 @@ interface InquireBalanceResultProps {
     reqPostOrderCash?: any;
     kakaoTotal?: any;
     kakaoMemberList?: any;
+    capital?: any;
     onOrderResult?: (status: "success" | "error", message: string) => void;
 }
 
@@ -93,6 +95,22 @@ export default function InquireBalanceResult(props: InquireBalanceResultProps) {
 
     const isUs = !!props.kiBalance?.output3 || !!props.kiBalance?.output1?.[0]?.ovrs_item_name;
     const exRate = Number(props.kiBalance?.output2?.[0]?.frst_bltn_exrt || 0);
+
+    // 운용 종목(capital stock_list)의 ticker → 그룹 매핑 (잔고 종목에 그룹 배지 표시용)
+    const groupByTicker = useMemo(() => {
+        const map = new Map<string, { name: string; active: boolean; assigned: boolean }>();
+        const groups: any[] = props.capital?.groups ?? [];
+        const gmap = new Map(groups.map((g: any) => [g.id, g]));
+        for (const s of (props.capital?.stock_list ?? [])) {
+            const g: any = s.group_id ? gmap.get(s.group_id) : null;
+            if (g && g.id !== "__likes__") {
+                map.set(String(s.symbol), { name: g.name, active: g.is_trading_active !== false, assigned: true });
+            } else {
+                map.set(String(s.symbol), { name: "미지정", active: true, assigned: false });
+            }
+        }
+        return map;
+    }, [props.capital]);
 
     const evlu_smtl = Number(props.kiBalance?.output3?.evlu_amt_smtl ?? props.kiBalance?.output2?.[0]?.evlu_amt_smtl_amt ?? 0);
     const pchs_smtl = Number(props.kiBalance?.output3?.pchs_amt_smtl ?? props.kiBalance?.output2?.[0]?.pchs_amt_smtl_amt ?? 0);
@@ -334,10 +352,11 @@ export default function InquireBalanceResult(props: InquireBalanceResultProps) {
 
             {/* 테이블 섹션 */}
             <div className="overflow-hidden bg-white dark:bg-[#242320] rounded-[2rem] border border-neutral-200 dark:border-[#35332e] shadow-sm">
-                <SortableBalanceTable 
-                    inventoryData={props.kiBalance.output1 || []} 
-                    isUs={isUs} 
+                <SortableBalanceTable
+                    inventoryData={props.kiBalance.output1 || []}
+                    isUs={isUs}
                     onOpenOrder={handleOpenOrderModal}
+                    groupByTicker={groupByTicker}
                 />
             </div>
 
@@ -367,9 +386,24 @@ function SummaryItem({ label, value, subValue, colorClass = "dark:text-white" }:
     );
 }
 
-function SortableBalanceTable({ inventoryData, isUs, onOpenOrder }: { inventoryData: any[], isUs: boolean, onOpenOrder: (stock: any) => void }) {
+function SortableBalanceTable({ inventoryData, isUs, onOpenOrder, groupByTicker }: { inventoryData: any[], isUs: boolean, onOpenOrder: (stock: any) => void, groupByTicker?: Map<string, { name: string; active: boolean; assigned: boolean }> }) {
     const [sortConfig, setSortConfig] = useState<any>({ key: "evlu_amt", direction: "desc" });
     const router = useRouter();
+
+    const renderGroupBadge = (item: any) => {
+        const ticker = String(item.pdno || item.ovrs_pdno || "");
+        const g = groupByTicker?.get(ticker);
+        if (!g) return null; // 운용 풀에 없는(자동매매 비대상) 보유 종목
+        return (
+            <span className={`mt-0.5 inline-flex w-fit items-center gap-0.5 rounded-full px-1.5 py-0.5 text-[9px] font-bold ${
+                g.assigned && g.active
+                    ? "bg-[#16a34a]/10 text-[#16a34a]"
+                    : "bg-neutral-100 text-neutral-400 dark:bg-[#35332e] dark:text-neutral-400"
+            }`}>
+                <FolderOpen className="w-2.5 h-2.5" /> {g.name}
+            </span>
+        );
+    };
     const goAnalyze = (item: any) => {
         // US: ticker code (AAPL), KR: stock name (삼성전자) — analyze page searches by name for KR
         const ticker = isUs
@@ -408,11 +442,12 @@ function SortableBalanceTable({ inventoryData, isUs, onOpenOrder }: { inventoryD
                     <div key={idx} className="p-4 space-y-3">
                         {/* 종목명 + 수익률 */}
                         <div className="flex items-start justify-between gap-2">
-                            <div>
+                            <div className="flex flex-col">
                                 <span className="font-black text-sm dark:text-neutral-100 leading-none block mb-0.5">
                                     {getFieldValue(item, "name")}
                                 </span>
                                 <span className="text-[10px] font-mono text-neutral-500">{item.pdno || item.ovrs_pdno}</span>
+                                {renderGroupBadge(item)}
                             </div>
                             <span className={`text-sm font-black font-mono shrink-0 ${isPositive ? "text-rose-500" : "text-[#f0fdf4]0"}`}>
                                 {isPositive ? "▲" : "▼"} {isPositive ? "+" : ""}{profitRt.toFixed(2)}%
@@ -502,6 +537,7 @@ function SortableBalanceTable({ inventoryData, isUs, onOpenOrder }: { inventoryD
                                                 {getFieldValue(item, "name")}
                                             </span>
                                             <span className="text-[10px] font-mono text-neutral-500">{item.pdno || item.ovrs_pdno}</span>
+                                            {renderGroupBadge(item)}
                                         </div>
                                     </td>
                                     <td className="p-4 text-right font-mono text-sm font-bold dark:text-neutral-300">

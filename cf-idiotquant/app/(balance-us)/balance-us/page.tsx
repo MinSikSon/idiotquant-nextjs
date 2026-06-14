@@ -632,6 +632,7 @@ function BalanceUs() {
             reqPostOrderCash={reqPostOrderUs}
             kakaoTotal={kakaoTotal}
             kakaoMemberList={kakaoMemberList}
+            capital={usCapital}
             onOrderResult={handleOrderResult}
           />
         </SectionPanel>
