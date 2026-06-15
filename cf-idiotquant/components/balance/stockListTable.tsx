@@ -48,11 +48,8 @@ function capitalStatus(action: string | undefined | null, groupActive: boolean, 
   if (action === "active") return { label: "매매중", tone: "active" };
   return { label: "대기", tone: "idle" };
 }
-function likesStatus(likesActive: boolean, countryActive: boolean): EffStatus {
-  if (!countryActive) return { label: "자동매매 OFF", tone: "off" };
-  if (!likesActive) return { label: "제외", tone: "excluded" };
-  return { label: "후보(찜)", tone: "idle" };
-}
+// 좋아요는 관심목록 전용(자동매매 대상 아님). 매매하려면 '복사'로 실제 그룹에 넣는다.
+const WATCH_STATUS: EffStatus = { label: "관심", tone: "off" };
 
 function StatusBadge({ status }: { status?: EffStatus }) {
   if (!status) return <span className="text-neutral-300">-</span>;
@@ -116,6 +113,7 @@ interface Props {
   onDeleteGroup?: (groupId: string) => void;
   onMoveStock?: (ticker: string, groupId: string | null) => void;
   onBulkMove?: (tickers: string[], groupId: string | null) => void;
+  onCopyLikes?: (tickers: string[], groupId: string | null) => void;
   // 좋아요(찜) 그룹
   likedList?: LikedStockItem[];
   onToggleLikesTrading?: (isActive: boolean) => void;
@@ -185,6 +183,7 @@ export default function StockListTable({
   onDeleteGroup,
   onMoveStock,
   onBulkMove,
+  onCopyLikes,
   likedList = [],
   onToggleLikesTrading,
   countryTradingActive = false,
@@ -203,6 +202,7 @@ export default function StockListTable({
   const [collapsed, setCollapsed] = useState<Set<string>>(new Set());
   const [picked, setPicked] = useState<Set<string>>(new Set());
   const [showLegend, setShowLegend] = useState(false);
+  const [bulkTarget, setBulkTarget] = useState<string>("");
 
   // 관리자 여부 확인 (기존 로직 유지)
   const isMaster = useMemo(() =>
@@ -224,9 +224,8 @@ export default function StockListTable({
     const likesPoolRows: DisplayRow[] = [];
     for (const s of stockList) {
       if (s.group_id === LIKES_GROUP_ID) {
-        // 좋아요 그룹 운용 종목 (토큰·상태 보유) → 좋아요 섹션에서 관리
-        const status = capitalStatus(s.action, likesActive, countryTradingActive);
-        likesPoolRows.push(normalizeCapital(s, status));
+        // 레거시 좋아요(__likes__) 운용 종목 → 좋아요 섹션에서 관리(관심)
+        likesPoolRows.push(normalizeCapital(s, WATCH_STATUS));
         continue;
       }
       const g = s.group_id ? gmap.get(s.group_id) : null;
@@ -257,25 +256,26 @@ export default function StockListTable({
     };
     const watchlistRows = (likedList ?? [])
       .filter(lk => !poolSymbols.has(lk.ticker))
-      .map(lk => normalizeLiked(lk, likesStatus(likesActive, countryTradingActive)));
+      .map(lk => normalizeLiked(lk, WATCH_STATUS));
     return [...likesPoolRows, ...watchlistRows].map(applyOverride);
   }, [likesPoolRows, likedList, likesActive, countryTradingActive, metricsOverride]);
 
-  // 요약 카운트
+  // 요약 카운트 (좋아요(__likes__) 레거시 항목은 관심목록이라 매매 집계에서 제외)
   const summary = useMemo(() => {
-    let active = 0, idle = 0, excluded = 0;
+    let active = 0, idle = 0, excluded = 0, total = 0;
     const gmap = new Map(realGroups.map(g => [g.id, g]));
     for (const s of stockList) {
-      let groupActive: boolean;
-      if (s.group_id === LIKES_GROUP_ID) groupActive = likesActive;
-      else { const g = s.group_id ? gmap.get(s.group_id) : null; groupActive = g ? g.is_trading_active !== false : true; }
+      if (s.group_id === LIKES_GROUP_ID) continue;
+      total++;
+      const g = s.group_id ? gmap.get(s.group_id) : null;
+      const groupActive = g ? g.is_trading_active !== false : true;
       const st = capitalStatus(s.action, groupActive, countryTradingActive);
       if (st.tone === "active") active++;
       else if (st.tone === "excluded") excluded++;
       else if (st.tone === "idle") idle++;
     }
-    return { active, idle, excluded, total: stockList.length };
-  }, [stockList, realGroups, countryTradingActive, likesActive]);
+    return { active, idle, excluded, total };
+  }, [stockList, realGroups, countryTradingActive]);
 
   const conditionChips = useMemo(() => formatConditions(quantRule), [quantRule]);
 
@@ -319,6 +319,12 @@ export default function StockListTable({
     if (tickers.length === 0) return;
     if (onBulkMove) onBulkMove(tickers, groupId);
     else tickers.forEach(t => onMoveStock?.(t, groupId)); // 폴백
+    clearPick();
+  };
+  const doCopyToGroup = (groupId: string | null) => {
+    const tickers = Array.from(picked);
+    if (tickers.length === 0) return;
+    onCopyLikes?.(tickers, groupId);
     clearPick();
   };
   const doCreateGroupFromPicked = () => {
@@ -372,7 +378,7 @@ export default function StockListTable({
         {/* 동작 안내 */}
         <p className="mt-2 flex items-start gap-1 text-[10px] leading-relaxed text-neutral-400">
           <Info className="mt-0.5 h-2.5 w-2.5 shrink-0" />
-          매매 흐름: <b className="font-bold text-neutral-500">자동매매 ON</b> → <b className="font-bold text-neutral-500">그룹 ON</b>(미지정·찜은 위 토글) → 위 조건 충족 + NCAV 상위 종목이 <b className="font-bold text-[#16a34a]">매매중</b>이 됩니다.
+          매매 흐름: <b className="font-bold text-neutral-500">자동매매 ON</b> → <b className="font-bold text-neutral-500">그룹 ON</b> → 위 조건 충족 + NCAV 상위 종목이 <b className="font-bold text-[#16a34a]">매매중</b>이 됩니다. <b className="font-bold text-rose-500">좋아요</b>는 관심목록이며, 매매하려면 <b className="font-bold text-[#16a34a]">복사</b>로 그룹에 넣으세요.
         </p>
 
         {/* 상태 설명 토글 */}
@@ -464,27 +470,43 @@ export default function StockListTable({
         </section>
       )}
 
-      {/* ===== 선택 작업 바 (다중선택 그룹 이동) ===== */}
+      {/* ===== 선택 작업 바 (이동 / 복사) ===== */}
       {isMaster && picked.size > 0 && (
         <div className="sticky top-2 z-20 flex flex-wrap items-center gap-2 rounded-xl border border-[#16a34a]/40 bg-[#f0fdf4] px-3 py-2.5 shadow-md dark:border-[#16a34a]/40 dark:bg-[#14532d]/30 sm:px-4">
           <span className="inline-flex items-center gap-1 text-xs font-bold text-[#16a34a]">
-            <ArrowRightLeft className="w-3.5 h-3.5" /> {picked.size}개 선택됨
+            <ArrowRightLeft className="w-3.5 h-3.5" /> {picked.size}개 선택
           </span>
           <button onClick={clearPick} className="rounded-md p-1 text-neutral-400 hover:bg-white/60 dark:hover:bg-[#1a1915] sm:order-last sm:ml-auto">
             <X className="w-4 h-4" />
           </button>
           <select
-            defaultValue=""
-            onChange={(e) => { if (e.target.value !== "__none__") doBulkMove(e.target.value || null); e.currentTarget.value = ""; }}
+            value={bulkTarget}
+            onChange={(e) => setBulkTarget(e.target.value)}
             className="min-w-0 flex-1 rounded-md border border-[#16a34a]/40 bg-white px-2 py-1.5 text-xs font-medium dark:bg-[#1a1915] sm:flex-none"
           >
-            <option value="__none__" disabled>그룹으로 이동…</option>
             <option value="">미지정</option>
             {realGroups.map(g => <option key={g.id} value={g.id}>{g.name}</option>)}
           </select>
+          {onCopyLikes && (
+            <button
+              onClick={() => doCopyToGroup(bulkTarget || null)}
+              title="좋아요 종목을 선택한 그룹의 운용 종목으로 복사 (원본 좋아요 유지)"
+              className="inline-flex shrink-0 items-center gap-1 rounded-md bg-[#16a34a] px-2.5 py-1.5 text-xs font-bold text-white hover:bg-[#15803d]"
+            >
+              <Copy className="w-3.5 h-3.5" /> 복사
+            </button>
+          )}
+          <button
+            onClick={() => doBulkMove(bulkTarget || null)}
+            title="운용 종목을 선택한 그룹으로 이동"
+            className="inline-flex shrink-0 items-center gap-1 rounded-md border border-[#16a34a]/40 bg-white px-2.5 py-1.5 text-xs font-bold text-[#16a34a] hover:bg-[#16a34a]/10 dark:bg-[#1a1915]"
+          >
+            <ArrowRightLeft className="w-3.5 h-3.5" /> 이동
+          </button>
           <button
             onClick={doCreateGroupFromPicked}
-            className="inline-flex shrink-0 items-center gap-1 rounded-md bg-[#16a34a] px-2.5 py-1.5 text-xs font-bold text-white hover:bg-[#15803d]"
+            title="선택한 운용 종목으로 새 그룹 생성(이동)"
+            className="inline-flex shrink-0 items-center gap-1 rounded-md border border-neutral-200 bg-white px-2.5 py-1.5 text-xs font-bold text-neutral-500 hover:bg-neutral-50 dark:border-[#35332e] dark:bg-[#242320]"
           >
             <FolderPlus className="w-3.5 h-3.5" /> 새 그룹
           </button>
@@ -495,13 +517,14 @@ export default function StockListTable({
       <GroupSection
         sectionKey={LIKES_GROUP_ID}
         title="좋아요 종목"
+        subtitle="관심목록 — 매매하려면 선택 후 '복사'로 그룹에 넣으세요"
         icon={<Heart className="w-4 h-4 text-rose-500" />}
         accent="rose"
         count={likedRows.length}
         rows={likedRows}
         isMaster={isMaster}
-        tradingActive={likesActive}
-        onToggleTrading={isMaster && onToggleLikesTrading ? () => onToggleLikesTrading(!likesActive) : undefined}
+        tradingActive={false}
+        hideTrading
         emptyText="좋아요한 종목이 없습니다. 검색·분석 페이지에서 ♥ 를 눌러 추가하세요."
         collapsed={collapsed.has(LIKES_GROUP_ID)}
         onToggleCollapse={() => toggleCollapse(LIKES_GROUP_ID)}
@@ -634,6 +657,7 @@ interface GroupSectionProps {
   isMaster: boolean;
   tradingActive: boolean;
   onToggleTrading?: () => void;
+  hideTrading?: boolean;
   conditionChips?: string[];
   editing?: boolean;
   editingName?: string;
@@ -653,16 +677,16 @@ interface GroupSectionProps {
 }
 
 function GroupSection({
-  sectionKey, title, subtitle, icon, accent, count, rows, isMaster, tradingActive, onToggleTrading,
+  sectionKey, title, subtitle, icon, accent, count, rows, isMaster, tradingActive, onToggleTrading, hideTrading,
   conditionChips, editing, editingName, onEditNameChange, onStartRename, onCommitRename, onDelete,
   emptyText, collapsed, onToggleCollapse, picked, onTogglePick, onPickMany,
   doTokenPlusOne, doTokenMinusOne, openDetail,
 }: GroupSectionProps) {
   const showRefill = isMaster && rows.some(r => r.movable);
-  const showCheck = isMaster && rows.some(r => r.movable);
-  const movableTickers = useMemo(() => rows.filter(r => r.movable).map(r => r.symbol), [rows]);
-  const allChecked = movableTickers.length > 0 && movableTickers.every(t => picked.has(t));
-  const someChecked = movableTickers.some(t => picked.has(t));
+  const showCheck = isMaster && rows.length > 0; // 모든 행 선택 가능(좋아요는 복사용)
+  const selectableTickers = useMemo(() => rows.map(r => r.symbol), [rows]);
+  const allChecked = selectableTickers.length > 0 && selectableTickers.every(t => picked.has(t));
+  const someChecked = selectableTickers.some(t => picked.has(t));
   const baseCols = 6; // 종목/상태/PER·PBR/BPS·EPS/시총/NCAV
   const colSpan = baseCols + 1 /*token*/ + (showCheck ? 1 : 0) + (showRefill ? 1 : 0);
 
@@ -699,6 +723,19 @@ function GroupSection({
           <span className="px-2 py-0.5 text-[10px] font-mono font-bold bg-neutral-100 text-neutral-500 dark:bg-[#35332e] dark:text-neutral-400 rounded-full">
             {count}종목
           </span>
+          {/* 그룹 전체선택 (데스크탑·모바일 공통) */}
+          {showCheck && !collapsed && (
+            <label className="inline-flex cursor-pointer items-center gap-1 text-[10px] font-bold text-neutral-500 dark:text-neutral-400">
+              <input
+                type="checkbox"
+                checked={allChecked}
+                ref={(el) => { if (el) el.indeterminate = !allChecked && someChecked; }}
+                onChange={() => onPickMany?.(selectableTickers, !allChecked)}
+                className="h-3.5 w-3.5 rounded border-neutral-300 text-[#16a34a] focus:ring-[#16a34a]"
+              />
+              전체
+            </label>
+          )}
           {subtitle && <span className="hidden sm:inline text-[11px] text-neutral-400">{subtitle}</span>}
         </div>
 
@@ -711,8 +748,12 @@ function GroupSection({
               ))}
             </div>
           )}
-          {/* 자동매매 토글 */}
-          {onToggleTrading ? (
+          {/* 자동매매 토글 (좋아요 섹션은 hideTrading 으로 숨기고 '관심목록' 표시) */}
+          {hideTrading ? (
+            <span className="inline-flex items-center gap-1.5 rounded-lg bg-rose-50 px-3 py-1.5 text-xs font-bold text-rose-500 dark:bg-rose-900/20">
+              <Heart className="w-3.5 h-3.5" /> 관심목록
+            </span>
+          ) : onToggleTrading ? (
             <button
               onClick={onToggleTrading}
               className={cn(
@@ -758,7 +799,7 @@ function GroupSection({
                       title="이 그룹 전체 선택"
                       checked={allChecked}
                       ref={(el) => { if (el) el.indeterminate = !allChecked && someChecked; }}
-                      onChange={() => onPickMany?.(movableTickers, !allChecked)}
+                      onChange={() => onPickMany?.(selectableTickers, !allChecked)}
                       className="h-4 w-4 rounded border-neutral-300 text-[#16a34a] focus:ring-[#16a34a]"
                     />
                   </th>
@@ -791,14 +832,12 @@ function GroupSection({
                   )}>
                     {showCheck && (
                       <td className="px-3 py-3">
-                        {row.movable ? (
-                          <input
-                            type="checkbox"
-                            checked={picked.has(row.symbol)}
-                            onChange={() => onTogglePick(row.symbol)}
-                            className="h-4 w-4 rounded border-neutral-300 text-[#16a34a] focus:ring-[#16a34a]"
-                          />
-                        ) : null}
+                        <input
+                          type="checkbox"
+                          checked={picked.has(row.symbol)}
+                          onChange={() => onTogglePick(row.symbol)}
+                          className="h-4 w-4 rounded border-neutral-300 text-[#16a34a] focus:ring-[#16a34a]"
+                        />
                       </td>
                     )}
                     <td className="px-4 py-3">
@@ -884,7 +923,7 @@ function GroupSection({
               >
                 {/* 상단: 체크 + 종목 + 상태 */}
                 <div className="flex items-center gap-2">
-                  {showCheck && row.movable && (
+                  {showCheck && (
                     <input
                       type="checkbox"
                       checked={picked.has(row.symbol)}

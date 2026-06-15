@@ -35,7 +35,7 @@ import {
   selectKrCapitalTokenMinusOne, selectKrCapitalTokenPlusAll,
   selectKrCapitalTokenPlusOne,
   reqPostKrCapitalGroupCreate, reqPostKrCapitalGroupUpdate,
-  reqPostKrCapitalGroupDelete, reqPostKrCapitalStockGroup, reqPostKrCapitalStocksGroup,
+  reqPostKrCapitalGroupDelete, reqPostKrCapitalStockGroup, reqPostKrCapitalStocksGroup, reqPostKrCapitalLikesCopy,
   selectKrGroupOp,
   reqGetKrQuantRule, reqPostKrQuantRule, selectKrQuantRule,
 } from "@/lib/features/capital/capitalSlice";
@@ -339,7 +339,7 @@ function BalanceKr() {
   const doDeleteGroup = (groupId: string) => dispatch(reqPostKrCapitalGroupDelete({ key: balanceKey, groupId }));
   const doMoveStock = (ticker: string, groupId: string | null) => dispatch(reqPostKrCapitalStockGroup({ key: balanceKey, ticker, groupId }));
   const doBulkMove = (tickers: string[], groupId: string | null) => dispatch(reqPostKrCapitalStocksGroup({ key: balanceKey, tickers, groupId }));
-  const doToggleLikesTrading = (isActive: boolean) => dispatch(reqPostKrCapitalGroupUpdate({ key: balanceKey, groupId: "__likes__", updates: { is_trading_active: isActive } }));
+  const doCopyLikes = (tickers: string[], groupId: string | null) => dispatch(reqPostKrCapitalLikesCopy({ key: balanceKey, tickers, groupId }));
   const doSaveQuantRule = (rule: any) => dispatch(reqPostKrQuantRule({ key: balanceKey, rule }));
 
   const summary = kiBalance.output2?.[0] || {};
@@ -624,8 +624,8 @@ function BalanceKr() {
               onDeleteGroup={doDeleteGroup}
               onMoveStock={doMoveStock}
               onBulkMove={doBulkMove}
+              onCopyLikes={doCopyLikes}
               likedList={krLikedList}
-              onToggleLikesTrading={doToggleLikesTrading}
               countryTradingActive={tradingStatus.KR === true}
               quantRule={krQuantRule.rule}
             />
