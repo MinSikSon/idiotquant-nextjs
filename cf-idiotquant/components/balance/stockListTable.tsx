@@ -212,12 +212,20 @@ export default function StockListTable({
   const likesActive = likesGroup?.is_trading_active ?? false;
 
   // 종목을 그룹별 버킷으로 분류 + 상태 계산
-  const { byGroup, unassigned } = useMemo(() => {
+  // group_id === "__likes__" 인 운용 종목은 '미지정'이 아니라 좋아요 섹션으로 보낸다.
+  const { byGroup, unassigned, likesPoolRows } = useMemo(() => {
     const gmap = new Map(realGroups.map(g => [g.id, g]));
     const byGroup = new Map<string, DisplayRow[]>();
     realGroups.forEach(g => byGroup.set(g.id, []));
     const unassigned: DisplayRow[] = [];
+    const likesPoolRows: DisplayRow[] = [];
     for (const s of stockList) {
+      if (s.group_id === LIKES_GROUP_ID) {
+        // 좋아요 그룹 운용 종목 (토큰·상태 보유) → 좋아요 섹션에서 관리
+        const status = capitalStatus(s.action, likesActive, countryTradingActive);
+        likesPoolRows.push(normalizeCapital(s, status));
+        continue;
+      }
       const g = s.group_id ? gmap.get(s.group_id) : null;
       const groupActive = g ? g.is_trading_active !== false : true;
       const status = capitalStatus(s.action, groupActive, countryTradingActive);
@@ -225,28 +233,33 @@ export default function StockListTable({
       if (s.group_id && gmap.has(s.group_id)) byGroup.get(s.group_id)!.push(row);
       else unassigned.push(row);
     }
-    return { byGroup, unassigned };
-  }, [stockList, realGroups, countryTradingActive]);
+    return { byGroup, unassigned, likesPoolRows };
+  }, [stockList, realGroups, countryTradingActive, likesActive]);
 
-  const likedRows = useMemo(
-    () => (likedList ?? []).map(lk => normalizeLiked(lk, likesStatus(likesActive, countryTradingActive))),
-    [likedList, likesActive, countryTradingActive]
-  );
+  // 좋아요 섹션 = 운용 중인 좋아요 종목(토큰/상태) + 아직 운용 풀에 없는 찜(읽기 전용 워치리스트)
+  const likedRows = useMemo(() => {
+    const poolSymbols = new Set(likesPoolRows.map(r => r.symbol));
+    const watchlistRows = (likedList ?? [])
+      .filter(lk => !poolSymbols.has(lk.ticker))
+      .map(lk => normalizeLiked(lk, likesStatus(likesActive, countryTradingActive)));
+    return [...likesPoolRows, ...watchlistRows];
+  }, [likesPoolRows, likedList, likesActive, countryTradingActive]);
 
   // 요약 카운트
   const summary = useMemo(() => {
     let active = 0, idle = 0, excluded = 0;
     const gmap = new Map(realGroups.map(g => [g.id, g]));
     for (const s of stockList) {
-      const g = s.group_id ? gmap.get(s.group_id) : null;
-      const groupActive = g ? g.is_trading_active !== false : true;
+      let groupActive: boolean;
+      if (s.group_id === LIKES_GROUP_ID) groupActive = likesActive;
+      else { const g = s.group_id ? gmap.get(s.group_id) : null; groupActive = g ? g.is_trading_active !== false : true; }
       const st = capitalStatus(s.action, groupActive, countryTradingActive);
       if (st.tone === "active") active++;
       else if (st.tone === "excluded") excluded++;
       else if (st.tone === "idle") idle++;
     }
     return { active, idle, excluded, total: stockList.length };
-  }, [stockList, realGroups, countryTradingActive]);
+  }, [stockList, realGroups, countryTradingActive, likesActive]);
 
   const conditionChips = useMemo(() => formatConditions(quantRule), [quantRule]);
 
