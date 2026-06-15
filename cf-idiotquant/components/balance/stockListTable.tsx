@@ -122,6 +122,8 @@ interface Props {
   // 자동매매 컨텍스트
   countryTradingActive?: boolean;
   quantRule?: QuantRule;
+  // 지표 보강 (예: US 좋아요 종목은 stock_data_daily 에 없어 KIS price-detail 로 보강)
+  metricsOverride?: Record<string, { per?: number | null; pbr?: number | null; bps?: number | null; eps?: number | null; marketCap?: number | null }>;
 }
 
 const tokenAmounts = [10000, 100000, 1000000];
@@ -187,6 +189,7 @@ export default function StockListTable({
   onToggleLikesTrading,
   countryTradingActive = false,
   quantRule,
+  metricsOverride,
 }: Props) {
   const stockList = data?.stock_list ?? [];
   const groups: StockGroup[] = data?.groups ?? [];
@@ -237,13 +240,26 @@ export default function StockListTable({
   }, [stockList, realGroups, countryTradingActive, likesActive]);
 
   // 좋아요 섹션 = 운용 중인 좋아요 종목(토큰/상태) + 아직 운용 풀에 없는 찜(읽기 전용 워치리스트)
+  // metricsOverride 로 비어있는 지표(US 등)를 보강한다.
   const likedRows = useMemo(() => {
     const poolSymbols = new Set(likesPoolRows.map(r => r.symbol));
+    const applyOverride = (row: DisplayRow): DisplayRow => {
+      const o = metricsOverride?.[row.symbol];
+      if (!o) return row;
+      return {
+        ...row,
+        per: row.per ?? o.per,
+        pbr: row.pbr ?? o.pbr,
+        bps: row.bps ?? o.bps,
+        eps: row.eps ?? o.eps,
+        marketCap: row.marketCap ?? o.marketCap,
+      };
+    };
     const watchlistRows = (likedList ?? [])
       .filter(lk => !poolSymbols.has(lk.ticker))
       .map(lk => normalizeLiked(lk, likesStatus(likesActive, countryTradingActive)));
-    return [...likesPoolRows, ...watchlistRows];
-  }, [likesPoolRows, likedList, likesActive, countryTradingActive]);
+    return [...likesPoolRows, ...watchlistRows].map(applyOverride);
+  }, [likesPoolRows, likedList, likesActive, countryTradingActive, metricsOverride]);
 
   // 요약 카운트
   const summary = useMemo(() => {

@@ -47,6 +47,7 @@ import {
   reqGetUsQuantRule, reqPostUsQuantRule, selectUsQuantRule,
 } from "@/lib/features/capital/capitalSlice";
 import { reqGetMyLikes, selectLikedList } from "@/lib/features/stockLikes/stockLikesSlice";
+import { getQuotationsPriceDetail } from "@/lib/features/koreaInvestmentUsMarket/koreaInvestmentUsMarketAPI";
 
 import InquireBalanceResult from "@/components/inquireBalanceResult";
 import QuantRuleEditor from "@/components/balance/quantRuleEditor";
@@ -194,6 +195,37 @@ function BalanceUs() {
   const likedListAll = useAppSelector(selectLikedList);
   const usLikedList = useMemo(() => (likedListAll ?? []).filter((l: any) => !!l.is_us), [likedListAll]);
   const isMaster = useMemo(() => session?.user?.name === process.env.NEXT_PUBLIC_MASTER, [session]);
+
+  // US 좋아요 종목은 stock_data_daily(KR 전용)에 없어 지표가 비어온다.
+  // KIS overseas price-detail 로 per/pbr/eps/bps 를 보강한다.
+  const [usLikeMetrics, setUsLikeMetrics] = useState<Record<string, { per?: number; pbr?: number; eps?: number; bps?: number }>>({});
+  const metricsFetchedRef = useRef<Set<string>>(new Set());
+  useEffect(() => {
+    const tickers = new Set<string>();
+    (usLikedList ?? []).forEach((l: any) => { if (l?.ticker) tickers.add(String(l.ticker)); });
+    (usCapital?.stock_list ?? []).forEach((s: any) => { if (s?.group_id === "__likes__" && s?.symbol) tickers.add(String(s.symbol)); });
+    const todo = [...tickers].filter(t => !metricsFetchedRef.current.has(t));
+    if (todo.length === 0) return;
+    let cancelled = false;
+    const num = (v: any) => { const n = Number(v); return (v != null && v !== "" && Number.isFinite(n)) ? n : undefined; };
+    (async () => {
+      const limit = 3;
+      for (let i = 0; i < todo.length; i += limit) {
+        const batch = todo.slice(i, i + limit);
+        const results = await Promise.all(batch.map(async (t) => {
+          metricsFetchedRef.current.add(t);
+          try {
+            const res = await getQuotationsPriceDetail(t);
+            const o = res?.output ?? {};
+            return [t, { per: num(o.perx), pbr: num(o.pbrx), eps: num(o.epsx), bps: num(o.bpsx) }] as const;
+          } catch { return [t, {}] as const; }
+        }));
+        if (cancelled) return;
+        setUsLikeMetrics(prev => { const next = { ...prev }; for (const [t, m] of results) next[t] = m; return next; });
+      }
+    })();
+    return () => { cancelled = true; };
+  }, [usLikedList, usCapital]);
 
   const tradingStatus = useAppSelector(selectTradingStatus);
 
@@ -673,6 +705,7 @@ function BalanceUs() {
               onToggleLikesTrading={doToggleLikesTrading}
               countryTradingActive={tradingStatus.US === true}
               quantRule={usQuantRule.rule}
+              metricsOverride={usLikeMetrics}
             />
           </SectionPanel>
         )}
