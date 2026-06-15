@@ -437,13 +437,17 @@ export default function StockListTable({
 
       {/* ===== 선택 작업 바 (다중선택 그룹 이동) ===== */}
       {isMaster && picked.size > 0 && (
-        <div className="sticky top-2 z-20 flex flex-wrap items-center gap-2 rounded-xl border border-[#16a34a]/40 bg-[#f0fdf4] px-4 py-2.5 shadow-md dark:border-[#16a34a]/40 dark:bg-[#14532d]/30">
-          <span className="text-xs font-bold text-[#16a34a]">{picked.size}개 종목 선택됨</span>
-          <ArrowRightLeft className="w-3.5 h-3.5 text-[#16a34a]" />
+        <div className="sticky top-2 z-20 flex flex-wrap items-center gap-2 rounded-xl border border-[#16a34a]/40 bg-[#f0fdf4] px-3 py-2.5 shadow-md dark:border-[#16a34a]/40 dark:bg-[#14532d]/30 sm:px-4">
+          <span className="inline-flex items-center gap-1 text-xs font-bold text-[#16a34a]">
+            <ArrowRightLeft className="w-3.5 h-3.5" /> {picked.size}개 선택됨
+          </span>
+          <button onClick={clearPick} className="rounded-md p-1 text-neutral-400 hover:bg-white/60 dark:hover:bg-[#1a1915] sm:order-last sm:ml-auto">
+            <X className="w-4 h-4" />
+          </button>
           <select
             defaultValue=""
             onChange={(e) => { if (e.target.value !== "__none__") doBulkMove(e.target.value || null); e.currentTarget.value = ""; }}
-            className="rounded-md border border-[#16a34a]/40 bg-white dark:bg-[#1a1915] px-2 py-1 text-xs font-medium"
+            className="min-w-0 flex-1 rounded-md border border-[#16a34a]/40 bg-white px-2 py-1.5 text-xs font-medium dark:bg-[#1a1915] sm:flex-none"
           >
             <option value="__none__" disabled>그룹으로 이동…</option>
             <option value="">미지정</option>
@@ -451,12 +455,9 @@ export default function StockListTable({
           </select>
           <button
             onClick={doCreateGroupFromPicked}
-            className="inline-flex items-center gap-1 rounded-md bg-[#16a34a] px-2.5 py-1 text-xs font-bold text-white hover:bg-[#15803d]"
+            className="inline-flex shrink-0 items-center gap-1 rounded-md bg-[#16a34a] px-2.5 py-1.5 text-xs font-bold text-white hover:bg-[#15803d]"
           >
-            <FolderPlus className="w-3.5 h-3.5" /> 새 그룹으로
-          </button>
-          <button onClick={clearPick} className="ml-auto rounded-md p-1 text-neutral-400 hover:bg-white/60 dark:hover:bg-[#1a1915]">
-            <X className="w-4 h-4" />
+            <FolderPlus className="w-3.5 h-3.5" /> 새 그룹
           </button>
         </div>
       )}
@@ -713,9 +714,10 @@ function GroupSection({
         </div>
       </div>
 
-      {/* 테이블 */}
+      {/* 본문 — 데스크탑: 테이블 / 모바일: 카드 */}
       {!collapsed && (
-        <div className="relative overflow-x-auto">
+        <>
+        <div className="hidden md:block relative overflow-x-auto">
           <table className="w-full text-left text-[12px] border-collapse">
             <thead className="bg-neutral-50/80 text-neutral-500 dark:bg-[#242320]/50 dark:text-neutral-400">
               <tr>
@@ -837,8 +839,90 @@ function GroupSection({
             </tbody>
           </table>
         </div>
+
+        {/* 모바일 카드 뷰 */}
+        <div className="md:hidden divide-y divide-neutral-100 dark:divide-[#35332e]">
+          {rows.length === 0 ? (
+            <div className="flex flex-col items-center gap-2 py-10 opacity-40">
+              <Search className="w-8 h-8" />
+              <p className="text-xs">{emptyText}</p>
+            </div>
+          ) : (
+            rows.map((row, idx) => (
+              <div
+                key={`m-${sectionKey}-${row.symbol}-${idx}`}
+                className={cn("p-3", picked.has(row.symbol) && "bg-[#f0fdf4] dark:bg-[#14532d]/20")}
+              >
+                {/* 상단: 체크 + 종목 + 상태 */}
+                <div className="flex items-center gap-2">
+                  {showCheck && row.movable && (
+                    <input
+                      type="checkbox"
+                      checked={picked.has(row.symbol)}
+                      onChange={() => onTogglePick(row.symbol)}
+                      className="h-5 w-5 shrink-0 rounded border-neutral-300 text-[#16a34a] focus:ring-[#16a34a]"
+                    />
+                  )}
+                  <button onClick={() => openDetail(row.raw)} className="flex min-w-0 items-center gap-1.5">
+                    <div className="shrink-0 rounded-md bg-[#faf9f7] p-1.5 dark:bg-[#35332e]">
+                      <TrendingUp className="w-3.5 h-3.5" />
+                    </div>
+                    <span className="truncate text-sm font-bold text-neutral-900 dark:text-neutral-100">{row.symbol}</span>
+                  </button>
+                  <div className="ml-auto shrink-0">
+                    <StatusBadge status={row.status} />
+                  </div>
+                </div>
+
+                {/* 지표 4열 */}
+                <div className="mt-2.5 grid grid-cols-4 gap-1.5">
+                  <MiniStat label="PER/PBR" value={`${row.per ?? "-"} / ${row.pbr ?? "-"}`} />
+                  <MiniStat label="BPS/EPS" value={`${row.bps?.toLocaleString() ?? "-"} / ${row.eps?.toLocaleString() ?? "-"}`} />
+                  <MiniStat label="시총(억)" value={(row.marketCap || 0).toLocaleString()} />
+                  <MiniStat label="NCAV" value={row.ncavRatio ?? "-"} highlight={Number(row.ncavRatio) > 1} />
+                </div>
+
+                {/* 예산 + Refill (운용 종목만) */}
+                {row.movable && (
+                  <div className="mt-2.5 flex items-center justify-between gap-2">
+                    <span className="text-[11px] text-neutral-500 dark:text-neutral-400">
+                      예산 <b className="font-mono font-black text-[#16a34a]">{row.token?.toLocaleString() ?? 0}</b>
+                    </span>
+                    {showRefill && (
+                      <div className="flex flex-wrap justify-end gap-1">
+                        {tokenAmounts.map(amt => (
+                          <div key={`m-indiv-${amt}`} className="flex items-center overflow-hidden rounded-md border border-neutral-200 dark:border-[#35332e]">
+                            <button onClick={() => doTokenPlusOne(amt, row.symbol)} className="px-2.5 py-1.5 text-[11px] font-bold text-[#16a34a] active:bg-[#f0fdf4] dark:active:bg-[#14532d]/30">
+                              +{amt / 10000}만
+                            </button>
+                            <button onClick={() => doTokenMinusOne(amt, row.symbol)} className="border-l border-neutral-200 px-2 py-1.5 text-red-500 active:bg-red-50 dark:border-[#35332e] dark:active:bg-red-950">
+                              <Minus className="w-3 h-3" />
+                            </button>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
+            ))
+          )}
+        </div>
+        </>
       )}
     </section>
+  );
+}
+
+/** 모바일 카드용 지표 칩 */
+function MiniStat({ label, value, highlight }: { label: string; value: React.ReactNode; highlight?: boolean }) {
+  return (
+    <div className="rounded-lg bg-[#faf9f7] px-1.5 py-1 dark:bg-[#242320]">
+      <div className="text-[8px] font-black uppercase tracking-tight text-neutral-400">{label}</div>
+      <div className={cn("truncate font-mono text-[11px] font-bold", highlight ? "text-emerald-600 dark:text-emerald-400" : "text-neutral-700 dark:text-neutral-300")}>
+        {value}
+      </div>
+    </div>
   );
 }
 
