@@ -42,7 +42,7 @@ import {
   selectUsCapitalTokenPlusAll, selectUsCapitalTokenPlusOne,
   selectUsCapitalTokenMinusOne,
   reqPostUsCapitalGroupCreate, reqPostUsCapitalGroupUpdate,
-  reqPostUsCapitalGroupDelete, reqPostUsCapitalStockGroup, reqPostUsCapitalStocksGroup,
+  reqPostUsCapitalGroupDelete, reqPostUsCapitalStockGroup, reqPostUsCapitalStocksGroup, reqPostUsCapitalLikesCopy,
   selectUsGroupOp,
   reqGetUsQuantRule, reqPostUsQuantRule, selectUsQuantRule,
 } from "@/lib/features/capital/capitalSlice";
@@ -351,7 +351,7 @@ function BalanceUs() {
   const doDeleteGroup = (groupId: string) => dispatch(reqPostUsCapitalGroupDelete({ key: balanceKey, groupId }));
   const doMoveStock = (ticker: string, groupId: string | null) => dispatch(reqPostUsCapitalStockGroup({ key: balanceKey, ticker, groupId }));
   const doBulkMove = (tickers: string[], groupId: string | null) => dispatch(reqPostUsCapitalStocksGroup({ key: balanceKey, tickers, groupId }));
-  const doToggleLikesTrading = (isActive: boolean) => dispatch(reqPostUsCapitalGroupUpdate({ key: balanceKey, groupId: "__likes__", updates: { is_trading_active: isActive } }));
+  const doCopyLikes = (tickers: string[], groupId: string | null) => dispatch(reqPostUsCapitalLikesCopy({ key: balanceKey, tickers, groupId }));
   const doSaveQuantRule = (rule: any) => dispatch(reqPostUsQuantRule({ key: balanceKey, rule }));
 
   const out2 = kiBalance?.output2?.[0];
@@ -701,8 +701,8 @@ function BalanceUs() {
               onDeleteGroup={doDeleteGroup}
               onMoveStock={doMoveStock}
               onBulkMove={doBulkMove}
+              onCopyLikes={doCopyLikes}
               likedList={usLikedList}
-              onToggleLikesTrading={doToggleLikesTrading}
               countryTradingActive={tradingStatus.US === true}
               quantRule={usQuantRule.rule}
               metricsOverride={usLikeMetrics}
