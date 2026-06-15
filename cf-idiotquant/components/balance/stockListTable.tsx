@@ -199,6 +199,7 @@ export default function StockListTable({
   const [newGroupName, setNewGroupName] = useState("");
   const [collapsed, setCollapsed] = useState<Set<string>>(new Set());
   const [picked, setPicked] = useState<Set<string>>(new Set());
+  const [showLegend, setShowLegend] = useState(false);
 
   // 관리자 여부 확인 (기존 로직 유지)
   const isMaster = useMemo(() =>
@@ -276,6 +277,12 @@ export default function StockListTable({
       next.has(ticker) ? next.delete(ticker) : next.add(ticker);
       return next;
     });
+  const pickMany = (tickers: string[], select: boolean) =>
+    setPicked(prev => {
+      const next = new Set(prev);
+      tickers.forEach(t => select ? next.add(t) : next.delete(t));
+      return next;
+    });
   const clearPick = () => setPicked(new Set());
 
   const doBulkMove = (groupId: string | null) => {
@@ -338,6 +345,30 @@ export default function StockListTable({
           <Info className="mt-0.5 h-2.5 w-2.5 shrink-0" />
           매매 흐름: <b className="font-bold text-neutral-500">자동매매 ON</b> → <b className="font-bold text-neutral-500">그룹 ON</b>(미지정·찜은 위 토글) → 위 조건 충족 + NCAV 상위 종목이 <b className="font-bold text-[#16a34a]">매매중</b>이 됩니다.
         </p>
+
+        {/* 상태 설명 토글 */}
+        <button
+          onClick={() => setShowLegend(v => !v)}
+          className="mt-2 inline-flex items-center gap-1 text-[10px] font-bold text-neutral-400 hover:text-neutral-600 dark:hover:text-neutral-200"
+        >
+          {showLegend ? <ChevronDown className="w-3 h-3" /> : <ChevronRight className="w-3 h-3" />} 종목 상태 설명
+        </button>
+        {showLegend && (
+          <div className="mt-2 grid grid-cols-1 gap-1.5 rounded-lg border border-neutral-100 bg-[#fcfaf7] p-3 sm:grid-cols-2 dark:border-[#35332e] dark:bg-[#242320]">
+            {([
+              { s: { label: "매매중", tone: "active" as Tone }, d: "현재 자동매매 대상. 마지막 실행에서 활성 종목으로 선정됨." },
+              { s: { label: "대기", tone: "idle" as Tone }, d: "운용 목록엔 있으나 이번엔 미선정 (NCAV 상위 N 밖 / 조건 미달 / 다음 실행 대기)." },
+              { s: { label: "후보(찜)", tone: "idle" as Tone }, d: "좋아요 종목. 찜 그룹 자동매매 ON이면 다음 실행 때 후보로 합류 (아직 운용 목록 아님)." },
+              { s: { label: "제외", tone: "excluded" as Tone }, d: "속한 그룹(또는 찜)의 자동매매가 OFF라 매매에서 제외됨." },
+              { s: { label: "자동매매 OFF", tone: "off" as Tone }, d: "국가 자동매매가 꺼져 있어 어떤 종목도 매매되지 않음." },
+            ]).map((row, i) => (
+              <div key={i} className="flex items-start gap-2">
+                <StatusBadge status={row.s} />
+                <span className="text-[10px] leading-snug text-neutral-500 dark:text-neutral-400">{row.d}</span>
+              </div>
+            ))}
+          </div>
+        )}
       </section>
 
       {/* ===== 1. Global Token Control + 새 그룹 추가 (Master) ===== */}
@@ -446,6 +477,7 @@ export default function StockListTable({
         onToggleCollapse={() => toggleCollapse(LIKES_GROUP_ID)}
         picked={picked}
         onTogglePick={togglePick}
+        onPickMany={pickMany}
         doTokenPlusOne={doTokenPlusOne}
         doTokenMinusOne={doTokenMinusOne}
         openDetail={openDetail}
@@ -500,6 +532,7 @@ export default function StockListTable({
         onToggleCollapse={() => toggleCollapse("__unassigned__")}
         picked={picked}
         onTogglePick={togglePick}
+        onPickMany={pickMany}
         doTokenPlusOne={doTokenPlusOne}
         doTokenMinusOne={doTokenMinusOne}
         openDetail={openDetail}
@@ -583,6 +616,7 @@ interface GroupSectionProps {
   onToggleCollapse: () => void;
   picked: Set<string>;
   onTogglePick: (ticker: string) => void;
+  onPickMany?: (tickers: string[], select: boolean) => void;
   doTokenPlusOne: (val: number, sym: string) => void;
   doTokenMinusOne: (val: number, sym: string) => void;
   openDetail: (raw: any) => void;
@@ -591,11 +625,14 @@ interface GroupSectionProps {
 function GroupSection({
   sectionKey, title, subtitle, icon, accent, count, rows, isMaster, tradingActive, onToggleTrading,
   conditionChips, editing, editingName, onEditNameChange, onStartRename, onCommitRename, onDelete,
-  emptyText, collapsed, onToggleCollapse, picked, onTogglePick,
+  emptyText, collapsed, onToggleCollapse, picked, onTogglePick, onPickMany,
   doTokenPlusOne, doTokenMinusOne, openDetail,
 }: GroupSectionProps) {
   const showRefill = isMaster && rows.some(r => r.movable);
   const showCheck = isMaster && rows.some(r => r.movable);
+  const movableTickers = useMemo(() => rows.filter(r => r.movable).map(r => r.symbol), [rows]);
+  const allChecked = movableTickers.length > 0 && movableTickers.every(t => picked.has(t));
+  const someChecked = movableTickers.some(t => picked.has(t));
   const baseCols = 6; // 종목/상태/PER·PBR/BPS·EPS/시총/NCAV
   const colSpan = baseCols + 1 /*token*/ + (showCheck ? 1 : 0) + (showRefill ? 1 : 0);
 
@@ -682,7 +719,19 @@ function GroupSection({
           <table className="w-full text-left text-[12px] border-collapse">
             <thead className="bg-neutral-50/80 text-neutral-500 dark:bg-[#242320]/50 dark:text-neutral-400">
               <tr>
-                {showCheck && <th className="px-3 py-2.5 w-8"></th>}
+                {showCheck && (
+                  <th className="px-3 py-2.5 w-8">
+                    <input
+                      type="checkbox"
+                      aria-label="이 그룹 전체 선택"
+                      title="이 그룹 전체 선택"
+                      checked={allChecked}
+                      ref={(el) => { if (el) el.indeterminate = !allChecked && someChecked; }}
+                      onChange={() => onPickMany?.(movableTickers, !allChecked)}
+                      className="h-4 w-4 rounded border-neutral-300 text-[#16a34a] focus:ring-[#16a34a]"
+                    />
+                  </th>
+                )}
                 <th className="px-4 py-2.5 font-semibold uppercase tracking-wider">종목</th>
                 <th className="px-4 py-2.5 font-semibold uppercase tracking-wider text-center">상태</th>
                 <th className="px-4 py-2.5 font-semibold uppercase tracking-wider text-center">PER / PBR</th>

@@ -587,6 +587,7 @@ function BalanceKr() {
             kakaoMemberList={kakaoMemberList}
             reqPostOrderCash={reqPostOrderCash}
             kiOrderCash={orderCashState}
+            capital={krCapital}
             onOrderResult={handleOrderResult}
           />
         </SectionPanel>
