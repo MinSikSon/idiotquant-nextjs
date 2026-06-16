@@ -5,14 +5,14 @@
            stroke="#16a34a"
            stroke-width="3"
            stroke-linejoin="miter"/>
-  <!-- Q: ring -->
-  <circle cx="32" cy="37" r="9"
+  <!-- Q: ring (smaller) -->
+  <circle cx="32" cy="37" r="7"
           fill="none"
           stroke="#16a34a"
           stroke-width="3"/>
-  <!-- Q: tail extending to bottom-right triangle corner -->
-  <line x1="38.5" y1="43.5" x2="59" y2="54"
+  <!-- Q: tail aligned from circle edge toward bottom-right corner -->
+  <line x1="37.92" y1="40.73" x2="59" y2="54"
         stroke="#16a34a"
         stroke-width="3"
-        stroke-linecap="round"/>
+        stroke-linecap="square"/>
 </svg>
