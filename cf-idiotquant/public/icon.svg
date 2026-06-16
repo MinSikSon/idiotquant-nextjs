@@ -1,17 +1,14 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
   <defs>
-    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+    <linearGradient id="hex" x1="0" y1="0" x2="1" y2="1">
       <stop offset="0" stop-color="#22c55e"/>
       <stop offset="1" stop-color="#15803d"/>
     </linearGradient>
   </defs>
-  <rect width="64" height="64" rx="14" fill="url(#bg)"/>
-  <!-- Hexagon frame -->
-  <polygon
-    points="32,4 58,19 58,45 32,60 6,45 6,19"
-    fill="none" stroke="#ffffff" stroke-width="5.5"/>
-  <!-- 3 ascending bars, no overlap with hex edges, clean spacing -->
-  <rect x="16" y="39" width="9" height="12" rx="1.5" fill="#bbf7d0" opacity="0.8"/>
-  <rect x="27.5" y="29" width="9" height="22" rx="1.5" fill="#ffffff" opacity="0.88"/>
+  <!-- Hexagon filled -->
+  <polygon points="32,4 58,19 58,45 32,60 6,45 6,19" fill="url(#hex)"/>
+  <!-- 3 ascending bars inside, white -->
+  <rect x="16" y="39" width="9" height="12" rx="1.5" fill="#bbf7d0" opacity="0.85"/>
+  <rect x="27.5" y="29" width="9" height="22" rx="1.5" fill="#ffffff" opacity="0.9"/>
   <rect x="39" y="19" width="9" height="32" rx="1.5" fill="#ffffff"/>
 </svg>
