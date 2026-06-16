@@ -29,6 +29,14 @@ const DAILY_PAGE_SIZE = 30;
 type DiscoverySortKey = "ticker" | "ncav_ratio" | "per" | "pbr" | "roe" | "market_cap" | "last_price";
 type SortOrder = "asc" | "desc";
 
+// 밸류에이션 필터 프리셋 (0 = 미적용)
+const PBR_MAX_PRESETS = [0.5, 0.7, 1.0];   // PBR 이하
+const PER_MAX_PRESETS = [5, 10, 15];        // PER 이하
+const ROE_MIN_PRESETS = [5, 10, 15];        // ROE(%) 이상
+const NCAV_MIN_PRESETS = [0.7, 1.0, 1.5];   // NCAV 비율 이상
+// 우선주: 종목명이 '우' / '우B' / '우C' 등으로 끝남
+const isPreferredStock = (name: string): boolean => /\d*우[A-C]?$/.test((name ?? "").trim());
+
 const STRATEGY_ACTIVE_CLS: Record<string, string> = {
     all:            "bg-neutral-900 dark:bg-white text-white dark:text-neutral-900 border-neutral-900 dark:border-white shadow-sm",
     ncav:           "bg-emerald-600 border-emerald-600 text-white shadow-sm",
@@ -257,6 +265,39 @@ function StockRowCard({ item, onClick, likedTickers, onToggleLike }: {
 }
 
 // =========================================================================
+// 숫자 프리셋 필터 그룹 (NCAV/PBR/PER/ROE 공통 UI). 활성 값을 다시 누르면 해제(0).
+// =========================================================================
+function NumericPresetGroup({ label, presets, value, onPick, fmt }: {
+    label: string;
+    presets: number[];
+    value: number;
+    onPick: (v: number) => void;
+    fmt: (v: number) => string;
+}) {
+    return (
+        <div className="flex items-center gap-2 flex-wrap">
+            <span className="text-[10px] font-extrabold text-neutral-400 uppercase tracking-wider">{label}</span>
+            {presets.map(p => (
+                <button
+                    key={p}
+                    onClick={() => onPick(value === p ? 0 : p)}
+                    className={cn(
+                        "px-2.5 py-1 rounded-lg border text-xs font-bold transition-all",
+                        value === p
+                            ? "bg-[#16a34a] border-[#16a34a] text-white shadow-sm"
+                            : "bg-white dark:bg-[#242320] border-neutral-200 dark:border-[#3a3834] text-neutral-600 dark:text-neutral-400 hover:border-neutral-300 dark:hover:border-neutral-600"
+                    )}
+                >
+                    {fmt(p)}
+                </button>
+            ))}
+        </div>
+    );
+}
+
+const FilterDivider = () => <div className="w-px h-4 bg-neutral-200 dark:bg-[#4a4641] hidden sm:block" />;
+
+// =========================================================================
 // 메인 스크리너
 // =========================================================================
 const VALID_SORT_KEYS: DiscoverySortKey[] = ["ticker", "ncav_ratio", "per", "pbr", "roe", "market_cap", "last_price"];
@@ -271,47 +312,58 @@ function ScreenerContent() {
     const likedList = useAppSelector(selectLikedList);
     const likedTickers = useMemo(() => new Set(likedTickersArr), [likedTickersArr]);
 
-    // URL query params → localStorage 순 fallback으로 상태 초기화
+    // URL query params → localStorage(전체 필터 스냅샷) 순 fallback으로 상태 초기화
+    // (다른 페이지 다녀와 URL 파라미터가 없어도 마지막 필터를 그대로 복원)
+    const saved = useMemo(() => {
+        if (typeof window === 'undefined') return {} as Record<string, any>;
+        try { return JSON.parse(localStorage.getItem('screener:filters') || '{}') as Record<string, any>; }
+        catch { return {} as Record<string, any>; }
+    }, []);
+    const urlExclude = useMemo(() => searchParams.get('exclude')?.split(',') ?? null, [searchParams]);
+    const initExclude = (key: string): boolean =>
+        urlExclude ? urlExclude.includes(key) : (Array.isArray(saved.exclude) && saved.exclude.includes(key));
+    const initNum = (param: string, savedKey: string, allowed?: number[]): number => {
+        const raw = searchParams.get(param);
+        const v = Number(raw ?? (saved[savedKey] ?? 0));
+        if (!Number.isFinite(v) || v <= 0) return 0;
+        return allowed && !allowed.includes(v) ? 0 : v;
+    };
+
     const [activeStrategyIds, setActiveStrategyIds] = useState<Set<string>>(() => {
         const urlS = searchParams.get('strategies');
-        if (urlS) return new Set(urlS.split(',').filter(id => STRATEGY_PRESETS.some(p => p.id === id)));
-        if (typeof window !== 'undefined') {
-            const saved = localStorage.getItem('screener:strategies');
-            if (saved) return new Set(saved.split(',').filter(id => STRATEGY_PRESETS.some(p => p.id === id)));
-        }
-        return new Set();
+        const src = urlS ?? (Array.isArray(saved.strategies) ? saved.strategies.join(',') : '');
+        return new Set((src || '').split(',').filter(id => STRATEGY_PRESETS.some(p => p.id === id)));
     });
-    const [filterMode, setFilterMode] = useState<'OR' | 'AND'>(() => {
-        if (searchParams.get('mode') === 'AND') return 'AND';
-        if (typeof window !== 'undefined' && localStorage.getItem('screener:filterMode') === 'AND') return 'AND';
-        return 'OR';
-    });
+    const [filterMode, setFilterMode] = useState<'OR' | 'AND'>(() =>
+        (searchParams.get('mode') ?? saved.mode) === 'AND' ? 'AND' : 'OR'
+    );
     const [showGuide, setShowGuide] = useState(false);
     const [sortKey, setSortKey] = useState<DiscoverySortKey>(() => {
-        const s = searchParams.get('sort') as DiscoverySortKey;
+        const s = (searchParams.get('sort') ?? saved.sort) as DiscoverySortKey;
         return VALID_SORT_KEYS.includes(s) ? s : 'ncav_ratio';
     });
     const [sortOrder, setSortOrder] = useState<SortOrder>(() =>
-        searchParams.get('order') === 'asc' ? 'asc' : 'desc'
+        (searchParams.get('order') ?? saved.order) === 'asc' ? 'asc' : 'desc'
     );
-    const [searchQuery, setSearchQuery] = useState(() => searchParams.get('q') ?? "");
+    const [searchQuery, setSearchQuery] = useState(() => searchParams.get('q') ?? saved.q ?? "");
     const [displayCount, setDisplayCount] = useState(DAILY_PAGE_SIZE);
     const [shareCopied, setShareCopied] = useState(false);
-    const [excludeHoldings, setExcludeHoldings] = useState(() =>
-        searchParams.get('exclude')?.split(',').includes('holdings') ?? false
-    );
-    const [excludeDeficit, setExcludeDeficit] = useState(() =>
-        searchParams.get('exclude')?.split(',').includes('deficit') ?? false
-    );
+    const [excludeHoldings, setExcludeHoldings] = useState(() => initExclude('holdings'));
+    const [excludeDeficit, setExcludeDeficit] = useState(() => initExclude('deficit'));
+    const [excludePreferred, setExcludePreferred] = useState(() => initExclude('preferred'));
     const [filterOpen, setFilterOpen] = useState(false);
     const [showLikedOnly, setShowLikedOnly] = useState(() =>
-        searchParams.get('filter') === 'liked'
+        (searchParams.get('filter') ?? saved.filter) === 'liked'
     );
     // 시가총액 필터 (단위: 억원, URL param: mincap)
-    const [minMarketCap, setMinMarketCap] = useState<number>(() => {
-        const mc = Number(searchParams.get('mincap') ?? 0);
-        return MKTCAP_PRESETS.some(p => p.value === mc) ? mc : 0;
-    });
+    const [minMarketCap, setMinMarketCap] = useState<number>(() =>
+        initNum('mincap', 'mincap', MKTCAP_PRESETS.map(p => p.value))
+    );
+    // 밸류에이션 필터 (0 = 미적용)
+    const [maxPbr, setMaxPbr] = useState<number>(() => initNum('maxpbr', 'maxpbr', PBR_MAX_PRESETS));
+    const [maxPer, setMaxPer] = useState<number>(() => initNum('maxper', 'maxper', PER_MAX_PRESETS));
+    const [minRoe, setMinRoe] = useState<number>(() => initNum('minroe', 'minroe', ROE_MIN_PRESETS));
+    const [minNcav, setMinNcav] = useState<number>(() => initNum('minncav', 'minncav', NCAV_MIN_PRESETS));
 
     const hasDiscovered = useRef(false);
 
@@ -347,30 +399,51 @@ function ScreenerContent() {
         const excludeList = [
             excludeHoldings ? 'holdings' : null,
             excludeDeficit ? 'deficit' : null,
+            excludePreferred ? 'preferred' : null,
         ].filter(Boolean).join(',');
         if (excludeList) params.set('exclude', excludeList);
         if (minMarketCap > 0) params.set('mincap', String(minMarketCap));
+        if (maxPbr > 0) params.set('maxpbr', String(maxPbr));
+        if (maxPer > 0) params.set('maxper', String(maxPer));
+        if (minRoe > 0) params.set('minroe', String(minRoe));
+        if (minNcav > 0) params.set('minncav', String(minNcav));
         if (showLikedOnly) params.set('filter', 'liked');
         if (searchQuery.trim()) params.set('q', searchQuery.trim());
         return params.toString();
-    }, [activeStrategyIds, filterMode, sortKey, sortOrder, excludeHoldings, excludeDeficit, minMarketCap, showLikedOnly, searchQuery]);
+    }, [activeStrategyIds, filterMode, sortKey, sortOrder, excludeHoldings, excludeDeficit, excludePreferred, minMarketCap, maxPbr, maxPer, minRoe, minNcav, showLikedOnly, searchQuery]);
 
-    // 필터 상태 → URL 동기화 + localStorage 저장 (페이지 이동 후 재진입 시에도 필터 유지)
+    // 필터 상태 → URL 동기화 + localStorage 저장 (페이지 이동 후 재진입 시에도 전체 필터 유지)
     useEffect(() => {
         router.replace(queryString ? `/screener?${queryString}` : '/screener', { scroll: false });
 
-        // localStorage에도 전략 상태 저장 — 다른 페이지 이동 후 복귀 시 복원
-        if (activeStrategyIds.size > 0) {
-            localStorage.setItem('screener:strategies', Array.from(activeStrategyIds).join(','));
+        // 전체 필터 스냅샷을 단일 키에 저장 — 다른 페이지 이동 후 복귀 시 그대로 복원
+        const snapshot: Record<string, any> = {};
+        if (activeStrategyIds.size > 0) snapshot.strategies = Array.from(activeStrategyIds);
+        if (filterMode !== 'OR') snapshot.mode = filterMode;
+        if (sortKey !== 'ncav_ratio') snapshot.sort = sortKey;
+        if (sortOrder !== 'desc') snapshot.order = sortOrder;
+        const excludeArr = [
+            excludeHoldings ? 'holdings' : null,
+            excludeDeficit ? 'deficit' : null,
+            excludePreferred ? 'preferred' : null,
+        ].filter(Boolean);
+        if (excludeArr.length) snapshot.exclude = excludeArr;
+        if (minMarketCap > 0) snapshot.mincap = minMarketCap;
+        if (maxPbr > 0) snapshot.maxpbr = maxPbr;
+        if (maxPer > 0) snapshot.maxper = maxPer;
+        if (minRoe > 0) snapshot.minroe = minRoe;
+        if (minNcav > 0) snapshot.minncav = minNcav;
+        if (showLikedOnly) snapshot.filter = 'liked';
+        if (searchQuery.trim()) snapshot.q = searchQuery.trim();
+        if (Object.keys(snapshot).length > 0) {
+            localStorage.setItem('screener:filters', JSON.stringify(snapshot));
         } else {
-            localStorage.removeItem('screener:strategies');
+            localStorage.removeItem('screener:filters');
         }
-        if (filterMode !== 'OR') {
-            localStorage.setItem('screener:filterMode', filterMode);
-        } else {
-            localStorage.removeItem('screener:filterMode');
-        }
-    }, [queryString, activeStrategyIds, filterMode, router]);
+        // 레거시 개별 키 정리 (구버전 호환)
+        localStorage.removeItem('screener:strategies');
+        localStorage.removeItem('screener:filterMode');
+    }, [queryString, activeStrategyIds, filterMode, sortKey, sortOrder, excludeHoldings, excludeDeficit, excludePreferred, minMarketCap, maxPbr, maxPer, minRoe, minNcav, showLikedOnly, searchQuery, router]);
 
     // 현재 필터링 결과 링크 공유 (모바일: 네이티브 공유 시트 / 데스크탑: 클립보드 복사)
     const handleShare = useCallback(async () => {
@@ -427,9 +500,15 @@ function ScreenerContent() {
         setSearchQuery('');
         setExcludeHoldings(false);
         setExcludeDeficit(false);
+        setExcludePreferred(false);
         setMinMarketCap(0);
+        setMaxPbr(0);
+        setMaxPer(0);
+        setMinRoe(0);
+        setMinNcav(0);
         setShowLikedOnly(false);
         setDisplayCount(DAILY_PAGE_SIZE);
+        localStorage.removeItem('screener:filters');
         localStorage.removeItem('screener:strategies');
         localStorage.removeItem('screener:filterMode');
     }, []);
@@ -483,9 +562,17 @@ function ScreenerContent() {
             );
         }
 
-        if (excludeHoldings) list = list.filter(item => !item.name?.includes("홀딩스"));
-        if (excludeDeficit)  list = list.filter(item => safeNum(item.eps) > 0);
+        if (excludeHoldings)  list = list.filter(item => !item.name?.includes("홀딩스"));
+        if (excludeDeficit)   list = list.filter(item => safeNum(item.eps) > 0);
+        if (excludePreferred) list = list.filter(item => !isPreferredStock(item.name ?? ""));
         if (minMarketCap > 0) list = list.filter(item => safeNum(item.market_cap) >= minMarketCap);
+        if (maxPbr > 0)  list = list.filter(item => safeNum(item.pbr) > 0 && safeNum(item.pbr) <= maxPbr);
+        if (maxPer > 0)  list = list.filter(item => safeNum(item.per) > 0 && safeNum(item.per) <= maxPer);
+        if (minNcav > 0) list = list.filter(item => safeNum(item.ncav_ratio) >= minNcav);
+        if (minRoe > 0)  list = list.filter(item => {
+            const roe = safeNum(item.bps) > 0 ? (safeNum(item.eps) / safeNum(item.bps)) * 100 : null;
+            return roe !== null && roe >= minRoe;
+        });
 
         list.sort((a, b) => {
             if (sortKey === "ticker") {
@@ -504,7 +591,7 @@ function ScreenerContent() {
         });
 
         return list;
-    }, [ncavDailyList.list, normalizedLikedList, showLikedOnly, activeStrategyIds, filterMode, searchQuery, excludeHoldings, excludeDeficit, minMarketCap, sortKey, sortOrder]);
+    }, [ncavDailyList.list, normalizedLikedList, showLikedOnly, activeStrategyIds, filterMode, searchQuery, excludeHoldings, excludeDeficit, excludePreferred, minMarketCap, maxPbr, maxPer, minRoe, minNcav, sortKey, sortOrder]);
 
     const visibleList = filteredList.slice(0, displayCount);
     const hasMore = filteredList.length > displayCount;
@@ -526,9 +613,9 @@ function ScreenerContent() {
         : null;
     const scanningInProgress = ncavDailyList.scanningInProgress;
 
-    const activeFilterCount = [excludeHoldings, excludeDeficit, minMarketCap > 0].filter(Boolean).length;
+    const activeFilterCount = [excludeHoldings, excludeDeficit, excludePreferred, minMarketCap > 0, maxPbr > 0, maxPer > 0, minRoe > 0, minNcav > 0].filter(Boolean).length;
     const isAllActive = activeStrategyIds.size === 0;
-    const hasActiveFilters = activeStrategyIds.size > 0 || excludeHoldings || excludeDeficit || minMarketCap > 0 || sortKey !== 'ncav_ratio' || sortOrder !== 'desc' || showLikedOnly;
+    const hasActiveFilters = activeStrategyIds.size > 0 || excludeHoldings || excludeDeficit || excludePreferred || minMarketCap > 0 || maxPbr > 0 || maxPer > 0 || minRoe > 0 || minNcav > 0 || sortKey !== 'ncav_ratio' || sortOrder !== 'desc' || showLikedOnly;
     const isFiltered = !showLikedOnly && filteredList.length !== ncavDailyList.list.length;
 
     return (
@@ -785,8 +872,13 @@ function ScreenerContent() {
                         const chips: { key: string; label: string; clear: () => void }[] = [];
                         if (searchQuery)     chips.push({ key: 'q',   label: `검색 "${searchQuery}"`, clear: () => { setSearchQuery(''); setDisplayCount(DAILY_PAGE_SIZE); } });
                         if (minMarketCap > 0) chips.push({ key: 'cap', label: `시총 ${MKTCAP_PRESETS.find(p => p.value === minMarketCap)?.label ?? `${minMarketCap}억+`}`, clear: () => { setMinMarketCap(0); setDisplayCount(DAILY_PAGE_SIZE); } });
+                        if (minNcav > 0)     chips.push({ key: 'ncav', label: `NCAV ≥ ${minNcav}`, clear: () => { setMinNcav(0); setDisplayCount(DAILY_PAGE_SIZE); } });
+                        if (maxPbr > 0)      chips.push({ key: 'pbr', label: `PBR ≤ ${maxPbr}`, clear: () => { setMaxPbr(0); setDisplayCount(DAILY_PAGE_SIZE); } });
+                        if (maxPer > 0)      chips.push({ key: 'per', label: `PER ≤ ${maxPer}`, clear: () => { setMaxPer(0); setDisplayCount(DAILY_PAGE_SIZE); } });
+                        if (minRoe > 0)      chips.push({ key: 'roe', label: `ROE ≥ ${minRoe}%`, clear: () => { setMinRoe(0); setDisplayCount(DAILY_PAGE_SIZE); } });
                         if (excludeHoldings) chips.push({ key: 'hold', label: '홀딩스 제외', clear: () => setExcludeHoldings(false) });
                         if (excludeDeficit)  chips.push({ key: 'def',  label: '적자 제외',  clear: () => setExcludeDeficit(false) });
+                        if (excludePreferred) chips.push({ key: 'pref', label: '우선주 제외', clear: () => setExcludePreferred(false) });
                         if (chips.length === 0) return null;
                         return (
                             <div className="pb-2.5 flex items-center gap-1.5 flex-wrap">
@@ -907,8 +999,51 @@ function ScreenerContent() {
                             ))}
                         </div>
 
-                        {/* 구분선 */}
-                        <div className="w-px h-4 bg-neutral-200 dark:bg-[#4a4641] hidden sm:block" />
+                        <FilterDivider />
+
+                        {/* NCAV 비율 (이상) */}
+                        <NumericPresetGroup
+                            label="NCAV ≥"
+                            presets={NCAV_MIN_PRESETS}
+                            value={minNcav}
+                            onPick={v => { setMinNcav(v); setDisplayCount(DAILY_PAGE_SIZE); }}
+                            fmt={v => `${v}`}
+                        />
+
+                        <FilterDivider />
+
+                        {/* PBR (이하) */}
+                        <NumericPresetGroup
+                            label="PBR ≤"
+                            presets={PBR_MAX_PRESETS}
+                            value={maxPbr}
+                            onPick={v => { setMaxPbr(v); setDisplayCount(DAILY_PAGE_SIZE); }}
+                            fmt={v => `${v}`}
+                        />
+
+                        <FilterDivider />
+
+                        {/* PER (이하) */}
+                        <NumericPresetGroup
+                            label="PER ≤"
+                            presets={PER_MAX_PRESETS}
+                            value={maxPer}
+                            onPick={v => { setMaxPer(v); setDisplayCount(DAILY_PAGE_SIZE); }}
+                            fmt={v => `${v}`}
+                        />
+
+                        <FilterDivider />
+
+                        {/* ROE (이상) */}
+                        <NumericPresetGroup
+                            label="ROE ≥"
+                            presets={ROE_MIN_PRESETS}
+                            value={minRoe}
+                            onPick={v => { setMinRoe(v); setDisplayCount(DAILY_PAGE_SIZE); }}
+                            fmt={v => `${v}%`}
+                        />
+
+                        <FilterDivider />
 
                         {/* 제외 조건 */}
                         <div className="flex items-center gap-4 flex-wrap">
@@ -930,6 +1065,15 @@ function ScreenerContent() {
                                     className="rounded accent-[#16a34a]"
                                 />
                                 <span className="text-xs font-bold text-neutral-600 dark:text-neutral-400">적자 기업</span>
+                            </label>
+                            <label className="flex items-center gap-2 cursor-pointer select-none">
+                                <input
+                                    type="checkbox"
+                                    checked={excludePreferred}
+                                    onChange={e => setExcludePreferred(e.target.checked)}
+                                    className="rounded accent-[#16a34a]"
+                                />
+                                <span className="text-xs font-bold text-neutral-600 dark:text-neutral-400">우선주</span>
                             </label>
                         </div>
                     </div>
