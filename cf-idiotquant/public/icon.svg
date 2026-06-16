@@ -1,17 +1,17 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
-  <!-- Triangle: outline only -->
+  <!-- Triangle: outline only, sharp corners -->
   <polygon points="32,5 59,54 5,54"
            fill="none"
            stroke="#16a34a"
            stroke-width="3"
-           stroke-linejoin="round"/>
+           stroke-linejoin="miter"/>
   <!-- Q: ring -->
   <circle cx="32" cy="37" r="9"
           fill="none"
           stroke="#16a34a"
           stroke-width="3"/>
-  <!-- Q: diagonal tail -->
-  <line x1="38.5" y1="43.5" x2="44" y2="49"
+  <!-- Q: tail extending to bottom-right triangle corner -->
+  <line x1="38.5" y1="43.5" x2="59" y2="54"
         stroke="#16a34a"
         stroke-width="3"
         stroke-linecap="round"/>
