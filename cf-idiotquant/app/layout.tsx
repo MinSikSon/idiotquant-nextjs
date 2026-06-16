@@ -1,17 +1,17 @@
 import "@/app/global.css";
 import type { Metadata, Viewport } from "next";
-import { Inter, Noto_Sans_KR, JetBrains_Mono } from "next/font/google";
+import { Lora, Noto_Serif_KR, JetBrains_Mono } from "next/font/google";
 
-const inter = Inter({
+const lora = Lora({
   subsets: ["latin"],
-  variable: "--font-inter",
+  variable: "--font-serif-latin",
   display: "swap",
 });
 
-const notoSansKr = Noto_Sans_KR({
+const notoSerifKr = Noto_Serif_KR({
   weight: ["400", "500", "700", "900"],
   subsets: ["latin"],
-  variable: "--font-noto-kr",
+  variable: "--font-serif-kr",
   display: "swap",
 });
 
@@ -170,10 +170,10 @@ export default function RootLayout({
         <meta name="google-adsense-account" content="ca-pub-6995198721227228" />
       </head>
       <body className={cn(
-        inter.variable,
-        notoSansKr.variable,
+        lora.variable,
+        notoSerifKr.variable,
         jetbrainsMono.variable,
-        "min-h-screen font-sans antialiased",
+        "min-h-screen font-serif antialiased",
         "bg-[#faf9f7] dark:bg-[#1a1915] text-neutral-900 dark:text-neutral-50"
       )}>
         <StoreProvider>
