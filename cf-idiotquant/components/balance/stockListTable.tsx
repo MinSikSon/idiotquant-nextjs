@@ -563,6 +563,7 @@ export default function StockListTable({
           onToggleCollapse={() => toggleCollapse(g.id)}
           picked={picked}
           onTogglePick={togglePick}
+          onPickMany={pickMany}
           doTokenPlusOne={doTokenPlusOne}
           doTokenMinusOne={doTokenMinusOne}
           openDetail={openDetail}
