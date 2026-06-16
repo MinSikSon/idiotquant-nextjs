@@ -266,14 +266,14 @@ function BalanceKr() {
   const handleOrderResult = useCallback((status: "success" | "error", message: string) => {
     addToast(status, message);
     if (status === "success") {
-      dispatch(reqGetInquireBalance(balanceKey));
-      fetchOrderHistory(balanceKey);
       setLastUpdated(new Date());
-      // KIS API 체결 반영 지연 대비 2초 후 재조회
-      setTimeout(() => {
-        dispatch(reqGetInquireBalance(balanceKey));
-        fetchOrderHistory(balanceKey);
-      }, 2000);
+      // KIS 잔고조회는 체결 반영까지 지연이 있어, 여러 번 staged 재조회로 보유수량을 즉시 반영
+      [0, 1500, 3500, 6000].forEach((delay) => {
+        setTimeout(() => {
+          dispatch(reqGetInquireBalance(balanceKey));
+          fetchOrderHistory(balanceKey);
+        }, delay);
+      });
     }
   }, [balanceKey, dispatch, fetchOrderHistory, addToast]);
 
