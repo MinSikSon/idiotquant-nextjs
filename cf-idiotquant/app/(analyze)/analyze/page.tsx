@@ -516,9 +516,9 @@ function AnalyzeContent() {
         </div>
 
         {/* 인기 종목 + 최근 검색 */}
-        {!isPriceLoaded && (
+        {(popularStocks.length > 0 || krMarketHistory.length > 0) && (
           <div className="border-t border-neutral-100 dark:border-[#35332e]/50 bg-[#faf9f7]/50 dark:bg-[#242320]/30">
-            {popularStocks.length > 0 && (
+            {!isPriceLoaded && popularStocks.length > 0 && (
               <div className="max-w-4xl mx-auto px-4 py-2 flex items-center gap-3">
                 <div className="flex items-center gap-1.5 shrink-0">
                   <Flame size={11} className="text-amber-500" />
@@ -537,7 +537,7 @@ function AnalyzeContent() {
               </div>
             )}
             {krMarketHistory.length > 0 && (
-              <div className="max-w-4xl mx-auto px-4 py-2 flex items-center gap-3 border-t border-neutral-100 dark:border-[#35332e]/40">
+              <div className={cn("max-w-4xl mx-auto px-4 py-2 flex items-center gap-3", !isPriceLoaded && popularStocks.length > 0 && "border-t border-neutral-100 dark:border-[#35332e]/40")}>
                 <span className="text-[9px] font-bold text-neutral-400 uppercase tracking-wider shrink-0">최근 검색</span>
                 <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar">
                   {krMarketHistory.slice().reverse().slice(0, 8).map((s, i) => (
