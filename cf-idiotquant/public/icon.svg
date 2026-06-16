@@ -8,18 +8,17 @@
   <polygon points="32,5 59,54 5,54"
            fill="none"
            stroke="#16a34a"
-           stroke-width="3"
+           stroke-width="4"
            stroke-linejoin="miter"/>
   <!-- Q: clipped to triangle interior -->
   <g clip-path="url(#tri)">
-    <!-- stroke same color as fill to eliminate white edge artifact -->
     <circle cx="32" cy="37.67" r="10"
             fill="#16a34a"
             stroke="#16a34a"
-            stroke-width="1"/>
+            stroke-width="4"/>
     <line x1="40.56" y1="42.84" x2="59" y2="54"
           stroke="#16a34a"
-          stroke-width="3"
+          stroke-width="4"
           stroke-linecap="butt"/>
   </g>
 </svg>
