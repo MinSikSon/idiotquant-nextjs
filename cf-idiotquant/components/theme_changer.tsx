@@ -9,7 +9,7 @@ export default function ThemeChanger() {
     const dispatch = useDispatch();
     const theme = useAppSelector(selectTheme)
     return (
-        <button className="p-1 w-36 md:w-full lg:w-full text-center"
+        <button className="p-1.5 w-auto md:w-full text-center flex items-center justify-center"
             onClick={() => dispatch(setTheme(theme == "light" ? "dark" : "light"))}>
             {theme == "dark" ? <MoonIcon className="w-4 h-4"/> : <SunIcon className="w-4 h-4" />}
         </button>
