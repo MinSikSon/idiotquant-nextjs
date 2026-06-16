@@ -32,10 +32,29 @@ import { UsCapitalStockItem, KrUsCapitalType, StockGroup, LIKES_GROUP_ID, QuantR
 import { LikedStockItem } from "@/lib/features/stockLikes/stockLikesSlice";
 import { clsx, type ClassValue } from "clsx";
 import { twMerge } from "tailwind-merge";
+import validCorpCodeArray from "@/public/data/validCorpCodeArray.json";
+import validCorpNameArray from "@/public/data/validCorpNameArray.json";
 
 /** Tailwind 클래스 병합 유틸리티 */
 function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
+}
+
+// KR 종목코드(6자리) → 종목명 매핑. validCorpCodeArray / validCorpNameArray 는 같은 순서의 병렬 배열.
+const KR_CODE_TO_NAME: Record<string, string> = (() => {
+  const codes = validCorpCodeArray as string[];
+  const names = validCorpNameArray as string[];
+  const map: Record<string, string> = {};
+  for (let i = 0; i < codes.length; i++) map[codes[i]] = names[i];
+  return map;
+})();
+
+/** symbol/ticker 에 대응하는 표시용 종목명 결정. 백엔드 name 우선, 없으면 KR 코드맵으로 보강. */
+function resolveDisplayName(symbol: string, rawName?: string | null): string | undefined {
+  const n = (rawName ?? "").trim();
+  if (n && n !== symbol) return n;
+  const kr = KR_CODE_TO_NAME[symbol];
+  return kr && kr !== symbol ? kr : undefined;
 }
 
 /** 선택 상태 키: 섹션별로 독립 선택되도록 (section + symbol) 형태로 보관 */
@@ -89,6 +108,7 @@ function formatConditions(r?: QuantRule): string[] {
 /** 그룹 섹션·찜 섹션이 공통으로 쓰는 정규화된 행 */
 interface DisplayRow {
   symbol: string;
+  name?: string;           // 표시용 종목명 (있으면 symbol 과 함께 노출)
   per?: number | string | null;
   pbr?: number | string | null;
   bps?: number | null;
@@ -133,6 +153,7 @@ const tokenAmounts = [10000, 100000, 1000000];
 function normalizeCapital(row: UsCapitalStockItem, status?: EffStatus): DisplayRow {
   return {
     symbol: row.symbol,
+    name: resolveDisplayName(row.symbol, row.name),
     per: row.condition?.per,
     pbr: row.condition?.pbr,
     bps: row.condition?.bps,
@@ -149,6 +170,7 @@ function normalizeCapital(row: UsCapitalStockItem, status?: EffStatus): DisplayR
 function normalizeLiked(lk: LikedStockItem, status?: EffStatus): DisplayRow {
   return {
     symbol: lk.ticker,
+    name: resolveDisplayName(lk.ticker, lk.stock_name),
     per: lk.per,
     pbr: lk.pbr,
     bps: lk.bps,
@@ -857,12 +879,23 @@ function GroupSection({
                       </td>
                     )}
                     <td className="px-4 py-3">
-                      <button onClick={() => openDetail(row.raw)} className="flex items-center gap-2 group/btn">
-                        <div className="p-1.5 rounded-md bg-[#faf9f7] dark:bg-[#35332e] transition-all">
+                      <button onClick={() => openDetail(row.raw)} className="flex items-center gap-2 group/btn min-w-0">
+                        <div className="shrink-0 p-1.5 rounded-md bg-[#faf9f7] dark:bg-[#35332e] transition-all">
                           <TrendingUp className="w-3.5 h-3.5" />
                         </div>
-                        <span className="font-bold text-sm text-neutral-900 dark:text-neutral-100 group-hover/btn:text-[#16a34a] transition-colors tracking-tight">
-                          {row.symbol}
+                        <span className="flex min-w-0 flex-col items-start leading-tight">
+                          {row.name ? (
+                            <>
+                              <span className="font-bold text-sm text-neutral-900 dark:text-neutral-100 group-hover/btn:text-[#16a34a] transition-colors tracking-tight truncate max-w-[180px]">
+                                {row.name}
+                              </span>
+                              <span className="text-[10px] text-neutral-400 font-mono tracking-wider">{row.symbol}</span>
+                            </>
+                          ) : (
+                            <span className="font-bold text-sm text-neutral-900 dark:text-neutral-100 group-hover/btn:text-[#16a34a] transition-colors tracking-tight">
+                              {row.symbol}
+                            </span>
+                          )}
                         </span>
                       </button>
                     </td>
@@ -951,7 +984,14 @@ function GroupSection({
                     <div className="shrink-0 rounded-md bg-[#faf9f7] p-1.5 dark:bg-[#35332e]">
                       <TrendingUp className="w-3.5 h-3.5" />
                     </div>
-                    <span className="truncate text-sm font-bold text-neutral-900 dark:text-neutral-100">{row.symbol}</span>
+                    {row.name ? (
+                      <span className="flex min-w-0 flex-col items-start leading-tight">
+                        <span className="truncate max-w-[160px] text-sm font-bold text-neutral-900 dark:text-neutral-100">{row.name}</span>
+                        <span className="text-[10px] text-neutral-400 font-mono tracking-wider">{row.symbol}</span>
+                      </span>
+                    ) : (
+                      <span className="truncate text-sm font-bold text-neutral-900 dark:text-neutral-100">{row.symbol}</span>
+                    )}
                   </button>
                   <div className="ml-auto shrink-0">
                     <StatusBadge status={row.status} />
