@@ -19,7 +19,7 @@ import { STRATEGY_LABEL, STRATEGY_BADGE, STRATEGY_PRESETS_CLIENT as STRATEGY_PRE
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const safeNum = (v: any): number => { const n = Number(v); return isNaN(n) ? 0 : n; };
-import { RefreshCw, ChevronRight, Loader2, Search, SlidersHorizontal, TrendingUp, Info, X, Heart, Clock } from "lucide-react";
+import { RefreshCw, ChevronRight, Loader2, Search, SlidersHorizontal, TrendingUp, Info, X, Heart, Clock, Share2, Check } from "lucide-react";
 import * as Tooltip from "@radix-ui/react-tooltip";
 
 // =========================================================================
@@ -294,8 +294,9 @@ function ScreenerContent() {
     const [sortOrder, setSortOrder] = useState<SortOrder>(() =>
         searchParams.get('order') === 'asc' ? 'asc' : 'desc'
     );
-    const [searchQuery, setSearchQuery] = useState("");
+    const [searchQuery, setSearchQuery] = useState(() => searchParams.get('q') ?? "");
     const [displayCount, setDisplayCount] = useState(DAILY_PAGE_SIZE);
+    const [shareCopied, setShareCopied] = useState(false);
     const [excludeHoldings, setExcludeHoldings] = useState(() =>
         searchParams.get('exclude')?.split(',').includes('holdings') ?? false
     );
@@ -332,8 +333,8 @@ function ScreenerContent() {
         }
     }, [ncavDailyList.state, ncavDailyList.scanDate, ncavDailyDates.dates.length, dispatch]);
 
-    // 필터 상태 → URL 동기화 + localStorage 저장 (페이지 이동 후 재진입 시에도 필터 유지)
-    useEffect(() => {
+    // 현재 필터 상태를 그대로 재현하는 쿼리 스트링 (URL 동기화 + 공유 링크 공용)
+    const queryString = useMemo(() => {
         const params = new URLSearchParams();
         if (activeStrategyIds.size > 0)
             params.set('strategies', Array.from(activeStrategyIds).join(','));
@@ -350,8 +351,13 @@ function ScreenerContent() {
         if (excludeList) params.set('exclude', excludeList);
         if (minMarketCap > 0) params.set('mincap', String(minMarketCap));
         if (showLikedOnly) params.set('filter', 'liked');
-        const qs = params.toString();
-        router.replace(qs ? `/screener?${qs}` : '/screener', { scroll: false });
+        if (searchQuery.trim()) params.set('q', searchQuery.trim());
+        return params.toString();
+    }, [activeStrategyIds, filterMode, sortKey, sortOrder, excludeHoldings, excludeDeficit, minMarketCap, showLikedOnly, searchQuery]);
+
+    // 필터 상태 → URL 동기화 + localStorage 저장 (페이지 이동 후 재진입 시에도 필터 유지)
+    useEffect(() => {
+        router.replace(queryString ? `/screener?${queryString}` : '/screener', { scroll: false });
 
         // localStorage에도 전략 상태 저장 — 다른 페이지 이동 후 복귀 시 복원
         if (activeStrategyIds.size > 0) {
@@ -364,7 +370,24 @@ function ScreenerContent() {
         } else {
             localStorage.removeItem('screener:filterMode');
         }
-    }, [activeStrategyIds, filterMode, sortKey, sortOrder, excludeHoldings, excludeDeficit, minMarketCap, showLikedOnly, router]);
+    }, [queryString, activeStrategyIds, filterMode, router]);
+
+    // 현재 필터링 결과 링크 공유 (모바일: 네이티브 공유 시트 / 데스크탑: 클립보드 복사)
+    const handleShare = useCallback(async () => {
+        const url = `${window.location.origin}/screener${queryString ? `?${queryString}` : ''}`;
+        const nav = typeof navigator !== 'undefined' ? navigator : undefined;
+        if (nav?.share) {
+            try {
+                await nav.share({ title: "아이디어퀀트 발굴 종목", text: "필터링한 발굴 종목 보기", url });
+            } catch { /* 사용자가 공유 취소 — 무시 */ }
+            return;
+        }
+        try {
+            await nav?.clipboard?.writeText(url);
+            setShareCopied(true);
+            setTimeout(() => setShareCopied(false), 2000);
+        } catch { /* 클립보드 권한 없음 — 무시 */ }
+    }, [queryString]);
 
     const handleRefresh = useCallback(() => {
         dispatch(reqGetNcavDailyList("latest"));
@@ -663,6 +686,21 @@ function ScreenerContent() {
                         )}
 
                         <div className="flex-1" />
+
+                        {/* 결과 링크 공유 */}
+                        <button
+                            onClick={handleShare}
+                            className={cn(
+                                "shrink-0 flex items-center gap-1 px-2.5 py-1.5 rounded-lg border text-xs font-bold transition-all",
+                                shareCopied
+                                    ? "bg-[#f0fdf4] dark:bg-[#052e16]/30 border-[#86efac] dark:border-[#15803d] text-[#15803d] dark:text-[#16a34a]"
+                                    : "border-neutral-200 dark:border-[#3a3834] text-neutral-500 dark:text-neutral-400 hover:border-neutral-300 bg-white dark:bg-[#242320]"
+                            )}
+                            title="현재 필터링 결과 링크 공유"
+                        >
+                            {shareCopied ? <Check size={12} /> : <Share2 size={12} />}
+                            <span className="hidden sm:inline">{shareCopied ? "복사됨" : "공유"}</span>
+                        </button>
 
                         {/* 전략 가이드 토글 */}
                         <button
