@@ -51,8 +51,12 @@ export const metadata: Metadata = {
     '퀀트 전략', '주식 발굴', '가치투자',
   ],
   icons: {
-    icon: '/icon.svg',
-    shortcut: '/icon.svg',
+    icon: [
+      { url: '/favicon.ico', sizes: 'any' },
+      { url: '/icon.svg', type: 'image/svg+xml' },
+    ],
+    shortcut: '/favicon.ico',
+    apple: '/apple-icon.png',
   },
   authors: [{ name: 'IdiotQuant', url: 'https://idiotquant.com' }],
   creator: 'IdiotQuant',
