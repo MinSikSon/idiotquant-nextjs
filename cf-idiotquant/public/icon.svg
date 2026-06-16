@@ -12,8 +12,12 @@
            stroke-linejoin="miter"/>
   <!-- Q: clipped to triangle interior -->
   <g clip-path="url(#tri)">
-    <circle cx="32" cy="37" r="7" fill="#16a34a"/>
-    <line x1="37.92" y1="40.73" x2="59" y2="54"
+    <!-- stroke same color as fill to eliminate white edge artifact -->
+    <circle cx="32" cy="37.67" r="10"
+            fill="#16a34a"
+            stroke="#16a34a"
+            stroke-width="1"/>
+    <line x1="40.56" y1="42.84" x2="59" y2="54"
           stroke="#16a34a"
           stroke-width="3"
           stroke-linecap="butt"/>
