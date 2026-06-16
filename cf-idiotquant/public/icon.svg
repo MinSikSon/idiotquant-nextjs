@@ -1,18 +1,21 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
-  <!-- Triangle: outline only, sharp corners -->
+  <defs>
+    <clipPath id="tri">
+      <polygon points="32,5 59,54 5,54"/>
+    </clipPath>
+  </defs>
+  <!-- Triangle: outline -->
   <polygon points="32,5 59,54 5,54"
            fill="none"
            stroke="#16a34a"
            stroke-width="3"
            stroke-linejoin="miter"/>
-  <!-- Q: ring (smaller) -->
-  <circle cx="32" cy="37" r="7"
-          fill="none"
+  <!-- Q: clipped to triangle interior -->
+  <g clip-path="url(#tri)">
+    <circle cx="32" cy="37" r="7" fill="#16a34a"/>
+    <line x1="37.92" y1="40.73" x2="59" y2="54"
           stroke="#16a34a"
-          stroke-width="3"/>
-  <!-- Q: tail aligned from circle edge toward bottom-right corner -->
-  <line x1="37.92" y1="40.73" x2="59" y2="54"
-        stroke="#16a34a"
-        stroke-width="3"
-        stroke-linecap="square"/>
+          stroke-width="3"
+          stroke-linecap="butt"/>
+  </g>
 </svg>
