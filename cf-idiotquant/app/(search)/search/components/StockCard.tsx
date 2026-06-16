@@ -118,7 +118,8 @@ export const StockCard = ({ stock, chartConfig }: StockCardProps) => {
   const ncavUpside  = Number(stock?.ncavScore ?? 0);
   const isUp        = ncavUpside >= 0;
   const currency    = stock?.isUs ? "$" : "₩";
-  const market      = stock?.isUs ? "NYSE/NASDAQ" : "KRX";
+  const market      = stock?.isUs ? "NYSE/NASDAQ" : (stock?.market || "KRX");
+  const sector      = !stock?.isUs && stock?.sector && stock.sector !== "DEFAULT" ? stock.sector : null;
 
   const logoUrl = stock?.isUs
     ? `https://img.logo.dev/ticker/${stock.ticker}?token=${process.env.NEXT_PUBLIC_CLEARBIT_API_KEY}&size=200`
@@ -181,9 +182,16 @@ export const StockCard = ({ stock, chartConfig }: StockCardProps) => {
                 <h2 className="font-black text-neutral-900 dark:text-white text-[15px] leading-snug line-clamp-2">
                   {stock?.name}
                 </h2>
-                <p className="text-[10px] font-mono text-neutral-400 dark:text-neutral-500 mt-0.5 truncate">
-                  {stock?.ticker} · {market}
-                </p>
+                <div className="flex items-center gap-1.5 flex-wrap mt-0.5">
+                  <p className="text-[10px] font-mono text-neutral-400 dark:text-neutral-500 truncate">
+                    {stock?.ticker} · {market}
+                  </p>
+                  {sector && (
+                    <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[9px] font-bold bg-neutral-100 text-neutral-600 dark:bg-[#35332e] dark:text-neutral-300">
+                      {sector}
+                    </span>
+                  )}
+                </div>
               </div>
               {/* 등급 배지 */}
               <span className={cn(
