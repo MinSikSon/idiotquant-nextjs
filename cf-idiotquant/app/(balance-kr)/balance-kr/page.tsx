@@ -40,6 +40,7 @@ import {
   reqGetKrQuantRule, reqPostKrQuantRule, selectKrQuantRule,
 } from "@/lib/features/capital/capitalSlice";
 import { reqGetMyLikes, selectLikedList } from "@/lib/features/stockLikes/stockLikesSlice";
+import { getInquirePrice } from "@/lib/features/koreaInvestment/koreaInvestmentAPI";
 
 import InquireBalanceResult from "@/components/inquireBalanceResult";
 import StockListTable from "@/components/balance/stockListTable";
@@ -215,6 +216,46 @@ function BalanceKr() {
   const [autoRefresh, setAutoRefresh] = useState(false);
   const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
   const { toasts, addToast, removeToast } = useToast();
+
+  // 좋아요 종목 중 stock_data_daily JOIN 이 비어(per/pbr 등 없음) 오는 경우
+  // KIS 국내 inquire-price 로 per/pbr/eps/bps 를 보강한다. (US 의 price-detail 보강과 동일 패턴)
+  const [krLikeMetrics, setKrLikeMetrics] = useState<Record<string, { per?: number; pbr?: number; eps?: number; bps?: number }>>({});
+  const krMetricsFetchedRef = useRef<Set<string>>(new Set());
+  useEffect(() => {
+    const isCode = (t: string) => /^\d{6}$/.test(t); // inquire-price 는 6자리 종목코드만 가능
+    const need = new Set<string>();
+    (krLikedList ?? []).forEach((l: any) => {
+      if (l?.ticker && isCode(String(l.ticker)) && (l.per == null || l.pbr == null)) need.add(String(l.ticker));
+    });
+    (krCapital?.stock_list ?? []).forEach((s: any) => {
+      if (s?.group_id === "__likes__" && s?.symbol && isCode(String(s.symbol))) {
+        const c = s.condition ?? {};
+        if (c.per == null || c.pbr == null) need.add(String(s.symbol));
+      }
+    });
+    const todo = [...need].filter(t => !krMetricsFetchedRef.current.has(t));
+    if (todo.length === 0) return;
+    let cancelled = false;
+    const num = (v: any) => { const n = Number(v); return (v != null && v !== "" && Number.isFinite(n)) ? n : undefined; };
+    (async () => {
+      const limit = 3;
+      for (let i = 0; i < todo.length; i += limit) {
+        const batch = todo.slice(i, i + limit);
+        const results = await Promise.all(batch.map(async (t) => {
+          krMetricsFetchedRef.current.add(t);
+          try {
+            const res = await getInquirePrice(t, balanceKey);
+            const o = res?.output ?? {};
+            return [t, { per: num(o.per), pbr: num(o.pbr), eps: num(o.eps), bps: num(o.bps) }] as const;
+          } catch { return [t, {}] as const; }
+        }));
+        if (cancelled) return;
+        setKrLikeMetrics(prev => { const next = { ...prev }; for (const [t, m] of results) next[t] = m; return next; });
+      }
+    })();
+    return () => { cancelled = true; };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [krLikedList, krCapital, balanceKey]);
 
   const fetchOrderHistory = useCallback((key: string) => {
     if (!key || key === "undefined") return;
@@ -628,6 +669,7 @@ function BalanceKr() {
               likedList={krLikedList}
               countryTradingActive={tradingStatus.KR === true}
               quantRule={krQuantRule.rule}
+              metricsOverride={krLikeMetrics}
             />
           </SectionPanel>
         )}

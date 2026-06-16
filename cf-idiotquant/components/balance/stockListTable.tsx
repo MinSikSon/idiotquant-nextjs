@@ -38,6 +38,10 @@ function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
 }
 
+/** 선택 상태 키: 섹션별로 독립 선택되도록 (section + symbol) 형태로 보관 */
+const PICK_SEP = "::";
+const pickKey = (section: string, symbol: string) => `${section}${PICK_SEP}${symbol}`;
+
 type Tone = "active" | "idle" | "excluded" | "off";
 interface EffStatus { label: string; tone: Tone; }
 
@@ -300,35 +304,44 @@ export default function StockListTable({
       next.has(key) ? next.delete(key) : next.add(key);
       return next;
     });
-  const togglePick = (ticker: string) =>
+  // 선택은 섹션별로 독립적이다. 같은 종목이 좋아요·그룹에 동시에 나타나도
+  // 한 섹션에서 고른 게 다른 섹션까지 선택되지 않도록 키에 섹션을 포함한다.
+  const togglePick = (section: string, ticker: string) =>
     setPicked(prev => {
       const next = new Set(prev);
-      next.has(ticker) ? next.delete(ticker) : next.add(ticker);
+      const k = pickKey(section, ticker);
+      next.has(k) ? next.delete(k) : next.add(k);
       return next;
     });
-  const pickMany = (tickers: string[], select: boolean) =>
+  const pickMany = (section: string, tickers: string[], select: boolean) =>
     setPicked(prev => {
       const next = new Set(prev);
-      tickers.forEach(t => select ? next.add(t) : next.delete(t));
+      tickers.forEach(t => { const k = pickKey(section, t); select ? next.add(k) : next.delete(k); });
       return next;
     });
   const clearPick = () => setPicked(new Set());
 
+  // 선택된 키에서 종목(symbol)만 추출(섹션 간 중복 제거) — 일괄 작업용
+  const pickedSymbols = useMemo(
+    () => Array.from(new Set(Array.from(picked).map(k => k.split(PICK_SEP)[1]))),
+    [picked]
+  );
+
   const doBulkMove = (groupId: string | null) => {
-    const tickers = Array.from(picked);
+    const tickers = pickedSymbols;
     if (tickers.length === 0) return;
     if (onBulkMove) onBulkMove(tickers, groupId);
     else tickers.forEach(t => onMoveStock?.(t, groupId)); // 폴백
     clearPick();
   };
   const doCopyToGroup = (groupId: string | null) => {
-    const tickers = Array.from(picked);
+    const tickers = pickedSymbols;
     if (tickers.length === 0) return;
     onCopyLikes?.(tickers, groupId);
     clearPick();
   };
   const doCreateGroupFromPicked = () => {
-    const tickers = Array.from(picked);
+    const tickers = pickedSymbols;
     if (tickers.length === 0) return;
     const name = window.prompt(`선택한 ${tickers.length}개 종목으로 만들 그룹 이름을 입력하세요`);
     if (name && name.trim()) {
@@ -474,7 +487,7 @@ export default function StockListTable({
       {isMaster && picked.size > 0 && (
         <div className="sticky top-2 z-20 flex flex-wrap items-center gap-2 rounded-xl border border-[#16a34a]/40 bg-[#f0fdf4] px-3 py-2.5 shadow-md dark:border-[#16a34a]/40 dark:bg-[#14532d]/30 sm:px-4">
           <span className="inline-flex items-center gap-1 text-xs font-bold text-[#16a34a]">
-            <ArrowRightLeft className="w-3.5 h-3.5" /> {picked.size}개 선택
+            <ArrowRightLeft className="w-3.5 h-3.5" /> {pickedSymbols.length}개 선택
           </span>
           <button onClick={clearPick} className="rounded-md p-1 text-neutral-400 hover:bg-white/60 dark:hover:bg-[#1a1915] sm:order-last sm:ml-auto">
             <X className="w-4 h-4" />
@@ -670,8 +683,8 @@ interface GroupSectionProps {
   collapsed: boolean;
   onToggleCollapse: () => void;
   picked: Set<string>;
-  onTogglePick: (ticker: string) => void;
-  onPickMany?: (tickers: string[], select: boolean) => void;
+  onTogglePick: (section: string, ticker: string) => void;
+  onPickMany?: (section: string, tickers: string[], select: boolean) => void;
   doTokenPlusOne: (val: number, sym: string) => void;
   doTokenMinusOne: (val: number, sym: string) => void;
   openDetail: (raw: any) => void;
@@ -686,8 +699,10 @@ function GroupSection({
   const showRefill = isMaster && rows.some(r => r.movable);
   const showCheck = isMaster && rows.length > 0; // 모든 행 선택 가능(좋아요는 복사용)
   const selectableTickers = useMemo(() => rows.map(r => r.symbol), [rows]);
-  const allChecked = selectableTickers.length > 0 && selectableTickers.every(t => picked.has(t));
-  const someChecked = selectableTickers.some(t => picked.has(t));
+  // 선택 여부는 이 섹션 키 기준으로만 판단(다른 섹션의 동일 종목과 분리)
+  const isPicked = (sym: string) => picked.has(pickKey(sectionKey, sym));
+  const allChecked = selectableTickers.length > 0 && selectableTickers.every(isPicked);
+  const someChecked = selectableTickers.some(isPicked);
   const baseCols = 6; // 종목/상태/PER·PBR/BPS·EPS/시총/NCAV
   const colSpan = baseCols + 1 /*token*/ + (showCheck ? 1 : 0) + (showRefill ? 1 : 0);
 
@@ -731,7 +746,7 @@ function GroupSection({
                 type="checkbox"
                 checked={allChecked}
                 ref={(el) => { if (el) el.indeterminate = !allChecked && someChecked; }}
-                onChange={() => onPickMany?.(selectableTickers, !allChecked)}
+                onChange={() => onPickMany?.(sectionKey, selectableTickers, !allChecked)}
                 className="h-3.5 w-3.5 rounded border-neutral-300 text-[#16a34a] focus:ring-[#16a34a]"
               />
               전체
@@ -800,7 +815,7 @@ function GroupSection({
                       title="이 그룹 전체 선택"
                       checked={allChecked}
                       ref={(el) => { if (el) el.indeterminate = !allChecked && someChecked; }}
-                      onChange={() => onPickMany?.(selectableTickers, !allChecked)}
+                      onChange={() => onPickMany?.(sectionKey, selectableTickers, !allChecked)}
                       className="h-4 w-4 rounded border-neutral-300 text-[#16a34a] focus:ring-[#16a34a]"
                     />
                   </th>
@@ -829,14 +844,14 @@ function GroupSection({
                 rows.map((row, idx) => (
                   <tr key={`${sectionKey}-${row.symbol}-${idx}`} className={cn(
                     "group transition-colors",
-                    picked.has(row.symbol) ? "bg-[#f0fdf4] dark:bg-[#14532d]/20" : "hover:bg-[#f0fdf4]/30 dark:hover:bg-[#14532d]/10"
+                    isPicked(row.symbol) ? "bg-[#f0fdf4] dark:bg-[#14532d]/20" : "hover:bg-[#f0fdf4]/30 dark:hover:bg-[#14532d]/10"
                   )}>
                     {showCheck && (
                       <td className="px-3 py-3">
                         <input
                           type="checkbox"
-                          checked={picked.has(row.symbol)}
-                          onChange={() => onTogglePick(row.symbol)}
+                          checked={isPicked(row.symbol)}
+                          onChange={() => onTogglePick(sectionKey, row.symbol)}
                           className="h-4 w-4 rounded border-neutral-300 text-[#16a34a] focus:ring-[#16a34a]"
                         />
                       </td>
@@ -920,15 +935,15 @@ function GroupSection({
             rows.map((row, idx) => (
               <div
                 key={`m-${sectionKey}-${row.symbol}-${idx}`}
-                className={cn("p-3", picked.has(row.symbol) && "bg-[#f0fdf4] dark:bg-[#14532d]/20")}
+                className={cn("p-3", isPicked(row.symbol) && "bg-[#f0fdf4] dark:bg-[#14532d]/20")}
               >
                 {/* 상단: 체크 + 종목 + 상태 */}
                 <div className="flex items-center gap-2">
                   {showCheck && (
                     <input
                       type="checkbox"
-                      checked={picked.has(row.symbol)}
-                      onChange={() => onTogglePick(row.symbol)}
+                      checked={isPicked(row.symbol)}
+                      onChange={() => onTogglePick(sectionKey, row.symbol)}
                       className="h-5 w-5 shrink-0 rounded border-neutral-300 text-[#16a34a] focus:ring-[#16a34a]"
                     />
                   )}
