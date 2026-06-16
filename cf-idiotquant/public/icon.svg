@@ -1,24 +1,18 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
-  <defs>
-    <linearGradient id="g" x1="0.2" y1="0" x2="0.8" y2="1">
-      <stop offset="0" stop-color="#22c55e"/>
-      <stop offset="1" stop-color="#15803d"/>
-    </linearGradient>
-  </defs>
   <!-- Triangle: outline only -->
   <polygon points="32,5 59,54 5,54"
            fill="none"
-           stroke="url(#g)"
-           stroke-width="2.5"
+           stroke="#16a34a"
+           stroke-width="3"
            stroke-linejoin="round"/>
   <!-- Q: ring -->
   <circle cx="32" cy="37" r="9"
           fill="none"
-          stroke="url(#g)"
-          stroke-width="3.5"/>
+          stroke="#16a34a"
+          stroke-width="3"/>
   <!-- Q: diagonal tail -->
   <line x1="38.5" y1="43.5" x2="44" y2="49"
-        stroke="url(#g)"
-        stroke-width="3.5"
+        stroke="#16a34a"
+        stroke-width="3"
         stroke-linecap="round"/>
 </svg>
