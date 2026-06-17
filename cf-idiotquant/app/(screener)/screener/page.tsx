@@ -633,7 +633,7 @@ function ScreenerContent() {
                                     : <TrendingUp size={18} className="text-[#16a34a] dark:text-[#16a34a]" strokeWidth={2.5} />
                                 }
                                 <h1 className="text-xl font-black tracking-tight text-neutral-900 dark:text-white">
-                                    {showLikedOnly ? "내 관심 종목" : "오늘의 발굴 종목"}
+                                    {showLikedOnly ? "내 관심 종목" : "최근 발굴 종목"}
                                 </h1>
                             </div>
                             <p className="text-xs text-neutral-400 dark:text-neutral-500 font-medium flex items-center gap-2">
@@ -672,7 +672,7 @@ function ScreenerContent() {
                     <div className="max-w-7xl mx-auto px-4 sm:px-6 py-2.5 flex items-center gap-2">
                         <Clock size={13} className="text-amber-500 dark:text-amber-400 shrink-0" />
                         <p className="text-xs text-amber-700 dark:text-amber-400 font-medium">
-                            오늘 발굴 종목 수집 중 — 아직 스캔되지 않은 종목은 어제({formattedDate}) 데이터로 보완됩니다.
+                            최근 발굴 종목 수집 중 — 아직 스캔되지 않은 종목은 어제({formattedDate}) 데이터로 보완됩니다.
                         </p>
                     </div>
                 </div>
