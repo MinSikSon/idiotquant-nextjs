@@ -281,7 +281,7 @@ export default function HomePage() {
                 <p className="text-xl font-black text-[#16a34a] dark:text-[#16a34a] tabular-nums leading-none">
                   {animatedTotal.toLocaleString()}
                 </p>
-                <p className="text-[10px] text-neutral-400 font-medium mt-1">오늘 발굴 종목</p>
+                <p className="text-[10px] text-neutral-400 font-medium mt-1">최근 발굴 종목</p>
               </div>
               <div className="text-center py-1 border-x border-neutral-100 dark:border-[#2c2b27]">
                 <p className="text-xl font-black text-emerald-600 dark:text-emerald-400 tabular-nums leading-none">
@@ -314,7 +314,7 @@ export default function HomePage() {
             <div>
               <div className="flex items-center gap-2">
                 <h2 className="text-base font-black tracking-tight text-neutral-900 dark:text-neutral-50">
-                  오늘의 발굴 종목
+                  최근 발굴 종목
                 </h2>
                 <span className="text-[9px] font-extrabold px-2 py-0.5 rounded-full bg-[#16a34a] text-white">
                   500억+
