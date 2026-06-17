@@ -118,7 +118,7 @@ export const StockCard = ({ stock, chartConfig }: StockCardProps) => {
   const ncavUpside  = Number(stock?.ncavScore ?? 0);
   const isUp        = ncavUpside >= 0;
   const currency    = stock?.isUs ? "$" : "₩";
-  const market      = stock?.isUs ? "NYSE/NASDAQ" : (stock?.market || "KRX");
+  const market      = stock?.market || (stock?.isUs ? "NYSE/NASDAQ" : "KRX");
   const sector      = !stock?.isUs && stock?.sector && stock.sector !== "DEFAULT" ? stock.sector : null;
 
   const logoUrl = stock?.isUs
