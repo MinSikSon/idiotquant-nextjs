@@ -581,6 +581,7 @@ function AnalyzeContent() {
                       pbr: stockData?.pbr ?? 0,
                       eps: currency + (stockData?.eps ?? 0),
                       sector: data?.usDetail?.output?.e_icod ?? "DEFAULT",
+                      market: data?.usSearchInfo?.output?.tr_mket_name || data?.usSearchInfo?.output?.ovrs_excg_name || "",
                     } : {
                       code: tickerFromUrl, isUs: false, name: displayName,
                       ticker: stockData?.stockTicker ?? '',
