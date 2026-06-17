@@ -1,26 +1,5 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
-  <defs>
-    <clipPath id="tri">
-      <polygon points="32,7 59,54 5,54"/>
-    </clipPath>
-  </defs>
-  <!-- Equilateral triangle outline -->
-  <polygon points="32,7 59,54 5,54"
-           fill="none"
-           stroke="#16a34a"
-           stroke-width="4"
-           stroke-linejoin="miter"
-           stroke-miterlimit="10"/>
-  <g clip-path="url(#tri)">
-    <!-- Q circle: centered at centroid, r=9 -->
-    <circle cx="32" cy="38.5" r="9"
-            fill="#16a34a"
-            stroke="#16a34a"
-            stroke-width="4"/>
-    <!-- Q tail: from circle edge to bottom-right corner -->
-    <line x1="39.79" y1="42.91" x2="59" y2="54"
-          stroke="#16a34a"
-          stroke-width="4"
-          stroke-linecap="butt"/>
-  </g>
+  <rect x="2" y="2" width="60" height="60" rx="15" fill="#15a34a"/>
+  <polygon points="32.00,11.00 50.19,42.50 13.81,42.50" fill="#ffffff"/>
+  <polygon points="32.00,53.00 13.81,21.50 50.19,21.50" fill="#ffffff"/>
 </svg>
