@@ -46,7 +46,9 @@ export default auth((req: any) => {
     }
 
     if (!isLoggedIn) {
-        return NextResponse.redirect(new URL('/login', req.url));
+        const loginUrl = new URL('/login', req.url);
+        loginUrl.searchParams.set('callbackUrl', path + req.nextUrl.search);
+        return NextResponse.redirect(loginUrl);
     }
 
     return NextResponse.next();
