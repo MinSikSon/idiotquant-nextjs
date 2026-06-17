@@ -593,6 +593,7 @@ function AnalyzeContent() {
                       pbr: stockData?.pbr ?? 0,
                       eps: currency + (stockData?.eps ?? 0).toFixed(0),
                       sector: data?.kiPrice?.output?.bstp_kor_isnm ?? "DEFAULT",
+                      market: data?.kiPrice?.output?.rprs_mrkt_kor_name ?? "",
                     }}
                     chartConfig={chartConfig}
                     rawData={data}
