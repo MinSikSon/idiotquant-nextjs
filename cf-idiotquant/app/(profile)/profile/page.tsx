@@ -337,7 +337,7 @@ export default function ProfilePage() {
                                 정말 탈퇴하시겠어요?
                             </p>
                             <p className="text-[12px] leading-relaxed text-neutral-600 dark:text-neutral-400 mb-3">
-                                계정과 <b>모든 데이터(자동매매 설정·증권사 API 키·관심종목·매매기록)</b>가 영구 삭제되며 복구할 수 없습니다.
+                                <b>카카오 로그인 정보 등 회원님의 개인정보</b>가 영구 삭제되며 복구할 수 없습니다.
                                 {cooldownDays > 0 && (
                                     <><br />탈퇴 후 <b>{cooldownDays}일간</b> 같은 카카오 계정으로 재가입할 수 없습니다.</>
                                 )}
