@@ -43,6 +43,7 @@ export default function ProfilePage() {
     const [confirmingDelete, setConfirmingDelete] = useState(false);
     const [deleteConfirmText, setDeleteConfirmText] = useState("");
     const [deleting, setDeleting] = useState(false);
+    const [cooldownDays, setCooldownDays] = useState(30);
 
     const handleDeleteAccount = async () => {
         if (deleteConfirmText.trim() !== DELETE_CONFIRM_PHRASE) return;
@@ -61,6 +62,13 @@ export default function ProfilePage() {
         setConfirmingDelete(false);
         setDeleteConfirmText("");
     };
+
+    useEffect(() => {
+        fetch("/api/proxy/user/withdraw-cooldown")
+            .then(r => r.json())
+            .then(d => { if (d?.days != null) setCooldownDays(Number(d.days)); })
+            .catch(() => {});
+    }, []);
 
     useEffect(() => {
         if (status === "unauthenticated") {
@@ -330,7 +338,9 @@ export default function ProfilePage() {
                             </p>
                             <p className="text-[12px] leading-relaxed text-neutral-600 dark:text-neutral-400 mb-3">
                                 계정과 <b>모든 데이터(자동매매 설정·증권사 API 키·관심종목·매매기록)</b>가 영구 삭제되며 복구할 수 없습니다.
-                                <br />탈퇴 후 <b>30일간</b> 같은 카카오 계정으로 재가입할 수 없습니다.
+                                {cooldownDays > 0 && (
+                                    <><br />탈퇴 후 <b>{cooldownDays}일간</b> 같은 카카오 계정으로 재가입할 수 없습니다.</>
+                                )}
                             </p>
                             <label className="block text-[12px] text-neutral-500 dark:text-neutral-400 mb-1.5">
                                 계속하려면 <span className="font-bold text-red-600 dark:text-red-400">{DELETE_CONFIRM_PHRASE}</span> 을(를) 입력하세요

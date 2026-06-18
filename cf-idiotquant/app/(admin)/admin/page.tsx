@@ -3,7 +3,7 @@
 import { useSession } from "next-auth/react";
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { Users, Shield, ArrowRight, BookOpen } from "lucide-react";
+import { Users, Shield, ArrowRight, BookOpen, Clock } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 interface UserRow {
@@ -34,6 +34,10 @@ export default function AdminPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
+  const [cooldownDays, setCooldownDays] = useState("");
+  const [cooldownSaving, setCooldownSaving] = useState(false);
+  const [cooldownMsg, setCooldownMsg] = useState<string | null>(null);
+
   const isAdmin = (session?.user as any)?.role === "admin";
 
   useEffect(() => {
@@ -46,7 +50,35 @@ export default function AdminPage() {
       })
       .catch(e => setError(String(e)))
       .finally(() => setLoading(false));
+
+    fetch("/api/proxy/user/withdraw-cooldown")
+      .then(r => r.json())
+      .then(d => { if (d?.days != null) setCooldownDays(String(d.days)); })
+      .catch(() => {});
   }, [isAdmin]);
+
+  const saveCooldown = async () => {
+    setCooldownSaving(true);
+    setCooldownMsg(null);
+    try {
+      const res = await fetch("/api/proxy/user/withdraw-cooldown", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ days: Number(cooldownDays) }),
+      });
+      const d = await res.json();
+      if (res.ok && d?.success) {
+        setCooldownDays(String(d.days));
+        setCooldownMsg("저장되었습니다");
+      } else {
+        setCooldownMsg(d?.error ?? "저장 실패");
+      }
+    } catch (e) {
+      setCooldownMsg("저장 실패");
+    } finally {
+      setCooldownSaving(false);
+    }
+  };
 
   if (status === "loading") {
     return (
@@ -87,6 +119,34 @@ export default function AdminPage() {
           종목명 매핑 관리
           <ArrowRight size={11} className="text-neutral-300 group-hover:text-[#16a34a] transition-colors" />
         </Link>
+      </div>
+
+      {/* 재가입 쿨다운 설정 */}
+      <div className="bg-white dark:bg-[#1f1e1b] border border-neutral-200/70 dark:border-[#3a3834] rounded-xl p-5 mb-6">
+        <div className="flex items-center gap-2 mb-1">
+          <Clock size={14} className="text-neutral-400" />
+          <span className="text-sm font-semibold text-neutral-700 dark:text-neutral-300">재가입 쿨다운</span>
+        </div>
+        <p className="text-xs text-neutral-400 mb-3">탈퇴 후 같은 카카오 계정의 재가입을 막을 기간(일). 0이면 제한 없음.</p>
+        <div className="flex items-center gap-2 flex-wrap">
+          <input
+            type="number"
+            min={0}
+            max={3650}
+            value={cooldownDays}
+            onChange={(e) => setCooldownDays(e.target.value)}
+            className="w-28 px-3 py-2 rounded-xl border border-neutral-200 dark:border-[#35332e] bg-white dark:bg-[#242320] text-sm text-neutral-800 dark:text-neutral-200 outline-none focus:border-[#16a34a]"
+          />
+          <span className="text-sm text-neutral-500 dark:text-neutral-400">일</span>
+          <button
+            onClick={saveCooldown}
+            disabled={cooldownSaving || cooldownDays === ""}
+            className="ml-1 px-4 py-2 rounded-xl text-sm font-semibold text-white bg-[#16a34a] hover:bg-[#15803d] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            {cooldownSaving ? "저장 중…" : "저장"}
+          </button>
+          {cooldownMsg && <span className="text-xs text-neutral-500 dark:text-neutral-400">{cooldownMsg}</span>}
+        </div>
       </div>
 
       {/* Stats */}
