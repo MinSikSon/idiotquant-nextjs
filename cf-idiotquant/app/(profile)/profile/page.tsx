@@ -39,13 +39,13 @@ export default function ProfilePage() {
     const isMasterUser = session?.user?.name === process.env.NEXT_PUBLIC_MASTER;
     const isAdmin = (session?.user as any)?.role === "admin";
 
+    const DELETE_CONFIRM_PHRASE = "탈퇴";
+    const [confirmingDelete, setConfirmingDelete] = useState(false);
+    const [deleteConfirmText, setDeleteConfirmText] = useState("");
     const [deleting, setDeleting] = useState(false);
 
     const handleDeleteAccount = async () => {
-        const ok = window.confirm(
-            "정말 탈퇴하시겠어요?\n\n계정과 모든 데이터(자동매매 설정·증권사 API 키·관심종목·매매기록)가 영구 삭제되며 복구할 수 없습니다."
-        );
-        if (!ok) return;
+        if (deleteConfirmText.trim() !== DELETE_CONFIRM_PHRASE) return;
         setDeleting(true);
         try {
             const res = await fetch("/api/proxy/user/delete-account", { method: "DELETE" });
@@ -55,6 +55,11 @@ export default function ProfilePage() {
             alert("탈퇴 처리 중 오류가 발생했습니다. 잠시 후 다시 시도해주세요.");
             setDeleting(false);
         }
+    };
+
+    const cancelDelete = () => {
+        setConfirmingDelete(false);
+        setDeleteConfirmText("");
     };
 
     useEffect(() => {
@@ -300,23 +305,62 @@ export default function ProfilePage() {
 
                     <div className="border-t border-neutral-200/70 dark:border-[#35332e]" />
 
-                    <button
-                        onClick={handleDeleteAccount}
-                        disabled={deleting}
-                        className="flex items-center gap-3 w-full px-5 py-3.5 hover:bg-red-50 dark:hover:bg-red-950/20 transition-colors group text-left disabled:opacity-50 disabled:cursor-not-allowed"
-                    >
-                        <div className="w-8 h-8 rounded-xl bg-[#faf9f7] dark:bg-[#35332e] flex items-center justify-center shrink-0 group-hover:bg-red-100 dark:group-hover:bg-red-950/30 transition-colors">
-                            <Trash2 size={15} className="text-red-400 group-hover:text-red-500 dark:group-hover:text-red-400 transition-colors" />
+                    {!confirmingDelete ? (
+                        <button
+                            onClick={() => setConfirmingDelete(true)}
+                            disabled={isAdmin}
+                            className="flex items-center gap-3 w-full px-5 py-3.5 hover:bg-red-50 dark:hover:bg-red-950/20 transition-colors group text-left disabled:opacity-60 disabled:cursor-not-allowed disabled:hover:bg-transparent"
+                        >
+                            <div className="w-8 h-8 rounded-xl bg-[#faf9f7] dark:bg-[#35332e] flex items-center justify-center shrink-0 group-hover:bg-red-100 dark:group-hover:bg-red-950/30 transition-colors">
+                                <Trash2 size={15} className="text-red-400 group-hover:text-red-500 dark:group-hover:text-red-400 transition-colors" />
+                            </div>
+                            <div className="flex-1">
+                                <span className="block text-sm font-semibold text-red-600 dark:text-red-400">
+                                    회원 탈퇴
+                                </span>
+                                <span className="block text-[11px] text-neutral-400 dark:text-neutral-500 mt-0.5">
+                                    {isAdmin ? "관리자 계정은 탈퇴할 수 없습니다" : "계정과 모든 데이터가 영구 삭제됩니다"}
+                                </span>
+                            </div>
+                        </button>
+                    ) : (
+                        <div className="px-5 py-4 bg-red-50/60 dark:bg-red-950/20">
+                            <p className="text-sm font-semibold text-red-600 dark:text-red-400 mb-1">
+                                정말 탈퇴하시겠어요?
+                            </p>
+                            <p className="text-[12px] leading-relaxed text-neutral-600 dark:text-neutral-400 mb-3">
+                                계정과 <b>모든 데이터(자동매매 설정·증권사 API 키·관심종목·매매기록)</b>가 영구 삭제되며 복구할 수 없습니다.
+                            </p>
+                            <label className="block text-[12px] text-neutral-500 dark:text-neutral-400 mb-1.5">
+                                계속하려면 <span className="font-bold text-red-600 dark:text-red-400">{DELETE_CONFIRM_PHRASE}</span> 을(를) 입력하세요
+                            </label>
+                            <input
+                                type="text"
+                                value={deleteConfirmText}
+                                onChange={(e) => setDeleteConfirmText(e.target.value)}
+                                disabled={deleting}
+                                placeholder={DELETE_CONFIRM_PHRASE}
+                                autoFocus
+                                className="w-full px-3 py-2 rounded-xl border border-red-200 dark:border-red-900/50 bg-white dark:bg-[#1c1b19] text-sm text-neutral-800 dark:text-neutral-200 outline-none focus:border-red-400 dark:focus:border-red-600 mb-3"
+                            />
+                            <div className="flex gap-2">
+                                <button
+                                    onClick={cancelDelete}
+                                    disabled={deleting}
+                                    className="flex-1 px-4 py-2.5 rounded-xl text-sm font-semibold text-neutral-700 dark:text-neutral-300 bg-neutral-100 dark:bg-[#35332e] hover:bg-neutral-200 dark:hover:bg-[#403d37] transition-colors disabled:opacity-50"
+                                >
+                                    취소
+                                </button>
+                                <button
+                                    onClick={handleDeleteAccount}
+                                    disabled={deleting || deleteConfirmText.trim() !== DELETE_CONFIRM_PHRASE}
+                                    className="flex-1 px-4 py-2.5 rounded-xl text-sm font-semibold text-white bg-red-600 hover:bg-red-700 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+                                >
+                                    {deleting ? "탈퇴 처리 중…" : "영구 삭제"}
+                                </button>
+                            </div>
                         </div>
-                        <div className="flex-1">
-                            <span className="block text-sm font-semibold text-red-600 dark:text-red-400">
-                                {deleting ? "탈퇴 처리 중…" : "회원 탈퇴"}
-                            </span>
-                            <span className="block text-[11px] text-neutral-400 dark:text-neutral-500 mt-0.5">
-                                계정과 모든 데이터가 영구 삭제됩니다
-                            </span>
-                        </div>
-                    </button>
+                    )}
                 </div>
 
             </div>
