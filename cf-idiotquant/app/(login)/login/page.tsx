@@ -2,6 +2,9 @@ import { Suspense } from "react";
 import { LoginAuthWrapper } from "./components/LoginAuthWrapper";
 import Link from "next/link";
 
+// searchParams(error)로 동적 렌더 — Cloudflare Pages(next-on-pages) edge 런타임 필요
+export const runtime = "edge";
+
 const BENEFITS = [
     { label: "매일 자동 스캔", desc: "NCAV · 저PBR · 저PER · S-RIM 기준으로 저평가 종목을 매일 갱신" },
     { label: "9가지 전략 필터", desc: "그레이엄 · 마법공식 · 퀄리티밸류 등 전략 조합 AND/OR 필터" },
