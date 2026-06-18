@@ -30,14 +30,6 @@ export const LoadData = () => {
 
     const kakaoTotal = useAppSelector(selectKakaoTotal);
 
-    // TODO 1
-    // -  date list -> get latest financialInfo date
-    // - getMarketInfo date list -> get latest marketInfo date
-
-    // TODO 2
-    // - ncavList 존재 o -> getNcavList(latestFinancialInfoDate, latestMarketInfoDate)
-    // - ncavList 존재 x ->  + getMarketInfo -> ncavList 구성 -> setNcavList
-
     function checkInCommon() {
         if ("ready-financialInfoList" == financialInfoState)
             if ("ready-marketInfoList" == marketInfoState) {

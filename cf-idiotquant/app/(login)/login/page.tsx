@@ -2,17 +2,29 @@ import { Suspense } from "react";
 import { LoginAuthWrapper } from "./components/LoginAuthWrapper";
 import Link from "next/link";
 
+// searchParams(error)로 동적 렌더 — Cloudflare Pages(next-on-pages) edge 런타임 필요
+export const runtime = "edge";
+
 const BENEFITS = [
     { label: "매일 자동 스캔", desc: "NCAV · 저PBR · 저PER · S-RIM 기준으로 저평가 종목을 매일 갱신" },
     { label: "9가지 전략 필터", desc: "그레이엄 · 마법공식 · 퀄리티밸류 등 전략 조합 AND/OR 필터" },
     { label: "적정 주가 계산", desc: "7가지 밸류에이션 모델 기반 종목별 안전마진 분석" },
 ];
 
-export default function LoginPage() {
+export default async function LoginPage({ searchParams }: { searchParams: Promise<{ error?: string; days?: string }> }) {
+    const sp = await searchParams;
+    const cooldownDays = sp?.error === "withdraw_cooldown" ? (sp.days ?? "30") : null;
+
     return (
         <div className="min-h-screen flex flex-col items-center justify-center px-4 py-12 bg-[#faf9f7] dark:bg-[#1a1915]">
 
             <div className="relative w-full max-w-sm flex flex-col gap-8">
+
+                {cooldownDays && (
+                    <div className="rounded-xl border border-amber-200 dark:border-amber-900/50 bg-amber-50 dark:bg-amber-950/30 px-4 py-3 text-[13px] text-amber-800 dark:text-amber-300 text-center">
+                        최근 탈퇴한 계정입니다. <b>{cooldownDays}일</b> 후 같은 카카오 계정으로 다시 가입할 수 있습니다.
+                    </div>
+                )}
 
                 {/* Brand mark */}
                 <div className="flex justify-center">
