@@ -2,9 +2,9 @@
 
 import { useSession, signOut } from "next-auth/react";
 import { useRouter } from "next/navigation";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
-import { LogOut, Eye, DollarSign, ChevronRight, ShieldCheck, Heart } from "lucide-react";
+import { LogOut, Eye, DollarSign, ChevronRight, ShieldCheck, Heart, Trash2 } from "lucide-react";
 import { useAppDispatch, useAppSelector } from "@/lib/hooks";
 import {
     selectLikedList, selectLikesState,
@@ -38,6 +38,24 @@ export default function ProfilePage() {
 
     const isMasterUser = session?.user?.name === process.env.NEXT_PUBLIC_MASTER;
     const isAdmin = (session?.user as any)?.role === "admin";
+
+    const [deleting, setDeleting] = useState(false);
+
+    const handleDeleteAccount = async () => {
+        const ok = window.confirm(
+            "정말 탈퇴하시겠어요?\n\n계정과 모든 데이터(자동매매 설정·증권사 API 키·관심종목·매매기록)가 영구 삭제되며 복구할 수 없습니다."
+        );
+        if (!ok) return;
+        setDeleting(true);
+        try {
+            const res = await fetch("/api/proxy/user/delete-account", { method: "DELETE" });
+            if (!res.ok) throw new Error(String(res.status));
+            await signOut({ callbackUrl: "/login" });
+        } catch (e) {
+            alert("탈퇴 처리 중 오류가 발생했습니다. 잠시 후 다시 시도해주세요.");
+            setDeleting(false);
+        }
+    };
 
     useEffect(() => {
         if (status === "unauthenticated") {
@@ -278,6 +296,26 @@ export default function ProfilePage() {
                         <span className="flex-1 text-sm font-semibold text-neutral-700 dark:text-neutral-300 group-hover:text-red-600 dark:group-hover:text-red-400 transition-colors">
                             로그아웃
                         </span>
+                    </button>
+
+                    <div className="border-t border-neutral-200/70 dark:border-[#35332e]" />
+
+                    <button
+                        onClick={handleDeleteAccount}
+                        disabled={deleting}
+                        className="flex items-center gap-3 w-full px-5 py-3.5 hover:bg-red-50 dark:hover:bg-red-950/20 transition-colors group text-left disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                        <div className="w-8 h-8 rounded-xl bg-[#faf9f7] dark:bg-[#35332e] flex items-center justify-center shrink-0 group-hover:bg-red-100 dark:group-hover:bg-red-950/30 transition-colors">
+                            <Trash2 size={15} className="text-red-400 group-hover:text-red-500 dark:group-hover:text-red-400 transition-colors" />
+                        </div>
+                        <div className="flex-1">
+                            <span className="block text-sm font-semibold text-red-600 dark:text-red-400">
+                                {deleting ? "탈퇴 처리 중…" : "회원 탈퇴"}
+                            </span>
+                            <span className="block text-[11px] text-neutral-400 dark:text-neutral-500 mt-0.5">
+                                계정과 모든 데이터가 영구 삭제됩니다
+                            </span>
+                        </div>
                     </button>
                 </div>
 
