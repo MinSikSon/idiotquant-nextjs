@@ -267,13 +267,9 @@ function BalanceKr() {
     addToast(status, message);
     if (status === "success") {
       setLastUpdated(new Date());
-      // KIS 잔고조회는 체결 반영까지 지연이 있어, 여러 번 staged 재조회로 보유수량을 즉시 반영
-      [0, 1500, 3500, 6000].forEach((delay) => {
-        setTimeout(() => {
-          dispatch(reqGetInquireBalance(balanceKey));
-          fetchOrderHistory(balanceKey);
-        }, delay);
-      });
+      // 매매 성공 시 잔고·주문내역 1회만 재조회
+      dispatch(reqGetInquireBalance(balanceKey));
+      fetchOrderHistory(balanceKey);
     }
   }, [balanceKey, dispatch, fetchOrderHistory, addToast]);
 
