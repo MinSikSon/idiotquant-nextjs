@@ -19,6 +19,30 @@ export const authConfig = {
         updateAge: 60 * 60 * 24, // 1일 주기 갱신 (세션이 하루 안에서 무한 연장되지 않도록 maxAge와 동일하게)
     },
     callbacks: {
+        // 재가입 쿨다운: 최근 탈퇴한 카카오 계정은 일정 기간 가입 차단
+        async signIn({ account }) {
+            if (account?.provider === "kakao" && account.providerAccountId) {
+                try {
+                    const base = process.env.NEXT_PUBLIC_API_URL?.replace(/\/$/, "") ?? "";
+                    const res = await fetch(`${base}/user/withdraw-status`, {
+                        method: "POST",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify({ kakaoId: account.providerAccountId }),
+                    });
+                    if (res.ok) {
+                        const data: any = await res.json();
+                        if (data?.blocked) {
+                            // string 반환 시 해당 URL로 리다이렉트 (가입 거부)
+                            return `/login?error=withdraw_cooldown&days=${data.remainingDays ?? 30}`;
+                        }
+                    }
+                } catch (e) {
+                    // fail-open: 백엔드 장애 시 정상 사용자 가입을 막지 않음
+                    console.error("[signIn] withdraw-status check failed:", e);
+                }
+            }
+            return true;
+        },
         async jwt({ token, user }) {
             if (user) {
                 console.log(`[auth.config.ts] user:`, user);

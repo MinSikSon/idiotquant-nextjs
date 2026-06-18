@@ -8,11 +8,20 @@ const BENEFITS = [
     { label: "적정 주가 계산", desc: "7가지 밸류에이션 모델 기반 종목별 안전마진 분석" },
 ];
 
-export default function LoginPage() {
+export default async function LoginPage({ searchParams }: { searchParams: Promise<{ error?: string; days?: string }> }) {
+    const sp = await searchParams;
+    const cooldownDays = sp?.error === "withdraw_cooldown" ? (sp.days ?? "30") : null;
+
     return (
         <div className="min-h-screen flex flex-col items-center justify-center px-4 py-12 bg-[#faf9f7] dark:bg-[#1a1915]">
 
             <div className="relative w-full max-w-sm flex flex-col gap-8">
+
+                {cooldownDays && (
+                    <div className="rounded-xl border border-amber-200 dark:border-amber-900/50 bg-amber-50 dark:bg-amber-950/30 px-4 py-3 text-[13px] text-amber-800 dark:text-amber-300 text-center">
+                        최근 탈퇴한 계정입니다. <b>{cooldownDays}일</b> 후 같은 카카오 계정으로 다시 가입할 수 있습니다.
+                    </div>
+                )}
 
                 {/* Brand mark */}
                 <div className="flex justify-center">
