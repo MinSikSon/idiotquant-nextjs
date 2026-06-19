@@ -100,9 +100,9 @@ export default function LoginPage() {
                 {/* Footer */}
                 <p className="text-center text-[11px] text-neutral-400 dark:text-neutral-500">
                     로그인 시{" "}
-                    <span className="underline underline-offset-2 cursor-pointer hover:text-neutral-600 dark:hover:text-neutral-300 transition-colors">이용약관</span>
+                    <Link href="/terms" className="underline underline-offset-2 cursor-pointer hover:text-neutral-600 dark:hover:text-neutral-300 transition-colors">이용약관</Link>
                     {" "}및{" "}
-                    <span className="underline underline-offset-2 cursor-pointer hover:text-neutral-600 dark:hover:text-neutral-300 transition-colors">개인정보 처리방침</span>
+                    <Link href="/privacy" className="underline underline-offset-2 cursor-pointer hover:text-neutral-600 dark:hover:text-neutral-300 transition-colors">개인정보 처리방침</Link>
                     에 동의합니다.
                 </p>
             </div>
