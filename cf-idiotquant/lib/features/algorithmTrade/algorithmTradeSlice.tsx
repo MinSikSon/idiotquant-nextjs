@@ -164,6 +164,7 @@ export interface NcavDailyState {
     state: "init" | "pending" | "fulfilled" | "rejected";
     list: NcavDailyItem[];
     scanDate: string | null;
+    prevDate: string | null;
     total: number;
     scanningInProgress: boolean;
     error: string | null;
@@ -258,7 +259,7 @@ const initialState: AlgorithmTradeType = {
     stockDetails: {},
     strategyLists: {},
     ncavDailyDates: { state: "init", dates: [], selectedDate: "latest", error: null },
-    ncavDailyList: { state: "init", list: [], scanDate: null, total: 0, scanningInProgress: false, error: null },
+    ncavDailyList: { state: "init", list: [], scanDate: null, prevDate: null, total: 0, scanningInProgress: false, error: null },
     tradingStatus: { KR: null, US: null, state: "init" },
 }
 
@@ -432,6 +433,8 @@ export const algorithmTradeSlice = createAppSlice({
                     state.ncavDailyList.state = "fulfilled";
                     const rawScanDate = action.payload?.meta?.scanDate;
                     const scanDate = rawScanDate ? normalizeDate(rawScanDate) : null;
+                    const rawPrevDate = action.payload?.meta?.prevDate;
+                    state.ncavDailyList.prevDate = rawPrevDate ? normalizeDate(rawPrevDate) : null;
                     if (scanDate) {
                         state.ncavDailyList.scanDate = scanDate;
                         if (!state.ncavDailyDates.dates.find(d => d.scan_date === scanDate)) {

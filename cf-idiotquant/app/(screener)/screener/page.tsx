@@ -611,6 +611,10 @@ function ScreenerContent() {
     const formattedDate = scanDate
         ? `${scanDate.slice(0, 4)}.${scanDate.slice(4, 6)}.${scanDate.slice(6, 8)}`
         : null;
+    const prevDate = ncavDailyList.prevDate;
+    const formattedPrevDate = prevDate
+        ? `${prevDate.slice(0, 4)}.${prevDate.slice(4, 6)}.${prevDate.slice(6, 8)}`
+        : null;
     const scanningInProgress = ncavDailyList.scanningInProgress;
 
     const activeFilterCount = [excludeHoldings, excludeDeficit, excludePreferred, minMarketCap > 0, maxPbr > 0, maxPer > 0, minRoe > 0, minNcav > 0].filter(Boolean).length;
@@ -672,7 +676,7 @@ function ScreenerContent() {
                     <div className="max-w-7xl mx-auto px-4 sm:px-6 py-2.5 flex items-center gap-2">
                         <Clock size={13} className="text-amber-500 dark:text-amber-400 shrink-0" />
                         <p className="text-xs text-amber-700 dark:text-amber-400 font-medium">
-                            최근 발굴 종목 수집 중 — 아직 스캔되지 않은 종목은 어제({formattedDate}) 데이터로 보완됩니다.
+                            최근 발굴 종목 수집 중 — 아직 스캔되지 않은 종목은{formattedPrevDate ? ` 이전(${formattedPrevDate})` : " 이전"} 데이터로 보완됩니다.
                         </p>
                     </div>
                 </div>
