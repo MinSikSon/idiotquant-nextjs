@@ -120,3 +120,11 @@ export const getUsQuantRule: any = async (key: string) =>
     getKoreaInvestmentRequest(`/us/capital/quant-rule?kakao-id=${key}`, {});
 export const postUsQuantRule: any = async (key: string, rule: object) =>
     postKoreaInvestmentRequest(`/us/capital/quant-rule?kakao-id=${key}`, {}, { rule });
+
+// ============================================================================
+// 자동매매 월 예산(= 총 리필량) API (KR)
+// ============================================================================
+export const getKrCapitalBudget: any = async (key: string) =>
+    getKoreaInvestmentRequest(`/kr/capital/budget?kakao-id=${key}`, {});
+export const postKrCapitalBudget: any = async (key: string, monthly_budget_krw: number) =>
+    postKoreaInvestmentRequest(`/kr/capital/budget?kakao-id=${key}`, {}, { monthly_budget_krw });

@@ -1,6 +1,6 @@
 import { PayloadAction } from "@reduxjs/toolkit";
 import { createAppSlice } from "@/lib/createAppSlice";
-import { getKrCapital, getUsCapital, postKrCapitalTokenMinusAll, postKrCapitalTokenMinusOne, postKrCapitalTokenPlusAll, postKrCapitalTokenPlusOne, postUsCapitalTokenMinusAll, postUsCapitalTokenMinusOne, postUsCapitalTokenPlusAll, postUsCapitalTokenPlusOne, postKrCapitalGroupCreate, postKrCapitalGroupUpdate, postKrCapitalGroupDelete, postKrCapitalStockGroup, postKrCapitalStocksGroup, postKrCapitalLikesCopy, postUsCapitalGroupCreate, postUsCapitalGroupUpdate, postUsCapitalGroupDelete, postUsCapitalStockGroup, postUsCapitalStocksGroup, postUsCapitalLikesCopy, getKrQuantRule, postKrQuantRule, getUsQuantRule, postUsQuantRule } from "./capitalAPI";
+import { getKrCapital, getUsCapital, postKrCapitalTokenMinusAll, postKrCapitalTokenMinusOne, postKrCapitalTokenPlusAll, postKrCapitalTokenPlusOne, postUsCapitalTokenMinusAll, postUsCapitalTokenMinusOne, postUsCapitalTokenPlusAll, postUsCapitalTokenPlusOne, postKrCapitalGroupCreate, postKrCapitalGroupUpdate, postKrCapitalGroupDelete, postKrCapitalStockGroup, postKrCapitalStocksGroup, postKrCapitalLikesCopy, postUsCapitalGroupCreate, postUsCapitalGroupUpdate, postUsCapitalGroupDelete, postUsCapitalStockGroup, postUsCapitalStocksGroup, postUsCapitalLikesCopy, getKrQuantRule, postKrQuantRule, getUsQuantRule, postUsQuantRule, getKrCapitalBudget, postKrCapitalBudget } from "./capitalAPI";
 
 /** 예약(가상) 그룹 id — 좋아요(찜) 종목 그룹 */
 export const LIKES_GROUP_ID = "__likes__";
@@ -36,6 +36,33 @@ export interface QuantRuleState {
     default: QuantRule;
     desc: Record<string, QuantRuleFieldMeta>;
 }
+
+/** 자동매매 월 예산(= 총 리필량) + 리필 계산값 */
+export interface BudgetState {
+    state: "init" | "pending" | "fulfilled" | "rejected";
+    saveState: "init" | "pending" | "fulfilled" | "rejected";
+    has_account: boolean;
+    monthly_budget_krw: number;   // 월 예산 = 총 리필량
+    period_minutes: number;       // 리필 주기(분, 고정 5)
+    market_hours: string;         // 리필 시간대
+    active_count: number;         // 활성 종목 수
+    per_tick_total: number;       // 5분당 전체 리필액
+    per_tick_per_stock: number;   // 5분당 종목당 리필액
+    monthly_per_stock: number;    // 월 종목당 리필액(평균)
+}
+
+const initialBudgetState: BudgetState = {
+    state: "init",
+    saveState: "init",
+    has_account: false,
+    monthly_budget_krw: 0,
+    period_minutes: 5,
+    market_hours: "",
+    active_count: 0,
+    per_tick_total: 0,
+    per_tick_per_stock: 0,
+    monthly_per_stock: 0,
+};
 
 const initialQuantRuleState: QuantRuleState = {
     state: "init",
@@ -109,6 +136,7 @@ export interface CapitalType {
     usGroupOp: CapitalTokenRefillType;
     krQuantRule: QuantRuleState;
     usQuantRule: QuantRuleState;
+    krBudget: BudgetState;
 }
 
 const initialState: CapitalType = {
@@ -186,7 +214,8 @@ const initialState: CapitalType = {
         state: "init"
     },
     krQuantRule: { ...initialQuantRuleState },
-    usQuantRule: { ...initialQuantRuleState }
+    usQuantRule: { ...initialQuantRuleState },
+    krBudget: { ...initialBudgetState }
 }
 
 export const capitalSlice = createAppSlice({
@@ -562,6 +591,53 @@ export const capitalSlice = createAppSlice({
                 rejected: (state) => { state.usQuantRule.saveState = "rejected"; },
             }
         ),
+
+        // ── 자동매매 월 예산(= 총 리필량) ──
+        reqGetKrCapitalBudget: create.asyncThunk(
+            async (key?: string) => getKrCapitalBudget(key),
+            {
+                pending: (state) => { state.krBudget.state = "pending"; },
+                fulfilled: (state, action) => {
+                    const p = action.payload ?? {};
+                    state.krBudget = {
+                        ...state.krBudget,
+                        state: "fulfilled",
+                        has_account: !!p.has_account,
+                        monthly_budget_krw: p.monthly_budget_krw ?? 0,
+                        period_minutes: p.period_minutes ?? 5,
+                        market_hours: p.market_hours ?? "",
+                        active_count: p.active_count ?? 0,
+                        per_tick_total: p.per_tick_total ?? 0,
+                        per_tick_per_stock: p.per_tick_per_stock ?? 0,
+                        monthly_per_stock: p.monthly_per_stock ?? 0,
+                    };
+                },
+                rejected: (state) => { state.krBudget.state = "rejected"; },
+            }
+        ),
+        reqPostKrCapitalBudget: create.asyncThunk(
+            async ({ key, monthly_budget_krw }: { key?: string, monthly_budget_krw: number }) => postKrCapitalBudget(key, monthly_budget_krw),
+            {
+                pending: (state) => { state.krBudget.saveState = "pending"; },
+                fulfilled: (state, action) => {
+                    const p = action.payload ?? {};
+                    if (p.success === false) { state.krBudget.saveState = "rejected"; return; }
+                    state.krBudget = {
+                        ...state.krBudget,
+                        saveState: "fulfilled",
+                        has_account: !!p.has_account,
+                        monthly_budget_krw: p.monthly_budget_krw ?? state.krBudget.monthly_budget_krw,
+                        period_minutes: p.period_minutes ?? state.krBudget.period_minutes,
+                        market_hours: p.market_hours ?? state.krBudget.market_hours,
+                        active_count: p.active_count ?? state.krBudget.active_count,
+                        per_tick_total: p.per_tick_total ?? state.krBudget.per_tick_total,
+                        per_tick_per_stock: p.per_tick_per_stock ?? state.krBudget.per_tick_per_stock,
+                        monthly_per_stock: p.monthly_per_stock ?? state.krBudget.monthly_per_stock,
+                    };
+                },
+                rejected: (state) => { state.krBudget.saveState = "rejected"; },
+            }
+        ),
     }),
     selectors: {
         selectKrCapital: (state) => state.krCapital,
@@ -578,6 +654,7 @@ export const capitalSlice = createAppSlice({
         selectUsGroupOp: (state) => state.usGroupOp,
         selectKrQuantRule: (state) => state.krQuantRule,
         selectUsQuantRule: (state) => state.usQuantRule,
+        selectKrBudget: (state) => state.krBudget,
     }
 });
 
@@ -588,5 +665,7 @@ export const { reqPostUsCapitalGroupCreate, reqPostUsCapitalGroupUpdate, reqPost
 export const { selectKrGroupOp, selectUsGroupOp } = capitalSlice.selectors;
 export const { reqGetKrQuantRule, reqPostKrQuantRule, reqGetUsQuantRule, reqPostUsQuantRule } = capitalSlice.actions;
 export const { selectKrQuantRule, selectUsQuantRule } = capitalSlice.selectors;
+export const { reqGetKrCapitalBudget, reqPostKrCapitalBudget } = capitalSlice.actions;
+export const { selectKrBudget } = capitalSlice.selectors;
 export const { reqGetUsCapital, reqPostUsCapitalTokenPlusAll, reqPostUsCapitalTokenPlusOne, reqPostUsCapitalTokenMinusAll, reqPostUsCapitalTokenMinusOne } = capitalSlice.actions;
 export const { selectUsCapital, selectUsCapitalTokenPlusAll, selectUsCapitalTokenPlusOne, selectUsCapitalTokenMinusAll, selectUsCapitalTokenMinusOne } = capitalSlice.selectors;

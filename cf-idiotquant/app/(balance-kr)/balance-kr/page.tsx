@@ -38,6 +38,7 @@ import {
   reqPostKrCapitalGroupDelete, reqPostKrCapitalStockGroup, reqPostKrCapitalStocksGroup, reqPostKrCapitalLikesCopy,
   selectKrGroupOp,
   reqGetKrQuantRule, reqPostKrQuantRule, selectKrQuantRule,
+  reqGetKrCapitalBudget, reqPostKrCapitalBudget, selectKrBudget,
 } from "@/lib/features/capital/capitalSlice";
 import { reqGetMyLikes, selectLikedList } from "@/lib/features/stockLikes/stockLikesSlice";
 import { getInquirePrice } from "@/lib/features/koreaInvestment/koreaInvestmentAPI";
@@ -45,6 +46,7 @@ import { getInquirePrice } from "@/lib/features/koreaInvestment/koreaInvestmentA
 import InquireBalanceResult from "@/components/inquireBalanceResult";
 import StockListTable from "@/components/balance/stockListTable";
 import QuantRuleEditor from "@/components/balance/quantRuleEditor";
+import RefillSettings from "@/components/balance/refillSettings";
 import { PortfolioChartSection } from "@/components/balance/portfolioChart";
 import { SectionNav, type NavSection } from "@/components/balance/sectionNav";
 import {
@@ -204,6 +206,7 @@ function BalanceKr() {
   const krCapitalMinusOne = useAppSelector(selectKrCapitalTokenMinusOne);
   const krGroupOp = useAppSelector(selectKrGroupOp);
   const krQuantRule = useAppSelector(selectKrQuantRule);
+  const krBudget = useAppSelector(selectKrBudget);
   const likedListAll = useAppSelector(selectLikedList);
   const krLikedList = useMemo(() => (likedListAll ?? []).filter((l: any) => !l.is_us), [likedListAll]);
   const isMaster = useMemo(() => session?.user?.name === process.env.NEXT_PUBLIC_MASTER, [session]);
@@ -322,7 +325,10 @@ function BalanceKr() {
 
   // 트레이딩 조건(quant_rule) 로드
   useEffect(() => {
-    if (balanceKey && balanceKey !== "undefined") dispatch(reqGetKrQuantRule(balanceKey));
+    if (balanceKey && balanceKey !== "undefined") {
+      dispatch(reqGetKrQuantRule(balanceKey));
+      dispatch(reqGetKrCapitalBudget(balanceKey));
+    }
   }, [balanceKey, dispatch]);
 
   // 조건 저장 결과 토스트
@@ -378,6 +384,7 @@ function BalanceKr() {
   const doBulkMove = (tickers: string[], groupId: string | null) => dispatch(reqPostKrCapitalStocksGroup({ key: balanceKey, tickers, groupId }));
   const doCopyLikes = (tickers: string[], groupId: string | null) => dispatch(reqPostKrCapitalLikesCopy({ key: balanceKey, tickers, groupId }));
   const doSaveQuantRule = (rule: any) => dispatch(reqPostKrQuantRule({ key: balanceKey, rule }));
+  const doSaveBudget = (monthly_budget_krw: number) => dispatch(reqPostKrCapitalBudget({ key: balanceKey, monthly_budget_krw }));
 
   const summary = kiBalance.output2?.[0] || {};
   const totalEvalAmt = Number(summary.tot_evlu_amt || 0);
@@ -688,6 +695,12 @@ function BalanceKr() {
                   : <span className="text-[10px] font-mono text-neutral-500 dark:text-neutral-400 bg-[#faf9f7] dark:bg-[#242320] px-2 py-0.5 rounded-full">기본값</span>
               }
             />
+            <RefillSettings
+              data={krBudget}
+              isMaster={isMaster}
+              onSave={doSaveBudget}
+            />
+            <div className="h-px bg-neutral-100 dark:bg-[#35332e] my-4" />
             <QuantRuleEditor
               data={krQuantRule}
               isMaster={isMaster}
