@@ -6,7 +6,7 @@ export const metadata: Metadata = {
 };
 
 const EFFECTIVE_DATE = "2026년 6월 19일";
-const CONTACT_EMAIL = "funkydj3@naver.com";
+const CONTACT_EMAIL = "funkydj1@naver.com";
 
 export default function PrivacyPage() {
     return (
