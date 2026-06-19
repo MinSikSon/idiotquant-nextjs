@@ -34,6 +34,8 @@ export default auth((req: any) => {
         path.startsWith("/images") ||
         path === "/favicon.ico" ||
         path === "/login" ||
+        path === "/terms" ||
+        path === "/privacy" ||
         path === "/calculator" ||
         path === "/not-found" ||
         path === "/laboratory" ||
