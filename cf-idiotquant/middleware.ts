@@ -13,15 +13,15 @@ export default auth((req: any) => {
     const isAdmin = session?.user?.role === "admin";
     const path: string = req.nextUrl.pathname;
 
-    if (path.startsWith("/admin")) {
+    // admin 전용 페이지: 서버 단에서 차단 (페이지 코드가 비admin에게 전달되지 않음)
+    const isAdminOnly =
+        path.startsWith("/admin") ||
+        path.startsWith("/backtest") ||
+        path.startsWith("/balance-kr") ||
+        path.startsWith("/balance-us");
+    if (isAdminOnly) {
         if (!isLoggedIn) return Response.redirect(new URL("/login", req.nextUrl));
         if (!isAdmin) return Response.redirect(new URL("/", req.nextUrl));
-    }
-
-    if (path.startsWith("/balance-kr") || path.startsWith("/balance-us")) {
-        if (!session?.user?.can_search_account) {
-            return Response.redirect(new URL("/login", req.nextUrl));
-        }
     }
 
     if (path.startsWith("/api/auth") || path.startsWith("/api/proxy")) {
