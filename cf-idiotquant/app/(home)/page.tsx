@@ -21,6 +21,8 @@ interface PreviewStock {
 }
 
 const HOME_MKTCAP_MIN = 500;
+const PREVIEW_FETCH = 8;   // 미리보기 카드에 담는 종목 수
+const PREVIEW_PUBLIC = 5;  // 비로그인 시 블러 없이 공개하는 종목 수
 
 const STRATEGY_LABEL: Record<string, string> = {
   ncav: "NCAV", low_pbr: "저PBR", low_per: "저PER", s_rim: "S-RIM",
@@ -194,7 +196,7 @@ export default function HomePage() {
           const all: PreviewStock[] = data.data;
           const filtered = all.filter(item => (item.market_cap ?? 0) >= HOME_MKTCAP_MIN);
           setPreview({
-            items: filtered.slice(0, 5),
+            items: filtered.slice(0, PREVIEW_FETCH),
             total: data.meta.total,
             filteredTotal: filtered.length,
             scanDate: data.meta.scanDate,
@@ -207,8 +209,8 @@ export default function HomePage() {
       .catch(() => setPreview(p => ({ ...p, loading: false })));
   }, []);
 
-  const publicItems = preview.items.slice(0, 3);
-  const lockedItems = preview.items.slice(3);
+  const publicItems = preview.items.slice(0, PREVIEW_PUBLIC);
+  const lockedItems = preview.items.slice(PREVIEW_PUBLIC);
   const formattedDate = preview.scanDate
     ? `${preview.scanDate.slice(0, 4)}.${preview.scanDate.slice(4, 6)}.${preview.scanDate.slice(6, 8)}`
     : null;
@@ -332,7 +334,7 @@ export default function HomePage() {
               <p className="text-[11px] text-neutral-400 mt-0.5">
                 {isLoggedIn
                   ? `NCAV 비율 순 · 전체 ${preview.filteredTotal}개`
-                  : "상위 3개 미리 보기 · 전체 목록은 로그인 후"}
+                  : `상위 ${PREVIEW_PUBLIC}개 미리 보기 · 전체 목록은 로그인 후`}
               </p>
             </div>
             <Link
@@ -355,7 +357,7 @@ export default function HomePage() {
 
             {preview.loading ? (
               <div>
-                {[0, 1, 2, 3, 4].map(i => (
+                {Array.from({ length: PREVIEW_PUBLIC }).map((_, i) => (
                   <div key={i} className="flex items-center gap-3 px-5 py-4 border-b border-neutral-100 dark:border-[#35332e] last:border-0">
                     <div className="w-4 h-3 rounded bg-neutral-100 dark:bg-[#2c2b27] animate-pulse shrink-0" />
                     <div className="flex-1 min-w-0 space-y-1.5">
