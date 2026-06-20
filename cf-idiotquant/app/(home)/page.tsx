@@ -5,7 +5,7 @@ import { useSession } from "next-auth/react";
 import Link from "next/link";
 import {
   Search, Calculator, Filter, Lock, ArrowRight,
-  TrendingUp, ChevronRight, Loader2, BarChart3, Zap, Layers,
+  TrendingUp, ChevronRight, BarChart3, Zap, Layers,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { STRATEGY_PRESETS_CLIENT, STRATEGY_BADGE } from "@/lib/constants/strategies";
@@ -207,8 +207,8 @@ export default function HomePage() {
       .catch(() => setPreview(p => ({ ...p, loading: false })));
   }, []);
 
-  const publicItems = preview.items.slice(0, 3);
-  const lockedItems = preview.items.slice(3);
+  const publicItems = preview.items.slice(0, 1);
+  const lockedItems = preview.items.slice(1);
   const formattedDate = preview.scanDate
     ? `${preview.scanDate.slice(0, 4)}.${preview.scanDate.slice(4, 6)}.${preview.scanDate.slice(6, 8)}`
     : null;
@@ -273,6 +273,11 @@ export default function HomePage() {
           </div>
         </div>
 
+        {/* Trust copy */}
+        <p className="text-center text-[10px] text-neutral-400 dark:text-neutral-600 pb-4 px-5">
+          개발자가 직접 운용하며 매일 검증하는 도구입니다.
+        </p>
+
         {/* Stats strip */}
         {!preview.loading && preview.total > 0 && (
           <div className="border-t border-neutral-100 dark:border-[#2c2b27] relative">
@@ -299,9 +304,15 @@ export default function HomePage() {
           </div>
         )}
         {preview.loading && (
-          <div className="border-t border-neutral-100 dark:border-[#2c2b27] flex items-center justify-center gap-2 py-3 text-neutral-400">
-            <Loader2 size={11} className="animate-spin" />
-            <span className="text-xs">집계 중...</span>
+          <div className="border-t border-neutral-100 dark:border-[#2c2b27]">
+            <div className="max-w-3xl mx-auto px-5 py-5 grid grid-cols-3 gap-0">
+              {[0, 1, 2].map(i => (
+                <div key={i} className={cn("text-center py-1", i === 1 && "border-x border-neutral-100 dark:border-[#2c2b27]")}>
+                  <div className="h-6 w-16 bg-neutral-100 dark:bg-neutral-800 rounded animate-pulse mx-auto mb-1.5" />
+                  <div className="h-2.5 w-12 bg-neutral-100 dark:bg-neutral-800 rounded animate-pulse mx-auto" />
+                </div>
+              ))}
+            </div>
           </div>
         )}
       </section>
@@ -323,7 +334,7 @@ export default function HomePage() {
               <p className="text-[11px] text-neutral-400 mt-0.5">
                 {isLoggedIn
                   ? `NCAV 비율 순 · 전체 ${preview.filteredTotal}개`
-                  : "상위 3개 미리 보기 · 전체 목록은 로그인 후"}
+                  : "1개 미리 보기 · 전체 목록은 로그인 후"}
               </p>
             </div>
             <Link
@@ -345,10 +356,22 @@ export default function HomePage() {
             </div>
 
             {preview.loading ? (
-              <div className="flex items-center justify-center py-12 gap-2 text-neutral-400">
-                <Loader2 size={16} className="animate-spin" />
-                <span className="text-sm">불러오는 중...</span>
-              </div>
+              <>
+                {Array.from({ length: 3 }).map((_, i) => (
+                  <div key={i} className="flex items-center gap-3 px-5 py-4 border-b border-neutral-100 dark:border-[#35332e] last:border-0">
+                    <div className="w-3 h-3 bg-neutral-100 dark:bg-neutral-800 rounded animate-pulse shrink-0" />
+                    <div className="flex-1 min-w-0 space-y-1.5">
+                      <div className="h-3.5 w-28 bg-neutral-100 dark:bg-neutral-800 rounded animate-pulse" />
+                      <div className="h-2.5 w-14 bg-neutral-100 dark:bg-neutral-800 rounded animate-pulse" />
+                    </div>
+                    <div className="hidden sm:flex items-center gap-4">
+                      <div className="h-8 w-10 bg-neutral-100 dark:bg-neutral-800 rounded animate-pulse" />
+                      <div className="h-8 w-10 bg-neutral-100 dark:bg-neutral-800 rounded animate-pulse" />
+                    </div>
+                    <div className="h-8 w-12 bg-neutral-100 dark:bg-neutral-800 rounded animate-pulse shrink-0" />
+                  </div>
+                ))}
+              </>
             ) : preview.items.length === 0 ? (
               <div className="py-10 text-center">
                 <BarChart3 size={24} className="text-neutral-300 dark:text-neutral-600 mx-auto mb-2" />
@@ -437,8 +460,11 @@ export default function HomePage() {
                   </span>
                   <ChevronRight size={13} className="text-neutral-300 dark:text-neutral-600 group-hover:text-[#16a34a] group-hover:translate-x-0.5 transition-all" />
                 </div>
-                <p className="text-[11px] text-neutral-500 dark:text-neutral-400 leading-relaxed break-keep">
+                <p className="text-[11px] text-neutral-500 dark:text-neutral-400 leading-relaxed break-keep mb-1.5">
                   {s.hint}
+                </p>
+                <p className="text-[10px] text-neutral-400 dark:text-neutral-500 leading-relaxed break-keep border-t border-neutral-100 dark:border-[#35332e] pt-1.5">
+                  {s.plain}
                 </p>
               </Link>
             ))}
