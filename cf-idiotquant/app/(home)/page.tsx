@@ -5,7 +5,7 @@ import { useSession } from "next-auth/react";
 import Link from "next/link";
 import {
   Search, Calculator, Filter, Lock, ArrowRight,
-  TrendingUp, ChevronRight, Loader2, BarChart3, Zap, Layers,
+  TrendingUp, ChevronRight, BarChart3, Zap, Layers,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { STRATEGY_PRESETS_CLIENT, STRATEGY_BADGE } from "@/lib/constants/strategies";
@@ -299,9 +299,18 @@ export default function HomePage() {
           </div>
         )}
         {preview.loading && (
-          <div className="border-t border-neutral-100 dark:border-[#2c2b27] flex items-center justify-center gap-2 py-3 text-neutral-400">
-            <Loader2 size={11} className="animate-spin" />
-            <span className="text-xs">집계 중...</span>
+          <div className="border-t border-neutral-100 dark:border-[#2c2b27] relative">
+            <div className="max-w-3xl mx-auto px-5 py-5 grid grid-cols-3 gap-0">
+              {[0, 1, 2].map(i => (
+                <div key={i} className={cn(
+                  "flex flex-col items-center py-1 gap-1.5",
+                  i === 1 && "border-x border-neutral-100 dark:border-[#2c2b27]"
+                )}>
+                  <div className="h-5 w-14 rounded-md bg-neutral-200/80 dark:bg-[#35332e] animate-pulse" />
+                  <div className="h-2.5 w-12 rounded bg-neutral-100 dark:bg-[#2c2b27] animate-pulse" />
+                </div>
+              ))}
+            </div>
           </div>
         )}
       </section>
@@ -345,9 +354,17 @@ export default function HomePage() {
             </div>
 
             {preview.loading ? (
-              <div className="flex items-center justify-center py-12 gap-2 text-neutral-400">
-                <Loader2 size={16} className="animate-spin" />
-                <span className="text-sm">불러오는 중...</span>
+              <div>
+                {[0, 1, 2, 3, 4].map(i => (
+                  <div key={i} className="flex items-center gap-3 px-5 py-4 border-b border-neutral-100 dark:border-[#35332e] last:border-0">
+                    <div className="w-4 h-3 rounded bg-neutral-100 dark:bg-[#2c2b27] animate-pulse shrink-0" />
+                    <div className="flex-1 min-w-0 space-y-1.5">
+                      <div className="h-3.5 w-32 rounded bg-neutral-200/80 dark:bg-[#35332e] animate-pulse" />
+                      <div className="h-2.5 w-16 rounded bg-neutral-100 dark:bg-[#2c2b27] animate-pulse" />
+                    </div>
+                    <div className="h-7 w-12 rounded-md bg-neutral-200/80 dark:bg-[#35332e] animate-pulse shrink-0" />
+                  </div>
+                ))}
               </div>
             ) : preview.items.length === 0 ? (
               <div className="py-10 text-center">
@@ -437,7 +454,10 @@ export default function HomePage() {
                   </span>
                   <ChevronRight size={13} className="text-neutral-300 dark:text-neutral-600 group-hover:text-[#16a34a] group-hover:translate-x-0.5 transition-all" />
                 </div>
-                <p className="text-[11px] text-neutral-500 dark:text-neutral-400 leading-relaxed break-keep">
+                <p className="text-xs text-neutral-700 dark:text-neutral-200 font-medium leading-relaxed break-keep mb-1">
+                  {s.plain}
+                </p>
+                <p className="text-[10px] text-neutral-400 dark:text-neutral-500 font-mono leading-relaxed break-keep">
                   {s.hint}
                 </p>
               </Link>
