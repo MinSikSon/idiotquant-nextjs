@@ -403,9 +403,9 @@ function AnalyzeContent() {
     };
   }, [krOrUs, data]);
 
-  // 일별 시세 요청이 끝났는데도(fulfilled/rejected) 데이터가 비어 차트를 그릴 수 없을 때,
-  // 실제 종목 상태 플래그로 거래정지/상장폐지를 구분해 안내. (로딩 중에는 안내하지 않음)
-  const chartNotice: 'suspended' | 'delisted' | 'unknown' | undefined = (() => {
+  // 차트 데이터가 비어 추이를 그릴 수 없을 때, 실제 종목 상태 플래그로 거래정지/상장폐지가
+  // 확인된 경우에만 안내한다. 플래그가 없으면(단순 빈 응답·로딩 등) 오안내를 피하기 위해 표시하지 않음.
+  const chartNotice: 'suspended' | 'delisted' | undefined = (() => {
     const dailyState = krOrUs === 'US' ? data.usDaily?.state : data.kiChart?.state;
     const settled = dailyState === 'fulfilled' || dailyState === 'rejected';
     if (!isPriceLoaded || chartConfig.data.length > 0 || !settled) return undefined;
@@ -413,12 +413,12 @@ function AnalyzeContent() {
       const o = data.kiPrice?.output;
       // 58: 거래정지 (iscd_stat_cls_code), temp_stop_yn: 임시정지여부
       if (o?.iscd_stat_cls_code === '58' || o?.temp_stop_yn === 'Y') return 'suspended';
-      return 'unknown';
+      return undefined;
     } else {
       const o = data.usSearchInfo?.output;
       if (o?.lstg_abol_item_yn === 'Y' || o?.lstg_yn === 'N') return 'delisted';
       if (o?.ovrs_stck_tr_stop_dvsn_cd && o.ovrs_stck_tr_stop_dvsn_cd !== '00') return 'suspended';
-      return 'unknown';
+      return undefined;
     }
   })();
 
