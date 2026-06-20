@@ -5,10 +5,10 @@ import { useSession } from "next-auth/react";
 import Link from "next/link";
 import {
   Search, Calculator, Filter, Lock, ArrowRight,
-  TrendingUp, ChevronRight, Loader2, BarChart3, Zap, Layers,
+  TrendingUp, ChevronRight, BarChart3, Zap, Layers,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { STRATEGY_PRESETS_CLIENT, STRATEGY_BADGE } from "@/lib/constants/strategies";
+import { STRATEGY_PRESETS_CLIENT, STRATEGY_BADGE, type StrategyPreset } from "@/lib/constants/strategies";
 
 interface PreviewStock {
   ticker: string;
@@ -21,6 +21,21 @@ interface PreviewStock {
 }
 
 const HOME_MKTCAP_MIN = 500;
+const PER_STRATEGY = 2;    // 전략 그룹당 노출 종목 수
+const GROUP_PUBLIC = 3;    // 비로그인 시 블러 없이 공개하는 전략 그룹 수
+
+// 전략별 정렬 키 (값이 작을수록 상위). NCAV 계열은 비율이 높을수록 좋으므로 음수.
+const STRATEGY_SORT: Record<string, (i: PreviewStock) => number> = {
+  ncav:           i => -(i.ncav_ratio ?? 0),
+  near_ncav:      i => -(i.ncav_ratio ?? 0),
+  low_pbr:        i => i.pbr > 0 ? i.pbr : Infinity,
+  s_rim:          i => i.pbr > 0 ? i.pbr : Infinity,
+  quality_value:  i => i.pbr > 0 ? i.pbr : Infinity,
+  balanced_value: i => i.pbr > 0 ? i.pbr : Infinity,
+  graham_number:  i => (i.per > 0 && i.pbr > 0) ? i.per * i.pbr : Infinity,
+  low_per:        i => i.per > 0 ? i.per : Infinity,
+  magic_formula:  i => i.per > 0 ? i.per : Infinity,
+};
 
 const STRATEGY_LABEL: Record<string, string> = {
   ncav: "NCAV", low_pbr: "저PBR", low_per: "저PER", s_rim: "S-RIM",
@@ -116,9 +131,9 @@ function useCountUp(target: number, duration = 1000) {
   return count;
 }
 
-function StockRow({ item, index }: { item: PreviewStock; index: number }) {
+function StockRow({ item, index, excludeStrategy }: { item: PreviewStock; index: number; excludeStrategy?: string }) {
   const ncav = item.ncav_ratio;
-  const strategies = item.strategies?.slice(0, 2) ?? [];
+  const strategies = (item.strategies ?? []).filter(s => s !== excludeStrategy).slice(0, 2);
 
   return (
     <div className="flex items-center gap-3 px-5 py-4 border-b border-neutral-100 dark:border-[#35332e] last:border-0 transition-colors">
@@ -173,6 +188,27 @@ function StockRow({ item, index }: { item: PreviewStock; index: number }) {
   );
 }
 
+function StrategyGroup({ preset, stocks }: { preset: StrategyPreset; stocks: PreviewStock[] }) {
+  return (
+    <div className="border-b border-neutral-100 dark:border-[#35332e] last:border-0">
+      <div className="px-4 py-2.5 bg-[#fcfaf7] dark:bg-[#1f1e1b] flex items-center gap-2">
+        <span className={cn(
+          "text-[11px] font-extrabold px-2 py-0.5 rounded shrink-0",
+          STRATEGY_BADGE[preset.id] ?? "bg-neutral-100 text-neutral-500"
+        )}>
+          {preset.label}
+        </span>
+        <span className="text-[11px] text-neutral-500 dark:text-neutral-400 truncate break-keep">
+          {preset.plain}
+        </span>
+      </div>
+      {stocks.map((item, i) => (
+        <StockRow key={`${preset.id}-${item.ticker}`} item={item} index={i} excludeStrategy={preset.id} />
+      ))}
+    </div>
+  );
+}
+
 export default function HomePage() {
   const { data: session, status } = useSession();
   const isLoggedIn = !!session;
@@ -194,7 +230,7 @@ export default function HomePage() {
           const all: PreviewStock[] = data.data;
           const filtered = all.filter(item => (item.market_cap ?? 0) >= HOME_MKTCAP_MIN);
           setPreview({
-            items: filtered.slice(0, 5),
+            items: filtered,
             total: data.meta.total,
             filteredTotal: filtered.length,
             scanDate: data.meta.scanDate,
@@ -207,8 +243,19 @@ export default function HomePage() {
       .catch(() => setPreview(p => ({ ...p, loading: false })));
   }, []);
 
-  const publicItems = preview.items.slice(0, 3);
-  const lockedItems = preview.items.slice(3);
+  // 전략별 상위 PER_STRATEGY개 그룹 (종목 없는 전략은 제외)
+  const groups = STRATEGY_PRESETS_CLIENT.map(preset => {
+    const sortFn = STRATEGY_SORT[preset.id] ?? (i => -(i.ncav_ratio ?? 0));
+    const stocks = preview.items
+      .filter(it => it.strategies?.includes(preset.id))
+      .sort((a, b) => sortFn(a) - sortFn(b))
+      .slice(0, PER_STRATEGY);
+    return { preset, stocks };
+  }).filter(g => g.stocks.length > 0);
+
+  const visibleGroups = isLoggedIn ? groups : groups.slice(0, GROUP_PUBLIC);
+  const lockedGroups = isLoggedIn ? [] : groups.slice(GROUP_PUBLIC);
+
   const formattedDate = preview.scanDate
     ? `${preview.scanDate.slice(0, 4)}.${preview.scanDate.slice(4, 6)}.${preview.scanDate.slice(6, 8)}`
     : null;
@@ -299,9 +346,18 @@ export default function HomePage() {
           </div>
         )}
         {preview.loading && (
-          <div className="border-t border-neutral-100 dark:border-[#2c2b27] flex items-center justify-center gap-2 py-3 text-neutral-400">
-            <Loader2 size={11} className="animate-spin" />
-            <span className="text-xs">집계 중...</span>
+          <div className="border-t border-neutral-100 dark:border-[#2c2b27] relative">
+            <div className="max-w-3xl mx-auto px-5 py-5 grid grid-cols-3 gap-0">
+              {[0, 1, 2].map(i => (
+                <div key={i} className={cn(
+                  "flex flex-col items-center py-1 gap-1.5",
+                  i === 1 && "border-x border-neutral-100 dark:border-[#2c2b27]"
+                )}>
+                  <div className="h-5 w-14 rounded-md bg-neutral-200/80 dark:bg-[#35332e] animate-pulse" />
+                  <div className="h-2.5 w-12 rounded bg-neutral-100 dark:bg-[#2c2b27] animate-pulse" />
+                </div>
+              ))}
+            </div>
           </div>
         )}
       </section>
@@ -322,8 +378,8 @@ export default function HomePage() {
               </div>
               <p className="text-[11px] text-neutral-400 mt-0.5">
                 {isLoggedIn
-                  ? `NCAV 비율 순 · 전체 ${preview.filteredTotal}개`
-                  : "상위 3개 미리 보기 · 전체 목록은 로그인 후"}
+                  ? `전략별 상위 ${PER_STRATEGY}개 · 전체 ${preview.filteredTotal}개`
+                  : `전략별 미리 보기 · 전체 목록은 로그인 후`}
               </p>
             </div>
             <Link
@@ -345,45 +401,48 @@ export default function HomePage() {
             </div>
 
             {preview.loading ? (
-              <div className="flex items-center justify-center py-12 gap-2 text-neutral-400">
-                <Loader2 size={16} className="animate-spin" />
-                <span className="text-sm">불러오는 중...</span>
+              <div>
+                {Array.from({ length: 5 }).map((_, i) => (
+                  <div key={i} className="flex items-center gap-3 px-5 py-4 border-b border-neutral-100 dark:border-[#35332e] last:border-0">
+                    <div className="w-4 h-3 rounded bg-neutral-100 dark:bg-[#2c2b27] animate-pulse shrink-0" />
+                    <div className="flex-1 min-w-0 space-y-1.5">
+                      <div className="h-3.5 w-32 rounded bg-neutral-200/80 dark:bg-[#35332e] animate-pulse" />
+                      <div className="h-2.5 w-16 rounded bg-neutral-100 dark:bg-[#2c2b27] animate-pulse" />
+                    </div>
+                    <div className="h-7 w-12 rounded-md bg-neutral-200/80 dark:bg-[#35332e] animate-pulse shrink-0" />
+                  </div>
+                ))}
               </div>
-            ) : preview.items.length === 0 ? (
+            ) : groups.length === 0 ? (
               <div className="py-10 text-center">
                 <BarChart3 size={24} className="text-neutral-300 dark:text-neutral-600 mx-auto mb-2" />
                 <p className="text-xs text-neutral-400">스캔 데이터가 없습니다.</p>
               </div>
             ) : (
               <>
-                {publicItems.map((item, i) => (
-                  <StockRow key={item.ticker} item={item} index={i} />
+                {visibleGroups.map(g => (
+                  <StrategyGroup key={g.preset.id} preset={g.preset} stocks={g.stocks} />
                 ))}
 
-                {/* Locked rows */}
-                {lockedItems.length > 0 && (
+                {/* Locked groups */}
+                {lockedGroups.length > 0 && (
                   <div className="relative">
-                    {lockedItems.map((item, i) => (
-                      <div
-                        key={item.ticker}
-                        className={cn(!isLoggedIn && "blur-sm select-none pointer-events-none")}
-                      >
-                        <StockRow item={item} index={publicItems.length + i} />
-                      </div>
-                    ))}
+                    <div className="blur-sm select-none pointer-events-none">
+                      {lockedGroups.map(g => (
+                        <StrategyGroup key={g.preset.id} preset={g.preset} stocks={g.stocks} />
+                      ))}
+                    </div>
 
-                    {!isLoggedIn && (
-                      <div className="absolute inset-0 flex items-center justify-center bg-gradient-to-b from-white/40 to-white/90 dark:from-[#242320]/40 dark:to-[#242320]/95">
-                        <Link
-                          href="/login"
-                          className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-[#16a34a] hover:bg-[#15803d] text-white text-sm font-bold shadow-md shadow-[#16a34a]/20 transition-all"
-                        >
-                          <Lock size={13} />
-                          로그인하여 전체 확인
-                          <ArrowRight size={13} />
-                        </Link>
-                      </div>
-                    )}
+                    <div className="absolute inset-0 flex items-center justify-center bg-gradient-to-b from-white/40 to-white/90 dark:from-[#242320]/40 dark:to-[#242320]/95">
+                      <Link
+                        href="/login"
+                        className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-[#16a34a] hover:bg-[#15803d] text-white text-sm font-bold shadow-md shadow-[#16a34a]/20 transition-all"
+                      >
+                        <Lock size={13} />
+                        로그인하여 {groups.length}개 전략 전체 확인
+                        <ArrowRight size={13} />
+                      </Link>
+                    </div>
                   </div>
                 )}
 
@@ -437,7 +496,10 @@ export default function HomePage() {
                   </span>
                   <ChevronRight size={13} className="text-neutral-300 dark:text-neutral-600 group-hover:text-[#16a34a] group-hover:translate-x-0.5 transition-all" />
                 </div>
-                <p className="text-[11px] text-neutral-500 dark:text-neutral-400 leading-relaxed break-keep">
+                <p className="text-xs text-neutral-700 dark:text-neutral-200 font-medium leading-relaxed break-keep mb-1">
+                  {s.plain}
+                </p>
+                <p className="text-[10px] text-neutral-400 dark:text-neutral-500 font-mono leading-relaxed break-keep">
                   {s.hint}
                 </p>
               </Link>
