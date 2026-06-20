@@ -3,7 +3,7 @@
 import React, { useState } from 'react';
 import Image from 'next/image';
 import { cn } from "@/lib/utils";
-import { TrendingUp, TrendingDown, Activity } from "lucide-react";
+import { TrendingUp, TrendingDown, Activity, AlertTriangle } from "lucide-react";
 import LineChart from "@/components/LineChart";
 
 // =========================================================================
@@ -98,6 +98,7 @@ interface StockXpProfile {
 interface StockCardProps {
   stock: any;
   chartConfig: { data: number[]; categories: string[]; color: string };
+  chartUnavailable?: boolean;
   rawData?: any;
   isCompact?: boolean;
   stockXpProfile?: StockXpProfile;
@@ -106,7 +107,7 @@ interface StockCardProps {
 // =========================================================================
 // StockCard
 // =========================================================================
-export const StockCard = ({ stock, chartConfig }: StockCardProps) => {
+export const StockCard = ({ stock, chartConfig, chartUnavailable }: StockCardProps) => {
   const [imgError, setImgError] = useState(false);
 
   const gradeRaw  = stock?.grade;
@@ -234,7 +235,7 @@ export const StockCard = ({ stock, chartConfig }: StockCardProps) => {
       </div>
 
       {/* ── 미니 차트 ── */}
-      {hasChart && (
+      {hasChart ? (
         <div className="px-5 pb-4">
           <div className="flex items-center gap-1.5 mb-2">
             <Activity size={9} className="text-neutral-400" />
@@ -250,7 +251,16 @@ export const StockCard = ({ stock, chartConfig }: StockCardProps) => {
             />
           </div>
         </div>
-      )}
+      ) : chartUnavailable ? (
+        <div className="px-5 pb-4">
+          <div className="flex items-start gap-2 px-3 py-2.5 rounded-xl border border-amber-200 dark:border-amber-900/40 bg-amber-50/60 dark:bg-amber-950/20">
+            <AlertTriangle size={12} className="text-amber-500 shrink-0 mt-0.5" />
+            <p className="text-[10px] font-medium text-amber-700 dark:text-amber-400 leading-relaxed">
+              가격 추이를 불러올 수 없습니다. 거래정지되었거나 상장폐지된 종목일 수 있습니다.
+            </p>
+          </div>
+        </div>
+      ) : null}
 
       {/* ── 통계 행 ── */}
       <div className="border-t border-neutral-100 dark:border-[#35332e] grid grid-cols-3 divide-x divide-neutral-100 dark:divide-[#35332e]">

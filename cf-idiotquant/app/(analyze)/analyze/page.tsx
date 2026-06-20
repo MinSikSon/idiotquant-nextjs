@@ -403,6 +403,14 @@ function AnalyzeContent() {
     };
   }, [krOrUs, data]);
 
+  // 일별 시세 요청이 끝났는데도(fulfilled/rejected) 데이터가 비어 있으면 거래정지·상장폐지 가능성 안내.
+  // (로딩 중에는 안내를 띄우지 않음)
+  const dailyState = krOrUs === 'US' ? data.usDaily?.state : data.kiChart?.state;
+  const chartUnavailable =
+    isPriceLoaded &&
+    chartConfig.data.length === 0 &&
+    (dailyState === 'fulfilled' || dailyState === 'rejected');
+
   // 핵심 지표 + StockCard props 통합 (중복 계산 방지)
   // isPriceLoaded 시점부터 가격·PBR·PER·EPS 표시. NCAV·fairValue·srimScore는 isLoaded 이후에 채워짐.
   const stockData = useMemo(() => {
@@ -597,6 +605,7 @@ function AnalyzeContent() {
                       market: data?.kiPrice?.output?.rprs_mrkt_kor_name ?? "",
                     }}
                     chartConfig={chartConfig}
+                    chartUnavailable={chartUnavailable}
                     rawData={data}
                     stockXpProfile={DEFAULT_XP_PROFILE}
                   />
