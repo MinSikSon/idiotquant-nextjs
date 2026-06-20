@@ -98,7 +98,7 @@ interface StockXpProfile {
 interface StockCardProps {
   stock: any;
   chartConfig: { data: number[]; categories: string[]; color: string };
-  chartNotice?: 'suspended' | 'delisted' | 'unknown';
+  chartNotice?: 'suspended' | 'delisted';
   rawData?: any;
   isCompact?: boolean;
   stockXpProfile?: StockXpProfile;
@@ -263,9 +263,7 @@ export const StockCard = ({ stock, chartConfig, chartNotice }: StockCardProps) =
             <p className={cn("text-[10px] font-medium leading-relaxed", chartNotice === 'delisted' ? "text-red-700 dark:text-red-400" : "text-amber-700 dark:text-amber-400")}>
               {chartNotice === 'suspended'
                 ? "거래정지된 종목입니다. 가격 추이를 제공할 수 없습니다."
-                : chartNotice === 'delisted'
-                ? "상장폐지된 종목입니다. 가격 추이를 제공할 수 없습니다."
-                : "가격 추이를 불러올 수 없습니다. 거래정지되었거나 상장폐지된 종목일 수 있습니다."}
+                : "상장폐지된 종목입니다. 가격 추이를 제공할 수 없습니다."}
             </p>
           </div>
         </div>
