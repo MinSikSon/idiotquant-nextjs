@@ -403,6 +403,25 @@ function AnalyzeContent() {
     };
   }, [krOrUs, data]);
 
+  // 일별 시세 요청이 끝났는데도(fulfilled/rejected) 데이터가 비어 차트를 그릴 수 없을 때,
+  // 실제 종목 상태 플래그로 거래정지/상장폐지를 구분해 안내. (로딩 중에는 안내하지 않음)
+  const chartNotice: 'suspended' | 'delisted' | 'unknown' | undefined = (() => {
+    const dailyState = krOrUs === 'US' ? data.usDaily?.state : data.kiChart?.state;
+    const settled = dailyState === 'fulfilled' || dailyState === 'rejected';
+    if (!isPriceLoaded || chartConfig.data.length > 0 || !settled) return undefined;
+    if (krOrUs === 'KR') {
+      const o = data.kiPrice?.output;
+      // 58: 거래정지 (iscd_stat_cls_code), temp_stop_yn: 임시정지여부
+      if (o?.iscd_stat_cls_code === '58' || o?.temp_stop_yn === 'Y') return 'suspended';
+      return 'unknown';
+    } else {
+      const o = data.usSearchInfo?.output;
+      if (o?.lstg_abol_item_yn === 'Y' || o?.lstg_yn === 'N') return 'delisted';
+      if (o?.ovrs_stck_tr_stop_dvsn_cd && o.ovrs_stck_tr_stop_dvsn_cd !== '00') return 'suspended';
+      return 'unknown';
+    }
+  })();
+
   // 핵심 지표 + StockCard props 통합 (중복 계산 방지)
   // isPriceLoaded 시점부터 가격·PBR·PER·EPS 표시. NCAV·fairValue·srimScore는 isLoaded 이후에 채워짐.
   const stockData = useMemo(() => {
@@ -597,6 +616,7 @@ function AnalyzeContent() {
                       market: data?.kiPrice?.output?.rprs_mrkt_kor_name ?? "",
                     }}
                     chartConfig={chartConfig}
+                    chartNotice={chartNotice}
                     rawData={data}
                     stockXpProfile={DEFAULT_XP_PROFILE}
                   />
