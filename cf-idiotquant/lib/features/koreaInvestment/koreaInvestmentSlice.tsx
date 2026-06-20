@@ -905,14 +905,13 @@ export const koreaInvestmentSlice = createAppSlice({
           state.koreaInvestmentInquireDailyItemChartPrice.state = "pending";
         },
         fulfilled: (state, action) => {
-          if (action.payload?.["output1"] !== undefined) {
-            state.koreaInvestmentInquireDailyItemChartPrice = {
-              ...state.koreaInvestmentInquireDailyItemChartPrice,
-              ...action.payload,
-              state: "fulfilled"
-            };
-            state.state = "inquire-daily-itemchartprice";
-          }
+          // 에러 응답(output1 없음)이어도 항상 settle 시킨다. pending에 머물면 차트도 안내도 안 나옴.
+          state.koreaInvestmentInquireDailyItemChartPrice = {
+            ...state.koreaInvestmentInquireDailyItemChartPrice,
+            ...action.payload,
+            state: "fulfilled"
+          };
+          state.state = "inquire-daily-itemchartprice";
         },
         rejected: (state) => {
           state.koreaInvestmentInquireDailyItemChartPrice.state = "rejected";
