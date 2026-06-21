@@ -287,12 +287,12 @@ function BalanceKr() {
     if (tradingStatus.state === "pending" || tradingStatus.KR === null) return;
     const next = !tradingStatus.KR;
     try {
-      await dispatch(reqSetTradingActive({ country: "KR", isActive: next })).unwrap();
+      await dispatch(reqSetTradingActive({ country: "KR", isActive: next, key: balanceKey })).unwrap();
       addToast("success", `국내 자동매매가 ${next ? "활성화" : "비활성화"}되었습니다.`);
     } catch {
       addToast("error", "자동매매 상태 변경에 실패했습니다.");
     }
-  }, [tradingStatus, dispatch, addToast]);
+  }, [tradingStatus, dispatch, addToast, balanceKey]);
 
   useEffect(() => {
     const urlKey = searchParams.get("key");
@@ -305,6 +305,7 @@ function BalanceKr() {
     dispatch(reqGetInquireBalance(balanceKey));
     fetchOrderHistory(balanceKey);
     dispatch(reqGetKrCapital(balanceKey));
+    dispatch(reqFetchTradingStatus({ country: "KR", key: balanceKey }));
   }, [balanceKey]);
 
   useEffect(() => {
@@ -319,7 +320,6 @@ function BalanceKr() {
     }
     dispatch(reqGetCapitalToken());
     dispatch(reqGetKakaoMemberList());
-    dispatch(reqFetchTradingStatus("KR"));
     dispatch(reqGetMyLikes());
   }, [session, status, dispatch, router]);
 

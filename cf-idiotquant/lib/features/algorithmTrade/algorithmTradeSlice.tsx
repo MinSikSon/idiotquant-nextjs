@@ -459,8 +459,8 @@ export const algorithmTradeSlice = createAppSlice({
             }
         ),
         reqFetchTradingStatus: create.asyncThunk(
-            async (country: "KR" | "US") => {
-                const value = await fetchTradingStatus(country);
+            async ({ country, key }: { country: "KR" | "US"; key?: string }) => {
+                const value = await fetchTradingStatus(country, key);
                 if (value === null) throw new Error("fetch_failed");
                 return { country, value };
             },
@@ -474,8 +474,8 @@ export const algorithmTradeSlice = createAppSlice({
             }
         ),
         reqSetTradingActive: create.asyncThunk(
-            async ({ country, isActive }: { country: "KR" | "US"; isActive: boolean }) => {
-                const ok = await setTradingActive(country, isActive);
+            async ({ country, isActive, key }: { country: "KR" | "US"; isActive: boolean; key?: string }) => {
+                const ok = await setTradingActive(country, isActive, key);
                 if (!ok) throw new Error("set_failed");
                 return { country, isActive };
             },

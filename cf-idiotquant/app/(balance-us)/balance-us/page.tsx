@@ -252,12 +252,12 @@ function BalanceUs() {
     if (tradingStatus.state === "pending" || tradingStatus.US === null) return;
     const next = !tradingStatus.US;
     try {
-      await dispatch(reqSetTradingActive({ country: "US", isActive: next })).unwrap();
+      await dispatch(reqSetTradingActive({ country: "US", isActive: next, key: balanceKey })).unwrap();
       addToast("success", `미국 자동매매가 ${next ? "활성화" : "비활성화"}되었습니다.`);
     } catch {
       addToast("error", "자동매매 상태 변경에 실패했습니다.");
     }
-  }, [tradingStatus, dispatch, addToast]);
+  }, [tradingStatus, dispatch, addToast, balanceKey]);
 
   const handleOrderResult = useCallback((status: "success" | "error", message: string) => {
     addToast(status, message);
@@ -286,13 +286,15 @@ function BalanceUs() {
       return;
     }
     dispatch(reqGetKakaoMemberList());
-    dispatch(reqFetchTradingStatus("US"));
     dispatch(reqGetMyLikes());
   }, [session, status, dispatch, router]);
 
   // 트레이딩 조건(quant_rule) 로드
   useEffect(() => {
-    if (balanceKey && balanceKey !== "undefined") dispatch(reqGetUsQuantRule(balanceKey));
+    if (balanceKey && balanceKey !== "undefined") {
+      dispatch(reqGetUsQuantRule(balanceKey));
+      dispatch(reqFetchTradingStatus({ country: "US", key: balanceKey }));
+    }
   }, [balanceKey, dispatch]);
 
   // 조건 저장 결과 토스트
