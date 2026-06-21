@@ -6,7 +6,7 @@ import {
   PieChart, Pie, BarChart, Bar, XAxis, YAxis, Tooltip, Cell, ResponsiveContainer,
 } from "recharts";
 import { InboxIcon } from "lucide-react";
-import { TabButton, ChartSectionSkeleton, fmtKrw, fmtUsd } from "@/components/balance/shared";
+import { TabButton, ChartSectionSkeleton, fmtKrw } from "@/components/balance/shared";
 
 // =========================================================================
 // 팔레트
@@ -26,11 +26,11 @@ const PIE_COLORS_DARK = [
 // =========================================================================
 // 커스텀 툴팁
 // =========================================================================
-function PieTooltip({ active, payload, isUs }: { active?: boolean; payload?: any[]; isUs: boolean }) {
+function PieTooltip({ active, payload }: { active?: boolean; payload?: any[] }) {
   if (!active || !payload || payload.length === 0) return null;
 
   const { name, value, percent } = payload[0];
-  const formatter = isUs ? fmtUsd : fmtKrw;
+  const formatter = fmtKrw;
   const pctStr = typeof percent === "number" && !isNaN(percent)
     ? `${(percent * 100).toFixed(1)}%`
     : "";
@@ -118,7 +118,7 @@ function PortfolioPieChart({ output1, isUs }: PortfolioPieChartProps) {
                 <Cell key={`cell-${index}`} fill={colors[index % colors.length]} />
               ))}
             </Pie>
-            <Tooltip content={<PieTooltip isUs={isUs} />} />
+            <Tooltip content={<PieTooltip />} />
           </PieChart>
         </ResponsiveContainer>
       </div>
@@ -127,7 +127,7 @@ function PortfolioPieChart({ output1, isUs }: PortfolioPieChartProps) {
       <div className="w-full sm:flex-1 sm:min-w-0 space-y-2.5 sm:max-h-[260px] sm:overflow-y-auto">
         {pieData.map((item, index) => {
           const percent = (item.value / totalValue) * 100;
-          const formatter = isUs ? fmtUsd : fmtKrw;
+          const formatter = fmtKrw;
 
           return (
             <div key={index} className="flex items-center gap-3 pb-2.5 border-b border-neutral-100 dark:border-[#35332e] last:border-0">
