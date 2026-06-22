@@ -46,7 +46,7 @@ export const getQuantRuleDesc: any = async () => {
 export const getScanDailyList: any = async (date?: string, strategy?: string) => {
     const dateParam = date ?? "latest";
     const strategyParam = strategy ?? "all";
-    const subUrl = `/scan/daily?date=${encodeURIComponent(dateParam)}&strategy=${strategyParam}&limit=2000&sort=ncav_ratio&order=desc`;
+    const subUrl = `/scan/daily?date=${encodeURIComponent(dateParam)}&strategy=${strategyParam}&limit=2500&sort=ncav_ratio&order=desc`;
     return getAlgorithmTradeRequest(subUrl);
 }
 
@@ -64,7 +64,7 @@ export const getScanDailyByTicker = async (ticker: string, limit = 30) =>
     getAlgorithmTradeRequest(`/scan/daily/ticker/${encodeURIComponent(ticker)}?limit=${limit}`);
 
 export const getScanDailyAll = async (date: string) =>
-    getAlgorithmTradeRequest(`/scan/daily?date=${encodeURIComponent(date)}&strategy=all&limit=2000`);
+    getAlgorithmTradeRequest(`/scan/daily?date=${encodeURIComponent(date)}&strategy=all&limit=2500`);
 
 export const getPortfolioSimulation = async (startDate: string, strategy: string) =>
     getAlgorithmTradeRequest(`/scan/portfolio?start_date=${encodeURIComponent(startDate)}&strategy=${encodeURIComponent(strategy)}`);
