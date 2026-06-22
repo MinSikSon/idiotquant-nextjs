@@ -43,7 +43,7 @@ export const metadata: Metadata = {
     default: 'IdiotQuant - 무료 NCAV·저PBR·저PER 주식 스크리너',
     template: '%s | IdiotQuant',
   },
-  description: '퀀트 알고리즘이 매일 코스피·코스닥 2,000개 종목을 스캔해 NCAV, 저PBR, 저PER, S-RIM 기준 저평가 주식을 자동 발굴합니다. 재무분석·목표주가·자동매매 기능 제공.',
+  description: '퀀트 알고리즘이 매일 코스피·코스닥 2,400개 종목을 스캔해 NCAV, 저PBR, 저PER, S-RIM 기준 저평가 주식을 자동 발굴합니다. 재무분석·목표주가·자동매매 기능 제공.',
   keywords: [
     '퀀트 투자', 'NCAV 주식', '저평가 주식', '주식 스크리너',
     '저PBR 주식', '저PER 주식', 'S-RIM', '주식 재무분석',
