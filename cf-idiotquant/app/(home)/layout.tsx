@@ -2,7 +2,7 @@ import type { Metadata } from 'next';
 
 export const metadata: Metadata = {
   title: 'IdiotQuant - 무료 NCAV·저PBR·저PER 주식 스크리너',
-  description: '퀀트 알고리즘이 매일 코스피·코스닥 2,000개 종목을 스캔해 NCAV, 저PBR, 저PER, S-RIM 기준 저평가 주식을 자동 발굴합니다. 데이터 기반 스마트 가치투자의 시작.',
+  description: '퀀트 알고리즘이 매일 코스피·코스닥 2,400개 종목을 스캔해 NCAV, 저PBR, 저PER, S-RIM 기준 저평가 주식을 자동 발굴합니다. 데이터 기반 스마트 가치투자의 시작.',
   keywords: [
     'NCAV 주식', '저PBR 주식', '저PER 주식', '퀀트 투자', '주식 스크리너',
     '저평가 주식', '주식 발굴', '퀀트 전략', '가치투자', '코스피 저평가 주식',
@@ -40,7 +40,7 @@ const jsonLdFaq = {
       name: 'IdiotQuant 스크리너는 어떻게 작동하나요?',
       acceptedAnswer: {
         '@type': 'Answer',
-        text: '매일 코스피·코스닥 2,000개 종목의 재무제표(유동자산, 총부채, 순이익 등)와 실시간 시세를 자동으로 스캔합니다. NCAV, 저PBR, 저PER, S-RIM 등 퀀트 전략 기준을 충족하는 종목을 필터링해 매일 업데이트된 발굴 종목 목록을 제공합니다.',
+        text: '매일 코스피·코스닥 2,400개 종목의 재무제표(유동자산, 총부채, 순이익 등)와 실시간 시세를 자동으로 스캔합니다. NCAV, 저PBR, 저PER, S-RIM 등 퀀트 전략 기준을 충족하는 종목을 필터링해 매일 업데이트된 발굴 종목 목록을 제공합니다.',
       },
     },
     {

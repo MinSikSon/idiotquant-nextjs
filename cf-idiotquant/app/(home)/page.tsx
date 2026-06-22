@@ -223,7 +223,7 @@ export default function HomePage() {
   }>({ items: [], total: 0, filteredTotal: 0, scanDate: null, loading: true });
 
   useEffect(() => {
-    fetch("/api/proxy/scan/daily?strategy=all&limit=2000&sort=ncav_ratio&order=desc")
+    fetch("/api/proxy/scan/daily?strategy=all&limit=2500&sort=ncav_ratio&order=desc")
       .then(r => r.json())
       .then((data: any) => {
         if (data.success) {
@@ -290,7 +290,7 @@ export default function HomePage() {
           </h1>
 
           <p className="text-sm sm:text-[15px] text-neutral-500 dark:text-neutral-400 font-medium leading-relaxed mb-7">
-            9가지 가치투자 전략으로 매일 2,000여 종목을<br className="hidden sm:block" />
+            9가지 가치투자 전략으로 매일 2,400여 종목을<br className="hidden sm:block" />
             알고리즘이 대신 분석합니다.
           </p>
 
