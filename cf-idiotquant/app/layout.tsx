@@ -87,12 +87,16 @@ export const metadata: Metadata = {
     siteName: 'IdiotQuant',
     locale: 'ko_KR',
     type: 'website',
+    images: [
+      { url: 'https://idiotquant.com/icon-512.png', width: 512, height: 512, alt: 'IdiotQuant' },
+    ],
   },
   twitter: {
     card: 'summary_large_image',
     title: 'IdiotQuant - 무료 NCAV·저PBR 주식 스크리너',
     description: '퀀트 알고리즘이 매일 코스피·코스닥 저평가 주식을 발굴합니다.',
     creator: '@idiotquant',
+    images: ['https://idiotquant.com/icon-512.png'],
   },
 };
 
@@ -117,7 +121,7 @@ const jsonLdOrg = {
   '@type': 'Organization',
   'name': 'IdiotQuant',
   'url': 'https://idiotquant.com',
-  'logo': 'https://idiotquant.com/images/logo.png',
+  'logo': 'https://idiotquant.com/icon-512.png',
   'description': '퀀트 알고리즘 기반 무료 주식 스크리너 및 재무분석 서비스',
   'contactPoint': {
     '@type': 'ContactPoint',
