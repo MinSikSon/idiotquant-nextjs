@@ -17,8 +17,7 @@ export default auth((req: any) => {
     const isAdminOnly =
         path.startsWith("/admin") ||
         path.startsWith("/backtest") ||
-        path.startsWith("/balance-kr") ||
-        path.startsWith("/balance-us");
+        path.startsWith("/balance");
     if (isAdminOnly) {
         if (!isLoggedIn) return Response.redirect(new URL("/login", req.nextUrl));
         if (!isAdmin) return Response.redirect(new URL("/", req.nextUrl));
