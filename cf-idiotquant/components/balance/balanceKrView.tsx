@@ -4,7 +4,7 @@ import { useEffect, useState, useCallback, useRef, useMemo } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import {
   LayoutDashboard, ChevronRight, MapPin,
-  Clock, Wallet, Coins, Percent,
+  Wallet, Coins, Percent,
   Database, User, PieChart, BarChart3, ClipboardList, Power, SlidersHorizontal,
 } from "lucide-react";
 import { useSession } from "next-auth/react";
@@ -48,12 +48,13 @@ import StockListTable from "@/components/balance/stockListTable";
 import QuantRuleEditor from "@/components/balance/quantRuleEditor";
 import RefillSettings from "@/components/balance/refillSettings";
 import { PortfolioChartSection } from "@/components/balance/portfolioChart";
-import { SectionNav, type NavSection } from "@/components/balance/sectionNav";
+import { type NavSection } from "@/components/balance/sectionNav";
+import { BalanceShell } from "@/components/balance/balanceShell";
 import {
-  useToast, ToastContainer,
+  useToast,
   SectionHeader, SectionPanel, EmptyRow,
-  KpiCard, TableHeader, OrderTabAction, OrderSectionIcon,
-  BalanceHeaderActions, PnlIcon, pnlIconBg, pnlValueColor, pnlAccentColor,
+  KpiCard, MetricChip, TableHeader, OrderTabAction, OrderSectionIcon,
+  PnlIcon, pnlIconBg, pnlValueColor, pnlAccentColor,
   formatTime,
 } from "@/components/balance/shared";
 import { cn } from "@/lib/utils";
@@ -94,20 +95,6 @@ export interface KoreaInvestmentBalance {
   output1: KoreaInvestmentBalanceStockInfo[];
   output2: KoreaInvestmentBalanceOutput2[];
   rt_cd: string;
-}
-
-// =========================================================================
-// 상세 지표 칩 (스크롤 스트립용)
-// =========================================================================
-function MetricChip({ label, value, valueClass = "text-neutral-900 dark:text-neutral-100" }: {
-  label: string; value: string; valueClass?: string;
-}) {
-  return (
-    <div className="bg-white dark:bg-[#242320] border border-neutral-200 dark:border-[#35332e] rounded-xl px-4 py-2.5 flex flex-col gap-0.5 shrink-0">
-      <span className="text-[9px] font-black text-neutral-400 dark:text-neutral-500 uppercase tracking-widest whitespace-nowrap">{label}</span>
-      <span className={cn("text-xs font-mono font-black whitespace-nowrap", valueClass)}>{value}</span>
-    </div>
-  );
 }
 
 // =========================================================================
@@ -418,341 +405,303 @@ export function BalanceKrView({ countryToggle }: { countryToggle?: React.ReactNo
   ];
 
   return (
-    <div className="min-h-screen bg-[#faf9f7] dark:bg-[#1a1915] transition-colors duration-300">
-
-      <ToastContainer toasts={toasts} onRemove={removeToast} />
-
-      <div className="max-w-7xl mx-auto px-4 py-8 md:py-10 space-y-6">
-
-        {/* 헤더 */}
-        <header className="flex flex-col md:flex-row md:items-end justify-between gap-5">
-          <div className="space-y-2.5">
-            {/* 브레드크럼 */}
-            <nav className="flex items-center gap-1.5 text-[11px] font-semibold text-neutral-400 flex-wrap">
-              <span className="flex items-center gap-1">
-                <LayoutDashboard size={12} />
-                투자 현황
-              </span>
+    <BalanceShell
+      toasts={toasts}
+      onRemoveToast={removeToast}
+      lastUpdated={lastUpdated}
+      countryToggle={countryToggle}
+      autoRefresh={autoRefresh}
+      onToggleAutoRefresh={() => setAutoRefresh(v => !v)}
+      isLoading={isLoading}
+      onRefresh={handleRefresh}
+      dividerClass="via-[#86efac] dark:via-[#166534]"
+      navSections={navSections}
+      mobileTab={mobileTab}
+      onMobileTabChange={setMobileTab}
+      breadcrumb={
+        <nav className="flex items-center gap-1.5 text-[11px] font-semibold text-neutral-400 flex-wrap">
+          <span className="flex items-center gap-1">
+            <LayoutDashboard size={12} />
+            투자 현황
+          </span>
+          <ChevronRight size={11} className="text-neutral-300 dark:text-neutral-600" />
+          <span className="flex items-center gap-1 text-[#16a34a] dark:text-[#16a34a] bg-[#f0fdf4] dark:bg-[#14532d]/20 px-2 py-0.5 rounded-md">
+            <MapPin size={11} />한국(KR)
+          </span>
+          {currentKakaoUser && (
+            <>
               <ChevronRight size={11} className="text-neutral-300 dark:text-neutral-600" />
-              <span className="flex items-center gap-1 text-[#16a34a] dark:text-[#16a34a] bg-[#f0fdf4] dark:bg-[#14532d]/20 px-2 py-0.5 rounded-md">
-                <MapPin size={11} />한국(KR)
+              <span className="flex items-center gap-1 text-neutral-600 dark:text-neutral-300 bg-neutral-200/60 dark:bg-[#242320] px-2 py-0.5 rounded-md">
+                <User size={10} />
+                {currentKakaoUser.name || balanceKey}
               </span>
-              {currentKakaoUser && (
-                <>
-                  <ChevronRight size={11} className="text-neutral-300 dark:text-neutral-600" />
-                  <span className="flex items-center gap-1 text-neutral-600 dark:text-neutral-300 bg-neutral-200/60 dark:bg-[#242320] px-2 py-0.5 rounded-md">
-                    <User size={10} />
-                    {currentKakaoUser.name || balanceKey}
-                  </span>
-                </>
-              )}
-            </nav>
-
-            {/* 타이틀 */}
-            <div className="flex items-center gap-3 flex-wrap">
-              <h1 className="text-3xl md:text-4xl font-black tracking-tighter bg-gradient-to-r from-neutral-900 to-neutral-500 dark:from-white dark:to-neutral-400 bg-clip-text text-transparent">
-                Portfolio Balance
-              </h1>
-              <span className="text-2xl select-none" aria-hidden>🇰🇷</span>
-              {!isLoading && totalEvalAmt > 0 && (
-                <span className="text-sm font-mono font-black text-neutral-400 dark:text-neutral-500 bg-[#faf9f7] dark:bg-[#242320] px-2.5 py-1 rounded-lg border border-neutral-200 dark:border-[#3a3834]">
-                  {totalEvalAmt.toLocaleString()}원
-                </span>
-              )}
-            </div>
-
-            {/* 마지막 업데이트 */}
-            {lastUpdated ? (
-              <p className="flex items-center gap-1.5 text-[11px] text-neutral-400 font-mono">
-                <Clock size={11} />
-                {lastUpdated.toLocaleTimeString("ko-KR")} 기준
-              </p>
-            ) : (
-              <div className="h-4 w-40 rounded bg-neutral-200 dark:bg-[#242320] animate-pulse" />
-            )}
-          </div>
-
-          <div className="flex flex-col items-end gap-2">
-            {countryToggle}
-            <BalanceHeaderActions
-              autoRefresh={autoRefresh}
-              onToggleAutoRefresh={() => setAutoRefresh(v => !v)}
-              isLoading={isLoading}
-              onRefresh={handleRefresh}
-              extra={tradingStatus.KR !== null ? (
-                <button
-                  onClick={handleToggleTrading}
-                  disabled={tradingStatus.state === "pending"}
-                  title={tradingStatus.KR ? "자동매매 비활성화" : "자동매매 활성화"}
-                  className={cn(
-                    "flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold border transition-all",
-                    tradingStatus.KR
-                      ? "bg-[#f0fdf4] dark:bg-[#14532d]/30 text-[#16a34a] border-[#86efac] dark:border-[#166534]"
-                      : "bg-white dark:bg-[#242320] text-neutral-400 border-neutral-200 dark:border-[#35332e] hover:border-neutral-400",
-                    tradingStatus.state === "pending" && "opacity-60 cursor-not-allowed"
-                  )}
-                >
-                  <Power size={13} className={tradingStatus.KR ? "text-[#16a34a]" : ""} />
-                  {tradingStatus.KR ? "자동매매 ON" : "자동매매 OFF"}
-                </button>
-              ) : undefined}
-            />
-            <span className="text-[10px] font-mono text-neutral-400 bg-[#faf9f7] dark:bg-[#242320] border border-neutral-200 dark:border-[#35332e] px-2.5 py-1 rounded-lg">
-              ID: {String(balanceKey).slice(0, 8) || "N/A"}
-            </span>
-          </div>
-        </header>
-
-        <div className="h-px bg-gradient-to-r from-transparent via-[#86efac] dark:via-[#166534] to-transparent opacity-60" />
-
-        {/* 섹션 네비게이션 */}
-        <SectionNav sections={navSections} mobileTab={mobileTab} onMobileTabChange={setMobileTab} />
-
-        {/* KPI + 지표 스트립 (모바일 탭: section-kpi) */}
-        <div className={cn(mobileTab !== "section-kpi" && "hidden md:block")}>
-
-        {/* KPI 카드 */}
-        <section id="section-kpi" className="grid grid-cols-2 lg:grid-cols-4 gap-3 animate-in fade-in slide-in-from-bottom-2 duration-400">
-          <KpiCard
-            label="총 평가 금액"
-            value={isLoading ? null : `${totalEvalAmt.toLocaleString()}원`}
-            sub={isLoading ? "" : `주식 ${sctsEvluAmt.toLocaleString()}원 · CMA ${cmaEvluAmt.toLocaleString()}원`}
-            icon={<Wallet size={15} />}
-            iconBg="bg-[#f0fdf4] dark:bg-[#052e16]/40 text-[#f0fdf4]0"
-            accentColor="bg-[#16a34a] dark:bg-[#16a34a]"
-          />
-          <KpiCard
-            label="예수금 (D+2)"
-            value={isLoading ? null : `${d2Deposit.toLocaleString()}원`}
-            sub={isLoading ? "" : `순자산 ${nassAmt.toLocaleString()}원`}
-            icon={<Coins size={15} />}
-            iconBg="bg-amber-50 dark:bg-amber-950/40 text-amber-500"
-            accentColor="bg-amber-400 dark:bg-amber-600"
-          />
-          <KpiCard
-            label="평가손익 합계"
-            value={isLoading ? null : `${isPnlPositive ? "▲ +" : "▼ "}${totalPnl.toLocaleString()}원`}
-            sub={isLoading ? "" : `매입원금 ${pchs.toLocaleString()}원`}
-            icon={<PnlIcon positive={isPnlPositive} />}
-            iconBg={pnlIconBg(isPnlPositive)}
-            valueColor={pnlValueColor(isPnlPositive)}
-            accentColor={pnlAccentColor(isPnlPositive)}
-          />
-          <KpiCard
-            label="자산 수익률"
-            value={isLoading ? null : `${isPnlPositive ? "▲ +" : "▼ "}${pnlRate.toFixed(2)}%`}
-            sub={isLoading ? "" : `당일 증감 ${isDailyPositive ? "+" : ""}${asstIcdcErngRt.toFixed(2)}%`}
-            icon={<Percent size={15} />}
-            iconBg="bg-[#faf9f7] dark:bg-[#242320] text-neutral-500"
-            valueColor={pnlValueColor(isPnlPositive)}
-            accentColor={pnlAccentColor(isPnlPositive)}
-          />
-        </section>
-
-        {/* 상세 지표 스트립 */}
-        {!isLoading && (
-          <div className="overflow-x-auto no-scrollbar -mt-1">
-            <div className="flex gap-2 min-w-max pb-0.5">
-              <MetricChip
-                label="당일 등락"
-                value={`${isDailyPositive ? "▲ +" : "▼ "}${asstIcdcAmt.toLocaleString()}원`}
-                valueClass={isDailyPositive ? "text-rose-500" : "text-[#f0fdf4]0"}
-              />
-              <MetricChip
-                label="금일 매수"
-                value={`${thdtBuyAmt.toLocaleString()}원`}
-                valueClass="text-rose-400 dark:text-rose-400"
-              />
-              <MetricChip
-                label="금일 매도"
-                value={`${thdtSllAmt.toLocaleString()}원`}
-                valueClass="text-[#16a34a] dark:text-[#16a34a]"
-              />
-              <MetricChip
-                label="금일 매수 - 매도"
-                value={`${(thdtBuyAmt - thdtSllAmt) >= 0 ? "+" : ""}${(thdtBuyAmt - thdtSllAmt).toLocaleString()}원`}
-                valueClass={(thdtBuyAmt - thdtSllAmt) >= 0 ? "text-rose-500" : "text-[#f0fdf4]0"}
-              />
-              <MetricChip
-                label="CMA 평가"
-                value={`${cmaEvluAmt.toLocaleString()}원`}
-              />
-              <MetricChip
-                label="유가증권 평가"
-                value={`${sctsEvluAmt.toLocaleString()}원`}
-                valueClass="text-indigo-600 dark:text-indigo-400"
-              />
-              {totLoanAmt > 0 && (
-                <MetricChip
-                  label="대출 잔고"
-                  value={`${totLoanAmt.toLocaleString()}원`}
-                  valueClass="text-orange-500"
+            </>
+          )}
+        </nav>
+      }
+      title={
+        <div className="flex items-center gap-3 flex-wrap">
+          <h1 className="text-3xl md:text-4xl font-black tracking-tighter bg-gradient-to-r from-neutral-900 to-neutral-500 dark:from-white dark:to-neutral-400 bg-clip-text text-transparent">
+            Portfolio Balance
+          </h1>
+          <span className="text-2xl select-none" aria-hidden>🇰🇷</span>
+        </div>
+      }
+      headerExtra={tradingStatus.KR !== null ? (
+        <button
+          onClick={handleToggleTrading}
+          disabled={tradingStatus.state === "pending"}
+          title={tradingStatus.KR ? "자동매매 비활성화" : "자동매매 활성화"}
+          className={cn(
+            "flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold border transition-all",
+            tradingStatus.KR
+              ? "bg-[#f0fdf4] dark:bg-[#14532d]/30 text-[#16a34a] border-[#86efac] dark:border-[#166534]"
+              : "bg-white dark:bg-[#242320] text-neutral-400 border-neutral-200 dark:border-[#35332e] hover:border-neutral-400",
+            tradingStatus.state === "pending" && "opacity-60 cursor-not-allowed"
+          )}
+        >
+          <Power size={13} className={tradingStatus.KR ? "text-[#16a34a]" : ""} />
+          {tradingStatus.KR ? "자동매매 ON" : "자동매매 OFF"}
+        </button>
+      ) : undefined}
+      footerBadge={
+        <span className="text-[10px] font-mono text-neutral-400 bg-[#faf9f7] dark:bg-[#242320] border border-neutral-200 dark:border-[#35332e] px-2.5 py-1 rounded-lg">
+          ID: {String(balanceKey).slice(0, 8) || "N/A"}
+        </span>
+      }
+      sections={[
+        {
+          id: "section-kpi",
+          node: (
+            <>
+              <section id="section-kpi" className="grid grid-cols-2 lg:grid-cols-4 gap-3 animate-in fade-in slide-in-from-bottom-2 duration-400">
+                <KpiCard
+                  label="총 평가 금액"
+                  value={isLoading ? null : `${totalEvalAmt.toLocaleString()}원`}
+                  sub={isLoading ? "" : `주식 ${sctsEvluAmt.toLocaleString()}원 · CMA ${cmaEvluAmt.toLocaleString()}원`}
+                  icon={<Wallet size={15} />}
+                  iconBg="bg-[#f0fdf4] dark:bg-[#052e16]/40 text-[#f0fdf4]0"
+                  accentColor="bg-[#16a34a] dark:bg-[#16a34a]"
                 />
+                <KpiCard
+                  label="예수금 (D+2)"
+                  value={isLoading ? null : `${d2Deposit.toLocaleString()}원`}
+                  sub={isLoading ? "" : `순자산 ${nassAmt.toLocaleString()}원`}
+                  icon={<Coins size={15} />}
+                  iconBg="bg-amber-50 dark:bg-amber-950/40 text-amber-500"
+                  accentColor="bg-amber-400 dark:bg-amber-600"
+                />
+                <KpiCard
+                  label="평가손익 합계"
+                  value={isLoading ? null : `${isPnlPositive ? "▲ +" : "▼ "}${totalPnl.toLocaleString()}원`}
+                  sub={isLoading ? "" : `매입원금 ${pchs.toLocaleString()}원`}
+                  icon={<PnlIcon positive={isPnlPositive} />}
+                  iconBg={pnlIconBg(isPnlPositive)}
+                  valueColor={pnlValueColor(isPnlPositive)}
+                  accentColor={pnlAccentColor(isPnlPositive)}
+                />
+                <KpiCard
+                  label="자산 수익률"
+                  value={isLoading ? null : `${isPnlPositive ? "▲ +" : "▼ "}${pnlRate.toFixed(2)}%`}
+                  sub={isLoading ? "" : `당일 증감 ${isDailyPositive ? "+" : ""}${asstIcdcErngRt.toFixed(2)}%`}
+                  icon={<Percent size={15} />}
+                  iconBg="bg-[#faf9f7] dark:bg-[#242320] text-neutral-500"
+                  valueColor={pnlValueColor(isPnlPositive)}
+                  accentColor={pnlAccentColor(isPnlPositive)}
+                />
+              </section>
+
+              {!isLoading && (
+                <div className="overflow-x-auto no-scrollbar mt-3">
+                  <div className="flex gap-2 min-w-max pb-0.5">
+                    <MetricChip
+                      label="당일 등락"
+                      value={`${isDailyPositive ? "▲ +" : "▼ "}${asstIcdcAmt.toLocaleString()}원`}
+                      valueClass={isDailyPositive ? "text-rose-500" : "text-[#f0fdf4]0"}
+                    />
+                    <MetricChip
+                      label="금일 매수"
+                      value={`${thdtBuyAmt.toLocaleString()}원`}
+                      valueClass="text-rose-400 dark:text-rose-400"
+                    />
+                    <MetricChip
+                      label="금일 매도"
+                      value={`${thdtSllAmt.toLocaleString()}원`}
+                      valueClass="text-[#16a34a] dark:text-[#16a34a]"
+                    />
+                    <MetricChip
+                      label="금일 매수 - 매도"
+                      value={`${(thdtBuyAmt - thdtSllAmt) >= 0 ? "+" : ""}${(thdtBuyAmt - thdtSllAmt).toLocaleString()}원`}
+                      valueClass={(thdtBuyAmt - thdtSllAmt) >= 0 ? "text-rose-500" : "text-[#f0fdf4]0"}
+                    />
+                    {totLoanAmt > 0 && (
+                      <MetricChip
+                        label="대출 잔고"
+                        value={`${totLoanAmt.toLocaleString()}원`}
+                        valueClass="text-orange-500"
+                      />
+                    )}
+                  </div>
+                </div>
               )}
-            </div>
-          </div>
-        )}
-
-        </div>{/* /section-kpi mobile tab */}
-
-        {/* 포트폴리오 자산 구성 (모바일 탭: section-portfolio) */}
-        <div className={cn(mobileTab !== "section-portfolio" && "hidden md:block")}>
-        <SectionPanel id="section-portfolio">
-          <SectionHeader
-            icon={<PieChart size={16} />}
-            title="포트폴리오 자산 구성"
-            subtitle="보유 종목별 평가금액 및 수익률 시각화"
-          />
-          <PortfolioChartSection
-            output1={kiBalance.output1 || []}
-            isUs={false}
-            isLoading={isLoading}
-          />
-        </SectionPanel>
-
-        </div>{/* /section-portfolio mobile tab */}
-
-        {/* 잔고 조회 패널 (모바일 탭: section-balance) */}
-        <div className={cn(mobileTab !== "section-balance" && "hidden md:block")}>
-        <SectionPanel id="section-balance">
-          <InquireBalanceResult
-            balanceKey={balanceKey}
-            setBalanceKey={setBalanceKey}
-            kiBalance={kiBalance as any}
-            reqGetInquireBalance={reqGetInquireBalance}
-            kakaoMemberList={kakaoMemberList}
-            reqPostOrderCash={reqPostOrderCash}
-            kiOrderCash={orderCashState}
-            capital={krCapital}
-            onOrderResult={handleOrderResult}
-          />
-        </SectionPanel>
-
-        </div>{/* /section-balance mobile tab */}
-
-        {/* NCAV 종목 관리 패널 (모바일 탭: section-stocks) */}
-        <div className={cn(mobileTab !== "section-stocks" && "hidden md:block")}>
-        {hasCapital && (
-          <SectionPanel id="section-stocks">
-            <SectionHeader
-              icon={<Database size={16} />}
-              title="NCAV 운용 종목 관리"
-              subtitle="전략 자동매매 종목 풀 및 토큰(예산) 관리"
-              badge={
-                krCapital.state === "pending"
-                  ? <span className="text-[10px] font-mono text-amber-500 bg-amber-50 dark:bg-amber-950/20 px-2 py-0.5 rounded-full border border-amber-200 dark:border-amber-800 animate-pulse">로딩 중</span>
-                  : krCapital.stock_list?.length > 0
-                  ? <span className="text-[10px] font-mono text-neutral-500 dark:text-neutral-400 bg-[#faf9f7] dark:bg-[#242320] px-2 py-0.5 rounded-full">{krCapital.stock_list.length}종목</span>
-                  : null
-              }
-            />
-            <StockListTable
-              data={krCapital}
-              kakaoTotal={kakaoTotal}
-              doTokenPlusAll={doTokenPlusAll}
-              doTokenPlusOne={doTokenPlusOne}
-              doTokenMinusAll={doTokenMinusAll}
-              doTokenMinusOne={doTokenMinusOne}
-              session={session}
-              onCreateGroup={doCreateGroup}
-              onRenameGroup={doRenameGroup}
-              onToggleGroupTrading={doToggleGroupTrading}
-              onDeleteGroup={doDeleteGroup}
-              onMoveStock={doMoveStock}
-              onBulkMove={doBulkMove}
-              onCopyLikes={doCopyLikes}
-              likedList={krLikedList}
-              countryTradingActive={tradingStatus.KR === true}
-              quantRule={krQuantRule.rule}
-              metricsOverride={krLikeMetrics}
-            />
-          </SectionPanel>
-        )}
-
-        </div>{/* /section-stocks mobile tab */}
-
-        {/* 트레이딩 조건 설정 (모바일 탭: section-conditions) */}
-        <div className={cn(mobileTab !== "section-conditions" && "hidden md:block")}>
-        {hasCapital && (
-          <SectionPanel id="section-conditions">
-            <SectionHeader
-              icon={<SlidersHorizontal size={16} />}
-              title="자동매매 트레이딩 조건"
-              subtitle="백엔드 quant rule(NCAV 비율·필터·활성 종목 수 등) 조회 및 수정"
-              badge={
-                krQuantRule.state === "pending"
-                  ? <span className="text-[10px] font-mono text-amber-500 bg-amber-50 dark:bg-amber-950/20 px-2 py-0.5 rounded-full border border-amber-200 dark:border-amber-800 animate-pulse">로딩 중</span>
-                  : krQuantRule.is_override
-                  ? <span className="text-[10px] font-mono text-[#16a34a] bg-[#f0fdf4] dark:bg-[#14532d]/30 px-2 py-0.5 rounded-full">계좌 전용</span>
-                  : <span className="text-[10px] font-mono text-neutral-500 dark:text-neutral-400 bg-[#faf9f7] dark:bg-[#242320] px-2 py-0.5 rounded-full">기본값</span>
-              }
-            />
-            <RefillSettings
-              data={krBudget}
-              isMaster={isMaster}
-              onSave={doSaveBudget}
-            />
-            <div className="h-px bg-neutral-100 dark:bg-[#35332e] my-4" />
-            <QuantRuleEditor
-              data={krQuantRule}
-              isMaster={isMaster}
-              onSave={doSaveQuantRule}
-            />
-          </SectionPanel>
-        )}
-
-        </div>{/* /section-conditions mobile tab */}
-
-        {/* 주문 내역 (모바일 탭: section-orders) */}
-        <div className={cn(mobileTab !== "section-orders" && "hidden md:block")}>
-        <SectionPanel id="section-orders">
-          <SectionHeader
-            icon={<OrderSectionIcon viewerTab={viewerTab} />}
-            title="당일 주문 내역"
-            subtitle="한국투자증권 실시간 체결 및 미체결 조회"
-            action={
-              <OrderTabAction
-                viewerTab={viewerTab}
-                setViewerTab={setViewerTab}
-                ccnlCount={krCcnl.output?.length || 0}
-                nccsCount={krNccs.output?.length || 0}
-                isPending={krCcnl.state === "pending" || krNccs.state === "pending"}
-                onRefresh={() => fetchOrderHistory(balanceKey)}
+            </>
+          ),
+        },
+        {
+          id: "section-portfolio",
+          node: (
+            <SectionPanel id="section-portfolio">
+              <SectionHeader
+                icon={<PieChart size={16} />}
+                title="포트폴리오 자산 구성"
+                subtitle="보유 종목별 비중·수익률 한눈에 보기 (상세·주문은 잔고 패널)"
               />
-            }
-          />
+              <PortfolioChartSection
+                output1={kiBalance.output1 || []}
+                isUs={false}
+                isLoading={isLoading}
+              />
+            </SectionPanel>
+          ),
+        },
+        {
+          id: "section-balance",
+          node: (
+            <SectionPanel id="section-balance">
+              <InquireBalanceResult
+                balanceKey={balanceKey}
+                setBalanceKey={setBalanceKey}
+                kiBalance={kiBalance as any}
+                reqGetInquireBalance={reqGetInquireBalance}
+                kakaoMemberList={kakaoMemberList}
+                reqPostOrderCash={reqPostOrderCash}
+                kiOrderCash={orderCashState}
+                capital={krCapital}
+                onOrderResult={handleOrderResult}
+              />
+            </SectionPanel>
+          ),
+        },
+        {
+          id: "section-stocks",
+          node: hasCapital ? (
+            <SectionPanel id="section-stocks">
+              <SectionHeader
+                icon={<Database size={16} />}
+                title="NCAV 운용 종목 관리"
+                subtitle="전략 자동매매 종목 풀 및 토큰(예산) 관리"
+                badge={
+                  krCapital.state === "pending"
+                    ? <span className="text-[10px] font-mono text-amber-500 bg-amber-50 dark:bg-amber-950/20 px-2 py-0.5 rounded-full border border-amber-200 dark:border-amber-800 animate-pulse">로딩 중</span>
+                    : krCapital.stock_list?.length > 0
+                    ? <span className="text-[10px] font-mono text-neutral-500 dark:text-neutral-400 bg-[#faf9f7] dark:bg-[#242320] px-2 py-0.5 rounded-full">{krCapital.stock_list.length}종목</span>
+                    : null
+                }
+              />
+              <StockListTable
+                data={krCapital}
+                kakaoTotal={kakaoTotal}
+                doTokenPlusAll={doTokenPlusAll}
+                doTokenPlusOne={doTokenPlusOne}
+                doTokenMinusAll={doTokenMinusAll}
+                doTokenMinusOne={doTokenMinusOne}
+                session={session}
+                onCreateGroup={doCreateGroup}
+                onRenameGroup={doRenameGroup}
+                onToggleGroupTrading={doToggleGroupTrading}
+                onDeleteGroup={doDeleteGroup}
+                onMoveStock={doMoveStock}
+                onBulkMove={doBulkMove}
+                onCopyLikes={doCopyLikes}
+                likedList={krLikedList}
+                countryTradingActive={tradingStatus.KR === true}
+                quantRule={krQuantRule.rule}
+                metricsOverride={krLikeMetrics}
+              />
+            </SectionPanel>
+          ) : null,
+        },
+        {
+          id: "section-conditions",
+          node: hasCapital ? (
+            <SectionPanel id="section-conditions">
+              <SectionHeader
+                icon={<SlidersHorizontal size={16} />}
+                title="자동매매 트레이딩 조건"
+                subtitle="백엔드 quant rule(NCAV 비율·필터·활성 종목 수 등) 조회 및 수정"
+                badge={
+                  krQuantRule.state === "pending"
+                    ? <span className="text-[10px] font-mono text-amber-500 bg-amber-50 dark:bg-amber-950/20 px-2 py-0.5 rounded-full border border-amber-200 dark:border-amber-800 animate-pulse">로딩 중</span>
+                    : krQuantRule.is_override
+                    ? <span className="text-[10px] font-mono text-[#16a34a] bg-[#f0fdf4] dark:bg-[#14532d]/30 px-2 py-0.5 rounded-full">계좌 전용</span>
+                    : <span className="text-[10px] font-mono text-neutral-500 dark:text-neutral-400 bg-[#faf9f7] dark:bg-[#242320] px-2 py-0.5 rounded-full">기본값</span>
+                }
+              />
+              <RefillSettings
+                data={krBudget}
+                isMaster={isMaster}
+                onSave={doSaveBudget}
+              />
+              <div className="h-px bg-neutral-100 dark:bg-[#35332e] my-4" />
+              <QuantRuleEditor
+                data={krQuantRule}
+                isMaster={isMaster}
+                onSave={doSaveQuantRule}
+              />
+            </SectionPanel>
+          ) : null,
+        },
+        {
+          id: "section-orders",
+          node: (
+            <SectionPanel id="section-orders">
+              <SectionHeader
+                icon={<OrderSectionIcon viewerTab={viewerTab} />}
+                title="당일 주문 내역"
+                subtitle="한국투자증권 실시간 체결 및 미체결 조회"
+                action={
+                  <OrderTabAction
+                    viewerTab={viewerTab}
+                    setViewerTab={setViewerTab}
+                    ccnlCount={krCcnl.output?.length || 0}
+                    nccsCount={krNccs.output?.length || 0}
+                    isPending={krCcnl.state === "pending" || krNccs.state === "pending"}
+                    onRefresh={() => fetchOrderHistory(balanceKey)}
+                  />
+                }
+              />
 
-          <div className="overflow-x-auto rounded-xl border border-neutral-100 dark:border-[#35332e]">
-            <table className="w-full text-sm text-left min-w-[600px]">
-              <TableHeader headers={[
-                { label: "주문시간 / 번호" },
-                { label: "구분" },
-                { label: "종목" },
-                { label: "주문가 / 수량", align: "text-right" },
-                { label: "체결가 / 수량", align: "text-right" },
-                { label: "미체결", align: "text-right" },
-              ]} />
-              <tbody className="divide-y divide-neutral-50 dark:divide-[#35332e]/40">
-                {viewerTab === "ccnl" ? (
-                  krCcnl.output?.length > 0
-                    ? krCcnl.output.map((item, i) => (
-                        <OrderRow key={i} item={item} isNccs={false} />
-                      ))
-                    : <EmptyRow colSpan={6} message="금일 체결된 거래 내역이 없습니다." />
-                ) : (
-                  krNccs.output?.length > 0
-                    ? krNccs.output.map((item, i) => (
-                        <OrderRow key={i} item={item} isNccs={true} />
-                      ))
-                    : <EmptyRow colSpan={6} message="금일 미체결 주문이 없습니다." />
-                )}
-              </tbody>
-            </table>
-          </div>
-        </SectionPanel>
-        </div>{/* /section-orders mobile tab */}
-
-      </div>
-    </div>
+              <div className="overflow-x-auto rounded-xl border border-neutral-100 dark:border-[#35332e]">
+                <table className="w-full text-sm text-left min-w-[600px]">
+                  <TableHeader headers={[
+                    { label: "주문시간 / 번호" },
+                    { label: "구분" },
+                    { label: "종목" },
+                    { label: "주문가 / 수량", align: "text-right" },
+                    { label: "체결가 / 수량", align: "text-right" },
+                    { label: "미체결", align: "text-right" },
+                  ]} />
+                  <tbody className="divide-y divide-neutral-50 dark:divide-[#35332e]/40">
+                    {viewerTab === "ccnl" ? (
+                      krCcnl.output?.length > 0
+                        ? krCcnl.output.map((item, i) => (
+                            <OrderRow key={i} item={item} isNccs={false} />
+                          ))
+                        : <EmptyRow colSpan={6} message="금일 체결된 거래 내역이 없습니다." />
+                    ) : (
+                      krNccs.output?.length > 0
+                        ? krNccs.output.map((item, i) => (
+                            <OrderRow key={i} item={item} isNccs={true} />
+                          ))
+                        : <EmptyRow colSpan={6} message="금일 미체결 주문이 없습니다." />
+                    )}
+                  </tbody>
+                </table>
+              </div>
+            </SectionPanel>
+          ),
+        },
+      ]}
+    />
   );
 }
