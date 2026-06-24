@@ -176,6 +176,20 @@ export function EmptyRow({ colSpan, message }: { colSpan: number; message: strin
 }
 
 // =========================================================================
+// 상세 지표 칩 (스크롤 스트립용 — KR/US 공용)
+// =========================================================================
+export function MetricChip({ label, value, valueClass = "text-neutral-900 dark:text-neutral-100" }: {
+  label: string; value: string; valueClass?: string;
+}) {
+  return (
+    <div className="bg-white dark:bg-[#242320] border border-neutral-200 dark:border-[#35332e] rounded-xl px-4 py-2.5 flex flex-col gap-0.5 shrink-0">
+      <span className="text-[9px] font-black text-neutral-400 dark:text-neutral-500 uppercase tracking-widest whitespace-nowrap">{label}</span>
+      <span className={cn("text-xs font-mono font-black whitespace-nowrap", valueClass)}>{value}</span>
+    </div>
+  );
+}
+
+// =========================================================================
 // KPI 카드 (단일값 — KR)
 // =========================================================================
 export function KpiCard({ label, value, sub, icon, iconBg, valueColor = "text-neutral-900 dark:text-white", accentColor = "bg-neutral-200 dark:bg-[#4a4641]" }: {
