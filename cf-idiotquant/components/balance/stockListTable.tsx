@@ -34,6 +34,7 @@ import { clsx, type ClassValue } from "clsx";
 import { twMerge } from "tailwind-merge";
 import validCorpCodeArray from "@/public/data/validCorpCodeArray.json";
 import validCorpNameArray from "@/public/data/validCorpNameArray.json";
+import { CopyStockButtons, type CopyStock } from "@/components/copyStockButtons";
 
 /** Tailwind 클래스 병합 유틸리티 */
 function cn(...inputs: ClassValue[]) {
@@ -721,6 +722,15 @@ function GroupSection({
   const showRefill = isMaster && rows.some(r => r.movable);
   const showCheck = isMaster && rows.length > 0; // 모든 행 선택 가능(좋아요는 복사용)
   const selectableTickers = useMemo(() => rows.map(r => r.symbol), [rows]);
+  // 복사용 행: 종목명/티커 + 지표(ROE는 EPS/BPS로 계산)
+  const copyRows = useMemo<CopyStock[]>(() => rows.map(r => ({
+    name: r.name || r.symbol,
+    ticker: r.symbol,
+    ncav: r.ncavRatio,
+    pbr: r.pbr,
+    per: r.per,
+    roe: Number(r.bps) > 0 ? (Number(r.eps) / Number(r.bps)) * 100 : null,
+  })), [rows]);
   // 선택 여부는 이 섹션 키 기준으로만 판단(다른 섹션의 동일 종목과 분리)
   const isPicked = (sym: string) => picked.has(pickKey(sectionKey, sym));
   const allChecked = selectableTickers.length > 0 && selectableTickers.every(isPicked);
@@ -778,6 +788,8 @@ function GroupSection({
         </div>
 
         <div className="ml-auto flex items-center gap-2">
+          {/* 종목 목록 복사 (종목명만 / 상세) */}
+          <CopyStockButtons rows={copyRows} />
           {/* 적용 조건 칩 (그룹 ON 일 때) */}
           {conditionChips && conditionChips.length > 0 && (
             <div className="hidden md:flex items-center gap-1">

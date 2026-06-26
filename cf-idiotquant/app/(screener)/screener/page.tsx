@@ -15,6 +15,7 @@ import {
     reqGetMyLikes, reqToggleLike,
 } from "@/lib/features/stockLikes/stockLikesSlice";
 import { cn } from "@/lib/utils";
+import { CopyStockButtons, type CopyStock } from "@/components/copyStockButtons";
 import { STRATEGY_LABEL, STRATEGY_BADGE, STRATEGY_PRESETS_CLIENT as STRATEGY_PRESETS, MKTCAP_PRESETS } from "@/lib/constants/strategies";
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -645,6 +646,16 @@ function ScreenerContent() {
     // 단일 전략만 선택했을 때, 그 전략 기준 컬럼을 강조 (0개·복수 선택이면 강조 안 함)
     const highlightMap: HighlightMap | null =
         activeStrategyIds.size === 1 ? (STRATEGY_HIGHLIGHT[Array.from(activeStrategyIds)[0]] ?? null) : null;
+
+    // 관심(좋아요) 목록 복사용 행
+    const likedCopyRows = useMemo<CopyStock[]>(() => filteredList.map(item => ({
+        name: item.name,
+        ticker: item.ticker,
+        ncav: item.ncav_ratio,
+        pbr: item.pbr,
+        per: item.per,
+        roe: safeNum(item.bps) > 0 ? (safeNum(item.eps) / safeNum(item.bps)) * 100 : null,
+    })), [filteredList]);
     const isLoading = !showLikedOnly && (ncavDailyList.state === "pending" || ncavDailyList.state === "init");
 
     const handleStockClick = useCallback((ticker: string, name: string) => {
@@ -1178,6 +1189,13 @@ function ScreenerContent() {
 
                 {!isLoading && filteredList.length > 0 && (
                     <>
+                        {/* 관심 목록 복사 (종목명만 / 상세) */}
+                        {showLikedOnly && (
+                            <div className="flex items-center justify-end gap-2 mb-3">
+                                <span className="text-[11px] text-neutral-400 font-medium">목록 복사</span>
+                                <CopyStockButtons rows={likedCopyRows} />
+                            </div>
+                        )}
                         {/* 데스크탑 테이블 */}
                         <div className="hidden md:block">
                             <div className="bg-white dark:bg-[#242320] rounded-2xl border border-neutral-200 dark:border-[#35332e] overflow-hidden shadow-sm">
