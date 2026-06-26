@@ -289,35 +289,11 @@ export default function HomePage() {
             <span className="text-[#16a34a] dark:text-[#16a34a]">어렵지 않습니다.</span>
           </h1>
 
-          <p className="text-sm sm:text-[15px] text-neutral-500 dark:text-neutral-400 font-medium leading-relaxed mb-7">
+          <p className="text-sm sm:text-[15px] text-neutral-500 dark:text-neutral-400 font-medium leading-relaxed">
             9가지 가치투자 전략으로 매일 2,400여 종목을<br className="hidden sm:block" />
             알고리즘이 대신 분석합니다.
           </p>
 
-          {/* CTA buttons */}
-          <div className="flex flex-col sm:flex-row gap-2.5">
-            {!sessionLoading && (isLoggedIn ? (
-              <Link href="/screener"
-                className="inline-flex items-center justify-center gap-2 w-full sm:w-auto px-6 py-3 rounded-xl bg-[#16a34a] hover:bg-[#15803d] active:bg-[#166534] text-white text-sm font-bold shadow-md shadow-[#16a34a]/20 transition-all"
-              >
-                <TrendingUp size={15} strokeWidth={2.5} />
-                종목 발굴하기
-                <ArrowRight size={14} />
-              </Link>
-            ) : (
-              <Link href="/login"
-                className="inline-flex items-center justify-center gap-2 w-full sm:w-auto px-6 py-3 rounded-xl bg-[#16a34a] hover:bg-[#15803d] active:bg-[#166534] text-white text-sm font-bold shadow-md shadow-[#16a34a]/20 transition-all"
-              >
-                카카오로 무료 시작
-                <ArrowRight size={14} />
-              </Link>
-            ))}
-            <Link href="/analyze"
-              className="inline-flex items-center justify-center gap-2 w-full sm:w-auto px-6 py-3 rounded-xl bg-[#faf9f7] dark:bg-[#242320] border border-neutral-200 dark:border-[#35332e] hover:border-neutral-400 dark:hover:border-[#4a4641] text-neutral-700 dark:text-neutral-300 text-sm font-bold transition-all"
-            >
-              종목 직접 분석하기
-            </Link>
-          </div>
         </div>
 
         {/* Stats strip */}
