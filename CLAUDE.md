@@ -6,6 +6,8 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 **Always think in English.** Regardless of the language used in the request, reason and think in English.
 
+**Explain results in Korean.** While thinking in English, write explanations and responses to the user in Korean.
+
 **Tradeoff:** These guidelines bias toward caution over speed. For trivial tasks, use judgment.
 
 ### 1. Think Before Coding
