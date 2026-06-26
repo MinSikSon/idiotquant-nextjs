@@ -60,6 +60,31 @@ function resolveStrategies(item: Record<string, any>): string[] {
     return Array.from(base);
 }
 
+// 단일 전략 선택 시 강조할 지표 컬럼 + 기준 충족 판정. 키는 전략의 기준이 되는 컬럼.
+type MetricKey = "ncav_ratio" | "pbr" | "per" | "roe";
+type HighlightMap = Partial<Record<MetricKey, (i: any) => boolean>>;
+const roeOf = (i: any) => safeNum(i.bps) > 0 ? (safeNum(i.eps) / safeNum(i.bps)) * 100 : 0;
+const grahamOk = (i: any) => safeNum(i.per) > 0 && safeNum(i.pbr) > 0 && safeNum(i.per) * safeNum(i.pbr) < 22.5;
+const STRATEGY_HIGHLIGHT: Record<string, HighlightMap> = {
+    ncav:           { ncav_ratio: i => safeNum(i.ncav_ratio) >= 1.0 },
+    near_ncav:      { ncav_ratio: i => safeNum(i.ncav_ratio) >= 0.7 && safeNum(i.ncav_ratio) < 1.0 },
+    low_pbr:        { pbr: i => safeNum(i.pbr) > 0 && safeNum(i.pbr) < 0.5 },
+    low_per:        { per: i => safeNum(i.per) > 0 && safeNum(i.per) < 10 },
+    graham_number:  { per: grahamOk, pbr: grahamOk },
+    s_rim:          { roe: i => roeOf(i) > 8, pbr: i => safeNum(i.pbr) > 0 && safeNum(i.pbr) < 1.0 },
+    magic_formula:  { per: i => safeNum(i.per) > 0 && safeNum(i.per) < 15, roe: i => roeOf(i) > 10 },
+    quality_value:  { roe: i => roeOf(i) > 15, pbr: i => safeNum(i.pbr) > 0 && safeNum(i.pbr) < 2.0 },
+    balanced_value: { per: i => safeNum(i.per) > 5 && safeNum(i.per) < 15, pbr: i => safeNum(i.pbr) > 0 && safeNum(i.pbr) < 1.5 },
+};
+
+// 강조 컬럼의 값 span에 입힐 클래스 (기준 충족=초록 pill, 미달=중립 pill, 비대상=없음)
+function hlPillCls(highlight: HighlightMap | null, key: MetricKey, item: any): string {
+    if (!highlight || !(key in highlight)) return "";
+    return highlight[key]!(item)
+        ? "px-1.5 py-0.5 rounded-md bg-emerald-50 dark:bg-emerald-950/40 ring-1 ring-inset ring-emerald-200 dark:ring-emerald-900/60 text-emerald-600 dark:text-emerald-400 font-bold"
+        : "px-1.5 py-0.5 rounded-md bg-neutral-100 dark:bg-[#2c2b27] text-neutral-400";
+}
+
 const TOOLTIP_CLS =
     "z-50 max-w-64 rounded-xl px-3.5 py-3 text-xs bg-neutral-900 dark:bg-[#242320] border border-neutral-700/60 shadow-lg text-neutral-200 leading-relaxed " +
     "data-[state=delayed-open]:animate-in data-[state=delayed-open]:fade-in-0 data-[state=delayed-open]:zoom-in-95 " +
@@ -68,12 +93,13 @@ const TOOLTIP_CLS =
 // =========================================================================
 // SortableHeader
 // =========================================================================
-function SortableHeader({ label, sortKey: key, currentKey, order, onToggle }: {
+function SortableHeader({ label, sortKey: key, currentKey, order, onToggle, relevant }: {
     label: string;
     sortKey: DiscoverySortKey;
     currentKey: DiscoverySortKey;
     order: SortOrder;
     onToggle: (k: DiscoverySortKey) => void;
+    relevant?: boolean;
 }) {
     const active = currentKey === key;
     return (
@@ -81,9 +107,11 @@ function SortableHeader({ label, sortKey: key, currentKey, order, onToggle }: {
             onClick={() => onToggle(key)}
             className={cn(
                 "flex items-center gap-1 text-[10px] font-bold uppercase tracking-wider transition-colors whitespace-nowrap",
-                active ? "text-[#16a34a] dark:text-[#16a34a]" : "text-neutral-400 hover:text-neutral-600 dark:hover:text-neutral-300"
+                active ? "text-[#16a34a] dark:text-[#16a34a]" : "text-neutral-400 hover:text-neutral-600 dark:hover:text-neutral-300",
+                relevant && !active && "text-emerald-600/90 dark:text-emerald-400/90"
             )}
         >
+            {relevant && <span className="w-1 h-1 rounded-full bg-emerald-500 shrink-0" />}
             {label}
             <span className="text-[9px] font-mono">{active ? (order === "asc" ? "↑" : "↓") : "↕"}</span>
         </button>
@@ -93,11 +121,12 @@ function SortableHeader({ label, sortKey: key, currentKey, order, onToggle }: {
 // =========================================================================
 // TableRow — 데스크탑
 // =========================================================================
-const TableRow = memo(function TableRow({ item, onClick, isLiked, onToggleLike }: {
+const TableRow = memo(function TableRow({ item, onClick, isLiked, onToggleLike, highlight }: {
     item: any;
     onClick: (ticker: string, name: string) => void;
     isLiked: boolean;
     onToggleLike: (ticker: string, name: string) => void;
+    highlight: HighlightMap | null;
 }) {
     const roe = safeNum(item.bps) > 0 ? (safeNum(item.eps) / safeNum(item.bps)) * 100 : null;
     const strategies: string[] = resolveStrategies(item);
@@ -130,20 +159,21 @@ const TableRow = memo(function TableRow({ item, onClick, isLiked, onToggleLike }
                 <span className={cn(
                     "text-sm font-mono font-black tabular-nums",
                     ncav >= 1 ? "text-emerald-600 dark:text-emerald-400" :
-                    ncav >= 0.7 ? "text-amber-500" : "text-neutral-400"
+                    ncav >= 0.7 ? "text-amber-500" : "text-neutral-400",
+                    hlPillCls(highlight, "ncav_ratio", item)
                 )}>
                     {ncav > 0 ? `${ncav.toFixed(2)}x` : "—"}
                 </span>
             </div>
 
             <div className="text-right">
-                <span className="text-sm font-mono text-neutral-600 dark:text-neutral-300 tabular-nums">
+                <span className={cn("text-sm font-mono text-neutral-600 dark:text-neutral-300 tabular-nums", hlPillCls(highlight, "pbr", item))}>
                     {safeNum(item.pbr) > 0 ? `${safeNum(item.pbr).toFixed(2)}` : "—"}
                 </span>
             </div>
 
             <div className="text-right">
-                <span className="text-sm font-mono text-neutral-600 dark:text-neutral-300 tabular-nums">
+                <span className={cn("text-sm font-mono text-neutral-600 dark:text-neutral-300 tabular-nums", hlPillCls(highlight, "per", item))}>
                     {safeNum(item.per) > 0 ? `${safeNum(item.per).toFixed(1)}` : "—"}
                 </span>
             </div>
@@ -152,7 +182,8 @@ const TableRow = memo(function TableRow({ item, onClick, isLiked, onToggleLike }
                 <span className={cn(
                     "text-sm font-mono tabular-nums",
                     roe && roe > 15 ? "text-emerald-600 dark:text-emerald-400 font-bold" :
-                    roe && roe > 0 ? "text-neutral-600 dark:text-neutral-300" : "text-neutral-400"
+                    roe && roe > 0 ? "text-neutral-600 dark:text-neutral-300" : "text-neutral-400",
+                    hlPillCls(highlight, "roe", item)
                 )}>
                     {roe !== null && roe > 0 ? `${roe.toFixed(1)}%` : "—"}
                 </span>
@@ -186,11 +217,12 @@ const TableRow = memo(function TableRow({ item, onClick, isLiked, onToggleLike }
 // =========================================================================
 // StockRowCard — 모바일
 // =========================================================================
-const StockRowCard = memo(function StockRowCard({ item, onClick, isLiked, onToggleLike }: {
+const StockRowCard = memo(function StockRowCard({ item, onClick, isLiked, onToggleLike, highlight }: {
     item: any;
     onClick: (ticker: string, name: string) => void;
     isLiked: boolean;
     onToggleLike: (ticker: string, name: string) => void;
+    highlight: HighlightMap | null;
 }) {
     const roe = safeNum(item.bps) > 0 ? (safeNum(item.eps) / safeNum(item.bps)) * 100 : null;
     const strategies: string[] = resolveStrategies(item);
@@ -224,7 +256,8 @@ const StockRowCard = memo(function StockRowCard({ item, onClick, isLiked, onTogg
                             ? "bg-emerald-100 dark:bg-emerald-950/50 text-emerald-700 dark:text-emerald-400"
                             : ncav >= 0.7
                             ? "bg-amber-100 dark:bg-amber-950/50 text-amber-700 dark:text-amber-400"
-                            : "bg-[#faf9f7] dark:bg-[#242320] text-neutral-500"
+                            : "bg-[#faf9f7] dark:bg-[#242320] text-neutral-500",
+                        highlight && "ncav_ratio" in highlight && "ring-2 ring-emerald-400/60 dark:ring-emerald-500/50"
                     )}>
                         {ncav > 0 ? `${ncav.toFixed(2)}x` : "—"}
                     </div>
@@ -242,16 +275,27 @@ const StockRowCard = memo(function StockRowCard({ item, onClick, isLiked, onTogg
             )}
 
             <div className="grid grid-cols-3 gap-2 mb-4">
-                {[
-                    { label: "PBR", value: safeNum(item.pbr) > 0 ? `${safeNum(item.pbr).toFixed(2)}` : "—" },
-                    { label: "PER", value: safeNum(item.per) > 0 ? `${safeNum(item.per).toFixed(1)}` : "—" },
-                    { label: "ROE", value: roe !== null && roe > 0 ? `${roe.toFixed(1)}%` : "—" },
-                ].map(m => (
-                    <div key={m.label} className="text-center p-3.5 bg-[#faf9f7] dark:bg-[#242320]/60 rounded-xl">
-                        <p className="text-[9px] font-bold text-neutral-400 uppercase tracking-wider">{m.label}</p>
-                        <p className="text-sm font-mono font-bold text-neutral-700 dark:text-neutral-200 mt-0.5">{m.value}</p>
-                    </div>
-                ))}
+                {([
+                    { key: "pbr" as MetricKey, label: "PBR", value: safeNum(item.pbr) > 0 ? `${safeNum(item.pbr).toFixed(2)}` : "—" },
+                    { key: "per" as MetricKey, label: "PER", value: safeNum(item.per) > 0 ? `${safeNum(item.per).toFixed(1)}` : "—" },
+                    { key: "roe" as MetricKey, label: "ROE", value: roe !== null && roe > 0 ? `${roe.toFixed(1)}%` : "—" },
+                ]).map(m => {
+                    const rel = !!highlight && m.key in highlight;
+                    const met = rel && highlight![m.key]!(item);
+                    return (
+                        <div key={m.label} className={cn(
+                            "text-center p-3.5 rounded-xl",
+                            rel && met ? "bg-emerald-50 dark:bg-emerald-950/40 ring-1 ring-inset ring-emerald-200 dark:ring-emerald-900/60"
+                                : "bg-[#faf9f7] dark:bg-[#242320]/60"
+                        )}>
+                            <p className="text-[9px] font-bold text-neutral-400 uppercase tracking-wider">{m.label}</p>
+                            <p className={cn(
+                                "text-sm font-mono font-bold mt-0.5",
+                                rel && met ? "text-emerald-600 dark:text-emerald-400" : "text-neutral-700 dark:text-neutral-200"
+                            )}>{m.value}</p>
+                        </div>
+                    );
+                })}
             </div>
 
             <button className="w-full flex items-center justify-center gap-1.5 py-3 rounded-xl bg-[#faf9f7] dark:bg-[#242320] hover:bg-[#16a34a] hover:text-white text-neutral-600 dark:text-neutral-400 text-xs font-bold transition-all">
@@ -597,6 +641,10 @@ function ScreenerContent() {
 
     const visibleList = filteredList.slice(0, displayCount);
     const hasMore = filteredList.length > displayCount;
+
+    // 단일 전략만 선택했을 때, 그 전략 기준 컬럼을 강조 (0개·복수 선택이면 강조 안 함)
+    const highlightMap: HighlightMap | null =
+        activeStrategyIds.size === 1 ? (STRATEGY_HIGHLIGHT[Array.from(activeStrategyIds)[0]] ?? null) : null;
     const isLoading = !showLikedOnly && (ncavDailyList.state === "pending" || ncavDailyList.state === "init");
 
     const handleStockClick = useCallback((ticker: string, name: string) => {
@@ -1136,15 +1184,15 @@ function ScreenerContent() {
                                 <div className="grid grid-cols-[minmax(160px,2.5fr)_minmax(110px,1fr)_88px_68px_68px_68px_88px] gap-4 items-center px-6 py-4 bg-[#fcfaf7] dark:bg-[#1f1e1b] border-b border-neutral-200 dark:border-[#35332e]">
                                     <SortableHeader label="종목명" sortKey="ticker" currentKey={sortKey} order={sortOrder} onToggle={toggleSort} />
                                     <div className="text-[10px] font-bold text-neutral-400 uppercase tracking-wider">전략</div>
-                                    <SortableHeader label="NCAV 비율" sortKey="ncav_ratio" currentKey={sortKey} order={sortOrder} onToggle={toggleSort} />
-                                    <SortableHeader label="PBR" sortKey="pbr" currentKey={sortKey} order={sortOrder} onToggle={toggleSort} />
-                                    <SortableHeader label="PER" sortKey="per" currentKey={sortKey} order={sortOrder} onToggle={toggleSort} />
-                                    <SortableHeader label="ROE" sortKey="roe" currentKey={sortKey} order={sortOrder} onToggle={toggleSort} />
+                                    <SortableHeader label="NCAV 비율" sortKey="ncav_ratio" currentKey={sortKey} order={sortOrder} onToggle={toggleSort} relevant={!!highlightMap && "ncav_ratio" in highlightMap} />
+                                    <SortableHeader label="PBR" sortKey="pbr" currentKey={sortKey} order={sortOrder} onToggle={toggleSort} relevant={!!highlightMap && "pbr" in highlightMap} />
+                                    <SortableHeader label="PER" sortKey="per" currentKey={sortKey} order={sortOrder} onToggle={toggleSort} relevant={!!highlightMap && "per" in highlightMap} />
+                                    <SortableHeader label="ROE" sortKey="roe" currentKey={sortKey} order={sortOrder} onToggle={toggleSort} relevant={!!highlightMap && "roe" in highlightMap} />
                                     <div />
                                 </div>
                                 <div>
                                     {visibleList.map((item: any) => (
-                                        <TableRow key={item.ticker} item={item} onClick={handleStockClick} isLiked={likedTickers.has(item.name)} onToggleLike={handleToggleLike} />
+                                        <TableRow key={item.ticker} item={item} onClick={handleStockClick} isLiked={likedTickers.has(item.name)} onToggleLike={handleToggleLike} highlight={highlightMap} />
                                     ))}
                                 </div>
                             </div>
@@ -1153,7 +1201,7 @@ function ScreenerContent() {
                         {/* 모바일 카드 */}
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 md:hidden">
                             {visibleList.map((item: any) => (
-                                <StockRowCard key={item.ticker} item={item} onClick={handleStockClick} isLiked={likedTickers.has(item.name)} onToggleLike={handleToggleLike} />
+                                <StockRowCard key={item.ticker} item={item} onClick={handleStockClick} isLiked={likedTickers.has(item.name)} onToggleLike={handleToggleLike} highlight={highlightMap} />
                             ))}
                         </div>
 
