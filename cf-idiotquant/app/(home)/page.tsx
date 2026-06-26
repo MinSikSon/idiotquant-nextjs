@@ -8,6 +8,7 @@ import {
   TrendingUp, ChevronRight, BarChart3, Zap, Layers,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { safeNum } from "@/lib/utils/numbers";
 import { STRATEGY_PRESETS_CLIENT, STRATEGY_BADGE, type StrategyPreset } from "@/lib/constants/strategies";
 
 interface PreviewStock {
@@ -16,9 +17,48 @@ interface PreviewStock {
   ncav_ratio: number;
   pbr: number;
   per: number;
+  eps: number;
+  bps: number;
   strategies: string[];
   market_cap?: number;
 }
+
+// 전략별 "핵심 지표" — 그 전략이 보는 지표와 기준 충족 여부. 종목이 설명에 얼마나 부합하는지 표시.
+interface StrategyMetric {
+  label: string;
+  get: (i: PreviewStock) => number;   // 표시값 (0 이하 = 데이터 없음)
+  ok: (v: number) => boolean;         // 전략 기준 충족 여부
+  fmt: (v: number) => string;
+}
+
+// ROE = EPS / BPS × 100 — 스크리너 전략 필터(clientFilter)와 동일한 계산식
+const roePct = (i: PreviewStock) => safeNum(i.bps) > 0 ? safeNum(i.eps) / safeNum(i.bps) * 100 : 0;
+
+const STRATEGY_METRICS: Record<string, StrategyMetric[]> = {
+  ncav:           [{ label: "NCAV",    get: i => safeNum(i.ncav_ratio), ok: v => v >= 1.0,            fmt: v => `${v.toFixed(2)}x` }],
+  near_ncav:      [{ label: "NCAV",    get: i => safeNum(i.ncav_ratio), ok: v => v >= 0.7 && v < 1.0, fmt: v => `${v.toFixed(2)}x` }],
+  low_pbr:        [{ label: "PBR",     get: i => safeNum(i.pbr),        ok: v => v > 0 && v < 0.5,    fmt: v => v.toFixed(2) }],
+  low_per:        [{ label: "PER",     get: i => safeNum(i.per),        ok: v => v > 0 && v < 10,     fmt: v => v.toFixed(1) }],
+  graham_number:  [{ label: "PER×PBR", get: i => safeNum(i.per) > 0 && safeNum(i.pbr) > 0 ? safeNum(i.per) * safeNum(i.pbr) : 0, ok: v => v > 0 && v < 22.5, fmt: v => v.toFixed(1) }],
+  s_rim:          [
+    { label: "ROE", get: roePct,            ok: v => v > 8,            fmt: v => `${v.toFixed(1)}%` },
+    { label: "PBR", get: i => safeNum(i.pbr), ok: v => v > 0 && v < 1.0, fmt: v => v.toFixed(2) },
+  ],
+  magic_formula:  [
+    { label: "PER", get: i => safeNum(i.per), ok: v => v > 0 && v < 15, fmt: v => v.toFixed(1) },
+    { label: "ROE", get: roePct,            ok: v => v > 10,           fmt: v => `${v.toFixed(1)}%` },
+  ],
+  quality_value:  [
+    { label: "ROE", get: roePct,            ok: v => v > 15,           fmt: v => `${v.toFixed(1)}%` },
+    { label: "PBR", get: i => safeNum(i.pbr), ok: v => v > 0 && v < 2.0, fmt: v => v.toFixed(2) },
+  ],
+  balanced_value: [
+    { label: "PER", get: i => safeNum(i.per), ok: v => v > 5 && v < 15,  fmt: v => v.toFixed(1) },
+    { label: "PBR", get: i => safeNum(i.pbr), ok: v => v > 0 && v < 1.5, fmt: v => v.toFixed(2) },
+  ],
+};
+
+const NCAV_METRIC: StrategyMetric[] = STRATEGY_METRICS.ncav;
 
 const HOME_MKTCAP_MIN = 500;
 const PER_STRATEGY = 2;    // 전략 그룹당 노출 종목 수
@@ -131,8 +171,7 @@ function useCountUp(target: number, duration = 1000) {
   return count;
 }
 
-function StockRow({ item, index, excludeStrategy }: { item: PreviewStock; index: number; excludeStrategy?: string }) {
-  const ncav = item.ncav_ratio;
+function StockRow({ item, index, excludeStrategy, metrics }: { item: PreviewStock; index: number; excludeStrategy?: string; metrics: StrategyMetric[] }) {
   const strategies = (item.strategies ?? []).filter(s => s !== excludeStrategy).slice(0, 2);
 
   return (
@@ -158,37 +197,33 @@ function StockRow({ item, index, excludeStrategy }: { item: PreviewStock; index:
         <p className="text-[10px] text-neutral-400 font-mono">{item.ticker}</p>
       </div>
 
-      {/* PBR · PER — sm 이상에서만 노출 (모바일은 NCAV에 집중) */}
-      <div className="hidden sm:flex items-center gap-4 shrink-0">
-        <div className="text-right min-w-[40px]">
-          <p className="text-xs font-bold font-mono tabular-nums text-neutral-600 dark:text-neutral-300">
-            {item.pbr > 0 ? item.pbr.toFixed(2) : "—"}
-          </p>
-          <p className="text-[9px] text-neutral-400 font-bold uppercase tracking-wider">PBR</p>
-        </div>
-        <div className="text-right min-w-[40px]">
-          <p className="text-xs font-bold font-mono tabular-nums text-neutral-600 dark:text-neutral-300">
-            {item.per > 0 ? item.per.toFixed(1) : "—"}
-          </p>
-          <p className="text-[9px] text-neutral-400 font-bold uppercase tracking-wider">PER</p>
-        </div>
-      </div>
-
-      <div className="shrink-0 text-right min-w-[52px]">
-        <p className={cn(
-          "text-sm font-black font-mono tabular-nums",
-          ncav >= 1 ? "text-emerald-600 dark:text-emerald-400" :
-          ncav >= 0.7 ? "text-amber-600 dark:text-amber-400" : "text-neutral-400"
-        )}>
-          {ncav > 0 ? `${ncav.toFixed(2)}x` : "—"}
-        </p>
-        <p className="text-[9px] text-neutral-400 font-bold uppercase tracking-wider">NCAV</p>
+      {/* 전략 핵심 지표 — 기준 충족 시 초록, 미달 회색, 데이터 없으면 — */}
+      <div className="shrink-0 flex items-center gap-3 sm:gap-4">
+        {metrics.map(m => {
+          const v = m.get(item);
+          const has = v > 0;
+          const ok = has && m.ok(v);
+          return (
+            <div key={m.label} className="text-right min-w-[48px]">
+              <p className={cn(
+                "text-sm font-black font-mono tabular-nums",
+                !has ? "text-neutral-300 dark:text-neutral-600"
+                  : ok ? "text-emerald-600 dark:text-emerald-400"
+                  : "text-neutral-500 dark:text-neutral-400"
+              )}>
+                {has ? m.fmt(v) : "—"}
+              </p>
+              <p className="text-[9px] text-neutral-400 font-bold uppercase tracking-wider">{m.label}</p>
+            </div>
+          );
+        })}
       </div>
     </div>
   );
 }
 
 function StrategyGroup({ preset, stocks }: { preset: StrategyPreset; stocks: PreviewStock[] }) {
+  const metrics = STRATEGY_METRICS[preset.id] ?? NCAV_METRIC;
   return (
     <div className="border-b border-neutral-100 dark:border-[#35332e] last:border-0">
       <div className="px-4 py-2.5 bg-[#fcfaf7] dark:bg-[#1f1e1b] flex items-center gap-2">
@@ -203,7 +238,7 @@ function StrategyGroup({ preset, stocks }: { preset: StrategyPreset; stocks: Pre
         </span>
       </div>
       {stocks.map((item, i) => (
-        <StockRow key={`${preset.id}-${item.ticker}`} item={item} index={i} excludeStrategy={preset.id} />
+        <StockRow key={`${preset.id}-${item.ticker}`} item={item} index={i} excludeStrategy={preset.id} metrics={metrics} />
       ))}
     </div>
   );
@@ -289,35 +324,11 @@ export default function HomePage() {
             <span className="text-[#16a34a] dark:text-[#16a34a]">어렵지 않습니다.</span>
           </h1>
 
-          <p className="text-sm sm:text-[15px] text-neutral-500 dark:text-neutral-400 font-medium leading-relaxed mb-7">
+          <p className="text-sm sm:text-[15px] text-neutral-500 dark:text-neutral-400 font-medium leading-relaxed">
             9가지 가치투자 전략으로 매일 2,400여 종목을<br className="hidden sm:block" />
             알고리즘이 대신 분석합니다.
           </p>
 
-          {/* CTA buttons */}
-          <div className="flex flex-col sm:flex-row gap-2.5">
-            {!sessionLoading && (isLoggedIn ? (
-              <Link href="/screener"
-                className="inline-flex items-center justify-center gap-2 w-full sm:w-auto px-6 py-3 rounded-xl bg-[#16a34a] hover:bg-[#15803d] active:bg-[#166534] text-white text-sm font-bold shadow-md shadow-[#16a34a]/20 transition-all"
-              >
-                <TrendingUp size={15} strokeWidth={2.5} />
-                종목 발굴하기
-                <ArrowRight size={14} />
-              </Link>
-            ) : (
-              <Link href="/login"
-                className="inline-flex items-center justify-center gap-2 w-full sm:w-auto px-6 py-3 rounded-xl bg-[#16a34a] hover:bg-[#15803d] active:bg-[#166534] text-white text-sm font-bold shadow-md shadow-[#16a34a]/20 transition-all"
-              >
-                카카오로 무료 시작
-                <ArrowRight size={14} />
-              </Link>
-            ))}
-            <Link href="/analyze"
-              className="inline-flex items-center justify-center gap-2 w-full sm:w-auto px-6 py-3 rounded-xl bg-[#faf9f7] dark:bg-[#242320] border border-neutral-200 dark:border-[#35332e] hover:border-neutral-400 dark:hover:border-[#4a4641] text-neutral-700 dark:text-neutral-300 text-sm font-bold transition-all"
-            >
-              종목 직접 분석하기
-            </Link>
-          </div>
         </div>
 
         {/* Stats strip */}
@@ -395,9 +406,7 @@ export default function HomePage() {
             {/* Column headers */}
             <div className="px-4 py-2 bg-[#fcfaf7] dark:bg-[#1f1e1b] border-b border-neutral-100 dark:border-[#35332e] flex items-center justify-between">
               <span className="text-[10px] font-bold text-neutral-400 uppercase tracking-wider">종목</span>
-              <span className="text-[10px] font-bold text-neutral-400 uppercase tracking-wider">
-                <span className="hidden sm:inline">PBR · PER · </span>NCAV
-              </span>
+              <span className="text-[10px] font-bold text-neutral-400 uppercase tracking-wider">전략 지표</span>
             </div>
 
             {preview.loading ? (
