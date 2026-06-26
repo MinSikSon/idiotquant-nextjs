@@ -2,7 +2,7 @@
 
 export const dynamic = 'force-dynamic';
 
-import { useEffect, useMemo, useState, useCallback, useRef, Suspense } from "react";
+import { useEffect, useMemo, useState, useCallback, useRef, Suspense, memo } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useAppDispatch, useAppSelector } from "@/lib/hooks";
 import {
@@ -93,16 +93,15 @@ function SortableHeader({ label, sortKey: key, currentKey, order, onToggle }: {
 // =========================================================================
 // TableRow — 데스크탑
 // =========================================================================
-function TableRow({ item, onClick, likedTickers, onToggleLike }: {
+const TableRow = memo(function TableRow({ item, onClick, isLiked, onToggleLike }: {
     item: any;
     onClick: (ticker: string, name: string) => void;
-    likedTickers: Set<string>;
+    isLiked: boolean;
     onToggleLike: (ticker: string, name: string) => void;
 }) {
     const roe = safeNum(item.bps) > 0 ? (safeNum(item.eps) / safeNum(item.bps)) * 100 : null;
     const strategies: string[] = resolveStrategies(item);
     const ncav = safeNum(item.ncav_ratio);
-    const isLiked = likedTickers.has(item.name);
 
     return (
         <div
@@ -182,21 +181,20 @@ function TableRow({ item, onClick, likedTickers, onToggleLike }: {
             </div>
         </div>
     );
-}
+});
 
 // =========================================================================
 // StockRowCard — 모바일
 // =========================================================================
-function StockRowCard({ item, onClick, likedTickers, onToggleLike }: {
+const StockRowCard = memo(function StockRowCard({ item, onClick, isLiked, onToggleLike }: {
     item: any;
     onClick: (ticker: string, name: string) => void;
-    likedTickers: Set<string>;
+    isLiked: boolean;
     onToggleLike: (ticker: string, name: string) => void;
 }) {
     const roe = safeNum(item.bps) > 0 ? (safeNum(item.eps) / safeNum(item.bps)) * 100 : null;
     const strategies: string[] = resolveStrategies(item);
     const ncav = safeNum(item.ncav_ratio);
-    const isLiked = likedTickers.has(item.name);
 
     return (
         <div
@@ -262,7 +260,7 @@ function StockRowCard({ item, onClick, likedTickers, onToggleLike }: {
             </button>
         </div>
     );
-}
+});
 
 // =========================================================================
 // 숫자 프리셋 필터 그룹 (NCAV/PBR/PER/ROE 공통 UI). 활성 값을 다시 누르면 해제(0).
@@ -414,6 +412,8 @@ function ScreenerContent() {
 
     // 필터 상태 → URL 동기화 + localStorage 저장 (페이지 이동 후 재진입 시에도 전체 필터 유지)
     useEffect(() => {
+        // 타이핑 등 빠른 연속 변경 시 매번 router.replace + localStorage 쓰기를 피하려 디바운스
+        const debounce = setTimeout(() => {
         router.replace(queryString ? `/screener?${queryString}` : '/screener', { scroll: false });
 
         // 전체 필터 스냅샷을 단일 키에 저장 — 다른 페이지 이동 후 복귀 시 그대로 복원
@@ -443,6 +443,8 @@ function ScreenerContent() {
         // 레거시 개별 키 정리 (구버전 호환)
         localStorage.removeItem('screener:strategies');
         localStorage.removeItem('screener:filterMode');
+        }, 300);
+        return () => clearTimeout(debounce);
     }, [queryString, activeStrategyIds, filterMode, sortKey, sortOrder, excludeHoldings, excludeDeficit, excludePreferred, minMarketCap, maxPbr, maxPer, minRoe, minNcav, showLikedOnly, searchQuery, router]);
 
     // 현재 필터링 결과 링크 공유 (모바일: 네이티브 공유 시트 / 데스크탑: 클립보드 복사)
@@ -1142,7 +1144,7 @@ function ScreenerContent() {
                                 </div>
                                 <div>
                                     {visibleList.map((item: any) => (
-                                        <TableRow key={item.ticker} item={item} onClick={handleStockClick} likedTickers={likedTickers} onToggleLike={handleToggleLike} />
+                                        <TableRow key={item.ticker} item={item} onClick={handleStockClick} isLiked={likedTickers.has(item.name)} onToggleLike={handleToggleLike} />
                                     ))}
                                 </div>
                             </div>
@@ -1151,7 +1153,7 @@ function ScreenerContent() {
                         {/* 모바일 카드 */}
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 md:hidden">
                             {visibleList.map((item: any) => (
-                                <StockRowCard key={item.ticker} item={item} onClick={handleStockClick} likedTickers={likedTickers} onToggleLike={handleToggleLike} />
+                                <StockRowCard key={item.ticker} item={item} onClick={handleStockClick} isLiked={likedTickers.has(item.name)} onToggleLike={handleToggleLike} />
                             ))}
                         </div>
 
