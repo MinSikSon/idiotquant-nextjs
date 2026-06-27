@@ -112,7 +112,7 @@ export function LoadingState({ message = "계좌 데이터를 불러오는 중..
   return (
     <div className="h-screen w-full flex flex-col items-center justify-center bg-[#fcfaf7] dark:bg-[#1a1915] gap-3">
       <div className="p-4 rounded-2xl bg-white dark:bg-[#242320] border border-neutral-200 dark:border-[#35332e] shadow-sm">
-        <Loader2 className="w-7 h-7 text-[#f0fdf4]0 animate-spin" />
+        <Loader2 className="w-7 h-7 text-[#16a34a] animate-spin" />
       </div>
       <p className="text-sm font-bold text-neutral-400">{message}</p>
     </div>
@@ -160,16 +160,23 @@ export function TabButton({ active, onClick, children }: { active: boolean; onCl
   );
 }
 
+// 표가 아닌 곳(모바일 카드 등)에서 쓰는 빈 상태
+export function EmptyState({ message, icon }: { message: string; icon?: React.ReactNode }) {
+  return (
+    <div className="flex flex-col items-center justify-center py-14 gap-3">
+      <div className="p-3 rounded-2xl bg-[#faf9f7] dark:bg-[#35332e]">
+        {icon ?? <InboxIcon size={20} className="text-neutral-400" />}
+      </div>
+      <p className="text-sm text-neutral-400 font-medium">{message}</p>
+    </div>
+  );
+}
+
 export function EmptyRow({ colSpan, message }: { colSpan: number; message: string }) {
   return (
     <tr>
       <td colSpan={colSpan}>
-        <div className="flex flex-col items-center justify-center py-14 gap-3">
-          <div className="p-3 rounded-2xl bg-[#faf9f7] dark:bg-[#35332e]">
-            <InboxIcon size={20} className="text-neutral-400" />
-          </div>
-          <p className="text-sm text-neutral-400 font-medium">{message}</p>
-        </div>
+        <EmptyState message={message} />
       </td>
     </tr>
   );
@@ -340,11 +347,11 @@ export function PnlIcon({ positive, size = 15 }: { positive: boolean; size?: num
 export function pnlIconBg(positive: boolean) {
   return positive
     ? "bg-red-50 dark:bg-red-950/40 text-red-500"
-    : "bg-[#f0fdf4] dark:bg-[#052e16]/40 text-[#f0fdf4]0";
+    : "bg-[#f0fdf4] dark:bg-[#052e16]/40 text-[#16a34a]";
 }
 
 export function pnlValueColor(positive: boolean) {
-  return positive ? "text-red-500" : "text-[#f0fdf4]0";
+  return positive ? "text-red-500" : "text-[#16a34a]";
 }
 
 export function pnlAccentColor(positive: boolean) {

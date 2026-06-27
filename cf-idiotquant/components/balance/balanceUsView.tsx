@@ -82,7 +82,7 @@ function OverseasOrderRow({ item, isNccs }: { item: any; isNccs: boolean }) {
       <td className="py-3.5 px-4">
         <span className={cn(
           "px-2.5 py-1 rounded-full text-[10px] font-black uppercase tracking-wide",
-          isBuy ? "bg-red-50 text-red-500 dark:bg-red-950/40" : "bg-[#f0fdf4] text-[#f0fdf4]0 dark:bg-[#052e16]/40"
+          isBuy ? "bg-red-50 text-red-500 dark:bg-red-950/40" : "bg-[#f0fdf4] text-[#16a34a] dark:bg-[#052e16]/40"
         )}>
           {item.sll_buy_dvsn_cd_name || (isBuy ? "매수" : "매도")}
         </span>
@@ -468,7 +468,7 @@ export function BalanceUsView({ countryToggle }: { countryToggle?: React.ReactNo
                   subLabel="원화 평가액"
                   subValue={isLoading ? null : fmtKrw(totalAssetKrw)}
                   icon={<BarChart3 size={15} />}
-                  iconBg="bg-[#f0fdf4] dark:bg-[#052e16]/40 text-[#f0fdf4]0"
+                  iconBg="bg-[#f0fdf4] dark:bg-[#052e16]/40 text-[#16a34a]"
                   accentColor="bg-[#16a34a] dark:bg-[#16a34a]"
                   loading={isLoading}
                 />
