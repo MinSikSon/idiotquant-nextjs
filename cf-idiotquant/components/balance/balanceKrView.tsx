@@ -115,7 +115,7 @@ function OrderRow({ item, isNccs }: { item: any; isNccs: boolean }) {
           "px-2.5 py-1 rounded-full text-[10px] font-black uppercase tracking-wide",
           isBuy
             ? "bg-red-50 text-red-500 dark:bg-red-950/40"
-            : "bg-[#f0fdf4] text-[#f0fdf4]0 dark:bg-[#052e16]/40"
+            : "bg-[#f0fdf4] text-[#16a34a] dark:bg-[#052e16]/40"
         )}>
           {item.ord_dvsn_name || (isNccs ? "대기" : "현금")}
         </span>
@@ -480,7 +480,7 @@ export function BalanceKrView({ countryToggle }: { countryToggle?: React.ReactNo
                   value={isLoading ? null : `${totalEvalAmt.toLocaleString()}원`}
                   sub={isLoading ? "" : `주식 ${sctsEvluAmt.toLocaleString()}원 · CMA ${cmaEvluAmt.toLocaleString()}원`}
                   icon={<Wallet size={15} />}
-                  iconBg="bg-[#f0fdf4] dark:bg-[#052e16]/40 text-[#f0fdf4]0"
+                  iconBg="bg-[#f0fdf4] dark:bg-[#052e16]/40 text-[#16a34a]"
                   accentColor="bg-[#16a34a] dark:bg-[#16a34a]"
                 />
                 <KpiCard
@@ -517,7 +517,7 @@ export function BalanceKrView({ countryToggle }: { countryToggle?: React.ReactNo
                     <MetricChip
                       label="당일 등락"
                       value={`${isDailyPositive ? "▲ +" : "▼ "}${asstIcdcAmt.toLocaleString()}원`}
-                      valueClass={isDailyPositive ? "text-rose-500" : "text-[#f0fdf4]0"}
+                      valueClass={isDailyPositive ? "text-rose-500" : "text-[#16a34a]"}
                     />
                     <MetricChip
                       label="금일 매수"
@@ -532,7 +532,7 @@ export function BalanceKrView({ countryToggle }: { countryToggle?: React.ReactNo
                     <MetricChip
                       label="금일 매수 - 매도"
                       value={`${(thdtBuyAmt - thdtSllAmt) >= 0 ? "+" : ""}${(thdtBuyAmt - thdtSllAmt).toLocaleString()}원`}
-                      valueClass={(thdtBuyAmt - thdtSllAmt) >= 0 ? "text-rose-500" : "text-[#f0fdf4]0"}
+                      valueClass={(thdtBuyAmt - thdtSllAmt) >= 0 ? "text-rose-500" : "text-[#16a34a]"}
                     />
                     {totLoanAmt > 0 && (
                       <MetricChip

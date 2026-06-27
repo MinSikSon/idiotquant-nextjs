@@ -112,7 +112,7 @@ export function LoadingState({ message = "계좌 데이터를 불러오는 중..
   return (
     <div className="h-screen w-full flex flex-col items-center justify-center bg-[#fcfaf7] dark:bg-[#1a1915] gap-3">
       <div className="p-4 rounded-2xl bg-white dark:bg-[#242320] border border-neutral-200 dark:border-[#35332e] shadow-sm">
-        <Loader2 className="w-7 h-7 text-[#f0fdf4]0 animate-spin" />
+        <Loader2 className="w-7 h-7 text-[#16a34a] animate-spin" />
       </div>
       <p className="text-sm font-bold text-neutral-400">{message}</p>
     </div>
@@ -340,11 +340,11 @@ export function PnlIcon({ positive, size = 15 }: { positive: boolean; size?: num
 export function pnlIconBg(positive: boolean) {
   return positive
     ? "bg-red-50 dark:bg-red-950/40 text-red-500"
-    : "bg-[#f0fdf4] dark:bg-[#052e16]/40 text-[#f0fdf4]0";
+    : "bg-[#f0fdf4] dark:bg-[#052e16]/40 text-[#16a34a]";
 }
 
 export function pnlValueColor(positive: boolean) {
-  return positive ? "text-red-500" : "text-[#f0fdf4]0";
+  return positive ? "text-red-500" : "text-[#16a34a]";
 }
 
 export function pnlAccentColor(positive: boolean) {

@@ -326,7 +326,7 @@ export default function InquireBalanceResult(props: InquireBalanceResultProps) {
                         label="평가 손익률"
                         value={`${totalProfitRate >= 0 ? "▲ +" : "▼ "}${totalProfitRate.toFixed(2)}%`}
                         subValue={`손익 합계: ${formatValue(evlu_smtl - pchs_smtl, "MONEY")}`}
-                        colorClass={totalProfitRate >= 0 ? "text-rose-500" : "text-[#f0fdf4]0"}
+                        colorClass={totalProfitRate >= 0 ? "text-rose-500" : "text-[#16a34a]"}
                     />
                     <SummaryItem
                         label="총 평가금액"
@@ -459,7 +459,7 @@ function SortableBalanceTable({ inventoryData, isUs, onOpenOrder, groupByTicker 
                                 <span className="text-[10px] font-mono text-neutral-500">{item.pdno || item.ovrs_pdno}</span>
                                 {renderGroupBadge(item)}
                             </div>
-                            <span className={`text-sm font-black font-mono shrink-0 ${isPositive ? "text-rose-500" : "text-[#f0fdf4]0"}`}>
+                            <span className={`text-sm font-black font-mono shrink-0 ${isPositive ? "text-rose-500" : "text-[#16a34a]"}`}>
                                 {isPositive ? "▲" : "▼"} {isPositive ? "+" : ""}{profitRt.toFixed(2)}%
                             </span>
                         </div>
@@ -569,7 +569,7 @@ function SortableBalanceTable({ inventoryData, isUs, onOpenOrder, groupByTicker 
                                             {formatValue(avgPrice, "MONEY")}
                                         </div>
                                     </td>
-                                    <td className={`p-4 text-right font-mono text-sm font-black ${isPositive ? "text-rose-500" : "text-[#f0fdf4]0"}`}>
+                                    <td className={`p-4 text-right font-mono text-sm font-black ${isPositive ? "text-rose-500" : "text-[#16a34a]"}`}>
                                         {isPositive ? "▲ +" : "▼ "}{profitRt.toFixed(2)}%
                                     </td>
                                     <td className="p-4 text-right font-mono text-sm font-bold text-neutral-600 dark:text-neutral-400">
