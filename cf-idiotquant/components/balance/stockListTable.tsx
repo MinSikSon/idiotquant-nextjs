@@ -738,6 +738,8 @@ function GroupSection({
     per: r.per,
     roe: Number(r.bps) > 0 ? (Number(r.eps) / Number(r.bps)) * 100 : null,
   })), [rows]);
+  // 그룹 예산(토큰) 합계 — 그룹 단위 운용 현황을 헤더에 표시
+  const tokenTotal = useMemo(() => rows.reduce((s, r) => s + (r.movable ? (Number(r.token) || 0) : 0), 0), [rows]);
   // 선택 여부는 이 섹션 키 기준으로만 판단(다른 섹션의 동일 종목과 분리)
   const isPicked = (sym: string) => picked.has(pickKey(sectionKey, sym));
   const allChecked = selectableTickers.length > 0 && selectableTickers.every(isPicked);
@@ -778,6 +780,11 @@ function GroupSection({
           <span className="px-2 py-0.5 text-[10px] font-mono font-bold bg-neutral-100 text-neutral-500 dark:bg-[#35332e] dark:text-neutral-400 rounded-full">
             {count}종목
           </span>
+          {tokenTotal > 0 && (
+            <span className="px-2 py-0.5 text-[10px] font-mono font-bold bg-[#f0fdf4] text-[#16a34a] dark:bg-[#14532d]/30 rounded-full" title="이 그룹 예산(토큰) 합계">
+              예산 ₩{Math.round(tokenTotal).toLocaleString("ko-KR")}
+            </span>
+          )}
           {/* 그룹 전체선택 (데스크탑·모바일 공통) */}
           {showCheck && !collapsed && (
             <label className="inline-flex cursor-pointer items-center gap-1 text-[10px] font-bold text-neutral-500 dark:text-neutral-400">

@@ -63,6 +63,22 @@ export default function QuantRuleEditor({ data, isMaster, onSave, className = ""
 
   const metaFor = (k: string) => desc[k] ?? inferMeta(k);
 
+  // 저장값/기본값 대비 변경 여부 — 변경된 필드를 강조하고 기본값을 힌트로 보여준다.
+  const savedDraft = useMemo(() => ruleToDraft(rule), [JSON.stringify(rule)]);
+  const defaultDraft = useMemo(() => ruleToDraft(data?.default ?? {}), [JSON.stringify(data?.default)]);
+  const isChanged = (k: string) => {
+    if (metaFor(k).type === "boolean") return !!draft[k] !== !!savedDraft[k];
+    return String(draft[k] ?? "") !== String(savedDraft[k] ?? "");
+  };
+  const changedCount = fieldKeys.filter(isChanged).length;
+  const fmtDefault = (k: string) => {
+    const meta = metaFor(k);
+    const dv = defaultDraft[k];
+    if (dv == null || dv === "") return null;
+    if (meta.type === "boolean") return dv ? "사용함" : "사용 안 함";
+    return String(dv);
+  };
+
   const setField = (k: string, v: string | boolean) => {
     setDraft(prev => ({ ...prev, [k]: v }));
     setDirty(true);
@@ -128,10 +144,20 @@ export default function QuantRuleEditor({ data, isMaster, onSave, className = ""
         {fieldKeys.map((k) => {
           const meta = metaFor(k);
           const val = draft[k];
+          const changed = isChanged(k);
+          const defaultVal = fmtDefault(k);
           return (
-            <div key={k} className="rounded-xl border border-neutral-200 bg-white p-3 dark:border-[#35332e] dark:bg-[#1a1915]">
+            <div key={k} className={cn(
+              "rounded-xl border bg-white p-3 dark:bg-[#1a1915] transition-colors",
+              changed
+                ? "border-[#16a34a] ring-1 ring-[#16a34a]/30 dark:border-[#16a34a]"
+                : "border-neutral-200 dark:border-[#35332e]"
+            )}>
               <div className="mb-1.5 flex items-center justify-between gap-2">
-                <span className="text-xs font-bold text-neutral-800 dark:text-neutral-200">{meta.label}</span>
+                <span className="flex items-center gap-1.5 text-xs font-bold text-neutral-800 dark:text-neutral-200">
+                  {meta.label}
+                  {changed && <span className="rounded bg-[#16a34a]/10 px-1.5 py-0.5 text-[9px] font-extrabold text-[#16a34a]">변경됨</span>}
+                </span>
                 <code className="text-[9px] text-neutral-300 dark:text-neutral-600">{k}</code>
               </div>
               <p className="mb-2 flex items-start gap-1 text-[10px] leading-tight text-neutral-400">
@@ -172,6 +198,14 @@ export default function QuantRuleEditor({ data, isMaster, onSave, className = ""
                   className="w-full rounded-lg border border-neutral-200 bg-[#fcfaf7] px-3 py-1.5 font-mono text-sm font-bold text-neutral-800 outline-none focus:border-[#16a34a] disabled:opacity-60 dark:border-[#35332e] dark:bg-[#242320] dark:text-neutral-200"
                 />
               )}
+              {defaultVal != null && (
+                <div className="mt-1.5 flex items-center justify-between gap-2 text-[10px] text-neutral-400">
+                  <span>기본값 <span className="font-mono">{defaultVal}</span></span>
+                  {changed && isMaster && (
+                    <button type="button" onClick={() => setField(k, defaultDraft[k])} className="font-bold text-neutral-400 hover:text-[#16a34a]">되돌리기</button>
+                  )}
+                </div>
+              )}
             </div>
           );
         })}
@@ -180,6 +214,9 @@ export default function QuantRuleEditor({ data, isMaster, onSave, className = ""
       {/* 액션 */}
       {isMaster && (
         <div className="flex flex-wrap items-center justify-end gap-2">
+          {changedCount > 0 && (
+            <span className="mr-auto text-xs font-bold text-[#16a34a]">{changedCount}개 변경됨</span>
+          )}
           {data?.saveState === "fulfilled" && !dirty && (
             <span className="inline-flex items-center gap-1 text-xs font-bold text-[#16a34a]">
               <CheckCircle2 className="h-3.5 w-3.5" /> 저장됨
