@@ -147,6 +147,8 @@ interface Props {
   quantRule?: QuantRule;
   // 지표 보강 (예: US 좋아요 종목은 stock_data_daily 에 없어 KIS price-detail 로 보강)
   metricsOverride?: Record<string, { per?: number | null; pbr?: number | null; bps?: number | null; eps?: number | null; marketCap?: number | null }>;
+  // 종목당 월 예산 (토큰 충전 진행 막대 기준값)
+  monthlyPerStock?: number;
 }
 
 const tokenAmounts = [10000, 100000, 1000000];
@@ -216,6 +218,7 @@ export default function StockListTable({
   countryTradingActive = false,
   quantRule,
   metricsOverride,
+  monthlyPerStock = 0,
 }: Props) {
   const stockList = data?.stock_list ?? [];
   const groups: StockGroup[] = data?.groups ?? [];
@@ -570,6 +573,7 @@ export default function StockListTable({
         doTokenPlusOne={doTokenPlusOne}
         doTokenMinusOne={doTokenMinusOne}
         openDetail={openDetail}
+        monthlyPerStock={monthlyPerStock}
       />
 
       {/* ===== 3. 사용자 그룹 섹션들 ===== */}
@@ -603,6 +607,7 @@ export default function StockListTable({
           doTokenPlusOne={doTokenPlusOne}
           doTokenMinusOne={doTokenMinusOne}
           openDetail={openDetail}
+          monthlyPerStock={monthlyPerStock}
         />
       ))}
 
@@ -626,6 +631,7 @@ export default function StockListTable({
         doTokenPlusOne={doTokenPlusOne}
         doTokenMinusOne={doTokenMinusOne}
         openDetail={openDetail}
+        monthlyPerStock={monthlyPerStock}
       />
 
       {/* 상세 분석 모달 */}
@@ -711,13 +717,14 @@ interface GroupSectionProps {
   doTokenPlusOne: (val: number, sym: string) => void;
   doTokenMinusOne: (val: number, sym: string) => void;
   openDetail: (raw: any) => void;
+  monthlyPerStock?: number;
 }
 
 function GroupSection({
   sectionKey, title, subtitle, icon, accent, count, rows, isMaster, tradingActive, onToggleTrading, hideTrading,
   conditionChips, editing, editingName, onEditNameChange, onStartRename, onCommitRename, onDelete,
   emptyText, collapsed, onToggleCollapse, picked, onTogglePick, onPickMany,
-  doTokenPlusOne, doTokenMinusOne, openDetail,
+  doTokenPlusOne, doTokenMinusOne, openDetail, monthlyPerStock = 0,
 }: GroupSectionProps) {
   const showRefill = isMaster && rows.some(r => r.movable);
   const showCheck = isMaster && rows.length > 0; // 모든 행 선택 가능(좋아요는 복사용)
@@ -731,6 +738,8 @@ function GroupSection({
     per: r.per,
     roe: Number(r.bps) > 0 ? (Number(r.eps) / Number(r.bps)) * 100 : null,
   })), [rows]);
+  // 그룹 예산(토큰) 합계 — 그룹 단위 운용 현황을 헤더에 표시
+  const tokenTotal = useMemo(() => rows.reduce((s, r) => s + (r.movable ? (Number(r.token) || 0) : 0), 0), [rows]);
   // 선택 여부는 이 섹션 키 기준으로만 판단(다른 섹션의 동일 종목과 분리)
   const isPicked = (sym: string) => picked.has(pickKey(sectionKey, sym));
   const allChecked = selectableTickers.length > 0 && selectableTickers.every(isPicked);
@@ -771,6 +780,11 @@ function GroupSection({
           <span className="px-2 py-0.5 text-[10px] font-mono font-bold bg-neutral-100 text-neutral-500 dark:bg-[#35332e] dark:text-neutral-400 rounded-full">
             {count}종목
           </span>
+          {tokenTotal > 0 && (
+            <span className="px-2 py-0.5 text-[10px] font-mono font-bold bg-[#f0fdf4] text-[#16a34a] dark:bg-[#14532d]/30 rounded-full" title="이 그룹 예산(토큰) 합계">
+              예산 ₩{Math.round(tokenTotal).toLocaleString("ko-KR")}
+            </span>
+          )}
           {/* 그룹 전체선택 (데스크탑·모바일 공통) */}
           {showCheck && !collapsed && (
             <label className="inline-flex cursor-pointer items-center gap-1 text-[10px] font-bold text-neutral-500 dark:text-neutral-400">
@@ -940,7 +954,16 @@ function GroupSection({
                       </span>
                     </td>
                     <td className="px-4 py-3 text-right font-mono font-black text-[#16a34a] dark:text-[#16a34a]">
-                      {row.movable ? (row.token?.toLocaleString() ?? 0) : "-"}
+                      {row.movable ? (
+                        <div className="flex flex-col items-end gap-1">
+                          <span>{row.token?.toLocaleString() ?? 0}</span>
+                          {monthlyPerStock > 0 && (
+                            <div className="w-16 h-1 rounded-full bg-neutral-100 dark:bg-[#35332e] overflow-hidden" title={`종목당 월 예산 대비 ${Math.round(Math.min(1, (Number(row.token) || 0) / monthlyPerStock) * 100)}%`}>
+                              <div className="h-full bg-[#16a34a] rounded-full" style={{ width: `${Math.min(100, ((Number(row.token) || 0) / monthlyPerStock) * 100)}%` }} />
+                            </div>
+                          )}
+                        </div>
+                      ) : "-"}
                     </td>
                     {showRefill && (
                       <td className="px-4 py-3">
@@ -1021,8 +1044,13 @@ function GroupSection({
                 {/* 예산 + Refill (운용 종목만) */}
                 {row.movable && (
                   <div className="mt-2.5 flex items-center justify-between gap-2">
-                    <span className="text-[11px] text-neutral-500 dark:text-neutral-400">
-                      예산 <b className="font-mono font-black text-[#16a34a]">{row.token?.toLocaleString() ?? 0}</b>
+                    <span className="text-[11px] text-neutral-500 dark:text-neutral-400 flex items-center gap-2">
+                      <span>예산 <b className="font-mono font-black text-[#16a34a]">{row.token?.toLocaleString() ?? 0}</b></span>
+                      {monthlyPerStock > 0 && (
+                        <span className="w-14 h-1 rounded-full bg-neutral-100 dark:bg-[#35332e] overflow-hidden inline-block" title={`종목당 월 예산 대비 ${Math.round(Math.min(1, (Number(row.token) || 0) / monthlyPerStock) * 100)}%`}>
+                          <span className="block h-full bg-[#16a34a] rounded-full" style={{ width: `${Math.min(100, ((Number(row.token) || 0) / monthlyPerStock) * 100)}%` }} />
+                        </span>
+                      )}
                     </span>
                     {showRefill && (
                       <div className="flex flex-wrap justify-end gap-1">

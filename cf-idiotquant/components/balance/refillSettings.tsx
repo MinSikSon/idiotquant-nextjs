@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Coins } from "lucide-react";
+import { Coins, ChevronRight } from "lucide-react";
 
 export interface RefillData {
     has_account: boolean;
@@ -17,12 +17,28 @@ export interface RefillData {
 
 const won = (n: number) => `₩${Math.round(Number(n) || 0).toLocaleString("ko-KR")}`;
 
-function Stat({ label, value, sub }: { label: string; value: string; sub?: string }) {
+// 예산 흐름 노드 (월 예산 → 종목당 월 → 종목당 5분)
+function FlowNode({ label, value, sub, accent }: { label: string; value: string; sub?: string; accent?: boolean }) {
     return (
-        <div className="bg-[#faf9f7] dark:bg-[#1f1e1b] border border-neutral-200/70 dark:border-[#3a3834] rounded-xl px-3 py-2.5 flex flex-col gap-0.5 min-w-0">
+        <div className={
+            "flex-1 min-w-0 rounded-xl border px-3 py-2.5 flex flex-col gap-0.5 " +
+            (accent
+                ? "border-[#bbf7d0] dark:border-[#166534]/60 bg-[#f0fdf4] dark:bg-[#052e16]/20"
+                : "border-neutral-200/70 dark:border-[#3a3834] bg-[#faf9f7] dark:bg-[#1f1e1b]")
+        }>
             <span className="text-[10px] text-neutral-400 dark:text-neutral-500 truncate">{label}</span>
-            <span className="text-sm font-black text-neutral-800 dark:text-neutral-100 tabular-nums truncate">{value}</span>
+            <span className={"text-sm font-black tabular-nums truncate " + (accent ? "text-[#15803d] dark:text-[#16a34a]" : "text-neutral-800 dark:text-neutral-100")}>{value}</span>
             {sub && <span className="text-[10px] text-neutral-400 dark:text-neutral-500 truncate">{sub}</span>}
+        </div>
+    );
+}
+
+// 노드 사이 연산 설명 (모바일: 아래 화살표 / 데스크탑: 오른쪽 화살표)
+function FlowOp({ text }: { text: string }) {
+    return (
+        <div className="flex sm:flex-col items-center justify-center gap-1 shrink-0 text-neutral-400 dark:text-neutral-500">
+            <ChevronRight size={14} className="rotate-90 sm:rotate-0 shrink-0" />
+            <span className="text-[9px] font-bold whitespace-nowrap">{text}</span>
         </div>
     );
 }
@@ -47,12 +63,13 @@ export default function RefillSettings({
 
     return (
         <div className="space-y-3">
-            {/* 요약: 모바일 2열, sm 이상 4열 */}
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
-                <Stat label="총 리필량 (월)" value={won(data.monthly_budget_krw)} />
-                <Stat label="리필 주기" value={`${data.period_minutes}분마다`} sub={data.market_hours || "장중"} />
-                <Stat label="종목당 (5분)" value={won(data.per_tick_per_stock)} sub={`활성 ${data.active_count}종목`} />
-                <Stat label="종목당 (월)" value={won(data.monthly_per_stock)} />
+            {/* 예산 흐름: 월 예산 → (활성 N종목 분배) → 종목당 월 → (5분마다 적립) → 종목당 5분 */}
+            <div className="flex flex-col sm:flex-row sm:items-stretch gap-2">
+                <FlowNode label="월 예산 (총 리필량)" value={won(data.monthly_budget_krw)} sub={`${data.period_minutes}분마다 · ${data.market_hours || "장중"}`} accent />
+                <FlowOp text={`÷ 활성 ${data.active_count}종목`} />
+                <FlowNode label="종목당 (월)" value={won(data.monthly_per_stock)} />
+                <FlowOp text={`${data.period_minutes}분마다 적립`} />
+                <FlowNode label="종목당 (5분)" value={won(data.per_tick_per_stock)} sub={`전체 ${won(data.per_tick_total)}`} />
             </div>
 
             {/* 월 예산 조절 */}

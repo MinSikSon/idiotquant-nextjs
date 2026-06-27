@@ -51,6 +51,7 @@ import { getQuotationsPriceDetail } from "@/lib/features/koreaInvestmentUsMarket
 
 import InquireBalanceResult from "@/components/inquireBalanceResult";
 import QuantRuleEditor from "@/components/balance/quantRuleEditor";
+import TradingFlowSummary from "@/components/balance/tradingFlowSummary";
 import StockListTable from "@/components/balance/stockListTable";
 import { PortfolioChartSection } from "@/components/balance/portfolioChart";
 import { type NavSection } from "@/components/balance/sectionNav";
@@ -632,6 +633,16 @@ export function BalanceUsView({ countryToggle }: { countryToggle?: React.ReactNo
                     ? <span className="text-[10px] font-mono text-neutral-500 dark:text-neutral-400 bg-[#faf9f7] dark:bg-[#242320] px-2 py-0.5 rounded-full">{usCapital.stock_list.length}종목</span>
                     : null
                 }
+              />
+              <TradingFlowSummary
+                country="US"
+                tradingActive={tradingStatus.US}
+                groups={usCapital.groups ?? []}
+                stockList={usCapital.stock_list ?? []}
+                quantRule={usQuantRule?.rule}
+                onToggleTrading={handleToggleTrading}
+                togglePending={tradingStatus.state === "pending"}
+                className="mb-5"
               />
               <StockListTable
                 data={usCapital}
