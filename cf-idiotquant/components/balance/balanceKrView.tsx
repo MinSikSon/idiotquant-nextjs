@@ -47,6 +47,7 @@ import InquireBalanceResult from "@/components/inquireBalanceResult";
 import StockListTable from "@/components/balance/stockListTable";
 import QuantRuleEditor from "@/components/balance/quantRuleEditor";
 import RefillSettings from "@/components/balance/refillSettings";
+import TradingFlowSummary from "@/components/balance/tradingFlowSummary";
 import { PortfolioChartSection } from "@/components/balance/portfolioChart";
 import { type NavSection } from "@/components/balance/sectionNav";
 import { BalanceShell } from "@/components/balance/balanceShell";
@@ -597,6 +598,17 @@ export function BalanceKrView({ countryToggle }: { countryToggle?: React.ReactNo
                     ? <span className="text-[10px] font-mono text-neutral-500 dark:text-neutral-400 bg-[#faf9f7] dark:bg-[#242320] px-2 py-0.5 rounded-full">{krCapital.stock_list.length}종목</span>
                     : null
                 }
+              />
+              <TradingFlowSummary
+                country="KR"
+                tradingActive={tradingStatus.KR}
+                groups={krCapital.groups ?? []}
+                stockList={krCapital.stock_list ?? []}
+                quantRule={krQuantRule?.rule}
+                budget={krBudget}
+                onToggleTrading={handleToggleTrading}
+                togglePending={tradingStatus.state === "pending"}
+                className="mb-5"
               />
               <StockListTable
                 data={krCapital}
