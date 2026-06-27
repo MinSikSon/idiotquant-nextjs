@@ -222,7 +222,7 @@ export default function ProfilePage() {
                     {likedList.length > 0 && (
                         <div className="px-5 pb-2 flex items-center justify-end gap-2">
                             <span className="text-[10px] text-neutral-400 font-medium">목록 복사</span>
-                            <CopyStockButtons rows={likedCopyRows} />
+                            <CopyStockButtons rows={likedCopyRows} label="관심 종목" />
                         </div>
                     )}
 

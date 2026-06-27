@@ -789,7 +789,7 @@ function GroupSection({
 
         <div className="ml-auto flex items-center gap-2">
           {/* 종목 목록 복사 (종목명만 / 상세) */}
-          <CopyStockButtons rows={copyRows} />
+          <CopyStockButtons rows={copyRows} label={title} />
           {/* 적용 조건 칩 (그룹 ON 일 때) */}
           {conditionChips && conditionChips.length > 0 && (
             <div className="hidden md:flex items-center gap-1">
