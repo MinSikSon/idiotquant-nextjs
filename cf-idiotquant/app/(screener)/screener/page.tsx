@@ -647,8 +647,8 @@ function ScreenerContent() {
     const highlightMap: HighlightMap | null =
         activeStrategyIds.size === 1 ? (STRATEGY_HIGHLIGHT[Array.from(activeStrategyIds)[0]] ?? null) : null;
 
-    // 관심(좋아요) 목록 복사용 행
-    const likedCopyRows = useMemo<CopyStock[]>(() => filteredList.map(item => ({
+    // 목록 복사용 행 (관심 뷰·일반 발굴 목록 공용)
+    const copyRows = useMemo<CopyStock[]>(() => filteredList.map(item => ({
         name: item.name,
         ticker: item.ticker,
         ncav: item.ncav_ratio,
@@ -1189,13 +1189,11 @@ function ScreenerContent() {
 
                 {!isLoading && filteredList.length > 0 && (
                     <>
-                        {/* 관심 목록 복사 (종목명만 / 상세) */}
-                        {showLikedOnly && (
-                            <div className="flex items-center justify-end gap-2 mb-3">
-                                <span className="text-[11px] text-neutral-400 font-medium">목록 복사</span>
-                                <CopyStockButtons rows={likedCopyRows} />
-                            </div>
-                        )}
+                        {/* 목록 복사 (종목명만 / 상세) */}
+                        <div className="flex items-center justify-end gap-2 mb-3">
+                            <span className="text-[11px] text-neutral-400 font-medium">목록 복사</span>
+                            <CopyStockButtons rows={copyRows} label={showLikedOnly ? "관심 종목" : "발굴 종목"} />
+                        </div>
                         {/* 데스크탑 테이블 */}
                         <div className="hidden md:block">
                             <div className="bg-white dark:bg-[#242320] rounded-2xl border border-neutral-200 dark:border-[#35332e] overflow-hidden shadow-sm">

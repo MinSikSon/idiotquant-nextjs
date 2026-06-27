@@ -11,6 +11,7 @@ import {
     reqGetMyLikes, reqToggleLike,
 } from "@/lib/features/stockLikes/stockLikesSlice";
 import { cn } from "@/lib/utils";
+import { CopyStockButtons, type CopyStock } from "@/components/copyStockButtons";
 
 const STRATEGY_BADGE: Record<string, string> = {
     ncav:           "bg-emerald-100 text-emerald-700 dark:bg-emerald-950/50 dark:text-emerald-400",
@@ -35,6 +36,16 @@ export default function ProfilePage() {
     const dispatch = useAppDispatch();
     const likedList = useAppSelector(selectLikedList);
     const likesState = useAppSelector(selectLikesState);
+
+    // 관심 종목 복사용 행 (ROE는 EPS/BPS로 계산)
+    const likedCopyRows: CopyStock[] = likedList.map(item => ({
+        name: item.stock_name ?? item.ticker,
+        ticker: item.ticker,
+        ncav: item.ncav_ratio,
+        pbr: item.pbr,
+        per: item.per,
+        roe: Number(item.bps) > 0 ? (Number(item.eps) / Number(item.bps)) * 100 : null,
+    }));
 
     const isMasterUser = session?.user?.name === process.env.NEXT_PUBLIC_MASTER;
     const isAdmin = (session?.user as any)?.role === "admin";
@@ -207,6 +218,13 @@ export default function ProfilePage() {
                             발굴 페이지에서 보기
                         </Link>
                     </div>
+
+                    {likedList.length > 0 && (
+                        <div className="px-5 pb-2 flex items-center justify-end gap-2">
+                            <span className="text-[10px] text-neutral-400 font-medium">목록 복사</span>
+                            <CopyStockButtons rows={likedCopyRows} label="관심 종목" />
+                        </div>
+                    )}
 
                     {likesState === "pending" || likesState === "init" ? (
                         <div className="px-5 py-5 flex justify-center">

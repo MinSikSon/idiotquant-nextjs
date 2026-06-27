@@ -22,6 +22,7 @@ import {
   DollarSign, Coins, Heart, X, TrendingUp, ChevronLeft, Lock, ArrowRight, BarChart2,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { CopyStockButtons } from '@/components/copyStockButtons';
 
 // =========================================================================
 // Dynamic imports
@@ -583,6 +584,19 @@ function AnalyzeContent() {
             {waitResponse && !isPriceLoaded && <ResultSkeleton />}
 
             <div className={cn(!isPriceLoaded ? 'hidden' : 'animate-in fade-in duration-400')}>
+
+              {/* 종목 정보 복사 (종목명만 / 상세) */}
+              {stockData && (
+                <div className="flex items-center justify-end gap-2 mb-3">
+                  <span className="text-[11px] text-neutral-400 font-medium">복사</span>
+                  <CopyStockButtons rows={[{
+                    name: displayName,
+                    ticker: krOrUs === 'US' ? name : (stockData.stockTicker ?? tickerFromUrl),
+                    pbr: stockData.pbr,
+                    per: stockData.per,
+                  }]} />
+                </div>
+              )}
 
               {/* 종목 카드 + 핵심 지표 — 최상단 */}
               <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 mb-6">
