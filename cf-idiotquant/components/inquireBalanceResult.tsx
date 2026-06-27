@@ -16,12 +16,13 @@ import {
     Loader2,
     Search,
     PlusCircle,
-    FolderOpen
+    FolderOpen,
+    AlertCircle
 } from "lucide-react";
 import { useAppDispatch, useAppSelector } from "@/lib/hooks";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useSession } from "next-auth/react";
-import { useToast, ToastContainer } from "@/components/balance/shared";
+import { useToast, ToastContainer, EmptyState, EmptyRow } from "@/components/balance/shared";
 import {
     reqGetInquirePrice,
     getKoreaInvestmentInquirePrice,
@@ -342,14 +343,26 @@ export default function InquireBalanceResult(props: InquireBalanceResultProps) {
                 </div>
             </div>
 
-            {props.kiBalance.msg1 && (
-                <div className="flex items-start gap-3 p-4 bg-[#faf9f7] dark:bg-[#242320] border border-neutral-200 dark:border-[#35332e] rounded-2xl">
-                    <Info size={18} className="text-neutral-400 mt-0.5 shrink-0" />
-                    <p className="text-sm text-neutral-600 dark:text-neutral-400 font-medium leading-relaxed">
-                        {props.kiBalance.msg1}
-                    </p>
-                </div>
-            )}
+            {props.kiBalance.msg1 && (() => {
+                // KIS rt_cd: "0" = 정상. 그 외 값이면 오류/경고로 보고 강조.
+                const isError = props.kiBalance.rt_cd != null && String(props.kiBalance.rt_cd) !== "0";
+                return (
+                    <div className={`flex items-start gap-3 p-4 rounded-2xl border ${
+                        isError
+                            ? "bg-red-50 dark:bg-red-950/30 border-red-200 dark:border-red-900/50"
+                            : "bg-[#faf9f7] dark:bg-[#242320] border-neutral-200 dark:border-[#35332e]"
+                    }`}>
+                        {isError
+                            ? <AlertCircle size={18} className="text-red-500 mt-0.5 shrink-0" />
+                            : <Info size={18} className="text-neutral-400 mt-0.5 shrink-0" />}
+                        <p className={`text-sm font-medium leading-relaxed ${
+                            isError ? "text-red-700 dark:text-red-300" : "text-neutral-600 dark:text-neutral-400"
+                        }`}>
+                            {props.kiBalance.msg1}
+                        </p>
+                    </div>
+                );
+            })()}
 
             {/* 테이블 섹션 */}
             <div className="overflow-hidden bg-white dark:bg-[#242320] rounded-[2rem] border border-neutral-200 dark:border-[#35332e] shadow-sm">
@@ -440,7 +453,7 @@ function SortableBalanceTable({ inventoryData, isUs, onOpenOrder, groupByTicker 
     const MobileCardList = () => (
         <div className="divide-y divide-neutral-100 dark:divide-[#35332e]">
             {sortedItems.length === 0 && (
-                <p className="py-10 text-center text-sm text-neutral-400">보유 종목이 없습니다.</p>
+                <EmptyState message="보유 종목이 없습니다" />
             )}
             {sortedItems.map((item, idx) => {
                 const profitRt = Number(getFieldValue(item, "profit_rt"));
@@ -535,9 +548,7 @@ function SortableBalanceTable({ inventoryData, isUs, onOpenOrder, groupByTicker 
                     </thead>
                     <tbody className="divide-y divide-neutral-100 dark:divide-[#35332e]">
                         {sortedItems.length === 0 && (
-                            <tr>
-                                <td colSpan={8} className="py-10 text-center text-sm text-neutral-400">보유 종목이 없습니다.</td>
-                            </tr>
+                            <EmptyRow colSpan={8} message="보유 종목이 없습니다" />
                         )}
                         {sortedItems.map((item, idx) => {
                             const profitRt = Number(getFieldValue(item, "profit_rt"));

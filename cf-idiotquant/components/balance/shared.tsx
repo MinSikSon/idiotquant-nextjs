@@ -160,16 +160,23 @@ export function TabButton({ active, onClick, children }: { active: boolean; onCl
   );
 }
 
+// 표가 아닌 곳(모바일 카드 등)에서 쓰는 빈 상태
+export function EmptyState({ message, icon }: { message: string; icon?: React.ReactNode }) {
+  return (
+    <div className="flex flex-col items-center justify-center py-14 gap-3">
+      <div className="p-3 rounded-2xl bg-[#faf9f7] dark:bg-[#35332e]">
+        {icon ?? <InboxIcon size={20} className="text-neutral-400" />}
+      </div>
+      <p className="text-sm text-neutral-400 font-medium">{message}</p>
+    </div>
+  );
+}
+
 export function EmptyRow({ colSpan, message }: { colSpan: number; message: string }) {
   return (
     <tr>
       <td colSpan={colSpan}>
-        <div className="flex flex-col items-center justify-center py-14 gap-3">
-          <div className="p-3 rounded-2xl bg-[#faf9f7] dark:bg-[#35332e]">
-            <InboxIcon size={20} className="text-neutral-400" />
-          </div>
-          <p className="text-sm text-neutral-400 font-medium">{message}</p>
-        </div>
+        <EmptyState message={message} />
       </td>
     </tr>
   );

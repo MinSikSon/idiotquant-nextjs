@@ -40,10 +40,10 @@ export default function OverseasNccsTable({ data, className = "" }: Props) {
     return (
         <div className={`w-full ${className}`}>
             {/* 상태 바 */}
-            <div className="flex items-center justify-between mb-2">
-                <div className="text-sm">[미체결내역]</div>
-                <div className="text-sm">상태: <span className="font-medium">{data?.state}</span></div>
-                <div className="text-sm">응답코드: {data?.rt_cd} • {data?.msg1}</div>
+            <div className="flex flex-wrap items-center gap-x-3 gap-y-1 mb-2 text-xs text-neutral-500 dark:text-neutral-400">
+                <span className="font-bold text-neutral-700 dark:text-neutral-200">미체결내역</span>
+                <span>상태: <span className="font-medium">{data?.state}</span></span>
+                {data?.msg1 && <span className="text-neutral-400 truncate">{data?.rt_cd} · {data?.msg1}</span>}
             </div>
 
             {/* Radix ScrollArea를 써서 가로 스크롤과 세로 스크롤을 모두 잡아줍니다. */}
