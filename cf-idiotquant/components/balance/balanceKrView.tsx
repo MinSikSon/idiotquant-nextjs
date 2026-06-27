@@ -629,6 +629,7 @@ export function BalanceKrView({ countryToggle }: { countryToggle?: React.ReactNo
                 countryTradingActive={tradingStatus.KR === true}
                 quantRule={krQuantRule.rule}
                 metricsOverride={krLikeMetrics}
+                monthlyPerStock={krBudget?.monthly_per_stock}
               />
             </SectionPanel>
           ) : null,
