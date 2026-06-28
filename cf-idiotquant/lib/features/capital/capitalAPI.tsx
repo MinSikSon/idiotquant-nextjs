@@ -128,3 +128,15 @@ export const getKrCapitalBudget: any = async (key: string) =>
     getKoreaInvestmentRequest(`/kr/capital/budget?kakao-id=${key}`, {});
 export const postKrCapitalBudget: any = async (key: string, monthly_budget_krw: number) =>
     postKoreaInvestmentRequest(`/kr/capital/budget?kakao-id=${key}`, {}, { monthly_budget_krw });
+
+// ============================================================================
+// 토큰 리셋 API (KR / US)
+// ============================================================================
+export const postKrCapitalTokenResetAll: any = async (key: string) =>
+    postKoreaInvestmentRequest(`/kr/capital/token/reset/all?kakao-id=${key}`, {});
+export const postKrCapitalTokenResetOne: any = async (key: string, ticker: string) =>
+    postKoreaInvestmentRequest(`/kr/capital/token/reset/ticker/${ticker}?kakao-id=${key}`, {});
+export const postUsCapitalTokenResetAll: any = async (key: string) =>
+    postKoreaInvestmentRequest(`/us/capital/token/reset/all?kakao-id=${key}`, {});
+export const postUsCapitalTokenResetOne: any = async (key: string, ticker: string) =>
+    postKoreaInvestmentRequest(`/us/capital/token/reset/ticker/${ticker}?kakao-id=${key}`, {});
