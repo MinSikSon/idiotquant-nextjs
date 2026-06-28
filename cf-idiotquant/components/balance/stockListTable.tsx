@@ -27,6 +27,7 @@ import {
   CircleCheck,
   CircleSlash,
   CircleDashed,
+  RotateCcw,
 } from "lucide-react";
 import { UsCapitalStockItem, KrUsCapitalType, StockGroup, LIKES_GROUP_ID, QuantRule } from "@/lib/features/capital/capitalSlice";
 import { LikedStockItem } from "@/lib/features/stockLikes/stockLikesSlice";
@@ -129,6 +130,8 @@ interface Props {
   doTokenPlusOne: (val: number, sym: string) => void;
   doTokenMinusAll: (val: number) => void;
   doTokenMinusOne: (val: number, sym: string) => void;
+  doTokenResetAll?: () => void;
+  doTokenResetOne?: (sym: string) => void;
   className?: string;
   session: any;
   // 그룹 관리
@@ -204,6 +207,8 @@ export default function StockListTable({
   doTokenPlusOne,
   doTokenMinusAll,
   doTokenMinusOne,
+  doTokenResetAll,
+  doTokenResetOne,
   className = "",
   session,
   onCreateGroup,
@@ -476,6 +481,15 @@ export default function StockListTable({
                   </button>
                 </div>
               ))}
+              {doTokenResetAll && (
+                <button
+                  onClick={() => { if (window.confirm("전체 활성 종목의 토큰을 0으로 리셋할까요?")) doTokenResetAll(); }}
+                  title="전체 종목 토큰 리셋"
+                  className="inline-flex items-center gap-1.5 rounded-lg border border-red-300 dark:border-red-800 bg-white dark:bg-[#242320] px-3 py-1.5 text-xs font-bold text-red-600 hover:bg-red-50 dark:hover:bg-red-950 transition-colors"
+                >
+                  <RotateCcw className="w-3.5 h-3.5" /> 전체 리셋
+                </button>
+              )}
             </div>
             {/* 새 그룹 추가 */}
             <div className="ml-auto flex items-center gap-2">
@@ -572,6 +586,7 @@ export default function StockListTable({
         onPickMany={pickMany}
         doTokenPlusOne={doTokenPlusOne}
         doTokenMinusOne={doTokenMinusOne}
+        doTokenResetOne={doTokenResetOne}
         openDetail={openDetail}
         monthlyPerStock={monthlyPerStock}
       />
@@ -606,6 +621,7 @@ export default function StockListTable({
           onPickMany={pickMany}
           doTokenPlusOne={doTokenPlusOne}
           doTokenMinusOne={doTokenMinusOne}
+          doTokenResetOne={doTokenResetOne}
           openDetail={openDetail}
           monthlyPerStock={monthlyPerStock}
         />
@@ -630,6 +646,7 @@ export default function StockListTable({
         onPickMany={pickMany}
         doTokenPlusOne={doTokenPlusOne}
         doTokenMinusOne={doTokenMinusOne}
+        doTokenResetOne={doTokenResetOne}
         openDetail={openDetail}
         monthlyPerStock={monthlyPerStock}
       />
@@ -716,6 +733,7 @@ interface GroupSectionProps {
   onPickMany?: (section: string, tickers: string[], select: boolean) => void;
   doTokenPlusOne: (val: number, sym: string) => void;
   doTokenMinusOne: (val: number, sym: string) => void;
+  doTokenResetOne?: (sym: string) => void;
   openDetail: (raw: any) => void;
   monthlyPerStock?: number;
 }
@@ -724,7 +742,7 @@ function GroupSection({
   sectionKey, title, subtitle, icon, accent, count, rows, isMaster, tradingActive, onToggleTrading, hideTrading,
   conditionChips, editing, editingName, onEditNameChange, onStartRename, onCommitRename, onDelete,
   emptyText, collapsed, onToggleCollapse, picked, onTogglePick, onPickMany,
-  doTokenPlusOne, doTokenMinusOne, openDetail, monthlyPerStock = 0,
+  doTokenPlusOne, doTokenMinusOne, doTokenResetOne, openDetail, monthlyPerStock = 0,
 }: GroupSectionProps) {
   const showRefill = isMaster && rows.some(r => r.movable);
   const showCheck = isMaster && rows.length > 0; // 모든 행 선택 가능(좋아요는 복사용)
@@ -968,7 +986,7 @@ function GroupSection({
                     {showRefill && (
                       <td className="px-4 py-3">
                         {row.movable ? (
-                          <div className="flex justify-end gap-1.5">
+                          <div className="flex justify-end gap-1.5 flex-wrap">
                             {tokenAmounts.map(amt => (
                               <div key={`indiv-${amt}`} className="flex items-center rounded-md border border-neutral-200 dark:border-[#35332e] bg-white dark:bg-[#242320] overflow-hidden shadow-xs">
                                 <button onClick={() => doTokenPlusOne(amt, row.symbol)} className="px-2 py-1 hover:bg-[#f5f1eb] dark:hover:bg-[#35332e] text-[10px] font-bold border-r border-neutral-100 dark:border-[#35332e]">
@@ -979,6 +997,11 @@ function GroupSection({
                                 </button>
                               </div>
                             ))}
+                            {doTokenResetOne && Number(row.token) > 0 && (
+                              <button onClick={() => doTokenResetOne(row.symbol)} title="토큰 0으로 리셋" className="flex items-center rounded-md border border-neutral-200 dark:border-[#35332e] bg-white dark:bg-[#242320] px-1.5 py-1 text-neutral-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-950 transition-colors">
+                                <RotateCcw className="w-3 h-3" />
+                              </button>
+                            )}
                           </div>
                         ) : (
                           <span className="block text-right text-neutral-300">-</span>
@@ -1064,6 +1087,11 @@ function GroupSection({
                             </button>
                           </div>
                         ))}
+                        {doTokenResetOne && Number(row.token) > 0 && (
+                          <button onClick={() => doTokenResetOne(row.symbol)} title="리셋" className="flex items-center rounded-md border border-neutral-200 dark:border-[#35332e] bg-white dark:bg-[#242320] px-2 py-1.5 text-neutral-400 active:text-red-500 active:bg-red-50 dark:active:bg-red-950">
+                            <RotateCcw className="w-3 h-3" />
+                          </button>
+                        )}
                       </div>
                     )}
                   </div>

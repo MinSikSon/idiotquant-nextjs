@@ -34,6 +34,8 @@ import {
   selectKrCapital, selectKrCapitalTokenMinusAll,
   selectKrCapitalTokenMinusOne, selectKrCapitalTokenPlusAll,
   selectKrCapitalTokenPlusOne,
+  reqPostKrCapitalTokenResetAll, reqPostKrCapitalTokenResetOne,
+  selectKrCapitalTokenResetAll, selectKrCapitalTokenResetOne,
   reqPostKrCapitalGroupCreate, reqPostKrCapitalGroupUpdate,
   reqPostKrCapitalGroupDelete, reqPostKrCapitalStockGroup, reqPostKrCapitalStocksGroup, reqPostKrCapitalLikesCopy,
   selectKrGroupOp,
@@ -181,6 +183,8 @@ export function BalanceKrView({ countryToggle }: { countryToggle?: React.ReactNo
   const krCapitalPlusOne = useAppSelector(selectKrCapitalTokenPlusOne);
   const krCapitalMinusAll = useAppSelector(selectKrCapitalTokenMinusAll);
   const krCapitalMinusOne = useAppSelector(selectKrCapitalTokenMinusOne);
+  const krCapitalResetAll = useAppSelector(selectKrCapitalTokenResetAll);
+  const krCapitalResetOne = useAppSelector(selectKrCapitalTokenResetOne);
   const krGroupOp = useAppSelector(selectKrGroupOp);
   const krQuantRule = useAppSelector(selectKrQuantRule);
   const krBudget = useAppSelector(selectKrBudget);
@@ -323,12 +327,12 @@ export function BalanceKrView({ countryToggle }: { countryToggle?: React.ReactNo
   }, [krCapital.state, balanceKey]);
 
   useEffect(() => {
-    const states = [krCapitalPlusAll?.state, krCapitalPlusOne?.state, krCapitalMinusAll?.state, krCapitalMinusOne?.state];
+    const states = [krCapitalPlusAll?.state, krCapitalPlusOne?.state, krCapitalMinusAll?.state, krCapitalMinusOne?.state, krCapitalResetAll?.state, krCapitalResetOne?.state];
     if (states.some(s => s === "fulfilled")) {
       dispatch(reqGetKrCapital(balanceKey));
       addToast("success", "토큰 잔액이 업데이트되었습니다.");
     }
-  }, [krCapitalPlusAll?.state, krCapitalPlusOne?.state, krCapitalMinusAll?.state, krCapitalMinusOne?.state]);
+  }, [krCapitalPlusAll?.state, krCapitalPlusOne?.state, krCapitalMinusAll?.state, krCapitalMinusOne?.state, krCapitalResetAll?.state, krCapitalResetOne?.state]);
 
   useEffect(() => {
     if (kiBalance.state === "fulfilled") setLastUpdated(new Date());
@@ -353,6 +357,8 @@ export function BalanceKrView({ countryToggle }: { countryToggle?: React.ReactNo
   const doTokenPlusOne = (num: number, ticker: string) => ticker && dispatch(reqPostKrCapitalTokenPlusOne({ key: balanceKey, num, ticker }));
   const doTokenMinusAll = (num: number) => dispatch(reqPostKrCapitalTokenMinusAll({ key: balanceKey, num }));
   const doTokenMinusOne = (num: number, ticker: string) => ticker && dispatch(reqPostKrCapitalTokenMinusOne({ key: balanceKey, num, ticker }));
+  const doTokenResetAll = () => dispatch(reqPostKrCapitalTokenResetAll({ key: balanceKey }));
+  const doTokenResetOne = (ticker: string) => ticker && dispatch(reqPostKrCapitalTokenResetOne({ key: balanceKey, ticker }));
 
   // 그룹 관리 핸들러
   const doCreateGroup = (name: string, tickers?: string[]) => dispatch(reqPostKrCapitalGroupCreate({ key: balanceKey, name, tickers }));
@@ -617,6 +623,8 @@ export function BalanceKrView({ countryToggle }: { countryToggle?: React.ReactNo
                 doTokenPlusOne={doTokenPlusOne}
                 doTokenMinusAll={doTokenMinusAll}
                 doTokenMinusOne={doTokenMinusOne}
+                doTokenResetAll={doTokenResetAll}
+                doTokenResetOne={doTokenResetOne}
                 session={session}
                 onCreateGroup={doCreateGroup}
                 onRenameGroup={doRenameGroup}

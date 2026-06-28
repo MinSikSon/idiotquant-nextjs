@@ -41,6 +41,8 @@ import {
   selectUsCapital, selectUsCapitalTokenMinusAll,
   selectUsCapitalTokenPlusAll, selectUsCapitalTokenPlusOne,
   selectUsCapitalTokenMinusOne,
+  reqPostUsCapitalTokenResetAll, reqPostUsCapitalTokenResetOne,
+  selectUsCapitalTokenResetAll, selectUsCapitalTokenResetOne,
   reqPostUsCapitalGroupCreate, reqPostUsCapitalGroupUpdate,
   reqPostUsCapitalGroupDelete, reqPostUsCapitalStockGroup, reqPostUsCapitalStocksGroup, reqPostUsCapitalLikesCopy,
   selectUsGroupOp,
@@ -167,6 +169,8 @@ export function BalanceUsView({ countryToggle }: { countryToggle?: React.ReactNo
   const usCapitalPlusOne = useAppSelector(selectUsCapitalTokenPlusOne);
   const usCapitalMinusAll = useAppSelector(selectUsCapitalTokenMinusAll);
   const usCapitalMinusOne = useAppSelector(selectUsCapitalTokenMinusOne);
+  const usCapitalResetAll = useAppSelector(selectUsCapitalTokenResetAll);
+  const usCapitalResetOne = useAppSelector(selectUsCapitalTokenResetOne);
   const usGroupOp = useAppSelector(selectUsGroupOp);
   const usQuantRule = useAppSelector(selectUsQuantRule);
   const likedListAll = useAppSelector(selectLikedList);
@@ -291,12 +295,12 @@ export function BalanceUsView({ countryToggle }: { countryToggle?: React.ReactNo
   }, [balanceKey]);
 
   useEffect(() => {
-    const states = [usCapitalPlusAll?.state, usCapitalPlusOne?.state, usCapitalMinusAll?.state, usCapitalMinusOne?.state];
+    const states = [usCapitalPlusAll?.state, usCapitalPlusOne?.state, usCapitalMinusAll?.state, usCapitalMinusOne?.state, usCapitalResetAll?.state, usCapitalResetOne?.state];
     if (states.some(s => s === "fulfilled")) {
       dispatch(reqGetUsCapital(balanceKey));
       addToast("success", "토큰 잔액이 업데이트되었습니다.");
     }
-  }, [usCapitalPlusAll?.state, usCapitalPlusOne?.state, usCapitalMinusAll?.state, usCapitalMinusOne?.state]);
+  }, [usCapitalPlusAll?.state, usCapitalPlusOne?.state, usCapitalMinusAll?.state, usCapitalMinusOne?.state, usCapitalResetAll?.state, usCapitalResetOne?.state]);
 
   useEffect(() => {
     if (kiBalance.state === "fulfilled") setLastUpdated(new Date());
@@ -321,6 +325,8 @@ export function BalanceUsView({ countryToggle }: { countryToggle?: React.ReactNo
   const doTokenPlusOne = (num: number, ticker: string) => ticker && dispatch(reqPostUsCapitalTokenPlusOne({ key: balanceKey, num, ticker }));
   const doTokenMinusAll = (num: number) => dispatch(reqPostUsCapitalTokenMinusAll({ key: balanceKey, num }));
   const doTokenMinusOne = (num: number, ticker: string) => ticker && dispatch(reqPostUsCapitalTokenMinusOne({ key: balanceKey, num, ticker }));
+  const doTokenResetAll = () => dispatch(reqPostUsCapitalTokenResetAll({ key: balanceKey }));
+  const doTokenResetOne = (ticker: string) => ticker && dispatch(reqPostUsCapitalTokenResetOne({ key: balanceKey, ticker }));
 
   // 그룹 관리 핸들러
   const doCreateGroup = (name: string, tickers?: string[]) => dispatch(reqPostUsCapitalGroupCreate({ key: balanceKey, name, tickers }));
@@ -651,6 +657,8 @@ export function BalanceUsView({ countryToggle }: { countryToggle?: React.ReactNo
                 doTokenPlusOne={doTokenPlusOne}
                 doTokenMinusAll={doTokenMinusAll}
                 doTokenMinusOne={doTokenMinusOne}
+                doTokenResetAll={doTokenResetAll}
+                doTokenResetOne={doTokenResetOne}
                 session={session}
                 onCreateGroup={doCreateGroup}
                 onRenameGroup={doRenameGroup}
