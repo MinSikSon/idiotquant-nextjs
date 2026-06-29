@@ -140,3 +140,11 @@ export const postUsCapitalTokenResetAll: any = async (key: string) =>
     postKoreaInvestmentRequest(`/us/capital/token/reset/all?kakao-id=${key}`, {});
 export const postUsCapitalTokenResetOne: any = async (key: string, ticker: string) =>
     postKoreaInvestmentRequest(`/us/capital/token/reset/ticker/${ticker}?kakao-id=${key}`, {});
+
+// ============================================================================
+// 종목 제거 API (미지정 종목 stock_list에서 삭제)
+// ============================================================================
+export const postKrCapitalStockRemove: any = async (key: string, ticker: string) =>
+    postKoreaInvestmentRequest(`/kr/capital/stock/${ticker}/remove?kakao-id=${key}`, {});
+export const postUsCapitalStockRemove: any = async (key: string, ticker: string) =>
+    postKoreaInvestmentRequest(`/us/capital/stock/${ticker}/remove?kakao-id=${key}`, {});

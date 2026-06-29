@@ -142,6 +142,7 @@ interface Props {
   onMoveStock?: (ticker: string, groupId: string | null) => void;
   onBulkMove?: (tickers: string[], groupId: string | null) => void;
   onCopyLikes?: (tickers: string[], groupId: string | null) => void;
+  onDeleteStock?: (ticker: string) => void;
   // 좋아요(찜) 그룹
   likedList?: LikedStockItem[];
   onToggleLikesTrading?: (isActive: boolean) => void;
@@ -218,6 +219,7 @@ export default function StockListTable({
   onMoveStock,
   onBulkMove,
   onCopyLikes,
+  onDeleteStock,
   likedList = [],
   onToggleLikesTrading,
   countryTradingActive = false,
@@ -264,7 +266,7 @@ export default function StockListTable({
         continue;
       }
       const g = s.group_id ? gmap.get(s.group_id) : null;
-      const groupActive = g ? g.is_trading_active !== false : true;
+      const groupActive = g ? g.is_trading_active !== false : false;
       const status = capitalStatus(s.action, groupActive, countryTradingActive);
       const row = normalizeCapital(s, status);
       if (s.group_id && gmap.has(s.group_id)) byGroup.get(s.group_id)!.push(row);
@@ -303,7 +305,7 @@ export default function StockListTable({
       if (s.group_id === LIKES_GROUP_ID) continue;
       total++;
       const g = s.group_id ? gmap.get(s.group_id) : null;
-      const groupActive = g ? g.is_trading_active !== false : true;
+      const groupActive = g ? g.is_trading_active !== false : false;
       const st = capitalStatus(s.action, groupActive, countryTradingActive);
       if (st.tone === "active") active++;
       else if (st.tone === "excluded") excluded++;
@@ -631,13 +633,13 @@ export default function StockListTable({
       <GroupSection
         sectionKey="__unassigned__"
         title="미지정"
-        subtitle="그룹에 속하지 않은 종목 (자동매매 기본 포함)"
+        subtitle="그룹 미지정 종목 — 자동매매 OFF. 그룹에 추가하면 ON/OFF 설정 가능"
         icon={<FolderOpen className="w-4 h-4 text-neutral-400" />}
         accent="neutral"
         count={unassigned.length}
         rows={unassigned}
         isMaster={isMaster}
-        tradingActive={true}
+        tradingActive={false}
         emptyText="미지정 종목이 없습니다."
         collapsed={collapsed.has("__unassigned__")}
         onToggleCollapse={() => toggleCollapse("__unassigned__")}
@@ -649,6 +651,7 @@ export default function StockListTable({
         doTokenResetOne={doTokenResetOne}
         openDetail={openDetail}
         monthlyPerStock={monthlyPerStock}
+        onDeleteStock={isMaster && onDeleteStock ? onDeleteStock : undefined}
       />
 
       {/* 상세 분석 모달 */}
@@ -736,13 +739,14 @@ interface GroupSectionProps {
   doTokenResetOne?: (sym: string) => void;
   openDetail: (raw: any) => void;
   monthlyPerStock?: number;
+  onDeleteStock?: (ticker: string) => void;
 }
 
 function GroupSection({
   sectionKey, title, subtitle, icon, accent, count, rows, isMaster, tradingActive, onToggleTrading, hideTrading,
   conditionChips, editing, editingName, onEditNameChange, onStartRename, onCommitRename, onDelete,
   emptyText, collapsed, onToggleCollapse, picked, onTogglePick, onPickMany,
-  doTokenPlusOne, doTokenMinusOne, doTokenResetOne, openDetail, monthlyPerStock = 0,
+  doTokenPlusOne, doTokenMinusOne, doTokenResetOne, openDetail, monthlyPerStock = 0, onDeleteStock,
 }: GroupSectionProps) {
   const showRefill = isMaster && rows.some(r => r.movable);
   const showCheck = isMaster && rows.length > 0; // 모든 행 선택 가능(좋아요는 복사용)
@@ -763,7 +767,7 @@ function GroupSection({
   const allChecked = selectableTickers.length > 0 && selectableTickers.every(isPicked);
   const someChecked = selectableTickers.some(isPicked);
   const baseCols = 6; // 종목/상태/PER·PBR/BPS·EPS/시총/NCAV
-  const colSpan = baseCols + 1 /*token*/ + (showCheck ? 1 : 0) + (showRefill ? 1 : 0);
+  const colSpan = baseCols + 1 /*token*/ + (showCheck ? 1 : 0) + (showRefill ? 1 : 0) + (onDeleteStock ? 1 : 0);
 
   const accentBorder = accent === "rose" ? "border-rose-200 dark:border-rose-900/30"
     : accent === "green" ? "border-[#16a34a]/20 dark:border-[#16a34a]/20"
@@ -894,6 +898,7 @@ function GroupSection({
                 <th className="px-4 py-2.5 font-semibold uppercase tracking-wider text-center">NCAV 비율</th>
                 <th className="px-4 py-2.5 font-semibold uppercase tracking-wider text-right">Token</th>
                 {showRefill && <th className="px-4 py-2.5 font-semibold uppercase tracking-wider text-right">Refill</th>}
+                {onDeleteStock && <th className="px-4 py-2.5 w-10"></th>}
               </tr>
             </thead>
             <tbody className="divide-y divide-neutral-100 dark:divide-[#35332e]">
@@ -1008,6 +1013,17 @@ function GroupSection({
                         )}
                       </td>
                     )}
+                    {onDeleteStock && (
+                      <td className="px-2 py-3 text-right">
+                        <button
+                          onClick={() => { if (window.confirm(`'${row.name || row.symbol}' 종목을 제거할까요?`)) onDeleteStock(row.symbol); }}
+                          title="종목 제거"
+                          className="rounded-md p-1 text-neutral-300 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-950 transition-colors"
+                        >
+                          <X className="w-3.5 h-3.5" />
+                        </button>
+                      </td>
+                    )}
                   </tr>
                 ))
               )}
@@ -1051,8 +1067,17 @@ function GroupSection({
                       <span className="truncate text-sm font-bold text-neutral-900 dark:text-neutral-100">{row.symbol}</span>
                     )}
                   </button>
-                  <div className="ml-auto shrink-0">
+                  <div className="ml-auto shrink-0 flex items-center gap-1">
                     <StatusBadge status={row.status} />
+                    {onDeleteStock && (
+                      <button
+                        onClick={() => { if (window.confirm(`'${row.name || row.symbol}' 종목을 제거할까요?`)) onDeleteStock(row.symbol); }}
+                        title="종목 제거"
+                        className="rounded-md p-1 text-neutral-300 active:text-red-500 active:bg-red-50 dark:active:bg-red-950 transition-colors"
+                      >
+                        <X className="w-3.5 h-3.5" />
+                      </button>
+                    )}
                   </div>
                 </div>
 

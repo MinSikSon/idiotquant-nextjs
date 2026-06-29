@@ -1,6 +1,6 @@
 import { PayloadAction } from "@reduxjs/toolkit";
 import { createAppSlice } from "@/lib/createAppSlice";
-import { getKrCapital, getUsCapital, postKrCapitalTokenMinusAll, postKrCapitalTokenMinusOne, postKrCapitalTokenPlusAll, postKrCapitalTokenPlusOne, postUsCapitalTokenMinusAll, postUsCapitalTokenMinusOne, postUsCapitalTokenPlusAll, postUsCapitalTokenPlusOne, postKrCapitalGroupCreate, postKrCapitalGroupUpdate, postKrCapitalGroupDelete, postKrCapitalStockGroup, postKrCapitalStocksGroup, postKrCapitalLikesCopy, postUsCapitalGroupCreate, postUsCapitalGroupUpdate, postUsCapitalGroupDelete, postUsCapitalStockGroup, postUsCapitalStocksGroup, postUsCapitalLikesCopy, getKrQuantRule, postKrQuantRule, getUsQuantRule, postUsQuantRule, getKrCapitalBudget, postKrCapitalBudget, postKrCapitalTokenResetAll, postKrCapitalTokenResetOne, postUsCapitalTokenResetAll, postUsCapitalTokenResetOne } from "./capitalAPI";
+import { getKrCapital, getUsCapital, postKrCapitalTokenMinusAll, postKrCapitalTokenMinusOne, postKrCapitalTokenPlusAll, postKrCapitalTokenPlusOne, postUsCapitalTokenMinusAll, postUsCapitalTokenMinusOne, postUsCapitalTokenPlusAll, postUsCapitalTokenPlusOne, postKrCapitalGroupCreate, postKrCapitalGroupUpdate, postKrCapitalGroupDelete, postKrCapitalStockGroup, postKrCapitalStocksGroup, postKrCapitalLikesCopy, postUsCapitalGroupCreate, postUsCapitalGroupUpdate, postUsCapitalGroupDelete, postUsCapitalStockGroup, postUsCapitalStocksGroup, postUsCapitalLikesCopy, getKrQuantRule, postKrQuantRule, getUsQuantRule, postUsQuantRule, getKrCapitalBudget, postKrCapitalBudget, postKrCapitalTokenResetAll, postKrCapitalTokenResetOne, postUsCapitalTokenResetAll, postUsCapitalTokenResetOne, postKrCapitalStockRemove, postUsCapitalStockRemove } from "./capitalAPI";
 
 /** 예약(가상) 그룹 id — 좋아요(찜) 종목 그룹 */
 export const LIKES_GROUP_ID = "__likes__";
@@ -694,6 +694,24 @@ export const capitalSlice = createAppSlice({
                 rejected: (state) => { state.krBudget.saveState = "rejected"; },
             }
         ),
+
+        // ── 미지정 종목 제거 ──
+        reqPostKrCapitalStockRemove: create.asyncThunk(
+            async ({ key, ticker }: { key?: string, ticker: string }) => postKrCapitalStockRemove(key, ticker),
+            {
+                pending: (state) => { state.krGroupOp.state = "pending"; },
+                fulfilled: (state) => { state.krGroupOp.state = "fulfilled"; },
+                rejected: (state) => { state.krGroupOp.state = "rejected"; },
+            }
+        ),
+        reqPostUsCapitalStockRemove: create.asyncThunk(
+            async ({ key, ticker }: { key?: string, ticker: string }) => postUsCapitalStockRemove(key, ticker),
+            {
+                pending: (state) => { state.usGroupOp.state = "pending"; },
+                fulfilled: (state) => { state.usGroupOp.state = "fulfilled"; },
+                rejected: (state) => { state.usGroupOp.state = "rejected"; },
+            }
+        ),
     }),
     selectors: {
         selectKrCapital: (state) => state.krCapital,
@@ -720,8 +738,8 @@ export const capitalSlice = createAppSlice({
 
 export const { reqGetKrCapital, reqPostKrCapitalTokenPlusAll, reqPostKrCapitalTokenPlusOne, reqPostKrCapitalTokenMinusAll, reqPostKrCapitalTokenMinusOne, reqPostKrCapitalTokenResetAll, reqPostKrCapitalTokenResetOne } = capitalSlice.actions;
 export const { selectKrCapital, selectKrCapitalTokenPlusAll, selectKrCapitalTokenPlusOne, selectKrCapitalTokenMinusAll, selectKrCapitalTokenMinusOne, selectKrCapitalTokenResetAll, selectKrCapitalTokenResetOne } = capitalSlice.selectors;
-export const { reqPostKrCapitalGroupCreate, reqPostKrCapitalGroupUpdate, reqPostKrCapitalGroupDelete, reqPostKrCapitalStockGroup, reqPostKrCapitalStocksGroup, reqPostKrCapitalLikesCopy } = capitalSlice.actions;
-export const { reqPostUsCapitalGroupCreate, reqPostUsCapitalGroupUpdate, reqPostUsCapitalGroupDelete, reqPostUsCapitalStockGroup, reqPostUsCapitalStocksGroup, reqPostUsCapitalLikesCopy } = capitalSlice.actions;
+export const { reqPostKrCapitalGroupCreate, reqPostKrCapitalGroupUpdate, reqPostKrCapitalGroupDelete, reqPostKrCapitalStockGroup, reqPostKrCapitalStocksGroup, reqPostKrCapitalLikesCopy, reqPostKrCapitalStockRemove } = capitalSlice.actions;
+export const { reqPostUsCapitalGroupCreate, reqPostUsCapitalGroupUpdate, reqPostUsCapitalGroupDelete, reqPostUsCapitalStockGroup, reqPostUsCapitalStocksGroup, reqPostUsCapitalLikesCopy, reqPostUsCapitalStockRemove } = capitalSlice.actions;
 export const { selectKrGroupOp, selectUsGroupOp } = capitalSlice.selectors;
 export const { reqGetKrQuantRule, reqPostKrQuantRule, reqGetUsQuantRule, reqPostUsQuantRule } = capitalSlice.actions;
 export const { selectKrQuantRule, selectUsQuantRule } = capitalSlice.selectors;
