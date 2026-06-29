@@ -656,7 +656,7 @@ export default function StockListTable({
         doTokenResetOne={doTokenResetOne}
         openDetail={openDetail}
         monthlyPerStock={monthlyPerStock}
-        onDeleteStock={onDeleteStock}
+        onDeleteStock={isMaster && onDeleteStock ? onDeleteStock : undefined}
       />
 
       {/* 상세 분석 모달 */}
