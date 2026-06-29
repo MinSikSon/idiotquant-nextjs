@@ -28,6 +28,7 @@ import {
   CircleSlash,
   CircleDashed,
   RotateCcw,
+  SlidersHorizontal,
 } from "lucide-react";
 import { UsCapitalStockItem, KrUsCapitalType, StockGroup, LIKES_GROUP_ID, QuantRule } from "@/lib/features/capital/capitalSlice";
 import { LikedStockItem } from "@/lib/features/stockLikes/stockLikesSlice";
@@ -143,6 +144,7 @@ interface Props {
   onBulkMove?: (tickers: string[], groupId: string | null) => void;
   onCopyLikes?: (tickers: string[], groupId: string | null) => void;
   onDeleteStock?: (ticker: string) => void;
+  onSaveGroupQuantRule?: (groupId: string, rule: QuantRule | null) => void;
   // 좋아요(찜) 그룹
   likedList?: LikedStockItem[];
   onToggleLikesTrading?: (isActive: boolean) => void;
@@ -220,6 +222,7 @@ export default function StockListTable({
   onBulkMove,
   onCopyLikes,
   onDeleteStock,
+  onSaveGroupQuantRule,
   likedList = [],
   onToggleLikesTrading,
   countryTradingActive = false,
@@ -606,7 +609,7 @@ export default function StockListTable({
           isMaster={isMaster}
           tradingActive={g.is_trading_active !== false}
           onToggleTrading={isMaster && onToggleGroupTrading ? () => onToggleGroupTrading(g.id, !(g.is_trading_active !== false)) : undefined}
-          conditionChips={g.is_trading_active !== false ? conditionChips.slice(0, 2) : []}
+          conditionChips={g.is_trading_active !== false ? formatConditions(g.quant_rule ?? quantRule).slice(0, 2) : []}
           editing={editingGroupId === g.id}
           editingName={editingName}
           onEditNameChange={setEditingName}
@@ -626,6 +629,8 @@ export default function StockListTable({
           doTokenResetOne={doTokenResetOne}
           openDetail={openDetail}
           monthlyPerStock={monthlyPerStock}
+          groupQuantRule={g.quant_rule}
+          onSaveGroupQuantRule={isMaster && onSaveGroupQuantRule ? (rule) => onSaveGroupQuantRule(g.id, rule) : undefined}
         />
       ))}
 
@@ -740,6 +745,8 @@ interface GroupSectionProps {
   openDetail: (raw: any) => void;
   monthlyPerStock?: number;
   onDeleteStock?: (ticker: string) => void;
+  groupQuantRule?: QuantRule;
+  onSaveGroupQuantRule?: (rule: QuantRule | null) => void;
 }
 
 function GroupSection({
@@ -747,7 +754,11 @@ function GroupSection({
   conditionChips, editing, editingName, onEditNameChange, onStartRename, onCommitRename, onDelete,
   emptyText, collapsed, onToggleCollapse, picked, onTogglePick, onPickMany,
   doTokenPlusOne, doTokenMinusOne, doTokenResetOne, openDetail, monthlyPerStock = 0, onDeleteStock,
+  groupQuantRule, onSaveGroupQuantRule,
 }: GroupSectionProps) {
+  const [showRuleEditor, setShowRuleEditor] = useState(false);
+  const [draftActiveCount, setDraftActiveCount] = useState<string>("");
+  const [draftNcavRatio, setDraftNcavRatio] = useState<string>("");
   const showRefill = isMaster && rows.some(r => r.movable);
   const showCheck = isMaster && rows.length > 0; // 모든 행 선택 가능(좋아요는 복사용)
   const selectableTickers = useMemo(() => rows.map(r => r.symbol), [rows]);
@@ -834,6 +845,25 @@ function GroupSection({
               ))}
             </div>
           )}
+          {/* 그룹별 트레이딩 조건 편집 버튼 */}
+          {onSaveGroupQuantRule && tradingActive && (
+            <button
+              onClick={() => {
+                setDraftActiveCount(String(groupQuantRule?.active_count ?? ""));
+                setDraftNcavRatio(String(groupQuantRule?.ncav_ratio ?? ""));
+                setShowRuleEditor(v => !v);
+              }}
+              title="이 그룹의 트레이딩 조건 설정"
+              className={cn(
+                "rounded-lg p-1.5 transition-colors",
+                showRuleEditor
+                  ? "bg-[#16a34a]/10 text-[#16a34a]"
+                  : "text-neutral-400 hover:bg-neutral-100 hover:text-neutral-700 dark:hover:bg-[#35332e] dark:hover:text-neutral-200"
+              )}
+            >
+              <SlidersHorizontal className="w-3.5 h-3.5" />
+            </button>
+          )}
           {/* 자동매매 토글 (좋아요 섹션은 hideTrading 으로 숨기고 '관심목록' 표시) */}
           {hideTrading ? (
             <span className="inline-flex items-center gap-1.5 rounded-lg bg-rose-50 px-3 py-1.5 text-xs font-bold text-rose-500 dark:bg-rose-900/20">
@@ -869,6 +899,75 @@ function GroupSection({
           )}
         </div>
       </div>
+
+      {/* 그룹별 트레이딩 조건 인라인 편집 패널 */}
+      {showRuleEditor && onSaveGroupQuantRule && (
+        <div className="border-b border-neutral-100 dark:border-[#35332e] bg-[#f8fdf9] dark:bg-[#1a2a1a]/50 px-4 py-3">
+          <div className="flex flex-wrap items-end gap-3">
+            <span className="text-[11px] font-bold text-[#16a34a] uppercase tracking-wider shrink-0">그룹 조건 설정</span>
+            <div className="flex items-center gap-1.5">
+              <label className="text-[11px] text-neutral-500 shrink-0">활성 종목 수</label>
+              <input
+                type="number"
+                min={1}
+                max={200}
+                step={1}
+                value={draftActiveCount}
+                onChange={e => setDraftActiveCount(e.target.value)}
+                placeholder="계좌 기본값"
+                className="w-20 rounded border border-neutral-300 dark:border-[#4a4641] bg-white dark:bg-[#1a1915] px-2 py-1 text-xs"
+              />
+            </div>
+            <div className="flex items-center gap-1.5">
+              <label className="text-[11px] text-neutral-500 shrink-0">NCAV 비율</label>
+              <input
+                type="number"
+                min={0}
+                step={0.1}
+                value={draftNcavRatio}
+                onChange={e => setDraftNcavRatio(e.target.value)}
+                placeholder="계좌 기본값"
+                className="w-20 rounded border border-neutral-300 dark:border-[#4a4641] bg-white dark:bg-[#1a1915] px-2 py-1 text-xs"
+              />
+            </div>
+            <div className="flex items-center gap-1.5 ml-auto">
+              {groupQuantRule && (
+                <button
+                  onClick={() => { onSaveGroupQuantRule(null); setShowRuleEditor(false); }}
+                  className="rounded px-2.5 py-1 text-xs text-neutral-500 hover:text-red-600 border border-neutral-200 dark:border-[#4a4641]"
+                >
+                  초기화
+                </button>
+              )}
+              <button
+                onClick={() => setShowRuleEditor(false)}
+                className="rounded px-2.5 py-1 text-xs text-neutral-500 border border-neutral-200 dark:border-[#4a4641]"
+              >
+                취소
+              </button>
+              <button
+                onClick={() => {
+                  const rule: QuantRule = {};
+                  const ac = parseInt(draftActiveCount, 10);
+                  if (!isNaN(ac) && ac > 0) rule.active_count = ac;
+                  const nr = parseFloat(draftNcavRatio);
+                  if (!isNaN(nr)) rule.ncav_ratio = nr;
+                  onSaveGroupQuantRule(Object.keys(rule).length > 0 ? rule : null);
+                  setShowRuleEditor(false);
+                }}
+                className="rounded px-2.5 py-1 text-xs font-bold bg-[#16a34a] text-white hover:bg-[#15803d]"
+              >
+                저장
+              </button>
+            </div>
+          </div>
+          {groupQuantRule && (
+            <p className="mt-1.5 text-[10px] text-neutral-400">
+              현재 그룹 조건: {formatConditions(groupQuantRule).join(" · ")}
+            </p>
+          )}
+        </div>
+      )}
 
       {/* 본문 — 데스크탑: 테이블 / 모바일: 카드 */}
       {!collapsed && (

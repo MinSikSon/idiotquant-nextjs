@@ -28,7 +28,7 @@ import {
   selectKakaoTotal, KakaoTotal
 } from "@/lib/features/kakao/kakaoSlice";
 import {
-  KrUsCapitalType, reqGetKrCapital,
+  KrUsCapitalType, QuantRule, reqGetKrCapital,
   reqPostKrCapitalTokenMinusAll, reqPostKrCapitalTokenMinusOne,
   reqPostKrCapitalTokenPlusAll, reqPostKrCapitalTokenPlusOne,
   selectKrCapital, selectKrCapitalTokenMinusAll,
@@ -370,6 +370,7 @@ export function BalanceKrView({ countryToggle }: { countryToggle?: React.ReactNo
   const doBulkMove = (tickers: string[], groupId: string | null) => dispatch(reqPostKrCapitalStocksGroup({ key: balanceKey, tickers, groupId }));
   const doCopyLikes = (tickers: string[], groupId: string | null) => dispatch(reqPostKrCapitalLikesCopy({ key: balanceKey, tickers, groupId }));
   const doDeleteStock = (ticker: string) => dispatch(reqPostKrCapitalStockRemove({ key: balanceKey, ticker }));
+  const doSaveGroupQuantRule = (groupId: string, rule: QuantRule | null) => dispatch(reqPostKrCapitalGroupUpdate({ key: balanceKey, groupId, updates: { quant_rule: rule } }));
   const doSaveQuantRule = (rule: any) => dispatch(reqPostKrQuantRule({ key: balanceKey, rule }));
   const doSaveBudget = (monthly_budget_krw: number) => dispatch(reqPostKrCapitalBudget({ key: balanceKey, monthly_budget_krw }));
 
@@ -636,6 +637,7 @@ export function BalanceKrView({ countryToggle }: { countryToggle?: React.ReactNo
                 onBulkMove={doBulkMove}
                 onCopyLikes={doCopyLikes}
                 onDeleteStock={doDeleteStock}
+                onSaveGroupQuantRule={doSaveGroupQuantRule}
                 likedList={krLikedList}
                 countryTradingActive={tradingStatus.KR === true}
                 quantRule={krQuantRule.rule}
