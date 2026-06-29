@@ -17,7 +17,8 @@ import {
     Search,
     PlusCircle,
     FolderOpen,
-    AlertCircle
+    AlertCircle,
+    ArrowDownRight,
 } from "lucide-react";
 import { useAppDispatch, useAppSelector } from "@/lib/hooks";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
@@ -127,6 +128,8 @@ export default function InquireBalanceResult(props: InquireBalanceResultProps) {
 
     const [isOrderModalOpen, setIsOrderModalOpen] = useState(false);
     const [selectedStock, setSelectedStock] = useState<any>(null);
+    const [orderInitialMode, setOrderInitialMode] = useState<"buy" | "sell">("buy");
+    const [orderInitialQty, setOrderInitialQty] = useState<string>("1");
 
     // 검색 제어 상태 관리
     const [searchQuery, setSearchQuery] = useState("");
@@ -181,8 +184,10 @@ export default function InquireBalanceResult(props: InquireBalanceResultProps) {
         }
     }, [props.kiOrderCash?.state]);
 
-    const handleOpenOrderModal = (stock: any) => {
+    const handleOpenOrderModal = (stock: any, mode: "buy" | "sell" = "buy", qty?: string) => {
         setSelectedStock(stock);
+        setOrderInitialMode(mode);
+        setOrderInitialQty(qty ?? "1");
         setIsOrderModalOpen(true);
         setIsDropdownOpen(false);
     };
@@ -383,6 +388,8 @@ export default function InquireBalanceResult(props: InquireBalanceResultProps) {
                     kiOrderCash={props.kiOrderCash}
                     reqPostOrderCash={props.reqPostOrderCash}
                     exRate={exRate}
+                    initialMode={orderInitialMode}
+                    initialQty={orderInitialQty}
                     onClose={() => setIsOrderModalOpen(false)}
                 />
             )}
@@ -400,7 +407,7 @@ function SummaryItem({ label, value, subValue, colorClass = "dark:text-white" }:
     );
 }
 
-function SortableBalanceTable({ inventoryData, isUs, onOpenOrder, groupByTicker }: { inventoryData: any[], isUs: boolean, onOpenOrder: (stock: any) => void, groupByTicker?: Map<string, { name: string; active: boolean; assigned: boolean }> }) {
+function SortableBalanceTable({ inventoryData, isUs, onOpenOrder, groupByTicker }: { inventoryData: any[], isUs: boolean, onOpenOrder: (stock: any, mode?: "buy" | "sell", qty?: string) => void, groupByTicker?: Map<string, { name: string; active: boolean; assigned: boolean }> }) {
     const [sortConfig, setSortConfig] = useState<any>({ key: "evlu_amt", direction: "desc" });
     const router = useRouter();
 
@@ -496,7 +503,7 @@ function SortableBalanceTable({ inventoryData, isUs, onOpenOrder, groupByTicker 
                             </div>
                         </div>
                         {/* 액션 */}
-                        <div className="flex gap-2 pt-1">
+                        <div className="flex gap-2 pt-1 flex-wrap">
                             <button
                                 onClick={() => goAnalyze(item)}
                                 className="flex items-center gap-1.5 px-3 py-1.5 bg-neutral-100 dark:bg-[#35332e] text-neutral-600 dark:text-neutral-300 rounded-lg text-xs font-black transition-colors hover:bg-neutral-200 dark:hover:bg-[#4a4641]"
@@ -509,6 +516,14 @@ function SortableBalanceTable({ inventoryData, isUs, onOpenOrder, groupByTicker 
                             >
                                 <Send size={12} /> 주문
                             </button>
+                            {Number(qty) > 0 && (
+                                <button
+                                    onClick={() => onOpenOrder(item, "sell", String(qty))}
+                                    className="flex items-center gap-1.5 px-3 py-1.5 bg-red-50 dark:bg-red-950/20 text-red-500 rounded-lg text-xs font-black transition-colors hover:bg-red-100 dark:hover:bg-red-950/40"
+                                >
+                                    <ArrowDownRight size={12} /> 전량 매도
+                                </button>
+                            )}
                         </div>
                     </div>
                 );
@@ -601,9 +616,19 @@ function SortableBalanceTable({ inventoryData, isUs, onOpenOrder, groupByTicker 
                                             <button
                                                 onClick={() => onOpenOrder(item)}
                                                 className="p-1.5 hover:bg-[#dcfce7] dark:hover:bg-[#14532d]/30 rounded-lg text-[#16a34a] transition-colors"
+                                                title="주문"
                                             >
                                                 <Send size={16} />
                                             </button>
+                                            {Number(qty) > 0 && (
+                                                <button
+                                                    onClick={() => onOpenOrder(item, "sell", String(qty))}
+                                                    className="flex items-center gap-1 px-2 py-1.5 hover:bg-red-50 dark:hover:bg-red-950/30 rounded-lg text-red-500 transition-colors text-[11px] font-black"
+                                                    title="전량 매도"
+                                                >
+                                                    <ArrowDownRight size={13} /> 전량
+                                                </button>
+                                            )}
                                         </div>
                                     </td>
                                 </tr>
@@ -647,10 +672,12 @@ interface OrderModalProps {
     kiOrderCash: any;
     reqPostOrderCash: any;
     exRate: number;
+    initialMode?: "buy" | "sell";
+    initialQty?: string;
     onClose: () => void;
 }
 
-function OrderModal({ isUs, stock, balanceKey, kiOrderCash, reqPostOrderCash, exRate, onClose }: OrderModalProps) {
+function OrderModal({ isUs, stock, balanceKey, kiOrderCash, reqPostOrderCash, exRate, initialMode = "buy", initialQty = "1", onClose }: OrderModalProps) {
     const dispatch = useAppDispatch();
 
     const krPriceState = useAppSelector(getKoreaInvestmentInquirePrice);
@@ -666,9 +693,10 @@ function OrderModal({ isUs, stock, balanceKey, kiOrderCash, reqPostOrderCash, ex
         ? parseFloat((rawPrice / exRate).toFixed(2))
         : rawPrice;
 
-    const [buyOrSell, setBuyOrSell] = useState<"buy" | "sell">("buy");
+    const [buyOrSell, setBuyOrSell] = useState<"buy" | "sell">(initialMode);
     const [price, setPrice] = useState(initialPrice > 0 ? String(initialPrice) : "");
-    const [qty, setQty] = useState("1");
+    const [qty, setQty] = useState(initialQty);
+    const heldQty = Number(getFieldValue(stock, "qty") || 0);
     const [priceError, setPriceError] = useState("");
     const [qtyError, setQtyError] = useState("");
     const [isFetchingPrice, setIsFetchingPrice] = useState(false);
@@ -793,7 +821,18 @@ function OrderModal({ isUs, stock, balanceKey, kiOrderCash, reqPostOrderCash, ex
                     </div>
 
                     <div className="space-y-1.5">
-                        <label className="text-xs font-black text-neutral-400 uppercase tracking-wider">주문 수량 (QTY)</label>
+                        <div className="flex items-center justify-between">
+                            <label className="text-xs font-black text-neutral-400 uppercase tracking-wider">주문 수량 (QTY)</label>
+                            {buyOrSell === "sell" && heldQty > 0 && (
+                                <button
+                                    type="button"
+                                    onClick={() => { setQty(formatValue(heldQty, "QTY").replace(/,/g, "")); if (qtyError) setQtyError(""); }}
+                                    className="text-[11px] font-black text-[#16a34a] hover:underline"
+                                >
+                                    전량 ({formatValue(heldQty, "QTY")})
+                                </button>
+                            )}
+                        </div>
                         <div className={`flex items-center border rounded-xl overflow-hidden ${qtyError ? "border-rose-500 dark:border-rose-500" : "border-neutral-200 dark:border-[#35332e]"}`}>
                             <button
                                 type="button"
