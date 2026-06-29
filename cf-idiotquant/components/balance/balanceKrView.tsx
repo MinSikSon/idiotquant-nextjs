@@ -354,6 +354,13 @@ export function BalanceKrView({ countryToggle }: { countryToggle?: React.ReactNo
     }
   }, [krGroupOp?.state]);
 
+  // 그룹 작업 실패 시 사유 노출 (모바일에서 원인 확인용)
+  useEffect(() => {
+    if (krGroupOp?.state === "rejected") {
+      addToast("error", krGroupOp.error || "종목 작업에 실패했습니다.");
+    }
+  }, [krGroupOp?.state]);
+
   const doTokenPlusAll = (num: number) => dispatch(reqPostKrCapitalTokenPlusAll({ key: balanceKey, num }));
   const doTokenPlusOne = (num: number, ticker: string) => ticker && dispatch(reqPostKrCapitalTokenPlusOne({ key: balanceKey, num, ticker }));
   const doTokenMinusAll = (num: number) => dispatch(reqPostKrCapitalTokenMinusAll({ key: balanceKey, num }));

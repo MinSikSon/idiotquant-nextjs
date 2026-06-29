@@ -224,13 +224,20 @@ export async function postKoreaInvestmentRequest(
     };
     
     const res = await fetch(url, options);
+    const text = await res.text();
 
     if (!res.ok) {
-        const errorData = await res.json().catch(() => ({}));
-        throw new Error(errorData.message || "프록시 서버 통신 실패 (POST: 500)");
+        let message = text;
+        try { message = JSON.parse(text)?.message || text; } catch { /* 평문 응답 */ }
+        throw new Error(message || `프록시 서버 통신 실패 (POST: ${res.status})`);
     }
 
-    return res.json();
+    try {
+        return JSON.parse(text);
+    } catch {
+        // 백엔드가 JSON이 아닌 평문(예: 권한 거부 'need to valid id')을 200으로 반환한 경우
+        throw new Error(text || "서버 응답을 해석할 수 없습니다.");
+    }
 }
 
 /**

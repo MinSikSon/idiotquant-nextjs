@@ -119,6 +119,7 @@ export interface KrUsCapitalType {
 
 interface CapitalTokenRefillType {
     state: "init" | "pending" | "fulfilled" | "rejected";
+    error?: string;
 }
 
 export interface CapitalType {
@@ -489,7 +490,7 @@ export const capitalSlice = createAppSlice({
             {
                 pending: (state) => { state.krGroupOp.state = "pending"; },
                 fulfilled: (state) => { state.krGroupOp.state = "fulfilled"; },
-                rejected: (state) => { state.krGroupOp.state = "rejected"; },
+                rejected: (state, action) => { state.krGroupOp.state = "rejected"; state.krGroupOp.error = action.error?.message; },
             }
         ),
         reqPostKrCapitalStocksGroup: create.asyncThunk(
@@ -497,7 +498,7 @@ export const capitalSlice = createAppSlice({
             {
                 pending: (state) => { state.krGroupOp.state = "pending"; },
                 fulfilled: (state) => { state.krGroupOp.state = "fulfilled"; },
-                rejected: (state) => { state.krGroupOp.state = "rejected"; },
+                rejected: (state, action) => { state.krGroupOp.state = "rejected"; state.krGroupOp.error = action.error?.message; },
             }
         ),
         reqPostKrCapitalLikesCopy: create.asyncThunk(
@@ -505,7 +506,7 @@ export const capitalSlice = createAppSlice({
             {
                 pending: (state) => { state.krGroupOp.state = "pending"; },
                 fulfilled: (state) => { state.krGroupOp.state = "fulfilled"; },
-                rejected: (state) => { state.krGroupOp.state = "rejected"; },
+                rejected: (state, action) => { state.krGroupOp.state = "rejected"; state.krGroupOp.error = action.error?.message; },
             }
         ),
         reqPostKrCapitalGroupUpdate: create.asyncThunk(
@@ -513,7 +514,7 @@ export const capitalSlice = createAppSlice({
             {
                 pending: (state) => { state.krGroupOp.state = "pending"; },
                 fulfilled: (state) => { state.krGroupOp.state = "fulfilled"; },
-                rejected: (state) => { state.krGroupOp.state = "rejected"; },
+                rejected: (state, action) => { state.krGroupOp.state = "rejected"; state.krGroupOp.error = action.error?.message; },
             }
         ),
         reqPostKrCapitalGroupDelete: create.asyncThunk(
@@ -521,7 +522,7 @@ export const capitalSlice = createAppSlice({
             {
                 pending: (state) => { state.krGroupOp.state = "pending"; },
                 fulfilled: (state) => { state.krGroupOp.state = "fulfilled"; },
-                rejected: (state) => { state.krGroupOp.state = "rejected"; },
+                rejected: (state, action) => { state.krGroupOp.state = "rejected"; state.krGroupOp.error = action.error?.message; },
             }
         ),
         reqPostKrCapitalStockGroup: create.asyncThunk(
@@ -529,7 +530,7 @@ export const capitalSlice = createAppSlice({
             {
                 pending: (state) => { state.krGroupOp.state = "pending"; },
                 fulfilled: (state) => { state.krGroupOp.state = "fulfilled"; },
-                rejected: (state) => { state.krGroupOp.state = "rejected"; },
+                rejected: (state, action) => { state.krGroupOp.state = "rejected"; state.krGroupOp.error = action.error?.message; },
             }
         ),
 
@@ -539,7 +540,7 @@ export const capitalSlice = createAppSlice({
             {
                 pending: (state) => { state.usGroupOp.state = "pending"; },
                 fulfilled: (state) => { state.usGroupOp.state = "fulfilled"; },
-                rejected: (state) => { state.usGroupOp.state = "rejected"; },
+                rejected: (state, action) => { state.usGroupOp.state = "rejected"; state.usGroupOp.error = action.error?.message; },
             }
         ),
         reqPostUsCapitalStocksGroup: create.asyncThunk(
@@ -547,7 +548,7 @@ export const capitalSlice = createAppSlice({
             {
                 pending: (state) => { state.usGroupOp.state = "pending"; },
                 fulfilled: (state) => { state.usGroupOp.state = "fulfilled"; },
-                rejected: (state) => { state.usGroupOp.state = "rejected"; },
+                rejected: (state, action) => { state.usGroupOp.state = "rejected"; state.usGroupOp.error = action.error?.message; },
             }
         ),
         reqPostUsCapitalLikesCopy: create.asyncThunk(
@@ -555,7 +556,7 @@ export const capitalSlice = createAppSlice({
             {
                 pending: (state) => { state.usGroupOp.state = "pending"; },
                 fulfilled: (state) => { state.usGroupOp.state = "fulfilled"; },
-                rejected: (state) => { state.usGroupOp.state = "rejected"; },
+                rejected: (state, action) => { state.usGroupOp.state = "rejected"; state.usGroupOp.error = action.error?.message; },
             }
         ),
         reqPostUsCapitalGroupUpdate: create.asyncThunk(
@@ -563,7 +564,7 @@ export const capitalSlice = createAppSlice({
             {
                 pending: (state) => { state.usGroupOp.state = "pending"; },
                 fulfilled: (state) => { state.usGroupOp.state = "fulfilled"; },
-                rejected: (state) => { state.usGroupOp.state = "rejected"; },
+                rejected: (state, action) => { state.usGroupOp.state = "rejected"; state.usGroupOp.error = action.error?.message; },
             }
         ),
         reqPostUsCapitalGroupDelete: create.asyncThunk(
@@ -571,7 +572,7 @@ export const capitalSlice = createAppSlice({
             {
                 pending: (state) => { state.usGroupOp.state = "pending"; },
                 fulfilled: (state) => { state.usGroupOp.state = "fulfilled"; },
-                rejected: (state) => { state.usGroupOp.state = "rejected"; },
+                rejected: (state, action) => { state.usGroupOp.state = "rejected"; state.usGroupOp.error = action.error?.message; },
             }
         ),
         reqPostUsCapitalStockGroup: create.asyncThunk(
@@ -579,7 +580,7 @@ export const capitalSlice = createAppSlice({
             {
                 pending: (state) => { state.usGroupOp.state = "pending"; },
                 fulfilled: (state) => { state.usGroupOp.state = "fulfilled"; },
-                rejected: (state) => { state.usGroupOp.state = "rejected"; },
+                rejected: (state, action) => { state.usGroupOp.state = "rejected"; state.usGroupOp.error = action.error?.message; },
             }
         ),
 
@@ -702,7 +703,7 @@ export const capitalSlice = createAppSlice({
             {
                 pending: (state) => { state.krGroupOp.state = "pending"; },
                 fulfilled: (state) => { state.krGroupOp.state = "fulfilled"; },
-                rejected: (state) => { state.krGroupOp.state = "rejected"; },
+                rejected: (state, action) => { state.krGroupOp.state = "rejected"; state.krGroupOp.error = action.error?.message; },
             }
         ),
         reqPostUsCapitalStockRemove: create.asyncThunk(
@@ -710,7 +711,7 @@ export const capitalSlice = createAppSlice({
             {
                 pending: (state) => { state.usGroupOp.state = "pending"; },
                 fulfilled: (state) => { state.usGroupOp.state = "fulfilled"; },
-                rejected: (state) => { state.usGroupOp.state = "rejected"; },
+                rejected: (state, action) => { state.usGroupOp.state = "rejected"; state.usGroupOp.error = action.error?.message; },
             }
         ),
     }),
