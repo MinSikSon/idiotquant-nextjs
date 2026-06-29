@@ -91,6 +91,7 @@ export interface StockGroup {
     id: string;
     name: string;
     is_trading_active: boolean;
+    quant_rule?: QuantRule;
 }
 
 export interface UsCapitalStockItem {
@@ -508,7 +509,7 @@ export const capitalSlice = createAppSlice({
             }
         ),
         reqPostKrCapitalGroupUpdate: create.asyncThunk(
-            async ({ key, groupId, updates }: { key?: string, groupId: string, updates: { name?: string, is_trading_active?: boolean } }) => postKrCapitalGroupUpdate(key, groupId, updates),
+            async ({ key, groupId, updates }: { key?: string, groupId: string, updates: { name?: string, is_trading_active?: boolean, quant_rule?: QuantRule | null } }) => postKrCapitalGroupUpdate(key, groupId, updates),
             {
                 pending: (state) => { state.krGroupOp.state = "pending"; },
                 fulfilled: (state) => { state.krGroupOp.state = "fulfilled"; },
@@ -558,7 +559,7 @@ export const capitalSlice = createAppSlice({
             }
         ),
         reqPostUsCapitalGroupUpdate: create.asyncThunk(
-            async ({ key, groupId, updates }: { key?: string, groupId: string, updates: { name?: string, is_trading_active?: boolean } }) => postUsCapitalGroupUpdate(key, groupId, updates),
+            async ({ key, groupId, updates }: { key?: string, groupId: string, updates: { name?: string, is_trading_active?: boolean, quant_rule?: QuantRule | null } }) => postUsCapitalGroupUpdate(key, groupId, updates),
             {
                 pending: (state) => { state.usGroupOp.state = "pending"; },
                 fulfilled: (state) => { state.usGroupOp.state = "fulfilled"; },
