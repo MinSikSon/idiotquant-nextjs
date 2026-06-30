@@ -346,8 +346,7 @@ export function BalanceUsView({ countryToggle }: { countryToggle?: React.ReactNo
   const doCopyLikes = (tickers: string[], groupId: string | null) => dispatch(reqPostUsCapitalLikesCopy({ key: balanceKey, tickers, groupId }));
   const doDeleteStock = (ticker: string) => dispatch(reqPostUsCapitalStockRemove({ key: balanceKey, ticker }));
   const doBulkRemove = (tickers: string[]) => dispatch(reqPostUsCapitalStocksRemove({ key: balanceKey, tickers }));
-  const doSaveGroupQuantRule = (groupId: string, rule: QuantRule | null) => dispatch(reqPostUsCapitalGroupUpdate({ key: balanceKey, groupId, updates: { quant_rule: rule } }));
-  const doSaveGroupBudget = (groupId: string, budget: number | null) => dispatch(reqPostUsCapitalGroupUpdate({ key: balanceKey, groupId, updates: { budget_krw: budget } }));
+  const doSaveGroupSettings = (groupId: string, settings: { quant_rule: QuantRule | null; budget_krw: number | null }) => dispatch(reqPostUsCapitalGroupUpdate({ key: balanceKey, groupId, updates: settings }));
   const doSaveQuantRule = (rule: any) => dispatch(reqPostUsQuantRule({ key: balanceKey, rule }));
 
   const out2 = kiBalance?.output2?.[0];
@@ -681,8 +680,7 @@ export function BalanceUsView({ countryToggle }: { countryToggle?: React.ReactNo
                 onCopyLikes={doCopyLikes}
                 onDeleteStock={doDeleteStock}
                 onBulkRemove={doBulkRemove}
-                onSaveGroupQuantRule={doSaveGroupQuantRule}
-                onSaveGroupBudget={doSaveGroupBudget}
+                onSaveGroupSettings={doSaveGroupSettings}
                 likedList={usLikedList}
                 countryTradingActive={tradingStatus.US === true}
                 quantRule={usQuantRule.rule}
