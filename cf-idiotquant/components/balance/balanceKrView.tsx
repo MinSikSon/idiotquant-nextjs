@@ -379,6 +379,7 @@ export function BalanceKrView({ countryToggle }: { countryToggle?: React.ReactNo
   const doDeleteStock = (ticker: string) => dispatch(reqPostKrCapitalStockRemove({ key: balanceKey, ticker }));
   const doBulkRemove = (tickers: string[]) => dispatch(reqPostKrCapitalStocksRemove({ key: balanceKey, tickers }));
   const doSaveGroupQuantRule = (groupId: string, rule: QuantRule | null) => dispatch(reqPostKrCapitalGroupUpdate({ key: balanceKey, groupId, updates: { quant_rule: rule } }));
+  const doSaveGroupBudget = (groupId: string, budget: number | null) => dispatch(reqPostKrCapitalGroupUpdate({ key: balanceKey, groupId, updates: { budget_krw: budget } }));
   const doSaveQuantRule = (rule: any) => dispatch(reqPostKrQuantRule({ key: balanceKey, rule }));
   const doSaveBudget = (monthly_budget_krw: number) => dispatch(reqPostKrCapitalBudget({ key: balanceKey, monthly_budget_krw }));
 
@@ -647,6 +648,7 @@ export function BalanceKrView({ countryToggle }: { countryToggle?: React.ReactNo
                 onDeleteStock={doDeleteStock}
                 onBulkRemove={doBulkRemove}
                 onSaveGroupQuantRule={doSaveGroupQuantRule}
+                onSaveGroupBudget={doSaveGroupBudget}
                 likedList={krLikedList}
                 countryTradingActive={tradingStatus.KR === true}
                 quantRule={krQuantRule.rule}

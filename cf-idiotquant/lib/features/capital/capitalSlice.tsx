@@ -92,6 +92,7 @@ export interface StockGroup {
     name: string;
     is_trading_active: boolean;
     quant_rule?: QuantRule;
+    budget_krw?: number;   // 그룹별 월 예산(DCA 리필). 미설정 시 계좌예산 fallback.
 }
 
 export interface UsCapitalStockItem {
@@ -510,7 +511,7 @@ export const capitalSlice = createAppSlice({
             }
         ),
         reqPostKrCapitalGroupUpdate: create.asyncThunk(
-            async ({ key, groupId, updates }: { key?: string, groupId: string, updates: { name?: string, is_trading_active?: boolean, quant_rule?: QuantRule | null } }) => postKrCapitalGroupUpdate(key, groupId, updates),
+            async ({ key, groupId, updates }: { key?: string, groupId: string, updates: { name?: string, is_trading_active?: boolean, quant_rule?: QuantRule | null, budget_krw?: number | null } }) => postKrCapitalGroupUpdate(key, groupId, updates),
             {
                 pending: (state) => { state.krGroupOp.state = "pending"; },
                 fulfilled: (state) => { state.krGroupOp.state = "fulfilled"; },
@@ -560,7 +561,7 @@ export const capitalSlice = createAppSlice({
             }
         ),
         reqPostUsCapitalGroupUpdate: create.asyncThunk(
-            async ({ key, groupId, updates }: { key?: string, groupId: string, updates: { name?: string, is_trading_active?: boolean, quant_rule?: QuantRule | null } }) => postUsCapitalGroupUpdate(key, groupId, updates),
+            async ({ key, groupId, updates }: { key?: string, groupId: string, updates: { name?: string, is_trading_active?: boolean, quant_rule?: QuantRule | null, budget_krw?: number | null } }) => postUsCapitalGroupUpdate(key, groupId, updates),
             {
                 pending: (state) => { state.usGroupOp.state = "pending"; },
                 fulfilled: (state) => { state.usGroupOp.state = "fulfilled"; },

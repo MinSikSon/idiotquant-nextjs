@@ -146,6 +146,7 @@ interface Props {
   onDeleteStock?: (ticker: string) => void;
   onBulkRemove?: (tickers: string[]) => void;
   onSaveGroupQuantRule?: (groupId: string, rule: QuantRule | null) => void;
+  onSaveGroupBudget?: (groupId: string, budget: number | null) => void;
   // 좋아요(찜) 그룹
   likedList?: LikedStockItem[];
   onToggleLikesTrading?: (isActive: boolean) => void;
@@ -225,6 +226,7 @@ export default function StockListTable({
   onDeleteStock,
   onBulkRemove,
   onSaveGroupQuantRule,
+  onSaveGroupBudget,
   likedList = [],
   onToggleLikesTrading,
   countryTradingActive = false,
@@ -649,7 +651,9 @@ export default function StockListTable({
           openDetail={openDetail}
           monthlyPerStock={monthlyPerStock}
           groupQuantRule={g.quant_rule}
+          groupBudget={g.budget_krw}
           onSaveGroupQuantRule={isMaster && onSaveGroupQuantRule ? (rule) => onSaveGroupQuantRule(g.id, rule) : undefined}
+          onSaveGroupBudget={isMaster && onSaveGroupBudget ? (budget) => onSaveGroupBudget(g.id, budget) : undefined}
         />
       ))}
 
@@ -765,7 +769,9 @@ interface GroupSectionProps {
   monthlyPerStock?: number;
   onDeleteStock?: (ticker: string) => void;
   groupQuantRule?: QuantRule;
+  groupBudget?: number;
   onSaveGroupQuantRule?: (rule: QuantRule | null) => void;
+  onSaveGroupBudget?: (budget: number | null) => void;
 }
 
 function GroupSection({
@@ -773,11 +779,12 @@ function GroupSection({
   conditionChips, editing, editingName, onEditNameChange, onStartRename, onCommitRename, onDelete,
   emptyText, collapsed, onToggleCollapse, picked, onTogglePick, onPickMany,
   doTokenPlusOne, doTokenMinusOne, doTokenResetOne, openDetail, monthlyPerStock = 0, onDeleteStock,
-  groupQuantRule, onSaveGroupQuantRule,
+  groupQuantRule, groupBudget, onSaveGroupQuantRule, onSaveGroupBudget,
 }: GroupSectionProps) {
   const [showRuleEditor, setShowRuleEditor] = useState(false);
   const [draftActiveCount, setDraftActiveCount] = useState<string>("");
   const [draftNcavRatio, setDraftNcavRatio] = useState<string>("");
+  const [draftBudget, setDraftBudget] = useState<string>("");
   const showRefill = isMaster && rows.some(r => r.movable);
   const showCheck = isMaster && rows.length > 0; // 모든 행 선택 가능(좋아요는 복사용)
   const selectableTickers = useMemo(() => rows.map(r => r.symbol), [rows]);
@@ -870,6 +877,7 @@ function GroupSection({
               onClick={() => {
                 setDraftActiveCount(String(groupQuantRule?.active_count ?? ""));
                 setDraftNcavRatio(String(groupQuantRule?.ncav_ratio ?? ""));
+                setDraftBudget(groupBudget != null ? String(groupBudget) : "");
                 setShowRuleEditor(v => !v);
               }}
               title="이 그룹의 트레이딩 조건 설정"
@@ -949,10 +957,24 @@ function GroupSection({
                 className="w-20 rounded border border-neutral-300 dark:border-[#4a4641] bg-white dark:bg-[#1a1915] px-2 py-1 text-xs"
               />
             </div>
+            {onSaveGroupBudget && (
+              <div className="flex items-center gap-1.5">
+                <label className="text-[11px] text-neutral-500 shrink-0">월 예산(원)</label>
+                <input
+                  type="number"
+                  min={0}
+                  step={10000}
+                  value={draftBudget}
+                  onChange={e => setDraftBudget(e.target.value)}
+                  placeholder="계좌예산 분배"
+                  className="w-28 rounded border border-neutral-300 dark:border-[#4a4641] bg-white dark:bg-[#1a1915] px-2 py-1 text-xs"
+                />
+              </div>
+            )}
             <div className="flex items-center gap-1.5 ml-auto">
-              {groupQuantRule && (
+              {(groupQuantRule || groupBudget != null) && (
                 <button
-                  onClick={() => { onSaveGroupQuantRule(null); setShowRuleEditor(false); }}
+                  onClick={() => { onSaveGroupQuantRule(null); onSaveGroupBudget?.(null); setShowRuleEditor(false); }}
                   className="rounded px-2.5 py-1 text-xs text-neutral-500 hover:text-red-600 border border-neutral-200 dark:border-[#4a4641]"
                 >
                   초기화
@@ -972,6 +994,10 @@ function GroupSection({
                   const nr = parseFloat(draftNcavRatio);
                   if (!isNaN(nr)) rule.ncav_ratio = nr;
                   onSaveGroupQuantRule(Object.keys(rule).length > 0 ? rule : null);
+                  if (onSaveGroupBudget) {
+                    const b = parseInt(draftBudget, 10);
+                    onSaveGroupBudget(!isNaN(b) && b > 0 ? b : null);
+                  }
                   setShowRuleEditor(false);
                 }}
                 className="rounded px-2.5 py-1 text-xs font-bold bg-[#16a34a] text-white hover:bg-[#15803d]"
