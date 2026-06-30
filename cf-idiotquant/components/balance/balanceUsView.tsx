@@ -45,7 +45,7 @@ import {
   selectUsCapitalTokenResetAll, selectUsCapitalTokenResetOne,
   reqPostUsCapitalGroupCreate, reqPostUsCapitalGroupUpdate,
   reqPostUsCapitalGroupDelete, reqPostUsCapitalStockGroup, reqPostUsCapitalStocksGroup, reqPostUsCapitalLikesCopy,
-  reqPostUsCapitalStockRemove,
+  reqPostUsCapitalStockRemove, reqPostUsCapitalStocksRemove,
   selectUsGroupOp,
   reqGetUsQuantRule, reqPostUsQuantRule, selectUsQuantRule,
 } from "@/lib/features/capital/capitalSlice";
@@ -345,6 +345,7 @@ export function BalanceUsView({ countryToggle }: { countryToggle?: React.ReactNo
   const doBulkMove = (tickers: string[], groupId: string | null) => dispatch(reqPostUsCapitalStocksGroup({ key: balanceKey, tickers, groupId }));
   const doCopyLikes = (tickers: string[], groupId: string | null) => dispatch(reqPostUsCapitalLikesCopy({ key: balanceKey, tickers, groupId }));
   const doDeleteStock = (ticker: string) => dispatch(reqPostUsCapitalStockRemove({ key: balanceKey, ticker }));
+  const doBulkRemove = (tickers: string[]) => dispatch(reqPostUsCapitalStocksRemove({ key: balanceKey, tickers }));
   const doSaveGroupQuantRule = (groupId: string, rule: QuantRule | null) => dispatch(reqPostUsCapitalGroupUpdate({ key: balanceKey, groupId, updates: { quant_rule: rule } }));
   const doSaveQuantRule = (rule: any) => dispatch(reqPostUsQuantRule({ key: balanceKey, rule }));
 
@@ -678,6 +679,7 @@ export function BalanceUsView({ countryToggle }: { countryToggle?: React.ReactNo
                 onBulkMove={doBulkMove}
                 onCopyLikes={doCopyLikes}
                 onDeleteStock={doDeleteStock}
+                onBulkRemove={doBulkRemove}
                 onSaveGroupQuantRule={doSaveGroupQuantRule}
                 likedList={usLikedList}
                 countryTradingActive={tradingStatus.US === true}

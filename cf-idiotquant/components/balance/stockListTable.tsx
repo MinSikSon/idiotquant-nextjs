@@ -144,6 +144,7 @@ interface Props {
   onBulkMove?: (tickers: string[], groupId: string | null) => void;
   onCopyLikes?: (tickers: string[], groupId: string | null) => void;
   onDeleteStock?: (ticker: string) => void;
+  onBulkRemove?: (tickers: string[]) => void;
   onSaveGroupQuantRule?: (groupId: string, rule: QuantRule | null) => void;
   // 좋아요(찜) 그룹
   likedList?: LikedStockItem[];
@@ -222,6 +223,7 @@ export default function StockListTable({
   onBulkMove,
   onCopyLikes,
   onDeleteStock,
+  onBulkRemove,
   onSaveGroupQuantRule,
   likedList = [],
   onToggleLikesTrading,
@@ -375,6 +377,14 @@ export default function StockListTable({
     if (tickers.length === 0) return;
     onCopyLikes?.(tickers, groupId);
     clearPick();
+  };
+  const doBulkRemove = () => {
+    const tickers = pickedSymbols;
+    if (tickers.length === 0) return;
+    if (window.confirm(`선택한 ${tickers.length}개 종목을 제거할까요?`)) {
+      onBulkRemove?.(tickers);
+      clearPick();
+    }
   };
   const doCreateGroupFromPicked = () => {
     const tickers = pickedSymbols;
@@ -568,6 +578,15 @@ export default function StockListTable({
           >
             <FolderPlus className="w-3.5 h-3.5" /> 새 그룹
           </button>
+          {onBulkRemove && (
+            <button
+              onClick={doBulkRemove}
+              title="선택한 종목을 운용 목록에서 제거"
+              className="inline-flex shrink-0 items-center gap-1 rounded-md border border-red-300 bg-white px-2.5 py-1.5 text-xs font-bold text-red-500 hover:bg-red-50 dark:border-red-900 dark:bg-[#1a1915] dark:hover:bg-red-950"
+            >
+              <Trash2 className="w-3.5 h-3.5" /> 삭제
+            </button>
+          )}
         </div>
       )}
 

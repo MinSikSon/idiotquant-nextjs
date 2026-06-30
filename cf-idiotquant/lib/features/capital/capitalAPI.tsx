@@ -148,3 +148,7 @@ export const postKrCapitalStockRemove: any = async (key: string, ticker: string)
     postKoreaInvestmentRequest(`/kr/capital/stock/${ticker}/remove?kakao-id=${key}`, {});
 export const postUsCapitalStockRemove: any = async (key: string, ticker: string) =>
     postKoreaInvestmentRequest(`/us/capital/stock/${ticker}/remove?kakao-id=${key}`, {});
+export const postKrCapitalStocksRemove: any = async (key: string, tickers: string[]) =>
+    postKoreaInvestmentRequest(`/kr/capital/stocks/remove?kakao-id=${key}`, {}, { tickers });
+export const postUsCapitalStocksRemove: any = async (key: string, tickers: string[]) =>
+    postKoreaInvestmentRequest(`/us/capital/stocks/remove?kakao-id=${key}`, {}, { tickers });

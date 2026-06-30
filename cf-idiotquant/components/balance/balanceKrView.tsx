@@ -38,7 +38,7 @@ import {
   selectKrCapitalTokenResetAll, selectKrCapitalTokenResetOne,
   reqPostKrCapitalGroupCreate, reqPostKrCapitalGroupUpdate,
   reqPostKrCapitalGroupDelete, reqPostKrCapitalStockGroup, reqPostKrCapitalStocksGroup, reqPostKrCapitalLikesCopy,
-  reqPostKrCapitalStockRemove,
+  reqPostKrCapitalStockRemove, reqPostKrCapitalStocksRemove,
   selectKrGroupOp,
   reqGetKrQuantRule, reqPostKrQuantRule, selectKrQuantRule,
   reqGetKrCapitalBudget, reqPostKrCapitalBudget, selectKrBudget,
@@ -377,6 +377,7 @@ export function BalanceKrView({ countryToggle }: { countryToggle?: React.ReactNo
   const doBulkMove = (tickers: string[], groupId: string | null) => dispatch(reqPostKrCapitalStocksGroup({ key: balanceKey, tickers, groupId }));
   const doCopyLikes = (tickers: string[], groupId: string | null) => dispatch(reqPostKrCapitalLikesCopy({ key: balanceKey, tickers, groupId }));
   const doDeleteStock = (ticker: string) => dispatch(reqPostKrCapitalStockRemove({ key: balanceKey, ticker }));
+  const doBulkRemove = (tickers: string[]) => dispatch(reqPostKrCapitalStocksRemove({ key: balanceKey, tickers }));
   const doSaveGroupQuantRule = (groupId: string, rule: QuantRule | null) => dispatch(reqPostKrCapitalGroupUpdate({ key: balanceKey, groupId, updates: { quant_rule: rule } }));
   const doSaveQuantRule = (rule: any) => dispatch(reqPostKrQuantRule({ key: balanceKey, rule }));
   const doSaveBudget = (monthly_budget_krw: number) => dispatch(reqPostKrCapitalBudget({ key: balanceKey, monthly_budget_krw }));
@@ -644,6 +645,7 @@ export function BalanceKrView({ countryToggle }: { countryToggle?: React.ReactNo
                 onBulkMove={doBulkMove}
                 onCopyLikes={doCopyLikes}
                 onDeleteStock={doDeleteStock}
+                onBulkRemove={doBulkRemove}
                 onSaveGroupQuantRule={doSaveGroupQuantRule}
                 likedList={krLikedList}
                 countryTradingActive={tradingStatus.KR === true}
