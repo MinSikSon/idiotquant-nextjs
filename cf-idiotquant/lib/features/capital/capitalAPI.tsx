@@ -77,7 +77,7 @@ export const postUsCapitalTokenMinusOne: any = async (key: string, num: number, 
 // ============================================================================
 // 종목 그룹 관리 API (KR / US)
 // ============================================================================
-type GroupUpdates = { name?: string; is_trading_active?: boolean };
+type GroupUpdates = { name?: string; is_trading_active?: boolean; quant_rule?: object | null; budget_krw?: number | null };
 
 // KR
 export const postKrCapitalGroupCreate: any = async (key: string, name: string, tickers?: string[]) =>
@@ -148,3 +148,7 @@ export const postKrCapitalStockRemove: any = async (key: string, ticker: string)
     postKoreaInvestmentRequest(`/kr/capital/stock/${ticker}/remove?kakao-id=${key}`, {});
 export const postUsCapitalStockRemove: any = async (key: string, ticker: string) =>
     postKoreaInvestmentRequest(`/us/capital/stock/${ticker}/remove?kakao-id=${key}`, {});
+export const postKrCapitalStocksRemove: any = async (key: string, tickers: string[]) =>
+    postKoreaInvestmentRequest(`/kr/capital/stocks/remove?kakao-id=${key}`, {}, { tickers });
+export const postUsCapitalStocksRemove: any = async (key: string, tickers: string[]) =>
+    postKoreaInvestmentRequest(`/us/capital/stocks/remove?kakao-id=${key}`, {}, { tickers });
