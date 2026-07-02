@@ -23,6 +23,7 @@ export function BalanceShell({
   breadcrumb, title, lastUpdated,
   countryToggle, autoRefresh, onToggleAutoRefresh, isLoading, onRefresh, headerExtra, footerBadge,
   dividerClass,
+  accountSelector,
   navSections, mobileTab, onMobileTabChange,
   sections,
 }: {
@@ -39,6 +40,7 @@ export function BalanceShell({
   headerExtra?: React.ReactNode;
   footerBadge?: React.ReactNode;
   dividerClass: string;
+  accountSelector?: React.ReactNode;
   navSections: NavSection[];
   mobileTab: string;
   onMobileTabChange: (id: string) => void;
@@ -80,6 +82,9 @@ export function BalanceShell({
         </header>
 
         <div className={cn("h-px bg-gradient-to-r from-transparent to-transparent opacity-60", dividerClass)} />
+
+        {/* 계좌 선택 (탭 위 최상단) */}
+        {accountSelector}
 
         {/* 섹션 네비게이션 */}
         <SectionNav sections={navSections} mobileTab={mobileTab} onMobileTabChange={onMobileTabChange} />
