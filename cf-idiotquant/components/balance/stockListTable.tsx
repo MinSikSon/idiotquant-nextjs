@@ -205,7 +205,7 @@ function normalizeLiked(lk: LikedStockItem, status?: EffStatus): DisplayRow {
   };
 }
 
-export default function StockListTable({
+function StockListTable({
   data,
   doTokenPlusAll,
   doTokenPlusOne,
@@ -1293,3 +1293,7 @@ function StatItem({ label, value, icon }: { label: string; value: string; icon: 
     </div>
   );
 }
+
+// 부모(balance 뷰)의 잦은 상태 변화(잔고 자동새로고침·토스트 등)에서 대형 테이블 재렌더를 차단.
+// 모든 함수 prop은 뷰에서 useCallback으로 참조가 고정되어 있어야 memo가 유효하다.
+export default React.memo(StockListTable);
