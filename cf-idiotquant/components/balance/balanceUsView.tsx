@@ -56,7 +56,13 @@ import InquireBalanceResult from "@/components/inquireBalanceResult";
 import QuantRuleEditor from "@/components/balance/quantRuleEditor";
 import TradingFlowSummary from "@/components/balance/tradingFlowSummary";
 import StockListTable from "@/components/balance/stockListTable";
-import { PortfolioChartSection } from "@/components/balance/portfolioChart";
+import dynamic from "next/dynamic";
+import { ChartSectionSkeleton } from "@/components/balance/shared";
+// recharts(무거움)를 초기 번들에서 제외 — 차트 섹션 표시 시점에 로드
+const PortfolioChartSection = dynamic(
+  () => import("@/components/balance/portfolioChart").then(m => ({ default: m.PortfolioChartSection })),
+  { ssr: false, loading: () => <ChartSectionSkeleton /> }
+);
 import { type NavSection } from "@/components/balance/sectionNav";
 import { BalanceShell } from "@/components/balance/balanceShell";
 import {
@@ -329,24 +335,25 @@ export function BalanceUsView({ countryToggle }: { countryToggle?: React.ReactNo
     }
   }, [usGroupOp?.state]);
 
-  const doTokenPlusAll = (num: number) => dispatch(reqPostUsCapitalTokenPlusAll({ key: balanceKey, num }));
-  const doTokenPlusOne = (num: number, ticker: string) => ticker && dispatch(reqPostUsCapitalTokenPlusOne({ key: balanceKey, num, ticker }));
-  const doTokenMinusAll = (num: number) => dispatch(reqPostUsCapitalTokenMinusAll({ key: balanceKey, num }));
-  const doTokenMinusOne = (num: number, ticker: string) => ticker && dispatch(reqPostUsCapitalTokenMinusOne({ key: balanceKey, num, ticker }));
-  const doTokenResetAll = () => dispatch(reqPostUsCapitalTokenResetAll({ key: balanceKey }));
-  const doTokenResetOne = (ticker: string) => ticker && dispatch(reqPostUsCapitalTokenResetOne({ key: balanceKey, ticker }));
+  // StockListTable(memo)에 전달되는 핸들러 — useCallback으로 참조 고정해 잔고 자동새로고침 등에서 테이블 재렌더 방지
+  const doTokenPlusAll = useCallback((num: number) => dispatch(reqPostUsCapitalTokenPlusAll({ key: balanceKey, num })), [dispatch, balanceKey]);
+  const doTokenPlusOne = useCallback((num: number, ticker: string) => { if (ticker) dispatch(reqPostUsCapitalTokenPlusOne({ key: balanceKey, num, ticker })); }, [dispatch, balanceKey]);
+  const doTokenMinusAll = useCallback((num: number) => dispatch(reqPostUsCapitalTokenMinusAll({ key: balanceKey, num })), [dispatch, balanceKey]);
+  const doTokenMinusOne = useCallback((num: number, ticker: string) => { if (ticker) dispatch(reqPostUsCapitalTokenMinusOne({ key: balanceKey, num, ticker })); }, [dispatch, balanceKey]);
+  const doTokenResetAll = useCallback(() => dispatch(reqPostUsCapitalTokenResetAll({ key: balanceKey })), [dispatch, balanceKey]);
+  const doTokenResetOne = useCallback((ticker: string) => { if (ticker) dispatch(reqPostUsCapitalTokenResetOne({ key: balanceKey, ticker })); }, [dispatch, balanceKey]);
 
   // 그룹 관리 핸들러
-  const doCreateGroup = (name: string, tickers?: string[]) => dispatch(reqPostUsCapitalGroupCreate({ key: balanceKey, name, tickers }));
-  const doRenameGroup = (groupId: string, name: string) => dispatch(reqPostUsCapitalGroupUpdate({ key: balanceKey, groupId, updates: { name } }));
-  const doToggleGroupTrading = (groupId: string, isActive: boolean) => dispatch(reqPostUsCapitalGroupUpdate({ key: balanceKey, groupId, updates: { is_trading_active: isActive } }));
-  const doDeleteGroup = (groupId: string) => dispatch(reqPostUsCapitalGroupDelete({ key: balanceKey, groupId }));
-  const doMoveStock = (ticker: string, groupId: string | null) => dispatch(reqPostUsCapitalStockGroup({ key: balanceKey, ticker, groupId }));
-  const doBulkMove = (tickers: string[], groupId: string | null) => dispatch(reqPostUsCapitalStocksGroup({ key: balanceKey, tickers, groupId }));
-  const doCopyLikes = (tickers: string[], groupId: string | null) => dispatch(reqPostUsCapitalLikesCopy({ key: balanceKey, tickers, groupId }));
-  const doDeleteStock = (ticker: string) => dispatch(reqPostUsCapitalStockRemove({ key: balanceKey, ticker }));
-  const doBulkRemove = (tickers: string[]) => dispatch(reqPostUsCapitalStocksRemove({ key: balanceKey, tickers }));
-  const doSaveGroupSettings = (groupId: string, settings: { quant_rule: QuantRule | null; budget_krw: number | null }) => dispatch(reqPostUsCapitalGroupUpdate({ key: balanceKey, groupId, updates: settings }));
+  const doCreateGroup = useCallback((name: string, tickers?: string[]) => dispatch(reqPostUsCapitalGroupCreate({ key: balanceKey, name, tickers })), [dispatch, balanceKey]);
+  const doRenameGroup = useCallback((groupId: string, name: string) => dispatch(reqPostUsCapitalGroupUpdate({ key: balanceKey, groupId, updates: { name } })), [dispatch, balanceKey]);
+  const doToggleGroupTrading = useCallback((groupId: string, isActive: boolean) => dispatch(reqPostUsCapitalGroupUpdate({ key: balanceKey, groupId, updates: { is_trading_active: isActive } })), [dispatch, balanceKey]);
+  const doDeleteGroup = useCallback((groupId: string) => dispatch(reqPostUsCapitalGroupDelete({ key: balanceKey, groupId })), [dispatch, balanceKey]);
+  const doMoveStock = useCallback((ticker: string, groupId: string | null) => dispatch(reqPostUsCapitalStockGroup({ key: balanceKey, ticker, groupId })), [dispatch, balanceKey]);
+  const doBulkMove = useCallback((tickers: string[], groupId: string | null) => dispatch(reqPostUsCapitalStocksGroup({ key: balanceKey, tickers, groupId })), [dispatch, balanceKey]);
+  const doCopyLikes = useCallback((tickers: string[], groupId: string | null) => dispatch(reqPostUsCapitalLikesCopy({ key: balanceKey, tickers, groupId })), [dispatch, balanceKey]);
+  const doDeleteStock = useCallback((ticker: string) => dispatch(reqPostUsCapitalStockRemove({ key: balanceKey, ticker })), [dispatch, balanceKey]);
+  const doBulkRemove = useCallback((tickers: string[]) => dispatch(reqPostUsCapitalStocksRemove({ key: balanceKey, tickers })), [dispatch, balanceKey]);
+  const doSaveGroupSettings = useCallback((groupId: string, settings: { quant_rule: QuantRule | null; budget_krw: number | null }) => dispatch(reqPostUsCapitalGroupUpdate({ key: balanceKey, groupId, updates: settings })), [dispatch, balanceKey]);
   const doSaveQuantRule = (rule: any) => dispatch(reqPostUsQuantRule({ key: balanceKey, rule }));
 
   const out2 = kiBalance?.output2?.[0];
