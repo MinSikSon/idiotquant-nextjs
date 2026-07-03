@@ -16,6 +16,7 @@ import {
     reqGetMyLikes, reqToggleLike,
 } from "@/lib/features/stockLikes/stockLikesSlice";
 import { cn } from "@/lib/utils";
+import { computeValueScore, type ValueTone } from "@/lib/utils/valueScore";
 import { CopyStockButtons, type CopyStock } from "@/components/copyStockButtons";
 import { STRATEGY_LABEL, STRATEGY_BADGE, STRATEGY_PRESETS_CLIENT as STRATEGY_PRESETS, MKTCAP_PRESETS } from "@/lib/constants/strategies";
 
@@ -28,7 +29,7 @@ import * as Tooltip from "@radix-ui/react-tooltip";
 // 상수 & 타입
 // =========================================================================
 const DAILY_PAGE_SIZE = 30;
-type DiscoverySortKey = "ticker" | "ncav_ratio" | "per" | "pbr" | "roe" | "market_cap" | "last_price";
+type DiscoverySortKey = "value_score" | "ticker" | "ncav_ratio" | "per" | "pbr" | "roe" | "market_cap" | "last_price";
 type SortOrder = "asc" | "desc";
 
 // 밸류에이션 필터 프리셋 (0 = 미적용)
@@ -121,6 +122,32 @@ function SortableHeader({ label, sortKey: key, currentKey, order, onToggle, rele
 }
 
 // =========================================================================
+// ValueMedal — 저평가 점수 + 메달 (게임 스코어)
+// =========================================================================
+const MEDAL_TONE: Record<ValueTone, string> = {
+    treasure: "bg-amber-100 text-amber-700 ring-amber-300 dark:bg-amber-950/40 dark:text-amber-300 dark:ring-amber-800",
+    gold: "bg-yellow-50 text-yellow-700 ring-yellow-300 dark:bg-yellow-950/30 dark:text-yellow-300 dark:ring-yellow-800",
+    silver: "bg-neutral-100 text-neutral-600 ring-neutral-300 dark:bg-[#2c2b27] dark:text-neutral-300 dark:ring-[#4a4641]",
+    bronze: "bg-orange-50 text-orange-700 ring-orange-200 dark:bg-orange-950/30 dark:text-orange-300 dark:ring-orange-900",
+    muted: "bg-neutral-50 text-neutral-400 ring-neutral-200 dark:bg-[#242320] dark:text-neutral-500 dark:ring-[#35332e]",
+};
+function ValueMedal({ item, size = "sm" }: { item: any; size?: "sm" | "lg" }) {
+    const v = computeValueScore(item);
+    return (
+        <span
+            className={cn(
+                "inline-flex items-center gap-1 rounded-full ring-1 ring-inset font-black tabular-nums shrink-0",
+                size === "lg" ? "px-2.5 py-1 text-sm" : "px-1.5 py-0.5 text-[11px]",
+                MEDAL_TONE[v.tone]
+            )}
+            title={`저평가 점수 ${v.score}/100 · ${v.label}등급 (NCAV·PBR·PER·ROE 종합)`}
+        >
+            <span aria-hidden>{v.medal}</span>{v.score}
+        </span>
+    );
+}
+
+// =========================================================================
 // TableRow — 데스크탑
 // =========================================================================
 const TableRow = memo(function TableRow({ item, onClick, isLiked, onToggleLike, highlight }: {
@@ -139,9 +166,12 @@ const TableRow = memo(function TableRow({ item, onClick, isLiked, onToggleLike, 
             className="group grid grid-cols-[minmax(160px,2.5fr)_minmax(110px,1fr)_88px_68px_68px_68px_112px] gap-4 items-center px-6 py-5 hover:bg-[#f0fdf4]/40 dark:hover:bg-[#242320]/50 cursor-pointer transition-colors border-b border-neutral-100 dark:border-[#35332e] last:border-0"
             onClick={() => onClick(item.ticker, item.name)}
         >
-            <div className="min-w-0">
-                <p className="font-bold text-sm text-neutral-900 dark:text-white truncate leading-tight">{item.name}</p>
-                <p className="text-[11px] text-neutral-400 font-mono mt-0.5 tracking-wider">{item.ticker}</p>
+            <div className="min-w-0 flex items-center gap-2">
+                <ValueMedal item={item} />
+                <div className="min-w-0">
+                    <p className="font-bold text-sm text-neutral-900 dark:text-white truncate leading-tight">{item.name}</p>
+                    <p className="text-[11px] text-neutral-400 font-mono mt-0.5 tracking-wider">{item.ticker}</p>
+                </div>
             </div>
 
             <div className="flex flex-wrap gap-1">
@@ -237,6 +267,9 @@ const StockRowCard = memo(function StockRowCard({ item, onClick, isLiked, onTogg
         >
             <div className="flex items-start justify-between gap-2 mb-4">
                 <div className="min-w-0 flex-1">
+                    <div className="flex items-center gap-2 mb-1">
+                        <ValueMedal item={item} size="lg" />
+                    </div>
                     <p className="font-bold text-base text-neutral-900 dark:text-white truncate leading-tight">{item.name}</p>
                     <p className="text-[11px] text-neutral-400 font-mono tracking-wider mt-0.5">{item.ticker}</p>
                 </div>
@@ -344,7 +377,7 @@ const FilterDivider = () => <div className="w-px h-4 bg-neutral-200 dark:bg-[#4a
 // =========================================================================
 // 메인 스크리너
 // =========================================================================
-const VALID_SORT_KEYS: DiscoverySortKey[] = ["ticker", "ncav_ratio", "per", "pbr", "roe", "market_cap", "last_price"];
+const VALID_SORT_KEYS: DiscoverySortKey[] = ["value_score", "ticker", "ncav_ratio", "per", "pbr", "roe", "market_cap", "last_price"];
 
 function ScreenerContent() {
     const dispatch = useAppDispatch();
@@ -390,7 +423,7 @@ function ScreenerContent() {
     const [showGuide, setShowGuide] = useState(false);
     const [sortKey, setSortKey] = useState<DiscoverySortKey>(() => {
         const s = (searchParams.get('sort') ?? saved.sort) as DiscoverySortKey;
-        return VALID_SORT_KEYS.includes(s) ? s : 'ncav_ratio';
+        return VALID_SORT_KEYS.includes(s) ? s : 'value_score';
     });
     const [sortOrder, setSortOrder] = useState<SortOrder>(() =>
         (searchParams.get('order') ?? saved.order) === 'asc' ? 'asc' : 'desc'
@@ -445,7 +478,7 @@ function ScreenerContent() {
             params.set('strategies', Array.from(activeStrategyIds).join(','));
         if (filterMode !== 'OR')
             params.set('mode', filterMode);
-        if (sortKey !== 'ncav_ratio')
+        if (sortKey !== 'value_score')
             params.set('sort', sortKey);
         if (sortOrder !== 'desc')
             params.set('order', sortOrder);
@@ -475,7 +508,7 @@ function ScreenerContent() {
         const snapshot: Record<string, any> = {};
         if (activeStrategyIds.size > 0) snapshot.strategies = Array.from(activeStrategyIds);
         if (filterMode !== 'OR') snapshot.mode = filterMode;
-        if (sortKey !== 'ncav_ratio') snapshot.sort = sortKey;
+        if (sortKey !== 'value_score') snapshot.sort = sortKey;
         if (sortOrder !== 'desc') snapshot.order = sortOrder;
         const excludeArr = [
             excludeHoldings ? 'holdings' : null,
@@ -632,6 +665,11 @@ function ScreenerContent() {
         });
 
         list.sort((a, b) => {
+            if (sortKey === "value_score") {
+                const sa = computeValueScore(a).score;
+                const sb = computeValueScore(b).score;
+                return sortOrder === "asc" ? sa - sb : sb - sa;
+            }
             if (sortKey === "ticker") {
                 return sortOrder === "asc"
                     ? (a.ticker ?? "").localeCompare(b.ticker ?? "")
@@ -691,7 +729,7 @@ function ScreenerContent() {
 
     const activeFilterCount = [excludeHoldings, excludeDeficit, excludePreferred, minMarketCap > 0, maxPbr > 0, maxPer > 0, minRoe > 0, minNcav > 0].filter(Boolean).length;
     const isAllActive = activeStrategyIds.size === 0;
-    const hasActiveFilters = activeStrategyIds.size > 0 || excludeHoldings || excludeDeficit || excludePreferred || minMarketCap > 0 || maxPbr > 0 || maxPer > 0 || minRoe > 0 || minNcav > 0 || sortKey !== 'ncav_ratio' || sortOrder !== 'desc' || showLikedOnly;
+    const hasActiveFilters = activeStrategyIds.size > 0 || excludeHoldings || excludeDeficit || excludePreferred || minMarketCap > 0 || maxPbr > 0 || maxPer > 0 || minRoe > 0 || minNcav > 0 || sortKey !== 'value_score' || sortOrder !== 'desc' || showLikedOnly;
     const isFiltered = !showLikedOnly && filteredList.length !== ncavDailyList.list.length;
 
     return (
@@ -809,6 +847,21 @@ function ScreenerContent() {
 
                     {/* 둘째 줄: 관심 + 결과 수 + 전략 안내 + 초기화 */}
                     <div className="flex items-center gap-2 pb-3">
+                        {/* 저평가 점수순 정렬 (게임 리더보드) */}
+                        <button
+                            onClick={() => { setSortKey("value_score"); setSortOrder("desc"); setDisplayCount(DAILY_PAGE_SIZE); }}
+                            title="저평가 점수 높은 순으로 정렬 (NCAV·PBR·PER·ROE 종합)"
+                            className={cn(
+                                "shrink-0 flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold border transition-all whitespace-nowrap",
+                                sortKey === "value_score"
+                                    ? "bg-[#16a34a] border-[#16a34a] text-white shadow-sm"
+                                    : "border-neutral-200 dark:border-[#3a3834] text-neutral-600 dark:text-neutral-400 hover:border-[#86efac] dark:hover:border-[#15803d] hover:text-[#16a34a] bg-white dark:bg-[#242320]"
+                            )}
+                        >
+                            <span aria-hidden>🏆</span>
+                            점수순
+                        </button>
+
                         {/* 관심 종목 필터 */}
                         <button
                             onClick={() => {
