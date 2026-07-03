@@ -145,7 +145,7 @@ interface Props {
   onCopyLikes?: (tickers: string[], groupId: string | null) => void;
   onDeleteStock?: (ticker: string) => void;
   onBulkRemove?: (tickers: string[]) => void;
-  onSaveGroupSettings?: (groupId: string, settings: { quant_rule: QuantRule | null; budget_krw: number | null }) => void;
+  onSaveGroupSettings?: (groupId: string, settings: { quant_rule: QuantRule | null; budget_krw: number | null; side?: "buy" | "sell" }) => void;
   // 좋아요(찜) 그룹
   likedList?: LikedStockItem[];
   onToggleLikesTrading?: (isActive: boolean) => void;
@@ -650,6 +650,7 @@ function StockListTable({
           monthlyPerStock={monthlyPerStock}
           groupQuantRule={g.quant_rule}
           groupBudget={g.budget_krw}
+          groupSide={g.side}
           onSaveGroupSettings={isMaster && onSaveGroupSettings ? (settings) => onSaveGroupSettings(g.id, settings) : undefined}
         />
       ))}
@@ -767,7 +768,8 @@ interface GroupSectionProps {
   onDeleteStock?: (ticker: string) => void;
   groupQuantRule?: QuantRule;
   groupBudget?: number;
-  onSaveGroupSettings?: (settings: { quant_rule: QuantRule | null; budget_krw: number | null }) => void;
+  groupSide?: "buy" | "sell";
+  onSaveGroupSettings?: (settings: { quant_rule: QuantRule | null; budget_krw: number | null; side?: "buy" | "sell" }) => void;
 }
 
 function GroupSection({
@@ -775,12 +777,13 @@ function GroupSection({
   conditionChips, editing, editingName, onEditNameChange, onStartRename, onCommitRename, onDelete,
   emptyText, collapsed, onToggleCollapse, picked, onTogglePick, onPickMany,
   doTokenPlusOne, doTokenMinusOne, doTokenResetOne, openDetail, monthlyPerStock = 0, onDeleteStock,
-  groupQuantRule, groupBudget, onSaveGroupSettings,
+  groupQuantRule, groupBudget, groupSide, onSaveGroupSettings,
 }: GroupSectionProps) {
   const [showRuleEditor, setShowRuleEditor] = useState(false);
   const [draftActiveCount, setDraftActiveCount] = useState<string>("");
   const [draftNcavRatio, setDraftNcavRatio] = useState<string>("");
   const [draftBudget, setDraftBudget] = useState<string>("");
+  const [draftSide, setDraftSide] = useState<"buy" | "sell">("buy");
   const showRefill = isMaster && rows.some(r => r.movable);
   const showCheck = isMaster && rows.length > 0; // 모든 행 선택 가능(좋아요는 복사용)
   const selectableTickers = useMemo(() => rows.map(r => r.symbol), [rows]);
@@ -826,6 +829,16 @@ function GroupSection({
             />
           ) : (
             <h3 className="text-sm font-bold text-neutral-900 dark:text-neutral-100 truncate">{title}</h3>
+          )}
+          {!hideTrading && groupSide && (
+            <span className={cn(
+              "shrink-0 rounded-md px-1.5 py-0.5 text-[10px] font-black",
+              groupSide === "sell"
+                ? "bg-rose-500 text-white"
+                : "bg-[#16a34a]/10 text-[#16a34a]"
+            )}>
+              {groupSide === "sell" ? "매도" : "매수"}
+            </span>
           )}
           {onStartRename && !editing && (
             <button onClick={onStartRename} className="text-neutral-300 hover:text-neutral-600 dark:hover:text-neutral-200">
@@ -874,6 +887,7 @@ function GroupSection({
                 setDraftActiveCount(String(groupQuantRule?.active_count ?? ""));
                 setDraftNcavRatio(String(groupQuantRule?.ncav_ratio ?? ""));
                 setDraftBudget(groupBudget != null ? String(groupBudget) : "");
+                setDraftSide(groupSide === "sell" ? "sell" : "buy");
                 setShowRuleEditor(v => !v);
               }}
               title="이 그룹의 트레이딩 조건 설정"
@@ -928,6 +942,21 @@ function GroupSection({
         <div className="border-b border-neutral-100 dark:border-[#35332e] bg-[#f8fdf9] dark:bg-[#1a2a1a]/50 px-4 py-3">
           <div className="flex flex-wrap items-end gap-3">
             <span className="text-[11px] font-bold text-[#16a34a] uppercase tracking-wider shrink-0">그룹 조건 설정</span>
+            <div className="flex items-center gap-1.5">
+              <label className="text-[11px] text-neutral-500 shrink-0">방향</label>
+              <div className="inline-flex rounded-lg border border-neutral-300 dark:border-[#4a4641] overflow-hidden">
+                <button type="button" onClick={() => setDraftSide("buy")}
+                  className={cn("px-2.5 py-1 text-xs font-bold transition-colors",
+                    draftSide === "buy" ? "bg-[#16a34a] text-white" : "bg-white dark:bg-[#1a1915] text-neutral-500")}>
+                  매수
+                </button>
+                <button type="button" onClick={() => setDraftSide("sell")}
+                  className={cn("px-2.5 py-1 text-xs font-bold transition-colors",
+                    draftSide === "sell" ? "bg-rose-500 text-white" : "bg-white dark:bg-[#1a1915] text-neutral-500")}>
+                  매도
+                </button>
+              </div>
+            </div>
             <div className="flex items-center gap-1.5">
               <label className="text-[11px] text-neutral-500 shrink-0">활성 종목 수</label>
               <input
@@ -991,6 +1020,7 @@ function GroupSection({
                   onSaveGroupSettings({
                     quant_rule: Object.keys(rule).length > 0 ? rule : null,
                     budget_krw: !isNaN(b) && b > 0 ? b : null,
+                    side: draftSide,
                   });
                   setShowRuleEditor(false);
                 }}

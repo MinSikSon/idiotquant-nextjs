@@ -3,15 +3,19 @@
 // =========================================================================
 // 종목 카드: 높다/낮다 (Higher-Lower) — 덱 빌딩 게임 1탄
 // 두 종목 카드를 스탯(시가총액·저평가점수·NCAV·주가)으로 비교해 맞히면 연승.
-// 비교한 카드는 랜덤으로 "내 덱리스트"(localStorage)에 수집 → 이후 게임의 밑천.
+// 비교한 카드는 랜덤으로 "내 덱"에 수집 → 계정별 D1 저장(로그인 필요).
+// 비로그인 시 수집 시점에 로그인 유도.
 // =========================================================================
 
 import { useEffect, useMemo, useState, useCallback, useRef } from "react";
 import Link from "next/link";
-import { ArrowUp, ArrowDown, RotateCcw, Layers, TrendingUp, Sparkles, ChevronLeft } from "lucide-react";
+import { useRouter } from "next/navigation";
+import { useSession } from "next-auth/react";
+import { ArrowUp, ArrowDown, RotateCcw, Layers, TrendingUp, Sparkles, ChevronLeft, Lock } from "lucide-react";
 import { useAppDispatch, useAppSelector } from "@/lib/hooks";
 import { reqGetNcavDailyList, selectNcavDailyList } from "@/lib/features/algorithmTrade/algorithmTradeSlice";
 import { computeValueScore } from "@/lib/utils/valueScore";
+import { getDeck, addDeckCard, type DeckCardSnapshot } from "@/lib/features/deck/deckAPI";
 import { cn } from "@/lib/utils";
 
 const safeNum = (v: any): number => { const n = Number(v); return Number.isFinite(n) ? n : 0; };
@@ -28,20 +32,14 @@ const STATS: Stat[] = [
   { key: "last_price", label: "주가", get: it => safeNum(it.last_price), fmt: v => `${Math.round(v).toLocaleString()}원` },
 ];
 
-const DECK_KEY = "iq:deck:v1";        // 내 덱리스트 (소유 카드) — 이후 게임들이 공유
-const DROP_CHANCE = 0.4;              // 비교한 카드가 덱에 들어올 확률
+const DROP_CHANCE = 0.4; // 비교한 카드가 덱에 들어올 확률
 
-type DeckCard = { ticker: string; name: string; market_cap: number; last_price: number; ncav_ratio: number; pbr: number; per: number; eps: number; bps: number; at: number };
-
-function loadDeck(): DeckCard[] {
-  try { return JSON.parse(localStorage.getItem(DECK_KEY) || "[]"); } catch { return []; }
-}
-function toCard(it: any): DeckCard {
+function toCard(it: any): DeckCardSnapshot {
   return {
     ticker: String(it.ticker), name: String(it.name),
     market_cap: safeNum(it.market_cap), last_price: safeNum(it.last_price),
     ncav_ratio: safeNum(it.ncav_ratio), pbr: safeNum(it.pbr), per: safeNum(it.per),
-    eps: safeNum(it.eps), bps: safeNum(it.bps), at: Date.now(),
+    eps: safeNum(it.eps), bps: safeNum(it.bps),
   };
 }
 
@@ -84,7 +82,14 @@ type Phase = "loading" | "guessing" | "revealed" | "over";
 
 export default function GamePage() {
   const dispatch = useAppDispatch();
+  const router = useRouter();
   const ncav = useAppSelector(selectNcavDailyList);
+  const { data: session } = useSession();
+  const isLoggedIn = !!session;
+
+  const requireLogin = useCallback(() => {
+    router.push(`/login?callbackUrl=${encodeURIComponent("/game")}`);
+  }, [router]);
 
   const [statKey, setStatKey] = useState("market_cap");
   const stat = useMemo(() => STATS.find(s => s.key === statKey)!, [statKey]);
@@ -95,11 +100,23 @@ export default function GamePage() {
   const [streak, setStreak] = useState(0);
   const [best, setBest] = useState(0);
   const [lastWin, setLastWin] = useState<boolean | null>(null);
-  const [dropped, setDropped] = useState(false);          // 이번 라운드에 카드 획득했는지
-  const [deck, setDeck] = useState<DeckCard[]>([]);
+  const [dropped, setDropped] = useState(false);      // 이번 라운드 카드 획득(로그인)
+  const [dropPrompt, setDropPrompt] = useState(false); // 카드가 떴지만 로그인 필요
+  const [deck, setDeck] = useState<DeckCardSnapshot[]>([]);
   const [showDeck, setShowDeck] = useState(false);
 
-  useEffect(() => { dispatch(reqGetNcavDailyList("latest")); setDeck(loadDeck()); }, [dispatch]);
+  useEffect(() => { dispatch(reqGetNcavDailyList("latest")); }, [dispatch]);
+
+  // 로그인 상태면 계정 덱 로드
+  useEffect(() => {
+    if (!isLoggedIn) { setDeck([]); return; }
+    let cancelled = false;
+    getDeck().then(res => {
+      if (cancelled || !res?.success || !Array.isArray(res.data)) return;
+      setDeck(res.data.map((r: any) => ({ ticker: r.ticker, name: r.name, ...(r.card ?? {}) })));
+    }).catch(() => { });
+    return () => { cancelled = true; };
+  }, [isLoggedIn]);
 
   // 현재 스탯으로 비교 가능한 종목 풀
   const pool = useMemo(() => {
@@ -122,36 +139,23 @@ export default function GamePage() {
   const start = useCallback(() => {
     const a = draw();
     if (!a) return;
-    setAnchor(a); setChallenger(draw(a.ticker)); setStreak(0); setLastWin(null); setDropped(false); setPhase("guessing");
+    setAnchor(a); setChallenger(draw(a.ticker));
+    setStreak(0); setLastWin(null); setDropped(false); setDropPrompt(false); setPhase("guessing");
   }, [draw]);
 
-  // 풀 준비되면 시작
   const started = useRef(false);
   useEffect(() => {
     if (!started.current && pool.length >= 2) { started.current = true; start(); }
   }, [pool, start]);
-
-  // 비교한 카드를 랜덤으로 덱에 수집 (중복 티커는 제외)
-  const maybeCollect = useCallback((it: any) => {
-    if (Math.random() >= DROP_CHANCE) return false;
-    let added = false;
-    setDeck(prev => {
-      if (prev.some(c => c.ticker === String(it.ticker))) return prev;
-      added = true;
-      const next = [toCard(it), ...prev];
-      try { localStorage.setItem(DECK_KEY, JSON.stringify(next)); } catch { }
-      return next;
-    });
-    return added;
-  }, []);
 
   const guess = useCallback((dir: "higher" | "lower") => {
     if (phase !== "guessing" || !anchor || !challenger) return;
     const av = stat.get(anchor), cv = stat.get(challenger);
     const win = dir === "higher" ? cv >= av : cv <= av;   // 동점은 승리 처리
     setLastWin(win);
-    setDropped(maybeCollect(challenger));
+    setDropped(false); setDropPrompt(false);
     setPhase("revealed");
+
     if (win) {
       setStreak(s => {
         const ns = s + 1;
@@ -159,13 +163,28 @@ export default function GamePage() {
         return ns;
       });
     }
-  }, [phase, anchor, challenger, stat, best, bestKey, maybeCollect]);
+
+    // 비교한 카드 랜덤 수집 (계정 저장)
+    if (Math.random() < DROP_CHANCE) {
+      if (!isLoggedIn) {
+        setDropPrompt(true);
+      } else {
+        const snap = toCard(challenger);
+        addDeckCard(snap).then(res => {
+          if (res?.added) {
+            setDropped(true);
+            setDeck(prev => prev.some(c => c.ticker === snap.ticker) ? prev : [snap, ...prev]);
+          }
+        }).catch(() => { });
+      }
+    }
+  }, [phase, anchor, challenger, stat, best, bestKey, isLoggedIn]);
 
   const next = useCallback(() => {
     if (!lastWin) return;
     setAnchor(challenger);
     setChallenger(draw(challenger?.ticker));
-    setDropped(false); setLastWin(null); setPhase("guessing");
+    setDropped(false); setDropPrompt(false); setLastWin(null); setPhase("guessing");
   }, [lastWin, challenger, draw]);
 
   useEffect(() => { if (phase === "revealed" && lastWin === false) setPhase("over"); }, [phase, lastWin]);
@@ -185,12 +204,13 @@ export default function GamePage() {
           <button onClick={() => setShowDeck(v => !v)}
             className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg border border-neutral-200 dark:border-[#35332e] bg-white dark:bg-[#242320] text-xs font-bold text-neutral-600 dark:text-neutral-300">
             <Layers size={13} className="text-[#16a34a]" /> 내 덱 {deck.length}
+            {!isLoggedIn && <Lock size={10} className="opacity-60" />}
           </button>
         </div>
 
-        {/* 덱리스트 뷰 */}
+        {/* 덱 뷰 */}
         {showDeck ? (
-          <DeckView deck={deck} onClose={() => setShowDeck(false)} />
+          <DeckView deck={deck} isLoggedIn={isLoggedIn} onLogin={requireLogin} onClose={() => setShowDeck(false)} />
         ) : isLoading ? (
           <div className="py-24 text-center text-sm text-neutral-400">카드 데이터를 불러오는 중…</div>
         ) : (
@@ -227,7 +247,9 @@ export default function GamePage() {
                 <p className="text-3xl mb-2">🚢</p>
                 <p className="font-black text-lg text-neutral-900 dark:text-white">항해 종료!</p>
                 <p className="text-sm text-neutral-500 dark:text-neutral-400 mt-1">이번 연승 <b className="text-[#16a34a]">{streak}</b> · 최고 {best}</p>
-                <p className="text-xs text-neutral-400 mt-2">발굴한 카드는 <b>내 덱({deck.length})</b>에 쌓였습니다.</p>
+                <p className="text-xs text-neutral-400 mt-2">
+                  {isLoggedIn ? <>발굴한 카드는 <b>내 덱({deck.length})</b>에 쌓였습니다.</> : "로그인하면 발굴한 카드를 덱에 모을 수 있어요."}
+                </p>
                 <button onClick={start}
                   className="mt-5 inline-flex items-center gap-2 px-6 py-3 rounded-xl bg-[#16a34a] hover:bg-[#15803d] text-white font-bold text-sm shadow-md">
                   <RotateCcw size={15} /> 다시 시작
@@ -243,14 +265,20 @@ export default function GamePage() {
                       : <span className="text-neutral-300 dark:text-neutral-600">?</span>} />
                 </div>
 
-                {/* 획득 알림 */}
-                <div className="h-6 mt-2 text-center">
+                {/* 획득 / 로그인 유도 */}
+                <div className="min-h-[1.75rem] mt-2 text-center">
                   {phase === "revealed" && dropped && (
                     <span className="inline-flex items-center gap-1 text-xs font-bold text-amber-600 dark:text-amber-400 animate-in fade-in slide-in-from-bottom-1">
                       <Sparkles size={12} /> 카드 획득! {challenger.name} 이(가) 덱에 추가됨
                     </span>
                   )}
-                  {phase === "revealed" && lastWin && !dropped && (
+                  {phase === "revealed" && dropPrompt && (
+                    <button onClick={requireLogin}
+                      className="inline-flex items-center gap-1.5 text-xs font-bold text-[#16a34a] animate-in fade-in hover:underline">
+                      <Lock size={12} /> 카드가 나왔어요! 로그인하고 덱에 담기 →
+                    </button>
+                  )}
+                  {phase === "revealed" && lastWin && !dropped && !dropPrompt && (
                     <span className="text-xs font-bold text-[#16a34a] animate-in fade-in">정답! ✔</span>
                   )}
                 </div>
@@ -287,8 +315,8 @@ export default function GamePage() {
   );
 }
 
-// 덱리스트 뷰
-function DeckView({ deck, onClose }: { deck: DeckCard[]; onClose: () => void }) {
+// 덱 뷰
+function DeckView({ deck, isLoggedIn, onLogin, onClose }: { deck: DeckCardSnapshot[]; isLoggedIn: boolean; onLogin: () => void; onClose: () => void }) {
   const sorted = useMemo(() => [...deck].sort((a, b) => computeValueScore(b).score - computeValueScore(a).score), [deck]);
   return (
     <div className="animate-in fade-in duration-200">
@@ -296,7 +324,16 @@ function DeckView({ deck, onClose }: { deck: DeckCard[]; onClose: () => void }) 
         <p className="font-black text-neutral-900 dark:text-white">내 덱 <span className="text-[#16a34a]">{deck.length}</span>장</p>
         <button onClick={onClose} className="text-xs font-bold text-neutral-500 hover:text-[#16a34a]">게임으로 ▶</button>
       </div>
-      {deck.length === 0 ? (
+      {!isLoggedIn ? (
+        <div className="py-16 text-center">
+          <Lock size={22} className="mx-auto text-neutral-300 dark:text-neutral-600 mb-3" />
+          <p className="text-sm font-bold text-neutral-700 dark:text-neutral-300">덱은 계정에 저장됩니다</p>
+          <p className="text-xs text-neutral-400 mt-1 mb-4">로그인하면 발굴한 카드가 기기와 상관없이 보관돼요.</p>
+          <button onClick={onLogin} className="inline-flex items-center gap-1.5 px-5 py-2.5 rounded-xl bg-[#16a34a] hover:bg-[#15803d] text-white font-bold text-sm">
+            로그인하고 덱 시작
+          </button>
+        </div>
+      ) : deck.length === 0 ? (
         <p className="py-20 text-center text-sm text-neutral-400">아직 카드가 없어요. 게임을 하며 카드를 수집하세요!</p>
       ) : (
         <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">

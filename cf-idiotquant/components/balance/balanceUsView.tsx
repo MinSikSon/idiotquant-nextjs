@@ -353,7 +353,7 @@ export function BalanceUsView({ countryToggle }: { countryToggle?: React.ReactNo
   const doCopyLikes = useCallback((tickers: string[], groupId: string | null) => dispatch(reqPostUsCapitalLikesCopy({ key: balanceKey, tickers, groupId })), [dispatch, balanceKey]);
   const doDeleteStock = useCallback((ticker: string) => dispatch(reqPostUsCapitalStockRemove({ key: balanceKey, ticker })), [dispatch, balanceKey]);
   const doBulkRemove = useCallback((tickers: string[]) => dispatch(reqPostUsCapitalStocksRemove({ key: balanceKey, tickers })), [dispatch, balanceKey]);
-  const doSaveGroupSettings = useCallback((groupId: string, settings: { quant_rule: QuantRule | null; budget_krw: number | null }) => dispatch(reqPostUsCapitalGroupUpdate({ key: balanceKey, groupId, updates: settings })), [dispatch, balanceKey]);
+  const doSaveGroupSettings = useCallback((groupId: string, settings: { quant_rule: QuantRule | null; budget_krw: number | null; side?: "buy" | "sell" }) => dispatch(reqPostUsCapitalGroupUpdate({ key: balanceKey, groupId, updates: settings })), [dispatch, balanceKey]);
   const doSaveQuantRule = (rule: any) => dispatch(reqPostUsQuantRule({ key: balanceKey, rule }));
 
   const out2 = kiBalance?.output2?.[0];
