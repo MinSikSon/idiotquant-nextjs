@@ -62,7 +62,7 @@ import { type NavSection } from "@/components/balance/sectionNav";
 import { BalanceShell } from "@/components/balance/balanceShell";
 import {
   useToast,
-  SectionHeader, SectionPanel, EmptyRow,
+  SectionHeader, SectionPanel, EmptyRow, AccountSelector,
   KpiCard, MetricChip, TableHeader, OrderTabAction, OrderSectionIcon,
   PnlIcon, pnlIconBg, pnlValueColor, pnlAccentColor,
   formatTime,
@@ -440,6 +440,14 @@ export function BalanceKrView({ countryToggle }: { countryToggle?: React.ReactNo
       isLoading={isLoading}
       onRefresh={handleRefresh}
       dividerClass="via-[#86efac] dark:via-[#166534]"
+      accountSelector={
+        <AccountSelector
+          balanceKey={balanceKey}
+          setBalanceKey={setBalanceKey}
+          kakaoMemberList={kakaoMemberList}
+          isMaster={isMaster}
+        />
+      }
       navSections={navSections}
       mobileTab={mobileTab}
       onMobileTabChange={setMobileTab}

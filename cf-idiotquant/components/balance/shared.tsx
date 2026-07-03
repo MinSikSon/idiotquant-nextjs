@@ -4,7 +4,7 @@ import { useState, useCallback, memo } from "react";
 import {
   Loader2, X, Check, AlertCircle,
   CheckCircle2, Clock, ArrowUpRight, ArrowDownRight,
-  RefreshCw, Activity, InboxIcon,
+  RefreshCw, Activity, InboxIcon, ChevronDown, Key,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -140,6 +140,43 @@ export function SectionHeader({
         </div>
       </div>
       {action && <div className="shrink-0 self-start sm:self-center">{action}</div>}
+    </div>
+  );
+}
+
+// 계좌 선택기 (MASTER 전용). 탭 위 최상단에 배치해 종목관리·자동매매를 계좌 단위로 전환한다.
+export function AccountSelector({ balanceKey, setBalanceKey, kakaoMemberList, isMaster }: {
+  balanceKey: string;
+  setBalanceKey: (v: string) => void;
+  kakaoMemberList?: any;
+  isMaster: boolean;
+}) {
+  if (!isMaster) return null;
+  const list = Array.isArray(kakaoMemberList?.list) ? kakaoMemberList.list : [];
+  return (
+    <div className="flex flex-wrap items-center gap-3 bg-white dark:bg-[#242320] rounded-2xl border border-neutral-200 dark:border-[#35332e] px-4 py-3 shadow-sm">
+      <div className="flex items-center gap-1.5 px-2.5 py-1 bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400 rounded-lg text-[10px] font-black uppercase">
+        <Key size={12} /> MASTER MODE
+      </div>
+      <span className="text-xs font-semibold text-neutral-500 dark:text-neutral-400">계좌 선택</span>
+      <div className="relative inline-block">
+        <select
+          value={balanceKey}
+          onChange={(e) => setBalanceKey(e.target.value)}
+          className="appearance-none bg-transparent pl-3 pr-8 py-1.5 font-bold text-sm focus:outline-none dark:text-white cursor-pointer border border-neutral-200 dark:border-[#35332e] rounded-lg"
+        >
+          {list.length > 0 ? (
+            list.map((item: any) => (
+              <option key={item.key} value={String(item.key)} className="dark:bg-[#242320]">
+                {item.value?.nickname} ({item.key})
+              </option>
+            ))
+          ) : (
+            <option value="">계좌 목록 로딩 중...</option>
+          )}
+        </select>
+        <ChevronDown size={14} className="absolute right-2 top-1/2 -translate-y-1/2 pointer-events-none opacity-50" />
+      </div>
     </div>
   );
 }

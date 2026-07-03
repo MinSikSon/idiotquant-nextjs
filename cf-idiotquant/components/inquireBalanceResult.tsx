@@ -5,7 +5,6 @@ import {
     Globe,
     TrendingUp,
     RefreshCw,
-    Key,
     Info,
     ChevronUp,
     ChevronDown,
@@ -299,34 +298,8 @@ export default function InquireBalanceResult(props: InquireBalanceResultProps) {
                 </div>
             </div>
 
-            {/* 메인 요약 카드 */}
+            {/* 메인 요약 카드 (계좌 선택기는 페이지 상단 AccountSelector로 이동됨) */}
             <div className="bg-white dark:bg-[#242320] rounded-[2rem] border border-neutral-200 dark:border-[#35332e] shadow-sm overflow-hidden">
-                {session?.user?.name === process.env.NEXT_PUBLIC_MASTER && (
-                    <div className="p-4 border-b border-neutral-100 dark:border-[#35332e] bg-neutral-50/50 dark:bg-[#242320]/50 flex flex-wrap items-center gap-4">
-                        <div className="flex items-center gap-1.5 px-2.5 py-1 bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400 rounded-lg text-[10px] font-black uppercase">
-                            <Key size={12} /> MASTER MODE
-                        </div>
-                        <div className="relative inline-block">
-                            <select
-                                value={props.balanceKey}
-                                onChange={(e) => props.setBalanceKey(e.target.value)}
-                                className="appearance-none bg-transparent pl-2 pr-8 py-1 font-bold text-sm focus:outline-none dark:text-white cursor-pointer"
-                            >
-                                {Array.isArray(props.kakaoMemberList?.list) ? (
-                                    props.kakaoMemberList.list.map((item: any) => (
-                                        <option key={item.key} value={String(item.key)} className="dark:bg-[#242320]">
-                                            {item.value?.nickname} ({item.key})
-                                        </option>
-                                    ))
-                                ) : (
-                                    <option value="">계좌 목록 로딩 중...</option>
-                                )}
-                            </select>
-                            <ChevronDown size={14} className="absolute right-2 top-1/2 -translate-y-1/2 pointer-events-none opacity-50" />
-                        </div>
-                    </div>
-                )}
-
                 <div className="grid grid-cols-1 md:grid-cols-3 divide-y md:divide-y-0 md:divide-x border-neutral-100 dark:divide-[#35332e]">
                     <SummaryItem
                         label="평가 손익률"
