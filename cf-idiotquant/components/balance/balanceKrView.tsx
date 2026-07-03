@@ -385,7 +385,7 @@ export function BalanceKrView({ countryToggle }: { countryToggle?: React.ReactNo
   const doCopyLikes = useCallback((tickers: string[], groupId: string | null) => dispatch(reqPostKrCapitalLikesCopy({ key: balanceKey, tickers, groupId })), [dispatch, balanceKey]);
   const doDeleteStock = useCallback((ticker: string) => dispatch(reqPostKrCapitalStockRemove({ key: balanceKey, ticker })), [dispatch, balanceKey]);
   const doBulkRemove = useCallback((tickers: string[]) => dispatch(reqPostKrCapitalStocksRemove({ key: balanceKey, tickers })), [dispatch, balanceKey]);
-  const doSaveGroupSettings = useCallback((groupId: string, settings: { quant_rule: QuantRule | null; budget_krw: number | null }) => dispatch(reqPostKrCapitalGroupUpdate({ key: balanceKey, groupId, updates: settings })), [dispatch, balanceKey]);
+  const doSaveGroupSettings = useCallback((groupId: string, settings: { quant_rule: QuantRule | null; budget_krw: number | null; side?: "buy" | "sell" }) => dispatch(reqPostKrCapitalGroupUpdate({ key: balanceKey, groupId, updates: settings })), [dispatch, balanceKey]);
   const doSaveQuantRule = (rule: any) => dispatch(reqPostKrQuantRule({ key: balanceKey, rule }));
   const doSaveBudget = (monthly_budget_krw: number) => dispatch(reqPostKrCapitalBudget({ key: balanceKey, monthly_budget_krw }));
 

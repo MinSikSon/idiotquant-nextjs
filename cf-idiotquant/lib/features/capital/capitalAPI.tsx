@@ -77,7 +77,7 @@ export const postUsCapitalTokenMinusOne: any = async (key: string, num: number, 
 // ============================================================================
 // 종목 그룹 관리 API (KR / US)
 // ============================================================================
-type GroupUpdates = { name?: string; is_trading_active?: boolean; quant_rule?: object | null; budget_krw?: number | null };
+type GroupUpdates = { name?: string; is_trading_active?: boolean; quant_rule?: object | null; budget_krw?: number | null; side?: "buy" | "sell" };
 
 // KR
 export const postKrCapitalGroupCreate: any = async (key: string, name: string, tickers?: string[]) =>
