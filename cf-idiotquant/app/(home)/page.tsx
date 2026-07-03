@@ -196,6 +196,61 @@ function StepTagArt() {
 
 const STEP_ARTS = [StepScanArt, StepFunnelArt, StepTagArt];
 
+// 대항해시대 네덜란드 범선(East Indiaman) — "가치를 향한 항해" 테마 배너.
+// 실제 사진 대신 라이선스·네트워크 제약이 없는 자체 인라인 SVG 실루엣.
+function ShipArt() {
+  // 돛(순풍에 부푼 사각돛) 하나를 그리는 헬퍼: 상·하 활대에 걸리고 우현으로 부풂
+  const sail = (x1: number, x2: number, yt: number, yb: number, bulge: number) =>
+    `M${x1},${yt} L${x2},${yt} Q${x2 + bulge},${(yt + yb) / 2} ${x2},${yb} L${x1},${yb} Q${x1 + bulge},${(yt + yb) / 2} ${x1},${yt} Z`;
+  const HULL = "#123c2e";
+  return (
+    <svg viewBox="0 0 960 300" fill="none" role="img" aria-label="가치를 향한 항해를 상징하는 대항해시대 네덜란드 범선"
+      preserveAspectRatio="xMidYMid slice" className="w-full h-full">
+      {/* 태양 */}
+      <circle cx="742" cy="104" r="48" fill="#f59e0b" opacity="0.85" />
+      <circle cx="742" cy="104" r="48" fill="#fbbf24" opacity="0.25" />
+
+      {/* 선체 */}
+      <path d="M320,208 L612,208 L590,240 Q468,252 348,240 Z" fill={HULL} />
+      {/* 선미루 */}
+      <path d="M582,208 L612,208 L612,186 Q600,182 588,186 Z" fill={HULL} />
+      {/* 현측 장식선 */}
+      <path d="M338,220 L596,220" stroke="#fcd34d" strokeWidth="2.5" opacity="0.7" />
+
+      {/* 마스트 */}
+      <line x1="395" y1="208" x2="395" y2="70" stroke={HULL} strokeWidth="5" />
+      <line x1="468" y1="208" x2="468" y2="44" stroke={HULL} strokeWidth="6" />
+      <line x1="541" y1="208" x2="541" y2="80" stroke={HULL} strokeWidth="5" />
+      {/* 활대 */}
+      <line x1="352" y1="92" x2="438" y2="92" stroke={HULL} strokeWidth="3.5" />
+      <line x1="416" y1="66" x2="520" y2="66" stroke={HULL} strokeWidth="4" />
+      <line x1="505" y1="100" x2="577" y2="100" stroke={HULL} strokeWidth="3.5" />
+      {/* 선수 사장(bowsprit) */}
+      <line x1="330" y1="206" x2="284" y2="182" stroke={HULL} strokeWidth="4" />
+
+      {/* 돛 */}
+      <path d={sail(363, 427, 96, 132, 20)} fill="#fdf7e6" stroke={HULL} strokeWidth="2" />
+      <path d={sail(352, 438, 138, 188, 26)} fill="#fbf3dd" stroke={HULL} strokeWidth="2" />
+      <path d={sail(428, 508, 70, 116, 24)} fill="#fdf7e6" stroke={HULL} strokeWidth="2" />
+      <path d={sail(416, 520, 124, 180, 30)} fill="#fbf3dd" stroke={HULL} strokeWidth="2" />
+      <path d={sail(513, 569, 104, 134, 18)} fill="#fdf7e6" stroke={HULL} strokeWidth="2" />
+      <path d={sail(505, 577, 142, 186, 22)} fill="#fbf3dd" stroke={HULL} strokeWidth="2" />
+      {/* 선수 삼각돛 */}
+      <path d="M330,204 L292,182 L330,168 Z" fill="#fdf7e6" stroke={HULL} strokeWidth="2" />
+
+      {/* 페넌트 깃발 */}
+      <path d="M468,44 l30,7 l-30,7 Z" fill="#16a34a" />
+      <path d="M395,70 l22,5 l-22,5 Z" fill="#16a34a" />
+      <path d="M541,80 l22,5 l-22,5 Z" fill="#16a34a" />
+
+      {/* 앞바다 물결 (선체 하부와 겹쳐 물에 떠 보이게) */}
+      <path d="M0,238 Q120,228 240,238 T480,238 T720,238 T960,238 V300 H0 Z" fill="#16a34a" opacity="0.18" />
+      <path d="M0,252 Q160,242 320,252 T640,252 T960,252 V300 H0 Z" fill="#16a34a" opacity="0.30" />
+      <path d="M0,268 Q140,258 280,268 T560,268 T840,268 T960,268 V300 H0 Z" fill="#15803d" opacity="0.45" />
+    </svg>
+  );
+}
+
 function useCountUp(target: number, duration = 1000) {
   const [count, setCount] = useState(0);
   const rafRef = useRef<number | null>(null);
@@ -421,6 +476,11 @@ export default function HomePage() {
             </div>
           </div>
         )}
+      </section>
+
+      {/* ── SHIP BANNER (대항해시대 테마) ─────────────────────────── */}
+      <section className="relative h-40 sm:h-56 overflow-hidden border-b border-neutral-200/70 dark:border-[#3a3834] bg-gradient-to-b from-[#eaf5ee] to-white dark:from-[#0e2019] dark:to-[#1a1915]">
+        <ShipArt />
       </section>
 
       {/* ── TODAY'S PICKS ─────────────────────────────────────────── */}
