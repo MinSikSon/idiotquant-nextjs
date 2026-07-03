@@ -42,7 +42,8 @@ export default auth((req: any) => {
         path === "/" ||
         path === "/search" ||
         path === "/analyze" ||
-        path === "/screener"
+        path === "/screener" ||
+        path === "/game"
     ) {
         return NextResponse.next();
     }

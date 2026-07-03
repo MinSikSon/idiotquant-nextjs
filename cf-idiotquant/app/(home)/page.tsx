@@ -478,10 +478,13 @@ export default function HomePage() {
         )}
       </section>
 
-      {/* ── SHIP BANNER (대항해시대 테마) ─────────────────────────── */}
-      <section className="relative h-40 sm:h-56 overflow-hidden border-b border-neutral-200/70 dark:border-[#3a3834] bg-gradient-to-b from-[#eaf5ee] to-white dark:from-[#0e2019] dark:to-[#1a1915]">
+      {/* ── SHIP BANNER (대항해시대 테마 · 카드 게임 입구) ─────────── */}
+      <Link href="/game" className="group relative flex h-40 sm:h-56 overflow-hidden border-b border-neutral-200/70 dark:border-[#3a3834] bg-gradient-to-b from-[#eaf5ee] to-white dark:from-[#0e2019] dark:to-[#1a1915]">
         <ShipArt />
-      </section>
+        <span className="absolute bottom-3 left-1/2 -translate-x-1/2 inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full bg-white/85 dark:bg-[#242320]/85 backdrop-blur border border-neutral-200 dark:border-[#35332e] text-xs font-black text-[#15803d] dark:text-[#16a34a] shadow-sm group-hover:scale-105 transition-transform">
+          🃏 종목 카드 게임 시작 <ChevronRight size={13} />
+        </span>
+      </Link>
 
       {/* ── TODAY'S PICKS ─────────────────────────────────────────── */}
       <section className="py-10 px-5 md:py-14">
@@ -718,6 +721,7 @@ export default function HomePage() {
               { label: "발굴", href: "/screener" },
               { label: "분석", href: "/analyze" },
               { label: "계산기", href: "/calculator" },
+              { label: "🃏 게임", href: "/game" },
             ].map(l => (
               <Link key={l.label} href={l.href}
                 className="text-xs text-neutral-400 hover:text-neutral-700 dark:hover:text-neutral-200 transition-colors font-medium"
