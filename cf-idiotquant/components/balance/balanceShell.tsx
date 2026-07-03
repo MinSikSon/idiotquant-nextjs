@@ -89,9 +89,9 @@ export function BalanceShell({
         {/* 섹션 네비게이션 */}
         <SectionNav sections={navSections} mobileTab={mobileTab} onMobileTabChange={onMobileTabChange} />
 
-        {/* 섹션 본문 (모바일은 탭 단위로 표시) */}
+        {/* 섹션 본문 (데스크탑·모바일 모두 탭 단위로 활성 섹션만 표시) */}
         {sections.map(s => (
-          <div key={s.id} className={cn(mobileTab !== s.id && "hidden md:block")}>
+          <div key={s.id} className={cn(mobileTab !== s.id && "hidden")}>
             {s.node}
           </div>
         ))}

@@ -1,6 +1,5 @@
 "use client";
 
-import { useEffect, useState, useCallback } from "react";
 import { cn } from "@/lib/utils";
 
 // =========================================================================
@@ -24,43 +23,6 @@ export function SectionNav({
   mobileTab?: string;
   onMobileTabChange?: (id: string) => void;
 }) {
-  const [activeId, setActiveId] = useState<string>("");
-
-  const handleNavClick = useCallback((id: string) => {
-    const element = document.getElementById(id);
-    if (element) {
-      element.scrollIntoView({ behavior: "smooth", block: "start" });
-      setActiveId(id);
-    }
-  }, []);
-
-  useEffect(() => {
-    const observerOptions = {
-      threshold: 0.3,
-      rootMargin: "-60px 0px -40% 0px",
-    };
-
-    const observers: IntersectionObserver[] = [];
-
-    sections.forEach(({ id }) => {
-      const element = document.getElementById(id);
-      if (!element) return;
-
-      const observer = new IntersectionObserver(([entry]) => {
-        if (entry.isIntersecting) {
-          setActiveId(id);
-        }
-      }, observerOptions);
-
-      observer.observe(element);
-      observers.push(observer);
-    });
-
-    return () => {
-      observers.forEach(obs => obs.disconnect());
-    };
-  }, [sections]);
-
   return (
     <nav className="sticky top-0 z-30 bg-white/90 dark:bg-[#1f1e1b]/90 backdrop-blur-xl border-b border-neutral-200/70 dark:border-[#35332e] transition-colors duration-300">
       <div className="max-w-7xl mx-auto px-4">
@@ -84,15 +46,15 @@ export function SectionNav({
           ))}
         </div>
 
-        {/* 데스크탑 스크롤 네비 */}
+        {/* 데스크탑 탭 네비 */}
         <div className="hidden md:flex items-center gap-2 overflow-x-auto scrollbar-hide py-3 md:py-4">
           {sections.map(({ id, label, icon }) => (
             <button
               key={id}
-              onClick={() => handleNavClick(id)}
+              onClick={() => onMobileTabChange?.(id)}
               className={cn(
                 "flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs whitespace-nowrap transition-all shrink-0",
-                activeId === id
+                mobileTab === id
                   ? "bg-[#ede8df]/80 dark:bg-[#35332e] text-neutral-900 dark:text-neutral-50 font-semibold"
                   : "font-medium text-neutral-500 dark:text-neutral-400 hover:bg-[#f5f0e8] dark:hover:bg-[#2c2b27] hover:text-neutral-900 dark:hover:text-neutral-100"
               )}
