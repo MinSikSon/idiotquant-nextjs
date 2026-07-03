@@ -4,6 +4,7 @@ export const dynamic = 'force-dynamic';
 
 import { useEffect, useMemo, useState, useCallback, useRef, Suspense, memo } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
+import { useSession } from "next-auth/react";
 import { useAppDispatch, useAppSelector } from "@/lib/hooks";
 import {
     selectNcavDailyDates, selectNcavDailyList,
@@ -20,7 +21,7 @@ import { STRATEGY_LABEL, STRATEGY_BADGE, STRATEGY_PRESETS_CLIENT as STRATEGY_PRE
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const safeNum = (v: any): number => { const n = Number(v); return isNaN(n) ? 0 : n; };
-import { RefreshCw, ChevronRight, Loader2, Search, SlidersHorizontal, TrendingUp, Info, X, Heart, Clock, Share2, Check } from "lucide-react";
+import { RefreshCw, ChevronRight, Loader2, Search, SlidersHorizontal, TrendingUp, Info, X, Heart, Clock, Share2, Check, Lock } from "lucide-react";
 import * as Tooltip from "@radix-ui/react-tooltip";
 
 // =========================================================================
@@ -349,6 +350,12 @@ function ScreenerContent() {
     const dispatch = useAppDispatch();
     const router = useRouter();
     const searchParams = useSearchParams();
+    const { data: session } = useSession();
+    const isLoggedIn = !!session;
+    // 비로그인 시 고급 필터/관심 사용 → 로그인 페이지로 유도 (복귀 URL 보존)
+    const requireLogin = useCallback(() => {
+        router.push(`/login?callbackUrl=${encodeURIComponent(`/screener${window.location.search}`)}`);
+    }, [router]);
     const ncavDailyDates = useAppSelector(selectNcavDailyDates);
     const ncavDailyList = useAppSelector(selectNcavDailyList);
     const likedTickersArr = useAppSelector(selectLikedTickers);
@@ -413,8 +420,11 @@ function ScreenerContent() {
     useEffect(() => {
         dispatch(reqGetNcavDailyDates());
         dispatch(reqGetNcavDailyList("latest"));
-        dispatch(reqGetMyLikes());
     }, [dispatch]);
+
+    useEffect(() => {
+        if (isLoggedIn) dispatch(reqGetMyLikes());
+    }, [dispatch, isLoggedIn]);
 
     useEffect(() => {
         if (
@@ -664,9 +674,10 @@ function ScreenerContent() {
     }, [router]);
 
     const handleToggleLike = useCallback((ticker: string, name: string) => {
+        if (!isLoggedIn) { requireLogin(); return; }
         // KR 종목 좋아요 키는 종목명 기준 — analyze와 동일하게 통일
         dispatch(reqToggleLike({ ticker: name, name, isUs: false }));
-    }, [dispatch]);
+    }, [dispatch, isLoggedIn, requireLogin]);
 
     const scanDate = ncavDailyList.scanDate;
     const formattedDate = scanDate
@@ -800,7 +811,10 @@ function ScreenerContent() {
                     <div className="flex items-center gap-2 pb-3">
                         {/* 관심 종목 필터 */}
                         <button
-                            onClick={() => { setShowLikedOnly(o => !o); setActiveStrategyIds(new Set()); setDisplayCount(DAILY_PAGE_SIZE); }}
+                            onClick={() => {
+                                if (!isLoggedIn) { requireLogin(); return; }
+                                setShowLikedOnly(o => !o); setActiveStrategyIds(new Set()); setDisplayCount(DAILY_PAGE_SIZE);
+                            }}
                             className={cn(
                                 "shrink-0 flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold border transition-all whitespace-nowrap",
                                 showLikedOnly
@@ -810,6 +824,7 @@ function ScreenerContent() {
                         >
                             <Heart size={11} fill={showLikedOnly ? "currentColor" : "none"} />
                             관심
+                            {!isLoggedIn && <Lock size={10} className="opacity-60" />}
                             <span className={cn(
                                 "text-[10px] font-black px-1.5 py-0.5 rounded-full",
                                 showLikedOnly ? "bg-white/20" : "bg-[#faf9f7] dark:bg-[#4a4641] text-neutral-500"
@@ -1026,7 +1041,7 @@ function ScreenerContent() {
                 </div>
 
                 <button
-                    onClick={() => setFilterOpen(o => !o)}
+                    onClick={() => isLoggedIn ? setFilterOpen(o => !o) : requireLogin()}
                     className={cn(
                         "flex items-center gap-1.5 px-3.5 py-2 rounded-xl border text-xs font-bold transition-all",
                         filterOpen || activeFilterCount > 0
@@ -1036,6 +1051,7 @@ function ScreenerContent() {
                 >
                     <SlidersHorizontal size={12} />
                     필터
+                    {!isLoggedIn && <Lock size={10} className="opacity-60" />}
                     {activeFilterCount > 0 && (
                         <span className="w-4 h-4 flex items-center justify-center rounded-full bg-[#16a34a] text-white text-[9px] font-black">
                             {activeFilterCount}

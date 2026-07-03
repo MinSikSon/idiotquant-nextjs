@@ -41,7 +41,8 @@ export default auth((req: any) => {
         path === "/ads.txt" ||
         path === "/" ||
         path === "/search" ||
-        path === "/analyze"
+        path === "/analyze" ||
+        path === "/screener"
     ) {
         return NextResponse.next();
     }

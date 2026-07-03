@@ -101,7 +101,6 @@ const FEATURES = [
     iconCls: "text-[#16a34a] dark:text-[#16a34a]",
     bgCls: "bg-[#f0fdf4] dark:bg-[#052e16]/30",
     title: "종목 발굴",
-    desc: "9가지 퀀트 전략으로 KOSPI·KOSDAQ 전 종목을 매일 자동 스캔합니다.",
     link: "/screener",
     linkLabel: "스크리너 열기",
   },
@@ -110,7 +109,6 @@ const FEATURES = [
     iconCls: "text-violet-600 dark:text-violet-400",
     bgCls: "bg-violet-50 dark:bg-violet-950/30",
     title: "적정주가 분석",
-    desc: "NCAV·S-RIM·PBR·PER 4개 모델로 적정 주가와 괴리율을 즉시 계산합니다.",
     link: "/analyze",
     linkLabel: "종목 분석하기",
   },
@@ -119,32 +117,84 @@ const FEATURES = [
     iconCls: "text-emerald-600 dark:text-emerald-400",
     bgCls: "bg-emerald-50 dark:bg-emerald-950/30",
     title: "수익 계산기",
-    desc: "거래세·수수료 포함 세후 순수익과 연환산 수익률을 즉시 산출합니다.",
     link: "/calculator",
     linkLabel: "계산해보기",
   },
 ];
 
 const HOW_IT_WORKS = [
-  {
-    step: "01",
-    title: "매일 자동 스캔",
-    desc: "KIS API로 KOSPI·KOSDAQ 전 종목의 재무 데이터를 매일 수집합니다.",
-    accent: "text-[#16a34a]",
-  },
-  {
-    step: "02",
-    title: "저평가 종목 발굴",
-    desc: "NCAV·PBR·그레이엄 등 9가지 전략으로 저평가 후보를 자동 선별합니다.",
-    accent: "text-emerald-600 dark:text-emerald-400",
-  },
-  {
-    step: "03",
-    title: "적정주가 즉시 확인",
-    desc: "종목 코드 하나로 4가지 모델 기반 적정주가와 괴리율을 즉시 산출합니다.",
-    accent: "text-violet-600 dark:text-violet-400",
-  },
+  { step: "01", title: "매일 자동 스캔", accent: "text-[#16a34a]" },
+  { step: "02", title: "저평가 종목 발굴", accent: "text-emerald-600 dark:text-emerald-400" },
+  { step: "03", title: "적정주가 즉시 확인", accent: "text-violet-600 dark:text-violet-400" },
 ];
+
+// =========================================================================
+// 홈 일러스트 (자체 인라인 SVG · 외부 이미지/요청 없음 · 라이트/다크 대응)
+// "투자가 쉽다"는 인상을 글자 대신 이미지로 전달한다.
+// =========================================================================
+const HERO_LINE = [[50, 150], [88, 133], [122, 139], [158, 108], [194, 119], [228, 83], [252, 71]];
+
+function HeroArt() {
+  return (
+    <svg viewBox="0 0 340 210" fill="none"
+      role="img" aria-label="알고리즘이 저평가 종목을 자동으로 찾아 체크해 주는 모습"
+      className="w-full max-w-sm sm:max-w-md mx-auto h-auto text-neutral-300 dark:text-neutral-600">
+      <ellipse cx="180" cy="120" rx="150" ry="72" fill="#16a34a" opacity="0.06" />
+      <rect x="28" y="40" width="236" height="140" rx="18" fill="#16a34a" opacity="0.05" />
+      <rect x="28" y="40" width="236" height="140" rx="18" stroke="currentColor" strokeWidth="2" />
+      <path d="M50,150 L88,133 L122,139 L158,108 L194,119 L228,83 L252,71 L252,160 L50,160 Z" fill="#16a34a" opacity="0.12" />
+      <path d="M50,150 L88,133 L122,139 L158,108 L194,119 L228,83 L252,71"
+        stroke="#16a34a" strokeWidth="3.5" strokeLinecap="round" strokeLinejoin="round" />
+      {HERO_LINE.map(([x, y], i) => <circle key={i} cx={x} cy={y} r="3.2" fill="#16a34a" />)}
+      <circle cx="278" cy="58" r="30" fill="#16a34a" />
+      <path d="M265,58 l9,9 l16,-19" stroke="#fff" strokeWidth="4.5" strokeLinecap="round" strokeLinejoin="round" />
+      <path d="M34,150 l0,-12 M28,144 l12,0" stroke="#16a34a" strokeWidth="2.5" strokeLinecap="round" />
+      <path d="M300,152 l0,-10 M295,147 l10,0" stroke="#16a34a" strokeWidth="2.5" strokeLinecap="round" opacity="0.7" />
+      <circle cx="48" cy="58" r="3" fill="#16a34a" opacity="0.6" />
+    </svg>
+  );
+}
+
+// 1단계: 여러 종목 중 좋은 하나를 돋보기로 집어냄
+function StepScanArt() {
+  const dots = [[14, 14], [26, 14], [38, 14], [14, 26], [26, 26], [38, 26], [14, 38], [26, 38]];
+  return (
+    <svg viewBox="0 0 64 64" fill="none" aria-hidden="true" className="w-11 h-11 shrink-0 text-neutral-300 dark:text-neutral-600">
+      {dots.map(([x, y], i) => <circle key={i} cx={x} cy={y} r="3" fill="currentColor" />)}
+      <circle cx="40" cy="40" r="3.2" fill="#16a34a" />
+      <circle cx="40" cy="40" r="13" stroke="#16a34a" strokeWidth="3.5" fill="none" />
+      <line x1="49" y1="49" x2="57" y2="57" stroke="#16a34a" strokeWidth="3.5" strokeLinecap="round" />
+    </svg>
+  );
+}
+
+// 2단계: 많은 후보를 걸러 좋은 종목만 통과 (깔때기 + 체크)
+function StepFunnelArt() {
+  return (
+    <svg viewBox="0 0 64 64" fill="none" aria-hidden="true" className="w-11 h-11 shrink-0 text-neutral-300 dark:text-neutral-600">
+      <circle cx="20" cy="12" r="3" fill="currentColor" />
+      <circle cx="32" cy="12" r="3" fill="currentColor" />
+      <circle cx="44" cy="12" r="3" fill="currentColor" />
+      <path d="M14,22 H50 L38,38 V46 H26 V38 Z" stroke="#16a34a" strokeWidth="3" strokeLinejoin="round" />
+      <circle cx="32" cy="54" r="8" fill="#16a34a" />
+      <path d="M28,54 l3,3 l5,-6" stroke="#fff" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  );
+}
+
+// 3단계: 적정주가(₩) 확인 완료 (체크)
+function StepTagArt() {
+  return (
+    <svg viewBox="0 0 64 64" fill="none" aria-hidden="true" className="w-11 h-11 shrink-0 text-neutral-300 dark:text-neutral-600">
+      <circle cx="28" cy="30" r="16" stroke="currentColor" strokeWidth="2.5" />
+      <text x="28" y="36" textAnchor="middle" fontSize="17" fontWeight="800" fill="#16a34a" fontFamily="sans-serif">₩</text>
+      <circle cx="46" cy="44" r="9" fill="#16a34a" />
+      <path d="M42,44 l3,3 l5,-6" stroke="#fff" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  );
+}
+
+const STEP_ARTS = [StepScanArt, StepFunnelArt, StepTagArt];
 
 function useCountUp(target: number, duration = 1000) {
   const [count, setCount] = useState(0);
@@ -324,10 +374,10 @@ export default function HomePage() {
             <span className="text-[#16a34a] dark:text-[#16a34a]">어렵지 않습니다.</span>
           </h1>
 
-          <p className="text-sm sm:text-[15px] text-neutral-500 dark:text-neutral-400 font-medium leading-relaxed">
-            9가지 가치투자 전략으로 매일 2,400여 종목을<br className="hidden sm:block" />
-            알고리즘이 대신 분석합니다.
-          </p>
+          {/* 히어로 일러스트 — "알고리즘이 알아서 골라준다"를 글자 대신 이미지로 */}
+          <div className="mt-8 sm:mt-10">
+            <HeroArt />
+          </div>
 
         </div>
 
@@ -387,14 +437,9 @@ export default function HomePage() {
                   500억+
                 </span>
               </div>
-              <p className="text-[11px] text-neutral-400 mt-0.5">
-                {isLoggedIn
-                  ? `전략별 상위 ${PER_STRATEGY}개 · 전체 ${preview.filteredTotal}개`
-                  : `전략별 미리 보기 · 전체 목록은 로그인 후`}
-              </p>
             </div>
             <Link
-              href={isLoggedIn ? "/screener?mincap=500" : "/login"}
+              href="/screener?mincap=500"
               className="flex items-center gap-0.5 text-xs font-bold text-[#16a34a] dark:text-[#16a34a] whitespace-nowrap"
             >
               전체 보기 <ChevronRight size={13} />
@@ -479,13 +524,10 @@ export default function HomePage() {
         <div className="max-w-3xl mx-auto">
           <div className="flex items-center justify-between mb-5 gap-3">
             <div>
-              <div className="flex items-center gap-2 mb-1">
+              <div className="flex items-center gap-2">
                 <Layers size={13} className="text-[#16a34a]" strokeWidth={2.5} />
                 <h2 className="text-base font-black text-neutral-900 dark:text-neutral-50">9가지 퀀트 전략</h2>
               </div>
-              <p className="text-[11px] text-neutral-400 break-keep">
-                검증된 가치투자 전략으로 매일 종목을 선별합니다. 카드를 눌러 바로 탐색하세요.
-              </p>
             </div>
           </div>
 
@@ -493,7 +535,7 @@ export default function HomePage() {
             {STRATEGY_PRESETS_CLIENT.map(s => (
               <Link
                 key={s.id}
-                href={isLoggedIn ? `/screener?strategies=${s.id}&mincap=500` : "/login"}
+                href={`/screener?strategies=${s.id}&mincap=500`}
                 className="group p-4 rounded-2xl border border-neutral-200 dark:border-[#35332e] bg-white dark:bg-[#242320] hover:border-[#16a34a]/50 dark:hover:border-[#16a34a]/40 hover:shadow-sm transition-all"
               >
                 <div className="flex items-center justify-between mb-2">
@@ -505,11 +547,8 @@ export default function HomePage() {
                   </span>
                   <ChevronRight size={13} className="text-neutral-300 dark:text-neutral-600 group-hover:text-[#16a34a] group-hover:translate-x-0.5 transition-all" />
                 </div>
-                <p className="text-xs text-neutral-700 dark:text-neutral-200 font-medium leading-relaxed break-keep mb-1">
+                <p className="text-xs text-neutral-700 dark:text-neutral-200 font-medium leading-relaxed break-keep">
                   {s.plain}
-                </p>
-                <p className="text-[10px] text-neutral-400 dark:text-neutral-500 font-mono leading-relaxed break-keep">
-                  {s.hint}
                 </p>
               </Link>
             ))}
@@ -521,25 +560,25 @@ export default function HomePage() {
       <section className="py-10 px-5 md:py-14 border-t border-neutral-100 dark:border-[#3a3834] bg-[#faf9f7] dark:bg-[#1a1917]">
         <div className="max-w-3xl mx-auto">
           <div className="mb-7">
-            <div className="flex items-center gap-2 mb-1">
+            <div className="flex items-center gap-2">
               <Zap size={13} className="text-[#16a34a]" strokeWidth={2.5} />
               <h2 className="text-base font-black text-neutral-900 dark:text-neutral-50">이렇게 씁니다</h2>
             </div>
-            <p className="text-[11px] text-neutral-400">3단계로 저평가 종목을 발굴합니다.</p>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            {HOW_IT_WORKS.map((step, i) => (
-              <div key={i} className="flex items-start gap-4 p-5 rounded-2xl bg-white dark:bg-[#242320] border border-neutral-200 dark:border-[#35332e]">
-                <span className={cn("text-xs font-black tabular-nums shrink-0 mt-0.5", step.accent)}>
-                  {step.step}
-                </span>
-                <div>
-                  <p className="text-sm font-black text-neutral-900 dark:text-neutral-50 mb-0.5">{step.title}</p>
-                  <p className="text-[11px] text-neutral-500 dark:text-neutral-400 leading-relaxed break-keep">{step.desc}</p>
+            {HOW_IT_WORKS.map((step, i) => {
+              const Art = STEP_ARTS[i];
+              return (
+                <div key={i} className="p-5 rounded-2xl bg-white dark:bg-[#242320] border border-neutral-200 dark:border-[#35332e]">
+                  <div className="flex items-center gap-3 mb-3">
+                    <Art />
+                    <span className={cn("text-xs font-black tabular-nums", step.accent)}>{step.step}</span>
+                  </div>
+                  <p className="text-sm font-black text-neutral-900 dark:text-neutral-50">{step.title}</p>
                 </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         </div>
       </section>
@@ -549,7 +588,6 @@ export default function HomePage() {
         <div className="max-w-3xl mx-auto">
           <div className="mb-6">
             <h2 className="text-base font-black text-neutral-900 dark:text-neutral-50">주요 기능</h2>
-            <p className="text-[11px] text-neutral-400 mt-0.5">발굴 → 분석 → 계산</p>
           </div>
 
           {/* Mobile: horizontal scroll, Desktop: 3-col grid */}
@@ -565,10 +603,7 @@ export default function HomePage() {
                     <Icon size={16} className={f.iconCls} strokeWidth={2} />
                   </div>
                   <div className="flex-1">
-                    <p className="text-sm font-black text-neutral-900 dark:text-neutral-50 mb-1">{f.title}</p>
-                    <p className="text-[11px] text-neutral-500 dark:text-neutral-400 leading-relaxed break-keep">
-                      {f.desc}
-                    </p>
+                    <p className="text-sm font-black text-neutral-900 dark:text-neutral-50">{f.title}</p>
                   </div>
                   <Link href={f.link}
                     className="inline-flex items-center gap-1 text-xs font-bold text-[#16a34a] dark:text-[#16a34a]"
@@ -596,12 +631,9 @@ export default function HomePage() {
               </span>
               무료로 시작하세요
             </div>
-            <h2 className="text-2xl font-black text-neutral-900 dark:text-neutral-50 mb-2 tracking-tight leading-tight">
+            <h2 className="text-2xl font-black text-neutral-900 dark:text-neutral-50 mb-6 tracking-tight leading-tight">
               지금 바로 저평가 종목을<br />찾아보세요
             </h2>
-            <p className="text-sm text-neutral-500 dark:text-neutral-400 mb-6 leading-relaxed">
-              카카오 계정으로 즉시 시작. 별도 가입 없이 전체 기능을 이용할 수 있습니다.
-            </p>
             <Link href="/login"
               className="inline-flex items-center gap-2 px-7 py-3.5 rounded-xl bg-[#16a34a] hover:bg-[#15803d] active:bg-[#166534] text-white font-bold text-sm shadow-md shadow-[#16a34a]/20 transition-all"
             >
@@ -623,7 +655,7 @@ export default function HomePage() {
           </div>
           <div className="flex items-center gap-4">
             {[
-              { label: "발굴", href: isLoggedIn ? "/screener" : "/login" },
+              { label: "발굴", href: "/screener" },
               { label: "분석", href: "/analyze" },
               { label: "계산기", href: "/calculator" },
             ].map(l => (
