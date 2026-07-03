@@ -439,7 +439,7 @@ export default function HomePage() {
               </div>
             </div>
             <Link
-              href={isLoggedIn ? "/screener?mincap=500" : "/login"}
+              href="/screener?mincap=500"
               className="flex items-center gap-0.5 text-xs font-bold text-[#16a34a] dark:text-[#16a34a] whitespace-nowrap"
             >
               전체 보기 <ChevronRight size={13} />
@@ -535,7 +535,7 @@ export default function HomePage() {
             {STRATEGY_PRESETS_CLIENT.map(s => (
               <Link
                 key={s.id}
-                href={isLoggedIn ? `/screener?strategies=${s.id}&mincap=500` : "/login"}
+                href={`/screener?strategies=${s.id}&mincap=500`}
                 className="group p-4 rounded-2xl border border-neutral-200 dark:border-[#35332e] bg-white dark:bg-[#242320] hover:border-[#16a34a]/50 dark:hover:border-[#16a34a]/40 hover:shadow-sm transition-all"
               >
                 <div className="flex items-center justify-between mb-2">
@@ -655,7 +655,7 @@ export default function HomePage() {
           </div>
           <div className="flex items-center gap-4">
             {[
-              { label: "발굴", href: isLoggedIn ? "/screener" : "/login" },
+              { label: "발굴", href: "/screener" },
               { label: "분석", href: "/analyze" },
               { label: "계산기", href: "/calculator" },
             ].map(l => (
