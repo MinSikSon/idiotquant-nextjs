@@ -69,6 +69,31 @@ function Medal({ item, lg }: { item: any; lg?: boolean }) {
   );
 }
 
+// 종목 로고 (KR: NEXT_PUBLIC_KR_LOGO_API, US: logo.dev). 실패 시 첫 글자 fallback. StockCard와 동일 소스.
+function logoUrlFor(item: any): string {
+  const t = String(item?.ticker ?? "");
+  return item?.isUs
+    ? `https://img.logo.dev/ticker/${t}?token=${process.env.NEXT_PUBLIC_CLEARBIT_API_KEY}&size=200`
+    : `${process.env.NEXT_PUBLIC_KR_LOGO_API}/${t}`;
+}
+function StockLogo({ item, size = 44 }: { item: any; size?: number }) {
+  const [err, setErr] = useState(false);
+  return (
+    <div className="rounded-2xl border border-neutral-100 dark:border-[#35332e] bg-white shrink-0 flex items-center justify-center overflow-hidden"
+      style={{ width: size, height: size }}>
+      {!err ? (
+        // eslint-disable-next-line @next/next/no-img-element
+        <img src={logoUrlFor(item)} alt={item?.name ?? "logo"} loading="lazy"
+          className="w-full h-full object-contain p-1.5" onError={() => setErr(true)} />
+      ) : (
+        <span className="font-black text-neutral-500 leading-none" style={{ fontSize: size * 0.4 }}>
+          {(item?.name ?? item?.ticker ?? "?").charAt(0)}
+        </span>
+      )}
+    </div>
+  );
+}
+
 // 저평가 점수 설명 툴팁 (마우스 오버 + 클릭, 모바일 대응)
 function ScoreInfo() {
   const [open, setOpen] = useState(false);
@@ -94,8 +119,9 @@ function ScoreInfo() {
 function Card({ item, stat, value }: { item: any; stat: Stat; value: React.ReactNode }) {
   return (
     <div className="w-full rounded-3xl border border-neutral-200 dark:border-[#35332e] bg-white dark:bg-[#242320] shadow-sm p-5 sm:p-6 flex flex-col items-center text-center">
-      <Medal item={item} lg />
-      <p className="mt-3 font-black text-lg sm:text-xl text-neutral-900 dark:text-white leading-tight break-keep">{item.name}</p>
+      <StockLogo item={item} size={52} />
+      <div className="mt-2"><Medal item={item} lg /></div>
+      <p className="mt-2 font-black text-lg sm:text-xl text-neutral-900 dark:text-white leading-tight break-keep">{item.name}</p>
       <p className="text-[11px] text-neutral-400 font-mono tracking-wider">{item.ticker}</p>
       <div className="my-4 h-px w-16 bg-neutral-100 dark:bg-[#35332e]" />
       <p className="text-[10px] font-bold text-neutral-400 uppercase tracking-widest">{stat.label}</p>
@@ -129,10 +155,11 @@ function MissedInfo({ missed }: { missed: any }) {
           {missed.higherSide === "challenger" ? "높았어요" : "낮았어요"}
         </b>.
       </p>
-      <div className="flex items-center gap-1.5 mb-3">
+      <div className="flex items-center gap-2 mb-3">
+        <StockLogo item={c} size={40} />
         <Medal item={c} lg />
         <ScoreInfo />
-        <div className="min-w-0 ml-1">
+        <div className="min-w-0 ml-0.5">
           <p className="font-black text-sm text-neutral-900 dark:text-white truncate">{c.name}</p>
           <p className="text-[10px] text-neutral-400 font-mono">{c.ticker}</p>
         </div>
@@ -445,9 +472,10 @@ function DeckView({ deck, isLoggedIn, onLogin, onClose }: { deck: DeckCardSnapsh
       ) : (
         <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
           {sorted.map(c => (
-            <div key={c.ticker} className="rounded-2xl border border-neutral-200 dark:border-[#35332e] bg-white dark:bg-[#242320] p-4 text-center">
-              <Medal item={c} />
-              <p className="mt-2 font-bold text-sm text-neutral-900 dark:text-white truncate">{c.name}</p>
+            <div key={c.ticker} className="rounded-2xl border border-neutral-200 dark:border-[#35332e] bg-white dark:bg-[#242320] p-4 text-center flex flex-col items-center">
+              <StockLogo item={c} size={40} />
+              <div className="mt-1.5"><Medal item={c} /></div>
+              <p className="mt-1.5 font-bold text-sm text-neutral-900 dark:text-white truncate max-w-full">{c.name}</p>
               <p className="text-[10px] text-neutral-400 font-mono">{c.ticker}</p>
             </div>
           ))}
