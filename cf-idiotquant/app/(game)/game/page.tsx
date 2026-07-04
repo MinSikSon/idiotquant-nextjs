@@ -3,7 +3,8 @@
 // =========================================================================
 // 종목 카드: 높다/낮다 (Higher-Lower) — 덱 빌딩 게임 1탄
 // 두 종목 카드를 스탯(시가총액·저평가점수·NCAV·주가)으로 비교해 맞히면 연승.
-// 비교한 카드는 랜덤으로 "내 덱"에 수집 → 계정별 D1 저장(로그인 필요).
+// 정답을 맞힌 카드만 "내 덱"에 수집 → 계정별 D1 저장(로그인 필요).
+// 연승↑ → 획득 확률↑, 높은 등급(메달) 카드일수록 더 높은 연승이 필요.
 // 비로그인 시 수집 시점에 로그인 유도.
 // =========================================================================
 
@@ -11,7 +12,7 @@ import { useEffect, useMemo, useState, useCallback, useRef } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useSession } from "next-auth/react";
-import { ArrowUp, ArrowDown, RotateCcw, Layers, TrendingUp, Sparkles, ChevronLeft, ChevronRight, Lock } from "lucide-react";
+import { ArrowUp, ArrowDown, RotateCcw, Layers, TrendingUp, Sparkles, ChevronLeft, ChevronRight, Lock, Info } from "lucide-react";
 import { useAppDispatch, useAppSelector } from "@/lib/hooks";
 import { reqGetNcavDailyList, selectNcavDailyList } from "@/lib/features/algorithmTrade/algorithmTradeSlice";
 import { computeValueScore } from "@/lib/utils/valueScore";
@@ -32,7 +33,13 @@ const STATS: Stat[] = [
   { key: "last_price", label: "주가", get: it => safeNum(it.last_price), fmt: v => `${Math.round(v).toLocaleString()}원` },
 ];
 
-const DROP_CHANCE = 0.4; // 비교한 카드가 덱에 들어올 확률
+// 카드 수집: 정답을 맞힌 카드만, 연승↑ → 획득 확률↑.
+// 등급이 높을수록(보물>금>은) 더 높은 연승이 필요하도록 패널티를 준다.
+const TIER_PENALTY: Record<string, number> = { muted: 0, bronze: 0, silver: 0.18, gold: 0.36, treasure: 0.6 };
+function acquireChance(item: any, streak: number): number {
+  const tone = computeValueScore(item).tone;
+  return Math.min(0.85, Math.max(0, streak * 0.12 - (TIER_PENALTY[tone] ?? 0)));
+}
 
 function toCard(it: any): DeckCardSnapshot {
   return {
@@ -58,6 +65,27 @@ function Medal({ item, lg }: { item: any; lg?: boolean }) {
     <span className={cn("inline-flex items-center gap-1 rounded-full ring-1 ring-inset font-black tabular-nums",
       lg ? "px-2.5 py-1 text-sm" : "px-1.5 py-0.5 text-[11px]", MEDAL_TONE[v.tone])}>
       <span aria-hidden>{v.medal}</span>{v.score}
+    </span>
+  );
+}
+
+// 저평가 점수 설명 툴팁 (마우스 오버 + 클릭, 모바일 대응)
+function ScoreInfo() {
+  const [open, setOpen] = useState(false);
+  return (
+    <span className="relative inline-flex align-middle"
+      onMouseEnter={() => setOpen(true)} onMouseLeave={() => setOpen(false)}>
+      <button type="button" aria-label="저평가 점수 설명" onClick={() => setOpen(o => !o)}
+        className="inline-flex items-center justify-center w-4 h-4 rounded-full text-neutral-400 hover:text-[#16a34a] transition-colors">
+        <Info size={13} />
+      </button>
+      {open && (
+        <span className="absolute z-30 bottom-full left-1/2 -translate-x-1/2 mb-2 w-60 rounded-xl bg-neutral-900 dark:bg-[#242320] border border-neutral-700/60 dark:border-[#35332e] p-3 text-[11px] leading-relaxed text-neutral-200 shadow-xl text-left font-medium">
+          <b className="text-white">저평가 점수 (0~100)</b><br />
+          NCAV·PBR·PER·ROE를 종합해 저평가된 정도를 점수화. 높을수록 저평가 매력이 큽니다.
+          <span className="block mt-1.5 text-neutral-300">🏆 보물 80+ · 🥇 금 65+ · 🥈 은 50+ · 🥉 동 35+ · 🧭 탐색 그 외</span>
+        </span>
+      )}
     </span>
   );
 }
@@ -101,9 +129,10 @@ function MissedInfo({ missed }: { missed: any }) {
           {missed.higherSide === "challenger" ? "높았어요" : "낮았어요"}
         </b>.
       </p>
-      <div className="flex items-center gap-2 mb-3">
+      <div className="flex items-center gap-1.5 mb-3">
         <Medal item={c} lg />
-        <div className="min-w-0">
+        <ScoreInfo />
+        <div className="min-w-0 ml-1">
           <p className="font-black text-sm text-neutral-900 dark:text-white truncate">{c.name}</p>
           <p className="text-[10px] text-neutral-400 font-mono">{c.ticker}</p>
         </div>
@@ -148,6 +177,7 @@ export default function GamePage() {
   const [lastWin, setLastWin] = useState<boolean | null>(null);
   const [dropped, setDropped] = useState(false);      // 이번 라운드 카드 획득(로그인)
   const [dropPrompt, setDropPrompt] = useState(false); // 카드가 떴지만 로그인 필요
+  const [escaped, setEscaped] = useState<string | null>(null); // 높은 등급 카드가 도망감(메달)
   const [deck, setDeck] = useState<DeckCardSnapshot[]>([]);
   const [showDeck, setShowDeck] = useState(false);
   const [missed, setMissed] = useState<any | null>(null); // 항해 종료 시 틀린 종목 정보
@@ -187,7 +217,7 @@ export default function GamePage() {
     const a = draw();
     if (!a) return;
     setAnchor(a); setChallenger(draw(a.ticker));
-    setStreak(0); setLastWin(null); setDropped(false); setDropPrompt(false); setMissed(null); setPhase("guessing");
+    setStreak(0); setLastWin(null); setDropped(false); setDropPrompt(false); setEscaped(null); setMissed(null); setPhase("guessing");
   }, [draw]);
 
   const started = useRef(false);
@@ -200,15 +230,32 @@ export default function GamePage() {
     const av = stat.get(anchor), cv = stat.get(challenger);
     const win = dir === "higher" ? cv >= av : cv <= av;   // 동점은 승리 처리
     setLastWin(win);
-    setDropped(false); setDropPrompt(false);
+    setDropped(false); setDropPrompt(false); setEscaped(null);
     setPhase("revealed");
 
     if (win) {
-      setStreak(s => {
-        const ns = s + 1;
-        if (ns > best) { setBest(ns); try { localStorage.setItem(bestKey, String(ns)); } catch { } }
-        return ns;
-      });
+      const ns = streak + 1;
+      setStreak(ns);
+      if (ns > best) { setBest(ns); try { localStorage.setItem(bestKey, String(ns)); } catch { } }
+
+      // 정답 카드만 수집. 연승↑ → 획득 확률↑, 높은 등급일수록 더 높은 연승 필요.
+      if (Math.random() < acquireChance(challenger, ns)) {
+        if (!isLoggedIn) {
+          setDropPrompt(true);
+        } else {
+          const snap = toCard(challenger);
+          addDeckCard(snap).then(res => {
+            if (res?.added) {
+              setDropped(true);
+              setDeck(prev => prev.some(c => c.ticker === snap.ticker) ? prev : [snap, ...prev]);
+            }
+          }).catch(() => { });
+        }
+      } else {
+        // 높은 등급 카드가 도망감 → 연승 더 쌓으라는 힌트
+        const v = computeValueScore(challenger);
+        if (v.tone === "silver" || v.tone === "gold" || v.tone === "treasure") setEscaped(v.medal);
+      }
     } else {
       // 틀린 라운드 정보 스냅샷 (statKey 변경과 무관하게 종료 화면에서 표시)
       setMissed({
@@ -219,28 +266,13 @@ export default function GamePage() {
         higherSide: cv >= av ? "challenger" : "anchor",
       });
     }
-
-    // 비교한 카드 랜덤 수집 (계정 저장)
-    if (Math.random() < DROP_CHANCE) {
-      if (!isLoggedIn) {
-        setDropPrompt(true);
-      } else {
-        const snap = toCard(challenger);
-        addDeckCard(snap).then(res => {
-          if (res?.added) {
-            setDropped(true);
-            setDeck(prev => prev.some(c => c.ticker === snap.ticker) ? prev : [snap, ...prev]);
-          }
-        }).catch(() => { });
-      }
-    }
-  }, [phase, anchor, challenger, stat, best, bestKey, isLoggedIn]);
+  }, [phase, anchor, challenger, stat, best, bestKey, isLoggedIn, streak]);
 
   const next = useCallback(() => {
     if (!lastWin) return;
     setAnchor(challenger);
     setChallenger(draw(challenger?.ticker));
-    setDropped(false); setDropPrompt(false); setLastWin(null); setPhase("guessing");
+    setDropped(false); setDropPrompt(false); setEscaped(null); setLastWin(null); setPhase("guessing");
   }, [lastWin, challenger, draw]);
 
   useEffect(() => { if (phase === "revealed" && lastWin === false) setPhase("over"); }, [phase, lastWin]);
@@ -336,7 +368,9 @@ export default function GamePage() {
                     </button>
                   )}
                   {phase === "revealed" && lastWin && !dropped && !dropPrompt && (
-                    <span className="text-xs font-bold text-[#16a34a] animate-in fade-in">정답! ✔</span>
+                    escaped
+                      ? <span className="text-xs font-bold text-amber-600 dark:text-amber-400 animate-in fade-in">정답! {escaped} 등급 카드가 도망갔어요 — 연승을 쌓으면 획득 확률↑</span>
+                      : <span className="text-xs font-bold text-[#16a34a] animate-in fade-in">정답! ✔</span>
                   )}
                 </div>
 
