@@ -11,7 +11,7 @@ import { useEffect, useMemo, useState, useCallback, useRef } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useSession } from "next-auth/react";
-import { ArrowUp, ArrowDown, RotateCcw, Layers, TrendingUp, Sparkles, ChevronLeft, Lock } from "lucide-react";
+import { ArrowUp, ArrowDown, RotateCcw, Layers, TrendingUp, Sparkles, ChevronLeft, ChevronRight, Lock } from "lucide-react";
 import { useAppDispatch, useAppSelector } from "@/lib/hooks";
 import { reqGetNcavDailyList, selectNcavDailyList } from "@/lib/features/algorithmTrade/algorithmTradeSlice";
 import { computeValueScore } from "@/lib/utils/valueScore";
@@ -78,6 +78,52 @@ function Card({ item, stat, value }: { item: any; stat: Stat; value: React.React
   );
 }
 
+const fmtCap = (v: number) => (v >= 10000 ? `${(v / 10000).toFixed(1)}조` : `${Math.round(v).toLocaleString()}억`);
+
+// 항해 종료 시 틀린 종목 정보 카드 (무엇을 놓쳤는지 + 그 종목 지표 학습)
+function MissedInfo({ missed }: { missed: any }) {
+  const c = missed.challenger;
+  const ncav = safeNum(c.ncav_ratio), pbr = safeNum(c.pbr);
+  const metrics = [
+    { label: "점수", value: `${computeValueScore(c).score}` },
+    { label: "시총", value: fmtCap(safeNum(c.market_cap)) },
+    { label: "NCAV", value: ncav > 0 ? `${ncav.toFixed(2)}x` : "—" },
+    { label: "PBR", value: pbr > 0 ? pbr.toFixed(2) : "—" },
+  ];
+  return (
+    <div className="mt-5 text-left rounded-2xl border border-neutral-200 dark:border-[#35332e] bg-[#faf9f7] dark:bg-[#1a1915] p-4">
+      <p className="text-[11px] font-black text-rose-500 mb-2">아깝게 놓친 종목</p>
+      <p className="text-xs text-neutral-500 dark:text-neutral-400 mb-3 break-keep leading-relaxed">
+        <b className="text-neutral-800 dark:text-neutral-200">{c.name}</b>의 {missed.statLabel}
+        <b className="text-neutral-700 dark:text-neutral-300"> {missed.challengerStr}</b>은{" "}
+        {missed.anchor.name}({missed.anchorStr})보다{" "}
+        <b className={missed.higherSide === "challenger" ? "text-[#16a34a]" : "text-rose-500"}>
+          {missed.higherSide === "challenger" ? "높았어요" : "낮았어요"}
+        </b>.
+      </p>
+      <div className="flex items-center gap-2 mb-3">
+        <Medal item={c} lg />
+        <div className="min-w-0">
+          <p className="font-black text-sm text-neutral-900 dark:text-white truncate">{c.name}</p>
+          <p className="text-[10px] text-neutral-400 font-mono">{c.ticker}</p>
+        </div>
+      </div>
+      <div className="grid grid-cols-4 gap-2 mb-3">
+        {metrics.map(m => (
+          <div key={m.label} className="rounded-lg bg-white dark:bg-[#242320] p-2 text-center">
+            <p className="text-[9px] font-bold text-neutral-400 uppercase tracking-wide">{m.label}</p>
+            <p className="text-xs font-black tabular-nums text-neutral-800 dark:text-neutral-200 mt-0.5">{m.value}</p>
+          </div>
+        ))}
+      </div>
+      <Link href={`/analyze?ticker=${encodeURIComponent(c.name)}&from=game`}
+        className="inline-flex items-center gap-1 text-xs font-bold text-[#16a34a] hover:underline">
+        이 종목 분석하기 <ChevronRight size={12} />
+      </Link>
+    </div>
+  );
+}
+
 type Phase = "loading" | "guessing" | "revealed" | "over";
 
 export default function GamePage() {
@@ -104,6 +150,7 @@ export default function GamePage() {
   const [dropPrompt, setDropPrompt] = useState(false); // 카드가 떴지만 로그인 필요
   const [deck, setDeck] = useState<DeckCardSnapshot[]>([]);
   const [showDeck, setShowDeck] = useState(false);
+  const [missed, setMissed] = useState<any | null>(null); // 항해 종료 시 틀린 종목 정보
 
   useEffect(() => { dispatch(reqGetNcavDailyList("latest")); }, [dispatch]);
 
@@ -140,7 +187,7 @@ export default function GamePage() {
     const a = draw();
     if (!a) return;
     setAnchor(a); setChallenger(draw(a.ticker));
-    setStreak(0); setLastWin(null); setDropped(false); setDropPrompt(false); setPhase("guessing");
+    setStreak(0); setLastWin(null); setDropped(false); setDropPrompt(false); setMissed(null); setPhase("guessing");
   }, [draw]);
 
   const started = useRef(false);
@@ -161,6 +208,15 @@ export default function GamePage() {
         const ns = s + 1;
         if (ns > best) { setBest(ns); try { localStorage.setItem(bestKey, String(ns)); } catch { } }
         return ns;
+      });
+    } else {
+      // 틀린 라운드 정보 스냅샷 (statKey 변경과 무관하게 종료 화면에서 표시)
+      setMissed({
+        challenger, anchor,
+        statLabel: stat.label,
+        anchorStr: stat.fmt(av),
+        challengerStr: stat.fmt(cv),
+        higherSide: cv >= av ? "challenger" : "anchor",
       });
     }
 
@@ -250,6 +306,7 @@ export default function GamePage() {
                 <p className="text-xs text-neutral-400 mt-2">
                   {isLoggedIn ? <>발굴한 카드는 <b>내 덱({deck.length})</b>에 쌓였습니다.</> : "로그인하면 발굴한 카드를 덱에 모을 수 있어요."}
                 </p>
+                {missed && <MissedInfo missed={missed} />}
                 <button onClick={start}
                   className="mt-5 inline-flex items-center gap-2 px-6 py-3 rounded-xl bg-[#16a34a] hover:bg-[#15803d] text-white font-bold text-sm shadow-md">
                   <RotateCcw size={15} /> 다시 시작
