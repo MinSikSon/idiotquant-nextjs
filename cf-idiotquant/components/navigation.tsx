@@ -17,6 +17,7 @@ import {
   DollarSign,
   ShieldCheck,
   History,
+  Gamepad2,
 } from "lucide-react";
 
 /* ─── NAV CONFIG ──────────────────────────────────────────────────── */
@@ -32,6 +33,7 @@ type NavItem = {
 const MAIN_NAV: NavItem[] = [
   { label: "홈",        href: "/",           icon: Home,       exact: true  },
   { label: "종목 발굴", href: "/screener",    icon: Filter,     badge: "Pro" },
+  { label: "카드 게임", href: "/game",        icon: Gamepad2,   badge: "New" },
   { label: "전략 히스토리", href: "/backtest", icon: History, adminOnly: true },
   { label: "적정 주가", href: "/analyze",     icon: Search                  },
   { label: "수익 계산", href: "/calculator",  icon: Calculator              },
@@ -306,6 +308,7 @@ export function NavbarWithSimpleLinks() {
       <nav className="md:hidden fixed bottom-0 left-0 right-0 h-[64px] z-40 bg-white/95 dark:bg-[#1f1e1b]/95 backdrop-blur-xl border-t border-neutral-200/70 dark:border-[#3a3834] flex items-center px-3">
         <TabItem href="/"           label="홈"     icon={Home}       isActive={pathname === "/"} />
         <TabItem href="/screener"   label="발굴"   icon={Filter}     isActive={pathname.startsWith("/screener")} />
+        <TabItem href="/game"       label="게임"   icon={Gamepad2}   isActive={pathname.startsWith("/game")} />
         {isAdmin && (
           <TabItem href="/backtest"   label="히스토리" icon={History}  isActive={pathname.startsWith("/backtest")} />
         )}
