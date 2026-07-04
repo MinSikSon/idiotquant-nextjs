@@ -11,7 +11,7 @@ import { useEffect, useMemo, useState, useCallback, useRef } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useSession } from "next-auth/react";
-import { ArrowUp, ArrowDown, RotateCcw, Layers, TrendingUp, Sparkles, ChevronLeft, ChevronRight, Lock } from "lucide-react";
+import { ArrowUp, ArrowDown, RotateCcw, Layers, TrendingUp, Sparkles, ChevronLeft, ChevronRight, Lock, Info } from "lucide-react";
 import { useAppDispatch, useAppSelector } from "@/lib/hooks";
 import { reqGetNcavDailyList, selectNcavDailyList } from "@/lib/features/algorithmTrade/algorithmTradeSlice";
 import { computeValueScore } from "@/lib/utils/valueScore";
@@ -62,6 +62,27 @@ function Medal({ item, lg }: { item: any; lg?: boolean }) {
   );
 }
 
+// 저평가 점수 설명 툴팁 (마우스 오버 + 클릭, 모바일 대응)
+function ScoreInfo() {
+  const [open, setOpen] = useState(false);
+  return (
+    <span className="relative inline-flex align-middle"
+      onMouseEnter={() => setOpen(true)} onMouseLeave={() => setOpen(false)}>
+      <button type="button" aria-label="저평가 점수 설명" onClick={() => setOpen(o => !o)}
+        className="inline-flex items-center justify-center w-4 h-4 rounded-full text-neutral-400 hover:text-[#16a34a] transition-colors">
+        <Info size={13} />
+      </button>
+      {open && (
+        <span className="absolute z-30 bottom-full left-1/2 -translate-x-1/2 mb-2 w-60 rounded-xl bg-neutral-900 dark:bg-[#242320] border border-neutral-700/60 dark:border-[#35332e] p-3 text-[11px] leading-relaxed text-neutral-200 shadow-xl text-left font-medium">
+          <b className="text-white">저평가 점수 (0~100)</b><br />
+          NCAV·PBR·PER·ROE를 종합해 저평가된 정도를 점수화. 높을수록 저평가 매력이 큽니다.
+          <span className="block mt-1.5 text-neutral-300">🏆 보물 80+ · 🥇 금 65+ · 🥈 은 50+ · 🥉 동 35+ · 🧭 탐색 그 외</span>
+        </span>
+      )}
+    </span>
+  );
+}
+
 // 종목 카드
 function Card({ item, stat, value }: { item: any; stat: Stat; value: React.ReactNode }) {
   return (
@@ -101,9 +122,10 @@ function MissedInfo({ missed }: { missed: any }) {
           {missed.higherSide === "challenger" ? "높았어요" : "낮았어요"}
         </b>.
       </p>
-      <div className="flex items-center gap-2 mb-3">
+      <div className="flex items-center gap-1.5 mb-3">
         <Medal item={c} lg />
-        <div className="min-w-0">
+        <ScoreInfo />
+        <div className="min-w-0 ml-1">
           <p className="font-black text-sm text-neutral-900 dark:text-white truncate">{c.name}</p>
           <p className="text-[10px] text-neutral-400 font-mono">{c.ticker}</p>
         </div>
