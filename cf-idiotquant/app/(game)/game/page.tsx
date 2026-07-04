@@ -153,6 +153,15 @@ function MissedInfo({ missed }: { missed: any }) {
   );
 }
 
+// 이번 항해(연승) 기록 기반 등급 (전역 리더보드 대신 자체 랭크)
+function rankOf(streak: number): { emoji: string; title: string } {
+  if (streak >= 15) return { emoji: "👑", title: "전설의 선장" };
+  if (streak >= 10) return { emoji: "🚢", title: "제독" };
+  if (streak >= 6) return { emoji: "⚓", title: "선장" };
+  if (streak >= 3) return { emoji: "🧭", title: "항해사" };
+  return { emoji: "⛵", title: "견습 항해사" };
+}
+
 type Phase = "loading" | "guessing" | "revealed" | "over";
 
 export default function GamePage() {
@@ -174,6 +183,7 @@ export default function GamePage() {
   const [phase, setPhase] = useState<Phase>("loading");
   const [streak, setStreak] = useState(0);
   const [best, setBest] = useState(0);
+  const [newBest, setNewBest] = useState(false); // 이번 판에 최고 기록 경신
   const [lastWin, setLastWin] = useState<boolean | null>(null);
   const [dropped, setDropped] = useState(false);      // 이번 라운드 카드 획득(로그인)
   const [dropPrompt, setDropPrompt] = useState(false); // 카드가 떴지만 로그인 필요
@@ -217,7 +227,7 @@ export default function GamePage() {
     const a = draw();
     if (!a) return;
     setAnchor(a); setChallenger(draw(a.ticker));
-    setStreak(0); setLastWin(null); setDropped(false); setDropPrompt(false); setEscaped(null); setMissed(null); setPhase("guessing");
+    setStreak(0); setNewBest(false); setLastWin(null); setDropped(false); setDropPrompt(false); setEscaped(null); setMissed(null); setPhase("guessing");
   }, [draw]);
 
   const started = useRef(false);
@@ -236,7 +246,7 @@ export default function GamePage() {
     if (win) {
       const ns = streak + 1;
       setStreak(ns);
-      if (ns > best) { setBest(ns); try { localStorage.setItem(bestKey, String(ns)); } catch { } }
+      if (ns > best) { setBest(ns); setNewBest(true); try { localStorage.setItem(bestKey, String(ns)); } catch { } }
 
       // 정답 카드만 수집. 연승↑ → 획득 확률↑, 높은 등급일수록 더 높은 연승 필요.
       if (Math.random() < acquireChance(challenger, ns)) {
@@ -332,9 +342,15 @@ export default function GamePage() {
 
             {phase === "over" ? (
               <div className="rounded-3xl border border-neutral-200 dark:border-[#35332e] bg-white dark:bg-[#242320] p-8 text-center animate-in fade-in zoom-in-95 duration-300">
-                <p className="text-3xl mb-2">🚢</p>
+                <p className="text-4xl mb-1">{rankOf(streak).emoji}</p>
                 <p className="font-black text-lg text-neutral-900 dark:text-white">항해 종료!</p>
-                <p className="text-sm text-neutral-500 dark:text-neutral-400 mt-1">이번 연승 <b className="text-[#16a34a]">{streak}</b> · 최고 {best}</p>
+                <div className="mt-1.5 inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-[#f0fdf4] dark:bg-[#052e16]/40 border border-[#86efac]/60 dark:border-[#166534]/60 text-[#15803d] dark:text-[#16a34a] text-sm font-black">
+                  {rankOf(streak).title} 등급
+                </div>
+                {newBest && streak > 0 && (
+                  <p className="text-xs font-black text-amber-500 dark:text-amber-400 mt-2 animate-in fade-in zoom-in-95">🎉 신기록 달성!</p>
+                )}
+                <p className="text-sm text-neutral-500 dark:text-neutral-400 mt-2">이번 연승 <b className="text-[#16a34a]">{streak}</b> · 최고 {best}</p>
                 <p className="text-xs text-neutral-400 mt-2">
                   {isLoggedIn ? <>발굴한 카드는 <b>내 덱({deck.length})</b>에 쌓였습니다.</> : "로그인하면 발굴한 카드를 덱에 모을 수 있어요."}
                 </p>
