@@ -214,6 +214,7 @@ export default function GamePage() {
   const [lastWin, setLastWin] = useState<boolean | null>(null);
   const [dropped, setDropped] = useState(false);      // 이번 라운드 카드 획득(로그인)
   const [dropPrompt, setDropPrompt] = useState(false); // 카드가 떴지만 로그인 필요
+  const [saveFail, setSaveFail] = useState(false);     // 덱 저장 실패(서버 미배포 등)
   const [escaped, setEscaped] = useState<string | null>(null); // 높은 등급 카드가 도망감(메달)
   const [deck, setDeck] = useState<DeckCardSnapshot[]>([]);
   const [showDeck, setShowDeck] = useState(false);
@@ -254,7 +255,7 @@ export default function GamePage() {
     const a = draw();
     if (!a) return;
     setAnchor(a); setChallenger(draw(a.ticker));
-    setStreak(0); setNewBest(false); setLastWin(null); setDropped(false); setDropPrompt(false); setEscaped(null); setMissed(null); setPhase("guessing");
+    setStreak(0); setNewBest(false); setLastWin(null); setDropped(false); setDropPrompt(false); setSaveFail(false); setEscaped(null); setMissed(null); setPhase("guessing");
   }, [draw]);
 
   const started = useRef(false);
@@ -267,7 +268,7 @@ export default function GamePage() {
     const av = stat.get(anchor), cv = stat.get(challenger);
     const win = dir === "higher" ? cv >= av : cv <= av;   // 동점은 승리 처리
     setLastWin(win);
-    setDropped(false); setDropPrompt(false); setEscaped(null);
+    setDropped(false); setDropPrompt(false); setSaveFail(false); setEscaped(null);
     setPhase("revealed");
 
     if (win) {
@@ -285,8 +286,12 @@ export default function GamePage() {
             if (res?.added) {
               setDropped(true);
               setDeck(prev => prev.some(c => c.ticker === snap.ticker) ? prev : [snap, ...prev]);
+            } else if (res?.success !== true) {
+              // 서버가 저장을 못 함(예: 워커 /user/deck 미배포·마이그레이션 미적용) → 조용히 실패하지 않도록 노출
+              setSaveFail(true);
             }
-          }).catch(() => { });
+            // res.success===true && !added → 이미 보유(중복) → 무시
+          }).catch(() => setSaveFail(true));
         }
       } else {
         // 높은 등급 카드가 도망감 → 연승 더 쌓으라는 힌트
@@ -309,7 +314,7 @@ export default function GamePage() {
     if (!lastWin) return;
     setAnchor(challenger);
     setChallenger(draw(challenger?.ticker));
-    setDropped(false); setDropPrompt(false); setEscaped(null); setLastWin(null); setPhase("guessing");
+    setDropped(false); setDropPrompt(false); setSaveFail(false); setEscaped(null); setLastWin(null); setPhase("guessing");
   }, [lastWin, challenger, draw]);
 
   useEffect(() => { if (phase === "revealed" && lastWin === false) setPhase("over"); }, [phase, lastWin]);
@@ -411,9 +416,11 @@ export default function GamePage() {
                     </button>
                   )}
                   {phase === "revealed" && lastWin && !dropped && !dropPrompt && (
-                    escaped
-                      ? <span className="text-xs font-bold text-amber-600 dark:text-amber-400 animate-in fade-in">정답! {escaped} 등급 카드가 도망갔어요 — 연승을 쌓으면 획득 확률↑</span>
-                      : <span className="text-xs font-bold text-[#16a34a] animate-in fade-in">정답! ✔</span>
+                    saveFail
+                      ? <span className="text-xs font-bold text-rose-500 dark:text-rose-400 animate-in fade-in">정답! 그런데 덱 저장에 실패했어요 — 로그인 상태와 서버(워커) 배포를 확인하세요</span>
+                      : escaped
+                        ? <span className="text-xs font-bold text-amber-600 dark:text-amber-400 animate-in fade-in">정답! {escaped} 등급 카드가 도망갔어요 — 연승을 쌓으면 획득 확률↑</span>
+                        : <span className="text-xs font-bold text-[#16a34a] animate-in fade-in">정답! ✔</span>
                   )}
                 </div>
 
