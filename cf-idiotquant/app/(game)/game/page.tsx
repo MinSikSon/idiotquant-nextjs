@@ -116,8 +116,9 @@ function ScoreInfo() {
       </button>
       {open && (
         // 모바일(<640px)에선 화면에 고정된 패널로(트리거 위치와 무관하게 항상 화면 안에 보임),
-        // sm 이상에선 아이콘 옆에 뜨는 툴팁으로.
-        <span className="fixed z-30 inset-x-4 bottom-6 sm:absolute sm:inset-x-auto sm:left-0 sm:bottom-full sm:mb-2 sm:w-72 rounded-xl bg-neutral-900 dark:bg-[#242320] border border-neutral-700/60 dark:border-[#35332e] p-3 text-[11px] leading-relaxed text-neutral-200 shadow-xl text-left font-medium break-keep">
+        // 모바일 하단 탭바(h-[64px], z-40)에 가리지 않도록 그 위로 띄우고 z-index도 더 높임.
+        // sm 이상(하단 탭바 없음)에선 아이콘 옆에 뜨는 툴팁으로.
+        <span className="fixed z-50 inset-x-4 bottom-20 sm:absolute sm:z-30 sm:inset-x-auto sm:left-0 sm:bottom-full sm:mb-2 sm:w-72 rounded-xl bg-neutral-900 dark:bg-[#242320] border border-neutral-700/60 dark:border-[#35332e] p-3 text-[11px] leading-relaxed text-neutral-200 shadow-xl text-left font-medium break-keep">
           <b className="text-white">저평가 점수 (0~100)</b><br />
           NCAV·PBR·PER·ROE를 가중 평균해 점수화(값 없는 지표는 제외 후 재분배):
           <span className="block mt-1.5 space-y-0.5 text-neutral-300">
