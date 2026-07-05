@@ -2,11 +2,11 @@
 // NCAV·PBR·PER·ROE 기준을 각각 0~1 서브점수로 환산해 가중 평균한 뒤 0~100 점수로.
 // 데이터가 없는 지표는 제외하고 남은 지표의 가중치로 정규화한다.
 
-export type ValueTone = "treasure" | "gold" | "silver" | "bronze" | "muted";
+export type ValueTone = "legend" | "treasure" | "diamond" | "gold" | "silver" | "bronze" | "raw" | "explore";
 
 export interface ValueScore {
   score: number;          // 0~100
-  grade: "S" | "A" | "B" | "C" | "D";
+  grade: "S+" | "S" | "A+" | "A" | "B+" | "B" | "C" | "D";
   medal: string;          // 이모지
   label: string;          // 등급 한글
   tone: ValueTone;
@@ -40,9 +40,12 @@ export function computeValueScore(item: any): ValueScore {
 }
 
 function tier(score: number): Omit<ValueScore, "score"> {
+  if (score >= 90) return { grade: "S+", medal: "👑", label: "전설", tone: "legend" };
   if (score >= 80) return { grade: "S", medal: "🏆", label: "보물", tone: "treasure" };
-  if (score >= 65) return { grade: "A", medal: "🥇", label: "금", tone: "gold" };
-  if (score >= 50) return { grade: "B", medal: "🥈", label: "은", tone: "silver" };
-  if (score >= 35) return { grade: "C", medal: "🥉", label: "동", tone: "bronze" };
-  return { grade: "D", medal: "🧭", label: "탐색", tone: "muted" };
+  if (score >= 70) return { grade: "A+", medal: "💎", label: "다이아", tone: "diamond" };
+  if (score >= 60) return { grade: "A", medal: "🥇", label: "금", tone: "gold" };
+  if (score >= 50) return { grade: "B+", medal: "🥈", label: "은", tone: "silver" };
+  if (score >= 40) return { grade: "B", medal: "🥉", label: "동", tone: "bronze" };
+  if (score >= 25) return { grade: "C", medal: "🪨", label: "원석", tone: "raw" };
+  return { grade: "D", medal: "🧭", label: "탐색", tone: "explore" };
 }
