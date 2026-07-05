@@ -30,6 +30,7 @@ const STATS: Stat[] = [
   },
   { key: "value_score", label: "저평가 점수", get: it => computeValueScore(it).score, fmt: v => `${v}점` },
   { key: "ncav_ratio", label: "NCAV 비율", get: it => safeNum(it.ncav_ratio), fmt: v => `${v.toFixed(2)}x` },
+  { key: "per", label: "PER", get: it => safeNum(it.per), fmt: v => `${v.toFixed(1)}배` },
   { key: "last_price", label: "주가", get: it => safeNum(it.last_price), fmt: v => `${Math.round(v).toLocaleString()}원` },
 ];
 
