@@ -465,13 +465,37 @@ export default function GamePage() {
   );
 }
 
+// 등급 카드 배경 틴트 (섹션·카드 모두에서 등급을 한눈에 구분)
+const TIER_CARD_BG: Record<string, string> = {
+  treasure: "bg-amber-50/70 dark:bg-amber-950/20 border-amber-200 dark:border-amber-900/50",
+  gold: "bg-yellow-50/60 dark:bg-yellow-950/10 border-yellow-200 dark:border-yellow-900/40",
+  silver: "bg-neutral-100/70 dark:bg-[#2c2b27] border-neutral-200 dark:border-[#4a4641]",
+  bronze: "bg-orange-50/60 dark:bg-orange-950/10 border-orange-200 dark:border-orange-900/40",
+  muted: "bg-white dark:bg-[#242320] border-neutral-200 dark:border-[#35332e]",
+};
+const TIER_ORDER: Array<ReturnType<typeof computeValueScore>["tone"]> = ["treasure", "gold", "silver", "bronze", "muted"];
+
 // 덱 뷰
 function DeckView({ deck, isLoggedIn, onLogin, onClose }: { deck: DeckCardSnapshot[]; isLoggedIn: boolean; onLogin: () => void; onClose: () => void }) {
-  const sorted = useMemo(() => [...deck].sort((a, b) => computeValueScore(b).score - computeValueScore(a).score), [deck]);
+  // 등급별로 묶고, 등급 순서(보물→탐색) → 등급 내 점수 내림차순으로 정렬해 분류를 명확히 함
+  const groups = useMemo(() => {
+    const byTone = new Map<string, { item: DeckCardSnapshot; v: ReturnType<typeof computeValueScore> }[]>();
+    for (const c of deck) {
+      const v = computeValueScore(c);
+      if (!byTone.has(v.tone)) byTone.set(v.tone, []);
+      byTone.get(v.tone)!.push({ item: c, v });
+    }
+    for (const list of byTone.values()) list.sort((a, b) => b.v.score - a.v.score);
+    return TIER_ORDER.filter(t => byTone.has(t)).map(t => ({ tone: t, cards: byTone.get(t)! }));
+  }, [deck]);
+
   return (
     <div className="animate-in fade-in duration-200">
       <div className="flex items-center justify-between mb-4">
-        <p className="font-black text-neutral-900 dark:text-white">내 덱 <span className="text-[#16a34a]">{deck.length}</span>장</p>
+        <p className="font-black text-neutral-900 dark:text-white flex items-center gap-1.5">
+          내 덱 <span className="text-[#16a34a]">{deck.length}</span>장
+          <ScoreInfo />
+        </p>
         <button onClick={onClose} className="text-xs font-bold text-neutral-500 hover:text-[#16a34a]">게임으로 ▶</button>
       </div>
       {!isLoggedIn ? (
@@ -486,13 +510,25 @@ function DeckView({ deck, isLoggedIn, onLogin, onClose }: { deck: DeckCardSnapsh
       ) : deck.length === 0 ? (
         <p className="py-20 text-center text-sm text-neutral-400">아직 카드가 없어요. 게임을 하며 카드를 수집하세요!</p>
       ) : (
-        <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-          {sorted.map(c => (
-            <div key={c.ticker} className="rounded-2xl border border-neutral-200 dark:border-[#35332e] bg-white dark:bg-[#242320] p-4 text-center flex flex-col items-center">
-              <StockLogo item={c} size={40} />
-              <div className="mt-1.5"><Medal item={c} /></div>
-              <p className="mt-1.5 font-bold text-sm text-neutral-900 dark:text-white truncate max-w-full">{c.name}</p>
-              <p className="text-[10px] text-neutral-400 font-mono">{c.ticker}</p>
+        <div className="space-y-5">
+          {groups.map(({ tone, cards }) => (
+            <div key={tone}>
+              <div className="flex items-center gap-2 mb-2 px-0.5">
+                <span className={cn("inline-flex items-center gap-1 px-2 py-0.5 rounded-full ring-1 ring-inset text-[11px] font-black", MEDAL_TONE[tone])}>
+                  <span aria-hidden>{cards[0].v.medal}</span>{cards[0].v.label}
+                </span>
+                <span className="text-[11px] font-bold text-neutral-400">{cards.length}장</span>
+              </div>
+              <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                {cards.map(({ item: c }) => (
+                  <div key={c.ticker} className={cn("rounded-2xl border p-4 text-center flex flex-col items-center", TIER_CARD_BG[tone])}>
+                    <StockLogo item={c} size={40} />
+                    <div className="mt-1.5"><Medal item={c} /></div>
+                    <p className="mt-1.5 font-bold text-sm text-neutral-900 dark:text-white truncate max-w-full">{c.name}</p>
+                    <p className="text-[10px] text-neutral-400 font-mono">{c.ticker}</p>
+                  </div>
+                ))}
+              </div>
             </div>
           ))}
         </div>
