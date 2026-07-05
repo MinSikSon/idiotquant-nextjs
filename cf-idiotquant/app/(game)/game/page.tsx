@@ -2,7 +2,8 @@
 
 // =========================================================================
 // 종목 카드: 높다/낮다 (Higher-Lower) — 덱 빌딩 게임 1탄
-// 두 종목 카드를 스탯(시가총액·저평가점수·NCAV·주가)으로 비교해 맞히면 연승.
+// 두 종목 카드를 시가총액으로 비교해 맞히면 연승.
+// 카드 등급(메달)은 NCAV·PBR·PER·ROE를 종합한 저평가 점수로 별도 산정.
 // 정답을 맞힌 카드만 "내 덱"에 수집 → 계정별 D1 저장(로그인 필요).
 // 연승↑ → 획득 확률↑, 높은 등급(메달) 카드일수록 더 높은 연승이 필요.
 // 비로그인 시 수집 시점에 로그인 유도.
@@ -21,22 +22,18 @@ import { cn } from "@/lib/utils";
 
 const safeNum = (v: any): number => { const n = Number(v); return Number.isFinite(n) ? n : 0; };
 
-// 비교 가능한 스탯 정의
+// 비교 스탯: 시가총액 하나로 고정 (카드 등급은 별도 저평가 점수로 산정)
 type Stat = { key: string; label: string; get: (it: any) => number; fmt: (v: number) => string };
-const STATS: Stat[] = [
-  {
-    key: "market_cap", label: "시가총액", get: it => safeNum(it.market_cap),
-    fmt: v => v >= 10000 ? `${(v / 10000).toFixed(1)}조` : `${Math.round(v).toLocaleString()}억`,
-  },
-  { key: "value_score", label: "저평가 점수", get: it => computeValueScore(it).score, fmt: v => `${v}점` },
-  { key: "ncav_ratio", label: "NCAV 비율", get: it => safeNum(it.ncav_ratio), fmt: v => `${v.toFixed(2)}x` },
-  { key: "per", label: "PER", get: it => safeNum(it.per), fmt: v => `${v.toFixed(1)}배` },
-  { key: "last_price", label: "주가", get: it => safeNum(it.last_price), fmt: v => `${Math.round(v).toLocaleString()}원` },
-];
+const STAT: Stat = {
+  key: "market_cap", label: "시가총액", get: it => safeNum(it.market_cap),
+  fmt: v => v >= 10000 ? `${(v / 10000).toFixed(1)}조` : `${Math.round(v).toLocaleString()}억`,
+};
 
 // 카드 수집: 정답을 맞힌 카드만, 연승↑ → 획득 확률↑.
-// 등급이 높을수록(보물>금>은) 더 높은 연승이 필요하도록 패널티를 준다.
-const TIER_PENALTY: Record<string, number> = { muted: 0, bronze: 0, silver: 0.18, gold: 0.36, treasure: 0.6 };
+// 등급이 높을수록(전설>보물>다이아>금>은>동>원석>탐색) 더 높은 연승이 필요하도록 패널티를 준다.
+const TIER_PENALTY: Record<string, number> = {
+  explore: 0, raw: 0, bronze: 0.08, silver: 0.16, gold: 0.28, diamond: 0.40, treasure: 0.52, legend: 0.66,
+};
 function acquireChance(item: any, streak: number): number {
   const tone = computeValueScore(item).tone;
   return Math.min(0.85, Math.max(0, streak * 0.12 - (TIER_PENALTY[tone] ?? 0)));
@@ -62,11 +59,14 @@ function toCard(it: any): DeckCardSnapshot {
 
 // 메달 톤
 const MEDAL_TONE: Record<string, string> = {
+  legend: "bg-violet-100 text-violet-700 ring-violet-300 dark:bg-violet-950/40 dark:text-violet-300 dark:ring-violet-800",
   treasure: "bg-amber-100 text-amber-700 ring-amber-300 dark:bg-amber-950/40 dark:text-amber-300 dark:ring-amber-800",
+  diamond: "bg-sky-50 text-sky-700 ring-sky-300 dark:bg-sky-950/30 dark:text-sky-300 dark:ring-sky-800",
   gold: "bg-yellow-50 text-yellow-700 ring-yellow-300 dark:bg-yellow-950/30 dark:text-yellow-300 dark:ring-yellow-800",
   silver: "bg-neutral-100 text-neutral-600 ring-neutral-300 dark:bg-[#2c2b27] dark:text-neutral-300 dark:ring-[#4a4641]",
   bronze: "bg-orange-50 text-orange-700 ring-orange-200 dark:bg-orange-950/30 dark:text-orange-300 dark:ring-orange-900",
-  muted: "bg-neutral-50 text-neutral-400 ring-neutral-200 dark:bg-[#242320] dark:text-neutral-500 dark:ring-[#35332e]",
+  raw: "bg-stone-100 text-stone-600 ring-stone-300 dark:bg-stone-900/40 dark:text-stone-400 dark:ring-stone-700",
+  explore: "bg-neutral-50 text-neutral-400 ring-neutral-200 dark:bg-[#242320] dark:text-neutral-500 dark:ring-[#35332e]",
 };
 
 function Medal({ item, lg }: { item: any; lg?: boolean }) {
@@ -127,7 +127,10 @@ function ScoreInfo() {
             <span className="block">· PER 20% — 5↓ 만점, 20↑ 0점</span>
             <span className="block">· ROE 15% — 18%↑ 만점, 3%↓ 0점</span>
           </span>
-          <span className="block mt-1.5 text-neutral-300">등급: 🏆 보물 80+ · 🥇 금 65+ · 🥈 은 50+ · 🥉 동 35+ · 🧭 탐색 그 외</span>
+          <span className="block mt-1.5 text-neutral-300">
+            등급: 👑 전설 90+ · 🏆 보물 80+ · 💎 다이아 70+ · 🥇 금 60+<br />
+            🥈 은 50+ · 🥉 동 40+ · 🪨 원석 25+ · 🧭 탐색 그 외
+          </span>
         </span>
       )}
     </span>
@@ -221,9 +224,6 @@ export default function GamePage() {
     router.push(`/login?callbackUrl=${encodeURIComponent("/game")}`);
   }, [router]);
 
-  const [statKey, setStatKey] = useState("market_cap");
-  const stat = useMemo(() => STATS.find(s => s.key === statKey)!, [statKey]);
-
   const [anchor, setAnchor] = useState<any | null>(null);
   const [challenger, setChallenger] = useState<any | null>(null);
   const [phase, setPhase] = useState<Phase>("loading");
@@ -252,13 +252,13 @@ export default function GamePage() {
     return () => { cancelled = true; };
   }, [isLoggedIn]);
 
-  // 현재 스탯으로 비교 가능한 종목 풀
+  // 비교 가능한 종목 풀 (시가총액 보유 종목)
   const pool = useMemo(() => {
     const list = Array.isArray(ncav.list) ? ncav.list : [];
-    return list.filter((it: any) => it?.name && it?.ticker && stat.get(it) > 0);
-  }, [ncav.list, stat]);
+    return list.filter((it: any) => it?.name && it?.ticker && STAT.get(it) > 0);
+  }, [ncav.list]);
 
-  const bestKey = `iq:game:best:hl:${statKey}`;
+  const bestKey = "iq:game:best:hl:market_cap"; // 기존 시가총액 비교 기록 키 유지
   useEffect(() => { setBest(safeNum(typeof window !== "undefined" ? localStorage.getItem(bestKey) : 0)); }, [bestKey]);
 
   const draw = useCallback((excludeTicker?: string) => {
@@ -284,7 +284,7 @@ export default function GamePage() {
 
   const guess = useCallback((dir: "higher" | "lower") => {
     if (phase !== "guessing" || !anchor || !challenger) return;
-    const av = stat.get(anchor), cv = stat.get(challenger);
+    const av = STAT.get(anchor), cv = STAT.get(challenger);
     const win = dir === "higher" ? cv >= av : cv <= av;   // 동점은 승리 처리
     setLastWin(win);
     setDropped(false); setDropPrompt(false); setSaveFail(null); setEscaped(null);
@@ -315,19 +315,19 @@ export default function GamePage() {
       } else {
         // 높은 등급 카드가 도망감 → 연승 더 쌓으라는 힌트
         const v = computeValueScore(challenger);
-        if (v.tone === "silver" || v.tone === "gold" || v.tone === "treasure") setEscaped(v.medal);
+        if (["silver", "gold", "diamond", "treasure", "legend"].includes(v.tone)) setEscaped(v.medal);
       }
     } else {
-      // 틀린 라운드 정보 스냅샷 (statKey 변경과 무관하게 종료 화면에서 표시)
+      // 틀린 라운드 정보 스냅샷 (종료 화면에서 표시)
       setMissed({
         challenger, anchor,
-        statLabel: stat.label,
-        anchorStr: stat.fmt(av),
-        challengerStr: stat.fmt(cv),
+        statLabel: STAT.label,
+        anchorStr: STAT.fmt(av),
+        challengerStr: STAT.fmt(cv),
         higherSide: cv >= av ? "challenger" : "anchor",
       });
     }
-  }, [phase, anchor, challenger, stat, best, bestKey, isLoggedIn, streak]);
+  }, [phase, anchor, challenger, best, bestKey, isLoggedIn, streak]);
 
   const next = useCallback(() => {
     if (!lastWin) return;
@@ -364,20 +364,6 @@ export default function GamePage() {
           <div className="py-24 text-center text-sm text-neutral-400">카드 데이터를 불러오는 중…</div>
         ) : (
           <>
-            {/* 스탯 선택 */}
-            <div className="flex flex-wrap items-center justify-center gap-2 mb-5">
-              {STATS.map(s => (
-                <button key={s.key}
-                  onClick={() => { setStatKey(s.key); started.current = false; }}
-                  className={cn("px-3 py-1.5 rounded-lg text-xs font-bold border transition-all",
-                    s.key === statKey
-                      ? "bg-[#16a34a] border-[#16a34a] text-white shadow-sm"
-                      : "bg-white dark:bg-[#242320] border-neutral-200 dark:border-[#35332e] text-neutral-500 dark:text-neutral-400 hover:border-[#86efac]")}>
-                  {s.label}
-                </button>
-              ))}
-            </div>
-
             {/* 스코어 */}
             <div className="flex items-center justify-center gap-6 mb-5 text-center">
               <div>
@@ -414,10 +400,10 @@ export default function GamePage() {
             ) : anchor && challenger ? (
               <>
                 <div className="grid grid-cols-2 gap-3 sm:gap-4 items-stretch">
-                  <Card item={anchor} stat={stat} value={stat.fmt(stat.get(anchor))} />
-                  <Card item={challenger} stat={stat}
+                  <Card item={anchor} stat={STAT} value={STAT.fmt(STAT.get(anchor))} />
+                  <Card item={challenger} stat={STAT}
                     value={phase === "revealed"
-                      ? <span className="animate-in zoom-in-75 duration-300">{stat.fmt(stat.get(challenger))}</span>
+                      ? <span className="animate-in zoom-in-75 duration-300">{STAT.fmt(STAT.get(challenger))}</span>
                       : <span className="text-neutral-300 dark:text-neutral-600">?</span>} />
                 </div>
 
@@ -447,7 +433,7 @@ export default function GamePage() {
                 {phase === "guessing" ? (
                   <div className="mt-3">
                     <p className="text-center text-xs text-neutral-400 mb-3">
-                      오른쪽 <b className="text-neutral-600 dark:text-neutral-300">{challenger.name}</b> 의 {stat.label}은 왼쪽보다?
+                      오른쪽 <b className="text-neutral-600 dark:text-neutral-300">{challenger.name}</b> 의 {STAT.label}은 왼쪽보다?
                     </p>
                     <div className="grid grid-cols-2 gap-3">
                       <button onClick={() => guess("higher")}
@@ -477,13 +463,17 @@ export default function GamePage() {
 
 // 등급 카드 배경 틴트 (섹션·카드 모두에서 등급을 한눈에 구분)
 const TIER_CARD_BG: Record<string, string> = {
+  legend: "bg-violet-50/70 dark:bg-violet-950/20 border-violet-200 dark:border-violet-900/50",
   treasure: "bg-amber-50/70 dark:bg-amber-950/20 border-amber-200 dark:border-amber-900/50",
+  diamond: "bg-sky-50/60 dark:bg-sky-950/10 border-sky-200 dark:border-sky-900/40",
   gold: "bg-yellow-50/60 dark:bg-yellow-950/10 border-yellow-200 dark:border-yellow-900/40",
   silver: "bg-neutral-100/70 dark:bg-[#2c2b27] border-neutral-200 dark:border-[#4a4641]",
   bronze: "bg-orange-50/60 dark:bg-orange-950/10 border-orange-200 dark:border-orange-900/40",
-  muted: "bg-white dark:bg-[#242320] border-neutral-200 dark:border-[#35332e]",
+  raw: "bg-stone-50/70 dark:bg-stone-900/20 border-stone-200 dark:border-stone-800/50",
+  explore: "bg-white dark:bg-[#242320] border-neutral-200 dark:border-[#35332e]",
 };
-const TIER_ORDER: Array<ReturnType<typeof computeValueScore>["tone"]> = ["treasure", "gold", "silver", "bronze", "muted"];
+const TIER_ORDER: Array<ReturnType<typeof computeValueScore>["tone"]> =
+  ["legend", "treasure", "diamond", "gold", "silver", "bronze", "raw", "explore"];
 
 // 덱 뷰
 function DeckView({ deck, isLoggedIn, onLogin, onClose }: { deck: DeckCardSnapshot[]; isLoggedIn: boolean; onLogin: () => void; onClose: () => void }) {
