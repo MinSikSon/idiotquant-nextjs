@@ -114,10 +114,18 @@ function ScoreInfo() {
         <Info size={13} />
       </button>
       {open && (
-        <span className="absolute z-30 bottom-full left-1/2 -translate-x-1/2 mb-2 w-60 rounded-xl bg-neutral-900 dark:bg-[#242320] border border-neutral-700/60 dark:border-[#35332e] p-3 text-[11px] leading-relaxed text-neutral-200 shadow-xl text-left font-medium">
+        // 모바일(<640px)에선 화면에 고정된 패널로(트리거 위치와 무관하게 항상 화면 안에 보임),
+        // sm 이상에선 아이콘 옆에 뜨는 툴팁으로.
+        <span className="fixed z-30 inset-x-4 bottom-6 sm:absolute sm:inset-x-auto sm:left-0 sm:bottom-full sm:mb-2 sm:w-72 rounded-xl bg-neutral-900 dark:bg-[#242320] border border-neutral-700/60 dark:border-[#35332e] p-3 text-[11px] leading-relaxed text-neutral-200 shadow-xl text-left font-medium break-keep">
           <b className="text-white">저평가 점수 (0~100)</b><br />
-          NCAV·PBR·PER·ROE를 종합해 저평가된 정도를 점수화. 높을수록 저평가 매력이 큽니다.
-          <span className="block mt-1.5 text-neutral-300">🏆 보물 80+ · 🥇 금 65+ · 🥈 은 50+ · 🥉 동 35+ · 🧭 탐색 그 외</span>
+          NCAV·PBR·PER·ROE를 가중 평균해 점수화(값 없는 지표는 제외 후 재분배):
+          <span className="block mt-1.5 space-y-0.5 text-neutral-300">
+            <span className="block">· NCAV 40% — 1.5배↑ 만점, 0.3배↓ 0점</span>
+            <span className="block">· PBR 25% — 0.3↓ 만점, 1.5↑ 0점</span>
+            <span className="block">· PER 20% — 5↓ 만점, 20↑ 0점</span>
+            <span className="block">· ROE 15% — 18%↑ 만점, 3%↓ 0점</span>
+          </span>
+          <span className="block mt-1.5 text-neutral-300">등급: 🏆 보물 80+ · 🥇 금 65+ · 🥈 은 50+ · 🥉 동 35+ · 🧭 탐색 그 외</span>
         </span>
       )}
     </span>
