@@ -13,13 +13,23 @@ export interface DeckCardSnapshot {
 }
 
 async function deckRequest(subUrl: string, method = "GET", body?: object) {
-    const res = await fetch(`/api/proxy${subUrl}`, {
-        method,
-        credentials: "include",
-        headers: { "content-type": "application/json" },
-        ...(body ? { body: JSON.stringify(body) } : {}),
-    });
-    return res.json();
+    try {
+        const res = await fetch(`/api/proxy${subUrl}`, {
+            method,
+            credentials: "include",
+            headers: { "content-type": "application/json" },
+            ...(body ? { body: JSON.stringify(body) } : {}),
+        });
+        const text = await res.text();
+        let json: any = null;
+        try { json = text ? JSON.parse(text) : null; } catch { /* 비 JSON 응답(예: 404 HTML) */ }
+        if (!res.ok || !json || typeof json !== "object") {
+            return { success: false, status: res.status, error: json?.error ?? (text ? text.slice(0, 100) : `HTTP ${res.status}`) };
+        }
+        return json;
+    } catch {
+        return { success: false, status: 0, error: "네트워크 오류" };
+    }
 }
 
 // 내 덱 목록: [{ ticker, name, card }]
