@@ -124,7 +124,7 @@ function ScoreInfo() {
         // sm 이상(하단 탭바 없음)에선 아이콘 옆에 뜨는 툴팁으로.
         <span className="fixed z-50 inset-x-4 bottom-20 sm:absolute sm:z-30 sm:inset-x-auto sm:left-0 sm:bottom-full sm:mb-2 sm:w-72 rounded-xl bg-neutral-900 dark:bg-[#242320] border border-neutral-700/60 dark:border-[#35332e] p-3 text-[11px] leading-relaxed text-neutral-200 shadow-xl text-left font-medium break-keep">
           <b className="text-white">저평가 점수 (0~100)</b><br />
-          NCAV·PBR·PER·ROE를 가중 평균해 점수화(값 없는 지표는 제외 후 재분배):
+          NCAV·PBR·PER·ROE를 가중 평균해 점수화(값 없는 지표는 제외, 적자·자본잠식 등 음수 지표는 0점):
           <span className="block mt-1.5 space-y-0.5 text-neutral-300">
             <span className="block">· NCAV 40% — 1.5배↑ 만점, 0.3배↓ 0점</span>
             <span className="block">· PBR 25% — 0.3↓ 만점, 1.5↑ 0점</span>

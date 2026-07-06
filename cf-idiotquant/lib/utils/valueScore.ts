@@ -29,13 +29,6 @@ const num = (v: unknown) => {
   return Number.isFinite(x) ? x : NaN;
 };
 
-function mkPart(
-  key: ValuePart["key"], label: string, weight: number,
-  value: number, available: boolean, sub: number, fmt: (v: number) => string,
-): ValuePart {
-  return { key, label, weight, available, sub: available ? sub : 0, valueStr: available ? fmt(value) : "—" };
-}
-
 export function computeValueScore(item: any): ValueScore {
   const ncav = num(item?.ncav_ratio);
   const pbr = num(item?.pbr);
@@ -44,14 +37,36 @@ export function computeValueScore(item: any): ValueScore {
   const bps = num(item?.bps);
   const roe = bps > 0 && Number.isFinite(eps) ? (eps / bps) * 100 : NaN;
 
+  // 값이 존재하면(finite) 계산에 포함. 음수/0(적자 PER·음수 PBR·자본잠식 등)은 "제외"가 아니라
+  // 서브점수 0으로 페널티 — 나쁜 펀더멘털이 빠지면서 점수가 부풀려지는 문제를 막는다.
+  // 값이 아예 없을(NaN) 때만 제외하고 남은 가중치로 정규화한다.
   const parts: ValuePart[] = [
-    mkPart("ncav", "NCAV", 0.40, ncav, Number.isFinite(ncav) && ncav > 0, clamp01((ncav - 0.3) / (1.5 - 0.3)), v => `${v.toFixed(2)}x`), // 1.5x↑ 만점
-    mkPart("pbr", "PBR", 0.25, pbr, Number.isFinite(pbr) && pbr > 0, clamp01((1.5 - pbr) / (1.5 - 0.3)), v => v.toFixed(2)),             // 0.3↓ 만점
-    mkPart("per", "PER", 0.20, per, Number.isFinite(per) && per > 0, clamp01((20 - per) / (20 - 5)), v => v.toFixed(1)),                 // 5↓ 만점
-    mkPart("roe", "ROE", 0.15, roe, Number.isFinite(roe), clamp01((roe - 3) / (18 - 3)), v => `${v.toFixed(1)}%`),                       // 18%↑ 만점
+    {
+      key: "ncav", label: "NCAV", weight: 0.40,               // 1.5x↑ 만점
+      available: Number.isFinite(ncav),
+      sub: ncav > 0 ? clamp01((ncav - 0.3) / (1.5 - 0.3)) : 0,
+      valueStr: Number.isFinite(ncav) ? `${ncav.toFixed(2)}x` : "—",
+    },
+    {
+      key: "pbr", label: "PBR", weight: 0.25,                 // 0.3↓ 만점, 음수(자본잠식)는 0점
+      available: Number.isFinite(pbr),
+      sub: pbr > 0 ? clamp01((1.5 - pbr) / (1.5 - 0.3)) : 0,
+      valueStr: Number.isFinite(pbr) ? pbr.toFixed(2) : "—",
+    },
+    {
+      key: "per", label: "PER", weight: 0.20,                 // 5↓ 만점, 적자(음수)는 0점
+      available: Number.isFinite(per),
+      sub: per > 0 ? clamp01((20 - per) / (20 - 5)) : 0,
+      valueStr: Number.isFinite(per) ? per.toFixed(1) : "—",
+    },
+    {
+      key: "roe", label: "ROE", weight: 0.15,                 // 18%↑ 만점, 자본잠식(bps≤0)·적자는 0점
+      available: Number.isFinite(eps) && Number.isFinite(bps) && bps !== 0,
+      sub: bps > 0 ? clamp01((roe - 3) / (18 - 3)) : 0,
+      valueStr: bps > 0 ? `${roe.toFixed(1)}%` : (Number.isFinite(bps) && bps < 0 ? "자본잠식" : "—"),
+    },
   ];
 
-  // 값 없는 지표는 제외하고 남은 지표의 가중치로 정규화
   const avail = parts.filter(p => p.available);
   const wsum = avail.reduce((a, p) => a + p.weight, 0);
   const score = wsum > 0 ? Math.round((avail.reduce((a, p) => a + p.weight * p.sub, 0) / wsum) * 100) : 0;
