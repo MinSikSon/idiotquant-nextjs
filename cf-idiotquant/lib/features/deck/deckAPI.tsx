@@ -35,6 +35,6 @@ async function deckRequest(subUrl: string, method = "GET", body?: object) {
 // 내 덱 목록: [{ ticker, name, card }]
 export const getDeck = () => deckRequest("/user/deck");
 
-// 카드 추가 (중복은 백엔드에서 무시). added: 신규 추가 여부
+// 카드 추가 (같은 종목이면 수집 개수 +1). added: 수집 성공, count: 누적 개수
 export const addDeckCard = (card: DeckCardSnapshot) =>
     deckRequest("/user/deck", "POST", { ticker: card.ticker, name: card.name, card });

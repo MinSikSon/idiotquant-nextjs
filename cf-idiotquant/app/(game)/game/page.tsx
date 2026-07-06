@@ -48,6 +48,10 @@ function deckFailReason(res: any): string {
   return res?.error ? String(res.error) : "저장 실패";
 }
 
+// 덱 아이템 = 카드 스냅샷 + 수집 개수 (같은 종목 중복 누적)
+type DeckItem = DeckCardSnapshot & { count: number };
+const deckTotal = (deck: DeckItem[]) => deck.reduce((a, c) => a + (c.count ?? 1), 0);
+
 function toCard(it: any): DeckCardSnapshot {
   return {
     ticker: String(it.ticker), name: String(it.name),
@@ -235,7 +239,7 @@ export default function GamePage() {
   const [dropPrompt, setDropPrompt] = useState(false); // 카드가 떴지만 로그인 필요
   const [saveFail, setSaveFail] = useState<string | null>(null); // 덱 저장 실패 사유
   const [escaped, setEscaped] = useState<string | null>(null); // 높은 등급 카드가 도망감(메달)
-  const [deck, setDeck] = useState<DeckCardSnapshot[]>([]);
+  const [deck, setDeck] = useState<DeckItem[]>([]);
   const [showDeck, setShowDeck] = useState(false);
   const [missed, setMissed] = useState<any | null>(null); // 항해 종료 시 틀린 종목 정보
 
@@ -247,7 +251,7 @@ export default function GamePage() {
     let cancelled = false;
     getDeck().then(res => {
       if (cancelled || !res?.success || !Array.isArray(res.data)) return;
-      setDeck(res.data.map((r: any) => ({ ticker: r.ticker, name: r.name, ...(r.card ?? {}) })));
+      setDeck(res.data.map((r: any) => ({ ticker: r.ticker, name: r.name, ...(r.card ?? {}), count: r.count ?? 1 })));
     }).catch(() => { });
     return () => { cancelled = true; };
   }, [isLoggedIn]);
@@ -304,12 +308,20 @@ export default function GamePage() {
           addDeckCard(snap).then(res => {
             if (res?.added) {
               setDropped(true);
-              setDeck(prev => prev.some(c => c.ticker === snap.ticker) ? prev : [snap, ...prev]);
+              // 같은 종목이면 개수 누적, 없으면 새로 추가
+              setDeck(prev => {
+                const i = prev.findIndex(c => c.ticker === snap.ticker);
+                if (i >= 0) {
+                  const next = [...prev];
+                  next[i] = { ...next[i], count: res.count ?? next[i].count + 1 };
+                  return next;
+                }
+                return [{ ...snap, count: res.count ?? 1 }, ...prev];
+              });
             } else if (res?.success !== true) {
               // 서버가 저장을 못 함 → 사유를 화면에 노출 (조용히 실패 방지)
               setSaveFail(deckFailReason(res));
             }
-            // res.success===true && !added → 이미 보유(중복) → 무시
           }).catch(() => setSaveFail("네트워크 오류"));
         }
       } else {
@@ -352,7 +364,7 @@ export default function GamePage() {
           <h1 className="text-sm font-black text-neutral-900 dark:text-white">종목 카드 · 높다/낮다</h1>
           <button onClick={() => setShowDeck(v => !v)}
             className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg border border-neutral-200 dark:border-[#35332e] bg-white dark:bg-[#242320] text-xs font-bold text-neutral-600 dark:text-neutral-300">
-            <Layers size={13} className="text-[#16a34a]" /> 내 덱 {deck.length}
+            <Layers size={13} className="text-[#16a34a]" /> 내 덱 {deckTotal(deck)}
             {!isLoggedIn && <Lock size={10} className="opacity-60" />}
           </button>
         </div>
@@ -389,7 +401,7 @@ export default function GamePage() {
                 )}
                 <p className="text-sm text-neutral-500 dark:text-neutral-400 mt-2">이번 연승 <b className="text-[#16a34a]">{streak}</b> · 최고 {best}</p>
                 <p className="text-xs text-neutral-400 mt-2">
-                  {isLoggedIn ? <>발굴한 카드는 <b>내 덱({deck.length})</b>에 쌓였습니다.</> : "로그인하면 발굴한 카드를 덱에 모을 수 있어요."}
+                  {isLoggedIn ? <>발굴한 카드는 <b>내 덱({deckTotal(deck)})</b>에 쌓였습니다.</> : "로그인하면 발굴한 카드를 덱에 모을 수 있어요."}
                 </p>
                 {missed && <MissedInfo missed={missed} />}
                 <button onClick={start}
@@ -476,10 +488,10 @@ const TIER_ORDER: Array<ReturnType<typeof computeValueScore>["tone"]> =
   ["legend", "treasure", "diamond", "gold", "silver", "bronze", "raw", "explore"];
 
 // 덱 뷰
-function DeckView({ deck, isLoggedIn, onLogin, onClose }: { deck: DeckCardSnapshot[]; isLoggedIn: boolean; onLogin: () => void; onClose: () => void }) {
+function DeckView({ deck, isLoggedIn, onLogin, onClose }: { deck: DeckItem[]; isLoggedIn: boolean; onLogin: () => void; onClose: () => void }) {
   // 등급별로 묶고, 등급 순서(보물→탐색) → 등급 내 점수 내림차순으로 정렬해 분류를 명확히 함
   const groups = useMemo(() => {
-    const byTone = new Map<string, { item: DeckCardSnapshot; v: ReturnType<typeof computeValueScore> }[]>();
+    const byTone = new Map<string, { item: DeckItem; v: ReturnType<typeof computeValueScore> }[]>();
     for (const c of deck) {
       const v = computeValueScore(c);
       if (!byTone.has(v.tone)) byTone.set(v.tone, []);
@@ -493,7 +505,7 @@ function DeckView({ deck, isLoggedIn, onLogin, onClose }: { deck: DeckCardSnapsh
     <div className="animate-in fade-in duration-200">
       <div className="flex items-center justify-between mb-4">
         <p className="font-black text-neutral-900 dark:text-white flex items-center gap-1.5">
-          내 덱 <span className="text-[#16a34a]">{deck.length}</span>장
+          내 덱 <span className="text-[#16a34a]">{deckTotal(deck)}</span>장
           <ScoreInfo />
         </p>
         <button onClick={onClose} className="text-xs font-bold text-neutral-500 hover:text-[#16a34a]">게임으로 ▶</button>
@@ -517,11 +529,14 @@ function DeckView({ deck, isLoggedIn, onLogin, onClose }: { deck: DeckCardSnapsh
                 <span className={cn("inline-flex items-center gap-1 px-2 py-0.5 rounded-full ring-1 ring-inset text-[11px] font-black", MEDAL_TONE[tone])}>
                   <span aria-hidden>{cards[0].v.medal}</span>{cards[0].v.label}
                 </span>
-                <span className="text-[11px] font-bold text-neutral-400">{cards.length}장</span>
+                <span className="text-[11px] font-bold text-neutral-400">{cards.reduce((a, x) => a + (x.item.count ?? 1), 0)}장</span>
               </div>
               <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
                 {cards.map(({ item: c }) => (
-                  <div key={c.ticker} className={cn("rounded-2xl border p-4 text-center flex flex-col items-center", TIER_CARD_BG[tone])}>
+                  <div key={c.ticker} className={cn("relative rounded-2xl border p-4 text-center flex flex-col items-center", TIER_CARD_BG[tone])}>
+                    {(c.count ?? 1) > 1 && (
+                      <span className="absolute top-1.5 right-1.5 px-1.5 py-0.5 rounded-full bg-[#16a34a] text-white text-[10px] font-black tabular-nums leading-none">×{c.count}</span>
+                    )}
                     <StockLogo item={c} size={40} />
                     <div className="mt-1.5"><Medal item={c} /></div>
                     <p className="mt-1.5 font-bold text-sm text-neutral-900 dark:text-white truncate max-w-full">{c.name}</p>
