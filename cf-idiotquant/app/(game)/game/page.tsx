@@ -510,9 +510,27 @@ export default function GamePage() {
                 {/* 액션 */}
                 {phase === "guessing" ? (
                   <div className="mt-3">
-                    <p className="text-center text-xs text-neutral-400 mb-3">
+                    <p className="text-center text-xs text-neutral-400 mb-1">
                       오른쪽 <b className="text-neutral-600 dark:text-neutral-300">{challenger.name}</b> 의 {STAT.label}은 왼쪽보다?
                     </p>
+                    {(() => {
+                      // 정답 시(연승+1) 이 카드 획득 확률 — 연승↑·낮은 등급↑, 높은 등급은 더 높은 연승 필요.
+                      const chance = Math.round(acquireChance(challenger, streak + 1) * 100);
+                      const owned = deck.find(c => c.ticker === challenger.ticker);
+                      return (
+                        <p className="text-center text-[11px] mb-3">
+                          <span className="text-neutral-400">정답 시 획득 확률 </span>
+                          {chance > 0
+                            ? <b className="text-[#16a34a] tabular-nums">{chance}%</b>
+                            : <span className="text-neutral-400">0% · 연승을 더 쌓으세요</span>}
+                          {owned && (
+                            <span className="ml-1.5 inline-flex items-center px-1.5 py-0.5 rounded-full bg-[#16a34a]/10 text-[#16a34a] font-bold tabular-nums">
+                              보유 ×{owned.count} · 획득 시 +1
+                            </span>
+                          )}
+                        </p>
+                      );
+                    })()}
                     <div className="grid grid-cols-2 gap-3">
                       <button onClick={() => guess("higher")}
                         className="flex items-center justify-center gap-2 py-4 rounded-2xl bg-[#16a34a] hover:bg-[#15803d] text-white font-black shadow-md active:scale-[0.98] transition-all">
