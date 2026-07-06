@@ -163,12 +163,14 @@ const fmtCap = (v: number) => (v >= 10000 ? `${(v / 10000).toFixed(1)}조` : `${
 // 항해 종료 시 틀린 종목 정보 카드 (무엇을 놓쳤는지 + 그 종목 지표 학습)
 function MissedInfo({ missed }: { missed: any }) {
   const c = missed.challenger;
-  const ncav = safeNum(c.ncav_ratio), pbr = safeNum(c.pbr);
+  const v = computeValueScore(c);
+  const byKey = Object.fromEntries(v.parts.map(p => [p.key, p]));
   const metrics = [
-    { label: "점수", value: `${computeValueScore(c).score}` },
     { label: "시총", value: fmtCap(safeNum(c.market_cap)) },
-    { label: "NCAV", value: ncav > 0 ? `${ncav.toFixed(2)}x` : "—" },
-    { label: "PBR", value: pbr > 0 ? pbr.toFixed(2) : "—" },
+    { label: "NCAV", value: byKey.ncav.valueStr },
+    { label: "PBR", value: byKey.pbr.valueStr },
+    { label: "PER", value: byKey.per.valueStr },
+    { label: "ROE", value: byKey.roe.valueStr },
   ];
   return (
     <div className="mt-5 text-left rounded-2xl border border-neutral-200 dark:border-[#35332e] bg-[#faf9f7] dark:bg-[#1a1915] p-4">
@@ -190,7 +192,7 @@ function MissedInfo({ missed }: { missed: any }) {
           <p className="text-[10px] text-neutral-400 font-mono">{c.ticker}</p>
         </div>
       </div>
-      <div className="grid grid-cols-4 gap-2 mb-3">
+      <div className="grid grid-cols-3 sm:grid-cols-5 gap-2 mb-3">
         {metrics.map(m => (
           <div key={m.label} className="rounded-lg bg-white dark:bg-[#242320] p-2 text-center">
             <p className="text-[9px] font-bold text-neutral-400 uppercase tracking-wide">{m.label}</p>
@@ -198,6 +200,33 @@ function MissedInfo({ missed }: { missed: any }) {
           </div>
         ))}
       </div>
+
+      {/* 점수 계산 과정: 지표별 서브점수 × 가중치 → 종합 (값 없는 지표는 제외) */}
+      <div className="rounded-lg bg-white dark:bg-[#242320] p-3 mb-3">
+        <p className="text-[10px] font-black text-neutral-500 dark:text-neutral-400 mb-1.5">
+          점수 계산 <span className="font-medium text-neutral-400">· 값 없는 지표 제외 후 가중 평균</span>
+        </p>
+        <div className="space-y-1">
+          {v.parts.map(p => (
+            <div key={p.key} className="flex items-center justify-between text-[11px]">
+              <span className="font-bold text-neutral-600 dark:text-neutral-300">{p.label}</span>
+              {p.available ? (
+                <span className="tabular-nums text-neutral-500 dark:text-neutral-400">
+                  {p.valueStr} → <b className="text-neutral-700 dark:text-neutral-200">{Math.round(p.sub * 100)}점</b>
+                  <span className="text-neutral-400"> × {Math.round(p.weight * 100)}%</span>
+                </span>
+              ) : (
+                <span className="text-neutral-400">데이터 없음 · 제외</span>
+              )}
+            </div>
+          ))}
+        </div>
+        <div className="mt-2 pt-2 border-t border-neutral-100 dark:border-[#35332e] flex items-center justify-between">
+          <span className="text-[11px] font-black text-neutral-700 dark:text-neutral-200">종합 점수</span>
+          <span className="text-sm font-black text-[#16a34a] tabular-nums">{v.score}점</span>
+        </div>
+      </div>
+
       <Link href={`/analyze?ticker=${encodeURIComponent(c.name)}&from=game`}
         className="inline-flex items-center gap-1 text-xs font-bold text-[#16a34a] hover:underline">
         이 종목 분석하기 <ChevronRight size={12} />
