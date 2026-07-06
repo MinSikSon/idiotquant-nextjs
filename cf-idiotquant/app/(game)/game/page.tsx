@@ -235,6 +235,40 @@ function MissedInfo({ missed }: { missed: any }) {
   );
 }
 
+// 이번 항해에서 획득한 카드 목록 (종료 화면). 같은 종목은 ×N 합산, 점수 높은 순.
+function AcquiredThisGame({ cards }: { cards: DeckCardSnapshot[] }) {
+  const agg = useMemo(() => {
+    const m = new Map<string, { item: DeckCardSnapshot; count: number }>();
+    for (const c of cards) {
+      const e = m.get(c.ticker);
+      if (e) e.count++; else m.set(c.ticker, { item: c, count: 1 });
+    }
+    return [...m.values()].sort((a, b) => computeValueScore(b.item).score - computeValueScore(a.item).score);
+  }, [cards]);
+
+  return (
+    <div className="mt-5 text-left rounded-2xl border border-[#86efac]/60 dark:border-[#166534]/50 bg-[#f0fdf4]/60 dark:bg-[#052e16]/20 p-4">
+      <p className="text-[11px] font-black text-[#15803d] dark:text-[#16a34a] mb-2 flex items-center gap-1">
+        <Sparkles size={12} /> 이번 항해에서 획득한 카드 {cards.length}장
+      </p>
+      <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+        {agg.map(({ item: c, count }) => (
+          <div key={c.ticker} className="relative flex items-center gap-2 rounded-xl bg-white dark:bg-[#242320] border border-neutral-100 dark:border-[#35332e] p-2">
+            {count > 1 && (
+              <span className="absolute top-1 right-1 px-1 py-0.5 rounded-full bg-[#16a34a] text-white text-[9px] font-black tabular-nums leading-none">×{count}</span>
+            )}
+            <StockLogo item={c} size={30} />
+            <div className="min-w-0">
+              <p className="font-bold text-xs text-neutral-900 dark:text-white truncate">{c.name}</p>
+              <div className="mt-0.5"><Medal item={c} /></div>
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 // 이번 항해(연승) 기록 기반 등급 (전역 리더보드 대신 자체 랭크)
 function rankOf(streak: number): { emoji: string; title: string } {
   if (streak >= 15) return { emoji: "👑", title: "전설의 선장" };
@@ -271,6 +305,7 @@ export default function GamePage() {
   const [deck, setDeck] = useState<DeckItem[]>([]);
   const [showDeck, setShowDeck] = useState(false);
   const [missed, setMissed] = useState<any | null>(null); // 항해 종료 시 틀린 종목 정보
+  const [acquired, setAcquired] = useState<DeckCardSnapshot[]>([]); // 이번 항해에서 획득한 카드
 
   useEffect(() => { dispatch(reqGetNcavDailyList("latest")); }, [dispatch]);
 
@@ -307,7 +342,7 @@ export default function GamePage() {
     const a = draw();
     if (!a) return;
     setAnchor(a); setChallenger(draw(a.ticker));
-    setStreak(0); setNewBest(false); setLastWin(null); setDropped(false); setDropPrompt(false); setSaveFail(null); setEscaped(null); setMissed(null); setPhase("guessing");
+    setStreak(0); setNewBest(false); setLastWin(null); setDropped(false); setDropPrompt(false); setSaveFail(null); setEscaped(null); setMissed(null); setAcquired([]); setPhase("guessing");
   }, [draw]);
 
   const started = useRef(false);
@@ -337,6 +372,7 @@ export default function GamePage() {
           addDeckCard(snap).then(res => {
             if (res?.added) {
               setDropped(true);
+              setAcquired(prev => [snap, ...prev]); // 이번 항해 획득 목록에 추가
               // 같은 종목이면 개수 누적, 없으면 새로 추가
               setDeck(prev => {
                 const i = prev.findIndex(c => c.ticker === snap.ticker);
@@ -432,6 +468,7 @@ export default function GamePage() {
                 <p className="text-xs text-neutral-400 mt-2">
                   {isLoggedIn ? <>발굴한 카드는 <b>내 덱({deckTotal(deck)})</b>에 쌓였습니다.</> : "로그인하면 발굴한 카드를 덱에 모을 수 있어요."}
                 </p>
+                {acquired.length > 0 && <AcquiredThisGame cards={acquired} />}
                 {missed && <MissedInfo missed={missed} />}
                 <button onClick={start}
                   className="mt-5 inline-flex items-center gap-2 px-6 py-3 rounded-xl bg-[#16a34a] hover:bg-[#15803d] text-white font-bold text-sm shadow-md">
