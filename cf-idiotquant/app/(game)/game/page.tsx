@@ -618,9 +618,12 @@ function DeckView({ deck, isLoggedIn, onLogin, onClose }: { deck: DeckItem[]; is
               <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
                 {cards.map(({ item: c }) => (
                   <div key={c.ticker} className={cn("relative rounded-2xl border p-4 text-center flex flex-col items-center", TIER_CARD_BG[tone])}>
-                    {(c.count ?? 1) > 1 && (
-                      <span className="absolute top-1.5 right-1.5 px-1.5 py-0.5 rounded-full bg-[#16a34a] text-white text-[10px] font-black tabular-nums leading-none">×{c.count}</span>
-                    )}
+                    <span className={cn("absolute top-1.5 right-1.5 px-1.5 py-0.5 rounded-full text-[10px] font-black tabular-nums leading-none",
+                      (c.count ?? 1) > 1
+                        ? "bg-[#16a34a] text-white"
+                        : "bg-neutral-200/70 text-neutral-500 dark:bg-[#35332e] dark:text-neutral-400")}>
+                      ×{c.count ?? 1}
+                    </span>
                     <StockLogo item={c} size={40} />
                     <div className="mt-1.5"><Medal item={c} /></div>
                     <p className="mt-1.5 font-bold text-sm text-neutral-900 dark:text-white truncate max-w-full">{c.name}</p>
