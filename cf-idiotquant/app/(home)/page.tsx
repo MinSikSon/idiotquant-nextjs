@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef } from "react";
 import * as THREE from "three";
+import { RoomEnvironment } from "three/examples/jsm/environments/RoomEnvironment.js";
 import { useSession } from "next-auth/react";
 import Link from "next/link";
 import {
@@ -240,14 +241,14 @@ function HeroArt() {
     const reduce = window.matchMedia?.("(prefers-reduced-motion: reduce)").matches ?? false;
 
     const scene = new THREE.Scene();
-    const camera = new THREE.PerspectiveCamera(32, 1, 0.1, 100);
-    camera.position.set(0, 0.3, 9.5);
-    camera.lookAt(0, -0.1, 0);
+    const camera = new THREE.PerspectiveCamera(42, 1, 0.1, 100);
+    camera.position.set(0, 2.6, 11);
+    camera.lookAt(0, 0.3, -1);
 
     const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
     renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
     renderer.toneMapping = THREE.ACESFilmicToneMapping;
-    renderer.toneMappingExposure = 1.22;
+    renderer.toneMappingExposure = 1.1;
     renderer.outputColorSpace = THREE.SRGBColorSpace;
     const canvas = renderer.domElement;
     canvas.style.width = "100%";
@@ -255,78 +256,85 @@ function HeroArt() {
     canvas.style.display = "block";
     mount.appendChild(canvas);
 
-    const envTex = makeEnvTexture();
-    scene.environment = envTex;
+    const disposables: { dispose: () => void }[] = [];
 
-    scene.add(new THREE.HemisphereLight(0xffffff, 0x8f9a92, 0.75));
-    const key = new THREE.DirectionalLight(0xfff4d6, 3.0);
-    key.position.set(3, 6, 5);
+    // 프리미엄 반사용 실내 환경맵 (PMREM)
+    const pmrem = new THREE.PMREMGenerator(renderer);
+    const envRT = pmrem.fromScene(new RoomEnvironment(), 0.04);
+    scene.environment = envRT.texture;
+    pmrem.dispose();
+    disposables.push(envRT.texture);
+
+    scene.add(new THREE.HemisphereLight(0xffffff, 0x6b7a72, 0.6));
+    const key = new THREE.DirectionalLight(0xfff2d0, 2.6);
+    key.position.set(5, 9, 7);
     scene.add(key);
-    const rim = new THREE.DirectionalLight(0x9be7bd, 1.0);
-    rim.position.set(-5, 2, -2);
+    const rim = new THREE.DirectionalLight(0x86efc0, 1.2);
+    rim.position.set(-7, 3, -4);
     scene.add(rim);
 
     const root = new THREE.Group();
     scene.add(root);
-    const disposables: { dispose: () => void }[] = [envTex];
+    const BASE = -2;
 
-    const BASE = -1.5; // 차트 바닥선
-
-    // 접지 그림자 (바닥에 깔아 자연스럽게)
-    const shadowTex = makeRadialTexture("rgba(4,20,12,0.5)");
-    const shGeo = new THREE.PlaneGeometry(1, 1);
-    const shMat = new THREE.MeshBasicMaterial({ map: shadowTex, transparent: true, depthWrite: false, opacity: 0.55 });
-    disposables.push(shadowTex, shGeo, shMat);
-    const shadow = new THREE.Mesh(shGeo, shMat);
-    shadow.rotation.x = -Math.PI / 2;
-    shadow.position.set(0, BASE + 0.02, 0);
-    shadow.scale.set(6.6, 2.3, 1);
-    root.add(shadow);
-
-    // 상승 캔들차트 — 둥근 모서리 유광 캔들
-    const upMat = new THREE.MeshPhysicalMaterial({ color: 0x16a34a, roughness: 0.32, clearcoat: 0.7, clearcoatRoughness: 0.25, emissive: 0x0c5a2a, emissiveIntensity: 0.12 });
-    const dnMat = new THREE.MeshPhysicalMaterial({ color: 0xef4457, roughness: 0.32, clearcoat: 0.7, clearcoatRoughness: 0.25, emissive: 0x7a1626, emissiveIntensity: 0.12 });
+    // 공용 재질 · 지오메트리
+    const upMat = new THREE.MeshPhysicalMaterial({ color: 0x18a94e, roughness: 0.3, clearcoat: 0.8, clearcoatRoughness: 0.22, emissive: 0x0b5a2a, emissiveIntensity: 0.14 });
+    const dnMat = new THREE.MeshPhysicalMaterial({ color: 0xf04458, roughness: 0.3, clearcoat: 0.8, clearcoatRoughness: 0.22, emissive: 0x7a1626, emissiveIntensity: 0.14 });
     const wickMat = new THREE.MeshStandardMaterial({ color: 0x9aa3af, metalness: 0.1, roughness: 0.6 });
-    disposables.push(upMat, dnMat, wickMat);
-    const bars: { x: number; h: number; up: boolean }[] = [
-      { x: -2.15, h: 1.2, up: true }, { x: -1.075, h: 1.95, up: false }, { x: 0, h: 1.5, up: true },
-      { x: 1.075, h: 2.35, up: true }, { x: 2.15, h: 2.85, up: true },
-    ];
+    const goldMat = new THREE.MeshStandardMaterial({ color: 0xffca3d, metalness: 0.95, roughness: 0.14, emissive: 0x5a3d06, emissiveIntensity: 0.16 });
+    const shadowTex = makeRadialTexture("rgba(3,18,10,0.5)");
+    const shGeo = new THREE.PlaneGeometry(1, 1);
+    const shMat = new THREE.MeshBasicMaterial({ map: shadowTex, transparent: true, depthWrite: false, opacity: 0.5 });
+    const glowTex = makeRadialTexture("rgba(255,205,80,0.55)");
+    const haloMat = new THREE.SpriteMaterial({ map: glowTex, transparent: true, depthWrite: false, blending: THREE.AdditiveBlending, opacity: 0.55 });
+    disposables.push(upMat, dnMat, wickMat, goldMat, shadowTex, shGeo, shMat, glowTex, haloMat);
+
+    // 캔들 스카이라인 — 좌→우 상승 추세, 깊이(z) 배치로 원근감
     const candles: { g: THREE.Group; phase: number }[] = [];
-    bars.forEach((b, i) => {
-      const geo = roundedBoxGeometry(0.62, b.h, 0.62, 0.1);
-      const wickGeo = new THREE.CylinderGeometry(0.035, 0.035, b.h + 0.9, 10);
+    const N = 15;
+    let prev = 1.0;
+    for (let i = 0; i < N; i++) {
+      const trend = 0.9 + i * 0.12;
+      const noise = Math.sin(i * 1.7) * 0.4 + (Math.random() - 0.5) * 0.35;
+      const h = Math.max(0.6, trend + noise);
+      const up = h >= prev; prev = h;
+      const x = (i - (N - 1) / 2) * 1.15;
+      const z = -1.5 + Math.sin(i * 0.9) * 1.3 + (Math.random() - 0.5) * 0.6;
+      const geo = roundedBoxGeometry(0.5, h, 0.5, 0.09);
+      const wickGeo = new THREE.CylinderGeometry(0.03, 0.03, h + 0.7, 8);
       disposables.push(geo, wickGeo);
       const g = new THREE.Group();
-      const body = new THREE.Mesh(geo, b.up ? upMat : dnMat);
-      body.position.y = b.h / 2;
-      const wick = new THREE.Mesh(wickGeo, wickMat);
-      wick.position.y = b.h / 2;
-      g.add(wick, body);
-      g.position.set(b.x, BASE, 0);
+      const body = new THREE.Mesh(geo, up ? upMat : dnMat); body.position.y = h / 2;
+      const wick = new THREE.Mesh(wickGeo, wickMat); wick.position.y = h / 2;
+      const sh = new THREE.Mesh(shGeo, shMat); sh.rotation.x = -Math.PI / 2; sh.position.y = 0.01; sh.scale.set(1.5, 1.5, 1);
+      g.add(sh, wick, body);
+      g.position.set(x, BASE, z);
       root.add(g);
-      candles.push({ g, phase: i * 0.7 });
-    });
+      candles.push({ g, phase: i * 0.5 });
+    }
 
-    // 금화 액센트 (단위 표시 없는 금속 원통) — 차트 위로 떠서 회전
-    const goldMat = new THREE.MeshStandardMaterial({ color: 0xffca3d, metalness: 0.92, roughness: 0.16, emissive: 0x5a3d06, emissiveIntensity: 0.18 });
-    disposables.push(goldMat);
-    const makeCoin = (x: number, y: number, r: number) => {
+    // 금화 여러 개 (깊이·크기 다양) — 회전 + 부유 + 글로우 스프라이트
+    const coins: { parent: THREE.Group; disc: THREE.Group; spin: number; baseY: number; phase: number }[] = [];
+    const coinData: [number, number, number, number][] = [
+      [-5.5, 2.6, 1.5, 0.55], [3.4, 3.5, -1.0, 0.42], [6.2, 1.9, 0.4, 0.5],
+      [-2.6, 3.9, 0.2, 0.34], [0.8, 3.0, 2.4, 0.38],
+    ];
+    coinData.forEach(([x, y, z, r], i) => {
       const th = r * 0.22;
-      const baseGeo = new THREE.CylinderGeometry(r, r, th, 56);
-      const fieldGeo = new THREE.CylinderGeometry(r * 0.8, r * 0.8, th * 1.35, 56);
+      const baseGeo = new THREE.CylinderGeometry(r, r, th, 48);
+      const fieldGeo = new THREE.CylinderGeometry(r * 0.8, r * 0.8, th * 1.35, 48);
       disposables.push(baseGeo, fieldGeo);
       const disc = new THREE.Group();
       disc.add(new THREE.Mesh(baseGeo, goldMat), new THREE.Mesh(fieldGeo, goldMat));
       disc.rotation.x = Math.PI / 2;
+      const halo = new THREE.Sprite(haloMat);
+      halo.scale.set(r * 5, r * 5, 1);
       const g = new THREE.Group();
-      g.add(disc);
-      g.position.set(x, y, 0.8);
-      return g;
-    };
-    const coin1 = makeCoin(-1.95, 1.5, 0.4);
-    const coin2 = makeCoin(1.55, 1.95, 0.3);
-    root.add(coin1, coin2);
+      g.add(halo, disc);
+      g.position.set(x, BASE + y, z);
+      root.add(g);
+      coins.push({ parent: g, disc, spin: 1.1 + i * 0.25, baseY: BASE + y, phase: i });
+    });
 
     const resize = () => {
       const w = mount.clientWidth || 1;
@@ -343,15 +351,21 @@ function HeroArt() {
     let raf = 0;
     const render = () => {
       const t = clock.getElapsedTime();
-      coin1.rotation.y = t * 1.3;
-      coin2.rotation.y = t * 1.7 + 1;
-      candles.forEach(({ g, phase }) => { g.position.y = BASE + Math.sin(t * 1.1 + phase) * 0.06; });
-      root.rotation.y = Math.sin(t * 0.3) * 0.2;
+      candles.forEach(({ g, phase }) => { g.position.y = BASE + Math.sin(t * 0.9 + phase) * 0.05; });
+      coins.forEach(({ parent, disc, spin, baseY, phase }) => {
+        disc.rotation.y = t * spin;
+        parent.position.y = baseY + Math.sin(t * 0.8 + phase) * 0.18;
+      });
+      // 완만한 카메라 드리프트(패럴랙스)로 화면 전체가 살아 있게
+      camera.position.x = Math.sin(t * 0.08) * 2.4;
+      camera.position.y = 2.6 + Math.sin(t * 0.05) * 0.5;
+      camera.lookAt(0, 0.4, -1);
       renderer.render(scene, camera);
       raf = requestAnimationFrame(render);
     };
     if (reduce) {
-      root.rotation.y = -0.16;
+      camera.position.set(1.6, 2.7, 11);
+      camera.lookAt(0, 0.4, -1);
       renderer.render(scene, camera);
     } else {
       raf = requestAnimationFrame(render);
@@ -366,12 +380,7 @@ function HeroArt() {
     };
   }, []);
 
-  return (
-    <div className="relative w-full max-w-sm sm:max-w-md mx-auto aspect-[5/3]" aria-hidden="true">
-      <div className="absolute inset-[14%] rounded-full bg-[#16a34a]/15 dark:bg-[#16a34a]/20 blur-3xl" />
-      <div ref={mountRef} className="absolute inset-0" />
-    </div>
-  );
+  return <div ref={mountRef} className="w-full h-full" aria-hidden="true" />;
 }
 
 // 게임 버튼용 3D 종목 카드 (three.js) — 회전하며 앞면 아트가 보이는 카드
@@ -669,16 +678,17 @@ export default function HomePage() {
     <div className="min-h-screen">
 
       {/* ── HERO ─────────────────────────────────────────────────── */}
-      <section className="bg-gradient-to-b from-[#f4faf6] via-white to-white dark:from-[#12241c] dark:via-[#1f1e1b] dark:to-[#1f1e1b] border-b border-neutral-200/70 dark:border-[#3a3834] relative overflow-hidden">
-        {/* Decorative radial accents + dot-grid texture */}
-        <div className="absolute -top-40 -right-24 w-96 h-96 rounded-full bg-[#16a34a]/10 dark:bg-[#16a34a]/10 blur-3xl pointer-events-none" />
-        <div className="absolute top-16 -left-24 w-72 h-72 rounded-full bg-emerald-400/8 dark:bg-emerald-500/6 blur-3xl pointer-events-none" />
-        <div className="absolute inset-0 pointer-events-none opacity-[0.4] dark:opacity-[0.18] [background-image:radial-gradient(circle_at_1px_1px,rgba(22,163,74,0.18)_1px,transparent_0)] [background-size:22px_22px]" />
+      <section className="relative overflow-hidden min-h-[86vh] flex flex-col border-b border-neutral-200/70 dark:border-[#3a3834] bg-gradient-to-b from-[#f4faf6] to-white dark:from-[#12241c] dark:to-[#1a1915]">
+        {/* 풀블리드 3D 씬 (화면 전체) */}
+        <div className="absolute inset-0">
+          <HeroArt />
+        </div>
+        {/* 가독성 스크림 — 위·아래는 배경색, 가운데는 투명해 3D가 보이게 */}
+        <div className="absolute inset-0 pointer-events-none bg-gradient-to-b from-[#f4faf6] via-[#f4faf6]/5 to-[#f4faf6] dark:from-[#12241c] dark:via-transparent dark:to-[#1a1915]" />
 
-        <div className="max-w-3xl mx-auto px-5 pt-14 pb-12 sm:pt-20 sm:pb-14 md:pt-28 md:pb-20 relative">
-
-          {/* Live badge */}
-          <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-[#faf9f7] dark:bg-[#242320] border border-neutral-200 dark:border-[#35332e] mb-5 text-[11px] font-medium text-neutral-500 dark:text-neutral-400">
+        {/* 텍스트 오버레이 (상단) */}
+        <div className="relative z-10 max-w-3xl mx-auto w-full px-5 pt-16 sm:pt-24 md:pt-28">
+          <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-white/70 dark:bg-[#242320]/70 backdrop-blur border border-neutral-200 dark:border-[#35332e] mb-5 text-[11px] font-medium text-neutral-500 dark:text-neutral-400">
             <span className="relative flex h-1.5 w-1.5 shrink-0">
               <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
               <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-emerald-500" />
@@ -686,60 +696,41 @@ export default function HomePage() {
             게임으로 배우는 주식·경제
           </div>
 
-          {/* Headline */}
-          <h1 className="text-[2.1rem] sm:text-[3rem] md:text-[3.5rem] font-black leading-[1.08] tracking-tight mb-4 text-neutral-900 dark:text-neutral-50">
+          <h1 className="text-[2.3rem] sm:text-[3.2rem] md:text-[4rem] font-black leading-[1.06] tracking-tight mb-4 text-neutral-900 dark:text-neutral-50">
             주식이 게임처럼,<br />
             <span className="bg-gradient-to-r from-[#16a34a] to-emerald-500 dark:from-[#22c55e] dark:to-emerald-400 bg-clip-text text-transparent">쉽고 재미있게.</span>
           </h1>
 
-          <p className="text-sm sm:text-base text-neutral-500 dark:text-neutral-400 font-medium mb-6 break-keep max-w-md">
+          <p className="text-sm sm:text-base text-neutral-600 dark:text-neutral-300 font-medium break-keep max-w-md">
             종목 카드 게임으로 시작해, 실제 시장 데이터로 주식·경제 감각을 키웁니다.
           </p>
-
-          {/* 히어로 일러스트 — "게임으로 배우는 주식"을 글자 대신 이미지로 */}
-          <div className="mt-8 sm:mt-10">
-            <HeroArt />
-          </div>
-
         </div>
 
-        {/* Stats strip — 히어로 위에 떠 있는 카드 */}
-        {!preview.loading && preview.total > 0 && (
-          <div className="relative">
-            <div className="max-w-3xl mx-auto px-5 pb-9 grid grid-cols-3 gap-2.5 sm:gap-3">
-              <div className="rounded-2xl bg-white/70 dark:bg-[#242320]/60 backdrop-blur border border-neutral-200/70 dark:border-[#35332e] shadow-sm px-2 py-4 text-center">
+        {/* 스탯 (하단 오버레이) */}
+        <div className="relative z-10 mt-auto">
+          {!preview.loading && preview.total > 0 && (
+            <div className="max-w-3xl mx-auto px-5 pb-9 pt-4 grid grid-cols-3 gap-2.5 sm:gap-3">
+              <div className="rounded-2xl bg-white/70 dark:bg-[#242320]/70 backdrop-blur border border-neutral-200/70 dark:border-[#35332e] shadow-sm px-2 py-4 text-center">
                 <p className="text-xl sm:text-2xl font-black text-[#16a34a] dark:text-[#16a34a] tabular-nums leading-none">
                   {animatedTotal.toLocaleString()}
                 </p>
-                <p className="text-[10px] text-neutral-400 font-medium mt-1.5">최근 발굴 종목</p>
+                <p className="text-[10px] text-neutral-500 dark:text-neutral-400 font-medium mt-1.5">최근 발굴 종목</p>
               </div>
-              <div className="rounded-2xl bg-white/70 dark:bg-[#242320]/60 backdrop-blur border border-neutral-200/70 dark:border-[#35332e] shadow-sm px-2 py-4 text-center">
+              <div className="rounded-2xl bg-white/70 dark:bg-[#242320]/70 backdrop-blur border border-neutral-200/70 dark:border-[#35332e] shadow-sm px-2 py-4 text-center">
                 <p className="text-xl sm:text-2xl font-black text-emerald-600 dark:text-emerald-400 tabular-nums leading-none">
                   {animatedFiltered.toLocaleString()}
                 </p>
-                <p className="text-[10px] text-neutral-400 font-medium mt-1.5">시총 500억+</p>
+                <p className="text-[10px] text-neutral-500 dark:text-neutral-400 font-medium mt-1.5">시총 500억+</p>
               </div>
-              <div className="rounded-2xl bg-white/70 dark:bg-[#242320]/60 backdrop-blur border border-neutral-200/70 dark:border-[#35332e] shadow-sm px-2 py-4 text-center">
+              <div className="rounded-2xl bg-white/70 dark:bg-[#242320]/70 backdrop-blur border border-neutral-200/70 dark:border-[#35332e] shadow-sm px-2 py-4 text-center">
                 <p className="text-base sm:text-lg font-black text-neutral-700 dark:text-neutral-200 tabular-nums leading-none mt-1">
                   {formattedDate ?? "—"}
                 </p>
-                <p className="text-[10px] text-neutral-400 font-medium mt-1.5">업데이트</p>
+                <p className="text-[10px] text-neutral-500 dark:text-neutral-400 font-medium mt-1.5">업데이트</p>
               </div>
             </div>
-          </div>
-        )}
-        {preview.loading && (
-          <div className="relative">
-            <div className="max-w-3xl mx-auto px-5 pb-9 grid grid-cols-3 gap-2.5 sm:gap-3">
-              {[0, 1, 2].map(i => (
-                <div key={i} className="flex flex-col items-center gap-2 rounded-2xl bg-white/60 dark:bg-[#242320]/50 border border-neutral-200/70 dark:border-[#35332e] px-2 py-4">
-                  <div className="h-5 w-14 rounded-md bg-neutral-200/80 dark:bg-[#35332e] animate-pulse" />
-                  <div className="h-2.5 w-12 rounded bg-neutral-100 dark:bg-[#2c2b27] animate-pulse" />
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
+          )}
+        </div>
       </section>
 
       {/* ── GAME BANNER (3D 종목 카드 · 게임 입구) ─────────────────── */}
