@@ -30,15 +30,14 @@ const nextConfig = {
                 port: '',
                 pathname: '/**',
             },
-        ],
-        domains: [
-            'cdn.pixabay.com',
-            'encrypted-tbn0.gstatic.com',
-            'encrypted-tbn1.gstatic.com',
-            'encrypted-tbn2.gstatic.com',
-            'encrypted-tbn3.gstatic.com',
-            'mud-kage.kakao.com',
-            'example.com',
+            // 기존 images.domains → remotePatterns 로 이전 (Next 16 에서 domains 제거됨)
+            { protocol: 'https', hostname: 'cdn.pixabay.com' },
+            { protocol: 'https', hostname: 'encrypted-tbn0.gstatic.com' },
+            { protocol: 'https', hostname: 'encrypted-tbn1.gstatic.com' },
+            { protocol: 'https', hostname: 'encrypted-tbn2.gstatic.com' },
+            { protocol: 'https', hostname: 'encrypted-tbn3.gstatic.com' },
+            { protocol: 'https', hostname: 'mud-kage.kakao.com' },
+            { protocol: 'https', hostname: 'example.com' },
         ],
     },
     env: {
