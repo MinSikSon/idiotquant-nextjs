@@ -135,22 +135,52 @@ const HOW_IT_WORKS = [
 const HERO_LINE = [[50, 150], [88, 133], [122, 139], [158, 108], [194, 119], [228, 83], [252, 71]];
 
 function HeroArt() {
+  const last = HERO_LINE.length - 1;
   return (
     <svg viewBox="0 0 340 210" fill="none"
       role="img" aria-label="알고리즘이 저평가 종목을 자동으로 찾아 체크해 주는 모습"
-      className="w-full max-w-sm sm:max-w-md mx-auto h-auto text-neutral-300 dark:text-neutral-600">
-      <ellipse cx="180" cy="120" rx="150" ry="72" fill="#16a34a" opacity="0.06" />
-      <rect x="28" y="40" width="236" height="140" rx="18" fill="#16a34a" opacity="0.05" />
-      <rect x="28" y="40" width="236" height="140" rx="18" stroke="currentColor" strokeWidth="2" />
-      <path d="M50,150 L88,133 L122,139 L158,108 L194,119 L228,83 L252,71 L252,160 L50,160 Z" fill="#16a34a" opacity="0.12" />
+      className="w-full max-w-sm sm:max-w-md mx-auto h-auto">
+      <defs>
+        <linearGradient id="heroArea" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stopColor="#16a34a" stopOpacity="0.30" />
+          <stop offset="100%" stopColor="#16a34a" stopOpacity="0" />
+        </linearGradient>
+        <linearGradient id="heroLine" x1="0" y1="1" x2="1" y2="0">
+          <stop offset="0%" stopColor="#16a34a" />
+          <stop offset="100%" stopColor="#22c55e" />
+        </linearGradient>
+        <radialGradient id="heroGlow" cx="50%" cy="50%" r="50%">
+          <stop offset="0%" stopColor="#16a34a" stopOpacity="0.20" />
+          <stop offset="100%" stopColor="#16a34a" stopOpacity="0" />
+        </radialGradient>
+        <filter id="heroSoft" x="-40%" y="-40%" width="180%" height="180%">
+          <feDropShadow dx="0" dy="6" stdDeviation="7" floodColor="#16a34a" floodOpacity="0.30" />
+        </filter>
+      </defs>
+
+      {/* 뒤 글로우 */}
+      <ellipse cx="168" cy="116" rx="172" ry="86" fill="url(#heroGlow)" />
+
+      {/* 차트 카드 */}
+      <rect x="26" y="34" width="248" height="150" rx="22" className="fill-white dark:fill-[#242320]" />
+      <rect x="26" y="34" width="248" height="150" rx="22" fill="none" stroke="#16a34a" strokeOpacity="0.16" strokeWidth="1.5" />
+
+      {/* 상승 곡선 + 면적 */}
+      <path d="M50,150 L88,133 L122,139 L158,108 L194,119 L228,83 L252,71 L252,168 L50,168 Z" fill="url(#heroArea)" />
       <path d="M50,150 L88,133 L122,139 L158,108 L194,119 L228,83 L252,71"
-        stroke="#16a34a" strokeWidth="3.5" strokeLinecap="round" strokeLinejoin="round" />
-      {HERO_LINE.map(([x, y], i) => <circle key={i} cx={x} cy={y} r="3.2" fill="#16a34a" />)}
-      <circle cx="278" cy="58" r="30" fill="#16a34a" />
-      <path d="M265,58 l9,9 l16,-19" stroke="#fff" strokeWidth="4.5" strokeLinecap="round" strokeLinejoin="round" />
-      <path d="M34,150 l0,-12 M28,144 l12,0" stroke="#16a34a" strokeWidth="2.5" strokeLinecap="round" />
-      <path d="M300,152 l0,-10 M295,147 l10,0" stroke="#16a34a" strokeWidth="2.5" strokeLinecap="round" opacity="0.7" />
-      <circle cx="48" cy="58" r="3" fill="#16a34a" opacity="0.6" />
+        stroke="url(#heroLine)" strokeWidth="4" strokeLinecap="round" strokeLinejoin="round" />
+      {HERO_LINE.map(([x, y], i) => (
+        <circle key={i} cx={x} cy={y} r={i === last ? 5 : 3}
+          fill="white" stroke="#16a34a" strokeWidth={i === last ? 3.5 : 2.5} />
+      ))}
+
+      {/* 체크 배지 */}
+      <circle cx="286" cy="52" r="30" fill="url(#heroLine)" filter="url(#heroSoft)" />
+      <path d="M273,52 l9,9 l16,-19" stroke="#fff" strokeWidth="5" strokeLinecap="round" strokeLinejoin="round" />
+
+      {/* 반짝임 */}
+      <circle cx="44" cy="52" r="3" fill="#16a34a" opacity="0.5" />
+      <circle cx="60" cy="40" r="2" fill="#16a34a" opacity="0.35" />
     </svg>
   );
 }
@@ -407,10 +437,11 @@ export default function HomePage() {
     <div className="min-h-screen">
 
       {/* ── HERO ─────────────────────────────────────────────────── */}
-      <section className="bg-white dark:bg-[#1f1e1b] border-b border-neutral-200/70 dark:border-[#3a3834] relative overflow-hidden">
-        {/* Decorative radial accents */}
-        <div className="absolute -top-32 -right-32 w-80 h-80 rounded-full bg-[#16a34a]/6 dark:bg-[#16a34a]/4 blur-3xl pointer-events-none" />
-        <div className="absolute -bottom-16 -left-16 w-64 h-64 rounded-full bg-emerald-500/4 dark:bg-emerald-500/3 blur-3xl pointer-events-none" />
+      <section className="bg-gradient-to-b from-[#f4faf6] via-white to-white dark:from-[#12241c] dark:via-[#1f1e1b] dark:to-[#1f1e1b] border-b border-neutral-200/70 dark:border-[#3a3834] relative overflow-hidden">
+        {/* Decorative radial accents + dot-grid texture */}
+        <div className="absolute -top-40 -right-24 w-96 h-96 rounded-full bg-[#16a34a]/10 dark:bg-[#16a34a]/10 blur-3xl pointer-events-none" />
+        <div className="absolute top-16 -left-24 w-72 h-72 rounded-full bg-emerald-400/8 dark:bg-emerald-500/6 blur-3xl pointer-events-none" />
+        <div className="absolute inset-0 pointer-events-none opacity-[0.4] dark:opacity-[0.18] [background-image:radial-gradient(circle_at_1px_1px,rgba(22,163,74,0.18)_1px,transparent_0)] [background-size:22px_22px]" />
 
         <div className="max-w-3xl mx-auto px-5 pt-14 pb-12 sm:pt-20 sm:pb-14 md:pt-28 md:pb-20 relative">
 
@@ -426,7 +457,7 @@ export default function HomePage() {
           {/* Headline */}
           <h1 className="text-[2.1rem] sm:text-[3rem] md:text-[3.5rem] font-black leading-[1.08] tracking-tight mb-4 text-neutral-900 dark:text-neutral-50">
             퀀트 투자,<br />
-            <span className="text-[#16a34a] dark:text-[#16a34a]">어렵지 않습니다.</span>
+            <span className="bg-gradient-to-r from-[#16a34a] to-emerald-500 dark:from-[#22c55e] dark:to-emerald-400 bg-clip-text text-transparent">어렵지 않습니다.</span>
           </h1>
 
           {/* 히어로 일러스트 — "알고리즘이 알아서 골라준다"를 글자 대신 이미지로 */}
@@ -436,39 +467,36 @@ export default function HomePage() {
 
         </div>
 
-        {/* Stats strip */}
+        {/* Stats strip — 히어로 위에 떠 있는 카드 */}
         {!preview.loading && preview.total > 0 && (
-          <div className="border-t border-neutral-100 dark:border-[#2c2b27] relative">
-            <div className="max-w-3xl mx-auto px-5 py-5 grid grid-cols-3 gap-0">
-              <div className="text-center py-1">
-                <p className="text-xl font-black text-[#16a34a] dark:text-[#16a34a] tabular-nums leading-none">
+          <div className="relative">
+            <div className="max-w-3xl mx-auto px-5 pb-9 grid grid-cols-3 gap-2.5 sm:gap-3">
+              <div className="rounded-2xl bg-white/70 dark:bg-[#242320]/60 backdrop-blur border border-neutral-200/70 dark:border-[#35332e] shadow-sm px-2 py-4 text-center">
+                <p className="text-xl sm:text-2xl font-black text-[#16a34a] dark:text-[#16a34a] tabular-nums leading-none">
                   {animatedTotal.toLocaleString()}
                 </p>
-                <p className="text-[10px] text-neutral-400 font-medium mt-1">최근 발굴 종목</p>
+                <p className="text-[10px] text-neutral-400 font-medium mt-1.5">최근 발굴 종목</p>
               </div>
-              <div className="text-center py-1 border-x border-neutral-100 dark:border-[#2c2b27]">
-                <p className="text-xl font-black text-emerald-600 dark:text-emerald-400 tabular-nums leading-none">
+              <div className="rounded-2xl bg-white/70 dark:bg-[#242320]/60 backdrop-blur border border-neutral-200/70 dark:border-[#35332e] shadow-sm px-2 py-4 text-center">
+                <p className="text-xl sm:text-2xl font-black text-emerald-600 dark:text-emerald-400 tabular-nums leading-none">
                   {animatedFiltered.toLocaleString()}
                 </p>
-                <p className="text-[10px] text-neutral-400 font-medium mt-1">시총 500억+</p>
+                <p className="text-[10px] text-neutral-400 font-medium mt-1.5">시총 500억+</p>
               </div>
-              <div className="text-center py-1">
-                <p className="text-xl font-black text-neutral-700 dark:text-neutral-200 tabular-nums leading-none">
+              <div className="rounded-2xl bg-white/70 dark:bg-[#242320]/60 backdrop-blur border border-neutral-200/70 dark:border-[#35332e] shadow-sm px-2 py-4 text-center">
+                <p className="text-base sm:text-lg font-black text-neutral-700 dark:text-neutral-200 tabular-nums leading-none mt-1">
                   {formattedDate ?? "—"}
                 </p>
-                <p className="text-[10px] text-neutral-400 font-medium mt-1">업데이트</p>
+                <p className="text-[10px] text-neutral-400 font-medium mt-1.5">업데이트</p>
               </div>
             </div>
           </div>
         )}
         {preview.loading && (
-          <div className="border-t border-neutral-100 dark:border-[#2c2b27] relative">
-            <div className="max-w-3xl mx-auto px-5 py-5 grid grid-cols-3 gap-0">
+          <div className="relative">
+            <div className="max-w-3xl mx-auto px-5 pb-9 grid grid-cols-3 gap-2.5 sm:gap-3">
               {[0, 1, 2].map(i => (
-                <div key={i} className={cn(
-                  "flex flex-col items-center py-1 gap-1.5",
-                  i === 1 && "border-x border-neutral-100 dark:border-[#2c2b27]"
-                )}>
+                <div key={i} className="flex flex-col items-center gap-2 rounded-2xl bg-white/60 dark:bg-[#242320]/50 border border-neutral-200/70 dark:border-[#35332e] px-2 py-4">
                   <div className="h-5 w-14 rounded-md bg-neutral-200/80 dark:bg-[#35332e] animate-pulse" />
                   <div className="h-2.5 w-12 rounded bg-neutral-100 dark:bg-[#2c2b27] animate-pulse" />
                 </div>
