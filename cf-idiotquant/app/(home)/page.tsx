@@ -160,6 +160,77 @@ function makeEnvTexture(): THREE.Texture {
   return tex;
 }
 
+// 둥근 모서리 3D 슬래브 (core three: Shape + ExtrudeGeometry)
+function roundedBoxGeometry(w: number, h: number, d: number, r: number): THREE.ExtrudeGeometry {
+  const s = new THREE.Shape();
+  const x = -w / 2, y = -h / 2;
+  s.moveTo(x + r, y);
+  s.lineTo(x + w - r, y);
+  s.quadraticCurveTo(x + w, y, x + w, y + r);
+  s.lineTo(x + w, y + h - r);
+  s.quadraticCurveTo(x + w, y + h, x + w - r, y + h);
+  s.lineTo(x + r, y + h);
+  s.quadraticCurveTo(x, y + h, x, y + h - r);
+  s.lineTo(x, y + r);
+  s.quadraticCurveTo(x, y, x + r, y);
+  const bevel = Math.min(0.045, d * 0.4, r * 0.6);
+  const geo = new THREE.ExtrudeGeometry(s, {
+    depth: Math.max(0.001, d - bevel * 2), bevelEnabled: true,
+    bevelThickness: bevel, bevelSize: bevel, bevelSegments: 2, steps: 1, curveSegments: 14,
+  });
+  geo.translate(0, 0, -d / 2);
+  geo.computeVertexNormals();
+  return geo;
+}
+
+// 부드러운 원형 그림자/글로우 텍스처
+function makeRadialTexture(inner: string): THREE.CanvasTexture {
+  const c = document.createElement("canvas");
+  c.width = c.height = 128;
+  const ctx = c.getContext("2d")!;
+  const g = ctx.createRadialGradient(64, 64, 2, 64, 64, 62);
+  g.addColorStop(0, inner);
+  g.addColorStop(1, "rgba(0,0,0,0)");
+  ctx.fillStyle = g;
+  ctx.fillRect(0, 0, 128, 128);
+  const t = new THREE.CanvasTexture(c);
+  t.colorSpace = THREE.SRGBColorSpace;
+  return t;
+}
+
+// 종목 카드 앞면 아트 (초록 카드 + 미니 상승 캔들 + 코너 핍)
+function makeCardFaceTexture(): THREE.CanvasTexture {
+  const w = 500, h = 720;
+  const c = document.createElement("canvas");
+  c.width = w; c.height = h;
+  const ctx = c.getContext("2d")!;
+  const g = ctx.createLinearGradient(0, 0, w, h);
+  g.addColorStop(0, "#22b45f");
+  g.addColorStop(1, "#0b6a33");
+  ctx.fillStyle = g;
+  ctx.beginPath(); ctx.roundRect(0, 0, w, h, 52); ctx.fill();
+  ctx.strokeStyle = "rgba(255,255,255,0.4)"; ctx.lineWidth = 6;
+  ctx.beginPath(); ctx.roundRect(24, 24, w - 48, h - 48, 36); ctx.stroke();
+  // 코너 핍
+  ctx.fillStyle = "#ffffff"; ctx.textBaseline = "top"; ctx.font = "800 54px sans-serif";
+  ctx.fillText("₩", 44, 40);
+  ctx.save(); ctx.translate(w - 44, h - 40); ctx.rotate(Math.PI); ctx.fillText("₩", 0, 0); ctx.restore();
+  // 중앙 미니 상승 캔들차트
+  const bars: [number, number, boolean][] = [[-150, 90, true], [-75, 150, false], [0, 120, true], [75, 210, true], [150, 270, true]];
+  const cx = w / 2, base = h / 2 + 150;
+  ctx.lineWidth = 6; ctx.strokeStyle = "rgba(255,255,255,0.85)";
+  for (const [dx, bh, up] of bars) {
+    const bx = cx + dx, bw = 42;
+    ctx.beginPath(); ctx.moveTo(bx, base - bh - 26); ctx.lineTo(bx, base + 12); ctx.stroke();
+    ctx.fillStyle = up ? "rgba(255,255,255,0.96)" : "rgba(255,255,255,0.5)";
+    ctx.beginPath(); ctx.roundRect(bx - bw / 2, base - bh, bw, bh, 8); ctx.fill();
+  }
+  const t = new THREE.CanvasTexture(c);
+  t.colorSpace = THREE.SRGBColorSpace;
+  t.anisotropy = 4;
+  return t;
+}
+
 function HeroArt() {
   const mountRef = useRef<HTMLDivElement>(null);
 
@@ -169,9 +240,9 @@ function HeroArt() {
     const reduce = window.matchMedia?.("(prefers-reduced-motion: reduce)").matches ?? false;
 
     const scene = new THREE.Scene();
-    const camera = new THREE.PerspectiveCamera(34, 1, 0.1, 100);
-    camera.position.set(0, 0.5, 7.4);
-    camera.lookAt(0, 0.15, 0);
+    const camera = new THREE.PerspectiveCamera(32, 1, 0.1, 100);
+    camera.position.set(0, 0.3, 9.5);
+    camera.lookAt(0, -0.1, 0);
 
     const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
     renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
@@ -187,57 +258,74 @@ function HeroArt() {
     const envTex = makeEnvTexture();
     scene.environment = envTex;
 
-    scene.add(new THREE.HemisphereLight(0xffffff, 0x8f9a92, 0.7));
-    const key = new THREE.DirectionalLight(0xfff4d6, 3.2);
-    key.position.set(3, 5, 5);
+    scene.add(new THREE.HemisphereLight(0xffffff, 0x8f9a92, 0.75));
+    const key = new THREE.DirectionalLight(0xfff4d6, 3.0);
+    key.position.set(3, 6, 5);
     scene.add(key);
     const rim = new THREE.DirectionalLight(0x9be7bd, 1.0);
-    rim.position.set(-4, 1.5, -2);
+    rim.position.set(-5, 2, -2);
     scene.add(rim);
-    const fill = new THREE.PointLight(0xffffff, 18, 20);
-    fill.position.set(-1, 2, 4);
-    scene.add(fill);
 
     const root = new THREE.Group();
     scene.add(root);
-
     const disposables: { dispose: () => void }[] = [envTex];
 
-    // 캔들 = 3D 박스 + 심지, 좌우로 배치
-    const makeCandle = (x: number, h: number, color: number) => {
-      const bodyGeo = new THREE.BoxGeometry(0.72, h, 0.72);
-      const bodyMat = new THREE.MeshPhysicalMaterial({ color, metalness: 0, roughness: 0.34, clearcoat: 0.7, clearcoatRoughness: 0.28, emissive: color, emissiveIntensity: 0.06 });
-      const wickGeo = new THREE.CylinderGeometry(0.045, 0.045, h + 1.3, 12);
-      const wickMat = new THREE.MeshStandardMaterial({ color: 0x9aa3af, metalness: 0.1, roughness: 0.6 });
-      disposables.push(bodyGeo, bodyMat, wickGeo, wickMat);
-      const g = new THREE.Group();
-      g.add(new THREE.Mesh(bodyGeo, bodyMat), new THREE.Mesh(wickGeo, wickMat));
-      g.position.x = x;
-      return g;
-    };
-    const candleL = makeCandle(-1.75, 2.5, 0x15a34a);
-    const candleR = makeCandle(1.55, 1.7, 0xe11d48);
-    root.add(candleL, candleR);
+    const BASE = -1.5; // 차트 바닥선
 
-    // 금화 = 금속 원통(단위 표시 없음). 세로축(그룹 Y) 회전으로 앞·옆·뒤가 보임
+    // 접지 그림자 (바닥에 깔아 자연스럽게)
+    const shadowTex = makeRadialTexture("rgba(4,20,12,0.5)");
+    const shGeo = new THREE.PlaneGeometry(1, 1);
+    const shMat = new THREE.MeshBasicMaterial({ map: shadowTex, transparent: true, depthWrite: false, opacity: 0.55 });
+    disposables.push(shadowTex, shGeo, shMat);
+    const shadow = new THREE.Mesh(shGeo, shMat);
+    shadow.rotation.x = -Math.PI / 2;
+    shadow.position.set(0, BASE + 0.02, 0);
+    shadow.scale.set(6.6, 2.3, 1);
+    root.add(shadow);
+
+    // 상승 캔들차트 — 둥근 모서리 유광 캔들
+    const upMat = new THREE.MeshPhysicalMaterial({ color: 0x16a34a, roughness: 0.32, clearcoat: 0.7, clearcoatRoughness: 0.25, emissive: 0x0c5a2a, emissiveIntensity: 0.12 });
+    const dnMat = new THREE.MeshPhysicalMaterial({ color: 0xef4457, roughness: 0.32, clearcoat: 0.7, clearcoatRoughness: 0.25, emissive: 0x7a1626, emissiveIntensity: 0.12 });
+    const wickMat = new THREE.MeshStandardMaterial({ color: 0x9aa3af, metalness: 0.1, roughness: 0.6 });
+    disposables.push(upMat, dnMat, wickMat);
+    const bars: { x: number; h: number; up: boolean }[] = [
+      { x: -2.15, h: 1.2, up: true }, { x: -1.075, h: 1.95, up: false }, { x: 0, h: 1.5, up: true },
+      { x: 1.075, h: 2.35, up: true }, { x: 2.15, h: 2.85, up: true },
+    ];
+    const candles: { g: THREE.Group; phase: number }[] = [];
+    bars.forEach((b, i) => {
+      const geo = roundedBoxGeometry(0.62, b.h, 0.62, 0.1);
+      const wickGeo = new THREE.CylinderGeometry(0.035, 0.035, b.h + 0.9, 10);
+      disposables.push(geo, wickGeo);
+      const g = new THREE.Group();
+      const body = new THREE.Mesh(geo, b.up ? upMat : dnMat);
+      body.position.y = b.h / 2;
+      const wick = new THREE.Mesh(wickGeo, wickMat);
+      wick.position.y = b.h / 2;
+      g.add(wick, body);
+      g.position.set(b.x, BASE, 0);
+      root.add(g);
+      candles.push({ g, phase: i * 0.7 });
+    });
+
+    // 금화 액센트 (단위 표시 없는 금속 원통) — 차트 위로 떠서 회전
     const goldMat = new THREE.MeshStandardMaterial({ color: 0xffca3d, metalness: 0.92, roughness: 0.16, emissive: 0x5a3d06, emissiveIntensity: 0.18 });
     disposables.push(goldMat);
-    // 정제된 금화 느낌: 베이스 원반 + 살짝 도드라진 안쪽 필드(테두리 생김)
     const makeCoin = (x: number, y: number, r: number) => {
       const th = r * 0.22;
-      const baseGeo = new THREE.CylinderGeometry(r, r, th, 60);
-      const fieldGeo = new THREE.CylinderGeometry(r * 0.8, r * 0.8, th * 1.35, 60);
+      const baseGeo = new THREE.CylinderGeometry(r, r, th, 56);
+      const fieldGeo = new THREE.CylinderGeometry(r * 0.8, r * 0.8, th * 1.35, 56);
       disposables.push(baseGeo, fieldGeo);
       const disc = new THREE.Group();
       disc.add(new THREE.Mesh(baseGeo, goldMat), new THREE.Mesh(fieldGeo, goldMat));
-      disc.rotation.x = Math.PI / 2; // 납작한 면이 카메라를 향하게
+      disc.rotation.x = Math.PI / 2;
       const g = new THREE.Group();
       g.add(disc);
-      g.position.set(x, y, 0.6);
+      g.position.set(x, y, 0.8);
       return g;
     };
-    const coin1 = makeCoin(-0.35, 1.95, 0.62);
-    const coin2 = makeCoin(2.05, 1.5, 0.44);
+    const coin1 = makeCoin(-1.95, 1.5, 0.4);
+    const coin2 = makeCoin(1.55, 1.95, 0.3);
     root.add(coin1, coin2);
 
     const resize = () => {
@@ -256,15 +344,14 @@ function HeroArt() {
     const render = () => {
       const t = clock.getElapsedTime();
       coin1.rotation.y = t * 1.3;
-      coin2.rotation.y = t * 1.6 + 1;
-      candleL.position.y = Math.sin(t * 1.1) * 0.12;
-      candleR.position.y = Math.sin(t * 1.1 + 1.1) * 0.12;
-      root.rotation.y = Math.sin(t * 0.32) * 0.4;
+      coin2.rotation.y = t * 1.7 + 1;
+      candles.forEach(({ g, phase }) => { g.position.y = BASE + Math.sin(t * 1.1 + phase) * 0.06; });
+      root.rotation.y = Math.sin(t * 0.3) * 0.2;
       renderer.render(scene, camera);
       raf = requestAnimationFrame(render);
     };
     if (reduce) {
-      root.rotation.y = -0.28;
+      root.rotation.y = -0.16;
       renderer.render(scene, camera);
     } else {
       raf = requestAnimationFrame(render);
@@ -285,6 +372,104 @@ function HeroArt() {
       <div ref={mountRef} className="absolute inset-0" />
     </div>
   );
+}
+
+// 게임 버튼용 3D 종목 카드 (three.js) — 회전하며 앞면 아트가 보이는 카드
+function GameCardArt() {
+  const mountRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const mount = mountRef.current;
+    if (!mount) return;
+    const reduce = window.matchMedia?.("(prefers-reduced-motion: reduce)").matches ?? false;
+
+    const scene = new THREE.Scene();
+    const camera = new THREE.PerspectiveCamera(30, 1, 0.1, 100);
+    camera.position.set(0, 0, 6.4);
+    camera.lookAt(0, 0, 0);
+
+    const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+    renderer.toneMapping = THREE.ACESFilmicToneMapping;
+    renderer.toneMappingExposure = 1.15;
+    renderer.outputColorSpace = THREE.SRGBColorSpace;
+    const canvas = renderer.domElement;
+    canvas.style.width = "100%";
+    canvas.style.height = "100%";
+    canvas.style.display = "block";
+    mount.appendChild(canvas);
+
+    const envTex = makeEnvTexture();
+    scene.environment = envTex;
+    scene.add(new THREE.HemisphereLight(0xffffff, 0x88958c, 0.7));
+    const key = new THREE.DirectionalLight(0xffffff, 2.6);
+    key.position.set(2, 4, 5);
+    scene.add(key);
+    const rim = new THREE.DirectionalLight(0x7ee3ad, 1.1);
+    rim.position.set(-4, 1, 1);
+    scene.add(rim);
+
+    const disposables: { dispose: () => void }[] = [envTex];
+
+    // 뒤 글로우
+    const glowTex = makeRadialTexture("rgba(22,163,74,0.5)");
+    const glowGeo = new THREE.PlaneGeometry(7, 7);
+    const glowMat = new THREE.MeshBasicMaterial({ map: glowTex, transparent: true, depthWrite: false, opacity: 0.55 });
+    disposables.push(glowTex, glowGeo, glowMat);
+    const glow = new THREE.Mesh(glowGeo, glowMat);
+    glow.position.z = -1.2;
+    scene.add(glow);
+
+    // 카드 본체(둥근 슬래브) + 앞면 아트
+    const cardGeo = roundedBoxGeometry(2.1, 3.0, 0.14, 0.18);
+    const cardMat = new THREE.MeshPhysicalMaterial({ color: 0x0e7a38, roughness: 0.3, clearcoat: 0.8, clearcoatRoughness: 0.2, metalness: 0 });
+    const faceTex = makeCardFaceTexture();
+    const faceGeo = new THREE.PlaneGeometry(1.86, 2.76);
+    const faceMat = new THREE.MeshStandardMaterial({ map: faceTex, roughness: 0.5, metalness: 0 });
+    disposables.push(cardGeo, cardMat, faceTex, faceGeo, faceMat);
+    const card = new THREE.Group();
+    const face = new THREE.Mesh(faceGeo, faceMat);
+    face.position.z = 0.082;
+    card.add(new THREE.Mesh(cardGeo, cardMat), face);
+    scene.add(card);
+
+    const resize = () => {
+      const w = mount.clientWidth || 1, h = mount.clientHeight || 1;
+      renderer.setSize(w, h, false);
+      camera.aspect = w / h;
+      camera.updateProjectionMatrix();
+    };
+    resize();
+    const ro = new ResizeObserver(resize);
+    ro.observe(mount);
+
+    const clock = new THREE.Clock();
+    let raf = 0;
+    const render = () => {
+      const t = clock.getElapsedTime();
+      card.rotation.y = Math.sin(t * 0.6) * 0.5;
+      card.rotation.x = Math.sin(t * 0.5 + 1) * 0.07;
+      card.position.y = Math.sin(t) * 0.08;
+      renderer.render(scene, camera);
+      raf = requestAnimationFrame(render);
+    };
+    if (reduce) {
+      card.rotation.y = -0.32;
+      renderer.render(scene, camera);
+    } else {
+      raf = requestAnimationFrame(render);
+    }
+
+    return () => {
+      cancelAnimationFrame(raf);
+      ro.disconnect();
+      disposables.forEach(d => d.dispose());
+      renderer.dispose();
+      if (canvas.parentNode) canvas.parentNode.removeChild(canvas);
+    };
+  }, []);
+
+  return <div ref={mountRef} className="w-full h-full" aria-hidden="true" />;
 }
 
 // 1단계: 여러 종목 중 좋은 하나를 돋보기로 집어냄
@@ -327,61 +512,6 @@ function StepTagArt() {
 }
 
 const STEP_ARTS = [StepScanArt, StepFunnelArt, StepTagArt];
-
-// 대항해시대 네덜란드 범선(East Indiaman) — "가치를 향한 항해" 테마 배너.
-// 실제 사진 대신 라이선스·네트워크 제약이 없는 자체 인라인 SVG 실루엣.
-function ShipArt() {
-  // 돛(순풍에 부푼 사각돛) 하나를 그리는 헬퍼: 상·하 활대에 걸리고 우현으로 부풂
-  const sail = (x1: number, x2: number, yt: number, yb: number, bulge: number) =>
-    `M${x1},${yt} L${x2},${yt} Q${x2 + bulge},${(yt + yb) / 2} ${x2},${yb} L${x1},${yb} Q${x1 + bulge},${(yt + yb) / 2} ${x1},${yt} Z`;
-  const HULL = "#123c2e";
-  return (
-    <svg viewBox="0 0 960 300" fill="none" role="img" aria-label="가치를 향한 항해를 상징하는 대항해시대 네덜란드 범선"
-      preserveAspectRatio="xMidYMid slice" className="w-full h-full">
-      {/* 태양 */}
-      <circle cx="742" cy="104" r="48" fill="#f59e0b" opacity="0.85" />
-      <circle cx="742" cy="104" r="48" fill="#fbbf24" opacity="0.25" />
-
-      {/* 선체 */}
-      <path d="M320,208 L612,208 L590,240 Q468,252 348,240 Z" fill={HULL} />
-      {/* 선미루 */}
-      <path d="M582,208 L612,208 L612,186 Q600,182 588,186 Z" fill={HULL} />
-      {/* 현측 장식선 */}
-      <path d="M338,220 L596,220" stroke="#fcd34d" strokeWidth="2.5" opacity="0.7" />
-
-      {/* 마스트 */}
-      <line x1="395" y1="208" x2="395" y2="70" stroke={HULL} strokeWidth="5" />
-      <line x1="468" y1="208" x2="468" y2="44" stroke={HULL} strokeWidth="6" />
-      <line x1="541" y1="208" x2="541" y2="80" stroke={HULL} strokeWidth="5" />
-      {/* 활대 */}
-      <line x1="352" y1="92" x2="438" y2="92" stroke={HULL} strokeWidth="3.5" />
-      <line x1="416" y1="66" x2="520" y2="66" stroke={HULL} strokeWidth="4" />
-      <line x1="505" y1="100" x2="577" y2="100" stroke={HULL} strokeWidth="3.5" />
-      {/* 선수 사장(bowsprit) */}
-      <line x1="330" y1="206" x2="284" y2="182" stroke={HULL} strokeWidth="4" />
-
-      {/* 돛 */}
-      <path d={sail(363, 427, 96, 132, 20)} fill="#fdf7e6" stroke={HULL} strokeWidth="2" />
-      <path d={sail(352, 438, 138, 188, 26)} fill="#fbf3dd" stroke={HULL} strokeWidth="2" />
-      <path d={sail(428, 508, 70, 116, 24)} fill="#fdf7e6" stroke={HULL} strokeWidth="2" />
-      <path d={sail(416, 520, 124, 180, 30)} fill="#fbf3dd" stroke={HULL} strokeWidth="2" />
-      <path d={sail(513, 569, 104, 134, 18)} fill="#fdf7e6" stroke={HULL} strokeWidth="2" />
-      <path d={sail(505, 577, 142, 186, 22)} fill="#fbf3dd" stroke={HULL} strokeWidth="2" />
-      {/* 선수 삼각돛 */}
-      <path d="M330,204 L292,182 L330,168 Z" fill="#fdf7e6" stroke={HULL} strokeWidth="2" />
-
-      {/* 페넌트 깃발 */}
-      <path d="M468,44 l30,7 l-30,7 Z" fill="#16a34a" />
-      <path d="M395,70 l22,5 l-22,5 Z" fill="#16a34a" />
-      <path d="M541,80 l22,5 l-22,5 Z" fill="#16a34a" />
-
-      {/* 앞바다 물결 (선체 하부와 겹쳐 물에 떠 보이게) */}
-      <path d="M0,238 Q120,228 240,238 T480,238 T720,238 T960,238 V300 H0 Z" fill="#16a34a" opacity="0.18" />
-      <path d="M0,252 Q160,242 320,252 T640,252 T960,252 V300 H0 Z" fill="#16a34a" opacity="0.30" />
-      <path d="M0,268 Q140,258 280,268 T560,268 T840,268 T960,268 V300 H0 Z" fill="#15803d" opacity="0.45" />
-    </svg>
-  );
-}
 
 function useCountUp(target: number, duration = 1000) {
   const [count, setCount] = useState(0);
@@ -612,9 +742,9 @@ export default function HomePage() {
         )}
       </section>
 
-      {/* ── SHIP BANNER (대항해시대 테마 · 카드 게임 입구) ─────────── */}
-      <Link href="/game" className="group relative flex h-40 sm:h-56 overflow-hidden border-b border-neutral-200/70 dark:border-[#3a3834] bg-gradient-to-b from-[#eaf5ee] to-white dark:from-[#0e2019] dark:to-[#1a1915]">
-        <ShipArt />
+      {/* ── GAME BANNER (3D 종목 카드 · 게임 입구) ─────────────────── */}
+      <Link href="/game" className="group relative flex h-44 sm:h-60 overflow-hidden border-b border-neutral-200/70 dark:border-[#3a3834] bg-gradient-to-b from-[#eaf5ee] to-white dark:from-[#0e2019] dark:to-[#1a1915]">
+        <GameCardArt />
         <span className="absolute bottom-3 left-1/2 -translate-x-1/2 inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full bg-white/85 dark:bg-[#242320]/85 backdrop-blur border border-neutral-200 dark:border-[#35332e] text-xs font-black text-[#15803d] dark:text-[#16a34a] shadow-sm group-hover:scale-105 transition-transform">
           🃏 종목 카드 게임으로 배우기 <ChevronRight size={13} />
         </span>
