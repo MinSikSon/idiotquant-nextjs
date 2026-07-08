@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, type CSSProperties } from "react";
 import { useSession } from "next-auth/react";
 import Link from "next/link";
 import {
@@ -137,81 +137,69 @@ const HOW_IT_WORKS = [
 ];
 
 // =========================================================================
-// 홈 일러스트 (자체 인라인 SVG · 외부 이미지/요청 없음 · 라이트/다크 대응)
-// "게임으로 배우는 주식" — 종목 카드(게임) + 미니 상승 차트로 컨셉을 전달한다.
+// 홈 3D 애니메이션 일러스트 (CSS 3D 트랜스폼 · 외부 라이브러리/에셋 없음 · 라이트/다크 대응)
+// 회전하는 금화(₩/$) + 3D 기울기의 캔들차트가 떠서 움직이며 "주식"을 표현한다.
+// prefers-reduced-motion 시 애니메이션 정지.
 // =========================================================================
+const HERO_CANDLES: { h: number; up: boolean }[] = [
+  { h: 40, up: true }, { h: 58, up: true }, { h: 36, up: false }, { h: 70, up: true },
+  { h: 52, up: false }, { h: 86, up: true }, { h: 66, up: true },
+];
+
+const HERO3D_CSS = `
+.iq3d{position:relative;width:100%;max-width:26rem;margin:0 auto;aspect-ratio:5/3;perspective:900px}
+.iq3d-glow{position:absolute;inset:8% 10%;border-radius:50%;background:radial-gradient(closest-side,rgba(22,163,74,.22),transparent);filter:blur(10px)}
+.iq3d-stage{position:absolute;inset:0;transform-style:preserve-3d}
+.iq3d-chart{position:absolute;left:11%;right:11%;bottom:16%;height:52%;display:flex;align-items:flex-end;justify-content:space-between;gap:5%;transform:rotateX(22deg) rotateY(-13deg);transform-style:preserve-3d}
+.iq3d-candle{position:relative;flex:1;height:var(--h);display:flex;align-items:flex-end;justify-content:center;transform-style:preserve-3d;animation:iq3d-float 4.2s ease-in-out infinite;animation-delay:var(--d)}
+.iq3d-wick{position:absolute;left:50%;top:-16%;height:132%;width:3px;transform:translateX(-50%) translateZ(14px);background:#94a3b8;opacity:.4;border-radius:2px}
+.iq3d-body{position:relative;width:100%;height:100%;border-radius:6px;transform:translateZ(14px);box-shadow:0 14px 22px rgba(2,44,26,.22)}
+.iq3d-body::before{content:"";position:absolute;inset:0;border-radius:6px;background:linear-gradient(125deg,rgba(255,255,255,.42),rgba(255,255,255,0) 46%)}
+.iq3d-body.up{background:linear-gradient(158deg,#4ade80,#15a34a 60%,#0f7a37)}
+.iq3d-body.down{background:linear-gradient(158deg,#fb7185,#e11d48 60%,#be123c)}
+.iq3d-coin{position:absolute;transform-style:preserve-3d;animation:iq3d-bob 3.4s ease-in-out infinite;filter:drop-shadow(0 10px 9px rgba(120,53,0,.28))}
+.iq3d-coin1{width:58px;height:58px;font-size:24px;top:8%;left:2%}
+.iq3d-coin2{width:40px;height:40px;font-size:16px;top:0;right:14%;animation-delay:.7s}
+.iq3d-coin3{width:34px;height:34px;font-size:13px;bottom:24%;right:1%;animation-delay:1.3s}
+.iq3d-spin{position:absolute;inset:0;transform-style:preserve-3d;animation:iq3d-spin 3.4s linear infinite}
+.iq3d-face{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;border-radius:50%;font-weight:900;color:#7c3f00;background:radial-gradient(circle at 34% 26%,#fff7db,#fcd34d 48%,#e0920b 78%,#b45309);box-shadow:inset 0 0 0 3px rgba(255,255,255,.45),inset 0 -7px 12px rgba(146,64,14,.4),inset 0 6px 10px rgba(255,255,255,.4);text-shadow:0 1px 0 rgba(255,255,255,.45),0 -1px 1px rgba(120,53,0,.45)}
+.iq3d-face::after{content:"";position:absolute;top:16%;left:20%;width:30%;height:22%;border-radius:50%;background:rgba(255,255,255,.6);filter:blur(2px)}
+@keyframes iq3d-spin{from{transform:rotateY(0)}to{transform:rotateY(360deg)}}
+@keyframes iq3d-bob{0%,100%{transform:translateY(0)}50%{transform:translateY(-13px)}}
+@keyframes iq3d-float{0%,100%{transform:translateY(0)}50%{transform:translateY(-8px)}}
+@media (prefers-reduced-motion:reduce){.iq3d-coin,.iq3d-spin,.iq3d-candle{animation:none}}
+`;
+
+function Coin({ cls, symbol }: { cls: string; symbol: string }) {
+  return (
+    <div className={`iq3d-coin ${cls}`}>
+      <div className="iq3d-spin">
+        <span className="iq3d-face">{symbol}</span>
+      </div>
+    </div>
+  );
+}
+
 function HeroArt() {
   return (
-    <svg viewBox="0 0 340 210" fill="none"
-      role="img" aria-label="종목 카드 게임으로 주식을 배우는 모습"
-      className="w-full max-w-sm sm:max-w-md mx-auto h-auto">
-      <defs>
-        <linearGradient id="heroArea" x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0%" stopColor="#16a34a" stopOpacity="0.30" />
-          <stop offset="100%" stopColor="#16a34a" stopOpacity="0" />
-        </linearGradient>
-        <linearGradient id="heroLine" x1="0" y1="1" x2="1" y2="0">
-          <stop offset="0%" stopColor="#16a34a" />
-          <stop offset="100%" stopColor="#22c55e" />
-        </linearGradient>
-        <radialGradient id="heroGlow" cx="50%" cy="50%" r="50%">
-          <stop offset="0%" stopColor="#16a34a" stopOpacity="0.20" />
-          <stop offset="100%" stopColor="#16a34a" stopOpacity="0" />
-        </radialGradient>
-        <filter id="heroSoft" x="-40%" y="-40%" width="180%" height="180%">
-          <feDropShadow dx="0" dy="6" stdDeviation="7" floodColor="#16a34a" floodOpacity="0.30" />
-        </filter>
-      </defs>
-
-      {/* 뒤 글로우 */}
-      <ellipse cx="170" cy="118" rx="168" ry="84" fill="url(#heroGlow)" />
-
-      {/* 부채꼴로 펼친 종목 카드 (게임) — 뒤 두 장 */}
-      <g transform="rotate(-20 170 206)" opacity="0.5">
-        <rect x="128" y="70" width="84" height="124" rx="13" className="fill-white dark:fill-[#242320]" stroke="#16a34a" strokeOpacity="0.14" strokeWidth="1.5" />
-        <circle cx="150" cy="96" r="9" fill="#16a34a" opacity="0.25" />
-        <rect x="140" y="116" width="50" height="6" rx="3" fill="#16a34a" opacity="0.16" />
-        <rect x="140" y="128" width="32" height="5" rx="2.5" fill="#16a34a" opacity="0.12" />
-      </g>
-      <g transform="rotate(20 170 206)" opacity="0.5">
-        <rect x="128" y="70" width="84" height="124" rx="13" className="fill-white dark:fill-[#242320]" stroke="#16a34a" strokeOpacity="0.14" strokeWidth="1.5" />
-        <circle cx="150" cy="96" r="9" fill="#16a34a" opacity="0.25" />
-        <rect x="140" y="116" width="50" height="6" rx="3" fill="#16a34a" opacity="0.16" />
-        <rect x="140" y="128" width="32" height="5" rx="2.5" fill="#16a34a" opacity="0.12" />
-      </g>
-
-      {/* 앞 카드 (선택된 종목 카드) */}
-      <g filter="url(#heroSoft)">
-        <rect x="126" y="62" width="88" height="132" rx="15" className="fill-white dark:fill-[#242320]" />
-      </g>
-      <rect x="126" y="62" width="88" height="132" rx="15" fill="none" stroke="url(#heroLine)" strokeOpacity="0.45" strokeWidth="1.5" />
-
-      {/* 종목 로고 + 등급 배지 */}
-      <circle cx="149" cy="88" r="12" fill="url(#heroLine)" />
-      <path d="M143,88 l4,4 l8,-9" stroke="#fff" strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round" />
-      <rect x="167" y="80" width="35" height="16" rx="8" fill="#16a34a" opacity="0.14" />
-      <circle cx="176" cy="88" r="3" fill="#16a34a" />
-      <rect x="182" y="85" width="14" height="6" rx="3" fill="#16a34a" opacity="0.55" />
-
-      {/* 종목명 라인 */}
-      <rect x="138" y="110" width="62" height="6" rx="3" fill="#16a34a" opacity="0.20" />
-      <rect x="138" y="122" width="42" height="5" rx="2.5" fill="#16a34a" opacity="0.13" />
-
-      {/* 카드 안 미니 상승 차트 */}
-      <path d="M138,174 L150,164 L162,168 L174,151 L186,157 L200,142 L200,182 L138,182 Z" fill="url(#heroArea)" />
-      <path d="M138,174 L150,164 L162,168 L174,151 L186,157 L200,142"
-        stroke="url(#heroLine)" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" />
-      <circle cx="200" cy="142" r="3.5" fill="white" stroke="#16a34a" strokeWidth="2.5" />
-
-      {/* "높다" 업 배지 */}
-      <circle cx="214" cy="70" r="21" fill="url(#heroLine)" filter="url(#heroSoft)" />
-      <path d="M206,74 l8,-9 l8,9" stroke="#fff" strokeWidth="4.5" strokeLinecap="round" strokeLinejoin="round" />
-      <line x1="214" y1="65" x2="214" y2="80" stroke="#fff" strokeWidth="4.5" strokeLinecap="round" />
-
-      {/* 반짝임 */}
-      <circle cx="70" cy="60" r="3" fill="#16a34a" opacity="0.5" />
-      <circle cx="286" cy="150" r="2.5" fill="#16a34a" opacity="0.4" />
-    </svg>
+    <div className="iq3d" aria-hidden="true">
+      <style dangerouslySetInnerHTML={{ __html: HERO3D_CSS }} />
+      <div className="iq3d-glow" />
+      <div className="iq3d-stage">
+        <div className="iq3d-chart">
+          {HERO_CANDLES.map((c, i) => (
+            <div key={i} className="iq3d-candle"
+              style={{ "--h": `${c.h}%`, "--d": `${i * 0.3}s` } as CSSProperties}>
+              <span className="iq3d-wick" />
+              <span className={`iq3d-body ${c.up ? "up" : "down"}`} />
+            </div>
+          ))}
+        </div>
+        <Coin cls="iq3d-coin1" symbol="₩" />
+        <Coin cls="iq3d-coin2" symbol="$" />
+        <Coin cls="iq3d-coin3" symbol="₩" />
+      </div>
+    </div>
   );
 }
 
