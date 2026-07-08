@@ -143,24 +143,6 @@ const HOW_IT_WORKS = [
 // 금속 금화(단위 표시 없음) 2개가 회전하고, 3D 캔들 박스 2개가 좌우에서 떠 움직인다.
 // 클라이언트에서만 마운트, prefers-reduced-motion 시 정적 렌더.
 // =========================================================================
-// 금속 반사용 그라데이션 환경맵 (밝은 위→어두운 아래) — core three만 사용
-function makeEnvTexture(): THREE.Texture {
-  const c = document.createElement("canvas");
-  c.width = 16; c.height = 128;
-  const ctx = c.getContext("2d")!;
-  const g = ctx.createLinearGradient(0, 0, 0, 128);
-  g.addColorStop(0, "#ffffff");
-  g.addColorStop(0.42, "#f5f8f4");
-  g.addColorStop(0.72, "#d8e3db");
-  g.addColorStop(1, "#a7b6ae");
-  ctx.fillStyle = g;
-  ctx.fillRect(0, 0, 16, 128);
-  const tex = new THREE.CanvasTexture(c);
-  tex.mapping = THREE.EquirectangularReflectionMapping;
-  tex.colorSpace = THREE.SRGBColorSpace;
-  return tex;
-}
-
 // 둥근 모서리 3D 슬래브 (core three: Shape + ExtrudeGeometry)
 function roundedBoxGeometry(w: number, h: number, d: number, r: number): THREE.ExtrudeGeometry {
   const s = new THREE.Shape();
@@ -383,7 +365,30 @@ function HeroArt() {
   return <div ref={mountRef} className="w-full h-full" aria-hidden="true" />;
 }
 
-// 게임 버튼용 3D 종목 카드 (three.js) — 회전하며 앞면 아트가 보이는 카드
+// 카드 뒷면 아트 (초록 백디자인 + 대각 패턴 + ₩ 엠블럼)
+function makeCardBackTexture(): THREE.CanvasTexture {
+  const w = 500, h = 720;
+  const c = document.createElement("canvas");
+  c.width = w; c.height = h;
+  const ctx = c.getContext("2d")!;
+  const g = ctx.createLinearGradient(0, 0, w, h);
+  g.addColorStop(0, "#0f7a39"); g.addColorStop(1, "#064d24");
+  ctx.beginPath(); ctx.roundRect(0, 0, w, h, 52); ctx.fillStyle = g; ctx.fill();
+  ctx.save(); ctx.beginPath(); ctx.roundRect(0, 0, w, h, 52); ctx.clip();
+  ctx.strokeStyle = "rgba(255,255,255,0.06)"; ctx.lineWidth = 12;
+  for (let i = -h; i < w; i += 36) { ctx.beginPath(); ctx.moveTo(i, 0); ctx.lineTo(i + h, h); ctx.stroke(); }
+  ctx.restore();
+  ctx.strokeStyle = "rgba(255,255,255,0.3)"; ctx.lineWidth = 6;
+  ctx.beginPath(); ctx.roundRect(24, 24, w - 48, h - 48, 36); ctx.stroke();
+  ctx.fillStyle = "rgba(255,255,255,0.12)"; ctx.beginPath(); ctx.arc(w / 2, h / 2, 118, 0, Math.PI * 2); ctx.fill();
+  ctx.fillStyle = "#ffffff"; ctx.font = "800 128px sans-serif"; ctx.textAlign = "center"; ctx.textBaseline = "middle";
+  ctx.fillText("₩", w / 2, h / 2 + 8);
+  const t = new THREE.CanvasTexture(c);
+  t.colorSpace = THREE.SRGBColorSpace; t.anisotropy = 4;
+  return t;
+}
+
+// 게임 버튼용 3D — 부채꼴로 펼친 종목 카드 한 벌 + 금화
 function GameCardArt() {
   const mountRef = useRef<HTMLDivElement>(null);
 
@@ -393,14 +398,14 @@ function GameCardArt() {
     const reduce = window.matchMedia?.("(prefers-reduced-motion: reduce)").matches ?? false;
 
     const scene = new THREE.Scene();
-    const camera = new THREE.PerspectiveCamera(30, 1, 0.1, 100);
-    camera.position.set(0, 0, 6.4);
-    camera.lookAt(0, 0, 0);
+    const camera = new THREE.PerspectiveCamera(32, 1, 0.1, 100);
+    camera.position.set(0, 0.1, 6.8);
+    camera.lookAt(0, 0.1, 0);
 
     const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
     renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
     renderer.toneMapping = THREE.ACESFilmicToneMapping;
-    renderer.toneMappingExposure = 1.15;
+    renderer.toneMappingExposure = 1.12;
     renderer.outputColorSpace = THREE.SRGBColorSpace;
     const canvas = renderer.domElement;
     canvas.style.width = "100%";
@@ -408,39 +413,78 @@ function GameCardArt() {
     canvas.style.display = "block";
     mount.appendChild(canvas);
 
-    const envTex = makeEnvTexture();
-    scene.environment = envTex;
-    scene.add(new THREE.HemisphereLight(0xffffff, 0x88958c, 0.7));
-    const key = new THREE.DirectionalLight(0xffffff, 2.6);
-    key.position.set(2, 4, 5);
-    scene.add(key);
-    const rim = new THREE.DirectionalLight(0x7ee3ad, 1.1);
-    rim.position.set(-4, 1, 1);
-    scene.add(rim);
+    const disposables: { dispose: () => void }[] = [];
+    const pmrem = new THREE.PMREMGenerator(renderer);
+    const envRT = pmrem.fromScene(new RoomEnvironment(), 0.04);
+    scene.environment = envRT.texture;
+    pmrem.dispose();
+    disposables.push(envRT.texture);
 
-    const disposables: { dispose: () => void }[] = [envTex];
+    scene.add(new THREE.HemisphereLight(0xffffff, 0x7a8880, 0.6));
+    const key = new THREE.DirectionalLight(0xffffff, 2.4);
+    key.position.set(2, 4, 6);
+    scene.add(key);
+    const rim = new THREE.DirectionalLight(0x7ee3ad, 1.2);
+    rim.position.set(-5, 1, 1);
+    scene.add(rim);
 
     // 뒤 글로우
     const glowTex = makeRadialTexture("rgba(22,163,74,0.5)");
-    const glowGeo = new THREE.PlaneGeometry(7, 7);
+    const glowGeo = new THREE.PlaneGeometry(8, 8);
     const glowMat = new THREE.MeshBasicMaterial({ map: glowTex, transparent: true, depthWrite: false, opacity: 0.55 });
     disposables.push(glowTex, glowGeo, glowMat);
     const glow = new THREE.Mesh(glowGeo, glowMat);
-    glow.position.z = -1.2;
+    glow.position.z = -1.5;
     scene.add(glow);
 
-    // 카드 본체(둥근 슬래브) + 앞면 아트
-    const cardGeo = roundedBoxGeometry(2.1, 3.0, 0.14, 0.18);
-    const cardMat = new THREE.MeshPhysicalMaterial({ color: 0x0e7a38, roughness: 0.3, clearcoat: 0.8, clearcoatRoughness: 0.2, metalness: 0 });
+    // 카드 재질 · 지오메트리 (앞면 아트 / 뒷면 백디자인)
+    const cardGeo = roundedBoxGeometry(1.7, 2.42, 0.1, 0.15);
+    const cardMat = new THREE.MeshPhysicalMaterial({ color: 0x0e7a38, roughness: 0.26, clearcoat: 0.85, clearcoatRoughness: 0.16, metalness: 0 });
     const faceTex = makeCardFaceTexture();
-    const faceGeo = new THREE.PlaneGeometry(1.86, 2.76);
-    const faceMat = new THREE.MeshStandardMaterial({ map: faceTex, roughness: 0.5, metalness: 0 });
-    disposables.push(cardGeo, cardMat, faceTex, faceGeo, faceMat);
-    const card = new THREE.Group();
-    const face = new THREE.Mesh(faceGeo, faceMat);
-    face.position.z = 0.082;
-    card.add(new THREE.Mesh(cardGeo, cardMat), face);
-    scene.add(card);
+    const backTex = makeCardBackTexture();
+    const faceGeo = new THREE.PlaneGeometry(1.5, 2.24);
+    const faceMatF = new THREE.MeshStandardMaterial({ map: faceTex, roughness: 0.5 });
+    const backMat = new THREE.MeshStandardMaterial({ map: backTex, roughness: 0.5 });
+    disposables.push(cardGeo, cardMat, faceTex, backTex, faceGeo, faceMatF, backMat);
+
+    // 부채꼴 한 벌 — 피벗을 카드 아래에 둬 위쪽으로 펼침
+    const fan = new THREE.Group();
+    const specs: { a: number; dz: number; front: boolean }[] = [
+      { a: 0.36, dz: -0.18, front: false },
+      { a: -0.36, dz: -0.18, front: false },
+      { a: 0, dz: 0, front: true },
+    ];
+    specs.forEach(({ a, dz, front }) => {
+      const pivot = new THREE.Group();
+      const card = new THREE.Group();
+      const f = new THREE.Mesh(faceGeo, front ? faceMatF : backMat);
+      f.position.z = 0.056;
+      card.add(new THREE.Mesh(cardGeo, cardMat), f);
+      card.position.y = 1.5;
+      pivot.add(card);
+      pivot.rotation.z = a;
+      pivot.position.z = dz;
+      fan.add(pivot);
+    });
+    fan.position.y = -1.35;
+    scene.add(fan);
+
+    // 금화 액센트 + 글로우 (회전·부유)
+    const goldMat = new THREE.MeshStandardMaterial({ color: 0xffca3d, metalness: 0.95, roughness: 0.15, emissive: 0x5a3d06, emissiveIntensity: 0.16 });
+    const coinGeo = new THREE.CylinderGeometry(0.34, 0.34, 0.08, 40);
+    const coinField = new THREE.CylinderGeometry(0.27, 0.27, 0.11, 40);
+    const haloTex = makeRadialTexture("rgba(255,205,80,0.55)");
+    const haloMat = new THREE.SpriteMaterial({ map: haloTex, transparent: true, depthWrite: false, blending: THREE.AdditiveBlending, opacity: 0.6 });
+    disposables.push(goldMat, coinGeo, coinField, haloTex, haloMat);
+    const coinDisc = new THREE.Group();
+    coinDisc.add(new THREE.Mesh(coinGeo, goldMat), new THREE.Mesh(coinField, goldMat));
+    coinDisc.rotation.x = Math.PI / 2;
+    const coinHalo = new THREE.Sprite(haloMat);
+    coinHalo.scale.set(1.9, 1.9, 1);
+    const coin = new THREE.Group();
+    coin.add(coinHalo, coinDisc);
+    coin.position.set(1.55, 1.35, 0.9);
+    scene.add(coin);
 
     const resize = () => {
       const w = mount.clientWidth || 1, h = mount.clientHeight || 1;
@@ -456,14 +500,16 @@ function GameCardArt() {
     let raf = 0;
     const render = () => {
       const t = clock.getElapsedTime();
-      card.rotation.y = Math.sin(t * 0.6) * 0.5;
-      card.rotation.x = Math.sin(t * 0.5 + 1) * 0.07;
-      card.position.y = Math.sin(t) * 0.08;
+      fan.rotation.y = Math.sin(t * 0.5) * 0.3;
+      fan.rotation.x = Math.sin(t * 0.42 + 1) * 0.05;
+      fan.position.y = -1.35 + Math.sin(t) * 0.06;
+      coinDisc.rotation.y = t * 1.6;
+      coin.position.y = 1.35 + Math.sin(t * 0.9 + 1) * 0.12;
       renderer.render(scene, camera);
       raf = requestAnimationFrame(render);
     };
     if (reduce) {
-      card.rotation.y = -0.32;
+      fan.rotation.y = -0.2;
       renderer.render(scene, camera);
     } else {
       raf = requestAnimationFrame(render);
