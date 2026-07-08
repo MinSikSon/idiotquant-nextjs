@@ -138,15 +138,12 @@ const HOW_IT_WORKS = [
 
 // =========================================================================
 // 홈 일러스트 (자체 인라인 SVG · 외부 이미지/요청 없음 · 라이트/다크 대응)
-// "투자가 쉽다"는 인상을 글자 대신 이미지로 전달한다.
+// "게임으로 배우는 주식" — 종목 카드(게임) + 미니 상승 차트로 컨셉을 전달한다.
 // =========================================================================
-const HERO_LINE = [[50, 150], [88, 133], [122, 139], [158, 108], [194, 119], [228, 83], [252, 71]];
-
 function HeroArt() {
-  const last = HERO_LINE.length - 1;
   return (
     <svg viewBox="0 0 340 210" fill="none"
-      role="img" aria-label="알고리즘이 저평가 종목을 자동으로 찾아 체크해 주는 모습"
+      role="img" aria-label="종목 카드 게임으로 주식을 배우는 모습"
       className="w-full max-w-sm sm:max-w-md mx-auto h-auto">
       <defs>
         <linearGradient id="heroArea" x1="0" y1="0" x2="0" y2="1">
@@ -167,28 +164,53 @@ function HeroArt() {
       </defs>
 
       {/* 뒤 글로우 */}
-      <ellipse cx="168" cy="116" rx="172" ry="86" fill="url(#heroGlow)" />
+      <ellipse cx="170" cy="118" rx="168" ry="84" fill="url(#heroGlow)" />
 
-      {/* 차트 카드 */}
-      <rect x="26" y="34" width="248" height="150" rx="22" className="fill-white dark:fill-[#242320]" />
-      <rect x="26" y="34" width="248" height="150" rx="22" fill="none" stroke="#16a34a" strokeOpacity="0.16" strokeWidth="1.5" />
+      {/* 부채꼴로 펼친 종목 카드 (게임) — 뒤 두 장 */}
+      <g transform="rotate(-20 170 206)" opacity="0.5">
+        <rect x="128" y="70" width="84" height="124" rx="13" className="fill-white dark:fill-[#242320]" stroke="#16a34a" strokeOpacity="0.14" strokeWidth="1.5" />
+        <circle cx="150" cy="96" r="9" fill="#16a34a" opacity="0.25" />
+        <rect x="140" y="116" width="50" height="6" rx="3" fill="#16a34a" opacity="0.16" />
+        <rect x="140" y="128" width="32" height="5" rx="2.5" fill="#16a34a" opacity="0.12" />
+      </g>
+      <g transform="rotate(20 170 206)" opacity="0.5">
+        <rect x="128" y="70" width="84" height="124" rx="13" className="fill-white dark:fill-[#242320]" stroke="#16a34a" strokeOpacity="0.14" strokeWidth="1.5" />
+        <circle cx="150" cy="96" r="9" fill="#16a34a" opacity="0.25" />
+        <rect x="140" y="116" width="50" height="6" rx="3" fill="#16a34a" opacity="0.16" />
+        <rect x="140" y="128" width="32" height="5" rx="2.5" fill="#16a34a" opacity="0.12" />
+      </g>
 
-      {/* 상승 곡선 + 면적 */}
-      <path d="M50,150 L88,133 L122,139 L158,108 L194,119 L228,83 L252,71 L252,168 L50,168 Z" fill="url(#heroArea)" />
-      <path d="M50,150 L88,133 L122,139 L158,108 L194,119 L228,83 L252,71"
-        stroke="url(#heroLine)" strokeWidth="4" strokeLinecap="round" strokeLinejoin="round" />
-      {HERO_LINE.map(([x, y], i) => (
-        <circle key={i} cx={x} cy={y} r={i === last ? 5 : 3}
-          fill="white" stroke="#16a34a" strokeWidth={i === last ? 3.5 : 2.5} />
-      ))}
+      {/* 앞 카드 (선택된 종목 카드) */}
+      <g filter="url(#heroSoft)">
+        <rect x="126" y="62" width="88" height="132" rx="15" className="fill-white dark:fill-[#242320]" />
+      </g>
+      <rect x="126" y="62" width="88" height="132" rx="15" fill="none" stroke="url(#heroLine)" strokeOpacity="0.45" strokeWidth="1.5" />
 
-      {/* 체크 배지 */}
-      <circle cx="286" cy="52" r="30" fill="url(#heroLine)" filter="url(#heroSoft)" />
-      <path d="M273,52 l9,9 l16,-19" stroke="#fff" strokeWidth="5" strokeLinecap="round" strokeLinejoin="round" />
+      {/* 종목 로고 + 등급 배지 */}
+      <circle cx="149" cy="88" r="12" fill="url(#heroLine)" />
+      <path d="M143,88 l4,4 l8,-9" stroke="#fff" strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round" />
+      <rect x="167" y="80" width="35" height="16" rx="8" fill="#16a34a" opacity="0.14" />
+      <circle cx="176" cy="88" r="3" fill="#16a34a" />
+      <rect x="182" y="85" width="14" height="6" rx="3" fill="#16a34a" opacity="0.55" />
+
+      {/* 종목명 라인 */}
+      <rect x="138" y="110" width="62" height="6" rx="3" fill="#16a34a" opacity="0.20" />
+      <rect x="138" y="122" width="42" height="5" rx="2.5" fill="#16a34a" opacity="0.13" />
+
+      {/* 카드 안 미니 상승 차트 */}
+      <path d="M138,174 L150,164 L162,168 L174,151 L186,157 L200,142 L200,182 L138,182 Z" fill="url(#heroArea)" />
+      <path d="M138,174 L150,164 L162,168 L174,151 L186,157 L200,142"
+        stroke="url(#heroLine)" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" />
+      <circle cx="200" cy="142" r="3.5" fill="white" stroke="#16a34a" strokeWidth="2.5" />
+
+      {/* "높다" 업 배지 */}
+      <circle cx="214" cy="70" r="21" fill="url(#heroLine)" filter="url(#heroSoft)" />
+      <path d="M206,74 l8,-9 l8,9" stroke="#fff" strokeWidth="4.5" strokeLinecap="round" strokeLinejoin="round" />
+      <line x1="214" y1="65" x2="214" y2="80" stroke="#fff" strokeWidth="4.5" strokeLinecap="round" />
 
       {/* 반짝임 */}
-      <circle cx="44" cy="52" r="3" fill="#16a34a" opacity="0.5" />
-      <circle cx="60" cy="40" r="2" fill="#16a34a" opacity="0.35" />
+      <circle cx="70" cy="60" r="3" fill="#16a34a" opacity="0.5" />
+      <circle cx="286" cy="150" r="2.5" fill="#16a34a" opacity="0.4" />
     </svg>
   );
 }
