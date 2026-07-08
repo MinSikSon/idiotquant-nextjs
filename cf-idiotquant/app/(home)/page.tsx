@@ -1,6 +1,7 @@
 "use client";
 
-import { useState, useEffect, useRef, type CSSProperties } from "react";
+import { useState, useEffect, useRef } from "react";
+import * as THREE from "three";
 import { useSession } from "next-auth/react";
 import Link from "next/link";
 import {
@@ -137,68 +138,151 @@ const HOW_IT_WORKS = [
 ];
 
 // =========================================================================
-// 홈 3D 애니메이션 일러스트 (CSS 3D 트랜스폼 · 외부 라이브러리/에셋 없음 · 라이트/다크 대응)
-// 회전하는 금화(₩/$) + 3D 기울기의 캔들차트가 떠서 움직이며 "주식"을 표현한다.
-// prefers-reduced-motion 시 애니메이션 정지.
+// 홈 3D 일러스트 (three.js / WebGL) — 진짜 3D
+// 금속 금화(단위 표시 없음) 2개가 회전하고, 3D 캔들 박스 2개가 좌우에서 떠 움직인다.
+// 클라이언트에서만 마운트, prefers-reduced-motion 시 정적 렌더.
 // =========================================================================
-const HERO_CANDLES: { h: number; up: boolean }[] = [
-  { h: 40, up: true }, { h: 58, up: true }, { h: 36, up: false }, { h: 70, up: true },
-  { h: 52, up: false }, { h: 86, up: true }, { h: 66, up: true },
-];
-
-const HERO3D_CSS = `
-.iq3d{position:relative;width:100%;max-width:26rem;margin:0 auto;aspect-ratio:5/3;perspective:900px}
-.iq3d-glow{position:absolute;inset:8% 10%;border-radius:50%;background:radial-gradient(closest-side,rgba(22,163,74,.22),transparent);filter:blur(10px)}
-.iq3d-stage{position:absolute;inset:0;transform-style:preserve-3d}
-.iq3d-chart{position:absolute;left:11%;right:11%;bottom:16%;height:52%;display:flex;align-items:flex-end;justify-content:space-between;gap:5%;transform:rotateX(22deg) rotateY(-13deg);transform-style:preserve-3d}
-.iq3d-candle{position:relative;flex:1;height:var(--h);display:flex;align-items:flex-end;justify-content:center;transform-style:preserve-3d;animation:iq3d-float 4.2s ease-in-out infinite;animation-delay:var(--d)}
-.iq3d-wick{position:absolute;left:50%;top:-16%;height:132%;width:3px;transform:translateX(-50%) translateZ(14px);background:#94a3b8;opacity:.4;border-radius:2px}
-.iq3d-body{position:relative;width:100%;height:100%;border-radius:6px;transform:translateZ(14px);box-shadow:0 14px 22px rgba(2,44,26,.22)}
-.iq3d-body::before{content:"";position:absolute;inset:0;border-radius:6px;background:linear-gradient(125deg,rgba(255,255,255,.42),rgba(255,255,255,0) 46%)}
-.iq3d-body.up{background:linear-gradient(158deg,#4ade80,#15a34a 60%,#0f7a37)}
-.iq3d-body.down{background:linear-gradient(158deg,#fb7185,#e11d48 60%,#be123c)}
-.iq3d-coin{position:absolute;transform-style:preserve-3d;animation:iq3d-bob 3.4s ease-in-out infinite;filter:drop-shadow(0 10px 9px rgba(120,53,0,.28))}
-.iq3d-coin1{width:58px;height:58px;font-size:24px;top:8%;left:2%}
-.iq3d-coin2{width:40px;height:40px;font-size:16px;top:0;right:14%;animation-delay:.7s}
-.iq3d-coin3{width:34px;height:34px;font-size:13px;bottom:24%;right:1%;animation-delay:1.3s}
-.iq3d-spin{position:absolute;inset:0;transform-style:preserve-3d;animation:iq3d-spin 3.4s linear infinite}
-.iq3d-face{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;border-radius:50%;font-weight:900;color:#7c3f00;background:radial-gradient(circle at 34% 26%,#fff7db,#fcd34d 48%,#e0920b 78%,#b45309);box-shadow:inset 0 0 0 3px rgba(255,255,255,.45),inset 0 -7px 12px rgba(146,64,14,.4),inset 0 6px 10px rgba(255,255,255,.4);text-shadow:0 1px 0 rgba(255,255,255,.45),0 -1px 1px rgba(120,53,0,.45)}
-.iq3d-face::after{content:"";position:absolute;top:16%;left:20%;width:30%;height:22%;border-radius:50%;background:rgba(255,255,255,.6);filter:blur(2px)}
-@keyframes iq3d-spin{from{transform:rotateY(0)}to{transform:rotateY(360deg)}}
-@keyframes iq3d-bob{0%,100%{transform:translateY(0)}50%{transform:translateY(-13px)}}
-@keyframes iq3d-float{0%,100%{transform:translateY(0)}50%{transform:translateY(-8px)}}
-@media (prefers-reduced-motion:reduce){.iq3d-coin,.iq3d-spin,.iq3d-candle{animation:none}}
-`;
-
-function Coin({ cls, symbol }: { cls: string; symbol: string }) {
-  return (
-    <div className={`iq3d-coin ${cls}`}>
-      <div className="iq3d-spin">
-        <span className="iq3d-face">{symbol}</span>
-      </div>
-    </div>
-  );
+// 금속 반사용 그라데이션 환경맵 (밝은 위→어두운 아래) — core three만 사용
+function makeEnvTexture(): THREE.Texture {
+  const c = document.createElement("canvas");
+  c.width = 16; c.height = 128;
+  const ctx = c.getContext("2d")!;
+  const g = ctx.createLinearGradient(0, 0, 0, 128);
+  g.addColorStop(0, "#ffffff");
+  g.addColorStop(0.42, "#f5f8f4");
+  g.addColorStop(0.72, "#d8e3db");
+  g.addColorStop(1, "#a7b6ae");
+  ctx.fillStyle = g;
+  ctx.fillRect(0, 0, 16, 128);
+  const tex = new THREE.CanvasTexture(c);
+  tex.mapping = THREE.EquirectangularReflectionMapping;
+  tex.colorSpace = THREE.SRGBColorSpace;
+  return tex;
 }
 
 function HeroArt() {
+  const mountRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const mount = mountRef.current;
+    if (!mount) return;
+    const reduce = window.matchMedia?.("(prefers-reduced-motion: reduce)").matches ?? false;
+
+    const scene = new THREE.Scene();
+    const camera = new THREE.PerspectiveCamera(34, 1, 0.1, 100);
+    camera.position.set(0, 0.5, 7.4);
+    camera.lookAt(0, 0.15, 0);
+
+    const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+    renderer.toneMapping = THREE.ACESFilmicToneMapping;
+    renderer.toneMappingExposure = 1.22;
+    renderer.outputColorSpace = THREE.SRGBColorSpace;
+    const canvas = renderer.domElement;
+    canvas.style.width = "100%";
+    canvas.style.height = "100%";
+    canvas.style.display = "block";
+    mount.appendChild(canvas);
+
+    const envTex = makeEnvTexture();
+    scene.environment = envTex;
+
+    scene.add(new THREE.HemisphereLight(0xffffff, 0x8f9a92, 0.7));
+    const key = new THREE.DirectionalLight(0xfff4d6, 3.2);
+    key.position.set(3, 5, 5);
+    scene.add(key);
+    const rim = new THREE.DirectionalLight(0x9be7bd, 1.0);
+    rim.position.set(-4, 1.5, -2);
+    scene.add(rim);
+    const fill = new THREE.PointLight(0xffffff, 18, 20);
+    fill.position.set(-1, 2, 4);
+    scene.add(fill);
+
+    const root = new THREE.Group();
+    scene.add(root);
+
+    const disposables: { dispose: () => void }[] = [envTex];
+
+    // 캔들 = 3D 박스 + 심지, 좌우로 배치
+    const makeCandle = (x: number, h: number, color: number) => {
+      const bodyGeo = new THREE.BoxGeometry(0.72, h, 0.72);
+      const bodyMat = new THREE.MeshPhysicalMaterial({ color, metalness: 0, roughness: 0.34, clearcoat: 0.7, clearcoatRoughness: 0.28, emissive: color, emissiveIntensity: 0.06 });
+      const wickGeo = new THREE.CylinderGeometry(0.045, 0.045, h + 1.3, 12);
+      const wickMat = new THREE.MeshStandardMaterial({ color: 0x9aa3af, metalness: 0.1, roughness: 0.6 });
+      disposables.push(bodyGeo, bodyMat, wickGeo, wickMat);
+      const g = new THREE.Group();
+      g.add(new THREE.Mesh(bodyGeo, bodyMat), new THREE.Mesh(wickGeo, wickMat));
+      g.position.x = x;
+      return g;
+    };
+    const candleL = makeCandle(-1.75, 2.5, 0x15a34a);
+    const candleR = makeCandle(1.55, 1.7, 0xe11d48);
+    root.add(candleL, candleR);
+
+    // 금화 = 금속 원통(단위 표시 없음). 세로축(그룹 Y) 회전으로 앞·옆·뒤가 보임
+    const goldMat = new THREE.MeshStandardMaterial({ color: 0xffca3d, metalness: 0.92, roughness: 0.16, emissive: 0x5a3d06, emissiveIntensity: 0.18 });
+    disposables.push(goldMat);
+    // 정제된 금화 느낌: 베이스 원반 + 살짝 도드라진 안쪽 필드(테두리 생김)
+    const makeCoin = (x: number, y: number, r: number) => {
+      const th = r * 0.22;
+      const baseGeo = new THREE.CylinderGeometry(r, r, th, 60);
+      const fieldGeo = new THREE.CylinderGeometry(r * 0.8, r * 0.8, th * 1.35, 60);
+      disposables.push(baseGeo, fieldGeo);
+      const disc = new THREE.Group();
+      disc.add(new THREE.Mesh(baseGeo, goldMat), new THREE.Mesh(fieldGeo, goldMat));
+      disc.rotation.x = Math.PI / 2; // 납작한 면이 카메라를 향하게
+      const g = new THREE.Group();
+      g.add(disc);
+      g.position.set(x, y, 0.6);
+      return g;
+    };
+    const coin1 = makeCoin(-0.35, 1.95, 0.62);
+    const coin2 = makeCoin(2.05, 1.5, 0.44);
+    root.add(coin1, coin2);
+
+    const resize = () => {
+      const w = mount.clientWidth || 1;
+      const h = mount.clientHeight || 1;
+      renderer.setSize(w, h, false);
+      camera.aspect = w / h;
+      camera.updateProjectionMatrix();
+    };
+    resize();
+    const ro = new ResizeObserver(resize);
+    ro.observe(mount);
+
+    const clock = new THREE.Clock();
+    let raf = 0;
+    const render = () => {
+      const t = clock.getElapsedTime();
+      coin1.rotation.y = t * 1.3;
+      coin2.rotation.y = t * 1.6 + 1;
+      candleL.position.y = Math.sin(t * 1.1) * 0.12;
+      candleR.position.y = Math.sin(t * 1.1 + 1.1) * 0.12;
+      root.rotation.y = Math.sin(t * 0.32) * 0.4;
+      renderer.render(scene, camera);
+      raf = requestAnimationFrame(render);
+    };
+    if (reduce) {
+      root.rotation.y = -0.28;
+      renderer.render(scene, camera);
+    } else {
+      raf = requestAnimationFrame(render);
+    }
+
+    return () => {
+      cancelAnimationFrame(raf);
+      ro.disconnect();
+      disposables.forEach(d => d.dispose());
+      renderer.dispose();
+      if (canvas.parentNode) canvas.parentNode.removeChild(canvas);
+    };
+  }, []);
+
   return (
-    <div className="iq3d" aria-hidden="true">
-      <style dangerouslySetInnerHTML={{ __html: HERO3D_CSS }} />
-      <div className="iq3d-glow" />
-      <div className="iq3d-stage">
-        <div className="iq3d-chart">
-          {HERO_CANDLES.map((c, i) => (
-            <div key={i} className="iq3d-candle"
-              style={{ "--h": `${c.h}%`, "--d": `${i * 0.3}s` } as CSSProperties}>
-              <span className="iq3d-wick" />
-              <span className={`iq3d-body ${c.up ? "up" : "down"}`} />
-            </div>
-          ))}
-        </div>
-        <Coin cls="iq3d-coin1" symbol="₩" />
-        <Coin cls="iq3d-coin2" symbol="$" />
-        <Coin cls="iq3d-coin3" symbol="₩" />
-      </div>
+    <div className="relative w-full max-w-sm sm:max-w-md mx-auto aspect-[5/3]" aria-hidden="true">
+      <div className="absolute inset-[14%] rounded-full bg-[#16a34a]/15 dark:bg-[#16a34a]/20 blur-3xl" />
+      <div ref={mountRef} className="absolute inset-0" />
     </div>
   );
 }
@@ -481,18 +565,6 @@ export default function HomePage() {
           <p className="text-sm sm:text-base text-neutral-500 dark:text-neutral-400 font-medium mb-6 break-keep max-w-md">
             종목 카드 게임으로 시작해, 실제 시장 데이터로 주식·경제 감각을 키웁니다.
           </p>
-
-          {/* CTA — 게임이 메인 진입점, 실데이터는 보조 */}
-          <div className="flex flex-wrap gap-2.5">
-            <Link href="/game"
-              className="inline-flex items-center gap-2 px-6 py-3 rounded-xl bg-[#16a34a] hover:bg-[#15803d] text-white font-bold text-sm shadow-md shadow-[#16a34a]/20 transition-all">
-              🃏 카드 게임 시작 <ArrowRight size={15} />
-            </Link>
-            <Link href="/screener?mincap=500"
-              className="inline-flex items-center gap-2 px-6 py-3 rounded-xl border border-neutral-200 dark:border-[#35332e] bg-white/70 dark:bg-[#242320]/60 backdrop-blur text-neutral-700 dark:text-neutral-200 font-bold text-sm hover:border-[#16a34a]/50 transition-all">
-              실제 종목 보기
-            </Link>
-          </div>
 
           {/* 히어로 일러스트 — "게임으로 배우는 주식"을 글자 대신 이미지로 */}
           <div className="mt-8 sm:mt-10">
