@@ -1,11 +1,11 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, type CSSProperties } from "react";
 import { useSession } from "next-auth/react";
 import Link from "next/link";
 import {
   Search, Calculator, Filter, Lock, ArrowRight,
-  TrendingUp, ChevronRight, BarChart3, Zap, Layers,
+  TrendingUp, ChevronRight, BarChart3, Zap, Layers, Gamepad2,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { safeNum } from "@/lib/utils/numbers";
@@ -97,9 +97,17 @@ const STRATEGY_BADGE_CLS: Record<string, string> = {
 
 const FEATURES = [
   {
-    icon: Filter,
+    icon: Gamepad2,
     iconCls: "text-[#16a34a] dark:text-[#16a34a]",
     bgCls: "bg-[#f0fdf4] dark:bg-[#052e16]/30",
+    title: "종목 카드 게임",
+    link: "/game",
+    linkLabel: "게임하기",
+  },
+  {
+    icon: Filter,
+    iconCls: "text-emerald-600 dark:text-emerald-400",
+    bgCls: "bg-emerald-50 dark:bg-emerald-950/30",
     title: "종목 발굴",
     link: "/screener",
     linkLabel: "스크리너 열기",
@@ -123,65 +131,75 @@ const FEATURES = [
 ];
 
 const HOW_IT_WORKS = [
-  { step: "01", title: "매일 자동 스캔", accent: "text-[#16a34a]" },
-  { step: "02", title: "저평가 종목 발굴", accent: "text-emerald-600 dark:text-emerald-400" },
-  { step: "03", title: "적정주가 즉시 확인", accent: "text-violet-600 dark:text-violet-400" },
+  { step: "01", title: "카드로 종목 비교", accent: "text-[#16a34a]" },
+  { step: "02", title: "등급·지표로 가치 감각", accent: "text-emerald-600 dark:text-emerald-400" },
+  { step: "03", title: "실제 데이터로 확인", accent: "text-violet-600 dark:text-violet-400" },
 ];
 
 // =========================================================================
-// 홈 일러스트 (자체 인라인 SVG · 외부 이미지/요청 없음 · 라이트/다크 대응)
-// "투자가 쉽다"는 인상을 글자 대신 이미지로 전달한다.
+// 홈 3D 애니메이션 일러스트 (CSS 3D 트랜스폼 · 외부 라이브러리/에셋 없음 · 라이트/다크 대응)
+// 회전하는 금화(₩/$) + 3D 기울기의 캔들차트가 떠서 움직이며 "주식"을 표현한다.
+// prefers-reduced-motion 시 애니메이션 정지.
 // =========================================================================
-const HERO_LINE = [[50, 150], [88, 133], [122, 139], [158, 108], [194, 119], [228, 83], [252, 71]];
+const HERO_CANDLES: { h: number; up: boolean }[] = [
+  { h: 40, up: true }, { h: 58, up: true }, { h: 36, up: false }, { h: 70, up: true },
+  { h: 52, up: false }, { h: 86, up: true }, { h: 66, up: true },
+];
+
+const HERO3D_CSS = `
+.iq3d{position:relative;width:100%;max-width:26rem;margin:0 auto;aspect-ratio:5/3;perspective:900px}
+.iq3d-glow{position:absolute;inset:8% 10%;border-radius:50%;background:radial-gradient(closest-side,rgba(22,163,74,.22),transparent);filter:blur(10px)}
+.iq3d-stage{position:absolute;inset:0;transform-style:preserve-3d}
+.iq3d-chart{position:absolute;left:11%;right:11%;bottom:16%;height:52%;display:flex;align-items:flex-end;justify-content:space-between;gap:5%;transform:rotateX(22deg) rotateY(-13deg);transform-style:preserve-3d}
+.iq3d-candle{position:relative;flex:1;height:var(--h);display:flex;align-items:flex-end;justify-content:center;transform-style:preserve-3d;animation:iq3d-float 4.2s ease-in-out infinite;animation-delay:var(--d)}
+.iq3d-wick{position:absolute;left:50%;top:-16%;height:132%;width:3px;transform:translateX(-50%) translateZ(14px);background:#94a3b8;opacity:.4;border-radius:2px}
+.iq3d-body{position:relative;width:100%;height:100%;border-radius:6px;transform:translateZ(14px);box-shadow:0 14px 22px rgba(2,44,26,.22)}
+.iq3d-body::before{content:"";position:absolute;inset:0;border-radius:6px;background:linear-gradient(125deg,rgba(255,255,255,.42),rgba(255,255,255,0) 46%)}
+.iq3d-body.up{background:linear-gradient(158deg,#4ade80,#15a34a 60%,#0f7a37)}
+.iq3d-body.down{background:linear-gradient(158deg,#fb7185,#e11d48 60%,#be123c)}
+.iq3d-coin{position:absolute;transform-style:preserve-3d;animation:iq3d-bob 3.4s ease-in-out infinite;filter:drop-shadow(0 10px 9px rgba(120,53,0,.28))}
+.iq3d-coin1{width:58px;height:58px;font-size:24px;top:8%;left:2%}
+.iq3d-coin2{width:40px;height:40px;font-size:16px;top:0;right:14%;animation-delay:.7s}
+.iq3d-coin3{width:34px;height:34px;font-size:13px;bottom:24%;right:1%;animation-delay:1.3s}
+.iq3d-spin{position:absolute;inset:0;transform-style:preserve-3d;animation:iq3d-spin 3.4s linear infinite}
+.iq3d-face{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;border-radius:50%;font-weight:900;color:#7c3f00;background:radial-gradient(circle at 34% 26%,#fff7db,#fcd34d 48%,#e0920b 78%,#b45309);box-shadow:inset 0 0 0 3px rgba(255,255,255,.45),inset 0 -7px 12px rgba(146,64,14,.4),inset 0 6px 10px rgba(255,255,255,.4);text-shadow:0 1px 0 rgba(255,255,255,.45),0 -1px 1px rgba(120,53,0,.45)}
+.iq3d-face::after{content:"";position:absolute;top:16%;left:20%;width:30%;height:22%;border-radius:50%;background:rgba(255,255,255,.6);filter:blur(2px)}
+@keyframes iq3d-spin{from{transform:rotateY(0)}to{transform:rotateY(360deg)}}
+@keyframes iq3d-bob{0%,100%{transform:translateY(0)}50%{transform:translateY(-13px)}}
+@keyframes iq3d-float{0%,100%{transform:translateY(0)}50%{transform:translateY(-8px)}}
+@media (prefers-reduced-motion:reduce){.iq3d-coin,.iq3d-spin,.iq3d-candle{animation:none}}
+`;
+
+function Coin({ cls, symbol }: { cls: string; symbol: string }) {
+  return (
+    <div className={`iq3d-coin ${cls}`}>
+      <div className="iq3d-spin">
+        <span className="iq3d-face">{symbol}</span>
+      </div>
+    </div>
+  );
+}
 
 function HeroArt() {
-  const last = HERO_LINE.length - 1;
   return (
-    <svg viewBox="0 0 340 210" fill="none"
-      role="img" aria-label="알고리즘이 저평가 종목을 자동으로 찾아 체크해 주는 모습"
-      className="w-full max-w-sm sm:max-w-md mx-auto h-auto">
-      <defs>
-        <linearGradient id="heroArea" x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0%" stopColor="#16a34a" stopOpacity="0.30" />
-          <stop offset="100%" stopColor="#16a34a" stopOpacity="0" />
-        </linearGradient>
-        <linearGradient id="heroLine" x1="0" y1="1" x2="1" y2="0">
-          <stop offset="0%" stopColor="#16a34a" />
-          <stop offset="100%" stopColor="#22c55e" />
-        </linearGradient>
-        <radialGradient id="heroGlow" cx="50%" cy="50%" r="50%">
-          <stop offset="0%" stopColor="#16a34a" stopOpacity="0.20" />
-          <stop offset="100%" stopColor="#16a34a" stopOpacity="0" />
-        </radialGradient>
-        <filter id="heroSoft" x="-40%" y="-40%" width="180%" height="180%">
-          <feDropShadow dx="0" dy="6" stdDeviation="7" floodColor="#16a34a" floodOpacity="0.30" />
-        </filter>
-      </defs>
-
-      {/* 뒤 글로우 */}
-      <ellipse cx="168" cy="116" rx="172" ry="86" fill="url(#heroGlow)" />
-
-      {/* 차트 카드 */}
-      <rect x="26" y="34" width="248" height="150" rx="22" className="fill-white dark:fill-[#242320]" />
-      <rect x="26" y="34" width="248" height="150" rx="22" fill="none" stroke="#16a34a" strokeOpacity="0.16" strokeWidth="1.5" />
-
-      {/* 상승 곡선 + 면적 */}
-      <path d="M50,150 L88,133 L122,139 L158,108 L194,119 L228,83 L252,71 L252,168 L50,168 Z" fill="url(#heroArea)" />
-      <path d="M50,150 L88,133 L122,139 L158,108 L194,119 L228,83 L252,71"
-        stroke="url(#heroLine)" strokeWidth="4" strokeLinecap="round" strokeLinejoin="round" />
-      {HERO_LINE.map(([x, y], i) => (
-        <circle key={i} cx={x} cy={y} r={i === last ? 5 : 3}
-          fill="white" stroke="#16a34a" strokeWidth={i === last ? 3.5 : 2.5} />
-      ))}
-
-      {/* 체크 배지 */}
-      <circle cx="286" cy="52" r="30" fill="url(#heroLine)" filter="url(#heroSoft)" />
-      <path d="M273,52 l9,9 l16,-19" stroke="#fff" strokeWidth="5" strokeLinecap="round" strokeLinejoin="round" />
-
-      {/* 반짝임 */}
-      <circle cx="44" cy="52" r="3" fill="#16a34a" opacity="0.5" />
-      <circle cx="60" cy="40" r="2" fill="#16a34a" opacity="0.35" />
-    </svg>
+    <div className="iq3d" aria-hidden="true">
+      <style dangerouslySetInnerHTML={{ __html: HERO3D_CSS }} />
+      <div className="iq3d-glow" />
+      <div className="iq3d-stage">
+        <div className="iq3d-chart">
+          {HERO_CANDLES.map((c, i) => (
+            <div key={i} className="iq3d-candle"
+              style={{ "--h": `${c.h}%`, "--d": `${i * 0.3}s` } as CSSProperties}>
+              <span className="iq3d-wick" />
+              <span className={`iq3d-body ${c.up ? "up" : "down"}`} />
+            </div>
+          ))}
+        </div>
+        <Coin cls="iq3d-coin1" symbol="₩" />
+        <Coin cls="iq3d-coin2" symbol="$" />
+        <Coin cls="iq3d-coin3" symbol="₩" />
+      </div>
+    </div>
   );
 }
 
@@ -451,16 +469,32 @@ export default function HomePage() {
               <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
               <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-emerald-500" />
             </span>
-            매일 자동 스캔 · KOSPI · KOSDAQ
+            게임으로 배우는 주식·경제
           </div>
 
           {/* Headline */}
           <h1 className="text-[2.1rem] sm:text-[3rem] md:text-[3.5rem] font-black leading-[1.08] tracking-tight mb-4 text-neutral-900 dark:text-neutral-50">
-            퀀트 투자,<br />
-            <span className="bg-gradient-to-r from-[#16a34a] to-emerald-500 dark:from-[#22c55e] dark:to-emerald-400 bg-clip-text text-transparent">어렵지 않습니다.</span>
+            주식이 게임처럼,<br />
+            <span className="bg-gradient-to-r from-[#16a34a] to-emerald-500 dark:from-[#22c55e] dark:to-emerald-400 bg-clip-text text-transparent">쉽고 재미있게.</span>
           </h1>
 
-          {/* 히어로 일러스트 — "알고리즘이 알아서 골라준다"를 글자 대신 이미지로 */}
+          <p className="text-sm sm:text-base text-neutral-500 dark:text-neutral-400 font-medium mb-6 break-keep max-w-md">
+            종목 카드 게임으로 시작해, 실제 시장 데이터로 주식·경제 감각을 키웁니다.
+          </p>
+
+          {/* CTA — 게임이 메인 진입점, 실데이터는 보조 */}
+          <div className="flex flex-wrap gap-2.5">
+            <Link href="/game"
+              className="inline-flex items-center gap-2 px-6 py-3 rounded-xl bg-[#16a34a] hover:bg-[#15803d] text-white font-bold text-sm shadow-md shadow-[#16a34a]/20 transition-all">
+              🃏 카드 게임 시작 <ArrowRight size={15} />
+            </Link>
+            <Link href="/screener?mincap=500"
+              className="inline-flex items-center gap-2 px-6 py-3 rounded-xl border border-neutral-200 dark:border-[#35332e] bg-white/70 dark:bg-[#242320]/60 backdrop-blur text-neutral-700 dark:text-neutral-200 font-bold text-sm hover:border-[#16a34a]/50 transition-all">
+              실제 종목 보기
+            </Link>
+          </div>
+
+          {/* 히어로 일러스트 — "게임으로 배우는 주식"을 글자 대신 이미지로 */}
           <div className="mt-8 sm:mt-10">
             <HeroArt />
           </div>
@@ -510,7 +544,7 @@ export default function HomePage() {
       <Link href="/game" className="group relative flex h-40 sm:h-56 overflow-hidden border-b border-neutral-200/70 dark:border-[#3a3834] bg-gradient-to-b from-[#eaf5ee] to-white dark:from-[#0e2019] dark:to-[#1a1915]">
         <ShipArt />
         <span className="absolute bottom-3 left-1/2 -translate-x-1/2 inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full bg-white/85 dark:bg-[#242320]/85 backdrop-blur border border-neutral-200 dark:border-[#35332e] text-xs font-black text-[#15803d] dark:text-[#16a34a] shadow-sm group-hover:scale-105 transition-transform">
-          🃏 종목 카드 게임 시작 <ChevronRight size={13} />
+          🃏 종목 카드 게임으로 배우기 <ChevronRight size={13} />
         </span>
       </Link>
 
@@ -528,6 +562,7 @@ export default function HomePage() {
                   500억+
                 </span>
               </div>
+              <p className="text-[11px] text-neutral-400 mt-1 break-keep">게임 카드로도 만나는 실제 저평가 종목</p>
             </div>
             <Link
               href="/screener?mincap=500"
@@ -653,7 +688,7 @@ export default function HomePage() {
           <div className="mb-7">
             <div className="flex items-center gap-2">
               <Zap size={13} className="text-[#16a34a]" strokeWidth={2.5} />
-              <h2 className="text-base font-black text-neutral-900 dark:text-neutral-50">이렇게 씁니다</h2>
+              <h2 className="text-base font-black text-neutral-900 dark:text-neutral-50">이렇게 배웁니다</h2>
             </div>
           </div>
 
@@ -682,7 +717,7 @@ export default function HomePage() {
           </div>
 
           {/* Mobile: horizontal scroll, Desktop: 3-col grid */}
-          <div className="flex gap-3 overflow-x-auto no-scrollbar pb-1 sm:grid sm:grid-cols-3 sm:overflow-visible sm:gap-4">
+          <div className="flex gap-3 overflow-x-auto no-scrollbar pb-1 sm:grid sm:grid-cols-2 lg:grid-cols-4 sm:overflow-visible sm:gap-4">
             {FEATURES.map((f, i) => {
               const Icon = f.icon;
               return (
@@ -723,7 +758,7 @@ export default function HomePage() {
               무료로 시작하세요
             </div>
             <h2 className="text-2xl font-black text-neutral-900 dark:text-neutral-50 mb-6 tracking-tight leading-tight">
-              지금 바로 저평가 종목을<br />찾아보세요
+              지금 바로 게임으로<br />주식·경제를 배워보세요
             </h2>
             <Link href="/login"
               className="inline-flex items-center gap-2 px-7 py-3.5 rounded-xl bg-[#16a34a] hover:bg-[#15803d] active:bg-[#166534] text-white font-bold text-sm shadow-md shadow-[#16a34a]/20 transition-all"
