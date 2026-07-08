@@ -5,7 +5,7 @@ import { useSession } from "next-auth/react";
 import Link from "next/link";
 import {
   Search, Calculator, Filter, Lock, ArrowRight,
-  TrendingUp, ChevronRight, BarChart3, Zap, Layers,
+  TrendingUp, ChevronRight, BarChart3, Zap, Layers, Gamepad2,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { safeNum } from "@/lib/utils/numbers";
@@ -97,9 +97,17 @@ const STRATEGY_BADGE_CLS: Record<string, string> = {
 
 const FEATURES = [
   {
-    icon: Filter,
+    icon: Gamepad2,
     iconCls: "text-[#16a34a] dark:text-[#16a34a]",
     bgCls: "bg-[#f0fdf4] dark:bg-[#052e16]/30",
+    title: "종목 카드 게임",
+    link: "/game",
+    linkLabel: "게임하기",
+  },
+  {
+    icon: Filter,
+    iconCls: "text-emerald-600 dark:text-emerald-400",
+    bgCls: "bg-emerald-50 dark:bg-emerald-950/30",
     title: "종목 발굴",
     link: "/screener",
     linkLabel: "스크리너 열기",
@@ -123,9 +131,9 @@ const FEATURES = [
 ];
 
 const HOW_IT_WORKS = [
-  { step: "01", title: "매일 자동 스캔", accent: "text-[#16a34a]" },
-  { step: "02", title: "저평가 종목 발굴", accent: "text-emerald-600 dark:text-emerald-400" },
-  { step: "03", title: "적정주가 즉시 확인", accent: "text-violet-600 dark:text-violet-400" },
+  { step: "01", title: "카드로 종목 비교", accent: "text-[#16a34a]" },
+  { step: "02", title: "등급·지표로 가치 감각", accent: "text-emerald-600 dark:text-emerald-400" },
+  { step: "03", title: "실제 데이터로 확인", accent: "text-violet-600 dark:text-violet-400" },
 ];
 
 // =========================================================================
@@ -451,16 +459,32 @@ export default function HomePage() {
               <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
               <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-emerald-500" />
             </span>
-            매일 자동 스캔 · KOSPI · KOSDAQ
+            게임으로 배우는 주식·경제
           </div>
 
           {/* Headline */}
           <h1 className="text-[2.1rem] sm:text-[3rem] md:text-[3.5rem] font-black leading-[1.08] tracking-tight mb-4 text-neutral-900 dark:text-neutral-50">
-            퀀트 투자,<br />
-            <span className="bg-gradient-to-r from-[#16a34a] to-emerald-500 dark:from-[#22c55e] dark:to-emerald-400 bg-clip-text text-transparent">어렵지 않습니다.</span>
+            주식이 게임처럼,<br />
+            <span className="bg-gradient-to-r from-[#16a34a] to-emerald-500 dark:from-[#22c55e] dark:to-emerald-400 bg-clip-text text-transparent">쉽고 재미있게.</span>
           </h1>
 
-          {/* 히어로 일러스트 — "알고리즘이 알아서 골라준다"를 글자 대신 이미지로 */}
+          <p className="text-sm sm:text-base text-neutral-500 dark:text-neutral-400 font-medium mb-6 break-keep max-w-md">
+            종목 카드 게임으로 시작해, 실제 시장 데이터로 주식·경제 감각을 키웁니다.
+          </p>
+
+          {/* CTA — 게임이 메인 진입점, 실데이터는 보조 */}
+          <div className="flex flex-wrap gap-2.5">
+            <Link href="/game"
+              className="inline-flex items-center gap-2 px-6 py-3 rounded-xl bg-[#16a34a] hover:bg-[#15803d] text-white font-bold text-sm shadow-md shadow-[#16a34a]/20 transition-all">
+              🃏 카드 게임 시작 <ArrowRight size={15} />
+            </Link>
+            <Link href="/screener?mincap=500"
+              className="inline-flex items-center gap-2 px-6 py-3 rounded-xl border border-neutral-200 dark:border-[#35332e] bg-white/70 dark:bg-[#242320]/60 backdrop-blur text-neutral-700 dark:text-neutral-200 font-bold text-sm hover:border-[#16a34a]/50 transition-all">
+              실제 종목 보기
+            </Link>
+          </div>
+
+          {/* 히어로 일러스트 — "게임으로 배우는 주식"을 글자 대신 이미지로 */}
           <div className="mt-8 sm:mt-10">
             <HeroArt />
           </div>
@@ -510,7 +534,7 @@ export default function HomePage() {
       <Link href="/game" className="group relative flex h-40 sm:h-56 overflow-hidden border-b border-neutral-200/70 dark:border-[#3a3834] bg-gradient-to-b from-[#eaf5ee] to-white dark:from-[#0e2019] dark:to-[#1a1915]">
         <ShipArt />
         <span className="absolute bottom-3 left-1/2 -translate-x-1/2 inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full bg-white/85 dark:bg-[#242320]/85 backdrop-blur border border-neutral-200 dark:border-[#35332e] text-xs font-black text-[#15803d] dark:text-[#16a34a] shadow-sm group-hover:scale-105 transition-transform">
-          🃏 종목 카드 게임 시작 <ChevronRight size={13} />
+          🃏 종목 카드 게임으로 배우기 <ChevronRight size={13} />
         </span>
       </Link>
 
@@ -528,6 +552,7 @@ export default function HomePage() {
                   500억+
                 </span>
               </div>
+              <p className="text-[11px] text-neutral-400 mt-1 break-keep">게임 카드로도 만나는 실제 저평가 종목</p>
             </div>
             <Link
               href="/screener?mincap=500"
@@ -653,7 +678,7 @@ export default function HomePage() {
           <div className="mb-7">
             <div className="flex items-center gap-2">
               <Zap size={13} className="text-[#16a34a]" strokeWidth={2.5} />
-              <h2 className="text-base font-black text-neutral-900 dark:text-neutral-50">이렇게 씁니다</h2>
+              <h2 className="text-base font-black text-neutral-900 dark:text-neutral-50">이렇게 배웁니다</h2>
             </div>
           </div>
 
@@ -682,7 +707,7 @@ export default function HomePage() {
           </div>
 
           {/* Mobile: horizontal scroll, Desktop: 3-col grid */}
-          <div className="flex gap-3 overflow-x-auto no-scrollbar pb-1 sm:grid sm:grid-cols-3 sm:overflow-visible sm:gap-4">
+          <div className="flex gap-3 overflow-x-auto no-scrollbar pb-1 sm:grid sm:grid-cols-2 lg:grid-cols-4 sm:overflow-visible sm:gap-4">
             {FEATURES.map((f, i) => {
               const Icon = f.icon;
               return (
@@ -723,7 +748,7 @@ export default function HomePage() {
               무료로 시작하세요
             </div>
             <h2 className="text-2xl font-black text-neutral-900 dark:text-neutral-50 mb-6 tracking-tight leading-tight">
-              지금 바로 저평가 종목을<br />찾아보세요
+              지금 바로 게임으로<br />주식·경제를 배워보세요
             </h2>
             <Link href="/login"
               className="inline-flex items-center gap-2 px-7 py-3.5 rounded-xl bg-[#16a34a] hover:bg-[#15803d] active:bg-[#166534] text-white font-bold text-sm shadow-md shadow-[#16a34a]/20 transition-all"
