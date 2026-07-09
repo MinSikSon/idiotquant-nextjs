@@ -464,12 +464,12 @@ function AnalyzeContent() {
       </div>
 
       {/* ── 헤더 ── */}
-      <header className="sticky top-0 z-30 bg-white dark:bg-[#1f1e1b] border-b border-neutral-200 dark:border-[#3a3834] border-t-[3px] border-t-blue-500">
+      <header className="sticky top-0 z-30 bg-white dark:bg-[#1f1e1b] border-b border-neutral-200 dark:border-[#3a3834] border-t-[3px] border-t-[#16a34a]">
         {/* 페이지 레이블 + 뒤로가기 */}
         <div className="border-b border-neutral-100 dark:border-[#35332e]/60">
           <div className="max-w-4xl mx-auto px-4 py-2 flex items-center justify-between">
             <div className="flex items-center gap-1.5">
-              <BarChart2 size={13} className="text-blue-500 dark:text-blue-400" strokeWidth={2.5} />
+              <BarChart2 size={13} className="text-[#16a34a] dark:text-[#16a34a]" strokeWidth={2.5} />
               <span className="text-[10px] font-black text-neutral-400 dark:text-neutral-500 uppercase tracking-widest">
                 종목 분석
               </span>
@@ -781,7 +781,7 @@ function AnalyzeContent() {
 
                 {/* 비로그인 로그인 CTA */}
                 {!isLoggedIn && (
-                  <div className="p-7 bg-gradient-to-br from-[#f0fdf4] to-indigo-50 dark:from-[#052e16]/20 dark:to-indigo-950/20 rounded-2xl border border-[#bbf7d0]/60 dark:border-[#14532d]/40 text-center">
+                  <div className="p-7 bg-gradient-to-br from-[#f0fdf4] to-emerald-50 dark:from-[#052e16]/20 dark:to-emerald-950/20 rounded-2xl border border-[#bbf7d0]/60 dark:border-[#14532d]/40 text-center">
                     <p className="text-sm font-black text-neutral-900 dark:text-white mb-1">
                       {name ? `${name} 상세 분석` : '상세 분석'} 전체 보기
                     </p>
