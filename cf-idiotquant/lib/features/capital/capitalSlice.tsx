@@ -1,6 +1,6 @@
 import { PayloadAction } from "@reduxjs/toolkit";
 import { createAppSlice } from "@/lib/createAppSlice";
-import { getKrCapital, getUsCapital, postKrCapitalTokenMinusAll, postKrCapitalTokenMinusOne, postKrCapitalTokenPlusAll, postKrCapitalTokenPlusOne, postUsCapitalTokenMinusAll, postUsCapitalTokenMinusOne, postUsCapitalTokenPlusAll, postUsCapitalTokenPlusOne, postKrCapitalGroupCreate, postKrCapitalGroupUpdate, postKrCapitalGroupDelete, postKrCapitalStockGroup, postKrCapitalStocksGroup, postKrCapitalLikesCopy, postUsCapitalGroupCreate, postUsCapitalGroupUpdate, postUsCapitalGroupDelete, postUsCapitalStockGroup, postUsCapitalStocksGroup, postUsCapitalLikesCopy, getKrQuantRule, postKrQuantRule, getUsQuantRule, postUsQuantRule, getKrCapitalBudget, postKrCapitalBudget, postKrCapitalTokenResetAll, postKrCapitalTokenResetOne, postUsCapitalTokenResetAll, postUsCapitalTokenResetOne, postKrCapitalStockRemove, postUsCapitalStockRemove, postKrCapitalStocksRemove, postUsCapitalStocksRemove } from "./capitalAPI";
+import { getKrCapital, getUsCapital, postKrCapitalTokenMinusAll, postKrCapitalTokenMinusOne, postKrCapitalTokenPlusAll, postKrCapitalTokenPlusOne, postUsCapitalTokenMinusAll, postUsCapitalTokenMinusOne, postUsCapitalTokenPlusAll, postUsCapitalTokenPlusOne, postKrCapitalGroupCreate, postKrCapitalGroupUpdate, postKrCapitalGroupDelete, postKrCapitalStockGroup, postKrCapitalStocksGroup, postKrCapitalLikesCopy, postUsCapitalGroupCreate, postUsCapitalGroupUpdate, postUsCapitalGroupDelete, postUsCapitalStockGroup, postUsCapitalStocksGroup, postUsCapitalLikesCopy, getKrQuantRule, postKrQuantRule, getUsQuantRule, postUsQuantRule, getKrCapitalBudget, postKrCapitalBudget, postKrCapitalTokenResetAll, postKrCapitalTokenResetOne, postUsCapitalTokenResetAll, postUsCapitalTokenResetOne, postKrCapitalStockRemove, postUsCapitalStockRemove, postKrCapitalStocksRemove, postUsCapitalStocksRemove, getKrCapitalActivity, getUsCapitalActivity } from "./capitalAPI";
 
 /** 예약(가상) 그룹 id — 좋아요(찜) 종목 그룹 */
 export const LIKES_GROUP_ID = "__likes__";
@@ -124,6 +124,23 @@ interface CapitalTokenRefillType {
     error?: string;
 }
 
+/** 자동매매 체결 로그 1건 (스케줄러가 IQ_PURCHASE_LOG 에 기록) */
+export interface TradingLog {
+    ts: number;                 // 체결 시각 (epoch ms)
+    stock_name?: string;
+    stock_code?: string;
+    symbol?: string;
+    buyOrSell?: "buy" | "sell" | string;
+    stck_prpr?: string | number;   // 체결가
+    ORD_QTY?: string | number;     // 수량
+    remaining_token?: string | number;
+}
+
+export interface TradingActivityState {
+    state: "init" | "pending" | "fulfilled" | "rejected";
+    logs: TradingLog[];
+}
+
 export interface CapitalType {
     state: "init" | "pending" | "fulfilled" | "rejected";
     krCapital: KrUsCapitalType;
@@ -145,6 +162,8 @@ export interface CapitalType {
     krQuantRule: QuantRuleState;
     usQuantRule: QuantRuleState;
     krBudget: BudgetState;
+    krActivity: TradingActivityState;
+    usActivity: TradingActivityState;
 }
 
 const initialState: CapitalType = {
@@ -235,7 +254,9 @@ const initialState: CapitalType = {
     },
     krQuantRule: { ...initialQuantRuleState },
     usQuantRule: { ...initialQuantRuleState },
-    krBudget: { ...initialBudgetState }
+    krBudget: { ...initialBudgetState },
+    krActivity: { state: "init", logs: [] },
+    usActivity: { state: "init", logs: [] }
 }
 
 export const capitalSlice = createAppSlice({
@@ -261,6 +282,32 @@ export const capitalSlice = createAppSlice({
                     // console.log(`[reqGetKrCapital] rejected`);
                     state.krCapital.state = "rejected"
                 }
+            }
+        ),
+        reqGetKrTradingActivity: create.asyncThunk(
+            async (key?: string) => {
+                return await getKrCapitalActivity(key);
+            },
+            {
+                pending: (state) => { state.krActivity.state = "pending"; },
+                fulfilled: (state, action) => {
+                    const json = action.payload;
+                    state.krActivity = { state: "fulfilled", logs: Array.isArray(json?.logs) ? json.logs : [] };
+                },
+                rejected: (state) => { state.krActivity.state = "rejected"; }
+            }
+        ),
+        reqGetUsTradingActivity: create.asyncThunk(
+            async (key?: string) => {
+                return await getUsCapitalActivity(key);
+            },
+            {
+                pending: (state) => { state.usActivity.state = "pending"; },
+                fulfilled: (state, action) => {
+                    const json = action.payload;
+                    state.usActivity = { state: "fulfilled", logs: Array.isArray(json?.logs) ? json.logs : [] };
+                },
+                rejected: (state) => { state.usActivity.state = "rejected"; }
             }
         ),
         reqPostKrCapitalTokenPlusAll: create.asyncThunk(
@@ -754,6 +801,8 @@ export const capitalSlice = createAppSlice({
         selectKrQuantRule: (state) => state.krQuantRule,
         selectUsQuantRule: (state) => state.usQuantRule,
         selectKrBudget: (state) => state.krBudget,
+        selectKrActivity: (state) => state.krActivity,
+        selectUsActivity: (state) => state.usActivity,
     }
 });
 
@@ -766,5 +815,7 @@ export const { reqGetKrQuantRule, reqPostKrQuantRule, reqGetUsQuantRule, reqPost
 export const { selectKrQuantRule, selectUsQuantRule } = capitalSlice.selectors;
 export const { reqGetKrCapitalBudget, reqPostKrCapitalBudget } = capitalSlice.actions;
 export const { selectKrBudget } = capitalSlice.selectors;
+export const { reqGetKrTradingActivity, reqGetUsTradingActivity } = capitalSlice.actions;
+export const { selectKrActivity, selectUsActivity } = capitalSlice.selectors;
 export const { reqGetUsCapital, reqPostUsCapitalTokenPlusAll, reqPostUsCapitalTokenPlusOne, reqPostUsCapitalTokenMinusAll, reqPostUsCapitalTokenMinusOne, reqPostUsCapitalTokenResetAll, reqPostUsCapitalTokenResetOne } = capitalSlice.actions;
 export const { selectUsCapital, selectUsCapitalTokenPlusAll, selectUsCapitalTokenPlusOne, selectUsCapitalTokenMinusAll, selectUsCapitalTokenMinusOne, selectUsCapitalTokenResetAll, selectUsCapitalTokenResetOne } = capitalSlice.selectors;

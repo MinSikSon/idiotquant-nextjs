@@ -5,7 +5,7 @@ import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import {
   LayoutDashboard, ChevronRight, MapPin,
   Wallet, Coins, Percent,
-  Database, User, PieChart, BarChart3, ClipboardList, Power, SlidersHorizontal,
+  Database, User, PieChart, BarChart3, ClipboardList, Power, SlidersHorizontal, Activity,
 } from "lucide-react";
 import { useSession } from "next-auth/react";
 
@@ -42,6 +42,7 @@ import {
   selectKrGroupOp,
   reqGetKrQuantRule, reqPostKrQuantRule, selectKrQuantRule,
   reqGetKrCapitalBudget, reqPostKrCapitalBudget, selectKrBudget,
+  reqGetKrTradingActivity, selectKrActivity,
 } from "@/lib/features/capital/capitalSlice";
 import { reqGetMyLikes, selectLikedList } from "@/lib/features/stockLikes/stockLikesSlice";
 import { getInquirePrice } from "@/lib/features/koreaInvestment/koreaInvestmentAPI";
@@ -51,6 +52,7 @@ import StockListTable from "@/components/balance/stockListTable";
 import QuantRuleEditor from "@/components/balance/quantRuleEditor";
 import RefillSettings from "@/components/balance/refillSettings";
 import TradingFlowSummary from "@/components/balance/tradingFlowSummary";
+import TradingActivityPanel from "@/components/balance/tradingActivityPanel";
 import dynamic from "next/dynamic";
 import { ChartSectionSkeleton } from "@/components/balance/shared";
 // recharts(무거움)를 초기 번들에서 제외 — 차트 섹션 표시 시점에 로드
@@ -181,6 +183,7 @@ export function BalanceKrView({ countryToggle }: { countryToggle?: React.ReactNo
 
   const kiBalance = useAppSelector(getKoreaInvestmentBalance) as unknown as KoreaInvestmentBalance;
   const krCapital = useAppSelector(selectKrCapital) as KrUsCapitalType;
+  const krActivity = useAppSelector(selectKrActivity);
   const kakaoTotal = useAppSelector(selectKakaoTotal) as KakaoTotal;
   const kakaoMemberList = useAppSelector(selectKakaoMemberList);
   const orderCashState = useAppSelector(getKoreaInvestmentOrderCash) as KoreaInvestmentOrderCash;
@@ -269,6 +272,7 @@ export function BalanceKrView({ countryToggle }: { countryToggle?: React.ReactNo
     dispatch(reqGetInquireBalance(balanceKey));
     fetchOrderHistory(balanceKey);
     dispatch(reqGetKrCapital(balanceKey));
+    dispatch(reqGetKrTradingActivity(balanceKey));
   }, [balanceKey, dispatch, fetchOrderHistory]);
 
   const handleToggleTrading = useCallback(async () => {
@@ -295,6 +299,7 @@ export function BalanceKrView({ countryToggle }: { countryToggle?: React.ReactNo
     dispatch(reqGetInquireBalance(balanceKey));
     fetchOrderHistory(balanceKey);
     dispatch(reqGetKrCapital(balanceKey));
+    dispatch(reqGetKrTradingActivity(balanceKey));
     dispatch(reqFetchTradingStatus({ country: "KR", key: balanceKey }));
   }, [balanceKey]);
 
@@ -425,6 +430,7 @@ export function BalanceKrView({ countryToggle }: { countryToggle?: React.ReactNo
     { id: "section-portfolio", label: "포트폴리오", icon: <PieChart size={13} /> },
     { id: "section-balance", label: "잔고", icon: <BarChart3 size={13} /> },
     ...(hasCapital ? [{ id: "section-stocks", label: "종목관리", icon: <Database size={13} /> }] : []),
+    ...(hasCapital ? [{ id: "section-activity", label: "자동매매 현황", icon: <Activity size={13} /> }] : []),
     ...(hasCapital ? [{ id: "section-conditions", label: "트레이딩 조건", icon: <SlidersHorizontal size={13} /> }] : []),
     { id: "section-orders", label: "주문내역", icon: <ClipboardList size={13} /> },
   ];
@@ -667,6 +673,29 @@ export function BalanceKrView({ countryToggle }: { countryToggle?: React.ReactNo
                 quantRule={krQuantRule.rule}
                 metricsOverride={krLikeMetrics}
                 monthlyPerStock={krBudget?.monthly_per_stock}
+              />
+            </SectionPanel>
+          ) : null,
+        },
+        {
+          id: "section-activity",
+          node: hasCapital ? (
+            <SectionPanel id="section-activity">
+              <SectionHeader
+                icon={<Activity size={16} />}
+                title="자동매매 현황"
+                subtitle="스케줄러(5분마다) 가동 상태 · 토큰 리필 · 최근 자동 체결 내역"
+                badge={
+                  krActivity.state === "pending"
+                    ? <span className="text-[10px] font-mono text-amber-500 bg-amber-50 dark:bg-amber-950/20 px-2 py-0.5 rounded-full border border-amber-200 dark:border-amber-800 animate-pulse">로딩 중</span>
+                    : <span className="text-[10px] font-mono text-neutral-500 dark:text-neutral-400 bg-[#faf9f7] dark:bg-[#242320] px-2 py-0.5 rounded-full">최근 {krActivity.logs.length}건</span>
+                }
+              />
+              <TradingActivityPanel
+                country="KR"
+                capital={krCapital}
+                activity={krActivity}
+                onRefresh={() => dispatch(reqGetKrTradingActivity(balanceKey))}
               />
             </SectionPanel>
           ) : null,
