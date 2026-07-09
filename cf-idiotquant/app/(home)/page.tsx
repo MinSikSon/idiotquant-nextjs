@@ -181,39 +181,6 @@ function makeRadialTexture(inner: string): THREE.CanvasTexture {
   return t;
 }
 
-// 종목 카드 앞면 아트 (초록 카드 + 미니 상승 캔들 + 코너 핍)
-function makeCardFaceTexture(): THREE.CanvasTexture {
-  const w = 500, h = 720;
-  const c = document.createElement("canvas");
-  c.width = w; c.height = h;
-  const ctx = c.getContext("2d")!;
-  const g = ctx.createLinearGradient(0, 0, w, h);
-  g.addColorStop(0, "#22b45f");
-  g.addColorStop(1, "#0b6a33");
-  ctx.fillStyle = g;
-  ctx.beginPath(); ctx.roundRect(0, 0, w, h, 52); ctx.fill();
-  ctx.strokeStyle = "rgba(255,255,255,0.4)"; ctx.lineWidth = 6;
-  ctx.beginPath(); ctx.roundRect(24, 24, w - 48, h - 48, 36); ctx.stroke();
-  // 코너 핍
-  ctx.fillStyle = "#ffffff"; ctx.textBaseline = "top"; ctx.font = "800 54px sans-serif";
-  ctx.fillText("₩", 44, 40);
-  ctx.save(); ctx.translate(w - 44, h - 40); ctx.rotate(Math.PI); ctx.fillText("₩", 0, 0); ctx.restore();
-  // 중앙 미니 상승 캔들차트
-  const bars: [number, number, boolean][] = [[-150, 90, true], [-75, 150, false], [0, 120, true], [75, 210, true], [150, 270, true]];
-  const cx = w / 2, base = h / 2 + 150;
-  ctx.lineWidth = 6; ctx.strokeStyle = "rgba(255,255,255,0.85)";
-  for (const [dx, bh, up] of bars) {
-    const bx = cx + dx, bw = 42;
-    ctx.beginPath(); ctx.moveTo(bx, base - bh - 26); ctx.lineTo(bx, base + 12); ctx.stroke();
-    ctx.fillStyle = up ? "rgba(255,255,255,0.96)" : "rgba(255,255,255,0.5)";
-    ctx.beginPath(); ctx.roundRect(bx - bw / 2, base - bh, bw, bh, 8); ctx.fill();
-  }
-  const t = new THREE.CanvasTexture(c);
-  t.colorSpace = THREE.SRGBColorSpace;
-  t.anisotropy = 4;
-  return t;
-}
-
 function HeroArt() {
   const mountRef = useRef<HTMLDivElement>(null);
 
@@ -365,30 +332,7 @@ function HeroArt() {
   return <div ref={mountRef} className="w-full h-full" aria-hidden="true" />;
 }
 
-// 카드 뒷면 아트 (초록 백디자인 + 대각 패턴 + ₩ 엠블럼)
-function makeCardBackTexture(): THREE.CanvasTexture {
-  const w = 500, h = 720;
-  const c = document.createElement("canvas");
-  c.width = w; c.height = h;
-  const ctx = c.getContext("2d")!;
-  const g = ctx.createLinearGradient(0, 0, w, h);
-  g.addColorStop(0, "#0f7a39"); g.addColorStop(1, "#064d24");
-  ctx.beginPath(); ctx.roundRect(0, 0, w, h, 52); ctx.fillStyle = g; ctx.fill();
-  ctx.save(); ctx.beginPath(); ctx.roundRect(0, 0, w, h, 52); ctx.clip();
-  ctx.strokeStyle = "rgba(255,255,255,0.06)"; ctx.lineWidth = 12;
-  for (let i = -h; i < w; i += 36) { ctx.beginPath(); ctx.moveTo(i, 0); ctx.lineTo(i + h, h); ctx.stroke(); }
-  ctx.restore();
-  ctx.strokeStyle = "rgba(255,255,255,0.3)"; ctx.lineWidth = 6;
-  ctx.beginPath(); ctx.roundRect(24, 24, w - 48, h - 48, 36); ctx.stroke();
-  ctx.fillStyle = "rgba(255,255,255,0.12)"; ctx.beginPath(); ctx.arc(w / 2, h / 2, 118, 0, Math.PI * 2); ctx.fill();
-  ctx.fillStyle = "#ffffff"; ctx.font = "800 128px sans-serif"; ctx.textAlign = "center"; ctx.textBaseline = "middle";
-  ctx.fillText("₩", w / 2, h / 2 + 8);
-  const t = new THREE.CanvasTexture(c);
-  t.colorSpace = THREE.SRGBColorSpace; t.anisotropy = 4;
-  return t;
-}
-
-// 게임 버튼용 3D — 부채꼴로 펼친 종목 카드 한 벌 + 금화
+// 게임 버튼용 3D — 대항해시대 범선 (저폴리 파도·부푼 돛·금화·햇살)
 function GameCardArt() {
   const mountRef = useRef<HTMLDivElement>(null);
 
@@ -398,9 +342,9 @@ function GameCardArt() {
     const reduce = window.matchMedia?.("(prefers-reduced-motion: reduce)").matches ?? false;
 
     const scene = new THREE.Scene();
-    const camera = new THREE.PerspectiveCamera(32, 1, 0.1, 100);
-    camera.position.set(0, 0.1, 6.8);
-    camera.lookAt(0, 0.1, 0);
+    const camera = new THREE.PerspectiveCamera(36, 1, 0.1, 100);
+    camera.position.set(0.4, 1.7, 8.6);
+    camera.lookAt(0, 0.5, 0);
 
     const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
     renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
@@ -420,71 +364,147 @@ function GameCardArt() {
     pmrem.dispose();
     disposables.push(envRT.texture);
 
-    scene.add(new THREE.HemisphereLight(0xffffff, 0x7a8880, 0.6));
-    const key = new THREE.DirectionalLight(0xffffff, 2.4);
-    key.position.set(2, 4, 6);
-    scene.add(key);
-    const rim = new THREE.DirectionalLight(0x7ee3ad, 1.2);
-    rim.position.set(-5, 1, 1);
-    scene.add(rim);
+    scene.add(new THREE.HemisphereLight(0xcfe8ff, 0x1c6b3e, 0.7));
+    const sun = new THREE.DirectionalLight(0xffe6b0, 2.6);
+    sun.position.set(-5, 5, 3);
+    scene.add(sun);
+    const fillL = new THREE.DirectionalLight(0x9be7bd, 0.9);
+    fillL.position.set(4, 2, 4);
+    scene.add(fillL);
 
-    // 뒤 글로우
-    const glowTex = makeRadialTexture("rgba(22,163,74,0.5)");
-    const glowGeo = new THREE.PlaneGeometry(8, 8);
-    const glowMat = new THREE.MeshBasicMaterial({ map: glowTex, transparent: true, depthWrite: false, opacity: 0.55 });
-    disposables.push(glowTex, glowGeo, glowMat);
-    const glow = new THREE.Mesh(glowGeo, glowMat);
-    glow.position.z = -1.5;
-    scene.add(glow);
+    // ── 바다 (저폴리 파도) ──
+    const seaGeo = new THREE.PlaneGeometry(24, 16, 40, 24);
+    const seaMat = new THREE.MeshStandardMaterial({ color: 0x12a35b, roughness: 0.45, flatShading: true });
+    disposables.push(seaGeo, seaMat);
+    const sea = new THREE.Mesh(seaGeo, seaMat);
+    sea.rotation.x = -Math.PI / 2;
+    sea.position.y = -0.55;
+    scene.add(sea);
+    const seaPos = seaGeo.attributes.position as THREE.BufferAttribute;
 
-    // 카드 재질 · 지오메트리 (앞면 아트 / 뒷면 백디자인)
-    const cardGeo = roundedBoxGeometry(1.7, 2.42, 0.1, 0.15);
-    const cardMat = new THREE.MeshPhysicalMaterial({ color: 0x0e7a38, roughness: 0.26, clearcoat: 0.85, clearcoatRoughness: 0.16, metalness: 0 });
-    const faceTex = makeCardFaceTexture();
-    const backTex = makeCardBackTexture();
-    const faceGeo = new THREE.PlaneGeometry(1.5, 2.24);
-    const faceMatF = new THREE.MeshStandardMaterial({ map: faceTex, roughness: 0.5 });
-    const backMat = new THREE.MeshStandardMaterial({ map: backTex, roughness: 0.5 });
-    disposables.push(cardGeo, cardMat, faceTex, backTex, faceGeo, faceMatF, backMat);
+    // ── 태양 (뒤 글로우) ──
+    const sunGlowTex = makeRadialTexture("rgba(255,213,130,0.9)");
+    const sunGlowMat = new THREE.SpriteMaterial({ map: sunGlowTex, transparent: true, depthWrite: false, blending: THREE.AdditiveBlending, opacity: 0.9 });
+    disposables.push(sunGlowTex, sunGlowMat);
+    const sunGlow = new THREE.Sprite(sunGlowMat);
+    sunGlow.scale.set(4.4, 4.4, 1);
+    sunGlow.position.set(-3.2, 2.5, -4);
+    scene.add(sunGlow);
+    const sunDiscGeo = new THREE.SphereGeometry(0.55, 24, 16);
+    const sunDiscMat = new THREE.MeshBasicMaterial({ color: 0xffdf8a });
+    disposables.push(sunDiscGeo, sunDiscMat);
+    const sunDisc = new THREE.Mesh(sunDiscGeo, sunDiscMat);
+    sunDisc.position.copy(sunGlow.position);
+    scene.add(sunDisc);
 
-    // 부채꼴 한 벌 — 피벗을 카드 아래에 둬 위쪽으로 펼침
-    const fan = new THREE.Group();
-    const specs: { a: number; dz: number; front: boolean }[] = [
-      { a: 0.36, dz: -0.18, front: false },
-      { a: -0.36, dz: -0.18, front: false },
-      { a: 0, dz: 0, front: true },
-    ];
-    specs.forEach(({ a, dz, front }) => {
-      const pivot = new THREE.Group();
-      const card = new THREE.Group();
-      const f = new THREE.Mesh(faceGeo, front ? faceMatF : backMat);
-      f.position.z = 0.056;
-      card.add(new THREE.Mesh(cardGeo, cardMat), f);
-      card.position.y = 1.5;
-      pivot.add(card);
-      pivot.rotation.z = a;
-      pivot.position.z = dz;
-      fan.add(pivot);
+    // ── 범선 (갤리온) ──
+    const ship = new THREE.Group();
+    const hullShape = new THREE.Shape();
+    hullShape.moveTo(2.5, 0.34);
+    hullShape.lineTo(-1.7, 0.12);
+    hullShape.lineTo(-2.05, 0.3);
+    hullShape.lineTo(-2.35, 0.98);
+    hullShape.lineTo(-2.64, 0.92);
+    hullShape.lineTo(-2.35, -0.5);
+    hullShape.quadraticCurveTo(0.1, -0.96, 2.05, -0.34);
+    hullShape.quadraticCurveTo(2.95, -0.04, 2.5, 0.34);
+    const hullGeo = new THREE.ExtrudeGeometry(hullShape, { depth: 1.25, bevelEnabled: true, bevelThickness: 0.09, bevelSize: 0.09, bevelSegments: 2, steps: 1, curveSegments: 18 });
+    hullGeo.translate(0, 0, -0.625);
+    hullGeo.computeVertexNormals();
+    const hullMat = new THREE.MeshStandardMaterial({ color: 0x6a3f1e, roughness: 0.55, metalness: 0.05 });
+    const deckMat = new THREE.MeshStandardMaterial({ color: 0x8a5a2c, roughness: 0.6 });
+    disposables.push(hullGeo, hullMat, deckMat);
+    ship.add(new THREE.Mesh(hullGeo, hullMat));
+
+    // 선미루(aftcastle)
+    const castleGeo = roundedBoxGeometry(0.7, 0.5, 1.1, 0.06);
+    disposables.push(castleGeo);
+    const castle = new THREE.Mesh(castleGeo, deckMat);
+    castle.position.set(-2.1, 0.6, 0);
+    ship.add(castle);
+
+    // 금색 현측 장식선 2줄
+    const trimMat = new THREE.MeshStandardMaterial({ color: 0xffca3d, metalness: 0.9, roughness: 0.25, emissive: 0x5a3d06, emissiveIntensity: 0.15 });
+    disposables.push(trimMat);
+    [0.18, 0.0].forEach(ty => {
+      const tGeo = new THREE.BoxGeometry(4.9, 0.05, 1.3);
+      disposables.push(tGeo);
+      const tm = new THREE.Mesh(tGeo, trimMat); tm.position.set(-0.1, ty, 0);
+      ship.add(tm);
     });
-    fan.position.y = -1.35;
-    scene.add(fan);
 
-    // 금화 액센트 + 글로우 (회전·부유)
-    const goldMat = new THREE.MeshStandardMaterial({ color: 0xffca3d, metalness: 0.95, roughness: 0.15, emissive: 0x5a3d06, emissiveIntensity: 0.16 });
-    const coinGeo = new THREE.CylinderGeometry(0.34, 0.34, 0.08, 40);
-    const coinField = new THREE.CylinderGeometry(0.27, 0.27, 0.11, 40);
-    const haloTex = makeRadialTexture("rgba(255,205,80,0.55)");
-    const haloMat = new THREE.SpriteMaterial({ map: haloTex, transparent: true, depthWrite: false, blending: THREE.AdditiveBlending, opacity: 0.6 });
-    disposables.push(goldMat, coinGeo, coinField, haloTex, haloMat);
-    const coinDisc = new THREE.Group();
-    coinDisc.add(new THREE.Mesh(coinGeo, goldMat), new THREE.Mesh(coinField, goldMat));
-    coinDisc.rotation.x = Math.PI / 2;
-    const coinHalo = new THREE.Sprite(haloMat);
-    coinHalo.scale.set(1.9, 1.9, 1);
-    const coin = new THREE.Group();
-    coin.add(coinHalo, coinDisc);
-    coin.position.set(1.55, 1.35, 0.9);
-    scene.add(coin);
+    // 돛대 · 활대 · 사각돛
+    const mastMat = new THREE.MeshStandardMaterial({ color: 0x4a2f16, roughness: 0.6 });
+    const sailMat = new THREE.MeshStandardMaterial({ color: 0xf4ead0, roughness: 0.72, side: THREE.DoubleSide });
+    disposables.push(mastMat, sailMat);
+    const addSail = (parent: THREE.Group, cy: number, w: number, h: number) => {
+      const sg = new THREE.PlaneGeometry(w, h, 14, 10);
+      const sp = sg.attributes.position as THREE.BufferAttribute;
+      for (let i = 0; i < sp.count; i++) { const u = sp.getX(i) / w + 0.5, v = sp.getY(i) / h + 0.5; sp.setZ(i, Math.sin(u * Math.PI) * (0.35 + v * 0.25) * 0.62); }
+      sg.computeVertexNormals();
+      const yardGeo = new THREE.CylinderGeometry(0.03, 0.03, w + 0.24, 8);
+      disposables.push(sg, yardGeo);
+      const yard = new THREE.Mesh(yardGeo, mastMat); yard.rotation.x = Math.PI / 2; yard.position.y = cy + h / 2;
+      const sail = new THREE.Mesh(sg, sailMat); sail.rotation.y = Math.PI / 2; sail.position.y = cy;
+      parent.add(yard, sail);
+    };
+    const makeMast = (x: number, mh: number, specs: [number, number, number][]) => {
+      const g = new THREE.Group();
+      const mastGeo = new THREE.CylinderGeometry(0.045, 0.06, mh, 10);
+      disposables.push(mastGeo);
+      const mast = new THREE.Mesh(mastGeo, mastMat); mast.position.y = mh / 2;
+      g.add(mast);
+      specs.forEach(([cy, w, h]) => addSail(g, cy, w, h));
+      g.position.set(x, 0.26, 0);
+      ship.add(g);
+    };
+    makeMast(1.35, 2.35, [[0.98, 1.28, 1.02], [1.92, 0.9, 0.66]]);  // 앞돛대: 큰돛 + 윗돛
+    makeMast(0.15, 3.0, [[1.12, 1.55, 1.28], [2.35, 1.05, 0.78]]);  // 주돛대(제일 큼)
+    makeMast(-1.05, 2.15, [[0.95, 1.12, 0.94]]);                    // 뒷돛대
+
+    // 선수 사장(bowsprit) + 삼각 지브
+    const bspGeo = new THREE.CylinderGeometry(0.03, 0.045, 1.5, 8);
+    disposables.push(bspGeo);
+    const bowsprit = new THREE.Mesh(bspGeo, mastMat);
+    bowsprit.position.set(2.95, 0.55, 0); bowsprit.rotation.z = Math.PI / 2 - 0.55;
+    ship.add(bowsprit);
+    const jibShape = new THREE.Shape();
+    jibShape.moveTo(0, 0); jibShape.lineTo(1.1, 0.1); jibShape.lineTo(0.1, 1.05); jibShape.lineTo(0, 0);
+    const jibGeo = new THREE.ShapeGeometry(jibShape);
+    disposables.push(jibGeo);
+    const jib = new THREE.Mesh(jibGeo, sailMat);
+    jib.position.set(1.95, 0.55, 0); jib.rotation.y = Math.PI / 2;
+    ship.add(jib);
+
+    // 페넌트 깃발
+    const flagGeo = new THREE.ConeGeometry(0.11, 0.5, 3);
+    const flagMat = new THREE.MeshStandardMaterial({ color: 0x16a34a, roughness: 0.5, side: THREE.DoubleSide });
+    disposables.push(flagGeo, flagMat);
+    const flag = new THREE.Mesh(flagGeo, flagMat);
+    flag.rotation.z = -Math.PI / 2; flag.position.set(0.15, 3.5, 0);
+    ship.add(flag);
+
+    ship.position.set(0.1, -0.12, 0);
+    ship.rotation.y = -0.32;
+    ship.rotation.z = 0.04;
+    scene.add(ship);
+
+    // ── 뱃머리 물보라 & 항적 (흰 포말 스프라이트) ──
+    const foamTex = makeRadialTexture("rgba(255,255,255,0.92)");
+    const foamMat = new THREE.SpriteMaterial({ map: foamTex, transparent: true, depthWrite: false, opacity: 0.85 });
+    const wakeMat = new THREE.SpriteMaterial({ map: foamTex, transparent: true, depthWrite: false, opacity: 0.5 });
+    disposables.push(foamTex, foamMat, wakeMat);
+    const foams: { s: THREE.Sprite; by: number; sc: number; ph: number }[] = [];
+    // 뱃머리 물보라 (선수에서 크게 부서지는 하얀 파도)
+    ([[2.95, -0.18, 1.25, 0.35], [2.6, -0.3, 1.05, 0.0], [3.15, -0.32, 0.85, -0.4], [2.35, -0.36, 0.9, 0.6], [3.05, 0.05, 0.7, 0.1]] as [number, number, number, number][]).forEach(([x, y, sc, z], i) => {
+      const s = new THREE.Sprite(foamMat); s.scale.set(sc, sc * 0.7, 1); s.position.set(x, y, z);
+      scene.add(s); foams.push({ s, by: y, sc, ph: i * 1.1 });
+    });
+    // 항적 (선미 뒤로 길게 퍼지는 흰 물줄기)
+    ([[-2.5, -0.32, 0.85, 0.15], [-3.2, -0.34, 0.72, -0.45], [-3.95, -0.36, 0.58, 0.3], [-4.7, -0.38, 0.44, -0.2], [-5.4, -0.4, 0.32, 0.1]] as [number, number, number, number][]).forEach(([x, y, sc, z], i) => {
+      const s = new THREE.Sprite(wakeMat); s.scale.set(sc, sc * 0.5, 1); s.position.set(x, y, z);
+      scene.add(s); foams.push({ s, by: y, sc, ph: 2 + i * 0.9 });
+    });
 
     const resize = () => {
       const w = mount.clientWidth || 1, h = mount.clientHeight || 1;
@@ -498,18 +518,32 @@ function GameCardArt() {
 
     const clock = new THREE.Clock();
     let raf = 0;
+    const animateSea = (t: number) => {
+      for (let i = 0; i < seaPos.count; i++) {
+        const x = seaPos.getX(i), y = seaPos.getY(i);
+        seaPos.setZ(i, Math.sin(x * 0.7 + t) * 0.16 + Math.sin(y * 0.9 + t * 0.8) * 0.12);
+      }
+      seaPos.needsUpdate = true;
+      seaGeo.computeVertexNormals();
+    };
     const render = () => {
       const t = clock.getElapsedTime();
-      fan.rotation.y = Math.sin(t * 0.5) * 0.3;
-      fan.rotation.x = Math.sin(t * 0.42 + 1) * 0.05;
-      fan.position.y = -1.35 + Math.sin(t) * 0.06;
-      coinDisc.rotation.y = t * 1.6;
-      coin.position.y = 1.35 + Math.sin(t * 0.9 + 1) * 0.12;
+      animateSea(t);
+      ship.position.y = -0.12 + Math.sin(t * 1.3) * 0.05;
+      ship.rotation.z = 0.04 + Math.sin(t * 0.9) * 0.03;
+      ship.rotation.x = Math.sin(t * 0.7 + 1) * 0.025;
+      ship.rotation.y = -0.32 + Math.sin(t * 0.12) * 0.06;
+      foams.forEach(({ s, by, sc, ph }) => {
+        const p = (Math.sin(t * 2.4 + ph) + 1) / 2;
+        s.position.y = by + Math.sin(t * 1.8 + ph) * 0.05;
+        s.scale.set(sc * (0.85 + p * 0.3), sc * 0.7 * (0.85 + p * 0.3), 1);
+      });
       renderer.render(scene, camera);
       raf = requestAnimationFrame(render);
     };
     if (reduce) {
-      fan.rotation.y = -0.2;
+      animateSea(0.6);
+      ship.rotation.y = -0.3;
       renderer.render(scene, camera);
     } else {
       raf = requestAnimationFrame(render);
@@ -783,7 +817,7 @@ export default function HomePage() {
       <Link href="/game" className="group relative flex h-44 sm:h-60 overflow-hidden border-b border-neutral-200/70 dark:border-[#3a3834] bg-gradient-to-b from-[#eaf5ee] to-white dark:from-[#0e2019] dark:to-[#1a1915]">
         <GameCardArt />
         <span className="absolute bottom-3 left-1/2 -translate-x-1/2 inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full bg-white/85 dark:bg-[#242320]/85 backdrop-blur border border-neutral-200 dark:border-[#35332e] text-xs font-black text-[#15803d] dark:text-[#16a34a] shadow-sm group-hover:scale-105 transition-transform">
-          🃏 종목 카드 게임으로 배우기 <ChevronRight size={13} />
+          ⛵ 가치를 향한 항해 — 종목 카드 게임 <ChevronRight size={13} />
         </span>
       </Link>
 
