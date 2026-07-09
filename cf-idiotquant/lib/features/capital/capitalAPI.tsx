@@ -37,6 +37,12 @@ export const postKrCapitalTokenMinusOne: any = async (key: string, num: number, 
     return postKoreaInvestmentRequest(subUrl, additionalHeaders);
 }
 
+// 자동매매 현황 — 최근 체결 로그 (IQ_PURCHASE_LOG)
+export const getKrCapitalActivity: any = async (key: string) =>
+    getKoreaInvestmentRequest(`/kr/capital/activity?kakao-id=${key}`, {});
+export const getUsCapitalActivity: any = async (key: string) =>
+    getKoreaInvestmentRequest(`/us/capital/activity?kakao-id=${key}`, {});
+
 // US Capital API
 export const getUsCapital: any = async (key: string) => {
     const subUrl = `/us/capital?kakao-id=${key}`;

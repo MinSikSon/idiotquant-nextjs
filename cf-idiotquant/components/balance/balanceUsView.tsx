@@ -6,7 +6,7 @@ import {
   Globe, ChevronRight, DollarSign, Building2,
   Wallet, TrendingUp, BarChart3, RefreshCw,
   AlertCircle, Database,
-  ArrowDownRight, PieChart, ClipboardList, TrendingDown, Power, SlidersHorizontal,
+  ArrowDownRight, PieChart, ClipboardList, TrendingDown, Power, SlidersHorizontal, Activity,
 } from "lucide-react";
 import { useSession } from "next-auth/react";
 
@@ -48,6 +48,7 @@ import {
   reqPostUsCapitalStockRemove, reqPostUsCapitalStocksRemove,
   selectUsGroupOp,
   reqGetUsQuantRule, reqPostUsQuantRule, selectUsQuantRule,
+  reqGetUsTradingActivity, selectUsActivity,
 } from "@/lib/features/capital/capitalSlice";
 import { reqGetMyLikes, selectLikedList } from "@/lib/features/stockLikes/stockLikesSlice";
 import { getQuotationsPriceDetail } from "@/lib/features/koreaInvestmentUsMarket/koreaInvestmentUsMarketAPI";
@@ -55,6 +56,7 @@ import { getQuotationsPriceDetail } from "@/lib/features/koreaInvestmentUsMarket
 import InquireBalanceResult from "@/components/inquireBalanceResult";
 import QuantRuleEditor from "@/components/balance/quantRuleEditor";
 import TradingFlowSummary from "@/components/balance/tradingFlowSummary";
+import TradingActivityPanel from "@/components/balance/tradingActivityPanel";
 import StockListTable from "@/components/balance/stockListTable";
 import dynamic from "next/dynamic";
 import { ChartSectionSkeleton } from "@/components/balance/shared";
@@ -172,6 +174,7 @@ export function BalanceUsView({ countryToggle }: { countryToggle?: React.ReactNo
   const kakaoTotal = useAppSelector(selectKakaoTotal) as KakaoTotal;
   const kakaoMemberList = useAppSelector(selectKakaoMemberList);
   const usCapital = useAppSelector(selectUsCapital) as KrUsCapitalType;
+  const usActivity = useAppSelector(selectUsActivity);
   const usCapitalPlusAll = useAppSelector(selectUsCapitalTokenPlusAll);
   const usCapitalPlusOne = useAppSelector(selectUsCapitalTokenPlusOne);
   const usCapitalMinusAll = useAppSelector(selectUsCapitalTokenMinusAll);
@@ -230,6 +233,7 @@ export function BalanceUsView({ countryToggle }: { countryToggle?: React.ReactNo
     dispatch(reqGetOverseasStockTradingInquireCcnl(key));
     dispatch(reqGetOverseasStockTradingInquireNccs(key));
     dispatch(reqGetUsCapital(key));
+    dispatch(reqGetUsTradingActivity(key));
   }, [dispatch]);
 
   const handleRefresh = useCallback(() => {
@@ -411,6 +415,7 @@ export function BalanceUsView({ countryToggle }: { countryToggle?: React.ReactNo
     { id: "section-portfolio", label: "포트폴리오", icon: <PieChart size={13} /> },
     { id: "section-balance", label: "잔고", icon: <BarChart3 size={13} /> },
     ...(hasCapital ? [{ id: "section-stocks", label: "종목관리", icon: <Database size={13} /> }] : []),
+    ...(hasCapital ? [{ id: "section-activity", label: "자동매매 현황", icon: <Activity size={13} /> }] : []),
     ...(hasCapital ? [{ id: "section-conditions", label: "트레이딩 조건", icon: <SlidersHorizontal size={13} /> }] : []),
     { id: "section-orders", label: "해외주문", icon: <ClipboardList size={13} /> },
   ];
@@ -700,6 +705,29 @@ export function BalanceUsView({ countryToggle }: { countryToggle?: React.ReactNo
                 countryTradingActive={tradingStatus.US === true}
                 quantRule={usQuantRule.rule}
                 metricsOverride={usLikeMetrics}
+              />
+            </SectionPanel>
+          ) : null,
+        },
+        {
+          id: "section-activity",
+          node: hasCapital ? (
+            <SectionPanel id="section-activity">
+              <SectionHeader
+                icon={<Activity size={16} />}
+                title="자동매매 현황"
+                subtitle="스케줄러(5분마다) 가동 상태 · 토큰 리필 · 최근 자동 체결 내역"
+                badge={
+                  usActivity.state === "pending"
+                    ? <span className="text-[10px] font-mono text-amber-500 bg-amber-50 dark:bg-amber-950/20 px-2 py-0.5 rounded-full border border-amber-200 dark:border-amber-800 animate-pulse">로딩 중</span>
+                    : <span className="text-[10px] font-mono text-neutral-500 dark:text-neutral-400 bg-[#faf9f7] dark:bg-[#242320] px-2 py-0.5 rounded-full">최근 {usActivity.logs.length}건</span>
+                }
+              />
+              <TradingActivityPanel
+                country="US"
+                capital={usCapital}
+                activity={usActivity}
+                onRefresh={() => dispatch(reqGetUsTradingActivity(balanceKey))}
               />
             </SectionPanel>
           ) : null,
