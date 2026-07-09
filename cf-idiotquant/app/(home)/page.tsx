@@ -100,42 +100,46 @@ const STRATEGY_BADGE_CLS: Record<string, string> = {
 const FEATURES = [
   {
     icon: Gamepad2,
-    iconCls: "text-[#16a34a] dark:text-[#16a34a]",
-    bgCls: "bg-[#f0fdf4] dark:bg-[#052e16]/30",
+    iconCls: "text-white",
+    bgCls: "bg-gradient-to-br from-[#16a34a] to-emerald-500 shadow-md shadow-[#16a34a]/25",
     title: "종목 카드 게임",
+    desc: "카드를 비교하며 가치투자 감각을 익혀요",
     link: "/game",
     linkLabel: "게임하기",
   },
   {
     icon: Filter,
-    iconCls: "text-emerald-600 dark:text-emerald-400",
-    bgCls: "bg-emerald-50 dark:bg-emerald-950/30",
+    iconCls: "text-white",
+    bgCls: "bg-gradient-to-br from-emerald-500 to-teal-500 shadow-md shadow-emerald-500/25",
     title: "종목 발굴",
+    desc: "9가지 전략으로 저평가 종목을 스캔해요",
     link: "/screener",
     linkLabel: "스크리너 열기",
   },
   {
     icon: Search,
-    iconCls: "text-violet-600 dark:text-violet-400",
-    bgCls: "bg-violet-50 dark:bg-violet-950/30",
+    iconCls: "text-white",
+    bgCls: "bg-gradient-to-br from-violet-500 to-indigo-500 shadow-md shadow-violet-500/25",
     title: "적정주가 분석",
+    desc: "재무 데이터로 내재가치를 계산해요",
     link: "/analyze",
     linkLabel: "종목 분석하기",
   },
   {
     icon: Calculator,
-    iconCls: "text-emerald-600 dark:text-emerald-400",
-    bgCls: "bg-emerald-50 dark:bg-emerald-950/30",
+    iconCls: "text-white",
+    bgCls: "bg-gradient-to-br from-amber-500 to-orange-500 shadow-md shadow-amber-500/25",
     title: "수익 계산기",
+    desc: "매수·매도 시나리오 수익률을 계산해요",
     link: "/calculator",
     linkLabel: "계산해보기",
   },
 ];
 
 const HOW_IT_WORKS = [
-  { step: "01", title: "카드로 종목 비교", accent: "text-[#16a34a]" },
-  { step: "02", title: "등급·지표로 가치 감각", accent: "text-emerald-600 dark:text-emerald-400" },
-  { step: "03", title: "실제 데이터로 확인", accent: "text-violet-600 dark:text-violet-400" },
+  { step: "01", title: "카드로 종목 비교" },
+  { step: "02", title: "등급·지표로 가치 감각" },
+  { step: "03", title: "실제 데이터로 확인" },
 ];
 
 // =========================================================================
@@ -718,6 +722,24 @@ export default function HomePage() {
           <p className="text-sm sm:text-base text-neutral-600 dark:text-neutral-300 font-medium break-keep max-w-md">
             종목 카드 게임으로 시작해, 실제 시장 데이터로 주식·경제 감각을 키웁니다.
           </p>
+
+          <div className="mt-7 flex flex-wrap items-center gap-3">
+            <Link
+              href="/game"
+              className="group inline-flex items-center gap-2 px-6 py-3.5 rounded-2xl bg-[#16a34a] hover:bg-[#15803d] active:bg-[#166534] text-white font-bold text-sm shadow-lg shadow-[#16a34a]/25 transition-all hover:-translate-y-0.5"
+            >
+              <Gamepad2 size={16} strokeWidth={2.5} />
+              게임으로 시작하기
+              <ArrowRight size={15} className="group-hover:translate-x-0.5 transition-transform" />
+            </Link>
+            <Link
+              href="/screener?mincap=500"
+              className="inline-flex items-center gap-2 px-6 py-3.5 rounded-2xl bg-white/80 dark:bg-[#242320]/80 backdrop-blur border border-neutral-200 dark:border-[#35332e] text-neutral-800 dark:text-neutral-100 font-bold text-sm shadow-sm hover:border-[#16a34a]/50 hover:-translate-y-0.5 transition-all"
+            >
+              <Filter size={15} strokeWidth={2.5} className="text-[#16a34a]" />
+              종목 발굴
+            </Link>
+          </div>
         </div>
 
         {/* 스탯 (하단 오버레이) */}
@@ -750,32 +772,42 @@ export default function HomePage() {
       {/* ── GAME BANNER (3D 종목 카드 · 게임 입구) ─────────────────── */}
       <Link href="/game" className="group relative flex h-44 sm:h-60 overflow-hidden border-b border-neutral-200/70 dark:border-[#3a3834] bg-gradient-to-b from-[#eaf5ee] to-white dark:from-[#0e2019] dark:to-[#1a1915]">
         <GameCardArt />
-        <span className="absolute bottom-3 left-1/2 -translate-x-1/2 inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full bg-white/85 dark:bg-[#242320]/85 backdrop-blur border border-neutral-200 dark:border-[#35332e] text-xs font-black text-[#15803d] dark:text-[#16a34a] shadow-sm group-hover:scale-105 transition-transform">
-          ⛵ 가치를 향한 항해 — 종목 카드 게임 <ChevronRight size={13} />
-        </span>
+        <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex flex-col items-center gap-2">
+          <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-[#16a34a]/10 dark:bg-[#16a34a]/20 text-[10px] font-extrabold text-[#15803d] dark:text-[#16a34a] uppercase tracking-wide">
+            미니 게임 · 무료
+          </span>
+          <span className="inline-flex items-center gap-1.5 px-4 py-2 rounded-full bg-[#16a34a] text-white text-xs sm:text-sm font-black shadow-lg shadow-[#16a34a]/25 group-hover:-translate-y-0.5 transition-transform">
+            ⛵ 가치를 향한 항해 시작
+            <ArrowRight size={14} className="group-hover:translate-x-0.5 transition-transform" />
+          </span>
+        </div>
       </Link>
 
       {/* ── TODAY'S PICKS ─────────────────────────────────────────── */}
       <section className="py-10 px-5 md:py-14">
         <div className="max-w-3xl mx-auto">
 
-          <div className="flex items-center justify-between mb-5">
+          <div className="flex items-end justify-between mb-5 gap-3">
             <div>
+              <div className="flex items-center gap-1.5 mb-2">
+                <BarChart3 size={13} className="text-[#16a34a]" strokeWidth={2.5} />
+                <span className="text-[11px] font-extrabold uppercase tracking-wider text-[#16a34a]">Today's Picks</span>
+              </div>
               <div className="flex items-center gap-2">
-                <h2 className="text-base font-black tracking-tight text-neutral-900 dark:text-neutral-50">
+                <h2 className="text-lg sm:text-xl font-black tracking-tight text-neutral-900 dark:text-neutral-50">
                   최근 발굴 종목
                 </h2>
                 <span className="text-[9px] font-extrabold px-2 py-0.5 rounded-full bg-[#16a34a] text-white">
                   500억+
                 </span>
               </div>
-              <p className="text-[11px] text-neutral-400 mt-1 break-keep">게임 카드로도 만나는 실제 저평가 종목</p>
+              <p className="text-xs text-neutral-400 mt-1 break-keep">게임 카드로도 만나는 실제 저평가 종목</p>
             </div>
             <Link
               href="/screener?mincap=500"
-              className="flex items-center gap-0.5 text-xs font-bold text-[#16a34a] dark:text-[#16a34a] whitespace-nowrap"
+              className="group flex items-center gap-0.5 text-xs font-bold text-[#16a34a] dark:text-[#16a34a] whitespace-nowrap shrink-0"
             >
-              전체 보기 <ChevronRight size={13} />
+              전체 보기 <ChevronRight size={13} className="group-hover:translate-x-0.5 transition-transform" />
             </Link>
           </div>
 
@@ -855,13 +887,13 @@ export default function HomePage() {
       {/* ── STRATEGIES ───────────────────────────────────────────── */}
       <section className="py-10 px-5 md:py-14 border-t border-neutral-100 dark:border-[#3a3834]">
         <div className="max-w-3xl mx-auto">
-          <div className="flex items-center justify-between mb-5 gap-3">
-            <div>
-              <div className="flex items-center gap-2">
-                <Layers size={13} className="text-[#16a34a]" strokeWidth={2.5} />
-                <h2 className="text-base font-black text-neutral-900 dark:text-neutral-50">9가지 퀀트 전략</h2>
-              </div>
+          <div className="mb-6">
+            <div className="flex items-center gap-1.5 mb-2">
+              <Layers size={13} className="text-[#16a34a]" strokeWidth={2.5} />
+              <span className="text-[11px] font-extrabold uppercase tracking-wider text-[#16a34a]">Strategies</span>
             </div>
+            <h2 className="text-lg sm:text-xl font-black tracking-tight text-neutral-900 dark:text-neutral-50">9가지 퀀트 전략</h2>
+            <p className="text-xs text-neutral-400 mt-1 break-keep">검증된 가치투자 원칙을 클릭 한 번으로 적용</p>
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
@@ -869,7 +901,7 @@ export default function HomePage() {
               <Link
                 key={s.id}
                 href={`/screener?strategies=${s.id}&mincap=500`}
-                className="group p-4 rounded-2xl border border-neutral-200 dark:border-[#35332e] bg-white dark:bg-[#242320] hover:border-[#16a34a]/50 dark:hover:border-[#16a34a]/40 hover:shadow-sm transition-all"
+                className="group p-4 rounded-2xl border border-neutral-200 dark:border-[#35332e] bg-white dark:bg-[#242320] hover:border-[#16a34a]/50 dark:hover:border-[#16a34a]/40 hover:shadow-md hover:-translate-y-0.5 transition-all"
               >
                 <div className="flex items-center justify-between mb-2">
                   <span className={cn(
@@ -893,22 +925,22 @@ export default function HomePage() {
       <section className="py-10 px-5 md:py-14 border-t border-neutral-100 dark:border-[#3a3834] bg-[#faf9f7] dark:bg-[#1a1917]">
         <div className="max-w-3xl mx-auto">
           <div className="mb-7">
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-1.5 mb-2">
               <Zap size={13} className="text-[#16a34a]" strokeWidth={2.5} />
-              <h2 className="text-base font-black text-neutral-900 dark:text-neutral-50">이렇게 배웁니다</h2>
+              <span className="text-[11px] font-extrabold uppercase tracking-wider text-[#16a34a]">How it works</span>
             </div>
+            <h2 className="text-lg sm:text-xl font-black tracking-tight text-neutral-900 dark:text-neutral-50">이렇게 배웁니다</h2>
+            <p className="text-xs text-neutral-400 mt-1 break-keep">게임으로 감각을 잡고, 실제 데이터로 검증하는 3단계</p>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             {HOW_IT_WORKS.map((step, i) => {
               const Art = STEP_ARTS[i];
               return (
-                <div key={i} className="p-5 rounded-2xl bg-white dark:bg-[#242320] border border-neutral-200 dark:border-[#35332e]">
-                  <div className="flex items-center gap-3 mb-3">
-                    <Art />
-                    <span className={cn("text-xs font-black tabular-nums", step.accent)}>{step.step}</span>
-                  </div>
-                  <p className="text-sm font-black text-neutral-900 dark:text-neutral-50">{step.title}</p>
+                <div key={i} className="group relative overflow-hidden p-5 rounded-2xl bg-white dark:bg-[#242320] border border-neutral-200 dark:border-[#35332e] hover:border-[#16a34a]/40 hover:shadow-md hover:-translate-y-0.5 transition-all">
+                  <span className="absolute -top-1 right-3 text-4xl font-black tabular-nums text-neutral-100 dark:text-[#2c2b27] group-hover:text-[#16a34a]/15 transition-colors select-none">{step.step}</span>
+                  <div className="relative mb-3"><Art /></div>
+                  <p className="relative text-sm font-black text-neutral-900 dark:text-neutral-50">{step.title}</p>
                 </div>
               );
             })}
@@ -920,30 +952,34 @@ export default function HomePage() {
       <section className="py-10 px-5 md:py-14 border-t border-neutral-100 dark:border-[#3a3834]">
         <div className="max-w-3xl mx-auto">
           <div className="mb-6">
-            <h2 className="text-base font-black text-neutral-900 dark:text-neutral-50">주요 기능</h2>
+            <div className="flex items-center gap-1.5 mb-2">
+              <Layers size={13} className="text-[#16a34a]" strokeWidth={2.5} />
+              <span className="text-[11px] font-extrabold uppercase tracking-wider text-[#16a34a]">Features</span>
+            </div>
+            <h2 className="text-lg sm:text-xl font-black tracking-tight text-neutral-900 dark:text-neutral-50">주요 기능</h2>
           </div>
 
-          {/* Mobile: horizontal scroll, Desktop: 3-col grid */}
+          {/* Mobile: horizontal scroll, Desktop: 4-col grid */}
           <div className="flex gap-3 overflow-x-auto no-scrollbar pb-1 sm:grid sm:grid-cols-2 lg:grid-cols-4 sm:overflow-visible sm:gap-4">
             {FEATURES.map((f, i) => {
               const Icon = f.icon;
               return (
-                <div
+                <Link
                   key={i}
-                  className="shrink-0 w-56 sm:w-auto bg-white dark:bg-[#242320] rounded-2xl border border-neutral-200 dark:border-[#35332e] p-5 flex flex-col gap-4"
+                  href={f.link}
+                  className="group shrink-0 w-56 sm:w-auto bg-white dark:bg-[#242320] rounded-2xl border border-neutral-200 dark:border-[#35332e] p-5 flex flex-col gap-3.5 hover:border-[#16a34a]/40 hover:shadow-md hover:-translate-y-0.5 transition-all"
                 >
-                  <div className={cn("w-8 h-8 rounded-xl flex items-center justify-center", f.bgCls)}>
-                    <Icon size={16} className={f.iconCls} strokeWidth={2} />
+                  <div className={cn("w-11 h-11 rounded-2xl flex items-center justify-center", f.bgCls)}>
+                    <Icon size={20} className={f.iconCls} strokeWidth={2.2} />
                   </div>
                   <div className="flex-1">
                     <p className="text-sm font-black text-neutral-900 dark:text-neutral-50">{f.title}</p>
+                    <p className="text-[11px] text-neutral-400 mt-1 leading-relaxed break-keep">{f.desc}</p>
                   </div>
-                  <Link href={f.link}
-                    className="inline-flex items-center gap-1 text-xs font-bold text-[#16a34a] dark:text-[#16a34a]"
-                  >
-                    {f.linkLabel} <ChevronRight size={11} />
-                  </Link>
-                </div>
+                  <span className="inline-flex items-center gap-1 text-xs font-bold text-[#16a34a] dark:text-[#16a34a]">
+                    {f.linkLabel} <ChevronRight size={11} className="group-hover:translate-x-0.5 transition-transform" />
+                  </span>
+                </Link>
               );
             })}
           </div>
@@ -968,11 +1004,19 @@ export default function HomePage() {
               지금 바로 게임으로<br />주식·경제를 배워보세요
             </h2>
             <Link href="/login"
-              className="inline-flex items-center gap-2 px-7 py-3.5 rounded-xl bg-[#16a34a] hover:bg-[#15803d] active:bg-[#166534] text-white font-bold text-sm shadow-md shadow-[#16a34a]/20 transition-all"
+              className="group inline-flex items-center gap-2 px-7 py-3.5 rounded-xl bg-[#16a34a] hover:bg-[#15803d] active:bg-[#166534] text-white font-bold text-sm shadow-md shadow-[#16a34a]/20 transition-all hover:-translate-y-0.5"
             >
               카카오로 무료 시작
-              <ArrowRight size={15} />
+              <ArrowRight size={15} className="group-hover:translate-x-0.5 transition-transform" />
             </Link>
+
+            <div className="mt-5 flex flex-wrap items-center justify-center gap-2 text-[11px] font-bold text-neutral-400 dark:text-neutral-500">
+              {["카카오 3초 가입", "완전 무료", "신용카드 불필요"].map(t => (
+                <span key={t} className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-white dark:bg-[#242320] border border-neutral-200 dark:border-[#35332e]">
+                  <span className="w-1 h-1 rounded-full bg-[#16a34a]" />{t}
+                </span>
+              ))}
+            </div>
           </div>
         </section>
       )}
