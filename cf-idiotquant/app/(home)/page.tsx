@@ -332,7 +332,7 @@ function HeroArt() {
   return <div ref={mountRef} className="w-full h-full" aria-hidden="true" />;
 }
 
-// 게임 버튼용 3D — 대항해시대 범선 (저폴리 파도·부푼 돛·금화·햇살)
+// 게임 버튼용 3D — 심플 글로시 돛단배 아이콘 (isolated 스타일 · 소프트 그림자)
 function GameCardArt() {
   const mountRef = useRef<HTMLDivElement>(null);
 
@@ -343,13 +343,13 @@ function GameCardArt() {
 
     const scene = new THREE.Scene();
     const camera = new THREE.PerspectiveCamera(36, 1, 0.1, 100);
-    camera.position.set(0.4, 1.7, 8.6);
-    camera.lookAt(0, 0.5, 0);
+    camera.position.set(0.2, 1.35, 8.9);
+    camera.lookAt(0, 0.75, 0);
 
     const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
     renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
     renderer.toneMapping = THREE.ACESFilmicToneMapping;
-    renderer.toneMappingExposure = 1.12;
+    renderer.toneMappingExposure = 1.1;
     renderer.outputColorSpace = THREE.SRGBColorSpace;
     const canvas = renderer.domElement;
     canvas.style.width = "100%";
@@ -364,146 +364,91 @@ function GameCardArt() {
     pmrem.dispose();
     disposables.push(envRT.texture);
 
-    scene.add(new THREE.HemisphereLight(0xcfe8ff, 0x1c6b3e, 0.7));
-    const sun = new THREE.DirectionalLight(0xffe6b0, 2.6);
-    sun.position.set(-5, 5, 3);
+    scene.add(new THREE.HemisphereLight(0xffffff, 0xdfe6ee, 0.65));
+    const sun = new THREE.DirectionalLight(0xfff2dc, 2.4);
+    sun.position.set(-4, 6, 5);
     scene.add(sun);
-    const fillL = new THREE.DirectionalLight(0x9be7bd, 0.9);
-    fillL.position.set(4, 2, 4);
+    const fillL = new THREE.DirectionalLight(0xdfeeff, 0.7);
+    fillL.position.set(5, 2, 3);
     scene.add(fillL);
 
-    // ── 바다 (저폴리 파도) ──
-    const seaGeo = new THREE.PlaneGeometry(24, 16, 40, 24);
-    const seaMat = new THREE.MeshStandardMaterial({ color: 0x12a35b, roughness: 0.45, flatShading: true });
-    disposables.push(seaGeo, seaMat);
-    const sea = new THREE.Mesh(seaGeo, seaMat);
-    sea.rotation.x = -Math.PI / 2;
-    sea.position.y = -0.55;
-    scene.add(sea);
-    const seaPos = seaGeo.attributes.position as THREE.BufferAttribute;
+    // ── 소프트 그림자 (바닥 대신 · isolated 느낌) ──
+    const shadowTex = makeRadialTexture("rgba(16,60,40,0.55)");
+    const shadowMat = new THREE.SpriteMaterial({ map: shadowTex, transparent: true, depthWrite: false, opacity: 0.5 });
+    disposables.push(shadowTex, shadowMat);
+    const shadow = new THREE.Sprite(shadowMat);
+    shadow.scale.set(5.6, 1.6, 1);
+    shadow.position.set(0, -1.05, -0.3);
+    scene.add(shadow);
 
-    // ── 태양 (뒤 글로우) ──
-    const sunGlowTex = makeRadialTexture("rgba(255,213,130,0.9)");
-    const sunGlowMat = new THREE.SpriteMaterial({ map: sunGlowTex, transparent: true, depthWrite: false, blending: THREE.AdditiveBlending, opacity: 0.9 });
-    disposables.push(sunGlowTex, sunGlowMat);
-    const sunGlow = new THREE.Sprite(sunGlowMat);
-    sunGlow.scale.set(4.4, 4.4, 1);
-    sunGlow.position.set(-3.2, 2.5, -4);
-    scene.add(sunGlow);
-    const sunDiscGeo = new THREE.SphereGeometry(0.55, 24, 16);
-    const sunDiscMat = new THREE.MeshBasicMaterial({ color: 0xffdf8a });
-    disposables.push(sunDiscGeo, sunDiscMat);
-    const sunDisc = new THREE.Mesh(sunDiscGeo, sunDiscMat);
-    sunDisc.position.copy(sunGlow.position);
-    scene.add(sunDisc);
+    // ── 심플 글로시 돛단배 ──
+    const boat = new THREE.Group();
+    const gloss = (color: number, extra: THREE.MeshPhysicalMaterialParameters = {}) => {
+      const m = new THREE.MeshPhysicalMaterial({ color, roughness: 0.32, clearcoat: 1, clearcoatRoughness: 0.18, ...extra });
+      disposables.push(m); return m;
+    };
 
-    // ── 범선 (갤리온) ──
-    const ship = new THREE.Group();
+    // 선체 (둥근 플라스틱)
     const hullShape = new THREE.Shape();
-    hullShape.moveTo(2.5, 0.34);
-    hullShape.lineTo(-1.7, 0.12);
-    hullShape.lineTo(-2.05, 0.3);
-    hullShape.lineTo(-2.35, 0.98);
-    hullShape.lineTo(-2.64, 0.92);
-    hullShape.lineTo(-2.35, -0.5);
-    hullShape.quadraticCurveTo(0.1, -0.96, 2.05, -0.34);
-    hullShape.quadraticCurveTo(2.95, -0.04, 2.5, 0.34);
-    const hullGeo = new THREE.ExtrudeGeometry(hullShape, { depth: 1.25, bevelEnabled: true, bevelThickness: 0.09, bevelSize: 0.09, bevelSegments: 2, steps: 1, curveSegments: 18 });
-    hullGeo.translate(0, 0, -0.625);
+    hullShape.moveTo(1.85, 0.42);
+    hullShape.lineTo(-1.7, 0.42);
+    hullShape.lineTo(-1.5, 0.05);
+    hullShape.quadraticCurveTo(0, -0.72, 1.5, 0.05);
+    hullShape.lineTo(1.85, 0.42);
+    const hullGeo = new THREE.ExtrudeGeometry(hullShape, { depth: 1.15, bevelEnabled: true, bevelThickness: 0.14, bevelSize: 0.14, bevelSegments: 4, steps: 1, curveSegments: 20 });
+    hullGeo.translate(0, 0, -0.575);
     hullGeo.computeVertexNormals();
-    const hullMat = new THREE.MeshStandardMaterial({ color: 0x6a3f1e, roughness: 0.55, metalness: 0.05 });
-    const deckMat = new THREE.MeshStandardMaterial({ color: 0x8a5a2c, roughness: 0.6 });
-    disposables.push(hullGeo, hullMat, deckMat);
-    ship.add(new THREE.Mesh(hullGeo, hullMat));
+    disposables.push(hullGeo);
+    boat.add(new THREE.Mesh(hullGeo, gloss(0xe0492c, { roughness: 0.28 })));
 
-    // 선미루(aftcastle)
-    const castleGeo = roundedBoxGeometry(0.7, 0.5, 1.1, 0.06);
-    disposables.push(castleGeo);
-    const castle = new THREE.Mesh(castleGeo, deckMat);
-    castle.position.set(-2.1, 0.6, 0);
-    ship.add(castle);
+    // 흰색 갑판 트림
+    const trimGeo = roundedBoxGeometry(3.4, 0.16, 1.34, 0.07);
+    disposables.push(trimGeo);
+    const trim = new THREE.Mesh(trimGeo, gloss(0xfff6ec, { clearcoatRoughness: 0.1 }));
+    trim.position.set(0.05, 0.42, 0);
+    boat.add(trim);
 
-    // 금색 현측 장식선 2줄
-    const trimMat = new THREE.MeshStandardMaterial({ color: 0xffca3d, metalness: 0.9, roughness: 0.25, emissive: 0x5a3d06, emissiveIntensity: 0.15 });
-    disposables.push(trimMat);
-    [0.18, 0.0].forEach(ty => {
-      const tGeo = new THREE.BoxGeometry(4.9, 0.05, 1.3);
-      disposables.push(tGeo);
-      const tm = new THREE.Mesh(tGeo, trimMat); tm.position.set(-0.1, ty, 0);
-      ship.add(tm);
-    });
+    // 돛대
+    const mastMat = gloss(0xdcbf94, { roughness: 0.5, clearcoat: 0.5 });
+    const mastGeo = new THREE.CylinderGeometry(0.06, 0.075, 2.5, 14);
+    disposables.push(mastGeo);
+    const mast = new THREE.Mesh(mastGeo, mastMat);
+    mast.position.set(0.1, 1.6, 0);
+    boat.add(mast);
 
-    // 돛대 · 활대 · 사각돛
-    const mastMat = new THREE.MeshStandardMaterial({ color: 0x4a2f16, roughness: 0.6 });
-    const sailMat = new THREE.MeshStandardMaterial({ color: 0xf4ead0, roughness: 0.72, side: THREE.DoubleSide });
-    disposables.push(mastMat, sailMat);
-    const addSail = (parent: THREE.Group, cy: number, w: number, h: number) => {
-      const sg = new THREE.PlaneGeometry(w, h, 14, 10);
-      const sp = sg.attributes.position as THREE.BufferAttribute;
-      for (let i = 0; i < sp.count; i++) { const u = sp.getX(i) / w + 0.5, v = sp.getY(i) / h + 0.5; sp.setZ(i, Math.sin(u * Math.PI) * (0.35 + v * 0.25) * 0.62); }
-      sg.computeVertexNormals();
-      const yardGeo = new THREE.CylinderGeometry(0.03, 0.03, w + 0.24, 8);
-      disposables.push(sg, yardGeo);
-      const yard = new THREE.Mesh(yardGeo, mastMat); yard.rotation.x = Math.PI / 2; yard.position.y = cy + h / 2;
-      const sail = new THREE.Mesh(sg, sailMat); sail.rotation.y = Math.PI / 2; sail.position.y = cy;
-      parent.add(yard, sail);
+    // 삼각돛 2개 (솔리드 3D 패널)
+    const sailMat = gloss(0xfdf1da, { roughness: 0.55, clearcoat: 0.4, side: THREE.DoubleSide });
+    const jibMat = gloss(0xffd7c2, { roughness: 0.55, clearcoat: 0.4, side: THREE.DoubleSide });
+    const mkSail = (pts: [number, number][], mat: THREE.Material, depth = 0.08) => {
+      const s = new THREE.Shape();
+      s.moveTo(pts[0][0], pts[0][1]); s.lineTo(pts[1][0], pts[1][1]); s.lineTo(pts[2][0], pts[2][1]); s.lineTo(pts[0][0], pts[0][1]);
+      const g = new THREE.ExtrudeGeometry(s, { depth, bevelEnabled: true, bevelThickness: 0.03, bevelSize: 0.03, bevelSegments: 1, steps: 1 });
+      g.translate(0, 0, -depth / 2);
+      disposables.push(g);
+      const m = new THREE.Mesh(g, mat); m.position.set(0.1, 0, 0);
+      boat.add(m);
     };
-    const makeMast = (x: number, mh: number, specs: [number, number, number][]) => {
-      const g = new THREE.Group();
-      const mastGeo = new THREE.CylinderGeometry(0.045, 0.06, mh, 10);
-      disposables.push(mastGeo);
-      const mast = new THREE.Mesh(mastGeo, mastMat); mast.position.y = mh / 2;
-      g.add(mast);
-      specs.forEach(([cy, w, h]) => addSail(g, cy, w, h));
-      g.position.set(x, 0.26, 0);
-      ship.add(g);
-    };
-    makeMast(1.35, 2.35, [[0.98, 1.28, 1.02], [1.92, 0.9, 0.66]]);  // 앞돛대: 큰돛 + 윗돛
-    makeMast(0.15, 3.0, [[1.12, 1.55, 1.28], [2.35, 1.05, 0.78]]);  // 주돛대(제일 큼)
-    makeMast(-1.05, 2.15, [[0.95, 1.12, 0.94]]);                    // 뒷돛대
+    mkSail([[0, 0.2], [0, 2.65], [-1.4, 0.25]], sailMat);   // 메인 돛 (뒤)
+    mkSail([[0, 0.4], [0, 2.45], [1.3, 0.35]], jibMat);     // 지브 (앞)
 
-    // 선수 사장(bowsprit) + 삼각 지브
-    const bspGeo = new THREE.CylinderGeometry(0.03, 0.045, 1.5, 8);
-    disposables.push(bspGeo);
-    const bowsprit = new THREE.Mesh(bspGeo, mastMat);
-    bowsprit.position.set(2.95, 0.55, 0); bowsprit.rotation.z = Math.PI / 2 - 0.55;
-    ship.add(bowsprit);
-    const jibShape = new THREE.Shape();
-    jibShape.moveTo(0, 0); jibShape.lineTo(1.1, 0.1); jibShape.lineTo(0.1, 1.05); jibShape.lineTo(0, 0);
-    const jibGeo = new THREE.ShapeGeometry(jibShape);
-    disposables.push(jibGeo);
-    const jib = new THREE.Mesh(jibGeo, sailMat);
-    jib.position.set(1.95, 0.55, 0); jib.rotation.y = Math.PI / 2;
-    ship.add(jib);
+    // 깃발
+    const flagGeo = new THREE.ConeGeometry(0.13, 0.52, 3);
+    disposables.push(flagGeo);
+    const flag = new THREE.Mesh(flagGeo, gloss(0x16a34a, { roughness: 0.45 }));
+    flag.rotation.z = -Math.PI / 2; flag.position.set(0.35, 2.8, 0);
+    boat.add(flag);
 
-    // 페넌트 깃발
-    const flagGeo = new THREE.ConeGeometry(0.11, 0.5, 3);
-    const flagMat = new THREE.MeshStandardMaterial({ color: 0x16a34a, roughness: 0.5, side: THREE.DoubleSide });
-    disposables.push(flagGeo, flagMat);
-    const flag = new THREE.Mesh(flagGeo, flagMat);
-    flag.rotation.z = -Math.PI / 2; flag.position.set(0.15, 3.5, 0);
-    ship.add(flag);
+    boat.position.set(0, -0.15, 0);
+    scene.add(boat);
 
-    ship.position.set(0.1, -0.12, 0);
-    ship.rotation.y = -0.32;
-    ship.rotation.z = 0.04;
-    scene.add(ship);
-
-    // ── 뱃머리 물보라 & 항적 (흰 포말 스프라이트) ──
-    const foamTex = makeRadialTexture("rgba(255,255,255,0.92)");
+    // ── 물결 컬 (심플 흰 포말) ──
+    const foamTex = makeRadialTexture("rgba(255,255,255,0.9)");
     const foamMat = new THREE.SpriteMaterial({ map: foamTex, transparent: true, depthWrite: false, opacity: 0.85 });
-    const wakeMat = new THREE.SpriteMaterial({ map: foamTex, transparent: true, depthWrite: false, opacity: 0.5 });
-    disposables.push(foamTex, foamMat, wakeMat);
+    disposables.push(foamTex, foamMat);
     const foams: { s: THREE.Sprite; by: number; sc: number; ph: number }[] = [];
-    // 뱃머리 물보라 (선수에서 크게 부서지는 하얀 파도)
-    ([[2.95, -0.18, 1.25, 0.35], [2.6, -0.3, 1.05, 0.0], [3.15, -0.32, 0.85, -0.4], [2.35, -0.36, 0.9, 0.6], [3.05, 0.05, 0.7, 0.1]] as [number, number, number, number][]).forEach(([x, y, sc, z], i) => {
-      const s = new THREE.Sprite(foamMat); s.scale.set(sc, sc * 0.7, 1); s.position.set(x, y, z);
-      scene.add(s); foams.push({ s, by: y, sc, ph: i * 1.1 });
-    });
-    // 항적 (선미 뒤로 길게 퍼지는 흰 물줄기)
-    ([[-2.5, -0.32, 0.85, 0.15], [-3.2, -0.34, 0.72, -0.45], [-3.95, -0.36, 0.58, 0.3], [-4.7, -0.38, 0.44, -0.2], [-5.4, -0.4, 0.32, 0.1]] as [number, number, number, number][]).forEach(([x, y, sc, z], i) => {
-      const s = new THREE.Sprite(wakeMat); s.scale.set(sc, sc * 0.5, 1); s.position.set(x, y, z);
-      scene.add(s); foams.push({ s, by: y, sc, ph: 2 + i * 0.9 });
+    ([[1.85, -0.32, 0.66], [-1.75, -0.34, 0.6], [2.2, -0.14, 0.42], [-2.15, -0.18, 0.4]] as [number, number, number][]).forEach(([x, y, sc], i) => {
+      const s = new THREE.Sprite(foamMat); s.scale.set(sc, sc * 0.6, 1); s.position.set(x, y, 0.15);
+      scene.add(s); foams.push({ s, by: y, sc, ph: i * 1.3 });
     });
 
     const resize = () => {
@@ -518,32 +463,21 @@ function GameCardArt() {
 
     const clock = new THREE.Clock();
     let raf = 0;
-    const animateSea = (t: number) => {
-      for (let i = 0; i < seaPos.count; i++) {
-        const x = seaPos.getX(i), y = seaPos.getY(i);
-        seaPos.setZ(i, Math.sin(x * 0.7 + t) * 0.16 + Math.sin(y * 0.9 + t * 0.8) * 0.12);
-      }
-      seaPos.needsUpdate = true;
-      seaGeo.computeVertexNormals();
-    };
     const render = () => {
       const t = clock.getElapsedTime();
-      animateSea(t);
-      ship.position.y = -0.12 + Math.sin(t * 1.3) * 0.05;
-      ship.rotation.z = 0.04 + Math.sin(t * 0.9) * 0.03;
-      ship.rotation.x = Math.sin(t * 0.7 + 1) * 0.025;
-      ship.rotation.y = -0.32 + Math.sin(t * 0.12) * 0.06;
+      boat.position.y = -0.15 + Math.sin(t * 1.4) * 0.08;
+      boat.rotation.z = Math.sin(t * 1.1) * 0.05;
+      boat.rotation.y = Math.sin(t * 0.35) * 0.16;
       foams.forEach(({ s, by, sc, ph }) => {
-        const p = (Math.sin(t * 2.4 + ph) + 1) / 2;
-        s.position.y = by + Math.sin(t * 1.8 + ph) * 0.05;
-        s.scale.set(sc * (0.85 + p * 0.3), sc * 0.7 * (0.85 + p * 0.3), 1);
+        const p = (Math.sin(t * 2.6 + ph) + 1) / 2;
+        s.position.y = by + Math.sin(t * 2.0 + ph) * 0.04;
+        s.scale.set(sc * (0.85 + p * 0.3), sc * 0.6 * (0.85 + p * 0.3), 1);
       });
       renderer.render(scene, camera);
       raf = requestAnimationFrame(render);
     };
     if (reduce) {
-      animateSea(0.6);
-      ship.rotation.y = -0.3;
+      boat.rotation.y = 0.1;
       renderer.render(scene, camera);
     } else {
       raf = requestAnimationFrame(render);
