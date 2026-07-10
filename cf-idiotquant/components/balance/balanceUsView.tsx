@@ -6,8 +6,9 @@ import {
   Globe, ChevronRight, DollarSign, Building2,
   Wallet, TrendingUp, BarChart3, RefreshCw,
   AlertCircle, Database,
-  ArrowDownRight, PieChart, ClipboardList, TrendingDown, Power, SlidersHorizontal, Activity,
+  ArrowDownRight, PieChart, ClipboardList, TrendingDown, Power, SlidersHorizontal, Activity, KeyRound,
 } from "lucide-react";
+import TradingAccountPanel from "@/components/balance/tradingAccountPanel";
 import { useSession } from "next-auth/react";
 
 import { useAppDispatch, useAppSelector } from "@/lib/hooks";
@@ -421,6 +422,7 @@ export function BalanceUsView({ countryToggle }: { countryToggle?: React.ReactNo
     ...(hasCapital ? [{ id: "section-stocks", label: "종목관리", icon: <Database size={13} /> }] : []),
     ...(hasCapital ? [{ id: "section-activity", label: "자동매매 현황", icon: <Activity size={13} /> }] : []),
     ...(hasCapital ? [{ id: "section-conditions", label: "트레이딩 조건", icon: <SlidersHorizontal size={13} /> }] : []),
+    { id: "section-account", label: "계정", icon: <KeyRound size={13} /> },
     { id: "section-orders", label: "해외주문", icon: <ClipboardList size={13} /> },
   ];
 
@@ -759,6 +761,23 @@ export function BalanceUsView({ countryToggle }: { countryToggle?: React.ReactNo
               />
             </SectionPanel>
           ) : null,
+        },
+        {
+          id: "section-account",
+          node: (
+            <SectionPanel id="section-account">
+              <SectionHeader
+                icon={<KeyRound size={16} />}
+                title="자동매매 계정 관리"
+                subtitle="선택 계정의 KIS App Key/Secret·계좌번호·월 예산 등록/수정/삭제 (admin 전용)"
+              />
+              <TradingAccountPanel
+                country="US"
+                balanceKey={balanceKey}
+                onChanged={() => { fetchAll(balanceKey); dispatch(reqFetchTradingStatus({ country: "US", key: balanceKey })); }}
+              />
+            </SectionPanel>
+          ),
         },
         {
           id: "section-orders",
