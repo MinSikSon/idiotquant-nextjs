@@ -99,24 +99,6 @@ const STRATEGY_BADGE_CLS: Record<string, string> = {
 
 const FEATURES = [
   {
-    icon: Gamepad2,
-    iconCls: "text-white",
-    bgCls: "bg-gradient-to-br from-[#16a34a] to-emerald-500 shadow-md shadow-[#16a34a]/25",
-    title: "종목 카드 게임",
-    desc: "카드를 비교하며 가치투자 감각을 익혀요",
-    link: "/game",
-    linkLabel: "게임하기",
-  },
-  {
-    icon: Filter,
-    iconCls: "text-white",
-    bgCls: "bg-gradient-to-br from-emerald-500 to-teal-500 shadow-md shadow-emerald-500/25",
-    title: "종목 발굴",
-    desc: "9가지 전략으로 저평가 종목을 스캔해요",
-    link: "/screener",
-    linkLabel: "스크리너 열기",
-  },
-  {
     icon: Search,
     iconCls: "text-white",
     bgCls: "bg-gradient-to-br from-violet-500 to-indigo-500 shadow-md shadow-violet-500/25",
@@ -959,15 +941,14 @@ export default function HomePage() {
             <h2 className="text-lg sm:text-xl font-black tracking-tight text-neutral-900 dark:text-neutral-50">주요 기능</h2>
           </div>
 
-          {/* Mobile: horizontal scroll, Desktop: 4-col grid */}
-          <div className="flex gap-3 overflow-x-auto no-scrollbar pb-1 sm:grid sm:grid-cols-2 lg:grid-cols-4 sm:overflow-visible sm:gap-4">
+          <div className="grid grid-cols-2 gap-3 sm:gap-4">
             {FEATURES.map((f, i) => {
               const Icon = f.icon;
               return (
                 <Link
                   key={i}
                   href={f.link}
-                  className="group shrink-0 w-56 sm:w-auto bg-white dark:bg-[#242320] rounded-2xl border border-neutral-200 dark:border-[#35332e] p-5 flex flex-col gap-3.5 hover:border-[#16a34a]/40 hover:shadow-md hover:-translate-y-0.5 transition-all"
+                  className="group bg-white dark:bg-[#242320] rounded-2xl border border-neutral-200 dark:border-[#35332e] p-5 flex flex-col gap-3.5 hover:border-[#16a34a]/40 hover:shadow-md hover:-translate-y-0.5 transition-all"
                 >
                   <div className={cn("w-11 h-11 rounded-2xl flex items-center justify-center", f.bgCls)}>
                     <Icon size={20} className={f.iconCls} strokeWidth={2.2} />
