@@ -494,10 +494,9 @@ export default function GamePage() {
   useEffect(() => { if (phase === "revealed" && lastWin === false) setPhase("over"); }, [phase, lastWin]);
 
   const isLoading = ncav.state === "pending" || ncav.state === "init" || pool.length < 2;
-  const bodyScroll = showDeck || phase === "over";
 
   return (
-    <div className="relative h-[100dvh] flex flex-col overflow-hidden bg-gradient-to-b from-[#fdf4e3] via-[#eaf6ef] to-[#dff0e6] dark:from-[#0a1a1f] dark:via-[#0c1f1a] dark:to-[#0a1512] transition-colors">
+    <div className="relative h-[calc(100dvh-112px)] md:h-[100dvh] flex flex-col overflow-hidden bg-gradient-to-b from-[#fdf4e3] via-[#eaf6ef] to-[#dff0e6] dark:from-[#0a1a1f] dark:via-[#0c1f1a] dark:to-[#0a1512] transition-colors">
       {/* 대항해시대 바다 3D 배경 (three.js) */}
       <div className="absolute inset-0 z-0"><GameSeaArt /></div>
       <div className="absolute inset-0 z-0 pointer-events-none bg-gradient-to-b from-[#fdf4e3]/70 via-transparent to-[#dff0e6]/85 dark:from-[#0a1a1f]/75 dark:via-transparent dark:to-[#0a1512]/90" />
@@ -516,14 +515,14 @@ export default function GamePage() {
           </button>
         </div>
 
-        {/* 본문 — 덱/종료는 스크롤, 플레이는 세로 중앙 정렬로 한 화면에 담김 */}
-        <div className={cn("flex-1 min-h-0 flex flex-col", bodyScroll ? "overflow-y-auto py-1" : "justify-center")}>
+        {/* 본문 — 항상 스크롤 가능. 플레이는 my-auto 로 세로 중앙(넘치면 스크롤), 종료/덱은 자연 스크롤 */}
+        <div className="flex-1 min-h-0 overflow-y-auto flex flex-col py-2">
         {showDeck ? (
           <DeckView deck={deck} isLoggedIn={isLoggedIn} onLogin={requireLogin} onClose={() => setShowDeck(false)} />
         ) : isLoading ? (
-          <div className="py-24 text-center text-sm text-neutral-400">카드 데이터를 불러오는 중…</div>
+          <div className="my-auto py-24 text-center text-sm text-neutral-400">카드 데이터를 불러오는 중…</div>
         ) : (
-          <>
+          <div className={cn("w-full", phase !== "over" && "my-auto")}>
             {/* 스코어 (플레이 중에만) */}
             {phase !== "over" && (
               <div className="flex items-center justify-center mb-4 shrink-0">
@@ -665,7 +664,7 @@ export default function GamePage() {
                 )}
               </>
             ) : null}
-          </>
+          </div>
         )}
         </div>
       </div>

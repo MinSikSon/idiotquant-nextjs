@@ -94,6 +94,7 @@ export interface StockGroup {
     quant_rule?: QuantRule;
     budget_krw?: number;   // 그룹별 월 예산(DCA 리필). 미설정 시 계좌예산 fallback.
     side?: "buy" | "sell"; // 그룹별 매수/매도 방향. 미설정 시 buy.
+    dca?: boolean;         // DCA(정액매수) 모드. NCAV 조건 무시하고 예산으로 매수 (ETF 등). 미설정 시 false.
 }
 
 export interface UsCapitalStockItem {
@@ -560,7 +561,7 @@ export const capitalSlice = createAppSlice({
             }
         ),
         reqPostKrCapitalGroupUpdate: create.asyncThunk(
-            async ({ key, groupId, updates }: { key?: string, groupId: string, updates: { name?: string, is_trading_active?: boolean, quant_rule?: QuantRule | null, budget_krw?: number | null, side?: "buy" | "sell" } }) => postKrCapitalGroupUpdate(key, groupId, updates),
+            async ({ key, groupId, updates }: { key?: string, groupId: string, updates: { name?: string, is_trading_active?: boolean, quant_rule?: QuantRule | null, budget_krw?: number | null, side?: "buy" | "sell", dca?: boolean } }) => postKrCapitalGroupUpdate(key, groupId, updates),
             {
                 pending: (state) => { state.krGroupOp.state = "pending"; },
                 fulfilled: (state) => { state.krGroupOp.state = "fulfilled"; },
@@ -610,7 +611,7 @@ export const capitalSlice = createAppSlice({
             }
         ),
         reqPostUsCapitalGroupUpdate: create.asyncThunk(
-            async ({ key, groupId, updates }: { key?: string, groupId: string, updates: { name?: string, is_trading_active?: boolean, quant_rule?: QuantRule | null, budget_krw?: number | null, side?: "buy" | "sell" } }) => postUsCapitalGroupUpdate(key, groupId, updates),
+            async ({ key, groupId, updates }: { key?: string, groupId: string, updates: { name?: string, is_trading_active?: boolean, quant_rule?: QuantRule | null, budget_krw?: number | null, side?: "buy" | "sell", dca?: boolean } }) => postUsCapitalGroupUpdate(key, groupId, updates),
             {
                 pending: (state) => { state.usGroupOp.state = "pending"; },
                 fulfilled: (state) => { state.usGroupOp.state = "fulfilled"; },
