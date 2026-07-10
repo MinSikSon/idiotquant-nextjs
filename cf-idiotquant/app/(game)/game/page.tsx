@@ -208,14 +208,15 @@ function Card({ item, stat, value, idleDelay = 0 }: { item: any; stat: Stat; val
   const tone = computeValueScore(item).tone;
   return (
     <HoloCard tone={tone} radius="rounded-3xl" idleDelay={idleDelay} className="w-full h-full">
-      <div className="w-full h-full rounded-3xl border border-neutral-200 dark:border-[#35332e] bg-white dark:bg-[#242320] shadow-sm p-5 sm:p-6 flex flex-col items-center text-center">
-        <StockLogo item={item} size={52} />
-        <div className="mt-2"><Medal item={item} lg /></div>
-        <p className="mt-2 font-black text-lg sm:text-xl text-neutral-900 dark:text-white leading-tight break-keep">{item.name}</p>
-        <p className="text-[11px] text-neutral-400 font-mono tracking-wider">{item.ticker}</p>
+      {/* 카드 면 위로 요소들이 떠올라(translateZ) 기울일 때 시차 깊이가 생김 (preserve-3d) */}
+      <div className="w-full h-full rounded-3xl border border-neutral-200 dark:border-[#35332e] bg-white dark:bg-[#242320] shadow-sm p-5 sm:p-6 flex flex-col items-center text-center [transform-style:preserve-3d]">
+        <div style={{ transform: "translateZ(42px)" }}><StockLogo item={item} size={52} /></div>
+        <div className="mt-2" style={{ transform: "translateZ(32px)" }}><Medal item={item} lg /></div>
+        <p className="mt-2 font-black text-lg sm:text-xl text-neutral-900 dark:text-white leading-tight break-keep" style={{ transform: "translateZ(26px)" }}>{item.name}</p>
+        <p className="text-[11px] text-neutral-400 font-mono tracking-wider" style={{ transform: "translateZ(18px)" }}>{item.ticker}</p>
         <div className="my-4 h-px w-16 bg-neutral-100 dark:bg-[#35332e]" />
-        <p className="text-[10px] font-bold text-neutral-400 uppercase tracking-widest">{stat.label}</p>
-        <div className="mt-1 text-2xl sm:text-3xl font-black tabular-nums text-[#16a34a] dark:text-[#16a34a] min-h-[2.5rem] flex items-center">
+        <p className="text-[10px] font-bold text-neutral-400 uppercase tracking-widest" style={{ transform: "translateZ(12px)" }}>{stat.label}</p>
+        <div className="mt-1 text-2xl sm:text-3xl font-black tabular-nums text-[#16a34a] dark:text-[#16a34a] min-h-[2.5rem] flex items-center" style={{ transform: "translateZ(24px)" }}>
           {value}
         </div>
       </div>
@@ -683,17 +684,18 @@ function DeckView({ deck, isLoggedIn, onLogin, onClose }: { deck: DeckItem[]; is
               <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
                 {cards.map(({ item: c }, ci) => (
                   <HoloCard key={c.ticker} tone={tone} radius="rounded-2xl" idleDelay={ci * 0.6}>
-                    <div className={cn("relative rounded-2xl border p-4 text-center flex flex-col items-center", TIER_CARD_BG[tone])}>
+                    <div className={cn("relative rounded-2xl border p-4 text-center flex flex-col items-center [transform-style:preserve-3d]", TIER_CARD_BG[tone])}>
                       <span className={cn("absolute top-1.5 right-1.5 px-1.5 py-0.5 rounded-full text-[10px] font-black tabular-nums leading-none",
                         (c.count ?? 1) > 1
                           ? "bg-[#16a34a] text-white"
-                          : "bg-neutral-200/70 text-neutral-500 dark:bg-[#35332e] dark:text-neutral-400")}>
+                          : "bg-neutral-200/70 text-neutral-500 dark:bg-[#35332e] dark:text-neutral-400")}
+                        style={{ transform: "translateZ(30px)" }}>
                         ×{c.count ?? 1}
                       </span>
-                      <StockLogo item={c} size={40} />
-                      <div className="mt-1.5"><Medal item={c} /></div>
-                      <p className="mt-1.5 font-bold text-sm text-neutral-900 dark:text-white truncate max-w-full">{c.name}</p>
-                      <p className="text-[10px] text-neutral-400 font-mono">{c.ticker}</p>
+                      <div style={{ transform: "translateZ(28px)" }}><StockLogo item={c} size={40} /></div>
+                      <div className="mt-1.5" style={{ transform: "translateZ(20px)" }}><Medal item={c} /></div>
+                      <p className="mt-1.5 font-bold text-sm text-neutral-900 dark:text-white truncate max-w-full" style={{ transform: "translateZ(14px)" }}>{c.name}</p>
+                      <p className="text-[10px] text-neutral-400 font-mono" style={{ transform: "translateZ(8px)" }}>{c.ticker}</p>
                     </div>
                   </HoloCard>
                 ))}
