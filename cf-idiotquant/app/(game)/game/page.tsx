@@ -141,20 +141,79 @@ function ScoreInfo() {
   );
 }
 
+// 등급별 홀로그램 포일 (프리미엄 등급만 무지개 포일, 그 외는 포인터 하이라이트만)
+const TIER_HOLO: Record<string, string> = {
+  legend: "linear-gradient(115deg, transparent 18%, rgba(250,204,21,.55), rgba(45,212,191,.5), rgba(167,139,250,.5), transparent 82%)",
+  treasure: "linear-gradient(115deg, transparent 18%, rgba(251,191,36,.55), rgba(253,224,71,.5), rgba(251,146,60,.5), transparent 82%)",
+  diamond: "linear-gradient(115deg, transparent 20%, rgba(56,189,248,.5), rgba(125,211,252,.45), rgba(186,230,253,.45), transparent 80%)",
+  gold: "linear-gradient(115deg, transparent 25%, rgba(250,204,21,.45), rgba(253,224,71,.4), transparent 78%)",
+};
+
+function usePrefersReducedMotion() {
+  const [reduce, setReduce] = useState(false);
+  useEffect(() => {
+    const m = window.matchMedia("(prefers-reduced-motion: reduce)");
+    const apply = () => setReduce(m.matches);
+    apply();
+    m.addEventListener?.("change", apply);
+    return () => m.removeEventListener?.("change", apply);
+  }, []);
+  return reduce;
+}
+
+// 3D 틸트 + 등급 홀로그램 포일 — 카드에 수집욕구를 주는 인터랙티브 3D 래퍼
+function HoloCard({ tone, radius = "rounded-2xl", className, children }:
+  { tone: string; radius?: string; className?: string; children: React.ReactNode }) {
+  const ref = useRef<HTMLDivElement>(null);
+  const reduce = usePrefersReducedMotion();
+  const [p, setP] = useState({ x: 50, y: 50, active: false });
+
+  const onMove = useCallback((e: React.PointerEvent) => {
+    const el = ref.current; if (!el) return;
+    const r = el.getBoundingClientRect();
+    setP({ x: ((e.clientX - r.left) / r.width) * 100, y: ((e.clientY - r.top) / r.height) * 100, active: true });
+  }, []);
+  const onLeave = useCallback(() => setP(s => ({ ...s, active: false })), []);
+
+  const tilt = p.active && !reduce;
+  const rx = ((50 - p.y) / 50) * 9;
+  const ry = ((p.x - 50) / 50) * 9;
+  const holo = TIER_HOLO[tone];
+
+  return (
+    <div ref={ref} onPointerMove={onMove} onPointerLeave={onLeave}
+      className={cn("relative transition-transform duration-200 ease-out will-change-transform", className)}
+      style={{ transformStyle: "preserve-3d", transform: tilt ? `perspective(800px) rotateX(${rx}deg) rotateY(${ry}deg) scale(1.03)` : undefined }}>
+      {children}
+      {/* 포인터 추적 하이라이트 */}
+      <div aria-hidden style={{ opacity: tilt ? 1 : 0, background: `radial-gradient(circle at ${p.x}% ${p.y}%, rgba(255,255,255,.7), transparent 45%)` }}
+        className={cn("pointer-events-none absolute inset-0 transition-opacity duration-200 mix-blend-soft-light", radius)} />
+      {/* 프리미엄 등급 홀로그램 포일 */}
+      {holo && (
+        <div aria-hidden style={{ opacity: tilt ? 0.9 : 0.3, backgroundImage: holo, backgroundSize: "220% 220%", backgroundPosition: `${p.x}% ${p.y}%` }}
+          className={cn("pointer-events-none absolute inset-0 transition-opacity duration-300 mix-blend-overlay", radius)} />
+      )}
+    </div>
+  );
+}
+
 // 종목 카드
 function Card({ item, stat, value }: { item: any; stat: Stat; value: React.ReactNode }) {
+  const tone = computeValueScore(item).tone;
   return (
-    <div className="w-full rounded-3xl border border-neutral-200 dark:border-[#35332e] bg-white dark:bg-[#242320] shadow-sm p-5 sm:p-6 flex flex-col items-center text-center">
-      <StockLogo item={item} size={52} />
-      <div className="mt-2"><Medal item={item} lg /></div>
-      <p className="mt-2 font-black text-lg sm:text-xl text-neutral-900 dark:text-white leading-tight break-keep">{item.name}</p>
-      <p className="text-[11px] text-neutral-400 font-mono tracking-wider">{item.ticker}</p>
-      <div className="my-4 h-px w-16 bg-neutral-100 dark:bg-[#35332e]" />
-      <p className="text-[10px] font-bold text-neutral-400 uppercase tracking-widest">{stat.label}</p>
-      <div className="mt-1 text-2xl sm:text-3xl font-black tabular-nums text-[#16a34a] dark:text-[#16a34a] min-h-[2.5rem] flex items-center">
-        {value}
+    <HoloCard tone={tone} radius="rounded-3xl" className="w-full h-full">
+      <div className="w-full h-full rounded-3xl border border-neutral-200 dark:border-[#35332e] bg-white dark:bg-[#242320] shadow-sm p-5 sm:p-6 flex flex-col items-center text-center">
+        <StockLogo item={item} size={52} />
+        <div className="mt-2"><Medal item={item} lg /></div>
+        <p className="mt-2 font-black text-lg sm:text-xl text-neutral-900 dark:text-white leading-tight break-keep">{item.name}</p>
+        <p className="text-[11px] text-neutral-400 font-mono tracking-wider">{item.ticker}</p>
+        <div className="my-4 h-px w-16 bg-neutral-100 dark:bg-[#35332e]" />
+        <p className="text-[10px] font-bold text-neutral-400 uppercase tracking-widest">{stat.label}</p>
+        <div className="mt-1 text-2xl sm:text-3xl font-black tabular-nums text-[#16a34a] dark:text-[#16a34a] min-h-[2.5rem] flex items-center">
+          {value}
+        </div>
       </div>
-    </div>
+    </HoloCard>
   );
 }
 
@@ -617,18 +676,20 @@ function DeckView({ deck, isLoggedIn, onLogin, onClose }: { deck: DeckItem[]; is
               </div>
               <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
                 {cards.map(({ item: c }) => (
-                  <div key={c.ticker} className={cn("relative rounded-2xl border p-4 text-center flex flex-col items-center", TIER_CARD_BG[tone])}>
-                    <span className={cn("absolute top-1.5 right-1.5 px-1.5 py-0.5 rounded-full text-[10px] font-black tabular-nums leading-none",
-                      (c.count ?? 1) > 1
-                        ? "bg-[#16a34a] text-white"
-                        : "bg-neutral-200/70 text-neutral-500 dark:bg-[#35332e] dark:text-neutral-400")}>
-                      ×{c.count ?? 1}
-                    </span>
-                    <StockLogo item={c} size={40} />
-                    <div className="mt-1.5"><Medal item={c} /></div>
-                    <p className="mt-1.5 font-bold text-sm text-neutral-900 dark:text-white truncate max-w-full">{c.name}</p>
-                    <p className="text-[10px] text-neutral-400 font-mono">{c.ticker}</p>
-                  </div>
+                  <HoloCard key={c.ticker} tone={tone} radius="rounded-2xl">
+                    <div className={cn("relative rounded-2xl border p-4 text-center flex flex-col items-center", TIER_CARD_BG[tone])}>
+                      <span className={cn("absolute top-1.5 right-1.5 px-1.5 py-0.5 rounded-full text-[10px] font-black tabular-nums leading-none",
+                        (c.count ?? 1) > 1
+                          ? "bg-[#16a34a] text-white"
+                          : "bg-neutral-200/70 text-neutral-500 dark:bg-[#35332e] dark:text-neutral-400")}>
+                        ×{c.count ?? 1}
+                      </span>
+                      <StockLogo item={c} size={40} />
+                      <div className="mt-1.5"><Medal item={c} /></div>
+                      <p className="mt-1.5 font-bold text-sm text-neutral-900 dark:text-white truncate max-w-full">{c.name}</p>
+                      <p className="text-[10px] text-neutral-400 font-mono">{c.ticker}</p>
+                    </div>
+                  </HoloCard>
                 ))}
               </div>
             </div>
