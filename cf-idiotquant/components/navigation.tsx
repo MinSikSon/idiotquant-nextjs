@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useSession, signOut } from "next-auth/react";
@@ -18,6 +18,8 @@ import {
   ShieldCheck,
   History,
   Gamepad2,
+  MoreHorizontal,
+  ChevronDown,
 } from "lucide-react";
 
 /* ─── NAV CONFIG ──────────────────────────────────────────────────── */
@@ -38,6 +40,10 @@ const MAIN_NAV: NavItem[] = [
   { label: "종목 발굴", href: "/screener",    icon: Filter,     emoji: "🪙", badge: "Pro" },
   { label: "전략 히스토리", href: "/backtest", icon: History, adminOnly: true },
   { label: "적정 주가", href: "/analyze",     icon: Search,     emoji: "💎"   },
+];
+
+// '더 보기'로 숨기는 보조 메뉴
+const MORE_NAV: NavItem[] = [
   { label: "수익 계산", href: "/calculator",  icon: Calculator              },
 ];
 
@@ -200,6 +206,12 @@ export function NavbarWithSimpleLinks() {
   const isMasterUser = session?.user?.name === process.env.NEXT_PUBLIC_MASTER;
   const isAdmin = (session?.user as any)?.role === "admin";
 
+  // '더 보기' — 보조 메뉴(계산기) 접기/펼치기. 해당 경로에 있으면 자동 노출.
+  const moreActive = MORE_NAV.some(i => active(pathname, i.href));
+  const [moreOpen, setMoreOpen] = useState(false);
+  const [moreSheet, setMoreSheet] = useState(false);
+  const showMore = moreOpen || moreActive;
+
   /* Theme sync: persist choice in localStorage, hydrate on mount */
   useEffect(() => {
     if (typeof window === "undefined") return;
@@ -249,6 +261,31 @@ export function NavbarWithSimpleLinks() {
               emoji={item.emoji}
               isActive={active(pathname, item.href, item.exact)}
               badge={item.badge}
+            />
+          ))}
+
+          {/* 더 보기 (보조 메뉴 — 계산기) */}
+          <button
+            type="button"
+            onClick={() => setMoreOpen(v => !v)}
+            className={cn(
+              "group flex items-center gap-3 w-full px-3 py-2.5 rounded-xl text-sm font-medium transition-all duration-150",
+              moreActive
+                ? "text-neutral-900 dark:text-neutral-50"
+                : "text-neutral-500 dark:text-neutral-400 hover:bg-[#f5f0e8] dark:hover:bg-[#2c2b27] hover:text-neutral-900 dark:hover:text-neutral-100"
+            )}
+          >
+            <MoreHorizontal size={16} strokeWidth={1.8} className="shrink-0" />
+            <span className="flex-1 truncate text-left">더 보기</span>
+            <ChevronDown size={14} className={cn("shrink-0 text-neutral-400 transition-transform", showMore && "rotate-180")} />
+          </button>
+          {showMore && MORE_NAV.map(item => (
+            <SideItem
+              key={item.href}
+              href={item.href}
+              label={item.label}
+              icon={item.icon}
+              isActive={active(pathname, item.href)}
             />
           ))}
 
@@ -324,8 +361,49 @@ export function NavbarWithSimpleLinks() {
           <TabItem href="/backtest"   label="히스토리" icon={History}  isActive={pathname.startsWith("/backtest")} />
         )}
         <TabItem href="/analyze"    label="분석"   emoji="💎"        isActive={pathname.startsWith("/analyze")} />
-        <TabItem href="/calculator" label="계산기" icon={Calculator} isActive={pathname.startsWith("/calculator")} />
+        <button
+          type="button"
+          onClick={() => setMoreSheet(v => !v)}
+          className={cn(
+            "flex flex-1 flex-col items-center justify-center gap-[3px] py-2 rounded-xl transition-colors",
+            moreActive || moreSheet
+              ? "text-[#16a34a] dark:text-[#16a34a] bg-[#faf9f7] dark:bg-[#35332e]"
+              : "text-neutral-400 dark:text-neutral-500 hover:text-neutral-700 dark:hover:text-neutral-300"
+          )}
+        >
+          <MoreHorizontal size={20} strokeWidth={moreActive ? 2.2 : 1.6} />
+          <span className="text-[10px] font-semibold leading-none">더보기</span>
+        </button>
       </nav>
+
+      {/* ══ MOBILE '더보기' 시트 ══════════════════════════════════════ */}
+      {moreSheet && (
+        <>
+          <div className="md:hidden fixed inset-0 z-40" onClick={() => setMoreSheet(false)} />
+          <div className="md:hidden fixed bottom-[72px] right-3 z-50 min-w-[160px] rounded-2xl bg-white dark:bg-[#242320] border border-neutral-200 dark:border-[#35332e] shadow-xl p-1.5 animate-in fade-in slide-in-from-bottom-2 duration-150">
+            {MORE_NAV.map(item => {
+              const Icon = item.icon;
+              const isActive = active(pathname, item.href);
+              return (
+                <Link
+                  key={item.href}
+                  href={item.href}
+                  onClick={() => setMoreSheet(false)}
+                  className={cn(
+                    "flex items-center gap-2.5 px-3 py-2.5 rounded-xl text-sm font-semibold transition-colors",
+                    isActive
+                      ? "bg-[#faf9f7] dark:bg-[#35332e] text-[#16a34a]"
+                      : "text-neutral-600 dark:text-neutral-300 hover:bg-[#f5f0e8] dark:hover:bg-[#2c2b27]"
+                  )}
+                >
+                  <Icon size={16} className={cn("shrink-0", isActive && "text-[#16a34a]")} />
+                  {item.label}
+                </Link>
+              );
+            })}
+          </div>
+        </>
+      )}
     </>
   );
 }
