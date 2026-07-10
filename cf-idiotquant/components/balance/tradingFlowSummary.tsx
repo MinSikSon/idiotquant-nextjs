@@ -38,13 +38,14 @@ export default function TradingFlowSummary({
   const unassigned = operating.filter(s => !s.group_id || !realGroups.some(g => g.id === s.group_id));
 
   const isOn = tradingActive === true;
-  const hasActiveTarget = activeGroups.length > 0 || unassigned.length > 0;
+  // 매매 대상은 '활성 그룹' 소속 종목만 (미지정 종목은 워커에서 제외). 프론트 stockListTable 집계와 일치.
+  const hasActiveTarget = activeGroups.length > 0;
   const hasStocks = operating.length > 0;
   const budgetOk = !budget || budget.monthly_budget_krw > 0;
 
   const steps: FlowStep[] = [
     { key: "trading", label: "자동매매", ok: isOn, detail: tradingActive === null ? "—" : isOn ? "ON" : "OFF" },
-    { key: "target", label: "활성 대상", ok: hasActiveTarget, detail: `그룹 ${activeGroups.length}/${realGroups.length}${unassigned.length ? ` · 미지정 ${unassigned.length}` : ""}` },
+    { key: "target", label: "활성 대상", ok: hasActiveTarget, detail: `그룹 ${activeGroups.length}/${realGroups.length}${unassigned.length ? ` · 미지정 ${unassigned.length}(제외)` : ""}` },
     { key: "stocks", label: "운용 종목", ok: hasStocks, detail: `${operating.length}종목` },
     ...(budget ? [{ key: "budget", label: "월 예산", ok: budget.monthly_budget_krw > 0, detail: budget.monthly_budget_krw > 0 ? won(budget.monthly_budget_krw) : "미설정" }] : []),
   ];
@@ -54,7 +55,7 @@ export default function TradingFlowSummary({
   const missing: string[] = [];
   if (!isOn) missing.push("자동매매 ON");
   if (!hasStocks) missing.push("운용 종목 추가");
-  if (!hasActiveTarget) missing.push("그룹 ON 또는 미지정 종목");
+  if (!hasActiveTarget) missing.push("그룹 ON");
   if (budget && budget.monthly_budget_krw <= 0) missing.push("월 예산 설정");
 
   // 조건 요약 (상위 N종목 · NCAV ≥ x · 종목당 틱 배분)
