@@ -2,7 +2,23 @@
 
 import { Activity, Clock, RefreshCw, Gauge, Layers, ArrowDownCircle, ArrowUpCircle } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { KrUsCapitalType, TradingActivityState, TradingLog } from "@/lib/features/capital/capitalSlice";
+import { KrUsCapitalType, TradingActivityState, TradingLog, UsCapitalStockItem, LIKES_GROUP_ID } from "@/lib/features/capital/capitalSlice";
+import validCorpCodeArray from "@/public/data/validCorpCodeArray.json";
+import validCorpNameArray from "@/public/data/validCorpNameArray.json";
+
+// KR 종목코드(6자리) → 종목명. stockListTable 과 동일 소스(병렬 배열).
+const KR_CODE_TO_NAME: Record<string, string> = (() => {
+  const codes = validCorpCodeArray as string[];
+  const names = validCorpNameArray as string[];
+  const map: Record<string, string> = {};
+  for (let i = 0; i < codes.length; i++) map[codes[i]] = names[i];
+  return map;
+})();
+const displayName = (symbol: string, name?: string | null) => {
+  const n = (name ?? "").trim();
+  if (n && n !== symbol) return n;
+  return KR_CODE_TO_NAME[symbol] || symbol;
+};
 
 // 자동매매 스케줄 창 (워커 isWithinTimeRange 와 동일): KR 08~18 / US 21~06 KST
 function isWindowOpen(country: "KR" | "US"): boolean {
@@ -52,9 +68,16 @@ export default function TradingActivityPanel({
   const windowLabel = country === "KR" ? "08:00~18:00 KST" : "21:00~06:00 KST";
 
   const stockList = capital?.stock_list ?? [];
-  const isActive = (a?: string) => ["active", "buy", "sell"].includes(a ?? "");
-  const activeTokenSum = stockList.filter(s => isActive(s.action)).reduce((acc, s) => acc + Number(s.token ?? 0), 0);
-  const activeCount = stockList.filter(s => isActive(s.action)).length;
+  // 현재 매매 대상 = 활성 그룹(is_trading_active) 소속 + action==="active".
+  // stockListTable 의 '매매중' 정의 및 워커 makeStockList 활성화 기준과 일치.
+  const gmap = new Map((capital?.groups ?? []).filter(g => g.id !== LIKES_GROUP_ID).map(g => [g.id, g]));
+  const isActiveGroupStock = (s: UsCapitalStockItem) => {
+    const g = s.group_id ? gmap.get(s.group_id) : undefined;
+    return !!g && g.is_trading_active !== false && s.action === "active";
+  };
+  const activeStocks = stockList.filter(isActiveGroupStock);
+  const activeTokenSum = activeStocks.reduce((acc, s) => acc + Number(s.token ?? 0), 0);
+  const activeCount = activeStocks.length;
   const chargeRate = Number(capital?.charge_info?.capital_charge_rate ?? 0);
   const refillIdx = capital?.token_info?.refill_stock_index ?? 0;
 
@@ -104,6 +127,49 @@ export default function TradingActivityPanel({
         <Stat icon={<Gauge size={12} />} label="충전 속도" value={`${won(chargeRate)}`} hint="/ 5분 틱" />
         <Stat icon={<Layers size={12} />} label="활성 토큰 합계" value={won(activeTokenSum)} hint={`활성 ${activeCount}종목`} />
         <Stat icon={<Activity size={12} />} label="리필 인덱스" value={`${refillIdx} / ${stockList.length}`} hint="다음 매수 대상 위치" />
+      </div>
+
+      {/* 현재 매매 대상 (활성 그룹 소속 · action=active) — 워커가 이 종목들을 자동매매 */}
+      <div className="flex items-baseline justify-between mb-2">
+        <p className="text-[11px] font-extrabold uppercase tracking-wider text-[#16a34a]">현재 매매 대상</p>
+        <p className="text-[11px] font-bold text-neutral-400">활성 그룹 {activeCount}종목 · 예산 {won(activeTokenSum)}</p>
+      </div>
+      <div className="overflow-x-auto rounded-xl border border-neutral-200 dark:border-[#35332e] mb-4">
+        <table className="w-full text-sm text-left min-w-[420px]">
+          <thead>
+            <tr className="bg-[#fcfaf7] dark:bg-[#1f1e1b] border-b border-neutral-100 dark:border-[#35332e]">
+              {["종목", "그룹", "NCAV", "예산(토큰)"].map((h, i) => (
+                <th key={h} className={cn("px-3 py-2 text-[10px] font-bold text-neutral-400 uppercase tracking-wider", i >= 2 && "text-right")}>{h}</th>
+              ))}
+            </tr>
+          </thead>
+          <tbody className="divide-y divide-neutral-50 dark:divide-[#35332e]/40">
+            {activeStocks.length === 0 ? (
+              <tr><td colSpan={4} className="px-3 py-8 text-center text-xs text-neutral-400">활성 그룹에 매매 대상 종목이 없습니다. (그룹 자동매매 ON + 조건 충족 필요)</td></tr>
+            ) : (
+              activeStocks.map((s, i) => {
+                const nm = displayName(s.symbol, s.name);
+                const grp = s.group_id ? gmap.get(s.group_id) : undefined;
+                const ncav = Number(s.ncavRatio);
+                return (
+                  <tr key={`${s.symbol}-${i}`} className="hover:bg-[#faf9f7] dark:hover:bg-[#242320]/50">
+                    <td className="px-3 py-2">
+                      <p className="text-xs font-bold text-neutral-800 dark:text-neutral-100 truncate max-w-[120px]">{nm}</p>
+                      {nm !== s.symbol && <p className="text-[10px] text-neutral-400 font-mono">{s.symbol}</p>}
+                    </td>
+                    <td className="px-3 py-2">
+                      <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold bg-[#f0fdf4] text-[#16a34a] dark:bg-[#14532d]/30 dark:text-[#4ade80] truncate max-w-[90px]">
+                        {grp?.name ?? "-"}
+                      </span>
+                    </td>
+                    <td className="px-3 py-2 text-right text-xs font-mono text-neutral-600 dark:text-neutral-300 tabular-nums">{Number.isFinite(ncav) ? `${ncav.toFixed(2)}x` : "-"}</td>
+                    <td className="px-3 py-2 text-right text-xs font-bold text-neutral-800 dark:text-neutral-100 tabular-nums">{won(s.token ?? 0)}</td>
+                  </tr>
+                );
+              })
+            )}
+          </tbody>
+        </table>
       </div>
 
       {/* 최근 자동 체결 */}
