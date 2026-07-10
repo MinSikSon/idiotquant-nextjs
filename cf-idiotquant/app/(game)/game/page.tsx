@@ -29,14 +29,17 @@ const STAT: Stat = {
   fmt: v => v >= 10000 ? `${(v / 10000).toFixed(1)}조` : `${Math.round(v).toLocaleString()}억`,
 };
 
-// 카드 수집: 정답을 맞힌 카드만, 연승↑ → 획득 확률↑.
-// 등급이 높을수록(전설>보물>다이아>금>은>동>원석>탐색) 더 높은 연승이 필요하도록 패널티를 준다.
-const TIER_PENALTY: Record<string, number> = {
-  explore: 0, raw: 0, bronze: 0.08, silver: 0.16, gold: 0.28, diamond: 0.40, treasure: 0.52, legend: 0.66,
+// 카드 수집: 정답을 맞힌 카드만 획득 판정. 등급별 "기본 획득 확률" + 연승 보너스.
+// 연승이 없어도(첫 정답에도) 기본 확률로 카드가 나오며, 높은 등급일수록 기본 확률이 낮고
+// 연승을 쌓을수록 확률이 오른다 (전설>보물>다이아>금>은>동>원석>탐색).
+const TIER_BASE: Record<string, number> = {
+  explore: 0.34, raw: 0.28, bronze: 0.22, silver: 0.16, gold: 0.11, diamond: 0.07, treasure: 0.045, legend: 0.025,
 };
 function acquireChance(item: any, streak: number): number {
   const tone = computeValueScore(item).tone;
-  return Math.min(0.85, Math.max(0, streak * 0.12 - (TIER_PENALTY[tone] ?? 0)));
+  const base = TIER_BASE[tone] ?? 0.2;
+  // streak 은 정답 후 연승(≥1). 첫 정답(streak 1)엔 기본 확률, 이후 연승마다 +7%p.
+  return Math.min(0.9, base + Math.max(0, streak - 1) * 0.07);
 }
 
 // 덱 저장 실패 사유를 사람이 읽을 문구로 (401 로그인 / 404 미배포 / 500 마이그레이션)
@@ -163,8 +166,8 @@ function usePrefersReducedMotion() {
 
 // 3D 틸트 + 등급 홀로그램 포일 — 카드에 수집욕구를 주는 인터랙티브 3D 래퍼.
 // 평소엔 은은한 아이들 애니메이션(holo-idle)으로 3D가 드러나고, 포인터가 올라오면 그 방향으로 기울어진다.
-function HoloCard({ tone, radius = "rounded-2xl", idleDelay = 0, className, children }:
-  { tone: string; radius?: string; idleDelay?: number; className?: string; children: React.ReactNode }) {
+function HoloCard({ tone, radius = "rounded-2xl", idleDelay = 0, thickness = 0, className, children }:
+  { tone: string; radius?: string; idleDelay?: number; thickness?: number; className?: string; children: React.ReactNode }) {
   const ref = useRef<HTMLDivElement>(null);
   const reduce = usePrefersReducedMotion();
   const [p, setP] = useState({ x: 50, y: 50, active: false });
@@ -190,6 +193,12 @@ function HoloCard({ tone, radius = "rounded-2xl", idleDelay = 0, className, chil
         // 포인터 조작 중에는 아이들 애니메이션을 끄고(그래야 인라인 transform 이 적용됨) 포인터 방향으로 기울인다.
         ...(tilt ? { transform: `perspective(900px) rotateX(${rx}deg) rotateY(${ry}deg) scale(1.04)`, animation: "none" } : {}),
       }}>
+      {/* 카드 두께 — 면 뒤로 슬래브를 겹겹이 쌓아 기울일 때 실제 측면(입체 두께)이 보이게 */}
+      {thickness > 0 && Array.from({ length: Math.max(1, Math.round(thickness / 4)) }).map((_, k) => (
+        <div key={k} aria-hidden
+          className={cn("pointer-events-none absolute inset-0 bg-[#e6e3dc] dark:bg-[#131210]", radius)}
+          style={{ transform: `translateZ(-${(k + 1) * 4}px)` }} />
+      ))}
       {children}
       {/* 포인터 추적 하이라이트 */}
       <div aria-hidden style={{ opacity: tilt ? 1 : 0, background: `radial-gradient(circle at ${p.x}% ${p.y}%, rgba(255,255,255,.7), transparent 45%)` }}
@@ -207,7 +216,7 @@ function HoloCard({ tone, radius = "rounded-2xl", idleDelay = 0, className, chil
 function Card({ item, stat, value, idleDelay = 0 }: { item: any; stat: Stat; value: React.ReactNode; idleDelay?: number }) {
   const tone = computeValueScore(item).tone;
   return (
-    <HoloCard tone={tone} radius="rounded-3xl" idleDelay={idleDelay} className="w-full h-full">
+    <HoloCard tone={tone} radius="rounded-3xl" idleDelay={idleDelay} thickness={18} className="w-full h-full">
       {/* 카드 면 위로 요소들이 떠올라(translateZ) 기울일 때 시차 깊이가 생김 (preserve-3d) */}
       <div className="w-full h-full rounded-3xl border border-neutral-200 dark:border-[#35332e] bg-white dark:bg-[#242320] shadow-sm p-5 sm:p-6 flex flex-col items-center text-center [transform-style:preserve-3d]">
         <div style={{ transform: "translateZ(42px)" }}><StockLogo item={item} size={52} /></div>
@@ -482,13 +491,14 @@ export default function GamePage() {
   useEffect(() => { if (phase === "revealed" && lastWin === false) setPhase("over"); }, [phase, lastWin]);
 
   const isLoading = ncav.state === "pending" || ncav.state === "init" || pool.length < 2;
+  const bodyScroll = showDeck || phase === "over";
 
   return (
-    <div className="min-h-screen bg-[#faf9f7] dark:bg-[#1a1915] transition-colors">
-      <div className="max-w-2xl mx-auto px-4 py-6 sm:py-10">
+    <div className="h-[100dvh] flex flex-col bg-[#faf9f7] dark:bg-[#1a1915] transition-colors">
+      <div className="w-full max-w-2xl mx-auto px-4 pt-4 pb-3 flex-1 min-h-0 flex flex-col">
 
         {/* 헤더 */}
-        <div className="flex items-center justify-between mb-6">
+        <div className="flex items-center justify-between mb-3 shrink-0">
           <Link href="/" className="inline-flex items-center gap-1 text-xs font-bold text-neutral-500 dark:text-neutral-400 hover:text-[#16a34a]">
             <ChevronLeft size={14} /> 홈
           </Link>
@@ -500,25 +510,30 @@ export default function GamePage() {
           </button>
         </div>
 
-        {/* 덱 뷰 */}
+        {/* 본문 — 덱/종료는 스크롤, 플레이는 세로 중앙 정렬로 한 화면에 담김 */}
+        <div className={cn("flex-1 min-h-0 flex flex-col", bodyScroll ? "overflow-y-auto py-1" : "justify-center")}>
         {showDeck ? (
           <DeckView deck={deck} isLoggedIn={isLoggedIn} onLogin={requireLogin} onClose={() => setShowDeck(false)} />
         ) : isLoading ? (
           <div className="py-24 text-center text-sm text-neutral-400">카드 데이터를 불러오는 중…</div>
         ) : (
           <>
-            {/* 스코어 */}
-            <div className="flex items-center justify-center gap-6 mb-5 text-center">
-              <div>
-                <p className="text-2xl font-black tabular-nums text-[#16a34a]">{streak}</p>
-                <p className="text-[10px] font-bold text-neutral-400 uppercase tracking-wider">연승</p>
+            {/* 스코어 (플레이 중에만) */}
+            {phase !== "over" && (
+              <div className="flex items-center justify-center mb-4 shrink-0">
+                <div className="flex items-center gap-1 px-2 py-1.5 rounded-2xl bg-white dark:bg-[#242320] border border-neutral-200 dark:border-[#35332e] shadow-sm">
+                  <div className="text-center px-3">
+                    <p className="text-xl font-black tabular-nums text-[#16a34a] leading-none">{streak}</p>
+                    <p className="text-[9px] font-bold text-neutral-400 uppercase tracking-wider mt-1">연승</p>
+                  </div>
+                  <div className="h-7 w-px bg-neutral-200 dark:bg-[#35332e]" />
+                  <div className="text-center px-3">
+                    <p className="text-xl font-black tabular-nums text-neutral-700 dark:text-neutral-200 leading-none">{best}</p>
+                    <p className="text-[9px] font-bold text-neutral-400 uppercase tracking-wider mt-1">최고</p>
+                  </div>
+                </div>
               </div>
-              <div className="h-8 w-px bg-neutral-200 dark:bg-[#35332e]" />
-              <div>
-                <p className="text-2xl font-black tabular-nums text-neutral-700 dark:text-neutral-200">{best}</p>
-                <p className="text-[10px] font-bold text-neutral-400 uppercase tracking-wider">최고 기록</p>
-              </div>
-            </div>
+            )}
 
             {phase === "over" ? (
               <div className="rounded-3xl border border-neutral-200 dark:border-[#35332e] bg-white dark:bg-[#242320] p-8 text-center animate-in fade-in zoom-in-95 duration-300">
@@ -543,12 +558,13 @@ export default function GamePage() {
               </div>
             ) : anchor && challenger ? (
               <>
-                <div className="grid grid-cols-2 gap-3 sm:gap-4 items-stretch">
+                <div className="relative grid grid-cols-2 gap-3 sm:gap-4 items-stretch">
                   <Card item={anchor} stat={STAT} value={STAT.fmt(STAT.get(anchor))} idleDelay={0} />
                   <Card item={challenger} stat={STAT} idleDelay={3}
                     value={phase === "revealed"
                       ? <span className="animate-in zoom-in-75 duration-300">{STAT.fmt(STAT.get(challenger))}</span>
                       : <span className="text-neutral-300 dark:text-neutral-600">?</span>} />
+                  <span className="pointer-events-none absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 z-20 w-8 h-8 rounded-full bg-neutral-900 dark:bg-white text-white dark:text-neutral-900 text-[10px] font-black flex items-center justify-center shadow-lg ring-4 ring-[#faf9f7] dark:ring-[#1a1915]">VS</span>
                 </div>
 
                 {/* 획득 / 로그인 유도 */}
@@ -585,10 +601,9 @@ export default function GamePage() {
                       const owned = deck.find(c => c.ticker === challenger.ticker);
                       return (
                         <p className="text-center text-[11px] mb-3">
-                          <span className="text-neutral-400">정답 시 획득 확률 </span>
-                          {chance > 0
-                            ? <b className="text-[#16a34a] tabular-nums">{chance}%</b>
-                            : <span className="text-neutral-400">0% · 연승을 더 쌓으세요</span>}
+                          <span className="text-neutral-400">획득 확률 </span>
+                          <b className="text-[#16a34a] tabular-nums">{chance}%</b>
+                          <span className="text-neutral-300 dark:text-neutral-600"> · 연승 시 ↑</span>
                           {owned && (
                             <span className="ml-1.5 inline-flex items-center px-1.5 py-0.5 rounded-full bg-[#16a34a]/10 text-[#16a34a] font-bold tabular-nums">
                               보유 ×{owned.count} · 획득 시 +1
@@ -618,6 +633,7 @@ export default function GamePage() {
             ) : null}
           </>
         )}
+        </div>
       </div>
     </div>
   );

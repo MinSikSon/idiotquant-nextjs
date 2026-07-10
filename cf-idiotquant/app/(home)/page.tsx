@@ -1,132 +1,15 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useEffect, useRef } from "react";
 import * as THREE from "three";
 import { RoomEnvironment } from "three/examples/jsm/environments/RoomEnvironment.js";
 import { useSession } from "next-auth/react";
 import Link from "next/link";
-import {
-  Search, Calculator, Filter, Lock, ArrowRight,
-  TrendingUp, ChevronRight, BarChart3, Zap, Layers, Gamepad2,
-} from "lucide-react";
+import { Gamepad2, ArrowRight, TrendingUp } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { safeNum } from "@/lib/utils/numbers";
-import { STRATEGY_PRESETS_CLIENT, STRATEGY_BADGE, type StrategyPreset } from "@/lib/constants/strategies";
-
-interface PreviewStock {
-  ticker: string;
-  name: string;
-  ncav_ratio: number;
-  pbr: number;
-  per: number;
-  eps: number;
-  bps: number;
-  strategies: string[];
-  market_cap?: number;
-}
-
-// 전략별 "핵심 지표" — 그 전략이 보는 지표와 기준 충족 여부. 종목이 설명에 얼마나 부합하는지 표시.
-interface StrategyMetric {
-  label: string;
-  get: (i: PreviewStock) => number;   // 표시값 (0 이하 = 데이터 없음)
-  ok: (v: number) => boolean;         // 전략 기준 충족 여부
-  fmt: (v: number) => string;
-}
-
-// ROE = EPS / BPS × 100 — 스크리너 전략 필터(clientFilter)와 동일한 계산식
-const roePct = (i: PreviewStock) => safeNum(i.bps) > 0 ? safeNum(i.eps) / safeNum(i.bps) * 100 : 0;
-
-const STRATEGY_METRICS: Record<string, StrategyMetric[]> = {
-  ncav:           [{ label: "NCAV",    get: i => safeNum(i.ncav_ratio), ok: v => v >= 1.0,            fmt: v => `${v.toFixed(2)}x` }],
-  near_ncav:      [{ label: "NCAV",    get: i => safeNum(i.ncav_ratio), ok: v => v >= 0.7 && v < 1.0, fmt: v => `${v.toFixed(2)}x` }],
-  low_pbr:        [{ label: "PBR",     get: i => safeNum(i.pbr),        ok: v => v > 0 && v < 0.5,    fmt: v => v.toFixed(2) }],
-  low_per:        [{ label: "PER",     get: i => safeNum(i.per),        ok: v => v > 0 && v < 10,     fmt: v => v.toFixed(1) }],
-  graham_number:  [{ label: "PER×PBR", get: i => safeNum(i.per) > 0 && safeNum(i.pbr) > 0 ? safeNum(i.per) * safeNum(i.pbr) : 0, ok: v => v > 0 && v < 22.5, fmt: v => v.toFixed(1) }],
-  s_rim:          [
-    { label: "ROE", get: roePct,            ok: v => v > 8,            fmt: v => `${v.toFixed(1)}%` },
-    { label: "PBR", get: i => safeNum(i.pbr), ok: v => v > 0 && v < 1.0, fmt: v => v.toFixed(2) },
-  ],
-  magic_formula:  [
-    { label: "PER", get: i => safeNum(i.per), ok: v => v > 0 && v < 15, fmt: v => v.toFixed(1) },
-    { label: "ROE", get: roePct,            ok: v => v > 10,           fmt: v => `${v.toFixed(1)}%` },
-  ],
-  quality_value:  [
-    { label: "ROE", get: roePct,            ok: v => v > 15,           fmt: v => `${v.toFixed(1)}%` },
-    { label: "PBR", get: i => safeNum(i.pbr), ok: v => v > 0 && v < 2.0, fmt: v => v.toFixed(2) },
-  ],
-  balanced_value: [
-    { label: "PER", get: i => safeNum(i.per), ok: v => v > 5 && v < 15,  fmt: v => v.toFixed(1) },
-    { label: "PBR", get: i => safeNum(i.pbr), ok: v => v > 0 && v < 1.5, fmt: v => v.toFixed(2) },
-  ],
-};
-
-const NCAV_METRIC: StrategyMetric[] = STRATEGY_METRICS.ncav;
-
-const HOME_MKTCAP_MIN = 500;
-const PER_STRATEGY = 2;    // 전략 그룹당 노출 종목 수
-const GROUP_PUBLIC = 3;    // 비로그인 시 블러 없이 공개하는 전략 그룹 수
-
-// 전략별 정렬 키 (값이 작을수록 상위). NCAV 계열은 비율이 높을수록 좋으므로 음수.
-const STRATEGY_SORT: Record<string, (i: PreviewStock) => number> = {
-  ncav:           i => -(i.ncav_ratio ?? 0),
-  near_ncav:      i => -(i.ncav_ratio ?? 0),
-  low_pbr:        i => i.pbr > 0 ? i.pbr : Infinity,
-  s_rim:          i => i.pbr > 0 ? i.pbr : Infinity,
-  quality_value:  i => i.pbr > 0 ? i.pbr : Infinity,
-  balanced_value: i => i.pbr > 0 ? i.pbr : Infinity,
-  graham_number:  i => (i.per > 0 && i.pbr > 0) ? i.per * i.pbr : Infinity,
-  low_per:        i => i.per > 0 ? i.per : Infinity,
-  magic_formula:  i => i.per > 0 ? i.per : Infinity,
-};
-
-const STRATEGY_LABEL: Record<string, string> = {
-  ncav: "NCAV", low_pbr: "저PBR", low_per: "저PER", s_rim: "S-RIM",
-  graham_number: "그레이엄", magic_formula: "마법공식",
-  quality_value: "퀄리티", near_ncav: "NCAV근접", balanced_value: "균형가치",
-};
-
-const STRATEGY_BADGE_CLS: Record<string, string> = {
-  ncav:           "bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-400 border-emerald-200 dark:border-emerald-800/60",
-  low_pbr:        "bg-[#f0fdf4] dark:bg-[#052e16]/40 text-[#15803d] dark:text-[#16a34a] border-[#bbf7d0] dark:border-[#166534]/60",
-  low_per:        "bg-orange-50 dark:bg-orange-950/40 text-orange-700 dark:text-orange-400 border-orange-200 dark:border-orange-800/60",
-  s_rim:          "bg-violet-50 dark:bg-violet-950/40 text-violet-700 dark:text-violet-400 border-violet-200 dark:border-violet-800/60",
-  graham_number:  "bg-teal-50 dark:bg-teal-950/40 text-teal-700 dark:text-teal-400 border-teal-200 dark:border-teal-800/60",
-  magic_formula:  "bg-rose-50 dark:bg-rose-950/40 text-rose-700 dark:text-rose-400 border-rose-200 dark:border-rose-800/60",
-  quality_value:  "bg-amber-50 dark:bg-amber-950/40 text-amber-700 dark:text-amber-400 border-amber-200 dark:border-amber-800/60",
-  near_ncav:      "bg-indigo-50 dark:bg-indigo-950/40 text-indigo-700 dark:text-indigo-400 border-indigo-200 dark:border-indigo-800/60",
-  balanced_value: "bg-cyan-50 dark:bg-cyan-950/40 text-cyan-700 dark:text-cyan-400 border-cyan-200 dark:border-cyan-800/60",
-};
-
-const FEATURES = [
-  {
-    icon: Search,
-    iconCls: "text-white",
-    bgCls: "bg-gradient-to-br from-violet-500 to-indigo-500 shadow-md shadow-violet-500/25",
-    title: "적정주가 분석",
-    desc: "재무 데이터로 내재가치를 계산해요",
-    link: "/analyze",
-    linkLabel: "종목 분석하기",
-  },
-  {
-    icon: Calculator,
-    iconCls: "text-white",
-    bgCls: "bg-gradient-to-br from-amber-500 to-orange-500 shadow-md shadow-amber-500/25",
-    title: "수익 계산기",
-    desc: "매수·매도 시나리오 수익률을 계산해요",
-    link: "/calculator",
-    linkLabel: "계산해보기",
-  },
-];
-
-const HOW_IT_WORKS = [
-  { step: "01", title: "카드로 종목 비교" },
-  { step: "02", title: "등급·지표로 가치 감각" },
-  { step: "03", title: "실제 데이터로 확인" },
-];
 
 // =========================================================================
-// 홈 3D 일러스트 (three.js / WebGL) — 진짜 3D
-// 금속 금화(단위 표시 없음) 2개가 회전하고, 3D 캔들 박스 2개가 좌우에서 떠 움직인다.
+// 홈 3D 일러스트 (three.js / WebGL)
 // 클라이언트에서만 마운트, prefers-reduced-motion 시 정적 렌더.
 // =========================================================================
 // 둥근 모서리 3D 슬래브 (core three: Shape + ExtrudeGeometry)
@@ -318,7 +201,7 @@ function HeroArt() {
   return <div ref={mountRef} className="w-full h-full" aria-hidden="true" />;
 }
 
-// 게임 버튼용 3D — 심플 글로시 돛단배 아이콘 (isolated 스타일 · 소프트 그림자)
+// 게임 스텝용 3D — 심플 글로시 돛단배 아이콘 (isolated 스타일 · 소프트 그림자)
 function GameCardArt() {
   const mountRef = useRef<HTMLDivElement>(null);
 
@@ -481,213 +364,165 @@ function GameCardArt() {
   return <div ref={mountRef} className="w-full h-full" aria-hidden="true" />;
 }
 
-// 1단계: 여러 종목 중 좋은 하나를 돋보기로 집어냄
-function StepScanArt() {
-  const dots = [[14, 14], [26, 14], [38, 14], [14, 26], [26, 26], [38, 26], [14, 38], [26, 38]];
-  return (
-    <svg viewBox="0 0 64 64" fill="none" aria-hidden="true" className="w-11 h-11 shrink-0 text-neutral-300 dark:text-neutral-600">
-      {dots.map(([x, y], i) => <circle key={i} cx={x} cy={y} r="3" fill="currentColor" />)}
-      <circle cx="40" cy="40" r="3.2" fill="#16a34a" />
-      <circle cx="40" cy="40" r="13" stroke="#16a34a" strokeWidth="3.5" fill="none" />
-      <line x1="49" y1="49" x2="57" y2="57" stroke="#16a34a" strokeWidth="3.5" strokeLinecap="round" />
-    </svg>
-  );
-}
-
-// 2단계: 많은 후보를 걸러 좋은 종목만 통과 (깔때기 + 체크)
-function StepFunnelArt() {
-  return (
-    <svg viewBox="0 0 64 64" fill="none" aria-hidden="true" className="w-11 h-11 shrink-0 text-neutral-300 dark:text-neutral-600">
-      <circle cx="20" cy="12" r="3" fill="currentColor" />
-      <circle cx="32" cy="12" r="3" fill="currentColor" />
-      <circle cx="44" cy="12" r="3" fill="currentColor" />
-      <path d="M14,22 H50 L38,38 V46 H26 V38 Z" stroke="#16a34a" strokeWidth="3" strokeLinejoin="round" />
-      <circle cx="32" cy="54" r="8" fill="#16a34a" />
-      <path d="M28,54 l3,3 l5,-6" stroke="#fff" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
-    </svg>
-  );
-}
-
-// 3단계: 적정주가(₩) 확인 완료 (체크)
-function StepTagArt() {
-  return (
-    <svg viewBox="0 0 64 64" fill="none" aria-hidden="true" className="w-11 h-11 shrink-0 text-neutral-300 dark:text-neutral-600">
-      <circle cx="28" cy="30" r="16" stroke="currentColor" strokeWidth="2.5" />
-      <text x="28" y="36" textAnchor="middle" fontSize="17" fontWeight="800" fill="#16a34a" fontFamily="sans-serif">₩</text>
-      <circle cx="46" cy="44" r="9" fill="#16a34a" />
-      <path d="M42,44 l3,3 l5,-6" stroke="#fff" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
-    </svg>
-  );
-}
-
-const STEP_ARTS = [StepScanArt, StepFunnelArt, StepTagArt];
-
-function useCountUp(target: number, duration = 1000) {
-  const [count, setCount] = useState(0);
-  const rafRef = useRef<number | null>(null);
+// 온보딩 스텝용 3D — 회전하는 글로시 오브젝트 (coin: 금화 / gem: 에메랄드 젬)
+function SpinArt({ kind }: { kind: "coin" | "gem" }) {
+  const mountRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    if (target === 0) return;
-    const start = Date.now();
-    const tick = () => {
-      const elapsed = Date.now() - start;
-      const progress = Math.min(elapsed / duration, 1);
-      const ease = 1 - Math.pow(1 - progress, 3);
-      setCount(Math.round(target * ease));
-      if (progress < 1) {
-        rafRef.current = requestAnimationFrame(tick);
-      }
+    const mount = mountRef.current;
+    if (!mount) return;
+    const reduce = window.matchMedia?.("(prefers-reduced-motion: reduce)").matches ?? false;
+
+    const scene = new THREE.Scene();
+    const camera = new THREE.PerspectiveCamera(38, 1, 0.1, 100);
+    camera.position.set(0, 0.3, 6.2);
+    camera.lookAt(0, 0, 0);
+
+    const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+    renderer.toneMapping = THREE.ACESFilmicToneMapping;
+    renderer.toneMappingExposure = 1.1;
+    renderer.outputColorSpace = THREE.SRGBColorSpace;
+    const canvas = renderer.domElement;
+    canvas.style.width = "100%";
+    canvas.style.height = "100%";
+    canvas.style.display = "block";
+    mount.appendChild(canvas);
+
+    const disposables: { dispose: () => void }[] = [];
+    const pmrem = new THREE.PMREMGenerator(renderer);
+    const envRT = pmrem.fromScene(new RoomEnvironment(), 0.04);
+    scene.environment = envRT.texture;
+    pmrem.dispose();
+    disposables.push(envRT.texture);
+
+    scene.add(new THREE.HemisphereLight(0xffffff, 0x8a9a88, 0.6));
+    const key = new THREE.DirectionalLight(0xfff2d0, 2.6);
+    key.position.set(4, 7, 6);
+    scene.add(key);
+    const rim = new THREE.DirectionalLight(0x86efc0, 1.1);
+    rim.position.set(-5, 2, -4);
+    scene.add(rim);
+
+    // 소프트 그림자
+    const shadowTex = makeRadialTexture("rgba(16,60,40,0.5)");
+    const shadowMat = new THREE.SpriteMaterial({ map: shadowTex, transparent: true, depthWrite: false, opacity: 0.4 });
+    disposables.push(shadowTex, shadowMat);
+    const shadow = new THREE.Sprite(shadowMat);
+    shadow.scale.set(4.4, 1.3, 1);
+    shadow.position.set(0, -1.7, -0.2);
+    scene.add(shadow);
+
+    const obj = new THREE.Group();
+    scene.add(obj);
+
+    const haloColor = kind === "coin" ? "rgba(255,205,80,0.5)" : "rgba(80,220,140,0.5)";
+    const glowTex = makeRadialTexture(haloColor);
+    const haloMat = new THREE.SpriteMaterial({ map: glowTex, transparent: true, depthWrite: false, blending: THREE.AdditiveBlending, opacity: 0.5 });
+    disposables.push(glowTex, haloMat);
+    const halo = new THREE.Sprite(haloMat);
+    halo.scale.set(6, 6, 1);
+    obj.add(halo);
+
+    if (kind === "coin") {
+      const goldMat = new THREE.MeshStandardMaterial({ color: 0xffca3d, metalness: 0.95, roughness: 0.15, emissive: 0x5a3d06, emissiveIntensity: 0.16 });
+      const baseGeo = new THREE.CylinderGeometry(1.5, 1.5, 0.34, 60);
+      const fieldGeo = new THREE.CylinderGeometry(1.2, 1.2, 0.44, 60);
+      disposables.push(goldMat, baseGeo, fieldGeo);
+      const disc = new THREE.Group();
+      disc.add(new THREE.Mesh(baseGeo, goldMat), new THREE.Mesh(fieldGeo, goldMat));
+      disc.rotation.x = Math.PI / 2;
+      obj.add(disc);
+    } else {
+      const gemMat = new THREE.MeshPhysicalMaterial({ color: 0x18a94e, metalness: 0.1, roughness: 0.12, clearcoat: 1, clearcoatRoughness: 0.1, emissive: 0x0b5a2a, emissiveIntensity: 0.14 });
+      const gemGeo = new THREE.OctahedronGeometry(1.55, 0);
+      disposables.push(gemMat, gemGeo);
+      obj.add(new THREE.Mesh(gemGeo, gemMat));
+    }
+
+    const resize = () => {
+      const w = mount.clientWidth || 1, h = mount.clientHeight || 1;
+      renderer.setSize(w, h, false);
+      camera.aspect = w / h;
+      camera.updateProjectionMatrix();
     };
-    rafRef.current = requestAnimationFrame(tick);
+    resize();
+    const ro = new ResizeObserver(resize);
+    ro.observe(mount);
+
+    const clock = new THREE.Clock();
+    let raf = 0;
+    const render = () => {
+      const t = clock.getElapsedTime();
+      obj.rotation.y = t * 0.9;
+      obj.position.y = Math.sin(t * 0.9) * 0.16;
+      if (kind === "gem") obj.rotation.x = Math.sin(t * 0.5) * 0.22;
+      renderer.render(scene, camera);
+      raf = requestAnimationFrame(render);
+    };
+    if (reduce) {
+      obj.rotation.y = 0.5;
+      renderer.render(scene, camera);
+    } else {
+      raf = requestAnimationFrame(render);
+    }
+
     return () => {
-      if (rafRef.current !== null) cancelAnimationFrame(rafRef.current);
+      cancelAnimationFrame(raf);
+      ro.disconnect();
+      disposables.forEach(d => d.dispose());
+      renderer.dispose();
+      if (canvas.parentNode) canvas.parentNode.removeChild(canvas);
     };
-  }, [target, duration]);
+  }, [kind]);
 
-  return count;
+  return <div ref={mountRef} className="w-full h-full" aria-hidden="true" />;
 }
 
-function StockRow({ item, index, excludeStrategy, metrics }: { item: PreviewStock; index: number; excludeStrategy?: string; metrics: StrategyMetric[] }) {
-  const strategies = (item.strategies ?? []).filter(s => s !== excludeStrategy).slice(0, 2);
-
-  return (
-    <div className="flex items-center gap-3 px-5 py-4 border-b border-neutral-100 dark:border-[#35332e] last:border-0 transition-colors">
-      <span className="w-4 text-[10px] font-black text-neutral-300 dark:text-neutral-600 tabular-nums shrink-0">
-        {index + 1}
-      </span>
-
-      <div className="flex-1 min-w-0">
-        <div className="flex items-center gap-1.5 mb-0.5 flex-wrap">
-          <p className="font-semibold text-sm text-neutral-900 dark:text-neutral-50 truncate leading-tight">
-            {item.name}
-          </p>
-          {strategies.map(s => (
-            <span key={s} className={cn(
-              "text-[9px] font-extrabold px-1.5 py-0.5 rounded border leading-none",
-              STRATEGY_BADGE_CLS[s] ?? "bg-neutral-100 text-neutral-500 border-neutral-200"
-            )}>
-              {STRATEGY_LABEL[s] ?? s}
-            </span>
-          ))}
-        </div>
-        <p className="text-[10px] text-neutral-400 font-mono">{item.ticker}</p>
-      </div>
-
-      {/* 전략 핵심 지표 — 기준 충족 시 초록, 미달 회색, 데이터 없으면 — */}
-      <div className="shrink-0 flex items-center gap-3 sm:gap-4">
-        {metrics.map(m => {
-          const v = m.get(item);
-          const has = v > 0;
-          const ok = has && m.ok(v);
-          return (
-            <div key={m.label} className="text-right min-w-[48px]">
-              <p className={cn(
-                "text-sm font-black font-mono tabular-nums",
-                !has ? "text-neutral-300 dark:text-neutral-600"
-                  : ok ? "text-emerald-600 dark:text-emerald-400"
-                  : "text-neutral-500 dark:text-neutral-400"
-              )}>
-                {has ? m.fmt(v) : "—"}
-              </p>
-              <p className="text-[9px] text-neutral-400 font-bold uppercase tracking-wider">{m.label}</p>
-            </div>
-          );
-        })}
-      </div>
-    </div>
-  );
-}
-
-function StrategyGroup({ preset, stocks }: { preset: StrategyPreset; stocks: PreviewStock[] }) {
-  const metrics = STRATEGY_METRICS[preset.id] ?? NCAV_METRIC;
-  return (
-    <div className="border-b border-neutral-100 dark:border-[#35332e] last:border-0">
-      <div className="px-4 py-2.5 bg-[#fcfaf7] dark:bg-[#1f1e1b] flex items-center gap-2">
-        <span className={cn(
-          "text-[11px] font-extrabold px-2 py-0.5 rounded shrink-0",
-          STRATEGY_BADGE[preset.id] ?? "bg-neutral-100 text-neutral-500"
-        )}>
-          {preset.label}
-        </span>
-        <span className="text-[11px] text-neutral-500 dark:text-neutral-400 truncate break-keep">
-          {preset.plain}
-        </span>
-      </div>
-      {stocks.map((item, i) => (
-        <StockRow key={`${preset.id}-${item.ticker}`} item={item} index={i} excludeStrategy={preset.id} metrics={metrics} />
-      ))}
-    </div>
-  );
-}
+// 순차 온보딩 3단계 — 각 단계는 3D 이미지 + 한 줄 설명 + 단일 CTA
+const STEPS: {
+  n: string; tag: string; title: string; desc: string; cta: string; href: string;
+  art: React.ReactNode; tint: string;
+}[] = [
+  {
+    n: "01", tag: "PLAY", title: "카드 게임으로 시작",
+    desc: "두 종목을 비교하는 카드 게임으로 가치투자 감각을 놀이처럼 익혀요. 회원가입 없이 바로 시작합니다.",
+    cta: "게임 시작하기", href: "/game", art: <GameCardArt />,
+    tint: "from-[#eaf5ee] to-white dark:from-[#0e2019] dark:to-[#161511]",
+  },
+  {
+    n: "02", tag: "DISCOVER", title: "저평가 종목 발굴",
+    desc: "게임으로 익힌 감각을 실제 시장에. 검증된 퀀트 전략으로 숨어 있는 저평가 종목을 스캔해요.",
+    cta: "종목 발굴하기", href: "/screener?mincap=500", art: <SpinArt kind="coin" />,
+    tint: "from-[#fdf6e9] to-white dark:from-[#241d0e] dark:to-[#161511]",
+  },
+  {
+    n: "03", tag: "ANALYZE", title: "적정주가 분석",
+    desc: "관심 종목의 내재가치를 재무 데이터로 직접 계산해, 지금 가격이 싼지 비싼지 판단해요.",
+    cta: "종목 분석하기", href: "/analyze", art: <SpinArt kind="gem" />,
+    tint: "from-[#eafaf0] to-white dark:from-[#0e2016] dark:to-[#161511]",
+  },
+];
 
 export default function HomePage() {
   const { data: session, status } = useSession();
   const isLoggedIn = !!session;
   const sessionLoading = status === "loading";
 
-  const [preview, setPreview] = useState<{
-    items: PreviewStock[];
-    total: number;
-    filteredTotal: number;
-    scanDate: string | null;
-    loading: boolean;
-  }>({ items: [], total: 0, filteredTotal: 0, scanDate: null, loading: true });
-
-  useEffect(() => {
-    fetch("/api/proxy/scan/daily?strategy=all&limit=2500&sort=ncav_ratio&order=desc")
-      .then(r => r.json())
-      .then((data: any) => {
-        if (data.success) {
-          const all: PreviewStock[] = data.data;
-          const filtered = all.filter(item => (item.market_cap ?? 0) >= HOME_MKTCAP_MIN);
-          setPreview({
-            items: filtered,
-            total: data.meta.total,
-            filteredTotal: filtered.length,
-            scanDate: data.meta.scanDate,
-            loading: false,
-          });
-        } else {
-          setPreview(p => ({ ...p, loading: false }));
-        }
-      })
-      .catch(() => setPreview(p => ({ ...p, loading: false })));
-  }, []);
-
-  // 전략별 상위 PER_STRATEGY개 그룹 (종목 없는 전략은 제외)
-  const groups = STRATEGY_PRESETS_CLIENT.map(preset => {
-    const sortFn = STRATEGY_SORT[preset.id] ?? (i => -(i.ncav_ratio ?? 0));
-    const stocks = preview.items
-      .filter(it => it.strategies?.includes(preset.id))
-      .sort((a, b) => sortFn(a) - sortFn(b))
-      .slice(0, PER_STRATEGY);
-    return { preset, stocks };
-  }).filter(g => g.stocks.length > 0);
-
-  const visibleGroups = isLoggedIn ? groups : groups.slice(0, GROUP_PUBLIC);
-  const lockedGroups = isLoggedIn ? [] : groups.slice(GROUP_PUBLIC);
-
-  const formattedDate = preview.scanDate
-    ? `${preview.scanDate.slice(0, 4)}.${preview.scanDate.slice(4, 6)}.${preview.scanDate.slice(6, 8)}`
-    : null;
-
-  const animatedTotal = useCountUp(preview.loading ? 0 : preview.total);
-  const animatedFiltered = useCountUp(preview.loading ? 0 : preview.filteredTotal);
-
   return (
     <div className="min-h-screen">
 
       {/* ── HERO ─────────────────────────────────────────────────── */}
-      <section className="relative overflow-hidden min-h-[86vh] flex flex-col border-b border-neutral-200/70 dark:border-[#3a3834] bg-gradient-to-b from-[#f4faf6] to-white dark:from-[#12241c] dark:to-[#1a1915]">
-        {/* 풀블리드 3D 씬 (화면 전체) */}
+      <section className="relative overflow-hidden min-h-[88vh] flex flex-col border-b border-neutral-200/70 dark:border-[#3a3834] bg-gradient-to-b from-[#f4faf6] to-white dark:from-[#12241c] dark:to-[#1a1915]">
+        {/* 풀블리드 3D 씬 */}
         <div className="absolute inset-0">
           <HeroArt />
         </div>
-        {/* 가독성 스크림 — 위·아래는 배경색, 가운데는 투명해 3D가 보이게 */}
+        {/* 가독성 스크림 */}
         <div className="absolute inset-0 pointer-events-none bg-gradient-to-b from-[#f4faf6] via-[#f4faf6]/5 to-[#f4faf6] dark:from-[#12241c] dark:via-transparent dark:to-[#1a1915]" />
 
-        {/* 텍스트 오버레이 (상단) */}
-        <div className="relative z-10 max-w-3xl mx-auto w-full px-5 pt-16 sm:pt-24 md:pt-28">
+        {/* 텍스트 오버레이 */}
+        <div className="relative z-10 max-w-3xl mx-auto w-full px-5 pt-20 sm:pt-28 md:pt-32">
           <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-white/70 dark:bg-[#242320]/70 backdrop-blur border border-neutral-200 dark:border-[#35332e] mb-5 text-[11px] font-medium text-neutral-500 dark:text-neutral-400">
             <span className="relative flex h-1.5 w-1.5 shrink-0">
               <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
@@ -705,306 +540,95 @@ export default function HomePage() {
             종목 카드 게임으로 시작해, 실제 시장 데이터로 주식·경제 감각을 키웁니다.
           </p>
 
-          <div className="mt-7 flex flex-wrap items-center gap-3">
+          <div className="mt-8">
             <Link
               href="/game"
-              className="group inline-flex items-center gap-2 px-6 py-3.5 rounded-2xl bg-[#16a34a] hover:bg-[#15803d] active:bg-[#166534] text-white font-bold text-sm shadow-lg shadow-[#16a34a]/25 transition-all hover:-translate-y-0.5"
+              className="group inline-flex items-center gap-2 px-7 py-4 rounded-2xl bg-[#16a34a] hover:bg-[#15803d] active:bg-[#166534] text-white font-bold text-base shadow-lg shadow-[#16a34a]/25 transition-all hover:-translate-y-0.5"
             >
-              <Gamepad2 size={16} strokeWidth={2.5} />
-              게임으로 시작하기
-              <ArrowRight size={15} className="group-hover:translate-x-0.5 transition-transform" />
-            </Link>
-            <Link
-              href="/screener?mincap=500"
-              className="inline-flex items-center gap-2 px-6 py-3.5 rounded-2xl bg-white/80 dark:bg-[#242320]/80 backdrop-blur border border-neutral-200 dark:border-[#35332e] text-neutral-800 dark:text-neutral-100 font-bold text-sm shadow-sm hover:border-[#16a34a]/50 hover:-translate-y-0.5 transition-all"
-            >
-              <Filter size={15} strokeWidth={2.5} className="text-[#16a34a]" />
-              종목 발굴
+              <Gamepad2 size={18} strokeWidth={2.5} />
+              게임으로 무료 시작
+              <ArrowRight size={16} className="group-hover:translate-x-0.5 transition-transform" />
             </Link>
           </div>
         </div>
 
-        {/* 스탯 (하단 오버레이) */}
-        <div className="relative z-10 mt-auto">
-          {!preview.loading && preview.total > 0 && (
-            <div className="max-w-3xl mx-auto px-5 pb-9 pt-4 grid grid-cols-3 gap-2.5 sm:gap-3">
-              <div className="rounded-2xl bg-white/70 dark:bg-[#242320]/70 backdrop-blur border border-neutral-200/70 dark:border-[#35332e] shadow-sm px-2 py-4 text-center">
-                <p className="text-xl sm:text-2xl font-black text-[#16a34a] dark:text-[#16a34a] tabular-nums leading-none">
-                  {animatedTotal.toLocaleString()}
-                </p>
-                <p className="text-[10px] text-neutral-500 dark:text-neutral-400 font-medium mt-1.5">최근 발굴 종목</p>
-              </div>
-              <div className="rounded-2xl bg-white/70 dark:bg-[#242320]/70 backdrop-blur border border-neutral-200/70 dark:border-[#35332e] shadow-sm px-2 py-4 text-center">
-                <p className="text-xl sm:text-2xl font-black text-emerald-600 dark:text-emerald-400 tabular-nums leading-none">
-                  {animatedFiltered.toLocaleString()}
-                </p>
-                <p className="text-[10px] text-neutral-500 dark:text-neutral-400 font-medium mt-1.5">시총 500억+</p>
-              </div>
-              <div className="rounded-2xl bg-white/70 dark:bg-[#242320]/70 backdrop-blur border border-neutral-200/70 dark:border-[#35332e] shadow-sm px-2 py-4 text-center">
-                <p className="text-base sm:text-lg font-black text-neutral-700 dark:text-neutral-200 tabular-nums leading-none mt-1">
-                  {formattedDate ?? "—"}
-                </p>
-                <p className="text-[10px] text-neutral-500 dark:text-neutral-400 font-medium mt-1.5">업데이트</p>
-              </div>
-            </div>
+        {/* 스크롤 유도 (숫자 대신 온보딩 안내) */}
+        <div className="relative z-10 mt-auto pb-8 text-center">
+          <p className="text-[11px] font-bold text-neutral-400 dark:text-neutral-500 tracking-wide">
+            아래로 스크롤 · 3단계로 시작하세요 ↓
+          </p>
+        </div>
+      </section>
+
+      {/* ── 온보딩 3단계 ─────────────────────────────────────────── */}
+      {STEPS.map((s, i) => (
+        <section
+          key={s.n}
+          className={cn(
+            "border-b border-neutral-100 dark:border-[#3a3834]",
+            i % 2 === 1 && "bg-[#faf9f7] dark:bg-[#1a1917]"
           )}
-        </div>
-      </section>
-
-      {/* ── GAME BANNER (3D 종목 카드 · 게임 입구) ─────────────────── */}
-      <Link href="/game" className="group relative flex h-44 sm:h-60 overflow-hidden border-b border-neutral-200/70 dark:border-[#3a3834] bg-gradient-to-b from-[#eaf5ee] to-white dark:from-[#0e2019] dark:to-[#1a1915]">
-        <GameCardArt />
-        <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex flex-col items-center gap-2">
-          <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-[#16a34a]/10 dark:bg-[#16a34a]/20 text-[10px] font-extrabold text-[#15803d] dark:text-[#16a34a] uppercase tracking-wide">
-            미니 게임 · 무료
-          </span>
-          <span className="inline-flex items-center gap-1.5 px-4 py-2 rounded-full bg-[#16a34a] text-white text-xs sm:text-sm font-black shadow-lg shadow-[#16a34a]/25 group-hover:-translate-y-0.5 transition-transform">
-            ⛵ 가치를 향한 항해 시작
-            <ArrowRight size={14} className="group-hover:translate-x-0.5 transition-transform" />
-          </span>
-        </div>
-      </Link>
-
-      {/* ── TODAY'S PICKS ─────────────────────────────────────────── */}
-      <section className="py-10 px-5 md:py-14">
-        <div className="max-w-3xl mx-auto">
-
-          <div className="flex items-end justify-between mb-5 gap-3">
-            <div>
-              <div className="flex items-center gap-1.5 mb-2">
-                <BarChart3 size={13} className="text-[#16a34a]" strokeWidth={2.5} />
-                <span className="text-[11px] font-extrabold uppercase tracking-wider text-[#16a34a]">Today's Picks</span>
+        >
+          <div className="max-w-4xl mx-auto px-5 py-12 md:py-20 grid md:grid-cols-2 gap-7 md:gap-12 items-center">
+            {/* 3D 이미지 */}
+            <div className={cn("order-1", i % 2 === 1 ? "md:order-2" : "md:order-1")}>
+              <div className={cn("h-52 sm:h-64 rounded-3xl border border-neutral-200/70 dark:border-[#35332e] bg-gradient-to-b overflow-hidden", s.tint)}>
+                {s.art}
               </div>
-              <div className="flex items-center gap-2">
-                <h2 className="text-lg sm:text-xl font-black tracking-tight text-neutral-900 dark:text-neutral-50">
-                  최근 발굴 종목
-                </h2>
-                <span className="text-[9px] font-extrabold px-2 py-0.5 rounded-full bg-[#16a34a] text-white">
-                  500억+
+            </div>
+
+            {/* 텍스트 + 단일 CTA */}
+            <div className={cn("order-2", i % 2 === 1 ? "md:order-1" : "md:order-2")}>
+              <div className="flex items-center gap-2 mb-3">
+                <span className="inline-flex items-center justify-center w-7 h-7 rounded-full bg-[#16a34a] text-white text-xs font-black tabular-nums">
+                  {s.n}
                 </span>
+                <span className="text-[11px] font-extrabold uppercase tracking-widest text-[#16a34a]">{s.tag}</span>
               </div>
-              <p className="text-xs text-neutral-400 mt-1 break-keep">게임 카드로도 만나는 실제 저평가 종목</p>
-            </div>
-            <Link
-              href="/screener?mincap=500"
-              className="group flex items-center gap-0.5 text-xs font-bold text-[#16a34a] dark:text-[#16a34a] whitespace-nowrap shrink-0"
-            >
-              전체 보기 <ChevronRight size={13} className="group-hover:translate-x-0.5 transition-transform" />
-            </Link>
-          </div>
-
-          {/* Stock list card */}
-          <div className="rounded-2xl border border-neutral-200 dark:border-[#35332e] overflow-hidden bg-white dark:bg-[#242320] shadow-sm">
-            {/* Column headers */}
-            <div className="px-4 py-2 bg-[#fcfaf7] dark:bg-[#1f1e1b] border-b border-neutral-100 dark:border-[#35332e] flex items-center justify-between">
-              <span className="text-[10px] font-bold text-neutral-400 uppercase tracking-wider">종목</span>
-              <span className="text-[10px] font-bold text-neutral-400 uppercase tracking-wider">전략 지표</span>
-            </div>
-
-            {preview.loading ? (
-              <div>
-                {Array.from({ length: 5 }).map((_, i) => (
-                  <div key={i} className="flex items-center gap-3 px-5 py-4 border-b border-neutral-100 dark:border-[#35332e] last:border-0">
-                    <div className="w-4 h-3 rounded bg-neutral-100 dark:bg-[#2c2b27] animate-pulse shrink-0" />
-                    <div className="flex-1 min-w-0 space-y-1.5">
-                      <div className="h-3.5 w-32 rounded bg-neutral-200/80 dark:bg-[#35332e] animate-pulse" />
-                      <div className="h-2.5 w-16 rounded bg-neutral-100 dark:bg-[#2c2b27] animate-pulse" />
-                    </div>
-                    <div className="h-7 w-12 rounded-md bg-neutral-200/80 dark:bg-[#35332e] animate-pulse shrink-0" />
-                  </div>
-                ))}
-              </div>
-            ) : groups.length === 0 ? (
-              <div className="py-10 text-center">
-                <BarChart3 size={24} className="text-neutral-300 dark:text-neutral-600 mx-auto mb-2" />
-                <p className="text-xs text-neutral-400">스캔 데이터가 없습니다.</p>
-              </div>
-            ) : (
-              <>
-                {visibleGroups.map(g => (
-                  <StrategyGroup key={g.preset.id} preset={g.preset} stocks={g.stocks} />
-                ))}
-
-                {/* Locked groups */}
-                {lockedGroups.length > 0 && (
-                  <div className="relative">
-                    <div className="blur-sm select-none pointer-events-none">
-                      {lockedGroups.map(g => (
-                        <StrategyGroup key={g.preset.id} preset={g.preset} stocks={g.stocks} />
-                      ))}
-                    </div>
-
-                    <div className="absolute inset-0 flex items-center justify-center bg-gradient-to-b from-white/40 to-white/90 dark:from-[#242320]/40 dark:to-[#242320]/95">
-                      <Link
-                        href="/login"
-                        className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-[#16a34a] hover:bg-[#15803d] text-white text-sm font-bold shadow-md shadow-[#16a34a]/20 transition-all"
-                      >
-                        <Lock size={13} />
-                        로그인하여 {groups.length}개 전략 전체 확인
-                        <ArrowRight size={13} />
-                      </Link>
-                    </div>
-                  </div>
-                )}
-
-                {isLoggedIn && (
-                  <div className="px-4 py-3 bg-[#f0fdf4] dark:bg-[#052e16]/20 border-t border-[#dcfce7] dark:border-[#14532d]/40 flex items-center justify-between gap-3">
-                    <p className="text-xs text-[#15803d] dark:text-[#16a34a] font-medium">
-                      전체 <span className="font-black">{preview.filteredTotal}개</span> 종목을 필터·정렬로 탐색하세요.
-                    </p>
-                    <Link
-                      href="/screener?mincap=500"
-                      className="shrink-0 flex items-center gap-1 px-3 py-1.5 rounded-lg bg-[#16a34a] text-white text-xs font-bold hover:bg-[#15803d] transition-colors whitespace-nowrap"
-                    >
-                      스크리너 <ChevronRight size={10} />
-                    </Link>
-                  </div>
-                )}
-              </>
-            )}
-          </div>
-        </div>
-      </section>
-
-      {/* ── STRATEGIES ───────────────────────────────────────────── */}
-      <section className="py-10 px-5 md:py-14 border-t border-neutral-100 dark:border-[#3a3834]">
-        <div className="max-w-3xl mx-auto">
-          <div className="mb-6">
-            <div className="flex items-center gap-1.5 mb-2">
-              <Layers size={13} className="text-[#16a34a]" strokeWidth={2.5} />
-              <span className="text-[11px] font-extrabold uppercase tracking-wider text-[#16a34a]">Strategies</span>
-            </div>
-            <h2 className="text-lg sm:text-xl font-black tracking-tight text-neutral-900 dark:text-neutral-50">9가지 퀀트 전략</h2>
-            <p className="text-xs text-neutral-400 mt-1 break-keep">검증된 가치투자 원칙을 클릭 한 번으로 적용</p>
-          </div>
-
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-            {STRATEGY_PRESETS_CLIENT.map(s => (
+              <h2 className="text-xl sm:text-2xl font-black tracking-tight text-neutral-900 dark:text-neutral-50 mb-2.5">
+                {s.title}
+              </h2>
+              <p className="text-sm text-neutral-500 dark:text-neutral-400 leading-relaxed break-keep mb-5 max-w-sm">
+                {s.desc}
+              </p>
               <Link
-                key={s.id}
-                href={`/screener?strategies=${s.id}&mincap=500`}
-                className="group p-4 rounded-2xl border border-neutral-200 dark:border-[#35332e] bg-white dark:bg-[#242320] hover:border-[#16a34a]/50 dark:hover:border-[#16a34a]/40 hover:shadow-md hover:-translate-y-0.5 transition-all"
+                href={s.href}
+                className="group inline-flex items-center gap-1.5 px-5 py-2.5 rounded-xl bg-white dark:bg-[#242320] border border-neutral-200 dark:border-[#35332e] text-neutral-800 dark:text-neutral-100 font-bold text-sm shadow-sm hover:border-[#16a34a]/50 hover:-translate-y-0.5 transition-all"
               >
-                <div className="flex items-center justify-between mb-2">
-                  <span className={cn(
-                    "text-[11px] font-extrabold px-2 py-0.5 rounded",
-                    STRATEGY_BADGE[s.id] ?? "bg-neutral-100 text-neutral-500"
-                  )}>
-                    {s.label}
-                  </span>
-                  <ChevronRight size={13} className="text-neutral-300 dark:text-neutral-600 group-hover:text-[#16a34a] group-hover:translate-x-0.5 transition-all" />
-                </div>
-                <p className="text-xs text-neutral-700 dark:text-neutral-200 font-medium leading-relaxed break-keep">
-                  {s.plain}
-                </p>
+                {s.cta}
+                <ArrowRight size={14} className="text-[#16a34a] group-hover:translate-x-0.5 transition-transform" />
               </Link>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* ── HOW IT WORKS ─────────────────────────────────────────── */}
-      <section className="py-10 px-5 md:py-14 border-t border-neutral-100 dark:border-[#3a3834] bg-[#faf9f7] dark:bg-[#1a1917]">
-        <div className="max-w-3xl mx-auto">
-          <div className="mb-7">
-            <div className="flex items-center gap-1.5 mb-2">
-              <Zap size={13} className="text-[#16a34a]" strokeWidth={2.5} />
-              <span className="text-[11px] font-extrabold uppercase tracking-wider text-[#16a34a]">How it works</span>
             </div>
-            <h2 className="text-lg sm:text-xl font-black tracking-tight text-neutral-900 dark:text-neutral-50">이렇게 배웁니다</h2>
-            <p className="text-xs text-neutral-400 mt-1 break-keep">게임으로 감각을 잡고, 실제 데이터로 검증하는 3단계</p>
           </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            {HOW_IT_WORKS.map((step, i) => {
-              const Art = STEP_ARTS[i];
-              return (
-                <div key={i} className="group relative overflow-hidden p-5 rounded-2xl bg-white dark:bg-[#242320] border border-neutral-200 dark:border-[#35332e] hover:border-[#16a34a]/40 hover:shadow-md hover:-translate-y-0.5 transition-all">
-                  <span className="absolute -top-1 right-3 text-4xl font-black tabular-nums text-neutral-100 dark:text-[#2c2b27] group-hover:text-[#16a34a]/15 transition-colors select-none">{step.step}</span>
-                  <div className="relative mb-3"><Art /></div>
-                  <p className="relative text-sm font-black text-neutral-900 dark:text-neutral-50">{step.title}</p>
-                </div>
-              );
-            })}
-          </div>
-        </div>
-      </section>
-
-      {/* ── FEATURES ─────────────────────────────────────────────── */}
-      <section className="py-10 px-5 md:py-14 border-t border-neutral-100 dark:border-[#3a3834]">
-        <div className="max-w-3xl mx-auto">
-          <div className="mb-6">
-            <div className="flex items-center gap-1.5 mb-2">
-              <Layers size={13} className="text-[#16a34a]" strokeWidth={2.5} />
-              <span className="text-[11px] font-extrabold uppercase tracking-wider text-[#16a34a]">Features</span>
-            </div>
-            <h2 className="text-lg sm:text-xl font-black tracking-tight text-neutral-900 dark:text-neutral-50">주요 기능</h2>
-          </div>
-
-          <div className="grid grid-cols-2 gap-3 sm:gap-4">
-            {FEATURES.map((f, i) => {
-              const Icon = f.icon;
-              return (
-                <Link
-                  key={i}
-                  href={f.link}
-                  className="group bg-white dark:bg-[#242320] rounded-2xl border border-neutral-200 dark:border-[#35332e] p-5 flex flex-col gap-3.5 hover:border-[#16a34a]/40 hover:shadow-md hover:-translate-y-0.5 transition-all"
-                >
-                  <div className={cn("w-11 h-11 rounded-2xl flex items-center justify-center", f.bgCls)}>
-                    <Icon size={20} className={f.iconCls} strokeWidth={2.2} />
-                  </div>
-                  <div className="flex-1">
-                    <p className="text-sm font-black text-neutral-900 dark:text-neutral-50">{f.title}</p>
-                    <p className="text-[11px] text-neutral-400 mt-1 leading-relaxed break-keep">{f.desc}</p>
-                  </div>
-                  <span className="inline-flex items-center gap-1 text-xs font-bold text-[#16a34a] dark:text-[#16a34a]">
-                    {f.linkLabel} <ChevronRight size={11} className="group-hover:translate-x-0.5 transition-transform" />
-                  </span>
-                </Link>
-              );
-            })}
-          </div>
-        </div>
-      </section>
+        </section>
+      ))}
 
       {/* ── CONVERSION CTA (비로그인) ─────────────────────────────── */}
       {!isLoggedIn && !sessionLoading && (
-        <section className="py-16 px-5 border-t border-neutral-100 dark:border-[#3a3834] bg-gradient-to-b from-[#faf9f7] to-white dark:from-[#1a1917] dark:to-[#1f1e1b] relative overflow-hidden">
+        <section className="py-16 px-5 border-b border-neutral-100 dark:border-[#3a3834] bg-gradient-to-b from-white to-[#f4faf6] dark:from-[#1a1915] dark:to-[#12241c] relative overflow-hidden">
           <div className="absolute inset-0 pointer-events-none">
-            <div className="absolute top-0 left-1/2 -translate-x-1/2 w-96 h-40 rounded-full bg-[#16a34a]/5 dark:bg-[#16a34a]/4 blur-3xl" />
+            <div className="absolute top-0 left-1/2 -translate-x-1/2 w-96 h-40 rounded-full bg-[#16a34a]/5 dark:bg-[#16a34a]/5 blur-3xl" />
           </div>
-          <div className="max-w-3xl mx-auto text-center relative">
-            <div className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-[#f0fdf4] dark:bg-[#052e16]/40 border border-[#dcfce7] dark:border-[#14532d]/60 mb-4 text-[11px] font-semibold text-[#15803d] dark:text-[#16a34a]">
-              <span className="relative flex h-1.5 w-1.5 shrink-0">
-                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#16a34a] opacity-60" />
-                <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-[#16a34a]" />
-              </span>
-              무료로 시작하세요
-            </div>
-            <h2 className="text-2xl font-black text-neutral-900 dark:text-neutral-50 mb-6 tracking-tight leading-tight">
-              지금 바로 게임으로<br />주식·경제를 배워보세요
+          <div className="max-w-md mx-auto text-center relative">
+            <h2 className="text-2xl font-black text-neutral-900 dark:text-neutral-50 mb-3 tracking-tight leading-tight">
+              발굴한 카드를 모으려면?
             </h2>
+            <p className="text-sm text-neutral-500 dark:text-neutral-400 mb-6 break-keep">
+              카카오로 3초면 시작. 게임에서 얻은 종목 카드가 내 덱에 쌓입니다.
+            </p>
             <Link href="/login"
               className="group inline-flex items-center gap-2 px-7 py-3.5 rounded-xl bg-[#16a34a] hover:bg-[#15803d] active:bg-[#166534] text-white font-bold text-sm shadow-md shadow-[#16a34a]/20 transition-all hover:-translate-y-0.5"
             >
               카카오로 무료 시작
               <ArrowRight size={15} className="group-hover:translate-x-0.5 transition-transform" />
             </Link>
-
-            <div className="mt-5 flex flex-wrap items-center justify-center gap-2 text-[11px] font-bold text-neutral-400 dark:text-neutral-500">
-              {["카카오 3초 가입", "완전 무료", "신용카드 불필요"].map(t => (
-                <span key={t} className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-white dark:bg-[#242320] border border-neutral-200 dark:border-[#35332e]">
-                  <span className="w-1 h-1 rounded-full bg-[#16a34a]" />{t}
-                </span>
-              ))}
-            </div>
           </div>
         </section>
       )}
 
       {/* ── FOOTER ───────────────────────────────────────────────── */}
-      <footer className="border-t border-neutral-100 dark:border-[#3a3834] bg-white dark:bg-[#1f1e1b]">
-        <div className="max-w-3xl mx-auto px-5 py-6 flex items-center justify-between gap-4">
+      <footer className="bg-white dark:bg-[#1f1e1b]">
+        <div className="max-w-4xl mx-auto px-5 py-6 flex items-center justify-between gap-4">
           <div className="flex items-center gap-2">
             <TrendingUp size={14} className="text-[#16a34a] shrink-0" strokeWidth={2.5} />
             <span className="text-xs font-black tracking-tight text-neutral-700 dark:text-neutral-200">
@@ -1013,10 +637,10 @@ export default function HomePage() {
           </div>
           <div className="flex items-center gap-4">
             {[
+              { label: "🃏 게임", href: "/game" },
               { label: "발굴", href: "/screener" },
               { label: "분석", href: "/analyze" },
               { label: "계산기", href: "/calculator" },
-              { label: "🃏 게임", href: "/game" },
             ].map(l => (
               <Link key={l.label} href={l.href}
                 className="text-xs text-neutral-400 hover:text-neutral-700 dark:hover:text-neutral-200 transition-colors font-medium"
