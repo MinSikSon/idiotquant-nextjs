@@ -180,8 +180,8 @@ function HoloCard({ tone, radius = "rounded-2xl", idleDelay = 0, thickness = 0, 
   const onLeave = useCallback(() => setP(s => ({ ...s, active: false })), []);
 
   const tilt = p.active && !reduce;
-  const rx = ((50 - p.y) / 50) * 9;
-  const ry = ((p.x - 50) / 50) * 9;
+  const rx = ((50 - p.y) / 50) * 14;
+  const ry = ((p.x - 50) / 50) * 14;
   const holo = TIER_HOLO[tone];
 
   return (
@@ -191,13 +191,14 @@ function HoloCard({ tone, radius = "rounded-2xl", idleDelay = 0, thickness = 0, 
         transformStyle: "preserve-3d",
         animationDelay: `${-idleDelay}s`,
         // 포인터 조작 중에는 아이들 애니메이션을 끄고(그래야 인라인 transform 이 적용됨) 포인터 방향으로 기울인다.
-        ...(tilt ? { transform: `perspective(900px) rotateX(${rx}deg) rotateY(${ry}deg) scale(1.04)`, animation: "none" } : {}),
+        ...(tilt ? { transform: `perspective(820px) rotateX(${rx}deg) rotateY(${ry}deg) scale(1.05)`, animation: "none" } : {}),
       }}>
-      {/* 카드 두께 — 면 뒤로 슬래브를 겹겹이 쌓아 기울일 때 실제 측면(입체 두께)이 보이게 */}
-      {thickness > 0 && Array.from({ length: Math.max(1, Math.round(thickness / 4)) }).map((_, k) => (
+      {/* 카드 두께 — 면 뒤로 슬래브를 촘촘히 쌓아(측면 음영) 기울일 때 실제 입체 두께가 보이게 */}
+      {thickness > 0 && Array.from({ length: Math.round(thickness / 3) }).map((_, k, arr) => (
         <div key={k} aria-hidden
-          className={cn("pointer-events-none absolute inset-0 bg-[#e6e3dc] dark:bg-[#131210]", radius)}
-          style={{ transform: `translateZ(-${(k + 1) * 4}px)` }} />
+          className={cn("pointer-events-none absolute inset-0 bg-[#c9c4b8] dark:bg-[#0c0b08]", radius,
+            k === arr.length - 1 && "shadow-[0_22px_36px_rgba(20,30,20,0.30)]")}
+          style={{ transform: `translateZ(-${(k + 1) * 3}px)` }} />
       ))}
       {children}
       {/* 포인터 추적 하이라이트 */}
@@ -216,7 +217,7 @@ function HoloCard({ tone, radius = "rounded-2xl", idleDelay = 0, thickness = 0, 
 function Card({ item, stat, value, idleDelay = 0 }: { item: any; stat: Stat; value: React.ReactNode; idleDelay?: number }) {
   const tone = computeValueScore(item).tone;
   return (
-    <HoloCard tone={tone} radius="rounded-3xl" idleDelay={idleDelay} thickness={18} className="w-full h-full">
+    <HoloCard tone={tone} radius="rounded-3xl" idleDelay={idleDelay} thickness={27} className="w-full h-full">
       {/* 카드 면 위로 요소들이 떠올라(translateZ) 기울일 때 시차 깊이가 생김 (preserve-3d) */}
       <div className="w-full h-full rounded-3xl border border-neutral-200 dark:border-[#35332e] bg-white dark:bg-[#242320] shadow-sm p-5 sm:p-6 flex flex-col items-center text-center [transform-style:preserve-3d]">
         <div style={{ transform: "translateZ(42px)" }}><StockLogo item={item} size={52} /></div>
@@ -614,12 +615,18 @@ export default function GamePage() {
                     })()}
                     <div className="grid grid-cols-2 gap-3">
                       <button onClick={() => guess("higher")}
-                        className="flex items-center justify-center gap-2 py-4 rounded-2xl bg-[#16a34a] hover:bg-[#15803d] text-white font-black shadow-md active:scale-[0.98] transition-all">
-                        <ArrowUp size={18} /> 높다
+                        className="group flex items-center justify-center gap-2.5 py-4 rounded-2xl bg-gradient-to-b from-[#22c55e] to-[#16a34a] hover:from-[#16a34a] hover:to-[#15803d] text-white shadow-lg shadow-[#16a34a]/30 active:scale-[0.97] transition-all">
+                        <span className="flex items-center justify-center w-8 h-8 rounded-full bg-white/20 group-hover:-translate-y-0.5 transition-transform">
+                          <ArrowUp size={20} strokeWidth={2.8} />
+                        </span>
+                        <span className="text-lg font-black tracking-tight">높다</span>
                       </button>
                       <button onClick={() => guess("lower")}
-                        className="flex items-center justify-center gap-2 py-4 rounded-2xl bg-neutral-800 hover:bg-neutral-900 dark:bg-[#35332e] dark:hover:bg-[#413f39] text-white font-black shadow-md active:scale-[0.98] transition-all">
-                        <ArrowDown size={18} /> 낮다
+                        className="group flex items-center justify-center gap-2.5 py-4 rounded-2xl bg-gradient-to-b from-[#fb7185] to-[#e11d48] hover:from-[#f43f5e] hover:to-[#be123c] text-white shadow-lg shadow-rose-500/30 active:scale-[0.97] transition-all">
+                        <span className="flex items-center justify-center w-8 h-8 rounded-full bg-white/20 group-hover:translate-y-0.5 transition-transform">
+                          <ArrowDown size={20} strokeWidth={2.8} />
+                        </span>
+                        <span className="text-lg font-black tracking-tight">낮다</span>
                       </button>
                     </div>
                   </div>

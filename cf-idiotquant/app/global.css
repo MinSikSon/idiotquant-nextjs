@@ -29,8 +29,8 @@
 
 /* ── Game card 3D idle (HoloCard) — 정지·모바일에서도 3D가 드러나도록 은은히 부유/회전 ── */
 @keyframes holo-idle {
-  0%, 100% { transform: perspective(900px) rotateX(3deg) rotateY(-7deg) translateY(0); }
-  50%      { transform: perspective(900px) rotateX(-2.5deg) rotateY(7deg) translateY(-5px); }
+  0%, 100% { transform: perspective(820px) rotateX(5deg) rotateY(-14deg) translateY(0); }
+  50%      { transform: perspective(820px) rotateX(-3.5deg) rotateY(14deg) translateY(-7px); }
 }
-.holo-idle { animation: holo-idle 6s ease-in-out infinite; }
+.holo-idle { animation: holo-idle 6.5s ease-in-out infinite; }
 @media (prefers-reduced-motion: reduce) { .holo-idle { animation: none; } }
