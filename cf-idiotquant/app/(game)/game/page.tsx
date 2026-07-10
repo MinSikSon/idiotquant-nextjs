@@ -154,6 +154,34 @@ const TIER_HOLO: Record<string, string> = {
   gold: "linear-gradient(115deg, transparent 25%, rgba(250,204,21,.45), rgba(253,224,71,.4), transparent 78%)",
 };
 
+// 3D 글로시 플라스틱 카드 표면 (첨부 이미지 질감 참고) — 등급별 톤 · 라이트/다크
+const TIER_PLASTIC: Record<string, string> = {
+  legend:   "bg-[linear-gradient(157deg,#f7f3ff,#ece4ff_46%,#dccffb)] dark:bg-[linear-gradient(157deg,#2b2352,#211b41_46%,#17122f)] border-violet-200/70 dark:border-violet-800/40",
+  treasure: "bg-[linear-gradient(157deg,#fff8ea,#ffeccb_46%,#ffdfa8)] dark:bg-[linear-gradient(157deg,#3b2f12,#2c220b_46%,#1e1707)] border-amber-200/70 dark:border-amber-800/40",
+  diamond:  "bg-[linear-gradient(157deg,#eff9ff,#daf0fe_46%,#bfe4fd)] dark:bg-[linear-gradient(157deg,#123249,#0e2537_46%,#091926)] border-sky-200/70 dark:border-sky-800/40",
+  gold:     "bg-[linear-gradient(157deg,#fffceb,#fff2c6_46%,#ffe79e)] dark:bg-[linear-gradient(157deg,#3b3410,#2c2709_46%,#1e1a05)] border-yellow-200/70 dark:border-yellow-800/40",
+  silver:   "bg-[linear-gradient(157deg,#fcfcfe,#eef1f5_46%,#dee2e9)] dark:bg-[linear-gradient(157deg,#343330,#2a2926_46%,#1f1e1b)] border-neutral-200 dark:border-[#4a4641]",
+  bronze:   "bg-[linear-gradient(157deg,#fff5ee,#ffe7d6_46%,#ffd2b2)] dark:bg-[linear-gradient(157deg,#3b2817,#2c1d0f_46%,#1f1309)] border-orange-200/70 dark:border-orange-800/40",
+  raw:      "bg-[linear-gradient(157deg,#faf9f7,#efece6_46%,#e2dcd1)] dark:bg-[linear-gradient(157deg,#2b2926,#232120_46%,#1a1917)] border-stone-200 dark:border-stone-800/50",
+  explore:  "bg-[linear-gradient(157deg,#f0fefb,#d9f7ef_46%,#bff0e3)] dark:bg-[linear-gradient(157deg,#123b34,#0e2c27_46%,#0a201d)] border-teal-200/70 dark:border-teal-800/40",
+};
+
+// 부드러운 플라스틱 입체감: 볼록한 상단 엣지(하이라이트) + 하단 음영 + 넓은 앰비언트 그림자
+const PLASTIC_SHADOW =
+  "0 22px 46px -18px rgba(15,40,32,0.5), 0 6px 14px -8px rgba(15,40,32,0.28), inset 0 2px 1px rgba(255,255,255,0.75), inset 0 -16px 26px -16px rgba(0,0,0,0.20)";
+
+// 플라스틱 표면 광택 오버레이 (스페큘러 하이라이트) — 카드 면에 얹어 글로시 질감을 낸다
+function Gloss({ radius }: { radius: string }) {
+  return (
+    <>
+      <div aria-hidden className={cn("pointer-events-none absolute inset-0 z-0", radius)}
+        style={{ background: "radial-gradient(125% 85% at 24% 10%, rgba(255,255,255,0.6), rgba(255,255,255,0) 45%)", mixBlendMode: "soft-light" }} />
+      <div aria-hidden className={cn("pointer-events-none absolute inset-x-0 top-0 h-1/2 z-0", radius)}
+        style={{ background: "linear-gradient(180deg, rgba(255,255,255,0.5), rgba(255,255,255,0) 85%)", mixBlendMode: "soft-light" }} />
+    </>
+  );
+}
+
 function usePrefersReducedMotion() {
   const [reduce, setReduce] = useState(false);
   useEffect(() => {
@@ -221,8 +249,10 @@ function Card({ item, stat, value, idleDelay = 0 }: { item: any; stat: Stat; val
   return (
     <HoloCard tone={tone} radius="rounded-3xl" idleDelay={idleDelay} thickness={27} className="w-full h-full">
       {/* 카드 면 위로 요소들이 떠올라(translateZ) 기울일 때 시차 깊이가 생김 (preserve-3d) */}
-      <div className="w-full h-full rounded-3xl border border-neutral-200 dark:border-[#35332e] bg-white dark:bg-[#242320] shadow-sm p-5 sm:p-6 flex flex-col items-center text-center [transform-style:preserve-3d]">
-        <div style={{ transform: "translateZ(42px)" }}><StockLogo item={item} size={52} /></div>
+      <div className={cn("relative w-full h-full rounded-3xl border p-5 sm:p-6 flex flex-col items-center text-center [transform-style:preserve-3d]", TIER_PLASTIC[tone] ?? TIER_PLASTIC.explore)}
+        style={{ boxShadow: PLASTIC_SHADOW }}>
+        <Gloss radius="rounded-3xl" />
+        <div className="relative z-10" style={{ transform: "translateZ(42px)" }}><StockLogo item={item} size={52} /></div>
         <div className="mt-2" style={{ transform: "translateZ(32px)" }}><Medal item={item} lg /></div>
         <p className="mt-2 font-black text-lg sm:text-xl text-neutral-900 dark:text-white leading-tight break-keep" style={{ transform: "translateZ(26px)" }}>{item.name}</p>
         <p className="text-[11px] text-neutral-400 font-mono tracking-wider" style={{ transform: "translateZ(18px)" }}>{item.ticker}</p>
@@ -673,16 +703,6 @@ export default function GamePage() {
 }
 
 // 등급 카드 배경 틴트 (섹션·카드 모두에서 등급을 한눈에 구분)
-const TIER_CARD_BG: Record<string, string> = {
-  legend: "bg-violet-50/70 dark:bg-violet-950/20 border-violet-200 dark:border-violet-900/50",
-  treasure: "bg-amber-50/70 dark:bg-amber-950/20 border-amber-200 dark:border-amber-900/50",
-  diamond: "bg-sky-50/60 dark:bg-sky-950/10 border-sky-200 dark:border-sky-900/40",
-  gold: "bg-yellow-50/60 dark:bg-yellow-950/10 border-yellow-200 dark:border-yellow-900/40",
-  silver: "bg-neutral-100/70 dark:bg-[#2c2b27] border-neutral-200 dark:border-[#4a4641]",
-  bronze: "bg-orange-50/60 dark:bg-orange-950/10 border-orange-200 dark:border-orange-900/40",
-  raw: "bg-stone-50/70 dark:bg-stone-900/20 border-stone-200 dark:border-stone-800/50",
-  explore: "bg-white dark:bg-[#242320] border-neutral-200 dark:border-[#35332e]",
-};
 const TIER_ORDER: Array<ReturnType<typeof computeValueScore>["tone"]> =
   ["legend", "treasure", "diamond", "gold", "silver", "bronze", "raw", "explore"];
 
@@ -733,8 +753,10 @@ function DeckView({ deck, isLoggedIn, onLogin, onClose }: { deck: DeckItem[]; is
               <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
                 {cards.map(({ item: c }, ci) => (
                   <HoloCard key={c.ticker} tone={tone} radius="rounded-2xl" idleDelay={ci * 0.6}>
-                    <div className={cn("relative rounded-2xl border p-4 text-center flex flex-col items-center [transform-style:preserve-3d]", TIER_CARD_BG[tone])}>
-                      <span className={cn("absolute top-1.5 right-1.5 px-1.5 py-0.5 rounded-full text-[10px] font-black tabular-nums leading-none",
+                    <div className={cn("relative rounded-2xl border p-4 text-center flex flex-col items-center [transform-style:preserve-3d]", TIER_PLASTIC[tone] ?? TIER_PLASTIC.explore)}
+                      style={{ boxShadow: PLASTIC_SHADOW }}>
+                      <Gloss radius="rounded-2xl" />
+                      <span className={cn("absolute top-1.5 right-1.5 z-10 px-1.5 py-0.5 rounded-full text-[10px] font-black tabular-nums leading-none",
                         (c.count ?? 1) > 1
                           ? "bg-[#16a34a] text-white"
                           : "bg-neutral-200/70 text-neutral-500 dark:bg-[#35332e] dark:text-neutral-400")}
