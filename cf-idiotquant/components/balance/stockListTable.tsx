@@ -145,7 +145,7 @@ interface Props {
   onCopyLikes?: (tickers: string[], groupId: string | null) => void;
   onDeleteStock?: (ticker: string) => void;
   onBulkRemove?: (tickers: string[]) => void;
-  onSaveGroupSettings?: (groupId: string, settings: { quant_rule: QuantRule | null; budget_krw: number | null; side?: "buy" | "sell" }) => void;
+  onSaveGroupSettings?: (groupId: string, settings: { quant_rule: QuantRule | null; budget_krw: number | null; side?: "buy" | "sell"; dca?: boolean }) => void;
   // 좋아요(찜) 그룹
   likedList?: LikedStockItem[];
   onToggleLikesTrading?: (isActive: boolean) => void;
@@ -657,6 +657,7 @@ function StockListTable({
           groupQuantRule={g.quant_rule}
           groupBudget={g.budget_krw}
           groupSide={g.side}
+          groupDca={g.dca}
           onSaveGroupSettings={isMaster && onSaveGroupSettings ? (settings) => onSaveGroupSettings(g.id, settings) : undefined}
         />
       ))}
@@ -775,7 +776,8 @@ interface GroupSectionProps {
   groupQuantRule?: QuantRule;
   groupBudget?: number;
   groupSide?: "buy" | "sell";
-  onSaveGroupSettings?: (settings: { quant_rule: QuantRule | null; budget_krw: number | null; side?: "buy" | "sell" }) => void;
+  groupDca?: boolean;
+  onSaveGroupSettings?: (settings: { quant_rule: QuantRule | null; budget_krw: number | null; side?: "buy" | "sell"; dca?: boolean }) => void;
 }
 
 function GroupSection({
@@ -783,13 +785,14 @@ function GroupSection({
   conditionChips, editing, editingName, onEditNameChange, onStartRename, onCommitRename, onDelete,
   emptyText, collapsed, onToggleCollapse, picked, onTogglePick, onPickMany,
   doTokenPlusOne, doTokenMinusOne, doTokenResetOne, openDetail, monthlyPerStock = 0, onDeleteStock,
-  groupQuantRule, groupBudget, groupSide, onSaveGroupSettings,
+  groupQuantRule, groupBudget, groupSide, groupDca, onSaveGroupSettings,
 }: GroupSectionProps) {
   const [showRuleEditor, setShowRuleEditor] = useState(false);
   const [draftActiveCount, setDraftActiveCount] = useState<string>("");
   const [draftNcavRatio, setDraftNcavRatio] = useState<string>("");
   const [draftBudget, setDraftBudget] = useState<string>("");
   const [draftSide, setDraftSide] = useState<"buy" | "sell">("buy");
+  const [draftDca, setDraftDca] = useState<boolean>(false);
   const showRefill = isMaster && rows.some(r => r.movable);
   const showCheck = isMaster && rows.length > 0; // 모든 행 선택 가능(좋아요는 복사용)
   const selectableTickers = useMemo(() => rows.map(r => r.symbol), [rows]);
@@ -846,6 +849,11 @@ function GroupSection({
               {groupSide === "sell" ? "매도" : "매수"}
             </span>
           )}
+          {!hideTrading && groupDca && (
+            <span className="shrink-0 rounded-md px-1.5 py-0.5 text-[10px] font-black bg-amber-400/20 text-amber-600 dark:text-amber-400" title="정액매수(DCA): NCAV 조건 무시하고 예산으로 매수">
+              정액
+            </span>
+          )}
           {onStartRename && !editing && (
             <button onClick={onStartRename} className="text-neutral-300 hover:text-neutral-600 dark:hover:text-neutral-200">
               <Pencil className="w-3.5 h-3.5" />
@@ -894,6 +902,7 @@ function GroupSection({
                 setDraftNcavRatio(String(groupQuantRule?.ncav_ratio ?? ""));
                 setDraftBudget(groupBudget != null ? String(groupBudget) : "");
                 setDraftSide(groupSide === "sell" ? "sell" : "buy");
+                setDraftDca(!!groupDca);
                 setShowRuleEditor(v => !v);
               }}
               title="이 그룹의 트레이딩 조건 설정"
@@ -964,6 +973,14 @@ function GroupSection({
               </div>
             </div>
             <div className="flex items-center gap-1.5">
+              <label className="text-[11px] text-neutral-500 shrink-0" title="켜면 NCAV 조건을 무시하고 예산으로 정액 매수 (ETF 등)">정액매수(DCA)</label>
+              <button type="button" onClick={() => setDraftDca(v => !v)}
+                className={cn("px-2.5 py-1 text-xs font-bold rounded-lg border transition-colors",
+                  draftDca ? "bg-[#16a34a] text-white border-[#16a34a]" : "bg-white dark:bg-[#1a1915] text-neutral-500 border-neutral-300 dark:border-[#4a4641]")}>
+                {draftDca ? "ON" : "OFF"}
+              </button>
+            </div>
+            <div className="flex items-center gap-1.5">
               <label className="text-[11px] text-neutral-500 shrink-0">활성 종목 수</label>
               <input
                 type="number"
@@ -1027,6 +1044,7 @@ function GroupSection({
                     quant_rule: Object.keys(rule).length > 0 ? rule : null,
                     budget_krw: !isNaN(b) && b > 0 ? b : null,
                     side: draftSide,
+                    dca: draftDca,
                   });
                   setShowRuleEditor(false);
                 }}
