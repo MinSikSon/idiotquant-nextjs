@@ -4,7 +4,7 @@ import { useSession, signOut } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { LogOut, Eye, DollarSign, ChevronRight, ShieldCheck, Heart, Trash2 } from "lucide-react";
+import { LogOut, Eye, DollarSign, ChevronRight, ShieldCheck, Heart, Trash2, Blocks } from "lucide-react";
 import { useAppDispatch, useAppSelector } from "@/lib/hooks";
 import {
     selectLikedList, selectLikesState,
@@ -12,6 +12,8 @@ import {
 } from "@/lib/features/stockLikes/stockLikesSlice";
 import { cn } from "@/lib/utils";
 import { CopyStockButtons, type CopyStock } from "@/components/copyStockButtons";
+import { computeValueScore, type ValueTone } from "@/lib/utils/valueScore";
+import PortfolioLegoTower from "@/components/profile/portfolioLegoTower";
 
 const STRATEGY_BADGE: Record<string, string> = {
     ncav:           "bg-emerald-100 text-emerald-700 dark:bg-emerald-950/50 dark:text-emerald-400",
@@ -30,6 +32,25 @@ const STRATEGY_LABEL: Record<string, string> = {
     near_ncav: "NCAV근접", balanced_value: "균형가치",
 };
 
+// 등급(tone) 표시 — 게임/valueScore 와 통일 (강한 순서)
+const TONE_ORDER: ValueTone[] = ["legend", "treasure", "diamond", "gold", "silver", "bronze", "raw", "explore"];
+const TONE_LABEL: Record<ValueTone, string> = {
+    legend: "전설", treasure: "보물", diamond: "다이아", gold: "금", silver: "은", bronze: "동", raw: "원석", explore: "탐색",
+};
+const TONE_MEDAL: Record<ValueTone, string> = {
+    legend: "👑", treasure: "🏆", diamond: "💎", gold: "🥇", silver: "🥈", bronze: "🥉", raw: "🪨", explore: "🧭",
+};
+const TONE_CSS: Record<ValueTone, string> = {
+    legend: "bg-violet-100 text-violet-700 dark:bg-violet-950/40 dark:text-violet-300",
+    treasure: "bg-amber-100 text-amber-700 dark:bg-amber-950/40 dark:text-amber-300",
+    diamond: "bg-sky-100 text-sky-700 dark:bg-sky-950/40 dark:text-sky-300",
+    gold: "bg-yellow-100 text-yellow-700 dark:bg-yellow-950/40 dark:text-yellow-300",
+    silver: "bg-neutral-100 text-neutral-600 dark:bg-[#35332e] dark:text-neutral-300",
+    bronze: "bg-orange-100 text-orange-700 dark:bg-orange-950/40 dark:text-orange-300",
+    raw: "bg-stone-100 text-stone-600 dark:bg-stone-900/40 dark:text-stone-400",
+    explore: "bg-neutral-100 text-neutral-500 dark:bg-[#2c2b27] dark:text-neutral-500",
+};
+
 export default function ProfilePage() {
     const { data: session, status } = useSession();
     const router = useRouter();
@@ -46,6 +67,12 @@ export default function ProfilePage() {
         per: item.per,
         roe: Number(item.bps) > 0 ? (Number(item.eps) / Number(item.bps)) * 100 : null,
     }));
+
+    // 포트폴리오 탄탄함 — 관심 종목의 저평가 점수 평균 + 등급 분포
+    const scored = likedList.map(item => computeValueScore(item));
+    const solidity = scored.length ? Math.round(scored.reduce((a, v) => a + v.score, 0) / scored.length) : 0;
+    const solidityLabel = solidity >= 70 ? "매우 탄탄" : solidity >= 50 ? "탄탄" : solidity >= 35 ? "보통" : "보강 필요";
+    const toneCounts = scored.reduce((acc, v) => { acc[v.tone] = (acc[v.tone] ?? 0) + 1; return acc; }, {} as Record<string, number>);
 
     const isMasterUser = session?.user?.name === process.env.NEXT_PUBLIC_MASTER;
     const isAdmin = (session?.user as any)?.role === "admin";
@@ -193,6 +220,56 @@ export default function ProfilePage() {
                                 </span>
                                 <ChevronRight size={14} className="text-neutral-300 dark:text-neutral-600 group-hover:text-neutral-500 dark:group-hover:text-neutral-400 transition-colors" />
                             </Link>
+                        </div>
+                    </div>
+                )}
+
+                {/* 포트폴리오 탄탄함 (관심 종목 기반 3D 레고 타워) */}
+                {likedList.length > 0 && (
+                    <div className="bg-white dark:bg-[#242320] rounded-2xl border border-neutral-200/70 dark:border-[#35332e] shadow-sm overflow-hidden">
+                        <div className="px-5 pt-4 pb-2 flex items-center justify-between">
+                            <div className="flex items-center gap-1.5">
+                                <Blocks size={12} className="text-[#16a34a]" />
+                                <span className="text-[10px] font-bold text-neutral-400 dark:text-neutral-500 uppercase tracking-widest">
+                                    포트폴리오 탄탄함
+                                </span>
+                            </div>
+                            <span className="text-[10px] text-neutral-400">관심 {likedList.length}종목 기반</span>
+                        </div>
+
+                        {/* 3D 레고 타워 */}
+                        <div className="h-60 sm:h-72 bg-gradient-to-b from-[#f4faf6] to-white dark:from-[#12241c] dark:to-[#242320]">
+                            <PortfolioLegoTower items={likedList} />
+                        </div>
+
+                        {/* 탄탄함 지수 */}
+                        <div className="px-5 py-4 flex items-end gap-4 border-t border-neutral-100 dark:border-[#35332e]">
+                            <div className="shrink-0">
+                                <p className="text-[10px] font-bold text-neutral-400 uppercase tracking-wider">탄탄함 지수</p>
+                                <p className="text-3xl font-black text-[#16a34a] tabular-nums leading-none mt-1">
+                                    {solidity}<span className="text-base text-neutral-400 font-bold">/100</span>
+                                </p>
+                            </div>
+                            <div className="flex-1 min-w-0 pb-0.5">
+                                <div className="flex items-center justify-between mb-1.5">
+                                    <span className="text-xs font-black text-neutral-700 dark:text-neutral-200">{solidityLabel}</span>
+                                    <span className="text-[10px] text-neutral-400">
+                                        블록 {Math.min(likedList.length, 18)}{likedList.length > 18 ? ` / ${likedList.length}` : ""}
+                                    </span>
+                                </div>
+                                <div className="h-2 rounded-full bg-neutral-100 dark:bg-[#35332e] overflow-hidden">
+                                    <div className="h-full rounded-full bg-gradient-to-r from-[#16a34a] to-emerald-400 transition-all" style={{ width: `${solidity}%` }} />
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* 등급 분포 */}
+                        <div className="px-5 pb-4 flex flex-wrap gap-1.5">
+                            {TONE_ORDER.filter(t => toneCounts[t]).map(t => (
+                                <span key={t} className={cn("inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-full", TONE_CSS[t])}>
+                                    <span aria-hidden>{TONE_MEDAL[t]}</span>{TONE_LABEL[t]} {toneCounts[t]}
+                                </span>
+                            ))}
                         </div>
                     </div>
                 )}
