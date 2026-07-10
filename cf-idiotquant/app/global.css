@@ -26,3 +26,11 @@
 /* ── No scrollbar utility ── */
 .no-scrollbar { scrollbar-width: none; -ms-overflow-style: none; }
 .no-scrollbar::-webkit-scrollbar { display: none; }
+
+/* ── Game card 3D idle (HoloCard) — 정지·모바일에서도 3D가 드러나도록 은은히 부유/회전 ── */
+@keyframes holo-idle {
+  0%, 100% { transform: perspective(900px) rotateX(3deg) rotateY(-7deg) translateY(0); }
+  50%      { transform: perspective(900px) rotateX(-2.5deg) rotateY(7deg) translateY(-5px); }
+}
+.holo-idle { animation: holo-idle 6s ease-in-out infinite; }
+@media (prefers-reduced-motion: reduce) { .holo-idle { animation: none; } }

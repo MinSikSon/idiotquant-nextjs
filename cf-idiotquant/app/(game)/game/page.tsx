@@ -161,9 +161,10 @@ function usePrefersReducedMotion() {
   return reduce;
 }
 
-// 3D 틸트 + 등급 홀로그램 포일 — 카드에 수집욕구를 주는 인터랙티브 3D 래퍼
-function HoloCard({ tone, radius = "rounded-2xl", className, children }:
-  { tone: string; radius?: string; className?: string; children: React.ReactNode }) {
+// 3D 틸트 + 등급 홀로그램 포일 — 카드에 수집욕구를 주는 인터랙티브 3D 래퍼.
+// 평소엔 은은한 아이들 애니메이션(holo-idle)으로 3D가 드러나고, 포인터가 올라오면 그 방향으로 기울어진다.
+function HoloCard({ tone, radius = "rounded-2xl", idleDelay = 0, className, children }:
+  { tone: string; radius?: string; idleDelay?: number; className?: string; children: React.ReactNode }) {
   const ref = useRef<HTMLDivElement>(null);
   const reduce = usePrefersReducedMotion();
   const [p, setP] = useState({ x: 50, y: 50, active: false });
@@ -182,15 +183,20 @@ function HoloCard({ tone, radius = "rounded-2xl", className, children }:
 
   return (
     <div ref={ref} onPointerMove={onMove} onPointerLeave={onLeave}
-      className={cn("relative transition-transform duration-200 ease-out will-change-transform", className)}
-      style={{ transformStyle: "preserve-3d", transform: tilt ? `perspective(800px) rotateX(${rx}deg) rotateY(${ry}deg) scale(1.03)` : undefined }}>
+      className={cn("relative transition-transform duration-200 ease-out will-change-transform", !reduce && "holo-idle", className)}
+      style={{
+        transformStyle: "preserve-3d",
+        animationDelay: `${-idleDelay}s`,
+        // 포인터 조작 중에는 아이들 애니메이션을 끄고(그래야 인라인 transform 이 적용됨) 포인터 방향으로 기울인다.
+        ...(tilt ? { transform: `perspective(900px) rotateX(${rx}deg) rotateY(${ry}deg) scale(1.04)`, animation: "none" } : {}),
+      }}>
       {children}
       {/* 포인터 추적 하이라이트 */}
       <div aria-hidden style={{ opacity: tilt ? 1 : 0, background: `radial-gradient(circle at ${p.x}% ${p.y}%, rgba(255,255,255,.7), transparent 45%)` }}
         className={cn("pointer-events-none absolute inset-0 transition-opacity duration-200 mix-blend-soft-light", radius)} />
-      {/* 프리미엄 등급 홀로그램 포일 */}
+      {/* 프리미엄 등급 홀로그램 포일 (평소에도 은은히 보이도록 rest opacity 상향) */}
       {holo && (
-        <div aria-hidden style={{ opacity: tilt ? 0.9 : 0.3, backgroundImage: holo, backgroundSize: "220% 220%", backgroundPosition: `${p.x}% ${p.y}%` }}
+        <div aria-hidden style={{ opacity: tilt ? 0.95 : 0.45, backgroundImage: holo, backgroundSize: "220% 220%", backgroundPosition: `${p.x}% ${p.y}%` }}
           className={cn("pointer-events-none absolute inset-0 transition-opacity duration-300 mix-blend-overlay", radius)} />
       )}
     </div>
@@ -198,10 +204,10 @@ function HoloCard({ tone, radius = "rounded-2xl", className, children }:
 }
 
 // 종목 카드
-function Card({ item, stat, value }: { item: any; stat: Stat; value: React.ReactNode }) {
+function Card({ item, stat, value, idleDelay = 0 }: { item: any; stat: Stat; value: React.ReactNode; idleDelay?: number }) {
   const tone = computeValueScore(item).tone;
   return (
-    <HoloCard tone={tone} radius="rounded-3xl" className="w-full h-full">
+    <HoloCard tone={tone} radius="rounded-3xl" idleDelay={idleDelay} className="w-full h-full">
       <div className="w-full h-full rounded-3xl border border-neutral-200 dark:border-[#35332e] bg-white dark:bg-[#242320] shadow-sm p-5 sm:p-6 flex flex-col items-center text-center">
         <StockLogo item={item} size={52} />
         <div className="mt-2"><Medal item={item} lg /></div>
@@ -537,8 +543,8 @@ export default function GamePage() {
             ) : anchor && challenger ? (
               <>
                 <div className="grid grid-cols-2 gap-3 sm:gap-4 items-stretch">
-                  <Card item={anchor} stat={STAT} value={STAT.fmt(STAT.get(anchor))} />
-                  <Card item={challenger} stat={STAT}
+                  <Card item={anchor} stat={STAT} value={STAT.fmt(STAT.get(anchor))} idleDelay={0} />
+                  <Card item={challenger} stat={STAT} idleDelay={3}
                     value={phase === "revealed"
                       ? <span className="animate-in zoom-in-75 duration-300">{STAT.fmt(STAT.get(challenger))}</span>
                       : <span className="text-neutral-300 dark:text-neutral-600">?</span>} />
@@ -675,8 +681,8 @@ function DeckView({ deck, isLoggedIn, onLogin, onClose }: { deck: DeckItem[]; is
                 <span className="text-[11px] font-bold text-neutral-400">{cards.reduce((a, x) => a + (x.item.count ?? 1), 0)}장</span>
               </div>
               <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-                {cards.map(({ item: c }) => (
-                  <HoloCard key={c.ticker} tone={tone} radius="rounded-2xl">
+                {cards.map(({ item: c }, ci) => (
+                  <HoloCard key={c.ticker} tone={tone} radius="rounded-2xl" idleDelay={ci * 0.6}>
                     <div className={cn("relative rounded-2xl border p-4 text-center flex flex-col items-center", TIER_CARD_BG[tone])}>
                       <span className={cn("absolute top-1.5 right-1.5 px-1.5 py-0.5 rounded-full text-[10px] font-black tabular-nums leading-none",
                         (c.count ?? 1) > 1
