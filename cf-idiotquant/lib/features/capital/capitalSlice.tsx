@@ -113,6 +113,7 @@ export interface KrUsCapitalType {
     token_info: { token_per_stock: number; refill_stock_index: number };
     charge_info: { capital_charge_per_year: string; capital_charge_per_month: number; capital_charge_rate: number };
     stock_list: UsCapitalStockItem[];
+    candidate_pool?: UsCapitalStockItem[];  // 미지정 NCAV 후보 (매매 제외) — 워커가 stock_list 와 분리 보관
     groups?: StockGroup[];
     corp_scan_index: number;
     action: string;

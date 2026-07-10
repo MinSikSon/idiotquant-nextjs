@@ -233,6 +233,7 @@ function StockListTable({
   monthlyPerStock = 0,
 }: Props) {
   const stockList = data?.stock_list ?? [];
+  const candidatePool = data?.candidate_pool ?? [];  // 미지정 NCAV 후보 (워커가 stock_list 와 분리)
   const groups: StockGroup[] = data?.groups ?? [];
 
   const [selectedDetail, setSelectedDetail] = useState<any | null>(null);
@@ -264,9 +265,9 @@ function StockListTable({
     realGroups.forEach(g => byGroup.set(g.id, []));
     const unassigned: DisplayRow[] = [];
     const likesPoolRows: DisplayRow[] = [];
+    // stock_list = 그룹 소속(매매 대상). 그룹별 버킷 + 레거시 좋아요 분리.
     for (const s of stockList) {
       if (s.group_id === LIKES_GROUP_ID) {
-        // 레거시 좋아요(__likes__) 운용 종목 → 좋아요 섹션에서 관리(관심)
         likesPoolRows.push(normalizeCapital(s, WATCH_STATUS));
         continue;
       }
@@ -275,10 +276,15 @@ function StockListTable({
       const status = capitalStatus(s.action, groupActive, countryTradingActive);
       const row = normalizeCapital(s, status);
       if (s.group_id && gmap.has(s.group_id)) byGroup.get(s.group_id)!.push(row);
-      else unassigned.push(row);
+      else unassigned.push(row); // 안전망: 혹시 stock_list 에 미지정이 남아 있으면 미지정으로
+    }
+    // 미지정 후보 = candidate_pool (워커가 매매용 stock_list 와 분리 보관)
+    for (const s of candidatePool) {
+      if (s.group_id === LIKES_GROUP_ID) { likesPoolRows.push(normalizeCapital(s, WATCH_STATUS)); continue; }
+      unassigned.push(normalizeCapital(s, capitalStatus(s.action, false, countryTradingActive)));
     }
     return { byGroup, unassigned, likesPoolRows };
-  }, [stockList, realGroups, countryTradingActive, likesActive]);
+  }, [stockList, candidatePool, realGroups, countryTradingActive, likesActive]);
 
   // 좋아요 섹션 = 운용 중인 좋아요 종목(토큰/상태) + 아직 운용 풀에 없는 찜(읽기 전용 워치리스트)
   // metricsOverride 로 비어있는 지표(US 등)를 보강한다.
