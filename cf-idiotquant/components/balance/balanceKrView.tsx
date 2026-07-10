@@ -209,6 +209,7 @@ export function BalanceKrView({ countryToggle }: { countryToggle?: React.ReactNo
   const [mobileTab, setMobileTab] = useState("section-kpi");
   const [autoRefresh, setAutoRefresh] = useState(false);
   const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
+  const fetchedKeyRef = useRef<string | null>(null); // 같은 계좌 키로 이미 로드했는지 — 초기 진입 시 중복 refresh 방지
   const { toasts, addToast, removeToast } = useToast();
 
   // 좋아요 종목 중 stock_data_daily JOIN 이 비어(per/pbr 등 없음) 오는 경우
@@ -293,9 +294,14 @@ export function BalanceKrView({ countryToggle }: { countryToggle?: React.ReactNo
 
   useEffect(() => {
     if (!balanceKey || balanceKey === "undefined") return;
-    const params = new URLSearchParams(searchParams.toString());
-    params.set("key", balanceKey);
-    router.replace(`${pathname}?${params.toString()}`);
+    if (searchParams.get("key") !== balanceKey) {
+      const params = new URLSearchParams(searchParams.toString());
+      params.set("key", balanceKey);
+      router.replace(`${pathname}?${params.toString()}`);
+    }
+    // 같은 키로 이미 조회했으면 재조회하지 않음 (URL 동기화/재렌더로 인한 불필요한 반복 refresh 방지)
+    if (fetchedKeyRef.current === balanceKey) return;
+    fetchedKeyRef.current = balanceKey;
     dispatch(reqGetInquireBalance(balanceKey));
     fetchOrderHistory(balanceKey);
     dispatch(reqGetKrCapital(balanceKey));
@@ -310,7 +316,7 @@ export function BalanceKrView({ countryToggle }: { countryToggle?: React.ReactNo
       return;
     }
     if (session.user?.id && !searchParams.get("key")) {
-      dispatch(reqGetInquireBalance(String(session.user.id)));
+      // 잔고 조회는 balanceKey 확정 후 아래 effect 에서 1회 수행 (여기서 중복 조회하지 않음)
       setBalanceKey(String(session.user.id));
     }
     dispatch(reqGetCapitalToken());
