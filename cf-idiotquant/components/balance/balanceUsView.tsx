@@ -225,6 +225,7 @@ export function BalanceUsView({ countryToggle }: { countryToggle?: React.ReactNo
   const [mobileTab, setMobileTab] = useState("section-kpi");
   const [autoRefresh, setAutoRefresh] = useState(false);
   const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
+  const fetchedKeyRef = useRef<string | null>(null); // 같은 계좌 키로 이미 로드했는지 — 초기 진입 시 중복 refresh 방지
   const { toasts, addToast, removeToast } = useToast();
 
   const fetchAll = useCallback((key: string) => {
@@ -302,6 +303,9 @@ export function BalanceUsView({ countryToggle }: { countryToggle?: React.ReactNo
       params.set("key", balanceKey);
       router.replace(`${pathname}?${params.toString()}`);
     }
+    // 같은 키로 이미 조회했으면 재조회하지 않음 (URL 동기화/재렌더로 인한 불필요한 반복 refresh 방지)
+    if (fetchedKeyRef.current === balanceKey) return;
+    fetchedKeyRef.current = balanceKey;
     fetchAll(balanceKey);
   }, [balanceKey]);
 
