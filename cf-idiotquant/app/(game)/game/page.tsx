@@ -19,6 +19,8 @@ import { reqGetNcavDailyList, selectNcavDailyList } from "@/lib/features/algorit
 import { computeValueScore } from "@/lib/utils/valueScore";
 import { getDeck, addDeckCard, type DeckCardSnapshot } from "@/lib/features/deck/deckAPI";
 import { cn } from "@/lib/utils";
+import VoyageArt from "@/components/game/voyageArt";
+import GameSeaArt from "@/components/game/gameSeaArt";
 
 const safeNum = (v: any): number => { const n = Number(v); return Number.isFinite(n) ? n : 0; };
 
@@ -495,8 +497,11 @@ export default function GamePage() {
   const bodyScroll = showDeck || phase === "over";
 
   return (
-    <div className="h-[100dvh] flex flex-col bg-[#faf9f7] dark:bg-[#1a1915] transition-colors">
-      <div className="w-full max-w-2xl mx-auto px-4 pt-4 pb-3 flex-1 min-h-0 flex flex-col">
+    <div className="relative h-[100dvh] flex flex-col overflow-hidden bg-gradient-to-b from-[#fdf4e3] via-[#eaf6ef] to-[#dff0e6] dark:from-[#0a1a1f] dark:via-[#0c1f1a] dark:to-[#0a1512] transition-colors">
+      {/* 대항해시대 바다 3D 배경 (three.js) */}
+      <div className="absolute inset-0 z-0"><GameSeaArt /></div>
+      <div className="absolute inset-0 z-0 pointer-events-none bg-gradient-to-b from-[#fdf4e3]/70 via-transparent to-[#dff0e6]/85 dark:from-[#0a1a1f]/75 dark:via-transparent dark:to-[#0a1512]/90" />
+      <div className="relative z-10 w-full max-w-2xl mx-auto px-4 pt-4 pb-3 flex-1 min-h-0 flex flex-col">
 
         {/* 헤더 */}
         <div className="flex items-center justify-between mb-3 shrink-0">
@@ -537,25 +542,47 @@ export default function GamePage() {
             )}
 
             {phase === "over" ? (
-              <div className="rounded-3xl border border-neutral-200 dark:border-[#35332e] bg-white dark:bg-[#242320] p-8 text-center animate-in fade-in zoom-in-95 duration-300">
-                <p className="text-4xl mb-1">{rankOf(streak).emoji}</p>
-                <p className="font-black text-lg text-neutral-900 dark:text-white">항해 종료!</p>
-                <div className="mt-1.5 inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-[#f0fdf4] dark:bg-[#052e16]/40 border border-[#86efac]/60 dark:border-[#166534]/60 text-[#15803d] dark:text-[#16a34a] text-sm font-black">
-                  {rankOf(streak).title} 등급
+              <div className="rounded-3xl border border-neutral-200 dark:border-[#35332e] bg-white dark:bg-[#242320] overflow-hidden shadow-sm animate-in fade-in zoom-in-95 duration-300">
+                {/* 3D 보물상자 헤더 (three.js) — 발굴한 보물(수집 카드) */}
+                <div className="relative h-44 bg-gradient-to-b from-[#fff7e6] to-white dark:from-[#241d0e] dark:to-[#242320]">
+                  <VoyageArt />
+                  {newBest && streak > 0 && (
+                    <span className="absolute top-3 right-3 inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-amber-400 text-white text-[11px] font-black shadow-md animate-in fade-in zoom-in-95">
+                      🎉 신기록
+                    </span>
+                  )}
                 </div>
-                {newBest && streak > 0 && (
-                  <p className="text-xs font-black text-amber-500 dark:text-amber-400 mt-2 animate-in fade-in zoom-in-95">🎉 신기록 달성!</p>
-                )}
-                <p className="text-sm text-neutral-500 dark:text-neutral-400 mt-2">이번 연승 <b className="text-[#16a34a]">{streak}</b> · 최고 {best}</p>
-                <p className="text-xs text-neutral-400 mt-2">
-                  {isLoggedIn ? <>발굴한 카드는 <b>내 덱({deckTotal(deck)})</b>에 쌓였습니다.</> : "로그인하면 발굴한 카드를 덱에 모을 수 있어요."}
-                </p>
-                {acquired.length > 0 && <AcquiredThisGame cards={acquired} />}
-                {missed && <MissedInfo missed={missed} />}
-                <button onClick={start}
-                  className="mt-5 inline-flex items-center gap-2 px-6 py-3 rounded-xl bg-[#16a34a] hover:bg-[#15803d] text-white font-bold text-sm shadow-md">
-                  <RotateCcw size={15} /> 다시 시작
-                </button>
+
+                <div className="px-6 pb-6 -mt-3 text-center relative">
+                  <p className="text-xl font-black text-neutral-900 dark:text-white">항해 종료!</p>
+                  <div className="mt-2 inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full bg-[#f0fdf4] dark:bg-[#052e16]/40 border border-[#86efac]/60 dark:border-[#166534]/60 text-[#15803d] dark:text-[#16a34a] text-sm font-black">
+                    <span aria-hidden className="text-base leading-none">{rankOf(streak).emoji}</span> {rankOf(streak).title}
+                  </div>
+
+                  {/* 스탯 타일 (가독성) */}
+                  <div className="grid grid-cols-2 gap-2.5 mt-5">
+                    <div className="rounded-2xl border border-neutral-100 dark:border-[#35332e] bg-[#faf9f7] dark:bg-[#1f1e1b] py-3">
+                      <p className="text-2xl font-black tabular-nums text-[#16a34a] leading-none">{streak}</p>
+                      <p className="text-[10px] font-bold text-neutral-400 uppercase tracking-wider mt-1.5">이번 연승</p>
+                    </div>
+                    <div className="rounded-2xl border border-neutral-100 dark:border-[#35332e] bg-[#faf9f7] dark:bg-[#1f1e1b] py-3">
+                      <p className="text-2xl font-black tabular-nums text-neutral-700 dark:text-neutral-200 leading-none">{best}</p>
+                      <p className="text-[10px] font-bold text-neutral-400 uppercase tracking-wider mt-1.5">최고 기록</p>
+                    </div>
+                  </div>
+
+                  <p className="text-xs text-neutral-400 mt-4 break-keep">
+                    {isLoggedIn ? <>발굴한 카드는 <b className="text-neutral-600 dark:text-neutral-300">내 덱({deckTotal(deck)})</b>에 쌓였습니다.</> : "로그인하면 발굴한 카드를 덱에 모을 수 있어요."}
+                  </p>
+
+                  {acquired.length > 0 && <AcquiredThisGame cards={acquired} />}
+                  {missed && <MissedInfo missed={missed} />}
+
+                  <button onClick={start}
+                    className="mt-6 w-full inline-flex items-center justify-center gap-2 px-6 py-3.5 rounded-2xl bg-[#16a34a] hover:bg-[#15803d] text-white font-black text-sm shadow-md shadow-[#16a34a]/25 active:scale-[0.98] transition-all">
+                    <RotateCcw size={16} /> 다시 시작
+                  </button>
+                </div>
               </div>
             ) : anchor && challenger ? (
               <>
