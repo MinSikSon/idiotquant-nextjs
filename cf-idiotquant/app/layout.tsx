@@ -1,5 +1,6 @@
 import "@/app/global.css";
 import type { Metadata, Viewport } from "next";
+import Script from "next/script";
 import { Lora, Noto_Serif_KR, JetBrains_Mono } from "next/font/google";
 
 const lora = Lora({
@@ -158,23 +159,6 @@ export default function RootLayout({
         <link rel="preconnect" href="https://pagead2.googlesyndication.com" />
         <link rel="dns-prefetch" href="//pagead2.googlesyndication.com" />
         <link rel="dns-prefetch" href="//www.googletagservices.com" />
-        <script
-          type="application/ld+json"
-          dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLdWebSite) }}
-        />
-        <script
-          type="application/ld+json"
-          dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLdOrg) }}
-        />
-        <script
-          type="application/ld+json"
-          dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLdApp) }}
-        />
-        <script
-          async
-          src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-6995198721227228"
-          crossOrigin="anonymous"
-        />
         <meta name="google-adsense-account" content="ca-pub-6995198721227228" />
       </head>
       <body className={cn(
@@ -184,6 +168,15 @@ export default function RootLayout({
         "min-h-screen font-serif antialiased",
         "bg-[#faf9f7] dark:bg-[#1a1915] text-neutral-900 dark:text-neutral-50"
       )}>
+        <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLdWebSite) }} />
+        <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLdOrg) }} />
+        <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLdApp) }} />
+        <Script
+          async
+          src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-6995198721227228"
+          crossOrigin="anonymous"
+          strategy="afterInteractive"
+        />
         <StoreProvider>
           <ThemeProviderClient>
             <AuthProvider>

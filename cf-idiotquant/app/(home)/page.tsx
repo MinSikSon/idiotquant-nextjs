@@ -479,6 +479,33 @@ function SpinArt({ kind }: { kind: "coin" | "gem" }) {
   return <div ref={mountRef} className="w-full h-full" aria-hidden="true" />;
 }
 
+// ── 서비스 규모 통계 밴드 ─────────────────────────────────────────
+const STATS = [
+  { value: "2,400+", label: "종목 스캔" },
+  { value: "4가지",  label: "퀀트 전략" },
+  { value: "매일",   label: "자동 업데이트" },
+  { value: "무료",   label: "로 시작 가능" },
+];
+
+function StatsBand() {
+  return (
+    <div className="border-b border-neutral-100 dark:border-[#2c2b27] bg-white dark:bg-[#1f1e1b]">
+      <div className="max-w-4xl mx-auto px-5 grid grid-cols-2 sm:grid-cols-4 divide-x divide-neutral-100 dark:divide-[#2c2b27]">
+        {STATS.map(s => (
+          <div key={s.label} className="py-5 text-center">
+            <div className="text-2xl font-black font-[family-name:var(--font-mono)] text-neutral-900 dark:text-neutral-50 tabular-nums leading-none">
+              {s.value}
+            </div>
+            <div className="text-[10px] font-semibold text-neutral-400 dark:text-neutral-500 uppercase tracking-widest mt-1.5">
+              {s.label}
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 // 순차 온보딩 3단계 — 각 단계는 3D 이미지 + 한 줄 설명 + 단일 CTA
 const STEPS: {
   n: string; tag: string; title: string; desc: string; cta: string; href: string;
@@ -552,13 +579,10 @@ export default function HomePage() {
           </div>
         </div>
 
-        {/* 스크롤 유도 (숫자 대신 온보딩 안내) */}
-        <div className="relative z-10 mt-auto pb-8 text-center">
-          <p className="text-[11px] font-bold text-neutral-400 dark:text-neutral-500 tracking-wide">
-            아래로 스크롤 · 3단계로 시작하세요 ↓
-          </p>
-        </div>
       </section>
+
+      {/* ── 서비스 규모 통계 ─────────────────────────────────────── */}
+      <StatsBand />
 
       {/* ── 온보딩 3단계 ─────────────────────────────────────────── */}
       {STEPS.map((s, i) => (
@@ -579,11 +603,14 @@ export default function HomePage() {
 
             {/* 텍스트 + 단일 CTA */}
             <div className={cn("order-2", i % 2 === 1 ? "md:order-1" : "md:order-2")}>
-              <div className="flex items-center gap-2 mb-3">
-                <span className="inline-flex items-center justify-center w-7 h-7 rounded-full bg-[#16a34a] text-white text-xs font-black tabular-nums">
+              <div className="flex items-center gap-3 mb-4">
+                <span className="text-[11px] font-bold tabular-nums font-[family-name:var(--font-mono)] text-neutral-300 dark:text-neutral-700 shrink-0">
                   {s.n}
                 </span>
-                <span className="text-[11px] font-extrabold uppercase tracking-widest text-[#16a34a]">{s.tag}</span>
+                <div className="h-px flex-1 bg-neutral-200 dark:bg-[#2c2b27]" />
+                <span className="text-[10px] font-black uppercase tracking-[0.15em] text-[#16a34a] shrink-0">
+                  {s.tag}
+                </span>
               </div>
               <h2 className="text-xl sm:text-2xl font-black tracking-tight text-neutral-900 dark:text-neutral-50 mb-2.5">
                 {s.title}
@@ -613,15 +640,26 @@ export default function HomePage() {
             <h2 className="text-2xl font-black text-neutral-900 dark:text-neutral-50 mb-3 tracking-tight leading-tight">
               발굴한 카드를 모으려면?
             </h2>
-            <p className="text-sm text-neutral-500 dark:text-neutral-400 mb-6 break-keep">
-              카카오로 3초면 시작. 게임에서 얻은 종목 카드가 내 덱에 쌓입니다.
-            </p>
-            <Link href="/login"
-              className="group inline-flex items-center gap-2 px-7 py-3.5 rounded-xl bg-[#16a34a] hover:bg-[#15803d] active:bg-[#166534] text-white font-bold text-sm shadow-md shadow-[#16a34a]/20 transition-all hover:-translate-y-0.5"
-            >
-              카카오로 무료 시작
-              <ArrowRight size={15} className="group-hover:translate-x-0.5 transition-transform" />
-            </Link>
+            <ul className="space-y-2.5 mb-6 text-left inline-block">
+              {[
+                "게임에서 발굴한 종목 카드 영구 보관",
+                "스크리너 즐겨찾기 및 포트폴리오 저장",
+                "신규 저평가 종목 알림 수신",
+              ].map(item => (
+                <li key={item} className="flex items-center gap-2.5 text-sm text-neutral-600 dark:text-neutral-400">
+                  <span className="w-1.5 h-1.5 rounded-full bg-[#16a34a] shrink-0" />
+                  {item}
+                </li>
+              ))}
+            </ul>
+            <div>
+              <Link href="/login"
+                className="group inline-flex items-center gap-2 px-7 py-3.5 rounded-xl bg-[#16a34a] hover:bg-[#15803d] active:bg-[#166534] text-white font-bold text-sm shadow-md shadow-[#16a34a]/20 transition-all hover:-translate-y-0.5"
+              >
+                카카오로 무료 시작
+                <ArrowRight size={15} className="group-hover:translate-x-0.5 transition-transform" />
+              </Link>
+            </div>
           </div>
         </section>
       )}
@@ -637,7 +675,7 @@ export default function HomePage() {
           </div>
           <div className="flex items-center gap-4">
             {[
-              { label: "🃏 게임", href: "/game" },
+              { label: "게임", href: "/game" },
               { label: "발굴", href: "/screener" },
               { label: "분석", href: "/analyze" },
               { label: "계산기", href: "/calculator" },
