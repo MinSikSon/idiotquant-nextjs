@@ -337,21 +337,21 @@ function Card({ item, stat, value, idleDelay = 0 }: { item: any; stat: Stat; val
           style={{ boxShadow: PLASTIC_SHADOW }}>
           <Gloss radius="rounded-[22px]" />
           <CornerRivets />
-          {/* 등급 젬 (좌상단) */}
-          <div className="absolute top-2.5 left-2.5 z-20" style={{ transform: "translateZ(46px)" }}><Medal item={item} lg /></div>
 
-          {/* 아트 윈도우 — 햇살 방사(sunburst) + 로고(장면) */}
+          {/* 아트 윈도우 — 햇살 방사(sunburst) 배경. 로고 메달리온이 이 창에서 프레임 밖으로 솟는다 */}
           <div className="relative z-10 mt-9 w-[86%] aspect-[6/5] rounded-lg overflow-hidden border-2 border-white/55 dark:border-white/10 shadow-[inset_0_2px_10px_rgba(0,0,0,0.2)]"
             style={{ transform: "translateZ(12px)" }}>
             <div aria-hidden className="absolute inset-0"
-              style={{ background: `radial-gradient(circle at 50% 60%, rgba(255,255,255,0.9), rgba(255,255,255,0) 66%), repeating-conic-gradient(from 0deg at 50% 58%, rgba(${f.glow},0.24) 0deg 7deg, rgba(${f.glow},0) 7deg 14deg)` }} />
-            <div className="absolute inset-x-0 bottom-1.5 flex justify-center">
-              <StockLogo item={item} size={42} />
-            </div>
+              style={{ background: `radial-gradient(circle at 50% 55%, rgba(255,255,255,0.92), rgba(255,255,255,0) 66%), repeating-conic-gradient(from 0deg at 50% 52%, rgba(${f.glow},0.24) 0deg 7deg, rgba(${f.glow},0) 7deg 14deg)` }} />
           </div>
 
           <p className="relative z-10 mt-2.5 font-black text-base sm:text-lg text-neutral-900 dark:text-white leading-tight break-keep" style={{ transform: "translateZ(28px)" }}>{item.name}</p>
           <p className="relative z-10 text-[10px] text-neutral-500 dark:text-neutral-400 font-mono tracking-widest" style={{ transform: "translateZ(20px)" }}>{item.ticker}</p>
+          {/* 등급 젬 + 업종 라벨 (윈도우 아래로 내려 상단 팝업과 겹치지 않게) */}
+          <div className="relative z-10 mt-1.5 flex items-center justify-center gap-1.5" style={{ transform: "translateZ(18px)" }}>
+            <Medal item={item} />
+            <span className="inline-flex items-center rounded-full bg-black/5 dark:bg-white/10 px-2 py-0.5 text-[9px] font-bold tracking-wide text-neutral-500 dark:text-neutral-400">{sec.label}</span>
+          </div>
 
           {/* 하단 값 플라크(놋쇠 명판 느낌) */}
           <div className="relative z-10 mt-auto w-full pt-2.5" style={{ transform: "translateZ(26px)" }}>
@@ -365,10 +365,10 @@ function Card({ item, stat, value, idleDelay = 0 }: { item: any; stat: Stat; val
         </div>
       </div>
 
-      {/* 업종 이미지 — 아트 윈도우에서 프레임을 뚫고 솟는 3D 팝업 (body overflow 밖 · 높은 translateZ 로 강한 시차 깊이) */}
-      <span aria-hidden className="pointer-events-none absolute left-1/2 top-[30%] z-30 leading-none select-none"
-        style={{ transform: "translate(-50%,-62%) translateZ(90px)", fontSize: "clamp(48px,13vw,72px)", filter: `drop-shadow(0 16px 11px rgba(0,0,0,0.38)) drop-shadow(0 3px 5px rgba(${f.glow},0.55))` }}>
-        {sec.emoji}
+      {/* 실제 로고 메달리온 — 아트 윈도우에서 프레임을 뚫고 솟는 3D 팝업 (body overflow 밖 · 높은 translateZ 로 강한 시차 깊이) */}
+      <span aria-hidden className="pointer-events-none absolute left-1/2 top-[28%] z-30"
+        style={{ transform: "translate(-50%,-58%) translateZ(92px)", filter: "drop-shadow(0 18px 13px rgba(0,0,0,0.42))" }}>
+        <StockLogoHero item={item} size={92} glow={f.glow} />
       </span>
     </HoloCard>
   );
@@ -865,7 +865,6 @@ function DeckView({ deck, isLoggedIn, onLogin, onClose }: { deck: DeckItem[]; is
               <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
                 {cards.map(({ item: c }, ci) => {
                   const cf = TIER_FRAME[tone] ?? TIER_FRAME.explore;
-                  const sc = sectorArt(c);
                   return (
                   <HoloCard key={c.ticker} tone={tone} radius="rounded-[20px]" idleDelay={ci * 0.6} thickness={22}>
                     <div className="relative w-full h-full rounded-[20px] [transform-style:preserve-3d]"
@@ -887,11 +886,6 @@ function DeckView({ deck, isLoggedIn, onLogin, onClose }: { deck: DeckItem[]; is
                         <p className="relative z-10 text-[10px] text-neutral-500 dark:text-neutral-400 font-mono tracking-wider" style={{ transform: "translateZ(10px)" }}>{c.ticker}</p>
                       </div>
                     </div>
-                    {/* 업종 이미지 — 카드 위로 튀어나오는 팝업 */}
-                    <span aria-hidden className="pointer-events-none absolute left-1/2 top-[6%] z-30 leading-none select-none"
-                      style={{ transform: "translate(-50%,-55%) translateZ(64px)", fontSize: "34px", filter: `drop-shadow(0 8px 7px rgba(0,0,0,0.35)) drop-shadow(0 2px 3px rgba(${cf.glow},0.5))` }}>
-                      {sc.emoji}
-                    </span>
                   </HoloCard>
                   );
                 })}
