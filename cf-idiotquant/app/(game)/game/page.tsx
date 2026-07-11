@@ -162,6 +162,36 @@ function CornerRivets() {
   );
 }
 
+// 업종 추론 — 종목명/티커 키워드로 대표 이모지(업종 이미지) 매핑. 데이터에 sector 필드가 없어 이름 기반.
+const SECTORS: { re: RegExp; emoji: string; label: string }[] = [
+  { re: /반도체|전자|디스플레이|칩|하이닉스|테크|semi|chip|micron|nvidia|amd|intel|apple|tech/i, emoji: "🔌", label: "전자·반도체" },
+  { re: /바이오|제약|헬스|메디|파마|셀|진단|bio|pharma|health|medi|gene/i, emoji: "🧬", label: "바이오·제약" },
+  { re: /은행|금융|증권|캐피탈|카드|보험|지주|홀딩스|bank|financ|capital|insur|jpmorgan|goldman/i, emoji: "🏦", label: "금융" },
+  { re: /자동차|모비스|타이어|모터|현대차|기아|auto|motor|\bcar\b|tesla|ford|toyota/i, emoji: "🚗", label: "자동차" },
+  { re: /조선|해운|중공업|marine|ship|해양/i, emoji: "🚢", label: "조선·해운" },
+  { re: /건설|엔지니어|건축|시멘트|construc|engineer|cement/i, emoji: "🏗️", label: "건설" },
+  { re: /에너지|전력|가스|정유|석유|원전|태양|배터리|energy|oil|power|solar|batter|exxon|chevron/i, emoji: "⚡", label: "에너지" },
+  { re: /화학|케미|소재|섬유|폴리|chem|material/i, emoji: "⚗️", label: "화학·소재" },
+  { re: /철강|금속|포스코|steel|metal|alum/i, emoji: "🏭", label: "철강·금속" },
+  { re: /통신|텔레콤|kt|skt|telecom|networ|verizon|comcast/i, emoji: "📡", label: "통신" },
+  { re: /게임|엔터|미디어|콘텐츠|넷마블|엔씨|크래프톤|game|media|netflix|disney|entertain/i, emoji: "🎮", label: "게임·엔터" },
+  { re: /식품|푸드|제과|음료|주류|라면|food|bever|coca|pepsi|nestle/i, emoji: "🍱", label: "식품" },
+  { re: /유통|마트|리테일|백화|커머스|이마트|쿠팡|retail|amazon|walmart|shop/i, emoji: "🛒", label: "유통" },
+  { re: /항공|우주|방산|aero|defense|boeing|lockheed/i, emoji: "✈️", label: "항공·방산" },
+  { re: /패션|의류|화장품|뷰티|아모레|fashion|cosmet|nike|beauty/i, emoji: "👗", label: "패션·뷰티" },
+  { re: /소프트|플랫폼|클라우드|인터넷|카카오|네이버|soft|cloud|internet|google|meta|microsoft/i, emoji: "💻", label: "소프트웨어" },
+];
+const SECTOR_FALLBACK: { emoji: string; label: string }[] = [
+  { emoji: "💎", label: "가치주" }, { emoji: "📈", label: "성장주" }, { emoji: "🧭", label: "탐험" },
+  { emoji: "⚓", label: "블루칩" }, { emoji: "🗺️", label: "신대륙" }, { emoji: "🪙", label: "우량주" },
+];
+function sectorArt(item: any): { emoji: string; label: string } {
+  const hay = `${item?.name ?? ""} ${item?.ticker ?? ""}`;
+  for (const s of SECTORS) if (s.re.test(hay)) return { emoji: s.emoji, label: s.label };
+  const h = [...String(item?.ticker ?? item?.name ?? "")].reduce((a, c) => a + c.charCodeAt(0), 0);
+  return SECTOR_FALLBACK[h % SECTOR_FALLBACK.length];
+}
+
 // 저평가 점수 설명 툴팁 (마우스 오버 + 클릭, 모바일 대응)
 function ScoreInfo() {
   const [open, setOpen] = useState(false);
@@ -292,44 +322,54 @@ function HoloCard({ tone, radius = "rounded-2xl", idleDelay = 0, thickness = 0, 
   );
 }
 
-// 종목 카드 — 대담한 3D 미니어처 수집형: 등급 프레임 + 대형 로고 포트홀 + 대항해 장식
+// 종목 카드 — 팝업(카드 밖으로 튀어나오는) 3D: 아트 윈도우(햇살 방사)에서 업종 이미지가 프레임을 뚫고 솟는다.
 function Card({ item, stat, value, idleDelay = 0 }: { item: any; stat: Stat; value: React.ReactNode; idleDelay?: number }) {
   const tone = computeValueScore(item).tone;
   const f = TIER_FRAME[tone] ?? TIER_FRAME.explore;
+  const sec = sectorArt(item);
   return (
     <HoloCard tone={tone} radius="rounded-[26px]" idleDelay={idleDelay} thickness={36} className="w-full h-full">
       {/* 등급 프레임(금속 테두리 링) + 등급 글로우 */}
       <div className="relative w-full h-full rounded-[26px] [transform-style:preserve-3d]"
         style={{ background: f.ring, padding: "3px", boxShadow: `0 22px 48px -16px rgba(${f.glow},0.55)` }}>
         {/* 플라스틱 본체 (요소들은 translateZ 로 떠올라 기울일 때 시차 깊이 · preserve-3d) */}
-        <div className={cn("relative w-full h-full rounded-[22px] px-4 pt-5 pb-4 flex flex-col items-center text-center overflow-hidden [transform-style:preserve-3d]", TIER_PLASTIC[tone] ?? TIER_PLASTIC.explore)}
+        <div className={cn("relative w-full h-full rounded-[22px] px-3.5 pt-4 pb-3.5 flex flex-col items-center text-center overflow-hidden [transform-style:preserve-3d]", TIER_PLASTIC[tone] ?? TIER_PLASTIC.explore)}
           style={{ boxShadow: PLASTIC_SHADOW }}>
           <Gloss radius="rounded-[22px]" />
-          {/* 나침반 워터마크 (대항해 분위기) */}
-          <span aria-hidden className="pointer-events-none absolute -bottom-6 -right-4 text-[130px] leading-none opacity-[0.07] select-none">🧭</span>
           <CornerRivets />
           {/* 등급 젬 (좌상단) */}
-          <div className="absolute top-2.5 left-2.5 z-20" style={{ transform: "translateZ(50px)" }}><Medal item={item} lg /></div>
+          <div className="absolute top-2.5 left-2.5 z-20" style={{ transform: "translateZ(46px)" }}><Medal item={item} lg /></div>
 
-          {/* 대형 로고 포트홀 (히어로) */}
-          <div className="relative z-10 mt-3" style={{ transform: "translateZ(56px)" }}>
-            <StockLogoHero item={item} size={96} glow={f.glow} />
+          {/* 아트 윈도우 — 햇살 방사(sunburst) + 로고(장면) */}
+          <div className="relative z-10 mt-9 w-[86%] aspect-[6/5] rounded-lg overflow-hidden border-2 border-white/55 dark:border-white/10 shadow-[inset_0_2px_10px_rgba(0,0,0,0.2)]"
+            style={{ transform: "translateZ(12px)" }}>
+            <div aria-hidden className="absolute inset-0"
+              style={{ background: `radial-gradient(circle at 50% 60%, rgba(255,255,255,0.9), rgba(255,255,255,0) 66%), repeating-conic-gradient(from 0deg at 50% 58%, rgba(${f.glow},0.24) 0deg 7deg, rgba(${f.glow},0) 7deg 14deg)` }} />
+            <div className="absolute inset-x-0 bottom-1.5 flex justify-center">
+              <StockLogo item={item} size={42} />
+            </div>
           </div>
 
-          <p className="relative z-10 mt-3 font-black text-lg sm:text-xl text-neutral-900 dark:text-white leading-tight break-keep" style={{ transform: "translateZ(30px)" }}>{item.name}</p>
-          <p className="relative z-10 text-[11px] text-neutral-500 dark:text-neutral-400 font-mono tracking-widest" style={{ transform: "translateZ(20px)" }}>{item.ticker}</p>
+          <p className="relative z-10 mt-2.5 font-black text-base sm:text-lg text-neutral-900 dark:text-white leading-tight break-keep" style={{ transform: "translateZ(28px)" }}>{item.name}</p>
+          <p className="relative z-10 text-[10px] text-neutral-500 dark:text-neutral-400 font-mono tracking-widest" style={{ transform: "translateZ(20px)" }}>{item.ticker}</p>
 
           {/* 하단 값 플라크(놋쇠 명판 느낌) */}
-          <div className="relative z-10 mt-auto w-full pt-3" style={{ transform: "translateZ(28px)" }}>
-            <div className="mx-auto rounded-xl border border-white/60 dark:border-white/10 bg-white/55 dark:bg-black/25 px-3 py-2 backdrop-blur-sm shadow-sm">
+          <div className="relative z-10 mt-auto w-full pt-2.5" style={{ transform: "translateZ(26px)" }}>
+            <div className="mx-auto rounded-xl border border-white/60 dark:border-white/10 bg-white/55 dark:bg-black/25 px-3 py-1.5 backdrop-blur-sm shadow-sm">
               <p className="text-[9px] font-black text-neutral-500 dark:text-neutral-400 uppercase tracking-[0.2em]">{stat.label}</p>
-              <div className="text-2xl sm:text-3xl font-black tabular-nums text-[#16a34a] dark:text-[#16a34a] min-h-[2.25rem] flex items-center justify-center">
+              <div className="text-xl sm:text-2xl font-black tabular-nums text-[#16a34a] dark:text-[#16a34a] min-h-[2rem] flex items-center justify-center">
                 {value}
               </div>
             </div>
           </div>
         </div>
       </div>
+
+      {/* 업종 이미지 — 아트 윈도우에서 프레임을 뚫고 솟는 3D 팝업 (body overflow 밖 · 높은 translateZ 로 강한 시차 깊이) */}
+      <span aria-hidden className="pointer-events-none absolute left-1/2 top-[30%] z-30 leading-none select-none"
+        style={{ transform: "translate(-50%,-62%) translateZ(90px)", fontSize: "clamp(48px,13vw,72px)", filter: `drop-shadow(0 16px 11px rgba(0,0,0,0.38)) drop-shadow(0 3px 5px rgba(${f.glow},0.55))` }}>
+        {sec.emoji}
+      </span>
     </HoloCard>
   );
 }
@@ -717,8 +757,12 @@ export default function GamePage() {
                 {/* 액션 */}
                 {phase === "guessing" ? (
                   <div className="mt-3">
-                    <p className="text-center text-xs text-neutral-400 mb-1">
-                      오른쪽 <b className="text-neutral-600 dark:text-neutral-300">{challenger.name}</b> 의 {STAT.label}은 왼쪽보다?
+                    {/* 질문 — 이름 기준으로 명확하게 (왼/오 대신). 버튼과 바로 연결 */}
+                    <p className="text-center text-sm sm:text-base font-bold text-neutral-800 dark:text-neutral-100 mb-1 break-keep leading-snug">
+                      <b className="text-[#16a34a]">{challenger.name}</b>
+                      <span className="font-medium text-neutral-500 dark:text-neutral-400">의 {STAT.label}은 </span>
+                      <b className="text-neutral-900 dark:text-white">{anchor.name}</b>
+                      <span className="font-medium text-neutral-500 dark:text-neutral-400">보다?</span>
                     </p>
                     {(() => {
                       // 정답 시(연승+1) 이 카드 획득 확률 — 연승↑·낮은 등급↑, 높은 등급은 더 높은 연승 필요.
@@ -821,6 +865,7 @@ function DeckView({ deck, isLoggedIn, onLogin, onClose }: { deck: DeckItem[]; is
               <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
                 {cards.map(({ item: c }, ci) => {
                   const cf = TIER_FRAME[tone] ?? TIER_FRAME.explore;
+                  const sc = sectorArt(c);
                   return (
                   <HoloCard key={c.ticker} tone={tone} radius="rounded-[20px]" idleDelay={ci * 0.6} thickness={22}>
                     <div className="relative w-full h-full rounded-[20px] [transform-style:preserve-3d]"
@@ -842,6 +887,11 @@ function DeckView({ deck, isLoggedIn, onLogin, onClose }: { deck: DeckItem[]; is
                         <p className="relative z-10 text-[10px] text-neutral-500 dark:text-neutral-400 font-mono tracking-wider" style={{ transform: "translateZ(10px)" }}>{c.ticker}</p>
                       </div>
                     </div>
+                    {/* 업종 이미지 — 카드 위로 튀어나오는 팝업 */}
+                    <span aria-hidden className="pointer-events-none absolute left-1/2 top-[6%] z-30 leading-none select-none"
+                      style={{ transform: "translate(-50%,-55%) translateZ(64px)", fontSize: "34px", filter: `drop-shadow(0 8px 7px rgba(0,0,0,0.35)) drop-shadow(0 2px 3px rgba(${cf.glow},0.5))` }}>
+                      {sc.emoji}
+                    </span>
                   </HoloCard>
                   );
                 })}
