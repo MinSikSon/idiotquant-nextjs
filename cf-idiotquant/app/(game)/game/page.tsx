@@ -113,6 +113,55 @@ function StockLogo({ item, size = 44 }: { item: any; size?: number }) {
   );
 }
 
+// 큰 로고 "포트홀"(대항해 선박 창) — 브라스 링 + 유리 반사. 로고가 있는 종목을 크게 부각.
+function StockLogoHero({ item, size = 96, glow = "45,212,191" }: { item: any; size?: number; glow?: string }) {
+  const [err, setErr] = useState(false);
+  return (
+    <div className="relative rounded-full shrink-0" style={{ width: size, height: size, boxShadow: `0 12px 26px -8px rgba(${glow},0.55)` }}>
+      {/* 브라스 링 */}
+      <div className="absolute inset-0 rounded-full" style={{ background: "conic-gradient(from 140deg,#c8901a,#fde8a6,#a9760f,#fff6d6,#c8901a)" }} />
+      <div className="absolute inset-[3px] rounded-full overflow-hidden flex items-center justify-center bg-gradient-to-b from-white to-neutral-100 shadow-[inset_0_3px_6px_rgba(0,0,0,0.15)]">
+        {!err ? (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img src={logoUrlFor(item)} alt={item?.name ?? "logo"} loading="lazy"
+            className="w-[76%] h-[76%] object-contain" onError={() => setErr(true)} />
+        ) : (
+          <span className="font-black text-neutral-400 leading-none" style={{ fontSize: size * 0.44 }}>
+            {(item?.name ?? item?.ticker ?? "?").charAt(0)}
+          </span>
+        )}
+      </div>
+      {/* 유리 반사광 */}
+      <div aria-hidden className="absolute inset-[3px] rounded-full pointer-events-none"
+        style={{ background: "linear-gradient(150deg,rgba(255,255,255,.72),transparent 46%)" }} />
+    </div>
+  );
+}
+
+// 등급별 프레임(테두리 링) + 강조 글로우 — 수집형 카드의 등급 프레임
+const TIER_FRAME: Record<string, { ring: string; glow: string }> = {
+  legend:   { ring: "conic-gradient(from 210deg,#a78bfa,#f0abfc,#fcd34d,#c4b5fd,#a78bfa)", glow: "167,139,250" },
+  treasure: { ring: "conic-gradient(from 210deg,#f59e0b,#fde68a,#d97706,#fef3c7,#f59e0b)", glow: "251,191,36" },
+  diamond:  { ring: "conic-gradient(from 210deg,#38bdf8,#a5f3fc,#0ea5e9,#e0f2fe,#38bdf8)", glow: "56,189,248" },
+  gold:     { ring: "conic-gradient(from 210deg,#eab308,#fde047,#ca8a04,#fef9c3,#eab308)", glow: "234,179,8" },
+  silver:   { ring: "conic-gradient(from 210deg,#94a3b8,#f1f5f9,#64748b,#e2e8f0,#94a3b8)", glow: "148,163,184" },
+  bronze:   { ring: "conic-gradient(from 210deg,#ea580c,#fed7aa,#c2410c,#ffedd5,#ea580c)", glow: "251,146,60" },
+  raw:      { ring: "conic-gradient(from 210deg,#a8a29e,#e7e5e4,#78716c,#f5f5f4,#a8a29e)", glow: "168,162,150" },
+  explore:  { ring: "conic-gradient(from 210deg,#14b8a6,#99f6e4,#0d9488,#ccfbf1,#14b8a6)", glow: "45,212,191" },
+};
+
+// 카드 네 모서리 브라스 리벳(대항해 장식)
+function CornerRivets() {
+  return (
+    <>
+      {[["top-1.5 left-1.5"], ["top-1.5 right-1.5"], ["bottom-1.5 left-1.5"], ["bottom-1.5 right-1.5"]].map(([pos], i) => (
+        <span key={i} aria-hidden className={cn("pointer-events-none absolute z-10 w-2 h-2 rounded-full", pos)}
+          style={{ background: "radial-gradient(circle at 35% 30%,#fff2c4,#c8901a 60%,#8a6410)", boxShadow: "0 1px 2px rgba(0,0,0,0.3)" }} />
+      ))}
+    </>
+  );
+}
+
 // 저평가 점수 설명 툴팁 (마우스 오버 + 클릭, 모바일 대응)
 function ScoreInfo() {
   const [open, setOpen] = useState(false);
@@ -243,23 +292,42 @@ function HoloCard({ tone, radius = "rounded-2xl", idleDelay = 0, thickness = 0, 
   );
 }
 
-// 종목 카드
+// 종목 카드 — 대담한 3D 미니어처 수집형: 등급 프레임 + 대형 로고 포트홀 + 대항해 장식
 function Card({ item, stat, value, idleDelay = 0 }: { item: any; stat: Stat; value: React.ReactNode; idleDelay?: number }) {
   const tone = computeValueScore(item).tone;
+  const f = TIER_FRAME[tone] ?? TIER_FRAME.explore;
   return (
-    <HoloCard tone={tone} radius="rounded-3xl" idleDelay={idleDelay} thickness={27} className="w-full h-full">
-      {/* 카드 면 위로 요소들이 떠올라(translateZ) 기울일 때 시차 깊이가 생김 (preserve-3d) */}
-      <div className={cn("relative w-full h-full rounded-3xl border p-5 sm:p-6 flex flex-col items-center text-center [transform-style:preserve-3d]", TIER_PLASTIC[tone] ?? TIER_PLASTIC.explore)}
-        style={{ boxShadow: PLASTIC_SHADOW }}>
-        <Gloss radius="rounded-3xl" />
-        <div className="relative z-10" style={{ transform: "translateZ(42px)" }}><StockLogo item={item} size={52} /></div>
-        <div className="mt-2" style={{ transform: "translateZ(32px)" }}><Medal item={item} lg /></div>
-        <p className="mt-2 font-black text-lg sm:text-xl text-neutral-900 dark:text-white leading-tight break-keep" style={{ transform: "translateZ(26px)" }}>{item.name}</p>
-        <p className="text-[11px] text-neutral-400 font-mono tracking-wider" style={{ transform: "translateZ(18px)" }}>{item.ticker}</p>
-        <div className="my-4 h-px w-16 bg-neutral-100 dark:bg-[#35332e]" />
-        <p className="text-[10px] font-bold text-neutral-400 uppercase tracking-widest" style={{ transform: "translateZ(12px)" }}>{stat.label}</p>
-        <div className="mt-1 text-2xl sm:text-3xl font-black tabular-nums text-[#16a34a] dark:text-[#16a34a] min-h-[2.5rem] flex items-center" style={{ transform: "translateZ(24px)" }}>
-          {value}
+    <HoloCard tone={tone} radius="rounded-[26px]" idleDelay={idleDelay} thickness={36} className="w-full h-full">
+      {/* 등급 프레임(금속 테두리 링) + 등급 글로우 */}
+      <div className="relative w-full h-full rounded-[26px] [transform-style:preserve-3d]"
+        style={{ background: f.ring, padding: "3px", boxShadow: `0 22px 48px -16px rgba(${f.glow},0.55)` }}>
+        {/* 플라스틱 본체 (요소들은 translateZ 로 떠올라 기울일 때 시차 깊이 · preserve-3d) */}
+        <div className={cn("relative w-full h-full rounded-[22px] px-4 pt-5 pb-4 flex flex-col items-center text-center overflow-hidden [transform-style:preserve-3d]", TIER_PLASTIC[tone] ?? TIER_PLASTIC.explore)}
+          style={{ boxShadow: PLASTIC_SHADOW }}>
+          <Gloss radius="rounded-[22px]" />
+          {/* 나침반 워터마크 (대항해 분위기) */}
+          <span aria-hidden className="pointer-events-none absolute -bottom-6 -right-4 text-[130px] leading-none opacity-[0.07] select-none">🧭</span>
+          <CornerRivets />
+          {/* 등급 젬 (좌상단) */}
+          <div className="absolute top-2.5 left-2.5 z-20" style={{ transform: "translateZ(50px)" }}><Medal item={item} lg /></div>
+
+          {/* 대형 로고 포트홀 (히어로) */}
+          <div className="relative z-10 mt-3" style={{ transform: "translateZ(56px)" }}>
+            <StockLogoHero item={item} size={96} glow={f.glow} />
+          </div>
+
+          <p className="relative z-10 mt-3 font-black text-lg sm:text-xl text-neutral-900 dark:text-white leading-tight break-keep" style={{ transform: "translateZ(30px)" }}>{item.name}</p>
+          <p className="relative z-10 text-[11px] text-neutral-500 dark:text-neutral-400 font-mono tracking-widest" style={{ transform: "translateZ(20px)" }}>{item.ticker}</p>
+
+          {/* 하단 값 플라크(놋쇠 명판 느낌) */}
+          <div className="relative z-10 mt-auto w-full pt-3" style={{ transform: "translateZ(28px)" }}>
+            <div className="mx-auto rounded-xl border border-white/60 dark:border-white/10 bg-white/55 dark:bg-black/25 px-3 py-2 backdrop-blur-sm shadow-sm">
+              <p className="text-[9px] font-black text-neutral-500 dark:text-neutral-400 uppercase tracking-[0.2em]">{stat.label}</p>
+              <div className="text-2xl sm:text-3xl font-black tabular-nums text-[#16a34a] dark:text-[#16a34a] min-h-[2.25rem] flex items-center justify-center">
+                {value}
+              </div>
+            </div>
+          </div>
         </div>
       </div>
     </HoloCard>
@@ -537,7 +605,7 @@ export default function GamePage() {
           <Link href="/" className="inline-flex items-center gap-1 text-xs font-bold text-neutral-500 dark:text-neutral-400 hover:text-[#16a34a]">
             <ChevronLeft size={14} /> 홈
           </Link>
-          <h1 className="text-sm font-black text-neutral-900 dark:text-white">종목 카드 · 높다/낮다</h1>
+          <h1 className="text-sm font-black text-neutral-900 dark:text-white">⛵ 신대륙 항해 · 종목 발굴</h1>
           <button onClick={() => setShowDeck(v => !v)}
             className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg border border-neutral-200 dark:border-[#35332e] bg-white dark:bg-[#242320] text-xs font-bold text-neutral-600 dark:text-neutral-300">
             <Layers size={13} className="text-[#16a34a]" /> 내 덱 {deckTotal(deck)}
@@ -751,25 +819,32 @@ function DeckView({ deck, isLoggedIn, onLogin, onClose }: { deck: DeckItem[]; is
                 <span className="text-[11px] font-bold text-neutral-400">{cards.reduce((a, x) => a + (x.item.count ?? 1), 0)}장</span>
               </div>
               <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-                {cards.map(({ item: c }, ci) => (
-                  <HoloCard key={c.ticker} tone={tone} radius="rounded-2xl" idleDelay={ci * 0.6}>
-                    <div className={cn("relative rounded-2xl border p-4 text-center flex flex-col items-center [transform-style:preserve-3d]", TIER_PLASTIC[tone] ?? TIER_PLASTIC.explore)}
-                      style={{ boxShadow: PLASTIC_SHADOW }}>
-                      <Gloss radius="rounded-2xl" />
-                      <span className={cn("absolute top-1.5 right-1.5 z-10 px-1.5 py-0.5 rounded-full text-[10px] font-black tabular-nums leading-none",
-                        (c.count ?? 1) > 1
-                          ? "bg-[#16a34a] text-white"
-                          : "bg-neutral-200/70 text-neutral-500 dark:bg-[#35332e] dark:text-neutral-400")}
-                        style={{ transform: "translateZ(30px)" }}>
-                        ×{c.count ?? 1}
-                      </span>
-                      <div style={{ transform: "translateZ(28px)" }}><StockLogo item={c} size={40} /></div>
-                      <div className="mt-1.5" style={{ transform: "translateZ(20px)" }}><Medal item={c} /></div>
-                      <p className="mt-1.5 font-bold text-sm text-neutral-900 dark:text-white truncate max-w-full" style={{ transform: "translateZ(14px)" }}>{c.name}</p>
-                      <p className="text-[10px] text-neutral-400 font-mono" style={{ transform: "translateZ(8px)" }}>{c.ticker}</p>
+                {cards.map(({ item: c }, ci) => {
+                  const cf = TIER_FRAME[tone] ?? TIER_FRAME.explore;
+                  return (
+                  <HoloCard key={c.ticker} tone={tone} radius="rounded-[20px]" idleDelay={ci * 0.6} thickness={22}>
+                    <div className="relative w-full h-full rounded-[20px] [transform-style:preserve-3d]"
+                      style={{ background: cf.ring, padding: "2.5px", boxShadow: `0 16px 32px -14px rgba(${cf.glow},0.5)` }}>
+                      <div className={cn("relative w-full h-full rounded-[17px] px-3 pt-3 pb-3.5 text-center flex flex-col items-center overflow-hidden [transform-style:preserve-3d]", TIER_PLASTIC[tone] ?? TIER_PLASTIC.explore)}
+                        style={{ boxShadow: PLASTIC_SHADOW }}>
+                        <Gloss radius="rounded-[17px]" />
+                        <CornerRivets />
+                        <span className={cn("absolute top-1.5 right-1.5 z-20 px-1.5 py-0.5 rounded-full text-[10px] font-black tabular-nums leading-none",
+                          (c.count ?? 1) > 1
+                            ? "bg-[#16a34a] text-white"
+                            : "bg-neutral-200/70 text-neutral-500 dark:bg-[#35332e] dark:text-neutral-400")}
+                          style={{ transform: "translateZ(34px)" }}>
+                          ×{c.count ?? 1}
+                        </span>
+                        <div className="relative z-10 mt-1" style={{ transform: "translateZ(38px)" }}><StockLogoHero item={c} size={62} glow={cf.glow} /></div>
+                        <div className="relative z-10 mt-2" style={{ transform: "translateZ(22px)" }}><Medal item={c} /></div>
+                        <p className="relative z-10 mt-1.5 font-black text-sm text-neutral-900 dark:text-white truncate max-w-full" style={{ transform: "translateZ(16px)" }}>{c.name}</p>
+                        <p className="relative z-10 text-[10px] text-neutral-500 dark:text-neutral-400 font-mono tracking-wider" style={{ transform: "translateZ(10px)" }}>{c.ticker}</p>
+                      </div>
                     </div>
                   </HoloCard>
-                ))}
+                  );
+                })}
               </div>
             </div>
           ))}
