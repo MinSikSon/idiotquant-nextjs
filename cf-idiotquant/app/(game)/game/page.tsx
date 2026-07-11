@@ -113,27 +113,26 @@ function StockLogo({ item, size = 44 }: { item: any; size?: number }) {
   );
 }
 
-// 큰 로고 "포트홀"(대항해 선박 창) — 브라스 링 + 유리 반사. 로고가 있는 종목을 크게 부각.
+// 로고 메달리온 — 브라스 링 없이 로고를 경계까지 크게. 돔 하이라이트+하단 내부 그림자로 3D 구형.
 function StockLogoHero({ item, size = 96, glow = "45,212,191" }: { item: any; size?: number; glow?: string }) {
   const [err, setErr] = useState(false);
   return (
-    <div className="relative rounded-full shrink-0" style={{ width: size, height: size, boxShadow: `0 12px 26px -8px rgba(${glow},0.55)` }}>
-      {/* 브라스 링 */}
-      <div className="absolute inset-0 rounded-full" style={{ background: "conic-gradient(from 140deg,#c8901a,#fde8a6,#a9760f,#fff6d6,#c8901a)" }} />
-      <div className="absolute inset-[3px] rounded-full overflow-hidden flex items-center justify-center bg-gradient-to-b from-white to-neutral-100 shadow-[inset_0_3px_6px_rgba(0,0,0,0.15)]">
+    <div className="relative rounded-full shrink-0" style={{ width: size, height: size,
+      boxShadow: `0 20px 32px -8px rgba(0,0,0,0.45), 0 9px 18px -6px rgba(${glow},0.5)` }}>
+      <div className="absolute inset-0 rounded-full overflow-hidden flex items-center justify-center bg-gradient-to-b from-white to-neutral-100 ring-1 ring-black/10">
         {!err ? (
           // eslint-disable-next-line @next/next/no-img-element
           <img src={logoUrlFor(item)} alt={item?.name ?? "logo"} loading="lazy"
-            className="w-[76%] h-[76%] object-contain" onError={() => setErr(true)} />
+            className="w-[94%] h-[94%] object-contain" onError={() => setErr(true)} />
         ) : (
-          <span className="font-black text-neutral-400 leading-none" style={{ fontSize: size * 0.44 }}>
+          <span className="font-black text-neutral-400 leading-none" style={{ fontSize: size * 0.52 }}>
             {(item?.name ?? item?.ticker ?? "?").charAt(0)}
           </span>
         )}
       </div>
-      {/* 유리 반사광 */}
-      <div aria-hidden className="absolute inset-[3px] rounded-full pointer-events-none"
-        style={{ background: "linear-gradient(150deg,rgba(255,255,255,.72),transparent 46%)" }} />
+      {/* 돔 하이라이트 + 하단 내부 그림자 → 3D 구형(오브) */}
+      <div aria-hidden className="absolute inset-0 rounded-full pointer-events-none"
+        style={{ background: "radial-gradient(115% 100% at 30% 20%, rgba(255,255,255,0.6), rgba(255,255,255,0) 44%)", boxShadow: "inset 0 -13px 18px -10px rgba(0,0,0,0.3), inset 0 2px 3px rgba(255,255,255,0.6)" }} />
     </div>
   );
 }
@@ -149,18 +148,6 @@ const TIER_FRAME: Record<string, { ring: string; glow: string }> = {
   raw:      { ring: "conic-gradient(from 210deg,#a8a29e,#e7e5e4,#78716c,#f5f5f4,#a8a29e)", glow: "168,162,150" },
   explore:  { ring: "conic-gradient(from 210deg,#14b8a6,#99f6e4,#0d9488,#ccfbf1,#14b8a6)", glow: "45,212,191" },
 };
-
-// 카드 네 모서리 브라스 리벳(대항해 장식)
-function CornerRivets() {
-  return (
-    <>
-      {[["top-1.5 left-1.5"], ["top-1.5 right-1.5"], ["bottom-1.5 left-1.5"], ["bottom-1.5 right-1.5"]].map(([pos], i) => (
-        <span key={i} aria-hidden className={cn("pointer-events-none absolute z-10 w-2 h-2 rounded-full", pos)}
-          style={{ background: "radial-gradient(circle at 35% 30%,#fff2c4,#c8901a 60%,#8a6410)", boxShadow: "0 1px 2px rgba(0,0,0,0.3)" }} />
-      ))}
-    </>
-  );
-}
 
 // 업종 추론 — 종목명/티커 키워드로 대표 이모지(업종 이미지) 매핑. 데이터에 sector 필드가 없어 이름 기반.
 const SECTORS: { re: RegExp; emoji: string; label: string }[] = [
@@ -328,21 +315,19 @@ function Card({ item, stat, value, idleDelay = 0 }: { item: any; stat: Stat; val
   const f = TIER_FRAME[tone] ?? TIER_FRAME.explore;
   const sec = sectorArt(item);
   return (
-    <HoloCard tone={tone} radius="rounded-[26px]" idleDelay={idleDelay} thickness={36} className="w-full h-full">
-      {/* 등급 프레임(금속 테두리 링) + 등급 글로우 */}
+    <HoloCard tone={tone} radius="rounded-[26px]" idleDelay={idleDelay} thickness={46} className="w-full h-full">
+      {/* 등급 프레임(얇은 금속 엣지) + 등급 글로우 — 테두리는 이 하나만 (촌스럽지 않게) */}
       <div className="relative w-full h-full rounded-[26px] [transform-style:preserve-3d]"
-        style={{ background: f.ring, padding: "3px", boxShadow: `0 22px 48px -16px rgba(${f.glow},0.55)` }}>
+        style={{ background: f.ring, padding: "2px", boxShadow: `0 26px 52px -16px rgba(${f.glow},0.5)` }}>
         {/* 플라스틱 본체 (요소들은 translateZ 로 떠올라 기울일 때 시차 깊이 · preserve-3d) */}
-        <div className={cn("relative w-full h-full rounded-[22px] px-3.5 pt-4 pb-3.5 flex flex-col items-center text-center overflow-hidden [transform-style:preserve-3d]", TIER_PLASTIC[tone] ?? TIER_PLASTIC.explore)}
+        <div className={cn("relative w-full h-full rounded-[24px] px-3.5 pt-4 pb-3.5 flex flex-col items-center text-center overflow-hidden [transform-style:preserve-3d]", TIER_PLASTIC[tone] ?? TIER_PLASTIC.explore)}
           style={{ boxShadow: PLASTIC_SHADOW }}>
-          <Gloss radius="rounded-[22px]" />
-          <CornerRivets />
+          <Gloss radius="rounded-[24px]" />
 
-          {/* 아트 윈도우 — 햇살 방사(sunburst) 배경. 로고 메달리온이 이 창에서 프레임 밖으로 솟는다 */}
-          <div className="relative z-10 mt-9 w-[86%] aspect-[6/5] rounded-lg overflow-hidden border-2 border-white/55 dark:border-white/10 shadow-[inset_0_2px_10px_rgba(0,0,0,0.2)]"
-            style={{ transform: "translateZ(12px)" }}>
+          {/* 햇살 방사(sunburst) 스테이지 — 테두리 없는 은은한 후광이 공간을 확보하고, 로고 메달리온이 여기서 솟는다 */}
+          <div className="relative z-10 mt-8 w-[86%] aspect-[6/5] rounded-2xl overflow-hidden" style={{ transform: "translateZ(8px)" }}>
             <div aria-hidden className="absolute inset-0"
-              style={{ background: `radial-gradient(circle at 50% 55%, rgba(255,255,255,0.92), rgba(255,255,255,0) 66%), repeating-conic-gradient(from 0deg at 50% 52%, rgba(${f.glow},0.24) 0deg 7deg, rgba(${f.glow},0) 7deg 14deg)` }} />
+              style={{ background: `radial-gradient(circle at 50% 52%, rgba(255,255,255,0.9), rgba(255,255,255,0) 62%), repeating-conic-gradient(from 0deg at 50% 50%, rgba(${f.glow},0.2) 0deg 7deg, rgba(${f.glow},0) 7deg 14deg)`, maskImage: "linear-gradient(#000,#000)" }} />
           </div>
 
           <p className="relative z-10 mt-2.5 font-black text-base sm:text-lg text-neutral-900 dark:text-white leading-tight break-keep" style={{ transform: "translateZ(28px)" }}>{item.name}</p>
@@ -365,10 +350,10 @@ function Card({ item, stat, value, idleDelay = 0 }: { item: any; stat: Stat; val
         </div>
       </div>
 
-      {/* 실제 로고 메달리온 — 아트 윈도우에서 프레임을 뚫고 솟는 3D 팝업 (body overflow 밖 · 높은 translateZ 로 강한 시차 깊이) */}
-      <span aria-hidden className="pointer-events-none absolute left-1/2 top-[28%] z-30"
-        style={{ transform: "translate(-50%,-58%) translateZ(92px)", filter: "drop-shadow(0 18px 13px rgba(0,0,0,0.42))" }}>
-        <StockLogoHero item={item} size={92} glow={f.glow} />
+      {/* 실제 로고 메달리온 — 스테이지에서 프레임 밖으로 솟는 3D 팝업 (body overflow 밖 · 높은 translateZ 로 강한 시차 깊이) */}
+      <span aria-hidden className="pointer-events-none absolute left-1/2 top-[27%] z-30"
+        style={{ transform: "translate(-50%,-56%) translateZ(112px)", filter: "drop-shadow(0 22px 15px rgba(0,0,0,0.45))" }}>
+        <StockLogoHero item={item} size={98} glow={f.glow} />
       </span>
     </HoloCard>
   );
@@ -872,7 +857,6 @@ function DeckView({ deck, isLoggedIn, onLogin, onClose }: { deck: DeckItem[]; is
                       <div className={cn("relative w-full h-full rounded-[17px] px-3 pt-3 pb-3.5 text-center flex flex-col items-center overflow-hidden [transform-style:preserve-3d]", TIER_PLASTIC[tone] ?? TIER_PLASTIC.explore)}
                         style={{ boxShadow: PLASTIC_SHADOW }}>
                         <Gloss radius="rounded-[17px]" />
-                        <CornerRivets />
                         <span className={cn("absolute top-1.5 right-1.5 z-20 px-1.5 py-0.5 rounded-full text-[10px] font-black tabular-nums leading-none",
                           (c.count ?? 1) > 1
                             ? "bg-[#16a34a] text-white"
