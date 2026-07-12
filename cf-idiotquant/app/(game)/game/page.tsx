@@ -309,6 +309,28 @@ function HoloCard({ tone, radius = "rounded-2xl", idleDelay = 0, thickness = 0, 
   );
 }
 
+// 대항해시대 범선 실루엣 — 카드 아트 창 배경(등급색 틴트). 로고 뒤에 은은히 깔려 항해 컨셉을 준다.
+function ShipMark({ glow, className }: { glow: string; className?: string }) {
+  const c = `rgb(${glow})`;
+  return (
+    <svg viewBox="0 0 120 104" fill="none" aria-hidden className={className}
+      stroke={c} strokeWidth={2.2} strokeLinecap="round" strokeLinejoin="round">
+      {/* 돛대 */}
+      <line x1="60" y1="8" x2="60" y2="58" />
+      {/* 깃발 */}
+      <path d="M60 9 L73 14 L60 19 Z" fill={c} fillOpacity="0.55" stroke="none" />
+      {/* 돛 (좌/우, 바람에 부풂) */}
+      <path d="M57 20 C40 25 36 38 39 50 L57 50 Z" fill={c} fillOpacity="0.16" />
+      <path d="M63 20 C80 25 84 38 81 50 L63 50 Z" fill={c} fillOpacity="0.10" />
+      {/* 선체 */}
+      <path d="M28 58 L92 58 L83 74 C60 83 60 83 37 74 Z" fill={c} fillOpacity="0.20" />
+      {/* 파도 */}
+      <path d="M14 84 Q28 77 42 84 T70 84 T98 84 T112 84" strokeOpacity="0.55" />
+      <path d="M20 94 Q34 87 48 94 T76 94 T104 94" strokeOpacity="0.38" />
+    </svg>
+  );
+}
+
 // 종목 TCG 카드 — 타이틀바 / 아트창(로고 3D 팝업) / 타입줄 / 스탯칸.
 //  심플한 트레이딩 카드 프레임에 3D(틸트·두께·아트 팝업·홀로 포일)를 얹음. 나중에 본격 TCG로 확장 예정.
 //  hero: 플레이용(로고가 아트창에서 프레임 밖으로 솟음, 스탯 큼). 미지정: 덱용 콤팩트(로고는 아트창 안).
@@ -334,10 +356,13 @@ function TcgCard({ item, value, hero = false, count, idleDelay = 0 }:
             <span className="ml-auto shrink-0"><Medal item={item} /></span>
           </div>
 
-          {/* 아트 창 (등급 톤 후광) */}
+          {/* 아트 창 (등급 톤 후광 + 대항해시대 범선) */}
           <div className="relative z-10 mx-2.5 rounded-lg overflow-hidden ring-1 ring-inset ring-black/10 dark:ring-white/10 aspect-[7/5]" style={{ transform: "translateZ(8px)" }}>
             <div aria-hidden className="absolute inset-0"
-              style={{ background: `radial-gradient(circle at 50% 46%, rgba(255,255,255,0.9), rgba(255,255,255,0) 62%), linear-gradient(160deg, rgba(${f.glow},0.16), rgba(${f.glow},0.02))` }} />
+              style={{ background: `radial-gradient(circle at 50% 44%, rgba(255,255,255,0.55), rgba(255,255,255,0) 58%), linear-gradient(160deg, rgba(${f.glow},0.16), rgba(${f.glow},0.02))` }} />
+            <div aria-hidden className="absolute inset-0 flex items-end justify-center overflow-hidden">
+              <ShipMark glow={f.glow} className="w-[82%] h-[82%] opacity-[0.18] dark:opacity-[0.24]" />
+            </div>
             {!hero && (
               <div className="absolute inset-0 flex items-center justify-center" style={{ transform: "translateZ(20px)" }}>
                 <StockLogoHero item={item} size={54} glow={f.glow} />
@@ -524,6 +549,8 @@ export default function GamePage() {
   const [showDeck, setShowDeck] = useState(false);
   const [missed, setMissed] = useState<any | null>(null); // 항해 종료 시 틀린 종목 정보
   const [acquired, setAcquired] = useState<DeckCardSnapshot[]>([]); // 이번 항해에서 획득한 카드
+  const [history, setHistory] = useState<any[]>([]); // 지나온 비교 카드(왼쪽으로 쌓임) — 슬라이드로 항해 기록 확인
+  const trackRef = useRef<HTMLDivElement>(null); // 카드 필름스트립(가로 스크롤)
 
   useEffect(() => { dispatch(reqGetNcavDailyList("latest")); }, [dispatch]);
 
@@ -560,7 +587,7 @@ export default function GamePage() {
     const a = draw();
     if (!a) return;
     setAnchor(a); setChallenger(draw(a.ticker));
-    setStreak(0); setNewBest(false); setLastWin(null); setDropped(false); setDropPrompt(false); setSaveFail(null); setEscaped(null); setMissed(null); setAcquired([]); setPhase("guessing");
+    setStreak(0); setNewBest(false); setLastWin(null); setDropped(false); setDropPrompt(false); setSaveFail(null); setEscaped(null); setMissed(null); setAcquired([]); setHistory([]); setPhase("guessing");
   }, [draw]);
 
   const started = useRef(false);
@@ -626,10 +653,17 @@ export default function GamePage() {
 
   const next = useCallback(() => {
     if (!lastWin) return;
+    setHistory(h => [...h, anchor]);   // 왼쪽 카드를 항해 기록에 쌓음(오른쪽 카드가 왼쪽 자리로)
     setAnchor(challenger);
     setChallenger(draw(challenger?.ticker));
     setDropped(false); setDropPrompt(false); setSaveFail(null); setEscaped(null); setLastWin(null); setPhase("guessing");
-  }, [lastWin, challenger, draw]);
+  }, [lastWin, anchor, challenger, draw]);
+
+  // 카드가 늘거나 라운드가 바뀌면 필름스트립을 우측 끝(최신)으로 부드럽게 스크롤 → 카드가 왼쪽으로 흐르는 효과
+  useEffect(() => {
+    const el = trackRef.current;
+    if (el) el.scrollTo({ left: el.scrollWidth, behavior: "smooth" });
+  }, [history.length, challenger]);
 
   useEffect(() => { if (phase === "revealed" && lastWin === false) setPhase("over"); }, [phase, lastWin]);
 
@@ -732,13 +766,31 @@ export default function GamePage() {
               </div>
             ) : anchor && challenger ? (
               <>
-                <div className="relative grid grid-cols-2 gap-3 sm:gap-4 items-stretch">
-                  <TcgCard hero item={anchor} value={STAT.fmt(STAT.get(anchor))} idleDelay={0} />
-                  <TcgCard hero item={challenger} idleDelay={3}
-                    value={phase === "revealed"
-                      ? <span className="animate-in zoom-in-75 duration-300">{STAT.fmt(STAT.get(challenger))}</span>
-                      : <span className="text-neutral-300 dark:text-neutral-600">?</span>} />
-                  <span className="pointer-events-none absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 z-20 w-8 h-8 rounded-full bg-neutral-900 dark:bg-white text-white dark:text-neutral-900 text-[10px] font-black flex items-center justify-center shadow-lg ring-4 ring-[#faf9f7] dark:ring-[#1a1915]">VS</span>
+                <div className="relative">
+                  {/* 카드 필름스트립 — 활성 2장이 우측에 꽉 차고, 지나온 카드는 왼쪽에 쌓임. 왼쪽으로 슬라이드하면 항해 기록 확인 */}
+                  <div ref={trackRef} className="flex gap-3 sm:gap-4 overflow-x-auto snap-x snap-mandatory scrollbar-hide pt-11 pb-2">
+                    {history.map((c, i) => (
+                      <div key={`${c.ticker}-${i}`} className="shrink-0 self-end snap-end w-[calc(50%-0.375rem)] sm:w-[calc(50%-0.5rem)] opacity-90">
+                        <div className="aspect-[3/4]"><TcgCard item={c} value={STAT.fmt(STAT.get(c))} idleDelay={i * 0.4} /></div>
+                      </div>
+                    ))}
+                    <div className="shrink-0 self-end snap-end w-[calc(50%-0.375rem)] sm:w-[calc(50%-0.5rem)]">
+                      <div className="aspect-[3/4]"><TcgCard hero item={anchor} value={STAT.fmt(STAT.get(anchor))} idleDelay={0} /></div>
+                    </div>
+                    <div className="shrink-0 self-end snap-end w-[calc(50%-0.375rem)] sm:w-[calc(50%-0.5rem)]">
+                      <div className="aspect-[3/4]"><TcgCard hero item={challenger} idleDelay={3}
+                        value={phase === "revealed"
+                          ? <span className="animate-in zoom-in-75 duration-300">{STAT.fmt(STAT.get(challenger))}</span>
+                          : <span className="text-neutral-300 dark:text-neutral-600">?</span>} /></div>
+                    </div>
+                  </div>
+                  {/* VS — 활성 쌍(우측 두 장) 사이 */}
+                  <span className="pointer-events-none absolute left-1/2 top-[calc(50%+1.25rem)] -translate-x-1/2 -translate-y-1/2 z-20 w-8 h-8 rounded-full bg-neutral-900 dark:bg-white text-white dark:text-neutral-900 text-[10px] font-black flex items-center justify-center shadow-lg ring-4 ring-[#faf9f7] dark:ring-[#1a1915]">VS</span>
+                  {history.length > 0 && (
+                    <span className="pointer-events-none absolute left-1 top-3 z-20 inline-flex items-center gap-0.5 text-[10px] font-bold text-neutral-400 dark:text-neutral-500">
+                      <ChevronLeft size={11} /> 항해 기록 {history.length}
+                    </span>
+                  )}
                 </div>
 
                 {/* 획득 / 로그인 유도 */}
