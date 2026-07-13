@@ -27,10 +27,31 @@
 .no-scrollbar { scrollbar-width: none; -ms-overflow-style: none; }
 .no-scrollbar::-webkit-scrollbar { display: none; }
 
-/* ── Game card 3D idle (HoloCard) — 정지·모바일에서도 3D가 드러나도록 은은히 부유/회전 ── */
-@keyframes holo-idle {
-  0%, 100% { transform: perspective(820px) rotateX(5deg) rotateY(-14deg) translateY(0); }
-  50%      { transform: perspective(820px) rotateX(-3.5deg) rotateY(14deg) translateY(-7px); }
+/* ── Game card "고지도 항해일지" — 양피지 질감(라이트/다크). 정적·저비용 ── */
+.carto-body {
+  background:
+    radial-gradient(120% 80% at 18% 12%, rgba(120,90,40,.10), transparent 55%),
+    radial-gradient(100% 90% at 88% 92%, rgba(90,60,20,.16), transparent 60%),
+    repeating-linear-gradient(0deg, rgba(90,66,30,.05) 0 1px, transparent 1px 4px),
+    linear-gradient(158deg, #f5ecd6, #e7d8b6);
+  box-shadow: inset 0 0 0 1px rgba(74,58,34,.28), inset 0 0 26px rgba(74,45,15,.22);
 }
-.holo-idle { animation: holo-idle 6.5s ease-in-out infinite; }
-@media (prefers-reduced-motion: reduce) { .holo-idle { animation: none; } }
+.dark .carto-body {
+  background:
+    radial-gradient(120% 80% at 18% 12%, rgba(180,140,70,.10), transparent 55%),
+    radial-gradient(100% 90% at 88% 92%, rgba(0,0,0,.45), transparent 60%),
+    repeating-linear-gradient(0deg, rgba(200,165,105,.045) 0 1px, transparent 1px 4px),
+    linear-gradient(158deg, #2a2114, #1b160d);
+  box-shadow: inset 0 0 0 1px rgba(180,150,100,.28), inset 0 0 26px rgba(0,0,0,.5);
+}
+.carto-art { background: radial-gradient(circle at 50% 42%, rgba(255,250,235,.55), rgba(214,196,150,.15) 62%); }
+.dark .carto-art { background: radial-gradient(circle at 50% 42%, rgba(60,48,26,.5), rgba(10,8,4,.4) 62%); }
+.carto-grid {
+  background:
+    repeating-linear-gradient(0deg, currentColor 0 .6px, transparent .6px 18px),
+    repeating-linear-gradient(90deg, currentColor 0 .6px, transparent .6px 18px);
+  color: rgba(90,66,30,.16);
+}
+.dark .carto-grid { color: rgba(200,165,105,.13); }
+.carto-plate { background: linear-gradient(#f3e7c9, #e3d0a6); box-shadow: inset 0 0 0 1px rgba(74,58,34,.4); }
+.dark .carto-plate { background: linear-gradient(#2e2415, #20190e); }
