@@ -894,6 +894,23 @@ function DeckView({ deck, isLoggedIn, onLogin, onClose }: { deck: DeckItem[]; is
     return TIER_ORDER.filter(t => byTone.has(t)).map(t => ({ tone: t, cards: byTone.get(t)! }));
   }, [deck]);
 
+  // 카드가 3D(두께·범선·홀로)라 한 번에 다 그리면 무거움 → 12장씩 나눠 렌더(스크롤 시 자동 추가)
+  const PAGE = 12;
+  const total = useMemo(() => groups.reduce((a, g) => a + g.cards.length, 0), [groups]);
+  const [visible, setVisible] = useState(PAGE);
+  const sentinelRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    if (visible >= total) return;
+    const el = sentinelRef.current;
+    if (!el) return;
+    const io = new IntersectionObserver(
+      (entries) => { if (entries.some(e => e.isIntersecting)) setVisible(v => Math.min(total, v + PAGE)); },
+      { rootMargin: "400px" } // 화면에 닿기 전에 미리 다음 묶음 로드
+    );
+    io.observe(el);
+    return () => io.disconnect();
+  }, [visible, total]);
+
   return (
     <div className="animate-in fade-in duration-200">
       <div className="flex items-center justify-between mb-4">
@@ -916,23 +933,40 @@ function DeckView({ deck, isLoggedIn, onLogin, onClose }: { deck: DeckItem[]; is
         <p className="py-20 text-center text-sm text-neutral-400">아직 카드가 없어요. 게임을 하며 카드를 수집하세요!</p>
       ) : (
         <div className="space-y-5">
-          {groups.map(({ tone, cards }) => (
-            <div key={tone}>
-              <div className="flex items-center gap-2 mb-2 px-0.5">
-                <span className={cn("inline-flex items-center gap-1 px-2 py-0.5 rounded-full ring-1 ring-inset text-[11px] font-black", MEDAL_TONE[tone])}>
-                  <span aria-hidden>{cards[0].v.medal}</span>{cards[0].v.label}
-                </span>
-                <span className="text-[11px] font-bold text-neutral-400">{cards.reduce((a, x) => a + (x.item.count ?? 1), 0)}장</span>
-              </div>
-              <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-                {cards.map(({ item: c }, ci) => (
-                  <div key={c.ticker} className="aspect-[3/4]">
-                    <TcgCard item={c} value={STAT.fmt(STAT.get(c))} count={c.count} idleDelay={ci * 0.6} />
+          {(() => {
+            let shown = 0; // 지금까지 렌더한 카드 수(등급 순). visible 이내 카드만 그림
+            return groups.map(({ tone, cards }) => {
+              const start = shown;
+              shown += cards.length;
+              const slice = cards.slice(0, Math.max(0, visible - start));
+              if (slice.length === 0) return null; // 이 등급은 아직 로드 범위 밖 → 스크롤 시 노출
+              return (
+                <div key={tone}>
+                  <div className="flex items-center gap-2 mb-2 px-0.5">
+                    <span className={cn("inline-flex items-center gap-1 px-2 py-0.5 rounded-full ring-1 ring-inset text-[11px] font-black", MEDAL_TONE[tone])}>
+                      <span aria-hidden>{cards[0].v.medal}</span>{cards[0].v.label}
+                    </span>
+                    <span className="text-[11px] font-bold text-neutral-400">{cards.reduce((a, x) => a + (x.item.count ?? 1), 0)}장</span>
                   </div>
-                ))}
-              </div>
+                  <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                    {slice.map(({ item: c }, ci) => (
+                      <div key={c.ticker} className="aspect-[3/4]">
+                        <TcgCard item={c} value={STAT.fmt(STAT.get(c))} count={c.count} idleDelay={ci * 0.6} />
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              );
+            });
+          })()}
+          {visible < total && (
+            <div ref={sentinelRef} className="pt-1 pb-4 text-center">
+              <button onClick={() => setVisible(v => Math.min(total, v + PAGE))}
+                className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl border border-neutral-200 dark:border-[#35332e] bg-white dark:bg-[#242320] text-xs font-bold text-neutral-500 dark:text-neutral-400 hover:border-[#16a34a]/50">
+                더 보기 <span className="tabular-nums text-neutral-400">{visible}/{total}</span>
+              </button>
             </div>
-          ))}
+          )}
         </div>
       )}
     </div>
