@@ -43,6 +43,38 @@ function relTime(dateStr?: string): string {
 
 const won = (n: number) => `₩${Math.round(Number(n) || 0).toLocaleString("ko-KR")}`;
 
+// 워커가 종목별로 기록한 마지막 매매 결과(last_result.code) → 표시 라벨/색상.
+type LastResult = { at?: string; code?: string; msg?: string };
+const RESULT_META: Record<string, { label: string; tone: "green" | "amber" | "red" | "neutral" }> = {
+  bought: { label: "매수 체결", tone: "green" },
+  sold: { label: "매도 체결", tone: "green" },
+  insufficient_token: { label: "예산 모으는 중", tone: "amber" },
+  condition_fail: { label: "조건 미달", tone: "amber" },
+  no_financials: { label: "재무 없음", tone: "amber" },
+  sell_no_holding: { label: "보유 없음", tone: "neutral" },
+  pdno_unresolved: { label: "종목코드 오류", tone: "red" },
+  no_price: { label: "현재가 조회 실패", tone: "red" },
+  order_error: { label: "주문 오류", tone: "red" },
+};
+const RESULT_TONE_CLS: Record<string, string> = {
+  green: "bg-[#f0fdf4] text-[#16a34a] dark:bg-[#14532d]/30 dark:text-[#4ade80]",
+  amber: "bg-amber-50 text-amber-600 dark:bg-amber-950/30 dark:text-amber-400",
+  red: "bg-rose-50 text-rose-600 dark:bg-rose-950/30 dark:text-rose-400",
+  neutral: "bg-neutral-100 text-neutral-500 dark:bg-[#35332e] dark:text-neutral-400",
+};
+
+function StatusBadge({ lr }: { lr?: LastResult }) {
+  if (!lr?.code) return <span className="text-[11px] text-neutral-400">대기</span>;
+  const meta = RESULT_META[lr.code] ?? { label: lr.code, tone: "neutral" as const };
+  const detail = [lr.msg, relTime(lr.at)].filter(Boolean).join(" · ");
+  return (
+    <span title={detail}
+      className={cn("inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold whitespace-nowrap", RESULT_TONE_CLS[meta.tone])}>
+      {meta.label}
+    </span>
+  );
+}
+
 function Stat({ icon, label, value, hint }: { icon: React.ReactNode; label: string; value: string; hint?: string }) {
   return (
     <div className="rounded-xl border border-neutral-200 dark:border-[#35332e] bg-[#faf9f7] dark:bg-[#242320] px-3 py-2.5">
@@ -135,17 +167,17 @@ export default function TradingActivityPanel({
         <p className="text-[11px] font-bold text-neutral-400">활성 그룹 {activeCount}종목 · 예산 {won(activeTokenSum)}</p>
       </div>
       <div className="overflow-x-auto rounded-xl border border-neutral-200 dark:border-[#35332e] mb-4">
-        <table className="w-full text-sm text-left min-w-[420px]">
+        <table className="w-full text-sm text-left min-w-[500px]">
           <thead>
             <tr className="bg-[#fcfaf7] dark:bg-[#1f1e1b] border-b border-neutral-100 dark:border-[#35332e]">
-              {["종목", "그룹", "NCAV", "예산(토큰)"].map((h, i) => (
-                <th key={h} className={cn("px-3 py-2 text-[10px] font-bold text-neutral-400 uppercase tracking-wider", i >= 2 && "text-right")}>{h}</th>
+              {["종목", "그룹", "상태", "NCAV", "예산(토큰)"].map((h, i) => (
+                <th key={h} className={cn("px-3 py-2 text-[10px] font-bold text-neutral-400 uppercase tracking-wider", i >= 3 && "text-right")}>{h}</th>
               ))}
             </tr>
           </thead>
           <tbody className="divide-y divide-neutral-50 dark:divide-[#35332e]/40">
             {activeStocks.length === 0 ? (
-              <tr><td colSpan={4} className="px-3 py-8 text-center text-xs text-neutral-400">활성 그룹에 매매 대상 종목이 없습니다. (그룹 자동매매 ON + 조건 충족 필요)</td></tr>
+              <tr><td colSpan={5} className="px-3 py-8 text-center text-xs text-neutral-400">활성 그룹에 매매 대상 종목이 없습니다. (그룹 자동매매 ON + 조건 충족 필요)</td></tr>
             ) : (
               activeStocks.map((s, i) => {
                 const nm = displayName(s.symbol, s.name);
@@ -162,6 +194,7 @@ export default function TradingActivityPanel({
                         {grp?.name ?? "-"}
                       </span>
                     </td>
+                    <td className="px-3 py-2"><StatusBadge lr={(s as unknown as { last_result?: LastResult }).last_result} /></td>
                     <td className="px-3 py-2 text-right text-xs font-mono text-neutral-600 dark:text-neutral-300 tabular-nums">{Number.isFinite(ncav) ? `${ncav.toFixed(2)}x` : "-"}</td>
                     <td className="px-3 py-2 text-right text-xs font-bold text-neutral-800 dark:text-neutral-100 tabular-nums">{won(s.token ?? 0)}</td>
                   </tr>
