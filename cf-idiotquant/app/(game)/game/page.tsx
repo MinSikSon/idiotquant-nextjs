@@ -96,21 +96,20 @@ function logoUrlFor(item: any): string {
     : `${process.env.NEXT_PUBLIC_KR_LOGO_API}/${t}`;
 }
 
-// 항구 메달리온 — 세피아 원형 프레임 + 브라스 링(평면). 로고 실패 시 이니셜. (기존 3D 오브 대체)
+// 로고 메달리온 — 밝은 원형 칩 + 등급색 발광 링(평면 2D). 로고 실패 시 이니셜. (기존 3D 오브 대체)
 function PortMedallion({ item, size = 56, lift = false }: { item: any; size?: number; lift?: boolean }) {
   const [err, setErr] = useState(false);
+  const c = TIER[computeValueScore(item).tone] ?? TIER.explore;
   return (
-    <div className="relative rounded-full shrink-0 flex items-center justify-center overflow-hidden bg-gradient-to-b from-[#fbf4e2] to-[#e7d6b0]"
+    <div className="relative rounded-full shrink-0 flex items-center justify-center overflow-hidden bg-gradient-to-b from-white to-[#e6e8ec]"
       style={{ width: size, height: size,
-        boxShadow: lift
-          ? "0 8px 14px -4px rgba(30,18,0,0.5), 0 0 0 2px #c9a86a, 0 0 0 3px rgba(74,58,34,0.55), inset 0 -6px 10px -6px rgba(90,60,20,0.4)"
-          : "0 3px 8px rgba(40,25,0,0.4), 0 0 0 2px #c9a86a, 0 0 0 3px rgba(74,58,34,0.5), inset 0 -6px 10px -6px rgba(90,60,20,0.4)" }}>
+        boxShadow: `0 0 0 2px ${c.accent}, 0 0 ${lift ? 16 : 10}px ${rgba(c.glow, lift ? 0.55 : 0.45)}, 0 ${lift ? 6 : 3}px ${lift ? 12 : 7}px rgba(0,0,0,0.4)` }}>
       {!err ? (
         // eslint-disable-next-line @next/next/no-img-element
         <img src={logoUrlFor(item)} alt={item?.name ?? "logo"} loading="lazy"
           className="w-[82%] h-[82%] object-contain" onError={() => setErr(true)} />
       ) : (
-        <span className="font-serif font-extrabold text-[#7a5f30] leading-none" style={{ fontSize: size * 0.46 }}>
+        <span className="font-serif font-extrabold text-[#334155] leading-none" style={{ fontSize: size * 0.46 }}>
           {(item?.name ?? item?.ticker ?? "?").charAt(0)}
         </span>
       )}
@@ -118,16 +117,21 @@ function PortMedallion({ item, size = 56, lift = false }: { item: any; size?: nu
   );
 }
 
-// 등급별 밀랍 봉인색 + 프리미엄(브라스 포일 엣지) 여부 — computeValueScore().tone 이 조인키
-const TIER_SEAL: Record<string, { wax: string; premium: boolean }> = {
-  legend:   { wax: "#7c3aed", premium: true },
-  treasure: { wax: "#b45309", premium: true },
-  diamond:  { wax: "#0e7490", premium: true },
-  gold:     { wax: "#a16207", premium: true },
-  silver:   { wax: "#64748b", premium: false },
-  bronze:   { wax: "#9a3412", premium: false },
-  raw:      { wax: "#78716c", premium: false },
-  explore:  { wax: "#0f766e", premium: false },
+// 등급별 프리즘 팔레트 — computeValueScore().tone 이 조인키. 선명한 발광 젬 카드 룩.
+// glow=발광색 · edge=포일 테두리 스톱 · body=본체 다크 젬 그라디언트 · ink=본문색 · accent=강조/값색.
+const rgba = (h: string, a: number) => {
+  const n = parseInt(h.slice(1), 16);
+  return `rgba(${(n >> 16) & 255},${(n >> 8) & 255},${n & 255},${a})`;
+};
+const TIER: Record<string, { premium: boolean; glow: string; edge: string[]; body: [string, string]; ink: string; accent: string }> = {
+  legend:   { premium: true,  glow: "#a855f7", edge: ["#f0abfc", "#7c3aed", "#e9d5ff", "#6d28d9"], body: ["#2a1147", "#130a24"], ink: "#efe0ff", accent: "#d8b4fe" },
+  treasure: { premium: true,  glow: "#fb923c", edge: ["#fed7aa", "#ea580c", "#fca5a5", "#b45309"], body: ["#3a1a0b", "#1c0e06"], ink: "#ffe2cc", accent: "#fdba74" },
+  diamond:  { premium: true,  glow: "#22d3ee", edge: ["#cffafe", "#0891b2", "#a5f3fc", "#0e7490"], body: ["#082e3a", "#04161d"], ink: "#d6f7ff", accent: "#67e8f9" },
+  gold:     { premium: true,  glow: "#facc15", edge: ["#fef08a", "#ca8a04", "#fde047", "#a16207"], body: ["#33280a", "#191204"], ink: "#fff0bf", accent: "#fde047" },
+  silver:   { premium: false, glow: "#94a3b8", edge: ["#e2e8f0", "#64748b"], body: ["#222a36", "#0e1218"], ink: "#e8edf3", accent: "#cbd5e1" },
+  bronze:   { premium: false, glow: "#f59e0b", edge: ["#fdba74", "#9a3412"], body: ["#331b0b", "#190c05"], ink: "#ffe0c2", accent: "#fb923c" },
+  raw:      { premium: false, glow: "#a8a29e", edge: ["#d6d3d1", "#57534e"], body: ["#2a2725", "#171513"], ink: "#eae7e4", accent: "#d6d3d1" },
+  explore:  { premium: false, glow: "#10b981", edge: ["#a7f3d0", "#047857"], body: ["#062a1e", "#03140e"], ink: "#c9fae4", accent: "#6ee7b7" },
 };
 
 // 업종 추론 — 종목명/티커 키워드로 대표 이모지(업종 이미지) 매핑. 데이터에 sector 필드가 없어 이름 기반.
@@ -193,34 +197,33 @@ function ScoreInfo() {
   );
 }
 
-// 밀랍 봉인 — 등급색 왁스 방울 + 봉인 이모지 음각. (기존 Medal pill 대체, 카드 전용)
+// 등급 젬 배지 — 발광 젬 방울 + 메달 이모지. (카드/획득칩 공용)
 function WaxSeal({ item, size = 26 }: { item: any; size?: number }) {
   const v = computeValueScore(item);
-  const { wax } = TIER_SEAL[v.tone] ?? TIER_SEAL.explore;
+  const c = TIER[v.tone] ?? TIER.explore;
   return (
     <span className="relative shrink-0 inline-flex items-center justify-center rounded-full"
       style={{ width: size, height: size,
-        background: `radial-gradient(circle at 34% 28%, rgba(255,255,255,0.55), ${wax} 60%, rgba(0,0,0,0.42))`,
-        boxShadow: "0 2px 4px rgba(0,0,0,0.4), inset 0 1px 1px rgba(255,255,255,0.35), inset 0 -3px 5px rgba(0,0,0,0.35)" }}>
-      <span aria-hidden className="absolute inset-[2px] rounded-full border border-dashed border-white/35" />
-      <span aria-hidden className="leading-none" style={{ fontSize: size * 0.46, filter: "drop-shadow(0 1px 0 rgba(0,0,0,0.35))" }}>{v.medal}</span>
+        background: `radial-gradient(circle at 34% 28%, rgba(255,255,255,0.6), ${c.glow} 55%, rgba(0,0,0,0.5))`,
+        boxShadow: `0 0 8px ${rgba(c.glow, 0.8)}, inset 0 1px 1px rgba(255,255,255,0.4), inset 0 -3px 5px rgba(0,0,0,0.4)` }}>
+      <span aria-hidden className="leading-none" style={{ fontSize: size * 0.5, filter: "drop-shadow(0 1px 1px rgba(0,0,0,0.5))" }}>{v.medal}</span>
     </span>
   );
 }
 
 // 코너 필리그리 (1개 SVG를 4모서리에 회전 배치)
-function CornerFlourish({ className }: { className?: string }) {
+function CornerFlourish({ className, style }: { className?: string; style?: React.CSSProperties }) {
   return (
-    <svg viewBox="0 0 20 20" fill="none" aria-hidden className={className} stroke="currentColor" strokeWidth={1.1}>
+    <svg viewBox="0 0 20 20" fill="none" aria-hidden className={className} style={style} stroke="currentColor" strokeWidth={1.1}>
       <path d="M2 9 V3 H8" /><path d="M4 11 V5 H10" opacity="0.6" /><circle cx="3.4" cy="3.4" r="1.1" fill="currentColor" stroke="none" />
     </svg>
   );
 }
 
 // 나침반 로즈 — 지도 창 배경 워터마크 (기존 ShipMark 대체)
-function CompassRose({ className }: { className?: string }) {
+function CompassRose({ className, style }: { className?: string; style?: React.CSSProperties }) {
   return (
-    <svg viewBox="0 0 100 100" fill="none" aria-hidden className={className} stroke="currentColor" strokeWidth={1.4}>
+    <svg viewBox="0 0 100 100" fill="none" aria-hidden className={className} style={style} stroke="currentColor" strokeWidth={1.4}>
       <circle cx="50" cy="50" r="34" /><circle cx="50" cy="50" r="27" strokeDasharray="1 4" />
       <path d="M50 8 L56 50 L50 92 L44 50 Z" fill="currentColor" stroke="none" opacity="0.55" />
       <path d="M8 50 L50 56 L92 50 L50 44 Z" fill="currentColor" stroke="none" opacity="0.35" />
@@ -230,69 +233,76 @@ function CompassRose({ className }: { className?: string }) {
   );
 }
 
-// 종목 카드 "고지도 항해일지" — 타이틀 카투시(밀랍봉인) / 지도창(나침반+항구 메달리온) / 범례줄 / 스케일바 스탯.
-//  양피지·동판 인그레이빙·평면 2D(무거운 3D 제거). hero=플레이용(큼), 미지정=덱 콤팩트.
+// 종목 카드 "프리즘 트레저" — 타이틀(젬배지) / 지도창(나침반+로고 메달리온) / 범례줄 / 스탯 플레이트.
+//  등급색 발광 젬 본체 + 포일 엣지 + 스포트라이트 글로우. 평면 2D(무거운 3D 없음). hero=플레이용(큼), 미지정=덱 콤팩트.
 function TcgCard({ item, value, hero = false, count }:
   { item: any; value: React.ReactNode; hero?: boolean; count?: number; idleDelay?: number }) {
   const tone = computeValueScore(item).tone;
-  const { premium } = TIER_SEAL[tone] ?? TIER_SEAL.explore;
+  const c = TIER[tone] ?? TIER.explore;
   const sec = sectorArt(item);
   const R = hero ? "rounded-[14px]" : "rounded-[12px]";
   const Rin = hero ? "rounded-[12px]" : "rounded-[10px]";
-  const cornerCls = "pointer-events-none absolute w-4 h-4 text-[#7a5f30] dark:text-[#b7975a] opacity-70 z-[2]";
+  const edge = c.premium
+    ? `linear-gradient(135deg, ${c.edge[0]}, ${c.edge[1]} 28%, ${c.edge[2]} 52%, ${c.edge[3]} 74%, ${c.edge[0]})`
+    : `linear-gradient(135deg, ${c.edge[0]}, ${c.edge[1]})`;
+  const outGlow = c.premium
+    ? `0 ${hero ? 16 : 10}px ${hero ? 34 : 22}px -12px ${rgba(c.glow, 0.6)}, 0 0 0 .5px rgba(0,0,0,0.35)`
+    : `0 ${hero ? 14 : 9}px ${hero ? 26 : 18}px -14px ${rgba(c.glow, 0.4)}, 0 0 0 .5px rgba(0,0,0,0.4)`;
+  const bodyBg = `radial-gradient(135% 80% at 50% -8%, ${rgba(c.glow, 0.38)}, transparent 58%), linear-gradient(160deg, ${c.body[0]}, ${c.body[1]})`;
+  const winBg = `radial-gradient(circle at 50% 46%, ${rgba(c.glow, 0.5)}, transparent 62%), linear-gradient(160deg, ${c.body[1]}, #000)`;
+  const cornerCls = "pointer-events-none absolute w-4 h-4 z-[2]";
+  const cornerStyle = { color: c.accent, opacity: 0.55 };
   return (
     <div className={cn("relative w-full h-full p-[2px] transition-transform duration-200 ease-out hover:-translate-y-1", R)}
-      style={{
-        background: premium ? "linear-gradient(135deg,#e6cf9a,#8a6a3a 30%,#f2e2b0 52%,#7d5f33 74%,#c9a86a)" : "#6b5836",
-        boxShadow: `0 ${hero ? 16 : 10}px ${hero ? 30 : 20}px -14px rgba(40,25,0,0.5)`,
-      }}>
-      <div className={cn("carto-body relative w-full h-full flex flex-col overflow-hidden text-[#4a3a22] dark:text-[#d8c49a]", Rin)}>
-        {premium && (
-          <div aria-hidden className={cn("pointer-events-none absolute inset-0", Rin)}
-            style={{ background: "linear-gradient(125deg, transparent 40%, rgba(240,220,160,0.16) 50%, transparent 60%)" }} />
-        )}
+      style={{ background: edge, boxShadow: outGlow }}>
+      <div className={cn("relative w-full h-full flex flex-col overflow-hidden", Rin)}
+        style={{ background: bodyBg, color: c.ink, boxShadow: "inset 0 0 0 1px rgba(255,255,255,0.07), inset 0 -34px 44px -34px #000" }}>
+        {/* 글로시 시인 1겹 */}
+        <div aria-hidden className={cn("pointer-events-none absolute inset-0", Rin)}
+          style={{ background: "linear-gradient(115deg, transparent 40%, rgba(255,255,255,0.16) 48%, transparent 56%)" }} />
         {/* 코너 필리그리 4개 */}
-        <CornerFlourish className={cn(cornerCls, "top-1 left-1")} />
-        <CornerFlourish className={cn(cornerCls, "top-1 right-1 rotate-90")} />
-        <CornerFlourish className={cn(cornerCls, "bottom-1 right-1 rotate-180")} />
-        <CornerFlourish className={cn(cornerCls, "bottom-1 left-1 -rotate-90")} />
+        <CornerFlourish className={cn(cornerCls, "top-1 left-1")} style={cornerStyle} />
+        <CornerFlourish className={cn(cornerCls, "top-1 right-1 rotate-90")} style={cornerStyle} />
+        <CornerFlourish className={cn(cornerCls, "bottom-1 right-1 rotate-180")} style={cornerStyle} />
+        <CornerFlourish className={cn(cornerCls, "bottom-1 left-1 -rotate-90")} style={cornerStyle} />
 
-        {/* 타이틀 카투시: 종목명(세리프) + 밀랍 봉인 */}
+        {/* 타이틀: 종목명(세리프) + 등급 젬 */}
         <div className="relative z-[2] flex items-center gap-1.5 px-2.5 pt-2 pb-1">
           <p className={cn("font-serif font-bold truncate leading-tight", hero ? "text-[15px]" : "text-[12.5px]")}>{item.name}</p>
           <span className="ml-auto"><WaxSeal item={item} size={hero ? 32 : 26} /></span>
         </div>
-        <div className="relative z-[2] mx-2.5 border-t border-current opacity-25" />
+        <div className="relative z-[2] mx-2.5 border-t border-current opacity-20" />
 
-        {/* 지도 창: 격자 + 나침반 워터마크 + 항구 메달리온 로고 */}
-        <div className="relative z-[1] mx-2.5 mt-1 rounded-lg overflow-hidden aspect-[7/5]" style={{ boxShadow: "inset 0 0 0 1px rgba(74,58,34,0.32)" }}>
-          <div aria-hidden className="carto-art absolute inset-0" />
-          <div aria-hidden className="carto-grid absolute inset-0 opacity-50" />
+        {/* 지도 창: 스포트라이트 + 나침반 워터마크 + 로고 메달리온 */}
+        <div className="relative z-[1] mx-2.5 mt-1 rounded-lg overflow-hidden aspect-[7/5]" style={{ boxShadow: `inset 0 0 0 1px ${rgba(c.accent, 0.22)}` }}>
+          <div aria-hidden className="absolute inset-0" style={{ background: winBg }} />
           <div aria-hidden className="absolute inset-0 flex items-center justify-center">
-            <CompassRose className="w-[74%] h-[74%] text-[#5a421e] dark:text-[#c8a569] opacity-[0.16] dark:opacity-[0.22]" />
+            <CompassRose className="w-[72%] h-[72%]" style={{ color: c.accent, opacity: 0.2 }} />
           </div>
           <div className={cn("absolute inset-0 flex justify-center", hero ? "items-start pt-1" : "items-center")}>
             <PortMedallion item={item} size={hero ? 68 : 50} lift={hero} />
           </div>
           {count != null && count > 1 && (
-            <span className="absolute top-1 right-1 z-[3] px-1.5 py-0.5 rounded-full bg-[#5b4a2e] text-[#f3e9d2] text-[10px] font-black tabular-nums leading-none">×{count}</span>
+            <span className="absolute top-1 right-1 z-[3] px-1.5 py-0.5 rounded-full bg-black/55 text-[10px] font-black tabular-nums leading-none" style={{ color: c.accent }}>×{count}</span>
           )}
         </div>
 
         {/* 범례 줄: 업종(이탤릭) + 좌표(티커) */}
-        <div className="relative z-[2] flex items-center gap-1.5 px-2.5 pt-1.5 text-[9px] font-bold tracking-wide">
-          <span className="shrink-0 opacity-50">—</span>
-          <span className="font-serif italic opacity-85 truncate min-w-0">{sec.label}</span>
-          <span className="shrink-0 opacity-50">—</span>
-          <span className="ml-auto shrink-0 font-mono text-[9px] tracking-[0.12em] opacity-70">{item.ticker}</span>
+        <div className="relative z-[2] flex items-center gap-1.5 px-2.5 pt-1.5 text-[9px] font-bold tracking-wide" style={{ color: c.accent }}>
+          <span className="shrink-0 opacity-45">—</span>
+          <span className="font-serif italic opacity-90 truncate min-w-0">{sec.label}</span>
+          <span className="shrink-0 opacity-45">—</span>
+          <span className="ml-auto shrink-0 font-mono text-[9px] tracking-[0.12em] opacity-60" style={{ color: c.ink }}>{item.ticker}</span>
         </div>
 
-        {/* 스케일바 스탯: 라벨 ┈ 점선 리더 ┈ 값(도전카드 미공개 시 ?) */}
+        {/* 스탯 플레이트: 라벨 ┈ 점선 리더 ┈ 값(도전카드 미공개 시 ?) */}
         <div className="relative z-[2] mt-auto px-2.5 pb-2.5 pt-1.5">
-          <div className="carto-plate flex items-center gap-1.5 rounded-md px-2 py-1.5">
-            <span className="text-[9px] font-extrabold tracking-[0.14em] opacity-70 whitespace-nowrap">{STAT.label}</span>
-            <span className="flex-1 border-t border-dotted border-current opacity-45 mt-0.5" />
-            <span className={cn("font-serif font-extrabold whitespace-nowrap text-[#7a4b12] dark:text-[#e6b866] leading-none flex items-center min-h-[1.4rem]", hero ? "text-lg" : "text-[15px]")}>{value}</span>
+          <div className="flex items-center gap-1.5 rounded-md px-2 py-1.5"
+            style={{ background: "linear-gradient(rgba(255,255,255,0.07), rgba(0,0,0,0.28))", boxShadow: "inset 0 0 0 1px rgba(255,255,255,0.09)" }}>
+            <span className="text-[9px] font-extrabold tracking-[0.14em] opacity-60 whitespace-nowrap">{STAT.label}</span>
+            <span className="flex-1 border-t border-dotted border-current opacity-35 mt-0.5" />
+            <span className={cn("font-serif font-extrabold whitespace-nowrap leading-none flex items-center min-h-[1.4rem]", hero ? "text-lg" : "text-[15px]")}
+              style={{ color: c.accent, textShadow: `0 0 10px ${rgba(c.glow, 0.55)}` }}>{value}</span>
           </div>
         </div>
       </div>
@@ -315,7 +325,7 @@ function MissedInfo({ missed }: { missed: any }) {
     { label: "ROE", value: byKey.roe.valueStr },
   ];
   return (
-    <div className="mt-3 text-left rounded-2xl border border-[#c9b48a]/60 dark:border-[#5c4a2c]/70 bg-[#f3e9d2] dark:bg-[#241d12] p-3">
+    <div className="mt-3 text-left rounded-2xl border border-neutral-200 dark:border-neutral-700 bg-neutral-50 dark:bg-neutral-900 p-3">
       <p className="text-[11px] font-black text-rose-500 mb-2">아깝게 놓친 종목</p>
       <p className="text-xs text-neutral-500 dark:text-neutral-400 mb-3 break-keep leading-relaxed">
         <b className="text-neutral-800 dark:text-neutral-200">{c.name}</b>의 {missed.statLabel}
@@ -330,13 +340,13 @@ function MissedInfo({ missed }: { missed: any }) {
         <Medal item={c} lg />
         <ScoreInfo />
         <div className="min-w-0 ml-0.5">
-          <p className="font-serif font-bold text-sm text-[#4a3a22] dark:text-[#e7d6b0] truncate">{c.name}</p>
-          <p className="text-[10px] text-[#8a744c] dark:text-[#a98f5f] font-mono">{c.ticker}</p>
+          <p className="font-serif font-bold text-sm text-neutral-800 dark:text-neutral-100 truncate">{c.name}</p>
+          <p className="text-[10px] text-neutral-500 font-mono">{c.ticker}</p>
         </div>
       </div>
       <div className="grid grid-cols-3 sm:grid-cols-5 gap-2 mb-3">
         {metrics.map(m => (
-          <div key={m.label} className="rounded-lg bg-[#fbf4e2] dark:bg-[#1b160d] p-2 text-center">
+          <div key={m.label} className="rounded-lg bg-neutral-100 dark:bg-neutral-800 p-2 text-center">
             <p className="text-[9px] font-bold text-neutral-400 uppercase tracking-wide">{m.label}</p>
             <p className="text-xs font-black tabular-nums text-neutral-800 dark:text-neutral-200 mt-0.5">{m.value}</p>
           </div>
@@ -344,7 +354,7 @@ function MissedInfo({ missed }: { missed: any }) {
       </div>
 
       {/* 점수 계산 과정: 지표별 서브점수 × 가중치 → 종합 (값 없는 지표는 제외) */}
-      <div className="rounded-lg bg-[#fbf4e2] dark:bg-[#1b160d] p-3 mb-3">
+      <div className="rounded-lg bg-neutral-100 dark:bg-neutral-800 p-3 mb-3">
         <p className="text-[10px] font-black text-neutral-500 dark:text-neutral-400 mb-1.5">
           점수 계산 <span className="font-medium text-neutral-400">· 값 없는 지표 제외 후 가중 평균</span>
         </p>
@@ -396,9 +406,9 @@ function AcquiredThisGame({ cards }: { cards: DeckCardSnapshot[] }) {
       {/* 가로 스트립 — 카드 수가 많아도 높이가 고정(한 화면 유지). 좌우로 슬라이드 */}
       <div className="flex gap-2 overflow-x-auto pb-1 -mx-0.5 px-0.5 scrollbar-hide">
         {agg.map(({ item: c, count }) => (
-          <div key={c.ticker} className="relative shrink-0 flex items-center gap-1.5 rounded-xl bg-[#f3e9d2] dark:bg-[#241d12] border border-[#c9b48a]/60 dark:border-[#5c4a2c]/70 py-1.5 pl-1.5 pr-2.5 text-[#4a3a22] dark:text-[#d8c49a]">
+          <div key={c.ticker} className="relative shrink-0 flex items-center gap-1.5 rounded-xl bg-neutral-100 dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-700 py-1.5 pl-1.5 pr-2.5 text-neutral-700 dark:text-neutral-200">
             {count > 1 && (
-              <span className="absolute -top-1 -right-1 px-1 py-0.5 rounded-full bg-[#5b4a2e] text-[#f3e9d2] text-[9px] font-black tabular-nums leading-none">×{count}</span>
+              <span className="absolute -top-1 -right-1 px-1 py-0.5 rounded-full bg-neutral-800 text-white text-[9px] font-black tabular-nums leading-none">×{count}</span>
             )}
             <PortMedallion item={c} size={26} />
             <div className="min-w-0 flex items-center gap-1.5">
