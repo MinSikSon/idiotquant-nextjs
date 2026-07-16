@@ -13,7 +13,12 @@ import { useEffect, useMemo, useState, useCallback, useRef } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useSession } from "next-auth/react";
-import { ArrowUp, ArrowDown, RotateCcw, Layers, TrendingUp, Sparkles, ChevronLeft, ChevronRight, Lock, Info } from "lucide-react";
+import {
+  ArrowUp, ArrowDown, RotateCcw, Layers, TrendingUp, Sparkles, ChevronLeft, ChevronRight, Lock, Info,
+  Cpu, Dna, Landmark, CarFront, Ship, Construction, Zap, FlaskConical, Factory, RadioTower, Gamepad2,
+  Soup, ShoppingCart, PlaneTakeoff, Shirt, Code2, Gem, Compass, Anchor, Map as MapIcon, Medal as MedalIcon,
+  type LucideIcon,
+} from "lucide-react";
 import { useAppDispatch, useAppSelector } from "@/lib/hooks";
 import { reqGetNcavDailyList, selectNcavDailyList } from "@/lib/features/algorithmTrade/algorithmTradeSlice";
 import { computeValueScore } from "@/lib/utils/valueScore";
@@ -117,49 +122,62 @@ function PortMedallion({ item, size = 56, lift = false }: { item: any; size?: nu
   );
 }
 
-// 등급별 프리즘 팔레트 — computeValueScore().tone 이 조인키. 선명한 발광 젬 카드 룩.
-// glow=발광색 · edge=포일 테두리 스톱 · body=본체 다크 젬 그라디언트 · ink=본문색 · accent=강조/값색.
+// 등급별 프리즘 팔레트 — computeValueScore().tone 이 조인키. 테두리·봉인·스탯 강조색을 결정.
+// glow=발광색 · edge=포일 테두리 스톱 · accent=스탯값 강조색. 카드 본문은 아래 PARCHMENT(양피지) 고정색.
 const rgba = (h: string, a: number) => {
   const n = parseInt(h.slice(1), 16);
   return `rgba(${(n >> 16) & 255},${(n >> 8) & 255},${n & 255},${a})`;
 };
-const TIER: Record<string, { premium: boolean; glow: string; edge: string[]; body: [string, string]; ink: string; accent: string }> = {
-  legend:   { premium: true,  glow: "#a855f7", edge: ["#f0abfc", "#7c3aed", "#e9d5ff", "#6d28d9"], body: ["#2a1147", "#130a24"], ink: "#efe0ff", accent: "#d8b4fe" },
-  treasure: { premium: true,  glow: "#fb923c", edge: ["#fed7aa", "#ea580c", "#fca5a5", "#b45309"], body: ["#3a1a0b", "#1c0e06"], ink: "#ffe2cc", accent: "#fdba74" },
-  diamond:  { premium: true,  glow: "#22d3ee", edge: ["#cffafe", "#0891b2", "#a5f3fc", "#0e7490"], body: ["#082e3a", "#04161d"], ink: "#d6f7ff", accent: "#67e8f9" },
-  gold:     { premium: true,  glow: "#facc15", edge: ["#fef08a", "#ca8a04", "#fde047", "#a16207"], body: ["#33280a", "#191204"], ink: "#fff0bf", accent: "#fde047" },
-  silver:   { premium: false, glow: "#94a3b8", edge: ["#e2e8f0", "#64748b"], body: ["#222a36", "#0e1218"], ink: "#e8edf3", accent: "#cbd5e1" },
-  bronze:   { premium: false, glow: "#f59e0b", edge: ["#fdba74", "#9a3412"], body: ["#331b0b", "#190c05"], ink: "#ffe0c2", accent: "#fb923c" },
-  raw:      { premium: false, glow: "#a8a29e", edge: ["#d6d3d1", "#57534e"], body: ["#2a2725", "#171513"], ink: "#eae7e4", accent: "#d6d3d1" },
-  explore:  { premium: false, glow: "#10b981", edge: ["#a7f3d0", "#047857"], body: ["#062a1e", "#03140e"], ink: "#c9fae4", accent: "#6ee7b7" },
+const TIER: Record<string, { premium: boolean; glow: string; edge: string[]; accent: string }> = {
+  legend:   { premium: true,  glow: "#a855f7", edge: ["#f0abfc", "#7c3aed", "#e9d5ff", "#6d28d9"], accent: "#9333ea" },
+  treasure: { premium: true,  glow: "#fb923c", edge: ["#fed7aa", "#ea580c", "#fca5a5", "#b45309"], accent: "#ea580c" },
+  diamond:  { premium: true,  glow: "#22d3ee", edge: ["#cffafe", "#0891b2", "#a5f3fc", "#0e7490"], accent: "#0891b2" },
+  gold:     { premium: true,  glow: "#facc15", edge: ["#fef08a", "#ca8a04", "#fde047", "#a16207"], accent: "#ca8a04" },
+  silver:   { premium: false, glow: "#94a3b8", edge: ["#e2e8f0", "#64748b"], accent: "#64748b" },
+  bronze:   { premium: false, glow: "#f59e0b", edge: ["#fdba74", "#9a3412"], accent: "#9a3412" },
+  raw:      { premium: false, glow: "#a8a29e", edge: ["#d6d3d1", "#57534e"], accent: "#57534e" },
+  explore:  { premium: false, glow: "#10b981", edge: ["#a7f3d0", "#047857"], accent: "#047857" },
 };
 
-// 업종 추론 — 종목명/티커 키워드로 대표 이모지(업종 이미지) 매핑. 데이터에 sector 필드가 없어 이름 기반.
-const SECTORS: { re: RegExp; emoji: string; label: string }[] = [
-  { re: /반도체|전자|디스플레이|칩|하이닉스|테크|semi|chip|micron|nvidia|amd|intel|apple|tech/i, emoji: "🔌", label: "전자·반도체" },
-  { re: /바이오|제약|헬스|메디|파마|셀|진단|bio|pharma|health|medi|gene/i, emoji: "🧬", label: "바이오·제약" },
-  { re: /은행|금융|증권|캐피탈|카드|보험|지주|홀딩스|bank|financ|capital|insur|jpmorgan|goldman/i, emoji: "🏦", label: "금융" },
-  { re: /자동차|모비스|타이어|모터|현대차|기아|auto|motor|\bcar\b|tesla|ford|toyota/i, emoji: "🚗", label: "자동차" },
-  { re: /조선|해운|중공업|marine|ship|해양/i, emoji: "🚢", label: "조선·해운" },
-  { re: /건설|엔지니어|건축|시멘트|construc|engineer|cement/i, emoji: "🏗️", label: "건설" },
-  { re: /에너지|전력|가스|정유|석유|원전|태양|배터리|energy|oil|power|solar|batter|exxon|chevron/i, emoji: "⚡", label: "에너지" },
-  { re: /화학|케미|소재|섬유|폴리|chem|material/i, emoji: "⚗️", label: "화학·소재" },
-  { re: /철강|금속|포스코|steel|metal|alum/i, emoji: "🏭", label: "철강·금속" },
-  { re: /통신|텔레콤|kt|skt|telecom|networ|verizon|comcast/i, emoji: "📡", label: "통신" },
-  { re: /게임|엔터|미디어|콘텐츠|넷마블|엔씨|크래프톤|game|media|netflix|disney|entertain/i, emoji: "🎮", label: "게임·엔터" },
-  { re: /식품|푸드|제과|음료|주류|라면|food|bever|coca|pepsi|nestle/i, emoji: "🍱", label: "식품" },
-  { re: /유통|마트|리테일|백화|커머스|이마트|쿠팡|retail|amazon|walmart|shop/i, emoji: "🛒", label: "유통" },
-  { re: /항공|우주|방산|aero|defense|boeing|lockheed/i, emoji: "✈️", label: "항공·방산" },
-  { re: /패션|의류|화장품|뷰티|아모레|fashion|cosmet|nike|beauty/i, emoji: "👗", label: "패션·뷰티" },
-  { re: /소프트|플랫폼|클라우드|인터넷|카카오|네이버|soft|cloud|internet|google|meta|microsoft/i, emoji: "💻", label: "소프트웨어" },
+// 등급별 카드 효과 보너스(%) — 설명란 효과 문구용 (전설이 가장 높음)
+const EFFECT_BONUS: Record<string, number> = {
+  legend: 10, treasure: 8, diamond: 6, gold: 5, silver: 4, bronze: 3, raw: 2, explore: 1,
+};
+
+// 업종 추론 — 종목명/티커 키워드로 대표 업종을 매핑. 데이터에 sector 필드가 없어 이름 기반.
+// image=사용자 제공 업종 일러스트(사진) — GICS 11개 섹터 기준 카드 세트에서 크롭. 없으면 icon(벡터)으로 대체.
+// hue=업종 고유색 · flavor=설명 · keyword=효과 문구 키워드. GICS상 가까운 섹터끼리는 같은 이미지를 공유(예: 화학·소재/철강·금속 → materials).
+type SectorInfo = { label: string; icon: LucideIcon; image?: string; hue: string; flavor: string; keyword: string };
+const SEC_IMG = (name: string) => `/images/sectors/${name}.jpg`;
+const SECTORS: (SectorInfo & { re: RegExp })[] = [
+  { re: /반도체|전자|디스플레이|칩|하이닉스|테크|semi|chip|micron|nvidia|amd|intel|apple|tech/i, icon: Cpu, image: SEC_IMG("it"), hue: "#2f7dd6", label: "전자·반도체", flavor: "더 빠르고 더 작은 회로로 정보화 시대를 이끄는 기술의 심장부.", keyword: "기술력" },
+  { re: /바이오|제약|헬스|메디|파마|셀|진단|bio|pharma|health|medi|gene/i, icon: Dna, image: SEC_IMG("healthcare"), hue: "#9d3fa0", label: "바이오·제약", flavor: "생명을 향한 연구와 신뢰로 인류의 건강을 지킨다.", keyword: "바이오 기술" },
+  { re: /은행|금융|증권|캐피탈|카드|보험|지주|홀딩스|bank|financ|capital|insur|jpmorgan|goldman/i, icon: Landmark, image: SEC_IMG("financials"), hue: "#52606d", label: "금융", flavor: "자본의 흐름을 설계해 신뢰의 네트워크를 구축하는 곳.", keyword: "유동성" },
+  { re: /자동차|모비스|타이어|모터|현대차|기아|auto|motor|\bcar\b|tesla|ford|toyota/i, icon: CarFront, image: SEC_IMG("automobiles"), hue: "#3b6fc4", label: "자동차", flavor: "바퀴 위에서 이동의 미래를 실현하는 엔지니어링의 결정체.", keyword: "생산력" },
+  { re: /조선|해운|중공업|marine|ship|해양/i, icon: Ship, image: SEC_IMG("transportation"), hue: "#1d94c9", label: "조선·해운", flavor: "대양을 가르는 강철 선체로 세계 무역을 실어나른다.", keyword: "물류" },
+  { re: /건설|엔지니어|건축|시멘트|construc|engineer|cement/i, icon: Construction, image: SEC_IMG("industrials"), hue: "#6b8e35", label: "건설", flavor: "도시의 뼈대를 세우고 미래의 스카이라인을 그린다.", keyword: "수주" },
+  { re: /에너지|전력|가스|정유|석유|원전|태양|배터리|energy|oil|power|solar|batter|exxon|chevron/i, icon: Zap, image: SEC_IMG("energy"), hue: "#d2691e", label: "에너지", flavor: "빛과 동력을 공급해 산업의 맥박을 뛰게 하는 원천.", keyword: "공급망" },
+  { re: /화학|케미|소재|섬유|폴리|chem|material/i, icon: FlaskConical, image: SEC_IMG("materials"), hue: "#3568a8", label: "화학·소재", flavor: "분자 단위의 혁신으로 모든 산업의 기초를 완성한다.", keyword: "소재 경쟁력" },
+  { re: /철강|금속|포스코|steel|metal|alum/i, icon: Factory, image: SEC_IMG("materials"), hue: "#3568a8", label: "철강·금속", flavor: "불과 압력으로 세상을 지탱하는 뼈대를 벼려낸다.", keyword: "원가 경쟁력" },
+  { re: /통신|텔레콤|kt|skt|telecom|networ|verizon|comcast/i, icon: RadioTower, image: SEC_IMG("communication"), hue: "#4f5fbf", label: "통신", flavor: "보이지 않는 전파로 세계를 하나로 연결한다.", keyword: "네트워크" },
+  { re: /게임|엔터|미디어|콘텐츠|넷마블|엔씨|크래프톤|game|media|netflix|disney|entertain/i, icon: Gamepad2, image: SEC_IMG("media_entertainment"), hue: "#8b2fb0", label: "게임·엔터", flavor: "상상을 픽셀로, 즐거움을 콘텐츠로 빚어내는 창작소.", keyword: "IP 파워" },
+  { re: /식품|푸드|제과|음료|주류|라면|food|bever|coca|pepsi|nestle/i, icon: Soup, image: SEC_IMG("cons_staples"), hue: "#c98a1e", label: "식품", flavor: "누군가의 식탁 위에 매일 신뢰를 올려놓는다.", keyword: "브랜드 신뢰" },
+  { re: /유통|마트|리테일|백화|커머스|이마트|쿠팡|retail|amazon|walmart|shop/i, icon: ShoppingCart, image: SEC_IMG("diversified"), hue: "#4f9e42", label: "유통", flavor: "생산자와 소비자를 잇는 거대한 흐름의 관문.", keyword: "판매망" },
+  { re: /항공|우주|방산|aero|defense|boeing|lockheed/i, icon: PlaneTakeoff, image: SEC_IMG("industrials"), hue: "#6b8e35", label: "항공·방산", flavor: "하늘과 안보의 경계를 지키는 첨단 기술의 결집체.", keyword: "기술 우위" },
+  { re: /패션|의류|화장품|뷰티|아모레|fashion|cosmet|nike|beauty/i, icon: Shirt, image: SEC_IMG("cons_discretionary"), hue: "#c94a3d", label: "패션·뷰티", flavor: "취향과 자신감을 디자인하는 감각의 산업.", keyword: "브랜드 파워" },
+  { re: /소프트|플랫폼|클라우드|인터넷|카카오|네이버|soft|cloud|internet|google|meta|microsoft/i, icon: Code2, image: SEC_IMG("it"), hue: "#2f7dd6", label: "소프트웨어", flavor: "코드 몇 줄로 세상의 방식을 다시 쓰는 플랫폼.", keyword: "확장성" },
 ];
-const SECTOR_FALLBACK: { emoji: string; label: string }[] = [
-  { emoji: "💎", label: "가치주" }, { emoji: "📈", label: "성장주" }, { emoji: "🧭", label: "탐험" },
-  { emoji: "⚓", label: "블루칩" }, { emoji: "🗺️", label: "신대륙" }, { emoji: "🪙", label: "우량주" },
+const SECTOR_FALLBACK: SectorInfo[] = [
+  { icon: Gem, hue: "#16a34a", label: "가치주", flavor: "저평가된 가치, 시장이 아직 알아보지 못한 원석.", keyword: "저평가" },
+  { icon: TrendingUp, image: SEC_IMG("education"), hue: "#b8622a", label: "성장주", flavor: "가파른 곡선 위에서 다음 시대를 선점한다.", keyword: "성장성" },
+  { icon: Compass, hue: "#0ea5e9", label: "탐험", flavor: "지도에 없는 시장을 개척하는 최전선의 도전자.", keyword: "개척" },
+  { icon: Anchor, image: SEC_IMG("utilities"), hue: "#14a08f", label: "블루칩", flavor: "오랜 시간 검증된 안정감, 흔들리지 않는 기둥.", keyword: "안정성" },
+  { icon: MapIcon, hue: "#65a30d", label: "신대륙", flavor: "아직 발견되지 않은 기회의 땅을 향해 나아간다.", keyword: "잠재력" },
+  { icon: MedalIcon, image: SEC_IMG("real_estate"), hue: "#ca9a1e", label: "우량주", flavor: "탄탄한 재무구조로 어떤 파도에도 흔들리지 않는다.", keyword: "재무 건전성" },
 ];
-function sectorArt(item: any): { emoji: string; label: string } {
+function sectorArt(item: any): SectorInfo {
   const hay = `${item?.name ?? ""} ${item?.ticker ?? ""}`;
-  for (const s of SECTORS) if (s.re.test(hay)) return { emoji: s.emoji, label: s.label };
+  for (const s of SECTORS) if (s.re.test(hay)) return s;
   const h = [...String(item?.ticker ?? item?.name ?? "")].reduce((a, c) => a + c.charCodeAt(0), 0);
   return SECTOR_FALLBACK[h % SECTOR_FALLBACK.length];
 }
@@ -211,100 +229,99 @@ function WaxSeal({ item, size = 26 }: { item: any; size?: number }) {
   );
 }
 
-// 코너 필리그리 (1개 SVG를 4모서리에 회전 배치)
-function CornerFlourish({ className, style }: { className?: string; style?: React.CSSProperties }) {
-  return (
-    <svg viewBox="0 0 20 20" fill="none" aria-hidden className={className} style={style} stroke="currentColor" strokeWidth={1.1}>
-      <path d="M2 9 V3 H8" /><path d="M4 11 V5 H10" opacity="0.6" /><circle cx="3.4" cy="3.4" r="1.1" fill="currentColor" stroke="none" />
-    </svg>
-  );
-}
-
-// 나침반 로즈 — 지도 창 배경 워터마크 (기존 ShipMark 대체)
-function CompassRose({ className, style }: { className?: string; style?: React.CSSProperties }) {
-  return (
-    <svg viewBox="0 0 100 100" fill="none" aria-hidden className={className} style={style} stroke="currentColor" strokeWidth={1.4}>
-      <circle cx="50" cy="50" r="34" /><circle cx="50" cy="50" r="27" strokeDasharray="1 4" />
-      <path d="M50 8 L56 50 L50 92 L44 50 Z" fill="currentColor" stroke="none" opacity="0.55" />
-      <path d="M8 50 L50 56 L92 50 L50 44 Z" fill="currentColor" stroke="none" opacity="0.35" />
-      <path d="M22 22 L50 47 L78 78 M78 22 L50 53 L22 78" strokeWidth={1} opacity="0.4" />
-      <circle cx="50" cy="50" r="3.5" fill="currentColor" stroke="none" />
-    </svg>
-  );
-}
-
-// 종목 카드 "프리즘 트레저" — 타이틀(젬배지) / 지도창(나침반+로고 메달리온) / 범례줄 / 스탯 플레이트.
-//  등급색 발광 젬 본체 + 포일 엣지 + 스포트라이트 글로우. 평면 2D(무거운 3D 없음). hero=플레이용(큼), 미지정=덱 콤팩트.
+// 종목 카드 — 실물 TCG(그리드 아일랜드 카드) 레이아웃 그대로: 검정 카드지 + 명패(점수·이름·코드) +
+// 어두운 아트창(업종 심볼+로고) + 대리석 테두리 룰박스(플레이버+효과, 등급색) + 하단 인쇄줄(티커·시가총액).
+// 레퍼런스 카드엔 사진 아트가 들어가지만 이미지 생성 API가 없어 업종별 벡터 심볼(lucide)로 대체 — 레이아웃/구획은 그대로 유지.
+// hero=플레이용(큼), 미지정=덱 콤팩트. 룰박스는 shrink-0 로 항상 온전히 보이고, 아트창만 flex-1 로 크기에 맞춰 줄어듦.
 function TcgCard({ item, value, hero = false, count }:
   { item: any; value: React.ReactNode; hero?: boolean; count?: number; idleDelay?: number }) {
-  const tone = computeValueScore(item).tone;
-  const c = TIER[tone] ?? TIER.explore;
+  const v = computeValueScore(item);
+  const c = TIER[v.tone] ?? TIER.explore;
   const sec = sectorArt(item);
-  const R = hero ? "rounded-[14px]" : "rounded-[12px]";
-  const Rin = hero ? "rounded-[12px]" : "rounded-[10px]";
-  const edge = c.premium
+  const Icon = sec.icon;
+  const bonus = EFFECT_BONUS[v.tone] ?? 1;
+  // 대리석 룰박스 — 등급 컬러 베이스 + 흰/검 얼룩(veining)을 얹어 진짜 대리석처럼
+  const marbleBase = c.premium
     ? `linear-gradient(135deg, ${c.edge[0]}, ${c.edge[1]} 28%, ${c.edge[2]} 52%, ${c.edge[3]} 74%, ${c.edge[0]})`
     : `linear-gradient(135deg, ${c.edge[0]}, ${c.edge[1]})`;
-  const outGlow = c.premium
-    ? `0 ${hero ? 16 : 10}px ${hero ? 34 : 22}px -12px ${rgba(c.glow, 0.6)}, 0 0 0 .5px rgba(0,0,0,0.35)`
-    : `0 ${hero ? 14 : 9}px ${hero ? 26 : 18}px -14px ${rgba(c.glow, 0.4)}, 0 0 0 .5px rgba(0,0,0,0.4)`;
-  const bodyBg = `radial-gradient(135% 80% at 50% -8%, ${rgba(c.glow, 0.38)}, transparent 58%), linear-gradient(160deg, ${c.body[0]}, ${c.body[1]})`;
-  const winBg = `radial-gradient(circle at 50% 46%, ${rgba(c.glow, 0.5)}, transparent 62%), linear-gradient(160deg, ${c.body[1]}, #000)`;
-  const cornerCls = "pointer-events-none absolute w-4 h-4 z-[2]";
-  const cornerStyle = { color: c.accent, opacity: 0.55 };
+  const marble = `radial-gradient(30% 45% at 18% 22%, rgba(255,255,255,0.4), transparent 60%), radial-gradient(26% 40% at 82% 75%, rgba(0,0,0,0.28), transparent 60%), radial-gradient(20% 30% at 70% 15%, rgba(255,255,255,0.25), transparent 60%), ${marbleBase}`;
+  const line = "rgba(0,0,0,0.55)";
+  const DividerCap = ({ y }: { y: "top" | "bottom" }) => (
+    <span aria-hidden className="absolute w-[3px] h-[3px] rounded-full left-1/2 -translate-x-1/2"
+      style={{ [y]: -1.5, background: "rgba(0,0,0,0.55)" } as React.CSSProperties} />
+  );
   return (
-    <div className={cn("relative w-full h-full p-[2px] transition-transform duration-200 ease-out hover:-translate-y-1", R)}
-      style={{ background: edge, boxShadow: outGlow }}>
-      <div className={cn("relative w-full h-full flex flex-col overflow-hidden", Rin)}
-        style={{ background: bodyBg, color: c.ink, boxShadow: "inset 0 0 0 1px rgba(255,255,255,0.07), inset 0 -34px 44px -34px #000" }}>
-        {/* 글로시 시인 1겹 */}
-        <div aria-hidden className={cn("pointer-events-none absolute inset-0", Rin)}
-          style={{ background: "linear-gradient(115deg, transparent 40%, rgba(255,255,255,0.16) 48%, transparent 56%)" }} />
-        {/* 코너 필리그리 4개 */}
-        <CornerFlourish className={cn(cornerCls, "top-1 left-1")} style={cornerStyle} />
-        <CornerFlourish className={cn(cornerCls, "top-1 right-1 rotate-90")} style={cornerStyle} />
-        <CornerFlourish className={cn(cornerCls, "bottom-1 right-1 rotate-180")} style={cornerStyle} />
-        <CornerFlourish className={cn(cornerCls, "bottom-1 left-1 -rotate-90")} style={cornerStyle} />
-
-        {/* 타이틀: 종목명(세리프) + 등급 젬 */}
-        <div className="relative z-[2] flex items-center gap-1.5 px-2.5 pt-2 pb-1">
-          <p className={cn("font-serif font-bold truncate leading-tight", hero ? "text-[15px]" : "text-[12.5px]")}>{item.name}</p>
-          <span className="ml-auto"><WaxSeal item={item} size={hero ? 32 : 26} /></span>
-        </div>
-        <div className="relative z-[2] mx-2.5 border-t border-current opacity-20" />
-
-        {/* 지도 창: 스포트라이트 + 나침반 워터마크 + 로고 메달리온 */}
-        <div className="relative z-[1] mx-2.5 mt-1 rounded-lg overflow-hidden aspect-[7/5]" style={{ boxShadow: `inset 0 0 0 1px ${rgba(c.accent, 0.22)}` }}>
-          <div aria-hidden className="absolute inset-0" style={{ background: winBg }} />
-          <div aria-hidden className="absolute inset-0 flex items-center justify-center">
-            <CompassRose className="w-[72%] h-[72%]" style={{ color: c.accent, opacity: 0.2 }} />
+    <div className="relative w-full h-full flex flex-col overflow-hidden transition-transform duration-200 ease-out hover:-translate-y-1 p-[3.5%]"
+      style={{ background: "linear-gradient(160deg,#232323,#0c0c0c)", boxShadow: "inset 0 0 0 1px rgba(255,255,255,0.08), 0 4px 14px -6px rgba(0,0,0,0.6)" }}>
+      {/* 명패+아트 존 — 상아색 카드지 한 장. 명패는 카드지 가장자리까지 꽉 차고, 아트는 사진 매트처럼 안쪽에 여백을 두고 액자처럼 삽입 */}
+      <div className="relative shrink-0 flex flex-col overflow-hidden"
+        style={{ background: "linear-gradient(175deg,#ece4cf,#ddd0a6)", flex: "1 1 auto", minHeight: 0 }}>
+        {/* 명패: 점수 | 종목명 | 코드 — 구분선·바깥 모서리에 리벳 캡 장식 */}
+        <div className="relative z-[2] shrink-0 flex items-stretch border-b-2" style={{ borderColor: line }}>
+          <span aria-hidden className="absolute w-[3px] h-[3px] rounded-full left-1 top-0 -translate-y-1/2" style={{ background: "rgba(0,0,0,0.55)" }} />
+          <span aria-hidden className="absolute w-[3px] h-[3px] rounded-full right-1 top-0 -translate-y-1/2" style={{ background: "rgba(0,0,0,0.55)" }} />
+          <div className="relative flex items-center justify-center shrink-0 border-r" style={{ minWidth: hero ? 26 : 20, borderColor: "rgba(0,0,0,0.35)" }}>
+            <span className="font-serif font-black tabular-nums" style={{ fontSize: hero ? 13 : 10.5, color: "#221c10" }}>{v.score}</span>
+            <DividerCap y="top" /><DividerCap y="bottom" />
           </div>
-          <div className={cn("absolute inset-0 flex justify-center", hero ? "items-start pt-1" : "items-center")}>
-            <PortMedallion item={item} size={hero ? 68 : 50} lift={hero} />
+          <div className="flex-1 min-w-0 flex items-center justify-center px-1 py-[3%]">
+            <p className={cn("font-serif font-bold truncate", hero ? "text-[13px]" : "text-[10.5px]")} style={{ color: "#221c10" }}>{item.name}</p>
           </div>
-          {count != null && count > 1 && (
-            <span className="absolute top-1 right-1 z-[3] px-1.5 py-0.5 rounded-full bg-black/55 text-[10px] font-black tabular-nums leading-none" style={{ color: c.accent }}>×{count}</span>
-          )}
-        </div>
-
-        {/* 범례 줄: 업종(이탤릭) + 좌표(티커) */}
-        <div className="relative z-[2] flex items-center gap-1.5 px-2.5 pt-1.5 text-[9px] font-bold tracking-wide" style={{ color: c.accent }}>
-          <span className="shrink-0 opacity-45">—</span>
-          <span className="font-serif italic opacity-90 truncate min-w-0">{sec.label}</span>
-          <span className="shrink-0 opacity-45">—</span>
-          <span className="ml-auto shrink-0 font-mono text-[9px] tracking-[0.12em] opacity-60" style={{ color: c.ink }}>{item.ticker}</span>
-        </div>
-
-        {/* 스탯 플레이트: 라벨 ┈ 점선 리더 ┈ 값(도전카드 미공개 시 ?) */}
-        <div className="relative z-[2] mt-auto px-2.5 pb-2.5 pt-1.5">
-          <div className="flex items-center gap-1.5 rounded-md px-2 py-1.5"
-            style={{ background: "linear-gradient(rgba(255,255,255,0.07), rgba(0,0,0,0.28))", boxShadow: "inset 0 0 0 1px rgba(255,255,255,0.09)" }}>
-            <span className="text-[9px] font-extrabold tracking-[0.14em] opacity-60 whitespace-nowrap">{STAT.label}</span>
-            <span className="flex-1 border-t border-dotted border-current opacity-35 mt-0.5" />
-            <span className={cn("font-serif font-extrabold whitespace-nowrap leading-none flex items-center min-h-[1.4rem]", hero ? "text-lg" : "text-[15px]")}
-              style={{ color: c.accent, textShadow: `0 0 10px ${rgba(c.glow, 0.55)}` }}>{value}</span>
+          <div className="relative flex items-center justify-center shrink-0 px-1 border-l" style={{ borderColor: "rgba(0,0,0,0.35)" }}>
+            <span className="font-mono truncate" style={{ fontSize: hero ? 8 : 6.5, color: "#4a3f2a" }}>{sec.label.slice(0, 2).toUpperCase()}-{item.ticker.slice(-2)}</span>
+            <DividerCap y="top" /><DividerCap y="bottom" />
           </div>
         </div>
+
+        {/* 아트 매트: 명패 아래 크림색 여백을 두고 그 안에 검정 액자 + 아트창을 배치 (레퍼런스의 사진 매트 프레임) */}
+        <div className="relative flex-1 min-h-[42px] p-[3%]">
+          <div className="relative w-full h-full overflow-hidden" style={{ background: "#181312", padding: "2.5%" }}>
+            <div className="relative w-full h-full overflow-hidden" style={{ background: sec.image ? "#0c0a08" : `radial-gradient(120% 90% at 50% 30%, ${rgba(sec.hue, 0.35)}, transparent 65%), linear-gradient(155deg, #2a2015, #14100a)` }}>
+              {sec.image ? (
+                <>
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img src={sec.image} alt={sec.label} loading="lazy" className="absolute inset-0 w-full h-full object-cover" />
+                  {/* 사진 비네트 — 레퍼런스 사진 특유의 가장자리 음영 */}
+                  <div aria-hidden className="absolute inset-0" style={{ boxShadow: "inset 0 0 14px 2px rgba(0,0,0,0.45)" }} />
+                </>
+              ) : (
+                <div aria-hidden className="absolute inset-0 flex items-center justify-center">
+                  <Icon className="w-[46%] h-[46%]" style={{ color: rgba(sec.hue, 0.85) }} strokeWidth={1.15} />
+                </div>
+              )}
+              {/* 종목 로고 — 업종 사진이 있으면 가리지 않도록 우하단 작은 배지로, 없으면(벡터 심볼일 때) 중앙에 */}
+              <div className={cn("absolute z-[2]", sec.image ? "bottom-1 right-1" : "inset-0 flex justify-center items-center")}>
+                <PortMedallion item={item} size={sec.image ? (hero ? 34 : 26) : (hero ? 56 : 40)} lift={hero} />
+              </div>
+              {count != null && count > 1 && (
+                <span className="absolute top-1 left-1 z-[3] px-1.5 py-0.5 rounded-full bg-black/70 text-white text-[10px] font-black tabular-nums leading-none">×{count}</span>
+              )}
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* 검정 여백 — 아트존과 룰박스 사이 (레퍼런스의 카드지 마진, 카드 크기에 비례) */}
+      <div className="shrink-0 h-[2.2%]" />
+
+      {/* 룰박스: 등급색 대리석 테두리(각진 모서리, 카드 폭에 비례한 두께) + 흰 바탕 텍스트 — 플레이버 + 효과. shrink-0, 항상 온전히 보임 */}
+      <div className="relative z-[2] shrink-0 p-[3.2%]" style={{ background: marble }}>
+        <div className="px-1.5 py-1.5" style={{ background: "#faf9f5", boxShadow: "inset 0 0 0 1px rgba(0,0,0,0.5)" }}>
+          <p className="font-bold uppercase tracking-wide" style={{ fontSize: hero ? 8 : 6.5, color: sec.hue }}>{sec.label}</p>
+          <p className={cn("leading-snug break-keep mt-0.5", hero ? "line-clamp-2" : "line-clamp-1")} style={{ fontSize: hero ? 10 : 7.5, color: "#181818" }}>{sec.flavor}</p>
+          <p className="leading-snug break-keep mt-1" style={{ fontSize: hero ? 9 : 7, color: "#181818" }}>
+            "{sec.keyword}" 관련 발굴 확률 <b style={{ color: c.accent }}>+{bonus}%p</b>
+          </p>
+        </div>
+      </div>
+
+      {/* 하단 인쇄줄 — 레퍼런스의 저작권 표기 자리에 티커 · 시가총액(게임 진행에 필요한 실 스탯) */}
+      <div className="relative z-[2] shrink-0 flex items-center justify-between gap-1 px-0.5 pt-[2%]">
+        <span className="font-mono tracking-wide opacity-60" style={{ fontSize: hero ? 8 : 6.5, color: "#cbc6ba" }}>{item.ticker}</span>
+        <span className={cn("font-serif font-extrabold whitespace-nowrap leading-none flex items-center gap-1", hero ? "text-sm" : "text-[11px]")}>
+          <span className="font-sans font-bold opacity-60" style={{ fontSize: hero ? 7.5 : 6.5, color: "#cbc6ba" }}>{STAT.label}</span>
+          <span style={{ color: c.glow }}>{value}</span>
+        </span>
       </div>
     </div>
   );
