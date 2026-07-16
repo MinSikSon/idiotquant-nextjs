@@ -181,6 +181,8 @@ function sectorArt(item: any): SectorInfo {
   const h = [...String(item?.ticker ?? item?.name ?? "")].reduce((a, c) => a + c.charCodeAt(0), 0);
   return SECTOR_FALLBACK[h % SECTOR_FALLBACK.length];
 }
+// 카드 아트에 쓰는 업종 사진 전체(중복 제거) — 마운트 시 미리 로드해두면 카드가 바뀔 때마다 재요청 없이 캐시에서 즉시 표시됨.
+const ALL_SECTOR_IMAGES = Array.from(new Set([...SECTORS, ...SECTOR_FALLBACK].map(s => s.image).filter(Boolean))) as string[];
 
 // 저평가 점수 설명 툴팁 (마우스 오버 + 클릭, 모바일 대응)
 function ScoreInfo() {
@@ -280,7 +282,7 @@ function TcgCard({ item, value, hero = false, count }:
               {sec.image ? (
                 <>
                   {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img src={sec.image} alt={sec.label} loading="lazy" className="absolute inset-0 w-full h-full object-cover" />
+                  <img src={sec.image} alt={sec.label} loading={hero ? "eager" : "lazy"} decoding="async" fetchPriority={hero ? "high" : "auto"} className="absolute inset-0 w-full h-full object-cover" />
                   {/* 사진 비네트 — 레퍼런스 사진 특유의 가장자리 음영 */}
                   <div aria-hidden className="absolute inset-0" style={{ boxShadow: "inset 0 0 14px 2px rgba(0,0,0,0.45)" }} />
                 </>
@@ -481,6 +483,11 @@ export default function GamePage() {
 
   useEffect(() => { dispatch(reqGetNcavDailyList("latest")); }, [dispatch]);
 
+  // 카드 아트(업종 사진) 전체를 미리 로드 — 첫 카드가 뜨기 전에 브라우저 캐시에 올려둬서 다음 라운드에 지연 없이 표시.
+  useEffect(() => {
+    for (const src of ALL_SECTOR_IMAGES) { const img = new window.Image(); img.src = src; }
+  }, []);
+
   // 로그인 상태면 계정 덱 로드
   useEffect(() => {
     if (!isLoggedIn) { setDeck([]); return; }
@@ -642,6 +649,16 @@ export default function GamePage() {
               </div>
             )}
 
+            {/* 질문 — 최상단(스코어 바로 아래)으로 이동해 카드를 보기 전에 무엇을 비교하는지 먼저 알 수 있게 */}
+            {phase === "guessing" && anchor && challenger && (
+              <p className="text-center text-sm sm:text-base font-bold text-neutral-800 dark:text-neutral-100 mb-3 shrink-0 break-keep leading-snug">
+                <b className="text-[#16a34a]">{challenger.name}</b>
+                <span className="font-medium text-neutral-500 dark:text-neutral-400">의 {STAT.label}은 </span>
+                <b className="text-neutral-900 dark:text-white">{anchor.name}</b>
+                <span className="font-medium text-neutral-500 dark:text-neutral-400">보다?</span>
+              </p>
+            )}
+
             {phase === "over" ? (
               // 결과 카드: 화면(뷰포트)을 꽉 채우고 헤더·버튼은 고정, 중간만 필요 시 내부 스크롤 → 한 화면에서 보임
               <div className="flex-1 min-h-0 flex flex-col rounded-3xl border border-neutral-200 dark:border-[#35332e] bg-white dark:bg-[#242320] overflow-hidden shadow-sm animate-in fade-in zoom-in-95 duration-300">
@@ -722,7 +739,7 @@ export default function GamePage() {
                 </div>
 
                 {/* 획득 / 로그인 유도 */}
-                <div className="min-h-[1.75rem] mt-2 text-center">
+                <div className="min-h-[1.75rem] text-center">
                   {phase === "revealed" && dropped && (
                     <span className="inline-flex items-center gap-1 text-xs font-bold text-amber-600 dark:text-amber-400 animate-in fade-in slide-in-from-bottom-1">
                       <Sparkles size={12} /> 카드 획득! {challenger.name} 이(가) 덱에 추가됨
@@ -743,22 +760,15 @@ export default function GamePage() {
                   )}
                 </div>
 
-                {/* 액션 */}
+                {/* 액션 — 카드 바로 아래로 붙여 여백 없이 */}
                 {phase === "guessing" ? (
-                  <div className="mt-3">
-                    {/* 질문 — 이름 기준으로 명확하게 (왼/오 대신). 버튼과 바로 연결 */}
-                    <p className="text-center text-sm sm:text-base font-bold text-neutral-800 dark:text-neutral-100 mb-1 break-keep leading-snug">
-                      <b className="text-[#16a34a]">{challenger.name}</b>
-                      <span className="font-medium text-neutral-500 dark:text-neutral-400">의 {STAT.label}은 </span>
-                      <b className="text-neutral-900 dark:text-white">{anchor.name}</b>
-                      <span className="font-medium text-neutral-500 dark:text-neutral-400">보다?</span>
-                    </p>
+                  <div>
                     {(() => {
                       // 정답 시(연승+1) 이 카드 획득 확률 — 연승↑·낮은 등급↑, 높은 등급은 더 높은 연승 필요.
                       const chance = Math.round(acquireChance(challenger, streak + 1) * 100);
                       const owned = deck.find(c => c.ticker === challenger.ticker);
                       return (
-                        <p className="text-center text-[11px] mb-3">
+                        <p className="text-center text-[11px] mb-1.5">
                           <span className="text-neutral-400">획득 확률 </span>
                           <b className="text-[#16a34a] tabular-nums">{chance}%</b>
                           <span className="text-neutral-300 dark:text-neutral-600"> · 연승 시 ↑</span>
@@ -770,20 +780,25 @@ export default function GamePage() {
                         </p>
                       );
                     })()}
+                    {/* 높다/낮다 — 카드 프레임과 같은 흑단+보석 배지 톤으로 통일 */}
                     <div className="grid grid-cols-2 gap-3">
                       <button onClick={() => guess("higher")}
-                        className="group flex items-center justify-center gap-2.5 py-4 rounded-2xl bg-gradient-to-b from-[#22c55e] to-[#16a34a] hover:from-[#16a34a] hover:to-[#15803d] text-white shadow-lg shadow-[#16a34a]/30 active:scale-[0.97] transition-all">
-                        <span className="flex items-center justify-center w-8 h-8 rounded-full bg-white/20 group-hover:-translate-y-0.5 transition-transform">
-                          <ArrowUp size={20} strokeWidth={2.8} />
+                        className="group flex items-center justify-center gap-2.5 py-4 rounded-xl border-2 active:scale-[0.97] transition-all"
+                        style={{ background: "linear-gradient(160deg,#232323,#0c0c0c)", borderColor: "#16a34a", boxShadow: "inset 0 0 0 1px rgba(255,255,255,0.08), 0 6px 16px -8px rgba(22,163,74,0.55)" }}>
+                        <span className="flex items-center justify-center w-8 h-8 rounded-full shrink-0 group-hover:-translate-y-0.5 transition-transform"
+                          style={{ background: "radial-gradient(circle at 34% 28%, rgba(255,255,255,0.55), #16a34a 55%, rgba(0,0,0,0.5))", boxShadow: "0 0 8px rgba(22,163,74,0.7)" }}>
+                          <ArrowUp size={18} strokeWidth={2.8} className="text-white" />
                         </span>
-                        <span className="text-lg font-black tracking-tight">높다</span>
+                        <span className="text-lg font-black font-serif tracking-tight" style={{ color: "#ece4cf" }}>높다</span>
                       </button>
                       <button onClick={() => guess("lower")}
-                        className="group flex items-center justify-center gap-2.5 py-4 rounded-2xl bg-gradient-to-b from-[#fb7185] to-[#e11d48] hover:from-[#f43f5e] hover:to-[#be123c] text-white shadow-lg shadow-rose-500/30 active:scale-[0.97] transition-all">
-                        <span className="flex items-center justify-center w-8 h-8 rounded-full bg-white/20 group-hover:translate-y-0.5 transition-transform">
-                          <ArrowDown size={20} strokeWidth={2.8} />
+                        className="group flex items-center justify-center gap-2.5 py-4 rounded-xl border-2 active:scale-[0.97] transition-all"
+                        style={{ background: "linear-gradient(160deg,#232323,#0c0c0c)", borderColor: "#e11d48", boxShadow: "inset 0 0 0 1px rgba(255,255,255,0.08), 0 6px 16px -8px rgba(225,29,72,0.55)" }}>
+                        <span className="flex items-center justify-center w-8 h-8 rounded-full shrink-0 group-hover:translate-y-0.5 transition-transform"
+                          style={{ background: "radial-gradient(circle at 34% 28%, rgba(255,255,255,0.55), #e11d48 55%, rgba(0,0,0,0.5))", boxShadow: "0 0 8px rgba(225,29,72,0.7)" }}>
+                          <ArrowDown size={18} strokeWidth={2.8} className="text-white" />
                         </span>
-                        <span className="text-lg font-black tracking-tight">낮다</span>
+                        <span className="text-lg font-black font-serif tracking-tight" style={{ color: "#ece4cf" }}>낮다</span>
                       </button>
                     </div>
                   </div>
