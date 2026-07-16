@@ -17,6 +17,7 @@ import {
   ArrowUp, ArrowDown, RotateCcw, Layers, TrendingUp, Sparkles, ChevronLeft, ChevronRight, Lock, Info,
   Cpu, Dna, Landmark, CarFront, Ship, Construction, Zap, FlaskConical, Factory, RadioTower, Gamepad2,
   Soup, ShoppingCart, PlaneTakeoff, Shirt, Code2, Gem, Compass, Anchor, Map as MapIcon, Medal as MedalIcon,
+  BatteryCharging, Bot, Wallet,
   type LucideIcon,
 } from "lucide-react";
 import { useAppDispatch, useAppSelector } from "@/lib/hooks";
@@ -150,13 +151,17 @@ const EFFECT_BONUS: Record<string, number> = {
 type SectorInfo = { label: string; icon: LucideIcon; image?: string; hue: string; flavor: string; keyword: string };
 const SEC_IMG = (name: string) => `/images/sectors/${name}.jpg`;
 const SECTORS: (SectorInfo & { re: RegExp })[] = [
-  { re: /반도체|전자|디스플레이|칩|하이닉스|테크|semi|chip|micron|nvidia|amd|intel|apple|tech/i, icon: Cpu, image: SEC_IMG("it"), hue: "#2f7dd6", label: "전자·반도체", flavor: "더 빠르고 더 작은 회로로 정보화 시대를 이끄는 기술의 심장부.", keyword: "기술력" },
+  // 세분화된 테마(핀테크·2차전지·로봇)를 먼저 검사해 소프트웨어·에너지 등 상위 카테고리에 앞서 매칭되게 함
+  { re: /핀테크|페이|사이버결제|간편결제|fintech|payment/i, icon: Wallet, image: SEC_IMG("fintech"), hue: "#6b3fa0", label: "핀테크", flavor: "돈의 흐름을 코드로 다시 설계하는 금융의 최전선.", keyword: "결제 점유율" },
+  { re: /2차전지|배터리|에너지솔루션|에코프로|엘앤에프|포스코퓨처엠|battery/i, icon: BatteryCharging, image: SEC_IMG("battery"), hue: "#1b6ec2", label: "2차전지", flavor: "전기의 시대를 떠받치는 작은 셀 하나하나의 혁신.", keyword: "셀 기술력" },
+  { re: /로봇|로보틱|자동화|robot|automat/i, icon: Bot, image: SEC_IMG("robotics"), hue: "#556270", label: "로봇·자동화", flavor: "반복을 기계에 맡기고 사람은 더 큰 일을 한다.", keyword: "자동화율" },
+  { re: /반도체|전자|디스플레이|칩|하이닉스|테크|semi|chip|micron|nvidia|amd|intel|apple|tech/i, icon: Cpu, image: SEC_IMG("semiconductor"), hue: "#2f7dd6", label: "전자·반도체", flavor: "더 빠르고 더 작은 회로로 정보화 시대를 이끄는 기술의 심장부.", keyword: "기술력" },
   { re: /바이오|제약|헬스|메디|파마|셀|진단|bio|pharma|health|medi|gene/i, icon: Dna, image: SEC_IMG("healthcare"), hue: "#9d3fa0", label: "바이오·제약", flavor: "생명을 향한 연구와 신뢰로 인류의 건강을 지킨다.", keyword: "바이오 기술" },
   { re: /은행|금융|증권|캐피탈|카드|보험|지주|홀딩스|bank|financ|capital|insur|jpmorgan|goldman/i, icon: Landmark, image: SEC_IMG("financials"), hue: "#52606d", label: "금융", flavor: "자본의 흐름을 설계해 신뢰의 네트워크를 구축하는 곳.", keyword: "유동성" },
   { re: /자동차|모비스|타이어|모터|현대차|기아|auto|motor|\bcar\b|tesla|ford|toyota/i, icon: CarFront, image: SEC_IMG("automobiles"), hue: "#3b6fc4", label: "자동차", flavor: "바퀴 위에서 이동의 미래를 실현하는 엔지니어링의 결정체.", keyword: "생산력" },
   { re: /조선|해운|중공업|marine|ship|해양/i, icon: Ship, image: SEC_IMG("transportation"), hue: "#1d94c9", label: "조선·해운", flavor: "대양을 가르는 강철 선체로 세계 무역을 실어나른다.", keyword: "물류" },
   { re: /건설|엔지니어|건축|시멘트|construc|engineer|cement/i, icon: Construction, image: SEC_IMG("industrials"), hue: "#6b8e35", label: "건설", flavor: "도시의 뼈대를 세우고 미래의 스카이라인을 그린다.", keyword: "수주" },
-  { re: /에너지|전력|가스|정유|석유|원전|태양|배터리|energy|oil|power|solar|batter|exxon|chevron/i, icon: Zap, image: SEC_IMG("energy"), hue: "#d2691e", label: "에너지", flavor: "빛과 동력을 공급해 산업의 맥박을 뛰게 하는 원천.", keyword: "공급망" },
+  { re: /에너지|전력|가스|정유|석유|원전|태양|energy|oil|power|solar|exxon|chevron/i, icon: Zap, image: SEC_IMG("energy"), hue: "#d2691e", label: "에너지", flavor: "빛과 동력을 공급해 산업의 맥박을 뛰게 하는 원천.", keyword: "공급망" },
   { re: /화학|케미|소재|섬유|폴리|chem|material/i, icon: FlaskConical, image: SEC_IMG("materials"), hue: "#3568a8", label: "화학·소재", flavor: "분자 단위의 혁신으로 모든 산업의 기초를 완성한다.", keyword: "소재 경쟁력" },
   { re: /철강|금속|포스코|steel|metal|alum/i, icon: Factory, image: SEC_IMG("materials"), hue: "#3568a8", label: "철강·금속", flavor: "불과 압력으로 세상을 지탱하는 뼈대를 벼려낸다.", keyword: "원가 경쟁력" },
   { re: /통신|텔레콤|kt|skt|telecom|networ|verizon|comcast/i, icon: RadioTower, image: SEC_IMG("communication"), hue: "#4f5fbf", label: "통신", flavor: "보이지 않는 전파로 세계를 하나로 연결한다.", keyword: "네트워크" },
@@ -169,11 +174,31 @@ const SECTORS: (SectorInfo & { re: RegExp })[] = [
 ];
 const SECTOR_FALLBACK: SectorInfo[] = [
   { icon: Gem, image: SEC_IMG("value_stock"), hue: "#c99a2e", label: "가치주", flavor: "저평가된 가치, 시장이 아직 알아보지 못한 원석.", keyword: "저평가" },
-  { icon: TrendingUp, image: SEC_IMG("education"), hue: "#b8622a", label: "성장주", flavor: "가파른 곡선 위에서 다음 시대를 선점한다.", keyword: "성장성" },
+  { icon: TrendingUp, image: SEC_IMG("growth_stock"), hue: "#1d5fa8", label: "성장주", flavor: "가파른 곡선 위에서 다음 시대를 선점한다.", keyword: "성장성" },
   { icon: Compass, image: SEC_IMG("compass_voyage"), hue: "#8a6d3f", label: "탐험", flavor: "지도에 없는 시장을 개척하는 최전선의 도전자.", keyword: "개척" },
   { icon: Anchor, image: SEC_IMG("utilities"), hue: "#14a08f", label: "블루칩", flavor: "오랜 시간 검증된 안정감, 흔들리지 않는 기둥.", keyword: "안정성" },
   { icon: MapIcon, image: SEC_IMG("new_continent"), hue: "#d4820f", label: "신대륙", flavor: "아직 발견되지 않은 기회의 땅을 향해 나아간다.", keyword: "잠재력" },
-  { icon: MedalIcon, image: SEC_IMG("real_estate"), hue: "#ca9a1e", label: "우량주", flavor: "탄탄한 재무구조로 어떤 파도에도 흔들리지 않는다.", keyword: "재무 건전성" },
+  { icon: MedalIcon, image: SEC_IMG("bluechip_shield"), hue: "#c9a227", label: "우량주", flavor: "탄탄한 재무구조로 어떤 파도에도 흔들리지 않는다.", keyword: "재무 건전성" },
+  { icon: Landmark, image: SEC_IMG("dividend_stock"), hue: "#2f7d4f", label: "배당주", flavor: "꾸준한 배당으로 현금흐름을 돌려주는 신뢰의 나무.", keyword: "배당수익률" },
+  { icon: Dna, image: SEC_IMG("esg_invest"), hue: "#5b3a8f", label: "ESG 투자", flavor: "환경·사회·지배구조를 함께 고려하는 책임 있는 투자.", keyword: "ESG 등급" },
+  { icon: Construction, image: SEC_IMG("reits"), hue: "#3f7d4f", label: "리츠", flavor: "부동산에서 나오는 안정적인 임대수익을 나눠 갖는다.", keyword: "임대수익률" },
+  { icon: Construction, image: SEC_IMG("infra_invest"), hue: "#1e5c8a", label: "인프라 투자", flavor: "다리와 길처럼, 세상의 기반을 놓는 오래가는 투자.", keyword: "인프라 안정성" },
+  { icon: CarFront, image: SEC_IMG("ev_mobility"), hue: "#1f8a7a", label: "전기차·모빌리티", flavor: "충전 한 번으로 달리는 이동수단의 미래.", keyword: "충전 인프라" },
+  { icon: ShoppingCart, image: SEC_IMG("consumer_brand"), hue: "#a8791e", label: "소비재·브랜드", flavor: "일상 속 브랜드 파워로 꾸준히 사랑받는 소비재.", keyword: "브랜드 충성도" },
+  { icon: Compass, image: SEC_IMG("risk_challenge"), hue: "#2c4f66", label: "위험과 도전", flavor: "거친 파도를 넘어야 더 큰 성장이 보인다.", keyword: "리스크 관리" },
+  { icon: Gem, image: SEC_IMG("gold_discovery"), hue: "#b8860b", label: "황금의 발견", flavor: "묻혀 있던 가치를 가장 먼저 찾아내는 안목.", keyword: "발굴력" },
+  { icon: Ship, image: SEC_IMG("trade_expansion"), hue: "#6b5030", label: "무역의 확장", flavor: "손을 맞잡고 시장을 넓혀가는 교역의 힘.", keyword: "글로벌 네트워크" },
+  { icon: Compass, image: SEC_IMG("pioneer_spirit"), hue: "#c9711e", label: "개척자의 정신", flavor: "끊임없는 도전과 혁신으로 새로운 길을 개척한다.", keyword: "혁신성" },
+  { icon: Ship, image: SEC_IMG("harbor_town"), hue: "#2a6b8a", label: "무역항", flavor: "성공적인 투자를 통해 풍요와 안정을 이룬 항구.", keyword: "안정적 수익" },
+  { icon: TrendingUp, image: SEC_IMG("business_cycle"), hue: "#5a7a4a", label: "경기순환", flavor: "경기의 흐름을 이해하고 사이클에 맞는 투자를 한다.", keyword: "타이밍" },
+  { icon: MedalIcon, image: SEC_IMG("diversification"), hue: "#8a6d3f", label: "분산투자", flavor: "다양한 자산에 나눠 담아 위험을 줄이고 안정성을 높인다.", keyword: "포트폴리오" },
+  { icon: MedalIcon, image: SEC_IMG("long_term_invest"), hue: "#9a7a3f", label: "장기투자", flavor: "시간의 힘을 믿고 인내하며 복리의 효과를 누린다.", keyword: "복리 효과" },
+  { icon: Landmark, image: SEC_IMG("cash_flow"), hue: "#4a7a5a", label: "현금흐름", flavor: "지속적인 현금흐름을 창출하는 기업과 자산에 투자한다.", keyword: "잉여현금흐름" },
+  { icon: Gem, image: SEC_IMG("value_creation"), hue: "#2f6b5a", label: "가치 창출", flavor: "기업의 본질적 가치를 키워 주주와 사회에 보답한다.", keyword: "내재가치" },
+  { icon: TrendingUp, image: SEC_IMG("innovation_growth"), hue: "#2f5a8a", label: "혁신 성장", flavor: "혁신과 기술로 미래를 선도하며 꾸준한 성장을 이어간다.", keyword: "R&D 투자" },
+  { icon: MapIcon, image: SEC_IMG("global_invest"), hue: "#2f4a7a", label: "글로벌 투자", flavor: "세계 시장을 무대로 더 넓은 기회를 포착한다.", keyword: "해외 매출 비중" },
+  { icon: TrendingUp, image: SEC_IMG("sustainable_growth"), hue: "#3f7a4f", label: "지속가능 성장", flavor: "지속가능한 성장을 통해 미래 세대와 함께 번영한다.", keyword: "지속가능성" },
+  { icon: TrendingUp, image: SEC_IMG("education"), hue: "#b8622a", label: "인재 양성", flavor: "배움과 지식의 가치를 전하며 미래 인재를 키운다.", keyword: "인적자본" },
 ];
 function sectorArt(item: any): SectorInfo {
   const hay = `${item?.name ?? ""} ${item?.ticker ?? ""}`;
