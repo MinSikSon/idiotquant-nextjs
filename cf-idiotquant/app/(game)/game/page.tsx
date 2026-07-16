@@ -634,7 +634,7 @@ export default function GamePage() {
       {/* 대항해시대 바다 3D 배경 (three.js) */}
       <div className="absolute inset-0 z-0"><GameSeaArt /></div>
       <div className="absolute inset-0 z-0 pointer-events-none bg-gradient-to-b from-[#fdf4e3]/70 via-transparent to-[#dff0e6]/85 dark:from-[#0a1a1f]/75 dark:via-transparent dark:to-[#0a1512]/90" />
-      <div className="relative z-10 w-full max-w-2xl mx-auto px-4 pt-4 pb-3 flex-1 min-h-0 flex flex-col">
+      <div className="relative z-10 w-full max-w-2xl mx-auto px-2 pt-4 pb-3 flex-1 min-h-0 flex flex-col">
 
         {/* 헤더 */}
         <div className="flex items-center justify-between mb-3 shrink-0">
