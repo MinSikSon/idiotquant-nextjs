@@ -145,33 +145,35 @@ const EFFECT_BONUS: Record<string, number> = {
 };
 
 // 업종 추론 — 종목명/티커 키워드로 대표 업종을 매핑. 데이터에 sector 필드가 없어 이름 기반.
-// icon=카드 아트창에 쓰는 벡터 심볼(실사 이미지 생성 API가 없어 벡터 일러스트로 대체) · hue=업종 고유색 · flavor=설명 · keyword=효과 문구 키워드.
-type SectorInfo = { label: string; icon: LucideIcon; hue: string; flavor: string; keyword: string };
+// image=사용자 제공 업종 일러스트(사진) — GICS 11개 섹터 기준 카드 세트에서 크롭. 없으면 icon(벡터)으로 대체.
+// hue=업종 고유색 · flavor=설명 · keyword=효과 문구 키워드. GICS상 가까운 섹터끼리는 같은 이미지를 공유(예: 화학·소재/철강·금속 → materials).
+type SectorInfo = { label: string; icon: LucideIcon; image?: string; hue: string; flavor: string; keyword: string };
+const SEC_IMG = (name: string) => `/images/sectors/${name}.jpg`;
 const SECTORS: (SectorInfo & { re: RegExp })[] = [
-  { re: /반도체|전자|디스플레이|칩|하이닉스|테크|semi|chip|micron|nvidia|amd|intel|apple|tech/i, icon: Cpu, hue: "#2563eb", label: "전자·반도체", flavor: "더 빠르고 더 작은 회로로 정보화 시대를 이끄는 기술의 심장부.", keyword: "기술력" },
-  { re: /바이오|제약|헬스|메디|파마|셀|진단|bio|pharma|health|medi|gene/i, icon: Dna, hue: "#0d9488", label: "바이오·제약", flavor: "생명을 향한 연구와 신뢰로 인류의 건강을 지킨다.", keyword: "바이오 기술" },
-  { re: /은행|금융|증권|캐피탈|카드|보험|지주|홀딩스|bank|financ|capital|insur|jpmorgan|goldman/i, icon: Landmark, hue: "#92400e", label: "금융", flavor: "자본의 흐름을 설계해 신뢰의 네트워크를 구축하는 곳.", keyword: "유동성" },
-  { re: /자동차|모비스|타이어|모터|현대차|기아|auto|motor|\bcar\b|tesla|ford|toyota/i, icon: CarFront, hue: "#dc2626", label: "자동차", flavor: "바퀴 위에서 이동의 미래를 실현하는 엔지니어링의 결정체.", keyword: "생산력" },
-  { re: /조선|해운|중공업|marine|ship|해양/i, icon: Ship, hue: "#0369a1", label: "조선·해운", flavor: "대양을 가르는 강철 선체로 세계 무역을 실어나른다.", keyword: "물류" },
-  { re: /건설|엔지니어|건축|시멘트|construc|engineer|cement/i, icon: Construction, hue: "#ea580c", label: "건설", flavor: "도시의 뼈대를 세우고 미래의 스카이라인을 그린다.", keyword: "수주" },
-  { re: /에너지|전력|가스|정유|석유|원전|태양|배터리|energy|oil|power|solar|batter|exxon|chevron/i, icon: Zap, hue: "#eab308", label: "에너지", flavor: "빛과 동력을 공급해 산업의 맥박을 뛰게 하는 원천.", keyword: "공급망" },
-  { re: /화학|케미|소재|섬유|폴리|chem|material/i, icon: FlaskConical, hue: "#7c3aed", label: "화학·소재", flavor: "분자 단위의 혁신으로 모든 산업의 기초를 완성한다.", keyword: "소재 경쟁력" },
-  { re: /철강|금속|포스코|steel|metal|alum/i, icon: Factory, hue: "#52525b", label: "철강·금속", flavor: "불과 압력으로 세상을 지탱하는 뼈대를 벼려낸다.", keyword: "원가 경쟁력" },
-  { re: /통신|텔레콤|kt|skt|telecom|networ|verizon|comcast/i, icon: RadioTower, hue: "#4f46e5", label: "통신", flavor: "보이지 않는 전파로 세계를 하나로 연결한다.", keyword: "네트워크" },
-  { re: /게임|엔터|미디어|콘텐츠|넷마블|엔씨|크래프톤|game|media|netflix|disney|entertain/i, icon: Gamepad2, hue: "#db2777", label: "게임·엔터", flavor: "상상을 픽셀로, 즐거움을 콘텐츠로 빚어내는 창작소.", keyword: "IP 파워" },
-  { re: /식품|푸드|제과|음료|주류|라면|food|bever|coca|pepsi|nestle/i, icon: Soup, hue: "#d97706", label: "식품", flavor: "누군가의 식탁 위에 매일 신뢰를 올려놓는다.", keyword: "브랜드 신뢰" },
-  { re: /유통|마트|리테일|백화|커머스|이마트|쿠팡|retail|amazon|walmart|shop/i, icon: ShoppingCart, hue: "#059669", label: "유통", flavor: "생산자와 소비자를 잇는 거대한 흐름의 관문.", keyword: "판매망" },
-  { re: /항공|우주|방산|aero|defense|boeing|lockheed/i, icon: PlaneTakeoff, hue: "#0e7490", label: "항공·방산", flavor: "하늘과 안보의 경계를 지키는 첨단 기술의 결집체.", keyword: "기술 우위" },
-  { re: /패션|의류|화장품|뷰티|아모레|fashion|cosmet|nike|beauty/i, icon: Shirt, hue: "#e11d48", label: "패션·뷰티", flavor: "취향과 자신감을 디자인하는 감각의 산업.", keyword: "브랜드 파워" },
-  { re: /소프트|플랫폼|클라우드|인터넷|카카오|네이버|soft|cloud|internet|google|meta|microsoft/i, icon: Code2, hue: "#06b6d4", label: "소프트웨어", flavor: "코드 몇 줄로 세상의 방식을 다시 쓰는 플랫폼.", keyword: "확장성" },
+  { re: /반도체|전자|디스플레이|칩|하이닉스|테크|semi|chip|micron|nvidia|amd|intel|apple|tech/i, icon: Cpu, image: SEC_IMG("it"), hue: "#2563eb", label: "전자·반도체", flavor: "더 빠르고 더 작은 회로로 정보화 시대를 이끄는 기술의 심장부.", keyword: "기술력" },
+  { re: /바이오|제약|헬스|메디|파마|셀|진단|bio|pharma|health|medi|gene/i, icon: Dna, image: SEC_IMG("healthcare"), hue: "#0d9488", label: "바이오·제약", flavor: "생명을 향한 연구와 신뢰로 인류의 건강을 지킨다.", keyword: "바이오 기술" },
+  { re: /은행|금융|증권|캐피탈|카드|보험|지주|홀딩스|bank|financ|capital|insur|jpmorgan|goldman/i, icon: Landmark, image: SEC_IMG("financials"), hue: "#92400e", label: "금융", flavor: "자본의 흐름을 설계해 신뢰의 네트워크를 구축하는 곳.", keyword: "유동성" },
+  { re: /자동차|모비스|타이어|모터|현대차|기아|auto|motor|\bcar\b|tesla|ford|toyota/i, icon: CarFront, image: SEC_IMG("automobiles"), hue: "#dc2626", label: "자동차", flavor: "바퀴 위에서 이동의 미래를 실현하는 엔지니어링의 결정체.", keyword: "생산력" },
+  { re: /조선|해운|중공업|marine|ship|해양/i, icon: Ship, image: SEC_IMG("transportation"), hue: "#0369a1", label: "조선·해운", flavor: "대양을 가르는 강철 선체로 세계 무역을 실어나른다.", keyword: "물류" },
+  { re: /건설|엔지니어|건축|시멘트|construc|engineer|cement/i, icon: Construction, image: SEC_IMG("industrials"), hue: "#ea580c", label: "건설", flavor: "도시의 뼈대를 세우고 미래의 스카이라인을 그린다.", keyword: "수주" },
+  { re: /에너지|전력|가스|정유|석유|원전|태양|배터리|energy|oil|power|solar|batter|exxon|chevron/i, icon: Zap, image: SEC_IMG("energy"), hue: "#eab308", label: "에너지", flavor: "빛과 동력을 공급해 산업의 맥박을 뛰게 하는 원천.", keyword: "공급망" },
+  { re: /화학|케미|소재|섬유|폴리|chem|material/i, icon: FlaskConical, image: SEC_IMG("materials"), hue: "#7c3aed", label: "화학·소재", flavor: "분자 단위의 혁신으로 모든 산업의 기초를 완성한다.", keyword: "소재 경쟁력" },
+  { re: /철강|금속|포스코|steel|metal|alum/i, icon: Factory, image: SEC_IMG("materials"), hue: "#52525b", label: "철강·금속", flavor: "불과 압력으로 세상을 지탱하는 뼈대를 벼려낸다.", keyword: "원가 경쟁력" },
+  { re: /통신|텔레콤|kt|skt|telecom|networ|verizon|comcast/i, icon: RadioTower, image: SEC_IMG("communication"), hue: "#4f46e5", label: "통신", flavor: "보이지 않는 전파로 세계를 하나로 연결한다.", keyword: "네트워크" },
+  { re: /게임|엔터|미디어|콘텐츠|넷마블|엔씨|크래프톤|game|media|netflix|disney|entertain/i, icon: Gamepad2, image: SEC_IMG("media_entertainment"), hue: "#db2777", label: "게임·엔터", flavor: "상상을 픽셀로, 즐거움을 콘텐츠로 빚어내는 창작소.", keyword: "IP 파워" },
+  { re: /식품|푸드|제과|음료|주류|라면|food|bever|coca|pepsi|nestle/i, icon: Soup, image: SEC_IMG("cons_staples"), hue: "#d97706", label: "식품", flavor: "누군가의 식탁 위에 매일 신뢰를 올려놓는다.", keyword: "브랜드 신뢰" },
+  { re: /유통|마트|리테일|백화|커머스|이마트|쿠팡|retail|amazon|walmart|shop/i, icon: ShoppingCart, image: SEC_IMG("diversified"), hue: "#059669", label: "유통", flavor: "생산자와 소비자를 잇는 거대한 흐름의 관문.", keyword: "판매망" },
+  { re: /항공|우주|방산|aero|defense|boeing|lockheed/i, icon: PlaneTakeoff, image: SEC_IMG("industrials"), hue: "#0e7490", label: "항공·방산", flavor: "하늘과 안보의 경계를 지키는 첨단 기술의 결집체.", keyword: "기술 우위" },
+  { re: /패션|의류|화장품|뷰티|아모레|fashion|cosmet|nike|beauty/i, icon: Shirt, image: SEC_IMG("cons_discretionary"), hue: "#e11d48", label: "패션·뷰티", flavor: "취향과 자신감을 디자인하는 감각의 산업.", keyword: "브랜드 파워" },
+  { re: /소프트|플랫폼|클라우드|인터넷|카카오|네이버|soft|cloud|internet|google|meta|microsoft/i, icon: Code2, image: SEC_IMG("it"), hue: "#06b6d4", label: "소프트웨어", flavor: "코드 몇 줄로 세상의 방식을 다시 쓰는 플랫폼.", keyword: "확장성" },
 ];
 const SECTOR_FALLBACK: SectorInfo[] = [
   { icon: Gem, hue: "#16a34a", label: "가치주", flavor: "저평가된 가치, 시장이 아직 알아보지 못한 원석.", keyword: "저평가" },
-  { icon: TrendingUp, hue: "#f97316", label: "성장주", flavor: "가파른 곡선 위에서 다음 시대를 선점한다.", keyword: "성장성" },
+  { icon: TrendingUp, image: SEC_IMG("education"), hue: "#f97316", label: "성장주", flavor: "가파른 곡선 위에서 다음 시대를 선점한다.", keyword: "성장성" },
   { icon: Compass, hue: "#0ea5e9", label: "탐험", flavor: "지도에 없는 시장을 개척하는 최전선의 도전자.", keyword: "개척" },
-  { icon: Anchor, hue: "#1d4ed8", label: "블루칩", flavor: "오랜 시간 검증된 안정감, 흔들리지 않는 기둥.", keyword: "안정성" },
+  { icon: Anchor, image: SEC_IMG("utilities"), hue: "#1d4ed8", label: "블루칩", flavor: "오랜 시간 검증된 안정감, 흔들리지 않는 기둥.", keyword: "안정성" },
   { icon: MapIcon, hue: "#65a30d", label: "신대륙", flavor: "아직 발견되지 않은 기회의 땅을 향해 나아간다.", keyword: "잠재력" },
-  { icon: MedalIcon, hue: "#ca8a04", label: "우량주", flavor: "탄탄한 재무구조로 어떤 파도에도 흔들리지 않는다.", keyword: "재무 건전성" },
+  { icon: MedalIcon, image: SEC_IMG("real_estate"), hue: "#ca8a04", label: "우량주", flavor: "탄탄한 재무구조로 어떤 파도에도 흔들리지 않는다.", keyword: "재무 건전성" },
 ];
 function sectorArt(item: any): SectorInfo {
   const hay = `${item?.name ?? ""} ${item?.ticker ?? ""}`;
@@ -249,18 +251,20 @@ function TcgCard({ item, value, hero = false, count }:
       style={{ [y]: -1.5, background: "rgba(0,0,0,0.55)" } as React.CSSProperties} />
   );
   return (
-    <div className="relative w-full h-full flex flex-col overflow-hidden transition-transform duration-200 ease-out hover:-translate-y-1 p-[7%]"
+    <div className="relative w-full h-full flex flex-col overflow-hidden transition-transform duration-200 ease-out hover:-translate-y-1 p-[3.5%]"
       style={{ background: "linear-gradient(160deg,#232323,#0c0c0c)", boxShadow: "inset 0 0 0 1px rgba(255,255,255,0.08), 0 4px 14px -6px rgba(0,0,0,0.6)" }}>
-      {/* 명패+아트 존 — 상아색 카드지 한 장, 룰선으로만 구획 (레퍼런스와 동일하게 여백 없이 이어짐, 각진 모서리) */}
+      {/* 명패+아트 존 — 상아색 카드지 한 장. 명패는 카드지 가장자리까지 꽉 차고, 아트는 사진 매트처럼 안쪽에 여백을 두고 액자처럼 삽입 */}
       <div className="relative shrink-0 flex flex-col overflow-hidden"
         style={{ background: "linear-gradient(175deg,#ece4cf,#ddd0a6)", flex: "1 1 auto", minHeight: 0 }}>
-        {/* 명패: 점수 | 종목명 | 코드 — 구분선 상하단에 리벳 캡 장식 */}
+        {/* 명패: 점수 | 종목명 | 코드 — 구분선·바깥 모서리에 리벳 캡 장식 */}
         <div className="relative z-[2] shrink-0 flex items-stretch border-b-2" style={{ borderColor: line }}>
+          <span aria-hidden className="absolute w-[3px] h-[3px] rounded-full left-1 top-0 -translate-y-1/2" style={{ background: "rgba(0,0,0,0.55)" }} />
+          <span aria-hidden className="absolute w-[3px] h-[3px] rounded-full right-1 top-0 -translate-y-1/2" style={{ background: "rgba(0,0,0,0.55)" }} />
           <div className="relative flex items-center justify-center shrink-0 border-r" style={{ minWidth: hero ? 26 : 20, borderColor: "rgba(0,0,0,0.35)" }}>
             <span className="font-serif font-black tabular-nums" style={{ fontSize: hero ? 13 : 10.5, color: "#221c10" }}>{v.score}</span>
             <DividerCap y="top" /><DividerCap y="bottom" />
           </div>
-          <div className="flex-1 min-w-0 flex items-center justify-center px-1 py-1.5">
+          <div className="flex-1 min-w-0 flex items-center justify-center px-1 py-[3%]">
             <p className={cn("font-serif font-bold truncate", hero ? "text-[13px]" : "text-[10.5px]")} style={{ color: "#221c10" }}>{item.name}</p>
           </div>
           <div className="relative flex items-center justify-center shrink-0 px-1 border-l" style={{ borderColor: "rgba(0,0,0,0.35)" }}>
@@ -269,25 +273,35 @@ function TcgCard({ item, value, hero = false, count }:
           </div>
         </div>
 
-        {/* 아트창: 어두운 바탕(레퍼런스의 목재 배경) 위에 업종 심볼 + 로고 메달리온 — 밝은 톤으로 대비. flex-1 로 가변, 각진 모서리 */}
-        <div className="relative z-[1] flex-1 min-h-[38px] overflow-hidden" style={{ background: `radial-gradient(120% 90% at 50% 30%, ${rgba(sec.hue, 0.35)}, transparent 65%), linear-gradient(155deg, #2a2015, #14100a)` }}>
-          <div aria-hidden className="absolute inset-0 flex items-center justify-center">
-            <Icon className="w-[46%] h-[46%]" style={{ color: rgba(sec.hue, 0.85) }} strokeWidth={1.15} />
+        {/* 아트 매트: 명패 아래 크림색 여백을 두고 그 안에 검정 액자 + 아트창을 배치 (레퍼런스의 사진 매트 프레임) */}
+        <div className="relative flex-1 min-h-[42px] p-[3%]">
+          <div className="relative w-full h-full overflow-hidden" style={{ background: "#181312", padding: "2.5%" }}>
+            <div className="relative w-full h-full overflow-hidden" style={{ background: sec.image ? "#0c0a08" : `radial-gradient(120% 90% at 50% 30%, ${rgba(sec.hue, 0.35)}, transparent 65%), linear-gradient(155deg, #2a2015, #14100a)` }}>
+              {sec.image ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img src={sec.image} alt={sec.label} loading="lazy" className="absolute inset-0 w-full h-full object-cover" />
+              ) : (
+                <div aria-hidden className="absolute inset-0 flex items-center justify-center">
+                  <Icon className="w-[46%] h-[46%]" style={{ color: rgba(sec.hue, 0.85) }} strokeWidth={1.15} />
+                </div>
+              )}
+              {/* 종목 로고 — 업종 사진이 있으면 가리지 않도록 우하단 작은 배지로, 없으면(벡터 심볼일 때) 중앙에 */}
+              <div className={cn("absolute z-[2]", sec.image ? "bottom-1 right-1" : "inset-0 flex justify-center items-center")}>
+                <PortMedallion item={item} size={sec.image ? (hero ? 34 : 26) : (hero ? 56 : 40)} lift={hero} />
+              </div>
+              {count != null && count > 1 && (
+                <span className="absolute top-1 left-1 z-[3] px-1.5 py-0.5 rounded-full bg-black/70 text-white text-[10px] font-black tabular-nums leading-none">×{count}</span>
+              )}
+            </div>
           </div>
-          <div className={cn("absolute inset-0 flex justify-center items-center")}>
-            <PortMedallion item={item} size={hero ? 56 : 40} lift={hero} />
-          </div>
-          {count != null && count > 1 && (
-            <span className="absolute top-1 left-1 z-[3] px-1.5 py-0.5 rounded-full bg-black/70 text-white text-[10px] font-black tabular-nums leading-none">×{count}</span>
-          )}
         </div>
       </div>
 
-      {/* 검정 여백 — 아트존과 룰박스 사이 (레퍼런스의 카드지 마진) */}
-      <div className="shrink-0" style={{ height: hero ? 5 : 3 }} />
+      {/* 검정 여백 — 아트존과 룰박스 사이 (레퍼런스의 카드지 마진, 카드 크기에 비례) */}
+      <div className="shrink-0 h-[2.2%]" />
 
-      {/* 룰박스: 등급색 대리석 테두리(각진 모서리) + 흰 바탕 텍스트 — 플레이버 + 효과. shrink-0, 항상 온전히 보임 */}
-      <div className="relative z-[2] shrink-0 p-[3px]" style={{ background: marble }}>
+      {/* 룰박스: 등급색 대리석 테두리(각진 모서리, 카드 폭에 비례한 두께) + 흰 바탕 텍스트 — 플레이버 + 효과. shrink-0, 항상 온전히 보임 */}
+      <div className="relative z-[2] shrink-0 p-[3.2%]" style={{ background: marble }}>
         <div className="px-1.5 py-1.5" style={{ background: "#faf9f5", boxShadow: "inset 0 0 0 1px rgba(0,0,0,0.5)" }}>
           <p className="font-bold uppercase tracking-wide" style={{ fontSize: hero ? 8 : 6.5, color: sec.hue }}>{sec.label}</p>
           <p className={cn("leading-snug break-keep mt-0.5", hero ? "line-clamp-2" : "line-clamp-1")} style={{ fontSize: hero ? 10 : 7.5, color: "#181818" }}>{sec.flavor}</p>
@@ -298,7 +312,7 @@ function TcgCard({ item, value, hero = false, count }:
       </div>
 
       {/* 하단 인쇄줄 — 레퍼런스의 저작권 표기 자리에 티커 · 시가총액(게임 진행에 필요한 실 스탯) */}
-      <div className="relative z-[2] shrink-0 flex items-center justify-between gap-1 px-0.5 pt-1">
+      <div className="relative z-[2] shrink-0 flex items-center justify-between gap-1 px-0.5 pt-[2%]">
         <span className="font-mono tracking-wide opacity-60" style={{ fontSize: hero ? 8 : 6.5, color: "#cbc6ba" }}>{item.ticker}</span>
         <span className={cn("font-serif font-extrabold whitespace-nowrap leading-none flex items-center gap-1", hero ? "text-sm" : "text-[11px]")}>
           <span className="font-sans font-bold opacity-60" style={{ fontSize: hero ? 7.5 : 6.5, color: "#cbc6ba" }}>{STAT.label}</span>
