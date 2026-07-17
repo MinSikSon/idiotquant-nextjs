@@ -33,11 +33,11 @@ type NavItem = {
   adminOnly?: boolean;
 };
 
-// 순서·아이콘을 홈 온보딩 설명 순서에 맞춤: 게임(⛵) → 발굴(🪙) → 분석(💎)
+// 순서·아이콘을 홈 온보딩 설명 순서에 맞춤: 게임(⛵) → 발굴(🥇) → 분석(💎)
 const MAIN_NAV: NavItem[] = [
   { label: "홈",        href: "/",           icon: Home,       exact: true  },
   { label: "카드 게임", href: "/game",        icon: Gamepad2,   emoji: "⛵", badge: "New" },
-  { label: "종목 발굴", href: "/screener",    icon: Filter,     emoji: "🪙", badge: "Pro" },
+  { label: "종목 발굴", href: "/screener",    icon: Filter,     emoji: "🥇", badge: "Pro" },
   { label: "전략 히스토리", href: "/backtest", icon: History, adminOnly: true },
   { label: "적정 주가", href: "/analyze",     icon: Search,     emoji: "💎"   },
 ];
@@ -74,7 +74,7 @@ function SideItem({
           : "font-medium text-neutral-500 dark:text-neutral-400 hover:bg-[#f5f0e8] dark:hover:bg-[#2c2b27] hover:text-neutral-900 dark:hover:text-neutral-100"
       )}
     >
-      {emoji ? (
+      {emoji && isActive ? (
         <span className="shrink-0 w-4 text-center text-[15px] leading-none transition-transform group-hover:scale-110" aria-hidden>{emoji}</span>
       ) : (
         <Icon
@@ -114,7 +114,7 @@ function TabItem({
           : "text-neutral-400 dark:text-neutral-500 hover:text-neutral-700 dark:hover:text-neutral-300"
       )}
     >
-      {emoji ? (
+      {emoji && isActive ? (
         <span className="text-[19px] leading-none h-5 flex items-center" aria-hidden>{emoji}</span>
       ) : (
         <Icon size={20} strokeWidth={isActive ? 2.2 : 1.6} />
@@ -355,12 +355,12 @@ export function NavbarWithSimpleLinks() {
       {/* ══ MOBILE BOTTOM TAB BAR ════════════════════════════════════ */}
       <nav className="md:hidden fixed bottom-0 left-0 right-0 h-[64px] z-40 bg-white/95 dark:bg-[#1f1e1b]/95 backdrop-blur-xl border-t border-neutral-200/70 dark:border-[#3a3834] flex items-center px-3">
         <TabItem href="/"           label="홈"     icon={Home}       isActive={pathname === "/"} />
-        <TabItem href="/game"       label="게임"   emoji="⛵"        isActive={pathname.startsWith("/game")} />
-        <TabItem href="/screener"   label="발굴"   emoji="🪙"        isActive={pathname.startsWith("/screener")} />
+        <TabItem href="/game"       label="게임"   icon={Gamepad2}   emoji="⛵" isActive={pathname.startsWith("/game")} />
+        <TabItem href="/screener"   label="발굴"   icon={Filter}     emoji="🥇" isActive={pathname.startsWith("/screener")} />
         {isAdmin && (
           <TabItem href="/backtest"   label="히스토리" icon={History}  isActive={pathname.startsWith("/backtest")} />
         )}
-        <TabItem href="/analyze"    label="분석"   emoji="💎"        isActive={pathname.startsWith("/analyze")} />
+        <TabItem href="/analyze"    label="분석"   icon={Search}     emoji="💎" isActive={pathname.startsWith("/analyze")} />
         <button
           type="button"
           onClick={() => setMoreSheet(v => !v)}
