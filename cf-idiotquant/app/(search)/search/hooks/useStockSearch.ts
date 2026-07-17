@@ -108,11 +108,15 @@ export function useStockSearch() {
     const onSearch = useCallback(async (stockName: string) => {
         if (!stockName) return;
 
+        // 연속 검색 시 이전 호출의 await가 나중에 끝나 name이 뒤집히는 것을 막기 위해
+        // await 이전에 동기적으로 호출 순서대로 세팅한다.
+        dispatch(addKrMarketHistory(stockName));
+        setName(stockName);
+        setWaitResponse(true);
+
         const upper = stockName.toUpperCase();
         const usOverrides = await loadUsOverrides();
         const isUs = us_tickers.includes(upper) || usOverrides.has(upper);
-        dispatch(addKrMarketHistory(stockName));
-        setName(stockName);
 
         if (!isUs) {
             setKrOrUs("KR");
@@ -135,7 +139,6 @@ export function useStockSearch() {
                 }));
                 dispatch(reqGetBalanceSheet({ PDNO: code }));
                 dispatch(reqGetIncomeStatement({ PDNO: code }));
-                setWaitResponse(true);
             } else {
                 // 유효한 6자리 KR 코드가 없으면 US 티커로 폴백 (오버라이드 country 미설정 등)
                 setKrOrUs("US");
