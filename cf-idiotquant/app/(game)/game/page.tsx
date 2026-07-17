@@ -199,6 +199,16 @@ const SECTOR_FALLBACK: SectorInfo[] = [
   { icon: MapIcon, image: SEC_IMG("global_invest"), hue: "#2f4a7a", label: "글로벌 투자", flavor: "세계 시장을 무대로 더 넓은 기회를 포착한다.", keyword: "해외 매출 비중" },
   { icon: TrendingUp, image: SEC_IMG("sustainable_growth"), hue: "#3f7a4f", label: "지속가능 성장", flavor: "지속가능한 성장을 통해 미래 세대와 함께 번영한다.", keyword: "지속가능성" },
   { icon: TrendingUp, image: SEC_IMG("education"), hue: "#b8622a", label: "인재 양성", flavor: "배움과 지식의 가치를 전하며 미래 인재를 키운다.", keyword: "인적자본" },
+  { icon: Landmark, image: SEC_IMG("value_building"), hue: "#2f6fa8", label: "가치주", flavor: "기업의 내재가치 대비 저평가된 주식에 투자하여 안정적인 수익을 추구한다.", keyword: "내재가치 대비" },
+  { icon: TrendingUp, image: SEC_IMG("growth_leaf"), hue: "#3f8f4f", label: "성장주", flavor: "높은 성장 잠재력을 가진 기업에 투자하여 미래의 가치를 선점한다.", keyword: "성장 잠재력" },
+  { icon: Gem, image: SEC_IMG("won_coin"), hue: "#c9971e", label: "배당주", flavor: "꾸준한 배당을 지급하는 기업에 투자하여 안정적인 현금흐름과 복리의 힘을 누린다.", keyword: "현금흐름" },
+  { icon: Bot, image: SEC_IMG("theme_stock"), hue: "#7c3fb0", label: "테마주", flavor: "시대의 흐름을 이끄는 테마에 투자해 구조적 성장을 추구하고 미래의 변화를 먼저 읽어낸다.", keyword: "테마 선점력" },
+  { icon: MedalIcon, image: SEC_IMG("shield_laurel"), hue: "#2f6fb0", label: "우량주", flavor: "재무구조가 건실하고 경쟁력이 뛰어난 우량 기업에 투자하여 위기 속에서도 빛나는 기업을 선택한다.", keyword: "재무 안정성" },
+  { icon: Ship, image: SEC_IMG("new_continent2"), hue: "#1f9ac9", label: "신대륙 발견", flavor: "미지의 시장과 기회를 개척하여 새로운 가치를 발견한다.", keyword: "시장 개척" },
+  { icon: Gem, image: SEC_IMG("gold_land"), hue: "#8a6018", label: "황금의 땅", flavor: "숨겨진 자산과 기업을 발굴하여 가치를 극대화한다.", keyword: "자산 발굴" },
+  { icon: Compass, image: SEC_IMG("risk_scale"), hue: "#c05a2a", label: "위험과 기회", flavor: "높은 위험 속에 큰 기회가 존재한다. 리스크를 이해하고 통제할 때 보상이 따른다.", keyword: "리스크 관리" },
+  { icon: MedalIcon, image: SEC_IMG("hourglass2"), hue: "#d98a1e", label: "장기 투자", flavor: "시간의 힘을 믿고 인내하며 복리의 효과를 누린다.", keyword: "복리 효과" },
+  { icon: MapIcon, image: SEC_IMG("global_expand"), hue: "#1f6a8a", label: "글로벌 확장", flavor: "세계 시장을 무대로 다양한 국가와 산업에 투자하여 성장 기회를 넓힌다.", keyword: "해외 확장성" },
 ];
 function sectorArt(item: any): SectorInfo {
   const hay = `${item?.name ?? ""} ${item?.ticker ?? ""}`;
