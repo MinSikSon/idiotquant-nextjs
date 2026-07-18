@@ -275,6 +275,7 @@ export function WaxSeal({ item, size = 26 }: { item: any; size?: number }) {
 // hero=플레이용(큼), 미지정=덱 콤팩트. 룰박스는 shrink-0 로 항상 온전히 보이고, 아트창만 flex-1 로 크기에 맞춰 줄어듦.
 function TcgCard({ item, value, hero = false, count, locked = false }:
   { item: any; value: React.ReactNode; hero?: boolean; count?: number; idleDelay?: number; locked?: boolean }) {
+  const [showInfo, setShowInfo] = useState(false);
   const v = computeValueScore(item);
   const c = TIER[v.tone] ?? TIER.explore;
   const sec = sectorArt(item);
@@ -306,7 +307,19 @@ function TcgCard({ item, value, hero = false, count, locked = false }:
           <span aria-hidden className="absolute w-[3px] h-[3px] rounded-full left-1 top-0 -translate-y-1/2" style={{ background: "rgba(0,0,0,0.55)" }} />
           <span aria-hidden className="absolute w-[3px] h-[3px] rounded-full right-1 top-0 -translate-y-1/2" style={{ background: "rgba(0,0,0,0.55)" }} />
           <div className="relative flex items-center justify-center shrink-0 border-r" style={{ minWidth: hero ? 26 : 20, borderColor: "rgba(0,0,0,0.35)" }}>
-            <span className="font-serif font-black tabular-nums" style={{ fontSize: hero ? 13 : 10.5, color: "#221c10" }}>{locked ? v.medal : v.score}</span>
+            {locked ? (
+              <span className="font-serif font-black tabular-nums" style={{ fontSize: hero ? 13 : 10.5, color: "#221c10" }}>{v.medal}</span>
+            ) : (
+              <button type="button"
+                onClick={e => { e.stopPropagation(); setShowInfo(s => !s); }}
+                onMouseEnter={() => setShowInfo(true)}
+                onMouseLeave={() => setShowInfo(false)}
+                className="font-serif font-black tabular-nums underline decoration-dotted decoration-1 underline-offset-2 cursor-help"
+                style={{ fontSize: hero ? 13 : 10.5, color: "#221c10" }}
+                aria-label="점수 계산 내역 보기">
+                {v.score}
+              </button>
+            )}
             <DividerCap y="top" /><DividerCap y="bottom" />
           </div>
           <div className="flex-1 min-w-0 flex items-center justify-center px-1 py-[3%]">
@@ -375,6 +388,30 @@ function TcgCard({ item, value, hero = false, count, locked = false }:
           <span style={{ color: c.glow }}>{value}</span>
         </span>
       </div>
+
+      {/* 점수 계산 내역 — 명패 점수 클릭/오버 시 카드 안쪽에 오버레이(카드 밖으로 안 나가 overflow-hidden에 안전) */}
+      {showInfo && !locked && (
+        <div className="absolute inset-0 z-[7] flex flex-col justify-center gap-1 bg-black p-[6%]"
+          onClick={e => { e.stopPropagation(); setShowInfo(false); }}>
+          <p className="font-serif font-black text-center" style={{ fontSize: hero ? 13 : 10, color: c.glow }}>저평가 점수 {v.score}</p>
+          <div className="space-y-[3%] mt-1">
+            {v.parts.map(p => (
+              <div key={p.key} className="flex items-center justify-between" style={{ fontSize: hero ? 9.5 : 7 }}>
+                <span className="font-bold text-neutral-300">{p.label}</span>
+                {p.available ? (
+                  <span className="tabular-nums text-neutral-400">
+                    {p.valueStr} → <b className="text-white">{Math.round(p.sub * 100)}</b>
+                    <span className="text-neutral-500">×{Math.round(p.weight * 100)}%</span>
+                  </span>
+                ) : (
+                  <span className="text-neutral-500">데이터 없음</span>
+                )}
+              </div>
+            ))}
+          </div>
+          <p className="text-center text-neutral-500 mt-1" style={{ fontSize: hero ? 8 : 6.5 }}>탭하면 닫혀요</p>
+        </div>
+      )}
     </div>
   );
 }
