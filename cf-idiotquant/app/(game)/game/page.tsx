@@ -23,10 +23,12 @@ import {
 import { useAppDispatch, useAppSelector } from "@/lib/hooks";
 import { reqGetNcavDailyList, selectNcavDailyList } from "@/lib/features/algorithmTrade/algorithmTradeSlice";
 import { computeValueScore } from "@/lib/utils/valueScore";
-import { getDeck, addDeckCard, type DeckCardSnapshot } from "@/lib/features/deck/deckAPI";
+import { getDeck, addDeckCard, getWallet, syncBestStreak, type DeckCardSnapshot } from "@/lib/features/deck/deckAPI";
 import { cn } from "@/lib/utils";
 import VoyageArt from "@/components/game/voyageArt";
 import GameSeaArt from "@/components/game/gameSeaArt";
+import { HOLO_THRESHOLD, HoloOverlay, PackReveal, AchievementBadges } from "./gameCollectibles";
+import { WalletChip, ConvertButton, ShopPanel, BOOST_ITEMS, type BoostItem } from "./gameShop";
 
 const safeNum = (v: any): number => { const n = Number(v); return Number.isFinite(n) ? n : 0; };
 
@@ -60,8 +62,8 @@ function deckFailReason(res: any): string {
 }
 
 // 덱 아이템 = 카드 스냅샷 + 수집 개수 (같은 종목 중복 누적)
-type DeckItem = DeckCardSnapshot & { count: number };
-const deckTotal = (deck: DeckItem[]) => deck.reduce((a, c) => a + (c.count ?? 1), 0);
+export type DeckItem = DeckCardSnapshot & { count: number };
+export const deckTotal = (deck: DeckItem[]) => deck.reduce((a, c) => a + (c.count ?? 1), 0);
 
 function toCard(it: any): DeckCardSnapshot {
   return {
@@ -69,6 +71,7 @@ function toCard(it: any): DeckCardSnapshot {
     market_cap: safeNum(it.market_cap), last_price: safeNum(it.last_price),
     ncav_ratio: safeNum(it.ncav_ratio), pbr: safeNum(it.pbr), per: safeNum(it.per),
     eps: safeNum(it.eps), bps: safeNum(it.bps),
+    tone: computeValueScore(it).tone, // 지갑 중복 카드 전환 시 코인 가치 조회용(워커에 점수 로직 미복제)
   };
 }
 
@@ -125,11 +128,11 @@ function PortMedallion({ item, size = 56, lift = false }: { item: any; size?: nu
 
 // 등급별 프리즘 팔레트 — computeValueScore().tone 이 조인키. 테두리·봉인·스탯 강조색을 결정.
 // glow=발광색 · edge=포일 테두리 스톱 · accent=스탯값 강조색. 카드 본문은 아래 PARCHMENT(양피지) 고정색.
-const rgba = (h: string, a: number) => {
+export const rgba = (h: string, a: number) => {
   const n = parseInt(h.slice(1), 16);
   return `rgba(${(n >> 16) & 255},${(n >> 8) & 255},${n & 255},${a})`;
 };
-const TIER: Record<string, { premium: boolean; glow: string; edge: string[]; accent: string }> = {
+export const TIER: Record<string, { premium: boolean; glow: string; edge: string[]; accent: string }> = {
   legend:   { premium: true,  glow: "#a855f7", edge: ["#f0abfc", "#7c3aed", "#e9d5ff", "#6d28d9"], accent: "#9333ea" },
   treasure: { premium: true,  glow: "#fb923c", edge: ["#fed7aa", "#ea580c", "#fca5a5", "#b45309"], accent: "#ea580c" },
   diamond:  { premium: true,  glow: "#22d3ee", edge: ["#cffafe", "#0891b2", "#a5f3fc", "#0e7490"], accent: "#0891b2" },
@@ -253,7 +256,7 @@ function ScoreInfo() {
 }
 
 // 등급 젬 배지 — 발광 젬 방울 + 메달 이모지. (카드/획득칩 공용)
-function WaxSeal({ item, size = 26 }: { item: any; size?: number }) {
+export function WaxSeal({ item, size = 26 }: { item: any; size?: number }) {
   const v = computeValueScore(item);
   const c = TIER[v.tone] ?? TIER.explore;
   return (
@@ -270,13 +273,17 @@ function WaxSeal({ item, size = 26 }: { item: any; size?: number }) {
 // 어두운 아트창(업종 심볼+로고) + 대리석 테두리 룰박스(플레이버+효과, 등급색) + 하단 인쇄줄(티커·시가총액).
 // 레퍼런스 카드엔 사진 아트가 들어가지만 이미지 생성 API가 없어 업종별 벡터 심볼(lucide)로 대체 — 레이아웃/구획은 그대로 유지.
 // hero=플레이용(큼), 미지정=덱 콤팩트. 룰박스는 shrink-0 로 항상 온전히 보이고, 아트창만 flex-1 로 크기에 맞춰 줄어듦.
-function TcgCard({ item, value, hero = false, count }:
-  { item: any; value: React.ReactNode; hero?: boolean; count?: number; idleDelay?: number }) {
+function TcgCard({ item, value, hero = false, count, locked = false }:
+  { item: any; value: React.ReactNode; hero?: boolean; count?: number; idleDelay?: number; locked?: boolean }) {
   const v = computeValueScore(item);
   const c = TIER[v.tone] ?? TIER.explore;
   const sec = sectorArt(item);
   const Icon = sec.icon;
   const bonus = EFFECT_BONUS[v.tone] ?? 1;
+  const holo = !locked && count != null && count >= HOLO_THRESHOLD;
+  const displayName = locked ? "???" : item.name;
+  const displayCode = locked ? "??-??" : `${sec.label.slice(0, 2).toUpperCase()}-${item.ticker.slice(-2)}`;
+  const displayTicker = locked ? "??????" : item.ticker;
   // 대리석 룰박스 — 등급 컬러 베이스 + 흰/검 얼룩(veining)을 얹어 진짜 대리석처럼
   const marbleBase = c.premium
     ? `linear-gradient(135deg, ${c.edge[0]}, ${c.edge[1]} 28%, ${c.edge[2]} 52%, ${c.edge[3]} 74%, ${c.edge[0]})`
@@ -288,8 +295,9 @@ function TcgCard({ item, value, hero = false, count }:
       style={{ [y]: -1.5, background: "rgba(0,0,0,0.55)" } as React.CSSProperties} />
   );
   return (
-    <div className="relative w-full h-full flex flex-col overflow-hidden transition-transform duration-200 ease-out hover:-translate-y-1 p-[3.5%]"
+    <div className={cn("relative w-full h-full flex flex-col overflow-hidden transition-transform duration-200 ease-out hover:-translate-y-1 p-[3.5%]", locked && "grayscale-[0.85] brightness-[0.65]")}
       style={{ background: "linear-gradient(160deg,#232323,#0c0c0c)", boxShadow: "inset 0 0 0 1px rgba(255,255,255,0.08), 0 4px 14px -6px rgba(0,0,0,0.6)" }}>
+      {holo && <HoloOverlay tone={v.tone} />}
       {/* 명패+아트 존 — 상아색 카드지 한 장. 명패는 카드지 가장자리까지 꽉 차고, 아트는 사진 매트처럼 안쪽에 여백을 두고 액자처럼 삽입 */}
       <div className="relative shrink-0 flex flex-col overflow-hidden"
         style={{ background: "linear-gradient(175deg,#ece4cf,#ddd0a6)", flex: "1 1 auto", minHeight: 0 }}>
@@ -298,14 +306,14 @@ function TcgCard({ item, value, hero = false, count }:
           <span aria-hidden className="absolute w-[3px] h-[3px] rounded-full left-1 top-0 -translate-y-1/2" style={{ background: "rgba(0,0,0,0.55)" }} />
           <span aria-hidden className="absolute w-[3px] h-[3px] rounded-full right-1 top-0 -translate-y-1/2" style={{ background: "rgba(0,0,0,0.55)" }} />
           <div className="relative flex items-center justify-center shrink-0 border-r" style={{ minWidth: hero ? 26 : 20, borderColor: "rgba(0,0,0,0.35)" }}>
-            <span className="font-serif font-black tabular-nums" style={{ fontSize: hero ? 13 : 10.5, color: "#221c10" }}>{v.score}</span>
+            <span className="font-serif font-black tabular-nums" style={{ fontSize: hero ? 13 : 10.5, color: "#221c10" }}>{locked ? v.medal : v.score}</span>
             <DividerCap y="top" /><DividerCap y="bottom" />
           </div>
           <div className="flex-1 min-w-0 flex items-center justify-center px-1 py-[3%]">
-            <p className={cn("font-serif font-bold truncate", hero ? "text-[13px]" : "text-[10.5px]")} style={{ color: "#221c10" }}>{item.name}</p>
+            <p className={cn("font-serif font-bold truncate", hero ? "text-[13px]" : "text-[10.5px]")} style={{ color: "#221c10" }}>{displayName}</p>
           </div>
           <div className="relative flex items-center justify-center shrink-0 px-1 border-l" style={{ borderColor: "rgba(0,0,0,0.35)" }}>
-            <span className="font-mono truncate" style={{ fontSize: hero ? 8 : 6.5, color: "#4a3f2a" }}>{sec.label.slice(0, 2).toUpperCase()}-{item.ticker.slice(-2)}</span>
+            <span className="font-mono truncate" style={{ fontSize: hero ? 8 : 6.5, color: "#4a3f2a" }}>{displayCode}</span>
             <DividerCap y="top" /><DividerCap y="bottom" />
           </div>
         </div>
@@ -313,8 +321,13 @@ function TcgCard({ item, value, hero = false, count }:
         {/* 아트 매트: 명패 아래 크림색 여백을 두고 그 안에 검정 액자 + 아트창을 배치 (레퍼런스의 사진 매트 프레임) */}
         <div className="relative flex-1 min-h-[42px] p-[3%]">
           <div className="relative w-full h-full overflow-hidden" style={{ background: "#181312", padding: "2.5%" }}>
-            <div className="relative w-full h-full overflow-hidden" style={{ background: sec.image ? "#0c0a08" : `radial-gradient(120% 90% at 50% 30%, ${rgba(sec.hue, 0.35)}, transparent 65%), linear-gradient(155deg, #2a2015, #14100a)` }}>
-              {sec.image ? (
+            <div className="relative w-full h-full overflow-hidden" style={{ background: (sec.image && !locked) ? "#0c0a08" : `radial-gradient(120% 90% at 50% 30%, ${rgba(sec.hue, 0.35)}, transparent 65%), linear-gradient(155deg, #2a2015, #14100a)` }}>
+              {locked ? (
+                <div aria-hidden className="absolute inset-0 flex items-center justify-center">
+                  <Icon className="w-[40%] h-[40%]" style={{ color: rgba(sec.hue, 0.5) }} strokeWidth={1.15} />
+                  <Lock className="absolute w-[26%] h-[26%] text-white/70" strokeWidth={1.5} />
+                </div>
+              ) : sec.image ? (
                 <>
                   {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img src={sec.image} alt={sec.label} loading={hero ? "eager" : "lazy"} decoding="async" fetchPriority={hero ? "high" : "auto"} className="absolute inset-0 w-full h-full object-cover" />
@@ -326,11 +339,13 @@ function TcgCard({ item, value, hero = false, count }:
                   <Icon className="w-[46%] h-[46%]" style={{ color: rgba(sec.hue, 0.85) }} strokeWidth={1.15} />
                 </div>
               )}
-              {/* 종목 로고 — 업종 사진이 있으면 가리지 않도록 우하단 작은 배지로, 없으면(벡터 심볼일 때) 중앙에 */}
-              <div className={cn("absolute z-[2]", sec.image ? "bottom-1 right-1" : "inset-0 flex justify-center items-center")}>
-                <PortMedallion item={item} size={sec.image ? (hero ? 34 : 26) : (hero ? 56 : 40)} lift={hero} />
-              </div>
-              {count != null && count > 1 && (
+              {/* 종목 로고 — 업종 사진이 있으면 가리지 않도록 우하단 작은 배지로, 없으면(벡터 심볼일 때) 중앙에. 잠금 카드는 정체를 가려야 하므로 렌더 안 함 */}
+              {!locked && (
+                <div className={cn("absolute z-[2]", sec.image ? "bottom-1 right-1" : "inset-0 flex justify-center items-center")}>
+                  <PortMedallion item={item} size={sec.image ? (hero ? 34 : 26) : (hero ? 56 : 40)} lift={hero} />
+                </div>
+              )}
+              {!locked && count != null && count > 1 && (
                 <span className="absolute top-1 left-1 z-[3] px-1.5 py-0.5 rounded-full bg-black/70 text-white text-[10px] font-black tabular-nums leading-none">×{count}</span>
               )}
             </div>
@@ -354,7 +369,7 @@ function TcgCard({ item, value, hero = false, count }:
 
       {/* 하단 인쇄줄 — 레퍼런스의 저작권 표기 자리에 티커 · 시가총액(게임 진행에 필요한 실 스탯) */}
       <div className="relative z-[2] shrink-0 flex items-center justify-between gap-1 px-0.5 pt-[2%]">
-        <span className="font-mono tracking-wide opacity-60" style={{ fontSize: hero ? 8 : 6.5, color: "#cbc6ba" }}>{item.ticker}</span>
+        <span className="font-mono tracking-wide opacity-60" style={{ fontSize: hero ? 8 : 6.5, color: "#cbc6ba" }}>{displayTicker}</span>
         <span className={cn("font-serif font-extrabold whitespace-nowrap leading-none flex items-center gap-1", hero ? "text-sm" : "text-[11px]")}>
           <span className="font-sans font-bold opacity-60" style={{ fontSize: hero ? 7.5 : 6.5, color: "#cbc6ba" }}>{STAT.label}</span>
           <span style={{ color: c.glow }}>{value}</span>
@@ -515,6 +530,10 @@ export default function GamePage() {
   const [acquired, setAcquired] = useState<DeckCardSnapshot[]>([]); // 이번 항해에서 획득한 카드
   const [history, setHistory] = useState<any[]>([]); // 지나온 비교 카드(왼쪽으로 쌓임) — 슬라이드로 항해 기록 확인
   const trackRef = useRef<HTMLDivElement>(null); // 카드 필름스트립(가로 스크롤)
+  const [coins, setCoins] = useState(0); // 지갑 코인 잔액
+  const [showShop, setShowShop] = useState(false);
+  const [activeBoost, setActiveBoost] = useState<{ mult: number; roundsLeft: number } | null>(null); // 상점 부스트(세션 로컬)
+  const [packOpening, setPackOpening] = useState(false); // 팩 오픈 리빌 연출 표시 중
 
   useEffect(() => { dispatch(reqGetNcavDailyList("latest")); }, [dispatch]);
 
@@ -534,14 +553,38 @@ export default function GamePage() {
     return () => { cancelled = true; };
   }, [isLoggedIn]);
 
+  // 로그인 상태면 지갑(코인·서버 최고 연승) 로드 — 서버 값과 로컬 값 중 큰 쪽을 최종 best로 병합
+  useEffect(() => {
+    if (!isLoggedIn) { setCoins(0); return; }
+    let cancelled = false;
+    getWallet().then(res => {
+      if (cancelled || !res?.success) return;
+      setCoins(res.coins ?? 0);
+      setBest(b => Math.max(b, res.best_streak ?? 0));
+    }).catch(() => { });
+    return () => { cancelled = true; };
+  }, [isLoggedIn]);
+
   // 비교 가능한 종목 풀 (시가총액 보유 종목)
   const pool = useMemo(() => {
     const list = Array.isArray(ncav.list) ? ncav.list : [];
     return list.filter((it: any) => it?.name && it?.ticker && STAT.get(it) > 0);
   }, [ncav.list]);
 
+  // 도감(완성도) 총량 스냅샷 — 세션 진입 시 1회 고정해 스캔 진행 중에도 완성률이 들쭉날쭉 보이지 않게 함
+  const poolSnapshotRef = useRef<any[] | null>(null);
+  useEffect(() => {
+    if (!poolSnapshotRef.current && pool.length >= 2) poolSnapshotRef.current = pool;
+  }, [pool]);
+  const catalog = useMemo(() => {
+    const snap = poolSnapshotRef.current ?? pool;
+    const byTicker = new Map(snap.map((it: any) => [it.ticker, it]));
+    for (const d of deck) if (!byTicker.has(d.ticker)) byTicker.set(d.ticker, d); // 오늘 목록에서 빠진 보유 종목도 유지
+    return [...byTicker.values()];
+  }, [pool, deck]);
+
   const bestKey = "iq:game:best:hl:market_cap"; // 기존 시가총액 비교 기록 키 유지
-  useEffect(() => { setBest(safeNum(typeof window !== "undefined" ? localStorage.getItem(bestKey) : 0)); }, [bestKey]);
+  useEffect(() => { setBest(b => Math.max(b, safeNum(typeof window !== "undefined" ? localStorage.getItem(bestKey) : 0))); }, [bestKey]);
 
   const draw = useCallback((excludeTicker?: string) => {
     if (pool.length < 2) return null;
@@ -557,7 +600,7 @@ export default function GamePage() {
     if (!a) return;
     setAnchor(a); setChallenger(draw(a.ticker));
     // 새 게임에서도 직전 항해 기록 카드 몇 장은 필름스트립 왼쪽에 남겨둠(연속성)
-    setStreak(0); setNewBest(false); setLastWin(null); setDropped(false); setDropPrompt(false); setSaveFail(null); setEscaped(null); setMissed(null); setAcquired([]); setHistory(h => h.slice(-3)); setPhase("guessing");
+    setStreak(0); setNewBest(false); setLastWin(null); setDropped(false); setDropPrompt(false); setSaveFail(null); setEscaped(null); setMissed(null); setAcquired([]); setHistory(h => h.slice(-3)); setPackOpening(false); setPhase("guessing");
   }, [draw]);
 
   const started = useRef(false);
@@ -573,13 +616,27 @@ export default function GamePage() {
     setDropped(false); setDropPrompt(false); setSaveFail(null); setEscaped(null);
     setPhase("revealed");
 
+    // 상점에서 산 확률 부스트는 세션 로컬로만 추적 — 라운드(승패 무관)마다 1씩 소진
+    if (activeBoost) {
+      setActiveBoost(b => (b && b.roundsLeft > 1) ? { ...b, roundsLeft: b.roundsLeft - 1 } : null);
+    }
+
     if (win) {
       const ns = streak + 1;
       setStreak(ns);
-      if (ns > best) { setBest(ns); setNewBest(true); try { localStorage.setItem(bestKey, String(ns)); } catch { } }
+      if (ns > best) {
+        setBest(ns); setNewBest(true);
+        try { localStorage.setItem(bestKey, String(ns)); } catch { }
+        if (isLoggedIn) syncBestStreak(ns).catch(() => { });
+      }
 
-      // 정답 카드만 수집. 연승↑ → 획득 확률↑, 높은 등급일수록 더 높은 연승 필요.
-      if (Math.random() < acquireChance(challenger, ns)) {
+      // 정답 카드만 수집. 연승↑ → 획득 확률↑, 높은 등급일수록 더 높은 연승 필요. 부스트 배율 적용.
+      const chance = Math.min(0.95, acquireChance(challenger, ns) * (activeBoost?.mult ?? 1));
+      if (Math.random() < chance) {
+        const reduceMotion = typeof window !== "undefined" && window.matchMedia?.("(prefers-reduced-motion: reduce)").matches;
+        setPackOpening(true);
+        setTimeout(() => setPackOpening(false), reduceMotion ? 50 : 650);
+
         if (!isLoggedIn) {
           setDropPrompt(true);
         } else {
@@ -619,14 +676,14 @@ export default function GamePage() {
         higherSide: cv >= av ? "challenger" : "anchor",
       });
     }
-  }, [phase, anchor, challenger, best, bestKey, isLoggedIn, streak]);
+  }, [phase, anchor, challenger, best, bestKey, isLoggedIn, streak, activeBoost]);
 
   const next = useCallback(() => {
     if (!lastWin) return;
     setHistory(h => [...h, anchor]);   // 왼쪽 카드를 항해 기록에 쌓음(오른쪽 카드가 왼쪽 자리로)
     setAnchor(challenger);
     setChallenger(draw(challenger?.ticker));
-    setDropped(false); setDropPrompt(false); setSaveFail(null); setEscaped(null); setLastWin(null); setPhase("guessing");
+    setDropped(false); setDropPrompt(false); setSaveFail(null); setEscaped(null); setLastWin(null); setPackOpening(false); setPhase("guessing");
   }, [lastWin, anchor, challenger, draw]);
 
   // 카드가 늘거나 라운드가 바뀌면 필름스트립을 우측 끝(최신)으로 부드럽게 스크롤 → 카드가 왼쪽으로 흐르는 효과
@@ -652,17 +709,27 @@ export default function GamePage() {
             <ChevronLeft size={14} /> 홈
           </Link>
           <h1 className="text-sm font-black text-neutral-900 dark:text-white">⛵ 신대륙 항해 · 종목 발굴</h1>
-          <button onClick={() => setShowDeck(v => !v)}
-            className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg border border-neutral-200 dark:border-[#35332e] bg-white dark:bg-[#242320] text-xs font-bold text-neutral-600 dark:text-neutral-300">
-            <Layers size={13} className="text-[#16a34a]" /> 내 덱 {deckTotal(deck)}
-            {!isLoggedIn && <Lock size={10} className="opacity-60" />}
-          </button>
+          <div className="flex items-center gap-1.5">
+            {isLoggedIn && <WalletChip coins={coins} />}
+            <button onClick={() => setShowDeck(v => !v)}
+              className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg border border-neutral-200 dark:border-[#35332e] bg-white dark:bg-[#242320] text-xs font-bold text-neutral-600 dark:text-neutral-300">
+              <Layers size={13} className="text-[#16a34a]" /> 내 덱 {deckTotal(deck)}
+              {!isLoggedIn && <Lock size={10} className="opacity-60" />}
+            </button>
+          </div>
         </div>
 
         {/* 본문 — 항상 스크롤 가능. 플레이는 my-auto 로 세로 중앙(넘치면 스크롤), 종료/덱은 자연 스크롤 */}
         <div className="flex-1 min-h-0 overflow-y-auto flex flex-col py-2">
         {showDeck ? (
-          <DeckView deck={deck} isLoggedIn={isLoggedIn} onLogin={requireLogin} onClose={() => setShowDeck(false)} />
+          <DeckView deck={deck} catalog={catalog} best={best} coins={coins} isLoggedIn={isLoggedIn}
+            onLogin={requireLogin} onClose={() => { setShowDeck(false); setShowShop(false); }}
+            showShop={showShop} onToggleShop={() => setShowShop(v => !v)}
+            onBuyBoost={(item) => setActiveBoost({ mult: item.mult, roundsLeft: item.rounds })}
+            onConverted={(ticker, gained, remaining) => {
+              setCoins(c => c + gained);
+              setDeck(prev => prev.map(c => c.ticker === ticker ? { ...c, count: remaining } : c));
+            }} />
         ) : isLoading ? (
           <div className="my-auto py-24 text-center text-sm text-neutral-400">카드 데이터를 불러오는 중…</div>
         ) : (
@@ -728,6 +795,10 @@ export default function GamePage() {
                     </div>
                   </div>
 
+                  <div className="flex justify-center mt-2.5">
+                    <AchievementBadges deck={deck} best={best} catalogTotal={catalog.length} />
+                  </div>
+
                   <p className="text-[11px] text-neutral-400 mt-2 break-keep">
                     {isLoggedIn ? <>발굴한 카드는 <b className="text-neutral-600 dark:text-neutral-300">내 덱({deckTotal(deck)})</b>에 쌓였습니다.</> : "로그인하면 발굴한 카드를 덱에 모을 수 있어요."}
                   </p>
@@ -775,23 +846,29 @@ export default function GamePage() {
 
                 {/* 획득 / 로그인 유도 */}
                 <div className="min-h-[1.75rem] text-center">
-                  {phase === "revealed" && dropped && (
-                    <span className="inline-flex items-center gap-1 text-xs font-bold text-amber-600 dark:text-amber-400 animate-in fade-in slide-in-from-bottom-1">
-                      <Sparkles size={12} /> 카드 획득! {challenger.name} 이(가) 덱에 추가됨
-                    </span>
-                  )}
-                  {phase === "revealed" && dropPrompt && (
-                    <button onClick={requireLogin}
-                      className="inline-flex items-center gap-1.5 text-xs font-bold text-[#16a34a] animate-in fade-in hover:underline">
-                      <Lock size={12} /> 카드가 나왔어요! 로그인하고 덱에 담기 →
-                    </button>
-                  )}
-                  {phase === "revealed" && lastWin && !dropped && !dropPrompt && (
-                    saveFail
-                      ? <span className="text-xs font-bold text-rose-500 dark:text-rose-400 animate-in fade-in">정답! 덱 저장 실패 — {saveFail}</span>
-                      : escaped
-                        ? <span className="text-xs font-bold text-amber-600 dark:text-amber-400 animate-in fade-in">정답! {escaped} 등급 카드가 도망갔어요 — 연승을 쌓으면 획득 확률↑</span>
-                        : <span className="text-xs font-bold text-[#16a34a] animate-in fade-in">정답! ✔</span>
+                  {packOpening ? (
+                    <PackReveal item={challenger} />
+                  ) : (
+                    <>
+                      {phase === "revealed" && dropped && (
+                        <span className="inline-flex items-center gap-1 text-xs font-bold text-amber-600 dark:text-amber-400 animate-in fade-in slide-in-from-bottom-1">
+                          <Sparkles size={12} /> 카드 획득! {challenger.name} 이(가) 덱에 추가됨
+                        </span>
+                      )}
+                      {phase === "revealed" && dropPrompt && (
+                        <button onClick={requireLogin}
+                          className="inline-flex items-center gap-1.5 text-xs font-bold text-[#16a34a] animate-in fade-in hover:underline">
+                          <Lock size={12} /> 카드가 나왔어요! 로그인하고 덱에 담기 →
+                        </button>
+                      )}
+                      {phase === "revealed" && lastWin && !dropped && !dropPrompt && (
+                        saveFail
+                          ? <span className="text-xs font-bold text-rose-500 dark:text-rose-400 animate-in fade-in">정답! 덱 저장 실패 — {saveFail}</span>
+                          : escaped
+                            ? <span className="text-xs font-bold text-amber-600 dark:text-amber-400 animate-in fade-in">정답! {escaped} 등급 카드가 도망갔어요 — 연승을 쌓으면 획득 확률↑</span>
+                            : <span className="text-xs font-bold text-[#16a34a] animate-in fade-in">정답! ✔</span>
+                      )}
+                    </>
                   )}
                 </div>
 
@@ -799,14 +876,19 @@ export default function GamePage() {
                 {phase === "guessing" ? (
                   <div>
                     {(() => {
-                      // 정답 시(연승+1) 이 카드 획득 확률 — 연승↑·낮은 등급↑, 높은 등급은 더 높은 연승 필요.
-                      const chance = Math.round(acquireChance(challenger, streak + 1) * 100);
+                      // 정답 시(연승+1) 이 카드 획득 확률 — 연승↑·낮은 등급↑, 높은 등급은 더 높은 연승 필요. 상점 부스트 배율 반영.
+                      const chance = Math.round(Math.min(0.95, acquireChance(challenger, streak + 1) * (activeBoost?.mult ?? 1)) * 100);
                       const owned = deck.find(c => c.ticker === challenger.ticker);
                       return (
                         <p className="text-center text-[11px] mb-1.5">
                           <span className="text-neutral-400">획득 확률 </span>
                           <b className="text-[#16a34a] tabular-nums">{chance}%</b>
                           <span className="text-neutral-300 dark:text-neutral-600"> · 연승 시 ↑</span>
+                          {activeBoost && (
+                            <span className="ml-1.5 inline-flex items-center px-1.5 py-0.5 rounded-full bg-amber-500/10 text-amber-600 dark:text-amber-400 font-bold tabular-nums">
+                              🪄 부적 ×{activeBoost.mult} (남은 {activeBoost.roundsLeft}판)
+                            </span>
+                          )}
                           {owned && (
                             <span className="ml-1.5 inline-flex items-center px-1.5 py-0.5 rounded-full bg-[#16a34a]/10 text-[#16a34a] font-bold tabular-nums">
                               보유 ×{owned.count} · 획득 시 +1
@@ -857,19 +939,34 @@ export default function GamePage() {
 const TIER_ORDER: Array<ReturnType<typeof computeValueScore>["tone"]> =
   ["legend", "treasure", "diamond", "gold", "silver", "bronze", "raw", "explore"];
 
-// 덱 뷰
-function DeckView({ deck, isLoggedIn, onLogin, onClose }: { deck: DeckItem[]; isLoggedIn: boolean; onLogin: () => void; onClose: () => void }) {
+// 덱 뷰 — 도감(catalog 전체) 기준으로 보유/미보유(잠금) 카드를 함께 보여줌
+function DeckView({ deck, catalog, best, coins, isLoggedIn, onLogin, onClose, showShop, onToggleShop, onBuyBoost, onConverted }: {
+  deck: DeckItem[]; catalog: any[]; best: number; coins: number; isLoggedIn: boolean;
+  onLogin: () => void; onClose: () => void;
+  showShop: boolean; onToggleShop: () => void; onBuyBoost: (item: BoostItem) => void;
+  onConverted: (ticker: string, gained: number, remaining: number) => void;
+}) {
+  const ownedByTicker = useMemo(() => new Map(deck.map(d => [d.ticker, d])), [deck]);
+
   // 등급별로 묶고, 등급 순서(보물→탐색) → 등급 내 점수 내림차순으로 정렬해 분류를 명확히 함
   const groups = useMemo(() => {
-    const byTone = new Map<string, { item: DeckItem; v: ReturnType<typeof computeValueScore> }[]>();
-    for (const c of deck) {
+    const byTone = new Map<string, { item: any; owned: DeckItem | undefined; v: ReturnType<typeof computeValueScore> }[]>();
+    for (const c of catalog) {
       const v = computeValueScore(c);
       if (!byTone.has(v.tone)) byTone.set(v.tone, []);
-      byTone.get(v.tone)!.push({ item: c, v });
+      byTone.get(v.tone)!.push({ item: c, owned: ownedByTicker.get(c.ticker), v });
     }
     for (const list of byTone.values()) list.sort((a, b) => b.v.score - a.v.score);
     return TIER_ORDER.filter(t => byTone.has(t)).map(t => ({ tone: t, cards: byTone.get(t)! }));
-  }, [deck]);
+  }, [catalog, ownedByTicker]);
+
+  // 완성도: 등급별 owned/total + 전체 %
+  const completion = useMemo(() => {
+    const byTone: Record<string, { owned: number; total: number }> = {};
+    for (const { tone, cards } of groups) byTone[tone] = { owned: cards.filter(c => c.owned).length, total: cards.length };
+    const total = catalog.length, owned = ownedByTicker.size;
+    return { byTone, total, owned, pct: total > 0 ? Math.round((owned / total) * 100) : 0 };
+  }, [groups, catalog.length, ownedByTicker]);
 
   // 카드가 3D(두께·범선·홀로)라 한 번에 다 그리면 무거움 → 12장씩 나눠 렌더(스크롤 시 자동 추가)
   const PAGE = 12;
@@ -890,61 +987,98 @@ function DeckView({ deck, isLoggedIn, onLogin, onClose }: { deck: DeckItem[]; is
 
   return (
     <div className="animate-in fade-in duration-200">
-      <div className="flex items-center justify-between mb-4">
-        <p className="font-black text-neutral-900 dark:text-white flex items-center gap-1.5">
+      <div className="flex items-center justify-between mb-3 gap-2">
+        <p className="font-black text-neutral-900 dark:text-white flex items-center gap-1.5 min-w-0">
           내 덱 <span className="text-[#16a34a]">{deckTotal(deck)}</span>장
           <ScoreInfo />
         </p>
-        <button onClick={onClose} className="text-xs font-bold text-neutral-500 hover:text-[#16a34a]">게임으로 ▶</button>
-      </div>
-      {!isLoggedIn ? (
-        <div className="py-16 text-center">
-          <Lock size={22} className="mx-auto text-neutral-300 dark:text-neutral-600 mb-3" />
-          <p className="text-sm font-bold text-neutral-700 dark:text-neutral-300">덱은 계정에 저장됩니다</p>
-          <p className="text-xs text-neutral-400 mt-1 mb-4">로그인하면 발굴한 카드가 기기와 상관없이 보관돼요.</p>
-          <button onClick={onLogin} className="inline-flex items-center gap-1.5 px-5 py-2.5 rounded-xl bg-[#16a34a] hover:bg-[#15803d] text-white font-bold text-sm">
-            로그인하고 덱 시작
-          </button>
+        <div className="flex items-center gap-1.5 shrink-0">
+          {isLoggedIn && <WalletChip coins={coins} />}
+          {isLoggedIn && (
+            <button onClick={onToggleShop}
+              className="inline-flex items-center gap-1 px-2 py-1 rounded-lg border border-neutral-200 dark:border-[#35332e] bg-white dark:bg-[#242320] text-xs font-bold text-neutral-600 dark:text-neutral-300">
+              🪙 상점
+            </button>
+          )}
+          <button onClick={onClose} className="text-xs font-bold text-neutral-500 hover:text-[#16a34a]">게임으로 ▶</button>
         </div>
-      ) : deck.length === 0 ? (
-        <p className="py-20 text-center text-sm text-neutral-400">아직 카드가 없어요. 게임을 하며 카드를 수집하세요!</p>
+      </div>
+
+      {showShop ? (
+        <ShopPanel coins={coins} onBuy={onBuyBoost} onClose={onToggleShop} />
       ) : (
-        <div className="space-y-5">
-          {(() => {
-            let shown = 0; // 지금까지 렌더한 카드 수(등급 순). visible 이내 카드만 그림
-            return groups.map(({ tone, cards }) => {
-              const start = shown;
-              shown += cards.length;
-              const slice = cards.slice(0, Math.max(0, visible - start));
-              if (slice.length === 0) return null; // 이 등급은 아직 로드 범위 밖 → 스크롤 시 노출
-              return (
-                <div key={tone}>
-                  <div className="flex items-center gap-2 mb-2 px-0.5">
-                    <span className={cn("inline-flex items-center gap-1 px-2 py-0.5 rounded-full ring-1 ring-inset text-[11px] font-black", MEDAL_TONE[tone])}>
-                      <span aria-hidden>{cards[0].v.medal}</span>{cards[0].v.label}
-                    </span>
-                    <span className="text-[11px] font-bold text-neutral-400">{cards.reduce((a, x) => a + (x.item.count ?? 1), 0)}장</span>
-                  </div>
-                  <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-                    {slice.map(({ item: c }, ci) => (
-                      <div key={c.ticker} className="aspect-[3/4]">
-                        <TcgCard item={c} value={STAT.fmt(STAT.get(c))} count={c.count} idleDelay={ci * 0.6} />
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              );
-            });
-          })()}
-          {visible < total && (
-            <div ref={sentinelRef} className="pt-1 pb-4 text-center">
-              <button onClick={() => setVisible(v => Math.min(total, v + PAGE))}
-                className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl border border-neutral-200 dark:border-[#35332e] bg-white dark:bg-[#242320] text-xs font-bold text-neutral-500 dark:text-neutral-400 hover:border-[#16a34a]/50">
-                더 보기 <span className="tabular-nums text-neutral-400">{visible}/{total}</span>
+        <>
+          {/* 도감 완성도 */}
+          {catalog.length > 0 && (
+            <div className="mb-3 rounded-xl border border-neutral-100 dark:border-[#35332e] bg-[#faf9f7] dark:bg-[#1f1e1b] p-3">
+              <div className="flex items-center justify-between mb-1.5">
+                <p className="text-xs font-black text-neutral-700 dark:text-neutral-200">도감 완성도 <span className="text-neutral-400 font-medium">· 오늘 기준 발굴 가능 종목</span></p>
+                <p className="text-xs font-black text-[#16a34a] tabular-nums">{completion.owned}/{completion.total} ({completion.pct}%)</p>
+              </div>
+              <div className="h-1.5 rounded-full bg-neutral-200 dark:bg-[#35332e] overflow-hidden">
+                <div className="h-full bg-[#16a34a] transition-all" style={{ width: `${completion.pct}%` }} />
+              </div>
+            </div>
+          )}
+
+          <AchievementBadges deck={deck} best={best} catalogTotal={catalog.length} />
+
+          {!isLoggedIn && (
+            <div className="my-4 py-4 text-center rounded-xl border border-dashed border-neutral-200 dark:border-[#35332e]">
+              <Lock size={18} className="mx-auto text-neutral-300 dark:text-neutral-600 mb-2" />
+              <p className="text-xs font-bold text-neutral-700 dark:text-neutral-300">덱은 계정에 저장됩니다</p>
+              <p className="text-[11px] text-neutral-400 mt-1 mb-3">로그인하면 발굴한 카드가 기기와 상관없이 보관돼요.</p>
+              <button onClick={onLogin} className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-[#16a34a] hover:bg-[#15803d] text-white font-bold text-xs">
+                로그인하고 덱 시작
               </button>
             </div>
           )}
-        </div>
+
+          {catalog.length === 0 ? (
+            <p className="py-20 text-center text-sm text-neutral-400">카드 데이터를 불러오는 중…</p>
+          ) : (
+            <div className="space-y-5 mt-3">
+              {(() => {
+                let shown = 0; // 지금까지 렌더한 카드 수(등급 순). visible 이내 카드만 그림
+                return groups.map(({ tone, cards }) => {
+                  const start = shown;
+                  shown += cards.length;
+                  const slice = cards.slice(0, Math.max(0, visible - start));
+                  if (slice.length === 0) return null; // 이 등급은 아직 로드 범위 밖 → 스크롤 시 노출
+                  return (
+                    <div key={tone}>
+                      <div className="flex items-center gap-2 mb-2 px-0.5">
+                        <span className={cn("inline-flex items-center gap-1 px-2 py-0.5 rounded-full ring-1 ring-inset text-[11px] font-black", MEDAL_TONE[tone])}>
+                          <span aria-hidden>{cards[0].v.medal}</span>{cards[0].v.label}
+                        </span>
+                        <span className="text-[11px] font-bold text-neutral-400">{completion.byTone[tone]?.owned ?? 0}/{completion.byTone[tone]?.total ?? cards.length}</span>
+                      </div>
+                      <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                        {slice.map(({ item, owned }, ci) => (
+                          <div key={item.ticker} className="relative aspect-[3/4]">
+                            <TcgCard item={owned ?? item} value={STAT.fmt(STAT.get(item))} count={owned?.count} locked={!owned} idleDelay={ci * 0.6} />
+                            {owned && (owned.count ?? 1) >= 2 && (
+                              <ConvertButton item={owned} count={owned.count ?? 1}
+                                onConverted={(gained, remaining) => onConverted(owned.ticker, gained, remaining)} />
+                            )}
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  );
+                });
+              })()}
+              {visible < total && (
+                <div ref={sentinelRef} className="pt-1 pb-4 text-center">
+                  <button onClick={() => setVisible(v => Math.min(total, v + PAGE))}
+                    className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl border border-neutral-200 dark:border-[#35332e] bg-white dark:bg-[#242320] text-xs font-bold text-neutral-500 dark:text-neutral-400 hover:border-[#16a34a]/50">
+                    더 보기 <span className="tabular-nums text-neutral-400">{visible}/{total}</span>
+                  </button>
+                </div>
+              )}
+            </div>
+          )}
+        </>
       )}
     </div>
   );
