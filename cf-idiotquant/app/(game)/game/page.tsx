@@ -14,7 +14,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useSession } from "next-auth/react";
 import {
-  ArrowUp, ArrowDown, RotateCcw, Layers, TrendingUp, Sparkles, ChevronLeft, ChevronRight, Lock, Info,
+  ArrowUp, ArrowDown, Layers, TrendingUp, Sparkles, ChevronLeft, ChevronRight, Lock, Info,
   Cpu, Dna, Landmark, CarFront, Ship, Construction, Zap, FlaskConical, Factory, RadioTower, Gamepad2,
   Soup, ShoppingCart, PlaneTakeoff, Shirt, Code2, Gem, Compass, Anchor, Map as MapIcon, Medal as MedalIcon,
   BatteryCharging, Bot, Wallet,
@@ -651,12 +651,14 @@ export default function GamePage() {
   }, [pool]);
 
   const start = useCallback(() => {
-    const a = draw();
+    // 틀려서 이어서 시작하는 경우 방금 틀린 카드(challenger)부터 이어감. 첫 시작은 무작위 추첨.
+    const a = missed ? missed.challenger : draw();
     if (!a) return;
     setAnchor(a); setChallenger(draw(a.ticker));
-    // 새 게임에서도 직전 항해 기록 카드 몇 장은 필름스트립 왼쪽에 남겨둠(연속성)
-    setStreak(0); setNewBest(false); setLastWin(null); setDropped(false); setDropPrompt(false); setSaveFail(null); setEscaped(null); setMissed(null); setAcquired([]); setHistory(h => h.slice(-3)); setPackOpening(false); setFirstDupHint(false); setPhase("guessing");
-  }, [draw]);
+    // 패배 라운드의 anchor도 항해 기록에 남겨 필름스트립이 끊기지 않게 하고, 최근 10개까지만 유지
+    setHistory(h => (missed ? [...h, missed.anchor] : h).slice(-10));
+    setStreak(0); setNewBest(false); setLastWin(null); setDropped(false); setDropPrompt(false); setSaveFail(null); setEscaped(null); setMissed(null); setAcquired([]); setPackOpening(false); setFirstDupHint(false); setPhase("guessing");
+  }, [draw, missed]);
 
   const started = useRef(false);
   useEffect(() => {
@@ -736,7 +738,7 @@ export default function GamePage() {
 
   const next = useCallback(() => {
     if (!lastWin) return;
-    setHistory(h => [...h, anchor]);   // 왼쪽 카드를 항해 기록에 쌓음(오른쪽 카드가 왼쪽 자리로)
+    setHistory(h => [...h, anchor].slice(-10));   // 왼쪽 카드를 항해 기록에 쌓음(오른쪽 카드가 왼쪽 자리로), 최근 10개까지만 유지
     setAnchor(challenger);
     setChallenger(draw(challenger?.ticker));
     setDropped(false); setDropPrompt(false); setSaveFail(null); setEscaped(null); setLastWin(null); setPackOpening(false); setFirstDupHint(false); setPhase("guessing");
@@ -867,7 +869,7 @@ export default function GamePage() {
                 <div className="shrink-0 px-5 pb-4 pt-2.5 border-t border-neutral-100 dark:border-[#35332e]">
                   <button onClick={start}
                     className="w-full inline-flex items-center justify-center gap-2 px-6 py-3 rounded-2xl bg-[#16a34a] hover:bg-[#15803d] text-white font-black text-sm shadow-md shadow-[#16a34a]/25 active:scale-[0.98] transition-all">
-                    <RotateCcw size={16} /> 다시 시작
+                    <TrendingUp size={16} /> 이어서 항해
                   </button>
                 </div>
               </div>
