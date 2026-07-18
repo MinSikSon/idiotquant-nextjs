@@ -273,8 +273,8 @@ export function WaxSeal({ item, size = 26 }: { item: any; size?: number }) {
 // 어두운 아트창(업종 심볼+로고) + 대리석 테두리 룰박스(플레이버+효과, 등급색) + 하단 인쇄줄(티커·시가총액).
 // 레퍼런스 카드엔 사진 아트가 들어가지만 이미지 생성 API가 없어 업종별 벡터 심볼(lucide)로 대체 — 레이아웃/구획은 그대로 유지.
 // hero=플레이용(큼), 미지정=덱 콤팩트. 룰박스는 shrink-0 로 항상 온전히 보이고, 아트창만 flex-1 로 크기에 맞춰 줄어듦.
-function TcgCard({ item, value, hero = false, count, locked = false }:
-  { item: any; value: React.ReactNode; hero?: boolean; count?: number; idleDelay?: number; locked?: boolean }) {
+function TcgCard({ item, value, hero = false, count, locked = false, onGuess }:
+  { item: any; value: React.ReactNode; hero?: boolean; count?: number; idleDelay?: number; locked?: boolean; onGuess?: (dir: "higher" | "lower") => void }) {
   const [showInfo, setShowInfo] = useState(false);
   const v = computeValueScore(item);
   const c = TIER[v.tone] ?? TIER.explore;
@@ -360,6 +360,23 @@ function TcgCard({ item, value, hero = false, count, locked = false }:
               )}
               {!locked && count != null && count > 1 && (
                 <span className="absolute top-1 left-1 z-[3] px-1.5 py-0.5 rounded-full bg-black/70 text-white text-[10px] font-black tabular-nums leading-none">×{count}</span>
+              )}
+              {/* 높다/낮다 — 별도 버튼 대신 카드(아트창) 상/하단을 직접 탭해서 선택 */}
+              {onGuess && (
+                <>
+                  <button type="button" aria-label="높다"
+                    onClick={e => { e.stopPropagation(); onGuess("higher"); }}
+                    className="absolute inset-x-0 top-0 h-1/2 z-[6] flex flex-col items-center justify-center gap-1 bg-gradient-to-b from-transparent to-[#16a34a]/35 hover:to-[#16a34a]/50 active:to-[#16a34a]/65 transition-colors">
+                    <ArrowUp size={hero ? 22 : 16} strokeWidth={2.8} className="text-white drop-shadow-md" />
+                    <span className="font-serif font-black" style={{ fontSize: hero ? 12 : 9, color: "white", textShadow: "0 1px 3px rgba(0,0,0,0.7)" }}>높다</span>
+                  </button>
+                  <button type="button" aria-label="낮다"
+                    onClick={e => { e.stopPropagation(); onGuess("lower"); }}
+                    className="absolute inset-x-0 bottom-0 h-1/2 z-[6] flex flex-col items-center justify-center gap-1 bg-gradient-to-t from-transparent to-[#e11d48]/35 hover:to-[#e11d48]/50 active:to-[#e11d48]/65 transition-colors">
+                    <span className="font-serif font-black" style={{ fontSize: hero ? 12 : 9, color: "white", textShadow: "0 1px 3px rgba(0,0,0,0.7)" }}>낮다</span>
+                    <ArrowDown size={hero ? 22 : 16} strokeWidth={2.8} className="text-white drop-shadow-md" />
+                  </button>
+                </>
               )}
             </div>
           </div>
@@ -869,6 +886,7 @@ export default function GamePage() {
                     </div>
                     <div className="shrink-0 self-end snap-end w-[calc(50%-0.375rem)] sm:w-[calc(50%-0.5rem)]">
                       <div className="aspect-[3/4]"><TcgCard hero item={challenger} idleDelay={3}
+                        onGuess={phase === "guessing" ? guess : undefined}
                         value={phase === "revealed"
                           ? <span className="animate-in zoom-in-75 duration-300">{STAT.fmt(STAT.get(challenger))}</span>
                           : <span className="text-neutral-300 dark:text-neutral-600">?</span>} /></div>
@@ -919,54 +937,29 @@ export default function GamePage() {
                   )}
                 </div>
 
-                {/* 액션 — 카드 바로 아래로 붙여 여백 없이 */}
-                {phase === "guessing" ? (
-                  <div>
-                    {(() => {
-                      // 정답 시(연승+1) 이 카드 획득 확률 — 연승↑·낮은 등급↑, 높은 등급은 더 높은 연승 필요. 상점 부스트 배율 반영.
-                      const chance = Math.round(Math.min(0.95, acquireChance(challenger, streak + 1) * (activeBoost?.mult ?? 1)) * 100);
-                      const owned = deck.find(c => c.ticker === challenger.ticker);
-                      return (
-                        <p className="text-center text-[11px] mb-1.5">
-                          <span className="text-neutral-400">획득 확률 </span>
-                          <b className="text-[#16a34a] tabular-nums">{chance}%</b>
-                          <span className="text-neutral-300 dark:text-neutral-600"> · 연승 시 ↑</span>
-                          {activeBoost && (
-                            <span className="ml-1.5 inline-flex items-center px-1.5 py-0.5 rounded-full bg-amber-500/10 text-amber-600 dark:text-amber-400 font-bold tabular-nums">
-                              🪄 부적 ×{activeBoost.mult} (남은 {activeBoost.roundsLeft}판)
-                            </span>
-                          )}
-                          {owned && (
-                            <span className="ml-1.5 inline-flex items-center px-1.5 py-0.5 rounded-full bg-[#16a34a]/10 text-[#16a34a] font-bold tabular-nums">
-                              보유 ×{owned.count} · 획득 시 +1
-                            </span>
-                          )}
-                        </p>
-                      );
-                    })()}
-                    {/* 높다/낮다 — 카드 프레임과 같은 흑단+보석 배지 톤으로 통일 */}
-                    <div className="grid grid-cols-2 gap-3">
-                      <button onClick={() => guess("higher")}
-                        className="group flex items-center justify-center gap-2.5 py-4 rounded-xl border-2 active:scale-[0.97] transition-all"
-                        style={{ background: "linear-gradient(160deg,#232323,#0c0c0c)", borderColor: "#16a34a", boxShadow: "inset 0 0 0 1px rgba(255,255,255,0.08), 0 6px 16px -8px rgba(22,163,74,0.55)" }}>
-                        <span className="flex items-center justify-center w-8 h-8 rounded-full shrink-0 group-hover:-translate-y-0.5 transition-transform"
-                          style={{ background: "radial-gradient(circle at 34% 28%, rgba(255,255,255,0.55), #16a34a 55%, rgba(0,0,0,0.5))", boxShadow: "0 0 8px rgba(22,163,74,0.7)" }}>
-                          <ArrowUp size={18} strokeWidth={2.8} className="text-white" />
+                {/* 획득 확률 안내 — 높다/낮다는 이제 카드(챌린저) 상/하단을 직접 탭해서 선택 */}
+                {phase === "guessing" ? (() => {
+                  // 정답 시(연승+1) 이 카드 획득 확률 — 연승↑·낮은 등급↑, 높은 등급은 더 높은 연승 필요. 상점 부스트 배율 반영.
+                  const chance = Math.round(Math.min(0.95, acquireChance(challenger, streak + 1) * (activeBoost?.mult ?? 1)) * 100);
+                  const owned = deck.find(c => c.ticker === challenger.ticker);
+                  return (
+                    <p className="text-center text-[11px]">
+                      <span className="text-neutral-400">획득 확률 </span>
+                      <b className="text-[#16a34a] tabular-nums">{chance}%</b>
+                      <span className="text-neutral-300 dark:text-neutral-600"> · 연승 시 ↑</span>
+                      {activeBoost && (
+                        <span className="ml-1.5 inline-flex items-center px-1.5 py-0.5 rounded-full bg-amber-500/10 text-amber-600 dark:text-amber-400 font-bold tabular-nums">
+                          🪄 부적 ×{activeBoost.mult} (남은 {activeBoost.roundsLeft}판)
                         </span>
-                        <span className="text-lg font-black font-serif tracking-tight" style={{ color: "#ece4cf" }}>높다</span>
-                      </button>
-                      <button onClick={() => guess("lower")}
-                        className="group flex items-center justify-center gap-2.5 py-4 rounded-xl border-2 active:scale-[0.97] transition-all"
-                        style={{ background: "linear-gradient(160deg,#232323,#0c0c0c)", borderColor: "#e11d48", boxShadow: "inset 0 0 0 1px rgba(255,255,255,0.08), 0 6px 16px -8px rgba(225,29,72,0.55)" }}>
-                        <span className="flex items-center justify-center w-8 h-8 rounded-full shrink-0 group-hover:translate-y-0.5 transition-transform"
-                          style={{ background: "radial-gradient(circle at 34% 28%, rgba(255,255,255,0.55), #e11d48 55%, rgba(0,0,0,0.5))", boxShadow: "0 0 8px rgba(225,29,72,0.7)" }}>
-                          <ArrowDown size={18} strokeWidth={2.8} className="text-white" />
+                      )}
+                      {owned && (
+                        <span className="ml-1.5 inline-flex items-center px-1.5 py-0.5 rounded-full bg-[#16a34a]/10 text-[#16a34a] font-bold tabular-nums">
+                          보유 ×{owned.count} · 획득 시 +1
                         </span>
-                        <span className="text-lg font-black font-serif tracking-tight" style={{ color: "#ece4cf" }}>낮다</span>
-                      </button>
-                    </div>
-                  </div>
-                ) : (
+                      )}
+                    </p>
+                  );
+                })() : (
                   <button onClick={next}
                     className="mt-3 w-full flex items-center justify-center gap-2 py-4 rounded-2xl bg-[#16a34a] hover:bg-[#15803d] text-white font-black shadow-md animate-in fade-in">
                     다음 카드 <TrendingUp size={16} />
