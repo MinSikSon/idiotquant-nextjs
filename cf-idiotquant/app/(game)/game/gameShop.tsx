@@ -9,7 +9,11 @@ import { useState } from "react";
 import { Coins, Sparkles, X } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { convertDupes, spendCoins, type DeckCardSnapshot } from "@/lib/features/deck/deckAPI";
+import { computeValueScore } from "@/lib/utils/valueScore";
 import { type DeckItem } from "./page";
+
+// 워커 COIN_VALUE(d1Store.js)와 동일한 등급→코인 표 — 전환 팝오버에 예상 획득량을 보여주기 위한 표시용 사본.
+const COIN_VALUE: Record<string, number> = { explore: 1, raw: 2, bronze: 3, silver: 5, gold: 8, diamond: 12, treasure: 18, legend: 30 };
 
 export function WalletChip({ coins }: { coins: number }) {
   return (
@@ -28,6 +32,7 @@ export function ConvertButton({ item, count, onConverted }: {
   const [pending, setPending] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const max = count - 1; // 최소 1장은 남김
+  const perCard = COIN_VALUE[computeValueScore(item).tone] ?? COIN_VALUE.explore;
   if (max < 1) return null;
 
   const convert = async () => {
@@ -50,14 +55,17 @@ export function ConvertButton({ item, count, onConverted }: {
           <Coins size={9} /> 전환
         </button>
       ) : (
-        <span className="flex items-center gap-1 px-1.5 py-1 rounded-lg bg-black/85 text-white text-[9px]">
-          <input type="number" min={1} max={max} value={amount}
-            onChange={e => setAmount(Math.max(1, Math.min(max, Number(e.target.value) || 1)))}
-            className="w-8 bg-white/10 rounded px-1 py-0.5 text-center" />
-          <button type="button" disabled={pending} onClick={convert} className="font-black text-amber-300 disabled:opacity-50">
-            {pending ? "…" : "확인"}
-          </button>
-          <button type="button" onClick={() => setOpen(false)} className="text-neutral-400"><X size={10} /></button>
+        <span className="flex flex-col gap-1 px-1.5 py-1 rounded-lg bg-black/85 text-white text-[9px] w-max">
+          <span className="flex items-center gap-1">
+            <input type="number" min={1} max={max} value={amount}
+              onChange={e => setAmount(Math.max(1, Math.min(max, Number(e.target.value) || 1)))}
+              className="w-8 bg-white/10 rounded px-1 py-0.5 text-center" />
+            <button type="button" disabled={pending} onClick={convert} className="font-black text-amber-300 disabled:opacity-50">
+              {pending ? "…" : "확인"}
+            </button>
+            <button type="button" onClick={() => setOpen(false)} className="text-neutral-400"><X size={10} /></button>
+          </span>
+          <span className="text-neutral-400">1장당 🪙{perCard} · 예상 <b className="text-amber-300">🪙{perCard * amount}</b></span>
         </span>
       )}
       {error && <span className="block mt-0.5 px-1 py-0.5 rounded bg-rose-950/80 text-rose-300 text-[8px]">{error}</span>}
@@ -93,6 +101,9 @@ export function ShopPanel({ coins, onBuy, onClose }: {
         </p>
         <button onClick={onClose} className="text-xs font-bold text-neutral-500 hover:text-[#16a34a]">닫기 ▶</button>
       </div>
+      <p className="text-[11px] text-neutral-400 mb-3 break-keep">
+        🪙 코인은 <b className="text-neutral-600 dark:text-neutral-300">내 덱에서 중복 카드(×2 이상)를 전환</b>하면 모을 수 있어요. 등급이 높을수록 더 많이 받아요.
+      </p>
       <div className="space-y-2">
         {BOOST_ITEMS.map(item => (
           <div key={item.id} className="flex items-center justify-between gap-2 rounded-xl border border-neutral-100 dark:border-[#35332e] bg-[#faf9f7] dark:bg-[#1f1e1b] p-3">
