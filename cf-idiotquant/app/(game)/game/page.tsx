@@ -534,6 +534,7 @@ export default function GamePage() {
   const [showShop, setShowShop] = useState(false);
   const [activeBoost, setActiveBoost] = useState<{ mult: number; roundsLeft: number } | null>(null); // 상점 부스트(세션 로컬)
   const [packOpening, setPackOpening] = useState(false); // 팩 오픈 리빌 연출 표시 중
+  const [firstDupHint, setFirstDupHint] = useState(false); // 첫 중복 카드 획득 시 지갑/전환 안내
 
   useEffect(() => { dispatch(reqGetNcavDailyList("latest")); }, [dispatch]);
 
@@ -600,7 +601,7 @@ export default function GamePage() {
     if (!a) return;
     setAnchor(a); setChallenger(draw(a.ticker));
     // 새 게임에서도 직전 항해 기록 카드 몇 장은 필름스트립 왼쪽에 남겨둠(연속성)
-    setStreak(0); setNewBest(false); setLastWin(null); setDropped(false); setDropPrompt(false); setSaveFail(null); setEscaped(null); setMissed(null); setAcquired([]); setHistory(h => h.slice(-3)); setPackOpening(false); setPhase("guessing");
+    setStreak(0); setNewBest(false); setLastWin(null); setDropped(false); setDropPrompt(false); setSaveFail(null); setEscaped(null); setMissed(null); setAcquired([]); setHistory(h => h.slice(-3)); setPackOpening(false); setFirstDupHint(false); setPhase("guessing");
   }, [draw]);
 
   const started = useRef(false);
@@ -613,7 +614,7 @@ export default function GamePage() {
     const av = STAT.get(anchor), cv = STAT.get(challenger);
     const win = dir === "higher" ? cv >= av : cv <= av;   // 동점은 승리 처리
     setLastWin(win);
-    setDropped(false); setDropPrompt(false); setSaveFail(null); setEscaped(null);
+    setDropped(false); setDropPrompt(false); setSaveFail(null); setEscaped(null); setFirstDupHint(false);
     setPhase("revealed");
 
     // 상점에서 산 확률 부스트는 세션 로컬로만 추적 — 라운드(승패 무관)마다 1씩 소진
@@ -644,6 +645,7 @@ export default function GamePage() {
           addDeckCard(snap).then(res => {
             if (res?.added) {
               setDropped(true);
+              if (res.count === 2) setFirstDupHint(true); // 처음으로 중복 카드가 생긴 순간 — 전환 기능 안내
               setAcquired(prev => [snap, ...prev]); // 이번 항해 획득 목록에 추가
               // 같은 종목이면 개수 누적, 없으면 새로 추가
               setDeck(prev => {
@@ -683,7 +685,7 @@ export default function GamePage() {
     setHistory(h => [...h, anchor]);   // 왼쪽 카드를 항해 기록에 쌓음(오른쪽 카드가 왼쪽 자리로)
     setAnchor(challenger);
     setChallenger(draw(challenger?.ticker));
-    setDropped(false); setDropPrompt(false); setSaveFail(null); setEscaped(null); setLastWin(null); setPackOpening(false); setPhase("guessing");
+    setDropped(false); setDropPrompt(false); setSaveFail(null); setEscaped(null); setLastWin(null); setPackOpening(false); setFirstDupHint(false); setPhase("guessing");
   }, [lastWin, anchor, challenger, draw]);
 
   // 카드가 늘거나 라운드가 바뀌면 필름스트립을 우측 끝(최신)으로 부드럽게 스크롤 → 카드가 왼쪽으로 흐르는 효과
@@ -851,8 +853,16 @@ export default function GamePage() {
                   ) : (
                     <>
                       {phase === "revealed" && dropped && (
-                        <span className="inline-flex items-center gap-1 text-xs font-bold text-amber-600 dark:text-amber-400 animate-in fade-in slide-in-from-bottom-1">
-                          <Sparkles size={12} /> 카드 획득! {challenger.name} 이(가) 덱에 추가됨
+                        <span className="flex flex-col items-center gap-1 animate-in fade-in slide-in-from-bottom-1">
+                          <span className="inline-flex items-center gap-1 text-xs font-bold text-amber-600 dark:text-amber-400">
+                            <Sparkles size={12} /> 카드 획득! {challenger.name} 이(가) 덱에 추가됨
+                          </span>
+                          {firstDupHint && (
+                            <button onClick={() => setShowDeck(true)}
+                              className="text-[10px] font-bold text-neutral-400 hover:text-[#16a34a] hover:underline">
+                              🪙 같은 카드가 2장이 됐어요 — 내 덱에서 코인으로 전환해보세요 →
+                            </button>
+                          )}
                         </span>
                       )}
                       {phase === "revealed" && dropPrompt && (
