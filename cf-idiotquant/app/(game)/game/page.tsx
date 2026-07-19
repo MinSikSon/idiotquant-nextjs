@@ -9,9 +9,9 @@
 // 비로그인 시 수집 시점에 로그인 유도.
 // =========================================================================
 
-import { useEffect, useMemo, useState, useCallback, useRef } from "react";
+import { useEffect, useMemo, useState, useCallback, useRef, Suspense } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useSession } from "next-auth/react";
 import {
   ArrowUp, ArrowDown, Layers, Copy, TrendingUp, Sparkles, ChevronLeft, ChevronRight, Lock, Info,
@@ -594,9 +594,15 @@ function rankOf(streak: number): { emoji: string; title: string } {
 
 type Phase = "loading" | "guessing" | "revealed" | "over";
 
+// useSearchParams는 Suspense 경계가 필요(screener 페이지와 동일 패턴) — 게임 본체를 감싼다
 export default function GamePage() {
+  return <Suspense fallback={null}><GameContent /></Suspense>;
+}
+
+function GameContent() {
   const dispatch = useAppDispatch();
   const router = useRouter();
+  const searchParams = useSearchParams();
   const ncav = useAppSelector(selectNcavDailyList);
   const { data: session } = useSession();
   const isLoggedIn = !!session;
@@ -604,6 +610,11 @@ export default function GamePage() {
   const requireLogin = useCallback(() => {
     router.push(`/login?callbackUrl=${encodeURIComponent("/game")}`);
   }, [router]);
+
+  // 내 덱 열림 상태는 URL(?deck=1)로 관리 — 네비게이션(게임 버튼)에서 열 수 있게. 소프트 내비라 게임 진행 상태는 유지됨.
+  const showDeck = searchParams.get("deck") === "1";
+  const openDeck = useCallback(() => router.replace("/game?deck=1", { scroll: false }), [router]);
+  const closeDeck = useCallback(() => router.replace("/game", { scroll: false }), [router]);
 
   const [anchor, setAnchor] = useState<any | null>(null);
   const [challenger, setChallenger] = useState<any | null>(null);
@@ -617,7 +628,6 @@ export default function GamePage() {
   const [saveFail, setSaveFail] = useState<string | null>(null); // 덱 저장 실패 사유
   const [escaped, setEscaped] = useState<string | null>(null); // 높은 등급 카드가 도망감(메달)
   const [deck, setDeck] = useState<DeckItem[]>([]);
-  const [showDeck, setShowDeck] = useState(false);
   const [missed, setMissed] = useState<any | null>(null); // 항해 종료 시 틀린 종목 정보
   const [acquired, setAcquired] = useState<DeckCardSnapshot[]>([]); // 이번 항해에서 획득한 카드
   const [history, setHistory] = useState<any[]>([]); // 지나온 비교 카드(왼쪽으로 쌓임) — 슬라이드로 항해 기록 확인
@@ -804,27 +814,13 @@ export default function GamePage() {
       <div className="absolute inset-0 z-0 pointer-events-none bg-gradient-to-b from-[#fdf4e3]/70 via-transparent to-[#dff0e6]/85 dark:from-[#0a1a1f]/75 dark:via-transparent dark:to-[#0a1512]/90" />
       <div className="relative z-10 w-full max-w-2xl mx-auto px-2 pt-3 pb-1 flex-1 min-h-0 flex flex-col">
 
-        {/* 헤더 */}
-        <div className="flex items-center justify-between mb-2 shrink-0">
-          <Link href="/" className="inline-flex items-center gap-1 text-xs font-bold text-neutral-500 dark:text-neutral-400 hover:text-[#16a34a]">
-            <ChevronLeft size={14} /> 홈
-          </Link>
-          <h1 className="text-sm font-black text-neutral-900 dark:text-white">⛵ 신대륙 항해 · 종목 발굴</h1>
-          <div className="flex items-center gap-1.5">
-            {isLoggedIn && <WalletChip coins={coins} />}
-            <button onClick={() => setShowDeck(v => !v)}
-              className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg border border-neutral-200 dark:border-[#35332e] bg-white dark:bg-[#242320] text-xs font-bold text-neutral-600 dark:text-neutral-300">
-              <Layers size={13} className="text-[#16a34a]" /> 내 덱 {deckTotal(deck)}
-              {!isLoggedIn && <Lock size={10} className="opacity-60" />}
-            </button>
-          </div>
-        </div>
+        {/* 상단 메뉴 바 없음 — 홈·제목·내 덱 접근은 전역 네비게이션(게임 버튼)에 통합됨 */}
 
         {/* 본문 — 항상 스크롤 가능. 플레이는 my-auto 로 세로 중앙(넘치면 스크롤), 종료/덱은 자연 스크롤 */}
         <div className="flex-1 min-h-0 overflow-y-auto flex flex-col">
         {showDeck ? (
           <DeckView deck={deck} catalog={catalog} best={best} coins={coins} isLoggedIn={isLoggedIn}
-            onLogin={requireLogin} onClose={() => { setShowDeck(false); setShowShop(false); }}
+            onLogin={requireLogin} onClose={() => { setShowShop(false); closeDeck(); }}
             showShop={showShop} onToggleShop={() => setShowShop(v => !v)}
             onBuyBoost={(item) => setActiveBoost({ mult: item.mult, roundsLeft: item.rounds })}
             onConverted={(ticker, gained, remaining) => {
@@ -992,7 +988,7 @@ export default function GamePage() {
                             <Sparkles size={12} /> 카드 획득! {challenger.name} 이(가) 덱에 추가됨
                           </span>
                           {firstDupHint && (
-                            <button onClick={() => setShowDeck(true)}
+                            <button onClick={openDeck}
                               className="text-[10px] font-bold text-neutral-400 hover:text-[#16a34a] hover:underline">
                               🪙 같은 카드가 2장이 됐어요 — 내 덱에서 코인으로 전환해보세요 →
                             </button>
