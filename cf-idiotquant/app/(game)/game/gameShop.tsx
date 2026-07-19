@@ -32,12 +32,13 @@ export function ConvertButton({ item, count, onConverted }: {
   const [pending, setPending] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const max = count - 1; // 최소 1장은 남김
-  const perCard = COIN_VALUE[computeValueScore(item).tone] ?? COIN_VALUE.explore;
+  const tone = computeValueScore(item).tone;
+  const perCard = COIN_VALUE[tone] ?? COIN_VALUE.explore;
   if (max < 1) return null;
 
   const convert = async () => {
     setPending(true); setError(null);
-    const res = await convertDupes(item.ticker, amount);
+    const res = await convertDupes(item.ticker, amount, tone);
     setPending(false);
     if (res?.success) {
       onConverted(res.gained, res.remaining);

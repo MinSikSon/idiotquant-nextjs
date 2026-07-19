@@ -44,8 +44,9 @@ export const addDeckCard = (card: DeckCardSnapshot) =>
 export const getWallet = () => deckRequest("/user/wallet");
 
 // 중복 카드(count-1장까지) 코인 전환. gained: 획득 코인, remaining: 전환 후 개수
-export const convertDupes = (ticker: string, amount: number) =>
-    deckRequest("/user/wallet", "POST", { action: "convert", ticker, amount });
+// tone: 현재 등급(코인 가치 조회용) — 서버 저장분(card_json.tone)이 옛 카드라 없을 수 있어 매번 최신값을 함께 보낸다.
+export const convertDupes = (ticker: string, amount: number, tone: string) =>
+    deckRequest("/user/wallet", "POST", { action: "convert", ticker, amount, tone });
 
 // 상점 구매용 코인 차감. coins: 차감 후 잔액
 export const spendCoins = (cost: number) =>
