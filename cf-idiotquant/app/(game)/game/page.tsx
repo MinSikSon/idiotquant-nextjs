@@ -1186,7 +1186,7 @@ function DeckView({ deck, catalog, best, coins, isLoggedIn, onLogin, onClose, sh
                       <div className="flex items-center gap-2 mb-2 px-0.5">
                         {groupMode === "tier" ? (
                           <span className={cn("inline-flex items-center gap-1 px-2 py-0.5 rounded-full ring-1 ring-inset text-[11px] font-black", MEDAL_TONE[key])}>
-                            <span aria-hidden>{cards[0].v.medal}</span>{cards[0].v.label}
+                            <span aria-hidden>{cards[0].v.medal}</span>{cards[0].v.grade} {cards[0].v.label}
                           </span>
                         ) : (
                           <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full ring-1 ring-inset text-[11px] font-black"
