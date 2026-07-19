@@ -834,7 +834,7 @@ export default function GamePage() {
         ) : isLoading ? (
           <div className="my-auto py-24 text-center text-sm text-neutral-400">카드 데이터를 불러오는 중…</div>
         ) : (
-          <div className={cn("w-full", phase === "over" ? "flex-1 min-h-0 flex flex-col" : "my-auto")}>
+          <div className={cn("w-full", phase === "over" ? "flex flex-col sm:flex-1 sm:min-h-0" : "my-auto")}>
             {/* 스코어 (플레이 중에만) */}
             {phase !== "over" && (
               <div className="flex items-center justify-center mb-1 sm:mb-3 shrink-0">
@@ -865,8 +865,8 @@ export default function GamePage() {
             )}
 
             {phase === "over" ? (
-              // 결과 카드: 화면(뷰포트)을 꽉 채우고 헤더·버튼은 고정, 중간만 필요 시 내부 스크롤 → 한 화면에서 보임
-              <div className="flex-1 min-h-0 flex flex-col rounded-3xl border border-neutral-200 dark:border-[#35332e] bg-white dark:bg-[#242320] overflow-hidden shadow-sm animate-in fade-in zoom-in-95 duration-300">
+              // 결과 카드: 모바일은 본문 단일 스크롤로 자연스럽게 흐르고, 데스크톱(sm+)은 뷰포트를 꽉 채우고 헤더·버튼 고정 + 중간만 내부 스크롤
+              <div className="flex flex-col rounded-3xl border border-neutral-200 dark:border-[#35332e] bg-white dark:bg-[#242320] shadow-sm animate-in fade-in zoom-in-95 duration-300 sm:flex-1 sm:min-h-0 sm:overflow-hidden">
                 {/* 3D 보물상자 헤더 (three.js) — 모바일 축소 */}
                 <div className="relative h-20 sm:h-40 shrink-0 bg-gradient-to-b from-[#fff7e6] to-white dark:from-[#241d0e] dark:to-[#242320]">
                   <VoyageArt />
@@ -877,8 +877,8 @@ export default function GamePage() {
                   )}
                 </div>
 
-                {/* 중간 — 넘칠 때만 이 영역만 내부 스크롤(헤더·버튼은 항상 보임) */}
-                <div className="flex-1 min-h-0 overflow-y-auto px-5 pt-1.5 pb-2 text-center space-y-2">
+                {/* 중간 — 모바일은 자연 흐름(본문 스크롤), 데스크톱은 이 영역만 내부 스크롤(헤더·버튼 항상 보임) */}
+                <div className="px-5 pt-1.5 pb-2 text-center space-y-2 sm:flex-1 sm:min-h-0 sm:overflow-y-auto">
                   <div>
                     <p className="text-lg font-black text-neutral-900 dark:text-white">항해 종료!</p>
                     <span className="inline-flex items-center gap-1 mt-1 px-3 py-1 rounded-full bg-[#f0fdf4] dark:bg-[#052e16]/40 border border-[#86efac]/60 dark:border-[#166534]/60 text-[#15803d] dark:text-[#16a34a] text-xs font-black">
