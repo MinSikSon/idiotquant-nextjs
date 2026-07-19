@@ -830,7 +830,7 @@ function GameContent() {
         ) : isLoading ? (
           <div className="my-auto py-24 text-center text-sm text-neutral-400">카드 데이터를 불러오는 중…</div>
         ) : (
-          <div className={cn("w-full", phase === "over" ? "flex flex-col sm:flex-1 sm:min-h-0" : "my-auto")}>
+          <div className={cn("w-full", phase === "over" ? "flex flex-col sm:flex-1 sm:min-h-0" : "mt-auto mb-2")}>
             {/* 스코어 (플레이 중에만) */}
             {phase !== "over" && (
               <div className="flex items-center justify-center mb-1 sm:mb-3 shrink-0">
