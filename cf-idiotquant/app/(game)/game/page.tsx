@@ -14,7 +14,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useSession } from "next-auth/react";
 import {
-  ArrowUp, ArrowDown, Layers, TrendingUp, Sparkles, ChevronLeft, ChevronRight, Lock, Info,
+  ArrowUp, ArrowDown, Layers, Copy, TrendingUp, Sparkles, ChevronLeft, ChevronRight, Lock, Info,
   Cpu, Dna, Landmark, CarFront, Ship, Construction, Zap, FlaskConical, Factory, RadioTower, Gamepad2,
   Soup, ShoppingCart, PlaneTakeoff, Shirt, Code2, Gem, Compass, Anchor, Map as MapIcon, Medal as MedalIcon,
   BatteryCharging, Bot, Wallet,
@@ -1075,12 +1075,15 @@ function DeckView({ deck, catalog, best, coins, isLoggedIn, onLogin, onClose, sh
     return { byGroup, total, owned, pct: total > 0 ? Math.round((owned / total) * 100) : 0 };
   }, [groups, catalog.length, ownedByTicker]);
 
-  // 보유 카드만 보기 필터 — 켜면 잠금(미보유) 카드를 그룹에서 제외
+  // 보유 카드만 / 중복(2장 이상, 코인 전환 가능) 카드만 보기 필터
   const [showOwnedOnly, setShowOwnedOnly] = useState(false);
+  const [showDupesOnly, setShowDupesOnly] = useState(false);
   const displayGroups = useMemo(() => {
-    if (!showOwnedOnly) return groups;
-    return groups.map(g => ({ key: g.key, cards: g.cards.filter(c => c.owned) })).filter(g => g.cards.length > 0);
-  }, [groups, showOwnedOnly]);
+    let result = groups;
+    if (showOwnedOnly) result = result.map(g => ({ key: g.key, cards: g.cards.filter(c => c.owned) })).filter(g => g.cards.length > 0);
+    if (showDupesOnly) result = result.map(g => ({ key: g.key, cards: g.cards.filter(c => (c.owned?.count ?? 0) >= 2) })).filter(g => g.cards.length > 0);
+    return result;
+  }, [groups, showOwnedOnly, showDupesOnly]);
 
   // 카드가 3D(두께·범선·홀로)라 한 번에 다 그리면 무거움 → 12장씩 나눠 렌더(스크롤 시 자동 추가)
   const PAGE = 12;
@@ -1155,6 +1158,13 @@ function DeckView({ deck, catalog, best, coins, isLoggedIn, onLogin, onClose, sh
                       : "border-neutral-200 dark:border-[#35332e] bg-white dark:bg-[#242320] text-neutral-500 dark:text-neutral-400")}>
                   <Layers size={11} /> 보유만
                 </button>
+                <button onClick={() => { setShowDupesOnly(v => !v); setVisible(PAGE); }}
+                  className={cn("inline-flex items-center gap-1 px-2 py-1 rounded-lg border text-[11px] font-bold transition-colors",
+                    showDupesOnly
+                      ? "border-[#16a34a] bg-[#16a34a]/10 text-[#16a34a]"
+                      : "border-neutral-200 dark:border-[#35332e] bg-white dark:bg-[#242320] text-neutral-500 dark:text-neutral-400")}>
+                  <Copy size={11} /> 중복만
+                </button>
               </div>
             )}
           </div>
@@ -1172,8 +1182,10 @@ function DeckView({ deck, catalog, best, coins, isLoggedIn, onLogin, onClose, sh
 
           {catalog.length === 0 ? (
             <p className="py-20 text-center text-sm text-neutral-400">카드 데이터를 불러오는 중…</p>
-          ) : showOwnedOnly && total === 0 ? (
-            <p className="py-20 text-center text-sm text-neutral-400">아직 보유한 카드가 없어요. 게임을 하며 카드를 수집하세요!</p>
+          ) : (showOwnedOnly || showDupesOnly) && total === 0 ? (
+            <p className="py-20 text-center text-sm text-neutral-400">
+              {showDupesOnly ? "2장 이상 보유한 중복 카드가 없어요. 코인으로 전환하려면 같은 카드가 더 필요해요!" : "아직 보유한 카드가 없어요. 게임을 하며 카드를 수집하세요!"}
+            </p>
           ) : (
             <div className="space-y-5 mt-3">
               {(() => {
