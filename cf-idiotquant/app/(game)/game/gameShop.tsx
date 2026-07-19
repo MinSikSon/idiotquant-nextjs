@@ -13,7 +13,7 @@ import { computeValueScore } from "@/lib/utils/valueScore";
 import { type DeckItem } from "./page";
 
 // 워커 COIN_VALUE(d1Store.js)와 동일한 등급→코인 표 — 전환 팝오버에 예상 획득량을 보여주기 위한 표시용 사본.
-const COIN_VALUE: Record<string, number> = { explore: 1, clay: 1.5, raw: 2, iron: 2.5, bronze: 3, silver: 5, gold: 8, diamond: 12, treasure: 18, legend: 30 };
+const COIN_VALUE: Record<string, number> = { explore: 2, clay: 3, raw: 3, iron: 4, bronze: 5, silver: 8, gold: 12, diamond: 18, treasure: 25, legend: 40 };
 
 export function WalletChip({ coins }: { coins: number }) {
   return (
@@ -32,12 +32,13 @@ export function ConvertButton({ item, count, onConverted }: {
   const [pending, setPending] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const max = count - 1; // 최소 1장은 남김
-  const perCard = COIN_VALUE[computeValueScore(item).tone] ?? COIN_VALUE.explore;
+  const tone = computeValueScore(item).tone;
+  const perCard = COIN_VALUE[tone] ?? COIN_VALUE.explore;
   if (max < 1) return null;
 
   const convert = async () => {
     setPending(true); setError(null);
-    const res = await convertDupes(item.ticker, amount);
+    const res = await convertDupes(item.ticker, amount, tone);
     setPending(false);
     if (res?.success) {
       onConverted(res.gained, res.remaining);
