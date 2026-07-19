@@ -13,7 +13,7 @@ import { computeValueScore } from "@/lib/utils/valueScore";
 import { type DeckItem } from "./page";
 
 // 워커 COIN_VALUE(d1Store.js)와 동일한 등급→코인 표 — 전환 팝오버에 예상 획득량을 보여주기 위한 표시용 사본.
-const COIN_VALUE: Record<string, number> = { explore: 2, clay: 2.5, raw: 3, iron: 4, bronze: 5, silver: 8, gold: 12, diamond: 18, treasure: 25, legend: 40 };
+const COIN_VALUE: Record<string, number> = { explore: 2, clay: 3, raw: 3, iron: 4, bronze: 5, silver: 8, gold: 12, diamond: 18, treasure: 25, legend: 40 };
 
 export function WalletChip({ coins }: { coins: number }) {
   return (
