@@ -134,17 +134,17 @@ export const rgba = (h: string, a: number) => {
   const n = parseInt(h.slice(1), 16);
   return `rgba(${(n >> 16) & 255},${(n >> 8) & 255},${n & 255},${a})`;
 };
-export const TIER: Record<string, { premium: boolean; glow: string; edge: string[]; accent: string }> = {
-  legend:   { premium: true,  glow: "#a855f7", edge: ["#f0abfc", "#7c3aed", "#e9d5ff", "#6d28d9"], accent: "#9333ea" },
-  treasure: { premium: true,  glow: "#fb923c", edge: ["#fed7aa", "#ea580c", "#fca5a5", "#b45309"], accent: "#ea580c" },
-  diamond:  { premium: true,  glow: "#22d3ee", edge: ["#cffafe", "#0891b2", "#a5f3fc", "#0e7490"], accent: "#0891b2" },
-  gold:     { premium: true,  glow: "#facc15", edge: ["#fef08a", "#ca8a04", "#fde047", "#a16207"], accent: "#ca8a04" },
-  silver:   { premium: false, glow: "#94a3b8", edge: ["#e2e8f0", "#64748b"], accent: "#64748b" },
-  bronze:   { premium: false, glow: "#f59e0b", edge: ["#fdba74", "#9a3412"], accent: "#9a3412" },
-  iron:     { premium: false, glow: "#8a94a6", edge: ["#c7ced9", "#4b5563"], accent: "#4b5563" },
-  raw:      { premium: false, glow: "#a8a29e", edge: ["#d6d3d1", "#57534e"], accent: "#57534e" },
-  clay:     { premium: false, glow: "#a1785a", edge: ["#d9bfa3", "#6b4a2f"], accent: "#6b4a2f" },
-  explore:  { premium: false, glow: "#10b981", edge: ["#a7f3d0", "#047857"], accent: "#047857" },
+export const TIER: Record<string, { glow: string; accent: string }> = {
+  legend:   { glow: "#a855f7", accent: "#9333ea" },
+  treasure: { glow: "#fb923c", accent: "#ea580c" },
+  diamond:  { glow: "#22d3ee", accent: "#0891b2" },
+  gold:     { glow: "#facc15", accent: "#ca8a04" },
+  silver:   { glow: "#94a3b8", accent: "#64748b" },
+  bronze:   { glow: "#f59e0b", accent: "#9a3412" },
+  iron:     { glow: "#8a94a6", accent: "#4b5563" },
+  raw:      { glow: "#a8a29e", accent: "#57534e" },
+  clay:     { glow: "#a1785a", accent: "#6b4a2f" },
+  explore:  { glow: "#10b981", accent: "#047857" },
 };
 
 // 등급별 카드 효과 보너스(%) — 설명란 효과 문구용 (전설이 가장 높음)
@@ -305,35 +305,40 @@ function TcgCard({ item, value, hero = false, count, locked = false, rank, onGue
   const holo = !locked && count != null && count >= HOLO_THRESHOLD;
   const displayName = locked ? "???" : item.name;
   const displayTicker = locked ? "??????" : item.ticker;
-  // 대리석 룰박스 — 등급 컬러 베이스 + 흰/검 얼룩(veining)을 얹어 진짜 대리석처럼
-  const marbleBase = c.premium
-    ? `linear-gradient(135deg, ${c.edge[0]}, ${c.edge[1]} 28%, ${c.edge[2]} 52%, ${c.edge[3]} 74%, ${c.edge[0]})`
-    : `linear-gradient(135deg, ${c.edge[0]}, ${c.edge[1]})`;
-  const marble = `radial-gradient(30% 45% at 18% 22%, rgba(255,255,255,0.4), transparent 60%), radial-gradient(26% 40% at 82% 75%, rgba(0,0,0,0.28), transparent 60%), radial-gradient(20% 30% at 70% 15%, rgba(255,255,255,0.25), transparent 60%), ${marbleBase}`;
+  // 룰박스 대리석 — 레퍼런스 카드 실물 사진과 동일하게 등급 무관 고정 마룬(적갈색) 톤으로 통일.
+  // 등급 구분은 배지(MEDAL_TONE)·글로우(PortMedallion)·홀로 등 다른 요소로 남긴다.
+  const marbleBase = "linear-gradient(135deg, #7a1830, #4a0f20 28%, #9c2c48 52%, #3d0c1a 74%, #7a1830)";
+  const marble = `radial-gradient(30% 45% at 18% 22%, rgba(255,255,255,0.22), transparent 60%), radial-gradient(26% 40% at 82% 75%, rgba(0,0,0,0.35), transparent 60%), radial-gradient(20% 30% at 70% 15%, rgba(255,255,255,0.15), transparent 60%), ${marbleBase}`;
   const line = "rgba(0,0,0,0.55)";
-  const DividerCap = ({ y }: { y: "top" | "bottom" }) => (
-    <span aria-hidden className="absolute w-[3px] h-[3px] rounded-full left-1/2 -translate-x-1/2"
-      style={{ [y]: -1.5, background: "rgba(0,0,0,0.55)" } as React.CSSProperties} />
+  // 명패 구분 기둥 — 레퍼런스 카드의 리벳 캡 달린 세로 기둥(핀) 장식을 복제
+  const Pillar = () => (
+    <span aria-hidden className="relative z-[3] shrink-0" style={{ width: hero ? 9 : 7 }}>
+      <span className="absolute inset-y-0 left-1/2 -translate-x-1/2 rounded-full"
+        style={{ width: hero ? 5 : 4, background: "linear-gradient(180deg,#2e3546,#12141a)", boxShadow: "inset 0 0 0 1px rgba(255,255,255,0.2)" }} />
+      <span className="absolute left-1/2 -translate-x-1/2 rounded-full"
+        style={{ top: hero ? -4 : -3, width: hero ? 8 : 6.5, height: hero ? 8 : 6.5, background: "linear-gradient(160deg,#454e63,#14161c)", boxShadow: "0 0 0 1px rgba(0,0,0,0.7)" }} />
+      <span className="absolute left-1/2 -translate-x-1/2 rounded-full"
+        style={{ bottom: hero ? -4 : -3, width: hero ? 8 : 6.5, height: hero ? 8 : 6.5, background: "linear-gradient(160deg,#454e63,#14161c)", boxShadow: "0 0 0 1px rgba(0,0,0,0.7)" }} />
+    </span>
   );
   return (
-    <div className={cn("relative w-full h-full flex flex-col overflow-hidden transition-transform duration-200 ease-out hover:-translate-y-1 p-[3.5%]", locked && "grayscale-[0.85] brightness-[0.65]")}
+    <div className={cn("relative w-full h-full flex flex-col overflow-hidden rounded-[5%] transition-transform duration-200 ease-out hover:-translate-y-1 p-[3.5%]", locked && "grayscale-[0.85] brightness-[0.65]")}
       style={{ background: "linear-gradient(160deg,#232323,#0c0c0c)", boxShadow: "inset 0 0 0 1px rgba(255,255,255,0.08), 0 4px 14px -6px rgba(0,0,0,0.6)" }}>
       {holo && <HoloOverlay tone={v.tone} />}
       {/* 명패+아트 존 — 상아색 카드지 한 장. 명패는 카드지 가장자리까지 꽉 차고, 아트는 사진 매트처럼 안쪽에 여백을 두고 액자처럼 삽입 */}
       <div className="relative shrink-0 flex flex-col overflow-hidden"
         style={{ background: "linear-gradient(175deg,#ece4cf,#ddd0a6)", flex: "1 1 auto", minHeight: 0 }}>
-        {/* 명패: 점수 | 종목명 | 코드 — 구분선·바깥 모서리에 리벳 캡 장식 */}
+        {/* 명패: 티커 | 종목명 | 등급-순번 — 레퍼런스와 동일한 리벳 기둥 구분선 */}
         <div className="relative z-[2] shrink-0 flex items-stretch border-b-2" style={{ borderColor: line }}>
-          <span aria-hidden className="absolute w-[3px] h-[3px] rounded-full left-1 top-0 -translate-y-1/2" style={{ background: "rgba(0,0,0,0.55)" }} />
-          <span aria-hidden className="absolute w-[3px] h-[3px] rounded-full right-1 top-0 -translate-y-1/2" style={{ background: "rgba(0,0,0,0.55)" }} />
-          <div className="relative flex items-center justify-center shrink-0 border-r px-1" style={{ minWidth: hero ? 26 : 20, borderColor: "rgba(0,0,0,0.35)" }}>
+          <div className="flex items-center justify-center shrink-0 px-1" style={{ minWidth: hero ? 26 : 20 }}>
             <span className="font-mono tracking-tight truncate" style={{ fontSize: hero ? 8 : 6.5, color: "#4a3f2a" }}>{displayTicker}</span>
-            <DividerCap y="top" /><DividerCap y="bottom" />
           </div>
+          <Pillar />
           <div className="flex-1 min-w-0 flex items-center justify-center px-1 py-[3%]">
             <p className={cn("font-serif font-bold truncate", hero ? "text-[13px]" : "text-[10.5px]")} style={{ color: "#221c10" }}>{displayName}</p>
           </div>
-          <div className="relative flex items-center justify-center shrink-0 border-l px-1" style={{ minWidth: hero ? 30 : 24, borderColor: "rgba(0,0,0,0.35)" }}>
+          <Pillar />
+          <div className="flex items-center justify-center shrink-0 px-1" style={{ minWidth: hero ? 30 : 24 }}>
             {locked ? (
               <span className="font-serif font-black tabular-nums" style={{ fontSize: hero ? 12 : 9.5, color: "#221c10" }}>{v.grade}{rank != null && `-${rank}`}</span>
             ) : (
@@ -347,7 +352,6 @@ function TcgCard({ item, value, hero = false, count, locked = false, rank, onGue
                 {v.grade}{rank != null && `-${rank}`}
               </button>
             )}
-            <DividerCap y="top" /><DividerCap y="bottom" />
           </div>
         </div>
 
@@ -421,9 +425,9 @@ function TcgCard({ item, value, hero = false, count, locked = false, rank, onGue
       {/* 검정 여백 — 아트존과 룰박스 사이 (레퍼런스의 카드지 마진, 카드 크기에 비례) */}
       <div className="shrink-0 h-[2.2%]" />
 
-      {/* 룰박스: 등급색 대리석 테두리(각진 모서리, 카드 폭에 비례한 두께) + 흰 바탕 텍스트 — 플레이버 + 효과. shrink-0, 항상 온전히 보임 */}
-      <div className="relative z-[2] shrink-0 p-[3.2%]" style={{ background: marble }}>
-        <div className="px-1.5 py-1.5" style={{ background: "#faf9f5", boxShadow: "inset 0 0 0 1px rgba(0,0,0,0.5)" }}>
+      {/* 룰박스: 마룬 대리석 테두리(레퍼런스와 동일한 고정색, 둥근 인셋 박스) + 회청색 바탕 텍스트 — 플레이버 + 효과. shrink-0, 항상 온전히 보임 */}
+      <div className="relative z-[2] shrink-0 p-[4%]" style={{ background: marble }}>
+        <div className="rounded-lg px-2 py-2" style={{ background: "#c8d2d6", boxShadow: "inset 0 0 0 2px rgba(0,0,0,0.8)" }}>
           <p className="font-bold uppercase tracking-wide" style={{ fontSize: hero ? 8 : 6.5, color: sec.hue }}>{sec.label}</p>
           <p className={cn("leading-snug break-keep mt-0.5", hero ? "line-clamp-2" : "line-clamp-1")} style={{ fontSize: hero ? 10 : 7.5, color: "#181818" }}>{sec.flavor}</p>
           <p className="leading-snug break-keep mt-1" style={{ fontSize: hero ? 9 : 7, color: "#181818" }}>
