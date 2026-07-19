@@ -808,7 +808,9 @@ function GameContent() {
   const isLoading = ncav.state === "pending" || ncav.state === "init" || pool.length < 2;
 
   return (
-    <div className="relative h-[calc(100dvh-112px)] md:h-[100dvh] flex flex-col overflow-hidden bg-gradient-to-b from-[#fdf4e3] via-[#eaf6ef] to-[#dff0e6] dark:from-[#0a1a1f] dark:via-[#0c1f1a] dark:to-[#0a1512] transition-colors">
+    // svh(small viewport height) 사용 — iOS Safari에서 주소창/툴바가 완전히 펼쳐진 상태의 100dvh가
+    // 실제 보이는 영역보다 크게 계산돼 하단에 빈 공간이 남는 문제 방지(svh는 항상 "가장 작은" 뷰포트 기준)
+    <div className="relative h-[calc(100svh-112px)] md:h-[100svh] flex flex-col overflow-hidden bg-gradient-to-b from-[#fdf4e3] via-[#eaf6ef] to-[#dff0e6] dark:from-[#0a1a1f] dark:via-[#0c1f1a] dark:to-[#0a1512] transition-colors">
       {/* 대항해시대 바다 3D 배경 (three.js) */}
       <div className="absolute inset-0 z-0"><GameSeaArt /></div>
       <div className="absolute inset-0 z-0 pointer-events-none bg-gradient-to-b from-[#fdf4e3]/70 via-transparent to-[#dff0e6]/85 dark:from-[#0a1a1f]/75 dark:via-transparent dark:to-[#0a1512]/90" />
