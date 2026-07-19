@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, Fragment } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useSession, signOut } from "next-auth/react";
@@ -18,6 +18,7 @@ import {
   ShieldCheck,
   History,
   Gamepad2,
+  Layers,
   MoreHorizontal,
   ChevronDown,
 } from "lucide-react";
@@ -252,17 +253,31 @@ export function NavbarWithSimpleLinks() {
 
         {/* Navigation */}
         <nav className="flex-1 px-3 py-4 space-y-0.5 overflow-y-auto">
-          {MAIN_NAV.filter(item => !item.adminOnly || isAdmin).map(item => (
-            <SideItem
-              key={item.href}
-              href={item.href}
-              label={item.label}
-              icon={item.icon}
-              emoji={item.emoji}
-              isActive={active(pathname, item.href, item.exact)}
-              badge={item.badge}
-            />
-          ))}
+          {MAIN_NAV.filter(item => !item.adminOnly || isAdmin).map(item => {
+            const isActive = active(pathname, item.href, item.exact);
+            return (
+              <Fragment key={item.href}>
+                <SideItem
+                  href={item.href}
+                  label={item.label}
+                  icon={item.icon}
+                  emoji={item.emoji}
+                  isActive={isActive}
+                  badge={item.badge}
+                />
+                {/* 게임 화면에선 '내 덱'을 게임 메뉴 하위로 통합 노출 (게임 페이지 상단 바 제거분) */}
+                {item.href === "/game" && isActive && (
+                  <Link
+                    href="/game?deck=1"
+                    className="group flex items-center gap-2.5 ml-4 pl-4 pr-3 py-2 rounded-xl text-[13px] font-medium border-l border-neutral-200 dark:border-[#3a3834] text-neutral-500 dark:text-neutral-400 hover:bg-[#f5f0e8] dark:hover:bg-[#2c2b27] hover:text-neutral-900 dark:hover:text-neutral-100 transition-colors"
+                  >
+                    <Layers size={15} strokeWidth={1.9} className="shrink-0 text-[#16a34a]" />
+                    <span className="flex-1 truncate">내 덱</span>
+                  </Link>
+                )}
+              </Fragment>
+            );
+          })}
 
           {/* 더 보기 (보조 메뉴 — 계산기) */}
           <button
@@ -355,7 +370,12 @@ export function NavbarWithSimpleLinks() {
       {/* ══ MOBILE BOTTOM TAB BAR ════════════════════════════════════ */}
       <nav className="md:hidden fixed bottom-0 left-0 right-0 h-[64px] z-40 bg-white/95 dark:bg-[#1f1e1b]/95 backdrop-blur-xl border-t border-neutral-200/70 dark:border-[#3a3834] flex items-center px-3">
         <TabItem href="/"           label="홈"     icon={Home}       isActive={pathname === "/"} />
-        <TabItem href="/game"       label="게임"   icon={Gamepad2}   emoji="⛵" isActive={pathname.startsWith("/game")} />
+        {/* 게임 화면에선 게임 탭이 '내 덱'으로 전환 — 게임 페이지 상단 바 제거분을 통합. 덱 닫기는 덱 화면의 '게임으로' 버튼 */}
+        {pathname.startsWith("/game") ? (
+          <TabItem href="/game?deck=1" label="내 덱" icon={Layers} isActive={true} />
+        ) : (
+          <TabItem href="/game"       label="게임"   icon={Gamepad2}   emoji="⛵" isActive={false} />
+        )}
         <TabItem href="/screener"   label="발굴"   icon={Filter}     emoji="🥇" isActive={pathname.startsWith("/screener")} />
         {isAdmin && (
           <TabItem href="/backtest"   label="히스토리" icon={History}  isActive={pathname.startsWith("/backtest")} />
