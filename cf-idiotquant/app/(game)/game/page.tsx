@@ -837,27 +837,29 @@ export default function GamePage() {
           <div className={cn("w-full", phase === "over" ? "flex-1 min-h-0 flex flex-col" : "my-auto")}>
             {/* 스코어 (플레이 중에만) */}
             {phase !== "over" && (
-              <div className="flex items-center justify-center mb-3 shrink-0">
-                <div className="flex items-center gap-1 px-2 py-1.5 rounded-2xl bg-white dark:bg-[#242320] border border-neutral-200 dark:border-[#35332e] shadow-sm">
-                  <div className="text-center px-3">
-                    <p className="text-xl font-black tabular-nums text-[#16a34a] leading-none">{streak}</p>
-                    <p className="text-[9px] font-bold text-neutral-400 uppercase tracking-wider mt-1">연승</p>
+              <div className="flex items-center justify-center mb-1 sm:mb-3 shrink-0">
+                <div className="flex items-center gap-1 px-1.5 sm:px-2 py-1 sm:py-1.5 rounded-2xl bg-white dark:bg-[#242320] border border-neutral-200 dark:border-[#35332e] shadow-sm">
+                  <div className="text-center px-2.5 sm:px-3">
+                    <p className="text-base sm:text-xl font-black tabular-nums text-[#16a34a] leading-none">{streak}</p>
+                    <p className="text-[9px] font-bold text-neutral-400 uppercase tracking-wider mt-0.5 sm:mt-1">연승</p>
                   </div>
-                  <div className="h-7 w-px bg-neutral-200 dark:bg-[#35332e]" />
-                  <div className="text-center px-3">
-                    <p className="text-xl font-black tabular-nums text-neutral-700 dark:text-neutral-200 leading-none">{best}</p>
-                    <p className="text-[9px] font-bold text-neutral-400 uppercase tracking-wider mt-1">최고</p>
+                  <div className="h-6 sm:h-7 w-px bg-neutral-200 dark:bg-[#35332e]" />
+                  <div className="text-center px-2.5 sm:px-3">
+                    <p className="text-base sm:text-xl font-black tabular-nums text-neutral-700 dark:text-neutral-200 leading-none">{best}</p>
+                    <p className="text-[9px] font-bold text-neutral-400 uppercase tracking-wider mt-0.5 sm:mt-1">최고</p>
                   </div>
                 </div>
               </div>
             )}
 
-            {/* 질문 — 최상단(스코어 바로 아래)으로 이동해 카드를 보기 전에 무엇을 비교하는지 먼저 알 수 있게 */}
+            {/* 질문 — 최상단(스코어 바로 아래)으로 이동해 카드를 보기 전에 무엇을 비교하는지 먼저 알 수 있게.
+                모바일은 별도 앵커 배지 없이 앵커 값을 괄호로 함께 표기(세로 공간 절약) */}
             {phase === "guessing" && anchor && challenger && (
-              <p className="text-center text-sm sm:text-base font-bold text-neutral-800 dark:text-neutral-100 mb-3 shrink-0 break-keep leading-snug">
+              <p className="text-center text-sm sm:text-base font-bold text-neutral-800 dark:text-neutral-100 mb-1 sm:mb-3 shrink-0 break-keep leading-snug">
                 <b className="text-[#16a34a]">{challenger.name}</b>
                 <span className="font-medium text-neutral-500 dark:text-neutral-400">의 {STAT.label}은 </span>
                 <b className="text-neutral-900 dark:text-white">{anchor.name}</b>
+                <span className="sm:hidden font-medium text-neutral-400 dark:text-neutral-500 text-xs"> ({STAT.fmt(STAT.get(anchor))})</span>
                 <span className="font-medium text-neutral-500 dark:text-neutral-400">보다?</span>
               </p>
             )}
@@ -948,37 +950,30 @@ export default function GamePage() {
                   )}
                 </div>
 
-                {/* 모바일 — 챌린저(비교 대상) 카드 위주 큰 뷰, 앵커(기준)는 값 배지로 축소 */}
-                <div className="sm:hidden pt-3 pb-2">
-                  <div className="flex items-center justify-center mb-2.5">
-                    <span className="inline-flex items-center gap-1.5 pl-1 pr-3 py-1 rounded-full bg-white dark:bg-[#242320] border border-neutral-200 dark:border-[#35332e] shadow-sm">
-                      <PortMedallion item={anchor} size={22} />
-                      <span className="text-[11px] font-bold text-neutral-500 dark:text-neutral-400 truncate max-w-[100px]">{anchor.name}</span>
-                      <span className="text-xs font-black text-neutral-800 dark:text-neutral-100 tabular-nums">{STAT.fmt(STAT.get(anchor))}</span>
-                    </span>
-                  </div>
-                  <div className="mx-auto w-[86%] max-w-[320px] aspect-[3/4]">
+                {/* 모바일 — 챌린저(비교 대상) 카드 위주 큰 뷰. 앵커 값은 위 질문 문구에 괄호로 함께 표기(세로 공간 절약) */}
+                <div className="sm:hidden pt-0.5 pb-0.5">
+                  <div className="mx-auto w-[70%] max-w-[260px] aspect-[3/4]">
                     <TcgCard hero item={challenger} rank={rankMap.get(String(challenger.ticker))} idleDelay={3}
                       value={phase === "revealed"
                         ? <span className="animate-in zoom-in-75 duration-300">{STAT.fmt(STAT.get(challenger))}</span>
                         : <span className="text-neutral-300 dark:text-neutral-600">?</span>} />
                   </div>
                   {/* 높다/낮다 — 카드 아트를 가리지 않도록 카드 아래 전용 버튼 영역으로 분리(모바일 전용) */}
-                  <div className="mx-auto w-[86%] max-w-[320px] mt-2.5">
+                  <div className="mx-auto w-[70%] max-w-[260px] mt-1.5">
                     {phase === "guessing" ? (
                       <div className="grid grid-cols-2 gap-2">
                         <button type="button" onClick={() => guess("higher")}
-                          className="flex items-center justify-center gap-1.5 py-3 rounded-xl bg-[#16a34a] hover:bg-[#15803d] active:scale-[0.97] text-white font-black text-sm shadow-md shadow-[#16a34a]/25 transition-all">
+                          className="flex items-center justify-center gap-1.5 py-2 rounded-xl bg-[#16a34a] hover:bg-[#15803d] active:scale-[0.97] text-white font-black text-sm shadow-md shadow-[#16a34a]/25 transition-all">
                           <ArrowUp size={16} strokeWidth={3} /> 높다
                         </button>
                         <button type="button" onClick={() => guess("lower")}
-                          className="flex items-center justify-center gap-1.5 py-3 rounded-xl bg-[#e11d48] hover:bg-[#be123c] active:scale-[0.97] text-white font-black text-sm shadow-md shadow-[#e11d48]/25 transition-all">
+                          className="flex items-center justify-center gap-1.5 py-2 rounded-xl bg-[#e11d48] hover:bg-[#be123c] active:scale-[0.97] text-white font-black text-sm shadow-md shadow-[#e11d48]/25 transition-all">
                           낮다 <ArrowDown size={16} strokeWidth={3} />
                         </button>
                       </div>
                     ) : phase === "revealed" && lastWin ? (
                       <button type="button" onClick={next}
-                        className="w-full flex items-center justify-center gap-1.5 py-3 rounded-xl bg-[#16a34a] hover:bg-[#15803d] active:scale-[0.97] text-white font-black text-sm shadow-md shadow-[#16a34a]/25 transition-all animate-in fade-in">
+                        className="w-full flex items-center justify-center gap-1.5 py-2 rounded-xl bg-[#16a34a] hover:bg-[#15803d] active:scale-[0.97] text-white font-black text-sm shadow-md shadow-[#16a34a]/25 transition-all animate-in fade-in">
                         다음 카드 <TrendingUp size={16} strokeWidth={3} />
                       </button>
                     ) : null}
@@ -986,7 +981,7 @@ export default function GamePage() {
                 </div>
 
                 {/* 획득 / 로그인 유도 */}
-                <div className="min-h-[1.75rem] text-center">
+                <div className="min-h-[1.25rem] sm:min-h-[1.75rem] text-center mt-1 sm:mt-0">
                   {packOpening ? (
                     <PackReveal item={challenger} />
                   ) : (
