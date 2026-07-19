@@ -41,9 +41,9 @@ const STAT: Stat = {
 
 // 카드 수집: 정답을 맞힌 카드만 획득 판정. 등급별 "기본 획득 확률" + 연승 보너스.
 // 연승이 없어도(첫 정답에도) 기본 확률로 카드가 나오며, 높은 등급일수록 기본 확률이 낮고
-// 연승을 쌓을수록 확률이 오른다 (전설>보물>다이아>금>은>동>원석>탐색).
+// 연승을 쌓을수록 확률이 오른다 (SS전설>S보물>A다이아>B금>C은>D동>E철>F원석>G흙>H탐색).
 const TIER_BASE: Record<string, number> = {
-  explore: 0.34, raw: 0.28, bronze: 0.22, silver: 0.16, gold: 0.11, diamond: 0.07, treasure: 0.045, legend: 0.025,
+  explore: 0.35, clay: 0.29, raw: 0.24, iron: 0.19, bronze: 0.15, silver: 0.11, gold: 0.08, diamond: 0.055, treasure: 0.035, legend: 0.02,
 };
 function acquireChance(item: any, streak: number): number {
   const tone = computeValueScore(item).tone;
@@ -83,7 +83,9 @@ const MEDAL_TONE: Record<string, string> = {
   gold: "bg-yellow-50 text-yellow-700 ring-yellow-300 dark:bg-yellow-950/30 dark:text-yellow-300 dark:ring-yellow-800",
   silver: "bg-neutral-100 text-neutral-600 ring-neutral-300 dark:bg-[#2c2b27] dark:text-neutral-300 dark:ring-[#4a4641]",
   bronze: "bg-orange-50 text-orange-700 ring-orange-200 dark:bg-orange-950/30 dark:text-orange-300 dark:ring-orange-900",
+  iron: "bg-zinc-100 text-zinc-600 ring-zinc-300 dark:bg-zinc-900/40 dark:text-zinc-400 dark:ring-zinc-700",
   raw: "bg-stone-100 text-stone-600 ring-stone-300 dark:bg-stone-900/40 dark:text-stone-400 dark:ring-stone-700",
+  clay: "bg-lime-50 text-lime-800 ring-lime-200 dark:bg-lime-950/30 dark:text-lime-500 dark:ring-lime-900",
   explore: "bg-neutral-50 text-neutral-400 ring-neutral-200 dark:bg-[#242320] dark:text-neutral-500 dark:ring-[#35332e]",
 };
 
@@ -139,13 +141,15 @@ export const TIER: Record<string, { premium: boolean; glow: string; edge: string
   gold:     { premium: true,  glow: "#facc15", edge: ["#fef08a", "#ca8a04", "#fde047", "#a16207"], accent: "#ca8a04" },
   silver:   { premium: false, glow: "#94a3b8", edge: ["#e2e8f0", "#64748b"], accent: "#64748b" },
   bronze:   { premium: false, glow: "#f59e0b", edge: ["#fdba74", "#9a3412"], accent: "#9a3412" },
+  iron:     { premium: false, glow: "#8a94a6", edge: ["#c7ced9", "#4b5563"], accent: "#4b5563" },
   raw:      { premium: false, glow: "#a8a29e", edge: ["#d6d3d1", "#57534e"], accent: "#57534e" },
+  clay:     { premium: false, glow: "#a1785a", edge: ["#d9bfa3", "#6b4a2f"], accent: "#6b4a2f" },
   explore:  { premium: false, glow: "#10b981", edge: ["#a7f3d0", "#047857"], accent: "#047857" },
 };
 
 // 등급별 카드 효과 보너스(%) — 설명란 효과 문구용 (전설이 가장 높음)
 const EFFECT_BONUS: Record<string, number> = {
-  legend: 10, treasure: 8, diamond: 6, gold: 5, silver: 4, bronze: 3, raw: 2, explore: 1,
+  legend: 10, treasure: 9, diamond: 8, gold: 7, silver: 6, bronze: 5, iron: 4, raw: 3, clay: 2, explore: 1,
 };
 
 // 업종 추론 — 종목명/티커 키워드로 대표 업종을 매핑. 데이터에 sector 필드가 없어 이름 기반.
@@ -246,8 +250,9 @@ function ScoreInfo() {
             <span className="block">· ROE 15% — 18%↑ 만점, 3%↓ 0점</span>
           </span>
           <span className="block mt-1.5 text-neutral-300">
-            등급: 👑 전설 90+ · 🏆 보물 80+ · 💎 다이아 70+ · 🥇 금 60+<br />
-            🥈 은 50+ · 🥉 동 40+ · 🪨 원석 25+ · 🧭 탐색 그 외
+            등급: 👑SS 전설 90+ · 🏆S 보물 80+ · 💎A 다이아 70+ · 🥇B 금 62+<br />
+            🥈C 은 54+ · 🥉D 동 46+ · 🔩E 철 38+ · 🪨F 원석 30+<br />
+            🟤G 흙 20+ · 🧭H 탐색 그 외
           </span>
         </span>
       )}
@@ -283,7 +288,6 @@ function TcgCard({ item, value, hero = false, count, locked = false, onGuess, on
   const bonus = EFFECT_BONUS[v.tone] ?? 1;
   const holo = !locked && count != null && count >= HOLO_THRESHOLD;
   const displayName = locked ? "???" : item.name;
-  const displayCode = locked ? "??-??" : `${sec.label.slice(0, 2).toUpperCase()}-${item.ticker.slice(-2)}`;
   const displayTicker = locked ? "??????" : item.ticker;
   // 대리석 룰박스 — 등급 컬러 베이스 + 흰/검 얼룩(veining)을 얹어 진짜 대리석처럼
   const marbleBase = c.premium
@@ -306,9 +310,16 @@ function TcgCard({ item, value, hero = false, count, locked = false, onGuess, on
         <div className="relative z-[2] shrink-0 flex items-stretch border-b-2" style={{ borderColor: line }}>
           <span aria-hidden className="absolute w-[3px] h-[3px] rounded-full left-1 top-0 -translate-y-1/2" style={{ background: "rgba(0,0,0,0.55)" }} />
           <span aria-hidden className="absolute w-[3px] h-[3px] rounded-full right-1 top-0 -translate-y-1/2" style={{ background: "rgba(0,0,0,0.55)" }} />
-          <div className="relative flex items-center justify-center shrink-0 border-r" style={{ minWidth: hero ? 26 : 20, borderColor: "rgba(0,0,0,0.35)" }}>
+          <div className="relative flex items-center justify-center shrink-0 border-r px-1" style={{ minWidth: hero ? 26 : 20, borderColor: "rgba(0,0,0,0.35)" }}>
+            <span className="font-mono tracking-tight truncate" style={{ fontSize: hero ? 8 : 6.5, color: "#4a3f2a" }}>{displayTicker}</span>
+            <DividerCap y="top" /><DividerCap y="bottom" />
+          </div>
+          <div className="flex-1 min-w-0 flex items-center justify-center px-1 py-[3%]">
+            <p className={cn("font-serif font-bold truncate", hero ? "text-[13px]" : "text-[10.5px]")} style={{ color: "#221c10" }}>{displayName}</p>
+          </div>
+          <div className="relative flex items-center justify-center shrink-0 border-l" style={{ minWidth: hero ? 26 : 20, borderColor: "rgba(0,0,0,0.35)" }}>
             {locked ? (
-              <span className="font-serif font-black tabular-nums" style={{ fontSize: hero ? 13 : 10.5, color: "#221c10" }}>{v.medal}</span>
+              <span className="font-serif font-black tabular-nums" style={{ fontSize: hero ? 13 : 10.5, color: "#221c10" }}>{v.grade}</span>
             ) : (
               <button type="button"
                 onClick={e => { e.stopPropagation(); setShowInfo(s => !s); }}
@@ -317,16 +328,9 @@ function TcgCard({ item, value, hero = false, count, locked = false, onGuess, on
                 className="font-serif font-black tabular-nums underline decoration-dotted decoration-1 underline-offset-2 cursor-help"
                 style={{ fontSize: hero ? 13 : 10.5, color: "#221c10" }}
                 aria-label="점수 계산 내역 보기">
-                {v.score}
+                {v.grade}
               </button>
             )}
-            <DividerCap y="top" /><DividerCap y="bottom" />
-          </div>
-          <div className="flex-1 min-w-0 flex items-center justify-center px-1 py-[3%]">
-            <p className={cn("font-serif font-bold truncate", hero ? "text-[13px]" : "text-[10.5px]")} style={{ color: "#221c10" }}>{displayName}</p>
-          </div>
-          <div className="relative flex items-center justify-center shrink-0 px-1 border-l" style={{ borderColor: "rgba(0,0,0,0.35)" }}>
-            <span className="font-mono truncate" style={{ fontSize: hero ? 8 : 6.5, color: "#4a3f2a" }}>{displayCode}</span>
             <DividerCap y="top" /><DividerCap y="bottom" />
           </div>
         </div>
@@ -412,9 +416,8 @@ function TcgCard({ item, value, hero = false, count, locked = false, onGuess, on
         </div>
       </div>
 
-      {/* 하단 인쇄줄 — 레퍼런스의 저작권 표기 자리에 티커 · 시가총액(게임 진행에 필요한 실 스탯) */}
-      <div className="relative z-[2] shrink-0 flex items-center justify-between gap-1 px-0.5 pt-[2%]">
-        <span className="font-mono tracking-wide opacity-60" style={{ fontSize: hero ? 8 : 6.5, color: "#cbc6ba" }}>{displayTicker}</span>
+      {/* 하단 인쇄줄 — 레퍼런스의 저작권 표기 자리에 시가총액(게임 진행에 필요한 실 스탯) */}
+      <div className="relative z-[2] shrink-0 flex items-center justify-end gap-1 px-0.5 pt-[2%]">
         <span className={cn("font-serif font-extrabold whitespace-nowrap leading-none flex items-center gap-1", hero ? "text-sm" : "text-[11px]")}>
           <span className="font-sans font-bold opacity-60" style={{ fontSize: hero ? 7.5 : 6.5, color: "#cbc6ba" }}>{STAT.label}</span>
           <span style={{ color: c.glow }}>{value}</span>
@@ -995,7 +998,7 @@ export default function GamePage() {
 
 // 등급 카드 배경 틴트 (섹션·카드 모두에서 등급을 한눈에 구분)
 const TIER_ORDER: Array<ReturnType<typeof computeValueScore>["tone"]> =
-  ["legend", "treasure", "diamond", "gold", "silver", "bronze", "raw", "explore"];
+  ["legend", "treasure", "diamond", "gold", "silver", "bronze", "iron", "raw", "clay", "explore"];
 
 // 덱 뷰 — 도감(catalog 전체) 기준으로 보유/미보유(잠금) 카드를 함께 보여줌
 function DeckView({ deck, catalog, best, coins, isLoggedIn, onLogin, onClose, showShop, onToggleShop, onBuyBoost, onConverted }: {
@@ -1007,7 +1010,7 @@ function DeckView({ deck, catalog, best, coins, isLoggedIn, onLogin, onClose, sh
   const ownedByTicker = useMemo(() => new Map(deck.map(d => [d.ticker, d])), [deck]);
 
   // 등급별로 묶고, 등급 순서(보물→탐색) → 등급 내 점수 내림차순으로 정렬해 분류를 명확히 함
-  const groups = useMemo(() => {
+  const tierGroups = useMemo(() => {
     const byTone = new Map<string, { item: any; owned: DeckItem | undefined; v: ReturnType<typeof computeValueScore> }[]>();
     for (const c of catalog) {
       const v = computeValueScore(c);
@@ -1015,22 +1018,40 @@ function DeckView({ deck, catalog, best, coins, isLoggedIn, onLogin, onClose, sh
       byTone.get(v.tone)!.push({ item: c, owned: ownedByTicker.get(c.ticker), v });
     }
     for (const list of byTone.values()) list.sort((a, b) => b.v.score - a.v.score);
-    return TIER_ORDER.filter(t => byTone.has(t)).map(t => ({ tone: t, cards: byTone.get(t)! }));
+    return TIER_ORDER.filter(t => byTone.has(t)).map(t => ({ key: t, cards: byTone.get(t)! }));
   }, [catalog, ownedByTicker]);
 
-  // 완성도: 등급별 owned/total + 전체 % (필터와 무관하게 항상 도감 전체 기준)
+  // 업종별로 묶고, 종목 수 많은 업종 → 업종 내 점수 내림차순으로 정렬 (항목/종목분류 기준 도감 완성)
+  const sectorGroups = useMemo(() => {
+    const bySector = new Map<string, { item: any; owned: DeckItem | undefined; v: ReturnType<typeof computeValueScore> }[]>();
+    for (const c of catalog) {
+      const label = sectorArt(c).label;
+      if (!bySector.has(label)) bySector.set(label, []);
+      bySector.get(label)!.push({ item: c, owned: ownedByTicker.get(c.ticker), v: computeValueScore(c) });
+    }
+    for (const list of bySector.values()) list.sort((a, b) => b.v.score - a.v.score);
+    return Array.from(bySector.entries())
+      .sort((a, b) => b[1].length - a[1].length)
+      .map(([label, cards]) => ({ key: label, cards }));
+  }, [catalog, ownedByTicker]);
+
+  // 도감 그룹 기준 — 등급별 / 업종별(항목·종목분류) 전환
+  const [groupMode, setGroupMode] = useState<"tier" | "sector">("tier");
+  const groups = groupMode === "tier" ? tierGroups : sectorGroups;
+
+  // 완성도: 그룹별 owned/total + 전체 % (필터와 무관하게 항상 도감 전체 기준)
   const completion = useMemo(() => {
-    const byTone: Record<string, { owned: number; total: number }> = {};
-    for (const { tone, cards } of groups) byTone[tone] = { owned: cards.filter(c => c.owned).length, total: cards.length };
+    const byGroup: Record<string, { owned: number; total: number }> = {};
+    for (const { key, cards } of groups) byGroup[key] = { owned: cards.filter(c => c.owned).length, total: cards.length };
     const total = catalog.length, owned = ownedByTicker.size;
-    return { byTone, total, owned, pct: total > 0 ? Math.round((owned / total) * 100) : 0 };
+    return { byGroup, total, owned, pct: total > 0 ? Math.round((owned / total) * 100) : 0 };
   }, [groups, catalog.length, ownedByTicker]);
 
   // 보유 카드만 보기 필터 — 켜면 잠금(미보유) 카드를 그룹에서 제외
   const [showOwnedOnly, setShowOwnedOnly] = useState(false);
   const displayGroups = useMemo(() => {
     if (!showOwnedOnly) return groups;
-    return groups.map(g => ({ tone: g.tone, cards: g.cards.filter(c => c.owned) })).filter(g => g.cards.length > 0);
+    return groups.map(g => ({ key: g.key, cards: g.cards.filter(c => c.owned) })).filter(g => g.cards.length > 0);
   }, [groups, showOwnedOnly]);
 
   // 카드가 3D(두께·범선·홀로)라 한 번에 다 그리면 무거움 → 12장씩 나눠 렌더(스크롤 시 자동 추가)
@@ -1086,16 +1107,27 @@ function DeckView({ deck, catalog, best, coins, isLoggedIn, onLogin, onClose, sh
             </div>
           )}
 
-          <div className="flex items-center justify-between gap-2 mb-3">
+          <div className="flex items-center justify-between gap-2 mb-3 flex-wrap">
             <AchievementBadges deck={deck} best={best} catalogTotal={catalog.length} />
             {catalog.length > 0 && (
-              <button onClick={() => { setShowOwnedOnly(v => !v); setVisible(PAGE); }}
-                className={cn("shrink-0 inline-flex items-center gap-1 px-2 py-1 rounded-lg border text-[11px] font-bold transition-colors",
-                  showOwnedOnly
-                    ? "border-[#16a34a] bg-[#16a34a]/10 text-[#16a34a]"
-                    : "border-neutral-200 dark:border-[#35332e] bg-white dark:bg-[#242320] text-neutral-500 dark:text-neutral-400")}>
-                <Layers size={11} /> 보유만
-              </button>
+              <div className="flex items-center gap-1.5 shrink-0">
+                <div className="inline-flex rounded-lg border border-neutral-200 dark:border-[#35332e] overflow-hidden">
+                  {(["tier", "sector"] as const).map(m => (
+                    <button key={m} onClick={() => { setGroupMode(m); setVisible(PAGE); }}
+                      className={cn("px-2 py-1 text-[11px] font-bold transition-colors",
+                        groupMode === m ? "bg-[#16a34a] text-white" : "bg-white dark:bg-[#242320] text-neutral-500 dark:text-neutral-400")}>
+                      {m === "tier" ? "등급별" : "업종별"}
+                    </button>
+                  ))}
+                </div>
+                <button onClick={() => { setShowOwnedOnly(v => !v); setVisible(PAGE); }}
+                  className={cn("inline-flex items-center gap-1 px-2 py-1 rounded-lg border text-[11px] font-bold transition-colors",
+                    showOwnedOnly
+                      ? "border-[#16a34a] bg-[#16a34a]/10 text-[#16a34a]"
+                      : "border-neutral-200 dark:border-[#35332e] bg-white dark:bg-[#242320] text-neutral-500 dark:text-neutral-400")}>
+                  <Layers size={11} /> 보유만
+                </button>
+              </div>
             )}
           </div>
 
@@ -1117,19 +1149,28 @@ function DeckView({ deck, catalog, best, coins, isLoggedIn, onLogin, onClose, sh
           ) : (
             <div className="space-y-5 mt-3">
               {(() => {
-                let shown = 0; // 지금까지 렌더한 카드 수(등급 순). visible 이내 카드만 그림
-                return displayGroups.map(({ tone, cards }) => {
+                let shown = 0; // 지금까지 렌더한 카드 수(그룹 순). visible 이내 카드만 그림
+                return displayGroups.map(({ key, cards }) => {
                   const start = shown;
                   shown += cards.length;
                   const slice = cards.slice(0, Math.max(0, visible - start));
-                  if (slice.length === 0) return null; // 이 등급은 아직 로드 범위 밖 → 스크롤 시 노출
+                  if (slice.length === 0) return null; // 이 그룹은 아직 로드 범위 밖 → 스크롤 시 노출
+                  const sec = groupMode === "sector" ? sectorArt(cards[0].item) : null;
+                  const SecIcon = sec?.icon;
                   return (
-                    <div key={tone}>
+                    <div key={key}>
                       <div className="flex items-center gap-2 mb-2 px-0.5">
-                        <span className={cn("inline-flex items-center gap-1 px-2 py-0.5 rounded-full ring-1 ring-inset text-[11px] font-black", MEDAL_TONE[tone])}>
-                          <span aria-hidden>{cards[0].v.medal}</span>{cards[0].v.label}
-                        </span>
-                        <span className="text-[11px] font-bold text-neutral-400">{completion.byTone[tone]?.owned ?? 0}/{completion.byTone[tone]?.total ?? cards.length}</span>
+                        {groupMode === "tier" ? (
+                          <span className={cn("inline-flex items-center gap-1 px-2 py-0.5 rounded-full ring-1 ring-inset text-[11px] font-black", MEDAL_TONE[key])}>
+                            <span aria-hidden>{cards[0].v.medal}</span>{cards[0].v.label}
+                          </span>
+                        ) : (
+                          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full ring-1 ring-inset text-[11px] font-black"
+                            style={{ background: rgba(sec!.hue, 0.12), color: sec!.hue, "--tw-ring-color": rgba(sec!.hue, 0.35) } as React.CSSProperties}>
+                            {SecIcon && <SecIcon aria-hidden size={11} />}{key}
+                          </span>
+                        )}
+                        <span className="text-[11px] font-bold text-neutral-400">{completion.byGroup[key]?.owned ?? 0}/{completion.byGroup[key]?.total ?? cards.length}</span>
                       </div>
                       <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
                         {slice.map(({ item, owned }, ci) => (
