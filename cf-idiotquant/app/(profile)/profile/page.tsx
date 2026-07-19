@@ -33,12 +33,12 @@ const STRATEGY_LABEL: Record<string, string> = {
 };
 
 // 등급(tone) 표시 — 게임/valueScore 와 통일 (강한 순서)
-const TONE_ORDER: ValueTone[] = ["legend", "treasure", "diamond", "gold", "silver", "bronze", "raw", "explore"];
+const TONE_ORDER: ValueTone[] = ["legend", "treasure", "diamond", "gold", "silver", "bronze", "iron", "raw", "clay", "explore"];
 const TONE_LABEL: Record<ValueTone, string> = {
-    legend: "전설", treasure: "보물", diamond: "다이아", gold: "금", silver: "은", bronze: "동", raw: "원석", explore: "탐색",
+    legend: "전설", treasure: "보물", diamond: "다이아", gold: "금", silver: "은", bronze: "동", iron: "철", raw: "원석", clay: "흙", explore: "탐색",
 };
 const TONE_MEDAL: Record<ValueTone, string> = {
-    legend: "👑", treasure: "🏆", diamond: "💎", gold: "🥇", silver: "🥈", bronze: "🥉", raw: "🪨", explore: "🧭",
+    legend: "👑", treasure: "🏆", diamond: "💎", gold: "🥇", silver: "🥈", bronze: "🥉", iron: "🔩", raw: "🪨", clay: "🟤", explore: "🧭",
 };
 const TONE_CSS: Record<ValueTone, string> = {
     legend: "bg-violet-100 text-violet-700 dark:bg-violet-950/40 dark:text-violet-300",
@@ -47,7 +47,9 @@ const TONE_CSS: Record<ValueTone, string> = {
     gold: "bg-yellow-100 text-yellow-700 dark:bg-yellow-950/40 dark:text-yellow-300",
     silver: "bg-neutral-100 text-neutral-600 dark:bg-[#35332e] dark:text-neutral-300",
     bronze: "bg-orange-100 text-orange-700 dark:bg-orange-950/40 dark:text-orange-300",
+    iron: "bg-zinc-100 text-zinc-600 dark:bg-zinc-900/40 dark:text-zinc-400",
     raw: "bg-stone-100 text-stone-600 dark:bg-stone-900/40 dark:text-stone-400",
+    clay: "bg-lime-100 text-lime-800 dark:bg-lime-950/40 dark:text-lime-500",
     explore: "bg-neutral-100 text-neutral-500 dark:bg-[#2c2b27] dark:text-neutral-500",
 };
 

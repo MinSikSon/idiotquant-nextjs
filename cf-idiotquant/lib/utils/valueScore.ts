@@ -2,7 +2,7 @@
 // NCAV·PBR·PER·ROE 기준을 각각 0~1 서브점수로 환산해 가중 평균한 뒤 0~100 점수로.
 // 데이터가 없는 지표는 제외하고 남은 지표의 가중치로 정규화한다.
 
-export type ValueTone = "legend" | "treasure" | "diamond" | "gold" | "silver" | "bronze" | "raw" | "explore";
+export type ValueTone = "legend" | "treasure" | "diamond" | "gold" | "silver" | "bronze" | "iron" | "raw" | "clay" | "explore";
 
 // 점수 계산 내역 (지표별 서브점수·가중치) — 게임 종료 시 계산 과정 표시용
 export interface ValuePart {
@@ -16,7 +16,7 @@ export interface ValuePart {
 
 export interface ValueScore {
   score: number;          // 0~100
-  grade: "S+" | "S" | "A+" | "A" | "B+" | "B" | "C" | "D";
+  grade: "SS" | "S" | "A" | "B" | "C" | "D" | "E" | "F" | "G" | "H";
   medal: string;          // 이모지
   label: string;          // 등급 한글
   tone: ValueTone;
@@ -75,12 +75,14 @@ export function computeValueScore(item: any): ValueScore {
 }
 
 function tier(score: number): Omit<ValueScore, "score" | "parts"> {
-  if (score >= 90) return { grade: "S+", medal: "👑", label: "전설", tone: "legend" };
+  if (score >= 90) return { grade: "SS", medal: "👑", label: "전설", tone: "legend" };
   if (score >= 80) return { grade: "S", medal: "🏆", label: "보물", tone: "treasure" };
-  if (score >= 70) return { grade: "A+", medal: "💎", label: "다이아", tone: "diamond" };
-  if (score >= 60) return { grade: "A", medal: "🥇", label: "금", tone: "gold" };
-  if (score >= 50) return { grade: "B+", medal: "🥈", label: "은", tone: "silver" };
-  if (score >= 40) return { grade: "B", medal: "🥉", label: "동", tone: "bronze" };
-  if (score >= 25) return { grade: "C", medal: "🪨", label: "원석", tone: "raw" };
-  return { grade: "D", medal: "🧭", label: "탐색", tone: "explore" };
+  if (score >= 70) return { grade: "A", medal: "💎", label: "다이아", tone: "diamond" };
+  if (score >= 62) return { grade: "B", medal: "🥇", label: "금", tone: "gold" };
+  if (score >= 54) return { grade: "C", medal: "🥈", label: "은", tone: "silver" };
+  if (score >= 46) return { grade: "D", medal: "🥉", label: "동", tone: "bronze" };
+  if (score >= 38) return { grade: "E", medal: "🔩", label: "철", tone: "iron" };
+  if (score >= 30) return { grade: "F", medal: "🪨", label: "원석", tone: "raw" };
+  if (score >= 20) return { grade: "G", medal: "🟤", label: "흙", tone: "clay" };
+  return { grade: "H", medal: "🧭", label: "탐색", tone: "explore" };
 }

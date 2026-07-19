@@ -12,7 +12,7 @@ import type { LikedStockItem } from "@/lib/features/stockLikes/stockLikesSlice";
 
 const TIER_HEX: Record<ValueTone, number> = {
   legend: 0x8b5cf6, treasure: 0xf59e0b, diamond: 0x38bdf8, gold: 0xeab308,
-  silver: 0xa3a3a3, bronze: 0xf97316, raw: 0xa8a29e, explore: 0xd4d4d4,
+  silver: 0xa3a3a3, bronze: 0xf97316, iron: 0x8a94a6, raw: 0xa8a29e, clay: 0xa1785a, explore: 0xd4d4d4,
 };
 
 // 점수 → 블록 폭(스터드 개수). 강할수록 넓은 기반.
