@@ -274,12 +274,28 @@ export function WaxSeal({ item, size = 26 }: { item: any; size?: number }) {
   );
 }
 
+// 등급 내 카드 번호(예: S-1) — 도감(catalog) 기준 등급별 점수 내림차순 순번. TcgCard 의 rank prop 에 꽂아줌.
+function buildTierRankMap(catalog: any[]): Map<string, number> {
+  const byTone = new Map<string, any[]>();
+  for (const c of catalog) {
+    const tone = computeValueScore(c).tone;
+    if (!byTone.has(tone)) byTone.set(tone, []);
+    byTone.get(tone)!.push(c);
+  }
+  const map = new Map<string, number>();
+  for (const list of byTone.values()) {
+    list.sort((a, b) => computeValueScore(b).score - computeValueScore(a).score);
+    list.forEach((c, i) => map.set(String(c.ticker), i + 1));
+  }
+  return map;
+}
+
 // 종목 카드 — 실물 TCG(그리드 아일랜드 카드) 레이아웃 그대로: 검정 카드지 + 명패(점수·이름·코드) +
 // 어두운 아트창(업종 심볼+로고) + 대리석 테두리 룰박스(플레이버+효과, 등급색) + 하단 인쇄줄(티커·시가총액).
 // 레퍼런스 카드엔 사진 아트가 들어가지만 이미지 생성 API가 없어 업종별 벡터 심볼(lucide)로 대체 — 레이아웃/구획은 그대로 유지.
 // hero=플레이용(큼), 미지정=덱 콤팩트. 룰박스는 shrink-0 로 항상 온전히 보이고, 아트창만 flex-1 로 크기에 맞춰 줄어듦.
-function TcgCard({ item, value, hero = false, count, locked = false, onGuess, onNext }:
-  { item: any; value: React.ReactNode; hero?: boolean; count?: number; idleDelay?: number; locked?: boolean; onGuess?: (dir: "higher" | "lower") => void; onNext?: () => void }) {
+function TcgCard({ item, value, hero = false, count, locked = false, rank, onGuess, onNext }:
+  { item: any; value: React.ReactNode; hero?: boolean; count?: number; idleDelay?: number; locked?: boolean; rank?: number; onGuess?: (dir: "higher" | "lower") => void; onNext?: () => void }) {
   const [showInfo, setShowInfo] = useState(false);
   const v = computeValueScore(item);
   const c = TIER[v.tone] ?? TIER.explore;
@@ -317,18 +333,18 @@ function TcgCard({ item, value, hero = false, count, locked = false, onGuess, on
           <div className="flex-1 min-w-0 flex items-center justify-center px-1 py-[3%]">
             <p className={cn("font-serif font-bold truncate", hero ? "text-[13px]" : "text-[10.5px]")} style={{ color: "#221c10" }}>{displayName}</p>
           </div>
-          <div className="relative flex items-center justify-center shrink-0 border-l" style={{ minWidth: hero ? 26 : 20, borderColor: "rgba(0,0,0,0.35)" }}>
+          <div className="relative flex items-center justify-center shrink-0 border-l px-1" style={{ minWidth: hero ? 30 : 24, borderColor: "rgba(0,0,0,0.35)" }}>
             {locked ? (
-              <span className="font-serif font-black tabular-nums" style={{ fontSize: hero ? 13 : 10.5, color: "#221c10" }}>{v.grade}</span>
+              <span className="font-serif font-black tabular-nums" style={{ fontSize: hero ? 12 : 9.5, color: "#221c10" }}>{v.grade}{rank != null && `-${rank}`}</span>
             ) : (
               <button type="button"
                 onClick={e => { e.stopPropagation(); setShowInfo(s => !s); }}
                 onMouseEnter={() => setShowInfo(true)}
                 onMouseLeave={() => setShowInfo(false)}
                 className="font-serif font-black tabular-nums underline decoration-dotted decoration-1 underline-offset-2 cursor-help"
-                style={{ fontSize: hero ? 13 : 10.5, color: "#221c10" }}
+                style={{ fontSize: hero ? 12 : 9.5, color: "#221c10" }}
                 aria-label="점수 계산 내역 보기">
-                {v.grade}
+                {v.grade}{rank != null && `-${rank}`}
               </button>
             )}
             <DividerCap y="top" /><DividerCap y="bottom" />
@@ -656,6 +672,7 @@ export default function GamePage() {
     for (const d of deck) if (!byTicker.has(d.ticker)) byTicker.set(d.ticker, d); // 오늘 목록에서 빠진 보유 종목도 유지
     return [...byTicker.values()];
   }, [pool, deck]);
+  const rankMap = useMemo(() => buildTierRankMap(catalog), [catalog]); // 카드 명패의 "등급-번호"(예: S-1)용
 
   const bestKey = "iq:game:best:hl:market_cap"; // 기존 시가총액 비교 기록 키 유지
   useEffect(() => { setBest(b => Math.max(b, safeNum(typeof window !== "undefined" ? localStorage.getItem(bestKey) : 0))); }, [bestKey]);
@@ -903,14 +920,14 @@ export default function GamePage() {
                   <div ref={trackRef} className="flex gap-3 sm:gap-4 overflow-x-auto snap-x snap-mandatory scrollbar-hide pt-3 pb-2">
                     {history.map((c, i) => (
                       <div key={`${c.ticker}-${i}`} className="shrink-0 self-end snap-end w-[calc(50%-0.375rem)] sm:w-[calc(50%-0.5rem)] opacity-90">
-                        <div className="aspect-[3/4]"><TcgCard item={c} value={STAT.fmt(STAT.get(c))} idleDelay={i * 0.4} /></div>
+                        <div className="aspect-[3/4]"><TcgCard item={c} value={STAT.fmt(STAT.get(c))} rank={rankMap.get(String(c.ticker))} idleDelay={i * 0.4} /></div>
                       </div>
                     ))}
                     <div className="shrink-0 self-end snap-end w-[calc(50%-0.375rem)] sm:w-[calc(50%-0.5rem)]">
-                      <div className="aspect-[3/4]"><TcgCard hero item={anchor} value={STAT.fmt(STAT.get(anchor))} idleDelay={0} /></div>
+                      <div className="aspect-[3/4]"><TcgCard hero item={anchor} value={STAT.fmt(STAT.get(anchor))} rank={rankMap.get(String(anchor.ticker))} idleDelay={0} /></div>
                     </div>
                     <div className="shrink-0 self-end snap-end w-[calc(50%-0.375rem)] sm:w-[calc(50%-0.5rem)]">
-                      <div className="aspect-[3/4]"><TcgCard hero item={challenger} idleDelay={3}
+                      <div className="aspect-[3/4]"><TcgCard hero item={challenger} rank={rankMap.get(String(challenger.ticker))} idleDelay={3}
                         onGuess={phase === "guessing" ? guess : undefined}
                         onNext={phase === "revealed" && lastWin ? next : undefined}
                         value={phase === "revealed"
@@ -1020,6 +1037,13 @@ function DeckView({ deck, catalog, best, coins, isLoggedIn, onLogin, onClose, sh
     for (const list of byTone.values()) list.sort((a, b) => b.v.score - a.v.score);
     return TIER_ORDER.filter(t => byTone.has(t)).map(t => ({ key: t, cards: byTone.get(t)! }));
   }, [catalog, ownedByTicker]);
+
+  // 등급 내 카드 번호(예: S-1) — tierGroups(등급별·점수 내림차순) 기준 순번, 카드 명패에 표시
+  const rankMap = useMemo(() => {
+    const map = new Map<string, number>();
+    for (const { cards } of tierGroups) cards.forEach((c, i) => map.set(String(c.item.ticker), i + 1));
+    return map;
+  }, [tierGroups]);
 
   // 업종별로 묶고, 종목 수 많은 업종 → 업종 내 점수 내림차순으로 정렬 (항목/종목분류 기준 도감 완성)
   const sectorGroups = useMemo(() => {
@@ -1175,7 +1199,7 @@ function DeckView({ deck, catalog, best, coins, isLoggedIn, onLogin, onClose, sh
                       <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
                         {slice.map(({ item, owned }, ci) => (
                           <div key={item.ticker} className="relative aspect-[3/4]">
-                            <TcgCard item={owned ?? item} value={STAT.fmt(STAT.get(item))} count={owned?.count} locked={!owned} idleDelay={ci * 0.6} />
+                            <TcgCard item={owned ?? item} value={STAT.fmt(STAT.get(item))} count={owned?.count} locked={!owned} rank={rankMap.get(String(item.ticker))} idleDelay={ci * 0.6} />
                             {owned && (owned.count ?? 1) >= 2 && (
                               <ConvertButton item={owned} count={owned.count ?? 1}
                                 onConverted={(gained, remaining) => onConverted(owned.ticker, gained, remaining)} />
