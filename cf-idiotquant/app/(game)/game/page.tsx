@@ -385,35 +385,35 @@ function TcgCard({ item, value, hero = false, count, locked = false, rank, onGue
               {!locked && count != null && count > 1 && (
                 <span className="absolute top-1 left-1 z-[3] px-1.5 py-0.5 rounded-full bg-black/70 text-white text-[10px] font-black tabular-nums leading-none">×{count}</span>
               )}
-              {/* 높다/낮다 — 카드(아트창) 상/하단 전체를 탭 영역으로 쓰되, 실제 버튼처럼 보이는 알약 배지를 중앙에 배치 */}
+              {/* 높다/낮다 — 카드(아트창) 상/하단 전체를 탭 영역으로 쓰되, 앱 전역과 통일된 사각 라운드 버튼을 중앙에 배치 */}
               {onGuess && (
                 <>
                   <button type="button" aria-label="높다" onClick={e => { e.stopPropagation(); onGuess("higher"); }}
                     className="group absolute inset-x-0 top-0 h-1/2 z-[6] flex items-center justify-center bg-gradient-to-b from-transparent via-transparent to-black/10 hover:to-black/25 transition-colors">
-                    <span className="inline-flex items-center gap-1.5 rounded-full border-2 shadow-lg transition-transform group-active:scale-90"
-                      style={{ padding: hero ? "7px 16px" : "4px 10px", background: "linear-gradient(160deg,#232323,#0c0c0c)", borderColor: "#16a34a", boxShadow: "0 4px 14px -4px rgba(22,163,74,0.7)" }}>
-                      <ArrowUp size={hero ? 16 : 12} strokeWidth={3} className="text-[#16a34a]" />
-                      <span className="font-serif font-black" style={{ fontSize: hero ? 12 : 9, color: "#ece4cf" }}>높다</span>
+                    <span className="inline-flex items-center gap-1.5 rounded-xl shadow-lg transition-transform group-active:scale-90"
+                      style={{ padding: hero ? "7px 16px" : "4px 10px", background: "#16a34a", boxShadow: "0 4px 14px -4px rgba(22,163,74,0.6)" }}>
+                      <ArrowUp size={hero ? 16 : 12} strokeWidth={3} className="text-white" />
+                      <span className="font-serif font-black text-white" style={{ fontSize: hero ? 12 : 9 }}>높다</span>
                     </span>
                   </button>
                   <button type="button" aria-label="낮다" onClick={e => { e.stopPropagation(); onGuess("lower"); }}
                     className="group absolute inset-x-0 bottom-0 h-1/2 z-[6] flex items-center justify-center bg-gradient-to-t from-transparent via-transparent to-black/10 hover:to-black/25 transition-colors">
-                    <span className="inline-flex items-center gap-1.5 rounded-full border-2 shadow-lg transition-transform group-active:scale-90"
-                      style={{ padding: hero ? "7px 16px" : "4px 10px", background: "linear-gradient(160deg,#232323,#0c0c0c)", borderColor: "#e11d48", boxShadow: "0 4px 14px -4px rgba(225,29,72,0.7)" }}>
-                      <span className="font-serif font-black" style={{ fontSize: hero ? 12 : 9, color: "#ece4cf" }}>낮다</span>
-                      <ArrowDown size={hero ? 16 : 12} strokeWidth={3} className="text-[#e11d48]" />
+                    <span className="inline-flex items-center gap-1.5 rounded-xl shadow-lg transition-transform group-active:scale-90"
+                      style={{ padding: hero ? "7px 16px" : "4px 10px", background: "#e11d48", boxShadow: "0 4px 14px -4px rgba(225,29,72,0.6)" }}>
+                      <span className="font-serif font-black text-white" style={{ fontSize: hero ? 12 : 9 }}>낮다</span>
+                      <ArrowDown size={hero ? 16 : 12} strokeWidth={3} className="text-white" />
                     </span>
                   </button>
                 </>
               )}
-              {/* 정답 시 다음 카드 — 별도 버튼 대신 카드 위 동일한 알약 배지로 통합 */}
+              {/* 정답 시 다음 카드 — 별도 버튼 대신 카드 위 동일한 사각 라운드 버튼으로 통합 */}
               {onNext && (
                 <button type="button" aria-label="다음 카드" onClick={e => { e.stopPropagation(); onNext(); }}
                   className="group absolute inset-0 z-[6] flex items-center justify-center bg-black/0 hover:bg-black/15 transition-colors animate-in fade-in">
-                  <span className="inline-flex items-center gap-1.5 rounded-full border-2 shadow-lg transition-transform group-active:scale-90"
-                    style={{ padding: hero ? "8px 18px" : "5px 12px", background: "linear-gradient(160deg,#232323,#0c0c0c)", borderColor: "#16a34a", boxShadow: "0 4px 14px -4px rgba(22,163,74,0.7)" }}>
-                    <span className="font-serif font-black" style={{ fontSize: hero ? 13 : 10, color: "#ece4cf" }}>다음 카드</span>
-                    <TrendingUp size={hero ? 16 : 12} strokeWidth={3} className="text-[#16a34a]" />
+                  <span className="inline-flex items-center gap-1.5 rounded-xl shadow-lg transition-transform group-active:scale-90"
+                    style={{ padding: hero ? "8px 18px" : "5px 12px", background: "#16a34a", boxShadow: "0 4px 14px -4px rgba(22,163,74,0.6)" }}>
+                    <span className="font-serif font-black text-white" style={{ fontSize: hero ? 13 : 10 }}>다음 카드</span>
+                    <TrendingUp size={hero ? 16 : 12} strokeWidth={3} className="text-white" />
                   </span>
                 </button>
               )}
@@ -959,11 +959,29 @@ export default function GamePage() {
                   </div>
                   <div className="mx-auto w-[86%] max-w-[320px] aspect-[3/4]">
                     <TcgCard hero item={challenger} rank={rankMap.get(String(challenger.ticker))} idleDelay={3}
-                      onGuess={phase === "guessing" ? guess : undefined}
-                      onNext={phase === "revealed" && lastWin ? next : undefined}
                       value={phase === "revealed"
                         ? <span className="animate-in zoom-in-75 duration-300">{STAT.fmt(STAT.get(challenger))}</span>
                         : <span className="text-neutral-300 dark:text-neutral-600">?</span>} />
+                  </div>
+                  {/* 높다/낮다 — 카드 아트를 가리지 않도록 카드 아래 전용 버튼 영역으로 분리(모바일 전용) */}
+                  <div className="mx-auto w-[86%] max-w-[320px] mt-2.5">
+                    {phase === "guessing" ? (
+                      <div className="grid grid-cols-2 gap-2">
+                        <button type="button" onClick={() => guess("higher")}
+                          className="flex items-center justify-center gap-1.5 py-3 rounded-xl bg-[#16a34a] hover:bg-[#15803d] active:scale-[0.97] text-white font-black text-sm shadow-md shadow-[#16a34a]/25 transition-all">
+                          <ArrowUp size={16} strokeWidth={3} /> 높다
+                        </button>
+                        <button type="button" onClick={() => guess("lower")}
+                          className="flex items-center justify-center gap-1.5 py-3 rounded-xl bg-[#e11d48] hover:bg-[#be123c] active:scale-[0.97] text-white font-black text-sm shadow-md shadow-[#e11d48]/25 transition-all">
+                          낮다 <ArrowDown size={16} strokeWidth={3} />
+                        </button>
+                      </div>
+                    ) : phase === "revealed" && lastWin ? (
+                      <button type="button" onClick={next}
+                        className="w-full flex items-center justify-center gap-1.5 py-3 rounded-xl bg-[#16a34a] hover:bg-[#15803d] active:scale-[0.97] text-white font-black text-sm shadow-md shadow-[#16a34a]/25 transition-all animate-in fade-in">
+                        다음 카드 <TrendingUp size={16} strokeWidth={3} />
+                      </button>
+                    ) : null}
                   </div>
                 </div>
 

@@ -52,7 +52,7 @@ export function ConvertButton({ item, count, onConverted }: {
     <span className="absolute bottom-1 left-1 z-[5]" onClick={e => e.stopPropagation()}>
       {!open ? (
         <button type="button" onClick={() => setOpen(true)}
-          className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-full bg-black/70 text-amber-300 text-[9px] font-black">
+          className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-lg bg-black/70 text-amber-300 text-[9px] font-black">
           <Coins size={9} /> 전환
         </button>
       ) : (
