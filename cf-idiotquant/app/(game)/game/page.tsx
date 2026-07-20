@@ -25,8 +25,6 @@ import { reqGetNcavDailyList, selectNcavDailyList } from "@/lib/features/algorit
 import { computeValueScore } from "@/lib/utils/valueScore";
 import { getDeck, addDeckCard, getWallet, syncBestStreak, type DeckCardSnapshot } from "@/lib/features/deck/deckAPI";
 import { cn } from "@/lib/utils";
-import VoyageArt from "@/components/game/voyageArt";
-import GameSeaArt from "@/components/game/gameSeaArt";
 import { HOLO_THRESHOLD, HoloOverlay, PackReveal, AchievementBadges } from "./gameCollectibles";
 import { WalletChip, ConvertButton, ShopPanel, BOOST_ITEMS, type BoostItem } from "./gameShop";
 
@@ -99,6 +97,23 @@ function Medal({ item, lg }: { item: any; lg?: boolean }) {
   );
 }
 
+// 등급 젬 — 카드 명패용 소형 페이싯(다면체) 보석 아이콘. 실물 프리미엄 TCG의 레어리티 젬 표기를 재해석.
+function RarityGem({ tone, size = 12 }: { tone: string; size?: number }) {
+  const c = TIER[tone] ?? TIER.explore;
+  return (
+    <span aria-hidden className="relative shrink-0 inline-block" style={{ width: size, height: size }}>
+      <span className="absolute inset-0" style={{
+        background: c.border, clipPath: "polygon(50% 0%, 100% 38%, 82% 100%, 18% 100%, 0% 38%)",
+        boxShadow: `0 0 ${size * 0.6}px ${rgba(c.glow, 0.75)}`,
+      }} />
+      <span className="absolute" style={{
+        top: size * 0.12, left: size * 0.22, width: size * 0.3, height: size * 0.18,
+        background: "rgba(255,255,255,0.85)", clipPath: "polygon(50% 0%, 100% 100%, 0% 100%)", borderRadius: 1,
+      }} />
+    </span>
+  );
+}
+
 // 종목 로고 (KR: NEXT_PUBLIC_KR_LOGO_API, US: logo.dev). 실패 시 첫 글자 fallback. StockCard와 동일 소스.
 function logoUrlFor(item: any): string {
   const t = String(item?.ticker ?? "");
@@ -128,23 +143,25 @@ function PortMedallion({ item, size = 56, lift = false }: { item: any; size?: nu
   );
 }
 
-// 등급별 프리즘 팔레트 — computeValueScore().tone 이 조인키. 테두리·봉인·스탯 강조색을 결정.
-// glow=발광색 · edge=포일 테두리 스톱 · accent=스탯값 강조색. 카드 본문은 아래 PARCHMENT(양피지) 고정색.
+// 등급별 프리미엄 TCG 팔레트 — computeValueScore().tone 이 조인키. 카드 베젤·글로우·스탯 강조색을 결정.
+// glow=발광/텍스트 강조색 · accent=보조 강조색(링·구분선) · border=금속 포일 베젤 그라데이션 · sheen=글로시 하이라이트 색.
+// 카드 본문(내부)은 등급 무관 고정 다크 톤 — 등급 구분은 베젤·젬·글로우로만 표현.
 export const rgba = (h: string, a: number) => {
   const n = parseInt(h.slice(1), 16);
   return `rgba(${(n >> 16) & 255},${(n >> 8) & 255},${n & 255},${a})`;
 };
-export const TIER: Record<string, { glow: string; accent: string }> = {
-  legend:   { glow: "#a855f7", accent: "#9333ea" },
-  treasure: { glow: "#fb923c", accent: "#ea580c" },
-  diamond:  { glow: "#22d3ee", accent: "#0891b2" },
-  gold:     { glow: "#facc15", accent: "#ca8a04" },
-  silver:   { glow: "#94a3b8", accent: "#64748b" },
-  bronze:   { glow: "#f59e0b", accent: "#9a3412" },
-  iron:     { glow: "#8a94a6", accent: "#4b5563" },
-  raw:      { glow: "#a8a29e", accent: "#57534e" },
-  clay:     { glow: "#a1785a", accent: "#6b4a2f" },
-  explore:  { glow: "#10b981", accent: "#047857" },
+// border=금속 베젤 그라데이션(등급이 높을수록 화려한 포일), sheen=글로시 하이라이트 색.
+export const TIER: Record<string, { glow: string; accent: string; border: string; sheen: string }> = {
+  legend:   { glow: "#e879f9", accent: "#c026d3", border: "linear-gradient(135deg,#f9a8d4,#facc15 22%,#4ade80 42%,#38bdf8 62%,#a78bfa 82%,#f9a8d4)", sheen: "rgba(255,255,255,0.95)" },
+  treasure: { glow: "#fbbf24", accent: "#d97706", border: "linear-gradient(135deg,#fef3c7,#f59e0b 30%,#92400e 55%,#fbbf24 80%,#fef9c3)", sheen: "rgba(255,241,196,0.9)" },
+  diamond:  { glow: "#38bdf8", accent: "#0284c7", border: "linear-gradient(135deg,#e0f2fe,#38bdf8 30%,#0c4a6e 55%,#7dd3fc 80%,#f0f9ff)", sheen: "rgba(224,242,254,0.9)" },
+  gold:     { glow: "#facc15", accent: "#b45309", border: "linear-gradient(135deg,#fef9c3,#eab308 35%,#78350f 60%,#facc15 85%)", sheen: "rgba(254,249,195,0.85)" },
+  silver:   { glow: "#cbd5e1", accent: "#475569", border: "linear-gradient(135deg,#f1f5f9,#94a3b8 35%,#1e293b 60%,#cbd5e1 85%)", sheen: "rgba(241,245,249,0.8)" },
+  bronze:   { glow: "#fb923c", accent: "#9a3412", border: "linear-gradient(135deg,#fed7aa,#c2410c 35%,#431407 60%,#f97316 85%)", sheen: "rgba(254,215,170,0.75)" },
+  iron:     { glow: "#94a3b8", accent: "#334155", border: "linear-gradient(135deg,#cbd5e1,#64748b 40%,#0f172a 65%,#94a3b8 85%)", sheen: "rgba(203,213,225,0.6)" },
+  raw:      { glow: "#a8a29e", accent: "#44403c", border: "linear-gradient(135deg,#e7e5e4,#78716c 40%,#1c1917 65%,#a8a29e 85%)", sheen: "rgba(231,229,228,0.55)" },
+  clay:     { glow: "#a3a887", accent: "#3f4a34", border: "linear-gradient(135deg,#d4d8c8,#6b7458 40%,#1f2417 65%,#8b9478 85%)", sheen: "rgba(212,216,200,0.5)" },
+  explore:  { glow: "#9ca3af", accent: "#374151", border: "linear-gradient(135deg,#d1d5db,#6b7280 40%,#111827 65%,#9ca3af 85%)", sheen: "rgba(209,213,219,0.45)" },
 };
 
 // 등급별 카드 효과 보너스(%) — 설명란 효과 문구용 (전설이 가장 높음)
@@ -290,10 +307,9 @@ function buildTierRankMap(catalog: any[]): Map<string, number> {
   return map;
 }
 
-// 종목 카드 — 실물 TCG(그리드 아일랜드 카드) 레이아웃 그대로: 검정 카드지 + 명패(점수·이름·코드) +
-// 어두운 아트창(업종 심볼+로고) + 대리석 테두리 룰박스(플레이버+효과, 등급색) + 하단 인쇄줄(티커·시가총액).
-// 레퍼런스 카드엔 사진 아트가 들어가지만 이미지 생성 API가 없어 업종별 벡터 심볼(lucide)로 대체 — 레이아웃/구획은 그대로 유지.
-// hero=플레이용(큼), 미지정=덱 콤팩트. 룰박스는 shrink-0 로 항상 온전히 보이고, 아트창만 flex-1 로 크기에 맞춰 줄어듦.
+// 종목 카드 — 프리미엄 실물 TCG(하스스톤/매직 스타일) 카드 프레임.
+// 등급(TIER)별 금속 포일 베젤 + 다크 카드 바디 + 아트 윈도우 + 글래스 이펙트 패널 + 하단 스탯 젬.
+// hero=플레이용(큼), 미지정=덱 콤팩트. 이펙트 패널은 shrink-0 로 항상 온전히 보이고, 아트 윈도우만 flex-1 로 크기에 맞춰 줄어듦.
 function TcgCard({ item, value, hero = false, count, locked = false, rank, onGuess, onNext }:
   { item: any; value: React.ReactNode; hero?: boolean; count?: number; idleDelay?: number; locked?: boolean; rank?: number; onGuess?: (dir: "higher" | "lower") => void; onNext?: () => void }) {
   const [showInfo, setShowInfo] = useState(false);
@@ -328,168 +344,146 @@ function TcgCard({ item, value, hero = false, count, locked = false, rank, onGue
   const holo = !locked && count != null && count >= HOLO_THRESHOLD;
   const displayName = locked ? "???" : item.name;
   const displayTicker = locked ? "??????" : item.ticker;
-  // 룰박스 대리석 — 레퍼런스 카드 실물 사진과 동일하게 등급 무관 고정 마룬(적갈색) 톤으로 통일.
-  // 등급 구분은 배지(MEDAL_TONE)·글로우(PortMedallion)·홀로 등 다른 요소로 남긴다.
-  const marbleBase = "linear-gradient(135deg, #7a1830, #4a0f20 28%, #9c2c48 52%, #3d0c1a 74%, #7a1830)";
-  const marble = `radial-gradient(30% 45% at 18% 22%, rgba(255,255,255,0.22), transparent 60%), radial-gradient(26% 40% at 82% 75%, rgba(0,0,0,0.35), transparent 60%), radial-gradient(20% 30% at 70% 15%, rgba(255,255,255,0.15), transparent 60%), ${marbleBase}`;
-  const line = "rgba(0,0,0,0.55)";
-  // 명패 구분 기둥 — 레퍼런스 카드의 리벳 캡 달린 세로 기둥(핀) 장식을 복제
-  const Pillar = () => (
-    <span aria-hidden className="relative z-[3] shrink-0" style={{ width: hero ? 9 : 7 }}>
-      <span className="absolute inset-y-0 left-1/2 -translate-x-1/2 rounded-full"
-        style={{ width: hero ? 5 : 4, background: "linear-gradient(180deg,#2e3546,#12141a)", boxShadow: "inset 0 0 0 1px rgba(255,255,255,0.2)" }} />
-      <span className="absolute left-1/2 -translate-x-1/2 rounded-full"
-        style={{ top: hero ? -4 : -3, width: hero ? 8 : 6.5, height: hero ? 8 : 6.5, background: "linear-gradient(160deg,#454e63,#14161c)", boxShadow: "0 0 0 1px rgba(0,0,0,0.7)" }} />
-      <span className="absolute left-1/2 -translate-x-1/2 rounded-full"
-        style={{ bottom: hero ? -4 : -3, width: hero ? 8 : 6.5, height: hero ? 8 : 6.5, background: "linear-gradient(160deg,#454e63,#14161c)", boxShadow: "0 0 0 1px rgba(0,0,0,0.7)" }} />
-    </span>
-  );
   return (
-    <div className={cn("relative w-full h-full flex flex-col overflow-hidden rounded-[5%] hover:-translate-y-1 p-[3.5%]", !onGuess && "transition-transform duration-200 ease-out", locked && "grayscale-[0.85] brightness-[0.65]")}
+    <div className={cn("relative w-full h-full rounded-[6%] p-[3%] hover:-translate-y-1", !onGuess && "transition-transform duration-200 ease-out", locked && "grayscale-[0.85] brightness-[0.65]")}
       style={{
-        background: "linear-gradient(160deg,#232323,#0c0c0c)", boxShadow: "inset 0 0 0 1px rgba(255,255,255,0.08), 0 4px 14px -6px rgba(0,0,0,0.6)",
+        background: c.border, // 등급별 금속 포일 베젤
+        boxShadow: `0 10px 24px -10px rgba(0,0,0,0.65), 0 0 0 1px rgba(0,0,0,0.35), 0 0 ${hero ? 20 : 10}px ${rgba(c.glow, 0.35)}`,
         ...(onGuess ? {
           transform: `translateX(${dragX}px) rotate(${Math.max(-12, Math.min(12, dragX / 14))}deg)`,
           transition: dragging ? "none" : "transform 0.25s cubic-bezier(.34,1.56,.64,1)",
         } : null),
       }}>
-      {holo && <HoloOverlay tone={v.tone} />}
-      {/* 명패+아트 존 — 상아색 카드지 한 장. 명패는 카드지 가장자리까지 꽉 차고, 아트는 사진 매트처럼 안쪽에 여백을 두고 액자처럼 삽입 */}
-      <div className="relative shrink-0 flex flex-col overflow-hidden"
-        style={{ background: "linear-gradient(175deg,#ece4cf,#ddd0a6)", flex: "1 1 auto", minHeight: 0 }}>
-        {/* 명패: 티커 | 종목명 | 등급-순번 — 레퍼런스와 동일한 리벳 기둥 구분선 */}
-        <div className="relative z-[2] shrink-0 flex items-stretch border-b-2" style={{ borderColor: line }}>
-          <div className="flex items-center justify-center shrink-0 px-1" style={{ minWidth: hero ? 26 : 20 }}>
-            <span className="font-mono tracking-tight truncate" style={{ fontSize: hero ? 8 : 6.5, color: "#4a3f2a" }}>{displayTicker}</span>
-          </div>
-          <Pillar />
-          <div className="flex-1 min-w-0 flex items-center justify-center px-1 py-[3%]">
-            <p className={cn("font-serif font-bold truncate", hero ? "text-[13px]" : "text-[10.5px]")} style={{ color: "#221c10" }}>{displayName}</p>
-          </div>
-          <Pillar />
-          <div className="flex items-center justify-center shrink-0 px-1" style={{ minWidth: hero ? 30 : 24 }}>
+      {/* 내부 다크 카드 바디 */}
+      <div className="relative w-full h-full rounded-[4%] overflow-hidden flex flex-col" style={{ background: "linear-gradient(165deg,#1d1d24,#08080a)" }}>
+        {/* 항상 켜진 은은한 글로시 스윕(유리 질감) */}
+        <span aria-hidden className="absolute inset-0 z-[3] pointer-events-none"
+          style={{ background: `linear-gradient(115deg, transparent 32%, ${c.sheen} 47%, transparent 60%)`, opacity: 0.15, mixBlendMode: "screen" }} />
+        {holo && <HoloOverlay tone={v.tone} />}
+
+        {/* 명패: 등급 젬 · 종목명 · 등급-순번 */}
+        <div className="relative z-[4] shrink-0 flex items-center gap-1.5 px-[6%] py-[2.6%] border-b"
+          style={{ borderColor: rgba(c.accent, 0.5), background: "linear-gradient(180deg, rgba(255,255,255,0.06), transparent)" }}>
+          <RarityGem tone={v.tone} size={hero ? 13 : 10} />
+          <p className={cn("flex-1 min-w-0 truncate font-black text-white", hero ? "text-[13px]" : "text-[10px]")}>{displayName}</p>
+          {locked ? (
+            <span className="shrink-0 font-black tabular-nums" style={{ fontSize: hero ? 11 : 9, color: c.glow }}>{v.grade}{rank != null && `-${rank}`}</span>
+          ) : (
+            <button type="button"
+              onClick={e => { e.stopPropagation(); setShowInfo(s => !s); }}
+              onMouseEnter={() => setShowInfo(true)}
+              onMouseLeave={() => setShowInfo(false)}
+              className="shrink-0 font-black tabular-nums underline decoration-dotted decoration-1 underline-offset-2 cursor-help"
+              style={{ fontSize: hero ? 11 : 9, color: c.glow }}
+              aria-label="점수 계산 내역 보기">
+              {v.grade}{rank != null && `-${rank}`}
+            </button>
+          )}
+        </div>
+
+        {/* 아트 윈도우 — 등급색 인셋 링으로 액자 처리 */}
+        <div className="relative z-[2] flex-1 min-h-[42px] mx-[5%] mt-[3.5%] rounded-[10%] overflow-hidden"
+          style={{ boxShadow: `inset 0 0 0 2px ${rgba(c.accent, 0.65)}, inset 0 3px 10px rgba(0,0,0,0.55)` }}>
+          <div className="relative w-full h-full overflow-hidden" style={{ background: (sec.image && !locked) ? "#0a0a0c" : `radial-gradient(120% 90% at 50% 30%, ${rgba(sec.hue, 0.35)}, transparent 65%), linear-gradient(155deg, #17171c, #08080a)` }}>
             {locked ? (
-              <span className="font-serif font-black tabular-nums" style={{ fontSize: hero ? 12 : 9.5, color: "#221c10" }}>{v.grade}{rank != null && `-${rank}`}</span>
+              <div aria-hidden className="absolute inset-0 flex items-center justify-center">
+                <Icon className="w-[40%] h-[40%]" style={{ color: rgba(sec.hue, 0.5) }} strokeWidth={1.15} />
+                <Lock className="absolute w-[26%] h-[26%] text-white/70" strokeWidth={1.5} />
+              </div>
+            ) : sec.image ? (
+              <>
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img src={sec.image} alt={sec.label} loading={hero ? "eager" : "lazy"} decoding="async" fetchPriority={hero ? "high" : "auto"} className="absolute inset-0 w-full h-full object-cover" />
+                {/* 사진 비네트 */}
+                <div aria-hidden className="absolute inset-0" style={{ boxShadow: "inset 0 0 14px 2px rgba(0,0,0,0.5)" }} />
+              </>
             ) : (
-              <button type="button"
-                onClick={e => { e.stopPropagation(); setShowInfo(s => !s); }}
-                onMouseEnter={() => setShowInfo(true)}
-                onMouseLeave={() => setShowInfo(false)}
-                className="font-serif font-black tabular-nums underline decoration-dotted decoration-1 underline-offset-2 cursor-help"
-                style={{ fontSize: hero ? 12 : 9.5, color: "#221c10" }}
-                aria-label="점수 계산 내역 보기">
-                {v.grade}{rank != null && `-${rank}`}
+              <div aria-hidden className="absolute inset-0 flex items-center justify-center">
+                <Icon className="w-[46%] h-[46%]" style={{ color: rgba(sec.hue, 0.85) }} strokeWidth={1.15} />
+              </div>
+            )}
+            {/* 종목 로고 — 업종 사진이 있으면 가리지 않도록 우하단 작은 배지로, 없으면(벡터 심볼일 때) 중앙에. 잠금 카드는 정체를 가려야 하므로 렌더 안 함 */}
+            {!locked && (
+              <div className={cn("absolute z-[2]", sec.image ? "bottom-1 right-1" : "inset-0 flex justify-center items-center")}>
+                <PortMedallion item={item} size={sec.image ? (hero ? 34 : 26) : (hero ? 56 : 40)} lift={hero} />
+              </div>
+            )}
+            {!locked && count != null && count > 1 && (
+              <span className="absolute top-1 left-1 z-[3] px-1.5 py-0.5 rounded-full bg-black/70 text-white text-[10px] font-black tabular-nums leading-none">×{count}</span>
+            )}
+            {/* 높다/낮다 — 카드를 좌우로 드래그(오른쪽=높다/초록, 왼쪽=낮다/빨강). 놓으면 임계값 넘었는지 판정, 아니면 원위치 */}
+            {onGuess && (
+              <div ref={dragLayerRef}
+                className="absolute inset-0 z-[6] cursor-grab active:cursor-grabbing touch-none"
+                onPointerDown={handlePointerDown} onPointerMove={handlePointerMove} onPointerUp={handlePointerUp} onPointerCancel={handlePointerUp}>
+                <span aria-hidden className="absolute top-[8%] left-[6%] inline-flex items-center gap-1 rounded-lg border-2 font-black -rotate-12"
+                  style={{ padding: hero ? "4px 9px" : "2px 6px", fontSize: hero ? 13 : 10, borderColor: "#e11d48", color: "#e11d48", background: "rgba(0,0,0,0.65)", opacity: dragX < 0 ? Math.min(1, -dragX / 60) : 0 }}>
+                  <ArrowDown size={hero ? 13 : 10} strokeWidth={3} /> 낮다
+                </span>
+                <span aria-hidden className="absolute top-[8%] right-[6%] inline-flex items-center gap-1 rounded-lg border-2 font-black rotate-12"
+                  style={{ padding: hero ? "4px 9px" : "2px 6px", fontSize: hero ? 13 : 10, borderColor: "#16a34a", color: "#16a34a", background: "rgba(0,0,0,0.65)", opacity: dragX > 0 ? Math.min(1, dragX / 60) : 0 }}>
+                  높다 <ArrowUp size={hero ? 13 : 10} strokeWidth={3} />
+                </span>
+              </div>
+            )}
+            {/* 정답 시 다음 카드 — 별도 버튼 대신 카드 위 동일한 사각 라운드 버튼으로 통합 */}
+            {onNext && (
+              <button type="button" aria-label="다음 카드" onClick={e => { e.stopPropagation(); onNext(); }}
+                className="group absolute inset-0 z-[6] flex items-center justify-center bg-black/0 hover:bg-black/15 transition-colors animate-in fade-in">
+                <span className="inline-flex items-center gap-1.5 rounded-xl shadow-lg transition-transform group-active:scale-90"
+                  style={{ padding: hero ? "8px 18px" : "5px 12px", background: "#16a34a", boxShadow: "0 4px 14px -4px rgba(22,163,74,0.6)" }}>
+                  <span className="font-black text-white" style={{ fontSize: hero ? 13 : 10 }}>다음 카드</span>
+                  <TrendingUp size={hero ? 16 : 12} strokeWidth={3} className="text-white" />
+                </span>
               </button>
             )}
           </div>
         </div>
 
-        {/* 아트 매트: 명패 아래 크림색 여백을 두고 그 안에 검정 액자 + 아트창을 배치 (레퍼런스의 사진 매트 프레임) */}
-        <div className="relative flex-1 min-h-[42px] p-[3%]">
-          <div className="relative w-full h-full overflow-hidden" style={{ background: "#181312", padding: "2.5%" }}>
-            <div className="relative w-full h-full overflow-hidden" style={{ background: (sec.image && !locked) ? "#0c0a08" : `radial-gradient(120% 90% at 50% 30%, ${rgba(sec.hue, 0.35)}, transparent 65%), linear-gradient(155deg, #2a2015, #14100a)` }}>
-              {locked ? (
-                <div aria-hidden className="absolute inset-0 flex items-center justify-center">
-                  <Icon className="w-[40%] h-[40%]" style={{ color: rgba(sec.hue, 0.5) }} strokeWidth={1.15} />
-                  <Lock className="absolute w-[26%] h-[26%] text-white/70" strokeWidth={1.5} />
-                </div>
-              ) : sec.image ? (
-                <>
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img src={sec.image} alt={sec.label} loading={hero ? "eager" : "lazy"} decoding="async" fetchPriority={hero ? "high" : "auto"} className="absolute inset-0 w-full h-full object-cover" />
-                  {/* 사진 비네트 — 레퍼런스 사진 특유의 가장자리 음영 */}
-                  <div aria-hidden className="absolute inset-0" style={{ boxShadow: "inset 0 0 14px 2px rgba(0,0,0,0.45)" }} />
-                </>
-              ) : (
-                <div aria-hidden className="absolute inset-0 flex items-center justify-center">
-                  <Icon className="w-[46%] h-[46%]" style={{ color: rgba(sec.hue, 0.85) }} strokeWidth={1.15} />
-                </div>
-              )}
-              {/* 종목 로고 — 업종 사진이 있으면 가리지 않도록 우하단 작은 배지로, 없으면(벡터 심볼일 때) 중앙에. 잠금 카드는 정체를 가려야 하므로 렌더 안 함 */}
-              {!locked && (
-                <div className={cn("absolute z-[2]", sec.image ? "bottom-1 right-1" : "inset-0 flex justify-center items-center")}>
-                  <PortMedallion item={item} size={sec.image ? (hero ? 34 : 26) : (hero ? 56 : 40)} lift={hero} />
-                </div>
-              )}
-              {!locked && count != null && count > 1 && (
-                <span className="absolute top-1 left-1 z-[3] px-1.5 py-0.5 rounded-full bg-black/70 text-white text-[10px] font-black tabular-nums leading-none">×{count}</span>
-              )}
-              {/* 높다/낮다 — 카드를 좌우로 드래그(오른쪽=높다/초록, 왼쪽=낮다/빨강). 놓으면 임계값 넘었는지 판정, 아니면 원위치 */}
-              {onGuess && (
-                <div ref={dragLayerRef}
-                  className="absolute inset-0 z-[6] cursor-grab active:cursor-grabbing touch-none"
-                  onPointerDown={handlePointerDown} onPointerMove={handlePointerMove} onPointerUp={handlePointerUp} onPointerCancel={handlePointerUp}>
-                  <span aria-hidden className="absolute top-[8%] left-[6%] inline-flex items-center gap-1 rounded-lg border-2 font-serif font-black -rotate-12"
-                    style={{ padding: hero ? "4px 9px" : "2px 6px", fontSize: hero ? 13 : 10, borderColor: "#e11d48", color: "#e11d48", background: "rgba(0,0,0,0.6)", opacity: dragX < 0 ? Math.min(1, -dragX / 60) : 0 }}>
-                    <ArrowDown size={hero ? 13 : 10} strokeWidth={3} /> 낮다
-                  </span>
-                  <span aria-hidden className="absolute top-[8%] right-[6%] inline-flex items-center gap-1 rounded-lg border-2 font-serif font-black rotate-12"
-                    style={{ padding: hero ? "4px 9px" : "2px 6px", fontSize: hero ? 13 : 10, borderColor: "#16a34a", color: "#16a34a", background: "rgba(0,0,0,0.6)", opacity: dragX > 0 ? Math.min(1, dragX / 60) : 0 }}>
-                    높다 <ArrowUp size={hero ? 13 : 10} strokeWidth={3} />
-                  </span>
-                </div>
-              )}
-              {/* 정답 시 다음 카드 — 별도 버튼 대신 카드 위 동일한 사각 라운드 버튼으로 통합 */}
-              {onNext && (
-                <button type="button" aria-label="다음 카드" onClick={e => { e.stopPropagation(); onNext(); }}
-                  className="group absolute inset-0 z-[6] flex items-center justify-center bg-black/0 hover:bg-black/15 transition-colors animate-in fade-in">
-                  <span className="inline-flex items-center gap-1.5 rounded-xl shadow-lg transition-transform group-active:scale-90"
-                    style={{ padding: hero ? "8px 18px" : "5px 12px", background: "#16a34a", boxShadow: "0 4px 14px -4px rgba(22,163,74,0.6)" }}>
-                    <span className="font-serif font-black text-white" style={{ fontSize: hero ? 13 : 10 }}>다음 카드</span>
-                    <TrendingUp size={hero ? 16 : 12} strokeWidth={3} className="text-white" />
-                  </span>
-                </button>
-              )}
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* 검정 여백 — 아트존과 룰박스 사이 (레퍼런스의 카드지 마진, 카드 크기에 비례) */}
-      <div className="shrink-0 h-[2.2%]" />
-
-      {/* 룰박스: 마룬 대리석 테두리(레퍼런스와 동일한 고정색, 둥근 인셋 박스) + 회청색 바탕 텍스트 — 플레이버 + 효과. shrink-0, 항상 온전히 보임 */}
-      <div className="relative z-[2] shrink-0 p-[4%]" style={{ background: marble }}>
-        <div className="rounded-lg px-2 py-2" style={{ background: "#c8d2d6", boxShadow: "inset 0 0 0 2px rgba(0,0,0,0.8)" }}>
-          <p className="font-bold uppercase tracking-wide" style={{ fontSize: hero ? 8 : 6.5, color: sec.hue }}>{sec.label}</p>
-          <p className={cn("leading-snug break-keep mt-0.5", hero ? "line-clamp-2" : "line-clamp-1")} style={{ fontSize: hero ? 10 : 7.5, color: "#181818" }}>{sec.flavor}</p>
-          <p className="leading-snug break-keep mt-1" style={{ fontSize: hero ? 9 : 7, color: "#181818" }}>
-            "{sec.keyword}" 관련 발굴 확률 <b style={{ color: c.accent }}>+{bonus}%p</b>
+        {/* 이펙트 패널 — 다크 글래스 카드(플레이버 + 발굴 확률 보너스). shrink-0, 항상 온전히 보임 */}
+        <div className="relative z-[4] shrink-0 mx-[5%] mt-[2.6%] mb-[2.2%] rounded-lg px-[6%] py-[3%]"
+          style={{ background: "rgba(255,255,255,0.05)", boxShadow: `inset 0 0 0 1px ${rgba(c.accent, 0.5)}` }}>
+          <p className="font-bold uppercase tracking-wide" style={{ fontSize: hero ? 8 : 6.5, color: c.glow }}>{sec.label}</p>
+          <p className={cn("leading-snug break-keep mt-0.5 text-neutral-300", hero ? "line-clamp-2" : "line-clamp-1")} style={{ fontSize: hero ? 10 : 7.5 }}>{sec.flavor}</p>
+          <p className="leading-snug break-keep mt-1 text-neutral-400" style={{ fontSize: hero ? 9 : 7 }}>
+            "{sec.keyword}" 관련 발굴 확률 <b style={{ color: c.glow }}>+{bonus}%p</b>
           </p>
         </div>
-      </div>
 
-      {/* 하단 인쇄줄 — 레퍼런스의 저작권 표기 자리에 시가총액(게임 진행에 필요한 실 스탯) */}
-      <div className="relative z-[2] shrink-0 flex items-center justify-end gap-1 px-0.5 pt-[2%]">
-        <span className={cn("font-serif font-extrabold whitespace-nowrap leading-none flex items-center gap-1", hero ? "text-sm" : "text-[11px]")}>
-          <span className="font-sans font-bold opacity-60" style={{ fontSize: hero ? 7.5 : 6.5, color: "#cbc6ba" }}>{STAT.label}</span>
-          <span style={{ color: c.glow }}>{value}</span>
-        </span>
-      </div>
-
-      {/* 점수 계산 내역 — 명패 점수 클릭/오버 시 카드 안쪽에 오버레이(카드 밖으로 안 나가 overflow-hidden에 안전) */}
-      {showInfo && !locked && (
-        <div className="absolute inset-0 z-[7] flex flex-col justify-center gap-1 bg-black p-[6%]"
-          onClick={e => { e.stopPropagation(); setShowInfo(false); }}>
-          <p className="font-serif font-black text-center" style={{ fontSize: hero ? 13 : 10, color: c.glow }}>저평가 점수 {v.score}</p>
-          <div className="space-y-[3%] mt-1">
-            {v.parts.map(p => (
-              <div key={p.key} className="flex items-center justify-between" style={{ fontSize: hero ? 9.5 : 7 }}>
-                <span className="font-bold text-neutral-300">{p.label}</span>
-                {p.available ? (
-                  <span className="tabular-nums text-neutral-400">
-                    {p.valueStr} → <b className="text-white">{Math.round(p.sub * 100)}</b>
-                    <span className="text-neutral-500">×{Math.round(p.weight * 100)}%</span>
-                  </span>
-                ) : (
-                  <span className="text-neutral-500">데이터 없음</span>
-                )}
-              </div>
-            ))}
-          </div>
-          <p className="text-center text-neutral-500 mt-1" style={{ fontSize: hero ? 8 : 6.5 }}>탭하면 닫혀요</p>
+        {/* 하단 스탯 바 — 티커 + 젬 스타일 시가총액 배지 */}
+        <div className="relative z-[4] shrink-0 flex items-center justify-between gap-1 px-[6%] pb-[3%]">
+          <span className="font-mono tracking-tight text-neutral-500 truncate" style={{ fontSize: hero ? 7.5 : 6 }}>{displayTicker}</span>
+          <span className="inline-flex items-center gap-1 shrink-0 rounded-full px-2 py-0.5"
+            style={{ background: "rgba(0,0,0,0.55)", boxShadow: `inset 0 0 0 1px ${rgba(c.accent, 0.7)}` }}>
+            <span className="font-bold opacity-60 text-neutral-300" style={{ fontSize: hero ? 7 : 6 }}>{STAT.label}</span>
+            <span className="font-black whitespace-nowrap" style={{ fontSize: hero ? 11 : 9, color: c.glow }}>{value}</span>
+          </span>
         </div>
-      )}
+
+        {/* 점수 계산 내역 — 명패 점수 클릭/오버 시 카드 안쪽에 오버레이(카드 밖으로 안 나가 overflow-hidden에 안전) */}
+        {showInfo && !locked && (
+          <div className="absolute inset-0 z-[20] flex flex-col justify-center gap-1 bg-black p-[6%]"
+            onClick={e => { e.stopPropagation(); setShowInfo(false); }}>
+            <p className="font-black text-center" style={{ fontSize: hero ? 13 : 10, color: c.glow }}>저평가 점수 {v.score}</p>
+            <div className="space-y-[3%] mt-1">
+              {v.parts.map(p => (
+                <div key={p.key} className="flex items-center justify-between" style={{ fontSize: hero ? 9.5 : 7 }}>
+                  <span className="font-bold text-neutral-300">{p.label}</span>
+                  {p.available ? (
+                    <span className="tabular-nums text-neutral-400">
+                      {p.valueStr} → <b className="text-white">{Math.round(p.sub * 100)}</b>
+                      <span className="text-neutral-500">×{Math.round(p.weight * 100)}%</span>
+                    </span>
+                  ) : (
+                    <span className="text-neutral-500">데이터 없음</span>
+                  )}
+                </div>
+              ))}
+            </div>
+            <p className="text-center text-neutral-500 mt-1" style={{ fontSize: hero ? 8 : 6.5 }}>탭하면 닫혀요</p>
+          </div>
+        )}
+      </div>
     </div>
   );
 }
@@ -861,10 +855,12 @@ function GameContent() {
   return (
     // svh(small viewport height) 사용 — iOS Safari에서 주소창/툴바가 완전히 펼쳐진 상태의 100dvh가
     // 실제 보이는 영역보다 크게 계산돼 하단에 빈 공간이 남는 문제 방지(svh는 항상 "가장 작은" 뷰포트 기준)
-    <div className="relative h-[calc(100svh-112px)] md:h-[100svh] flex flex-col overflow-hidden bg-gradient-to-b from-[#fdf4e3] via-[#eaf6ef] to-[#dff0e6] dark:from-[#0a1a1f] dark:via-[#0c1f1a] dark:to-[#0a1512] transition-colors">
-      {/* 대항해시대 바다 3D 배경 (three.js) */}
-      <div className="absolute inset-0 z-0"><GameSeaArt /></div>
-      <div className="absolute inset-0 z-0 pointer-events-none bg-gradient-to-b from-[#fdf4e3]/70 via-transparent to-[#dff0e6]/85 dark:from-[#0a1a1f]/75 dark:via-transparent dark:to-[#0a1512]/90" />
+    <div className="relative h-[calc(100svh-112px)] md:h-[100svh] flex flex-col overflow-hidden bg-gradient-to-b from-neutral-100 via-neutral-50 to-neutral-200 dark:from-[#0a0a0e] dark:via-[#101015] dark:to-[#08080a] transition-colors">
+      {/* 프리미엄 아레나 배경 — 카드 위쪽에 은은한 스포트라이트 글로우 + 격자 텍스처(대항해시대 3D 배경 대체) */}
+      <div aria-hidden className="absolute inset-0 z-0 pointer-events-none"
+        style={{ background: "radial-gradient(55% 45% at 50% 24%, rgba(168,85,247,0.12), transparent 70%)" }} />
+      <div aria-hidden className="absolute inset-0 z-0 pointer-events-none opacity-[0.06] dark:opacity-[0.08]"
+        style={{ backgroundImage: "radial-gradient(currentColor 1px, transparent 1px)", backgroundSize: "24px 24px" }} />
       <div className="relative z-10 w-full max-w-2xl mx-auto px-2 pt-3 pb-1 flex-1 min-h-0 flex flex-col">
 
         {/* 상단 메뉴 바 없음 — 홈·제목·내 덱 접근은 전역 네비게이션(게임 버튼)에 통합됨 */}
@@ -941,9 +937,14 @@ function GameContent() {
             {phase === "over" ? (
               // 결과 카드: 모바일은 본문 단일 스크롤로 자연스럽게 흐르고, 데스크톱(sm+)은 뷰포트를 꽉 채우고 헤더·버튼 고정 + 중간만 내부 스크롤
               <div className="flex flex-col rounded-3xl border border-neutral-200 dark:border-[#35332e] bg-white dark:bg-[#242320] shadow-sm animate-in fade-in zoom-in-95 duration-300 sm:flex-1 sm:min-h-0 sm:overflow-hidden">
-                {/* 3D 보물상자 헤더 (three.js) — 모바일 축소 */}
-                <div className="relative h-20 sm:h-40 shrink-0 bg-gradient-to-b from-[#fff7e6] to-white dark:from-[#241d0e] dark:to-[#242320]">
-                  <VoyageArt />
+                {/* 프리미엄 글로우 헤더 — 등급 이모지 + 스포트라이트(3D 보물상자 대체) */}
+                <div className="relative h-20 sm:h-40 shrink-0 overflow-hidden"
+                  style={{ background: "radial-gradient(60% 90% at 50% 105%, rgba(192,38,211,0.28), transparent 70%), linear-gradient(180deg, #18171e, #0a0a0d)" }}>
+                  <div aria-hidden className="absolute inset-0 opacity-[0.08]"
+                    style={{ backgroundImage: "radial-gradient(#fff 1px, transparent 1px)", backgroundSize: "20px 20px" }} />
+                  <div className="relative h-full flex items-center justify-center">
+                    <span aria-hidden className="text-4xl sm:text-6xl" style={{ filter: "drop-shadow(0 0 18px rgba(192,38,211,0.55))" }}>{rankOf(streak).emoji}</span>
+                  </div>
                   {newBest && streak > 0 && (
                     <span className="absolute top-2.5 right-2.5 inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-amber-400 text-white text-[11px] font-black shadow-md animate-in fade-in zoom-in-95">
                       🎉 신기록
