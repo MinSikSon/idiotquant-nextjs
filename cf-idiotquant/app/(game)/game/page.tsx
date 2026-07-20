@@ -860,7 +860,7 @@ function GameContent() {
         ) : isLoading ? (
           <div className="my-auto py-24 text-center text-sm text-neutral-400">카드 데이터를 불러오는 중…</div>
         ) : (
-          <div className={cn("w-full", phase === "over" ? "flex flex-col sm:flex-1 sm:min-h-0" : "mt-auto mb-2")}>
+          <div className={cn("w-full", phase === "over" ? "flex flex-col sm:flex-1 sm:min-h-0" : "flex flex-col flex-1 min-h-0 sm:block sm:flex-none sm:mt-auto sm:mb-2")}>
             {/* 스코어 (플레이 중에만) — 획득 확률은 챌린저 카드 위 스와이프 판정 대상이 있을 때만(guessing) 연승 옆에 표기 */}
             {phase !== "over" && (
               <div className="flex items-center justify-center gap-1.5 flex-wrap mb-1 sm:mb-3 shrink-0">
@@ -1001,10 +1001,10 @@ function GameContent() {
                   )}
                 </div>
 
-                {/* 모바일 — 챌린저(비교 대상) 카드 위주 큰 뷰. 높다/낮다는 카드 자체를 좌우로 드래그해서 판정(TcgCard 내부 처리),
-                    별도 버튼 영역이 사라진 만큼 카드를 더 크게 표시 */}
-                <div className="sm:hidden pt-0.5 pb-0.5">
-                  <div className="mx-auto w-[74%] max-w-[280px] aspect-[3/4]">
+                {/* 모바일 — 챌린저(비교 대상) 카드 위주 큰 뷰. 높다/낮다는 카드 자체를 좌우로 드래그해서 판정(TcgCard 내부 처리).
+                    카드는 남은 세로 공간에 맞춰 높이 기준으로 크기가 정해짐(스코어/질문/안내 문구 길이가 변해도 넘치지 않음 — 스크롤 방지) */}
+                <div className="sm:hidden pt-0.5 pb-0.5 flex-1 min-h-0 flex flex-col items-center">
+                  <div className="h-full aspect-[3/4] max-w-[min(320px,100%)]">
                     <TcgCard hero item={challenger} rank={rankMap.get(String(challenger.ticker))} idleDelay={3}
                       onGuess={phase === "guessing" ? guess : undefined}
                       onNext={phase === "revealed" && lastWin ? next : undefined}
