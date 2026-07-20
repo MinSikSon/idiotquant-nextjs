@@ -663,6 +663,29 @@ function GameContent() {
   const [packOpening, setPackOpening] = useState(false); // 팩 오픈 리빌 연출 표시 중
   const [firstDupHint, setFirstDupHint] = useState(false); // 첫 중복 카드 획득 시 지갑/전환 안내
 
+  // 모바일 카드 크기 — CSS aspect-ratio를 남은 세로 공간(h-full)에 맞춰 계산하는 방식이 실제 남는 공간을
+  // 다 못 채우고 빈틈을 남기는 경우가 있어, 실제 남은 공간을 JS로 측정해 픽셀 값으로 직접 지정.
+  // 콜백 ref 사용: 카드 박스는 phase에 따라 조건부로 마운트되므로 일반 useEffect([])로는 최초 렌더 시점에
+  // DOM이 없어 옵저버가 아예 안 붙는 문제가 있었음 — 콜백 ref는 노드가 실제로 마운트될 때마다 호출됨.
+  const mobileCardRoRef = useRef<ResizeObserver | null>(null);
+  const [mobileCardSize, setMobileCardSize] = useState<{ w: number; h: number } | null>(null);
+  const mobileCardBoxRef = useCallback((el: HTMLDivElement | null) => {
+    mobileCardRoRef.current?.disconnect();
+    mobileCardRoRef.current = null;
+    if (!el) return;
+    const RATIO = 3 / 4; // width / height
+    const update = () => {
+      const w = el.clientWidth, h = el.clientHeight;
+      if (w <= 0 || h <= 0) return;
+      const byHeight = { w: h * RATIO, h };
+      setMobileCardSize(byHeight.w <= w ? byHeight : { w, h: w / RATIO });
+    };
+    update();
+    const ro = new ResizeObserver(update);
+    ro.observe(el);
+    mobileCardRoRef.current = ro;
+  }, []);
+
   useEffect(() => { dispatch(reqGetNcavDailyList("latest")); }, [dispatch]);
 
   // 카드 아트(업종 사진) 전체를 미리 로드 — 첫 카드가 뜨기 전에 브라우저 캐시에 올려둬서 다음 라운드에 지연 없이 표시.
@@ -1002,9 +1025,9 @@ function GameContent() {
                 </div>
 
                 {/* 모바일 — 챌린저(비교 대상) 카드 위주 큰 뷰. 높다/낮다는 카드 자체를 좌우로 드래그해서 판정(TcgCard 내부 처리).
-                    카드는 남은 세로 공간에 맞춰 높이 기준으로 크기가 정해짐(스코어/질문/안내 문구 길이가 변해도 넘치지 않음 — 스크롤 방지) */}
-                <div className="sm:hidden pt-0.5 pb-0.5 flex-1 min-h-0 flex flex-col items-center">
-                  <div className="h-full aspect-[3/4] max-w-[min(320px,100%)]">
+                    카드는 남은 세로 공간을 JS로 측정해 픽셀 값으로 크기 지정(스코어/질문/안내 문구 길이가 변해도 넘치지 않음 — 스크롤 방지) */}
+                <div ref={mobileCardBoxRef} className="sm:hidden pt-0.5 pb-0.5 flex-1 min-h-0 flex items-center justify-center">
+                  <div style={mobileCardSize ? { width: mobileCardSize.w, height: mobileCardSize.h } : { width: "74%", maxWidth: 280, aspectRatio: "3/4" }}>
                     <TcgCard hero item={challenger} rank={rankMap.get(String(challenger.ticker))} idleDelay={3}
                       onGuess={phase === "guessing" ? guess : undefined}
                       onNext={phase === "revealed" && lastWin ? next : undefined}
