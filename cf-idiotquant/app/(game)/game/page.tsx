@@ -17,7 +17,7 @@ import {
   ArrowUp, ArrowDown, Layers, Copy, TrendingUp, Sparkles, ChevronLeft, ChevronRight, Lock, Info,
   Cpu, Dna, Landmark, CarFront, Ship, Construction, Zap, FlaskConical, Factory, RadioTower, Gamepad2,
   Soup, ShoppingCart, PlaneTakeoff, Shirt, Code2, Gem, Compass, Anchor, Map as MapIcon, Medal as MedalIcon,
-  BatteryCharging, Bot, Wallet,
+  BatteryCharging, Bot, Wallet, History, X,
   type LucideIcon,
 } from "lucide-react";
 import { useAppDispatch, useAppSelector } from "@/lib/hooks";
@@ -297,6 +297,29 @@ function buildTierRankMap(catalog: any[]): Map<string, number> {
 function TcgCard({ item, value, hero = false, count, locked = false, rank, onGuess, onNext }:
   { item: any; value: React.ReactNode; hero?: boolean; count?: number; idleDelay?: number; locked?: boolean; rank?: number; onGuess?: (dir: "higher" | "lower") => void; onNext?: () => void }) {
   const [showInfo, setShowInfo] = useState(false);
+  // 높다/낮다 — 카드를 좌우로 드래그해서 판정(오른쪽=높다, 왼쪽=낮다). 폭의 28% 이상 끌면 확정.
+  const [dragX, setDragX] = useState(0);
+  const [dragging, setDragging] = useState(false);
+  const dragStartX = useRef(0);
+  const dragLayerRef = useRef<HTMLDivElement>(null);
+  const DRAG_RATIO = 0.28;
+  const handlePointerDown = (e: React.PointerEvent) => {
+    if (!onGuess) return;
+    dragStartX.current = e.clientX;
+    setDragging(true);
+    e.currentTarget.setPointerCapture(e.pointerId);
+  };
+  const handlePointerMove = (e: React.PointerEvent) => {
+    if (!dragging) return;
+    setDragX(e.clientX - dragStartX.current);
+  };
+  const handlePointerUp = () => {
+    if (!dragging) return;
+    setDragging(false);
+    const width = dragLayerRef.current?.offsetWidth ?? 300;
+    if (Math.abs(dragX) > width * DRAG_RATIO) onGuess?.(dragX > 0 ? "higher" : "lower");
+    setDragX(0);
+  };
   const v = computeValueScore(item);
   const c = TIER[v.tone] ?? TIER.explore;
   const sec = sectorArt(item);
@@ -322,8 +345,14 @@ function TcgCard({ item, value, hero = false, count, locked = false, rank, onGue
     </span>
   );
   return (
-    <div className={cn("relative w-full h-full flex flex-col overflow-hidden rounded-[5%] transition-transform duration-200 ease-out hover:-translate-y-1 p-[3.5%]", locked && "grayscale-[0.85] brightness-[0.65]")}
-      style={{ background: "linear-gradient(160deg,#232323,#0c0c0c)", boxShadow: "inset 0 0 0 1px rgba(255,255,255,0.08), 0 4px 14px -6px rgba(0,0,0,0.6)" }}>
+    <div className={cn("relative w-full h-full flex flex-col overflow-hidden rounded-[5%] hover:-translate-y-1 p-[3.5%]", !onGuess && "transition-transform duration-200 ease-out", locked && "grayscale-[0.85] brightness-[0.65]")}
+      style={{
+        background: "linear-gradient(160deg,#232323,#0c0c0c)", boxShadow: "inset 0 0 0 1px rgba(255,255,255,0.08), 0 4px 14px -6px rgba(0,0,0,0.6)",
+        ...(onGuess ? {
+          transform: `translateX(${dragX}px) rotate(${Math.max(-12, Math.min(12, dragX / 14))}deg)`,
+          transition: dragging ? "none" : "transform 0.25s cubic-bezier(.34,1.56,.64,1)",
+        } : null),
+      }}>
       {holo && <HoloOverlay tone={v.tone} />}
       {/* 명패+아트 존 — 상아색 카드지 한 장. 명패는 카드지 가장자리까지 꽉 차고, 아트는 사진 매트처럼 안쪽에 여백을 두고 액자처럼 삽입 */}
       <div className="relative shrink-0 flex flex-col overflow-hidden"
@@ -385,26 +414,20 @@ function TcgCard({ item, value, hero = false, count, locked = false, rank, onGue
               {!locked && count != null && count > 1 && (
                 <span className="absolute top-1 left-1 z-[3] px-1.5 py-0.5 rounded-full bg-black/70 text-white text-[10px] font-black tabular-nums leading-none">×{count}</span>
               )}
-              {/* 높다/낮다 — 카드(아트창) 상/하단 전체를 탭 영역으로 쓰되, 앱 전역과 통일된 사각 라운드 버튼을 중앙에 배치 */}
+              {/* 높다/낮다 — 카드를 좌우로 드래그(오른쪽=높다/초록, 왼쪽=낮다/빨강). 놓으면 임계값 넘었는지 판정, 아니면 원위치 */}
               {onGuess && (
-                <>
-                  <button type="button" aria-label="높다" onClick={e => { e.stopPropagation(); onGuess("higher"); }}
-                    className="group absolute inset-x-0 top-0 h-1/2 z-[6] flex items-center justify-center bg-gradient-to-b from-transparent via-transparent to-black/10 hover:to-black/25 transition-colors">
-                    <span className="inline-flex items-center gap-1.5 rounded-xl shadow-lg transition-transform group-active:scale-90"
-                      style={{ padding: hero ? "7px 16px" : "4px 10px", background: "#16a34a", boxShadow: "0 4px 14px -4px rgba(22,163,74,0.6)" }}>
-                      <ArrowUp size={hero ? 16 : 12} strokeWidth={3} className="text-white" />
-                      <span className="font-serif font-black text-white" style={{ fontSize: hero ? 12 : 9 }}>높다</span>
-                    </span>
-                  </button>
-                  <button type="button" aria-label="낮다" onClick={e => { e.stopPropagation(); onGuess("lower"); }}
-                    className="group absolute inset-x-0 bottom-0 h-1/2 z-[6] flex items-center justify-center bg-gradient-to-t from-transparent via-transparent to-black/10 hover:to-black/25 transition-colors">
-                    <span className="inline-flex items-center gap-1.5 rounded-xl shadow-lg transition-transform group-active:scale-90"
-                      style={{ padding: hero ? "7px 16px" : "4px 10px", background: "#e11d48", boxShadow: "0 4px 14px -4px rgba(225,29,72,0.6)" }}>
-                      <span className="font-serif font-black text-white" style={{ fontSize: hero ? 12 : 9 }}>낮다</span>
-                      <ArrowDown size={hero ? 16 : 12} strokeWidth={3} className="text-white" />
-                    </span>
-                  </button>
-                </>
+                <div ref={dragLayerRef}
+                  className="absolute inset-0 z-[6] cursor-grab active:cursor-grabbing touch-none"
+                  onPointerDown={handlePointerDown} onPointerMove={handlePointerMove} onPointerUp={handlePointerUp} onPointerCancel={handlePointerUp}>
+                  <span aria-hidden className="absolute top-[8%] left-[6%] inline-flex items-center gap-1 rounded-lg border-2 font-serif font-black -rotate-12"
+                    style={{ padding: hero ? "4px 9px" : "2px 6px", fontSize: hero ? 13 : 10, borderColor: "#e11d48", color: "#e11d48", background: "rgba(0,0,0,0.6)", opacity: dragX < 0 ? Math.min(1, -dragX / 60) : 0 }}>
+                    <ArrowDown size={hero ? 13 : 10} strokeWidth={3} /> 낮다
+                  </span>
+                  <span aria-hidden className="absolute top-[8%] right-[6%] inline-flex items-center gap-1 rounded-lg border-2 font-serif font-black rotate-12"
+                    style={{ padding: hero ? "4px 9px" : "2px 6px", fontSize: hero ? 13 : 10, borderColor: "#16a34a", color: "#16a34a", background: "rgba(0,0,0,0.6)", opacity: dragX > 0 ? Math.min(1, dragX / 60) : 0 }}>
+                    높다 <ArrowUp size={hero ? 13 : 10} strokeWidth={3} />
+                  </span>
+                </div>
               )}
               {/* 정답 시 다음 카드 — 별도 버튼 대신 카드 위 동일한 사각 라운드 버튼으로 통합 */}
               {onNext && (
@@ -631,6 +654,7 @@ function GameContent() {
   const [missed, setMissed] = useState<any | null>(null); // 항해 종료 시 틀린 종목 정보
   const [acquired, setAcquired] = useState<DeckCardSnapshot[]>([]); // 이번 항해에서 획득한 카드
   const [history, setHistory] = useState<any[]>([]); // 지나온 비교 카드(왼쪽으로 쌓임) — 슬라이드로 항해 기록 확인
+  const [showHistory, setShowHistory] = useState(false); // 모바일 등에서 항해 기록 패널 열림 상태
   const trackRef = useRef<HTMLDivElement>(null); // 카드 필름스트립(가로 스크롤)
   const jumpScrollRef = useRef(false); // true면 다음 스크롤을 애니메이션 없이 즉시 이동(게임 재개용)
   const [coins, setCoins] = useState(0); // 지갑 코인 잔액
@@ -807,6 +831,10 @@ function GameContent() {
 
   const isLoading = ncav.state === "pending" || ncav.state === "init" || pool.length < 2;
 
+  // 획득 확률 — 정답 시(연승+1) 이 카드 획득 확률. 연승↑·낮은 등급↑, 높은 등급은 더 높은 연승 필요. 상점 부스트 배율 반영.
+  const acquirePct = challenger ? Math.round(Math.min(0.95, acquireChance(challenger, streak + 1) * (activeBoost?.mult ?? 1)) * 100) : 0;
+  const ownedChallenger = challenger ? deck.find(c => c.ticker === challenger.ticker) : undefined;
+
   return (
     // svh(small viewport height) 사용 — iOS Safari에서 주소창/툴바가 완전히 펼쳐진 상태의 100dvh가
     // 실제 보이는 영역보다 크게 계산돼 하단에 빈 공간이 남는 문제 방지(svh는 항상 "가장 작은" 뷰포트 기준)
@@ -833,9 +861,9 @@ function GameContent() {
           <div className="my-auto py-24 text-center text-sm text-neutral-400">카드 데이터를 불러오는 중…</div>
         ) : (
           <div className={cn("w-full", phase === "over" ? "flex flex-col sm:flex-1 sm:min-h-0" : "mt-auto mb-2")}>
-            {/* 스코어 (플레이 중에만) */}
+            {/* 스코어 (플레이 중에만) — 획득 확률은 챌린저 카드 위 스와이프 판정 대상이 있을 때만(guessing) 연승 옆에 표기 */}
             {phase !== "over" && (
-              <div className="flex items-center justify-center mb-1 sm:mb-3 shrink-0">
+              <div className="flex items-center justify-center gap-1.5 flex-wrap mb-1 sm:mb-3 shrink-0">
                 <div className="flex items-center gap-1 px-1.5 sm:px-2 py-1 sm:py-1.5 rounded-2xl bg-white dark:bg-[#242320] border border-neutral-200 dark:border-[#35332e] shadow-sm">
                   <div className="text-center px-2.5 sm:px-3">
                     <p className="text-base sm:text-xl font-black tabular-nums text-[#16a34a] leading-none">{streak}</p>
@@ -846,7 +874,32 @@ function GameContent() {
                     <p className="text-base sm:text-xl font-black tabular-nums text-neutral-700 dark:text-neutral-200 leading-none">{best}</p>
                     <p className="text-[9px] font-bold text-neutral-400 uppercase tracking-wider mt-0.5 sm:mt-1">최고</p>
                   </div>
+                  {phase === "guessing" && challenger && (
+                    <>
+                      <div className="h-6 sm:h-7 w-px bg-neutral-200 dark:bg-[#35332e]" />
+                      <div className="text-center px-2.5 sm:px-3">
+                        <p className="text-base sm:text-xl font-black tabular-nums text-amber-600 dark:text-amber-400 leading-none">{acquirePct}%</p>
+                        <p className="text-[9px] font-bold text-neutral-400 uppercase tracking-wider mt-0.5 sm:mt-1">획득 확률</p>
+                      </div>
+                    </>
+                  )}
                 </div>
+                {phase === "guessing" && activeBoost && (
+                  <span className="inline-flex items-center px-1.5 py-0.5 rounded-full bg-amber-500/10 text-amber-600 dark:text-amber-400 text-[10px] font-bold tabular-nums">
+                    🪄 ×{activeBoost.mult} (남은 {activeBoost.roundsLeft}판)
+                  </span>
+                )}
+                {phase === "guessing" && ownedChallenger && (
+                  <span className="inline-flex items-center px-1.5 py-0.5 rounded-full bg-[#16a34a]/10 text-[#16a34a] text-[10px] font-bold tabular-nums">
+                    보유 ×{ownedChallenger.count}
+                  </span>
+                )}
+                {history.length > 0 && (
+                  <button type="button" onClick={() => setShowHistory(true)} aria-label="항해 기록 보기"
+                    className="inline-flex items-center gap-1 px-2 py-1 sm:py-1.5 rounded-2xl bg-white dark:bg-[#242320] border border-neutral-200 dark:border-[#35332e] shadow-sm text-[11px] font-bold text-neutral-500 hover:text-[#16a34a] transition-colors">
+                    <History size={13} /> {history.length}
+                  </button>
+                )}
               </div>
             )}
 
@@ -948,33 +1001,16 @@ function GameContent() {
                   )}
                 </div>
 
-                {/* 모바일 — 챌린저(비교 대상) 카드 위주 큰 뷰. 앵커 값은 위 질문 문구에 괄호로 함께 표기(세로 공간 절약) */}
+                {/* 모바일 — 챌린저(비교 대상) 카드 위주 큰 뷰. 높다/낮다는 카드 자체를 좌우로 드래그해서 판정(TcgCard 내부 처리),
+                    별도 버튼 영역이 사라진 만큼 카드를 더 크게 표시 */}
                 <div className="sm:hidden pt-0.5 pb-0.5">
-                  <div className="mx-auto w-[70%] max-w-[260px] aspect-[3/4]">
+                  <div className="mx-auto w-[84%] max-w-[320px] aspect-[3/4]">
                     <TcgCard hero item={challenger} rank={rankMap.get(String(challenger.ticker))} idleDelay={3}
+                      onGuess={phase === "guessing" ? guess : undefined}
+                      onNext={phase === "revealed" && lastWin ? next : undefined}
                       value={phase === "revealed"
                         ? <span className="animate-in zoom-in-75 duration-300">{STAT.fmt(STAT.get(challenger))}</span>
                         : <span className="text-neutral-300 dark:text-neutral-600">?</span>} />
-                  </div>
-                  {/* 높다/낮다 — 카드 아트를 가리지 않도록 카드 아래 전용 버튼 영역으로 분리(모바일 전용) */}
-                  <div className="mx-auto w-[70%] max-w-[260px] mt-1.5">
-                    {phase === "guessing" ? (
-                      <div className="grid grid-cols-2 gap-2">
-                        <button type="button" onClick={() => guess("higher")}
-                          className="flex items-center justify-center gap-1.5 py-2 rounded-xl bg-[#16a34a] hover:bg-[#15803d] active:scale-[0.97] text-white font-black text-sm shadow-md shadow-[#16a34a]/25 transition-all">
-                          <ArrowUp size={16} strokeWidth={3} /> 높다
-                        </button>
-                        <button type="button" onClick={() => guess("lower")}
-                          className="flex items-center justify-center gap-1.5 py-2 rounded-xl bg-[#e11d48] hover:bg-[#be123c] active:scale-[0.97] text-white font-black text-sm shadow-md shadow-[#e11d48]/25 transition-all">
-                          낮다 <ArrowDown size={16} strokeWidth={3} />
-                        </button>
-                      </div>
-                    ) : phase === "revealed" && lastWin ? (
-                      <button type="button" onClick={next}
-                        className="w-full flex items-center justify-center gap-1.5 py-2 rounded-xl bg-[#16a34a] hover:bg-[#15803d] active:scale-[0.97] text-white font-black text-sm shadow-md shadow-[#16a34a]/25 transition-all animate-in fade-in">
-                        다음 카드 <TrendingUp size={16} strokeWidth={3} />
-                      </button>
-                    ) : null}
                   </div>
                 </div>
 
@@ -1013,36 +1049,46 @@ function GameContent() {
                     </>
                   )}
                 </div>
-
-                {/* 획득 확률 안내 — 높다/낮다·다음 카드 모두 이제 카드(챌린저) 위에서 직접 탭해서 진행 */}
-                {phase === "guessing" && (() => {
-                  // 정답 시(연승+1) 이 카드 획득 확률 — 연승↑·낮은 등급↑, 높은 등급은 더 높은 연승 필요. 상점 부스트 배율 반영.
-                  const chance = Math.round(Math.min(0.95, acquireChance(challenger, streak + 1) * (activeBoost?.mult ?? 1)) * 100);
-                  const owned = deck.find(c => c.ticker === challenger.ticker);
-                  return (
-                    <p className="text-center text-[11px]">
-                      <span className="text-neutral-400">획득 확률 </span>
-                      <b className="text-[#16a34a] tabular-nums">{chance}%</b>
-                      <span className="text-neutral-300 dark:text-neutral-600"> · 연승 시 ↑</span>
-                      {activeBoost && (
-                        <span className="ml-1.5 inline-flex items-center px-1.5 py-0.5 rounded-full bg-amber-500/10 text-amber-600 dark:text-amber-400 font-bold tabular-nums">
-                          🪄 부적 ×{activeBoost.mult} (남은 {activeBoost.roundsLeft}판)
-                        </span>
-                      )}
-                      {owned && (
-                        <span className="ml-1.5 inline-flex items-center px-1.5 py-0.5 rounded-full bg-[#16a34a]/10 text-[#16a34a] font-bold tabular-nums">
-                          보유 ×{owned.count} · 획득 시 +1
-                        </span>
-                      )}
-                    </p>
-                  );
-                })()}
               </>
             ) : null}
           </div>
         )}
         </div>
       </div>
+
+      {/* 항해 기록 패널 — 지나온 비교 카드(anchor) 목록. 모바일은 필름스트립이 없어 이게 유일한 열람 수단, 데스크톱도 보조로 제공 */}
+      {showHistory && (
+        <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/50 backdrop-blur-sm p-3"
+          onClick={() => setShowHistory(false)}>
+          <div className="w-full sm:max-w-sm max-h-[70vh] overflow-y-auto rounded-2xl bg-white dark:bg-[#242320] border border-neutral-200 dark:border-[#35332e] shadow-xl p-4 animate-in fade-in slide-in-from-bottom-2 sm:zoom-in-95 duration-200"
+            onClick={e => e.stopPropagation()}>
+            <div className="flex items-center justify-between mb-3">
+              <p className="font-black text-neutral-900 dark:text-white flex items-center gap-1.5">
+                <History size={15} /> 항해 기록 {history.length}
+              </p>
+              <button type="button" onClick={() => setShowHistory(false)} className="text-neutral-400 hover:text-[#16a34a]" aria-label="닫기">
+                <X size={18} />
+              </button>
+            </div>
+            {history.length === 0 ? (
+              <p className="text-center text-xs text-neutral-400 py-6">아직 지나온 카드가 없어요.</p>
+            ) : (
+              <div className="space-y-1.5">
+                {[...history].reverse().map((c, i) => (
+                  <div key={`${c.ticker}-${i}`} className="flex items-center gap-2 px-2 py-1.5 rounded-xl bg-[#faf9f7] dark:bg-[#1f1e1b]">
+                    <Medal item={c} />
+                    <div className="min-w-0 flex-1">
+                      <p className="text-xs font-bold text-neutral-800 dark:text-neutral-100 truncate">{c.name}</p>
+                      <p className="text-[10px] text-neutral-400">{c.ticker}</p>
+                    </div>
+                    <span className="text-xs font-bold tabular-nums text-neutral-600 dark:text-neutral-300">{STAT.fmt(STAT.get(c))}</span>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+      )}
     </div>
   );
 }
