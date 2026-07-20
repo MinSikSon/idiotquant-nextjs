@@ -17,7 +17,7 @@ import {
   ArrowUp, ArrowDown, Layers, Copy, TrendingUp, Sparkles, ChevronLeft, ChevronRight, Lock, Info,
   Cpu, Dna, Landmark, CarFront, Ship, Construction, Zap, FlaskConical, Factory, RadioTower, Gamepad2,
   Soup, ShoppingCart, PlaneTakeoff, Shirt, Code2, Gem, Compass, Anchor, Map as MapIcon, Medal as MedalIcon,
-  BatteryCharging, Bot, Wallet, History, X,
+  BatteryCharging, Bot, Wallet, History, X, Flame, Trophy, Target, Wand2,
   type LucideIcon,
 } from "lucide-react";
 import { useAppDispatch, useAppSelector } from "@/lib/hooks";
@@ -25,8 +25,6 @@ import { reqGetNcavDailyList, selectNcavDailyList } from "@/lib/features/algorit
 import { computeValueScore } from "@/lib/utils/valueScore";
 import { getDeck, addDeckCard, getWallet, syncBestStreak, type DeckCardSnapshot } from "@/lib/features/deck/deckAPI";
 import { cn } from "@/lib/utils";
-import VoyageArt from "@/components/game/voyageArt";
-import GameSeaArt from "@/components/game/gameSeaArt";
 import { HOLO_THRESHOLD, HoloOverlay, PackReveal, AchievementBadges } from "./gameCollectibles";
 import { WalletChip, ConvertButton, ShopPanel, BOOST_ITEMS, type BoostItem } from "./gameShop";
 
@@ -509,7 +507,7 @@ function MissedInfo({ missed }: { missed: any }) {
     { label: "ROE", value: byKey.roe.valueStr },
   ];
   return (
-    <div className="text-left rounded-2xl border border-neutral-200 dark:border-neutral-700 bg-neutral-50 dark:bg-neutral-900 p-2.5">
+    <div className="text-left rounded-2xl backdrop-blur-md bg-black/[0.03] dark:bg-black/30 border border-black/5 dark:border-white/10 p-2.5">
       <p className="text-[11px] font-black text-rose-500 mb-1.5">아깝게 놓친 종목</p>
       <p className="text-xs text-neutral-500 dark:text-neutral-400 mb-2 break-keep leading-relaxed">
         <b className="text-neutral-800 dark:text-neutral-200">{c.name}</b>의 {missed.statLabel}
@@ -530,7 +528,7 @@ function MissedInfo({ missed }: { missed: any }) {
       </div>
       <div className="grid grid-cols-3 sm:grid-cols-5 gap-1.5 mb-2">
         {metrics.map(m => (
-          <div key={m.label} className="rounded-lg bg-neutral-100 dark:bg-neutral-800 p-1.5 text-center">
+          <div key={m.label} className="rounded-lg bg-white/70 dark:bg-white/[0.05] p-1.5 text-center">
             <p className="text-[9px] font-bold text-neutral-400 uppercase tracking-wide">{m.label}</p>
             <p className="text-xs font-black tabular-nums text-neutral-800 dark:text-neutral-200 mt-0.5">{m.value}</p>
           </div>
@@ -538,7 +536,7 @@ function MissedInfo({ missed }: { missed: any }) {
       </div>
 
       {/* 점수 계산 과정: 지표별 서브점수 × 가중치 → 종합 (값 없는 지표는 제외) */}
-      <div className="rounded-lg bg-neutral-100 dark:bg-neutral-800 p-2.5">
+      <div className="rounded-lg bg-white/70 dark:bg-white/[0.05] p-2.5">
         <p className="text-[10px] font-black text-neutral-500 dark:text-neutral-400 mb-1.5">
           점수 계산 <span className="font-medium text-neutral-400">· 값 없는 지표 제외 후 가중 평균</span>
         </p>
@@ -557,7 +555,7 @@ function MissedInfo({ missed }: { missed: any }) {
             </div>
           ))}
         </div>
-        <div className="mt-1.5 pt-1.5 border-t border-neutral-100 dark:border-[#35332e] flex items-center justify-between">
+        <div className="mt-1.5 pt-1.5 border-t border-black/5 dark:border-white/10 flex items-center justify-between">
           <span className="text-[11px] font-black text-neutral-700 dark:text-neutral-200">종합 점수</span>
           <span className="text-sm font-black text-[#16a34a] tabular-nums">{v.score}점</span>
         </div>
@@ -583,14 +581,14 @@ function AcquiredThisGame({ cards }: { cards: DeckCardSnapshot[] }) {
   }, [cards]);
 
   return (
-    <div className="text-left rounded-2xl border border-[#86efac]/60 dark:border-[#166534]/50 bg-[#f0fdf4]/60 dark:bg-[#052e16]/20 p-2.5">
+    <div className="text-left rounded-2xl backdrop-blur-md bg-[#16a34a]/[0.06] border border-[#16a34a]/25 p-2.5">
       <p className="text-[11px] font-black text-[#15803d] dark:text-[#16a34a] mb-1.5 flex items-center gap-1">
         <Sparkles size={12} /> 이번 항해 획득 {cards.length}장
       </p>
       {/* 가로 스트립 — 카드 수가 많아도 높이가 고정(한 화면 유지). 좌우로 슬라이드 */}
       <div className="flex gap-2 overflow-x-auto pb-1 -mx-0.5 px-0.5 scrollbar-hide">
         {agg.map(({ item: c, count }) => (
-          <div key={c.ticker} className="relative shrink-0 flex items-center gap-1.5 rounded-xl bg-neutral-100 dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-700 py-1.5 pl-1.5 pr-2.5 text-neutral-700 dark:text-neutral-200">
+          <div key={c.ticker} className="relative shrink-0 flex items-center gap-1.5 rounded-xl bg-white/70 dark:bg-white/[0.05] border border-black/5 dark:border-white/10 py-1.5 pl-1.5 pr-2.5 text-neutral-700 dark:text-neutral-200">
             {count > 1 && (
               <span className="absolute -top-1 -right-1 px-1 py-0.5 rounded-full bg-neutral-800 text-white text-[9px] font-black tabular-nums leading-none">×{count}</span>
             )}
@@ -861,10 +859,12 @@ function GameContent() {
   return (
     // svh(small viewport height) 사용 — iOS Safari에서 주소창/툴바가 완전히 펼쳐진 상태의 100dvh가
     // 실제 보이는 영역보다 크게 계산돼 하단에 빈 공간이 남는 문제 방지(svh는 항상 "가장 작은" 뷰포트 기준)
-    <div className="relative h-[calc(100svh-112px)] md:h-[100svh] flex flex-col overflow-hidden bg-gradient-to-b from-[#fdf4e3] via-[#eaf6ef] to-[#dff0e6] dark:from-[#0a1a1f] dark:via-[#0c1f1a] dark:to-[#0a1512] transition-colors">
-      {/* 대항해시대 바다 3D 배경 (three.js) */}
-      <div className="absolute inset-0 z-0"><GameSeaArt /></div>
-      <div className="absolute inset-0 z-0 pointer-events-none bg-gradient-to-b from-[#fdf4e3]/70 via-transparent to-[#dff0e6]/85 dark:from-[#0a1a1f]/75 dark:via-transparent dark:to-[#0a1512]/90" />
+    <div className="relative h-[calc(100svh-112px)] md:h-[100svh] flex flex-col overflow-hidden bg-gradient-to-b from-neutral-100 via-neutral-50 to-neutral-200 dark:from-[#0a0a0e] dark:via-[#101015] dark:to-[#08080a] transition-colors">
+      {/* 프리미엄 아레나 배경 — 카드 위쪽에 은은한 스포트라이트 글로우 + 격자 텍스처(대항해시대 3D 배경 대체) */}
+      <div aria-hidden className="absolute inset-0 z-0 pointer-events-none"
+        style={{ background: "radial-gradient(55% 45% at 50% 24%, rgba(168,85,247,0.12), transparent 70%)" }} />
+      <div aria-hidden className="absolute inset-0 z-0 pointer-events-none opacity-[0.06] dark:opacity-[0.08]"
+        style={{ backgroundImage: "radial-gradient(currentColor 1px, transparent 1px)", backgroundSize: "24px 24px" }} />
       <div className="relative z-10 w-full max-w-2xl mx-auto px-2 pt-3 pb-1 flex-1 min-h-0 flex flex-col">
 
         {/* 상단 메뉴 바 없음 — 홈·제목·내 덱 접근은 전역 네비게이션(게임 버튼)에 통합됨 */}
@@ -884,42 +884,49 @@ function GameContent() {
           <div className="my-auto py-24 text-center text-sm text-neutral-400">카드 데이터를 불러오는 중…</div>
         ) : (
           <div className={cn("w-full", phase === "over" ? "flex flex-col sm:flex-1 sm:min-h-0" : "flex flex-col flex-1 min-h-0 sm:block sm:flex-none sm:mt-auto sm:mb-2")}>
-            {/* 스코어 (플레이 중에만) — 획득 확률은 챌린저 카드 위 스와이프 판정 대상이 있을 때만(guessing) 연승 옆에 표기 */}
+            {/* 스코어 (플레이 중에만) — 프리미엄 글래스 HUD 배지. 획득 확률은 챌린저 카드 위 스와이프 판정 대상이
+                있을 때만(guessing) 연승 옆에 표기 */}
             {phase !== "over" && (
               <div className="flex items-center justify-center gap-1.5 flex-wrap mb-1 sm:mb-3 shrink-0">
-                <div className="flex items-center gap-1 px-1.5 sm:px-2 py-1 sm:py-1.5 rounded-2xl bg-white dark:bg-[#242320] border border-neutral-200 dark:border-[#35332e] shadow-sm">
+                <div className="flex items-center gap-1 px-1.5 sm:px-2 py-1 sm:py-1.5 rounded-2xl backdrop-blur-md bg-white/85 dark:bg-white/[0.06] border border-black/5 dark:border-white/10 shadow-[0_6px_18px_-8px_rgba(0,0,0,0.35)]">
                   <div className="text-center px-2.5 sm:px-3">
-                    <p className="text-base sm:text-xl font-black tabular-nums text-[#16a34a] leading-none">{streak}</p>
+                    <p className="flex items-center justify-center gap-1 text-base sm:text-xl font-black tabular-nums text-[#16a34a] leading-none">
+                      <Flame size={13} strokeWidth={2.5} className="shrink-0" />{streak}
+                    </p>
                     <p className="text-[9px] font-bold text-neutral-400 uppercase tracking-wider mt-0.5 sm:mt-1">연승</p>
                   </div>
-                  <div className="h-6 sm:h-7 w-px bg-neutral-200 dark:bg-[#35332e]" />
+                  <div className="h-6 sm:h-7 w-px bg-neutral-200 dark:bg-white/10" />
                   <div className="text-center px-2.5 sm:px-3">
-                    <p className="text-base sm:text-xl font-black tabular-nums text-neutral-700 dark:text-neutral-200 leading-none">{best}</p>
+                    <p className="flex items-center justify-center gap-1 text-base sm:text-xl font-black tabular-nums text-amber-500 leading-none">
+                      <Trophy size={13} strokeWidth={2.5} className="shrink-0" />{best}
+                    </p>
                     <p className="text-[9px] font-bold text-neutral-400 uppercase tracking-wider mt-0.5 sm:mt-1">최고</p>
                   </div>
                   {phase === "guessing" && challenger && (
                     <>
-                      <div className="h-6 sm:h-7 w-px bg-neutral-200 dark:bg-[#35332e]" />
+                      <div className="h-6 sm:h-7 w-px bg-neutral-200 dark:bg-white/10" />
                       <div className="text-center px-2.5 sm:px-3">
-                        <p className="text-base sm:text-xl font-black tabular-nums text-amber-600 dark:text-amber-400 leading-none">{acquirePct}%</p>
+                        <p className="flex items-center justify-center gap-1 text-base sm:text-xl font-black tabular-nums text-amber-600 dark:text-amber-400 leading-none">
+                          <Target size={13} strokeWidth={2.5} className="shrink-0" />{acquirePct}%
+                        </p>
                         <p className="text-[9px] font-bold text-neutral-400 uppercase tracking-wider mt-0.5 sm:mt-1">획득 확률</p>
                       </div>
                     </>
                   )}
                 </div>
                 {phase === "guessing" && activeBoost && (
-                  <span className="inline-flex items-center px-1.5 py-0.5 rounded-full bg-amber-500/10 text-amber-600 dark:text-amber-400 text-[10px] font-bold tabular-nums">
-                    🪄 ×{activeBoost.mult}·{activeBoost.roundsLeft}판
+                  <span className="inline-flex items-center gap-1 px-2 py-1 rounded-full backdrop-blur-md bg-amber-500/10 border border-amber-500/25 text-amber-600 dark:text-amber-400 text-[10px] font-bold tabular-nums">
+                    <Wand2 size={11} strokeWidth={2.5} /> ×{activeBoost.mult}·{activeBoost.roundsLeft}판
                   </span>
                 )}
                 {phase === "guessing" && ownedChallenger && (
-                  <span className="inline-flex items-center px-1.5 py-0.5 rounded-full bg-[#16a34a]/10 text-[#16a34a] text-[10px] font-bold tabular-nums">
-                    보유 ×{ownedChallenger.count}
+                  <span className="inline-flex items-center gap-1 px-2 py-1 rounded-full backdrop-blur-md bg-[#16a34a]/10 border border-[#16a34a]/25 text-[#16a34a] text-[10px] font-bold tabular-nums">
+                    <Layers size={11} strokeWidth={2.5} /> ×{ownedChallenger.count}
                   </span>
                 )}
                 {history.length > 0 && (
                   <button type="button" onClick={() => setShowHistory(true)} aria-label="항해 기록 보기"
-                    className="inline-flex items-center gap-1 px-2 py-1 sm:py-1.5 rounded-2xl bg-white dark:bg-[#242320] border border-neutral-200 dark:border-[#35332e] shadow-sm text-[11px] font-bold text-neutral-500 hover:text-[#16a34a] transition-colors">
+                    className="inline-flex items-center gap-1 px-2 py-1 sm:py-1.5 rounded-2xl backdrop-blur-md bg-white/85 dark:bg-white/[0.06] border border-black/5 dark:border-white/10 shadow-[0_6px_18px_-8px_rgba(0,0,0,0.35)] text-[11px] font-bold text-neutral-500 dark:text-neutral-300 hover:text-[#16a34a] transition-colors">
                     <History size={13} /> {history.length}
                   </button>
                 )}
@@ -927,9 +934,9 @@ function GameContent() {
             )}
 
             {/* 질문 — 최상단(스코어 바로 아래)으로 이동해 카드를 보기 전에 무엇을 비교하는지 먼저 알 수 있게.
-                모바일은 별도 앵커 배지 없이 앵커 값을 괄호로 함께 표기(세로 공간 절약) */}
+                모바일은 별도 앵커 배지 없이 앵커 값을 괄호로 함께 표기(세로 공간 절약). 글래스 배너로 시각적 무게감 부여 */}
             {phase === "guessing" && anchor && challenger && (
-              <p className="text-center text-sm sm:text-base font-bold text-neutral-800 dark:text-neutral-100 mb-1 sm:mb-3 shrink-0 break-keep leading-snug">
+              <p className="text-center text-sm sm:text-base font-bold text-neutral-800 dark:text-neutral-100 mb-1 sm:mb-3 shrink-0 break-keep leading-snug px-3 py-1.5 rounded-2xl backdrop-blur-md bg-white/70 dark:bg-white/[0.04] border border-black/5 dark:border-white/10 mx-auto w-fit max-w-full">
                 <b className="text-[#16a34a]">{challenger.name}</b>
                 <span className="font-medium text-neutral-500 dark:text-neutral-400">의 {STAT.label}은 </span>
                 <b className="text-neutral-900 dark:text-white">{anchor.name}</b>
@@ -940,10 +947,15 @@ function GameContent() {
 
             {phase === "over" ? (
               // 결과 카드: 모바일은 본문 단일 스크롤로 자연스럽게 흐르고, 데스크톱(sm+)은 뷰포트를 꽉 채우고 헤더·버튼 고정 + 중간만 내부 스크롤
-              <div className="flex flex-col rounded-3xl border border-neutral-200 dark:border-[#35332e] bg-white dark:bg-[#242320] shadow-sm animate-in fade-in zoom-in-95 duration-300 sm:flex-1 sm:min-h-0 sm:overflow-hidden">
-                {/* 3D 보물상자 헤더 (three.js) — 모바일 축소 */}
-                <div className="relative h-20 sm:h-40 shrink-0 bg-gradient-to-b from-[#fff7e6] to-white dark:from-[#241d0e] dark:to-[#242320]">
-                  <VoyageArt />
+              <div className="flex flex-col rounded-3xl backdrop-blur-md bg-white/85 dark:bg-white/[0.04] border border-black/5 dark:border-white/10 shadow-[0_20px_50px_-24px_rgba(0,0,0,0.45)] animate-in fade-in zoom-in-95 duration-300 sm:flex-1 sm:min-h-0 sm:overflow-hidden">
+                {/* 프리미엄 글로우 헤더 — 등급 이모지 + 스포트라이트(3D 보물상자 대체) */}
+                <div className="relative h-20 sm:h-40 shrink-0 overflow-hidden"
+                  style={{ background: "radial-gradient(60% 90% at 50% 105%, rgba(192,38,211,0.28), transparent 70%), linear-gradient(180deg, #18171e, #0a0a0d)" }}>
+                  <div aria-hidden className="absolute inset-0 opacity-[0.08]"
+                    style={{ backgroundImage: "radial-gradient(#fff 1px, transparent 1px)", backgroundSize: "20px 20px" }} />
+                  <div className="relative h-full flex items-center justify-center">
+                    <span aria-hidden className="text-4xl sm:text-6xl" style={{ filter: "drop-shadow(0 0 18px rgba(192,38,211,0.55))" }}>{rankOf(streak).emoji}</span>
+                  </div>
                   {newBest && streak > 0 && (
                     <span className="absolute top-2.5 right-2.5 inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-amber-400 text-white text-[11px] font-black shadow-md animate-in fade-in zoom-in-95">
                       🎉 신기록
@@ -960,16 +972,20 @@ function GameContent() {
                     </span>
                   </div>
 
-                  {/* 이번 항해 성과 — 스탯·업적을 한 패널로 묶어 시각적으로 한 덩어리로 보이게 */}
-                  <div className="rounded-2xl border border-neutral-100 dark:border-[#35332e] bg-[#faf9f7] dark:bg-[#1f1e1b] p-2.5">
+                  {/* 이번 항해 성과 — 스탯·업적을 한 패널로 묶어 시각적으로 한 덩어리로 보이게. 다크 글래스 패널 */}
+                  <div className="rounded-2xl backdrop-blur-md bg-black/[0.03] dark:bg-black/30 border border-black/5 dark:border-white/10 p-2.5">
                     <p className="text-[10px] font-bold text-neutral-400 uppercase tracking-wider mb-1.5">이번 항해 성과</p>
                     <div className="grid grid-cols-2 gap-2">
-                      <div className="rounded-xl bg-white dark:bg-[#242320] py-1.5">
-                        <p className="text-xl font-black tabular-nums text-[#16a34a] leading-none">{streak}</p>
+                      <div className="rounded-xl bg-white/70 dark:bg-white/[0.05] py-1.5">
+                        <p className="flex items-center justify-center gap-1 text-xl font-black tabular-nums text-[#16a34a] leading-none">
+                          <Flame size={15} strokeWidth={2.5} />{streak}
+                        </p>
                         <p className="text-[9px] font-bold text-neutral-400 uppercase tracking-wider mt-1">이번 연승</p>
                       </div>
-                      <div className="rounded-xl bg-white dark:bg-[#242320] py-1.5">
-                        <p className="text-xl font-black tabular-nums text-neutral-700 dark:text-neutral-200 leading-none">{best}</p>
+                      <div className="rounded-xl bg-white/70 dark:bg-white/[0.05] py-1.5">
+                        <p className="flex items-center justify-center gap-1 text-xl font-black tabular-nums text-amber-500 leading-none">
+                          <Trophy size={15} strokeWidth={2.5} />{best}
+                        </p>
                         <p className="text-[9px] font-bold text-neutral-400 uppercase tracking-wider mt-1">최고 기록</p>
                       </div>
                     </div>
@@ -985,10 +1001,10 @@ function GameContent() {
                   {missed && <MissedInfo missed={missed} />}
                 </div>
 
-                {/* 버튼 고정 (항상 보임) */}
-                <div className="shrink-0 px-5 pb-3 pt-2 border-t border-neutral-100 dark:border-[#35332e]">
+                {/* 버튼 고정 (항상 보임) — 그라데이션 + 글로우 프리미엄 버튼 */}
+                <div className="shrink-0 px-5 pb-3 pt-2 border-t border-black/5 dark:border-white/10">
                   <button onClick={start}
-                    className="w-full inline-flex items-center justify-center gap-2 px-6 py-2.5 rounded-2xl bg-[#16a34a] hover:bg-[#15803d] text-white font-black text-sm shadow-md shadow-[#16a34a]/25 active:scale-[0.98] transition-all">
+                    className="w-full inline-flex items-center justify-center gap-2 px-6 py-2.5 rounded-2xl bg-gradient-to-r from-[#16a34a] to-[#15803d] hover:brightness-110 text-white font-black text-sm shadow-[0_8px_24px_-8px_rgba(22,163,74,0.55)] active:scale-[0.98] transition-all">
                     <TrendingUp size={16} /> 이어서 항해
                   </button>
                 </div>
@@ -1212,7 +1228,7 @@ function DeckView({ deck, catalog, best, coins, isLoggedIn, onLogin, onClose, sh
           {isLoggedIn && <WalletChip coins={coins} />}
           {isLoggedIn && (
             <button onClick={onToggleShop}
-              className="inline-flex items-center gap-1 px-2 py-1 rounded-lg border border-neutral-200 dark:border-[#35332e] bg-white dark:bg-[#242320] text-xs font-bold text-neutral-600 dark:text-neutral-300">
+              className="inline-flex items-center gap-1 px-2 py-1 rounded-lg backdrop-blur-md border border-black/5 dark:border-white/10 bg-white/80 dark:bg-white/[0.06] text-xs font-bold text-neutral-600 dark:text-neutral-300">
               🪙 상점
             </button>
           )}
@@ -1224,15 +1240,15 @@ function DeckView({ deck, catalog, best, coins, isLoggedIn, onLogin, onClose, sh
         <ShopPanel coins={coins} onBuy={onBuyBoost} onClose={onToggleShop} />
       ) : (
         <>
-          {/* 도감 완성도 */}
+          {/* 도감 완성도 — 글로우 그라데이션 프로그레스 바 */}
           {catalog.length > 0 && (
-            <div className="mb-3 rounded-xl border border-neutral-100 dark:border-[#35332e] bg-[#faf9f7] dark:bg-[#1f1e1b] p-3">
+            <div className="mb-3 rounded-xl backdrop-blur-md bg-black/[0.03] dark:bg-black/30 border border-black/5 dark:border-white/10 p-3">
               <div className="flex items-center justify-between mb-1.5">
                 <p className="text-xs font-black text-neutral-700 dark:text-neutral-200">도감 완성도 <span className="text-neutral-400 font-medium">· 오늘 기준 발굴 가능 종목</span></p>
                 <p className="text-xs font-black text-[#16a34a] tabular-nums">{completion.owned}/{completion.total} ({completion.pct}%)</p>
               </div>
-              <div className="h-1.5 rounded-full bg-neutral-200 dark:bg-[#35332e] overflow-hidden">
-                <div className="h-full bg-[#16a34a] transition-all" style={{ width: `${completion.pct}%` }} />
+              <div className="h-1.5 rounded-full bg-black/5 dark:bg-white/10 overflow-hidden">
+                <div className="h-full rounded-full bg-gradient-to-r from-[#16a34a] to-[#4ade80] shadow-[0_0_8px_rgba(74,222,128,0.7)] transition-all" style={{ width: `${completion.pct}%` }} />
               </div>
             </div>
           )}
@@ -1241,27 +1257,27 @@ function DeckView({ deck, catalog, best, coins, isLoggedIn, onLogin, onClose, sh
             <AchievementBadges deck={deck} best={best} catalogTotal={catalog.length} />
             {catalog.length > 0 && (
               <div className="flex items-center gap-1.5 shrink-0">
-                <div className="inline-flex rounded-lg border border-neutral-200 dark:border-[#35332e] overflow-hidden">
+                <div className="inline-flex rounded-lg overflow-hidden backdrop-blur-md border border-black/5 dark:border-white/10">
                   {(["tier", "sector"] as const).map(m => (
                     <button key={m} onClick={() => { setGroupMode(m); setVisible(PAGE); }}
                       className={cn("px-2 py-1 text-[11px] font-bold transition-colors",
-                        groupMode === m ? "bg-[#16a34a] text-white" : "bg-white dark:bg-[#242320] text-neutral-500 dark:text-neutral-400")}>
+                        groupMode === m ? "bg-[#16a34a] text-white" : "bg-white/80 dark:bg-white/[0.06] text-neutral-500 dark:text-neutral-400")}>
                       {m === "tier" ? "등급별" : "업종별"}
                     </button>
                   ))}
                 </div>
                 <button onClick={() => { setShowOwnedOnly(v => !v); setVisible(PAGE); }}
-                  className={cn("inline-flex items-center gap-1 px-2 py-1 rounded-lg border text-[11px] font-bold transition-colors",
+                  className={cn("inline-flex items-center gap-1 px-2 py-1 rounded-lg border backdrop-blur-md text-[11px] font-bold transition-colors",
                     showOwnedOnly
-                      ? "border-[#16a34a] bg-[#16a34a]/10 text-[#16a34a]"
-                      : "border-neutral-200 dark:border-[#35332e] bg-white dark:bg-[#242320] text-neutral-500 dark:text-neutral-400")}>
+                      ? "border-[#16a34a]/40 bg-[#16a34a]/10 text-[#16a34a] shadow-[0_0_10px_-2px_rgba(22,163,74,0.5)]"
+                      : "border-black/5 dark:border-white/10 bg-white/80 dark:bg-white/[0.06] text-neutral-500 dark:text-neutral-400")}>
                   <Layers size={11} /> 보유만
                 </button>
                 <button onClick={() => { setShowDupesOnly(v => !v); setVisible(PAGE); }}
-                  className={cn("inline-flex items-center gap-1 px-2 py-1 rounded-lg border text-[11px] font-bold transition-colors",
+                  className={cn("inline-flex items-center gap-1 px-2 py-1 rounded-lg border backdrop-blur-md text-[11px] font-bold transition-colors",
                     showDupesOnly
-                      ? "border-[#16a34a] bg-[#16a34a]/10 text-[#16a34a]"
-                      : "border-neutral-200 dark:border-[#35332e] bg-white dark:bg-[#242320] text-neutral-500 dark:text-neutral-400")}>
+                      ? "border-[#16a34a]/40 bg-[#16a34a]/10 text-[#16a34a] shadow-[0_0_10px_-2px_rgba(22,163,74,0.5)]"
+                      : "border-black/5 dark:border-white/10 bg-white/80 dark:bg-white/[0.06] text-neutral-500 dark:text-neutral-400")}>
                   <Copy size={11} /> 중복만
                 </button>
               </div>
@@ -1269,11 +1285,11 @@ function DeckView({ deck, catalog, best, coins, isLoggedIn, onLogin, onClose, sh
           </div>
 
           {!isLoggedIn && (
-            <div className="my-4 py-4 text-center rounded-xl border border-dashed border-neutral-200 dark:border-[#35332e]">
+            <div className="my-4 py-4 text-center rounded-xl backdrop-blur-md border border-dashed border-black/10 dark:border-white/15 bg-black/[0.02] dark:bg-black/20">
               <Lock size={18} className="mx-auto text-neutral-300 dark:text-neutral-600 mb-2" />
               <p className="text-xs font-bold text-neutral-700 dark:text-neutral-300">덱은 계정에 저장됩니다</p>
               <p className="text-[11px] text-neutral-400 mt-1 mb-3">로그인하면 발굴한 카드가 기기와 상관없이 보관돼요.</p>
-              <button onClick={onLogin} className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-[#16a34a] hover:bg-[#15803d] text-white font-bold text-xs">
+              <button onClick={onLogin} className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-gradient-to-r from-[#16a34a] to-[#15803d] hover:brightness-110 text-white font-bold text-xs shadow-[0_8px_20px_-8px_rgba(22,163,74,0.55)]">
                 로그인하고 덱 시작
               </button>
             </div>
@@ -1329,7 +1345,7 @@ function DeckView({ deck, catalog, best, coins, isLoggedIn, onLogin, onClose, sh
               {visible < total && (
                 <div ref={sentinelRef} className="pt-1 pb-4 text-center">
                   <button onClick={() => setVisible(v => Math.min(total, v + PAGE))}
-                    className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl border border-neutral-200 dark:border-[#35332e] bg-white dark:bg-[#242320] text-xs font-bold text-neutral-500 dark:text-neutral-400 hover:border-[#16a34a]/50">
+                    className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl backdrop-blur-md border border-black/5 dark:border-white/10 bg-white/80 dark:bg-white/[0.06] text-xs font-bold text-neutral-500 dark:text-neutral-400 hover:border-[#16a34a]/50">
                     더 보기 <span className="tabular-nums text-neutral-400">{visible}/{total}</span>
                   </button>
                 </div>

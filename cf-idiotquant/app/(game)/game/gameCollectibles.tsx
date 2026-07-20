@@ -70,9 +70,9 @@ export function AchievementBadges({ deck, best, catalogTotal }: { deck: DeckItem
     <div className="flex flex-wrap gap-1.5">
       {list.map(a => (
         <span key={a.id} title={a.desc}
-          className={cn("inline-flex items-center gap-1 px-2 py-1 rounded-full text-[10px] font-bold ring-1 ring-inset",
-            a.unlocked ? "bg-amber-50 text-amber-700 ring-amber-300 dark:bg-amber-950/30 dark:text-amber-300 dark:ring-amber-800"
-              : "bg-neutral-100 text-neutral-400 ring-neutral-200 dark:bg-[#242320] dark:text-neutral-600 dark:ring-[#35332e]")}>
+          className={cn("inline-flex items-center gap-1 px-2 py-1 rounded-full text-[10px] font-bold ring-1 ring-inset backdrop-blur-md",
+            a.unlocked ? "bg-amber-500/10 text-amber-600 dark:text-amber-300 ring-amber-500/40 shadow-[0_0_10px_-2px_rgba(245,158,11,0.5)]"
+              : "bg-black/[0.03] dark:bg-white/[0.04] text-neutral-400 dark:text-neutral-600 ring-black/5 dark:ring-white/10")}>
           {a.unlocked ? <span aria-hidden>{a.icon}</span> : <Lock size={10} />}
           {a.label}
         </span>

@@ -17,7 +17,7 @@ const COIN_VALUE: Record<string, number> = { explore: 2, clay: 3, raw: 3, iron: 
 
 export function WalletChip({ coins }: { coins: number }) {
   return (
-    <span className="inline-flex items-center gap-1 px-2 py-1 rounded-lg bg-amber-50 dark:bg-amber-950/30 text-amber-700 dark:text-amber-300 text-xs font-black tabular-nums">
+    <span className="inline-flex items-center gap-1 px-2 py-1 rounded-lg backdrop-blur-md bg-amber-500/10 border border-amber-500/25 text-amber-600 dark:text-amber-300 text-xs font-black tabular-nums shadow-[0_0_10px_-3px_rgba(245,158,11,0.6)]">
       <Coins size={13} /> {coins}
     </span>
   );
@@ -95,7 +95,7 @@ export function ShopPanel({ coins, onBuy, onClose }: {
   };
 
   return (
-    <div className="rounded-2xl border border-neutral-200 dark:border-[#35332e] bg-white dark:bg-[#242320] p-4">
+    <div className="rounded-2xl backdrop-blur-md bg-white/85 dark:bg-white/[0.04] border border-black/5 dark:border-white/10 shadow-[0_20px_50px_-24px_rgba(0,0,0,0.45)] p-4">
       <div className="flex items-center justify-between mb-3">
         <p className="font-black text-neutral-900 dark:text-white flex items-center gap-1.5">
           <Sparkles size={15} className="text-amber-500" /> 상점 <WalletChip coins={coins} />
@@ -107,15 +107,15 @@ export function ShopPanel({ coins, onBuy, onClose }: {
       </p>
       <div className="space-y-2">
         {BOOST_ITEMS.map(item => (
-          <div key={item.id} className="flex items-center justify-between gap-2 rounded-xl border border-neutral-100 dark:border-[#35332e] bg-[#faf9f7] dark:bg-[#1f1e1b] p-3">
+          <div key={item.id} className="flex items-center justify-between gap-2 rounded-xl backdrop-blur-md bg-black/[0.03] dark:bg-black/30 border border-black/5 dark:border-white/10 p-3">
             <div className="min-w-0">
               <p className="text-sm font-bold text-neutral-800 dark:text-neutral-100">{item.label}</p>
               <p className="text-[11px] text-neutral-400 mt-0.5">{item.desc}</p>
             </div>
             <button type="button" disabled={coins < item.cost || pendingId === item.id} onClick={() => buy(item)}
               className={cn("shrink-0 inline-flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-black transition-colors",
-                coins < item.cost ? "bg-neutral-200 dark:bg-[#35332e] text-neutral-400 cursor-not-allowed"
-                  : "bg-amber-500 hover:bg-amber-600 text-white")}>
+                coins < item.cost ? "bg-black/5 dark:bg-white/10 text-neutral-400 cursor-not-allowed"
+                  : "bg-gradient-to-r from-amber-500 to-amber-600 hover:brightness-110 text-white shadow-[0_6px_16px_-6px_rgba(245,158,11,0.6)]")}>
               <Coins size={12} /> {item.cost}
             </button>
           </div>
