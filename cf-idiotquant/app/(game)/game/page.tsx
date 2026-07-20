@@ -886,7 +886,7 @@ function GameContent() {
                 </div>
                 {phase === "guessing" && activeBoost && (
                   <span className="inline-flex items-center px-1.5 py-0.5 rounded-full bg-amber-500/10 text-amber-600 dark:text-amber-400 text-[10px] font-bold tabular-nums">
-                    🪄 ×{activeBoost.mult} (남은 {activeBoost.roundsLeft}판)
+                    🪄 ×{activeBoost.mult}·{activeBoost.roundsLeft}판
                   </span>
                 )}
                 {phase === "guessing" && ownedChallenger && (
@@ -1004,7 +1004,7 @@ function GameContent() {
                 {/* 모바일 — 챌린저(비교 대상) 카드 위주 큰 뷰. 높다/낮다는 카드 자체를 좌우로 드래그해서 판정(TcgCard 내부 처리),
                     별도 버튼 영역이 사라진 만큼 카드를 더 크게 표시 */}
                 <div className="sm:hidden pt-0.5 pb-0.5">
-                  <div className="mx-auto w-[84%] max-w-[320px] aspect-[3/4]">
+                  <div className="mx-auto w-[74%] max-w-[280px] aspect-[3/4]">
                     <TcgCard hero item={challenger} rank={rankMap.get(String(challenger.ticker))} idleDelay={3}
                       onGuess={phase === "guessing" ? guess : undefined}
                       onNext={phase === "revealed" && lastWin ? next : undefined}
