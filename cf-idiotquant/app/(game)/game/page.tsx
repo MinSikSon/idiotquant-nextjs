@@ -1166,8 +1166,17 @@ function GameContent() {
               </div>
             ) : playerCard && opponentCard ? (
               <>
+                {/* 어느 카드가 내 카드인지 한눈에 안 보인다는 피드백 — 카드 폭(battleCardSize.w)에 맞춘 라벨을
+                    카드 바로 위에 정렬해서 "왼쪽=내 카드/오른쪽=몬스터"를 명확히 함. 카드 행과 동일한 gap-1.5 +
+                    VS폭(w-6=24px) 구조를 그대로 반복해야 라벨이 카드 중앙에 정확히 정렬됨. */}
+                <div className="shrink-0 flex items-center justify-center gap-1.5 mb-0.5">
+                  <span style={battleCardSize ? { width: battleCardSize.w } : { width: "38%", maxWidth: 220 }}
+                    className="text-center text-[9px] font-black text-[#16a34a] truncate">🗡️ 내 카드</span>
+                  <span className="shrink-0 w-6" aria-hidden />
+                  <span style={battleCardSize ? { width: battleCardSize.w } : { width: "38%", maxWidth: 220 }}
+                    className="text-center text-[9px] font-black text-rose-500 truncate">👹 몬스터</span>
+                </div>
                 {/* 배틀 아레나 — 모바일/데스크톱 공통 레이아웃. 두 카드가 남은 세로 공간을 JS로 실측해 꽉 채움(스크롤 방지).
-                    "용사 VS 몬스터" 캡션 줄은 제거함 — 카드가 작아 보인다는 피드백에 따라 그 세로 공간을 카드 크기로 돌림.
                     VS 배지·간격은 battleRowRef의 RESERVED 계산과 반드시 일치시켜야 함(gap-1.5=6px, w-6=24px) */}
                 <div ref={battleRowRef} className="flex-1 min-h-0 flex items-center justify-center gap-1.5">
                   <div style={battleCardSize ? { width: battleCardSize.w, height: battleCardSize.h } : { width: "38%", maxWidth: 220, aspectRatio: "3/4" }}>
@@ -1180,12 +1189,15 @@ function GameContent() {
                 </div>
 
                 {/* 지표 픽커 — 4개 지표 중 하나를 골라 배틀. 내 카드 값은 항상 보이고(유·불리 태그 포함),
-                    상대 값은 고른 지표만 라운드 종료 후 공개. sub 기준 태그가 초록일수록 이길 확률↑ */}
-                {phase === "battling" && (
-                  <p className="shrink-0 text-center text-[10px] font-bold text-neutral-400 mt-1">
-                    내 카드가 <span className="text-[#16a34a]">유리</span>한 지표를 고르면 이길 확률이 높아요
-                  </p>
-                )}
+                    상대 값은 고른 지표만 라운드 종료 후 공개. sub 기준 태그가 초록일수록 이길 확률↑.
+                    아래 헤더 행은 버튼 내부와 동일한 gap-2 px-3 + 아이콘/w-9/flex-1/w-14 구조를 그대로 반복해
+                    "이 값은 내 카드, 이 칸은 몬스터"가 값 칸 바로 위에서 정렬되게 함. */}
+                <div className="shrink-0 flex items-center gap-2 px-3 mt-1 text-[9px] font-bold text-neutral-400">
+                  <span className="w-3 shrink-0" aria-hidden />
+                  <span className="w-9 shrink-0" aria-hidden />
+                  <span className="flex-1 text-left">🗡️ 내 카드</span>
+                  <span className="w-14 shrink-0 text-right">👹 몬스터</span>
+                </div>
                 <div className="shrink-0 space-y-1 mt-1">
                   {playerParts.map(pPart => {
                     const oPart = opponentParts.find(o => o.key === pPart.key);
