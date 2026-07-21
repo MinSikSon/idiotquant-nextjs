@@ -647,7 +647,7 @@ function GameContent() {
   const [best, setBest] = useState(0); // 역대 최고 승수(서버 동기화)
   const [newBest, setNewBest] = useState(false); // 이번 런에 최고 기록 경신
   const [chosenStat, setChosenStat] = useState<string | null>(null); // 이번 라운드 배틀에 고른 지표
-  const [lastResult, setLastResult] = useState<{ win: boolean; statKey: string } | null>(null);
+  const [lastResult, setLastResult] = useState<{ win: boolean; statKey: string; shieldLoss?: number } | null>(null);
   const [dropped, setDropped] = useState(false);      // 이번 라운드 카드 획득(로그인)
   const [dropPrompt, setDropPrompt] = useState(false); // 카드가 떴지만 로그인 필요
   const [saveFail, setSaveFail] = useState<string | null>(null); // 덱 저장 실패 사유
@@ -791,8 +791,11 @@ function GameContent() {
     const oPart = ov.parts.find(p => p.key === statKey);
     if (!pPart?.available || !oPart?.available) return;
     const win = pPart.sub >= oPart.sub; // 동점은 승리 처리
+    // 패배 대가 — 밀어붙인 연승(streak)이 길수록 커짐(3연승마다 +1, 최대 보유 방패만큼).
+    // "한 판 더" 를 계속 고를수록 다음 패배가 더 아파지는 푸시-유어-럭 긴장감 장치.
+    const shieldLoss = win ? 0 : Math.min(shields, 1 + Math.floor(streak / 3));
     setChosenStat(statKey);
-    setLastResult({ win, statKey });
+    setLastResult({ win, statKey, shieldLoss });
     setDropped(false); setDropPrompt(false); setSaveFail(null); setEscaped(null); setFirstDupHint(false);
     setPhase("resolved");
 
@@ -850,9 +853,9 @@ function GameContent() {
         if (["silver", "gold", "diamond", "treasure", "legend"].includes(v.tone)) setEscaped(v.medal);
       }
     } else {
-      // 패배 — 방패 1 소모(런은 계속). 패배 라운드의 지표 비교 정보 스냅샷(종료 화면/자동 표시용)
+      // 패배 — 방패 shieldLoss개 소모(런은 계속). 패배 라운드의 지표 비교 정보 스냅샷(종료 화면/자동 표시용)
       setStreak(0);
-      setShields(s => s - 1);
+      setShields(s => s - shieldLoss);
       setMissed({
         challenger: opponentCard, anchor: playerCard,
         statLabel: pPart.label,
@@ -861,7 +864,13 @@ function GameContent() {
         higherSide: "challenger", // 패배 라운드는 항상 상대(opponentCard) 지표가 더 좋았던 경우
       });
     }
-  }, [phase, playerCard, opponentCard, best, bestKey, isLoggedIn, streak, totalWins, activeBoost]);
+  }, [phase, playerCard, opponentCard, best, bestKey, isLoggedIn, streak, totalWins, activeBoost, shields]);
+
+  // 승리든 패배든, 방패가 남아있으면 그 자리에서 런을 마무리(안전 정리)할 수 있음 — "더 갈까 여기서 챙길까" 선택지.
+  const cashOut = useCallback(() => {
+    if (phase !== "resolved") return;
+    setPhase("over");
+  }, [phase]);
 
   const nextRound = useCallback(() => {
     if (phase !== "resolved" || shields <= 0 || !playerCard || !opponentCard) return;
@@ -887,6 +896,7 @@ function GameContent() {
   const playerParts = playerCard ? computeValueScore(playerCard).parts : [];
   const opponentParts = opponentCard ? computeValueScore(opponentCard).parts : [];
   const wave = Math.floor(roundNum / 5) + 1;
+  const nextLossPenalty = Math.min(shields, 1 + Math.floor(streak / 3)); // "다음 패배 시 방패 -N" 경고에 표시
 
   return (
     // svh(small viewport height) 사용 — iOS Safari에서 주소창/툴바가 완전히 펼쳐진 상태의 100dvh가
@@ -996,6 +1006,9 @@ function GameContent() {
                 <div className="px-5 pt-1.5 pb-2 text-center space-y-2 sm:flex-1 sm:min-h-0 sm:overflow-y-auto">
                   <div>
                     <p className="text-lg font-black text-neutral-900 dark:text-white">런 종료!</p>
+                    <p className="text-[11px] font-bold text-neutral-400 mt-0.5">
+                      {shields <= 0 ? "방패를 모두 소진했어요" : "여기서 안전하게 정리했어요"}
+                    </p>
                     <span className="inline-flex items-center gap-1 mt-1 px-3 py-1 rounded-full bg-[#f0fdf4] dark:bg-[#052e16]/40 border border-[#86efac]/60 dark:border-[#166534]/60 text-[#15803d] dark:text-[#16a34a] text-xs font-black">
                       <span aria-hidden className="text-sm leading-none">{rankOf(totalWins).emoji}</span>{rankOf(totalWins).title}
                     </span>
@@ -1087,11 +1100,14 @@ function GameContent() {
                   {packOpening ? (
                     <PackReveal item={opponentCard} />
                   ) : phase === "battling" ? (
-                    <p className="text-xs font-bold text-neutral-400">지표를 하나 골라 승부하세요 ⚔️</p>
+                    <p className="text-xs font-bold text-neutral-400">
+                      지표를 하나 골라 승부하세요 ⚔️
+                      {streak >= 3 && <span className="block mt-0.5 text-rose-500">⚠️ 다음 패배 시 방패 -{nextLossPenalty}</span>}
+                    </p>
                   ) : (
                     <div className="space-y-1">
                       <p className={cn("text-sm font-black animate-in fade-in", lastResult?.win ? "text-[#16a34a]" : "text-rose-500")}>
-                        {lastResult?.win ? "승리! ✔" : "패배! 방패 -1"}
+                        {lastResult?.win ? "승리! ✔" : `패배! 방패 -${lastResult?.shieldLoss ?? 1}`}
                       </p>
                       {lastResult?.win && dropped && (
                         <span className="flex flex-col items-center gap-1 animate-in fade-in slide-in-from-bottom-1">
@@ -1119,10 +1135,16 @@ function GameContent() {
                         <span className="text-xs font-bold text-amber-600 dark:text-amber-400 animate-in fade-in">{escaped} 등급 카드가 도망갔어요 — 연승을 쌓으면 획득 확률↑</span>
                       )}
                       {shields > 0 && (
-                        <button onClick={nextRound}
-                          className="inline-flex items-center gap-1.5 px-4 py-1.5 rounded-xl bg-gradient-to-r from-[#16a34a] to-[#15803d] hover:brightness-110 text-white font-black text-xs shadow-[0_6px_16px_-6px_rgba(22,163,74,0.55)] active:scale-[0.97] transition-all">
-                          다음 전투 <Swords size={13} />
-                        </button>
+                        <div className="flex items-center justify-center gap-2">
+                          <button onClick={cashOut}
+                            className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl border border-black/10 dark:border-white/15 bg-white/70 dark:bg-white/[0.05] hover:border-amber-500/50 text-neutral-600 dark:text-neutral-300 font-black text-xs active:scale-[0.97] transition-all">
+                            <Trophy size={13} className="text-amber-500" /> 여기서 정리
+                          </button>
+                          <button onClick={nextRound}
+                            className="inline-flex items-center gap-1.5 px-4 py-1.5 rounded-xl bg-gradient-to-r from-[#16a34a] to-[#15803d] hover:brightness-110 text-white font-black text-xs shadow-[0_6px_16px_-6px_rgba(22,163,74,0.55)] active:scale-[0.97] transition-all">
+                            한 판 더 <Swords size={13} />
+                          </button>
+                        </div>
                       )}
                     </div>
                   )}
