@@ -14,10 +14,10 @@ import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useSession } from "next-auth/react";
 import {
-  ArrowUp, ArrowDown, Layers, Copy, TrendingUp, Sparkles, ChevronLeft, ChevronRight, Lock, Info,
+  ArrowUp, ArrowDown, Layers, Copy, TrendingUp, Sparkles, ChevronRight, Lock, Info,
   Cpu, Dna, Landmark, CarFront, Ship, Construction, Zap, FlaskConical, Factory, RadioTower, Gamepad2,
   Soup, ShoppingCart, PlaneTakeoff, Shirt, Code2, Gem, Compass, Anchor, Map as MapIcon, Medal as MedalIcon,
-  BatteryCharging, Bot, Wallet, History, X, Flame, Trophy, Target, Wand2,
+  BatteryCharging, Bot, Wallet, History, X, Flame, Trophy, Target, Wand2, Shield, Swords, Crown,
   type LucideIcon,
 } from "lucide-react";
 import { useAppDispatch, useAppSelector } from "@/lib/hooks";
@@ -511,11 +511,9 @@ function MissedInfo({ missed }: { missed: any }) {
       <p className="text-[11px] font-black text-rose-500 mb-1.5">아깝게 놓친 종목</p>
       <p className="text-xs text-neutral-500 dark:text-neutral-400 mb-2 break-keep leading-relaxed">
         <b className="text-neutral-800 dark:text-neutral-200">{c.name}</b>의 {missed.statLabel}
-        <b className="text-neutral-700 dark:text-neutral-300"> {missed.challengerStr}</b>은{" "}
+        <b className="text-neutral-700 dark:text-neutral-300"> {missed.challengerStr}</b>이(가){" "}
         {missed.anchor.name}({missed.anchorStr})보다{" "}
-        <b className={missed.higherSide === "challenger" ? "text-[#16a34a]" : "text-rose-500"}>
-          {missed.higherSide === "challenger" ? "높았어요" : "낮았어요"}
-        </b>.
+        <b className="text-rose-500">더 좋았어요</b>.
       </p>
       <div className="flex items-center gap-2 mb-2">
         <PortMedallion item={c} size={40} />
@@ -613,7 +611,7 @@ function rankOf(streak: number): { emoji: string; title: string } {
   return { emoji: "⛵", title: "견습 항해사" };
 }
 
-type Phase = "loading" | "guessing" | "revealed" | "over";
+type Phase = "loading" | "battling" | "resolved" | "over";
 
 // useSearchParams는 Suspense 경계가 필요(screener 페이지와 동일 패턴) — 게임 본체를 감싼다
 export default function GamePage() {
@@ -637,51 +635,61 @@ function GameContent() {
   const openDeck = useCallback(() => router.replace("/game?deck=1", { scroll: false }), [router]);
   const closeDeck = useCallback(() => router.replace("/game", { scroll: false }), [router]);
 
-  const [anchor, setAnchor] = useState<any | null>(null);
-  const [challenger, setChallenger] = useState<any | null>(null);
+  // 플레이어 카드(항상 공개) vs 상대 카드 — 4개 지표(NCAV·PBR·PER·ROE) 중 하나를 선택해 배틀.
+  const [playerCard, setPlayerCard] = useState<any | null>(null);
+  const [opponentCard, setOpponentCard] = useState<any | null>(null);
   const [phase, setPhase] = useState<Phase>("loading");
-  const [streak, setStreak] = useState(0);
-  const [best, setBest] = useState(0);
-  const [newBest, setNewBest] = useState(false); // 이번 판에 최고 기록 경신
-  const [lastWin, setLastWin] = useState<boolean | null>(null);
+  const [shields, setShields] = useState(3); // 방패(목숨) — 0이 되면 런 종료. 패배해도 즉시 끝나지 않음.
+  const [roundNum, setRoundNum] = useState(0); // 이번 런 누적 라운드 수(승패 무관)
+  const [isBoss, setIsBoss] = useState(false); // 5라운드마다 보스전(고등급 상대)
+  const [streak, setStreak] = useState(0); // 연속 무패(패배 시 0으로 리셋되지만 런은 계속)
+  const [totalWins, setTotalWins] = useState(0); // 이번 런 누적 승수 — 최종 스코어
+  const [best, setBest] = useState(0); // 역대 최고 승수(서버 동기화)
+  const [newBest, setNewBest] = useState(false); // 이번 런에 최고 기록 경신
+  const [chosenStat, setChosenStat] = useState<string | null>(null); // 이번 라운드 배틀에 고른 지표
+  const [lastResult, setLastResult] = useState<{ win: boolean; statKey: string } | null>(null);
   const [dropped, setDropped] = useState(false);      // 이번 라운드 카드 획득(로그인)
   const [dropPrompt, setDropPrompt] = useState(false); // 카드가 떴지만 로그인 필요
   const [saveFail, setSaveFail] = useState<string | null>(null); // 덱 저장 실패 사유
   const [escaped, setEscaped] = useState<string | null>(null); // 높은 등급 카드가 도망감(메달)
   const [deck, setDeck] = useState<DeckItem[]>([]);
-  const [missed, setMissed] = useState<any | null>(null); // 항해 종료 시 틀린 종목 정보
-  const [acquired, setAcquired] = useState<DeckCardSnapshot[]>([]); // 이번 항해에서 획득한 카드
-  const [history, setHistory] = useState<any[]>([]); // 지나온 비교 카드(왼쪽으로 쌓임) — 슬라이드로 항해 기록 확인
-  const [showHistory, setShowHistory] = useState(false); // 모바일 등에서 항해 기록 패널 열림 상태
-  const trackRef = useRef<HTMLDivElement>(null); // 카드 필름스트립(가로 스크롤)
-  const jumpScrollRef = useRef(false); // true면 다음 스크롤을 애니메이션 없이 즉시 이동(게임 재개용)
+  const [missed, setMissed] = useState<any | null>(null); // 패배 라운드의 지표 비교 정보
+  const [acquired, setAcquired] = useState<DeckCardSnapshot[]>([]); // 이번 런에서 획득한 카드
+  const [history, setHistory] = useState<any[]>([]); // 전투 기록 {player, opponent, statKey, win} — 최근 10개
+  const [showHistory, setShowHistory] = useState(false); // 전투 기록 패널 열림 상태
   const [coins, setCoins] = useState(0); // 지갑 코인 잔액
   const [showShop, setShowShop] = useState(false);
   const [activeBoost, setActiveBoost] = useState<{ mult: number; roundsLeft: number } | null>(null); // 상점 부스트(세션 로컬)
   const [packOpening, setPackOpening] = useState(false); // 팩 오픈 리빌 연출 표시 중
   const [firstDupHint, setFirstDupHint] = useState(false); // 첫 중복 카드 획득 시 지갑/전환 안내
 
-  // 모바일 카드 크기 — CSS aspect-ratio를 남은 세로 공간(h-full)에 맞춰 계산하는 방식이 실제 남는 공간을
-  // 다 못 채우고 빈틈을 남기는 경우가 있어, 실제 남은 공간을 JS로 측정해 픽셀 값으로 직접 지정.
+  // 배틀 카드 두 장(플레이어+상대)이 나란히 들어갈 크기 — 모바일/데스크톱 공통 레이아웃이라 남은 공간을
+  // JS로 실측해 두 장이 꼭 맞게 들어가는 픽셀 크기를 직접 계산(CSS만으로는 남는 공간을 다 못 채우는 문제가 있었음).
   // 콜백 ref 사용: 카드 박스는 phase에 따라 조건부로 마운트되므로 일반 useEffect([])로는 최초 렌더 시점에
   // DOM이 없어 옵저버가 아예 안 붙는 문제가 있었음 — 콜백 ref는 노드가 실제로 마운트될 때마다 호출됨.
-  const mobileCardRoRef = useRef<ResizeObserver | null>(null);
-  const [mobileCardSize, setMobileCardSize] = useState<{ w: number; h: number } | null>(null);
-  const mobileCardBoxRef = useCallback((el: HTMLDivElement | null) => {
-    mobileCardRoRef.current?.disconnect();
-    mobileCardRoRef.current = null;
+  const battleRowRoRef = useRef<ResizeObserver | null>(null);
+  const [battleCardSize, setBattleCardSize] = useState<{ w: number; h: number } | null>(null);
+  const battleRowRef = useCallback((el: HTMLDivElement | null) => {
+    battleRowRoRef.current?.disconnect();
+    battleRowRoRef.current = null;
     if (!el) return;
     const RATIO = 3 / 4; // width / height
+    const GAP = 12;
     const update = () => {
       const w = el.clientWidth, h = el.clientHeight;
       if (w <= 0 || h <= 0) return;
-      const byHeight = { w: h * RATIO, h };
-      setMobileCardSize(byHeight.w <= w ? byHeight : { w, h: w / RATIO });
+      const wByHeight = h * RATIO;
+      if (wByHeight * 2 + GAP <= w) {
+        setBattleCardSize({ w: wByHeight, h });
+      } else {
+        const wByWidth = (w - GAP) / 2;
+        setBattleCardSize({ w: wByWidth, h: wByWidth / RATIO });
+      }
     };
     update();
     const ro = new ResizeObserver(update);
     ro.observe(el);
-    mobileCardRoRef.current = ro;
+    battleRowRoRef.current = ro;
   }, []);
 
   useEffect(() => { dispatch(reqGetNcavDailyList("latest")); }, [dispatch]);
@@ -736,38 +744,57 @@ function GameContent() {
   const bestKey = "iq:game:best:hl:market_cap"; // 기존 시가총액 비교 기록 키 유지
   useEffect(() => { setBest(b => Math.max(b, safeNum(typeof window !== "undefined" ? localStorage.getItem(bestKey) : 0))); }, [bestKey]);
 
-  const draw = useCallback((excludeTicker?: string) => {
+  // 서로 다른 두 카드를 뽑되, 보스전이면 상대를 고등급 풀에서 우선 선택. 배틀 가능한(둘 다 데이터 있는)
+  // 공통 지표가 하나도 없으면 다시 뽑음(최대 20회 시도).
+  const drawPair = useCallback((boss: boolean): [any, any] | null => {
     if (pool.length < 2) return null;
-    for (let i = 0; i < 30; i++) {
-      const c = pool[Math.floor(Math.random() * pool.length)];
-      if (c.ticker !== excludeTicker) return c;
+    for (let attempt = 0; attempt < 20; attempt++) {
+      const p = pool[Math.floor(Math.random() * pool.length)];
+      let candidates = pool;
+      if (boss) {
+        const strong = pool.filter((it: any) => it.ticker !== p.ticker && ["gold", "diamond", "treasure", "legend"].includes(computeValueScore(it).tone));
+        if (strong.length > 0) candidates = strong;
+      }
+      let o = candidates[Math.floor(Math.random() * candidates.length)];
+      for (let i = 0; i < 10 && o.ticker === p.ticker; i++) o = candidates[Math.floor(Math.random() * candidates.length)];
+      if (o.ticker === p.ticker) continue;
+      const pv = computeValueScore(p), ov = computeValueScore(o);
+      const hasCommonStat = pv.parts.some(part => part.available && ov.parts.find(op => op.key === part.key)?.available);
+      if (hasCommonStat) return [p, o];
     }
-    return pool[0];
+    return [pool[0], pool[1 % pool.length]];
   }, [pool]);
 
   const start = useCallback(() => {
-    // 틀려서 이어서 시작하는 경우 방금 틀린 카드(challenger)부터 이어감. 첫 시작은 무작위 추첨.
-    const a = missed ? missed.challenger : draw();
-    if (!a) return;
-    jumpScrollRef.current = true; // 게임 재개 시 필름스트립이 스르르 넘어가지 않고 마지막 위치로 바로 이동
-    setAnchor(a); setChallenger(draw(a.ticker));
-    // 패배 라운드의 anchor도 항해 기록에 남겨 필름스트립이 끊기지 않게 하고, 최근 10개까지만 유지
-    setHistory(h => (missed ? [...h, missed.anchor] : h).slice(-10));
-    setStreak(0); setNewBest(false); setLastWin(null); setDropped(false); setDropPrompt(false); setSaveFail(null); setEscaped(null); setMissed(null); setAcquired([]); setPackOpening(false); setFirstDupHint(false); setPhase("guessing");
-  }, [draw, missed]);
+    const pair = drawPair(false);
+    if (!pair) return;
+    setPlayerCard(pair[0]); setOpponentCard(pair[1]);
+    setShields(3); setRoundNum(0); setIsBoss(false);
+    setStreak(0); setTotalWins(0); setNewBest(false);
+    setChosenStat(null); setLastResult(null);
+    setDropped(false); setDropPrompt(false); setSaveFail(null); setEscaped(null); setMissed(null);
+    setAcquired([]); setPackOpening(false); setFirstDupHint(false); setHistory([]);
+    setPhase("battling");
+  }, [drawPair]);
 
   const started = useRef(false);
   useEffect(() => {
     if (!started.current && pool.length >= 2) { started.current = true; start(); }
   }, [pool, start]);
 
-  const guess = useCallback((dir: "higher" | "lower") => {
-    if (phase !== "guessing" || !anchor || !challenger) return;
-    const av = STAT.get(anchor), cv = STAT.get(challenger);
-    const win = dir === "higher" ? cv >= av : cv <= av;   // 동점은 승리 처리
-    setLastWin(win);
+  // 지표(NCAV/PBR/PER/ROE) 하나를 골라 배틀 — sub(0~1 정규화 점수)로 비교하므로 지표별 방향(NCAV는 높을수록,
+  // PBR·PER은 낮을수록 좋음)을 신경 쓸 필요 없이 그대로 비교하면 됨.
+  const battle = useCallback((statKey: string) => {
+    if (phase !== "battling" || !playerCard || !opponentCard) return;
+    const pv = computeValueScore(playerCard), ov = computeValueScore(opponentCard);
+    const pPart = pv.parts.find(p => p.key === statKey);
+    const oPart = ov.parts.find(p => p.key === statKey);
+    if (!pPart?.available || !oPart?.available) return;
+    const win = pPart.sub >= oPart.sub; // 동점은 승리 처리
+    setChosenStat(statKey);
+    setLastResult({ win, statKey });
     setDropped(false); setDropPrompt(false); setSaveFail(null); setEscaped(null); setFirstDupHint(false);
-    setPhase("revealed");
+    setPhase("resolved");
 
     // 상점에서 산 확률 부스트는 세션 로컬로만 추적 — 라운드(승패 무관)마다 1씩 소진
     if (activeBoost) {
@@ -777,14 +804,16 @@ function GameContent() {
     if (win) {
       const ns = streak + 1;
       setStreak(ns);
-      if (ns > best) {
-        setBest(ns); setNewBest(true);
-        try { localStorage.setItem(bestKey, String(ns)); } catch { }
-        if (isLoggedIn) syncBestStreak(ns).catch(() => { });
+      const nt = totalWins + 1;
+      setTotalWins(nt);
+      if (nt > best) {
+        setBest(nt); setNewBest(true);
+        try { localStorage.setItem(bestKey, String(nt)); } catch { }
+        if (isLoggedIn) syncBestStreak(nt).catch(() => { });
       }
 
-      // 정답 카드만 수집. 연승↑ → 획득 확률↑, 높은 등급일수록 더 높은 연승 필요. 부스트 배율 적용.
-      const chance = Math.min(0.95, acquireChance(challenger, ns) * (activeBoost?.mult ?? 1));
+      // 승리 카드만 수집. 연승↑ → 획득 확률↑, 높은 등급일수록 더 높은 연승 필요. 부스트 배율 적용.
+      const chance = Math.min(0.95, acquireChance(opponentCard, ns) * (activeBoost?.mult ?? 1));
       if (Math.random() < chance) {
         const reduceMotion = typeof window !== "undefined" && window.matchMedia?.("(prefers-reduced-motion: reduce)").matches;
         setPackOpening(true);
@@ -793,12 +822,12 @@ function GameContent() {
         if (!isLoggedIn) {
           setDropPrompt(true);
         } else {
-          const snap = toCard(challenger);
+          const snap = toCard(opponentCard);
           addDeckCard(snap).then(res => {
             if (res?.added) {
               setDropped(true);
               if (res.count === 2) setFirstDupHint(true); // 처음으로 중복 카드가 생긴 순간 — 전환 기능 안내
-              setAcquired(prev => [snap, ...prev]); // 이번 항해 획득 목록에 추가
+              setAcquired(prev => [snap, ...prev]); // 이번 런 획득 목록에 추가
               // 같은 종목이면 개수 누적, 없으면 새로 추가
               setDeck(prev => {
                 const i = prev.findIndex(c => c.ticker === snap.ticker);
@@ -817,59 +846,62 @@ function GameContent() {
         }
       } else {
         // 높은 등급 카드가 도망감 → 연승 더 쌓으라는 힌트
-        const v = computeValueScore(challenger);
+        const v = computeValueScore(opponentCard);
         if (["silver", "gold", "diamond", "treasure", "legend"].includes(v.tone)) setEscaped(v.medal);
       }
     } else {
-      // 틀린 라운드 정보 스냅샷 (종료 화면에서 표시)
+      // 패배 — 방패 1 소모(런은 계속). 패배 라운드의 지표 비교 정보 스냅샷(종료 화면/자동 표시용)
+      setStreak(0);
+      setShields(s => s - 1);
       setMissed({
-        challenger, anchor,
-        statLabel: STAT.label,
-        anchorStr: STAT.fmt(av),
-        challengerStr: STAT.fmt(cv),
-        higherSide: cv >= av ? "challenger" : "anchor",
+        challenger: opponentCard, anchor: playerCard,
+        statLabel: pPart.label,
+        anchorStr: pPart.valueStr,
+        challengerStr: oPart.valueStr,
+        higherSide: "challenger", // 패배 라운드는 항상 상대(opponentCard) 지표가 더 좋았던 경우
       });
     }
-  }, [phase, anchor, challenger, best, bestKey, isLoggedIn, streak, activeBoost]);
+  }, [phase, playerCard, opponentCard, best, bestKey, isLoggedIn, streak, totalWins, activeBoost]);
 
-  const next = useCallback(() => {
-    if (!lastWin) return;
-    setHistory(h => [...h, anchor].slice(-10));   // 왼쪽 카드를 항해 기록에 쌓음(오른쪽 카드가 왼쪽 자리로), 최근 10개까지만 유지
-    setAnchor(challenger);
-    setChallenger(draw(challenger?.ticker));
-    setDropped(false); setDropPrompt(false); setSaveFail(null); setEscaped(null); setLastWin(null); setPackOpening(false); setFirstDupHint(false); setPhase("guessing");
-  }, [lastWin, anchor, challenger, draw]);
+  const nextRound = useCallback(() => {
+    if (phase !== "resolved" || shields <= 0 || !playerCard || !opponentCard) return;
+    setHistory(h => [...h, { player: playerCard, opponent: opponentCard, statKey: chosenStat, win: lastResult?.win ?? false }].slice(-10));
+    const nextNum = roundNum + 1;
+    const boss = nextNum % 5 === 0;
+    const pair = drawPair(boss);
+    if (!pair) return;
+    setRoundNum(nextNum); setIsBoss(boss);
+    setPlayerCard(pair[0]); setOpponentCard(pair[1]);
+    setChosenStat(null); setLastResult(null);
+    setDropped(false); setDropPrompt(false); setSaveFail(null); setEscaped(null); setPackOpening(false); setFirstDupHint(false);
+    setPhase("battling");
+  }, [phase, shields, playerCard, opponentCard, chosenStat, lastResult, roundNum, drawPair]);
 
-  // 카드가 늘거나 라운드가 바뀌면 필름스트립을 우측 끝(최신)으로 스크롤. 평소엔 부드럽게(카드가 쌓이는 연출),
-  // 게임 재개(이어서 항해) 직후엔 jumpScrollRef로 애니메이션 없이 바로 마지막 위치로 이동.
-  useEffect(() => {
-    const el = trackRef.current;
-    if (el) el.scrollTo({ left: el.scrollWidth, behavior: jumpScrollRef.current ? "auto" : "smooth" });
-    jumpScrollRef.current = false;
-  }, [history.length, challenger]);
-
-  useEffect(() => { if (phase === "revealed" && lastWin === false) setPhase("over"); }, [phase, lastWin]);
+  useEffect(() => { if (phase === "resolved" && shields <= 0) setPhase("over"); }, [phase, shields]);
 
   const isLoading = ncav.state === "pending" || ncav.state === "init" || pool.length < 2;
 
-  // 획득 확률 — 정답 시(연승+1) 이 카드 획득 확률. 연승↑·낮은 등급↑, 높은 등급은 더 높은 연승 필요. 상점 부스트 배율 반영.
-  const acquirePct = challenger ? Math.round(Math.min(0.95, acquireChance(challenger, streak + 1) * (activeBoost?.mult ?? 1)) * 100) : 0;
-  const ownedChallenger = challenger ? deck.find(c => c.ticker === challenger.ticker) : undefined;
+  // 획득 확률 — 승리 시(연승+1) 이 카드 획득 확률. 연승↑·낮은 등급↑, 높은 등급은 더 높은 연승 필요. 상점 부스트 배율 반영.
+  const acquirePct = opponentCard ? Math.round(Math.min(0.95, acquireChance(opponentCard, streak + 1) * (activeBoost?.mult ?? 1)) * 100) : 0;
+  const ownedOpponent = opponentCard ? deck.find(c => c.ticker === opponentCard.ticker) : undefined;
+  const playerParts = playerCard ? computeValueScore(playerCard).parts : [];
+  const opponentParts = opponentCard ? computeValueScore(opponentCard).parts : [];
+  const wave = Math.floor(roundNum / 5) + 1;
 
   return (
     // svh(small viewport height) 사용 — iOS Safari에서 주소창/툴바가 완전히 펼쳐진 상태의 100dvh가
     // 실제 보이는 영역보다 크게 계산돼 하단에 빈 공간이 남는 문제 방지(svh는 항상 "가장 작은" 뷰포트 기준)
     <div className="relative h-[calc(100svh-112px)] md:h-[100svh] flex flex-col overflow-hidden bg-gradient-to-b from-neutral-100 via-neutral-50 to-neutral-200 dark:from-[#0a0a0e] dark:via-[#101015] dark:to-[#08080a] transition-colors">
-      {/* 프리미엄 아레나 배경 — 카드 위쪽에 은은한 스포트라이트 글로우 + 격자 텍스처(대항해시대 3D 배경 대체) */}
+      {/* 프리미엄 아레나 배경 — 카드 위쪽에 은은한 스포트라이트 글로우 + 격자 텍스처 */}
       <div aria-hidden className="absolute inset-0 z-0 pointer-events-none"
         style={{ background: "radial-gradient(55% 45% at 50% 24%, rgba(168,85,247,0.12), transparent 70%)" }} />
       <div aria-hidden className="absolute inset-0 z-0 pointer-events-none opacity-[0.06] dark:opacity-[0.08]"
         style={{ backgroundImage: "radial-gradient(currentColor 1px, transparent 1px)", backgroundSize: "24px 24px" }} />
-      <div className="relative z-10 w-full max-w-2xl mx-auto px-2 pt-3 pb-1 flex-1 min-h-0 flex flex-col">
+      <div className="relative z-10 w-full max-w-2xl sm:max-w-4xl mx-auto px-2 pt-3 pb-1 flex-1 min-h-0 flex flex-col">
 
         {/* 상단 메뉴 바 없음 — 홈·제목·내 덱 접근은 전역 네비게이션(게임 버튼)에 통합됨 */}
 
-        {/* 본문 — 항상 스크롤 가능. 플레이는 my-auto 로 세로 중앙(넘치면 스크롤), 종료/덱은 자연 스크롤 */}
+        {/* 본문 — 항상 스크롤 가능. 플레이는 flex-1 로 남은 공간을 채움(넘치면 스크롤), 종료/덱은 자연 스크롤 */}
         <div className="flex-1 min-h-0 overflow-y-auto flex flex-col">
         {showDeck ? (
           <DeckView deck={deck} catalog={catalog} best={best} coins={coins} isLoggedIn={isLoggedIn}
@@ -883,17 +915,26 @@ function GameContent() {
         ) : isLoading ? (
           <div className="my-auto py-24 text-center text-sm text-neutral-400">카드 데이터를 불러오는 중…</div>
         ) : (
-          <div className={cn("w-full", phase === "over" ? "flex flex-col sm:flex-1 sm:min-h-0" : "flex flex-col flex-1 min-h-0 sm:block sm:flex-none sm:mt-auto sm:mb-2")}>
-            {/* 스코어 (플레이 중에만) — 프리미엄 글래스 HUD 배지. 획득 확률은 챌린저 카드 위 스와이프 판정 대상이
-                있을 때만(guessing) 연승 옆에 표기 */}
+          <div className={cn("w-full", phase === "over" ? "flex flex-col sm:flex-1 sm:min-h-0" : "flex flex-col flex-1 min-h-0")}>
+            {/* 상단 HUD (플레이 중에만) — 방패(목숨) · 웨이브 · 승수/최고/획득확률 글래스 배지 */}
             {phase !== "over" && (
-              <div className="flex items-center justify-center gap-1.5 flex-wrap mb-1 sm:mb-3 shrink-0">
+              <div className="flex items-center justify-center gap-1.5 flex-wrap mb-1 sm:mb-2 shrink-0">
+                <div className="flex items-center gap-1 px-2 py-1.5 rounded-2xl backdrop-blur-md bg-white/85 dark:bg-white/[0.06] border border-black/5 dark:border-white/10 shadow-[0_6px_18px_-8px_rgba(0,0,0,0.35)]">
+                  {[0, 1, 2].map(i => (
+                    <Shield key={i} size={15} strokeWidth={2.5}
+                      className={i < shields ? "text-[#16a34a] fill-[#16a34a]/25" : "text-neutral-300 dark:text-neutral-700"} />
+                  ))}
+                </div>
+                <span className={cn("inline-flex items-center gap-1 px-2 py-1 rounded-full backdrop-blur-md border text-[10px] font-bold",
+                  isBoss ? "bg-rose-500/10 border-rose-500/30 text-rose-500" : "bg-white/85 dark:bg-white/[0.06] border-black/5 dark:border-white/10 text-neutral-500 dark:text-neutral-300")}>
+                  {isBoss && <Crown size={12} strokeWidth={2.5} />} 웨이브 {wave}{isBoss && " · 보스"}
+                </span>
                 <div className="flex items-center gap-1 px-1.5 sm:px-2 py-1 sm:py-1.5 rounded-2xl backdrop-blur-md bg-white/85 dark:bg-white/[0.06] border border-black/5 dark:border-white/10 shadow-[0_6px_18px_-8px_rgba(0,0,0,0.35)]">
                   <div className="text-center px-2.5 sm:px-3">
                     <p className="flex items-center justify-center gap-1 text-base sm:text-xl font-black tabular-nums text-[#16a34a] leading-none">
-                      <Flame size={13} strokeWidth={2.5} className="shrink-0" />{streak}
+                      <Flame size={13} strokeWidth={2.5} className="shrink-0" />{totalWins}
                     </p>
-                    <p className="text-[9px] font-bold text-neutral-400 uppercase tracking-wider mt-0.5 sm:mt-1">연승</p>
+                    <p className="text-[9px] font-bold text-neutral-400 uppercase tracking-wider mt-0.5 sm:mt-1">승수</p>
                   </div>
                   <div className="h-6 sm:h-7 w-px bg-neutral-200 dark:bg-white/10" />
                   <div className="text-center px-2.5 sm:px-3">
@@ -902,7 +943,7 @@ function GameContent() {
                     </p>
                     <p className="text-[9px] font-bold text-neutral-400 uppercase tracking-wider mt-0.5 sm:mt-1">최고</p>
                   </div>
-                  {phase === "guessing" && challenger && (
+                  {phase === "battling" && opponentCard && (
                     <>
                       <div className="h-6 sm:h-7 w-px bg-neutral-200 dark:bg-white/10" />
                       <div className="text-center px-2.5 sm:px-3">
@@ -914,18 +955,18 @@ function GameContent() {
                     </>
                   )}
                 </div>
-                {phase === "guessing" && activeBoost && (
+                {phase === "battling" && activeBoost && (
                   <span className="inline-flex items-center gap-1 px-2 py-1 rounded-full backdrop-blur-md bg-amber-500/10 border border-amber-500/25 text-amber-600 dark:text-amber-400 text-[10px] font-bold tabular-nums">
                     <Wand2 size={11} strokeWidth={2.5} /> ×{activeBoost.mult}·{activeBoost.roundsLeft}판
                   </span>
                 )}
-                {phase === "guessing" && ownedChallenger && (
+                {phase === "battling" && ownedOpponent && (
                   <span className="inline-flex items-center gap-1 px-2 py-1 rounded-full backdrop-blur-md bg-[#16a34a]/10 border border-[#16a34a]/25 text-[#16a34a] text-[10px] font-bold tabular-nums">
-                    <Layers size={11} strokeWidth={2.5} /> ×{ownedChallenger.count}
+                    <Layers size={11} strokeWidth={2.5} /> ×{ownedOpponent.count}
                   </span>
                 )}
                 {history.length > 0 && (
-                  <button type="button" onClick={() => setShowHistory(true)} aria-label="항해 기록 보기"
+                  <button type="button" onClick={() => setShowHistory(true)} aria-label="전투 기록 보기"
                     className="inline-flex items-center gap-1 px-2 py-1 sm:py-1.5 rounded-2xl backdrop-blur-md bg-white/85 dark:bg-white/[0.06] border border-black/5 dark:border-white/10 shadow-[0_6px_18px_-8px_rgba(0,0,0,0.35)] text-[11px] font-bold text-neutral-500 dark:text-neutral-300 hover:text-[#16a34a] transition-colors">
                     <History size={13} /> {history.length}
                   </button>
@@ -933,30 +974,18 @@ function GameContent() {
               </div>
             )}
 
-            {/* 질문 — 최상단(스코어 바로 아래)으로 이동해 카드를 보기 전에 무엇을 비교하는지 먼저 알 수 있게.
-                모바일은 별도 앵커 배지 없이 앵커 값을 괄호로 함께 표기(세로 공간 절약). 글래스 배너로 시각적 무게감 부여 */}
-            {phase === "guessing" && anchor && challenger && (
-              <p className="text-center text-sm sm:text-base font-bold text-neutral-800 dark:text-neutral-100 mb-1 sm:mb-3 shrink-0 break-keep leading-snug px-3 py-1.5 rounded-2xl backdrop-blur-md bg-white/70 dark:bg-white/[0.04] border border-black/5 dark:border-white/10 mx-auto w-fit max-w-full">
-                <b className="text-[#16a34a]">{challenger.name}</b>
-                <span className="font-medium text-neutral-500 dark:text-neutral-400">의 {STAT.label}은 </span>
-                <b className="text-neutral-900 dark:text-white">{anchor.name}</b>
-                <span className="sm:hidden font-medium text-neutral-400 dark:text-neutral-500 text-xs"> ({STAT.fmt(STAT.get(anchor))})</span>
-                <span className="font-medium text-neutral-500 dark:text-neutral-400">보다?</span>
-              </p>
-            )}
-
             {phase === "over" ? (
               // 결과 카드: 모바일은 본문 단일 스크롤로 자연스럽게 흐르고, 데스크톱(sm+)은 뷰포트를 꽉 채우고 헤더·버튼 고정 + 중간만 내부 스크롤
               <div className="flex flex-col rounded-3xl backdrop-blur-md bg-white/85 dark:bg-white/[0.04] border border-black/5 dark:border-white/10 shadow-[0_20px_50px_-24px_rgba(0,0,0,0.45)] animate-in fade-in zoom-in-95 duration-300 sm:flex-1 sm:min-h-0 sm:overflow-hidden">
-                {/* 프리미엄 글로우 헤더 — 등급 이모지 + 스포트라이트(3D 보물상자 대체) */}
+                {/* 프리미엄 글로우 헤더 — 등급 이모지 + 스포트라이트 */}
                 <div className="relative h-20 sm:h-40 shrink-0 overflow-hidden"
                   style={{ background: "radial-gradient(60% 90% at 50% 105%, rgba(192,38,211,0.28), transparent 70%), linear-gradient(180deg, #18171e, #0a0a0d)" }}>
                   <div aria-hidden className="absolute inset-0 opacity-[0.08]"
                     style={{ backgroundImage: "radial-gradient(#fff 1px, transparent 1px)", backgroundSize: "20px 20px" }} />
                   <div className="relative h-full flex items-center justify-center">
-                    <span aria-hidden className="text-4xl sm:text-6xl" style={{ filter: "drop-shadow(0 0 18px rgba(192,38,211,0.55))" }}>{rankOf(streak).emoji}</span>
+                    <span aria-hidden className="text-4xl sm:text-6xl" style={{ filter: "drop-shadow(0 0 18px rgba(192,38,211,0.55))" }}>{rankOf(totalWins).emoji}</span>
                   </div>
-                  {newBest && streak > 0 && (
+                  {newBest && totalWins > 0 && (
                     <span className="absolute top-2.5 right-2.5 inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-amber-400 text-white text-[11px] font-black shadow-md animate-in fade-in zoom-in-95">
                       🎉 신기록
                     </span>
@@ -966,27 +995,33 @@ function GameContent() {
                 {/* 중간 — 모바일은 자연 흐름(본문 스크롤), 데스크톱은 이 영역만 내부 스크롤(헤더·버튼 항상 보임) */}
                 <div className="px-5 pt-1.5 pb-2 text-center space-y-2 sm:flex-1 sm:min-h-0 sm:overflow-y-auto">
                   <div>
-                    <p className="text-lg font-black text-neutral-900 dark:text-white">항해 종료!</p>
+                    <p className="text-lg font-black text-neutral-900 dark:text-white">런 종료!</p>
                     <span className="inline-flex items-center gap-1 mt-1 px-3 py-1 rounded-full bg-[#f0fdf4] dark:bg-[#052e16]/40 border border-[#86efac]/60 dark:border-[#166534]/60 text-[#15803d] dark:text-[#16a34a] text-xs font-black">
-                      <span aria-hidden className="text-sm leading-none">{rankOf(streak).emoji}</span>{rankOf(streak).title}
+                      <span aria-hidden className="text-sm leading-none">{rankOf(totalWins).emoji}</span>{rankOf(totalWins).title}
                     </span>
                   </div>
 
-                  {/* 이번 항해 성과 — 스탯·업적을 한 패널로 묶어 시각적으로 한 덩어리로 보이게. 다크 글래스 패널 */}
+                  {/* 이번 런 성과 — 스탯·업적을 한 패널로 묶어 시각적으로 한 덩어리로 보이게. 다크 글래스 패널 */}
                   <div className="rounded-2xl backdrop-blur-md bg-black/[0.03] dark:bg-black/30 border border-black/5 dark:border-white/10 p-2.5">
-                    <p className="text-[10px] font-bold text-neutral-400 uppercase tracking-wider mb-1.5">이번 항해 성과</p>
-                    <div className="grid grid-cols-2 gap-2">
+                    <p className="text-[10px] font-bold text-neutral-400 uppercase tracking-wider mb-1.5">이번 런 성과</p>
+                    <div className="grid grid-cols-3 gap-2">
                       <div className="rounded-xl bg-white/70 dark:bg-white/[0.05] py-1.5">
                         <p className="flex items-center justify-center gap-1 text-xl font-black tabular-nums text-[#16a34a] leading-none">
-                          <Flame size={15} strokeWidth={2.5} />{streak}
+                          <Flame size={15} strokeWidth={2.5} />{totalWins}
                         </p>
-                        <p className="text-[9px] font-bold text-neutral-400 uppercase tracking-wider mt-1">이번 연승</p>
+                        <p className="text-[9px] font-bold text-neutral-400 uppercase tracking-wider mt-1">총 승수</p>
                       </div>
                       <div className="rounded-xl bg-white/70 dark:bg-white/[0.05] py-1.5">
                         <p className="flex items-center justify-center gap-1 text-xl font-black tabular-nums text-amber-500 leading-none">
                           <Trophy size={15} strokeWidth={2.5} />{best}
                         </p>
                         <p className="text-[9px] font-bold text-neutral-400 uppercase tracking-wider mt-1">최고 기록</p>
+                      </div>
+                      <div className="rounded-xl bg-white/70 dark:bg-white/[0.05] py-1.5">
+                        <p className="flex items-center justify-center gap-1 text-xl font-black tabular-nums text-rose-500 leading-none">
+                          <Crown size={15} strokeWidth={2.5} />{Math.floor(roundNum / 5)}
+                        </p>
+                        <p className="text-[9px] font-bold text-neutral-400 uppercase tracking-wider mt-1">격파 웨이브</p>
                       </div>
                     </div>
                     <div className="flex justify-center mt-2">
@@ -1005,64 +1040,63 @@ function GameContent() {
                 <div className="shrink-0 px-5 pb-3 pt-2 border-t border-black/5 dark:border-white/10">
                   <button onClick={start}
                     className="w-full inline-flex items-center justify-center gap-2 px-6 py-2.5 rounded-2xl bg-gradient-to-r from-[#16a34a] to-[#15803d] hover:brightness-110 text-white font-black text-sm shadow-[0_8px_24px_-8px_rgba(22,163,74,0.55)] active:scale-[0.98] transition-all">
-                    <TrendingUp size={16} /> 이어서 항해
+                    <Swords size={16} /> 새 런 시작
                   </button>
                 </div>
               </div>
-            ) : anchor && challenger ? (
+            ) : playerCard && opponentCard ? (
               <>
-                {/* PC — 필름스트립: 활성 2장이 우측에 꽉 차고, 지나온 카드는 왼쪽에 쌓임. 왼쪽으로 슬라이드하면 항해 기록 확인 */}
-                <div className="relative hidden sm:block">
-                  <div ref={trackRef} className="flex gap-4 overflow-x-auto snap-x snap-mandatory scrollbar-hide pt-3 pb-2">
-                    {history.map((c, i) => (
-                      <div key={`${c.ticker}-${i}`} className="shrink-0 self-end snap-end w-[calc(50%-0.5rem)] opacity-90">
-                        <div className="aspect-[3/4]"><TcgCard item={c} value={STAT.fmt(STAT.get(c))} rank={rankMap.get(String(c.ticker))} idleDelay={i * 0.4} /></div>
-                      </div>
-                    ))}
-                    <div className="shrink-0 self-end snap-end w-[calc(50%-0.5rem)]">
-                      <div className="aspect-[3/4]"><TcgCard hero item={anchor} value={STAT.fmt(STAT.get(anchor))} rank={rankMap.get(String(anchor.ticker))} idleDelay={0} /></div>
-                    </div>
-                    <div className="shrink-0 self-end snap-end w-[calc(50%-0.5rem)]">
-                      <div className="aspect-[3/4]"><TcgCard hero item={challenger} rank={rankMap.get(String(challenger.ticker))} idleDelay={3}
-                        onGuess={phase === "guessing" ? guess : undefined}
-                        onNext={phase === "revealed" && lastWin ? next : undefined}
-                        value={phase === "revealed"
-                          ? <span className="animate-in zoom-in-75 duration-300">{STAT.fmt(STAT.get(challenger))}</span>
-                          : <span className="text-neutral-300 dark:text-neutral-600">?</span>} /></div>
-                    </div>
+                {/* 배틀 아레나 — 모바일/데스크톱 공통 레이아웃. 두 카드가 남은 세로 공간을 JS로 실측해 꽉 채움(스크롤 방지) */}
+                <div ref={battleRowRef} className="flex-1 min-h-0 flex items-center justify-center gap-3">
+                  <div style={battleCardSize ? { width: battleCardSize.w, height: battleCardSize.h } : { width: "38%", maxWidth: 220, aspectRatio: "3/4" }}>
+                    <TcgCard hero item={playerCard} value={STAT.fmt(STAT.get(playerCard))} rank={rankMap.get(String(playerCard.ticker))} />
                   </div>
-                  {/* VS — 활성 쌍(우측 두 장) 사이 */}
-                  <span className="pointer-events-none absolute left-1/2 top-[calc(50%+0.25rem)] -translate-x-1/2 -translate-y-1/2 z-20 w-8 h-8 rounded-full bg-[#5b4a2e] dark:bg-[#c9a86a] text-[#f3e9d2] dark:text-[#14100a] text-[10px] font-black font-serif flex items-center justify-center shadow-lg ring-4 ring-[#faf9f7] dark:ring-[#1a1915]">VS</span>
-                  {history.length > 0 && (
-                    <span className="pointer-events-none absolute left-1 top-3 z-20 inline-flex items-center gap-0.5 text-[10px] font-bold text-neutral-400 dark:text-neutral-500">
-                      <ChevronLeft size={11} /> 항해 기록 {history.length}
-                    </span>
-                  )}
-                </div>
-
-                {/* 모바일 — 챌린저(비교 대상) 카드 위주 큰 뷰. 높다/낮다는 카드 자체를 좌우로 드래그해서 판정(TcgCard 내부 처리).
-                    카드는 남은 세로 공간을 JS로 측정해 픽셀 값으로 크기 지정(스코어/질문/안내 문구 길이가 변해도 넘치지 않음 — 스크롤 방지) */}
-                <div ref={mobileCardBoxRef} className="sm:hidden pt-0.5 pb-0.5 flex-1 min-h-0 flex items-center justify-center">
-                  <div style={mobileCardSize ? { width: mobileCardSize.w, height: mobileCardSize.h } : { width: "74%", maxWidth: 280, aspectRatio: "3/4" }}>
-                    <TcgCard hero item={challenger} rank={rankMap.get(String(challenger.ticker))} idleDelay={3}
-                      onGuess={phase === "guessing" ? guess : undefined}
-                      onNext={phase === "revealed" && lastWin ? next : undefined}
-                      value={phase === "revealed"
-                        ? <span className="animate-in zoom-in-75 duration-300">{STAT.fmt(STAT.get(challenger))}</span>
-                        : <span className="text-neutral-300 dark:text-neutral-600">?</span>} />
+                  <span className="shrink-0 w-8 h-8 rounded-full bg-[#5b4a2e] dark:bg-[#c9a86a] text-[#f3e9d2] dark:text-[#14100a] text-[10px] font-black font-serif flex items-center justify-center shadow-lg">VS</span>
+                  <div style={battleCardSize ? { width: battleCardSize.w, height: battleCardSize.h } : { width: "38%", maxWidth: 220, aspectRatio: "3/4" }}>
+                    <TcgCard hero item={opponentCard} value={STAT.fmt(STAT.get(opponentCard))} rank={rankMap.get(String(opponentCard.ticker))} />
                   </div>
                 </div>
 
-                {/* 획득 / 로그인 유도 */}
-                <div className="min-h-[1.25rem] sm:min-h-[1.75rem] text-center mt-1 sm:mt-0">
+                {/* 지표 픽커 — 4개 지표 중 하나를 골라 배틀. 내 카드 값은 항상 보이고, 상대 값은 고른 지표만 라운드 종료 후 공개 */}
+                <div className="shrink-0 space-y-1 mt-1.5">
+                  {playerParts.map(pPart => {
+                    const oPart = opponentParts.find(o => o.key === pPart.key);
+                    const bothAvailable = !!(pPart.available && oPart?.available);
+                    const isChosen = chosenStat === pPart.key;
+                    const revealed = phase === "resolved" && isChosen;
+                    return (
+                      <button key={pPart.key} type="button" disabled={phase !== "battling" || !bothAvailable}
+                        onClick={() => battle(pPart.key)}
+                        className={cn("w-full flex items-center gap-2 px-3 py-1.5 rounded-xl border backdrop-blur-md text-xs font-bold transition-all",
+                          !bothAvailable ? "opacity-40 border-black/5 dark:border-white/10 bg-black/[0.02] dark:bg-white/[0.02] cursor-not-allowed"
+                            : revealed ? (lastResult?.win ? "border-[#16a34a]/50 bg-[#16a34a]/10" : "border-rose-500/50 bg-rose-500/10")
+                              : "border-black/5 dark:border-white/10 bg-white/80 dark:bg-white/[0.05] hover:border-[#16a34a]/40 active:scale-[0.98]")}>
+                        <Swords size={12} className="shrink-0 text-neutral-400" />
+                        <span className="w-9 shrink-0 text-left text-neutral-500 dark:text-neutral-400">{pPart.label}</span>
+                        <span className="flex-1 text-left tabular-nums text-neutral-700 dark:text-neutral-200">{pPart.available ? pPart.valueStr : "—"}</span>
+                        <span className="w-16 shrink-0 text-right tabular-nums text-neutral-400">
+                          {revealed ? oPart!.valueStr : bothAvailable ? "?" : "—"}
+                        </span>
+                      </button>
+                    );
+                  })}
+                </div>
+
+                {/* 결과 안내 / 다음 전투 / 획득·로그인 유도 */}
+                <div className="shrink-0 min-h-[2.25rem] text-center mt-1.5">
                   {packOpening ? (
-                    <PackReveal item={challenger} />
+                    <PackReveal item={opponentCard} />
+                  ) : phase === "battling" ? (
+                    <p className="text-xs font-bold text-neutral-400">지표를 하나 골라 승부하세요 ⚔️</p>
                   ) : (
-                    <>
-                      {phase === "revealed" && dropped && (
+                    <div className="space-y-1">
+                      <p className={cn("text-sm font-black animate-in fade-in", lastResult?.win ? "text-[#16a34a]" : "text-rose-500")}>
+                        {lastResult?.win ? "승리! ✔" : "패배! 방패 -1"}
+                      </p>
+                      {lastResult?.win && dropped && (
                         <span className="flex flex-col items-center gap-1 animate-in fade-in slide-in-from-bottom-1">
                           <span className="inline-flex items-center gap-1 text-xs font-bold text-amber-600 dark:text-amber-400">
-                            <Sparkles size={12} /> 카드 획득! {challenger.name} 이(가) 덱에 추가됨
+                            <Sparkles size={12} /> 카드 획득! {opponentCard.name} 이(가) 덱에 추가됨
                           </span>
                           {firstDupHint && (
                             <button onClick={openDeck}
@@ -1072,20 +1106,25 @@ function GameContent() {
                           )}
                         </span>
                       )}
-                      {phase === "revealed" && dropPrompt && (
+                      {lastResult?.win && dropPrompt && (
                         <button onClick={requireLogin}
                           className="inline-flex items-center gap-1.5 text-xs font-bold text-[#16a34a] animate-in fade-in hover:underline">
                           <Lock size={12} /> 카드가 나왔어요! 로그인하고 덱에 담기 →
                         </button>
                       )}
-                      {phase === "revealed" && lastWin && !dropped && !dropPrompt && (
-                        saveFail
-                          ? <span className="text-xs font-bold text-rose-500 dark:text-rose-400 animate-in fade-in">정답! 덱 저장 실패 — {saveFail}</span>
-                          : escaped
-                            ? <span className="text-xs font-bold text-amber-600 dark:text-amber-400 animate-in fade-in">정답! {escaped} 등급 카드가 도망갔어요 — 연승을 쌓으면 획득 확률↑</span>
-                            : <span className="text-xs font-bold text-[#16a34a] animate-in fade-in">정답! ✔</span>
+                      {lastResult?.win && !dropped && !dropPrompt && saveFail && (
+                        <span className="text-xs font-bold text-rose-500 dark:text-rose-400 animate-in fade-in">덱 저장 실패 — {saveFail}</span>
                       )}
-                    </>
+                      {lastResult?.win && !dropped && !dropPrompt && !saveFail && escaped && (
+                        <span className="text-xs font-bold text-amber-600 dark:text-amber-400 animate-in fade-in">{escaped} 등급 카드가 도망갔어요 — 연승을 쌓으면 획득 확률↑</span>
+                      )}
+                      {shields > 0 && (
+                        <button onClick={nextRound}
+                          className="inline-flex items-center gap-1.5 px-4 py-1.5 rounded-xl bg-gradient-to-r from-[#16a34a] to-[#15803d] hover:brightness-110 text-white font-black text-xs shadow-[0_6px_16px_-6px_rgba(22,163,74,0.55)] active:scale-[0.97] transition-all">
+                          다음 전투 <Swords size={13} />
+                        </button>
+                      )}
+                    </div>
                   )}
                 </div>
               </>
@@ -1095,7 +1134,7 @@ function GameContent() {
         </div>
       </div>
 
-      {/* 항해 기록 패널 — 지나온 비교 카드(anchor) 목록. 모바일은 필름스트립이 없어 이게 유일한 열람 수단, 데스크톱도 보조로 제공 */}
+      {/* 전투 기록 패널 — 지나온 라운드(플레이어 vs 상대, 고른 지표, 승패) 목록 */}
       {showHistory && (
         <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/50 backdrop-blur-sm p-3"
           onClick={() => setShowHistory(false)}>
@@ -1103,26 +1142,29 @@ function GameContent() {
             onClick={e => e.stopPropagation()}>
             <div className="flex items-center justify-between mb-3">
               <p className="font-black text-neutral-900 dark:text-white flex items-center gap-1.5">
-                <History size={15} /> 항해 기록 {history.length}
+                <History size={15} /> 전투 기록 {history.length}
               </p>
               <button type="button" onClick={() => setShowHistory(false)} className="text-neutral-400 hover:text-[#16a34a]" aria-label="닫기">
                 <X size={18} />
               </button>
             </div>
             {history.length === 0 ? (
-              <p className="text-center text-xs text-neutral-400 py-6">아직 지나온 카드가 없어요.</p>
+              <p className="text-center text-xs text-neutral-400 py-6">아직 전투 기록이 없어요.</p>
             ) : (
               <div className="space-y-1.5">
-                {[...history].reverse().map((c, i) => (
-                  <div key={`${c.ticker}-${i}`} className="flex items-center gap-2 px-2 py-1.5 rounded-xl bg-[#faf9f7] dark:bg-[#1f1e1b]">
-                    <Medal item={c} />
-                    <div className="min-w-0 flex-1">
-                      <p className="text-xs font-bold text-neutral-800 dark:text-neutral-100 truncate">{c.name}</p>
-                      <p className="text-[10px] text-neutral-400">{c.ticker}</p>
+                {[...history].reverse().map((h, i) => {
+                  const label = computeValueScore(h.player).parts.find((p: any) => p.key === h.statKey)?.label ?? h.statKey;
+                  return (
+                    <div key={i} className="flex items-center gap-2 px-2 py-1.5 rounded-xl bg-[#faf9f7] dark:bg-[#1f1e1b]">
+                      {h.win ? <span className="shrink-0 text-[#16a34a] font-black">✔</span> : <span className="shrink-0 text-rose-500 font-black">✕</span>}
+                      <Medal item={h.win ? h.opponent : h.player} />
+                      <div className="min-w-0 flex-1">
+                        <p className="text-xs font-bold text-neutral-800 dark:text-neutral-100 truncate">{h.player.name} vs {h.opponent.name}</p>
+                        <p className="text-[10px] text-neutral-400">{label} 지표 배틀</p>
+                      </div>
                     </div>
-                    <span className="text-xs font-bold tabular-nums text-neutral-600 dark:text-neutral-300">{STAT.fmt(STAT.get(c))}</span>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             )}
           </div>
