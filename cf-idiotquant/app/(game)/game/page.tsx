@@ -725,15 +725,17 @@ function GameContent() {
     battleRowRoRef.current = null;
     if (!el) return;
     const RATIO = 3 / 4; // width / height
-    const GAP = 12;
+    const GAP = 6; // JSX의 gap-1.5(카드-VS 사이 간격)와 일치해야 함
+    const VS_WIDTH = 24; // VS 배지 지름(JSX의 w-6)과 일치해야 함
+    const RESERVED = GAP * 2 + VS_WIDTH; // 카드 사이 간격 2번 + VS 배지 — 예전엔 GAP 1번만 빼서 실제보다 넓게 계산되는 버그가 있었음(카드가 계산값보다 눌려 작게 렌더링됨)
     const update = () => {
       const w = el.clientWidth, h = el.clientHeight;
       if (w <= 0 || h <= 0) return;
       const wByHeight = h * RATIO;
-      if (wByHeight * 2 + GAP <= w) {
+      if (wByHeight * 2 + RESERVED <= w) {
         setBattleCardSize({ w: wByHeight, h });
       } else {
-        const wByWidth = (w - GAP) / 2;
+        const wByWidth = (w - RESERVED) / 2;
         setBattleCardSize({ w: wByWidth, h: wByWidth / RATIO });
       }
     };
@@ -1164,13 +1166,14 @@ function GameContent() {
               </div>
             ) : playerCard && opponentCard ? (
               <>
-                <p className="shrink-0 text-center text-[10px] font-bold text-neutral-400 mb-0.5">🗡️ 용사 VS 👹 몬스터</p>
-                {/* 배틀 아레나 — 모바일/데스크톱 공통 레이아웃. 두 카드가 남은 세로 공간을 JS로 실측해 꽉 채움(스크롤 방지) */}
-                <div ref={battleRowRef} className="flex-1 min-h-0 flex items-center justify-center gap-3">
+                {/* 배틀 아레나 — 모바일/데스크톱 공통 레이아웃. 두 카드가 남은 세로 공간을 JS로 실측해 꽉 채움(스크롤 방지).
+                    "용사 VS 몬스터" 캡션 줄은 제거함 — 카드가 작아 보인다는 피드백에 따라 그 세로 공간을 카드 크기로 돌림.
+                    VS 배지·간격은 battleRowRef의 RESERVED 계산과 반드시 일치시켜야 함(gap-1.5=6px, w-6=24px) */}
+                <div ref={battleRowRef} className="flex-1 min-h-0 flex items-center justify-center gap-1.5">
                   <div style={battleCardSize ? { width: battleCardSize.w, height: battleCardSize.h } : { width: "38%", maxWidth: 220, aspectRatio: "3/4" }}>
                     <TcgCard hero item={playerCard} value={STAT.fmt(STAT.get(playerCard))} rank={rankMap.get(String(playerCard.ticker))} />
                   </div>
-                  <span className="shrink-0 w-8 h-8 rounded-full bg-[#5b4a2e] dark:bg-[#c9a86a] text-[#f3e9d2] dark:text-[#14100a] text-[10px] font-black font-serif flex items-center justify-center shadow-lg">VS</span>
+                  <span className="shrink-0 w-6 h-6 rounded-full bg-[#5b4a2e] dark:bg-[#c9a86a] text-[#f3e9d2] dark:text-[#14100a] text-[8px] font-black font-serif flex items-center justify-center shadow-lg">VS</span>
                   <div style={battleCardSize ? { width: battleCardSize.w, height: battleCardSize.h } : { width: "38%", maxWidth: 220, aspectRatio: "3/4" }}>
                     <TcgCard hero item={opponentCard} value={STAT.fmt(STAT.get(opponentCard))} rank={rankMap.get(String(opponentCard.ticker))} />
                   </div>
@@ -1183,7 +1186,7 @@ function GameContent() {
                     내 카드가 <span className="text-[#16a34a]">유리</span>한 지표를 고르면 이길 확률이 높아요
                   </p>
                 )}
-                <div className="shrink-0 space-y-1 mt-1.5">
+                <div className="shrink-0 space-y-1 mt-1">
                   {playerParts.map(pPart => {
                     const oPart = opponentParts.find(o => o.key === pPart.key);
                     const bothAvailable = !!(pPart.available && oPart?.available);
@@ -1212,7 +1215,7 @@ function GameContent() {
                 </div>
 
                 {/* 결과 안내 / 다음 전투 / 획득·로그인 유도 */}
-                <div className="shrink-0 min-h-[2.25rem] text-center mt-1.5">
+                <div className="shrink-0 min-h-[2.25rem] text-center mt-1">
                   {packOpening ? (
                     <PackReveal item={opponentCard} />
                   ) : phase === "battling" ? (
