@@ -46,6 +46,20 @@ function statTag(sub: number): { label: string; cls: string } {
   return { label: "불리", cls: "bg-rose-500/15 text-rose-500" };
 }
 
+// 유물(로그라이크 요소) — 보스를 물리치면 3개 중 하나를 골라 이번 던전(런) 동안만 적용.
+// 서버 저장 없이 세션 로컬로만 추적(골드도 동일) — 던전을 나가면(cashOut/game over) 초기화됨.
+type Relic = { id: string; icon: string; name: string; desc: string };
+const RELIC_POOL: Relic[] = [
+  { id: "extra_shield", icon: "🛡️", name: "수호의 방패", desc: "최대 방패 +1" },
+  { id: "luck_charm", icon: "🍀", name: "행운의 발", desc: "카드 획득 확률 +8%p" },
+  { id: "risk_taker", icon: "⚔️", name: "무모한 반지", desc: "다음 패배 시 방패 소모 -1" },
+  { id: "gold_magnet", icon: "🪙", name: "황금 나침반", desc: "층 클리어 골드 획득 +50%" },
+];
+function pickRelicChoices(held: string[]): Relic[] {
+  const pool = RELIC_POOL.filter(r => !held.includes(r.id));
+  return [...pool].sort(() => Math.random() - 0.5).slice(0, 3);
+}
+
 // 카드 수집: 정답을 맞힌 카드만 획득 판정. 등급별 "기본 획득 확률" + 연승 보너스.
 // 연승이 없어도(첫 정답에도) 기본 확률로 카드가 나오며, 높은 등급일수록 기본 확률이 낮고
 // 연승을 쌓을수록 확률이 오른다 (SS전설>S보물>A다이아>B금>C은>D동>E철>F원석>G흙>H탐색).
@@ -655,7 +669,7 @@ function GameContent() {
   const [best, setBest] = useState(0); // 역대 최고 승수(서버 동기화)
   const [newBest, setNewBest] = useState(false); // 이번 런에 최고 기록 경신
   const [chosenStat, setChosenStat] = useState<string | null>(null); // 이번 라운드 배틀에 고른 지표
-  const [lastResult, setLastResult] = useState<{ win: boolean; statKey: string; shieldLoss?: number } | null>(null);
+  const [lastResult, setLastResult] = useState<{ win: boolean; statKey: string; shieldLoss?: number; goldGain?: number } | null>(null);
   const [dropped, setDropped] = useState(false);      // 이번 라운드 카드 획득(로그인)
   const [dropPrompt, setDropPrompt] = useState(false); // 카드가 떴지만 로그인 필요
   const [saveFail, setSaveFail] = useState<string | null>(null); // 덱 저장 실패 사유
@@ -671,6 +685,22 @@ function GameContent() {
   const [packOpening, setPackOpening] = useState(false); // 팩 오픈 리빌 연출 표시 중
   const [firstDupHint, setFirstDupHint] = useState(false); // 첫 중복 카드 획득 시 지갑/전환 안내
   const [showTutorial, setShowTutorial] = useState(false); // 방법 안내 모달(첫 방문 자동 표시 + ? 버튼으로 재열람)
+  const [gold, setGold] = useState(0); // 이번 런 골드(층 클리어·카드 획득마다 적립) — 던전을 나가면 초기화
+  const [relics, setRelics] = useState<string[]>([]); // 이번 런에 고른 유물 id 목록 — 던전을 나가면 초기화
+  const [relicChoices, setRelicChoices] = useState<Relic[] | null>(null); // 보스 처치 직후 유물 선택지(null=선택 없음)
+  const hasRelic = useCallback((id: string) => relics.includes(id), [relics]);
+
+  const pickRelic = useCallback((id: string) => {
+    setRelics(r => [...r, id]);
+    if (id === "extra_shield") setShields(s => s + 1);
+    setRelicChoices(null);
+  }, []);
+  const skipRelic = useCallback(() => setRelicChoices(null), []);
+  const rerollRelics = useCallback(() => {
+    if (gold < 20) return;
+    setGold(g => g - 20);
+    setRelicChoices(pickRelicChoices(relics));
+  }, [gold, relics]);
 
   // 처음 방문이면 방법 안내를 자동으로 한 번 띄움 — 재방문 시엔 뜨지 않고 ? 버튼으로만 열람
   const tutorialKey = "iq:game:tutorialSeen";
@@ -795,6 +825,7 @@ function GameContent() {
     setChosenStat(null); setLastResult(null);
     setDropped(false); setDropPrompt(false); setSaveFail(null); setEscaped(null); setMissed(null);
     setAcquired([]); setPackOpening(false); setFirstDupHint(false); setHistory([]);
+    setGold(0); setRelics([]); setRelicChoices(null); // 골드·유물은 던전(런) 단위 — 새 던전 입장 시 초기화
     setPhase("battling");
   }, [drawPair]);
 
@@ -813,8 +844,8 @@ function GameContent() {
     if (!pPart?.available || !oPart?.available) return;
     const win = pPart.sub >= oPart.sub; // 동점은 승리 처리
     // 패배 대가 — 밀어붙인 연승(streak)이 길수록 커짐(3연승마다 +1, 최대 보유 방패만큼).
-    // "한 판 더" 를 계속 고를수록 다음 패배가 더 아파지는 푸시-유어-럭 긴장감 장치.
-    const shieldLoss = win ? 0 : Math.min(shields, 1 + Math.floor(streak / 3));
+    // "한 판 더" 를 계속 고를수록 다음 패배가 더 아파지는 푸시-유어-럭 긴장감 장치. 무모한 반지 유물은 -1(최소 1).
+    const shieldLoss = win ? 0 : Math.max(1, Math.min(shields, 1 + Math.floor(streak / 3)) - (hasRelic("risk_taker") ? 1 : 0));
     setChosenStat(statKey);
     setLastResult({ win, statKey, shieldLoss });
     setDropped(false); setDropPrompt(false); setSaveFail(null); setEscaped(null); setFirstDupHint(false);
@@ -836,9 +867,23 @@ function GameContent() {
         if (isLoggedIn) syncBestStreak(nt).catch(() => { });
       }
 
-      // 승리 카드만 수집. 연승↑ → 획득 확률↑, 높은 등급일수록 더 높은 연승 필요. 부스트 배율 적용.
-      const chance = Math.min(0.95, acquireChance(opponentCard, ns) * (activeBoost?.mult ?? 1));
-      if (Math.random() < chance) {
+      // 승리 카드만 수집. 연승↑ → 획득 확률↑, 높은 등급일수록 더 높은 연승 필요. 부스트 배율 + 행운의 발 유물(+8%p) 적용.
+      const chance = Math.min(0.95, acquireChance(opponentCard, ns) * (activeBoost?.mult ?? 1) + (hasRelic("luck_charm") ? 0.08 : 0));
+      const willDrop = Math.random() < chance;
+
+      // 골드 — 층 클리어(기본) + 보스 처치 보너스 + 카드 획득 보너스. 황금 나침반 유물이면 +50%.
+      const isBossRound = roundNum > 0 && roundNum % 5 === 0;
+      const goldGain = Math.round((3 + (isBossRound ? 15 : 0) + (willDrop ? 5 : 0)) * (hasRelic("gold_magnet") ? 1.5 : 1));
+      setGold(g => g + goldGain);
+      setLastResult(r => (r ? { ...r, goldGain } : r));
+
+      // 보스를 물리치면 유물 3개 중 하나 선택(로그라이크 요소) — 이미 보유한 유물은 후보에서 제외
+      if (isBossRound) {
+        const choices = pickRelicChoices(relics);
+        if (choices.length > 0) setRelicChoices(choices);
+      }
+
+      if (willDrop) {
         const reduceMotion = typeof window !== "undefined" && window.matchMedia?.("(prefers-reduced-motion: reduce)").matches;
         setPackOpening(true);
         setTimeout(() => setPackOpening(false), reduceMotion ? 50 : 650);
@@ -885,7 +930,7 @@ function GameContent() {
         higherSide: "challenger", // 패배 라운드는 항상 상대(opponentCard) 지표가 더 좋았던 경우
       });
     }
-  }, [phase, playerCard, opponentCard, best, bestKey, isLoggedIn, streak, totalWins, activeBoost, shields]);
+  }, [phase, playerCard, opponentCard, best, bestKey, isLoggedIn, streak, totalWins, activeBoost, shields, roundNum, relics, hasRelic]);
 
   // 승리든 패배든, 방패가 남아있으면 그 자리에서 런을 마무리(안전 정리)할 수 있음 — "더 갈까 여기서 챙길까" 선택지.
   const cashOut = useCallback(() => {
@@ -911,12 +956,13 @@ function GameContent() {
 
   const isLoading = ncav.state === "pending" || ncav.state === "init" || pool.length < 2;
 
-  // 획득 확률 — 승리 시(연승+1) 이 카드 획득 확률. 연승↑·낮은 등급↑, 높은 등급은 더 높은 연승 필요. 상점 부스트 배율 반영.
-  const acquirePct = opponentCard ? Math.round(Math.min(0.95, acquireChance(opponentCard, streak + 1) * (activeBoost?.mult ?? 1)) * 100) : 0;
+  // 획득 확률 — 승리 시(연승+1) 이 카드 획득 확률. 연승↑·낮은 등급↑, 높은 등급은 더 높은 연승 필요. 상점 부스트 + 행운의 발 유물 반영.
+  const acquirePct = opponentCard ? Math.round(Math.min(0.95, acquireChance(opponentCard, streak + 1) * (activeBoost?.mult ?? 1) + (hasRelic("luck_charm") ? 0.08 : 0)) * 100) : 0;
   const ownedOpponent = opponentCard ? deck.find(c => c.ticker === opponentCard.ticker) : undefined;
   const playerParts = playerCard ? computeValueScore(playerCard).parts : [];
   const opponentParts = opponentCard ? computeValueScore(opponentCard).parts : [];
-  const nextLossPenalty = Math.min(shields, 1 + Math.floor(streak / 3)); // "다음 패배 시 방패 -N" 경고에 표시
+  const nextLossPenalty = Math.max(1, Math.min(shields, 1 + Math.floor(streak / 3)) - (hasRelic("risk_taker") ? 1 : 0)); // "다음 패배 시 방패 -N" 경고에 표시
+  const maxShields = 3 + (hasRelic("extra_shield") ? 1 : 0); // 수호의 방패 유물이면 최대 방패 +1(HUD 아이콘 수)
   // 상단 던전 층 표시 — 현재 층 기준 앞뒤 슬라이딩 창(5칸). floor=roundNum+1(1층부터), 5의 배수 층마다 보스.
   const floorWindow = useMemo(() => {
     const start = Math.max(0, roundNum - 1);
@@ -957,7 +1003,7 @@ function GameContent() {
             {phase !== "over" && (
               <div className="flex items-center justify-center gap-1.5 flex-wrap mb-1 sm:mb-2 shrink-0">
                 <div className="flex items-center gap-1 px-2 py-1.5 rounded-2xl backdrop-blur-md bg-white/85 dark:bg-white/[0.06] border border-black/5 dark:border-white/10 shadow-[0_6px_18px_-8px_rgba(0,0,0,0.35)]">
-                  {[0, 1, 2].map(i => (
+                  {Array.from({ length: maxShields }, (_, i) => (
                     <Shield key={i} size={15} strokeWidth={2.5}
                       className={i < shields ? "text-[#16a34a] fill-[#16a34a]/25" : "text-neutral-300 dark:text-neutral-700"} />
                   ))}
@@ -1000,6 +1046,19 @@ function GameContent() {
                     </>
                   )}
                 </div>
+                {gold > 0 && (
+                  <span className="inline-flex items-center gap-1 px-2 py-1 rounded-full backdrop-blur-md bg-amber-500/10 border border-amber-500/25 text-amber-600 dark:text-amber-400 text-[10px] font-bold tabular-nums">
+                    🪙 {gold}
+                  </span>
+                )}
+                {relics.length > 0 && (
+                  <span className="inline-flex items-center gap-1 px-2 py-1 rounded-full backdrop-blur-md bg-violet-500/10 border border-violet-500/25 text-[11px]">
+                    {relics.map(id => {
+                      const r = RELIC_POOL.find(x => x.id === id);
+                      return r ? <span key={id} title={`${r.name} — ${r.desc}`} aria-hidden>{r.icon}</span> : null;
+                    })}
+                  </span>
+                )}
                 {phase === "battling" && activeBoost && (
                   <span className="inline-flex items-center gap-1 px-2 py-1 rounded-full backdrop-blur-md bg-amber-500/10 border border-amber-500/25 text-amber-600 dark:text-amber-400 text-[10px] font-bold tabular-nums">
                     <Wand2 size={11} strokeWidth={2.5} /> ×{activeBoost.mult}·{activeBoost.roundsLeft}판
@@ -1082,6 +1141,13 @@ function GameContent() {
                     <p className="text-[11px] text-neutral-400 mt-2 break-keep">
                       {isLoggedIn ? <>발굴한 카드는 <b className="text-neutral-600 dark:text-neutral-300">내 덱({deckTotal(deck)})</b>에 쌓였습니다.</> : "로그인하면 발굴한 카드를 덱에 모을 수 있어요."}
                     </p>
+                    {(gold > 0 || relics.length > 0) && (
+                      <p className="text-[11px] text-neutral-400 mt-1 break-keep">
+                        🪙 이번 던전 골드 {gold}
+                        {relics.length > 0 && <> · 유물 {relics.map(id => RELIC_POOL.find(r => r.id === id)?.icon).join(" ")}</>}
+                        {" "}— 던전을 나가면 초기화돼요
+                      </p>
+                    )}
                   </div>
 
                   {acquired.length > 0 && <AcquiredThisGame cards={acquired} />}
@@ -1158,6 +1224,9 @@ function GameContent() {
                     <div className="space-y-1">
                       <p className={cn("text-sm font-black animate-in fade-in", lastResult?.win ? "text-[#16a34a]" : "text-rose-500")}>
                         {lastResult?.win ? "승리! ✔" : `패배! 방패 -${lastResult?.shieldLoss ?? 1}`}
+                        {lastResult?.win && !!lastResult.goldGain && (
+                          <span className="ml-1.5 text-xs font-bold text-amber-600 dark:text-amber-400">🪙 +{lastResult.goldGain}</span>
+                        )}
                       </p>
                       {lastResult?.win && dropped && (
                         <span className="flex flex-col items-center gap-1 animate-in fade-in slide-in-from-bottom-1">
@@ -1184,7 +1253,7 @@ function GameContent() {
                       {lastResult?.win && !dropped && !dropPrompt && !saveFail && escaped && (
                         <span className="text-xs font-bold text-amber-600 dark:text-amber-400 animate-in fade-in">{escaped} 등급 카드가 도망갔어요 — 연승을 쌓으면 획득 확률↑</span>
                       )}
-                      {shields > 0 && (
+                      {shields > 0 && !relicChoices && (
                         <div className="flex items-center justify-center gap-2">
                           <button onClick={cashOut}
                             className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl border border-black/10 dark:border-white/15 bg-white/70 dark:bg-white/[0.05] hover:border-amber-500/50 text-neutral-600 dark:text-neutral-300 font-black text-xs active:scale-[0.97] transition-all">
@@ -1262,6 +1331,7 @@ function GameContent() {
                 { icon: "⚔️", text: <>용사(내 카드)와 몬스터(상대 카드)의 지표(NCAV·PBR·PER·ROE) 중 하나를 골라 대결하세요. 지표 이름을 몰라도 옆에 뜨는 <b className="text-[#16a34a]">유리</b>/<b className="text-amber-600 dark:text-amber-400">보통</b>/<b className="text-rose-500">불리</b> 태그만 보고 초록을 고르면 돼요.</> },
                 { icon: "🛡️", text: <>이기면 다음 층으로, 지면 <b className="text-neutral-800 dark:text-neutral-100">방패</b>를 잃어요. 방패가 다 떨어지면 던전에서 나가게 돼요.</> },
                 { icon: "🃏", text: <>이긴 몬스터 카드는 확률에 따라 <b className="text-neutral-800 dark:text-neutral-100">내 덱</b>에 카드로 수집돼요.</> },
+                { icon: "🪙", text: <>층을 돌파할 때마다 <b className="text-neutral-800 dark:text-neutral-100">골드</b>를 얻고, <b className="text-violet-600 dark:text-violet-400">보스</b>를 물리치면 이번 던전에서만 쓰는 <b className="text-neutral-800 dark:text-neutral-100">유물</b>을 하나 고를 수 있어요. 골드와 유물은 던전을 나가면 초기화돼요.</> },
                 { icon: "⚠️", text: <>연승이 길어질수록 다음 패배의 대가도 커져요. 매 판마다 <b className="text-neutral-800 dark:text-neutral-100">"여기서 정리"</b>(안전하게 마무리)와 <b className="text-neutral-800 dark:text-neutral-100">"다음 층으로"</b>(위험 감수) 중 골라보세요.</> },
               ].map((row, i) => (
                 <div key={i} className="flex items-start gap-2.5">
@@ -1274,6 +1344,36 @@ function GameContent() {
               className="w-full mt-4 inline-flex items-center justify-center gap-2 px-6 py-2.5 rounded-2xl bg-gradient-to-r from-[#16a34a] to-[#15803d] hover:brightness-110 text-white font-black text-sm shadow-[0_8px_24px_-8px_rgba(22,163,74,0.55)] active:scale-[0.98] transition-all">
               <Swords size={16} /> 던전 입장!
             </button>
+          </div>
+        </div>
+      )}
+
+      {/* 유물 선택 — 보스 처치 직후 뜨는 로그라이크 보상. 배틀 화면의 촘촘한 no-scroll 레이아웃과
+          별개로 고정 오버레이(모달)로 띄워서 카드 크기 실측 로직에 영향을 주지 않게 함(튜토리얼/기록 패널과 동일 패턴) */}
+      {relicChoices && (
+        <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/50 backdrop-blur-sm p-3">
+          <div className="w-full sm:max-w-sm max-h-[80vh] overflow-y-auto rounded-2xl bg-white dark:bg-[#242320] border border-neutral-200 dark:border-[#35332e] shadow-xl p-4 animate-in fade-in slide-in-from-bottom-2 sm:zoom-in-95 duration-200">
+            <p className="font-black text-neutral-900 dark:text-white flex items-center gap-1.5 mb-3">
+              🎁 보스 처치! 유물을 하나 고르세요
+            </p>
+            <div className="space-y-2">
+              {relicChoices.map(r => (
+                <button key={r.id} type="button" onClick={() => pickRelic(r.id)}
+                  className="w-full flex items-center gap-2.5 px-3 py-2.5 rounded-xl border border-violet-500/30 bg-violet-500/5 hover:bg-violet-500/10 text-left active:scale-[0.98] transition-all">
+                  <span className="text-xl shrink-0" aria-hidden>{r.icon}</span>
+                  <span className="min-w-0">
+                    <span className="block text-sm font-black text-neutral-800 dark:text-neutral-100">{r.name}</span>
+                    <span className="block text-xs text-neutral-500 dark:text-neutral-400">{r.desc}</span>
+                  </span>
+                </button>
+              ))}
+            </div>
+            <div className="flex items-center justify-center gap-4 mt-3">
+              <button type="button" onClick={skipRelic} className="text-xs font-bold text-neutral-400 hover:text-neutral-600 dark:hover:text-neutral-300">건너뛰기</button>
+              {gold >= 20 && (
+                <button type="button" onClick={rerollRelics} className="text-xs font-bold text-amber-600 dark:text-amber-400 hover:underline">🪙20으로 다시 뽑기</button>
+              )}
+            </div>
           </div>
         </div>
       )}
