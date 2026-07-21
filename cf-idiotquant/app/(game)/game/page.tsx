@@ -37,6 +37,15 @@ const STAT: Stat = {
   fmt: v => v >= 10000 ? `${(v / 10000).toFixed(1)}조` : `${Math.round(v).toLocaleString()}억`,
 };
 
+// 지표 픽커용 "내 카드 유불리" 태그 — sub(0~1 정규화 점수)를 3단계로 단순화해 보여줌.
+// 상대 카드 값은 고를 때까지 안 보이지만, sub가 높을수록(=절대 기준으로 좋은 값일수록)
+// 무작위 상대를 이길 확률도 통계적으로 높아지므로 "내 카드 기준 유불리"만으로도 유효한 선택 근거가 됨.
+function statTag(sub: number): { label: string; cls: string } {
+  if (sub >= 0.66) return { label: "유리", cls: "bg-[#16a34a]/15 text-[#16a34a]" };
+  if (sub >= 0.34) return { label: "보통", cls: "bg-amber-500/15 text-amber-600 dark:text-amber-400" };
+  return { label: "불리", cls: "bg-rose-500/15 text-rose-500" };
+}
+
 // 카드 수집: 정답을 맞힌 카드만 획득 판정. 등급별 "기본 획득 확률" + 연승 보너스.
 // 연승이 없어도(첫 정답에도) 기본 확률로 카드가 나오며, 높은 등급일수록 기본 확률이 낮고
 // 연승을 쌓을수록 확률이 오른다 (SS전설>S보물>A다이아>B금>C은>D동>E철>F원석>G흙>H탐색).
@@ -1101,13 +1110,20 @@ function GameContent() {
                   </div>
                 </div>
 
-                {/* 지표 픽커 — 4개 지표 중 하나를 골라 배틀. 내 카드 값은 항상 보이고, 상대 값은 고른 지표만 라운드 종료 후 공개 */}
+                {/* 지표 픽커 — 4개 지표 중 하나를 골라 배틀. 내 카드 값은 항상 보이고(유·불리 태그 포함),
+                    상대 값은 고른 지표만 라운드 종료 후 공개. sub 기준 태그가 초록일수록 이길 확률↑ */}
+                {phase === "battling" && (
+                  <p className="shrink-0 text-center text-[10px] font-bold text-neutral-400 mt-1">
+                    내 카드가 <span className="text-[#16a34a]">유리</span>한 지표를 고르면 이길 확률이 높아요
+                  </p>
+                )}
                 <div className="shrink-0 space-y-1 mt-1.5">
                   {playerParts.map(pPart => {
                     const oPart = opponentParts.find(o => o.key === pPart.key);
                     const bothAvailable = !!(pPart.available && oPart?.available);
                     const isChosen = chosenStat === pPart.key;
                     const revealed = phase === "resolved" && isChosen;
+                    const tag = statTag(pPart.sub);
                     return (
                       <button key={pPart.key} type="button" disabled={phase !== "battling" || !bothAvailable}
                         onClick={() => battle(pPart.key)}
@@ -1118,7 +1134,10 @@ function GameContent() {
                         <Swords size={12} className="shrink-0 text-neutral-400" />
                         <span className="w-9 shrink-0 text-left text-neutral-500 dark:text-neutral-400">{pPart.label}</span>
                         <span className="flex-1 text-left tabular-nums text-neutral-700 dark:text-neutral-200">{pPart.available ? pPart.valueStr : "—"}</span>
-                        <span className="w-16 shrink-0 text-right tabular-nums text-neutral-400">
+                        {pPart.available && (
+                          <span className={cn("shrink-0 px-1.5 py-0.5 rounded-full text-[9px] font-black", tag.cls)}>{tag.label}</span>
+                        )}
+                        <span className="w-14 shrink-0 text-right tabular-nums text-neutral-400">
                           {revealed ? oPart!.valueStr : bothAvailable ? "?" : "—"}
                         </span>
                       </button>
@@ -1240,7 +1259,7 @@ function GameContent() {
             </div>
             <div className="space-y-3">
               {[
-                { icon: "⚔️", text: <>용사(내 카드)와 몬스터(상대 카드)의 <b className="text-neutral-800 dark:text-neutral-100">NCAV·PBR·PER·ROE</b> 중 하나를 골라 대결하세요.</> },
+                { icon: "⚔️", text: <>용사(내 카드)와 몬스터(상대 카드)의 지표(NCAV·PBR·PER·ROE) 중 하나를 골라 대결하세요. 지표 이름을 몰라도 옆에 뜨는 <b className="text-[#16a34a]">유리</b>/<b className="text-amber-600 dark:text-amber-400">보통</b>/<b className="text-rose-500">불리</b> 태그만 보고 초록을 고르면 돼요.</> },
                 { icon: "🛡️", text: <>이기면 다음 층으로, 지면 <b className="text-neutral-800 dark:text-neutral-100">방패</b>를 잃어요. 방패가 다 떨어지면 던전에서 나가게 돼요.</> },
                 { icon: "🃏", text: <>이긴 몬스터 카드는 확률에 따라 <b className="text-neutral-800 dark:text-neutral-100">내 덱</b>에 카드로 수집돼요.</> },
                 { icon: "⚠️", text: <>연승이 길어질수록 다음 패배의 대가도 커져요. 매 판마다 <b className="text-neutral-800 dark:text-neutral-100">"여기서 정리"</b>(안전하게 마무리)와 <b className="text-neutral-800 dark:text-neutral-100">"다음 층으로"</b>(위험 감수) 중 골라보세요.</> },
