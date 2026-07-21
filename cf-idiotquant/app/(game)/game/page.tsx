@@ -602,13 +602,13 @@ function AcquiredThisGame({ cards }: { cards: DeckCardSnapshot[] }) {
   );
 }
 
-// 이번 항해(연승) 기록 기반 등급 (전역 리더보드 대신 자체 랭크)
+// 이번 던전 탐험(연승) 기록 기반 용사 등급 (전역 리더보드 대신 자체 랭크)
 function rankOf(streak: number): { emoji: string; title: string } {
-  if (streak >= 15) return { emoji: "👑", title: "전설의 선장" };
-  if (streak >= 10) return { emoji: "🚢", title: "제독" };
-  if (streak >= 6) return { emoji: "⚓", title: "선장" };
-  if (streak >= 3) return { emoji: "🧭", title: "항해사" };
-  return { emoji: "⛵", title: "견습 항해사" };
+  if (streak >= 15) return { emoji: "👑", title: "전설의 용사" };
+  if (streak >= 10) return { emoji: "🏆", title: "던전 정복자" };
+  if (streak >= 6) return { emoji: "🛡️", title: "베테랑 용사" };
+  if (streak >= 3) return { emoji: "🗡️", title: "던전 탐험가" };
+  return { emoji: "🔰", title: "견습 용사" };
 }
 
 type Phase = "loading" | "battling" | "resolved" | "over";
@@ -640,8 +640,7 @@ function GameContent() {
   const [opponentCard, setOpponentCard] = useState<any | null>(null);
   const [phase, setPhase] = useState<Phase>("loading");
   const [shields, setShields] = useState(3); // 방패(목숨) — 0이 되면 런 종료. 패배해도 즉시 끝나지 않음.
-  const [roundNum, setRoundNum] = useState(0); // 이번 런 누적 라운드 수(승패 무관)
-  const [isBoss, setIsBoss] = useState(false); // 5라운드마다 보스전(고등급 상대)
+  const [roundNum, setRoundNum] = useState(0); // 이번 런 누적 라운드 수(승패 무관). 5의 배수 층마다 보스.
   const [streak, setStreak] = useState(0); // 연속 무패(패배 시 0으로 리셋되지만 런은 계속)
   const [totalWins, setTotalWins] = useState(0); // 이번 런 누적 승수 — 최종 스코어
   const [best, setBest] = useState(0); // 역대 최고 승수(서버 동기화)
@@ -662,6 +661,19 @@ function GameContent() {
   const [activeBoost, setActiveBoost] = useState<{ mult: number; roundsLeft: number } | null>(null); // 상점 부스트(세션 로컬)
   const [packOpening, setPackOpening] = useState(false); // 팩 오픈 리빌 연출 표시 중
   const [firstDupHint, setFirstDupHint] = useState(false); // 첫 중복 카드 획득 시 지갑/전환 안내
+  const [showTutorial, setShowTutorial] = useState(false); // 방법 안내 모달(첫 방문 자동 표시 + ? 버튼으로 재열람)
+
+  // 처음 방문이면 방법 안내를 자동으로 한 번 띄움 — 재방문 시엔 뜨지 않고 ? 버튼으로만 열람
+  const tutorialKey = "iq:game:tutorialSeen";
+  useEffect(() => {
+    try {
+      if (!localStorage.getItem(tutorialKey)) setShowTutorial(true);
+    } catch { }
+  }, []);
+  const closeTutorial = useCallback(() => {
+    setShowTutorial(false);
+    try { localStorage.setItem(tutorialKey, "1"); } catch { }
+  }, []);
 
   // 배틀 카드 두 장(플레이어+상대)이 나란히 들어갈 크기 — 모바일/데스크톱 공통 레이아웃이라 남은 공간을
   // JS로 실측해 두 장이 꼭 맞게 들어가는 픽셀 크기를 직접 계산(CSS만으로는 남는 공간을 다 못 채우는 문제가 있었음).
@@ -769,7 +781,7 @@ function GameContent() {
     const pair = drawPair(false);
     if (!pair) return;
     setPlayerCard(pair[0]); setOpponentCard(pair[1]);
-    setShields(3); setRoundNum(0); setIsBoss(false);
+    setShields(3); setRoundNum(0);
     setStreak(0); setTotalWins(0); setNewBest(false);
     setChosenStat(null); setLastResult(null);
     setDropped(false); setDropPrompt(false); setSaveFail(null); setEscaped(null); setMissed(null);
@@ -879,7 +891,7 @@ function GameContent() {
     const boss = nextNum % 5 === 0;
     const pair = drawPair(boss);
     if (!pair) return;
-    setRoundNum(nextNum); setIsBoss(boss);
+    setRoundNum(nextNum);
     setPlayerCard(pair[0]); setOpponentCard(pair[1]);
     setChosenStat(null); setLastResult(null);
     setDropped(false); setDropPrompt(false); setSaveFail(null); setEscaped(null); setPackOpening(false); setFirstDupHint(false);
@@ -895,8 +907,14 @@ function GameContent() {
   const ownedOpponent = opponentCard ? deck.find(c => c.ticker === opponentCard.ticker) : undefined;
   const playerParts = playerCard ? computeValueScore(playerCard).parts : [];
   const opponentParts = opponentCard ? computeValueScore(opponentCard).parts : [];
-  const wave = Math.floor(roundNum / 5) + 1;
   const nextLossPenalty = Math.min(shields, 1 + Math.floor(streak / 3)); // "다음 패배 시 방패 -N" 경고에 표시
+  // 상단 던전 층 표시 — 현재 층 기준 앞뒤 슬라이딩 창(5칸). floor=roundNum+1(1층부터), 5의 배수 층마다 보스.
+  const floorWindow = useMemo(() => {
+    const start = Math.max(0, roundNum - 1);
+    return Array.from({ length: 5 }, (_, i) => start + i).map(n => ({
+      n, floor: n + 1, boss: n > 0 && n % 5 === 0, cleared: n < roundNum, current: n === roundNum,
+    }));
+  }, [roundNum]);
 
   return (
     // svh(small viewport height) 사용 — iOS Safari에서 주소창/툴바가 완전히 펼쳐진 상태의 100dvh가
@@ -935,10 +953,18 @@ function GameContent() {
                       className={i < shields ? "text-[#16a34a] fill-[#16a34a]/25" : "text-neutral-300 dark:text-neutral-700"} />
                   ))}
                 </div>
-                <span className={cn("inline-flex items-center gap-1 px-2 py-1 rounded-full backdrop-blur-md border text-[10px] font-bold",
-                  isBoss ? "bg-rose-500/10 border-rose-500/30 text-rose-500" : "bg-white/85 dark:bg-white/[0.06] border-black/5 dark:border-white/10 text-neutral-500 dark:text-neutral-300")}>
-                  {isBoss && <Crown size={12} strokeWidth={2.5} />} 웨이브 {wave}{isBoss && " · 보스"}
-                </span>
+                {/* 던전 층 표시 — 현재 층 기준 앞뒤 슬라이딩 창. 회색=미탐험, 초록=돌파, 빨강(확대)=현재, 왕관=보스층 */}
+                <div className="flex items-center gap-1 px-2 py-1.5 rounded-2xl backdrop-blur-md bg-white/85 dark:bg-white/[0.06] border border-black/5 dark:border-white/10 shadow-[0_6px_18px_-8px_rgba(0,0,0,0.35)]">
+                  <span className="text-[9px] font-black text-neutral-400 uppercase tracking-wider pr-0.5 whitespace-nowrap">지하{roundNum + 1}층</span>
+                  {floorWindow.map(f => (
+                    <span key={f.n} className={cn("w-5 h-5 rounded-full flex items-center justify-center text-[9px] font-black shrink-0 transition-all",
+                      f.current ? "bg-rose-500 text-white ring-2 ring-rose-300 dark:ring-rose-800 scale-110"
+                        : f.cleared ? "bg-[#16a34a]/15 text-[#16a34a]"
+                          : "bg-black/5 dark:bg-white/10 text-neutral-400 dark:text-neutral-600")}>
+                      {f.boss ? <Crown size={11} strokeWidth={2.5} /> : f.floor}
+                    </span>
+                  ))}
+                </div>
                 <div className="flex items-center gap-1 px-1.5 sm:px-2 py-1 sm:py-1.5 rounded-2xl backdrop-blur-md bg-white/85 dark:bg-white/[0.06] border border-black/5 dark:border-white/10 shadow-[0_6px_18px_-8px_rgba(0,0,0,0.35)]">
                   <div className="text-center px-2.5 sm:px-3">
                     <p className="flex items-center justify-center gap-1 text-base sm:text-xl font-black tabular-nums text-[#16a34a] leading-none">
@@ -981,6 +1007,10 @@ function GameContent() {
                     <History size={13} /> {history.length}
                   </button>
                 )}
+                <button type="button" onClick={() => setShowTutorial(true)} aria-label="게임 방법 보기"
+                  className="inline-flex items-center justify-center w-7 h-7 rounded-full backdrop-blur-md bg-white/85 dark:bg-white/[0.06] border border-black/5 dark:border-white/10 shadow-[0_6px_18px_-8px_rgba(0,0,0,0.35)] text-neutral-500 dark:text-neutral-300 hover:text-[#16a34a] transition-colors">
+                  <Info size={14} />
+                </button>
               </div>
             )}
 
@@ -1005,9 +1035,9 @@ function GameContent() {
                 {/* 중간 — 모바일은 자연 흐름(본문 스크롤), 데스크톱은 이 영역만 내부 스크롤(헤더·버튼 항상 보임) */}
                 <div className="px-5 pt-1.5 pb-2 text-center space-y-2 sm:flex-1 sm:min-h-0 sm:overflow-y-auto">
                   <div>
-                    <p className="text-lg font-black text-neutral-900 dark:text-white">런 종료!</p>
+                    <p className="text-lg font-black text-neutral-900 dark:text-white">던전 탐험 종료!</p>
                     <p className="text-[11px] font-bold text-neutral-400 mt-0.5">
-                      {shields <= 0 ? "방패를 모두 소진했어요" : "여기서 안전하게 정리했어요"}
+                      {shields <= 0 ? "던전 깊은 곳에서 쓰러지고 말았어요" : "무사히 던전을 빠져나왔어요"}
                     </p>
                     <span className="inline-flex items-center gap-1 mt-1 px-3 py-1 rounded-full bg-[#f0fdf4] dark:bg-[#052e16]/40 border border-[#86efac]/60 dark:border-[#166534]/60 text-[#15803d] dark:text-[#16a34a] text-xs font-black">
                       <span aria-hidden className="text-sm leading-none">{rankOf(totalWins).emoji}</span>{rankOf(totalWins).title}
@@ -1034,7 +1064,7 @@ function GameContent() {
                         <p className="flex items-center justify-center gap-1 text-xl font-black tabular-nums text-rose-500 leading-none">
                           <Crown size={15} strokeWidth={2.5} />{Math.floor(roundNum / 5)}
                         </p>
-                        <p className="text-[9px] font-bold text-neutral-400 uppercase tracking-wider mt-1">격파 웨이브</p>
+                        <p className="text-[9px] font-bold text-neutral-400 uppercase tracking-wider mt-1">처치한 보스</p>
                       </div>
                     </div>
                     <div className="flex justify-center mt-2">
@@ -1053,12 +1083,13 @@ function GameContent() {
                 <div className="shrink-0 px-5 pb-3 pt-2 border-t border-black/5 dark:border-white/10">
                   <button onClick={start}
                     className="w-full inline-flex items-center justify-center gap-2 px-6 py-2.5 rounded-2xl bg-gradient-to-r from-[#16a34a] to-[#15803d] hover:brightness-110 text-white font-black text-sm shadow-[0_8px_24px_-8px_rgba(22,163,74,0.55)] active:scale-[0.98] transition-all">
-                    <Swords size={16} /> 새 런 시작
+                    <Swords size={16} /> 새 던전 입장
                   </button>
                 </div>
               </div>
             ) : playerCard && opponentCard ? (
               <>
+                <p className="shrink-0 text-center text-[10px] font-bold text-neutral-400 mb-0.5">🗡️ 용사 VS 👹 몬스터</p>
                 {/* 배틀 아레나 — 모바일/데스크톱 공통 레이아웃. 두 카드가 남은 세로 공간을 JS로 실측해 꽉 채움(스크롤 방지) */}
                 <div ref={battleRowRef} className="flex-1 min-h-0 flex items-center justify-center gap-3">
                   <div style={battleCardSize ? { width: battleCardSize.w, height: battleCardSize.h } : { width: "38%", maxWidth: 220, aspectRatio: "3/4" }}>
@@ -1101,7 +1132,7 @@ function GameContent() {
                     <PackReveal item={opponentCard} />
                   ) : phase === "battling" ? (
                     <p className="text-xs font-bold text-neutral-400">
-                      지표를 하나 골라 승부하세요 ⚔️
+                      몬스터와 겨룰 지표를 하나 골라보세요 ⚔️
                       {streak >= 3 && <span className="block mt-0.5 text-rose-500">⚠️ 다음 패배 시 방패 -{nextLossPenalty}</span>}
                     </p>
                   ) : (
@@ -1142,7 +1173,7 @@ function GameContent() {
                           </button>
                           <button onClick={nextRound}
                             className="inline-flex items-center gap-1.5 px-4 py-1.5 rounded-xl bg-gradient-to-r from-[#16a34a] to-[#15803d] hover:brightness-110 text-white font-black text-xs shadow-[0_6px_16px_-6px_rgba(22,163,74,0.55)] active:scale-[0.97] transition-all">
-                            한 판 더 <Swords size={13} />
+                            다음 층으로 <Swords size={13} />
                           </button>
                         </div>
                       )}
@@ -1189,6 +1220,41 @@ function GameContent() {
                 })}
               </div>
             )}
+          </div>
+        </div>
+      )}
+
+      {/* 방법 안내 — 첫 방문 시 자동으로 뜨고, 이후엔 HUD의 ? 버튼으로 재열람 */}
+      {showTutorial && (
+        <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/50 backdrop-blur-sm p-3"
+          onClick={closeTutorial}>
+          <div className="w-full sm:max-w-sm max-h-[80vh] overflow-y-auto rounded-2xl bg-white dark:bg-[#242320] border border-neutral-200 dark:border-[#35332e] shadow-xl p-4 animate-in fade-in slide-in-from-bottom-2 sm:zoom-in-95 duration-200"
+            onClick={e => e.stopPropagation()}>
+            <div className="flex items-center justify-between mb-3">
+              <p className="font-black text-neutral-900 dark:text-white flex items-center gap-1.5">
+                🗡️ 용사의 던전 도전
+              </p>
+              <button type="button" onClick={closeTutorial} className="text-neutral-400 hover:text-[#16a34a]" aria-label="닫기">
+                <X size={18} />
+              </button>
+            </div>
+            <div className="space-y-3">
+              {[
+                { icon: "⚔️", text: <>용사(내 카드)와 몬스터(상대 카드)의 <b className="text-neutral-800 dark:text-neutral-100">NCAV·PBR·PER·ROE</b> 중 하나를 골라 대결하세요.</> },
+                { icon: "🛡️", text: <>이기면 다음 층으로, 지면 <b className="text-neutral-800 dark:text-neutral-100">방패</b>를 잃어요. 방패가 다 떨어지면 던전에서 나가게 돼요.</> },
+                { icon: "🃏", text: <>이긴 몬스터 카드는 확률에 따라 <b className="text-neutral-800 dark:text-neutral-100">내 덱</b>에 카드로 수집돼요.</> },
+                { icon: "⚠️", text: <>연승이 길어질수록 다음 패배의 대가도 커져요. 매 판마다 <b className="text-neutral-800 dark:text-neutral-100">"여기서 정리"</b>(안전하게 마무리)와 <b className="text-neutral-800 dark:text-neutral-100">"다음 층으로"</b>(위험 감수) 중 골라보세요.</> },
+              ].map((row, i) => (
+                <div key={i} className="flex items-start gap-2.5">
+                  <span aria-hidden className="shrink-0 text-lg leading-none">{row.icon}</span>
+                  <p className="text-xs text-neutral-600 dark:text-neutral-300 leading-relaxed break-keep">{row.text}</p>
+                </div>
+              ))}
+            </div>
+            <button onClick={closeTutorial}
+              className="w-full mt-4 inline-flex items-center justify-center gap-2 px-6 py-2.5 rounded-2xl bg-gradient-to-r from-[#16a34a] to-[#15803d] hover:brightness-110 text-white font-black text-sm shadow-[0_8px_24px_-8px_rgba(22,163,74,0.55)] active:scale-[0.98] transition-all">
+              <Swords size={16} /> 던전 입장!
+            </button>
           </div>
         </div>
       )}
