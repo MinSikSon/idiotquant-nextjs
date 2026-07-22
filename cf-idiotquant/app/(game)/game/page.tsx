@@ -1,12 +1,12 @@
 "use client";
 
 // =========================================================================
-// 종목 카드: 높다/낮다 (Higher-Lower) — 덱 빌딩 게임 1탄
-// 두 종목 카드를 시가총액으로 비교해 맞히면 연승.
+// 밸류 아레나 — 용사(내 카드) vs 몬스터(상대 카드) 지표 픽 배틀 던전 크롤 게임
+// NCAV·PBR·PER·ROE 중 하나를 골라 대결(sub 정규화 점수 비교). 이기면 다음 층으로,
+// 지면 방패 소모(0이 되면 던전 종료). 5층마다 보스 — 처치하면 유물 선택(런 스코프
+// 로그라이크 버프). 층 클리어·카드 획득마다 골드 적립(런 스코프, 던전 나가면 초기화).
 // 카드 등급(메달)은 NCAV·PBR·PER·ROE를 종합한 저평가 점수로 별도 산정.
-// 정답을 맞힌 카드만 "내 덱"에 수집 → 계정별 D1 저장(로그인 필요).
-// 연승↑ → 획득 확률↑, 높은 등급(메달) 카드일수록 더 높은 연승이 필요.
-// 비로그인 시 수집 시점에 로그인 유도.
+// 이긴 카드만 확률적으로 "내 덱"에 수집 → 계정별 D1 저장(로그인 필요). 비로그인 시 수집 시점에 로그인 유도.
 // =========================================================================
 
 import { useEffect, useMemo, useState, useCallback, useRef, Suspense } from "react";
@@ -17,7 +17,7 @@ import {
   ArrowUp, ArrowDown, Layers, Copy, TrendingUp, Sparkles, ChevronRight, Lock, Info,
   Cpu, Dna, Landmark, CarFront, Ship, Construction, Zap, FlaskConical, Factory, RadioTower, Gamepad2,
   Soup, ShoppingCart, PlaneTakeoff, Shirt, Code2, Gem, Compass, Anchor, Map as MapIcon, Medal as MedalIcon,
-  BatteryCharging, Bot, Wallet, History, X, Flame, Trophy, Target, Wand2, Shield, Swords, Crown,
+  BatteryCharging, Bot, Wallet, History, X, Flame, Trophy, Target, Wand2, Shield, Swords, Crown, Loader2,
   type LucideIcon,
 } from "lucide-react";
 import { useAppDispatch, useAppSelector } from "@/lib/hooks";
@@ -53,11 +53,21 @@ const RELIC_POOL: Relic[] = [
   { id: "extra_shield", icon: "🛡️", name: "수호의 방패", desc: "최대 방패 +1" },
   { id: "luck_charm", icon: "🍀", name: "행운의 발", desc: "카드 획득 확률 +8%p" },
   { id: "risk_taker", icon: "⚔️", name: "무모한 반지", desc: "다음 패배 시 방패 소모 -1" },
-  { id: "gold_magnet", icon: "🪙", name: "황금 나침반", desc: "층 클리어 골드 획득 +50%" },
+  { id: "gold_magnet", icon: "🧭", name: "황금 나침반", desc: "골드 획득량 +50%" },
 ];
 function pickRelicChoices(held: string[]): Relic[] {
   const pool = RELIC_POOL.filter(r => !held.includes(r.id));
   return [...pool].sort(() => Math.random() - 0.5).slice(0, 3);
+}
+// 이전 선택지와 완전히 같은 3개가 다시 나오면(풀이 4개뿐이라 25% 확률로 발생) "다시 뽑기"가
+// 아무 효과 없이 골드만 날리는 것처럼 보이므로, 최대 5회까지 다른 조합이 나올 때까지 다시 뽑음.
+function rerollDistinctChoices(held: string[], prev: Relic[]): Relic[] {
+  const prevIds = new Set(prev.map(r => r.id));
+  for (let i = 0; i < 5; i++) {
+    const next = pickRelicChoices(held);
+    if (next.length !== prevIds.size || next.some(r => !prevIds.has(r.id))) return next;
+  }
+  return pickRelicChoices(held);
 }
 
 // 카드 수집: 정답을 맞힌 카드만 획득 판정. 등급별 "기본 획득 확률" + 연승 보너스.
@@ -253,8 +263,9 @@ function ScoreInfo() {
   return (
     <span className="relative inline-flex align-middle"
       onMouseEnter={() => setOpen(true)} onMouseLeave={() => setOpen(false)}>
+      {/* w-4 h-4(16px)는 탭 영역이 너무 작아서 주변 레이아웃을 안 건드리는 선에서 패딩으로 살짝 키움 */}
       <button type="button" aria-label="저평가 점수 설명" onClick={() => setOpen(o => !o)}
-        className="inline-flex items-center justify-center w-4 h-4 rounded-full text-neutral-400 hover:text-[#16a34a] transition-colors">
+        className="inline-flex items-center justify-center p-1.5 rounded-full text-neutral-400 hover:text-[#16a34a] transition-colors">
         <Info size={13} />
       </button>
       {open && (
@@ -517,7 +528,7 @@ function TcgCard({ item, value, hero = false, count, locked = false, rank, onGue
 
 const fmtCap = (v: number) => (v >= 10000 ? `${(v / 10000).toFixed(1)}조` : `${Math.round(v).toLocaleString()}억`);
 
-// 항해 종료 시 틀린 종목 정보 카드 (무엇을 놓쳤는지 + 그 종목 지표 학습)
+// 던전 탐험 종료 시 틀린 종목 정보 카드 (무엇을 놓쳤는지 + 그 종목 지표 학습)
 function MissedInfo({ missed }: { missed: any }) {
   const c = missed.challenger;
   const v = computeValueScore(c);
@@ -590,7 +601,7 @@ function MissedInfo({ missed }: { missed: any }) {
   );
 }
 
-// 이번 항해에서 획득한 카드 목록 (종료 화면). 같은 종목은 ×N 합산, 점수 높은 순.
+// 이번 던전에서 획득한 카드 목록 (종료 화면). 같은 종목은 ×N 합산, 점수 높은 순.
 function AcquiredThisGame({ cards }: { cards: DeckCardSnapshot[] }) {
   const agg = useMemo(() => {
     const m = new Map<string, { item: DeckCardSnapshot; count: number }>();
@@ -604,7 +615,7 @@ function AcquiredThisGame({ cards }: { cards: DeckCardSnapshot[] }) {
   return (
     <div className="text-left rounded-2xl backdrop-blur-md bg-[#16a34a]/[0.06] border border-[#16a34a]/25 p-2.5">
       <p className="text-[11px] font-black text-[#15803d] dark:text-[#16a34a] mb-1.5 flex items-center gap-1">
-        <Sparkles size={12} /> 이번 항해 획득 {cards.length}장
+        <Sparkles size={12} /> 이번 던전 획득 {cards.length}장
       </p>
       {/* 가로 스트립 — 카드 수가 많아도 높이가 고정(한 화면 유지). 좌우로 슬라이드 */}
       <div className="flex gap-2 overflow-x-auto pb-1 -mx-0.5 px-0.5 scrollbar-hide">
@@ -685,6 +696,7 @@ function GameContent() {
   const [packOpening, setPackOpening] = useState(false); // 팩 오픈 리빌 연출 표시 중
   const [firstDupHint, setFirstDupHint] = useState(false); // 첫 중복 카드 획득 시 지갑/전환 안내
   const [showTutorial, setShowTutorial] = useState(false); // 방법 안내 모달(첫 방문 자동 표시 + ? 버튼으로 재열람)
+  const [showRelicInfo, setShowRelicInfo] = useState(false); // 보유 유물 효과 설명 — title 툴팁은 모바일 탭에서 안 뜨므로 탭 토글로 대체
   const [gold, setGold] = useState(0); // 이번 런 골드(층 클리어·카드 획득마다 적립) — 던전을 나가면 초기화
   const [relics, setRelics] = useState<string[]>([]); // 이번 런에 고른 유물 id 목록 — 던전을 나가면 초기화
   const [relicChoices, setRelicChoices] = useState<Relic[] | null>(null); // 보스 처치 직후 유물 선택지(null=선택 없음)
@@ -699,7 +711,7 @@ function GameContent() {
   const rerollRelics = useCallback(() => {
     if (gold < 20) return;
     setGold(g => g - 20);
-    setRelicChoices(pickRelicChoices(relics));
+    setRelicChoices(prev => rerollDistinctChoices(relics, prev ?? []));
   }, [gold, relics]);
 
   // 처음 방문이면 방법 안내를 자동으로 한 번 띄움 — 재방문 시엔 뜨지 않고 ? 버튼으로만 열람
@@ -879,10 +891,17 @@ function GameContent() {
       setGold(g => g + goldGain);
       setLastResult(r => (r ? { ...r, goldGain } : r));
 
-      // 보스를 물리치면 유물 3개 중 하나 선택(로그라이크 요소) — 이미 보유한 유물은 후보에서 제외
+      // 보스를 물리치면 유물 3개 중 하나 선택(로그라이크 요소) — 이미 보유한 유물은 후보에서 제외.
+      // 유물 4종을 이미 다 모았으면(고를 게 없으면) 보스 처치가 허탕이 되지 않도록 골드로 대신 보상.
       if (isBossRound) {
         const choices = pickRelicChoices(relics);
-        if (choices.length > 0) setRelicChoices(choices);
+        if (choices.length > 0) {
+          setRelicChoices(choices);
+        } else {
+          const bonus = 30;
+          setGold(g => g + bonus);
+          setLastResult(r => (r ? { ...r, goldGain: (r.goldGain ?? goldGain) + bonus } : r));
+        }
       }
 
       if (willDrop) {
@@ -998,10 +1017,13 @@ function GameContent() {
               setDeck(prev => prev.map(c => c.ticker === ticker ? { ...c, count: remaining } : c));
             }} />
         ) : isLoading ? (
-          <div className="my-auto py-24 text-center text-sm text-neutral-400">카드 데이터를 불러오는 중…</div>
+          <div className="my-auto py-24 flex flex-col items-center gap-2 text-sm text-neutral-400">
+            <Loader2 size={20} className="animate-spin" />
+            카드 데이터를 불러오는 중…
+          </div>
         ) : (
           <div className={cn("w-full", phase === "over" ? "flex flex-col sm:flex-1 sm:min-h-0" : "flex flex-col flex-1 min-h-0")}>
-            {/* 상단 HUD (플레이 중에만) — 방패(목숨) · 웨이브 · 승수/최고/획득확률 글래스 배지 */}
+            {/* 상단 HUD (플레이 중에만) — 방패(목숨) · 던전 층 · 승수/최고/획득확률 · 골드/유물 글래스 배지 */}
             {phase !== "over" && (
               <div className="flex items-center justify-center gap-1.5 flex-wrap mb-1 sm:mb-2 shrink-0">
                 <div className="flex items-center gap-1 px-2 py-1.5 rounded-2xl backdrop-blur-md bg-white/85 dark:bg-white/[0.06] border border-black/5 dark:border-white/10 shadow-[0_6px_18px_-8px_rgba(0,0,0,0.35)]">
@@ -1049,16 +1071,42 @@ function GameContent() {
                   )}
                 </div>
                 {gold > 0 && (
+                  // 상점의 영구 "코인"(🪙, 은색/amber Coins 아이콘)과 혼동되지 않도록 이번 던전 한정
+                  // "골드"는 다른 아이콘(💰)·문구로 구분 — 두 재화는 서로 별개(런 종료 시 골드만 초기화)
                   <span className="inline-flex items-center gap-1 px-2 py-1 rounded-full backdrop-blur-md bg-amber-500/10 border border-amber-500/25 text-amber-600 dark:text-amber-400 text-[10px] font-bold tabular-nums">
-                    🪙 {gold}
+                    💰 골드 {gold}
                   </span>
                 )}
                 {relics.length > 0 && (
-                  <span className="inline-flex items-center gap-1 px-2 py-1 rounded-full backdrop-blur-md bg-violet-500/10 border border-violet-500/25 text-[11px]">
-                    {relics.map(id => {
-                      const r = RELIC_POOL.find(x => x.id === id);
-                      return r ? <span key={id} title={`${r.name} — ${r.desc}`} aria-hidden>{r.icon}</span> : null;
-                    })}
+                  // title 툴팁은 모바일 탭에서 안 뜨므로, 탭하면 열리는 패널(ScoreInfo와 동일 패턴)로 대체
+                  <span className="relative inline-flex">
+                    {/* key=relics.length로 유물이 새로 추가될 때마다 재마운트시켜 pop-in 애니메이션이 다시 재생되게 함 */}
+                    <button key={relics.length} type="button" onClick={() => setShowRelicInfo(v => !v)} aria-label="보유 유물 효과 보기"
+                      className="inline-flex items-center gap-1 px-2 py-1 rounded-full backdrop-blur-md bg-violet-500/10 border border-violet-500/25 text-[11px] animate-in zoom-in-50 duration-300">
+                      {relics.map(id => {
+                        const r = RELIC_POOL.find(x => x.id === id);
+                        return r ? <span key={id} aria-hidden>{r.icon}</span> : null;
+                      })}
+                    </button>
+                    {showRelicInfo && (
+                      <>
+                        {/* 바깥 탭하면 닫히는 투명 배경 — 패널(z-50)보다 낮지만 전역 모바일 헤더(z-40)보다는
+                            높아야 함(같은 z-40이면 DOM 순서에 기대게 되어 클릭이 헤더에 막힐 수 있었음) */}
+                        <button type="button" aria-label="유물 정보 닫기" onClick={() => setShowRelicInfo(false)}
+                          className="fixed inset-0 z-[45] cursor-default" />
+                        <div className="fixed z-50 inset-x-4 bottom-20 sm:absolute sm:z-50 sm:inset-x-auto sm:left-0 sm:top-full sm:mt-2 sm:w-60 rounded-xl bg-neutral-900 dark:bg-[#242320] border border-neutral-700/60 dark:border-[#35332e] p-2.5 text-left shadow-xl space-y-1.5">
+                          {relics.map(id => {
+                            const r = RELIC_POOL.find(x => x.id === id);
+                            return r ? (
+                              <p key={id} className="flex items-start gap-1.5 text-[11px] text-neutral-200">
+                                <span aria-hidden className="shrink-0">{r.icon}</span>
+                                <span><b className="text-white">{r.name}</b> — {r.desc}</span>
+                              </p>
+                            ) : null;
+                          })}
+                        </div>
+                      </>
+                    )}
                   </span>
                 )}
                 {phase === "battling" && activeBoost && (
@@ -1078,7 +1126,7 @@ function GameContent() {
                   </button>
                 )}
                 <button type="button" onClick={() => setShowTutorial(true)} aria-label="게임 방법 보기"
-                  className="inline-flex items-center justify-center w-7 h-7 rounded-full backdrop-blur-md bg-white/85 dark:bg-white/[0.06] border border-black/5 dark:border-white/10 shadow-[0_6px_18px_-8px_rgba(0,0,0,0.35)] text-neutral-500 dark:text-neutral-300 hover:text-[#16a34a] transition-colors">
+                  className="inline-flex items-center justify-center w-8 h-8 rounded-full backdrop-blur-md bg-white/85 dark:bg-white/[0.06] border border-black/5 dark:border-white/10 shadow-[0_6px_18px_-8px_rgba(0,0,0,0.35)] text-neutral-500 dark:text-neutral-300 hover:text-[#16a34a] transition-colors">
                   <Info size={14} />
                 </button>
               </div>
@@ -1145,9 +1193,9 @@ function GameContent() {
                     </p>
                     {(gold > 0 || relics.length > 0) && (
                       <p className="text-[11px] text-neutral-400 mt-1 break-keep">
-                        🪙 이번 던전 골드 {gold}
+                        💰 이번 던전 골드 {gold}
                         {relics.length > 0 && <> · 유물 {relics.map(id => RELIC_POOL.find(r => r.id === id)?.icon).join(" ")}</>}
-                        {" "}— 던전을 나가면 초기화돼요
+                        <span className="block mt-0.5">던전을 나가면 초기화돼요</span>
                       </p>
                     )}
                   </div>
@@ -1192,11 +1240,11 @@ function GameContent() {
                     상대 값은 고른 지표만 라운드 종료 후 공개. sub 기준 태그가 초록일수록 이길 확률↑.
                     아래 헤더 행은 버튼 내부와 동일한 gap-2 px-3 + 아이콘/w-9/flex-1/w-14 구조를 그대로 반복해
                     "이 값은 내 카드, 이 칸은 몬스터"가 값 칸 바로 위에서 정렬되게 함. */}
-                <div className="shrink-0 flex items-center gap-2 px-3 mt-1 text-[9px] font-bold text-neutral-400">
+                <div className="shrink-0 flex items-center gap-2 px-3 mt-1 text-[9px] font-bold">
                   <span className="w-3 shrink-0" aria-hidden />
                   <span className="w-9 shrink-0" aria-hidden />
-                  <span className="flex-1 text-left">🗡️ 내 카드</span>
-                  <span className="w-14 shrink-0 text-right">👹 몬스터</span>
+                  <span className="flex-1 text-left text-[#16a34a]">🗡️ 내 카드</span>
+                  <span className="w-14 shrink-0 text-right text-rose-500">👹 몬스터</span>
                 </div>
                 <div className="shrink-0 space-y-1 mt-1">
                   {playerParts.map(pPart => {
@@ -1208,7 +1256,7 @@ function GameContent() {
                     return (
                       <button key={pPart.key} type="button" disabled={phase !== "battling" || !bothAvailable}
                         onClick={() => battle(pPart.key)}
-                        className={cn("w-full flex items-center gap-2 px-3 py-1.5 rounded-xl border backdrop-blur-md text-xs font-bold transition-all",
+                        className={cn("w-full flex items-center gap-2 px-3 py-2 rounded-xl border backdrop-blur-md text-xs font-bold transition-all",
                           !bothAvailable ? "opacity-40 border-black/5 dark:border-white/10 bg-black/[0.02] dark:bg-white/[0.02] cursor-not-allowed"
                             : revealed ? (lastResult?.win ? "border-[#16a34a]/50 bg-[#16a34a]/10" : "border-rose-500/50 bg-rose-500/10")
                               : "border-black/5 dark:border-white/10 bg-white/80 dark:bg-white/[0.05] hover:border-[#16a34a]/40 active:scale-[0.98]")}>
@@ -1218,7 +1266,9 @@ function GameContent() {
                         {pPart.available && (
                           <span className={cn("shrink-0 px-1.5 py-0.5 rounded-full text-[9px] font-black", tag.cls)}>{tag.label}</span>
                         )}
-                        <span className="w-14 shrink-0 text-right tabular-nums text-neutral-400">
+                        {/* 미공개 상대 값 — 탭 가능한 버튼처럼 보이지 않도록 이탤릭+저채도로 "아직 안 보임"임을 표시.
+                            공개된(revealed) 실제 값은 일반 텍스트로 정상 표시. */}
+                        <span className={cn("w-14 shrink-0 text-right tabular-nums", revealed ? "text-neutral-400" : "text-neutral-400 italic opacity-60")}>
                           {revealed ? oPart!.valueStr : bothAvailable ? "?" : "—"}
                         </span>
                       </button>
@@ -1240,7 +1290,7 @@ function GameContent() {
                       <p className={cn("text-sm font-black animate-in fade-in", lastResult?.win ? "text-[#16a34a]" : "text-rose-500")}>
                         {lastResult?.win ? "승리! ✔" : `패배! 방패 -${lastResult?.shieldLoss ?? 1}`}
                         {lastResult?.win && !!lastResult.goldGain && (
-                          <span className="ml-1.5 text-xs font-bold text-amber-600 dark:text-amber-400">🪙 +{lastResult.goldGain}</span>
+                          <span className="ml-1.5 text-xs font-bold text-amber-600 dark:text-amber-400">💰 +{lastResult.goldGain}</span>
                         )}
                       </p>
                       {lastResult?.win && dropped && (
@@ -1271,11 +1321,11 @@ function GameContent() {
                       {shields > 0 && !relicChoices && (
                         <div className="flex items-center justify-center gap-2">
                           <button onClick={cashOut}
-                            className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl border border-black/10 dark:border-white/15 bg-white/70 dark:bg-white/[0.05] hover:border-amber-500/50 text-neutral-600 dark:text-neutral-300 font-black text-xs active:scale-[0.97] transition-all">
+                            className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl border border-black/10 dark:border-white/15 bg-white/70 dark:bg-white/[0.05] hover:border-amber-500/50 text-neutral-600 dark:text-neutral-300 font-black text-xs active:scale-[0.97] transition-all">
                             <Trophy size={13} className="text-amber-500" /> 여기서 정리
                           </button>
                           <button onClick={nextRound}
-                            className="inline-flex items-center gap-1.5 px-4 py-1.5 rounded-xl bg-gradient-to-r from-[#16a34a] to-[#15803d] hover:brightness-110 text-white font-black text-xs shadow-[0_6px_16px_-6px_rgba(22,163,74,0.55)] active:scale-[0.97] transition-all">
+                            className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-gradient-to-r from-[#16a34a] to-[#15803d] hover:brightness-110 text-white font-black text-xs shadow-[0_6px_16px_-6px_rgba(22,163,74,0.55)] active:scale-[0.97] transition-all">
                             다음 층으로 <Swords size={13} />
                           </button>
                         </div>
@@ -1346,7 +1396,7 @@ function GameContent() {
                 { icon: "⚔️", text: <>용사(내 카드)와 몬스터(상대 카드)의 지표(NCAV·PBR·PER·ROE) 중 하나를 골라 대결하세요. 지표 이름을 몰라도 옆에 뜨는 <b className="text-[#16a34a]">유리</b>/<b className="text-amber-600 dark:text-amber-400">보통</b>/<b className="text-rose-500">불리</b> 태그만 보고 초록을 고르면 돼요.</> },
                 { icon: "🛡️", text: <>이기면 다음 층으로, 지면 <b className="text-neutral-800 dark:text-neutral-100">방패</b>를 잃어요. 방패가 다 떨어지면 던전에서 나가게 돼요.</> },
                 { icon: "🃏", text: <>이긴 몬스터 카드는 확률에 따라 <b className="text-neutral-800 dark:text-neutral-100">내 덱</b>에 카드로 수집돼요.</> },
-                { icon: "🪙", text: <>층을 돌파할 때마다 <b className="text-neutral-800 dark:text-neutral-100">골드</b>를 얻고, <b className="text-violet-600 dark:text-violet-400">보스</b>를 물리치면 이번 던전에서만 쓰는 <b className="text-neutral-800 dark:text-neutral-100">유물</b>을 하나 고를 수 있어요. 골드와 유물은 던전을 나가면 초기화돼요.</> },
+                { icon: "💰", text: <>층을 돌파할 때마다 <b className="text-neutral-800 dark:text-neutral-100">골드</b>를 얻고, <b className="text-violet-600 dark:text-violet-400">보스</b>를 물리치면 이번 던전에서만 쓰는 <b className="text-neutral-800 dark:text-neutral-100">유물</b>을 하나 고를 수 있어요. 골드와 유물은 던전을 나가면 초기화돼요 — 내 덱에서 카드를 바꾸는 영구 <b className="text-neutral-800 dark:text-neutral-100">코인</b>(🪙)과는 다른 재화예요.</> },
                 { icon: "⚠️", text: <>연승이 길어질수록 다음 패배의 대가도 커져요. 매 판마다 <b className="text-neutral-800 dark:text-neutral-100">"여기서 정리"</b>(안전하게 마무리)와 <b className="text-neutral-800 dark:text-neutral-100">"다음 층으로"</b>(위험 감수) 중 골라보세요.</> },
               ].map((row, i) => (
                 <div key={i} className="flex items-start gap-2.5">
@@ -1364,8 +1414,9 @@ function GameContent() {
       )}
 
       {/* 유물 선택 — 보스 처치 직후 뜨는 로그라이크 보상. 배틀 화면의 촘촘한 no-scroll 레이아웃과
-          별개로 고정 오버레이(모달)로 띄워서 카드 크기 실측 로직에 영향을 주지 않게 함(튜토리얼/기록 패널과 동일 패턴) */}
-      {relicChoices && (
+          별개로 고정 오버레이(모달)로 띄워서 카드 크기 실측 로직에 영향을 주지 않게 함(튜토리얼/기록 패널과 동일 패턴).
+          packOpening 중엔 뒤로 미룸 — 안 그러면 모달이 팩 오픈 리빌 연출을 그대로 가려서 못 보게 됨. */}
+      {relicChoices && !packOpening && (
         <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/50 backdrop-blur-sm p-3">
           <div className="w-full sm:max-w-sm max-h-[80vh] overflow-y-auto rounded-2xl bg-white dark:bg-[#242320] border border-neutral-200 dark:border-[#35332e] shadow-xl p-4 animate-in fade-in slide-in-from-bottom-2 sm:zoom-in-95 duration-200">
             <p className="font-black text-neutral-900 dark:text-white flex items-center gap-1.5 mb-3">
@@ -1386,7 +1437,7 @@ function GameContent() {
             <div className="flex items-center justify-center gap-4 mt-3">
               <button type="button" onClick={skipRelic} className="text-xs font-bold text-neutral-400 hover:text-neutral-600 dark:hover:text-neutral-300">건너뛰기</button>
               {gold >= 20 && (
-                <button type="button" onClick={rerollRelics} className="text-xs font-bold text-amber-600 dark:text-amber-400 hover:underline">🪙20으로 다시 뽑기</button>
+                <button type="button" onClick={rerollRelics} className="text-xs font-bold text-amber-600 dark:text-amber-400 hover:underline">💰20으로 다시 뽑기</button>
               )}
             </div>
           </div>
@@ -1560,7 +1611,10 @@ function DeckView({ deck, catalog, best, coins, isLoggedIn, onLogin, onClose, sh
           )}
 
           {catalog.length === 0 ? (
-            <p className="py-20 text-center text-sm text-neutral-400">카드 데이터를 불러오는 중…</p>
+            <p className="py-20 flex flex-col items-center gap-2 text-center text-sm text-neutral-400">
+              <Loader2 size={20} className="animate-spin" />
+              카드 데이터를 불러오는 중…
+            </p>
           ) : (showOwnedOnly || showDupesOnly) && total === 0 ? (
             <p className="py-20 text-center text-sm text-neutral-400">
               {showDupesOnly ? "2장 이상 보유한 중복 카드가 없어요. 코인으로 전환하려면 같은 카드가 더 필요해요!" : "아직 보유한 카드가 없어요. 게임을 하며 카드를 수집하세요!"}
