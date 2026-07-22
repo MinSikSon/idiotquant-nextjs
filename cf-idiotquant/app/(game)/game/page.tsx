@@ -17,7 +17,7 @@ import {
   ArrowUp, ArrowDown, Layers, Copy, TrendingUp, Sparkles, ChevronRight, Lock, Info,
   Cpu, Dna, Landmark, CarFront, Ship, Construction, Zap, FlaskConical, Factory, RadioTower, Gamepad2,
   Soup, ShoppingCart, PlaneTakeoff, Shirt, Code2, Gem, Compass, Anchor, Map as MapIcon, Medal as MedalIcon,
-  BatteryCharging, Bot, Wallet, History, X, Flame, Trophy, Target, Wand2, Shield, Swords, Crown, Loader2,
+  BatteryCharging, Bot, Wallet, History, X, Flame, Trophy, Target, Wand2, Shield, Swords, Crown, Loader2, UserRound,
   type LucideIcon,
 } from "lucide-react";
 import { useAppDispatch, useAppSelector } from "@/lib/hooks";
@@ -645,6 +645,35 @@ function rankOf(streak: number): { emoji: string; title: string } {
   return { emoji: "🔰", title: "견습 용사" };
 }
 
+// 던전 층 진행도 — 원형 노드 나열 대신 꺾은선 그래프로 표시. floor가 커질수록(더 깊이 내려갈수록)
+// 선이 아래로 내려가는 "하강" 모양으로 그려 "지하 N층"이라는 세계관과 맞춤. 보스 층은 왕관으로 표시.
+type FloorNode = { n: number; floor: number; boss: boolean; cleared: boolean; current: boolean };
+function FloorGraph({ nodes }: { nodes: FloorNode[] }) {
+  // 원형 노드 나열이던 예전 배지(높이 ~32px)보다 커지면 그만큼 배틀 카드가 작아지므로
+  // (배틀 화면은 세로 공간이 병목) 같은 높이 예산 안에서 그리도록 치수를 맞춤.
+  const W = 132, H = 24, PAD_X = 10, PAD_TOP = 4;
+  const stepX = (W - PAD_X * 2) / (nodes.length - 1);
+  const stepY = 3.5; // 층마다 살짝 더 깊이 내려가는 느낌
+  const pts = nodes.map((f, i) => ({ x: PAD_X + i * stepX, y: PAD_TOP + i * stepY, f }));
+  const pathD = pts.map((p, i) => `${i === 0 ? "M" : "L"}${p.x.toFixed(1)},${p.y.toFixed(1)}`).join(" ");
+  return (
+    <svg width={W} height={H} viewBox={`0 0 ${W} ${H}`} className="shrink-0 overflow-visible" aria-hidden>
+      <path d={pathD} fill="none" strokeWidth={1.5} strokeLinecap="round" className="stroke-black/10 dark:stroke-white/15" />
+      {pts.map(({ x, y, f }) => (
+        <g key={f.n}>
+          <circle cx={x} cy={y} r={f.current ? 3.5 : 2.75}
+            className={f.current ? "fill-rose-500" : f.cleared ? "fill-[#16a34a]" : "fill-neutral-300 dark:fill-neutral-700"} />
+          {f.current && <circle cx={x} cy={y} r={5.5} className="fill-none stroke-rose-300 dark:stroke-rose-800" strokeWidth={1.2} />}
+          <text x={x} y={y + 10} textAnchor="middle" fontSize={f.boss ? 8 : 6.5}
+            className={cn("font-black", f.current ? "fill-rose-500" : f.cleared ? "fill-[#16a34a]" : "fill-neutral-400 dark:fill-neutral-600")}>
+            {f.boss ? "👑" : f.floor}
+          </text>
+        </g>
+      ))}
+    </svg>
+  );
+}
+
 type Phase = "loading" | "battling" | "resolved" | "over";
 
 // useSearchParams는 Suspense 경계가 필요(screener 페이지와 동일 패턴) — 게임 본체를 감싼다
@@ -696,7 +725,7 @@ function GameContent() {
   const [packOpening, setPackOpening] = useState(false); // 팩 오픈 리빌 연출 표시 중
   const [firstDupHint, setFirstDupHint] = useState(false); // 첫 중복 카드 획득 시 지갑/전환 안내
   const [showTutorial, setShowTutorial] = useState(false); // 방법 안내 모달(첫 방문 자동 표시 + ? 버튼으로 재열람)
-  const [showRelicInfo, setShowRelicInfo] = useState(false); // 보유 유물 효과 설명 — title 툴팁은 모바일 탭에서 안 뜨므로 탭 토글로 대체
+  const [showStatus, setShowStatus] = useState(false); // 용사 상태창(방패·연승·골드·보유 유물 등) 모달
   const [gold, setGold] = useState(0); // 이번 런 골드(층 클리어·카드 획득마다 적립) — 던전을 나가면 초기화
   const [relics, setRelics] = useState<string[]>([]); // 이번 런에 고른 유물 id 목록 — 던전을 나가면 초기화
   const [relicChoices, setRelicChoices] = useState<Relic[] | null>(null); // 보스 처치 직후 유물 선택지(null=선택 없음)
@@ -737,9 +766,8 @@ function GameContent() {
     battleRowRoRef.current = null;
     if (!el) return;
     const RATIO = 3 / 4; // width / height
-    const GAP = 6; // JSX의 gap-1.5(카드-VS 사이 간격)와 일치해야 함
-    const VS_WIDTH = 24; // VS 배지 지름(JSX의 w-6)과 일치해야 함
-    const RESERVED = GAP * 2 + VS_WIDTH; // 카드 사이 간격 2번 + VS 배지 — 예전엔 GAP 1번만 빼서 실제보다 넓게 계산되는 버그가 있었음(카드가 계산값보다 눌려 작게 렌더링됨)
+    const GAP = 6; // JSX의 gap-1.5(카드 사이 간격)와 일치해야 함 — VS 배지를 없애 카드 사이엔 이 간격 하나만 남음
+    const RESERVED = GAP; // 카드 두 장 사이 간격 1번만 예약
     const update = () => {
       const w = el.clientWidth, h = el.clientHeight;
       if (w <= 0 || h <= 0) return;
@@ -1032,17 +1060,10 @@ function GameContent() {
                       className={i < shields ? "text-[#16a34a] fill-[#16a34a]/25" : "text-neutral-300 dark:text-neutral-700"} />
                   ))}
                 </div>
-                {/* 던전 층 표시 — 현재 층 기준 앞뒤 슬라이딩 창. 회색=미탐험, 초록=돌파, 빨강(확대)=현재, 왕관=보스층 */}
-                <div className="flex items-center gap-1 px-2 py-1.5 rounded-2xl backdrop-blur-md bg-white/85 dark:bg-white/[0.06] border border-black/5 dark:border-white/10 shadow-[0_6px_18px_-8px_rgba(0,0,0,0.35)]">
+                {/* 던전 층 표시 — 원형 노드 나열 대신 꺾은선 그래프. 회색=미탐험, 초록=돌파, 빨강(확대)=현재, 왕관=보스층 */}
+                <div className="flex items-center gap-1 pl-2 pr-1 py-1 rounded-2xl backdrop-blur-md bg-white/85 dark:bg-white/[0.06] border border-black/5 dark:border-white/10 shadow-[0_6px_18px_-8px_rgba(0,0,0,0.35)]">
                   <span className="text-[9px] font-black text-neutral-400 uppercase tracking-wider pr-0.5 whitespace-nowrap">지하{roundNum + 1}층</span>
-                  {floorWindow.map(f => (
-                    <span key={f.n} className={cn("w-5 h-5 rounded-full flex items-center justify-center text-[9px] font-black shrink-0 transition-all",
-                      f.current ? "bg-rose-500 text-white ring-2 ring-rose-300 dark:ring-rose-800 scale-110"
-                        : f.cleared ? "bg-[#16a34a]/15 text-[#16a34a]"
-                          : "bg-black/5 dark:bg-white/10 text-neutral-400 dark:text-neutral-600")}>
-                      {f.boss ? <Crown size={11} strokeWidth={2.5} /> : f.floor}
-                    </span>
-                  ))}
+                  <FloorGraph nodes={floorWindow} />
                 </div>
                 <div className="flex items-center gap-1 px-1.5 sm:px-2 py-1 sm:py-1.5 rounded-2xl backdrop-blur-md bg-white/85 dark:bg-white/[0.06] border border-black/5 dark:border-white/10 shadow-[0_6px_18px_-8px_rgba(0,0,0,0.35)]">
                   <div className="text-center px-2.5 sm:px-3">
@@ -1078,36 +1099,14 @@ function GameContent() {
                   </span>
                 )}
                 {relics.length > 0 && (
-                  // title 툴팁은 모바일 탭에서 안 뜨므로, 탭하면 열리는 패널(ScoreInfo와 동일 패턴)로 대체
-                  <span className="relative inline-flex">
-                    {/* key=relics.length로 유물이 새로 추가될 때마다 재마운트시켜 pop-in 애니메이션이 다시 재생되게 함 */}
-                    <button key={relics.length} type="button" onClick={() => setShowRelicInfo(v => !v)} aria-label="보유 유물 효과 보기"
-                      className="inline-flex items-center gap-1 px-2 py-1 rounded-full backdrop-blur-md bg-violet-500/10 border border-violet-500/25 text-[11px] animate-in zoom-in-50 duration-300">
-                      {relics.map(id => {
-                        const r = RELIC_POOL.find(x => x.id === id);
-                        return r ? <span key={id} aria-hidden>{r.icon}</span> : null;
-                      })}
-                    </button>
-                    {showRelicInfo && (
-                      <>
-                        {/* 바깥 탭하면 닫히는 투명 배경 — 패널(z-50)보다 낮지만 전역 모바일 헤더(z-40)보다는
-                            높아야 함(같은 z-40이면 DOM 순서에 기대게 되어 클릭이 헤더에 막힐 수 있었음) */}
-                        <button type="button" aria-label="유물 정보 닫기" onClick={() => setShowRelicInfo(false)}
-                          className="fixed inset-0 z-[45] cursor-default" />
-                        <div className="fixed z-50 inset-x-4 bottom-20 sm:absolute sm:z-50 sm:inset-x-auto sm:left-0 sm:top-full sm:mt-2 sm:w-60 rounded-xl bg-neutral-900 dark:bg-[#242320] border border-neutral-700/60 dark:border-[#35332e] p-2.5 text-left shadow-xl space-y-1.5">
-                          {relics.map(id => {
-                            const r = RELIC_POOL.find(x => x.id === id);
-                            return r ? (
-                              <p key={id} className="flex items-start gap-1.5 text-[11px] text-neutral-200">
-                                <span aria-hidden className="shrink-0">{r.icon}</span>
-                                <span><b className="text-white">{r.name}</b> — {r.desc}</span>
-                              </p>
-                            ) : null;
-                          })}
-                        </div>
-                      </>
-                    )}
-                  </span>
+                  // 유물 효과 상세 설명은 아래 "상태창"으로 통합(간단 뱃지는 탭하면 바로 상태창을 엶)
+                  <button key={relics.length} type="button" onClick={() => setShowStatus(true)} aria-label="상태창 보기 — 보유 유물"
+                    className="inline-flex items-center gap-1 px-2 py-1 rounded-full backdrop-blur-md bg-violet-500/10 border border-violet-500/25 text-[11px] animate-in zoom-in-50 duration-300">
+                    {relics.map(id => {
+                      const r = RELIC_POOL.find(x => x.id === id);
+                      return r ? <span key={id} aria-hidden>{r.icon}</span> : null;
+                    })}
+                  </button>
                 )}
                 {phase === "battling" && activeBoost && (
                   <span className="inline-flex items-center gap-1 px-2 py-1 rounded-full backdrop-blur-md bg-amber-500/10 border border-amber-500/25 text-amber-600 dark:text-amber-400 text-[10px] font-bold tabular-nums">
@@ -1125,6 +1124,10 @@ function GameContent() {
                     <History size={13} /> {history.length}
                   </button>
                 )}
+                <button type="button" onClick={() => setShowStatus(true)} aria-label="상태창 보기"
+                  className="inline-flex items-center justify-center w-8 h-8 rounded-full backdrop-blur-md bg-white/85 dark:bg-white/[0.06] border border-black/5 dark:border-white/10 shadow-[0_6px_18px_-8px_rgba(0,0,0,0.35)] text-neutral-500 dark:text-neutral-300 hover:text-[#16a34a] transition-colors">
+                  <UserRound size={14} />
+                </button>
                 <button type="button" onClick={() => setShowTutorial(true)} aria-label="게임 방법 보기"
                   className="inline-flex items-center justify-center w-8 h-8 rounded-full backdrop-blur-md bg-white/85 dark:bg-white/[0.06] border border-black/5 dark:border-white/10 shadow-[0_6px_18px_-8px_rgba(0,0,0,0.35)] text-neutral-500 dark:text-neutral-300 hover:text-[#16a34a] transition-colors">
                   <Info size={14} />
@@ -1225,12 +1228,12 @@ function GameContent() {
                     className="text-center text-[9px] font-black text-rose-500 truncate">👹 몬스터</span>
                 </div>
                 {/* 배틀 아레나 — 모바일/데스크톱 공통 레이아웃. 두 카드가 남은 세로 공간을 JS로 실측해 꽉 채움(스크롤 방지).
-                    VS 배지·간격은 battleRowRef의 RESERVED 계산과 반드시 일치시켜야 함(gap-1.5=6px, w-6=24px) */}
+                    카드가 작아진다는 피드백에 따라 VS 배지를 없애 그 공간만큼 카드를 더 키움 — 카드 사이
+                    간격(gap-1.5)은 battleRowRef의 RESERVED 계산과 반드시 일치시켜야 함 */}
                 <div ref={battleRowRef} className="flex-1 min-h-0 flex items-center justify-center gap-1.5">
                   <div style={battleCardSize ? { width: battleCardSize.w, height: battleCardSize.h } : { width: "38%", maxWidth: 220, aspectRatio: "3/4" }}>
                     <TcgCard hero item={playerCard} value={STAT.fmt(STAT.get(playerCard))} rank={rankMap.get(String(playerCard.ticker))} />
                   </div>
-                  <span className="shrink-0 w-6 h-6 rounded-full bg-[#5b4a2e] dark:bg-[#c9a86a] text-[#f3e9d2] dark:text-[#14100a] text-[8px] font-black font-serif flex items-center justify-center shadow-lg">VS</span>
                   <div style={battleCardSize ? { width: battleCardSize.w, height: battleCardSize.h } : { width: "38%", maxWidth: 220, aspectRatio: "3/4" }}>
                     <TcgCard hero item={opponentCard} value={STAT.fmt(STAT.get(opponentCard))} rank={rankMap.get(String(opponentCard.ticker))} />
                   </div>
@@ -1409,6 +1412,78 @@ function GameContent() {
               className="w-full mt-4 inline-flex items-center justify-center gap-2 px-6 py-2.5 rounded-2xl bg-gradient-to-r from-[#16a34a] to-[#15803d] hover:brightness-110 text-white font-black text-sm shadow-[0_8px_24px_-8px_rgba(22,163,74,0.55)] active:scale-[0.98] transition-all">
               <Swords size={16} /> 던전 입장!
             </button>
+          </div>
+        </div>
+      )}
+
+      {/* 용사 상태창 — 방패·연승·골드·보유 유물을 한 화면에 모아 보여줌. HUD의 유물 뱃지/사람 아이콘 버튼으로 엶 */}
+      {showStatus && (
+        <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/50 backdrop-blur-sm p-3"
+          onClick={() => setShowStatus(false)}>
+          <div className="w-full sm:max-w-sm max-h-[80vh] overflow-y-auto rounded-2xl bg-white dark:bg-[#242320] border border-neutral-200 dark:border-[#35332e] shadow-xl p-4 animate-in fade-in slide-in-from-bottom-2 sm:zoom-in-95 duration-200"
+            onClick={e => e.stopPropagation()}>
+            <div className="flex items-center justify-between mb-3">
+              <p className="font-black text-neutral-900 dark:text-white flex items-center gap-1.5">
+                <UserRound size={16} /> 용사 상태창
+              </p>
+              <button type="button" onClick={() => setShowStatus(false)} className="text-neutral-400 hover:text-[#16a34a]" aria-label="닫기">
+                <X size={18} />
+              </button>
+            </div>
+
+            <div className="flex items-center gap-3 mb-3 p-3 rounded-xl bg-black/[0.03] dark:bg-white/[0.04]">
+              <span aria-hidden className="text-3xl leading-none">{rankOf(totalWins).emoji}</span>
+              <div className="min-w-0">
+                <p className="font-black text-sm text-neutral-900 dark:text-white truncate">{rankOf(totalWins).title}</p>
+                <p className="text-[11px] text-neutral-400">지하 {roundNum + 1}층 탐험 중</p>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-2 mb-3">
+              <div className="rounded-xl bg-black/[0.03] dark:bg-white/[0.04] p-2.5 text-center">
+                <p className="flex items-center justify-center gap-1 text-lg font-black tabular-nums text-[#16a34a] leading-none">
+                  <Shield size={14} strokeWidth={2.5} />{shields}/{maxShields}
+                </p>
+                <p className="text-[9px] font-bold text-neutral-400 uppercase tracking-wider mt-1">방패</p>
+              </div>
+              <div className="rounded-xl bg-black/[0.03] dark:bg-white/[0.04] p-2.5 text-center">
+                <p className="flex items-center justify-center gap-1 text-lg font-black tabular-nums text-rose-500 leading-none">
+                  <Flame size={14} strokeWidth={2.5} />{streak}
+                </p>
+                <p className="text-[9px] font-bold text-neutral-400 uppercase tracking-wider mt-1">연승</p>
+              </div>
+              <div className="rounded-xl bg-black/[0.03] dark:bg-white/[0.04] p-2.5 text-center">
+                <p className="flex items-center justify-center gap-1 text-lg font-black tabular-nums text-amber-500 leading-none">
+                  <Trophy size={14} strokeWidth={2.5} />{best}
+                </p>
+                <p className="text-[9px] font-bold text-neutral-400 uppercase tracking-wider mt-1">최고 기록</p>
+              </div>
+              <div className="rounded-xl bg-black/[0.03] dark:bg-white/[0.04] p-2.5 text-center">
+                <p className="flex items-center justify-center gap-1 text-lg font-black tabular-nums text-amber-600 dark:text-amber-400 leading-none">
+                  💰{gold}
+                </p>
+                <p className="text-[9px] font-bold text-neutral-400 uppercase tracking-wider mt-1">골드</p>
+              </div>
+            </div>
+
+            <p className="text-xs font-black text-neutral-700 dark:text-neutral-200 mb-1.5">
+              보유 유물 {relics.length}/{RELIC_POOL.length}
+            </p>
+            {relics.length === 0 ? (
+              <p className="text-xs text-neutral-400 break-keep">아직 유물이 없어요 — 보스를 물리치면 하나 고를 수 있어요.</p>
+            ) : (
+              <div className="space-y-1.5">
+                {relics.map(id => {
+                  const r = RELIC_POOL.find(x => x.id === id);
+                  return r ? (
+                    <p key={id} className="flex items-start gap-2 rounded-lg bg-violet-500/5 border border-violet-500/20 p-2 text-xs">
+                      <span aria-hidden className="text-base shrink-0">{r.icon}</span>
+                      <span><b className="text-neutral-800 dark:text-neutral-100">{r.name}</b> <span className="text-neutral-500 dark:text-neutral-400">— {r.desc}</span></span>
+                    </p>
+                  ) : null;
+                })}
+              </div>
+            )}
           </div>
         </div>
       )}
