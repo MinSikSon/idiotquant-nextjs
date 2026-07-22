@@ -329,6 +329,7 @@ function buildTierRankMap(catalog: any[]): Map<string, number> {
 function TcgCard({ item, value, hero = false, count, locked = false, rank, onGuess, onNext }:
   { item: any; value: React.ReactNode; hero?: boolean; count?: number; idleDelay?: number; locked?: boolean; rank?: number; onGuess?: (dir: "higher" | "lower") => void; onNext?: () => void }) {
   const [showInfo, setShowInfo] = useState(false);
+  const [showFlavor, setShowFlavor] = useState(false); // 룰박스 설명(플레이버+효과) 기본 숨김 — 탭하면 펼쳐짐
   // 높다/낮다 — 카드를 좌우로 드래그해서 판정(오른쪽=높다, 왼쪽=낮다). 폭의 28% 이상 끌면 확정.
   const [dragX, setDragX] = useState(0);
   const [dragging, setDragging] = useState(false);
@@ -480,15 +481,25 @@ function TcgCard({ item, value, hero = false, count, locked = false, rank, onGue
       {/* 검정 여백 — 아트존과 룰박스 사이 (레퍼런스의 카드지 마진, 카드 크기에 비례) */}
       <div className="shrink-0 h-[2.2%]" />
 
-      {/* 룰박스: 마룬 대리석 테두리(레퍼런스와 동일한 고정색, 둥근 인셋 박스) + 회청색 바탕 텍스트 — 플레이버 + 효과. shrink-0, 항상 온전히 보임 */}
+      {/* 룰박스: 마룬 대리석 테두리(레퍼런스와 동일한 고정색, 둥근 인셋 박스) + 회청색 바탕 텍스트 — 플레이버 + 효과.
+          게임 전체적으로 설명 텍스트가 카드 공간을 차지한다는 피드백에 따라 기본은 업종 라벨만 한 줄
+          보이고, 탭하면 플레이버·효과 문구가 펼쳐짐(shrink-0라 접혀 있을 땐 그만큼 아트존이 커짐). */}
       <div className="relative z-[2] shrink-0 p-[4%]" style={{ background: marble }}>
-        <div className="rounded-lg px-2 py-2" style={{ background: "#c8d2d6", boxShadow: "inset 0 0 0 2px rgba(0,0,0,0.8)" }}>
-          <p className="font-bold uppercase tracking-wide" style={{ fontSize: hero ? 8 : 6.5, color: sec.hue }}>{sec.label}</p>
-          <p className={cn("leading-snug break-keep mt-0.5", hero ? "line-clamp-2" : "line-clamp-1")} style={{ fontSize: hero ? 10 : 7.5, color: "#181818" }}>{sec.flavor}</p>
-          <p className="leading-snug break-keep mt-1" style={{ fontSize: hero ? 9 : 7, color: "#181818" }}>
-            "{sec.keyword}" 관련 발굴 확률 <b style={{ color: c.accent }}>+{bonus}%p</b>
+        <button type="button" onClick={e => { e.stopPropagation(); setShowFlavor(v => !v); }}
+          className="w-full text-left rounded-lg px-2 py-2" style={{ background: "#c8d2d6", boxShadow: "inset 0 0 0 2px rgba(0,0,0,0.8)" }}>
+          <p className="font-bold uppercase tracking-wide flex items-center justify-between gap-1" style={{ fontSize: hero ? 8 : 6.5, color: sec.hue }}>
+            {sec.label}
+            {!showFlavor && <Info size={hero ? 10 : 8} className="shrink-0 opacity-50" />}
           </p>
-        </div>
+          {showFlavor && (
+            <>
+              <p className={cn("leading-snug break-keep mt-0.5", hero ? "line-clamp-2" : "line-clamp-1")} style={{ fontSize: hero ? 10 : 7.5, color: "#181818" }}>{sec.flavor}</p>
+              <p className="leading-snug break-keep mt-1" style={{ fontSize: hero ? 9 : 7, color: "#181818" }}>
+                "{sec.keyword}" 관련 발굴 확률 <b style={{ color: c.accent }}>+{bonus}%p</b>
+              </p>
+            </>
+          )}
+        </button>
       </div>
 
       {/* 하단 인쇄줄 — 레퍼런스의 저작권 표기 자리에 시가총액(게임 진행에 필요한 실 스탯) */}
