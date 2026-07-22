@@ -1242,21 +1242,11 @@ function GameContent() {
                   </div>
                 </div>
 
-                {/* 지표 픽커 — 4개 지표 중 하나를 골라 배틀. 내 카드 값은 항상 보이고(유·불리 태그 포함),
-                    상대 값은 고른 지표만 라운드 종료 후 공개. sub 기준 태그가 초록일수록 이길 확률↑.
-                    아래 헤더 행은 버튼 내부와 동일한 gap-2 px-3 + 아이콘/w-9/flex-1/w-14 구조를 그대로 반복해
-                    "이 값은 내 카드, 이 칸은 몬스터"가 값 칸 바로 위에서 정렬되게 함.
-                    resolved 단계에선 어차피 픽커 행 자체가 색으로 결과를 보여주므로 헤더를 숨겨서 그만큼
-                    카드 공간을 돌려줌 — 결과 확인 직후 카드가 유독 작아 보인다는 피드백 대응. */}
-                {phase === "battling" && (
-                  <div className="shrink-0 flex items-center gap-2 px-3 mt-1 text-[9px] font-bold">
-                    <span className="w-3 shrink-0" aria-hidden />
-                    <span className="w-9 shrink-0" aria-hidden />
-                    <span className="flex-1 text-left text-[#16a34a]">🗡️ 내 카드</span>
-                    <span className="w-14 shrink-0 text-right text-rose-500">👹 몬스터</span>
-                  </div>
-                )}
-                <div className="shrink-0 space-y-1 mt-1">
+                {/* 지표 픽커 — 가로로 긴 행 4개를 쌓던 걸 세로 한 줄(4열 그리드)로 바꿈. 버튼이 화면의
+                    절반 가까이 차지해 카드가 작아 보인다는 피드백 대응 — 행 4개(각 ~38px+간격)를
+                    한 줄로 압축해 카드 공간을 크게 돌려줌. 칸이 좁아 라벨/내 값/태그를 세로로 쌓아 표시하고,
+                    고른 지표만 라운드 종료 후 태그 자리에 상대 값이 나타남(같은 칸이 태그→값으로 전환). */}
+                <div className="shrink-0 grid grid-cols-4 gap-1.5 mt-1.5">
                   {playerParts.map(pPart => {
                     const oPart = opponentParts.find(o => o.key === pPart.key);
                     const bothAvailable = !!(pPart.available && oPart?.available);
@@ -1266,20 +1256,15 @@ function GameContent() {
                     return (
                       <button key={pPart.key} type="button" disabled={phase !== "battling" || !bothAvailable}
                         onClick={() => battle(pPart.key)}
-                        className={cn("w-full flex items-center gap-2 px-3 py-1.5 rounded-xl border backdrop-blur-md text-xs font-bold transition-all",
+                        className={cn("flex flex-col items-center justify-center gap-0.5 py-1.5 rounded-xl border backdrop-blur-md transition-all",
                           !bothAvailable ? "opacity-40 border-black/5 dark:border-white/10 bg-black/[0.02] dark:bg-white/[0.02] cursor-not-allowed"
                             : revealed ? (lastResult?.win ? "border-[#16a34a]/50 bg-[#16a34a]/10" : "border-rose-500/50 bg-rose-500/10")
                               : "border-black/5 dark:border-white/10 bg-white/80 dark:bg-white/[0.05] hover:border-[#16a34a]/40 active:scale-[0.98]")}>
-                        <Swords size={12} className="shrink-0 text-neutral-400" />
-                        <span className="w-9 shrink-0 text-left text-neutral-500 dark:text-neutral-400">{pPart.label}</span>
-                        <span className="flex-1 text-left tabular-nums text-neutral-700 dark:text-neutral-200">{pPart.available ? pPart.valueStr : "—"}</span>
-                        {pPart.available && (
-                          <span className={cn("shrink-0 px-1.5 py-0.5 rounded-full text-[9px] font-black", tag.cls)}>{tag.label}</span>
-                        )}
-                        {/* 미공개 상대 값 — 탭 가능한 버튼처럼 보이지 않도록 이탤릭+저채도로 "아직 안 보임"임을 표시.
-                            공개된(revealed) 실제 값은 일반 텍스트로 정상 표시. */}
-                        <span className={cn("w-14 shrink-0 text-right tabular-nums", revealed ? "text-neutral-400" : "text-neutral-400 italic opacity-60")}>
-                          {revealed ? oPart!.valueStr : bothAvailable ? "?" : "—"}
+                        <span className="text-[9px] font-bold text-neutral-400">{pPart.label}</span>
+                        <span className="text-xs font-black tabular-nums text-neutral-700 dark:text-neutral-200">{pPart.available ? pPart.valueStr : "—"}</span>
+                        <span className={cn("px-1.5 py-0.5 rounded-full text-[8px] font-black",
+                          revealed ? "text-neutral-500 dark:text-neutral-400" : pPart.available ? tag.cls : "text-neutral-400")}>
+                          {revealed ? (oPart?.valueStr ?? "—") : pPart.available ? tag.label : "—"}
                         </span>
                       </button>
                     );
