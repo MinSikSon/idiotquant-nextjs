@@ -60,8 +60,8 @@ const ACHIEVEMENTS: Achievement[] = [
   { id: "prism4", icon: "💠", label: "프리즘 소유자", desc: "전설·보물·다이아·금 등급 모두 보유", done: ({ deck }) => ["legend", "treasure", "diamond", "gold"].every(t => deck.some(c => computeValueScore(c).tone === t)) },
   { id: "half", icon: "📖", label: "도감 반절", desc: "도감 50% 달성", done: ({ deck, catalogTotal }) => catalogTotal > 0 && deck.length / catalogTotal >= 0.5 },
   { id: "holo", icon: "✨", label: "홀로 컬렉터", desc: "같은 카드 3장으로 홀로 카드 제작", done: ({ deck }) => deck.some(c => (c.count ?? 1) >= HOLO_THRESHOLD) },
-  { id: "streak10", icon: "🔥", label: "생존 스트릭 10", desc: "한 항해에서 10연승", done: ({ best }) => best >= 10 },
-  { id: "captain", icon: "🚢", label: "전설의 선장", desc: "최고 기록 15연승 달성", done: ({ best }) => best >= 15 }, // rankOf()의 "전설의 선장"(streak>=15)과 동일 기준
+  { id: "streak10", icon: "🔥", label: "생존 스트릭 10", desc: "한 던전에서 10연승", done: ({ best }) => best >= 10 },
+  { id: "captain", icon: "👑", label: "전설의 용사", desc: "최고 기록 15연승 달성", done: ({ best }) => best >= 15 }, // rankOf()의 "전설의 용사"(streak>=15)과 동일 기준
 ];
 
 export function AchievementBadges({ deck, best, catalogTotal }: { deck: DeckItem[]; best: number; catalogTotal: number }) {
