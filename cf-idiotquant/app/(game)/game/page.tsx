@@ -649,9 +649,11 @@ function rankOf(streak: number): { emoji: string; title: string } {
 // 선이 아래로 내려가는 "하강" 모양으로 그려 "지하 N층"이라는 세계관과 맞춤. 보스 층은 왕관으로 표시.
 type FloorNode = { n: number; floor: number; boss: boolean; cleared: boolean; current: boolean };
 function FloorGraph({ nodes }: { nodes: FloorNode[] }) {
-  const W = 132, H = 34, PAD_X = 10, PAD_TOP = 6;
+  // 원형 노드 나열이던 예전 배지(높이 ~32px)보다 커지면 그만큼 배틀 카드가 작아지므로
+  // (배틀 화면은 세로 공간이 병목) 같은 높이 예산 안에서 그리도록 치수를 맞춤.
+  const W = 132, H = 24, PAD_X = 10, PAD_TOP = 4;
   const stepX = (W - PAD_X * 2) / (nodes.length - 1);
-  const stepY = 5.5; // 층마다 살짝 더 깊이 내려가는 느낌
+  const stepY = 3.5; // 층마다 살짝 더 깊이 내려가는 느낌
   const pts = nodes.map((f, i) => ({ x: PAD_X + i * stepX, y: PAD_TOP + i * stepY, f }));
   const pathD = pts.map((p, i) => `${i === 0 ? "M" : "L"}${p.x.toFixed(1)},${p.y.toFixed(1)}`).join(" ");
   return (
@@ -659,10 +661,10 @@ function FloorGraph({ nodes }: { nodes: FloorNode[] }) {
       <path d={pathD} fill="none" strokeWidth={1.5} strokeLinecap="round" className="stroke-black/10 dark:stroke-white/15" />
       {pts.map(({ x, y, f }) => (
         <g key={f.n}>
-          <circle cx={x} cy={y} r={f.current ? 4.5 : 3.5}
+          <circle cx={x} cy={y} r={f.current ? 3.5 : 2.75}
             className={f.current ? "fill-rose-500" : f.cleared ? "fill-[#16a34a]" : "fill-neutral-300 dark:fill-neutral-700"} />
-          {f.current && <circle cx={x} cy={y} r={7} className="fill-none stroke-rose-300 dark:stroke-rose-800" strokeWidth={1.5} />}
-          <text x={x} y={y + 14} textAnchor="middle" fontSize={f.boss ? 9 : 7.5}
+          {f.current && <circle cx={x} cy={y} r={5.5} className="fill-none stroke-rose-300 dark:stroke-rose-800" strokeWidth={1.2} />}
+          <text x={x} y={y + 10} textAnchor="middle" fontSize={f.boss ? 8 : 6.5}
             className={cn("font-black", f.current ? "fill-rose-500" : f.cleared ? "fill-[#16a34a]" : "fill-neutral-400 dark:fill-neutral-600")}>
             {f.boss ? "👑" : f.floor}
           </text>
@@ -764,9 +766,8 @@ function GameContent() {
     battleRowRoRef.current = null;
     if (!el) return;
     const RATIO = 3 / 4; // width / height
-    const GAP = 6; // JSX의 gap-1.5(카드-VS 사이 간격)와 일치해야 함
-    const VS_WIDTH = 24; // VS 배지 지름(JSX의 w-6)과 일치해야 함
-    const RESERVED = GAP * 2 + VS_WIDTH; // 카드 사이 간격 2번 + VS 배지 — 예전엔 GAP 1번만 빼서 실제보다 넓게 계산되는 버그가 있었음(카드가 계산값보다 눌려 작게 렌더링됨)
+    const GAP = 6; // JSX의 gap-1.5(카드 사이 간격)와 일치해야 함 — VS 배지를 없애 카드 사이엔 이 간격 하나만 남음
+    const RESERVED = GAP; // 카드 두 장 사이 간격 1번만 예약
     const update = () => {
       const w = el.clientWidth, h = el.clientHeight;
       if (w <= 0 || h <= 0) return;
@@ -1227,12 +1228,12 @@ function GameContent() {
                     className="text-center text-[9px] font-black text-rose-500 truncate">👹 몬스터</span>
                 </div>
                 {/* 배틀 아레나 — 모바일/데스크톱 공통 레이아웃. 두 카드가 남은 세로 공간을 JS로 실측해 꽉 채움(스크롤 방지).
-                    VS 배지·간격은 battleRowRef의 RESERVED 계산과 반드시 일치시켜야 함(gap-1.5=6px, w-6=24px) */}
+                    카드가 작아진다는 피드백에 따라 VS 배지를 없애 그 공간만큼 카드를 더 키움 — 카드 사이
+                    간격(gap-1.5)은 battleRowRef의 RESERVED 계산과 반드시 일치시켜야 함 */}
                 <div ref={battleRowRef} className="flex-1 min-h-0 flex items-center justify-center gap-1.5">
                   <div style={battleCardSize ? { width: battleCardSize.w, height: battleCardSize.h } : { width: "38%", maxWidth: 220, aspectRatio: "3/4" }}>
                     <TcgCard hero item={playerCard} value={STAT.fmt(STAT.get(playerCard))} rank={rankMap.get(String(playerCard.ticker))} />
                   </div>
-                  <span className="shrink-0 w-6 h-6 rounded-full bg-[#5b4a2e] dark:bg-[#c9a86a] text-[#f3e9d2] dark:text-[#14100a] text-[8px] font-black font-serif flex items-center justify-center shadow-lg">VS</span>
                   <div style={battleCardSize ? { width: battleCardSize.w, height: battleCardSize.h } : { width: "38%", maxWidth: 220, aspectRatio: "3/4" }}>
                     <TcgCard hero item={opponentCard} value={STAT.fmt(STAT.get(opponentCard))} rank={rankMap.get(String(opponentCard.ticker))} />
                   </div>
