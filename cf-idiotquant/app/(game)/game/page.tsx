@@ -3,8 +3,8 @@
 // =========================================================================
 // 밸류 아레나 — 용사(내 카드) vs 몬스터(상대 카드) 지표 픽 배틀 던전 크롤 게임
 // NCAV·PBR·PER·ROE 중 하나를 골라 대결(sub 정규화 점수 비교). 이기면 다음 층으로,
-// 지면 방패 소모(0이 되면 던전 종료). 5층마다 보스 — 처치하면 유물 선택(런 스코프
-// 로그라이크 버프). 층 클리어·카드 획득마다 골드 적립(런 스코프, 던전 나가면 초기화).
+// 지면 방패 소모(0이 되면 던전 종료). 3층마다 장비 선택(7슬롯, 런 스코프 로그라이크 버프,
+// 세트 3/5/7개 보너스 있음), 10층마다 보스. 층 클리어·카드 획득마다 골드 적립(런 스코프, 던전 나가면 초기화).
 // 카드 등급(메달)은 NCAV·PBR·PER·ROE를 종합한 저평가 점수로 별도 산정.
 // 이긴 카드만 확률적으로 "내 덱"에 수집 → 계정별 D1 저장(로그인 필요). 비로그인 시 수집 시점에 로그인 유도.
 // =========================================================================
@@ -46,28 +46,62 @@ function statTag(sub: number): { label: string; cls: string } {
   return { label: "불리", cls: "bg-rose-500/15 text-rose-500" };
 }
 
-// 유물(로그라이크 요소) — 보스를 물리치면 3개 중 하나를 골라 이번 던전(런) 동안만 적용.
-// 서버 저장 없이 세션 로컬로만 추적(골드도 동일) — 던전을 나가면(cashOut/game over) 초기화됨.
-type Relic = { id: string; icon: string; name: string; desc: string };
-const RELIC_POOL: Relic[] = [
-  { id: "extra_shield", icon: "🛡️", name: "수호의 방패", desc: "최대 방패 +1" },
-  { id: "luck_charm", icon: "🍀", name: "행운의 발", desc: "카드 획득 확률 +8%p" },
-  { id: "risk_taker", icon: "⚔️", name: "무모한 반지", desc: "다음 패배 시 방패 소모 -1" },
-  { id: "gold_magnet", icon: "🧭", name: "황금 나침반", desc: "골드 획득량 +50%" },
+// 장비(로그라이크 요소) — 3라운드마다 장비 하나를 3택1로 획득해 7개 슬롯(투구·갑옷·무기·방패·목걸이·
+// 장신구 I·II)을 채워나감. 이번 던전(런) 동안만 적용되고, 던전을 나가면(cashOut/game over) 해제됨
+// — 단, "지금까지 한 번이라도 장착해본 장비"는 도감(equipmentLog)으로 로컬에 계속 남음.
+// 같은 슬롯이라도 수호자/약탈자 두 세트 중 어느 걸 착용하든 슬롯 자체의 효과는 동일하고(테마만 다름),
+// 대신 같은 세트로 3/5/7개를 맞추면 추가 세트 보너스가 붙어 "몰아서 맞출지 섞어 쓸지" 선택하게 함.
+type EquipSlot = "helmet" | "armor" | "weapon" | "shield" | "necklace" | "accessory1" | "accessory2";
+type EquipSetId = "guardian" | "raider";
+type EquipItem = { id: string; slot: EquipSlot; set: EquipSetId; icon: string; name: string; desc: string };
+
+const EQUIP_SLOTS: EquipSlot[] = ["helmet", "armor", "weapon", "shield", "necklace", "accessory1", "accessory2"];
+const EQUIP_SLOT_LABEL: Record<EquipSlot, string> = {
+  helmet: "투구", armor: "갑옷", weapon: "무기", shield: "방패",
+  necklace: "목걸이", accessory1: "장신구 I", accessory2: "장신구 II",
+};
+const EQUIP_SET_LABEL: Record<EquipSetId, string> = { guardian: "수호자 세트", raider: "약탈자 세트" };
+
+const EQUIP_POOL: EquipItem[] = [
+  // 수호자 세트 — 방어 지향
+  { id: "guardian_helmet", slot: "helmet", set: "guardian", icon: "⛑️", name: "수호자의 투구", desc: "최대 방패 +1" },
+  { id: "guardian_armor", slot: "armor", set: "guardian", icon: "🥋", name: "수호자의 갑옷", desc: "패배 시 방패 소모 -1" },
+  { id: "guardian_weapon", slot: "weapon", set: "guardian", icon: "🔨", name: "수호자의 망치", desc: "카드 획득 확률 +6%p" },
+  { id: "guardian_shield", slot: "shield", set: "guardian", icon: "🛡️", name: "수호자의 방패", desc: "최대 방패 +1" },
+  { id: "guardian_necklace", slot: "necklace", set: "guardian", icon: "📿", name: "수호자의 목걸이", desc: "카드 획득 확률 +4%p" },
+  { id: "guardian_accessory1", slot: "accessory1", set: "guardian", icon: "💍", name: "수호자의 반지", desc: "골드 획득량 +25%" },
+  { id: "guardian_accessory2", slot: "accessory2", set: "guardian", icon: "🧿", name: "수호자의 부적", desc: "골드 획득량 +25%" },
+  // 약탈자 세트 — 슬롯별 효과는 수호자 세트와 동일, 테마(세트 보너스 방향)만 다름
+  { id: "raider_helmet", slot: "helmet", set: "raider", icon: "🎩", name: "약탈자의 후드", desc: "최대 방패 +1" },
+  { id: "raider_armor", slot: "armor", set: "raider", icon: "🧥", name: "약탈자의 조끼", desc: "패배 시 방패 소모 -1" },
+  { id: "raider_weapon", slot: "weapon", set: "raider", icon: "🗡️", name: "약탈자의 단검", desc: "카드 획득 확률 +6%p" },
+  { id: "raider_shield", slot: "shield", set: "raider", icon: "🪃", name: "약탈자의 버클러", desc: "최대 방패 +1" },
+  { id: "raider_necklace", slot: "necklace", set: "raider", icon: "📜", name: "약탈자의 인장", desc: "카드 획득 확률 +4%p" },
+  { id: "raider_accessory1", slot: "accessory1", set: "raider", icon: "💰", name: "약탈자의 주머니", desc: "골드 획득량 +25%" },
+  { id: "raider_accessory2", slot: "accessory2", set: "raider", icon: "🗝️", name: "약탈자의 열쇠", desc: "골드 획득량 +25%" },
 ];
-function pickRelicChoices(held: string[]): Relic[] {
-  const pool = RELIC_POOL.filter(r => !held.includes(r.id));
+// 세트 보너스 — 같은 세트로 맞춘 슬롯 개수(3/5/7)에 따라 추가로 붙는 보너스
+const SET_BONUS: Record<EquipSetId, { at: number; label: string }[]> = {
+  guardian: [
+    { at: 3, label: "최대 방패 +1" },
+    { at: 5, label: "패배 시 방패 소모 -1" },
+    { at: 7, label: "최대 방패 +2" },
+  ],
+  raider: [
+    { at: 3, label: "카드 획득 확률 +5%p" },
+    { at: 5, label: "골드 획득량 +25%" },
+    { at: 7, label: "카드 획득 확률 +10%p" },
+  ],
+};
+type Equipment = Record<EquipSlot, string | null>;
+const EMPTY_EQUIPMENT: Equipment = { helmet: null, armor: null, weapon: null, shield: null, necklace: null, accessory1: null, accessory2: null };
+// 이미 장착 중인 "정확히 같은" 장비는 후보에서 제외(같은 슬롯의 다른 세트로 교체 제안은 허용) — 슬롯 7개 ×
+// 세트 2개 = 14종 중 최대 7개만 제외되므로 최소 7개는 항상 남아 3택1이 막힐 일은 없음(유물 4종과 달리
+// 품절 시 골드 대체 로직 불필요).
+function pickItemChoices(equipment: Equipment): EquipItem[] {
+  const equippedIds = new Set(Object.values(equipment).filter(Boolean));
+  const pool = EQUIP_POOL.filter(i => !equippedIds.has(i.id));
   return [...pool].sort(() => Math.random() - 0.5).slice(0, 3);
-}
-// 이전 선택지와 완전히 같은 3개가 다시 나오면(풀이 4개뿐이라 25% 확률로 발생) "다시 뽑기"가
-// 아무 효과 없이 골드만 날리는 것처럼 보이므로, 최대 5회까지 다른 조합이 나올 때까지 다시 뽑음.
-function rerollDistinctChoices(held: string[], prev: Relic[]): Relic[] {
-  const prevIds = new Set(prev.map(r => r.id));
-  for (let i = 0; i < 5; i++) {
-    const next = pickRelicChoices(held);
-    if (next.length !== prevIds.size || next.some(r => !prevIds.has(r.id))) return next;
-  }
-  return pickRelicChoices(held);
 }
 
 // 카드 수집: 정답을 맞힌 카드만 획득 판정. 등급별 "기본 획득 확률" + 연승 보너스.
@@ -714,7 +748,7 @@ function GameContent() {
   const [opponentCard, setOpponentCard] = useState<any | null>(null);
   const [phase, setPhase] = useState<Phase>("loading");
   const [shields, setShields] = useState(3); // 방패(목숨) — 0이 되면 런 종료. 패배해도 즉시 끝나지 않음.
-  const [roundNum, setRoundNum] = useState(0); // 이번 런 누적 라운드 수(승패 무관). 5의 배수 층마다 보스.
+  const [roundNum, setRoundNum] = useState(0); // 이번 런 누적 라운드 수(승패 무관). 10의 배수 층마다 보스, 3의 배수 층마다 장비.
   const [streak, setStreak] = useState(0); // 연속 무패(패배 시 0으로 리셋되지만 런은 계속)
   const [totalWins, setTotalWins] = useState(0); // 이번 런 누적 승수 — 최종 스코어
   const [best, setBest] = useState(0); // 역대 최고 승수(서버 동기화)
@@ -736,24 +770,60 @@ function GameContent() {
   const [packOpening, setPackOpening] = useState(false); // 팩 오픈 리빌 연출 표시 중
   const [firstDupHint, setFirstDupHint] = useState(false); // 첫 중복 카드 획득 시 지갑/전환 안내
   const [showTutorial, setShowTutorial] = useState(false); // 방법 안내 모달(첫 방문 자동 표시 + ? 버튼으로 재열람)
-  const [showStatus, setShowStatus] = useState(false); // 용사 상태창(방패·연승·골드·보유 유물 등) 모달
+  const [showStatus, setShowStatus] = useState(false); // 용사 상태창(방패·연승·골드·장비 등) 모달
   const [showResultDetail, setShowResultDetail] = useState(false); // 결과 화면 상세(업적·획득 카드·놓친 종목) 접힘 상태 — 기본은 핵심 정보만
   const [gold, setGold] = useState(0); // 이번 런 골드(층 클리어·카드 획득마다 적립) — 던전을 나가면 초기화
-  const [relics, setRelics] = useState<string[]>([]); // 이번 런에 고른 유물 id 목록 — 던전을 나가면 초기화
-  const [relicChoices, setRelicChoices] = useState<Relic[] | null>(null); // 보스 처치 직후 유물 선택지(null=선택 없음)
-  const hasRelic = useCallback((id: string) => relics.includes(id), [relics]);
-
-  const pickRelic = useCallback((id: string) => {
-    setRelics(r => [...r, id]);
-    if (id === "extra_shield") setShields(s => s + 1);
-    setRelicChoices(null);
+  const [equipment, setEquipment] = useState<Equipment>(EMPTY_EQUIPMENT); // 이번 런 장비(슬롯별 아이템 id) — 던전을 나가면 초기화
+  const [itemChoices, setItemChoices] = useState<EquipItem[] | null>(null); // 3라운드마다 뜨는 장비 선택지(null=선택 없음)
+  // 장비 도감 — 지금까지 한 번이라도 장착해본 장비 id. 장비 자체는 런 한정이지만 "얼마나 모아봤는지"는
+  // 로컬에 영구 저장해 다음 던전에서도 이어짐(best 연승 기록과 같은 패턴).
+  const equipLogKey = "iq:game:equipLog";
+  const [equipmentLog, setEquipmentLog] = useState<Set<string>>(new Set());
+  useEffect(() => {
+    try {
+      const raw = localStorage.getItem(equipLogKey);
+      if (raw) setEquipmentLog(new Set(JSON.parse(raw)));
+    } catch { }
   }, []);
-  const skipRelic = useCallback(() => setRelicChoices(null), []);
-  const rerollRelics = useCallback(() => {
-    if (gold < 20) return;
-    setGold(g => g - 20);
-    setRelicChoices(prev => rerollDistinctChoices(relics, prev ?? []));
-  }, [gold, relics]);
+
+  const equippedItems = useMemo(() =>
+    EQUIP_SLOTS.map(s => equipment[s]).filter((id): id is string => !!id)
+      .map(id => EQUIP_POOL.find(i => i.id === id)!).filter(Boolean),
+    [equipment]);
+  const setCount = useCallback((set: EquipSetId) => equippedItems.filter(i => i.set === set).length, [equippedItems]);
+  // 장비 총 보너스 = 슬롯별 기본 효과 합 + (같은 세트로 3/5/7개 채웠을 때) 세트 보너스
+  const equipBonus = useMemo(() => {
+    let maxShield = 0, shieldLossReduce = 0, acquirePctBonus = 0, goldMult = 1;
+    for (const item of equippedItems) {
+      if (item.slot === "helmet" || item.slot === "shield") maxShield += 1;
+      else if (item.slot === "armor") shieldLossReduce += 1;
+      else if (item.slot === "weapon") acquirePctBonus += 0.06;
+      else if (item.slot === "necklace") acquirePctBonus += 0.04;
+      else if (item.slot === "accessory1" || item.slot === "accessory2") goldMult += 0.25;
+    }
+    const gCount = setCount("guardian"), rCount = setCount("raider");
+    if (gCount >= 3) maxShield += 1;
+    if (gCount >= 5) shieldLossReduce += 1;
+    if (gCount >= 7) maxShield += 2;
+    if (rCount >= 3) acquirePctBonus += 0.05;
+    if (rCount >= 5) goldMult += 0.25;
+    if (rCount >= 7) acquirePctBonus += 0.10;
+    return { maxShield, shieldLossReduce, acquirePctBonus, goldMult };
+  }, [equippedItems, setCount]);
+
+  const pickItem = useCallback((id: string) => {
+    const item = EQUIP_POOL.find(i => i.id === id);
+    if (!item) return;
+    setEquipment(e => ({ ...e, [item.slot]: id }));
+    setEquipmentLog(prev => {
+      if (prev.has(id)) return prev;
+      const next = new Set(prev); next.add(id);
+      try { localStorage.setItem(equipLogKey, JSON.stringify([...next])); } catch { }
+      return next;
+    });
+    setItemChoices(null);
+  }, []);
+  const skipItem = useCallback(() => setItemChoices(null), []);
 
   // 처음 방문이면 방법 안내를 자동으로 한 번 띄움 — 재방문 시엔 뜨지 않고 ? 버튼으로만 열람
   const tutorialKey = "iq:game:tutorialSeen";
@@ -882,7 +952,7 @@ function GameContent() {
     setChosenStat(null); setLastResult(null);
     setDropped(false); setDropPrompt(false); setSaveFail(null); setEscaped(null); setMissed(null);
     setAcquired([]); setPackOpening(false); setFirstDupHint(false); setHistory([]);
-    setGold(0); setRelics([]); setRelicChoices(null); // 골드·유물은 던전(런) 단위 — 새 던전 입장 시 초기화
+    setGold(0); setEquipment(EMPTY_EQUIPMENT); setItemChoices(null); // 골드·장비는 던전(런) 단위 — 새 던전 입장 시 초기화
     setShowResultDetail(false);
     setPhase("battling");
   }, [drawPair]);
@@ -902,8 +972,8 @@ function GameContent() {
     if (!pPart?.available || !oPart?.available) return;
     const win = pPart.sub >= oPart.sub; // 동점은 승리 처리
     // 패배 대가 — 밀어붙인 연승(streak)이 길수록 커짐(3연승마다 +1, 최대 보유 방패만큼).
-    // "한 판 더" 를 계속 고를수록 다음 패배가 더 아파지는 푸시-유어-럭 긴장감 장치. 무모한 반지 유물은 -1(최소 1).
-    const shieldLoss = win ? 0 : Math.max(1, Math.min(shields, 1 + Math.floor(streak / 3)) - (hasRelic("risk_taker") ? 1 : 0));
+    // "한 판 더" 를 계속 고를수록 다음 패배가 더 아파지는 푸시-유어-럭 긴장감 장치. 갑옷/수호자 세트 장비는 -N(최소 1).
+    const shieldLoss = win ? 0 : Math.max(1, Math.min(shields, 1 + Math.floor(streak / 3)) - equipBonus.shieldLossReduce);
     setChosenStat(statKey);
     setLastResult({ win, statKey, shieldLoss });
     setDropped(false); setDropPrompt(false); setSaveFail(null); setEscaped(null); setFirstDupHint(false);
@@ -925,27 +995,22 @@ function GameContent() {
         if (isLoggedIn) syncBestStreak(nt).catch(() => { });
       }
 
-      // 승리 카드만 수집. 연승↑ → 획득 확률↑, 높은 등급일수록 더 높은 연승 필요. 부스트 배율 + 행운의 발 유물(+8%p) 적용.
-      const chance = Math.min(0.95, acquireChance(opponentCard, ns) * (activeBoost?.mult ?? 1) + (hasRelic("luck_charm") ? 0.08 : 0));
+      // 승리 카드만 수집. 연승↑ → 획득 확률↑, 높은 등급일수록 더 높은 연승 필요. 부스트 배율 + 무기/목걸이/약탈자 세트 장비 적용.
+      const chance = Math.min(0.95, acquireChance(opponentCard, ns) * (activeBoost?.mult ?? 1) + equipBonus.acquirePctBonus);
       const willDrop = Math.random() < chance;
 
-      // 골드 — 층 클리어(기본) + 보스 처치 보너스 + 카드 획득 보너스. 황금 나침반 유물이면 +50%.
-      const isBossRound = roundNum > 0 && roundNum % 5 === 0;
-      const goldGain = Math.round((3 + (isBossRound ? 15 : 0) + (willDrop ? 5 : 0)) * (hasRelic("gold_magnet") ? 1.5 : 1));
+      // 골드 — 층 클리어(기본) + 보스 처치 보너스 + 카드 획득 보너스. 장신구/약탈자 세트 장비면 배율 적용.
+      // 보스는 10라운드마다(기존 5라운드에서 변경), 장비는 3라운드마다 획득 — 두 주기가 겹치는 30라운드째는
+      // 보스 조우를 우선하고 그 라운드의 장비 드랍은 건너뜀(30라운드마다 1번뿐이라 무시 가능한 손실).
+      const isBossRound = roundNum > 0 && roundNum % 10 === 0;
+      const isItemRound = roundNum > 0 && roundNum % 3 === 0 && !isBossRound;
+      const goldGain = Math.round((3 + (isBossRound ? 15 : 0) + (willDrop ? 5 : 0)) * equipBonus.goldMult);
       setGold(g => g + goldGain);
       setLastResult(r => (r ? { ...r, goldGain } : r));
 
-      // 보스를 물리치면 유물 3개 중 하나 선택(로그라이크 요소) — 이미 보유한 유물은 후보에서 제외.
-      // 유물 4종을 이미 다 모았으면(고를 게 없으면) 보스 처치가 허탕이 되지 않도록 골드로 대신 보상.
-      if (isBossRound) {
-        const choices = pickRelicChoices(relics);
-        if (choices.length > 0) {
-          setRelicChoices(choices);
-        } else {
-          const bonus = 30;
-          setGold(g => g + bonus);
-          setLastResult(r => (r ? { ...r, goldGain: (r.goldGain ?? goldGain) + bonus } : r));
-        }
+      // 3라운드마다 장비 3택1 선택지 제공(품절 걱정 없음 — pickItemChoices 주석 참고)
+      if (isItemRound) {
+        setItemChoices(pickItemChoices(equipment));
       }
 
       if (willDrop) {
@@ -995,7 +1060,7 @@ function GameContent() {
         higherSide: "challenger", // 패배 라운드는 항상 상대(opponentCard) 지표가 더 좋았던 경우
       });
     }
-  }, [phase, playerCard, opponentCard, best, bestKey, isLoggedIn, streak, totalWins, activeBoost, shields, roundNum, relics, hasRelic]);
+  }, [phase, playerCard, opponentCard, best, bestKey, isLoggedIn, streak, totalWins, activeBoost, shields, roundNum, equipment, equipBonus]);
 
   // 승리든 패배든, 방패가 남아있으면 그 자리에서 런을 마무리(안전 정리)할 수 있음 — "더 갈까 여기서 챙길까" 선택지.
   const cashOut = useCallback(() => {
@@ -1007,7 +1072,7 @@ function GameContent() {
     if (phase !== "resolved" || shields <= 0 || !playerCard || !opponentCard) return;
     setHistory(h => [...h, { player: playerCard, opponent: opponentCard, statKey: chosenStat, win: lastResult?.win ?? false }].slice(-10));
     const nextNum = roundNum + 1;
-    const boss = nextNum % 5 === 0;
+    const boss = nextNum % 10 === 0;
     const pair = drawPair(boss);
     if (!pair) return;
     setRoundNum(nextNum);
@@ -1021,18 +1086,18 @@ function GameContent() {
 
   const isLoading = ncav.state === "pending" || ncav.state === "init" || pool.length < 2;
 
-  // 획득 확률 — 승리 시(연승+1) 이 카드 획득 확률. 연승↑·낮은 등급↑, 높은 등급은 더 높은 연승 필요. 상점 부스트 + 행운의 발 유물 반영.
-  const acquirePct = opponentCard ? Math.round(Math.min(0.95, acquireChance(opponentCard, streak + 1) * (activeBoost?.mult ?? 1) + (hasRelic("luck_charm") ? 0.08 : 0)) * 100) : 0;
+  // 획득 확률 — 승리 시(연승+1) 이 카드 획득 확률. 연승↑·낮은 등급↑, 높은 등급은 더 높은 연승 필요. 상점 부스트 + 무기/목걸이/약탈자 세트 장비 반영.
+  const acquirePct = opponentCard ? Math.round(Math.min(0.95, acquireChance(opponentCard, streak + 1) * (activeBoost?.mult ?? 1) + equipBonus.acquirePctBonus) * 100) : 0;
   const ownedOpponent = opponentCard ? deck.find(c => c.ticker === opponentCard.ticker) : undefined;
   const playerParts = playerCard ? computeValueScore(playerCard).parts : [];
   const opponentParts = opponentCard ? computeValueScore(opponentCard).parts : [];
-  const nextLossPenalty = Math.max(1, Math.min(shields, 1 + Math.floor(streak / 3)) - (hasRelic("risk_taker") ? 1 : 0)); // "다음 패배 시 방패 -N" 경고에 표시
-  const maxShields = 3 + (hasRelic("extra_shield") ? 1 : 0); // 수호의 방패 유물이면 최대 방패 +1(HUD 아이콘 수)
-  // 상단 던전 층 표시 — 현재 층 기준 앞뒤 슬라이딩 창(5칸). floor=roundNum+1(1층부터), 5의 배수 층마다 보스.
+  const nextLossPenalty = Math.max(1, Math.min(shields, 1 + Math.floor(streak / 3)) - equipBonus.shieldLossReduce); // "다음 패배 시 방패 -N" 경고에 표시
+  const maxShields = 3 + equipBonus.maxShield; // 투구/방패 장비·수호자 세트 보너스만큼 최대 방패 +N(HUD 아이콘 수)
+  // 상단 던전 층 표시 — 현재 층 기준 앞뒤 슬라이딩 창(5칸). floor=roundNum+1(1층부터), 10의 배수 층마다 보스(기존 5에서 변경).
   const floorWindow = useMemo(() => {
     const start = Math.max(0, roundNum - 1);
     return Array.from({ length: 5 }, (_, i) => start + i).map(n => ({
-      n, floor: n + 1, boss: n > 0 && n % 5 === 0, cleared: n < roundNum, current: n === roundNum,
+      n, floor: n + 1, boss: n > 0 && n % 10 === 0, cleared: n < roundNum, current: n === roundNum,
     }));
   }, [roundNum]);
 
@@ -1072,8 +1137,8 @@ function GameContent() {
           </div>
         ) : (
           <div className={cn("w-full", phase === "over" ? "flex flex-col sm:flex-1 sm:min-h-0" : "flex flex-col flex-1 min-h-0")}>
-            {/* 상단 HUD (플레이 중에만) — 방패(목숨) · 던전 층 · 승수/최고/획득확률 · 골드/유물 글래스 배지.
-                골드/유물/부스트/보유/기록 배지는 게임 진행 중 나타났다 사라지는데, 예전엔 이 배지들이
+            {/* 상단 HUD (플레이 중에만) — 방패(목숨) · 던전 층 · 승수/최고/획득확률 · 골드/장비 글래스 배지.
+                골드/장비/부스트/보유/기록 배지는 게임 진행 중 나타났다 사라지는데, 예전엔 이 배지들이
                 본체 HUD 행에 같이 섞여 있어서 배지 유무에 따라 HUD 행이 1~2줄을 오갔고, 그 높이 변화가
                 battleRowRef의 ResizeObserver를 타고 카드 크기를 흔들리게 했음(요청: "UI 틀이 흔들리지
                 않게"). 그래서 "핵심 정보(1행, 값만 바뀌고 구성은 항상 동일)"와 "조건부 배지(2행, 높이
@@ -1127,14 +1192,11 @@ function GameContent() {
                       💰 골드 {gold}
                     </span>
                   )}
-                  {relics.length > 0 && (
-                    // 유물 효과 상세 설명은 아래 "상태창"으로 통합(간단 뱃지는 탭하면 바로 상태창을 엶)
-                    <button key={relics.length} type="button" onClick={() => setShowStatus(true)} aria-label="상태창 보기 — 보유 유물"
-                      className="shrink-0 inline-flex items-center gap-1 px-2 py-1 rounded-full backdrop-blur-md bg-violet-500/10 border border-violet-500/25 text-[11px] animate-in zoom-in-50 duration-300">
-                      {relics.map(id => {
-                        const r = RELIC_POOL.find(x => x.id === id);
-                        return r ? <span key={id} aria-hidden>{r.icon}</span> : null;
-                      })}
+                  {equippedItems.length > 0 && (
+                    // 장비 효과 상세 설명은 아래 "상태창"으로 통합(간단 뱃지는 탭하면 바로 상태창을 엶)
+                    <button key={equippedItems.length} type="button" onClick={() => setShowStatus(true)} aria-label="상태창 보기 — 장비"
+                      className="shrink-0 inline-flex items-center gap-1 px-2 py-1 rounded-full backdrop-blur-md bg-violet-500/10 border border-violet-500/25 text-[10px] font-bold text-violet-600 dark:text-violet-400 tabular-nums animate-in zoom-in-50 duration-300">
+                      🎒 {equippedItems.length}/{EQUIP_SLOTS.length}
                     </button>
                   )}
                   {phase === "battling" && activeBoost && (
@@ -1236,10 +1298,10 @@ function GameContent() {
                         <p className="text-[11px] text-neutral-400 mt-2 break-keep">
                           {isLoggedIn ? <>발굴한 카드는 <b className="text-neutral-600 dark:text-neutral-300">내 덱({deckTotal(deck)})</b>에 쌓였습니다.</> : "로그인하면 발굴한 카드를 덱에 모을 수 있어요."}
                         </p>
-                        {(gold > 0 || relics.length > 0) && (
+                        {(gold > 0 || equippedItems.length > 0) && (
                           <p className="text-[11px] text-neutral-400 mt-1 break-keep">
                             💰 이번 던전 골드 {gold}
-                            {relics.length > 0 && <> · 유물 {relics.map(id => RELIC_POOL.find(r => r.id === id)?.icon).join(" ")}</>}
+                            {equippedItems.length > 0 && <> · 장비 {equippedItems.map(i => i.icon).join(" ")}</>}
                             <span className="block mt-0.5">던전을 나가면 초기화돼요</span>
                           </p>
                         )}
@@ -1355,7 +1417,7 @@ function GameContent() {
                       {lastResult?.win && !dropped && !dropPrompt && !saveFail && escaped && (
                         <span className="text-[10px] font-bold text-amber-600 dark:text-amber-400 animate-in fade-in">{escaped} 등급 카드가 도망갔어요 — 연승을 쌓으면 획득 확률↑</span>
                       )}
-                      {shields > 0 && !relicChoices && (
+                      {shields > 0 && !itemChoices && (
                         <div className="flex items-center justify-center gap-2 pt-0.5">
                           <button onClick={cashOut}
                             className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl border border-black/10 dark:border-white/15 bg-white/70 dark:bg-white/[0.05] hover:border-amber-500/50 text-neutral-600 dark:text-neutral-300 font-black text-xs active:scale-[0.97] transition-all">
@@ -1433,7 +1495,8 @@ function GameContent() {
                 { icon: "⚔️", text: <>용사(내 카드)와 몬스터(상대 카드)의 지표(NCAV·PBR·PER·ROE) 중 하나를 골라 대결하세요. 지표 이름을 몰라도 옆에 뜨는 <b className="text-[#16a34a]">유리</b>/<b className="text-amber-600 dark:text-amber-400">보통</b>/<b className="text-rose-500">불리</b> 태그만 보고 초록을 고르면 돼요.</> },
                 { icon: "🛡️", text: <>이기면 다음 층으로, 지면 <b className="text-neutral-800 dark:text-neutral-100">방패</b>를 잃어요. 방패가 다 떨어지면 던전에서 나가게 돼요.</> },
                 { icon: "🃏", text: <>이긴 몬스터 카드는 확률에 따라 <b className="text-neutral-800 dark:text-neutral-100">내 덱</b>에 카드로 수집돼요.</> },
-                { icon: "💰", text: <>층을 돌파할 때마다 <b className="text-neutral-800 dark:text-neutral-100">골드</b>를 얻고, <b className="text-violet-600 dark:text-violet-400">보스</b>를 물리치면 이번 던전에서만 쓰는 <b className="text-neutral-800 dark:text-neutral-100">유물</b>을 하나 고를 수 있어요. 골드와 유물은 던전을 나가면 초기화돼요 — 내 덱에서 카드를 바꾸는 영구 <b className="text-neutral-800 dark:text-neutral-100">코인</b>(🪙)과는 다른 재화예요.</> },
+                { icon: "🎒", text: <>3층마다 <b className="text-neutral-800 dark:text-neutral-100">장비</b>를 하나 골라 투구·갑옷·무기·방패·목걸이·장신구 2개, 7개 슬롯을 채워보세요. 같은 세트로 3/5/7개를 맞추면 추가 보너스가 붙어요. 10층마다는 강한 <b className="text-violet-600 dark:text-violet-400">보스</b>가 나와요.</> },
+                { icon: "💰", text: <>층을 돌파할 때마다 <b className="text-neutral-800 dark:text-neutral-100">골드</b>를 얻어요. 골드와 장비는 던전을 나가면 초기화돼요 — 내 덱에서 카드를 바꾸는 영구 <b className="text-neutral-800 dark:text-neutral-100">코인</b>(🪙)과는 다른 재화예요.</> },
                 { icon: "⚠️", text: <>연승이 길어질수록 다음 패배의 대가도 커져요. 매 판마다 <b className="text-neutral-800 dark:text-neutral-100">"여기서 정리"</b>(안전하게 마무리)와 <b className="text-neutral-800 dark:text-neutral-100">"다음 층으로"</b>(위험 감수) 중 골라보세요.</> },
               ].map((row, i) => (
                 <div key={i} className="flex items-start gap-2.5">
@@ -1450,7 +1513,7 @@ function GameContent() {
         </div>
       )}
 
-      {/* 용사 상태창 — 방패·연승·골드·보유 유물을 한 화면에 모아 보여줌. HUD의 유물 뱃지/사람 아이콘 버튼으로 엶 */}
+      {/* 용사 상태창 — 방패·연승·골드·장비 슬롯 7칸을 한 화면에 모아 보여줌. HUD의 장비 뱃지/사람 아이콘 버튼으로 엶 */}
       {showStatus && (
         <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/50 backdrop-blur-sm p-3"
           onClick={() => setShowStatus(false)}>
@@ -1501,53 +1564,74 @@ function GameContent() {
             </div>
 
             <p className="text-xs font-black text-neutral-700 dark:text-neutral-200 mb-1.5">
-              보유 유물 {relics.length}/{RELIC_POOL.length}
+              장비 {equippedItems.length}/{EQUIP_SLOTS.length}
             </p>
-            {relics.length === 0 ? (
-              <p className="text-xs text-neutral-400 break-keep">아직 유물이 없어요 — 보스를 물리치면 하나 고를 수 있어요.</p>
-            ) : (
-              <div className="space-y-1.5">
-                {relics.map(id => {
-                  const r = RELIC_POOL.find(x => x.id === id);
-                  return r ? (
-                    <p key={id} className="flex items-start gap-2 rounded-lg bg-violet-500/5 border border-violet-500/20 p-2 text-xs">
-                      <span aria-hidden className="text-base shrink-0">{r.icon}</span>
-                      <span><b className="text-neutral-800 dark:text-neutral-100">{r.name}</b> <span className="text-neutral-500 dark:text-neutral-400">— {r.desc}</span></span>
-                    </p>
-                  ) : null;
-                })}
-              </div>
-            )}
+            <div className="grid grid-cols-2 gap-1.5 mb-2.5">
+              {EQUIP_SLOTS.map(slot => {
+                const id = equipment[slot];
+                const item = id ? EQUIP_POOL.find(i => i.id === id) : null;
+                return (
+                  <div key={slot} className={cn("rounded-lg p-2 text-xs",
+                    item ? "bg-violet-500/5 border border-violet-500/20" : "bg-black/[0.02] dark:bg-white/[0.02] border border-dashed border-black/10 dark:border-white/15")}>
+                    <p className="text-[9px] font-bold text-neutral-400 uppercase tracking-wide">{EQUIP_SLOT_LABEL[slot]}</p>
+                    {item ? (
+                      <>
+                        <p className="flex items-center gap-1 mt-0.5 font-bold text-neutral-800 dark:text-neutral-100 truncate">
+                          <span aria-hidden>{item.icon}</span>{item.name}
+                        </p>
+                        <p className="text-[9px] text-neutral-500 dark:text-neutral-400 truncate">{item.desc}</p>
+                      </>
+                    ) : (
+                      <p className="text-neutral-400 mt-0.5">비어 있음</p>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+            <div className="space-y-1 mb-1.5">
+              {(["guardian", "raider"] as EquipSetId[]).map(set => (
+                <div key={set} className="flex items-center justify-between text-[11px]">
+                  <span className="font-bold text-neutral-600 dark:text-neutral-300">{EQUIP_SET_LABEL[set]}</span>
+                  <span className="tabular-nums text-neutral-400">{setCount(set)}/7</span>
+                </div>
+              ))}
+            </div>
+            <p className="text-[10px] text-neutral-400">장비 도감(누적) {equipmentLog.size}/{EQUIP_POOL.length}</p>
           </div>
         </div>
       )}
 
-      {/* 유물 선택 — 보스 처치 직후 뜨는 로그라이크 보상. 배틀 화면의 촘촘한 no-scroll 레이아웃과
+      {/* 장비 선택 — 3라운드마다 뜨는 로그라이크 보상. 배틀 화면의 촘촘한 no-scroll 레이아웃과
           별개로 고정 오버레이(모달)로 띄워서 카드 크기 실측 로직에 영향을 주지 않게 함(튜토리얼/기록 패널과 동일 패턴).
           packOpening 중엔 뒤로 미룸 — 안 그러면 모달이 팩 오픈 리빌 연출을 그대로 가려서 못 보게 됨. */}
-      {relicChoices && !packOpening && (
+      {itemChoices && !packOpening && (
         <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/50 backdrop-blur-sm p-3">
           <div className="w-full sm:max-w-sm max-h-[80vh] overflow-y-auto rounded-2xl bg-white dark:bg-[#242320] border border-neutral-200 dark:border-[#35332e] shadow-xl p-4 animate-in fade-in slide-in-from-bottom-2 sm:zoom-in-95 duration-200">
             <p className="font-black text-neutral-900 dark:text-white flex items-center gap-1.5 mb-3">
-              🎁 보스 처치! 유물을 하나 고르세요
+              🎒 장비를 하나 고르세요
             </p>
             <div className="space-y-2">
-              {relicChoices.map(r => (
-                <button key={r.id} type="button" onClick={() => pickRelic(r.id)}
-                  className="w-full flex items-center gap-2.5 px-3 py-2.5 rounded-xl border border-violet-500/30 bg-violet-500/5 hover:bg-violet-500/10 text-left active:scale-[0.98] transition-all">
-                  <span className="text-xl shrink-0" aria-hidden>{r.icon}</span>
-                  <span className="min-w-0">
-                    <span className="block text-sm font-black text-neutral-800 dark:text-neutral-100">{r.name}</span>
-                    <span className="block text-xs text-neutral-500 dark:text-neutral-400">{r.desc}</span>
-                  </span>
-                </button>
-              ))}
+              {itemChoices.map(item => {
+                const equippedInSlot = equipment[item.slot] ? EQUIP_POOL.find(i => i.id === equipment[item.slot]) : null;
+                return (
+                  <button key={item.id} type="button" onClick={() => pickItem(item.id)}
+                    className="w-full flex items-center gap-2.5 px-3 py-2.5 rounded-xl border border-violet-500/30 bg-violet-500/5 hover:bg-violet-500/10 text-left active:scale-[0.98] transition-all">
+                    <span className="text-xl shrink-0" aria-hidden>{item.icon}</span>
+                    <span className="min-w-0 flex-1">
+                      <span className="block text-sm font-black text-neutral-800 dark:text-neutral-100">{item.name}</span>
+                      <span className="block text-xs text-neutral-500 dark:text-neutral-400">{EQUIP_SLOT_LABEL[item.slot]} · {item.desc}</span>
+                    </span>
+                    {equippedInSlot && equippedInSlot.id !== item.id && (
+                      <span className="shrink-0 text-[9px] font-bold text-amber-600 dark:text-amber-400 text-right">
+                        {equippedInSlot.icon} 교체
+                      </span>
+                    )}
+                  </button>
+                );
+              })}
             </div>
-            <div className="flex items-center justify-center gap-4 mt-3">
-              <button type="button" onClick={skipRelic} className="text-xs font-bold text-neutral-400 hover:text-neutral-600 dark:hover:text-neutral-300">건너뛰기</button>
-              {gold >= 20 && (
-                <button type="button" onClick={rerollRelics} className="text-xs font-bold text-amber-600 dark:text-amber-400 hover:underline">💰20으로 다시 뽑기</button>
-              )}
+            <div className="flex items-center justify-center mt-3">
+              <button type="button" onClick={skipItem} className="text-xs font-bold text-neutral-400 hover:text-neutral-600 dark:hover:text-neutral-300">건너뛰기</button>
             </div>
           </div>
         </div>
