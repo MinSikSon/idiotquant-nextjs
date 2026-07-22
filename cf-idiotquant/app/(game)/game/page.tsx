@@ -14,7 +14,7 @@ import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useSession } from "next-auth/react";
 import {
-  ArrowUp, ArrowDown, Layers, Copy, TrendingUp, Sparkles, ChevronRight, Lock, Info,
+  ArrowUp, ArrowDown, Layers, Copy, TrendingUp, Sparkles, ChevronRight, ChevronDown, Lock, Info,
   Cpu, Dna, Landmark, CarFront, Ship, Construction, Zap, FlaskConical, Factory, RadioTower, Gamepad2,
   Soup, ShoppingCart, PlaneTakeoff, Shirt, Code2, Gem, Compass, Anchor, Map as MapIcon, Medal as MedalIcon,
   BatteryCharging, Bot, Wallet, History, X, Flame, Trophy, Target, Wand2, Shield, Swords, Crown, Loader2, UserRound,
@@ -737,6 +737,7 @@ function GameContent() {
   const [firstDupHint, setFirstDupHint] = useState(false); // 첫 중복 카드 획득 시 지갑/전환 안내
   const [showTutorial, setShowTutorial] = useState(false); // 방법 안내 모달(첫 방문 자동 표시 + ? 버튼으로 재열람)
   const [showStatus, setShowStatus] = useState(false); // 용사 상태창(방패·연승·골드·보유 유물 등) 모달
+  const [showResultDetail, setShowResultDetail] = useState(false); // 결과 화면 상세(업적·획득 카드·놓친 종목) 접힘 상태 — 기본은 핵심 정보만
   const [gold, setGold] = useState(0); // 이번 런 골드(층 클리어·카드 획득마다 적립) — 던전을 나가면 초기화
   const [relics, setRelics] = useState<string[]>([]); // 이번 런에 고른 유물 id 목록 — 던전을 나가면 초기화
   const [relicChoices, setRelicChoices] = useState<Relic[] | null>(null); // 보스 처치 직후 유물 선택지(null=선택 없음)
@@ -882,6 +883,7 @@ function GameContent() {
     setDropped(false); setDropPrompt(false); setSaveFail(null); setEscaped(null); setMissed(null);
     setAcquired([]); setPackOpening(false); setFirstDupHint(false); setHistory([]);
     setGold(0); setRelics([]); setRelicChoices(null); // 골드·유물은 던전(런) 단위 — 새 던전 입장 시 초기화
+    setShowResultDetail(false);
     setPhase("battling");
   }, [drawPair]);
 
@@ -1035,9 +1037,14 @@ function GameContent() {
   }, [roundNum]);
 
   return (
-    // svh(small viewport height) 사용 — iOS Safari에서 주소창/툴바가 완전히 펼쳐진 상태의 100dvh가
-    // 실제 보이는 영역보다 크게 계산돼 하단에 빈 공간이 남는 문제 방지(svh는 항상 "가장 작은" 뷰포트 기준)
-    <div className="relative h-[calc(100svh-112px)] md:h-[100svh] flex flex-col overflow-hidden bg-gradient-to-b from-neutral-100 via-neutral-50 to-neutral-200 dark:from-[#0a0a0e] dark:via-[#101015] dark:to-[#08080a] transition-colors">
+    // main의 pt-[48px]/pb-[64px](모바일 헤더·하단 탭 바) 안에서 100svh를 기준으로 높이를 역산하면
+    // 주소창 접힘·기종별 오차로 몇 px씩 어긋나 문서 전체가 스크롤되고, 그 여백만큼 하단 탭 바에
+    // 화면 일부가 가려지는 문제가 있었음. top/bottom을 뷰포트에 직접 고정(fixed)해서 헤더·탭 바가
+    // 차지하는 만큼만 비워두면 뷰포트 단위 계산 자체가 필요 없어 이 오차가 생기지 않음.
+    // z-50: position:fixed는 z-index 값과 무관하게 항상 새 스태킹 컨텍스트를 만들기 때문에, 이 안의
+    // 튜토리얼/기록/상태창 모달(z-50)이 하단 탭 바(z-40, 이 div 밖의 형제 요소)와 비교될 때 모달의
+    // z-50이 아니라 이 div 자체의 z-index로 비교됨 — z-index를 지정하지 않으면(auto) 탭 바에 가려짐.
+    <div className="fixed z-50 left-0 right-0 top-[48px] bottom-[64px] md:left-[220px] md:top-0 md:bottom-0 flex flex-col overflow-hidden bg-gradient-to-b from-neutral-100 via-neutral-50 to-neutral-200 dark:from-[#0a0a0e] dark:via-[#101015] dark:to-[#08080a] transition-colors">
       {/* 프리미엄 아레나 배경 — 카드 위쪽에 은은한 스포트라이트 글로우 + 격자 텍스처 */}
       <div aria-hidden className="absolute inset-0 z-0 pointer-events-none"
         style={{ background: "radial-gradient(55% 45% at 50% 24%, rgba(168,85,247,0.12), transparent 70%)" }} />
@@ -1065,87 +1072,96 @@ function GameContent() {
           </div>
         ) : (
           <div className={cn("w-full", phase === "over" ? "flex flex-col sm:flex-1 sm:min-h-0" : "flex flex-col flex-1 min-h-0")}>
-            {/* 상단 HUD (플레이 중에만) — 방패(목숨) · 던전 층 · 승수/최고/획득확률 · 골드/유물 글래스 배지 */}
+            {/* 상단 HUD (플레이 중에만) — 방패(목숨) · 던전 층 · 승수/최고/획득확률 · 골드/유물 글래스 배지.
+                골드/유물/부스트/보유/기록 배지는 게임 진행 중 나타났다 사라지는데, 예전엔 이 배지들이
+                본체 HUD 행에 같이 섞여 있어서 배지 유무에 따라 HUD 행이 1~2줄을 오갔고, 그 높이 변화가
+                battleRowRef의 ResizeObserver를 타고 카드 크기를 흔들리게 했음(요청: "UI 틀이 흔들리지
+                않게"). 그래서 "핵심 정보(1행, 값만 바뀌고 구성은 항상 동일)"와 "조건부 배지(2행, 높이
+                고정 h-8 + 넘치면 줄바꿈 대신 가로 스크롤)"를 분리해 HUD 전체 높이를 항상 고정시킴. */}
             {phase !== "over" && (
-              <div className="flex items-center justify-center gap-1.5 flex-wrap mb-1 sm:mb-2 shrink-0">
-                <div className="flex items-center gap-1 px-2 py-1.5 rounded-2xl backdrop-blur-md bg-white/85 dark:bg-white/[0.06] border border-black/5 dark:border-white/10 shadow-[0_6px_18px_-8px_rgba(0,0,0,0.35)]">
-                  {Array.from({ length: maxShields }, (_, i) => (
-                    <Shield key={i} size={15} strokeWidth={2.5}
-                      className={i < shields ? "text-[#16a34a] fill-[#16a34a]/25" : "text-neutral-300 dark:text-neutral-700"} />
-                  ))}
-                </div>
-                {/* 던전 층 표시 — 원형 노드 나열 대신 꺾은선 그래프. 회색=미탐험, 초록=돌파, 빨강(확대)=현재, 왕관=보스층 */}
-                <div className="flex items-center gap-1 pl-2 pr-1 py-1 rounded-2xl backdrop-blur-md bg-white/85 dark:bg-white/[0.06] border border-black/5 dark:border-white/10 shadow-[0_6px_18px_-8px_rgba(0,0,0,0.35)]">
-                  <span className="text-[9px] font-black text-neutral-400 uppercase tracking-wider pr-0.5 whitespace-nowrap">지하{roundNum + 1}층</span>
-                  <FloorGraph nodes={floorWindow} />
-                </div>
-                <div className="flex items-center gap-1 px-1.5 sm:px-2 py-1 sm:py-1.5 rounded-2xl backdrop-blur-md bg-white/85 dark:bg-white/[0.06] border border-black/5 dark:border-white/10 shadow-[0_6px_18px_-8px_rgba(0,0,0,0.35)]">
-                  <div className="text-center px-2.5 sm:px-3">
-                    <p className="flex items-center justify-center gap-1 text-base sm:text-xl font-black tabular-nums text-[#16a34a] leading-none">
-                      <Flame size={13} strokeWidth={2.5} className="shrink-0" />{totalWins}
-                    </p>
-                    <p className="text-[9px] font-bold text-neutral-400 uppercase tracking-wider mt-0.5 sm:mt-1">승수</p>
+              <div className="shrink-0 mb-1 sm:mb-2 space-y-1">
+                <div className="flex items-center justify-center gap-1.5 flex-wrap">
+                  <div className="flex items-center gap-1 px-2 py-1.5 rounded-2xl backdrop-blur-md bg-white/85 dark:bg-white/[0.06] border border-black/5 dark:border-white/10 shadow-[0_6px_18px_-8px_rgba(0,0,0,0.35)]">
+                    {Array.from({ length: maxShields }, (_, i) => (
+                      <Shield key={i} size={15} strokeWidth={2.5}
+                        className={i < shields ? "text-[#16a34a] fill-[#16a34a]/25" : "text-neutral-300 dark:text-neutral-700"} />
+                    ))}
                   </div>
-                  <div className="h-6 sm:h-7 w-px bg-neutral-200 dark:bg-white/10" />
-                  <div className="text-center px-2.5 sm:px-3">
-                    <p className="flex items-center justify-center gap-1 text-base sm:text-xl font-black tabular-nums text-amber-500 leading-none">
-                      <Trophy size={13} strokeWidth={2.5} className="shrink-0" />{best}
-                    </p>
-                    <p className="text-[9px] font-bold text-neutral-400 uppercase tracking-wider mt-0.5 sm:mt-1">최고</p>
+                  {/* 던전 층 표시 — 원형 노드 나열 대신 꺾은선 그래프. 회색=미탐험, 초록=돌파, 빨강(확대)=현재, 왕관=보스층 */}
+                  <div className="flex items-center gap-1 pl-2 pr-1 py-1 rounded-2xl backdrop-blur-md bg-white/85 dark:bg-white/[0.06] border border-black/5 dark:border-white/10 shadow-[0_6px_18px_-8px_rgba(0,0,0,0.35)]">
+                    <span className="text-[9px] font-black text-neutral-400 uppercase tracking-wider pr-0.5 whitespace-nowrap">지하{roundNum + 1}층</span>
+                    <FloorGraph nodes={floorWindow} />
                   </div>
-                  {phase === "battling" && opponentCard && (
-                    <>
-                      <div className="h-6 sm:h-7 w-px bg-neutral-200 dark:bg-white/10" />
-                      <div className="text-center px-2.5 sm:px-3">
-                        <p className="flex items-center justify-center gap-1 text-base sm:text-xl font-black tabular-nums text-amber-600 dark:text-amber-400 leading-none">
-                          <Target size={13} strokeWidth={2.5} className="shrink-0" />{acquirePct}%
-                        </p>
-                        <p className="text-[9px] font-bold text-neutral-400 uppercase tracking-wider mt-0.5 sm:mt-1">획득 확률</p>
-                      </div>
-                    </>
+                  <div className="flex items-center gap-1 px-1.5 sm:px-2 py-1 sm:py-1.5 rounded-2xl backdrop-blur-md bg-white/85 dark:bg-white/[0.06] border border-black/5 dark:border-white/10 shadow-[0_6px_18px_-8px_rgba(0,0,0,0.35)]">
+                    <div className="text-center px-2.5 sm:px-3">
+                      <p className="flex items-center justify-center gap-1 text-base sm:text-xl font-black tabular-nums text-[#16a34a] leading-none">
+                        <Flame size={13} strokeWidth={2.5} className="shrink-0" />{totalWins}
+                      </p>
+                      <p className="text-[9px] font-bold text-neutral-400 uppercase tracking-wider mt-0.5 sm:mt-1">승수</p>
+                    </div>
+                    <div className="h-6 sm:h-7 w-px bg-neutral-200 dark:bg-white/10" />
+                    <div className="text-center px-2.5 sm:px-3">
+                      <p className="flex items-center justify-center gap-1 text-base sm:text-xl font-black tabular-nums text-amber-500 leading-none">
+                        <Trophy size={13} strokeWidth={2.5} className="shrink-0" />{best}
+                      </p>
+                      <p className="text-[9px] font-bold text-neutral-400 uppercase tracking-wider mt-0.5 sm:mt-1">최고</p>
+                    </div>
+                    {phase === "battling" && opponentCard && (
+                      <>
+                        <div className="h-6 sm:h-7 w-px bg-neutral-200 dark:bg-white/10" />
+                        <div className="text-center px-2.5 sm:px-3">
+                          <p className="flex items-center justify-center gap-1 text-base sm:text-xl font-black tabular-nums text-amber-600 dark:text-amber-400 leading-none">
+                            <Target size={13} strokeWidth={2.5} className="shrink-0" />{acquirePct}%
+                          </p>
+                          <p className="text-[9px] font-bold text-neutral-400 uppercase tracking-wider mt-0.5 sm:mt-1">획득 확률</p>
+                        </div>
+                      </>
+                    )}
+                  </div>
+                </div>
+                <div className="flex items-center justify-center gap-1.5 h-8 overflow-x-auto overflow-y-hidden flex-nowrap scrollbar-hide">
+                  {gold > 0 && (
+                    // 상점의 영구 "코인"(🪙, 은색/amber Coins 아이콘)과 혼동되지 않도록 이번 던전 한정
+                    // "골드"는 다른 아이콘(💰)·문구로 구분 — 두 재화는 서로 별개(런 종료 시 골드만 초기화)
+                    <span className="shrink-0 inline-flex items-center gap-1 px-2 py-1 rounded-full backdrop-blur-md bg-amber-500/10 border border-amber-500/25 text-amber-600 dark:text-amber-400 text-[10px] font-bold tabular-nums">
+                      💰 골드 {gold}
+                    </span>
                   )}
+                  {relics.length > 0 && (
+                    // 유물 효과 상세 설명은 아래 "상태창"으로 통합(간단 뱃지는 탭하면 바로 상태창을 엶)
+                    <button key={relics.length} type="button" onClick={() => setShowStatus(true)} aria-label="상태창 보기 — 보유 유물"
+                      className="shrink-0 inline-flex items-center gap-1 px-2 py-1 rounded-full backdrop-blur-md bg-violet-500/10 border border-violet-500/25 text-[11px] animate-in zoom-in-50 duration-300">
+                      {relics.map(id => {
+                        const r = RELIC_POOL.find(x => x.id === id);
+                        return r ? <span key={id} aria-hidden>{r.icon}</span> : null;
+                      })}
+                    </button>
+                  )}
+                  {phase === "battling" && activeBoost && (
+                    <span className="shrink-0 inline-flex items-center gap-1 px-2 py-1 rounded-full backdrop-blur-md bg-amber-500/10 border border-amber-500/25 text-amber-600 dark:text-amber-400 text-[10px] font-bold tabular-nums">
+                      <Wand2 size={11} strokeWidth={2.5} /> ×{activeBoost.mult}·{activeBoost.roundsLeft}판
+                    </span>
+                  )}
+                  {phase === "battling" && ownedOpponent && (
+                    <span className="shrink-0 inline-flex items-center gap-1 px-2 py-1 rounded-full backdrop-blur-md bg-[#16a34a]/10 border border-[#16a34a]/25 text-[#16a34a] text-[10px] font-bold tabular-nums">
+                      <Layers size={11} strokeWidth={2.5} /> ×{ownedOpponent.count}
+                    </span>
+                  )}
+                  {history.length > 0 && (
+                    <button type="button" onClick={() => setShowHistory(true)} aria-label="전투 기록 보기"
+                      className="shrink-0 inline-flex items-center gap-1 px-2 py-1 rounded-2xl backdrop-blur-md bg-white/85 dark:bg-white/[0.06] border border-black/5 dark:border-white/10 shadow-[0_6px_18px_-8px_rgba(0,0,0,0.35)] text-[11px] font-bold text-neutral-500 dark:text-neutral-300 hover:text-[#16a34a] transition-colors">
+                      <History size={13} /> {history.length}
+                    </button>
+                  )}
+                  <button type="button" onClick={() => setShowStatus(true)} aria-label="상태창 보기"
+                    className="shrink-0 inline-flex items-center justify-center w-8 h-8 rounded-full backdrop-blur-md bg-white/85 dark:bg-white/[0.06] border border-black/5 dark:border-white/10 shadow-[0_6px_18px_-8px_rgba(0,0,0,0.35)] text-neutral-500 dark:text-neutral-300 hover:text-[#16a34a] transition-colors">
+                    <UserRound size={14} />
+                  </button>
+                  <button type="button" onClick={() => setShowTutorial(true)} aria-label="게임 방법 보기"
+                    className="shrink-0 inline-flex items-center justify-center w-8 h-8 rounded-full backdrop-blur-md bg-white/85 dark:bg-white/[0.06] border border-black/5 dark:border-white/10 shadow-[0_6px_18px_-8px_rgba(0,0,0,0.35)] text-neutral-500 dark:text-neutral-300 hover:text-[#16a34a] transition-colors">
+                    <Info size={14} />
+                  </button>
                 </div>
-                {gold > 0 && (
-                  // 상점의 영구 "코인"(🪙, 은색/amber Coins 아이콘)과 혼동되지 않도록 이번 던전 한정
-                  // "골드"는 다른 아이콘(💰)·문구로 구분 — 두 재화는 서로 별개(런 종료 시 골드만 초기화)
-                  <span className="inline-flex items-center gap-1 px-2 py-1 rounded-full backdrop-blur-md bg-amber-500/10 border border-amber-500/25 text-amber-600 dark:text-amber-400 text-[10px] font-bold tabular-nums">
-                    💰 골드 {gold}
-                  </span>
-                )}
-                {relics.length > 0 && (
-                  // 유물 효과 상세 설명은 아래 "상태창"으로 통합(간단 뱃지는 탭하면 바로 상태창을 엶)
-                  <button key={relics.length} type="button" onClick={() => setShowStatus(true)} aria-label="상태창 보기 — 보유 유물"
-                    className="inline-flex items-center gap-1 px-2 py-1 rounded-full backdrop-blur-md bg-violet-500/10 border border-violet-500/25 text-[11px] animate-in zoom-in-50 duration-300">
-                    {relics.map(id => {
-                      const r = RELIC_POOL.find(x => x.id === id);
-                      return r ? <span key={id} aria-hidden>{r.icon}</span> : null;
-                    })}
-                  </button>
-                )}
-                {phase === "battling" && activeBoost && (
-                  <span className="inline-flex items-center gap-1 px-2 py-1 rounded-full backdrop-blur-md bg-amber-500/10 border border-amber-500/25 text-amber-600 dark:text-amber-400 text-[10px] font-bold tabular-nums">
-                    <Wand2 size={11} strokeWidth={2.5} /> ×{activeBoost.mult}·{activeBoost.roundsLeft}판
-                  </span>
-                )}
-                {phase === "battling" && ownedOpponent && (
-                  <span className="inline-flex items-center gap-1 px-2 py-1 rounded-full backdrop-blur-md bg-[#16a34a]/10 border border-[#16a34a]/25 text-[#16a34a] text-[10px] font-bold tabular-nums">
-                    <Layers size={11} strokeWidth={2.5} /> ×{ownedOpponent.count}
-                  </span>
-                )}
-                {history.length > 0 && (
-                  <button type="button" onClick={() => setShowHistory(true)} aria-label="전투 기록 보기"
-                    className="inline-flex items-center gap-1 px-2 py-1 sm:py-1.5 rounded-2xl backdrop-blur-md bg-white/85 dark:bg-white/[0.06] border border-black/5 dark:border-white/10 shadow-[0_6px_18px_-8px_rgba(0,0,0,0.35)] text-[11px] font-bold text-neutral-500 dark:text-neutral-300 hover:text-[#16a34a] transition-colors">
-                    <History size={13} /> {history.length}
-                  </button>
-                )}
-                <button type="button" onClick={() => setShowStatus(true)} aria-label="상태창 보기"
-                  className="inline-flex items-center justify-center w-8 h-8 rounded-full backdrop-blur-md bg-white/85 dark:bg-white/[0.06] border border-black/5 dark:border-white/10 shadow-[0_6px_18px_-8px_rgba(0,0,0,0.35)] text-neutral-500 dark:text-neutral-300 hover:text-[#16a34a] transition-colors">
-                  <UserRound size={14} />
-                </button>
-                <button type="button" onClick={() => setShowTutorial(true)} aria-label="게임 방법 보기"
-                  className="inline-flex items-center justify-center w-8 h-8 rounded-full backdrop-blur-md bg-white/85 dark:bg-white/[0.06] border border-black/5 dark:border-white/10 shadow-[0_6px_18px_-8px_rgba(0,0,0,0.35)] text-neutral-500 dark:text-neutral-300 hover:text-[#16a34a] transition-colors">
-                  <Info size={14} />
-                </button>
               </div>
             )}
 
@@ -1179,7 +1195,8 @@ function GameContent() {
                     </span>
                   </div>
 
-                  {/* 이번 런 성과 — 스탯·업적을 한 패널로 묶어 시각적으로 한 덩어리로 보이게. 다크 글래스 패널 */}
+                  {/* 이번 런 성과 — 핵심 3종 스탯만 항상 보이게(간단 명료). 업적 배지·획득 카드·놓친 종목
+                      같은 부가 정보는 "자세히 보기"를 눌러야 펼쳐지는 별도 섹션으로 분리 */}
                   <div className="rounded-2xl backdrop-blur-md bg-black/[0.03] dark:bg-black/30 border border-black/5 dark:border-white/10 p-2.5">
                     <p className="text-[10px] font-bold text-neutral-400 uppercase tracking-wider mb-1.5">이번 런 성과</p>
                     <div className="grid grid-cols-3 gap-2">
@@ -1202,23 +1219,35 @@ function GameContent() {
                         <p className="text-[9px] font-bold text-neutral-400 uppercase tracking-wider mt-1">처치한 보스</p>
                       </div>
                     </div>
-                    <div className="flex justify-center mt-2">
-                      <AchievementBadges deck={deck} best={best} catalogTotal={catalog.length} />
-                    </div>
-                    <p className="text-[11px] text-neutral-400 mt-2 break-keep">
-                      {isLoggedIn ? <>발굴한 카드는 <b className="text-neutral-600 dark:text-neutral-300">내 덱({deckTotal(deck)})</b>에 쌓였습니다.</> : "로그인하면 발굴한 카드를 덱에 모을 수 있어요."}
-                    </p>
-                    {(gold > 0 || relics.length > 0) && (
-                      <p className="text-[11px] text-neutral-400 mt-1 break-keep">
-                        💰 이번 던전 골드 {gold}
-                        {relics.length > 0 && <> · 유물 {relics.map(id => RELIC_POOL.find(r => r.id === id)?.icon).join(" ")}</>}
-                        <span className="block mt-0.5">던전을 나가면 초기화돼요</span>
-                      </p>
-                    )}
                   </div>
 
-                  {acquired.length > 0 && <AcquiredThisGame cards={acquired} />}
-                  {missed && <MissedInfo missed={missed} />}
+                  <button type="button" onClick={() => setShowResultDetail(v => !v)}
+                    className="w-full flex items-center justify-center gap-1 py-1 text-[11px] font-bold text-neutral-400 hover:text-[#16a34a] transition-colors">
+                    {showResultDetail ? "접기" : "자세히 보기"}
+                    <ChevronDown size={13} className={cn("transition-transform", showResultDetail && "rotate-180")} />
+                  </button>
+
+                  {showResultDetail && (
+                    <div className="space-y-2 animate-in fade-in slide-in-from-top-1 duration-200">
+                      <div className="rounded-2xl backdrop-blur-md bg-black/[0.03] dark:bg-black/30 border border-black/5 dark:border-white/10 p-2.5">
+                        <div className="flex justify-center">
+                          <AchievementBadges deck={deck} best={best} catalogTotal={catalog.length} />
+                        </div>
+                        <p className="text-[11px] text-neutral-400 mt-2 break-keep">
+                          {isLoggedIn ? <>발굴한 카드는 <b className="text-neutral-600 dark:text-neutral-300">내 덱({deckTotal(deck)})</b>에 쌓였습니다.</> : "로그인하면 발굴한 카드를 덱에 모을 수 있어요."}
+                        </p>
+                        {(gold > 0 || relics.length > 0) && (
+                          <p className="text-[11px] text-neutral-400 mt-1 break-keep">
+                            💰 이번 던전 골드 {gold}
+                            {relics.length > 0 && <> · 유물 {relics.map(id => RELIC_POOL.find(r => r.id === id)?.icon).join(" ")}</>}
+                            <span className="block mt-0.5">던전을 나가면 초기화돼요</span>
+                          </p>
+                        )}
+                      </div>
+                      {acquired.length > 0 && <AcquiredThisGame cards={acquired} />}
+                      {missed && <MissedInfo missed={missed} />}
+                    </div>
+                  )}
                 </div>
 
                 {/* 버튼 고정 (항상 보임) — 그라데이션 + 글로우 프리미엄 버튼 */}
@@ -1231,24 +1260,19 @@ function GameContent() {
               </div>
             ) : playerCard && opponentCard ? (
               <>
-                {/* 어느 카드가 내 카드인지 한눈에 안 보인다는 피드백 — 카드 폭(battleCardSize.w)에 맞춘 라벨을
-                    카드 바로 위에 정렬해서 "왼쪽=내 카드/오른쪽=몬스터"를 명확히 함. 카드 행과 동일한 gap-1.5 +
-                    VS폭(w-6=24px) 구조를 그대로 반복해야 라벨이 카드 중앙에 정확히 정렬됨. */}
-                <div className="shrink-0 flex items-center justify-center gap-1.5 mb-0.5">
-                  <span style={battleCardSize ? { width: battleCardSize.w } : { width: "38%", maxWidth: 220 }}
-                    className="text-center text-[9px] font-black text-[#16a34a] truncate">🗡️ 내 카드</span>
-                  <span className="shrink-0 w-6" aria-hidden />
-                  <span style={battleCardSize ? { width: battleCardSize.w } : { width: "38%", maxWidth: 220 }}
-                    className="text-center text-[9px] font-black text-rose-500 truncate">👹 몬스터</span>
-                </div>
                 {/* 배틀 아레나 — 모바일/데스크톱 공통 레이아웃. 두 카드가 남은 세로 공간을 JS로 실측해 꽉 채움(스크롤 방지).
                     카드가 작아진다는 피드백에 따라 VS 배지를 없애 그 공간만큼 카드를 더 키움 — 카드 사이
-                    간격(gap-1.5)은 battleRowRef의 RESERVED 계산과 반드시 일치시켜야 함 */}
+                    간격(gap-1.5)은 battleRowRef의 RESERVED 계산과 반드시 일치시켜야 함.
+                    "내 카드"/"몬스터" 라벨은 예전엔 카드 위에 별도 행으로 떨어뜨려 배치했는데, 라벨과
+                    카드 사이가 붕 떠 보인다는 피드백에 따라 각 카드 wrapper를 relative로 만들고 라벨을
+                    카드 상단 테두리에 겹치는 배지로 바로 부착함(행 자체를 없애 카드 세로 공간도 늘어남). */}
                 <div ref={battleRowRef} className="flex-1 min-h-0 flex items-center justify-center gap-1.5">
-                  <div style={battleCardSize ? { width: battleCardSize.w, height: battleCardSize.h } : { width: "38%", maxWidth: 220, aspectRatio: "0.8" }}>
+                  <div className="relative" style={battleCardSize ? { width: battleCardSize.w, height: battleCardSize.h } : { width: "38%", maxWidth: 220, aspectRatio: "0.8" }}>
+                    <span className="absolute -top-2 left-1/2 -translate-x-1/2 z-10 px-2 py-0.5 rounded-full bg-[#16a34a] text-white text-[9px] font-black shadow-md whitespace-nowrap">🗡️ 내 카드</span>
                     <TcgCard hero item={playerCard} value={STAT.fmt(STAT.get(playerCard))} rank={rankMap.get(String(playerCard.ticker))} />
                   </div>
-                  <div style={battleCardSize ? { width: battleCardSize.w, height: battleCardSize.h } : { width: "38%", maxWidth: 220, aspectRatio: "0.8" }}>
+                  <div className="relative" style={battleCardSize ? { width: battleCardSize.w, height: battleCardSize.h } : { width: "38%", maxWidth: 220, aspectRatio: "0.8" }}>
+                    <span className="absolute -top-2 left-1/2 -translate-x-1/2 z-10 px-2 py-0.5 rounded-full bg-rose-500 text-white text-[9px] font-black shadow-md whitespace-nowrap">👹 몬스터</span>
                     <TcgCard hero item={opponentCard} value={STAT.fmt(STAT.get(opponentCard))} rank={rankMap.get(String(opponentCard.ticker))} />
                   </div>
                 </div>
@@ -1282,8 +1306,12 @@ function GameContent() {
                   })}
                 </div>
 
-                {/* 결과 안내 / 다음 전투 / 획득·로그인 유도 */}
-                <div className="shrink-0 min-h-[2.25rem] text-center mt-1">
+                {/* 결과 안내 / 다음 전투 / 획득·로그인 유도 — 배틀 힌트(1줄)와 결과 메시지(승패+부가문구+
+                    버튼, 최대 3~4줄)의 줄 수 차이가 커서, 예전엔 min-height만 걸어 뒀더니 내용에 따라
+                    이 블록 높이가 늘었다 줄었다 하고 그때마다 battleRowRef가 카드 크기를 재계산해
+                    흔들렸음. 높이를 고정(h-24)하고 내용을 그 안에서 세로 중앙 정렬해 어떤 상태든
+                    이 블록 자체의 높이가 절대 바뀌지 않게 함. */}
+                <div className="shrink-0 h-24 flex flex-col items-center justify-center text-center mt-1 overflow-hidden">
                   {packOpening ? (
                     <PackReveal item={opponentCard} />
                   ) : phase === "battling" ? (
