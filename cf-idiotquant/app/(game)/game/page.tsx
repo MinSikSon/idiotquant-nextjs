@@ -17,7 +17,7 @@ import {
   ArrowUp, ArrowDown, Layers, Copy, TrendingUp, Sparkles, ChevronRight, Lock, Info,
   Cpu, Dna, Landmark, CarFront, Ship, Construction, Zap, FlaskConical, Factory, RadioTower, Gamepad2,
   Soup, ShoppingCart, PlaneTakeoff, Shirt, Code2, Gem, Compass, Anchor, Map as MapIcon, Medal as MedalIcon,
-  BatteryCharging, Bot, Wallet, History, X, Flame, Trophy, Target, Wand2, Shield, Swords, Crown,
+  BatteryCharging, Bot, Wallet, History, X, Flame, Trophy, Target, Wand2, Shield, Swords, Crown, Loader2,
   type LucideIcon,
 } from "lucide-react";
 import { useAppDispatch, useAppSelector } from "@/lib/hooks";
@@ -263,8 +263,9 @@ function ScoreInfo() {
   return (
     <span className="relative inline-flex align-middle"
       onMouseEnter={() => setOpen(true)} onMouseLeave={() => setOpen(false)}>
+      {/* w-4 h-4(16px)는 탭 영역이 너무 작아서 주변 레이아웃을 안 건드리는 선에서 패딩으로 살짝 키움 */}
       <button type="button" aria-label="저평가 점수 설명" onClick={() => setOpen(o => !o)}
-        className="inline-flex items-center justify-center w-4 h-4 rounded-full text-neutral-400 hover:text-[#16a34a] transition-colors">
+        className="inline-flex items-center justify-center p-1.5 rounded-full text-neutral-400 hover:text-[#16a34a] transition-colors">
         <Info size={13} />
       </button>
       {open && (
@@ -1016,7 +1017,10 @@ function GameContent() {
               setDeck(prev => prev.map(c => c.ticker === ticker ? { ...c, count: remaining } : c));
             }} />
         ) : isLoading ? (
-          <div className="my-auto py-24 text-center text-sm text-neutral-400">카드 데이터를 불러오는 중…</div>
+          <div className="my-auto py-24 flex flex-col items-center gap-2 text-sm text-neutral-400">
+            <Loader2 size={20} className="animate-spin" />
+            카드 데이터를 불러오는 중…
+          </div>
         ) : (
           <div className={cn("w-full", phase === "over" ? "flex flex-col sm:flex-1 sm:min-h-0" : "flex flex-col flex-1 min-h-0")}>
             {/* 상단 HUD (플레이 중에만) — 방패(목숨) · 던전 층 · 승수/최고/획득확률 · 골드/유물 글래스 배지 */}
@@ -1076,26 +1080,32 @@ function GameContent() {
                 {relics.length > 0 && (
                   // title 툴팁은 모바일 탭에서 안 뜨므로, 탭하면 열리는 패널(ScoreInfo와 동일 패턴)로 대체
                   <span className="relative inline-flex">
-                    <button type="button" onClick={() => setShowRelicInfo(v => !v)} aria-label="보유 유물 효과 보기"
-                      className="inline-flex items-center gap-1 px-2 py-1 rounded-full backdrop-blur-md bg-violet-500/10 border border-violet-500/25 text-[11px]">
+                    {/* key=relics.length로 유물이 새로 추가될 때마다 재마운트시켜 pop-in 애니메이션이 다시 재생되게 함 */}
+                    <button key={relics.length} type="button" onClick={() => setShowRelicInfo(v => !v)} aria-label="보유 유물 효과 보기"
+                      className="inline-flex items-center gap-1 px-2 py-1 rounded-full backdrop-blur-md bg-violet-500/10 border border-violet-500/25 text-[11px] animate-in zoom-in-50 duration-300">
                       {relics.map(id => {
                         const r = RELIC_POOL.find(x => x.id === id);
                         return r ? <span key={id} aria-hidden>{r.icon}</span> : null;
                       })}
                     </button>
                     {showRelicInfo && (
-                      <div className="fixed z-50 inset-x-4 bottom-20 sm:absolute sm:z-30 sm:inset-x-auto sm:left-0 sm:top-full sm:mt-2 sm:w-60 rounded-xl bg-neutral-900 dark:bg-[#242320] border border-neutral-700/60 dark:border-[#35332e] p-2.5 text-left shadow-xl space-y-1.5"
-                        onClick={() => setShowRelicInfo(false)}>
-                        {relics.map(id => {
-                          const r = RELIC_POOL.find(x => x.id === id);
-                          return r ? (
-                            <p key={id} className="flex items-start gap-1.5 text-[11px] text-neutral-200">
-                              <span aria-hidden className="shrink-0">{r.icon}</span>
-                              <span><b className="text-white">{r.name}</b> — {r.desc}</span>
-                            </p>
-                          ) : null;
-                        })}
-                      </div>
+                      <>
+                        {/* 바깥 탭하면 닫히는 투명 배경 — 패널(z-50)보다 낮지만 전역 모바일 헤더(z-40)보다는
+                            높아야 함(같은 z-40이면 DOM 순서에 기대게 되어 클릭이 헤더에 막힐 수 있었음) */}
+                        <button type="button" aria-label="유물 정보 닫기" onClick={() => setShowRelicInfo(false)}
+                          className="fixed inset-0 z-[45] cursor-default" />
+                        <div className="fixed z-50 inset-x-4 bottom-20 sm:absolute sm:z-50 sm:inset-x-auto sm:left-0 sm:top-full sm:mt-2 sm:w-60 rounded-xl bg-neutral-900 dark:bg-[#242320] border border-neutral-700/60 dark:border-[#35332e] p-2.5 text-left shadow-xl space-y-1.5">
+                          {relics.map(id => {
+                            const r = RELIC_POOL.find(x => x.id === id);
+                            return r ? (
+                              <p key={id} className="flex items-start gap-1.5 text-[11px] text-neutral-200">
+                                <span aria-hidden className="shrink-0">{r.icon}</span>
+                                <span><b className="text-white">{r.name}</b> — {r.desc}</span>
+                              </p>
+                            ) : null;
+                          })}
+                        </div>
+                      </>
                     )}
                   </span>
                 )}
@@ -1116,7 +1126,7 @@ function GameContent() {
                   </button>
                 )}
                 <button type="button" onClick={() => setShowTutorial(true)} aria-label="게임 방법 보기"
-                  className="inline-flex items-center justify-center w-7 h-7 rounded-full backdrop-blur-md bg-white/85 dark:bg-white/[0.06] border border-black/5 dark:border-white/10 shadow-[0_6px_18px_-8px_rgba(0,0,0,0.35)] text-neutral-500 dark:text-neutral-300 hover:text-[#16a34a] transition-colors">
+                  className="inline-flex items-center justify-center w-8 h-8 rounded-full backdrop-blur-md bg-white/85 dark:bg-white/[0.06] border border-black/5 dark:border-white/10 shadow-[0_6px_18px_-8px_rgba(0,0,0,0.35)] text-neutral-500 dark:text-neutral-300 hover:text-[#16a34a] transition-colors">
                   <Info size={14} />
                 </button>
               </div>
@@ -1185,7 +1195,7 @@ function GameContent() {
                       <p className="text-[11px] text-neutral-400 mt-1 break-keep">
                         💰 이번 던전 골드 {gold}
                         {relics.length > 0 && <> · 유물 {relics.map(id => RELIC_POOL.find(r => r.id === id)?.icon).join(" ")}</>}
-                        {" "}— 던전을 나가면 초기화돼요
+                        <span className="block mt-0.5">던전을 나가면 초기화돼요</span>
                       </p>
                     )}
                   </div>
@@ -1230,11 +1240,11 @@ function GameContent() {
                     상대 값은 고른 지표만 라운드 종료 후 공개. sub 기준 태그가 초록일수록 이길 확률↑.
                     아래 헤더 행은 버튼 내부와 동일한 gap-2 px-3 + 아이콘/w-9/flex-1/w-14 구조를 그대로 반복해
                     "이 값은 내 카드, 이 칸은 몬스터"가 값 칸 바로 위에서 정렬되게 함. */}
-                <div className="shrink-0 flex items-center gap-2 px-3 mt-1 text-[9px] font-bold text-neutral-400">
+                <div className="shrink-0 flex items-center gap-2 px-3 mt-1 text-[9px] font-bold">
                   <span className="w-3 shrink-0" aria-hidden />
                   <span className="w-9 shrink-0" aria-hidden />
-                  <span className="flex-1 text-left">🗡️ 내 카드</span>
-                  <span className="w-14 shrink-0 text-right">👹 몬스터</span>
+                  <span className="flex-1 text-left text-[#16a34a]">🗡️ 내 카드</span>
+                  <span className="w-14 shrink-0 text-right text-rose-500">👹 몬스터</span>
                 </div>
                 <div className="shrink-0 space-y-1 mt-1">
                   {playerParts.map(pPart => {
@@ -1246,7 +1256,7 @@ function GameContent() {
                     return (
                       <button key={pPart.key} type="button" disabled={phase !== "battling" || !bothAvailable}
                         onClick={() => battle(pPart.key)}
-                        className={cn("w-full flex items-center gap-2 px-3 py-1.5 rounded-xl border backdrop-blur-md text-xs font-bold transition-all",
+                        className={cn("w-full flex items-center gap-2 px-3 py-2 rounded-xl border backdrop-blur-md text-xs font-bold transition-all",
                           !bothAvailable ? "opacity-40 border-black/5 dark:border-white/10 bg-black/[0.02] dark:bg-white/[0.02] cursor-not-allowed"
                             : revealed ? (lastResult?.win ? "border-[#16a34a]/50 bg-[#16a34a]/10" : "border-rose-500/50 bg-rose-500/10")
                               : "border-black/5 dark:border-white/10 bg-white/80 dark:bg-white/[0.05] hover:border-[#16a34a]/40 active:scale-[0.98]")}>
@@ -1256,7 +1266,9 @@ function GameContent() {
                         {pPart.available && (
                           <span className={cn("shrink-0 px-1.5 py-0.5 rounded-full text-[9px] font-black", tag.cls)}>{tag.label}</span>
                         )}
-                        <span className="w-14 shrink-0 text-right tabular-nums text-neutral-400">
+                        {/* 미공개 상대 값 — 탭 가능한 버튼처럼 보이지 않도록 이탤릭+저채도로 "아직 안 보임"임을 표시.
+                            공개된(revealed) 실제 값은 일반 텍스트로 정상 표시. */}
+                        <span className={cn("w-14 shrink-0 text-right tabular-nums", revealed ? "text-neutral-400" : "text-neutral-400 italic opacity-60")}>
                           {revealed ? oPart!.valueStr : bothAvailable ? "?" : "—"}
                         </span>
                       </button>
@@ -1309,11 +1321,11 @@ function GameContent() {
                       {shields > 0 && !relicChoices && (
                         <div className="flex items-center justify-center gap-2">
                           <button onClick={cashOut}
-                            className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl border border-black/10 dark:border-white/15 bg-white/70 dark:bg-white/[0.05] hover:border-amber-500/50 text-neutral-600 dark:text-neutral-300 font-black text-xs active:scale-[0.97] transition-all">
+                            className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl border border-black/10 dark:border-white/15 bg-white/70 dark:bg-white/[0.05] hover:border-amber-500/50 text-neutral-600 dark:text-neutral-300 font-black text-xs active:scale-[0.97] transition-all">
                             <Trophy size={13} className="text-amber-500" /> 여기서 정리
                           </button>
                           <button onClick={nextRound}
-                            className="inline-flex items-center gap-1.5 px-4 py-1.5 rounded-xl bg-gradient-to-r from-[#16a34a] to-[#15803d] hover:brightness-110 text-white font-black text-xs shadow-[0_6px_16px_-6px_rgba(22,163,74,0.55)] active:scale-[0.97] transition-all">
+                            className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-gradient-to-r from-[#16a34a] to-[#15803d] hover:brightness-110 text-white font-black text-xs shadow-[0_6px_16px_-6px_rgba(22,163,74,0.55)] active:scale-[0.97] transition-all">
                             다음 층으로 <Swords size={13} />
                           </button>
                         </div>
@@ -1599,7 +1611,10 @@ function DeckView({ deck, catalog, best, coins, isLoggedIn, onLogin, onClose, sh
           )}
 
           {catalog.length === 0 ? (
-            <p className="py-20 text-center text-sm text-neutral-400">카드 데이터를 불러오는 중…</p>
+            <p className="py-20 flex flex-col items-center gap-2 text-center text-sm text-neutral-400">
+              <Loader2 size={20} className="animate-spin" />
+              카드 데이터를 불러오는 중…
+            </p>
           ) : (showOwnedOnly || showDupesOnly) && total === 0 ? (
             <p className="py-20 text-center text-sm text-neutral-400">
               {showDupesOnly ? "2장 이상 보유한 중복 카드가 없어요. 코인으로 전환하려면 같은 카드가 더 필요해요!" : "아직 보유한 카드가 없어요. 게임을 하며 카드를 수집하세요!"}
