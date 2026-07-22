@@ -1093,6 +1093,15 @@ function GameContent() {
   const opponentParts = opponentCard ? computeValueScore(opponentCard).parts : [];
   const nextLossPenalty = Math.max(1, Math.min(shields, 1 + Math.floor(streak / 3)) - equipBonus.shieldLossReduce); // "다음 패배 시 방패 -N" 경고에 표시
   const maxShields = 3 + equipBonus.maxShield; // 투구/방패 장비·수호자 세트 보너스만큼 최대 방패 +N(HUD 아이콘 수)
+  // 최대 방패가 늘어나기만 하고 현재 방패는 그대로면(예: 3/4) "장비 효과가 안 먹는 것처럼" 보임 —
+  // 늘어난 만큼(delta) 현재 방패도 즉시 채워줌(기존 유물 "수호의 방패"가 즉시 +1 주던 것과 동일 UX).
+  // 런 시작(start)으로 maxShields가 줄어드는 경우엔 delta<=0이라 자연히 무시됨.
+  const prevMaxShieldsRef = useRef(maxShields);
+  useEffect(() => {
+    const delta = maxShields - prevMaxShieldsRef.current;
+    if (delta > 0) setShields(s => Math.min(maxShields, s + delta));
+    prevMaxShieldsRef.current = maxShields;
+  }, [maxShields]);
   // 상단 던전 층 표시 — 현재 층 기준 앞뒤 슬라이딩 창(5칸). floor=roundNum+1(1층부터), 10의 배수 층마다 보스(기존 5에서 변경).
   const floorWindow = useMemo(() => {
     const start = Math.max(0, roundNum - 1);
