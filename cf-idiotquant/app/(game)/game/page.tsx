@@ -765,7 +765,10 @@ function GameContent() {
     battleRowRoRef.current?.disconnect();
     battleRowRoRef.current = null;
     if (!el) return;
-    const RATIO = 3 / 4; // width / height
+    // width / height — 배틀 화면은 세로 공간이 항상 병목(카드가 남은 높이에 맞춰 커짐)이라,
+    // 0.75(실제 TCG 카드 비율)로는 좌우에 안 쓰는 여백이 많이 남음. 카드가 작아 보인다는
+    // 반복된 피드백에 따라 0.8로 살짝 넓혀 그 여백만큼 카드가 더 커 보이게 함.
+    const RATIO = 0.8;
     const GAP = 6; // JSX의 gap-1.5(카드 사이 간격)와 일치해야 함 — VS 배지를 없애 카드 사이엔 이 간격 하나만 남음
     const RESERVED = GAP; // 카드 두 장 사이 간격 1번만 예약
     const update = () => {
@@ -1029,7 +1032,7 @@ function GameContent() {
         style={{ background: "radial-gradient(55% 45% at 50% 24%, rgba(168,85,247,0.12), transparent 70%)" }} />
       <div aria-hidden className="absolute inset-0 z-0 pointer-events-none opacity-[0.06] dark:opacity-[0.08]"
         style={{ backgroundImage: "radial-gradient(currentColor 1px, transparent 1px)", backgroundSize: "24px 24px" }} />
-      <div className="relative z-10 w-full max-w-2xl sm:max-w-4xl mx-auto px-2 pt-3 pb-1 flex-1 min-h-0 flex flex-col">
+      <div className="relative z-10 w-full max-w-2xl sm:max-w-4xl mx-auto px-1 sm:px-2 pt-3 pb-1 flex-1 min-h-0 flex flex-col">
 
         {/* 상단 메뉴 바 없음 — 홈·제목·내 덱 접근은 전역 네비게이션(게임 버튼)에 통합됨 */}
 
@@ -1231,10 +1234,10 @@ function GameContent() {
                     카드가 작아진다는 피드백에 따라 VS 배지를 없애 그 공간만큼 카드를 더 키움 — 카드 사이
                     간격(gap-1.5)은 battleRowRef의 RESERVED 계산과 반드시 일치시켜야 함 */}
                 <div ref={battleRowRef} className="flex-1 min-h-0 flex items-center justify-center gap-1.5">
-                  <div style={battleCardSize ? { width: battleCardSize.w, height: battleCardSize.h } : { width: "38%", maxWidth: 220, aspectRatio: "3/4" }}>
+                  <div style={battleCardSize ? { width: battleCardSize.w, height: battleCardSize.h } : { width: "38%", maxWidth: 220, aspectRatio: "0.8" }}>
                     <TcgCard hero item={playerCard} value={STAT.fmt(STAT.get(playerCard))} rank={rankMap.get(String(playerCard.ticker))} />
                   </div>
-                  <div style={battleCardSize ? { width: battleCardSize.w, height: battleCardSize.h } : { width: "38%", maxWidth: 220, aspectRatio: "3/4" }}>
+                  <div style={battleCardSize ? { width: battleCardSize.w, height: battleCardSize.h } : { width: "38%", maxWidth: 220, aspectRatio: "0.8" }}>
                     <TcgCard hero item={opponentCard} value={STAT.fmt(STAT.get(opponentCard))} rank={rankMap.get(String(opponentCard.ticker))} />
                   </div>
                 </div>
