@@ -6,17 +6,33 @@ import Phaser from "phaser";
 // 실루엣을 계산해 그리는 방식으로 바꿨다 — 조합이 아무리 랜덤해도 항상 매끈한 블롭이 보장됨.
 // 판정 로직은 전혀 없음 — combatEngine이 계산한 결과를 받아 재생만 한다.
 
+// 슬라임 실루엣 — 위쪽은 돔(타원 상반부), 적도(CY) 아래로는 폭을 얼리듯 고정해 곧은 옆면을
+// 만들고, 맨 아랫줄만 살짝 좁혀 바닥에 앉은 듯한 둥근 모서리를 준다(둥근 사각형이 아니라
+// 실제 "물방울이 바닥에 눌러앉은" 슬라임 프로필).
 const GRID = 14;
-const CX = GRID / 2, CY = GRID / 2; // 블롭 중심(격자 좌표계)
-const RX = 6, RY = 5.2; // 몸통 타원 반지름(칸 단위) — 살짝 눌린 타원이 통통한 슬라임 느낌을 줌
+const CX = GRID / 2;
+const RX = 6, RY = 6;
+const CY = 6;          // 돔의 적도(가장 넓은 지점) — 여기부터 아래는 폭 고정
+const BODY_BOTTOM = 11; // 바닥 줄(이 줄 아래는 없음)
 
 function inBody(col: number, row: number): boolean {
-  const nx = (col + 0.5 - CX) / RX, ny = (row + 0.5 - CY) / RY;
-  return nx * nx + ny * ny <= 1;
+  if (row > BODY_BOTTOM) return false;
+  const dx = col + 0.5 - CX;
+  if (row <= CY) {
+    const nx = dx / RX, ny = (row + 0.5 - CY) / RY;
+    return nx * nx + ny * ny <= 1;
+  }
+  const maxRx = row >= BODY_BOTTOM ? RX - 1.3 : RX; // 맨 아랫줄만 살짝 좁혀 모서리를 둥글게
+  return Math.abs(dx) <= maxRx;
 }
 
-type Palette = { body: number; outline: number; blush: number };
-const PALETTES: Palette[] = [
+type Palette = { body: number; outline: number; blush: number; shine: number };
+function lighten(hex: number, amt: number): number {
+  const r = (hex >> 16) & 0xff, g = (hex >> 8) & 0xff, b = hex & 0xff;
+  const mix = (c: number) => Math.min(255, Math.round(c + (255 - c) * amt));
+  return (mix(r) << 16) | (mix(g) << 8) | mix(b);
+}
+const PALETTE_BASE = [
   { body: 0xf87171, outline: 0xb91c1c, blush: 0xfecaca },
   { body: 0xc084fc, outline: 0x7e22ce, blush: 0xf3e8ff },
   { body: 0xfb923c, outline: 0xc2410c, blush: 0xfed7aa },
@@ -25,16 +41,16 @@ const PALETTES: Palette[] = [
   { body: 0xfbbf24, outline: 0xb45309, blush: 0xfef3c7 },
   { body: 0xf472b6, outline: 0xbe185d, blush: 0xfce7f3 },
 ];
+const PALETTES: Palette[] = PALETTE_BASE.map(p => ({ ...p, shine: lighten(p.body, 0.6) }));
 
 type MouthKind = "smile" | "o" | "none";
-type MonsterSpec = { palette: Palette; eyeGap: number; mouth: MouthKind; hasAntenna: boolean; hasBlush: boolean };
+type MonsterSpec = { palette: Palette; eyeGap: number; mouth: MouthKind; hasBlush: boolean };
 const pick = <T,>(arr: T[]) => arr[Math.floor(Math.random() * arr.length)];
 function randomMonster(): MonsterSpec {
   return {
     palette: pick(PALETTES),
     eyeGap: pick([2, 3]),
     mouth: pick(["smile", "smile", "o", "none"]),
-    hasAntenna: Math.random() < 0.4,
     hasBlush: Math.random() < 0.5,
   };
 }
@@ -106,21 +122,18 @@ export default class CombatScene extends Phaser.Scene {
       }
     }
 
-    // 더듬이(장식) — 정수리 위로 작은 줄기 + 동그란 끝
-    if (s.hasAntenna) {
-      const topRow = CY - RY;
-      const stem = this.cellPx(CX, topRow - 2);
-      g.fillStyle(s.palette.outline, 1);
-      g.fillRect(stem.x, stem.y, this.cell, this.cell * 2.2);
-      g.fillStyle(s.palette.body, 1);
-      g.fillCircle(stem.x + this.cell / 2, stem.y, this.cell * 0.7);
+    // 광택 — 슬라임 특유의 물방울/젤리 느낌을 주는 밝은 하이라이트(왼쪽 위, 반투명)
+    {
+      const p = this.cellPx(CX - RX * 0.45, CY - RY * 0.55);
+      g.fillStyle(s.palette.shine, 0.7);
+      g.fillEllipse(p.x, p.y, this.cell * 2.2, this.cell * 1.4);
     }
 
     // 볼터치
     if (s.hasBlush) {
       g.fillStyle(s.palette.blush, 0.9);
       for (const dir of [-1, 1]) {
-        const p = this.cellPx(CX + dir * (s.eyeGap + 2), CY + 0.5);
+        const p = this.cellPx(CX + dir * (s.eyeGap + 2), CY + 1);
         g.fillCircle(p.x + this.cell / 2, p.y + this.cell / 2, this.cell * 0.8);
       }
     }
@@ -128,7 +141,7 @@ export default class CombatScene extends Phaser.Scene {
     // 눈 — 흰자 + 눈동자(2칸), 깜빡일 땐 얇은 가로줄로 대체
     for (const dir of [-1, 1]) {
       const ex = CX + dir * s.eyeGap;
-      const p = this.cellPx(ex, CY - 1.5);
+      const p = this.cellPx(ex, CY - 1);
       if (blink) {
         g.fillStyle(s.palette.outline, 1);
         g.fillRect(p.x - this.cell * 0.6, p.y + this.cell * 0.3, this.cell * 1.2, this.cell * 0.35);
@@ -142,7 +155,7 @@ export default class CombatScene extends Phaser.Scene {
 
     // 입
     if (s.mouth !== "none") {
-      const p = this.cellPx(CX, CY + 1.6);
+      const p = this.cellPx(CX, CY + 2);
       g.fillStyle(s.palette.outline, 1);
       if (s.mouth === "smile") g.fillRoundedRect(p.x - this.cell, p.y, this.cell * 2, this.cell * 0.4, this.cell * 0.2);
       else g.fillCircle(p.x + this.cell / 2, p.y, this.cell * 0.4);
