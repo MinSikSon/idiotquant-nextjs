@@ -2,14 +2,18 @@ import Phaser from "phaser";
 
 // 가치투자 덱빌더 — 전투 씬(프로토타입 비주얼). 몬스터는 모노스페이스 ASCII 아트로 그린다.
 // 판정 로직은 전혀 없음 — combatEngine이 계산한 결과를 받아 재생만 한다.
-const ASCII_MONSTER = [
-  "   ▄▄▄▄▄▄▄   ",
-  " ▄█▀▀   ▀▀█▄ ",
-  "█  ●     ●  █",
-  "█     ▼     █",
-  " █▄       ▄█ ",
-  "   ▀▀▀▀▀▀▀   ",
-].join("\n");
+
+// 몬스터 아트는 부위별(머리/눈/입/몸통) 조각을 랜덤 조합해 매 조우마다 다른 생김새를 만든다.
+// Phaser Text의 align:"center"는 줄마다 독립적으로 가운데 정렬하므로 줄 길이가 달라도 괜찮다.
+const HEAD_ROWS = ["   ▄▄▄▄▄▄▄   ", "  ▄███████▄  ", " ▄▄▀▀▀▀▀▀▀▄▄ ", "   ◢▄▄▄▄▄◣   "];
+const EYES_ROWS = ["█  ●     ●  █", "█  ◉     ◉  █", "█  ✕     ✕  █", "█  ▲     ▲  █", "█ ◕     ◕ █"];
+const MOUTH_ROWS = ["█     ▼     █", "█    ▽▽▽    █", "█   ▔▔▔▔▔   █", "█  ▁▁▁▁▁▁▁  █", "█    ◇◇◇    █"];
+const BODY_ROWS = [" █▄       ▄█ ", " ██▄     ▄██ ", "  █▄▄   ▄▄█  ", " ▐█       █▌ "];
+const FOOT_ROWS = ["   ▀▀▀▀▀▀▀   ", "  ▀▀▀▀▀▀▀▀▀  ", " ▀▀▀   ▀▀▀   ", "  ▘▘▘▘▘▘▘▘▘  "];
+const pick = <T,>(arr: T[]) => arr[Math.floor(Math.random() * arr.length)];
+function randomMonster(): string {
+  return [pick(HEAD_ROWS), pick(EYES_ROWS), pick(MOUTH_ROWS), pick(BODY_ROWS), pick(FOOT_ROWS)].join("\n");
+}
 
 const BAR_LEN = 14;
 function asciiBar(hp: number, maxHp: number): string {
@@ -31,7 +35,7 @@ export default class CombatScene extends Phaser.Scene {
     this.cameras.main.setBackgroundColor("#00000000");
 
     this.enemyLabel = this.add.text(w / 2, h * 0.08, "", { fontSize: "12px", color: "#ffffff", fontStyle: "bold" }).setOrigin(0.5);
-    this.enemyArt = this.add.text(w / 2, h * 0.48, ASCII_MONSTER, {
+    this.enemyArt = this.add.text(w / 2, h * 0.48, randomMonster(), {
       fontFamily: "monospace", fontSize: "11px", color: "#f87171", align: "center", lineSpacing: 1,
     }).setOrigin(0.5);
     this.enemyHpText = this.add.text(w / 2, h * 0.88, asciiBar(0, 1), {
@@ -44,6 +48,7 @@ export default class CombatScene extends Phaser.Scene {
 
   setEnemy(name: string, hp: number, maxHp: number) {
     this.enemyLabel.setText(name);
+    this.enemyArt.setText(randomMonster());
     this.setEnemyHp(hp, maxHp);
   }
 
