@@ -1576,27 +1576,40 @@ function GameContent() {
             <p className="text-xs font-black text-neutral-700 dark:text-neutral-200 mb-1.5">
               장비 {equippedItems.length}/{EQUIP_SLOTS.length}
             </p>
-            {/* 종이인형(paper-doll) 배치 — 가운데 사람 실루엣을 배경으로 깔고, 슬롯을 신체 부위에
-                맞춰 둘러 배치(투구=머리, 목걸이=목, 무기/방패=양손, 갑옷=몸통, 장신구=허리 양옆).
-                빈 슬롯 칸은 점선 테두리로만 표시해 실루엣이 그 자리에 은은히 비쳐 보이게 함. */}
-            <div className="relative rounded-xl bg-black/[0.02] dark:bg-white/[0.02] border border-black/5 dark:border-white/10 p-2 mb-1.5">
-              <div aria-hidden className="absolute inset-0 flex items-center justify-center pointer-events-none text-neutral-400 dark:text-neutral-600 opacity-[0.15]">
-                <UserRound size={90} strokeWidth={1} />
-              </div>
-              <div className="relative grid grid-cols-3 gap-1"
-                style={{ gridTemplateAreas: `". helmet ." "weapon necklace shield" ". armor ." "accessory1 . accessory2"` }}>
-                {EQUIP_SLOTS.map(slot => {
-                  const id = equipment[slot];
-                  const item = id ? EQUIP_POOL.find(i => i.id === id) : null;
-                  return (
-                    <div key={slot} style={{ gridArea: slot }}
-                      className={cn("flex flex-col items-center justify-center gap-0.5 rounded-lg py-1 px-1 text-center min-h-[38px]",
-                        item ? "bg-violet-500/10 border border-violet-500/30" : "bg-white/40 dark:bg-white/[0.03] border border-dashed border-black/10 dark:border-white/15")}>
-                      <span aria-hidden className={cn("text-sm leading-none", !item && "opacity-30")}>{item ? item.icon : "•"}</span>
-                      <span className="text-[7px] font-bold text-neutral-400 leading-tight">{EQUIP_SLOT_LABEL[slot]}</span>
-                    </div>
-                  );
-                })}
+            {/* 용사 초상화를 가운데 두고 좌우에 슬롯을 배치 — 왼쪽은 투구·갑옷·무기·방패(4칸),
+                오른쪽은 목걸이·장신구 I·II(3칸), EQUIP_SLOTS 배열 순서(앞 4개/뒤 3개)와 그대로 맞음.
+                패널 자체는 초상화 분위기에 맞춰 어두운 톤으로 별도 테마(모달의 나머지는 기존 라이트/다크 유지). */}
+            <div className="rounded-xl overflow-hidden mb-1.5" style={{ background: "linear-gradient(180deg,#221b13,#12100c)" }}>
+              <div className="flex items-stretch gap-1.5 p-2">
+                <div className="flex-1 flex flex-col gap-1 justify-between min-w-0">
+                  {EQUIP_SLOTS.slice(0, 4).map(slot => {
+                    const id = equipment[slot];
+                    const item = id ? EQUIP_POOL.find(i => i.id === id) : null;
+                    return (
+                      <div key={slot} className={cn("flex items-center gap-1 rounded-lg px-1.5 py-1 min-w-0",
+                        item ? "bg-amber-500/15 border border-amber-500/40" : "bg-black/30 border border-dashed border-amber-100/15")}>
+                        <span aria-hidden className={cn("text-sm leading-none shrink-0", !item && "opacity-30")}>{item ? item.icon : "•"}</span>
+                        <span className="text-[7px] font-bold text-amber-100/60 truncate">{EQUIP_SLOT_LABEL[slot]}</span>
+                      </div>
+                    );
+                  })}
+                </div>
+                <div className="shrink-0 flex items-center justify-center">
+                  <img src="/images/game/hero-equip.png" alt="용사" className="w-[84px] h-auto rounded-lg" />
+                </div>
+                <div className="flex-1 flex flex-col gap-1 justify-between min-w-0">
+                  {EQUIP_SLOTS.slice(4).map(slot => {
+                    const id = equipment[slot];
+                    const item = id ? EQUIP_POOL.find(i => i.id === id) : null;
+                    return (
+                      <div key={slot} className={cn("flex items-center gap-1 rounded-lg px-1.5 py-1 min-w-0",
+                        item ? "bg-amber-500/15 border border-amber-500/40" : "bg-black/30 border border-dashed border-amber-100/15")}>
+                        <span aria-hidden className={cn("text-sm leading-none shrink-0", !item && "opacity-30")}>{item ? item.icon : "•"}</span>
+                        <span className="text-[7px] font-bold text-amber-100/60 truncate">{EQUIP_SLOT_LABEL[slot]}</span>
+                      </div>
+                    );
+                  })}
+                </div>
               </div>
             </div>
             {equippedItems.length > 0 && (
