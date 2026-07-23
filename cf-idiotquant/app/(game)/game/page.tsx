@@ -1575,28 +1575,39 @@ function GameContent() {
             <p className="text-xs font-black text-neutral-700 dark:text-neutral-200 mb-1.5">
               장비 {equippedItems.length}/{EQUIP_SLOTS.length}
             </p>
-            <div className="grid grid-cols-2 gap-1.5 mb-2.5">
-              {EQUIP_SLOTS.map(slot => {
-                const id = equipment[slot];
-                const item = id ? EQUIP_POOL.find(i => i.id === id) : null;
-                return (
-                  <div key={slot} className={cn("rounded-lg p-2 text-xs",
-                    item ? "bg-violet-500/5 border border-violet-500/20" : "bg-black/[0.02] dark:bg-white/[0.02] border border-dashed border-black/10 dark:border-white/15")}>
-                    <p className="text-[9px] font-bold text-neutral-400 uppercase tracking-wide">{EQUIP_SLOT_LABEL[slot]}</p>
-                    {item ? (
-                      <>
-                        <p className="flex items-center gap-1 mt-0.5 font-bold text-neutral-800 dark:text-neutral-100 truncate">
-                          <span aria-hidden>{item.icon}</span>{item.name}
-                        </p>
-                        <p className="text-[9px] text-neutral-500 dark:text-neutral-400 truncate">{item.desc}</p>
-                      </>
-                    ) : (
-                      <p className="text-neutral-400 mt-0.5">비어 있음</p>
-                    )}
-                  </div>
-                );
-              })}
+            {/* 종이인형(paper-doll) 배치 — 가운데 사람 실루엣을 배경으로 깔고, 슬롯을 신체 부위에
+                맞춰 둘러 배치(투구=머리, 목걸이=목, 무기/방패=양손, 갑옷=몸통, 장신구=허리 양옆).
+                빈 슬롯 칸은 점선 테두리로만 표시해 실루엣이 그 자리에 은은히 비쳐 보이게 함. */}
+            <div className="relative rounded-xl bg-black/[0.02] dark:bg-white/[0.02] border border-black/5 dark:border-white/10 p-2.5 mb-2">
+              <div aria-hidden className="absolute inset-0 flex items-center justify-center pointer-events-none text-neutral-400 dark:text-neutral-600 opacity-[0.15]">
+                <UserRound size={120} strokeWidth={1} />
+              </div>
+              <div className="relative grid grid-cols-3 gap-1.5"
+                style={{ gridTemplateAreas: `". helmet ." "weapon necklace shield" ". armor ." "accessory1 . accessory2"` }}>
+                {EQUIP_SLOTS.map(slot => {
+                  const id = equipment[slot];
+                  const item = id ? EQUIP_POOL.find(i => i.id === id) : null;
+                  return (
+                    <div key={slot} style={{ gridArea: slot }}
+                      className={cn("flex flex-col items-center justify-center gap-0.5 rounded-lg py-1.5 px-1 text-center min-h-[52px]",
+                        item ? "bg-violet-500/10 border border-violet-500/30" : "bg-white/40 dark:bg-white/[0.03] border border-dashed border-black/10 dark:border-white/15")}>
+                      <span aria-hidden className={cn("text-lg leading-none", !item && "opacity-30")}>{item ? item.icon : "•"}</span>
+                      <span className="text-[8px] font-bold text-neutral-400 leading-tight">{EQUIP_SLOT_LABEL[slot]}</span>
+                    </div>
+                  );
+                })}
+              </div>
             </div>
+            {equippedItems.length > 0 && (
+              <div className="space-y-1 mb-2.5">
+                {equippedItems.map(item => (
+                  <p key={item.id} className="flex items-start gap-1.5 text-[11px]">
+                    <span aria-hidden className="shrink-0">{item.icon}</span>
+                    <span><b className="text-neutral-700 dark:text-neutral-200">{item.name}</b> <span className="text-neutral-400">— {item.desc}</span></span>
+                  </p>
+                ))}
+              </div>
+            )}
             <div className="space-y-1 mb-1.5">
               {(["guardian", "raider"] as EquipSetId[]).map(set => (
                 <div key={set} className="flex items-center justify-between text-[11px]">
