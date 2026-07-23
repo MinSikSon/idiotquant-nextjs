@@ -25,7 +25,7 @@ import { reqGetNcavDailyList, selectNcavDailyList } from "@/lib/features/algorit
 import { computeValueScore } from "@/lib/utils/valueScore";
 import { getDeck, addDeckCard, getWallet, syncBestStreak, type DeckCardSnapshot } from "@/lib/features/deck/deckAPI";
 import { cn } from "@/lib/utils";
-import { HOLO_THRESHOLD, HoloOverlay, PackReveal, AchievementBadges } from "./gameCollectibles";
+import { HOLO_THRESHOLD, HoloOverlay, PackReveal, AchievementBadges, ACHIEVEMENTS } from "./gameCollectibles";
 import { WalletChip, ConvertButton, ShopPanel, BOOST_ITEMS, type BoostItem } from "./gameShop";
 
 const safeNum = (v: any): number => { const n = Number(v); return Number.isFinite(n) ? n : 0; };
@@ -51,57 +51,84 @@ function statTag(sub: number): { label: string; cls: string } {
 // — 단, "지금까지 한 번이라도 장착해본 장비"는 도감(equipmentLog)으로 로컬에 계속 남음.
 // 같은 슬롯이라도 수호자/약탈자 두 세트 중 어느 걸 착용하든 슬롯 자체의 효과는 동일하고(테마만 다름),
 // 대신 같은 세트로 3/5/7개를 맞추면 추가 세트 보너스가 붙어 "몰아서 맞출지 섞어 쓸지" 선택하게 함.
+// effect는 구조화된 스탯 보너스 — 슬롯만으로는 결정 못 하는 전설 세트(아이템마다 다른 조합) 때문에
+// 슬롯이 아니라 "아이템 자체"에 물려서 equipBonus가 세트 구분 없이 그대로 합산할 수 있게 함.
 type EquipSlot = "helmet" | "armor" | "weapon" | "shield" | "necklace" | "accessory1" | "accessory2";
-type EquipSetId = "guardian" | "raider";
-type EquipItem = { id: string; slot: EquipSlot; set: EquipSetId; icon: string; name: string; desc: string };
+type EquipSetId = "guardian" | "raider" | "legend";
+type EquipEffect = { maxShield?: number; shieldLossReduce?: number; acquirePctBonus?: number; goldMult?: number };
+type EquipItem = { id: string; slot: EquipSlot; set: EquipSetId; icon: string; name: string; desc: string; effect: EquipEffect };
 
 const EQUIP_SLOTS: EquipSlot[] = ["helmet", "armor", "weapon", "shield", "necklace", "accessory1", "accessory2"];
 const EQUIP_SLOT_LABEL: Record<EquipSlot, string> = {
   helmet: "투구", armor: "갑옷", weapon: "무기", shield: "방패",
   necklace: "목걸이", accessory1: "장신구 I", accessory2: "장신구 II",
 };
-const EQUIP_SET_LABEL: Record<EquipSetId, string> = { guardian: "수호자 세트", raider: "약탈자 세트" };
+const EQUIP_SET_LABEL: Record<EquipSetId, string> = { guardian: "수호자 세트", raider: "약탈자 세트", legend: "전설 세트" };
 
+// 수호자/약탈자 세트는 테마만 다르고 슬롯별 기본 효과는 동일 — 그 공통 효과표
+const SLOT_EFFECT: Record<EquipSlot, EquipEffect> = {
+  helmet: { maxShield: 1 }, shield: { maxShield: 1 }, armor: { shieldLossReduce: 1 },
+  weapon: { acquirePctBonus: 0.06 }, necklace: { acquirePctBonus: 0.04 },
+  accessory1: { goldMult: 0.25 }, accessory2: { goldMult: 0.25 },
+};
 const EQUIP_POOL: EquipItem[] = [
   // 수호자 세트 — 방어 지향
-  { id: "guardian_helmet", slot: "helmet", set: "guardian", icon: "⛑️", name: "수호자의 투구", desc: "최대 방패 +1" },
-  { id: "guardian_armor", slot: "armor", set: "guardian", icon: "🥋", name: "수호자의 갑옷", desc: "패배 시 방패 소모 -1" },
-  { id: "guardian_weapon", slot: "weapon", set: "guardian", icon: "🔨", name: "수호자의 망치", desc: "카드 획득 확률 +6%p" },
-  { id: "guardian_shield", slot: "shield", set: "guardian", icon: "🛡️", name: "수호자의 방패", desc: "최대 방패 +1" },
-  { id: "guardian_necklace", slot: "necklace", set: "guardian", icon: "📿", name: "수호자의 목걸이", desc: "카드 획득 확률 +4%p" },
-  { id: "guardian_accessory1", slot: "accessory1", set: "guardian", icon: "💍", name: "수호자의 반지", desc: "골드 획득량 +25%" },
-  { id: "guardian_accessory2", slot: "accessory2", set: "guardian", icon: "🧿", name: "수호자의 부적", desc: "골드 획득량 +25%" },
+  { id: "guardian_helmet", slot: "helmet", set: "guardian", icon: "⛑️", name: "수호자의 투구", desc: "최대 방패 +1", effect: SLOT_EFFECT.helmet },
+  { id: "guardian_armor", slot: "armor", set: "guardian", icon: "🥋", name: "수호자의 갑옷", desc: "패배 시 방패 소모 -1", effect: SLOT_EFFECT.armor },
+  { id: "guardian_weapon", slot: "weapon", set: "guardian", icon: "🔨", name: "수호자의 망치", desc: "카드 획득 확률 +6%p", effect: SLOT_EFFECT.weapon },
+  { id: "guardian_shield", slot: "shield", set: "guardian", icon: "🛡️", name: "수호자의 방패", desc: "최대 방패 +1", effect: SLOT_EFFECT.shield },
+  { id: "guardian_necklace", slot: "necklace", set: "guardian", icon: "📿", name: "수호자의 목걸이", desc: "카드 획득 확률 +4%p", effect: SLOT_EFFECT.necklace },
+  { id: "guardian_accessory1", slot: "accessory1", set: "guardian", icon: "💍", name: "수호자의 반지", desc: "골드 획득량 +25%", effect: SLOT_EFFECT.accessory1 },
+  { id: "guardian_accessory2", slot: "accessory2", set: "guardian", icon: "🧿", name: "수호자의 부적", desc: "골드 획득량 +25%", effect: SLOT_EFFECT.accessory2 },
   // 약탈자 세트 — 슬롯별 효과는 수호자 세트와 동일, 테마(세트 보너스 방향)만 다름
-  { id: "raider_helmet", slot: "helmet", set: "raider", icon: "🎩", name: "약탈자의 후드", desc: "최대 방패 +1" },
-  { id: "raider_armor", slot: "armor", set: "raider", icon: "🧥", name: "약탈자의 조끼", desc: "패배 시 방패 소모 -1" },
-  { id: "raider_weapon", slot: "weapon", set: "raider", icon: "🗡️", name: "약탈자의 단검", desc: "카드 획득 확률 +6%p" },
-  { id: "raider_shield", slot: "shield", set: "raider", icon: "🪃", name: "약탈자의 버클러", desc: "최대 방패 +1" },
-  { id: "raider_necklace", slot: "necklace", set: "raider", icon: "📜", name: "약탈자의 인장", desc: "카드 획득 확률 +4%p" },
-  { id: "raider_accessory1", slot: "accessory1", set: "raider", icon: "💰", name: "약탈자의 주머니", desc: "골드 획득량 +25%" },
-  { id: "raider_accessory2", slot: "accessory2", set: "raider", icon: "🗝️", name: "약탈자의 열쇠", desc: "골드 획득량 +25%" },
+  { id: "raider_helmet", slot: "helmet", set: "raider", icon: "🎩", name: "약탈자의 후드", desc: "최대 방패 +1", effect: SLOT_EFFECT.helmet },
+  { id: "raider_armor", slot: "armor", set: "raider", icon: "🧥", name: "약탈자의 조끼", desc: "패배 시 방패 소모 -1", effect: SLOT_EFFECT.armor },
+  { id: "raider_weapon", slot: "weapon", set: "raider", icon: "🗡️", name: "약탈자의 단검", desc: "카드 획득 확률 +6%p", effect: SLOT_EFFECT.weapon },
+  { id: "raider_shield", slot: "shield", set: "raider", icon: "🪃", name: "약탈자의 버클러", desc: "최대 방패 +1", effect: SLOT_EFFECT.shield },
+  { id: "raider_necklace", slot: "necklace", set: "raider", icon: "📜", name: "약탈자의 인장", desc: "카드 획득 확률 +4%p", effect: SLOT_EFFECT.necklace },
+  { id: "raider_accessory1", slot: "accessory1", set: "raider", icon: "💰", name: "약탈자의 주머니", desc: "골드 획득량 +25%", effect: SLOT_EFFECT.accessory1 },
+  { id: "raider_accessory2", slot: "accessory2", set: "raider", icon: "🗝️", name: "약탈자의 열쇠", desc: "골드 획득량 +25%", effect: SLOT_EFFECT.accessory2 },
 ];
+// 업적 해금 전설 장비 — 업적 하나당 슬롯 하나(streak10/captain은 같은 지표라 captain은 매핑 없음).
+// 수호자/약탈자보다 강하거나 복합 효과를 줘서 "업적 깨서 얻는 진짜 보상"으로 체감되게 함.
+type LegendItem = EquipItem & { achievementId: string };
+const LEGEND_ITEMS: LegendItem[] = [
+  { id: "legend_helmet", slot: "helmet", set: "legend", icon: "🌟", name: "초심자의 투구", desc: "최대 방패 +1 · 카드 획득 확률 +3%p", effect: { maxShield: 1, acquirePctBonus: 0.03 }, achievementId: "first" },
+  { id: "legend_armor", slot: "armor", set: "legend", icon: "🎽", name: "수집가의 갑옷", desc: "패배 시 방패 소모 -1 · 골드 획득량 +15%", effect: { shieldLossReduce: 1, goldMult: 0.15 }, achievementId: "collector" },
+  { id: "legend_weapon", slot: "weapon", set: "legend", icon: "⚔️", name: "발굴자의 대검", desc: "카드 획득 확률 +10%p", effect: { acquirePctBonus: 0.10 }, achievementId: "legend3" },
+  { id: "legend_shield", slot: "shield", set: "legend", icon: "💎", name: "프리즘 방패", desc: "최대 방패 +2", effect: { maxShield: 2 }, achievementId: "prism4" },
+  { id: "legend_necklace", slot: "necklace", set: "legend", icon: "🏅", name: "완주자의 목걸이", desc: "카드 획득 확률 +8%p", effect: { acquirePctBonus: 0.08 }, achievementId: "half" },
+  { id: "legend_accessory1", slot: "accessory1", set: "legend", icon: "💫", name: "홀로그램 반지", desc: "골드 획득량 +40%", effect: { goldMult: 0.40 }, achievementId: "holo" },
+  { id: "legend_accessory2", slot: "accessory2", set: "legend", icon: "🪬", name: "생존자의 부적", desc: "패배 시 방패 소모 -1 · 골드 획득량 +20%", effect: { shieldLossReduce: 1, goldMult: 0.20 }, achievementId: "streak10" },
+];
+const ALL_EQUIP_ITEMS: EquipItem[] = [...EQUIP_POOL, ...LEGEND_ITEMS];
 // 세트 보너스 — 같은 세트로 맞춘 슬롯 개수(3/5/7)에 따라 추가로 붙는 보너스
-const SET_BONUS: Record<EquipSetId, { at: number; label: string }[]> = {
+const SET_BONUS: Record<EquipSetId, { at: number; label: string; effect: EquipEffect }[]> = {
   guardian: [
-    { at: 3, label: "최대 방패 +1" },
-    { at: 5, label: "패배 시 방패 소모 -1" },
-    { at: 7, label: "최대 방패 +2" },
+    { at: 3, label: "최대 방패 +1", effect: { maxShield: 1 } },
+    { at: 5, label: "패배 시 방패 소모 -1", effect: { shieldLossReduce: 1 } },
+    { at: 7, label: "최대 방패 +2", effect: { maxShield: 2 } },
   ],
   raider: [
-    { at: 3, label: "카드 획득 확률 +5%p" },
-    { at: 5, label: "골드 획득량 +25%" },
-    { at: 7, label: "카드 획득 확률 +10%p" },
+    { at: 3, label: "카드 획득 확률 +5%p", effect: { acquirePctBonus: 0.05 } },
+    { at: 5, label: "골드 획득량 +25%", effect: { goldMult: 0.25 } },
+    { at: 7, label: "카드 획득 확률 +10%p", effect: { acquirePctBonus: 0.10 } },
+  ],
+  legend: [
+    { at: 3, label: "카드 획득 확률 +5%p", effect: { acquirePctBonus: 0.05 } },
+    { at: 5, label: "골드 획득량 +30%", effect: { goldMult: 0.30 } },
+    { at: 7, label: "최대 방패 +2 · 카드 획득 확률 +10%p", effect: { maxShield: 2, acquirePctBonus: 0.10 } },
   ],
 };
 type Equipment = Record<EquipSlot, string | null>;
 const EMPTY_EQUIPMENT: Equipment = { helmet: null, armor: null, weapon: null, shield: null, necklace: null, accessory1: null, accessory2: null };
-// 이미 장착 중인 "정확히 같은" 장비는 후보에서 제외(같은 슬롯의 다른 세트로 교체 제안은 허용) — 슬롯 7개 ×
-// 세트 2개 = 14종 중 최대 7개만 제외되므로 최소 7개는 항상 남아 3택1이 막힐 일은 없음(유물 4종과 달리
-// 품절 시 골드 대체 로직 불필요).
-function pickItemChoices(equipment: Equipment): EquipItem[] {
+// 이미 장착 중인 "정확히 같은" 장비는 후보에서 제외(같은 슬롯의 다른 세트로 교체 제안은 허용). pool은
+// EQUIP_POOL(14종) + 해금된 전설 장비 — 슬롯 7개 × 세트 2개 = 14종 중 최대 7개만 제외되므로 최소
+// 7개는 항상 남아 3택1이 막힐 일은 없음(유물 4종과 달리 품절 시 골드 대체 로직 불필요).
+function pickItemChoices(equipment: Equipment, pool: EquipItem[]): EquipItem[] {
   const equippedIds = new Set(Object.values(equipment).filter(Boolean));
-  const pool = EQUIP_POOL.filter(i => !equippedIds.has(i.id));
-  return [...pool].sort(() => Math.random() - 0.5).slice(0, 3);
+  const candidates = pool.filter(i => !equippedIds.has(i.id));
+  return [...candidates].sort(() => Math.random() - 0.5).slice(0, 3);
 }
 
 // 카드 수집: 정답을 맞힌 카드만 획득 판정. 등급별 "기본 획득 확률" + 연승 보너스.
@@ -771,6 +798,7 @@ function GameContent() {
   const [firstDupHint, setFirstDupHint] = useState(false); // 첫 중복 카드 획득 시 지갑/전환 안내
   const [showTutorial, setShowTutorial] = useState(false); // 방법 안내 모달(첫 방문 자동 표시 + ? 버튼으로 재열람)
   const [showStatus, setShowStatus] = useState(false); // 용사 상태창(방패·연승·골드·장비 등) 모달
+  const [selectedSlot, setSelectedSlot] = useState<EquipSlot | null>(null); // 상태창에서 탭한 장비 슬롯(능력치 표시용)
   const [showResultDetail, setShowResultDetail] = useState(false); // 결과 화면 상세(업적·획득 카드·놓친 종목) 접힘 상태 — 기본은 핵심 정보만
   const [gold, setGold] = useState(0); // 이번 런 골드(층 클리어·카드 획득마다 적립) — 던전을 나가면 초기화
   const [equipment, setEquipment] = useState<Equipment>(EMPTY_EQUIPMENT); // 이번 런 장비(슬롯별 아이템 id) — 던전을 나가면 초기화
@@ -788,31 +816,35 @@ function GameContent() {
 
   const equippedItems = useMemo(() =>
     EQUIP_SLOTS.map(s => equipment[s]).filter((id): id is string => !!id)
-      .map(id => EQUIP_POOL.find(i => i.id === id)!).filter(Boolean),
+      .map(id => ALL_EQUIP_ITEMS.find(i => i.id === id)!).filter(Boolean),
     [equipment]);
   const setCount = useCallback((set: EquipSetId) => equippedItems.filter(i => i.set === set).length, [equippedItems]);
-  // 장비 총 보너스 = 슬롯별 기본 효과 합 + (같은 세트로 3/5/7개 채웠을 때) 세트 보너스
+  // 장비 총 보너스 = 장착한 아이템별 effect 합 + (같은 세트로 3/5/7개 채웠을 때) 세트 보너스 effect 합.
+  // 슬롯별로 분기하던 걸 아이템 자체의 effect를 그대로 더하는 방식으로 일반화 — 전설 장비는 슬롯 하나에
+  // 여러 스탯이 겹쳐 있어서(예: 최대 방패+카드 획득 확률) 슬롯 기준 분기로는 표현이 안 됨.
   const equipBonus = useMemo(() => {
     let maxShield = 0, shieldLossReduce = 0, acquirePctBonus = 0, goldMult = 1;
     for (const item of equippedItems) {
-      if (item.slot === "helmet" || item.slot === "shield") maxShield += 1;
-      else if (item.slot === "armor") shieldLossReduce += 1;
-      else if (item.slot === "weapon") acquirePctBonus += 0.06;
-      else if (item.slot === "necklace") acquirePctBonus += 0.04;
-      else if (item.slot === "accessory1" || item.slot === "accessory2") goldMult += 0.25;
+      maxShield += item.effect.maxShield ?? 0;
+      shieldLossReduce += item.effect.shieldLossReduce ?? 0;
+      acquirePctBonus += item.effect.acquirePctBonus ?? 0;
+      goldMult += item.effect.goldMult ?? 0;
     }
-    const gCount = setCount("guardian"), rCount = setCount("raider");
-    if (gCount >= 3) maxShield += 1;
-    if (gCount >= 5) shieldLossReduce += 1;
-    if (gCount >= 7) maxShield += 2;
-    if (rCount >= 3) acquirePctBonus += 0.05;
-    if (rCount >= 5) goldMult += 0.25;
-    if (rCount >= 7) acquirePctBonus += 0.10;
+    for (const set of Object.keys(SET_BONUS) as EquipSetId[]) {
+      const count = setCount(set);
+      for (const tier of SET_BONUS[set]) {
+        if (count < tier.at) continue;
+        maxShield += tier.effect.maxShield ?? 0;
+        shieldLossReduce += tier.effect.shieldLossReduce ?? 0;
+        acquirePctBonus += tier.effect.acquirePctBonus ?? 0;
+        goldMult += tier.effect.goldMult ?? 0;
+      }
+    }
     return { maxShield, shieldLossReduce, acquirePctBonus, goldMult };
   }, [equippedItems, setCount]);
 
   const pickItem = useCallback((id: string) => {
-    const item = EQUIP_POOL.find(i => i.id === id);
+    const item = ALL_EQUIP_ITEMS.find(i => i.id === id);
     if (!item) return;
     setEquipment(e => ({ ...e, [item.slot]: id }));
     setEquipmentLog(prev => {
@@ -919,6 +951,14 @@ function GameContent() {
   }, [pool, deck]);
   const rankMap = useMemo(() => buildTierRankMap(catalog), [catalog]); // 카드 명패의 "등급-번호"(예: S-1)용
 
+  // 업적 해금 시 전설 장비가 파밍 풀에 추가됨 — ACHIEVEMENTS.done()과 같은 기준(deck/best/catalog)을
+  // 그대로 재사용해 두 곳(업적 배지·장비 해금)이 어긋나지 않게 함.
+  const unlockedLegendItems = useMemo(() => {
+    const unlockedIds = new Set(ACHIEVEMENTS.filter(a => a.done({ deck, best, catalogTotal: catalog.length })).map(a => a.id));
+    return LEGEND_ITEMS.filter(li => unlockedIds.has(li.achievementId));
+  }, [deck, best, catalog]);
+  const availableEquipPool = useMemo(() => [...EQUIP_POOL, ...unlockedLegendItems], [unlockedLegendItems]);
+
   const bestKey = "iq:game:best:hl:market_cap"; // 기존 시가총액 비교 기록 키 유지
   useEffect(() => { setBest(b => Math.max(b, safeNum(typeof window !== "undefined" ? localStorage.getItem(bestKey) : 0))); }, [bestKey]);
 
@@ -972,8 +1012,10 @@ function GameContent() {
     if (!pPart?.available || !oPart?.available) return;
     const win = pPart.sub >= oPart.sub; // 동점은 승리 처리
     // 패배 대가 — 밀어붙인 연승(streak)이 길수록 커짐(3연승마다 +1, 최대 보유 방패만큼).
-    // "한 판 더" 를 계속 고를수록 다음 패배가 더 아파지는 푸시-유어-럭 긴장감 장치. 갑옷/수호자 세트 장비는 -N(최소 1).
-    const shieldLoss = win ? 0 : Math.max(1, Math.min(shields, 1 + Math.floor(streak / 3)) - equipBonus.shieldLossReduce);
+    // "한 판 더" 를 계속 고를수록 다음 패배가 더 아파지는 푸시-유어-럭 긴장감 장치. 갑옷/수호자 세트
+    // 장비는 -N. 최솟값을 1로 클램프하면 streak<3(기본값 1)일 때는 1-1=0이 다시 1로 올라가 버려서
+    // "패배 시 방패 소모 -1" 효과가 아예 안 먹는 것처럼 보였음 — 0으로 클램프해 실제로 무피해 패배가 되게 함.
+    const shieldLoss = win ? 0 : Math.max(0, Math.min(shields, 1 + Math.floor(streak / 3)) - equipBonus.shieldLossReduce);
     setChosenStat(statKey);
     setLastResult({ win, statKey, shieldLoss });
     setDropped(false); setDropPrompt(false); setSaveFail(null); setEscaped(null); setFirstDupHint(false);
@@ -1008,9 +1050,10 @@ function GameContent() {
       setGold(g => g + goldGain);
       setLastResult(r => (r ? { ...r, goldGain } : r));
 
-      // 3라운드마다 장비 3택1 선택지 제공(품절 걱정 없음 — pickItemChoices 주석 참고)
+      // 3라운드마다 장비 3택1 선택지 제공(품절 걱정 없음 — pickItemChoices 주석 참고).
+      // availableEquipPool = 기본 14종 + 그새 해금된 전설 장비.
       if (isItemRound) {
-        setItemChoices(pickItemChoices(equipment));
+        setItemChoices(pickItemChoices(equipment, availableEquipPool));
       }
 
       if (willDrop) {
@@ -1060,7 +1103,7 @@ function GameContent() {
         higherSide: "challenger", // 패배 라운드는 항상 상대(opponentCard) 지표가 더 좋았던 경우
       });
     }
-  }, [phase, playerCard, opponentCard, best, bestKey, isLoggedIn, streak, totalWins, activeBoost, shields, roundNum, equipment, equipBonus]);
+  }, [phase, playerCard, opponentCard, best, bestKey, isLoggedIn, streak, totalWins, activeBoost, shields, roundNum, equipment, equipBonus, availableEquipPool]);
 
   // 승리든 패배든, 방패가 남아있으면 그 자리에서 런을 마무리(안전 정리)할 수 있음 — "더 갈까 여기서 챙길까" 선택지.
   const cashOut = useCallback(() => {
@@ -1091,7 +1134,7 @@ function GameContent() {
   const ownedOpponent = opponentCard ? deck.find(c => c.ticker === opponentCard.ticker) : undefined;
   const playerParts = playerCard ? computeValueScore(playerCard).parts : [];
   const opponentParts = opponentCard ? computeValueScore(opponentCard).parts : [];
-  const nextLossPenalty = Math.max(1, Math.min(shields, 1 + Math.floor(streak / 3)) - equipBonus.shieldLossReduce); // "다음 패배 시 방패 -N" 경고에 표시
+  const nextLossPenalty = Math.max(0, Math.min(shields, 1 + Math.floor(streak / 3)) - equipBonus.shieldLossReduce); // "다음 패배 시 방패 -N" 경고에 표시 — battle()의 shieldLoss와 클램프를 반드시 일치시켜야 함
   const maxShields = 3 + equipBonus.maxShield; // 투구/방패 장비·수호자 세트 보너스만큼 최대 방패 +N(HUD 아이콘 수)
   // 최대 방패가 늘어나기만 하고 현재 방패는 그대로면(예: 3/4) "장비 효과가 안 먹는 것처럼" 보임 —
   // 늘어난 만큼(delta) 현재 방패도 즉시 채워줌(기존 유물 "수호의 방패"가 즉시 +1 주던 것과 동일 UX).
@@ -1525,14 +1568,14 @@ function GameContent() {
       {/* 용사 상태창 — 방패·연승·골드·장비 슬롯 7칸을 한 화면에 모아 보여줌. HUD의 장비 뱃지/사람 아이콘 버튼으로 엶 */}
       {showStatus && (
         <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/50 backdrop-blur-sm p-3"
-          onClick={() => setShowStatus(false)}>
+          onClick={() => { setShowStatus(false); setSelectedSlot(null); }}>
           <div className="w-full sm:max-w-sm max-h-[80vh] overflow-y-auto rounded-2xl bg-white dark:bg-[#242320] border border-neutral-200 dark:border-[#35332e] shadow-xl p-4 animate-in fade-in slide-in-from-bottom-2 sm:zoom-in-95 duration-200"
             onClick={e => e.stopPropagation()}>
             <div className="flex items-center justify-between mb-3">
               <p className="font-black text-neutral-900 dark:text-white flex items-center gap-1.5">
                 <UserRound size={16} /> 용사 상태창
               </p>
-              <button type="button" onClick={() => setShowStatus(false)} className="text-neutral-400 hover:text-[#16a34a]" aria-label="닫기">
+              <button type="button" onClick={() => { setShowStatus(false); setSelectedSlot(null); }} className="text-neutral-400 hover:text-[#16a34a]" aria-label="닫기">
                 <X size={18} />
               </button>
             </div>
@@ -1578,19 +1621,28 @@ function GameContent() {
             </p>
             {/* 용사 초상화를 가운데 두고 좌우에 슬롯을 배치 — 왼쪽은 투구·갑옷·무기·방패(4칸),
                 오른쪽은 목걸이·장신구 I·II(3칸), EQUIP_SLOTS 배열 순서(앞 4개/뒤 3개)와 그대로 맞음.
-                패널 자체는 초상화 분위기에 맞춰 어두운 톤으로 별도 테마(모달의 나머지는 기존 라이트/다크 유지). */}
-            <div className="rounded-xl overflow-hidden mb-1.5" style={{ background: "linear-gradient(180deg,#221b13,#12100c)" }}>
+                라이트 모드에서 어두운 고정 배경이 너무 무겁게 떠 보인다는 피드백 — 다크 모드는 기존
+                어두운 톤(초상화 분위기)을 유지하고, 라이트 모드는 따뜻한 톤(호박색 계열)으로 전환.
+                장착된 슬롯은 탭하면 능력치(효과 설명)가 아래에 뜸 — 같은 슬롯 재탭 시 접힘. */}
+            <div data-equip-panel className="rounded-xl overflow-hidden mb-1.5 bg-gradient-to-b from-amber-100 to-amber-200/70 dark:from-[#221b13] dark:to-[#12100c]">
               <div className="flex items-stretch gap-1.5 p-2">
                 <div className="flex-1 flex flex-col gap-1 justify-between min-w-0">
                   {EQUIP_SLOTS.slice(0, 4).map(slot => {
                     const id = equipment[slot];
-                    const item = id ? EQUIP_POOL.find(i => i.id === id) : null;
-                    return (
-                      <div key={slot} className={cn("flex items-center gap-1 rounded-lg px-1.5 py-1 min-w-0",
-                        item ? "bg-amber-500/15 border border-amber-500/40" : "bg-black/30 border border-dashed border-amber-100/15")}>
-                        <span aria-hidden className={cn("text-sm leading-none shrink-0", !item && "opacity-30")}>{item ? item.icon : "•"}</span>
-                        <span className="text-[7px] font-bold text-amber-100/60 truncate">{EQUIP_SLOT_LABEL[slot]}</span>
-                      </div>
+                    const item = id ? ALL_EQUIP_ITEMS.find(i => i.id === id) : null;
+                    const cellCls = cn("flex items-center gap-1 rounded-lg px-1.5 py-1 min-w-0 w-full text-left transition-colors",
+                      item ? "bg-amber-500/20 dark:bg-amber-500/15 border border-amber-500/50 dark:border-amber-500/40"
+                        : "bg-black/5 dark:bg-black/30 border border-dashed border-black/15 dark:border-amber-100/15",
+                      item?.set === "legend" && "ring-1 ring-amber-500 dark:ring-amber-300",
+                      selectedSlot === slot && "bg-amber-500/35 dark:bg-amber-500/30");
+                    const inner = <>
+                      <span aria-hidden className={cn("text-sm leading-none shrink-0", !item && "opacity-30")}>{item ? item.icon : "•"}</span>
+                      <span className="text-[7px] font-bold text-amber-900/70 dark:text-amber-100/60 truncate">{EQUIP_SLOT_LABEL[slot]}</span>
+                    </>;
+                    return item ? (
+                      <button key={slot} type="button" onClick={() => setSelectedSlot(s => s === slot ? null : slot)} className={cellCls}>{inner}</button>
+                    ) : (
+                      <div key={slot} className={cellCls}>{inner}</div>
                     );
                   })}
                 </div>
@@ -1600,30 +1652,45 @@ function GameContent() {
                 <div className="flex-1 flex flex-col gap-1 justify-between min-w-0">
                   {EQUIP_SLOTS.slice(4).map(slot => {
                     const id = equipment[slot];
-                    const item = id ? EQUIP_POOL.find(i => i.id === id) : null;
-                    return (
-                      <div key={slot} className={cn("flex items-center gap-1 rounded-lg px-1.5 py-1 min-w-0",
-                        item ? "bg-amber-500/15 border border-amber-500/40" : "bg-black/30 border border-dashed border-amber-100/15")}>
-                        <span aria-hidden className={cn("text-sm leading-none shrink-0", !item && "opacity-30")}>{item ? item.icon : "•"}</span>
-                        <span className="text-[7px] font-bold text-amber-100/60 truncate">{EQUIP_SLOT_LABEL[slot]}</span>
-                      </div>
+                    const item = id ? ALL_EQUIP_ITEMS.find(i => i.id === id) : null;
+                    const cellCls = cn("flex items-center gap-1 rounded-lg px-1.5 py-1 min-w-0 w-full text-left transition-colors",
+                      item ? "bg-amber-500/20 dark:bg-amber-500/15 border border-amber-500/50 dark:border-amber-500/40"
+                        : "bg-black/5 dark:bg-black/30 border border-dashed border-black/15 dark:border-amber-100/15",
+                      item?.set === "legend" && "ring-1 ring-amber-500 dark:ring-amber-300",
+                      selectedSlot === slot && "bg-amber-500/35 dark:bg-amber-500/30");
+                    const inner = <>
+                      <span aria-hidden className={cn("text-sm leading-none shrink-0", !item && "opacity-30")}>{item ? item.icon : "•"}</span>
+                      <span className="text-[7px] font-bold text-amber-900/70 dark:text-amber-100/60 truncate">{EQUIP_SLOT_LABEL[slot]}</span>
+                    </>;
+                    return item ? (
+                      <button key={slot} type="button" onClick={() => setSelectedSlot(s => s === slot ? null : slot)} className={cellCls}>{inner}</button>
+                    ) : (
+                      <div key={slot} className={cellCls}>{inner}</div>
                     );
                   })}
                 </div>
               </div>
             </div>
-            {equippedItems.length > 0 && (
-              <div className="grid grid-cols-2 gap-x-2 gap-y-0.5 mb-1.5">
-                {equippedItems.map(item => (
-                  <p key={item.id} className="flex items-center gap-1 text-[10px] truncate">
-                    <span aria-hidden className="shrink-0">{item.icon}</span>
-                    <span className="text-neutral-500 dark:text-neutral-400 truncate">{item.desc}</span>
-                  </p>
-                ))}
-              </div>
-            )}
+            {(() => {
+              const selectedItem = selectedSlot ? ALL_EQUIP_ITEMS.find(i => i.id === equipment[selectedSlot!]) : null;
+              return selectedItem ? (
+                <div className="flex items-start gap-2 rounded-lg bg-amber-500/10 border border-amber-500/30 px-2.5 py-2 mb-1.5">
+                  <span aria-hidden className="text-lg leading-none shrink-0">{selectedItem.icon}</span>
+                  <span className="min-w-0">
+                    <span className="flex items-center gap-1 text-xs font-black text-neutral-800 dark:text-neutral-100">
+                      {selectedItem.name}
+                      {selectedItem.set === "legend" && <span className="px-1 py-0.5 rounded text-[8px] font-black bg-amber-500 text-white">전설</span>}
+                    </span>
+                    <span className="block text-[10px] text-neutral-500 dark:text-neutral-400">{EQUIP_SLOT_LABEL[selectedItem.slot]} · {EQUIP_SET_LABEL[selectedItem.set]}</span>
+                    <span className="block text-[11px] font-bold text-amber-600 dark:text-amber-400 mt-0.5">{selectedItem.desc}</span>
+                  </span>
+                </div>
+              ) : equippedItems.length > 0 ? (
+                <p className="text-[10px] text-neutral-400 mb-1.5">장비를 탭하면 능력치를 볼 수 있어요</p>
+              ) : null;
+            })()}
             <p className="text-[10px] text-neutral-400">
-              {EQUIP_SET_LABEL.guardian} {setCount("guardian")}/7 · {EQUIP_SET_LABEL.raider} {setCount("raider")}/7 · 도감 {equipmentLog.size}/{EQUIP_POOL.length}
+              {EQUIP_SET_LABEL.guardian} {setCount("guardian")}/7 · {EQUIP_SET_LABEL.raider} {setCount("raider")}/7 · {EQUIP_SET_LABEL.legend} {setCount("legend")}/{unlockedLegendItems.length} · 도감 {equipmentLog.size}/{ALL_EQUIP_ITEMS.length}
             </p>
           </div>
         </div>
@@ -1640,13 +1707,18 @@ function GameContent() {
             </p>
             <div className="space-y-2">
               {itemChoices.map(item => {
-                const equippedInSlot = equipment[item.slot] ? EQUIP_POOL.find(i => i.id === equipment[item.slot]) : null;
+                const equippedInSlot = equipment[item.slot] ? ALL_EQUIP_ITEMS.find(i => i.id === equipment[item.slot]) : null;
+                const isLegend = item.set === "legend"; // 업적 해금 전설 장비는 금색 테두리로 구분
                 return (
                   <button key={item.id} type="button" onClick={() => pickItem(item.id)}
-                    className="w-full flex items-center gap-2.5 px-3 py-2.5 rounded-xl border border-violet-500/30 bg-violet-500/5 hover:bg-violet-500/10 text-left active:scale-[0.98] transition-all">
+                    className={cn("w-full flex items-center gap-2.5 px-3 py-2.5 rounded-xl border text-left active:scale-[0.98] transition-all",
+                      isLegend ? "border-amber-500/40 bg-amber-500/10 hover:bg-amber-500/15" : "border-violet-500/30 bg-violet-500/5 hover:bg-violet-500/10")}>
                     <span className="text-xl shrink-0" aria-hidden>{item.icon}</span>
                     <span className="min-w-0 flex-1">
-                      <span className="block text-sm font-black text-neutral-800 dark:text-neutral-100">{item.name}</span>
+                      <span className="flex items-center gap-1 text-sm font-black text-neutral-800 dark:text-neutral-100">
+                        {item.name}
+                        {isLegend && <span className="px-1 py-0.5 rounded text-[8px] font-black bg-amber-500 text-white">전설</span>}
+                      </span>
                       <span className="block text-xs text-neutral-500 dark:text-neutral-400">{EQUIP_SLOT_LABEL[item.slot]} · {item.desc}</span>
                     </span>
                     {equippedInSlot && equippedInSlot.id !== item.id && (
@@ -1726,15 +1798,20 @@ function DeckView({ deck, catalog, best, coins, isLoggedIn, onLogin, onClose, sh
     return { byGroup, total, owned, pct: total > 0 ? Math.round((owned / total) * 100) : 0 };
   }, [groups, catalog.length, ownedByTicker]);
 
-  // 보유 카드만 / 중복(2장 이상, 코인 전환 가능) 카드만 보기 필터
+  // 보유 카드만 / 중복(2장 이상, 코인 전환 가능) 카드만 / 업적 관련 카드만 보기 필터
   const [showOwnedOnly, setShowOwnedOnly] = useState(false);
   const [showDupesOnly, setShowDupesOnly] = useState(false);
+  const [achievementFilter, setAchievementFilter] = useState<string | null>(null);
   const displayGroups = useMemo(() => {
     let result = groups;
     if (showOwnedOnly) result = result.map(g => ({ key: g.key, cards: g.cards.filter(c => c.owned) })).filter(g => g.cards.length > 0);
     if (showDupesOnly) result = result.map(g => ({ key: g.key, cards: g.cards.filter(c => (c.owned?.count ?? 0) >= 2) })).filter(g => g.cards.length > 0);
+    if (achievementFilter) {
+      const achievement = ACHIEVEMENTS.find(a => a.id === achievementFilter);
+      if (achievement?.cardFilter) result = result.map(g => ({ key: g.key, cards: g.cards.filter(achievement.cardFilter!) })).filter(g => g.cards.length > 0);
+    }
     return result;
-  }, [groups, showOwnedOnly, showDupesOnly]);
+  }, [groups, showOwnedOnly, showDupesOnly, achievementFilter]);
 
   // 카드가 3D(두께·범선·홀로)라 한 번에 다 그리면 무거움 → 12장씩 나눠 렌더(스크롤 시 자동 추가)
   const PAGE = 12;
@@ -1790,7 +1867,10 @@ function DeckView({ deck, catalog, best, coins, isLoggedIn, onLogin, onClose, sh
           )}
 
           <div className="flex items-center justify-between gap-2 mb-3 flex-wrap">
-            <AchievementBadges deck={deck} best={best} catalogTotal={catalog.length} />
+            {/* 업적 배지 탭 — 카드 관련 업적(cardFilter 있는 것)은 눌러서 그 업적에 해당하는 카드만
+                필터링해 볼 수 있음. 같은 배지를 다시 누르면 필터 해제. */}
+            <AchievementBadges deck={deck} best={best} catalogTotal={catalog.length}
+              selected={achievementFilter} onSelect={id => { setAchievementFilter(f => f === id ? null : id); setVisible(PAGE); }} />
             {catalog.length > 0 && (
               <div className="flex items-center gap-1.5 shrink-0">
                 <div className="inline-flex rounded-lg overflow-hidden backdrop-blur-md border border-black/5 dark:border-white/10">
