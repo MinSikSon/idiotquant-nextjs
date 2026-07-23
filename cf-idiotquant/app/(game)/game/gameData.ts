@@ -21,7 +21,7 @@ export const ITEM_OFFER_COUNT = 3;
 export const ITEM_POOL: ItemDef[] = [
   { id: "buffer", kind: "passive", name: "여유 자금", desc: "매 턴 시작 시 블록 +2", icon: "🧱", effect: { blockPerTurn: 2 } },
   { id: "network", kind: "passive", name: "정보망", desc: "손패 드로우 +1", icon: "📡", effect: { drawBonus: 1 } },
-  { id: "leverage", kind: "passive", name: "레버리지", desc: "턴 시작 에너지 +1", icon: "⚡", effect: { energyBonus: 1 } },
+  { id: "leverage", kind: "passive", name: "레버리지", desc: "턴 시작 코스트 +1", icon: "⚡", effect: { energyBonus: 1 } },
   { id: "diversify", kind: "passive", name: "분산 투자", desc: "코스트 1인 카드는 무료로 낼 수 있음", icon: "🧩", effect: { freeCostThreshold: 1 } },
   { id: "stoploss", kind: "active", name: "손절매", desc: "즉시 적에게 5 데미지", icon: "✂️", effect: { kind: "damage", amount: 5 } },
   { id: "loan", kind: "active", name: "긴급 대출", desc: "즉시 블록 +5", icon: "🏦", effect: { kind: "block", amount: 5 } },
