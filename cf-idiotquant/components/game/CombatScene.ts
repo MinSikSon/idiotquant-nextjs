@@ -6,14 +6,15 @@ import Phaser from "phaser";
 // 실루엣을 계산해 그리는 방식으로 바꿨다 — 조합이 아무리 랜덤해도 항상 매끈한 블롭이 보장됨.
 // 판정 로직은 전혀 없음 — combatEngine이 계산한 결과를 받아 재생만 한다.
 
-// 슬라임 실루엣 — 위쪽은 돔(타원 상반부), 적도(CY) 아래로는 폭을 얼리듯 고정해 곧은 옆면을
-// 만들고, 맨 아랫줄만 살짝 좁혀 바닥에 앉은 듯한 둥근 모서리를 준다(둥근 사각형이 아니라
-// 실제 "물방울이 바닥에 눌러앉은" 슬라임 프로필).
-const GRID = 14;
+// 슬라임 실루엣 — 위쪽은 돔(타원 상반부), 적도(CY)부터 아래는 바닥으로 갈수록 폭이 점점
+// 넓어지는 플레어(치마처럼 퍼짐)를 줘서 "바닥에 퍼져 앉은" 물웅덩이 느낌을 낸다. 맨 아랫줄만
+// 살짝 좁혀 모서리를 둥글게.
+const GRID = 18;
 const CX = GRID / 2;
-const RX = 6, RY = 6;
-const CY = 6;          // 돔의 적도(가장 넓은 지점) — 여기부터 아래는 폭 고정
-const BODY_BOTTOM = 11; // 바닥 줄(이 줄 아래는 없음)
+const RX = 5, RY = 5.5;
+const CY = 7;            // 돔의 적도(가장 넓은 지점) — 여기부터 아래는 바닥까지 폭이 늘어남
+const BODY_BOTTOM = 13;  // 바닥 줄(이 줄 아래는 없음)
+const FLARE = 2.6;       // 적도 대비 바닥에서 추가로 퍼지는 폭(칸)
 
 function inBody(col: number, row: number): boolean {
   if (row > BODY_BOTTOM) return false;
@@ -22,26 +23,29 @@ function inBody(col: number, row: number): boolean {
     const nx = dx / RX, ny = (row + 0.5 - CY) / RY;
     return nx * nx + ny * ny <= 1;
   }
-  const maxRx = row >= BODY_BOTTOM ? RX - 1.3 : RX; // 맨 아랫줄만 살짝 좁혀 모서리를 둥글게
+  const t = (row - CY) / (BODY_BOTTOM - CY); // 0(적도) → 1(바닥)
+  const flared = RX + t * FLARE;
+  const maxRx = row >= BODY_BOTTOM ? flared - 1 : flared; // 맨 아랫줄만 살짝 좁혀 모서리를 둥글게
   return Math.abs(dx) <= maxRx;
 }
 
-type Palette = { body: number; outline: number; blush: number; shine: number };
+// 초록 계열 팔레트로만 구성(슬라임다움을 위해 색상군을 고정, 색조는 다양화)
+type Palette = { body: number; outline: number; shine: number };
 function lighten(hex: number, amt: number): number {
   const r = (hex >> 16) & 0xff, g = (hex >> 8) & 0xff, b = hex & 0xff;
   const mix = (c: number) => Math.min(255, Math.round(c + (255 - c) * amt));
   return (mix(r) << 16) | (mix(g) << 8) | mix(b);
 }
 const PALETTE_BASE = [
-  { body: 0xf87171, outline: 0xb91c1c, blush: 0xfecaca },
-  { body: 0xc084fc, outline: 0x7e22ce, blush: 0xf3e8ff },
-  { body: 0xfb923c, outline: 0xc2410c, blush: 0xfed7aa },
-  { body: 0x38bdf8, outline: 0x0369a1, blush: 0xdbeafe },
-  { body: 0x4ade80, outline: 0x15803d, blush: 0xdcfce7 },
-  { body: 0xfbbf24, outline: 0xb45309, blush: 0xfef3c7 },
-  { body: 0xf472b6, outline: 0xbe185d, blush: 0xfce7f3 },
+  { body: 0x4ade80, outline: 0x15803d }, // 에메랄드
+  { body: 0x34d399, outline: 0x047857 }, // 민트
+  { body: 0xa3e635, outline: 0x4d7c0f }, // 라임
+  { body: 0x22c55e, outline: 0x14532d }, // 포레스트
+  { body: 0x6ee7b7, outline: 0x0f766e }, // 시폼
+  { body: 0x84cc16, outline: 0x3f6212 }, // 올리브
 ];
 const PALETTES: Palette[] = PALETTE_BASE.map(p => ({ ...p, shine: lighten(p.body, 0.6) }));
+const BLUSH_COLOR = 0xfda4af; // 초록 몸과 대비되도록 볼터치는 고정 분홍
 
 type MouthKind = "smile" | "o" | "none";
 type MonsterSpec = { palette: Palette; eyeGap: number; mouth: MouthKind; hasBlush: boolean };
@@ -131,25 +135,27 @@ export default class CombatScene extends Phaser.Scene {
 
     // 볼터치
     if (s.hasBlush) {
-      g.fillStyle(s.palette.blush, 0.9);
+      g.fillStyle(BLUSH_COLOR, 0.85);
       for (const dir of [-1, 1]) {
-        const p = this.cellPx(CX + dir * (s.eyeGap + 2), CY + 1);
-        g.fillCircle(p.x + this.cell / 2, p.y + this.cell / 2, this.cell * 0.8);
+        const p = this.cellPx(CX + dir * (s.eyeGap + 1.8), CY + 1);
+        g.fillCircle(p.x + this.cell / 2, p.y + this.cell / 2, this.cell * 0.75);
       }
     }
 
-    // 눈 — 흰자 + 눈동자(2칸), 깜빡일 땐 얇은 가로줄로 대체
+    // 눈 — 동그란 눈동자(가운데 정렬, 바깥쪽으로 안 쏠리게)에 작은 흰색 반짝임 점 하나만 —
+    // 예전엔 흰자+동공이 바깥쪽으로 쏠려 있어 무섭다는 피드백을 받았음. 깜빡일 땐 얇은 곡선으로.
     for (const dir of [-1, 1]) {
       const ex = CX + dir * s.eyeGap;
-      const p = this.cellPx(ex, CY - 1);
+      const p = this.cellPx(ex, CY - 0.5);
+      const cxPx = p.x + this.cell / 2, cyPx = p.y + this.cell / 2;
       if (blink) {
         g.fillStyle(s.palette.outline, 1);
-        g.fillRect(p.x - this.cell * 0.6, p.y + this.cell * 0.3, this.cell * 1.2, this.cell * 0.35);
+        g.fillRoundedRect(cxPx - this.cell * 0.65, cyPx - this.cell * 0.12, this.cell * 1.3, this.cell * 0.24, this.cell * 0.12);
       } else {
-        g.fillStyle(0xffffff, 1);
-        g.fillCircle(p.x + this.cell / 2, p.y + this.cell / 2, this.cell * 0.95);
         g.fillStyle(0x1f2937, 1);
-        g.fillCircle(p.x + this.cell / 2 + dir * this.cell * 0.25, p.y + this.cell / 2 + this.cell * 0.15, this.cell * 0.45);
+        g.fillCircle(cxPx, cyPx, this.cell * 0.85);
+        g.fillStyle(0xffffff, 0.95);
+        g.fillCircle(cxPx - this.cell * 0.28, cyPx - this.cell * 0.28, this.cell * 0.28);
       }
     }
 
