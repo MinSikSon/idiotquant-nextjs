@@ -759,7 +759,24 @@ function FloorGraph({ nodes }: { nodes: FloorNode[] }) {
   );
 }
 
-type Phase = "loading" | "battling" | "resolved" | "over";
+type Phase = "loading" | "battling" | "resolved" | "over" | "event";
+
+// 조우 유형 — 보스(10라운드 고정)를 제외하면, 층이 깊을수록 상인/휴식/정예 같은 특수 조우 확률이
+// 늘어나 "진행할수록 다채로워지는" 로그라이크 리듬을 만든다(요청: "게임이 너무 선형적"). 정예는
+// 5라운드 이후부터만 등장(초반 난이도 보호). 특수 조우가 뜨면 그 라운드는 배틀이 아니라서 아이템
+// 드랍(3라운드 주기)이 겹쳐도 그냥 건너뜀 — 자주 있는 일이 아니라 무시 가능한 손실.
+type EncounterType = "battle" | "boss" | "merchant" | "rest" | "elite";
+const MERCHANT_HEAL_COST = 8; // 상인에게 방패 1칸 회복을 사는 데 드는 골드(이번 던전 한정 재화)
+function pickEncounter(roundNum: number): EncounterType {
+  if (roundNum === 0) return "battle"; // 첫 판은 항상 평범한 배틀로 시작(튜토리얼 흐름 유지)
+  if (roundNum % 10 === 0) return "boss";
+  const specialChance = Math.min(0.35, 0.05 + Math.floor(roundNum / 5) * 0.05);
+  if (Math.random() < specialChance) {
+    const pool: EncounterType[] = roundNum >= 5 ? ["merchant", "rest", "elite"] : ["merchant", "rest"];
+    return pool[Math.floor(Math.random() * pool.length)];
+  }
+  return "battle";
+}
 
 // useSearchParams는 Suspense 경계가 필요(screener 페이지와 동일 패턴) — 게임 본체를 감싼다
 export default function GamePage() {
@@ -789,6 +806,8 @@ function GameContent() {
   const [phase, setPhase] = useState<Phase>("loading");
   const [shields, setShields] = useState(3); // 방패(목숨) — 0이 되면 런 종료. 패배해도 즉시 끝나지 않음.
   const [roundNum, setRoundNum] = useState(0); // 이번 런 누적 라운드 수(승패 무관). 10의 배수 층마다 보스, 3의 배수 층마다 장비.
+  const [encounter, setEncounter] = useState<EncounterType>("battle"); // 이번 라운드 조우 유형(battle/boss/merchant/rest/elite)
+  const [restHealed, setRestHealed] = useState(false); // 휴식 조우 진입 시 실제로 방패를 회복했는지(이미 가득 찼으면 false)
   const [streak, setStreak] = useState(0); // 연속 무패(패배 시 0으로 리셋되지만 런은 계속)
   const [totalWins, setTotalWins] = useState(0); // 이번 런 누적 승수 — 최종 스코어
   const [best, setBest] = useState(0); // 역대 최고 승수(서버 동기화)
@@ -887,6 +906,9 @@ function GameContent() {
     acquirePctBonus: equipBonus.acquirePctBonus + levelBonus.acquirePctBonus,
     goldMult: equipBonus.goldMult + levelBonus.goldMult,
   }), [equipBonus, levelBonus]);
+  const maxShields = 3 + totalBonus.maxShield; // 장비·세트 보너스 + 레벨 보너스만큼 최대 방패 +N(HUD 아이콘 수)
+  // battle()/advanceToRound() 등 여러 콜백이 참조하므로 그 콜백들보다 앞서 선언 — 아래서 선언하면
+  // useCallback 의존성 배열에 안 넣었을 때 이전 렌더의 stale closure를 참조하는 문제가 생길 수 있음.
 
   const pickItem = useCallback((id: string) => {
     const item = ALL_EQUIP_ITEMS.find(i => i.id === id);
@@ -1039,6 +1061,7 @@ function GameContent() {
     setAcquired([]); setPackOpening(false); setFirstDupHint(false); setHistory([]);
     setGold(0); setEquipment(EMPTY_EQUIPMENT); setItemChoices(null); // 골드·장비는 던전(런) 단위 — 새 던전 입장 시 초기화
     setShowResultDetail(false);
+    setEncounter("battle"); setRestHealed(false);
     setPhase("battling");
   }, [drawPair]);
 
@@ -1090,18 +1113,20 @@ function GameContent() {
       const chance = Math.min(0.95, acquireChance(opponentCard, ns) * (activeBoost?.mult ?? 1) + totalBonus.acquirePctBonus);
       const willDrop = Math.random() < chance;
 
-      // 골드 — 층 클리어(기본) + 보스 처치 보너스 + 카드 획득 보너스. 장신구/약탈자 세트 장비면 배율 적용.
-      // 보스는 10라운드마다(기존 5라운드에서 변경), 장비는 3라운드마다 획득 — 두 주기가 겹치는 30라운드째는
-      // 보스 조우를 우선하고 그 라운드의 장비 드랍은 건너뜀(30라운드마다 1번뿐이라 무시 가능한 손실).
-      const isBossRound = roundNum > 0 && roundNum % 10 === 0;
-      const isItemRound = roundNum > 0 && roundNum % 3 === 0 && !isBossRound;
-      const goldGain = Math.round((3 + (isBossRound ? 15 : 0) + (willDrop ? 5 : 0)) * totalBonus.goldMult);
+      // 골드 — 층 클리어(기본) + 보스/정예 처치 보너스 + 카드 획득 보너스. 장신구/약탈자 세트 장비면 배율 적용.
+      // 보스는 10라운드마다 고정, 정예는 pickEncounter가 층이 깊을수록 확률적으로 배치 — 둘 다 강한 상대라
+      // 위험을 감수한 보상으로 보스보다 조금 약한 보너스를 줌. 장비는 3라운드마다 획득 — 특수 조우(보스/정예/
+      // 상인/휴식)와 겹치는 라운드는 그냥 건너뜀(자주 있는 일이 아니라 무시 가능한 손실).
+      const isBossRound = encounter === "boss";
+      const isEliteRound = encounter === "elite";
+      const isItemRound = roundNum > 0 && roundNum % 3 === 0 && encounter === "battle";
+      const goldGain = Math.round((3 + (isBossRound ? 15 : 0) + (isEliteRound ? 8 : 0) + (willDrop ? 5 : 0)) * totalBonus.goldMult);
       setGold(g => g + goldGain);
       setLastResult(r => (r ? { ...r, goldGain } : r));
 
-      // XP — 골드와 같은 규칙(보스 보너스)으로 적립되지만 던전을 나가도 사라지지 않는 영구 성장치.
+      // XP — 골드와 같은 규칙(보스/정예 보너스)으로 적립되지만 던전을 나가도 사라지지 않는 영구 성장치.
       // 장비 배율은 적용하지 않음 — 장비는 런 한정이라 영구 성장 폭까지 장비로 부풀리지 않기 위함.
-      const xpGain = 3 + (isBossRound ? 15 : 0);
+      const xpGain = 3 + (isBossRound ? 15 : 0) + (isEliteRound ? 8 : 0);
       const nextXp = xp + xpGain;
       setXp(nextXp);
       try { localStorage.setItem(xpKey, String(nextXp)); } catch { }
@@ -1162,7 +1187,7 @@ function GameContent() {
         higherSide: "challenger", // 패배 라운드는 항상 상대(opponentCard) 지표가 더 좋았던 경우
       });
     }
-  }, [phase, playerCard, opponentCard, best, bestKey, isLoggedIn, streak, totalWins, activeBoost, shields, roundNum, equipment, totalBonus, availableEquipPool, xp, xpKey, level]);
+  }, [phase, playerCard, opponentCard, best, bestKey, isLoggedIn, streak, totalWins, activeBoost, shields, roundNum, encounter, equipment, totalBonus, availableEquipPool, xp, xpKey, level]);
 
   // 승리든 패배든, 방패가 남아있으면 그 자리에서 런을 마무리(안전 정리)할 수 있음 — "더 갈까 여기서 챙길까" 선택지.
   const cashOut = useCallback(() => {
@@ -1170,19 +1195,53 @@ function GameContent() {
     setPhase("over");
   }, [phase]);
 
+  // 다음 라운드로 진입 — 조우 유형(pickEncounter)에 따라 배틀(boss/elite 포함)이면 카드를 뽑아
+  // "battling"으로, 상인/휴식이면 카드 없이 "event"로 전환. nextRound(배틀 종료 후)·proceedFromEvent
+  // (상인/휴식 종료 후) 양쪽에서 공유해서 조우 판정·초기화 로직이 두 곳에 따로 존재하지 않게 함.
+  const advanceToRound = useCallback((nextNum: number) => {
+    const enc = pickEncounter(nextNum);
+    setRoundNum(nextNum);
+    setEncounter(enc);
+    setChosenStat(null); setLastResult(null);
+    setDropped(false); setDropPrompt(false); setSaveFail(null); setEscaped(null); setPackOpening(false); setFirstDupHint(false);
+    if (enc === "merchant") {
+      setPlayerCard(null); setOpponentCard(null);
+      setPhase("event");
+      return;
+    }
+    if (enc === "rest") {
+      const healed = shields < maxShields;
+      setRestHealed(healed);
+      if (healed) setShields(s => Math.min(maxShields, s + 1));
+      setPlayerCard(null); setOpponentCard(null);
+      setPhase("event");
+      return;
+    }
+    const pair = drawPair(enc === "boss" || enc === "elite");
+    if (!pair) return;
+    setPlayerCard(pair[0]); setOpponentCard(pair[1]);
+    setPhase("battling");
+  }, [shields, maxShields, drawPair]);
+
   const nextRound = useCallback(() => {
     if (phase !== "resolved" || shields <= 0 || !playerCard || !opponentCard) return;
     setHistory(h => [...h, { player: playerCard, opponent: opponentCard, statKey: chosenStat, win: lastResult?.win ?? false }].slice(-10));
-    const nextNum = roundNum + 1;
-    const boss = nextNum % 10 === 0;
-    const pair = drawPair(boss);
-    if (!pair) return;
-    setRoundNum(nextNum);
-    setPlayerCard(pair[0]); setOpponentCard(pair[1]);
-    setChosenStat(null); setLastResult(null);
-    setDropped(false); setDropPrompt(false); setSaveFail(null); setEscaped(null); setPackOpening(false); setFirstDupHint(false);
-    setPhase("battling");
-  }, [phase, shields, playerCard, opponentCard, chosenStat, lastResult, roundNum, drawPair]);
+    advanceToRound(roundNum + 1);
+  }, [phase, shields, playerCard, opponentCard, chosenStat, lastResult, roundNum, advanceToRound]);
+
+  // 상인/휴식 조우 종료 → 다음 라운드로. 배틀이 없었으니 전투 기록(history)엔 남기지 않음.
+  const proceedFromEvent = useCallback(() => {
+    if (phase !== "event") return;
+    advanceToRound(roundNum + 1);
+  }, [phase, roundNum, advanceToRound]);
+
+  // 상인 조우 — 골드를 내고 방패 1칸 회복(가득 찼거나 골드가 부족하면 비활성화, UI에서 처리).
+  const buyMerchantHeal = useCallback(() => {
+    if (phase !== "event" || encounter !== "merchant") return;
+    if (shields >= maxShields || gold < MERCHANT_HEAL_COST) return;
+    setGold(g => g - MERCHANT_HEAL_COST);
+    setShields(s => Math.min(maxShields, s + 1));
+  }, [phase, encounter, shields, maxShields, gold]);
 
   useEffect(() => { if (phase === "resolved" && shields <= 0) setPhase("over"); }, [phase, shields]);
 
@@ -1194,7 +1253,6 @@ function GameContent() {
   const playerParts = playerCard ? computeValueScore(playerCard).parts : [];
   const opponentParts = opponentCard ? computeValueScore(opponentCard).parts : [];
   const nextLossPenalty = Math.max(0, Math.min(shields, 1 + Math.floor(streak / 3)) - totalBonus.shieldLossReduce); // "다음 패배 시 방패 -N" 경고에 표시 — battle()의 shieldLoss와 클램프를 반드시 일치시켜야 함
-  const maxShields = 3 + totalBonus.maxShield; // 장비·세트 보너스 + 레벨 보너스만큼 최대 방패 +N(HUD 아이콘 수)
   // 최대 방패가 늘어나기만 하고 현재 방패는 그대로면(예: 3/4) "장비 효과가 안 먹는 것처럼" 보임 —
   // 늘어난 만큼(delta) 현재 방패도 즉시 채워줌(기존 유물 "수호의 방패"가 즉시 +1 주던 것과 동일 UX).
   // 런 시작(start)으로 maxShields가 줄어드는 경우엔 delta<=0이라 자연히 무시됨.
@@ -1449,6 +1507,41 @@ function GameContent() {
                   </button>
                 </div>
               </div>
+            ) : phase === "event" ? (
+              // 상인/휴식 조우 — 배틀 없이 지나가는 라운드. "게임이 선형적" 피드백에 따라 pickEncounter가
+              // 층이 깊을수록 확률적으로 끼워 넣는 특수 조우(정예는 카드가 있으니 배틀 아레나 쪽으로 감).
+              <div className="flex-1 min-h-0 flex flex-col items-center justify-center gap-3 text-center px-4">
+                {encounter === "merchant" ? (
+                  <>
+                    <span aria-hidden className="text-5xl">🛒</span>
+                    <p className="text-lg font-black text-neutral-900 dark:text-white">떠돌이 상인</p>
+                    <p className="text-xs text-neutral-400 max-w-[240px] break-keep">"지친 모험가로군. 골드가 있다면 방패를 손봐주지."</p>
+                    <div className="flex flex-col gap-2 w-full max-w-[240px]">
+                      <button type="button" onClick={buyMerchantHeal} disabled={shields >= maxShields || gold < MERCHANT_HEAL_COST}
+                        className="w-full inline-flex items-center justify-between gap-2 px-4 py-2.5 rounded-xl border border-amber-500/30 bg-amber-500/10 hover:bg-amber-500/15 disabled:opacity-40 disabled:cursor-not-allowed text-left transition-all">
+                        <span className="text-sm font-black text-neutral-800 dark:text-neutral-100">🛡️ 방패 회복 +1</span>
+                        <span className="text-xs font-bold text-amber-600 dark:text-amber-400">💰 {MERCHANT_HEAL_COST}</span>
+                      </button>
+                      <button type="button" onClick={proceedFromEvent}
+                        className="w-full inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-gradient-to-r from-[#16a34a] to-[#15803d] hover:brightness-110 text-white font-black text-sm shadow-[0_6px_16px_-6px_rgba(22,163,74,0.55)] active:scale-[0.97] transition-all">
+                        다음 층으로 <Swords size={14} />
+                      </button>
+                    </div>
+                  </>
+                ) : (
+                  <>
+                    <span aria-hidden className="text-5xl">🏕️</span>
+                    <p className="text-lg font-black text-neutral-900 dark:text-white">잠깐의 휴식</p>
+                    <p className="text-xs text-neutral-400 max-w-[240px] break-keep">
+                      {restHealed ? "모닥불 옆에서 상처를 돌봤다 — 방패 +1 회복!" : "이미 방패가 가득 차 있어 딱히 회복할 게 없다."}
+                    </p>
+                    <button type="button" onClick={proceedFromEvent}
+                      className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-gradient-to-r from-[#16a34a] to-[#15803d] hover:brightness-110 text-white font-black text-sm shadow-[0_6px_16px_-6px_rgba(22,163,74,0.55)] active:scale-[0.97] transition-all">
+                      다음 층으로 <Swords size={14} />
+                    </button>
+                  </>
+                )}
+              </div>
             ) : playerCard && opponentCard ? (
               <>
                 {/* 배틀 아레나 — 모바일/데스크톱 공통 레이아웃. 두 카드가 남은 세로 공간을 JS로 실측해 꽉 채움(스크롤 방지).
@@ -1463,7 +1556,12 @@ function GameContent() {
                     <TcgCard hero item={playerCard} value={STAT.fmt(STAT.get(playerCard))} rank={rankMap.get(String(playerCard.ticker))} />
                   </div>
                   <div className="relative" style={battleCardSize ? { width: battleCardSize.w, height: battleCardSize.h } : { width: "38%", maxWidth: 220, aspectRatio: "0.8" }}>
-                    <span className="absolute -top-2 left-1/2 -translate-x-1/2 z-10 px-2 py-0.5 rounded-full bg-rose-500 text-white text-[9px] font-black shadow-md whitespace-nowrap">👹 몬스터</span>
+                    {/* 보스/정예 조우면 라벨 자체를 바꿔서 표시 — 새 배지 행을 추가하면 battleRowRef의
+                        높이 계산(RESERVED)이 흔들리므로, 기존 "몬스터" 라벨 슬롯을 그대로 재사용. */}
+                    <span className={cn("absolute -top-2 left-1/2 -translate-x-1/2 z-10 px-2 py-0.5 rounded-full text-white text-[9px] font-black shadow-md whitespace-nowrap",
+                      encounter === "boss" ? "bg-violet-600" : encounter === "elite" ? "bg-orange-500" : "bg-rose-500")}>
+                      {encounter === "boss" ? "👑 보스" : encounter === "elite" ? "🗡️ 정예" : "👹 몬스터"}
+                    </span>
                     <TcgCard hero item={opponentCard} value={STAT.fmt(STAT.get(opponentCard))} rank={rankMap.get(String(opponentCard.ticker))} />
                   </div>
                 </div>
@@ -1630,6 +1728,7 @@ function GameContent() {
                 { icon: "🎒", text: <>3층마다 <b className="text-neutral-800 dark:text-neutral-100">장비</b>를 하나 골라 투구·갑옷·무기·방패·목걸이·장신구 2개, 7개 슬롯을 채워보세요. 같은 세트로 3/5/7개를 맞추면 추가 보너스가 붙어요. 10층마다는 강한 <b className="text-violet-600 dark:text-violet-400">보스</b>가 나와요.</> },
                 { icon: "💰", text: <>층을 돌파할 때마다 <b className="text-neutral-800 dark:text-neutral-100">골드</b>를 얻어요. 골드와 장비는 던전을 나가면 초기화돼요 — 내 덱에서 카드를 바꾸는 영구 <b className="text-neutral-800 dark:text-neutral-100">코인</b>(🪙)과는 다른 재화예요.</> },
                 { icon: "⚠️", text: <>연승이 길어질수록 다음 패배의 대가도 커져요. 매 판마다 <b className="text-neutral-800 dark:text-neutral-100">"여기서 정리"</b>(안전하게 마무리)와 <b className="text-neutral-800 dark:text-neutral-100">"다음 층으로"</b>(위험 감수) 중 골라보세요.</> },
+                { icon: "🎲", text: <>층이 깊어질수록 <b className="text-neutral-800 dark:text-neutral-100">상인</b>(골드로 방패 회복)·<b className="text-neutral-800 dark:text-neutral-100">휴식</b>(방패 무료 회복)·<b className="text-orange-500 dark:text-orange-400">정예</b>(강하지만 보상 큰 몬스터) 같은 특수 조우가 섞여서 나와요.</> },
               ].map((row, i) => (
                 <div key={i} className="flex items-start gap-2.5">
                   <span aria-hidden className="shrink-0 text-lg leading-none">{row.icon}</span>
