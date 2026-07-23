@@ -179,7 +179,8 @@ export function useGameRun(params: { pool: any[]; deck: DeckItem[]; setDeck: (fn
     reservedRefundRef.current += card.stats.refund;
     const parts = [`⚔${card.stats.attack} 피해`];
     if (card.stats.shield > 0) parts.push(`🛡${card.stats.shield} 방어`);
-    pushLog("player", `${card.name} 발동 — ${parts.join(", ")} (에너지 -${cost})`);
+    if (card.stats.refund > 0) parts.push(`🔋다음 턴 코스트 +${card.stats.refund}`);
+    pushLog("player", `${card.name} 발동 — ${parts.join(", ")} (코스트 -${cost})`);
     if (checkOutcome(result.player, result.enemy) === "win") handleWin(result.enemy, encounter, roundNum);
   }, [phase, enemy, pile.hand, passive, player, encounter, roundNum, handleWin, pushLog]);
 

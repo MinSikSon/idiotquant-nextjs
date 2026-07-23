@@ -18,13 +18,30 @@ export function HpBar({ hp, maxHp, label }: { hp: number; maxHp: number; label: 
   );
 }
 
+// 상단 동그라미 개수 = energyMax(기본 4 + 레버리지 등 패시브 아이템의 energyBonus 합).
+// 채워진(노란) 동그라미 수 = 이번 턴에 아직 쓸 수 있는 코스트. 카드의 코스트 숫자와 같은
+// 동그라미 기호(●)를 써서 "카드를 내면 이 동그라미가 그만큼 준다"는 걸 시각적으로 잇는다.
 export function EnergyBar({ energy, energyMax }: { energy: number; energyMax: number }) {
   return (
-    <div className="flex items-center gap-0.5">
-      {Array.from({ length: Math.max(energy, energyMax) }, (_, i) => (
-        <span key={i} aria-hidden className={cn("w-2.5 h-2.5 rounded-full", i < energy ? "bg-amber-400 shadow-[0_0_6px_rgba(251,191,36,0.7)]" : "bg-black/10 dark:bg-white/10")} />
-      ))}
-      <span className="ml-1 text-[10px] font-black tabular-nums text-amber-600 dark:text-amber-400">{energy}</span>
+    <div className="flex items-center gap-1.5 min-w-0">
+      <span className="text-[9px] font-black text-neutral-400 shrink-0">코스트</span>
+      <div className="flex items-center gap-0.5">
+        {Array.from({ length: Math.max(energy, energyMax) }, (_, i) => (
+          <span key={i} aria-hidden className={cn("w-2.5 h-2.5 rounded-full", i < energy ? "bg-amber-400 shadow-[0_0_6px_rgba(251,191,36,0.7)]" : "bg-black/10 dark:bg-white/10")} />
+        ))}
+      </div>
+      <span className="text-[10px] font-black tabular-nums text-amber-600 dark:text-amber-400 shrink-0">{energy}</span>
+    </div>
+  );
+}
+
+// 이번 턴 동안 쌓인 방어력 — 적 턴 한 번 막고 사라지므로, 카드를 낼 때마다 바로바로
+// 눈에 보여야 "지금 방어를 쌓고 있다"는 걸 알 수 있다.
+export function ShieldBadge({ block }: { block: number }) {
+  return (
+    <div className="flex items-center gap-1 shrink-0">
+      <span aria-hidden className="text-sky-500">🛡️</span>
+      <span className="text-[10px] font-black tabular-nums text-sky-600 dark:text-sky-400">{block}</span>
     </div>
   );
 }

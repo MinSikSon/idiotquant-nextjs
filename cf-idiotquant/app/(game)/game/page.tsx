@@ -28,7 +28,7 @@ import { cn } from "@/lib/utils";
 import { HOLO_THRESHOLD, PackReveal, AchievementBadges, ACHIEVEMENTS } from "./gameCollectibles";
 import { WalletChip, ConvertButton, ShopPanel, BOOST_ITEMS } from "./gameShop";
 import { useGameRun, deckTotal, type DeckItem } from "./useGameRun";
-import { HpBar, EnergyBar, ItemBar } from "@/components/game/CombatHud";
+import { HpBar, EnergyBar, ShieldBadge, ItemBar } from "@/components/game/CombatHud";
 import CombatLog from "@/components/game/CombatLog";
 
 const PhaserCombatCanvas = dynamic(() => import("@/components/game/PhaserCombatCanvas"), { ssr: false });
@@ -601,8 +601,9 @@ function GameContent() {
                       <FloorGraph nodes={floorWindow} />
                     </div>
                     {run.phase === "battling" && (
-                      <div className="px-2 py-1.5 rounded-2xl backdrop-blur-md bg-white/85 dark:bg-white/[0.06] border border-black/5 dark:border-white/10 shadow-[0_6px_18px_-8px_rgba(0,0,0,0.35)]">
+                      <div className="flex items-center gap-2 px-2 py-1.5 rounded-2xl backdrop-blur-md bg-white/85 dark:bg-white/[0.06] border border-black/5 dark:border-white/10 shadow-[0_6px_18px_-8px_rgba(0,0,0,0.35)]">
                         <EnergyBar energy={run.player.energy} energyMax={run.player.energyMax} />
+                        <ShieldBadge block={run.player.block} />
                       </div>
                     )}
                   </div>
@@ -676,8 +677,9 @@ function GameContent() {
             <div className="space-y-3">
               {[
                 { icon: "⚔️", text: <>내 덱(보유 카드)이 곧 전투 카드예요. 매 턴 <b className="text-neutral-800 dark:text-neutral-100">손패</b>에서 카드를 <b className="text-neutral-800 dark:text-neutral-100">전장으로 드래그</b>해 발동하세요 — 공격력만큼 적 HP를, 방어력만큼 내 블록을 올려요.</> },
-                { icon: "🔋", text: <>카드를 내려면 <b className="text-neutral-800 dark:text-neutral-100">에너지(코스트)</b>가 필요해요. 환급 스탯이 있는 카드는 <b className="text-neutral-800 dark:text-neutral-100">다음 턴 에너지</b>를 미리 채워줘요.</> },
-                { icon: "🛡️", text: <>블록은 <b className="text-neutral-800 dark:text-neutral-100">적 턴 하나만</b> 막고 사라져요. 적의 "다음 턴 예정 공격력"을 미리 보고 방어할지 판단하세요.</> },
+                { icon: "●", text: <>카드를 내려면 <b className="text-neutral-800 dark:text-neutral-100">코스트</b>가 필요해요 — 상단의 노란 동그라미 개수만큼 쓸 수 있고, 카드의 ●숫자만큼 소모돼요.</> },
+                { icon: "🔋", text: <>카드의 🔋(환급) 숫자만큼 <b className="text-neutral-800 dark:text-neutral-100">다음 턴 코스트</b>가 미리 충전돼요 — 이번 턴엔 안 쓰이고 다음 턴 시작할 때 동그라미로 더해져요.</> },
+                { icon: "🛡️", text: <>쌓인 방어력은 상단 🛡️ 배지에 실시간으로 표시돼요. <b className="text-neutral-800 dark:text-neutral-100">적 턴 하나만</b> 막고 사라지니, 적의 "다음 턴 예정 공격력"을 미리 보고 방어할지 판단하세요.</> },
                 { icon: "🎒", text: <>3층마다 <b className="text-neutral-800 dark:text-neutral-100">패시브/액티브 아이템</b>을 하나 고를 수 있어요. 패시브는 자동 적용, 액티브는 원할 때 탭해서 1회 사용해요.</> },
                 { icon: "🃏", text: <>적을 처치(층 클리어)하면 확률에 따라 <b className="text-neutral-800 dark:text-neutral-100">내 덱</b>에 카드가 수집돼요. 좋은 카드일수록 전투 스탯도 강해요.</> },
                 { icon: "🎲", text: <>층이 깊어질수록 <b className="text-neutral-800 dark:text-neutral-100">상인</b>(골드로 HP 회복)·<b className="text-neutral-800 dark:text-neutral-100">휴식</b>(무료 회복)·<b className="text-orange-500 dark:text-orange-400">정예</b>(강한 몬스터) 조우가 섞여 나와요. 10층마다는 <b className="text-violet-600 dark:text-violet-400">보스</b>예요.</> },
