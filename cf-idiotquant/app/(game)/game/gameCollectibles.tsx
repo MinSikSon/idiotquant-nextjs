@@ -6,7 +6,8 @@
 import { useMemo } from "react";
 import { Lock } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { TIER, rgba, WaxSeal, deckTotal, type DeckItem } from "./page";
+import { TIER, rgba, WaxSeal } from "./page";
+import { deckTotal, type DeckItem } from "./useGameRun";
 import { computeValueScore } from "@/lib/utils/valueScore";
 
 // ─── 중복 카드 홀로/프리미엄 마감 ────────────────────────────────────
