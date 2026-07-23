@@ -602,7 +602,7 @@ function GameContent() {
                     </div>
                     {run.phase === "battling" && (
                       <div className="flex items-center gap-2 px-2 py-1.5 rounded-2xl backdrop-blur-md bg-white/85 dark:bg-white/[0.06] border border-black/5 dark:border-white/10 shadow-[0_6px_18px_-8px_rgba(0,0,0,0.35)]">
-                        <EnergyBar energy={run.player.energy} energyMax={run.player.energyMax} />
+                        <EnergyBar energy={run.player.energy} base={run.player.energyMax + run.passive.energyBonus} bonus={run.turnBonusCost} />
                         <ShieldBadge block={run.player.block} />
                       </div>
                     )}

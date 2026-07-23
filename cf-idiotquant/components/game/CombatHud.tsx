@@ -18,19 +18,28 @@ export function HpBar({ hp, maxHp, label }: { hp: number; maxHp: number; label: 
   );
 }
 
-// 상단 동그라미 개수 = energyMax(기본 4 + 레버리지 등 패시브 아이템의 energyBonus 합).
-// 채워진(노란) 동그라미 수 = 이번 턴에 아직 쓸 수 있는 코스트. 카드의 코스트 숫자와 같은
-// 동그라미 기호(●)를 써서 "카드를 내면 이 동그라미가 그만큼 준다"는 걸 시각적으로 잇는다.
-export function EnergyBar({ energy, energyMax }: { energy: number; energyMax: number }) {
+// 동그라미 개수 = base(기본 4 + 레버리지 등 패시브의 energyBonus) + bonus(직전 턴 카드들의
+// 환급(🔋)으로 이번 턴에만 얹힌 보너스). 기본분은 노란색, 환급 보너스분은 카드의 🔋과 같은
+// 초록색으로 구분해서 "이번 턴엔 기본보다 N 더 쓸 수 있다"는 걸 한눈에 보이게 한다.
+// 채워진 동그라미 수 = 아직 안 쓴 코스트, 카드의 ●와 같은 기호를 써서 관계를 시각적으로 잇는다.
+export function EnergyBar({ energy, base, bonus }: { energy: number; base: number; bonus: number }) {
+  const total = Math.max(energy, base + bonus);
   return (
     <div className="flex items-center gap-1.5 min-w-0">
       <span className="text-[9px] font-black text-neutral-400 shrink-0">코스트</span>
       <div className="flex items-center gap-0.5">
-        {Array.from({ length: Math.max(energy, energyMax) }, (_, i) => (
-          <span key={i} aria-hidden className={cn("w-2.5 h-2.5 rounded-full", i < energy ? "bg-amber-400 shadow-[0_0_6px_rgba(251,191,36,0.7)]" : "bg-black/10 dark:bg-white/10")} />
-        ))}
+        {Array.from({ length: total }, (_, i) => {
+          const filled = i < energy;
+          const isBonus = i >= base;
+          return (
+            <span key={i} aria-hidden className={cn("w-2.5 h-2.5 rounded-full",
+              !filled ? "bg-black/10 dark:bg-white/10"
+                : isBonus ? "bg-emerald-400 shadow-[0_0_6px_rgba(52,211,153,0.7)]" : "bg-amber-400 shadow-[0_0_6px_rgba(251,191,36,0.7)]")} />
+          );
+        })}
       </div>
       <span className="text-[10px] font-black tabular-nums text-amber-600 dark:text-amber-400 shrink-0">{energy}</span>
+      {bonus > 0 && <span className="text-[9px] font-black text-emerald-600 dark:text-emerald-400 shrink-0">🔋+{bonus}</span>}
     </div>
   );
 }

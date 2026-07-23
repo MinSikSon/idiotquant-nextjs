@@ -76,6 +76,7 @@ export function useGameRun(params: { pool: any[]; deck: DeckItem[]; setDeck: (fn
   const [enemy, setEnemy] = useState<EnemyState | null>(null);
   const [pile, setPile] = useState<Pile>({ draw: [], hand: [], discard: [] });
   const reservedRefundRef = useRef(0); // 이번 턴에 낸 카드들의 refund 합 — 다음 턴 시작 시 에너지로 편입
+  const [turnBonusCost, setTurnBonusCost] = useState(0); // 직전 턴 카드들의 refund로 "이번 턴" 코스트에 얹힌 보너스분(기본 코스트와 구분 표시용)
 
   const [log, setLog] = useState<LogEntry[]>([]);
   const pushLog = useCallback((kind: LogKind, text: string) => {
@@ -208,6 +209,7 @@ export function useGameRun(params: { pool: any[]; deck: DeckItem[]; setDeck: (fn
     setPlayer(afterEnemy);
     if (afterEnemy.hp <= 0) { setPhase("over"); setLastResult({ win: false }); pushLog("system", "💀 쓰러졌습니다..."); return; }
     const rr = reservedRefundRef.current; reservedRefundRef.current = 0;
+    setTurnBonusCost(rr);
     setPlayer(p => startTurn(p, passive, rr));
     setPile(prev => {
       const carryDiscard = [...prev.discard, ...prev.hand];
@@ -243,6 +245,7 @@ export function useGameRun(params: { pool: any[]; deck: DeckItem[]; setDeck: (fn
       return { draw: r.drawPile, hand: r.hand, discard: r.discardPile };
     });
     const rr = reservedRefundRef.current; reservedRefundRef.current = 0;
+    setTurnBonusCost(rr);
     setPlayer(p => startTurn(p, passive, rr));
     setPhase("battling");
   }, [pool, passive, pushLog]);
@@ -280,6 +283,7 @@ export function useGameRun(params: { pool: any[]; deck: DeckItem[]; setDeck: (fn
     setGold(0); setRoundNum(0); setEncounter("battle"); setRestHealed(false); setNewBest(false);
     setLastResult(null); setDropped(false); setDropPrompt(false); setSaveFail(null); setPackOpening(false); setAcquired([]);
     reservedRefundRef.current = 0;
+    setTurnBonusCost(0);
     const hp = BASE_HP;
     setPlayer({ hp, maxHp: hp, block: 0, energy: ENERGY_MAX, energyMax: ENERGY_MAX });
     prevMaxHpRef.current = hp;
@@ -295,7 +299,7 @@ export function useGameRun(params: { pool: any[]; deck: DeckItem[]; setDeck: (fn
   return {
     phase, roundNum, encounter, restHealed, gold, best, newBest,
     ownedItems, ownedDefs, itemChoices, passive, maxHp, unlockedLegendItems, activeBoost,
-    player, enemy, hand: pile.hand, drawCount: pile.draw.length, log,
+    player, enemy, hand: pile.hand, drawCount: pile.draw.length, log, turnBonusCost,
     lastResult, dropped, dropPrompt, saveFail, packOpening, acquired, acquirePct,
     start, playHandCard, useOwnedActiveItem, endTurn, nextRound, proceedFromEvent, cashOut, buyMerchantHeal, buyBoost, pickItem, skipItem,
   };
