@@ -14,7 +14,7 @@ import {
 import { ALL_ITEMS, STARTER_DECK, pickItemChoices, acquireChance } from "./gameData";
 import { ACHIEVEMENTS } from "./gameCollectibles";
 import type {
-  Phase, EncounterType, CombatCard, ItemDef, OwnedItem, EnemyState, PlayerState, ActiveEffect,
+  Phase, EncounterType, CombatCard, ItemDef, OwnedItem, EnemyState, PlayerState, ActiveEffect, LogEntry, LogKind,
 } from "./gameTypes";
 
 const safeNum = (v: any): number => { const n = Number(v); return Number.isFinite(n) ? n : 0; };
@@ -77,6 +77,11 @@ export function useGameRun(params: { pool: any[]; deck: DeckItem[]; setDeck: (fn
   const [pile, setPile] = useState<Pile>({ draw: [], hand: [], discard: [] });
   const reservedRefundRef = useRef(0); // 이번 턴에 낸 카드들의 refund 합 — 다음 턴 시작 시 에너지로 편입
 
+  const [log, setLog] = useState<LogEntry[]>([]);
+  const pushLog = useCallback((kind: LogKind, text: string) => {
+    setLog(prev => [...prev.slice(-49), { id: `l${Date.now().toString(36)}${Math.random().toString(36).slice(2, 6)}`, kind, text }]);
+  }, []);
+
   const [lastResult, setLastResult] = useState<{ win: boolean; goldGain?: number } | null>(null);
   const [dropped, setDropped] = useState(false);
   const [dropPrompt, setDropPrompt] = useState(false);
@@ -115,6 +120,7 @@ export function useGameRun(params: { pool: any[]; deck: DeckItem[]; setDeck: (fn
   // 승리(층 클리어) 공통 처리 — 최고기록·골드·아이템 제공·카드 수집 판정
   const handleWin = useCallback((beatenEnemy: EnemyState, enc: EncounterType, floor: number) => {
     const nt = floor + 1; // 클리어한 층수(0-indexed floor → 1부터)
+    pushLog("system", `🏆 ${beatenEnemy.item?.name ?? "적"}을(를) 처치했습니다!`);
     if (nt > best) {
       setBest(nt); setNewBest(true);
       try { localStorage.setItem(bestKey, String(nt)); } catch { }
@@ -146,6 +152,7 @@ export function useGameRun(params: { pool: any[]; deck: DeckItem[]; setDeck: (fn
     addDeckCard(snap).then(res => {
       if (res?.added) {
         setDropped(true);
+        pushLog("system", `✨ ${snap.name} 카드를 획득했습니다!`);
         setAcquired(prev => [snap, ...prev]);
         setDeck(prev => {
           const i = prev.findIndex(c => c.ticker === snap.ticker);
@@ -156,7 +163,7 @@ export function useGameRun(params: { pool: any[]; deck: DeckItem[]; setDeck: (fn
         setSaveFail(deckFailReason(res));
       }
     }).catch(() => setSaveFail("네트워크 오류"));
-  }, [best, isLoggedIn, availableItemPool, unlockedLegendItems, setDeck, activeBoost]);
+  }, [best, isLoggedIn, availableItemPool, unlockedLegendItems, setDeck, activeBoost, pushLog]);
 
   // 손패 카드 발동 — dnd-kit 드롭 이벤트에서 호출
   const playHandCard = useCallback((instanceId: string) => {
@@ -170,8 +177,11 @@ export function useGameRun(params: { pool: any[]; deck: DeckItem[]; setDeck: (fn
     setEnemy(result.enemy);
     setPile(p => ({ ...p, hand: p.hand.filter(c => c.instanceId !== instanceId), discard: [...p.discard, card] }));
     reservedRefundRef.current += card.stats.refund;
+    const parts = [`⚔${card.stats.attack} 피해`];
+    if (card.stats.shield > 0) parts.push(`🛡${card.stats.shield} 방어`);
+    pushLog("player", `${card.name} 발동 — ${parts.join(", ")} (에너지 -${cost})`);
     if (checkOutcome(result.player, result.enemy) === "win") handleWin(result.enemy, encounter, roundNum);
-  }, [phase, enemy, pile.hand, passive, player, encounter, roundNum, handleWin]);
+  }, [phase, enemy, pile.hand, passive, player, encounter, roundNum, handleWin, pushLog]);
 
   // 액티브 아이템 즉시 발동(1회 소모)
   const useOwnedActiveItem = useCallback((instanceId: string) => {
@@ -183,15 +193,19 @@ export function useGameRun(params: { pool: any[]; deck: DeckItem[]; setDeck: (fn
     setPlayer(r.player); setEnemy(r.enemy);
     setPile({ hand: r.hand, draw: r.drawPile, discard: r.discardPile });
     setOwnedItems(prev => prev.filter(o => o.instanceId !== instanceId));
+    pushLog("item", `🎒 ${def.name} 사용 — ${def.desc}`);
     if (checkOutcome(r.player, r.enemy) === "win") handleWin(r.enemy, encounter, roundNum);
-  }, [phase, enemy, ownedItems, player, pile, encounter, roundNum, handleWin]);
+  }, [phase, enemy, ownedItems, player, pile, encounter, roundNum, handleWin, pushLog]);
 
   // 턴 종료 — 적 턴 해석 → (생존 시) 다음 턴 시작(에너지 리필+예약환급, 손패 재드로우)
   const endTurn = useCallback(() => {
     if (phase !== "battling" || !enemy) return;
+    const blocked = Math.min(enemy.nextAttack, player.block + passive.damageReduce);
+    const dmg = enemy.nextAttack - blocked;
+    pushLog("enemy", `${enemy.item?.name ?? "적"}의 공격! ⚔${enemy.nextAttack} 중 🛡${blocked} 경감 → ${dmg} 피해`);
     const afterEnemy = resolveEnemyTurn(player, enemy, passive);
     setPlayer(afterEnemy);
-    if (afterEnemy.hp <= 0) { setPhase("over"); setLastResult({ win: false }); return; }
+    if (afterEnemy.hp <= 0) { setPhase("over"); setLastResult({ win: false }); pushLog("system", "💀 쓰러졌습니다..."); return; }
     const rr = reservedRefundRef.current; reservedRefundRef.current = 0;
     setPlayer(p => startTurn(p, passive, rr));
     setPile(prev => {
@@ -199,7 +213,7 @@ export function useGameRun(params: { pool: any[]; deck: DeckItem[]; setDeck: (fn
       const r = drawHand(prev.draw, carryDiscard, HAND_SIZE + passive.drawBonus);
       return { draw: r.drawPile, hand: r.hand, discard: r.discardPile };
     });
-  }, [phase, enemy, player, passive]);
+  }, [phase, enemy, player, passive, pushLog]);
 
   // 다음 라운드 진입 — 조우 판정 후 배틀(적 생성+손패 재드로우) 또는 이벤트(상인/휴식)
   const advanceToRound = useCallback((nextRoundNum: number) => {
@@ -208,8 +222,9 @@ export function useGameRun(params: { pool: any[]; deck: DeckItem[]; setDeck: (fn
     setEncounter(enc);
     setLastResult(null); setDropped(false); setDropPrompt(false); setSaveFail(null); setPackOpening(false);
 
-    if (enc === "merchant") { setEnemy(null); setPhase("event"); return; }
+    if (enc === "merchant") { pushLog("system", "🛒 떠돌이 상인을 만났습니다."); setEnemy(null); setPhase("event"); return; }
     if (enc === "rest") {
+      pushLog("system", "🏕️ 잠깐의 휴식.");
       setPlayer(p => {
         const healed = p.hp < p.maxHp;
         setRestHealed(healed);
@@ -220,6 +235,7 @@ export function useGameRun(params: { pool: any[]; deck: DeckItem[]; setDeck: (fn
 
     const newEnemy = enemyForFloor(pool, nextRoundNum, enc as "battle" | "boss" | "elite");
     setEnemy(newEnemy);
+    pushLog("system", `${enc === "boss" ? "👑" : enc === "elite" ? "🗡️" : "🐉"} ${newEnemy.item?.name ?? "적"} 등장! (HP ${newEnemy.maxHp})`);
     setPile(prev => {
       const carryDiscard = [...prev.discard, ...prev.hand];
       const r = drawHand(prev.draw, carryDiscard, HAND_SIZE + passive.drawBonus);
@@ -228,7 +244,7 @@ export function useGameRun(params: { pool: any[]; deck: DeckItem[]; setDeck: (fn
     const rr = reservedRefundRef.current; reservedRefundRef.current = 0;
     setPlayer(p => startTurn(p, passive, rr));
     setPhase("battling");
-  }, [pool, passive]);
+  }, [pool, passive, pushLog]);
 
   const nextRound = useCallback(() => { if (phase === "resolved") advanceToRound(roundNum + 1); }, [phase, roundNum, advanceToRound]);
   const proceedFromEvent = useCallback(() => { if (phase === "event") advanceToRound(roundNum + 1); }, [phase, roundNum, advanceToRound]);
@@ -266,6 +282,7 @@ export function useGameRun(params: { pool: any[]; deck: DeckItem[]; setDeck: (fn
     const hp = BASE_HP;
     setPlayer({ hp, maxHp: hp, block: 0, energy: ENERGY_MAX, energyMax: ENERGY_MAX });
     prevMaxHpRef.current = hp;
+    setLog([{ id: "l0", kind: "system", text: `🐉 ${newEnemy.item?.name ?? "적"} 등장! (HP ${newEnemy.maxHp})` }]);
     setPhase("battling");
   }, [pool, deck]);
 
@@ -277,7 +294,7 @@ export function useGameRun(params: { pool: any[]; deck: DeckItem[]; setDeck: (fn
   return {
     phase, roundNum, encounter, restHealed, gold, best, newBest,
     ownedItems, ownedDefs, itemChoices, passive, maxHp, unlockedLegendItems, activeBoost,
-    player, enemy, hand: pile.hand, drawCount: pile.draw.length,
+    player, enemy, hand: pile.hand, drawCount: pile.draw.length, log,
     lastResult, dropped, dropPrompt, saveFail, packOpening, acquired, acquirePct,
     start, playHandCard, useOwnedActiveItem, endTurn, nextRound, proceedFromEvent, cashOut, buyMerchantHeal, buyBoost, pickItem, skipItem,
   };
