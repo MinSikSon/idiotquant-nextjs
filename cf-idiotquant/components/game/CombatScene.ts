@@ -22,6 +22,11 @@ function asciiBar(hp: number, maxHp: number): string {
   return `[${"█".repeat(filled)}${"░".repeat(BAR_LEN - filled)}] ${Math.max(0, hp)}/${maxHp}`;
 }
 
+// Phaser의 Text는 자체 해상도(resolution)로 텍스처를 굽는데 기본값 1이라 고밀도(레티나)
+// 모바일 화면에서 흐릿하게 보임 — devicePixelRatio만큼 올려서 선명하게 그린다(과도한 메모리
+// 사용 방지로 최대 3배로 제한).
+const RES = typeof window !== "undefined" ? Math.min(window.devicePixelRatio || 1, 3) : 1;
+
 export default class CombatScene extends Phaser.Scene {
   private enemyArt!: Phaser.GameObjects.Text;
   private enemyHpText!: Phaser.GameObjects.Text;
@@ -34,15 +39,15 @@ export default class CombatScene extends Phaser.Scene {
     const w = this.scale.width, h = this.scale.height;
     this.cameras.main.setBackgroundColor("#00000000");
 
-    this.enemyLabel = this.add.text(w / 2, h * 0.08, "", { fontSize: "12px", color: "#ffffff", fontStyle: "bold" }).setOrigin(0.5);
+    this.enemyLabel = this.add.text(w / 2, h * 0.08, "", { fontSize: "12px", color: "#ffffff", fontStyle: "bold", resolution: RES }).setOrigin(0.5);
     this.enemyArt = this.add.text(w / 2, h * 0.48, randomMonster(), {
-      fontFamily: "monospace", fontSize: "11px", color: "#f87171", align: "center", lineSpacing: 1,
+      fontFamily: "monospace", fontSize: "11px", color: "#f87171", align: "center", lineSpacing: 1, resolution: RES,
     }).setOrigin(0.5);
     this.enemyHpText = this.add.text(w / 2, h * 0.88, asciiBar(0, 1), {
-      fontFamily: "monospace", fontSize: "11px", color: "#4ade80", fontStyle: "bold",
+      fontFamily: "monospace", fontSize: "11px", color: "#4ade80", fontStyle: "bold", resolution: RES,
     }).setOrigin(0.5);
 
-    this.introText = this.add.text(w / 2, h / 2, "", { fontSize: "20px", color: "#facc15", fontStyle: "bold" })
+    this.introText = this.add.text(w / 2, h / 2, "", { fontSize: "20px", color: "#facc15", fontStyle: "bold", resolution: RES })
       .setOrigin(0.5).setAlpha(0).setDepth(10);
   }
 
@@ -83,7 +88,7 @@ export default class CombatScene extends Phaser.Scene {
   }
 
   private popText(x: number, y: number, text: string, color: string) {
-    const t = this.add.text(x, y, text, { fontSize: "16px", color, fontStyle: "bold" }).setOrigin(0.5).setDepth(5);
+    const t = this.add.text(x, y, text, { fontSize: "16px", color, fontStyle: "bold", resolution: RES }).setOrigin(0.5).setDepth(5);
     this.tweens.add({ targets: t, y: y - 30, alpha: 0, duration: 600, ease: "Quad.easeOut", onComplete: () => t.destroy() });
   }
 }
