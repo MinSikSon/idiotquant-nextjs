@@ -1002,15 +1002,19 @@ function GameContent() {
     if (!started.current && pool.length >= 2) { started.current = true; start(); }
   }, [pool, start]);
 
-  // 지표(NCAV/PBR/PER/ROE) 하나를 골라 배틀 — sub(0~1 정규화 점수)로 비교하므로 지표별 방향(NCAV는 높을수록,
-  // PBR·PER은 낮을수록 좋음)을 신경 쓸 필요 없이 그대로 비교하면 됨.
+  // 지표(NCAV/PBR/PER/ROE) 하나를 골라 배틀 — raw(정규화 전 원시값)를 지표 방향(higherBetter)에 맞춰
+  // 비교한다. 예전엔 sub(등급 산정용 0~1 정규화 점수)로 비교했는데, sub는 정규화 구간 밖의 값을 전부
+  // 0(또는 1)으로 뭉개버려서(예: NCAV는 0.3 미만이면 음수든 0.14든 전부 sub=0) 그 구간 안에서는 실제
+  // 값이 더 좋아도 진짜 차이가 안 보였다 — "NCAV -0.01이 0.14를 이긴다" 버그가 이래서 생김(둘 다 sub=0
+  // 동점 처리되고, 동점은 항상 플레이어 승리라 우연히 -0.01 쪽이 이겨 보인 것). raw 비교는 이런 뭉개짐이
+  // 없어서 실제 값 차이를 그대로 반영한다.
   const battle = useCallback((statKey: string) => {
     if (phase !== "battling" || !playerCard || !opponentCard) return;
     const pv = computeValueScore(playerCard), ov = computeValueScore(opponentCard);
     const pPart = pv.parts.find(p => p.key === statKey);
     const oPart = ov.parts.find(p => p.key === statKey);
     if (!pPart?.available || !oPart?.available) return;
-    const win = pPart.sub >= oPart.sub; // 동점은 승리 처리
+    const win = pPart.higherBetter ? pPart.raw >= oPart.raw : pPart.raw <= oPart.raw; // 동점은 승리 처리
     // 패배 대가 — 밀어붙인 연승(streak)이 길수록 커짐(3연승마다 +1, 최대 보유 방패만큼).
     // "한 판 더" 를 계속 고를수록 다음 패배가 더 아파지는 푸시-유어-럭 긴장감 장치. 갑옷/수호자 세트
     // 장비는 -N. 최솟값을 1로 클램프하면 streak<3(기본값 1)일 때는 1-1=0이 다시 1로 올라가 버려서
