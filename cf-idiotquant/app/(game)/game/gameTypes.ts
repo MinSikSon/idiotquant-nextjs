@@ -66,3 +66,7 @@ export interface PlayerState {
   energy: number;
   energyMax: number;
 }
+
+// 전투 로그 한 줄 — D&D 전투기록처럼 실제 수치를 담아 쌓아가는 메시지.
+export type LogKind = "player" | "enemy" | "item" | "system";
+export interface LogEntry { id: string; kind: LogKind; text: string }

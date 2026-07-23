@@ -29,6 +29,7 @@ import { HOLO_THRESHOLD, PackReveal, AchievementBadges, ACHIEVEMENTS } from "./g
 import { WalletChip, ConvertButton, ShopPanel, BOOST_ITEMS } from "./gameShop";
 import { useGameRun, deckTotal, type DeckItem } from "./useGameRun";
 import { HpBar, EnergyBar, ItemBar } from "@/components/game/CombatHud";
+import CombatLog from "@/components/game/CombatLog";
 
 const PhaserCombatCanvas = dynamic(() => import("@/components/game/PhaserCombatCanvas"), { ssr: false });
 const HandView = dynamic(() => import("@/components/game/HandView"), { ssr: false });
@@ -643,10 +644,13 @@ function GameContent() {
                 <ResolvedScreen run={run} />
               ) : run.enemy ? (
                 <div className="flex-1 min-h-0 flex flex-col">
-                  <div className="flex-1 min-h-0 rounded-2xl overflow-hidden backdrop-blur-md bg-white/60 dark:bg-white/[0.03] border border-black/5 dark:border-white/10">
+                  <div className="flex-1 min-h-0 flex flex-col rounded-2xl overflow-hidden backdrop-blur-md bg-white/60 dark:bg-white/[0.03] border border-black/5 dark:border-white/10">
                     <HandView cards={run.hand} energy={run.player.energy} freeCostThreshold={run.passive.freeCostThreshold} onPlayCard={run.playHandCard}>
                       <PhaserCombatCanvas enemy={run.enemy} player={run.player} introLabel={introLabel} />
                     </HandView>
+                  </div>
+                  <div className="shrink-0 pt-1.5">
+                    <CombatLog entries={run.log} />
                   </div>
                   <div className="shrink-0 pt-1.5 flex justify-center">
                     <button type="button" onClick={run.endTurn}

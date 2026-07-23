@@ -19,6 +19,8 @@ export default function PhaserCombatCanvas({ enemy, player, introLabel }: {
   const prevEnemyHp = useRef<number>(0);
   const prevPlayerHp = useRef<number>(player.hp);
   const prevPlayerBlock = useRef<number>(player.block);
+  const latestEnemyRef = useRef(enemy);
+  latestEnemyRef.current = enemy;
 
   useEffect(() => {
     let disposed = false;
@@ -38,7 +40,15 @@ export default function PhaserCombatCanvas({ enemy, player, introLabel }: {
       });
       gameRef.current = game;
       game.events.once(Phaser.Core.Events.READY, () => {
-        sceneRef.current = game.scene.getScene("combat") as any;
+        const scene = game.scene.getScene("combat") as any;
+        sceneRef.current = scene;
+        // 씬이 준비되기 전에 이미 적이 정해져 있었을 수 있음(마운트 시점 경쟁) — 놓치지 않게 즉시 반영.
+        const e = latestEnemyRef.current;
+        if (e) {
+          scene.setEnemy?.(String(e.item?.name ?? "몬스터"), e.hp, e.maxHp);
+          prevEnemyTicker.current = e.item?.ticker ?? null;
+          prevEnemyHp.current = e.hp;
+        }
       });
       const ro = new ResizeObserver(() => {
         if (!containerRef.current) return;
