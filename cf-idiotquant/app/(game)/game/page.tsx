@@ -1537,75 +1537,94 @@ function GameContent() {
               </button>
             </div>
 
-            <div className="flex items-center gap-3 mb-3 p-3 rounded-xl bg-black/[0.03] dark:bg-white/[0.04]">
-              <span aria-hidden className="text-3xl leading-none">{rankOf(totalWins).emoji}</span>
-              <div className="min-w-0">
-                <p className="font-black text-sm text-neutral-900 dark:text-white truncate">{rankOf(totalWins).title}</p>
-                <p className="text-[11px] text-neutral-400">지하 {roundNum + 1}층 탐험 중</p>
-              </div>
-            </div>
+            {/* 모바일에서 세로 스크롤 없이 한 화면에 들어오도록 압축 — 예전엔 순위 패널(1줄)+스탯
+                2×2 그리드(2줄)로 나뉘어 있던 걸 "순위 한 줄 + 스탯 4열 한 줄"로, 종이인형 칸 높이도
+                줄이고, 장비 설명·세트 진행도·도감을 각각 별도 블록 대신 압축된 줄로 합침. */}
+            <p className="flex items-center gap-1.5 text-xs text-neutral-500 dark:text-neutral-400 mb-2">
+              <span aria-hidden className="text-base leading-none">{rankOf(totalWins).emoji}</span>
+              <b className="text-neutral-800 dark:text-neutral-100">{rankOf(totalWins).title}</b>
+              <span>· 지하 {roundNum + 1}층</span>
+            </p>
 
-            <div className="grid grid-cols-2 gap-2 mb-3">
-              <div className="rounded-xl bg-black/[0.03] dark:bg-white/[0.04] p-2.5 text-center">
-                <p className="flex items-center justify-center gap-1 text-lg font-black tabular-nums text-[#16a34a] leading-none">
-                  <Shield size={14} strokeWidth={2.5} />{shields}/{maxShields}
+            <div className="grid grid-cols-4 gap-1.5 mb-2.5">
+              <div className="rounded-lg bg-black/[0.03] dark:bg-white/[0.04] py-1.5 text-center">
+                <p className="flex items-center justify-center gap-0.5 text-sm font-black tabular-nums text-[#16a34a] leading-none">
+                  <Shield size={11} strokeWidth={2.5} />{shields}/{maxShields}
                 </p>
-                <p className="text-[9px] font-bold text-neutral-400 uppercase tracking-wider mt-1">방패</p>
+                <p className="text-[8px] font-bold text-neutral-400 uppercase tracking-wider mt-1">방패</p>
               </div>
-              <div className="rounded-xl bg-black/[0.03] dark:bg-white/[0.04] p-2.5 text-center">
-                <p className="flex items-center justify-center gap-1 text-lg font-black tabular-nums text-rose-500 leading-none">
-                  <Flame size={14} strokeWidth={2.5} />{streak}
+              <div className="rounded-lg bg-black/[0.03] dark:bg-white/[0.04] py-1.5 text-center">
+                <p className="flex items-center justify-center gap-0.5 text-sm font-black tabular-nums text-rose-500 leading-none">
+                  <Flame size={11} strokeWidth={2.5} />{streak}
                 </p>
-                <p className="text-[9px] font-bold text-neutral-400 uppercase tracking-wider mt-1">연승</p>
+                <p className="text-[8px] font-bold text-neutral-400 uppercase tracking-wider mt-1">연승</p>
               </div>
-              <div className="rounded-xl bg-black/[0.03] dark:bg-white/[0.04] p-2.5 text-center">
-                <p className="flex items-center justify-center gap-1 text-lg font-black tabular-nums text-amber-500 leading-none">
-                  <Trophy size={14} strokeWidth={2.5} />{best}
+              <div className="rounded-lg bg-black/[0.03] dark:bg-white/[0.04] py-1.5 text-center">
+                <p className="flex items-center justify-center gap-0.5 text-sm font-black tabular-nums text-amber-500 leading-none">
+                  <Trophy size={11} strokeWidth={2.5} />{best}
                 </p>
-                <p className="text-[9px] font-bold text-neutral-400 uppercase tracking-wider mt-1">최고 기록</p>
+                <p className="text-[8px] font-bold text-neutral-400 uppercase tracking-wider mt-1">최고</p>
               </div>
-              <div className="rounded-xl bg-black/[0.03] dark:bg-white/[0.04] p-2.5 text-center">
-                <p className="flex items-center justify-center gap-1 text-lg font-black tabular-nums text-amber-600 dark:text-amber-400 leading-none">
+              <div className="rounded-lg bg-black/[0.03] dark:bg-white/[0.04] py-1.5 text-center">
+                <p className="flex items-center justify-center gap-0.5 text-sm font-black tabular-nums text-amber-600 dark:text-amber-400 leading-none">
                   💰{gold}
                 </p>
-                <p className="text-[9px] font-bold text-neutral-400 uppercase tracking-wider mt-1">골드</p>
+                <p className="text-[8px] font-bold text-neutral-400 uppercase tracking-wider mt-1">골드</p>
               </div>
             </div>
 
             <p className="text-xs font-black text-neutral-700 dark:text-neutral-200 mb-1.5">
               장비 {equippedItems.length}/{EQUIP_SLOTS.length}
             </p>
-            <div className="grid grid-cols-2 gap-1.5 mb-2.5">
-              {EQUIP_SLOTS.map(slot => {
-                const id = equipment[slot];
-                const item = id ? EQUIP_POOL.find(i => i.id === id) : null;
-                return (
-                  <div key={slot} className={cn("rounded-lg p-2 text-xs",
-                    item ? "bg-violet-500/5 border border-violet-500/20" : "bg-black/[0.02] dark:bg-white/[0.02] border border-dashed border-black/10 dark:border-white/15")}>
-                    <p className="text-[9px] font-bold text-neutral-400 uppercase tracking-wide">{EQUIP_SLOT_LABEL[slot]}</p>
-                    {item ? (
-                      <>
-                        <p className="flex items-center gap-1 mt-0.5 font-bold text-neutral-800 dark:text-neutral-100 truncate">
-                          <span aria-hidden>{item.icon}</span>{item.name}
-                        </p>
-                        <p className="text-[9px] text-neutral-500 dark:text-neutral-400 truncate">{item.desc}</p>
-                      </>
-                    ) : (
-                      <p className="text-neutral-400 mt-0.5">비어 있음</p>
-                    )}
-                  </div>
-                );
-              })}
-            </div>
-            <div className="space-y-1 mb-1.5">
-              {(["guardian", "raider"] as EquipSetId[]).map(set => (
-                <div key={set} className="flex items-center justify-between text-[11px]">
-                  <span className="font-bold text-neutral-600 dark:text-neutral-300">{EQUIP_SET_LABEL[set]}</span>
-                  <span className="tabular-nums text-neutral-400">{setCount(set)}/7</span>
+            {/* 용사 초상화를 가운데 두고 좌우에 슬롯을 배치 — 왼쪽은 투구·갑옷·무기·방패(4칸),
+                오른쪽은 목걸이·장신구 I·II(3칸), EQUIP_SLOTS 배열 순서(앞 4개/뒤 3개)와 그대로 맞음.
+                패널 자체는 초상화 분위기에 맞춰 어두운 톤으로 별도 테마(모달의 나머지는 기존 라이트/다크 유지). */}
+            <div className="rounded-xl overflow-hidden mb-1.5" style={{ background: "linear-gradient(180deg,#221b13,#12100c)" }}>
+              <div className="flex items-stretch gap-1.5 p-2">
+                <div className="flex-1 flex flex-col gap-1 justify-between min-w-0">
+                  {EQUIP_SLOTS.slice(0, 4).map(slot => {
+                    const id = equipment[slot];
+                    const item = id ? EQUIP_POOL.find(i => i.id === id) : null;
+                    return (
+                      <div key={slot} className={cn("flex items-center gap-1 rounded-lg px-1.5 py-1 min-w-0",
+                        item ? "bg-amber-500/15 border border-amber-500/40" : "bg-black/30 border border-dashed border-amber-100/15")}>
+                        <span aria-hidden className={cn("text-sm leading-none shrink-0", !item && "opacity-30")}>{item ? item.icon : "•"}</span>
+                        <span className="text-[7px] font-bold text-amber-100/60 truncate">{EQUIP_SLOT_LABEL[slot]}</span>
+                      </div>
+                    );
+                  })}
                 </div>
-              ))}
+                <div className="shrink-0 flex items-center justify-center">
+                  <img src="/images/game/hero-equip.png" alt="용사" className="w-[84px] h-auto rounded-lg" />
+                </div>
+                <div className="flex-1 flex flex-col gap-1 justify-between min-w-0">
+                  {EQUIP_SLOTS.slice(4).map(slot => {
+                    const id = equipment[slot];
+                    const item = id ? EQUIP_POOL.find(i => i.id === id) : null;
+                    return (
+                      <div key={slot} className={cn("flex items-center gap-1 rounded-lg px-1.5 py-1 min-w-0",
+                        item ? "bg-amber-500/15 border border-amber-500/40" : "bg-black/30 border border-dashed border-amber-100/15")}>
+                        <span aria-hidden className={cn("text-sm leading-none shrink-0", !item && "opacity-30")}>{item ? item.icon : "•"}</span>
+                        <span className="text-[7px] font-bold text-amber-100/60 truncate">{EQUIP_SLOT_LABEL[slot]}</span>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
             </div>
-            <p className="text-[10px] text-neutral-400">장비 도감(누적) {equipmentLog.size}/{EQUIP_POOL.length}</p>
+            {equippedItems.length > 0 && (
+              <div className="grid grid-cols-2 gap-x-2 gap-y-0.5 mb-1.5">
+                {equippedItems.map(item => (
+                  <p key={item.id} className="flex items-center gap-1 text-[10px] truncate">
+                    <span aria-hidden className="shrink-0">{item.icon}</span>
+                    <span className="text-neutral-500 dark:text-neutral-400 truncate">{item.desc}</span>
+                  </p>
+                ))}
+              </div>
+            )}
+            <p className="text-[10px] text-neutral-400">
+              {EQUIP_SET_LABEL.guardian} {setCount("guardian")}/7 · {EQUIP_SET_LABEL.raider} {setCount("raider")}/7 · 도감 {equipmentLog.size}/{EQUIP_POOL.length}
+            </p>
           </div>
         </div>
       )}
