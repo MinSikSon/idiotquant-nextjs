@@ -592,7 +592,8 @@ function GameContent() {
               {/* 상단 HUD */}
               {run.phase !== "over" && (
                 <div className="shrink-0 mb-1 sm:mb-2 space-y-1">
-                  <div className="flex items-center justify-center gap-1.5 flex-wrap">
+                  <button type="button" onClick={() => setShowStatus(true)} aria-label="상태창 보기"
+                    className="flex items-center justify-center gap-1.5 flex-wrap w-full active:opacity-70 transition-opacity">
                     <div className="px-2 py-1.5 rounded-2xl backdrop-blur-md bg-white/85 dark:bg-white/[0.06] border border-black/5 dark:border-white/10 shadow-[0_6px_18px_-8px_rgba(0,0,0,0.35)]">
                       <HpBar hp={run.player.hp} maxHp={run.player.maxHp} label="HP" />
                     </div>
@@ -606,7 +607,7 @@ function GameContent() {
                         <ShieldBadge block={run.player.block} />
                       </div>
                     )}
-                  </div>
+                  </button>
                   <div className="flex items-center justify-center gap-1.5 h-8 overflow-x-auto overflow-y-hidden flex-nowrap scrollbar-hide">
                     {run.gold > 0 && (
                       <span className="shrink-0 inline-flex items-center gap-1 px-2 py-1 rounded-full backdrop-blur-md bg-amber-500/10 border border-amber-500/25 text-amber-600 dark:text-amber-400 text-[10px] font-bold tabular-nums">
@@ -624,10 +625,6 @@ function GameContent() {
                         <Target size={11} strokeWidth={2.5} /> 획득 {run.acquirePct}%
                       </span>
                     )}
-                    <button type="button" onClick={() => setShowStatus(true)} aria-label="상태창 보기"
-                      className="shrink-0 inline-flex items-center justify-center w-8 h-8 rounded-full backdrop-blur-md bg-white/85 dark:bg-white/[0.06] border border-black/5 dark:border-white/10 shadow-[0_6px_18px_-8px_rgba(0,0,0,0.35)] text-neutral-500 dark:text-neutral-300 hover:text-[#16a34a] transition-colors">
-                      <UserRound size={14} />
-                    </button>
                     <button type="button" onClick={() => setShowTutorial(true)} aria-label="게임 방법 보기"
                       className="shrink-0 inline-flex items-center justify-center w-8 h-8 rounded-full backdrop-blur-md bg-white/85 dark:bg-white/[0.06] border border-black/5 dark:border-white/10 shadow-[0_6px_18px_-8px_rgba(0,0,0,0.35)] text-neutral-500 dark:text-neutral-300 hover:text-[#16a34a] transition-colors">
                       <Info size={14} />
@@ -724,7 +721,28 @@ function GameContent() {
                 <p className="flex items-center justify-center gap-0.5 text-sm font-black tabular-nums text-amber-600 dark:text-amber-400 leading-none">💰{run.gold}</p>
                 <p className="text-[8px] font-bold text-neutral-400 uppercase tracking-wider mt-1">골드</p>
               </div>
+              {run.phase === "battling" && (
+                <>
+                  <div className="rounded-lg bg-black/[0.03] dark:bg-white/[0.04] py-1.5 text-center">
+                    <p className="text-sm font-black tabular-nums text-amber-500 leading-none">●{run.player.energy}</p>
+                    <p className="text-[8px] font-bold text-neutral-400 uppercase tracking-wider mt-1">코스트</p>
+                  </div>
+                  <div className="rounded-lg bg-black/[0.03] dark:bg-white/[0.04] py-1.5 text-center">
+                    <p className="text-sm font-black tabular-nums text-sky-500 leading-none">🛡️{run.player.block}</p>
+                    <p className="text-[8px] font-bold text-neutral-400 uppercase tracking-wider mt-1">방어력</p>
+                  </div>
+                  <div className="rounded-lg bg-black/[0.03] dark:bg-white/[0.04] py-1.5 text-center">
+                    <p className="text-sm font-black tabular-nums text-amber-700 dark:text-amber-400 leading-none">{run.acquirePct}%</p>
+                    <p className="text-[8px] font-bold text-neutral-400 uppercase tracking-wider mt-1">획득 확률</p>
+                  </div>
+                </>
+              )}
             </div>
+            {run.activeBoost && (
+              <p className="flex items-center gap-1 text-[11px] font-bold text-amber-600 dark:text-amber-400 mb-2">
+                <Wand2 size={12} strokeWidth={2.5} /> 확률 부스트 ×{run.activeBoost.mult} — {run.activeBoost.roundsLeft}판 남음
+              </p>
+            )}
             <p className="text-xs font-black text-neutral-700 dark:text-neutral-200 mb-1.5">보유 아이템 {run.ownedItems.length}</p>
             {run.ownedItems.length === 0 ? (
               <p className="text-[11px] text-neutral-400">아직 없어요. 3층마다 획득 기회가 있어요.</p>
