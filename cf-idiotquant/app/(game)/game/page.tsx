@@ -717,6 +717,19 @@ function rankOf(streak: number): { emoji: string; title: string } {
   return { emoji: "🔰", title: "견습 용사" };
 }
 
+// 캐릭터 레벨 — 승리마다 쌓이는 누적 XP를 레벨로 환산. rankOf(칭호)·gold(런 한정 재화)와 달리
+// 던전을 나가도 리셋되지 않는 유일한 영구 성장 축. 레벨마다 필요 XP가 조금씩 늘어나 초반엔 빠르게,
+// 갈수록 천천히 오르는 전형적인 RPG 곡선.
+function levelFromXp(xp: number): { level: number; into: number; need: number } {
+  let level = 1, remaining = xp, need = 100;
+  while (remaining >= need) {
+    remaining -= need;
+    level++;
+    need = 100 + (level - 1) * 40;
+  }
+  return { level, into: remaining, need };
+}
+
 // 던전 층 진행도 — 원형 노드 나열 대신 꺾은선 그래프로 표시. floor가 커질수록(더 깊이 내려갈수록)
 // 선이 아래로 내려가는 "하강" 모양으로 그려 "지하 N층"이라는 세계관과 맞춤. 보스 층은 왕관으로 표시.
 type FloorNode = { n: number; floor: number; boss: boolean; cleared: boolean; current: boolean };
@@ -781,7 +794,7 @@ function GameContent() {
   const [best, setBest] = useState(0); // 역대 최고 승수(서버 동기화)
   const [newBest, setNewBest] = useState(false); // 이번 런에 최고 기록 경신
   const [chosenStat, setChosenStat] = useState<string | null>(null); // 이번 라운드 배틀에 고른 지표
-  const [lastResult, setLastResult] = useState<{ win: boolean; statKey: string; shieldLoss?: number; goldGain?: number } | null>(null);
+  const [lastResult, setLastResult] = useState<{ win: boolean; statKey: string; shieldLoss?: number; goldGain?: number; xpGain?: number } | null>(null);
   const [dropped, setDropped] = useState(false);      // 이번 라운드 카드 획득(로그인)
   const [dropPrompt, setDropPrompt] = useState(false); // 카드가 떴지만 로그인 필요
   const [saveFail, setSaveFail] = useState<string | null>(null); // 덱 저장 실패 사유
@@ -814,6 +827,22 @@ function GameContent() {
     } catch { }
   }, []);
 
+  // 캐릭터 레벨 — 골드/장비와 달리 던전을 나가도 초기화되지 않는 영구 XP(equipLog·best와 같은 로컬 저장 패턴).
+  const xpKey = "iq:game:xp";
+  const [xp, setXp] = useState(0);
+  const [justLeveledUp, setJustLeveledUp] = useState<number | null>(null); // 방금 오른 레벨(토스트 연출용)
+  useEffect(() => {
+    try {
+      const raw = localStorage.getItem(xpKey);
+      if (raw) setXp(Number(raw) || 0);
+    } catch { }
+  }, []);
+  useEffect(() => {
+    if (justLeveledUp === null) return;
+    const t = setTimeout(() => setJustLeveledUp(null), 1800);
+    return () => clearTimeout(t);
+  }, [justLeveledUp]);
+
   const equippedItems = useMemo(() =>
     EQUIP_SLOTS.map(s => equipment[s]).filter((id): id is string => !!id)
       .map(id => ALL_EQUIP_ITEMS.find(i => i.id === id)!).filter(Boolean),
@@ -842,6 +871,22 @@ function GameContent() {
     }
     return { maxShield, shieldLossReduce, acquirePctBonus, goldMult };
   }, [equippedItems, setCount]);
+
+  const { level, into: xpIntoLevel, need: xpForNext } = useMemo(() => levelFromXp(xp), [xp]);
+  // 레벨의 영구 보너스 — equipBonus와 같은 4개 축으로 소폭 증가(장비는 던전을 나가면 초기화되지만
+  // 레벨 보너스는 항상 유지됨). equipBonus와 합쳐 실제 전투 계산(totalBonus)에 쓴다.
+  const levelBonus = useMemo(() => ({
+    maxShield: Math.floor((level - 1) / 5),
+    shieldLossReduce: Math.floor((level - 1) / 10),
+    acquirePctBonus: (level - 1) * 0.003,
+    goldMult: (level - 1) * 0.02,
+  }), [level]);
+  const totalBonus = useMemo(() => ({
+    maxShield: equipBonus.maxShield + levelBonus.maxShield,
+    shieldLossReduce: equipBonus.shieldLossReduce + levelBonus.shieldLossReduce,
+    acquirePctBonus: equipBonus.acquirePctBonus + levelBonus.acquirePctBonus,
+    goldMult: equipBonus.goldMult + levelBonus.goldMult,
+  }), [equipBonus, levelBonus]);
 
   const pickItem = useCallback((id: string) => {
     const item = ALL_EQUIP_ITEMS.find(i => i.id === id);
@@ -1002,20 +1047,24 @@ function GameContent() {
     if (!started.current && pool.length >= 2) { started.current = true; start(); }
   }, [pool, start]);
 
-  // 지표(NCAV/PBR/PER/ROE) 하나를 골라 배틀 — sub(0~1 정규화 점수)로 비교하므로 지표별 방향(NCAV는 높을수록,
-  // PBR·PER은 낮을수록 좋음)을 신경 쓸 필요 없이 그대로 비교하면 됨.
+  // 지표(NCAV/PBR/PER/ROE) 하나를 골라 배틀 — raw(정규화 전 원시값)를 지표 방향(higherBetter)에 맞춰
+  // 비교한다. 예전엔 sub(등급 산정용 0~1 정규화 점수)로 비교했는데, sub는 정규화 구간 밖의 값을 전부
+  // 0(또는 1)으로 뭉개버려서(예: NCAV는 0.3 미만이면 음수든 0.14든 전부 sub=0) 그 구간 안에서는 실제
+  // 값이 더 좋아도 진짜 차이가 안 보였다 — "NCAV -0.01이 0.14를 이긴다" 버그가 이래서 생김(둘 다 sub=0
+  // 동점 처리되고, 동점은 항상 플레이어 승리라 우연히 -0.01 쪽이 이겨 보인 것). raw 비교는 이런 뭉개짐이
+  // 없어서 실제 값 차이를 그대로 반영한다.
   const battle = useCallback((statKey: string) => {
     if (phase !== "battling" || !playerCard || !opponentCard) return;
     const pv = computeValueScore(playerCard), ov = computeValueScore(opponentCard);
     const pPart = pv.parts.find(p => p.key === statKey);
     const oPart = ov.parts.find(p => p.key === statKey);
     if (!pPart?.available || !oPart?.available) return;
-    const win = pPart.sub >= oPart.sub; // 동점은 승리 처리
+    const win = pPart.higherBetter ? pPart.raw >= oPart.raw : pPart.raw <= oPart.raw; // 동점은 승리 처리
     // 패배 대가 — 밀어붙인 연승(streak)이 길수록 커짐(3연승마다 +1, 최대 보유 방패만큼).
     // "한 판 더" 를 계속 고를수록 다음 패배가 더 아파지는 푸시-유어-럭 긴장감 장치. 갑옷/수호자 세트
     // 장비는 -N. 최솟값을 1로 클램프하면 streak<3(기본값 1)일 때는 1-1=0이 다시 1로 올라가 버려서
     // "패배 시 방패 소모 -1" 효과가 아예 안 먹는 것처럼 보였음 — 0으로 클램프해 실제로 무피해 패배가 되게 함.
-    const shieldLoss = win ? 0 : Math.max(0, Math.min(shields, 1 + Math.floor(streak / 3)) - equipBonus.shieldLossReduce);
+    const shieldLoss = win ? 0 : Math.max(0, Math.min(shields, 1 + Math.floor(streak / 3)) - totalBonus.shieldLossReduce);
     setChosenStat(statKey);
     setLastResult({ win, statKey, shieldLoss });
     setDropped(false); setDropPrompt(false); setSaveFail(null); setEscaped(null); setFirstDupHint(false);
@@ -1038,7 +1087,7 @@ function GameContent() {
       }
 
       // 승리 카드만 수집. 연승↑ → 획득 확률↑, 높은 등급일수록 더 높은 연승 필요. 부스트 배율 + 무기/목걸이/약탈자 세트 장비 적용.
-      const chance = Math.min(0.95, acquireChance(opponentCard, ns) * (activeBoost?.mult ?? 1) + equipBonus.acquirePctBonus);
+      const chance = Math.min(0.95, acquireChance(opponentCard, ns) * (activeBoost?.mult ?? 1) + totalBonus.acquirePctBonus);
       const willDrop = Math.random() < chance;
 
       // 골드 — 층 클리어(기본) + 보스 처치 보너스 + 카드 획득 보너스. 장신구/약탈자 세트 장비면 배율 적용.
@@ -1046,9 +1095,19 @@ function GameContent() {
       // 보스 조우를 우선하고 그 라운드의 장비 드랍은 건너뜀(30라운드마다 1번뿐이라 무시 가능한 손실).
       const isBossRound = roundNum > 0 && roundNum % 10 === 0;
       const isItemRound = roundNum > 0 && roundNum % 3 === 0 && !isBossRound;
-      const goldGain = Math.round((3 + (isBossRound ? 15 : 0) + (willDrop ? 5 : 0)) * equipBonus.goldMult);
+      const goldGain = Math.round((3 + (isBossRound ? 15 : 0) + (willDrop ? 5 : 0)) * totalBonus.goldMult);
       setGold(g => g + goldGain);
       setLastResult(r => (r ? { ...r, goldGain } : r));
+
+      // XP — 골드와 같은 규칙(보스 보너스)으로 적립되지만 던전을 나가도 사라지지 않는 영구 성장치.
+      // 장비 배율은 적용하지 않음 — 장비는 런 한정이라 영구 성장 폭까지 장비로 부풀리지 않기 위함.
+      const xpGain = 3 + (isBossRound ? 15 : 0);
+      const nextXp = xp + xpGain;
+      setXp(nextXp);
+      try { localStorage.setItem(xpKey, String(nextXp)); } catch { }
+      setLastResult(r => (r ? { ...r, xpGain } : r));
+      const nextLevel = levelFromXp(nextXp).level;
+      if (nextLevel > level) setJustLeveledUp(nextLevel);
 
       // 3라운드마다 장비 3택1 선택지 제공(품절 걱정 없음 — pickItemChoices 주석 참고).
       // availableEquipPool = 기본 14종 + 그새 해금된 전설 장비.
@@ -1103,7 +1162,7 @@ function GameContent() {
         higherSide: "challenger", // 패배 라운드는 항상 상대(opponentCard) 지표가 더 좋았던 경우
       });
     }
-  }, [phase, playerCard, opponentCard, best, bestKey, isLoggedIn, streak, totalWins, activeBoost, shields, roundNum, equipment, equipBonus, availableEquipPool]);
+  }, [phase, playerCard, opponentCard, best, bestKey, isLoggedIn, streak, totalWins, activeBoost, shields, roundNum, equipment, totalBonus, availableEquipPool, xp, xpKey, level]);
 
   // 승리든 패배든, 방패가 남아있으면 그 자리에서 런을 마무리(안전 정리)할 수 있음 — "더 갈까 여기서 챙길까" 선택지.
   const cashOut = useCallback(() => {
@@ -1130,12 +1189,12 @@ function GameContent() {
   const isLoading = ncav.state === "pending" || ncav.state === "init" || pool.length < 2;
 
   // 획득 확률 — 승리 시(연승+1) 이 카드 획득 확률. 연승↑·낮은 등급↑, 높은 등급은 더 높은 연승 필요. 상점 부스트 + 무기/목걸이/약탈자 세트 장비 반영.
-  const acquirePct = opponentCard ? Math.round(Math.min(0.95, acquireChance(opponentCard, streak + 1) * (activeBoost?.mult ?? 1) + equipBonus.acquirePctBonus) * 100) : 0;
+  const acquirePct = opponentCard ? Math.round(Math.min(0.95, acquireChance(opponentCard, streak + 1) * (activeBoost?.mult ?? 1) + totalBonus.acquirePctBonus) * 100) : 0;
   const ownedOpponent = opponentCard ? deck.find(c => c.ticker === opponentCard.ticker) : undefined;
   const playerParts = playerCard ? computeValueScore(playerCard).parts : [];
   const opponentParts = opponentCard ? computeValueScore(opponentCard).parts : [];
-  const nextLossPenalty = Math.max(0, Math.min(shields, 1 + Math.floor(streak / 3)) - equipBonus.shieldLossReduce); // "다음 패배 시 방패 -N" 경고에 표시 — battle()의 shieldLoss와 클램프를 반드시 일치시켜야 함
-  const maxShields = 3 + equipBonus.maxShield; // 투구/방패 장비·수호자 세트 보너스만큼 최대 방패 +N(HUD 아이콘 수)
+  const nextLossPenalty = Math.max(0, Math.min(shields, 1 + Math.floor(streak / 3)) - totalBonus.shieldLossReduce); // "다음 패배 시 방패 -N" 경고에 표시 — battle()의 shieldLoss와 클램프를 반드시 일치시켜야 함
+  const maxShields = 3 + totalBonus.maxShield; // 장비·세트 보너스 + 레벨 보너스만큼 최대 방패 +N(HUD 아이콘 수)
   // 최대 방패가 늘어나기만 하고 현재 방패는 그대로면(예: 3/4) "장비 효과가 안 먹는 것처럼" 보임 —
   // 늘어난 만큼(delta) 현재 방패도 즉시 채워줌(기존 유물 "수호의 방패"가 즉시 +1 주던 것과 동일 UX).
   // 런 시작(start)으로 maxShields가 줄어드는 경우엔 delta<=0이라 자연히 무시됨.
@@ -1162,6 +1221,15 @@ function GameContent() {
     // 튜토리얼/기록/상태창 모달(z-50)이 하단 탭 바(z-40, 이 div 밖의 형제 요소)와 비교될 때 모달의
     // z-50이 아니라 이 div 자체의 z-index로 비교됨 — z-index를 지정하지 않으면(auto) 탭 바에 가려짐.
     <div className="fixed z-50 left-0 right-0 top-[48px] bottom-[64px] md:left-[220px] md:top-0 md:bottom-0 flex flex-col overflow-hidden bg-gradient-to-b from-neutral-100 via-neutral-50 to-neutral-200 dark:from-[#0a0a0e] dark:via-[#101015] dark:to-[#08080a] transition-colors">
+      {/* 레벨업 토스트 — 영구 캐릭터 레벨이 올랐을 때만 잠깐(1.8초) 뜸. 레이아웃에 영향 없는 오버레이라
+          HUD 높이 고정 원칙(카드 크기 흔들림 방지)을 건드리지 않음. */}
+      {justLeveledUp !== null && (
+        <div className="absolute inset-x-0 top-2 z-[60] flex justify-center pointer-events-none px-3">
+          <div className="inline-flex items-center gap-1.5 px-4 py-2 rounded-full bg-gradient-to-r from-sky-500 to-violet-500 text-white text-sm font-black shadow-[0_10px_30px_-8px_rgba(59,130,246,0.6)] animate-in fade-in zoom-in-95 slide-in-from-top-2 duration-300">
+            ⭐ 레벨 업! Lv.{justLeveledUp}
+          </div>
+        </div>
+      )}
       {/* 프리미엄 아레나 배경 — 카드 위쪽에 은은한 스포트라이트 글로우 + 격자 텍스처 */}
       <div aria-hidden className="absolute inset-0 z-0 pointer-events-none"
         style={{ background: "radial-gradient(55% 45% at 50% 24%, rgba(168,85,247,0.12), transparent 70%)" }} />
@@ -1237,6 +1305,11 @@ function GameContent() {
                   </div>
                 </div>
                 <div className="flex items-center justify-center gap-1.5 h-8 overflow-x-auto overflow-y-hidden flex-nowrap scrollbar-hide">
+                  {/* 캐릭터 레벨 — 골드/장비와 달리 던전을 나가도 초기화되지 않는 영구 성장치라 항상 노출(0판이어도 Lv.1). */}
+                  <button type="button" onClick={() => setShowStatus(true)} aria-label="상태창 보기 — 레벨"
+                    className="shrink-0 inline-flex items-center gap-1 px-2 py-1 rounded-full backdrop-blur-md bg-sky-500/10 border border-sky-500/25 text-sky-600 dark:text-sky-400 text-[10px] font-bold tabular-nums">
+                    ⭐ Lv.{level}
+                  </button>
                   {gold > 0 && (
                     // 상점의 영구 "코인"(🪙, 은색/amber Coins 아이콘)과 혼동되지 않도록 이번 던전 한정
                     // "골드"는 다른 아이콘(💰)·문구로 구분 — 두 재화는 서로 별개(런 종료 시 골드만 초기화)
@@ -1306,6 +1379,10 @@ function GameContent() {
                     </p>
                     <span className="inline-flex items-center gap-1 mt-1 px-3 py-1 rounded-full bg-[#f0fdf4] dark:bg-[#052e16]/40 border border-[#86efac]/60 dark:border-[#166534]/60 text-[#15803d] dark:text-[#16a34a] text-xs font-black">
                       <span aria-hidden className="text-sm leading-none">{rankOf(totalWins).emoji}</span>{rankOf(totalWins).title}
+                    </span>
+                    {/* 이번 던전 칭호(rankOf)와 별개로, 던전을 나가도 유지되는 영구 캐릭터 레벨도 같이 보여줌 */}
+                    <span className="inline-flex items-center gap-1 mt-1 ml-1 px-3 py-1 rounded-full bg-sky-50 dark:bg-sky-950/30 border border-sky-200 dark:border-sky-800 text-sky-600 dark:text-sky-400 text-xs font-black">
+                      ⭐ Lv.{level}
                     </span>
                   </div>
 
@@ -1443,6 +1520,9 @@ function GameContent() {
                         {lastResult?.win && !!lastResult.goldGain && (
                           <span className="ml-1.5 text-xs font-bold text-amber-600 dark:text-amber-400">💰 +{lastResult.goldGain}</span>
                         )}
+                        {lastResult?.win && !!lastResult.xpGain && (
+                          <span className="ml-1.5 text-xs font-bold text-sky-600 dark:text-sky-400">⭐ +{lastResult.xpGain}</span>
+                        )}
                       </p>
                       {lastResult?.win && dropped && (
                         <span className="flex flex-col items-center gap-0.5 animate-in fade-in slide-in-from-bottom-1">
@@ -1578,6 +1658,20 @@ function GameContent() {
               <button type="button" onClick={() => { setShowStatus(false); setSelectedSlot(null); }} className="text-neutral-400 hover:text-[#16a34a]" aria-label="닫기">
                 <X size={18} />
               </button>
+            </div>
+
+            {/* 캐릭터 레벨 — rankOf(칭호)·roundNum(층)과 달리 던전을 나가도 초기화되지 않는 유일한
+                영구 성장치. 레벨업 시 방패·방어·획득 확률·골드가 조금씩 영구적으로 오른다(totalBonus). */}
+            <div className="rounded-xl bg-gradient-to-r from-sky-500/10 to-violet-500/10 border border-sky-500/20 px-2.5 py-2 mb-2">
+              <div className="flex items-center justify-between">
+                <p className="text-sm font-black text-neutral-800 dark:text-neutral-100">⭐ Lv.{level}</p>
+                <p className="text-[10px] font-bold text-neutral-400 tabular-nums">{xpIntoLevel}/{xpForNext} XP</p>
+              </div>
+              <div className="mt-1 h-1.5 rounded-full bg-black/10 dark:bg-white/10 overflow-hidden">
+                <div className="h-full rounded-full bg-gradient-to-r from-sky-500 to-violet-500"
+                  style={{ width: `${Math.min(100, (xpIntoLevel / xpForNext) * 100)}%` }} />
+              </div>
+              <p className="text-[9px] text-neutral-400 mt-1 break-keep">레벨업마다 최대 방패·방어·카드 획득 확률·골드가 영구적으로 조금씩 강해져요</p>
             </div>
 
             {/* 모바일에서 세로 스크롤 없이 한 화면에 들어오도록 압축 — 예전엔 순위 패널(1줄)+스탯

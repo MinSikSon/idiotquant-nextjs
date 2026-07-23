@@ -11,7 +11,11 @@ export interface ValuePart {
   weight: number;         // 명목 가중치 (0~1)
   available: boolean;     // 데이터 유무
   valueStr: string;       // 원시값 표기 ("0.85x" / "—")
-  sub: number;            // 0~1 서브점수 (없으면 0)
+  sub: number;            // 0~1 서브점수 (없으면 0) — 등급 산정용. 정규화 구간 밖(예: NCAV 0~0.3, PBR>1.5)은
+                           // 전부 0(또는 1)으로 뭉개져서 그 안에서는 값 차이가 사라짐 — 카드 등급용으로는
+                           // 문제없지만 배틀 승패 비교에는 부적합(아래 raw/higherBetter 참고).
+  raw: number;            // 정규화 전 원시값(NaN 가능) — 배틀 승패는 이 값을 그대로 비교(뭉개짐 없음)
+  higherBetter: boolean;  // 이 지표는 raw가 클수록 유리한지(NCAV·ROE=true, PBR·PER=false)
 }
 
 export interface ValueScore {
@@ -45,24 +49,28 @@ export function computeValueScore(item: any): ValueScore {
       key: "ncav", label: "NCAV", weight: 0.40,               // 1.5x↑ 만점
       available: Number.isFinite(ncav),
       sub: ncav > 0 ? clamp01((ncav - 0.3) / (1.5 - 0.3)) : 0,
+      raw: ncav, higherBetter: true,                          // 음수도 그대로 비교(높을수록 유리라 자연스럽게 정렬됨)
       valueStr: Number.isFinite(ncav) ? `${ncav.toFixed(2)}x` : "—",
     },
     {
       key: "pbr", label: "PBR", weight: 0.25,                 // 0.3↓ 만점, 음수(자본잠식)는 0점
       available: Number.isFinite(pbr),
       sub: pbr > 0 ? clamp01((1.5 - pbr) / (1.5 - 0.3)) : 0,
+      raw: pbr > 0 ? pbr : Infinity, higherBetter: false,     // 0 이하(자본잠식)는 "낮을수록 유리"에서 항상 지도록 +∞로
       valueStr: Number.isFinite(pbr) ? pbr.toFixed(2) : "—",
     },
     {
       key: "per", label: "PER", weight: 0.20,                 // 5↓ 만점, 적자(음수)는 0점
       available: Number.isFinite(per),
       sub: per > 0 ? clamp01((20 - per) / (20 - 5)) : 0,
+      raw: per > 0 ? per : Infinity, higherBetter: false,     // 0 이하(적자)는 항상 지도록 +∞로
       valueStr: Number.isFinite(per) ? per.toFixed(1) : "—",
     },
     {
       key: "roe", label: "ROE", weight: 0.15,                 // 18%↑ 만점, 자본잠식(bps≤0)·적자는 0점
       available: Number.isFinite(eps) && Number.isFinite(bps) && bps !== 0,
       sub: bps > 0 ? clamp01((roe - 3) / (18 - 3)) : 0,
+      raw: bps > 0 ? roe : -Infinity, higherBetter: true,     // 자본잠식(bps<0)은 항상 지도록 -∞로
       valueStr: bps > 0 ? `${roe.toFixed(1)}%` : (Number.isFinite(bps) && bps < 0 ? "자본잠식" : "—"),
     },
   ];
