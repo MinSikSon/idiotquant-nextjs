@@ -159,22 +159,54 @@ function randomMonster(): MonsterSpec {
   };
 }
 
-const BAR_LEN = 14;
-function asciiBar(hp: number, maxHp: number): string {
-  const pct = maxHp > 0 ? Math.max(0, Math.min(1, hp / maxHp)) : 0;
-  const filled = Math.round(pct * BAR_LEN);
-  return `[${"█".repeat(filled)}${"░".repeat(BAR_LEN - filled)}] ${Math.max(0, hp)}/${maxHp}`;
+// 내 캐릭터 뒷모습 실루엣 — 몬스터와 같은 절차적 픽셀 그리드 방식(둥근 머리 + 사다리꼴 등판 +
+// 다리 두 갈래), 얼굴이 안 보이는 뒷모습이라 눈/입/볼터치 없이 형태만. "전사" 톤(가죽 갑옷 톤).
+const PLAYER_HEAD_RX = 2.3, PLAYER_HEAD_RY = 2.1, PLAYER_HEAD_ROW = 3;
+const PLAYER_TORSO_TOP = 5, PLAYER_TORSO_BOTTOM = 12, PLAYER_TORSO_TOP_HALF = 3.2, PLAYER_TORSO_BOTTOM_HALF = 4.4;
+const PLAYER_LEG_BOTTOM = 17, PLAYER_LEG_HALF = 1.5, PLAYER_LEG_OFFSET = 2.1;
+function playerBody(col: number, row: number): boolean {
+  const dx = col + 0.5 - CX;
+  if (row <= PLAYER_HEAD_ROW + PLAYER_HEAD_RY) {
+    const nx = dx / PLAYER_HEAD_RX, ny = (row - PLAYER_HEAD_ROW) / PLAYER_HEAD_RY;
+    if (nx * nx + ny * ny <= 1) return true;
+  }
+  if (row >= PLAYER_TORSO_TOP && row <= PLAYER_TORSO_BOTTOM) {
+    const t = (row - PLAYER_TORSO_TOP) / (PLAYER_TORSO_BOTTOM - PLAYER_TORSO_TOP);
+    const half = PLAYER_TORSO_TOP_HALF + t * (PLAYER_TORSO_BOTTOM_HALF - PLAYER_TORSO_TOP_HALF);
+    if (Math.abs(dx) <= half) return true;
+  }
+  if (row > PLAYER_TORSO_BOTTOM && row <= PLAYER_LEG_BOTTOM) {
+    if (Math.abs(dx - PLAYER_LEG_OFFSET) <= PLAYER_LEG_HALF || Math.abs(dx + PLAYER_LEG_OFFSET) <= PLAYER_LEG_HALF) return true;
+  }
+  return false;
 }
+const PLAYER_PALETTE = makePalette(0xb45309, 0x431407); // 가죽 갑옷 톤(호박빛 브라운)
 
 // Phaser의 Text는 자체 해상도(resolution)로 텍스처를 굽는데 기본값 1이라 고밀도(레티나)
 // 모바일 화면에서 흐릿하게 보임 — devicePixelRatio만큼 올려서 선명하게 그린다(과도한 메모리
 // 사용 방지로 최대 3배로 제한).
 const RES = typeof window !== "undefined" ? Math.min(window.devicePixelRatio || 1, 3) : 1;
 
+const HP_BAR_H = 8;
+
+// 포켓몬 클래식 대각선 배치 — 적(정면)은 우상단 스프라이트 + 좌상단 정보(이름+HP바), 내
+// 캐릭터(뒷모습)는 좌하단 스프라이트 + 우상단이 아닌 우하단 정보. 서로 반대편 코너에 정보를
+// 둬서 시선이 대각선으로 교차하게 배치하는 포켓몬 시리즈의 전통적인 배틀 화면 구도.
 export default class CombatScene extends Phaser.Scene {
   private enemyGfx!: Phaser.GameObjects.Graphics;
-  private enemyHpText!: Phaser.GameObjects.Text;
   private enemyLabel!: Phaser.GameObjects.Text;
+  private enemyHpGfx!: Phaser.GameObjects.Graphics;
+  private enemyHpNumText!: Phaser.GameObjects.Text;
+  private enemyCenterX = 0; private enemyCenterY = 0;
+  private enemyHpBarX = 0; private enemyHpBarY = 0; private enemyHpBarW = 0;
+
+  private playerGfx!: Phaser.GameObjects.Graphics;
+  private playerLabel!: Phaser.GameObjects.Text;
+  private playerHpGfx!: Phaser.GameObjects.Graphics;
+  private playerHpNumText!: Phaser.GameObjects.Text;
+  private playerCenterX = 0; private playerCenterY = 0;
+  private playerHpBarX = 0; private playerHpBarY = 0; private playerHpBarW = 0;
+
   private introText!: Phaser.GameObjects.Text;
   private spec!: MonsterSpec;
   private cell = 8; // 격자 한 칸의 화면 픽셀 크기(씬 크기에 맞춰 create에서 재계산)
@@ -186,17 +218,28 @@ export default class CombatScene extends Phaser.Scene {
   create() {
     const w = this.scale.width, h = this.scale.height;
     this.cameras.main.setBackgroundColor("#00000000");
+    this.cell = Math.max(3, Math.floor(Math.min(w * 0.36, h * 0.34) / GRID));
 
-    this.enemyLabel = this.add.text(w / 2, h * 0.1, "", { fontSize: "12px", color: "#ffffff", fontStyle: "bold", resolution: RES }).setOrigin(0.5);
-
-    this.cell = Math.max(4, Math.floor(Math.min(w * 0.9, h * 0.62) / GRID));
+    // 적 — 우상단 스프라이트 + 좌상단 정보
+    this.enemyCenterX = w * 0.74; this.enemyCenterY = h * 0.30;
+    this.enemyLabel = this.add.text(w * 0.05, h * 0.04, "", { fontSize: "12px", color: "#ffffff", fontStyle: "bold", resolution: RES }).setOrigin(0, 0);
+    this.enemyHpBarX = w * 0.05; this.enemyHpBarY = h * 0.12; this.enemyHpBarW = w * 0.36;
+    this.enemyHpGfx = this.add.graphics();
+    this.enemyHpNumText = this.add.text(this.enemyHpBarX + this.enemyHpBarW / 2, this.enemyHpBarY + HP_BAR_H / 2, "", { fontFamily: "monospace", fontSize: "9px", color: "#ffffff", fontStyle: "bold", resolution: RES }).setOrigin(0.5);
     this.spec = randomMonster();
-    this.enemyGfx = this.add.graphics({ x: w / 2, y: h * 0.48 });
+    this.enemyGfx = this.add.graphics({ x: this.enemyCenterX, y: this.enemyCenterY });
     this.drawMonster();
+    this.setEnemyHp(0, 1);
 
-    this.enemyHpText = this.add.text(w / 2, h * 0.88, asciiBar(0, 1), {
-      fontFamily: "monospace", fontSize: "11px", color: "#4ade80", fontStyle: "bold", resolution: RES,
-    }).setOrigin(0.5);
+    // 나 — 좌하단 스프라이트(전투 내내 고정, 몬스터처럼 매 전투 재생성하지 않음) + 우하단 정보
+    this.playerCenterX = w * 0.26; this.playerCenterY = h * 0.72;
+    this.playerGfx = this.add.graphics({ x: this.playerCenterX, y: this.playerCenterY });
+    this.drawPlayer();
+    this.playerHpBarW = w * 0.36; this.playerHpBarX = w * 0.95 - this.playerHpBarW; this.playerHpBarY = h * 0.86;
+    this.playerLabel = this.add.text(w * 0.95, this.playerHpBarY - 4, "", { fontSize: "12px", color: "#ffffff", fontStyle: "bold", resolution: RES }).setOrigin(1, 1);
+    this.playerHpGfx = this.add.graphics();
+    this.playerHpNumText = this.add.text(this.playerHpBarX + this.playerHpBarW / 2, this.playerHpBarY + HP_BAR_H / 2, "", { fontFamily: "monospace", fontSize: "9px", color: "#ffffff", fontStyle: "bold", resolution: RES }).setOrigin(0.5);
+    this.setPlayerHp(0, 1);
 
     this.introText = this.add.text(w / 2, h / 2, "", { fontSize: "20px", color: "#facc15", fontStyle: "bold", resolution: RES })
       .setOrigin(0.5).setAlpha(0).setDepth(10);
@@ -280,6 +323,45 @@ export default class CombatScene extends Phaser.Scene {
     }
   }
 
+  // 등판 갑옷 광택 하이라이트만 있을 뿐 눈/입은 없음(뒷모습이라 얼굴이 안 보임). 몬스터와 달리
+  // 전투 내내 같은 모양을 유지하므로 idle 애니메이션(숨쉬기/깜빡임) 대상에서도 제외.
+  private drawPlayer() {
+    const g = this.playerGfx;
+    g.clear();
+    const body: boolean[][] = [];
+    for (let row = 0; row < GRID; row++) {
+      body[row] = [];
+      for (let col = 0; col < GRID; col++) body[row][col] = playerBody(col, row);
+    }
+    const isBody = (col: number, row: number) => body[row]?.[col] ?? false;
+    for (let row = 0; row < GRID; row++) {
+      for (let col = 0; col < GRID; col++) {
+        if (!isBody(col, row)) continue;
+        const edge = !isBody(col + 1, row) || !isBody(col - 1, row) || !isBody(col, row + 1) || !isBody(col, row - 1);
+        const { x, y } = this.cellPx(col, row);
+        g.fillStyle(edge ? PLAYER_PALETTE.outline : PLAYER_PALETTE.body, 1);
+        g.fillRect(x, y, this.cell + 1, this.cell + 1);
+      }
+    }
+    const p = this.cellPx(CX, PLAYER_TORSO_TOP + 1);
+    g.fillStyle(PLAYER_PALETTE.shine, 0.5);
+    g.fillEllipse(p.x, p.y, this.cell * 3.4, this.cell * 1.3);
+  }
+
+  private drawHpBar(gfx: Phaser.GameObjects.Graphics, numText: Phaser.GameObjects.Text, x: number, y: number, w: number, hp: number, maxHp: number) {
+    const pct = maxHp > 0 ? Math.max(0, Math.min(1, hp / maxHp)) : 0;
+    const color = pct > 0.5 ? 0x16a34a : pct > 0.2 ? 0xf59e0b : 0xf43f5e;
+    gfx.clear();
+    gfx.fillStyle(0x000000, 0.35);
+    gfx.fillRoundedRect(x, y, w, HP_BAR_H, HP_BAR_H / 2);
+    const fillW = Math.min(w, Math.max(pct > 0 ? HP_BAR_H : 0, w * pct));
+    if (fillW > 0) {
+      gfx.fillStyle(color, 1);
+      gfx.fillRoundedRect(x, y, fillW, HP_BAR_H, HP_BAR_H / 2);
+    }
+    numText.setText(`${Math.max(0, Math.round(hp))}/${Math.round(maxHp)}`);
+  }
+
   // 정예/보스는 상시 배지를 라벨에 붙여 등장 인트로가 사라진 뒤에도 계속 구분되게 함.
   setEnemy(name: string, hp: number, maxHp: number, encounter: "battle" | "boss" | "elite" = "battle") {
     const prefix = encounter === "boss" ? "👑 보스 · " : encounter === "elite" ? "🗡️ 정예 · " : "";
@@ -293,7 +375,15 @@ export default class CombatScene extends Phaser.Scene {
   }
 
   setEnemyHp(hp: number, maxHp: number) {
-    this.enemyHpText.setText(asciiBar(hp, maxHp));
+    this.drawHpBar(this.enemyHpGfx, this.enemyHpNumText, this.enemyHpBarX, this.enemyHpBarY, this.enemyHpBarW, hp, maxHp);
+  }
+
+  setPlayerName(name: string) {
+    this.playerLabel.setText(name);
+  }
+
+  setPlayerHp(hp: number, maxHp: number) {
+    this.drawHpBar(this.playerHpGfx, this.playerHpNumText, this.playerHpBarX, this.playerHpBarY, this.playerHpBarW, hp, maxHp);
   }
 
   // 살아있는 느낌을 주는 대기 애니메이션 — 위치를 옮기는 트윈 대신 몇 개 픽셀만 주기적으로
@@ -317,21 +407,21 @@ export default class CombatScene extends Phaser.Scene {
   flashEnemyHit(damage: number) {
     this.cameras.main.flash(120, 255, 60, 60);
     this.tweens.add({ targets: this.enemyGfx, scaleX: 0.92, scaleY: 0.92, duration: 80, yoyo: true });
-    this.popText(this.scale.width / 2, this.scale.height * 0.3, `-${damage}`, "#f87171");
+    this.popText(this.enemyCenterX, this.enemyCenterY - this.cell * CY * 0.6, `-${damage}`, "#f87171");
   }
 
   flashPlayerBlock(amount: number) {
-    this.popText(this.scale.width / 2, this.scale.height * 0.85, `+${amount} 🛡️`, "#60a5fa");
+    this.popText(this.playerCenterX, this.playerCenterY - this.cell * CY * 0.6, `+${amount} 🛡️`, "#60a5fa");
   }
 
   flashPlayerHit(damage: number) {
     if (damage <= 0) return;
     this.cameras.main.shake(150, 0.006);
-    this.popText(this.scale.width / 2, this.scale.height * 0.9, `-${damage}`, "#f87171");
+    this.popText(this.playerCenterX, this.playerCenterY - this.cell * CY * 0.6, `-${damage}`, "#f87171");
   }
 
   playHeal(amount: number) {
-    this.popText(this.scale.width / 2, this.scale.height * 0.85, `+${amount} ❤️`, "#4ade80");
+    this.popText(this.playerCenterX, this.playerCenterY - this.cell * CY * 0.6, `+${amount} ❤️`, "#4ade80");
   }
 
   showIntro(label: string) {

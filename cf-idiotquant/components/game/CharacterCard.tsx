@@ -33,7 +33,7 @@ export default function CharacterCard({ character, effectiveStats }: {
   const infoText = infoKey === "class" ? cls.desc : infoKey ? STAT_DESC[infoKey] : null;
 
   return (
-    <div className="relative rounded-xl border border-orange-500/30 bg-orange-500/[0.06] px-2 py-1.5">
+    <div className="relative rounded-xl border border-orange-500/30 bg-orange-500/[0.06] px-2 py-1">
       <div className="flex items-center gap-1.5">
         <button type="button" onClick={() => toggle("class")}
           className={cn("shrink-0 text-[10px] font-black px-1.5 py-0.5 rounded-full transition-colors",

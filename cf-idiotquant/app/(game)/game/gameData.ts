@@ -18,15 +18,16 @@ export function acquireChance(item: any, floorsCleared: number): number {
 // 3층마다 뜨는 아이템 선택지 개수, 보스 처치 시 전설급 등장 확률
 export const ITEM_OFFER_COUNT = 3;
 
+export const PP_POTION_ITEM_ID = "buyMore";
+export const PP_POTION_COST = 10; // 매 층 상점에서 판매하는 PP 회복 물약 가격(골드)
+
 export const ITEM_POOL: ItemDef[] = [
   { id: "buffer", kind: "passive", name: "여유 자금", desc: "매 턴 시작 시 블록 +2", icon: "🧱", effect: { blockPerTurn: 2 } },
-  { id: "network", kind: "passive", name: "정보망", desc: "손패 드로우 +1", icon: "📡", effect: { drawBonus: 1 } },
-  { id: "leverage", kind: "passive", name: "레버리지", desc: "턴 시작 코스트 +1", icon: "⚡", effect: { energyBonus: 1 } },
-  { id: "diversify", kind: "passive", name: "분산 투자", desc: "코스트 1인 카드는 무료로 낼 수 있음", icon: "🧩", effect: { freeCostThreshold: 1 } },
+  { id: "network", kind: "passive", name: "정보망", desc: "전투 시작 시 뽑는 기술 +1", icon: "📡", effect: { drawBonus: 1 } },
   { id: "stoploss", kind: "active", name: "손절매", desc: "즉시 적에게 5 데미지", icon: "✂️", effect: { kind: "damage", amount: 5 } },
   { id: "loan", kind: "active", name: "긴급 대출", desc: "즉시 블록 +5", icon: "🏦", effect: { kind: "block", amount: 5 } },
   { id: "compound", kind: "active", name: "복리의 마법", desc: "즉시 HP +8 회복", icon: "🔄", effect: { kind: "heal", amount: 8 } },
-  { id: "buyMore", kind: "active", name: "추가 매수", desc: "카드 2장 즉시 드로우", icon: "🛒", effect: { kind: "draw", amount: 2 } },
+  { id: PP_POTION_ITEM_ID, kind: "active", name: "기력 회복", desc: "보유한 모든 기술의 PP를 최대치로 회복", icon: "💊", effect: { kind: "restorePP" } },
 ];
 
 // 힘/민첩/행운/체력 스탯 부스트 — 각 3단계(lv2=lv1×2, lv3=lv1×4). 다른 패시브 아이템과 동일하게
@@ -56,19 +57,17 @@ export const LEGEND_ITEMS: ItemDef[] = [
 export const ALL_ITEMS: ItemDef[] = [...ITEM_POOL, ...STAT_ITEM_POOL, ...LEGEND_ITEMS];
 
 // 컬렉션이 MIN_DECK(combatEngine) 미만일 때 채우는 스타터 카드 — 계정 덱에는 저장되지 않는 합성
-// 카드. 실제 컬렉션보다 확실히 약하게 잡아 수집 동기를 유지한다.
-// 코스트가 전투 턴마다 성장(1부터 시작)하는 구조라, 스타터 카드가 전부 코스트 2 이상이면 첫
-// 턴엔 아무것도 못 내는 상황이 생김 — "안전 마진"은 코스트 1로 낮춰 첫 턴에도 낼 수 있게 함.
-export const STARTER_DECK: Omit<CombatCard, "instanceId">[] = [
+// 카드. 실제 컬렉션보다 확실히 약하게 잡아 수집 동기를 유지한다(공격/방어는 낮게, PP도 낮게).
+export const STARTER_DECK: Omit<CombatCard, "instanceId" | "usesLeft">[] = [
   ...Array.from({ length: 6 }, (_, i) => ({
     ticker: `STARTER-A${i}`, name: "가치 원석", isStarter: true,
     item: { ticker: `STARTER-A${i}`, name: "가치 원석" },
-    stats: { attack: 6, shield: 1, cost: 2, refund: 1 },
+    stats: { attack: 6, shield: 1, maxUses: 3 },
   })),
   ...Array.from({ length: 4 }, (_, i) => ({
     ticker: `STARTER-B${i}`, name: "안전 마진", isStarter: true,
     item: { ticker: `STARTER-B${i}`, name: "안전 마진" },
-    stats: { attack: 4, shield: 3, cost: 1, refund: 1 },
+    stats: { attack: 4, shield: 3, maxUses: 3 },
   })),
 ];
 

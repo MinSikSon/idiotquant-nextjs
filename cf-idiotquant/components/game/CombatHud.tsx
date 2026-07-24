@@ -2,7 +2,8 @@
 
 // 전투 HUD 조각들 — HP바/에너지바/보유 아이템 목록. 순수 표시(+ ItemBar만 액티브 아이템 발동 콜백).
 
-import { useState } from "react";
+import { useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import { cn } from "@/lib/utils";
 import type { ItemDef, OwnedItem } from "@/app/(game)/game/gameTypes";
 
@@ -19,43 +20,6 @@ export function HpBar({ hp, maxHp, label }: { hp: number; maxHp: number; label: 
   );
 }
 
-// 동그라미 개수 = base(기본 4 + 레버리지 등 패시브의 energyBonus) + bonus(직전 턴 카드들의
-// 환급(🔋)으로 이번 턴에만 얹힌 보너스). 기본분은 노란색, 환급 보너스분은 카드의 🔋과 같은
-// 초록색으로 구분해서 "이번 턴엔 기본보다 N 더 쓸 수 있다"는 걸 한눈에 보이게 한다.
-// 채워진 동그라미 수 = 아직 안 쓴 코스트, 카드의 ●와 같은 기호를 써서 관계를 시각적으로 잇는다.
-export function EnergyBar({ energy, base, bonus }: { energy: number; base: number; bonus: number }) {
-  const total = Math.max(energy, base + bonus);
-  const dots = Array.from({ length: total }, (_, i) => {
-    const filled = i < energy;
-    const isBonus = i >= base;
-    return (
-      <span key={i} aria-hidden className={cn("w-2.5 h-2.5 rounded-full",
-        !filled ? "bg-black/10 dark:bg-white/10"
-          : isBonus ? "bg-emerald-400 shadow-[0_0_6px_rgba(52,211,153,0.7)]" : "bg-amber-400 shadow-[0_0_6px_rgba(251,191,36,0.7)]")} />
-    );
-  });
-
-  return (
-    <div className="flex items-center gap-1.5 min-w-0">
-      <span className="text-[9px] font-black text-neutral-400 shrink-0">코스트</span>
-      <div className="flex items-center gap-0.5">{dots}</div>
-      <span className="text-[10px] font-black tabular-nums text-amber-600 dark:text-amber-400 shrink-0">{energy}</span>
-      {bonus > 0 && <span className="text-[9px] font-black text-emerald-600 dark:text-emerald-400 shrink-0">🔋+{bonus}</span>}
-    </div>
-  );
-}
-
-// 이번 턴 동안 쌓인 방어력 — 적 턴 한 번 막고 사라지므로, 카드를 낼 때마다 바로바로
-// 눈에 보여야 "지금 방어를 쌓고 있다"는 걸 알 수 있다.
-export function ShieldBadge({ block }: { block: number }) {
-  return (
-    <div className="flex items-center gap-1 shrink-0">
-      <span aria-hidden className="text-sky-500">🛡️</span>
-      <span className="text-[10px] font-black tabular-nums text-sky-600 dark:text-sky-400">{block}</span>
-    </div>
-  );
-}
-
 // 적의 다음 공격이 얼마나 아플지 미리 보여주는 텔레그래프 — 공격력이 이제 고정 데미지가 아니라
 // 0~N 범위 주사위 굴림이라 정확한 수치 대신 범위로 표시한다.
 export function EnemyIntentBadge({ base }: { base: number }) {
@@ -63,6 +27,28 @@ export function EnemyIntentBadge({ base }: { base: number }) {
     <div className="flex items-center gap-1 shrink-0">
       <span aria-hidden className="text-rose-500">⚔️</span>
       <span className="text-[10px] font-black tabular-nums text-rose-600 dark:text-rose-400">0~{base} 예정</span>
+    </div>
+  );
+}
+
+// 하단 캐릭터 정보 패널용 — 아이콘+값(굵게, 크게)을 한 줄로, 라벨을 그 아래 작게. 가로
+// 스크롤로 숨겨지던 수치들을 전부 동시에 보이는 고정 그리드로 펼치기 위한 셀 하나.
+const TILE_TONE = {
+  amber: "text-amber-600 dark:text-amber-400",
+  sky: "text-sky-600 dark:text-sky-400",
+  rose: "text-rose-600 dark:text-rose-400",
+  emerald: "text-[#16a34a] dark:text-emerald-400",
+} as const;
+export function StatTile({ icon, label, value, tone = "amber", suffix }: {
+  icon: React.ReactNode; label: string; value: React.ReactNode; tone?: keyof typeof TILE_TONE; suffix?: React.ReactNode;
+}) {
+  return (
+    <div className="rounded-xl bg-white/85 dark:bg-white/[0.06] border border-black/5 dark:border-white/10 py-1 text-center">
+      <p className={cn("flex items-center justify-center gap-0.5 text-xs font-black tabular-nums leading-none", TILE_TONE[tone])}>
+        {icon}{value}
+      </p>
+      {suffix && <p className="text-[8px] font-bold text-emerald-500 mt-0.5 leading-none">{suffix}</p>}
+      <p className="text-[7px] font-bold text-neutral-400 uppercase tracking-wider mt-0.5 leading-none">{label}</p>
     </div>
   );
 }
@@ -75,18 +61,51 @@ export function ItemBar({ ownedDefs, ownedItems, onUseActive, canUseActive }: {
   onUseActive: (instanceId: string) => void; canUseActive: boolean;
 }) {
   const [selected, setSelected] = useState<string | null>(null);
+  const [popoverPos, setPopoverPos] = useState<{ top: number; left: number } | null>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
   if (ownedItems.length === 0) return null;
   const selectedOwned = ownedItems.find(o => o.instanceId === selected);
   const selectedDef = selectedOwned && ownedDefs.find(d => d.id === selectedOwned.defId);
+
+  const toggle = (instanceId: string) => {
+    setSelected(s => {
+      const next = s === instanceId ? null : instanceId;
+      if (next && containerRef.current) {
+        const r = containerRef.current.getBoundingClientRect();
+        setPopoverPos({ top: r.bottom + 6, left: r.left + r.width / 2 });
+      }
+      return next;
+    });
+  };
+
+  // 이 행은 부모(page.tsx)에서 h-8 overflow-y-hidden 가로 스크롤 컨테이너로 감싸져 있어(다른
+  // HUD 배지들과 나란히 배치하기 위함) absolute top-full 팝오버가 그 안에서 잘려 안 보이는
+  // 문제가 있었다 — document.body로 포탈해서 그 클리핑을 완전히 벗어나게 함.
+  const popover = selectedDef && popoverPos && (
+    <div className="fixed z-50 -translate-x-1/2 w-max max-w-[220px] rounded-lg backdrop-blur-md bg-white/95 dark:bg-[#242320]/95 border border-black/5 dark:border-white/10 shadow-lg px-2 py-1.5 text-center"
+      style={{ top: popoverPos.top, left: popoverPos.left }}>
+      <p className="text-[10px] font-black text-neutral-800 dark:text-neutral-100">{selectedDef.name}</p>
+      <p className="text-[9px] text-neutral-500 dark:text-neutral-400 leading-tight">{selectedDef.desc}</p>
+      {selectedDef.kind === "active" && (
+        <button type="button" disabled={!canUseActive}
+          onClick={() => { onUseActive(selectedOwned!.instanceId); setSelected(null); }}
+          className={cn("mt-1 px-3 py-1 rounded-full text-[10px] font-black transition-colors",
+            canUseActive ? "bg-amber-500 text-white active:scale-95" : "bg-black/10 dark:bg-white/10 text-neutral-400 cursor-not-allowed")}>
+          사용하기
+        </button>
+      )}
+    </div>
+  );
+
   return (
-    <div className="relative flex items-center gap-1 flex-wrap justify-center">
+    <div ref={containerRef} className="flex items-center gap-1 flex-wrap justify-center">
       {ownedItems.map(o => {
         const def = ownedDefs.find(d => d.id === o.defId);
         if (!def) return null;
         const isActive = def.kind === "active";
         return (
           <button key={o.instanceId} type="button"
-            onClick={() => setSelected(s => s === o.instanceId ? null : o.instanceId)}
+            onClick={() => toggle(o.instanceId)}
             className={cn("inline-flex items-center justify-center w-7 h-7 rounded-full text-sm shrink-0 border transition-all active:scale-90",
               selected === o.instanceId ? "ring-2 ring-offset-1 ring-offset-white dark:ring-offset-[#242320]" : "",
               isActive ? cn("bg-amber-500/10 border-amber-500/40", selected === o.instanceId && "ring-amber-500")
@@ -96,22 +115,7 @@ export function ItemBar({ ownedDefs, ownedItems, onUseActive, canUseActive }: {
           </button>
         );
       })}
-      {/* absolute — 설명이 펼쳐져도 이 행의 높이(=상단 HUD 전체 높이)가 안 변해야 캔버스가
-          같이 리사이즈되며 흔들리는 문제(과거 HUD 배지 높이 고정 작업의 이유)가 재발하지 않음 */}
-      {selectedDef && (
-        <div className="absolute top-full mt-1 left-1/2 -translate-x-1/2 z-20 w-max max-w-[220px] rounded-lg backdrop-blur-md bg-white/95 dark:bg-[#242320]/95 border border-black/5 dark:border-white/10 shadow-lg px-2 py-1.5 text-center">
-          <p className="text-[10px] font-black text-neutral-800 dark:text-neutral-100">{selectedDef.name}</p>
-          <p className="text-[9px] text-neutral-500 dark:text-neutral-400 leading-tight">{selectedDef.desc}</p>
-          {selectedDef.kind === "active" && (
-            <button type="button" disabled={!canUseActive}
-              onClick={() => { onUseActive(selectedOwned!.instanceId); setSelected(null); }}
-              className={cn("mt-1 px-3 py-1 rounded-full text-[10px] font-black transition-colors",
-                canUseActive ? "bg-amber-500 text-white active:scale-95" : "bg-black/10 dark:bg-white/10 text-neutral-400 cursor-not-allowed")}>
-              사용하기
-            </button>
-          )}
-        </div>
-      )}
+      {typeof document !== "undefined" && popover ? createPortal(popover, document.body) : popover}
     </div>
   );
 }
