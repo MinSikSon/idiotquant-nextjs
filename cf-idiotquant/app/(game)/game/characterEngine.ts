@@ -24,6 +24,7 @@ export function killXpFor(item: any): number {
 export interface ClassDef {
   id: CharClass;
   name: string;
+  desc: string; // 상태창에서 직업 라벨 탭 시 보여줄 특성 설명
   baseStats: CharacterStats;
   growthPerLevel: CharacterStats; // 레벨업마다 자동으로 오르는 스탯(직업색)
   selectable: boolean;
@@ -32,6 +33,7 @@ export interface ClassDef {
 export const CLASS_DEFS: Record<CharClass, ClassDef> = {
   warrior: {
     id: "warrior", name: "전사",
+    desc: "힘과 체력 위주로 성장하는 근접 전투 특화 직업. 레벨업마다 힘+1·체력+1이 자동으로 오릅니다.",
     baseStats: { str: 1, dex: 0, luk: 0, vit: 10 },
     growthPerLevel: { str: 1, dex: 0, luk: 0, vit: 1 },
     selectable: true,
