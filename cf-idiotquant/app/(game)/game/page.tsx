@@ -34,7 +34,7 @@ import { useGameRun, deckTotal, type DeckItem } from "./useGameRun";
 import { HpBar, EnergyBar, ShieldBadge, EnemyIntentBadge, ItemBar } from "@/components/game/CombatHud";
 import CombatLog from "@/components/game/CombatLog";
 import CharacterCard from "@/components/game/CharacterCard";
-import DiceRollOverlay from "@/components/game/DiceRollOverlay";
+import DiceBadge from "@/components/game/DiceBadge";
 
 const PhaserCombatCanvas = dynamic(() => import("@/components/game/PhaserCombatCanvas"), { ssr: false });
 const HandView = dynamic(() => import("@/components/game/HandView"), { ssr: false });
@@ -653,6 +653,7 @@ function GameContent() {
                 <div className="flex-1 min-h-0 flex flex-col">
                   <div className="flex-1 min-h-0 flex flex-col rounded-2xl overflow-hidden backdrop-blur-md bg-white/60 dark:bg-white/[0.03] border border-black/5 dark:border-white/10">
                     <HandView cards={run.hand} energy={run.player.energy} freeCostThreshold={run.passive.freeCostThreshold} onPlayCard={run.playHandCard}
+                      leftOverlay={<DiceBadge playerRoll={run.lastPlayerRoll} enemyRoll={run.lastEnemyRoll} />}
                       hudOverlay={<EnergyBar vertical energy={run.player.energy} base={run.player.energyMax + run.passive.energyBonus} bonus={run.turnBonusCost} />}>
                       <PhaserCombatCanvas enemy={run.enemy} player={run.player} introLabel={introLabel} />
                     </HandView>
@@ -684,7 +685,7 @@ function GameContent() {
             <div className="space-y-3">
               {[
                 { icon: "⚔️", text: <>내 덱(보유 카드)이 곧 전투 카드예요. 매 턴 <b className="text-neutral-800 dark:text-neutral-100">손패</b>에서 카드를 <b className="text-neutral-800 dark:text-neutral-100">전장으로 드래그</b>해 발동하세요 — 카드의 공격력은 <b className="text-neutral-800 dark:text-neutral-100">0~N 범위</b>로 20면체 주사위를 굴려 실제 피해가 정해지고, 방어력만큼 내 블록을 올려요.</> },
-                { icon: "🎲", text: <>주사위 눈이 <b className="text-amber-500 dark:text-amber-400">자연 20</b>이면 <b className="text-amber-500 dark:text-amber-400">크리티컬</b>(최대 피해의 2배)! 몬스터의 공격도 같은 방식으로 굴려요. 상태창에서 자동/수동 굴림을 고를 수 있어요.</> },
+                { icon: "🎲", text: <>주사위 눈이 <b className="text-amber-500 dark:text-amber-400">자연 20</b>이면 <b className="text-amber-500 dark:text-amber-400">크리티컬</b>(최대 피해의 2배)! 몬스터의 공격도 같은 방식으로 굴려요. 전장 왼쪽의 주사위에서 결과를 확인할 수 있어요.</> },
                 { icon: "●", text: <>카드를 내려면 <b className="text-neutral-800 dark:text-neutral-100">코스트</b>가 필요해요 — 전투 시작 시 1개로 시작해 <b className="text-neutral-800 dark:text-neutral-100">내 턴마다 +1</b>씩 늘어나 최대 10개까지 커져요.</> },
                 { icon: "🔋", text: <>카드의 🔋(환급) 숫자만큼 <b className="text-neutral-800 dark:text-neutral-100">다음 턴 코스트</b>가 미리 충전돼요 — 이번 턴엔 안 쓰이고 다음 턴 시작할 때 동그라미로 더해져요.</> },
                 { icon: "🛡️", text: <>쌓인 방어력은 상단 🛡️ 배지에 실시간으로 표시돼요. <b className="text-neutral-800 dark:text-neutral-100">적 턴 하나만</b> 막고 사라지니, 적의 "다음 턴 예정 공격력 범위"를 미리 보고 방어할지 판단하세요.</> },
@@ -721,19 +722,6 @@ function GameContent() {
             </p>
             <div className="mb-3">
               <CharacterCard character={run.character} effectiveStats={run.effectiveStats} hp={run.player.hp} maxHp={run.player.maxHp} />
-            </div>
-            <div className="flex items-center justify-between mb-3">
-              <span className="text-xs font-black text-neutral-700 dark:text-neutral-200">주사위 굴림</span>
-              <div className="inline-flex rounded-full bg-black/[0.04] dark:bg-white/[0.06] p-0.5">
-                <button type="button" onClick={() => run.setDiceAutoRoll(true)}
-                  className={cn("px-2.5 py-1 rounded-full text-[10px] font-black transition-colors", run.diceAutoRoll ? "bg-[#16a34a] text-white" : "text-neutral-500")}>
-                  자동
-                </button>
-                <button type="button" onClick={() => run.setDiceAutoRoll(false)}
-                  className={cn("px-2.5 py-1 rounded-full text-[10px] font-black transition-colors", !run.diceAutoRoll ? "bg-[#16a34a] text-white" : "text-neutral-500")}>
-                  수동
-                </button>
-              </div>
             </div>
             <div className="grid grid-cols-3 gap-1.5 mb-3">
               <div className="rounded-lg bg-black/[0.03] dark:bg-white/[0.04] py-1.5 text-center">
@@ -828,8 +816,6 @@ function GameContent() {
           </div>
         </div>
       )}
-
-      <DiceRollOverlay roll={run.lastRoll} auto={run.diceAutoRoll} onDismiss={run.dismissRoll} />
     </div>
   );
 }
