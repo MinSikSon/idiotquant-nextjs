@@ -163,8 +163,7 @@ export default class CombatScene extends Phaser.Scene {
       }
     }
 
-    // 눈 — 큼직한 흰자에 아주 작은 눈동자를 아래쪽에 콕 찍어 "하찮고 멍한" 인상을 줌
-    // (동공이 클수록 야무져 보이고, 작을수록 얼빠진 귀여움이 남). 눈동자는 여전히 좌우
+    // 눈 — 흰자 없이 동그란 눈동자 하나만 콕 찍어서 "하찮고 멍한" 인상을 줌. 눈동자는 좌우
     // 대칭 중앙에 고정 — 예전에 바깥쪽으로 쏠려 무섭다는 피드백을 받았던 것과 같은 실수를
     // 반복하지 않기 위함. 깜빡일 땐 얇은 곡선으로.
     for (const dir of [-1, 1]) {
@@ -175,12 +174,10 @@ export default class CombatScene extends Phaser.Scene {
         g.fillStyle(s.palette.outline, 1);
         g.fillRoundedRect(cxPx - this.cell * 0.7, cyPx - this.cell * 0.12, this.cell * 1.4, this.cell * 0.24, this.cell * 0.12);
       } else {
-        g.fillStyle(0xffffff, 1);
-        g.fillCircle(cxPx, cyPx, this.cell * 1.05);
         g.fillStyle(0x1f2937, 1);
-        g.fillCircle(cxPx, cyPx + this.cell * 0.32, this.cell * 0.3);
+        g.fillCircle(cxPx, cyPx + this.cell * 0.15, this.cell * 0.42);
         g.fillStyle(0xffffff, 0.95);
-        g.fillCircle(cxPx - this.cell * 0.1, cyPx + this.cell * 0.2, this.cell * 0.1);
+        g.fillCircle(cxPx - this.cell * 0.12, cyPx - this.cell * 0.02, this.cell * 0.12);
       }
     }
 
