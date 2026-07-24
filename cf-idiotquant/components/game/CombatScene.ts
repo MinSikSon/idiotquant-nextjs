@@ -21,6 +21,9 @@ type ShapeParams = { ry: number; bodyBottom: number; flare: number };
 const SHAPE_NORMAL: ShapeParams = { ry: 5.5, bodyBottom: 13, flare: 2.6 };
 const SHAPE_SQUISH: ShapeParams = { ry: 4.6, bodyBottom: 12, flare: 3.6 };
 
+const SPIKE_ROW_OFFSET = 1.5; // 정수리 뾰족점이 돔 타원보다 몇 줄 위까지 튀어나오는지
+const SPIKE_HALF_WIDTH = 0.6; // 뾰족점의 중심 기준 반폭(칸)
+
 function inBody(col: number, row: number, shape: ShapeParams): boolean {
   if (row > shape.bodyBottom) return false;
   const dx = col + 0.5 - CX;
@@ -29,8 +32,8 @@ function inBody(col: number, row: number, shape: ShapeParams): boolean {
     const nx = dx / RX;
     if (nx * nx + ny * ny <= 1) return true;
     // 정수리 뾰족점 — 돔 타원 바로 위 한 줄만, 중앙 두 칸 폭으로 살짝 튀어나오게
-    const nyBelow = (row + 1.5 - CY) / shape.ry;
-    return nyBelow * nyBelow <= 1 && Math.abs(dx) <= 0.6;
+    const nyBelow = (row + SPIKE_ROW_OFFSET - CY) / shape.ry;
+    return nyBelow * nyBelow <= 1 && Math.abs(dx) <= SPIKE_HALF_WIDTH;
   }
   const t = (row - CY) / (shape.bodyBottom - CY); // 0(적도) → 1(바닥)
   const flared = RX + t * shape.flare;
@@ -101,7 +104,7 @@ export default class CombatScene extends Phaser.Scene {
     this.cell = Math.max(4, Math.floor(Math.min(w * 0.9, h * 0.62) / GRID));
     this.spec = randomMonster();
     this.enemyGfx = this.add.graphics({ x: w / 2, y: h * 0.48 });
-    this.redraw();
+    this.drawMonster();
 
     this.enemyHpText = this.add.text(w / 2, h * 0.88, asciiBar(0, 1), {
       fontFamily: "monospace", fontSize: "11px", color: "#4ade80", fontStyle: "bold", resolution: RES,
@@ -118,21 +121,26 @@ export default class CombatScene extends Phaser.Scene {
     return { x: (col - CX) * this.cell, y: (row - CY) * this.cell };
   }
 
-  private redraw() {
-    this.drawMonster(this.blinking, this.squished);
-  }
-
-  private drawMonster(blink: boolean, squish: boolean) {
+  private drawMonster() {
     const g = this.enemyGfx;
     const s = this.spec;
-    const shape = squish ? SHAPE_SQUISH : SHAPE_NORMAL;
+    const shape = this.squished ? SHAPE_SQUISH : SHAPE_NORMAL;
     g.clear();
+
+    // 몸통 판정을 칸마다 한 번만 계산해 캐시해두고(테두리 판정에서 이웃 4칸 재조회 시 재사용),
+    // inBody() 중복 호출을 줄인다.
+    const body: boolean[][] = [];
+    for (let row = 0; row < GRID; row++) {
+      body[row] = [];
+      for (let col = 0; col < GRID; col++) body[row][col] = inBody(col, row, shape);
+    }
+    const isBody = (col: number, row: number) => body[row]?.[col] ?? false;
 
     // 몸통 — 칸마다 타원 안쪽인지 검사해 채우고, 바로 바깥 칸이 하나라도 비어 있으면 외곽선색으로.
     for (let row = 0; row < GRID; row++) {
       for (let col = 0; col < GRID; col++) {
-        if (!inBody(col, row, shape)) continue;
-        const edge = !inBody(col + 1, row, shape) || !inBody(col - 1, row, shape) || !inBody(col, row + 1, shape) || !inBody(col, row - 1, shape);
+        if (!isBody(col, row)) continue;
+        const edge = !isBody(col + 1, row) || !isBody(col - 1, row) || !isBody(col, row + 1) || !isBody(col, row - 1);
         const { x, y } = this.cellPx(col, row);
         g.fillStyle(edge ? s.palette.outline : s.palette.body, 1);
         g.fillRect(x, y, this.cell + 1, this.cell + 1); // +1로 인접 칸 사이 미세한 틈(seam) 방지
@@ -163,7 +171,7 @@ export default class CombatScene extends Phaser.Scene {
       const ex = CX + dir * s.eyeGap;
       const p = this.cellPx(ex, CY - 0.5);
       const cxPx = p.x + this.cell / 2, cyPx = p.y + this.cell / 2;
-      if (blink) {
+      if (this.blinking) {
         g.fillStyle(s.palette.outline, 1);
         g.fillRoundedRect(cxPx - this.cell * 0.7, cyPx - this.cell * 0.12, this.cell * 1.4, this.cell * 0.24, this.cell * 0.12);
       } else {
@@ -190,7 +198,7 @@ export default class CombatScene extends Phaser.Scene {
     this.spec = randomMonster();
     this.blinking = false;
     this.squished = false;
-    this.redraw();
+    this.drawMonster();
     this.setEnemyHp(hp, maxHp);
   }
 
@@ -204,14 +212,14 @@ export default class CombatScene extends Phaser.Scene {
   private startIdleAnim() {
     this.time.addEvent({
       delay: 550, loop: true,
-      callback: () => { this.squished = !this.squished; this.redraw(); },
+      callback: () => { this.squished = !this.squished; this.drawMonster(); },
     });
     this.time.addEvent({
       delay: Phaser.Math.Between(2200, 3600), loop: true,
       callback: () => {
         this.blinking = true;
-        this.redraw();
-        this.time.delayedCall(120, () => { this.blinking = false; this.redraw(); });
+        this.drawMonster();
+        this.time.delayedCall(120, () => { this.blinking = false; this.drawMonster(); });
       },
     });
   }

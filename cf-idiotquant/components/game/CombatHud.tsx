@@ -25,23 +25,21 @@ export function HpBar({ hp, maxHp, label }: { hp: number; maxHp: number; label: 
 // vertical: 전장 오른쪽 가장자리에 세로로 띄우는 배지(동그라미가 아래→위로 채워짐, 자원계 UI 관례).
 export function EnergyBar({ energy, base, bonus, vertical }: { energy: number; base: number; bonus: number; vertical?: boolean }) {
   const total = Math.max(energy, base + bonus);
-  const dot = (i: number) => {
+  const dots = Array.from({ length: total }, (_, i) => {
     const filled = i < energy;
     const isBonus = i >= base;
     return (
-      <span key={i} aria-hidden className={cn(vertical ? "w-2.5 h-2.5" : "w-2.5 h-2.5", "rounded-full",
+      <span key={i} aria-hidden className={cn("w-2.5 h-2.5 rounded-full",
         !filled ? "bg-black/10 dark:bg-white/10"
           : isBonus ? "bg-emerald-400 shadow-[0_0_6px_rgba(52,211,153,0.7)]" : "bg-amber-400 shadow-[0_0_6px_rgba(251,191,36,0.7)]")} />
     );
-  };
+  });
 
   if (vertical) {
     return (
       <div className="flex flex-col items-center gap-1 px-1.5 py-2 rounded-2xl backdrop-blur-md bg-white/85 dark:bg-white/[0.06] border border-black/5 dark:border-white/10 shadow-[0_6px_18px_-8px_rgba(0,0,0,0.35)]">
         <span className="text-[8px] font-black text-neutral-400 whitespace-nowrap">코스트</span>
-        <div className="flex flex-col-reverse items-center gap-0.5 py-0.5">
-          {Array.from({ length: total }, (_, i) => dot(i))}
-        </div>
+        <div className="flex flex-col-reverse items-center gap-0.5 py-0.5">{dots}</div>
         <span className="text-[10px] font-black tabular-nums text-amber-600 dark:text-amber-400">{energy}</span>
         {bonus > 0 && <span className="text-[8px] font-black text-emerald-600 dark:text-emerald-400 whitespace-nowrap">🔋+{bonus}</span>}
       </div>
@@ -51,9 +49,7 @@ export function EnergyBar({ energy, base, bonus, vertical }: { energy: number; b
   return (
     <div className="flex items-center gap-1.5 min-w-0">
       <span className="text-[9px] font-black text-neutral-400 shrink-0">코스트</span>
-      <div className="flex items-center gap-0.5">
-        {Array.from({ length: total }, (_, i) => dot(i))}
-      </div>
+      <div className="flex items-center gap-0.5">{dots}</div>
       <span className="text-[10px] font-black tabular-nums text-amber-600 dark:text-amber-400 shrink-0">{energy}</span>
       {bonus > 0 && <span className="text-[9px] font-black text-emerald-600 dark:text-emerald-400 shrink-0">🔋+{bonus}</span>}
     </div>
