@@ -163,10 +163,10 @@ export default class CombatScene extends Phaser.Scene {
       }
     }
 
-    // 눈 — 흰자 위에 중앙 정렬된 검은 눈동자 + 작은 반짝임 점(고전 슬라임 캐릭터의 눈 관례
-    // 참고). 예전엔 흰자 없이 어두운 원만 써서 표정이 흐릿했고, 그 전엔 눈동자가 바깥쪽으로
-    // 쏠려 있어 무섭다는 피드백을 받았음 — 이번엔 흰자를 넣되 눈동자는 계속 중앙에 고정.
-    // 깜빡일 땐 얇은 곡선으로.
+    // 눈 — 큼직한 흰자에 아주 작은 눈동자를 아래쪽에 콕 찍어 "하찮고 멍한" 인상을 줌
+    // (동공이 클수록 야무져 보이고, 작을수록 얼빠진 귀여움이 남). 눈동자는 여전히 좌우
+    // 대칭 중앙에 고정 — 예전에 바깥쪽으로 쏠려 무섭다는 피드백을 받았던 것과 같은 실수를
+    // 반복하지 않기 위함. 깜빡일 땐 얇은 곡선으로.
     for (const dir of [-1, 1]) {
       const ex = CX + dir * s.eyeGap;
       const p = this.cellPx(ex, CY - 0.5);
@@ -176,11 +176,11 @@ export default class CombatScene extends Phaser.Scene {
         g.fillRoundedRect(cxPx - this.cell * 0.7, cyPx - this.cell * 0.12, this.cell * 1.4, this.cell * 0.24, this.cell * 0.12);
       } else {
         g.fillStyle(0xffffff, 1);
-        g.fillCircle(cxPx, cyPx, this.cell * 0.95);
+        g.fillCircle(cxPx, cyPx, this.cell * 1.05);
         g.fillStyle(0x1f2937, 1);
-        g.fillCircle(cxPx, cyPx + this.cell * 0.08, this.cell * 0.5);
+        g.fillCircle(cxPx, cyPx + this.cell * 0.32, this.cell * 0.3);
         g.fillStyle(0xffffff, 0.95);
-        g.fillCircle(cxPx - this.cell * 0.18, cyPx - this.cell * 0.2, this.cell * 0.17);
+        g.fillCircle(cxPx - this.cell * 0.1, cyPx + this.cell * 0.2, this.cell * 0.1);
       }
     }
 
