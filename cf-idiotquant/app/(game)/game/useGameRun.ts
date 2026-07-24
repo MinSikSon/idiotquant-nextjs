@@ -8,11 +8,11 @@ import { computeValueScore } from "@/lib/utils/valueScore";
 import { addDeckCard, getWallet, syncBestStreak, type DeckCardSnapshot } from "@/lib/features/deck/deckAPI";
 import {
   buildRunDeck, drawHand, enemyForFloor, playCard as engPlayCard,
-  startTurn, resolveEnemyTurn, useActiveItem as engUseActiveItem, checkOutcome, aggregatePassive,
-  battleEnergyMax, bossExtraChoiceChance,
-  ENERGY_MAX, HAND_SIZE, BASE_HP, VIT_HP_MULTIPLIER,
+  resolveEnemyTurn, useActiveItem as engUseActiveItem, checkOutcome, aggregatePassive,
+  bossExtraChoiceChance,
+  HAND_SIZE, BASE_HP, VIT_HP_MULTIPLIER,
 } from "./combatEngine";
-import { ALL_ITEMS, STARTER_DECK, ITEM_OFFER_COUNT, pickItemChoices, acquireChance } from "./gameData";
+import { ALL_ITEMS, STARTER_DECK, ITEM_OFFER_COUNT, PP_POTION_ITEM_ID, PP_POTION_COST, pickItemChoices, acquireChance } from "./gameData";
 import { ACHIEVEMENTS } from "./gameCollectibles";
 import { useCharacter } from "./useCharacter";
 import { killXpFor, XP_PER_ATTACK } from "./characterEngine";
@@ -44,13 +44,14 @@ export function deckFailReason(res: any): string {
   return res?.error ? String(res.error) : "저장 실패";
 }
 
-// 조우 유형 — 보스(10층 고정) 제외, 층이 깊을수록 상인/휴식/정예 확률 증가
+// 조우 유형 — 보스(10층 고정) 제외, 층이 깊을수록 휴식/정예 확률 증가. 상인은 더 이상 확률
+// 조우가 아니라 매 층 클리어 후 항상 뜨는 상점("shop" phase)으로 대체됨.
 function pickEncounter(roundNum: number): EncounterType {
   if (roundNum === 0) return "battle";
   if (roundNum % 10 === 0) return "boss";
   const specialChance = Math.min(0.35, 0.05 + Math.floor(roundNum / 5) * 0.05);
   if (Math.random() < specialChance) {
-    const pool: EncounterType[] = roundNum >= 5 ? ["merchant", "rest", "elite"] : ["merchant", "rest"];
+    const pool: EncounterType[] = roundNum >= 5 ? ["rest", "elite"] : ["rest"];
     return pool[Math.floor(Math.random() * pool.length)];
   }
   return "battle";
@@ -70,7 +71,6 @@ type SavedRun = {
   gold: number; newBest: boolean;
   ownedItems: OwnedItem[]; itemChoices: ItemDef[] | null; activeBoost: { mult: number; roundsLeft: number } | null;
   player: PlayerState; enemy: EnemyState | null; pile: Pile;
-  reservedRefund: number; battleTurn: number;
   log: LogEntry[]; lastResult: { win: boolean; goldGain?: number } | null;
   acquired: DeckCardSnapshot[];
 };
@@ -90,11 +90,9 @@ export function useGameRun(params: { pool: any[]; deck: DeckItem[]; setDeck: (fn
   const [itemChoices, setItemChoices] = useState<ItemDef[] | null>(null);
   const [activeBoost, setActiveBoost] = useState<{ mult: number; roundsLeft: number } | null>(null); // 상점 확률 부스트(세션 로컬, 층 클리어마다 소진)
 
-  const [player, setPlayer] = useState<PlayerState>({ hp: BASE_HP, maxHp: BASE_HP, block: 0, energy: ENERGY_MAX, energyMax: ENERGY_MAX });
+  const [player, setPlayer] = useState<PlayerState>({ hp: BASE_HP, maxHp: BASE_HP, block: 0 });
   const [enemy, setEnemy] = useState<EnemyState | null>(null);
   const [pile, setPile] = useState<Pile>({ draw: [], hand: [], discard: [] });
-  const reservedRefundRef = useRef(0); // 이번 턴에 낸 카드들의 refund 합 — 다음 턴 시작 시 에너지로 편입
-  const [battleTurn, setBattleTurn] = useState(1); // 이번 전투에서 몇 번째 내 턴인지(1부터) — 코스트 성장의 기준
 
   const { character, characterLoaded, gainXp } = useCharacter();
   const [lastPlayerRoll, setLastPlayerRoll] = useState<AttackRollResult | null>(null);
@@ -165,8 +163,6 @@ export function useGameRun(params: { pool: any[]; deck: DeckItem[]; setDeck: (fn
       setActiveBoost(saved.activeBoost ?? null);
       setPlayer(saved.player); setEnemy(saved.enemy);
       setPile(saved.pile ?? { draw: [], hand: [], discard: [] });
-      reservedRefundRef.current = saved.reservedRefund ?? 0;
-      setBattleTurn(saved.battleTurn ?? 1);
       setLog(saved.log ?? []);
       setLastResult(saved.lastResult ?? null);
       setAcquired(saved.acquired ?? []);
@@ -226,72 +222,65 @@ export function useGameRun(params: { pool: any[]; deck: DeckItem[]; setDeck: (fn
     }).catch(() => setSaveFail("네트워크 오류"));
   }, [best, isLoggedIn, availableItemPool, unlockedLegendItems, setDeck, activeBoost, pushLog, gainXp, effectiveStats.luk]);
 
-  // 손패 카드 발동 — dnd-kit 드롭 이벤트에서 호출. 공격력은 이제 주사위로 굴려서 정해짐.
+  // 내 행동(기술/아이템/패스) 직후 곧바로 적 턴을 진행 — 1행동=1턴이라 별도 "턴 종료" 버튼이
+  // 없고, 카드/아이템을 쓴 함수들이 마지막에 이 함수 하나로 마무리한다. afterPlayer/afterEnemy는
+  // 이미 그 행동의 효과(데미지/블록/회복)까지 반영된 상태.
+  const resolveTurn = useCallback((afterPlayer: PlayerState, afterEnemy: EnemyState) => {
+    setEnemy(afterEnemy);
+    if (checkOutcome(afterPlayer, afterEnemy) === "win") { setPlayer(afterPlayer); handleWin(afterEnemy, encounter, roundNum); return; }
+    const { player: finalPlayer, roll } = resolveEnemyTurn(afterPlayer, afterEnemy, passive);
+    setLastEnemyRoll(roll);
+    const blocked = Math.min(roll.totalDamage, afterPlayer.block + passive.damageReduce);
+    const dmg = Math.max(0, roll.totalDamage - blocked);
+    const critTxt = roll.isCrit ? " 💥크리티컬!" : "";
+    pushLog("enemy", `${afterEnemy.item?.name ?? "적"}의 공격! 🎲${roll.faces.join("/")}${critTxt} → ⚔${roll.totalDamage} 중 🛡${blocked} 경감 → ${dmg} 피해`);
+    setPlayer(finalPlayer);
+    if (finalPlayer.hp <= 0) { setPhase("over"); setLastResult({ win: false }); pushLog("system", "💀 쓰러졌습니다..."); }
+  }, [encounter, roundNum, passive, handleWin, pushLog]);
+
+  // 기술(카드) 발동 — 탭하면 즉시. PP(usesLeft) 소진 시 무시. 공격력은 주사위로 굴려서 정해짐.
   const playHandCard = useCallback((instanceId: string) => {
     if (phase !== "battling" || !enemy) return;
     const card = pile.hand.find(c => c.instanceId === instanceId);
-    if (!card) return;
-    const cost = card.stats.cost <= passive.freeCostThreshold ? 0 : card.stats.cost;
-    if (player.energy < cost) return;
+    if (!card || card.usesLeft <= 0) return;
     const result = engPlayCard(player, enemy, card, passive, effectiveStats);
-    setPlayer(result.player);
-    setEnemy(result.enemy);
-    setPile(p => ({ ...p, hand: p.hand.filter(c => c.instanceId !== instanceId), discard: [...p.discard, card] }));
-    reservedRefundRef.current += card.stats.refund;
+    setPile(p => ({ ...p, hand: p.hand.map(c => c.instanceId === instanceId ? { ...c, usesLeft: c.usesLeft - 1 } : c) }));
     gainXp(XP_PER_ATTACK);
     setLastPlayerRoll(result.roll);
     const critTxt = result.roll.isCrit ? " 💥크리티컬!" : "";
     const parts = [`🎲${result.roll.faces.join("/")}${critTxt} → ⚔${result.roll.totalDamage} 피해`];
     if (card.stats.shield > 0) parts.push(`🛡${card.stats.shield} 방어`);
-    if (card.stats.refund > 0) parts.push(`🔋다음 턴 코스트 +${card.stats.refund}`);
-    pushLog("player", `${card.name} 발동 — ${parts.join(", ")} (코스트 -${cost})`);
-    if (checkOutcome(result.player, result.enemy) === "win") handleWin(result.enemy, encounter, roundNum);
-  }, [phase, enemy, pile.hand, passive, player, effectiveStats, encounter, roundNum, handleWin, pushLog, gainXp]);
+    pushLog("player", `${card.name} 발동 (PP ${card.usesLeft - 1}/${card.stats.maxUses}) — ${parts.join(", ")}`);
+    resolveTurn(result.player, result.enemy);
+  }, [phase, enemy, pile.hand, passive, player, effectiveStats, pushLog, gainXp, resolveTurn]);
 
-  // 액티브 아이템 즉시 발동(1회 소모)
+  // 액티브 아이템 즉시 발동(1회 소모) — 기술과 동일하게 사용 즉시 턴을 소모.
   const useOwnedActiveItem = useCallback((instanceId: string) => {
     if (phase !== "battling" || !enemy) return;
     const owned = ownedItems.find(o => o.instanceId === instanceId);
     const def = owned && ALL_ITEMS.find(d => d.id === owned.defId);
     if (!owned || !def || def.kind !== "active") return;
-    const r = engUseActiveItem(player, enemy, pile.hand, pile.draw, pile.discard, def.effect as ActiveEffect);
-    setPlayer(r.player); setEnemy(r.enemy);
-    setPile({ hand: r.hand, draw: r.drawPile, discard: r.discardPile });
+    const r = engUseActiveItem(player, enemy, pile.hand, def.effect as ActiveEffect);
+    setPile(p => ({ ...p, hand: r.hand }));
     setOwnedItems(prev => prev.filter(o => o.instanceId !== instanceId));
     pushLog("item", `🎒 ${def.name} 사용 — ${def.desc}`);
-    if (checkOutcome(r.player, r.enemy) === "win") handleWin(r.enemy, encounter, roundNum);
-  }, [phase, enemy, ownedItems, player, pile, encounter, roundNum, handleWin, pushLog]);
+    resolveTurn(r.player, r.enemy);
+  }, [phase, enemy, ownedItems, player, pile.hand, pushLog, resolveTurn]);
 
-  // 턴 종료 — 적 턴 해석(적도 주사위 굴림) → (생존 시) 다음 턴 시작(코스트 성장+환급, 손패 재드로우)
-  const endTurn = useCallback(() => {
+  // 모든 기술 PP 소진 + 쓸 아이템도 없는 극단적 상황에서만 노출되는 패스 — 아무 효과 없이 턴만 넘김.
+  const passTurn = useCallback(() => {
     if (phase !== "battling" || !enemy) return;
-    const { player: afterEnemy, roll } = resolveEnemyTurn(player, enemy, passive);
-    setLastEnemyRoll(roll);
-    const blocked = Math.min(roll.totalDamage, player.block + passive.damageReduce);
-    const dmg = Math.max(0, roll.totalDamage - blocked);
-    const critTxt = roll.isCrit ? " 💥크리티컬!" : "";
-    pushLog("enemy", `${enemy.item?.name ?? "적"}의 공격! 🎲${roll.faces.join("/")}${critTxt} → ⚔${roll.totalDamage} 중 🛡${blocked} 경감 → ${dmg} 피해`);
-    setPlayer(afterEnemy);
-    if (afterEnemy.hp <= 0) { setPhase("over"); setLastResult({ win: false }); pushLog("system", "💀 쓰러졌습니다..."); return; }
-    const rr = reservedRefundRef.current; reservedRefundRef.current = 0;
-    const nextTurn = battleTurn + 1;
-    setBattleTurn(nextTurn);
-    setPlayer(p => startTurn({ ...p, energyMax: battleEnergyMax(nextTurn) }, passive, rr));
-    setPile(prev => {
-      const carryDiscard = [...prev.discard, ...prev.hand];
-      const r = drawHand(prev.draw, carryDiscard, HAND_SIZE + passive.drawBonus);
-      return { draw: r.drawPile, hand: r.hand, discard: r.discardPile };
-    });
-  }, [phase, enemy, player, passive, pushLog, battleTurn]);
+    pushLog("system", "쓸 수 있는 기술/아이템이 없어 턴을 넘깁니다.");
+    resolveTurn(player, enemy);
+  }, [phase, enemy, player, pushLog, resolveTurn]);
 
-  // 다음 라운드 진입 — 조우 판정 후 배틀(적 생성+손패 재드로우) 또는 이벤트(상인/휴식)
+  // 다음 라운드 진입 — 조우 판정 후 배틀(적 생성+기술셋 새로 드로우) 또는 이벤트(휴식)
   const advanceToRound = useCallback((nextRoundNum: number) => {
     const enc = pickEncounter(nextRoundNum);
     setRoundNum(nextRoundNum);
     setEncounter(enc);
     setLastResult(null); setDropped(false); setDropPrompt(false); setSaveFail(null); setPackOpening(false);
 
-    if (enc === "merchant") { pushLog("system", "🛒 떠돌이 상인을 만났습니다."); setEnemy(null); setPhase("event"); return; }
     if (enc === "rest") {
       pushLog("system", "🏕️ 잠깐의 휴식.");
       setPlayer(p => {
@@ -310,22 +299,30 @@ export function useGameRun(params: { pool: any[]; deck: DeckItem[]; setDeck: (fn
       const r = drawHand(prev.draw, carryDiscard, HAND_SIZE + passive.drawBonus);
       return { draw: r.drawPile, hand: r.hand, discard: r.discardPile };
     });
-    const rr = reservedRefundRef.current; reservedRefundRef.current = 0;
-    setBattleTurn(1); // 새 전투 진입 — 코스트 성장 카운터 리셋
-    setPlayer(p => startTurn({ ...p, energyMax: battleEnergyMax(1) }, passive, rr));
+    setPlayer(p => ({ ...p, block: passive.blockPerTurn }));
     setPhase("battling");
   }, [pool, passive, pushLog]);
 
-  const nextRound = useCallback(() => { if (phase === "resolved") advanceToRound(roundNum + 1); }, [phase, roundNum, advanceToRound]);
-  const proceedFromEvent = useCallback(() => { if (phase === "event") advanceToRound(roundNum + 1); }, [phase, roundNum, advanceToRound]);
+  const nextRound = useCallback(() => { if (phase === "resolved") setPhase("shop"); }, [phase]);
+  const proceedFromEvent = useCallback(() => { if (phase === "event") setPhase("shop"); }, [phase]);
+  const proceedFromShop = useCallback(() => { if (phase === "shop") advanceToRound(roundNum + 1); }, [phase, roundNum, advanceToRound]);
   const cashOut = useCallback(() => { if (phase === "resolved") setPhase("over"); }, [phase]);
 
+  // 매 층 상점 — HP 회복 물약(즉시 회복, 옛 떠돌이 상인 기능 재사용, merchant 조우 게이팅만 제거)
   const buyMerchantHeal = useCallback(() => {
-    if (phase !== "event" || encounter !== "merchant") return;
+    if (phase !== "shop") return;
     if (player.hp >= player.maxHp || gold < MERCHANT_HEAL_COST) return;
     setGold(g => g - MERCHANT_HEAL_COST);
     setPlayer(p => ({ ...p, hp: Math.min(p.maxHp, p.hp + Math.round(p.maxHp * REST_HEAL_FRAC)) }));
-  }, [phase, encounter, player, gold]);
+  }, [phase, player, gold]);
+
+  // 매 층 상점 — PP 회복 물약(구매 시 보유 액티브 아이템으로 추가, 전투 중 쓰면 모든 기술 PP 회복)
+  const buyPpPotion = useCallback(() => {
+    if (phase !== "shop" || gold < PP_POTION_COST) return;
+    setGold(g => g - PP_POTION_COST);
+    const instanceId = `item_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 7)}`;
+    setOwnedItems(prev => [...prev, { instanceId, defId: PP_POTION_ITEM_ID }]);
+  }, [phase, gold]);
 
   const buyBoost = useCallback((item: { mult: number; rounds: number }) => {
     setActiveBoost({ mult: item.mult, roundsLeft: item.rounds });
@@ -348,10 +345,7 @@ export function useGameRun(params: { pool: any[]; deck: DeckItem[]; setDeck: (fn
     setOwnedItems([]); setItemChoices(null);
     setGold(0); setRoundNum(0); setEncounter("battle"); setRestHealed(false); setNewBest(false);
     setLastResult(null); setDropped(false); setDropPrompt(false); setSaveFail(null); setPackOpening(false); setAcquired([]);
-    reservedRefundRef.current = 0;
-    setBattleTurn(1);
-    const initialEnergyMax = battleEnergyMax(1);
-    setPlayer({ hp: maxHp, maxHp, block: 0, energy: initialEnergyMax, energyMax: initialEnergyMax });
+    setPlayer({ hp: maxHp, maxHp, block: 0 });
     prevMaxHpRef.current = maxHp;
     setLog([{ id: "l0", kind: "system", text: `🐉 ${newEnemy.item?.name ?? "적"} 등장! (HP ${newEnemy.maxHp})` }]);
     setPhase("battling");
@@ -367,20 +361,20 @@ export function useGameRun(params: { pool: any[]; deck: DeckItem[]; setDeck: (fn
     const saved: SavedRun = {
       phase, roundNum, encounter, restHealed, gold, newBest,
       ownedItems, itemChoices, activeBoost, player, enemy, pile,
-      reservedRefund: reservedRefundRef.current, battleTurn,
       log, lastResult, acquired,
     };
     try { localStorage.setItem(RUN_KEY, JSON.stringify(saved)); } catch { }
-  }, [phase, roundNum, encounter, restHealed, gold, newBest, ownedItems, itemChoices, activeBoost, player, enemy, pile, battleTurn, log, lastResult, acquired]);
+  }, [phase, roundNum, encounter, restHealed, gold, newBest, ownedItems, itemChoices, activeBoost, player, enemy, pile, log, lastResult, acquired]);
 
   const acquirePct = enemy ? Math.round(Math.min(0.95, acquireChance(enemy.item, roundNum + 1) * (activeBoost?.mult ?? 1)) * 100) : 0;
 
   return {
     phase, roundNum, encounter, restHealed, gold, best, newBest,
     ownedItems, ownedDefs, itemChoices, passive, maxHp, unlockedLegendItems, activeBoost,
-    player, enemy, hand: pile.hand, drawCount: pile.draw.length, log, battleTurn,
+    player, enemy, hand: pile.hand, drawCount: pile.draw.length, log,
     lastResult, dropped, dropPrompt, saveFail, packOpening, acquired, acquirePct,
     character, effectiveStats, lastPlayerRoll, lastEnemyRoll,
-    start, playHandCard, useOwnedActiveItem, endTurn, nextRound, proceedFromEvent, cashOut, buyMerchantHeal, buyBoost, pickItem, skipItem,
+    start, playHandCard, useOwnedActiveItem, passTurn, nextRound, proceedFromEvent, proceedFromShop, cashOut,
+    buyMerchantHeal, buyPpPotion, buyBoost, pickItem, skipItem,
   };
 }

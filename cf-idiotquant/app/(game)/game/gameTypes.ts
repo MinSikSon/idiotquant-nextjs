@@ -1,34 +1,32 @@
 // 가치투자 덱빌더 — 공유 타입. React/Phaser 비의존.
 
-export type Phase = "loading" | "battling" | "resolved" | "over" | "event";
-export type EncounterType = "battle" | "boss" | "merchant" | "rest" | "elite";
-export type EnemyEncounter = "battle" | "boss" | "elite"; // 실제로 적이 등장하는 조우만(상인/휴식 제외)
+export type Phase = "loading" | "battling" | "resolved" | "over" | "event" | "shop";
+export type EncounterType = "battle" | "boss" | "rest" | "elite";
+export type EnemyEncounter = "battle" | "boss" | "elite"; // 실제로 적이 등장하는 조우만(휴식 제외)
 
-// 4개 재무 지표 → 4개 전투 스탯, 전부 1~10 양의 정수(combatEngine.cardStats 참고).
+// 3개 재무 지표 → 3개 전투 스탯, 전부 1~10 양의 정수(combatEngine.cardStats 참고).
 export interface CardStats {
-  attack: number; // ROE
-  shield: number; // NCAV
-  cost: number;   // PBR(역방향, 낮을수록 저평가)
-  refund: number; // PER(역방향) — 다음 턴 시작 시 미리 충전되는 예약 에너지
+  attack: number;  // ROE
+  shield: number;  // NCAV
+  maxUses: number; // PER(역방향) — 포켓몬식 PP(이 기술의 전투당 최대 사용 횟수)
 }
 
-// 손패/전장에 올라가는 카드 한 장(실제 종목 데이터 + 계산된 전투 스탯).
+// 손패(=이번 전투의 고정 기술셋)에 올라가는 카드 한 장(실제 종목 데이터 + 계산된 전투 스탯).
 export interface CombatCard {
   instanceId: string; // 같은 종목 중복 보유분을 구분하기 위한 고유 id
   ticker: string;
   name: string;
   item: any;           // 원본 종목 데이터(카드 아트/등급 표시용)
   stats: CardStats;
+  usesLeft: number;    // 이번 전투에서 남은 PP — 전투 시작 시 stats.maxUses로 초기화
   isStarter: boolean;  // 스타터 카드는 계정 덱(D1)에 저장되지 않음
 }
 
 export type PassiveEffect = {
   blockPerTurn?: number;     // 턴 시작 시 자동 블록
-  drawBonus?: number;        // 손패 드로우 매수 증가
-  energyBonus?: number;      // 턴 시작 에너지 증가
+  drawBonus?: number;        // 전투 시작 시 뽑는 기술 수 증가
   maxHpBonus?: number;       // 최대 HP 증가
   damageReduce?: number;     // 적 공격 데미지 감소
-  freeCostThreshold?: number; // 이 값 이하 코스트인 카드는 무료
   strBonus?: number;         // 이번 런 한정 힘(STR) 보너스
   dexBonus?: number;         // 이번 런 한정 민첩(DEX) 보너스
   lukBonus?: number;         // 이번 런 한정 행운(LUK) 보너스
@@ -40,7 +38,7 @@ export type ActiveEffect =
   | { kind: "damage"; amount: number }
   | { kind: "heal"; amount: number }
   | { kind: "block"; amount: number }
-  | { kind: "draw"; amount: number };
+  | { kind: "restorePP" }; // 보유한 모든 기술의 PP를 최대치로 회복
 
 export type ItemKind = "passive" | "active";
 export interface ItemDef {
@@ -71,8 +69,6 @@ export interface PlayerState {
   hp: number;
   maxHp: number;
   block: number;
-  energy: number;
-  energyMax: number;
 }
 
 // 캐릭터(계정에 영구 저장) — 던전 런과 무관하게 유지되는 레벨/능력치.
