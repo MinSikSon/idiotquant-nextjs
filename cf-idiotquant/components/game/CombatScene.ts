@@ -6,26 +6,38 @@ import Phaser from "phaser";
 // 실루엣을 계산해 그리는 방식으로 바꿨다 — 조합이 아무리 랜덤해도 항상 매끈한 블롭이 보장됨.
 // 판정 로직은 전혀 없음 — combatEngine이 계산한 결과를 받아 재생만 한다.
 
-// 슬라임 실루엣 — 위쪽은 돔(타원 상반부), 적도(CY)부터 아래는 바닥으로 갈수록 폭이 점점
-// 넓어지는 플레어(치마처럼 퍼짐)를 줘서 "바닥에 퍼져 앉은" 물웅덩이 느낌을 낸다. 맨 아랫줄만
-// 살짝 좁혀 모서리를 둥글게.
+// 슬라임 실루엣 — 위쪽은 돔(타원 상반부) + 정수리 뾰족점(고전 물방울형 슬라임 실루엣 관례
+// 참고, 특정 캐릭터 디자인을 그대로 베끼지 않고 형태 관례만 차용), 적도(CY)부터 아래는
+// 바닥으로 갈수록 폭이 점점 넓어지는 플레어(치마처럼 퍼짐)를 줘서 "바닥에 퍼져 앉은" 느낌을
+// 낸다. 맨 아랫줄만 살짝 좁혀 모서리를 둥글게.
 const GRID = 18;
 const CX = GRID / 2;
-const RX = 5, RY = 5.5;
-const CY = 7;            // 돔의 적도(가장 넓은 지점) — 여기부터 아래는 바닥까지 폭이 늘어남
-const BODY_BOTTOM = 13;  // 바닥 줄(이 줄 아래는 없음)
-const FLARE = 2.6;       // 적도 대비 바닥에서 추가로 퍼지는 폭(칸)
+const RX = 5;
+const CY = 7; // 돔의 적도(가장 넓은 지점) — 여기부터 아래는 바닥까지 폭이 늘어남
 
-function inBody(col: number, row: number): boolean {
-  if (row > BODY_BOTTOM) return false;
+// 대기 애니메이션용 두 프레임 — 위치를 옮기는 트윈 대신, 돔 높이/바닥 폭 몇 줄만 바꿔서
+// "숨쉬듯" 눌렸다 펴지는 느낌을 픽셀 단위로 표현한다(값이 낮을수록 납작하게 눌린 프레임).
+type ShapeParams = { ry: number; bodyBottom: number; flare: number };
+const SHAPE_NORMAL: ShapeParams = { ry: 5.5, bodyBottom: 13, flare: 2.6 };
+const SHAPE_SQUISH: ShapeParams = { ry: 4.6, bodyBottom: 12, flare: 3.6 };
+
+const SPIKE_ROW_OFFSET = 1.5; // 정수리 뾰족점이 돔 타원보다 몇 줄 위까지 튀어나오는지
+const SPIKE_HALF_WIDTH = 0.6; // 뾰족점의 중심 기준 반폭(칸)
+
+function inBody(col: number, row: number, shape: ShapeParams): boolean {
+  if (row > shape.bodyBottom) return false;
   const dx = col + 0.5 - CX;
   if (row <= CY) {
-    const nx = dx / RX, ny = (row + 0.5 - CY) / RY;
-    return nx * nx + ny * ny <= 1;
+    const ny = (row + 0.5 - CY) / shape.ry;
+    const nx = dx / RX;
+    if (nx * nx + ny * ny <= 1) return true;
+    // 정수리 뾰족점 — 돔 타원 바로 위 한 줄만, 중앙 두 칸 폭으로 살짝 튀어나오게
+    const nyBelow = (row + SPIKE_ROW_OFFSET - CY) / shape.ry;
+    return nyBelow * nyBelow <= 1 && Math.abs(dx) <= SPIKE_HALF_WIDTH;
   }
-  const t = (row - CY) / (BODY_BOTTOM - CY); // 0(적도) → 1(바닥)
-  const flared = RX + t * FLARE;
-  const maxRx = row >= BODY_BOTTOM ? flared - 1 : flared; // 맨 아랫줄만 살짝 좁혀 모서리를 둥글게
+  const t = (row - CY) / (shape.bodyBottom - CY); // 0(적도) → 1(바닥)
+  const flared = RX + t * shape.flare;
+  const maxRx = row >= shape.bodyBottom ? flared - 1 : flared; // 맨 아랫줄만 살짝 좁혀 모서리를 둥글게
   return Math.abs(dx) <= maxRx;
 }
 
@@ -78,8 +90,8 @@ export default class CombatScene extends Phaser.Scene {
   private introText!: Phaser.GameObjects.Text;
   private spec!: MonsterSpec;
   private cell = 8; // 격자 한 칸의 화면 픽셀 크기(씬 크기에 맞춰 create에서 재계산)
-  private bobTween?: Phaser.Tweens.Tween;
-  private artBaseY = 0; // bob 트윈 기준 y(고정) — 트윈 도중 값을 재사용하면 매번 살짝 밀려 누적 표류함
+  private blinking = false;
+  private squished = false;
 
   constructor() { super("combat"); }
 
@@ -90,10 +102,9 @@ export default class CombatScene extends Phaser.Scene {
     this.enemyLabel = this.add.text(w / 2, h * 0.1, "", { fontSize: "12px", color: "#ffffff", fontStyle: "bold", resolution: RES }).setOrigin(0.5);
 
     this.cell = Math.max(4, Math.floor(Math.min(w * 0.9, h * 0.62) / GRID));
-    this.artBaseY = h * 0.48;
     this.spec = randomMonster();
-    this.enemyGfx = this.add.graphics({ x: w / 2, y: this.artBaseY });
-    this.drawMonster(false);
+    this.enemyGfx = this.add.graphics({ x: w / 2, y: h * 0.48 });
+    this.drawMonster();
 
     this.enemyHpText = this.add.text(w / 2, h * 0.88, asciiBar(0, 1), {
       fontFamily: "monospace", fontSize: "11px", color: "#4ade80", fontStyle: "bold", resolution: RES,
@@ -110,16 +121,26 @@ export default class CombatScene extends Phaser.Scene {
     return { x: (col - CX) * this.cell, y: (row - CY) * this.cell };
   }
 
-  private drawMonster(blink: boolean) {
+  private drawMonster() {
     const g = this.enemyGfx;
     const s = this.spec;
+    const shape = this.squished ? SHAPE_SQUISH : SHAPE_NORMAL;
     g.clear();
+
+    // 몸통 판정을 칸마다 한 번만 계산해 캐시해두고(테두리 판정에서 이웃 4칸 재조회 시 재사용),
+    // inBody() 중복 호출을 줄인다.
+    const body: boolean[][] = [];
+    for (let row = 0; row < GRID; row++) {
+      body[row] = [];
+      for (let col = 0; col < GRID; col++) body[row][col] = inBody(col, row, shape);
+    }
+    const isBody = (col: number, row: number) => body[row]?.[col] ?? false;
 
     // 몸통 — 칸마다 타원 안쪽인지 검사해 채우고, 바로 바깥 칸이 하나라도 비어 있으면 외곽선색으로.
     for (let row = 0; row < GRID; row++) {
       for (let col = 0; col < GRID; col++) {
-        if (!inBody(col, row)) continue;
-        const edge = !inBody(col + 1, row) || !inBody(col - 1, row) || !inBody(col, row + 1) || !inBody(col, row - 1);
+        if (!isBody(col, row)) continue;
+        const edge = !isBody(col + 1, row) || !isBody(col - 1, row) || !isBody(col, row + 1) || !isBody(col, row - 1);
         const { x, y } = this.cellPx(col, row);
         g.fillStyle(edge ? s.palette.outline : s.palette.body, 1);
         g.fillRect(x, y, this.cell + 1, this.cell + 1); // +1로 인접 칸 사이 미세한 틈(seam) 방지
@@ -128,7 +149,7 @@ export default class CombatScene extends Phaser.Scene {
 
     // 광택 — 슬라임 특유의 물방울/젤리 느낌을 주는 밝은 하이라이트(왼쪽 위, 반투명)
     {
-      const p = this.cellPx(CX - RX * 0.45, CY - RY * 0.55);
+      const p = this.cellPx(CX - RX * 0.45, CY - shape.ry * 0.55);
       g.fillStyle(s.palette.shine, 0.7);
       g.fillEllipse(p.x, p.y, this.cell * 2.2, this.cell * 1.4);
     }
@@ -142,20 +163,21 @@ export default class CombatScene extends Phaser.Scene {
       }
     }
 
-    // 눈 — 동그란 눈동자(가운데 정렬, 바깥쪽으로 안 쏠리게)에 작은 흰색 반짝임 점 하나만 —
-    // 예전엔 흰자+동공이 바깥쪽으로 쏠려 있어 무섭다는 피드백을 받았음. 깜빡일 땐 얇은 곡선으로.
+    // 눈 — 흰자 없이 동그란 눈동자 하나만 콕 찍어서 "하찮고 멍한" 인상을 줌. 눈동자는 좌우
+    // 대칭 중앙에 고정 — 예전에 바깥쪽으로 쏠려 무섭다는 피드백을 받았던 것과 같은 실수를
+    // 반복하지 않기 위함. 깜빡일 땐 얇은 곡선으로.
     for (const dir of [-1, 1]) {
       const ex = CX + dir * s.eyeGap;
       const p = this.cellPx(ex, CY - 0.5);
       const cxPx = p.x + this.cell / 2, cyPx = p.y + this.cell / 2;
-      if (blink) {
+      if (this.blinking) {
         g.fillStyle(s.palette.outline, 1);
-        g.fillRoundedRect(cxPx - this.cell * 0.65, cyPx - this.cell * 0.12, this.cell * 1.3, this.cell * 0.24, this.cell * 0.12);
+        g.fillRoundedRect(cxPx - this.cell * 0.7, cyPx - this.cell * 0.12, this.cell * 1.4, this.cell * 0.24, this.cell * 0.12);
       } else {
         g.fillStyle(0x1f2937, 1);
-        g.fillCircle(cxPx, cyPx, this.cell * 0.85);
+        g.fillCircle(cxPx, cyPx + this.cell * 0.15, this.cell * 0.42);
         g.fillStyle(0xffffff, 0.95);
-        g.fillCircle(cxPx - this.cell * 0.28, cyPx - this.cell * 0.28, this.cell * 0.28);
+        g.fillCircle(cxPx - this.cell * 0.12, cyPx - this.cell * 0.02, this.cell * 0.12);
       }
     }
 
@@ -171,10 +193,9 @@ export default class CombatScene extends Phaser.Scene {
   setEnemy(name: string, hp: number, maxHp: number) {
     this.enemyLabel.setText(name);
     this.spec = randomMonster();
-    this.bobTween?.stop();
-    this.enemyGfx.setPosition(this.enemyGfx.x, this.artBaseY);
-    this.drawMonster(false);
-    this.bobTween = this.tweens.add({ targets: this.enemyGfx, y: this.artBaseY - 4, duration: 650, yoyo: true, repeat: -1, ease: "Sine.easeInOut" });
+    this.blinking = false;
+    this.squished = false;
+    this.drawMonster();
     this.setEnemyHp(hp, maxHp);
   }
 
@@ -182,15 +203,20 @@ export default class CombatScene extends Phaser.Scene {
     this.enemyHpText.setText(asciiBar(hp, maxHp));
   }
 
-  // 살아있는 느낌을 주는 대기 애니메이션 — 위아래로 살짝 흔들리는 움직임(bob) +
-  // 몇 초마다 눈을 잠깐 감는 깜빡임. 둘 다 판정과 무관한 순수 장식 트윈/타이머.
+  // 살아있는 느낌을 주는 대기 애니메이션 — 위치를 옮기는 트윈 대신 몇 개 픽셀(돔 높이·바닥
+  // 폭 몇 줄)만 주기적으로 바꿔서 숨쉬듯 눌렸다 펴지는 느낌을 낸다 + 몇 초마다 눈을 잠깐
+  // 감는 깜빡임. 둘 다 판정과 무관한 순수 장식 타이머.
   private startIdleAnim() {
-    this.bobTween = this.tweens.add({ targets: this.enemyGfx, y: this.artBaseY - 4, duration: 650, yoyo: true, repeat: -1, ease: "Sine.easeInOut" });
+    this.time.addEvent({
+      delay: 550, loop: true,
+      callback: () => { this.squished = !this.squished; this.drawMonster(); },
+    });
     this.time.addEvent({
       delay: Phaser.Math.Between(2200, 3600), loop: true,
       callback: () => {
-        this.drawMonster(true);
-        this.time.delayedCall(120, () => this.drawMonster(false));
+        this.blinking = true;
+        this.drawMonster();
+        this.time.delayedCall(120, () => { this.blinking = false; this.drawMonster(); });
       },
     });
   }

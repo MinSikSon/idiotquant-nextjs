@@ -47,18 +47,20 @@ function DragPreview({ card, free }: { card: CombatCard; free: boolean }) {
   );
 }
 
-function Battlefield({ children }: { children: React.ReactNode }) {
+function Battlefield({ children, hudOverlay }: { children: React.ReactNode; hudOverlay?: React.ReactNode }) {
   const { setNodeRef, isOver } = useDroppable({ id: "battlefield" });
   return (
     <div ref={setNodeRef} className={cn("relative w-full h-full rounded-xl transition-colors", isOver && "ring-2 ring-[#16a34a] ring-inset bg-[#16a34a]/5")}>
       {children}
+      {hudOverlay && <div className="absolute right-1.5 top-1/2 -translate-y-1/2 z-10">{hudOverlay}</div>}
     </div>
   );
 }
 
-export default function HandView({ cards, energy, freeCostThreshold, onPlayCard, children }: {
+export default function HandView({ cards, energy, freeCostThreshold, onPlayCard, hudOverlay, children }: {
   cards: CombatCard[]; energy: number; freeCostThreshold: number;
   onPlayCard: (instanceId: string) => void;
+  hudOverlay?: React.ReactNode;
   children: React.ReactNode;
 }) {
   const [activeId, setActiveId] = useState<string | null>(null);
@@ -82,7 +84,7 @@ export default function HandView({ cards, energy, freeCostThreshold, onPlayCard,
       onDragEnd={handleDragEnd}
       onDragCancel={() => setActiveId(null)}>
       <div className="flex-1 min-h-0">
-        <Battlefield>{children}</Battlefield>
+        <Battlefield hudOverlay={hudOverlay}>{children}</Battlefield>
       </div>
       <div className="shrink-0 flex items-center justify-center gap-1.5 py-1.5 overflow-x-auto">
         {cards.map(card => {
