@@ -653,7 +653,7 @@ function GameContent() {
                 <div className="flex-1 min-h-0 flex flex-col">
                   <div className="flex-1 min-h-0 flex flex-col rounded-2xl overflow-hidden backdrop-blur-md bg-white/60 dark:bg-white/[0.03] border border-black/5 dark:border-white/10">
                     <HandView cards={run.hand} energy={run.player.energy} freeCostThreshold={run.passive.freeCostThreshold} onPlayCard={run.playHandCard}
-                      leftOverlay={<DiceBadge roll={run.lastRoll} />}
+                      leftOverlay={<DiceBadge playerRoll={run.lastPlayerRoll} enemyRoll={run.lastEnemyRoll} />}
                       hudOverlay={<EnergyBar vertical energy={run.player.energy} base={run.player.energyMax + run.passive.energyBonus} bonus={run.turnBonusCost} />}>
                       <PhaserCombatCanvas enemy={run.enemy} player={run.player} introLabel={introLabel} />
                     </HandView>

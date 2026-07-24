@@ -84,7 +84,8 @@ export function useGameRun(params: { pool: any[]; deck: DeckItem[]; setDeck: (fn
   const [battleTurn, setBattleTurn] = useState(1); // 이번 전투에서 몇 번째 내 턴인지(1부터) — 코스트 성장의 기준
 
   const { character, characterLoaded, gainXp } = useCharacter();
-  const [lastRoll, setLastRoll] = useState<{ source: "player" | "enemy"; roll: AttackRollResult } | null>(null);
+  const [lastPlayerRoll, setLastPlayerRoll] = useState<AttackRollResult | null>(null);
+  const [lastEnemyRoll, setLastEnemyRoll] = useState<AttackRollResult | null>(null);
 
   const [log, setLog] = useState<LogEntry[]>([]);
   const pushLog = useCallback((kind: LogKind, text: string) => {
@@ -197,7 +198,7 @@ export function useGameRun(params: { pool: any[]; deck: DeckItem[]; setDeck: (fn
     setPile(p => ({ ...p, hand: p.hand.filter(c => c.instanceId !== instanceId), discard: [...p.discard, card] }));
     reservedRefundRef.current += card.stats.refund;
     gainXp(XP_PER_ATTACK);
-    setLastRoll({ source: "player", roll: result.roll });
+    setLastPlayerRoll(result.roll);
     const critTxt = result.roll.isCrit ? " 💥크리티컬!" : "";
     const parts = [`🎲${result.roll.faces.join("/")}${critTxt} → ⚔${result.roll.totalDamage} 피해`];
     if (card.stats.shield > 0) parts.push(`🛡${card.stats.shield} 방어`);
@@ -224,7 +225,7 @@ export function useGameRun(params: { pool: any[]; deck: DeckItem[]; setDeck: (fn
   const endTurn = useCallback(() => {
     if (phase !== "battling" || !enemy) return;
     const { player: afterEnemy, roll } = resolveEnemyTurn(player, enemy, passive);
-    setLastRoll({ source: "enemy", roll });
+    setLastEnemyRoll(roll);
     const blocked = Math.min(roll.totalDamage, player.block + passive.damageReduce);
     const dmg = Math.max(0, roll.totalDamage - blocked);
     const critTxt = roll.isCrit ? " 💥크리티컬!" : "";
@@ -328,7 +329,7 @@ export function useGameRun(params: { pool: any[]; deck: DeckItem[]; setDeck: (fn
     ownedItems, ownedDefs, itemChoices, passive, maxHp, unlockedLegendItems, activeBoost,
     player, enemy, hand: pile.hand, drawCount: pile.draw.length, log, turnBonusCost, battleTurn,
     lastResult, dropped, dropPrompt, saveFail, packOpening, acquired, acquirePct,
-    character, effectiveStats, lastRoll,
+    character, effectiveStats, lastPlayerRoll, lastEnemyRoll,
     start, playHandCard, useOwnedActiveItem, endTurn, nextRound, proceedFromEvent, cashOut, buyMerchantHeal, buyBoost, pickItem, skipItem,
   };
 }
