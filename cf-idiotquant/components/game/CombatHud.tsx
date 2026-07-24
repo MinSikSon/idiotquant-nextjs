@@ -67,6 +67,17 @@ export function ShieldBadge({ block }: { block: number }) {
   );
 }
 
+// 적의 다음 공격이 얼마나 아플지 미리 보여주는 텔레그래프 — 공격력이 이제 고정 데미지가 아니라
+// 0~N 범위 주사위 굴림이라 정확한 수치 대신 범위로 표시한다.
+export function EnemyIntentBadge({ base }: { base: number }) {
+  return (
+    <div className="flex items-center gap-1 shrink-0">
+      <span aria-hidden className="text-rose-500">⚔️</span>
+      <span className="text-[10px] font-black tabular-nums text-rose-600 dark:text-rose-400">0~{base} 예정</span>
+    </div>
+  );
+}
+
 export function ItemBar({ ownedDefs, ownedItems, onUseActive, canUseActive }: {
   ownedDefs: ItemDef[]; ownedItems: OwnedItem[];
   onUseActive: (instanceId: string) => void; canUseActive: boolean;

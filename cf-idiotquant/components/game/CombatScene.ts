@@ -280,8 +280,11 @@ export default class CombatScene extends Phaser.Scene {
     }
   }
 
-  setEnemy(name: string, hp: number, maxHp: number) {
-    this.enemyLabel.setText(name);
+  // 정예/보스는 상시 배지를 라벨에 붙여 등장 인트로가 사라진 뒤에도 계속 구분되게 함.
+  setEnemy(name: string, hp: number, maxHp: number, encounter: "battle" | "boss" | "elite" = "battle") {
+    const prefix = encounter === "boss" ? "👑 보스 · " : encounter === "elite" ? "🗡️ 정예 · " : "";
+    const color = encounter === "boss" ? "#facc15" : encounter === "elite" ? "#c084fc" : "#ffffff";
+    this.enemyLabel.setText(prefix + name).setColor(color);
     this.spec = randomMonster();
     this.blinking = false;
     this.squished = false;
