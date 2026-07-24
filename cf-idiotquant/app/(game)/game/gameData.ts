@@ -1,5 +1,5 @@
 // 가치투자 덱빌더 — 상수/데이터 테이블. 프로토타입 범위: 아이템은 소수만(패시브 4 + 액티브 4 +
-// 전설급 2), 콘텐츠 확장은 나중에.
+// 스탯 부스트 12 + 전설급 3), 콘텐츠 확장은 나중에.
 
 import { computeValueScore } from "@/lib/utils/valueScore";
 import type { ItemDef, CombatCard } from "./gameTypes";
@@ -29,16 +29,36 @@ export const ITEM_POOL: ItemDef[] = [
   { id: "buyMore", kind: "active", name: "추가 매수", desc: "카드 2장 즉시 드로우", icon: "🛒", effect: { kind: "draw", amount: 2 } },
 ];
 
+// 힘/민첩/행운/체력 스탯 부스트 — 각 3단계(lv2=lv1×2, lv3=lv1×4). 다른 패시브 아이템과 동일하게
+// 이번 런에서만 적용되고 던전을 나가면 사라짐(계정에 영구 저장되는 캐릭터 레벨과는 별개).
+export const STAT_ITEM_POOL: ItemDef[] = [
+  { id: "str_ring_1", kind: "passive", name: "힘의 반지 I", desc: "힘(STR) +1", icon: "💪", tier: 1, effect: { strBonus: 1 } },
+  { id: "str_ring_2", kind: "passive", name: "힘의 반지 II", desc: "힘(STR) +2", icon: "💪", tier: 2, effect: { strBonus: 2 } },
+  { id: "str_ring_3", kind: "passive", name: "힘의 반지 III", desc: "힘(STR) +4", icon: "💪", tier: 3, effect: { strBonus: 4 } },
+  { id: "dex_ring_1", kind: "passive", name: "민첩의 반지 I", desc: "민첩(DEX) +1", icon: "🐇", tier: 1, effect: { dexBonus: 1 } },
+  { id: "dex_ring_2", kind: "passive", name: "민첩의 반지 II", desc: "민첩(DEX) +2", icon: "🐇", tier: 2, effect: { dexBonus: 2 } },
+  { id: "dex_ring_3", kind: "passive", name: "민첩의 반지 III", desc: "민첩(DEX) +4", icon: "🐇", tier: 3, effect: { dexBonus: 4 } },
+  { id: "luk_ring_1", kind: "passive", name: "행운의 반지 I", desc: "행운(LUK) +1", icon: "🍀", tier: 1, effect: { lukBonus: 1 } },
+  { id: "luk_ring_2", kind: "passive", name: "행운의 반지 II", desc: "행운(LUK) +2", icon: "🍀", tier: 2, effect: { lukBonus: 2 } },
+  { id: "luk_ring_3", kind: "passive", name: "행운의 반지 III", desc: "행운(LUK) +4", icon: "🍀", tier: 3, effect: { lukBonus: 4 } },
+  { id: "vit_ring_1", kind: "passive", name: "체력의 반지 I", desc: "체력(VIT) +10", icon: "🫀", tier: 1, effect: { vitBonus: 10 } },
+  { id: "vit_ring_2", kind: "passive", name: "체력의 반지 II", desc: "체력(VIT) +20", icon: "🫀", tier: 2, effect: { vitBonus: 20 } },
+  { id: "vit_ring_3", kind: "passive", name: "체력의 반지 III", desc: "체력(VIT) +40", icon: "🫀", tier: 3, effect: { vitBonus: 40 } },
+];
+
 // 전설급 아이템 — 업적 해금 시에만 파밍 풀에 추가(기존 전설 장비 자리를 대체, 세트 개념 없음)
 export const LEGEND_ITEMS: ItemDef[] = [
   { id: "legend_buffett", kind: "passive", name: "워런 버핏의 서한", desc: "최대 HP +10", icon: "📜", isLegend: true, achievementId: "collector", effect: { maxHpBonus: 10 } },
   { id: "legend_blackswan", kind: "active", name: "블랙스완 헤지", desc: "즉시 적에게 15 데미지", icon: "🦢", isLegend: true, achievementId: "legend3", effect: { kind: "damage", amount: 15 } },
+  { id: "legend_advantage", kind: "passive", name: "야수의 감각", desc: "카드 공격 시 주사위를 2번 굴려 더 높은 눈 사용(어드밴티지)", icon: "🎲", isLegend: true, achievementId: "captain", effect: { extraDie: true } },
 ];
 
-export const ALL_ITEMS: ItemDef[] = [...ITEM_POOL, ...LEGEND_ITEMS];
+export const ALL_ITEMS: ItemDef[] = [...ITEM_POOL, ...STAT_ITEM_POOL, ...LEGEND_ITEMS];
 
 // 컬렉션이 MIN_DECK(combatEngine) 미만일 때 채우는 스타터 카드 — 계정 덱에는 저장되지 않는 합성
 // 카드. 실제 컬렉션보다 확실히 약하게 잡아 수집 동기를 유지한다.
+// 코스트가 전투 턴마다 성장(1부터 시작)하는 구조라, 스타터 카드가 전부 코스트 2 이상이면 첫
+// 턴엔 아무것도 못 내는 상황이 생김 — "안전 마진"은 코스트 1로 낮춰 첫 턴에도 낼 수 있게 함.
 export const STARTER_DECK: Omit<CombatCard, "instanceId">[] = [
   ...Array.from({ length: 6 }, (_, i) => ({
     ticker: `STARTER-A${i}`, name: "가치 원석", isStarter: true,
@@ -48,12 +68,13 @@ export const STARTER_DECK: Omit<CombatCard, "instanceId">[] = [
   ...Array.from({ length: 4 }, (_, i) => ({
     ticker: `STARTER-B${i}`, name: "안전 마진", isStarter: true,
     item: { ticker: `STARTER-B${i}`, name: "안전 마진" },
-    stats: { attack: 4, shield: 3, cost: 2, refund: 1 },
+    stats: { attack: 4, shield: 3, cost: 1, refund: 1 },
   })),
 ];
 
-// 아이템 선택지 3택1 — 슬롯 개념이 없어 이미 보유한 아이템도 후보에서 제외하지 않음(패시브는
-// 중복 보유 시 효과가 합산되고, 액티브는 충전 개념이 없어 여러 장 들고 있으면 그만큼 더 쓸 수 있음).
-export function pickItemChoices(pool: ItemDef[]): ItemDef[] {
-  return [...pool].sort(() => Math.random() - 0.5).slice(0, ITEM_OFFER_COUNT);
+// 아이템 선택지 3택1(보스는 행운 수치에 따라 4택) — 슬롯 개념이 없어 이미 보유한 아이템도 후보에서
+// 제외하지 않음(패시브는 중복 보유 시 효과가 합산되고, 액티브는 충전 개념이 없어 여러 장 들고 있으면
+// 그만큼 더 쓸 수 있음).
+export function pickItemChoices(pool: ItemDef[], count: number = ITEM_OFFER_COUNT): ItemDef[] {
+  return [...pool].sort(() => Math.random() - 0.5).slice(0, count);
 }

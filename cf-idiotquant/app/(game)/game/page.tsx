@@ -1,10 +1,13 @@
 "use client";
 
 // =========================================================================
-// 가치투자 덱빌더 — 손패·에너지 기반 다중 턴 전투 던전 크롤 게임(프로토타입).
+// 가치투자 덱빌더 — 손패·코스트 기반 다중 턴 전투 던전 크롤 게임(프로토타입).
 // 4개 재무지표(ROE→공격력·NCAV→방어력·PBR→코스트·PER→환급) → 카드 전투 스탯(1~10).
+// 공격력은 20면체 주사위(D&D 스타일)로 굴려 0~N 범위에서 실제 피해가 정해짐(자연 20=크리티컬).
+// 캐릭터(전사, 계정 영구 저장)는 힘/민첩/행운/체력 4스탯 + 레벨을 갖고, 공격/처치마다 경험치 획득.
 // 보유 컬렉션(계정 덱) 전체가 곧 전투 덱 — 손패에서 카드를 전장(Phaser 캔버스)으로 드래그해
-// 발동, 에너지 소진 시 "턴 종료"로 적 턴 진행. 3층마다 패시브/액티브 아이템 획득, 10층마다 보스.
+// 발동, 코스트 소진 시 "턴 종료"로 적 턴 진행(코스트는 전투 턴마다 성장, 최대 10). 3층마다
+// 패시브/액티브 아이템 획득, 10층마다 보스(같은 몬스터가 스탯 3배로 강화되어 등장).
 // 이긴 층의 카드만 확률적으로 "내 덱"에 수집(계정별 D1 저장, 로그인 필요).
 // =========================================================================
 
@@ -28,8 +31,10 @@ import { cn } from "@/lib/utils";
 import { HOLO_THRESHOLD, PackReveal, AchievementBadges, ACHIEVEMENTS } from "./gameCollectibles";
 import { WalletChip, ConvertButton, ShopPanel, BOOST_ITEMS } from "./gameShop";
 import { useGameRun, deckTotal, type DeckItem } from "./useGameRun";
-import { HpBar, EnergyBar, ShieldBadge, ItemBar } from "@/components/game/CombatHud";
+import { HpBar, EnergyBar, ShieldBadge, EnemyIntentBadge, ItemBar } from "@/components/game/CombatHud";
 import CombatLog from "@/components/game/CombatLog";
+import CharacterCard from "@/components/game/CharacterCard";
+import DiceRollOverlay from "@/components/game/DiceRollOverlay";
 
 const PhaserCombatCanvas = dynamic(() => import("@/components/game/PhaserCombatCanvas"), { ssr: false });
 const HandView = dynamic(() => import("@/components/game/HandView"), { ssr: false });
@@ -606,6 +611,11 @@ function GameContent() {
                         <ShieldBadge block={run.player.block} />
                       </div>
                     )}
+                    {run.phase === "battling" && run.enemy && (
+                      <div className="px-2 py-1.5 rounded-2xl backdrop-blur-md bg-white/85 dark:bg-white/[0.06] border border-black/5 dark:border-white/10 shadow-[0_6px_18px_-8px_rgba(0,0,0,0.35)]">
+                        <EnemyIntentBadge base={run.enemy.nextAttack} />
+                      </div>
+                    )}
                   </button>
                   <div className="flex items-center justify-center gap-1.5 h-8 overflow-x-auto overflow-y-hidden flex-nowrap scrollbar-hide">
                     {run.gold > 0 && (
@@ -673,13 +683,14 @@ function GameContent() {
             </div>
             <div className="space-y-3">
               {[
-                { icon: "⚔️", text: <>내 덱(보유 카드)이 곧 전투 카드예요. 매 턴 <b className="text-neutral-800 dark:text-neutral-100">손패</b>에서 카드를 <b className="text-neutral-800 dark:text-neutral-100">전장으로 드래그</b>해 발동하세요 — 공격력만큼 적 HP를, 방어력만큼 내 블록을 올려요.</> },
-                { icon: "●", text: <>카드를 내려면 <b className="text-neutral-800 dark:text-neutral-100">코스트</b>가 필요해요 — 상단의 노란 동그라미 개수만큼 쓸 수 있고, 카드의 ●숫자만큼 소모돼요.</> },
+                { icon: "⚔️", text: <>내 덱(보유 카드)이 곧 전투 카드예요. 매 턴 <b className="text-neutral-800 dark:text-neutral-100">손패</b>에서 카드를 <b className="text-neutral-800 dark:text-neutral-100">전장으로 드래그</b>해 발동하세요 — 카드의 공격력은 <b className="text-neutral-800 dark:text-neutral-100">0~N 범위</b>로 20면체 주사위를 굴려 실제 피해가 정해지고, 방어력만큼 내 블록을 올려요.</> },
+                { icon: "🎲", text: <>주사위 눈이 <b className="text-amber-500 dark:text-amber-400">자연 20</b>이면 <b className="text-amber-500 dark:text-amber-400">크리티컬</b>(최대 피해의 2배)! 몬스터의 공격도 같은 방식으로 굴려요. 상태창에서 자동/수동 굴림을 고를 수 있어요.</> },
+                { icon: "●", text: <>카드를 내려면 <b className="text-neutral-800 dark:text-neutral-100">코스트</b>가 필요해요 — 전투 시작 시 1개로 시작해 <b className="text-neutral-800 dark:text-neutral-100">내 턴마다 +1</b>씩 늘어나 최대 10개까지 커져요.</> },
                 { icon: "🔋", text: <>카드의 🔋(환급) 숫자만큼 <b className="text-neutral-800 dark:text-neutral-100">다음 턴 코스트</b>가 미리 충전돼요 — 이번 턴엔 안 쓰이고 다음 턴 시작할 때 동그라미로 더해져요.</> },
-                { icon: "🛡️", text: <>쌓인 방어력은 상단 🛡️ 배지에 실시간으로 표시돼요. <b className="text-neutral-800 dark:text-neutral-100">적 턴 하나만</b> 막고 사라지니, 적의 "다음 턴 예정 공격력"을 미리 보고 방어할지 판단하세요.</> },
-                { icon: "🎒", text: <>3층마다 <b className="text-neutral-800 dark:text-neutral-100">패시브/액티브 아이템</b>을 하나 고를 수 있어요. 패시브는 자동 적용, 액티브는 원할 때 탭해서 1회 사용해요.</> },
+                { icon: "🛡️", text: <>쌓인 방어력은 상단 🛡️ 배지에 실시간으로 표시돼요. <b className="text-neutral-800 dark:text-neutral-100">적 턴 하나만</b> 막고 사라지니, 적의 "다음 턴 예정 공격력 범위"를 미리 보고 방어할지 판단하세요.</> },
+                { icon: "🎒", text: <>3층마다 <b className="text-neutral-800 dark:text-neutral-100">패시브/액티브 아이템</b>을 하나 고를 수 있어요. 힘·민첩·행운·체력을 올려주는 스탯 아이템도 있어요.</> },
                 { icon: "🃏", text: <>적을 처치(층 클리어)하면 확률에 따라 <b className="text-neutral-800 dark:text-neutral-100">내 덱</b>에 카드가 수집돼요. 좋은 카드일수록 전투 스탯도 강해요.</> },
-                { icon: "🎲", text: <>층이 깊어질수록 <b className="text-neutral-800 dark:text-neutral-100">상인</b>(골드로 HP 회복)·<b className="text-neutral-800 dark:text-neutral-100">휴식</b>(무료 회복)·<b className="text-orange-500 dark:text-orange-400">정예</b>(강한 몬스터) 조우가 섞여 나와요. 10층마다는 <b className="text-violet-600 dark:text-violet-400">보스</b>예요.</> },
+                { icon: "🧭", text: <>층이 깊어질수록 <b className="text-neutral-800 dark:text-neutral-100">상인</b>(골드로 HP 회복)·<b className="text-neutral-800 dark:text-neutral-100">휴식</b>(무료 회복)·<b className="text-orange-500 dark:text-orange-400">정예</b>(강한 몬스터) 조우가 섞여 나와요. <b className="text-violet-600 dark:text-violet-400">10층마다는 보스</b>(같은 몬스터가 스탯 3배로 강화돼 등장)예요.</> },
               ].map((row, i) => (
                 <div key={i} className="flex items-start gap-2.5">
                   <span aria-hidden className="shrink-0 text-lg leading-none">{row.icon}</span>
@@ -708,6 +719,22 @@ function GameContent() {
               <b className="text-neutral-800 dark:text-neutral-100">{rankOf(run.roundNum).title}</b>
               <span>· 지하 {run.roundNum + 1}층</span>
             </p>
+            <div className="mb-3">
+              <CharacterCard character={run.character} effectiveStats={run.effectiveStats} hp={run.player.hp} maxHp={run.player.maxHp} />
+            </div>
+            <div className="flex items-center justify-between mb-3">
+              <span className="text-xs font-black text-neutral-700 dark:text-neutral-200">주사위 굴림</span>
+              <div className="inline-flex rounded-full bg-black/[0.04] dark:bg-white/[0.06] p-0.5">
+                <button type="button" onClick={() => run.setDiceAutoRoll(true)}
+                  className={cn("px-2.5 py-1 rounded-full text-[10px] font-black transition-colors", run.diceAutoRoll ? "bg-[#16a34a] text-white" : "text-neutral-500")}>
+                  자동
+                </button>
+                <button type="button" onClick={() => run.setDiceAutoRoll(false)}
+                  className={cn("px-2.5 py-1 rounded-full text-[10px] font-black transition-colors", !run.diceAutoRoll ? "bg-[#16a34a] text-white" : "text-neutral-500")}>
+                  수동
+                </button>
+              </div>
+            </div>
             <div className="grid grid-cols-3 gap-1.5 mb-3">
               <div className="rounded-lg bg-black/[0.03] dark:bg-white/[0.04] py-1.5 text-center">
                 <p className="flex items-center justify-center gap-0.5 text-sm font-black tabular-nums text-rose-500 leading-none"><UserRound size={11} strokeWidth={2.5} />{run.player.hp}/{run.player.maxHp}</p>
@@ -758,6 +785,7 @@ function GameContent() {
                         <span className="flex items-center gap-1 text-xs font-black text-neutral-800 dark:text-neutral-100">
                           {def.name}
                           {def.isLegend && <span className="px-1 py-0.5 rounded text-[8px] font-black bg-amber-500 text-white">전설</span>}
+                          {def.tier && <span className="px-1 py-0.5 rounded text-[8px] font-black bg-violet-500 text-white">Lv{def.tier}</span>}
                           <span className="text-[9px] font-bold text-neutral-400">{def.kind === "active" ? "액티브" : "패시브"}</span>
                         </span>
                         <span className="block text-[10px] text-neutral-500 dark:text-neutral-400">{def.desc}</span>
@@ -786,6 +814,7 @@ function GameContent() {
                     <span className="flex items-center gap-1 text-sm font-black text-neutral-800 dark:text-neutral-100">
                       {item.name}
                       {item.isLegend && <span className="px-1 py-0.5 rounded text-[8px] font-black bg-amber-500 text-white">전설</span>}
+                      {item.tier && <span className="px-1 py-0.5 rounded text-[8px] font-black bg-violet-500 text-white">Lv{item.tier}</span>}
                       <span className="text-[9px] font-bold text-neutral-400">{item.kind === "active" ? "액티브" : "패시브"}</span>
                     </span>
                     <span className="block text-xs text-neutral-500 dark:text-neutral-400">{item.desc}</span>
@@ -799,6 +828,8 @@ function GameContent() {
           </div>
         </div>
       )}
+
+      <DiceRollOverlay roll={run.lastRoll} auto={run.diceAutoRoll} onDismiss={run.dismissRoll} />
     </div>
   );
 }

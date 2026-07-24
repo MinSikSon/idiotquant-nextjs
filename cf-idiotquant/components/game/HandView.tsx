@@ -14,7 +14,7 @@ function CardFace({ card, free }: { card: CombatCard; free: boolean }) {
     <>
       <p className="text-[8px] font-bold text-neutral-500 dark:text-neutral-400 truncate w-full text-center">{card.name}</p>
       <div className="grid grid-cols-2 gap-x-1 gap-y-0.5 text-[9px] font-black tabular-nums w-full">
-        <span className="text-rose-500 text-center">⚔{card.stats.attack}</span>
+        <span className="text-rose-500 text-center text-[8px]">⚔0~{card.stats.attack}</span>
         <span className="text-sky-500 text-center">🛡{card.stats.shield}</span>
         <span className={cn("text-center", free ? "text-amber-400 line-through" : "text-amber-600 dark:text-amber-400")}>●{card.stats.cost}</span>
         <span className="text-emerald-500 text-center">🔋{card.stats.refund}</span>

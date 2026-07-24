@@ -45,7 +45,7 @@ export default function PhaserCombatCanvas({ enemy, player, introLabel }: {
         // 씬이 준비되기 전에 이미 적이 정해져 있었을 수 있음(마운트 시점 경쟁) — 놓치지 않게 즉시 반영.
         const e = latestEnemyRef.current;
         if (e) {
-          scene.setEnemy?.(String(e.item?.name ?? "몬스터"), e.hp, e.maxHp);
+          scene.setEnemy?.(String(e.item?.name ?? "몬스터"), e.hp, e.maxHp, e.encounter);
           prevEnemyTicker.current = e.item?.ticker ?? null;
           prevEnemyHp.current = e.hp;
         }
@@ -72,7 +72,7 @@ export default function PhaserCombatCanvas({ enemy, player, introLabel }: {
     if (!scene || !enemy) return;
     const id = requestAnimationFrame(() => {
       if (enemy.item?.ticker !== prevEnemyTicker.current) {
-        scene.setEnemy?.(String(enemy.item?.name ?? "몬스터"), enemy.hp, enemy.maxHp);
+        scene.setEnemy?.(String(enemy.item?.name ?? "몬스터"), enemy.hp, enemy.maxHp, enemy.encounter);
         if (introLabel) scene.showIntro?.(introLabel);
         prevEnemyTicker.current = enemy.item?.ticker ?? null;
         prevEnemyHp.current = enemy.hp;
