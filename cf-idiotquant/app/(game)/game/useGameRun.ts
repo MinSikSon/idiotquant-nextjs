@@ -85,16 +85,6 @@ export function useGameRun(params: { pool: any[]; deck: DeckItem[]; setDeck: (fn
 
   const { character, characterLoaded, gainXp } = useCharacter();
   const [lastRoll, setLastRoll] = useState<{ source: "player" | "enemy"; roll: AttackRollResult } | null>(null);
-  const diceAutoRollKey = "iq:game:diceAutoRoll";
-  const [diceAutoRoll, setDiceAutoRollState] = useState(true);
-  useEffect(() => {
-    try { const raw = localStorage.getItem(diceAutoRollKey); if (raw != null) setDiceAutoRollState(raw === "1"); } catch { /* 기본값(자동) 유지 */ }
-  }, []);
-  const setDiceAutoRoll = useCallback((v: boolean) => {
-    setDiceAutoRollState(v);
-    try { localStorage.setItem(diceAutoRollKey, v ? "1" : "0"); } catch { /* 저장 실패는 무시 */ }
-  }, []);
-  const dismissRoll = useCallback(() => setLastRoll(null), []);
 
   const [log, setLog] = useState<LogEntry[]>([]);
   const pushLog = useCallback((kind: LogKind, text: string) => {
@@ -338,7 +328,7 @@ export function useGameRun(params: { pool: any[]; deck: DeckItem[]; setDeck: (fn
     ownedItems, ownedDefs, itemChoices, passive, maxHp, unlockedLegendItems, activeBoost,
     player, enemy, hand: pile.hand, drawCount: pile.draw.length, log, turnBonusCost, battleTurn,
     lastResult, dropped, dropPrompt, saveFail, packOpening, acquired, acquirePct,
-    character, effectiveStats, lastRoll, diceAutoRoll, setDiceAutoRoll, dismissRoll,
+    character, effectiveStats, lastRoll,
     start, playHandCard, useOwnedActiveItem, endTurn, nextRound, proceedFromEvent, cashOut, buyMerchantHeal, buyBoost, pickItem, skipItem,
   };
 }
