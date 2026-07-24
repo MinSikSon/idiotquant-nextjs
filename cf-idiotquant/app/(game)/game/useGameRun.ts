@@ -70,7 +70,7 @@ type SavedRun = {
   gold: number; newBest: boolean;
   ownedItems: OwnedItem[]; itemChoices: ItemDef[] | null; activeBoost: { mult: number; roundsLeft: number } | null;
   player: PlayerState; enemy: EnemyState | null; pile: Pile;
-  reservedRefund: number; turnBonusCost: number; battleTurn: number;
+  reservedRefund: number; battleTurn: number;
   log: LogEntry[]; lastResult: { win: boolean; goldGain?: number } | null;
   acquired: DeckCardSnapshot[];
 };
@@ -94,7 +94,6 @@ export function useGameRun(params: { pool: any[]; deck: DeckItem[]; setDeck: (fn
   const [enemy, setEnemy] = useState<EnemyState | null>(null);
   const [pile, setPile] = useState<Pile>({ draw: [], hand: [], discard: [] });
   const reservedRefundRef = useRef(0); // 이번 턴에 낸 카드들의 refund 합 — 다음 턴 시작 시 에너지로 편입
-  const [turnBonusCost, setTurnBonusCost] = useState(0); // 직전 턴 카드들의 refund로 "이번 턴" 코스트에 얹힌 보너스분(기본 코스트와 구분 표시용)
   const [battleTurn, setBattleTurn] = useState(1); // 이번 전투에서 몇 번째 내 턴인지(1부터) — 코스트 성장의 기준
 
   const { character, characterLoaded, gainXp } = useCharacter();
@@ -167,7 +166,6 @@ export function useGameRun(params: { pool: any[]; deck: DeckItem[]; setDeck: (fn
       setPlayer(saved.player); setEnemy(saved.enemy);
       setPile(saved.pile ?? { draw: [], hand: [], discard: [] });
       reservedRefundRef.current = saved.reservedRefund ?? 0;
-      setTurnBonusCost(saved.turnBonusCost ?? 0);
       setBattleTurn(saved.battleTurn ?? 1);
       setLog(saved.log ?? []);
       setLastResult(saved.lastResult ?? null);
@@ -276,7 +274,6 @@ export function useGameRun(params: { pool: any[]; deck: DeckItem[]; setDeck: (fn
     setPlayer(afterEnemy);
     if (afterEnemy.hp <= 0) { setPhase("over"); setLastResult({ win: false }); pushLog("system", "💀 쓰러졌습니다..."); return; }
     const rr = reservedRefundRef.current; reservedRefundRef.current = 0;
-    setTurnBonusCost(rr);
     const nextTurn = battleTurn + 1;
     setBattleTurn(nextTurn);
     setPlayer(p => startTurn({ ...p, energyMax: battleEnergyMax(nextTurn) }, passive, rr));
@@ -314,7 +311,6 @@ export function useGameRun(params: { pool: any[]; deck: DeckItem[]; setDeck: (fn
       return { draw: r.drawPile, hand: r.hand, discard: r.discardPile };
     });
     const rr = reservedRefundRef.current; reservedRefundRef.current = 0;
-    setTurnBonusCost(rr);
     setBattleTurn(1); // 새 전투 진입 — 코스트 성장 카운터 리셋
     setPlayer(p => startTurn({ ...p, energyMax: battleEnergyMax(1) }, passive, rr));
     setPhase("battling");
@@ -353,7 +349,6 @@ export function useGameRun(params: { pool: any[]; deck: DeckItem[]; setDeck: (fn
     setGold(0); setRoundNum(0); setEncounter("battle"); setRestHealed(false); setNewBest(false);
     setLastResult(null); setDropped(false); setDropPrompt(false); setSaveFail(null); setPackOpening(false); setAcquired([]);
     reservedRefundRef.current = 0;
-    setTurnBonusCost(0);
     setBattleTurn(1);
     const initialEnergyMax = battleEnergyMax(1);
     setPlayer({ hp: maxHp, maxHp, block: 0, energy: initialEnergyMax, energyMax: initialEnergyMax });
@@ -372,18 +367,18 @@ export function useGameRun(params: { pool: any[]; deck: DeckItem[]; setDeck: (fn
     const saved: SavedRun = {
       phase, roundNum, encounter, restHealed, gold, newBest,
       ownedItems, itemChoices, activeBoost, player, enemy, pile,
-      reservedRefund: reservedRefundRef.current, turnBonusCost, battleTurn,
+      reservedRefund: reservedRefundRef.current, battleTurn,
       log, lastResult, acquired,
     };
     try { localStorage.setItem(RUN_KEY, JSON.stringify(saved)); } catch { }
-  }, [phase, roundNum, encounter, restHealed, gold, newBest, ownedItems, itemChoices, activeBoost, player, enemy, pile, turnBonusCost, battleTurn, log, lastResult, acquired]);
+  }, [phase, roundNum, encounter, restHealed, gold, newBest, ownedItems, itemChoices, activeBoost, player, enemy, pile, battleTurn, log, lastResult, acquired]);
 
   const acquirePct = enemy ? Math.round(Math.min(0.95, acquireChance(enemy.item, roundNum + 1) * (activeBoost?.mult ?? 1)) * 100) : 0;
 
   return {
     phase, roundNum, encounter, restHealed, gold, best, newBest,
     ownedItems, ownedDefs, itemChoices, passive, maxHp, unlockedLegendItems, activeBoost,
-    player, enemy, hand: pile.hand, drawCount: pile.draw.length, log, turnBonusCost, battleTurn,
+    player, enemy, hand: pile.hand, drawCount: pile.draw.length, log, battleTurn,
     lastResult, dropped, dropPrompt, saveFail, packOpening, acquired, acquirePct,
     character, effectiveStats, lastPlayerRoll, lastEnemyRoll,
     start, playHandCard, useOwnedActiveItem, endTurn, nextRound, proceedFromEvent, cashOut, buyMerchantHeal, buyBoost, pickItem, skipItem,

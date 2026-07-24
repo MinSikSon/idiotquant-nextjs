@@ -19,43 +19,6 @@ export function HpBar({ hp, maxHp, label }: { hp: number; maxHp: number; label: 
   );
 }
 
-// 동그라미 개수 = base(기본 4 + 레버리지 등 패시브의 energyBonus) + bonus(직전 턴 카드들의
-// 환급(🔋)으로 이번 턴에만 얹힌 보너스). 기본분은 노란색, 환급 보너스분은 카드의 🔋과 같은
-// 초록색으로 구분해서 "이번 턴엔 기본보다 N 더 쓸 수 있다"는 걸 한눈에 보이게 한다.
-// 채워진 동그라미 수 = 아직 안 쓴 코스트, 카드의 ●와 같은 기호를 써서 관계를 시각적으로 잇는다.
-export function EnergyBar({ energy, base, bonus }: { energy: number; base: number; bonus: number }) {
-  const total = Math.max(energy, base + bonus);
-  const dots = Array.from({ length: total }, (_, i) => {
-    const filled = i < energy;
-    const isBonus = i >= base;
-    return (
-      <span key={i} aria-hidden className={cn("w-2.5 h-2.5 rounded-full",
-        !filled ? "bg-black/10 dark:bg-white/10"
-          : isBonus ? "bg-emerald-400 shadow-[0_0_6px_rgba(52,211,153,0.7)]" : "bg-amber-400 shadow-[0_0_6px_rgba(251,191,36,0.7)]")} />
-    );
-  });
-
-  return (
-    <div className="flex items-center gap-1.5 min-w-0">
-      <span className="text-[9px] font-black text-neutral-400 shrink-0">코스트</span>
-      <div className="flex items-center gap-0.5">{dots}</div>
-      <span className="text-[10px] font-black tabular-nums text-amber-600 dark:text-amber-400 shrink-0">{energy}</span>
-      {bonus > 0 && <span className="text-[9px] font-black text-emerald-600 dark:text-emerald-400 shrink-0">🔋+{bonus}</span>}
-    </div>
-  );
-}
-
-// 이번 턴 동안 쌓인 방어력 — 적 턴 한 번 막고 사라지므로, 카드를 낼 때마다 바로바로
-// 눈에 보여야 "지금 방어를 쌓고 있다"는 걸 알 수 있다.
-export function ShieldBadge({ block }: { block: number }) {
-  return (
-    <div className="flex items-center gap-1 shrink-0">
-      <span aria-hidden className="text-sky-500">🛡️</span>
-      <span className="text-[10px] font-black tabular-nums text-sky-600 dark:text-sky-400">{block}</span>
-    </div>
-  );
-}
-
 // 적의 다음 공격이 얼마나 아플지 미리 보여주는 텔레그래프 — 공격력이 이제 고정 데미지가 아니라
 // 0~N 범위 주사위 굴림이라 정확한 수치 대신 범위로 표시한다.
 export function EnemyIntentBadge({ base }: { base: number }) {
@@ -63,6 +26,28 @@ export function EnemyIntentBadge({ base }: { base: number }) {
     <div className="flex items-center gap-1 shrink-0">
       <span aria-hidden className="text-rose-500">⚔️</span>
       <span className="text-[10px] font-black tabular-nums text-rose-600 dark:text-rose-400">0~{base} 예정</span>
+    </div>
+  );
+}
+
+// 하단 캐릭터 정보 패널용 — 아이콘+값(굵게, 크게)을 한 줄로, 라벨을 그 아래 작게. 가로
+// 스크롤로 숨겨지던 수치들을 전부 동시에 보이는 고정 그리드로 펼치기 위한 셀 하나.
+const TILE_TONE = {
+  amber: "text-amber-600 dark:text-amber-400",
+  sky: "text-sky-600 dark:text-sky-400",
+  rose: "text-rose-600 dark:text-rose-400",
+  emerald: "text-[#16a34a] dark:text-emerald-400",
+} as const;
+export function StatTile({ icon, label, value, tone = "amber", suffix }: {
+  icon: React.ReactNode; label: string; value: React.ReactNode; tone?: keyof typeof TILE_TONE; suffix?: React.ReactNode;
+}) {
+  return (
+    <div className="rounded-xl bg-white/85 dark:bg-white/[0.06] border border-black/5 dark:border-white/10 py-1 text-center">
+      <p className={cn("flex items-center justify-center gap-0.5 text-xs font-black tabular-nums leading-none", TILE_TONE[tone])}>
+        {icon}{value}
+      </p>
+      {suffix && <p className="text-[8px] font-bold text-emerald-500 mt-0.5 leading-none">{suffix}</p>}
+      <p className="text-[7px] font-bold text-neutral-400 uppercase tracking-wider mt-0.5 leading-none">{label}</p>
     </div>
   );
 }

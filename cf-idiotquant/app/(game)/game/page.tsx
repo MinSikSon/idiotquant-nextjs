@@ -20,7 +20,7 @@ import {
   ArrowUp, ArrowDown, Layers, Copy, TrendingUp, Sparkles, ChevronDown, Lock, Info,
   Cpu, Dna, Landmark, CarFront, Ship, Construction, Zap, FlaskConical, Factory, RadioTower, Gamepad2,
   Soup, ShoppingCart, PlaneTakeoff, Shirt, Code2, Gem, Compass, Anchor, Map as MapIcon, Medal as MedalIcon,
-  BatteryCharging, Bot, Wallet, Flame, Trophy, Target, Wand2, Swords, Crown, Loader2, X,
+  BatteryCharging, Bot, Wallet, Flame, Trophy, Target, Swords, Crown, Loader2, X,
   type LucideIcon,
 } from "lucide-react";
 import { useAppDispatch, useAppSelector } from "@/lib/hooks";
@@ -31,7 +31,7 @@ import { cn } from "@/lib/utils";
 import { HOLO_THRESHOLD, PackReveal, AchievementBadges, ACHIEVEMENTS } from "./gameCollectibles";
 import { WalletChip, ConvertButton, ShopPanel, BOOST_ITEMS } from "./gameShop";
 import { useGameRun, deckTotal, type DeckItem } from "./useGameRun";
-import { HpBar, EnergyBar, ShieldBadge, EnemyIntentBadge, ItemBar } from "@/components/game/CombatHud";
+import { HpBar, EnemyIntentBadge, ItemBar, StatTile } from "@/components/game/CombatHud";
 import CombatLog from "@/components/game/CombatLog";
 import CharacterCard from "@/components/game/CharacterCard";
 import { DiceRow } from "@/components/game/DiceRow";
@@ -643,45 +643,27 @@ function GameContent() {
                 </div>
               ) : null}
 
-              {/* 하단 — 내 캐릭터 정보(상시 노출, 구 "용사 상태창" 모달 대체). 배지 행은 항목
-                  수가 늘어나도(전투 중 vs 아닐 때 등) 세로로 안 자라게 가로 스크롤 한 줄로 고정
-                  — 위쪽 캔버스가 flex-1이라 이 영역 높이가 흔들리면 캔버스가 같이 움찔거림. */}
+              {/* 하단 — 내 캐릭터 정보(상시 노출, 구 "용사 상태창" 모달 대체). 가로 스크롤(슬라이드)
+                  로 숨겨지던 수치들을 전부 한눈에 보이는 고정 그리드로 펼침 — 항목 수는 phase에만
+                  의존(전투 중 실시간으로는 안 바뀜)이라 그리드 칸 수가 흔들릴 일은 없음. */}
               {run.phase !== "over" && (
                 <div className="shrink-0 mt-1.5 space-y-1">
                   <CharacterCard character={run.character} effectiveStats={run.effectiveStats} />
-                  <div className="flex items-center gap-1.5 overflow-x-auto overflow-y-hidden flex-nowrap scrollbar-hide">
-                    <div className="shrink-0 px-2 py-1 rounded-full backdrop-blur-md bg-white/85 dark:bg-white/[0.06] border border-black/5 dark:border-white/10">
+                  <div className="flex items-center gap-1.5">
+                    <div className="flex-1 min-w-0 px-2.5 py-1 rounded-xl bg-white/85 dark:bg-white/[0.06] border border-black/5 dark:border-white/10">
                       <HpBar hp={run.player.hp} maxHp={run.player.maxHp} label="HP" />
                     </div>
-                    {run.phase === "battling" && (
-                      <div className="shrink-0 px-2 py-1 rounded-full backdrop-blur-md bg-white/85 dark:bg-white/[0.06] border border-black/5 dark:border-white/10">
-                        <EnergyBar energy={run.player.energy} base={run.player.energyMax + run.passive.energyBonus} bonus={run.turnBonusCost} />
-                      </div>
-                    )}
-                    {run.phase === "battling" && (
-                      <div className="shrink-0 px-2 py-1 rounded-full backdrop-blur-md bg-white/85 dark:bg-white/[0.06] border border-black/5 dark:border-white/10">
-                        <ShieldBadge block={run.player.block} />
-                      </div>
-                    )}
-                    {run.phase === "battling" && <div className="shrink-0"><DiceRow label="나" roll={run.lastPlayerRoll} isPlayer compact /></div>}
-                    {run.gold > 0 && (
-                      <span className="shrink-0 inline-flex items-center gap-1 px-2 py-1 rounded-full backdrop-blur-md bg-amber-500/10 border border-amber-500/25 text-amber-600 dark:text-amber-400 text-[10px] font-bold tabular-nums">
-                        💰 골드 {run.gold}
-                      </span>
-                    )}
-                    <span className="shrink-0 inline-flex items-center gap-1 px-2 py-1 rounded-full backdrop-blur-md bg-amber-500/10 border border-amber-500/25 text-amber-600 dark:text-amber-400 text-[10px] font-bold tabular-nums">
-                      <Trophy size={11} strokeWidth={2.5} /> 최고 {run.best}
-                    </span>
-                    {run.phase === "battling" && run.activeBoost && (
-                      <span className="shrink-0 inline-flex items-center gap-1 px-2 py-1 rounded-full backdrop-blur-md bg-amber-500/10 border border-amber-500/25 text-amber-600 dark:text-amber-400 text-[10px] font-bold tabular-nums">
-                        <Wand2 size={11} strokeWidth={2.5} /> ×{run.activeBoost.mult}·{run.activeBoost.roundsLeft}판
-                      </span>
-                    )}
-                    {run.phase === "battling" && run.enemy && (
-                      <span className="shrink-0 inline-flex items-center gap-1 px-2 py-1 rounded-full backdrop-blur-md bg-amber-600/10 border border-amber-600/25 text-amber-700 dark:text-amber-400 text-[10px] font-bold tabular-nums">
-                        <Target size={11} strokeWidth={2.5} /> 획득 {run.acquirePct}%
-                      </span>
-                    )}
+                    {run.phase === "battling" && <DiceRow label="나" roll={run.lastPlayerRoll} isPlayer compact />}
+                  </div>
+                  <div className={cn("grid gap-1.5", run.phase === "battling" ? "grid-cols-5" : "grid-cols-2")}>
+                    <StatTile icon={<Trophy size={11} strokeWidth={2.5} />} label="최고층수" value={run.best} />
+                    <StatTile icon="💰" label="골드" value={run.gold} />
+                    {run.phase === "battling" && <>
+                      <StatTile icon="●" label="코스트" value={run.player.energy} />
+                      <StatTile icon="🛡️" label="방어력" value={run.player.block} tone="sky" />
+                      <StatTile icon={<Target size={11} strokeWidth={2.5} />} label="획득확률" value={`${run.acquirePct}%`}
+                        suffix={run.activeBoost && <>×{run.activeBoost.mult}·{run.activeBoost.roundsLeft}판</>} />
+                    </>}
                   </div>
                 </div>
               )}
