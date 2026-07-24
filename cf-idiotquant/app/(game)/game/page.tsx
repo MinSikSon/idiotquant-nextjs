@@ -20,7 +20,7 @@ import {
   ArrowUp, ArrowDown, Layers, Copy, TrendingUp, Sparkles, ChevronDown, Lock, Info,
   Cpu, Dna, Landmark, CarFront, Ship, Construction, Zap, FlaskConical, Factory, RadioTower, Gamepad2,
   Soup, ShoppingCart, PlaneTakeoff, Shirt, Code2, Gem, Compass, Anchor, Map as MapIcon, Medal as MedalIcon,
-  BatteryCharging, Bot, Wallet, Flame, Trophy, Target, Wand2, Swords, Crown, Loader2, UserRound, X,
+  BatteryCharging, Bot, Wallet, Flame, Trophy, Target, Wand2, Swords, Crown, Loader2, X,
   type LucideIcon,
 } from "lucide-react";
 import { useAppDispatch, useAppSelector } from "@/lib/hooks";
@@ -34,7 +34,7 @@ import { useGameRun, deckTotal, type DeckItem } from "./useGameRun";
 import { HpBar, EnergyBar, ShieldBadge, EnemyIntentBadge, ItemBar } from "@/components/game/CombatHud";
 import CombatLog from "@/components/game/CombatLog";
 import CharacterCard from "@/components/game/CharacterCard";
-import DiceBadge from "@/components/game/DiceBadge";
+import { DiceRow } from "@/components/game/DiceRow";
 
 const PhaserCombatCanvas = dynamic(() => import("@/components/game/PhaserCombatCanvas"), { ssr: false });
 const HandView = dynamic(() => import("@/components/game/HandView"), { ssr: false });
@@ -509,7 +509,6 @@ function GameContent() {
   const [coins, setCoins] = useState(0);
   const [showShop, setShowShop] = useState(false);
   const [showTutorial, setShowTutorial] = useState(false);
-  const [showStatus, setShowStatus] = useState(false);
   const [showResultDetail, setShowResultDetail] = useState(false);
   const [introLabel, setIntroLabel] = useState<string | null>(null);
 
@@ -594,51 +593,26 @@ function GameContent() {
             </div>
           ) : (
             <div className={cn("w-full", run.phase === "over" ? "flex flex-col sm:flex-1 sm:min-h-0" : "flex flex-col flex-1 min-h-0")}>
-              {/* 상단 HUD */}
+              {/* 상단 HUD — 던전 층수 + 적 정보만(내 캐릭터 관련 정보는 전부 하단 패널로 이동) */}
               {run.phase !== "over" && (
                 <div className="shrink-0 mb-1 sm:mb-2 space-y-1">
-                  <button type="button" onClick={() => setShowStatus(true)} aria-label="상태창 보기"
-                    className="flex items-center justify-center gap-1.5 flex-wrap w-full active:opacity-70 transition-opacity">
-                    <div className="px-2 py-1.5 rounded-2xl backdrop-blur-md bg-white/85 dark:bg-white/[0.06] border border-black/5 dark:border-white/10 shadow-[0_6px_18px_-8px_rgba(0,0,0,0.35)]">
-                      <HpBar hp={run.player.hp} maxHp={run.player.maxHp} label="HP" />
-                    </div>
+                  {/* pr-9 — 우측 상단 구석에 고정된 게임 설명 버튼과 안 겹치게 오른쪽 여유 확보 */}
+                  <div className="flex items-center justify-center gap-1.5 flex-wrap w-full pr-9">
                     <div className="flex items-center gap-1 pl-2 pr-1 py-1 rounded-2xl backdrop-blur-md bg-white/85 dark:bg-white/[0.06] border border-black/5 dark:border-white/10 shadow-[0_6px_18px_-8px_rgba(0,0,0,0.35)]">
                       <span className="text-[9px] font-black text-neutral-400 uppercase tracking-wider pr-0.5 whitespace-nowrap">지하{run.roundNum + 1}층</span>
                       <FloorGraph nodes={floorWindow} />
                     </div>
-                    {run.phase === "battling" && (
-                      <div className="px-2 py-1.5 rounded-2xl backdrop-blur-md bg-white/85 dark:bg-white/[0.06] border border-black/5 dark:border-white/10 shadow-[0_6px_18px_-8px_rgba(0,0,0,0.35)]">
-                        <ShieldBadge block={run.player.block} />
-                      </div>
-                    )}
                     {run.phase === "battling" && run.enemy && (
                       <div className="px-2 py-1.5 rounded-2xl backdrop-blur-md bg-white/85 dark:bg-white/[0.06] border border-black/5 dark:border-white/10 shadow-[0_6px_18px_-8px_rgba(0,0,0,0.35)]">
                         <EnemyIntentBadge base={run.enemy.nextAttack} />
                       </div>
                     )}
-                  </button>
-                  <div className="flex items-center justify-center gap-1.5 h-8 overflow-x-auto overflow-y-hidden flex-nowrap scrollbar-hide">
-                    {run.gold > 0 && (
-                      <span className="shrink-0 inline-flex items-center gap-1 px-2 py-1 rounded-full backdrop-blur-md bg-amber-500/10 border border-amber-500/25 text-amber-600 dark:text-amber-400 text-[10px] font-bold tabular-nums">
-                        💰 골드 {run.gold}
-                      </span>
-                    )}
-                    <ItemBar ownedDefs={run.ownedDefs} ownedItems={run.ownedItems} canUseActive={run.phase === "battling"} onUseActive={run.useOwnedActiveItem} />
-                    {run.phase === "battling" && run.activeBoost && (
-                      <span className="shrink-0 inline-flex items-center gap-1 px-2 py-1 rounded-full backdrop-blur-md bg-amber-500/10 border border-amber-500/25 text-amber-600 dark:text-amber-400 text-[10px] font-bold tabular-nums">
-                        <Wand2 size={11} strokeWidth={2.5} /> ×{run.activeBoost.mult}·{run.activeBoost.roundsLeft}판
-                      </span>
-                    )}
-                    {run.phase === "battling" && run.enemy && (
-                      <span className="shrink-0 inline-flex items-center gap-1 px-2 py-1 rounded-full backdrop-blur-md bg-amber-600/10 border border-amber-600/25 text-amber-700 dark:text-amber-400 text-[10px] font-bold tabular-nums">
-                        <Target size={11} strokeWidth={2.5} /> 획득 {run.acquirePct}%
-                      </span>
-                    )}
-                    <button type="button" onClick={() => setShowTutorial(true)} aria-label="게임 방법 보기"
-                      className="shrink-0 inline-flex items-center justify-center w-8 h-8 rounded-full backdrop-blur-md bg-white/85 dark:bg-white/[0.06] border border-black/5 dark:border-white/10 shadow-[0_6px_18px_-8px_rgba(0,0,0,0.35)] text-neutral-500 dark:text-neutral-300 hover:text-[#16a34a] transition-colors">
-                      <Info size={14} />
-                    </button>
                   </div>
+                  {run.ownedItems.length > 0 && (
+                    <div className="flex items-center justify-center gap-1.5 h-8 overflow-x-auto overflow-y-hidden flex-nowrap scrollbar-hide">
+                      <ItemBar ownedDefs={run.ownedDefs} ownedItems={run.ownedItems} canUseActive={run.phase === "battling"} onUseActive={run.useOwnedActiveItem} />
+                    </div>
+                  )}
                 </div>
               )}
 
@@ -653,8 +627,7 @@ function GameContent() {
                 <div className="flex-1 min-h-0 flex flex-col">
                   <div className="flex-1 min-h-0 flex flex-col rounded-2xl overflow-hidden backdrop-blur-md bg-white/60 dark:bg-white/[0.03] border border-black/5 dark:border-white/10">
                     <HandView cards={run.hand} energy={run.player.energy} freeCostThreshold={run.passive.freeCostThreshold} onPlayCard={run.playHandCard}
-                      leftOverlay={<DiceBadge playerRoll={run.lastPlayerRoll} enemyRoll={run.lastEnemyRoll} />}
-                      hudOverlay={<EnergyBar vertical energy={run.player.energy} base={run.player.energyMax + run.passive.energyBonus} bonus={run.turnBonusCost} />}>
+                      leftOverlay={<DiceRow label="적" roll={run.lastEnemyRoll} isPlayer={false} />}>
                       <PhaserCombatCanvas enemy={run.enemy} player={run.player} introLabel={introLabel} />
                     </HandView>
                   </div>
@@ -669,10 +642,59 @@ function GameContent() {
                   </div>
                 </div>
               ) : null}
+
+              {/* 하단 — 내 캐릭터 정보(상시 노출, 구 "용사 상태창" 모달 대체). 배지 행은 항목
+                  수가 늘어나도(전투 중 vs 아닐 때 등) 세로로 안 자라게 가로 스크롤 한 줄로 고정
+                  — 위쪽 캔버스가 flex-1이라 이 영역 높이가 흔들리면 캔버스가 같이 움찔거림. */}
+              {run.phase !== "over" && (
+                <div className="shrink-0 mt-1.5 space-y-1">
+                  <CharacterCard character={run.character} effectiveStats={run.effectiveStats} />
+                  <div className="flex items-center gap-1.5 overflow-x-auto overflow-y-hidden flex-nowrap scrollbar-hide">
+                    <div className="shrink-0 px-2 py-1 rounded-full backdrop-blur-md bg-white/85 dark:bg-white/[0.06] border border-black/5 dark:border-white/10">
+                      <HpBar hp={run.player.hp} maxHp={run.player.maxHp} label="HP" />
+                    </div>
+                    {run.phase === "battling" && (
+                      <div className="shrink-0 px-2 py-1 rounded-full backdrop-blur-md bg-white/85 dark:bg-white/[0.06] border border-black/5 dark:border-white/10">
+                        <EnergyBar energy={run.player.energy} base={run.player.energyMax + run.passive.energyBonus} bonus={run.turnBonusCost} />
+                      </div>
+                    )}
+                    {run.phase === "battling" && (
+                      <div className="shrink-0 px-2 py-1 rounded-full backdrop-blur-md bg-white/85 dark:bg-white/[0.06] border border-black/5 dark:border-white/10">
+                        <ShieldBadge block={run.player.block} />
+                      </div>
+                    )}
+                    {run.phase === "battling" && <div className="shrink-0"><DiceRow label="나" roll={run.lastPlayerRoll} isPlayer compact /></div>}
+                    {run.gold > 0 && (
+                      <span className="shrink-0 inline-flex items-center gap-1 px-2 py-1 rounded-full backdrop-blur-md bg-amber-500/10 border border-amber-500/25 text-amber-600 dark:text-amber-400 text-[10px] font-bold tabular-nums">
+                        💰 골드 {run.gold}
+                      </span>
+                    )}
+                    <span className="shrink-0 inline-flex items-center gap-1 px-2 py-1 rounded-full backdrop-blur-md bg-amber-500/10 border border-amber-500/25 text-amber-600 dark:text-amber-400 text-[10px] font-bold tabular-nums">
+                      <Trophy size={11} strokeWidth={2.5} /> 최고 {run.best}
+                    </span>
+                    {run.phase === "battling" && run.activeBoost && (
+                      <span className="shrink-0 inline-flex items-center gap-1 px-2 py-1 rounded-full backdrop-blur-md bg-amber-500/10 border border-amber-500/25 text-amber-600 dark:text-amber-400 text-[10px] font-bold tabular-nums">
+                        <Wand2 size={11} strokeWidth={2.5} /> ×{run.activeBoost.mult}·{run.activeBoost.roundsLeft}판
+                      </span>
+                    )}
+                    {run.phase === "battling" && run.enemy && (
+                      <span className="shrink-0 inline-flex items-center gap-1 px-2 py-1 rounded-full backdrop-blur-md bg-amber-600/10 border border-amber-600/25 text-amber-700 dark:text-amber-400 text-[10px] font-bold tabular-nums">
+                        <Target size={11} strokeWidth={2.5} /> 획득 {run.acquirePct}%
+                      </span>
+                    )}
+                  </div>
+                </div>
+              )}
             </div>
           )}
         </div>
       </div>
+
+      {/* 게임 설명 버튼 — 화면 우측 상단 구석 */}
+      <button type="button" onClick={() => setShowTutorial(true)} aria-label="게임 방법 보기"
+        className="absolute top-2 right-2 z-20 inline-flex items-center justify-center w-8 h-8 rounded-full backdrop-blur-md bg-white/85 dark:bg-white/[0.06] border border-black/5 dark:border-white/10 shadow-[0_6px_18px_-8px_rgba(0,0,0,0.35)] text-neutral-500 dark:text-neutral-300 hover:text-[#16a34a] transition-colors">
+        <Info size={14} />
+      </button>
 
       {/* 방법 안내 */}
       {showTutorial && (
@@ -685,10 +707,10 @@ function GameContent() {
             <div className="space-y-3">
               {[
                 { icon: "⚔️", text: <>내 덱(보유 카드)이 곧 전투 카드예요. 매 턴 <b className="text-neutral-800 dark:text-neutral-100">손패</b>에서 카드를 <b className="text-neutral-800 dark:text-neutral-100">전장으로 드래그</b>해 발동하세요 — 카드의 공격력은 <b className="text-neutral-800 dark:text-neutral-100">0~N 범위</b>로 20면체 주사위를 굴려 실제 피해가 정해지고, 방어력만큼 내 블록을 올려요.</> },
-                { icon: "🎲", text: <>주사위 눈이 <b className="text-amber-500 dark:text-amber-400">자연 20</b>이면 <b className="text-amber-500 dark:text-amber-400">크리티컬</b>(최대 피해의 2배)! 몬스터의 공격도 같은 방식으로 굴려요. 전장 왼쪽의 주사위에서 결과를 확인할 수 있어요.</> },
+                { icon: "🎲", text: <>주사위 눈이 <b className="text-amber-500 dark:text-amber-400">자연 20</b>이면 <b className="text-amber-500 dark:text-amber-400">크리티컬</b>(최대 피해의 2배)! 몬스터의 공격도 같은 방식으로 굴려요. 내 주사위는 하단 캐릭터 정보에, 적 주사위는 전장 왼쪽에 각각 표시돼요.</> },
                 { icon: "●", text: <>카드를 내려면 <b className="text-neutral-800 dark:text-neutral-100">코스트</b>가 필요해요 — 전투 시작 시 1개로 시작해 <b className="text-neutral-800 dark:text-neutral-100">내 턴마다 +1</b>씩 늘어나 최대 10개까지 커져요.</> },
                 { icon: "🔋", text: <>카드의 🔋(환급) 숫자만큼 <b className="text-neutral-800 dark:text-neutral-100">다음 턴 코스트</b>가 미리 충전돼요 — 이번 턴엔 안 쓰이고 다음 턴 시작할 때 동그라미로 더해져요.</> },
-                { icon: "🛡️", text: <>쌓인 방어력은 상단 🛡️ 배지에 실시간으로 표시돼요. <b className="text-neutral-800 dark:text-neutral-100">적 턴 하나만</b> 막고 사라지니, 적의 "다음 턴 예정 공격력 범위"를 미리 보고 방어할지 판단하세요.</> },
+                { icon: "🛡️", text: <>쌓인 방어력은 하단 🛡️ 배지에 실시간으로 표시돼요. <b className="text-neutral-800 dark:text-neutral-100">적 턴 하나만</b> 막고 사라지니, 적의 "다음 턴 예정 공격력 범위"를 미리 보고 방어할지 판단하세요.</> },
                 { icon: "🎒", text: <>3층마다 <b className="text-neutral-800 dark:text-neutral-100">패시브/액티브 아이템</b>을 하나 고를 수 있어요. 힘·민첩·행운·체력을 올려주는 스탯 아이템도 있어요.</> },
                 { icon: "🃏", text: <>적을 처치(층 클리어)하면 확률에 따라 <b className="text-neutral-800 dark:text-neutral-100">내 덱</b>에 카드가 수집돼요. 좋은 카드일수록 전투 스탯도 강해요.</> },
                 { icon: "🧭", text: <>층이 깊어질수록 <b className="text-neutral-800 dark:text-neutral-100">상인</b>(골드로 HP 회복)·<b className="text-neutral-800 dark:text-neutral-100">휴식</b>(무료 회복)·<b className="text-orange-500 dark:text-orange-400">정예</b>(강한 몬스터) 조우가 섞여 나와요. <b className="text-violet-600 dark:text-violet-400">10층마다는 보스</b>(같은 몬스터가 스탯 3배로 강화돼 등장)예요.</> },
@@ -703,86 +725,6 @@ function GameContent() {
               className="w-full mt-4 inline-flex items-center justify-center gap-2 px-6 py-2.5 rounded-2xl bg-gradient-to-r from-[#16a34a] to-[#15803d] hover:brightness-110 text-white font-black text-sm shadow-[0_8px_24px_-8px_rgba(22,163,74,0.55)] active:scale-[0.98] transition-all">
               <Swords size={16} /> 던전 입장!
             </button>
-          </div>
-        </div>
-      )}
-
-      {/* 용사 상태창 */}
-      {showStatus && (
-        <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/50 backdrop-blur-sm p-3" onClick={() => setShowStatus(false)}>
-          <div className="w-full sm:max-w-sm max-h-[80vh] overflow-y-auto rounded-2xl bg-white dark:bg-[#242320] border border-neutral-200 dark:border-[#35332e] shadow-xl p-4 animate-in fade-in slide-in-from-bottom-2 sm:zoom-in-95 duration-200" onClick={e => e.stopPropagation()}>
-            <div className="flex items-center justify-between mb-3">
-              <p className="font-black text-neutral-900 dark:text-white flex items-center gap-1.5"><UserRound size={16} /> 용사 상태창</p>
-              <button type="button" onClick={() => setShowStatus(false)} className="text-neutral-400 hover:text-[#16a34a]" aria-label="닫기"><X size={18} /></button>
-            </div>
-            <p className="flex items-center gap-1.5 text-xs text-neutral-500 dark:text-neutral-400 mb-2">
-              <span aria-hidden className="text-base leading-none">{rankOf(run.roundNum).emoji}</span>
-              <b className="text-neutral-800 dark:text-neutral-100">{rankOf(run.roundNum).title}</b>
-              <span>· 지하 {run.roundNum + 1}층</span>
-            </p>
-            <div className="mb-3">
-              <CharacterCard character={run.character} effectiveStats={run.effectiveStats} hp={run.player.hp} maxHp={run.player.maxHp} />
-            </div>
-            <div className="grid grid-cols-3 gap-1.5 mb-3">
-              <div className="rounded-lg bg-black/[0.03] dark:bg-white/[0.04] py-1.5 text-center">
-                <p className="flex items-center justify-center gap-0.5 text-sm font-black tabular-nums text-rose-500 leading-none"><UserRound size={11} strokeWidth={2.5} />{run.player.hp}/{run.player.maxHp}</p>
-                <p className="text-[8px] font-bold text-neutral-400 uppercase tracking-wider mt-1">HP</p>
-              </div>
-              <div className="rounded-lg bg-black/[0.03] dark:bg-white/[0.04] py-1.5 text-center">
-                <p className="flex items-center justify-center gap-0.5 text-sm font-black tabular-nums text-amber-500 leading-none"><Trophy size={11} strokeWidth={2.5} />{run.best}</p>
-                <p className="text-[8px] font-bold text-neutral-400 uppercase tracking-wider mt-1">최고 층수</p>
-              </div>
-              <div className="rounded-lg bg-black/[0.03] dark:bg-white/[0.04] py-1.5 text-center">
-                <p className="flex items-center justify-center gap-0.5 text-sm font-black tabular-nums text-amber-600 dark:text-amber-400 leading-none">💰{run.gold}</p>
-                <p className="text-[8px] font-bold text-neutral-400 uppercase tracking-wider mt-1">골드</p>
-              </div>
-              {run.phase === "battling" && (
-                <>
-                  <div className="rounded-lg bg-black/[0.03] dark:bg-white/[0.04] py-1.5 text-center">
-                    <p className="text-sm font-black tabular-nums text-amber-500 leading-none">●{run.player.energy}</p>
-                    <p className="text-[8px] font-bold text-neutral-400 uppercase tracking-wider mt-1">코스트</p>
-                  </div>
-                  <div className="rounded-lg bg-black/[0.03] dark:bg-white/[0.04] py-1.5 text-center">
-                    <p className="text-sm font-black tabular-nums text-sky-500 leading-none">🛡️{run.player.block}</p>
-                    <p className="text-[8px] font-bold text-neutral-400 uppercase tracking-wider mt-1">방어력</p>
-                  </div>
-                  <div className="rounded-lg bg-black/[0.03] dark:bg-white/[0.04] py-1.5 text-center">
-                    <p className="text-sm font-black tabular-nums text-amber-700 dark:text-amber-400 leading-none">{run.acquirePct}%</p>
-                    <p className="text-[8px] font-bold text-neutral-400 uppercase tracking-wider mt-1">획득 확률</p>
-                  </div>
-                </>
-              )}
-            </div>
-            {run.activeBoost && (
-              <p className="flex items-center gap-1 text-[11px] font-bold text-amber-600 dark:text-amber-400 mb-2">
-                <Wand2 size={12} strokeWidth={2.5} /> 확률 부스트 ×{run.activeBoost.mult} — {run.activeBoost.roundsLeft}판 남음
-              </p>
-            )}
-            <p className="text-xs font-black text-neutral-700 dark:text-neutral-200 mb-1.5">보유 아이템 {run.ownedItems.length}</p>
-            {run.ownedItems.length === 0 ? (
-              <p className="text-[11px] text-neutral-400">아직 없어요. 3층마다 획득 기회가 있어요.</p>
-            ) : (
-              <div className="space-y-1.5">
-                {run.ownedItems.map(o => {
-                  const def = run.ownedDefs.find((d: any) => d.id === o.defId);
-                  if (!def) return null;
-                  return (
-                    <div key={o.instanceId} className={cn("flex items-center gap-2 rounded-lg px-2 py-1.5", def.kind === "active" ? "bg-amber-500/10" : "bg-sky-500/10")}>
-                      <span aria-hidden className="text-base">{def.icon}</span>
-                      <span className="min-w-0">
-                        <span className="flex items-center gap-1 text-xs font-black text-neutral-800 dark:text-neutral-100">
-                          {def.name}
-                          {def.isLegend && <span className="px-1 py-0.5 rounded text-[8px] font-black bg-amber-500 text-white">전설</span>}
-                          {def.tier && <span className="px-1 py-0.5 rounded text-[8px] font-black bg-violet-500 text-white">Lv{def.tier}</span>}
-                          <span className="text-[9px] font-bold text-neutral-400">{def.kind === "active" ? "액티브" : "패시브"}</span>
-                        </span>
-                        <span className="block text-[10px] text-neutral-500 dark:text-neutral-400">{def.desc}</span>
-                      </span>
-                    </div>
-                  );
-                })}
-              </div>
-            )}
           </div>
         </div>
       )}

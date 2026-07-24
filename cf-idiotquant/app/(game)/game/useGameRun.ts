@@ -61,6 +61,20 @@ const REST_HEAL_FRAC = 0.3;
 
 type Pile = { draw: CombatCard[]; hand: CombatCard[]; discard: CombatCard[] };
 
+// 진행 중인 런 저장 — 다른 페이지를 다녀와도 이어지도록 함. 카드 데이터가 전부 인라인 스냅샷이라
+// (pool/deck 참조 없음) 그대로 JSON 직렬화/복원이 됨. packOpening/dropped/dropPrompt/saveFail은
+// 진행 중이던 setTimeout·fetch 콜백에 묶인 일시 상태라 저장 대상에서 제외(로드 시 기본값).
+const RUN_KEY = "iq:game:run:v1";
+type SavedRun = {
+  phase: Phase; roundNum: number; encounter: EncounterType; restHealed: boolean;
+  gold: number; newBest: boolean;
+  ownedItems: OwnedItem[]; itemChoices: ItemDef[] | null; activeBoost: { mult: number; roundsLeft: number } | null;
+  player: PlayerState; enemy: EnemyState | null; pile: Pile;
+  reservedRefund: number; turnBonusCost: number; battleTurn: number;
+  log: LogEntry[]; lastResult: { win: boolean; goldGain?: number } | null;
+  acquired: DeckCardSnapshot[];
+};
+
 export function useGameRun(params: { pool: any[]; deck: DeckItem[]; setDeck: (fn: (prev: DeckItem[]) => DeckItem[]) => void; isLoggedIn: boolean }) {
   const { pool, deck, setDeck, isLoggedIn } = params;
 
@@ -133,6 +147,35 @@ export function useGameRun(params: { pool: any[]; deck: DeckItem[]; setDeck: (fn
     setPlayer(p => ({ ...p, maxHp, hp: delta > 0 ? Math.min(maxHp, p.hp + delta) : p.hp }));
     prevMaxHpRef.current = maxHp;
   }, [maxHp]);
+
+  const started = useRef(false); // 자동 새 런 시작 가드 — 아래 복원이 성공하면 true로 설정해 덮어쓰지 않게 함
+
+  // 페이지 재방문 시 진행 중이던 런 복원 — 저장된 스냅샷은 카드 데이터가 전부 인라인이라
+  // pool/deck 로딩을 기다릴 필요 없이 마운트 즉시 복원 가능.
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    try {
+      const raw = localStorage.getItem(RUN_KEY);
+      if (!raw) return;
+      const saved: SavedRun = JSON.parse(raw);
+      if (!saved || !saved.player || !saved.phase || saved.phase === "over") return;
+      setPhase(saved.phase); setRoundNum(saved.roundNum); setEncounter(saved.encounter);
+      setRestHealed(saved.restHealed); setGold(saved.gold); setNewBest(saved.newBest ?? false);
+      setOwnedItems(saved.ownedItems ?? []);
+      setItemChoices(saved.itemChoices ?? null);
+      setActiveBoost(saved.activeBoost ?? null);
+      setPlayer(saved.player); setEnemy(saved.enemy);
+      setPile(saved.pile ?? { draw: [], hand: [], discard: [] });
+      reservedRefundRef.current = saved.reservedRefund ?? 0;
+      setTurnBonusCost(saved.turnBonusCost ?? 0);
+      setBattleTurn(saved.battleTurn ?? 1);
+      setLog(saved.log ?? []);
+      setLastResult(saved.lastResult ?? null);
+      setAcquired(saved.acquired ?? []);
+      prevMaxHpRef.current = saved.player.maxHp;
+      started.current = true;
+    } catch { /* 손상된 저장값은 무시하고 새 런으로 진행 */ }
+  }, []);
 
   // 승리(층 클리어) 공통 처리 — 최고기록·골드·아이템 제공·카드 수집 판정
   const handleWin = useCallback((beatenEnemy: EnemyState, enc: EncounterType, floor: number) => {
@@ -319,8 +362,21 @@ export function useGameRun(params: { pool: any[]; deck: DeckItem[]; setDeck: (fn
     setPhase("battling");
   }, [pool, deck, maxHp]);
 
-  const started = useRef(false);
   useEffect(() => { if (!started.current && pool.length >= 2 && characterLoaded) { started.current = true; start(); } }, [pool, characterLoaded, start]);
+
+  // 진행 중인 런 저장 — 다른 페이지로 이동했다 돌아와도 이어지도록. 런이 끝나면(over) 제거.
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    if (phase === "loading") return;
+    if (phase === "over") { try { localStorage.removeItem(RUN_KEY); } catch { } return; }
+    const saved: SavedRun = {
+      phase, roundNum, encounter, restHealed, gold, newBest,
+      ownedItems, itemChoices, activeBoost, player, enemy, pile,
+      reservedRefund: reservedRefundRef.current, turnBonusCost, battleTurn,
+      log, lastResult, acquired,
+    };
+    try { localStorage.setItem(RUN_KEY, JSON.stringify(saved)); } catch { }
+  }, [phase, roundNum, encounter, restHealed, gold, newBest, ownedItems, itemChoices, activeBoost, player, enemy, pile, turnBonusCost, battleTurn, log, lastResult, acquired]);
 
   const acquirePct = enemy ? Math.round(Math.min(0.95, acquireChance(enemy.item, roundNum + 1) * (activeBoost?.mult ?? 1)) * 100) : 0;
 
