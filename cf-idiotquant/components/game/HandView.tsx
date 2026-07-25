@@ -137,7 +137,7 @@ function ItemMenu({ ownedItems, ownedDefs, onUse, onBack, busy }: {
 }
 
 // 파티 교체 — forced(활성 몬스터가 방금 기절)면 취소 화살표를 없애 반드시 하나를 골라야 함.
-// 3마리 고정이라 그리드 4칸 중 하나는 항상 빈 자리로 남는다.
+// 파티가 6마리라 2x2 그리드엔 안 들어가서 ItemMenu와 같은 가로 스크롤 스트립으로 나열한다.
 function PartyMenu({ party, activeIndex, forced, onSwitch, onBack, busy }: {
   party: PartyMember[]; activeIndex: number; forced: boolean;
   onSwitch: (instanceId: string) => void; onBack: () => void; busy: boolean;
@@ -145,14 +145,14 @@ function PartyMenu({ party, activeIndex, forced, onSwitch, onBack, busy }: {
   return (
     <>
       {!forced && <BackColumn onBack={onBack} disabled={busy} />}
-      <Grid2x2>
+      <div className="flex items-center gap-1 h-full w-[168px] shrink-0 overflow-x-auto">
         {party.map((m, i) => {
           const fainted = m.hp <= 0;
           const isActive = i === activeIndex;
           const usable = !fainted && !isActive && !busy;
           return (
             <button key={m.instanceId} type="button" disabled={!usable} onClick={() => onSwitch(m.instanceId)}
-              className={cn(CELL_CLASS, usable ? CELL_ON : CELL_OFF)}>
+              className={cn(CELL_CLASS, "w-16 shrink-0", usable ? CELL_ON : CELL_OFF)}>
               <p className="text-[8px] font-bold text-neutral-500 dark:text-neutral-400 truncate w-full text-center">
                 {isActive ? "▶ " : ""}{m.name}
               </p>
@@ -163,10 +163,7 @@ function PartyMenu({ party, activeIndex, forced, onSwitch, onBack, busy }: {
             </button>
           );
         })}
-        <div className={cn(CELL_CLASS, CELL_OFF)}>
-          <span className="text-[8px] font-bold text-neutral-400">빈 자리</span>
-        </div>
-      </Grid2x2>
+      </div>
     </>
   );
 }

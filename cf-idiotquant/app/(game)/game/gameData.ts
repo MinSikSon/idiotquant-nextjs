@@ -4,8 +4,8 @@
 import { computeValueScore } from "@/lib/utils/valueScore";
 import type { ItemDef, CardStats } from "./gameTypes";
 
-// 파티 규모 — 계정 덱(수집 카드) 중 우수한 상위 N장으로 던전 진입 시 파티를 구성.
-export const PARTY_SIZE = 3;
+// 파티 규모 — 던전 입장 전 파티 설정 화면에서 유저가 계정 덱 중 최대 이 수만큼 직접 고른다.
+export const PARTY_SIZE = 6;
 
 // 덱에 카드가 PARTY_SIZE보다 적을 때 채워 넣는 기본 몬스터(계정 덱엔 저장되지 않는 합성 스탯).
 // 실제 수집 카드보다 확실히 약하게 잡아 수집 동기를 유지한다.
