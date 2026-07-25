@@ -665,7 +665,7 @@ function GameContent() {
                 <ResultScreen run={run} showResultDetail={showResultDetail} setShowResultDetail={setShowResultDetail}
                   isLoggedIn={isLoggedIn} deck={deck} catalog={catalog} />
               ) : run.phase === "partySetup" ? (
-                <PartySetupScreen deck={deck} isLoggedIn={isLoggedIn} onConfirm={run.start} />
+                <PartySetupScreen deck={deck} isLoggedIn={isLoggedIn} onConfirm={run.start} hasSavedRun={run.hasSavedRun} onResume={run.resumeRun} />
               ) : run.phase === "shop" ? (
                 <ShopScreen run={run} />
               ) : run.phase === "event" ? (
@@ -804,8 +804,9 @@ function GameContent() {
 // 던전 입장 전 파티 설정 — 계정 덱에서 최대 PARTY_SIZE장을 직접 고른다(부족분은 스타터로
 // 채워짐, combatEngine.buildParty가 처리). 기본값은 저평가 점수 하위(수치가 제일 낮은)
 // PARTY_SIZE장을 미리 선택해둬 그냥 바로 입장해도 되게 함(커스터마이즈는 원할 때만).
-function PartySetupScreen({ deck, isLoggedIn, onConfirm }: {
+function PartySetupScreen({ deck, isLoggedIn, onConfirm, hasSavedRun, onResume }: {
   deck: DeckItem[]; isLoggedIn: boolean; onConfirm: (tickers: string[]) => void;
+  hasSavedRun: boolean; onResume: () => void;
 }) {
   const ranked = useMemo(() => [...deck].sort((a, b) => computeValueScore(a).score - computeValueScore(b).score), [deck]);
   const [selected, setSelected] = useState<string[]>(() => ranked.slice(0, PARTY_SIZE).map(c => c.ticker));
@@ -828,6 +829,14 @@ function PartySetupScreen({ deck, isLoggedIn, onConfirm }: {
         <p className="font-black text-neutral-900 dark:text-white">🧩 파티를 꾸리세요</p>
         <p className="text-[11px] text-neutral-400 mt-0.5 break-keep">최대 {PARTY_SIZE}장까지 고를 수 있어요(기본은 저평가 점수가 낮은 카드부터 선택돼 있어요) — 부족한 자리는 스타터 몬스터로 채워져요</p>
       </div>
+      {hasSavedRun && (
+        <div className="shrink-0 px-1 pb-2">
+          <button type="button" onClick={onResume}
+            className="w-full inline-flex items-center justify-center gap-2 px-6 py-2 rounded-2xl bg-white/70 dark:bg-white/[0.05] border border-black/10 dark:border-white/10 text-neutral-700 dark:text-neutral-200 font-bold text-xs active:scale-[0.98] transition-all">
+            🔖 진행 중이던 던전 이어하기
+          </button>
+        </div>
+      )}
       <div className="flex-1 min-h-0 overflow-y-auto space-y-1.5 px-1 pb-2">
         {ranked.length === 0 && (
           <div className="text-center text-xs text-neutral-400 py-10 break-keep">
