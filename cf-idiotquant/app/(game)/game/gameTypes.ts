@@ -1,6 +1,6 @@
 // 가치투자 덱빌더 — 공유 타입. React/Phaser 비의존.
 
-export type Phase = "loading" | "battling" | "resolved" | "over" | "event" | "shop";
+export type Phase = "loading" | "partySetup" | "battling" | "resolved" | "over" | "event" | "shop";
 export type EncounterType = "battle" | "boss" | "rest" | "elite";
 export type EnemyEncounter = "battle" | "boss" | "elite"; // 실제로 적이 등장하는 조우만(휴식 제외)
 

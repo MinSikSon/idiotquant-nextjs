@@ -114,11 +114,10 @@ export function monsterSkills(stats: CardStats): SkillDef[] {
   ];
 }
 
-// 던전 입장 시 파티 구성 — 계정 덱(수집한 종목 카드)에서 저평가 점수 상위 PARTY_SIZE장을 뽑고,
-// 부족하면 STARTER_MONSTERS로 채운다. 런 내내 고정(중간 합류/이탈 없음).
-export function buildParty(deckCards: any[]): PartyMember[] {
-  const sorted = [...deckCards].sort((a, b) => computeValueScore(b).score - computeValueScore(a).score);
-  const members: PartyMember[] = sorted.slice(0, PARTY_SIZE).map(card => {
+// 던전 입장 시 파티 구성 — 파티 설정 화면에서 유저가 고른 카드(최대 PARTY_SIZE장, 순서 무관)를
+// 그대로 쓰고, 부족하면 STARTER_MONSTERS로 채운다. 런 내내 고정(중간 합류/이탈 없음).
+export function buildParty(chosenCards: any[]): PartyMember[] {
+  const members: PartyMember[] = chosenCards.slice(0, PARTY_SIZE).map(card => {
     const stats = cardStats(card);
     const maxHp = PARTY_BASE_HP + stats.shield * HP_PER_SHIELD_PLAYER;
     return {

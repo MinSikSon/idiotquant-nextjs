@@ -464,9 +464,12 @@ export function useGameRun(params: { pool: any[]; deck: DeckItem[]; setDeck: (fn
   }, []);
   const skipItem = useCallback(() => setItemChoices(null), []);
 
-  const start = useCallback(() => {
+  // selectedTickers — 파티 설정 화면에서 유저가 고른 카드(최대 PARTY_SIZE, 순서=선택 순서).
+  // 빈 배열이면(덱이 없거나 전부 건너뜀) 전원 스타터로 시작.
+  const start = useCallback((selectedTickers: string[] = []) => {
     if (pool.length < 2) return;
-    const newParty = buildParty(deck);
+    const chosen = selectedTickers.map(t => deck.find(d => d.ticker === t)).filter((c): c is DeckItem => !!c);
+    const newParty = buildParty(chosen);
     const newEnemy = enemyForFloor(pool, 0, "battle");
     setParty(newParty);
     setActiveIndex(0);
@@ -483,7 +486,11 @@ export function useGameRun(params: { pool: any[]; deck: DeckItem[]; setDeck: (fn
     setPhase("battling");
   }, [pool, deck, effectiveStats.vit]);
 
-  useEffect(() => { if (!started.current && pool.length >= 2 && characterLoaded) { started.current = true; start(); } }, [pool, characterLoaded, start]);
+  // 준비되면(카드 풀+캐릭터 로드 완료) 곧바로 던전에 들어가지 않고 파티 설정 화면부터 보여준다.
+  // 이어할 저장된 런이 있었다면 복원 effect가 이미 started.current를 true로 만들어놨을 것.
+  useEffect(() => { if (!started.current && pool.length >= 2 && characterLoaded) { started.current = true; setPhase("partySetup"); } }, [pool, characterLoaded]);
+  // "새 던전 입장" — 곧바로 시작하지 않고 파티를 다시 고를 수 있게 설정 화면으로.
+  const promptNewRun = useCallback(() => { if (phase === "over") setPhase("partySetup"); }, [phase]);
 
   // 진행 중인 런 저장 — 다른 페이지로 이동했다 돌아와도 이어지도록. 런이 끝나면(over) 제거.
   useEffect(() => {
@@ -509,7 +516,7 @@ export function useGameRun(params: { pool: any[]; deck: DeckItem[]; setDeck: (fn
     player, enemy, party, activeIndex, forcedSwitch, busy: turnBusy, skills, battleMenu, log,
     lastResult, dropped, dropPrompt, saveFail, packOpening, acquired, acquirePct,
     character, effectiveStats, lastPlayerRoll, lastEnemyRoll,
-    start, useSkill, useOwnedActiveItem, switchMember, selectBattleAction, backToActionMenu, nextRound, proceedFromEvent, proceedFromShop, cashOut,
+    start, promptNewRun, useSkill, useOwnedActiveItem, switchMember, selectBattleAction, backToActionMenu, nextRound, proceedFromEvent, proceedFromShop, cashOut,
     buyMerchantHeal, buyPpPotion, buyBoost, pickItem, skipItem,
   };
 }
