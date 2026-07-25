@@ -5,14 +5,15 @@
 // page.tsx에서 dynamic(..., { ssr:false })로 불러와야 함(Phaser가 window/document를 참조).
 
 import { useEffect, useRef } from "react";
-import type { EnemyState, PlayerState } from "@/app/(game)/game/gameTypes";
+import type { EnemyState, PlayerState, SkillEffectKind } from "@/app/(game)/game/gameTypes";
 
-export default function PhaserCombatCanvas({ enemy, player, playerName, introLabel, level }: {
+export default function PhaserCombatCanvas({ enemy, player, playerName, introLabel, level, lastSkillCast }: {
   enemy: EnemyState | null;
   player: PlayerState;
   playerName: string; // 좌하단 내 캐릭터 정보 박스에 표시(활성 몬스터 이름)
   introLabel: string | null; // 조우 진입 시 부모가 짧게(한 렌더) 세팅 — 보스/정예만
   level: number; // 활성 몬스터의 육성 레벨 — 실루엣 크기에 반영
+  lastSkillCast?: { kind: SkillEffectKind; seq: number } | null; // 기술 시전 이펙트 트리거(seq가 바뀔 때마다 재생)
 }) {
   const containerRef = useRef<HTMLDivElement>(null);
   const sceneRef = useRef<import("./CombatScene").default | null>(null);
@@ -104,6 +105,12 @@ export default function PhaserCombatCanvas({ enemy, player, playerName, introLab
 
   // 육성 레벨 변화 — 레벨업 시 실루엣 크기 변경 + 플래시(최초 마운트 값 반영 시엔 무연출).
   useEffect(() => { sceneRef.current?.setPlayerLevel?.(level); }, [level]);
+
+  // 기술 시전 이펙트 — seq가 바뀔 때마다(같은 기술을 연달아 써도) 재생.
+  useEffect(() => {
+    if (!lastSkillCast) return;
+    sceneRef.current?.playSkillCast?.(lastSkillCast.kind);
+  }, [lastSkillCast]);
 
   // 플레이어 HP/블록 변화 → 피격/방어 이펙트 + HP바 갱신
   useEffect(() => {
