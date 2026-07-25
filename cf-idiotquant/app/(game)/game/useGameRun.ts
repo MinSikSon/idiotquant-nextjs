@@ -194,10 +194,15 @@ export function useGameRun(params: { pool: any[]; deck: DeckItem[]; setDeck: (fn
     [partyRaw],
   );
 
-  const started = useRef(false); // 자동 새 런 시작 가드 — 아래 복원이 성공하면 true로 설정해 덮어쓰지 않게 함
+  const started = useRef(false); // 자동 새 런 시작 가드 — resumeRun()이 호출되면 true로 설정해 덮어쓰지 않게 함
+  const savedRunRef = useRef<SavedRun | null>(null); // 감지된(아직 적용 안 한) 저장된 런 — resumeRun()이 실제로 적용
+  const [hasSavedRun, setHasSavedRun] = useState(false);
 
-  // 페이지 재방문 시 진행 중이던 런 복원 — 저장된 스냅샷은 카드 데이터가 전부 인라인이라
-  // pool/deck 로딩을 기다릴 필요 없이 마운트 즉시 복원 가능.
+  // 페이지 재방문 시 이어할 수 있는 런이 있는지만 감지 — 예전엔 감지되면 곧바로 자동 복원해서
+  // 파티 설정 화면을 건너뛰고 바로 전투로 돌아갔는데, 그러면 "게임 시작 시 파티를 꾸리고
+  // 싶다"는 유저 기대와 어긋난다(특히 파티 설정 기능이 생기기 전에 만들어진 오래된 저장분일수록
+  // 더). 이제는 감지만 해두고 파티 설정 화면에 "이어하기" 버튼으로 노출 — 실제 적용은 유저가
+  // 그 버튼을 눌러야(resumeRun) 일어난다.
   useEffect(() => {
     if (typeof window === "undefined") return;
     try {
@@ -205,28 +210,35 @@ export function useGameRun(params: { pool: any[]; deck: DeckItem[]; setDeck: (fn
       if (!raw) return;
       const saved: SavedRun = JSON.parse(raw);
       if (!saved || !saved.party || saved.party.length === 0 || !saved.phase || saved.phase === "over") return;
-      // 육성(진화) 기능 이전에 저장된 v2 스키마는 party 원소에 xp 필드가 없다 — 없으면 0(유아기)
-      // 으로 채워서 복원(스키마 자체를 또 올릴 만큼 큰 변경은 아니라 여기서 방어적으로 보정).
-      const restoredParty = saved.party.map(m => ({ ...m, xp: m.xp ?? 0 }));
-      setPhase(saved.phase); setRoundNum(saved.roundNum); setEncounter(saved.encounter);
-      setRestHealed(saved.restHealed); setGold(saved.gold); setNewBest(saved.newBest ?? false);
-      setOwnedItems(saved.ownedItems ?? []);
-      setItemChoices(saved.itemChoices ?? null);
-      setActiveBoost(saved.activeBoost ?? null);
-      setParty(restoredParty); setActiveIndex(saved.activeIndex ?? 0);
-      setPlayerHp(saved.playerHp); setPlayerBlock(saved.playerBlock ?? 0);
-      setEnemy(saved.enemy);
-      // saved.skillPp가 비어있으면(스키마 손상 등) 기술별 PP를 추적할 항목이 하나도 없어 이후
-      // .map() 갱신이 대상을 못 찾고 조용히 무시되는 버그가 과거에 있었음(구 단일 캐릭터 스키마
-      // 때) — 그때는 복원된 파티 기준으로 풀피 새로 채워서 복원한다.
-      setSkillPp(saved.skillPp && saved.skillPp.length > 0 ? saved.skillPp
-        : restoredParty.flatMap(m => monsterSkills(growthStats(m.stats, m.xp), stageForXp(m.xp)).map(def => ({ ownerId: m.instanceId, skillId: def.id, pp: def.maxPP }))));
-      setBattleMenu(saved.battleMenu ?? "action");
-      setLog(saved.log ?? []);
-      setLastResult(saved.lastResult ?? null);
-      setAcquired(saved.acquired ?? []);
-      started.current = true;
+      savedRunRef.current = saved;
+      setHasSavedRun(true);
     } catch { /* 손상된 저장값은 무시하고 새 런으로 진행 */ }
+  }, []);
+
+  const resumeRun = useCallback(() => {
+    const saved = savedRunRef.current;
+    if (!saved) return;
+    // 육성(진화) 기능 이전에 저장된 v2 스키마는 party 원소에 xp 필드가 없다 — 없으면 0(유아기)
+    // 으로 채워서 복원(스키마 자체를 또 올릴 만큼 큰 변경은 아니라 여기서 방어적으로 보정).
+    const restoredParty = saved.party.map(m => ({ ...m, xp: m.xp ?? 0 }));
+    setPhase(saved.phase); setRoundNum(saved.roundNum); setEncounter(saved.encounter);
+    setRestHealed(saved.restHealed); setGold(saved.gold); setNewBest(saved.newBest ?? false);
+    setOwnedItems(saved.ownedItems ?? []);
+    setItemChoices(saved.itemChoices ?? null);
+    setActiveBoost(saved.activeBoost ?? null);
+    setParty(restoredParty); setActiveIndex(saved.activeIndex ?? 0);
+    setPlayerHp(saved.playerHp); setPlayerBlock(saved.playerBlock ?? 0);
+    setEnemy(saved.enemy);
+    // saved.skillPp가 비어있으면(스키마 손상 등) 기술별 PP를 추적할 항목이 하나도 없어 이후
+    // .map() 갱신이 대상을 못 찾고 조용히 무시되는 버그가 과거에 있었음(구 단일 캐릭터 스키마
+    // 때) — 그때는 복원된 파티 기준으로 풀피 새로 채워서 복원한다.
+    setSkillPp(saved.skillPp && saved.skillPp.length > 0 ? saved.skillPp
+      : restoredParty.flatMap(m => monsterSkills(growthStats(m.stats, m.xp), stageForXp(m.xp)).map(def => ({ ownerId: m.instanceId, skillId: def.id, pp: def.maxPP }))));
+    setBattleMenu(saved.battleMenu ?? "action");
+    setLog(saved.log ?? []);
+    setLastResult(saved.lastResult ?? null);
+    setAcquired(saved.acquired ?? []);
+    started.current = true;
   }, []);
 
   // 육성(진화) — 이번 런에서 몬스터별로 쌓이는 경험치(파티 xp)를 지급. 유아기→청년기→성인
@@ -512,7 +524,8 @@ export function useGameRun(params: { pool: any[]; deck: DeckItem[]; setDeck: (fn
   }, [pool, deck, effectiveStats.vit]);
 
   // 준비되면(카드 풀+캐릭터 로드 완료) 곧바로 던전에 들어가지 않고 파티 설정 화면부터 보여준다.
-  // 이어할 저장된 런이 있었다면 복원 effect가 이미 started.current를 true로 만들어놨을 것.
+  // 이어할 저장된 런이 있어도 여기서 자동으로 적용하지 않는다 — hasSavedRun을 보고 파티 설정
+  // 화면에서 유저가 "이어하기"를 직접 눌러야(resumeRun) 적용된다.
   useEffect(() => { if (!started.current && pool.length >= 2 && characterLoaded) { started.current = true; setPhase("partySetup"); } }, [pool, characterLoaded]);
   // "새 던전 입장" — 곧바로 시작하지 않고 파티를 다시 고를 수 있게 설정 화면으로.
   const promptNewRun = useCallback(() => { if (phase === "over") setPhase("partySetup"); }, [phase]);
@@ -521,7 +534,7 @@ export function useGameRun(params: { pool: any[]; deck: DeckItem[]; setDeck: (fn
   useEffect(() => {
     if (typeof window === "undefined") return;
     if (phase === "loading") return;
-    if (phase === "over") { try { localStorage.removeItem(RUN_KEY); } catch { } return; }
+    if (phase === "over") { try { localStorage.removeItem(RUN_KEY); } catch { } setHasSavedRun(false); return; }
     // party는 트레이너 보너스가 더해진 화면 표시용 파생값이라 저장하지 않는다(복원 시 다시
     // 보너스를 더하면 이중으로 반영됨) — 원본 partyRaw를 저장한다.
     const saved: SavedRun = {
@@ -541,6 +554,7 @@ export function useGameRun(params: { pool: any[]; deck: DeckItem[]; setDeck: (fn
     player, enemy, party, activeIndex, activeStage, forcedSwitch, pending: pendingAction !== null, advance: advancePendingAction, skills, battleMenu, log,
     lastResult, dropped, dropPrompt, saveFail, packOpening, acquired, acquirePct,
     character, effectiveStats, lastPlayerRoll, lastEnemyRoll,
+    hasSavedRun, resumeRun,
     start, promptNewRun, useSkill, useOwnedActiveItem, switchMember, selectBattleAction, backToActionMenu, nextRound, proceedFromEvent, proceedFromShop, cashOut,
     buyMerchantHeal, buyPpPotion, buyBoost, pickItem, skipItem,
   };
