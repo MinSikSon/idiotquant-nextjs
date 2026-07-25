@@ -2,7 +2,19 @@
 // 스탯 부스트 12 + 전설급 3), 콘텐츠 확장은 나중에.
 
 import { computeValueScore } from "@/lib/utils/valueScore";
-import type { ItemDef, CombatCard } from "./gameTypes";
+import type { ItemDef, SkillDef, CharClass } from "./gameTypes";
+
+// 직업별 고정 기술 — 종목 카드가 아니라 미리 정의된 세트. 전사는 근접 공격 2종(주먹 휘두르기/
+// 강타)·방어·기력회복 4개, PP는 전부 20으로 통일(사용마다 1씩 차감, 던전 진행 내내 유지).
+export const WARRIOR_SKILLS: SkillDef[] = [
+  { id: "punch", name: "주먹 휘두르기", effect: "attack", power: 4, maxPP: 20 },
+  { id: "smash", name: "강타", effect: "attack", power: 8, maxPP: 20 },
+  { id: "defend", name: "방어", effect: "shield", power: 6, maxPP: 20 },
+  { id: "recover", name: "기력회복", effect: "heal", power: 8, maxPP: 20 },
+];
+export const SKILLS_BY_CLASS: Record<CharClass, SkillDef[]> = {
+  warrior: WARRIOR_SKILLS,
+};
 
 // 카드 수집: 승리(층 클리어)마다 판정. 등급별 기본 확률 + 클리어한 층수 보너스(옛 "연승" 보너스를
 // 대체 — 다중 턴 전투 구조에선 "판마다 승패"가 사라지고 "층 클리어"만 있어 streak==totalWins).
@@ -23,7 +35,6 @@ export const PP_POTION_COST = 10; // 매 층 상점에서 판매하는 PP 회복
 
 export const ITEM_POOL: ItemDef[] = [
   { id: "buffer", kind: "passive", name: "여유 자금", desc: "매 턴 시작 시 블록 +2", icon: "🧱", effect: { blockPerTurn: 2 } },
-  { id: "network", kind: "passive", name: "정보망", desc: "전투 시작 시 뽑는 기술 +1", icon: "📡", effect: { drawBonus: 1 } },
   { id: "stoploss", kind: "active", name: "손절매", desc: "즉시 적에게 5 데미지", icon: "✂️", effect: { kind: "damage", amount: 5 } },
   { id: "loan", kind: "active", name: "긴급 대출", desc: "즉시 블록 +5", icon: "🏦", effect: { kind: "block", amount: 5 } },
   { id: "compound", kind: "active", name: "복리의 마법", desc: "즉시 HP +8 회복", icon: "🔄", effect: { kind: "heal", amount: 8 } },
@@ -55,21 +66,6 @@ export const LEGEND_ITEMS: ItemDef[] = [
 ];
 
 export const ALL_ITEMS: ItemDef[] = [...ITEM_POOL, ...STAT_ITEM_POOL, ...LEGEND_ITEMS];
-
-// 컬렉션이 MIN_DECK(combatEngine) 미만일 때 채우는 스타터 카드 — 계정 덱에는 저장되지 않는 합성
-// 카드. 실제 컬렉션보다 확실히 약하게 잡아 수집 동기를 유지한다(공격/방어는 낮게, PP도 낮게).
-export const STARTER_DECK: Omit<CombatCard, "instanceId" | "usesLeft">[] = [
-  ...Array.from({ length: 6 }, (_, i) => ({
-    ticker: `STARTER-A${i}`, name: "가치 원석", isStarter: true,
-    item: { ticker: `STARTER-A${i}`, name: "가치 원석" },
-    stats: { attack: 6, shield: 1, maxUses: 3 },
-  })),
-  ...Array.from({ length: 4 }, (_, i) => ({
-    ticker: `STARTER-B${i}`, name: "안전 마진", isStarter: true,
-    item: { ticker: `STARTER-B${i}`, name: "안전 마진" },
-    stats: { attack: 4, shield: 3, maxUses: 3 },
-  })),
-];
 
 // 아이템 선택지 3택1(보스는 행운 수치에 따라 4택) — 슬롯 개념이 없어 이미 보유한 아이템도 후보에서
 // 제외하지 않음(패시브는 중복 보유 시 효과가 합산되고, 액티브는 충전 개념이 없어 여러 장 들고 있으면

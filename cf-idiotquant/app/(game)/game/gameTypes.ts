@@ -4,34 +4,22 @@ export type Phase = "loading" | "battling" | "resolved" | "over" | "event" | "sh
 export type EncounterType = "battle" | "boss" | "rest" | "elite";
 export type EnemyEncounter = "battle" | "boss" | "elite"; // 실제로 적이 등장하는 조우만(휴식 제외)
 
-// 3개 재무 지표 → 3개 전투 스탯, 전부 1~10 양의 정수(combatEngine.cardStats 참고).
+// 적(실제 종목) 전투 스탯 — ROE→공격력, NCAV→방어력/HP(combatEngine.cardStats 참고). 플레이어
+// 기술은 더 이상 종목 카드에서 오지 않고 직업별 고정 세트(SkillDef, 아래)를 씀.
 export interface CardStats {
-  attack: number;  // ROE
-  shield: number;  // NCAV
-  maxUses: number; // PER(역방향) — 포켓몬식 PP(이 기술의 전투당 최대 사용 횟수)
-}
-
-// 손패(=이번 전투의 고정 기술셋)에 올라가는 카드 한 장(실제 종목 데이터 + 계산된 전투 스탯).
-export interface CombatCard {
-  instanceId: string; // 같은 종목 중복 보유분을 구분하기 위한 고유 id
-  ticker: string;
-  name: string;
-  item: any;           // 원본 종목 데이터(카드 아트/등급 표시용)
-  stats: CardStats;
-  usesLeft: number;    // 이번 전투에서 남은 PP — 전투 시작 시 stats.maxUses로 초기화
-  isStarter: boolean;  // 스타터 카드는 계정 덱(D1)에 저장되지 않음
+  attack: number; // ROE
+  shield: number; // NCAV
 }
 
 export type PassiveEffect = {
   blockPerTurn?: number;     // 턴 시작 시 자동 블록
-  drawBonus?: number;        // 전투 시작 시 뽑는 기술 수 증가
   maxHpBonus?: number;       // 최대 HP 증가
   damageReduce?: number;     // 적 공격 데미지 감소
   strBonus?: number;         // 이번 런 한정 힘(STR) 보너스
   dexBonus?: number;         // 이번 런 한정 민첩(DEX) 보너스
   lukBonus?: number;         // 이번 런 한정 행운(LUK) 보너스
   vitBonus?: number;         // 이번 런 한정 체력(VIT) 보너스
-  extraDie?: boolean;        // 카드 공격 주사위 굴림에 어드밴티지(2개 굴려 높은 값) 적용
+  extraDie?: boolean;        // 공격 기술 주사위 굴림에 어드밴티지(2개 굴려 높은 값) 적용
 };
 
 export type ActiveEffect =
@@ -39,6 +27,24 @@ export type ActiveEffect =
   | { kind: "heal"; amount: number }
   | { kind: "block"; amount: number }
   | { kind: "restorePP" }; // 보유한 모든 기술의 PP를 최대치로 회복
+
+// 직업별 고정 기술 — 종목 카드가 아니라 미리 정의된 세트(전사: 주먹 휘두르기/강타/방어/
+// 기력회복). power는 효과별 의미가 다름: attack=주사위 기본 데미지, shield=고정 블록량,
+// heal=고정 회복량. PP(usesLeft에 대응하는 SkillState.pp)는 던전 진행 내내 유지되며(전투를
+// 이겨도 자동 회복 안 됨) 상점의 PP 회복 물약으로만 채워진다.
+export type SkillEffectKind = "attack" | "shield" | "heal";
+export interface SkillDef {
+  id: string;
+  name: string;
+  effect: SkillEffectKind;
+  power: number;
+  maxPP: number;
+}
+export interface SkillState { skillId: string; pp: number }
+
+// 전투 중 하위 화면 — 매 내 턴마다 "action"(전투/아이템/도망치기/월드맵 선택)에서 시작해,
+// "전투"를 고르면 "skills"(기술 목록)로, "아이템"을 고르면 "items"(보유 아이템 사용)로 전환.
+export type BattleMenu = "action" | "skills" | "items";
 
 export type ItemKind = "passive" | "active";
 export interface ItemDef {

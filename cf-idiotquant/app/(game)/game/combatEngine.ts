@@ -3,13 +3,11 @@
 
 import { computeValueScore } from "@/lib/utils/valueScore";
 import type {
-  CardStats, CombatCard, PassiveEffect, ActiveEffect, ItemDef, EnemyState, PlayerState,
+  CardStats, PassiveEffect, ActiveEffect, ItemDef, EnemyState, PlayerState, SkillDef, SkillState,
   CharacterStats, AttackRollOptions, AttackRollResult, EnemyEncounter,
 } from "./gameTypes";
 
-export const HAND_SIZE = 5; // 전투 시작 시 뽑는 고정 기술셋 매수(포켓몬처럼 전투 내내 고정)
 export const BASE_HP = 30;
-export const MIN_DECK = 10;
 const ENEMY_BASE_HP = 12;
 const ENEMY_PER_FLOOR = 3;
 const ENEMY_HP_PER_SHIELD = 2; // 뽑힌 카드 자체의 방어 스탯(등급과 상관관계가 있음)도 HP에 반영
@@ -48,21 +46,20 @@ export function bossExtraChoiceChance(luk: number): number {
   return Math.min(LUK_BOSS_EXTRA_CAP, luk * LUK_BOSS_EXTRA_PER_POINT);
 }
 
-// 3개 재무 지표(sub, 0~1 clamp01된 정규화 점수 — computeValueScore가 이미 계산)를 3개 전투
+// 2개 재무 지표(sub, 0~1 clamp01된 정규화 점수 — computeValueScore가 이미 계산)를 적의 전투
 // 스탯(1~10 양의 정수)으로 매핑. 데이터 없는 지표는 sub=0(최저값)으로 처리돼 NaN이 안 생김.
-// PER(역방향)은 "환급" 계산식을 그대로 재사용해 포켓몬식 PP(maxUses)로 재해석한 것.
+// 플레이어 기술은 더 이상 이 함수를 쓰지 않음(직업별 고정 SkillDef 세트를 씀).
 export function cardStats(item: any): CardStats {
   const parts = computeValueScore(item).parts;
   const sub = (key: string) => parts.find(p => p.key === key)?.sub ?? 0;
   return {
     attack: 1 + Math.round(sub("roe") * 9),
     shield: 1 + Math.round(sub("ncav") * 9),
-    maxUses: 1 + Math.round(sub("per") * 9),
   };
 }
 
 const emptyPassive: Required<PassiveEffect> = {
-  blockPerTurn: 0, drawBonus: 0, maxHpBonus: 0, damageReduce: 0,
+  blockPerTurn: 0, maxHpBonus: 0, damageReduce: 0,
   strBonus: 0, dexBonus: 0, lukBonus: 0, vitBonus: 0, extraDie: false,
 };
 
@@ -73,7 +70,6 @@ export function aggregatePassive(ownedDefs: ItemDef[]): Required<PassiveEffect> 
     if (def.kind !== "passive") continue;
     const e = def.effect as PassiveEffect;
     out.blockPerTurn += e.blockPerTurn ?? 0;
-    out.drawBonus += e.drawBonus ?? 0;
     out.maxHpBonus += e.maxHpBonus ?? 0;
     out.damageReduce += e.damageReduce ?? 0;
     out.strBonus += e.strBonus ?? 0;
@@ -83,49 +79,6 @@ export function aggregatePassive(ownedDefs: ItemDef[]): Required<PassiveEffect> 
     out.extraDie = out.extraDie || !!e.extraDie;
   }
   return out;
-}
-
-let seq = 0;
-const nextId = () => `c${Date.now().toString(36)}${(seq++).toString(36)}`;
-
-// 보유 컬렉션(계정 덱) 전체를 전투 카드로 변환 + 셔플. MIN_DECK 미만이면 스타터 카드로 패딩.
-export function buildRunDeck(deck: { ticker: string; name: string; count?: number;[k: string]: any }[], starterPool: Omit<CombatCard, "instanceId" | "usesLeft">[]): CombatCard[] {
-  const cards: CombatCard[] = [];
-  for (const d of deck) {
-    const n = Math.max(1, d.count ?? 1);
-    for (let i = 0; i < n; i++) {
-      const stats = cardStats(d);
-      cards.push({ instanceId: nextId(), ticker: d.ticker, name: d.name, item: d, stats, usesLeft: stats.maxUses, isStarter: false });
-    }
-  }
-  while (cards.length < MIN_DECK) {
-    const s = starterPool[cards.length % starterPool.length];
-    cards.push({ ...s, instanceId: nextId(), usesLeft: s.stats.maxUses });
-  }
-  for (let i = cards.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1));
-    [cards[i], cards[j]] = [cards[j], cards[i]];
-  }
-  return cards;
-}
-
-// 전투 시작 시 1회 호출 — 덱에서 고정 기술셋을 뽑음(드로우 파일이 부족하면 버림 더미를 섞어
-// 합침, 슬레이더스파이어 표준 리셔플 규칙). 뽑힌 기술은 이전 전투에서 소진됐을 수 있으므로
-// usesLeft를 전부 maxUses로 새로 채워 반환한다.
-export function drawHand(drawPile: CombatCard[], discardPile: CombatCard[], handSize: number): { hand: CombatCard[]; drawPile: CombatCard[]; discardPile: CombatCard[] } {
-  let draw = [...drawPile], discard = [...discardPile];
-  const hand: CombatCard[] = [];
-  for (let i = 0; i < handSize; i++) {
-    if (draw.length === 0) {
-      if (discard.length === 0) break; // 덱 전체가 손패에 나가 있으면 그냥 적은 수로 진행
-      draw = discard;
-      for (let k = draw.length - 1; k > 0; k--) { const j = Math.floor(Math.random() * (k + 1));[draw[k], draw[j]] = [draw[j], draw[k]]; }
-      discard = [];
-    }
-    const card = draw.pop()!;
-    hand.push({ ...card, usesLeft: card.stats.maxUses });
-  }
-  return { hand, drawPile: draw, discardPile: discard };
 }
 
 // 적 = 실제 종목 카드에서 뽑되, 보스/정예는 강한 등급 풀 우선. HP는 층수 비례 + 카드 자체의 등급
@@ -142,23 +95,27 @@ export function enemyForFloor(pool: any[], floor: number, encounter: EnemyEncoun
   return { item, stats, hp: maxHp, maxHp, nextAttack: attack, encounter };
 }
 
-// 기술(카드) 한 장 발동 — PP(usesLeft)가 없으면 그대로 반환(호출부에서 사전에 막아야 함, 여기선
-// 방어적으로만 처리). 공격력은 고정 데미지가 아니라 rollAttack()으로 굴린 값 — charStats/passive의
-// 힘/민첩/행운/어드밴티지가 그대로 반영된다. 1기술=1턴이라 사용 즉시 곧바로 적 턴으로 이어진다.
-export function playCard(
-  player: PlayerState, enemy: EnemyState, card: CombatCard,
+// 기술 한 장 발동(PP 체크는 호출부 책임 — 이 함수는 PP 상태를 모름, useGameRun의 SkillState가
+// 별도로 관리). 효과별로 분기: attack=rollAttack()으로 굴린 데미지(charStats/passive의 힘/민첩/
+// 행운/어드밴티지 반영), shield=고정 블록 추가, heal=고정 HP 회복. 1기술=1턴이라 사용 즉시
+// 곧바로 적 턴으로 이어진다(roll은 attack일 때만 존재 — 나머지는 주사위를 안 굴리므로 null).
+export function useSkillEffect(
+  player: PlayerState, enemy: EnemyState, def: SkillDef,
   passive: Required<PassiveEffect>, charStats: CharacterStats,
-): { player: PlayerState; enemy: EnemyState; roll: AttackRollResult } {
-  if (card.usesLeft <= 0) return { player, enemy, roll: rollAttack(0) };
-  const roll = rollAttack(card.stats.attack, {
-    advantage: passive.extraDie,
-    str: charStats.str + passive.strBonus,
-    dex: charStats.dex + passive.dexBonus,
-    luk: charStats.luk + passive.lukBonus,
-  });
-  const nextPlayer: PlayerState = { ...player, block: player.block + card.stats.shield };
-  const nextEnemy: EnemyState = { ...enemy, hp: Math.max(0, enemy.hp - roll.totalDamage) };
-  return { player: nextPlayer, enemy: nextEnemy, roll };
+): { player: PlayerState; enemy: EnemyState; roll: AttackRollResult | null } {
+  if (def.effect === "attack") {
+    const roll = rollAttack(def.power, {
+      advantage: passive.extraDie,
+      str: charStats.str + passive.strBonus,
+      dex: charStats.dex + passive.dexBonus,
+      luk: charStats.luk + passive.lukBonus,
+    });
+    return { player, enemy: { ...enemy, hp: Math.max(0, enemy.hp - roll.totalDamage) }, roll };
+  }
+  if (def.effect === "shield") {
+    return { player: { ...player, block: player.block + def.power }, enemy, roll: null };
+  }
+  return { player: { ...player, hp: Math.min(player.maxHp, player.hp + def.power) }, enemy, roll: null };
 }
 
 // 적 턴 — 적도 동일한 주사위 규칙으로 굴리되(자연 20 크리티컬만 적용, 힘/민첩/행운/어드밴티지
@@ -174,14 +131,20 @@ export function resolveEnemyTurn(
 }
 
 // 액티브 아이템 즉시 발동 — 기술과 동일하게 발동 즉시 턴을 소모(호출부에서 이어서 적 턴 진행).
-export function useActiveItem(player: PlayerState, enemy: EnemyState, hand: CombatCard[], effect: ActiveEffect) {
+// restorePP는 보유 기술 전부를 각자의 maxPP로 되돌림(skillDefs로 PP 상한을 조회).
+export function useActiveItem(
+  player: PlayerState, enemy: EnemyState, skills: SkillState[], skillDefs: SkillDef[], effect: ActiveEffect,
+) {
   let nextPlayer = { ...player }, nextEnemy = { ...enemy };
-  let nextHand = hand;
+  let nextSkills = skills;
   if (effect.kind === "damage") nextEnemy.hp = Math.max(0, nextEnemy.hp - effect.amount);
   else if (effect.kind === "heal") nextPlayer.hp = Math.min(nextPlayer.maxHp, nextPlayer.hp + effect.amount);
   else if (effect.kind === "block") nextPlayer.block += effect.amount;
-  else if (effect.kind === "restorePP") nextHand = hand.map(c => ({ ...c, usesLeft: c.stats.maxUses }));
-  return { player: nextPlayer, enemy: nextEnemy, hand: nextHand };
+  else if (effect.kind === "restorePP") nextSkills = skills.map(s => {
+    const def = skillDefs.find(d => d.id === s.skillId);
+    return def ? { ...s, pp: def.maxPP } : s;
+  });
+  return { player: nextPlayer, enemy: nextEnemy, skills: nextSkills };
 }
 
 export function checkOutcome(player: PlayerState, enemy: EnemyState): "win" | "lose" | null {
