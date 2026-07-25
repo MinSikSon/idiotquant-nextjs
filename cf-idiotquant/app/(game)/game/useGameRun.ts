@@ -15,7 +15,7 @@ import { ALL_ITEMS, RELIC_POOL, ITEM_OFFER_COUNT, START_GOLD, MERCHANT_FREE_POOL
 import { ACHIEVEMENTS } from "./gameCollectibles";
 import type {
   Phase, EncounterType, ItemDef, OwnedItem, EnemyState, PlayerState, ActiveEffect, LogEntry, LogKind,
-  CharacterStats, AttackRollResult, SkillState, BattleMenu, PartyMember, MerchantOfferDef, ActiveBuffs,
+  CharacterStats, AttackRollResult, SkillState, BattleMenu, PartyMember, MerchantOfferDef, ActiveBuffs, SkillEffectKind,
 } from "./gameTypes";
 
 // 떠돌이 상인이 매번 제시하는 오퍼(무료 3 + 유료 3) — 풀 자체가 정확히 6개라 무작위 추첨 없이
@@ -118,6 +118,10 @@ export function useGameRun(params: { pool: any[]; deck: DeckItem[]; setDeck: (fn
 
   const [lastPlayerRoll, setLastPlayerRoll] = useState<AttackRollResult | null>(null);
   const [lastEnemyRoll, setLastEnemyRoll] = useState<AttackRollResult | null>(null);
+  // 기술을 쓴 순간의 Phaser 시전 이펙트 트리거 — seq를 매번 올려서 같은 kind를 연달아 써도
+  // (예: 약공격→약공격) useEffect의 값 변화 감지가 매번 새로 걸리게 한다.
+  const [lastSkillCast, setLastSkillCast] = useState<{ kind: SkillEffectKind; seq: number } | null>(null);
+  const skillCastSeq = useRef(0);
   // 이번 전투에서 레벨업한 종목 목록 — 전투 하나가 끝날 때(handleWin 진입 시점)까지 쌓아뒀다가
   // "resolved" 화면에서 한 번에 보여준다. 다음 전투 시작(advanceToRound/start)에서 비운다.
   const [levelUps, setLevelUps] = useState<{ instanceId: string; name: string; from: number; to: number }[]>([]);
@@ -416,6 +420,8 @@ export function useGameRun(params: { pool: any[]; deck: DeckItem[]; setDeck: (fn
         ? { ...skill.def, power: Math.round(skill.def.power * activeBuffs.def.mult) }
         : skill.def;
     const result = engUseSkillEffect(player, enemy, buffedDef, passive, effectiveStats, activeMember.sectorType, enemy.sectorType);
+    skillCastSeq.current += 1;
+    setLastSkillCast({ kind: skill.def.effect, seq: skillCastSeq.current });
     // 성장으로 기술셋이 바뀌면(성인 진화로 "약공격"→"필살기" 등) skillPp에 그 skillId 항목이
     // 아직 없을 수 있음 — .map()만으론 못 찾아 조용히 무시되므로(과거 PP 버그와 같은 원인)
     // 없으면 새로 추가하는 upsert로 처리.
@@ -640,7 +646,7 @@ export function useGameRun(params: { pool: any[]; deck: DeckItem[]; setDeck: (fn
     merchantOffers, activeBuffs,
     player, enemy, party, activeIndex, activeLevel, passiveVitBonus, forcedSwitch, pending: pendingAction !== null, advance: advancePendingAction, skills, skillDefsByOwner, skillPp, battleMenu, log,
     lastResult, dropped, dropPrompt, saveFail, packOpening, acquired, acquirePct, levelUps,
-    effectiveStats, lastPlayerRoll, lastEnemyRoll,
+    effectiveStats, lastPlayerRoll, lastEnemyRoll, lastSkillCast,
     hasSavedRun, resumeRun,
     start, promptNewRun, useSkill, useOwnedActiveItem, switchMember, selectBattleAction, backToActionMenu, nextRound, proceedFromEvent, proceedFromShop, cashOut,
     applyMerchantOffer, buyBoost, pickItem, skipItem,

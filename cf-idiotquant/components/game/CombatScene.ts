@@ -112,11 +112,13 @@ const SLIME_PALETTES: Palette[] = [
   makePalette(0x6ee7b7, 0x0f766e), // 시폼
   makePalette(0x84cc16, 0x3f6212), // 올리브
 ];
+// 흰 배경에서도 실루엣이 묻히지 않도록(구 검정 배경 대비 대응) 옛 파스텔 톤보다 한두 단계
+// 진하게 조정 — 여전히 다른 종보다는 창백한 "유령" 톤을 유지.
 const GHOST_PALETTES: Palette[] = [
-  makePalette(0xf1f5f9, 0x94a3b8), // 슬레이트 화이트
-  makePalette(0xe0e7ff, 0x818cf8), // 라벤더
-  makePalette(0xdbeafe, 0x60a5fa), // 스카이 화이트
-  makePalette(0xfae8ff, 0xd8b4fe), // 연보라
+  makePalette(0xcbd5e1, 0x64748b), // 슬레이트
+  makePalette(0xa5b4fc, 0x6366f1), // 라벤더
+  makePalette(0x93c5fd, 0x3b82f6), // 스카이
+  makePalette(0xe9d5ff, 0xc084fc), // 연보라
 ];
 const BAT_PALETTES: Palette[] = [
   makePalette(0x6d28d9, 0x3b0764), // 퍼플
@@ -230,19 +232,19 @@ export default class CombatScene extends Phaser.Scene {
 
   create() {
     const w = this.scale.width, h = this.scale.height;
-    this.cameras.main.setBackgroundColor("#00000000");
+    this.cameras.main.setBackgroundColor("#ffffff");
     this.cell = Math.max(3, Math.floor(Math.min(w * 0.36, h * 0.34) / GRID));
 
     // 적 — 우상단 스프라이트 + 좌상단 정보(이름/HP태그/HP바/수치를 컨테이너로 묶어서 등장 시
     // 한 번에 슬라이드 인 시킴). HP태그("HP" 이탤릭 라벨)가 차지하는 폭만큼 바 자체는 살짝
-    // 줄여서 화면 왼쪽 끝을 벗어나지 않게 한다.
+    // 줄여서 화면 왼쪽 끝을 벗어나지 않게 한다. 흰 배경이라 텍스트는 짙은 색으로.
     const hpTagW = 16;
     this.enemyCenterX = w * 0.74; this.enemyCenterY = h * 0.30;
-    this.enemyLabel = this.add.text(w * 0.05, h * 0.04, "", { fontSize: "12px", color: "#ffffff", fontStyle: "bold", resolution: RES }).setOrigin(0, 0);
+    this.enemyLabel = this.add.text(w * 0.05, h * 0.04, "", { fontSize: "12px", color: "#1f2937", fontStyle: "bold", resolution: RES }).setOrigin(0, 0);
     this.enemyHpBarX = w * 0.05 + hpTagW; this.enemyHpBarY = h * 0.12; this.enemyHpBarW = w * 0.36 - hpTagW;
-    this.enemyHpTag = this.add.text(w * 0.05, this.enemyHpBarY + HP_BAR_H / 2, "HP", { fontSize: "9px", fontStyle: "italic", color: "#fde047", resolution: RES }).setOrigin(0, 0.5);
+    this.enemyHpTag = this.add.text(w * 0.05, this.enemyHpBarY + HP_BAR_H / 2, "HP", { fontSize: "9px", fontStyle: "italic", color: "#b45309", resolution: RES }).setOrigin(0, 0.5);
     this.enemyHpGfx = this.add.graphics();
-    this.enemyHpNumText = this.add.text(this.enemyHpBarX + this.enemyHpBarW / 2, this.enemyHpBarY + HP_BAR_H / 2, "", { fontFamily: "monospace", fontSize: "9px", color: "#ffffff", fontStyle: "bold", resolution: RES }).setOrigin(0.5);
+    this.enemyHpNumText = this.add.text(this.enemyHpBarX + this.enemyHpBarW / 2, this.enemyHpBarY + HP_BAR_H / 2, "", { fontFamily: "monospace", fontSize: "9px", color: "#1f2937", fontStyle: "bold", resolution: RES }).setOrigin(0.5);
     this.enemyInfoBox = this.add.container(0, 0, [this.enemyLabel, this.enemyHpTag, this.enemyHpGfx, this.enemyHpNumText]);
     this.enemyInfoRestX = 0;
     this.spec = randomMonster();
@@ -255,13 +257,13 @@ export default class CombatScene extends Phaser.Scene {
     this.playerGfx = this.add.graphics({ x: this.playerCenterX, y: this.playerCenterY });
     this.drawPlayer();
     this.playerHpBarW = w * 0.36 - hpTagW; this.playerHpBarX = w * 0.95 - this.playerHpBarW; this.playerHpBarY = h * 0.86;
-    this.playerHpTag = this.add.text(this.playerHpBarX - 3, this.playerHpBarY + HP_BAR_H / 2, "HP", { fontSize: "9px", fontStyle: "italic", color: "#fde047", resolution: RES }).setOrigin(1, 0.5);
-    this.playerLabel = this.add.text(w * 0.95, this.playerHpBarY - 4, "", { fontSize: "12px", color: "#ffffff", fontStyle: "bold", resolution: RES }).setOrigin(1, 1);
+    this.playerHpTag = this.add.text(this.playerHpBarX - 3, this.playerHpBarY + HP_BAR_H / 2, "HP", { fontSize: "9px", fontStyle: "italic", color: "#b45309", resolution: RES }).setOrigin(1, 0.5);
+    this.playerLabel = this.add.text(w * 0.95, this.playerHpBarY - 4, "", { fontSize: "12px", color: "#1f2937", fontStyle: "bold", resolution: RES }).setOrigin(1, 1);
     this.playerHpGfx = this.add.graphics();
-    this.playerHpNumText = this.add.text(this.playerHpBarX + this.playerHpBarW / 2, this.playerHpBarY + HP_BAR_H / 2, "", { fontFamily: "monospace", fontSize: "9px", color: "#ffffff", fontStyle: "bold", resolution: RES }).setOrigin(0.5);
+    this.playerHpNumText = this.add.text(this.playerHpBarX + this.playerHpBarW / 2, this.playerHpBarY + HP_BAR_H / 2, "", { fontFamily: "monospace", fontSize: "9px", color: "#1f2937", fontStyle: "bold", resolution: RES }).setOrigin(0.5);
     this.setPlayerHp(0, 1);
 
-    this.introText = this.add.text(w / 2, h / 2, "", { fontSize: "20px", color: "#facc15", fontStyle: "bold", resolution: RES })
+    this.introText = this.add.text(w / 2, h / 2, "", { fontSize: "20px", color: "#d97706", fontStyle: "bold", resolution: RES })
       .setOrigin(0.5).setAlpha(0).setDepth(10);
 
     this.startIdleAnim();
@@ -387,7 +389,7 @@ export default class CombatScene extends Phaser.Scene {
   // 되는 등장 연출을 재생한다(포켓몬의 "야생의 OO가 나타났다!" 등장 모먼트를 흉내).
   setEnemy(name: string, hp: number, maxHp: number, encounter: "battle" | "boss" | "elite" = "battle") {
     const prefix = encounter === "boss" ? "👑 보스 · " : encounter === "elite" ? "🗡️ 정예 · " : "";
-    const color = encounter === "boss" ? "#facc15" : encounter === "elite" ? "#c084fc" : "#ffffff";
+    const color = encounter === "boss" ? "#d97706" : encounter === "elite" ? "#9333ea" : "#1f2937";
     this.enemyLabel.setText(prefix + name).setColor(color);
     this.spec = randomMonster();
     this.blinking = false;
@@ -473,8 +475,38 @@ export default class CombatScene extends Phaser.Scene {
     this.time.delayedCall(700, () => this.tweens.add({ targets: this.introText, alpha: 0, duration: 250 }));
   }
 
+  // 기술을 쓴 순간 재생하는 시전 이펙트 — 결과(피해/블록/회복 숫자)는 이미 HP/블록 변화 감지로
+  // 따로 뜨므로(flashEnemyHit/flashPlayerBlock/playHeal), 여긴 "무엇을 시전했는지"를 즉시
+  // 보여주는 용도. attack은 내 스프라이트가 적 쪽으로 짧게 돌진했다 돌아오는 동작(타격을
+  // 날리는 느낌), shield/heal은 내 스프라이트 둘레로 고리가 번지며 퍼지는 연출.
+  playSkillCast(kind: "attack" | "shield" | "heal") {
+    if (kind === "attack") {
+      const dx = (this.enemyCenterX - this.playerCenterX) * 0.12;
+      const dy = (this.enemyCenterY - this.playerCenterY) * 0.12;
+      this.tweens.killTweensOf(this.playerGfx);
+      const baseScale = this.playerGfx.scaleX;
+      this.tweens.add({
+        targets: this.playerGfx, x: this.playerCenterX + dx, y: this.playerCenterY + dy,
+        scaleX: baseScale * 1.08, scaleY: baseScale * 1.08, duration: 90, yoyo: true, ease: "Quad.easeOut",
+      });
+      return;
+    }
+    this.playPulseRing(kind === "shield" ? 0x60a5fa : 0x4ade80);
+  }
+
+  private playPulseRing(color: number) {
+    const g = this.add.graphics({ x: this.playerCenterX, y: this.playerCenterY }).setDepth(4);
+    g.lineStyle(3, color, 1);
+    g.strokeCircle(0, 0, this.cell * 2.5);
+    g.setScale(0.4).setAlpha(1);
+    this.tweens.add({ targets: g, scale: 1.8, alpha: 0, duration: 450, ease: "Quad.easeOut", onComplete: () => g.destroy() });
+  }
+
   private popText(x: number, y: number, text: string, color: string) {
-    const t = this.add.text(x, y, text, { fontSize: "16px", color, fontStyle: "bold", resolution: RES }).setOrigin(0.5).setDepth(5);
+    const t = this.add.text(x, y, text, {
+      fontSize: "16px", color, fontStyle: "bold", resolution: RES,
+      stroke: "#ffffff", strokeThickness: 4,
+    }).setOrigin(0.5).setDepth(5);
     this.tweens.add({ targets: t, y: y - 30, alpha: 0, duration: 600, ease: "Quad.easeOut", onComplete: () => t.destroy() });
   }
 }
