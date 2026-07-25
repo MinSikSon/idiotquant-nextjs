@@ -7,11 +7,12 @@
 import { useEffect, useRef } from "react";
 import type { EnemyState, PlayerState } from "@/app/(game)/game/gameTypes";
 
-export default function PhaserCombatCanvas({ enemy, player, playerName, introLabel }: {
+export default function PhaserCombatCanvas({ enemy, player, playerName, introLabel, stage }: {
   enemy: EnemyState | null;
   player: PlayerState;
   playerName: string; // 좌하단 내 캐릭터 정보 박스에 표시(클래스명, 예: "전사")
   introLabel: string | null; // 조우 진입 시 부모가 짧게(한 렌더) 세팅 — 보스/정예만
+  stage: number; // 활성 몬스터의 육성 단계(0=유아기/1=청년기/2=성인) — 실루엣 크기에 반영
 }) {
   const containerRef = useRef<HTMLDivElement>(null);
   const sceneRef = useRef<import("./CombatScene").default | null>(null);
@@ -26,6 +27,8 @@ export default function PhaserCombatCanvas({ enemy, player, playerName, introLab
   latestPlayerRef.current = player;
   const latestPlayerNameRef = useRef(playerName);
   latestPlayerNameRef.current = playerName;
+  const latestStageRef = useRef(stage);
+  latestStageRef.current = stage;
 
   useEffect(() => {
     let disposed = false;
@@ -57,6 +60,7 @@ export default function PhaserCombatCanvas({ enemy, player, playerName, introLab
         }
         scene.setPlayerName?.(latestPlayerNameRef.current);
         scene.setPlayerHp?.(latestPlayerRef.current.hp, latestPlayerRef.current.maxHp);
+        scene.setPlayerStage?.(latestStageRef.current);
       });
       const ro = new ResizeObserver(() => {
         if (!containerRef.current) return;
@@ -97,6 +101,9 @@ export default function PhaserCombatCanvas({ enemy, player, playerName, introLab
 
   // 이름 변경(사실상 초기 1회) — 좌하단 정보 박스 라벨
   useEffect(() => { sceneRef.current?.setPlayerName?.(playerName); }, [playerName]);
+
+  // 육성 단계 변화 — 진화 시 실루엣 크기 변경 + 플래시(최초 마운트 값 반영 시엔 무연출).
+  useEffect(() => { sceneRef.current?.setPlayerStage?.(stage); }, [stage]);
 
   // 플레이어 HP/블록 변화 → 피격/방어 이펙트 + HP바 갱신
   useEffect(() => {

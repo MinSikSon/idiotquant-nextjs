@@ -181,6 +181,8 @@ function playerBody(col: number, row: number): boolean {
   return false;
 }
 const PLAYER_PALETTE = makePalette(0xb45309, 0x431407); // 가죽 갑옷 톤(호박빛 브라운)
+// 육성 단계(0=유아기/1=청년기/2=성인)별 실루엣 배율 — setPlayerStage에서 사용.
+const GROWTH_STAGE_SCALE = [0.72, 1, 1.3];
 
 // Phaser의 Text는 자체 해상도(resolution)로 텍스처를 굽는데 기본값 1이라 고밀도(레티나)
 // 모바일 화면에서 흐릿하게 보임 — devicePixelRatio만큼 올려서 선명하게 그린다(과도한 메모리
@@ -210,6 +212,7 @@ export default class CombatScene extends Phaser.Scene {
   private playerHpTag!: Phaser.GameObjects.Text;
   private playerCenterX = 0; private playerCenterY = 0;
   private playerHpBarX = 0; private playerHpBarY = 0; private playerHpBarW = 0;
+  private playerStage: number | null = null; // 육성 단계 — setPlayerStage 참고
 
   private introText!: Phaser.GameObjects.Text;
   private spec!: MonsterSpec;
@@ -405,6 +408,19 @@ export default class CombatScene extends Phaser.Scene {
 
   setPlayerHp(hp: number, maxHp: number) {
     this.drawHpBar(this.playerHpGfx, this.playerHpNumText, this.playerHpBarX, this.playerHpBarY, this.playerHpBarW, hp, maxHp);
+  }
+
+  // 육성(진화) — 유아기/청년기/성인 단계별로 실루엣 크기를 다르게 스케일(작게→기본→크게)해서
+  // 자라는 느낌을 준다. 실제로 단계가 바뀔 때만(최초 마운트 제외) 반짝임 연출을 곁들인다.
+  setPlayerStage(stage: number) {
+    if (this.playerStage === stage) return;
+    const first = this.playerStage === null;
+    this.playerStage = stage;
+    const scale = GROWTH_STAGE_SCALE[stage] ?? 1;
+    this.tweens.killTweensOf(this.playerGfx);
+    if (first) { this.playerGfx.setScale(scale); return; }
+    this.tweens.add({ targets: this.playerGfx, scale, duration: 380, ease: "Back.easeOut" });
+    this.cameras.main.flash(220, 253, 224, 71); // 옅은 금색 플래시로 진화 순간 강조
   }
 
   // 살아있는 느낌을 주는 대기 애니메이션 — 위치를 옮기는 트윈 대신 몇 개 픽셀만 주기적으로

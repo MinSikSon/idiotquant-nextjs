@@ -10,11 +10,14 @@
 import { useEffect, useMemo, useState } from "react";
 import { cn } from "@/lib/utils";
 import type { SkillDef, ItemDef, OwnedItem, PartyMember } from "@/app/(game)/game/gameTypes";
+import { stageForXp, STAGE_LABELS } from "@/app/(game)/game/combatEngine";
 
 type SkillRuntime = { def: SkillDef; pp: number };
 
 const TYPE_SPEED_MS = 22; // 글자당 출력 간격 — 포켓몬 특유의 또박또박 타자기 속도
-function MessageBox({ text }: { text: string }) {
+// pending(다음 단계가 탭 대기 중)이면 텍스트박스 자체도 탭 가능하게 하고 우하단에 깜빡이는
+// "▼" 표시를 붙인다 — 포켓몬 클래식 메시지창의 "다음 텍스트 대기" 관습.
+function MessageBox({ text, pending, onAdvance }: { text: string; pending?: boolean; onAdvance?: () => void }) {
   const chars = useMemo(() => Array.from(text ?? ""), [text]);
   const [count, setCount] = useState(chars.length);
   useEffect(() => {
@@ -29,11 +32,26 @@ function MessageBox({ text }: { text: string }) {
     return () => clearInterval(id);
   }, [chars]);
   return (
-    <div className="flex-1 min-w-0 h-20 rounded-lg border-2 border-neutral-800 dark:border-neutral-200 bg-white dark:bg-[#1a1a1a] px-2.5 py-2 overflow-hidden">
+    <div onClick={pending ? onAdvance : undefined}
+      className={cn("relative flex-1 min-w-0 h-20 rounded-lg border-2 border-neutral-800 dark:border-neutral-200 bg-white dark:bg-[#1a1a1a] px-2.5 py-2 overflow-hidden",
+        pending && "cursor-pointer")}>
       <p className="text-[11px] leading-snug font-bold text-neutral-800 dark:text-neutral-100 break-keep">
         {chars.slice(0, count).join("")}
       </p>
+      {pending && <span aria-hidden className="absolute right-2 bottom-1 text-neutral-400 dark:text-neutral-500 animate-bounce">▼</span>}
     </div>
+  );
+}
+
+// 내 행동 결과(또는 마지막 타격 결과)를 보여준 채로 다음 단계(적 반격 등)를 탭할 때까지 붙잡아
+// 두는 프롬프트 — 그리드 자리를 통째로 대체해서 그 사이엔 다른 선택지를 아예 누를 수 없게 한다.
+function AdvancePrompt({ onAdvance }: { onAdvance: () => void }) {
+  return (
+    <button type="button" onClick={onAdvance}
+      className="h-full w-[168px] shrink-0 rounded-md border border-black/10 dark:border-white/15 bg-white/90 dark:bg-white/[0.08] flex flex-col items-center justify-center gap-0.5 active:scale-95 transition-transform">
+      <span aria-hidden className="text-lg leading-none animate-bounce">▶</span>
+      <span className="text-[9px] font-bold text-neutral-500 dark:text-neutral-400">탭해서 계속</span>
+    </button>
   );
 }
 
@@ -43,11 +61,10 @@ const CELL_OFF = "bg-black/[0.03] dark:bg-white/[0.02] border-black/5 dark:borde
 
 // 포켓몬 배틀 메뉴의 상시 취소 화살표(그리드 칸을 하나 차지하지 않고 옆에 따로 붙어 있음)를
 // 흉내낸 슬림 세로 버튼 — skills/items/party(강제 아닐 때만) 모드에서 노출.
-function BackColumn({ onBack, disabled }: { onBack: () => void; disabled?: boolean }) {
+function BackColumn({ onBack }: { onBack: () => void }) {
   return (
-    <button type="button" disabled={disabled} onClick={onBack} aria-label="뒤로"
-      className={cn("shrink-0 w-6 h-full rounded-md border border-black/10 dark:border-white/15 bg-white/70 dark:bg-white/[0.06] text-neutral-500 dark:text-neutral-400 flex items-center justify-center active:scale-95 transition-transform",
-        disabled && "opacity-40 cursor-not-allowed")}>
+    <button type="button" onClick={onBack} aria-label="뒤로"
+      className="shrink-0 w-6 h-full rounded-md border border-black/10 dark:border-white/15 bg-white/70 dark:bg-white/[0.06] text-neutral-500 dark:text-neutral-400 flex items-center justify-center active:scale-95 transition-transform">
       <span aria-hidden className="text-sm leading-none">◀</span>
     </button>
   );
@@ -65,11 +82,11 @@ const ACTIONS: { id: "fight" | "party" | "item" | "flee"; icon: string; label: s
   { id: "item", icon: "🎒", label: "아이템" },
   { id: "flee", icon: "🏃", label: "도망치기" },
 ];
-function ActionMenu({ onSelect, busy }: { onSelect: (action: "fight" | "party" | "item" | "flee") => void; busy: boolean }) {
+function ActionMenu({ onSelect }: { onSelect: (action: "fight" | "party" | "item" | "flee") => void }) {
   return (
     <Grid2x2>
       {ACTIONS.map(a => (
-        <button key={a.id} type="button" disabled={busy} onClick={() => onSelect(a.id)} className={cn(CELL_CLASS, busy ? CELL_OFF : CELL_ON)}>
+        <button key={a.id} type="button" onClick={() => onSelect(a.id)} className={cn(CELL_CLASS, CELL_ON)}>
           <span aria-hidden className="text-base leading-none">{a.icon}</span>
           <p className="text-[9px] font-bold text-neutral-600 dark:text-neutral-300 text-center leading-tight mt-0.5">{a.label}</p>
         </button>
@@ -79,13 +96,13 @@ function ActionMenu({ onSelect, busy }: { onSelect: (action: "fight" | "party" |
 }
 
 const EFFECT_ICON = { attack: "⚔", shield: "🛡", heal: "❤️" } as const;
-function SkillMenu({ skills, onPlay, onBack, busy }: { skills: SkillRuntime[]; onPlay: (skillId: string) => void; onBack: () => void; busy: boolean }) {
+function SkillMenu({ skills, onPlay, onBack }: { skills: SkillRuntime[]; onPlay: (skillId: string) => void; onBack: () => void }) {
   return (
     <>
-      <BackColumn onBack={onBack} disabled={busy} />
+      <BackColumn onBack={onBack} />
       <Grid2x2>
         {skills.map(({ def, pp }) => {
-          const usable = pp > 0 && !busy;
+          const usable = pp > 0;
           return (
             <button key={def.id} type="button" disabled={!usable} onClick={() => onPlay(def.id)}
               className={cn(CELL_CLASS, usable ? CELL_ON : CELL_OFF)}>
@@ -104,12 +121,12 @@ function SkillMenu({ skills, onPlay, onBack, busy }: { skills: SkillRuntime[]; o
   );
 }
 
-function ItemMenu({ ownedItems, ownedDefs, onUse, onBack, busy }: {
-  ownedItems: OwnedItem[]; ownedDefs: ItemDef[]; onUse: (instanceId: string) => void; onBack: () => void; busy: boolean;
+function ItemMenu({ ownedItems, ownedDefs, onUse, onBack }: {
+  ownedItems: OwnedItem[]; ownedDefs: ItemDef[]; onUse: (instanceId: string) => void; onBack: () => void;
 }) {
   return (
     <>
-      <BackColumn onBack={onBack} disabled={busy} />
+      <BackColumn onBack={onBack} />
       <div className="flex items-center gap-1 h-full w-[168px] shrink-0 overflow-x-auto">
         {ownedItems.length === 0 && (
           <div className={cn(CELL_CLASS, CELL_OFF, "w-full")}>
@@ -119,7 +136,7 @@ function ItemMenu({ ownedItems, ownedDefs, onUse, onBack, busy }: {
         {ownedItems.map(o => {
           const def = ownedDefs.find(d => d.id === o.defId);
           if (!def) return null;
-          const usable = def.kind === "active" && !busy;
+          const usable = def.kind === "active";
           return (
             <button key={o.instanceId} type="button" disabled={!usable} onClick={() => onUse(o.instanceId)}
               className={cn(CELL_CLASS, "w-16 shrink-0", usable ? CELL_ON : CELL_OFF)}>
@@ -137,36 +154,33 @@ function ItemMenu({ ownedItems, ownedDefs, onUse, onBack, busy }: {
 }
 
 // 파티 교체 — forced(활성 몬스터가 방금 기절)면 취소 화살표를 없애 반드시 하나를 골라야 함.
-// 3마리 고정이라 그리드 4칸 중 하나는 항상 빈 자리로 남는다.
-function PartyMenu({ party, activeIndex, forced, onSwitch, onBack, busy }: {
+// 파티가 6마리라 2x2 그리드엔 안 들어가서 ItemMenu와 같은 가로 스크롤 스트립으로 나열한다.
+function PartyMenu({ party, activeIndex, forced, onSwitch, onBack }: {
   party: PartyMember[]; activeIndex: number; forced: boolean;
-  onSwitch: (instanceId: string) => void; onBack: () => void; busy: boolean;
+  onSwitch: (instanceId: string) => void; onBack: () => void;
 }) {
   return (
     <>
-      {!forced && <BackColumn onBack={onBack} disabled={busy} />}
-      <Grid2x2>
+      {!forced && <BackColumn onBack={onBack} />}
+      <div className="flex items-center gap-1 h-full w-[168px] shrink-0 overflow-x-auto">
         {party.map((m, i) => {
           const fainted = m.hp <= 0;
           const isActive = i === activeIndex;
-          const usable = !fainted && !isActive && !busy;
+          const usable = !fainted && !isActive;
           return (
             <button key={m.instanceId} type="button" disabled={!usable} onClick={() => onSwitch(m.instanceId)}
-              className={cn(CELL_CLASS, usable ? CELL_ON : CELL_OFF)}>
+              className={cn(CELL_CLASS, "w-16 shrink-0", usable ? CELL_ON : CELL_OFF)}>
               <p className="text-[8px] font-bold text-neutral-500 dark:text-neutral-400 truncate w-full text-center">
                 {isActive ? "▶ " : ""}{m.name}
               </p>
               <span className={cn("text-[8px] font-black tabular-nums", fainted ? "text-neutral-400" : "text-emerald-600 dark:text-emerald-400")}>
                 {fainted ? "기절" : `${m.hp}/${m.maxHp}`}
               </span>
-              <span className="text-[7px] font-bold text-neutral-400 truncate w-full text-center">{m.sectorType ?? "무속성"}</span>
+              <span className="text-[7px] font-bold text-neutral-400 truncate w-full text-center">{STAGE_LABELS[stageForXp(m.xp)]} · {m.sectorType ?? "무속성"}</span>
             </button>
           );
         })}
-        <div className={cn(CELL_CLASS, CELL_OFF)}>
-          <span className="text-[8px] font-bold text-neutral-400">빈 자리</span>
-        </div>
-      </Grid2x2>
+      </div>
     </>
   );
 }
@@ -192,9 +206,10 @@ type HandViewProps = {
   topLeftOverlay?: React.ReactNode;
   bottomRightOverlay?: React.ReactNode;
   children: React.ReactNode;
-  // 내 행동 결과를 보여주고 적 반격으로 넘어가는 사이(또는 마지막 타격 결과를 보여주고 다음
-  // 페이즈로 넘어가는 사이) true — 그 사이엔 모든 선택지를 비활성화해 입력이 겹치지 않게 한다.
-  busy?: boolean;
+  // 내 행동 결과(또는 마지막 타격 결과)를 보여준 채로 다음 단계(적 반격 등)가 유저의 탭을
+  // 기다리는 중이면 true — 그 사이엔 그리드 자리를 AdvancePrompt 하나로 통째로 대체한다.
+  pending?: boolean;
+  onAdvance?: () => void;
 } & (
   | { mode: "action"; onSelectAction: (action: "fight" | "party" | "item" | "flee") => void }
   | { mode: "skills"; skills: SkillRuntime[]; onPlaySkill: (skillId: string) => void; onBack: () => void }
@@ -203,21 +218,22 @@ type HandViewProps = {
 );
 
 export default function HandView(props: HandViewProps) {
-  const { message, topLeftOverlay, bottomRightOverlay, children, busy = false } = props;
+  const { message, topLeftOverlay, bottomRightOverlay, children, pending = false, onAdvance } = props;
   return (
     <>
       <div className="flex-1 min-h-0">
         <Battlefield topLeftOverlay={topLeftOverlay} bottomRightOverlay={bottomRightOverlay}>{children}</Battlefield>
       </div>
       {/* 포켓몬 클래식 구도 — 왼쪽은 메시지 텍스트박스(타자기 효과), 오른쪽은 선택 그리드
-          (전투/파티/아이템/도망치기 또는 기술/아이템/파티원 목록). 전부 h-20으로 높이를 맞춰서
-          모드가 바뀌어도 이 행 전체 높이가 안 흔들린다. */}
+          (전투/파티/아이템/도망치기 또는 기술/아이템/파티원 목록, pending이면 AdvancePrompt로
+          대체). 전부 h-20으로 높이를 맞춰서 모드가 바뀌어도 이 행 전체 높이가 안 흔들린다. */}
       <div className="shrink-0 flex items-stretch gap-1.5 py-1.5">
-        <MessageBox text={message} />
-        {props.mode === "action" ? <ActionMenu onSelect={props.onSelectAction} busy={busy} />
-          : props.mode === "skills" ? <SkillMenu skills={props.skills} onPlay={props.onPlaySkill} onBack={props.onBack} busy={busy} />
-            : props.mode === "items" ? <ItemMenu ownedItems={props.ownedItems} ownedDefs={props.ownedDefs} onUse={props.onUseItem} onBack={props.onBack} busy={busy} />
-              : <PartyMenu party={props.party} activeIndex={props.activeIndex} forced={props.forced} onSwitch={props.onSwitchMember} onBack={props.onBack} busy={busy} />}
+        <MessageBox text={message} pending={pending} onAdvance={onAdvance} />
+        {pending ? <AdvancePrompt onAdvance={onAdvance!} />
+          : props.mode === "action" ? <ActionMenu onSelect={props.onSelectAction} />
+            : props.mode === "skills" ? <SkillMenu skills={props.skills} onPlay={props.onPlaySkill} onBack={props.onBack} />
+              : props.mode === "items" ? <ItemMenu ownedItems={props.ownedItems} ownedDefs={props.ownedDefs} onUse={props.onUseItem} onBack={props.onBack} />
+                : <PartyMenu party={props.party} activeIndex={props.activeIndex} forced={props.forced} onSwitch={props.onSwitchMember} onBack={props.onBack} />}
       </div>
     </>
   );

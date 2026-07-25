@@ -58,9 +58,10 @@ export interface PartyMember {
   name: string;
   tone: string; // computeValueScore(item).tone — 파티 화면 배지 색상용
   sectorType: string | null; // sectorTypes.sectorType(item) — 무속성이면 null
-  stats: CardStats;
+  stats: CardStats; // 카드 자체 base(육성 성장 미반영) — combatEngine.growthStats로 xp만큼 보정해서 씀
   hp: number;
-  maxHp: number;
+  maxHp: number; // 카드 자체 base maxHp(육성/트레이너 보너스 미반영) — 화면 표시는 파생값을 씀
+  xp: number; // 이번 런에서 이 몬스터가 쌓은 성장 경험치(런 종료 시 리셋) — combatEngine.stageForXp로 단계 산출
 }
 
 export type ItemKind = "passive" | "active";
