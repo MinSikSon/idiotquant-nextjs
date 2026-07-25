@@ -34,10 +34,10 @@ type NavItem = {
   adminOnly?: boolean;
 };
 
-// 순서·아이콘을 홈 온보딩 설명 순서에 맞춤: 게임(⛵) → 발굴(🥇) → 분석(💎)
+// 순서·아이콘을 홈 온보딩 설명 순서에 맞춤: 발굴(🥇) → 분석(💎). 게임(⛵)은 admin 전용.
 const MAIN_NAV: NavItem[] = [
   { label: "홈",        href: "/",           icon: Home,       exact: true  },
-  { label: "카드 게임", href: "/game",        icon: Gamepad2,   emoji: "⛵", badge: "New" },
+  { label: "카드 게임", href: "/game",        icon: Gamepad2,   emoji: "⛵", badge: "New", adminOnly: true },
   { label: "종목 발굴", href: "/screener",    icon: Filter,     emoji: "🥇", badge: "Pro" },
   { label: "전략 히스토리", href: "/backtest", icon: History, adminOnly: true },
   { label: "적정 주가", href: "/analyze",     icon: Search,     emoji: "💎"   },
@@ -370,12 +370,13 @@ export function NavbarWithSimpleLinks() {
       {/* ══ MOBILE BOTTOM TAB BAR ════════════════════════════════════ */}
       <nav className="md:hidden fixed bottom-0 left-0 right-0 h-[64px] z-40 bg-white/95 dark:bg-[#1f1e1b]/95 backdrop-blur-xl border-t border-neutral-200/70 dark:border-[#3a3834] flex items-center px-3">
         <TabItem href="/"           label="홈"     icon={Home}       isActive={pathname === "/"} />
-        {/* 게임 화면에선 게임 탭이 '내 덱'으로 전환 — 게임 페이지 상단 바 제거분을 통합. 덱 닫기는 덱 화면의 '게임으로' 버튼 */}
-        {pathname.startsWith("/game") ? (
+        {/* 게임은 admin 전용 — 사이드바(MAIN_NAV의 adminOnly)와 같은 기준. 게임 화면에선 게임
+            탭이 '내 덱'으로 전환된다(게임 페이지 상단 바 제거분 통합, 덱 닫기는 덱 화면의 '게임으로' 버튼) */}
+        {isAdmin && (pathname.startsWith("/game") ? (
           <TabItem href="/game?deck=1" label="내 덱" icon={Layers} isActive={true} />
         ) : (
           <TabItem href="/game"       label="게임"   icon={Gamepad2}   emoji="⛵" isActive={false} />
-        )}
+        ))}
         <TabItem href="/screener"   label="발굴"   icon={Filter}     emoji="🥇" isActive={pathname.startsWith("/screener")} />
         {isAdmin && (
           <TabItem href="/backtest"   label="히스토리" icon={History}  isActive={pathname.startsWith("/backtest")} />
