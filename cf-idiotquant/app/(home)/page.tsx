@@ -3,6 +3,7 @@
 import { useEffect, useRef } from "react";
 import * as THREE from "three";
 import { RoomEnvironment } from "three/examples/jsm/environments/RoomEnvironment.js";
+import { mergeGeometries } from "three/examples/jsm/utils/BufferGeometryUtils.js";
 import { useSession } from "next-auth/react";
 import Link from "next/link";
 import { Filter, ArrowRight, TrendingUp } from "lucide-react";
@@ -12,27 +13,74 @@ import { cn } from "@/lib/utils";
 // 홈 3D 일러스트 (three.js / WebGL)
 // 클라이언트에서만 마운트, prefers-reduced-motion 시 정적 렌더.
 // =========================================================================
-// 둥근 모서리 3D 슬래브 (core three: Shape + ExtrudeGeometry)
-function roundedBoxGeometry(w: number, h: number, d: number, r: number): THREE.ExtrudeGeometry {
-  const s = new THREE.Shape();
-  const x = -w / 2, y = -h / 2;
-  s.moveTo(x + r, y);
-  s.lineTo(x + w - r, y);
-  s.quadraticCurveTo(x + w, y, x + w, y + r);
-  s.lineTo(x + w, y + h - r);
-  s.quadraticCurveTo(x + w, y + h, x + w - r, y + h);
-  s.lineTo(x + r, y + h);
-  s.quadraticCurveTo(x, y + h, x, y + h - r);
-  s.lineTo(x, y + r);
-  s.quadraticCurveTo(x, y, x + r, y);
-  const bevel = Math.min(0.045, d * 0.4, r * 0.6);
-  const geo = new THREE.ExtrudeGeometry(s, {
-    depth: Math.max(0.001, d - bevel * 2), bevelEnabled: true,
-    bevelThickness: bevel, bevelSize: bevel, bevelSegments: 2, steps: 1, curveSegments: 14,
-  });
-  geo.translate(0, 0, -d / 2);
-  geo.computeVertexNormals();
+
+// 금화 전용 스튜디오 환경맵 — 유광 금속의 관건은 "밝은 면과 어두운 면의 경계가 또렷한" 환경이다.
+// 완만한 그라데이션만 두면 구릿빛으로 밋밋해지고, 아래쪽을 검정으로 두면 금화가 바닥을 비출 때
+// 타버린 듯 검게 보인다 → 위는 밝은 소프트박스, 아래는 "어둡되 따뜻한 황동색"으로 두고 수평선에서
+// 급격히 전환시켜 표면에 선명한 반사선을 남긴다.
+function makeGoldStudioEnv(renderer: THREE.WebGLRenderer): THREE.Texture {
+  const c = document.createElement("canvas");
+  c.width = 1024; c.height = 512;
+  const x = c.getContext("2d")!;
+  const g = x.createLinearGradient(0, 0, 0, 512);
+  g.addColorStop(0.000, "#ffffff");
+  g.addColorStop(0.340, "#fbf1dc");
+  g.addColorStop(0.470, "#ffe7ae");
+  g.addColorStop(0.500, "#fff6df"); // 수평선 바로 위 밝은 띠
+  g.addColorStop(0.505, "#7c5a22"); // 급격한 명암 경계
+  g.addColorStop(1.000, "#4d3714");
+  x.fillStyle = g;
+  x.fillRect(0, 0, 1024, 512);
+  // 각진 소프트박스 — 원형 블러보다 경계가 뚜렷해 금속에 "면"으로 된 하이라이트를 남긴다
+  x.fillStyle = "#ffffff";
+  for (const [px, py, w, h] of [[120, 60, 300, 110], [560, 30, 230, 80], [860, 150, 170, 70]]) {
+    x.fillRect(px, py, w, h);
+  }
+  // 하단 반사광 — 동전 아랫면이 완전히 죽지 않도록 은은한 금빛을 깔아둔다
+  const wg = x.createLinearGradient(0, 512, 0, 300);
+  wg.addColorStop(0, "rgba(255,196,90,.5)");
+  wg.addColorStop(1, "rgba(255,196,90,0)");
+  x.fillStyle = wg;
+  x.fillRect(0, 300, 1024, 212);
+
+  const tex = new THREE.CanvasTexture(c);
+  tex.mapping = THREE.EquirectangularReflectionMapping;
+  tex.colorSpace = THREE.SRGBColorSpace;
+  const pmrem = new THREE.PMREMGenerator(renderer);
+  const env = pmrem.fromEquirectangular(tex).texture;
+  pmrem.dispose();
+  tex.dispose();
+  return env;
+}
+
+// 금화 한 닢을 단일 지오메트리로 병합 — 원판 + 도드라진 안쪽 필드 + 앞뒤 각인 링(평평한 금속면의
+// 밋밋함 제거). 테두리는 톱니 없이 매끈하게 연마된 면으로 둔다(톱니를 두르면 톱날·기어처럼 보임).
+// 반지름 1 기준으로 만들어 두고 인스턴스별 scale로 크기를 다르게 쓴다. 파트별 색은 정점
+// 색(vertexColors)으로 구분해 재질 하나·드로우콜 한 번으로 수십 개를 그린다.
+const COIN_BODY = new THREE.Color(0xffd257);
+const COIN_RIM = new THREE.Color(0xe0a020);
+function paint(geo: THREE.BufferGeometry, color: THREE.Color): THREE.BufferGeometry {
+  const n = geo.attributes.position.count;
+  const arr = new Float32Array(n * 3);
+  for (let i = 0; i < n; i++) { arr[i * 3] = color.r; arr[i * 3 + 1] = color.g; arr[i * 3 + 2] = color.b; }
+  geo.setAttribute("color", new THREE.BufferAttribute(arr, 3));
   return geo;
+}
+function makeCoinGeometry(): THREE.BufferGeometry {
+  const TH = 0.22;
+  const parts: THREE.BufferGeometry[] = [
+    paint(new THREE.CylinderGeometry(1, 1, TH, 48), COIN_BODY),
+    paint(new THREE.CylinderGeometry(0.8, 0.8, TH * 1.35, 48), COIN_BODY),
+  ];
+  for (const sgn of [1, -1]) {
+    const ring = paint(new THREE.TorusGeometry(0.52, 0.045, 8, 40), COIN_RIM);
+    ring.rotateX(Math.PI / 2);
+    ring.translate(0, sgn * TH * 0.7, 0);
+    parts.push(ring);
+  }
+  const merged = mergeGeometries(parts, false)!;
+  parts.forEach(p => p.dispose());
+  return merged;
 }
 
 // 부드러운 원형 그림자/글로우 텍스처
@@ -66,7 +114,7 @@ function HeroArt() {
     const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
     renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
     renderer.toneMapping = THREE.ACESFilmicToneMapping;
-    renderer.toneMappingExposure = 1.1;
+    renderer.toneMappingExposure = 1.0; // 노출을 낮춰 금화 하이라이트가 날아가지 않게
     renderer.outputColorSpace = THREE.SRGBColorSpace;
     const canvas = renderer.domElement;
     canvas.style.width = "100%";
@@ -76,83 +124,136 @@ function HeroArt() {
 
     const disposables: { dispose: () => void }[] = [];
 
-    // 프리미엄 반사용 실내 환경맵 (PMREM)
-    const pmrem = new THREE.PMREMGenerator(renderer);
-    const envRT = pmrem.fromScene(new RoomEnvironment(), 0.04);
-    scene.environment = envRT.texture;
-    pmrem.dispose();
-    disposables.push(envRT.texture);
+    // 금화가 유광으로 보이려면 명암 경계가 또렷한 환경이 필요하다(makeGoldStudioEnv 주석 참고).
+    const envTex = makeGoldStudioEnv(renderer);
+    scene.environment = envTex;
+    disposables.push(envTex);
 
-    scene.add(new THREE.HemisphereLight(0xffffff, 0x6b7a72, 0.6));
-    const key = new THREE.DirectionalLight(0xfff2d0, 2.6);
+    scene.add(new THREE.HemisphereLight(0xffffff, 0x6b7a72, 0.45));
+    const key = new THREE.DirectionalLight(0xfff2d0, 3.2);
     key.position.set(5, 9, 7);
     scene.add(key);
     const rim = new THREE.DirectionalLight(0x86efc0, 1.2);
     rim.position.set(-7, 3, -4);
     scene.add(rim);
+    const glint = new THREE.PointLight(0xffffff, 26, 40); // 금화 표면 글린트
+    glint.position.set(-3, 7, 6);
+    scene.add(glint);
 
     const root = new THREE.Group();
     scene.add(root);
     const BASE = -2;
 
-    // 공용 재질 · 지오메트리
-    const upMat = new THREE.MeshPhysicalMaterial({ color: 0x18a94e, roughness: 0.3, clearcoat: 0.8, clearcoatRoughness: 0.22, emissive: 0x0b5a2a, emissiveIntensity: 0.14 });
-    const dnMat = new THREE.MeshPhysicalMaterial({ color: 0xf04458, roughness: 0.3, clearcoat: 0.8, clearcoatRoughness: 0.22, emissive: 0x7a1626, emissiveIntensity: 0.14 });
-    const wickMat = new THREE.MeshStandardMaterial({ color: 0x9aa3af, metalness: 0.1, roughness: 0.6 });
-    const goldMat = new THREE.MeshStandardMaterial({ color: 0xffca3d, metalness: 0.95, roughness: 0.14, emissive: 0x5a3d06, emissiveIntensity: 0.16 });
-    const shadowTex = makeRadialTexture("rgba(3,18,10,0.5)");
-    const shGeo = new THREE.PlaneGeometry(1, 1);
-    const shMat = new THREE.MeshBasicMaterial({ map: shadowTex, transparent: true, depthWrite: false, opacity: 0.5 });
-    const glowTex = makeRadialTexture("rgba(255,205,80,0.55)");
-    const haloMat = new THREE.SpriteMaterial({ map: glowTex, transparent: true, depthWrite: false, blending: THREE.AdditiveBlending, opacity: 0.55 });
-    disposables.push(upMat, dnMat, wickMat, goldMat, shadowTex, shGeo, shMat, glowTex, haloMat);
+    // 캔들 재질 — 각진 형태는 유지하되 광택을 걷어내고 채도를 살짝 낮춘다.
+    const upMat = new THREE.MeshStandardMaterial({ color: 0x14a05a, roughness: 0.5, metalness: 0.04 });
+    const dnMat = new THREE.MeshStandardMaterial({ color: 0xd4525c, roughness: 0.5, metalness: 0.04 });
+    const goldMat = new THREE.MeshPhysicalMaterial({
+      vertexColors: true, metalness: 1.0, roughness: 0.05,
+      envMapIntensity: 2.6, clearcoat: 0.5, clearcoatRoughness: 0.04,
+    });
+    disposables.push(upMat, dnMat, goldMat);
 
-    // 캔들 스카이라인 — 좌→우 상승 추세, 깊이(z) 배치로 원근감
-    const candles: { g: THREE.Group; phase: number }[] = [];
+    // 캔들 스카이라인 — 좌→우 상승 추세. 예전엔 가느다란 회색 심지가 벌레 다리처럼 보이고, 진한
+    // 윤곽선과 제각각인 깊이(z)가 어수선해 보였다 → 심지를 몸통과 같은 색의 짧고 도톰한 블록으로
+    // 바꾸고, 윤곽선을 없애고, 깊이를 한 줄로 정렬해 정면에서 읽히는 깔끔한 차트로 만든다.
     const N = 15;
+    const CANDLE_Z = -0.6;
     let prev = 1.0;
     for (let i = 0; i < N; i++) {
       const trend = 0.9 + i * 0.12;
-      const noise = Math.sin(i * 1.7) * 0.4 + (Math.random() - 0.5) * 0.35;
+      const noise = Math.sin(i * 1.7) * 0.4 + (Math.sin(i * 7.3) * 0.5 - 0.25) * 0.35;
       const h = Math.max(0.6, trend + noise);
       const up = h >= prev; prev = h;
-      const x = (i - (N - 1) / 2) * 1.15;
-      const z = -1.5 + Math.sin(i * 0.9) * 1.3 + (Math.random() - 0.5) * 0.6;
-      const geo = roundedBoxGeometry(0.5, h, 0.5, 0.09);
-      const wickGeo = new THREE.CylinderGeometry(0.03, 0.03, h + 0.7, 8);
+      const mat = up ? upMat : dnMat;
+      const geo = new THREE.BoxGeometry(0.66, h, 0.66);          // 폭을 넓혀 안정감 있게
+      const wickGeo = new THREE.BoxGeometry(0.16, h * 0.28, 0.16); // 짧고 도톰한 심지
       disposables.push(geo, wickGeo);
       const g = new THREE.Group();
-      const body = new THREE.Mesh(geo, up ? upMat : dnMat); body.position.y = h / 2;
-      const wick = new THREE.Mesh(wickGeo, wickMat); wick.position.y = h / 2;
-      const sh = new THREE.Mesh(shGeo, shMat); sh.rotation.x = -Math.PI / 2; sh.position.y = 0.01; sh.scale.set(1.5, 1.5, 1);
-      g.add(sh, wick, body);
-      g.position.set(x, BASE, z);
+      const body = new THREE.Mesh(geo, mat); body.position.y = h / 2;
+      const wick = new THREE.Mesh(wickGeo, mat); wick.position.y = h + h * 0.14;
+      g.add(body, wick);
+      g.position.set((i - (N - 1) / 2) * 1.15, BASE, CANDLE_Z);
       root.add(g);
-      candles.push({ g, phase: i * 0.5 });
     }
 
-    // 금화 여러 개 (깊이·크기 다양) — 회전 + 부유 + 글로우 스프라이트
-    const coins: { parent: THREE.Group; disc: THREE.Group; spin: number; baseY: number; phase: number }[] = [];
-    const coinData: [number, number, number, number][] = [
-      [-5.5, 2.6, 1.5, 0.55], [3.4, 3.5, -1.0, 0.42], [6.2, 1.9, 0.4, 0.5],
-      [-2.6, 3.9, 0.2, 0.34], [0.8, 3.0, 2.4, 0.38],
-    ];
-    coinData.forEach(([x, y, z, r], i) => {
-      const th = r * 0.22;
-      const baseGeo = new THREE.CylinderGeometry(r, r, th, 48);
-      const fieldGeo = new THREE.CylinderGeometry(r * 0.8, r * 0.8, th * 1.35, 48);
-      disposables.push(baseGeo, fieldGeo);
-      const disc = new THREE.Group();
-      disc.add(new THREE.Mesh(baseGeo, goldMat), new THREE.Mesh(fieldGeo, goldMat));
-      disc.rotation.x = Math.PI / 2;
-      const halo = new THREE.Sprite(haloMat);
-      halo.scale.set(r * 5, r * 5, 1);
-      const g = new THREE.Group();
-      g.add(halo, disc);
-      g.position.set(x, BASE + y, z);
-      root.add(g);
-      coins.push({ parent: g, disc, spin: 1.1 + i * 0.25, baseY: BASE + y, phase: i });
-    });
+    // 쏟아지는 금화 — 계속 순환하며 떨어지는 무리(stream) + 바닥에 쌓여 더미를 만드는 무리(pile).
+    // 전부 하나의 InstancedMesh라 개수가 많아도 드로우콜은 1회다. 헤드라인을 침범할 수 있는 건
+    // 공중을 가로지르는 stream뿐이라, 좁은 화면에선 stream만 줄이고 pile은 그대로 둔다.
+    const narrowVp = mount.clientWidth / Math.max(1, mount.clientHeight) < 0.9;
+    const STREAM = narrowVp ? 10 : 26, PILE = 46, TOTAL = STREAM + PILE;
+    const coinGeo = makeCoinGeometry();
+    disposables.push(coinGeo);
+    const coinMesh = new THREE.InstancedMesh(coinGeo, goldMat, TOTAL);
+    coinMesh.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
+    root.add(coinMesh);
+
+    const rnd = (a: number, b: number) => a + Math.random() * (b - a);
+    // 세로로 긴 화면(모바일)은 보이는 가로 범위가 좁아, 넓은 화면 기준으로 쏟으면 금화가 헤드라인
+    // 위를 지나가 글씨를 가린다 → 좁은 화면에선 더미와 낙하 구간을 오른쪽으로 옮기고, 특히 공중을
+    // 가로지르는 낙하 금화는 텍스트 오른쪽 바깥에서만 떨어지게 한다.
+    const X_MAX = narrowVp ? 5.6 : 7.8;
+    const PILE_X_MIN = narrowVp ? 0.0 : -2.0;   // 바닥 더미 — 텍스트 아래라 왼쪽까지 깔려도 무방
+    const STREAM_X_MIN = narrowVp ? 1.6 : -2.0; // 낙하 금화 — 좁은 화면에선 헤드라인을 피해 오른쪽만
+    const MOUND_X = narrowVp ? 2.4 : 3.4;
+
+    type Coin = {
+      pos: THREE.Vector3; rot: THREE.Euler; r: number;
+      vy: number; vx: number; rx: number; ry: number; rz: number;
+      pile: boolean; settled: boolean;
+    };
+    const coins: Coin[] = [];
+    for (let i = 0; i < TOTAL; i++) {
+      const pile = i < PILE;
+      const x = rnd(pile ? PILE_X_MIN : STREAM_X_MIN, X_MAX);
+      // 텍스트가 얹히는 좌상단은 작고 깊은(뒤쪽) 금화만 배치해 가독성을 지킨다
+      const leftZone = x < -1.0;
+      coins.push({
+        pos: new THREE.Vector3(x, rnd(BASE + 4, BASE + 17), leftZone ? rnd(-3.5, -1.5) : rnd(-2.5, 3.2)),
+        rot: new THREE.Euler(rnd(0, 6.3), rnd(0, 6.3), rnd(0, 6.3)),
+        r: rnd(leftZone ? 0.2 : 0.26, leftZone ? 0.34 : 0.6),
+        vy: -rnd(2.2, 4.0), vx: rnd(-0.2, 0.2),
+        rx: rnd(-2.4, 2.4), ry: rnd(-2.6, 2.6), rz: rnd(-1.6, 1.6),
+        pile, settled: false,
+      });
+    }
+
+    const _m = new THREE.Matrix4(), _q = new THREE.Quaternion(), _s = new THREE.Vector3();
+    const syncCoins = () => {
+      coins.forEach((c, i) => {
+        _q.setFromEuler(c.rot);
+        _s.setScalar(c.r);
+        _m.compose(c.pos, _q, _s);
+        coinMesh.setMatrixAt(i, _m);
+      });
+      coinMesh.instanceMatrix.needsUpdate = true;
+    };
+
+    const stepCoins = (dt: number) => {
+      for (const c of coins) {
+        if (c.settled) continue;
+        c.vy -= 9.0 * dt;                     // 중력
+        c.pos.y += c.vy * dt;
+        c.pos.x += c.vx * dt;
+        c.rot.x += c.rx * dt; c.rot.y += c.ry * dt; c.rot.z += c.rz * dt;
+        const floorY = BASE + c.r * 0.12;
+        if (c.pos.y <= floorY) {
+          if (c.pile) {
+            // 눕혀서 고정 — 더미 중심에 가까울수록 높이 쌓여 봉긋한 금화 무더기가 된다
+            const mound = Math.max(0, 1 - Math.abs(c.pos.x - MOUND_X) / 5.5);
+            c.pos.y = floorY + mound * rnd(0.1, 1.5) + rnd(0, 0.12);
+            c.rot.set(Math.PI / 2 + rnd(-0.3, 0.3), rnd(0, 6.3), rnd(-0.3, 0.3));
+            c.settled = true;
+          } else {                            // 위로 되돌려 끊임없이 쏟아지게
+            c.pos.set(rnd(STREAM_X_MIN, X_MAX), BASE + rnd(11, 17), rnd(-2.5, 3.2));
+            c.vy = -rnd(2.2, 4.0);
+          }
+        }
+      }
+    };
+
+    // 첫 화면부터 "이미 쏟아지고 쌓여 있는" 상태로 보이도록 시뮬레이션을 미리 굴려둔다
+    for (let i = 0; i < 360; i++) stepCoins(1 / 60);
+    syncCoins();
 
     const resize = () => {
       const w = mount.clientWidth || 1;
@@ -168,13 +269,12 @@ function HeroArt() {
     const clock = new THREE.Clock();
     let raf = 0;
     const render = () => {
+      const dt = Math.min(clock.getDelta(), 0.05); // 탭 전환 후 큰 dt로 금화가 순간이동하는 것 방지
       const t = clock.getElapsedTime();
-      candles.forEach(({ g, phase }) => { g.position.y = BASE + Math.sin(t * 0.9 + phase) * 0.05; });
-      coins.forEach(({ parent, disc, spin, baseY, phase }) => {
-        disc.rotation.y = t * spin;
-        parent.position.y = baseY + Math.sin(t * 0.8 + phase) * 0.18;
-      });
-      // 완만한 카메라 드리프트(패럴랙스)로 화면 전체가 살아 있게
+      stepCoins(dt);
+      syncCoins();
+      // 캔들은 흔들지 않는다 — 정지된 차트가 "무겁고 신뢰감 있는" 인상을 만든다.
+      // 완만한 카메라 드리프트(패럴랙스)로 화면 전체가 살아 있게.
       camera.position.x = Math.sin(t * 0.08) * 2.4;
       camera.position.y = 2.6 + Math.sin(t * 0.05) * 0.5;
       camera.lookAt(0, 0.4, -1);
@@ -182,6 +282,7 @@ function HeroArt() {
       raf = requestAnimationFrame(render);
     };
     if (reduce) {
+      // 모션 최소화 설정 — 이미 쏟아져 쌓인 한 장면을 정지 화면으로 보여준다
       camera.position.set(1.6, 2.7, 11);
       camera.lookAt(0, 0.4, -1);
       renderer.render(scene, camera);
@@ -376,8 +477,9 @@ export default function HomePage() {
         <div className="absolute inset-0">
           <HeroArt />
         </div>
-        {/* 가독성 스크림 */}
-        <div className="absolute inset-0 pointer-events-none bg-gradient-to-b from-[#f4faf6] via-[#f4faf6]/5 to-[#f4faf6] dark:from-[#12241c] dark:via-transparent dark:to-[#1a1915]" />
+        {/* 가독성 스크림 — 위아래 경계만 부드럽게 잇는 정도로만 덮는다. 예전엔 상·하단이 배경색
+            불투명이라 금화·캔들의 색이 통째로 씻겨 뿌옇게 보였다(특히 하단 금화 더미). */}
+        <div className="absolute inset-0 pointer-events-none bg-gradient-to-b from-[#f4faf6]/75 via-transparent to-[#f4faf6]/55 dark:from-[#12241c]/80 dark:via-transparent dark:to-[#1a1915]/60" />
 
         {/* 텍스트 오버레이 */}
         <div className="relative z-10 max-w-3xl mx-auto w-full px-5 pt-20 sm:pt-28 md:pt-32">
