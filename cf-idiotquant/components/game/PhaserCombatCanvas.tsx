@@ -5,14 +5,16 @@
 // page.tsx에서 dynamic(..., { ssr:false })로 불러와야 함(Phaser가 window/document를 참조).
 
 import { useEffect, useRef } from "react";
-import type { EnemyState, PlayerState, SkillEffectKind } from "@/app/(game)/game/gameTypes";
+import type { EnemyState, PlayerState, SkillEffectKind, StatusKind } from "@/app/(game)/game/gameTypes";
 
-export default function PhaserCombatCanvas({ enemy, player, playerName, introLabel, level, lastSkillCast }: {
+export default function PhaserCombatCanvas({ enemy, player, playerName, introLabel, level, floor, activeStatus, lastSkillCast }: {
   enemy: EnemyState | null;
   player: PlayerState;
   playerName: string; // 좌하단 내 캐릭터 정보 박스에 표시(활성 몬스터 이름)
   introLabel: string | null; // 조우 진입 시 부모가 짧게(한 렌더) 세팅 — 보스/정예만
-  level: number; // 활성 몬스터의 육성 레벨 — 실루엣 크기에 반영
+  level: number; // 활성 몬스터의 육성 레벨 — 실루엣 크기·정보 패널 Lv 표기에 반영
+  floor: number; // 현재 층수 — 5층마다 바이옴 배경이 바뀐다(CombatScene.setFloor)
+  activeStatus?: StatusKind | null; // 활성 몬스터의 상태이상 — 정보 패널 배지
   lastSkillCast?: { kind: SkillEffectKind; seq: number } | null; // 기술 시전 이펙트 트리거(seq가 바뀔 때마다 재생)
 }) {
   const containerRef = useRef<HTMLDivElement>(null);
@@ -22,6 +24,7 @@ export default function PhaserCombatCanvas({ enemy, player, playerName, introLab
   const prevEnemyHp = useRef<number>(0);
   const prevPlayerHp = useRef<number>(player.hp);
   const prevPlayerBlock = useRef<number>(player.block);
+  const prevPlayerName = useRef<string | null>(null);
   const latestEnemyRef = useRef(enemy);
   latestEnemyRef.current = enemy;
   const latestPlayerRef = useRef(player);
@@ -30,6 +33,10 @@ export default function PhaserCombatCanvas({ enemy, player, playerName, introLab
   latestPlayerNameRef.current = playerName;
   const latestLevelRef = useRef(level);
   latestLevelRef.current = level;
+  const latestFloorRef = useRef(floor);
+  latestFloorRef.current = floor;
+  const latestActiveStatusRef = useRef(activeStatus ?? null);
+  latestActiveStatusRef.current = activeStatus ?? null;
 
   useEffect(() => {
     let disposed = false;
@@ -53,15 +60,19 @@ export default function PhaserCombatCanvas({ enemy, player, playerName, introLab
         sceneRef.current = scene;
         // 씬이 준비되기 전에 이미 적/플레이어 상태가 정해져 있었을 수 있음(마운트 시점 경쟁) —
         // 놓치지 않게 즉시 반영.
+        scene.setFloor?.(latestFloorRef.current);
         const e = latestEnemyRef.current;
         if (e) {
-          scene.setEnemy?.(String(e.item?.name ?? "몬스터"), e.hp, e.maxHp, e.encounter);
+          scene.setEnemy?.(String(e.item?.name ?? "몬스터"), e.hp, e.maxHp, e.encounter, e.level);
+          scene.setEnemyStatus?.(e.status ?? null);
           prevEnemyTicker.current = e.item?.ticker ?? null;
           prevEnemyHp.current = e.hp;
         }
         scene.setPlayerName?.(latestPlayerNameRef.current);
+        prevPlayerName.current = latestPlayerNameRef.current;
         scene.setPlayerHp?.(latestPlayerRef.current.hp, latestPlayerRef.current.maxHp);
         scene.setPlayerLevel?.(latestLevelRef.current);
+        scene.setPlayerStatus?.(latestActiveStatusRef.current);
       });
       const ro = new ResizeObserver(() => {
         if (!containerRef.current) return;
@@ -79,29 +90,46 @@ export default function PhaserCombatCanvas({ enemy, player, playerName, introLab
     };
   }, []);
 
-  // 적 등장/변경
+  // 층수 변화 → 바이옴 배경(5층마다 실제로 바뀜 — 판단은 씬이 함)
+  useEffect(() => { sceneRef.current?.setFloor?.(floor); }, [floor]);
+
+  // 적 등장/변경/피격/기절
   useEffect(() => {
     const scene = sceneRef.current;
     if (!scene || !enemy) return;
     const id = requestAnimationFrame(() => {
       if (enemy.item?.ticker !== prevEnemyTicker.current) {
         const name = String(enemy.item?.name ?? "몬스터");
-        scene.setEnemy?.(name, enemy.hp, enemy.maxHp, enemy.encounter);
+        scene.setEnemy?.(name, enemy.hp, enemy.maxHp, enemy.encounter, enemy.level);
         // 보스/정예는 부모가 넘겨준 전용 문구, 그 외 모든 조우도 포켓몬처럼 매번 등장 배너를 띄움.
-        scene.showIntro?.(introLabel ?? `${name} 등장!`);
+        scene.showIntro?.(introLabel ?? `야생의 ${name} 등장!`);
         prevEnemyTicker.current = enemy.item?.ticker ?? null;
         prevEnemyHp.current = enemy.hp;
         return;
       }
-      if (enemy.hp < prevEnemyHp.current) scene.flashEnemyHit?.(prevEnemyHp.current - enemy.hp);
+      if (enemy.hp < prevEnemyHp.current) {
+        scene.flashEnemyHit?.(prevEnemyHp.current - enemy.hp);
+        if (enemy.hp <= 0) scene.playEnemyFaint?.();
+      }
       scene.setEnemyHp?.(enemy.hp, enemy.maxHp);
       prevEnemyHp.current = enemy.hp;
     });
     return () => cancelAnimationFrame(id);
   }, [enemy, enemy?.hp, introLabel]);
 
-  // 이름 변경(사실상 초기 1회) — 좌하단 정보 박스 라벨
-  useEffect(() => { sceneRef.current?.setPlayerName?.(playerName); }, [playerName]);
+  // 적 상태이상 배지
+  useEffect(() => { sceneRef.current?.setEnemyStatus?.(enemy?.status ?? null); }, [enemy?.status]);
+  // 내 몬스터 상태이상 배지
+  useEffect(() => { sceneRef.current?.setPlayerStatus?.(activeStatus ?? null); }, [activeStatus]);
+
+  // 이름 변경 = 몬스터 교체 — 왼쪽에서 미끄러져 들어오는 교체 투입 연출(최초 마운트 제외)
+  useEffect(() => {
+    const scene = sceneRef.current;
+    if (!scene) return;
+    scene.setPlayerName?.(playerName);
+    if (prevPlayerName.current !== null && prevPlayerName.current !== playerName) scene.playPlayerEnter?.();
+    prevPlayerName.current = playerName;
+  }, [playerName]);
 
   // 육성 레벨 변화 — 레벨업 시 실루엣 크기 변경 + 플래시(최초 마운트 값 반영 시엔 무연출).
   useEffect(() => { sceneRef.current?.setPlayerLevel?.(level); }, [level]);
@@ -112,12 +140,16 @@ export default function PhaserCombatCanvas({ enemy, player, playerName, introLab
     sceneRef.current?.playSkillCast?.(lastSkillCast.kind);
   }, [lastSkillCast]);
 
-  // 플레이어 HP/블록 변화 → 피격/방어 이펙트 + HP바 갱신
+  // 플레이어 HP/블록 변화 → 피격/방어 이펙트 + HP바 갱신 + 기절 연출
   useEffect(() => {
     const scene = sceneRef.current;
     if (!scene) return;
-    if (player.hp < prevPlayerHp.current) scene.flashPlayerHit?.(prevPlayerHp.current - player.hp);
-    else if (player.hp > prevPlayerHp.current) scene.playHeal?.(player.hp - prevPlayerHp.current);
+    if (player.hp < prevPlayerHp.current) {
+      scene.flashPlayerHit?.(prevPlayerHp.current - player.hp);
+      if (player.hp <= 0) scene.playPlayerFaint?.();
+    } else if (player.hp > prevPlayerHp.current) {
+      scene.playHeal?.(player.hp - prevPlayerHp.current);
+    }
     if (player.block > prevPlayerBlock.current) scene.flashPlayerBlock?.(player.block - prevPlayerBlock.current);
     scene.setPlayerHp?.(player.hp, player.maxHp);
     prevPlayerHp.current = player.hp;

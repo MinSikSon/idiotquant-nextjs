@@ -33,12 +33,19 @@ export type ActiveEffect =
 // 기본 데미지, shield=고정 블록량, heal=고정 회복량. PP는 던전 진행 내내 유지되며(전투를 이겨도
 // 자동 회복 안 됨) 상점의 PP 회복 물약으로만 채워진다.
 export type SkillEffectKind = "attack" | "shield" | "heal";
+
+// 상태이상 — 화상/독(매 턴 도트 피해), 마비(행동 실패 확률). 포켓몬류 관습을 따르되 3종만.
+// 몸에 붙은 상태이상은 그 전투가 끝나면(승리·도망 성공) 해제된다.
+export type StatusKind = "burn" | "poison" | "paralysis";
+
 export interface SkillDef {
   id: string;
   name: string;
   effect: SkillEffectKind;
   power: number;
   maxPP: number;
+  statusChance?: number;    // 공격 적중 시 상태이상 부여 확률(0~1) — 없으면 부여 안 함
+  statusKind?: StatusKind;  // 부여할 상태이상 종류(statusChance와 함께 지정)
 }
 // ownerId = 그 기술을 가진 파티 몬스터의 PartyMember.instanceId — 몬스터마다 같은 skillId를
 // 재사용하므로(공통 템플릿) PP는 반드시 (ownerId, skillId) 쌍으로 구분해야 한다.
@@ -62,6 +69,7 @@ export interface PartyMember {
   hp: number;
   maxHp: number; // 카드 자체 base maxHp(레벨/트레이너 보너스 미반영) — 화면 표시는 파생값을 씀
   xp: number; // 이번 런에서 이 몬스터가 쌓은 경험치(런 종료 시 리셋) — combatEngine.levelForXp로 레벨 산출
+  status?: StatusKind | null; // 현재 걸린 상태이상 — 전투 종료(승리·도망 성공) 시 해제
 }
 
 export type ItemKind = "passive" | "active";
@@ -111,6 +119,7 @@ export interface EnemyState {
   nextAttack: number; // 주사위 굴림의 base — 실제 피해는 0~nextAttack 범위에서 결정됨
   encounter: EnemyEncounter; // 정예/보스 상시 표시용
   level: number; // winXpFor의 상대 경험치 계산용(층수 + 보스/정예 배율로 산출)
+  status?: StatusKind | null; // 현재 걸린 상태이상 — 적이 쓰러지면 함께 사라짐
 }
 
 export interface PlayerState {

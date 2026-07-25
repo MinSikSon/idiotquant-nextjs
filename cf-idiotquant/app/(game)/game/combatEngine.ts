@@ -6,7 +6,7 @@ import { sectorType, typeMultiplier } from "./sectorTypes";
 import { PARTY_SIZE, STARTER_MONSTERS } from "./gameData";
 import type {
   CardStats, PassiveEffect, ActiveEffect, ItemDef, EnemyState, PlayerState, SkillDef, SkillState,
-  CharacterStats, AttackRollOptions, AttackRollResult, EnemyEncounter, PartyMember,
+  CharacterStats, AttackRollOptions, AttackRollResult, EnemyEncounter, PartyMember, StatusKind,
 } from "./gameTypes";
 
 const PARTY_BASE_HP = 16;
@@ -53,6 +53,24 @@ export const FLEE_ROLL_THRESHOLD = 11;
 export function rollFlee(): { roll: number; success: boolean } {
   const roll = 1 + Math.floor(Math.random() * 20);
   return { roll, success: roll >= FLEE_ROLL_THRESHOLD };
+}
+
+// 상태이상 — 화상/독은 매 턴 최대 HP 비례 도트 피해, 마비는 행동이 확률로 실패. 부여 주체:
+// 강공격·필살기(플레이어 → 적, 화상), 적의 공격 적중(적 → 내 몬스터, 독/마비 중 랜덤).
+// 이미 상태이상이 있으면 덮어쓰지 않고, 전투가 끝나면(승리·도망 성공) 전부 해제된다.
+export const BURN_DOT_FRAC = 0.06;        // 화상: 매 턴 최대 HP의 6%
+export const POISON_DOT_FRAC = 0.09;      // 독: 매 턴 최대 HP의 9%
+export const PARALYSIS_SKIP_CHANCE = 0.25; // 마비: 행동(기술/적 공격)이 25% 확률로 실패
+export const ENEMY_STATUS_CHANCE = 0.15;  // 적 공격이 피해를 줬을 때 상태이상을 부여할 확률
+export const STATUS_LABELS: Record<StatusKind, { name: string; icon: string }> = {
+  burn: { name: "화상", icon: "🔥" },
+  poison: { name: "독", icon: "💜" },
+  paralysis: { name: "마비", icon: "⚡" },
+};
+export function statusDotDamage(kind: StatusKind, maxHp: number): number {
+  if (kind === "burn") return Math.max(1, Math.ceil(maxHp * BURN_DOT_FRAC));
+  if (kind === "poison") return Math.max(1, Math.ceil(maxHp * POISON_DOT_FRAC));
+  return 0; // 마비는 도트 피해 없음
 }
 
 // 2개 재무 지표(sub, 0~1 clamp01된 정규화 점수 — computeValueScore가 이미 계산)를 전투 스탯
@@ -143,11 +161,11 @@ export function growthMaxHp(stats: CardStats, xp: number): number {
 // PP는 기술마다 다른 예산을 둬 사용 판단에 무게를 준다.
 export function monsterSkills(stats: CardStats, level: number = 1): SkillDef[] {
   const atk1: SkillDef = level >= ULTIMATE_UNLOCK_LEVEL
-    ? { id: "ultimate", name: "필살기", effect: "attack", power: Math.round(stats.attack * 2.5), maxPP: 5 }
+    ? { id: "ultimate", name: "필살기", effect: "attack", power: Math.round(stats.attack * 2.5), maxPP: 5, statusChance: 0.3, statusKind: "burn" }
     : { id: "atk1", name: "약공격", effect: "attack", power: stats.attack, maxPP: 20 };
   return [
     atk1,
-    { id: "atk2", name: "강공격", effect: "attack", power: Math.round(stats.attack * 1.8), maxPP: 10 },
+    { id: "atk2", name: "강공격", effect: "attack", power: Math.round(stats.attack * 1.8), maxPP: 10, statusChance: 0.2, statusKind: "burn" },
     { id: "def1", name: "방어", effect: "shield", power: stats.shield, maxPP: 20 },
     { id: "heal1", name: "회복", effect: "heal", power: Math.max(1, Math.round((stats.attack + stats.shield) / 2)), maxPP: 8 },
   ];
