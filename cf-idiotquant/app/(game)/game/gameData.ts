@@ -2,19 +2,18 @@
 // 스탯 부스트 12 + 전설급 3), 콘텐츠 확장은 나중에.
 
 import { computeValueScore } from "@/lib/utils/valueScore";
-import type { ItemDef, SkillDef, CharClass } from "./gameTypes";
+import type { ItemDef, CardStats } from "./gameTypes";
 
-// 직업별 고정 기술 — 종목 카드가 아니라 미리 정의된 세트. 전사는 근접 공격 2종(주먹 휘두르기/
-// 강타)·방어·기력회복 4개, PP는 전부 20으로 통일(사용마다 1씩 차감, 던전 진행 내내 유지).
-export const WARRIOR_SKILLS: SkillDef[] = [
-  { id: "punch", name: "주먹 휘두르기", effect: "attack", power: 4, maxPP: 20 },
-  { id: "smash", name: "강타", effect: "attack", power: 8, maxPP: 20 },
-  { id: "defend", name: "방어", effect: "shield", power: 6, maxPP: 20 },
-  { id: "recover", name: "기력회복", effect: "heal", power: 8, maxPP: 20 },
+// 파티 규모 — 계정 덱(수집 카드) 중 우수한 상위 N장으로 던전 진입 시 파티를 구성.
+export const PARTY_SIZE = 3;
+
+// 덱에 카드가 PARTY_SIZE보다 적을 때 채워 넣는 기본 몬스터(계정 덱엔 저장되지 않는 합성 스탯).
+// 실제 수집 카드보다 확실히 약하게 잡아 수집 동기를 유지한다.
+export const STARTER_MONSTERS: { name: string; stats: CardStats }[] = [
+  { name: "들풀 정령", stats: { attack: 3, shield: 3 } },
+  { name: "돌멩이 정령", stats: { attack: 2, shield: 5 } },
+  { name: "불씨 정령", stats: { attack: 5, shield: 2 } },
 ];
-export const SKILLS_BY_CLASS: Record<CharClass, SkillDef[]> = {
-  warrior: WARRIOR_SKILLS,
-};
 
 // 카드 수집: 승리(층 클리어)마다 판정. 등급별 기본 확률 + 클리어한 층수 보너스(옛 "연승" 보너스를
 // 대체 — 다중 턴 전투 구조에선 "판마다 승패"가 사라지고 "층 클리어"만 있어 streak==totalWins).

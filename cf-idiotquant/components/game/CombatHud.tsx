@@ -21,12 +21,14 @@ export function HpBar({ hp, maxHp, label }: { hp: number; maxHp: number; label: 
 }
 
 // 적의 다음 공격이 얼마나 아플지 미리 보여주는 텔레그래프 — 공격력이 이제 고정 데미지가 아니라
-// 0~N 범위 주사위 굴림이라 정확한 수치 대신 범위로 표시한다.
-export function EnemyIntentBadge({ base }: { base: number }) {
+// 0~N 범위 주사위 굴림이라 정확한 수치 대신 범위로 표시한다. sectorType이 있으면 업종 상성을
+// 가늠할 수 있게 같이 보여준다(무속성이면 표시 생략).
+export function EnemyIntentBadge({ base, sectorType }: { base: number; sectorType?: string | null }) {
   return (
     <div className="flex items-center gap-1 shrink-0">
       <span aria-hidden className="text-rose-500">⚔️</span>
       <span className="text-[10px] font-black tabular-nums text-rose-600 dark:text-rose-400">0~{base} 예정</span>
+      {sectorType && <span className="text-[9px] font-bold text-neutral-400">· {sectorType}</span>}
     </div>
   );
 }
