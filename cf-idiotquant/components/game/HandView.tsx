@@ -43,10 +43,11 @@ const CELL_OFF = "bg-black/[0.03] dark:bg-white/[0.02] border-black/5 dark:borde
 
 // 포켓몬 배틀 메뉴의 상시 취소 화살표(그리드 칸을 하나 차지하지 않고 옆에 따로 붙어 있음)를
 // 흉내낸 슬림 세로 버튼 — skills/items/party(강제 아닐 때만) 모드에서 노출.
-function BackColumn({ onBack }: { onBack: () => void }) {
+function BackColumn({ onBack, disabled }: { onBack: () => void; disabled?: boolean }) {
   return (
-    <button type="button" onClick={onBack} aria-label="뒤로"
-      className="shrink-0 w-6 h-full rounded-md border border-black/10 dark:border-white/15 bg-white/70 dark:bg-white/[0.06] text-neutral-500 dark:text-neutral-400 flex items-center justify-center active:scale-95 transition-transform">
+    <button type="button" disabled={disabled} onClick={onBack} aria-label="뒤로"
+      className={cn("shrink-0 w-6 h-full rounded-md border border-black/10 dark:border-white/15 bg-white/70 dark:bg-white/[0.06] text-neutral-500 dark:text-neutral-400 flex items-center justify-center active:scale-95 transition-transform",
+        disabled && "opacity-40 cursor-not-allowed")}>
       <span aria-hidden className="text-sm leading-none">◀</span>
     </button>
   );
@@ -64,11 +65,11 @@ const ACTIONS: { id: "fight" | "party" | "item" | "flee"; icon: string; label: s
   { id: "item", icon: "🎒", label: "아이템" },
   { id: "flee", icon: "🏃", label: "도망치기" },
 ];
-function ActionMenu({ onSelect }: { onSelect: (action: "fight" | "party" | "item" | "flee") => void }) {
+function ActionMenu({ onSelect, busy }: { onSelect: (action: "fight" | "party" | "item" | "flee") => void; busy: boolean }) {
   return (
     <Grid2x2>
       {ACTIONS.map(a => (
-        <button key={a.id} type="button" onClick={() => onSelect(a.id)} className={cn(CELL_CLASS, CELL_ON)}>
+        <button key={a.id} type="button" disabled={busy} onClick={() => onSelect(a.id)} className={cn(CELL_CLASS, busy ? CELL_OFF : CELL_ON)}>
           <span aria-hidden className="text-base leading-none">{a.icon}</span>
           <p className="text-[9px] font-bold text-neutral-600 dark:text-neutral-300 text-center leading-tight mt-0.5">{a.label}</p>
         </button>
@@ -78,13 +79,13 @@ function ActionMenu({ onSelect }: { onSelect: (action: "fight" | "party" | "item
 }
 
 const EFFECT_ICON = { attack: "⚔", shield: "🛡", heal: "❤️" } as const;
-function SkillMenu({ skills, onPlay, onBack }: { skills: SkillRuntime[]; onPlay: (skillId: string) => void; onBack: () => void }) {
+function SkillMenu({ skills, onPlay, onBack, busy }: { skills: SkillRuntime[]; onPlay: (skillId: string) => void; onBack: () => void; busy: boolean }) {
   return (
     <>
-      <BackColumn onBack={onBack} />
+      <BackColumn onBack={onBack} disabled={busy} />
       <Grid2x2>
         {skills.map(({ def, pp }) => {
-          const usable = pp > 0;
+          const usable = pp > 0 && !busy;
           return (
             <button key={def.id} type="button" disabled={!usable} onClick={() => onPlay(def.id)}
               className={cn(CELL_CLASS, usable ? CELL_ON : CELL_OFF)}>
@@ -92,7 +93,7 @@ function SkillMenu({ skills, onPlay, onBack }: { skills: SkillRuntime[]; onPlay:
               <span className="text-[9px] font-black tabular-nums">
                 {EFFECT_ICON[def.effect]}{def.effect === "attack" ? `0~${def.power}` : def.power}
               </span>
-              <span className={cn("text-[8px] font-black tabular-nums", usable ? "text-violet-600 dark:text-violet-400" : "text-neutral-400")}>
+              <span className={cn("text-[8px] font-black tabular-nums", pp > 0 ? "text-violet-600 dark:text-violet-400" : "text-neutral-400")}>
                 PP {pp}/{def.maxPP}
               </span>
             </button>
@@ -103,12 +104,12 @@ function SkillMenu({ skills, onPlay, onBack }: { skills: SkillRuntime[]; onPlay:
   );
 }
 
-function ItemMenu({ ownedItems, ownedDefs, onUse, onBack }: {
-  ownedItems: OwnedItem[]; ownedDefs: ItemDef[]; onUse: (instanceId: string) => void; onBack: () => void;
+function ItemMenu({ ownedItems, ownedDefs, onUse, onBack, busy }: {
+  ownedItems: OwnedItem[]; ownedDefs: ItemDef[]; onUse: (instanceId: string) => void; onBack: () => void; busy: boolean;
 }) {
   return (
     <>
-      <BackColumn onBack={onBack} />
+      <BackColumn onBack={onBack} disabled={busy} />
       <div className="flex items-center gap-1 h-full w-[168px] shrink-0 overflow-x-auto">
         {ownedItems.length === 0 && (
           <div className={cn(CELL_CLASS, CELL_OFF, "w-full")}>
@@ -118,14 +119,14 @@ function ItemMenu({ ownedItems, ownedDefs, onUse, onBack }: {
         {ownedItems.map(o => {
           const def = ownedDefs.find(d => d.id === o.defId);
           if (!def) return null;
-          const usable = def.kind === "active";
+          const usable = def.kind === "active" && !busy;
           return (
             <button key={o.instanceId} type="button" disabled={!usable} onClick={() => onUse(o.instanceId)}
               className={cn(CELL_CLASS, "w-16 shrink-0", usable ? CELL_ON : CELL_OFF)}>
               <span aria-hidden className="text-base leading-none">{def.icon}</span>
               <p className="text-[8px] font-bold text-neutral-500 dark:text-neutral-400 truncate w-full text-center">{def.name}</p>
-              <span className={cn("text-[8px] font-black", usable ? "text-amber-600 dark:text-amber-400" : "text-neutral-400")}>
-                {usable ? "탭해서 사용" : "패시브"}
+              <span className={cn("text-[8px] font-black", def.kind === "active" ? "text-amber-600 dark:text-amber-400" : "text-neutral-400")}>
+                {def.kind === "active" ? "탭해서 사용" : "패시브"}
               </span>
             </button>
           );
@@ -137,18 +138,18 @@ function ItemMenu({ ownedItems, ownedDefs, onUse, onBack }: {
 
 // 파티 교체 — forced(활성 몬스터가 방금 기절)면 취소 화살표를 없애 반드시 하나를 골라야 함.
 // 3마리 고정이라 그리드 4칸 중 하나는 항상 빈 자리로 남는다.
-function PartyMenu({ party, activeIndex, forced, onSwitch, onBack }: {
+function PartyMenu({ party, activeIndex, forced, onSwitch, onBack, busy }: {
   party: PartyMember[]; activeIndex: number; forced: boolean;
-  onSwitch: (instanceId: string) => void; onBack: () => void;
+  onSwitch: (instanceId: string) => void; onBack: () => void; busy: boolean;
 }) {
   return (
     <>
-      {!forced && <BackColumn onBack={onBack} />}
+      {!forced && <BackColumn onBack={onBack} disabled={busy} />}
       <Grid2x2>
         {party.map((m, i) => {
           const fainted = m.hp <= 0;
           const isActive = i === activeIndex;
-          const usable = !fainted && !isActive;
+          const usable = !fainted && !isActive && !busy;
           return (
             <button key={m.instanceId} type="button" disabled={!usable} onClick={() => onSwitch(m.instanceId)}
               className={cn(CELL_CLASS, usable ? CELL_ON : CELL_OFF)}>
@@ -191,6 +192,9 @@ type HandViewProps = {
   topLeftOverlay?: React.ReactNode;
   bottomRightOverlay?: React.ReactNode;
   children: React.ReactNode;
+  // 내 행동 결과를 보여주고 적 반격으로 넘어가는 사이(또는 마지막 타격 결과를 보여주고 다음
+  // 페이즈로 넘어가는 사이) true — 그 사이엔 모든 선택지를 비활성화해 입력이 겹치지 않게 한다.
+  busy?: boolean;
 } & (
   | { mode: "action"; onSelectAction: (action: "fight" | "party" | "item" | "flee") => void }
   | { mode: "skills"; skills: SkillRuntime[]; onPlaySkill: (skillId: string) => void; onBack: () => void }
@@ -199,7 +203,7 @@ type HandViewProps = {
 );
 
 export default function HandView(props: HandViewProps) {
-  const { message, topLeftOverlay, bottomRightOverlay, children } = props;
+  const { message, topLeftOverlay, bottomRightOverlay, children, busy = false } = props;
   return (
     <>
       <div className="flex-1 min-h-0">
@@ -210,10 +214,10 @@ export default function HandView(props: HandViewProps) {
           모드가 바뀌어도 이 행 전체 높이가 안 흔들린다. */}
       <div className="shrink-0 flex items-stretch gap-1.5 py-1.5">
         <MessageBox text={message} />
-        {props.mode === "action" ? <ActionMenu onSelect={props.onSelectAction} />
-          : props.mode === "skills" ? <SkillMenu skills={props.skills} onPlay={props.onPlaySkill} onBack={props.onBack} />
-            : props.mode === "items" ? <ItemMenu ownedItems={props.ownedItems} ownedDefs={props.ownedDefs} onUse={props.onUseItem} onBack={props.onBack} />
-              : <PartyMenu party={props.party} activeIndex={props.activeIndex} forced={props.forced} onSwitch={props.onSwitchMember} onBack={props.onBack} />}
+        {props.mode === "action" ? <ActionMenu onSelect={props.onSelectAction} busy={busy} />
+          : props.mode === "skills" ? <SkillMenu skills={props.skills} onPlay={props.onPlaySkill} onBack={props.onBack} busy={busy} />
+            : props.mode === "items" ? <ItemMenu ownedItems={props.ownedItems} ownedDefs={props.ownedDefs} onUse={props.onUseItem} onBack={props.onBack} busy={busy} />
+              : <PartyMenu party={props.party} activeIndex={props.activeIndex} forced={props.forced} onSwitch={props.onSwitchMember} onBack={props.onBack} busy={busy} />}
       </div>
     </>
   );

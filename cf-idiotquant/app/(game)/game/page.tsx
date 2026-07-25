@@ -31,7 +31,9 @@ import { cn } from "@/lib/utils";
 import { HOLO_THRESHOLD, PackReveal, AchievementBadges, ACHIEVEMENTS } from "./gameCollectibles";
 import { WalletChip, ConvertButton, ShopPanel, BOOST_ITEMS } from "./gameShop";
 import { useGameRun, deckTotal, type DeckItem, MERCHANT_HEAL_COST } from "./useGameRun";
-import { PP_POTION_COST } from "./gameData";
+import { PP_POTION_COST, PARTY_SIZE } from "./gameData";
+import { cardStats } from "./combatEngine";
+import { sectorType } from "./sectorTypes";
 import type { PartyMember } from "./gameTypes";
 import { EnemyIntentBadge, ItemBar, StatTile } from "@/components/game/CombatHud";
 import CharacterCard from "@/components/game/CharacterCard";
@@ -624,8 +626,9 @@ function GameContent() {
             </div>
           ) : (
             <div className={cn("w-full", run.phase === "over" ? "flex flex-col sm:flex-1 sm:min-h-0" : "flex flex-col flex-1 min-h-0")}>
-              {/* 상단 HUD — 던전 층수 + 적 정보만(내 캐릭터 관련 정보는 전부 하단 패널로 이동) */}
-              {run.phase !== "over" && (
+              {/* 상단 HUD — 던전 층수 + 적 정보만(내 캐릭터 관련 정보는 전부 하단 패널로 이동).
+                  파티 설정 화면은 아직 던전에 들어간 게 아니라 층수/적 정보가 의미 없어 제외. */}
+              {run.phase !== "over" && run.phase !== "partySetup" && (
                 <div className="shrink-0 mb-1 sm:mb-2 space-y-1">
                   {/* pr-9 — 우측 상단 구석에 고정된 게임 설명 버튼과 안 겹치게 오른쪽 여유 확보 */}
                   <div className="flex items-center justify-center gap-1.5 flex-wrap w-full pr-9">
@@ -661,6 +664,8 @@ function GameContent() {
               {run.phase === "over" ? (
                 <ResultScreen run={run} showResultDetail={showResultDetail} setShowResultDetail={setShowResultDetail}
                   isLoggedIn={isLoggedIn} deck={deck} catalog={catalog} />
+              ) : run.phase === "partySetup" ? (
+                <PartySetupScreen deck={deck} isLoggedIn={isLoggedIn} onConfirm={run.start} />
               ) : run.phase === "shop" ? (
                 <ShopScreen run={run} />
               ) : run.phase === "event" ? (
@@ -673,25 +678,25 @@ function GameContent() {
                     {run.battleMenu === "action" ? (
                       <HandView mode="action" onSelectAction={run.selectBattleAction} message={latestLogText}
                         topLeftOverlay={<DiceRow label="적" roll={run.lastEnemyRoll} isPlayer={false} />}
-                        bottomRightOverlay={<DiceRow label="나" roll={run.lastPlayerRoll} isPlayer compact />}>
+                        bottomRightOverlay={<DiceRow label="나" roll={run.lastPlayerRoll} isPlayer compact />} busy={run.busy}>
                         <PhaserCombatCanvas enemy={run.enemy} player={run.player} playerName={activeMonsterName} introLabel={introLabel} />
                       </HandView>
                     ) : run.battleMenu === "skills" ? (
                       <HandView mode="skills" skills={run.skills} onPlaySkill={run.useSkill} onBack={run.backToActionMenu} message={latestLogText}
                         topLeftOverlay={<DiceRow label="적" roll={run.lastEnemyRoll} isPlayer={false} />}
-                        bottomRightOverlay={<DiceRow label="나" roll={run.lastPlayerRoll} isPlayer compact />}>
+                        bottomRightOverlay={<DiceRow label="나" roll={run.lastPlayerRoll} isPlayer compact />} busy={run.busy}>
                         <PhaserCombatCanvas enemy={run.enemy} player={run.player} playerName={activeMonsterName} introLabel={introLabel} />
                       </HandView>
                     ) : run.battleMenu === "items" ? (
                       <HandView mode="items" ownedItems={run.ownedItems} ownedDefs={run.ownedDefs} onUseItem={run.useOwnedActiveItem} onBack={run.backToActionMenu} message={latestLogText}
                         topLeftOverlay={<DiceRow label="적" roll={run.lastEnemyRoll} isPlayer={false} />}
-                        bottomRightOverlay={<DiceRow label="나" roll={run.lastPlayerRoll} isPlayer compact />}>
+                        bottomRightOverlay={<DiceRow label="나" roll={run.lastPlayerRoll} isPlayer compact />} busy={run.busy}>
                         <PhaserCombatCanvas enemy={run.enemy} player={run.player} playerName={activeMonsterName} introLabel={introLabel} />
                       </HandView>
                     ) : (
                       <HandView mode="party" party={run.party} activeIndex={run.activeIndex} forced={run.forcedSwitch} onSwitchMember={run.switchMember} onBack={run.backToActionMenu} message={latestLogText}
                         topLeftOverlay={<DiceRow label="적" roll={run.lastEnemyRoll} isPlayer={false} />}
-                        bottomRightOverlay={<DiceRow label="나" roll={run.lastPlayerRoll} isPlayer compact />}>
+                        bottomRightOverlay={<DiceRow label="나" roll={run.lastPlayerRoll} isPlayer compact />} busy={run.busy}>
                         <PhaserCombatCanvas enemy={run.enemy} player={run.player} playerName={activeMonsterName} introLabel={introLabel} />
                       </HandView>
                     )}
@@ -701,8 +706,9 @@ function GameContent() {
 
               {/* 하단 — 내 캐릭터 정보(상시 노출, 구 "용사 상태창" 모달 대체). HP는 이제 포켓몬식
                   캔버스(대각선 배치)에 표시되므로 여기선 제외 — 항목 수는 phase에만 의존(전투
-                  중 실시간으로는 안 바뀜)이라 그리드 칸 수가 흔들릴 일은 없음. */}
-              {run.phase !== "over" && (
+                  중 실시간으로는 안 바뀜)이라 그리드 칸 수가 흔들릴 일은 없음. 파티 설정 화면은
+                  카드 목록이 스크롤 공간을 다 써야 해서 제외. */}
+              {run.phase !== "over" && run.phase !== "partySetup" && (
                 <div className="shrink-0 mt-1.5 space-y-1">
                   <CharacterCard character={run.character} effectiveStats={run.effectiveStats} />
                   <div className={cn("grid gap-1.5", run.phase === "battling" ? "grid-cols-4" : "grid-cols-2")}>
@@ -737,7 +743,7 @@ function GameContent() {
             </div>
             <div className="space-y-3">
               {[
-                { icon: "🃏", text: <>던전에 입장하면 <b className="text-neutral-800 dark:text-neutral-100">내 덱</b>의 저평가 점수 상위 3장(부족하면 기본 몬스터로 보충)이 <b className="text-neutral-800 dark:text-neutral-100">파티</b>가 돼요. 카드의 ROE·NCAV가 그대로 몬스터의 공격력·방어력이 돼요.</> },
+                { icon: "🧩", text: <>던전 입장 전 <b className="text-neutral-800 dark:text-neutral-100">내 덱</b>에서 최대 3장을 직접 골라 <b className="text-neutral-800 dark:text-neutral-100">파티</b>를 꾸려요(저평가 점수 상위 3장이 기본 선택돼 있어요, 부족하면 기본 몬스터로 채워짐). 카드의 ROE·NCAV가 그대로 몬스터의 공격력·방어력이 돼요.</> },
                 { icon: "🗡️", text: <>매 턴 <b className="text-neutral-800 dark:text-neutral-100">전투/파티/아이템/도망치기</b> 중 행동을 골라요. <b className="text-neutral-800 dark:text-neutral-100">전투</b>를 고르면 지금 앞에 나온 몬스터의 기술 4개(약공격·강공격·방어·회복)가 나와요.</> },
                 { icon: "🎲", text: <>공격 기술은 <b className="text-neutral-800 dark:text-neutral-100">0~N 범위</b>로 20면체 주사위를 굴려 피해가 정해지고, 자연 20이면 <b className="text-amber-500 dark:text-amber-400">크리티컬</b>(최대 피해의 2배)! 방어는 블록을, 회복은 HP를 고정치만큼 즉시 채워요.</> },
                 { icon: "⚡", text: <>카드마다 업종이 있고 업종끼리 상성이 있어요 — 상성에서 <b className="text-emerald-600 dark:text-emerald-400">이기면 피해가 1.5배</b>, <b className="text-rose-500">지면 2/3배</b>로 줄어요.</> },
@@ -790,6 +796,68 @@ function GameContent() {
           </div>
         </div>
       )}
+    </div>
+  );
+}
+
+// 던전 입장 전 파티 설정 — 계정 덱에서 최대 PARTY_SIZE장을 직접 고른다(부족분은 스타터로
+// 채워짐, combatEngine.buildParty가 처리). 기본값은 저평가 점수 상위 PARTY_SIZE장을 미리
+// 선택해둬 그냥 바로 입장해도 되게 함(선택이 필수가 아님 — 커스터마이즈는 원할 때만).
+function PartySetupScreen({ deck, isLoggedIn, onConfirm }: {
+  deck: DeckItem[]; isLoggedIn: boolean; onConfirm: (tickers: string[]) => void;
+}) {
+  const ranked = useMemo(() => [...deck].sort((a, b) => computeValueScore(b).score - computeValueScore(a).score), [deck]);
+  const [selected, setSelected] = useState<string[]>(() => ranked.slice(0, PARTY_SIZE).map(c => c.ticker));
+  const touchedRef = useRef(false);
+  // deck이 늦게 도착(로그인 직후 등)해도 아직 유저가 손대기 전이면 기본 선택을 다시 계산
+  useEffect(() => { if (!touchedRef.current) setSelected(ranked.slice(0, PARTY_SIZE).map(c => c.ticker)); }, [ranked]);
+
+  const toggle = (ticker: string) => {
+    touchedRef.current = true;
+    setSelected(prev => {
+      if (prev.includes(ticker)) return prev.filter(t => t !== ticker);
+      if (prev.length >= PARTY_SIZE) return prev;
+      return [...prev, ticker];
+    });
+  };
+
+  return (
+    <div className="flex-1 min-h-0 flex flex-col">
+      <div className="shrink-0 text-center mb-2 px-2">
+        <p className="font-black text-neutral-900 dark:text-white">🧩 파티를 꾸리세요</p>
+        <p className="text-[11px] text-neutral-400 mt-0.5 break-keep">최대 {PARTY_SIZE}장까지 고를 수 있어요 — 부족한 자리는 스타터 몬스터로 채워져요</p>
+      </div>
+      <div className="flex-1 min-h-0 overflow-y-auto space-y-1.5 px-1 pb-2">
+        {ranked.length === 0 && (
+          <div className="text-center text-xs text-neutral-400 py-10 break-keep">
+            {isLoggedIn ? "아직 모은 카드가 없어요 — 스타터 몬스터로 시작해요." : "로그인하면 모은 카드로 파티를 꾸릴 수 있어요 — 지금은 스타터 몬스터로 시작해요."}
+          </div>
+        )}
+        {ranked.map(card => {
+          const stats = cardStats(card);
+          const type = sectorType(card);
+          const tone = computeValueScore(card).tone;
+          const isSel = selected.includes(card.ticker);
+          return (
+            <button key={card.ticker} type="button" onClick={() => toggle(card.ticker)}
+              className={cn("w-full flex items-center gap-2 px-3 py-2 rounded-xl border text-left transition-colors active:scale-[0.99]",
+                isSel ? "bg-emerald-500/10 border-emerald-500/50" : "bg-white/70 dark:bg-white/[0.05] border-black/5 dark:border-white/10")}>
+              <span className="w-2 h-2 rounded-full shrink-0" style={{ background: TIER[tone]?.glow }} />
+              <div className="flex-1 min-w-0">
+                <p className="text-xs font-bold text-neutral-800 dark:text-neutral-100 truncate">{card.name}</p>
+                <p className="text-[10px] text-neutral-400">{type ?? "무속성"} · ⚔{stats.attack} 🛡{stats.shield}</p>
+              </div>
+              {isSel && <span aria-hidden className="text-emerald-500 shrink-0">✅</span>}
+            </button>
+          );
+        })}
+      </div>
+      <div className="shrink-0 pt-2 px-1">
+        <button type="button" onClick={() => onConfirm(selected)}
+          className="w-full inline-flex items-center justify-center gap-2 px-6 py-2.5 rounded-2xl bg-gradient-to-r from-[#16a34a] to-[#15803d] hover:brightness-110 text-white font-black text-sm shadow-[0_8px_24px_-8px_rgba(22,163,74,0.55)] active:scale-[0.98] transition-all">
+          <Swords size={16} /> 던전 입장 ({selected.length}/{PARTY_SIZE} 선택)
+        </button>
+      </div>
     </div>
   );
 }
@@ -934,7 +1002,7 @@ function ResultScreen({ run, showResultDetail, setShowResultDetail, isLoggedIn, 
         )}
       </div>
       <div className="shrink-0 px-5 pb-3 pt-2 border-t border-black/5 dark:border-white/10">
-        <button onClick={run.start}
+        <button onClick={run.promptNewRun}
           className="w-full inline-flex items-center justify-center gap-2 px-6 py-2.5 rounded-2xl bg-gradient-to-r from-[#16a34a] to-[#15803d] hover:brightness-110 text-white font-black text-sm shadow-[0_8px_24px_-8px_rgba(22,163,74,0.55)] active:scale-[0.98] transition-all">
           <Swords size={16} /> 새 던전 입장
         </button>
