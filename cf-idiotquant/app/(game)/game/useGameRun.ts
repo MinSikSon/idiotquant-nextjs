@@ -165,7 +165,10 @@ export function useGameRun(params: { pool: any[]; deck: DeckItem[]; setDeck: (fn
       setItemChoices(saved.itemChoices ?? null);
       setActiveBoost(saved.activeBoost ?? null);
       setPlayer(saved.player); setEnemy(saved.enemy);
-      setSkillPp(saved.skillPp ?? []);
+      // saved.skillPp가 비어있으면(구 스키마 저장분 등) 기술별 PP를 추적할 항목이 하나도 없어
+      // 이후 useSkill의 .map() 갱신이 대상을 못 찾고 계속 조용히 무시되는 버그가 있었음 — 그때는
+      // 현재 직업 기술셋 기준으로 풀피 새로 채워서 복원한다.
+      setSkillPp(saved.skillPp && saved.skillPp.length > 0 ? saved.skillPp : skillDefs.map(def => ({ skillId: def.id, pp: def.maxPP })));
       setBattleMenu(saved.battleMenu ?? "action");
       setLog(saved.log ?? []);
       setLastResult(saved.lastResult ?? null);

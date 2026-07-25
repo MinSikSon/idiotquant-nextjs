@@ -34,7 +34,6 @@ import { useGameRun, deckTotal, type DeckItem, MERCHANT_HEAL_COST } from "./useG
 import { PP_POTION_COST } from "./gameData";
 import { CLASS_DEFS } from "./characterEngine";
 import { EnemyIntentBadge, ItemBar, StatTile } from "@/components/game/CombatHud";
-import CombatLog from "@/components/game/CombatLog";
 import CharacterCard from "@/components/game/CharacterCard";
 import { DiceRow } from "@/components/game/DiceRow";
 
@@ -561,6 +560,9 @@ function GameContent() {
     else setIntroLabel(null);
   }, [run.phase, run.roundNum, run.encounter]);
 
+  // 포켓몬식 메시지 텍스트박스에 타자기 효과로 보여줄 최신 로그 한 줄(전체 스크롤 로그 대신)
+  const latestLogText = run.log.length > 0 ? run.log[run.log.length - 1].text : "";
+
   const tutorialKey = "iq:game:tutorialSeen";
   useEffect(() => { try { if (!localStorage.getItem(tutorialKey)) setShowTutorial(true); } catch { } }, []);
   const closeTutorial = useCallback(() => { setShowTutorial(false); try { localStorage.setItem(tutorialKey, "1"); } catch { } }, []);
@@ -633,27 +635,24 @@ function GameContent() {
                 <div className="flex-1 min-h-0 flex flex-col">
                   <div className="flex-1 min-h-0 flex flex-col rounded-2xl overflow-hidden backdrop-blur-md bg-white/60 dark:bg-white/[0.03] border border-black/5 dark:border-white/10">
                     {run.battleMenu === "action" ? (
-                      <HandView mode="action" onSelectAction={run.selectBattleAction}
+                      <HandView mode="action" onSelectAction={run.selectBattleAction} message={latestLogText}
                         topLeftOverlay={<DiceRow label="적" roll={run.lastEnemyRoll} isPlayer={false} />}
                         bottomRightOverlay={<DiceRow label="나" roll={run.lastPlayerRoll} isPlayer compact />}>
                         <PhaserCombatCanvas enemy={run.enemy} player={run.player} playerName={CLASS_DEFS[run.character.classId].name} introLabel={introLabel} />
                       </HandView>
                     ) : run.battleMenu === "skills" ? (
-                      <HandView mode="skills" skills={run.skills} onPlaySkill={run.useSkill} onBack={run.backToActionMenu}
+                      <HandView mode="skills" skills={run.skills} onPlaySkill={run.useSkill} onBack={run.backToActionMenu} message={latestLogText}
                         topLeftOverlay={<DiceRow label="적" roll={run.lastEnemyRoll} isPlayer={false} />}
                         bottomRightOverlay={<DiceRow label="나" roll={run.lastPlayerRoll} isPlayer compact />}>
                         <PhaserCombatCanvas enemy={run.enemy} player={run.player} playerName={CLASS_DEFS[run.character.classId].name} introLabel={introLabel} />
                       </HandView>
                     ) : (
-                      <HandView mode="items" ownedItems={run.ownedItems} ownedDefs={run.ownedDefs} onUseItem={run.useOwnedActiveItem} onBack={run.backToActionMenu}
+                      <HandView mode="items" ownedItems={run.ownedItems} ownedDefs={run.ownedDefs} onUseItem={run.useOwnedActiveItem} onBack={run.backToActionMenu} message={latestLogText}
                         topLeftOverlay={<DiceRow label="적" roll={run.lastEnemyRoll} isPlayer={false} />}
                         bottomRightOverlay={<DiceRow label="나" roll={run.lastPlayerRoll} isPlayer compact />}>
                         <PhaserCombatCanvas enemy={run.enemy} player={run.player} playerName={CLASS_DEFS[run.character.classId].name} introLabel={introLabel} />
                       </HandView>
                     )}
-                  </div>
-                  <div className="shrink-0 pt-1.5">
-                    <CombatLog entries={run.log} />
                   </div>
                 </div>
               ) : null}
