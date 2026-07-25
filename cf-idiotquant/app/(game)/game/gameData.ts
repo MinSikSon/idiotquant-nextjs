@@ -2,7 +2,7 @@
 // 스탯 부스트 12 + 전설급 3), 콘텐츠 확장은 나중에.
 
 import { computeValueScore } from "@/lib/utils/valueScore";
-import type { ItemDef, CardStats } from "./gameTypes";
+import type { ItemDef, CardStats, MerchantOfferDef } from "./gameTypes";
 
 // 파티 규모 — 던전 입장 전 파티 설정 화면에서 유저가 계정 덱 중 최대 이 수만큼 직접 고른다.
 export const PARTY_SIZE = 6;
@@ -29,8 +29,22 @@ export function acquireChance(item: any, floorsCleared: number): number {
 // 3층마다 뜨는 아이템 선택지 개수, 보스 처치 시 전설급 등장 확률
 export const ITEM_OFFER_COUNT = 3;
 
-export const PP_POTION_ITEM_ID = "buyMore";
-export const PP_POTION_COST = 10; // 매 층 상점에서 판매하는 PP 회복 물약 가격(골드)
+export const PP_POTION_ITEM_ID = "buyMore"; // 3층마다 뜨는 일반 아이템 선택지의 "기력 회복"용 id(상점과 무관)
+export const START_GOLD = 1000; // 던전 입장 시 시작 골드
+
+// 떠돌이 상인(매 층 상점) — 무료 3종 + 유료 3종, 총 6종 중 딱 하나만 골라서 가져갈 수 있다.
+// heal/ppFill은 즉시 대상(+ppFill은 대상 기술)을 골라 적용, buffAtk/buffDef/buffXp는 대상 없이
+// 즉시 활성화돼 다음 전투부터 파티 전체에 적용된다.
+export const MERCHANT_FREE_POOL: MerchantOfferDef[] = [
+  { id: "merchant_heal30", name: "응급 처치", desc: "종목 하나의 HP를 30% 회복", icon: "❤️", cost: 0, effect: { kind: "heal", pct: 0.3 } },
+  { id: "merchant_ppfill", name: "PP 충전", desc: "종목 하나의 기술 하나를 PP 최대치로 충전", icon: "💊", cost: 0, effect: { kind: "ppFill" } },
+  { id: "merchant_atk_small", name: "기합", desc: "다음 전투부터 3턴 동안 공격력 +20%", icon: "💢", cost: 0, effect: { kind: "buffAtk", turns: 3, mult: 1.2 } },
+];
+export const MERCHANT_PAID_POOL: MerchantOfferDef[] = [
+  { id: "merchant_heal100", name: "완전 회복", desc: "종목 하나의 HP를 100% 회복", icon: "💗", cost: 150, effect: { kind: "heal", pct: 1 } },
+  { id: "merchant_def", name: "철벽 태세", desc: "다음 전투부터 5턴 동안 방어력 +30%", icon: "🛡️", cost: 200, effect: { kind: "buffDef", turns: 5, mult: 1.3 } },
+  { id: "merchant_xp2x", name: "집중 훈련", desc: "다음 전투부터 5턴 동안 경험치 2배", icon: "📈", cost: 250, effect: { kind: "buffXp", turns: 5, mult: 2 } },
+];
 
 export const ITEM_POOL: ItemDef[] = [
   { id: "buffer", kind: "passive", name: "여유 자금", desc: "매 턴 시작 시 블록 +2", icon: "🧱", effect: { blockPerTurn: 2 } },

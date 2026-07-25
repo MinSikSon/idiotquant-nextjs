@@ -82,6 +82,26 @@ export interface ItemDef {
 // 보유 아이템 인스턴스 — 액티브는 소모되면 목록에서 제거됨
 export interface OwnedItem { instanceId: string; defId: string }
 
+// 떠돌이 상인(매 층 상점) 오퍼 — 무료 3종 + 유료 3종 중 하나만 골라서 가져갈 수 있다(중복
+// 선택 불가). heal/ppFill은 대상 종목(+ppFill은 대상 기술)을 골라 즉시 적용되고, buffAtk/
+// buffDef/buffXp는 대상 없이 즉시 활성화돼 다음 전투부터 turns턴 동안 파티 전체에 적용된다.
+export type MerchantEffect =
+  | { kind: "heal"; pct: number }   // 대상 종목 HP를 최대치의 pct(0~1)만큼 회복
+  | { kind: "ppFill" }              // 대상 종목의 기술 하나를 PP 최대치로
+  | { kind: "buffAtk"; turns: number; mult: number }
+  | { kind: "buffDef"; turns: number; mult: number }
+  | { kind: "buffXp"; turns: number; mult: number };
+export interface MerchantOfferDef {
+  id: string; name: string; desc: string; icon: string;
+  cost: number; // 0이면 무료
+  effect: MerchantEffect;
+}
+
+// 상인에게서 얻은 공격력/방어력/경험치 배율 버프 — 다음 전투부터 시작해 내 턴(기술 사용·아이템
+// 사용·자발적 교체)마다 하나씩 소모되며, 0이 되면 사라진다.
+export interface ActiveBuff { turnsLeft: number; mult: number }
+export interface ActiveBuffs { atk?: ActiveBuff; def?: ActiveBuff; xp?: ActiveBuff }
+
 export interface EnemyState {
   item: any;
   stats: CardStats;

@@ -11,12 +11,16 @@ import {
   resolveEnemyTurn, useActiveItem as engUseActiveItem, checkOutcome, aggregatePassive, rollFlee,
   VIT_HP_MULTIPLIER, levelForXp, growthStats, growthMaxHp, ULTIMATE_UNLOCK_LEVEL, XP_PER_MONSTER_ATTACK, winXpFor,
 } from "./combatEngine";
-import { ALL_ITEMS, RELIC_POOL, ITEM_OFFER_COUNT, PP_POTION_COST, pickItemChoices, acquireChance } from "./gameData";
+import { ALL_ITEMS, RELIC_POOL, ITEM_OFFER_COUNT, START_GOLD, MERCHANT_FREE_POOL, MERCHANT_PAID_POOL, pickItemChoices, acquireChance } from "./gameData";
 import { ACHIEVEMENTS } from "./gameCollectibles";
 import type {
   Phase, EncounterType, ItemDef, OwnedItem, EnemyState, PlayerState, ActiveEffect, LogEntry, LogKind,
-  CharacterStats, AttackRollResult, SkillState, BattleMenu, PartyMember,
+  CharacterStats, AttackRollResult, SkillState, BattleMenu, PartyMember, MerchantOfferDef, ActiveBuffs,
 } from "./gameTypes";
+
+// 떠돌이 상인이 매번 제시하는 오퍼(무료 3 + 유료 3) — 풀 자체가 정확히 6개라 무작위 추첨 없이
+// 항상 전부 보여준다(콘텐츠가 늘어나면 그때 pickItemChoices류로 추첨하도록 바꾸면 됨).
+const ALL_MERCHANT_OFFERS: MerchantOfferDef[] = [...MERCHANT_FREE_POOL, ...MERCHANT_PAID_POOL];
 
 const safeNum = (v: any): number => { const n = Number(v); return Number.isFinite(n) ? n : 0; };
 
@@ -54,7 +58,6 @@ function pickEncounter(roundNum: number): EncounterType {
   return "battle";
 }
 
-export const MERCHANT_HEAL_COST = 8;
 const REST_HEAL_FRAC = 0.3;
 
 // 진행 중인 런 저장 — 다른 페이지를 다녀와도 이어지도록 함. 카드 데이터가 전부 인라인 스냅샷이라
@@ -67,6 +70,7 @@ type SavedRun = {
   phase: Phase; roundNum: number; encounter: EncounterType; restHealed: boolean;
   gold: number; newBest: boolean;
   ownedItems: OwnedItem[]; itemChoices: ItemDef[] | null; activeBoost: { mult: number; roundsLeft: number } | null;
+  merchantOffers: MerchantOfferDef[] | null; activeBuffs: ActiveBuffs;
   party: PartyMember[]; activeIndex: number; playerHp: number; playerBlock: number;
   enemy: EnemyState | null; skillPp: SkillState[]; battleMenu: BattleMenu;
   log: LogEntry[]; lastResult: { win: boolean; goldGain?: number } | null;
@@ -87,6 +91,10 @@ export function useGameRun(params: { pool: any[]; deck: DeckItem[]; setDeck: (fn
   const [ownedItems, setOwnedItems] = useState<OwnedItem[]>([]);
   const [itemChoices, setItemChoices] = useState<ItemDef[] | null>(null);
   const [activeBoost, setActiveBoost] = useState<{ mult: number; roundsLeft: number } | null>(null); // 상점 확률 부스트(세션 로컬, 층 클리어마다 소진)
+  // 떠돌이 상인(매 층 상점) — 6종 오퍼 제시, null이면 이미 하나를 가져갔거나 아직 상점에 안 왔다는 뜻.
+  const [merchantOffers, setMerchantOffers] = useState<MerchantOfferDef[] | null>(null);
+  // 상인에게서 받은 공격력/방어력/경험치 배율 버프 — 다음 전투부터 내 턴마다 하나씩 소모.
+  const [activeBuffs, setActiveBuffs] = useState<ActiveBuffs>({});
 
   // 파티 — 계정 덱 상위 카드로 던전 입장 시 구성, 런 내내 고정. activeIndex가 지금 전투 중인
   // 몬스터. playerHp/playerBlock은 그 활성 몬스터의 실시간 전투 상태(block은 매 적 턴 리셋).
@@ -230,6 +238,8 @@ export function useGameRun(params: { pool: any[]; deck: DeckItem[]; setDeck: (fn
     setOwnedItems(saved.ownedItems ?? []);
     setItemChoices(saved.itemChoices ?? null);
     setActiveBoost(saved.activeBoost ?? null);
+    setMerchantOffers(saved.merchantOffers ?? null);
+    setActiveBuffs(saved.activeBuffs ?? {});
     setParty(restoredParty); setActiveIndex(saved.activeIndex ?? 0);
     setPlayerHp(saved.playerHp); setPlayerBlock(saved.playerBlock ?? 0);
     // 종목 레벨 시스템 이전에 저장된 적 스냅샷은 level 필드가 없다 — 없으면 1로 채워서 복원
@@ -247,15 +257,30 @@ export function useGameRun(params: { pool: any[]; deck: DeckItem[]; setDeck: (fn
     started.current = true;
   }, []);
 
+  // 상인에게서 받은 공격력/방어력/경험치 배율 버프를 다음 내 턴으로 하나씩 소모(0이 되면 사라짐)
+  // — 기술/아이템 사용(resolveTurn) 및 자발적 파티 교체(switchMember)처럼 턴을 쓰는 행동마다 호출.
+  const tickBuffs = useCallback(() => {
+    setActiveBuffs(prev => {
+      const next: ActiveBuffs = {};
+      (Object.keys(prev) as (keyof ActiveBuffs)[]).forEach(k => {
+        const b = prev[k];
+        if (b && b.turnsLeft > 1) next[k] = { ...b, turnsLeft: b.turnsLeft - 1 };
+      });
+      return next;
+    });
+  }, []);
+
   // 육성(레벨) — 이번 런에서 몬스터별로 쌓이는 경험치(파티 xp)를 지급. 지금 배틀 중인(활성)
   // 몬스터에게만 지급되므로, 교체해서 새로 나온 몬스터도 그 이후 자기 행동만큼은 스스로 벌게
   // 된다. 레벨 경계를 넘으면 로그를 남기고(스탯/기술 변화는 growthStats·monsterSkills가 xp를
   // 다시 읽어 자동 반영) levelUps에 기록해뒀다가 전투가 끝나면 결과 화면에서 한 번에 보여준다.
+  // 상인의 경험치 2배 버프(activeBuffs.xp)가 있으면 지급량 자체를 미리 배율만큼 늘린다.
   const grantMonsterXp = useCallback((idx: number, amount: number) => {
     const member = partyRaw[idx];
     if (!member) return;
+    const scaledAmount = activeBuffs.xp ? Math.round(amount * activeBuffs.xp.mult) : amount;
     const prevLevel = levelForXp(member.xp);
-    const nextXp = member.xp + amount;
+    const nextXp = member.xp + scaledAmount;
     const nextLevel = levelForXp(nextXp);
     setParty(prev => prev.map((m, i) => i === idx ? { ...m, xp: nextXp } : m));
     if (nextLevel > prevLevel) {
@@ -267,7 +292,7 @@ export function useGameRun(params: { pool: any[]; deck: DeckItem[]; setDeck: (fn
         return [...prev, { instanceId: member.instanceId, name: member.name, from: prevLevel, to: nextLevel }];
       });
     }
-  }, [partyRaw, pushLog]);
+  }, [partyRaw, pushLog, activeBuffs.xp]);
 
   // 승리(층 클리어) 공통 처리 — 최고기록·골드·아이템 제공·카드 수집 판정
   const handleWin = useCallback((beatenEnemy: EnemyState, enc: EncounterType, floor: number) => {
@@ -361,28 +386,36 @@ export function useGameRun(params: { pool: any[]; deck: DeckItem[]; setDeck: (fn
   // 내 행동(기술/아이템) 직후 적 턴을 진행 — 1행동=1턴이라 별도 "턴 종료" 버튼이 없고, 기술/
   // 아이템을 쓴 함수들이 마지막에 이 함수 하나로 마무리한다. afterPlayer/afterEnemy는 이미 그
   // 행동의 효과(데미지/블록/회복)까지 반영된 상태 — 그 결과를 먼저 화면에 반영해두고, 적 반격
-  // (또는 승리 처리)은 pendingAction으로 넘겨 플레이어가 다시 탭할 때까지 기다린다.
+  // (또는 승리 처리)은 pendingAction으로 넘겨 플레이어가 다시 탭할 때까지 기다린다. 상인 버프는
+  // 여기서(기술·아이템 사용 공통 지점) 한 턴 소모한다.
   const resolveTurn = useCallback((afterPlayer: PlayerState, afterEnemy: EnemyState) => {
     setEnemy(afterEnemy);
     const idx = activeIndex, member = partyRaw[idx];
     if (!member) return;
     setParty(prev => prev.map((m, i) => i === idx ? { ...m, hp: afterPlayer.hp } : m));
     setPlayerHp(afterPlayer.hp); setPlayerBlock(afterPlayer.block);
+    tickBuffs();
     if (checkOutcome(afterPlayer, afterEnemy) === "win") {
       setPendingAction(() => () => handleWin(afterEnemy, encounter, roundNum));
       return;
     }
     setPendingAction(() => () => applyEnemyTurn(afterPlayer, afterEnemy, member, idx, partyRaw));
-  }, [activeIndex, partyRaw, encounter, roundNum, handleWin, applyEnemyTurn]);
+  }, [activeIndex, partyRaw, encounter, roundNum, handleWin, applyEnemyTurn, tickBuffs]);
 
   // 기술 발동 — 행동 메뉴에서 "전투"를 고른 뒤 기술 목록에서 탭하면 즉시. PP 소진 시 무시.
   // 공격 기술은 주사위로 굴려서 데미지가 정해지고(+업종 상성 배율), 방어/회복 기술은 고정치를
-  // 바로 적용.
+  // 바로 적용. 상인의 공격력/방어력 버프(activeBuffs.atk/def)가 살아있으면 해당 효과의 기술
+  // power를 미리 배율만큼 올린 뒤 굴린다.
   const useSkill = useCallback((skillId: string) => {
     if (phase !== "battling" || !enemy || !activeMember || pendingAction) return;
     const skill = skills.find(s => s.def.id === skillId);
     if (!skill || skill.pp <= 0) return;
-    const result = engUseSkillEffect(player, enemy, skill.def, passive, effectiveStats, activeMember.sectorType, enemy.sectorType);
+    const buffedDef = activeBuffs.atk && skill.def.effect === "attack"
+      ? { ...skill.def, power: Math.round(skill.def.power * activeBuffs.atk.mult) }
+      : activeBuffs.def && skill.def.effect === "shield"
+        ? { ...skill.def, power: Math.round(skill.def.power * activeBuffs.def.mult) }
+        : skill.def;
+    const result = engUseSkillEffect(player, enemy, buffedDef, passive, effectiveStats, activeMember.sectorType, enemy.sectorType);
     // 성장으로 기술셋이 바뀌면(성인 진화로 "약공격"→"필살기" 등) skillPp에 그 skillId 항목이
     // 아직 없을 수 있음 — .map()만으론 못 찾아 조용히 무시되므로(과거 PP 버그와 같은 원인)
     // 없으면 새로 추가하는 upsert로 처리.
@@ -404,7 +437,7 @@ export function useGameRun(params: { pool: any[]; deck: DeckItem[]; setDeck: (fn
       pushLog("player", `${activeMember.name}의 ${skill.def.name}! (PP ${nextPp}/${skill.def.maxPP}) — ❤️${skill.def.power} 회복`);
     }
     resolveTurn(result.player, result.enemy);
-  }, [phase, enemy, activeMember, activeIndex, skills, passive, player, effectiveStats, pendingAction, pushLog, grantMonsterXp, resolveTurn]);
+  }, [phase, enemy, activeMember, activeIndex, skills, passive, player, effectiveStats, pendingAction, activeBuffs, pushLog, grantMonsterXp, resolveTurn]);
 
   // 액티브 아이템 즉시 발동(1회 소모) — 행동 메뉴에서 "아이템"을 고른 뒤 사용. 기술과 동일하게
   // 사용 즉시 턴을 소모.
@@ -437,8 +470,9 @@ export function useGameRun(params: { pool: any[]; deck: DeckItem[]; setDeck: (fn
     if (forced) { setBattleMenu("action"); return; }
     if (!enemy) { setBattleMenu("action"); return; }
     // 자발적 교체도 턴을 소모 — "교체됨" 결과를 보여준 뒤 플레이어가 탭해야 적의 반격으로 넘어간다.
+    tickBuffs();
     setPendingAction(() => () => applyEnemyTurn({ hp: member.hp, maxHp: growthMaxHp(member.stats, member.xp) + passiveVitBonus, block: passive.blockPerTurn }, enemy, member, idx, partyRaw));
-  }, [phase, partyRaw, activeIndex, playerHp, passive, passiveVitBonus, enemy, pendingAction, pushLog, applyEnemyTurn]);
+  }, [phase, partyRaw, activeIndex, playerHp, passive, passiveVitBonus, enemy, pendingAction, pushLog, applyEnemyTurn, tickBuffs]);
 
   // 행동 메뉴 선택 — 전투(기술 목록)/파티(교체)/아이템(보유 아이템 목록)은 하위 화면 전환만.
   // 도망치기는 주사위(rollFlee) 하나로 성공/실패를 정하는 즉시 액션 — 성공하면 이번 층을 포기
@@ -493,33 +527,54 @@ export function useGameRun(params: { pool: any[]; deck: DeckItem[]; setDeck: (fn
     setPhase("battling");
   }, [pool, passive, activeIndex, activeMaxHp, playerHp, pushLog]);
 
-  const nextRound = useCallback(() => { if (phase === "resolved") setPhase("shop"); }, [phase]);
-  const proceedFromEvent = useCallback(() => { if (phase === "event") setPhase("shop"); }, [phase]);
+  // 상점 진입(승리 직후 또는 휴식 후) — 떠돌이 상인이 매번 6종(무료3+유료3) 오퍼를 새로 제시한다.
+  const nextRound = useCallback(() => { if (phase !== "resolved") return; setMerchantOffers(ALL_MERCHANT_OFFERS); setPhase("shop"); }, [phase]);
+  const proceedFromEvent = useCallback(() => { if (phase !== "event") return; setMerchantOffers(ALL_MERCHANT_OFFERS); setPhase("shop"); }, [phase]);
   const proceedFromShop = useCallback(() => { if (phase === "shop") advanceToRound(roundNum + 1); }, [phase, roundNum, advanceToRound]);
   // 던전 나가기(상단 HUD의 상시 버튼 및 "여기서 정리" 버튼) — resolved 화면뿐 아니라 진행 중인
   // 어느 시점에서도 호출 가능(런이 이미 끝났거나 로딩 중일 때만 무시).
   const cashOut = useCallback(() => { if (phase !== "over" && phase !== "loading") setPhase("over"); }, [phase]);
 
-  // 매 층 상점 — HP 회복 물약(즉시 회복, 옛 떠돌이 상인 기능 재사용, merchant 조우 게이팅만 제거)
-  const buyMerchantHeal = useCallback(() => {
-    if (phase !== "shop") return;
-    if (playerHp >= activeMaxHp || gold < MERCHANT_HEAL_COST) return;
-    setGold(g => g - MERCHANT_HEAL_COST);
-    const nextHp = Math.min(activeMaxHp, playerHp + Math.round(activeMaxHp * REST_HEAL_FRAC));
-    setPlayerHp(nextHp);
-    setParty(prev => prev.map((m, i) => i === activeIndex ? { ...m, hp: nextHp } : m));
-  }, [phase, playerHp, activeMaxHp, gold, activeIndex]);
+  // 떠돌이 상인 오퍼 하나를 가져간다 — 무료/유료 6종 중 딱 하나만(가져가면 merchantOffers를
+  // null로 비워 나머지는 더 이상 못 고르게 함, "중복 구매 안 됨"). heal/ppFill은 즉시 대상
+  // 종목(+ppFill은 대상 기술)에 적용되고, buffAtk/buffDef/buffXp는 대상 없이 바로 활성화돼
+  // 다음 전투부터 파티 전체에 적용된다(activeBuffs).
+  const applyMerchantOffer = useCallback((offerId: string, targetInstanceId?: string, targetSkillId?: string) => {
+    if (phase !== "shop" || !merchantOffers) return;
+    const offer = merchantOffers.find(o => o.id === offerId);
+    if (!offer) return;
+    if (offer.cost > 0 && gold < offer.cost) return;
 
-  // 매 층 상점 — PP 회복 물약. 구매 아이템은 전부 즉시 사용 아이템류라(보유 인벤토리에 안 쌓임)
-  // 사는 즉시 파티 전원의 기술 PP를 각자 maxPP로 채운다.
-  const buyPpPotion = useCallback(() => {
-    if (phase !== "shop" || gold < PP_POTION_COST) return;
-    setGold(g => g - PP_POTION_COST);
-    setSkillPp(prev => prev.map(s => {
-      const def = skillDefsByOwner.get(s.ownerId)?.find(d => d.id === s.skillId);
-      return def ? { ...s, pp: def.maxPP } : s;
-    }));
-  }, [phase, gold, skillDefsByOwner]);
+    if (offer.effect.kind === "heal") {
+      if (!targetInstanceId) return;
+      const idx = partyRaw.findIndex(m => m.instanceId === targetInstanceId);
+      if (idx < 0) return;
+      const member = partyRaw[idx];
+      const targetMaxHp = growthMaxHp(member.stats, member.xp) + passiveVitBonus;
+      const healedHp = Math.min(targetMaxHp, member.hp + Math.round(targetMaxHp * offer.effect.pct));
+      setParty(prev => prev.map((m, i) => i === idx ? { ...m, hp: healedHp } : m));
+      if (idx === activeIndex) setPlayerHp(healedHp);
+      pushLog("system", `🛒 ${offer.name} — ${member.name} HP ${healedHp}/${targetMaxHp}`);
+    } else if (offer.effect.kind === "ppFill") {
+      if (!targetInstanceId || !targetSkillId) return;
+      const targetMember = partyRaw.find(m => m.instanceId === targetInstanceId);
+      const def = skillDefsByOwner.get(targetInstanceId)?.find(d => d.id === targetSkillId);
+      if (!targetMember || !def) return;
+      setSkillPp(prev => {
+        const idx = prev.findIndex(s => s.ownerId === targetInstanceId && s.skillId === targetSkillId);
+        if (idx >= 0) { const next = [...prev]; next[idx] = { ...next[idx], pp: def.maxPP }; return next; }
+        return [...prev, { ownerId: targetInstanceId, skillId: targetSkillId, pp: def.maxPP }];
+      });
+      pushLog("system", `🛒 ${offer.name} — ${targetMember.name}의 ${def.name} PP 충전`);
+    } else {
+      const effect = offer.effect;
+      const key = effect.kind === "buffAtk" ? "atk" : effect.kind === "buffDef" ? "def" : "xp";
+      setActiveBuffs(prev => ({ ...prev, [key]: { turnsLeft: effect.turns, mult: effect.mult } }));
+      pushLog("system", `🛒 ${offer.name} 획득 — 다음 전투부터 ${effect.turns}턴 동안 적용됩니다.`);
+    }
+    if (offer.cost > 0) setGold(g => g - offer.cost);
+    setMerchantOffers(null);
+  }, [phase, merchantOffers, gold, partyRaw, passiveVitBonus, activeIndex, skillDefsByOwner, pushLog]);
 
   const buyBoost = useCallback((item: { mult: number; rounds: number }) => {
     setActiveBoost({ mult: item.mult, roundsLeft: item.rounds });
@@ -544,8 +599,8 @@ export function useGameRun(params: { pool: any[]; deck: DeckItem[]; setDeck: (fn
     setEnemy(newEnemy);
     setSkillPp(newParty.flatMap(m => monsterSkills(m.stats).map(def => ({ ownerId: m.instanceId, skillId: def.id, pp: def.maxPP }))));
     setBattleMenu("action");
-    setOwnedItems([]); setItemChoices(null);
-    setGold(0); setRoundNum(0); setEncounter("battle"); setRestHealed(false); setNewBest(false);
+    setOwnedItems([]); setItemChoices(null); setMerchantOffers(null); setActiveBuffs({});
+    setGold(START_GOLD); setRoundNum(0); setEncounter("battle"); setRestHealed(false); setNewBest(false);
     setLastResult(null); setDropped(false); setDropPrompt(false); setSaveFail(null); setPackOpening(false); setAcquired([]); setLevelUps([]);
     const startMaxHp = newParty[0].maxHp + effectiveStats.vit * VIT_HP_MULTIPLIER;
     setPlayerHp(startMaxHp); setPlayerBlock(0);
@@ -570,11 +625,11 @@ export function useGameRun(params: { pool: any[]; deck: DeckItem[]; setDeck: (fn
     // 보너스를 더하면 이중으로 반영됨) — 원본 partyRaw를 저장한다.
     const saved: SavedRun = {
       phase, roundNum, encounter, restHealed, gold, newBest,
-      ownedItems, itemChoices, activeBoost, party: partyRaw, activeIndex, playerHp, playerBlock, enemy, skillPp, battleMenu,
+      ownedItems, itemChoices, activeBoost, merchantOffers, activeBuffs, party: partyRaw, activeIndex, playerHp, playerBlock, enemy, skillPp, battleMenu,
       log, lastResult, acquired,
     };
     try { localStorage.setItem(RUN_KEY, JSON.stringify(saved)); } catch { }
-  }, [phase, roundNum, encounter, restHealed, gold, newBest, ownedItems, itemChoices, activeBoost, partyRaw, activeIndex, playerHp, playerBlock, enemy, skillPp, battleMenu, log, lastResult, acquired]);
+  }, [phase, roundNum, encounter, restHealed, gold, newBest, ownedItems, itemChoices, activeBoost, merchantOffers, activeBuffs, partyRaw, activeIndex, playerHp, playerBlock, enemy, skillPp, battleMenu, log, lastResult, acquired]);
 
   const acquirePct = enemy ? Math.round(Math.min(0.95, acquireChance(enemy.item, roundNum + 1) * (activeBoost?.mult ?? 1)) * 100) : 0;
   const forcedSwitch = playerHp <= 0; // battleMenu==="party"일 때만 의미 있음(그 외엔 항상 false)
@@ -582,11 +637,12 @@ export function useGameRun(params: { pool: any[]; deck: DeckItem[]; setDeck: (fn
   return {
     phase, roundNum, encounter, restHealed, gold, best, newBest,
     ownedItems, ownedDefs, ownedRelics, itemChoices, passive, unlockedLegendItems, activeBoost,
-    player, enemy, party, activeIndex, activeLevel, passiveVitBonus, forcedSwitch, pending: pendingAction !== null, advance: advancePendingAction, skills, battleMenu, log,
+    merchantOffers, activeBuffs,
+    player, enemy, party, activeIndex, activeLevel, passiveVitBonus, forcedSwitch, pending: pendingAction !== null, advance: advancePendingAction, skills, skillDefsByOwner, skillPp, battleMenu, log,
     lastResult, dropped, dropPrompt, saveFail, packOpening, acquired, acquirePct, levelUps,
     effectiveStats, lastPlayerRoll, lastEnemyRoll,
     hasSavedRun, resumeRun,
     start, promptNewRun, useSkill, useOwnedActiveItem, switchMember, selectBattleAction, backToActionMenu, nextRound, proceedFromEvent, proceedFromShop, cashOut,
-    buyMerchantHeal, buyPpPotion, buyBoost, pickItem, skipItem,
+    applyMerchantOffer, buyBoost, pickItem, skipItem,
   };
 }
