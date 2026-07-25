@@ -197,13 +197,17 @@ export default class CombatScene extends Phaser.Scene {
   private enemyLabel!: Phaser.GameObjects.Text;
   private enemyHpGfx!: Phaser.GameObjects.Graphics;
   private enemyHpNumText!: Phaser.GameObjects.Text;
+  private enemyHpTag!: Phaser.GameObjects.Text;
+  private enemyInfoBox!: Phaser.GameObjects.Container; // 라벨+HP바+태그 묶음 — 등장 시 슬라이드 인
   private enemyCenterX = 0; private enemyCenterY = 0;
   private enemyHpBarX = 0; private enemyHpBarY = 0; private enemyHpBarW = 0;
+  private enemyInfoRestX = 0;
 
   private playerGfx!: Phaser.GameObjects.Graphics;
   private playerLabel!: Phaser.GameObjects.Text;
   private playerHpGfx!: Phaser.GameObjects.Graphics;
   private playerHpNumText!: Phaser.GameObjects.Text;
+  private playerHpTag!: Phaser.GameObjects.Text;
   private playerCenterX = 0; private playerCenterY = 0;
   private playerHpBarX = 0; private playerHpBarY = 0; private playerHpBarW = 0;
 
@@ -220,12 +224,18 @@ export default class CombatScene extends Phaser.Scene {
     this.cameras.main.setBackgroundColor("#00000000");
     this.cell = Math.max(3, Math.floor(Math.min(w * 0.36, h * 0.34) / GRID));
 
-    // 적 — 우상단 스프라이트 + 좌상단 정보
+    // 적 — 우상단 스프라이트 + 좌상단 정보(이름/HP태그/HP바/수치를 컨테이너로 묶어서 등장 시
+    // 한 번에 슬라이드 인 시킴). HP태그("HP" 이탤릭 라벨)가 차지하는 폭만큼 바 자체는 살짝
+    // 줄여서 화면 왼쪽 끝을 벗어나지 않게 한다.
+    const hpTagW = 16;
     this.enemyCenterX = w * 0.74; this.enemyCenterY = h * 0.30;
     this.enemyLabel = this.add.text(w * 0.05, h * 0.04, "", { fontSize: "12px", color: "#ffffff", fontStyle: "bold", resolution: RES }).setOrigin(0, 0);
-    this.enemyHpBarX = w * 0.05; this.enemyHpBarY = h * 0.12; this.enemyHpBarW = w * 0.36;
+    this.enemyHpBarX = w * 0.05 + hpTagW; this.enemyHpBarY = h * 0.12; this.enemyHpBarW = w * 0.36 - hpTagW;
+    this.enemyHpTag = this.add.text(w * 0.05, this.enemyHpBarY + HP_BAR_H / 2, "HP", { fontSize: "9px", fontStyle: "italic", color: "#fde047", resolution: RES }).setOrigin(0, 0.5);
     this.enemyHpGfx = this.add.graphics();
     this.enemyHpNumText = this.add.text(this.enemyHpBarX + this.enemyHpBarW / 2, this.enemyHpBarY + HP_BAR_H / 2, "", { fontFamily: "monospace", fontSize: "9px", color: "#ffffff", fontStyle: "bold", resolution: RES }).setOrigin(0.5);
+    this.enemyInfoBox = this.add.container(0, 0, [this.enemyLabel, this.enemyHpTag, this.enemyHpGfx, this.enemyHpNumText]);
+    this.enemyInfoRestX = 0;
     this.spec = randomMonster();
     this.enemyGfx = this.add.graphics({ x: this.enemyCenterX, y: this.enemyCenterY });
     this.drawMonster();
@@ -235,7 +245,8 @@ export default class CombatScene extends Phaser.Scene {
     this.playerCenterX = w * 0.26; this.playerCenterY = h * 0.72;
     this.playerGfx = this.add.graphics({ x: this.playerCenterX, y: this.playerCenterY });
     this.drawPlayer();
-    this.playerHpBarW = w * 0.36; this.playerHpBarX = w * 0.95 - this.playerHpBarW; this.playerHpBarY = h * 0.86;
+    this.playerHpBarW = w * 0.36 - hpTagW; this.playerHpBarX = w * 0.95 - this.playerHpBarW; this.playerHpBarY = h * 0.86;
+    this.playerHpTag = this.add.text(this.playerHpBarX - 3, this.playerHpBarY + HP_BAR_H / 2, "HP", { fontSize: "9px", fontStyle: "italic", color: "#fde047", resolution: RES }).setOrigin(1, 0.5);
     this.playerLabel = this.add.text(w * 0.95, this.playerHpBarY - 4, "", { fontSize: "12px", color: "#ffffff", fontStyle: "bold", resolution: RES }).setOrigin(1, 1);
     this.playerHpGfx = this.add.graphics();
     this.playerHpNumText = this.add.text(this.playerHpBarX + this.playerHpBarW / 2, this.playerHpBarY + HP_BAR_H / 2, "", { fontFamily: "monospace", fontSize: "9px", color: "#ffffff", fontStyle: "bold", resolution: RES }).setOrigin(0.5);
@@ -362,7 +373,9 @@ export default class CombatScene extends Phaser.Scene {
     numText.setText(`${Math.max(0, Math.round(hp))}/${Math.round(maxHp)}`);
   }
 
-  // 정예/보스는 상시 배지를 라벨에 붙여 등장 인트로가 사라진 뒤에도 계속 구분되게 함.
+  // 정예/보스는 상시 배지를 라벨에 붙여 등장 인트로가 사라진 뒤에도 계속 구분되게 함. 새 적이
+  // 나타날 때마다 스프라이트는 페이드+스케일 인, 이름/HP 정보 박스는 왼쪽에서 슬라이드 인
+  // 되는 등장 연출을 재생한다(포켓몬의 "야생의 OO가 나타났다!" 등장 모먼트를 흉내).
   setEnemy(name: string, hp: number, maxHp: number, encounter: "battle" | "boss" | "elite" = "battle") {
     const prefix = encounter === "boss" ? "👑 보스 · " : encounter === "elite" ? "🗡️ 정예 · " : "";
     const color = encounter === "boss" ? "#facc15" : encounter === "elite" ? "#c084fc" : "#ffffff";
@@ -372,6 +385,14 @@ export default class CombatScene extends Phaser.Scene {
     this.squished = false;
     this.drawMonster();
     this.setEnemyHp(hp, maxHp);
+
+    this.tweens.killTweensOf(this.enemyGfx);
+    this.enemyGfx.setAlpha(0).setScale(0.55);
+    this.tweens.add({ targets: this.enemyGfx, alpha: 1, scale: 1, duration: 380, ease: "Back.easeOut" });
+
+    this.tweens.killTweensOf(this.enemyInfoBox);
+    this.enemyInfoBox.setX(this.enemyInfoRestX - 36).setAlpha(0);
+    this.tweens.add({ targets: this.enemyInfoBox, x: this.enemyInfoRestX, alpha: 1, duration: 300, ease: "Cubic.easeOut" });
   }
 
   setEnemyHp(hp: number, maxHp: number) {

@@ -28,10 +28,10 @@ export type ActiveEffect =
   | { kind: "block"; amount: number }
   | { kind: "restorePP" }; // 보유한 모든 기술의 PP를 최대치로 회복
 
-// 직업별 고정 기술 — 종목 카드가 아니라 미리 정의된 세트(전사: 주먹 휘두르기/강타/방어/
-// 기력회복). power는 효과별 의미가 다름: attack=주사위 기본 데미지, shield=고정 블록량,
-// heal=고정 회복량. PP(usesLeft에 대응하는 SkillState.pp)는 던전 진행 내내 유지되며(전투를
-// 이겨도 자동 회복 안 됨) 상점의 PP 회복 물약으로만 채워진다.
+// 기술 — 이제 직업 고정이 아니라 파티 몬스터(종목 카드)마다 자기 스탯(cardStats)으로 스케일된
+// 공통 4종 템플릿을 가짐(combatEngine.monsterSkills). power는 효과별 의미가 다름: attack=주사위
+// 기본 데미지, shield=고정 블록량, heal=고정 회복량. PP는 던전 진행 내내 유지되며(전투를 이겨도
+// 자동 회복 안 됨) 상점의 PP 회복 물약으로만 채워진다.
 export type SkillEffectKind = "attack" | "shield" | "heal";
 export interface SkillDef {
   id: string;
@@ -40,11 +40,28 @@ export interface SkillDef {
   power: number;
   maxPP: number;
 }
-export interface SkillState { skillId: string; pp: number }
+// ownerId = 그 기술을 가진 파티 몬스터의 PartyMember.instanceId — 몬스터마다 같은 skillId를
+// 재사용하므로(공통 템플릿) PP는 반드시 (ownerId, skillId) 쌍으로 구분해야 한다.
+export interface SkillState { ownerId: string; skillId: string; pp: number }
 
-// 전투 중 하위 화면 — 매 내 턴마다 "action"(전투/아이템/도망치기/월드맵 선택)에서 시작해,
-// "전투"를 고르면 "skills"(기술 목록)로, "아이템"을 고르면 "items"(보유 아이템 사용)로 전환.
-export type BattleMenu = "action" | "skills" | "items";
+// 전투 중 하위 화면 — 매 내 턴마다 "action"(전투/파티/아이템/도망치기 선택)에서 시작해,
+// "전투"를 고르면 "skills"(기술 목록), "파티"를 고르면 "party"(몬스터 교체),
+// "아이템"을 고르면 "items"(보유 아이템 사용)로 전환.
+export type BattleMenu = "action" | "skills" | "items" | "party";
+
+// 파티 몬스터 — 던전 입장 시 계정 덱(수집한 종목 카드) 중 우수한 카드 상위 N장으로 구성되고
+// (부족분은 스타터로 패딩), 런 내내 고정(중간에 새로 합류/이탈 없음). hp는 전투 중 실시간으로
+// 갱신되고, 벤치(비활성) 상태에서도 유지된다(교체해서 돌아오면 이어서 씀).
+export interface PartyMember {
+  instanceId: string;
+  ticker: string;
+  name: string;
+  tone: string; // computeValueScore(item).tone — 파티 화면 배지 색상용
+  sectorType: string | null; // sectorTypes.sectorType(item) — 무속성이면 null
+  stats: CardStats;
+  hp: number;
+  maxHp: number;
+}
 
 export type ItemKind = "passive" | "active";
 export interface ItemDef {
@@ -65,6 +82,7 @@ export interface OwnedItem { instanceId: string; defId: string }
 export interface EnemyState {
   item: any;
   stats: CardStats;
+  sectorType: string | null; // sectorTypes.sectorType(item) — 무속성이면 null
   hp: number;
   maxHp: number;
   nextAttack: number; // 주사위 굴림의 base — 실제 피해는 0~nextAttack 범위에서 결정됨

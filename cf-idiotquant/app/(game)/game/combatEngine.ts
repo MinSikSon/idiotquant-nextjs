@@ -2,17 +2,25 @@
 // Math.random 직접 호출로 격리돼 있어 나머지는 항상 같은 입력 → 같은 출력).
 
 import { computeValueScore } from "@/lib/utils/valueScore";
+import { sectorType, typeMultiplier } from "./sectorTypes";
+import { PARTY_SIZE, STARTER_MONSTERS } from "./gameData";
 import type {
   CardStats, PassiveEffect, ActiveEffect, ItemDef, EnemyState, PlayerState, SkillDef, SkillState,
-  CharacterStats, AttackRollOptions, AttackRollResult, EnemyEncounter,
+  CharacterStats, AttackRollOptions, AttackRollResult, EnemyEncounter, PartyMember,
 } from "./gameTypes";
 
-export const BASE_HP = 30;
+const PARTY_BASE_HP = 16;
+const HP_PER_SHIELD_PLAYER = 3; // 카드 자체 방어 스탯(등급과 상관관계)이 파티 몬스터 HP에 미치는 비중
 const ENEMY_BASE_HP = 12;
 const ENEMY_PER_FLOOR = 3;
 const ENEMY_HP_PER_SHIELD = 2; // 뽑힌 카드 자체의 방어 스탯(등급과 상관관계가 있음)도 HP에 반영
 const BOSS_MULT = 3;   // "보스는 그 층 몬스터가 스탯 3배로 강화되어 등장"
 const ELITE_MULT = 1.5;
+
+export type Effectiveness = "super" | "weak" | "normal";
+function effectivenessOf(mult: number): Effectiveness {
+  return mult > 1 ? "super" : mult < 1 ? "weak" : "normal";
+}
 
 // 주사위 — D&D 스타일 20면체. 카드 공격/적 공격 모두 이 함수 하나로 처리(몬스터는 str/dex/luk/
 // advantage를 안 넘기므로 자연 20 크리티컬만 적용됨).
@@ -46,9 +54,9 @@ export function bossExtraChoiceChance(luk: number): number {
   return Math.min(LUK_BOSS_EXTRA_CAP, luk * LUK_BOSS_EXTRA_PER_POINT);
 }
 
-// 2개 재무 지표(sub, 0~1 clamp01된 정규화 점수 — computeValueScore가 이미 계산)를 적의 전투
-// 스탯(1~10 양의 정수)으로 매핑. 데이터 없는 지표는 sub=0(최저값)으로 처리돼 NaN이 안 생김.
-// 플레이어 기술은 더 이상 이 함수를 쓰지 않음(직업별 고정 SkillDef 세트를 씀).
+// 2개 재무 지표(sub, 0~1 clamp01된 정규화 점수 — computeValueScore가 이미 계산)를 전투 스탯
+// (1~10 양의 정수)으로 매핑. 데이터 없는 지표는 sub=0(최저값)으로 처리돼 NaN이 안 생김. 적과
+// 파티 몬스터(종목 카드) 양쪽에 공용으로 쓰인다.
 export function cardStats(item: any): CardStats {
   const parts = computeValueScore(item).parts;
   const sub = (key: string) => parts.find(p => p.key === key)?.sub ?? 0;
@@ -92,17 +100,55 @@ export function enemyForFloor(pool: any[], floor: number, encounter: EnemyEncoun
   const baseHp = ENEMY_BASE_HP + floor * ENEMY_PER_FLOOR + stats.shield * ENEMY_HP_PER_SHIELD;
   const maxHp = Math.round(baseHp * mult);
   const attack = stats.attack + Math.floor(floor / 3);
-  return { item, stats, hp: maxHp, maxHp, nextAttack: attack, encounter };
+  return { item, stats, sectorType: sectorType(item), hp: maxHp, maxHp, nextAttack: attack, encounter };
+}
+
+// 파티 몬스터 공통 기술 템플릿 — 각 몬스터 자기 카드 스탯(attack/shield)으로 스케일된 4기술을
+// 갖는다(공격 약/강·방어·회복). PP는 기술마다 다른 예산을 둬 사용 판단에 무게를 준다.
+export function monsterSkills(stats: CardStats): SkillDef[] {
+  return [
+    { id: "atk1", name: "약공격", effect: "attack", power: stats.attack, maxPP: 20 },
+    { id: "atk2", name: "강공격", effect: "attack", power: Math.round(stats.attack * 1.8), maxPP: 10 },
+    { id: "def1", name: "방어", effect: "shield", power: stats.shield, maxPP: 20 },
+    { id: "heal1", name: "회복", effect: "heal", power: Math.max(1, Math.round((stats.attack + stats.shield) / 2)), maxPP: 8 },
+  ];
+}
+
+// 던전 입장 시 파티 구성 — 계정 덱(수집한 종목 카드)에서 저평가 점수 상위 PARTY_SIZE장을 뽑고,
+// 부족하면 STARTER_MONSTERS로 채운다. 런 내내 고정(중간 합류/이탈 없음).
+export function buildParty(deckCards: any[]): PartyMember[] {
+  const sorted = [...deckCards].sort((a, b) => computeValueScore(b).score - computeValueScore(a).score);
+  const members: PartyMember[] = sorted.slice(0, PARTY_SIZE).map(card => {
+    const stats = cardStats(card);
+    const maxHp = PARTY_BASE_HP + stats.shield * HP_PER_SHIELD_PLAYER;
+    return {
+      instanceId: `p_${card.ticker}`, ticker: String(card.ticker), name: String(card.name),
+      tone: computeValueScore(card).tone, sectorType: sectorType(card),
+      stats, hp: maxHp, maxHp,
+    };
+  });
+  let i = 0;
+  while (members.length < PARTY_SIZE) {
+    const starter = STARTER_MONSTERS[i % STARTER_MONSTERS.length];
+    const maxHp = PARTY_BASE_HP + starter.stats.shield * HP_PER_SHIELD_PLAYER;
+    members.push({
+      instanceId: `starter_${i}`, ticker: `STARTER${i}`, name: starter.name,
+      tone: "explore", sectorType: null, stats: starter.stats, hp: maxHp, maxHp,
+    });
+    i++;
+  }
+  return members;
 }
 
 // 기술 한 장 발동(PP 체크는 호출부 책임 — 이 함수는 PP 상태를 모름, useGameRun의 SkillState가
 // 별도로 관리). 효과별로 분기: attack=rollAttack()으로 굴린 데미지(charStats/passive의 힘/민첩/
-// 행운/어드밴티지 반영), shield=고정 블록 추가, heal=고정 HP 회복. 1기술=1턴이라 사용 즉시
-// 곧바로 적 턴으로 이어진다(roll은 attack일 때만 존재 — 나머지는 주사위를 안 굴리므로 null).
+// 행운/어드밴티지 + 업종 상성 배율까지 반영), shield=고정 블록 추가, heal=고정 HP 회복. 1기술=1턴
+// 이라 사용 즉시 곧바로 적 턴으로 이어진다(roll은 attack일 때만 존재).
 export function useSkillEffect(
   player: PlayerState, enemy: EnemyState, def: SkillDef,
   passive: Required<PassiveEffect>, charStats: CharacterStats,
-): { player: PlayerState; enemy: EnemyState; roll: AttackRollResult | null } {
+  atkType: string | null, defType: string | null,
+): { player: PlayerState; enemy: EnemyState; roll: AttackRollResult | null; effectiveness: Effectiveness } {
   if (def.effect === "attack") {
     const roll = rollAttack(def.power, {
       advantage: passive.extraDie,
@@ -110,30 +156,43 @@ export function useSkillEffect(
       dex: charStats.dex + passive.dexBonus,
       luk: charStats.luk + passive.lukBonus,
     });
-    return { player, enemy: { ...enemy, hp: Math.max(0, enemy.hp - roll.totalDamage) }, roll };
+    const mult = typeMultiplier(atkType, defType);
+    const totalDamage = Math.max(1, Math.round(roll.totalDamage * mult));
+    return {
+      player, enemy: { ...enemy, hp: Math.max(0, enemy.hp - totalDamage) },
+      roll: { ...roll, totalDamage }, effectiveness: effectivenessOf(mult),
+    };
   }
   if (def.effect === "shield") {
-    return { player: { ...player, block: player.block + def.power }, enemy, roll: null };
+    return { player: { ...player, block: player.block + def.power }, enemy, roll: null, effectiveness: "normal" };
   }
-  return { player: { ...player, hp: Math.min(player.maxHp, player.hp + def.power) }, enemy, roll: null };
+  return { player: { ...player, hp: Math.min(player.maxHp, player.hp + def.power) }, enemy, roll: null, effectiveness: "normal" };
 }
 
 // 적 턴 — 적도 동일한 주사위 규칙으로 굴리되(자연 20 크리티컬만 적용, 힘/민첩/행운/어드밴티지
-// 없음), 굴린 값에서 블록·데미지감소를 뺀 뒤(최소 0) 플레이어 HP 차감. 블록은 소멸하고 곧바로
-// 다음 내 턴을 위한 패시브 기본 블록(blockPerTurn)으로 채워진다 — 1기술=1턴 구조라 별도
-// "턴 시작" 단계 없이 이 함수가 턴 경계 역할을 겸한다.
+// 없음), 업종 상성 배율을 적용한 뒤 블록·데미지감소를 뺀 값(최소 0)을 플레이어 HP에서 차감한다.
+// 블록은 소멸하고 곧바로 다음 내 턴을 위한 패시브 기본 블록(blockPerTurn)으로 채워진다 — 1기술=
+// 1턴 구조라 별도 "턴 시작" 단계 없이 이 함수가 턴 경계 역할을 겸한다.
 export function resolveEnemyTurn(
   player: PlayerState, enemy: EnemyState, passive: Required<PassiveEffect>,
-): { player: PlayerState; roll: AttackRollResult } {
+  atkType: string | null, defType: string | null,
+): { player: PlayerState; roll: AttackRollResult; effectiveness: Effectiveness } {
   const roll = rollAttack(enemy.nextAttack);
-  const dmg = Math.max(0, roll.totalDamage - player.block - passive.damageReduce);
-  return { player: { ...player, hp: Math.max(0, player.hp - dmg), block: passive.blockPerTurn }, roll };
+  const mult = typeMultiplier(atkType, defType);
+  const totalDamage = Math.max(1, Math.round(roll.totalDamage * mult));
+  const dmg = Math.max(0, totalDamage - player.block - passive.damageReduce);
+  return {
+    player: { ...player, hp: Math.max(0, player.hp - dmg), block: passive.blockPerTurn },
+    roll: { ...roll, totalDamage }, effectiveness: effectivenessOf(mult),
+  };
 }
 
 // 액티브 아이템 즉시 발동 — 기술과 동일하게 발동 즉시 턴을 소모(호출부에서 이어서 적 턴 진행).
-// restorePP는 보유 기술 전부를 각자의 maxPP로 되돌림(skillDefs로 PP 상한을 조회).
+// restorePP는 파티 전원의 기술을 각자의 maxPP로 되돌림(skillDefsByOwner: PartyMember.instanceId →
+// 그 몬스터의 monsterSkills() 결과, PP 상한 조회용).
 export function useActiveItem(
-  player: PlayerState, enemy: EnemyState, skills: SkillState[], skillDefs: SkillDef[], effect: ActiveEffect,
+  player: PlayerState, enemy: EnemyState, skills: SkillState[],
+  skillDefsByOwner: Map<string, SkillDef[]>, effect: ActiveEffect,
 ) {
   let nextPlayer = { ...player }, nextEnemy = { ...enemy };
   let nextSkills = skills;
@@ -141,7 +200,7 @@ export function useActiveItem(
   else if (effect.kind === "heal") nextPlayer.hp = Math.min(nextPlayer.maxHp, nextPlayer.hp + effect.amount);
   else if (effect.kind === "block") nextPlayer.block += effect.amount;
   else if (effect.kind === "restorePP") nextSkills = skills.map(s => {
-    const def = skillDefs.find(d => d.id === s.skillId);
+    const def = skillDefsByOwner.get(s.ownerId)?.find(d => d.id === s.skillId);
     return def ? { ...s, pp: def.maxPP } : s;
   });
   return { player: nextPlayer, enemy: nextEnemy, skills: nextSkills };

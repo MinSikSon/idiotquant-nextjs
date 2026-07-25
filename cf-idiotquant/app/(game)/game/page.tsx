@@ -32,9 +32,8 @@ import { HOLO_THRESHOLD, PackReveal, AchievementBadges, ACHIEVEMENTS } from "./g
 import { WalletChip, ConvertButton, ShopPanel, BOOST_ITEMS } from "./gameShop";
 import { useGameRun, deckTotal, type DeckItem, MERCHANT_HEAL_COST } from "./useGameRun";
 import { PP_POTION_COST } from "./gameData";
-import { CLASS_DEFS } from "./characterEngine";
+import type { PartyMember } from "./gameTypes";
 import { EnemyIntentBadge, ItemBar, StatTile } from "@/components/game/CombatHud";
-import CombatLog from "@/components/game/CombatLog";
 import CharacterCard from "@/components/game/CharacterCard";
 import { DiceRow } from "@/components/game/DiceRow";
 
@@ -488,6 +487,30 @@ function FloorGraph({ nodes }: { nodes: FloorNode[] }) {
   );
 }
 
+// 상단 HUD의 파티 요약 — 3마리를 작은 원으로, 지금 나와있는 몬스터는 링으로 강조하고
+// 기절한 몬스터는 흐리게. 탭하면 바로 교체되진 않음(정보 표시 전용 — 실제 교체는 행동
+// 메뉴의 "파티"에서).
+function PartyStrip({ party, activeIndex }: { party: PartyMember[]; activeIndex: number }) {
+  return (
+    <div className="flex items-center gap-1 px-1.5 py-1 rounded-2xl backdrop-blur-md bg-white/85 dark:bg-white/[0.06] border border-black/5 dark:border-white/10 shadow-[0_6px_18px_-8px_rgba(0,0,0,0.35)]">
+      {party.map((m, i) => {
+        const fainted = m.hp <= 0;
+        const glow = TIER[m.tone]?.glow;
+        return (
+          <div key={m.instanceId} title={`${m.name} ${m.hp}/${m.maxHp}`}
+            className={cn("w-5 h-5 rounded-full flex items-center justify-center text-[9px] font-black border shrink-0",
+              fainted ? "opacity-30 grayscale border-black/10 dark:border-white/10 text-neutral-400"
+                : i === activeIndex ? "border-rose-500 ring-1 ring-rose-500 text-rose-600 dark:text-rose-400"
+                  : "border-black/10 dark:border-white/15 text-neutral-500 dark:text-neutral-300")}
+            style={{ background: !fainted && glow ? rgba(glow, 0.18) : undefined }}>
+            {i + 1}
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
 // useSearchParams는 Suspense 경계가 필요
 export default function GamePage() {
   return <Suspense fallback={null}><GameContent /></Suspense>;
@@ -561,6 +584,12 @@ function GameContent() {
     else setIntroLabel(null);
   }, [run.phase, run.roundNum, run.encounter]);
 
+  // 포켓몬식 메시지 텍스트박스에 타자기 효과로 보여줄 최신 로그 한 줄(전체 스크롤 로그 대신)
+  const latestLogText = run.log.length > 0 ? run.log[run.log.length - 1].text : "";
+  // Phaser 캔버스 좌하단 이름표 — 이제 HP가 트레이너가 아니라 지금 앞에 나온 몬스터 것이므로
+  // 그 몬스터 이름을 보여준다.
+  const activeMonsterName = run.party[run.activeIndex]?.name ?? "몬스터";
+
   const tutorialKey = "iq:game:tutorialSeen";
   useEffect(() => { try { if (!localStorage.getItem(tutorialKey)) setShowTutorial(true); } catch { } }, []);
   const closeTutorial = useCallback(() => { setShowTutorial(false); try { localStorage.setItem(tutorialKey, "1"); } catch { } }, []);
@@ -604,10 +633,19 @@ function GameContent() {
                       <span className="text-[9px] font-black text-neutral-400 uppercase tracking-wider pr-0.5 whitespace-nowrap">지하{run.roundNum + 1}층</span>
                       <FloorGraph nodes={floorWindow} />
                     </div>
+                    {run.phase === "battling" && run.party.length > 0 && (
+                      <PartyStrip party={run.party} activeIndex={run.activeIndex} />
+                    )}
                     {run.phase === "battling" && run.enemy && (
                       <div className="px-2 py-1.5 rounded-2xl backdrop-blur-md bg-white/85 dark:bg-white/[0.06] border border-black/5 dark:border-white/10 shadow-[0_6px_18px_-8px_rgba(0,0,0,0.35)]">
-                        <EnemyIntentBadge base={run.enemy.nextAttack} />
+                        <EnemyIntentBadge base={run.enemy.nextAttack} sectorType={run.enemy.sectorType} />
                       </div>
+                    )}
+                    {run.phase === "battling" && (
+                      <button type="button" onClick={run.cashOut} title="던전에서 나가기" aria-label="던전에서 나가기"
+                        className="w-7 h-7 shrink-0 rounded-full flex items-center justify-center backdrop-blur-md bg-white/85 dark:bg-white/[0.06] border border-black/5 dark:border-white/10 shadow-[0_6px_18px_-8px_rgba(0,0,0,0.35)] text-neutral-500 dark:text-neutral-400 active:scale-95 transition-transform">
+                        <span aria-hidden className="text-xs leading-none">🚪</span>
+                      </button>
                     )}
                   </div>
                   {/* 전투 중엔 아이템 사용이 행동 선택 메뉴("아이템")로만 이뤄지므로, 여긴 전투
@@ -633,27 +671,30 @@ function GameContent() {
                 <div className="flex-1 min-h-0 flex flex-col">
                   <div className="flex-1 min-h-0 flex flex-col rounded-2xl overflow-hidden backdrop-blur-md bg-white/60 dark:bg-white/[0.03] border border-black/5 dark:border-white/10">
                     {run.battleMenu === "action" ? (
-                      <HandView mode="action" onSelectAction={run.selectBattleAction}
+                      <HandView mode="action" onSelectAction={run.selectBattleAction} message={latestLogText}
                         topLeftOverlay={<DiceRow label="적" roll={run.lastEnemyRoll} isPlayer={false} />}
                         bottomRightOverlay={<DiceRow label="나" roll={run.lastPlayerRoll} isPlayer compact />}>
-                        <PhaserCombatCanvas enemy={run.enemy} player={run.player} playerName={CLASS_DEFS[run.character.classId].name} introLabel={introLabel} />
+                        <PhaserCombatCanvas enemy={run.enemy} player={run.player} playerName={activeMonsterName} introLabel={introLabel} />
                       </HandView>
                     ) : run.battleMenu === "skills" ? (
-                      <HandView mode="skills" skills={run.skills} onPlaySkill={run.useSkill} onBack={run.backToActionMenu}
+                      <HandView mode="skills" skills={run.skills} onPlaySkill={run.useSkill} onBack={run.backToActionMenu} message={latestLogText}
                         topLeftOverlay={<DiceRow label="적" roll={run.lastEnemyRoll} isPlayer={false} />}
                         bottomRightOverlay={<DiceRow label="나" roll={run.lastPlayerRoll} isPlayer compact />}>
-                        <PhaserCombatCanvas enemy={run.enemy} player={run.player} playerName={CLASS_DEFS[run.character.classId].name} introLabel={introLabel} />
+                        <PhaserCombatCanvas enemy={run.enemy} player={run.player} playerName={activeMonsterName} introLabel={introLabel} />
+                      </HandView>
+                    ) : run.battleMenu === "items" ? (
+                      <HandView mode="items" ownedItems={run.ownedItems} ownedDefs={run.ownedDefs} onUseItem={run.useOwnedActiveItem} onBack={run.backToActionMenu} message={latestLogText}
+                        topLeftOverlay={<DiceRow label="적" roll={run.lastEnemyRoll} isPlayer={false} />}
+                        bottomRightOverlay={<DiceRow label="나" roll={run.lastPlayerRoll} isPlayer compact />}>
+                        <PhaserCombatCanvas enemy={run.enemy} player={run.player} playerName={activeMonsterName} introLabel={introLabel} />
                       </HandView>
                     ) : (
-                      <HandView mode="items" ownedItems={run.ownedItems} ownedDefs={run.ownedDefs} onUseItem={run.useOwnedActiveItem} onBack={run.backToActionMenu}
+                      <HandView mode="party" party={run.party} activeIndex={run.activeIndex} forced={run.forcedSwitch} onSwitchMember={run.switchMember} onBack={run.backToActionMenu} message={latestLogText}
                         topLeftOverlay={<DiceRow label="적" roll={run.lastEnemyRoll} isPlayer={false} />}
                         bottomRightOverlay={<DiceRow label="나" roll={run.lastPlayerRoll} isPlayer compact />}>
-                        <PhaserCombatCanvas enemy={run.enemy} player={run.player} playerName={CLASS_DEFS[run.character.classId].name} introLabel={introLabel} />
+                        <PhaserCombatCanvas enemy={run.enemy} player={run.player} playerName={activeMonsterName} introLabel={introLabel} />
                       </HandView>
                     )}
-                  </div>
-                  <div className="shrink-0 pt-1.5">
-                    <CombatLog entries={run.log} />
                   </div>
                 </div>
               ) : null}
@@ -696,14 +737,15 @@ function GameContent() {
             </div>
             <div className="space-y-3">
               {[
-                { icon: "🗡️", text: <>매 턴 <b className="text-neutral-800 dark:text-neutral-100">전투/아이템/도망치기/월드맵</b> 중 행동을 골라요. <b className="text-neutral-800 dark:text-neutral-100">전투</b>를 고르면 전사의 고정 기술 4개(주먹 휘두르기·강타·방어·기력회복)가 나와요.</> },
-                { icon: "🎲", text: <>공격 기술(주먹 휘두르기·강타)은 <b className="text-neutral-800 dark:text-neutral-100">0~N 범위</b>로 20면체 주사위를 굴려 피해가 정해지고, 자연 20이면 <b className="text-amber-500 dark:text-amber-400">크리티컬</b>(최대 피해의 2배)! 방어는 블록을, 기력회복은 HP를 고정치만큼 즉시 채워요.</> },
-                { icon: "💊", text: <>기술마다 <b className="text-violet-600 dark:text-violet-400">PP 20</b>이 있고 쓸 때마다 1씩 줄어요 — <b className="text-neutral-800 dark:text-neutral-100">던전을 도는 내내 유지</b>되며(전투를 이겨도 안 채워짐) 상점의 PP 회복 물약으로만 채울 수 있어요.</> },
-                { icon: "⏭️", text: <>기술이나 아이템을 하나 쓰면 곧바로 내 턴이 끝나고 적이 반격해요 — 그 다음 다시 행동 선택부터 시작해요.</> },
-                { icon: "🏃", text: <><b className="text-neutral-800 dark:text-neutral-100">도망치기</b>는 이번 층을 포기하고 바로 상점으로, <b className="text-neutral-800 dark:text-neutral-100">월드맵</b>은 지금까지 성과를 저장하고 던전을 나가요.</> },
+                { icon: "🃏", text: <>던전에 입장하면 <b className="text-neutral-800 dark:text-neutral-100">내 덱</b>의 저평가 점수 상위 3장(부족하면 기본 몬스터로 보충)이 <b className="text-neutral-800 dark:text-neutral-100">파티</b>가 돼요. 카드의 ROE·NCAV가 그대로 몬스터의 공격력·방어력이 돼요.</> },
+                { icon: "🗡️", text: <>매 턴 <b className="text-neutral-800 dark:text-neutral-100">전투/파티/아이템/도망치기</b> 중 행동을 골라요. <b className="text-neutral-800 dark:text-neutral-100">전투</b>를 고르면 지금 앞에 나온 몬스터의 기술 4개(약공격·강공격·방어·회복)가 나와요.</> },
+                { icon: "🎲", text: <>공격 기술은 <b className="text-neutral-800 dark:text-neutral-100">0~N 범위</b>로 20면체 주사위를 굴려 피해가 정해지고, 자연 20이면 <b className="text-amber-500 dark:text-amber-400">크리티컬</b>(최대 피해의 2배)! 방어는 블록을, 회복은 HP를 고정치만큼 즉시 채워요.</> },
+                { icon: "⚡", text: <>카드마다 업종이 있고 업종끼리 상성이 있어요 — 상성에서 <b className="text-emerald-600 dark:text-emerald-400">이기면 피해가 1.5배</b>, <b className="text-rose-500">지면 2/3배</b>로 줄어요.</> },
+                { icon: "💊", text: <>기술마다 정해진 PP가 있고 쓸 때마다 1씩 줄어요 — <b className="text-neutral-800 dark:text-neutral-100">던전을 도는 내내 유지</b>되며(전투를 이겨도 안 채워짐) 상점의 PP 회복 물약으로만 채울 수 있어요.</> },
+                { icon: "🔄", text: <><b className="text-neutral-800 dark:text-neutral-100">파티</b>에서 다른 몬스터로 교체할 수 있어요(교체도 턴을 소모해 적의 공격을 받아요). 몬스터가 쓰러지면 강제로 다음 몬스터를 골라야 하고, 파티 전원이 쓰러지면 던전이 끝나요.</> },
+                { icon: "🚪", text: <><b className="text-neutral-800 dark:text-neutral-100">도망치기</b>는 이번 층을 포기하고 바로 상점으로 가요. 지금까지 성과를 저장하고 던전에서 나가고 싶으면 상단의 🚪 버튼을 눌러요.</> },
                 { icon: "🛒", text: <>층을 클리어할 때마다 <b className="text-neutral-800 dark:text-neutral-100">상점</b>에 들러 ❤️HP 회복 물약과 💊PP 회복 물약을 살 수 있어요.</> },
-                { icon: "🎒", text: <>3층마다 <b className="text-neutral-800 dark:text-neutral-100">패시브/액티브 아이템</b>을 하나 고를 수 있어요. 힘·민첩·행운·체력을 올려주는 스탯 아이템도 있어요.</> },
-                { icon: "🃏", text: <>적을 처치(층 클리어)하면 확률에 따라 <b className="text-neutral-800 dark:text-neutral-100">내 덱</b>에 실제 종목 카드가 수집돼요(전투와는 별개인 도감 컬렉션). <b className="text-violet-600 dark:text-violet-400">10층마다는 보스</b>(같은 몬스터가 스탯 3배로 강화돼 등장)예요.</> },
+                { icon: "🎒", text: <>3층마다 <b className="text-neutral-800 dark:text-neutral-100">패시브/액티브 아이템</b>을 하나 고를 수 있어요. 힘·민첩·행운·체력 스탯 아이템은 지금 나와있는 몬스터든 교체한 몬스터든 공통으로 적용돼요. <b className="text-violet-600 dark:text-violet-400">10층마다는 보스</b>(같은 몬스터가 스탯 3배로 강화돼 등장)예요.</> },
               ].map((row, i) => (
                 <div key={i} className="flex items-start gap-2.5">
                   <span aria-hidden className="shrink-0 text-lg leading-none">{row.icon}</span>

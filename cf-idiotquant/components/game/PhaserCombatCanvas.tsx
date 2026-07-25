@@ -80,8 +80,10 @@ export default function PhaserCombatCanvas({ enemy, player, playerName, introLab
     if (!scene || !enemy) return;
     const id = requestAnimationFrame(() => {
       if (enemy.item?.ticker !== prevEnemyTicker.current) {
-        scene.setEnemy?.(String(enemy.item?.name ?? "몬스터"), enemy.hp, enemy.maxHp, enemy.encounter);
-        if (introLabel) scene.showIntro?.(introLabel);
+        const name = String(enemy.item?.name ?? "몬스터");
+        scene.setEnemy?.(name, enemy.hp, enemy.maxHp, enemy.encounter);
+        // 보스/정예는 부모가 넘겨준 전용 문구, 그 외 모든 조우도 포켓몬처럼 매번 등장 배너를 띄움.
+        scene.showIntro?.(introLabel ?? `${name} 등장!`);
         prevEnemyTicker.current = enemy.item?.ticker ?? null;
         prevEnemyHp.current = enemy.hp;
         return;

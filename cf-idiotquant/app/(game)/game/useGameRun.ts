@@ -7,18 +7,18 @@ import { useState, useCallback, useEffect, useRef, useMemo } from "react";
 import { computeValueScore } from "@/lib/utils/valueScore";
 import { addDeckCard, getWallet, syncBestStreak, type DeckCardSnapshot } from "@/lib/features/deck/deckAPI";
 import {
-  enemyForFloor, useSkillEffect as engUseSkillEffect,
+  enemyForFloor, buildParty, monsterSkills, useSkillEffect as engUseSkillEffect,
   resolveEnemyTurn, useActiveItem as engUseActiveItem, checkOutcome, aggregatePassive,
   bossExtraChoiceChance,
-  BASE_HP, VIT_HP_MULTIPLIER,
+  VIT_HP_MULTIPLIER,
 } from "./combatEngine";
-import { ALL_ITEMS, SKILLS_BY_CLASS, ITEM_OFFER_COUNT, PP_POTION_ITEM_ID, PP_POTION_COST, pickItemChoices, acquireChance } from "./gameData";
+import { ALL_ITEMS, ITEM_OFFER_COUNT, PP_POTION_ITEM_ID, PP_POTION_COST, pickItemChoices, acquireChance } from "./gameData";
 import { ACHIEVEMENTS } from "./gameCollectibles";
 import { useCharacter } from "./useCharacter";
 import { killXpFor, XP_PER_ATTACK } from "./characterEngine";
 import type {
   Phase, EncounterType, ItemDef, OwnedItem, EnemyState, PlayerState, ActiveEffect, LogEntry, LogKind,
-  CharacterStats, AttackRollResult, SkillState, BattleMenu,
+  CharacterStats, AttackRollResult, SkillState, BattleMenu, PartyMember,
 } from "./gameTypes";
 
 const safeNum = (v: any): number => { const n = Number(v); return Number.isFinite(n) ? n : 0; };
@@ -63,12 +63,15 @@ const REST_HEAL_FRAC = 0.3;
 // 진행 중인 런 저장 — 다른 페이지를 다녀와도 이어지도록 함. 카드 데이터가 전부 인라인 스냅샷이라
 // (pool/deck 참조 없음) 그대로 JSON 직렬화/복원이 됨. packOpening/dropped/dropPrompt/saveFail은
 // 진행 중이던 setTimeout·fetch 콜백에 묶인 일시 상태라 저장 대상에서 제외(로드 시 기본값).
-const RUN_KEY = "iq:game:run:v1";
+// v1(전사 고정 기술 단일 캐릭터) → v2(카드 파티 3마리)로 스키마가 근본적으로 달라져 호환 불가라
+// 키 자체를 올렸다 — v1 저장분은 그냥 무시되고 새 런으로 시작한다(고아 키는 무해하게 방치).
+const RUN_KEY = "iq:game:run:v2";
 type SavedRun = {
   phase: Phase; roundNum: number; encounter: EncounterType; restHealed: boolean;
   gold: number; newBest: boolean;
   ownedItems: OwnedItem[]; itemChoices: ItemDef[] | null; activeBoost: { mult: number; roundsLeft: number } | null;
-  player: PlayerState; enemy: EnemyState | null; skillPp: SkillState[]; battleMenu: BattleMenu;
+  party: PartyMember[]; activeIndex: number; playerHp: number; playerBlock: number;
+  enemy: EnemyState | null; skillPp: SkillState[]; battleMenu: BattleMenu;
   log: LogEntry[]; lastResult: { win: boolean; goldGain?: number } | null;
   acquired: DeckCardSnapshot[];
 };
@@ -88,16 +91,17 @@ export function useGameRun(params: { pool: any[]; deck: DeckItem[]; setDeck: (fn
   const [itemChoices, setItemChoices] = useState<ItemDef[] | null>(null);
   const [activeBoost, setActiveBoost] = useState<{ mult: number; roundsLeft: number } | null>(null); // 상점 확률 부스트(세션 로컬, 층 클리어마다 소진)
 
-  const [player, setPlayer] = useState<PlayerState>({ hp: BASE_HP, maxHp: BASE_HP, block: 0 });
+  // 파티 — 계정 덱 상위 카드로 던전 입장 시 구성, 런 내내 고정. activeIndex가 지금 전투 중인
+  // 몬스터. playerHp/playerBlock은 그 활성 몬스터의 실시간 전투 상태(block은 매 적 턴 리셋).
+  const [party, setParty] = useState<PartyMember[]>([]);
+  const [activeIndex, setActiveIndex] = useState(0);
+  const [playerHp, setPlayerHp] = useState(0);
+  const [playerBlock, setPlayerBlock] = useState(0);
   const [enemy, setEnemy] = useState<EnemyState | null>(null);
   const [skillPp, setSkillPp] = useState<SkillState[]>([]); // 던전 진행 내내 유지(전투 승리로 안 채워짐) — PP 물약으로만 회복
   const [battleMenu, setBattleMenu] = useState<BattleMenu>("action"); // 전투 중 하위 화면 — 매 내 턴마다 "action"에서 시작
 
   const { character, characterLoaded, gainXp } = useCharacter();
-  const skillDefs = useMemo(() => SKILLS_BY_CLASS[character.classId] ?? [], [character.classId]);
-  const skills = useMemo(() => skillDefs.map(def => ({
-    def, pp: skillPp.find(s => s.skillId === def.id)?.pp ?? def.maxPP,
-  })), [skillDefs, skillPp]);
   const [lastPlayerRoll, setLastPlayerRoll] = useState<AttackRollResult | null>(null);
   const [lastEnemyRoll, setLastEnemyRoll] = useState<AttackRollResult | null>(null);
 
@@ -138,15 +142,31 @@ export function useGameRun(params: { pool: any[]; deck: DeckItem[]; setDeck: (fn
     luk: character.stats.luk + passive.lukBonus,
     vit: character.stats.vit + passive.vitBonus,
   }), [character.stats, passive]);
-  const maxHp = BASE_HP + effectiveStats.vit * VIT_HP_MULTIPLIER + passive.maxHpBonus;
 
-  // 아이템 보너스로 maxHp가 늘면 그만큼 현재 HP도 즉시 채워줌(줄어드는 경우는 없음)
-  const prevMaxHpRef = useRef(maxHp);
+  const activeMember = party[activeIndex] ?? null;
+  // 활성 몬스터의 최대 HP = 카드 자체 base(파티 구성 시 고정) + 트레이너 공용 보너스(패시브
+  // maxHpBonus + 체력 스탯) — 몬스터를 교체해도 이 공용 보너스는 그대로 따라붙는다. maxHp는
+  // 항상 파생값으로만 계산하고 별도 state로 들고 있지 않는다(교체 시 증분 적용 같은 동기화
+  // 버그를 원천 차단하기 위함 — state로 들고 있으면 교체마다 직접 갱신해야 해서 어긋나기 쉬움).
+  const passiveVitBonus = passive.maxHpBonus + effectiveStats.vit * VIT_HP_MULTIPLIER;
+  const activeMaxHp = activeMember ? activeMember.maxHp + passiveVitBonus : 0;
+  const player: PlayerState = useMemo(() => ({ hp: playerHp, maxHp: activeMaxHp, block: playerBlock }), [playerHp, activeMaxHp, playerBlock]);
+
+  // 트레이너 공용 보너스(패시브+체력 스탯)가 늘어난 만큼 활성 몬스터 HP도 즉시 채워줌(아이템을
+  // 새로 주웠을 때만 반응 — activeMaxHp 자체는 교체할 때도 바뀌므로 이 값에 직접 걸면 교체할
+  // 때마다 오작동한다. passiveVitBonus는 어느 몬스터가 나와있든 안 바뀌므로 안전).
+  const prevBonusRef = useRef(passiveVitBonus);
   useEffect(() => {
-    const delta = maxHp - prevMaxHpRef.current;
-    setPlayer(p => ({ ...p, maxHp, hp: delta > 0 ? Math.min(maxHp, p.hp + delta) : p.hp }));
-    prevMaxHpRef.current = maxHp;
-  }, [maxHp]);
+    const delta = passiveVitBonus - prevBonusRef.current;
+    if (delta > 0) setPlayerHp(hp => hp > 0 ? Math.min(activeMaxHp, hp + delta) : hp);
+    prevBonusRef.current = passiveVitBonus;
+  }, [passiveVitBonus, activeMaxHp]);
+
+  const skillDefs = useMemo(() => activeMember ? monsterSkills(activeMember.stats) : [], [activeMember]);
+  const skills = useMemo(() => skillDefs.map(def => ({
+    def, pp: skillPp.find(s => s.ownerId === activeMember?.instanceId && s.skillId === def.id)?.pp ?? def.maxPP,
+  })), [skillDefs, skillPp, activeMember]);
+  const skillDefsByOwner = useMemo(() => new Map(party.map(m => [m.instanceId, monsterSkills(m.stats)])), [party]);
 
   const started = useRef(false); // 자동 새 런 시작 가드 — 아래 복원이 성공하면 true로 설정해 덮어쓰지 않게 함
 
@@ -158,19 +178,24 @@ export function useGameRun(params: { pool: any[]; deck: DeckItem[]; setDeck: (fn
       const raw = localStorage.getItem(RUN_KEY);
       if (!raw) return;
       const saved: SavedRun = JSON.parse(raw);
-      if (!saved || !saved.player || !saved.phase || saved.phase === "over") return;
+      if (!saved || !saved.party || saved.party.length === 0 || !saved.phase || saved.phase === "over") return;
       setPhase(saved.phase); setRoundNum(saved.roundNum); setEncounter(saved.encounter);
       setRestHealed(saved.restHealed); setGold(saved.gold); setNewBest(saved.newBest ?? false);
       setOwnedItems(saved.ownedItems ?? []);
       setItemChoices(saved.itemChoices ?? null);
       setActiveBoost(saved.activeBoost ?? null);
-      setPlayer(saved.player); setEnemy(saved.enemy);
-      setSkillPp(saved.skillPp ?? []);
+      setParty(saved.party); setActiveIndex(saved.activeIndex ?? 0);
+      setPlayerHp(saved.playerHp); setPlayerBlock(saved.playerBlock ?? 0);
+      setEnemy(saved.enemy);
+      // saved.skillPp가 비어있으면(스키마 손상 등) 기술별 PP를 추적할 항목이 하나도 없어 이후
+      // .map() 갱신이 대상을 못 찾고 조용히 무시되는 버그가 과거에 있었음(구 단일 캐릭터 스키마
+      // 때) — 그때는 복원된 파티 기준으로 풀피 새로 채워서 복원한다.
+      setSkillPp(saved.skillPp && saved.skillPp.length > 0 ? saved.skillPp
+        : saved.party.flatMap(m => monsterSkills(m.stats).map(def => ({ ownerId: m.instanceId, skillId: def.id, pp: def.maxPP }))));
       setBattleMenu(saved.battleMenu ?? "action");
       setLog(saved.log ?? []);
       setLastResult(saved.lastResult ?? null);
       setAcquired(saved.acquired ?? []);
-      prevMaxHpRef.current = saved.player.maxHp;
       started.current = true;
     } catch { /* 손상된 저장값은 무시하고 새 런으로 진행 */ }
   }, []);
@@ -226,45 +251,66 @@ export function useGameRun(params: { pool: any[]; deck: DeckItem[]; setDeck: (fn
     }).catch(() => setSaveFail("네트워크 오류"));
   }, [best, isLoggedIn, availableItemPool, unlockedLegendItems, setDeck, activeBoost, pushLog, gainXp, effectiveStats.luk]);
 
-  // 내 행동(기술/아이템) 직후 곧바로 적 턴을 진행 — 1행동=1턴이라 별도 "턴 종료" 버튼이 없고,
-  // 기술/아이템을 쓴 함수들이 마지막에 이 함수 하나로 마무리한다. afterPlayer/afterEnemy는 이미
-  // 그 행동의 효과(데미지/블록/회복)까지 반영된 상태. 전투가 계속되면 다음 내 턴을 위해 행동
-  // 선택 메뉴("action")로 돌아간다.
-  const resolveTurn = useCallback((afterPlayer: PlayerState, afterEnemy: EnemyState) => {
-    setEnemy(afterEnemy);
-    if (checkOutcome(afterPlayer, afterEnemy) === "win") { setPlayer(afterPlayer); handleWin(afterEnemy, encounter, roundNum); return; }
-    const { player: finalPlayer, roll } = resolveEnemyTurn(afterPlayer, afterEnemy, passive);
+  // 적의 반격 처리 공통 로직 — 내 행동 직후(resolveTurn) 또는 자발적 파티 교체 직후(switchMember)
+  // 양쪽에서 호출. 활성 몬스터가 쓰러지면: 남은 파티원이 있으면 강제 교체 화면으로, 없으면 런 종료.
+  const applyEnemyTurn = useCallback((afterPlayer: PlayerState, afterEnemy: EnemyState, member: PartyMember, idx: number, currentParty: PartyMember[]) => {
+    const { player: finalPlayer, roll, effectiveness } = resolveEnemyTurn(afterPlayer, afterEnemy, passive, afterEnemy.sectorType, member.sectorType);
     setLastEnemyRoll(roll);
     const blocked = Math.min(roll.totalDamage, afterPlayer.block + passive.damageReduce);
     const dmg = Math.max(0, roll.totalDamage - blocked);
     const critTxt = roll.isCrit ? " 💥크리티컬!" : "";
-    pushLog("enemy", `${afterEnemy.item?.name ?? "적"}의 공격! 🎲${roll.faces.join("/")}${critTxt} → ⚔${roll.totalDamage} 중 🛡${blocked} 경감 → ${dmg} 피해`);
-    setPlayer(finalPlayer);
-    if (finalPlayer.hp <= 0) { setPhase("over"); setLastResult({ win: false }); pushLog("system", "💀 쓰러졌습니다..."); return; }
+    const effTxt = effectiveness === "super" ? " (업종 상성 우위!)" : effectiveness === "weak" ? " (업종 상성 열세)" : "";
+    pushLog("enemy", `${afterEnemy.item?.name ?? "적"}의 공격! 🎲${roll.faces.join("/")}${critTxt}${effTxt} → ⚔${roll.totalDamage} 중 🛡${blocked} 경감 → ${dmg} 피해`);
+    setPlayerHp(finalPlayer.hp); setPlayerBlock(finalPlayer.block);
+    setParty(prev => prev.map((m, i) => i === idx ? { ...m, hp: finalPlayer.hp } : m));
+    if (finalPlayer.hp <= 0) {
+      const hasReserve = currentParty.some((m, i) => i !== idx && m.hp > 0);
+      if (hasReserve) {
+        pushLog("system", `💥 ${member.name}이(가) 쓰러졌습니다! 다음 몬스터를 선택하세요.`);
+        setBattleMenu("party");
+      } else {
+        setPhase("over"); setLastResult({ win: false }); pushLog("system", "💀 파티 전원이 쓰러졌습니다...");
+      }
+      return;
+    }
     setBattleMenu("action");
-  }, [encounter, roundNum, passive, handleWin, pushLog]);
+  }, [passive, pushLog]);
+
+  // 내 행동(기술/아이템) 직후 곧바로 적 턴을 진행 — 1행동=1턴이라 별도 "턴 종료" 버튼이 없고,
+  // 기술/아이템을 쓴 함수들이 마지막에 이 함수 하나로 마무리한다. afterPlayer/afterEnemy는 이미
+  // 그 행동의 효과(데미지/블록/회복)까지 반영된 상태.
+  const resolveTurn = useCallback((afterPlayer: PlayerState, afterEnemy: EnemyState) => {
+    setEnemy(afterEnemy);
+    const idx = activeIndex, member = party[idx];
+    if (!member) return;
+    setParty(prev => prev.map((m, i) => i === idx ? { ...m, hp: afterPlayer.hp } : m));
+    if (checkOutcome(afterPlayer, afterEnemy) === "win") { setPlayerHp(afterPlayer.hp); setPlayerBlock(afterPlayer.block); handleWin(afterEnemy, encounter, roundNum); return; }
+    applyEnemyTurn(afterPlayer, afterEnemy, member, idx, party);
+  }, [activeIndex, party, encounter, roundNum, handleWin, applyEnemyTurn]);
 
   // 기술 발동 — 행동 메뉴에서 "전투"를 고른 뒤 기술 목록에서 탭하면 즉시. PP 소진 시 무시.
-  // 공격 기술은 주사위로 굴려서 데미지가 정해지고, 방어/회복 기술은 고정치를 바로 적용.
+  // 공격 기술은 주사위로 굴려서 데미지가 정해지고(+업종 상성 배율), 방어/회복 기술은 고정치를
+  // 바로 적용.
   const useSkill = useCallback((skillId: string) => {
-    if (phase !== "battling" || !enemy) return;
+    if (phase !== "battling" || !enemy || !activeMember) return;
     const skill = skills.find(s => s.def.id === skillId);
     if (!skill || skill.pp <= 0) return;
-    const result = engUseSkillEffect(player, enemy, skill.def, passive, effectiveStats);
-    setSkillPp(prev => prev.map(s => s.skillId === skillId ? { ...s, pp: s.pp - 1 } : s));
+    const result = engUseSkillEffect(player, enemy, skill.def, passive, effectiveStats, activeMember.sectorType, enemy.sectorType);
+    setSkillPp(prev => prev.map(s => s.ownerId === activeMember.instanceId && s.skillId === skillId ? { ...s, pp: s.pp - 1 } : s));
     const nextPp = skill.pp - 1;
+    const effTxt = result.effectiveness === "super" ? " 업종 상성 우위!" : result.effectiveness === "weak" ? " 업종 상성 열세..." : "";
     if (result.roll) {
       gainXp(XP_PER_ATTACK);
       setLastPlayerRoll(result.roll);
       const critTxt = result.roll.isCrit ? " 💥크리티컬!" : "";
-      pushLog("player", `${skill.def.name} 발동 (PP ${nextPp}/${skill.def.maxPP}) — 🎲${result.roll.faces.join("/")}${critTxt} → ⚔${result.roll.totalDamage} 피해`);
+      pushLog("player", `${activeMember.name}의 ${skill.def.name}! (PP ${nextPp}/${skill.def.maxPP}) — 🎲${result.roll.faces.join("/")}${critTxt}${effTxt} → ⚔${result.roll.totalDamage} 피해`);
     } else if (skill.def.effect === "shield") {
-      pushLog("player", `${skill.def.name} 발동 (PP ${nextPp}/${skill.def.maxPP}) — 🛡${skill.def.power} 방어`);
+      pushLog("player", `${activeMember.name}의 ${skill.def.name}! (PP ${nextPp}/${skill.def.maxPP}) — 🛡${skill.def.power} 방어`);
     } else {
-      pushLog("player", `${skill.def.name} 발동 (PP ${nextPp}/${skill.def.maxPP}) — ❤️${skill.def.power} 회복`);
+      pushLog("player", `${activeMember.name}의 ${skill.def.name}! (PP ${nextPp}/${skill.def.maxPP}) — ❤️${skill.def.power} 회복`);
     }
     resolveTurn(result.player, result.enemy);
-  }, [phase, enemy, skills, passive, player, effectiveStats, pushLog, gainXp, resolveTurn]);
+  }, [phase, enemy, activeMember, skills, passive, player, effectiveStats, pushLog, gainXp, resolveTurn]);
 
   // 액티브 아이템 즉시 발동(1회 소모) — 행동 메뉴에서 "아이템"을 고른 뒤 사용. 기술과 동일하게
   // 사용 즉시 턴을 소모.
@@ -273,28 +319,51 @@ export function useGameRun(params: { pool: any[]; deck: DeckItem[]; setDeck: (fn
     const owned = ownedItems.find(o => o.instanceId === instanceId);
     const def = owned && ALL_ITEMS.find(d => d.id === owned.defId);
     if (!owned || !def || def.kind !== "active") return;
-    const r = engUseActiveItem(player, enemy, skillPp, skillDefs, def.effect as ActiveEffect);
+    const r = engUseActiveItem(player, enemy, skillPp, skillDefsByOwner, def.effect as ActiveEffect);
     setSkillPp(r.skills);
     setOwnedItems(prev => prev.filter(o => o.instanceId !== instanceId));
     pushLog("item", `🎒 ${def.name} 사용 — ${def.desc}`);
     resolveTurn(r.player, r.enemy);
-  }, [phase, enemy, ownedItems, player, skillPp, skillDefs, pushLog, resolveTurn]);
+  }, [phase, enemy, ownedItems, player, skillPp, skillDefsByOwner, pushLog, resolveTurn]);
 
-  // 행동 메뉴 선택 — 전투(기술 목록)/아이템(보유 아이템 목록)은 하위 화면 전환만, 도망치기/
-  // 월드맵은 곧바로 던전 상태를 바꾸는 액션.
-  const selectBattleAction = useCallback((action: "fight" | "item" | "flee" | "map") => {
+  // 파티 교체 — 강제(활성 몬스터 기절 직후, battleMenu==="party"이고 player.hp<=0)면 턴을 소모하지
+  // 않고 곧바로 행동 선택으로 복귀. 자발적(행동 메뉴 "파티"에서 직접 선택)이면 실제 기술처럼 턴을
+  // 소모해 곧바로 적의 공격을 받는다(교체에 대가가 있어야 유의미한 선택이 됨).
+  const switchMember = useCallback((instanceId: string) => {
+    if (phase !== "battling") return;
+    const idx = party.findIndex(m => m.instanceId === instanceId);
+    if (idx < 0 || idx === activeIndex) return;
+    const member = party[idx];
+    if (member.hp <= 0) return;
+    const forced = playerHp <= 0;
+    setActiveIndex(idx);
+    setPlayerHp(member.hp);
+    setPlayerBlock(passive.blockPerTurn);
+    pushLog("system", `🔄 ${member.name}이(가) 앞으로 나섭니다!`);
+    if (forced) { setBattleMenu("action"); return; }
+    if (!enemy) { setBattleMenu("action"); return; }
+    applyEnemyTurn({ hp: member.hp, maxHp: member.maxHp + passiveVitBonus, block: passive.blockPerTurn }, enemy, member, idx, party);
+  }, [phase, party, activeIndex, playerHp, passive, passiveVitBonus, enemy, pushLog, applyEnemyTurn]);
+
+  // 행동 메뉴 선택 — 전투(기술 목록)/파티(교체)/아이템(보유 아이템 목록)은 하위 화면 전환만,
+  // 도망치기는 곧바로 던전 상태를 바꾸는 액션. 던전 나가기(구 "월드맵")는 이제 행동 메뉴가
+  // 아니라 상단 HUD의 상시 버튼(cashOut)으로 이동했다 — 정확히 4칸인 메뉴에 파티 교체 자리를
+  // 마련하기 위함.
+  const selectBattleAction = useCallback((action: "fight" | "party" | "item" | "flee") => {
     if (phase !== "battling") return;
     if (action === "fight") setBattleMenu("skills");
+    else if (action === "party") setBattleMenu("party");
     else if (action === "item") setBattleMenu("items");
     else if (action === "flee") {
       pushLog("system", "🏃 전투에서 도망쳐 이번 층을 포기했습니다.");
       setEnemy(null); setBattleMenu("action"); setPhase("shop");
-    } else if (action === "map") { setPhase("over"); }
+    }
   }, [phase, pushLog]);
-  const backToActionMenu = useCallback(() => setBattleMenu("action"), []);
+  const backToActionMenu = useCallback(() => { if (playerHp > 0) setBattleMenu("action"); }, [playerHp]);
 
   // 다음 라운드 진입 — 조우 판정 후 배틀(적 생성) 또는 이벤트(휴식). 기술 PP는 손대지 않음
-  // (던전 진행 내내 유지, 회복은 상점 물약으로만).
+  // (던전 진행 내내 유지, 회복은 상점 물약으로만). 활성 몬스터는 층 클리어 시점에 항상 생존 중
+  // 이었으므로(패배했다면 애초에 이 함수까지 못 옴) 별도 소생 처리가 필요 없다.
   const advanceToRound = useCallback((nextRoundNum: number) => {
     const enc = pickEncounter(nextRoundNum);
     setRoundNum(nextRoundNum);
@@ -303,38 +372,42 @@ export function useGameRun(params: { pool: any[]; deck: DeckItem[]; setDeck: (fn
 
     if (enc === "rest") {
       pushLog("system", "🏕️ 잠깐의 휴식.");
-      setPlayer(p => {
-        const healed = p.hp < p.maxHp;
-        setRestHealed(healed);
-        return healed ? { ...p, hp: Math.min(p.maxHp, p.hp + Math.round(p.maxHp * REST_HEAL_FRAC)) } : p;
-      });
+      const healed = playerHp < activeMaxHp;
+      setRestHealed(healed);
+      if (healed) {
+        const nextHp = Math.min(activeMaxHp, playerHp + Math.round(activeMaxHp * REST_HEAL_FRAC));
+        setPlayerHp(nextHp);
+        setParty(prev => prev.map((m, i) => i === activeIndex ? { ...m, hp: nextHp } : m));
+      }
       setEnemy(null); setPhase("event"); return;
     }
 
     const newEnemy = enemyForFloor(pool, nextRoundNum, enc as "battle" | "boss" | "elite");
     setEnemy(newEnemy);
     pushLog("system", `${enc === "boss" ? "👑" : enc === "elite" ? "🗡️" : "🐉"} ${newEnemy.item?.name ?? "적"} 등장! (HP ${newEnemy.maxHp})`);
-    setPlayer(p => ({ ...p, block: passive.blockPerTurn }));
+    setPlayerBlock(passive.blockPerTurn);
     setBattleMenu("action");
     setPhase("battling");
-  }, [pool, passive, pushLog]);
+  }, [pool, passive, activeIndex, activeMaxHp, playerHp, pushLog]);
 
   const nextRound = useCallback(() => { if (phase === "resolved") setPhase("shop"); }, [phase]);
   const proceedFromEvent = useCallback(() => { if (phase === "event") setPhase("shop"); }, [phase]);
   const proceedFromShop = useCallback(() => { if (phase === "shop") advanceToRound(roundNum + 1); }, [phase, roundNum, advanceToRound]);
-  // 던전 나가기("여기서 정리" 버튼 및 전투 중 행동 메뉴의 "월드맵") — resolved 화면뿐 아니라
-  // 진행 중인 어느 시점에서도 호출 가능(런이 이미 끝났거나 로딩 중일 때만 무시).
+  // 던전 나가기(상단 HUD의 상시 버튼 및 "여기서 정리" 버튼) — resolved 화면뿐 아니라 진행 중인
+  // 어느 시점에서도 호출 가능(런이 이미 끝났거나 로딩 중일 때만 무시).
   const cashOut = useCallback(() => { if (phase !== "over" && phase !== "loading") setPhase("over"); }, [phase]);
 
   // 매 층 상점 — HP 회복 물약(즉시 회복, 옛 떠돌이 상인 기능 재사용, merchant 조우 게이팅만 제거)
   const buyMerchantHeal = useCallback(() => {
     if (phase !== "shop") return;
-    if (player.hp >= player.maxHp || gold < MERCHANT_HEAL_COST) return;
+    if (playerHp >= activeMaxHp || gold < MERCHANT_HEAL_COST) return;
     setGold(g => g - MERCHANT_HEAL_COST);
-    setPlayer(p => ({ ...p, hp: Math.min(p.maxHp, p.hp + Math.round(p.maxHp * REST_HEAL_FRAC)) }));
-  }, [phase, player, gold]);
+    const nextHp = Math.min(activeMaxHp, playerHp + Math.round(activeMaxHp * REST_HEAL_FRAC));
+    setPlayerHp(nextHp);
+    setParty(prev => prev.map((m, i) => i === activeIndex ? { ...m, hp: nextHp } : m));
+  }, [phase, playerHp, activeMaxHp, gold, activeIndex]);
 
-  // 매 층 상점 — PP 회복 물약(구매 시 보유 액티브 아이템으로 추가, 전투 중 쓰면 모든 기술 PP 회복)
+  // 매 층 상점 — PP 회복 물약(구매 시 보유 액티브 아이템으로 추가, 전투 중 쓰면 파티 전원의 기술 PP 회복)
   const buyPpPotion = useCallback(() => {
     if (phase !== "shop" || gold < PP_POTION_COST) return;
     setGold(g => g - PP_POTION_COST);
@@ -355,18 +428,22 @@ export function useGameRun(params: { pool: any[]; deck: DeckItem[]; setDeck: (fn
 
   const start = useCallback(() => {
     if (pool.length < 2) return;
+    const newParty = buildParty(deck);
     const newEnemy = enemyForFloor(pool, 0, "battle");
+    setParty(newParty);
+    setActiveIndex(0);
     setEnemy(newEnemy);
-    setSkillPp(skillDefs.map(def => ({ skillId: def.id, pp: def.maxPP })));
+    setSkillPp(newParty.flatMap(m => monsterSkills(m.stats).map(def => ({ ownerId: m.instanceId, skillId: def.id, pp: def.maxPP }))));
     setBattleMenu("action");
     setOwnedItems([]); setItemChoices(null);
     setGold(0); setRoundNum(0); setEncounter("battle"); setRestHealed(false); setNewBest(false);
     setLastResult(null); setDropped(false); setDropPrompt(false); setSaveFail(null); setPackOpening(false); setAcquired([]);
-    setPlayer({ hp: maxHp, maxHp, block: 0 });
-    prevMaxHpRef.current = maxHp;
-    setLog([{ id: "l0", kind: "system", text: `🐉 ${newEnemy.item?.name ?? "적"} 등장! (HP ${newEnemy.maxHp})` }]);
+    const startMaxHp = newParty[0].maxHp + effectiveStats.vit * VIT_HP_MULTIPLIER;
+    setPlayerHp(startMaxHp); setPlayerBlock(0);
+    prevBonusRef.current = effectiveStats.vit * VIT_HP_MULTIPLIER;
+    setLog([{ id: "l0", kind: "system", text: `🐉 ${newEnemy.item?.name ?? "적"} 등장! (파티: ${newParty.map(m => m.name).join(" · ")})` }]);
     setPhase("battling");
-  }, [pool, skillDefs, maxHp]);
+  }, [pool, deck, effectiveStats.vit]);
 
   useEffect(() => { if (!started.current && pool.length >= 2 && characterLoaded) { started.current = true; start(); } }, [pool, characterLoaded, start]);
 
@@ -377,21 +454,22 @@ export function useGameRun(params: { pool: any[]; deck: DeckItem[]; setDeck: (fn
     if (phase === "over") { try { localStorage.removeItem(RUN_KEY); } catch { } return; }
     const saved: SavedRun = {
       phase, roundNum, encounter, restHealed, gold, newBest,
-      ownedItems, itemChoices, activeBoost, player, enemy, skillPp, battleMenu,
+      ownedItems, itemChoices, activeBoost, party, activeIndex, playerHp, playerBlock, enemy, skillPp, battleMenu,
       log, lastResult, acquired,
     };
     try { localStorage.setItem(RUN_KEY, JSON.stringify(saved)); } catch { }
-  }, [phase, roundNum, encounter, restHealed, gold, newBest, ownedItems, itemChoices, activeBoost, player, enemy, skillPp, battleMenu, log, lastResult, acquired]);
+  }, [phase, roundNum, encounter, restHealed, gold, newBest, ownedItems, itemChoices, activeBoost, party, activeIndex, playerHp, playerBlock, enemy, skillPp, battleMenu, log, lastResult, acquired]);
 
   const acquirePct = enemy ? Math.round(Math.min(0.95, acquireChance(enemy.item, roundNum + 1) * (activeBoost?.mult ?? 1)) * 100) : 0;
+  const forcedSwitch = playerHp <= 0; // battleMenu==="party"일 때만 의미 있음(그 외엔 항상 false)
 
   return {
     phase, roundNum, encounter, restHealed, gold, best, newBest,
-    ownedItems, ownedDefs, itemChoices, passive, maxHp, unlockedLegendItems, activeBoost,
-    player, enemy, skills, battleMenu, log,
+    ownedItems, ownedDefs, itemChoices, passive, unlockedLegendItems, activeBoost,
+    player, enemy, party, activeIndex, forcedSwitch, skills, battleMenu, log,
     lastResult, dropped, dropPrompt, saveFail, packOpening, acquired, acquirePct,
     character, effectiveStats, lastPlayerRoll, lastEnemyRoll,
-    start, useSkill, useOwnedActiveItem, selectBattleAction, backToActionMenu, nextRound, proceedFromEvent, proceedFromShop, cashOut,
+    start, useSkill, useOwnedActiveItem, switchMember, selectBattleAction, backToActionMenu, nextRound, proceedFromEvent, proceedFromShop, cashOut,
     buyMerchantHeal, buyPpPotion, buyBoost, pickItem, skipItem,
   };
 }
