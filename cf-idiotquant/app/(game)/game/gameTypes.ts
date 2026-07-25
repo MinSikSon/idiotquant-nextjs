@@ -44,7 +44,7 @@ export interface SkillDef {
 // 재사용하므로(공통 템플릿) PP는 반드시 (ownerId, skillId) 쌍으로 구분해야 한다.
 export interface SkillState { ownerId: string; skillId: string; pp: number }
 
-// 전투 중 하위 화면 — 매 내 턴마다 "action"(전투/파티/아이템/도망치기 선택)에서 시작해,
+// 전투 중 하위 화면 — 매 내 턴마다 "action"(전투/파티/아이템 선택)에서 시작해,
 // "전투"를 고르면 "skills"(기술 목록), "파티"를 고르면 "party"(몬스터 교체),
 // "아이템"을 고르면 "items"(보유 아이템 사용)로 전환.
 export type BattleMenu = "action" | "skills" | "items" | "party";
@@ -58,10 +58,10 @@ export interface PartyMember {
   name: string;
   tone: string; // computeValueScore(item).tone — 파티 화면 배지 색상용
   sectorType: string | null; // sectorTypes.sectorType(item) — 무속성이면 null
-  stats: CardStats; // 카드 자체 base(육성 성장 미반영) — combatEngine.growthStats로 xp만큼 보정해서 씀
+  stats: CardStats; // 카드 자체 base(레벨 성장 미반영) — combatEngine.growthStats로 xp만큼 보정해서 씀
   hp: number;
-  maxHp: number; // 카드 자체 base maxHp(육성/트레이너 보너스 미반영) — 화면 표시는 파생값을 씀
-  xp: number; // 이번 런에서 이 몬스터가 쌓은 성장 경험치(런 종료 시 리셋) — combatEngine.stageForXp로 단계 산출
+  maxHp: number; // 카드 자체 base maxHp(레벨/트레이너 보너스 미반영) — 화면 표시는 파생값을 씀
+  xp: number; // 이번 런에서 이 몬스터가 쌓은 경험치(런 종료 시 리셋) — combatEngine.levelForXp로 레벨 산출
 }
 
 export type ItemKind = "passive" | "active";
@@ -74,11 +74,33 @@ export interface ItemDef {
   isLegend?: boolean;
   achievementId?: string; // 전설급 아이템 해금 조건(업적 id)
   tier?: 1 | 2 | 3; // 스탯 부스트 아이템 등급(lv2=lv1×2, lv3=lv1×4) — 없으면 티어 배지 미표시
+  isRelic?: boolean; // 유물(주사위 커스텀류) — 3층마다 뜨는 일반 아이템 풀엔 안 섞이고, 보스
+                      // 처치 시에만 랜덤으로 하나 자동 지급됨(RELIC_POOL 참고)
   effect: PassiveEffect | ActiveEffect;
 }
 
 // 보유 아이템 인스턴스 — 액티브는 소모되면 목록에서 제거됨
 export interface OwnedItem { instanceId: string; defId: string }
+
+// 떠돌이 상인(매 층 상점) 오퍼 — 무료 3종 + 유료 3종 중 하나만 골라서 가져갈 수 있다(중복
+// 선택 불가). heal/ppFill은 대상 종목(+ppFill은 대상 기술)을 골라 즉시 적용되고, buffAtk/
+// buffDef/buffXp는 대상 없이 즉시 활성화돼 다음 전투부터 turns턴 동안 파티 전체에 적용된다.
+export type MerchantEffect =
+  | { kind: "heal"; pct: number }   // 대상 종목 HP를 최대치의 pct(0~1)만큼 회복
+  | { kind: "ppFill" }              // 대상 종목의 기술 하나를 PP 최대치로
+  | { kind: "buffAtk"; turns: number; mult: number }
+  | { kind: "buffDef"; turns: number; mult: number }
+  | { kind: "buffXp"; turns: number; mult: number };
+export interface MerchantOfferDef {
+  id: string; name: string; desc: string; icon: string;
+  cost: number; // 0이면 무료
+  effect: MerchantEffect;
+}
+
+// 상인에게서 얻은 공격력/방어력/경험치 배율 버프 — 다음 전투부터 시작해 내 턴(기술 사용·아이템
+// 사용·자발적 교체)마다 하나씩 소모되며, 0이 되면 사라진다.
+export interface ActiveBuff { turnsLeft: number; mult: number }
+export interface ActiveBuffs { atk?: ActiveBuff; def?: ActiveBuff; xp?: ActiveBuff }
 
 export interface EnemyState {
   item: any;
@@ -88,6 +110,7 @@ export interface EnemyState {
   maxHp: number;
   nextAttack: number; // 주사위 굴림의 base — 실제 피해는 0~nextAttack 범위에서 결정됨
   encounter: EnemyEncounter; // 정예/보스 상시 표시용
+  level: number; // winXpFor의 상대 경험치 계산용(층수 + 보스/정예 배율로 산출)
 }
 
 export interface PlayerState {
@@ -96,15 +119,9 @@ export interface PlayerState {
   block: number;
 }
 
-// 캐릭터(계정에 영구 저장) — 던전 런과 무관하게 유지되는 레벨/능력치.
+// 힘/민첩/행운/체력 — 이번 런에서 주운 아이템·유물이 주는 보너스 합계(useGameRun.effectiveStats).
+// 캐릭터(트레이너) 시스템은 제거됐고, 종목별 레벨(PartyMember.xp)이 그 성장 역할을 대신한다.
 export interface CharacterStats { str: number; dex: number; luk: number; vit: number }
-export type CharClass = "warrior"; // 현재는 전사만 선택 가능 — 다른 직업 추가 시 유니온만 확장
-export interface CharacterState {
-  classId: CharClass;
-  level: number; // 1~99
-  xp: number;    // 다음 레벨까지 진행도(레벨업 시 초과분 이월, 누적 총량 아님)
-  stats: CharacterStats;
-}
 
 // 주사위 굴림 — 카드 공격/적 공격 판정 결과.
 export interface AttackRollOptions {

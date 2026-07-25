@@ -4,7 +4,9 @@
 // 가치투자 덱빌더 — 손패·코스트 기반 다중 턴 전투 던전 크롤 게임(프로토타입).
 // 4개 재무지표(ROE→공격력·NCAV→방어력·PBR→코스트·PER→환급) → 카드 전투 스탯(1~10).
 // 공격력은 20면체 주사위(D&D 스타일)로 굴려 0~N 범위에서 실제 피해가 정해짐(자연 20=크리티컬).
-// 캐릭터(전사, 계정 영구 저장)는 힘/민첩/행운/체력 4스탯 + 레벨을 갖고, 공격/처치마다 경험치 획득.
+// 캐릭터(트레이너) 시스템은 없음 — 종목(몬스터)마다 이번 런 한정 레벨(경험치 100당 1레벨)을 갖고,
+// 공격/처치마다 경험치를 얻어 스탯이 오르고 필살기를 해금한다. 힘/민첩/행운은 아이템·유물(보스
+// 처치 시 랜덤 획득, 주사위 굴림 커스텀)로만 얻는다.
 // 보유 컬렉션(계정 덱) 전체가 곧 전투 덱 — 손패에서 카드를 전장(Phaser 캔버스)으로 드래그해
 // 발동, 코스트 소진 시 "턴 종료"로 적 턴 진행(코스트는 전투 턴마다 성장, 최대 10). 3층마다
 // 패시브/액티브 아이템 획득, 10층마다 보스(같은 몬스터가 스탯 3배로 강화되어 등장).
@@ -30,13 +32,12 @@ import { getDeck, getWallet, type DeckCardSnapshot } from "@/lib/features/deck/d
 import { cn } from "@/lib/utils";
 import { HOLO_THRESHOLD, PackReveal, AchievementBadges, ACHIEVEMENTS } from "./gameCollectibles";
 import { WalletChip, ConvertButton, ShopPanel, BOOST_ITEMS } from "./gameShop";
-import { useGameRun, deckTotal, type DeckItem, MERCHANT_HEAL_COST } from "./useGameRun";
-import { PP_POTION_COST, PARTY_SIZE } from "./gameData";
-import { cardStats } from "./combatEngine";
+import { useGameRun, deckTotal, type DeckItem } from "./useGameRun";
+import { PARTY_SIZE } from "./gameData";
+import { cardStats, levelForXp, LEVEL_XP } from "./combatEngine";
 import { sectorType } from "./sectorTypes";
-import type { PartyMember } from "./gameTypes";
+import type { PartyMember, MerchantOfferDef, ActiveBuffs, ActiveBuff } from "./gameTypes";
 import { EnemyIntentBadge, ItemBar, StatTile } from "@/components/game/CombatHud";
-import CharacterCard from "@/components/game/CharacterCard";
 import { DiceRow } from "@/components/game/DiceRow";
 
 const PhaserCombatCanvas = dynamic(() => import("@/components/game/PhaserCombatCanvas"), { ssr: false });
@@ -489,6 +490,49 @@ function FloorGraph({ nodes }: { nodes: FloorNode[] }) {
   );
 }
 
+// 하단 상시 패널 — 예전엔 캐릭터(트레이너) Lv/XP를 보여줬지만, 캐릭터 시스템이 사라지고 그
+// 성장 역할을 종목별 레벨이 대신하므로 지금 나와있는 몬스터의 이름/Lv/이번 레벨 진행도를 같은
+// 자리에 같은 모양으로 보여준다.
+function ActiveMonsterCard({ member }: { member: PartyMember | null }) {
+  if (!member) return null;
+  const level = levelForXp(member.xp);
+  const intoLevel = member.xp % LEVEL_XP;
+  const xpPct = Math.max(0, Math.min(100, (intoLevel / LEVEL_XP) * 100));
+  return (
+    <div className="rounded-xl border border-orange-500/30 bg-orange-500/[0.06] px-2 py-1">
+      <div className="flex items-center gap-1.5">
+        <span className="shrink-0 text-[10px] font-black px-1.5 py-0.5 rounded-full text-orange-700 dark:text-orange-300">
+          {member.name} Lv.{level}
+        </span>
+        <div className="flex-1 min-w-0 h-1.5 rounded-full bg-black/10 dark:bg-white/10 overflow-hidden" title={`XP ${intoLevel}/${LEVEL_XP}`}>
+          <div className="h-full bg-violet-500" style={{ width: `${xpPct}%` }} />
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// 상인에게서 얻은 공격력/방어력/경험치 버프 — 남은 턴이 있는 동안만 아이콘+배율+턴수로 표시.
+// 아무 버프도 없으면 렌더링 자체를 생략(공간 차지 안 함).
+function ActiveBuffsRow({ buffs }: { buffs: ActiveBuffs }) {
+  const entries: { key: string; icon: string; label: string; buff: ActiveBuff }[] = [
+    ...(buffs.atk ? [{ key: "atk", icon: "💢", label: "공격력", buff: buffs.atk }] : []),
+    ...(buffs.def ? [{ key: "def", icon: "🛡️", label: "방어력", buff: buffs.def }] : []),
+    ...(buffs.xp ? [{ key: "xp", icon: "📈", label: "경험치", buff: buffs.xp }] : []),
+  ];
+  if (entries.length === 0) return null;
+  return (
+    <div className="flex items-center gap-1 flex-wrap">
+      {entries.map(({ key, icon, label, buff }) => (
+        <span key={key} title={`${label} ×${buff.mult}`}
+          className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-full text-[9px] font-black border border-violet-500/30 bg-violet-500/10 text-violet-600 dark:text-violet-400">
+          {icon} ×{buff.mult} · {buff.turnsLeft}턴
+        </span>
+      ))}
+    </div>
+  );
+}
+
 // 상단 HUD의 파티 요약 — 파티원을 작은 원으로, 지금 나와있는 몬스터는 링으로 강조하고
 // 기절한 몬스터는 흐리게. 탭하면 바로 교체되진 않음(정보 표시 전용 — 실제 교체는 행동
 // 메뉴의 "파티"에서).
@@ -626,7 +670,7 @@ function GameContent() {
             </div>
           ) : (
             <div className={cn("w-full", run.phase === "over" ? "flex flex-col sm:flex-1 sm:min-h-0" : "flex flex-col flex-1 min-h-0")}>
-              {/* 상단 HUD — 던전 층수 + 적 정보만(내 캐릭터 관련 정보는 전부 하단 패널로 이동).
+              {/* 상단 HUD — 던전 층수 + 적 정보만(활성 몬스터 Lv/XP 등은 전부 하단 패널로 이동).
                   파티 설정 화면은 아직 던전에 들어간 게 아니라 층수/적 정보가 의미 없어 제외. */}
               {run.phase !== "over" && run.phase !== "partySetup" && (
                 <div className="shrink-0 mb-1 sm:mb-2 space-y-1">
@@ -679,38 +723,39 @@ function GameContent() {
                       <HandView mode="action" onSelectAction={run.selectBattleAction} message={latestLogText}
                         topLeftOverlay={<DiceRow label="적" roll={run.lastEnemyRoll} isPlayer={false} />}
                         bottomRightOverlay={<DiceRow label="나" roll={run.lastPlayerRoll} isPlayer compact />} pending={run.pending} onAdvance={run.advance}>
-                        <PhaserCombatCanvas enemy={run.enemy} player={run.player} playerName={activeMonsterName} introLabel={introLabel} stage={run.activeStage} />
+                        <PhaserCombatCanvas enemy={run.enemy} player={run.player} playerName={activeMonsterName} introLabel={introLabel} level={run.activeLevel} />
                       </HandView>
                     ) : run.battleMenu === "skills" ? (
                       <HandView mode="skills" skills={run.skills} onPlaySkill={run.useSkill} onBack={run.backToActionMenu} message={latestLogText}
                         topLeftOverlay={<DiceRow label="적" roll={run.lastEnemyRoll} isPlayer={false} />}
                         bottomRightOverlay={<DiceRow label="나" roll={run.lastPlayerRoll} isPlayer compact />} pending={run.pending} onAdvance={run.advance}>
-                        <PhaserCombatCanvas enemy={run.enemy} player={run.player} playerName={activeMonsterName} introLabel={introLabel} stage={run.activeStage} />
+                        <PhaserCombatCanvas enemy={run.enemy} player={run.player} playerName={activeMonsterName} introLabel={introLabel} level={run.activeLevel} />
                       </HandView>
                     ) : run.battleMenu === "items" ? (
                       <HandView mode="items" ownedItems={run.ownedItems} ownedDefs={run.ownedDefs} onUseItem={run.useOwnedActiveItem} onBack={run.backToActionMenu} message={latestLogText}
                         topLeftOverlay={<DiceRow label="적" roll={run.lastEnemyRoll} isPlayer={false} />}
                         bottomRightOverlay={<DiceRow label="나" roll={run.lastPlayerRoll} isPlayer compact />} pending={run.pending} onAdvance={run.advance}>
-                        <PhaserCombatCanvas enemy={run.enemy} player={run.player} playerName={activeMonsterName} introLabel={introLabel} stage={run.activeStage} />
+                        <PhaserCombatCanvas enemy={run.enemy} player={run.player} playerName={activeMonsterName} introLabel={introLabel} level={run.activeLevel} />
                       </HandView>
                     ) : (
                       <HandView mode="party" party={run.party} activeIndex={run.activeIndex} forced={run.forcedSwitch} onSwitchMember={run.switchMember} onBack={run.backToActionMenu} message={latestLogText}
                         topLeftOverlay={<DiceRow label="적" roll={run.lastEnemyRoll} isPlayer={false} />}
                         bottomRightOverlay={<DiceRow label="나" roll={run.lastPlayerRoll} isPlayer compact />} pending={run.pending} onAdvance={run.advance}>
-                        <PhaserCombatCanvas enemy={run.enemy} player={run.player} playerName={activeMonsterName} introLabel={introLabel} stage={run.activeStage} />
+                        <PhaserCombatCanvas enemy={run.enemy} player={run.player} playerName={activeMonsterName} introLabel={introLabel} level={run.activeLevel} />
                       </HandView>
                     )}
                   </div>
                 </div>
               ) : null}
 
-              {/* 하단 — 내 캐릭터 정보(상시 노출, 구 "용사 상태창" 모달 대체). HP는 이제 포켓몬식
-                  캔버스(대각선 배치)에 표시되므로 여기선 제외 — 항목 수는 phase에만 의존(전투
-                  중 실시간으로는 안 바뀜)이라 그리드 칸 수가 흔들릴 일은 없음. 파티 설정 화면은
-                  카드 목록이 스크롤 공간을 다 써야 해서 제외. */}
+              {/* 하단 — 활성 몬스터 Lv/XP(상시 노출, 구 "용사 상태창" 모달 대체). HP는 이제
+                  포켓몬식 캔버스(대각선 배치)에 표시되므로 여기선 제외 — 항목 수는 phase에만
+                  의존(전투 중 실시간으로는 안 바뀜)이라 그리드 칸 수가 흔들릴 일은 없음. 파티
+                  설정 화면은 카드 목록이 스크롤 공간을 다 써야 해서 제외. */}
               {run.phase !== "over" && run.phase !== "partySetup" && (
                 <div className="shrink-0 mt-1.5 space-y-1">
-                  <CharacterCard character={run.character} effectiveStats={run.effectiveStats} />
+                  <ActiveMonsterCard member={run.party[run.activeIndex] ?? null} />
+                  <ActiveBuffsRow buffs={run.activeBuffs} />
                   <div className={cn("grid gap-1.5", run.phase === "battling" ? "grid-cols-4" : "grid-cols-2")}>
                     <StatTile icon={<Trophy size={11} strokeWidth={2.5} />} label="최고층수" value={run.best} />
                     <StatTile icon="💰" label="골드" value={run.gold} />
@@ -744,15 +789,15 @@ function GameContent() {
             <div className="space-y-3">
               {[
                 { icon: "🧩", text: <>던전 입장 전 <b className="text-neutral-800 dark:text-neutral-100">내 덱</b>에서 최대 {PARTY_SIZE}장을 직접 골라 <b className="text-neutral-800 dark:text-neutral-100">파티</b>를 꾸려요(저평가 점수가 낮은 카드 {PARTY_SIZE}장이 기본 선택돼 있어요, 부족하면 기본 몬스터로 채워짐). 카드의 ROE·NCAV가 그대로 몬스터의 공격력·방어력이 돼요.</> },
-                { icon: "🗡️", text: <>매 턴 <b className="text-neutral-800 dark:text-neutral-100">전투/파티/아이템/도망치기</b> 중 행동을 골라요. <b className="text-neutral-800 dark:text-neutral-100">전투</b>를 고르면 지금 앞에 나온 몬스터의 기술 4개(약공격·강공격·방어·회복)가 나와요.</> },
+                { icon: "🗡️", text: <>매 턴 <b className="text-neutral-800 dark:text-neutral-100">전투/파티/아이템/도망치기</b> 중 행동을 골라요. <b className="text-neutral-800 dark:text-neutral-100">전투</b>를 고르면 지금 앞에 나온 몬스터의 기술 4개(약공격·강공격·방어·회복)가 나와요. <b className="text-neutral-800 dark:text-neutral-100">도망치기</b>는 주사위를 굴려 성공하면 이번 층을 포기하고 상점으로, 실패하면 턴을 소모해 적의 반격을 받아요.</> },
                 { icon: "🎲", text: <>공격 기술은 <b className="text-neutral-800 dark:text-neutral-100">0~N 범위</b>로 20면체 주사위를 굴려 피해가 정해지고, 자연 20이면 <b className="text-amber-500 dark:text-amber-400">크리티컬</b>(최대 피해의 2배)! 방어는 블록을, 회복은 HP를 고정치만큼 즉시 채워요.</> },
                 { icon: "⚡", text: <>카드마다 업종이 있고 업종끼리 상성이 있어요 — 상성에서 <b className="text-emerald-600 dark:text-emerald-400">이기면 피해가 1.5배</b>, <b className="text-rose-500">지면 2/3배</b>로 줄어요.</> },
-                { icon: "🐣", text: <>몬스터는 전투에서 공격하거나 층을 클리어할 때마다 경험치를 얻어 <b className="text-neutral-800 dark:text-neutral-100">유아기 → 청년기 → 성인</b>으로 성장해요(이번 던전 한정, 나가면 리셋). 성장할수록 스탯이 오르고 실루엣도 커지며, 성인이 되면 "약공격"이 훨씬 강한 <b className="text-violet-600 dark:text-violet-400">필살기</b>로 진화해요.</> },
-                { icon: "💊", text: <>기술마다 정해진 PP가 있고 쓸 때마다 1씩 줄어요 — <b className="text-neutral-800 dark:text-neutral-100">던전을 도는 내내 유지</b>되며(전투를 이겨도 안 채워짐) 상점의 PP 회복 물약으로만 채울 수 있어요.</> },
+                { icon: "🐣", text: <>몬스터는 전투에서 공격하거나 층을 클리어할 때마다 경험치를 얻어 <b className="text-neutral-800 dark:text-neutral-100">레벨업</b>해요(이번 던전 한정, 나가면 리셋 — 레벨업마다 경험치 100 필요). 비슷한 레벨의 적을 이기면 적당히, 더 강한 적을 이기면 더 많이 얻어요. 레벨이 오를수록 스탯이 오르고 실루엣도 커지며, <b className="text-neutral-800 dark:text-neutral-100">Lv.5</b>부터는 "약공격"이 훨씬 강한 <b className="text-violet-600 dark:text-violet-400">필살기</b>로 진화해요. 배틀이 끝나고 레벨업한 종목이 있으면 결과 화면에 표시돼요.</> },
+                { icon: "💊", text: <>기술마다 정해진 PP가 있고 쓸 때마다 1씩 줄어요 — <b className="text-neutral-800 dark:text-neutral-100">던전을 도는 내내 유지</b>되며(전투를 이겨도 안 채워짐) 상점의 PP 회복 물약을 사면 파티 전원의 PP가 즉시 가득 차요.</> },
                 { icon: "🔄", text: <><b className="text-neutral-800 dark:text-neutral-100">파티</b>에서 다른 몬스터로 교체할 수 있어요(교체도 턴을 소모해 적의 공격을 받아요). 몬스터가 쓰러지면 강제로 다음 몬스터를 골라야 하고, 파티 전원이 쓰러지면 던전이 끝나요.</> },
-                { icon: "🚪", text: <><b className="text-neutral-800 dark:text-neutral-100">도망치기</b>는 이번 층을 포기하고 바로 상점으로 가요. 지금까지 성과를 저장하고 던전에서 나가고 싶으면 상단의 🚪 버튼을 눌러요.</> },
-                { icon: "🛒", text: <>층을 클리어할 때마다 <b className="text-neutral-800 dark:text-neutral-100">상점</b>에 들러 ❤️HP 회복 물약과 💊PP 회복 물약을 살 수 있어요.</> },
-                { icon: "🎒", text: <>3층마다 <b className="text-neutral-800 dark:text-neutral-100">패시브/액티브 아이템</b>을 하나 고를 수 있어요. 힘·민첩·행운·체력 스탯 아이템은 지금 나와있는 몬스터든 교체한 몬스터든 공통으로 적용돼요. <b className="text-violet-600 dark:text-violet-400">10층마다는 보스</b>(같은 몬스터가 스탯 3배로 강화돼 등장)예요.</> },
+                { icon: "🚪", text: <>지금까지 성과를 저장하고 던전에서 나가고 싶으면 상단의 🚪 버튼을 눌러요.</> },
+                { icon: "🛒", text: <>층을 클리어할 때마다 <b className="text-neutral-800 dark:text-neutral-100">상점</b>에 들러 ❤️HP 회복 물약과 💊PP 회복 물약을 살 수 있어요(둘 다 사는 즉시 적용). 상점에서는 파티 전원의 HP를 한눈에 볼 수 있고, 아이템 효과로 늘어난 최대 HP도 따로 표시돼요.</> },
+                { icon: "🎒", text: <>3층마다 <b className="text-neutral-800 dark:text-neutral-100">패시브/액티브 아이템</b>을 하나 고를 수 있어요. 체력 스탯 아이템은 지금 나와있는 몬스터든 교체한 몬스터든 공통으로 적용돼요. <b className="text-violet-600 dark:text-violet-400">10층마다는 보스</b>(같은 몬스터가 스탯 3배로 강화돼 등장)가 나오고, 처치하면 힘·민첩·행운 등 <b className="text-violet-600 dark:text-violet-400">주사위 굴림을 커스텀하는 유물</b>을 하나 랜덤으로 자동 획득해요.</> },
               ].map((row, i) => (
                 <div key={i} className="flex items-start gap-2.5">
                   <span aria-hidden className="shrink-0 text-lg leading-none">{row.icon}</span>
@@ -883,6 +928,11 @@ function ResolvedScreen({ run }: { run: ReturnType<typeof useGameRun> }) {
           <span aria-hidden className="text-4xl">🏆</span>
           <p className="text-lg font-black text-[#16a34a]">층 클리어!</p>
           {!!run.lastResult?.goldGain && <p className="text-xs font-bold text-amber-600 dark:text-amber-400">💰 +{run.lastResult.goldGain} 골드</p>}
+          {run.levelUps.length > 0 && (
+            <div className="text-[11px] font-bold text-violet-600 dark:text-violet-400 space-y-0.5">
+              {run.levelUps.map(l => <p key={l.instanceId}>🎉 {l.name} Lv.{l.from} → Lv.{l.to}</p>)}
+            </div>
+          )}
           {run.dropped && <p className="text-[11px] font-bold text-amber-600 dark:text-amber-400 flex items-center gap-1"><Sparkles size={12} /> 카드 획득! 내 덱에 추가됨</p>}
           {run.dropPrompt && <p className="text-[11px] font-bold text-[#16a34a] flex items-center gap-1"><Lock size={11} /> 카드가 나왔어요! 로그인하면 덱에 담을 수 있어요</p>}
           {run.saveFail && <p className="text-[10px] font-bold text-rose-500">덱 저장 실패 — {run.saveFail}</p>}
@@ -919,30 +969,173 @@ function EventScreen({ run }: { run: ReturnType<typeof useGameRun> }) {
   );
 }
 
-// 매 층 상점 — 조우 종류와 무관하게 층 클리어/휴식 후 항상 거쳐가는 화면. HP 회복 물약(즉시
-// 회복)과 PP 회복 물약(구매 시 보유 아이템으로 추가, 전투 중 쓰면 모든 기술 PP 회복)을 판매.
-function ShopScreen({ run }: { run: ReturnType<typeof useGameRun> }) {
+// 상점의 파티 로스터 — 보유한 종목(몬스터) 전원의 HP를 한눈에. onPick이 있으면 대상 선택
+// 모드(기절한 몬스터는 고를 수 없음). healFlash는 방금 회복된 몬스터 줄에 잠깐 "+N"을 보여준다.
+function ShopPartyRoster({ party, activeIndex, healFlash, onPick }: {
+  party: PartyMember[]; activeIndex: number; healFlash: { instanceId: string; amount: number } | null;
+  onPick?: (instanceId: string) => void;
+}) {
   return (
-    <div className="flex-1 min-h-0 flex flex-col items-center justify-center gap-3 text-center px-4">
+    <div className="flex flex-col gap-1 w-full">
+      {party.map((m, i) => {
+        const fainted = m.hp <= 0;
+        const pct = m.maxHp > 0 ? Math.max(0, Math.min(100, (m.hp / m.maxHp) * 100)) : 0;
+        const pickable = !!onPick && !fainted;
+        return (
+          <button key={m.instanceId} type="button" disabled={!pickable} onClick={() => onPick?.(m.instanceId)}
+            className={cn("flex items-center gap-1.5 px-2 py-1 rounded-lg border w-full text-left",
+              pickable ? "active:scale-[0.98] transition-transform" : "cursor-default",
+              i === activeIndex ? "border-rose-500/40 bg-rose-500/5" : "border-black/5 dark:border-white/10 bg-white/60 dark:bg-white/[0.04]")}>
+            <span className="w-1.5 h-1.5 rounded-full shrink-0" style={{ background: TIER[m.tone]?.glow }} />
+            <span className="text-[10px] font-bold text-neutral-700 dark:text-neutral-200 truncate w-12 shrink-0 text-left">{m.name}</span>
+            <div className="relative flex-1 h-2 rounded-full bg-black/10 dark:bg-white/10 overflow-hidden">
+              <div className={cn("h-full rounded-full transition-all", fainted ? "bg-neutral-400" : pct > 50 ? "bg-[#16a34a]" : pct > 20 ? "bg-amber-500" : "bg-rose-500")} style={{ width: `${pct}%` }} />
+            </div>
+            <span className="text-[9px] font-black tabular-nums text-neutral-500 dark:text-neutral-400 shrink-0 w-11 text-right">
+              {fainted ? "기절" : `${m.hp}/${m.maxHp}`}
+            </span>
+            {healFlash?.instanceId === m.instanceId && (
+              <span aria-hidden className="text-[9px] font-black text-emerald-500 shrink-0 animate-in fade-in slide-in-from-bottom-1">+{healFlash.amount}</span>
+            )}
+          </button>
+        );
+      })}
+    </div>
+  );
+}
+
+// 상인 오퍼 카드 — 무료/유료 구분 색상, 골드가 부족하면(유료만 해당) 비활성화.
+function MerchantOfferCard({ offer, gold, onPick }: { offer: MerchantOfferDef; gold: number; onPick: () => void }) {
+  const disabled = offer.cost > 0 && gold < offer.cost;
+  return (
+    <button type="button" onClick={onPick} disabled={disabled}
+      className={cn("w-full flex items-center gap-2 px-3 py-2 rounded-xl border text-left transition-all active:scale-[0.98]",
+        offer.cost > 0 ? "border-amber-500/30 bg-amber-500/10 hover:bg-amber-500/15" : "border-emerald-500/30 bg-emerald-500/10 hover:bg-emerald-500/15",
+        disabled && "opacity-40 cursor-not-allowed")}>
+      <span aria-hidden className="text-lg leading-none shrink-0">{offer.icon}</span>
+      <div className="flex-1 min-w-0">
+        <p className="text-xs font-bold text-neutral-800 dark:text-neutral-100">{offer.name}</p>
+        <p className="text-[9px] text-neutral-400 truncate">{offer.desc}</p>
+      </div>
+      <span className={cn("text-[10px] font-black shrink-0", offer.cost > 0 ? "text-amber-600 dark:text-amber-400" : "text-emerald-600 dark:text-emerald-400")}>
+        {offer.cost > 0 ? `💰${offer.cost}` : "무료"}
+      </span>
+    </button>
+  );
+}
+
+// 매 층 상점 — 조우 종류와 무관하게 층 클리어/휴식 후 항상 거쳐가는 화면. 떠돌이 상인이 무료
+// 3종 + 유료 3종, 총 6종을 제시하고 그중 딱 하나만 가져갈 수 있다(중복 선택 불가 — 하나
+// 고르면 run.merchantOffers가 null이 되어 나머지는 더 이상 못 고름). heal/ppFill은 대상
+// 종목(+ppFill은 대상 기술)을 고르는 단계가 하나(또는 둘) 더 필요하고, 버프류는 대상 없이
+// 바로 적용된다.
+function ShopScreen({ run }: { run: ReturnType<typeof useGameRun> }) {
+  const [pickingOffer, setPickingOffer] = useState<MerchantOfferDef | null>(null);
+  const [pickingSkillFor, setPickingSkillFor] = useState<string | null>(null);
+  const [healFlash, setHealFlash] = useState<{ instanceId: string; amount: number } | null>(null);
+
+  // heal 오퍼가 실제로 적용된 뒤(applyMerchantOffer는 void라 회복량을 직접 안 넘겨줌) party의
+  // hp 변화를 관찰해서 그 몬스터 줄에 "+N"을 띄운다 — 수식을 이 화면에서 다시 계산하지 않아
+  // 로직 중복이 없다.
+  const prevPartyHpRef = useRef<Record<string, number>>({});
+  useEffect(() => {
+    for (const m of run.party) {
+      const prev = prevPartyHpRef.current[m.instanceId];
+      if (prev !== undefined && m.hp > prev) {
+        setHealFlash({ instanceId: m.instanceId, amount: m.hp - prev });
+        setTimeout(() => setHealFlash(null), 1400);
+      }
+    }
+    prevPartyHpRef.current = Object.fromEntries(run.party.map(m => [m.instanceId, m.hp]));
+  }, [run.party]);
+
+  const pickTarget = (instanceId: string) => {
+    if (!pickingOffer) return;
+    if (pickingOffer.effect.kind === "ppFill") { setPickingSkillFor(instanceId); return; }
+    if (pickingOffer.effect.kind === "heal") run.applyMerchantOffer(pickingOffer.id, instanceId);
+    setPickingOffer(null);
+  };
+  const pickSkill = (skillId: string) => {
+    if (!pickingOffer || !pickingSkillFor) return;
+    run.applyMerchantOffer(pickingOffer.id, pickingSkillFor, skillId);
+    setPickingOffer(null); setPickingSkillFor(null);
+  };
+  const pickOffer = (offer: MerchantOfferDef) => {
+    if (offer.effect.kind === "heal" || offer.effect.kind === "ppFill") setPickingOffer(offer);
+    else run.applyMerchantOffer(offer.id);
+  };
+
+  const offers = run.merchantOffers;
+  const freeOffers = offers?.filter(o => o.cost === 0) ?? [];
+  const paidOffers = offers?.filter(o => o.cost > 0) ?? [];
+
+  return (
+    <div className="flex-1 min-h-0 flex flex-col items-center justify-center gap-3 text-center px-4 overflow-y-auto py-2">
       <span aria-hidden className="text-5xl">🛒</span>
       <p className="text-lg font-black text-neutral-900 dark:text-white">떠돌이 상인</p>
-      <p className="text-xs text-neutral-400 max-w-[240px] break-keep">"지친 모험가로군. 골드가 있다면 상처와 기력을 손봐주지."</p>
-      <div className="flex flex-col gap-2 w-full max-w-[240px]">
-        <button type="button" onClick={run.buyMerchantHeal} disabled={run.player.hp >= run.player.maxHp || run.gold < MERCHANT_HEAL_COST}
-          className="w-full inline-flex items-center justify-between gap-2 px-4 py-2.5 rounded-xl border border-amber-500/30 bg-amber-500/10 hover:bg-amber-500/15 disabled:opacity-40 disabled:cursor-not-allowed text-left transition-all">
-          <span className="text-sm font-black text-neutral-800 dark:text-neutral-100">❤️ HP 회복</span>
-          <span className="text-xs font-bold text-amber-600 dark:text-amber-400">💰 {MERCHANT_HEAL_COST}</span>
-        </button>
-        <button type="button" onClick={run.buyPpPotion} disabled={run.gold < PP_POTION_COST}
-          className="w-full inline-flex items-center justify-between gap-2 px-4 py-2.5 rounded-xl border border-violet-500/30 bg-violet-500/10 hover:bg-violet-500/15 disabled:opacity-40 disabled:cursor-not-allowed text-left transition-all">
-          <span className="text-sm font-black text-neutral-800 dark:text-neutral-100">💊 기력 회복 물약</span>
-          <span className="text-xs font-bold text-violet-600 dark:text-violet-400">💰 {PP_POTION_COST}</span>
-        </button>
-        <button type="button" onClick={run.proceedFromShop}
-          className="w-full inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-gradient-to-r from-[#16a34a] to-[#15803d] hover:brightness-110 text-white font-black text-sm shadow-[0_6px_16px_-6px_rgba(22,163,74,0.55)] active:scale-[0.97] transition-all">
-          다음 층으로 <Swords size={14} />
-        </button>
-      </div>
+
+      {pickingSkillFor ? (
+        <>
+          <p className="text-xs text-neutral-400 max-w-[240px] break-keep">PP를 채울 기술을 골라주세요.</p>
+          <div className="flex flex-col gap-1.5 w-full max-w-[260px]">
+            {(run.skillDefsByOwner.get(pickingSkillFor) ?? []).map(def => {
+              const pp = run.skillPp.find(s => s.ownerId === pickingSkillFor && s.skillId === def.id)?.pp ?? def.maxPP;
+              return (
+                <button key={def.id} type="button" onClick={() => pickSkill(def.id)}
+                  className="w-full flex items-center justify-between px-3 py-2 rounded-xl border border-violet-500/30 bg-violet-500/10 hover:bg-violet-500/15 text-left transition-all active:scale-[0.98]">
+                  <span className="text-xs font-bold text-neutral-800 dark:text-neutral-100">{def.name}</span>
+                  <span className="text-[10px] font-black tabular-nums text-violet-600 dark:text-violet-400">PP {pp}/{def.maxPP}</span>
+                </button>
+              );
+            })}
+          </div>
+          <button type="button" onClick={() => { setPickingSkillFor(null); setPickingOffer(null); }}
+            className="text-[11px] font-bold text-neutral-400 underline underline-offset-2">취소</button>
+        </>
+      ) : pickingOffer ? (
+        <>
+          <p className="text-xs text-neutral-400 max-w-[240px] break-keep">{pickingOffer.name} — 대상 종목을 골라주세요.</p>
+          <div className="w-full max-w-[280px]">
+            <ShopPartyRoster party={run.party} activeIndex={run.activeIndex} healFlash={null} onPick={pickTarget} />
+          </div>
+          <button type="button" onClick={() => setPickingOffer(null)}
+            className="text-[11px] font-bold text-neutral-400 underline underline-offset-2">취소</button>
+        </>
+      ) : (
+        <>
+          <p className="text-xs text-neutral-400 max-w-[260px] break-keep">
+            {offers ? "\"어떤 걸 가져가겠나? 무료든 유료든, 딱 하나만이야.\"" : "\"이번엔 다 챙겼구먼. 다음 층에서 또 보세.\""}
+          </p>
+          {run.party.length > 0 && (
+            <div className="w-full max-w-[280px]">
+              <ShopPartyRoster party={run.party} activeIndex={run.activeIndex} healFlash={healFlash} />
+              {run.passiveVitBonus > 0 && (
+                <p className="text-[9px] text-neutral-400 mt-1">아이템 효과로 전원 최대 HP +{run.passiveVitBonus}</p>
+              )}
+            </div>
+          )}
+          {offers && (
+            <div className="w-full max-w-[280px] space-y-2">
+              <div>
+                <p className="text-[9px] font-bold text-neutral-400 uppercase tracking-wider mb-1 text-left">무료</p>
+                <div className="flex flex-col gap-1.5">
+                  {freeOffers.map(o => <MerchantOfferCard key={o.id} offer={o} gold={run.gold} onPick={() => pickOffer(o)} />)}
+                </div>
+              </div>
+              <div>
+                <p className="text-[9px] font-bold text-neutral-400 uppercase tracking-wider mb-1 text-left">유료</p>
+                <div className="flex flex-col gap-1.5">
+                  {paidOffers.map(o => <MerchantOfferCard key={o.id} offer={o} gold={run.gold} onPick={() => pickOffer(o)} />)}
+                </div>
+              </div>
+            </div>
+          )}
+          <button type="button" onClick={run.proceedFromShop}
+            className="w-full max-w-[240px] inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-gradient-to-r from-[#16a34a] to-[#15803d] hover:brightness-110 text-white font-black text-sm shadow-[0_6px_16px_-6px_rgba(22,163,74,0.55)] active:scale-[0.97] transition-all">
+            다음 층으로 <Swords size={14} />
+          </button>
+        </>
+      )}
     </div>
   );
 }

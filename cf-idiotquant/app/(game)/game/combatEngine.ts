@@ -31,8 +31,6 @@ export const STR_DAMAGE_DIVISOR = 10;    // 힘 10당 고정 데미지 +1
 export const VIT_HP_MULTIPLIER = 2;      // 체력 1당 최대 HP +2
 export const LUK_CRIT_PER_POINT = 0.003; // 행운 1당 추가 크리티컬 확률
 export const LUK_CRIT_CAP = 0.35;
-export const LUK_BOSS_EXTRA_PER_POINT = 0.005; // 행운 1당 보스 보상 4택 확률
-export const LUK_BOSS_EXTRA_CAP = 0.40;
 
 export function rollAttack(base: number, opts: AttackRollOptions = {}): AttackRollResult {
   const roll1 = 1 + Math.floor(Math.random() * 20);
@@ -49,9 +47,12 @@ export function rollAttack(base: number, opts: AttackRollOptions = {}): AttackRo
   return { faces, rawFace, effectiveFace, isCrit, diceDamage, strBonus, totalDamage: diceDamage + strBonus };
 }
 
-// 행운 수치에 따라 보스 처치 보상을 3택 대신 4택으로 제공할 확률.
-export function bossExtraChoiceChance(luk: number): number {
-  return Math.min(LUK_BOSS_EXTRA_CAP, luk * LUK_BOSS_EXTRA_PER_POINT);
+// 도망치기 판정 — 20면체 하나만 굴려 임계치 이상이면 성공(50%). 실패하면 턴을 소모해 적의
+// 반격을 받는다(호출부에서 applyEnemyTurn으로 이어짐).
+export const FLEE_ROLL_THRESHOLD = 11;
+export function rollFlee(): { roll: number; success: boolean } {
+  const roll = 1 + Math.floor(Math.random() * 20);
+  return { roll, success: roll >= FLEE_ROLL_THRESHOLD };
 }
 
 // 2개 재무 지표(sub, 0~1 clamp01된 정규화 점수 — computeValueScore가 이미 계산)를 전투 스탯
@@ -90,7 +91,8 @@ export function aggregatePassive(ownedDefs: ItemDef[]): Required<PassiveEffect> 
 }
 
 // 적 = 실제 종목 카드에서 뽑되, 보스/정예는 강한 등급 풀 우선. HP는 층수 비례 + 카드 자체의 등급
-// 상관 스탯(shield) + 보스/정예 배율.
+// 상관 스탯(shield) + 보스/정예 배율. level은 winXpFor의 상대 경험치 계산용 — 층수에 보스/정예
+// 배율(HP와 동일한 mult)을 반영해 강한 적일수록 "레벨"도 높게 잡는다.
 export function enemyForFloor(pool: any[], floor: number, encounter: EnemyEncounter): EnemyState {
   const strong = pool.filter(it => ["gold", "diamond", "treasure", "legend"].includes(computeValueScore(it).tone));
   const source = (encounter === "boss" || encounter === "elite") && strong.length > 0 ? strong : pool;
@@ -100,41 +102,47 @@ export function enemyForFloor(pool: any[], floor: number, encounter: EnemyEncoun
   const baseHp = ENEMY_BASE_HP + floor * ENEMY_PER_FLOOR + stats.shield * ENEMY_HP_PER_SHIELD;
   const maxHp = Math.round(baseHp * mult);
   const attack = stats.attack + Math.floor(floor / 3);
-  return { item, stats, sectorType: sectorType(item), hp: maxHp, maxHp, nextAttack: attack, encounter };
+  const level = Math.max(1, Math.round((floor + 1) * mult));
+  return { item, stats, sectorType: sectorType(item), hp: maxHp, maxHp, nextAttack: attack, encounter, level };
 }
 
-// 육성(진화) — 파티 몬스터는 이번 런에서 전투로 얻는 경험치(xp)만큼 유아기→청년기→성인으로
-// 성장한다(런 종료 시 리셋, 계정에 영구 저장되지 않음). xp는 PartyMember에 그대로 저장하고
-// 단계/보정 스탯은 항상 이 파생 함수들로만 계산 — 저장된 값과 어긋나는 걸 원천 차단하기 위함
-// (파티 HP 표시 버그 때와 같은 이유).
-export type GrowthStage = 0 | 1 | 2;
-export const STAGE_LABELS = ["유아기", "청년기", "성인"] as const;
-const STAGE_XP_THRESHOLDS: [number, number, number] = [0, 50, 150];
-const STAGE_STAT_MULT = [1, 1.25, 1.5];
-export const XP_PER_MONSTER_ATTACK = 3; // 공격 기술 사용마다
-export const WIN_XP_BONUS = 15; // 층 클리어(승리) 시 추가
+// 육성(레벨) — 파티 몬스터는 이번 런에서 전투로 얻는 경험치(xp)만큼 레벨업한다(런 종료 시
+// 리셋, 계정에 영구 저장되지 않음). xp는 PartyMember에 그대로 저장하고 레벨/보정 스탯은 항상
+// 이 파생 함수들로만 계산 — 저장된 값과 어긋나는 걸 원천 차단하기 위함(파티 HP 표시 버그 때와
+// 같은 이유).
+export const LEVEL_XP = 100; // 레벨업에 필요한 경험치 — 레벨마다 동일(누적 아님, 매 레벨 100)
+export const LEVEL_STAT_GROWTH = 0.12; // 레벨업마다 공격력/방어력 +12%
+export const ULTIMATE_UNLOCK_LEVEL = 5; // 이 레벨부터 "약공격"이 "필살기"로 해금
+export const XP_PER_MONSTER_ATTACK = 3; // 공격 기술 사용마다 고정 지급
+export const WIN_XP_BASE = 40; // 층 클리어(승리) 시 기준 경험치 — winXpFor가 상대 레벨차로 보정
+const WIN_XP_MIN_MULT = 0.25;
+const WIN_XP_MAX_MULT = 3;
 
-export function stageForXp(xp: number): GrowthStage {
-  if (xp >= STAGE_XP_THRESHOLDS[2]) return 2;
-  if (xp >= STAGE_XP_THRESHOLDS[1]) return 1;
-  return 0;
+export function levelForXp(xp: number): number {
+  return 1 + Math.floor(Math.max(0, xp) / LEVEL_XP);
 }
-// 성장 단계만큼 보정된 실전투 스탯 — monsterSkills/HP 계산 전부 이 값을 쓴다(원본 stats는
-// 카드 자체 base로 절대 안 건드림).
+// 승리 시 지급 경험치 — 상대(적) 레벨이 내 몬스터 레벨보다 높으면 더 많이, 낮으면 더 적게
+// (포켓몬류 상대 레벨 경험치 배분과 동일한 취지). 극단값 방지를 위해 배율을 클램프.
+export function winXpFor(monsterLevel: number, enemyLevel: number): number {
+  const ratio = Math.min(WIN_XP_MAX_MULT, Math.max(WIN_XP_MIN_MULT, enemyLevel / Math.max(1, monsterLevel)));
+  return Math.max(1, Math.round(WIN_XP_BASE * ratio));
+}
+// 레벨만큼 보정된 실전투 스탯 — monsterSkills/HP 계산 전부 이 값을 쓴다(원본 stats는 카드
+// 자체 base로 절대 안 건드림).
 export function growthStats(stats: CardStats, xp: number): CardStats {
-  const mult = STAGE_STAT_MULT[stageForXp(xp)];
+  const mult = 1 + (levelForXp(xp) - 1) * LEVEL_STAT_GROWTH;
   return { attack: Math.max(1, Math.round(stats.attack * mult)), shield: Math.max(1, Math.round(stats.shield * mult)) };
 }
 export function growthMaxHp(stats: CardStats, xp: number): number {
   return PARTY_BASE_HP + growthStats(stats, xp).shield * HP_PER_SHIELD_PLAYER;
 }
 
-// 파티 몬스터 공통 기술 템플릿 — 각 몬스터 자기 카드 스탯(attack/shield, 성장 보정 반영)으로
-// 스케일된 4기술을 갖는다(공격 약/강·방어·회복). 성인(stage 2)이 되면 "약공격"이 훨씬 강한
-// "필살기"로 바뀐다(해금) — 그리드가 정확히 4칸이라 5번째를 늘리는 대신 교체하는 방식.
+// 파티 몬스터 공통 기술 템플릿 — 각 몬스터 자기 카드 스탯(attack/shield, 레벨 보정 반영)으로
+// 스케일된 4기술을 갖는다(공격 약/강·방어·회복). ULTIMATE_UNLOCK_LEVEL에 도달하면 "약공격"이
+// 훨씬 강한 "필살기"로 바뀐다(해금) — 그리드가 정확히 4칸이라 5번째를 늘리는 대신 교체하는 방식.
 // PP는 기술마다 다른 예산을 둬 사용 판단에 무게를 준다.
-export function monsterSkills(stats: CardStats, stage: GrowthStage = 0): SkillDef[] {
-  const atk1: SkillDef = stage >= 2
+export function monsterSkills(stats: CardStats, level: number = 1): SkillDef[] {
+  const atk1: SkillDef = level >= ULTIMATE_UNLOCK_LEVEL
     ? { id: "ultimate", name: "필살기", effect: "attack", power: Math.round(stats.attack * 2.5), maxPP: 5 }
     : { id: "atk1", name: "약공격", effect: "attack", power: stats.attack, maxPP: 20 };
   return [
