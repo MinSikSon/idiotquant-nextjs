@@ -10,6 +10,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { cn } from "@/lib/utils";
 import type { SkillDef, ItemDef, OwnedItem, PartyMember } from "@/app/(game)/game/gameTypes";
+import { stageForXp, STAGE_LABELS } from "@/app/(game)/game/combatEngine";
 
 type SkillRuntime = { def: SkillDef; pp: number };
 
@@ -159,7 +160,7 @@ function PartyMenu({ party, activeIndex, forced, onSwitch, onBack, busy }: {
               <span className={cn("text-[8px] font-black tabular-nums", fainted ? "text-neutral-400" : "text-emerald-600 dark:text-emerald-400")}>
                 {fainted ? "기절" : `${m.hp}/${m.maxHp}`}
               </span>
-              <span className="text-[7px] font-bold text-neutral-400 truncate w-full text-center">{m.sectorType ?? "무속성"}</span>
+              <span className="text-[7px] font-bold text-neutral-400 truncate w-full text-center">{STAGE_LABELS[stageForXp(m.xp)]} · {m.sectorType ?? "무속성"}</span>
             </button>
           );
         })}

@@ -103,11 +103,42 @@ export function enemyForFloor(pool: any[], floor: number, encounter: EnemyEncoun
   return { item, stats, sectorType: sectorType(item), hp: maxHp, maxHp, nextAttack: attack, encounter };
 }
 
-// 파티 몬스터 공통 기술 템플릿 — 각 몬스터 자기 카드 스탯(attack/shield)으로 스케일된 4기술을
-// 갖는다(공격 약/강·방어·회복). PP는 기술마다 다른 예산을 둬 사용 판단에 무게를 준다.
-export function monsterSkills(stats: CardStats): SkillDef[] {
+// 육성(진화) — 파티 몬스터는 이번 런에서 전투로 얻는 경험치(xp)만큼 유아기→청년기→성인으로
+// 성장한다(런 종료 시 리셋, 계정에 영구 저장되지 않음). xp는 PartyMember에 그대로 저장하고
+// 단계/보정 스탯은 항상 이 파생 함수들로만 계산 — 저장된 값과 어긋나는 걸 원천 차단하기 위함
+// (파티 HP 표시 버그 때와 같은 이유).
+export type GrowthStage = 0 | 1 | 2;
+export const STAGE_LABELS = ["유아기", "청년기", "성인"] as const;
+const STAGE_XP_THRESHOLDS: [number, number, number] = [0, 50, 150];
+const STAGE_STAT_MULT = [1, 1.25, 1.5];
+export const XP_PER_MONSTER_ATTACK = 3; // 공격 기술 사용마다
+export const WIN_XP_BONUS = 15; // 층 클리어(승리) 시 추가
+
+export function stageForXp(xp: number): GrowthStage {
+  if (xp >= STAGE_XP_THRESHOLDS[2]) return 2;
+  if (xp >= STAGE_XP_THRESHOLDS[1]) return 1;
+  return 0;
+}
+// 성장 단계만큼 보정된 실전투 스탯 — monsterSkills/HP 계산 전부 이 값을 쓴다(원본 stats는
+// 카드 자체 base로 절대 안 건드림).
+export function growthStats(stats: CardStats, xp: number): CardStats {
+  const mult = STAGE_STAT_MULT[stageForXp(xp)];
+  return { attack: Math.max(1, Math.round(stats.attack * mult)), shield: Math.max(1, Math.round(stats.shield * mult)) };
+}
+export function growthMaxHp(stats: CardStats, xp: number): number {
+  return PARTY_BASE_HP + growthStats(stats, xp).shield * HP_PER_SHIELD_PLAYER;
+}
+
+// 파티 몬스터 공통 기술 템플릿 — 각 몬스터 자기 카드 스탯(attack/shield, 성장 보정 반영)으로
+// 스케일된 4기술을 갖는다(공격 약/강·방어·회복). 성인(stage 2)이 되면 "약공격"이 훨씬 강한
+// "필살기"로 바뀐다(해금) — 그리드가 정확히 4칸이라 5번째를 늘리는 대신 교체하는 방식.
+// PP는 기술마다 다른 예산을 둬 사용 판단에 무게를 준다.
+export function monsterSkills(stats: CardStats, stage: GrowthStage = 0): SkillDef[] {
+  const atk1: SkillDef = stage >= 2
+    ? { id: "ultimate", name: "필살기", effect: "attack", power: Math.round(stats.attack * 2.5), maxPP: 5 }
+    : { id: "atk1", name: "약공격", effect: "attack", power: stats.attack, maxPP: 20 };
   return [
-    { id: "atk1", name: "약공격", effect: "attack", power: stats.attack, maxPP: 20 },
+    atk1,
     { id: "atk2", name: "강공격", effect: "attack", power: Math.round(stats.attack * 1.8), maxPP: 10 },
     { id: "def1", name: "방어", effect: "shield", power: stats.shield, maxPP: 20 },
     { id: "heal1", name: "회복", effect: "heal", power: Math.max(1, Math.round((stats.attack + stats.shield) / 2)), maxPP: 8 },
@@ -115,7 +146,7 @@ export function monsterSkills(stats: CardStats): SkillDef[] {
 }
 
 // 던전 입장 시 파티 구성 — 파티 설정 화면에서 유저가 고른 카드(최대 PARTY_SIZE장, 순서 무관)를
-// 그대로 쓰고, 부족하면 STARTER_MONSTERS로 채운다. 런 내내 고정(중간 합류/이탈 없음).
+// 그대로 쓰고, 부족하면 STARTER_MONSTERS로 채운다. 런 내내 고정(중간 합류/이탈 없음), xp는 0부터.
 export function buildParty(chosenCards: any[]): PartyMember[] {
   const members: PartyMember[] = chosenCards.slice(0, PARTY_SIZE).map(card => {
     const stats = cardStats(card);
@@ -123,7 +154,7 @@ export function buildParty(chosenCards: any[]): PartyMember[] {
     return {
       instanceId: `p_${card.ticker}`, ticker: String(card.ticker), name: String(card.name),
       tone: computeValueScore(card).tone, sectorType: sectorType(card),
-      stats, hp: maxHp, maxHp,
+      stats, hp: maxHp, maxHp, xp: 0,
     };
   });
   let i = 0;
@@ -132,7 +163,7 @@ export function buildParty(chosenCards: any[]): PartyMember[] {
     const maxHp = PARTY_BASE_HP + starter.stats.shield * HP_PER_SHIELD_PLAYER;
     members.push({
       instanceId: `starter_${i}`, ticker: `STARTER${i}`, name: starter.name,
-      tone: "explore", sectorType: null, stats: starter.stats, hp: maxHp, maxHp,
+      tone: "explore", sectorType: null, stats: starter.stats, hp: maxHp, maxHp, xp: 0,
     });
     i++;
   }

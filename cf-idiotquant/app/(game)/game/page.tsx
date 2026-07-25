@@ -679,25 +679,25 @@ function GameContent() {
                       <HandView mode="action" onSelectAction={run.selectBattleAction} message={latestLogText}
                         topLeftOverlay={<DiceRow label="적" roll={run.lastEnemyRoll} isPlayer={false} />}
                         bottomRightOverlay={<DiceRow label="나" roll={run.lastPlayerRoll} isPlayer compact />} busy={run.busy}>
-                        <PhaserCombatCanvas enemy={run.enemy} player={run.player} playerName={activeMonsterName} introLabel={introLabel} />
+                        <PhaserCombatCanvas enemy={run.enemy} player={run.player} playerName={activeMonsterName} introLabel={introLabel} stage={run.activeStage} />
                       </HandView>
                     ) : run.battleMenu === "skills" ? (
                       <HandView mode="skills" skills={run.skills} onPlaySkill={run.useSkill} onBack={run.backToActionMenu} message={latestLogText}
                         topLeftOverlay={<DiceRow label="적" roll={run.lastEnemyRoll} isPlayer={false} />}
                         bottomRightOverlay={<DiceRow label="나" roll={run.lastPlayerRoll} isPlayer compact />} busy={run.busy}>
-                        <PhaserCombatCanvas enemy={run.enemy} player={run.player} playerName={activeMonsterName} introLabel={introLabel} />
+                        <PhaserCombatCanvas enemy={run.enemy} player={run.player} playerName={activeMonsterName} introLabel={introLabel} stage={run.activeStage} />
                       </HandView>
                     ) : run.battleMenu === "items" ? (
                       <HandView mode="items" ownedItems={run.ownedItems} ownedDefs={run.ownedDefs} onUseItem={run.useOwnedActiveItem} onBack={run.backToActionMenu} message={latestLogText}
                         topLeftOverlay={<DiceRow label="적" roll={run.lastEnemyRoll} isPlayer={false} />}
                         bottomRightOverlay={<DiceRow label="나" roll={run.lastPlayerRoll} isPlayer compact />} busy={run.busy}>
-                        <PhaserCombatCanvas enemy={run.enemy} player={run.player} playerName={activeMonsterName} introLabel={introLabel} />
+                        <PhaserCombatCanvas enemy={run.enemy} player={run.player} playerName={activeMonsterName} introLabel={introLabel} stage={run.activeStage} />
                       </HandView>
                     ) : (
                       <HandView mode="party" party={run.party} activeIndex={run.activeIndex} forced={run.forcedSwitch} onSwitchMember={run.switchMember} onBack={run.backToActionMenu} message={latestLogText}
                         topLeftOverlay={<DiceRow label="적" roll={run.lastEnemyRoll} isPlayer={false} />}
                         bottomRightOverlay={<DiceRow label="나" roll={run.lastPlayerRoll} isPlayer compact />} busy={run.busy}>
-                        <PhaserCombatCanvas enemy={run.enemy} player={run.player} playerName={activeMonsterName} introLabel={introLabel} />
+                        <PhaserCombatCanvas enemy={run.enemy} player={run.player} playerName={activeMonsterName} introLabel={introLabel} stage={run.activeStage} />
                       </HandView>
                     )}
                   </div>
@@ -747,6 +747,7 @@ function GameContent() {
                 { icon: "🗡️", text: <>매 턴 <b className="text-neutral-800 dark:text-neutral-100">전투/파티/아이템/도망치기</b> 중 행동을 골라요. <b className="text-neutral-800 dark:text-neutral-100">전투</b>를 고르면 지금 앞에 나온 몬스터의 기술 4개(약공격·강공격·방어·회복)가 나와요.</> },
                 { icon: "🎲", text: <>공격 기술은 <b className="text-neutral-800 dark:text-neutral-100">0~N 범위</b>로 20면체 주사위를 굴려 피해가 정해지고, 자연 20이면 <b className="text-amber-500 dark:text-amber-400">크리티컬</b>(최대 피해의 2배)! 방어는 블록을, 회복은 HP를 고정치만큼 즉시 채워요.</> },
                 { icon: "⚡", text: <>카드마다 업종이 있고 업종끼리 상성이 있어요 — 상성에서 <b className="text-emerald-600 dark:text-emerald-400">이기면 피해가 1.5배</b>, <b className="text-rose-500">지면 2/3배</b>로 줄어요.</> },
+                { icon: "🐣", text: <>몬스터는 전투에서 공격하거나 층을 클리어할 때마다 경험치를 얻어 <b className="text-neutral-800 dark:text-neutral-100">유아기 → 청년기 → 성인</b>으로 성장해요(이번 던전 한정, 나가면 리셋). 성장할수록 스탯이 오르고 실루엣도 커지며, 성인이 되면 "약공격"이 훨씬 강한 <b className="text-violet-600 dark:text-violet-400">필살기</b>로 진화해요.</> },
                 { icon: "💊", text: <>기술마다 정해진 PP가 있고 쓸 때마다 1씩 줄어요 — <b className="text-neutral-800 dark:text-neutral-100">던전을 도는 내내 유지</b>되며(전투를 이겨도 안 채워짐) 상점의 PP 회복 물약으로만 채울 수 있어요.</> },
                 { icon: "🔄", text: <><b className="text-neutral-800 dark:text-neutral-100">파티</b>에서 다른 몬스터로 교체할 수 있어요(교체도 턴을 소모해 적의 공격을 받아요). 몬스터가 쓰러지면 강제로 다음 몬스터를 골라야 하고, 파티 전원이 쓰러지면 던전이 끝나요.</> },
                 { icon: "🚪", text: <><b className="text-neutral-800 dark:text-neutral-100">도망치기</b>는 이번 층을 포기하고 바로 상점으로 가요. 지금까지 성과를 저장하고 던전에서 나가고 싶으면 상단의 🚪 버튼을 눌러요.</> },
