@@ -208,10 +208,10 @@ function ScoreInfo() {
           <b className="text-white">저평가 점수 (0~100)</b><br />
           NCAV·PBR·PER·ROE를 가중 평균해 점수화(값 없는 지표는 제외, 적자·자본잠식 등 음수 지표는 0점):
           <span className="block mt-1.5 space-y-0.5 text-neutral-300">
-            <span className="block">· NCAV 40% — 1.5배↑ 만점, 0.3배↓ 0점 (→ 전투 방어력)</span>
-            <span className="block">· PBR 25% — 0.3↓ 만점, 1.5↑ 0점 (→ 전투 코스트, 역방향)</span>
-            <span className="block">· PER 20% — 5↓ 만점, 20↑ 0점 (→ 전투 환급, 역방향)</span>
-            <span className="block">· ROE 15% — 18%↑ 만점, 3%↓ 0점 (→ 전투 공격력)</span>
+            <span className="block">· NCAV 40% — 1.5배↑ 만점, 0.3배↓ 0점 (→ 적 방어력/체력)</span>
+            <span className="block">· PBR 25% — 0.3↓ 만점, 1.5↑ 0점 (등급 산정에만 사용)</span>
+            <span className="block">· PER 20% — 5↓ 만점, 20↑ 0점 (등급 산정에만 사용)</span>
+            <span className="block">· ROE 15% — 18%↑ 만점, 3%↓ 0점 (→ 적 공격력)</span>
           </span>
         </span>
       )}
@@ -610,9 +610,11 @@ function GameContent() {
                       </div>
                     )}
                   </div>
-                  {run.ownedItems.length > 0 && (
+                  {/* 전투 중엔 아이템 사용이 행동 선택 메뉴("아이템")로만 이뤄지므로, 여긴 전투
+                      밖에서 보유 아이템을 훑어보는 용도로만 노출(설명만, 사용 불가). */}
+                  {run.ownedItems.length > 0 && run.phase !== "battling" && (
                     <div className="flex items-center justify-center gap-1.5 h-8 overflow-x-auto overflow-y-hidden flex-nowrap scrollbar-hide">
-                      <ItemBar ownedDefs={run.ownedDefs} ownedItems={run.ownedItems} canUseActive={run.phase === "battling"} onUseActive={run.useOwnedActiveItem} />
+                      <ItemBar ownedDefs={run.ownedDefs} ownedItems={run.ownedItems} canUseActive={false} onUseActive={run.useOwnedActiveItem} />
                     </div>
                   )}
                 </div>
@@ -630,25 +632,29 @@ function GameContent() {
               ) : run.enemy ? (
                 <div className="flex-1 min-h-0 flex flex-col">
                   <div className="flex-1 min-h-0 flex flex-col rounded-2xl overflow-hidden backdrop-blur-md bg-white/60 dark:bg-white/[0.03] border border-black/5 dark:border-white/10">
-                    <HandView cards={run.hand} onPlayCard={run.playHandCard}
-                      topLeftOverlay={<DiceRow label="적" roll={run.lastEnemyRoll} isPlayer={false} />}
-                      bottomRightOverlay={<DiceRow label="나" roll={run.lastPlayerRoll} isPlayer compact />}>
-                      <PhaserCombatCanvas enemy={run.enemy} player={run.player} playerName={CLASS_DEFS[run.character.classId].name} introLabel={introLabel} />
-                    </HandView>
+                    {run.battleMenu === "action" ? (
+                      <HandView mode="action" onSelectAction={run.selectBattleAction}
+                        topLeftOverlay={<DiceRow label="적" roll={run.lastEnemyRoll} isPlayer={false} />}
+                        bottomRightOverlay={<DiceRow label="나" roll={run.lastPlayerRoll} isPlayer compact />}>
+                        <PhaserCombatCanvas enemy={run.enemy} player={run.player} playerName={CLASS_DEFS[run.character.classId].name} introLabel={introLabel} />
+                      </HandView>
+                    ) : run.battleMenu === "skills" ? (
+                      <HandView mode="skills" skills={run.skills} onPlaySkill={run.useSkill} onBack={run.backToActionMenu}
+                        topLeftOverlay={<DiceRow label="적" roll={run.lastEnemyRoll} isPlayer={false} />}
+                        bottomRightOverlay={<DiceRow label="나" roll={run.lastPlayerRoll} isPlayer compact />}>
+                        <PhaserCombatCanvas enemy={run.enemy} player={run.player} playerName={CLASS_DEFS[run.character.classId].name} introLabel={introLabel} />
+                      </HandView>
+                    ) : (
+                      <HandView mode="items" ownedItems={run.ownedItems} ownedDefs={run.ownedDefs} onUseItem={run.useOwnedActiveItem} onBack={run.backToActionMenu}
+                        topLeftOverlay={<DiceRow label="적" roll={run.lastEnemyRoll} isPlayer={false} />}
+                        bottomRightOverlay={<DiceRow label="나" roll={run.lastPlayerRoll} isPlayer compact />}>
+                        <PhaserCombatCanvas enemy={run.enemy} player={run.player} playerName={CLASS_DEFS[run.character.classId].name} introLabel={introLabel} />
+                      </HandView>
+                    )}
                   </div>
                   <div className="shrink-0 pt-1.5">
                     <CombatLog entries={run.log} />
                   </div>
-                  {/* 모든 기술 PP 소진 + 쓸 액티브 아이템도 없는 극단적 상황에서만 노출되는 패스 —
-                      평소엔 기술/아이템 탭 자체가 곧 턴 진행이라 별도 버튼이 필요 없음. */}
-                  {run.hand.every(c => c.usesLeft <= 0) && !run.ownedDefs.some(d => d.kind === "active") && (
-                    <div className="shrink-0 pt-1.5 flex justify-center">
-                      <button type="button" onClick={run.passTurn}
-                        className="inline-flex items-center gap-1.5 px-6 py-2 rounded-2xl bg-gradient-to-r from-neutral-500 to-neutral-600 hover:brightness-110 text-white font-black text-sm shadow-[0_8px_24px_-8px_rgba(0,0,0,0.35)] active:scale-[0.98] transition-all">
-                        <Swords size={15} /> 턴 넘기기
-                      </button>
-                    </div>
-                  )}
                 </div>
               ) : null}
 
@@ -690,14 +696,14 @@ function GameContent() {
             </div>
             <div className="space-y-3">
               {[
-                { icon: "⚔️", text: <>카드는 이제 <b className="text-neutral-800 dark:text-neutral-100">기술</b>이에요. 손패에서 <b className="text-neutral-800 dark:text-neutral-100">탭하면 즉시 발동</b>! 공격력은 <b className="text-neutral-800 dark:text-neutral-100">0~N 범위</b>로 20면체 주사위를 굴려 실제 피해가 정해지고(ROE 기반), 방어력만큼 블록이 쌓여요(NCAV 기반).</> },
-                { icon: "🎲", text: <>주사위 눈이 <b className="text-amber-500 dark:text-amber-400">자연 20</b>이면 <b className="text-amber-500 dark:text-amber-400">크리티컬</b>(최대 피해의 2배)! 몬스터의 공격도 같은 방식으로 굴려요. 내 주사위는 화면 우하단, 적 주사위는 좌상단에 표시돼요.</> },
-                { icon: "💊", text: <>기술마다 전투당 사용 횟수(<b className="text-violet-600 dark:text-violet-400">PP</b>)가 있어요(PER 기반) — 다 쓰면 그 전투에서는 못 써요. 새 전투가 시작되면 기술이 새로 뽑히며 PP도 가득 채워져요.</> },
-                { icon: "⏭️", text: <>포켓몬처럼 <b className="text-neutral-800 dark:text-neutral-100">기술(또는 아이템) 하나</b>를 쓰면 곧바로 내 턴이 끝나고 적이 반격해요 — 따로 "턴 종료"를 누를 필요가 없어요.</> },
-                { icon: "🛒", text: <>층을 클리어할 때마다 <b className="text-neutral-800 dark:text-neutral-100">상점</b>에 들러 ❤️HP 회복 물약과 💊PP 회복 물약을 살 수 있어요. 전투 중 물약을 쓰면 그것도 한 번의 턴으로 계산돼요.</> },
+                { icon: "🗡️", text: <>매 턴 <b className="text-neutral-800 dark:text-neutral-100">전투/아이템/도망치기/월드맵</b> 중 행동을 골라요. <b className="text-neutral-800 dark:text-neutral-100">전투</b>를 고르면 전사의 고정 기술 4개(주먹 휘두르기·강타·방어·기력회복)가 나와요.</> },
+                { icon: "🎲", text: <>공격 기술(주먹 휘두르기·강타)은 <b className="text-neutral-800 dark:text-neutral-100">0~N 범위</b>로 20면체 주사위를 굴려 피해가 정해지고, 자연 20이면 <b className="text-amber-500 dark:text-amber-400">크리티컬</b>(최대 피해의 2배)! 방어는 블록을, 기력회복은 HP를 고정치만큼 즉시 채워요.</> },
+                { icon: "💊", text: <>기술마다 <b className="text-violet-600 dark:text-violet-400">PP 20</b>이 있고 쓸 때마다 1씩 줄어요 — <b className="text-neutral-800 dark:text-neutral-100">던전을 도는 내내 유지</b>되며(전투를 이겨도 안 채워짐) 상점의 PP 회복 물약으로만 채울 수 있어요.</> },
+                { icon: "⏭️", text: <>기술이나 아이템을 하나 쓰면 곧바로 내 턴이 끝나고 적이 반격해요 — 그 다음 다시 행동 선택부터 시작해요.</> },
+                { icon: "🏃", text: <><b className="text-neutral-800 dark:text-neutral-100">도망치기</b>는 이번 층을 포기하고 바로 상점으로, <b className="text-neutral-800 dark:text-neutral-100">월드맵</b>은 지금까지 성과를 저장하고 던전을 나가요.</> },
+                { icon: "🛒", text: <>층을 클리어할 때마다 <b className="text-neutral-800 dark:text-neutral-100">상점</b>에 들러 ❤️HP 회복 물약과 💊PP 회복 물약을 살 수 있어요.</> },
                 { icon: "🎒", text: <>3층마다 <b className="text-neutral-800 dark:text-neutral-100">패시브/액티브 아이템</b>을 하나 고를 수 있어요. 힘·민첩·행운·체력을 올려주는 스탯 아이템도 있어요.</> },
-                { icon: "🃏", text: <>적을 처치(층 클리어)하면 확률에 따라 <b className="text-neutral-800 dark:text-neutral-100">내 덱</b>에 카드가 수집돼요. 좋은 카드일수록 전투 스탯도 강해요.</> },
-                { icon: "🧭", text: <>층이 깊어질수록 <b className="text-neutral-800 dark:text-neutral-100">휴식</b>(무료 회복)·<b className="text-orange-500 dark:text-orange-400">정예</b>(강한 몬스터) 조우가 섞여 나와요. <b className="text-violet-600 dark:text-violet-400">10층마다는 보스</b>(같은 몬스터가 스탯 3배로 강화돼 등장)예요.</> },
+                { icon: "🃏", text: <>적을 처치(층 클리어)하면 확률에 따라 <b className="text-neutral-800 dark:text-neutral-100">내 덱</b>에 실제 종목 카드가 수집돼요(전투와는 별개인 도감 컬렉션). <b className="text-violet-600 dark:text-violet-400">10층마다는 보스</b>(같은 몬스터가 스탯 3배로 강화돼 등장)예요.</> },
               ].map((row, i) => (
                 <div key={i} className="flex items-start gap-2.5">
                   <span aria-hidden className="shrink-0 text-lg leading-none">{row.icon}</span>

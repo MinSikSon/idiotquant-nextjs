@@ -7,18 +7,18 @@ import { useState, useCallback, useEffect, useRef, useMemo } from "react";
 import { computeValueScore } from "@/lib/utils/valueScore";
 import { addDeckCard, getWallet, syncBestStreak, type DeckCardSnapshot } from "@/lib/features/deck/deckAPI";
 import {
-  buildRunDeck, drawHand, enemyForFloor, playCard as engPlayCard,
+  enemyForFloor, useSkillEffect as engUseSkillEffect,
   resolveEnemyTurn, useActiveItem as engUseActiveItem, checkOutcome, aggregatePassive,
   bossExtraChoiceChance,
-  HAND_SIZE, BASE_HP, VIT_HP_MULTIPLIER,
+  BASE_HP, VIT_HP_MULTIPLIER,
 } from "./combatEngine";
-import { ALL_ITEMS, STARTER_DECK, ITEM_OFFER_COUNT, PP_POTION_ITEM_ID, PP_POTION_COST, pickItemChoices, acquireChance } from "./gameData";
+import { ALL_ITEMS, SKILLS_BY_CLASS, ITEM_OFFER_COUNT, PP_POTION_ITEM_ID, PP_POTION_COST, pickItemChoices, acquireChance } from "./gameData";
 import { ACHIEVEMENTS } from "./gameCollectibles";
 import { useCharacter } from "./useCharacter";
 import { killXpFor, XP_PER_ATTACK } from "./characterEngine";
 import type {
-  Phase, EncounterType, CombatCard, ItemDef, OwnedItem, EnemyState, PlayerState, ActiveEffect, LogEntry, LogKind,
-  CharacterStats, AttackRollResult,
+  Phase, EncounterType, ItemDef, OwnedItem, EnemyState, PlayerState, ActiveEffect, LogEntry, LogKind,
+  CharacterStats, AttackRollResult, SkillState, BattleMenu,
 } from "./gameTypes";
 
 const safeNum = (v: any): number => { const n = Number(v); return Number.isFinite(n) ? n : 0; };
@@ -60,8 +60,6 @@ function pickEncounter(roundNum: number): EncounterType {
 export const MERCHANT_HEAL_COST = 8;
 const REST_HEAL_FRAC = 0.3;
 
-type Pile = { draw: CombatCard[]; hand: CombatCard[]; discard: CombatCard[] };
-
 // 진행 중인 런 저장 — 다른 페이지를 다녀와도 이어지도록 함. 카드 데이터가 전부 인라인 스냅샷이라
 // (pool/deck 참조 없음) 그대로 JSON 직렬화/복원이 됨. packOpening/dropped/dropPrompt/saveFail은
 // 진행 중이던 setTimeout·fetch 콜백에 묶인 일시 상태라 저장 대상에서 제외(로드 시 기본값).
@@ -70,7 +68,7 @@ type SavedRun = {
   phase: Phase; roundNum: number; encounter: EncounterType; restHealed: boolean;
   gold: number; newBest: boolean;
   ownedItems: OwnedItem[]; itemChoices: ItemDef[] | null; activeBoost: { mult: number; roundsLeft: number } | null;
-  player: PlayerState; enemy: EnemyState | null; pile: Pile;
+  player: PlayerState; enemy: EnemyState | null; skillPp: SkillState[]; battleMenu: BattleMenu;
   log: LogEntry[]; lastResult: { win: boolean; goldGain?: number } | null;
   acquired: DeckCardSnapshot[];
 };
@@ -92,9 +90,14 @@ export function useGameRun(params: { pool: any[]; deck: DeckItem[]; setDeck: (fn
 
   const [player, setPlayer] = useState<PlayerState>({ hp: BASE_HP, maxHp: BASE_HP, block: 0 });
   const [enemy, setEnemy] = useState<EnemyState | null>(null);
-  const [pile, setPile] = useState<Pile>({ draw: [], hand: [], discard: [] });
+  const [skillPp, setSkillPp] = useState<SkillState[]>([]); // 던전 진행 내내 유지(전투 승리로 안 채워짐) — PP 물약으로만 회복
+  const [battleMenu, setBattleMenu] = useState<BattleMenu>("action"); // 전투 중 하위 화면 — 매 내 턴마다 "action"에서 시작
 
   const { character, characterLoaded, gainXp } = useCharacter();
+  const skillDefs = useMemo(() => SKILLS_BY_CLASS[character.classId] ?? [], [character.classId]);
+  const skills = useMemo(() => skillDefs.map(def => ({
+    def, pp: skillPp.find(s => s.skillId === def.id)?.pp ?? def.maxPP,
+  })), [skillDefs, skillPp]);
   const [lastPlayerRoll, setLastPlayerRoll] = useState<AttackRollResult | null>(null);
   const [lastEnemyRoll, setLastEnemyRoll] = useState<AttackRollResult | null>(null);
 
@@ -162,7 +165,8 @@ export function useGameRun(params: { pool: any[]; deck: DeckItem[]; setDeck: (fn
       setItemChoices(saved.itemChoices ?? null);
       setActiveBoost(saved.activeBoost ?? null);
       setPlayer(saved.player); setEnemy(saved.enemy);
-      setPile(saved.pile ?? { draw: [], hand: [], discard: [] });
+      setSkillPp(saved.skillPp ?? []);
+      setBattleMenu(saved.battleMenu ?? "action");
       setLog(saved.log ?? []);
       setLastResult(saved.lastResult ?? null);
       setAcquired(saved.acquired ?? []);
@@ -222,9 +226,10 @@ export function useGameRun(params: { pool: any[]; deck: DeckItem[]; setDeck: (fn
     }).catch(() => setSaveFail("네트워크 오류"));
   }, [best, isLoggedIn, availableItemPool, unlockedLegendItems, setDeck, activeBoost, pushLog, gainXp, effectiveStats.luk]);
 
-  // 내 행동(기술/아이템/패스) 직후 곧바로 적 턴을 진행 — 1행동=1턴이라 별도 "턴 종료" 버튼이
-  // 없고, 카드/아이템을 쓴 함수들이 마지막에 이 함수 하나로 마무리한다. afterPlayer/afterEnemy는
-  // 이미 그 행동의 효과(데미지/블록/회복)까지 반영된 상태.
+  // 내 행동(기술/아이템) 직후 곧바로 적 턴을 진행 — 1행동=1턴이라 별도 "턴 종료" 버튼이 없고,
+  // 기술/아이템을 쓴 함수들이 마지막에 이 함수 하나로 마무리한다. afterPlayer/afterEnemy는 이미
+  // 그 행동의 효과(데미지/블록/회복)까지 반영된 상태. 전투가 계속되면 다음 내 턴을 위해 행동
+  // 선택 메뉴("action")로 돌아간다.
   const resolveTurn = useCallback((afterPlayer: PlayerState, afterEnemy: EnemyState) => {
     setEnemy(afterEnemy);
     if (checkOutcome(afterPlayer, afterEnemy) === "win") { setPlayer(afterPlayer); handleWin(afterEnemy, encounter, roundNum); return; }
@@ -235,46 +240,61 @@ export function useGameRun(params: { pool: any[]; deck: DeckItem[]; setDeck: (fn
     const critTxt = roll.isCrit ? " 💥크리티컬!" : "";
     pushLog("enemy", `${afterEnemy.item?.name ?? "적"}의 공격! 🎲${roll.faces.join("/")}${critTxt} → ⚔${roll.totalDamage} 중 🛡${blocked} 경감 → ${dmg} 피해`);
     setPlayer(finalPlayer);
-    if (finalPlayer.hp <= 0) { setPhase("over"); setLastResult({ win: false }); pushLog("system", "💀 쓰러졌습니다..."); }
+    if (finalPlayer.hp <= 0) { setPhase("over"); setLastResult({ win: false }); pushLog("system", "💀 쓰러졌습니다..."); return; }
+    setBattleMenu("action");
   }, [encounter, roundNum, passive, handleWin, pushLog]);
 
-  // 기술(카드) 발동 — 탭하면 즉시. PP(usesLeft) 소진 시 무시. 공격력은 주사위로 굴려서 정해짐.
-  const playHandCard = useCallback((instanceId: string) => {
+  // 기술 발동 — 행동 메뉴에서 "전투"를 고른 뒤 기술 목록에서 탭하면 즉시. PP 소진 시 무시.
+  // 공격 기술은 주사위로 굴려서 데미지가 정해지고, 방어/회복 기술은 고정치를 바로 적용.
+  const useSkill = useCallback((skillId: string) => {
     if (phase !== "battling" || !enemy) return;
-    const card = pile.hand.find(c => c.instanceId === instanceId);
-    if (!card || card.usesLeft <= 0) return;
-    const result = engPlayCard(player, enemy, card, passive, effectiveStats);
-    setPile(p => ({ ...p, hand: p.hand.map(c => c.instanceId === instanceId ? { ...c, usesLeft: c.usesLeft - 1 } : c) }));
-    gainXp(XP_PER_ATTACK);
-    setLastPlayerRoll(result.roll);
-    const critTxt = result.roll.isCrit ? " 💥크리티컬!" : "";
-    const parts = [`🎲${result.roll.faces.join("/")}${critTxt} → ⚔${result.roll.totalDamage} 피해`];
-    if (card.stats.shield > 0) parts.push(`🛡${card.stats.shield} 방어`);
-    pushLog("player", `${card.name} 발동 (PP ${card.usesLeft - 1}/${card.stats.maxUses}) — ${parts.join(", ")}`);
+    const skill = skills.find(s => s.def.id === skillId);
+    if (!skill || skill.pp <= 0) return;
+    const result = engUseSkillEffect(player, enemy, skill.def, passive, effectiveStats);
+    setSkillPp(prev => prev.map(s => s.skillId === skillId ? { ...s, pp: s.pp - 1 } : s));
+    const nextPp = skill.pp - 1;
+    if (result.roll) {
+      gainXp(XP_PER_ATTACK);
+      setLastPlayerRoll(result.roll);
+      const critTxt = result.roll.isCrit ? " 💥크리티컬!" : "";
+      pushLog("player", `${skill.def.name} 발동 (PP ${nextPp}/${skill.def.maxPP}) — 🎲${result.roll.faces.join("/")}${critTxt} → ⚔${result.roll.totalDamage} 피해`);
+    } else if (skill.def.effect === "shield") {
+      pushLog("player", `${skill.def.name} 발동 (PP ${nextPp}/${skill.def.maxPP}) — 🛡${skill.def.power} 방어`);
+    } else {
+      pushLog("player", `${skill.def.name} 발동 (PP ${nextPp}/${skill.def.maxPP}) — ❤️${skill.def.power} 회복`);
+    }
     resolveTurn(result.player, result.enemy);
-  }, [phase, enemy, pile.hand, passive, player, effectiveStats, pushLog, gainXp, resolveTurn]);
+  }, [phase, enemy, skills, passive, player, effectiveStats, pushLog, gainXp, resolveTurn]);
 
-  // 액티브 아이템 즉시 발동(1회 소모) — 기술과 동일하게 사용 즉시 턴을 소모.
+  // 액티브 아이템 즉시 발동(1회 소모) — 행동 메뉴에서 "아이템"을 고른 뒤 사용. 기술과 동일하게
+  // 사용 즉시 턴을 소모.
   const useOwnedActiveItem = useCallback((instanceId: string) => {
     if (phase !== "battling" || !enemy) return;
     const owned = ownedItems.find(o => o.instanceId === instanceId);
     const def = owned && ALL_ITEMS.find(d => d.id === owned.defId);
     if (!owned || !def || def.kind !== "active") return;
-    const r = engUseActiveItem(player, enemy, pile.hand, def.effect as ActiveEffect);
-    setPile(p => ({ ...p, hand: r.hand }));
+    const r = engUseActiveItem(player, enemy, skillPp, skillDefs, def.effect as ActiveEffect);
+    setSkillPp(r.skills);
     setOwnedItems(prev => prev.filter(o => o.instanceId !== instanceId));
     pushLog("item", `🎒 ${def.name} 사용 — ${def.desc}`);
     resolveTurn(r.player, r.enemy);
-  }, [phase, enemy, ownedItems, player, pile.hand, pushLog, resolveTurn]);
+  }, [phase, enemy, ownedItems, player, skillPp, skillDefs, pushLog, resolveTurn]);
 
-  // 모든 기술 PP 소진 + 쓸 아이템도 없는 극단적 상황에서만 노출되는 패스 — 아무 효과 없이 턴만 넘김.
-  const passTurn = useCallback(() => {
-    if (phase !== "battling" || !enemy) return;
-    pushLog("system", "쓸 수 있는 기술/아이템이 없어 턴을 넘깁니다.");
-    resolveTurn(player, enemy);
-  }, [phase, enemy, player, pushLog, resolveTurn]);
+  // 행동 메뉴 선택 — 전투(기술 목록)/아이템(보유 아이템 목록)은 하위 화면 전환만, 도망치기/
+  // 월드맵은 곧바로 던전 상태를 바꾸는 액션.
+  const selectBattleAction = useCallback((action: "fight" | "item" | "flee" | "map") => {
+    if (phase !== "battling") return;
+    if (action === "fight") setBattleMenu("skills");
+    else if (action === "item") setBattleMenu("items");
+    else if (action === "flee") {
+      pushLog("system", "🏃 전투에서 도망쳐 이번 층을 포기했습니다.");
+      setEnemy(null); setBattleMenu("action"); setPhase("shop");
+    } else if (action === "map") { setPhase("over"); }
+  }, [phase, pushLog]);
+  const backToActionMenu = useCallback(() => setBattleMenu("action"), []);
 
-  // 다음 라운드 진입 — 조우 판정 후 배틀(적 생성+기술셋 새로 드로우) 또는 이벤트(휴식)
+  // 다음 라운드 진입 — 조우 판정 후 배틀(적 생성) 또는 이벤트(휴식). 기술 PP는 손대지 않음
+  // (던전 진행 내내 유지, 회복은 상점 물약으로만).
   const advanceToRound = useCallback((nextRoundNum: number) => {
     const enc = pickEncounter(nextRoundNum);
     setRoundNum(nextRoundNum);
@@ -294,19 +314,17 @@ export function useGameRun(params: { pool: any[]; deck: DeckItem[]; setDeck: (fn
     const newEnemy = enemyForFloor(pool, nextRoundNum, enc as "battle" | "boss" | "elite");
     setEnemy(newEnemy);
     pushLog("system", `${enc === "boss" ? "👑" : enc === "elite" ? "🗡️" : "🐉"} ${newEnemy.item?.name ?? "적"} 등장! (HP ${newEnemy.maxHp})`);
-    setPile(prev => {
-      const carryDiscard = [...prev.discard, ...prev.hand];
-      const r = drawHand(prev.draw, carryDiscard, HAND_SIZE + passive.drawBonus);
-      return { draw: r.drawPile, hand: r.hand, discard: r.discardPile };
-    });
     setPlayer(p => ({ ...p, block: passive.blockPerTurn }));
+    setBattleMenu("action");
     setPhase("battling");
   }, [pool, passive, pushLog]);
 
   const nextRound = useCallback(() => { if (phase === "resolved") setPhase("shop"); }, [phase]);
   const proceedFromEvent = useCallback(() => { if (phase === "event") setPhase("shop"); }, [phase]);
   const proceedFromShop = useCallback(() => { if (phase === "shop") advanceToRound(roundNum + 1); }, [phase, roundNum, advanceToRound]);
-  const cashOut = useCallback(() => { if (phase === "resolved") setPhase("over"); }, [phase]);
+  // 던전 나가기("여기서 정리" 버튼 및 전투 중 행동 메뉴의 "월드맵") — resolved 화면뿐 아니라
+  // 진행 중인 어느 시점에서도 호출 가능(런이 이미 끝났거나 로딩 중일 때만 무시).
+  const cashOut = useCallback(() => { if (phase !== "over" && phase !== "loading") setPhase("over"); }, [phase]);
 
   // 매 층 상점 — HP 회복 물약(즉시 회복, 옛 떠돌이 상인 기능 재사용, merchant 조우 게이팅만 제거)
   const buyMerchantHeal = useCallback(() => {
@@ -337,11 +355,10 @@ export function useGameRun(params: { pool: any[]; deck: DeckItem[]; setDeck: (fn
 
   const start = useCallback(() => {
     if (pool.length < 2) return;
-    const runDeck = buildRunDeck(deck, STARTER_DECK);
     const newEnemy = enemyForFloor(pool, 0, "battle");
-    const r = drawHand(runDeck, [], HAND_SIZE);
     setEnemy(newEnemy);
-    setPile({ draw: r.drawPile, hand: r.hand, discard: r.discardPile });
+    setSkillPp(skillDefs.map(def => ({ skillId: def.id, pp: def.maxPP })));
+    setBattleMenu("action");
     setOwnedItems([]); setItemChoices(null);
     setGold(0); setRoundNum(0); setEncounter("battle"); setRestHealed(false); setNewBest(false);
     setLastResult(null); setDropped(false); setDropPrompt(false); setSaveFail(null); setPackOpening(false); setAcquired([]);
@@ -349,7 +366,7 @@ export function useGameRun(params: { pool: any[]; deck: DeckItem[]; setDeck: (fn
     prevMaxHpRef.current = maxHp;
     setLog([{ id: "l0", kind: "system", text: `🐉 ${newEnemy.item?.name ?? "적"} 등장! (HP ${newEnemy.maxHp})` }]);
     setPhase("battling");
-  }, [pool, deck, maxHp]);
+  }, [pool, skillDefs, maxHp]);
 
   useEffect(() => { if (!started.current && pool.length >= 2 && characterLoaded) { started.current = true; start(); } }, [pool, characterLoaded, start]);
 
@@ -360,21 +377,21 @@ export function useGameRun(params: { pool: any[]; deck: DeckItem[]; setDeck: (fn
     if (phase === "over") { try { localStorage.removeItem(RUN_KEY); } catch { } return; }
     const saved: SavedRun = {
       phase, roundNum, encounter, restHealed, gold, newBest,
-      ownedItems, itemChoices, activeBoost, player, enemy, pile,
+      ownedItems, itemChoices, activeBoost, player, enemy, skillPp, battleMenu,
       log, lastResult, acquired,
     };
     try { localStorage.setItem(RUN_KEY, JSON.stringify(saved)); } catch { }
-  }, [phase, roundNum, encounter, restHealed, gold, newBest, ownedItems, itemChoices, activeBoost, player, enemy, pile, log, lastResult, acquired]);
+  }, [phase, roundNum, encounter, restHealed, gold, newBest, ownedItems, itemChoices, activeBoost, player, enemy, skillPp, battleMenu, log, lastResult, acquired]);
 
   const acquirePct = enemy ? Math.round(Math.min(0.95, acquireChance(enemy.item, roundNum + 1) * (activeBoost?.mult ?? 1)) * 100) : 0;
 
   return {
     phase, roundNum, encounter, restHealed, gold, best, newBest,
     ownedItems, ownedDefs, itemChoices, passive, maxHp, unlockedLegendItems, activeBoost,
-    player, enemy, hand: pile.hand, drawCount: pile.draw.length, log,
+    player, enemy, skills, battleMenu, log,
     lastResult, dropped, dropPrompt, saveFail, packOpening, acquired, acquirePct,
     character, effectiveStats, lastPlayerRoll, lastEnemyRoll,
-    start, playHandCard, useOwnedActiveItem, passTurn, nextRound, proceedFromEvent, proceedFromShop, cashOut,
+    start, useSkill, useOwnedActiveItem, selectBattleAction, backToActionMenu, nextRound, proceedFromEvent, proceedFromShop, cashOut,
     buyMerchantHeal, buyPpPotion, buyBoost, pickItem, skipItem,
   };
 }
