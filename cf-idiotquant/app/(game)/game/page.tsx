@@ -673,25 +673,25 @@ function GameContent() {
                     {run.battleMenu === "action" ? (
                       <HandView mode="action" onSelectAction={run.selectBattleAction} message={latestLogText}
                         topLeftOverlay={<DiceRow label="적" roll={run.lastEnemyRoll} isPlayer={false} />}
-                        bottomRightOverlay={<DiceRow label="나" roll={run.lastPlayerRoll} isPlayer compact />}>
+                        bottomRightOverlay={<DiceRow label="나" roll={run.lastPlayerRoll} isPlayer compact />} busy={run.busy}>
                         <PhaserCombatCanvas enemy={run.enemy} player={run.player} playerName={activeMonsterName} introLabel={introLabel} />
                       </HandView>
                     ) : run.battleMenu === "skills" ? (
                       <HandView mode="skills" skills={run.skills} onPlaySkill={run.useSkill} onBack={run.backToActionMenu} message={latestLogText}
                         topLeftOverlay={<DiceRow label="적" roll={run.lastEnemyRoll} isPlayer={false} />}
-                        bottomRightOverlay={<DiceRow label="나" roll={run.lastPlayerRoll} isPlayer compact />}>
+                        bottomRightOverlay={<DiceRow label="나" roll={run.lastPlayerRoll} isPlayer compact />} busy={run.busy}>
                         <PhaserCombatCanvas enemy={run.enemy} player={run.player} playerName={activeMonsterName} introLabel={introLabel} />
                       </HandView>
                     ) : run.battleMenu === "items" ? (
                       <HandView mode="items" ownedItems={run.ownedItems} ownedDefs={run.ownedDefs} onUseItem={run.useOwnedActiveItem} onBack={run.backToActionMenu} message={latestLogText}
                         topLeftOverlay={<DiceRow label="적" roll={run.lastEnemyRoll} isPlayer={false} />}
-                        bottomRightOverlay={<DiceRow label="나" roll={run.lastPlayerRoll} isPlayer compact />}>
+                        bottomRightOverlay={<DiceRow label="나" roll={run.lastPlayerRoll} isPlayer compact />} busy={run.busy}>
                         <PhaserCombatCanvas enemy={run.enemy} player={run.player} playerName={activeMonsterName} introLabel={introLabel} />
                       </HandView>
                     ) : (
                       <HandView mode="party" party={run.party} activeIndex={run.activeIndex} forced={run.forcedSwitch} onSwitchMember={run.switchMember} onBack={run.backToActionMenu} message={latestLogText}
                         topLeftOverlay={<DiceRow label="적" roll={run.lastEnemyRoll} isPlayer={false} />}
-                        bottomRightOverlay={<DiceRow label="나" roll={run.lastPlayerRoll} isPlayer compact />}>
+                        bottomRightOverlay={<DiceRow label="나" roll={run.lastPlayerRoll} isPlayer compact />} busy={run.busy}>
                         <PhaserCombatCanvas enemy={run.enemy} player={run.player} playerName={activeMonsterName} introLabel={introLabel} />
                       </HandView>
                     )}
