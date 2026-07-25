@@ -40,18 +40,10 @@ export const ITEM_POOL: ItemDef[] = [
   { id: PP_POTION_ITEM_ID, kind: "active", name: "기력 회복", desc: "보유한 모든 기술의 PP를 최대치로 회복", icon: "💊", effect: { kind: "restorePP" } },
 ];
 
-// 힘/민첩/행운/체력 스탯 부스트 — 각 3단계(lv2=lv1×2, lv3=lv1×4). 다른 패시브 아이템과 동일하게
-// 이번 런에서만 적용되고 던전을 나가면 사라짐(계정에 영구 저장되는 캐릭터 레벨과는 별개).
+// 체력 스탯 부스트 — 3단계(lv2=lv1×2, lv3=lv1×4). 다른 패시브 아이템과 동일하게 이번 런에서만
+// 적용되고 던전을 나가면 사라짐. 힘/민첩/행운(주사위 굴림에 직접 관여하는 스탯)은 이제 일반
+// 풀이 아니라 RELIC_POOL(유물, 보스 처치 전용)로 옮겨졌다.
 export const STAT_ITEM_POOL: ItemDef[] = [
-  { id: "str_ring_1", kind: "passive", name: "힘의 반지 I", desc: "힘(STR) +1", icon: "💪", tier: 1, effect: { strBonus: 1 } },
-  { id: "str_ring_2", kind: "passive", name: "힘의 반지 II", desc: "힘(STR) +2", icon: "💪", tier: 2, effect: { strBonus: 2 } },
-  { id: "str_ring_3", kind: "passive", name: "힘의 반지 III", desc: "힘(STR) +4", icon: "💪", tier: 3, effect: { strBonus: 4 } },
-  { id: "dex_ring_1", kind: "passive", name: "민첩의 반지 I", desc: "민첩(DEX) +1", icon: "🐇", tier: 1, effect: { dexBonus: 1 } },
-  { id: "dex_ring_2", kind: "passive", name: "민첩의 반지 II", desc: "민첩(DEX) +2", icon: "🐇", tier: 2, effect: { dexBonus: 2 } },
-  { id: "dex_ring_3", kind: "passive", name: "민첩의 반지 III", desc: "민첩(DEX) +4", icon: "🐇", tier: 3, effect: { dexBonus: 4 } },
-  { id: "luk_ring_1", kind: "passive", name: "행운의 반지 I", desc: "행운(LUK) +1", icon: "🍀", tier: 1, effect: { lukBonus: 1 } },
-  { id: "luk_ring_2", kind: "passive", name: "행운의 반지 II", desc: "행운(LUK) +2", icon: "🍀", tier: 2, effect: { lukBonus: 2 } },
-  { id: "luk_ring_3", kind: "passive", name: "행운의 반지 III", desc: "행운(LUK) +4", icon: "🍀", tier: 3, effect: { lukBonus: 4 } },
   { id: "vit_ring_1", kind: "passive", name: "체력의 반지 I", desc: "체력(VIT) +10", icon: "🫀", tier: 1, effect: { vitBonus: 10 } },
   { id: "vit_ring_2", kind: "passive", name: "체력의 반지 II", desc: "체력(VIT) +20", icon: "🫀", tier: 2, effect: { vitBonus: 20 } },
   { id: "vit_ring_3", kind: "passive", name: "체력의 반지 III", desc: "체력(VIT) +40", icon: "🫀", tier: 3, effect: { vitBonus: 40 } },
@@ -61,10 +53,22 @@ export const STAT_ITEM_POOL: ItemDef[] = [
 export const LEGEND_ITEMS: ItemDef[] = [
   { id: "legend_buffett", kind: "passive", name: "워런 버핏의 서한", desc: "최대 HP +10", icon: "📜", isLegend: true, achievementId: "collector", effect: { maxHpBonus: 10 } },
   { id: "legend_blackswan", kind: "active", name: "블랙스완 헤지", desc: "즉시 적에게 15 데미지", icon: "🦢", isLegend: true, achievementId: "legend3", effect: { kind: "damage", amount: 15 } },
-  { id: "legend_advantage", kind: "passive", name: "야수의 감각", desc: "카드 공격 시 주사위를 2번 굴려 더 높은 눈 사용(어드밴티지)", icon: "🎲", isLegend: true, achievementId: "captain", effect: { extraDie: true } },
 ];
 
 export const ALL_ITEMS: ItemDef[] = [...ITEM_POOL, ...STAT_ITEM_POOL, ...LEGEND_ITEMS];
+
+// 유물 — 주사위 굴림 자체를 커스텀하는 효과(힘/민첩/행운 보너스, 어드밴티지)만 모아둔 별도 풀.
+// 3층마다 뜨는 일반 아이템 선택지엔 절대 안 섞이고, 보스를 처치했을 때만 이 중 하나가 랜덤으로
+// 자동 지급된다(플레이어가 고르지 않음 — pickItemChoices(RELIC_POOL, 1)).
+export const RELIC_POOL: ItemDef[] = [
+  { id: "relic_str_1", kind: "passive", name: "괴력의 유물", desc: "힘(STR) +3 — 공격 시 고정 데미지 보너스 증가", icon: "💪", isRelic: true, effect: { strBonus: 3 } },
+  { id: "relic_str_2", kind: "passive", name: "거인의 유물", desc: "힘(STR) +6 — 공격 시 고정 데미지 보너스 증가", icon: "💪", isRelic: true, effect: { strBonus: 6 } },
+  { id: "relic_dex_1", kind: "passive", name: "재빠름의 유물", desc: "민첩(DEX) +30 — 주사위 눈에 보정치 추가", icon: "🐇", isRelic: true, effect: { dexBonus: 30 } },
+  { id: "relic_dex_2", kind: "passive", name: "질풍의 유물", desc: "민첩(DEX) +60 — 주사위 눈에 보정치 추가", icon: "🐇", isRelic: true, effect: { dexBonus: 60 } },
+  { id: "relic_luk_1", kind: "passive", name: "행운의 유물", desc: "행운(LUK) +30 — 크리티컬 확률 상승", icon: "🍀", isRelic: true, effect: { lukBonus: 30 } },
+  { id: "relic_luk_2", kind: "passive", name: "여신의 유물", desc: "행운(LUK) +60 — 크리티컬 확률 상승", icon: "🍀", isRelic: true, effect: { lukBonus: 60 } },
+  { id: "relic_advantage", kind: "passive", name: "야수의 감각", desc: "카드 공격 시 주사위를 2번 굴려 더 높은 눈 사용(어드밴티지)", icon: "🎲", isRelic: true, effect: { extraDie: true } },
+];
 
 // 아이템 선택지 3택1(보스는 행운 수치에 따라 4택) — 슬롯 개념이 없어 이미 보유한 아이템도 후보에서
 // 제외하지 않음(패시브는 중복 보유 시 효과가 합산되고, 액티브는 충전 개념이 없어 여러 장 들고 있으면

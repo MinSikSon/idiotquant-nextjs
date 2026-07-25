@@ -181,8 +181,14 @@ function playerBody(col: number, row: number): boolean {
   return false;
 }
 const PLAYER_PALETTE = makePalette(0xb45309, 0x431407); // 가죽 갑옷 톤(호박빛 브라운)
-// 육성 단계(0=유아기/1=청년기/2=성인)별 실루엣 배율 — setPlayerStage에서 사용.
-const GROWTH_STAGE_SCALE = [0.72, 1, 1.3];
+// 육성(레벨)에 따른 실루엣 배율 — Lv1이 0.72(예전 "유아기"와 동일 크기)에서 시작해 레벨마다
+// 조금씩 커지고(필살기 해금 레벨인 Lv5쯤에서 대략 기본 크기 1.0), LEVEL_SCALE_MAX에서 멈춘다.
+const LEVEL_SCALE_BASE = 0.72;
+const LEVEL_SCALE_PER_LEVEL = 0.07;
+const LEVEL_SCALE_MAX = 1.6;
+function levelToScale(level: number): number {
+  return Math.min(LEVEL_SCALE_MAX, LEVEL_SCALE_BASE + (level - 1) * LEVEL_SCALE_PER_LEVEL);
+}
 
 // Phaser의 Text는 자체 해상도(resolution)로 텍스처를 굽는데 기본값 1이라 고밀도(레티나)
 // 모바일 화면에서 흐릿하게 보임 — devicePixelRatio만큼 올려서 선명하게 그린다(과도한 메모리
@@ -212,7 +218,7 @@ export default class CombatScene extends Phaser.Scene {
   private playerHpTag!: Phaser.GameObjects.Text;
   private playerCenterX = 0; private playerCenterY = 0;
   private playerHpBarX = 0; private playerHpBarY = 0; private playerHpBarW = 0;
-  private playerStage: number | null = null; // 육성 단계 — setPlayerStage 참고
+  private playerLevel: number | null = null; // 육성 레벨 — setPlayerLevel 참고
 
   private introText!: Phaser.GameObjects.Text;
   private spec!: MonsterSpec;
@@ -410,17 +416,17 @@ export default class CombatScene extends Phaser.Scene {
     this.drawHpBar(this.playerHpGfx, this.playerHpNumText, this.playerHpBarX, this.playerHpBarY, this.playerHpBarW, hp, maxHp);
   }
 
-  // 육성(진화) — 유아기/청년기/성인 단계별로 실루엣 크기를 다르게 스케일(작게→기본→크게)해서
-  // 자라는 느낌을 준다. 실제로 단계가 바뀔 때만(최초 마운트 제외) 반짝임 연출을 곁들인다.
-  setPlayerStage(stage: number) {
-    if (this.playerStage === stage) return;
-    const first = this.playerStage === null;
-    this.playerStage = stage;
-    const scale = GROWTH_STAGE_SCALE[stage] ?? 1;
+  // 육성(레벨) — 레벨이 오를수록 실루엣이 조금씩 커진다(levelToScale). 실제로 레벨이 바뀔 때만
+  // (최초 마운트 제외) 반짝임 연출을 곁들인다.
+  setPlayerLevel(level: number) {
+    if (this.playerLevel === level) return;
+    const first = this.playerLevel === null;
+    this.playerLevel = level;
+    const scale = levelToScale(level);
     this.tweens.killTweensOf(this.playerGfx);
     if (first) { this.playerGfx.setScale(scale); return; }
     this.tweens.add({ targets: this.playerGfx, scale, duration: 380, ease: "Back.easeOut" });
-    this.cameras.main.flash(220, 253, 224, 71); // 옅은 금색 플래시로 진화 순간 강조
+    this.cameras.main.flash(220, 253, 224, 71); // 옅은 금색 플래시로 레벨업 순간 강조
   }
 
   // 살아있는 느낌을 주는 대기 애니메이션 — 위치를 옮기는 트윈 대신 몇 개 픽셀만 주기적으로

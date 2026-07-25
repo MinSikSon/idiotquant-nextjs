@@ -4,7 +4,9 @@
 // 가치투자 덱빌더 — 손패·코스트 기반 다중 턴 전투 던전 크롤 게임(프로토타입).
 // 4개 재무지표(ROE→공격력·NCAV→방어력·PBR→코스트·PER→환급) → 카드 전투 스탯(1~10).
 // 공격력은 20면체 주사위(D&D 스타일)로 굴려 0~N 범위에서 실제 피해가 정해짐(자연 20=크리티컬).
-// 캐릭터(전사, 계정 영구 저장)는 힘/민첩/행운/체력 4스탯 + 레벨을 갖고, 공격/처치마다 경험치 획득.
+// 캐릭터(트레이너) 시스템은 없음 — 종목(몬스터)마다 이번 런 한정 레벨(경험치 100당 1레벨)을 갖고,
+// 공격/처치마다 경험치를 얻어 스탯이 오르고 필살기를 해금한다. 힘/민첩/행운은 아이템·유물(보스
+// 처치 시 랜덤 획득, 주사위 굴림 커스텀)로만 얻는다.
 // 보유 컬렉션(계정 덱) 전체가 곧 전투 덱 — 손패에서 카드를 전장(Phaser 캔버스)으로 드래그해
 // 발동, 코스트 소진 시 "턴 종료"로 적 턴 진행(코스트는 전투 턴마다 성장, 최대 10). 3층마다
 // 패시브/액티브 아이템 획득, 10층마다 보스(같은 몬스터가 스탯 3배로 강화되어 등장).
@@ -32,11 +34,10 @@ import { HOLO_THRESHOLD, PackReveal, AchievementBadges, ACHIEVEMENTS } from "./g
 import { WalletChip, ConvertButton, ShopPanel, BOOST_ITEMS } from "./gameShop";
 import { useGameRun, deckTotal, type DeckItem, MERCHANT_HEAL_COST } from "./useGameRun";
 import { PP_POTION_COST, PARTY_SIZE } from "./gameData";
-import { cardStats } from "./combatEngine";
+import { cardStats, levelForXp, LEVEL_XP } from "./combatEngine";
 import { sectorType } from "./sectorTypes";
 import type { PartyMember } from "./gameTypes";
 import { EnemyIntentBadge, ItemBar, StatTile } from "@/components/game/CombatHud";
-import CharacterCard from "@/components/game/CharacterCard";
 import { DiceRow } from "@/components/game/DiceRow";
 
 const PhaserCombatCanvas = dynamic(() => import("@/components/game/PhaserCombatCanvas"), { ssr: false });
@@ -489,6 +490,28 @@ function FloorGraph({ nodes }: { nodes: FloorNode[] }) {
   );
 }
 
+// 하단 상시 패널 — 예전엔 캐릭터(트레이너) Lv/XP를 보여줬지만, 캐릭터 시스템이 사라지고 그
+// 성장 역할을 종목별 레벨이 대신하므로 지금 나와있는 몬스터의 이름/Lv/이번 레벨 진행도를 같은
+// 자리에 같은 모양으로 보여준다.
+function ActiveMonsterCard({ member }: { member: PartyMember | null }) {
+  if (!member) return null;
+  const level = levelForXp(member.xp);
+  const intoLevel = member.xp % LEVEL_XP;
+  const xpPct = Math.max(0, Math.min(100, (intoLevel / LEVEL_XP) * 100));
+  return (
+    <div className="rounded-xl border border-orange-500/30 bg-orange-500/[0.06] px-2 py-1">
+      <div className="flex items-center gap-1.5">
+        <span className="shrink-0 text-[10px] font-black px-1.5 py-0.5 rounded-full text-orange-700 dark:text-orange-300">
+          {member.name} Lv.{level}
+        </span>
+        <div className="flex-1 min-w-0 h-1.5 rounded-full bg-black/10 dark:bg-white/10 overflow-hidden" title={`XP ${intoLevel}/${LEVEL_XP}`}>
+          <div className="h-full bg-violet-500" style={{ width: `${xpPct}%` }} />
+        </div>
+      </div>
+    </div>
+  );
+}
+
 // 상단 HUD의 파티 요약 — 파티원을 작은 원으로, 지금 나와있는 몬스터는 링으로 강조하고
 // 기절한 몬스터는 흐리게. 탭하면 바로 교체되진 않음(정보 표시 전용 — 실제 교체는 행동
 // 메뉴의 "파티"에서).
@@ -626,7 +649,7 @@ function GameContent() {
             </div>
           ) : (
             <div className={cn("w-full", run.phase === "over" ? "flex flex-col sm:flex-1 sm:min-h-0" : "flex flex-col flex-1 min-h-0")}>
-              {/* 상단 HUD — 던전 층수 + 적 정보만(내 캐릭터 관련 정보는 전부 하단 패널로 이동).
+              {/* 상단 HUD — 던전 층수 + 적 정보만(활성 몬스터 Lv/XP 등은 전부 하단 패널로 이동).
                   파티 설정 화면은 아직 던전에 들어간 게 아니라 층수/적 정보가 의미 없어 제외. */}
               {run.phase !== "over" && run.phase !== "partySetup" && (
                 <div className="shrink-0 mb-1 sm:mb-2 space-y-1">
@@ -679,38 +702,38 @@ function GameContent() {
                       <HandView mode="action" onSelectAction={run.selectBattleAction} message={latestLogText}
                         topLeftOverlay={<DiceRow label="적" roll={run.lastEnemyRoll} isPlayer={false} />}
                         bottomRightOverlay={<DiceRow label="나" roll={run.lastPlayerRoll} isPlayer compact />} pending={run.pending} onAdvance={run.advance}>
-                        <PhaserCombatCanvas enemy={run.enemy} player={run.player} playerName={activeMonsterName} introLabel={introLabel} stage={run.activeStage} />
+                        <PhaserCombatCanvas enemy={run.enemy} player={run.player} playerName={activeMonsterName} introLabel={introLabel} level={run.activeLevel} />
                       </HandView>
                     ) : run.battleMenu === "skills" ? (
                       <HandView mode="skills" skills={run.skills} onPlaySkill={run.useSkill} onBack={run.backToActionMenu} message={latestLogText}
                         topLeftOverlay={<DiceRow label="적" roll={run.lastEnemyRoll} isPlayer={false} />}
                         bottomRightOverlay={<DiceRow label="나" roll={run.lastPlayerRoll} isPlayer compact />} pending={run.pending} onAdvance={run.advance}>
-                        <PhaserCombatCanvas enemy={run.enemy} player={run.player} playerName={activeMonsterName} introLabel={introLabel} stage={run.activeStage} />
+                        <PhaserCombatCanvas enemy={run.enemy} player={run.player} playerName={activeMonsterName} introLabel={introLabel} level={run.activeLevel} />
                       </HandView>
                     ) : run.battleMenu === "items" ? (
                       <HandView mode="items" ownedItems={run.ownedItems} ownedDefs={run.ownedDefs} onUseItem={run.useOwnedActiveItem} onBack={run.backToActionMenu} message={latestLogText}
                         topLeftOverlay={<DiceRow label="적" roll={run.lastEnemyRoll} isPlayer={false} />}
                         bottomRightOverlay={<DiceRow label="나" roll={run.lastPlayerRoll} isPlayer compact />} pending={run.pending} onAdvance={run.advance}>
-                        <PhaserCombatCanvas enemy={run.enemy} player={run.player} playerName={activeMonsterName} introLabel={introLabel} stage={run.activeStage} />
+                        <PhaserCombatCanvas enemy={run.enemy} player={run.player} playerName={activeMonsterName} introLabel={introLabel} level={run.activeLevel} />
                       </HandView>
                     ) : (
                       <HandView mode="party" party={run.party} activeIndex={run.activeIndex} forced={run.forcedSwitch} onSwitchMember={run.switchMember} onBack={run.backToActionMenu} message={latestLogText}
                         topLeftOverlay={<DiceRow label="적" roll={run.lastEnemyRoll} isPlayer={false} />}
                         bottomRightOverlay={<DiceRow label="나" roll={run.lastPlayerRoll} isPlayer compact />} pending={run.pending} onAdvance={run.advance}>
-                        <PhaserCombatCanvas enemy={run.enemy} player={run.player} playerName={activeMonsterName} introLabel={introLabel} stage={run.activeStage} />
+                        <PhaserCombatCanvas enemy={run.enemy} player={run.player} playerName={activeMonsterName} introLabel={introLabel} level={run.activeLevel} />
                       </HandView>
                     )}
                   </div>
                 </div>
               ) : null}
 
-              {/* 하단 — 내 캐릭터 정보(상시 노출, 구 "용사 상태창" 모달 대체). HP는 이제 포켓몬식
-                  캔버스(대각선 배치)에 표시되므로 여기선 제외 — 항목 수는 phase에만 의존(전투
-                  중 실시간으로는 안 바뀜)이라 그리드 칸 수가 흔들릴 일은 없음. 파티 설정 화면은
-                  카드 목록이 스크롤 공간을 다 써야 해서 제외. */}
+              {/* 하단 — 활성 몬스터 Lv/XP(상시 노출, 구 "용사 상태창" 모달 대체). HP는 이제
+                  포켓몬식 캔버스(대각선 배치)에 표시되므로 여기선 제외 — 항목 수는 phase에만
+                  의존(전투 중 실시간으로는 안 바뀜)이라 그리드 칸 수가 흔들릴 일은 없음. 파티
+                  설정 화면은 카드 목록이 스크롤 공간을 다 써야 해서 제외. */}
               {run.phase !== "over" && run.phase !== "partySetup" && (
                 <div className="shrink-0 mt-1.5 space-y-1">
-                  <CharacterCard character={run.character} effectiveStats={run.effectiveStats} />
+                  <ActiveMonsterCard member={run.party[run.activeIndex] ?? null} />
                   <div className={cn("grid gap-1.5", run.phase === "battling" ? "grid-cols-4" : "grid-cols-2")}>
                     <StatTile icon={<Trophy size={11} strokeWidth={2.5} />} label="최고층수" value={run.best} />
                     <StatTile icon="💰" label="골드" value={run.gold} />
@@ -744,15 +767,15 @@ function GameContent() {
             <div className="space-y-3">
               {[
                 { icon: "🧩", text: <>던전 입장 전 <b className="text-neutral-800 dark:text-neutral-100">내 덱</b>에서 최대 {PARTY_SIZE}장을 직접 골라 <b className="text-neutral-800 dark:text-neutral-100">파티</b>를 꾸려요(저평가 점수가 낮은 카드 {PARTY_SIZE}장이 기본 선택돼 있어요, 부족하면 기본 몬스터로 채워짐). 카드의 ROE·NCAV가 그대로 몬스터의 공격력·방어력이 돼요.</> },
-                { icon: "🗡️", text: <>매 턴 <b className="text-neutral-800 dark:text-neutral-100">전투/파티/아이템</b> 중 행동을 골라요. <b className="text-neutral-800 dark:text-neutral-100">전투</b>를 고르면 지금 앞에 나온 몬스터의 기술 4개(약공격·강공격·방어·회복)가 나와요.</> },
+                { icon: "🗡️", text: <>매 턴 <b className="text-neutral-800 dark:text-neutral-100">전투/파티/아이템/도망치기</b> 중 행동을 골라요. <b className="text-neutral-800 dark:text-neutral-100">전투</b>를 고르면 지금 앞에 나온 몬스터의 기술 4개(약공격·강공격·방어·회복)가 나와요. <b className="text-neutral-800 dark:text-neutral-100">도망치기</b>는 주사위를 굴려 성공하면 이번 층을 포기하고 상점으로, 실패하면 턴을 소모해 적의 반격을 받아요.</> },
                 { icon: "🎲", text: <>공격 기술은 <b className="text-neutral-800 dark:text-neutral-100">0~N 범위</b>로 20면체 주사위를 굴려 피해가 정해지고, 자연 20이면 <b className="text-amber-500 dark:text-amber-400">크리티컬</b>(최대 피해의 2배)! 방어는 블록을, 회복은 HP를 고정치만큼 즉시 채워요.</> },
                 { icon: "⚡", text: <>카드마다 업종이 있고 업종끼리 상성이 있어요 — 상성에서 <b className="text-emerald-600 dark:text-emerald-400">이기면 피해가 1.5배</b>, <b className="text-rose-500">지면 2/3배</b>로 줄어요.</> },
-                { icon: "🐣", text: <>몬스터는 전투에서 공격하거나 층을 클리어할 때마다 경험치를 얻어 <b className="text-neutral-800 dark:text-neutral-100">유아기 → 청년기 → 성인</b>으로 성장해요(이번 던전 한정, 나가면 리셋). 성장할수록 스탯이 오르고 실루엣도 커지며, 성인이 되면 "약공격"이 훨씬 강한 <b className="text-violet-600 dark:text-violet-400">필살기</b>로 진화해요.</> },
-                { icon: "💊", text: <>기술마다 정해진 PP가 있고 쓸 때마다 1씩 줄어요 — <b className="text-neutral-800 dark:text-neutral-100">던전을 도는 내내 유지</b>되며(전투를 이겨도 안 채워짐) 상점의 PP 회복 물약으로만 채울 수 있어요.</> },
+                { icon: "🐣", text: <>몬스터는 전투에서 공격하거나 층을 클리어할 때마다 경험치를 얻어 <b className="text-neutral-800 dark:text-neutral-100">레벨업</b>해요(이번 던전 한정, 나가면 리셋 — 레벨업마다 경험치 100 필요). 비슷한 레벨의 적을 이기면 적당히, 더 강한 적을 이기면 더 많이 얻어요. 레벨이 오를수록 스탯이 오르고 실루엣도 커지며, <b className="text-neutral-800 dark:text-neutral-100">Lv.5</b>부터는 "약공격"이 훨씬 강한 <b className="text-violet-600 dark:text-violet-400">필살기</b>로 진화해요. 배틀이 끝나고 레벨업한 종목이 있으면 결과 화면에 표시돼요.</> },
+                { icon: "💊", text: <>기술마다 정해진 PP가 있고 쓸 때마다 1씩 줄어요 — <b className="text-neutral-800 dark:text-neutral-100">던전을 도는 내내 유지</b>되며(전투를 이겨도 안 채워짐) 상점의 PP 회복 물약을 사면 파티 전원의 PP가 즉시 가득 차요.</> },
                 { icon: "🔄", text: <><b className="text-neutral-800 dark:text-neutral-100">파티</b>에서 다른 몬스터로 교체할 수 있어요(교체도 턴을 소모해 적의 공격을 받아요). 몬스터가 쓰러지면 강제로 다음 몬스터를 골라야 하고, 파티 전원이 쓰러지면 던전이 끝나요.</> },
                 { icon: "🚪", text: <>지금까지 성과를 저장하고 던전에서 나가고 싶으면 상단의 🚪 버튼을 눌러요.</> },
-                { icon: "🛒", text: <>층을 클리어할 때마다 <b className="text-neutral-800 dark:text-neutral-100">상점</b>에 들러 ❤️HP 회복 물약과 💊PP 회복 물약을 살 수 있어요. 상점에서는 파티 전원의 HP를 한눈에 볼 수 있고, 캐릭터 효과로 늘어난 최대 HP도 따로 표시돼요.</> },
-                { icon: "🎒", text: <>3층마다 <b className="text-neutral-800 dark:text-neutral-100">패시브/액티브 아이템</b>을 하나 고를 수 있어요. 힘·민첩·행운·체력 스탯 아이템은 지금 나와있는 몬스터든 교체한 몬스터든 공통으로 적용돼요. <b className="text-violet-600 dark:text-violet-400">10층마다는 보스</b>(같은 몬스터가 스탯 3배로 강화돼 등장)예요.</> },
+                { icon: "🛒", text: <>층을 클리어할 때마다 <b className="text-neutral-800 dark:text-neutral-100">상점</b>에 들러 ❤️HP 회복 물약과 💊PP 회복 물약을 살 수 있어요(둘 다 사는 즉시 적용). 상점에서는 파티 전원의 HP를 한눈에 볼 수 있고, 아이템 효과로 늘어난 최대 HP도 따로 표시돼요.</> },
+                { icon: "🎒", text: <>3층마다 <b className="text-neutral-800 dark:text-neutral-100">패시브/액티브 아이템</b>을 하나 고를 수 있어요. 체력 스탯 아이템은 지금 나와있는 몬스터든 교체한 몬스터든 공통으로 적용돼요. <b className="text-violet-600 dark:text-violet-400">10층마다는 보스</b>(같은 몬스터가 스탯 3배로 강화돼 등장)가 나오고, 처치하면 힘·민첩·행운 등 <b className="text-violet-600 dark:text-violet-400">주사위 굴림을 커스텀하는 유물</b>을 하나 랜덤으로 자동 획득해요.</> },
               ].map((row, i) => (
                 <div key={i} className="flex items-start gap-2.5">
                   <span aria-hidden className="shrink-0 text-lg leading-none">{row.icon}</span>
@@ -883,6 +906,11 @@ function ResolvedScreen({ run }: { run: ReturnType<typeof useGameRun> }) {
           <span aria-hidden className="text-4xl">🏆</span>
           <p className="text-lg font-black text-[#16a34a]">층 클리어!</p>
           {!!run.lastResult?.goldGain && <p className="text-xs font-bold text-amber-600 dark:text-amber-400">💰 +{run.lastResult.goldGain} 골드</p>}
+          {run.levelUps.length > 0 && (
+            <div className="text-[11px] font-bold text-violet-600 dark:text-violet-400 space-y-0.5">
+              {run.levelUps.map(l => <p key={l.instanceId}>🎉 {l.name} Lv.{l.from} → Lv.{l.to}</p>)}
+            </div>
+          )}
           {run.dropped && <p className="text-[11px] font-bold text-amber-600 dark:text-amber-400 flex items-center gap-1"><Sparkles size={12} /> 카드 획득! 내 덱에 추가됨</p>}
           {run.dropPrompt && <p className="text-[11px] font-bold text-[#16a34a] flex items-center gap-1"><Lock size={11} /> 카드가 나왔어요! 로그인하면 덱에 담을 수 있어요</p>}
           {run.saveFail && <p className="text-[10px] font-bold text-rose-500">덱 저장 실패 — {run.saveFail}</p>}
@@ -990,7 +1018,7 @@ function ShopScreen({ run }: { run: ReturnType<typeof useGameRun> }) {
         <div className="w-full max-w-[280px]">
           <ShopPartyRoster party={run.party} activeIndex={run.activeIndex} healFlash={healFlash} />
           {run.passiveVitBonus > 0 && (
-            <p className="text-[9px] text-neutral-400 mt-1">캐릭터 효과로 전원 최대 HP +{run.passiveVitBonus}</p>
+            <p className="text-[9px] text-neutral-400 mt-1">아이템 효과로 전원 최대 HP +{run.passiveVitBonus}</p>
           )}
         </div>
       )}

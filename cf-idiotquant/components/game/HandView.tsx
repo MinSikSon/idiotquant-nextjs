@@ -1,7 +1,7 @@
 "use client";
 
 // 전투 하단 패널 — 포켓몬 클래식 구도(메시지 텍스트박스+선택 그리드 나란히 배치)를 따른다.
-// 매 내 턴마다 4가지 모드를 오간다: action(전투/파티/아이템 선택) → skills(활성
+// 매 내 턴마다 4가지 모드를 오간다: action(전투/파티/아이템/도망치기 선택) → skills(활성
 // 몬스터의 기술 목록, PP 있으면 탭해서 즉시 발동) 또는 items(보유 액티브 아이템 사용) 또는
 // party(파티원 교체 — 활성 몬스터가 기절하면 강제로 이 모드에 갇힘). 네 모드 모두 같은
 // 높이(h-20)를 유지해 모드 전환 시 캔버스가 리사이즈되며 흔들리는 문제(과거 HUD 배지 흔들림
@@ -10,7 +10,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { cn } from "@/lib/utils";
 import type { SkillDef, ItemDef, OwnedItem, PartyMember } from "@/app/(game)/game/gameTypes";
-import { stageForXp, STAGE_LABELS } from "@/app/(game)/game/combatEngine";
+import { levelForXp } from "@/app/(game)/game/combatEngine";
 
 type SkillRuntime = { def: SkillDef; pp: number };
 
@@ -76,23 +76,22 @@ function Grid2x2({ children }: { children: React.ReactNode }) {
   return <div className="grid grid-cols-2 grid-rows-2 gap-1 h-full w-[168px] shrink-0">{children}</div>;
 }
 
-const ACTIONS: { id: "fight" | "party" | "item"; icon: string; label: string }[] = [
+const ACTIONS: { id: "fight" | "party" | "item" | "flee"; icon: string; label: string }[] = [
   { id: "fight", icon: "⚔️", label: "전투" },
   { id: "party", icon: "🧩", label: "파티" },
   { id: "item", icon: "🎒", label: "아이템" },
+  { id: "flee", icon: "🏃", label: "도망치기" },
 ];
-// 도망치기(현재 전투를 그냥 건너뛰는 것과 다를 바 없어 제거됨)가 빠지면서 3개뿐이라, 기술
-// 그리드와 같은 2x2 대신 한 줄(3열)로 배치 — 빈 칸 없이 꽉 채운다.
-function ActionMenu({ onSelect }: { onSelect: (action: "fight" | "party" | "item") => void }) {
+function ActionMenu({ onSelect }: { onSelect: (action: "fight" | "party" | "item" | "flee") => void }) {
   return (
-    <div className="grid grid-cols-3 grid-rows-1 gap-1 h-full w-[168px] shrink-0">
+    <Grid2x2>
       {ACTIONS.map(a => (
         <button key={a.id} type="button" onClick={() => onSelect(a.id)} className={cn(CELL_CLASS, CELL_ON)}>
           <span aria-hidden className="text-base leading-none">{a.icon}</span>
           <p className="text-[9px] font-bold text-neutral-600 dark:text-neutral-300 text-center leading-tight mt-0.5">{a.label}</p>
         </button>
       ))}
-    </div>
+    </Grid2x2>
   );
 }
 
@@ -177,7 +176,7 @@ function PartyMenu({ party, activeIndex, forced, onSwitch, onBack }: {
               <span className={cn("text-[8px] font-black tabular-nums", fainted ? "text-neutral-400" : "text-emerald-600 dark:text-emerald-400")}>
                 {fainted ? "기절" : `${m.hp}/${m.maxHp}`}
               </span>
-              <span className="text-[7px] font-bold text-neutral-400 truncate w-full text-center">{STAGE_LABELS[stageForXp(m.xp)]} · {m.sectorType ?? "무속성"}</span>
+              <span className="text-[7px] font-bold text-neutral-400 truncate w-full text-center">Lv.{levelForXp(m.xp)} · {m.sectorType ?? "무속성"}</span>
             </button>
           );
         })}
@@ -212,7 +211,7 @@ type HandViewProps = {
   pending?: boolean;
   onAdvance?: () => void;
 } & (
-  | { mode: "action"; onSelectAction: (action: "fight" | "party" | "item") => void }
+  | { mode: "action"; onSelectAction: (action: "fight" | "party" | "item" | "flee") => void }
   | { mode: "skills"; skills: SkillRuntime[]; onPlaySkill: (skillId: string) => void; onBack: () => void }
   | { mode: "items"; ownedItems: OwnedItem[]; ownedDefs: ItemDef[]; onUseItem: (instanceId: string) => void; onBack: () => void }
   | { mode: "party"; party: PartyMember[]; activeIndex: number; forced: boolean; onSwitchMember: (instanceId: string) => void; onBack: () => void }
@@ -226,7 +225,7 @@ export default function HandView(props: HandViewProps) {
         <Battlefield topLeftOverlay={topLeftOverlay} bottomRightOverlay={bottomRightOverlay}>{children}</Battlefield>
       </div>
       {/* 포켓몬 클래식 구도 — 왼쪽은 메시지 텍스트박스(타자기 효과), 오른쪽은 선택 그리드
-          (전투/파티/아이템 또는 기술/아이템/파티원 목록, pending이면 AdvancePrompt로
+          (전투/파티/아이템/도망치기 또는 기술/아이템/파티원 목록, pending이면 AdvancePrompt로
           대체). 전부 h-20으로 높이를 맞춰서 모드가 바뀌어도 이 행 전체 높이가 안 흔들린다. */}
       <div className="shrink-0 flex items-stretch gap-1.5 py-1.5">
         <MessageBox text={message} pending={pending} onAdvance={onAdvance} />
