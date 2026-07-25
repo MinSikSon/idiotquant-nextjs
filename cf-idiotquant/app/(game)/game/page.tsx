@@ -22,7 +22,7 @@ import {
   ArrowUp, ArrowDown, Layers, Copy, TrendingUp, Sparkles, ChevronDown, Lock, Info,
   Cpu, Dna, Landmark, CarFront, Ship, Construction, Zap, FlaskConical, Factory, RadioTower, Gamepad2,
   Soup, ShoppingCart, PlaneTakeoff, Shirt, Code2, Gem, Compass, Anchor, Map as MapIcon, Medal as MedalIcon,
-  BatteryCharging, Bot, Wallet, Flame, Trophy, Target, Swords, Crown, Loader2, X,
+  BatteryCharging, Bot, Wallet, Flame, Trophy, Target, Swords, Crown, Loader2, X, Volume2, VolumeX,
   type LucideIcon,
 } from "lucide-react";
 import { useAppDispatch, useAppSelector } from "@/lib/hooks";
@@ -37,8 +37,10 @@ import { PARTY_SIZE } from "./gameData";
 import { cardStats, levelForXp, LEVEL_XP } from "./combatEngine";
 import { sectorType } from "./sectorTypes";
 import type { PartyMember, MerchantOfferDef, ActiveBuffs, ActiveBuff } from "./gameTypes";
+import { isMuted, setMuted } from "./sfx";
 import { EnemyIntentBadge, ItemBar, StatTile } from "@/components/game/CombatHud";
 import { DiceRow } from "@/components/game/DiceRow";
+import { biomeForFloor } from "@/components/game/biomes";
 
 const PhaserCombatCanvas = dynamic(() => import("@/components/game/PhaserCombatCanvas"), { ssr: false });
 const HandView = dynamic(() => import("@/components/game/HandView"), { ssr: false });
@@ -582,6 +584,12 @@ function GameContent() {
   const [showTutorial, setShowTutorial] = useState(false);
   const [showResultDetail, setShowResultDetail] = useState(false);
   const [introLabel, setIntroLabel] = useState<string | null>(null);
+  // 효과음 음소거 — localStorage와 동기화(초기값은 SSR 하이드레이션 어긋남 방지를 위해 effect에서 읽음)
+  const [soundMuted, setSoundMuted] = useState(false);
+  useEffect(() => { setSoundMuted(isMuted()); }, []);
+  const toggleMute = useCallback(() => {
+    setSoundMuted(prev => { setMuted(!prev); return !prev; });
+  }, []);
 
   useEffect(() => { dispatch(reqGetNcavDailyList("latest")); }, [dispatch]);
   useEffect(() => { for (const src of ALL_SECTOR_IMAGES) { const img = new window.Image(); img.src = src; } }, []);
@@ -677,7 +685,9 @@ function GameContent() {
                   {/* pr-9 — 우측 상단 구석에 고정된 게임 설명 버튼과 안 겹치게 오른쪽 여유 확보 */}
                   <div className="flex items-center justify-center gap-1.5 flex-wrap w-full pr-9">
                     <div className="flex items-center gap-1 pl-2 pr-1 py-1 rounded-2xl backdrop-blur-md bg-white/85 dark:bg-white/[0.06] border border-black/5 dark:border-white/10 shadow-[0_6px_18px_-8px_rgba(0,0,0,0.35)]">
-                      <span className="text-[9px] font-black text-neutral-400 uppercase tracking-wider pr-0.5 whitespace-nowrap">지하{run.roundNum + 1}층</span>
+                      <span className="text-[9px] font-black text-neutral-400 uppercase tracking-wider pr-0.5 whitespace-nowrap">
+                        {biomeForFloor(run.roundNum).emoji} {biomeForFloor(run.roundNum).name} · 지하{run.roundNum + 1}층
+                      </span>
                       <FloorGraph nodes={floorWindow} />
                     </div>
                     {run.phase === "battling" && run.party.length > 0 && (
@@ -723,25 +733,25 @@ function GameContent() {
                       <HandView mode="action" onSelectAction={run.selectBattleAction} message={latestLogText}
                         topLeftOverlay={<DiceRow label="적" roll={run.lastEnemyRoll} isPlayer={false} />}
                         bottomRightOverlay={<DiceRow label="나" roll={run.lastPlayerRoll} isPlayer compact />} pending={run.pending} onAdvance={run.advance}>
-                        <PhaserCombatCanvas enemy={run.enemy} player={run.player} playerName={activeMonsterName} introLabel={introLabel} level={run.activeLevel} lastSkillCast={run.lastSkillCast} />
+                        <PhaserCombatCanvas enemy={run.enemy} player={run.player} playerName={activeMonsterName} introLabel={introLabel} level={run.activeLevel} floor={run.roundNum} activeStatus={run.activeStatus} lastSkillCast={run.lastSkillCast} />
                       </HandView>
                     ) : run.battleMenu === "skills" ? (
                       <HandView mode="skills" skills={run.skills} onPlaySkill={run.useSkill} onBack={run.backToActionMenu} message={latestLogText}
                         topLeftOverlay={<DiceRow label="적" roll={run.lastEnemyRoll} isPlayer={false} />}
                         bottomRightOverlay={<DiceRow label="나" roll={run.lastPlayerRoll} isPlayer compact />} pending={run.pending} onAdvance={run.advance}>
-                        <PhaserCombatCanvas enemy={run.enemy} player={run.player} playerName={activeMonsterName} introLabel={introLabel} level={run.activeLevel} lastSkillCast={run.lastSkillCast} />
+                        <PhaserCombatCanvas enemy={run.enemy} player={run.player} playerName={activeMonsterName} introLabel={introLabel} level={run.activeLevel} floor={run.roundNum} activeStatus={run.activeStatus} lastSkillCast={run.lastSkillCast} />
                       </HandView>
                     ) : run.battleMenu === "items" ? (
                       <HandView mode="items" ownedItems={run.ownedItems} ownedDefs={run.ownedDefs} onUseItem={run.useOwnedActiveItem} onBack={run.backToActionMenu} message={latestLogText}
                         topLeftOverlay={<DiceRow label="적" roll={run.lastEnemyRoll} isPlayer={false} />}
                         bottomRightOverlay={<DiceRow label="나" roll={run.lastPlayerRoll} isPlayer compact />} pending={run.pending} onAdvance={run.advance}>
-                        <PhaserCombatCanvas enemy={run.enemy} player={run.player} playerName={activeMonsterName} introLabel={introLabel} level={run.activeLevel} lastSkillCast={run.lastSkillCast} />
+                        <PhaserCombatCanvas enemy={run.enemy} player={run.player} playerName={activeMonsterName} introLabel={introLabel} level={run.activeLevel} floor={run.roundNum} activeStatus={run.activeStatus} lastSkillCast={run.lastSkillCast} />
                       </HandView>
                     ) : (
                       <HandView mode="party" party={run.party} activeIndex={run.activeIndex} forced={run.forcedSwitch} onSwitchMember={run.switchMember} onBack={run.backToActionMenu} message={latestLogText}
                         topLeftOverlay={<DiceRow label="적" roll={run.lastEnemyRoll} isPlayer={false} />}
                         bottomRightOverlay={<DiceRow label="나" roll={run.lastPlayerRoll} isPlayer compact />} pending={run.pending} onAdvance={run.advance}>
-                        <PhaserCombatCanvas enemy={run.enemy} player={run.player} playerName={activeMonsterName} introLabel={introLabel} level={run.activeLevel} lastSkillCast={run.lastSkillCast} />
+                        <PhaserCombatCanvas enemy={run.enemy} player={run.player} playerName={activeMonsterName} introLabel={introLabel} level={run.activeLevel} floor={run.roundNum} activeStatus={run.activeStatus} lastSkillCast={run.lastSkillCast} />
                       </HandView>
                     )}
                   </div>
@@ -772,10 +782,14 @@ function GameContent() {
         </div>
       </div>
 
-      {/* 게임 설명 버튼 — 화면 우측 상단 구석 */}
+      {/* 게임 설명 · 효과음 토글 버튼 — 화면 우측 상단 구석에 세로로 나란히 */}
       <button type="button" onClick={() => setShowTutorial(true)} aria-label="게임 방법 보기"
         className="absolute top-2 right-2 z-20 inline-flex items-center justify-center w-8 h-8 rounded-full backdrop-blur-md bg-white/85 dark:bg-white/[0.06] border border-black/5 dark:border-white/10 shadow-[0_6px_18px_-8px_rgba(0,0,0,0.35)] text-neutral-500 dark:text-neutral-300 hover:text-[#16a34a] transition-colors">
         <Info size={14} />
+      </button>
+      <button type="button" onClick={toggleMute} aria-label={soundMuted ? "효과음 켜기" : "효과음 끄기"}
+        className="absolute top-11 right-2 z-20 inline-flex items-center justify-center w-8 h-8 rounded-full backdrop-blur-md bg-white/85 dark:bg-white/[0.06] border border-black/5 dark:border-white/10 shadow-[0_6px_18px_-8px_rgba(0,0,0,0.35)] text-neutral-500 dark:text-neutral-300 hover:text-[#16a34a] transition-colors">
+        {soundMuted ? <VolumeX size={14} /> : <Volume2 size={14} />}
       </button>
 
       {/* 방법 안내 */}
@@ -792,6 +806,8 @@ function GameContent() {
                 { icon: "🗡️", text: <>매 턴 <b className="text-neutral-800 dark:text-neutral-100">전투/파티/아이템/도망치기</b> 중 행동을 골라요. <b className="text-neutral-800 dark:text-neutral-100">전투</b>를 고르면 지금 앞에 나온 몬스터의 기술 4개(약공격·강공격·방어·회복)가 나와요. <b className="text-neutral-800 dark:text-neutral-100">도망치기</b>는 주사위를 굴려 성공하면 이번 층을 포기하고 상점으로, 실패하면 턴을 소모해 적의 반격을 받아요.</> },
                 { icon: "🎲", text: <>공격 기술은 <b className="text-neutral-800 dark:text-neutral-100">0~N 범위</b>로 20면체 주사위를 굴려 피해가 정해지고, 자연 20이면 <b className="text-amber-500 dark:text-amber-400">크리티컬</b>(최대 피해의 2배)! 방어는 블록을, 회복은 HP를 고정치만큼 즉시 채워요.</> },
                 { icon: "⚡", text: <>카드마다 업종이 있고 업종끼리 상성이 있어요 — 상성에서 <b className="text-emerald-600 dark:text-emerald-400">이기면 피해가 1.5배</b>, <b className="text-rose-500">지면 2/3배</b>로 줄어요.</> },
+                { icon: "🔥", text: <><b className="text-neutral-800 dark:text-neutral-100">상태이상</b>도 있어요 — 강공격·필살기는 적에게 <b className="text-orange-500">화상</b>(매 턴 도트 피해)을, 적의 공격은 내 몬스터에게 <b className="text-violet-600 dark:text-violet-400">독</b>(도트 피해)이나 <b className="text-amber-500">마비</b>(행동이 확률로 실패)를 걸 수 있어요. 상태이상은 그 전투가 끝나면 회복돼요.</> },
+                { icon: "🌋", text: <>던전은 <b className="text-neutral-800 dark:text-neutral-100">5층마다 바이옴</b>이 바뀌어요 — 초원 → 숲 → 사막 → 설원 → 동굴 → 화산 순환. 상단 HUD에서 지금 바이옴을 확인할 수 있어요.</> },
                 { icon: "🐣", text: <>몬스터는 전투에서 공격하거나 층을 클리어할 때마다 경험치를 얻어 <b className="text-neutral-800 dark:text-neutral-100">레벨업</b>해요(이번 던전 한정, 나가면 리셋 — 레벨업마다 경험치 100 필요). 비슷한 레벨의 적을 이기면 적당히, 더 강한 적을 이기면 더 많이 얻어요. 레벨이 오를수록 스탯이 오르고 실루엣도 커지며, <b className="text-neutral-800 dark:text-neutral-100">Lv.5</b>부터는 "약공격"이 훨씬 강한 <b className="text-violet-600 dark:text-violet-400">필살기</b>로 진화해요. 배틀이 끝나고 레벨업한 종목이 있으면 결과 화면에 표시돼요.</> },
                 { icon: "💊", text: <>기술마다 정해진 PP가 있고 쓸 때마다 1씩 줄어요 — <b className="text-neutral-800 dark:text-neutral-100">던전을 도는 내내 유지</b>되며(전투를 이겨도 안 채워짐) 상점의 PP 회복 물약을 사면 파티 전원의 PP가 즉시 가득 차요.</> },
                 { icon: "🔄", text: <><b className="text-neutral-800 dark:text-neutral-100">파티</b>에서 다른 몬스터로 교체할 수 있어요(교체도 턴을 소모해 적의 공격을 받아요). 몬스터가 쓰러지면 강제로 다음 몬스터를 골라야 하고, 파티 전원이 쓰러지면 던전이 끝나요.</> },

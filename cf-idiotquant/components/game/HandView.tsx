@@ -187,16 +187,16 @@ function PartyMenu({ party, activeIndex, forced, onSwitch, onBack }: {
 
 // 포켓몬 대각선 배치용 — 적 정보 오버레이(주사위 등)는 좌상단, 내 정보 오버레이는 우하단에
 // 떠서 각자 반대편 코너(적 캐릭터=우상단, 내 캐릭터=좌하단)와 시선이 교차하게 배치. Phaser
-// 캔버스(CombatScene.ts)의 이름표+HP바가 그 좌상단/우하단 자리를 이미 쓰고 있어서, 이 DOM
-// 오버레이는 그 아래/위로 한 칸 밀어(top-[17%]/bottom-[26%]) 겹치지 않게 한다.
+// 캔버스(CombatScene.ts)의 크림색 정보 패널(이름/Lv/HP바)이 그 좌상단/우하단 자리를 이미 쓰고
+// 있어서, 이 DOM 오버레이는 패널 높이만큼 더 밀어(top-[26%]/bottom-[31%]) 겹치지 않게 한다.
 function Battlefield({ children, topLeftOverlay, bottomRightOverlay }: {
   children: React.ReactNode; topLeftOverlay?: React.ReactNode; bottomRightOverlay?: React.ReactNode;
 }) {
   return (
     <div className="relative w-full h-full rounded-xl">
       {children}
-      {topLeftOverlay && <div className="absolute left-1.5 top-[17%] z-10">{topLeftOverlay}</div>}
-      {bottomRightOverlay && <div className="absolute right-1.5 bottom-[26%] z-10">{bottomRightOverlay}</div>}
+      {topLeftOverlay && <div className="absolute left-1.5 top-[26%] z-10">{topLeftOverlay}</div>}
+      {bottomRightOverlay && <div className="absolute right-1.5 bottom-[31%] z-10">{bottomRightOverlay}</div>}
     </div>
   );
 }

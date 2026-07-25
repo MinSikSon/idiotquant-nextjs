@@ -10,12 +10,14 @@ import {
   enemyForFloor, buildParty, monsterSkills, useSkillEffect as engUseSkillEffect,
   resolveEnemyTurn, useActiveItem as engUseActiveItem, checkOutcome, aggregatePassive, rollFlee,
   VIT_HP_MULTIPLIER, levelForXp, growthStats, growthMaxHp, ULTIMATE_UNLOCK_LEVEL, XP_PER_MONSTER_ATTACK, winXpFor,
+  STATUS_LABELS, statusDotDamage, PARALYSIS_SKIP_CHANCE, ENEMY_STATUS_CHANCE,
 } from "./combatEngine";
 import { ALL_ITEMS, RELIC_POOL, ITEM_OFFER_COUNT, START_GOLD, MERCHANT_FREE_POOL, MERCHANT_PAID_POOL, pickItemChoices, acquireChance } from "./gameData";
 import { ACHIEVEMENTS } from "./gameCollectibles";
+import { sfx } from "./sfx";
 import type {
   Phase, EncounterType, ItemDef, OwnedItem, EnemyState, PlayerState, ActiveEffect, LogEntry, LogKind,
-  CharacterStats, AttackRollResult, SkillState, BattleMenu, PartyMember, MerchantOfferDef, ActiveBuffs, SkillEffectKind,
+  CharacterStats, AttackRollResult, SkillState, BattleMenu, PartyMember, MerchantOfferDef, ActiveBuffs, SkillEffectKind, StatusKind,
 } from "./gameTypes";
 
 // 떠돌이 상인이 매번 제시하는 오퍼(무료 3 + 유료 3) — 풀 자체가 정확히 6개라 무작위 추첨 없이
@@ -289,6 +291,7 @@ export function useGameRun(params: { pool: any[]; deck: DeckItem[]; setDeck: (fn
     setParty(prev => prev.map((m, i) => i === idx ? { ...m, xp: nextXp } : m));
     if (nextLevel > prevLevel) {
       const unlockedUltimate = prevLevel < ULTIMATE_UNLOCK_LEVEL && nextLevel >= ULTIMATE_UNLOCK_LEVEL;
+      sfx.levelup();
       pushLog("system", `✨ ${member.name}이(가) Lv.${nextLevel}(으)로 레벨업했습니다!${unlockedUltimate ? " 필살기를 해금했어요!" : ""}`);
       setLevelUps(prev => {
         const i = prev.findIndex(l => l.instanceId === member.instanceId);
@@ -302,6 +305,9 @@ export function useGameRun(params: { pool: any[]; deck: DeckItem[]; setDeck: (fn
   const handleWin = useCallback((beatenEnemy: EnemyState, enc: EncounterType, floor: number) => {
     const nt = floor + 1; // 클리어한 층수(0-indexed floor → 1부터)
     pushLog("system", `🏆 ${beatenEnemy.item?.name ?? "적"}을(를) 처치했습니다!`);
+    sfx.victory();
+    // 전투가 끝나면 파티 전원의 상태이상 해제(상태이상은 그 전투 동안만 지속)
+    setParty(prev => prev.some(m => m.status) ? prev.map(m => m.status ? { ...m, status: null } : m) : prev);
     // 승리 경험치는 적 레벨(beatenEnemy.level) 대비 내 몬스터 레벨로 스케일됨(winXpFor) — 적이
     // 더 강하면(레벨이 높으면) 더 많이, 약하면 더 적게 받는다.
     if (activeMember) grantMonsterXp(activeIndex, winXpFor(levelForXp(activeMember.xp), beatenEnemy.level));
@@ -363,16 +369,42 @@ export function useGameRun(params: { pool: any[]; deck: DeckItem[]; setDeck: (fn
   // 보임), 그다음 단계(행동 메뉴 복귀·강제 교체·런 종료)로 넘어가는 건 pendingAction에 담아둬서
   // 플레이어가 직접 탭해야만 실행되게 한다.
   const applyEnemyTurn = useCallback((afterPlayer: PlayerState, afterEnemy: EnemyState, member: PartyMember, idx: number, currentParty: PartyMember[]) => {
-    const { player: finalPlayer, roll, effectiveness } = resolveEnemyTurn(afterPlayer, afterEnemy, passive, afterEnemy.sectorType, member.sectorType);
-    setLastEnemyRoll(roll);
-    const blocked = Math.min(roll.totalDamage, afterPlayer.block + passive.damageReduce);
-    const dmg = Math.max(0, roll.totalDamage - blocked);
-    const critTxt = roll.isCrit ? " 💥크리티컬!" : "";
-    const effTxt = effectiveness === "super" ? " (업종 상성 우위!)" : effectiveness === "weak" ? " (업종 상성 열세)" : "";
-    pushLog("enemy", `${afterEnemy.item?.name ?? "적"}의 공격! 🎲${roll.faces.join("/")}${critTxt}${effTxt} → ⚔${roll.totalDamage} 중 🛡${blocked} 경감 → ${dmg} 피해`);
-    setPlayerHp(finalPlayer.hp); setPlayerBlock(finalPlayer.block);
-    setParty(prev => prev.map((m, i) => i === idx ? { ...m, hp: finalPlayer.hp } : m));
-    if (finalPlayer.hp <= 0) {
+    let finalHp: number;
+    // 마비된 적은 확률로 행동 자체가 실패 — 이 경우에도 턴 경계이므로 블록은 다음 턴 기본치로 리셋.
+    if (afterEnemy.status === "paralysis" && Math.random() < PARALYSIS_SKIP_CHANCE) {
+      pushLog("enemy", `⚡ ${afterEnemy.item?.name ?? "적"}은(는) 몸이 저려 움직이지 못한다!`);
+      finalHp = afterPlayer.hp;
+      setPlayerBlock(passive.blockPerTurn);
+    } else {
+      const { player: finalPlayer, roll, effectiveness } = resolveEnemyTurn(afterPlayer, afterEnemy, passive, afterEnemy.sectorType, member.sectorType);
+      setLastEnemyRoll(roll);
+      const blocked = Math.min(roll.totalDamage, afterPlayer.block + passive.damageReduce);
+      const dmg = Math.max(0, roll.totalDamage - blocked);
+      const critTxt = roll.isCrit ? " 💥크리티컬!" : "";
+      const effTxt = effectiveness === "super" ? " (업종 상성 우위!)" : effectiveness === "weak" ? " (업종 상성 열세)" : "";
+      pushLog("enemy", `${afterEnemy.item?.name ?? "적"}의 공격! 🎲${roll.faces.join("/")}${critTxt}${effTxt} → ⚔${roll.totalDamage} 중 🛡${blocked} 경감 → ${dmg} 피해`);
+      if (dmg > 0) sfx.hurt();
+      finalHp = finalPlayer.hp;
+      setPlayerBlock(finalPlayer.block);
+      // 적 공격이 실제 피해를 줬으면 확률적으로 상태이상(독/마비 중 랜덤)을 부여 — 이미 걸려있으면 안 덮어씀.
+      if (dmg > 0 && finalHp > 0 && !member.status && Math.random() < ENEMY_STATUS_CHANCE) {
+        const kind: StatusKind = Math.random() < 0.5 ? "poison" : "paralysis";
+        setParty(prev => prev.map((m, i) => i === idx ? { ...m, status: kind } : m));
+        pushLog("system", `${STATUS_LABELS[kind].icon} ${member.name}은(는) ${STATUS_LABELS[kind].name} 상태가 되었다!`);
+        sfx.status();
+      }
+    }
+    // 내 몬스터의 화상/독 도트 피해 — 적 행동 성공 여부와 무관하게 턴 경계마다 1회. 이번 턴에
+    // 막 걸린 상태이상은 member 스냅샷엔 없으므로 다음 턴부터 아프기 시작한다.
+    if (finalHp > 0 && (member.status === "burn" || member.status === "poison")) {
+      const dot = statusDotDamage(member.status, afterPlayer.maxHp);
+      finalHp = Math.max(0, finalHp - dot);
+      pushLog("system", `${STATUS_LABELS[member.status].icon} ${member.name}은(는) ${STATUS_LABELS[member.status].name} 피해를 입었다! (-${dot})`);
+    }
+    setPlayerHp(finalHp);
+    setParty(prev => prev.map((m, i) => i === idx ? { ...m, hp: finalHp } : m));
+    if (finalHp <= 0) {
+      sfx.faint();
       const hasReserve = currentParty.some((m, i) => i !== idx && m.hp > 0);
       setPendingAction(() => () => {
         if (hasReserve) {
@@ -393,18 +425,26 @@ export function useGameRun(params: { pool: any[]; deck: DeckItem[]; setDeck: (fn
   // (또는 승리 처리)은 pendingAction으로 넘겨 플레이어가 다시 탭할 때까지 기다린다. 상인 버프는
   // 여기서(기술·아이템 사용 공통 지점) 한 턴 소모한다.
   const resolveTurn = useCallback((afterPlayer: PlayerState, afterEnemy: EnemyState) => {
-    setEnemy(afterEnemy);
+    // 적의 화상/독 도트 피해 — 내 행동 하나가 곧 한 턴이므로 여기(턴 경계)서 1회 적용. 도트만으로
+    // 쓰러뜨리는 것도 가능하다(아래 checkOutcome이 도트 반영 후의 HP로 판정).
+    let e = afterEnemy;
+    if (e.hp > 0 && (e.status === "burn" || e.status === "poison")) {
+      const dot = statusDotDamage(e.status, e.maxHp);
+      e = { ...e, hp: Math.max(0, e.hp - dot) };
+      pushLog("system", `${STATUS_LABELS[e.status!].icon} ${e.item?.name ?? "적"}은(는) ${STATUS_LABELS[e.status!].name} 피해를 입었다! (-${dot})`);
+    }
+    setEnemy(e);
     const idx = activeIndex, member = partyRaw[idx];
     if (!member) return;
     setParty(prev => prev.map((m, i) => i === idx ? { ...m, hp: afterPlayer.hp } : m));
     setPlayerHp(afterPlayer.hp); setPlayerBlock(afterPlayer.block);
     tickBuffs();
-    if (checkOutcome(afterPlayer, afterEnemy) === "win") {
-      setPendingAction(() => () => handleWin(afterEnemy, encounter, roundNum));
+    if (checkOutcome(afterPlayer, e) === "win") {
+      setPendingAction(() => () => handleWin(e, encounter, roundNum));
       return;
     }
-    setPendingAction(() => () => applyEnemyTurn(afterPlayer, afterEnemy, member, idx, partyRaw));
-  }, [activeIndex, partyRaw, encounter, roundNum, handleWin, applyEnemyTurn, tickBuffs]);
+    setPendingAction(() => () => applyEnemyTurn(afterPlayer, e, member, idx, partyRaw));
+  }, [activeIndex, partyRaw, encounter, roundNum, handleWin, applyEnemyTurn, tickBuffs, pushLog]);
 
   // 기술 발동 — 행동 메뉴에서 "전투"를 고른 뒤 기술 목록에서 탭하면 즉시. PP 소진 시 무시.
   // 공격 기술은 주사위로 굴려서 데미지가 정해지고(+업종 상성 배율), 방어/회복 기술은 고정치를
@@ -414,6 +454,13 @@ export function useGameRun(params: { pool: any[]; deck: DeckItem[]; setDeck: (fn
     if (phase !== "battling" || !enemy || !activeMember || pendingAction) return;
     const skill = skills.find(s => s.def.id === skillId);
     if (!skill || skill.pp <= 0) return;
+    // 마비 — 확률적으로 이번 행동이 통째로 실패(PP는 소모 안 함, 턴만 소모하고 적의 반격을 받음).
+    if (activeMember.status === "paralysis" && Math.random() < PARALYSIS_SKIP_CHANCE) {
+      pushLog("system", `⚡ ${activeMember.name}은(는) 몸이 저려 움직일 수 없다!`);
+      sfx.status();
+      resolveTurn(player, enemy);
+      return;
+    }
     const buffedDef = activeBuffs.atk && skill.def.effect === "attack"
       ? { ...skill.def, power: Math.round(skill.def.power * activeBuffs.atk.mult) }
       : activeBuffs.def && skill.def.effect === "shield"
@@ -422,6 +469,13 @@ export function useGameRun(params: { pool: any[]; deck: DeckItem[]; setDeck: (fn
     const result = engUseSkillEffect(player, enemy, buffedDef, passive, effectiveStats, activeMember.sectorType, enemy.sectorType);
     skillCastSeq.current += 1;
     setLastSkillCast({ kind: skill.def.effect, seq: skillCastSeq.current });
+    // 강공격·필살기는 확률적으로 적에게 화상을 입힌다 — 이미 상태이상이 있으면 안 덮어씀.
+    let afterEnemy = result.enemy;
+    if (skill.def.statusChance && skill.def.statusKind && afterEnemy.hp > 0 && !afterEnemy.status && Math.random() < skill.def.statusChance) {
+      afterEnemy = { ...afterEnemy, status: skill.def.statusKind };
+      pushLog("system", `${STATUS_LABELS[skill.def.statusKind].icon} ${enemy.item?.name ?? "적"}은(는) ${STATUS_LABELS[skill.def.statusKind].name} 상태가 되었다!`);
+      sfx.status();
+    }
     // 성장으로 기술셋이 바뀌면(성인 진화로 "약공격"→"필살기" 등) skillPp에 그 skillId 항목이
     // 아직 없을 수 있음 — .map()만으론 못 찾아 조용히 무시되므로(과거 PP 버그와 같은 원인)
     // 없으면 새로 추가하는 upsert로 처리.
@@ -434,15 +488,18 @@ export function useGameRun(params: { pool: any[]; deck: DeckItem[]; setDeck: (fn
     const effTxt = result.effectiveness === "super" ? " 업종 상성 우위!" : result.effectiveness === "weak" ? " 업종 상성 열세..." : "";
     if (result.roll) {
       setLastPlayerRoll(result.roll);
+      if (result.roll.isCrit) sfx.crit(); else sfx.attack();
       const critTxt = result.roll.isCrit ? " 💥크리티컬!" : "";
       pushLog("player", `${activeMember.name}의 ${skill.def.name}! (PP ${nextPp}/${skill.def.maxPP}) — 🎲${result.roll.faces.join("/")}${critTxt}${effTxt} → ⚔${result.roll.totalDamage} 피해`);
       grantMonsterXp(activeIndex, XP_PER_MONSTER_ATTACK);
     } else if (skill.def.effect === "shield") {
+      sfx.shield();
       pushLog("player", `${activeMember.name}의 ${skill.def.name}! (PP ${nextPp}/${skill.def.maxPP}) — 🛡${skill.def.power} 방어`);
     } else {
+      sfx.heal();
       pushLog("player", `${activeMember.name}의 ${skill.def.name}! (PP ${nextPp}/${skill.def.maxPP}) — ❤️${skill.def.power} 회복`);
     }
-    resolveTurn(result.player, result.enemy);
+    resolveTurn(result.player, afterEnemy);
   }, [phase, enemy, activeMember, activeIndex, skills, passive, player, effectiveStats, pendingAction, activeBuffs, pushLog, grantMonsterXp, resolveTurn]);
 
   // 액티브 아이템 즉시 발동(1회 소모) — 행동 메뉴에서 "아이템"을 고른 뒤 사용. 기술과 동일하게
@@ -494,8 +551,13 @@ export function useGameRun(params: { pool: any[]; deck: DeckItem[]; setDeck: (fn
       if (!enemy || !activeMember) return;
       const { roll, success } = rollFlee();
       if (success) {
+        sfx.flee();
         pushLog("system", `🏃 도망치는 중... 🎲${roll} → 성공! 이번 층을 포기하고 상점으로 갑니다.`);
-        setPendingAction(() => () => { setEnemy(null); setBattleMenu("action"); setPhase("shop"); });
+        setPendingAction(() => () => {
+          setEnemy(null); setBattleMenu("action"); setPhase("shop");
+          // 전투에서 벗어났으므로 상태이상도 해제(승리 시와 동일한 "전투 동안만" 규칙)
+          setParty(prev => prev.some(m => m.status) ? prev.map(m => m.status ? { ...m, status: null } : m) : prev);
+        });
       } else {
         pushLog("system", `🏃 도망치는 중... 🎲${roll} → 실패했습니다!`);
         setPendingAction(() => () => applyEnemyTurn(player, enemy, activeMember, activeIndex, partyRaw));
@@ -639,6 +701,7 @@ export function useGameRun(params: { pool: any[]; deck: DeckItem[]; setDeck: (fn
 
   const acquirePct = enemy ? Math.round(Math.min(0.95, acquireChance(enemy.item, roundNum + 1) * (activeBoost?.mult ?? 1)) * 100) : 0;
   const forcedSwitch = playerHp <= 0; // battleMenu==="party"일 때만 의미 있음(그 외엔 항상 false)
+  const activeStatus = activeMember?.status ?? null; // 활성 몬스터의 상태이상 — 캔버스 배지 표시용
 
   return {
     phase, roundNum, encounter, restHealed, gold, best, newBest,
@@ -646,7 +709,7 @@ export function useGameRun(params: { pool: any[]; deck: DeckItem[]; setDeck: (fn
     merchantOffers, activeBuffs,
     player, enemy, party, activeIndex, activeLevel, passiveVitBonus, forcedSwitch, pending: pendingAction !== null, advance: advancePendingAction, skills, skillDefsByOwner, skillPp, battleMenu, log,
     lastResult, dropped, dropPrompt, saveFail, packOpening, acquired, acquirePct, levelUps,
-    effectiveStats, lastPlayerRoll, lastEnemyRoll, lastSkillCast,
+    effectiveStats, lastPlayerRoll, lastEnemyRoll, lastSkillCast, activeStatus,
     hasSavedRun, resumeRun,
     start, promptNewRun, useSkill, useOwnedActiveItem, switchMember, selectBattleAction, backToActionMenu, nextRound, proceedFromEvent, proceedFromShop, cashOut,
     applyMerchantOffer, buyBoost, pickItem, skipItem,
