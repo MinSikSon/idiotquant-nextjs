@@ -744,14 +744,14 @@ function GameContent() {
             <div className="space-y-3">
               {[
                 { icon: "🧩", text: <>던전 입장 전 <b className="text-neutral-800 dark:text-neutral-100">내 덱</b>에서 최대 {PARTY_SIZE}장을 직접 골라 <b className="text-neutral-800 dark:text-neutral-100">파티</b>를 꾸려요(저평가 점수가 낮은 카드 {PARTY_SIZE}장이 기본 선택돼 있어요, 부족하면 기본 몬스터로 채워짐). 카드의 ROE·NCAV가 그대로 몬스터의 공격력·방어력이 돼요.</> },
-                { icon: "🗡️", text: <>매 턴 <b className="text-neutral-800 dark:text-neutral-100">전투/파티/아이템/도망치기</b> 중 행동을 골라요. <b className="text-neutral-800 dark:text-neutral-100">전투</b>를 고르면 지금 앞에 나온 몬스터의 기술 4개(약공격·강공격·방어·회복)가 나와요.</> },
+                { icon: "🗡️", text: <>매 턴 <b className="text-neutral-800 dark:text-neutral-100">전투/파티/아이템</b> 중 행동을 골라요. <b className="text-neutral-800 dark:text-neutral-100">전투</b>를 고르면 지금 앞에 나온 몬스터의 기술 4개(약공격·강공격·방어·회복)가 나와요.</> },
                 { icon: "🎲", text: <>공격 기술은 <b className="text-neutral-800 dark:text-neutral-100">0~N 범위</b>로 20면체 주사위를 굴려 피해가 정해지고, 자연 20이면 <b className="text-amber-500 dark:text-amber-400">크리티컬</b>(최대 피해의 2배)! 방어는 블록을, 회복은 HP를 고정치만큼 즉시 채워요.</> },
                 { icon: "⚡", text: <>카드마다 업종이 있고 업종끼리 상성이 있어요 — 상성에서 <b className="text-emerald-600 dark:text-emerald-400">이기면 피해가 1.5배</b>, <b className="text-rose-500">지면 2/3배</b>로 줄어요.</> },
                 { icon: "🐣", text: <>몬스터는 전투에서 공격하거나 층을 클리어할 때마다 경험치를 얻어 <b className="text-neutral-800 dark:text-neutral-100">유아기 → 청년기 → 성인</b>으로 성장해요(이번 던전 한정, 나가면 리셋). 성장할수록 스탯이 오르고 실루엣도 커지며, 성인이 되면 "약공격"이 훨씬 강한 <b className="text-violet-600 dark:text-violet-400">필살기</b>로 진화해요.</> },
                 { icon: "💊", text: <>기술마다 정해진 PP가 있고 쓸 때마다 1씩 줄어요 — <b className="text-neutral-800 dark:text-neutral-100">던전을 도는 내내 유지</b>되며(전투를 이겨도 안 채워짐) 상점의 PP 회복 물약으로만 채울 수 있어요.</> },
                 { icon: "🔄", text: <><b className="text-neutral-800 dark:text-neutral-100">파티</b>에서 다른 몬스터로 교체할 수 있어요(교체도 턴을 소모해 적의 공격을 받아요). 몬스터가 쓰러지면 강제로 다음 몬스터를 골라야 하고, 파티 전원이 쓰러지면 던전이 끝나요.</> },
-                { icon: "🚪", text: <><b className="text-neutral-800 dark:text-neutral-100">도망치기</b>는 이번 층을 포기하고 바로 상점으로 가요. 지금까지 성과를 저장하고 던전에서 나가고 싶으면 상단의 🚪 버튼을 눌러요.</> },
-                { icon: "🛒", text: <>층을 클리어할 때마다 <b className="text-neutral-800 dark:text-neutral-100">상점</b>에 들러 ❤️HP 회복 물약과 💊PP 회복 물약을 살 수 있어요.</> },
+                { icon: "🚪", text: <>지금까지 성과를 저장하고 던전에서 나가고 싶으면 상단의 🚪 버튼을 눌러요.</> },
+                { icon: "🛒", text: <>층을 클리어할 때마다 <b className="text-neutral-800 dark:text-neutral-100">상점</b>에 들러 ❤️HP 회복 물약과 💊PP 회복 물약을 살 수 있어요. 상점에서는 파티 전원의 HP를 한눈에 볼 수 있고, 캐릭터 효과로 늘어난 최대 HP도 따로 표시돼요.</> },
                 { icon: "🎒", text: <>3층마다 <b className="text-neutral-800 dark:text-neutral-100">패시브/액티브 아이템</b>을 하나 고를 수 있어요. 힘·민첩·행운·체력 스탯 아이템은 지금 나와있는 몬스터든 교체한 몬스터든 공통으로 적용돼요. <b className="text-violet-600 dark:text-violet-400">10층마다는 보스</b>(같은 몬스터가 스탯 3배로 강화돼 등장)예요.</> },
               ].map((row, i) => (
                 <div key={i} className="flex items-start gap-2.5">
@@ -919,24 +919,97 @@ function EventScreen({ run }: { run: ReturnType<typeof useGameRun> }) {
   );
 }
 
+// 상점의 파티 로스터 — 보유한 종목(몬스터) 전원의 HP를 한눈에. HP 회복 물약은 활성 몬스터만
+// 즉시 회복하므로, 회복 직후엔 그 몬스터 줄에 잠깐 "+N" 표시가 붙는다(healFlash).
+function ShopPartyRoster({ party, activeIndex, healFlash }: {
+  party: PartyMember[]; activeIndex: number; healFlash: number | null;
+}) {
+  return (
+    <div className="flex flex-col gap-1 w-full">
+      {party.map((m, i) => {
+        const fainted = m.hp <= 0;
+        const pct = m.maxHp > 0 ? Math.max(0, Math.min(100, (m.hp / m.maxHp) * 100)) : 0;
+        return (
+          <div key={m.instanceId}
+            className={cn("flex items-center gap-1.5 px-2 py-1 rounded-lg border",
+              i === activeIndex ? "border-rose-500/40 bg-rose-500/5" : "border-black/5 dark:border-white/10 bg-white/60 dark:bg-white/[0.04]")}>
+            <span className="w-1.5 h-1.5 rounded-full shrink-0" style={{ background: TIER[m.tone]?.glow }} />
+            <span className="text-[10px] font-bold text-neutral-700 dark:text-neutral-200 truncate w-12 shrink-0 text-left">{m.name}</span>
+            <div className="relative flex-1 h-2 rounded-full bg-black/10 dark:bg-white/10 overflow-hidden">
+              <div className={cn("h-full rounded-full transition-all", fainted ? "bg-neutral-400" : pct > 50 ? "bg-[#16a34a]" : pct > 20 ? "bg-amber-500" : "bg-rose-500")} style={{ width: `${pct}%` }} />
+            </div>
+            <span className="text-[9px] font-black tabular-nums text-neutral-500 dark:text-neutral-400 shrink-0 w-11 text-right">
+              {fainted ? "기절" : `${m.hp}/${m.maxHp}`}
+            </span>
+            {i === activeIndex && healFlash != null && (
+              <span aria-hidden className="text-[9px] font-black text-emerald-500 shrink-0 animate-in fade-in slide-in-from-bottom-1">+{healFlash}</span>
+            )}
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
 // 매 층 상점 — 조우 종류와 무관하게 층 클리어/휴식 후 항상 거쳐가는 화면. HP 회복 물약(즉시
 // 회복)과 PP 회복 물약(구매 시 보유 아이템으로 추가, 전투 중 쓰면 모든 기술 PP 회복)을 판매.
 function ShopScreen({ run }: { run: ReturnType<typeof useGameRun> }) {
+  // HP 회복 물약을 사면 activeMaxHp/player.hp가 즉시 바뀌는데, 그 변화량을 잠깐 "+N"으로
+  // 보여주기 위해 이전 값과 비교(diff)한다 — buyMerchantHeal 자체는 void라 회복량을 직접
+  // 넘겨주지 않으므로, 실제 반영된 state 변화를 관찰하는 쪽이 더 정확하고 로직 중복도 없다.
+  const [healFlash, setHealFlash] = useState<number | null>(null);
+  const prevHpRef = useRef(run.player.hp);
+  useEffect(() => {
+    const diff = run.player.hp - prevHpRef.current;
+    prevHpRef.current = run.player.hp;
+    if (diff <= 0) return;
+    setHealFlash(diff);
+    const t = setTimeout(() => setHealFlash(null), 1400);
+    return () => clearTimeout(t);
+  }, [run.player.hp]);
+
+  // PP 회복 물약은 사는 즉시 수치가 바뀌는 게 아니라(전투 중 써야 PP가 회복됨) 보유 아이템에
+  // 추가되므로, 구매 자체가 반영됐다는 걸 보여주기 위해 보유 아이템 개수 증가를 관찰한다.
+  const [ppFlash, setPpFlash] = useState(false);
+  const prevOwnedCountRef = useRef(run.ownedItems.length);
+  useEffect(() => {
+    const grew = run.ownedItems.length > prevOwnedCountRef.current;
+    prevOwnedCountRef.current = run.ownedItems.length;
+    if (!grew) return;
+    setPpFlash(true);
+    const t = setTimeout(() => setPpFlash(false), 1400);
+    return () => clearTimeout(t);
+  }, [run.ownedItems.length]);
+
   return (
-    <div className="flex-1 min-h-0 flex flex-col items-center justify-center gap-3 text-center px-4">
+    <div className="flex-1 min-h-0 flex flex-col items-center justify-center gap-3 text-center px-4 overflow-y-auto py-2">
       <span aria-hidden className="text-5xl">🛒</span>
       <p className="text-lg font-black text-neutral-900 dark:text-white">떠돌이 상인</p>
       <p className="text-xs text-neutral-400 max-w-[240px] break-keep">"지친 모험가로군. 골드가 있다면 상처와 기력을 손봐주지."</p>
+      {run.party.length > 0 && (
+        <div className="w-full max-w-[280px]">
+          <ShopPartyRoster party={run.party} activeIndex={run.activeIndex} healFlash={healFlash} />
+          {run.passiveVitBonus > 0 && (
+            <p className="text-[9px] text-neutral-400 mt-1">캐릭터 효과로 전원 최대 HP +{run.passiveVitBonus}</p>
+          )}
+        </div>
+      )}
       <div className="flex flex-col gap-2 w-full max-w-[240px]">
         <button type="button" onClick={run.buyMerchantHeal} disabled={run.player.hp >= run.player.maxHp || run.gold < MERCHANT_HEAL_COST}
           className="w-full inline-flex items-center justify-between gap-2 px-4 py-2.5 rounded-xl border border-amber-500/30 bg-amber-500/10 hover:bg-amber-500/15 disabled:opacity-40 disabled:cursor-not-allowed text-left transition-all">
           <span className="text-sm font-black text-neutral-800 dark:text-neutral-100">❤️ HP 회복</span>
-          <span className="text-xs font-bold text-amber-600 dark:text-amber-400">💰 {MERCHANT_HEAL_COST}</span>
+          <span className="flex items-center gap-1.5">
+            {healFlash != null && <span aria-hidden className="text-xs font-black text-emerald-500 animate-in fade-in slide-in-from-bottom-1">+{healFlash}</span>}
+            <span className="text-xs font-bold text-amber-600 dark:text-amber-400">💰 {MERCHANT_HEAL_COST}</span>
+          </span>
         </button>
         <button type="button" onClick={run.buyPpPotion} disabled={run.gold < PP_POTION_COST}
           className="w-full inline-flex items-center justify-between gap-2 px-4 py-2.5 rounded-xl border border-violet-500/30 bg-violet-500/10 hover:bg-violet-500/15 disabled:opacity-40 disabled:cursor-not-allowed text-left transition-all">
           <span className="text-sm font-black text-neutral-800 dark:text-neutral-100">💊 기력 회복 물약</span>
-          <span className="text-xs font-bold text-violet-600 dark:text-violet-400">💰 {PP_POTION_COST}</span>
+          <span className="flex items-center gap-1.5">
+            {ppFlash && <span aria-hidden className="text-xs font-black text-violet-500 animate-in fade-in slide-in-from-bottom-1">+1개</span>}
+            <span className="text-xs font-bold text-violet-600 dark:text-violet-400">💰 {PP_POTION_COST}</span>
+          </span>
         </button>
         <button type="button" onClick={run.proceedFromShop}
           className="w-full inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-gradient-to-r from-[#16a34a] to-[#15803d] hover:brightness-110 text-white font-black text-sm shadow-[0_6px_16px_-6px_rgba(22,163,74,0.55)] active:scale-[0.97] transition-all">

@@ -420,20 +420,15 @@ export function useGameRun(params: { pool: any[]; deck: DeckItem[]; setDeck: (fn
     setPendingAction(() => () => applyEnemyTurn({ hp: member.hp, maxHp: growthMaxHp(member.stats, member.xp) + passiveVitBonus, block: passive.blockPerTurn }, enemy, member, idx, partyRaw));
   }, [phase, partyRaw, activeIndex, playerHp, passive, passiveVitBonus, enemy, pendingAction, pushLog, applyEnemyTurn]);
 
-  // 행동 메뉴 선택 — 전투(기술 목록)/파티(교체)/아이템(보유 아이템 목록)은 하위 화면 전환만,
-  // 도망치기는 곧바로 던전 상태를 바꾸는 액션. 던전 나가기(구 "월드맵")는 이제 행동 메뉴가
-  // 아니라 상단 HUD의 상시 버튼(cashOut)으로 이동했다 — 정확히 4칸인 메뉴에 파티 교체 자리를
-  // 마련하기 위함.
-  const selectBattleAction = useCallback((action: "fight" | "party" | "item" | "flee") => {
+  // 행동 메뉴 선택 — 전투(기술 목록)/파티(교체)/아이템(보유 아이템 목록) 모두 하위 화면 전환만
+  // 한다. 도망치기(현재 전투를 그냥 건너뛰는 것과 다를 바 없어) 제거됨 — 던전 나가기(구
+  // "월드맵")는 행동 메뉴가 아니라 상단 HUD의 상시 버튼(cashOut)으로 이동했다.
+  const selectBattleAction = useCallback((action: "fight" | "party" | "item") => {
     if (phase !== "battling" || pendingAction) return;
     if (action === "fight") setBattleMenu("skills");
     else if (action === "party") setBattleMenu("party");
     else if (action === "item") setBattleMenu("items");
-    else if (action === "flee") {
-      pushLog("system", "🏃 전투에서 도망쳐 이번 층을 포기했습니다.");
-      setEnemy(null); setBattleMenu("action"); setPhase("shop");
-    }
-  }, [phase, pendingAction, pushLog]);
+  }, [phase, pendingAction]);
   const backToActionMenu = useCallback(() => { if (playerHp > 0 && !pendingAction) setBattleMenu("action"); }, [playerHp, pendingAction]);
 
   // 다음 라운드 진입 — 조우 판정 후 배틀(적 생성) 또는 이벤트(휴식). 기술 PP는 손대지 않음
@@ -551,7 +546,7 @@ export function useGameRun(params: { pool: any[]; deck: DeckItem[]; setDeck: (fn
   return {
     phase, roundNum, encounter, restHealed, gold, best, newBest,
     ownedItems, ownedDefs, itemChoices, passive, unlockedLegendItems, activeBoost,
-    player, enemy, party, activeIndex, activeStage, forcedSwitch, pending: pendingAction !== null, advance: advancePendingAction, skills, battleMenu, log,
+    player, enemy, party, activeIndex, activeStage, passiveVitBonus, forcedSwitch, pending: pendingAction !== null, advance: advancePendingAction, skills, battleMenu, log,
     lastResult, dropped, dropPrompt, saveFail, packOpening, acquired, acquirePct,
     character, effectiveStats, lastPlayerRoll, lastEnemyRoll,
     hasSavedRun, resumeRun,

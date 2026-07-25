@@ -44,7 +44,7 @@ export interface SkillDef {
 // 재사용하므로(공통 템플릿) PP는 반드시 (ownerId, skillId) 쌍으로 구분해야 한다.
 export interface SkillState { ownerId: string; skillId: string; pp: number }
 
-// 전투 중 하위 화면 — 매 내 턴마다 "action"(전투/파티/아이템/도망치기 선택)에서 시작해,
+// 전투 중 하위 화면 — 매 내 턴마다 "action"(전투/파티/아이템 선택)에서 시작해,
 // "전투"를 고르면 "skills"(기술 목록), "파티"를 고르면 "party"(몬스터 교체),
 // "아이템"을 고르면 "items"(보유 아이템 사용)로 전환.
 export type BattleMenu = "action" | "skills" | "items" | "party";
