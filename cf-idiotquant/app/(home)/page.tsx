@@ -53,10 +53,10 @@ function makeGoldStudioEnv(renderer: THREE.WebGLRenderer): THREE.Texture {
   return env;
 }
 
-// 금화 한 닢을 단일 지오메트리로 병합 — 원판 + 도드라진 안쪽 필드 + 톱니 테두리(빛을 잘게 쪼개
-// 반짝임을 만듦) + 앞뒤 각인 링(평평한 금속면의 밋밋함 제거). 반지름 1 기준으로 만들어 두고
-// 인스턴스별 scale로 크기를 다르게 쓴다. 파트별 색은 정점 색(vertexColors)으로 구분해 재질
-// 하나·드로우콜 한 번으로 수십 개를 그린다.
+// 금화 한 닢을 단일 지오메트리로 병합 — 원판 + 도드라진 안쪽 필드 + 앞뒤 각인 링(평평한 금속면의
+// 밋밋함 제거). 테두리는 톱니 없이 매끈하게 연마된 면으로 둔다(톱니를 두르면 톱날·기어처럼 보임).
+// 반지름 1 기준으로 만들어 두고 인스턴스별 scale로 크기를 다르게 쓴다. 파트별 색은 정점
+// 색(vertexColors)으로 구분해 재질 하나·드로우콜 한 번으로 수십 개를 그린다.
 const COIN_BODY = new THREE.Color(0xffd257);
 const COIN_RIM = new THREE.Color(0xe0a020);
 function paint(geo: THREE.BufferGeometry, color: THREE.Color): THREE.BufferGeometry {
@@ -72,14 +72,6 @@ function makeCoinGeometry(): THREE.BufferGeometry {
     paint(new THREE.CylinderGeometry(1, 1, TH, 48), COIN_BODY),
     paint(new THREE.CylinderGeometry(0.8, 0.8, TH * 1.35, 48), COIN_BODY),
   ];
-  const NOTCH = 36;
-  for (let i = 0; i < NOTCH; i++) {
-    const a = (i / NOTCH) * Math.PI * 2;
-    const nb = paint(new THREE.BoxGeometry(0.075, TH * 1.02, 0.11), COIN_RIM);
-    nb.rotateY(-a);
-    nb.translate(Math.cos(a), 0, Math.sin(a));
-    parts.push(nb);
-  }
   for (const sgn of [1, -1]) {
     const ring = paint(new THREE.TorusGeometry(0.52, 0.045, 8, 40), COIN_RIM);
     ring.rotateX(Math.PI / 2);
@@ -152,44 +144,43 @@ function HeroArt() {
     scene.add(root);
     const BASE = -2;
 
-    // 캔들 재질 — 광택을 걷어내고 채도를 낮춰 "각지고 무거운" 인상을 준다(clearcoat/emissive 제거).
-    const upMat = new THREE.MeshStandardMaterial({ color: 0x0f7a3d, roughness: 0.62, metalness: 0.06 });
-    const dnMat = new THREE.MeshStandardMaterial({ color: 0xb82d3f, roughness: 0.62, metalness: 0.06 });
-    const wickMat = new THREE.MeshStandardMaterial({ color: 0x77818d, metalness: 0.1, roughness: 0.6 });
-    const edgeMat = new THREE.LineBasicMaterial({ color: 0x07331c, transparent: true, opacity: 0.32 });
+    // 캔들 재질 — 각진 형태는 유지하되 광택을 걷어내고 채도를 살짝 낮춘다.
+    const upMat = new THREE.MeshStandardMaterial({ color: 0x14a05a, roughness: 0.5, metalness: 0.04 });
+    const dnMat = new THREE.MeshStandardMaterial({ color: 0xd4525c, roughness: 0.5, metalness: 0.04 });
     const goldMat = new THREE.MeshPhysicalMaterial({
       vertexColors: true, metalness: 1.0, roughness: 0.05,
       envMapIntensity: 2.6, clearcoat: 0.5, clearcoatRoughness: 0.04,
     });
-    disposables.push(upMat, dnMat, wickMat, edgeMat, goldMat);
+    disposables.push(upMat, dnMat, goldMat);
 
-    // 캔들 스카이라인 — 좌→우 상승 추세. 모서리를 둥글리지 않은 각기둥 + 윤곽선으로 마감.
+    // 캔들 스카이라인 — 좌→우 상승 추세. 예전엔 가느다란 회색 심지가 벌레 다리처럼 보이고, 진한
+    // 윤곽선과 제각각인 깊이(z)가 어수선해 보였다 → 심지를 몸통과 같은 색의 짧고 도톰한 블록으로
+    // 바꾸고, 윤곽선을 없애고, 깊이를 한 줄로 정렬해 정면에서 읽히는 깔끔한 차트로 만든다.
     const N = 15;
+    const CANDLE_Z = -0.6;
     let prev = 1.0;
     for (let i = 0; i < N; i++) {
       const trend = 0.9 + i * 0.12;
       const noise = Math.sin(i * 1.7) * 0.4 + (Math.sin(i * 7.3) * 0.5 - 0.25) * 0.35;
       const h = Math.max(0.6, trend + noise);
       const up = h >= prev; prev = h;
-      const x = (i - (N - 1) / 2) * 1.15;
-      const z = -1.5 + Math.sin(i * 0.9) * 1.3;
-      const geo = new THREE.BoxGeometry(0.52, h, 0.52);
-      const wickGeo = new THREE.BoxGeometry(0.055, h + 0.7, 0.055); // 심지도 각기둥으로 통일
+      const mat = up ? upMat : dnMat;
+      const geo = new THREE.BoxGeometry(0.66, h, 0.66);          // 폭을 넓혀 안정감 있게
+      const wickGeo = new THREE.BoxGeometry(0.16, h * 0.28, 0.16); // 짧고 도톰한 심지
       disposables.push(geo, wickGeo);
       const g = new THREE.Group();
-      const body = new THREE.Mesh(geo, up ? upMat : dnMat); body.position.y = h / 2;
-      const wick = new THREE.Mesh(wickGeo, wickMat); wick.position.y = h / 2;
-      const edges = new THREE.EdgesGeometry(geo);
-      disposables.push(edges);
-      const outline = new THREE.LineSegments(edges, edgeMat); outline.position.y = h / 2;
-      g.add(wick, body, outline);
-      g.position.set(x, BASE, z);
+      const body = new THREE.Mesh(geo, mat); body.position.y = h / 2;
+      const wick = new THREE.Mesh(wickGeo, mat); wick.position.y = h + h * 0.14;
+      g.add(body, wick);
+      g.position.set((i - (N - 1) / 2) * 1.15, BASE, CANDLE_Z);
       root.add(g);
     }
 
     // 쏟아지는 금화 — 계속 순환하며 떨어지는 무리(stream) + 바닥에 쌓여 더미를 만드는 무리(pile).
-    // 전부 하나의 InstancedMesh라 개수가 많아도 드로우콜은 1회다.
-    const STREAM = 26, PILE = 46, TOTAL = STREAM + PILE;
+    // 전부 하나의 InstancedMesh라 개수가 많아도 드로우콜은 1회다. 헤드라인을 침범할 수 있는 건
+    // 공중을 가로지르는 stream뿐이라, 좁은 화면에선 stream만 줄이고 pile은 그대로 둔다.
+    const narrowVp = mount.clientWidth / Math.max(1, mount.clientHeight) < 0.9;
+    const STREAM = narrowVp ? 10 : 26, PILE = 46, TOTAL = STREAM + PILE;
     const coinGeo = makeCoinGeometry();
     disposables.push(coinGeo);
     const coinMesh = new THREE.InstancedMesh(coinGeo, goldMat, TOTAL);
@@ -198,10 +189,12 @@ function HeroArt() {
 
     const rnd = (a: number, b: number) => a + Math.random() * (b - a);
     // 세로로 긴 화면(모바일)은 보이는 가로 범위가 좁아, 넓은 화면 기준으로 쏟으면 금화가 헤드라인
-    // 위를 지나가 글씨를 가린다 → 좁은 화면에선 쏟아지는 구간과 더미를 통째로 오른쪽으로 옮긴다.
-    const narrow = mount.clientWidth / Math.max(1, mount.clientHeight) < 0.9;
-    const X_MIN = narrow ? 0.3 : -2.0, X_MAX = narrow ? 5.6 : 7.8;
-    const MOUND_X = narrow ? 2.4 : 3.4;
+    // 위를 지나가 글씨를 가린다 → 좁은 화면에선 더미와 낙하 구간을 오른쪽으로 옮기고, 특히 공중을
+    // 가로지르는 낙하 금화는 텍스트 오른쪽 바깥에서만 떨어지게 한다.
+    const X_MAX = narrowVp ? 5.6 : 7.8;
+    const PILE_X_MIN = narrowVp ? 0.0 : -2.0;   // 바닥 더미 — 텍스트 아래라 왼쪽까지 깔려도 무방
+    const STREAM_X_MIN = narrowVp ? 1.6 : -2.0; // 낙하 금화 — 좁은 화면에선 헤드라인을 피해 오른쪽만
+    const MOUND_X = narrowVp ? 2.4 : 3.4;
 
     type Coin = {
       pos: THREE.Vector3; rot: THREE.Euler; r: number;
@@ -210,7 +203,8 @@ function HeroArt() {
     };
     const coins: Coin[] = [];
     for (let i = 0; i < TOTAL; i++) {
-      const x = rnd(X_MIN, X_MAX);
+      const pile = i < PILE;
+      const x = rnd(pile ? PILE_X_MIN : STREAM_X_MIN, X_MAX);
       // 텍스트가 얹히는 좌상단은 작고 깊은(뒤쪽) 금화만 배치해 가독성을 지킨다
       const leftZone = x < -1.0;
       coins.push({
@@ -219,7 +213,7 @@ function HeroArt() {
         r: rnd(leftZone ? 0.2 : 0.26, leftZone ? 0.34 : 0.6),
         vy: -rnd(2.2, 4.0), vx: rnd(-0.2, 0.2),
         rx: rnd(-2.4, 2.4), ry: rnd(-2.6, 2.6), rz: rnd(-1.6, 1.6),
-        pile: i < PILE, settled: false,
+        pile, settled: false,
       });
     }
 
@@ -250,7 +244,7 @@ function HeroArt() {
             c.rot.set(Math.PI / 2 + rnd(-0.3, 0.3), rnd(0, 6.3), rnd(-0.3, 0.3));
             c.settled = true;
           } else {                            // 위로 되돌려 끊임없이 쏟아지게
-            c.pos.set(rnd(X_MIN, X_MAX), BASE + rnd(11, 17), rnd(-2.5, 3.2));
+            c.pos.set(rnd(STREAM_X_MIN, X_MAX), BASE + rnd(11, 17), rnd(-2.5, 3.2));
             c.vy = -rnd(2.2, 4.0);
           }
         }
