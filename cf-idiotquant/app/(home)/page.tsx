@@ -22,17 +22,19 @@ function makeGoldStudioEnv(renderer: THREE.WebGLRenderer): THREE.Texture {
   const c = document.createElement("canvas");
   c.width = 1024; c.height = 512;
   const x = c.getContext("2d")!;
+  // 위쪽(하늘)은 순백 대신 난색 흰색으로 둔다 — 바닥에 눕힌 금화는 위쪽을 통째로 비추는데,
+  // 순백이면 반사가 하얗게 날아가 금색을 잃고 크림빛으로 창백해진다.
   const g = x.createLinearGradient(0, 0, 0, 512);
-  g.addColorStop(0.000, "#ffffff");
-  g.addColorStop(0.340, "#fbf1dc");
-  g.addColorStop(0.470, "#ffe7ae");
-  g.addColorStop(0.500, "#fff6df"); // 수평선 바로 위 밝은 띠
+  g.addColorStop(0.000, "#fff6e2");
+  g.addColorStop(0.340, "#ffeec8");
+  g.addColorStop(0.470, "#ffdf9e");
+  g.addColorStop(0.500, "#fff2cf"); // 수평선 바로 위 밝은 띠
   g.addColorStop(0.505, "#7c5a22"); // 급격한 명암 경계
   g.addColorStop(1.000, "#4d3714");
   x.fillStyle = g;
   x.fillRect(0, 0, 1024, 512);
   // 각진 소프트박스 — 원형 블러보다 경계가 뚜렷해 금속에 "면"으로 된 하이라이트를 남긴다
-  x.fillStyle = "#ffffff";
+  x.fillStyle = "#fff8e6";
   for (const [px, py, w, h] of [[120, 60, 300, 110], [560, 30, 230, 80], [860, 150, 170, 70]]) {
     x.fillRect(px, py, w, h);
   }
@@ -149,7 +151,8 @@ function HeroArt() {
     const dnMat = new THREE.MeshStandardMaterial({ color: 0xd4525c, roughness: 0.5, metalness: 0.04 });
     const goldMat = new THREE.MeshPhysicalMaterial({
       vertexColors: true, metalness: 1.0, roughness: 0.05,
-      envMapIntensity: 2.6, clearcoat: 0.5, clearcoatRoughness: 0.04,
+      // 반사 강도를 너무 올리면 하이라이트가 하얗게 날아가 금색이 빠진다
+      envMapIntensity: 1.9, clearcoat: 0.5, clearcoatRoughness: 0.04,
     });
     disposables.push(upMat, dnMat, goldMat);
 
@@ -180,31 +183,79 @@ function HeroArt() {
     // 전부 하나의 InstancedMesh라 개수가 많아도 드로우콜은 1회다. 헤드라인을 침범할 수 있는 건
     // 공중을 가로지르는 stream뿐이라, 좁은 화면에선 stream만 줄이고 pile은 그대로 둔다.
     const narrowVp = mount.clientWidth / Math.max(1, mount.clientHeight) < 0.9;
-    const STREAM = narrowVp ? 10 : 26, PILE = 46, TOTAL = STREAM + PILE;
-    const coinGeo = makeCoinGeometry();
-    disposables.push(coinGeo);
-    const coinMesh = new THREE.InstancedMesh(coinGeo, goldMat, TOTAL);
-    coinMesh.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
-    root.add(coinMesh);
+    const STREAM = narrowVp ? 10 : 26;
 
     const rnd = (a: number, b: number) => a + Math.random() * (b - a);
     // 세로로 긴 화면(모바일)은 보이는 가로 범위가 좁아, 넓은 화면 기준으로 쏟으면 금화가 헤드라인
     // 위를 지나가 글씨를 가린다 → 좁은 화면에선 더미와 낙하 구간을 오른쪽으로 옮기고, 특히 공중을
     // 가로지르는 낙하 금화는 텍스트 오른쪽 바깥에서만 떨어지게 한다.
     const X_MAX = narrowVp ? 5.6 : 7.8;
-    const PILE_X_MIN = narrowVp ? 0.0 : -2.0;   // 바닥 더미 — 텍스트 아래라 왼쪽까지 깔려도 무방
     const STREAM_X_MIN = narrowVp ? 1.6 : -2.0; // 낙하 금화 — 좁은 화면에선 헤드라인을 피해 오른쪽만
-    const MOUND_X = narrowVp ? 2.4 : 3.4;
+    const MOUND_X = narrowVp ? 2.4 : 3.4;       // 바닥 더미의 중심(더미 폭은 아래 SPREAD_X로 결정)
+
+    // 바닥 금화 더미 — 낱장이 제멋대로 겹치면 지저분해 보인다(예전엔 동전을 세로로 세운 채
+    // 무작위 높이에 띄워둬서, 정면에서 원판이 잔뜩 겹쳐 보이는 게 지저분함의 주원인이었다).
+    // 대신 여러 개의 "동전 기둥"으로 나눠 바닥에 눕힌 채 가지런히 포개 쌓는다. 아래층부터
+    // 기둥들을 골고루 채워 올려 봉긋한 무더기 실루엣이 되고, 기둥마다 반지름·각도를 조금씩
+    // 달리해 기계적으로 보이지 않게 한다.
+    const COIN_TH = 0.22; // makeCoinGeometry의 두께(반지름 1 기준)
+    const SPREAD_X = narrowVp ? 1.7 : 2.5, SPREAD_Z = 1.3;
+    const COLS = 5, ROWS = 3; // 기둥 수를 적게 잡아야 같은 금화 수로 더 높이 쌓여 무더기다워진다
+    const stacks: { x: number; z: number; r: number; cap: number }[] = [];
+    for (let cx = 0; cx < COLS; cx++) {
+      for (let cz = 0; cz < ROWS; cz++) {
+        const u = (cx / (COLS - 1)) * 2 - 1;
+        const v = (cz / (ROWS - 1)) * 2 - 1;
+        const d = Math.hypot(u, v);
+        if (d > 1.15) continue;                             // 타원 바깥은 버려 둥근 더미 윤곽을 만든다
+        stacks.push({
+          x: MOUND_X + u * SPREAD_X + rnd(-0.22, 0.22),
+          z: v * SPREAD_Z + rnd(-0.22, 0.22),
+          r: rnd(0.34, 0.5),
+          cap: Math.max(1, Math.round((1 - d * 0.6) * 10)), // 중심 기둥일수록 높게
+        });
+      }
+    }
+    // 아래층부터 가로로 채워 올린다 — 도중에 금화가 모자라도 층이 반듯하게 끊긴다
+    const slots: { x: number; y: number; z: number; r: number }[] = [];
+    const maxCap = Math.max(...stacks.map(s => s.cap));
+    for (let level = 0; level < maxCap; level++) {
+      for (const s of stacks) {
+        if (level >= s.cap) continue;
+        slots.push({ x: s.x, y: BASE + (level + 0.5) * COIN_TH * s.r, z: s.z, r: s.r });
+      }
+    }
+    // 더미 금화 수 = 기둥 자리 수 — 설계한 무더기 모양이 빈틈없이 완성된다
+    const PILE = slots.length, TOTAL = STREAM + PILE;
+
+    const coinGeo = makeCoinGeometry();
+    disposables.push(coinGeo);
+    const coinMesh = new THREE.InstancedMesh(coinGeo, goldMat, TOTAL);
+    coinMesh.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
+    root.add(coinMesh);
 
     type Coin = {
       pos: THREE.Vector3; rot: THREE.Euler; r: number;
       vy: number; vx: number; rx: number; ry: number; rz: number;
-      pile: boolean; settled: boolean;
+      settled: boolean;
     };
     const coins: Coin[] = [];
     for (let i = 0; i < TOTAL; i++) {
-      const pile = i < PILE;
-      const x = rnd(pile ? PILE_X_MIN : STREAM_X_MIN, X_MAX);
+      // 더미 몫은 애초에 기둥 자리에 눕혀 배치한다(어차피 낙하 시뮬레이션은 첫 렌더 전에 끝나
+      // 화면에 안 보이므로, 굴려서 쌓는 대신 곧바로 제자리에 놓는 편이 결과가 가지런하다)
+      if (i < PILE && i < slots.length) {
+        const s = slots[i];
+        coins.push({
+          pos: new THREE.Vector3(s.x, s.y, s.z),
+          // 눕힌 자세(회전 없음)가 기본 — 아주 살짝만 기울여 딱 맞아떨어진 느낌을 뺀다
+          rot: new THREE.Euler(rnd(-0.05, 0.05), rnd(0, 6.3), rnd(-0.05, 0.05)),
+          r: s.r,
+          vy: 0, vx: 0, rx: 0, ry: 0, rz: 0,
+          settled: true,
+        });
+        continue;
+      }
+      const x = rnd(STREAM_X_MIN, X_MAX);
       // 텍스트가 얹히는 좌상단은 작고 깊은(뒤쪽) 금화만 배치해 가독성을 지킨다
       const leftZone = x < -1.0;
       coins.push({
@@ -213,7 +264,7 @@ function HeroArt() {
         r: rnd(leftZone ? 0.2 : 0.26, leftZone ? 0.34 : 0.6),
         vy: -rnd(2.2, 4.0), vx: rnd(-0.2, 0.2),
         rx: rnd(-2.4, 2.4), ry: rnd(-2.6, 2.6), rz: rnd(-1.6, 1.6),
-        pile, settled: false,
+        settled: false,
       });
     }
 
@@ -235,18 +286,11 @@ function HeroArt() {
         c.pos.y += c.vy * dt;
         c.pos.x += c.vx * dt;
         c.rot.x += c.rx * dt; c.rot.y += c.ry * dt; c.rot.z += c.rz * dt;
-        const floorY = BASE + c.r * 0.12;
-        if (c.pos.y <= floorY) {
-          if (c.pile) {
-            // 눕혀서 고정 — 더미 중심에 가까울수록 높이 쌓여 봉긋한 금화 무더기가 된다
-            const mound = Math.max(0, 1 - Math.abs(c.pos.x - MOUND_X) / 5.5);
-            c.pos.y = floorY + mound * rnd(0.1, 1.5) + rnd(0, 0.12);
-            c.rot.set(Math.PI / 2 + rnd(-0.3, 0.3), rnd(0, 6.3), rnd(-0.3, 0.3));
-            c.settled = true;
-          } else {                            // 위로 되돌려 끊임없이 쏟아지게
-            c.pos.set(rnd(STREAM_X_MIN, X_MAX), BASE + rnd(11, 17), rnd(-2.5, 3.2));
-            c.vy = -rnd(2.2, 4.0);
-          }
+        // 더미에 닿으면 위로 되돌려 끊임없이 쏟아지게 한다(더미는 이미 기둥으로 쌓여 있으므로
+        // 낙하 금화가 새로 쌓이지는 않는다 — 계속 쌓으면 무더기가 무한정 높아진다)
+        if (c.pos.y <= BASE + c.r * 0.12) {
+          c.pos.set(rnd(STREAM_X_MIN, X_MAX), BASE + rnd(11, 17), rnd(-2.5, 3.2));
+          c.vy = -rnd(2.2, 4.0);
         }
       }
     };
