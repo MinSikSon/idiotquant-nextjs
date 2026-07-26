@@ -156,42 +156,69 @@ function HeroArt() {
     });
     disposables.push(upMat, dnMat, goldMat);
 
-    // 캔들 스카이라인 — 좌→우 상승 추세. 예전엔 가느다란 회색 심지가 벌레 다리처럼 보이고, 진한
-    // 윤곽선과 제각각인 깊이(z)가 어수선해 보였다 → 심지를 몸통과 같은 색의 짧고 도톰한 블록으로
-    // 바꾸고, 윤곽선을 없애고, 깊이를 한 줄로 정렬해 정면에서 읽히는 깔끔한 차트로 만든다.
-    const N = 15;
-    const CANDLE_Z = -0.6;
-    let prev = 1.0;
+    // 세로로 긴 화면(모바일)은 보이는 가로 범위가 데스크톱의 절반 이하다 — 캔들 간격과 금화 낙하
+    // 구간을 같은 값으로 쓰면 양쪽 다 화면 밖으로 밀려나 잘린 채 보인다. 아래 배치는 전부 이 플래그를
+    // 기준으로 좁은 화면용 값을 따로 쓴다.
+    const narrowVp = mount.clientWidth / Math.max(1, mount.clientHeight) < 0.9;
+
+    // 캔들 스카이라인 — 배치를 두 가지로 손봤다.
+    // ① 높이를 노이즈로 흔들지 않고 손으로 짠 시퀀스를 쓴다. "눌림 → 재상승"을 반복하며 우상향하는
+    //    흐름이 읽혀야 무작위 톱니보다 차트답고 신뢰감이 있다.
+    // ② 한 줄로 나란히 세우면 막대그래프처럼 납작해 보인다 → 왼쪽(과거)을 뒤로 밀고 오른쪽(현재)을
+    //    카메라 쪽으로 당겨 대각선으로 배치한다. 카메라 드리프트에 따라 깊이가 드러나고, 추세의
+    //    끝(최고가)이 가장 앞에 서서 시선이 자연스럽게 오른쪽 위로 끌린다.
+    // ③ 바닥에 접지 그림자를 깔아 캔들이 공중에 떠 보이지 않게 한다.
+    const CANDLE_SERIES = [0.7, 0.95, 0.85, 1.2, 1.45, 1.28, 1.65, 1.95, 1.75, 2.15, 2.45, 2.28, 2.7, 2.95, 3.2];
+    // 좁은 화면에 15개를 다 밀어 넣으면 몸통이 성냥개비처럼 얇아지고 양끝이 잘린다 → 최근 구간만
+    // 잘라 보여준다(상승 흐름은 그대로 읽히고 캔들 두께도 지킬 수 있다).
+    const CANDLE_H = narrowVp ? CANDLE_SERIES.slice(4) : CANDLE_SERIES;
+    const N = CANDLE_H.length;
+    const CANDLE_Z = -0.6;   // 가장 앞(오른쪽 끝) 캔들의 깊이 — 바닥 금화 더미보다는 뒤에 둔다
+    const CANDLE_GAP = narrowVp ? 0.56 : 1.05;
+    const CANDLE_HS = narrowVp ? 0.7 : 1; // 화면이 좁으면 높이도 낮춰 가로:세로 비율을 유지
+    const CANDLE_ARC = narrowVp ? 1.0 : 1.7;   // 왼쪽 끝이 뒤로 물러나는 거리
+    const shadowTex = makeRadialTexture("rgba(28,52,40,.4)");
+    const shadowMat = new THREE.MeshBasicMaterial({ map: shadowTex, transparent: true, depthWrite: false });
+    const shadowGeo = new THREE.PlaneGeometry(1, 1);
+    disposables.push(shadowTex, shadowMat, shadowGeo);
+    let prev = CANDLE_H[0] * CANDLE_HS;
     for (let i = 0; i < N; i++) {
-      const trend = 0.9 + i * 0.12;
-      const noise = Math.sin(i * 1.7) * 0.4 + (Math.sin(i * 7.3) * 0.5 - 0.25) * 0.35;
-      const h = Math.max(0.6, trend + noise);
+      const h = CANDLE_H[i] * CANDLE_HS;
       const up = h >= prev; prev = h;
       const mat = up ? upMat : dnMat;
-      const geo = new THREE.BoxGeometry(0.66, h, 0.66);          // 폭을 넓혀 안정감 있게
-      const wickGeo = new THREE.BoxGeometry(0.16, h * 0.28, 0.16); // 짧고 도톰한 심지
+      const bw = CANDLE_GAP * 0.66; // 몸통 폭은 간격에 비례 — 겹치지도, 성기지도 않게
+      const geo = new THREE.BoxGeometry(bw, h, bw);
+      const wickGeo = new THREE.BoxGeometry(bw * 0.24, h * 0.28, bw * 0.24); // 짧고 도톰한 심지
       disposables.push(geo, wickGeo);
       const g = new THREE.Group();
       const body = new THREE.Mesh(geo, mat); body.position.y = h / 2;
       const wick = new THREE.Mesh(wickGeo, mat); wick.position.y = h + h * 0.14;
-      g.add(body, wick);
-      g.position.set((i - (N - 1) / 2) * 1.15, BASE, CANDLE_Z);
+      const shadow = new THREE.Mesh(shadowGeo, shadowMat);
+      shadow.rotation.x = -Math.PI / 2;
+      shadow.position.y = 0.012; // 바닥면과 z-fighting 방지
+      shadow.scale.set(bw * 2.6, bw * 2.6, 1);
+      g.add(shadow, body, wick);
+      const u = i / (N - 1);
+      g.position.set((i - (N - 1) / 2) * CANDLE_GAP - CANDLE_GAP * 0.4, BASE, CANDLE_Z - (1 - u) * CANDLE_ARC);
       root.add(g);
     }
 
     // 쏟아지는 금화 — 계속 순환하며 떨어지는 무리(stream) + 바닥에 쌓여 더미를 만드는 무리(pile).
     // 전부 하나의 InstancedMesh라 개수가 많아도 드로우콜은 1회다. 헤드라인을 침범할 수 있는 건
     // 공중을 가로지르는 stream뿐이라, 좁은 화면에선 stream만 줄이고 pile은 그대로 둔다.
-    const narrowVp = mount.clientWidth / Math.max(1, mount.clientHeight) < 0.9;
-    const STREAM = narrowVp ? 10 : 26;
+    const STREAM = narrowVp ? 18 : 40;
 
     const rnd = (a: number, b: number) => a + Math.random() * (b - a);
-    // 세로로 긴 화면(모바일)은 보이는 가로 범위가 좁아, 넓은 화면 기준으로 쏟으면 금화가 헤드라인
-    // 위를 지나가 글씨를 가린다 → 좁은 화면에선 더미와 낙하 구간을 오른쪽으로 옮기고, 특히 공중을
-    // 가로지르는 낙하 금화는 텍스트 오른쪽 바깥에서만 떨어지게 한다.
-    const X_MAX = narrowVp ? 5.6 : 7.8;
-    const STREAM_X_MIN = narrowVp ? 1.6 : -2.0; // 낙하 금화 — 좁은 화면에선 헤드라인을 피해 오른쪽만
-    const MOUND_X = narrowVp ? 2.4 : 3.4;       // 바닥 더미의 중심(더미 폭은 아래 SPREAD_X로 결정)
+    // 좁은 화면에선 보이는 가로 범위가 ±3 정도라 데스크톱 값(±7.8)을 그대로 쓰면 금화가 대부분
+    // 화면 밖에서 떨어져 "쏟아지는" 느낌이 사라진다 → 낙하 구간과 더미를 프레임 안으로 당긴다.
+    // 다만 헤드라인 왼쪽까지 침범하지는 않게, 낙하 시작 x의 하한을 텍스트 오른쪽에 맞춘다.
+    const X_MAX = narrowVp ? 2.9 : 6.4; // 프레임 밖에서 떨어지면 개수만 늘고 보이지는 않는다
+    const STREAM_X_MIN = narrowVp ? 1.2 : -2.0; // 낙하 금화 — 좁은 화면에선 헤드라인을 피해 오른쪽만
+    const MOUND_X = narrowVp ? 1.6 : 3.4;       // 바닥 더미의 중심(더미 폭은 아래 SPREAD_X로 결정)
+    // 굵은 금화가 헤드라인 위를 지나면 글씨를 덮는다 → 이 x보다 왼쪽은 작고 깊은(뒤쪽) 금화만.
+    const BIG_X_MIN = 1.0;
+    // 좁은 화면은 낙하 구간이 좁아 큰 알을 그대로 쓰면 서로 겹쳐 한 덩어리로 뭉쳐 보인다
+    const R_MAX = narrowVp ? 0.46 : 0.6;
 
     // 바닥 금화 더미 — 낱장이 제멋대로 겹치면 지저분해 보인다(예전엔 동전을 세로로 세운 채
     // 무작위 높이에 띄워둬서, 정면에서 원판이 잔뜩 겹쳐 보이는 게 지저분함의 주원인이었다).
@@ -239,6 +266,28 @@ function HeroArt() {
       vy: number; vx: number; rx: number; ry: number; rz: number;
       settled: boolean;
     };
+    // 낙하 금화 한 닢을 화면 위쪽에 새로 던져 넣는다 — 최초 배치와 재활용이 같은 규칙을 써야
+    // 시간이 지나며 굵은 금화가 헤드라인 쪽으로 흘러들어오는 일이 없다(크기·깊이도 매번 다시 뽑아
+    // 같은 금화가 계속 같은 궤적을 그리지 않게 한다).
+    const respawn = (c: Coin) => {
+      const x = rnd(STREAM_X_MIN, X_MAX);
+      const textZone = x < BIG_X_MIN;
+      // y는 화면 위쪽 경계 바로 밖에서 시작한다 — 훨씬 높은 데서 떨구면 대부분의 금화가 프레임 위
+      // 허공에 머물러, 개수를 늘려도 정작 화면에서는 뜸해 보인다.
+      // z는 캔들(-2.3 ~ -0.6)을 사이에 두고 확실히 앞/뒤로 갈라둔다 — 같은 깊이에 두면 금화가
+      // 캔들 몸통을 파고들어 박힌 것처럼 보인다.
+      c.pos.set(x, BASE + rnd(7.2, 12.5), textZone ? rnd(-3.6, -2.6) : rnd(0.1, 1.8));
+      // 알을 굵게 — 낱알이 클수록 금덩이처럼 탐스럽게 보인다. 다만 너무 키우면 한 닢이 화면을
+      // 잡아먹고, 넓은 면이 환경맵의 어두운 아래쪽을 반사해 갈색으로 죽는다(글씨와 겹치는 구간은
+      // 별도로 더 작게).
+      c.r = textZone ? rnd(0.18, 0.3) : rnd(R_MAX * 0.5, R_MAX);
+      // 낙하·회전을 느리게 — 빠르게 흩날리면 부스러기처럼 보이고, 천천히 굴러떨어져야 면마다
+      // 빛을 받아 묵직한 금화로 읽힌다(중력도 함께 낮춘다, stepCoins 참고)
+      c.vy = -rnd(1.3, 2.4);
+      c.vx = rnd(-0.15, 0.15);
+      c.rx = rnd(-1.3, 1.3); c.ry = rnd(-1.5, 1.5); c.rz = rnd(-0.9, 0.9);
+    };
+
     const coins: Coin[] = [];
     for (let i = 0; i < TOTAL; i++) {
       // 더미 몫은 애초에 기둥 자리에 눕혀 배치한다(어차피 낙하 시뮬레이션은 첫 렌더 전에 끝나
@@ -255,17 +304,12 @@ function HeroArt() {
         });
         continue;
       }
-      const x = rnd(STREAM_X_MIN, X_MAX);
-      // 텍스트가 얹히는 좌상단은 작고 깊은(뒤쪽) 금화만 배치해 가독성을 지킨다
-      const leftZone = x < -1.0;
-      coins.push({
-        pos: new THREE.Vector3(x, rnd(BASE + 4, BASE + 17), leftZone ? rnd(-3.5, -1.5) : rnd(-2.5, 3.2)),
-        rot: new THREE.Euler(rnd(0, 6.3), rnd(0, 6.3), rnd(0, 6.3)),
-        r: rnd(leftZone ? 0.2 : 0.26, leftZone ? 0.34 : 0.6),
-        vy: -rnd(2.2, 4.0), vx: rnd(-0.2, 0.2),
-        rx: rnd(-2.4, 2.4), ry: rnd(-2.6, 2.6), rz: rnd(-1.6, 1.6),
-        settled: false,
-      });
+      const c: Coin = {
+        pos: new THREE.Vector3(), rot: new THREE.Euler(rnd(0, 6.3), rnd(0, 6.3), rnd(0, 6.3)),
+        r: 0, vy: 0, vx: 0, rx: 0, ry: 0, rz: 0, settled: false,
+      };
+      respawn(c);
+      coins.push(c);
     }
 
     const _m = new THREE.Matrix4(), _q = new THREE.Quaternion(), _s = new THREE.Vector3();
@@ -282,16 +326,13 @@ function HeroArt() {
     const stepCoins = (dt: number) => {
       for (const c of coins) {
         if (c.settled) continue;
-        c.vy -= 9.0 * dt;                     // 중력
+        c.vy -= 5.4 * dt;                     // 중력 — 낮게 잡아 무겁고 느긋하게 떨어지도록
         c.pos.y += c.vy * dt;
         c.pos.x += c.vx * dt;
         c.rot.x += c.rx * dt; c.rot.y += c.ry * dt; c.rot.z += c.rz * dt;
         // 더미에 닿으면 위로 되돌려 끊임없이 쏟아지게 한다(더미는 이미 기둥으로 쌓여 있으므로
         // 낙하 금화가 새로 쌓이지는 않는다 — 계속 쌓으면 무더기가 무한정 높아진다)
-        if (c.pos.y <= BASE + c.r * 0.12) {
-          c.pos.set(rnd(STREAM_X_MIN, X_MAX), BASE + rnd(11, 17), rnd(-2.5, 3.2));
-          c.vy = -rnd(2.2, 4.0);
-        }
+        if (c.pos.y <= BASE + c.r * 0.12) respawn(c);
       }
     };
 
