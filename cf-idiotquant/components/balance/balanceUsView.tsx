@@ -227,6 +227,7 @@ export function BalanceUsView({ countryToggle }: { countryToggle?: React.ReactNo
   const [autoRefresh, setAutoRefresh] = useState(false);
   const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
   const fetchedKeyRef = useRef<string | null>(null); // 같은 계좌 키로 이미 로드했는지 — 초기 진입 시 중복 refresh 방지
+  const accountFetchedRef = useRef<string | null>(null); // 계정 단위 조회를 유저당 1회로 — session 객체가 재생성돼도 다시 부르지 않음
   const { toasts, addToast, removeToast } = useToast();
 
   const fetchAll = useCallback((key: string) => {
@@ -279,6 +280,10 @@ export function BalanceUsView({ countryToggle }: { countryToggle?: React.ReactNo
       router.replace("/");
       return;
     }
+    // 같은 유저로 이미 불렀으면 재조회하지 않음 (session 객체 재생성으로 인한 중복 호출 방지)
+    const userId = String(session.user?.id ?? "");
+    if (accountFetchedRef.current === userId) return;
+    accountFetchedRef.current = userId;
     dispatch(reqGetKakaoMemberList());
     dispatch(reqGetMyLikes());
   }, [session, status, dispatch, router]);

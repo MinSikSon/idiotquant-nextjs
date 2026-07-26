@@ -211,6 +211,7 @@ export function BalanceKrView({ countryToggle }: { countryToggle?: React.ReactNo
   const [autoRefresh, setAutoRefresh] = useState(false);
   const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
   const fetchedKeyRef = useRef<string | null>(null); // 같은 계좌 키로 이미 로드했는지 — 초기 진입 시 중복 refresh 방지
+  const accountFetchedRef = useRef<string | null>(null); // 계정 단위 조회를 유저당 1회로 — session 객체가 재생성돼도 다시 부르지 않음
   const { toasts, addToast, removeToast } = useToast();
 
   // 좋아요 종목 중 stock_data_daily JOIN 이 비어(per/pbr 등 없음) 오는 경우
@@ -320,6 +321,10 @@ export function BalanceKrView({ countryToggle }: { countryToggle?: React.ReactNo
       // 잔고 조회는 balanceKey 확정 후 아래 effect 에서 1회 수행 (여기서 중복 조회하지 않음)
       setBalanceKey(String(session.user.id));
     }
+    // 같은 유저로 이미 불렀으면 재조회하지 않음 (session 객체 재생성으로 인한 중복 호출 방지)
+    const userId = String(session.user?.id ?? "");
+    if (accountFetchedRef.current === userId) return;
+    accountFetchedRef.current = userId;
     dispatch(reqGetCapitalToken());
     dispatch(reqGetKakaoMemberList());
     dispatch(reqGetMyLikes());
@@ -338,12 +343,6 @@ export function BalanceKrView({ countryToggle }: { countryToggle?: React.ReactNo
     if (krQuantRule?.saveState === "fulfilled") addToast("success", "트레이딩 조건이 저장되었습니다.");
     else if (krQuantRule?.saveState === "rejected") addToast("error", "조건 저장에 실패했습니다.");
   }, [krQuantRule?.saveState]);
-
-  useEffect(() => {
-    if (krCapital.state === "init" && balanceKey) {
-      dispatch(reqGetKrCapital(balanceKey));
-    }
-  }, [krCapital.state, balanceKey]);
 
   useEffect(() => {
     const states = [krCapitalPlusAll?.state, krCapitalPlusOne?.state, krCapitalMinusAll?.state, krCapitalMinusOne?.state, krCapitalResetAll?.state, krCapitalResetOne?.state];
