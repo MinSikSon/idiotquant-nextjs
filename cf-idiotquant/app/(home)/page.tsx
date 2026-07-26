@@ -7,7 +7,6 @@ import { mergeGeometries } from "three/examples/jsm/utils/BufferGeometryUtils.js
 import { useSession } from "next-auth/react";
 import Link from "next/link";
 import { Filter, ArrowRight, TrendingUp } from "lucide-react";
-import { cn } from "@/lib/utils";
 
 // =========================================================================
 // 홈 3D 일러스트 (three.js / WebGL)
@@ -502,24 +501,51 @@ function SpinArt({ kind }: { kind: "coin" | "gem" }) {
   return <div ref={mountRef} className="w-full h-full" aria-hidden="true" />;
 }
 
+// 스크롤 리빌 — `.reveal` 클래스가 붙은 요소를 전부 관측해 화면에 들어오면 `.is-in`을 단다.
+// 래퍼 컴포넌트 대신 클래스 기반으로 둔 이유: grid 자식에 래퍼 div가 끼면 열 배치가 깨진다.
+// 한 번 나타난 요소는 unobserve해서 다시 스크롤해도 재생되지 않는다(깜빡임 방지).
+// deps는 조건부로 늦게 마운트되는 섹션(비로그인 CTA)을 위해 받는다.
+function useScrollReveal(deps: unknown[]) {
+  useEffect(() => {
+    const els = Array.from(document.querySelectorAll<HTMLElement>(".reveal"));
+    if (!els.length) return;
+    const io = new IntersectionObserver(
+      entries => {
+        for (const e of entries) {
+          if (!e.isIntersecting) continue;
+          e.target.classList.add("is-in");
+          io.unobserve(e.target);
+        }
+      },
+      { rootMargin: "0px 0px -12% 0px", threshold: 0.1 }
+    );
+    els.forEach(el => io.observe(el));
+    return () => io.disconnect();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, deps);
+}
+
+// 계단식 등장용 지연값 — CSS의 var(--d)로 전달된다
+const delay = (ms: number) => ({ "--d": `${ms}ms` }) as React.CSSProperties;
+
 // ── 서비스 규모 통계 밴드 ─────────────────────────────────────────
 const STATS = [
   { value: "2,400+", label: "종목 스캔" },
-  { value: "4가지",  label: "퀀트 전략" },
-  { value: "매일",   label: "자동 업데이트" },
-  { value: "무료",   label: "로 시작 가능" },
+  { value: "4가지", label: "퀀트 전략" },
+  { value: "매일", label: "자동 업데이트" },
+  { value: "무료", label: "가입 없이 이용" },
 ];
 
 function StatsBand() {
   return (
-    <div className="border-b border-neutral-100 dark:border-[#2c2b27] bg-white dark:bg-[#1f1e1b]">
+    <div className="border-y border-neutral-100 dark:border-[#2c2b27] bg-white dark:bg-[#1f1e1b]">
       <div className="max-w-4xl mx-auto px-5 grid grid-cols-2 sm:grid-cols-4 divide-x divide-neutral-100 dark:divide-[#2c2b27]">
-        {STATS.map(s => (
-          <div key={s.label} className="py-5 text-center">
+        {STATS.map((s, i) => (
+          <div key={s.label} className="reveal py-6 text-center" style={delay(i * 80)}>
             <div className="text-2xl font-black font-[family-name:var(--font-mono)] text-neutral-900 dark:text-neutral-50 tabular-nums leading-none">
               {s.value}
             </div>
-            <div className="text-[10px] font-semibold text-neutral-400 dark:text-neutral-500 uppercase tracking-widest mt-1.5">
+            <div className="text-[10px] font-semibold text-neutral-400 dark:text-neutral-500 uppercase tracking-widest mt-2">
               {s.label}
             </div>
           </div>
@@ -529,35 +555,46 @@ function StatsBand() {
   );
 }
 
-// 순차 온보딩 2단계 — 각 단계는 3D 이미지 + 한 줄 설명 + 단일 CTA
-const STEPS: {
-  n: string; tag: string; title: string; desc: string; cta: string; href: string;
-  art: React.ReactNode; tint: string;
-}[] = [
-  {
-    n: "01", tag: "DISCOVER", title: "저평가 종목 발굴",
-    desc: "검증된 퀀트 전략으로 숨어 있는 저평가 종목을 스캔해요. 회원가입 없이 바로 시작합니다.",
-    cta: "종목 발굴하기", href: "/screener?mincap=500", art: <SpinArt kind="coin" />,
-    tint: "from-[#fdf6e9] to-white dark:from-[#241d0e] dark:to-[#161511]",
-  },
-  {
-    n: "02", tag: "ANALYZE", title: "적정주가 분석",
-    desc: "관심 종목의 내재가치를 재무 데이터로 직접 계산해, 지금 가격이 싼지 비싼지 판단해요.",
-    cta: "종목 분석하기", href: "/analyze", art: <SpinArt kind="gem" />,
-    tint: "from-[#eafaf0] to-white dark:from-[#0e2016] dark:to-[#161511]",
-  },
-];
+// 섹션 머리표 — 번호 · 구분선 · 영문 태그. 두 온보딩 섹션이 레이아웃은 서로 다르지만
+// 이 머리표만은 공유해 "같은 시리즈"로 읽히게 한다.
+function StepLabel({ n, tag }: { n: string; tag: string }) {
+  return (
+    <div className="flex items-center gap-3 mb-4">
+      <span className="text-[11px] font-bold tabular-nums font-[family-name:var(--font-mono)] text-neutral-300 dark:text-neutral-700 shrink-0">
+        {n}
+      </span>
+      <div className="h-px flex-1 bg-neutral-200 dark:bg-[#2c2b27]" />
+      <span className="text-[10px] font-black uppercase tracking-[0.15em] text-[#16a34a] shrink-0">
+        {tag}
+      </span>
+    </div>
+  );
+}
+
+// 온보딩 CTA — 보조 버튼. 히어로의 초록 단색 CTA와 위계를 나누되 눌림 피드백은 동일하게 준다.
+function StepCta({ href, children }: { href: string; children: React.ReactNode }) {
+  return (
+    <Link
+      href={href}
+      className="group inline-flex items-center gap-1.5 px-5 py-3 rounded-xl bg-white dark:bg-[#242320] border border-neutral-200 dark:border-[#35332e] text-neutral-800 dark:text-neutral-100 font-bold text-sm shadow-sm hover:border-[#16a34a]/50 hover:-translate-y-0.5 active:translate-y-0 active:scale-[0.98] transition-all duration-300 ease-out"
+    >
+      {children}
+      <ArrowRight size={14} className="text-[#16a34a] group-hover:translate-x-0.5 transition-transform duration-300 ease-out" />
+    </Link>
+  );
+}
 
 export default function HomePage() {
   const { data: session, status } = useSession();
   const isLoggedIn = !!session;
   const sessionLoading = status === "loading";
+  useScrollReveal([isLoggedIn, sessionLoading]);
 
   return (
     <div className="min-h-screen">
 
       {/* ── HERO ─────────────────────────────────────────────────── */}
-      <section className="relative overflow-hidden min-h-[88vh] flex flex-col border-b border-neutral-200/70 dark:border-[#3a3834] bg-gradient-to-b from-[#f4faf6] to-white dark:from-[#12241c] dark:to-[#1a1915]">
+      <section className="relative overflow-hidden min-h-[88dvh] flex flex-col bg-gradient-to-b from-[#f4faf6] to-white dark:from-[#12241c] dark:to-[#1a1915]">
         {/* 풀블리드 3D 씬 */}
         <div className="absolute inset-0">
           <HeroArt />
@@ -568,7 +605,7 @@ export default function HomePage() {
 
         {/* 텍스트 오버레이 */}
         <div className="relative z-10 max-w-3xl mx-auto w-full px-5 pt-20 sm:pt-28 md:pt-32">
-          <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-white/70 dark:bg-[#242320]/70 backdrop-blur border border-neutral-200 dark:border-[#35332e] mb-5 text-[11px] font-medium text-neutral-500 dark:text-neutral-400">
+          <div className="reveal inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-white/70 dark:bg-[#242320]/70 backdrop-blur-xl border border-neutral-200 dark:border-white/10 mb-5 text-[11px] font-medium text-neutral-500 dark:text-neutral-400">
             <span className="relative flex h-1.5 w-1.5 shrink-0">
               <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
               <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-emerald-500" />
@@ -576,23 +613,29 @@ export default function HomePage() {
             데이터로 배우는 주식·경제
           </div>
 
-          <h1 className="text-[2.3rem] sm:text-[3.2rem] md:text-[4rem] font-black leading-[1.06] tracking-tight mb-4 text-neutral-900 dark:text-neutral-50">
-            주식 분석이,<br />
+          <h1
+            className="reveal text-[2.3rem] sm:text-[3.2rem] md:text-[4rem] font-black leading-[1.06] tracking-tight mb-4 text-neutral-900 dark:text-neutral-50 break-keep text-balance"
+            style={delay(80)}
+          >
+            주식 분석,<br />
             <span className="bg-gradient-to-r from-[#16a34a] to-emerald-500 dark:from-[#22c55e] dark:to-emerald-400 bg-clip-text text-transparent">쉽고 재미있게.</span>
           </h1>
 
-          <p className="text-sm sm:text-base text-neutral-600 dark:text-neutral-300 font-medium break-keep max-w-md">
+          <p
+            className="reveal text-sm sm:text-base text-neutral-600 dark:text-neutral-300 font-medium break-keep leading-relaxed max-w-md"
+            style={delay(160)}
+          >
             검증된 퀀트 전략과 실제 시장 데이터로 주식·경제 감각을 키웁니다.
           </p>
 
-          <div className="mt-8">
+          <div className="reveal mt-8" style={delay(240)}>
             <Link
               href="/screener?mincap=500"
-              className="group inline-flex items-center gap-2 px-7 py-4 rounded-2xl bg-[#16a34a] hover:bg-[#15803d] active:bg-[#166534] text-white font-bold text-base shadow-lg shadow-[#16a34a]/25 transition-all hover:-translate-y-0.5"
+              className="group inline-flex items-center gap-2 px-8 py-4 rounded-2xl bg-[#16a34a] hover:bg-[#15803d] active:bg-[#166534] text-white font-bold text-base sm:text-lg shadow-lg shadow-[#16a34a]/25 hover:shadow-xl hover:shadow-[#16a34a]/30 hover:-translate-y-0.5 active:translate-y-0 active:scale-[0.98] transition-all duration-300 ease-out"
             >
               <Filter size={18} strokeWidth={2.5} />
               종목 발굴 무료 시작
-              <ArrowRight size={16} className="group-hover:translate-x-0.5 transition-transform" />
+              <ArrowRight size={16} className="group-hover:translate-x-0.5 transition-transform duration-300 ease-out" />
             </Link>
           </div>
         </div>
@@ -602,80 +645,111 @@ export default function HomePage() {
       {/* ── 서비스 규모 통계 ─────────────────────────────────────── */}
       <StatsBand />
 
-      {/* ── 온보딩 3단계 ─────────────────────────────────────────── */}
-      {STEPS.map((s, i) => (
-        <section
-          key={s.n}
-          className={cn(
-            "border-b border-neutral-100 dark:border-[#3a3834]",
-            i % 2 === 1 && "bg-[#faf9f7] dark:bg-[#1a1917]"
-          )}
-        >
-          <div className="max-w-4xl mx-auto px-5 py-12 md:py-20 grid md:grid-cols-2 gap-7 md:gap-12 items-center">
-            {/* 3D 이미지 */}
-            <div className={cn("order-1", i % 2 === 1 ? "md:order-2" : "md:order-1")}>
-              <div className={cn("h-52 sm:h-64 rounded-3xl border border-neutral-200/70 dark:border-[#35332e] bg-gradient-to-b overflow-hidden", s.tint)}>
-                {s.art}
-              </div>
+      {/* ── STEP 01 · 발굴 — 스플릿 2단 ───────────────────────────── */}
+      <section className="border-b border-neutral-100 dark:border-[#3a3834]">
+        <div className="max-w-4xl mx-auto px-5 py-20 md:py-32 grid md:grid-cols-2 gap-8 md:gap-12 items-center">
+          <div className="reveal h-52 sm:h-72 rounded-3xl border border-neutral-200/70 dark:border-[#35332e] bg-gradient-to-b from-[#fdf6e9] to-white dark:from-[#241d0e] dark:to-[#161511] overflow-hidden">
+            <SpinArt kind="coin" />
+          </div>
+
+          <div className="reveal" style={delay(120)}>
+            <StepLabel n="01" tag="DISCOVER" />
+            <h2 className="text-2xl sm:text-3xl font-black tracking-tight text-neutral-900 dark:text-neutral-50 mb-3 break-keep text-balance">
+              저평가 종목 발굴
+            </h2>
+            <p className="text-sm text-neutral-500 dark:text-neutral-400 leading-relaxed break-keep mb-6 max-w-sm">
+              검증된 퀀트 전략이 매일 코스피·코스닥 전 종목을 훑어 저평가 종목을 찾아냅니다.
+              회원가입 없이 바로 확인할 수 있습니다.
+            </p>
+            <StepCta href="/screener?mincap=500">종목 발굴하기</StepCta>
+          </div>
+        </div>
+      </section>
+
+      {/* ── STEP 02 · 분석 — 벤토 그리드 ───────────────────────────
+          01과 좌우만 뒤집으면 같은 레이아웃이 두 번 반복돼 리듬이 죽는다 → 큰 아트 패널 하나에
+          텍스트 셀·기능 셀 2개를 붙인 비대칭 벤토로 짠다. */}
+      <section className="border-b border-neutral-100 dark:border-[#3a3834] bg-[#faf9f7] dark:bg-[#1a1917]">
+        <div className="max-w-4xl mx-auto px-5 py-20 md:py-32">
+          <div className="grid md:grid-cols-5 gap-4">
+            <div className="reveal md:col-span-3 h-52 sm:h-72 md:h-auto md:min-h-[22rem] rounded-3xl border border-neutral-200/70 dark:border-[#35332e] bg-gradient-to-b from-[#eafaf0] to-white dark:from-[#0e2016] dark:to-[#161511] overflow-hidden">
+              <SpinArt kind="gem" />
             </div>
 
-            {/* 텍스트 + 단일 CTA */}
-            <div className={cn("order-2", i % 2 === 1 ? "md:order-1" : "md:order-2")}>
-              <div className="flex items-center gap-3 mb-4">
-                <span className="text-[11px] font-bold tabular-nums font-[family-name:var(--font-mono)] text-neutral-300 dark:text-neutral-700 shrink-0">
-                  {s.n}
-                </span>
-                <div className="h-px flex-1 bg-neutral-200 dark:bg-[#2c2b27]" />
-                <span className="text-[10px] font-black uppercase tracking-[0.15em] text-[#16a34a] shrink-0">
-                  {s.tag}
-                </span>
-              </div>
-              <h2 className="text-xl sm:text-2xl font-black tracking-tight text-neutral-900 dark:text-neutral-50 mb-2.5">
-                {s.title}
-              </h2>
-              <p className="text-sm text-neutral-500 dark:text-neutral-400 leading-relaxed break-keep mb-5 max-w-sm">
-                {s.desc}
-              </p>
-              <Link
-                href={s.href}
-                className="group inline-flex items-center gap-1.5 px-5 py-2.5 rounded-xl bg-white dark:bg-[#242320] border border-neutral-200 dark:border-[#35332e] text-neutral-800 dark:text-neutral-100 font-bold text-sm shadow-sm hover:border-[#16a34a]/50 hover:-translate-y-0.5 transition-all"
+            <div className="md:col-span-2 flex flex-col gap-4">
+              <div
+                className="reveal flex-1 rounded-3xl border border-neutral-200/70 dark:border-[#35332e] bg-white dark:bg-[#242320] p-6"
+                style={delay(120)}
               >
-                {s.cta}
-                <ArrowRight size={14} className="text-[#16a34a] group-hover:translate-x-0.5 transition-transform" />
-              </Link>
+                <StepLabel n="02" tag="ANALYZE" />
+                <h2 className="text-2xl sm:text-3xl font-black tracking-tight text-neutral-900 dark:text-neutral-50 mb-3 break-keep text-balance">
+                  적정주가 분석
+                </h2>
+                <p className="text-sm text-neutral-500 dark:text-neutral-400 leading-relaxed break-keep mb-6">
+                  관심 종목의 내재가치를 재무 데이터로 직접 계산해 지금 가격이 싼지 비싼지 판단합니다.
+                </p>
+                <StepCta href="/analyze">종목 분석하기</StepCta>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                {[
+                  { t: "목표주가 계산", d: "DCF · RIM · 그레이엄 공식" },
+                  { t: "위험도 점검", d: "상장폐지 위험 지표 분석" },
+                ].map((f, i) => (
+                  <div
+                    key={f.t}
+                    className="reveal rounded-3xl border border-neutral-200/70 dark:border-[#35332e] bg-white dark:bg-[#242320] p-5"
+                    style={delay(200 + i * 80)}
+                  >
+                    <p className="text-[13px] font-black tracking-tight text-neutral-900 dark:text-neutral-50 mb-1 break-keep">
+                      {f.t}
+                    </p>
+                    <p className="text-[11px] text-neutral-400 dark:text-neutral-500 leading-relaxed break-keep">
+                      {f.d}
+                    </p>
+                  </div>
+                ))}
+              </div>
             </div>
           </div>
-        </section>
-      ))}
+        </div>
+      </section>
 
-      {/* ── CONVERSION CTA (비로그인) ─────────────────────────────── */}
+      {/* ── CONVERSION CTA (비로그인) ───────────────────────────────
+          앞선 섹션들이 전부 밝은 중립색이라, 같은 톤으로 두면 CTA가 본문에 묻힌다 →
+          풀블리드 딥그린 패널로 뒤집어 페이지에서 가장 대비가 큰 블록으로 만든다. */}
       {!isLoggedIn && !sessionLoading && (
-        <section className="py-16 px-5 border-b border-neutral-100 dark:border-[#3a3834] bg-gradient-to-b from-white to-[#f4faf6] dark:from-[#1a1915] dark:to-[#12241c] relative overflow-hidden">
+        <section className="relative overflow-hidden py-20 md:py-28 px-5 bg-[#0d2a1a] dark:bg-[#0b2416]">
           <div className="absolute inset-0 pointer-events-none">
-            <div className="absolute top-0 left-1/2 -translate-x-1/2 w-96 h-40 rounded-full bg-[#16a34a]/5 dark:bg-[#16a34a]/5 blur-3xl" />
+            <div className="absolute -top-24 left-1/2 -translate-x-1/2 w-[42rem] h-[26rem] rounded-full bg-[#16a34a]/25 blur-3xl" />
+            <div className="absolute -bottom-32 right-0 w-[28rem] h-[20rem] rounded-full bg-[#facc15]/10 blur-3xl" />
           </div>
           <div className="max-w-md mx-auto text-center relative">
-            <h2 className="text-2xl font-black text-neutral-900 dark:text-neutral-50 mb-3 tracking-tight leading-tight">
+            <h2 className="reveal text-3xl sm:text-4xl font-black text-white mb-4 tracking-tight leading-tight break-keep text-balance">
               발굴한 종목을 모으려면?
             </h2>
-            <ul className="space-y-2.5 mb-6 text-left inline-block">
+            <ul className="space-y-3 mb-8 text-left inline-block">
               {[
                 "관심 종목 영구 보관 및 분석 이력 저장",
                 "스크리너 즐겨찾기 및 포트폴리오 저장",
                 "신규 저평가 종목 알림 수신",
-              ].map(item => (
-                <li key={item} className="flex items-center gap-2.5 text-sm text-neutral-600 dark:text-neutral-400">
-                  <span className="w-1.5 h-1.5 rounded-full bg-[#16a34a] shrink-0" />
+              ].map((item, i) => (
+                <li
+                  key={item}
+                  className="reveal flex items-center gap-3 text-sm text-emerald-50/80 break-keep"
+                  style={delay(80 + i * 80)}
+                >
+                  <span className="w-1.5 h-1.5 rounded-full bg-[#4ade80] shrink-0" />
                   {item}
                 </li>
               ))}
             </ul>
-            <div>
+            <div className="reveal" style={delay(320)}>
               <Link href="/login"
-                className="group inline-flex items-center gap-2 px-7 py-3.5 rounded-xl bg-[#16a34a] hover:bg-[#15803d] active:bg-[#166534] text-white font-bold text-sm shadow-md shadow-[#16a34a]/20 transition-all hover:-translate-y-0.5"
+                className="group inline-flex items-center gap-2 px-8 py-4 rounded-2xl bg-white hover:bg-emerald-50 text-[#0d2a1a] font-bold text-base sm:text-lg shadow-xl shadow-[#031a0e]/40 hover:-translate-y-0.5 active:translate-y-0 active:scale-[0.98] transition-all duration-300 ease-out"
               >
                 카카오로 무료 시작
-                <ArrowRight size={15} className="group-hover:translate-x-0.5 transition-transform" />
+                <ArrowRight size={16} className="group-hover:translate-x-0.5 transition-transform duration-300 ease-out" />
               </Link>
             </div>
           </div>

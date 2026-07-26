@@ -156,6 +156,13 @@ export default function RootLayout({
   return (
     <html lang="ko" suppressHydrationWarning>
       <head>
+        {/* Pretendard — 본문 기본 서체. 가변 폰트(45~920) 동적 서브셋이라 한글 전체를 받지 않고
+            실제 쓰인 글자만 내려받는다. `(game)` 페이지는 명시적 font-serif로 Lora/Noto Serif KR 유지. */}
+        <link rel="preconnect" href="https://cdn.jsdelivr.net" crossOrigin="anonymous" />
+        <link
+          rel="stylesheet"
+          href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css"
+        />
         <link rel="preconnect" href="https://pagead2.googlesyndication.com" />
         <link rel="dns-prefetch" href="//pagead2.googlesyndication.com" />
         <link rel="dns-prefetch" href="//www.googletagservices.com" />
@@ -165,7 +172,7 @@ export default function RootLayout({
         lora.variable,
         notoSerifKr.variable,
         jetbrainsMono.variable,
-        "min-h-screen font-serif antialiased",
+        "min-h-screen font-sans antialiased",
         "bg-[#faf9f7] dark:bg-[#1a1915] text-neutral-900 dark:text-neutral-50"
       )}>
         <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLdWebSite) }} />

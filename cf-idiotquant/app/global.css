@@ -27,3 +27,24 @@
 .no-scrollbar { scrollbar-width: none; -ms-overflow-style: none; }
 .no-scrollbar::-webkit-scrollbar { display: none; }
 
+html { scroll-behavior: smooth; }
+
+/* ── Scroll reveal ──
+   IntersectionObserver가 .is-in을 붙이면 올라오며 나타난다. 관측 전 기본값이 숨김이므로
+   JS가 실패하면 콘텐츠가 영영 안 보인다 → no-js 대비로 reduce-motion에서는 항상 보이게 둔다.
+   --d로 형제 요소마다 지연을 줘 계단식(cascade)으로 들어온다. */
+.reveal {
+  opacity: 0;
+  transform: translateY(18px);
+  transition:
+    opacity 0.7s cubic-bezier(0.16, 1, 0.3, 1) var(--d, 0ms),
+    transform 0.7s cubic-bezier(0.16, 1, 0.3, 1) var(--d, 0ms);
+  will-change: opacity, transform;
+}
+.reveal.is-in { opacity: 1; transform: none; }
+
+@media (prefers-reduced-motion: reduce) {
+  html { scroll-behavior: auto; }
+  .reveal { opacity: 1; transform: none; transition: none; }
+}
+
