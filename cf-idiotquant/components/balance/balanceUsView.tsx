@@ -9,6 +9,7 @@ import {
   ArrowDownRight, PieChart, ClipboardList, TrendingDown, Power, SlidersHorizontal, Activity, KeyRound,
 } from "lucide-react";
 import TradingAccountPanel from "@/components/balance/tradingAccountPanel";
+import TradingAccountList from "@/components/balance/tradingAccountList";
 import { useSession } from "next-auth/react";
 
 import { useAppDispatch, useAppSelector } from "@/lib/hooks";
@@ -222,6 +223,7 @@ export function BalanceUsView({ countryToggle }: { countryToggle?: React.ReactNo
   const tradingStatus = useAppSelector(selectTradingStatus);
 
   const [balanceKey, setBalanceKey] = useState(searchParams.get("key") || "");
+  const [accountListToken, setAccountListToken] = useState(0); // 계정 저장/삭제 후 목록 재조회 트리거
   const [viewerTab, setViewerTab] = useState<"ccnl" | "nccs">("ccnl");
   const [mobileTab, setMobileTab] = useState("section-kpi");
   const [autoRefresh, setAutoRefresh] = useState(false);
@@ -774,12 +776,22 @@ export function BalanceUsView({ countryToggle }: { countryToggle?: React.ReactNo
               <SectionHeader
                 icon={<KeyRound size={16} />}
                 title="자동매매 계정 관리"
-                subtitle="선택 계정의 KIS App Key/Secret·계좌번호·월 예산 등록/수정/삭제 (admin 전용)"
+                subtitle="등록된 계정을 선택해 KIS App Key/Secret·계좌번호·월 예산·ON/OFF 를 관리 (admin 전용)"
+              />
+              <TradingAccountList
+                country="US"
+                balanceKey={balanceKey}
+                onSelect={setBalanceKey}
+                refreshToken={accountListToken}
               />
               <TradingAccountPanel
                 country="US"
                 balanceKey={balanceKey}
-                onChanged={() => { fetchAll(balanceKey); dispatch(reqFetchTradingStatus({ country: "US", key: balanceKey })); }}
+                onChanged={() => {
+                  fetchAll(balanceKey);
+                  dispatch(reqFetchTradingStatus({ country: "US", key: balanceKey }));
+                  setAccountListToken(t => t + 1);
+                }}
               />
             </SectionPanel>
           ),
