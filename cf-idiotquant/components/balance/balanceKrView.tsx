@@ -8,6 +8,7 @@ import {
   Database, User, PieChart, BarChart3, ClipboardList, Power, SlidersHorizontal, Activity, KeyRound,
 } from "lucide-react";
 import TradingAccountPanel from "@/components/balance/tradingAccountPanel";
+import TradingAccountList from "@/components/balance/tradingAccountList";
 import { useSession } from "next-auth/react";
 
 import { useAppDispatch, useAppSelector } from "@/lib/hooks";
@@ -206,6 +207,7 @@ export function BalanceKrView({ countryToggle }: { countryToggle?: React.ReactNo
   const tradingStatus = useAppSelector(selectTradingStatus);
 
   const [balanceKey, setBalanceKey] = useState(searchParams.get("key") || String(session?.user?.id || ""));
+  const [accountListToken, setAccountListToken] = useState(0); // 계정 저장/삭제 후 목록 재조회 트리거
   const [viewerTab, setViewerTab] = useState<"ccnl" | "nccs">("ccnl");
   const [mobileTab, setMobileTab] = useState("section-kpi");
   const [autoRefresh, setAutoRefresh] = useState(false);
@@ -427,7 +429,8 @@ export function BalanceKrView({ countryToggle }: { countryToggle?: React.ReactNo
       : Array.isArray((kakaoMemberList as any)?.list)
       ? (kakaoMemberList as any).list
       : [];
-    return list.find((u: any) => String(u.id) === String(balanceKey)) ?? null;
+    // 목록 항목은 { key: kakaoId, value: 프로필 } 형태 — u.id 로는 절대 매칭되지 않는다.
+    return list.find((u: any) => String(u.key) === String(balanceKey)) ?? null;
   })();
 
   // 섹션 네비게이션 구성
@@ -479,7 +482,7 @@ export function BalanceKrView({ countryToggle }: { countryToggle?: React.ReactNo
               <ChevronRight size={11} className="text-neutral-300 dark:text-neutral-600" />
               <span className="flex items-center gap-1 text-neutral-600 dark:text-neutral-300 bg-neutral-200/60 dark:bg-[#242320] px-2 py-0.5 rounded-md">
                 <User size={10} />
-                {currentKakaoUser.name || balanceKey}
+                {currentKakaoUser.value?.nickname || balanceKey}
               </span>
             </>
           )}
@@ -744,12 +747,22 @@ export function BalanceKrView({ countryToggle }: { countryToggle?: React.ReactNo
               <SectionHeader
                 icon={<KeyRound size={16} />}
                 title="자동매매 계정 관리"
-                subtitle="선택 계정의 KIS App Key/Secret·계좌번호·월 예산 등록/수정/삭제 (admin 전용)"
+                subtitle="등록된 계정을 선택해 KIS App Key/Secret·계좌번호·월 예산·ON/OFF 를 관리 (admin 전용)"
+              />
+              <TradingAccountList
+                country="KR"
+                balanceKey={balanceKey}
+                onSelect={setBalanceKey}
+                refreshToken={accountListToken}
               />
               <TradingAccountPanel
                 country="KR"
                 balanceKey={balanceKey}
-                onChanged={() => { handleRefresh(); dispatch(reqFetchTradingStatus({ country: "KR", key: balanceKey })); }}
+                onChanged={() => {
+                  handleRefresh();
+                  dispatch(reqFetchTradingStatus({ country: "KR", key: balanceKey }));
+                  setAccountListToken(t => t + 1);
+                }}
               />
             </SectionPanel>
           ),
