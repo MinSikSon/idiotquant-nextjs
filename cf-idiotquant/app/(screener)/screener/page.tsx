@@ -16,13 +16,15 @@ import {
     reqGetMyLikes, reqToggleLike,
 } from "@/lib/features/stockLikes/stockLikesSlice";
 import { cn } from "@/lib/utils";
-import { computeValueScore, type ValueTone } from "@/lib/utils/valueScore";
+import { computeValueScore } from "@/lib/utils/valueScore";
 import { CopyStockButtons, type CopyStock } from "@/components/copyStockButtons";
+import { PageHeader, PAGE_ACTION_CLS } from "@/components/pageHeader";
+import { ValueMedal } from "@/components/valueMedal";
 import { STRATEGY_LABEL, STRATEGY_BADGE, STRATEGY_PRESETS_CLIENT as STRATEGY_PRESETS, MKTCAP_PRESETS } from "@/lib/constants/strategies";
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const safeNum = (v: any): number => { const n = Number(v); return isNaN(n) ? 0 : n; };
-import { RefreshCw, ChevronRight, Loader2, Search, SlidersHorizontal, TrendingUp, Info, X, Heart, Clock, Share2, Check, Lock } from "lucide-react";
+import { RefreshCw, ChevronRight, Loader2, Search, SlidersHorizontal, Info, X, Heart, Clock, Share2, Check, Lock } from "lucide-react";
 import * as Tooltip from "@radix-ui/react-tooltip";
 
 // =========================================================================
@@ -88,6 +90,71 @@ function hlPillCls(highlight: HighlightMap | null, key: MetricKey, item: any): s
         : "px-1.5 py-0.5 rounded-md bg-neutral-100 dark:bg-[#2c2b27] text-neutral-400";
 }
 
+// =========================================================================
+// 필터 적용 — 순수 함수로 분리한 이유: 필터 서랍의 파생 카운트(→N·−N)를 계산하려면
+// "지금과 조금 다른 조건"으로 같은 필터를 여러 번 돌려야 한다. 화면에 그리는 목록과
+// 카운트가 서로 다른 로직을 쓰면 숫자가 어긋나므로 반드시 같은 함수를 공유한다.
+// =========================================================================
+interface ScreenerFilters {
+    strategies: Set<string>;
+    mode: "OR" | "AND";
+    q: string;
+    excludeHoldings: boolean;
+    excludeDeficit: boolean;
+    excludePreferred: boolean;
+    minMarketCap: number;
+    maxPbr: number;
+    maxPer: number;
+    minRoe: number;
+    minNcav: number;
+}
+
+// 필터 그룹 — 서랍 카드 순서와 1:1. 누적 카운트(→N)는 이 순서대로 쌓아 계산한다.
+type FilterGroupKey = "mktcap" | "pbr" | "per" | "ncav" | "profit" | "exclude";
+const FILTER_GROUP_ORDER: FilterGroupKey[] = ["mktcap", "pbr", "per", "ncav", "profit", "exclude"];
+const GROUP_DEFAULTS: Record<FilterGroupKey, Partial<ScreenerFilters>> = {
+    mktcap:  { minMarketCap: 0 },
+    pbr:     { maxPbr: 0 },
+    per:     { maxPer: 0 },
+    ncav:    { minNcav: 0 },
+    profit:  { minRoe: 0, excludeDeficit: false },
+    exclude: { excludeHoldings: false, excludePreferred: false },
+};
+
+function applyFilters(list: Record<string, any>[], f: ScreenerFilters): Record<string, any>[] {
+    let out = list;
+
+    if (f.strategies.size > 0) {
+        const check = f.mode === "AND" ? "every" : "some";
+        const ids = Array.from(f.strategies);
+        out = out.filter(item =>
+            ids[check](stratId => {
+                const preset = STRATEGY_PRESETS.find(p => p.id === stratId);
+                return preset?.clientFilter ? preset.clientFilter(item) : resolveStrategies(item).includes(stratId);
+            })
+        );
+    }
+
+    if (f.q) {
+        const q = f.q.toLowerCase();
+        out = out.filter(item =>
+            (item.ticker ?? "").toLowerCase().includes(q) ||
+            (item.name ?? "").toLowerCase().includes(q)
+        );
+    }
+
+    if (f.excludeHoldings)  out = out.filter(item => !item.name?.includes("홀딩스"));
+    if (f.excludeDeficit)   out = out.filter(item => safeNum(item.eps) > 0);
+    if (f.excludePreferred) out = out.filter(item => !isPreferredStock(item.name ?? ""));
+    if (f.minMarketCap > 0) out = out.filter(item => safeNum(item.market_cap) >= f.minMarketCap);
+    if (f.maxPbr > 0)  out = out.filter(item => safeNum(item.pbr) > 0 && safeNum(item.pbr) <= f.maxPbr);
+    if (f.maxPer > 0)  out = out.filter(item => safeNum(item.per) > 0 && safeNum(item.per) <= f.maxPer);
+    if (f.minNcav > 0) out = out.filter(item => safeNum(item.ncav_ratio) >= f.minNcav);
+    if (f.minRoe > 0)  out = out.filter(item => roeOf(item) >= f.minRoe);
+
+    return out;
+}
+
 const TOOLTIP_CLS =
     "z-50 max-w-64 rounded-xl px-3.5 py-3 text-xs bg-neutral-900 dark:bg-[#242320] border border-neutral-700/60 shadow-lg text-neutral-200 leading-relaxed " +
     "data-[state=delayed-open]:animate-in data-[state=delayed-open]:fade-in-0 data-[state=delayed-open]:zoom-in-95 " +
@@ -114,41 +181,10 @@ function SortableHeader({ label, sortKey: key, currentKey, order, onToggle, rele
                 relevant && !active && "text-emerald-600/90 dark:text-emerald-400/90"
             )}
         >
-            {relevant && <span className="w-1 h-1 rounded-full bg-emerald-500 shrink-0" />}
+            {(active || relevant) && <span className={cn("w-1 h-1 rounded-full shrink-0", active ? "bg-[#16a34a]" : "bg-emerald-500")} />}
             {label}
             <span className="text-[9px] font-mono">{active ? (order === "asc" ? "↑" : "↓") : "↕"}</span>
         </button>
-    );
-}
-
-// =========================================================================
-// ValueMedal — 저평가 점수 + 메달 (게임 스코어)
-// =========================================================================
-const MEDAL_TONE: Record<ValueTone, string> = {
-    legend: "bg-violet-100 text-violet-700 ring-violet-300 dark:bg-violet-950/40 dark:text-violet-300 dark:ring-violet-800",
-    treasure: "bg-amber-100 text-amber-700 ring-amber-300 dark:bg-amber-950/40 dark:text-amber-300 dark:ring-amber-800",
-    diamond: "bg-sky-50 text-sky-700 ring-sky-300 dark:bg-sky-950/30 dark:text-sky-300 dark:ring-sky-800",
-    gold: "bg-yellow-50 text-yellow-700 ring-yellow-300 dark:bg-yellow-950/30 dark:text-yellow-300 dark:ring-yellow-800",
-    silver: "bg-neutral-100 text-neutral-600 ring-neutral-300 dark:bg-[#2c2b27] dark:text-neutral-300 dark:ring-[#4a4641]",
-    bronze: "bg-orange-50 text-orange-700 ring-orange-200 dark:bg-orange-950/30 dark:text-orange-300 dark:ring-orange-900",
-    iron: "bg-zinc-100 text-zinc-600 ring-zinc-300 dark:bg-zinc-900/40 dark:text-zinc-400 dark:ring-zinc-700",
-    raw: "bg-stone-100 text-stone-600 ring-stone-300 dark:bg-stone-900/40 dark:text-stone-400 dark:ring-stone-700",
-    clay: "bg-lime-50 text-lime-800 ring-lime-200 dark:bg-lime-950/30 dark:text-lime-500 dark:ring-lime-900",
-    explore: "bg-neutral-50 text-neutral-400 ring-neutral-200 dark:bg-[#242320] dark:text-neutral-500 dark:ring-[#35332e]",
-};
-function ValueMedal({ item, size = "sm" }: { item: any; size?: "sm" | "lg" }) {
-    const v = computeValueScore(item);
-    return (
-        <span
-            className={cn(
-                "inline-flex items-center gap-1 rounded-full ring-1 ring-inset font-black tabular-nums shrink-0",
-                size === "lg" ? "px-2.5 py-1 text-sm" : "px-1.5 py-0.5 text-[11px]",
-                MEDAL_TONE[v.tone]
-            )}
-            title={`저평가 점수 ${v.score}/100 · ${v.label}등급 (NCAV·PBR·PER·ROE 종합)`}
-        >
-            <span aria-hidden>{v.medal}</span>{v.score}
-        </span>
     );
 }
 
@@ -346,38 +382,85 @@ const StockRowCard = memo(function StockRowCard({ item, onClick, isLiked, onTogg
     );
 });
 
+
 // =========================================================================
-// 숫자 프리셋 필터 그룹 (NCAV/PBR/PER/ROE 공통 UI). 활성 값을 다시 누르면 해제(0).
+// 필터 서랍 — 조건을 좁히면서 결과가 몇 개 남는지 즉시 확인한다.
+// 모달이 아니라 툴바 아래로 밀어내리는 서랍인 이유: 모달로 띄우면 결과 테이블이 가려져
+// "이 조건을 켜면 뭐가 사라지는지"를 볼 수 없다.
 // =========================================================================
-function NumericPresetGroup({ label, presets, value, onPick, fmt }: {
-    label: string;
-    presets: number[];
-    value: number;
-    onPick: (v: number) => void;
-    fmt: (v: number) => string;
+// 저장 형식은 공유 링크와 같은 쿼리스트링 — 표현이 하나면 저장·복원·공유가 어긋날 일이 없다
+const SAVED_SETS_KEY = 'screener:savedSets';
+interface SavedFilterSet { id: string; name: string; qs: string }
+
+// 서랍 카드 껍데기 — 라벨 + 우측에 "여기까지 좁히면 남는 개수"
+function DrawerCard({ label, remain, dashed, span2, children }: {
+    label: string; remain?: number; dashed?: boolean; span2?: boolean; children: React.ReactNode;
 }) {
     return (
-        <div className="flex items-center gap-2 flex-wrap">
-            <span className="text-[10px] font-extrabold text-neutral-400 uppercase tracking-wider">{label}</span>
-            {presets.map(p => (
-                <button
-                    key={p}
-                    onClick={() => onPick(value === p ? 0 : p)}
-                    className={cn(
-                        "px-2.5 py-1 rounded-lg border text-xs font-bold transition-all",
-                        value === p
-                            ? "bg-[#16a34a] border-[#16a34a] text-white shadow-sm"
-                            : "bg-white dark:bg-[#242320] border-neutral-200 dark:border-[#3a3834] text-neutral-600 dark:text-neutral-400 hover:border-neutral-300 dark:hover:border-neutral-600"
-                    )}
-                >
-                    {fmt(p)}
-                </button>
-            ))}
+        <div className={cn(
+            "rounded-xl px-4 py-3.5 bg-white dark:bg-[#242320]",
+            dashed
+                ? "border border-dashed border-[#bbf7d0] dark:border-[#166534]/60"
+                : "border border-[#dcfce7] dark:border-[#166534]/40",
+            span2 && "sm:col-span-2"
+        )}>
+            <div className="flex items-center justify-between gap-2 mb-2.5">
+                <span className="text-[11px] font-extrabold uppercase tracking-wider text-neutral-500 dark:text-neutral-400">{label}</span>
+                {remain !== undefined && (
+                    <span className="text-[10.5px] font-bold font-mono text-[#16a34a] tabular-nums shrink-0">→ {remain}개</span>
+                )}
+            </div>
+            {children}
         </div>
     );
 }
 
-const FilterDivider = () => <div className="w-px h-4 bg-neutral-200 dark:bg-[#4a4641] hidden sm:block" />;
+// 서랍 안의 프리셋 칩 — 활성 값을 다시 누르면 해제
+function DrawerChip({ active, onClick, children }: { active: boolean; onClick: () => void; children: React.ReactNode }) {
+    return (
+        <button
+            onClick={onClick}
+            className={cn(
+                "px-2.5 py-1 rounded-[7px] text-[11px] font-bold border transition-colors",
+                active
+                    ? "bg-[#16a34a] border-[#16a34a] text-white"
+                    : "bg-[#faf9f7] dark:bg-[#1f1e1b] border-neutral-200 dark:border-[#3a3834] text-neutral-500 dark:text-neutral-400 hover:border-neutral-300 dark:hover:border-neutral-600"
+            )}
+        >
+            {children}
+        </button>
+    );
+}
+
+// 체크박스 행 — 우측 −N 이 이 화면의 핵심. 어떤 조건이 결과를 많이 죽이는지 켜기 전에 알 수 있다.
+function DrawerCheck({ checked, onChange, label, delta }: {
+    checked: boolean; onChange: (v: boolean) => void; label: string; delta: number;
+}) {
+    return (
+        <label className="flex items-center gap-2.5 cursor-pointer select-none py-0.5">
+            <span
+                className={cn(
+                    "w-[15px] h-[15px] rounded-[5px] flex items-center justify-center shrink-0 transition-colors",
+                    checked
+                        ? "bg-[#16a34a]"
+                        : "bg-white dark:bg-[#1f1e1b] border-[1.5px] border-neutral-300 dark:border-[#4a4641]"
+                )}
+            >
+                {checked && <Check size={10} className="text-white" strokeWidth={3.5} />}
+            </span>
+            <input type="checkbox" className="sr-only" checked={checked} onChange={e => onChange(e.target.checked)} />
+            <span className={cn(
+                "flex-1 text-xs",
+                checked ? "font-semibold text-neutral-900 dark:text-neutral-100" : "font-medium text-neutral-500 dark:text-neutral-400"
+            )}>
+                {label}
+            </span>
+            {delta > 0 && (
+                <span className="text-[10.5px] font-mono text-neutral-400 tabular-nums shrink-0">−{delta}</span>
+            )}
+        </label>
+    );
+}
 
 // =========================================================================
 // 메인 스크리너
@@ -452,6 +535,13 @@ function ScreenerContent() {
     const [maxPer, setMaxPer] = useState<number>(() => initNum('maxper', 'maxper', PER_MAX_PRESETS));
     const [minRoe, setMinRoe] = useState<number>(() => initNum('minroe', 'minroe', ROE_MIN_PRESETS));
     const [minNcav, setMinNcav] = useState<number>(() => initNum('minncav', 'minncav', NCAV_MIN_PRESETS));
+
+    // 저장된 필터 조합 — 자주 쓰는 조건을 이름 붙여 두면 다음에 한 번에 불러올 수 있다.
+    const [savedSets, setSavedSets] = useState<SavedFilterSet[]>(() => {
+        if (typeof window === 'undefined') return [];
+        try { return JSON.parse(localStorage.getItem(SAVED_SETS_KEY) || '[]') as SavedFilterSet[]; }
+        catch { return []; }
+    });
 
     const hasDiscovered = useRef(false);
 
@@ -634,40 +724,22 @@ function ScreenerContent() {
         }) as Record<string, any>[];
     }, [likedTickers, likedList, ncavDailyList.list]);
 
+    // 현재 필터 상태 스냅샷 — 목록·파생 카운트가 같은 입력을 쓰도록 한 곳에서 만든다
+    const filters = useMemo<ScreenerFilters>(() => ({
+        strategies: activeStrategyIds,
+        mode: filterMode,
+        q: searchQuery,
+        excludeHoldings, excludeDeficit, excludePreferred,
+        minMarketCap, maxPbr, maxPer, minRoe, minNcav,
+    }), [activeStrategyIds, filterMode, searchQuery, excludeHoldings, excludeDeficit, excludePreferred, minMarketCap, maxPbr, maxPer, minRoe, minNcav]);
+
+    const baseList = useMemo(
+        () => (showLikedOnly ? normalizedLikedList : ncavDailyList.list) as Record<string, any>[],
+        [showLikedOnly, normalizedLikedList, ncavDailyList.list]
+    );
+
     const filteredList = useMemo(() => {
-        let list: Record<string, any>[] = showLikedOnly
-            ? normalizedLikedList
-            : [...ncavDailyList.list];
-
-        if (activeStrategyIds.size > 0) {
-            const check = filterMode === 'AND' ? 'every' : 'some';
-            list = list.filter((item) =>
-                Array.from(activeStrategyIds)[check]((stratId) => {
-                    const preset = STRATEGY_PRESETS.find(p => p.id === stratId);
-                    return preset?.clientFilter ? preset.clientFilter(item) : resolveStrategies(item).includes(stratId as string);
-                })
-            );
-        }
-
-        if (searchQuery) {
-            const q = searchQuery.toLowerCase();
-            list = list.filter(item =>
-                (item.ticker ?? "").toLowerCase().includes(q) ||
-                (item.name ?? "").toLowerCase().includes(q)
-            );
-        }
-
-        if (excludeHoldings)  list = list.filter(item => !item.name?.includes("홀딩스"));
-        if (excludeDeficit)   list = list.filter(item => safeNum(item.eps) > 0);
-        if (excludePreferred) list = list.filter(item => !isPreferredStock(item.name ?? ""));
-        if (minMarketCap > 0) list = list.filter(item => safeNum(item.market_cap) >= minMarketCap);
-        if (maxPbr > 0)  list = list.filter(item => safeNum(item.pbr) > 0 && safeNum(item.pbr) <= maxPbr);
-        if (maxPer > 0)  list = list.filter(item => safeNum(item.per) > 0 && safeNum(item.per) <= maxPer);
-        if (minNcav > 0) list = list.filter(item => safeNum(item.ncav_ratio) >= minNcav);
-        if (minRoe > 0)  list = list.filter(item => {
-            const roe = safeNum(item.bps) > 0 ? (safeNum(item.eps) / safeNum(item.bps)) * 100 : null;
-            return roe !== null && roe >= minRoe;
-        });
+        const list = [...applyFilters(baseList, filters)];
 
         list.sort((a, b) => {
             if (sortKey === "value_score") {
@@ -691,7 +763,25 @@ function ScreenerContent() {
         });
 
         return list;
-    }, [ncavDailyList.list, normalizedLikedList, showLikedOnly, activeStrategyIds, filterMode, searchQuery, excludeHoldings, excludeDeficit, excludePreferred, minMarketCap, maxPbr, maxPer, minRoe, minNcav, sortKey, sortOrder]);
+    }, [baseList, filters, sortKey, sortOrder]);
+
+    // 조건 하나만 다르게 걸었을 때 남는 개수 — 서랍의 −N 표기용
+    const countWith = useCallback(
+        (override: Partial<ScreenerFilters>) => applyFilters(baseList, { ...filters, ...override }).length,
+        [baseList, filters]
+    );
+
+    // 그룹까지 누적 적용했을 때 남는 개수 — 서랍 카드 헤더의 →N개 표기용.
+    // 뒤 그룹은 기본값으로 되돌려 "여기까지 좁히면 이만큼 남는다"를 보여준다.
+    const cumulativeCounts = useMemo(() => {
+        const out = {} as Record<FilterGroupKey, number>;
+        FILTER_GROUP_ORDER.forEach((key, idx) => {
+            const reset = FILTER_GROUP_ORDER.slice(idx + 1)
+                .reduce<Partial<ScreenerFilters>>((acc, k) => ({ ...acc, ...GROUP_DEFAULTS[k] }), {});
+            out[key] = applyFilters(baseList, { ...filters, ...reset }).length;
+        });
+        return out;
+    }, [baseList, filters]);
 
     const visibleList = filteredList.slice(0, displayCount);
     const hasMore = filteredList.length > displayCount;
@@ -737,53 +827,121 @@ function ScreenerContent() {
     const hasActiveFilters = activeStrategyIds.size > 0 || excludeHoldings || excludeDeficit || excludePreferred || minMarketCap > 0 || maxPbr > 0 || maxPer > 0 || minRoe > 0 || minNcav > 0 || sortKey !== 'value_score' || sortOrder !== 'desc' || showLikedOnly;
     const isFiltered = !showLikedOnly && filteredList.length !== ncavDailyList.list.length;
 
+    // 단일 전략 선택 시에만 기준 배너를 띄운다 — 여러 전략을 겹치면 "이 값이 왜 초록인지"를
+    // 한 줄로 설명할 수 없어 오히려 오해를 만든다.
+    const bannerPreset = activeStrategyIds.size === 1
+        ? STRATEGY_PRESETS.find(p => p.id === Array.from(activeStrategyIds)[0]) ?? null
+        : null;
+
+    // 활성 조건에 걸린 컬럼은 초록 pill — 전략 기준이든 상세 필터든 규칙을 하나로 통일한다.
+    const metricHighlight = useMemo<HighlightMap | null>(() => {
+        const map: HighlightMap = { ...(highlightMap ?? {}) };
+        if (minNcav > 0) map.ncav_ratio = i => safeNum(i.ncav_ratio) >= minNcav;
+        if (maxPbr > 0)  map.pbr = i => safeNum(i.pbr) > 0 && safeNum(i.pbr) <= maxPbr;
+        if (maxPer > 0)  map.per = i => safeNum(i.per) > 0 && safeNum(i.per) <= maxPer;
+        if (minRoe > 0)  map.roe = i => roeOf(i) >= minRoe;
+        return Object.keys(map).length > 0 ? map : null;
+    }, [highlightMap, minNcav, maxPbr, maxPer, minRoe]);
+
+    // 현재 걸려 있는 상세 조건 목록 — 서랍 카운트·빈 결과 제안이 공유한다
+    const activeConditions = useMemo(() => ([
+        minMarketCap > 0 && { label: `시총 ${minMarketCap}억+`, override: { minMarketCap: 0 } as Partial<ScreenerFilters>, clear: () => setMinMarketCap(0) },
+        maxPbr > 0       && { label: `PBR ≤ ${maxPbr}`,        override: { maxPbr: 0 } as Partial<ScreenerFilters>,       clear: () => setMaxPbr(0) },
+        maxPer > 0       && { label: `PER ≤ ${maxPer}`,        override: { maxPer: 0 } as Partial<ScreenerFilters>,       clear: () => setMaxPer(0) },
+        minNcav > 0      && { label: `NCAV ≥ ${minNcav}`,      override: { minNcav: 0 } as Partial<ScreenerFilters>,      clear: () => setMinNcav(0) },
+        minRoe > 0       && { label: `ROE ≥ ${minRoe}%`,       override: { minRoe: 0 } as Partial<ScreenerFilters>,       clear: () => setMinRoe(0) },
+        excludeDeficit   && { label: '적자 기업 제외',           override: { excludeDeficit: false } as Partial<ScreenerFilters>,   clear: () => setExcludeDeficit(false) },
+        excludeHoldings  && { label: '홀딩스 제외',              override: { excludeHoldings: false } as Partial<ScreenerFilters>,  clear: () => setExcludeHoldings(false) },
+        excludePreferred && { label: '우선주 제외',              override: { excludePreferred: false } as Partial<ScreenerFilters>, clear: () => setExcludePreferred(false) },
+    ].filter(Boolean) as { label: string; override: Partial<ScreenerFilters>; clear: () => void }[]),
+    [minMarketCap, maxPbr, maxPer, minNcav, minRoe, excludeDeficit, excludeHoldings, excludePreferred]);
+
+    // 결과가 0개일 때 — "무엇을 풀면 몇 개가 돌아오는지"를 짚어준다. 그냥 "없습니다"로 끝내면
+    // 어떤 조건이 결과를 죽였는지 사용자가 하나씩 꺼보며 찾아야 한다.
+    const emptySuggestion = useMemo(() => {
+        if (filteredList.length > 0 || activeConditions.length === 0) return null;
+        return activeConditions
+            .map(c => ({ ...c, count: countWith(c.override) }))
+            .filter(c => c.count > 0)
+            .sort((a, b) => b.count - a.count)[0] ?? null;
+    }, [filteredList.length, activeConditions, countWith]);
+
+    // 상세 필터만 초기화 — 전략 선택은 남긴다 (전략은 "무엇을 보는지", 필터는 "얼마나 좁히는지")
+    const clearDetailFilters = useCallback(() => {
+        setMinMarketCap(0); setMaxPbr(0); setMaxPer(0); setMinRoe(0); setMinNcav(0);
+        setExcludeHoldings(false); setExcludeDeficit(false); setExcludePreferred(false);
+        setDisplayCount(DAILY_PAGE_SIZE);
+    }, []);
+
+    const persistSets = useCallback((next: SavedFilterSet[]) => {
+        setSavedSets(next);
+        localStorage.setItem(SAVED_SETS_KEY, JSON.stringify(next));
+    }, []);
+
+    const saveCurrentSet = useCallback(() => {
+        const fallback = activeConditions.map(c => c.label).join(' · ') || '전체';
+        const name = (window.prompt('저장할 이름', fallback) ?? '').trim();
+        if (!name) return;
+        persistSets([...savedSets, { id: `${Date.now()}`, name, qs: queryString }].slice(-12));
+    }, [activeConditions, savedSets, queryString, persistSets]);
+
+    const applySavedSet = useCallback((qs: string) => {
+        const p = new URLSearchParams(qs);
+        setActiveStrategyIds(new Set((p.get('strategies') ?? '').split(',').filter(id => STRATEGY_PRESETS.some(s => s.id === id))));
+        setFilterMode(p.get('mode') === 'AND' ? 'AND' : 'OR');
+        setSortKey(VALID_SORT_KEYS.includes(p.get('sort') as DiscoverySortKey) ? p.get('sort') as DiscoverySortKey : 'value_score');
+        setSortOrder(p.get('order') === 'asc' ? 'asc' : 'desc');
+        const ex = p.get('exclude')?.split(',') ?? [];
+        setExcludeHoldings(ex.includes('holdings'));
+        setExcludeDeficit(ex.includes('deficit'));
+        setExcludePreferred(ex.includes('preferred'));
+        setMinMarketCap(safeNum(p.get('mincap')));
+        setMaxPbr(safeNum(p.get('maxpbr')));
+        setMaxPer(safeNum(p.get('maxper')));
+        setMinRoe(safeNum(p.get('minroe')));
+        setMinNcav(safeNum(p.get('minncav')));
+        setSearchQuery(p.get('q') ?? '');
+        setShowLikedOnly(p.get('filter') === 'liked');
+        setDisplayCount(DAILY_PAGE_SIZE);
+    }, []);
+
     return (
         <Tooltip.Provider delayDuration={300}>
         <div className="min-h-screen bg-[#faf9f7] dark:bg-[#1a1915] text-neutral-900 dark:text-neutral-100">
 
-            {/* ── 헤더 ── */}
-            <div className="bg-white dark:bg-[#1f1e1b] border-b border-neutral-200 dark:border-[#3a3834] border-t-[3px] border-t-[#16a34a]">
-                <div className="max-w-7xl mx-auto px-4 sm:px-6 py-6">
-                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-                        <div>
-                            <div className="flex items-center gap-2 mb-1.5">
-                                {showLikedOnly
-                                    ? <Heart size={18} className="text-rose-500" fill="currentColor" />
-                                    : <TrendingUp size={18} className="text-[#16a34a] dark:text-[#16a34a]" strokeWidth={2.5} />
-                                }
-                                <h1 className="text-xl font-black tracking-tight text-neutral-900 dark:text-white">
-                                    {showLikedOnly ? "내 관심 종목" : "최근 발굴 종목"}
-                                </h1>
-                            </div>
-                            <p className="text-xs text-neutral-400 dark:text-neutral-500 font-medium flex items-center gap-2">
-                                {isLoading && !showLikedOnly ? (
-                                    <span className="flex items-center gap-1.5">
-                                        <Loader2 size={11} className="animate-spin" />
-                                        데이터 로딩 중...
-                                    </span>
-                                ) : (
-                                    <>
-                                        {!showLikedOnly && formattedDate && <span className="font-mono">{formattedDate}</span>}
-                                        {!showLikedOnly && formattedDate && <span>·</span>}
-                                        총 <span className="font-bold text-neutral-700 dark:text-neutral-300 mx-0.5">{filteredList.length}개</span> 종목
-                                        {!showLikedOnly && ncavDailyList.list.length !== filteredList.length && (
-                                            <span className="text-neutral-400"> (전체 {ncavDailyList.list.length}개 중)</span>
-                                        )}
-                                    </>
-                                )}
-                            </p>
-                        </div>
-                        <button
-                            onClick={handleRefresh}
-                            disabled={isLoading}
-                            className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-[#faf9f7] dark:bg-[#242320] hover:bg-neutral-200 dark:hover:bg-[#242320] text-neutral-600 dark:text-neutral-400 text-xs font-bold transition-colors disabled:opacity-50 disabled:cursor-not-allowed shrink-0 self-start"
-                        >
+            {/* ── 페이지 헤더 (공통 규칙) ── */}
+            <PageHeader
+                emoji={showLikedOnly ? "♡" : "🥇"}
+                title={showLikedOnly ? "내 관심 종목" : "종목 발굴"}
+                meta={
+                    isLoading && !showLikedOnly ? (
+                        <span className="flex items-center gap-1.5">
+                            <Loader2 size={11} className="animate-spin" />
+                            데이터 로딩 중...
+                        </span>
+                    ) : (
+                        <>
+                            {!showLikedOnly && formattedDate && <><span className="font-mono">{formattedDate}</span><span>·</span></>}
+                            <span>조건 충족 <span className={cn("font-extrabold", isFiltered ? "text-[#15803d] dark:text-[#16a34a]" : "text-neutral-700 dark:text-neutral-300")}>{filteredList.length}개</span></span>
+                            {!showLikedOnly && ncavDailyList.list.length !== filteredList.length && (
+                                <span className="text-neutral-300 dark:text-neutral-600">(전체 {ncavDailyList.list.length}개 중)</span>
+                            )}
+                        </>
+                    )
+                }
+                actions={
+                    <>
+                        <button onClick={handleShare} className={PAGE_ACTION_CLS} title="현재 필터링 결과 링크 공유">
+                            {shareCopied ? <Check size={13} /> : <Share2 size={13} />}
+                            {shareCopied ? "복사됨" : "공유"}
+                        </button>
+                        <button onClick={handleRefresh} disabled={isLoading} className={PAGE_ACTION_CLS}>
                             <RefreshCw size={13} className={isLoading ? "animate-spin" : ""} />
                             새로고침
                         </button>
-                    </div>
-                </div>
-            </div>
+                    </>
+                }
+            />
 
             {/* ── 수집 중 안내 배너 ── */}
             {scanningInProgress && !showLikedOnly && (
@@ -797,17 +955,22 @@ function ScreenerContent() {
                 </div>
             )}
 
-            {/* ── 전략 탭 (sticky, 멀티셀렉트) ── */}
-            <div className="sticky top-0 z-30 bg-white/95 dark:bg-[#1f1e1b]/95 backdrop-blur-md border-b border-neutral-200 dark:border-[#3a3834]">
-                <div className="max-w-7xl mx-auto px-4 sm:px-6">
+            {/* ── 전략 탭 + 통합 툴바 (sticky) ── */}
+            <div className={cn(
+                "sticky top-0 z-30 bg-white/95 dark:bg-[#1f1e1b]/95 backdrop-blur-md",
+                !filterOpen && "border-b border-neutral-200 dark:border-[#3a3834]"
+            )}>
+                <div className="max-w-7xl mx-auto px-4 sm:px-7">
 
-                    {/* 첫째 줄: 전략 탭 (전체 너비 스크롤) */}
-                    <div className="flex items-center gap-1.5 pt-3 pb-2">
+                    {/* 첫째 줄: 전략 탭.
+                        wrap 필수 — 칩이 9개라 한 줄에 담기지 않는다. 가로 스크롤로 두면 마지막 칩이
+                        잘려 있는 줄 모르고 지나친다. */}
+                    <div className="flex items-center gap-1.5 flex-wrap pt-3 pb-2">
                         {/* 전체 탭 */}
                         <button
                             onClick={clearStrategies}
                             className={cn(
-                                "shrink-0 flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold border transition-all whitespace-nowrap",
+                                "shrink-0 flex items-center gap-1.5 px-3 py-1.5 rounded-[9px] text-xs font-bold border transition-all whitespace-nowrap",
                                 isAllActive
                                     ? STRATEGY_ACTIVE_CLS.all
                                     : "border-neutral-200 dark:border-[#3a3834] text-neutral-600 dark:text-neutral-400 hover:border-neutral-300 dark:hover:border-neutral-600 bg-white dark:bg-[#242320]"
@@ -822,59 +985,95 @@ function ScreenerContent() {
                             </span>
                         </button>
 
-                        {/* 전략 탭 스크롤 영역 */}
-                        <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar flex-1">
-                            {STRATEGY_PRESETS.map(preset => {
-                                const isActive = activeStrategyIds.has(preset.id);
-                                return (
-                                    <button
-                                        key={preset.id}
-                                        onClick={() => toggleStrategy(preset.id)}
-                                        className={cn(
-                                            "shrink-0 flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold border transition-all whitespace-nowrap",
-                                            isActive
-                                                ? STRATEGY_ACTIVE_CLS[preset.id]
-                                                : "border-neutral-200 dark:border-[#3a3834] text-neutral-600 dark:text-neutral-400 hover:border-neutral-300 dark:hover:border-neutral-600 bg-white dark:bg-[#242320]"
-                                        )}
-                                    >
-                                        {preset.label}
-                                        <span className={cn(
-                                            "text-[10px] font-black px-1.5 py-0.5 rounded-full",
-                                            isActive ? "bg-white/20 dark:bg-black/20" : "bg-[#faf9f7] dark:bg-[#4a4641] text-neutral-500"
-                                        )}>
-                                            {strategyCounts[preset.id] ?? 0}
-                                        </span>
-                                    </button>
-                                );
-                            })}
-                        </div>
+                        {STRATEGY_PRESETS.map(preset => {
+                            const isActive = activeStrategyIds.has(preset.id);
+                            return (
+                                <button
+                                    key={preset.id}
+                                    onClick={() => toggleStrategy(preset.id)}
+                                    className={cn(
+                                        "shrink-0 flex items-center gap-1.5 px-3 py-1.5 rounded-[9px] text-xs font-bold border transition-all whitespace-nowrap",
+                                        isActive
+                                            ? STRATEGY_ACTIVE_CLS[preset.id]
+                                            : "border-neutral-200 dark:border-[#3a3834] text-neutral-600 dark:text-neutral-400 hover:border-neutral-300 dark:hover:border-neutral-600 bg-white dark:bg-[#242320]"
+                                    )}
+                                >
+                                    {preset.label}
+                                    <span className={cn(
+                                        "text-[10px] font-black px-1.5 py-0.5 rounded-full",
+                                        isActive ? "bg-white/20 dark:bg-black/20" : "bg-[#faf9f7] dark:bg-[#4a4641] text-neutral-500"
+                                    )}>
+                                        {strategyCounts[preset.id] ?? 0}
+                                    </span>
+                                </button>
+                            );
+                        })}
                     </div>
 
-                    {/* 둘째 줄: 관심 + 결과 수 + 전략 안내 + 초기화 */}
-                    <div className="flex items-center gap-2 pb-3">
-                        {/* 저평가 점수순 정렬 (게임 리더보드) */}
+                    {/* 둘째 줄: 통합 툴바 — 검색·정렬·필터·관심을 한 줄로. 예전엔 세 줄로 흩어져
+                        세로 공간만 먹고 무엇이 주된 조작인지 위계가 없었다. */}
+                    <div className="flex items-center gap-2 flex-wrap pb-3">
+                        {/* 검색 */}
+                        <div className="relative flex-1 min-w-[180px]">
+                            <Search size={13} className="absolute left-3 top-1/2 -translate-y-1/2 text-neutral-300 dark:text-neutral-600 pointer-events-none" />
+                            <input
+                                type="text"
+                                value={searchQuery}
+                                onChange={e => { setSearchQuery(e.target.value); setDisplayCount(DAILY_PAGE_SIZE); }}
+                                placeholder="종목명 또는 코드로 검색"
+                                className="w-full pl-8 pr-3 py-2 text-xs font-medium bg-[#faf9f7] dark:bg-[#242320] border border-neutral-200 dark:border-[#3a3834] rounded-[10px] outline-none focus:border-[#16a34a] focus:ring-2 focus:ring-[#16a34a]/15 placeholder:text-neutral-400 dark:placeholder:text-neutral-600"
+                            />
+                        </div>
+
+                        {/* 정렬 — 점수순 (활성 시 반전) */}
                         <button
                             onClick={() => { setSortKey("value_score"); setSortOrder("desc"); setDisplayCount(DAILY_PAGE_SIZE); }}
                             title="저평가 점수 높은 순으로 정렬 (NCAV·PBR·PER·ROE 종합)"
                             className={cn(
-                                "shrink-0 flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold border transition-all whitespace-nowrap",
+                                "shrink-0 flex items-center gap-1.5 px-3 py-2 rounded-[10px] text-xs font-bold border transition-all whitespace-nowrap",
                                 sortKey === "value_score"
-                                    ? "bg-[#16a34a] border-[#16a34a] text-white shadow-sm"
-                                    : "border-neutral-200 dark:border-[#3a3834] text-neutral-600 dark:text-neutral-400 hover:border-[#86efac] dark:hover:border-[#15803d] hover:text-[#16a34a] bg-white dark:bg-[#242320]"
+                                    ? "bg-neutral-900 dark:bg-white border-neutral-900 dark:border-white text-white dark:text-neutral-900"
+                                    : "border-neutral-200 dark:border-[#3a3834] text-neutral-600 dark:text-neutral-400 hover:border-neutral-300 bg-white dark:bg-[#242320]"
                             )}
                         >
-                            <span aria-hidden>🏆</span>
                             점수순
+                            <span className="font-mono text-[10px]">{sortKey === "value_score" && sortOrder === "asc" ? "↑" : "↓"}</span>
                         </button>
 
-                        {/* 관심 종목 필터 */}
+                        {/* 필터 — 열리면 아래 서랍과 물리적으로 이어 붙는다 (탭 → 패널) */}
+                        <button
+                            onClick={() => isLoggedIn ? setFilterOpen(o => !o) : requireLogin()}
+                            className={cn(
+                                "shrink-0 flex items-center gap-1.5 px-3 py-2 text-xs font-bold border transition-colors whitespace-nowrap",
+                                filterOpen
+                                    ? "bg-[#f0fdf4] dark:bg-[#052e16]/40 border-[#bbf7d0] dark:border-[#166534] border-b-[#f0fdf4] dark:border-b-transparent text-[#15803d] dark:text-[#16a34a] rounded-t-[10px] -mb-3 pb-[19px]"
+                                    : cn(
+                                        "rounded-[10px]",
+                                        activeFilterCount > 0
+                                            ? "bg-[#f0fdf4] dark:bg-[#052e16]/30 border-[#86efac] dark:border-[#166534] text-[#15803d] dark:text-[#16a34a]"
+                                            : "bg-white dark:bg-[#242320] border-neutral-200 dark:border-[#3a3834] text-neutral-600 dark:text-neutral-400 hover:border-neutral-300"
+                                    )
+                            )}
+                        >
+                            <SlidersHorizontal size={12} />
+                            필터
+                            {!isLoggedIn && <Lock size={10} className="opacity-60" />}
+                            {activeFilterCount > 0 && (
+                                <span className="px-1.5 rounded-full bg-[#dcfce7] dark:bg-[#14532d]/60 text-[#16a34a] text-[10px] font-black">
+                                    {activeFilterCount}
+                                </span>
+                            )}
+                            <span className="font-mono text-[9px]">{filterOpen ? "▲" : "▼"}</span>
+                        </button>
+
+                        {/* 관심 종목 */}
                         <button
                             onClick={() => {
                                 if (!isLoggedIn) { requireLogin(); return; }
                                 setShowLikedOnly(o => !o); setActiveStrategyIds(new Set()); setDisplayCount(DAILY_PAGE_SIZE);
                             }}
                             className={cn(
-                                "shrink-0 flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold border transition-all whitespace-nowrap",
+                                "shrink-0 flex items-center gap-1.5 px-3 py-2 rounded-[10px] text-xs font-bold border transition-all whitespace-nowrap",
                                 showLikedOnly
                                     ? "bg-rose-500 border-rose-500 text-white shadow-sm"
                                     : "border-neutral-200 dark:border-[#3a3834] text-neutral-600 dark:text-neutral-400 hover:border-rose-300 dark:hover:border-rose-700 hover:text-rose-500 dark:hover:text-rose-400 bg-white dark:bg-[#242320]"
@@ -891,47 +1090,11 @@ function ScreenerContent() {
                             </span>
                         </button>
 
-                        {/* 결과 종목 수 (sticky — 스크롤해도 항상 보임) */}
-                        {!isLoading && (
-                            <div className={cn(
-                                "shrink-0 flex items-baseline gap-1 px-3 py-1.5 rounded-lg border transition-colors",
-                                isFiltered
-                                    ? "bg-[#f0fdf4] dark:bg-[#052e16]/30 border-[#bbf7d0] dark:border-[#166534]/50"
-                                    : "bg-[#faf9f7] dark:bg-[#242320] border-neutral-200 dark:border-[#3a3834]"
-                            )}>
-                                <span className={cn(
-                                    "text-sm font-black tabular-nums leading-none",
-                                    isFiltered ? "text-[#15803d] dark:text-[#16a34a]" : "text-neutral-700 dark:text-neutral-200"
-                                )}>{filteredList.length}</span>
-                                <span className="text-[10px] font-bold text-neutral-400">개</span>
-                                {isFiltered && (
-                                    <span className="text-[10px] font-medium text-neutral-400 ml-0.5">/ {ncavDailyList.list.length}</span>
-                                )}
-                            </div>
-                        )}
-
-                        <div className="flex-1" />
-
-                        {/* 결과 링크 공유 */}
-                        <button
-                            onClick={handleShare}
-                            className={cn(
-                                "shrink-0 flex items-center gap-1 px-2.5 py-1.5 rounded-lg border text-xs font-bold transition-all",
-                                shareCopied
-                                    ? "bg-[#f0fdf4] dark:bg-[#052e16]/30 border-[#86efac] dark:border-[#15803d] text-[#15803d] dark:text-[#16a34a]"
-                                    : "border-neutral-200 dark:border-[#3a3834] text-neutral-500 dark:text-neutral-400 hover:border-neutral-300 bg-white dark:bg-[#242320]"
-                            )}
-                            title="현재 필터링 결과 링크 공유"
-                        >
-                            {shareCopied ? <Check size={12} /> : <Share2 size={12} />}
-                            <span className="hidden sm:inline">{shareCopied ? "복사됨" : "공유"}</span>
-                        </button>
-
                         {/* 전략 가이드 토글 */}
                         <button
                             onClick={() => setShowGuide(o => !o)}
                             className={cn(
-                                "shrink-0 flex items-center gap-1 px-2.5 py-1.5 rounded-lg border text-xs font-bold transition-all",
+                                "shrink-0 flex items-center gap-1 px-2.5 py-2 rounded-[10px] border text-xs font-bold transition-all",
                                 showGuide
                                     ? "bg-[#f0fdf4] dark:bg-[#052e16]/30 border-[#86efac] dark:border-[#15803d] text-[#15803d] dark:text-[#16a34a]"
                                     : "border-neutral-200 dark:border-[#3a3834] text-neutral-500 dark:text-neutral-400 hover:border-neutral-300 bg-white dark:bg-[#242320]"
@@ -946,7 +1109,7 @@ function ScreenerContent() {
                         {hasActiveFilters && (
                             <button
                                 onClick={resetAllFilters}
-                                className="shrink-0 flex items-center gap-1 px-2.5 py-1.5 rounded-lg border border-red-200 dark:border-red-800/50 text-xs font-bold text-red-500 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/20 transition-all bg-white dark:bg-[#242320]"
+                                className="shrink-0 flex items-center gap-1 px-2.5 py-2 rounded-[10px] border border-red-200 dark:border-red-800/50 text-xs font-bold text-red-500 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/20 transition-all bg-white dark:bg-[#242320]"
                                 title="모든 필터 초기화"
                             >
                                 <X size={12} />
@@ -1005,8 +1168,9 @@ function ScreenerContent() {
                         </div>
                     )}
 
-                    {/* 적용된 조건 칩 (검색·시가총액·제외) — 무엇이 걸려있는지 한눈에 */}
-                    {(() => {
+                    {/* 적용된 조건 칩 — 서랍이 닫혀 있을 때만. 열려 있으면 같은 조건이 서랍 안에
+                        그대로 보이므로 두 번 나열할 이유가 없다. */}
+                    {!filterOpen && (() => {
                         const chips: { key: string; label: string; clear: () => void }[] = [];
                         if (searchQuery)     chips.push({ key: 'q',   label: `검색 "${searchQuery}"`, clear: () => { setSearchQuery(''); setDisplayCount(DAILY_PAGE_SIZE); } });
                         if (minMarketCap > 0) chips.push({ key: 'cap', label: `시총 ${MKTCAP_PRESETS.find(p => p.value === minMarketCap)?.label ?? `${minMarketCap}억+`}`, clear: () => { setMinMarketCap(0); setDisplayCount(DAILY_PAGE_SIZE); } });
@@ -1032,6 +1196,191 @@ function ScreenerContent() {
                     })()}
                 </div>
             </div>
+
+            {/* ── 필터 서랍 ── */}
+            {filterOpen && (
+                <div className="bg-[#f0fdf4] dark:bg-[#052e16]/25 border-b border-[#dcfce7] dark:border-[#166534]/40">
+                    <div className="max-w-7xl mx-auto px-4 sm:px-7 pt-5 pb-[18px]">
+
+                        <div className="flex items-end justify-between gap-3 mb-4">
+                            <div className="min-w-0">
+                                <p className="text-[12.5px] font-extrabold text-[#14532d] dark:text-[#86efac]">상세 필터</p>
+                                <p className="text-[11px] text-[#16a34a] dark:text-[#4ade80]/80 mt-0.5">조건을 좁힐 때마다 결과가 즉시 갱신됩니다</p>
+                            </div>
+                            <button
+                                onClick={clearDetailFilters}
+                                className="text-[11.5px] font-bold text-[#16a34a] hover:opacity-70 transition-opacity shrink-0"
+                            >
+                                전체 해제
+                            </button>
+                        </div>
+
+                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3.5">
+
+                            {/* 시가총액 — 프리셋과 직접 입력을 함께 둔다. 프리셋만 있으면 정확한 값을
+                                못 넣고, 입력만 있으면 초보자가 무슨 값을 넣을지 모른다. */}
+                            <DrawerCard label="시가총액" remain={cumulativeCounts.mktcap}>
+                                <div className="flex items-center gap-1.5 flex-wrap mb-2.5">
+                                    {MKTCAP_PRESETS.filter(p => p.value > 0).map(p => (
+                                        <DrawerChip
+                                            key={p.value}
+                                            active={minMarketCap === p.value}
+                                            onClick={() => { setMinMarketCap(minMarketCap === p.value ? 0 : p.value); setDisplayCount(DAILY_PAGE_SIZE); }}
+                                        >
+                                            {p.label}
+                                        </DrawerChip>
+                                    ))}
+                                </div>
+                                <div className="flex items-center gap-1.5 text-[11px]">
+                                    <input
+                                        type="number"
+                                        min={0}
+                                        value={minMarketCap || ''}
+                                        onChange={e => { setMinMarketCap(Math.max(0, safeNum(e.target.value))); setDisplayCount(DAILY_PAGE_SIZE); }}
+                                        placeholder="0"
+                                        className="w-20 px-2 py-1 rounded-md font-mono tabular-nums bg-[#faf9f7] dark:bg-[#1f1e1b] border border-neutral-200 dark:border-[#3a3834] outline-none focus:border-[#16a34a]"
+                                    />
+                                    <span className="text-neutral-400">~</span>
+                                    <span className="text-neutral-300 dark:text-neutral-600">제한 없음</span>
+                                    <span className="text-neutral-400">억원</span>
+                                </div>
+                            </DrawerCard>
+
+                            {/* PBR */}
+                            <DrawerCard label="PBR" remain={cumulativeCounts.pbr}>
+                                <div className="flex items-center gap-1.5 flex-wrap mb-3">
+                                    {PBR_MAX_PRESETS.map(p => (
+                                        <DrawerChip key={p} active={maxPbr === p} onClick={() => { setMaxPbr(maxPbr === p ? 0 : p); setDisplayCount(DAILY_PAGE_SIZE); }}>
+                                            {p} 미만
+                                        </DrawerChip>
+                                    ))}
+                                </div>
+                                <input
+                                    type="range"
+                                    min={0} max={1.3} step={0.05}
+                                    value={maxPbr}
+                                    onChange={e => { setMaxPbr(Number(e.target.value)); setDisplayCount(DAILY_PAGE_SIZE); }}
+                                    className="w-full h-1 accent-[#16a34a] cursor-pointer"
+                                />
+                                <div className="flex items-center justify-between mt-1.5 text-[10px] font-mono text-neutral-300 dark:text-neutral-600">
+                                    <span>0</span>
+                                    <span className={cn(maxPbr > 0 && "font-bold text-[#16a34a]")}>{maxPbr > 0 ? maxPbr.toFixed(2) : '미적용'}</span>
+                                    <span>1.3</span>
+                                </div>
+                            </DrawerCard>
+
+                            {/* PER */}
+                            <DrawerCard label="PER" remain={cumulativeCounts.per}>
+                                <div className="flex items-center gap-1.5 flex-wrap">
+                                    {PER_MAX_PRESETS.map(p => (
+                                        <DrawerChip key={p} active={maxPer === p} onClick={() => { setMaxPer(maxPer === p ? 0 : p); setDisplayCount(DAILY_PAGE_SIZE); }}>
+                                            {p} 이하
+                                        </DrawerChip>
+                                    ))}
+                                </div>
+                            </DrawerCard>
+
+                            {/* NCAV */}
+                            <DrawerCard label="NCAV 비율" remain={cumulativeCounts.ncav}>
+                                <div className="flex items-center gap-1.5 flex-wrap">
+                                    {NCAV_MIN_PRESETS.map(p => (
+                                        <DrawerChip key={p} active={minNcav === p} onClick={() => { setMinNcav(minNcav === p ? 0 : p); setDisplayCount(DAILY_PAGE_SIZE); }}>
+                                            {p} 이상
+                                        </DrawerChip>
+                                    ))}
+                                </div>
+                            </DrawerCard>
+
+                            {/* 수익성 — −N 표기가 핵심. 어떤 조건이 결과를 많이 죽이는지 켜기 전에 안다. */}
+                            <DrawerCard label="수익성" remain={cumulativeCounts.profit}>
+                                <div className="flex items-center gap-1.5 flex-wrap mb-2.5">
+                                    {ROE_MIN_PRESETS.map(p => (
+                                        <DrawerChip key={p} active={minRoe === p} onClick={() => { setMinRoe(minRoe === p ? 0 : p); setDisplayCount(DAILY_PAGE_SIZE); }}>
+                                            ROE {p}%+
+                                        </DrawerChip>
+                                    ))}
+                                </div>
+                                <DrawerCheck
+                                    checked={excludeDeficit}
+                                    onChange={v => { setExcludeDeficit(v); setDisplayCount(DAILY_PAGE_SIZE); }}
+                                    label="적자 기업 제외"
+                                    delta={excludeDeficit
+                                        ? countWith({ excludeDeficit: false }) - filteredList.length
+                                        : filteredList.length - countWith({ excludeDeficit: true })}
+                                />
+                            </DrawerCard>
+
+                            {/* 제외 조건 */}
+                            <DrawerCard label="제외" remain={cumulativeCounts.exclude}>
+                                <div className="flex flex-col gap-1">
+                                    <DrawerCheck
+                                        checked={excludeHoldings}
+                                        onChange={v => { setExcludeHoldings(v); setDisplayCount(DAILY_PAGE_SIZE); }}
+                                        label="홀딩스 제외"
+                                        delta={excludeHoldings
+                                            ? countWith({ excludeHoldings: false }) - filteredList.length
+                                            : filteredList.length - countWith({ excludeHoldings: true })}
+                                    />
+                                    <DrawerCheck
+                                        checked={excludePreferred}
+                                        onChange={v => { setExcludePreferred(v); setDisplayCount(DAILY_PAGE_SIZE); }}
+                                        label="우선주 제외"
+                                        delta={excludePreferred
+                                            ? countWith({ excludePreferred: false }) - filteredList.length
+                                            : filteredList.length - countWith({ excludePreferred: true })}
+                                    />
+                                </div>
+                            </DrawerCard>
+
+                            {/* 이 조합 저장 — 재방문 동기 장치. 저장된 필터가 있으면 다시 올 이유가 생긴다. */}
+                            <DrawerCard label="이 조합 저장" dashed span2>
+                                <p className="text-[11px] leading-relaxed text-neutral-400 mb-2.5">
+                                    자주 쓰는 필터를 이름 붙여 저장하고 다음에 한 번에 불러옵니다.
+                                </p>
+                                {savedSets.length > 0 && (
+                                    <div className="flex items-center gap-1.5 flex-wrap mb-2.5">
+                                        {savedSets.map(s => (
+                                            <span key={s.id} className="inline-flex items-center gap-1 px-2 py-1 rounded-full bg-[#f0fdf4] dark:bg-[#052e16]/40 border border-[#bbf7d0] dark:border-[#166534]/50 text-[11px] font-bold text-[#15803d] dark:text-[#16a34a]">
+                                                <button onClick={() => applySavedSet(s.qs)} className="hover:opacity-70 max-w-[160px] truncate" title={s.name}>
+                                                    {s.name}
+                                                </button>
+                                                <button onClick={() => persistSets(savedSets.filter(x => x.id !== s.id))} className="hover:opacity-60" title="삭제">
+                                                    <X size={9} />
+                                                </button>
+                                            </span>
+                                        ))}
+                                    </div>
+                                )}
+                                <button
+                                    onClick={saveCurrentSet}
+                                    className="flex items-center justify-center gap-1.5 w-full py-2.5 rounded-[9px] bg-[#16a34a] hover:bg-[#15803d] text-white text-xs font-bold transition-colors"
+                                >
+                                    ＋ 내 필터로 저장
+                                </button>
+                            </DrawerCard>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* ── 전략 기준 배너 — 어떤 값이 왜 초록으로 표시되는지 한 줄로 밝힌다.
+                   기존에는 전략 이름만 있고 판정 기준이 화면 어디에도 없었다. ── */}
+            {bannerPreset && (
+                <div className="bg-[#f0fdf4] dark:bg-[#052e16]/25 border-b border-[#dcfce7] dark:border-[#166534]/40">
+                    <div className="max-w-7xl mx-auto px-4 sm:px-7 py-2.5 flex items-start gap-2">
+                        <span className={cn(
+                            "shrink-0 mt-px px-1.5 py-0.5 rounded-[5px] text-[10px] font-extrabold",
+                            STRATEGY_BADGE[bannerPreset.id] ?? "bg-[#dcfce7] text-[#15803d]"
+                        )}>
+                            {bannerPreset.label}
+                        </span>
+                        <p className="text-xs leading-relaxed text-[#15803d] dark:text-[#86efac] break-keep">
+                            <span className="font-bold">{bannerPreset.formula}</span>
+                            {` — ${bannerPreset.plain}. 기준을 충족한 값에 초록 표시가 붙습니다.`}
+                        </p>
+                    </div>
+                </div>
+            )}
 
             {/* ── 전략 가이드 패널 ── */}
             {showGuide && (
@@ -1085,142 +1434,8 @@ function ScreenerContent() {
                 </div>
             )}
 
-            {/* ── 검색 & 필터 바 ── */}
-            <div className="max-w-7xl mx-auto px-4 sm:px-6 pt-5 pb-3 flex items-center gap-3 flex-wrap">
-                <div className="relative flex-1 min-w-[180px] max-w-xs">
-                    <Search size={13} className="absolute left-3 top-1/2 -translate-y-1/2 text-neutral-400 pointer-events-none" />
-                    <input
-                        type="text"
-                        value={searchQuery}
-                        onChange={e => { setSearchQuery(e.target.value); setDisplayCount(DAILY_PAGE_SIZE); }}
-                        placeholder="종목명 또는 티커 검색"
-                        className="w-full pl-8 pr-3 py-2 text-xs bg-white dark:bg-[#242320] border border-neutral-200 dark:border-[#3a3834] rounded-xl outline-none focus:ring-2 focus:ring-[#f0fdf4]0/30 focus:border-[#16a34a] placeholder:text-neutral-400 font-medium"
-                    />
-                </div>
-
-                <button
-                    onClick={() => isLoggedIn ? setFilterOpen(o => !o) : requireLogin()}
-                    className={cn(
-                        "flex items-center gap-1.5 px-3.5 py-2 rounded-xl border text-xs font-bold transition-all",
-                        filterOpen || activeFilterCount > 0
-                            ? "bg-[#f0fdf4] dark:bg-[#052e16]/30 border-[#86efac] dark:border-[#166534] text-[#15803d] dark:text-[#16a34a]"
-                            : "bg-white dark:bg-[#242320] border-neutral-200 dark:border-[#3a3834] text-neutral-600 dark:text-neutral-400 hover:border-neutral-300"
-                    )}
-                >
-                    <SlidersHorizontal size={12} />
-                    필터
-                    {!isLoggedIn && <Lock size={10} className="opacity-60" />}
-                    {activeFilterCount > 0 && (
-                        <span className="w-4 h-4 flex items-center justify-center rounded-full bg-[#16a34a] text-white text-[9px] font-black">
-                            {activeFilterCount}
-                        </span>
-                    )}
-                </button>
-
-                {filterOpen && (
-                    <div className="w-full flex flex-wrap items-center gap-x-5 gap-y-3 px-1 py-2">
-                        {/* 시가총액 필터 */}
-                        <div className="flex items-center gap-2 flex-wrap">
-                            <span className="text-[10px] font-extrabold text-neutral-400 uppercase tracking-wider">시가총액</span>
-                            {MKTCAP_PRESETS.map(p => (
-                                <button
-                                    key={p.value}
-                                    onClick={() => { setMinMarketCap(p.value); setDisplayCount(DAILY_PAGE_SIZE); }}
-                                    className={cn(
-                                        "px-2.5 py-1 rounded-lg border text-xs font-bold transition-all",
-                                        minMarketCap === p.value
-                                            ? "bg-[#16a34a] border-[#16a34a] text-white shadow-sm"
-                                            : "bg-white dark:bg-[#242320] border-neutral-200 dark:border-[#3a3834] text-neutral-600 dark:text-neutral-400 hover:border-neutral-300 dark:hover:border-neutral-600"
-                                    )}
-                                >
-                                    {p.label}
-                                </button>
-                            ))}
-                        </div>
-
-                        <FilterDivider />
-
-                        {/* NCAV 비율 (이상) */}
-                        <NumericPresetGroup
-                            label="NCAV ≥"
-                            presets={NCAV_MIN_PRESETS}
-                            value={minNcav}
-                            onPick={v => { setMinNcav(v); setDisplayCount(DAILY_PAGE_SIZE); }}
-                            fmt={v => `${v}`}
-                        />
-
-                        <FilterDivider />
-
-                        {/* PBR (이하) */}
-                        <NumericPresetGroup
-                            label="PBR ≤"
-                            presets={PBR_MAX_PRESETS}
-                            value={maxPbr}
-                            onPick={v => { setMaxPbr(v); setDisplayCount(DAILY_PAGE_SIZE); }}
-                            fmt={v => `${v}`}
-                        />
-
-                        <FilterDivider />
-
-                        {/* PER (이하) */}
-                        <NumericPresetGroup
-                            label="PER ≤"
-                            presets={PER_MAX_PRESETS}
-                            value={maxPer}
-                            onPick={v => { setMaxPer(v); setDisplayCount(DAILY_PAGE_SIZE); }}
-                            fmt={v => `${v}`}
-                        />
-
-                        <FilterDivider />
-
-                        {/* ROE (이상) */}
-                        <NumericPresetGroup
-                            label="ROE ≥"
-                            presets={ROE_MIN_PRESETS}
-                            value={minRoe}
-                            onPick={v => { setMinRoe(v); setDisplayCount(DAILY_PAGE_SIZE); }}
-                            fmt={v => `${v}%`}
-                        />
-
-                        <FilterDivider />
-
-                        {/* 제외 조건 */}
-                        <div className="flex items-center gap-4 flex-wrap">
-                            <span className="text-[10px] font-extrabold text-neutral-400 uppercase tracking-wider">제외</span>
-                            <label className="flex items-center gap-2 cursor-pointer select-none">
-                                <input
-                                    type="checkbox"
-                                    checked={excludeHoldings}
-                                    onChange={e => setExcludeHoldings(e.target.checked)}
-                                    className="rounded accent-[#16a34a]"
-                                />
-                                <span className="text-xs font-bold text-neutral-600 dark:text-neutral-400">홀딩스</span>
-                            </label>
-                            <label className="flex items-center gap-2 cursor-pointer select-none">
-                                <input
-                                    type="checkbox"
-                                    checked={excludeDeficit}
-                                    onChange={e => setExcludeDeficit(e.target.checked)}
-                                    className="rounded accent-[#16a34a]"
-                                />
-                                <span className="text-xs font-bold text-neutral-600 dark:text-neutral-400">적자 기업</span>
-                            </label>
-                            <label className="flex items-center gap-2 cursor-pointer select-none">
-                                <input
-                                    type="checkbox"
-                                    checked={excludePreferred}
-                                    onChange={e => setExcludePreferred(e.target.checked)}
-                                    className="rounded accent-[#16a34a]"
-                                />
-                                <span className="text-xs font-bold text-neutral-600 dark:text-neutral-400">우선주</span>
-                            </label>
-                        </div>
-                    </div>
-                )}
-            </div>
-
             {/* ── 종목 리스트 ── */}
-            <div className="max-w-7xl mx-auto px-4 sm:px-6 pb-20">
+            <div className="max-w-7xl mx-auto px-4 sm:px-7 pt-5 pb-20">
 
                 {isLoading && (
                     <div className="flex flex-col items-center justify-center py-24 gap-4">
@@ -1250,6 +1465,16 @@ function ScreenerContent() {
                                 </>
                             )}
                         </div>
+                        {/* 어떤 조건을 풀면 몇 개가 돌아오는지 짚어준다 — 조건을 하나씩 꺼보게
+                            만들지 않는 것이 이 안내의 목적이다. */}
+                        {emptySuggestion && (
+                            <button
+                                onClick={() => { emptySuggestion.clear(); setDisplayCount(DAILY_PAGE_SIZE); }}
+                                className="px-4 py-2 rounded-xl bg-[#f0fdf4] dark:bg-[#052e16]/30 border border-[#bbf7d0] dark:border-[#166534]/50 text-xs font-bold text-[#15803d] dark:text-[#16a34a] hover:bg-[#dcfce7] dark:hover:bg-[#052e16]/50 transition-colors"
+                            >
+                                &lsquo;{emptySuggestion.label}&rsquo; 해제하면 {emptySuggestion.count}개
+                            </button>
+                        )}
                         {activeStrategyIds.size > 0 && (
                             <button
                                 onClick={clearStrategies}
@@ -1274,15 +1499,15 @@ function ScreenerContent() {
                                 <div className="grid grid-cols-[minmax(160px,2.5fr)_minmax(110px,1fr)_88px_68px_68px_68px_88px] gap-4 items-center px-6 py-4 bg-[#fcfaf7] dark:bg-[#1f1e1b] border-b border-neutral-200 dark:border-[#35332e]">
                                     <SortableHeader label="종목명" sortKey="ticker" currentKey={sortKey} order={sortOrder} onToggle={toggleSort} />
                                     <div className="text-[10px] font-bold text-neutral-400 uppercase tracking-wider">전략</div>
-                                    <SortableHeader label="NCAV 비율" sortKey="ncav_ratio" currentKey={sortKey} order={sortOrder} onToggle={toggleSort} relevant={!!highlightMap && "ncav_ratio" in highlightMap} />
-                                    <SortableHeader label="PBR" sortKey="pbr" currentKey={sortKey} order={sortOrder} onToggle={toggleSort} relevant={!!highlightMap && "pbr" in highlightMap} />
-                                    <SortableHeader label="PER" sortKey="per" currentKey={sortKey} order={sortOrder} onToggle={toggleSort} relevant={!!highlightMap && "per" in highlightMap} />
-                                    <SortableHeader label="ROE" sortKey="roe" currentKey={sortKey} order={sortOrder} onToggle={toggleSort} relevant={!!highlightMap && "roe" in highlightMap} />
+                                    <SortableHeader label="NCAV 비율" sortKey="ncav_ratio" currentKey={sortKey} order={sortOrder} onToggle={toggleSort} relevant={!!metricHighlight && "ncav_ratio" in metricHighlight} />
+                                    <SortableHeader label="PBR" sortKey="pbr" currentKey={sortKey} order={sortOrder} onToggle={toggleSort} relevant={!!metricHighlight && "pbr" in metricHighlight} />
+                                    <SortableHeader label="PER" sortKey="per" currentKey={sortKey} order={sortOrder} onToggle={toggleSort} relevant={!!metricHighlight && "per" in metricHighlight} />
+                                    <SortableHeader label="ROE" sortKey="roe" currentKey={sortKey} order={sortOrder} onToggle={toggleSort} relevant={!!metricHighlight && "roe" in metricHighlight} />
                                     <div />
                                 </div>
                                 <div>
                                     {visibleList.map((item: any) => (
-                                        <TableRow key={item.ticker} item={item} onClick={handleStockClick} isLiked={likedTickers.has(item.name)} onToggleLike={handleToggleLike} highlight={highlightMap} />
+                                        <TableRow key={item.ticker} item={item} onClick={handleStockClick} isLiked={likedTickers.has(item.name)} onToggleLike={handleToggleLike} highlight={metricHighlight} />
                                     ))}
                                 </div>
                             </div>
@@ -1291,7 +1516,7 @@ function ScreenerContent() {
                         {/* 모바일 카드 */}
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 md:hidden">
                             {visibleList.map((item: any) => (
-                                <StockRowCard key={item.ticker} item={item} onClick={handleStockClick} isLiked={likedTickers.has(item.name)} onToggleLike={handleToggleLike} highlight={highlightMap} />
+                                <StockRowCard key={item.ticker} item={item} onClick={handleStockClick} isLiked={likedTickers.has(item.name)} onToggleLike={handleToggleLike} highlight={metricHighlight} />
                             ))}
                         </div>
 

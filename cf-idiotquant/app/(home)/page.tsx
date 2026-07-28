@@ -7,6 +7,10 @@ import { mergeGeometries } from "three/examples/jsm/utils/BufferGeometryUtils.js
 import { useSession } from "next-auth/react";
 import Link from "next/link";
 import { Filter, ArrowRight, TrendingUp } from "lucide-react";
+import { useAppDispatch, useAppSelector } from "@/lib/hooks";
+import { selectNcavDailyList, reqGetNcavDailyList } from "@/lib/features/algorithmTrade/algorithmTradeSlice";
+import { STRATEGY_PRESETS_CLIENT } from "@/lib/constants/strategies";
+import { TodayDiscovery } from "./components/todayDiscovery";
 
 // =========================================================================
 // 홈 3D 일러스트 (three.js / WebGL)
@@ -529,18 +533,19 @@ function useScrollReveal(deps: unknown[]) {
 const delay = (ms: number) => ({ "--d": `${ms}ms` }) as React.CSSProperties;
 
 // ── 서비스 규모 통계 밴드 ─────────────────────────────────────────
-const STATS = [
-  { value: "2,400+", label: "종목 스캔" },
-  { value: "4가지", label: "퀀트 전략" },
-  { value: "매일", label: "자동 업데이트" },
-  { value: "무료", label: "가입 없이 이용" },
-];
-
-function StatsBand() {
+// 스캔 종목 수·전략 개수는 실제 데이터에서 읽는다. 하드코딩하면 스캔 규모가 늘어도
+// 숫자가 그대로 남아 "매일 갱신된다"는 주장 자체가 거짓이 된다.
+function StatsBand({ scannedCount }: { scannedCount: number }) {
+  const stats = [
+    { value: scannedCount > 0 ? scannedCount.toLocaleString() : "—", label: "종목 스캔" },
+    { value: `${STRATEGY_PRESETS_CLIENT.length}가지`, label: "퀀트 전략" },
+    { value: "매일", label: "자동 업데이트" },
+    { value: "무료", label: "가입 없이 이용" },
+  ];
   return (
     <div className="border-y border-neutral-100 dark:border-[#2c2b27] bg-white dark:bg-[#1f1e1b]">
       <div className="max-w-4xl mx-auto px-5 grid grid-cols-2 sm:grid-cols-4 divide-x divide-neutral-100 dark:divide-[#2c2b27]">
-        {STATS.map((s, i) => (
+        {stats.map((s, i) => (
           <div key={s.label} className="reveal py-6 text-center" style={delay(i * 80)}>
             <div className="text-2xl font-black font-[family-name:var(--font-mono)] text-neutral-900 dark:text-neutral-50 tabular-nums leading-none">
               {s.value}
@@ -590,6 +595,20 @@ export default function HomePage() {
   const sessionLoading = status === "loading";
   useScrollReveal([isLoggedIn, sessionLoading]);
 
+  // 랜딩도 발굴 결과를 직접 읽는다 — 제품 설명만으로는 다시 올 이유가 생기지 않는다.
+  const dispatch = useAppDispatch();
+  const ncavDailyList = useAppSelector(selectNcavDailyList);
+  useEffect(() => { dispatch(reqGetNcavDailyList("latest")); }, [dispatch]);
+
+  const scanLoading = ncavDailyList.state === "pending" || ncavDailyList.state === "init";
+  const matchedCount = ncavDailyList.list.length;
+  // meta.total 은 스캔 대상 전체 수. 아직 안 왔으면 조건 충족 수로라도 채운다.
+  const scannedCount = ncavDailyList.total || matchedCount;
+  const scanDate = ncavDailyList.scanDate;
+  const formattedScanDate = scanDate
+    ? `${scanDate.slice(0, 4)}.${scanDate.slice(4, 6)}.${scanDate.slice(6, 8)}`
+    : null;
+
   return (
     <div className="min-h-screen">
 
@@ -605,12 +624,16 @@ export default function HomePage() {
 
         {/* 텍스트 오버레이 */}
         <div className="relative z-10 max-w-3xl mx-auto w-full px-5 pt-20 sm:pt-28 md:pt-32">
+          {/* 라이브 배지 — 오늘 스캔이 실제로 돌았다는 사실을 날짜·종목 수로 보여준다.
+              데이터가 아직 없을 때만 제품 한 줄 소개로 대체한다. */}
           <div className="reveal inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-white/70 dark:bg-[#242320]/70 backdrop-blur-xl border border-neutral-200 dark:border-white/10 mb-5 text-[11px] font-medium text-neutral-500 dark:text-neutral-400">
             <span className="relative flex h-1.5 w-1.5 shrink-0">
               <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
               <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-emerald-500" />
             </span>
-            데이터로 배우는 주식·경제
+            {formattedScanDate
+              ? `${formattedScanDate} 스캔 완료 · 코스피·코스닥 ${scannedCount.toLocaleString()} 종목`
+              : "데이터로 배우는 주식·경제"}
           </div>
 
           <h1
@@ -642,8 +665,11 @@ export default function HomePage() {
 
       </section>
 
+      {/* ── 오늘의 상위 발굴 ─────────────────────────────────────── */}
+      <TodayDiscovery list={ncavDailyList.list} totalCount={matchedCount} isLoading={scanLoading} />
+
       {/* ── 서비스 규모 통계 ─────────────────────────────────────── */}
-      <StatsBand />
+      <StatsBand scannedCount={scannedCount} />
 
       {/* ── STEP 01 · 발굴 — 스플릿 2단 ───────────────────────────── */}
       <section className="border-b border-neutral-100 dark:border-[#3a3834]">

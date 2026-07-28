@@ -216,6 +216,45 @@ export const ValuationSection = ({ data, isUs, isLoggedIn = true, loginHref = "/
     return list;
   }, [data, isUs]);
 
+  // 축 요약 — 모델들이 제시한 적정주가와 현재가를 한 눈금 위에 세워, 지금 가격이 그 사이
+  // 어디쯤인지 바로 읽히게 한다. 위치는 반드시 가격에서 계산한다(눈대중 배치는 어긋난다).
+  const axis = useMemo(() => {
+    const rows = models
+      .map(({ type, result }) => {
+        const baseRow =
+          result.rows.find((r: any) =>
+            /1\.0|100|기준|적정/i.test((r.multiplier || r.label || r.weight || "").toString().replace(/\s+/g, ""))
+          ) ?? result.rows[0];
+        return {
+          type,
+          config: MODEL_CONFIG[type] ?? DEFAULT_CONFIG,
+          formula: result.formula,
+          targetPrice: baseRow?.targetPrice ?? 0,
+          returnPct: baseRow?.returnPct ?? 0,
+        };
+      })
+      .filter(r => r.targetPrice > 0);
+
+    // returnPct = targetPrice / 현재가 − 1 이므로 현재가를 역산할 수 있다
+    const ref = rows.find(r => r.returnPct > -100);
+    const curPrice = ref ? ref.targetPrice / (1 + ref.returnPct / 100) : 0;
+
+    const prices = [...rows.map(r => r.targetPrice), curPrice].filter(p => p > 0);
+    if (prices.length === 0) return null;
+
+    const lo = Math.min(...prices);
+    const hi = Math.max(...prices);
+    const pad = (hi - lo) * 0.12 || hi * 0.1 || 1;
+    const min = Math.max(0, lo - pad);
+    const max = hi + pad;
+    const pos = (p: number) => (max > min ? ((p - min) / (max - min)) * 100 : 50);
+
+    return {
+      rows: [...rows].sort((a, b) => b.targetPrice - a.targetPrice),
+      curPrice, min, max, pos,
+    };
+  }, [models]);
+
   const filteredModels = useMemo(() => {
     if (activeTab === "ALL") return models;
     return models.filter(m => (MODEL_CONFIG[m.type] ?? DEFAULT_CONFIG).category === activeTab);
@@ -236,63 +275,94 @@ export const ValuationSection = ({ data, isUs, isLoggedIn = true, loginHref = "/
   return (
     <div className="w-full flex flex-col">
 
-      {/* ────── 모델 요약 바 ────── */}
-      <div className="px-5 pt-5 pb-4 border-b border-neutral-100 dark:border-[#35332e]">
-        <div className="flex items-center gap-2 mb-4">
-          <Target size={13} className="text-neutral-400 shrink-0" />
-          <span className="text-xs font-extrabold text-neutral-600 dark:text-neutral-300 tracking-tight">
-            모델별 목표주가 요약
-          </span>
-          <span className="ml-auto text-[10px] font-mono font-bold text-neutral-400 dark:text-neutral-500 bg-[#faf9f7] dark:bg-[#242320] px-2 py-0.5 rounded-md uppercase tracking-wider">
-            {models.length} Models
-          </span>
-        </div>
+      {/* ────── 모델별 적정주가 (축 + 목록) ────── */}
+      {axis && (
+        <div className="px-5 pt-5 pb-6 border-b border-neutral-100 dark:border-[#35332e]">
+          <div className="flex items-center gap-2 mb-5">
+            <Target size={13} className="text-neutral-400 shrink-0" />
+            <span className="text-[13.5px] font-extrabold text-neutral-700 dark:text-neutral-200 tracking-tight">
+              모델별 적정주가
+            </span>
+            {axis.curPrice > 0 && (
+              <span className="text-[11px] text-neutral-400">
+                현재가 {currency}{Math.round(axis.curPrice).toLocaleString()} 기준
+              </span>
+            )}
+            <span className="ml-auto text-[10px] font-mono font-bold text-neutral-400 dark:text-neutral-500 bg-[#faf9f7] dark:bg-[#242320] px-2 py-0.5 rounded-md uppercase tracking-wider">
+              {axis.rows.length} Models
+            </span>
+          </div>
 
-        <div className="flex flex-col gap-2">
-          {models.map(({ type, result }) => {
-            const config = MODEL_CONFIG[type] ?? DEFAULT_CONFIG;
-            const baseRow =
-              result.rows.find((r: any) =>
-                /1\.0|100|기준|적정/i.test(
-                  (r.multiplier || r.label || r.weight || "").toString().replace(/\s+/g, "")
-                )
-              ) ?? result.rows[0];
-            const targetPrice = baseRow?.targetPrice ?? 0;
-            const returnPct = baseRow?.returnPct ?? 0;
-            const isPositive = returnPct >= 0;
-            const barWidth = Math.min(Math.abs(returnPct), 100);
+          {/* 축 */}
+          <div className="relative h-11">
+            <div className="absolute left-0 right-0 top-5 h-1 rounded-full bg-[#f2f0ec] dark:bg-[#2c2b27]" />
+            {/* 현재가까지 채움 — 초록은 "좋다"는 뜻으로 이미 쓰고 있어 현재가엔 중립색을 쓴다 */}
+            <div
+              className="absolute left-0 top-5 h-1 rounded-full bg-neutral-400 dark:bg-neutral-500"
+              style={{ width: `${axis.pos(axis.curPrice)}%` }}
+            />
+            <div
+              className="absolute top-[7px] w-0.5 h-[30px] -ml-px bg-neutral-900 dark:bg-white"
+              style={{ left: `${axis.pos(axis.curPrice)}%` }}
+            />
+            {axis.rows.map(r => (
+              <div
+                key={r.type}
+                title={`${r.config.name} ${currency}${r.targetPrice.toLocaleString()}`}
+                className={cn(
+                  "absolute top-[14px] w-3.5 h-3.5 -ml-[7px] rounded-full ring-[3px] ring-white dark:ring-[#242320]",
+                  r.config.dotBg
+                )}
+                style={{ left: `${axis.pos(r.targetPrice)}%` }}
+              />
+            ))}
+          </div>
 
-            return (
-              <div key={type} className="flex items-center gap-3">
-                <div className={cn("w-1.5 h-1.5 rounded-full shrink-0", config.dotBg)} />
-                <span className={cn("text-[11px] font-black font-mono w-10 shrink-0", config.textColor)}>
-                  {type}
-                </span>
-                <div className="flex-1 h-1.5 bg-[#faf9f7] dark:bg-[#242320] rounded-full overflow-hidden">
-                  <div
-                    className={cn(
-                      "h-full rounded-full transition-all duration-500",
-                      isPositive ? "bg-emerald-500" : "bg-red-400"
-                    )}
-                    style={{ width: `${barWidth}%` }}
-                  />
+          {/* 축 라벨 — 현재가 라벨은 기준선과 같은 퍼센트에 절대 배치한다.
+              space-between 으로 흘리면 라벨이 실제 기준선과 다른 위치를 가리킨다. */}
+          <div className="relative h-7 mb-5">
+            <span className="absolute left-0 text-[10px] font-mono text-neutral-300 dark:text-neutral-600">
+              {currency}{Math.round(axis.min).toLocaleString()}
+            </span>
+            <span className="absolute right-0 text-[10px] font-mono text-neutral-300 dark:text-neutral-600">
+              {currency}{Math.round(axis.max).toLocaleString()}
+            </span>
+            {axis.curPrice > 0 && (
+              <span
+                className="absolute -translate-x-1/2 whitespace-nowrap px-1.5 py-0.5 rounded-md bg-neutral-900 dark:bg-white text-white dark:text-neutral-900 text-[10px] font-bold font-mono"
+                style={{ left: `${axis.pos(axis.curPrice)}%` }}
+              >
+                현재가 {Math.round(axis.curPrice).toLocaleString()}
+              </span>
+            )}
+          </div>
+
+          {/* 모델 목록 — 각 모델에 계산 근거를 한 줄 붙인다. 숫자만 있으면 어디서 나온 값인지 알 수 없다. */}
+          <div className="flex flex-col gap-px rounded-[10px] overflow-hidden border border-neutral-100 dark:border-[#35332e] bg-neutral-100 dark:bg-[#35332e]">
+            {axis.rows.map(r => {
+              const isPositive = r.returnPct >= 0;
+              return (
+                <div key={r.type} className="grid grid-cols-[8px_minmax(0,1.6fr)_minmax(0,1fr)_80px] gap-3 items-center px-4 py-3 bg-white dark:bg-[#242320]">
+                  <div className={cn("w-2 h-2 rounded-full", r.config.dotBg)} />
+                  <div className="min-w-0">
+                    <p className="text-[12.5px] font-bold text-neutral-900 dark:text-neutral-100 truncate">{r.config.name}</p>
+                    <p className="text-[10.5px] text-neutral-400 truncate" title={r.formula}>{r.formula}</p>
+                  </div>
+                  <span className="text-sm font-extrabold font-mono tabular-nums text-neutral-900 dark:text-neutral-100 text-right">
+                    {currency}{r.targetPrice.toLocaleString()}
+                  </span>
+                  <span className={cn(
+                    "text-xs font-extrabold font-mono tabular-nums text-right",
+                    isPositive ? "text-[#16a34a] dark:text-emerald-400" : "text-red-500 dark:text-red-400"
+                  )}>
+                    {isPositive ? "+" : ""}{r.returnPct.toFixed(0)}%
+                  </span>
                 </div>
-                <span className="text-[11px] font-black font-mono tabular-nums text-neutral-800 dark:text-neutral-200 w-24 text-right shrink-0">
-                  {currency}{targetPrice.toLocaleString()}
-                </span>
-                <span className={cn(
-                  "text-[11px] font-black font-mono tabular-nums px-2 py-0.5 rounded-md w-16 text-right shrink-0",
-                  isPositive
-                    ? "text-emerald-700 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/30"
-                    : "text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-950/30"
-                )}>
-                  {isPositive ? "+" : ""}{returnPct.toFixed(1)}%
-                </span>
-              </div>
-            );
-          })}
+              );
+            })}
+          </div>
         </div>
-      </div>
+      )}
 
       {/* ────── 세부 모델 (필터탭 + 카드 그리드) ────── */}
       <div className="relative">

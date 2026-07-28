@@ -19,7 +19,7 @@ import { useStockSearch } from '@/app/(search)/search/hooks/useStockSearch';
 import { selectKrMarketHistory } from '@/lib/features/searchHistory/searchHistorySlice';
 import {
   AlertCircle, Loader2, Flame, Share2, Check, CheckCircle,
-  DollarSign, Coins, Heart, X, TrendingUp, ChevronLeft, Lock, ArrowRight, BarChart2,
+  DollarSign, Coins, Heart, X, TrendingUp, ChevronLeft, Lock, ArrowRight,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { CopyStockButtons } from '@/components/copyStockButtons';
@@ -291,6 +291,76 @@ const useToast = () => {
 const DEFAULT_XP_PROFILE = { level: 1, xp: 0, maxXp: 100, totalXp: 0, lastGain: 0, awardCount: 0 };
 
 // =========================================================================
+// 종합 판단 — 지표 값에서 문장과 색을 생성한다.
+// 나열된 지표만 보고 사용자가 결론을 직접 계산하게 두지 않는 것이 목적이다.
+// 조건이 나쁠 때도 초록 배너가 나오면 배너 자체를 아무도 믿지 않게 되므로,
+// 충족 개수에 따라 톤(초록 / 중립 / 경고)이 반드시 갈리게 한다.
+// =========================================================================
+interface VerdictMetrics { ncavMultiple: number | null; pbr: number; per: number; roe: number | null }
+
+const VERDICT_CHECKS: { test: (m: VerdictMetrics) => boolean; met: string; unmet: string }[] = [
+  {
+    test: m => m.ncavMultiple !== null && m.ncavMultiple >= 1,
+    met: '시가총액이 순유동자산보다 낮아 청산가치 이하',
+    unmet: '순유동자산이 시가총액에 못 미침',
+  },
+  {
+    test: m => m.pbr > 0 && m.pbr < 1,
+    met: '주가가 순자산(장부가) 아래',
+    unmet: '주가가 순자산보다 비쌈',
+  },
+  {
+    test: m => m.per > 0 && m.per < 10,
+    met: '이익 대비 주가가 10배 미만',
+    unmet: '이익 대비 주가가 싸지 않음',
+  },
+  {
+    test: m => m.roe !== null && m.roe >= 10,
+    met: '자기자본이익률 10% 이상',
+    unmet: '자기자본이익률 10% 미만',
+  },
+];
+
+function buildVerdict(m: VerdictMetrics) {
+  const results = VERDICT_CHECKS.map(c => ({ ok: c.test(m), met: c.met, unmet: c.unmet }));
+  const met = results.filter(r => r.ok);
+  const unmet = results.filter(r => !r.ok);
+  const tone: 'good' | 'neutral' | 'caution' =
+    met.length >= 3 ? 'good' : met.length >= 1 ? 'neutral' : 'caution';
+
+  const lead =
+    tone === 'good' ? `저평가 기준 4개 중 ${met.length}개를 충족`
+    : tone === 'neutral' ? `저평가 기준 4개 중 ${met.length}개만 충족`
+    : '저평가 기준을 충족한 지표가 없습니다';
+
+  const body = [
+    met.length > 0 ? `합니다. ${met.map(r => r.met).join(' · ')}입니다.` : '.',
+    unmet.length > 0 && met.length > 0 ? ` 다만 ${unmet.map(r => r.unmet).join(' · ')}입니다.` : '',
+    unmet.length > 0 && met.length === 0 ? ` ${unmet.map(r => r.unmet).join(' · ')}입니다.` : '',
+  ].join('');
+
+  return { tone, lead, body, metCount: met.length };
+}
+
+const VERDICT_TONE = {
+  good: {
+    box: 'bg-[#f0fdf4] dark:bg-[#052e16]/25 border-[#dcfce7] dark:border-[#166534]/40',
+    label: 'text-[#16a34a]',
+    text: 'text-[#14532d] dark:text-[#bbf7d0]',
+  },
+  neutral: {
+    box: 'bg-[#faf9f7] dark:bg-[#242320] border-neutral-200 dark:border-[#3a3834]',
+    label: 'text-neutral-400',
+    text: 'text-neutral-600 dark:text-neutral-300',
+  },
+  caution: {
+    box: 'bg-amber-50 dark:bg-amber-950/20 border-amber-200 dark:border-amber-900/40',
+    label: 'text-amber-600 dark:text-amber-500',
+    text: 'text-amber-800 dark:text-amber-300',
+  },
+} as const;
+
+// =========================================================================
 // 메인 콘텐츠
 // =========================================================================
 function AnalyzeContent() {
@@ -437,7 +507,8 @@ function AnalyzeContent() {
       const fairValue = isLoaded ? calculateKrNcavValue(data.kiBS, data.kiChart) : 0;
       const srimScore = isLoaded ? getKrSRIMTargetPrice(data.kiBS, data.kiIS, data.kiChart) : undefined;
       const stockTicker = (staticStockData.corpCodeJson as any)?.[name]?.stock_code ?? '';
-      return { ncavRatio, pbr, per, eps, curPrice, grade, fairValue, srimScore, stockTicker };
+      const bps = Number(data?.kiPrice?.output?.bps ?? 0);
+      return { ncavRatio, pbr, per, eps, bps, curPrice, grade, fairValue, srimScore, stockTicker };
     } else {
       const ncavRatio = isLoaded ? calculateUsNcavRatio(data.finnhubData, data.usDetail) : 0;
       const pbr = Number(data?.usDetail?.output?.pbrx ?? 0);
@@ -447,9 +518,20 @@ function AnalyzeContent() {
       const grade = isLoaded ? getUsNcavGrade(data.finnhubData, data.usDetail) : undefined;
       const fairValue = isLoaded ? calculateUsNcavValue(data.finnhubData, data.usDetail) : 0;
       const srimScore = isLoaded ? calculateUsSRIM(data.finnhubData, data.usDetail) : undefined;
-      return { ncavRatio, pbr, per, eps, curPrice, grade, fairValue, srimScore, stockTicker: '' };
+      const bps = Number(data?.usDetail?.output?.bpsx ?? 0);
+      return { ncavRatio, pbr, per, eps, bps, curPrice, grade, fairValue, srimScore, stockTicker: '' };
     }
   }, [isPriceLoaded, isLoaded, krOrUs, data, name, staticStockData.corpCodeJson]);
+
+  // 발굴 목록과 같은 뜻의 지표를 쓴다 — 저기선 "NCAV 1.42x", 여기선 "업사이드 +42%" 처럼
+  // 같은 값을 다른 이름으로 부르면 두 화면을 오갈 때마다 환산을 해야 한다.
+  const ncavMultiple = stockData && isLoaded && stockData.ncavRatio !== 0
+    ? stockData.ncavRatio / 100 + 1
+    : null;
+  const roe = stockData && stockData.bps > 0 ? (stockData.eps / stockData.bps) * 100 : null;
+  const verdict = stockData
+    ? buildVerdict({ ncavMultiple, pbr: stockData.pbr, per: stockData.per, roe })
+    : null;
 
   if (!hasMounted) return <div className="min-h-screen bg-[#faf9f7] dark:bg-[#1a1915]" />;
 
@@ -468,10 +550,11 @@ function AnalyzeContent() {
         {/* 페이지 레이블 + 뒤로가기 */}
         <div className="border-b border-neutral-100 dark:border-[#35332e]/60">
           <div className="max-w-4xl mx-auto px-4 py-2 flex items-center justify-between">
+            {/* 사이드바 nav 와 같은 이모지·같은 이름 — 지금 어느 메뉴에 있는지가 눈으로 이어진다 */}
             <div className="flex items-center gap-1.5">
-              <BarChart2 size={13} className="text-[#16a34a] dark:text-[#16a34a]" strokeWidth={2.5} />
-              <span className="text-[10px] font-black text-neutral-400 dark:text-neutral-500 uppercase tracking-widest">
-                종목 분석
+              <span className="text-[11px] leading-none" aria-hidden>💎</span>
+              <span className="text-[10px] font-black text-neutral-400 dark:text-neutral-500 uppercase tracking-[0.12em]">
+                적정 주가
               </span>
             </div>
             {fromScreener && (
@@ -598,6 +681,18 @@ function AnalyzeContent() {
                 </div>
               )}
 
+              {/* 종합 판단 — 지표 나열보다 먼저 결론을 준다 (판단 → 근거 → 원자료 순서) */}
+              {verdict && (
+                <div className={cn("rounded-2xl border p-5 sm:p-6 mb-5", VERDICT_TONE[verdict.tone].box)}>
+                  <p className={cn("text-[10px] font-extrabold uppercase tracking-[0.1em] mb-2", VERDICT_TONE[verdict.tone].label)}>
+                    종합 판단
+                  </p>
+                  <p className={cn("text-[14.5px] leading-relaxed break-keep", VERDICT_TONE[verdict.tone].text)}>
+                    <span className="font-extrabold">{verdict.lead}</span>{verdict.body}
+                  </p>
+                </div>
+              )}
+
               {/* 종목 카드 + 핵심 지표 — 최상단 */}
               <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 mb-6">
                 {/* StockCard */}
@@ -639,16 +734,16 @@ function AnalyzeContent() {
                 {/* 핵심 지표 4개 (항상 공개) */}
                 {stockData && (
                   <div className="lg:col-span-7 grid grid-cols-2 gap-4 content-start">
+                    {/* 설명에 계산식을 적는다 — 지표 이름만으로는 초보자가 판단할 수 없다.
+                        색은 기준 충족 시에만 초록, 아니면 중립. */}
                     {[
                       {
-                        label: "NCAV 업사이드",
-                        value: stockData.ncavRatio !== 0 ? `${stockData.ncavRatio >= 0 ? '+' : ''}${stockData.ncavRatio.toFixed(1)}%` : "—",
-                        desc: "NCAV 기준 업사이드",
-                        color: stockData.ncavRatio >= 100
+                        label: "NCAV 배수",
+                        value: ncavMultiple !== null ? `${ncavMultiple.toFixed(2)}x` : "—",
+                        desc: "순유동자산 / 시가총액",
+                        color: ncavMultiple !== null && ncavMultiple >= 1
                           ? "text-emerald-600 dark:text-emerald-400"
-                          : stockData.ncavRatio >= 0
-                          ? "text-amber-600 dark:text-amber-400"
-                          : "text-neutral-500 dark:text-neutral-400",
+                          : "text-neutral-700 dark:text-neutral-200",
                       },
                       {
                         label: "PBR",
@@ -667,18 +762,14 @@ function AnalyzeContent() {
                           : "text-neutral-700 dark:text-neutral-200",
                       },
                       {
-                        label: "EPS",
-                        value: stockData.eps !== 0
-                          ? `${currency}${Math.abs(stockData.eps) >= 1000
-                              ? (stockData.eps / 1000).toFixed(1) + 'K'
-                              : stockData.eps.toFixed(stockData.eps < 1 ? 2 : 0)}`
-                          : "—",
-                        desc: "주당 순이익",
-                        color: stockData.eps > 0
-                          ? "text-neutral-700 dark:text-neutral-200"
-                          : stockData.eps < 0
+                        label: "ROE",
+                        value: roe !== null ? `${roe.toFixed(1)}%` : "—",
+                        desc: "순이익 / 자본",
+                        color: roe !== null && roe >= 10
+                          ? "text-emerald-600 dark:text-emerald-400"
+                          : roe !== null && roe < 0
                           ? "text-rose-600 dark:text-rose-400"
-                          : "text-neutral-400",
+                          : "text-neutral-700 dark:text-neutral-200",
                       },
                     ].map(m => (
                       <div key={m.label} className="bg-white dark:bg-[#242320] rounded-xl border border-neutral-200 dark:border-[#35332e] p-5 shadow-sm">
