@@ -351,7 +351,15 @@ function HeroArt() {
       camera.updateProjectionMatrix();
     };
     resize();
-    const ro = new ResizeObserver(resize);
+    // 모바일 스크롤 중엔 주소창이 접히며 min-h-[88dvh] 컨테이너 높이가 계속 미세하게 바뀌어
+    // ResizeObserver가 연속 발화한다. 그때마다 renderer.setSize()(프레임버퍼 재할당, 비용 큼)를
+    // 동기 호출하면 스크롤이 끊겨 보인다. 캔버스는 이미 CSS로 100% 채워지므로, 실제 렌더 해상도
+    // 갱신은 리사이즈가 잦아든 뒤 한 번만 하도록 디바운스한다.
+    let resizeTimer: ReturnType<typeof setTimeout> | undefined;
+    const ro = new ResizeObserver(() => {
+      clearTimeout(resizeTimer);
+      resizeTimer = setTimeout(resize, 150);
+    });
     ro.observe(mount);
 
     const clock = new THREE.Clock();
@@ -380,6 +388,7 @@ function HeroArt() {
 
     return () => {
       cancelAnimationFrame(raf);
+      clearTimeout(resizeTimer);
       ro.disconnect();
       disposables.forEach(d => d.dispose());
       renderer.dispose();
