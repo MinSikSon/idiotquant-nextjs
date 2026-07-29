@@ -381,7 +381,7 @@ function AnalyzeContent() {
   const [hasMounted, setHasMounted] = useState(false);
   const [staticStockData, setStaticStockData] = useState<StaticStockData>({ allTickers: [], corpCodeJson: {} });
   const [shareStatus, setShareStatus] = useState<'idle' | 'copied' | 'error'>('idle');
-  const [activeTab, setActiveTab] = useState<'analysis' | 'strategy' | 'risk' | 'financials'>('analysis');
+  const [activeTab, setActiveTab] = useState<'analysis' | 'strategy' | 'risk' | 'financials'>('strategy');
 
   useEffect(() => {
     setHasMounted(true);
@@ -799,8 +799,8 @@ function AnalyzeContent() {
                 {/* Mobile Tab Bar */}
                 <div className="flex md:hidden gap-1 p-1 bg-neutral-100 dark:bg-[#2a2825] rounded-xl">
                   {([
-                    { key: 'analysis', label: '분석' },
                     { key: 'strategy', label: '전략' },
+                    { key: 'analysis', label: '분석' },
                     { key: 'risk', label: '위험도' },
                     { key: 'financials', label: '재무' },
                   ] as { key: 'analysis' | 'strategy' | 'risk' | 'financials'; label: string }[]).map(({ key, label }) => (
@@ -819,13 +819,6 @@ function AnalyzeContent() {
                   ))}
                 </div>
 
-                {/* 상세 지표 (블러) */}
-                <div className={cn(activeTab !== 'analysis' && 'hidden md:block')}>
-                  <BlurGate isLoggedIn={isLoggedIn}>
-                    <StockMetrics data={data} isUs={krOrUs === 'US'} />
-                  </BlurGate>
-                </div>
-
                 {/* 모델별 요약 (항상 공개) + 세부 카드 (블러) */}
                 <div className={cn("bg-white dark:bg-[#242320] rounded-2xl border border-neutral-200 dark:border-[#35332e] p-1 shadow-sm", activeTab !== 'strategy' && 'hidden md:block')}>
                   <ValuationSection
@@ -834,6 +827,13 @@ function AnalyzeContent() {
                     isLoggedIn={isLoggedIn}
                     loginHref={loginHref}
                   />
+                </div>
+
+                {/* 상세 지표 (블러) */}
+                <div className={cn(activeTab !== 'analysis' && 'hidden md:block')}>
+                  <BlurGate isLoggedIn={isLoggedIn}>
+                    <StockMetrics data={data} isUs={krOrUs === 'US'} />
+                  </BlurGate>
                 </div>
 
                 {/* 상장폐지 위험도 (블러) */}
