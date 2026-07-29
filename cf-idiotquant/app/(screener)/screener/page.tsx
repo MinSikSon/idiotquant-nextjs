@@ -20,7 +20,10 @@ import { computeValueScore } from "@/lib/utils/valueScore";
 import { CopyStockButtons, type CopyStock } from "@/components/copyStockButtons";
 import { PageHeader, PAGE_ACTION_CLS } from "@/components/pageHeader";
 import { ValueMedal } from "@/components/valueMedal";
-import { STRATEGY_LABEL, STRATEGY_BADGE, STRATEGY_PRESETS_CLIENT as STRATEGY_PRESETS, MKTCAP_PRESETS } from "@/lib/constants/strategies";
+import { buildGroups, defaultOpenGroups, GroupedResults, type GroupMode } from "./components/GroupedResults";
+import { ResultSummary, TermStrip } from "./components/ResultSummary";
+import { StockGridCard } from "./components/StockGridCard";
+import { STRATEGY_LABEL, STRATEGY_BADGE, STRATEGY_PRESETS_CLIENT as STRATEGY_PRESETS, MKTCAP_PRESETS, STRATEGY_ACTIVE_CLS } from "@/lib/constants/strategies";
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const safeNum = (v: any): number => { const n = Number(v); return isNaN(n) ? 0 : n; };
@@ -42,18 +45,6 @@ const NCAV_MIN_PRESETS = [0.7, 1.0, 1.5];   // NCAV 비율 이상
 // 우선주: 종목명이 '우' / '우B' / '우C' 등으로 끝남
 const isPreferredStock = (name: string): boolean => /\d*우[A-C]?$/.test((name ?? "").trim());
 
-const STRATEGY_ACTIVE_CLS: Record<string, string> = {
-    all:            "bg-neutral-900 dark:bg-white text-white dark:text-neutral-900 border-neutral-900 dark:border-white shadow-sm",
-    ncav:           "bg-emerald-600 border-emerald-600 text-white shadow-sm",
-    low_pbr:        "bg-sky-600 border-sky-600 text-white shadow-sm",
-    low_per:        "bg-orange-500 border-orange-500 text-white shadow-sm",
-    s_rim:          "bg-violet-600 border-violet-600 text-white shadow-sm",
-    graham_number:  "bg-teal-600 border-teal-600 text-white shadow-sm",
-    magic_formula:  "bg-rose-600 border-rose-600 text-white shadow-sm",
-    quality_value:  "bg-amber-500 border-amber-500 text-white shadow-sm",
-    near_ncav:      "bg-indigo-600 border-indigo-600 text-white shadow-sm",
-    balanced_value: "bg-cyan-600 border-cyan-600 text-white shadow-sm",
-};
 
 // 백엔드 strategies + 프론트엔드 clientFilter 병합 (백엔드 미분류 종목도 표시)
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -543,6 +534,16 @@ function ScreenerContent() {
         catch { return []; }
     });
 
+    // 묶어 보기 / 뷰 모드 — 기본값이 none·table 이라 배포 직후 동작은 그대로다
+    const [groupMode, setGroupMode] = useState<GroupMode>(() => {
+        const v = (searchParams.get('group') ?? saved.group) as GroupMode;
+        return (['sector', 'strategy', 'grade'] as GroupMode[]).includes(v) ? v : 'none';
+    });
+    const [viewMode, setViewMode] = useState<'table' | 'card'>(() =>
+        (searchParams.get('view') ?? saved.view) === 'card' ? 'card' : 'table'
+    );
+    const [openGroups, setOpenGroups] = useState<Set<string>>(new Set());
+
     const hasDiscovered = useRef(false);
 
     useEffect(() => {
@@ -590,8 +591,10 @@ function ScreenerContent() {
         if (minNcav > 0) params.set('minncav', String(minNcav));
         if (showLikedOnly) params.set('filter', 'liked');
         if (searchQuery.trim()) params.set('q', searchQuery.trim());
+        if (groupMode !== 'none') params.set('group', groupMode);
+        if (viewMode !== 'table') params.set('view', viewMode);
         return params.toString();
-    }, [activeStrategyIds, filterMode, sortKey, sortOrder, excludeHoldings, excludeDeficit, excludePreferred, minMarketCap, maxPbr, maxPer, minRoe, minNcav, showLikedOnly, searchQuery]);
+    }, [activeStrategyIds, filterMode, sortKey, sortOrder, excludeHoldings, excludeDeficit, excludePreferred, minMarketCap, maxPbr, maxPer, minRoe, minNcav, showLikedOnly, searchQuery, groupMode, viewMode]);
 
     // 필터 상태 → URL 동기화 + localStorage 저장 (페이지 이동 후 재진입 시에도 전체 필터 유지)
     useEffect(() => {
@@ -618,6 +621,8 @@ function ScreenerContent() {
         if (minNcav > 0) snapshot.minncav = minNcav;
         if (showLikedOnly) snapshot.filter = 'liked';
         if (searchQuery.trim()) snapshot.q = searchQuery.trim();
+        if (groupMode !== 'none') snapshot.group = groupMode;
+        if (viewMode !== 'table') snapshot.view = viewMode;
         if (Object.keys(snapshot).length > 0) {
             localStorage.setItem('screener:filters', JSON.stringify(snapshot));
         } else {
@@ -628,7 +633,7 @@ function ScreenerContent() {
         localStorage.removeItem('screener:filterMode');
         }, 300);
         return () => clearTimeout(debounce);
-    }, [queryString, activeStrategyIds, filterMode, sortKey, sortOrder, excludeHoldings, excludeDeficit, excludePreferred, minMarketCap, maxPbr, maxPer, minRoe, minNcav, showLikedOnly, searchQuery, router]);
+    }, [queryString, activeStrategyIds, filterMode, sortKey, sortOrder, excludeHoldings, excludeDeficit, excludePreferred, minMarketCap, maxPbr, maxPer, minRoe, minNcav, showLikedOnly, searchQuery, groupMode, viewMode, router]);
 
     // 현재 필터링 결과 링크 공유 (모바일: 네이티브 공유 시트 / 데스크탑: 클립보드 복사)
     const handleShare = useCallback(async () => {
@@ -783,8 +788,34 @@ function ScreenerContent() {
         return out;
     }, [baseList, filters]);
 
+    // 묶어 보기는 전체 결과를 대상으로 한다 — 페이지를 넘길 때마다 그룹 개수가 변하면
+    // "이 전략에 12개"라는 숫자를 믿을 수 없다. 대신 상위 2개 그룹만 펼쳐 DOM을 작게 유지한다.
+    const groups = useMemo(() => buildGroups(filteredList, groupMode), [filteredList, groupMode]);
+    useEffect(() => { setOpenGroups(defaultOpenGroups(buildGroups(filteredList, groupMode))); }, [groupMode]); // eslint-disable-line react-hooks/exhaustive-deps
+
     const visibleList = filteredList.slice(0, displayCount);
-    const hasMore = filteredList.length > displayCount;
+    const hasMore = !groups && filteredList.length > displayCount;
+
+    // 조건 깔때기 — 어느 단계에서 결과가 확 줄었는지 보여준다
+    const funnel = useMemo(() => {
+        const none: ScreenerFilters = {
+            strategies: new Set(), mode: 'OR', q: '',
+            excludeHoldings: false, excludeDeficit: false, excludePreferred: false,
+            minMarketCap: 0, maxPbr: 0, maxPer: 0, minRoe: 0, minNcav: 0,
+        };
+        const steps: { label: string; patch: Partial<ScreenerFilters> }[] = [
+            { label: '전체',      patch: {} },
+            { label: '전략',      patch: { strategies: filters.strategies, mode: filters.mode } },
+            { label: '검색',      patch: { q: filters.q } },
+            { label: '가치 지표', patch: { minMarketCap: filters.minMarketCap, maxPbr: filters.maxPbr, maxPer: filters.maxPer, minNcav: filters.minNcav } },
+            { label: '수익·제외', patch: { minRoe: filters.minRoe, excludeDeficit: filters.excludeDeficit, excludeHoldings: filters.excludeHoldings, excludePreferred: filters.excludePreferred } },
+        ];
+        let acc = { ...none };
+        return steps.map(s => {
+            acc = { ...acc, ...s.patch };
+            return { label: s.label, count: applyFilters(baseList, acc).length };
+        });
+    }, [baseList, filters]);
 
     // 단일 전략만 선택했을 때, 그 전략 기준 컬럼을 강조 (0개·복수 선택이면 강조 안 함)
     const highlightMap: HighlightMap | null =
@@ -826,6 +857,8 @@ function ScreenerContent() {
     const isAllActive = activeStrategyIds.size === 0;
     const hasActiveFilters = activeStrategyIds.size > 0 || excludeHoldings || excludeDeficit || excludePreferred || minMarketCap > 0 || maxPbr > 0 || maxPer > 0 || minRoe > 0 || minNcav > 0 || sortKey !== 'value_score' || sortOrder !== 'desc' || showLikedOnly;
     const isFiltered = !showLikedOnly && filteredList.length !== ncavDailyList.list.length;
+    // 업종 묶기는 응답에 sector/industry 가 있을 때만. 없으면 세그먼트에서 비활성.
+    const hasSectorData = ncavDailyList.list.some((i: any) => i.sector ?? i.industry);
 
     // 단일 전략 선택 시에만 기준 배너를 띄운다 — 여러 전략을 겹치면 "이 값이 왜 초록인지"를
     // 한 줄로 설명할 수 없어 오히려 오해를 만든다.
@@ -902,6 +935,8 @@ function ScreenerContent() {
         setMinNcav(safeNum(p.get('minncav')));
         setSearchQuery(p.get('q') ?? '');
         setShowLikedOnly(p.get('filter') === 'liked');
+        setGroupMode((p.get('group') as GroupMode) ?? 'none');
+        setViewMode(p.get('view') === 'card' ? 'card' : 'table');
         setDisplayCount(DAILY_PAGE_SIZE);
     }, []);
 
@@ -958,7 +993,7 @@ function ScreenerContent() {
             {/* ── 전략 탭 + 통합 툴바 (sticky) ── */}
             <div className={cn(
                 "sticky top-0 z-30 bg-white/95 dark:bg-[#1f1e1b]/95 backdrop-blur-md",
-                !filterOpen && "border-b border-neutral-200 dark:border-[#3a3834]"
+                "border-b border-neutral-200 dark:border-[#3a3834]"
             )}>
                 <div className="max-w-7xl mx-auto px-4 sm:px-7">
 
@@ -1040,31 +1075,79 @@ function ScreenerContent() {
                             <span className="font-mono text-[10px]">{sortKey === "value_score" && sortOrder === "asc" ? "↑" : "↓"}</span>
                         </button>
 
-                        {/* 필터 — 열리면 아래 서랍과 물리적으로 이어 붙는다 (탭 → 패널) */}
+                        {/* 필터 — 열림은 다른 툴바 토글과 같은 '단색 채움'으로 표시한다.
+                            서랍과 탭처럼 이어붙이는 연출은 이 레이아웃에서 성립하지 않는다:
+                            버튼이 감싸는 flex 줄 한가운데 있고 아래로 sticky 끝·칩 줄이 끼어서,
+                            테두리를 지우면 이어지는 대신 스타일이 벗겨진 것처럼 보인다. */}
                         <button
                             onClick={() => isLoggedIn ? setFilterOpen(o => !o) : requireLogin()}
                             className={cn(
-                                "shrink-0 flex items-center gap-1.5 px-3 py-2 text-xs font-bold border transition-colors whitespace-nowrap",
+                                "shrink-0 flex items-center gap-1.5 px-3 py-2 rounded-[10px] text-xs font-bold border transition-colors whitespace-nowrap",
                                 filterOpen
-                                    ? "bg-[#f0fdf4] dark:bg-[#052e16]/40 border-[#bbf7d0] dark:border-[#166534] border-b-[#f0fdf4] dark:border-b-transparent text-[#15803d] dark:text-[#16a34a] rounded-t-[10px] -mb-3 pb-[19px]"
-                                    : cn(
-                                        "rounded-[10px]",
-                                        activeFilterCount > 0
-                                            ? "bg-[#f0fdf4] dark:bg-[#052e16]/30 border-[#86efac] dark:border-[#166534] text-[#15803d] dark:text-[#16a34a]"
-                                            : "bg-white dark:bg-[#242320] border-neutral-200 dark:border-[#3a3834] text-neutral-600 dark:text-neutral-400 hover:border-neutral-300"
-                                    )
+                                    ? "bg-[#16a34a] border-[#16a34a] text-white shadow-sm"
+                                    : activeFilterCount > 0
+                                        ? "bg-[#f0fdf4] dark:bg-[#052e16]/30 border-[#86efac] dark:border-[#166534] text-[#15803d] dark:text-[#16a34a]"
+                                        : "bg-white dark:bg-[#242320] border-neutral-200 dark:border-[#3a3834] text-neutral-600 dark:text-neutral-400 hover:border-neutral-300"
                             )}
                         >
                             <SlidersHorizontal size={12} />
                             필터
                             {!isLoggedIn && <Lock size={10} className="opacity-60" />}
                             {activeFilterCount > 0 && (
-                                <span className="px-1.5 rounded-full bg-[#dcfce7] dark:bg-[#14532d]/60 text-[#16a34a] text-[10px] font-black">
+                                <span className={cn(
+                                    "px-1.5 rounded-full text-[10px] font-black",
+                                    filterOpen ? "bg-white/25 text-white" : "bg-[#dcfce7] dark:bg-[#14532d]/60 text-[#16a34a]"
+                                )}>
                                     {activeFilterCount}
                                 </span>
                             )}
                             <span className="font-mono text-[9px]">{filterOpen ? "▲" : "▼"}</span>
                         </button>
+
+                        {/* 묶기 세그먼트 — 업종은 스캔 응답에 업종 필드가 오면 자동으로 열린다 */}
+                        <div className="shrink-0 flex items-center gap-0.5 p-0.5 rounded-[10px] bg-[#f2f0ec] dark:bg-[#2c2b27]">
+                            {([
+                                { id: 'none',     label: '안 묶기' },
+                                { id: 'sector',   label: '업종', disabled: !hasSectorData },
+                                { id: 'strategy', label: '전략' },
+                                { id: 'grade',    label: '등급' },
+                            ] as { id: GroupMode; label: string; disabled?: boolean }[]).map(o => (
+                                <button
+                                    key={o.id}
+                                    disabled={o.disabled}
+                                    onClick={() => setGroupMode(o.id)}
+                                    title={o.disabled ? "업종 데이터 연동 예정" : undefined}
+                                    className={cn(
+                                        "px-2.5 py-1.5 rounded-lg text-[11px] transition-colors whitespace-nowrap",
+                                        o.disabled && "opacity-40 cursor-not-allowed",
+                                        groupMode === o.id
+                                            ? "bg-white dark:bg-[#1f1e1b] font-extrabold text-neutral-900 dark:text-white shadow-sm"
+                                            : "font-bold text-neutral-500 dark:text-neutral-400"
+                                    )}
+                                >
+                                    {o.label}
+                                </button>
+                            ))}
+                        </div>
+
+                        {/* 표 ↔ 카드 */}
+                        <div className="shrink-0 flex items-center gap-0.5 p-0.5 rounded-[10px] bg-[#f2f0ec] dark:bg-[#2c2b27]">
+                            {([['table', '☰'], ['card', '▦']] as const).map(([id, icon]) => (
+                                <button
+                                    key={id}
+                                    onClick={() => setViewMode(id)}
+                                    title={id === 'table' ? "표로 보기" : "카드로 보기"}
+                                    className={cn(
+                                        "px-2.5 py-1.5 rounded-lg text-xs transition-colors",
+                                        viewMode === id
+                                            ? "bg-white dark:bg-[#1f1e1b] text-neutral-900 dark:text-white shadow-sm"
+                                            : "text-neutral-500 dark:text-neutral-400"
+                                    )}
+                                >
+                                    {icon}
+                                </button>
+                            ))}
+                        </div>
 
                         {/* 관심 종목 */}
                         <button
@@ -1213,6 +1296,25 @@ function ScreenerContent() {
                             >
                                 전체 해제
                             </button>
+                        </div>
+
+                        {/* 조건 깔때기 — 어느 단계에서 결과가 확 줄었는지 한눈에 */}
+                        <div className="mb-4 flex flex-col gap-1">
+                            {funnel.map((s, i) => (
+                                <div key={s.label} className="flex items-center gap-2">
+                                    <span className="w-[76px] shrink-0 text-[10.5px] font-bold text-neutral-500 dark:text-neutral-400">{s.label}</span>
+                                    <span className="flex-1 h-2.5 rounded-full bg-white/60 dark:bg-black/20 overflow-hidden">
+                                        <span
+                                            className="block h-full rounded-full"
+                                            style={{
+                                                width: `${funnel[0].count > 0 ? (s.count / funnel[0].count) * 100 : 0}%`,
+                                                background: ['#e5e5e5', '#bbf7d0', '#86efac', '#4ade80', '#16a34a'][i],
+                                            }}
+                                        />
+                                    </span>
+                                    <span className="w-12 shrink-0 text-right text-[10.5px] font-mono font-bold tabular-nums text-[#15803d] dark:text-[#16a34a]">{s.count}</span>
+                                </div>
+                            ))}
                         </div>
 
                         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3.5">
@@ -1493,6 +1595,19 @@ function ScreenerContent() {
                             <span className="text-[11px] text-neutral-400 font-medium">목록 복사</span>
                             <CopyStockButtons rows={copyRows} label={showLikedOnly ? "관심 종목" : "발굴 종목"} />
                         </div>
+
+                        {/* 숫자를 읽는 법 + 결과가 대체로 어떤 모양인지 — 스크롤 전에 먼저 준다 */}
+                        <TermStrip />
+                        <ResultSummary list={filteredList} />
+
+                        {viewMode === 'card' ? (
+                            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+                                {visibleList.map((item: any) => (
+                                    <StockGridCard key={item.ticker} item={item} onClick={handleStockClick} isLiked={likedTickers.has(item.name)} onToggleLike={handleToggleLike} />
+                                ))}
+                            </div>
+                        ) : (
+                        <>
                         {/* 데스크탑 테이블 */}
                         <div className="hidden md:block">
                             <div className="bg-white dark:bg-[#242320] rounded-2xl border border-neutral-200 dark:border-[#35332e] overflow-hidden shadow-sm">
@@ -1505,11 +1620,29 @@ function ScreenerContent() {
                                     <SortableHeader label="ROE" sortKey="roe" currentKey={sortKey} order={sortOrder} onToggle={toggleSort} relevant={!!metricHighlight && "roe" in metricHighlight} />
                                     <div />
                                 </div>
-                                <div>
-                                    {visibleList.map((item: any) => (
-                                        <TableRow key={item.ticker} item={item} onClick={handleStockClick} isLiked={likedTickers.has(item.name)} onToggleLike={handleToggleLike} highlight={metricHighlight} />
-                                    ))}
-                                </div>
+                                {groups ? (
+                                    <GroupedResults
+                                        groups={groups}
+                                        open={openGroups}
+                                        onToggle={key => setOpenGroups(prev => {
+                                            const next = new Set(prev);
+                                            if (!next.delete(key)) next.add(key);
+                                            return next;
+                                        })}
+                                        hint={g => groupMode === 'strategy'
+                                            ? (STRATEGY_PRESETS.find(p => p.id === g.key)?.formula ?? '')
+                                            : ''}
+                                        renderRow={(item: any) => (
+                                            <TableRow key={item.ticker} item={item} onClick={handleStockClick} isLiked={likedTickers.has(item.name)} onToggleLike={handleToggleLike} highlight={metricHighlight} />
+                                        )}
+                                    />
+                                ) : (
+                                    <div>
+                                        {visibleList.map((item: any) => (
+                                            <TableRow key={item.ticker} item={item} onClick={handleStockClick} isLiked={likedTickers.has(item.name)} onToggleLike={handleToggleLike} highlight={metricHighlight} />
+                                        ))}
+                                    </div>
+                                )}
                             </div>
                         </div>
 
@@ -1519,6 +1652,8 @@ function ScreenerContent() {
                                 <StockRowCard key={item.ticker} item={item} onClick={handleStockClick} isLiked={likedTickers.has(item.name)} onToggleLike={handleToggleLike} highlight={metricHighlight} />
                             ))}
                         </div>
+                        </>
+                        )}
 
                         {hasMore && (
                             <div className="flex justify-center mt-10">

@@ -18,6 +18,27 @@ export const STRATEGY_BADGE: Record<string, string> = {
     balanced_value: 'bg-cyan-100 text-cyan-700 dark:bg-cyan-950/50 dark:text-cyan-400',
 };
 
+// 활성 전략 칩 = 전략별 단색. 요약 그래프의 막대 색도 여기서 가져온다(새 색 도입 없이).
+export const STRATEGY_ACTIVE_CLS: Record<string, string> = {
+    all:            "bg-neutral-900 dark:bg-white text-white dark:text-neutral-900 border-neutral-900 dark:border-white shadow-sm",
+    ncav:           "bg-emerald-600 border-emerald-600 text-white shadow-sm",
+    low_pbr:        "bg-sky-600 border-sky-600 text-white shadow-sm",
+    low_per:        "bg-orange-500 border-orange-500 text-white shadow-sm",
+    s_rim:          "bg-violet-600 border-violet-600 text-white shadow-sm",
+    graham_number:  "bg-teal-600 border-teal-600 text-white shadow-sm",
+    magic_formula:  "bg-rose-600 border-rose-600 text-white shadow-sm",
+    quality_value:  "bg-amber-500 border-amber-500 text-white shadow-sm",
+    near_ncav:      "bg-indigo-600 border-indigo-600 text-white shadow-sm",
+    balanced_value: "bg-cyan-600 border-cyan-600 text-white shadow-sm",
+};
+
+// 위 Tailwind 클래스와 같은 색을 hex로 — canvas(SectorSprite)는 클래스를 못 읽는다
+export const STRATEGY_HEX: Record<string, string> = {
+    ncav: '#059669', low_pbr: '#0284c7', low_per: '#f97316', s_rim: '#7c3aed',
+    graham_number: '#0d9488', magic_formula: '#e11d48', quality_value: '#f59e0b',
+    near_ncav: '#4f46e5', balanced_value: '#0891b2',
+};
+
 export const MKTCAP_PRESETS: { label: string; value: number }[] = [
     { label: '전체', value: 0 },
     { label: '500억+', value: 500 },

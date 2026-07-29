@@ -4,6 +4,9 @@ const config = {
     "./pages/**/*.{js,ts,jsx,tsx,mdx}",
     "./components/**/*.{js,ts,jsx,tsx,mdx}",
     "./app/**/*.{js,ts,jsx,tsx,mdx}",
+    // 전략 배지·활성 칩 색이 lib/constants/strategies.ts 에 문자열로 들어있다.
+    // 여기가 빠지면 그 클래스는 생성되지 않아 칩이 흰색으로 렌더된다.
+    "./lib/**/*.{js,ts,jsx,tsx,mdx}",
 
     "./src/**/*.{js,ts,jsx,tsx,mdx}",
   ],
