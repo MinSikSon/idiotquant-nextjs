@@ -184,6 +184,9 @@ function HeroArt() {
     const shadowMat = new THREE.MeshBasicMaterial({ map: shadowTex, transparent: true, depthWrite: false });
     const shadowGeo = new THREE.PlaneGeometry(1, 1);
     disposables.push(shadowTex, shadowMat, shadowGeo);
+    // 캔들만 따로 묶어 스크롤에 따라 이 그룹만 회전시킨다(금화는 낙하 궤적이 흐트러지면 안 되므로 제외).
+    const candleGroup = new THREE.Group();
+    root.add(candleGroup);
     let prev = CANDLE_H[0] * CANDLE_HS;
     for (let i = 0; i < N; i++) {
       const h = CANDLE_H[i] * CANDLE_HS;
@@ -203,7 +206,7 @@ function HeroArt() {
       g.add(shadow, body, wick);
       const u = i / (N - 1);
       g.position.set((i - (N - 1) / 2) * CANDLE_GAP - CANDLE_GAP * 0.4, BASE, CANDLE_Z - (1 - u) * CANDLE_ARC);
-      root.add(g);
+      candleGroup.add(g);
     }
 
     // 쏟아지는 금화 — 계속 순환하며 떨어지는 무리(stream) + 바닥에 쌓여 더미를 만드는 무리(pile).
@@ -362,6 +365,11 @@ function HeroArt() {
     });
     ro.observe(mount);
 
+    // 스크롤에 따라 캔들 차트를 살짝 회전 — 히어로 한 화면(innerHeight) 스크롤될 때까지 목표
+    // 각도까지 진행되고, 그 이상은 더 돌지 않게 clamp한다(계속 돌면 산만하다). 목표값을 향해
+    // 매 프레임 조금씩 따라가는 지수 감쇠(lerp)로 스크롤이 뚝뚝 끊겨도 회전은 매끈하게 이어진다.
+    const CANDLE_MAX_ROT = THREE.MathUtils.degToRad(12);
+    let candleRotY = 0;
     const clock = new THREE.Clock();
     let raf = 0;
     const render = () => {
@@ -369,7 +377,10 @@ function HeroArt() {
       const t = clock.getElapsedTime();
       stepCoins(dt);
       syncCoins();
-      // 캔들은 흔들지 않는다 — 정지된 차트가 "무겁고 신뢰감 있는" 인상을 만든다.
+      const scrollProgress = Math.min(window.scrollY / Math.max(1, window.innerHeight * 0.9), 1);
+      const targetRotY = scrollProgress * CANDLE_MAX_ROT;
+      candleRotY += (targetRotY - candleRotY) * (1 - Math.exp(-6 * dt));
+      candleGroup.rotation.y = candleRotY;
       // 완만한 카메라 드리프트(패럴랙스)로 화면 전체가 살아 있게.
       camera.position.x = Math.sin(t * 0.08) * 2.4;
       camera.position.y = 2.6 + Math.sin(t * 0.05) * 0.5;
