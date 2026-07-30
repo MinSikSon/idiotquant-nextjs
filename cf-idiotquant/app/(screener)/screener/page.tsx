@@ -60,6 +60,9 @@ function resolveStrategies(item: Record<string, any>): string[] {
 type MetricKey = "ncav_ratio" | "pbr" | "per" | "roe";
 type HighlightMap = Partial<Record<MetricKey, (i: any) => boolean>>;
 const roeOf = (i: any) => safeNum(i.bps) > 0 ? (safeNum(i.eps) / safeNum(i.bps)) * 100 : 0;
+// 상세 분석 화면의 S-RIM 카드는 ROE를 당기순이익÷자본총계(연결 전체)로 계산해 값이 다르다.
+// 같은 이름으로 다른 값이 보이면 데이터 오류로 오해하므로 양쪽에 기준을 명시한다.
+const ROE_BASIS_HINT = "ROE = EPS ÷ BPS (지배주주 기준). 상세 분석의 S-RIM 카드는 당기순이익÷자본총계(연결 전체) 기준이라 지주회사 등에서는 값이 다를 수 있습니다.";
 const grahamOk = (i: any) => safeNum(i.per) > 0 && safeNum(i.pbr) > 0 && safeNum(i.per) * safeNum(i.pbr) < 22.5;
 const STRATEGY_HIGHLIGHT: Record<string, HighlightMap> = {
     ncav:           { ncav_ratio: i => safeNum(i.ncav_ratio) >= 1.0 },
@@ -154,17 +157,19 @@ const TOOLTIP_CLS =
 // =========================================================================
 // SortableHeader
 // =========================================================================
-function SortableHeader({ label, sortKey: key, currentKey, order, onToggle, relevant }: {
+function SortableHeader({ label, sortKey: key, currentKey, order, onToggle, relevant, title }: {
     label: string;
     sortKey: DiscoverySortKey;
     currentKey: DiscoverySortKey;
     order: SortOrder;
     onToggle: (k: DiscoverySortKey) => void;
     relevant?: boolean;
+    title?: string;
 }) {
     const active = currentKey === key;
     return (
         <button
+            title={title}
             onClick={() => onToggle(key)}
             className={cn(
                 "flex items-center gap-1 text-[10px] font-bold uppercase tracking-wider transition-colors whitespace-nowrap",
@@ -350,7 +355,7 @@ const StockRowCard = memo(function StockRowCard({ item, onClick, isLiked, onTogg
                     const rel = !!highlight && m.key in highlight;
                     const met = rel && highlight![m.key]!(item);
                     return (
-                        <div key={m.label} className={cn(
+                        <div key={m.label} title={m.key === "roe" ? ROE_BASIS_HINT : undefined} className={cn(
                             "text-center p-3.5 rounded-xl",
                             rel && met ? "bg-emerald-50 dark:bg-emerald-950/40 ring-1 ring-inset ring-emerald-200 dark:ring-emerald-900/60"
                                 : "bg-[#faf9f7] dark:bg-[#242320]/60"
@@ -1617,7 +1622,7 @@ function ScreenerContent() {
                                     <SortableHeader label="NCAV 비율" sortKey="ncav_ratio" currentKey={sortKey} order={sortOrder} onToggle={toggleSort} relevant={!!metricHighlight && "ncav_ratio" in metricHighlight} />
                                     <SortableHeader label="PBR" sortKey="pbr" currentKey={sortKey} order={sortOrder} onToggle={toggleSort} relevant={!!metricHighlight && "pbr" in metricHighlight} />
                                     <SortableHeader label="PER" sortKey="per" currentKey={sortKey} order={sortOrder} onToggle={toggleSort} relevant={!!metricHighlight && "per" in metricHighlight} />
-                                    <SortableHeader label="ROE" sortKey="roe" currentKey={sortKey} order={sortOrder} onToggle={toggleSort} relevant={!!metricHighlight && "roe" in metricHighlight} />
+                                    <SortableHeader label="ROE" sortKey="roe" currentKey={sortKey} order={sortOrder} onToggle={toggleSort} relevant={!!metricHighlight && "roe" in metricHighlight} title={ROE_BASIS_HINT} />
                                     <div />
                                 </div>
                                 {groups ? (
