@@ -23,6 +23,7 @@ import { ValueMedal } from "@/components/valueMedal";
 import { buildGroups, defaultOpenGroups, GroupedResults, type GroupMode } from "./components/GroupedResults";
 import { ResultSummary, TermStrip } from "./components/ResultSummary";
 import { StockGridCard } from "./components/StockGridCard";
+import { StockRatioRow } from "./components/StockRatioRow";
 import { STRATEGY_LABEL, STRATEGY_BADGE, STRATEGY_PRESETS_CLIENT as STRATEGY_PRESETS, MKTCAP_PRESETS, STRATEGY_ACTIVE_CLS } from "@/lib/constants/strategies";
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -57,6 +58,13 @@ function resolveStrategies(item: Record<string, any>): string[] {
 }
 
 // 단일 전략 선택 시 강조할 지표 컬럼 + 기준 충족 판정. 키는 전략의 기준이 되는 컬럼.
+// table: 표 · card: 카드 · ratio: 자산·부채·시총 비율 비교
+type ViewMode = 'table' | 'card' | 'ratio';
+const VIEW_MODE_TITLE: Record<ViewMode, string> = {
+    table: "표로 보기",
+    card: "카드로 보기",
+    ratio: "비율로 보기 — 유동자산·부채총계·시가총액을 같은 축에서 비교",
+};
 type MetricKey = "ncav_ratio" | "pbr" | "per" | "roe";
 type HighlightMap = Partial<Record<MetricKey, (i: any) => boolean>>;
 const roeOf = (i: any) => safeNum(i.bps) > 0 ? (safeNum(i.eps) / safeNum(i.bps)) * 100 : 0;
@@ -544,9 +552,10 @@ function ScreenerContent() {
         const v = (searchParams.get('group') ?? saved.group) as GroupMode;
         return (['sector', 'strategy', 'grade'] as GroupMode[]).includes(v) ? v : 'none';
     });
-    const [viewMode, setViewMode] = useState<'table' | 'card'>(() =>
-        (searchParams.get('view') ?? saved.view) === 'card' ? 'card' : 'table'
-    );
+    const [viewMode, setViewMode] = useState<ViewMode>(() => {
+        const v = searchParams.get('view') ?? saved.view;
+        return (['card', 'ratio'] as ViewMode[]).includes(v as ViewMode) ? (v as ViewMode) : 'table';
+    });
     const [openGroups, setOpenGroups] = useState<Set<string>>(new Set());
 
     const hasDiscovered = useRef(false);
@@ -1135,13 +1144,13 @@ function ScreenerContent() {
                             ))}
                         </div>
 
-                        {/* 표 ↔ 카드 */}
+                        {/* 표 ↔ 카드 ↔ 비율 */}
                         <div className="shrink-0 flex items-center gap-0.5 p-0.5 rounded-[10px] bg-[#f2f0ec] dark:bg-[#2c2b27]">
-                            {([['table', '☰'], ['card', '▦']] as const).map(([id, icon]) => (
+                            {([['table', '☰'], ['card', '▦'], ['ratio', '▤']] as const).map(([id, icon]) => (
                                 <button
                                     key={id}
                                     onClick={() => setViewMode(id)}
-                                    title={id === 'table' ? "표로 보기" : "카드로 보기"}
+                                    title={VIEW_MODE_TITLE[id]}
                                     className={cn(
                                         "px-2.5 py-1.5 rounded-lg text-xs transition-colors",
                                         viewMode === id
@@ -1605,7 +1614,13 @@ function ScreenerContent() {
                         <TermStrip />
                         <ResultSummary list={filteredList} />
 
-                        {viewMode === 'card' ? (
+                        {viewMode === 'ratio' ? (
+                            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+                                {visibleList.map((item: any) => (
+                                    <StockRatioRow key={item.ticker} item={item} onClick={handleStockClick} isLiked={likedTickers.has(item.name)} onToggleLike={handleToggleLike} />
+                                ))}
+                            </div>
+                        ) : viewMode === 'card' ? (
                             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
                                 {visibleList.map((item: any) => (
                                     <StockGridCard key={item.ticker} item={item} onClick={handleStockClick} isLiked={likedTickers.has(item.name)} onToggleLike={handleToggleLike} />
