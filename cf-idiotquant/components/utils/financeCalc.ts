@@ -147,7 +147,12 @@ export function calculateKrNcav(kiBS: any, kiChart: any): ValuationResult {
 }
 
 export function calculateKrSRIM(kiBS: any, kiIS: any, kiChart: any, baseKe: number = 8.0): ValuationResult {
-    const total_cptl = Number(kiBS?.output?.[0]?.total_cptl ?? 1) * ONE_HUNDRED_MILLION;
+    // 값이 없거나 숫자가 아니면 0 — 예전엔 1로 폴백해 "자본총계 1억원인 회사"로 취급되면서
+    // ROE가 67,500% 같은 폭주값으로 표시됐다. || 0 을 쓰는 이유는 ?? 가 못 잡는 NaN
+    // (예: "-" 같은 비수치 문자열)까지 막기 위함이고, 음수(자본잠식)는 그대로 보존한다.
+    // 0이면 아래 total_cptl > 0 가드로 ROE 0이 되고, 적정주가도 0이라
+    // ValuationSection 의 targetPrice > 0 필터에서 걸러져 축 요약을 오염시키지 않는다.
+    const total_cptl = (Number(kiBS?.output?.[0]?.total_cptl) || 0) * ONE_HUNDRED_MILLION;
     const thtr_ntin = Number(kiIS?.output?.[0]?.thtr_ntin ?? 0) * ONE_HUNDRED_MILLION;
     const lstn = Number(kiChart?.output1?.lstn_stcn ?? 1);
     const prpr = Number(kiChart?.output1?.stck_prpr ?? 0);
@@ -232,7 +237,8 @@ export function calculateKrDCF(kiCF: any, kiChart: any, wacc: number = 10.0, ter
 }
 
 export function calculateKrMultipliers(kiBS: any, kiIS: any, kiChart: any): ValuationResult {
-    const total_cptl = Number(kiBS?.output?.[0]?.total_cptl ?? 1) * ONE_HUNDRED_MILLION;
+    // 값이 없거나 숫자가 아니면 0 (1로 폴백하면 값이 폭주 — calculateKrSRIM 주석 참고)
+    const total_cptl = (Number(kiBS?.output?.[0]?.total_cptl) || 0) * ONE_HUNDRED_MILLION;
     const thtr_ntin = Number(kiIS?.output?.[0]?.thtr_ntin ?? 0) * ONE_HUNDRED_MILLION;
     const lstn = Number(kiChart?.output1?.lstn_stcn ?? 1);
     const prpr = Number(kiChart?.output1?.stck_prpr ?? 0);
@@ -266,7 +272,8 @@ export function calculateKrMultipliers(kiBS: any, kiIS: any, kiChart: any): Valu
 }
 
 export function calculateKrPbrBand(kiBS: any, kiChart: any): ValuationResult {
-    const total_cptl = Number(kiBS?.output?.[0]?.total_cptl ?? 1) * ONE_HUNDRED_MILLION;
+    // 값이 없거나 숫자가 아니면 0 (1로 폴백하면 값이 폭주 — calculateKrSRIM 주석 참고)
+    const total_cptl = (Number(kiBS?.output?.[0]?.total_cptl) || 0) * ONE_HUNDRED_MILLION;
     const lstn = Number(kiChart?.output1?.lstn_stcn ?? 1);
     const prpr = Number(kiChart?.output1?.stck_prpr ?? 0);
 
@@ -537,7 +544,8 @@ export function getKrNcavGrade(kiBS: any, kiChart: any) {
 }
 
 export function getKrSRIMTargetPrice(kiBS: any, kiIS: any, kiChart: any, baseKe: number = 8.0) {
-    const total_cptl = Number(kiBS?.output?.[0]?.total_cptl ?? 1) * ONE_HUNDRED_MILLION;
+    // 값이 없거나 숫자가 아니면 0 (1로 폴백하면 값이 폭주 — calculateKrSRIM 주석 참고)
+    const total_cptl = (Number(kiBS?.output?.[0]?.total_cptl) || 0) * ONE_HUNDRED_MILLION;
     const thtr_ntin = Number(kiIS?.output?.[0]?.thtr_ntin ?? 0) * ONE_HUNDRED_MILLION;
     const ROE = total_cptl > 0 ? (thtr_ntin / total_cptl) * 100 : 0;
     const lstn = Number(kiChart?.output1?.lstn_stcn ?? 1) === 0 ? 1 : Number(kiChart?.output1?.lstn_stcn ?? 1);
