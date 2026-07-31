@@ -303,6 +303,7 @@ const DEFAULT_XP_PROFILE = { level: 1, xp: 0, maxXp: 100, totalXp: 0, lastGain: 
 // (예전엔 모바일만 탭이고 데스크톱은 네 섹션이 전부 펼쳐져 스크롤이 길었다)
 const DETAIL_TABS = [
   { key: 'strategy', label: '전략' },
+  { key: 'card', label: '카드' },
   { key: 'analysis', label: '분석' },
   { key: 'risk', label: '위험도' },
   { key: 'financials', label: '재무' },
@@ -776,8 +777,10 @@ function AnalyzeContent() {
                 </div>
               )}
 
-              {/* 종목 카드 — 핵심 지표(NCAV·PBR·PER·ROE)까지 카드가 함께 표시한다 */}
-              <div className="mb-6">
+              {/* 종목 카드 — 핵심 지표(NCAV·PBR·PER·ROE)까지 카드가 함께 표시한다.
+                  다른 섹션과 마찬가지로 탭 하나로 다룬다. 항상 펼쳐 두면 어떤 탭을 골라도
+                  카드 높이만큼 스크롤을 먼저 지나야 본문에 닿는다. */}
+              <div className={cn("mb-6", activeTab !== 'card' && 'hidden')}>
                 <StockCard
                   stock={krOrUs === 'US' ? {
                     code: tickerFromUrl, isUs: true, name: displayName, ticker: name,
