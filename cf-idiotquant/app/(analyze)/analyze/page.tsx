@@ -22,7 +22,6 @@ import {
   DollarSign, Coins, Heart, X, TrendingUp, ChevronLeft, Lock, ArrowRight,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { CopyStockButtons } from '@/components/copyStockButtons';
 
 // =========================================================================
 // Dynamic imports
@@ -548,25 +547,6 @@ function AnalyzeContent() {
       {/* ── 헤더 ── */}
       <header className="sticky top-0 z-30 bg-white dark:bg-[#1f1e1b] border-b border-neutral-200 dark:border-[#3a3834] border-t-[3px] border-t-[#16a34a]">
         {/* 페이지 레이블 + 뒤로가기 */}
-        <div className="border-b border-neutral-100 dark:border-[#35332e]/60">
-          <div className="max-w-4xl mx-auto px-4 py-2 flex items-center justify-between">
-            {/* 사이드바 nav 와 같은 이모지·같은 이름 — 지금 어느 메뉴에 있는지가 눈으로 이어진다 */}
-            <div className="flex items-center gap-1.5">
-              <span className="text-[11px] leading-none" aria-hidden>💎</span>
-              <span className="text-[10px] font-black text-neutral-400 dark:text-neutral-500 uppercase tracking-[0.12em]">
-                적정 주가
-              </span>
-            </div>
-            {fromScreener && (
-              <Link href="/screener"
-                className="inline-flex items-center gap-1.5 text-xs font-bold text-[#16a34a] dark:text-[#16a34a] hover:opacity-80 transition-opacity">
-                <ChevronLeft size={13} />
-                발굴로 돌아가기
-              </Link>
-            )}
-          </div>
-        </div>
-
         <div className="max-w-4xl mx-auto px-4 py-4 flex items-center gap-2">
           <div className="flex-1">
             <SearchAutocomplete
@@ -668,19 +648,6 @@ function AnalyzeContent() {
 
             <div className={cn(!isPriceLoaded ? 'hidden' : 'animate-in fade-in duration-400')}>
 
-              {/* 종목 정보 복사 (종목명만 / 상세) */}
-              {stockData && (
-                <div className="flex items-center justify-end gap-2 mb-3">
-                  <span className="text-[11px] text-neutral-400 font-medium">복사</span>
-                  <CopyStockButtons rows={[{
-                    name: displayName,
-                    ticker: krOrUs === 'US' ? name : (stockData.stockTicker ?? tickerFromUrl),
-                    pbr: stockData.pbr,
-                    per: stockData.per,
-                  }]} />
-                </div>
-              )}
-
               {/* 종합 판단 — 지표 나열보다 먼저 결론을 준다 (판단 → 근거 → 원자료 순서) */}
               {verdict && (
                 <div className={cn("rounded-2xl border p-5 sm:p-6 mb-5", VERDICT_TONE[verdict.tone].box)}>
@@ -693,93 +660,42 @@ function AnalyzeContent() {
                 </div>
               )}
 
-              {/* 종목 카드 + 핵심 지표 — 최상단 */}
-              <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 mb-6">
-                {/* StockCard */}
-                <div className="lg:col-span-5">
-                  <StockCard
-                    stock={krOrUs === 'US' ? {
-                      code: tickerFromUrl, isUs: true, name: displayName, ticker: name,
-                      grade: stockData?.grade,
-                      curPrice: stockData?.curPrice?.toFixed(2) ?? 0,
-                      fairValue: currency + (stockData?.fairValue ?? 0),
-                      ncavScore: stockData?.ncavRatio ?? 0,
-                      srimScore: stockData?.srimScore,
-                      per: stockData?.per ?? 0,
-                      pbr: stockData?.pbr ?? 0,
-                      eps: currency + (stockData?.eps ?? 0),
-                      sector: data?.usDetail?.output?.e_icod ?? "DEFAULT",
-                      market: data?.usSearchInfo?.output?.tr_mket_name || data?.usSearchInfo?.output?.ovrs_excg_name || "",
-                    } : {
-                      code: tickerFromUrl, isUs: false, name: displayName,
-                      ticker: stockData?.stockTicker ?? '',
-                      grade: stockData?.grade,
-                      curPrice: stockData?.curPrice ?? 0,
-                      fairValue: currency + (stockData?.fairValue ?? 0),
-                      ncavScore: stockData?.ncavRatio ?? 0,
-                      srimScore: stockData?.srimScore,
-                      per: stockData?.per ?? 0,
-                      pbr: stockData?.pbr ?? 0,
-                      eps: currency + (stockData?.eps ?? 0).toFixed(0),
-                      sector: data?.kiPrice?.output?.bstp_kor_isnm ?? "DEFAULT",
-                      market: data?.kiPrice?.output?.rprs_mrkt_kor_name ?? "",
-                    }}
-                    chartConfig={chartConfig}
-                    chartNotice={chartNotice}
-                    rawData={data}
-                    stockXpProfile={DEFAULT_XP_PROFILE}
-                  />
-                </div>
-
-                {/* 핵심 지표 4개 (항상 공개) */}
-                {stockData && (
-                  <div className="lg:col-span-7 grid grid-cols-2 gap-4 content-start">
-                    {/* 설명에 계산식을 적는다 — 지표 이름만으로는 초보자가 판단할 수 없다.
-                        색은 기준 충족 시에만 초록, 아니면 중립. */}
-                    {[
-                      {
-                        label: "NCAV 배수",
-                        value: ncavMultiple !== null ? `${ncavMultiple.toFixed(2)}x` : "—",
-                        desc: "순유동자산 / 시가총액",
-                        color: ncavMultiple !== null && ncavMultiple >= 1
-                          ? "text-emerald-600 dark:text-emerald-400"
-                          : "text-neutral-700 dark:text-neutral-200",
-                      },
-                      {
-                        label: "PBR",
-                        value: stockData.pbr > 0 ? `${stockData.pbr.toFixed(2)}x` : "—",
-                        desc: "주가 / 순자산",
-                        color: stockData.pbr > 0 && stockData.pbr < 1
-                          ? "text-emerald-600 dark:text-emerald-400"
-                          : "text-neutral-700 dark:text-neutral-200",
-                      },
-                      {
-                        label: "PER",
-                        value: stockData.per > 0 ? `${stockData.per.toFixed(1)}x` : "—",
-                        desc: "주가 / 순이익",
-                        color: stockData.per > 0 && stockData.per < 10
-                          ? "text-emerald-600 dark:text-emerald-400"
-                          : "text-neutral-700 dark:text-neutral-200",
-                      },
-                      {
-                        label: "ROE",
-                        value: roe !== null ? `${roe.toFixed(1)}%` : "—",
-                        desc: "순이익 / 자본",
-                        color: roe !== null && roe >= 10
-                          ? "text-emerald-600 dark:text-emerald-400"
-                          : roe !== null && roe < 0
-                          ? "text-rose-600 dark:text-rose-400"
-                          : "text-neutral-700 dark:text-neutral-200",
-                      },
-                    ].map(m => (
-                      <div key={m.label} className="bg-white dark:bg-[#242320] rounded-xl border border-neutral-200 dark:border-[#35332e] p-5 shadow-sm">
-                        <p className="text-[10px] font-bold text-neutral-400 uppercase tracking-wider mb-1.5">{m.label}</p>
-                        <p className={cn("text-2xl font-black font-mono tabular-nums leading-none", m.color)}>{m.value}</p>
-                        <p className="text-[10px] text-neutral-400 mt-1.5">{m.desc}</p>
-                      </div>
-                    ))}
-                  </div>
-                )}
+              {/* 종목 카드 — 핵심 지표(NCAV·PBR·PER·ROE)까지 카드가 함께 표시한다 */}
+              <div className="mb-6">
+                <StockCard
+                  stock={krOrUs === 'US' ? {
+                    code: tickerFromUrl, isUs: true, name: displayName, ticker: name,
+                    grade: stockData?.grade,
+                    curPrice: stockData?.curPrice?.toFixed(2) ?? 0,
+                    fairValue: currency + (stockData?.fairValue ?? 0),
+                    ncavScore: stockData?.ncavRatio ?? 0,
+                    ncavMultiple, roe,
+                    srimScore: stockData?.srimScore,
+                    per: stockData?.per ?? 0,
+                    pbr: stockData?.pbr ?? 0,
+                    eps: currency + (stockData?.eps ?? 0),
+                    sector: data?.usDetail?.output?.e_icod ?? "DEFAULT",
+                    market: data?.usSearchInfo?.output?.tr_mket_name || data?.usSearchInfo?.output?.ovrs_excg_name || "",
+                  } : {
+                    code: tickerFromUrl, isUs: false, name: displayName,
+                    ticker: stockData?.stockTicker ?? '',
+                    grade: stockData?.grade,
+                    curPrice: stockData?.curPrice ?? 0,
+                    fairValue: currency + (stockData?.fairValue ?? 0),
+                    ncavScore: stockData?.ncavRatio ?? 0,
+                    ncavMultiple, roe,
+                    srimScore: stockData?.srimScore,
+                    per: stockData?.per ?? 0,
+                    pbr: stockData?.pbr ?? 0,
+                    eps: currency + (stockData?.eps ?? 0).toFixed(0),
+                    sector: data?.kiPrice?.output?.bstp_kor_isnm ?? "DEFAULT",
+                    market: data?.kiPrice?.output?.rprs_mrkt_kor_name ?? "",
+                  }}
+                  chartConfig={chartConfig}
+                  chartNotice={chartNotice}
+                  rawData={data}
+                  stockXpProfile={DEFAULT_XP_PROFILE}
+                />
               </div>
 
               {/* 상세 분석 섹션 — 재무제표 포함 (isLoaded 이후 표시) */}

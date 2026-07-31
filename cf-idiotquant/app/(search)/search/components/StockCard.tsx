@@ -5,6 +5,7 @@ import Image from 'next/image';
 import { cn } from "@/lib/utils";
 import { TrendingUp, TrendingDown, Activity, AlertTriangle } from "lucide-react";
 import LineChart from "@/components/LineChart";
+import { CopyStockButtons } from "@/components/copyStockButtons";
 
 // =========================================================================
 // 등급별 스타일 설정
@@ -20,7 +21,6 @@ const GRADE_CONFIG = {
     label:      "PREMIUM NET-NET",
     desc:       "업사이드 ≥ +200% — 그레이엄 최고 등급",
     chartColor: "#a855f7",
-    ncavPosCls: "text-purple-600 dark:text-purple-400",
   },
   SS: {
     border:     "#f59e0b",
@@ -32,7 +32,6 @@ const GRADE_CONFIG = {
     label:      "DEEP VALUE ALPHA",
     desc:       "업사이드 ≥ +150% — 강력한 안전마진",
     chartColor: "#f59e0b",
-    ncavPosCls: "text-amber-600 dark:text-amber-400",
   },
   S: {
     border:     "#16a34a",
@@ -44,7 +43,6 @@ const GRADE_CONFIG = {
     label:      "DEEP VALUE",
     desc:       "업사이드 ≥ +100% — 그레이엄 기준 충족",
     chartColor: "#16a34a",
-    ncavPosCls: "text-[#16a34a] dark:text-emerald-400",
   },
   A: {
     border:     "#64748b",
@@ -56,7 +54,6 @@ const GRADE_CONFIG = {
     label:      "STABLE ASSET",
     desc:       "업사이드 ≥ +50% — 안전마진 존재",
     chartColor: "#64748b",
-    ncavPosCls: "text-[#16a34a] dark:text-[#16a34a]",
   },
   B: {
     border:     "#a1a1aa",
@@ -68,7 +65,6 @@ const GRADE_CONFIG = {
     label:      "FAIR VALUE",
     desc:       "업사이드 ≥ 0% — 공정 가치 구간",
     chartColor: "#a1a1aa",
-    ncavPosCls: "text-[#16a34a] dark:text-[#16a34a]",
   },
   F: {
     border:     "#ef4444",
@@ -80,7 +76,6 @@ const GRADE_CONFIG = {
     label:      "OVERVALUED",
     desc:       "업사이드 < 0% — 고평가 가능성",
     chartColor: "#ef4444",
-    ncavPosCls: "text-red-600 dark:text-red-400",
   },
 } as const;
 
@@ -128,21 +123,40 @@ export const StockCard = ({ stock, chartConfig, chartNotice }: StockCardProps) =
 
   const hasChart = chartConfig?.data?.length > 0;
 
+  // 지표 설명에 계산식을 적는다 — 이름만으로는 초보자가 판단할 수 없다.
+  // 색은 기준 충족 시에만 초록, 아니면 중립.
+  // NCAV는 배수(순유동자산/시가총액)로 적는다. 업사이드 %는 위 가격 배지에 이미 있다.
+  const NEUTRAL = "text-neutral-800 dark:text-neutral-200";
+  const GOOD = "text-emerald-600 dark:text-emerald-400";
+  const ncavMultiple = stock?.ncavMultiple ?? null;
+  const roe = stock?.roe ?? null;
+  const per = Number(stock?.per ?? 0);
+  const pbr = Number(stock?.pbr ?? 0);
+
   const statsRow = [
     {
-      label: "PER",
-      value: stock?.per ? `${stock.per}x` : "—",
-      colorCls: "",
+      label: "NCAV 배수",
+      value: ncavMultiple !== null ? `${ncavMultiple.toFixed(2)}x` : "—",
+      desc: "순유동자산 / 시가총액",
+      colorCls: ncavMultiple !== null && ncavMultiple >= 1 ? GOOD : NEUTRAL,
     },
     {
       label: "PBR",
-      value: stock?.pbr ? `${stock.pbr}x` : "—",
-      colorCls: "",
+      value: pbr > 0 ? `${pbr.toFixed(2)}x` : "—",
+      desc: "주가 / 순자산",
+      colorCls: pbr > 0 && pbr < 1 ? GOOD : NEUTRAL,
     },
     {
-      label: "NCAV",
-      value: `${isUp ? "+" : ""}${ncavUpside.toFixed(1)}%`,
-      colorCls: isUp ? cfg.ncavPosCls : "text-red-600 dark:text-red-400",
+      label: "PER",
+      value: per > 0 ? `${per.toFixed(1)}x` : "—",
+      desc: "주가 / 순이익",
+      colorCls: per > 0 && per < 10 ? GOOD : NEUTRAL,
+    },
+    {
+      label: "ROE",
+      value: roe !== null ? `${roe.toFixed(1)}%` : "—",
+      desc: "순이익 / 자본",
+      colorCls: roe === null ? NEUTRAL : roe >= 10 ? GOOD : roe < 0 ? "text-rose-600 dark:text-rose-400" : NEUTRAL,
     },
   ];
 
@@ -269,19 +283,28 @@ export const StockCard = ({ stock, chartConfig, chartNotice }: StockCardProps) =
         </div>
       ) : null}
 
-      {/* ── 통계 행 ── */}
-      <div className="border-t border-neutral-100 dark:border-[#35332e] grid grid-cols-3 divide-x divide-neutral-100 dark:divide-[#35332e]">
-        {statsRow.map(({ label, value, colorCls }) => (
-          <div key={label} className="py-3 flex flex-col items-center gap-0.5">
-            <p className="text-[8px] font-bold text-neutral-400 uppercase tracking-wider">{label}</p>
-            <p className={cn(
-              "text-[13px] font-black font-mono tabular-nums",
-              colorCls || "text-neutral-800 dark:text-neutral-200"
-            )}>
+      {/* ── 핵심 지표 ── gap-px + 셀 배경으로 구분선을 그린다. 2열로 접혀도 선이 어긋나지 않는다. */}
+      <div className="border-t border-neutral-100 dark:border-[#35332e] grid grid-cols-2 sm:grid-cols-4 gap-px bg-neutral-100 dark:bg-[#35332e]">
+        {statsRow.map(({ label, value, desc, colorCls }) => (
+          <div key={label} className="bg-white dark:bg-[#242320] px-4 py-3.5 flex flex-col gap-1">
+            <p className="text-[9px] font-bold text-neutral-400 uppercase tracking-wider">{label}</p>
+            <p className={cn("text-[17px] font-black font-mono tabular-nums leading-none", colorCls)}>
               {value}
             </p>
+            <p className="text-[9.5px] text-neutral-400">{desc}</p>
           </div>
         ))}
+      </div>
+
+      {/* ── 복사 ── 카드가 이미 종목명·티커·지표를 다 들고 있어 복사 대상도 여기서 만든다 */}
+      <div className="border-t border-neutral-100 dark:border-[#35332e] px-4 py-2 flex items-center justify-end gap-2">
+        <span className="text-[11px] text-neutral-400 font-medium">복사</span>
+        <CopyStockButtons rows={[{
+          name: stock?.name,
+          ticker: stock?.ticker || stock?.code,
+          pbr: stock?.pbr,
+          per: stock?.per,
+        }]} />
       </div>
     </div>
   );

@@ -65,6 +65,10 @@ const VIEW_MODE_TITLE: Record<ViewMode, string> = {
     card: "카드로 보기",
     ratio: "비율로 보기 — 유동자산·부채총계·시가총액을 같은 축에서 비교",
 };
+const DEFAULT_VIEW: ViewMode = 'ratio';
+// URL·localStorage 어디서 읽든 같은 규칙으로 해석한다. 한 곳만 고치면 복원 경로에서 어긋난다.
+const parseViewMode = (v: string | null | undefined): ViewMode =>
+    (['table', 'card', 'ratio'] as ViewMode[]).includes(v as ViewMode) ? (v as ViewMode) : DEFAULT_VIEW;
 type MetricKey = "ncav_ratio" | "pbr" | "per" | "roe";
 type HighlightMap = Partial<Record<MetricKey, (i: any) => boolean>>;
 const roeOf = (i: any) => safeNum(i.bps) > 0 ? (safeNum(i.eps) / safeNum(i.bps)) * 100 : 0;
@@ -552,10 +556,9 @@ function ScreenerContent() {
         const v = (searchParams.get('group') ?? saved.group) as GroupMode;
         return (['sector', 'strategy', 'grade'] as GroupMode[]).includes(v) ? v : 'none';
     });
-    const [viewMode, setViewMode] = useState<ViewMode>(() => {
-        const v = searchParams.get('view') ?? saved.view;
-        return (['card', 'ratio'] as ViewMode[]).includes(v as ViewMode) ? (v as ViewMode) : 'table';
-    });
+    const [viewMode, setViewMode] = useState<ViewMode>(
+        () => parseViewMode(searchParams.get('view') ?? saved.view)
+    );
     const [openGroups, setOpenGroups] = useState<Set<string>>(new Set());
 
     const hasDiscovered = useRef(false);
@@ -606,7 +609,7 @@ function ScreenerContent() {
         if (showLikedOnly) params.set('filter', 'liked');
         if (searchQuery.trim()) params.set('q', searchQuery.trim());
         if (groupMode !== 'none') params.set('group', groupMode);
-        if (viewMode !== 'table') params.set('view', viewMode);
+        if (viewMode !== DEFAULT_VIEW) params.set('view', viewMode);
         return params.toString();
     }, [activeStrategyIds, filterMode, sortKey, sortOrder, excludeHoldings, excludeDeficit, excludePreferred, minMarketCap, maxPbr, maxPer, minRoe, minNcav, showLikedOnly, searchQuery, groupMode, viewMode]);
 
@@ -636,7 +639,7 @@ function ScreenerContent() {
         if (showLikedOnly) snapshot.filter = 'liked';
         if (searchQuery.trim()) snapshot.q = searchQuery.trim();
         if (groupMode !== 'none') snapshot.group = groupMode;
-        if (viewMode !== 'table') snapshot.view = viewMode;
+        if (viewMode !== DEFAULT_VIEW) snapshot.view = viewMode;
         if (Object.keys(snapshot).length > 0) {
             localStorage.setItem('screener:filters', JSON.stringify(snapshot));
         } else {
@@ -950,7 +953,7 @@ function ScreenerContent() {
         setSearchQuery(p.get('q') ?? '');
         setShowLikedOnly(p.get('filter') === 'liked');
         setGroupMode((p.get('group') as GroupMode) ?? 'none');
-        setViewMode(p.get('view') === 'card' ? 'card' : 'table');
+        setViewMode(parseViewMode(p.get('view')));
         setDisplayCount(DAILY_PAGE_SIZE);
     }, []);
 
