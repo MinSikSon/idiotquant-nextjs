@@ -116,8 +116,14 @@ function HeroArt() {
     camera.position.set(0, 2.6, 11);
     camera.lookAt(0, 0.3, -1);
 
-    const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
-    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+    // 세로로 긴 화면(모바일)인지 — 배치값과 렌더 해상도를 모두 이 기준으로 나눈다
+    const narrowVp = mount.clientWidth / Math.max(1, mount.clientHeight) < 0.9;
+
+    // 모바일은 픽셀은 촘촘한데 GPU는 fill-rate에 묶여 있다. DPR 2 풀스크린에 MSAA까지 걸면
+    // 프레임이 들쭉날쭉해진다 → 좁은 화면에선 렌더 해상도를 1.5로 낮추고 MSAA를 끈다.
+    // 도트가 촘촘해 육안 차이는 거의 없다.
+    const renderer = new THREE.WebGLRenderer({ antialias: !narrowVp, alpha: true });
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio, narrowVp ? 1.5 : 2));
     renderer.toneMapping = THREE.ACESFilmicToneMapping;
     renderer.toneMappingExposure = 1.0; // 노출을 낮춰 금화 하이라이트가 날아가지 않게
     renderer.outputColorSpace = THREE.SRGBColorSpace;
@@ -159,10 +165,9 @@ function HeroArt() {
     });
     disposables.push(upMat, dnMat, goldMat);
 
-    // 세로로 긴 화면(모바일)은 보이는 가로 범위가 데스크톱의 절반 이하다 — 캔들 간격과 금화 낙하
-    // 구간을 같은 값으로 쓰면 양쪽 다 화면 밖으로 밀려나 잘린 채 보인다. 아래 배치는 전부 이 플래그를
-    // 기준으로 좁은 화면용 값을 따로 쓴다.
-    const narrowVp = mount.clientWidth / Math.max(1, mount.clientHeight) < 0.9;
+    // 아래 배치는 전부 narrowVp(위에서 선언) 기준으로 좁은 화면용 값을 따로 쓴다 — 세로로 긴
+    // 화면은 보이는 가로 범위가 데스크톱의 절반 이하라, 같은 값을 쓰면 양쪽 다 화면 밖으로
+    // 밀려나 잘린 채 보인다.
 
     // 캔들 스카이라인 — 배치를 두 가지로 손봤다.
     // ① 높이를 노이즈로 흔들지 않고 손으로 짠 시퀀스를 쓴다. "눌림 → 재상승"을 반복하며 우상향하는
@@ -388,16 +393,27 @@ function HeroArt() {
       renderer.render(scene, camera);
       raf = requestAnimationFrame(render);
     };
+    let disposed = false;
     if (reduce) {
       // 모션 최소화 설정 — 이미 쏟아져 쌓인 한 장면을 정지 화면으로 보여준다
       camera.position.set(1.6, 2.7, 11);
       camera.lookAt(0, 0.4, -1);
       renderer.render(scene, camera);
     } else {
-      raf = requestAnimationFrame(render);
+      // 셰이더를 첫 프레임에 컴파일하면 모바일 GPU에서 수백 ms가 걸린다 — 그동안 프레임이
+      // 통째로 밀려 "덜그럭거리다 매끄러워지는" 시작이 된다. 미리 비동기로 컴파일해 두고
+      // 끝난 뒤에 루프를 시작한다. clock을 다시 시작해 컴파일 시간이 첫 dt로 잡히지 않게 한다.
+      const start = () => {
+        if (disposed) return;
+        clock.start();
+        raf = requestAnimationFrame(render);
+      };
+      const compiled = renderer.compileAsync?.(scene, camera);
+      if (compiled) compiled.then(start); else start();
     }
 
     return () => {
+      disposed = true;
       cancelAnimationFrame(raf);
       clearTimeout(resizeTimer);
       ro.disconnect();
