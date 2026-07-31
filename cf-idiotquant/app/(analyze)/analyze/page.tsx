@@ -743,36 +743,54 @@ function AnalyzeContent() {
 
             <div className={cn(!isPriceLoaded ? 'hidden' : 'animate-in fade-in duration-400')}>
 
-              {/* 종합 판단 — 지표 나열보다 먼저 결론을 준다 (판단 → 근거 → 원자료 순서) */}
+              {/* 종합 판단 — 지표 나열보다 먼저 결론을 준다 (판단 → 근거 → 원자료 순서).
+                  모바일은 한 줄(충족 개수 + 결론 문장)만 남긴다. 지표 4개는 세로로 쌓이면서
+                  화면 첫 장을 다 먹었는데, 같은 값이 바로 아래 '카드' 탭에도 있다. */}
               {verdict && (
-                <div className={cn("rounded-2xl border p-5 sm:p-6 mb-5", VERDICT_TONE[verdict.tone].box)}>
-                  <p className={cn("text-[10px] font-extrabold uppercase tracking-[0.1em] mb-2", VERDICT_TONE[verdict.tone].label)}>
-                    종합 판단 · 저평가 기준 4개 중 {verdict.metCount}개 충족
-                  </p>
-                  <p className={cn("text-[14.5px] font-extrabold leading-relaxed break-keep", VERDICT_TONE[verdict.tone].text)}>
-                    {verdict.lead}
-                  </p>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 mt-3.5">
-                    {verdict.checks.map(c => (
-                      <div key={c.label}
-                        className="flex items-center gap-2.5 px-3 py-2 rounded-xl border border-neutral-200/70 dark:border-[#3a3834]/70 bg-white/70 dark:bg-[#1a1915]/40">
-                        <span className={cn(
-                          "w-4 h-4 rounded-full grid place-items-center text-[9px] font-black text-white shrink-0",
-                          c.ok ? "bg-[#16a34a]" : "bg-neutral-300 dark:bg-[#4a4641]"
-                        )}>
-                          {c.ok ? '✓' : '✕'}
-                        </span>
-                        <span className="text-[11.5px] font-bold text-neutral-600 dark:text-neutral-300 truncate">{c.label}</span>
-                        {/* 기준을 같이 적는다 — 값만 보면 왜 ✓/✕ 인지 알 수 없다 */}
-                        <span className="text-[10px] text-neutral-400 dark:text-neutral-500 truncate hidden sm:inline">{c.criterion}</span>
-                        <span className={cn(
-                          "ml-auto text-[12.5px] font-black font-mono tabular-nums shrink-0",
-                          c.ok ? "text-[#16a34a] dark:text-emerald-400" : "text-neutral-400 dark:text-neutral-500"
-                        )}>
-                          {c.value}
-                        </span>
-                      </div>
-                    ))}
+                <div className={cn("rounded-2xl border p-3 sm:p-6 mb-4 sm:mb-5", VERDICT_TONE[verdict.tone].box)}>
+                  {/* 모바일 — 한 줄. truncate 로 문장이 길어져도 줄바꿈이 생기지 않게 못 박는다.
+                      글자·여백 치수는 가장 긴 문장이 320px 화면에서 잘리지 않게 맞춘 값이다. */}
+                  <div className="flex items-center gap-1.5 sm:hidden">
+                    <span className={cn(
+                      "shrink-0 px-1.5 py-0.5 rounded-full text-[11px] font-black font-mono tabular-nums bg-white/70 dark:bg-[#1a1915]/50",
+                      VERDICT_TONE[verdict.tone].label
+                    )}>
+                      {verdict.metCount}/{verdict.checks.length}
+                    </span>
+                    <p className={cn("text-[12px] font-extrabold truncate", VERDICT_TONE[verdict.tone].text)}>
+                      {verdict.lead}
+                    </p>
+                  </div>
+
+                  <div className="hidden sm:block">
+                    <p className={cn("text-[10px] font-extrabold uppercase tracking-[0.1em] mb-2", VERDICT_TONE[verdict.tone].label)}>
+                      종합 판단 · 저평가 기준 {verdict.checks.length}개 중 {verdict.metCount}개 충족
+                    </p>
+                    <p className={cn("text-[14.5px] font-extrabold leading-relaxed break-keep", VERDICT_TONE[verdict.tone].text)}>
+                      {verdict.lead}
+                    </p>
+                    <div className="grid grid-cols-2 gap-2 mt-3.5">
+                      {verdict.checks.map(c => (
+                        <div key={c.label}
+                          className="flex items-center gap-2.5 px-3 py-2 rounded-xl border border-neutral-200/70 dark:border-[#3a3834]/70 bg-white/70 dark:bg-[#1a1915]/40">
+                          <span className={cn(
+                            "w-4 h-4 rounded-full grid place-items-center text-[9px] font-black text-white shrink-0",
+                            c.ok ? "bg-[#16a34a]" : "bg-neutral-300 dark:bg-[#4a4641]"
+                          )}>
+                            {c.ok ? '✓' : '✕'}
+                          </span>
+                          <span className="text-[11.5px] font-bold text-neutral-600 dark:text-neutral-300 truncate">{c.label}</span>
+                          {/* 기준을 같이 적는다 — 값만 보면 왜 ✓/✕ 인지 알 수 없다 */}
+                          <span className="text-[10px] text-neutral-400 dark:text-neutral-500 truncate">{c.criterion}</span>
+                          <span className={cn(
+                            "ml-auto text-[12.5px] font-black font-mono tabular-nums shrink-0",
+                            c.ok ? "text-[#16a34a] dark:text-emerald-400" : "text-neutral-400 dark:text-neutral-500"
+                          )}>
+                            {c.value}
+                          </span>
+                        </div>
+                      ))}
+                    </div>
                   </div>
                 </div>
               )}
