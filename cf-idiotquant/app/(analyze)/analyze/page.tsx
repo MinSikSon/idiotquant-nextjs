@@ -19,7 +19,7 @@ import { useStockSearch } from '@/app/(search)/search/hooks/useStockSearch';
 import { selectKrMarketHistory } from '@/lib/features/searchHistory/searchHistorySlice';
 import {
   AlertCircle, Loader2, Flame, Share2, Check, CheckCircle,
-  DollarSign, Coins, Heart, X, TrendingUp, ChevronLeft, Lock, ArrowRight,
+  Search, Heart, X, TrendingUp, ChevronLeft, Lock, ArrowRight,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
@@ -149,13 +149,18 @@ const StockCardSkeleton = memo(() => (
     <div className="px-5 pb-4">
       <div className="h-[68px] bg-[#faf9f7] dark:bg-[#1a1915] rounded-xl border border-neutral-100 dark:border-[#35332e]" />
     </div>
-    <div className="border-t border-neutral-100 dark:border-[#35332e] grid grid-cols-3 divide-x divide-neutral-100 dark:divide-[#35332e]">
-      {[...Array(3)].map((_, i) => (
-        <div key={i} className="py-3 flex flex-col items-center gap-1.5">
-          <div className="h-2 w-8 bg-neutral-200 dark:bg-[#35332e] rounded" />
-          <div className="h-4 w-12 bg-neutral-200 dark:bg-[#35332e] rounded" />
+    {/* 카드의 지표 4칸 + 복사줄과 같은 구성 */}
+    <div className="border-t border-neutral-100 dark:border-[#35332e] grid grid-cols-2 sm:grid-cols-4 gap-px bg-neutral-100 dark:bg-[#35332e]">
+      {[...Array(4)].map((_, i) => (
+        <div key={i} className="bg-white dark:bg-[#242320] px-4 py-3.5 flex flex-col gap-1.5">
+          <div className="h-2 w-10 bg-neutral-200 dark:bg-[#35332e] rounded" />
+          <div className="h-4 w-14 bg-neutral-200 dark:bg-[#35332e] rounded" />
+          <div className="h-2 w-16 bg-neutral-200 dark:bg-[#35332e] rounded" />
         </div>
       ))}
+    </div>
+    <div className="border-t border-neutral-100 dark:border-[#35332e] px-4 py-2 flex justify-end">
+      <div className="h-5 w-28 bg-neutral-200 dark:bg-[#35332e] rounded-md" />
     </div>
   </div>
 ));
@@ -191,13 +196,18 @@ const SearchSkeleton = memo(() => (
 ));
 SearchSkeleton.displayName = 'SearchSkeleton';
 
+// 실제 화면과 같은 구성·높이로 자리를 잡는다. 모양이 다르면 데이터가 도착할 때 화면이 재배치된다.
 const ResultSkeleton = memo(() => (
-  <div className="space-y-4 animate-in fade-in duration-300">
-    <div className="h-[88px] bg-white dark:bg-[#242320] rounded-2xl border border-neutral-200 dark:border-[#35332e] animate-pulse" />
-    <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-      {[...Array(4)].map((_, i) => <div key={i} className="h-20 bg-white dark:bg-[#242320] rounded-xl border border-neutral-200 dark:border-[#35332e] animate-pulse" />)}
+  <div className="space-y-5 animate-in fade-in duration-300">
+    {/* 종합 판단 (레이블 + 결론 + 체크 4개) */}
+    <div className="rounded-2xl border border-neutral-200 dark:border-[#35332e] bg-white dark:bg-[#242320] p-5 sm:p-6 animate-pulse">
+      <div className="h-2.5 w-44 bg-neutral-200 dark:bg-[#35332e] rounded mb-3" />
+      <div className="h-4 w-2/3 bg-neutral-200 dark:bg-[#35332e] rounded" />
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 mt-3.5">
+        {[...Array(4)].map((_, i) => <div key={i} className="h-9 rounded-xl bg-[#faf9f7] dark:bg-[#1a1915] border border-neutral-100 dark:border-[#35332e]" />)}
+      </div>
     </div>
-    <div className="h-[420px] bg-white dark:bg-[#242320] rounded-2xl border border-neutral-200 dark:border-[#35332e] animate-pulse" />
+    <StockCardSkeleton />
   </div>
 ));
 ResultSkeleton.displayName = 'ResultSkeleton';
@@ -289,6 +299,16 @@ const useToast = () => {
 // StockCard에 전달할 기본 XP 프로필
 const DEFAULT_XP_PROFILE = { level: 1, xp: 0, maxXp: 100, totalXp: 0, lastGain: 0, awardCount: 0 };
 
+// 상세 분석 탭 — 화면 크기와 무관하게 같은 사용 모델을 쓴다.
+// (예전엔 모바일만 탭이고 데스크톱은 네 섹션이 전부 펼쳐져 스크롤이 길었다)
+const DETAIL_TABS = [
+  { key: 'strategy', label: '전략' },
+  { key: 'analysis', label: '분석' },
+  { key: 'risk', label: '위험도' },
+  { key: 'financials', label: '재무' },
+] as const;
+type DetailTab = typeof DETAIL_TABS[number]['key'];
+
 // =========================================================================
 // 종합 판단 — 지표 값에서 문장과 색을 생성한다.
 // 나열된 지표만 보고 사용자가 결론을 직접 계산하게 두지 않는 것이 목적이다.
@@ -297,48 +317,54 @@ const DEFAULT_XP_PROFILE = { level: 1, xp: 0, maxXp: 100, totalXp: 0, lastGain: 
 // =========================================================================
 interface VerdictMetrics { ncavMultiple: number | null; pbr: number; per: number; roe: number | null }
 
-const VERDICT_CHECKS: { test: (m: VerdictMetrics) => boolean; met: string; unmet: string }[] = [
+// 판정 항목 = 종목 카드에 표시하는 지표 4개와 같다. 산문으로 늘어놓으면 어느 지표가
+// 걸렸는지 다시 대조해야 하므로, 기준·값·충족 여부를 한 줄씩 세운다.
+const VERDICT_CHECKS: {
+  label: string;
+  criterion: string;
+  test: (m: VerdictMetrics) => boolean;
+  value: (m: VerdictMetrics) => string;
+}[] = [
   {
+    label: 'NCAV 배수',
+    criterion: '1.00x 이상',
     test: m => m.ncavMultiple !== null && m.ncavMultiple >= 1,
-    met: '시가총액이 순유동자산보다 낮아 청산가치 이하',
-    unmet: '순유동자산이 시가총액에 못 미침',
+    value: m => m.ncavMultiple !== null ? `${m.ncavMultiple.toFixed(2)}x` : '—',
   },
   {
+    label: 'PBR',
+    criterion: '1.00x 미만',
     test: m => m.pbr > 0 && m.pbr < 1,
-    met: '주가가 순자산(장부가) 아래',
-    unmet: '주가가 순자산보다 비쌈',
+    value: m => m.pbr > 0 ? `${m.pbr.toFixed(2)}x` : '—',
   },
   {
+    label: 'PER',
+    criterion: '10.0x 미만',
     test: m => m.per > 0 && m.per < 10,
-    met: '이익 대비 주가가 10배 미만',
-    unmet: '이익 대비 주가가 싸지 않음',
+    value: m => m.per > 0 ? `${m.per.toFixed(1)}x` : '—',
   },
   {
+    label: 'ROE',
+    criterion: '10% 이상',
     test: m => m.roe !== null && m.roe >= 10,
-    met: '자기자본이익률 10% 이상',
-    unmet: '자기자본이익률 10% 미만',
+    value: m => m.roe !== null ? `${m.roe.toFixed(1)}%` : '—',
   },
 ];
 
+const VERDICT_LEAD = {
+  good: '저평가 기준을 대체로 충족합니다.',
+  neutral: '저평가 신호가 일부에서만 나타납니다.',
+  caution: '저평가 신호가 나타나지 않습니다.',
+} as const;
+
 function buildVerdict(m: VerdictMetrics) {
-  const results = VERDICT_CHECKS.map(c => ({ ok: c.test(m), met: c.met, unmet: c.unmet }));
-  const met = results.filter(r => r.ok);
-  const unmet = results.filter(r => !r.ok);
+  const checks = VERDICT_CHECKS.map(c => ({
+    label: c.label, criterion: c.criterion, value: c.value(m), ok: c.test(m),
+  }));
+  const metCount = checks.filter(c => c.ok).length;
   const tone: 'good' | 'neutral' | 'caution' =
-    met.length >= 3 ? 'good' : met.length >= 1 ? 'neutral' : 'caution';
-
-  const lead =
-    tone === 'good' ? `저평가 기준 4개 중 ${met.length}개를 충족`
-    : tone === 'neutral' ? `저평가 기준 4개 중 ${met.length}개만 충족`
-    : '저평가 기준을 충족한 지표가 없습니다';
-
-  const body = [
-    met.length > 0 ? `합니다. ${met.map(r => r.met).join(' · ')}입니다.` : '.',
-    unmet.length > 0 && met.length > 0 ? ` 다만 ${unmet.map(r => r.unmet).join(' · ')}입니다.` : '',
-    unmet.length > 0 && met.length === 0 ? ` ${unmet.map(r => r.unmet).join(' · ')}입니다.` : '',
-  ].join('');
-
-  return { tone, lead, body, metCount: met.length };
+    metCount >= 3 ? 'good' : metCount >= 1 ? 'neutral' : 'caution';
+  return { tone, lead: VERDICT_LEAD[tone], checks, metCount };
 }
 
 const VERDICT_TONE = {
@@ -380,7 +406,9 @@ function AnalyzeContent() {
   const [hasMounted, setHasMounted] = useState(false);
   const [staticStockData, setStaticStockData] = useState<StaticStockData>({ allTickers: [], corpCodeJson: {} });
   const [shareStatus, setShareStatus] = useState<'idle' | 'copied' | 'error'>('idle');
-  const [activeTab, setActiveTab] = useState<'analysis' | 'strategy' | 'risk' | 'financials'>('strategy');
+  const [activeTab, setActiveTab] = useState<DetailTab>('strategy');
+  // 결과를 보는 중에는 검색줄을 접어 헤더가 종목 정보를 대신 보여준다
+  const [searchOpen, setSearchOpen] = useState(false);
 
   useEffect(() => {
     setHasMounted(true);
@@ -528,6 +556,22 @@ function AnalyzeContent() {
     ? stockData.ncavRatio / 100 + 1
     : null;
   const roe = stockData && stockData.bps > 0 ? (stockData.eps / stockData.bps) * 100 : null;
+
+  // 헤더와 카드가 함께 쓰는 표시용 값 (같은 식을 두 곳에 적으면 한쪽만 고쳐진다)
+  const tickerLabel = krOrUs === 'US' ? name : (stockData?.stockTicker || tickerFromUrl || '');
+  const marketName = krOrUs === 'US'
+    ? (data?.usSearchInfo?.output?.tr_mket_name || data?.usSearchInfo?.output?.ovrs_excg_name || '')
+    : (data?.kiPrice?.output?.rprs_mrkt_kor_name ?? '');
+  const gradeLabel = (() => {
+    const g: any = stockData?.grade;
+    if (!g) return null;
+    return typeof g === 'object' ? (String(g.grade || '') || null) : String(g);
+  })();
+  const headerPrice = stockData
+    ? currency + (krOrUs === 'US'
+        ? stockData.curPrice.toFixed(2)
+        : Math.round(stockData.curPrice).toLocaleString())
+    : '';
   const verdict = stockData
     ? buildVerdict({ ncavMultiple, pbr: stockData.pbr, per: stockData.per, roe })
     : null;
@@ -546,35 +590,65 @@ function AnalyzeContent() {
 
       {/* ── 헤더 ── */}
       <header className="sticky top-0 z-30 bg-white dark:bg-[#1f1e1b] border-b border-neutral-200 dark:border-[#3a3834] border-t-[3px] border-t-[#16a34a]">
-        {/* 페이지 레이블 + 뒤로가기 */}
-        <div className="max-w-4xl mx-auto px-4 py-4 flex items-center gap-2">
-          <div className="flex-1">
-            <SearchAutocomplete
-              placeHolder="국내 종목명 또는 미국 티커 입력"
-              onSearchButton={handleSearch}
-              validCorpNameArray={staticStockData.allTickers}
-              onSearchStateChange={() => {}}
-            />
+        {/* 검색줄 — 결과 전에는 항상 열려 있고, 결과를 보는 중에는 돋보기로 펼친다 */}
+        {(!isPriceLoaded || searchOpen) && (
+          <div className="max-w-4xl mx-auto px-4 py-4 flex items-center gap-2">
+            <div className="flex-1">
+              <SearchAutocomplete
+                placeHolder="국내 종목명 또는 미국 티커 입력"
+                onSearchButton={handleSearch}
+                validCorpNameArray={staticStockData.allTickers}
+                onSearchStateChange={() => {}}
+              />
+            </div>
+            {isPriceLoaded && (
+              <button onClick={() => setSearchOpen(false)} aria-label="검색 닫기"
+                className="shrink-0 p-2 rounded-xl border border-neutral-200 dark:border-[#3a3834] text-neutral-500 hover:text-neutral-700 dark:hover:text-neutral-300 transition-colors">
+                <X size={14} />
+              </button>
+            )}
           </div>
+        )}
 
-          {isPriceLoaded && (
-            <div className="flex items-center gap-1.5 shrink-0 animate-in fade-in duration-200">
+        {/* 종목줄 — 스크롤을 내려도 지금 보는 종목이 헤더에 남는다 */}
+        {isPriceLoaded && (
+          <div className="max-w-4xl mx-auto px-4 py-2.5 flex items-center gap-2.5 animate-in fade-in duration-200">
+            <div className="min-w-0 flex-1">
+              <p className="text-[13.5px] font-black text-neutral-900 dark:text-white truncate leading-tight">
+                {displayName}
+              </p>
+              <p className="text-[10px] font-mono text-neutral-400 dark:text-neutral-500 truncate">
+                {[tickerLabel, marketName].filter(Boolean).join(' · ')}
+              </p>
+            </div>
+
+            <span className="text-[13.5px] font-black font-mono tabular-nums text-neutral-900 dark:text-white shrink-0">
+              {headerPrice}
+            </span>
+            {gradeLabel && (
+              <span className="shrink-0 px-2 py-0.5 rounded-lg text-[11px] font-black font-mono border border-neutral-200 dark:border-[#3a3834] text-neutral-600 dark:text-neutral-300">
+                {gradeLabel}
+              </span>
+            )}
+
+            <div className="flex items-center gap-1 shrink-0">
               <button
                 onClick={handleToggleLike}
+                aria-label={isInWatchlist ? "관심 종목에서 빼기" : "관심 종목에 담기"}
                 className={cn(
-                  "flex items-center gap-1.5 px-2.5 py-2 rounded-xl border text-xs font-bold transition-all",
+                  "p-2 rounded-xl border transition-all",
                   isInWatchlist
                     ? "text-rose-600 bg-rose-50 border-rose-200 dark:bg-rose-950/20 dark:border-rose-800/50 dark:text-rose-400"
                     : "text-neutral-500 bg-[#faf9f7] border-neutral-200 hover:text-rose-500 dark:bg-[#242320]/40 dark:border-[#3a3834]"
                 )}
               >
-                <Heart size={13} fill={isInWatchlist ? "currentColor" : "none"} />
-                <span className="hidden sm:inline">{isInWatchlist ? "저장됨" : "관심"}</span>
+                <Heart size={14} fill={isInWatchlist ? "currentColor" : "none"} />
               </button>
               <button
                 onClick={handleShareResult}
+                aria-label="링크 공유"
                 className={cn(
-                  "flex items-center gap-1.5 px-2.5 py-2 rounded-xl border text-xs font-bold transition-all",
+                  "p-2 rounded-xl border transition-all",
                   shareStatus === 'copied'
                     ? "bg-emerald-50 text-emerald-600 border-emerald-200 dark:bg-emerald-950/30 dark:text-emerald-400"
                     : shareStatus === 'error'
@@ -582,26 +656,46 @@ function AnalyzeContent() {
                     : "text-neutral-500 bg-[#faf9f7] border-neutral-200 hover:text-neutral-700 dark:bg-[#242320]/40 dark:border-[#3a3834]"
                 )}
               >
-                {shareStatus === 'copied' ? <Check size={13} /> : shareStatus === 'error' ? <AlertCircle size={13} /> : <Share2 size={13} />}
-                <span className="hidden sm:inline">{shareStatus === 'copied' ? '복사됨' : shareStatus === 'error' ? '실패' : '공유'}</span>
+                {shareStatus === 'copied' ? <Check size={14} /> : shareStatus === 'error' ? <AlertCircle size={14} /> : <Share2 size={14} />}
               </button>
-              <span className={cn(
-                "inline-flex items-center gap-1 px-2.5 py-2 rounded-xl text-[11px] font-black uppercase tracking-wider font-mono border",
-                krOrUs === 'US'
-                  ? "bg-[#f0fdf4] text-[#16a34a] border-[#bbf7d0]/60 dark:bg-[#052e16]/30 dark:text-[#16a34a] dark:border-[#14532d]/40"
-                  : "bg-indigo-50 text-indigo-600 border-indigo-200/60 dark:bg-indigo-950/30 dark:text-indigo-400 dark:border-indigo-900/40"
-              )}>
-                {krOrUs === 'US' ? <DollarSign size={11} /> : <Coins size={11} />}
-                <span>{krOrUs}</span>
-              </span>
+              {!searchOpen && (
+                <button onClick={() => setSearchOpen(true)} aria-label="다른 종목 검색"
+                  className="p-2 rounded-xl border border-neutral-200 dark:border-[#3a3834] bg-[#faf9f7] dark:bg-[#242320]/40 text-neutral-500 hover:text-neutral-700 dark:hover:text-neutral-300 transition-colors">
+                  <Search size={14} />
+                </button>
+              )}
             </div>
-          )}
-        </div>
+          </div>
+        )}
 
-        {/* 인기 종목 + 최근 검색 */}
-        {(popularStocks.length > 0 || krMarketHistory.length > 0) && (
+        {/* 상세 분석 탭 — 헤더 안에 두면 스크롤 위치와 무관하게 항상 닿는다.
+            재무 로딩(isLoaded) 전에도 띄워 둔다. 나중에 나타나면 헤더 높이가 한 번 더 튄다. */}
+        {isPriceLoaded && (
+          <div className="max-w-4xl mx-auto px-4 pb-2.5">
+            <div className="flex gap-1 p-1 bg-neutral-100 dark:bg-[#2a2825] rounded-xl">
+              {DETAIL_TABS.map(({ key, label }) => (
+                <button
+                  key={key}
+                  onClick={() => setActiveTab(key)}
+                  aria-pressed={activeTab === key}
+                  className={cn(
+                    "flex-1 py-1.5 text-xs font-bold rounded-lg transition-all",
+                    activeTab === key
+                      ? "bg-white dark:bg-[#1f1e1b] text-[#16a34a] shadow-sm"
+                      : "text-neutral-500 dark:text-neutral-400 hover:text-neutral-700 dark:hover:text-neutral-200"
+                  )}
+                >
+                  {label}
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* 인기 종목 + 최근 검색 — 검색 화면에서만 보여준다 */}
+        {!isPriceLoaded && (popularStocks.length > 0 || krMarketHistory.length > 0) && (
           <div className="border-t border-neutral-100 dark:border-[#35332e]/50 bg-[#faf9f7]/50 dark:bg-[#242320]/30">
-            {!isPriceLoaded && popularStocks.length > 0 && (
+            {popularStocks.length > 0 && (
               <div className="max-w-4xl mx-auto px-4 py-2 flex items-center gap-3">
                 <div className="flex items-center gap-1.5 shrink-0">
                   <Flame size={11} className="text-amber-500" />
@@ -612,7 +706,7 @@ function AnalyzeContent() {
                     <button key={i} onClick={() => handleSearch(s.ticker)}
                       className="shrink-0 flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-white dark:bg-[#242320] text-xs font-bold text-neutral-600 dark:text-neutral-300 border border-neutral-200/60 dark:border-[#35332e] hover:border-[#16a34a]/70 hover:text-[#16a34a] dark:hover:text-[#16a34a] transition-all whitespace-nowrap"
                     >
-                      <span className="w-3.5 h-3.5 flex items-center justify-center rounded-full bg-[#f0fdf4]0 text-white font-black text-[8px] shrink-0">{i + 1}</span>
+                      <span className="w-3.5 h-3.5 flex items-center justify-center rounded-full bg-[#16a34a] text-white font-black text-[8px] shrink-0">{i + 1}</span>
                       {s.name}
                     </button>
                   ))}
@@ -652,11 +746,33 @@ function AnalyzeContent() {
               {verdict && (
                 <div className={cn("rounded-2xl border p-5 sm:p-6 mb-5", VERDICT_TONE[verdict.tone].box)}>
                   <p className={cn("text-[10px] font-extrabold uppercase tracking-[0.1em] mb-2", VERDICT_TONE[verdict.tone].label)}>
-                    종합 판단
+                    종합 판단 · 저평가 기준 4개 중 {verdict.metCount}개 충족
                   </p>
-                  <p className={cn("text-[14.5px] leading-relaxed break-keep", VERDICT_TONE[verdict.tone].text)}>
-                    <span className="font-extrabold">{verdict.lead}</span>{verdict.body}
+                  <p className={cn("text-[14.5px] font-extrabold leading-relaxed break-keep", VERDICT_TONE[verdict.tone].text)}>
+                    {verdict.lead}
                   </p>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 mt-3.5">
+                    {verdict.checks.map(c => (
+                      <div key={c.label}
+                        className="flex items-center gap-2.5 px-3 py-2 rounded-xl border border-neutral-200/70 dark:border-[#3a3834]/70 bg-white/70 dark:bg-[#1a1915]/40">
+                        <span className={cn(
+                          "w-4 h-4 rounded-full grid place-items-center text-[9px] font-black text-white shrink-0",
+                          c.ok ? "bg-[#16a34a]" : "bg-neutral-300 dark:bg-[#4a4641]"
+                        )}>
+                          {c.ok ? '✓' : '✕'}
+                        </span>
+                        <span className="text-[11.5px] font-bold text-neutral-600 dark:text-neutral-300 truncate">{c.label}</span>
+                        {/* 기준을 같이 적는다 — 값만 보면 왜 ✓/✕ 인지 알 수 없다 */}
+                        <span className="text-[10px] text-neutral-400 dark:text-neutral-500 truncate hidden sm:inline">{c.criterion}</span>
+                        <span className={cn(
+                          "ml-auto text-[12.5px] font-black font-mono tabular-nums shrink-0",
+                          c.ok ? "text-[#16a34a] dark:text-emerald-400" : "text-neutral-400 dark:text-neutral-500"
+                        )}>
+                          {c.value}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
                 </div>
               )}
 
@@ -701,42 +817,31 @@ function AnalyzeContent() {
               {/* 상세 분석 섹션 — 재무제표 포함 (isLoaded 이후 표시) */}
               {isLoaded ? (
               <div className="space-y-6">
-                <div className="flex items-center gap-3">
-                  <p className="text-[11px] font-bold text-neutral-400 uppercase tracking-widest font-mono shrink-0">Detail Analysis</p>
-                  <div className="flex-1 h-px bg-neutral-100 dark:bg-[#35332e]" />
-                  {!isLoggedIn && (
-                    <span className="flex items-center gap-1 text-[10px] font-bold text-neutral-400 bg-[#faf9f7] dark:bg-[#242320] px-2 py-0.5 rounded-full">
-                      <Lock size={9} />
-                      일부 로그인 필요
-                    </span>
-                  )}
-                </div>
-
-                {/* Mobile Tab Bar */}
-                <div className="flex md:hidden gap-1 p-1 bg-neutral-100 dark:bg-[#2a2825] rounded-xl">
-                  {([
-                    { key: 'strategy', label: '전략' },
-                    { key: 'analysis', label: '분석' },
-                    { key: 'risk', label: '위험도' },
-                    { key: 'financials', label: '재무' },
-                  ] as { key: 'analysis' | 'strategy' | 'risk' | 'financials'; label: string }[]).map(({ key, label }) => (
-                    <button
-                      key={key}
-                      onClick={() => setActiveTab(key)}
-                      className={cn(
-                        "flex-1 py-2 text-xs font-bold rounded-lg transition-all",
-                        activeTab === key
-                          ? "bg-white dark:bg-[#1f1e1b] text-[#16a34a] shadow-sm"
-                          : "text-neutral-500 dark:text-neutral-400"
-                      )}
+                {/* 비로그인 안내 — 블러 구간에 들어가기 직전 한 번만.
+                    예전엔 헤더 배지·블러 오버레이·페이지 맨 아래 CTA 로 같은 말이 흩어져 있었다. */}
+                {!isLoggedIn && (
+                  <div className="p-5 bg-gradient-to-br from-[#f0fdf4] to-emerald-50 dark:from-[#052e16]/20 dark:to-emerald-950/20 rounded-2xl border border-[#bbf7d0]/60 dark:border-[#14532d]/40 flex flex-col sm:flex-row sm:items-center gap-3">
+                    <div className="min-w-0 flex-1">
+                      <p className="text-[13px] font-black text-neutral-900 dark:text-white flex items-center gap-1.5">
+                        <Lock size={11} className="shrink-0" />
+                        전체 분석은 로그인 후 볼 수 있어요
+                      </p>
+                      <p className="text-[11px] text-neutral-500 dark:text-neutral-400 mt-1 break-keep">
+                        카카오 30초 · 무료 · 재무제표 · 상장폐지 위험도 · 상세 지표 포함
+                      </p>
+                    </div>
+                    <Link
+                      href={loginHref}
+                      className="shrink-0 inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-full bg-[#16a34a] hover:bg-[#15803d] text-white text-[13px] font-bold shadow-lg shadow-[#16a34a]/20 transition-all"
                     >
-                      {label}
-                    </button>
-                  ))}
-                </div>
+                      카카오로 무료 로그인
+                      <ArrowRight size={14} />
+                    </Link>
+                  </div>
+                )}
 
                 {/* 모델별 요약 (항상 공개) + 세부 카드 (블러) */}
-                <div className={cn("bg-white dark:bg-[#242320] rounded-2xl border border-neutral-200 dark:border-[#35332e] p-1 shadow-sm", activeTab !== 'strategy' && 'hidden md:block')}>
+                <div className={cn("bg-white dark:bg-[#242320] rounded-2xl border border-neutral-200 dark:border-[#35332e] p-1 shadow-sm", activeTab !== 'strategy' && 'hidden')}>
                   <ValuationSection
                     data={data}
                     isUs={krOrUs === 'US'}
@@ -746,14 +851,14 @@ function AnalyzeContent() {
                 </div>
 
                 {/* 상세 지표 (블러) */}
-                <div className={cn(activeTab !== 'analysis' && 'hidden md:block')}>
+                <div className={cn(activeTab !== 'analysis' && 'hidden')}>
                   <BlurGate isLoggedIn={isLoggedIn}>
                     <StockMetrics data={data} isUs={krOrUs === 'US'} />
                   </BlurGate>
                 </div>
 
                 {/* 상장폐지 위험도 (블러) */}
-                <div className={cn(activeTab !== 'risk' && 'hidden md:block')}>
+                <div className={cn(activeTab !== 'risk' && 'hidden')}>
                   {krOrUs === 'KR' && (
                     <BlurGate isLoggedIn={isLoggedIn} loginHref={loginHref}>
                       <DelistingRisk kiBS={data.kiBS} kiIS={data.kiIS} />
@@ -767,7 +872,7 @@ function AnalyzeContent() {
                 </div>
 
                 {/* 재무제표 (블러) */}
-                <div className={cn(activeTab !== 'financials' && 'hidden md:block')}>
+                <div className={cn(activeTab !== 'financials' && 'hidden')}>
                   <BlurGate isLoggedIn={isLoggedIn} loginHref={loginHref}>
                     <div className="bg-white dark:bg-[#242320] rounded-2xl border border-neutral-200 dark:border-[#35332e] shadow-sm overflow-hidden">
                       <div className="px-5 py-4 border-b border-neutral-100 dark:border-[#35332e]">
@@ -786,31 +891,11 @@ function AnalyzeContent() {
                   </BlurGate>
                 </div>
 
-                {/* 비로그인 로그인 CTA */}
-                {!isLoggedIn && (
-                  <div className="p-7 bg-gradient-to-br from-[#f0fdf4] to-emerald-50 dark:from-[#052e16]/20 dark:to-emerald-950/20 rounded-2xl border border-[#bbf7d0]/60 dark:border-[#14532d]/40 text-center">
-                    <p className="text-sm font-black text-neutral-900 dark:text-white mb-1">
-                      {name ? `${name} 상세 분석` : '상세 분석'} 전체 보기
-                    </p>
-                    <p className="text-xs text-neutral-500 dark:text-neutral-400 mb-4">
-                      카카오 로그인 30초 · 무료 · 재무제표·상장폐지 위험도·상세 지표 모두 포함
-                    </p>
-                    <Link
-                      href={loginHref}
-                      className="inline-flex items-center gap-2 px-6 py-2.5 rounded-full bg-[#16a34a] hover:bg-[#15803d] text-white text-sm font-bold shadow-lg shadow-[#16a34a]/20 transition-all"
-                    >
-                      카카오로 무료 로그인
-                      <ArrowRight size={14} />
-                    </Link>
-                  </div>
-                )}
               </div>
               ) : (
-              <div className="mt-6 space-y-4 animate-pulse">
-                <div className="h-4 bg-neutral-200 dark:bg-[#35332e] rounded w-1/3" />
-                <div className="h-64 bg-white dark:bg-[#242320] rounded-2xl border border-neutral-200 dark:border-[#35332e]" />
-                <div className="h-48 bg-white dark:bg-[#242320] rounded-2xl border border-neutral-200 dark:border-[#35332e]" />
-                <div className="h-32 bg-white dark:bg-[#242320] rounded-2xl border border-neutral-200 dark:border-[#35332e]" />
+              /* 탭 하나 분량의 패널 한 장 — 실제로 표시되는 것도 선택된 탭 하나뿐이다 */
+              <div className="animate-pulse">
+                <div className="h-[520px] bg-white dark:bg-[#242320] rounded-2xl border border-neutral-200 dark:border-[#35332e]" />
               </div>
               )}
             </div>
@@ -822,7 +907,7 @@ function AnalyzeContent() {
       <footer className="max-w-4xl mx-auto px-4 pt-8 pb-12 mt-12 border-t border-neutral-200 dark:border-[#35332e]">
         <div className="flex flex-col items-center gap-3">
           <div className="flex items-center gap-2">
-            <TrendingUp size={13} className="text-[#f0fdf4]0" strokeWidth={2.5} />
+            <TrendingUp size={13} className="text-[#16a34a]" strokeWidth={2.5} />
             <span className="text-xs font-bold text-neutral-700 dark:text-neutral-300">IdiotQuant</span>
           </div>
           <p className="text-[11px] text-neutral-400 dark:text-neutral-600 text-center max-w-md leading-relaxed">
