@@ -216,9 +216,9 @@ export function NavbarWithSimpleLinks() {
   /* Theme sync: persist choice in localStorage, hydrate on mount */
   useEffect(() => {
     if (typeof window === "undefined") return;
-    const savedTheme = localStorage.getItem("theme");
-    const prefersDark = window.matchMedia("(prefers-color-scheme: dark)").matches;
-    if (savedTheme === "dark" || (!savedTheme && prefersDark)) {
+    // 기본값은 다크 — 저장된 선택이 'light'일 때만 밝게 간다(OS 설정은 보지 않는다).
+    // layout.tsx의 선반영 스크립트와 판정 기준이 같아야 마운트 순간 테마가 뒤집히지 않는다.
+    if (localStorage.getItem("theme") !== "light") {
       document.documentElement.classList.add("dark");
     } else {
       document.documentElement.classList.remove("dark");

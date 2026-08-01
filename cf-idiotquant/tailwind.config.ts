@@ -24,8 +24,14 @@ const config = {
         marquee: "marquee 12s linear infinite",
         marquee2: "marquee2 12s linear infinite",
         'gradient-xy': 'gradient-xy 3s ease infinite',
+        // 홈 히어로의 앱 화면 미리보기 — 아주 느리게 떠오르내린다
+        float: 'float 8s ease-in-out infinite',
       },
       keyframes: {
+        float: {
+          '0%, 100%': { transform: 'translateY(0)' },
+          '50%': { transform: 'translateY(-14px)' },
+        },
         marquee: {
           "0%": { transform: "translateX(0%)" },
           "100%": { transform: "translateX(-100%)" },

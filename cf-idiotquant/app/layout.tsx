@@ -167,6 +167,14 @@ export default function RootLayout({
         <link rel="dns-prefetch" href="//pagead2.googlesyndication.com" />
         <link rel="dns-prefetch" href="//www.googletagservices.com" />
         <meta name="google-adsense-account" content="ca-pub-6995198721227228" />
+        {/* 테마 선반영 — 다크가 기본이라, 렌더 전에 클래스를 붙여야 흰 화면이 한 번 번쩍이지 않는다.
+            저장된 선택만 존중하고 OS 설정은 보지 않는다(선택한 적 없으면 다크).
+            navigation.tsx의 동기화 로직과 판정 기준이 같아야 한다. */}
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `try{if(localStorage.getItem('theme')!=='light')document.documentElement.classList.add('dark')}catch(e){document.documentElement.classList.add('dark')}`,
+          }}
+        />
       </head>
       <body className={cn(
         lora.variable,

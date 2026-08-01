@@ -13,11 +13,10 @@ export function ThemeProviderClient({ children }: { children: React.ReactNode })
     useEffect(() => {
         if (typeof window === "undefined") return;
 
+        // 기본값은 다크 — 저장된 선택이 "light"일 때만 라이트로 간다(OS 설정은 보지 않는다).
+        // OS를 참조하면 layout.tsx의 선반영 스크립트와 결과가 갈려 화면이 한 번 번쩍인다.
         const savedTheme = localStorage.getItem("theme") as "light" | "dark" | null;
-        const prefersDark = window.matchMedia("(prefers-color-scheme: dark)").matches;
-
-        // 우선순위: 1. 로컬스토리지에 저장된 값 -> 2. 시스템 OS 다크모드 여부 -> 3. 기본값 light
-        const initialTheme = savedTheme || (prefersDark ? "dark" : "light");
+        const initialTheme: "light" | "dark" = savedTheme === "light" ? "light" : "dark";
 
         // Redux 스토어 상태 업데이트
         dispatch(setTheme(initialTheme));
