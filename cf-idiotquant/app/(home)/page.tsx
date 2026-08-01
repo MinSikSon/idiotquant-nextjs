@@ -382,10 +382,9 @@ function HeroArt() {
       camera.updateProjectionMatrix();
     };
     resize();
-    // 모바일 스크롤 중엔 주소창이 접히며 min-h-[88dvh] 컨테이너 높이가 계속 미세하게 바뀌어
-    // ResizeObserver가 연속 발화한다. 그때마다 renderer.setSize()(프레임버퍼 재할당, 비용 큼)를
-    // 동기 호출하면 스크롤이 끊겨 보인다. 캔버스는 이미 CSS로 100% 채워지므로, 실제 렌더 해상도
-    // 갱신은 리사이즈가 잦아든 뒤 한 번만 하도록 디바운스한다.
+    // 컨테이너 높이는 100vh 로 고정돼 있어(마운트하는 쪽 주석 참고) 스크롤만으로는 리사이즈가
+    // 일어나지 않는다. 남는 경우는 화면 회전·창 크기 변경뿐인데, renderer.setSize()는
+    // 프레임버퍼를 다시 잡는 비싼 호출이라 연속 발화하면 끊겨 보인다 → 잦아든 뒤 한 번만.
     let resizeTimer: ReturnType<typeof setTimeout> | undefined;
     const ro = new ResizeObserver(() => {
       clearTimeout(resizeTimer);
@@ -780,9 +779,14 @@ export default function HomePage() {
       {/* ── 페이지 전체 배경 ────────────────────────────────────────
           3D 씬을 히어로 안이 아니라 뷰포트에 고정해 둔다. 그래야 스크롤을 내려도 금화가
           계속 떨어지며 아래 섹션의 배경이 된다(히어로 안에 두면 히어로를 벗어나는 순간 잘린다).
-          그라디언트 → 금화 → 콘텐츠 순으로 겹친다. */}
-      <div className="fixed inset-0 z-0 pointer-events-none bg-[radial-gradient(130%_90%_at_74%_-10%,#143725_0%,#0a1b12_46%,#050d09_100%)]" />
-      <div className="fixed inset-0 z-[1] pointer-events-none">
+          그라디언트 → 금화 → 콘텐츠 순으로 겹친다.
+
+          높이는 inset-0 대신 h-screen(100vh)으로 고정한다. 모바일에서 fixed inset-0 은
+          주소창이 접혔다 펴질 때마다 따라 늘었다 줄고, 그때마다 캔버스가 리사이즈되면서
+          스크롤 중에 배경이 커졌다 작아졌다 한다. 100vh 는 모바일에서 "주소창이 접힌
+          상태"의 큰 뷰포트에 고정된 값이라 스크롤 내내 변하지 않는다. */}
+      <div className="fixed inset-x-0 top-0 h-screen z-0 pointer-events-none bg-[radial-gradient(130%_90%_at_74%_-10%,#143725_0%,#0a1b12_46%,#050d09_100%)]" />
+      <div className="fixed inset-x-0 top-0 h-screen z-[1] pointer-events-none">
         <HeroArt />
       </div>
 
