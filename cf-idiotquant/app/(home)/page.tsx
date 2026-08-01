@@ -181,7 +181,12 @@ function HeroArt() {
     // 잘라 보여준다(상승 흐름은 그대로 읽히고 캔들 두께도 지킬 수 있다).
     const CANDLE_H = narrowVp ? CANDLE_SERIES.slice(4) : CANDLE_SERIES;
     const N = CANDLE_H.length;
-    const CANDLE_Z = -0.6;   // 가장 앞(오른쪽 끝) 캔들의 깊이 — 바닥 금화 더미보다는 뒤에 둔다
+    // 가장 앞(오른쪽 끝) 캔들의 깊이 — 바닥 금화 더미보다는 뒤에 둔다.
+    // 좁은 화면에선 한 겹 더 뒤로 민다. 프레임이 좁아 캔들이 금화·헤드라인과 같은 평면에 선 것처럼
+    // 보이는데, 깊이를 벌리면 원근으로 작아지며 배경으로 물러난다. 다만 더 밀 수는 없다 —
+    // 글씨 뒤로 떨어지는 금화가 z −3.6~−2.6 을 쓰므로, 캔들 뒤끝(CANDLE_Z − CANDLE_ARC)이
+    // 그 구간에 닿으면 금화가 캔들 몸통을 파고들어 박힌 것처럼 보인다.
+    const CANDLE_Z = narrowVp ? -1.5 : -0.6;
     const CANDLE_GAP = narrowVp ? 0.56 : 1.05;
     const CANDLE_HS = narrowVp ? 0.7 : 1; // 화면이 좁으면 높이도 낮춰 가로:세로 비율을 유지
     const CANDLE_ARC = narrowVp ? 1.0 : 1.7;   // 왼쪽 끝이 뒤로 물러나는 거리
@@ -193,6 +198,12 @@ function HeroArt() {
     // 캔들만 따로 묶어 스크롤에 따라 이 그룹만 회전시킨다(금화는 낙하 궤적이 흐트러지면 안 되므로 제외).
     const candleGroup = new THREE.Group();
     root.add(candleGroup);
+
+    // 캔들을 스크롤에 따라 서서히 걷어내려면 재질이 투명을 지원해야 한다.
+    // 좁은 화면에서는 기본 불투명도도 살짝 낮춰 한 겹 뒤로 물러나 보이게 한다.
+    const CANDLE_BASE_OPACITY = narrowVp ? 0.88 : 1;
+    upMat.transparent = dnMat.transparent = true;
+    upMat.opacity = dnMat.opacity = CANDLE_BASE_OPACITY;
     let prev = CANDLE_H[0] * CANDLE_HS;
     for (let i = 0; i < N; i++) {
       const h = CANDLE_H[i] * CANDLE_HS;
@@ -387,6 +398,11 @@ function HeroArt() {
     // 매 프레임 조금씩 따라가는 지수 감쇠(lerp)로 스크롤이 뚝뚝 끊겨도 회전은 매끈하게 이어진다.
     const CANDLE_MAX_ROT = THREE.MathUtils.degToRad(12);
     let candleRotY = 0;
+    // 캔들이 사라지는 구간 — 예전엔 bgMode 로 넘어가는 한 프레임에 candleGroup.visible 을 꺼서
+    // 차트가 통째로 툭 사라졌다. 같은 구간을 불투명도로 건너가면 무대가 자연스럽게 물러난다.
+    // (스크롤이 뚝뚝 끊겨도 매끈하도록 회전과 같은 지수 감쇠를 쓴다)
+    const FADE_FROM = 0.15, FADE_TO = 0.55; // scrollProgress 기준 — 끝값은 bgMode 전환점과 같다
+    let candleFade = 1;
     const clock = new THREE.Clock();
     let raf = 0;
     const render = () => {
@@ -400,7 +416,11 @@ function HeroArt() {
       candleGroup.rotation.y = candleRotY;
       // 히어로를 절반 넘게 지나면 무대를 접는다 — 아래 섹션에서는 금화만 배경으로 흐른다
       bgMode = scrollProgress > 0.55;
-      candleGroup.visible = !bgMode;
+      const targetFade = 1 - THREE.MathUtils.clamp((scrollProgress - FADE_FROM) / (FADE_TO - FADE_FROM), 0, 1);
+      candleFade += (targetFade - candleFade) * (1 - Math.exp(-8 * dt));
+      upMat.opacity = dnMat.opacity = candleFade * CANDLE_BASE_OPACITY;
+      shadowMat.opacity = candleFade;
+      candleGroup.visible = candleFade > 0.02; // 다 지워지면 그리는 비용까지 없앤다
       // 완만한 카메라 드리프트(패럴랙스)로 화면 전체가 살아 있게.
       camera.position.x = Math.sin(t * 0.08) * 2.4;
       camera.position.y = 2.6 + Math.sin(t * 0.05) * 0.5;
