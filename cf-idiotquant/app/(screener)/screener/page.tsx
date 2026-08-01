@@ -167,6 +167,37 @@ const TOOLTIP_CLS =
     "data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=closed]:zoom-out-95";
 
 // =========================================================================
+// 전략 격자 셀 — 이름 위 / 종목 수 아래. 폭이 고정이라 개수가 같은 열에 선다.
+// =========================================================================
+function StrategyCell({ label, count, active, activeCls, title, onClick }: {
+    label: string;
+    count: number;
+    active: boolean;
+    activeCls: string;
+    title?: string;
+    onClick: () => void;
+}) {
+    return (
+        <button
+            onClick={onClick}
+            title={title}
+            aria-pressed={active}
+            className={cn(
+                "flex flex-col items-center justify-center gap-0.5 py-1.5 rounded-[10px] border text-center leading-none transition-all",
+                active
+                    ? activeCls
+                    : "border-neutral-200 dark:border-[#3a3834] text-neutral-600 dark:text-neutral-400 hover:border-neutral-300 dark:hover:border-neutral-600 bg-white dark:bg-[#242320]"
+            )}
+        >
+            <span className="text-[11.5px] font-extrabold truncate max-w-full px-1">{label}</span>
+            <span className={cn("text-[10px] font-black font-mono tabular-nums", active ? "opacity-75" : "text-neutral-400")}>
+                {count}
+            </span>
+        </button>
+    );
+}
+
+// =========================================================================
 // SortableHeader
 // =========================================================================
 function SortableHeader({ label, sortKey: key, currentKey, order, onToggle, relevant, title }: {
@@ -1014,52 +1045,46 @@ function ScreenerContent() {
             )}>
                 <div className="max-w-7xl mx-auto px-4 sm:px-7">
 
-                    {/* 첫째 줄: 전략 탭.
-                        wrap 필수 — 칩이 9개라 한 줄에 담기지 않는다. 가로 스크롤로 두면 마지막 칩이
-                        잘려 있는 줄 모르고 지나친다. */}
-                    <div className="flex items-center gap-1.5 flex-wrap pt-3 pb-2">
-                        {/* 전체 탭 */}
+                    {/* 첫째 줄: 전략 격자.
+                        칩(가변 폭)을 격자(고정 폭)로 바꾼 이유 — 칩은 이름 길이대로 폭이 달라져서
+                        종목 수가 매번 다른 위치에 서고, 전략끼리 개수를 비교할 수가 없었다.
+                        격자는 이름 위 / 개수 아래로 열을 맞추므로 훑는 것만으로 비교가 된다. */}
+                    <div className="flex items-baseline gap-2 pt-3 pb-1.5">
+                        <span className="text-[10px] font-black uppercase tracking-[0.1em] text-neutral-400">전략</span>
+                        <span className="text-[10.5px] font-bold text-[#16a34a]">
+                            {isAllActive ? '전체' : `${activeStrategyIds.size}개 선택`} · {filteredList.length}종목
+                        </span>
                         <button
-                            onClick={clearStrategies}
+                            onClick={() => setShowGuide(o => !o)}
+                            title="전략 설명 보기"
                             className={cn(
-                                "shrink-0 flex items-center gap-1.5 px-3 py-1.5 rounded-[9px] text-xs font-bold border transition-all whitespace-nowrap",
-                                isAllActive
-                                    ? STRATEGY_ACTIVE_CLS.all
-                                    : "border-neutral-200 dark:border-[#3a3834] text-neutral-600 dark:text-neutral-400 hover:border-neutral-300 dark:hover:border-neutral-600 bg-white dark:bg-[#242320]"
+                                "ml-auto shrink-0 flex items-center gap-1 px-2 py-0.5 rounded-md text-[10.5px] font-bold transition-colors",
+                                showGuide
+                                    ? "bg-[#f0fdf4] dark:bg-[#052e16]/40 text-[#15803d] dark:text-[#16a34a]"
+                                    : "text-neutral-400 hover:text-neutral-600 dark:hover:text-neutral-200"
                             )}
                         >
-                            전체
-                            <span className={cn(
-                                "text-[10px] font-black px-1.5 py-0.5 rounded-full",
-                                isAllActive ? "bg-white/20 dark:bg-black/20" : "bg-[#faf9f7] dark:bg-[#4a4641] text-neutral-500"
-                            )}>
-                                {strategyCounts.all}
-                            </span>
+                            <Info size={11} />
+                            <span className="hidden sm:inline">전략 안내</span>
                         </button>
+                    </div>
 
-                        {STRATEGY_PRESETS.map(preset => {
-                            const isActive = activeStrategyIds.has(preset.id);
-                            return (
-                                <button
-                                    key={preset.id}
-                                    onClick={() => toggleStrategy(preset.id)}
-                                    className={cn(
-                                        "shrink-0 flex items-center gap-1.5 px-3 py-1.5 rounded-[9px] text-xs font-bold border transition-all whitespace-nowrap",
-                                        isActive
-                                            ? STRATEGY_ACTIVE_CLS[preset.id]
-                                            : "border-neutral-200 dark:border-[#3a3834] text-neutral-600 dark:text-neutral-400 hover:border-neutral-300 dark:hover:border-neutral-600 bg-white dark:bg-[#242320]"
-                                    )}
-                                >
-                                    {preset.label}
-                                    <span className={cn(
-                                        "text-[10px] font-black px-1.5 py-0.5 rounded-full",
-                                        isActive ? "bg-white/20 dark:bg-black/20" : "bg-[#faf9f7] dark:bg-[#4a4641] text-neutral-500"
-                                    )}>
-                                        {strategyCounts[preset.id] ?? 0}
-                                    </span>
-                                </button>
-                            );
-                        })}
+                    <div className="grid grid-cols-4 sm:grid-cols-5 xl:grid-cols-10 gap-1.5 pb-2">
+                        <StrategyCell
+                            label="전체" count={strategyCounts.all} active={isAllActive}
+                            activeCls={STRATEGY_ACTIVE_CLS.all} onClick={clearStrategies}
+                        />
+                        {STRATEGY_PRESETS.map(preset => (
+                            <StrategyCell
+                                key={preset.id}
+                                label={preset.label}
+                                count={strategyCounts[preset.id] ?? 0}
+                                active={activeStrategyIds.has(preset.id)}
+                                activeCls={STRATEGY_ACTIVE_CLS[preset.id]}
+                                title={preset.hint}
+                                onClick={() => toggleStrategy(preset.id)}
+                            />
+                        ))}
                     </div>
 
                     {/* 둘째 줄: 통합 툴바 — 검색·정렬·필터·관심을 한 줄로. 예전엔 세 줄로 흩어져
@@ -1121,32 +1146,6 @@ function ScreenerContent() {
                             <span className="font-mono text-[9px]">{filterOpen ? "▲" : "▼"}</span>
                         </button>
 
-                        {/* 묶기 세그먼트 — 업종은 스캔 응답에 업종 필드가 오면 자동으로 열린다 */}
-                        <div className="shrink-0 flex items-center gap-0.5 p-0.5 rounded-[10px] bg-[#f2f0ec] dark:bg-[#2c2b27]">
-                            {([
-                                { id: 'none',     label: '안 묶기' },
-                                { id: 'sector',   label: '업종', disabled: !hasSectorData },
-                                { id: 'strategy', label: '전략' },
-                                { id: 'grade',    label: '등급' },
-                            ] as { id: GroupMode; label: string; disabled?: boolean }[]).map(o => (
-                                <button
-                                    key={o.id}
-                                    disabled={o.disabled}
-                                    onClick={() => setGroupMode(o.id)}
-                                    title={o.disabled ? "업종 데이터 연동 예정" : undefined}
-                                    className={cn(
-                                        "px-2.5 py-1.5 rounded-lg text-[11px] transition-colors whitespace-nowrap",
-                                        o.disabled && "opacity-40 cursor-not-allowed",
-                                        groupMode === o.id
-                                            ? "bg-white dark:bg-[#1f1e1b] font-extrabold text-neutral-900 dark:text-white shadow-sm"
-                                            : "font-bold text-neutral-500 dark:text-neutral-400"
-                                    )}
-                                >
-                                    {o.label}
-                                </button>
-                            ))}
-                        </div>
-
                         {/* 표 ↔ 카드 ↔ 비율 */}
                         <div className="shrink-0 flex items-center gap-0.5 p-0.5 rounded-[10px] bg-[#f2f0ec] dark:bg-[#2c2b27]">
                             {([['table', '☰'], ['card', '▦'], ['ratio', '▤']] as const).map(([id, icon]) => (
@@ -1190,32 +1189,6 @@ function ScreenerContent() {
                             </span>
                         </button>
 
-                        {/* 전략 가이드 토글 */}
-                        <button
-                            onClick={() => setShowGuide(o => !o)}
-                            className={cn(
-                                "shrink-0 flex items-center gap-1 px-2.5 py-2 rounded-[10px] border text-xs font-bold transition-all",
-                                showGuide
-                                    ? "bg-[#f0fdf4] dark:bg-[#052e16]/30 border-[#86efac] dark:border-[#15803d] text-[#15803d] dark:text-[#16a34a]"
-                                    : "border-neutral-200 dark:border-[#3a3834] text-neutral-500 dark:text-neutral-400 hover:border-neutral-300 bg-white dark:bg-[#242320]"
-                            )}
-                            title="전략 설명 보기"
-                        >
-                            <Info size={12} />
-                            <span className="hidden sm:inline">전략 안내</span>
-                        </button>
-
-                        {/* 전체 필터 초기화 */}
-                        {hasActiveFilters && (
-                            <button
-                                onClick={resetAllFilters}
-                                className="shrink-0 flex items-center gap-1 px-2.5 py-2 rounded-[10px] border border-red-200 dark:border-red-800/50 text-xs font-bold text-red-500 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/20 transition-all bg-white dark:bg-[#242320]"
-                                title="모든 필터 초기화"
-                            >
-                                <X size={12} />
-                                <span className="hidden sm:inline">초기화</span>
-                            </button>
-                        )}
                     </div>
 
                     {/* 선택된 전략 조합 안내 */}
@@ -1281,16 +1254,26 @@ function ScreenerContent() {
                         if (excludeHoldings) chips.push({ key: 'hold', label: '홀딩스 제외', clear: () => setExcludeHoldings(false) });
                         if (excludeDeficit)  chips.push({ key: 'def',  label: '적자 제외',  clear: () => setExcludeDeficit(false) });
                         if (excludePreferred) chips.push({ key: 'pref', label: '우선주 제외', clear: () => setExcludePreferred(false) });
-                        if (chips.length === 0) return null;
+                        // 칩이 없어도 걸린 조건(정렬·관심·전략)이 있으면 초기화 경로는 남겨야 한다.
+                        if (chips.length === 0 && !hasActiveFilters) return null;
                         return (
                             <div className="pb-2.5 flex items-center gap-1.5 flex-wrap">
-                                <span className="text-[10px] text-neutral-400 font-medium">적용:</span>
+                                {chips.length > 0 && <span className="text-[10px] text-neutral-400 font-medium">적용:</span>}
                                 {chips.map(c => (
                                     <span key={c.key} className="inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-full bg-[#f0fdf4] dark:bg-[#052e16]/30 border border-[#bbf7d0] dark:border-[#166534]/50 text-[#15803d] dark:text-[#16a34a]">
                                         {c.label}
                                         <button onClick={c.clear} className="hover:opacity-60" title="제거"><X size={9} /></button>
                                     </span>
                                 ))}
+                                {hasActiveFilters && (
+                                    <button
+                                        onClick={resetAllFilters}
+                                        title="모든 조건 초기화"
+                                        className="ml-auto shrink-0 text-[10px] font-bold text-neutral-400 hover:text-red-500 underline underline-offset-2 transition-colors"
+                                    >
+                                        전체 해제
+                                    </button>
+                                )}
                             </div>
                         );
                     })()}
@@ -1607,10 +1590,38 @@ function ScreenerContent() {
 
                 {!isLoading && filteredList.length > 0 && (
                     <>
-                        {/* 목록 복사 (종목명만 / 상세) */}
-                        <div className="flex items-center justify-end gap-2 mb-3">
-                            <span className="text-[11px] text-neutral-400 font-medium">목록 복사</span>
-                            <CopyStockButtons rows={copyRows} label={showLikedOnly ? "관심 종목" : "발굴 종목"} />
+                        {/* 결과에 거는 조작(묶기)과 목록 복사 — 조건을 고르는 상단과 분리한다.
+                            묶기는 "무엇을 걸러낼지"가 아니라 "고른 결과를 어떻게 늘어놓을지"라
+                            결과 바로 위가 제자리다. */}
+                        <div className="flex items-center gap-2 flex-wrap mb-3">
+                            <div className="shrink-0 flex items-center gap-0.5 p-0.5 rounded-[10px] bg-[#f2f0ec] dark:bg-[#2c2b27]">
+                                {([
+                                    { id: 'none',     label: '안 묶기' },
+                                    { id: 'sector',   label: '업종', disabled: !hasSectorData },
+                                    { id: 'strategy', label: '전략' },
+                                    { id: 'grade',    label: '등급' },
+                                ] as { id: GroupMode; label: string; disabled?: boolean }[]).map(o => (
+                                    <button
+                                        key={o.id}
+                                        disabled={o.disabled}
+                                        onClick={() => setGroupMode(o.id)}
+                                        title={o.disabled ? "업종 데이터 연동 예정" : undefined}
+                                        className={cn(
+                                            "px-2.5 py-1.5 rounded-lg text-[11px] transition-colors whitespace-nowrap",
+                                            o.disabled && "opacity-40 cursor-not-allowed",
+                                            groupMode === o.id
+                                                ? "bg-white dark:bg-[#1f1e1b] font-extrabold text-neutral-900 dark:text-white shadow-sm"
+                                                : "font-bold text-neutral-500 dark:text-neutral-400"
+                                        )}
+                                    >
+                                        {o.label}
+                                    </button>
+                                ))}
+                            </div>
+                            <span className="ml-auto hidden sm:inline text-[11px] text-neutral-400 font-medium">목록 복사</span>
+                            <div className="ml-auto sm:ml-0 flex items-center gap-2">
+                                <CopyStockButtons rows={copyRows} label={showLikedOnly ? "관심 종목" : "발굴 종목"} />
+                            </div>
                         </div>
 
                         {/* 숫자를 읽는 법 + 결과가 대체로 어떤 모양인지 — 스크롤 전에 먼저 준다 */}
