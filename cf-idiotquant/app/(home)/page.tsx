@@ -192,9 +192,12 @@ function HeroArt() {
     // 전체 폭(약 6.3)은 그대로 두면서 몸통 사이 빈 자리만 벌린다. 예전엔 몸통끼리 거의 붙어
     // 초록·빨강 벽처럼 보였고, 배경으로 물러나야 할 차트가 헤드라인과 경쟁했다.
     const CANDLE_GAP = narrowVp ? 0.70 : 1.05;
-    // 몸통 폭은 간격에 비례 — 좁은 화면은 비율을 낮춰 빈 자리를 몸통만큼 확보한다
-    const CANDLE_BODY_RATIO = narrowVp ? 0.5 : 0.66;
-    const CANDLE_HS = narrowVp ? 0.7 : 1; // 화면이 좁으면 높이도 낮춰 가로:세로 비율을 유지
+    // 몸통 폭은 간격에 비례 — 좁은 화면은 비율을 낮춰 빈 자리를 넓힌다. 몸통이 얇을수록
+    // 아래 jitterX 의 허용 범위(간격 − 몸통 폭)가 넓어져 더 제멋대로 흩어 세울 수 있다.
+    const CANDLE_BODY_RATIO = narrowVp ? 0.44 : 0.66;
+    // 좁은 화면에선 키를 확 낮춰 아기자기한 크기로 둔다. 배경 장식이라 키가 크면 헤드라인
+    // 옆에서 존재감을 다투는데, 낮추면 바닥에 오밀조밀 늘어선 소품처럼 읽힌다.
+    const CANDLE_HS = narrowVp ? 0.42 : 1;
     const CANDLE_ARC = narrowVp ? 1.0 : 1.7;   // 왼쪽 끝이 뒤로 물러나는 거리
     // 어두운 무대에서는 짙은 그림자가 배경과 구분되지 않는다 → 아주 옅게만 깔아 캔들 밑동만 눌러준다
     const shadowTex = makeRadialTexture("rgba(0,0,0,.45)");
@@ -212,7 +215,9 @@ function HeroArt() {
     upMat.opacity = dnMat.opacity = CANDLE_BASE_OPACITY;
     let prev = CANDLE_H[0] * CANDLE_HS;
     for (let i = 0; i < N; i++) {
-      const h = CANDLE_H[i] * CANDLE_HS;
+      // 키도 자리처럼 흔든다 — 시퀀스대로만 세우면 계단처럼 반듯해서 "가지런한 막대"로 읽힌다.
+      // ±30% 안에서만 흔들어 우상향 흐름 자체는 남긴다.
+      const h = CANDLE_H[i] * CANDLE_HS * (narrowVp ? 0.7 + Math.random() * 0.6 : 1);
       const up = h >= prev; prev = h;
       const mat = up ? upMat : dnMat;
       const bw = CANDLE_GAP * CANDLE_BODY_RATIO;
@@ -230,10 +235,10 @@ function HeroArt() {
       const u = i / (N - 1);
       // 좁은 화면 — 균일 간격으로 세우면 아무리 벌려도 "막대그래프 한 줄"로 읽힌다.
       // 자리마다 좌우로 흔들어 듬성듬성 흩어 세운다. 흔들 폭을 (간격 − 몸통 폭) 이내로 잡아야
-      // 이웃과 몸통이 겹치지 않는다. 깊이는 앞쪽으로만 흔든다 — 뒤로 밀면 글씨 뒤로 떨어지는
-      // 금화 구간(z −3.6~−2.6)에 닿아 금화가 캔들에 박힌 것처럼 보인다.
+      // 이웃과 몸통이 겹치지 않는다. 깊이는 앞뒤 양쪽이 다 막혀 있어 조금만 흔든다 — 뒤로는
+      // 글씨 뒤 낙하 금화 구간(z −3.6~−2.6), 앞으로는 바닥 금화 더미(z −1.5~1.5)에 닿는다.
       const jitterX = narrowVp ? (Math.random() - 0.5) * (CANDLE_GAP - bw) : 0;
-      const jitterZ = narrowVp ? Math.random() * 0.35 : 0;
+      const jitterZ = narrowVp ? Math.random() * 0.2 : 0;
       g.position.set(
         (i - (N - 1) / 2) * CANDLE_GAP - CANDLE_GAP * 0.4 + jitterX,
         BASE,
