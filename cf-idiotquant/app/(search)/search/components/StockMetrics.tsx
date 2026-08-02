@@ -96,9 +96,8 @@ export const StockMetrics = ({ data, isUs }: { data: any; isUs: boolean }) => {
         ? (100 * n(detail.tamt) / usMarketCap).toFixed(3)
         : "0";
 
+      // PER·PBR 은 같은 탭 위쪽 종목 카드가 크게 보여준다 — 여기서 또 적으면 같은 숫자가 두 번이다.
       return [
-        { label: "PER",     val: detail.perx ? `${detail.perx}배` : "—", type: "valuation", desc: "주가수익비율. 주가가 1주당 순이익의 몇 배인지 나타냅니다." },
-        { label: "PBR",     val: detail.pbrx ? `${detail.pbrx}배` : "—", type: "valuation", desc: "주가순자산비율. 주가가 1주당 순자산의 몇 배인지 나타냅니다." },
         { label: "EPS",     val: n(detail.epsx) ? `$${n(detail.epsx).toLocaleString()}` : "—", type: "valuation", desc: "주당순이익. 기업이 1주당 얼마의 순이익을 냈는지 보여줍니다." },
         { label: "BPS",     val: n(detail.bpsx) ? `$${n(detail.bpsx).toLocaleString()}` : "—", type: "valuation", desc: "주당순자산. 청산 시 1주당 주주에게 돌아가는 자산 가치입니다." },
         { label: "52주 최고", val: n(detail.h52p) ? `$${Number(detail.h52p).toFixed(2)}` : "—", sub: detail.h52d ? `${detail.h52d.slice(0,4)}-${detail.h52d.slice(4,6)}-${detail.h52d.slice(6,8)}` : "", type: "price", desc: "최근 52주간 가장 높았던 주가입니다." },
@@ -156,9 +155,8 @@ export const StockMetrics = ({ data, isUs }: { data: any; isUs: boolean }) => {
       const finalHigh = w52High > 0 ? { val: w52High, date: p.w52_hgpr_date ?? "" } : fallbackHigh;
       const finalLow  = w52Low  > 0 ? { val: w52Low,  date: p.w52_lwpr_date ?? "" } : fallbackLow;
 
+      // PER·PBR 은 같은 탭 위쪽 종목 카드가 크게 보여준다 — 여기서 또 적으면 같은 숫자가 두 번이다.
       return [
-        { label: "PER",     val: p.per ? `${p.per}배` : "—", type: "valuation", desc: "주가수익비율. 주가가 1주당 순이익의 몇 배인지 나타냅니다." },
-        { label: "PBR",     val: p.pbr ? `${p.pbr}배` : "—", type: "valuation", desc: "주가순자산비율. 주가가 1주당 순자산의 몇 배인지 나타냅니다." },
         { label: "EPS",     val: n(p.eps) ? `${n(p.eps).toLocaleString()}원` : "—", type: "valuation", desc: "주당순이익. 기업이 1주당 얼마의 순이익을 냈는지 보여줍니다." },
         { label: "BPS",     val: n(p.bps) ? `${n(p.bps).toLocaleString()}원` : "—", type: "valuation", desc: "주당순자산. 청산 시 1주당 주주에게 돌아가는 자산 가치입니다." },
         { label: "52주 최고", val: finalHigh.val > 0 ? `${Math.round(finalHigh.val).toLocaleString()}원` : "—", sub: fmt52Date(finalHigh.date), type: "price", desc: "최근 52주간 가장 높았던 주가입니다." },

@@ -309,8 +309,9 @@ const DEFAULT_XP_PROFILE = { level: 1, xp: 0, maxXp: 100, totalXp: 0, lastGain: 
 // (예전엔 모바일만 탭이고 데스크톱은 네 섹션이 전부 펼쳐져 스크롤이 길었다)
 const DETAIL_TABS = [
   { key: 'strategy', label: '전략' },
-  { key: 'card', label: '카드' },
-  { key: 'analysis', label: '분석' },
+  // 카드(시세·등급·차트)와 상세 지표는 둘 다 "지금 이 종목의 숫자"다. 탭을 갈라 두면
+  // PER·PBR 같은 같은 값을 양쪽에서 다시 보게 되고, 어느 탭을 눌러야 할지 매번 판단해야 한다.
+  { key: 'metrics', label: '지표' },
   { key: 'risk', label: '위험도' },
   { key: 'financials', label: '재무' },
 ] as const;
@@ -838,10 +839,10 @@ function AnalyzeContent() {
                 </div>
               )}
 
-              {/* 종목 카드 — 핵심 지표(NCAV·PBR·PER·ROE)까지 카드가 함께 표시한다.
-                  다른 섹션과 마찬가지로 탭 하나로 다룬다. 항상 펼쳐 두면 어떤 탭을 골라도
-                  카드 높이만큼 스크롤을 먼저 지나야 본문에 닿는다. */}
-              <div className={cn("mb-6", activeTab !== 'card' && 'hidden')}>
+              {/* 지표 탭 (1/2) — 종목 카드. 핵심 지표(NCAV·PBR·PER·ROE)를 카드가 크게 보여주고,
+                  아래 상세 지표 표가 나머지를 잇는다. 결론이 위, 근거가 아래.
+                  카드는 시세만 있으면 그려지므로 재무 로딩(isLoaded) 밖에 둔다. */}
+              <div className={cn("mb-6", activeTab !== 'metrics' && 'hidden')}>
                 <StockCard
                   stock={krOrUs === 'US' ? {
                     code: tickerFromUrl, isUs: true, name: displayName, ticker: name,
@@ -914,8 +915,8 @@ function AnalyzeContent() {
                   />
                 </div>
 
-                {/* 상세 지표 (블러) */}
-                <div className={cn(activeTab !== 'analysis' && 'hidden')}>
+                {/* 지표 탭 (2/2) — 상세 지표 표 (블러). 위 카드와 같은 탭이다. */}
+                <div className={cn(activeTab !== 'metrics' && 'hidden')}>
                   <BlurGate isLoggedIn={isLoggedIn}>
                     <StockMetrics data={data} isUs={krOrUs === 'US'} />
                   </BlurGate>
