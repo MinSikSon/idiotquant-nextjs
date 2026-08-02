@@ -85,7 +85,7 @@ export default function TradingAccountPanel({ country, balanceKey, onChanged }: 
           {exists && (
             <span className={cn("ml-1 rounded-full px-2 py-0.5 text-[10px] font-black",
               info?.is_active ? "bg-[#f0fdf4] text-[#16a34a] dark:bg-[#14532d]/30" : "bg-neutral-100 text-neutral-500 dark:bg-[#35332e]")}>
-              <Power className="inline w-3 h-3 -mt-0.5 mr-0.5" />{info?.is_active ? "ON" : "OFF"}
+              <Power className="inline w-3 h-3 -mt-0.5 mr-0.5" />{info?.is_active ? "대상" : "제외"}
             </span>
           )}
         </span>
@@ -119,7 +119,7 @@ export default function TradingAccountPanel({ country, balanceKey, onChanged }: 
         <label className="flex items-center gap-2 text-xs font-bold text-neutral-600 dark:text-neutral-300 cursor-pointer">
           <input type="checkbox" checked={isActive} onChange={e => setIsActive(e.target.checked)}
             className="h-4 w-4 rounded border-neutral-300 text-[#16a34a] focus:ring-[#16a34a]" />
-          자동매매 활성화(ON)
+          자동매매 대상에 포함
         </label>
         {msg && (
           <span className={cn("text-xs font-bold", msg.type === "ok" ? "text-[#16a34a]" : "text-red-500")}>{msg.text}</span>
