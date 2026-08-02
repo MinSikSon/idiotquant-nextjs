@@ -22,6 +22,7 @@ import {
   Search, Heart, X, TrendingUp, ChevronLeft, ChevronDown, Lock, ArrowRight,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { buildKrBars, buildUsBars } from '@/app/(search)/search/components/financialBars';
 
 // =========================================================================
 // Dynamic imports
@@ -58,6 +59,11 @@ const FinancialTables = dynamic(
 
 const FinnhubTable = dynamic(
   () => import('@/app/(search)/search/components/FinnhubTable'),
+  { ssr: false }
+);
+
+const FinancialBars = dynamic(
+  () => import('@/app/(search)/search/components/FinancialBars').then(mod => ({ default: mod.FinancialBars })),
   { ssr: false }
 );
 
@@ -410,6 +416,8 @@ function AnalyzeContent() {
   const [activeTab, setActiveTab] = useState<DetailTab>('strategy');
   // 모바일 종합 판단 — 한 줄 요약을 눌러 지표 4개(기준·값·충족 여부)를 펼친다
   const [verdictOpen, setVerdictOpen] = useState(false);
+  // 재무 탭 — 막대가 기본, 원본 숫자표는 토글로 남긴다
+  const [financeView, setFinanceView] = useState<'bars' | 'table'>('bars');
   // 결과를 보는 중에는 검색줄을 접어 헤더가 종목 정보를 대신 보여준다
   const [searchOpen, setSearchOpen] = useState(false);
 
@@ -927,22 +935,48 @@ function AnalyzeContent() {
                   )}
                 </div>
 
-                {/* 재무제표 (블러) */}
+                {/* 재무제표 (블러) — 막대가 기본, 원본 숫자표는 토글로 남긴다.
+                    막대에도 값을 함께 적지만 정렬·복사에는 표가 낫다. */}
                 <div className={cn(activeTab !== 'financials' && 'hidden')}>
                   <BlurGate isLoggedIn={isLoggedIn} loginHref={loginHref}>
-                    <div className="bg-white dark:bg-[#242320] rounded-2xl border border-neutral-200 dark:border-[#35332e] shadow-sm overflow-hidden">
-                      <div className="px-5 py-4 border-b border-neutral-100 dark:border-[#35332e]">
-                        <h3 className="text-sm font-extrabold text-neutral-800 dark:text-neutral-200">재무제표</h3>
-                        <p className="text-[10px] text-neutral-400 mt-0.5">
-                          {krOrUs === 'KR' ? 'DART 공시 기준 (억 원)' : 'US-GAAP 기준 (USD)'}
+                    <div className="flex flex-col gap-4">
+                      <div className="flex items-center gap-2">
+                        <p className="text-[10.5px] text-neutral-400">
+                          {krOrUs === 'KR' ? 'DART 공시 기준 · 억 원' : 'US-GAAP 기준 · USD'}
                         </p>
+                        <div className="ml-auto shrink-0 flex items-center gap-0.5 p-0.5 rounded-[10px] bg-[#f2f0ec] dark:bg-[#2c2b27]">
+                          {([['bars', '막대'], ['table', '표']] as const).map(([mode, label]) => (
+                            <button
+                              key={mode}
+                              onClick={() => setFinanceView(mode)}
+                              aria-pressed={financeView === mode}
+                              className={cn(
+                                "px-2.5 py-1 rounded-lg text-[11px] transition-colors",
+                                financeView === mode
+                                  ? "bg-white dark:bg-[#1f1e1b] font-extrabold text-neutral-900 dark:text-white shadow-sm"
+                                  : "font-bold text-neutral-500 dark:text-neutral-400"
+                              )}
+                            >
+                              {label}
+                            </button>
+                          ))}
+                        </div>
                       </div>
-                      <div className="overflow-x-auto">
-                        {krOrUs === 'KR'
-                          ? <FinancialTables kiBS={data.kiBS} kiIS={data.kiIS} />
-                          : <FinnhubTable data={data.finnhubData.data} />
-                        }
-                      </div>
+
+                      {financeView === 'bars' ? (
+                        krOrUs === 'KR'
+                          ? <FinancialBars {...buildKrBars(data.kiBS, data.kiIS)} unit="eok" />
+                          : <FinancialBars {...buildUsBars(data.finnhubData?.data ?? [])} unit="usd" />
+                      ) : (
+                        <div className="bg-white dark:bg-[#242320] rounded-2xl border border-neutral-200 dark:border-[#35332e] shadow-sm overflow-hidden">
+                          <div className="overflow-x-auto">
+                            {krOrUs === 'KR'
+                              ? <FinancialTables kiBS={data.kiBS} kiIS={data.kiIS} />
+                              : <FinnhubTable data={data.finnhubData.data} />
+                            }
+                          </div>
+                        </div>
+                      )}
                     </div>
                   </BlurGate>
                 </div>
