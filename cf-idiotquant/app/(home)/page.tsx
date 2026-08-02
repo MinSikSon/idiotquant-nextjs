@@ -179,7 +179,8 @@ function HeroArt() {
     const CANDLE_SERIES = [0.7, 0.95, 0.85, 1.2, 1.45, 1.28, 1.65, 1.95, 1.75, 2.15, 2.45, 2.28, 2.7, 2.95, 3.2];
     // 좁은 화면에 15개를 다 밀어 넣으면 몸통이 성냥개비처럼 얇아지고 양끝이 잘린다 → 최근 구간만
     // 잘라 보여준다(상승 흐름은 그대로 읽히고 캔들 두께도 지킬 수 있다).
-    const CANDLE_H = narrowVp ? CANDLE_SERIES.slice(4) : CANDLE_SERIES;
+    // 개수를 더 줄인 이유는 아래 CANDLE_GAP 주석 참고 — 같은 폭에 띄엄띄엄 세우기 위해서다.
+    const CANDLE_H = narrowVp ? CANDLE_SERIES.slice(6) : CANDLE_SERIES;
     const N = CANDLE_H.length;
     // 가장 앞(오른쪽 끝) 캔들의 깊이 — 바닥 금화 더미보다는 뒤에 둔다.
     // 좁은 화면에선 한 겹 더 뒤로 민다. 프레임이 좁아 캔들이 금화·헤드라인과 같은 평면에 선 것처럼
@@ -187,8 +188,16 @@ function HeroArt() {
     // 글씨 뒤로 떨어지는 금화가 z −3.6~−2.6 을 쓰므로, 캔들 뒤끝(CANDLE_Z − CANDLE_ARC)이
     // 그 구간에 닿으면 금화가 캔들 몸통을 파고들어 박힌 것처럼 보인다.
     const CANDLE_Z = narrowVp ? -1.5 : -0.6;
-    const CANDLE_GAP = narrowVp ? 0.56 : 1.05;
-    const CANDLE_HS = narrowVp ? 0.7 : 1; // 화면이 좁으면 높이도 낮춰 가로:세로 비율을 유지
+    // 좁은 화면에서는 캔들을 띄엄띄엄 세운다. 개수를 11 → 9로 줄이고 간격을 그만큼 넓혀
+    // 전체 폭(약 6.3)은 그대로 두면서 몸통 사이 빈 자리만 벌린다. 예전엔 몸통끼리 거의 붙어
+    // 초록·빨강 벽처럼 보였고, 배경으로 물러나야 할 차트가 헤드라인과 경쟁했다.
+    const CANDLE_GAP = narrowVp ? 0.70 : 1.05;
+    // 몸통 폭은 간격에 비례 — 좁은 화면은 비율을 낮춰 빈 자리를 넓힌다. 몸통이 얇을수록
+    // 아래 jitterX 의 허용 범위(간격 − 몸통 폭)가 넓어져 더 제멋대로 흩어 세울 수 있다.
+    const CANDLE_BODY_RATIO = narrowVp ? 0.44 : 0.66;
+    // 좁은 화면에선 키를 확 낮춰 아기자기한 크기로 둔다. 배경 장식이라 키가 크면 헤드라인
+    // 옆에서 존재감을 다투는데, 낮추면 바닥에 오밀조밀 늘어선 소품처럼 읽힌다.
+    const CANDLE_HS = narrowVp ? 0.42 : 1;
     const CANDLE_ARC = narrowVp ? 1.0 : 1.7;   // 왼쪽 끝이 뒤로 물러나는 거리
     // 어두운 무대에서는 짙은 그림자가 배경과 구분되지 않는다 → 아주 옅게만 깔아 캔들 밑동만 눌러준다
     const shadowTex = makeRadialTexture("rgba(0,0,0,.45)");
@@ -206,10 +215,12 @@ function HeroArt() {
     upMat.opacity = dnMat.opacity = CANDLE_BASE_OPACITY;
     let prev = CANDLE_H[0] * CANDLE_HS;
     for (let i = 0; i < N; i++) {
-      const h = CANDLE_H[i] * CANDLE_HS;
+      // 키도 자리처럼 흔든다 — 시퀀스대로만 세우면 계단처럼 반듯해서 "가지런한 막대"로 읽힌다.
+      // ±30% 안에서만 흔들어 우상향 흐름 자체는 남긴다.
+      const h = CANDLE_H[i] * CANDLE_HS * (narrowVp ? 0.7 + Math.random() * 0.6 : 1);
       const up = h >= prev; prev = h;
       const mat = up ? upMat : dnMat;
-      const bw = CANDLE_GAP * 0.66; // 몸통 폭은 간격에 비례 — 겹치지도, 성기지도 않게
+      const bw = CANDLE_GAP * CANDLE_BODY_RATIO;
       const geo = new THREE.BoxGeometry(bw, h, bw);
       const wickGeo = new THREE.BoxGeometry(bw * 0.24, h * 0.28, bw * 0.24); // 짧고 도톰한 심지
       disposables.push(geo, wickGeo);
@@ -222,7 +233,17 @@ function HeroArt() {
       shadow.scale.set(bw * 2.6, bw * 2.6, 1);
       g.add(shadow, body, wick);
       const u = i / (N - 1);
-      g.position.set((i - (N - 1) / 2) * CANDLE_GAP - CANDLE_GAP * 0.4, BASE, CANDLE_Z - (1 - u) * CANDLE_ARC);
+      // 좁은 화면 — 균일 간격으로 세우면 아무리 벌려도 "막대그래프 한 줄"로 읽힌다.
+      // 자리마다 좌우로 흔들어 듬성듬성 흩어 세운다. 흔들 폭을 (간격 − 몸통 폭) 이내로 잡아야
+      // 이웃과 몸통이 겹치지 않는다. 깊이는 앞뒤 양쪽이 다 막혀 있어 조금만 흔든다 — 뒤로는
+      // 글씨 뒤 낙하 금화 구간(z −3.6~−2.6), 앞으로는 바닥 금화 더미(z −1.5~1.5)에 닿는다.
+      const jitterX = narrowVp ? (Math.random() - 0.5) * (CANDLE_GAP - bw) : 0;
+      const jitterZ = narrowVp ? Math.random() * 0.2 : 0;
+      g.position.set(
+        (i - (N - 1) / 2) * CANDLE_GAP - CANDLE_GAP * 0.4 + jitterX,
+        BASE,
+        CANDLE_Z - (1 - u) * CANDLE_ARC + jitterZ,
+      );
       candleGroup.add(g);
     }
 
@@ -382,10 +403,9 @@ function HeroArt() {
       camera.updateProjectionMatrix();
     };
     resize();
-    // 모바일 스크롤 중엔 주소창이 접히며 min-h-[88dvh] 컨테이너 높이가 계속 미세하게 바뀌어
-    // ResizeObserver가 연속 발화한다. 그때마다 renderer.setSize()(프레임버퍼 재할당, 비용 큼)를
-    // 동기 호출하면 스크롤이 끊겨 보인다. 캔버스는 이미 CSS로 100% 채워지므로, 실제 렌더 해상도
-    // 갱신은 리사이즈가 잦아든 뒤 한 번만 하도록 디바운스한다.
+    // 컨테이너 높이는 100vh 로 고정돼 있어(마운트하는 쪽 주석 참고) 스크롤만으로는 리사이즈가
+    // 일어나지 않는다. 남는 경우는 화면 회전·창 크기 변경뿐인데, renderer.setSize()는
+    // 프레임버퍼를 다시 잡는 비싼 호출이라 연속 발화하면 끊겨 보인다 → 잦아든 뒤 한 번만.
     let resizeTimer: ReturnType<typeof setTimeout> | undefined;
     const ro = new ResizeObserver(() => {
       clearTimeout(resizeTimer);
@@ -780,9 +800,14 @@ export default function HomePage() {
       {/* ── 페이지 전체 배경 ────────────────────────────────────────
           3D 씬을 히어로 안이 아니라 뷰포트에 고정해 둔다. 그래야 스크롤을 내려도 금화가
           계속 떨어지며 아래 섹션의 배경이 된다(히어로 안에 두면 히어로를 벗어나는 순간 잘린다).
-          그라디언트 → 금화 → 콘텐츠 순으로 겹친다. */}
-      <div className="fixed inset-0 z-0 pointer-events-none bg-[radial-gradient(130%_90%_at_74%_-10%,#143725_0%,#0a1b12_46%,#050d09_100%)]" />
-      <div className="fixed inset-0 z-[1] pointer-events-none">
+          그라디언트 → 금화 → 콘텐츠 순으로 겹친다.
+
+          높이는 inset-0 대신 h-screen(100vh)으로 고정한다. 모바일에서 fixed inset-0 은
+          주소창이 접혔다 펴질 때마다 따라 늘었다 줄고, 그때마다 캔버스가 리사이즈되면서
+          스크롤 중에 배경이 커졌다 작아졌다 한다. 100vh 는 모바일에서 "주소창이 접힌
+          상태"의 큰 뷰포트에 고정된 값이라 스크롤 내내 변하지 않는다. */}
+      <div className="fixed inset-x-0 top-0 h-screen z-0 pointer-events-none bg-[radial-gradient(130%_90%_at_74%_-10%,#143725_0%,#0a1b12_46%,#050d09_100%)]" />
+      <div className="fixed inset-x-0 top-0 h-screen z-[1] pointer-events-none">
         <HeroArt />
       </div>
 

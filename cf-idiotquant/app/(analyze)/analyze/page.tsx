@@ -19,7 +19,7 @@ import { useStockSearch } from '@/app/(search)/search/hooks/useStockSearch';
 import { selectKrMarketHistory } from '@/lib/features/searchHistory/searchHistorySlice';
 import {
   AlertCircle, Loader2, Flame, Share2, Check, CheckCircle,
-  Search, Heart, X, TrendingUp, ChevronLeft, Lock, ArrowRight,
+  Search, Heart, X, TrendingUp, ChevronLeft, ChevronDown, Lock, ArrowRight,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
@@ -408,6 +408,8 @@ function AnalyzeContent() {
   const [staticStockData, setStaticStockData] = useState<StaticStockData>({ allTickers: [], corpCodeJson: {} });
   const [shareStatus, setShareStatus] = useState<'idle' | 'copied' | 'error'>('idle');
   const [activeTab, setActiveTab] = useState<DetailTab>('strategy');
+  // 모바일 종합 판단 — 한 줄 요약을 눌러 지표 4개(기준·값·충족 여부)를 펼친다
+  const [verdictOpen, setVerdictOpen] = useState(false);
   // 결과를 보는 중에는 검색줄을 접어 헤더가 종목 정보를 대신 보여준다
   const [searchOpen, setSearchOpen] = useState(false);
 
@@ -748,19 +750,52 @@ function AnalyzeContent() {
                   화면 첫 장을 다 먹었는데, 같은 값이 바로 아래 '카드' 탭에도 있다. */}
               {verdict && (
                 <div className={cn("rounded-2xl border p-3 sm:p-6 mb-4 sm:mb-5", VERDICT_TONE[verdict.tone].box)}>
-                  {/* 모바일 — 한 줄. truncate 로 문장이 길어져도 줄바꿈이 생기지 않게 못 박는다.
-                      글자·여백 치수는 가장 긴 문장이 320px 화면에서 잘리지 않게 맞춘 값이다. */}
-                  <div className="flex items-center gap-1.5 sm:hidden">
+                  {/* 모바일 — 한 줄 요약. 눌러서 지표 4개를 펼친다(접힌 상태가 기본).
+                      truncate 로 문장이 길어져도 줄바꿈이 생기지 않게 못 박는다. */}
+                  <button
+                    type="button"
+                    onClick={() => setVerdictOpen(o => !o)}
+                    aria-expanded={verdictOpen}
+                    className="w-full flex items-center gap-1 sm:hidden text-left"
+                  >
                     <span className={cn(
                       "shrink-0 px-1.5 py-0.5 rounded-full text-[11px] font-black font-mono tabular-nums bg-white/70 dark:bg-[#1a1915]/50",
                       VERDICT_TONE[verdict.tone].label
                     )}>
                       {verdict.metCount}/{verdict.checks.length}
                     </span>
-                    <p className={cn("text-[12px] font-extrabold truncate", VERDICT_TONE[verdict.tone].text)}>
+                    <span className={cn("min-w-0 flex-1 text-[11.5px] font-extrabold truncate", VERDICT_TONE[verdict.tone].text)}>
                       {verdict.lead}
-                    </p>
-                  </div>
+                    </span>
+                    <ChevronDown
+                      size={11}
+                      className={cn("shrink-0 transition-transform", VERDICT_TONE[verdict.tone].label, verdictOpen && "rotate-180")}
+                    />
+                  </button>
+
+                  {/* 펼친 내용 — 좁은 폭이라 한 줄에 하나씩. 기준을 같이 적어야 왜 ✓/✕ 인지 읽힌다 */}
+                  {verdictOpen && (
+                    <div className="mt-2.5 pt-2.5 border-t border-neutral-200/70 dark:border-[#3a3834]/70 flex flex-col gap-1.5 sm:hidden">
+                      {verdict.checks.map(c => (
+                        <div key={c.label} className="flex items-center gap-2">
+                          <span className={cn(
+                            "w-4 h-4 rounded-full grid place-items-center text-[9px] font-black text-white shrink-0",
+                            c.ok ? "bg-[#16a34a]" : "bg-neutral-300 dark:bg-[#4a4641]"
+                          )}>
+                            {c.ok ? '✓' : '✕'}
+                          </span>
+                          <span className="text-[11.5px] font-bold text-neutral-600 dark:text-neutral-300 shrink-0">{c.label}</span>
+                          <span className="text-[10px] text-neutral-400 dark:text-neutral-500 truncate">{c.criterion}</span>
+                          <span className={cn(
+                            "ml-auto text-[12px] font-black font-mono tabular-nums shrink-0",
+                            c.ok ? "text-[#16a34a] dark:text-emerald-400" : "text-neutral-400 dark:text-neutral-500"
+                          )}>
+                            {c.value}
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                  )}
 
                   <div className="hidden sm:block">
                     <p className={cn("text-[10px] font-extrabold uppercase tracking-[0.1em] mb-2", VERDICT_TONE[verdict.tone].label)}>
