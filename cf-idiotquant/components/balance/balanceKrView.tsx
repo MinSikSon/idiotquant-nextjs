@@ -5,7 +5,7 @@ import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import {
   LayoutDashboard, ChevronRight, MapPin,
   Wallet, Coins, Percent,
-  Database, User, PieChart, BarChart3, ClipboardList, Power, SlidersHorizontal, Activity, KeyRound,
+  Database, User, PieChart, ClipboardList, Power, SlidersHorizontal, Activity, KeyRound,
 } from "lucide-react";
 import TradingAccountPanel from "@/components/balance/tradingAccountPanel";
 import TradingAccountList from "@/components/balance/tradingAccountList";
@@ -433,16 +433,15 @@ export function BalanceKrView({ countryToggle }: { countryToggle?: React.ReactNo
     return list.find((u: any) => String(u.key) === String(balanceKey)) ?? null;
   })();
 
-  // 섹션 네비게이션 구성
+  // 섹션 네비게이션 — 8개를 4개로 묶는다. "내 돈이 지금 어떤가"(자산)와 "기계가 뭘 하고
+  // 있나"(자동매매)를 가르는 기준이다. 예전엔 이 둘이 8칸에 번갈아 섞여 있어서, 자동매매를
+  // 한 번 손보려면 종목관리 → 조건 → 현황을 오가야 했다.
+  // 각 항목은 묶음의 첫 패널로 스크롤한다(패널 자체의 id 는 그대로라 링크는 살아 있다).
   const navSections: NavSection[] = [
-    { id: "section-kpi", label: "KPI", icon: <Wallet size={13} /> },
-    { id: "section-portfolio", label: "포트폴리오", icon: <PieChart size={13} /> },
-    { id: "section-balance", label: "잔고", icon: <BarChart3 size={13} /> },
-    ...(hasCapital ? [{ id: "section-stocks", label: "종목관리", icon: <Database size={13} /> }] : []),
-    ...(hasCapital ? [{ id: "section-activity", label: "자동매매 현황", icon: <Activity size={13} /> }] : []),
-    ...(hasCapital ? [{ id: "section-conditions", label: "트레이딩 조건", icon: <SlidersHorizontal size={13} /> }] : []),
-    { id: "section-account", label: "계정", icon: <KeyRound size={13} /> },
+    { id: "section-kpi", label: "자산", icon: <Wallet size={13} /> },
+    ...(hasCapital ? [{ id: "section-stocks", label: "자동매매", icon: <Activity size={13} /> }] : []),
     { id: "section-orders", label: "주문내역", icon: <ClipboardList size={13} /> },
+    { id: "section-account", label: "계정", icon: <KeyRound size={13} /> },
   ];
 
   return (
@@ -579,7 +578,7 @@ export function BalanceKrView({ countryToggle }: { countryToggle?: React.ReactNo
                       valueClass="text-[#16a34a] dark:text-[#16a34a]"
                     />
                     <MetricChip
-                      label="금일 매수 - 매도"
+                      label="금일 순매수"
                       value={`${(thdtBuyAmt - thdtSllAmt) >= 0 ? "+" : ""}${(thdtBuyAmt - thdtSllAmt).toLocaleString()}원`}
                       valueClass={(thdtBuyAmt - thdtSllAmt) >= 0 ? "text-rose-500" : "text-[#16a34a]"}
                     />
@@ -688,29 +687,6 @@ export function BalanceKrView({ countryToggle }: { countryToggle?: React.ReactNo
           ) : null,
         },
         {
-          id: "section-activity",
-          node: hasCapital ? (
-            <SectionPanel id="section-activity">
-              <SectionHeader
-                icon={<Activity size={16} />}
-                title="자동매매 현황"
-                subtitle="스케줄러(5분마다) 가동 상태 · 토큰 리필 · 최근 자동 체결 내역"
-                badge={
-                  krActivity.state === "pending"
-                    ? <span className="text-[10px] font-mono text-amber-500 bg-amber-50 dark:bg-amber-950/20 px-2 py-0.5 rounded-full border border-amber-200 dark:border-amber-800 animate-pulse">로딩 중</span>
-                    : <span className="text-[10px] font-mono text-neutral-500 dark:text-neutral-400 bg-[#faf9f7] dark:bg-[#242320] px-2 py-0.5 rounded-full">최근 {krActivity.logs.length}건</span>
-                }
-              />
-              <TradingActivityPanel
-                country="KR"
-                capital={krCapital}
-                activity={krActivity}
-                onRefresh={() => dispatch(reqGetKrTradingActivity(balanceKey))}
-              />
-            </SectionPanel>
-          ) : null,
-        },
-        {
           id: "section-conditions",
           node: hasCapital ? (
             <SectionPanel id="section-conditions">
@@ -741,31 +717,27 @@ export function BalanceKrView({ countryToggle }: { countryToggle?: React.ReactNo
           ) : null,
         },
         {
-          id: "section-account",
-          node: (
-            <SectionPanel id="section-account">
+          id: "section-activity",
+          node: hasCapital ? (
+            <SectionPanel id="section-activity">
               <SectionHeader
-                icon={<KeyRound size={16} />}
-                title="자동매매 계정 관리"
-                subtitle="등록된 계정을 선택해 KIS App Key/Secret·계좌번호·월 예산·ON/OFF 를 관리 (admin 전용)"
+                icon={<Activity size={16} />}
+                title="자동매매 현황"
+                subtitle="스케줄러(5분마다) 가동 상태 · 토큰 리필 · 최근 자동 체결 내역"
+                badge={
+                  krActivity.state === "pending"
+                    ? <span className="text-[10px] font-mono text-amber-500 bg-amber-50 dark:bg-amber-950/20 px-2 py-0.5 rounded-full border border-amber-200 dark:border-amber-800 animate-pulse">로딩 중</span>
+                    : <span className="text-[10px] font-mono text-neutral-500 dark:text-neutral-400 bg-[#faf9f7] dark:bg-[#242320] px-2 py-0.5 rounded-full">최근 {krActivity.logs.length}건</span>
+                }
               />
-              <TradingAccountList
+              <TradingActivityPanel
                 country="KR"
-                balanceKey={balanceKey}
-                onSelect={setBalanceKey}
-                refreshToken={accountListToken}
-              />
-              <TradingAccountPanel
-                country="KR"
-                balanceKey={balanceKey}
-                onChanged={() => {
-                  handleRefresh();
-                  dispatch(reqFetchTradingStatus({ country: "KR", key: balanceKey }));
-                  setAccountListToken(t => t + 1);
-                }}
+                capital={krCapital}
+                activity={krActivity}
+                onRefresh={() => dispatch(reqGetKrTradingActivity(balanceKey))}
               />
             </SectionPanel>
-          ),
+          ) : null,
         },
         {
           id: "section-orders",
@@ -814,6 +786,33 @@ export function BalanceKrView({ countryToggle }: { countryToggle?: React.ReactNo
                   </tbody>
                 </table>
               </div>
+            </SectionPanel>
+          ),
+        },
+        {
+          id: "section-account",
+          node: (
+            <SectionPanel id="section-account">
+              <SectionHeader
+                icon={<KeyRound size={16} />}
+                title="자동매매 계정 관리"
+                subtitle="등록된 계정을 선택해 KIS App Key/Secret·계좌번호·월 예산·ON/OFF 를 관리 (admin 전용)"
+              />
+              <TradingAccountList
+                country="KR"
+                balanceKey={balanceKey}
+                onSelect={setBalanceKey}
+                refreshToken={accountListToken}
+              />
+              <TradingAccountPanel
+                country="KR"
+                balanceKey={balanceKey}
+                onChanged={() => {
+                  handleRefresh();
+                  dispatch(reqFetchTradingStatus({ country: "KR", key: balanceKey }));
+                  setAccountListToken(t => t + 1);
+                }}
+              />
             </SectionPanel>
           ),
         },

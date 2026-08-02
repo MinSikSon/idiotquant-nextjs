@@ -67,7 +67,7 @@ export default function TradingAccountList({ country, balanceKey, onSelect, refr
                     acc.is_active
                       ? "bg-[#f0fdf4] text-[#16a34a] dark:bg-[#14532d]/40"
                       : "bg-neutral-100 text-neutral-500 dark:bg-[#35332e]")}>
-                    <Power className="inline w-3 h-3 -mt-0.5 mr-0.5" />{acc.is_active ? "ON" : "OFF"}
+                    <Power className="inline w-3 h-3 -mt-0.5 mr-0.5" />{acc.is_active ? "대상" : "제외"}
                   </span>
                   <span className="ml-auto text-[11px] text-neutral-400">
                     {acc.account_number || "계좌번호 미등록"} · 월 {won(acc.monthly_budget_krw)}원

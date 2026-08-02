@@ -14,7 +14,6 @@ import {
   LogOut,
   LogIn,
   Eye,
-  DollarSign,
   ShieldCheck,
   History,
   Gamepad2,
@@ -48,9 +47,11 @@ const MORE_NAV: NavItem[] = [
   { label: "수익 계산", href: "/calculator",  icon: Calculator              },
 ];
 
+// 한 화면(/balance)으로 가는 항목이라 하나만 둔다. 국가 선택은 그 화면 안의 🇰🇷/🇺🇸 토글이 맡는다.
+// 예전엔 KR/US 두 항목이 각각 /balance-kr · /balance-us 로 갔다가 클라이언트 리다이렉트로
+// 같은 화면에 도착했다 — 누를 때마다 "이동 중…" 이 한 번 스쳤다.
 const PORTFOLIO_NAV = [
-  { label: "KR 포트폴리오", href: "/balance-kr", icon: Eye         },
-  { label: "US 포트폴리오", href: "/balance-us", icon: DollarSign  },
+  { label: "포트폴리오", href: "/balance", icon: Eye },
 ];
 
 /* ─── HELPERS ─────────────────────────────────────────────────────── */
