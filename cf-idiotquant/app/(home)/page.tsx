@@ -179,7 +179,8 @@ function HeroArt() {
     const CANDLE_SERIES = [0.7, 0.95, 0.85, 1.2, 1.45, 1.28, 1.65, 1.95, 1.75, 2.15, 2.45, 2.28, 2.7, 2.95, 3.2];
     // 좁은 화면에 15개를 다 밀어 넣으면 몸통이 성냥개비처럼 얇아지고 양끝이 잘린다 → 최근 구간만
     // 잘라 보여준다(상승 흐름은 그대로 읽히고 캔들 두께도 지킬 수 있다).
-    const CANDLE_H = narrowVp ? CANDLE_SERIES.slice(4) : CANDLE_SERIES;
+    // 개수를 더 줄인 이유는 아래 CANDLE_GAP 주석 참고 — 같은 폭에 띄엄띄엄 세우기 위해서다.
+    const CANDLE_H = narrowVp ? CANDLE_SERIES.slice(6) : CANDLE_SERIES;
     const N = CANDLE_H.length;
     // 가장 앞(오른쪽 끝) 캔들의 깊이 — 바닥 금화 더미보다는 뒤에 둔다.
     // 좁은 화면에선 한 겹 더 뒤로 민다. 프레임이 좁아 캔들이 금화·헤드라인과 같은 평면에 선 것처럼
@@ -187,7 +188,12 @@ function HeroArt() {
     // 글씨 뒤로 떨어지는 금화가 z −3.6~−2.6 을 쓰므로, 캔들 뒤끝(CANDLE_Z − CANDLE_ARC)이
     // 그 구간에 닿으면 금화가 캔들 몸통을 파고들어 박힌 것처럼 보인다.
     const CANDLE_Z = narrowVp ? -1.5 : -0.6;
-    const CANDLE_GAP = narrowVp ? 0.56 : 1.05;
+    // 좁은 화면에서는 캔들을 띄엄띄엄 세운다. 개수를 11 → 9로 줄이고 간격을 그만큼 넓혀
+    // 전체 폭(약 6.3)은 그대로 두면서 몸통 사이 빈 자리만 벌린다. 예전엔 몸통끼리 거의 붙어
+    // 초록·빨강 벽처럼 보였고, 배경으로 물러나야 할 차트가 헤드라인과 경쟁했다.
+    const CANDLE_GAP = narrowVp ? 0.70 : 1.05;
+    // 몸통 폭은 간격에 비례 — 좁은 화면은 비율을 낮춰 빈 자리를 몸통만큼 확보한다
+    const CANDLE_BODY_RATIO = narrowVp ? 0.5 : 0.66;
     const CANDLE_HS = narrowVp ? 0.7 : 1; // 화면이 좁으면 높이도 낮춰 가로:세로 비율을 유지
     const CANDLE_ARC = narrowVp ? 1.0 : 1.7;   // 왼쪽 끝이 뒤로 물러나는 거리
     // 어두운 무대에서는 짙은 그림자가 배경과 구분되지 않는다 → 아주 옅게만 깔아 캔들 밑동만 눌러준다
@@ -209,7 +215,7 @@ function HeroArt() {
       const h = CANDLE_H[i] * CANDLE_HS;
       const up = h >= prev; prev = h;
       const mat = up ? upMat : dnMat;
-      const bw = CANDLE_GAP * 0.66; // 몸통 폭은 간격에 비례 — 겹치지도, 성기지도 않게
+      const bw = CANDLE_GAP * CANDLE_BODY_RATIO;
       const geo = new THREE.BoxGeometry(bw, h, bw);
       const wickGeo = new THREE.BoxGeometry(bw * 0.24, h * 0.28, bw * 0.24); // 짧고 도톰한 심지
       disposables.push(geo, wickGeo);
