@@ -228,7 +228,17 @@ function HeroArt() {
       shadow.scale.set(bw * 2.6, bw * 2.6, 1);
       g.add(shadow, body, wick);
       const u = i / (N - 1);
-      g.position.set((i - (N - 1) / 2) * CANDLE_GAP - CANDLE_GAP * 0.4, BASE, CANDLE_Z - (1 - u) * CANDLE_ARC);
+      // 좁은 화면 — 균일 간격으로 세우면 아무리 벌려도 "막대그래프 한 줄"로 읽힌다.
+      // 자리마다 좌우로 흔들어 듬성듬성 흩어 세운다. 흔들 폭을 (간격 − 몸통 폭) 이내로 잡아야
+      // 이웃과 몸통이 겹치지 않는다. 깊이는 앞쪽으로만 흔든다 — 뒤로 밀면 글씨 뒤로 떨어지는
+      // 금화 구간(z −3.6~−2.6)에 닿아 금화가 캔들에 박힌 것처럼 보인다.
+      const jitterX = narrowVp ? (Math.random() - 0.5) * (CANDLE_GAP - bw) : 0;
+      const jitterZ = narrowVp ? Math.random() * 0.35 : 0;
+      g.position.set(
+        (i - (N - 1) / 2) * CANDLE_GAP - CANDLE_GAP * 0.4 + jitterX,
+        BASE,
+        CANDLE_Z - (1 - u) * CANDLE_ARC + jitterZ,
+      );
       candleGroup.add(g);
     }
 
