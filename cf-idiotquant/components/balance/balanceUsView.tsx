@@ -385,6 +385,11 @@ export function BalanceUsView({ countryToggle }: { countryToggle?: React.ReactNo
   const totalPnlRate = Number(out3?.evlu_erng_rt1 || 0);
   const isPnlPositive = totalPnlKrw >= 0;
   const isLoading = kiBalance.state === "pending";
+  // 재조회(30초 자동새로고침·수동 새로고침) 중에도 직전 데이터는 슬라이스에 그대로 남아 있다.
+  // 그런데 isLoading 만 보고 스켈레톤으로 되돌리면, 가진 데이터를 버리고 화면을 처음부터 다시
+  // 그리는 꼴이라 매번 페이지가 새로고침되는 것처럼 보인다. 표시할 게 아무것도 없는 첫 로딩에만
+  // 스켈레톤을 쓰고, 재조회는 헤더 새로고침 버튼의 스피너로만 알린다.
+  const isFirstLoad = isLoading && !out3?.tot_asst_amt;
   const hasCapital = usCapital.state === "fulfilled" || usCapital.state === "pending";
 
   // 추가 지표
@@ -511,50 +516,50 @@ export function BalanceUsView({ countryToggle }: { countryToggle?: React.ReactNo
               <section id="section-kpi" className="grid grid-cols-2 lg:grid-cols-4 gap-3 animate-in fade-in slide-in-from-bottom-2 duration-400">
                 <UsdKpiCard
                   label="총 자산 (USD)"
-                  mainValue={isLoading ? null : fmtUsd(totalAssetUsd)}
+                  mainValue={isFirstLoad ? null : fmtUsd(totalAssetUsd)}
                   mainColor="text-[#16a34a] dark:text-[#16a34a]"
                   subLabel="원화 평가액"
-                  subValue={isLoading ? null : fmtKrw(totalAssetKrw)}
+                  subValue={isFirstLoad ? null : fmtKrw(totalAssetKrw)}
                   icon={<BarChart3 size={15} />}
                   iconBg="bg-[#f0fdf4] dark:bg-[#052e16]/40 text-[#16a34a]"
                   accentColor="bg-[#16a34a] dark:bg-[#16a34a]"
-                  loading={isLoading}
+                  loading={isFirstLoad}
                 />
                 <UsdKpiCard
                   label="외화 예수금 (USD)"
-                  mainValue={isLoading ? null : fmtUsd(depositUsd)}
+                  mainValue={isFirstLoad ? null : fmtUsd(depositUsd)}
                   subLabel="익일 출금 가능"
-                  subValue={isLoading ? null : fmtUsd(nxdyFrcrDrwg)}
+                  subValue={isFirstLoad ? null : fmtUsd(nxdyFrcrDrwg)}
                   icon={<Wallet size={15} />}
                   iconBg="bg-amber-50 dark:bg-amber-950/40 text-amber-500"
                   accentColor="bg-amber-400 dark:bg-amber-600"
-                  loading={isLoading}
+                  loading={isFirstLoad}
                 />
                 <UsdKpiCard
                   label="주식 평가총액"
-                  mainValue={isLoading ? null : fmtUsd(stockEvalUsd)}
+                  mainValue={isFirstLoad ? null : fmtUsd(stockEvalUsd)}
                   subLabel="원화 환산액"
-                  subValue={isLoading ? null : fmtKrw(stockEvalKrw)}
+                  subValue={isFirstLoad ? null : fmtKrw(stockEvalKrw)}
                   icon={<TrendingUp size={15} />}
                   iconBg="bg-indigo-50 dark:bg-indigo-950/40 text-indigo-500"
                   accentColor="bg-indigo-400 dark:bg-indigo-600"
-                  loading={isLoading}
+                  loading={isFirstLoad}
                 />
                 <UsdKpiCard
                   label="총 수익률"
-                  mainValue={isLoading ? null : `${isPnlPositive ? "▲ +" : "▼ "}${totalPnlRate.toFixed(2)}%`}
+                  mainValue={isFirstLoad ? null : `${isPnlPositive ? "▲ +" : "▼ "}${totalPnlRate.toFixed(2)}%`}
                   mainColor={pnlValueColor(isPnlPositive)}
                   subLabel="손익 합계"
-                  subValue={isLoading ? null : fmtKrw(totalPnlKrw)}
+                  subValue={isFirstLoad ? null : fmtKrw(totalPnlKrw)}
                   subColor={pnlValueColor(isPnlPositive)}
                   icon={<PnlIcon positive={isPnlPositive} />}
                   iconBg={pnlIconBg(isPnlPositive)}
                   accentColor={pnlAccentColor(isPnlPositive)}
-                  loading={isLoading}
+                  loading={isFirstLoad}
                 />
               </section>
 
-              {!isLoading && (
+              {!isFirstLoad && (
                 <div className="overflow-x-auto no-scrollbar mt-3">
                   <div className="flex gap-2 min-w-max pb-0.5">
                     <MetricChip
@@ -628,7 +633,7 @@ export function BalanceUsView({ countryToggle }: { countryToggle?: React.ReactNo
               <PortfolioChartSection
                 output1={kiBalance.output1 || []}
                 isUs={true}
-                isLoading={isLoading}
+                isLoading={isFirstLoad}
               />
             </SectionPanel>
           ),

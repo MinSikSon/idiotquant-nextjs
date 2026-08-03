@@ -410,6 +410,11 @@ export function BalanceKrView({ countryToggle }: { countryToggle?: React.ReactNo
   const pnlRate = pchs > 0 ? (totalPnl / pchs) * 100 : Number(summary.asst_icdc_erng_rt || 0);
   const isPnlPositive = totalPnl >= 0;
   const isLoading = kiBalance.state === "pending";
+  // 재조회(30초 자동새로고침·수동 새로고침) 중에도 직전 데이터는 슬라이스에 그대로 남아 있다.
+  // 그런데 isLoading 만 보고 스켈레톤으로 되돌리면, 가진 데이터를 버리고 화면을 처음부터 다시
+  // 그리는 꼴이라 매번 페이지가 새로고침되는 것처럼 보인다. 표시할 게 아무것도 없는 첫 로딩에만
+  // 스켈레톤을 쓰고, 재조회는 헤더 새로고침 버튼의 스피너로만 알린다.
+  const isFirstLoad = isLoading && !summary.tot_evlu_amt;
   const hasCapital = krCapital.state === "fulfilled" || krCapital.state === "pending";
 
   // 추가 지표
@@ -525,24 +530,24 @@ export function BalanceKrView({ countryToggle }: { countryToggle?: React.ReactNo
               <section id="section-kpi" className="grid grid-cols-2 lg:grid-cols-4 gap-3 animate-in fade-in slide-in-from-bottom-2 duration-400">
                 <KpiCard
                   label="총 평가 금액"
-                  value={isLoading ? null : `${totalEvalAmt.toLocaleString()}원`}
-                  sub={isLoading ? "" : `주식 ${sctsEvluAmt.toLocaleString()}원 · CMA ${cmaEvluAmt.toLocaleString()}원`}
+                  value={isFirstLoad ? null : `${totalEvalAmt.toLocaleString()}원`}
+                  sub={isFirstLoad ? "" : `주식 ${sctsEvluAmt.toLocaleString()}원 · CMA ${cmaEvluAmt.toLocaleString()}원`}
                   icon={<Wallet size={15} />}
                   iconBg="bg-[#f0fdf4] dark:bg-[#052e16]/40 text-[#16a34a]"
                   accentColor="bg-[#16a34a] dark:bg-[#16a34a]"
                 />
                 <KpiCard
                   label="예수금 (D+2)"
-                  value={isLoading ? null : `${d2Deposit.toLocaleString()}원`}
-                  sub={isLoading ? "" : `순자산 ${nassAmt.toLocaleString()}원`}
+                  value={isFirstLoad ? null : `${d2Deposit.toLocaleString()}원`}
+                  sub={isFirstLoad ? "" : `순자산 ${nassAmt.toLocaleString()}원`}
                   icon={<Coins size={15} />}
                   iconBg="bg-amber-50 dark:bg-amber-950/40 text-amber-500"
                   accentColor="bg-amber-400 dark:bg-amber-600"
                 />
                 <KpiCard
                   label="평가손익 합계"
-                  value={isLoading ? null : `${isPnlPositive ? "▲ +" : "▼ "}${totalPnl.toLocaleString()}원`}
-                  sub={isLoading ? "" : `매입원금 ${pchs.toLocaleString()}원`}
+                  value={isFirstLoad ? null : `${isPnlPositive ? "▲ +" : "▼ "}${totalPnl.toLocaleString()}원`}
+                  sub={isFirstLoad ? "" : `매입원금 ${pchs.toLocaleString()}원`}
                   icon={<PnlIcon positive={isPnlPositive} />}
                   iconBg={pnlIconBg(isPnlPositive)}
                   valueColor={pnlValueColor(isPnlPositive)}
@@ -550,8 +555,8 @@ export function BalanceKrView({ countryToggle }: { countryToggle?: React.ReactNo
                 />
                 <KpiCard
                   label="자산 수익률"
-                  value={isLoading ? null : `${isPnlPositive ? "▲ +" : "▼ "}${pnlRate.toFixed(2)}%`}
-                  sub={isLoading ? "" : `당일 증감 ${isDailyPositive ? "+" : ""}${asstIcdcErngRt.toFixed(2)}%`}
+                  value={isFirstLoad ? null : `${isPnlPositive ? "▲ +" : "▼ "}${pnlRate.toFixed(2)}%`}
+                  sub={isFirstLoad ? "" : `당일 증감 ${isDailyPositive ? "+" : ""}${asstIcdcErngRt.toFixed(2)}%`}
                   icon={<Percent size={15} />}
                   iconBg="bg-[#faf9f7] dark:bg-[#242320] text-neutral-500"
                   valueColor={pnlValueColor(isPnlPositive)}
@@ -559,7 +564,7 @@ export function BalanceKrView({ countryToggle }: { countryToggle?: React.ReactNo
                 />
               </section>
 
-              {!isLoading && (
+              {!isFirstLoad && (
                 <div className="overflow-x-auto no-scrollbar mt-3">
                   <div className="flex gap-2 min-w-max pb-0.5">
                     <MetricChip
@@ -607,7 +612,7 @@ export function BalanceKrView({ countryToggle }: { countryToggle?: React.ReactNo
               <PortfolioChartSection
                 output1={kiBalance.output1 || []}
                 isUs={false}
-                isLoading={isLoading}
+                isLoading={isFirstLoad}
               />
             </SectionPanel>
           ),

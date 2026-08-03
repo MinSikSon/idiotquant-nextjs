@@ -217,7 +217,7 @@ export default function TradingActivityPanel({
             </tr>
           </thead>
           <tbody className="divide-y divide-neutral-50 dark:divide-[#35332e]/40">
-            {loading ? (
+            {loading && logs.length === 0 ? (
               <tr><td colSpan={5} className="px-3 py-8 text-center text-xs text-neutral-400">불러오는 중…</td></tr>
             ) : logs.length === 0 ? (
               <tr><td colSpan={5} className="px-3 py-8 text-center text-xs text-neutral-400">아직 자동 체결 내역이 없습니다.</td></tr>
