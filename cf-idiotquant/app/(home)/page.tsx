@@ -8,6 +8,7 @@ import { useSession } from "next-auth/react";
 import Link from "next/link";
 import { Filter, ArrowRight, TrendingUp } from "lucide-react";
 import { useAppDispatch, useAppSelector } from "@/lib/hooks";
+import { selectTheme } from "@/lib/features/control/controlSlice";
 import { selectNcavDailyList, reqGetNcavDailyList } from "@/lib/features/algorithmTrade/algorithmTradeSlice";
 import { STRATEGY_PRESETS_CLIENT } from "@/lib/constants/strategies";
 import { TodayDiscovery } from "./components/todayDiscovery";
@@ -98,13 +99,42 @@ function makeRadialTexture(inner: string): THREE.CanvasTexture {
   return t;
 }
 
+// 테마별 무대 조명. 금화 자체(goldMat·환경맵)는 두 테마가 공유한다 — 금색은 어디서나 금색이라야
+// 하고, 색을 바꾸면 금이 아니라 놋쇠나 레몬으로 읽힌다. 대신 배경 밝기에 맞춰 노출·조명·바닥
+// 그림자·캔들 색을 옮겨, 밝은 바닥에서는 씬이 뜨지 않고 어두운 바닥에서는 잠기게 한다.
+const HERO_STAGE = {
+  dark: {
+    exposure: 0.78,
+    hemiSky: 0x9fc4ae, hemiGround: 0x0a1b12, hemiInt: 0.3,
+    keyInt: 2.3,
+    rimColor: 0x3f9e6b, rimInt: 0.85,
+    glintInt: 22,
+    candleUp: 0x0f7a45, candleDown: 0x9e3b46, candleEnv: 0.4,
+    shadow: "rgba(0,0,0,.45)",
+  },
+  light: {
+    // 밝은 바닥에서는 같은 노출로 두면 씬 전체가 회색으로 가라앉는다 → 노출을 올리고
+    // 반사광(hemiGround)을 바닥색에 맞춰 밝게 준다.
+    exposure: 1.05,
+    hemiSky: 0xffffff, hemiGround: 0xdfe6e0, hemiInt: 0.55,
+    keyInt: 2.6,
+    rimColor: 0x9fd8b8, rimInt: 0.5,
+    glintInt: 18,
+    // 어두운 무대용 저채도 색은 흰 바닥에서 탁해 보인다 → 앱 기본 초록·로즈로 올린다.
+    candleUp: 0x16a34a, candleDown: 0xd4525c, candleEnv: 0.25,
+    shadow: "rgba(28,52,40,.28)",
+  },
+} as const;
+
 function HeroArt() {
   const mountRef = useRef<HTMLDivElement>(null);
+  const theme = useAppSelector(selectTheme);
 
   useEffect(() => {
     const mount = mountRef.current;
     if (!mount) return;
     const reduce = window.matchMedia?.("(prefers-reduced-motion: reduce)").matches ?? false;
+    const stage = HERO_STAGE[theme === "light" ? "light" : "dark"];
 
     const scene = new THREE.Scene();
     const camera = new THREE.PerspectiveCamera(42, 1, 0.1, 100);
@@ -122,7 +152,7 @@ function HeroArt() {
     renderer.toneMapping = THREE.ACESFilmicToneMapping;
     // 배경이 딥그린블랙이라 예전 노출(1.0)로는 씬 전체가 배경에서 떠 보인다.
     // 노출을 더 내려 어둠에 잠기게 하되, 금화 하이라이트는 환경맵이 워낙 밝아 그대로 살아남는다.
-    renderer.toneMappingExposure = 0.78;
+    renderer.toneMappingExposure = stage.exposure;
     renderer.outputColorSpace = THREE.SRGBColorSpace;
     const canvas = renderer.domElement;
     canvas.style.width = "100%";
@@ -139,14 +169,14 @@ function HeroArt() {
 
     // 어두운 무대용 조명 — 아래쪽(ground) 색을 배경과 같은 딥그린블랙으로 두어야
     // 캔들 밑동이 배경에 자연스럽게 잠긴다. 흰 ground를 쓰면 아래에서 조명을 쏜 것처럼 뜬다.
-    scene.add(new THREE.HemisphereLight(0x9fc4ae, 0x0a1b12, 0.3));
-    const key = new THREE.DirectionalLight(0xfff2d0, 2.3);
+    scene.add(new THREE.HemisphereLight(stage.hemiSky, stage.hemiGround, stage.hemiInt));
+    const key = new THREE.DirectionalLight(0xfff2d0, stage.keyInt);
     key.position.set(5, 9, 7);
     scene.add(key);
-    const rim = new THREE.DirectionalLight(0x3f9e6b, 0.85);
+    const rim = new THREE.DirectionalLight(stage.rimColor, stage.rimInt);
     rim.position.set(-7, 3, -4);
     scene.add(rim);
-    const glint = new THREE.PointLight(0xffffff, 22, 40); // 금화 표면 글린트
+    const glint = new THREE.PointLight(0xffffff, stage.glintInt, 40); // 금화 표면 글린트
     glint.position.set(-3, 7, 6);
     scene.add(glint);
 
@@ -156,8 +186,8 @@ function HeroArt() {
 
     // 캔들 재질 — 어두운 무대에서는 캔들이 밝으면 금화보다 먼저 눈에 띈다. 색을 낮추고
     // 환경맵 반사도 줄여 금화만 빛나게 둔다(주연은 금화, 캔들은 무대 배경).
-    const upMat = new THREE.MeshStandardMaterial({ color: 0x0f7a45, roughness: 0.62, metalness: 0.03, envMapIntensity: 0.4 });
-    const dnMat = new THREE.MeshStandardMaterial({ color: 0x9e3b46, roughness: 0.62, metalness: 0.03, envMapIntensity: 0.4 });
+    const upMat = new THREE.MeshStandardMaterial({ color: stage.candleUp, roughness: 0.62, metalness: 0.03, envMapIntensity: stage.candleEnv });
+    const dnMat = new THREE.MeshStandardMaterial({ color: stage.candleDown, roughness: 0.62, metalness: 0.03, envMapIntensity: stage.candleEnv });
     const goldMat = new THREE.MeshPhysicalMaterial({
       vertexColors: true, metalness: 1.0, roughness: 0.05,
       // 반사 강도를 너무 올리면 하이라이트가 하얗게 날아가 금색이 빠진다
@@ -200,7 +230,7 @@ function HeroArt() {
     const CANDLE_HS = narrowVp ? 0.42 : 1;
     const CANDLE_ARC = narrowVp ? 1.0 : 1.7;   // 왼쪽 끝이 뒤로 물러나는 거리
     // 어두운 무대에서는 짙은 그림자가 배경과 구분되지 않는다 → 아주 옅게만 깔아 캔들 밑동만 눌러준다
-    const shadowTex = makeRadialTexture("rgba(0,0,0,.45)");
+    const shadowTex = makeRadialTexture(stage.shadow);
     const shadowMat = new THREE.MeshBasicMaterial({ map: shadowTex, transparent: true, depthWrite: false });
     const shadowGeo = new THREE.PlaneGeometry(1, 1);
     disposables.push(shadowTex, shadowMat, shadowGeo);
@@ -476,7 +506,9 @@ function HeroArt() {
       renderer.dispose();
       if (canvas.parentNode) canvas.parentNode.removeChild(canvas);
     };
-  }, []);
+    // 테마가 바뀌면 씬을 통째로 다시 세운다. 살아 있는 재질·조명을 하나씩 갈아끼우는 것보다
+    // cleanup 이 이미 하는 dispose 를 그대로 태우는 쪽이 누수 없이 확실하다.
+  }, [theme]);
 
   return <div ref={mountRef} className="w-full h-full" aria-hidden="true" />;
 }
@@ -806,7 +838,7 @@ export default function HomePage() {
           주소창이 접혔다 펴질 때마다 따라 늘었다 줄고, 그때마다 캔버스가 리사이즈되면서
           스크롤 중에 배경이 커졌다 작아졌다 한다. 100vh 는 모바일에서 "주소창이 접힌
           상태"의 큰 뷰포트에 고정된 값이라 스크롤 내내 변하지 않는다. */}
-      <div className="fixed inset-x-0 top-0 h-screen z-0 pointer-events-none bg-[radial-gradient(130%_90%_at_74%_-10%,#143725_0%,#0a1b12_46%,#050d09_100%)]" />
+      <div className="fixed inset-x-0 top-0 h-screen z-0 pointer-events-none bg-[radial-gradient(130%_90%_at_74%_-10%,#eaf6ee_0%,#f4faf6_46%,#faf9f7_100%)] dark:bg-[radial-gradient(130%_90%_at_74%_-10%,#143725_0%,#0a1b12_46%,#050d09_100%)]" />
       <div className="fixed inset-x-0 top-0 h-screen z-[1] pointer-events-none">
         <HeroArt />
       </div>
@@ -814,35 +846,35 @@ export default function HomePage() {
       <div className="relative z-10">
 
       {/* ── HERO ─────────────────────────────────────────────────────
-          어두운 무대 위에 제품 화면을 올린다. 배경을 밝게 두면 3D 금화·캔들의 광택이
-          배경에 씻겨 밋밋해진다 → 딥그린블랙으로 떨어뜨려 금색만 빛나게 한다.
-          라이트/다크 모두 이 어두운 화면 하나로 간다(테마별 반전 없음 — 의도된 단일 톤). */}
+          다크에서는 딥그린블랙 무대에 금화를 올려 금색만 빛나게 한다. 라이트에서는 같은
+          무대를 밝게 뒤집고(HERO_STAGE.light) 글자·강조색을 어둡게 내려 대비를 맞춘다 —
+          금화 색만은 두 테마가 공유한다. */}
       <section className="relative min-h-[92dvh] flex flex-col">
         {/* 가독성 비네트 — 글이 놓이는 왼쪽만 눌러 덮는다. 화면 전체를 덮으면 금화가 통째로 죽는다. */}
-        <div className="absolute inset-0 pointer-events-none bg-[radial-gradient(74%_62%_at_22%_46%,rgba(4,11,8,0.94)_0%,rgba(4,11,8,0.6)_44%,transparent_76%)]" />
+        <div className="absolute inset-0 pointer-events-none bg-[radial-gradient(74%_62%_at_22%_46%,rgba(250,249,247,0.94)_0%,rgba(250,249,247,0.62)_44%,transparent_76%)] dark:bg-[radial-gradient(74%_62%_at_22%_46%,rgba(4,11,8,0.94)_0%,rgba(4,11,8,0.6)_44%,transparent_76%)]" />
 
         <div className="relative z-10 flex-1 max-w-5xl mx-auto w-full px-5 pt-20 pb-14 sm:pt-24 grid lg:grid-cols-[1.05fr_0.95fr] gap-10 lg:gap-6 items-center">
           <div>
             <div className="reveal flex items-center gap-2.5 mb-5">
-              <span className="w-5 h-px bg-[#e3b34a]/50" />
-              <span className="text-[10px] font-extrabold uppercase tracking-[0.3em] text-[#e3b34a]">
+              <span className="w-5 h-px bg-[#a1730a]/60 dark:bg-[#e3b34a]/50" />
+              <span className="text-[10px] font-extrabold uppercase tracking-[0.3em] text-[#a1730a] dark:text-[#e3b34a]">
                 Idiot Quant
               </span>
             </div>
 
             <h1
-              className="reveal text-[2.3rem] sm:text-[3rem] lg:text-[3.4rem] font-black leading-[1.14] tracking-tight text-white break-keep text-balance"
+              className="reveal text-[2.3rem] sm:text-[3rem] lg:text-[3.4rem] font-black leading-[1.14] tracking-tight text-neutral-900 dark:text-white break-keep text-balance"
               style={delay(80)}
             >
               주식 고르는 일,<br />
-              <span className="bg-gradient-to-r from-[#ffe9a8] via-[#e3b34a] to-[#c08c12] bg-clip-text text-transparent">
+              <span className="bg-gradient-to-r from-[#c9930f] via-[#a1730a] to-[#7d5806] dark:from-[#ffe9a8] dark:via-[#e3b34a] dark:to-[#c08c12] bg-clip-text text-transparent">
                 바보도 할 수 있게
               </span><br />
               만들었습니다
             </h1>
 
             <p
-              className="reveal mt-5 text-sm sm:text-base text-white/60 break-keep leading-relaxed max-w-md"
+              className="reveal mt-5 text-sm sm:text-base text-neutral-600 dark:text-white/60 break-keep leading-relaxed max-w-md"
               style={delay(160)}
             >
               어려운 건 저희가 합니다. 매일 아침
@@ -862,7 +894,7 @@ export default function HomePage() {
             </div>
 
             {/* 스캔 사실을 숫자 배지 대신 문장으로 — 처음 온 사람에게 "2,410 종목"은 뜻이 없다 */}
-            <p className="reveal mt-4 text-[11px] text-white/35 break-keep" style={delay(300)}>
+            <p className="reveal mt-4 text-[11px] text-neutral-500 dark:text-white/35 break-keep" style={delay(300)}>
               {formattedScanDate && matchedCount > 0
                 ? `오늘 아침 ${scannedCount.toLocaleString()}곳을 뒤져 ${matchedCount}곳이 남았습니다 · 가입 없이 무료`
                 : "가입 없이 · 무료 · 매일 아침 갱신"}
