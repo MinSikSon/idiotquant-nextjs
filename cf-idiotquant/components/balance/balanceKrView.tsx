@@ -614,6 +614,7 @@ export function BalanceKrView({ countryToggle }: { countryToggle?: React.ReactNo
         },
         {
           id: "section-portfolio",
+          tab: "section-kpi",
           node: (
             <SectionPanel id="section-portfolio">
               <SectionHeader
@@ -631,6 +632,7 @@ export function BalanceKrView({ countryToggle }: { countryToggle?: React.ReactNo
         },
         {
           id: "section-balance",
+          tab: "section-kpi",
           node: (
             <SectionPanel id="section-balance">
               <InquireBalanceResult
@@ -705,6 +707,7 @@ export function BalanceKrView({ countryToggle }: { countryToggle?: React.ReactNo
         },
         {
           id: "section-conditions",
+          tab: "section-stocks",
           node: hasCapital ? (
             <SectionPanel id="section-conditions">
               <SectionHeader
@@ -735,6 +738,7 @@ export function BalanceKrView({ countryToggle }: { countryToggle?: React.ReactNo
         },
         {
           id: "section-activity",
+          tab: "section-stocks",
           node: hasCapital ? (
             <SectionPanel id="section-activity">
               <SectionHeader
