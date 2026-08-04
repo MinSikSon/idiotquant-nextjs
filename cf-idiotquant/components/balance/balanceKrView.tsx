@@ -301,7 +301,11 @@ export function BalanceKrView({ countryToggle }: { countryToggle?: React.ReactNo
     if (searchParams.get("key") !== balanceKey) {
       const params = new URLSearchParams(searchParams.toString());
       params.set("key", balanceKey);
-      router.replace(`${pathname}?${params.toString()}`);
+      // router.replace 는 라우트 이동이라 RSC 왕복이 일어나고 뷰가 통째로 재마운트된다
+      // (계좌를 바꿀 때마다 페이지가 새로고침되는 것처럼 보이던 원인). 여기서 필요한 건
+      // "URL 이 현재 계좌를 반영하는 것"뿐이므로 History API 로 주소만 갈아끼운다.
+      // Next 는 native History API 를 지원하므로 useSearchParams 도 그대로 따라온다.
+      window.history.replaceState(null, "", `${pathname}?${params.toString()}`);
     }
     // 같은 키로 이미 조회했으면 재조회하지 않음 (URL 동기화/재렌더로 인한 불필요한 반복 refresh 방지)
     if (fetchedKeyRef.current === balanceKey) return;

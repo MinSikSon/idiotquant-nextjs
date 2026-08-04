@@ -1,7 +1,7 @@
 "use client";
 
 import { Suspense, useCallback } from "react";
-import { usePathname, useRouter, useSearchParams } from "next/navigation";
+import { usePathname, useSearchParams } from "next/navigation";
 import { LoadingState } from "@/components/balance/shared";
 import { BalanceKrView } from "@/components/balance/balanceKrView";
 import { BalanceUsView } from "@/components/balance/balanceUsView";
@@ -42,7 +42,6 @@ function CountryToggle({ country, onChange }: { country: Country; onChange: (c: 
 // 통합 페이지 본문
 // =========================================================================
 function BalancePage() {
-  const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
   const country: Country = searchParams.get("country") === "us" ? "us" : "kr";
@@ -51,8 +50,10 @@ function BalancePage() {
     if (next === country) return;
     const params = new URLSearchParams(searchParams.toString());
     params.set("country", next);
-    router.replace(`${pathname}?${params.toString()}`);
-  }, [country, pathname, router, searchParams]);
+    // router.replace 는 라우트 이동이라 RSC 왕복이 끼어들어 전환이 새로고침처럼 보인다.
+    // KR/US 뷰 교체는 어차피 이 클라이언트 컴포넌트가 하는 일이라 주소만 갈아끼우면 된다.
+    window.history.replaceState(null, "", `${pathname}?${params.toString()}`);
+  }, [country, pathname, searchParams]);
 
   const toggle = <CountryToggle country={country} onChange={handleChange} />;
 
