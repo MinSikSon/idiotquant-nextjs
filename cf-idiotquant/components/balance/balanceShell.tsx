@@ -15,6 +15,9 @@ import {
 
 export interface BalanceSection {
   id: string;
+  // 이 패널이 속한 탭(navSections 의 id). 탭 하나가 패널 여러 개를 묶으므로 id 와 다를 수 있다.
+  // 생략하면 자기 id 를 탭으로 쓴다(패널 하나가 곧 탭인 경우).
+  tab?: string;
   node: React.ReactNode;
 }
 
@@ -89,9 +92,10 @@ export function BalanceShell({
         {/* 섹션 네비게이션 */}
         <SectionNav sections={navSections} mobileTab={mobileTab} onMobileTabChange={onMobileTabChange} />
 
-        {/* 섹션 본문 (데스크탑·모바일 모두 탭 단위로 활성 섹션만 표시) */}
+        {/* 섹션 본문 — 활성 탭에 속한 패널을 모두 표시한다.
+            탭 id 와 패널 id 를 1:1 로 보면, 탭을 묶는 순간 짝 없는 패널이 조용히 사라진다. */}
         {sections.map(s => (
-          <div key={s.id} className={cn(mobileTab !== s.id && "hidden")}>
+          <div key={s.id} className={cn(mobileTab !== (s.tab ?? s.id) && "hidden")}>
             {s.node}
           </div>
         ))}
