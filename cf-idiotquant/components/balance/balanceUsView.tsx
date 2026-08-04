@@ -309,7 +309,11 @@ export function BalanceUsView({ countryToggle }: { countryToggle?: React.ReactNo
     if (searchParams.get("key") !== balanceKey) {
       const params = new URLSearchParams(searchParams.toString());
       params.set("key", balanceKey);
-      router.replace(`${pathname}?${params.toString()}`);
+      // router.replace 는 라우트 이동이라 RSC 왕복이 일어나고 뷰가 통째로 재마운트된다
+      // (계좌를 바꿀 때마다 페이지가 새로고침되는 것처럼 보이던 원인). 여기서 필요한 건
+      // "URL 이 현재 계좌를 반영하는 것"뿐이므로 History API 로 주소만 갈아끼운다.
+      // Next 는 native History API 를 지원하므로 useSearchParams 도 그대로 따라온다.
+      window.history.replaceState(null, "", `${pathname}?${params.toString()}`);
     }
     // 같은 키로 이미 조회했으면 재조회하지 않음 (URL 동기화/재렌더로 인한 불필요한 반복 refresh 방지)
     if (fetchedKeyRef.current === balanceKey) return;
@@ -389,8 +393,14 @@ export function BalanceUsView({ countryToggle }: { countryToggle?: React.ReactNo
   // 그런데 isLoading 만 보고 스켈레톤으로 되돌리면, 가진 데이터를 버리고 화면을 처음부터 다시
   // 그리는 꼴이라 매번 페이지가 새로고침되는 것처럼 보인다. 표시할 게 아무것도 없는 첫 로딩에만
   // 스켈레톤을 쓰고, 재조회는 헤더 새로고침 버튼의 스피너로만 알린다.
-  const isFirstLoad = isLoading && !out3?.tot_asst_amt;
-  const hasCapital = usCapital.state === "fulfilled" || usCapital.state === "pending";
+  // pending 을 함께 보면 요청 전(state="init") 이 빠져나가, 빈 응답으로 계산한 "$0.00"이
+  // 잠깐 진짜 잔고인 척 찍혔다가 스켈레톤 → 실제값으로 두 번 뒤집힌다. 기준은 오직
+  // "보여줄 데이터가 아직 없는가" 하나여야 한다. 응답이 오면 tot_asst_amt 는 "0" 이라도
+  // 문자열이라 truthy 다 — 잔고가 정말 0인 계좌도 스켈레톤에 갇히지 않는다.
+  const isFirstLoad = !out3?.tot_asst_amt;
+  // "init"(요청 전)을 빼면 진입 1초쯤 뒤 자동매매 탭이 뒤늦게 끼어들면서 탭 바가 밀린다.
+  // 조회에 실패했을 때만 감춘다 — 그 전까지는 자리를 지켜 탭 바가 흔들리지 않게.
+  const hasCapital = usCapital.state !== "rejected";
 
   // 추가 지표
   const pchsAmtKrw = Number(out3?.pchs_amt_smtl_amt || 0);
@@ -481,23 +491,23 @@ export function BalanceUsView({ countryToggle }: { countryToggle?: React.ReactNo
       }
       headerExtra={
         <>
-          {tradingStatus.US !== null && (
-            <button
-              onClick={handleToggleTrading}
-              disabled={tradingStatus.state === "pending"}
-              title={tradingStatus.US ? "자동매매 비활성화" : "자동매매 활성화"}
-              className={cn(
-                "flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold border transition-all",
-                tradingStatus.US
-                  ? "bg-[#f0fdf4] dark:bg-[#14532d]/30 text-[#16a34a] border-[#86efac] dark:border-[#166534]"
-                  : "bg-white dark:bg-[#242320] text-neutral-400 border-neutral-200 dark:border-[#35332e] hover:border-neutral-400",
-                tradingStatus.state === "pending" && "opacity-60 cursor-not-allowed"
-              )}
-            >
-              <Power size={13} className={tradingStatus.US ? "text-[#16a34a]" : ""} />
-              {tradingStatus.US ? "자동매매 ON" : "자동매매 OFF"}
-            </button>
-          )}
+          {/* 상태를 모를 때(null) 버튼을 아예 빼면, 조회가 끝나는 몇 초 뒤 헤더에 버튼이
+              불쑥 끼어들며 레이아웃이 밀린다. 자리는 처음부터 지키고 비활성으로만 둔다. */}
+          <button
+            onClick={handleToggleTrading}
+            disabled={tradingStatus.state === "pending" || tradingStatus.US === null}
+            title={tradingStatus.US === null ? "자동매매 상태 확인 중" : tradingStatus.US ? "자동매매 비활성화" : "자동매매 활성화"}
+            className={cn(
+              "flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold border transition-all",
+              tradingStatus.US
+                ? "bg-[#f0fdf4] dark:bg-[#14532d]/30 text-[#16a34a] border-[#86efac] dark:border-[#166534]"
+                : "bg-white dark:bg-[#242320] text-neutral-400 border-neutral-200 dark:border-[#35332e] hover:border-neutral-400",
+              (tradingStatus.state === "pending" || tradingStatus.US === null) && "opacity-60 cursor-not-allowed"
+            )}
+          >
+            <Power size={13} className={tradingStatus.US ? "text-[#16a34a]" : ""} />
+            {tradingStatus.US === null ? "자동매매" : tradingStatus.US ? "자동매매 ON" : "자동매매 OFF"}
+          </button>
           {exRate > 0 && (
             <div className="flex items-center gap-2 bg-white dark:bg-[#242320] px-3 py-2 rounded-xl border border-neutral-200 dark:border-[#35332e] shadow-sm">
               <span className="text-[10px] font-black text-neutral-400 uppercase tracking-wider">고시환율</span>
