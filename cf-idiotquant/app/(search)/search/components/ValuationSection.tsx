@@ -252,9 +252,10 @@ export const ValuationSection = ({ data, isUs, isLoggedIn = true, loginHref = "/
     const max = hi + pad;
     const pos = (p: number) => (max > min ? ((p - min) / (max - min)) * 100 : 50);
 
+    // min·max 는 pos() 안에서만 쓰인다(끝값 라벨을 걷어내며 밖으로 내보낼 이유가 없어졌다).
     return {
       rows: [...rows].sort((a, b) => b.targetPrice - a.targetPrice),
-      curPrice, min, max, pos,
+      curPrice, pos,
     };
   }, [models]);
 
@@ -297,20 +298,12 @@ export const ValuationSection = ({ data, isUs, isLoggedIn = true, loginHref = "/
               "이 점이 어느 모델인지" 를 색으로 되짚을 필요가 없다.
               모든 행이 같은 min~max 스케일을 쓰므로 세로로 곧장 비교된다. */}
           <div className="rounded-[10px] overflow-hidden border border-neutral-100 dark:border-[#35332e]">
-            {/* 눈금 — 트랙 열 위에만 올린다. 그리드 정의를 행과 똑같이 맞춰야 라벨이 실제 위치를 가리킨다. */}
+            {/* 눈금 — 트랙 열 위에만 올린다. 그리드 정의를 행과 똑같이 맞춰야 라벨이 실제 위치를 가리킨다.
+                축 양 끝값(min·max)은 찍지 않는다. 실제 목표가가 아니라 가장 바깥 점이 잘리지 않게
+                12% 여백을 붙인 눈금 경계일 뿐인데, 현재가 옆에 나란히 서면 또 하나의 가격으로 읽힌다. */}
             <div className={cn(AXIS_GRID, "px-3 sm:px-4 pt-2 pb-1")}>
               <div />
               <div className="relative h-4">
-                {(axis.curPrice <= 0 || curLabelPos > 18) && (
-                  <span className="absolute left-0 text-[10px] font-mono text-neutral-300 dark:text-neutral-600">
-                    {currency}{Math.round(axis.min).toLocaleString()}
-                  </span>
-                )}
-                {(axis.curPrice <= 0 || curLabelPos < 82) && (
-                  <span className="absolute right-0 text-[10px] font-mono text-neutral-300 dark:text-neutral-600">
-                    {currency}{Math.round(axis.max).toLocaleString()}
-                  </span>
-                )}
                 {axis.curPrice > 0 && (
                   <>
                     <span
