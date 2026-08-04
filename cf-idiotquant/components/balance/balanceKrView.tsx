@@ -418,8 +418,14 @@ export function BalanceKrView({ countryToggle }: { countryToggle?: React.ReactNo
   // 그런데 isLoading 만 보고 스켈레톤으로 되돌리면, 가진 데이터를 버리고 화면을 처음부터 다시
   // 그리는 꼴이라 매번 페이지가 새로고침되는 것처럼 보인다. 표시할 게 아무것도 없는 첫 로딩에만
   // 스켈레톤을 쓰고, 재조회는 헤더 새로고침 버튼의 스피너로만 알린다.
-  const isFirstLoad = isLoading && !summary.tot_evlu_amt;
-  const hasCapital = krCapital.state === "fulfilled" || krCapital.state === "pending";
+  // pending 을 함께 보면 요청 전(state="init") 이 빠져나가, 빈 summary 로 계산한 "0원"이
+  // 잠깐 진짜 잔고인 척 찍혔다가 스켈레톤 → 실제값으로 두 번 뒤집힌다. 기준은 오직
+  // "보여줄 데이터가 아직 없는가" 하나여야 한다. 응답이 오면 tot_evlu_amt 는 "0" 이라도
+  // 문자열이라 truthy 다 — 잔고가 정말 0원인 계좌도 스켈레톤에 갇히지 않는다.
+  const isFirstLoad = !summary.tot_evlu_amt;
+  // "init"(요청 전)을 빼면 진입 1초쯤 뒤 자동매매 탭이 뒤늦게 끼어들면서 탭 바가 밀린다.
+  // 조회에 실패했을 때만 감춘다 — 그 전까지는 자리를 지켜 탭 바가 흔들리지 않게.
+  const hasCapital = krCapital.state !== "rejected";
 
   // 추가 지표
   const sctsEvluAmt = Number(summary.scts_evlu_amt || 0);
@@ -504,23 +510,25 @@ export function BalanceKrView({ countryToggle }: { countryToggle?: React.ReactNo
           <span className="text-2xl select-none" aria-hidden>🇰🇷</span>
         </div>
       }
-      headerExtra={tradingStatus.KR !== null ? (
+      // 상태를 모를 때(null) 버튼을 아예 빼면, 조회가 끝나는 몇 초 뒤 헤더에 버튼이
+      // 불쑥 끼어들며 레이아웃이 밀린다. 자리는 처음부터 지키고 비활성으로만 둔다.
+      headerExtra={(
         <button
           onClick={handleToggleTrading}
-          disabled={tradingStatus.state === "pending"}
-          title={tradingStatus.KR ? "자동매매 비활성화" : "자동매매 활성화"}
+          disabled={tradingStatus.state === "pending" || tradingStatus.KR === null}
+          title={tradingStatus.KR === null ? "자동매매 상태 확인 중" : tradingStatus.KR ? "자동매매 비활성화" : "자동매매 활성화"}
           className={cn(
             "flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold border transition-all",
             tradingStatus.KR
               ? "bg-[#f0fdf4] dark:bg-[#14532d]/30 text-[#16a34a] border-[#86efac] dark:border-[#166534]"
               : "bg-white dark:bg-[#242320] text-neutral-400 border-neutral-200 dark:border-[#35332e] hover:border-neutral-400",
-            tradingStatus.state === "pending" && "opacity-60 cursor-not-allowed"
+            (tradingStatus.state === "pending" || tradingStatus.KR === null) && "opacity-60 cursor-not-allowed"
           )}
         >
           <Power size={13} className={tradingStatus.KR ? "text-[#16a34a]" : ""} />
-          {tradingStatus.KR ? "자동매매 ON" : "자동매매 OFF"}
+          {tradingStatus.KR === null ? "자동매매" : tradingStatus.KR ? "자동매매 ON" : "자동매매 OFF"}
         </button>
-      ) : undefined}
+      )}
       footerBadge={
         <span className="text-[10px] font-mono text-neutral-400 bg-[#faf9f7] dark:bg-[#242320] border border-neutral-200 dark:border-[#35332e] px-2.5 py-1 rounded-lg">
           ID: {String(balanceKey).slice(0, 8) || "N/A"}
