@@ -46,6 +46,10 @@ const NCAV_MIN_PRESETS = [0.7, 1.0, 1.5];   // NCAV 비율 이상
 // 우선주: 종목명이 '우' / '우B' / '우C' 등으로 끝남
 const isPreferredStock = (name: string): boolean => /\d*우[A-C]?$/.test((name ?? "").trim());
 
+// 업종 분포 띠 색 — 앱 강조색(초록)에서 단계적으로 옅어지고, 마지막은 "그 외"용 중립색.
+// 두 테마 모두 같은 값을 쓴다: 채도가 있는 면 위에 흰 글씨라 바탕색이 바뀌어도 대비가 유지된다.
+const MIX_COLORS = ['#15803d', '#16a34a', '#3faf6d', '#6ec492', '#93a89b', '#a8a29e'];
+
 // 일 거래대금 하한 프리셋 (단위: 억원, 0 = 미적용)
 const TR_AMT_PRESETS = [1, 3, 10, 50];
 
@@ -886,6 +890,29 @@ function ScreenerContent() {
     const visibleList = filteredList.slice(0, displayCount);
     const hasMore = !groups && filteredList.length > displayCount;
 
+    // 업종 분포 — 지금 화면에 있는 목록 기준. 저PBR·NCAV 결과는 업황이 꺾인 산업 하나로
+    // 뒤덮이기 쉬운데, 표를 위에서부터 읽으면 그게 "싼 회사가 많다"로 보인다.
+    const sectorMix = useMemo(() => {
+        if (filteredList.length < 4) return null;
+        const counts = new Map<string, number>();
+        let known = 0;
+        for (const i of filteredList) {
+            const sec = sectorOf(i);
+            if (!sec) continue;
+            counts.set(sec, (counts.get(sec) ?? 0) + 1);
+            known++;
+        }
+        if (known < 4 || counts.size < 2) return null;
+        const sorted = [...counts.entries()].sort((a, b) => b[1] - a[1]);
+        const head = sorted.slice(0, 5);
+        const restCount = sorted.slice(5).reduce((acc, [, n]) => acc + n, 0);
+        const segs = head.map(([name, n], idx) => ({ name, n, pct: (n / known) * 100, color: MIX_COLORS[idx] }));
+        if (restCount > 0) segs.push({ name: '그 외', n: restCount, pct: (restCount / known) * 100, color: MIX_COLORS[5] });
+        const top3 = sorted.slice(0, 3).reduce((acc, [, n]) => acc + n, 0);
+        return { segs, known, top3Pct: (top3 / known) * 100, topNames: sorted.slice(0, 3).map(([nm]) => nm) };
+        // 업종이 하나도 없는 응답이면 known 이 0 이라 위에서 null 로 빠진다 — 별도 플래그 불필요.
+    }, [filteredList]);
+
     // 조건 깔때기 — 어느 단계에서 결과가 확 줄었는지 보여준다
     const funnel = useMemo(() => {
         const none: ScreenerFilters = {
@@ -1709,6 +1736,47 @@ function ScreenerContent() {
 
                 {!isLoading && filteredList.length > 0 && (
                     <>
+                        {/* 업종 분포 — 목록을 늘어놓기 전에 "무엇을 받았는지"를 먼저 보여준다.
+                            좁은 화면에서는 띠 안에 이름을 넣을 자리가 없으므로 이름은 항상 아래
+                            범례가 맡고, 띠 안에는 넉넉한 조각에만 퍼센트를 얹는다. */}
+                        {sectorMix && (
+                            <div className="mb-3 rounded-xl border border-neutral-200 dark:border-[#35332e] bg-white dark:bg-[#242320] px-3.5 py-3">
+                                <div className="flex items-baseline justify-between gap-2 mb-2">
+                                    <span className="text-[11px] font-extrabold uppercase tracking-wider text-neutral-500 dark:text-neutral-400">업종 분포</span>
+                                    <span className="text-[10.5px] font-mono text-neutral-400 tabular-nums shrink-0">{sectorMix.known}종목</span>
+                                </div>
+                                <div className="flex h-6 rounded-md overflow-hidden border border-neutral-200 dark:border-[#3a3834]">
+                                    {sectorMix.segs.map(seg => (
+                                        <div
+                                            key={seg.name}
+                                            title={`${seg.name} ${seg.n}종목 (${seg.pct.toFixed(0)}%)`}
+                                            style={{ width: `${seg.pct}%`, minWidth: '3px', background: seg.color }}
+                                            className="relative flex items-center justify-center"
+                                        >
+                                            {seg.pct >= 15 && (
+                                                <span className="text-[9.5px] font-black text-white tabular-nums">{seg.pct.toFixed(0)}%</span>
+                                            )}
+                                        </div>
+                                    ))}
+                                </div>
+                                <div className="mt-2 flex flex-wrap gap-x-3 gap-y-1">
+                                    {sectorMix.segs.map(seg => (
+                                        <span key={seg.name} className="inline-flex items-center gap-1.5 text-[11px] text-neutral-600 dark:text-neutral-400">
+                                            <i className="w-2 h-2 rounded-[2px] shrink-0" style={{ background: seg.color }} />
+                                            <span className="font-semibold">{seg.name}</span>
+                                            <span className="font-mono tabular-nums text-neutral-400">{seg.n}</span>
+                                        </span>
+                                    ))}
+                                </div>
+                                {sectorMix.top3Pct >= 60 && (
+                                    <p className="mt-2.5 pt-2.5 border-t border-neutral-100 dark:border-[#35332e] text-[11.5px] leading-relaxed text-[#b8762e] dark:text-[#d9a05a] break-keep">
+                                        상위 3개 업종({sectorMix.topNames.join(' · ')})이 {sectorMix.top3Pct.toFixed(0)}%를 차지합니다.
+                                        여기서 고르면 사실상 그 업황에 거는 셈입니다.
+                                    </p>
+                                )}
+                            </div>
+                        )}
+
                         {/* 결과에 거는 조작(묶기)과 목록 복사 — 조건을 고르는 상단과 분리한다.
                             묶기는 "무엇을 걸러낼지"가 아니라 "고른 결과를 어떻게 늘어놓을지"라
                             결과 바로 위가 제자리다. */}
