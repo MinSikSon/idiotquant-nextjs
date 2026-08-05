@@ -24,6 +24,7 @@ import { buildGroups, defaultOpenGroups, GroupedResults, type GroupMode } from "
 import { ResultSummary, TermStrip } from "./components/ResultSummary";
 import { StockGridCard } from "./components/StockGridCard";
 import { StockRatioRow } from "./components/StockRatioRow";
+import { LiquidityBadge, trAmtEok, isHalted } from "./components/LiquidityBadge";
 import { STRATEGY_LABEL, STRATEGY_BADGE, STRATEGY_PRESETS_CLIENT as STRATEGY_PRESETS, MKTCAP_PRESETS, STRATEGY_ACTIVE_CLS } from "@/lib/constants/strategies";
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -55,14 +56,7 @@ const TR_AMT_PRESETS = [1, 3, 10, 50];
 
 // 업종명 — 워커는 sector 로 저장한다(inquire-price 의 bstp_kor_isnm). 예전 응답 호환으로 industry 도 본다.
 const sectorOf = (i: any): string => String(i?.sector ?? i?.industry ?? "").trim();
-// 누적 거래대금(원) → 억원. 값이 없으면 null — "거래대금 0원"과 "아직 수집 안 됨"은 다르다.
-const trAmtEok = (i: any): number | null => {
-    const v = i?.acml_tr_pbmn;
-    if (v === null || v === undefined || v === "") return null;
-    const n = Number(v);
-    return Number.isFinite(n) ? n / 1e8 : null;
-};
-const isHalted = (i: any): boolean => String(i?.temp_stop_yn ?? "").toUpperCase() === "Y";
+// 거래대금·거래정지 판정은 배지와 같은 기준을 써야 하므로 LiquidityBadge 모듈에서 가져온다.
 
 
 // 백엔드 strategies + 프론트엔드 clientFilter 병합 (백엔드 미분류 종목도 표시)
@@ -280,7 +274,10 @@ const TableRow = memo(function TableRow({ item, onClick, isLiked, onToggleLike, 
                 <ValueMedal item={item} />
                 <div className="min-w-0">
                     <p className="font-bold text-sm text-neutral-900 dark:text-white truncate leading-tight">{item.name}</p>
-                    <p className="text-[11px] text-neutral-400 font-mono mt-0.5 tracking-wider">{item.ticker}</p>
+                    <div className="flex items-center gap-1.5 mt-0.5 min-w-0">
+                        <span className="text-[11px] text-neutral-400 font-mono tracking-wider shrink-0">{item.ticker}</span>
+                        <LiquidityBadge item={item} />
+                    </div>
                 </div>
             </div>
 
@@ -381,7 +378,10 @@ const StockRowCard = memo(function StockRowCard({ item, onClick, isLiked, onTogg
                         <ValueMedal item={item} size="lg" />
                     </div>
                     <p className="font-bold text-base text-neutral-900 dark:text-white truncate leading-tight">{item.name}</p>
-                    <p className="text-[11px] text-neutral-400 font-mono tracking-wider mt-0.5">{item.ticker}</p>
+                    <div className="flex items-center gap-1.5 mt-0.5 flex-wrap">
+                        <span className="text-[11px] text-neutral-400 font-mono tracking-wider">{item.ticker}</span>
+                        <LiquidityBadge item={item} />
+                    </div>
                 </div>
                 <div className="flex items-center gap-1.5 shrink-0">
                     <button

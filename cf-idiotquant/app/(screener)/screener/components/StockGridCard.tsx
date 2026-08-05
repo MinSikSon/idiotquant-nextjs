@@ -2,6 +2,7 @@
 
 import { Heart, ChevronRight } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { LiquidityBadge } from "./LiquidityBadge";
 import { ValueMedal } from "@/components/valueMedal";
 import { STRATEGY_LABEL, STRATEGY_BADGE, STRATEGY_HEX, STRATEGY_PRESETS_CLIENT } from "@/lib/constants/strategies";
 import SectorSprite, { SECTOR_COLOR } from "./SectorSprite";
@@ -85,7 +86,10 @@ export function StockGridCard({ item, onClick, isLiked, onToggleLike }: {
                     <ValueMedal item={item} />
                     <div className="min-w-0 flex-1">
                         <p className="text-sm font-extrabold text-neutral-900 dark:text-white truncate leading-tight">{item.name}</p>
-                        <p className="text-[10.5px] font-mono tracking-[0.05em] text-neutral-400 mt-0.5">{item.ticker}</p>
+                        <div className="flex items-center gap-1.5 mt-0.5 flex-wrap">
+                            <span className="text-[10.5px] font-mono tracking-[0.05em] text-neutral-400">{item.ticker}</span>
+                            <LiquidityBadge item={item} />
+                        </div>
                     </div>
                     <button
                         onClick={e => { e.stopPropagation(); onToggleLike(item.ticker, item.name); }}

@@ -2,6 +2,7 @@
 
 import { Heart } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { LiquidityBadge } from "./LiquidityBadge";
 import { ValueMedal } from "@/components/valueMedal";
 import { ratioMetrics, barPct } from "./ratioMetrics";
 
@@ -62,7 +63,10 @@ export function StockRatioRow({ item, onClick, isLiked, onToggleLike }: {
                 <ValueMedal item={item} />
                 <div className="min-w-0 flex-1">
                     <p className="text-sm font-extrabold text-neutral-900 dark:text-white truncate leading-tight">{item.name}</p>
-                    <p className="text-[10.5px] font-mono tracking-[0.05em] text-neutral-400 mt-0.5">{item.ticker}</p>
+                    <div className="flex items-center gap-1.5 mt-0.5 min-w-0">
+                        <span className="text-[10.5px] font-mono tracking-[0.05em] text-neutral-400 shrink-0">{item.ticker}</span>
+                        <LiquidityBadge item={item} />
+                    </div>
                 </div>
                 <button
                     onClick={e => { e.stopPropagation(); onToggleLike(item.ticker, item.name); }}
