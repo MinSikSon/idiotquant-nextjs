@@ -183,6 +183,11 @@ export const ValuationSection = ({ data, isUs, isLoggedIn = true, loginHref = "/
   const [activeTab, setActiveTab] = useState<FilterTabType>("ALL");
   const currency = isUs ? "$" : "₩";
 
+  // 실제 시세. analyze 페이지가 이미 같은 필드를 직접 쓰고 있고, 같은 data prop 으로 들어온다.
+  const marketPrice = isUs
+    ? Number(data?.usDetail?.output?.last ?? 0)
+    : Number(data?.kiPrice?.output?.stck_prpr ?? 0);
+
   const models = useMemo(() => {
     const list: { type: ValuationModelType; result: ValuationResult }[] = [];
     if (isUs) {
@@ -238,9 +243,13 @@ export const ValuationSection = ({ data, isUs, isLoggedIn = true, loginHref = "/
       })
       .filter(r => r.targetPrice > 0);
 
-    // returnPct = targetPrice / 현재가 − 1 이므로 현재가를 역산할 수 있다
+    // 모델이 계산에 쓴 기준가 — returnPct = targetPrice / 기준가 − 1 이므로 역산할 수 있다.
+    // 예전에는 이 값을 그대로 "현재가"라고 적었는데, 첫 유효 모델 하나에서 나온 값이라
+    // 화면 상단 시세와 다른 시점일 수 있다. 이제는 시세를 우선 쓰고 이 값은 대조용으로 남긴다.
     const ref = rows.find(r => r.returnPct > -100);
-    const curPrice = ref ? ref.targetPrice / (1 + ref.returnPct / 100) : 0;
+    const modelBase = ref ? ref.targetPrice / (1 + ref.returnPct / 100) : 0;
+    // 시세를 못 읽는 경우(로딩 전·응답 누락)에는 기존대로 역산값으로 떨어진다 — 눈금이 비는 것보다 낫다.
+    const curPrice = marketPrice > 0 ? marketPrice : modelBase;
 
     const prices = [...rows.map(r => r.targetPrice), curPrice].filter(p => p > 0);
     if (prices.length === 0) return null;
@@ -252,11 +261,19 @@ export const ValuationSection = ({ data, isUs, isLoggedIn = true, loginHref = "/
     const max = hi + pad;
     const pos = (p: number) => (max > min ? ((p - min) / (max - min)) * 100 : 50);
 
+    // min·max 는 pos() 안에서만 쓰인다(끝값 라벨을 걷어내며 밖으로 내보낼 이유가 없어졌다).
     return {
       rows: [...rows].sort((a, b) => b.targetPrice - a.targetPrice),
-      curPrice, min, max, pos,
+      curPrice, modelBase, usedMarketPrice: marketPrice > 0, pos,
     };
-  }, [models]);
+  }, [models, marketPrice]);
+
+  // 모델 기준가와 시세가 어긋나면 괴리율이 어느 가격 기준인지 헷갈린다 → 그 사실을 적는다.
+  // 0.5% 는 호가 한두 틱 수준의 차이를 잡음으로 흘려보내기 위한 문턱이다.
+  const baseGap = axis && axis.usedMarketPrice && axis.modelBase > 0
+    ? Math.abs(axis.modelBase - axis.curPrice) / axis.curPrice
+    : 0;
+  const showBaseNote = baseGap > 0.005;
 
   const curLabelPos = axis ? axis.pos(axis.curPrice) : 0;
 
@@ -293,24 +310,23 @@ export const ValuationSection = ({ data, isUs, isLoggedIn = true, loginHref = "/
             </span>
           </div>
 
+          {showBaseNote && (
+            <p className="mb-2.5 text-[11px] leading-relaxed text-neutral-400 dark:text-neutral-500 break-keep">
+              아래 괴리율은 모델이 계산에 쓴 {currency}{Math.round(axis.modelBase).toLocaleString()} 기준입니다
+              (현재 시세 {currency}{Math.round(axis.curPrice).toLocaleString()}).
+            </p>
+          )}
+
           {/* 모델별 트랙 — 축과 목록을 한 줄에 합친다. 점과 이름이 같은 행에 있으면
               "이 점이 어느 모델인지" 를 색으로 되짚을 필요가 없다.
               모든 행이 같은 min~max 스케일을 쓰므로 세로로 곧장 비교된다. */}
           <div className="rounded-[10px] overflow-hidden border border-neutral-100 dark:border-[#35332e]">
-            {/* 눈금 — 트랙 열 위에만 올린다. 그리드 정의를 행과 똑같이 맞춰야 라벨이 실제 위치를 가리킨다. */}
+            {/* 눈금 — 트랙 열 위에만 올린다. 그리드 정의를 행과 똑같이 맞춰야 라벨이 실제 위치를 가리킨다.
+                축 양 끝값(min·max)은 찍지 않는다. 실제 목표가가 아니라 가장 바깥 점이 잘리지 않게
+                12% 여백을 붙인 눈금 경계일 뿐인데, 현재가 옆에 나란히 서면 또 하나의 가격으로 읽힌다. */}
             <div className={cn(AXIS_GRID, "px-3 sm:px-4 pt-2 pb-1")}>
               <div />
               <div className="relative h-4">
-                {(axis.curPrice <= 0 || curLabelPos > 18) && (
-                  <span className="absolute left-0 text-[10px] font-mono text-neutral-300 dark:text-neutral-600">
-                    {currency}{Math.round(axis.min).toLocaleString()}
-                  </span>
-                )}
-                {(axis.curPrice <= 0 || curLabelPos < 82) && (
-                  <span className="absolute right-0 text-[10px] font-mono text-neutral-300 dark:text-neutral-600">
-                    {currency}{Math.round(axis.max).toLocaleString()}
-                  </span>
-                )}
                 {axis.curPrice > 0 && (
                   <>
                     <span
