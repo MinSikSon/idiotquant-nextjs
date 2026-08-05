@@ -24,7 +24,7 @@ import { buildGroups, defaultOpenGroups, GroupedResults, type GroupMode } from "
 import { ResultSummary, TermStrip } from "./components/ResultSummary";
 import { StockGridCard } from "./components/StockGridCard";
 import { StockRatioRow } from "./components/StockRatioRow";
-import { LiquidityBadge, trAmtEok, isHalted } from "./components/LiquidityBadge";
+import { LiquidityBadge, trAmtEok, isHalted, isManaged } from "./components/LiquidityBadge";
 import { STRATEGY_LABEL, STRATEGY_BADGE, STRATEGY_PRESETS_CLIENT as STRATEGY_PRESETS, MKTCAP_PRESETS, STRATEGY_ACTIVE_CLS } from "@/lib/constants/strategies";
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -121,6 +121,7 @@ interface ScreenerFilters {
     excludeDeficit: boolean;
     excludePreferred: boolean;
     excludeHalted: boolean;
+    excludeManaged: boolean;
     sectors: Set<string>;
     minTrAmt: number;
     minMarketCap: number;
@@ -141,7 +142,7 @@ const GROUP_DEFAULTS: Record<FilterGroupKey, Partial<ScreenerFilters>> = {
     profit:  { minRoe: 0, excludeDeficit: false },
     sector:    { sectors: new Set<string>() },
     liquidity: { minTrAmt: 0 },
-    exclude:   { excludeHoldings: false, excludePreferred: false, excludeHalted: false },
+    exclude:   { excludeHoldings: false, excludePreferred: false, excludeHalted: false, excludeManaged: false },
 };
 
 function applyFilters(list: Record<string, any>[], f: ScreenerFilters): Record<string, any>[] {
@@ -181,6 +182,7 @@ function applyFilters(list: Record<string, any>[], f: ScreenerFilters): Record<s
     // (아래 두 서랍 카드는 애초에 데이터가 있을 때만 뜨므로 정상 상태에서는 이 경로가 드물다.)
     if (f.minTrAmt > 0) out = out.filter(item => { const v = trAmtEok(item); return v === null || v >= f.minTrAmt; });
     if (f.excludeHalted) out = out.filter(item => !isHalted(item));
+    if (f.excludeManaged) out = out.filter(item => !isManaged(item));
 
     return out;
 }
@@ -592,6 +594,7 @@ function ScreenerContent() {
     const [excludeDeficit, setExcludeDeficit] = useState(() => initExclude('deficit'));
     const [excludePreferred, setExcludePreferred] = useState(() => initExclude('preferred'));
     const [excludeHalted, setExcludeHalted] = useState(() => initExclude('halted'));
+    const [excludeManaged, setExcludeManaged] = useState(() => initExclude('managed'));
     // 업종 다중 선택 (URL param: sectors, 쉼표 구분)
     const [sectors, setSectors] = useState<Set<string>>(() => {
         const urlS = searchParams.get('sectors');
@@ -670,6 +673,7 @@ function ScreenerContent() {
             excludeDeficit ? 'deficit' : null,
             excludePreferred ? 'preferred' : null,
             excludeHalted ? 'halted' : null,
+            excludeManaged ? 'managed' : null,
         ].filter(Boolean).join(',');
         if (excludeList) params.set('exclude', excludeList);
         if (sectors.size > 0) params.set('sectors', Array.from(sectors).join(','));
@@ -684,7 +688,7 @@ function ScreenerContent() {
         if (groupMode !== 'none') params.set('group', groupMode);
         if (viewMode !== DEFAULT_VIEW) params.set('view', viewMode);
         return params.toString();
-    }, [activeStrategyIds, filterMode, sortKey, sortOrder, excludeHoldings, excludeDeficit, excludePreferred, excludeHalted, sectors, minTrAmt, minMarketCap, maxPbr, maxPer, minRoe, minNcav, showLikedOnly, searchQuery, groupMode, viewMode]);
+    }, [activeStrategyIds, filterMode, sortKey, sortOrder, excludeHoldings, excludeDeficit, excludePreferred, excludeHalted, excludeManaged, sectors, minTrAmt, minMarketCap, maxPbr, maxPer, minRoe, minNcav, showLikedOnly, searchQuery, groupMode, viewMode]);
 
     // 필터 상태 → URL 동기화 + localStorage 저장 (페이지 이동 후 재진입 시에도 전체 필터 유지)
     useEffect(() => {
@@ -703,6 +707,7 @@ function ScreenerContent() {
             excludeDeficit ? 'deficit' : null,
             excludePreferred ? 'preferred' : null,
             excludeHalted ? 'halted' : null,
+            excludeManaged ? 'managed' : null,
         ].filter(Boolean);
         if (excludeArr.length) snapshot.exclude = excludeArr;
         if (sectors.size > 0) snapshot.sectors = Array.from(sectors);
@@ -726,7 +731,7 @@ function ScreenerContent() {
         localStorage.removeItem('screener:filterMode');
         }, 300);
         return () => clearTimeout(debounce);
-    }, [queryString, activeStrategyIds, filterMode, sortKey, sortOrder, excludeHoldings, excludeDeficit, excludePreferred, excludeHalted, sectors, minTrAmt, minMarketCap, maxPbr, maxPer, minRoe, minNcav, showLikedOnly, searchQuery, groupMode, viewMode, router]);
+    }, [queryString, activeStrategyIds, filterMode, sortKey, sortOrder, excludeHoldings, excludeDeficit, excludePreferred, excludeHalted, excludeManaged, sectors, minTrAmt, minMarketCap, maxPbr, maxPer, minRoe, minNcav, showLikedOnly, searchQuery, groupMode, viewMode, router]);
 
     // 현재 필터링 결과 링크 공유 (모바일: 네이티브 공유 시트 / 데스크탑: 클립보드 복사)
     const handleShare = useCallback(async () => {
@@ -827,10 +832,10 @@ function ScreenerContent() {
         strategies: activeStrategyIds,
         mode: filterMode,
         q: searchQuery,
-        excludeHoldings, excludeDeficit, excludePreferred, excludeHalted,
+        excludeHoldings, excludeDeficit, excludePreferred, excludeHalted, excludeManaged,
         sectors, minTrAmt,
         minMarketCap, maxPbr, maxPer, minRoe, minNcav,
-    }), [activeStrategyIds, filterMode, searchQuery, excludeHoldings, excludeDeficit, excludePreferred, excludeHalted, sectors, minTrAmt, minMarketCap, maxPbr, maxPer, minRoe, minNcav]);
+    }), [activeStrategyIds, filterMode, searchQuery, excludeHoldings, excludeDeficit, excludePreferred, excludeHalted, excludeManaged, sectors, minTrAmt, minMarketCap, maxPbr, maxPer, minRoe, minNcav]);
 
     const baseList = useMemo(
         () => (showLikedOnly ? normalizedLikedList : ncavDailyList.list) as Record<string, any>[],
@@ -917,7 +922,7 @@ function ScreenerContent() {
     const funnel = useMemo(() => {
         const none: ScreenerFilters = {
             strategies: new Set(), mode: 'OR', q: '',
-            excludeHoldings: false, excludeDeficit: false, excludePreferred: false, excludeHalted: false,
+            excludeHoldings: false, excludeDeficit: false, excludePreferred: false, excludeHalted: false, excludeManaged: false,
             sectors: new Set<string>(), minTrAmt: 0,
             minMarketCap: 0, maxPbr: 0, maxPer: 0, minRoe: 0, minNcav: 0,
         };
@@ -927,7 +932,7 @@ function ScreenerContent() {
             { label: '검색',      patch: { q: filters.q } },
             { label: '가치 지표', patch: { minMarketCap: filters.minMarketCap, maxPbr: filters.maxPbr, maxPer: filters.maxPer, minNcav: filters.minNcav } },
             { label: '수익·제외', patch: { minRoe: filters.minRoe, excludeDeficit: filters.excludeDeficit, excludeHoldings: filters.excludeHoldings, excludePreferred: filters.excludePreferred } },
-            { label: '업종·유동성', patch: { sectors: filters.sectors, minTrAmt: filters.minTrAmt, excludeHalted: filters.excludeHalted } },
+            { label: '업종·유동성', patch: { sectors: filters.sectors, minTrAmt: filters.minTrAmt, excludeHalted: filters.excludeHalted, excludeManaged: filters.excludeManaged } },
         ];
         let acc = { ...none };
         return steps.map(s => {
@@ -972,16 +977,19 @@ function ScreenerContent() {
         : null;
     const scanningInProgress = ncavDailyList.scanningInProgress;
 
-    const activeFilterCount = [excludeHoldings, excludeDeficit, excludePreferred, excludeHalted, sectors.size > 0, minTrAmt > 0, minMarketCap > 0, maxPbr > 0, maxPer > 0, minRoe > 0, minNcav > 0].filter(Boolean).length;
+    const activeFilterCount = [excludeHoldings, excludeDeficit, excludePreferred, excludeHalted, excludeManaged, sectors.size > 0, minTrAmt > 0, minMarketCap > 0, maxPbr > 0, maxPer > 0, minRoe > 0, minNcav > 0].filter(Boolean).length;
     const isAllActive = activeStrategyIds.size === 0;
-    const hasActiveFilters = activeStrategyIds.size > 0 || excludeHoldings || excludeDeficit || excludePreferred || excludeHalted || sectors.size > 0 || minTrAmt > 0 || minMarketCap > 0 || maxPbr > 0 || maxPer > 0 || minRoe > 0 || minNcav > 0 || sortKey !== 'value_score' || sortOrder !== 'desc' || showLikedOnly;
+    const hasActiveFilters = activeStrategyIds.size > 0 || excludeHoldings || excludeDeficit || excludePreferred || excludeHalted || excludeManaged || sectors.size > 0 || minTrAmt > 0 || minMarketCap > 0 || maxPbr > 0 || maxPer > 0 || minRoe > 0 || minNcav > 0 || sortKey !== 'value_score' || sortOrder !== 'desc' || showLikedOnly;
     const isFiltered = !showLikedOnly && filteredList.length !== ncavDailyList.list.length;
     // 업종 묶기는 응답에 sector/industry 가 있을 때만. 없으면 세그먼트에서 비활성.
     const hasSectorData = ncavDailyList.list.some((i: any) => i.sector ?? i.industry);
     // 워커가 아직 이 값을 채우기 전(migration 0013 배포 전)에는 해당 서랍 카드를 아예 띄우지
     // 않는다. 조작해도 아무 일이 없는 손잡이를 두는 것보다 없는 편이 낫다.
     const hasTrAmtData = useMemo(() => baseList.some(i => trAmtEok(i) !== null), [baseList]);
-    const hasHaltData = useMemo(() => baseList.some(i => i.temp_stop_yn != null), [baseList]);
+    // 거래정지 판정은 stat_cls_code(58) 도 본다 → 둘 중 하나라도 있으면 손잡이를 띄운다.
+    const hasHaltData = useMemo(() => baseList.some(i => i.temp_stop_yn != null || i.stat_cls_code != null), [baseList]);
+    // 관리종목은 전용 플래그(migration 0014) 우선, 옛 데이터는 stat_cls_code(51) 로도 잡힌다.
+    const hasManagedData = useMemo(() => baseList.some(i => i.mang_issu_cls_code != null || i.stat_cls_code != null), [baseList]);
     // 업종 선택지 — 지금 목록에 실제로 있는 업종만, 종목이 많은 순으로.
     const sectorOptions = useMemo(() => {
         const counts = new Map<string, number>();
@@ -1019,10 +1027,11 @@ function ScreenerContent() {
         excludeHoldings  && { label: '홀딩스 제외',              override: { excludeHoldings: false } as Partial<ScreenerFilters>,  clear: () => setExcludeHoldings(false) },
         excludePreferred && { label: '우선주 제외',              override: { excludePreferred: false } as Partial<ScreenerFilters>, clear: () => setExcludePreferred(false) },
         excludeHalted    && { label: '거래정지 제외',             override: { excludeHalted: false } as Partial<ScreenerFilters>,    clear: () => setExcludeHalted(false) },
+        excludeManaged   && { label: '관리종목 제외',             override: { excludeManaged: false } as Partial<ScreenerFilters>,   clear: () => setExcludeManaged(false) },
         minTrAmt > 0     && { label: `거래대금 ${minTrAmt}억+`,   override: { minTrAmt: 0 } as Partial<ScreenerFilters>,             clear: () => setMinTrAmt(0) },
         sectors.size > 0 && { label: `업종 ${sectors.size}개`,    override: { sectors: new Set<string>() } as Partial<ScreenerFilters>, clear: () => setSectors(new Set()) },
     ].filter(Boolean) as { label: string; override: Partial<ScreenerFilters>; clear: () => void }[]),
-    [minMarketCap, maxPbr, maxPer, minNcav, minRoe, excludeDeficit, excludeHoldings, excludePreferred, excludeHalted, minTrAmt, sectors]);
+    [minMarketCap, maxPbr, maxPer, minNcav, minRoe, excludeDeficit, excludeHoldings, excludePreferred, excludeHalted, excludeManaged, minTrAmt, sectors]);
 
     // 결과가 0개일 때 — "무엇을 풀면 몇 개가 돌아오는지"를 짚어준다. 그냥 "없습니다"로 끝내면
     // 어떤 조건이 결과를 죽였는지 사용자가 하나씩 꺼보며 찾아야 한다.
@@ -1038,7 +1047,7 @@ function ScreenerContent() {
     const clearDetailFilters = useCallback(() => {
         setMinMarketCap(0); setMaxPbr(0); setMaxPer(0); setMinRoe(0); setMinNcav(0);
         setExcludeHoldings(false); setExcludeDeficit(false); setExcludePreferred(false);
-        setExcludeHalted(false); setSectors(new Set()); setMinTrAmt(0);
+        setExcludeHalted(false); setExcludeManaged(false); setSectors(new Set()); setMinTrAmt(0);
         setDisplayCount(DAILY_PAGE_SIZE);
     }, []);
 
@@ -1343,6 +1352,7 @@ function ScreenerContent() {
                         if (excludeDeficit)  chips.push({ key: 'def',  label: '적자 제외',  clear: () => setExcludeDeficit(false) });
                         if (excludePreferred) chips.push({ key: 'pref', label: '우선주 제외', clear: () => setExcludePreferred(false) });
                         if (excludeHalted)   chips.push({ key: 'halt', label: '거래정지 제외', clear: () => setExcludeHalted(false) });
+                        if (excludeManaged)  chips.push({ key: 'mang', label: '관리종목 제외', clear: () => setExcludeManaged(false) });
                         if (minTrAmt > 0)    chips.push({ key: 'tr',   label: `거래대금 ${minTrAmt}억+`, clear: () => { setMinTrAmt(0); setDisplayCount(DAILY_PAGE_SIZE); } });
                         if (sectors.size > 0) chips.push({ key: 'sec', label: `업종 ${sectors.size}개`, clear: () => { setSectors(new Set()); setDisplayCount(DAILY_PAGE_SIZE); } });
                         // 칩이 없어도 걸린 조건(정렬·관심·전략)이 있으면 초기화 경로는 남겨야 한다.
@@ -1575,6 +1585,16 @@ function ScreenerContent() {
                                             delta={excludeHalted
                                                 ? countWith({ excludeHalted: false }) - filteredList.length
                                                 : filteredList.length - countWith({ excludeHalted: true })}
+                                        />
+                                    )}
+                                    {hasManagedData && (
+                                        <DrawerCheck
+                                            checked={excludeManaged}
+                                            onChange={v => { setExcludeManaged(v); setDisplayCount(DAILY_PAGE_SIZE); }}
+                                            label="관리종목 제외"
+                                            delta={excludeManaged
+                                                ? countWith({ excludeManaged: false }) - filteredList.length
+                                                : filteredList.length - countWith({ excludeManaged: true })}
                                         />
                                     )}
                                 </div>
